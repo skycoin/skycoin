@@ -1,0 +1,34 @@
+*.o
+*.a
+*.so
+
+.* #hidden files
+*~
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+###
+
+#Blacklist Everything
+*
+
+#white list directories
+!*/
+
+#whitelist file types
+!*.go
+!*.MD
+!*.c
+!*.h
+
+#whitelist files
+!.gitignore
+!makefile

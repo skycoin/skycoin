@@ -73,7 +73,12 @@ func (self *Transaction) PushOutput(dst Address, Value1 uint64, Value2 uint64) {
 }
 
 func (self *Transaction) SetSig(idx int, sec SecKey) {
-	hash = self.HashInner()
+	hash := self.HashInner()
+
+	err := SignHash(hash, sec)
+	if err != nil {
+		log.Panic()
+	}
 
 }
 

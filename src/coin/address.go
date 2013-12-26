@@ -1,6 +1,7 @@
 package sb_coin
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 )
@@ -23,13 +24,14 @@ func AddressFromPubkey(pubkey PubKey) Address {
 	ret.Version = 0x0f
 
 	if len(pubkey.Value) != 33 {
+		fmt.Printf("len= %v \n", len(pubkey.Value))
 		log.Panic()
 	}
 	s := Sha256_func(pubkey.Value[0:33])
 	r := Ripmd160_func(s[:])
 	copy(ret.Value[0:20], r[0:20])
 
-	b := append([]byte{0x0f}, r[:]...) //add version prefix
+	b := append([]byte{ret.Version}, r[:]...) //add version prefix
 
 	//4 byte checksum
 	r2 := Sha256_func(b)
@@ -67,4 +69,17 @@ func AddressPrintable(a Address) []byte {
 	var en base58.Base58 = base58.Hex2Base58(a.Value[:]) //encode as base 58
 	fmt.Printf("address= %v\n", en)
 	return []byte(en)
+}
+
+//set the genesis address pubkey
+var GenesisAddress Address
+
+func init() {
+	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
+	b, err := hex.DecodeString(a)
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Printf("len= %v \n", len(b))
+	GenesisAddress = AddressFromRawPubkey(b)
 }

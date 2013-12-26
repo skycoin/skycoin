@@ -55,6 +55,28 @@ type TransactionOutput struct {
 	Transaction Helper Functions
 */
 
+func (self *Transaction) PushInput(UxOut SHA256) int {
+	var SigIdx int = len(self.TI)
+	var ti TransactionInput
+	ti.SigIdx = uint16(SigIdx)
+	ti.UxOut = UxOut
+	self.TI = append(self.TI, ti)
+	return SigIdx
+}
+
+func (self *Transaction) PushOutput(dst Address, Value1 uint64, Value2 uint64) {
+	var to TransactionOutput
+	to.DestinationAddress = dst
+	to.Value1 = Value1
+	to.Value2 = Value2
+	self.TO = append(self.TO, to)
+}
+
+func (self *Transaction) SetSig(idx int, sec SecKey) {
+	hash = self.HashInner()
+
+}
+
 //hash only inputs and outputs
 func (self *Transaction) HashInner() SHA256 {
 	b1 := encoder.Serialize(self.TI)

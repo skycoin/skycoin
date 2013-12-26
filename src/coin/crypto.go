@@ -13,11 +13,11 @@ type SecKey struct {
 }
 
 type PubKey struct {
-	Value [64 + 1]byte
+	Value [33]byte
 }
 
 type Sig struct {
-	Value [72]byte
+	Value [64 + 1]byte
 }
 
 /*
@@ -65,4 +65,18 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 		return errors.New("ChkSig Error: signature invalid, signature invalid for hash")
 	}
 	return nil
+}
+
+func SignHash(hash SHA256, sec SecKey) error {
+	sig := secp256.Sign(hash.Value[:], sec.Value[:])
+	if sig == nil {
+		log.Panic()
+		return errors.New("SignHash invalid private key")
+	}
+	return nil
+}
+
+//implement
+func PubkeyFromSec(sec SecKey) PubKey {
+	return PubKey{}
 }

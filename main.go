@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag" // cli parsing
 	"fmt"
 	"log"
@@ -16,6 +17,18 @@ var disable_gui bool = false
 var disable_coind bool = false
 var disable_coin_tests bool = false
 
+func ToHex(b []byte) string {
+	return hex.EncodeToString(b)
+}
+
+func FromHex(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		log.Panic(err)
+	}
+	return b
+}
+
 func parse_args() {
 	_gui_port := flag.Uint64("gui-port", uint64(sb_gui.GuiServerPort), "port to run gui server")
 	flag.BoolVar(&disable_coind, "disable-coind", disable_coind, "disable the coin daemon")
@@ -24,12 +37,45 @@ func parse_args() {
 	sb_gui.GuiServerPort = uint32(*_gui_port)
 }
 
+/*
+	genesis address
+	pub: 02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8
+	sec: f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0
+
+*/
+
+type Address struct {
+	pub []byte
+	sec []byte
+	add sb_coin.Address
+}
+
+func GenerateAddress() Address {
+	var A Address
+	A.pub, A.sec = sb.GenerateKeyPair()
+	A.add = sb_coin.AddressFromRawPubkey(A.pub)
+	return A
+}
+
+func AddressArray(n int) []Address {
+	aa := make([]Address, n)
+	for i := 0; i < n; i++ {
+		aa[i] = GenerateAddress()
+	}
+	return aa
+}
+
 func tests() {
 
-	pub, private := sb.GenerateKeyPair()
-	fmt.Printf("pub: %s \n", pub)
+	aa := AddressArray(16)
+	_ = aa
 
-	_ = private
+	pub, sec := sb.GenerateKeyPair()
+	pub = FromHex("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
+	sec = FromHex("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
+
+	fmt.Printf("sec: %s \n", ToHex(sec))
+	fmt.Printf("pub: %s \n", ToHex(pub))
 
 	var BC *sb_coin.BlockChain = sb_coin.NewBlockChain()
 
@@ -98,7 +144,3 @@ func main() {
 
 	fmt.Println("Goodbye")
 }
-
-/*
-   Junk
-*/

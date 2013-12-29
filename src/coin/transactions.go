@@ -52,7 +52,8 @@ type TransactionOutput struct {
 */
 
 /*
-	Transaction Helper Functions
+	Check that all sigs all used
+	Check that sigs are sequential
 */
 
 func (self *Transaction) PushInput(UxOut SHA256) int {
@@ -75,11 +76,19 @@ func (self *Transaction) PushOutput(dst Address, Value1 uint64, Value2 uint64) {
 func (self *Transaction) SetSig(idx int, sec SecKey) {
 	hash := self.HashInner()
 
-	err := SignHash(hash, sec)
+	sig, err := SignHash(hash, sec)
 	if err != nil {
 		log.Panic()
 	}
 
+	if idx < 0 || idx >= len(self.TI) {
+		log.Panic()
+	}
+	for len(self.TH.Signatures) <= idx {
+		self.TH.Signatures = append(self.TH.Signatures, Sig{})
+	}
+
+	self.TH.Signatures[idx] = sig
 }
 
 //hash only inputs and outputs

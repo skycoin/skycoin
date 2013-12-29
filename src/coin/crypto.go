@@ -67,14 +67,14 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 	return nil
 }
 
-func SignHash(hash SHA256, sec SecKey) (Sig, errors) {
-	sig := secp256.Sign(hash.Value[:], sec.Value[:])
-	if sig == nil {
+func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+	sig1 := secp256.Sign(hash.Value[:], sec.Value[:])
+	if sig1 == nil {
 		log.Panic()
 		return Sig{}, errors.New("SignHash invalid private key")
 	}
 	var sig2 Sig
-	sig2.Set(sig)
+	sig2.Set(sig1)
 	return sig2, nil
 }
 

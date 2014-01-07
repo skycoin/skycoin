@@ -1,146 +1,137 @@
 package main
 
 import (
-	"encoding/hex"
-	"flag" // cli parsing
-	"fmt"
-	"log"
+    "fmt"
+    "github.com/op/go-logging"
+    "log"
+    "net/http"
+    _ "net/http/pprof"
+    "os"
+    "os/signal"
+    "runtime/debug"
+    "runtime/pprof"
+    "syscall"
 )
 
 import (
-	"coin" //skycoin daemon
-	"common"
-	"gui"
+    "./src/cli/"
+    // "./src/coin/"
+    "./src/coind/"
+    "./src/gui/"
 )
 
-var disable_gui bool = false
-var disable_coind bool = false
-var disable_coin_tests bool = false
+var (
+    logger     = logging.MustGetLogger("skycoin.main")
+    logFormat  = "[%{module}:%{level}] %{message}"
+    logModules = []string{
+        "skycoin.main",
+        "skycoin.coind",
+        "skycoin.coin",
+        "skycoin.gui",
+        "skycoin.util",
+        "gnet",
+        "pex",
+    }
+)
 
-func ToHex(b []byte) string {
-	return hex.EncodeToString(b)
+func printProgramStatus() {
+    fmt.Println("Program Status:")
+    debug.PrintStack()
+    p := pprof.Lookup("goroutine")
+    f, err := os.Create("goroutine.prof")
+    defer f.Close()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    err = p.WriteTo(f, 1)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
 }
 
-func FromHex(s string) []byte {
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		log.Panic(err)
-	}
-	return b
+func catchInterrupt(quit chan int) {
+    sigchan := make(chan os.Signal, 1)
+    signal.Notify(sigchan, os.Interrupt)
+    <-sigchan
+    signal.Stop(sigchan)
+    shutdown(quit)
 }
 
-func parse_args() {
-	_gui_port := flag.Uint64("gui-port", uint64(sb_gui.GuiServerPort), "port to run gui server")
-	flag.BoolVar(&disable_coind, "disable-coind", disable_coind, "disable the coin daemon")
-	flag.BoolVar(&disable_gui, "disable-gui", disable_gui, "disable the gui server")
-	flag.Parse()
-	sb_gui.GuiServerPort = uint32(*_gui_port)
+// Catches SIGUSR1 and prints internal program state
+func catchDebug() {
+    sigchan := make(chan os.Signal, 1)
+    signal.Notify(sigchan, syscall.SIGUSR1)
+    for {
+        select {
+        case <-sigchan:
+            printProgramStatus()
+        }
+    }
 }
 
-/*
-	genesis address
-	pub: 02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8
-	sec: f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0
-
-*/
-
-type Address struct {
-	pub []byte
-	sec []byte
-	add sb_coin.Address
+func shutdown(quit chan int) {
+    logger.Info("Shutting down\n")
+    coind.Shutdown(cli.DataDirectory)
+    logger.Info("Goodbye\n")
+    quit <- 1
 }
 
-func GenerateAddress() Address {
-	var A Address
-	A.pub, A.sec = sb.GenerateKeyPair()
-	A.add = sb_coin.AddressFromRawPubkey(A.pub)
-	return A
+// func initSettings() {
+//     sb.InitSettings()
+//     sb.Settings.Load()
+//     we resave the settings, in case they were not found and had to be generated
+//     sb.Settings.Save()
+// }
+
+func initLogging(level logging.Level) {
+    fmt := logging.MustStringFormatter(logFormat)
+    logging.SetFormatter(fmt)
+    for _, s := range logModules {
+        logging.SetLevel(level, s)
+    }
 }
 
-func AddressArray(n int) []Address {
-	aa := make([]Address, n)
-	for i := 0; i < n; i++ {
-		aa[i] = GenerateAddress()
-	}
-	return aa
-}
-
-func tests() {
-
-	aa := AddressArray(16)
-	_ = aa
-
-	pub, sec := sb.GenerateKeyPair()
-	pub = FromHex("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
-	sec = FromHex("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
-
-	fmt.Printf("sec: %s \n", ToHex(sec))
-	fmt.Printf("pub: %s \n", ToHex(pub))
-
-	var BC *sb_coin.BlockChain = sb_coin.NewBlockChain()
-
-	if false {
-		fmt.Printf("l= %v\n", len(BC.Blocks))
-	}
-
-	B := BC.NewBlock()
-
-	var T sb_coin.Transaction
-
-	T.UpdateHeader() //sets hash
-
-	/*
-		Need to add input
-	*/
-	err := BC.AppendTransaction(B, &T)
-
-	if err != nil {
-		log.Panic(err)
-	}
-
+func initProfiling() {
+    if cli.ProfileCPU {
+        f, err := os.Create(cli.ProfileCPUFile)
+        if err != nil {
+            log.Fatal(err)
+        }
+        pprof.StartCPUProfile(f)
+        defer pprof.StopCPUProfile()
+    }
+    if cli.HTTPProf {
+        go func() {
+            log.Println(http.ListenAndServe("localhost:6060", nil))
+        }()
+    }
 }
 
 func main() {
+    cli.ParseArgs()
+    initProfiling()
+    initLogging(cli.LogLevel)
 
-	tests()
-	return
+    // If the user Ctrl-C's, shutdown properly
+    quit := make(chan int)
+    go catchInterrupt(quit)
+    // Watch for SIGUSR1
+    go catchDebug()
 
-	if false {
-		log.Panic()
-	}
+    coind.Init(cli.Port, cli.DataDirectory)
 
-	parse_args()
+    if cli.ConnectTo != "" {
+        _, err := coind.Pool.Connect(cli.ConnectTo)
+        if err != nil {
+            log.Panic(err)
+        }
+    }
 
-	var n_servers int = 2
+    if !cli.DisableGUI {
+        go gui.LaunchGUI()
+    }
 
-	if disable_gui {
-		n_servers--
-	}
-	if disable_coind {
-		n_servers--
-	}
-
-	if n_servers <= 0 {
-		fmt.Printf("Nothing to run. You disabled everything\n")
-		return
-	}
-
-	errchan := make(chan error, n_servers)
-
-	if !disable_gui {
-
-	}
-
-	if !disable_coind {
-
-	}
-
-	for err := range errchan {
-		if err != nil {
-			fmt.Printf("Error: %s\n", err.Error())
-			break
-		}
-	}
-
-	fmt.Println("Goodbye")
+    <-quit
 }

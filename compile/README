@@ -1,0 +1,22 @@
+Compiling releases:
+
+Suggestion:
+Install gvm for managing go installations
+https://github.com/moovweb/gvm
+
+Requirements:
+Install gox (go cross compiler):
+https://github.com/mitchellh/gox
+
+Install golang-nw-pkg:
+go get github.com/lonnc/golang-nw/cmd/golang-nw-pkg
+
+
+Building skycoin releases:
+./build-$OS-$ARCH.sh
+
+All scripts must be run from this directory
+
+Core configurations per OS/ARCH are in $OS-$ARCH-config.  Don't edit these.
+
+Compressed releases are put in ./releases/

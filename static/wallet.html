@@ -1,0 +1,35 @@
+{{ template "header"}}
+
+{{ template "navbar"}}
+
+<h1>Wallet</h1>
+
+<table class="itg">
+<tbody><tr>
+
+    <th style="text-align:center; width:50px">ID</th>
+    <th style="text-align:center; width:70px"><a href="/">Address</a></th>
+    <th style="text-align:center; width:120px"><a href="/">Balance</a></th>
+
+</tr>
+
+{{range .Addresses}}
+
+<tr class="gtr0">
+    <th style="text-align:center; width:50px">{{.Id}}</th>
+    <td class="itd">
+        <div style="height:15px; min-width:150px; max-width:600px; overflow:hidden">
+            <a href="/" onclick=""> {{.Address}}</a>
+        </div>
+    </td>
+
+    <td class="itd" style="text-align:left; width:120px">{{.Balance}}</td>
+
+</tr>
+
+{{end}}
+
+</tbody>
+</table>
+
+{{ template "footer" }}

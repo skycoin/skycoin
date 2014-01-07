@@ -1,0 +1,15 @@
+APPNAME="Skycoin"
+OS=linux
+ARCH=amd64
+APP=skycoin_linux_amd64
+APPD=skycoind_linux_amd64
+BIN=skycoin
+NWVERSION="v0.8.3"
+NWNAME=node-webkit-${NWVERSION}-linux-x64
+NWEXT=tar.gz
+BINDIR="./.bin"
+CACHEDIR="./.cache"
+RELEASEDIR="./release"
+ZIPNAME=skycoin_linux_x86_64
+PKGDIR=../
+LIBUDEV=/lib/x86_64-linux-gnu/libudev.so.1

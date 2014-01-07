@@ -16,7 +16,7 @@ import (
 import (
     "./src/cli/"
     // "./src/coin/"
-    "./src/coind/"
+    "./src/daemon/"
     "./src/gui/"
 )
 
@@ -25,7 +25,7 @@ var (
     logFormat  = "[%{module}:%{level}] %{message}"
     logModules = []string{
         "skycoin.main",
-        "skycoin.coind",
+        "skycoin.daemon",
         "skycoin.coin",
         "skycoin.gui",
         "skycoin.util",
@@ -73,7 +73,7 @@ func catchDebug() {
 
 func shutdown(quit chan int) {
     logger.Info("Shutting down\n")
-    coind.Shutdown(cli.DataDirectory)
+    daemon.Shutdown(cli.DataDirectory)
     logger.Info("Goodbye\n")
     quit <- 1
 }
@@ -120,10 +120,10 @@ func main() {
     // Watch for SIGUSR1
     go catchDebug()
 
-    coind.Init(cli.Port, cli.DataDirectory)
+    daemon.Init(cli.Port, cli.DataDirectory)
 
     if cli.ConnectTo != "" {
-        _, err := coind.Pool.Connect(cli.ConnectTo)
+        _, err := daemon.Pool.Connect(cli.ConnectTo)
         if err != nil {
             log.Panic(err)
         }

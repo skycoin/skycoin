@@ -1,4 +1,4 @@
-package coind
+package daemon
 
 /* TODO
 

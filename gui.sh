@@ -7,5 +7,5 @@ if [[ $? != 0 ]]; then
     exit 1
 fi
 
-./release/skycoin_linux_x86_64/skycoin -disable-gui=false
+./release/skycoin_linux_x86_64/skycoin -disable-gui=false $@
 

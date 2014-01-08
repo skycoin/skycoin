@@ -2,6 +2,24 @@
 
 CMD="$1"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ARCH=`uname -m`
+OS=`uname -s`
+
+if [ "$ARCH" != "x86_64" ];
+then
+    ARCH="x86"
+fi
+
+if [ "$OS" = "Darwin" ];
+then
+    OS="osx"
+elif [ "$OS" = "Linux" ];
+then
+    OS="linux"
+else
+    echo "Unknown OS $OS"
+    exit 0
+fi
 
 usage () {
     echo "Usage: "
@@ -13,10 +31,10 @@ pushd "$DIR/compile" >/dev/null
 
 if [[ "$CMD" = "build" ]];
 then
-    ./build-linux-x86_64.sh dev
+    ./build-${OS}-${ARCH}.sh dev
 elif [[ "$CMD" = "run" ]];
 then
-    ./release/skycoin_linux_x86_64/skycoin -disable-gui=false "${@:2}"
+    ./release/skycoin_${OS}_${ARCH}/skycoin -disable-gui=false "${@:2}"
 else
     usage
 fi

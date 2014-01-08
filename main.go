@@ -86,8 +86,8 @@ func shutdown(quit chan int) {
 // }
 
 func initLogging(level logging.Level) {
-    fmt := logging.MustStringFormatter(logFormat)
-    logging.SetFormatter(fmt)
+    format := logging.MustStringFormatter(logFormat)
+    logging.SetFormatter(format)
     for _, s := range logModules {
         logging.SetLevel(level, s)
     }

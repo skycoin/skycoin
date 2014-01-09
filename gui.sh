@@ -34,7 +34,9 @@ then
     ./build-${OS}-${ARCH}.sh dev
 elif [[ "$CMD" = "run" ]];
 then
-    ./release/skycoin_${OS}_${ARCH}/skycoin -disable-gui=false "${@:2}"
+    pushd "./release/skycoin_${OS}_${ARCH}/" >/dev/null
+    ./skycoin -disable-gui=false "${@:2}"
+    popd >/dev/null
 else
     usage
 fi

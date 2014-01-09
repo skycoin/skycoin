@@ -4,9 +4,9 @@ Suggestion:
 Install gvm for managing go installations
 https://github.com/moovweb/gvm
 
-Requirements:
-Install gox (go cross compiler):
-https://github.com/mitchellh/gox
+#Requirements: [EDIT: NO LONGER REQUIRED]
+#Install gox (go cross compiler):
+#https://github.com/mitchellh/gox
 
 Install golang-nw-pkg:
 go get github.com/lonnc/golang-nw/cmd/golang-nw-pkg

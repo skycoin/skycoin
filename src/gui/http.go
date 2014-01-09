@@ -2,14 +2,19 @@ package gui
 
 import (
     "fmt"
-    "github.com/op/go-logging"
-    "github.com/lonnc/golang-nw"
     "log"
     "net/http"
+    "path/filepath"
+
+    "github.com/lonnc/golang-nw"
+    "github.com/op/go-logging"
 )
 
 var (
-    logger = logging.MustGetLogger("skycoin.gui")
+    logger      = logging.MustGetLogger("skycoin.gui")
+    resources   = []string{"js", "css", "lib", "partials", "img", "assets"}
+    resourceDir = "app/"
+    indexPage   = filepath.Join(resourceDir, "index.html")
 )
 
 // Begins listening on the node-webkit localhost
@@ -44,7 +49,10 @@ func LaunchWebInterface(addr string, port int) {
 func NewGUIMux() *http.ServeMux {
     mux := http.NewServeMux()
     mux.HandleFunc("/", indexHandler)
-    mux.HandleFunc("/static/", staticHandler)
+    for _, s := range resources {
+        route := fmt.Sprintf("/%s/", s)
+        mux.HandleFunc(route, staticHandler)
+    }
     // Wallet interface
     RegisterWalletHandlers(mux)
     // Network stats interface
@@ -54,13 +62,13 @@ func NewGUIMux() *http.ServeMux {
 
 // Serves the main page
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-    logger.Debug("Serving index.html\n")
-    http.ServeFile(w, r, "./static/index.html")
+    logger.Debug("Serving %s\n", indexPage)
+    http.ServeFile(w, r, indexPage)
 }
 
 // Serves files out of ./static/
 func staticHandler(w http.ResponseWriter, r *http.Request) {
-    fp := r.URL.Path[1:]
+    fp := filepath.Join(resourceDir, r.URL.Path[1:])
     logger.Debug("Serving %s\n", fp)
     http.ServeFile(w, r, fp)
 }

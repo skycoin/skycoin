@@ -1,11 +1,44 @@
 #!/usr/bin/env bash
 
-cd compile/
-./build-linux-x86_64.sh dev
+CMD="$1"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ARCH=`uname -m`
+OS=`uname -s`
 
-if [[ $? != 0 ]]; then
-    exit 1
+if [ "$ARCH" != "x86_64" ];
+then
+    ARCH="x86"
 fi
 
-./release/skycoin_linux_x86_64/skycoin -disable-gui=false
+if [ "$OS" = "Darwin" ];
+then
+    OS="osx"
+elif [ "$OS" = "Linux" ];
+then
+    OS="linux"
+else
+    echo "Unknown OS $OS"
+    exit 0
+fi
 
+usage () {
+    echo "Usage: "
+    echo "./gui.sh (build|run) [args]"
+    exit 0
+}
+
+pushd "$DIR/compile" >/dev/null
+
+if [[ "$CMD" = "build" ]];
+then
+    ./build-${OS}-${ARCH}.sh dev
+elif [[ "$CMD" = "run" ]];
+then
+    ./release/skycoin_${OS}_${ARCH}/skycoin -disable-gui=false "${@:2}"
+else
+    usage
+fi
+
+popd >/dev/null
+
+exit $?

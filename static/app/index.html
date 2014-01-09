@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" ng-app="myApp">
+<head>
+  <meta charset="utf-8">
+  <title>My AngularJS App</title>
+  <link rel="stylesheet" href="css/app.css"/>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
+  <script src="js/ui-bootstrap-tpls-0.9.0.js"></script>
+  <script src="assets/plunker.js"></script>
+
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/rainbow.css"/>
+  <link rel="stylesheet" href="assets/demo.css"/>
+
+</head>
+<body>
+  <div id="sky-header"></div>
+  <div id="sky-center" ng-controller="TabsDemoCtrl">
+    <!-- <p>Select a tab by setting active binding to true:</p>
+    <p>
+      <button class="btn btn-default btn-sm" ng-click="tabs[0].active = true">Select second tab</button>
+      <button class="btn btn-default btn-sm" ng-click="tabs[1].active = true">Select third tab</button>
+    </p>
+    <p>
+      <button class="btn btn-default btn-sm" ng-click="tabs[1].disabled = ! tabs[1].disabled">Enable / Disable third tab</button>
+    </p>
+    <hr /> -->
+
+    <tabset>
+      <tab>
+        <tab-heading>
+          <i class="glyphicon glyphicon-home"></i> Overview
+        </tab-heading>
+        <div class="outline">
+          <div id="overview-wallet" class="outline">
+            <div id="overview-wallet-title">Wallet</div>
+            <div id="overview-wallet-balance">0.00 SKY</div>
+            <div id="overview-wallet-transactions">0</div>
+          </div>
+          <div id="overview-recent-transaction" class="outline">
+            <div id="overview-recent-transaction-title">Recent Transactions</div>
+            Receive 
+            Date
+            Address 
+            Amount
+          </div>
+          
+        </div>
+        
+      </tab>
+
+      <tab>
+        <tab-heading>
+          <i class="glyphicon glyphicon-cloud-upload"></i> Send
+        </tab-heading>
+        <div class="outline">
+          <label for="send_pay_to">Pay to</label> <input id="send_pay_to" type="text" ng-model="send.payto"  />
+          <label for="send_label">Label</label> <input id="send_label" type="text" ng-model="send.label"  />
+          <label for="send_amount">Amount</label> <input id="send_amount" type="text" ng-model="send.amount"  />
+        </div>
+      </tab>
+
+      <tab select="alertMe()">
+        <tab-heading>
+          <i class="glyphicon glyphicon-cloud-download"></i> Recieve
+        </tab-heading>
+        <div class="outline">
+          Label:
+          Address:
+        </div>
+      </tab>
+
+      <tab>
+        <tab-heading>
+          <i class="glyphicon glyphicon-list"></i> Transactions
+        </tab-heading>
+        <div class="outline">Table</div>
+      </tab>
+
+      <tab>
+        <tab-heading>
+          <i class="glyphicon glyphicon-pencil"></i> Addresses
+        </tab-heading>
+        <div class="outline">Table</div>
+      </tab>
+
+
+      
+    </tabset>
+
+
+  </div>
+  <!--<ul class="menu">
+    <li><a href="#/view1">Transaction</a></li>
+    <li><a href="#/view2">Transaction View</a></li>
+  </ul>-->
+
+
+  <div ng-view></div>
+
+  <div id="sky-footer"></div>
+
+  <!-- In production use:
+  <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+  -->
+  <script src="lib/angular/angular.js"></script>
+  <script src="lib/angular/angular-route.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/services.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/directives.js"></script>
+</body>
+</html>

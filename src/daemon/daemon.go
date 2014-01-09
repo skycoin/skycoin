@@ -15,21 +15,22 @@ import (
     "encoding/hex"
     "errors"
     "fmt"
-    "github.com/nictuku/dht"
-    "github.com/op/go-logging"
-    "github.com/skycoin/gnet"
-    "github.com/skycoin/pex"
     "log"
     "math/rand"
     "net"
     "strconv"
     "strings"
     "time"
+
+    "github.com/nictuku/dht"
+    "github.com/op/go-logging"
+    "github.com/skycoin/gnet"
+    "github.com/skycoin/pex"
 )
 
 var (
     // Logger
-    logger = logging.MustGetLogger("skycoin.coind")
+    logger = logging.MustGetLogger("skycoin.daemon")
     // Application version
     version int32 = 1
     // Maximum number of peers to keep account of in the PeerList
@@ -142,7 +143,7 @@ type ConnectionError struct {
     Error error
 }
 
-// Initializes the coind subsystem
+// Initializes the daemon subsystem
 func Init(port int, dataDir string) {
     RegisterMessages()
     InitDHT(port)

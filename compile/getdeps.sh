@@ -16,4 +16,4 @@ popd >/dev/null
 
 # Compilation dependencies
 go get -u -v github.com/lonnc/golang-nw
-go install -v github.com/lonnc/golang-nw/cmd/golang-nw-pkg
+go get -u -v github.com/lonnc/golang-nw/cmd/golang-nw-pkg

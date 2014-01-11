@@ -2,8 +2,8 @@
 package util
 
 import (
-	"../lib/secp256k1-go"
 	"errors"
+	"lib/secp256k1-go"
 	"log"
 )
 

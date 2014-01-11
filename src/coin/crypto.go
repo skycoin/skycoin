@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-import "../lib/secp256k1-go"
+import "lib/secp256k1-go"
 
 type SecKey struct {
 	Value [32]byte

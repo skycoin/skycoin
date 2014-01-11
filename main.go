@@ -17,7 +17,6 @@ import (
 	"./src/cli/"
 	// "./src/coin/"
 	"./src/daemon/"
-	"./src/examples/"
 	"./src/gui/"
 )
 

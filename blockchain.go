@@ -1,4 +1,4 @@
-package sb_examples
+package main
 
 import (
 	"encoding/hex"
@@ -8,8 +8,8 @@ import (
 
 import (
 	//"./src/cli/"
-	"../../src/coin/"
-	"../../src/util"
+	"./src/coin/"
+	"./src/util"
 	//"./src/daemon/"
 	//"./src/gui/"
 )
@@ -91,4 +91,8 @@ func tests() {
 		log.Panic(err)
 	}
 
+}
+
+func main() {
+	tests()
 }

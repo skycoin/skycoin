@@ -110,15 +110,7 @@ func initProfiling() {
 	}
 }
 
-func run_tests() {
-	sb_examples.Run()
-}
-
 func main() {
-
-	if true {
-		run_tests()
-	}
 
 	cli.ParseArgs()
 	initProfiling()

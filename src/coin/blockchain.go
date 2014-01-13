@@ -62,7 +62,7 @@ type BlockChain struct {
 	Unspent []UxOut
 }
 
-func NewBlockChain() *BlockChain {
+func NewBlockChain(genesisAddress Address) *BlockChain {
 	fmt.Print("new block chain \n")
 	var BC *BlockChain = new(BlockChain)
 	var B *Block = new(Block) //genesis block
@@ -77,7 +77,7 @@ func NewBlockChain() *BlockChain {
 	var Ux UxOut
 	Ux.Head.BkSeq = 0
 	Ux.Head.UxSeq = 0
-	//UX.Body.Address =
+	UX.Body.Address = genesisAddress
 	Ux.Body.Value1 = 100 * 1000000 //100 million
 	Ux.Body.Value2 = 1024 * 1024 * 1024
 

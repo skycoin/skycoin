@@ -39,8 +39,8 @@ func FromHex(s string) []byte {
 */
 
 type Wallet struct {
-	AA      []Address
-	Outputs []sb_coin.UxOut
+	AA      []Address       //address array
+	Outputs []sb_coin.UxOut //unspent outputs
 }
 
 func (self *Wallet) GetRandom() Address {
@@ -48,6 +48,7 @@ func (self *Wallet) GetRandom() Address {
 	return self.AA[index]
 }
 
+//signs a hash for a given address. nil on failure
 func (self *Wallet) Sign(address sb_coin.Address, hash []byte) []byte {
 	for _, a := range self.AA {
 		if a.address == address {
@@ -64,7 +65,9 @@ func (self *Wallet) Sign(address sb_coin.Address, hash []byte) []byte {
 func (self *Wallet) RefeshUnspentOutputs(bc sb_coin.Blockchain) {
 	self.Outputs = new([]sb_coin.UxOuts)
 	for _, a := range self.AA {
-		self.Outputs = append(self.Outputs, a.GetOutputs(bc))
+		//get unspent outputs for the address
+		unspentOutputs := bc.GetUnspentOutputs(a.address)
+		self.Outputs = append(self.Outputs, unspentOutputs)
 	}
 }
 
@@ -94,17 +97,22 @@ func (self *Address) GetOutputs(bc sb_coin.Blockchain) []sb_coin.UxOut {
 
 func tests() {
 
-	aa := AddressArray(16)
-	_ = aa
+	genesisWallet := NewWallet(1)
+	genesisAddress = genesisWallet.AA[0].address
+	var BC *sb_coin.BlockChain = sb_coin.NewBlockChain(genesisAddress)
 
-	pub, sec := util.GenerateKeyPair()
-	pub = FromHex("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
-	sec = FromHex("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
+	//create 16 wallets with 64 addresses
+	WA := new([]Wallet)
+	for i := 0; i < 16; i++ {
+		WA = append(WA, NewWallet(64))
+	}
+
+	//pub, sec := util.GenerateKeyPair()
+	//pub := FromHex("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
+	//sec := FromHex("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
 
 	fmt.Printf("sec: %s \n", ToHex(sec))
 	fmt.Printf("pub: %s \n", ToHex(pub))
-
-	var BC *sb_coin.BlockChain = sb_coin.NewBlockChain()
 
 	if false {
 		fmt.Printf("l= %v\n", len(BC.Blocks))

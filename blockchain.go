@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math/rand"
 )
 
 import (
@@ -37,10 +38,37 @@ func FromHex(s string) []byte {
 
 */
 
+type Wallet struct {
+	AA []Address
+}
+
+func (self *Wallet) GetRandom() Address {
+	index := rand.Int() % len(self.AA)
+	return self.AA[index]
+}
+
+func (self *Wallet) Sign(address sb_coin.Address, hash []byte) []byte {
+	for _, a := range self.AA {
+		if a.address == address {
+			//func GenerateSignature(seckey []byte, msg []byte) []byte
+			sig := sb_coin.GenerateSignature(a.seckey, hash)
+			return sig
+		}
+
+	}
+	return nil
+}
+
+func NewWallet(int n) Wallet {
+	for i := 0; i < n; i++ {
+		self.AA = append(self.AA, GenerateAddress())
+	}
+}
+
 type Address struct {
-	pub []byte
-	sec []byte
-	add sb_coin.Address
+	pubkey  []byte
+	seckey  []byte
+	address sb_coin.Address
 }
 
 func GenerateAddress() Address {

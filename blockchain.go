@@ -8,11 +8,8 @@ import (
 )
 
 import (
-	//"./src/cli/"
 	"./src/coin/"
-	"./src/util"
-	//"./src/daemon/"
-	//"./src/gui/"
+	//"./src/util"
 )
 
 func Run() {
@@ -62,19 +59,22 @@ func (self *Wallet) Sign(address sb_coin.Address, hash []byte) []byte {
 }
 
 //refresh the unspent outputs for the wallet
-func (self *Wallet) RefeshUnspentOutputs(bc sb_coin.Blockchain) {
-	self.Outputs = new([]sb_coin.UxOuts)
+func (self *Wallet) RefeshUnspentOutputs(bc *sb_coin.BlockChain) {
+	var outputs []sb_coin.UxOut
 	for _, a := range self.AA {
 		//get unspent outputs for the address
 		unspentOutputs := bc.GetUnspentOutputs(a.address)
-		self.Outputs = append(self.Outputs, unspentOutputs)
+		outputs = append(outputs, unspentOutputs...)
 	}
+	self.Outputs = outputs
 }
 
-func NewWallet(int n) Wallet {
+func NewWallet(n int) Wallet {
+	var w Wallet
 	for i := 0; i < n; i++ {
-		self.AA = append(self.AA, GenerateAddress())
+		w.AA = append(w.AA, GenerateAddress())
 	}
+	return w
 }
 
 type Address struct {
@@ -85,26 +85,26 @@ type Address struct {
 
 func GenerateAddress() Address {
 	var A Address
-	A.pub, A.sec = util.GenerateKeyPair()
-	A.add = sb_coin.AddressFromRawPubkey(A.pub)
+	A.pubkey, A.seckey = sb_coin.GenerateKeyPair()
+	A.address = sb_coin.AddressFromRawPubkey(A.pubkey)
 	return A
 }
 
-func (self *Address) GetOutputs(bc sb_coin.Blockchain) []sb_coin.UxOut {
-	ux := bc.GetUnspentOutputs(*self)
-	return ux
-}
+//func (self *Address) GetOutputs(bc sb_coin.BlockChain) []sb_coin.UxOut {
+//	ux := bc.GetUnspentOutputs(*self.address)
+//	return ux
+//}
 
 func tests() {
 
 	genesisWallet := NewWallet(1)
-	genesisAddress = genesisWallet.AA[0].address
-	var BC *sb_coin.BlockChain = sb_coin.NewBlockChain(genesisAddress)
+	genesisAddress := genesisWallet.AA[0]
+	var BC *sb_coin.BlockChain = sb_coin.NewBlockChain(genesisAddress.address)
 
 	genesisWallet.RefeshUnspentOutputs(BC)
 	//create 16 wallets with 64 addresses
 	wn := 16 //number of wallets to create
-	WA := new([]Wallet)
+	var WA []Wallet
 	for i := 0; i < wn; i++ {
 		WA = append(WA, NewWallet(64))
 	}
@@ -121,18 +121,18 @@ func tests() {
 
 	if true {
 		//create transaction by hand
-		ti := sb_coin.TransactionInput
+		var ti sb_coin.TransactionInput
 		ti.SigIdx = uint16(0)
 		ti.UxOut = genesisWallet.Outputs[0].Hash()
 		T.TI = append(T.TI, ti)
 
-		to := sb_coin.TransactionOutput
+		var to sb_coin.TransactionOutput
 		to.DestinationAddress = genesisWallet.AA[0].address
-		to.Value1 = 100*1000000 - wn*1000
+		to.Value1 = uint64(100*1000000 - wn*1000)
 		T.TO = append(T.TO, to)
 
 		for i := 0; i < wn; i++ {
-			to := sb_coin.TransactionOutput
+			var to sb_coin.TransactionOutput
 			a := WA[i].GetRandom()
 			to.DestinationAddress = a.address
 			to.Value1 = 1000
@@ -146,10 +146,10 @@ func tests() {
 
 	} else {
 		T.PushInput(genesisWallet.Outputs[0].Hash())
-		T.PushOutput(genesisWallet.AA[0].address, 100*1000000-wn*1000, 0)
+		T.PushOutput(genesisWallet.AA[0].address, uint64(100*1000000-wn*1000), 0)
 		for i := 0; i < wn; i++ {
 			a := WA[i].GetRandom()
-			T.PushOutput(A.address, wn, 1024)
+			T.PushOutput(a.address, uint64(wn), 1024)
 		}
 
 		var sec sb_coin.SecKey
@@ -158,6 +158,7 @@ func tests() {
 	}
 	T.UpdateHeader() //sets hash
 
+	fmt.Printf("genesis transaction: \n")
 	/*
 	   Need to add input
 	*/

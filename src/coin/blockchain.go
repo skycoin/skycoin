@@ -102,7 +102,7 @@ func (self *BlockChain) NewBlock() *Block {
 //look up unspent outputs for an address
 func (self *BlockChain) GetUnspentOutputs(address Address) []UxOut {
 	var ux []UxOut
-	for i, Ux := range self.Unspent {
+	for _, Ux := range self.Unspent {
 		if Ux.Body.Address == address {
 			ux = append(ux, Ux)
 		}

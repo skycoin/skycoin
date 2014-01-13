@@ -56,7 +56,7 @@ func catchInterrupt(quit chan int) {
     signal.Notify(sigchan, os.Interrupt)
     <-sigchan
     signal.Stop(sigchan)
-    shutdown(quit)
+    quit <- 1
 }
 
 // Catches SIGUSR1 and prints internal program state
@@ -71,11 +71,10 @@ func catchDebug() {
     }
 }
 
-func shutdown(quit chan int) {
+func shutdown() {
     logger.Info("Shutting down\n")
     daemon.Shutdown(cli.DataDirectory)
     logger.Info("Goodbye\n")
-    quit <- 1
 }
 
 // func initSettings() {
@@ -120,7 +119,8 @@ func main() {
     // Watch for SIGUSR1
     go catchDebug()
 
-    daemon.Init(cli.Port, cli.DataDirectory)
+    stopDaemon := make(chan int)
+    daemon.Init(cli.Port, cli.DataDirectory, stopDaemon)
 
     if cli.ConnectTo != "" {
         _, err := daemon.Pool.Connect(cli.ConnectTo)
@@ -134,4 +134,6 @@ func main() {
     }
 
     <-quit
+    stopDaemon <- 1
+    shutdown()
 }

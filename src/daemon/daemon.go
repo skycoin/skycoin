@@ -36,7 +36,7 @@ var (
     // Maximum number of peers to keep account of in the PeerList
     maxPeers = 1000
     // Peer list
-    Peers = pex.NewPeerList(maxPeers)
+    Peers = pex.NewPex(maxPeers)
     // Cull peers after they havent been seen in this much time
     peerExpiration = time.Hour * 24 * 7
     // Cull expired peers on this interval
@@ -70,7 +70,7 @@ var (
     // Maximum number of connections to try at once
     pendingConnectionsMax = 16
     // Number of connections waiting to be formed or timeout
-    pendingConnections = make(map[string]*pex.PeerState, pendingConnectionsMax)
+    pendingConnections = make(map[string]*pex.Peer, pendingConnectionsMax)
     // Keep track of unsolicited clients who should notify us of their version
     expectingVersions = make(map[string]time.Time)
     // Keep track of a connection's mirror value, to avoid double
@@ -143,14 +143,16 @@ type ConnectionError struct {
     Error error
 }
 
-// Initializes the daemon subsystem
-func Init(port int, dataDir string) {
+// Initializes the daemon subsystem.  Data is sent over both TCP and UDP for
+// port.  dataDir is where application data is stored. Sending anything to
+// the quit channel will stop the daemon.
+func Init(port int, dataDir string, quit chan int) {
     RegisterMessages()
     InitDHT(port)
     InitPool(port)
     InitPeers(dataDir)
     BeginPeerAcquisition(Pool)
-    go PeersLoop()
+    go PeersLoop(quit)
 }
 
 // Terminates peer subsytem safely
@@ -217,7 +219,7 @@ func ShutdownPool() {
 
 // Configure the pex.PeerList and load local data
 func InitPeers(data_directory string) {
-    err := Peers.LoadDatabase(data_directory)
+    err := Peers.Load(data_directory)
     if err != nil {
         logger.Notice("Failed to load peer database\n")
         logger.Notice("Reason: %v\n", err)
@@ -230,16 +232,17 @@ func InitPeers(data_directory string) {
 func BeginPeerAcquisition(pool *gnet.ConnectionPool) {
     logger.Info("BeginPeerAcquisition\n")
     logger.Debug("Known peers:\n")
-    for addr, _ := range Peers.Peers {
+    for addr, _ := range Peers.Peerlist {
         logger.Debug("\t%s\n", addr)
     }
-    if Peers.Count() == 0 {
+    if len(Peers.Peerlist) == 0 {
         logger.Debug("\tNone\n")
     }
 }
 
-// Main loop for peer/connection management
-func PeersLoop() {
+// Main loop for peer/connection management. Send anything to quit to shut it
+// down
+func PeersLoop(quit chan int) {
     dhtBootstrapTicker := time.Tick(dhtBootstrapRequestRate)
     cullInvalidTicker := time.Tick(cullInvalidRate)
     outgoingConnectionsTicker := time.Tick(outgoingConnectionsRate)
@@ -249,16 +252,17 @@ func PeersLoop() {
     messageHandlingTicker := time.Tick(messageHandlingRate)
     clearStaleConnectionsTicker := time.Tick(clearStaleConnectionsRate)
     pingCheckTicker := time.Tick(pingCheckRate)
+main:
     for {
         select {
         // Continually make requests to the DHT, if we need peers
         case <-dhtBootstrapTicker:
-            if len(Peers.Peers) < dhtPeerLimit {
+            if len(Peers.Peerlist) < dhtPeerLimit {
                 go DHT.PeersRequest(string(dhtInfoHash), true)
             }
         // Flush expired blacklisted peers
         case <-updateBlacklistTicker:
-            Peers.UpdateBlacklist()
+            Peers.Blacklist.Refresh()
         // Remove connections that failed to complete the handshake
         case <-cullInvalidTicker:
             cullInvalidConnections()
@@ -267,7 +271,7 @@ func PeersLoop() {
             Peers.RequestPeers(Pool.GetRawConnections(), NewGetPeersMessage)
         // Remove peers we haven't seen in a while
         case <-clearOldPeersTicker:
-            Peers.ClearOldPeers(peerExpiration)
+            Peers.Peerlist.ClearOld(peerExpiration)
         // Remove connections that haven't said anything in a while
         case <-clearStaleConnectionsTicker:
             clearStaleConnections()
@@ -299,6 +303,8 @@ func PeersLoop() {
         // Message handlers
         case m := <-messageEvent:
             m.Process()
+        case <-quit:
+            break main
         }
     }
 }
@@ -311,7 +317,7 @@ func onGnetDisconnect(c *gnet.Connection, reason gnet.DisconnectReason) {
     logger.Info("%s disconnected because: %v\n", a, reason)
     duration, exists := BlacklistOffenses[reason]
     if exists {
-        Peers.Blacklist(a, duration)
+        Peers.AddBlacklistEntry(a, duration)
     }
     delete(outgoingConnections, a)
     delete(expectingVersions, a)
@@ -401,14 +407,14 @@ func cullInvalidConnections() {
             logger.Info("Removing %s for not sending a version\n", a)
             delete(expectingVersions, a)
             Pool.Disconnect(Pool.Addresses[a], DisconnectVersionTimeout)
-            Peers.RemovePeer(a)
+            delete(Peers.Peerlist, a)
         }
     }
 }
 
 // Shutdown the PeerList
 func ShutdownPeers(data_directory string) {
-    err := Peers.SaveDatabase(data_directory)
+    err := Peers.Save(data_directory)
     if err != nil {
         logger.Warning("Failed to save peer database\n")
         logger.Warning("Reason: %v\n", err)
@@ -448,7 +454,7 @@ func RequestDHTPeers() {
 // Attempts to connect to a random peer. If it fails, the peer is removed
 func connectToRandomPeer() {
     // Make a connection to a random peer
-    peers := Peers.RandomPeers(0)
+    peers := Peers.Peerlist.Random(0)
     for _, p := range peers {
         if Pool.Addresses[p.Addr] == nil && pendingConnections[p.Addr] == nil {
             logger.Debug("Trying to connect to %s\n", p.Addr)
@@ -473,7 +479,7 @@ func handleConnectionError(c ConnectionError) {
     logger.Debug("Removing %s because failed to connect: %v\n", c.Addr,
         c.Error)
     delete(pendingConnections, c.Addr)
-    Peers.RemovePeer(c.Addr)
+    delete(Peers.Peerlist, c.Addr)
 }
 
 /* Messages */
@@ -518,7 +524,7 @@ type GivePeersMessage struct {
     c     *gnet.MessageContext `-`
 }
 
-func NewGivePeersMessage(peers []*pex.PeerState) pex.GivePeersMessage {
+func NewGivePeersMessage(peers []*pex.Peer) pex.GivePeersMessage {
     ipaddrs := make([]IPAddr, 0, len(peers))
     for _, ps := range peers {
         // TODO -- support ipv6

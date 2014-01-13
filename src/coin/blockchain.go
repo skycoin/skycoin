@@ -77,7 +77,7 @@ func NewBlockChain(genesisAddress Address) *BlockChain {
 	var Ux UxOut
 	Ux.Head.BkSeq = 0
 	Ux.Head.UxSeq = 0
-	UX.Body.Address = genesisAddress
+	Ux.Body.Address = genesisAddress
 	Ux.Body.Value1 = 100 * 1000000 //100 million
 	Ux.Body.Value2 = 1024 * 1024 * 1024
 
@@ -101,7 +101,7 @@ func (self *BlockChain) NewBlock() *Block {
 
 //look up unspent outputs for an address
 func (self *BlockChain) GetUnspentOutputs(address Address) []UxOut {
-	ux := new([]Uxout)
+	var ux []UxOut
 	for i, Ux := range self.Unspent {
 		if Ux.Body.Address == address {
 			ux = append(ux, Ux)

@@ -71,10 +71,11 @@ func catchDebug() {
     }
 }
 
-func shutdown() {
+func shutdown(quit chan int) {
     logger.Info("Shutting down\n")
     daemon.Shutdown(cli.DataDirectory)
     logger.Info("Goodbye\n")
+    quit <- 1
 }
 
 // func initSettings() {

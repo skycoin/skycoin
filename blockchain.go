@@ -39,7 +39,8 @@ func FromHex(s string) []byte {
 */
 
 type Wallet struct {
-	AA []Address
+	AA      []Address
+	Outputs []sb_coin.UxOut
 }
 
 func (self *Wallet) GetRandom() Address {
@@ -57,6 +58,14 @@ func (self *Wallet) Sign(address sb_coin.Address, hash []byte) []byte {
 
 	}
 	return nil
+}
+
+//refresh the unspent outputs for the wallet
+func (self *Wallet) RefeshUnspentOutputs(bc sb_coin.Blockchain) {
+	self.Outputs = new([]sb_coin.UxOuts)
+	for _, a := range self.AA {
+		self.Outputs = append(self.Outputs, a.GetOutputs(bc))
+	}
 }
 
 func NewWallet(int n) Wallet {
@@ -79,7 +88,8 @@ func GenerateAddress() Address {
 }
 
 func (self *Address) GetOutputs(bc sb_coin.Blockchain) []sb_coin.UxOut {
-	bc.
+	ux := bc.GetUnspentOutputs(*self)
+	return ux
 }
 
 func tests() {

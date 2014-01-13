@@ -78,12 +78,8 @@ func GenerateAddress() Address {
 	return A
 }
 
-func AddressArray(n int) []Address {
-	aa := make([]Address, n)
-	for i := 0; i < n; i++ {
-		aa[i] = GenerateAddress()
-	}
-	return aa
+func (self *Address) GetOutputs(bc sb_coin.Blockchain) []sb_coin.UxOut {
+	bc.
 }
 
 func tests() {

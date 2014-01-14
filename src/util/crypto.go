@@ -1,6 +1,12 @@
 // Wrapper around secp256k1-go
 package util
 
+/*
+   Moved to sb_coin
+   /src/coin/crypto
+*/
+
+/*
 import (
     "../lib/secp256k1-go"
     "errors"
@@ -34,3 +40,4 @@ func GenerateKeyPair() (public, secret []byte) {
     public, secret = secp256.GenerateKeyPair()
     return
 }
+*/

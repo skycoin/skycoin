@@ -420,6 +420,14 @@ func (self *BlockChain) ExecuteBlock(B *Block) error {
 
 func (self *BlockChain) AppendTransaction(B *Block, T *Transaction) error {
 
+	//check that all inputs exist and are unspent
+	for _, tx := range T.TI {
+		chk := self.GetUnspentByHash(tx.UxOut)
+		if chk == nil {
+			return errors.New("Unspent output does not exist")
+		}
+	}
+
 	//check for double spending outputs twice in block
 	for i, tx1 := range T.TI {
 		for j, tx2 := range T.TI {
@@ -437,14 +445,6 @@ func (self *BlockChain) AppendTransaction(B *Block, T *Transaction) error {
 					return errors.New("Cannot spend output twice in same block")
 				}
 			}
-		}
-	}
-
-	//check that all inputs exist and are unspent
-	for _, tx := range T.TI {
-		chk := self.GetUnspentByHash(tx.UxOut)
-		if chk == nil {
-			return errors.New("Unspent block does not exist")
 		}
 	}
 

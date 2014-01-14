@@ -168,6 +168,7 @@ func tests() {
 		log.Panic(err)
 	}
 
+	BC.ExecuteBlock(B)
 }
 
 func main() {

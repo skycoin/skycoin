@@ -421,9 +421,9 @@ func (self *BlockChain) ExecuteBlock(B *Block) error {
 func (self *BlockChain) AppendTransaction(B *Block, T *Transaction) error {
 
 	//check for double spending outputs twice in block
-	for _, tx1 := range T.TI {
-		for _, tx2 := range T.TI {
-			if tx1.UxOut == tx2.UxOut {
+	for i, tx1 := range T.TI {
+		for j, tx2 := range T.TI {
+			if j < i && tx1.UxOut == tx2.UxOut {
 				return errors.New("Cannot spend output twice in same block")
 			}
 		}
@@ -431,9 +431,9 @@ func (self *BlockChain) AppendTransaction(B *Block, T *Transaction) error {
 
 	//check to ensure that outputs do not appear twice in block
 	for _, t := range B.Body.Transactions {
-		for _, tx1 := range t.TI {
-			for _, tx2 := range T.TI {
-				if tx1.UxOut == tx2.UxOut {
+		for i, tx1 := range t.TI {
+			for j, tx2 := range T.TI {
+				if j < i && tx1.UxOut == tx2.UxOut {
 					return errors.New("Cannot spend output twice in same block")
 				}
 			}
@@ -480,7 +480,7 @@ func (self *BlockChain) AppendTransaction(B *Block, T *Transaction) error {
 		value1_out += ux.Value1
 		value2_out += ux.Value2
 	}
-	if value1_in != value2_out {
+	if value1_in != value1_out {
 		return errors.New("Error: Coin inputs do not match coin ouptuts")
 	}
 	if value2_in < value2_out {

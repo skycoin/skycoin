@@ -95,6 +95,12 @@ func GenerateAddress() Address {
 //	return ux
 //}
 
+//pub, sec := util.GenerateKeyPair()
+//pub := FromHex("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
+//sec := FromHex("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
+//fmt.Printf("sec: %s \n", ToHex(sec))
+//fmt.Printf("pub: %s \n", ToHex(pub))
+
 func tests() {
 
 	genesisWallet := NewWallet(1)
@@ -108,12 +114,6 @@ func tests() {
 	for i := 0; i < wn; i++ {
 		WA = append(WA, NewWallet(64))
 	}
-
-	//pub, sec := util.GenerateKeyPair()
-	//pub := FromHex("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
-	//sec := FromHex("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
-	//fmt.Printf("sec: %s \n", ToHex(sec))
-	//fmt.Printf("pub: %s \n", ToHex(pub))
 
 	B := BC.NewBlock()
 

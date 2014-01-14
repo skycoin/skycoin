@@ -55,9 +55,20 @@
           <i class="glyphicon glyphicon-cloud-upload"></i> Send
         </tab-heading>
         <div class="outline">
-          <label for="send_pay_to">Pay to</label> <input id="send_pay_to" type="text" ng-model="send.payto"  />
-          <label for="send_label">Label</label> <input id="send_label" type="text" ng-model="send.label"  />
-          <label for="send_amount">Amount</label> <input id="send_amount" type="text" ng-model="send.amount"  />
+          <table>
+            <tr>
+              <td><label for="send_pay_to">Pay to</label></td><td><input id="send_pay_to" type="text" ng-model="send.payto"  /></td>
+            </tr>
+            <tr>
+              <td><label for="send_label">Label</label></td><td><input id="send_label" type="text" ng-model="send.label"  /></td>
+            </tr>
+            <tr>
+              <td><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-model="send.amount" /></td>
+            </tr>
+          </table>
+          
+           
+           
         </div>
       </tab>
 

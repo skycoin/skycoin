@@ -12,15 +12,15 @@ html,body{
 
 #send_pay_to{
   float:right;
-  width:80%;
+  width:100%;
 }
 
 #send_label{
   float:right;
-  width:80%;
+  width:100%;
 }
 #send_amount{
-  float:left;
+  float:right;
   width:20%;
 }
 

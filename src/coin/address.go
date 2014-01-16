@@ -1,7 +1,7 @@
 package sb_coin
 
 import (
-	"encoding/hex"
+	//"encoding/hex"
 	"fmt"
 	"log"
 )
@@ -71,6 +71,7 @@ func AddressPrintable(a Address) []byte {
 	return []byte(en)
 }
 
+/*
 //set the genesis address pubkey
 var GenesisAddress Address
 
@@ -80,6 +81,7 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("len= %v \n", len(b))
+	//fmt.Printf("len= %v \n", len(b))
 	GenesisAddress = AddressFromRawPubkey(b)
 }
+*/

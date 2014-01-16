@@ -132,7 +132,7 @@ func tests() {
 
 	var T sb_coin.Transaction
 
-	if true {
+	if false {
 		//create transaction by hand
 		var ti sb_coin.TransactionInput
 		ti.SigIdx = uint16(0)
@@ -160,9 +160,10 @@ func tests() {
 	} else {
 		T.PushInput(genesisWallet.Outputs[0].Hash())
 		T.PushOutput(genesisWallet.AA[0].address, uint64(100*1000000-wn*1000), 0)
+
 		for i := 0; i < wn; i++ {
 			a := WA[i].GetRandom()
-			T.PushOutput(a.address, uint64(wn), 1024)
+			T.PushOutput(a.address, uint64(1000), 1024*1024)
 		}
 
 		var sec sb_coin.SecKey

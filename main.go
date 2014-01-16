@@ -90,6 +90,9 @@ func initLogging(level logging.Level) {
     for _, s := range logModules {
         logging.SetLevel(level, s)
     }
+    stdout := logging.NewLogBackend(os.Stdout, "", 0)
+    stdout.Color = true
+    logging.SetBackend(stdout)
 }
 
 func initProfiling() {

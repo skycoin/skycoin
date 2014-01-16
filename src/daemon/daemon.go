@@ -186,14 +186,14 @@ func InitDHT(port int) {
         log.Panicf("Failed to init DHT: %v", err)
         return
     }
-    logger.Info("Init DHT on port %d\n", port)
+    logger.Info("Init DHT on port %d", port)
     go DHT.DoDHT()
 }
 
 // Begins listening on port for connections and periodically scanning for
 // messages on read_interval
 func InitPool(port int) {
-    logger.Info("InitPool on port %d\n", port)
+    logger.Info("InitPool on port %d", port)
     if Pool != nil {
         log.Panic("ConnectionPool is already initialised")
     }
@@ -214,29 +214,29 @@ func ShutdownPool() {
     if Pool != nil {
         Pool.StopListen()
     }
-    logger.Info("Shutdown pool\n")
+    logger.Info("Shutdown pool")
 }
 
 // Configure the pex.PeerList and load local data
 func InitPeers(data_directory string) {
     err := Peers.Load(data_directory)
     if err != nil {
-        logger.Notice("Failed to load peer database\n")
-        logger.Notice("Reason: %v\n", err)
+        logger.Notice("Failed to load peer database")
+        logger.Notice("Reason: %v", err)
     }
-    logger.Debug("Init peers\n")
+    logger.Debug("Init peers")
 }
 
 // Hits bootstrap nodes if cached peers are not found.  Begins making
 // connections to some peers and requesting more
 func BeginPeerAcquisition(pool *gnet.ConnectionPool) {
-    logger.Info("BeginPeerAcquisition\n")
-    logger.Debug("Known peers:\n")
+    logger.Info("BeginPeerAcquisition")
+    logger.Debug("Known peers:")
     for addr, _ := range Peers.Peerlist {
-        logger.Debug("\t%s\n", addr)
+        logger.Debug("\t%s", addr)
     }
     if len(Peers.Peerlist) == 0 {
-        logger.Debug("\tNone\n")
+        logger.Debug("\tNone")
     }
 }
 
@@ -314,7 +314,7 @@ main:
 // by a queue in the PeersLoop() select{}.
 func onGnetDisconnect(c *gnet.Connection, reason gnet.DisconnectReason) {
     a := c.Addr()
-    logger.Info("%s disconnected because: %v\n", a, reason)
+    logger.Info("%s disconnected because: %v", a, reason)
     duration, exists := BlacklistOffenses[reason]
     if exists {
         Peers.AddBlacklistEntry(a, duration)
@@ -342,9 +342,9 @@ func onGnetConnect(c *gnet.Connection, solicited bool) {
 func onConnect(e ConnectEvent) {
     a := e.Addr
     if e.Solicited {
-        logger.Info("Connected to %s as we requested\n", a)
+        logger.Info("Connected to %s as we requested", a)
     } else {
-        logger.Info("Received unsolicited connection to %s\n", a)
+        logger.Info("Received unsolicited connection to %s", a)
     }
     delete(pendingConnections, a)
     c := Pool.Addresses[a]
@@ -355,16 +355,16 @@ func onConnect(e ConnectEvent) {
     }
     blacklisted := Peers.IsBlacklisted(a)
     if blacklisted {
-        logger.Info("%s is blacklisted, disconnecting\n", a)
+        logger.Info("%s is blacklisted, disconnecting", a)
         Pool.Disconnect(c, DisconnectIsBlacklisted)
         return
     }
-    logger.Debug("Sending version message to %s\n", a)
+    logger.Debug("Sending version message to %s", a)
     outgoingConnections[a] = c
     expectingVersions[a] = time.Now()
     err := c.Controller.SendMessage(NewIntroductionMessage())
     if err != nil {
-        logger.Error("Failed to send introduction message: %v\n", err)
+        logger.Error("Failed to send introduction message: %v", err)
         Pool.Disconnect(c, DisconnectSelf)
         return
     }
@@ -387,7 +387,7 @@ func sendPings() {
         if c.LastSent.Add(pingRate).Before(now) {
             err := c.Controller.SendMessage(&PingMessage{})
             if err != nil {
-                logger.Warning("Failed to send ping message to %s\n", c.Addr())
+                logger.Warning("Failed to send ping message to %s", c.Addr())
             }
         }
     }
@@ -404,7 +404,7 @@ func cullInvalidConnections() {
             continue
         }
         if t.Add(versionWait).Before(now) {
-            logger.Info("Removing %s for not sending a version\n", a)
+            logger.Info("Removing %s for not sending a version", a)
             delete(expectingVersions, a)
             Pool.Disconnect(Pool.Addresses[a], DisconnectVersionTimeout)
             delete(Peers.Peerlist, a)
@@ -416,10 +416,10 @@ func cullInvalidConnections() {
 func ShutdownPeers(data_directory string) {
     err := Peers.Save(data_directory)
     if err != nil {
-        logger.Warning("Failed to save peer database\n")
-        logger.Warning("Reason: %v\n", err)
+        logger.Warning("Failed to save peer database")
+        logger.Warning("Reason: %v", err)
     }
-    logger.Debug("Shutdown peers\n")
+    logger.Debug("Shutdown peers")
 }
 
 // Called when the DHT finds a peer
@@ -432,10 +432,10 @@ func receivedDHTPeer(r map[dht.InfoHash][]string) {
                 continue
             }
             peer := dht.DecodePeerAddress(p)
-            logger.Debug("DHT Peer: %s\n", peer)
+            logger.Debug("DHT Peer: %s", peer)
             _, err := Peers.AddPeer(peer)
             if err != nil {
-                logger.Info("Failed to add DHT peer: %v\n", err)
+                logger.Info("Failed to add DHT peer: %v", err)
             }
         }
     }
@@ -447,7 +447,7 @@ func RequestDHTPeers() {
         log.Panic("dhtInfoHash is not initialized")
         return
     }
-    logger.Info("Requesting DHT Peers\n")
+    logger.Info("Requesting DHT Peers")
     DHT.PeersRequest(ih, true)
 }
 
@@ -457,7 +457,7 @@ func connectToRandomPeer() {
     peers := Peers.Peerlist.Random(0)
     for _, p := range peers {
         if Pool.Addresses[p.Addr] == nil && pendingConnections[p.Addr] == nil {
-            logger.Debug("Trying to connect to %s\n", p.Addr)
+            logger.Debug("Trying to connect to %s", p.Addr)
             pendingConnections[p.Addr] = p
             go func() {
                 _, err := Pool.Connect(p.Addr)
@@ -476,7 +476,7 @@ func handleConnectionError(c ConnectionError) {
         return
     }
     // Remove a peer if we fail to connect to it
-    logger.Debug("Removing %s because failed to connect: %v\n", c.Addr,
+    logger.Debug("Removing %s because failed to connect: %v", c.Addr,
         c.Error)
     delete(pendingConnections, c.Addr)
     delete(Peers.Peerlist, c.Addr)
@@ -531,13 +531,13 @@ func NewGivePeersMessage(peers []*pex.Peer) pex.GivePeersMessage {
         ipport := strings.Split(ps.Addr, ":")
         ipb := net.ParseIP(ipport[0]).To4()
         if ipb == nil {
-            logger.Warning("Ignoring IPv6 address %s\n", ipport[0])
+            logger.Warning("Ignoring IPv6 address %s", ipport[0])
             continue
         }
         ip := binary.BigEndian.Uint32(ipb)
         port, err := strconv.ParseUint(ipport[1], 10, 16)
         if err != nil {
-            logger.Error("Invalid port in peer address %s\n", ps.Addr)
+            logger.Error("Invalid port in peer address %s", ps.Addr)
             continue
         }
         ipaddrs = append(ipaddrs, IPAddr{IP: ip, Port: uint16(port)})
@@ -569,9 +569,9 @@ func (self *GivePeersMessage) Handle(mc *gnet.MessageContext) error {
 func (self *GivePeersMessage) Process() {
     peers := self.GetPeers()
     if len(peers) != 0 {
-        logger.Debug("Got these peers via PEX:\n")
+        logger.Debug("Got these peers via PEX:")
         for _, p := range peers {
-            logger.Debug("\t%s\n", p)
+            logger.Debug("\t%s", p)
         }
     }
     Peers.RespondToGivePeersMessage(self)
@@ -607,25 +607,25 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext) (err error) {
     addr := mc.Conn.Addr()
     // Disconnect if this is a self connection (we have the same mirror value)
     if self.Mirror == mirrorValue {
-        logger.Info("Remote mirror value %v matches ours\n", self.Mirror)
+        logger.Info("Remote mirror value %v matches ours", self.Mirror)
         Pool.Disconnect(mc.Conn, DisconnectSelf)
         err = DisconnectSelf
     }
     // Disconnect if not running the same version
     if self.Version != version {
-        logger.Info("%s has different version %d. Disconnecting.\n",
+        logger.Info("%s has different version %d. Disconnecting.",
             addr, self.Version)
         Pool.Disconnect(mc.Conn, DisconnectInvalidVersion)
         err = DisconnectInvalidVersion
     } else {
-        logger.Info("%s verified for version %d\n", addr, version)
+        logger.Info("%s verified for version %d", addr, version)
     }
     // Disconnect if connected twice to the same peer (judging by ip:mirror)
     ips := mirrorConnections[self.Mirror]
     if ips != nil {
         ip := strings.Split(addr, ":")[0]
         if port, exists := ips[ip]; exists {
-            logger.Info("%s is already connected as %s\n", addr,
+            logger.Info("%s is already connected as %s", addr,
                 fmt.Sprintf("%s:%d", ip, port))
             Pool.Disconnect(mc.Conn, DisconnectConnectedTwice)
             err = DisconnectConnectedTwice
@@ -651,7 +651,7 @@ func (self *IntroductionMessage) Process() {
     if err != nil {
         // This should never happen, but the program should still work if it
         // does.
-        logger.Error("Invalid port for connection %s\n", a)
+        logger.Error("Invalid port for connection %s", a)
     }
     Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
     // Record their listener, to avoid double connections
@@ -676,9 +676,9 @@ func (self *PingMessage) Handle(mc *gnet.MessageContext) error {
 }
 
 func (self *PingMessage) Process() {
-    logger.Debug("Reply to ping from %s\n", self.c.Conn.Addr())
+    logger.Debug("Reply to ping from %s", self.c.Conn.Addr())
     if self.c.Conn.Controller.SendMessage(&PongMessage{}) != nil {
-        logger.Warning("Failed to send PongMessage to %s\n", self.c.Conn.Addr())
+        logger.Warning("Failed to send PongMessage to %s", self.c.Conn.Addr())
     }
 }
 
@@ -689,7 +689,7 @@ type PongMessage struct {
 func (self *PongMessage) Handle(mc *gnet.MessageContext) error {
     // There is nothing to do; gnet updates Connection.LastMessage internally
     // when this is received
-    logger.Debug("Received pong from %s\n", mc.Conn.Addr())
+    logger.Debug("Received pong from %s", mc.Conn.Addr())
     return nil
 }
 
@@ -701,6 +701,6 @@ func (self *DHTLogger) GetPeers(ip *net.UDPAddr, id string,
     _info dht.InfoHash) {
     id = hex.EncodeToString([]byte(id))
     info := hex.EncodeToString([]byte(_info))
-    logger.Debug("DHT GetPeers event occured:\n\tid: %s\n\tinfohash: %s\n",
+    logger.Debug("DHT GetPeers event occured:\n\tid: %s\n\tinfohash: %s",
         id, info)
 }

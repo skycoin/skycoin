@@ -18,6 +18,10 @@ func (g Address) Print() []byte {
 	return AddressPrintable(g)
 }
 
+func (g Address) String() string {
+	return string(AddressPrintable(g))
+}
+
 //get address struct from pubkey
 func AddressFromPubkey(pubkey PubKey) Address {
 	var ret Address
@@ -67,7 +71,7 @@ func AddressPrintable(a Address) []byte {
 		log.Panic()
 	}
 	var en base58.Base58 = base58.Hex2Base58(a.Value[:]) //encode as base 58
-	fmt.Printf("address= %v\n", en)
+	//fmt.Printf("address= %v\n", en)
 	return []byte(en)
 }
 

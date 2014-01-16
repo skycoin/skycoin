@@ -70,6 +70,8 @@ func (self *Wallet) RefeshUnspentOutputs(bc *sb_coin.BlockChain) {
 }
 
 func (self *Wallet) Balance(bc *sb_coin.BlockChain) (uint64, uint64) {
+	self.RefeshUnspentOutputs(bc)
+
 	var balance1 uint64 = 0
 	var balance2 uint64 = 0
 
@@ -120,6 +122,10 @@ func WalletBalances(bc *sb_coin.BlockChain, wallets []Wallet) {
 		b1, b2 := w.Balance(bc)
 		fmt.Printf("%v: %v %v \n", i, b1, b2)
 	}
+
+	for i, ux := range bc.Unspent {
+		fmt.Printf("%v: %v \n", i, ux.String())
+	}
 }
 
 func tests() {
@@ -140,7 +146,7 @@ func tests() {
 
 	var T sb_coin.Transaction
 
-	if false {
+	if true {
 		//create transaction by hand
 		var ti sb_coin.TransactionInput
 		ti.SigIdx = uint16(0)
@@ -157,7 +163,7 @@ func tests() {
 			a := WA[i].GetRandom()
 			to.DestinationAddress = a.address
 			to.Value1 = 1000
-			to.Value2 = 1024 * 1024
+			to.Value2 = 1024
 			T.TO = append(T.TO, to)
 		}
 
@@ -191,7 +197,10 @@ func tests() {
 	}
 
 	WalletBalances(BC, WA)
-	BC.ExecuteBlock(B)
+	err = BC.ExecuteBlock(B)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	WalletBalances(BC, WA)
 

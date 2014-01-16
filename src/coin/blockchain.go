@@ -62,14 +62,16 @@ type BlockChain struct {
 	Unspent []UxOut
 }
 
-func (self *BlockChain) BlockChainInfo() string {
-
-}
+//func (self *BlockChain) BlockChainInfo() string {
+//	return ""
+//}
 
 func NewBlockChain(genesisAddress Address) *BlockChain {
 	fmt.Print("new block chain \n")
 	var BC *BlockChain = new(BlockChain)
 	var B *Block = new(Block) //genesis block
+	B.Header.Time = uint64(time.Now().Unix())
+
 	/*
 		Todo, set genesis block!
 	*/
@@ -338,7 +340,7 @@ func (self *BlockChain) validateBlockBody(B *Block) error {
 			value1_out += to.Value1
 			value2_out += to.Value2
 		}
-		if value1_in != value2_out {
+		if value1_in != value1_out {
 			return errors.New("coin inputs do not match coin ouptuts")
 		}
 		if value2_in < value2_out {

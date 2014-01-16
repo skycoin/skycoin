@@ -1,6 +1,8 @@
 package sb_coin
 
-import ()
+import (
+	"fmt"
+)
 
 import "lib/encoder"
 
@@ -62,6 +64,10 @@ func (self UxOut) Hash() SHA256 {
 	return SHA256sum(b1)
 }
 
+func (self UxOut) String() string {
+	return fmt.Sprintf("%v, %v: %v %v", self.Body.Address.String(), self.Head.Time, self.Body.Value1, self.Body.Value2)
+}
+
 /*
 func (self UxOut) HashTotal() SHA256 {
 	b1 := encoder.Serialize(self.Head)
@@ -77,8 +83,12 @@ func (self UxOut) HashTotal() SHA256 {
 	Creation time of transaction cant be hashed
 */
 func (self UxOut) CoinHours(Time uint64) uint64 {
+	if Time < self.Head.Time {
+		return 0
+	}
+
 	v1 := self.Body.Value2               //starting coinshour
-	v2 := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-	v3 := v2 * v1                        //accumulated coin-hours
-	return v1 + v3                       //starting+earned
+	ch := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
+	v2 := ch * self.Body.Value1          //accumulated coin-hours
+	return v1 + v2                       //starting+earned
 }

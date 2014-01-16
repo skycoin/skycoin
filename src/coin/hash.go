@@ -3,7 +3,7 @@ package sb_coin
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	//"fmt"
 	"hash"
 	"log"
 )
@@ -68,7 +68,7 @@ func (h1 SHA256) Xor(h2 SHA256) SHA256 {
 //group inputs hashes into groups of 16 and hash them down to single hash
 //repeat until there is single hash in list
 func Merkle(h0 []SHA256) SHA256 {
-	fmt.Printf("Merkle 0: len= %v \n", len(h0))
+	//fmt.Printf("Merkle 0: len= %v \n", len(h0))
 	if len(h0) == 0 {
 		return SHA256{} //zero hash
 	}
@@ -86,7 +86,7 @@ func Merkle(h0 []SHA256) SHA256 {
 	}
 
 	for len(h1) != 1 {
-		fmt.Printf("Merkle 1: len= %v \n", len(h1))
+		//fmt.Printf("Merkle 1: len= %v \n", len(h1))
 		h2 := make([]SHA256, len(h1)/16)
 		var h3 [16]SHA256
 		for i := 0; i < len(h2); i++ {

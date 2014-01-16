@@ -69,6 +69,19 @@ func (self *Wallet) RefeshUnspentOutputs(bc *sb_coin.BlockChain) {
 	self.Outputs = outputs
 }
 
+func (self *Wallet) Balance(bc *sb_coin.BlockChain) (uint64, uint64) {
+	var balance1 uint64 = 0
+	var balance2 uint64 = 0
+
+	var time uint64 = bc.Head.Header.Time
+
+	for _, ux := range self.Outputs {
+		balance1 += ux.Body.Value1
+		balance2 += ux.CoinHours(time)
+	}
+	return balance1, balance2
+}
+
 func NewWallet(n int) Wallet {
 	var w Wallet
 	for i := 0; i < n; i++ {

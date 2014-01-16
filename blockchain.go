@@ -114,6 +114,14 @@ func GenerateAddress() Address {
 //fmt.Printf("sec: %s \n", ToHex(sec))
 //fmt.Printf("pub: %s \n", ToHex(pub))
 
+func WalletBalances(bc *sb_coin.BlockChain, wallets []Wallet) {
+	for i, w := range wallets {
+
+		b1, b2 := w.Balance(bc)
+		fmt.Printf("%v: %v %v \n", i, b1, b2)
+	}
+}
+
 func tests() {
 
 	genesisWallet := NewWallet(1)
@@ -182,7 +190,11 @@ func tests() {
 		log.Panic(err)
 	}
 
+	WalletBalances(BC, WA)
 	BC.ExecuteBlock(B)
+
+	WalletBalances(BC, WA)
+
 }
 
 func main() {

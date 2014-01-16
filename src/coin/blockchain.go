@@ -62,6 +62,10 @@ type BlockChain struct {
 	Unspent []UxOut
 }
 
+func (self *BlockChain) BlockChainInfo() string {
+
+}
+
 func NewBlockChain(genesisAddress Address) *BlockChain {
 	fmt.Print("new block chain \n")
 	var BC *BlockChain = new(BlockChain)

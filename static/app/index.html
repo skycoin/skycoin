@@ -28,7 +28,7 @@
     <tabset>
       <tab>
         <tab-heading>
-          <i class="fa fa-cloud fa-lg"></i> Wallets
+          <i class="fa fa-leaf fa-lg"></i> Wallets
         </tab-heading>
 
         <div class="outline">
@@ -56,15 +56,15 @@
 
         <div class="outline">
 
-          <table>
+          <table id="send-table">
             <tr>
-              <td><label for="send_pay_to">Pay to</label></td><td><input id="send_pay_to" type="text" ng-model="send.payto"  /></td>
+              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input id="send_pay_to" type="text" ng-model="send.payto"  /></td>
             </tr>
             <tr>
-              <td><label for="send_label">Label</label></td><td><input id="send_label" type="text" ng-model="send.label"  /></td>
+              <td class="send-pay-col1"><label for="send_label">Label</label></td><td><input id="send_label" type="text" ng-model="send.label"  /></td>
             </tr>
             <tr>
-              <td><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-model="send.amount" /></td>
+              <td class="send-pay-col1"><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-model="send.amount" /></td>
             </tr>
           </table>
           
@@ -146,7 +146,7 @@
             <td></td><td></td>
           </tr>
         </table>
-        <div id="receive-buttons" class="outline">
+        <div class="outline">
           <span class="receive-button">New Address</span>
           <span class="receive-button">Copy Address</span>
           <span class="receive-button">Show QR Code</span>

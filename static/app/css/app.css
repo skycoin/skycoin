@@ -10,6 +10,17 @@ html,body{
   min-height:60px;
 }
 
+#send-table{
+  width:100%;
+  text-align:left;
+}
+  .send-pay-col1{
+    width:92px;
+  }
+  #send-table td{
+    text-align:left;
+  }
+
 #send_pay_to{
   float:right;
   width:100%;
@@ -20,7 +31,6 @@ html,body{
   width:100%;
 }
 #send_amount{
-  float:right;
   width:20%;
 }
 

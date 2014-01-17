@@ -2,21 +2,19 @@
 <html lang="en" ng-app="myApp">
 <head>
   <meta charset="utf-8">
-  <title>My AngularJS App</title>
+  <title>Skycoin</title>
   <link rel="stylesheet" href="css/app.css"/>
 
-  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
-  <script src="js/ui-bootstrap-tpls-0.9.0.js"></script>
-  <script src="assets/plunker.js"></script>
-
-  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="assets/rainbow.css"/>
-  <link rel="stylesheet" href="assets/demo.css"/>
+  
+  
+  <link href="css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="css/font-awesome.min.css" rel="stylesheet">
+  <link href="css/bootstrap.icon-large.min.css" rel="stylesheet">
 
 </head>
-<body>
+<body ng-controller="TabsDemoCtrl">
   <div id="sky-header"></div>
-  <div id="sky-center" ng-controller="TabsDemoCtrl">
+  <div id="sky-center">
     <!-- <p>Select a tab by setting active binding to true:</p>
     <p>
       <button class="btn btn-default btn-sm" ng-click="tabs[0].active = true">Select second tab</button>
@@ -30,11 +28,12 @@
     <tabset>
       <tab>
         <tab-heading>
-          <i class="glyphicon glyphicon-home"></i> Overview
+          <i class="fa fa-cloud fa-lg"></i> Wallets
         </tab-heading>
+
         <div class="outline">
           <div id="overview-wallet" class="outline">
-            <div id="overview-wallet-title">Wallet</div>
+            <div id="overview-wallet-title"><a>My Wallet</a></div>
             <div id="overview-wallet-balance">0.00 SKY</div>
             <div id="overview-wallet-transactions">0</div>
           </div>
@@ -52,9 +51,11 @@
 
       <tab>
         <tab-heading>
-          <i class="glyphicon glyphicon-cloud-upload"></i> Send
+          <i class="fa fa-cloud-upload fa-lg"></i> Send
         </tab-heading>
+
         <div class="outline">
+
           <table>
             <tr>
               <td><label for="send_pay_to">Pay to</label></td><td><input id="send_pay_to" type="text" ng-model="send.payto"  /></td>
@@ -72,28 +73,85 @@
         </div>
       </tab>
 
-      <tab select="alertMe()">
+      <!-- <tab select="alertMe()">
         <tab-heading>
-          <i class="glyphicon glyphicon-cloud-download"></i> Recieve
+          <i class="glyphicon glyphicon-cloud-download"></i> Receive
         </tab-heading>
         <div class="outline">
-          Label:
-          Address:
+          <table id="receive-address-table">
+            <tr>
+              <td>Label</td><td>Address</td>
+            </tr>
+            <tr>
+              <td></td><td></td>
+            </tr>
+          </table>
+          <div id="receive-buttons" class="outline">
+            <span class="receive-button">New Address</span>
+            <span class="receive-button">Copy Address</span>
+            <span class="receive-button">Show QR Code</span>
+            <span class="receive-button">Export</span>
+          </div>
+        </div>
+      </tab> -->
+
+      <!-- <tab>
+        <tab-heading>
+          <i class="glyphicon glyphicon-list"></i> History
+        </tab-heading>
+        <table id="transaction-table">
+          <tr>
+            <td>Nothing</td><td>dropdown</td><td>dropdown</td><td>text search</td><td>amount</td>
+            <td>arrow</td><td>date</td><td>type</td><td>address</td><td>amount</td>
+          </tr>
+          <tr>
+            <td></td><td></td><td></td><td></td><td></td>
+          </tr>
+        </table>
+        <span class="receive-button">Export</span>
+      </tab> -->
+
+      <tab>
+        <tab-heading>
+          <i class="fa fa-book fa-lg"></i> Address Book
+        </tab-heading>
+
+        <table id="address-book-table">
+          <tr>
+            <td>Label</td><td>Address</td>
+          </tr>
+          <tr>
+            <td></td><td></td>
+          </tr>
+        </table>
+        <div id="receive-buttons" class="outline">
+          <span class="receive-button">New Address</span>
+          <span class="receive-button">Copy Address</span>
+          <span class="receive-button">Show QR Code</span>
+          <span class="receive-button">Export</span>
         </div>
       </tab>
 
-      <tab>
-        <tab-heading>
-          <i class="glyphicon glyphicon-list"></i> Transactions
-        </tab-heading>
-        <div class="outline">Table</div>
-      </tab>
 
       <tab>
         <tab-heading>
-          <i class="glyphicon glyphicon-pencil"></i> Addresses
+          <i class="fa fa-comments fa-lg"></i> Chat
         </tab-heading>
-        <div class="outline">Table</div>
+
+        <table id="address-book-table">
+          <tr>
+            <td>Label</td><td>Address</td>
+          </tr>
+          <tr>
+            <td></td><td></td>
+          </tr>
+        </table>
+        <div id="receive-buttons" class="outline">
+          <span class="receive-button">New Address</span>
+          <span class="receive-button">Copy Address</span>
+          <span class="receive-button">Show QR Code</span>
+          <span class="receive-button">Export</span>
+        </div>
       </tab>
 
 
@@ -107,6 +165,10 @@
     <li><a href="#/view2">Transaction View</a></li>
   </ul>-->
 
+  <div class="glyphicon-cloud background-cloud-1"></div>
+  <div class="glyphicon-cloud background-cloud-2"></div>
+  <div class="glyphicon-cloud background-cloud-3"></div>
+
 
   <div ng-view></div>
 
@@ -115,7 +177,9 @@
   <!-- In production use:
   <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
   -->
-  <script src="lib/angular/angular.js"></script>
+  <script src="js/angular_1.2.9.js"></script>
+  <script src="js/ui-bootstrap-tpls-0.10.0.min.js"></script>
+  <script src="assets/plunker.js"></script>
   <script src="lib/angular/angular-route.js"></script>
   <script src="js/app.js"></script>
   <script src="js/services.js"></script>

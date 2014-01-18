@@ -1,6 +1,16 @@
 skycoin
 =======
 
+Skycoin is a next-generation proof-of-stake cryptocurrency currently under development.
+It is currently in `alpha`.
+
+Current Status
+--------------
+
+* Peering infrastucture complete.  Clients are able to connect to each other, if configured appropriately.
+* Blockchain v1 functioning
+* Transactions are not networked.
+* The daemon RPC for the GUI is not implemented.
 
 Setup
 -----

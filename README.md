@@ -1,7 +1,8 @@
 skycoin
 =======
 
-Skycoin is a next-generation proof-of-stake cryptocurrency currently under development.
+Skycoin is a next-generation post proof-of-work cryptocurrency.
+
 It is currently in `alpha`.
 
 Current Status

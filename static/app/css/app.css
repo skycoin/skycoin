@@ -10,6 +10,17 @@ html,body{
   min-height:60px;
 }
 
+#send-table{
+  width:100%;
+  text-align:left;
+}
+  .send-pay-col1{
+    width:92px;
+  }
+  #send-table td{
+    text-align:left;
+  }
+
 #send_pay_to{
   float:right;
   width:100%;
@@ -20,8 +31,11 @@ html,body{
   width:100%;
 }
 #send_amount{
-  float:right;
   width:20%;
+}
+
+#overview-title{
+
 }
 
 label {
@@ -47,4 +61,42 @@ label {
   bottom:0;
   margin-top:20px;
   background-color:#dbe1e6;
+}
+.background-cloud-1{
+  position:absolute;
+  color:#dbe1e6;
+  bottom:0;
+  right:0;
+  font-size:350px;
+  opacity:.5;
+}
+.background-cloud-2{
+  position:absolute;
+  color:#dbe1e6;
+  bottom:30px;
+  right:30px;
+  font-size:300px;
+  opacity:.5;
+}
+.background-cloud-3{
+  position:absolute;
+  color:#dbe1e6;
+  bottom:-200px;
+  right:30px;
+  font-size:500px;
+  opacity:.3;
+  -webkit-transform: scaleX(-1);
+  -webkit-animation-name: floatOne;
+  -webkit-animation-duration: 40s;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-delay: 0s;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-animation-direction: alternate;
+  -webkit-animation-play-state: running;
+}
+
+@-webkit-keyframes floatOne{
+  0%   {bottom:-250px;}
+  50%  {bottom:-200px;}
+  100% {bottom:-250px;}
 }

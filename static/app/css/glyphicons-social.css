@@ -1,0 +1,121 @@
+/* GLYPHICONS SOCIAL 1.8 */
+@font-face { font-family: "Glyphicons Social"; src: url("/fonts/glyphicons/glyphicons-social-regular.eot"); src: url("/fonts/glyphicons/glyphicons-social-regular.eot?#iefix") format("embedded-opentype"), url("/fonts/glyphicons/glyphicons-social-regular.woff") format("woff"), url("/fonts/glyphicons/glyphicons-social-regular.ttf") format("truetype"), url("/fonts/glyphicons/glyphicons-social-regular.svg#glyphicons_socialregular") format("svg"); }
+
+[class*="social-"] { display: inline-block; vertical-align: middle; font-family: "Glyphicons Social"; font-style: normal; font-weight: normal; font-size: 1em; }
+
+.social-spin { -moz-animation: social-spin 2s infinite linear; -o-animation: social-spin 2s infinite linear; -webkit-animation: social-spin 2s infinite linear; animation: social-spin 2s infinite linear; }
+
+@-moz-keyframes social-spin { 0% { -moz-transform: rotate(0deg); }
+  100% { -moz-transform: rotate(359deg); } }
+
+@-webkit-keyframes social-spin { 0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(359deg); } }
+
+@-o-keyframes social-spin { 0% { -o-transform: rotate(0deg); }
+  100% { -o-transform: rotate(359deg); } }
+
+@-ms-keyframes social-spin { 0% { -ms-transform: rotate(0deg); }
+  100% { -ms-transform: rotate(359deg); } }
+
+@keyframes social-spin { 0% { transform: rotate(0deg); }
+  100% { transform: rotate(359deg); } }
+
+.social-pinterest:before { content: "\E001"; }
+
+.social-dropbox:before { content: "\E002"; }
+
+.social-google_plus:before { content: "\E003"; }
+
+.social-jolicloud:before { content: "\E004"; }
+
+.social-yahoo:before { content: "\E005"; }
+
+.social-blogger:before { content: "\E006"; }
+
+.social-picasa:before { content: "\E007"; }
+
+.social-amazon:before { content: "\E008"; }
+
+.social-tumblr:before { content: "\E009"; }
+
+.social-wordpress:before { content: "\E010"; }
+
+.social-instapaper:before { content: "\E011"; }
+
+.social-evernote:before { content: "\E012"; }
+
+.social-xing:before { content: "\E013"; }
+
+.social-zootool:before { content: "\E014"; }
+
+.social-dribbble:before { content: "\E015"; }
+
+.social-deviantart:before { content: "\E016"; }
+
+.social-read_it_later:before { content: "\E017"; }
+
+.social-linked_in:before { content: "\E018"; }
+
+.social-forrst:before { content: "\E019"; }
+
+.social-pinboard:before { content: "\E020"; }
+
+.social-behance:before { content: "\E021"; }
+
+.social-github:before { content: "\E022"; }
+
+.social-youtube:before { content: "\E023"; }
+
+.social-skitch:before { content: "\E024"; }
+
+.social-foursquare:before { content: "\E025"; }
+
+.social-quora:before { content: "\E026"; }
+
+.social-badoo:before { content: "\E027"; }
+
+.social-spotify:before { content: "\E028"; }
+
+.social-stumbleupon:before { content: "\E029"; }
+
+.social-readability:before { content: "\E030"; }
+
+.social-facebook:before { content: "\E031"; }
+
+.social-twitter:before { content: "\E032"; }
+
+.social-instagram:before { content: "\E033"; }
+
+.social-posterous_spaces:before { content: "\E034"; }
+
+.social-vimeo:before { content: "\E035"; }
+
+.social-flickr:before { content: "\E036"; }
+
+.social-last_fm:before { content: "\E037"; }
+
+.social-rss:before { content: "\E038"; }
+
+.social-skype:before { content: "\E039"; }
+
+.social-e-mail:before { content: "\E040"; }
+
+.social-vine:before { content: "\E041"; }
+
+.social-myspace:before { content: "\E042"; }
+
+.social-goodreads:before { content: "\E043"; }
+
+.social-apple:before { content: "\F8FF"; }
+
+.social-windows:before { content: "\E045"; }
+
+.social-yelp:before { content: "\E046"; }
+
+.social-playstation:before { content: "\E047"; }
+
+.social-xbox:before { content: "\E048"; }
+
+.social-android:before { content: "\E049"; }
+
+.social-ios:before { content: "\E050"; }

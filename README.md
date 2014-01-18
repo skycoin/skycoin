@@ -18,7 +18,9 @@ Skycoin has three command line interfaces, `dev`, `daemon`, and `client`.
 
 To run skycoin with any one of these, do
 
-`go run -tags $tag main.go`
+```
+go run -tags $tag main.go
+```
 
 For the developer's convenience,
 
@@ -48,10 +50,10 @@ You do not need to rebuild if only modifying the GUI frontend code,
 located in `./static/`.
 
 The GUI consists of a `node-webkit` binary and an `skycoin.nw` file which contains the frontend code and the skycoin binary.
-When running the GUI, the `node-webkit` binary is executed, it unpacks the `app.nw` file, forks skycoin which runs an http
+When running the GUI, the `node-webkit` binary is executed, it unpacks the `skycoin.nw` file, forks skycoin which runs an http
 server on `localhost:$randomport`, and the GUI's `index.html` is served from there.
 
-If you are trying to run the skycoin GUI client on a platform that we are not targeting, you can use run `node-webkit` with 
+If you are trying to run the skycoin GUI client on a platform that we are not targeting, you can run `node-webkit` with 
 the `skycoin.nw` file produced by the build scripts in `compile/`.
 
 Available Platforms
@@ -78,5 +80,5 @@ Skycoin tests can be run with
 ```
 
 At the moment, there are few tests for the core skycoin source.  Skycoin only recently stabilized enough
-to be tested. [gnet](http://godoc.org/github.com/skycoin/gnet) is being tested next, and [pex](https://github.com/skycoin/pex)'s 
+to be tested. [gnet](https://github.com/skycoin/gnet) is being tested next, and [pex](https://github.com/skycoin/pex)'s 
 tests are complete.

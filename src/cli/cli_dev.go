@@ -20,6 +20,7 @@ var (
     DataDirectory = ""
     // Logging
     LogLevel = logging.DEBUG
+    ColorLog = true
     logLevel = "DEBUG"
 
     /* Developer options */
@@ -58,4 +59,6 @@ func RegisterArgs() {
         "Run the http profiling interface")
     flag.StringVar(&logLevel, "log-level", logLevel,
         "Choices are: debug, info, notice, warning, error, critical")
+    flag.BoolVar(&ColorLog, "color-log", ColorLog,
+        "Add terminal colors to log output")
 }

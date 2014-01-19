@@ -20,6 +20,7 @@ var (
     DataDirectory = ""
     // Logging
     LogLevel = logging.NOTICE
+    ColorLog = false
     logLevel = "notice"
 
     /* Developer options (don't parse these) */

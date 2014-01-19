@@ -35,7 +35,7 @@ then
 elif [[ "$CMD" = "run" ]];
 then
     pushd "./release/skycoin_${OS}_${ARCH}/" >/dev/null
-    ./skycoin -disable-gui=false "${@:2}"
+    ./skycoin -disable-gui=false -color-log=false "${@:2}"
     popd >/dev/null
 else
     usage

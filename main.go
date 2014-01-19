@@ -91,7 +91,7 @@ func initLogging(level logging.Level) {
         logging.SetLevel(level, s)
     }
     stdout := logging.NewLogBackend(os.Stdout, "", 0)
-    stdout.Color = true
+    stdout.Color = cli.ColorLog
     logging.SetBackend(stdout)
 }
 

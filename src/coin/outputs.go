@@ -1,10 +1,10 @@
 package sb_coin
 
 import (
-	"fmt"
+    "fmt"
 )
 
-import "lib/encoder"
+import "../lib/encoder"
 
 /*
 	Unspent Outputs
@@ -35,37 +35,37 @@ import "lib/encoder"
 */
 
 type UxOut struct {
-	Head UxHead
-	Body UxBody //hashed part
-	Meta UxMeta
+    Head UxHead
+    Body UxBody //hashed part
+    Meta UxMeta
 }
 
 //
 type UxHead struct {
-	Time  uint64 //needed for coinhour calculation
-	UxSeq uint64 //move to meta
-	BkSeq uint64 //move to meta
-	SpSeq uint64 //order it was spent
+    Time  uint64 //needed for coinhour calculation
+    UxSeq uint64 //move to meta
+    BkSeq uint64 //move to meta
+    SpSeq uint64 //order it was spent
 }
 
 //part that is hashed
 type UxBody struct {
-	SrcTransaction SHA256
-	Address        Address //address of receiver
-	Value1         uint64  //number of coins
-	Value2         uint64  //coin hours
+    SrcTransaction SHA256
+    Address        Address //address of receiver
+    Value1         uint64  //number of coins
+    Value2         uint64  //coin hours
 }
 
 type UxMeta struct {
 }
 
 func (self UxOut) Hash() SHA256 {
-	b1 := encoder.Serialize(self.Body)
-	return SHA256sum(b1)
+    b1 := encoder.Serialize(self.Body)
+    return SHA256sum(b1)
 }
 
 func (self UxOut) String() string {
-	return fmt.Sprintf("%v, %v: %v %v", self.Body.Address.String(), self.Head.Time, self.Body.Value1, self.Body.Value2)
+    return fmt.Sprintf("%v, %v: %v %v", self.Body.Address.String(), self.Head.Time, self.Body.Value1, self.Body.Value2)
 }
 
 /*
@@ -83,12 +83,12 @@ func (self UxOut) HashTotal() SHA256 {
 	Creation time of transaction cant be hashed
 */
 func (self UxOut) CoinHours(Time uint64) uint64 {
-	if Time < self.Head.Time {
-		return 0
-	}
+    if Time < self.Head.Time {
+        return 0
+    }
 
-	v1 := self.Body.Value2               //starting coinshour
-	ch := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-	v2 := ch * self.Body.Value1          //accumulated coin-hours
-	return v1 + v2                       //starting+earned
+    v1 := self.Body.Value2               //starting coinshour
+    ch := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
+    v2 := ch * self.Body.Value1          //accumulated coin-hours
+    return v1 + v2                       //starting+earned
 }

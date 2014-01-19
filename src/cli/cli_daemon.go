@@ -20,6 +20,7 @@ var (
     DataDirectory = ""
     // Logging
     LogLevel = logging.NOTICE
+    ColorLog = false
     logLevel = "notice"
 
     /* Developer options (don't parse these) */
@@ -48,4 +49,6 @@ func RegisterArgs() {
         "directory to store app data (defaults to ~/.skycoin)")
     flag.StringVar(&logLevel, "log-level", logLevel,
         "Choices are: debug, info, notice, warning, error, critical")
+    flag.BoolVar(&ColorLog, "color-log", ColorLog,
+        "Add terminal colors to log output")
 }

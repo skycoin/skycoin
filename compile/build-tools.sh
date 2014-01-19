@@ -21,7 +21,7 @@ function compile_app() {
     echo "Compiling with go"
     #gox -osarch="${OS}/${ARCH}" -output="${BINDIR}/${APP}" "$PKGDIR"
     CC="$CGOCC" GOOS="$OS" GOARCH="$ARCH" go build \
-        -o "${BINDIR}/${APP}" "${PKGDIR}/cmd/skycoin/${RAWBIN}"
+        -o "${BINDIR}/${APP}" "${PKGDIR}/cmd/${RAWBIN}"
     if [[ $? != 0 ]]; then
         echo "go compilation failed"
         exit 1

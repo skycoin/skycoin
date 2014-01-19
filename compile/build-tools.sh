@@ -1,7 +1,7 @@
 . "$CONFIG"
 
 APPNW=skycoin
-TAGS=$1
+RAWBIN=$1
 
 # Create the node-webkit wrapped executable
 function create_nw_bin() {
@@ -20,8 +20,8 @@ function create_nw_bin() {
 function compile_app() {
     echo "Compiling with go"
     #gox -osarch="${OS}/${ARCH}" -output="${BINDIR}/${APP}" "$PKGDIR"
-    CC="$CGOCC" GOOS="$OS" GOARCH="$ARCH" go build -tags "$TAGS" \
-        -o "${BINDIR}/${APP}" "$PKGDIR/main.go"
+    CC="$CGOCC" GOOS="$OS" GOARCH="$ARCH" go build \
+        -o "${BINDIR}/${APP}" "${PKGDIR}/cmd/skycoin/${RAWBIN}"
     if [[ $? != 0 ]]; then
         echo "go compilation failed"
         exit 1

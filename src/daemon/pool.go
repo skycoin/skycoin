@@ -37,6 +37,7 @@ func ShutdownPool() {
     if Pool != nil {
         Pool.StopListen()
     }
+    Pool = nil
     logger.Info("Shutdown pool")
 }
 

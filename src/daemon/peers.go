@@ -37,5 +37,6 @@ func ShutdownPeers(data_directory string) {
         logger.Warning("Failed to save peer database")
         logger.Warning("Reason: %v", err)
     }
+    Peers = nil
     logger.Debug("Shutdown peers")
 }

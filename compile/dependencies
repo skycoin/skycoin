@@ -3,3 +3,4 @@ github.com/lonnc/golang-nw
 github.com/op/go-logging
 github.com/skycoin/gnet
 github.com/skycoin/pex
+github.com/stretchr/testify/assert

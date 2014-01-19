@@ -68,6 +68,10 @@ var (
         "Already connected")
     DisconnectIdle gnet.DisconnectReason = errors.New(
         "Idle")
+    // This is returned when a seemingly impossible error is encountered
+    // e.g. net.Conn.Addr() returns an invalid ip:port
+    DisconnectOtherError gnet.DisconnectReason = errors.New(
+        "Incomprehensible error")
 
     // Blacklist a peer when they get disconnected for these
     // DisconnectReasons

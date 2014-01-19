@@ -2,6 +2,7 @@ package daemon
 
 import (
     "encoding/binary"
+    "errors"
     "fmt"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
@@ -24,7 +25,8 @@ import (
 
 var (
     // Magic value for detecting self-connection
-    mirrorValue = rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32()
+    mirrorValue = rand.New(rand.NewSource(
+        time.Now().UTC().UnixNano())).Uint32()
     // Message handling queue
     messageEvent = make(chan AsyncMessage, gnet.EventChannelBufferSize)
 )
@@ -43,6 +45,38 @@ func RegisterMessages() {
 type IPAddr struct {
     IP   uint32
     Port uint16
+}
+
+// Returns an IPAddr from an ip:port string.  If ipv6 or invalid, error is
+// returned
+func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
+    // TODO -- support ipv6
+    ipport := strings.Split(addr, ":")
+    if len(ipport) != 2 {
+        err = errors.New("Invalid ip:port string")
+        return
+    }
+    ipb := net.ParseIP(ipport[0]).To4()
+    if ipb == nil {
+        err = errors.New("Ignoring IPv6 address")
+        return
+    }
+    ip := binary.BigEndian.Uint32(ipb)
+    port, err := strconv.ParseUint(ipport[1], 10, 16)
+    if err != nil {
+        err = errors.New("Invalid port")
+        return
+    }
+    ipaddr.IP = ip
+    ipaddr.Port = uint16(port)
+    return
+}
+
+// Returns IPAddr as "ip:port"
+func (self IPAddr) String() string {
+    ipb := make([]byte, 4)
+    binary.BigEndian.PutUint32(ipb, self.IP)
+    return fmt.Sprintf("%s:%d", net.IP(ipb).String(), self.Port)
 }
 
 // Messages that perform an action when received must implement this interface.
@@ -88,20 +122,13 @@ type GivePeersMessage struct {
 func NewGivePeersMessage(peers []*pex.Peer) pex.GivePeersMessage {
     ipaddrs := make([]IPAddr, 0, len(peers))
     for _, ps := range peers {
-        // TODO -- support ipv6
-        ipport := strings.Split(ps.Addr, ":")
-        ipb := net.ParseIP(ipport[0]).To4()
-        if ipb == nil {
-            logger.Warning("Ignoring IPv6 address %s", ipport[0])
-            continue
-        }
-        ip := binary.BigEndian.Uint32(ipb)
-        port, err := strconv.ParseUint(ipport[1], 10, 16)
+        ipaddr, err := NewIPAddr(ps.Addr)
         if err != nil {
-            logger.Error("Invalid port in peer address %s", ps.Addr)
+            logger.Warning("Skipping address %s", ps.Addr)
+            logger.Warning(err.Error())
             continue
         }
-        ipaddrs = append(ipaddrs, IPAddr{IP: ip, Port: uint16(port)})
+        ipaddrs = append(ipaddrs, ipaddr)
     }
     return &GivePeersMessage{Peers: ipaddrs}
 }
@@ -111,11 +138,8 @@ func NewGivePeersMessage(peers []*pex.Peer) pex.GivePeersMessage {
 // strings.
 func (self *GivePeersMessage) GetPeers() []string {
     peers := make([]string, 0, len(self.Peers))
-    ipb := make([]byte, 4)
     for _, ipaddr := range self.Peers {
-        binary.BigEndian.PutUint32(ipb, ipaddr.IP)
-        peer := fmt.Sprintf("%s:%d", net.IP(ipb).String(), ipaddr.Port)
-        peers = append(peers, peer)
+        peers = append(peers, ipaddr.String())
     }
     return peers
 }
@@ -212,12 +236,21 @@ func (self *IntroductionMessage) Process() {
     // Add the remote peer with their chosen listening port
     a := self.c.Conn.Addr()
     ipport := strings.Split(a, ":")
+    if len(ipport) != 2 {
+        // This should never happen, but the program should still work if it
+        // does.
+        logger.Error("Invalid Addr() for connection: %s", a)
+        Pool.Disconnect(self.c.Conn, DisconnectOtherError)
+        return
+    }
     ip := ipport[0]
     port, err := strconv.ParseUint(ipport[1], 10, 16)
     if err != nil {
         // This should never happen, but the program should still work if it
         // does.
         logger.Error("Invalid port for connection %s", a)
+        Pool.Disconnect(self.c.Conn, DisconnectOtherError)
+        return
     }
     Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
     // Record their listener, to avoid double connections
@@ -244,8 +277,10 @@ func (self *PingMessage) Handle(mc *gnet.MessageContext) error {
 // Sends a PongMessage to the sender of PingMessage
 func (self *PingMessage) Process() {
     logger.Debug("Reply to ping from %s", self.c.Conn.Addr())
-    if self.c.Conn.Controller.SendMessage(&PongMessage{}) != nil {
+    err := self.c.Conn.Controller.SendMessage(&PongMessage{})
+    if err != nil {
         logger.Warning("Failed to send PongMessage to %s", self.c.Conn.Addr())
+        logger.Warning("Reason: %v", err)
     }
 }
 

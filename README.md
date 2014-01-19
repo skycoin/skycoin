@@ -19,7 +19,7 @@ Setup
 * Clone this repo
 * Install [gvm](https://github.com/moovweb/gvm) (or hack up $GOPATH yourself)
 * Install `go1.2` with gvm, or manually.  Skycoin does not work with earlier releases of go.
-* `./compile/getdeps.sh` - This installs go dependencies
+* `./compile/getdeps.sh` - This installs go dependencies.  Run this again if you get import errors in the future.
 
 Running
 -------

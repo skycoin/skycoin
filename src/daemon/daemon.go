@@ -50,7 +50,7 @@ var (
     // Connection pool
     Pool *gnet.ConnectionPool = nil
     // Timeout when trying to connect to new peers through the pool
-    poolConnectTimeout = time.Second * 30
+    poolDialTimeout = time.Second * 30
     // How often to check for stale connections
     clearStaleConnectionsRate = time.Minute
     // How long a connection can idle before considered stale
@@ -197,7 +197,7 @@ func InitPool(port int) {
     if Pool != nil {
         log.Panic("ConnectionPool is already initialised")
     }
-    gnet.ConnectionTimeout = poolConnectTimeout
+    gnet.DialTimeout = poolDialTimeout
     Pool = gnet.NewConnectionPool(port)
     Pool.DisconnectCallback = onGnetDisconnect
     Pool.ConnectCallback = onGnetConnect

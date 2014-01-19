@@ -35,7 +35,7 @@ then
 elif [[ "$CMD" = "clean" ]];
 then
     rm -rf ./release/*
-elif [[ "$CMD" = "run" ]];
+elif [[ "$CMD" = "run" || "$CMD" = "" ]];
 then
     BINDIR="./release/skycoin_${OS}_${ARCH}/"
     if [[ -d "$BINDIR" ]];

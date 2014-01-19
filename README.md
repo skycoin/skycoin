@@ -26,13 +26,19 @@ Running
 -------
 
 ### Command line 
-Skycoin has three command line interfaces, `dev`, `daemon`, and `client`.
+Skycoin comes in three variations, `skycoin`, `skycoind` and `skycoindev`.  They differ in the command-line interface they expose and which values they default to.
 
 To run skycoin with any one of these, do
 
 ```
-go run -tags $tag main.go
+go run cmd/$name/$name.go
 ```
+
+For example, to run skycoindev,
+
+```
+go run cmd/skycoindev/skycoindev.go
+``` 
 
 For the developer's convenience,
 
@@ -40,7 +46,7 @@ For the developer's convenience,
 ./run.sh
 ```
 
-will run it in `dev` mode.
+will run `skycoindev`.
 
 
 ### GUI
@@ -91,6 +97,15 @@ Skycoin tests can be run with
 ./test.sh
 ```
 
-At the moment, there are few tests for the core skycoin source.  Skycoin only recently stabilized enough
-to be tested. [gnet](https://github.com/skycoin/gnet) is being tested next, and [pex](https://github.com/skycoin/pex)'s 
-tests are complete.
+### Test Roadmap
+
+##### Libraries
+
+* [pex](https://github.com/skycoin/pex) *Complete*
+* [gnet](https://github.com/skycoin/gnet) *Complete*
+
+##### Submodules
+
+* coin
+* daemon
+* util

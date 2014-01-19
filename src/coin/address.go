@@ -1,12 +1,10 @@
-package sb_coin
+package coin
 
 import (
-    //"encoding/hex"
     "fmt"
+    "github.com/skycoin/skycoin/src/lib/base58"
     "log"
 )
-
-import "../lib/base58"
 
 type Address struct {
     Version byte

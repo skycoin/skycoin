@@ -14,10 +14,9 @@ import (
 )
 
 import (
-    "./src/cli/"
-    // "./src/coin/"
-    "./src/daemon/"
-    "./src/gui/"
+    "github.com/skycoin/skycoin/src/cli"
+    "github.com/skycoin/skycoin/src/daemon"
+    "github.com/skycoin/skycoin/src/gui"
 )
 
 var (

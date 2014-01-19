@@ -1,10 +1,9 @@
-package sb_coin
+package coin
 
 import (
     "fmt"
+    "github.com/skycoin/skycoin/src/lib/encoder"
 )
-
-import "../lib/encoder"
 
 /*
 	Unspent Outputs

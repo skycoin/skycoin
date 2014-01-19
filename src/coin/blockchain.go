@@ -1,13 +1,12 @@
-package sb_coin
+package coin
 
 import (
     "errors"
     "fmt"
+    "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
     "time"
 )
-
-import "../lib/encoder"
 
 type Block struct {
     Header BlockHeader

@@ -1,19 +1,15 @@
-package sb_coin
+package coin
 
 import (
     "crypto/sha256"
     "encoding/hex"
-    //"fmt"
+    "github.com/skycoin/skycoin/src/lib/encoder"
+    "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
     "log"
 )
 
-import "../lib/encoder"
-import "../lib/ripemd160"
-
-/*
-	SHA256
-*/
+// SDH256
 var sha256_hash hash.Hash = sha256.New()
 
 func Sha256_func(data []byte) [32]byte {

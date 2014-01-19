@@ -1,12 +1,10 @@
-package sb_coin
+package coin
 
 import (
-    //"fmt"
     "errors"
+    "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
 )
-
-import "../lib/secp256k1-go"
 
 type SecKey struct {
     Value [32]byte

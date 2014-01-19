@@ -1,10 +1,9 @@
-package sb_coin
+package coin
 
 import (
+    "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
 )
-
-import "../lib/encoder"
 
 /*
 	Base Transaction Type

@@ -2,10 +2,9 @@ package cli
 
 import (
     "flag"
-    "log"
-
-    "../util/"
     "github.com/op/go-logging"
+    "github.com/skycoin/skycoin/src/util"
+    "log"
 )
 
 func ParseArgs() {

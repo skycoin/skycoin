@@ -92,7 +92,7 @@ type GetPeersMessage struct {
     c *gnet.MessageContext `-`
 }
 
-func NewGetPeersMessage() pex.GetPeersMessage {
+func NewGetPeersMessage() *GetPeersMessage {
     return &GetPeersMessage{}
 }
 
@@ -104,12 +104,16 @@ func (self *GetPeersMessage) Handle(mc *gnet.MessageContext) error {
 
 // Notifies the Pex instance that peers were requested
 func (self *GetPeersMessage) Process() {
-    Peers.RespondToGetPeersMessage(self.c.Conn.Conn, NewGivePeersMessage)
-}
-
-// Send is required by the pex.GetPeersMessage interface
-func (self *GetPeersMessage) Send(c net.Conn) error {
-    return gnet.WriteMessage(c, self)
+    peers := Peers.Peerlist.Random(peerReplyCount)
+    if len(peers) == 0 {
+        logger.Debug("We have no peers to send in reply")
+        return
+    }
+    m := NewGivePeersMessage(peers)
+    err := self.c.Conn.Controller.SendMessage(m)
+    if err != nil {
+        logger.Warning("Failed to send GivePeersMessage: %v", err)
+    }
 }
 
 // Sent in response to GetPeersMessage
@@ -119,12 +123,12 @@ type GivePeersMessage struct {
 }
 
 // []*pex.Peer is converted to []IPAddr for binary transmission
-func NewGivePeersMessage(peers []*pex.Peer) pex.GivePeersMessage {
+func NewGivePeersMessage(peers []*pex.Peer) *GivePeersMessage {
     ipaddrs := make([]IPAddr, 0, len(peers))
     for _, ps := range peers {
         ipaddr, err := NewIPAddr(ps.Addr)
         if err != nil {
-            logger.Warning("Skipping address %s", ps.Addr)
+            logger.Warning("GivePeersMessage skipping address %s", ps.Addr)
             logger.Warning(err.Error())
             continue
         }
@@ -144,11 +148,6 @@ func (self *GivePeersMessage) GetPeers() []string {
     return peers
 }
 
-// Send is required by the pex.GivePeersMessage interface
-func (self *GivePeersMessage) Send(c net.Conn) error {
-    return gnet.WriteMessage(c, self)
-}
-
 func (self *GivePeersMessage) Handle(mc *gnet.MessageContext) error {
     self.c = mc
     messageEvent <- self
@@ -164,7 +163,7 @@ func (self *GivePeersMessage) Process() {
             logger.Debug("\t%s", p)
         }
     }
-    Peers.RespondToGivePeersMessage(self)
+    Peers.AddPeers(peers)
 }
 
 // An IntroductionMessage is sent on first connect by both parties

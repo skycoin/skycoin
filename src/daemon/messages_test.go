@@ -65,8 +65,12 @@ func testSimpleMessageHandler(t *testing.T, m gnet.Message) {
 
 func TestGetPeersMessage(t *testing.T) {
     m := NewGetPeersMessage()
-    testSimpleMessageHandler(t, m.(gnet.Message))
-    m.(*GetPeersMessage).c = &gnet.MessageContext{Conn: &gnet.Connection{Conn: nil}}
+    testSimpleMessageHandler(t, m)
+    Peers.AddPeer(addr)
+    m.c = messageContext(addr)
+    m.Process()
+    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    resetPeers()
 }
 
 func TestGivePeersMessage(t *testing.T) {
@@ -77,11 +81,11 @@ func TestGivePeersMessage(t *testing.T) {
     }
     m := NewGivePeersMessage(peers)
     assert.Equal(t, len(m.GetPeers()), 2)
-    testSimpleMessageHandler(t, m.(gnet.Message))
+    testSimpleMessageHandler(t, m)
     assert.Equal(t, m.GetPeers()[0], addrs[0])
     assert.Equal(t, m.GetPeers()[1], addrs[1])
     // Peers should be added to the pex when processed
-    m.(*GivePeersMessage).Process()
+    m.Process()
     assert.Equal(t, len(Peers.Peerlist), 2)
     resetPeers()
 }
@@ -231,10 +235,6 @@ func (self *DummyGivePeersMessage) GetPeers() []string {
         p = append(p, ps.Addr)
     }
     return p
-}
-
-func DummyGivePeersMessageCtor(peers []*pex.Peer) pex.GivePeersMessage {
-    return &DummyGivePeersMessage{peers: peers}
 }
 
 type DummyAddr struct {

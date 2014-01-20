@@ -167,7 +167,7 @@ main:
             cullInvalidConnections()
         // Request peers via PEX
         case <-requestPeersTicker:
-            Peers.RequestPeers(Pool.GetRawConnections(), NewGetPeersMessage)
+            requestPeers()
         // Remove peers we haven't seen in a while
         case <-clearOldPeersTicker:
             Peers.Peerlist.ClearOld(peerExpiration)
@@ -204,6 +204,21 @@ main:
             m.Process()
         case <-quit:
             break main
+        }
+    }
+}
+
+// Requests peers from our connections
+// TODO -- batching all peer requests at once may cause performance issues
+func requestPeers() {
+    if Peers.Full() {
+        return
+    }
+    for _, conn := range Pool.Pool {
+        m := NewGetPeersMessage()
+        err := conn.Controller.SendMessage(m)
+        if err != nil {
+            logger.Warning("Failed to request peers from %s", conn.Addr())
         }
     }
 }

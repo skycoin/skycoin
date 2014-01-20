@@ -18,6 +18,8 @@ var (
     updateBlacklistRate = time.Minute
     // How often to request peers via PEX
     requestPeersRate = time.Minute
+    // How many peers to send back in response to a peers request
+    peerReplyCount = 30
 )
 
 // Configure the pex.PeerList and load local data

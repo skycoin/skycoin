@@ -15,7 +15,8 @@ Problems with Mining:
 - gigahash.io has abused its hashing power to steal Bitcoin from gambling sites
 - Every month mining power is concentrated in the hands of fewer people
 - cex.io allows people to rent a 51% attack by the minute
-- mining pools can form cartels to orphan blocks by honest miners. Bitcoin mining puts honest miners at a disadvantage.
+- mining pools can form cartels to orphan blocks by honest miners
+- Bitcoin puts honest miners at a disadvantage to the mining cartels
 - mining cartels will rent capacity to orphan blocks from other pools, if the reward is greater than the cost
 - pools have begun capping block size to drive up transaction fees
 - Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public

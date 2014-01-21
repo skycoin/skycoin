@@ -7,13 +7,13 @@ import (
 )
 
 type Connection struct {
-    addr          string
-    last_sent     int64
-    last_received int64
+    Addr         string `json:"address"`
+    LastSent     int64  `json:"last_sent"`
+    LastReceived int64  `json:"last_received"`
 }
 
 type Connections struct {
-    connections []Connection
+    Connections []Connection `json:"connections"`
 }
 
 func connectionsPage(w http.ResponseWriter, r *http.Request) {
@@ -26,9 +26,9 @@ func connectionsPage(w http.ResponseWriter, r *http.Request) {
     conns := make([]Connection, len(daemon.Pool.Pool))
     for _, v := range daemon.Pool.Pool {
         conns = append(conns, Connection{
-            addr:          v.Addr(),
-            last_sent:     v.LastSent.Unix(),
-            last_received: v.LastReceived.Unix(),
+            Addr:         v.Addr(),
+            LastSent:     v.LastSent.Unix(),
+            LastReceived: v.LastReceived.Unix(),
         })
     }
 

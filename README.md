@@ -17,13 +17,13 @@ Problems with Mining:
 - services such as cex.io allow people to rent a 51% attack by the minute
 - mining pools will form cartels to orphan blocks mined by non-cartel members, to steal block rewards
 - mining cartels will rent capacity to orphan blocks from other pools, if the reward is greater than the cost
-- pools have begun capping block size to drive up transaction fees. Bitcoin transaction processing rate is unable keep up with growth in new users. Bitcoin can only process 7 transactions/second and is already hitting the block size limit. Miners have an incentive to restrict the block size and the largest mining pool has already begun doing this.
+- pools have begun capping block size to drive up transaction fees. Bitcoin transaction processing rate is unable keep up with growth in new users. Bitcoin can only process 7 transactions/second and is hitting the block size limit. Miners have an incentive to restrict the block size and the largest mining pool has already capped the block size.
 - Every month more mining power is concentrated in the hands of a smaller number of people
 - Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public.
 - No one benefits from mining except miners and electricity companies
 - electricity used by mining is wasted. The costs of mining is passed on to every Bitcoin holder
-- Mining will substantially increase transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unsuitable for microtransactions. Bitcoin transaction fees may reach a level higher than the banking system Bitcoin was created to replace.
-- Miners selling newly created Bitcoins to pay equipment and electricity costs, drives down the price of Bitcoin.
+- Mining substantially increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions. Bitcoin transaction fees may reach a level higher than the banking system Bitcoin was created to replace.
+- Miners selling Bitcoins to pay equipment and electricity costs, drives down the price of Bitcoin. Every Bitcoin holder pays the cost of mining.
 - If Bitcoin reaches viability as the next global reserve currency, the incentives for nation states to monopolize and control mining are too great.
 
 Skycoin was designed to eliminate mining completely and eliminate the problems it creates. Skycoin replaces reliance on miners with reliance on mathematics.
@@ -38,7 +38,7 @@ Current Status
 * Peering infrastucture complete.  Clients are able to connect to each other, if configured appropriately.
 * Blockchain v1 functioning
 * Transactions are not networked.
-* The daemon RPC for the GUI is not implemented.
+* JSON RPC for wallet
 
 Setup
 -----

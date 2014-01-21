@@ -32,7 +32,7 @@ Problems with Mining:
 Skycoin was designed to eliminate mining completely and eliminate the problems it creates
 - Skycoin replaces reliance on miners with reliance on mathematics.
 - Skycoin is more secure because it does not rely upon the good will of miners
-- Skycoin transactions will be cheaper because there are no mining costs being passed on to users
+- Skycoin transactions will be cheaper because there are no mining costs passed on to users
 - Skycoin transactions are not subject to 51% attacks by mining cartels
 - Skycoin is environmentally friendly and sustainable. Skycoin does not require twelve coal power plants to power mining
 

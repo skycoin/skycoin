@@ -23,6 +23,7 @@ func connectionsPage(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // TODO -- not thread safe!!
     conns := make([]Connection, len(daemon.Pool.Pool))
     for _, v := range daemon.Pool.Pool {
         conns = append(conns, Connection{

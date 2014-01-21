@@ -13,6 +13,7 @@ fi
 if [ "$OS" = "Darwin" ];
 then
     OS="osx"
+    ARCH="x86"
 elif [ "$OS" = "Linux" ];
 then
     OS="linux"

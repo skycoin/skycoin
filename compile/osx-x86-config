@@ -10,6 +10,6 @@ NWEXT=zip
 BINDIR="./.bin"
 CACHEDIR="./.cache"
 RELEASEDIR="./release"
-ZIPNAME=Skycoin.zip
+ZIPNAME=Skycoin
 PKGDIR=../
 CGOCC=o32-clang

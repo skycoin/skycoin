@@ -1,5 +1,6 @@
 github.com/nictuku/dht
 github.com/lonnc/golang-nw
+github.com/lonnc/golang-nw/cmd/golang-nw-pkg
 github.com/op/go-logging
 github.com/skycoin/gnet
 github.com/skycoin/pex

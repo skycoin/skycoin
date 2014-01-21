@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/skycoin/skycoin/src/coin"
 	"log"
@@ -78,6 +79,19 @@ func (self *Wallet) Balance(bc *coin.BlockChain) (uint64, uint64) {
 		balance2 += ux.CoinHours(time)
 	}
 	return balance1, balance2
+}
+
+func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, amt1 uint64, amt2 uint64) (coin.Transaction, error) {
+	self.RefeshUnspentOutputs(bc)
+	bal1, bal2 := self.Balance()
+
+	if bal1 < amt1 {
+		return coin.Transaction{}, errors.New("insufficient coin balance")
+	}
+	if bal2 < amt2 {
+		return coin.Transaction{}, errors.New("insufficient coinhour balance")
+	}
+
 }
 
 func NewWallet(n int) Wallet {

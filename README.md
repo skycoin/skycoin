@@ -17,12 +17,12 @@ Problems with Mining:
 - cex.io allows people to rent a 51% attack by the minute
 - mining pools can form cartels to orphan blocks by honest miners
 - Bitcoin puts honest miners at a disadvantage to the mining cartels
-- mining cartels will rent capacity to orphan blocks from other pools, if the reward is greater than the cost
+- mining cartels will rent capacity to orphan blocks from other pools, if they can
 - pools have begun capping block size to drive up transaction fees
 - Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public
-- no one profits from mining except miners and electricity companies while every Bitcoin user pays the cost of mining
-- block rewards create an incentive to sybil attack the network to influence block propagation. These attacks have slowed down blockchain downloads to unacceptable levels.
-- electricity used by mining is wasted.
+- miners and electricity companies profit. Everyone else pays the costs.
+- block rewards create incentive to sybil attack network and influence block propagation. These attacks have slowed down blockchain downloads to unacceptable levels.
+- electricity used by mining is wasted
 - the costs of mining is passed on to every Bitcoin holder
 - Mining increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions.
 - Miners driving up transaction fees will make Bitcoin transaction fees higher than the banking system Bitcoin was created to replace.
@@ -31,7 +31,7 @@ Problems with Mining:
 - Miners sell Bitcoins to pay equipment and electricity costs, driving down the price of Bitcoin. Every Bitcoin holder pays the cost of mining.
 
 Skycoin was designed to eliminate mining completely and eliminate the problems it creates
-- Skycoin replaces reliance on miners with reliance on mathematics.
+- Skycoin replaces reliance on miners with reliance on mathematics
 - Skycoin is more secure because it does not rely upon the good will of miners
 - Skycoin transactions will be cheaper because there are no mining costs passed on to users
 - Skycoin transactions are not subject to 51% attacks by mining cartels

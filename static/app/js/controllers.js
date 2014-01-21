@@ -2,15 +2,15 @@
 
 /* Controllers */
 
-angular.module('myApp.controllers', []).
-  controller('MyCtrl1', [function() {
+angular.module('skycoin.controllers', []).
+  controller('ctrl1', [function() {
 
   }])
-  .controller('MyCtrl2', [function() {
+  .controller('ctrl2', [function() {
 
   }])
 
-.controller('TabsDemoCtrl', ['$scope',
+.controller('tabsCtrl', ['$scope',
   function($scope) {
 
 

@@ -2,13 +2,13 @@
 
 
 // Declare app level module which depends on filters, and services
-angular.module('myApp', [
+angular.module('skycoin', [
   'ngRoute',
   'ui.bootstrap',
-  'myApp.filters',
-  'myApp.services',
-  'myApp.directives',
-  'myApp.controllers'
+  //'skycoin.filters',
+  //'skycoin.services',
+  //'skycoin.directives',
+  'skycoin.controllers'
 ]).
 config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/view1', {templateUrl: 'partials/partial1.html', controller: 'MyCtrl1'});

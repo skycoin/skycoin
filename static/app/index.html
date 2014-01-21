@@ -25,18 +25,24 @@
     </p>
     <hr /> -->
 
-    <tabset>
+    <tabset id="main-content">
       <tab>
         <tab-heading>
           <i class="fa fa-leaf fa-lg"></i> Wallets
         </tab-heading>
 
         <div class="outline">
-          <div id="overview-wallet" class="outline">
-            <div id="overview-wallet-title"><a>My Wallet</a></div>
-            <div id="overview-wallet-balance">0.00 SKY</div>
-            <div id="overview-wallet-transactions">0</div>
-          </div>
+          <table id="overview-wallet" class="outline">
+            <tr>
+              <td><div id="overview-wallet-title"></div></td><td></td>
+            </tr>
+            <tr>
+              <td><div id="overview-wallet-balance">Address: </div></td><td>0</td>
+            </tr>
+            <tr>
+              <td><div id="overview-wallet-address">Balance: </div></td><td>0.00 SKY</td>
+            </tr>
+          </table>
           <!--<div id="overview-recent-transaction" class="outline">
             <div id="overview-recent-transaction-title">Recent Transactions</div>
             Receive 

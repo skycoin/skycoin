@@ -62,3 +62,10 @@ compile/.bin
 .skycoin
 
 *.prof
+*.out
+
+# Binaries
+skycoind$
+skycoin$
+skycoindev$
+blockchain$

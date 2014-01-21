@@ -31,12 +31,21 @@ pushd "$DIR/compile" >/dev/null
 
 if [[ "$CMD" = "build" ]];
 then
-    ./build-${OS}-${ARCH}.sh dev
-elif [[ "$CMD" = "run" ]];
+    ./build-${OS}-${ARCH}.sh skycoindev
+elif [[ "$CMD" = "clean" ]];
 then
-    pushd "./release/skycoin_${OS}_${ARCH}/" >/dev/null
-    ./skycoin -disable-gui=false "${@:2}"
-    popd >/dev/null
+    rm -rf ./release/*
+elif [[ "$CMD" = "run" || "$CMD" = "" ]];
+then
+    BINDIR="./release/skycoin_${OS}_${ARCH}/"
+    if [[ -d "$BINDIR" ]];
+    then
+      pushd "$BINDIR" >/dev/null
+      ./skycoin -disable-gui=false -color-log=false "${@:2}"
+      popd >/dev/null
+    else
+        echo "Do \"./gui.sh build\" first"
+    fi
 else
     usage
 fi

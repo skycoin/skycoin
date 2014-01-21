@@ -2,8 +2,8 @@
 
 GOCMD="go test -v"
 
-declare -a libs=(./lib/secp256k1-go)
-declare -a pkgs=(. ./src/cli ./src/coind ./src/gui ./src/util ./src/coin)
+declare -a libs=(./src/lib/secp256k1-go)
+declare -a pkgs=(. ./src/cli ./src/gui ./src/util ./src/coin ./src/daemon ../src/skycoin)
 
 for i in "${pkgs[@]}" 
 do

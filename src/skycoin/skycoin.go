@@ -1,4 +1,4 @@
-package main
+package skycoin
 
 import (
     "fmt"
@@ -14,10 +14,9 @@ import (
 )
 
 import (
-    "./src/cli/"
-    // "./src/coin/"
-    "./src/daemon/"
-    "./src/gui/"
+    "github.com/skycoin/skycoin/src/cli"
+    "github.com/skycoin/skycoin/src/daemon"
+    "github.com/skycoin/skycoin/src/gui"
 )
 
 var (
@@ -71,9 +70,9 @@ func catchDebug() {
     }
 }
 
-func shutdown() {
+func shutdown(dataDir string) {
     logger.Info("Shutting down\n")
-    daemon.Shutdown(cli.DataDirectory)
+    daemon.Shutdown(dataDir)
     logger.Info("Goodbye\n")
 }
 
@@ -84,37 +83,37 @@ func shutdown() {
 //     sb.Settings.Save()
 // }
 
-func initLogging(level logging.Level) {
+func initLogging(level logging.Level, color bool) {
     format := logging.MustStringFormatter(logFormat)
     logging.SetFormatter(format)
     for _, s := range logModules {
         logging.SetLevel(level, s)
     }
     stdout := logging.NewLogBackend(os.Stdout, "", 0)
-    stdout.Color = true
+    stdout.Color = color
     logging.SetBackend(stdout)
 }
 
-func initProfiling() {
-    if cli.ProfileCPU {
-        f, err := os.Create(cli.ProfileCPUFile)
+func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
+    if profileCPU {
+        f, err := os.Create(profileCPUFile)
         if err != nil {
             log.Fatal(err)
         }
         pprof.StartCPUProfile(f)
         defer pprof.StopCPUProfile()
     }
-    if cli.HTTPProf {
+    if httpProf {
         go func() {
             log.Println(http.ListenAndServe("localhost:6060", nil))
         }()
     }
 }
 
-func main() {
-    cli.ParseArgs()
-    initProfiling()
-    initLogging(cli.LogLevel)
+func Run(args cli.Args) {
+    c := cli.ParseArgs(args)
+    initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
+    initLogging(c.LogLevel, c.ColorLog)
 
     // If the user Ctrl-C's, shutdown properly
     quit := make(chan int)
@@ -123,20 +122,20 @@ func main() {
     go catchDebug()
 
     stopDaemon := make(chan int)
-    daemon.Init(cli.Port, cli.DataDirectory, stopDaemon)
+    daemon.Init(c.Port, c.DataDirectory, stopDaemon)
 
-    if cli.ConnectTo != "" {
-        _, err := daemon.Pool.Connect(cli.ConnectTo)
+    if c.ConnectTo != "" {
+        _, err := daemon.Pool.Connect(c.ConnectTo)
         if err != nil {
             log.Panic(err)
         }
     }
 
-    if !cli.DisableGUI {
+    if !c.DisableGUI {
         go gui.LaunchGUI()
     }
 
     <-quit
     stopDaemon <- 1
-    shutdown()
+    shutdown(c.DataDirectory)
 }

@@ -1,7 +1,7 @@
 . "$CONFIG"
 
 APPNW=skycoin
-TAGS=$1
+RAWBIN=$1
 
 # Create the node-webkit wrapped executable
 function create_nw_bin() {
@@ -18,10 +18,10 @@ function create_nw_bin() {
 # Compiles the core app with gox. Note: we can't really cross-compile due to
 # cgo
 function compile_app() {
-    echo "Comiling with go"
+    echo "Compiling with go"
     #gox -osarch="${OS}/${ARCH}" -output="${BINDIR}/${APP}" "$PKGDIR"
-    CC="$CGOCC" GOOS="$OS" GOARCH="$ARCH" go build -tags "$TAGS" \
-        -o "${BINDIR}/${APP}" "$PKGDIR"
+    CC="$CGOCC" GOOS="$OS" GOARCH="$ARCH" go build \
+        -o "${BINDIR}/${APP}" "${PKGDIR}/cmd/${RAWBIN}"
     if [[ $? != 0 ]]; then
         echo "go compilation failed"
         exit 1
@@ -41,6 +41,7 @@ function create_linux_package() {
     mkdir "$TMPZIP"
     mv "${APPTMP}/${NWNAME}/nw.pak" "$TMPZIP"
     cp -R ../static "$TMPZIP"
+    chmod +x "${BINDIR}/${BIN}"
     cp "${BINDIR}/${BIN}" "${TMPZIP}/${BIN}"
     ln -s "$LIBUDEV" "${TMPZIP}/libudev.so.0"
     cp linux/README "$TMPZIP"

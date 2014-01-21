@@ -23,7 +23,7 @@ Problems with Mining:
 - No one benefits from mining except miners and electricity companies
 - electricity used by mining is wasted.
 - the costs of mining is passed on to every Bitcoin holder
-- Mining substantially increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions. Bitcoin transaction fees may reach a level higher than the banking system Bitcoin was created to replace.
+- Mining increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions. Bitcoin transaction fees may reach a level higher than the banking system Bitcoin was created to replace.
 - If Bitcoin reaches viability as the next global reserve currency, the incentives for nation states to monopolize and control mining are too great.
 - Miners sell Bitcoins to pay equipment and electricity costs, driving down the price of Bitcoin. Every Bitcoin holder pays the cost of mining.
 

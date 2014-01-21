@@ -2,6 +2,7 @@ package daemon
 
 import (
     "github.com/skycoin/pex"
+    "log"
     "time"
 )
 
@@ -9,7 +10,7 @@ var (
     // Maximum number of peers to keep account of in the PeerList
     maxPeers = 1000
     // Peer list
-    Peers = pex.NewPex(maxPeers)
+    Peers *pex.Pex = nil
     // Cull peers after they havent been seen in this much time
     peerExpiration = time.Hour * 24 * 7
     // Cull expired peers on this interval
@@ -24,6 +25,10 @@ var (
 
 // Configure the pex.PeerList and load local data
 func InitPeers(data_directory string) {
+    if Peers != nil {
+        log.Panic("Pex peers already inited")
+    }
+    Peers = pex.NewPex(maxPeers)
     err := Peers.Load(data_directory)
     if err != nil {
         logger.Notice("Failed to load peer database")

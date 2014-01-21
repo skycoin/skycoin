@@ -5,7 +5,6 @@ import (
     "encoding/hex"
     "github.com/nictuku/dht"
     "log"
-    "net"
     "time"
 )
 
@@ -38,7 +37,7 @@ func InitDHT(port int) {
     // Create a hex encoded sha1 sum of a string to be used for DH
     dhtInfoHash, err = dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
     if err != nil {
-        log.Panic("Failed to create InfoHash: %v", err)
+        log.Panicf("Failed to create InfoHash: %v", err)
         return
     }
     DHT, err = dht.NewDHTNode(port, dhtDesiredPeers, true)
@@ -47,18 +46,12 @@ func InitDHT(port int) {
         return
     }
     logger.Info("Init DHT on port %d", port)
-    go DHT.DoDHT()
 }
 
 // Called when the DHT finds a peer
-func receivedDHTPeer(r map[dht.InfoHash][]string) {
+func receivedDHTPeers(r map[dht.InfoHash][]string) {
     for _, peers := range r {
         for _, p := range peers {
-            // Check that p is valid; for some reason the dht library
-            // sometimes gives us a peer that panics when its decoded
-            if len(p) < 5 {
-                continue
-            }
             peer := dht.DecodePeerAddress(p)
             logger.Debug("DHT Peer: %s", peer)
             _, err := Peers.AddPeer(peer)
@@ -80,14 +73,14 @@ func RequestDHTPeers() {
     DHT.PeersRequest(ih, true)
 }
 
-// DHT Event Logger
-type DHTLogger struct{}
+// // DHT Event Logger
+// type DHTLogger struct{}
 
-// Logs a GetPeers event
-func (self *DHTLogger) GetPeers(ip *net.UDPAddr, id string,
-    _info dht.InfoHash) {
-    id = hex.EncodeToString([]byte(id))
-    info := hex.EncodeToString([]byte(_info))
-    logger.Debug("DHT GetPeers event occured:\n\tid: %s\n\tinfohash: %s",
-        id, info)
-}
+// // Logs a GetPeers event
+// func (self *DHTLogger) GetPeers(ip *net.UDPAddr, id string,
+//     _info dht.InfoHash) {
+//     id = hex.EncodeToString([]byte(id))
+//     info := hex.EncodeToString([]byte(_info))
+//     logger.Debug("DHT GetPeers event occured:\n\tid: %s\n\tinfohash: %s",
+//         id, info)
+// }

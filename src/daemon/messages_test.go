@@ -1,6 +1,7 @@
 package daemon
 
 import (
+    "errors"
     "fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
@@ -18,9 +19,10 @@ var (
     addrPort      uint16 = 5555
     addr                 = "111.22.33.44:5555"
     addrb                = "112.22.33.44:6666"
+    addrc                = "112.22.33.55:4343"
     badAddrPort          = "111.22.44.33:x"
     badAddrNoPort        = "111.22.44.33"
-    silenceLogger        = true
+    silenceLogger        = false
 )
 
 func init() {
@@ -30,7 +32,9 @@ func init() {
 }
 
 func TestRegisterMessages(t *testing.T) {
+    gnet.EraseMessages()
     assert.NotPanics(t, RegisterMessages)
+    gnet.EraseMessages()
 }
 
 func TestNewIPAddr(t *testing.T) {
@@ -64,16 +68,32 @@ func testSimpleMessageHandler(t *testing.T, m gnet.Message) {
 }
 
 func TestGetPeersMessage(t *testing.T) {
+    RegisterMessages()
     m := NewGetPeersMessage()
     testSimpleMessageHandler(t, m)
     Peers.AddPeer(addr)
     m.c = messageContext(addr)
-    m.Process()
+    assert.NotPanics(t, m.Process)
     assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // If no peers, nothing should happen
+    m.c.Conn.LastSent = time.Unix(0, 0)
+    delete(Peers.Peerlist, addr)
+    assert.NotPanics(t, m.Process)
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // Test with failing send
+    Peers.AddPeer(addr)
+    m.c.Conn.Conn = NewFailingConn(addr)
+    assert.NotPanics(t, m.Process)
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
     resetPeers()
+    gnet.EraseMessages()
 }
 
 func TestGivePeersMessage(t *testing.T) {
+    RegisterMessages()
     addrs := []string{addr, addrb, "7"}
     peers := make([]*pex.Peer, 0, 3)
     for _, addr := range addrs {
@@ -88,9 +108,11 @@ func TestGivePeersMessage(t *testing.T) {
     m.Process()
     assert.Equal(t, len(Peers.Peerlist), 2)
     resetPeers()
+    gnet.EraseMessages()
 }
 
 func TestIntroductionMessageHandle(t *testing.T) {
+    RegisterMessages()
     Pool = gnet.NewConnectionPool(poolPort)
     mc := messageContext(addr)
     m := NewIntroductionMessage()
@@ -131,9 +153,11 @@ func TestIntroductionMessageHandle(t *testing.T) {
     for len(messageEvent) > 0 {
         <-messageEvent
     }
+    gnet.EraseMessages()
 }
 
 func TestIntroductionMessageProcess(t *testing.T) {
+    RegisterMessages()
     Pool = gnet.NewConnectionPool(poolPort)
     m := NewIntroductionMessage()
     m.c = messageContext(addr)
@@ -185,35 +209,52 @@ func TestIntroductionMessageProcess(t *testing.T) {
     <-Pool.DisconnectQueue
 
     Pool = nil
+    gnet.EraseMessages()
 }
 
 func TestPingMessage(t *testing.T) {
+    RegisterMessages()
     m := &PingMessage{}
     testSimpleMessageHandler(t, m)
 
     m.c = messageContext(addr)
-    m.Process()
+    assert.NotPanics(t, m.Process)
     // A pong message should have been sent
     assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // Failing to send should not cause a panic
+    m.c.Conn.Conn = NewFailingConn(addr)
+    m.c.Conn.LastSent = time.Unix(0, 0)
+    assert.NotPanics(t, m.Process)
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    gnet.EraseMessages()
 }
 
 func TestPongMessage(t *testing.T) {
+    RegisterMessages()
     m := &PongMessage{}
     // Pongs dont do anything
     assert.Nil(t, m.Handle(messageContext(addr)))
+    gnet.EraseMessages()
 }
 
 /* Helpers */
 
-func messageContext(addr string) *gnet.MessageContext {
+func gnetConnection(addr string) *gnet.Connection {
     conn := &gnet.Connection{
-        Id:       1,
-        Conn:     NewDummyConn(addr),
-        LastSent: time.Unix(0, 0),
+        Id:           1,
+        Conn:         NewDummyConn(addr),
+        LastSent:     time.Unix(0, 0),
+        LastReceived: time.Unix(0, 0),
     }
     conn.Controller = gnet.NewConnectionController(conn)
+    return conn
+}
+
+func messageContext(addr string) *gnet.MessageContext {
     return &gnet.MessageContext{
-        Conn: conn,
+        Conn: gnetConnection(addr),
     }
 }
 
@@ -284,4 +325,16 @@ func (self *DummyConn) SetWriteDeadline(t time.Time) error {
 
 func (self *DummyConn) Write(b []byte) (int, error) {
     return len(b), nil
+}
+
+type FailingConn struct {
+    DummyConn
+}
+
+func NewFailingConn(addr string) net.Conn {
+    return &FailingConn{DummyConn{addr: addr}}
+}
+
+func (self *FailingConn) Write(b []byte) (int, error) {
+    return 0, errors.New("failed")
 }

@@ -68,6 +68,8 @@ var (
         "Already connected")
     DisconnectIdle gnet.DisconnectReason = errors.New(
         "Idle")
+    DisconnectFailedSend gnet.DisconnectReason = errors.New(
+        "Failed to send data to this connection")
     // This is returned when a seemingly impossible error is encountered
     // e.g. net.Conn.Addr() returns an invalid ip:port
     DisconnectOtherError gnet.DisconnectReason = errors.New(
@@ -127,9 +129,10 @@ type ConnectionError struct {
 // the quit channel will stop the daemon.
 func Init(port int, dataDir string, quit chan int) {
     RegisterMessages()
-    InitDHT(port)
     InitPool(port)
     InitPeers(dataDir)
+    InitDHT(port)
+    go DHT.DoDHT()
     go DaemonLoop(quit)
 }
 
@@ -196,7 +199,7 @@ main:
             handleConnectionError(r)
         // Update Peers when DHT reports a new one
         case r := <-DHT.PeersRequestResults:
-            receivedDHTPeer(r)
+            receivedDHTPeers(r)
         case r := <-Pool.DisconnectQueue:
             Pool.HandleDisconnectEvent(r)
         // Message handlers
@@ -265,12 +268,8 @@ func connectToRandomPeer() {
     }
 }
 
-// Called when connecting/dialing an address fails
+// We remove a peer from the Pex if we failed to connect
 func handleConnectionError(c ConnectionError) {
-    if c.Error == nil {
-        return
-    }
-    // Remove a peer if we fail to connect to it
     logger.Debug("Removing %s because failed to connect: %v", c.Addr,
         c.Error)
     delete(pendingConnections, c.Addr)
@@ -283,10 +282,12 @@ func cullInvalidConnections() {
     // malicious nodes
     now := time.Now()
     for a, t := range expectingVersions {
+        // Forget about anyone that already disconnected
         if Pool.Addresses[a] == nil {
             delete(expectingVersions, a)
             continue
         }
+        // Remove anyone that fails to send a version within versionWait time
         if t.Add(versionWait).Before(now) {
             logger.Info("Removing %s for not sending a version", a)
             delete(expectingVersions, a)
@@ -317,13 +318,15 @@ func onConnect(e ConnectEvent) {
         Pool.Disconnect(c, DisconnectIsBlacklisted)
         return
     }
-    logger.Debug("Sending version message to %s", a)
-    outgoingConnections[a] = c
+    if e.Solicited {
+        outgoingConnections[a] = c
+    }
     expectingVersions[a] = time.Now()
+    logger.Debug("Sending introduction message to %s", a)
     err := c.Controller.SendMessage(NewIntroductionMessage())
     if err != nil {
         logger.Error("Failed to send introduction message: %v", err)
-        Pool.Disconnect(c, DisconnectSelf)
+        Pool.Disconnect(c, DisconnectFailedSend)
         return
     }
 }

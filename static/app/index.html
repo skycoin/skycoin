@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" ng-app="myApp">
+<html lang="en" ng-app="skycoin">
 <head>
   <meta charset="utf-8">
   <title>Skycoin</title>
@@ -12,7 +12,7 @@
   <link href="css/bootstrap.icon-large.min.css" rel="stylesheet">
 
 </head>
-<body ng-controller="TabsDemoCtrl">
+<body ng-controller="tabsCtrl">
   <div id="sky-header"></div>
   <div id="sky-center">
     <!-- <p>Select a tab by setting active binding to true:</p>
@@ -37,13 +37,13 @@
             <div id="overview-wallet-balance">0.00 SKY</div>
             <div id="overview-wallet-transactions">0</div>
           </div>
-          <div id="overview-recent-transaction" class="outline">
+          <!--<div id="overview-recent-transaction" class="outline">
             <div id="overview-recent-transaction-title">Recent Transactions</div>
             Receive 
             Date
             Address 
             Amount
-          </div>
+          </div>-->
           
         </div>
         
@@ -65,6 +65,9 @@
             </tr>
             <tr>
               <td class="send-pay-col1"><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-model="send.amount" /></td>
+            </tr>
+            <tr>
+              <td class="send-pay-col1" class="btn"><button type="button" class="btn btn-default">Send</button></td><td></td>
             </tr>
           </table>
           
@@ -95,23 +98,23 @@
         </div>
       </tab> -->
 
-      <!-- <tab>
+      <tab>
         <tab-heading>
           <i class="glyphicon glyphicon-list"></i> History
         </tab-heading>
         <table id="transaction-table">
           <tr>
-            <td>Nothing</td><td>dropdown</td><td>dropdown</td><td>text search</td><td>amount</td>
-            <td>arrow</td><td>date</td><td>type</td><td>address</td><td>amount</td>
+            <td></td><td><!-- dropdown--></td><td><!-- dropdown --></td><td><!-- text search--></td><td>Amount</td>
+            <td><!-- arrow --></td><td>Date</td><td>Type</td><td>Address</td><td>Amount</td>
           </tr>
           <tr>
             <td></td><td></td><td></td><td></td><td></td>
           </tr>
         </table>
-        <span class="receive-button">Export</span>
-      </tab> -->
+        <!-- <span class="receive-button">Export</span> -->
+      </tab> 
 
-      <tab>
+      <!-- <tab>
         <tab-heading>
           <i class="fa fa-book fa-lg"></i> Address Book
         </tab-heading>
@@ -130,10 +133,10 @@
           <span class="receive-button">Show QR Code</span>
           <span class="receive-button">Export</span>
         </div>
-      </tab>
+      </tab> -->
 
 
-      <tab>
+      <!--<tab>
         <tab-heading>
           <i class="fa fa-comments fa-lg"></i> Chat
         </tab-heading>
@@ -152,7 +155,7 @@
           <span class="receive-button">Show QR Code</span>
           <span class="receive-button">Export</span>
         </div>
-      </tab>
+      </tab> -->
 
 
       

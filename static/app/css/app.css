@@ -38,6 +38,11 @@ html,body{
 
 }
 
+#transaction-table{
+  width:100%;
+  border: 1px solid #ddd;
+}
+
 label {
   float:left;
 }

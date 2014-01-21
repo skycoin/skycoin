@@ -13,14 +13,14 @@ Satoshi has stated that mining is Bitcoin's only flaw. Miners are the greatest t
 Problems with Mining:
 - Dishonest miners are the greatest threat to Bitcoin
 - gigahash.io has abused its hashing power to steal Bitcoin from gambling sites
-- Every month mining power is becoming more concentrated and centralized in the hands of fewer people.
+- Every month mining power is concentrated in the hands of fewer people
 - cex.io allows people to rent a 51% attack by the minute
-- mining pools will form cartels to orphan blocks mined by non-cartel members, to steal block rewards
+- mining pools can form cartels to orphan blocks by honest miners. Bitcoin mining puts honest miners at a disadvantage.
 - mining cartels will rent capacity to orphan blocks from other pools, if the reward is greater than the cost
 - pools have begun capping block size to drive up transaction fees
-- Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public.
-- no one profits from mining except miners and electricity companies
-- block rewards create an incentive to sybil attack the network to influence block propagation
+- Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public
+- no one profits from mining except miners and electricity companies while every Bitcoin user pays the cost of mining
+- block rewards create an incentive to sybil attack the network to influence block propagation. These attacks have slowed down blockchain downloads to unacceptable levels.
 - electricity used by mining is wasted.
 - the costs of mining is passed on to every Bitcoin holder
 - Mining increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions.

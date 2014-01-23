@@ -15,6 +15,7 @@ var (
     resources   = []string{"js", "css", "lib", "partials", "img", "assets"}
     resourceDir = "app/"
     indexPage   = filepath.Join(resourceDir, "index.html")
+    generateAddress = "generateAddress"
 )
 
 // Begins listening on the node-webkit localhost
@@ -76,3 +77,11 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
     logger.Debug("Serving %s\n", fp)
     http.ServeFile(w, r, fp)
 }
+
+// Generate Address
+/*func generateAddress(w http.ResponseWriter, r *http.Request) {
+    logger.Debug("Serving %s\n", indexPage)
+    rw.Header().Set("Content-Type", "application/json")
+        fmt.Fprint(rw, Response{"success": true, "message": "Hello!"})
+        return
+}*/

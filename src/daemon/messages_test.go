@@ -165,10 +165,10 @@ func TestIntroductionMessageProcess(t *testing.T) {
 
     // Test invalid
     m.valid = false
-    expectingVersions[addr] = time.Now()
+    expectingIntroductions[addr] = time.Now()
     m.Process()
-    // expectingVersions should get updated
-    _, x := expectingVersions[addr]
+    // expectingIntroductions should get updated
+    _, x := expectingIntroductions[addr]
     assert.False(t, x)
     // mirrorConnections should not have an entry
     _, x = mirrorConnections[m.Mirror]
@@ -177,13 +177,13 @@ func TestIntroductionMessageProcess(t *testing.T) {
 
     // Test valid
     m.valid = true
-    expectingVersions[addr] = time.Now()
+    expectingIntroductions[addr] = time.Now()
     m.Process()
-    // expectingVersions should get updated
-    _, x = expectingVersions[addr]
+    // expectingIntroductions should get updated
+    _, x = expectingIntroductions[addr]
     assert.False(t, x)
     assert.Equal(t, len(Peers.Peerlist), 1)
-    assert.Equal(t, connectionMirrors[addrIP], m.Mirror)
+    assert.Equal(t, connectionMirrors[addr], m.Mirror)
     assert.NotNil(t, mirrorConnections[m.Mirror])
     assert.Equal(t, mirrorConnections[m.Mirror][addrIP], addrPort)
     peerAddr := fmt.Sprintf("%s:%d", addrIP, poolPort)

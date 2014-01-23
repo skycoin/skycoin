@@ -10,6 +10,23 @@ import (
     "time"
 )
 
+func TestGetListenPort(t *testing.T) {
+    // No connectionMirror found
+    assert.Equal(t, getListenPort(addr), uint16(0))
+    // No mirrorConnection map exists
+    connectionMirrors[addr] = uint32(4)
+    assert.Panics(t, func() { getListenPort(addr) })
+    // Everything is good
+    m := make(map[string]uint16)
+    mirrorConnections[uint32(4)] = m
+    m[addrIP] = uint16(6667)
+    assert.Equal(t, getListenPort(addr), uint16(6667))
+
+    // cleanup
+    delete(mirrorConnections, uint32(4))
+    delete(connectionMirrors, addr)
+}
+
 func TestInit(t *testing.T) {
     // TODO --
     // Need to be able to stop the DHT
@@ -178,11 +195,11 @@ func TestCullInvalidConnections(t *testing.T) {
     Peers = pex.NewPex(maxPeers)
     Pool = gnet.NewConnectionPool(port)
     // Is fine
-    expectingVersions[addr] = time.Now()
+    expectingIntroductions[addr] = time.Now()
     // Is expired
-    expectingVersions[addrb] = time.Unix(0, 0)
+    expectingIntroductions[addrb] = time.Unix(0, 0)
     // Is not in pool
-    expectingVersions[addrc] = time.Unix(0, 0)
+    expectingIntroductions[addrc] = time.Unix(0, 0)
     Peers.AddPeer(addr)
     Peers.AddPeer(addrb)
     Peers.AddPeer(addrc)
@@ -194,7 +211,7 @@ func TestCullInvalidConnections(t *testing.T) {
 
     assert.NotPanics(t, cullInvalidConnections)
 
-    assert.Equal(t, len(expectingVersions), 1)
+    assert.Equal(t, len(expectingIntroductions), 1)
     assert.Equal(t, len(Peers.Peerlist), 2)
     assert.Equal(t, len(Pool.DisconnectQueue), 1)
     if len(Pool.DisconnectQueue) == 0 {
@@ -226,13 +243,13 @@ func TestOnConnect(t *testing.T) {
     // This is not an outgoing connection, we did not solicit it
     assert.Equal(t, len(outgoingConnections), 0)
     // We should be expecting its version
-    assert.Equal(t, len(expectingVersions), 1)
-    _, exists := expectingVersions[addr]
+    assert.Equal(t, len(expectingIntroductions), 1)
+    _, exists := expectingIntroductions[addr]
     assert.True(t, exists)
     // An introduction should have been sent
     assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
     // Cleanup
-    delete(expectingVersions, addr)
+    delete(expectingIntroductions, addr)
 
     // Test a valid connection, solicited
     e = ConnectEvent{addr, true}
@@ -246,13 +263,13 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, len(outgoingConnections), 1)
     assert.NotNil(t, outgoingConnections[addr])
     // We should be expecting its version
-    assert.Equal(t, len(expectingVersions), 1)
-    _, exists = expectingVersions[addr]
+    assert.Equal(t, len(expectingIntroductions), 1)
+    _, exists = expectingIntroductions[addr]
     assert.True(t, exists)
     // An introduction should have been sent
     assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
     // Cleanup
-    delete(expectingVersions, addr)
+    delete(expectingIntroductions, addr)
     delete(outgoingConnections, addr)
 
     // Test a valid connection, but failing to send a message
@@ -269,8 +286,8 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, len(outgoingConnections), 1)
     assert.NotNil(t, outgoingConnections[addr])
     // We should be expecting its version
-    assert.Equal(t, len(expectingVersions), 1)
-    _, exists = expectingVersions[addr]
+    assert.Equal(t, len(expectingIntroductions), 1)
+    _, exists = expectingIntroductions[addr]
     assert.True(t, exists)
     // An introduction should not have been sent, it failed
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
@@ -283,7 +300,7 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, de.ConnId, 1)
     assert.Equal(t, de.Reason, DisconnectFailedSend)
     // Cleanup
-    delete(expectingVersions, addr)
+    delete(expectingIntroductions, addr)
     delete(outgoingConnections, addr)
 
     // Test a connection that is not connected by the time of processing
@@ -296,7 +313,7 @@ func TestOnConnect(t *testing.T) {
     // No message should have been sent
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
     // We should not be expecting its version
-    assert.Equal(t, len(expectingVersions), 0)
+    assert.Equal(t, len(expectingIntroductions), 0)
 
     // Test a connection that is blacklisted
     e = ConnectEvent{addr, true}
@@ -310,7 +327,7 @@ func TestOnConnect(t *testing.T) {
     // No message should have been sent
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
     // We should not be expecting its version
-    assert.Equal(t, len(expectingVersions), 0)
+    assert.Equal(t, len(expectingIntroductions), 0)
     // We should be looking to disconnect this client
     assert.Equal(t, len(Pool.DisconnectQueue), 1)
     if len(Pool.DisconnectQueue) == 0 {
@@ -329,7 +346,7 @@ func TestOnConnect(t *testing.T) {
 
 func setupTestOnDisconnect(c *gnet.Connection, mirror uint32) {
     outgoingConnections[addr] = c
-    expectingVersions[addr] = time.Now()
+    expectingIntroductions[addr] = time.Now()
     mirrorConnections[mirror] = make(map[string]uint16)
     mirrorConnections[mirror][addrIP] = addrPort
     connectionMirrors[addr] = mirror
@@ -348,8 +365,8 @@ func TestOnDisconnect(t *testing.T) {
     assert.Equal(t, len(Peers.Blacklist), 0)
     // Should no longer be in outgoingConnections
     assert.Equal(t, len(outgoingConnections), 0)
-    // Should no longer be in expectingVersions
-    assert.Equal(t, len(expectingVersions), 0)
+    // Should no longer be in expectingIntroductions
+    assert.Equal(t, len(expectingIntroductions), 0)
     // Should be removed from the mirror, and the mirror dict for this ip
     // should be removed
     assert.Equal(t, len(mirrorConnections), 0)
@@ -366,8 +383,8 @@ func TestOnDisconnect(t *testing.T) {
     assert.NotNil(t, Peers.Blacklist[addr])
     // Should no longer be in outgoingConnections
     assert.Equal(t, len(outgoingConnections), 0)
-    // Should no longer be in expectingVersions
-    assert.Equal(t, len(expectingVersions), 0)
+    // Should no longer be in expectingIntroductions
+    assert.Equal(t, len(expectingIntroductions), 0)
     // Should be removed from the mirror, and the mirror dict for this ip
     // should be removed
     assert.Equal(t, len(mirrorConnections), 0)
@@ -385,8 +402,8 @@ func TestOnDisconnect(t *testing.T) {
     assert.Equal(t, len(Peers.Blacklist), 0)
     // Should no longer be in outgoingConnections
     assert.Equal(t, len(outgoingConnections), 0)
-    // Should no longer be in expectingVersions
-    assert.Equal(t, len(expectingVersions), 0)
+    // Should no longer be in expectingIntroductions
+    assert.Equal(t, len(expectingIntroductions), 0)
     // Should be removed from the mirror, and the mirror dict for this ip
     // should be removed
     assert.Equal(t, len(mirrorConnections), 1)

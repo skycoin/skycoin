@@ -1,19 +1,11 @@
 package daemon
 
-/* TODO
-
-   Heartbeat message, Cull idle peers, either gnet or this will need to keep
-   track of last message time (probably gnet)
-
-    Figure out why messages/connections are stalling
-    Setup http://golang.org/pkg/net/http/pprof/ to review goroutine status
-*/
-
 import (
     "errors"
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "log"
     "strings"
     "time"
 )
@@ -96,7 +88,7 @@ var (
     // Number of connections waiting to be formed or timeout
     pendingConnections = make(map[string]*pex.Peer, pendingConnectionsMax)
     // Keep track of unsolicited clients who should notify us of their version
-    expectingVersions = make(map[string]time.Time)
+    expectingIntroductions = make(map[string]time.Time)
     // Keep track of a connection's mirror value, to avoid double
     // connections (one to their listener, and one to our listener)
     // Maps from addr to mirror value
@@ -157,6 +149,9 @@ func DaemonLoop(quit chan int) {
 main:
     for {
         select {
+        // Process any pending API requests
+        case fn := <-apiRequests:
+            apiResponses <- fn()
         // Continually make requests to the DHT, if we need peers
         case <-dhtBootstrapTicker:
             if len(Peers.Peerlist) < dhtPeerLimit {
@@ -209,6 +204,20 @@ main:
             break main
         }
     }
+}
+
+// Returns the ListenPort for a given address.  If no port is found, 0 is
+// returned
+func getListenPort(addr string) uint16 {
+    m, ok := connectionMirrors[addr]
+    if !ok {
+        return 0
+    }
+    mc := mirrorConnections[m]
+    if mc == nil {
+        log.Panic("mirrorConnections map does not exist, but mirror does")
+    }
+    return mc[strings.Split(addr, ":")[0]]
 }
 
 // Requests peers from our connections
@@ -281,16 +290,16 @@ func cullInvalidConnections() {
     // This method only handles the erroneous people from the DHT, but not
     // malicious nodes
     now := time.Now()
-    for a, t := range expectingVersions {
+    for a, t := range expectingIntroductions {
         // Forget about anyone that already disconnected
         if Pool.Addresses[a] == nil {
-            delete(expectingVersions, a)
+            delete(expectingIntroductions, a)
             continue
         }
         // Remove anyone that fails to send a version within versionWait time
         if t.Add(versionWait).Before(now) {
             logger.Info("Removing %s for not sending a version", a)
-            delete(expectingVersions, a)
+            delete(expectingIntroductions, a)
             Pool.Disconnect(Pool.Addresses[a], DisconnectVersionTimeout)
             delete(Peers.Peerlist, a)
         }
@@ -321,7 +330,7 @@ func onConnect(e ConnectEvent) {
     if e.Solicited {
         outgoingConnections[a] = c
     }
-    expectingVersions[a] = time.Now()
+    expectingIntroductions[a] = time.Now()
     logger.Debug("Sending introduction message to %s", a)
     err := c.Controller.SendMessage(NewIntroductionMessage())
     if err != nil {
@@ -342,15 +351,17 @@ func onDisconnect(c *gnet.Connection, reason gnet.DisconnectReason) {
         Peers.AddBlacklistEntry(a, duration)
     }
     delete(outgoingConnections, a)
-    delete(expectingVersions, a)
+    delete(expectingIntroductions, a)
     // Remove peer from the bidirectional mirror map
     ip := strings.Split(a, ":")[0]
-    mirror := connectionMirrors[a]
-    m := mirrorConnections[mirror]
-    if len(m) <= 1 {
-        delete(mirrorConnections, mirror)
-    } else {
-        delete(m, ip)
+    mirror, ok := connectionMirrors[a]
+    if ok {
+        m := mirrorConnections[mirror]
+        if len(m) <= 1 {
+            delete(mirrorConnections, mirror)
+        } else {
+            delete(m, ip)
+        }
+        delete(connectionMirrors, a)
     }
-    delete(connectionMirrors, a)
 }

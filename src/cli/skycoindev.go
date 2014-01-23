@@ -16,8 +16,9 @@ var DevArgs = DevConfig{Config{
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // Remote web interface
-    EnableWebInterface: false,
-    WebInterfacePort:   6402,
+    WebInterface:     false,
+    WebInterfacePort: 6402,
+    WebInterfaceAddr: "127.0.0.1",
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory: "",
     // Logging
@@ -43,10 +44,12 @@ func (self *DevConfig) register() {
         "disable the coin daemon")
     flag.BoolVar(&self.DisableGUI, "disable-gui", self.DisableGUI,
         "disable the gui")
-    flag.BoolVar(&self.EnableWebInterface, "enable-web-interface",
-        self.EnableWebInterface, "enable the web interface")
+    flag.BoolVar(&self.WebInterface, "web-interface",
+        self.WebInterface, "enable the web interface")
     flag.IntVar(&self.WebInterfacePort, "web-interface-port",
         self.WebInterfacePort, "port to serve web interface on")
+    flag.StringVar(&self.WebInterfaceAddr, "web-interface-addr",
+        self.WebInterfaceAddr, "addr to serve web interface on")
     flag.IntVar(&self.Port, "port", self.Port,
         "Port to run application on")
     flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,

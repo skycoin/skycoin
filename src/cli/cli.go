@@ -20,8 +20,9 @@ type Config struct {
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
     // Remote web interface
-    EnableWebInterface bool
-    WebInterfacePort   int
+    WebInterface     bool
+    WebInterfacePort int
+    WebInterfaceAddr string
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory string
     // Logging

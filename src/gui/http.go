@@ -36,7 +36,11 @@ func LaunchGUI() {
 
 // Begins listening on addr:port, for enabling remote web access
 func LaunchWebInterface(addr string, port int) {
-    log.Panic("Web interface is not supported yet, needs TLS support")
+    logger.Info("Starting web interface on %s:%d", addr, port)
+    if addr != "localhost" && addr != "127.0.0.1" {
+        log.Panic("Remote web interface is not supported yet, " +
+            "needs TLS support")
+    }
     a := fmt.Sprintf("%s:%d", addr, port)
     // TODO -- use ListenAndServeTLS. Will need to generate a pem file
     // and allow the user to override it with their own

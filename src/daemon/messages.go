@@ -228,7 +228,7 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext) (err error) {
 
 // Processes an event queued by Handle()
 func (self *IntroductionMessage) Process() {
-    delete(expectingVersions, self.c.Conn.Addr())
+    delete(expectingIntroductions, self.c.Conn.Addr())
     if !self.valid {
         return
     }
@@ -253,7 +253,7 @@ func (self *IntroductionMessage) Process() {
     }
     Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
     // Record their listener, to avoid double connections
-    connectionMirrors[ip] = self.Mirror
+    connectionMirrors[a] = self.Mirror
     m := mirrorConnections[self.Mirror]
     if m == nil {
         m = make(map[string]uint16, 1)

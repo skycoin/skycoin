@@ -89,7 +89,7 @@ type AsyncMessage interface {
 
 // Sent to request peers
 type GetPeersMessage struct {
-    c *gnet.MessageContext `-`
+    c *gnet.MessageContext `enc:"-"`
 }
 
 func NewGetPeersMessage() *GetPeersMessage {
@@ -119,7 +119,7 @@ func (self *GetPeersMessage) Process() {
 // Sent in response to GetPeersMessage
 type GivePeersMessage struct {
     Peers []IPAddr
-    c     *gnet.MessageContext `-`
+    c     *gnet.MessageContext `enc:"-"`
 }
 
 // []*pex.Peer is converted to []IPAddr for binary transmission
@@ -176,9 +176,9 @@ type IntroductionMessage struct {
     // Our client version
     Version int32
 
-    c   *gnet.MessageContext `-`
+    c   *gnet.MessageContext `enc:"-"`
     // We validate the message in Handle() and cache the result for Process()
-    valid bool `-` // skip it during encoding
+    valid bool `enc:"-"` // skip it during encoding
 }
 
 func NewIntroductionMessage() *IntroductionMessage {
@@ -264,7 +264,7 @@ func (self *IntroductionMessage) Process() {
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.
 type PingMessage struct {
-    c *gnet.MessageContext `-`
+    c *gnet.MessageContext `enc:"-"`
 }
 
 func (self *PingMessage) Handle(mc *gnet.MessageContext) error {

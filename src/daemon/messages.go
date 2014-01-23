@@ -89,7 +89,7 @@ type AsyncMessage interface {
 
 // Sent to request peers
 type GetPeersMessage struct {
-    c *gnet.MessageContext `-`
+    c *gnet.MessageContext `enc:"-"`
 }
 
 func NewGetPeersMessage() *GetPeersMessage {
@@ -119,7 +119,7 @@ func (self *GetPeersMessage) Process() {
 // Sent in response to GetPeersMessage
 type GivePeersMessage struct {
     Peers []IPAddr
-    c     *gnet.MessageContext `-`
+    c     *gnet.MessageContext `enc:"-"`
 }
 
 // []*pex.Peer is converted to []IPAddr for binary transmission
@@ -176,9 +176,9 @@ type IntroductionMessage struct {
     // Our client version
     Version int32
 
-    c   *gnet.MessageContext `-`
+    c   *gnet.MessageContext `enc:"-"`
     // We validate the message in Handle() and cache the result for Process()
-    valid bool `-` // skip it during encoding
+    valid bool `enc:"-"` // skip it during encoding
 }
 
 func NewIntroductionMessage() *IntroductionMessage {
@@ -228,7 +228,7 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext) (err error) {
 
 // Processes an event queued by Handle()
 func (self *IntroductionMessage) Process() {
-    delete(expectingVersions, self.c.Conn.Addr())
+    delete(expectingIntroductions, self.c.Conn.Addr())
     if !self.valid {
         return
     }
@@ -253,7 +253,7 @@ func (self *IntroductionMessage) Process() {
     }
     Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
     // Record their listener, to avoid double connections
-    connectionMirrors[ip] = self.Mirror
+    connectionMirrors[a] = self.Mirror
     m := mirrorConnections[self.Mirror]
     if m == nil {
         m = make(map[string]uint16, 1)
@@ -264,7 +264,7 @@ func (self *IntroductionMessage) Process() {
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.
 type PingMessage struct {
-    c *gnet.MessageContext `-`
+    c *gnet.MessageContext `enc:"-"`
 }
 
 func (self *PingMessage) Handle(mc *gnet.MessageContext) error {

@@ -6,38 +6,34 @@ import (
     "net/http"
 )
 
-type Connection struct {
-    Addr         string `json:"address"`
-    LastSent     int64  `json:"last_sent"`
-    LastReceived int64  `json:"last_received"`
-}
-
-type Connections struct {
-    Connections []Connection `json:"connections"`
-}
-
-func connectionsPage(w http.ResponseWriter, r *http.Request) {
-    if daemon.Pool == nil {
-        // the daemon is not initialized
+func connectionPage(w http.ResponseWriter, r *http.Request) {
+    addr := r.FormValue("addr")
+    if addr == "" {
         Error404(w)
         return
     }
-
-    // TODO -- not thread safe!!
-    conns := make([]Connection, len(daemon.Pool.Pool))
-    for _, v := range daemon.Pool.Pool {
-        conns = append(conns, Connection{
-            Addr:         v.Addr(),
-            LastSent:     v.LastSent.Unix(),
-            LastReceived: v.LastReceived.Unix(),
-        })
+    m := daemon.GetConnection(addr)
+    if m == nil {
+        Error404(w)
+        return
     }
+    if SendJSON(w, m) != nil {
+        Error500(w)
+    }
+}
 
-    if SendJSON(w, &Connections{conns}) != nil {
+func connectionsPage(w http.ResponseWriter, r *http.Request) {
+    m := daemon.GetConnections()
+    if m == nil {
+        Error404(w)
+        return
+    }
+    if SendJSON(w, m) != nil {
         Error500(w)
     }
 }
 
 func RegisterNetworkHandlers(mux *http.ServeMux) {
+    mux.HandleFunc("/api/network/connection", connectionPage)
     mux.HandleFunc("/api/network/connections", connectionsPage)
 }

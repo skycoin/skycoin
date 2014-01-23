@@ -60,7 +60,7 @@ func ConfirmPeersShutdown(t *testing.T) {
     f, err := os.Open("./" + pex.PeerDatabaseFilename)
     assert.Nil(t, err)
     if err != nil {
-        t.Fatalf("Failed to open %s")
+        t.Fatalf("Failed to open %s", "./"+pex.PeerDatabaseFilename)
     }
     b := make([]byte, len(addr)*2)
     n, err := f.Read(b)

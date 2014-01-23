@@ -5,17 +5,16 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ARCH=`uname -m`
 OS=`uname -s`
 
-if [ "$ARCH" != "x86_64" ];
-then
+if [[ "$ARCH" != "x86_64" ]]; then
     ARCH="x86"
 fi
 
-if [ "$OS" = "Darwin" ];
-then
+if [[ "$OS" = "Darwin" ]]; then
     OS="osx"
-elif [ "$OS" = "Linux" ];
-then
+    BINDIR="./release/Skycoin.app"
+elif [[ "$OS" = "Linux" ]]; then
     OS="linux"
+    BINDIR="./release/skycoin_${OS}_${ARCH}/"
 else
     echo "Unknown OS $OS"
     exit 0
@@ -29,20 +28,24 @@ usage () {
 
 pushd "$DIR/compile" >/dev/null
 
-if [[ "$CMD" = "build" ]];
-then
+if [[ "$CMD" = "build" ]]; then
     ./build-${OS}-${ARCH}.sh skycoindev
-elif [[ "$CMD" = "clean" ]];
-then
+elif [[ "$CMD" = "clean" ]]; then
     rm -rf ./release/*
-elif [[ "$CMD" = "run" || "$CMD" = "" ]];
-then
-    BINDIR="./release/skycoin_${OS}_${ARCH}/"
-    if [[ -d "$BINDIR" ]];
-    then
-      pushd "$BINDIR" >/dev/null
-      ./skycoin -disable-gui=false -color-log=false "${@:2}"
-      popd >/dev/null
+elif [[ "$CMD" = "run" || "$CMD" = "" ]]; then
+    if [[ -d "$BINDIR" ]]; then
+        if [[ "$OS" = "osx" ]]; then
+            pushd "./release" >/dev/null
+            open Skycoin.app
+            popd >/dev/null
+        elif [[ "$OS" = "linux" ]]; then
+          pushd "$BINDIR" >/dev/null
+          ./skycoin -disable-gui=false -color-log=false "${@:2}"
+          popd >/dev/null
+        else
+            echo "Unhandled OS $OS"
+            exit 0
+        fi
     else
         echo "Do \"./gui.sh build\" first"
     fi

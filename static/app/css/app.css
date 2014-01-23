@@ -3,11 +3,35 @@ html,body{
     height: 100%
 }
 
+a, a:hover, a:active {
+  color:#000;
+}
+
+tr{
+  border:1px solid #ddd;
+  background-color:#F2F5F8;
+}
+td{
+  padding:5px;
+  padding-left:10px;
+  padding-right:10px;
+}
+
+.tab-pane, .nav-tabs>li.active>a, .nav-tabs>li.active>a:hover{
+  background-color:#EAEFF3;
+}
+
+.tab-pane{
+  border-bottom-right-radius:10px;
+  border-bottom-left-radius:10px;
+}
+
 #sky-header{
   width: 100%;
   background: #dbe1e6 url("../img/skycoin_logo.png") 14px 12px no-repeat;
   height: 10%;
   min-height:60px;
+  border-bottom:1px solide #ddd;
 }
 
 #main-content{
@@ -38,23 +62,32 @@ html,body{
   width:20%;
 }
 
+#overview-wallet, #overview-wallet tr, #overview-wallet td{
+  background-color:#fff;
+}
+
 #overview-title{
 
 }
 
 #transaction-table{
   width:100%;
-  border: 1px solid #ddd;
 }
 
 label {
   float:left;
 }
 
+.green{
+  color:#27BD33 !important;
+}
+
 .outline{
   border: 1px solid #ddd;
   padding:10px;
   border-top: 0px;
+  border-bottom-right-radius:10px;
+  border-bottom-left-radius:10px;
 }
 
 .nav, .pagination, .carousel a { cursor: pointer; }
@@ -70,6 +103,7 @@ label {
   bottom:0;
   margin-top:20px;
   background-color:#dbe1e6;
+  border-top:1px solid #ddd;
 }
 .background-cloud-1{
   position:absolute;

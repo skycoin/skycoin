@@ -3,11 +3,15 @@
 APPNW=skycoin
 RAWBIN=$1
 
+if [[ -z "$NWARCH" ]]; then
+    NWARCH="$ARCH"
+fi
+
 # Create the node-webkit wrapped executable
 function create_nw_bin() {
     echo "Building release files"
     golang-nw-pkg -app="${BINDIR}/${APP}" -name="$APPNAME" -bin="$BIN" \
-        -os=$OS -arch=$ARCH -version="$NWVERSION" -toolbar=false \
+        -os=$OS -arch=$NWARCH -version="$NWVERSION" -toolbar=false \
         -cacheDir="$CACHEDIR" -binDir="$BINDIR" -includesDir=../static
     if [[ $? != 0 ]]; then
         echo "nw-pkg build failed"
@@ -54,4 +58,32 @@ function create_linux_package() {
     mv "${BINDIR}/${APP}" "${RELEASEDIR}/${APPD}"
     mv "${BINDIR}/${BIN}.nw" "${RELEASEDIR}/${APPNW}.nw"
     echo "Created ${OS} ${ARCH} release ${RELEASEDIR}/${ZIPNAME}.tar.gz"
+}
+
+function create_osx_package() {
+    echo "Creating OSX release bundle"
+    APPTMP=${CACHEDIR}/.unzipped
+    CONTENTS=${APPTMP}/${APPNAME}.app/Contents
+    RESOURCES=${CONTENTS}/Resources
+
+    rm -rf "$APPTMP"
+    mkdir -p "$APPTMP"
+    unzip "${CACHEDIR}/${NWNAME}.${NWEXT}" -d "$APPTMP"
+    mv "${APPTMP}/node-webkit.app" "${APPTMP}/${APPNAME}.app"
+    mv "${CONTENTS}/MacOS/node-webkit" "${CONTENTS}/MacOS/${ZIPNAME}"
+    cp "${BINDIR}/${BIN}.nw" "${RESOURCES}/app.nw"
+    cp ../LICENSE "$CONTENTS"
+    cp osx/Info.plist "$CONTENTS"
+    # TODO -- use our own skycoin.icns file
+    mv "${RESOURCES}/nw.icns" "${RESOURCES}/skycoin.icns"
+    #cp osx/skycoin.icns "$RESOURCES"
+    mkdir -p "$RELEASEDIR"
+    if [[ -d "${RELEASEDIR}/${APPNAME}.app" ]]; then
+        rm -rf "${RELEASEDIR}/${APPNAME}.app"
+    fi
+    mv "${APPTMP}/${APPNAME}.app" "$RELEASEDIR"
+    mv "${BINDIR}/${APP}" "${RELEASEDIR}/${APPD}"
+    mv "${BINDIR}/${BIN}.nw" "${RELEASEDIR}/${APPNW}.nw"
+
+    echo "Created ${OS} ${ARCH} release ${RELEASEDIR}/${ZIPNAME}.zip"
 }

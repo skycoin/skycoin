@@ -135,6 +135,10 @@ func Run(args cli.Args) {
         go gui.LaunchGUI()
     }
 
+    if c.WebInterface {
+        go gui.LaunchWebInterface(c.WebInterfaceAddr, c.WebInterfacePort)
+    }
+
     <-quit
     stopDaemon <- 1
     shutdown(c.DataDirectory)

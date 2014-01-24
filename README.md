@@ -83,10 +83,22 @@ will run `skycoindev`.
 
 ### GUI
 
-To run the gui client, it must be built first.
+To run the gui client
 
 ```
+./compile/getdeps.sh
 ./gui.sh build
+./run.sh -web-interface=true
+```
+
+The gui is now running on a random port.
+
+To rebuild the gui after modifying code
+
+```
+./compile/getdeps.sh
+./gui.sh build
+./run.sh -web-interface=true
 ```
 
 Once it is built, you can run it with

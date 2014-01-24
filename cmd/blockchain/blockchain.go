@@ -92,6 +92,31 @@ func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, am
 		return coin.Transaction{}, errors.New("insufficient coinhour balance")
 	}
 
+	//decide which outputs get spent
+
+	var ti coin.TransactionInput
+	ti.SigIdx = uint16(0)
+	ti.UxOut = genesisWallet.Outputs[0].Hash()
+	T.TI = append(T.TI, ti)
+
+	var to coin.TransactionOutput
+	to.DestinationAddress = genesisWallet.AA[0].address
+	to.Value1 = uint64(100*1000000 - wn*1000)
+	T.TO = append(T.TO, to)
+
+	for i := 0; i < wn; i++ {
+		var to coin.TransactionOutput
+		a := WA[i].GetRandom()
+		to.DestinationAddress = a.address
+		to.Value1 = 1000
+		to.Value2 = 1024
+		T.TO = append(T.TO, to)
+	}
+
+	var sec coin.SecKey
+	sec.Set(genesisAddress.seckey)
+	T.SetSig(0, sec)
+
 }
 
 func NewWallet(n int) Wallet {

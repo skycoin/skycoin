@@ -3,6 +3,7 @@ package coin
 import (
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
+    "math"
 )
 
 /*
@@ -18,9 +19,9 @@ type TransactionMeta struct {
 */
 
 type Transaction struct {
-    TH  TransactionHeader //Outer Hash
-    TI  []TransactionInput
-    TO  []TransactionOutput
+    TxHeader TransactionHeader //Outer Hash
+    TxIn     []TransactionInput
+    TxOut    []TransactionOutput
 }
 
 type TransactionHeader struct { //not hashed
@@ -42,8 +43,8 @@ type TransactionInput struct {
 //hash output/name is function of TransactionHash
 type TransactionOutput struct {
     DestinationAddress Address //address to send to
-    Value1             uint64  //amount to be sent in coins
-    Value2             uint64  //amount to be sent in coin hours
+    Coins              uint64  //amount to be sent in coins
+    Hours              uint64  //amount to be sent in coin hours
 }
 
 /*
@@ -55,50 +56,56 @@ type TransactionOutput struct {
 	Check that sigs are sequential
 */
 
-func (self *Transaction) PushInput(UxOut SHA256) int {
-    var SigIdx int = len(self.TI)
-    var ti TransactionInput
-    ti.SigIdx = uint16(SigIdx)
-    ti.UxOut = UxOut
-    self.TI = append(self.TI, ti)
-    return SigIdx
+func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+    if len(self.TxIn) >= math.MaxUint16 {
+        log.Panic("Max transaction inputs reached")
+    }
+    sigIdx := uint16(len(self.TxIn))
+    ti := TransactionInput{
+        SigIdx: sigIdx,
+        UxOut:  uxOut,
+    }
+    self.TxIn = append(self.TxIn, ti)
+    return sigIdx
 }
 
-func (self *Transaction) PushOutput(dst Address, Value1 uint64, Value2 uint64) {
-    var to TransactionOutput
-    to.DestinationAddress = dst
-    to.Value1 = Value1
-    to.Value2 = Value2
-    self.TO = append(self.TO, to)
+func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
+    to := TransactionOutput{
+        DestinationAddress: dst,
+        Coins:              coins,
+        Hours:              hours,
+    }
+    self.TxOut = append(self.TxOut, to)
 }
 
-func (self *Transaction) SetSig(idx int, sec SecKey) {
-    hash := self.HashInner()
-
+func (self *Transaction) SetSig(idx uint16, sec SecKey) {
+    hash := self.hashInner()
     sig, err := SignHash(hash, sec)
     if err != nil {
-        log.Panic()
+        log.Panic("Failed to sign hash")
     }
-
-    if idx < 0 || idx >= len(self.TI) {
-        log.Panic()
+    txInLen := len(self.TxIn)
+    if txInLen > math.MaxUint16 {
+        log.Panic("TxIn too large")
     }
-    for len(self.TH.Signatures) <= idx {
-        self.TH.Signatures = append(self.TH.Signatures, Sig{})
+    if idx >= uint16(txInLen) {
+        log.Panic("Invalid TxIn idx")
     }
-
-    self.TH.Signatures[idx] = sig
+    for len(self.TxHeader.Signatures) <= int(idx) {
+        self.TxHeader.Signatures = append(self.TxHeader.Signatures, Sig{})
+    }
+    self.TxHeader.Signatures[idx] = sig
 }
 
-//hash only inputs and outputs
-func (self *Transaction) HashInner() SHA256 {
-    b1 := encoder.Serialize(self.TI)
-    b2 := encoder.Serialize(self.TO)
+// Hashes only the Transction Inputs & Outputs
+func (self *Transaction) hashInner() SHA256 {
+    b1 := encoder.Serialize(self.TxIn)
+    b2 := encoder.Serialize(self.TxOut)
     b3 := append(b1, b2...)
     return SumSHA256(b3)
 }
 
-//hash full transaction
+// Hashes an entire Transaction struct
 func (self *Transaction) Hash() SHA256 {
     b1 := encoder.Serialize(*self)
     return SumDoubleSHA256(b1) //double SHA256 hash
@@ -108,14 +115,14 @@ func (self *Transaction) Serialize() []byte {
     return encoder.Serialize(*self)
 }
 
-func TransactionUnserialize(b []byte) Transaction {
-    var T Transaction
-    if err := encoder.DeserializeRaw(b, T); err != nil {
-        log.Panic() //handle
+func TransactionDeserialize(b []byte) Transaction {
+    var t Transaction
+    if err := encoder.DeserializeRaw(b, t); err != nil {
+        log.Panic("Faild to deserialize transaction")
     }
-    return T
+    return t
 }
 
 func (self *Transaction) UpdateHeader() {
-    self.TH.TransactionHash = self.HashInner()
+    self.TxHeader.TransactionHash = self.hashInner()
 }

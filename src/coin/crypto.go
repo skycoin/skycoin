@@ -74,16 +74,15 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 }
 
 func SignHash(hash SHA256, sec SecKey) (Sig, error) {
-    sig1 := secp256.Sign(hash[:], sec[:])
-    if sig1 == nil {
+    sig := secp256.Sign(hash[:], sec[:])
+    if sig == nil {
         log.Panic("SignHash invalid private key")
         return Sig{}, errors.New("SignHash invalid private key")
     }
-    // TODO -- why copy sig1 over?
-    return NewSig(sig1), nil
+    return NewSig(sig), nil
 }
 
-//implement
+// TODO -- implement
 func PubKeyFromSec(sec SecKey) PubKey {
     return PubKey{}
 }
@@ -93,7 +92,7 @@ func GenerateSignature(seckey []byte, msg []byte) []byte {
         log.Panic("Invalid secret key")
         return nil
     }
-    return secp256.Sign(msg, seckey) // test that signature is valid
+    return secp256.Sign(msg, seckey)
 }
 
 func VerifySignature(PubKey []byte, msg []byte, sig []byte) error {

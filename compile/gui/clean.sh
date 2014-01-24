@@ -2,5 +2,11 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR" >/dev/null
-cat dependencies | xargs go get -u -v
-popd >/dev/null
+
+rm -rf .cache/
+rm -rf .bin/
+rm -rf release/
+
+popd /dev/null
+
+echo "Cleaned build byproducts"

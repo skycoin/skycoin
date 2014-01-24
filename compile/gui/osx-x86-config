@@ -1,4 +1,3 @@
-APPNAME="Skycoin"
 OS=darwin
 ARCH=386
 APP=skycoin_darwin_386
@@ -7,9 +6,5 @@ BIN=skycoin
 NWVERSION="v0.8.3"
 NWNAME=node-webkit-${NWVERSION}-osx-ia32
 NWEXT=zip
-BINDIR="./.bin"
-CACHEDIR="./.cache"
-RELEASEDIR="./release"
 ZIPNAME=Skycoin
-PKGDIR=../
 CGOCC=o32-clang

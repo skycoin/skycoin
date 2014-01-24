@@ -1,7 +1,16 @@
-. "$CONFIG"
-
-APPNW=skycoin
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 RAWBIN=$1
+APPNW=skycoin
+APPNAME="Skycoin"
+NWVERSION="v0.8.3"
+BINDIR="./.bin"
+CACHEDIR="./.cache"
+PKGDIR=../../
+RELEASEDIR="./release"
+HTMLDIR=../../static
+LICENSE=../../LICENSE
+
+. "$CONFIG"
 
 if [[ -z "$NWARCH" ]]; then
     NWARCH="$ARCH"
@@ -12,7 +21,7 @@ function create_nw_bin() {
     echo "Building release files"
     golang-nw-pkg -app="${BINDIR}/${APP}" -name="$APPNAME" -bin="$BIN" \
         -os=$OS -arch=$NWARCH -version="$NWVERSION" -toolbar=false \
-        -cacheDir="$CACHEDIR" -binDir="$BINDIR" -includesDir=../static
+        -cacheDir="$CACHEDIR" -binDir="$BINDIR" -includesDir="$HTMLDIR"
     if [[ $? != 0 ]]; then
         echo "nw-pkg build failed"
         exit 1
@@ -44,12 +53,12 @@ function create_linux_package() {
     # Copy binary and dependencies
     mkdir "$TMPZIP"
     mv "${APPTMP}/${NWNAME}/nw.pak" "$TMPZIP"
-    cp -R ../static "$TMPZIP"
+    cp -R "$HTMLDIR" "$TMPZIP"
     chmod +x "${BINDIR}/${BIN}"
     cp "${BINDIR}/${BIN}" "${TMPZIP}/${BIN}"
     ln -s "$LIBUDEV" "${TMPZIP}/libudev.so.0"
     cp linux/README "$TMPZIP"
-    cp ../LICENSE "$TMPZIP"
+    cp "$LICENSE" "$TMPZIP"
     mkdir -p "$RELEASEDIR"
     if [[ -d "${RELEASEDIR}/${ZIPNAME}" ]]; then
         rm -rf "${RELEASEDIR}/${ZIPNAME}"
@@ -72,7 +81,8 @@ function create_osx_package() {
     mv "${APPTMP}/node-webkit.app" "${APPTMP}/${APPNAME}.app"
     mv "${CONTENTS}/MacOS/node-webkit" "${CONTENTS}/MacOS/${ZIPNAME}"
     cp "${BINDIR}/${BIN}.nw" "${RESOURCES}/app.nw"
-    cp ../LICENSE "$CONTENTS"
+    cp -R "$HTMLDIR" "$RESOURCES"
+    cp "$LICENSE" "$CONTENTS"
     cp osx/Info.plist "$CONTENTS"
     # TODO -- use our own skycoin.icns file
     mv "${RESOURCES}/nw.icns" "${RESOURCES}/skycoin.icns"
@@ -86,4 +96,60 @@ function create_osx_package() {
     mv "${BINDIR}/${BIN}.nw" "${RELEASEDIR}/${APPNW}.nw"
 
     echo "Created ${OS} ${ARCH} release ${RELEASEDIR}/${ZIPNAME}.zip"
+}
+
+function create_windows_package() {
+    echo "Building zip release"
+    RELEASEDIR=${RELEASEDIR}
+    APPTMP=${CACHEDIR}/.unzipped
+
+    # Unzip node-webkit resources
+    rm -rf "$APPTMP"
+    mkdir -p "${APPTMP}/${NWNAME}"
+    unzip "${CACHEDIR}/${NWNAME}.${NWEXT}" -d "${APPTMP}/${NWNAME}"
+    # Copy binary and dependencies
+    mkdir "${APPTMP}/${ZIPNAME}"
+    mv "${APPTMP}/${NWNAME}/icudt.dll" "${APPTMP}/${ZIPNAME}"
+    mv "${APPTMP}/${NWNAME}/nw.pak" "${APPTMP}/${ZIPNAME}"
+    cp "${BINDIR}/${BIN}" "${APPTMP}/${ZIPNAME}"
+    cp -R "$HTMLDIR" "$RESOURCES"
+    cp ../LICENSE "${APPTMP}/${ZIPNAME}"
+    # Create zip and place it in $RELEASEDIR
+    pushd "${APPTMP}/${ZIPNAME}"
+    zip "${ZIPNAME}.zip" *
+    popd
+    mkdir -p "$RELEASEDIR"
+    mv "${APPTMP}/${ZIPNAME}/${ZIPNAME}.zip" "$RELEASEDIR"
+    if [[ -d "${RELEASEDIR}/${ZIPNAME}" ]]; then
+        rm -rf "${RELEASEDIR}/${ZIPNAME}"
+    fi
+    mv "${APPTMP}/${ZIPNAME}" "$RELEASEDIR"
+    mv "${BINDIR}/${APP}" "${RELEASEDIR}/${APPD}"
+    mv "${BINDIR}/${BIN}.nw" "${RELEASEDIR}/${APPNW}.nw"
+
+    echo "Created ${OS} ${ARCH} release ${RELEASEDIR}/${ZIPNAME}.zip"
+}
+
+function do_linux() {
+    pushd "$SCRIPTDIR" >/dev/null
+    compile_app
+    create_nw_bin
+    create_linux_package
+    popd /dev/null
+}
+
+function do_osx() {
+    pushd "$SCRIPTDIR" >/dev/null
+    compile_app
+    create_nw_bin
+    create_osx_package
+    popd >/dev/null
+}
+
+function do_windows() {
+    pushd "$SCRIPTDIR" >/dev/null
+    compile_app
+    create_nw_bin
+    create_windows_package
+    popd >/dev/null
 }

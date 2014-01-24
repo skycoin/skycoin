@@ -83,24 +83,13 @@ will run `skycoindev`.
 
 ### GUI
 
-To run the wallet interface in a browser
-
-```
-./compile/getdeps.sh
-./gui.sh build
-./run.sh -web-interface=true
-```
-
-The wallet is now accessible at http://127.0.0.1:6402
-
-To rebuild the gui after modifying code
+To run the gui client, it must be built first.
 
 ```
 ./gui.sh build
-./run.sh -web-interface=true
 ```
 
-To run the webkit embedded wallet
+Once it is built, you can run it with
 
 ```
 ./gui.sh

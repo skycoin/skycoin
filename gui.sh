@@ -26,12 +26,12 @@ usage () {
     exit 0
 }
 
-pushd "$DIR/compile" >/dev/null
+pushd "$DIR/compile/gui" >/dev/null
 
 if [[ "$CMD" = "build" ]]; then
     ./build-${OS}-${ARCH}.sh skycoindev
 elif [[ "$CMD" = "clean" ]]; then
-    rm -rf ./release/*
+    ./clean.sh
 elif [[ "$CMD" = "run" || "$CMD" = "" ]]; then
     if [[ -d "$BINDIR" ]]; then
         if [[ "$OS" = "osx" ]]; then

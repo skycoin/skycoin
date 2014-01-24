@@ -2,19 +2,18 @@ package gui
 
 import (
     "fmt"
+    "github.com/lonnc/golang-nw"
+    "github.com/op/go-logging"
     "log"
     "net/http"
     "path/filepath"
-
-    "github.com/lonnc/golang-nw"
-    "github.com/op/go-logging"
 )
 
 var (
-    logger      = logging.MustGetLogger("skycoin.gui")
-    resources   = []string{"js", "css", "lib", "partials", "img", "assets"}
-    resourceDir = "app/"
-    indexPage   = filepath.Join(resourceDir, "index.html")
+    logger          = logging.MustGetLogger("skycoin.gui")
+    resources       = []string{"js", "css", "lib", "partials", "img", "assets"}
+    resourceDir     = "app/"
+    indexPage       = filepath.Join(resourceDir, "index.html")
     generateAddress = "generateAddress"
 )
 

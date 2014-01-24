@@ -6,7 +6,8 @@ import (
     "strings"
 )
 
-func HttpError(w http.ResponseWriter, status int, default_message string, messages []string) {
+func HttpError(w http.ResponseWriter, status int, default_message string,
+    messages []string) {
     message := default_message
     if len(messages) != 0 {
         message = strings.Join(messages, "<br>")
@@ -31,5 +32,6 @@ func Error501(w http.ResponseWriter, messages ...string) {
 }
 
 func Error500(w http.ResponseWriter, messages ...string) {
-    HttpError(w, http.StatusInternalServerError, "Internal server error", messages)
+    HttpError(w, http.StatusInternalServerError, "Internal server error",
+        messages)
 }

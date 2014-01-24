@@ -73,7 +73,7 @@ func Merkle(h0 []SHA256) SHA256 {
 	}
 	h1 := make([]SHA256, np)
 
-	var th SHA256 = h0[0]
+	//var th SHA256 = h0[0]
 
 	var lh0 = len(h0)
 	for i := lh0; i < 16; i++ { //pad to power of 16

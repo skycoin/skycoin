@@ -48,59 +48,44 @@ Current Status
 Setup
 -----
 
-* Clone this repo
-* Install [gvm](https://github.com/moovweb/gvm) (or hack up $GOPATH yourself)
-* Install `go1.2` with gvm, or manually.  Skycoin does not work with earlier releases of go.
-* `./compile/getdeps.sh` - This installs go dependencies.  Run this again if you get import errors in the future.
-* Run `./compile/install-to-gopath.sh`.  This will symlink the repo directory into your `$GOPATH`.  You only need to do this if you did not clone the repo to `$GOPATH/src/github.com/skycoin/skycoin`, either via `go get` or manually.
+```
+git clone https://github.com/skycoin/skycoin
+./install.sh
+```
+
+If a library could not be found, the dependencies may need to be updated.
+
+```
+./compile/get-dependencies.sh
+```
 
 Running
 -------
 
-### Command line 
-Skycoin comes in three variations, `skycoin`, `skycoind` and `skycoindev`.  They differ in the command-line interface they expose and which values they default to.
+Make sure to follow the instructions in Setup before attempting these commands.
 
-To run skycoin with any one of these, do
-
-```
-go run cmd/$name/$name.go
-```
-
-For example, to run skycoindev,
-
-```
-go run cmd/skycoindev/skycoindev.go
-``` 
-
-For the developer's convenience,
+### Daemon
 
 ```
 ./run.sh
 ```
 
-will run `skycoindev`.
+This runs the developer's version of the skycoin daemon.  To run
+the version intended for release,
 
+```
+go run cmd/skycoind/skycoind.go
+```
 
 ### GUI
 
-To run the wallet interface in a browser
-
-```
-./compile/getdeps.sh
-./gui.sh build
-./run.sh -web-interface=true
-```
-
-The wallet is now accessible at http://127.0.0.1:6402
-
-To rebuild the gui after modifying code
+To run the gui client, it must be built first.
 
 ```
 ./gui.sh build
-./run.sh -web-interface=true
 ```
 
-To run the webkit embedded wallet
+Once it is built, you can run it with
 
 ```
 ./gui.sh
@@ -109,13 +94,6 @@ To run the webkit embedded wallet
 until the go source has changed and you need to rebuild.  
 You do not need to rebuild if only modifying the GUI frontend code, 
 located in `./static/`.
-
-The GUI consists of a `node-webkit` binary and an `skycoin.nw` file which contains the frontend code and the skycoin binary.
-When running the GUI, the `node-webkit` binary is executed, it unpacks the `skycoin.nw` file, forks skycoin which runs an http
-server on `localhost:$randomport`, and the GUI's `index.html` is served from there.
-
-If you are trying to run the skycoin GUI client on a platform that we are not targeting, you can run `node-webkit` with 
-the `skycoin.nw` file produced by the build scripts in `compile/`.
 
 Available Platforms
 -------------------
@@ -150,5 +128,5 @@ Skycoin tests can be run with
 ##### Submodules
 
 * coin
-* daemon
+* daemon *Complete*
 * util

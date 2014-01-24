@@ -95,13 +95,13 @@ func (self *Transaction) HashInner() SHA256 {
     b1 := encoder.Serialize(self.TI)
     b2 := encoder.Serialize(self.TO)
     b3 := append(b1, b2...)
-    return SHA256sum(b3)
+    return SumSHA256(b3)
 }
 
 //hash full transaction
 func (self *Transaction) Hash() SHA256 {
     b1 := encoder.Serialize(*self)
-    return DSHA256sum(b1) //double SHA256 hash
+    return SumDoubleSHA256(b1) //double SHA256 hash
 }
 
 func (self *Transaction) Serialize() []byte {

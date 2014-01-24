@@ -5,8 +5,3 @@ bash < <(curl -s https://raw.github.com/moovweb/gvm/master/binscripts/gvm-instal
 gvm install go1.2
 echo "gvm use go1.2" >> ~/.bashrc
 source ~/.bashrc
-# Install dependencies
-./compile/getdeps.sh
-# Add to $GOPATH
-./compile/install-to-gopath.sh
-

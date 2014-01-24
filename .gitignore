@@ -55,9 +55,9 @@ build
 
 *.orig
 
-compile/.cache
-compile/release
-compile/.bin
+.cache
+release
+.bin
 
 .skycoin
 

@@ -1,76 +1,67 @@
 package coin
 
 import (
-    "fmt"
     "github.com/skycoin/skycoin/src/lib/base58"
     "log"
 )
 
 type Address struct {
+    // ??
     Version byte
-    Value   [20]byte //ripemd160 of sha256 of pubkey
+    // ripemd160 of sha256 of pubkey
+    Key Ripemd160
     //CheckSum [4]byte
 }
 
-func (g Address) Print() []byte {
-    return AddressPrintable(g)
+func (g *Address) String() string {
+    return string(g.Base58())
 }
 
-func (g Address) String() string {
-    return string(AddressPrintable(g))
+// Returns address as raw bytes, containing version and then key
+func (g *Address) Bytes() []byte {
+    return append([]byte{g.Version}, g.Key[:]...)
 }
 
-//get address struct from pubkey
-func AddressFromPubkey(pubkey PubKey) Address {
-    var ret Address
-    ret.Version = 0x0f
+// Returns address base58-encoded
+func (g *Address) Base58() []byte {
+    return []byte(base58.Hex2Base58(g.Key[:]))
+}
 
-    if len(pubkey.Value) != 33 {
-        fmt.Printf("len= %v \n", len(pubkey.Value))
-        log.Panic()
-    }
-    s := Sha256_func(pubkey.Value[0:33])
-    r := Ripmd160_func(s[:])
-    copy(ret.Value[0:20], r[0:20])
-
-    b := append([]byte{ret.Version}, r[:]...) //add version prefix
-
+// Returns the address checksum
+func (g *Address) Checksum() []byte {
+    // TODO -- the comments here don't match the code and I have no idea
+    // what this is supposed to be doing
+    b := g.Bytes()
     //4 byte checksum
-    r2 := Sha256_func(b)
-    r3 := Sha256_func(r2[:])
+    r2 := SumSHA256(b)
+    r3 := SumSHA256(r2[:])
 
-    r4 := r3[0:4] //first 1 bytes (error correction code)
+    r4 := r3[:4] // first 1 bytes (error correction code)
     b2 := append(b[:], r4...)
 
-    if len(b2) != 25 {
-        fmt.Printf("len(b)= %v, len(b2)= %v, len(r)= %v, len(r4)= %v \n", len(b), len(b2), len(r), len(r4))
-        log.Panic()
-    }
-
-    return ret
+    return b2
 }
 
+func (g *Address) MustChecksum() []byte {
+    b := g.Checksum()
+    if len(b) != 25 {
+        log.Panic("Invalid address checksum")
+    }
+    return b
+}
+
+// Creates Address from PubKey
+func AddressFromPubkey(pubkey PubKey) Address {
+    s := SumSHA256(pubkey[:])
+    addr := Address{Version: 0x0f, Key: HashRipemd160(s[:])}
+    addr.MustChecksum()
+    return addr
+}
+
+// Creates Address from []byte
 func AddressFromRawPubkey(pubkeyraw []byte) Address {
-    var pubkey PubKey
-    pubkey.Set(pubkeyraw)
+    pubkey := NewPubKey(pubkeyraw)
     return AddressFromPubkey(pubkey)
-}
-
-//returns base 58 of Address
-func AddressPrintable(a Address) []byte {
-    b1 := append([]byte{a.Version}, a.Value[0:20]...) //add version prefix
-
-    r1 := Sha256_func(b1)
-    r2 := Sha256_func(r1[:])
-    r3 := r2[0:4] // 4 bytes error correction code
-    b2 := append(b1[:], r3...)
-
-    if len(b2) != 25 {
-        log.Panic()
-    }
-    var en base58.Base58 = base58.Hex2Base58(a.Value[:]) //encode as base 58
-    //fmt.Printf("address= %v\n", en)
-    return []byte(en)
 }
 
 /*

@@ -1,8 +1,8 @@
 package coin
 
 import (
-	"fmt"
-	"github.com/skycoin/skycoin/src/lib/encoder"
+    "fmt"
+    "github.com/skycoin/skycoin/src/lib/encoder"
 )
 
 /*
@@ -34,37 +34,37 @@ import (
 */
 
 type UxOut struct {
-	Head UxHead
-	Body UxBody //hashed part
-	Meta UxMeta
+    Head UxHead
+    Body UxBody //hashed part
+    Meta UxMeta
 }
 
 //
 type UxHead struct {
-	Time  uint64 //needed for coinhour calculation, time of block it was created in
-	UxSeq uint64 //increment every newly created block
-	BkSeq uint64 //block it was created in
-	SpSeq uint64 //order it was spent
+    Time  uint64 //needed for coinhour calculation, time of block it was created in
+    UxSeq uint64 //increment every newly created block
+    BkSeq uint64 //block it was created in
+    SpSeq uint64 //order it was spent
 }
 
 //part that is hashed
 type UxBody struct {
-	SrcTransaction SHA256
-	Address        Address //address of receiver
-	Value1         uint64  //number of coins
-	Value2         uint64  //coin hours
+    SrcTransaction SHA256
+    Address        Address //address of receiver
+    Value1         uint64  //number of coins
+    Value2         uint64  //coin hours
 }
 
 type UxMeta struct {
 }
 
 func (self UxOut) Hash() SHA256 {
-	b1 := encoder.Serialize(self.Body)
-	return SHA256sum(b1)
+    b1 := encoder.Serialize(self.Body)
+    return SumSHA256(b1)
 }
 
 func (self UxOut) String() string {
-	return fmt.Sprintf("%v, %v: %v %v", self.Body.Address.String(), self.Head.Time, self.Body.Value1, self.Body.Value2)
+    return fmt.Sprintf("%v, %v: %v %v", self.Body.Address.String(), self.Head.Time, self.Body.Value1, self.Body.Value2)
 }
 
 /*
@@ -72,7 +72,7 @@ func (self UxOut) HashTotal() SHA256 {
 	b1 := encoder.Serialize(self.Head)
 	b2 := encoder.Serialize(self.Body)
 	b3 = append(b1, b2...)
-	return SHA256sum(b3)
+	return SumSHA256(b3)
 }
 */
 
@@ -82,12 +82,12 @@ func (self UxOut) HashTotal() SHA256 {
 	Creation time of transaction cant be hashed
 */
 func (self UxOut) CoinHours(Time uint64) uint64 {
-	if Time < self.Head.Time {
-		return 0
-	}
+    if Time < self.Head.Time {
+        return 0
+    }
 
-	v1 := self.Body.Value2               //starting coinshour
-	ch := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-	v2 := ch * self.Body.Value1          //accumulated coin-hours
-	return v1 + v2                       //starting+earned
+    v1 := self.Body.Value2               //starting coinshour
+    ch := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
+    v2 := ch * self.Body.Value1          //accumulated coin-hours
+    return v1 + v2                       //starting+earned
 }

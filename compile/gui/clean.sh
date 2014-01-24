@@ -7,6 +7,6 @@ rm -rf .cache/
 rm -rf .bin/
 rm -rf release/
 
-popd /dev/null
+popd >/dev/null
 
 echo "Cleaned build byproducts"

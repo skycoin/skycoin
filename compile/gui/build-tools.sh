@@ -135,7 +135,7 @@ function do_linux() {
     compile_app
     create_nw_bin
     create_linux_package
-    popd /dev/null
+    popd >/dev/null
 }
 
 function do_osx() {

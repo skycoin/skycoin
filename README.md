@@ -100,7 +100,7 @@ To rebuild the gui after modifying code
 ./run.sh -web-interface=true
 ```
 
-To run the webkit wallet
+To run the webkit embedded wallet
 
 ```
 ./gui.sh

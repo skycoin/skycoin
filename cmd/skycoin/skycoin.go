@@ -7,4 +7,8 @@ import (
 
 func main() {
     skycoin.Run(&cli.ClientArgs)
+
+    stop := make(chan int)
+    <-stop
+
 }

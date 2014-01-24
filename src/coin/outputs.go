@@ -51,8 +51,8 @@ type UxHead struct {
 type UxBody struct {
     SrcTransaction SHA256
     Address        Address //address of receiver
-    Value1         uint64  //number of coins
-    Value2         uint64  //coin hours
+    Coins          uint64  //number of coins
+    Hours          uint64  //coin hours
 }
 
 type UxMeta struct {
@@ -64,7 +64,8 @@ func (self UxOut) Hash() SHA256 {
 }
 
 func (self UxOut) String() string {
-    return fmt.Sprintf("%v, %v: %v %v", self.Body.Address.String(), self.Head.Time, self.Body.Value1, self.Body.Value2)
+    return fmt.Sprintf("%s, %d: %d %d", self.Body.Address, self.Head.Time,
+        self.Body.Coins, self.Body.Hours)
 }
 
 /*
@@ -81,13 +82,13 @@ func (self UxOut) HashTotal() SHA256 {
 	Then need creation time of output
 	Creation time of transaction cant be hashed
 */
-func (self UxOut) CoinHours(Time uint64) uint64 {
-    if Time < self.Head.Time {
+func (self *UxOut) CoinHours(t uint64) uint64 {
+    if t < self.Head.Time {
         return 0
     }
 
-    v1 := self.Body.Value2               //starting coinshour
-    ch := (Time - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-    v2 := ch * self.Body.Value1          //accumulated coin-hours
-    return v1 + v2                       //starting+earned
+    v1 := self.Body.Hours             //starting coinshour
+    ch := (t - self.Head.Time) / 3600 //number of hours, one hour every 240 block
+    v2 := ch * self.Body.Coins        //accumulated coin-hours
+    return v1 + v2                    //starting+earned
 }

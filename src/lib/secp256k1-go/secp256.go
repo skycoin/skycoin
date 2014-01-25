@@ -10,7 +10,10 @@ package secp256
 */
 import "C"
 
+//#cgo pkg-config: gmp
 //#cgo pkg-config: secp256
+
+//for osx 'xcode-select --install'
 
 import (
 	"unsafe"

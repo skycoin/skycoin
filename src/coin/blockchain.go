@@ -84,22 +84,15 @@ type BlockChain struct {
     Unspent []UxOut
 }
 
-//func (self *BlockChain) BlockChainInfo() string {
-//	return ""
-//}
-
 func NewBlockChain(genesisAddress Address) *BlockChain {
     logger.Debug("Creating new block chain")
     var bc *BlockChain = &BlockChain{}
     var b *Block = &Block{} // genesis block
     b.Header.Time = uint64(time.Now().Unix())
 
-    /*
-    	Todo, set genesis block!
-    */
     bc.Blocks = append(bc.Blocks, b)
     bc.Head = b
-    // Genesis transaction
+    // Genesis output
     ux := UxOut{
         Head: UxHead{
             // TODO -- what about the rest of the fields??

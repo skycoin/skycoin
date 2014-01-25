@@ -2,9 +2,11 @@ package daemon
 
 import (
     "errors"
+    "github.com/nictuku/dht"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
     "github.com/stretchr/testify/assert"
+    "os"
     "strings"
     "testing"
     "time"
@@ -28,8 +30,17 @@ func TestGetListenPort(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
-    // TODO --
-    // Need to be able to stop the DHT
+    quit := make(chan int)
+    Init(port, "./", quit)
+    assert.NotEqual(t, len(gnet.MessageIdMap), 0)
+    assert.NotNil(t, Pool)
+    assert.NotNil(t, Peers)
+    assert.NotNil(t, DHT)
+    quit <- 1
+    wait()
+    Shutdown("./")
+    os.Remove("./" + pex.BlacklistedDatabaseFilename)
+    os.Remove("./" + pex.PeerDatabaseFilename)
 }
 
 func TestShutdown(t *testing.T) {
@@ -38,11 +49,272 @@ func TestShutdown(t *testing.T) {
     assert.NotPanics(t, func() { Shutdown("./") })
     ConfirmPeersShutdown(t)
     ConfirmPoolShutdown(t, pool)
+    assert.Nil(t, DHT)
 }
 
-func TestDaemonLoop(t *testing.T) {
-    // TODO
-    // Make sure every possible event is handled??
+func setupDaemonLoop() chan int {
+    quit := make(chan int)
+    InitPool(port)
+    InitPeers("./")
+    InitDHT(port)
+    return quit
+}
+
+func cleanupDaemonLoop() {
+    Peers = nil
+    ShutdownDHT()
+    ShutdownPool()
+}
+
+func TestDaemonLoopQuit(t *testing.T) {
+    quit := setupDaemonLoop()
+    done := false
+    go func() {
+        DaemonLoop(quit)
+        done = true
+    }()
+    wait()
+    quit <- 1
+    wait()
+    assert.True(t, done)
+    cleanupDaemonLoop()
+}
+
+func TestDaemonLoopApiRequest(t *testing.T) {
+    quit := setupDaemonLoop()
+    go DaemonLoop(quit)
+    apiRequests <- func() interface{} { return &Connection{Id: 7} }
+    resp := <-apiResponses
+    assert.Equal(t, resp.(*Connection).Id, 7)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+}
+
+func TestDaemonLoopOnConnectEvent(t *testing.T) {
+    quit := setupDaemonLoop()
+    go DaemonLoop(quit)
+    pendingConnections[addr] = pex.NewPeer(addr)
+    onConnectEvent <- ConnectEvent{addr, false}
+    wait()
+    assert.Equal(t, len(pendingConnections), 0)
+    assert.Nil(t, pendingConnections[addr])
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+}
+
+func TestDaemonLoopConnectionErrors(t *testing.T) {
+    quit := setupDaemonLoop()
+    go DaemonLoop(quit)
+    pendingConnections[addr] = pex.NewPeer(addr)
+    connectionErrors <- ConnectionError{addr, errors.New("failed")}
+    wait()
+    assert.Equal(t, len(pendingConnections), 0)
+    assert.Nil(t, pendingConnections[addr])
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+}
+
+func TestDaemonLoopDisconnectQueue(t *testing.T) {
+    quit := setupDaemonLoop()
+    go DaemonLoop(quit)
+    Pool.Pool[1] = gnetConnection(addr)
+    e := gnet.DisconnectEvent{ConnId: 1, Reason: DisconnectIdle}
+    Pool.DisconnectQueue <- e
+    wait()
+    assert.Equal(t, len(Pool.Pool), 0)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+}
+
+type DummyAsyncMessage struct {
+    fn func()
+}
+
+func (self *DummyAsyncMessage) Process() {
+    self.fn()
+}
+
+func TestDaemonLoopMessageEvent(t *testing.T) {
+    quit := setupDaemonLoop()
+    go DaemonLoop(quit)
+    called := false
+    m := &DummyAsyncMessage{fn: func() { called = true }}
+    messageEvent <- m
+    wait()
+    assert.True(t, called)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+}
+
+func TestDaemonLoopDHTResults(t *testing.T) {
+    quit := setupDaemonLoop()
+    assert.Equal(t, len(Peers.Peerlist), 0)
+    go DaemonLoop(quit)
+    m := make(map[dht.InfoHash][]string, 1)
+    m[dhtInfoHash] = []string{"abcdef"}
+    DHT.PeersRequestResults <- m
+    wait()
+    assert.Equal(t, len(Peers.Peerlist), 1)
+    assert.NotNil(t, Peers.Peerlist["97.98.99.100:25958"])
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+}
+
+// TODO -- how to test tickers?
+// TODO -- override rate to something very fast?
+
+func TestDaemonLoopDHTBootstrapTicker(t *testing.T) {
+    quit := setupDaemonLoop()
+    rate := dhtBootstrapRequestRate
+    dhtBootstrapRequestRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    // Can't really test DHT internals, but we'll know if it crashes or not
+    time.Sleep(time.Millisecond * 15)
+    dhtPeerLimit = 0
+    time.Sleep(time.Millisecond * 15)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    dhtBootstrapRequestRate = rate
+}
+
+func TestDaemonLoopBlacklistTicker(t *testing.T) {
+    quit := setupDaemonLoop()
+    assert.Equal(t, len(Peers.Blacklist), 0)
+    Peers.AddBlacklistEntry(addr, time.Millisecond)
+    assert.Equal(t, len(Peers.Blacklist), 1)
+    rate := updateBlacklistRate
+    updateBlacklistRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(Peers.Blacklist), 0)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    updateBlacklistRate = rate
+}
+
+func TestDaemonLoopCullInvalidTicker(t *testing.T) {
+    quit := setupDaemonLoop()
+    expectingIntroductions[addr] = time.Now().Add(-time.Hour)
+    rate := cullInvalidRate
+    cullInvalidRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(expectingIntroductions), 0)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    cullInvalidRate = rate
+}
+
+func TestDaemonLoopRequestPeersTicker(t *testing.T) {
+    quit := setupDaemonLoop()
+    c := gnetConnection(addr)
+    Pool.Pool[1] = c
+    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    rate := requestPeersRate
+    requestPeersRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    requestPeersRate = rate
+    gnet.EraseMessages()
+}
+
+func TestDaemonLoopClearOldPeersTicker(t *testing.T) {
+    quit := setupDaemonLoop()
+    p := pex.NewPeer(addr)
+    p.LastSeen = time.Unix(0, 0).Unix()
+    Peers.Peerlist[addr] = p
+    rate := cullPeerRate
+    cullPeerRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(Peers.Peerlist), 0)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    cullPeerRate = rate
+}
+
+func TestDaemonLoopClearStaleConnectionsTicker(t *testing.T) {
+    quit := setupDaemonLoop()
+    c := gnetConnection(addr)
+    c.LastReceived = time.Unix(0, 0)
+    Pool.Pool[c.Id] = c
+    rate := clearStaleConnectionsRate
+    clearStaleConnectionsRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(Pool.Pool), 0)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    clearStaleConnectionsRate = rate
+}
+
+func TestDaemonLoopPingCheckTicker(t *testing.T) {
+    RegisterMessages()
+    quit := setupDaemonLoop()
+    c := gnetConnection(addr)
+    c.LastSent = time.Unix(0, 0)
+    Pool.Pool[c.Id] = c
+    rate := pingCheckRate
+    pingCheckRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    pingCheckRate = rate
+    gnet.EraseMessages()
+}
+
+func TestDaemonLoopOutgoingConnectionsTicker(t *testing.T) {
+    RegisterMessages()
+    quit := setupDaemonLoop()
+    dt := gnet.DialTimeout
+    gnet.DialTimeout = 1 // nanosecond
+    Peers.AddPeer(addr)
+    rate := outgoingConnectionsRate
+    outgoingConnectionsRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    // Should have made a connection attempt, timed out, put an error
+    // the queue, handled by DaemonLoop, resulting in the peer being removed
+    assert.Equal(t, len(Peers.Peerlist), 0)
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    outgoingConnectionsRate = rate
+    gnet.EraseMessages()
+    gnet.DialTimeout = dt
+}
+
+func TestDaemonLoopMessageHandlingTicker(t *testing.T) {
+    RegisterMessages()
+    quit := setupDaemonLoop()
+    rate := messageHandlingRate
+    messageHandlingRate = time.Millisecond * 10
+    go DaemonLoop(quit)
+    time.Sleep(time.Millisecond * 15)
+    // Can't test Pool internals from here
+    quit <- 1
+    wait()
+    cleanupDaemonLoop()
+    messageHandlingRate = rate
+    gnet.EraseMessages()
 }
 
 func TestRequestPeers(t *testing.T) {

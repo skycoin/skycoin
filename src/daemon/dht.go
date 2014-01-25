@@ -40,12 +40,21 @@ func InitDHT(port int) {
         log.Panicf("Failed to create InfoHash: %v", err)
         return
     }
-    DHT, err = dht.NewDHTNode(port, dhtDesiredPeers, true)
+    DHT, err = dht.New(port, dhtDesiredPeers, true)
     if err != nil {
         log.Panicf("Failed to init DHT: %v", err)
         return
     }
     logger.Info("Init DHT on port %d", port)
+}
+
+// Stops the DHT.  Warning: if DHT.Run() was never called, this will block
+// indefinitely.
+func ShutdownDHT() {
+    if DHT != nil {
+        DHT.Stop()
+    }
+    DHT = nil
 }
 
 // Called when the DHT finds a peer
@@ -72,15 +81,3 @@ func RequestDHTPeers() {
     logger.Info("Requesting DHT Peers")
     DHT.PeersRequest(ih, true)
 }
-
-// // DHT Event Logger
-// type DHTLogger struct{}
-
-// // Logs a GetPeers event
-// func (self *DHTLogger) GetPeers(ip *net.UDPAddr, id string,
-//     _info dht.InfoHash) {
-//     id = hex.EncodeToString([]byte(id))
-//     info := hex.EncodeToString([]byte(_info))
-//     logger.Debug("DHT GetPeers event occured:\n\tid: %s\n\tinfohash: %s",
-//         id, info)
-// }

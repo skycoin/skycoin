@@ -16,15 +16,6 @@ var (
     indexPage   = "index.html"
 )
 
-func init() {
-    resourceDir, err := filepath.Abs(resourceDir)
-    indexPage = filepath.Join(resourceDir, "index.html")
-
-    if err != nil {
-        log.Panic()
-    }
-}
-
 // Begins listening on the node-webkit localhost
 func LaunchGUI() {
     // Create a link back to node-webkit using the environment variable
@@ -34,26 +25,34 @@ func LaunchGUI() {
         log.Panic(err)
     }
 
-    // Pick a random localhost port, start listening for http requests using default handler
-    // and send a message back to node-webkit to redirect
+    // Pick a random localhost port, start listening for http requests using
+    // default handler and send a message back to node-webkit to redirect
     logger.Info("Launching GUI server")
     if err := nodeWebkit.ListenAndServe(NewGUIMux(resourceDir)); err != nil {
         log.Panic(err)
     }
 }
 
-// Begins listening on addr:port, for enabling remote web access
-func LaunchWebInterface(addr string, port int, staticDir string) {
-    logger.Info("Starting web interface on http://%s:%d", addr, port)
-    if addr != "localhost" && addr != "127.0.0.1" {
-        log.Panic("Remote web interface is not supported yet, " +
-            "needs TLS support")
-    }
-    a := fmt.Sprintf("%s:%d", addr, port)
-    // TODO -- use ListenAndServeTLS. Will need to generate a pem file
-    // and allow the user to override it with their own
+// Begins listening on http://$host, for enabling remote web access
+// Does NOT use HTTPS
+func LaunchWebInterface(host, staticDir string) {
+    logger.Warning("Starting web interface on http://%s", host)
+    logger.Warning("HTTPS not in use!")
     appLoc := filepath.Join(staticDir, resourceDir)
-    if err := http.ListenAndServe(a, NewGUIMux(appLoc)); err != nil {
+    if err := http.ListenAndServe(host, NewGUIMux(appLoc)); err != nil {
+        log.Panic(err)
+    }
+}
+
+// Begins listening on https://$host, for enabling remote web access
+// Uses HTTPS
+func LaunchWebInterfaceHTTPS(host, staticDir, certFile, keyFile string) {
+    logger.Info("Starting web interface on https://%s", host)
+    logger.Info("Using %s for the certificate", certFile)
+    logger.Info("Using %s for the key", keyFile)
+    appLoc := filepath.Join(staticDir, resourceDir)
+    err := http.ListenAndServeTLS(host, certFile, keyFile, NewGUIMux(appLoc))
+    if err != nil {
         log.Panic(err)
     }
 }

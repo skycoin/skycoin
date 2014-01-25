@@ -16,9 +16,12 @@ var DaemonArgs = DaemonConfig{Config{
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // Remote web interface
-    WebInterface:     false,
-    WebInterfacePort: 6402,
-    WebInterfaceAddr: "127.0.0.1",
+    WebInterface:      false,
+    WebInterfacePort:  6402,
+    WebInterfaceAddr:  "127.0.0.1",
+    WebInterfaceCert:  "",
+    WebInterfaceKey:   "",
+    WebInterfaceHTTPS: true,
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory: "",
     // GUI directory contains assets for the html gui
@@ -50,6 +53,14 @@ func (self *DaemonConfig) register() {
         self.WebInterfacePort, "port to serve web interface on")
     flag.StringVar(&self.WebInterfaceAddr, "web-interface-addr",
         self.WebInterfaceAddr, "addr to serve web interface on")
+    flag.StringVar(&self.WebInterfaceCert, "web-interface-cert",
+        self.WebInterfaceCert, "cert.pem file for web interface HTTPS. "+
+            "If not provided, will use cert.pem in -data-directory")
+    flag.StringVar(&self.WebInterfaceKey, "web-interface-key",
+        self.WebInterfaceKey, "key.pem file for web interface HTTPS. "+
+            "If not provided, will use key.pem in -data-directory")
+    flag.BoolVar(&self.WebInterfaceHTTPS, "web-interface-https",
+        self.WebInterfaceHTTPS, "enable HTTPS for web interface")
     flag.IntVar(&self.Port, "port", self.Port,
         "Port to run application on")
     flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,

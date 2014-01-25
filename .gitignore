@@ -65,7 +65,10 @@ release
 *.out
 
 # Binaries
-skycoind$
-skycoin$
-skycoindev$
-blockchain$
+/skycoind
+/skycoin
+/skycoindev
+/blockchain
+/generate_cert
+
+*.pem

@@ -16,9 +16,12 @@ var ClientArgs = ClientConfig{Config{
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // Remote web interface
-    WebInterface:     false,
-    WebInterfacePort: 6402,
-    WebInterfaceAddr: "127.0.0.1",
+    WebInterface:      false,
+    WebInterfacePort:  6402,
+    WebInterfaceAddr:  "127.0.0.1",
+    WebInterfaceCert:  "",
+    WebInterfaceKey:   "",
+    WebInterfaceHTTPS: true,
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory: "",
     // GUI directory contains assets for the html gui

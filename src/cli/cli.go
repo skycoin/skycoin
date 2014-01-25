@@ -6,6 +6,7 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/util"
     "log"
+    "path/filepath"
 )
 
 type Args interface {
@@ -20,9 +21,12 @@ type Config struct {
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
     // Remote web interface
-    WebInterface     bool
-    WebInterfacePort int
-    WebInterfaceAddr string
+    WebInterface      bool
+    WebInterfacePort  int
+    WebInterfaceAddr  string
+    WebInterfaceCert  string
+    WebInterfaceKey   string
+    WebInterfaceHTTPS bool
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory string
     // GUI directory contains assets for the html gui
@@ -52,7 +56,15 @@ func (self *Config) register() {
 }
 
 func (self *Config) postProcess() {
+    // app data
     self.DataDirectory = util.InitDataDir(self.DataDirectory)
+    if self.WebInterfaceCert == "" {
+        self.WebInterfaceCert = filepath.Join(self.DataDirectory, "cert.pem")
+    }
+    if self.WebInterfaceKey == "" {
+        self.WebInterfaceKey = filepath.Join(self.DataDirectory, "key.pem")
+    }
+    // logging
     ll, err := logging.LogLevel(self.logLevel)
     if err != nil {
         log.Panic("Invalid -log-level %s: %v\n", self.logLevel, err)

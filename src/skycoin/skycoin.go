@@ -71,9 +71,9 @@ func catchDebug() {
 }
 
 func shutdown(dataDir string) {
-    logger.Info("Shutting down\n")
+    logger.Info("Shutting down")
     daemon.Shutdown(dataDir)
-    logger.Info("Goodbye\n")
+    logger.Info("Goodbye")
 }
 
 // func initSettings() {
@@ -135,9 +135,24 @@ func Run(args cli.Args) {
         go gui.LaunchGUI()
     }
 
+    host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+
     if c.WebInterface {
-        go gui.LaunchWebInterface(c.WebInterfaceAddr, c.WebInterfacePort,
-            c.GUIDirectory)
+        if c.WebInterfaceHTTPS {
+            // Verify cert/key parameters, and if neither exist, create them
+            errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert,
+                c.WebInterfaceKey)
+            if len(errs) != 0 {
+                for _, err := range errs {
+                    logger.Error(err.Error())
+                }
+            } else {
+                go gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory,
+                    c.WebInterfaceCert, c.WebInterfaceKey)
+            }
+        } else {
+            go gui.LaunchWebInterface(host, c.GUIDirectory)
+        }
     }
 
     <-quit

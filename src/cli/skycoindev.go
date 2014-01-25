@@ -21,6 +21,8 @@ var DevArgs = DevConfig{Config{
     WebInterfaceAddr: "127.0.0.1",
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory: "",
+    // Data directory holds app data -- defaults to ~/.skycoin
+    GUIDirectory: "./static/",
     // Logging
     LogLevel: logging.DEBUG,
     ColorLog: true,
@@ -66,4 +68,6 @@ func (self *DevConfig) register() {
         "Choices are: debug, info, notice, warning, error, critical")
     flag.BoolVar(&self.ColorLog, "color-log", self.ColorLog,
         "Add terminal colors to log output")
+    flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
+        "static content directory for the html gui")
 }

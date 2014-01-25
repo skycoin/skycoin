@@ -136,7 +136,8 @@ func Run(args cli.Args) {
     }
 
     if c.WebInterface {
-        go gui.LaunchWebInterface(c.WebInterfaceAddr, c.WebInterfacePort)
+        go gui.LaunchWebInterface(c.WebInterfaceAddr, c.WebInterfacePort,
+            c.GUIDirectory)
     }
 
     <-quit

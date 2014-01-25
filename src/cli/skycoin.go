@@ -21,6 +21,8 @@ var ClientArgs = ClientConfig{Config{
     WebInterfaceAddr: "127.0.0.1",
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory: "",
+    // GUI directory contains assets for the html gui
+    GUIDirectory: "",
     // Logging
     LogLevel: logging.NOTICE,
     ColorLog: false,

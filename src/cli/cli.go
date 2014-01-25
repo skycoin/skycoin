@@ -25,6 +25,8 @@ type Config struct {
     WebInterfaceAddr string
     // Data directory holds app data -- defaults to ~/.skycoin
     DataDirectory string
+    // GUI directory contains assets for the html gui
+    GUIDirectory string
     // Logging
     LogLevel logging.Level
     ColorLog bool

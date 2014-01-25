@@ -16,6 +16,15 @@ var (
     indexPage   = "index.html"
 )
 
+func init() {
+    resourceDir, err := filepath.Abs(resourceDir)
+    indexPage = filepath.Join(resourceDir, "index.html")
+
+    if err != nil {
+        log.Panic()
+    }
+}
+
 // Begins listening on the node-webkit localhost
 func LaunchGUI() {
     // Create a link back to node-webkit using the environment variable

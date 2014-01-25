@@ -16,12 +16,17 @@ func resetDHT() {
     dhtInfoHash = ""
 }
 
-func TestInitDHT(t *testing.T) {
+func TestInitShutdownDHT(t *testing.T) {
+    resetDHT()
     assert.Nil(t, DHT)
     assert.Equal(t, string(dhtInfoHash), "")
     InitDHT(port)
     assert.NotNil(t, DHT)
     assert.NotEqual(t, string(dhtInfoHash), "")
+    go DHT.Run()
+    wait()
+    ShutdownDHT()
+    wait()
     resetDHT()
 }
 

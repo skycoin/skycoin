@@ -16,12 +16,8 @@ const (
     version int32 = 1
 )
 
-var (
-    logger = logging.MustGetLogger("skycoin.daemon")
-)
-
 // Behavioural configuration
-const (
+var (
     // How often to check and initiate an outgoing connection if needed
     outgoingConnectionsRate = time.Second * 5
     // How often to check for stale connections
@@ -42,9 +38,7 @@ const (
     versionWait = time.Second * 30
     // How often to check for peers that have decided to stop communicating
     cullInvalidRate = time.Second * 3
-)
 
-var (
     // DisconnectReasons
     DisconnectInvalidVersion gnet.DisconnectReason = errors.New(
         "Invalid version")
@@ -76,6 +70,8 @@ var (
         gnet.DisconnectMalformedMessage:     time.Hour * 8,
         gnet.DisconnectUnknownMessage:       time.Hour * 8,
     }
+
+    logger = logging.MustGetLogger("skycoin.daemon")
 )
 
 // Global state
@@ -124,12 +120,15 @@ func Init(port int, dataDir string, quit chan int) {
     InitPool(port)
     InitPeers(dataDir)
     InitDHT(port)
-    go DHT.DoDHT()
+    go DHT.Run()
     go DaemonLoop(quit)
 }
 
-// Terminates peer subsytem safely
+// Terminates all subsystems safely.  To stop the DaemonLoop, send a value
+// over the quit channel provided to Init.  The DaemonLoop must be stopped
+// before calling this function.
 func Shutdown(dataDir string) {
+    ShutdownDHT()
     ShutdownPool()
     ShutdownPeers(dataDir)
 }
@@ -149,9 +148,6 @@ func DaemonLoop(quit chan int) {
 main:
     for {
         select {
-        // Process any pending API requests
-        case fn := <-apiRequests:
-            apiResponses <- fn()
         // Continually make requests to the DHT, if we need peers
         case <-dhtBootstrapTicker:
             if len(Peers.Peerlist) < dhtPeerLimit {
@@ -200,6 +196,9 @@ main:
         // Message handlers
         case m := <-messageEvent:
             m.Process()
+        // Process any pending API requests
+        case fn := <-apiRequests:
+            apiResponses <- fn()
         case <-quit:
             break main
         }

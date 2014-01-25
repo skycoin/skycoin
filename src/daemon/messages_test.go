@@ -1,6 +1,7 @@
 package daemon
 
 import (
+    "bytes"
     "errors"
     "fmt"
     "github.com/op/go-logging"
@@ -247,6 +248,7 @@ func gnetConnection(addr string) *gnet.Connection {
         Conn:         NewDummyConn(addr),
         LastSent:     time.Unix(0, 0),
         LastReceived: time.Unix(0, 0),
+        Buffer:       &bytes.Buffer{},
     }
     conn.Controller = gnet.NewConnectionController(conn)
     return conn

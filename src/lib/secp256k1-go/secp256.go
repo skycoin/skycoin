@@ -3,6 +3,7 @@ package secp256
 /*
 #cgo CFLAGS: -std=gnu99 -Wno-error
 #cgo LDFLAGS: -lgmp
+#cgo CFLAGS: -Wno-error
 #define USE_FIELD_10X26
 #define USE_NUM_GMP
 #define USE_FIELD_INV_BUILTIN

@@ -72,7 +72,18 @@ td{
 
 #transaction-table{
   width:100%;
+  background-color:#fff;
 }
+  #transaction-table button{
+    width:100%;
+  }
+  #transaction-table tr{
+    background-color:#fff;
+  }
+  #transaction-table .dark-row{
+    background-color:#F2F5F8;
+    cursor:pointer;
+  }
 
 label {
   float:left;

@@ -1,6 +1,7 @@
 package coin
 
 import (
+    "bytes"
     "github.com/skycoin/skycoin/src/lib/base58"
     "log"
 )
@@ -25,6 +26,10 @@ func (g *Address) Bytes() []byte {
 // Returns address base58-encoded
 func (g *Address) Base58() []byte {
     return []byte(base58.Hex2Base58(g.Key[:]))
+}
+
+func (g *Address) Equals(other *Address) bool {
+    return g.Version == other.Version && bytes.Equal(g.Key[:], other.Key[:])
 }
 
 // Returns the address checksum

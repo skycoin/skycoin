@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/hex"
+	//"encoding/hex"
 	//"errors"
 	"fmt"
 	"github.com/skycoin/skycoin/src/coin"
@@ -33,17 +33,16 @@ func tests() {
 
 	genesisWallet := keyring.NewWallet(1)
 	genesisAddress := genesisWallet.AA[0]
-	var BC *coin.BlockChain = coin.NewBlockChain(genesisAddress.address)
+	var BC *coin.BlockChain = coin.NewBlockChain(genesisAddress.Address)
 
 	genesisWallet.RefeshUnspentOutputs(BC)
 	//create 16 wallets with 64 addresses
 	wn := 16 //number of wallets to create
 	var WA []keyring.Wallet
 	for i := 0; i < wn; i++ {
-		WA = append(WA, NewWallet(64))
+		WA = append(WA, keyring.NewWallet(64))
 	}
 
-/*
 	B := BC.NewBlock()
 
 	var T coin.Transaction
@@ -53,20 +52,20 @@ func tests() {
 		var ti coin.TransactionInput
 		ti.SigIdx = uint16(0)
 		ti.UxOut = genesisWallet.Outputs[0].Hash()
-		T.TI = append(T.TI, ti)
+		T.TxIn = append(T.TxIn, ti)
 
 		var to coin.TransactionOutput
-		to.DestinationAddress = genesisWallet.AA[0].address
-		to.Value1 = uint64(100*1000000 - wn*1000)
-		T.TO = append(T.TO, to)
+		to.DestinationAddress = genesisWallet.AA[0].Address
+		to.Coins = uint64(100*1000000 - wn*1000)
+		T.TxOut = append(T.TxOut, to)
 
 		for i := 0; i < wn; i++ {
 			var to coin.TransactionOutput
 			a := WA[i].GetRandom()
-			to.DestinationAddress = a.address
-			to.Value1 = 1000
-			to.Value2 = 1024
-			T.TO = append(T.TO, to)
+			to.DestinationAddress = a.Address
+			to.Coins = 1000
+			to.Hours = 1024
+			T.TxOut = append(T.TxOut, to)
 		}
 
 		var sec coin.SecKey
@@ -75,11 +74,11 @@ func tests() {
 
 	} else {
 		T.PushInput(genesisWallet.Outputs[0].Hash())
-		T.PushOutput(genesisWallet.AA[0].address, uint64(100*1000000-wn*1000), 0)
+		T.PushOutput(genesisWallet.AA[0].Address, uint64(100*1000000-wn*1000), 0)
 
 		for i := 0; i < wn; i++ {
 			a := WA[i].GetRandom()
-			T.PushOutput(a.address, uint64(1000), 1024*1024)
+			T.PushOutput(a.Address, uint64(1000), 1024*1024)
 		}
 
 		var sec coin.SecKey
@@ -103,7 +102,6 @@ func tests() {
 	}
 
 	WalletBalances(BC, WA)
-	*/
 }
 
 func main() {

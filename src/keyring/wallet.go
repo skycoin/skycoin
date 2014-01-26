@@ -21,6 +21,20 @@ func FromHex(s string) []byte {
 	return b
 }
 
+type Address struct {
+	Pubkey  []byte
+	Address coin.Address
+	seckey  []byte //keep secret
+}
+
+func GenerateAddress() Address {
+	var A Address
+	A.Pubkey, A.seckey = coin.GenerateKeyPair()
+	A.Address = coin.AddressFromRawPubkey(A.Pubkey)
+	return A
+}
+
+
 /*
    genesis address
    pub: 02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8
@@ -41,7 +55,7 @@ func (self *Wallet) GetRandom() Address {
 //signs a hash for a given address. nil on failure
 func (self *Wallet) Sign(address coin.Address, hash []byte) []byte {
 	for _, a := range self.AA {
-		if a.address == address {
+		if a.Address == address {
 			//func GenerateSignature(seckey []byte, msg []byte) []byte
 			sig := coin.GenerateSignature(a.seckey, hash)
 			return sig
@@ -56,7 +70,7 @@ func (self *Wallet) RefeshUnspentOutputs(bc *coin.BlockChain) {
 	var outputs []coin.UxOut
 	for _, a := range self.AA {
 		//get unspent outputs for the address
-		unspentOutputs := bc.GetUnspentOutputs(a.address)
+		unspentOutputs := bc.GetUnspentOutputs(a.Address)
 		outputs = append(outputs, unspentOutputs...)
 	}
 	self.Outputs = outputs
@@ -97,14 +111,14 @@ func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, am
 	T.TI = append(T.TI, ti)
 
 	var to coin.TransactionOutput
-	to.DestinationAddress = genesisWallet.AA[0].address
+	to.DestinationAddress = genesisWallet.AA[0].Address
 	to.Value1 = uint64(100*1000000 - wn*1000)
 	T.TO = append(T.TO, to)
 
 	for i := 0; i < wn; i++ {
 		var to coin.TransactionOutput
 		a := WA[i].GetRandom()
-		to.DestinationAddress = a.address
+		to.DestinationAddress = a.Address
 		to.Value1 = 1000
 		to.Value2 = 1024
 		T.TO = append(T.TO, to)
@@ -125,21 +139,8 @@ func NewWallet(n int) Wallet {
 	return w
 }
 
-type Address struct {
-	pubkey  []byte
-	seckey  []byte
-	address coin.Address
-}
-
-func GenerateAddress() Address {
-	var A Address
-	A.pubkey, A.seckey = coin.GenerateKeyPair()
-	A.address = coin.AddressFromRawPubkey(A.pubkey)
-	return A
-}
-
 //func (self *Address) GetOutputs(bc coin.BlockChain) []coin.UxOut {
-//	ux := bc.GetUnspentOutputs(*self.address)
+//	ux := bc.GetUnspentOutputs(*self.Address)
 //	return ux
 //}
 
@@ -151,7 +152,6 @@ func GenerateAddress() Address {
 
 func WalletBalances(bc *coin.BlockChain, wallets []Wallet) {
 	for i, w := range wallets {
-
 		b1, b2 := w.Balance(bc)
 		fmt.Printf("%v: %v %v \n", i, b1, b2)
 	}

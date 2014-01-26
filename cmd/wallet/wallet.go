@@ -35,7 +35,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir(static_path)))
 
-	http.HandleFunc("/api/newAdress/", newAddress)
+	http.HandleFunc("/api/newAdress", newAddress)
 
 	http.ListenAndServe(":3003", nil)
 }

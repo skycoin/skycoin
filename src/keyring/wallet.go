@@ -24,7 +24,7 @@ func FromHex(s string) []byte {
 type Address struct {
 	Pubkey  []byte
 	Address coin.Address
-	seckey  []byte //keep secret
+	Seckey  []byte //keep secret
 }
 
 func GenerateAddress() Address {

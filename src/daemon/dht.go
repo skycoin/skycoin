@@ -40,7 +40,7 @@ func InitDHT(port int) {
         log.Panicf("Failed to create InfoHash: %v", err)
         return
     }
-    DHT, err = dht.New(port, dhtDesiredPeers, true)
+    DHT, err = dht.New(port, dhtDesiredPeers, nil)
     if err != nil {
         log.Panicf("Failed to init DHT: %v", err)
         return

@@ -150,7 +150,7 @@ func NewWallet(n int) Wallet {
 func PrintWalletBalances(bc *coin.BlockChain, wallets []Wallet) {
     for i, w := range wallets {
         b1, b2 := w.Balance(bc)
-        fmt.Printf("%v: %v %v \n", i, b1, b2)
+        fmt.Printf("PWB: %v: %v %v \n", i, b1, b2)
     }
 
     for i, ux := range bc.Unspent {

@@ -94,13 +94,14 @@ func Merkle(h0 []SHA256) SHA256 {
     np := 0
     for np = 1; np < len(h0); np *= 16 {
     }
+    log.Printf("merkle: np= %v, n= %v \n", np, len(h0))
     h1 := make([]SHA256, np)
 
     //var th SHA256 = h0[0]
 
     var lh0 = len(h0)
     for i := lh0; i < 16; i++ { //pad to power of 16
-        h1[i+lh0] = h0[lh0-1] //pad last element till 16
+        h1[i] = h0[0] //pad first element till 16
     }
 
     for len(h1) != 1 {

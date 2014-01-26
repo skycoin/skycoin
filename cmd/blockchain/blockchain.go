@@ -68,7 +68,7 @@ func tests() {
 			T.TxOut = append(T.TxOut, to)
 		}
 
-		var sec coin.Seckey
+		var sec coin.SecKey
 		sec.Set(genesisAddress.Seckey)
 		T.SetSig(0, sec)
 
@@ -81,7 +81,7 @@ func tests() {
 			T.PushOutput(a.Address, uint64(1000), 1024*1024)
 		}
 
-		var sec coin.Seckey
+		var sec coin.SecKey
 		sec.Set(genesisAddress.Seckey)
 		T.SetSig(0, sec)
 	}

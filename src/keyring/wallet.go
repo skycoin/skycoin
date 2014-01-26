@@ -22,15 +22,9 @@ func MustFromHex(s string) []byte {
 }
 
 type Address struct {
-<<<<<<< HEAD
 	Pubkey  []byte
 	Address coin.Address
 	Seckey  []byte //keep secret
-=======
-    Pubkey  []byte
-    Address *coin.Address
-    seckey  []byte //keep secret
->>>>>>> b2bac642413aa6d19e9b26d98a2ffacf8b6b0a8d
 }
 
 func GenerateAddress() Address {
@@ -38,8 +32,8 @@ func GenerateAddress() Address {
     a := coin.AddressFromRawPubkey(pub)
     return Address{
         Pubkey:  pub,
-        seckey:  sec,
-        Address: &a,
+        Seckey:  sec,
+        Address: a,
     }
 }
 
@@ -52,7 +46,7 @@ func GenerateAddress() Address {
 
 type Wallet struct {
     Addresses []Address    //address array
-    Outputs   []coin.UxOut //unspent outputs
+    Outputs   []coin.UxOut //unspent outputs, must be refreshed
 }
 
 // Returns a random Address
@@ -65,7 +59,7 @@ func (self *Wallet) GetRandomAddress() Address {
 func (self *Wallet) Sign(address coin.Address, hash []byte) []byte {
     for _, a := range self.Addresses {
         if a.Address.Equals(&address) {
-            return coin.GenerateSignature(a.seckey, hash)
+            return coin.GenerateSignature(a.Seckey, hash)
         }
     }
     return nil
@@ -125,8 +119,8 @@ func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, am
 		T.TO = append(T.TO, to)
 	}
 
-	var sec coin.SecKey
-	sec.Set(genesisAddress.seckey)
+	var sec coin.Seckey
+	sec.Set(genesisAddress.Seckey)
 	T.SetSig(0, sec)
 
 }

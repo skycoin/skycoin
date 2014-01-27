@@ -1,4 +1,4 @@
-package secp256
+package secp256k1
 
 /*
 #cgo CFLAGS: -std=gnu99 -Wno-error
@@ -91,7 +91,7 @@ func GenerateKeyPair() ([]byte, []byte) {
 
 
 
-func GenerateDeterministicKeyPair(seed []byte) {
+func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 	seed_hash := SumSHA256(seed) //hash the seed
 
 	pubkey_len := C.int(33)
@@ -113,7 +113,7 @@ func GenerateDeterministicKeyPair(seed []byte) {
 		seed_hash = SumSHA256(seed_hash[0:32])
 		return GenerateDeterministicKeyPair(seed_hash) 
 	}
-	
+
 	return pubkey, seckey
 }
 

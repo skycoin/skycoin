@@ -60,21 +60,21 @@ func (g *Sig) Set(b []byte) {
 	- verify that signature is valid for hash for PubKey
 */
 func ChkSig(address Address, hash SHA256, sig Sig) error {
-    rawPubKey := secp256.RecoverPubkey(hash[:], sig[:])
+    rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
     if rawPubKey == nil {
         return errors.New("ChkSig Error: signature invalid, PubKey recovery failed")
     }
     if address != AddressFromRawPubkey(rawPubKey) {
         return errors.New("ChkSig Error: signature invalid, address does not match output address")
     }
-    if secp256.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
+    if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
         return errors.New("ChkSig Error: signature invalid, signature invalid for hash")
     }
     return nil
 }
 
 func SignHash(hash SHA256, sec SecKey) (Sig, error) {
-    sig := secp256.Sign(hash[:], sec[:])
+    sig := secp256k1.Sign(hash[:], sec[:])
     if sig == nil {
         log.Panic("SignHash invalid private key")
         return Sig{}, errors.New("SignHash invalid private key")
@@ -88,29 +88,29 @@ func PubKeyFromSec(sec SecKey) PubKey {
 }
 
 func GenerateSignature(seckey []byte, msg []byte) []byte {
-    if secp256.VerifySeckey(seckey) != 1 {
+    if secp256k1.VerifySeckey(seckey) != 1 {
         log.Panic("Invalid secret key")
         return nil
     }
-    return secp256.Sign(msg, seckey)
+    return secp256k1.Sign(msg, seckey)
 }
 
 func VerifySignature(PubKey []byte, msg []byte, sig []byte) error {
-    if secp256.VerifyPubkey(PubKey) != 1 {
+    if secp256k1.VerifyPubkey(PubKey) != 1 {
         log.Panic("Invalid public key")
         return errors.New("Invalid public key")
     }
-    if secp256.VerifySignatureValidity(sig) != 1 {
+    if secp256k1.VerifySignatureValidity(sig) != 1 {
         log.Panic("Invalid signature")
         return errors.New("Invalid signature")
     }
-    if secp256.VerifySignature(msg, sig, PubKey) != 1 {
+    if secp256k1.VerifySignature(msg, sig, PubKey) != 1 {
         return errors.New("Invalid signature for this message")
     }
     return nil
 }
 
 func GenerateKeyPair() (public, secret []byte) {
-    public, secret = secp256.GenerateKeyPair()
+    public, secret = secp256k1.GenerateKeyPair()
     return
 }

@@ -74,7 +74,7 @@ func GenerateKeyPair() ([]byte, []byte) {
 	const seckey_len = 32
 
 	var pubkey []byte = make([]byte, pubkey_len)
-	var seckey []byte = RandByte(seckey_len) //going to get bitcoins stolen!
+	var seckey []byte = RandByte(seckey_len)
 
 	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
 	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
@@ -88,6 +88,35 @@ func GenerateKeyPair() ([]byte, []byte) {
 	}
 	return pubkey, seckey
 }
+
+
+
+func GenerateDeterministicKeyPair(seed []byte) {
+	seed_hash := SumSHA256(seed) //hash the seed
+
+	pubkey_len := C.int(33)
+	const seckey_len = 32
+
+	var pubkey []byte = make([]byte, pubkey_len)
+	var seckey []byte
+	copy(seckey[0:32], seed_hash[0:32])
+
+	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
+	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
+
+	ret := C.secp256k1_ecdsa_pubkey_create(
+		pubkey_ptr, &pubkey_len,
+		seckey_ptr, 1)
+
+	if ret != 1 {
+		//invalid secret, try different
+		seed_hash = SumSHA256(seed_hash[0:32])
+		return GenerateDeterministicKeyPair(seed_hash) 
+	}
+	
+	return pubkey, seckey
+}
+
 
 /*
 *  Create a compact ECDSA signature (64 byte + recovery id).

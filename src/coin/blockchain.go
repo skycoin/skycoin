@@ -120,7 +120,7 @@ func (self *BlockChain) NewBlock() Block {
 	Operations on unspent outputs
 */
 
-//look up unspent outputs for an address
+// Returns the unspent outputs, UxOut, associated with an Address
 func (self *BlockChain) GetUnspentOutputs(address Address) []UxOut {
     var uxo []UxOut
     for _, ux := range self.Unspent {
@@ -131,7 +131,8 @@ func (self *BlockChain) GetUnspentOutputs(address Address) []UxOut {
     return uxo
 }
 
-//slow because we are rehashing everytime we do lookup
+// Return the UxOut for a given hash
+// TODO -- Slow because we are rehashing everytime we do lookup
 func (self *BlockChain) GetUnspentByHash(hash SHA256) (UxOut, error) {
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
@@ -141,6 +142,7 @@ func (self *BlockChain) GetUnspentByHash(hash SHA256) (UxOut, error) {
     return UxOut{}, errors.New("Unspent transaction does not exist")
 }
 
+// Returns the hashes of all unspent outputs xor'd
 func (self *BlockChain) HashUnspent() SHA256 {
     var h SHA256
     for _, ux := range self.Unspent {
@@ -149,22 +151,26 @@ func (self *BlockChain) HashUnspent() SHA256 {
     return h
 }
 
+// Add a new UxOut to the list of unspent transactions
 func (self *BlockChain) AddUnspent(ux UxOut) {
     hash := ux.Hash()
-    for _, ux := range self.Unspent {
-        if hash == ux.Hash() {
-            log.Panic("Unspent transaction already known")
-        }
+    if _, err := self.GetUnspentByHash(hash); err == nil {
+        log.Panic("Unspent transaction already known")
     }
     self.Unspent = append(self.Unspent, ux)
 }
 
-//need to save, in order to do rollback
+// Removes a UxOut for a given hash
+// TODO -- Need to save, in order to do rollback
 func (self *BlockChain) RemoveUnspent(hash SHA256) {
+    log.Panic("This function is wrong. Please fix it.")
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
+            // TODO -- this looks wrong
+            // It is copying the last unspent output to the output to remove
+            // Then assigning itself to itself
             self.Unspent[i] = self.Unspent[len(self.Unspent)-1]
-            self.Unspent = self.Unspent[:len(self.Unspent)-1]
+            self.Unspent = self.Unspent[:len(self.Unspent)-1] // does nothing
             return
         }
     }

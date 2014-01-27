@@ -5,6 +5,8 @@ Skycoin is a next-generation post proof-of-work cryptocurrency.
 
 It is currently in `alpha`.
 
+*For installation instructions, see [Installing Skycoin](wiki/Installation)*
+
 No Mining
 ---------
 
@@ -44,70 +46,6 @@ Current Status
 * Blockchain v1 functioning
 * Transactions are not networked.
 * JSON RPC for wallet
-
-Setup
------
-
-```
-git clone https://github.com/skycoin/skycoin
-./install.sh
-```
-
-If a library could not be found, the dependencies may need to be updated.
-
-```
-./compile/get-dependencies.sh
-```
-
-Running
--------
-
-Make sure to follow the instructions in Setup before attempting these commands.
-
-### Daemon
-
-```
-./run.sh
-```
-
-This runs the developer's version of the skycoin daemon.  To run
-the version intended for release,
-
-```
-go run cmd/skycoind/skycoind.go
-```
-
-### GUI
-
-To run the gui client, it must be built first.
-
-```
-./gui.sh build
-```
-
-Once it is built, you can run it with
-
-```
-./gui.sh
-```
-
-until the go source has changed and you need to rebuild.  
-You do not need to rebuild if only modifying the GUI frontend code, 
-located in `./static/`.
-
-Available Platforms
--------------------
-
-The instructions for running the client apply to Linux, Windows and OSX.
-Windows will need MingW.
-
-Skycoin development is primarily done on Linux so Windows and OSX may break from time to time.
-
-Please report any issues you have running skycoin on your system.
-
-We will provide snapshot binary releases for Linux 32/64-bit, Windows 32-bit and OSX 32-bit once
-the client is deemed ready for distribution.
-
 
 Tests
 -----

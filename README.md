@@ -129,4 +129,4 @@ Skycoin tests can be run with
 
 * coin
 * daemon *Complete*
-* util
+* util *Complete*

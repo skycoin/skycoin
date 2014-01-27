@@ -294,8 +294,8 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
 
     //check inner hash
     for _, t := range b.Body.Transactions {
-        if t.hashInner().Equals(t.TxHeader.TransactionHash) {
-            return errors.New("hash invalid")
+        if !t.hashInner().Equals(t.TxHeader.TransactionHash) {
+            return errors.New("transaction inner hash invalid")
         }
     }
 

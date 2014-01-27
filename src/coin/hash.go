@@ -1,7 +1,6 @@
 package coin
 
 import (
-    "bytes"
     "crypto/sha256"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "github.com/skycoin/skycoin/src/lib/ripemd160"
@@ -43,10 +42,6 @@ func (g *SHA256) Set(b []byte) {
         log.Panic("Invalid sha256 length")
     }
     copy(g[:], b[:32])
-}
-
-func (g SHA256) Equals(other SHA256) bool {
-    return bytes.Equal(g[:], other[:])
 }
 
 func SumSHA256(b []byte) SHA256 {

@@ -33,8 +33,8 @@ func (g *Address) Base58() []byte {
     return []byte(base58.Hex2Base58(g.Key[:]))
 }
 
-func (g *Address) Equals(other *Address) bool {
-    return *g == *other
+func (g Address) Equals(other Address) bool {
+    return g == other
 }
 
 // Returns address checksum
@@ -65,16 +65,18 @@ func (g *Address) ChecksumVerify() int {
 }
 
 // Creates Address from PubKey
-func AddressFromPubKey(pubkey *PubKey) *Address {
-    pubhash := SumSHA256(pubkey[:])
-    key := HashRipemd160(SumSHA256(pubhash[:])[:])
-    addr := &Address{Version: 0x0f, Key: *key}
+// sha256(sha256(ridmd160(pubkey)))
+func AddressFromPubKey(pubkey PubKey) Address {
+    r1 := SumSHA256(pubkey[:])
+    r2 := SumSHA256(r1[:])
+    r3 := HashRipemd160(r2[:])
+    addr := Address{Version: 0x0f, Key: r3}
     addr.SetChecksum()
     return addr
 }
 
 // Creates Address from []byte
-func AddressFromRawPubKey(pubkeyraw []byte) *Address {
+func AddressFromRawPubKey(pubkeyraw []byte) Address {
     pubkey := NewPubKey(pubkeyraw)
     return AddressFromPubKey(pubkey)
 }

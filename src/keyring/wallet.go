@@ -23,9 +23,9 @@ func MustFromHex(s string) []byte {
 
 // An Address contains a public and secret key,
 type Address struct {
-    Address *coin.Address
-    PubKey  *coin.PubKey
-    SecKey  *coin.SecKey // Keep secret
+    Address coin.Address
+    PubKey  coin.PubKey
+    SecKey  coin.SecKey // Keep secret
 }
 
 func NewAddress() Address {
@@ -56,10 +56,12 @@ func (self *Wallet) GetRandomAddress() Address {
 }
 
 // Signs a hash for a given address. nil on failure.
-func (self *Wallet) Sign(address *coin.Address, msg []byte) *coin.Sig {
+// use error
+func (self *Wallet) Sign(address coin.Address, msg []byte) *coin.Sig {
     for _, a := range self.Addresses {
         if a.Address.Equals(address) {
-            return coin.GenerateSignature(a.SecKey, msg)
+            sig := coin.GenerateSignature(a.SecKey, msg)
+            return &sig
         }
     }
     return nil

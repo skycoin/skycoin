@@ -69,7 +69,7 @@ func tests() {
 		}
 
 		var sec coin.SecKey
-		sec.Set(genesisAddress.Seckey)
+		sec.Set(genesisAddress.SecKey[:])
 		T.SetSig(0, sec)
 
 	} else {
@@ -82,7 +82,7 @@ func tests() {
 		}
 
 		var sec coin.SecKey
-		sec.Set(genesisAddress.Seckey)
+		sec.Set(genesisAddress.SecKey[:])
 		T.SetSig(0, sec)
 	}
 	T.UpdateHeader() //sets hash

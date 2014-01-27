@@ -103,8 +103,8 @@ func Merkle(h0 []*SHA256) *SHA256 {
     //var th SHA256 = h0[0]
 
     var lh0 = len(h0)
-    for i := lh0; i < 16; i++ { //pad to power of 16
-        h1[i+lh0] = h0[lh0-1] //pad last element till 16
+    for i := lh0; i < np; i++ { //pad to power of 16
+        h1[i] = h0[0] //pad first element till 16
     }
 
     for len(h1) != 1 {

@@ -24,16 +24,16 @@ func MustFromHex(s string) []byte {
 // An Address contains a public and secret key,
 type Address struct {
     Address *coin.Address
-    Pubkey  *coin.PubKey
-    seckey  *coin.SecKey // Keep secret
+    PubKey  *coin.PubKey
+    SecKey  *coin.SecKey // Keep secret
 }
 
 func NewAddress() Address {
     pub, sec := coin.GenerateKeyPair()
     return Address{
-        Address: coin.AddressFromPubkey(pub),
-        Pubkey:  pub,
-        seckey:  sec,
+        Address: coin.AddressFromPubKey(pub),
+        PubKey:  pub,
+        SecKey:  sec,
     }
 }
 
@@ -46,7 +46,7 @@ func NewAddress() Address {
 
 type Wallet struct {
     Addresses []Address    //address array
-    Outputs   []coin.UxOut //unspent outputs
+    Outputs   []coin.UxOut //unspent outputs, must be refreshed
 }
 
 // Returns a random Address
@@ -59,7 +59,7 @@ func (self *Wallet) GetRandomAddress() Address {
 func (self *Wallet) Sign(address *coin.Address, msg []byte) *coin.Sig {
     for _, a := range self.Addresses {
         if a.Address.Equals(address) {
-            return coin.GenerateSignature(a.seckey, msg)
+            return coin.GenerateSignature(a.SecKey, msg)
         }
     }
     return nil
@@ -120,7 +120,7 @@ func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, am
 	}
 
 	var sec coin.SecKey
-	sec.Set(genesisAddress.seckey)
+	sec.Set(genesisAddress.SecKey)
 	T.SetSig(0, sec)
 
 }
@@ -150,10 +150,10 @@ func NewWallet(n int) Wallet {
 func PrintWalletBalances(bc *coin.BlockChain, wallets []Wallet) {
     for i, w := range wallets {
         b1, b2 := w.Balance(bc)
-        fmt.Printf("%v: %v %v \n", i, b1, b2)
+        fmt.Printf("PWB: %v: %v %v \n", i, b1, b2)
     }
 
     for i, ux := range bc.Unspent {
-        fmt.Printf("%v: %v \n", i, ux.String())
+        fmt.Printf("PWB,UX: %v: %v \n", i, ux.String())
     }
 }

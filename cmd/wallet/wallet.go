@@ -119,8 +119,6 @@ func saveWallet(w http.ResponseWriter, r *http.Request) {
 }
 
 func newAddress(w http.ResponseWriter, r *http.Request) {
-	//profile := Profile{"Alex", []string{"snowboarding", "programming"}}
-	//logger.Debug("Serving %s", r)
 
 	//js, err := json.Marshal(profile)
 	addr := keyring.GenerateAddress()

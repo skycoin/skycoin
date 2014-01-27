@@ -64,12 +64,12 @@ func (self UxOut) Hash() SHA256 {
 }
 
 func (self UxOut) String() string {
-    return fmt.Sprintf("%s, %d: %d %d", self.Body.Address, self.Head.Time,
+    return fmt.Sprintf("%s, %d: %d %d", self.Body.Address.String(), self.Head.Time,
         self.Body.Coins, self.Body.Hours)
 }
 
 /*
-func (self UxOut) HashTotal() SHA256 {
+func (self UxOut) HashTotal() *SHA256 {
 	b1 := encoder.Serialize(self.Head)
 	b2 := encoder.Serialize(self.Body)
 	b3 = append(b1, b2...)

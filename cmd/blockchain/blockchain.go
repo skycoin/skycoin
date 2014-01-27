@@ -32,7 +32,7 @@ func (self *PendingTransactions) Rand() coin.Transaction {
 func tests() {
 
 	genesisWallet := keyring.NewWallet(1)
-	genesisAddress := genesisWallet.AA[0]
+	genesisAddress := genesisWallet.Addresses[0]
 	var BC *coin.BlockChain = coin.NewBlockChain(genesisAddress.Address)
 
 	genesisWallet.RefeshUnspentOutputs(BC)
@@ -55,13 +55,13 @@ func tests() {
 		T.TxIn = append(T.TxIn, ti)
 
 		var to coin.TransactionOutput
-		to.DestinationAddress = genesisWallet.AA[0].Address
+		to.DestinationAddress = genesisWallet.Addresses[0].Address
 		to.Coins = uint64(100*1000000 - wn*1000)
 		T.TxOut = append(T.TxOut, to)
 
 		for i := 0; i < wn; i++ {
 			var to coin.TransactionOutput
-			a := WA[i].GetRandom()
+			a := WA[i].GetRandomAddress()
 			to.DestinationAddress = a.Address
 			to.Coins = 1000
 			to.Hours = 1024
@@ -69,20 +69,20 @@ func tests() {
 		}
 
 		var sec coin.SecKey
-		sec.Set(genesisAddress.seckey)
+		sec.Set(genesisAddress.SecKey[:])
 		T.SetSig(0, sec)
 
 	} else {
 		T.PushInput(genesisWallet.Outputs[0].Hash())
-		T.PushOutput(genesisWallet.AA[0].Address, uint64(100*1000000-wn*1000), 0)
+		T.PushOutput(genesisWallet.Addresses[0].Address, uint64(100*1000000-wn*1000), 0)
 
 		for i := 0; i < wn; i++ {
-			a := WA[i].GetRandom()
+			a := WA[i].GetRandomAddress()
 			T.PushOutput(a.Address, uint64(1000), 1024*1024)
 		}
 
 		var sec coin.SecKey
-		sec.Set(genesisAddress.seckey)
+		sec.Set(genesisAddress.SecKey[:])
 		T.SetSig(0, sec)
 	}
 	T.UpdateHeader() //sets hash
@@ -95,13 +95,13 @@ func tests() {
 		log.Panic(err)
 	}
 
-	WalletBalances(BC, WA)
+	keyring.PrintWalletBalances(BC, WA)
 	err = BC.ExecuteBlock(B)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	WalletBalances(BC, WA)
+	keyring.PrintWalletBalances(BC, WA)
 }
 
 func main() {

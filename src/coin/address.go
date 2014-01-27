@@ -1,25 +1,31 @@
 package coin
 
 import (
+    "bytes"
+    "encoding/hex"
     "github.com/skycoin/skycoin/src/lib/base58"
     "log"
 )
 
 type Address struct {
-    // ??
     Version byte
-    // ripemd160 of sha256 of pubkey
-    Key Ripemd160
-    //CheckSum [4]byte
+    Key     [20]byte //sha256(sha256(ridmd160(pubkey)))
+    ChkSum  [4]byte
 }
 
+//get address as string
 func (g *Address) String() string {
     return string(g.Base58())
 }
 
 // Returns address as raw bytes, containing version and then key
 func (g *Address) Bytes() []byte {
-    return append([]byte{g.Version}, g.Key[:]...)
+    b := make([]byte, 25)
+    b[0] = g.Version
+    copy(b[1:21], g.Key[0:20])
+    copy(b[21:25], g.ChkSum[0:4])
+    return b
+    //return append([]byte{g.Version}, g.Key[:]...)
 }
 
 // Returns address base58-encoded
@@ -27,41 +33,67 @@ func (g *Address) Base58() []byte {
     return []byte(base58.Hex2Base58(g.Key[:]))
 }
 
-// Returns the address checksum
-func (g *Address) Checksum() []byte {
-    // TODO -- the comments here don't match the code and I have no idea
-    // what this is supposed to be doing
-    b := g.Bytes()
-    //4 byte checksum
-    r2 := SumSHA256(b)
-    r3 := SumSHA256(r2[:])
-
-    r4 := r3[:4] // first 1 bytes (error correction code)
-    b2 := append(b[:], r4...)
-
-    return b2
+func (g Address) Equals(other Address) bool {
+    return g == other
 }
 
-func (g *Address) MustChecksum() []byte {
-    b := g.Checksum()
-    if len(b) != 25 {
+// Returns address checksum
+// 4 byte checksum
+func (g *Address) Checksum() []byte {
+    r1 := append([]byte{g.Version}, g.Key[:]...)
+    r2 := SumSHA256(r1[:])
+    return r2[0:4] //4 bytes
+}
+
+func (g *Address) SetChecksum() {
+    copy(g.ChkSum[0:4], g.Checksum())
+}
+
+//r3 := SumSHA256(r2[:])
+//r4 := HashRipemd160(r3[:])
+
+func (g *Address) ChecksumVerify() int {
+    chksum := g.Checksum()
+    if len(chksum) != 4 {
         log.Panic("Invalid address checksum")
     }
-    return b
+    if !bytes.Equal(chksum[0:4], g.ChkSum[0:4]) {
+        return 0
+    }
+
+    return 1
 }
 
 // Creates Address from PubKey
-func AddressFromPubkey(pubkey PubKey) Address {
-    s := SumSHA256(pubkey[:])
-    addr := Address{Version: 0x0f, Key: HashRipemd160(s[:])}
-    addr.MustChecksum()
+// sha256(sha256(ridmd160(pubkey)))
+func AddressFromPubKey(pubkey PubKey) Address {
+    r1 := SumSHA256(pubkey[:])
+    r2 := SumSHA256(r1[:])
+    r3 := HashRipemd160(r2[:])
+    addr := Address{Version: 0x0f, Key: r3}
+    addr.SetChecksum()
     return addr
 }
 
 // Creates Address from []byte
-func AddressFromRawPubkey(pubkeyraw []byte) Address {
+func AddressFromRawPubKey(pubkeyraw []byte) Address {
     pubkey := NewPubKey(pubkeyraw)
-    return AddressFromPubkey(pubkey)
+    return AddressFromPubKey(pubkey)
+}
+
+func init() {
+    a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
+    b, err := hex.DecodeString(a)
+    if err != nil {
+        log.Panic(err)
+    }
+    addr := AddressFromRawPubKey(b)
+    if !bytes.Equal(addr.ChkSum[:], addr.Checksum()) {
+        log.Panic("Checksum fail")
+    }
+    if len(addr.Bytes()) != 25 {
+        log.Panic("Address length invalid")
+    }
 }
 
 /*

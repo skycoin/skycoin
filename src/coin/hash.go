@@ -1,8 +1,8 @@
 package coin
 
 import (
+    "bytes"
     "crypto/sha256"
-    "encoding/hex"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
@@ -45,6 +45,10 @@ func (g *SHA256) Set(b []byte) {
     copy(g[:], b[:32])
 }
 
+func (g SHA256) Equals(other SHA256) bool {
+    return bytes.Equal(g[:], other[:])
+}
+
 func SumSHA256(b []byte) SHA256 {
     sha256Hash.Reset()
     sha256Hash.Write(b)
@@ -74,9 +78,9 @@ func AddSHA256(a1 SHA256, b1 SHA256) SHA256 {
     return MustSumSHA256(b, 32*2)
 }
 
-func (h1 SHA256) Xor(h2 SHA256) SHA256 {
+func (h1 *SHA256) Xor(h2 SHA256) SHA256 {
     var h3 SHA256
-    for i := 0; i < 32; i++ {
+    for i := 0; i < len(h1); i++ {
         h3[i] = h1[i] ^ h2[i]
     }
     return h3
@@ -99,8 +103,8 @@ func Merkle(h0 []SHA256) SHA256 {
     //var th SHA256 = h0[0]
 
     var lh0 = len(h0)
-    for i := lh0; i < 16; i++ { //pad to power of 16
-        h1[i+lh0] = h0[lh0-1] //pad last element till 16
+    for i := lh0; i < np; i++ { //pad to power of 16
+        h1[i] = h0[0] //pad first element till 16
     }
 
     for len(h1) != 1 {
@@ -116,13 +120,4 @@ func Merkle(h0 []SHA256) SHA256 {
         h1 = h2
     }
     return h1[0]
-}
-
-func Hex(s string) []byte {
-    b, err := hex.DecodeString(s)
-    if err != nil {
-        log.Panic(err)
-        return nil
-    }
-    return b
 }

@@ -56,14 +56,14 @@ type TransactionOutput struct {
 	Check that sigs are sequential
 */
 
-func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+func (self *Transaction) PushInput(uxOut *SHA256) uint16 {
     if len(self.TxIn) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
     sigIdx := uint16(len(self.TxIn))
     ti := TransactionInput{
         SigIdx: sigIdx,
-        UxOut:  uxOut,
+        UxOut:  *uxOut,
     }
     self.TxIn = append(self.TxIn, ti)
     return sigIdx
@@ -78,7 +78,7 @@ func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
     self.TxOut = append(self.TxOut, to)
 }
 
-func (self *Transaction) SetSig(idx uint16, sec SecKey) {
+func (self *Transaction) SetSig(idx uint16, sec *SecKey) {
     hash := self.hashInner()
     sig, err := SignHash(hash, sec)
     if err != nil {
@@ -94,11 +94,11 @@ func (self *Transaction) SetSig(idx uint16, sec SecKey) {
     for len(self.TxHeader.Signatures) <= int(idx) {
         self.TxHeader.Signatures = append(self.TxHeader.Signatures, Sig{})
     }
-    self.TxHeader.Signatures[idx] = sig
+    self.TxHeader.Signatures[idx] = *sig
 }
 
 // Hashes only the Transction Inputs & Outputs
-func (self *Transaction) hashInner() SHA256 {
+func (self *Transaction) hashInner() *SHA256 {
     b1 := encoder.Serialize(self.TxIn)
     b2 := encoder.Serialize(self.TxOut)
     b3 := append(b1, b2...)
@@ -106,7 +106,7 @@ func (self *Transaction) hashInner() SHA256 {
 }
 
 // Hashes an entire Transaction struct
-func (self *Transaction) Hash() SHA256 {
+func (self *Transaction) Hash() *SHA256 {
     b1 := encoder.Serialize(*self)
     return SumDoubleSHA256(b1) //double SHA256 hash
 }
@@ -124,5 +124,5 @@ func TransactionDeserialize(b []byte) Transaction {
 }
 
 func (self *Transaction) UpdateHeader() {
-    self.TxHeader.TransactionHash = self.hashInner()
+    self.TxHeader.TransactionHash = *self.hashInner()
 }

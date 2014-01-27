@@ -56,15 +56,15 @@ func (g *Address) MustChecksum() []byte {
 }
 
 // Creates Address from PubKey
-func AddressFromPubkey(pubkey PubKey) Address {
+func AddressFromPubkey(pubkey *PubKey) *Address {
     s := SumSHA256(pubkey[:])
-    addr := Address{Version: 0x0f, Key: HashRipemd160(s[:])}
+    addr := &Address{Version: 0x0f, Key: *HashRipemd160(s[:])}
     addr.MustChecksum()
     return addr
 }
 
 // Creates Address from []byte
-func AddressFromRawPubkey(pubkeyraw []byte) Address {
+func AddressFromRawPubkey(pubkeyraw []byte) *Address {
     pubkey := NewPubKey(pubkeyraw)
     return AddressFromPubkey(pubkey)
 }

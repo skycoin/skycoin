@@ -21,19 +21,19 @@ func MustFromHex(s string) []byte {
     return b
 }
 
+// An Address contains a public and secret key,
 type Address struct {
-    Pubkey  []byte
     Address *coin.Address
-    seckey  []byte //keep secret
+    Pubkey  *coin.PubKey
+    seckey  *coin.SecKey // Keep secret
 }
 
-func GenerateAddress() Address {
+func NewAddress() Address {
     pub, sec := coin.GenerateKeyPair()
-    a := coin.AddressFromRawPubkey(pub)
     return Address{
+        Address: coin.AddressFromPubkey(pub),
         Pubkey:  pub,
         seckey:  sec,
-        Address: &a,
     }
 }
 
@@ -55,11 +55,11 @@ func (self *Wallet) GetRandomAddress() Address {
     return self.Addresses[index]
 }
 
-// Signs a hash for a given address. nil on failure
-func (self *Wallet) Sign(address coin.Address, hash []byte) []byte {
+// Signs a hash for a given address. nil on failure.
+func (self *Wallet) Sign(address *coin.Address, msg []byte) *coin.Sig {
     for _, a := range self.Addresses {
-        if a.Address.Equals(&address) {
-            return coin.GenerateSignature(a.seckey, hash)
+        if a.Address.Equals(address) {
+            return coin.GenerateSignature(a.seckey, msg)
         }
     }
     return nil
@@ -130,7 +130,7 @@ func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, am
 func NewWallet(n int) Wallet {
     var w Wallet
     for i := 0; i < n; i++ {
-        w.Addresses = append(w.Addresses, GenerateAddress())
+        w.Addresses = append(w.Addresses, NewAddress())
     }
     return w
 }

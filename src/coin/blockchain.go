@@ -30,14 +30,14 @@ func newBlock(prev *Block) *Block {
     return &Block{Header: header, Body: BlockBody{}}
 }
 
-func (self *Block) HashHeader() SHA256 {
+func (self *Block) HashHeader() *SHA256 {
     b1 := encoder.Serialize(self.Header)
     return SumDoubleSHA256(b1)
 }
 
 //merkle hash of transactions in block
-func (self *Block) HashBody() SHA256 {
-    var hashes []SHA256
+func (self *Block) HashBody() *SHA256 {
+    var hashes []*SHA256
     for _, t := range self.Body.Transactions {
         hashes = append(hashes, t.Hash())
     }
@@ -132,27 +132,27 @@ func (self *BlockChain) GetUnspentOutputs(address *Address) []UxOut {
 }
 
 //slow because we are rehashing everytime we do lookup
-func (self *BlockChain) GetUnspentByHash(Hash SHA256) *UxOut {
+func (self *BlockChain) GetUnspentByHash(hash *SHA256) *UxOut {
     for i, ux := range self.Unspent {
-        if Hash == ux.Hash() {
+        if hash.Equals(ux.Hash()) {
             return &self.Unspent[i]
         }
     }
     return nil
 }
 
-func (self *BlockChain) HashUnspent() SHA256 {
+func (self *BlockChain) HashUnspent() *SHA256 {
     var h SHA256
     for _, ux := range self.Unspent {
-        h = h.Xor(ux.Hash()) // dont rehash each time
+        h = *(h.Xor(ux.Hash())) // dont rehash each time
     }
-    return h
+    return &h
 }
 
 func (self *BlockChain) AddUnspent(ux UxOut) {
     hash := ux.Hash()
     for _, ux := range self.Unspent {
-        if hash == ux.Hash() {
+        if hash.Equals(ux.Hash()) {
             log.Panic("Unspent transaction already known")
         }
     }
@@ -160,9 +160,9 @@ func (self *BlockChain) AddUnspent(ux UxOut) {
 }
 
 //need to save, in order to do rollback
-func (self *BlockChain) RemoveUnspent(hash SHA256) {
+func (self *BlockChain) RemoveUnspent(hash *SHA256) {
     for i, ux := range self.Unspent {
-        if hash == ux.Hash() {
+        if hash.Equals(ux.Hash()) {
             self.Unspent[i] = self.Unspent[len(self.Unspent)-1]
             self.Unspent = self.Unspent[:len(self.Unspent)-1]
             return
@@ -175,7 +175,7 @@ func (self *BlockChain) RemoveUnspent(hash SHA256) {
 func (self *BlockChain) validateInputs(b *Block) error {
     for _, t := range b.Body.Transactions {
         for _, tx := range t.TxIn {
-            chk := self.GetUnspentByHash(tx.UxOut)
+            chk := self.GetUnspentByHash(&tx.UxOut)
             if chk == nil {
                 return errors.New("validateInputs: input does not exists")
             }
@@ -208,11 +208,11 @@ func (self *BlockChain) validateSignatures(b *Block) error {
     //check signatures
     for _, t := range b.Body.Transactions {
         for _, tx := range t.TxIn {
-            hash := t.TxHeader.TransactionHash
-            sig := t.TxHeader.Signatures[tx.SigIdx] //signature for input
-            ux := self.GetUnspentByHash(tx.UxOut)   //output being spent
-            if err := ChkSig(ux.Body.Address, hash, sig); err != nil {
-                return err //signature check failed
+            ux := self.GetUnspentByHash(&tx.UxOut) // output being spent
+            err := ChkSig(&ux.Body.Address, &t.TxHeader.TransactionHash,
+                &t.TxHeader.Signatures[tx.SigIdx])
+            if err != nil {
+                return err // signature check failed
             }
         }
     }
@@ -273,10 +273,10 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
-    if b.Header.HashPrevBlock != self.Head.Header.HashPrevBlock {
+    if !b.Header.HashPrevBlock.Equals(&self.Head.Header.HashPrevBlock) {
         return errors.New("HashPrevBlock does not match current head")
     }
-    if b.Header.BodyHash != b.HashBody() {
+    if !b.HashBody().Equals(&b.Header.BodyHash) {
         return errors.New("Body hash error hash error")
     }
     return nil
@@ -288,13 +288,13 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
 func (self *BlockChain) validateBlockBody(b *Block) error {
 
     //check merkle tree and compare against header
-    if b.Header.BodyHash != b.HashBody() {
+    if !b.HashBody().Equals(&b.Header.BodyHash) {
         return errors.New("transaction body hash does not match header")
     }
 
     //check inner hash
     for _, t := range b.Body.Transactions {
-        if t.hashInner() != t.TxHeader.TransactionHash {
+        if t.hashInner().Equals(&t.TxHeader.TransactionHash) {
             return errors.New("hash invalid")
         }
     }
@@ -316,7 +316,7 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
 
     //make list
     //check for duplicate outputs
-    var outputs []SHA256
+    var outputs []*SHA256
     for _, t := range b.Body.Transactions {
         for _, to := range t.TxOut {
             var out UxOut
@@ -347,7 +347,7 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
         var coinsIn uint64
         var hoursIn uint64
         for _, tx := range t.TxIn {
-            ux := self.GetUnspentByHash(tx.UxOut)
+            ux := self.GetUnspentByHash(&tx.UxOut)
             coinsIn += ux.Body.Coins
             hoursIn += ux.CoinHours(b.Header.Time)
         }
@@ -371,7 +371,7 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
         var hoursIn uint64
         var hoursOut uint64
         for _, tx := range t.TxIn {
-            ux := self.GetUnspentByHash(tx.UxOut)
+            ux := self.GetUnspentByHash(&tx.UxOut)
             hoursIn += ux.CoinHours(self.Head.Header.Time) //valid in future
         }
         for _, ux := range t.TxOut {
@@ -405,7 +405,7 @@ func (self *BlockChain) ExecuteBlock(b *Block) error {
 
     for _, tx := range b.Body.Transactions {
         for _, ti := range tx.TxIn {
-            self.RemoveUnspent(ti.UxOut)
+            self.RemoveUnspent(&ti.UxOut)
         }
         for _, to := range tx.TxOut {
 
@@ -413,7 +413,7 @@ func (self *BlockChain) ExecuteBlock(b *Block) error {
             	Add function for intiating outputs
             */
             var ux UxOut //create transaction output
-            ux.Body.SrcTransaction = tx.Hash()
+            ux.Body.SrcTransaction = *tx.Hash()
             ux.Body.Address = to.DestinationAddress
             ux.Body.Coins = to.Coins
             ux.Body.Hours = to.Hours
@@ -446,7 +446,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t *Transaction) error {
 
     //check that all inputs exist and are unspent
     for _, tx := range t.TxIn {
-        chk := self.GetUnspentByHash(tx.UxOut)
+        chk := self.GetUnspentByHash(&tx.UxOut)
         if chk == nil {
             return errors.New("Unspent output does not exist")
         }
@@ -455,7 +455,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t *Transaction) error {
     //check for double spending outputs twice in block
     for i, tx1 := range t.TxIn {
         for j, tx2 := range t.TxIn {
-            if j < i && tx1.UxOut == tx2.UxOut {
+            if j < i && tx1.UxOut.Equals(&tx2.UxOut) {
                 return errors.New("Cannot spend output twice in same block")
             }
         }
@@ -465,7 +465,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t *Transaction) error {
     for _, t := range b.Body.Transactions {
         for i, tx1 := range t.TxIn {
             for j, tx2 := range t.TxIn {
-                if j < i && tx1.UxOut == tx2.UxOut {
+                if j < i && tx1.UxOut.Equals(&tx2.UxOut) {
                     return errors.New("Cannot spend output twice in same block")
                 }
             }
@@ -474,19 +474,17 @@ func (self *BlockChain) AppendTransaction(b *Block, t *Transaction) error {
 
     hash := t.hashInner()
     //t.TxHeader.Hash = hash //set hash?
-    if hash != t.TxHeader.TransactionHash {
+    if !hash.Equals(&t.TxHeader.TransactionHash) {
         log.Panic("Set Hash!")
     }
 
     //check signatures
     for _, tx := range t.TxIn {
-        hash := t.TxHeader.TransactionHash
-        sig := t.TxHeader.Signatures[tx.SigIdx] //signature for input
-        ux := self.GetUnspentByHash(tx.UxOut)   //output being spent
-
-        err := ChkSig(ux.Body.Address, hash, sig)
+        ux := self.GetUnspentByHash(&tx.UxOut) //output being spent
+        err := ChkSig(&ux.Body.Address, &t.TxHeader.TransactionHash,
+            &t.TxHeader.Signatures[tx.SigIdx])
         if err != nil {
-            return err //signature check failed
+            return err // signature check failed
         }
     }
 
@@ -494,7 +492,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t *Transaction) error {
     var coinsIn uint64
     var hoursIn uint64
     for _, tx := range t.TxIn {
-        ux := self.GetUnspentByHash(tx.UxOut)
+        ux := self.GetUnspentByHash(&tx.UxOut)
         coinsIn += ux.Body.Coins
         hoursIn += ux.CoinHours(self.Head.Header.Time)
     }

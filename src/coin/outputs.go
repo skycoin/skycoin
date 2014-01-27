@@ -58,7 +58,7 @@ type UxBody struct {
 type UxMeta struct {
 }
 
-func (self UxOut) Hash() SHA256 {
+func (self UxOut) Hash() *SHA256 {
     b1 := encoder.Serialize(self.Body)
     return SumSHA256(b1)
 }
@@ -69,7 +69,7 @@ func (self UxOut) String() string {
 }
 
 /*
-func (self UxOut) HashTotal() SHA256 {
+func (self UxOut) HashTotal() *SHA256 {
 	b1 := encoder.Serialize(self.Head)
 	b2 := encoder.Serialize(self.Body)
 	b3 = append(b1, b2...)

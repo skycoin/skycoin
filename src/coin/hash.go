@@ -1,8 +1,8 @@
 package coin
 
 import (
+    "bytes"
     "crypto/sha256"
-    "encoding/hex"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
@@ -25,13 +25,13 @@ func (self *Ripemd160) Set(b []byte) {
     copy(self[:], b[:])
 }
 
-func HashRipemd160(data []byte) Ripemd160 {
+func HashRipemd160(data []byte) *Ripemd160 {
     ripemd160Hash.Reset()
     ripemd160Hash.Write(data)
     sum := ripemd160Hash.Sum(nil)
     var h Ripemd160
     h.Set(sum[:])
-    return h
+    return &h
 }
 
 // SHA256
@@ -45,17 +45,21 @@ func (g *SHA256) Set(b []byte) {
     copy(g[:], b[:32])
 }
 
-func SumSHA256(b []byte) SHA256 {
+func (g *SHA256) Equals(other *SHA256) bool {
+    return bytes.Equal(g[:], other[:])
+}
+
+func SumSHA256(b []byte) *SHA256 {
     sha256Hash.Reset()
     sha256Hash.Write(b)
     sum := sha256Hash.Sum(nil)
     var h SHA256
     h.Set(sum[:])
-    return h
+    return &h
 }
 
 // Like SumSHA256, but len(b) must equal n, or panic
-func MustSumSHA256(b []byte, n int) SHA256 {
+func MustSumSHA256(b []byte, n int) *SHA256 {
     if len(b) != n {
         log.Panic("len(b) != n")
     }
@@ -63,38 +67,38 @@ func MustSumSHA256(b []byte, n int) SHA256 {
 }
 
 // Double SHA256
-func SumDoubleSHA256(b []byte) SHA256 {
+func SumDoubleSHA256(b []byte) *SHA256 {
     h := SumSHA256(b)
     return AddSHA256(h, h)
 }
 
 // Returns the SHA256 hash of to two concatenated hashes
-func AddSHA256(a1 SHA256, b1 SHA256) SHA256 {
+func AddSHA256(a1 *SHA256, b1 *SHA256) *SHA256 {
     b := append(a1[:], b1[:]...)
     return MustSumSHA256(b, 32*2)
 }
 
-func (h1 SHA256) Xor(h2 SHA256) SHA256 {
+func (h1 *SHA256) Xor(h2 *SHA256) *SHA256 {
     var h3 SHA256
-    for i := 0; i < 32; i++ {
+    for i := 0; i < len(h1); i++ {
         h3[i] = h1[i] ^ h2[i]
     }
-    return h3
+    return &h3
 }
 
 //compute root merkle tree hash of hash list
 //pad input to power of 16
 //group inputs hashes into groups of 16 and hash them down to single hash
 //repeat until there is single hash in list
-func Merkle(h0 []SHA256) SHA256 {
+func Merkle(h0 []*SHA256) *SHA256 {
     //fmt.Printf("Merkle 0: len= %v \n", len(h0))
     if len(h0) == 0 {
-        return SHA256{} //zero hash
+        return &SHA256{} //zero hash
     }
     np := 0
     for np = 1; np < len(h0); np *= 16 {
     }
-    h1 := make([]SHA256, np)
+    h1 := make([]*SHA256, np)
 
     //var th SHA256 = h0[0]
 
@@ -105,8 +109,8 @@ func Merkle(h0 []SHA256) SHA256 {
 
     for len(h1) != 1 {
         //fmt.Printf("Merkle 1: len= %v \n", len(h1))
-        h2 := make([]SHA256, len(h1)/16)
-        var h3 [16]SHA256
+        h2 := make([]*SHA256, len(h1)/16)
+        var h3 [16]*SHA256
         for i := 0; i < len(h2); i++ {
             for j := 0; j < 16; j++ {
                 h3[j] = h1[16*i+j]
@@ -116,13 +120,4 @@ func Merkle(h0 []SHA256) SHA256 {
         h1 = h2
     }
     return h1[0]
-}
-
-func Hex(s string) []byte {
-    b, err := hex.DecodeString(s)
-    if err != nil {
-        log.Panic(err)
-        return nil
-    }
-    return b
 }

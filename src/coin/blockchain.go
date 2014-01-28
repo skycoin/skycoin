@@ -7,6 +7,7 @@ import (
     "log"
     "math"
     "time"
+    "fmt"
 )
 
 var (
@@ -163,14 +164,10 @@ func (self *BlockChain) AddUnspent(ux UxOut) {
 // Removes a UxOut for a given hash
 // TODO -- Need to save, in order to do rollback
 func (self *BlockChain) RemoveUnspent(hash SHA256) {
-    log.Panic("This function is wrong. Please fix it.")
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
-            // TODO -- this looks wrong
-            // It is copying the last unspent output to the output to remove
-            // Then assigning itself to itself
-            self.Unspent[i] = self.Unspent[len(self.Unspent)-1]
-            self.Unspent = self.Unspent[:len(self.Unspent)-1] // does nothing
+            //remove spent output from array
+            self.Unspent= append(self.Unspent[:i], self.Unspent[i+1:]...)
             return
         }
     }
@@ -346,10 +343,13 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
     }
     //make sure output does not already exist in unspent blocks
     for _, hash := range outputs {
-        _, err := self.GetUnspentByHash(hash)
-        if err != nil {
+        out, err := self.GetUnspentByHash(hash)
+        if err == nil {
+            if out.Hash() != hash {
+                log.Panic("impossible")
+            }
             return errors.New("Impossible Error: hash collision, " +
-                "duplicate output to unspent block")
+                "new output has same hash as existing output")
         }
     }
 
@@ -420,6 +420,8 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     //BkSeq = self.Head.Header.BkSeq
     //UxSeq := self.Head.Meta.UxSeq1
 
+    fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
+
     for _, tx := range b.Body.Transactions {
         for _, ti := range tx.TxIn {
             self.RemoveUnspent(ti.UxOut)
@@ -459,7 +461,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     return nil
 }
 
-func (self *BlockChain) AppendTransaction(b Block, t Transaction) error {
+func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
 
     //check that all inputs exist and are unspent
     for _, tx := range t.TxIn {

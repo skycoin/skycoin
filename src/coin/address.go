@@ -2,14 +2,15 @@ package coin
 
 import (
     "bytes"
-    "encoding/hex"
+    //"encoding/hex"
     "github.com/skycoin/skycoin/src/lib/base58"
     "log"
 )
 
+//version is after Key to enable better vanity address generation
 type Address struct {
-    Version byte
     Key     [20]byte //sha256(sha256(ridmd160(pubkey)))
+    Version byte
     ChkSum  [4]byte
 }
 
@@ -21,8 +22,8 @@ func (g *Address) String() string {
 // Returns address as raw bytes, containing version and then key
 func (g *Address) Bytes() []byte {
     b := make([]byte, 25)
-    b[0] = g.Version
-    copy(b[1:21], g.Key[0:20])
+    copy(b[0:20], g.Key[0:20])
+    b[20] = g.Version
     copy(b[21:25], g.ChkSum[0:4])
     return b
     //return append([]byte{g.Version}, g.Key[:]...)
@@ -36,7 +37,7 @@ func (g *Address) Base58() []byte {
 // Returns address checksum
 // 4 byte checksum
 func (g *Address) Checksum() []byte {
-    r1 := append([]byte{g.Version}, g.Key[:]...)
+    r1 := append(g.Key[:],[]byte{g.Version}...)
     r2 := SumSHA256(r1[:])
     return r2[0:4] //4 bytes
 }
@@ -77,32 +78,9 @@ func AddressFromRawPubKey(pubkeyraw []byte) Address {
     return AddressFromPubKey(pubkey)
 }
 
-func init() {
-    a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
-    b, err := hex.DecodeString(a)
-    if err != nil {
-        log.Panic(err)
-    }
-    addr := AddressFromRawPubKey(b)
-    if !bytes.Equal(addr.ChkSum[:], addr.Checksum()) {
-        log.Panic("Checksum fail")
-    }
-    if len(addr.Bytes()) != 25 {
-        log.Panic("Address length invalid")
-    }
+func AddressFromSecKey(seckey SecKey) Address {
+    //pubkey := PubkeyFromSeckey(pubkey)
+    //Address := 
+    return Address{}
 }
-
-/*
-//set the genesis address pubkey
-var GenesisAddress Address
-
-func init() {
-	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
-	b, err := hex.DecodeString(a)
-	if err != nil {
-		log.Panic(err)
-	}
-	//fmt.Printf("len= %v \n", len(b))
-	GenesisAddress = AddressFromRawPubkey(b)
-}
-*/
+//PubkeyFromSeckey

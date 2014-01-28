@@ -6,11 +6,11 @@ import (
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/keyring"
 	"github.com/skycoin/skycoin/src/util"
-	"io"
+	//"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
+	//"os"
 	"path/filepath"
 	"time"
 )

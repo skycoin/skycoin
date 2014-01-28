@@ -497,6 +497,68 @@ func TestCullInvalidConnections(t *testing.T) {
     ShutdownPool()
 }
 
+func TestRecordMessageEventValid(t *testing.T) {
+    // Valid message, not expecting Introduction
+    assert.Equal(t, len(messageEvent), 0)
+    delete(expectingIntroductions, addr)
+    m := &PingMessage{}
+    m.c = messageContext(addr)
+    err := recordMessageEvent(m, m.c)
+    assert.Nil(t, err)
+    assert.Equal(t, len(messageEvent), 1)
+    if len(messageEvent) == 0 {
+        t.Fatal("messageEvent empty, would block")
+    }
+    me := <-messageEvent
+    _, ok := me.(*PingMessage)
+    assert.True(t, ok)
+}
+
+func TestRecordMessageEventIsIntroduction(t *testing.T) {
+    // Needs Introduction and thats what it has received
+    Pool = gnet.NewConnectionPool(port)
+    expectingIntroductions[addr] = time.Now().UTC()
+    assert.Equal(t, len(messageEvent), 0)
+    m := NewIntroductionMessage()
+    m.c = messageContext(addr)
+    err := recordMessageEvent(m, m.c)
+    assert.Nil(t, err)
+    assert.Equal(t, len(messageEvent), 1)
+    if len(messageEvent) == 0 {
+        t.Fatal("messageEvent empty, would block")
+    }
+    me := <-messageEvent
+    _, ok := me.(*IntroductionMessage)
+    assert.Equal(t, len(Pool.DisconnectQueue), 0)
+    assert.True(t, ok)
+    delete(expectingIntroductions, addr)
+    ShutdownPool()
+}
+
+func TestRecordMessageEventNeedsIntroduction(t *testing.T) {
+    // Needs Introduction but didn't get it first
+    Pool = gnet.NewConnectionPool(port)
+    m := &PingMessage{}
+    m.c = messageContext(addr)
+    Pool.Addresses[addr] = m.c.Conn
+    Pool.Pool[m.c.Conn.Id] = m.c.Conn
+    assert.Equal(t, len(messageEvent), 0)
+    expectingIntroductions[addr] = time.Now().UTC()
+    err := recordMessageEvent(m, m.c)
+    assert.NotNil(t, err)
+    assert.Equal(t, err, DisconnectNoIntroduction)
+    assert.Equal(t, len(messageEvent), 0)
+    assert.Equal(t, len(Pool.DisconnectQueue), 1)
+    if len(Pool.DisconnectQueue) == 0 {
+        t.Fatal("DisconnectQueue empty, would block")
+    }
+    de := <-Pool.DisconnectQueue
+    assert.Equal(t, de.ConnId, m.c.Conn.Id)
+    assert.Equal(t, de.Reason, DisconnectNoIntroduction)
+    ShutdownPool()
+    delete(expectingIntroductions, addr)
+}
+
 func TestOnConnect(t *testing.T) {
     RegisterMessages()
     Peers = pex.NewPex(maxPeers)

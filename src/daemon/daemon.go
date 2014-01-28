@@ -239,7 +239,7 @@ func requestPeers() {
 
 // Removes connections that have not sent a message in too long
 func clearStaleConnections() {
-    now := time.Now()
+    now := time.Now().UTC()
     for _, c := range Pool.Pool {
         if c.LastReceived.Add(idleConnectionLimit).Before(now) {
             Pool.Disconnect(c, DisconnectIdle)
@@ -249,7 +249,7 @@ func clearStaleConnections() {
 
 // Send a ping if our last message sent was over pingRate ago
 func sendPings() {
-    now := time.Now()
+    now := time.Now().UTC()
     for _, c := range Pool.Pool {
         if c.LastSent.Add(pingRate).Before(now) {
             err := c.Controller.SendMessage(&PingMessage{})
@@ -291,7 +291,7 @@ func handleConnectionError(c ConnectionError) {
 func cullInvalidConnections() {
     // This method only handles the erroneous people from the DHT, but not
     // malicious nodes
-    now := time.Now()
+    now := time.Now().UTC()
     for a, t := range expectingIntroductions {
         // Forget about anyone that already disconnected
         if Pool.Addresses[a] == nil {
@@ -348,7 +348,7 @@ func onConnect(e ConnectEvent) {
     if e.Solicited {
         outgoingConnections[a] = c
     }
-    expectingIntroductions[a] = time.Now()
+    expectingIntroductions[a] = time.Now().UTC()
     logger.Debug("Sending introduction message to %s", a)
     err := c.Controller.SendMessage(NewIntroductionMessage())
     if err != nil {

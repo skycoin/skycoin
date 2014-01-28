@@ -89,7 +89,7 @@ func tests() {
 
     fmt.Printf("genesis transaction: \n")
 
-    err := bc.AppendTransaction(b, t)
+    err := bc.AppendTransaction(&b, t)
     if err != nil {
         log.Panic(err)
     }
@@ -100,6 +100,7 @@ func tests() {
         log.Panic(err)
     }
 
+    fmt.Printf("after execution: \n")
     keyring.PrintWalletBalances(bc, wa)
 }
 

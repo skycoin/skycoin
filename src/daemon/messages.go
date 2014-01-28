@@ -104,8 +104,7 @@ func NewGetPeersMessage() *GetPeersMessage {
 
 func (self *GetPeersMessage) Handle(mc *gnet.MessageContext) error {
     self.c = mc
-    messageEvent <- self
-    return nil
+    return recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were requested
@@ -156,8 +155,7 @@ func (self *GivePeersMessage) GetPeers() []string {
 
 func (self *GivePeersMessage) Handle(mc *gnet.MessageContext) error {
     self.c = mc
-    messageEvent <- self
-    return nil
+    return recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were received
@@ -228,7 +226,9 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext) (err error) {
     }
     self.valid = (err == nil)
     self.c = mc
-    messageEvent <- self
+    if err == nil {
+        err = recordMessageEvent(self, mc)
+    }
     return
 }
 
@@ -275,8 +275,7 @@ type PingMessage struct {
 
 func (self *PingMessage) Handle(mc *gnet.MessageContext) error {
     self.c = mc
-    messageEvent <- self
-    return nil
+    return recordMessageEvent(self, mc)
 }
 
 // Sends a PongMessage to the sender of PingMessage

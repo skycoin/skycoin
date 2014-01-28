@@ -56,6 +56,8 @@ var (
         "Idle")
     DisconnectFailedSend gnet.DisconnectReason = errors.New(
         "Failed to send data to this connection")
+    DisconnectNoIntroduction gnet.DisconnectReason = errors.New(
+        "First message was not an Introduction")
     // This is returned when a seemingly impossible error is encountered
     // e.g. net.Conn.Addr() returns an invalid ip:port
     DisconnectOtherError gnet.DisconnectReason = errors.New(
@@ -66,6 +68,7 @@ var (
     BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
         DisconnectSelf:                      time.Hour * 24,
         DisconnectIntroductionTimeout:       time.Hour,
+        DisconnectNoIntroduction:            time.Hour * 8,
         gnet.DisconnectInvalidMessageLength: time.Hour * 8,
         gnet.DisconnectMalformedMessage:     time.Hour * 8,
         gnet.DisconnectUnknownMessage:       time.Hour * 8,
@@ -303,6 +306,22 @@ func cullInvalidConnections() {
             delete(Peers.Peerlist, a)
         }
     }
+}
+
+// Records an AsyncMessage to the messageEvent chan.  Do not access
+// messageEvent directly.
+func recordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error {
+    // The first message received must be an Introduction
+    _, needsIntro := expectingIntroductions[c.Conn.Addr()]
+    if needsIntro {
+        _, isIntro := m.(*IntroductionMessage)
+        if !isIntro {
+            Pool.Disconnect(c.Conn, DisconnectNoIntroduction)
+            return DisconnectNoIntroduction
+        }
+    }
+    messageEvent <- m
+    return nil
 }
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel

@@ -234,7 +234,7 @@ func TestDaemonLoopRequestPeersTicker(t *testing.T) {
 func TestDaemonLoopClearOldPeersTicker(t *testing.T) {
     quit := setupDaemonLoop()
     p := pex.NewPeer(addr)
-    p.LastSeen = time.Unix(0, 0).Unix()
+    p.LastSeen = time.Unix(0, 0)
     Peers.Peerlist[addr] = p
     rate := cullPeerRate
     cullPeerRate = time.Millisecond * 10
@@ -491,7 +491,7 @@ func TestCullInvalidConnections(t *testing.T) {
     }
     de := <-Pool.DisconnectQueue
     assert.Equal(t, de.ConnId, 2)
-    assert.Equal(t, de.Reason, DisconnectVersionTimeout)
+    assert.Equal(t, de.Reason, DisconnectIntroductionTimeout)
 
     resetPeers()
     ShutdownPool()
@@ -645,7 +645,7 @@ func TestOnDisconnect(t *testing.T) {
     assert.Equal(t, len(connectionMirrors), 0)
 
     // Blacklistable
-    reason = DisconnectVersionTimeout
+    reason = DisconnectIntroductionTimeout
     setupTestOnDisconnect(c, mirror)
     assert.NotPanics(t, func() { onDisconnect(c, reason) })
     assert.Equal(t, len(Peers.Blacklist), 1)

@@ -83,8 +83,16 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 }
 
 // TODO -- implement
-func PubKeyFromSec(sec *SecKey) PubKey {
-    return PubKey{}
+//func PubKeyFromSec(sec SecKey) PubKey {
+//    return PubKey{}
+//}
+
+func PubkeyFromSeckey(seckey []byte) PubKey {
+    pubkey := secp256k1.PubkeyFromSeckey(seckey)
+    if pubkey == nil {
+        return PubKey{}
+    }
+    return NewPubKey(pubkey)
 }
 
 func GenerateSignature(seckey SecKey, msg []byte) Sig {

@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"os"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -26,7 +26,6 @@ type test_struct struct {
 
 type walletData struct {
 	Seed      string
-	Address   string
 	Addresses []string
 	History   []string
 }
@@ -72,11 +71,20 @@ func loadWallet(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug("Serving %s", value)
 
-	fmt.Printf("walletName= %s", value+".wallet")
+	fmt.Printf("walletName = %s", value+".wallet")
 
-	LoadedJason := util.LoadJSON(value+".wallet", WalletFile)
+	//LoadedJSON := util.LoadJSON(value+".wallet", WalletFile)
 
-	js, err := json.Marshal(LoadedJason)
+	err = util.LoadJSON(value+".wallet", &WalletFile)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	fmt.Printf("json= %v type= %T \n", WalletFile, WalletFile)
+
+	logger.Debug("LoadedJSON = %s", WalletFile)
+
+	js, err := json.Marshal(WalletFile)
 
 	_ = err
 
@@ -135,4 +143,25 @@ func newAddress(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func LoadJSON(filename string, thing interface{}) error {
+	file, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(file, thing)
+}
+
+func SaveJSON(filename string, thing interface{}) error {
+	data, err := json.Marshal(thing)
+	if err != nil {
+		return err
+	}
+	tmpname := filename + ".tmp"
+	err = ioutil.WriteFile(tmpname, data, os.FileMode(0644))
+	if err != nil {
+		return err
+	}
+	return os.Rename(tmpname, filename)
 }

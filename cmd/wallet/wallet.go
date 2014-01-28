@@ -35,7 +35,7 @@ var (
 	logger = logging.MustGetLogger("skycoin.gui")
 )
 
-var walletFile = walletData{}
+var WalletFile = walletData{}
 
 func main() {
 	static_path, _ := filepath.Abs("../../static/app/")
@@ -74,9 +74,9 @@ func loadWallet(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("walletName= %s", value+".wallet")
 
-	loadedJason := util.LoadJSON(value+".wallet", walletFile)
+	LoadedJason := util.LoadJSON(value+".wallet", WalletFile)
 
-	js, err := json.Marshal(loadedJason)
+	js, err := json.Marshal(LoadedJason)
 
 	_ = err
 
@@ -121,7 +121,7 @@ func saveWallet(w http.ResponseWriter, r *http.Request) {
 func newAddress(w http.ResponseWriter, r *http.Request) {
 
 	//js, err := json.Marshal(profile)
-	addr := keyring.GenerateAddress()
+	addr := keyring.NewAddress()
 
 	//walletFile.Addresses = append(walletFile.Addresses, addr)
 	fmt.Printf("address= %s \n", addr.Address.String())

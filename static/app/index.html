@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <title>Skycoin</title>
-  
+
   <link href="css/bootstrap.min.css" rel="stylesheet"/>
   <link href="css/font-awesome.min.css" rel="stylesheet">
   <link href="css/bootstrap.icon-large.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css"/>
 
 </head>
-<body ng-controller="tabsCtrl">
+<body ng-controller="mainCtrl">
   <div id="sky-header"></div>
   <div id="sky-center">
     <!-- <p>Select a tab by setting active binding to true:</p>
@@ -35,22 +35,24 @@
               <td><div id="overview-wallet-title">My Wallet</div></td><td></td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-balance">Address: </div></td><td>0</td>
+              <td><div id="overview-wallet-balance">Address: </div></td><td>{{newAddress}}</td>
             </tr>
             <tr>
               <td><div id="overview-wallet-address">Balance: </div></td><td>0.00 SKY</td>
             </tr>
           </table>
+          <button ng-click="newAddress()" type="button" class="btn btn-default">New Wallet</button>
+
           <!--<div id="overview-recent-transaction" class="outline">
             <div id="overview-recent-transaction-title">Recent Transactions</div>
-            Receive 
+            Receive
             Date
-            Address 
+            Address
             Amount
           </div>-->
-          
+
         </div>
-        
+
       </tab>
 
       <tab>
@@ -72,10 +74,10 @@
             </tr>
           </table>
 
-          
-          
-           
-           
+
+
+
+
         </div>
       </tab>
 
@@ -124,7 +126,7 @@
           </table>
         </div>
         <!-- <span class="receive-button">Export</span> -->
-      </tab> 
+      </tab>
 
       <!-- <tab>
         <tab-heading>
@@ -170,7 +172,7 @@
       </tab> -->
 
 
-      
+
     </tabset>
 
 

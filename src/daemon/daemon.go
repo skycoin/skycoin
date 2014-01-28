@@ -35,14 +35,14 @@ var (
     // Maximum number of connections to try at once
     pendingConnectionsMax = 16
     // How long to wait for a version packet
-    versionWait = time.Second * 30
+    introductionWait = time.Second * 30
     // How often to check for peers that have decided to stop communicating
     cullInvalidRate = time.Second * 3
 
     // DisconnectReasons
     DisconnectInvalidVersion gnet.DisconnectReason = errors.New(
         "Invalid version")
-    DisconnectVersionTimeout gnet.DisconnectReason = errors.New(
+    DisconnectIntroductionTimeout gnet.DisconnectReason = errors.New(
         "Version timeout")
     DisconnectVersionSendFailed gnet.DisconnectReason = errors.New(
         "Version send failed")
@@ -65,7 +65,7 @@ var (
     // DisconnectReasons
     BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
         DisconnectSelf:                      time.Hour * 24,
-        DisconnectVersionTimeout:            time.Hour,
+        DisconnectIntroductionTimeout:       time.Hour,
         gnet.DisconnectInvalidMessageLength: time.Hour * 8,
         gnet.DisconnectMalformedMessage:     time.Hour * 8,
         gnet.DisconnectUnknownMessage:       time.Hour * 8,
@@ -295,11 +295,11 @@ func cullInvalidConnections() {
             delete(expectingIntroductions, a)
             continue
         }
-        // Remove anyone that fails to send a version within versionWait time
-        if t.Add(versionWait).Before(now) {
+        // Remove anyone that fails to send a version within introductionWait time
+        if t.Add(introductionWait).Before(now) {
             logger.Info("Removing %s for not sending a version", a)
             delete(expectingIntroductions, a)
-            Pool.Disconnect(Pool.Addresses[a], DisconnectVersionTimeout)
+            Pool.Disconnect(Pool.Addresses[a], DisconnectIntroductionTimeout)
             delete(Peers.Peerlist, a)
         }
     }

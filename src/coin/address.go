@@ -34,10 +34,6 @@ func (g *Address) Base58() []byte {
     return []byte(base58.Hex2Base58(g.Key[:]))
 }
 
-func (g Address) Equals(other Address) bool {
-    return g == other
-}
-
 // Returns address checksum
 // 4 byte checksum
 func (g *Address) Checksum() []byte {

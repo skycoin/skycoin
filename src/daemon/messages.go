@@ -29,15 +29,21 @@ var (
         time.Now().UTC().UnixNano())).Uint32()
     // Message handling queue
     messageEvent = make(chan AsyncMessage, gnet.EventChannelBufferSize)
+    // Message ID prefices
+    IntroductionPrefix = gnet.MessagePrefix{'I', 'N', 'T', 'R'}
+    GetPeersPrefix     = gnet.MessagePrefix{'G', 'E', 'T', 'P'}
+    GivePeersPrefix    = gnet.MessagePrefix{'G', 'I', 'V', 'P'}
+    PingPrefix         = gnet.MessagePrefix{'P', 'I', 'N', 'G'}
+    PongPrefix         = gnet.MessagePrefix{'P', 'O', 'N', 'G'}
 )
 
 // Registers our Messages with gnet
 func RegisterMessages() {
-    gnet.RegisterMessage(IntroductionMessage{})
-    gnet.RegisterMessage(GetPeersMessage{})
-    gnet.RegisterMessage(GivePeersMessage{})
-    gnet.RegisterMessage(PingMessage{})
-    gnet.RegisterMessage(PongMessage{})
+    gnet.RegisterMessage(IntroductionPrefix, IntroductionMessage{})
+    gnet.RegisterMessage(GetPeersPrefix, GetPeersMessage{})
+    gnet.RegisterMessage(GivePeersPrefix, GivePeersMessage{})
+    gnet.RegisterMessage(PingPrefix, PingMessage{})
+    gnet.RegisterMessage(PongPrefix, PongMessage{})
     gnet.VerifyMessages()
 }
 

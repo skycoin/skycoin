@@ -2,7 +2,7 @@ package keyring
 
 import (
     "encoding/hex"
-    //"errors"
+    "errors"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
     "log"
@@ -57,14 +57,13 @@ func (self *Wallet) GetRandomAddress() Address {
 
 // Signs a hash for a given address. nil on failure.
 // use error
-func (self *Wallet) Sign(address coin.Address, msg []byte) *coin.Sig {
+func (self *Wallet) Sign(address coin.Address, msg []byte) (coin.Sig, error) {
     for _, a := range self.Addresses {
-        if a.Address.Equals(address) {
-            sig := coin.GenerateSignature(a.SecKey, msg)
-            return &sig
+        if a.Address == address {
+            return coin.GenerateSignature(a.SecKey, msg), nil
         }
     }
-    return nil
+    return coin.Sig{}, errors.New("Failed to sign: Unknown address")
 }
 
 // Refresh the unspent outputs for the wallet

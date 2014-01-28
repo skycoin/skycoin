@@ -26,7 +26,7 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
     isCA bool, validFrom time.Time, validFor time.Duration) error {
     priv, err := rsa.GenerateKey(rand.Reader, rsaBits)
     if err != nil {
-        return fmt.Errorf("failed to generate private key: %v", err)
+        return fmt.Errorf("Failed to generate private key: %v", err)
     }
 
     notBefore := validFrom
@@ -74,7 +74,7 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
 
     certOut, err := os.Create(certFile)
     if err != nil {
-        return fmt.Errorf("failed to open %s for writing: %v", certFile, err)
+        return fmt.Errorf("Failed to open %s for writing: %v", certFile, err)
     }
     defer certOut.Close()
     pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
@@ -82,7 +82,7 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
     keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
         0600)
     if err != nil {
-        return fmt.Errorf("failed to open %s for writing:", keyFile, err)
+        return fmt.Errorf("Failed to open %s for writing:", keyFile, err)
     }
     defer keyOut.Close()
     pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY",

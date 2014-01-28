@@ -6,5 +6,5 @@ gvm install go1.2
 grep -q 'gvm use' ~/.bashrc;
 if [[ $? -ne 0 ]]; then
     echo "gvm use go1.2 >/dev/null" >> ~/.bashrc
-    source ~/.bashrc
+    gvm use go1.2
 fi

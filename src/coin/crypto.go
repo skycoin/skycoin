@@ -62,13 +62,13 @@ func (g *Sig) Set(b []byte) {
 func ChkSig(address Address, hash SHA256, sig Sig) error {
     rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
     if rawPubKey == nil {
-        return errors.New("ChkSig Error: signature invalid, PubKey recovery failed")
+        return errors.New("Invalig sig: PubKey recovery failed")
     }
-    if !address.Equals(AddressFromRawPubKey(rawPubKey)) {
-        return errors.New("ChkSig Error: signature invalid, address does not match output address")
+    if address != AddressFromRawPubKey(rawPubKey) {
+        return errors.New("Invalid sig: address does not match output address")
     }
     if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
-        return errors.New("ChkSig Error: signature invalid, signature invalid for hash")
+        return errors.New("Invalid sig: invalid for hash")
     }
     return nil
 }

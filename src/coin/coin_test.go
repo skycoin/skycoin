@@ -5,10 +5,11 @@ import (
     //"hash"
     "encoding/hex"
     "log"
+    "testing"
 )
 
 
-func TestAddress1() {
+func TestAddress1(t *testing.T) {
 	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
 	b, err := hex.DecodeString(a)
 	if err != nil {
@@ -21,12 +22,14 @@ func TestAddress1() {
 
 }
 
-func TestAddress2() {
-	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
+func TestAddress2(t *testing.T) {
+	a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
 	b, err := hex.DecodeString(a)
 	if err != nil {
 		log.Panic(err)
 	}
+
+    seckey := 
 	addr := AddressFromRawPubKey(b)
 	_ = addr
 

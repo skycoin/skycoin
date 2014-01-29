@@ -420,7 +420,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     //BkSeq = self.Head.Header.BkSeq
     //UxSeq := self.Head.Meta.UxSeq1
 
-    fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
+    //fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
 
     for _, tx := range b.Body.Transactions {
         for _, ti := range tx.TxIn {

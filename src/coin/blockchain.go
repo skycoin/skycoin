@@ -499,7 +499,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
     hash := t.hashInner()
     //t.TxHeader.Hash = hash //set hash?
     if hash != t.TxHeader.TransactionHash {
-        log.Panic("Set Hash!")
+        log.Panic("Transaction hash not set")
     }
 
     //check signatures

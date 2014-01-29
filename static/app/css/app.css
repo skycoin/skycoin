@@ -38,6 +38,12 @@ td{
   max-width:800px;
 }
 
+.wallet-buttons{
+  width:100%;
+  clear:both;
+  padding-top:10px;
+}
+
 #send-table{
   width:100%;
   text-align:left;
@@ -62,6 +68,13 @@ td{
   width:20%;
 }
 
+table#overview-wallet{
+  width: 378px;
+  float: left;
+  margin-right: 10px;
+  margin-top:10px;
+}
+
 #overview-wallet, #overview-wallet tr, #overview-wallet td{
   background-color:#fff;
 }
@@ -74,12 +87,15 @@ td{
   width:100%;
   background-color:#fff;
 }
-  #transaction-table button{
+  #transaction-table button, #transaction-table .btn-group{
     width:100%;
   }
   #transaction-table tr{
     background-color:#fff;
   }
+    #transaction-table td{
+      text-align:left;
+    }
   #transaction-table .dark-row{
     background-color:#F2F5F8;
     cursor:pointer;
@@ -123,6 +139,7 @@ label {
   right:0;
   font-size:350px;
   opacity:.5;
+  -webkit-filter: blur(2px);
 }
 .background-cloud-2{
   position:absolute;

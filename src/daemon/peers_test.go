@@ -4,6 +4,7 @@ import (
     "github.com/skycoin/pex"
     "github.com/stretchr/testify/assert"
     "os"
+    "strings"
     "testing"
 )
 
@@ -23,7 +24,7 @@ func TestInitPeers(t *testing.T) {
     if err != nil {
         t.Fatalf("Error creating %s", fn)
     }
-    _, err = f.Write([]byte(addr + "\n"))
+    _, err = f.Write([]byte(addr + " 0\n"))
     assert.Nil(t, err)
     f.Close()
 
@@ -65,5 +66,5 @@ func ConfirmPeersShutdown(t *testing.T) {
     b := make([]byte, len(addr)*2)
     n, err := f.Read(b)
     assert.Nil(t, err)
-    assert.Equal(t, string(b[:n]), addr+"\n")
+    assert.Equal(t, strings.Split(string(b[:n]), " ")[0], addr)
 }

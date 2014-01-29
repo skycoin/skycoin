@@ -378,6 +378,11 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
         if hoursIn < hoursOut {
             return errors.New("insuffient coinhours for output")
         }
+        for _, to := range t.TxOut {
+            if to.Coins == 0 {
+                return errors.New("zero coin output")
+            }
+        }
     }
 
     //check fee
@@ -533,6 +538,13 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
     if hoursIn < hoursOut {
         return errors.New("Error: insuffient coinhours for output")
     }
+
+    for _, ux := range t.TxOut {
+        if ux.Coins == 0 {
+            return errors.New("Error: zero coin output in transaction")
+        }
+    }
+
 
     //TxCnt = len(t.TxIn)
     //UxCnt = len(t.TxOut)

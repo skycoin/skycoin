@@ -78,6 +78,7 @@ func AddressFromRawPubKey(pubkeyraw []byte) Address {
     return AddressFromPubKey(pubkey)
 }
 
+//implement
 func AddressFromSecKey(seckey SecKey) Address {
     //pubkey := PubkeyFromSeckey(pubkey)
     //Address := 

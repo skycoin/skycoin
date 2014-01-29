@@ -11,7 +11,9 @@
 
 </head>
 <body ng-controller="mainCtrl">
-  <div id="sky-header"></div>
+  <div id="sky-header">
+    <div class="glyphicon-cloud background-cloud-0"></div>
+  </div>
   <div id="sky-center">
 
     <!-- <p>Select a tab by setting active binding to true:</p>
@@ -27,13 +29,13 @@
     <tabset id="main-content">
       <tab>
         <tab-heading>
-          <i class="fa fa-leaf fa-lg"></i> Wallets
+          <i class="fa fa-cloud fa-lg"></i> Wallets
         </tab-heading>
 
         <div class="outline">
           <table id="overview-wallet" class="outline" ng-repeat="address in addresses">
-            <tr>
-              <td><div id="overview-wallet-title">My Wallet</div></td><td></td>
+            <tr class="dark-row">
+              <td><div id="overview-wallet-title">Wallet {{$index}}</div></td><td><i class="fa fa-align-justify"></i></td>
             </tr>
             <tr>
               <td><div id="overview-wallet-balance">Address: </div></td><td>{{address}}</td>
@@ -42,11 +44,15 @@
               <td><div id="overview-wallet-address">Balance: </div></td><td>0.00 SKY</td>
             </tr>
             <tr>
-              <td><qrcode data="{{address}}"></qrcode></td>
+              <td colspan="2"><!--<qrcode data="{{address}}">QR</qrcode>-->
+                <a href="#"><i class="fa fa-qrcode"></i> QR Code</a>
+                <a href="#"><i class="fa fa-cloud-upload"></i> Send </a>
+                <a href="#"><i class="fa fa-pencil"></i> Edit</a>
+              </td>
             </tr>
           </table>
           <div class="wallet-buttons">
-            <button ng-click="newAddress()" type="button" class="btn btn-default">New Wallet</button>
+            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Wallet</button> <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud-download"></i> Back Up</button>
           </div>
 
           <!--<div id="overview-recent-transaction" class="outline">
@@ -111,7 +117,7 @@
 
       <tab>
         <tab-heading>
-          <i class="glyphicon glyphicon-list"></i> History
+          <i class="fa fa-moon-o"></i> History
         </tab-heading>
         <div class="outline">
           <table id="transaction-table">
@@ -136,6 +142,34 @@
               <td>Amount
               </td>
               <td>Label
+              </td>
+            </tr>
+            <tr>
+              <td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+          </table>
+        </div>
+        <!-- <span class="receive-button">Export</span> -->
+      </tab>
+
+      <tab>
+        <tab-heading>
+          <i class="fa fa-sun-o"></i>
+        </tab-heading>
+        <div class="outline">
+          <table id="transaction-d">
+            <tr class="dark-row">
+              <td><i class="fa fa-check"></i></td>
+              <td>
+
+              </td>
+              <td>
+              </td>
+              <td>
+              </td>
+              <td>
+              </td>
+              <td>
               </td>
             </tr>
             <tr>
@@ -199,9 +233,8 @@
     <li><a href="#/view1">Transaction</a></li>
     <li><a href="#/view2">Transaction View</a></li>
   </ul>-->
-
-  <div class="glyphicon-cloud background-cloud-1"></div>
-  <div class="glyphicon-cloud background-cloud-2"></div>
+  <!--<div class="glyphicon-cloud background-cloud-1"></div>-->
+  <!--<div class="glyphicon-cloud background-cloud-2"></div> -->
   <!-- <div class="glyphicon-cloud background-cloud-3"></div> -->
 
 

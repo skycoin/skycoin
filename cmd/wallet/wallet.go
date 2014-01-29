@@ -42,6 +42,7 @@ func main() {
 
 	//readWriteFile()
 
+	
 	http.Handle("/", http.FileServer(http.Dir(static_path)))
 
 	http.HandleFunc("/api/loadWallet", loadWallet)
@@ -50,7 +51,12 @@ func main() {
 
 	http.HandleFunc("/api/newAddress", newAddress)
 
-	http.ListenAndServe(":3003", nil)
+	fmt.Printf("Server Running on: 127.0.0.1:3003 \n")
+	err := http.ListenAndServe(":3003", nil)
+	if err != nil {
+		log.Panic(err)
+	}
+
 }
 
 func loadWallet(w http.ResponseWriter, r *http.Request) {

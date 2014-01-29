@@ -80,7 +80,7 @@ func (self *BlockBody) Bytes() []byte {
 }
 
 type BlockChain struct {
-    Head    Block
+    Head    *Block //link to current head block
     Blocks  []Block
     Unspent []UxOut
 }
@@ -92,7 +92,7 @@ func NewBlockChain(genesisAddress Address) *BlockChain {
     b.Header.Time = uint64(time.Now().Unix())
 
     bc.Blocks = append(bc.Blocks, b)
-    bc.Head = b
+    bc.Head = &bc.Blocks[0]
     // Genesis output
     ux := UxOut{
         Head: UxHead{
@@ -114,7 +114,7 @@ func NewBlockChain(genesisAddress Address) *BlockChain {
 }
 
 func (self *BlockChain) NewBlock() Block {
-    return newBlock(&self.Head)
+    return newBlock(self.Head)
 }
 
 /*
@@ -267,6 +267,7 @@ func (self *BlockChain) validateBlockMeta(b *Block) error {
 */
 
 //important
+//TODO, check previous block hash for matching
 func (self *BlockChain) validateBlockHeader(b *Block) error {
     //check BkSeq
     if b.Header.BkSeq != self.Head.Header.BkSeq+1 {
@@ -285,6 +286,8 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")
     }
+
+    //TODO, check that this is successor to previous block
     return nil
 }
 
@@ -376,7 +379,13 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
             return errors.New("coin inputs do not match coin ouptuts")
         }
         if hoursIn < hoursOut {
+            //fmt.Printf("45: %v %v \n", hoursIn, hoursOut)
             return errors.New("insuffient coinhours for output")
+        }
+        for _, to := range t.TxOut {
+            if to.Coins == 0 {
+                return errors.New("zero coin output")
+            }
         }
     }
 
@@ -420,7 +429,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     //BkSeq = self.Head.Header.BkSeq
     //UxSeq := self.Head.Meta.UxSeq1
 
-    fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
+    //fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
 
     for _, tx := range b.Body.Transactions {
         for _, ti := range tx.TxIn {
@@ -444,6 +453,10 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
             //UxSeq++
         }
     }
+
+
+    self.Blocks = append(self.Blocks, b) //extend the blockchain
+    self.Head = &self.Blocks[len(self.Blocks)-1] //set new header
     //check	check UxXor1
     //check UxSeq1
 
@@ -513,6 +526,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
     //check balances
     var coinsIn uint64
     var hoursIn uint64
+
     for _, tx := range t.TxIn {
         ux, err := self.GetUnspentByHash(tx.UxOut)
         if err != nil {
@@ -520,6 +534,12 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
         }
         coinsIn += ux.Body.Coins
         hoursIn += ux.CoinHours(self.Head.Header.Time)
+    
+        //check inpossible condition
+        if ux.Body.Hours > ux.CoinHours(self.Head.Header.Time) {
+            fmt.Printf("46: %v %v \n", ux.Body.Hours, self.Head.Header.Time)
+            log.Panic("Coin Hours Invalid: Time Error!\n")
+        }
     }
     var coins_out uint64
     var hoursOut uint64
@@ -531,8 +551,16 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
         return errors.New("Error: Coin inputs do not match coin ouptuts")
     }
     if hoursIn < hoursOut {
+        fmt.Printf("45: %v %v \n", hoursIn, hoursOut)
         return errors.New("Error: insuffient coinhours for output")
     }
+
+    for _, ux := range t.TxOut {
+        if ux.Coins == 0 {
+            return errors.New("Error: zero coin output in transaction")
+        }
+    }
+
 
     //TxCnt = len(t.TxIn)
     //UxCnt = len(t.TxOut)

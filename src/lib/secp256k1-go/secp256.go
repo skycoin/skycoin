@@ -99,7 +99,7 @@ func PubkeyFromSeckey(SecKey []byte) ([]byte) {
 	const seckey_len = 32
 
 	var pubkey []byte = make([]byte, pubkey_len)
-	var seckey []byte
+	var seckey []byte = make([]byte, seckey_len)
 	copy(seckey, SecKey)
 
 	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
@@ -123,7 +123,7 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 	const seckey_len = 32
 
 	var pubkey []byte = make([]byte, pubkey_len)
-	var seckey []byte
+	var seckey []byte = make([]byte, seckey_len)
 	copy(seckey[0:32], seed_hash[0:32])
 
 	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))

@@ -4,8 +4,8 @@
 
 angular.module('skycoin.controllers', [])
 
-.controller('mainCtrl', ['$scope','$http',
-  function($scope,$http) {
+.controller('mainCtrl', ['$scope','$http', '$modal', '$log',
+  function($scope,$http,$modal,$log) {
   	$scope.addresses = [];
 
   	$scope.loadWallet = function(wallet){
@@ -39,8 +39,40 @@ angular.module('skycoin.controllers', [])
 	 }
 
 
+	 $scope.openQR = function (address) {
+
+      var modalInstance = $modal.open({
+        templateUrl: 'qrModalContent.html',
+        controller: "qrInstanceCtrl",
+        resolve: {
+          address: function () {
+            return address;
+          }
+        }
+      });
+
+      modalInstance.result.then(function () {
+      }, function () {
+        $log.info('Modal dismissed at: ' + new Date());
+      });
+    };
+
+}])
 
 
+.controller('qrInstanceCtrl', ['$http', '$scope', '$modalInstance', 'address',
+  function($http, $scope, $modalInstance, address) {
+
+  $scope.address = address;
+  $scope.qro = {};
+  $scope.qro.fm = address;
 
 
+  $scope.ok = function () {
+    $modalInstance.close($scope.selected.item);
+  };
+
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
+  };
 }]);

@@ -15,10 +15,31 @@ td{
   padding:5px;
   padding-left:10px;
   padding-right:10px;
+  position:relative;
+}
+br {
+  display:block;
+  width:100%;
+}
+.dark-row{
+    background-color:#F2F5F8;
 }
 
 .tab-pane, .nav-tabs>li.active>a, .nav-tabs>li.active>a:hover{
   background-color:#EAEFF3;
+}
+
+.nav-tabs a{
+  color: #000;
+}
+
+.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
+  color: #000;
+}
+
+.tab-content{
+  /*box-shadow: 0px 37px 57px #E0DEDE;*/
+  border-radius: 10px;
 }
 
 .tab-pane{
@@ -26,12 +47,20 @@ td{
   border-bottom-left-radius:10px;
 }
 
+.fa-align-justify {
+  display:inline-block;
+  position:absolute;
+  top: 8px;
+  right: 8px;
+  color:#a3b0bb;
+}
+
 #sky-header{
   width: 100%;
   background: #dbe1e6 url("../img/skycoin_logo.png") 14px 12px no-repeat;
-  height: 10%;
-  min-height:60px;
+  height:60px;
   border-bottom:1px solide #ddd;
+  position:relative;
 }
 
 #main-content{
@@ -75,13 +104,23 @@ table#overview-wallet{
   margin-top:10px;
 }
 
-#overview-wallet, #overview-wallet tr, #overview-wallet td{
+#overview-wallet, #overview-wallet tr{
   background-color:#fff;
+}
+
+#overview-wallet tr.dark-row{
+    background-color:#F2F5F8;
 }
 
 #overview-title{
 
 }
+  #overview-wallet a{
+    margin-left:10px;
+  }
+  #overview-wallet a:first-of-type{
+    margin-left:0px;
+  }
 
 #transaction-table{
   width:100%;
@@ -126,28 +165,54 @@ label {
 
 #sky-footer{
   width: 100%;
-  height: 12%;
+  height: 10%;
   bottom:0;
   margin-top:20px;
   background-color:#dbe1e6;
   border-top:1px solid #ddd;
+}
+
+.qr-container {
+  text-align:right;
+  position:relative;
+  padding:30px;
+}
+  .qr-container textarea, .qr-container input {
+    margin-top:20px;
+
+  }
+
+.modal-content {
+  width:363px;
+}
+.background-cloud-0{
+  position: absolute;
+  color: #fff;
+  bottom: -7px;
+  right: 182px;
+  font-size: 52px;
+  height: 60px;
+  opacity: 1;
+
 }
 .background-cloud-1{
   position:absolute;
   color:#dbe1e6;
   bottom:0;
   right:0;
-  font-size:350px;
+  font-size:550px;
   opacity:.5;
   -webkit-filter: blur(2px);
+  z-index:-1;
 }
 .background-cloud-2{
   position:absolute;
-  color:#dbe1e6;
-  bottom:30px;
-  right:30px;
-  font-size:300px;
+  color:#EAF2F8;
+  bottom: -389px;
+  right: 51px;
+  font-size:500px;
   opacity:.5;
+  z-index:-1;
 }
 .background-cloud-3{
   position:absolute;

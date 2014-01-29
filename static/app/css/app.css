@@ -17,6 +17,10 @@ td{
   padding-right:10px;
   position:relative;
 }
+br {
+  display:block;
+  width:100%;
+}
 .dark-row{
     background-color:#F2F5F8;
 }
@@ -26,7 +30,11 @@ td{
 }
 
 .nav-tabs a{
-  color: #6F6F6F;
+  color: #000;
+}
+
+.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
+  color: #000;
 }
 
 .tab-content{
@@ -164,6 +172,19 @@ label {
   border-top:1px solid #ddd;
 }
 
+.qr-container {
+  text-align:right;
+  position:relative;
+  padding:30px;
+}
+  .qr-container textarea, .qr-container input {
+    margin-top:20px;
+
+  }
+
+.modal-content {
+  width:363px;
+}
 .background-cloud-0{
   position: absolute;
   color: #fff;

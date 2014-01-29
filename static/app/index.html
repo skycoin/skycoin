@@ -44,8 +44,8 @@
               <td><div id="overview-wallet-address">Balance: </div></td><td>0.00 SKY</td>
             </tr>
             <tr>
-              <td colspan="2"><!--<qrcode data="{{address}}">QR</qrcode>-->
-                <a href="#"><i class="fa fa-qrcode"></i> QR Code</a>
+              <td colspan="2">
+                <a href="#"><i class="fa fa-qrcode"></i> <a ng-click="openQR(address)">QR Code</a>
                 <a href="#"><i class="fa fa-cloud-upload"></i> Send </a>
                 <a href="#"><i class="fa fa-pencil"></i> Edit</a>
               </td>
@@ -241,6 +241,7 @@
   <div ng-view></div>
 
   <div id="sky-footer"></div>
+  <div ng-include="" src="'/partials/qr-modal.html'"></div>
 
   <!-- In production use:
   <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>

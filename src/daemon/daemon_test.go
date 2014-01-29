@@ -438,8 +438,18 @@ func TestConnectToRandomPeer(t *testing.T) {
     assert.NotPanics(t, connectToRandomPeer)
     assert.Equal(t, len(pendingConnections), 1)
     assert.Equal(t, len(connectionErrors), 0)
-    gnet.DialTimeout = dt
+    delete(pendingConnections, addr)
 
+    // Already connected to this base IP at least once, skip
+    ipCounts[addrIP] = 1
+    assert.NotPanics(t, connectToRandomPeer)
+    assert.Equal(t, len(ipCounts), 1)
+    assert.Equal(t, ipCounts[addrIP], 1)
+    assert.Equal(t, len(pendingConnections), 0)
+    assert.Equal(t, len(connectionErrors), 0)
+    delete(ipCounts, addrIP)
+
+    gnet.DialTimeout = dt
     resetPeers()
     ShutdownPool()
 }
@@ -582,7 +592,10 @@ func TestOnConnect(t *testing.T) {
     assert.True(t, exists)
     // An introduction should have been sent
     assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    // ipCounts should be 1
+    assert.Equal(t, ipCounts[addrIP], 1)
     // Cleanup
+    delete(ipCounts, addrIP)
     delete(expectingIntroductions, addr)
 
     // Test a valid connection, solicited
@@ -602,9 +615,12 @@ func TestOnConnect(t *testing.T) {
     assert.True(t, exists)
     // An introduction should have been sent
     assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    // ipCounts should be 1
+    assert.Equal(t, ipCounts[addrIP], 1)
     // Cleanup
     delete(expectingIntroductions, addr)
     delete(outgoingConnections, addr)
+    delete(ipCounts, addrIP)
 
     // Test a valid connection, but failing to send a message
     e = ConnectEvent{addr, true}
@@ -633,9 +649,12 @@ func TestOnConnect(t *testing.T) {
     de := <-Pool.DisconnectQueue
     assert.Equal(t, de.ConnId, 1)
     assert.Equal(t, de.Reason, DisconnectFailedSend)
+    // ipCounts should be 1, since we haven't processed the disconnect yet
+    assert.Equal(t, ipCounts[addrIP], 1)
     // Cleanup
     delete(expectingIntroductions, addr)
     delete(outgoingConnections, addr)
+    delete(ipCounts, addrIP)
 
     // Test a connection that is not connected by the time of processing
     e = ConnectEvent{addr, true}
@@ -648,6 +667,8 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
     // We should not be expecting its version
     assert.Equal(t, len(expectingIntroductions), 0)
+    // We should not have recorded it to ipCount
+    assert.Equal(t, ipCounts[addrIP], 0)
 
     // Test a connection that is blacklisted
     e = ConnectEvent{addr, true}
@@ -662,6 +683,8 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
     // We should not be expecting its version
     assert.Equal(t, len(expectingIntroductions), 0)
+    // We should not have recorded its ipCount
+    assert.Equal(t, ipCounts[addrIP], 0)
     // We should be looking to disconnect this client
     assert.Equal(t, len(Pool.DisconnectQueue), 1)
     if len(Pool.DisconnectQueue) == 0 {
@@ -672,6 +695,32 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, de.Reason, DisconnectIsBlacklisted)
     // Cleanup
     delete(Peers.Blacklist, addr)
+
+    // Test a connection that has reached maxed ipCount
+    e = ConnectEvent{addr, true}
+    c = gnetConnection(addr)
+    ipCounts[addrIP] = maxIPCounts
+    pendingConnections[addr] = p
+    Pool.Addresses[addr] = c
+    assert.NotPanics(t, func() { onConnect(e) })
+    // This connection should no longer be pending
+    assert.Equal(t, len(pendingConnections), 0)
+    // No message should have been sent
+    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    // We should not be expecting its version
+    assert.Equal(t, len(expectingIntroductions), 0)
+    // ipCounts should be unchanged
+    assert.Equal(t, ipCounts[addrIP], maxIPCounts)
+    // We should be looking to disconnect this client
+    assert.Equal(t, len(Pool.DisconnectQueue), 1)
+    if len(Pool.DisconnectQueue) == 0 {
+        t.Fatal("Pool.DisconnectQueue is empty, would block")
+    }
+    de = <-Pool.DisconnectQueue
+    assert.Equal(t, de.ConnId, 1)
+    assert.Equal(t, de.Reason, DisconnectIPLimitReached)
+    // Cleanup
+    delete(ipCounts, addrIP)
 
     resetPeers()
     ShutdownPool()
@@ -744,5 +793,109 @@ func TestOnDisconnect(t *testing.T) {
     assert.Equal(t, len(mirrorConnections[mirror]), 1)
     assert.Equal(t, len(connectionMirrors), 0)
 
+    delete(mirrorConnections, mirror)
     resetPeers()
+}
+
+func TestIPCountMaxed(t *testing.T) {
+    assert.Equal(t, ipCounts[addrIP], 0)
+    ipCounts[addrIP] = maxIPCounts
+    assert.True(t, ipCountMaxed(addrIP))
+    ipCounts[addrIP] = 1
+    assert.False(t, ipCountMaxed(addrIP))
+    delete(ipCounts, addrIP)
+    assert.False(t, ipCountMaxed(addrIP))
+}
+
+func TestRecordIPCount(t *testing.T) {
+    assert.Equal(t, ipCounts[addrIP], 0)
+    recordIPCount(addr)
+    assert.Equal(t, ipCounts[addrIP], 1)
+    recordIPCount(addr)
+    assert.Equal(t, ipCounts[addrIP], 2)
+    delete(ipCounts, addrIP)
+}
+
+func TestRemoveIPCount(t *testing.T) {
+    assert.Equal(t, ipCounts[addrIP], 0)
+    removeIPCount(addr)
+    assert.Equal(t, ipCounts[addrIP], 0)
+    ipCounts[addrIP] = 7
+    removeIPCount(addr)
+    assert.Equal(t, ipCounts[addrIP], 6)
+    delete(ipCounts, addrIP)
+}
+
+func assertConnectMirrors(t *testing.T) {
+    m := connectionMirrors[addr]
+    assert.Equal(t, m, mirrorValue)
+    assert.NotEqual(t, m, 0)
+    assert.Equal(t, len(connectionMirrors), 1)
+    assert.Equal(t, len(mirrorConnections), 1)
+    assert.Equal(t, len(mirrorConnections[mirrorValue]), 1)
+    p, exists := mirrorConnections[mirrorValue][addrIP]
+    assert.True(t, exists)
+    assert.Equal(t, p, addrPort)
+}
+
+func TestRecordConnectionMirror(t *testing.T) {
+    assert.Equal(t, len(connectionMirrors), 0)
+    assert.Equal(t, len(mirrorConnections), 0)
+    recordConnectionMirror(addr, mirrorValue)
+    assertConnectMirrors(t)
+
+    // 2nd attempt should be a noop
+    recordConnectionMirror(addr, mirrorValue)
+    assertConnectMirrors(t)
+
+    delete(connectionMirrors, addr)
+    delete(mirrorConnections, mirrorValue)
+}
+
+func TestRemoveConnectionMirror(t *testing.T) {
+    // No recorded addr should be noop
+    assert.Equal(t, len(connectionMirrors), 0)
+    assert.Equal(t, len(mirrorConnections), 0)
+    assert.NotPanics(t, func() { removeConnectionMirror(addr) })
+    assert.Equal(t, len(connectionMirrors), 0)
+    assert.Equal(t, len(mirrorConnections), 0)
+
+    // With no connectionMirror recorded, we can't clean up the
+    // mirrorConnections
+    mirrorConnections[mirrorValue] = make(map[string]uint16)
+    mirrorConnections[mirrorValue][addrIP] = addrPort
+    assert.NotPanics(t, func() { removeConnectionMirror(addr) })
+    assert.Equal(t, len(connectionMirrors), 0)
+    assert.Equal(t, len(mirrorConnections), 1)
+    assert.Equal(t, len(mirrorConnections[mirrorValue]), 1)
+
+    // Should clean up if all valid
+    connectionMirrors[addr] = mirrorValue
+    assert.NotPanics(t, func() { removeConnectionMirror(addr) })
+    assert.Equal(t, len(connectionMirrors), 0)
+    assert.Equal(t, len(mirrorConnections), 0)
+
+    // Cleaning up should leave mirrorConnections[addr] intact if multiple
+    connectionMirrors[addr] = mirrorValue
+    mirrorConnections[mirrorValue] = make(map[string]uint16)
+    mirrorConnections[mirrorValue][addrIP] = addrPort
+    mirrorConnections[mirrorValue][addrbIP] = addrbPort
+
+    assert.NotPanics(t, func() { removeConnectionMirror(addr) })
+    assert.Equal(t, len(connectionMirrors), 0)
+    assert.Equal(t, len(mirrorConnections), 1)
+    assert.Equal(t, mirrorConnections[mirrorValue][addrbIP], addrbPort)
+    delete(mirrorConnections, mirrorValue)
+}
+
+func TestAddrMirrorPort(t *testing.T) {
+    p, exists := addrMirrorPort(addr, mirrorValue)
+    assert.Equal(t, p, uint16(0))
+    assert.False(t, exists)
+    mirrorConnections[mirrorValue] = make(map[string]uint16)
+    mirrorConnections[mirrorValue][addrIP] = addrPort
+    p, exists = addrMirrorPort(addr, mirrorValue)
+    assert.Equal(t, p, addrPort)
+    assert.True(t, exists)
+    delete(mirrorConnections, mirrorValue)
 }

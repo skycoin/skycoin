@@ -17,9 +17,11 @@ import (
 var (
     poolPort             = 6688
     addrIP               = "111.22.33.44"
+    addrbIP              = "111.33.44.55"
     addrPort      uint16 = 5555
+    addrbPort     uint16 = 6666
     addr                 = "111.22.33.44:5555"
-    addrb                = "112.22.33.44:6666"
+    addrb                = "112.33.44.55:6666"
     addrc                = "112.22.33.55:4343"
     badAddrPort          = "111.22.44.33:x"
     badAddrNoPort        = "111.22.44.33"

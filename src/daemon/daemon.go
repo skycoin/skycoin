@@ -6,6 +6,7 @@ import (
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
     "log"
+    "strconv"
     "strings"
     "time"
 )
@@ -38,6 +39,8 @@ var (
     introductionWait = time.Second * 30
     // How often to check for peers that have decided to stop communicating
     cullInvalidRate = time.Second * 3
+    // How many connections are allowed from the same base IP
+    maxIPCounts = 3
 
     // DisconnectReasons
     DisconnectInvalidVersion gnet.DisconnectReason = errors.New(
@@ -58,6 +61,8 @@ var (
         "Failed to send data to this connection")
     DisconnectNoIntroduction gnet.DisconnectReason = errors.New(
         "First message was not an Introduction")
+    DisconnectIPLimitReached gnet.DisconnectReason = errors.New(
+        "Maximum number of connections for this IP was reached")
     // This is returned when a seemingly impossible error is encountered
     // e.g. net.Conn.Addr() returns an invalid ip:port
     DisconnectOtherError gnet.DisconnectReason = errors.New(
@@ -101,6 +106,9 @@ var (
     onConnectEvent = make(chan ConnectEvent, 8)
     // Connection failure events
     connectionErrors = make(chan ConnectionError, 8)
+    // Tracking connections from the same base IP.  Multiple connections
+    // from the same base IP are allowed but limited.
+    ipCounts = make(map[string]int)
 )
 
 // Generated when a client connects
@@ -265,7 +273,10 @@ func connectToRandomPeer() {
     // Make a connection to a random peer
     peers := Peers.Peerlist.Random(0)
     for _, p := range peers {
-        if Pool.Addresses[p.Addr] == nil && pendingConnections[p.Addr] == nil {
+        isConnected := Pool.Addresses[p.Addr] != nil
+        isPending := pendingConnections[p.Addr] != nil
+        ipInUse := ipCounts[strings.Split(p.Addr, ":")[0]] != 0
+        if !isConnected && !isPending && !ipInUse {
             logger.Debug("Trying to connect to %s", p.Addr)
             pendingConnections[p.Addr] = p
             go func() {
@@ -327,24 +338,37 @@ func recordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error {
 // Called when a ConnectEvent is processed off the onConnectEvent channel
 func onConnect(e ConnectEvent) {
     a := e.Addr
+
     if e.Solicited {
         logger.Info("Connected to %s as we requested", a)
     } else {
         logger.Info("Received unsolicited connection to %s", a)
     }
+
     delete(pendingConnections, a)
+
     c := Pool.Addresses[a]
     if c == nil {
         logger.Warning("While processing an onConnect event, no pool " +
             "connection was found")
         return
     }
+
     blacklisted := Peers.IsBlacklisted(a)
     if blacklisted {
         logger.Info("%s is blacklisted, disconnecting", a)
         Pool.Disconnect(c, DisconnectIsBlacklisted)
         return
     }
+
+    if ipCountMaxed(a) {
+        logger.Info("Max connections for %s reached, disconnecting", a)
+        Pool.Disconnect(c, DisconnectIPLimitReached)
+        return
+    }
+
+    recordIPCount(a)
+
     if e.Solicited {
         outgoingConnections[a] = c
     }
@@ -370,16 +394,79 @@ func onDisconnect(c *gnet.Connection, reason gnet.DisconnectReason) {
     }
     delete(outgoingConnections, a)
     delete(expectingIntroductions, a)
-    // Remove peer from the bidirectional mirror map
-    ip := strings.Split(a, ":")[0]
-    mirror, ok := connectionMirrors[a]
-    if ok {
-        m := mirrorConnections[mirror]
-        if len(m) <= 1 {
-            delete(mirrorConnections, mirror)
-        } else {
-            delete(m, ip)
-        }
-        delete(connectionMirrors, a)
+    removeIPCount(a)
+    removeConnectionMirror(a)
+}
+
+// Returns whether the ipCount maximum has been reached
+func ipCountMaxed(addr string) bool {
+    ip := strings.Split(addr, ":")[0]
+    return ipCounts[ip] >= maxIPCounts
+}
+
+// Adds base IP to ipCount or returns error if max is reached
+func recordIPCount(addr string) {
+    ip := strings.Split(addr, ":")[0]
+    _, hasCount := ipCounts[ip]
+    if !hasCount {
+        ipCounts[ip] = 0
     }
+    ipCounts[ip] += 1
+}
+
+// Removes base IP from ipCount
+func removeIPCount(addr string) {
+    ip := strings.Split(addr, ":")[0]
+    if ipCounts[ip] <= 1 {
+        delete(ipCounts, ip)
+    } else {
+        ipCounts[ip] -= 1
+    }
+}
+
+// Adds addr + mirror to the connectionMirror mappings
+func recordConnectionMirror(addr string, mirror uint32) error {
+    ipPort := strings.Split(addr, ":")
+    ip := ipPort[0]
+    sport := ipPort[1]
+    port64, err := strconv.ParseUint(sport, 10, 16)
+    if err != nil {
+        return err
+    }
+    port := uint16(port64)
+    connectionMirrors[addr] = mirror
+    m := mirrorConnections[mirror]
+    if m == nil {
+        m = make(map[string]uint16, 1)
+    }
+    m[ip] = port
+    mirrorConnections[mirror] = m
+    return nil
+}
+
+// Removes an addr from the connectionMirror mappings
+func removeConnectionMirror(addr string) {
+    mirror, ok := connectionMirrors[addr]
+    if !ok {
+        return
+    }
+    ip := strings.Split(addr, ":")[0]
+    m := mirrorConnections[mirror]
+    if len(m) <= 1 {
+        delete(mirrorConnections, mirror)
+    } else {
+        delete(m, ip)
+    }
+    delete(connectionMirrors, addr)
+}
+
+// Returns whether an addr+mirror's port and whether the port exists
+func addrMirrorPort(addr string, mirror uint32) (uint16, bool) {
+    ips := mirrorConnections[mirror]
+    if ips == nil {
+        return 0, false
+    }
+    ip := strings.Split(addr, ":")[0]
+    port, exists := ips[ip]
+    return port, exists
 }

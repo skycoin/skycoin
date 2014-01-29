@@ -50,8 +50,7 @@ td{
 #sky-header{
   width: 100%;
   background: #dbe1e6 url("../img/skycoin_logo.png") 14px 12px no-repeat;
-  height: 10%;
-  min-height:60px;
+  height:60px;
   border-bottom:1px solide #ddd;
   position:relative;
 }
@@ -168,9 +167,10 @@ label {
 .background-cloud-0{
   position: absolute;
   color: #fff;
-  bottom: -2px;
+  bottom: -7px;
   right: 182px;
-  font-size: 102px;
+  font-size: 52px;
+  height: 60px;
   opacity: 1;
 
 }

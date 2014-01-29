@@ -13,6 +13,7 @@
 <body ng-controller="mainCtrl">
   <div id="sky-header"></div>
   <div id="sky-center">
+
     <!-- <p>Select a tab by setting active binding to true:</p>
     <p>
       <button class="btn btn-default btn-sm" ng-click="tabs[0].active = true">Select second tab</button>
@@ -30,18 +31,23 @@
         </tab-heading>
 
         <div class="outline">
-          <table id="overview-wallet" class="outline">
+          <table id="overview-wallet" class="outline" ng-repeat="address in addresses">
             <tr>
               <td><div id="overview-wallet-title">My Wallet</div></td><td></td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-balance">Address: </div></td><td>{{newAddress}}</td>
+              <td><div id="overview-wallet-balance">Address: </div></td><td>{{address}}</td>
             </tr>
             <tr>
               <td><div id="overview-wallet-address">Balance: </div></td><td>0.00 SKY</td>
             </tr>
+            <tr>
+              <td><qrcode data="{{address}}"></qrcode></td>
+            </tr>
           </table>
-          <button ng-click="newAddress()" type="button" class="btn btn-default">New Wallet</button>
+          <div class="wallet-buttons">
+            <button ng-click="newAddress()" type="button" class="btn btn-default">New Wallet</button>
+          </div>
 
           <!--<div id="overview-recent-transaction" class="outline">
             <div id="overview-recent-transaction-title">Recent Transactions</div>
@@ -110,18 +116,30 @@
         <div class="outline">
           <table id="transaction-table">
             <tr class="dark-row">
-              <td><!-- arrow --></td>
-              <td>Date
+              <td><i class="fa fa-check"></i></td>
+              <td>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    Wallet <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" role="menu">
+                    <li ng-repeat="address in addresses"><a href="#">{{address}}</a></li>
+                    <li class="divider"></li>
+                    <li><a href="#">All</a></li>
+                  </ul>
+                </div>
               </td>
-              <td>Type
+              <td>Date
               </td>
               <td>Address
               </td>
               <td>Amount
               </td>
+              <td>Label
+              </td>
             </tr>
             <tr>
-              <td></td><td></td><td></td><td></td><td></td>
+              <td></td><td></td><td></td><td></td><td></td><td></td>
             </tr>
           </table>
         </div>
@@ -203,5 +221,6 @@
   <script src="js/controllers.js"></script>
   <script src="js/filters.js"></script>
   <script src="js/directives.js"></script>
+  <script src="bower_components/qrcode-generator/js/qrcode.js"></script>
 </body>
 </html>

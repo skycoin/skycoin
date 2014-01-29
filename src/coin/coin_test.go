@@ -30,8 +30,13 @@ func TestAddress2(t *testing.T) {
 		log.Panic(err)
 	}
 
-    seckey := 
-	addr := AddressFromRawPubKey(b)
+    if len(b) != 32 {
+        log.Panic()
+    }
+
+    seckey := NewSecKey(b)
+    pubkey := PubKeyFromSeckey(seckey)
+	addr := AddressFromPubKey(pubkey)
 	_ = addr
 
 	///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
@@ -49,7 +54,7 @@ func _gpub(s SecKey) PubKey {
 }
 
 func _gaddr(s SecKey) Address {
-    AddressFromPubKey(PubkeyFromSeckey(s))
+    return AddressFromPubKey(PubkeyFromSeckey(s))
 }
 
 func _gaddr_a1(S []SecKey) []Address {
@@ -78,7 +83,7 @@ func _gaddr_a2(S []SecKey, O []UxOut) []int {
 
 func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
     A := _gaddr_a1(S)
-    var M map[Address]int //address to int
+    M := make(map[Address]int) //address to int
     for i,a := range A {
         M[a] = i
     }
@@ -87,11 +92,11 @@ func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
 
 //assign amt to n bins in randomized manner
 func _rand_bins(amt uint64, n int) []uint64 {
-    var bins [n]uint64
+    var bins []uint64 = make([]uint64, n)
     var max uint64 = amt / (4*uint64(n))
-    for i:=0; v1 > 0; i++ {
+    for i:=0; amt > 0; i++ {
         //amount going into this bin
-        var b uint64 = 1+ (uint64(rand.Int63) % max)
+        var b uint64 = 1+ (uint64(rand.Int63()) % max)
         if b > amt {
             b = amt
         }
@@ -112,21 +117,24 @@ func TestBlockchain1(t *testing.T) {
 
     A := _gaddr_a1(S)
 
-    var bc *BlockChain = NewBlockChain(S[0])
+    var bc *BlockChain = NewBlockChain(A[0])
 
     for i:=0; i<1024; i++ {
         b := bc.NewBlock()
 
         //unspent outputs
-        O  := make([]UxOut, len(bc.Unspent))
-        copy(Unspent, bc.Unspent)
+        U := make([]UxOut, len(bc.Unspent))
+        copy(U, bc.Unspent)
         
-        I := _gaddr_a2(S,O)
-        M := _gaddr_a3(S,O)
-        var num_in := 1+rand.Intn(len(O))% 15
-        var num_out := 1+rand.Int() % 30
+        //for _,Ux := range U {
+        //    if Ux.Hours() < Ux.Body.
+        //}
+        //I := _gaddr_a2(S,U)
+        M := _gaddr_a3(S,U)
+        var num_in int = 1+rand.Intn(len(U))% 15
+        var num_out int = 1+rand.Int() % 30
 
-        var t coin.Transaction
+        var t Transaction
 
         SigIdx := make([]int, num_in)
 
@@ -143,18 +151,32 @@ func TestBlockchain1(t *testing.T) {
             //index of signature that must sign input
             SigIdx[i] = M[Ux.Body.Address] //signature index
 
-            var ti coin.TransactionInput
+            var ti TransactionInput
             ti.SigIdx = uint16(i)
             ti.UxOut = Ux.Hash()
-            t.TxIn = append(t, ti) //append input to transaction
+            t.TxIn = append(t.TxIn, ti) //append input to transaction
         }
 
         //assign coins to output addresses in random manner
+        
+        v1_ := v1
+        v2_ := v2
+
         vo1 := _rand_bins(v1,num_out)
         vo2 := _rand_bins(v2,num_out)
 
+        var v1_t uint64
+        var v2_t uint64
+        for i,_ := range vo1 {
+            v1_t += vo1[i]
+            v2_t += vo2[i]
+        }
+
+
+        log.Printf("%v %v, %v %v \n", v1_,v2_, v1_t, v2_t)
+
         for i := 0; i < num_out; i++ {
-            var to coin.TransactionOutput
+            var to TransactionOutput
             to.DestinationAddress = A[rand.Intn(len(A))]
             to.Coins = vo1[i]
             to.Hours = vo2[i]
@@ -163,7 +185,7 @@ func TestBlockchain1(t *testing.T) {
 
         //transaction complete, now set signatures
         for i:=0;i<num_in; i++ {
-            t.SetSig(i, S[SigIdx[i]])
+            t.SetSig(uint16(i), S[SigIdx[i]])
         }
         t.UpdateHeader() //sets hash
 

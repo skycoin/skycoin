@@ -167,9 +167,10 @@ label {
 .background-cloud-0{
   position: absolute;
   color: #fff;
-  bottom: -2px;
+  bottom: -7px;
   right: 182px;
-  font-size: 102px;
+  font-size: 52px;
+  height: 60px;
   opacity: 1;
 
 }

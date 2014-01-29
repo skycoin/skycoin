@@ -85,28 +85,45 @@ func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
     return M
 }
 
+//assign amt to n bins in randomized manner
+func _rand_bins(amt uint64, n int) []uint64 {
+    var bins [n]uint64
+    var max uint64 = amt / (4*uint64(n))
+    for i:=0; v1 > 0; i++ {
+        //amount going into this bin
+        var b uint64 = 1+ (uint64(rand.Int63) % max)
+        if b > amt {
+            b = amt
+        }
+        bins[i%n] += b
+        amt -= b
+    }
+    return bins
+}
+
+//create 4096 addresses
+//send addreses randomly between each other over 1024 blocks
 func TestBlockchain1(t *testing.T) {
     
     var S []SecKey
-    S = append(S, _gensec())
+    for i:= 0; i < 4096; i++ {
+        S = append(S, _gensec())
+    }
+
+    A := _gaddr_a1(S)
 
     var bc *BlockChain = NewBlockChain(S[0])
 
-    for i:=0; i<1000; i++ {
-
+    for i:=0; i<1024; i++ {
         b := bc.NewBlock()
 
-        //numt := rand.Int() % 5 //number of transactions
-        //copy S
-        S2 := make([]SecKey, len(S))
-        copy(S2, S)
-
-        U  := make([]UxOut, len(bc.Unspent))
+        //unspent outputs
+        O  := make([]UxOut, len(bc.Unspent))
         copy(Unspent, bc.Unspent)
         
         I := _gaddr_a2(S,O)
         M := _gaddr_a3(S,O)
-        var num_in := 1+rand.Intn(len(U))% 15
+        var num_in := 1+rand.Intn(len(O))% 15
         var num_out := 1+rand.Int() % 30
 
         var t coin.Transaction
@@ -123,6 +140,7 @@ func TestBlockchain1(t *testing.T) {
             v1 += Ux.Body.Coins
             v2 += Ux.Body.Hours
 
+            //index of signature that must sign input
             SigIdx[i] = M[Ux.Body.Address] //signature index
 
             var ti coin.TransactionInput
@@ -131,30 +149,29 @@ func TestBlockchain1(t *testing.T) {
             t.TxIn = append(t, ti) //append input to transaction
         }
 
+        //assign coins to output addresses in random manner
+        vo1 := _rand_bins(v1,num_out)
+        vo2 := _rand_bins(v2,num_out)
 
-
-        t.PushInput(genesisWallet.Outputs[0].Hash())
-        t.PushOutput(genesisWallet.Addresses[0].Address,
-            uint64(100*1e6-wn*1000), 0)
-
-        for i := 0; i < wn; i++ {
-            a := wa[i].GetRandomAddress()
-            t.PushOutput(a.Address, uint64(1000), 1024*1024)
+        for i := 0; i < num_out; i++ {
+            var to coin.TransactionOutput
+            to.DestinationAddress = A[rand.Intn(len(A))]
+            to.Coins = vo1[i]
+            to.Hours = vo2[i]
+            t.TxOut = append(t.TxOut, to)
         }
 
-        var sec coin.SecKey
-        sec.Set(genesisAddress.SecKey[:])
-        t.SetSig(0, sec)
-
+        //transaction complete, now set signatures
+        for i:=0;i<num_in; i++ {
+            t.SetSig(i, S[SigIdx[i]])
+        }
         t.UpdateHeader() //sets hash
-
 
         err := bc.AppendTransaction(&b, t)
         if err != nil {
             log.Panic(err)
         }
 
-        keyring.PrintWalletBalances(bc, wa)
         err = bc.ExecuteBlock(b)
         if err != nil {
             log.Panic(err)

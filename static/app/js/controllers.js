@@ -6,6 +6,7 @@ angular.module('skycoin.controllers', [])
 
 .controller('mainCtrl', ['$scope','$http',
   function($scope,$http) {
+  	$scope.addresses = [];
 
   	$scope.loadWallet = function(wallet){
 	  var data = {WalletName:wallet};
@@ -13,6 +14,7 @@ angular.module('skycoin.controllers', [])
       $http.post('/api/loadWallet', JSON.stringify(data)).success(function(response){
         console.dir(response);
         $scope.loadedWallet = response;
+        $scope.addresses = response.Addresses;
       });
 	 }
 
@@ -20,7 +22,7 @@ angular.module('skycoin.controllers', [])
 	 $scope.loadWallet(localStorage.loadedWallet);
 
 	 $scope.saveWallet = function(){
-	  var data = {Address:$scope.newAddress};
+	  var data = {Addresses:$scope.addresses};
       $http.post('/api/saveWallet', JSON.stringify(data)).success(function(response){
         console.dir(response);
         $scope.loadedWalletName = response;
@@ -31,7 +33,7 @@ angular.module('skycoin.controllers', [])
 	 $scope.newAddress = function(){
 	  	$http.get('/api/newAddress').success(function(response) {
 	      console.dir(response);
-	      $scope.newAddress = response.replace(/"/g, "");
+	      $scope.addresses.push(response.replace(/"/g, ""));
 	      $scope.saveWallet();
 	    });
 	 }

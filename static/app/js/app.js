@@ -8,7 +8,8 @@ angular.module('skycoin', [
   //'skycoin.filters',
   //'skycoin.services',
   //'skycoin.directives',
-  'skycoin.controllers'
+  'skycoin.controllers',
+  'monospaced.qrcode'
 ]).
 config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/view1', {templateUrl: 'partials/partial1.html', controller: 'mainCtrl'});

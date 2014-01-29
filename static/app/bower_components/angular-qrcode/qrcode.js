@@ -1,7 +1,8 @@
-'use strict';
-
-/* Directives */
-
+/*
+ * angular-qrcode v2.0.0
+ * (c) 2013 Monospaced http://monospaced.com
+ * License: MIT
+ */
 
 angular.module('monospaced.qrcode', [])
   .directive('qrcode', ['$timeout', '$window', function($timeout, $window){

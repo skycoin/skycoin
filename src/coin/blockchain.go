@@ -7,7 +7,7 @@ import (
     "log"
     "math"
     "time"
-    "fmt"
+    //"fmt"
 )
 
 var (
@@ -378,6 +378,11 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
         if hoursIn < hoursOut {
             return errors.New("insuffient coinhours for output")
         }
+        for _, to := range t.TxOut {
+            if to.Coins == 0 {
+                return errors.New("zero coin output")
+            }
+        }
     }
 
     //check fee
@@ -420,7 +425,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     //BkSeq = self.Head.Header.BkSeq
     //UxSeq := self.Head.Meta.UxSeq1
 
-    fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
+    //fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
 
     for _, tx := range b.Body.Transactions {
         for _, ti := range tx.TxIn {
@@ -533,6 +538,13 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
     if hoursIn < hoursOut {
         return errors.New("Error: insuffient coinhours for output")
     }
+
+    for _, ux := range t.TxOut {
+        if ux.Coins == 0 {
+            return errors.New("Error: zero coin output in transaction")
+        }
+    }
+
 
     //TxCnt = len(t.TxIn)
     //UxCnt = len(t.TxOut)

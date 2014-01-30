@@ -9,18 +9,13 @@ import (
 type PubKey [33]byte
 
 func NewPubKey(b []byte) PubKey {
-    var p PubKey
-    p.Set(b)
-    return p
-}
-
-func (g *PubKey) Set(b []byte) {
     if len(b) != 33 {
         log.Panic("Invalid public key length")
     }
-    copy(g[:], b[:])
+    var p PubKey
+    copy(p[:], b[:])
+    return p
 }
-
 type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
@@ -93,7 +88,7 @@ func PubkeyFromSeckey(seckey SecKey) PubKey {
 }
 
 
-func VerifySignature(pubkey PubKey, sig Sig, msg []byte) error {
+func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
         log.Panic("Invalid public key")
         return errors.New("Invalid public key")
@@ -102,7 +97,7 @@ func VerifySignature(pubkey PubKey, sig Sig, msg []byte) error {
         log.Panic("Invalid signature")
         return errors.New("Invalid signature")
     }
-    if secp256k1.VerifySignature(msg, sig[:], pubkey[:]) != 1 {
+    if secp256k1.VerifySignature(hash, sig[:], pubkey[:]) != 1 {
         return errors.New("Invalid signature for this message")
     }
     return nil

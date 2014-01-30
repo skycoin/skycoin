@@ -51,10 +51,10 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
     if rawPubKey == nil {
         return errors.New("Invalig sig: PubKey recovery failed")
     }
-    if address != AddressFromRawPubKey(rawPubKey) {
+    if address != AddressFromPubKey(NewPubKey(rawPubKey)) {
         return errors.New("Invalid sig: address does not match output address")
     }
-    if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
+    if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]) != 1 {
         return errors.New("Invalid sig: invalid for hash")
     }
     return nil

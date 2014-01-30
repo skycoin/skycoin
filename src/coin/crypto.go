@@ -79,7 +79,7 @@ func SignMessage(seckey SecKey, msg []byte) Sig {
 }
 */
 
-func PubKeyFromSeckey(seckey SecKey) PubKey {
+func PubKeyFromSecKey(seckey SecKey) PubKey {
     b := secp256k1.PubkeyFromSeckey(seckey[:])
     if b == nil {
         log.Panic("could not recover pubkey form sec key \n")

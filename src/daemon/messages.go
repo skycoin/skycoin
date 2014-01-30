@@ -30,7 +30,7 @@ type MessageConfig struct {
     Message interface{}
 }
 
-func NewMessageConfig(m interface{}, prefix string) MessageConfig {
+func NewMessageConfig(prefix string, m interface{}) MessageConfig {
     return MessageConfig{
         Message: m,
         Prefix:  gnet.MessagePrefixFromString(prefix),
@@ -38,19 +38,21 @@ func NewMessageConfig(m interface{}, prefix string) MessageConfig {
 }
 
 // Creates and populates the message configs
-func getMessageConfigs() map[string]MessageConfig {
-    m := make(map[string]MessageConfig)
-    m["Introduction"] = NewMessageConfig(IntroductionMessage{}, "INTR")
-    m["GetPeers"] = NewMessageConfig(GetPeersMessage{}, "GETP")
-    m["GivePeers"] = NewMessageConfig(GivePeersMessage{}, "GIVP")
-    m["Ping"] = NewMessageConfig(PingMessage{}, "PING")
-    m["Pong"] = NewMessageConfig(PongMessage{}, "PONG")
-    return m
+func getMessageConfigs() []MessageConfig {
+    return []MessageConfig{
+        NewMessageConfig("INTR", IntroductionMessage{}),
+        NewMessageConfig("GETP", GetPeersMessage{}),
+        NewMessageConfig("GIVP", GivePeersMessage{}),
+        NewMessageConfig("PING", PingMessage{}),
+        NewMessageConfig("PONG", PongMessage{}),
+        NewMessageConfig("GETB", GetBlocksMessage{}),
+        NewMessageConfig("GIVB", GiveBlocksMessage{}),
+    }
 }
 
 type MessagesConfig struct {
     // Message ID prefices
-    Messages map[string]MessageConfig
+    Messages []MessageConfig
 }
 
 func NewMessagesConfig() MessagesConfig {

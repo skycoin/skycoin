@@ -7,11 +7,6 @@ import (
 
 // Communication layer for the coin pkg
 
-var (
-    GetBlocksPrefix  = gnet.MessagePrefix{'G', 'E', 'T', 'B'}
-    GiveBlocksPrefix = gnet.MessagePrefix{'G', 'I', 'V', 'B'}
-)
-
 type GetBlocksMessage struct {
     LastBlock uint64
     c         *gnet.MessageContext `enc:"-"`
@@ -55,5 +50,4 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
     // The blockchain needs to either be a global in the daemon
     // or passed into the daemon from the controlling program
     // and then passed into every Process() call
-    // Perhaps we should bundle all globals into a struct and pass that around
 }

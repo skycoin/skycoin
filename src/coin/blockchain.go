@@ -54,8 +54,8 @@ type BlockHeader struct {
     BkSeq uint64 //increment every block
     Fee   uint64 //fee in block, used for Proof of Stake
 
-    HashPrevBlock SHA256 //hash of header of previous block
-    BodyHash      SHA256 //hash of transaction block
+    PrevHash SHA256 //hash of header of previous block
+    BodyHash SHA256 //hash of transaction block
 }
 
 func newBlockHeader(prev *BlockHeader) BlockHeader {
@@ -238,8 +238,8 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
-    if b.Header.HashPrevBlock != self.Head.Header.HashPrevBlock {
-        return errors.New("HashPrevBlock does not match current head")
+    if b.Header.PrevHash != self.Head.Header.PrevHash {
+        return errors.New("PrevHash does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")

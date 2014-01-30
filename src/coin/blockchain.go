@@ -23,7 +23,6 @@ const (
 type Block struct {
     Header BlockHeader
     Body   BlockBody //just transaction list
-    //Meta   BlockMeta //extra information, not hashed
 }
 
 func newBlock(prev *Block) Block {
@@ -225,47 +224,6 @@ func (self *BlockChain) validateSignatures(b *Block) error {
     return nil
 }
 
-//meta is not hashed, just for book keeping
-/*
-func (self *BlockChain) validateBlockMeta(b *Block) error {
-	//check seq/meta
-	if b.Meta.TxSeq1 != b.Meta.TxSeq0 {
-		return errors.New("TxSeq0/TxSeq1 do not match")
-	}
-	if b.Meta.UxSeq1 != b.Meta.TxSeq0 {
-		return errors.New("UxSeq0/UxSeq1 do not match")
-	}
-	//check TxSeq1
-	TxSeq1 := b.Meta.TxSeq0
-	for _, T := range b.Body.Transactions {
-		for _, tx := range t.TxIn {
-			_ = tx
-			TxSeq1++
-		}
-	}
-	if TxSeq1 != b.Meta.TxSeq1 {
-		return errors.New("Header TxSeq1 invalid")
-	}
-	//check UxSeq1,
-	UxSeq1 := b.Meta.UxSeq0
-	for _, T := range b.Body.Transactions {
-		for _, ux := range t.TxOut {
-			_ = ux
-			UxSeq1++
-		}
-	}
-	if UxSeq1 != b.Meta.UxSeq1 {
-		return errors.New("Header UxSeq1 invalid")
-	}
-
-	if b.Meta.UxXor0 != self.HashUnspent() {
-		return errors.New("Unspent transactions do not match")
-	}
-	//also check UxXor1
-	return nil
-}
-*/
-
 //important
 //TODO, check previous block hash for matching
 func (self *BlockChain) validateBlockHeader(b *Block) error {
@@ -419,58 +377,33 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     if err := self.validateBlockHeader(&b); err != nil {
         return err
     }
-    //if err := self.validateBlockMeta(&b); err != nil {
-    //	return err
-    //}
     if err := self.validateBlockBody(&b); err != nil {
         return err
     }
 
-    //BkSeq = self.Head.Header.BkSeq
-    //UxSeq := self.Head.Meta.UxSeq1
-
-    //fmt.Printf("ExecuteBlock: nTransactions= %v \n", len( b.Body.Transactions) )
-
     for _, tx := range b.Body.Transactions {
+        //remove spent outputs
         for _, ti := range tx.TxIn {
             self.RemoveUnspent(ti.UxOut)
         }
+        //create new outputs
         for _, to := range tx.TxOut {
-
-            /*
-            	Add function for intiating outputs
-            */
+            //TODO: use NewUxOut
             var ux UxOut //create transaction output
             ux.Body.SrcTransaction = tx.Hash()
             ux.Body.Address = to.DestinationAddress
             ux.Body.Coins = to.Coins
             ux.Body.Hours = to.Hours
 
-            //ux.Head.UxSeq = UxSeq
-            //ux.Head.BkSeq = b.Header.BkSeq
             ux.Head.Time = b.Header.Time
             self.AddUnspent(ux)
-            //UxSeq++
         }
     }
 
-
+    //set new block head
     self.Blocks = append(self.Blocks, b) //extend the blockchain
     self.Head = &self.Blocks[len(self.Blocks)-1] //set new header
-    //check	check UxXor1
-    //check UxSeq1
 
-    /*
-    	if self.HashUnspent() != b.Meta.UxXor1 {
-    		log.Panic() //means invalid, can check before execution
-    	}
-    	if UxSeq != b.Meta.UxSeq1 {
-    		log.Panic() //impossible
-    	}
-    	if self.Head.Meta.UxSeq1 != b.Meta.UxSeq0 {
-    		log.Panic() //impossible
-    	}
-    */
     return nil
 }
 
@@ -560,10 +493,6 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
             return errors.New("Error: zero coin output in transaction")
         }
     }
-
-
-    //TxCnt = len(t.TxIn)
-    //UxCnt = len(t.TxOut)
 
     b.Body.Transactions = append(b.Body.Transactions, t)
 

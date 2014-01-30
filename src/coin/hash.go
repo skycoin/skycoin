@@ -17,12 +17,12 @@ var (
 
 type Ripemd160 [20]byte
 
-func (self *Ripemd160) Set(b []byte) {
-    if len(b) != 20 {
-        log.Panic("Invalid ripemd160 length")
-    }
-    copy(self[:], b[:])
-}
+//func (self *Ripemd160) Set(b []byte) {
+//    if len(b) != 20 {
+//        log.Panic("Invalid ripemd160 length")
+//    }
+//    copy(self[:], b[:])
+//}
 
 func HashRipemd160(data []byte) Ripemd160 {
     ripemd160Hash.Reset()
@@ -37,12 +37,12 @@ func HashRipemd160(data []byte) Ripemd160 {
 
 type SHA256 [32]byte
 
-func (g *SHA256) Set(b []byte) {
-    if len(b) != 32 {
-        log.Panic("Invalid sha256 length")
-    }
-    copy(g[:], b[:32])
-}
+//func (g *SHA256) Set(b []byte) {
+//    if len(b) != 32 {
+//        log.Panic("Invalid sha256 length")
+//    }
+//    copy(g[:], b[:32])
+//}
 
 func SumSHA256(b []byte) SHA256 {
     sha256Hash.Reset()

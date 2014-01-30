@@ -57,10 +57,15 @@ func (self *Wallet) GetRandomAddress() Address {
 
 // Signs a hash for a given address. nil on failure.
 // use error
-func (self *Wallet) Sign(address coin.Address, msg []byte) (coin.Sig, error) {
+func (self *Wallet) Sign(address coin.Address, hash coin.SHA256) (coin.Sig, error) {
     for _, a := range self.Addresses {
         if a.Address == address {
-            return coin.GenerateSignature(a.SecKey, msg), nil
+            sig, err := coin.SignHash(hash, a.SecKey)
+            if err != nil {
+                log.Panic("Error signing")
+                return coin.Sig{}, err
+            }
+            return sig, err
         }
     }
     return coin.Sig{}, errors.New("Failed to sign: Unknown address")

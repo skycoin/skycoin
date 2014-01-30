@@ -97,7 +97,7 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
         log.Panic("Invalid signature")
         return errors.New("Invalid signature")
     }
-    if secp256k1.VerifySignature(hash, sig[:], pubkey[:]) != 1 {
+    if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
         return errors.New("Invalid signature for this message")
     }
     return nil

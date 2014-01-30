@@ -17,7 +17,7 @@ func TestAddress1(t *testing.T) {
 	if err != nil {
 		log.Panic(err)
 	}
-	addr := AddressFromRawPubKey(b)
+	addr := AddressFromPubKey(NewPubKey(b))
 	_ = addr
 
 	///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
@@ -36,7 +36,7 @@ func TestAddress2(t *testing.T) {
     }
 
     seckey := NewSecKey(b)
-    pubkey := PubKeyFromSeckey(seckey)
+    pubkey := PubKeyFromSecKey(seckey)
 	addr := AddressFromPubKey(pubkey)
 	_ = addr
 
@@ -51,17 +51,17 @@ func _gensec() SecKey {
 }
 
 func _gpub(s SecKey) PubKey {
-    return PubkeyFromSeckey(s)
+    return PubKeyFromSecKey(s)
 }
 
 func _gaddr(s SecKey) Address {
-    return AddressFromPubKey(PubkeyFromSeckey(s))
+    return AddressFromPubKey(PubKeyFromSecKey(s))
 }
 
 func _gaddr_a1(S []SecKey) []Address {
     A := make([]Address, len(S))
     for i:=0; i<len(S); i++ {
-        A[i] = AddressFromPubKey(PubkeyFromSeckey(S[i]))
+        A[i] = AddressFromPubKey(PubKeyFromSecKey(S[i]))
     }
     return A
 }

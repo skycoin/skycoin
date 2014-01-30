@@ -70,12 +70,6 @@ func catchDebug() {
     }
 }
 
-func shutdown(dataDir string) {
-    logger.Info("Shutting down")
-    daemon.Shutdown(dataDir)
-    logger.Info("Goodbye")
-}
-
 // func initSettings() {
 //     sb.InitSettings()
 //     sb.Settings.Load()
@@ -110,6 +104,14 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
     }
 }
 
+func configureDaemon(c *cli.Config) *daemon.DaemonConfig {
+    dc := daemon.NewDaemonConfig()
+    dc.Peers.DataDirectory = c.DataDirectory
+    dc.DHT.Port = c.Port
+    dc.Pool.Port = c.Port
+    return dc
+}
+
 func Run(args cli.Args) {
     c := cli.ParseArgs(args)
     initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
@@ -121,18 +123,21 @@ func Run(args cli.Args) {
     // Watch for SIGUSR1
     go catchDebug()
 
+    dconf := configureDaemon(c)
+    d := daemon.NewDaemon(dconf)
+
     stopDaemon := make(chan int)
-    daemon.Init(c.Port, c.DataDirectory, stopDaemon)
+    d.Init(stopDaemon)
 
     if c.ConnectTo != "" {
-        _, err := daemon.Pool.Connect(c.ConnectTo)
+        _, err := d.Pool.Pool.Connect(c.ConnectTo)
         if err != nil {
             log.Panic(err)
         }
     }
 
     if !c.DisableGUI {
-        go gui.LaunchGUI()
+        go gui.LaunchGUI(d)
     }
 
     host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
@@ -147,15 +152,18 @@ func Run(args cli.Args) {
                     logger.Error(err.Error())
                 }
             } else {
-                go gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory,
+                go gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
                     c.WebInterfaceCert, c.WebInterfaceKey)
             }
         } else {
-            go gui.LaunchWebInterface(host, c.GUIDirectory)
+            go gui.LaunchWebInterface(host, c.GUIDirectory, d)
         }
     }
 
     <-quit
     stopDaemon <- 1
-    shutdown(c.DataDirectory)
+
+    logger.Info("Shutting down")
+    d.Shutdown()
+    logger.Info("Goodbye")
 }

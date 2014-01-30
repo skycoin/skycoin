@@ -2,48 +2,74 @@ package daemon
 
 import (
     "github.com/skycoin/pex"
-    "log"
     "time"
 )
 
-var (
+type PeersConfig struct {
+    // Folder where peers database should be saved
+    DataDirectory string
     // Maximum number of peers to keep account of in the PeerList
-    maxPeers = 1000
-    // Peer list
-    Peers *pex.Pex = nil
+    Max int
     // Cull peers after they havent been seen in this much time
-    peerExpiration = time.Hour * 24 * 7
+    Expiration time.Duration
     // Cull expired peers on this interval
-    cullPeerRate = time.Minute * 10
+    CullRate time.Duration
     // How often to clear expired blacklist entries
-    updateBlacklistRate = time.Minute
+    UpdateBlacklistRate time.Duration
     // How often to request peers via PEX
-    requestPeersRate = time.Minute
+    RequestRate time.Duration
     // How many peers to send back in response to a peers request
-    peerReplyCount = 30
-)
+    ReplyCount int
+}
+
+func NewPeersConfig() *PeersConfig {
+    return &PeersConfig{
+        DataDirectory:       "./",
+        Max:                 1000,
+        Expiration:          time.Hour * 24 * 7,
+        CullRate:            time.Minute * 10,
+        UpdateBlacklistRate: time.Minute,
+        RequestRate:         time.Minute,
+        ReplyCount:          30,
+    }
+}
+
+type Peers struct {
+    Config *PeersConfig
+    // Peer list
+    Peers *pex.Pex
+}
+
+func NewPeers(c *PeersConfig) *Peers {
+    return &Peers{
+        Config: c,
+        Peers:  nil,
+    }
+}
 
 // Configure the pex.PeerList and load local data
-func InitPeers(data_directory string) {
-    if Peers != nil {
-        log.Panic("Pex peers already inited")
-    }
-    Peers = pex.NewPex(maxPeers)
-    err := Peers.Load(data_directory)
+func (self *Peers) Init() {
+    peers := pex.NewPex(self.Config.Max)
+    err := peers.Load(self.Config.DataDirectory)
     if err != nil {
         logger.Notice("Failed to load peer database")
         logger.Notice("Reason: %v", err)
     }
     logger.Debug("Init peers")
+    self.Peers = peers
 }
 
 // Shutdown the PeerList
-func ShutdownPeers(data_directory string) {
-    err := Peers.Save(data_directory)
+func (self *Peers) Shutdown() error {
+    if self.Peers == nil {
+        return nil
+    }
+    err := self.Peers.Save(self.Config.DataDirectory)
     if err != nil {
         logger.Warning("Failed to save peer database")
         logger.Warning("Reason: %v", err)
+        return err
     }
-    Peers = nil
     logger.Debug("Shutdown peers")
+    return nil
 }

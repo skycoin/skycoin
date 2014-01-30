@@ -2,12 +2,12 @@ package coin
 
 import (
     "errors"
+    "fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
     "math"
     "time"
-    "fmt"
 )
 
 var (
@@ -166,7 +166,7 @@ func (self *BlockChain) RemoveUnspent(hash SHA256) {
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
             //remove spent output from array
-            self.Unspent= append(self.Unspent[:i], self.Unspent[i+1:]...)
+            self.Unspent = append(self.Unspent[:i], self.Unspent[i+1:]...)
             return
         }
     }
@@ -401,7 +401,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     }
 
     //set new block head
-    self.Blocks = append(self.Blocks, b) //extend the blockchain
+    self.Blocks = append(self.Blocks, b)         //extend the blockchain
     self.Head = &self.Blocks[len(self.Blocks)-1] //set new header
 
     return nil
@@ -467,7 +467,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
         }
         coinsIn += ux.Body.Coins
         hoursIn += ux.CoinHours(self.Head.Header.Time)
-    
+
         //check inpossible condition
         if ux.Body.Hours > ux.CoinHours(self.Head.Header.Time) {
             fmt.Printf("46: %v %v \n", ux.Body.Hours, self.Head.Header.Time)

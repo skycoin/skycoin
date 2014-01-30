@@ -2,11 +2,36 @@ package daemon
 
 // Exposes a read-only api for use by the gui rpc interface
 
-var (
-    apiBufferSize = 32
-    apiRequests   = make(chan func() interface{}, apiBufferSize)
-    apiResponses  = make(chan interface{}, apiBufferSize)
-)
+type RPCConfig struct {
+    BufferSize int
+}
+
+func NewRPCConfig() *RPCConfig {
+    return &RPCConfig{
+        BufferSize: 32,
+    }
+}
+
+// RPC interface for daemon state
+type RPC struct {
+    // Backref to Daemon
+    Daemon *Daemon
+    Config *RPCConfig
+
+    // Requests are queued on this channel
+    requests chan func() interface{}
+    // When a request is done processing, it is placed on this channel
+    responses chan interface{}
+}
+
+func NewRPC(c *RPCConfig, d *Daemon) *RPC {
+    return &RPC{
+        Config:    c,
+        Daemon:    d,
+        requests:  make(chan func() interface{}, c.BufferSize),
+        responses: make(chan interface{}, c.BufferSize),
+    }
+}
 
 // A connection's state within the daemon
 type Connection struct {
@@ -33,48 +58,48 @@ type Connections struct {
 */
 
 // Returns a Connections struct
-func GetConnections() interface{} {
-    apiRequests <- func() interface{} { return getConnections() }
-    r := <-apiResponses
+func (self *RPC) GetConnections() interface{} {
+    self.requests <- func() interface{} { return self.getConnections() }
+    r := <-self.responses
     return r
 }
 
 // Returns a Connection struct
-func GetConnection(addr string) interface{} {
-    apiRequests <- func() interface{} { return getConnection(addr) }
-    r := <-apiResponses
+func (self *RPC) GetConnection(addr string) interface{} {
+    self.requests <- func() interface{} { return self.getConnection(addr) }
+    r := <-self.responses
     return r
 }
 
 /* Internal API */
 
 // Returns a Connection struct
-func getConnection(addr string) *Connection {
-    if Pool == nil {
+func (self *RPC) getConnection(addr string) *Connection {
+    if self.Daemon.Pool.Pool == nil {
         return nil
     }
-    c := Pool.Addresses[addr]
-    _, expecting := expectingIntroductions[addr]
+    c := self.Daemon.Pool.Pool.Addresses[addr]
+    _, expecting := self.Daemon.expectingIntroductions[addr]
     return &Connection{
         Id:           c.Id,
         Addr:         addr,
         LastSent:     c.LastSent.Unix(),
         LastReceived: c.LastReceived.Unix(),
-        Outgoing:     (outgoingConnections[addr] == nil),
+        Outgoing:     (self.Daemon.outgoingConnections[addr] == nil),
         Introduced:   !expecting,
-        Mirror:       connectionMirrors[addr],
-        ListenPort:   getListenPort(addr),
+        Mirror:       self.Daemon.connectionMirrors[addr],
+        ListenPort:   self.Daemon.getListenPort(addr),
     }
 }
 
 // Returns a Connections struct
-func getConnections() *Connections {
-    if Pool == nil {
+func (self *RPC) getConnections() *Connections {
+    if self.Daemon.Pool.Pool == nil {
         return nil
     }
-    conns := make([]*Connection, 0, len(Pool.Pool))
-    for _, c := range Pool.Pool {
-        conns = append(conns, getConnection(c.Addr()))
+    conns := make([]*Connection, 0, len(self.Daemon.Pool.Pool.Pool))
+    for _, c := range self.Daemon.Pool.Pool.Pool {
+        conns = append(conns, self.getConnection(c.Addr()))
     }
     return &Connections{Connections: conns}
 }

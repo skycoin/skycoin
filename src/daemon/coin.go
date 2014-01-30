@@ -1,5 +1,10 @@
 package daemon
 
+import (
+    "github.com/skycoin/gnet"
+    "github.com/skycoin/skycoin/src/coin"
+)
+
 // Communication layer for the coin pkg
 
 var (
@@ -8,27 +13,47 @@ var (
 )
 
 type GetBlocksMessage struct {
-    c *gnet.MessageContext `enc:"-"`
+    LastBlock uint64
+    c         *gnet.MessageContext `enc:"-"`
 }
 
-func NewGetBlocksMessage() *GetBlocksMessage {
-    return &GetBlocksMessage{}
+func NewGetBlocksMessage(lastBlock uint64) *GetBlocksMessage {
+    return &GetBlocksMessage{
+        LastBlock: lastBlock,
+    }
 }
 
-func (self *GetBlocksMessage) Handle(mc *gnet.MessageContext) error {
+func (self *GetBlocksMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
     self.c = mc
-    return recordMessageEvent(self, mc)
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GetBlocksMessage) Process(d *Daemon) {
+    // TODO
 }
 
 type GiveBlocksMessage struct {
-    c *gnet.MessageContext `enc:"-"`
+    Blocks []coin.Block
+    c      *gnet.MessageContext `enc:"-"`
 }
 
-func NetGiveBlocksMessage() *GiveBlocksMessage {
-    return &GiveBlocksMessage{}
+func NetGiveBlocksMessage(blocks []coin.Block) *GiveBlocksMessage {
+    return &GiveBlocksMessage{
+        Blocks: blocks,
+    }
 }
 
-func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext) error {
+func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
     self.c = mc
-    return recordMessageEvent(self, mc)
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GiveBlocksMessage) Process(d *Daemon) {
+    // TODO -- where is the global blockchain stored?
+    // The blockchain needs to either be a global in the daemon
+    // or passed into the daemon from the controlling program
+    // and then passed into every Process() call
+    // Perhaps we should bundle all globals into a struct and pass that around
 }

@@ -14,7 +14,7 @@ type Address struct {
     ChkSum  [4]byte
 }
 
-//get address as string
+//address as Base58 encoded string
 func (g *Address) String() string {
     return string(base58.Hex2Base58(g.Key[:]))
 }
@@ -26,13 +26,7 @@ func (g *Address) Bytes() []byte {
     b[20] = g.Version
     copy(b[21:25], g.ChkSum[0:4])
     return b
-    //return append([]byte{g.Version}, g.Key[:]...)
 }
-
-// Returns address base58-encoded
-//func (g *Address) base58() []byte {
-//    return []byte(base58.Hex2Base58(g.Key[:]))
-//}
 
 // Returns address checksum
 // 4 byte checksum
@@ -71,17 +65,3 @@ func AddressFromPubKey(pubkey PubKey) Address {
     addr.setChecksum()
     return addr
 }
-
-// Creates Address from []byte
-func AddressFromRawPubKey(pubkeyraw []byte) Address {
-    pubkey := NewPubKey(pubkeyraw)
-    return AddressFromPubKey(pubkey)
-}
-
-//implement
-func AddressFromSecKey(seckey SecKey) Address {
-    //pubkey := PubkeyFromSeckey(pubkey)
-    //Address := 
-    return Address{}
-}
-//PubkeyFromSeckey

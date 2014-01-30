@@ -36,7 +36,7 @@ import (
 type UxOut struct {
     Head UxHead
     Body UxBody //hashed part
-    Meta UxMeta
+    //Meta UxMeta
 }
 
 //
@@ -55,8 +55,8 @@ type UxBody struct {
     Hours          uint64  //coin hours
 }
 
-type UxMeta struct {
-}
+//type UxMeta struct {
+//}
 
 func (self UxOut) Hash() SHA256 {
     b1 := encoder.Serialize(self.Body)

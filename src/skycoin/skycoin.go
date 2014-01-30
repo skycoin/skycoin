@@ -104,8 +104,8 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
     }
 }
 
-func configureDaemon(c *cli.Config) *daemon.DaemonConfig {
-    dc := daemon.NewDaemonConfig()
+func configureDaemon(c *cli.Config) *daemon.Config {
+    dc := daemon.NewConfig()
     dc.Peers.DataDirectory = c.DataDirectory
     dc.DHT.Port = c.Port
     dc.Pool.Port = c.Port
@@ -127,7 +127,7 @@ func Run(args cli.Args) {
     d := daemon.NewDaemon(dconf)
 
     stopDaemon := make(chan int)
-    d.Init(stopDaemon)
+    go d.Start(stopDaemon)
 
     if c.ConnectTo != "" {
         _, err := d.Pool.Pool.Connect(c.ConnectTo)

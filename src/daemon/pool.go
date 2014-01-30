@@ -16,25 +16,31 @@ type PoolConfig struct {
     PingRate time.Duration
     // How long a connection can idle before considered stale
     IdleLimit time.Duration
+    // How often to check for needed pings
+    IdleCheckRate time.Duration
+    // How often to check for stale connections
+    ClearStaleRate time.Duration
 }
 
-func NewPoolConfig() *PoolConfig {
+func NewPoolConfig() PoolConfig {
     defIdleLimit := time.Minute * 90
-    return &PoolConfig{
+    return PoolConfig{
         Port:                6677,
         DialTimeout:         time.Second * 30,
         MessageHandlingRate: time.Millisecond * 30,
         PingRate:            defIdleLimit / 3,
         IdleLimit:           defIdleLimit,
+        IdleCheckRate:       time.Minute,
+        ClearStaleRate:      time.Minute,
     }
 }
 
 type Pool struct {
-    Config *PoolConfig
+    Config PoolConfig
     Pool   *gnet.ConnectionPool
 }
 
-func NewPool(c *PoolConfig) *Pool {
+func NewPool(c PoolConfig) *Pool {
     return &Pool{
         Config: c,
         Pool:   nil,
@@ -60,6 +66,7 @@ func (self *Pool) Shutdown() {
     }
 }
 
+// Starts listening on the configured Port
 func (self *Pool) Start() {
     err := self.Pool.StartListen()
     if err != nil {

@@ -52,7 +52,29 @@ var (
     logger = logging.MustGetLogger("skycoin.daemon")
 )
 
-// Behavioural configuration parameters for the daemon
+// Subsystem configurations
+type Config struct {
+    Daemon   DaemonConfig
+    Messages MessagesConfig
+    Pool     PoolConfig
+    Peers    PeersConfig
+    DHT      DHTConfig
+    RPC      RPCConfig
+}
+
+// Returns a Config with defaults set
+func NewConfig() *Config {
+    return &Config{
+        Daemon:   NewDaemonConfig(),
+        Pool:     NewPoolConfig(),
+        Peers:    NewPeersConfig(),
+        DHT:      NewDHTConfig(),
+        RPC:      NewRPCConfig(),
+        Messages: NewMessagesConfig(),
+    }
+}
+
+// Configuration for the Daemon
 type DaemonConfig struct {
     // Application version. TODO -- manage version better
     Version int32
@@ -62,10 +84,6 @@ type DaemonConfig struct {
     DataDirectory string
     // How often to check and initiate an outgoing connection if needed
     OutgoingRate time.Duration
-    // How often to check for stale connections
-    ClearStaleRate time.Duration
-    // How often to check for needed pings
-    IdleCheckRate time.Duration
     // Number of outgoing connections to maintain
     OutgoingMax int
     // Maximum number of connections to try at once
@@ -76,39 +94,25 @@ type DaemonConfig struct {
     CullInvalidRate time.Duration
     // How many connections are allowed from the same base IP
     IPCountsMax int
-
-    Messages *MessagesConfig
-    Pool     *PoolConfig
-    Peers    *PeersConfig
-    DHT      *DHTConfig
-    RPC      *RPCConfig
 }
 
-// Returns a DaemonConfig with defaults set
-func NewDaemonConfig() *DaemonConfig {
-    return &DaemonConfig{
+func NewDaemonConfig() DaemonConfig {
+    return DaemonConfig{
         Version:          1,
         Port:             6677,
         OutgoingRate:     time.Second * 5,
-        ClearStaleRate:   time.Minute,
-        IdleCheckRate:    time.Minute,
         OutgoingMax:      8,
         PendingMax:       16,
         IntroductionWait: time.Second * 30,
         CullInvalidRate:  time.Second * 3,
         IPCountsMax:      3,
-        Pool:             NewPoolConfig(),
-        Peers:            NewPeersConfig(),
-        DHT:              NewDHTConfig(),
-        RPC:              NewRPCConfig(),
-        Messages:         NewMessagesConfig(),
     }
 }
 
 // Stateful properties of the daemon
 type Daemon struct {
     // Daemon configuration
-    Config *DaemonConfig
+    Config DaemonConfig
 
     // Components
     Messages *Messages
@@ -143,9 +147,9 @@ type Daemon struct {
 }
 
 // Returns a Daemon with primitives allocated
-func NewDaemon(config *DaemonConfig) *Daemon {
+func NewDaemon(config *Config) *Daemon {
     d := &Daemon{
-        Config:   config,
+        Config:   config.Daemon,
         Messages: NewMessages(config.Messages),
         Pool:     NewPool(config.Pool),
         Peers:    NewPeers(config.Peers),
@@ -155,15 +159,19 @@ func NewDaemon(config *DaemonConfig) *Daemon {
         mirrorConnections:      make(map[uint32]map[string]uint16),
         ipCounts:               make(map[string]int),
         onConnectEvent: make(chan ConnectEvent,
-            config.OutgoingMax),
+            config.Daemon.OutgoingMax),
         connectionErrors: make(chan ConnectionError,
-            config.OutgoingMax),
+            config.Daemon.OutgoingMax),
         outgoingConnections: make(map[string]*gnet.Connection,
-            config.OutgoingMax),
+            config.Daemon.OutgoingMax),
         pendingConnections: make(map[string]*pex.Peer,
-            config.PendingMax),
+            config.Daemon.PendingMax),
     }
     d.RPC = NewRPC(config.RPC, d)
+    d.Messages.Config.Register()
+    d.Pool.Init(d)
+    d.Peers.Init()
+    d.DHT.Init()
     return d
 }
 
@@ -179,19 +187,6 @@ type ConnectionError struct {
     Error error
 }
 
-// Initializes the daemon subsystem. Sending anything to the quit channel will
-// stop the daemon.
-func (self *Daemon) Init(quit chan int) {
-    self.Messages.Config.Register()
-    self.Pool.Init(self)
-    self.Peers.Init()
-    self.DHT.Init()
-
-    go self.Pool.Start()
-    go self.DHT.Start()
-    go self.Start(quit)
-}
-
 // Terminates all subsystems safely.  To stop the Daemon run loop, send a value
 // over the quit channel provided to Init.  The Daemon run lopp must be stopped
 // before calling this function.
@@ -199,26 +194,30 @@ func (self *Daemon) Shutdown() {
     self.DHT.Shutdown()
     self.Pool.Shutdown()
     self.Peers.Shutdown()
+    gnet.EraseMessages()
 }
 
 // Main loop for peer/connection management. Send anything to quit to shut it
 // down
 func (self *Daemon) Start(quit chan int) {
-    dhtBootstrapTicker := time.Tick(self.Config.DHT.BootstrapRequestRate)
+    go self.Pool.Start()
+    go self.DHT.Start()
+
+    dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
     cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
     outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
-    clearOldPeersTicker := time.Tick(self.Config.Peers.CullRate)
-    requestPeersTicker := time.Tick(self.Config.Peers.RequestRate)
-    updateBlacklistTicker := time.Tick(self.Config.Peers.UpdateBlacklistRate)
-    messageHandlingTicker := time.Tick(self.Config.Pool.MessageHandlingRate)
-    clearStaleConnectionsTicker := time.Tick(self.Config.ClearStaleRate)
-    pingCheckTicker := time.Tick(self.Config.IdleCheckRate)
+    clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
+    requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
+    updateBlacklistTicker := time.Tick(self.Peers.Config.UpdateBlacklistRate)
+    messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
+    clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
+    idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
 main:
     for {
         select {
         // Continually make requests to the DHT, if we need peers
         case <-dhtBootstrapTicker:
-            if len(self.Peers.Peers.Peerlist) < self.Config.DHT.PeerLimit {
+            if len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
                 go self.DHT.RequestPeers()
             }
         // Flush expired blacklisted peers
@@ -234,12 +233,12 @@ main:
             }
         // Remove peers we haven't seen in a while
         case <-clearOldPeersTicker:
-            self.Peers.Peers.Peerlist.ClearOld(self.Config.Peers.Expiration)
+            self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
         // Remove connections that haven't said anything in a while
         case <-clearStaleConnectionsTicker:
             self.Pool.clearStaleConnections()
         // Sends pings as needed
-        case <-pingCheckTicker:
+        case <-idleCheckTicker:
             self.Pool.sendPings()
         // Fill up our outgoing connections
         case <-outgoingConnectionsTicker:

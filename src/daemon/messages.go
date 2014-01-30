@@ -23,6 +23,8 @@ import (
 // When the message is retrieved from the messageEvent channel, its Process()
 // method is called.
 
+// Message config contains a gnet.Message's 4byte prefix and a
+// reference interface
 type MessageConfig struct {
     Prefix  gnet.MessagePrefix
     Message interface{}
@@ -51,8 +53,8 @@ type MessagesConfig struct {
     Messages map[string]MessageConfig
 }
 
-func NewMessagesConfig() *MessagesConfig {
-    return &MessagesConfig{
+func NewMessagesConfig() MessagesConfig {
+    return MessagesConfig{
         Messages: getMessageConfigs(),
     }
 }
@@ -66,14 +68,14 @@ func (self *MessagesConfig) Register() {
 }
 
 type Messages struct {
-    Config *MessagesConfig
+    Config MessagesConfig
     // Magic value for detecting self-connection
     Mirror uint32
     // Message handling queue
     Events chan AsyncMessage
 }
 
-func NewMessages(c *MessagesConfig) *Messages {
+func NewMessages(c MessagesConfig) *Messages {
     return &Messages{
         Config: c,
         Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),

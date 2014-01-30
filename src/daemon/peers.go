@@ -22,8 +22,8 @@ type PeersConfig struct {
     ReplyCount int
 }
 
-func NewPeersConfig() *PeersConfig {
-    return &PeersConfig{
+func NewPeersConfig() PeersConfig {
+    return PeersConfig{
         DataDirectory:       "./",
         Max:                 1000,
         Expiration:          time.Hour * 24 * 7,
@@ -35,12 +35,12 @@ func NewPeersConfig() *PeersConfig {
 }
 
 type Peers struct {
-    Config *PeersConfig
+    Config PeersConfig
     // Peer list
     Peers *pex.Pex
 }
 
-func NewPeers(c *PeersConfig) *Peers {
+func NewPeers(c PeersConfig) *Peers {
     return &Peers{
         Config: c,
         Peers:  nil,

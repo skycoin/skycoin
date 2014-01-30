@@ -23,8 +23,8 @@ type DHTConfig struct {
     BootstrapRequestRate time.Duration
 }
 
-func NewDHTConfig() *DHTConfig {
-    return &DHTConfig{
+func NewDHTConfig() DHTConfig {
+    return DHTConfig{
         Port:         6677,
         Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
         DesiredPeers: 20,
@@ -40,14 +40,14 @@ func NewDHTConfig() *DHTConfig {
 }
 
 type DHT struct {
-    Config *DHTConfig
+    Config DHTConfig
     // DHT manager
     DHT *dht.DHT
     // Hex encoded sha1 sum of Info
     InfoHash dht.InfoHash
 }
 
-func NewDHT(c *DHTConfig) *DHT {
+func NewDHT(c DHTConfig) *DHT {
     return &DHT{
         Config:   c,
         DHT:      nil,

@@ -6,8 +6,8 @@ type RPCConfig struct {
     BufferSize int
 }
 
-func NewRPCConfig() *RPCConfig {
-    return &RPCConfig{
+func NewRPCConfig() RPCConfig {
+    return RPCConfig{
         BufferSize: 32,
     }
 }
@@ -16,7 +16,7 @@ func NewRPCConfig() *RPCConfig {
 type RPC struct {
     // Backref to Daemon
     Daemon *Daemon
-    Config *RPCConfig
+    Config RPCConfig
 
     // Requests are queued on this channel
     requests chan func() interface{}
@@ -24,7 +24,7 @@ type RPC struct {
     responses chan interface{}
 }
 
-func NewRPC(c *RPCConfig, d *Daemon) *RPC {
+func NewRPC(c RPCConfig, d *Daemon) *RPC {
     return &RPC{
         Config:    c,
         Daemon:    d,

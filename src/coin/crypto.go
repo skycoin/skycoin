@@ -24,31 +24,23 @@ func (g *PubKey) Set(b []byte) {
 type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
-    var p SecKey
-    p.Set(b)
-    return p
-}
-
-func (g *SecKey) Set(b []byte) {
     if len(b) != 32 {
         log.Panic("Invalid secret key length")
     }
-    copy(g[:], b[:])
+    var p SecKey
+    copy(p[:], b[:])
+    return p
 }
 
 type Sig [64 + 1]byte
 
 func NewSig(b []byte) Sig {
-    var p Sig
-    p.Set(b)
-    return p
-}
-
-func (g *Sig) Set(b []byte) {
     if len(b) != 65 {
-        log.Panic("Invalid signature length")
+        log.Panic("Invalid secret key length")
     }
-    copy(g[:], b[:])
+    var p Sig
+    copy(p[:],b[:])
+    return p
 }
 
 /*
@@ -82,10 +74,15 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
     return NewSig(sig), nil
 }
 
-// TODO -- implement
-//func PubKeyFromSec(sec SecKey) PubKey {
-//    return PubKey{}
-//}
+/*
+func SignMessage(seckey SecKey, msg []byte) Sig {
+    if secp256k1.VerifySeckey(seckey[:]) != 1 {
+        log.Panic("Invalid secret key")
+    }
+    sig := secp256k1.Sign(msg, seckey[:])
+    return NewSig(sig)
+}
+*/
 
 func PubkeyFromSeckey(seckey SecKey) PubKey {
     pubkey := secp256k1.PubkeyFromSeckey(seckey[:])
@@ -95,13 +92,6 @@ func PubkeyFromSeckey(seckey SecKey) PubKey {
     return NewPubKey(pubkey)
 }
 
-func GenerateSignature(seckey SecKey, msg []byte) Sig {
-    if secp256k1.VerifySeckey(seckey[:]) != 1 {
-        log.Panic("Invalid secret key")
-    }
-    sig := secp256k1.Sign(msg, seckey[:])
-    return NewSig(sig)
-}
 
 func VerifySignature(pubkey PubKey, sig Sig, msg []byte) error {
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {

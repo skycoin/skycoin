@@ -67,8 +67,7 @@ func tests() {
             t.TxOut = append(t.TxOut, to)
         }
 
-        var sec coin.SecKey
-        sec.Set(genesisAddress.SecKey[:])
+        sec := coin.NewSecKey(genesisAddress.SecKey[:])
         t.SetSig(0, sec)
 
     } else {
@@ -81,8 +80,9 @@ func tests() {
             t.PushOutput(a.Address, uint64(1000), 1024*1024)
         }
 
-        var sec coin.SecKey
-        sec.Set(genesisAddress.SecKey[:])
+        //var sec coin.SecKey
+        //sec.Set(genesisAddress.SecKey[:])
+        sec := coin.NewSecKey(genesisAddress.SecKey[:])
         t.SetSig(0, sec)
     }
     t.UpdateHeader() //sets hash

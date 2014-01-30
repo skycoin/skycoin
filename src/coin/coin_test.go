@@ -7,6 +7,7 @@ import (
     "log"
     "testing"
     "math/rand"
+    "fmt"
 )
 
 
@@ -106,6 +107,13 @@ func _rand_bins(amt uint64, n int) []uint64 {
     return bins
 }
 
+
+/*
+TODO: check block header of new block
+TODO: check that coins are not created or destroyed
+TODO: 
+*/
+
 //create 4096 addresses
 //send addreses randomly between each other over 1024 blocks
 func TestBlockchain1(t *testing.T) {
@@ -159,6 +167,7 @@ func TestBlockchain1(t *testing.T) {
 
         //assign coins to output addresses in random manner
         
+        //check that inputs/outputs sum
         v1_ := v1
         v2_ := v2
 
@@ -172,8 +181,13 @@ func TestBlockchain1(t *testing.T) {
             v2_t += vo2[i]
         }
 
-
-        log.Printf("%v %v, %v %v \n", v1_,v2_, v1_t, v2_t)
+        if v1_t != v1_ {
+            log.Panic()
+        }
+        if v2_t != v2_ {
+            log.Panic()
+        }
+        //log.Printf("%v %v, %v %v \n", v1_,v2_, v1_t, v2_t)
 
         for i := 0; i < num_out; i++ {
             var to TransactionOutput
@@ -194,6 +208,7 @@ func TestBlockchain1(t *testing.T) {
             log.Panic(err)
         }
 
+        fmt.Printf("Block %v \n", i)
         err = bc.ExecuteBlock(b)
         if err != nil {
             log.Panic(err)

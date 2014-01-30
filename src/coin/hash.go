@@ -29,7 +29,7 @@ func HashRipemd160(data []byte) Ripemd160 {
     ripemd160Hash.Write(data)
     sum := ripemd160Hash.Sum(nil)
     var h Ripemd160
-    h.Set(sum[:])
+    copy(h[0:20], sum[0:20])
     return h
 }
 
@@ -49,7 +49,7 @@ func SumSHA256(b []byte) SHA256 {
     sha256Hash.Write(b)
     sum := sha256Hash.Sum(nil)
     var h SHA256
-    h.Set(sum[:])
+    copy(h[0:32], sum[0:32])
     return h
 }
 

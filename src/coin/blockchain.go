@@ -22,7 +22,25 @@ const (
 
 type Block struct {
     Header BlockHeader
-    Body   BlockBody //just transaction list
+    Body   BlockBody //transaction list
+}
+
+//block - Bk
+//transaction - Tx
+//Ouput - Ux
+type BlockHeader struct {
+    Version uint32
+
+    Time  uint64
+    BkSeq uint64 //increment every block
+    Fee   uint64 //fee in block, used for Proof of Stake
+
+    HashPrevBlock SHA256 //hash of header of previous block
+    BodyHash      SHA256 //hash of transaction block
+}
+
+type BlockBody struct {
+    Transactions []Transaction
 }
 
 func newBlock(prev *Block) Block {
@@ -44,19 +62,6 @@ func (self *Block) HashBody() SHA256 {
     return Merkle(hashes) //merkle hash of transactions
 }
 
-//block - Bk
-//transaction - Tx
-//Ouput - ux
-type BlockHeader struct {
-    Version uint32
-
-    Time  uint64
-    BkSeq uint64 //increment every block
-    Fee   uint64 //fee in block, used for Proof of Stake
-
-    HashPrevBlock SHA256 //hash of header of previous block
-    BodyHash      SHA256 //hash of transaction block
-}
 
 func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
@@ -68,10 +73,6 @@ func newBlockHeader(prev *BlockHeader) BlockHeader {
 
 func (self *BlockHeader) Bytes() []byte {
     return encoder.Serialize(*self)
-}
-
-type BlockBody struct {
-    Transactions []Transaction
 }
 
 func (self *BlockBody) Bytes() []byte {

@@ -79,14 +79,14 @@ func SignMessage(seckey SecKey, msg []byte) Sig {
 }
 */
 
-func PubkeyFromSeckey(seckey SecKey) PubKey {
-    pubkey := secp256k1.PubkeyFromSeckey(seckey[:])
-    if pubkey == nil {
+func PubKeyFromSeckey(seckey SecKey) PubKey {
+    b := secp256k1.PubkeyFromSeckey(seckey[:])
+    if b == nil {
+        log.Panic("could not recover pubkey form sec key \n")
         return PubKey{}
     }
-    return NewPubKey(pubkey)
+    return NewPubKey(b)
 }
-
 
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
@@ -106,14 +106,4 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 func GenerateKeyPair() (PubKey, SecKey) {
     public, secret := secp256k1.GenerateKeyPair()
     return NewPubKey(public), NewSecKey(secret)
-}
-
-func PubKeyFromSeckey(seckey SecKey) PubKey {
-    b := secp256k1.PubkeyFromSeckey(seckey[:])
-    if b == nil {
-        log.Panic("could not recover pubkey form sec key \n")
-        return PubKey{}
-    }
-    pubkey := NewPubKey(b)
-    return pubkey
 }

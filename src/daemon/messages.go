@@ -214,16 +214,13 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext) (err error) {
         logger.Info("%s verified for version %d", addr, version)
     }
     // Disconnect if connected twice to the same peer (judging by ip:mirror)
-    ips := mirrorConnections[self.Mirror]
-    if ips != nil {
-        ip := strings.Split(addr, ":")[0]
-        if port, exists := ips[ip]; exists {
-            logger.Info("%s is already connected as %s", addr,
-                fmt.Sprintf("%s:%d", ip, port))
-            Pool.Disconnect(mc.Conn, DisconnectConnectedTwice)
-            err = DisconnectConnectedTwice
-        }
+    knownPort, exists := addrMirrorPort(addr, self.Mirror)
+    if exists {
+        logger.Info("%s is already connected on port %d", addr, knownPort)
+        Pool.Disconnect(mc.Conn, DisconnectConnectedTwice)
+        err = DisconnectConnectedTwice
     }
+
     self.valid = (err == nil)
     self.c = mc
     if err == nil {
@@ -248,24 +245,20 @@ func (self *IntroductionMessage) Process() {
         Pool.Disconnect(self.c.Conn, DisconnectOtherError)
         return
     }
-    ip := ipport[0]
-    port, err := strconv.ParseUint(ipport[1], 10, 16)
+    // Record their listener, to avoid double connections
+    err := recordConnectionMirror(a, self.Mirror)
     if err != nil {
-        // This should never happen, but the program should still work if it
-        // does.
+        // This should never happen, but the program should not allow itself
+        // to be corrupted in case it does
         logger.Error("Invalid port for connection %s", a)
         Pool.Disconnect(self.c.Conn, DisconnectOtherError)
         return
     }
-    Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
-    // Record their listener, to avoid double connections
-    connectionMirrors[a] = self.Mirror
-    m := mirrorConnections[self.Mirror]
-    if m == nil {
-        m = make(map[string]uint16, 1)
+    ip := ipport[0]
+    _, err = Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
+    if err != nil {
+        logger.Error("Failed to add peer: %v", err)
     }
-    m[ip] = uint16(port)
-    mirrorConnections[self.Mirror] = m
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

@@ -32,10 +32,18 @@ func init() {
 	master_pubkey = pubkey
 }
 
-//just sign block header
+//func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
+	//var block_hash coin.SHA256 = block.HashHeader()
+	//sig, err := SignHash(block_hash, seckey)
+	//return sig,err
+//}
 
+//sign a block with a private key
 func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
-	var block_hash coin.SHA256 = block.HashHeader()
-	sig, err := SignHash(block_hash, seckey)
-	return sig,err
+	return coin.SignHash(block.HashHeader(), seckey)
+}
+
+func VerifyBlockSignature(block coin.Block, sig Sig) error {
+
+
 }

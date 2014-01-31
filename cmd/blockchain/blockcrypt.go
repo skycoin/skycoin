@@ -32,3 +32,15 @@ func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
 func VerifyBlockSignature(block coin.Block, sig Sig) error {
 	return coin.VerifySignature(master_pubkey, sig, block.HashHeader())
 }
+
+func ApplyBlock(bc *coin.BlockChain, block coin.Block, sig Sig) error {
+	err := VerifySignature(block, sig)
+	if err != nil {
+		return err
+	}
+	err = bc.ApplyBlock(block)
+	if err != nil {
+		return err
+	}
+	return nil
+}

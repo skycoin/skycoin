@@ -27,23 +27,15 @@ func init() {
 
     master_seckey := NewSecKey(b)
     master_pubkey := PubKeyFromSecKey(seckey)
-
-	master_seckey = seckey
-	master_pubkey = pubkey
 }
 
-//func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
-	//var block_hash coin.SHA256 = block.HashHeader()
-	//sig, err := SignHash(block_hash, seckey)
-	//return sig,err
-//}
 
 //sign a block with a private key
 func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
 	return coin.SignHash(block.HashHeader(), seckey)
 }
 
-//nil on success
+//verify block signature
 func VerifyBlockSignature(block coin.Block, pubkey PubKey, sig Sig) error {
 	return coin.VerifySignature(master_pubkey, sig, block.HashHeader())
 }

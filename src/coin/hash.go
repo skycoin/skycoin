@@ -6,6 +6,7 @@ import (
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
     "log"
+    "encoding/hex"
 )
 
 var (
@@ -42,6 +43,10 @@ func (g *SHA256) Set(b []byte) {
         log.Panic("Invalid sha256 length")
     }
     copy(g[:], b[:32])
+}
+
+func (g *SHA256) Hex() string {
+    return hex.EncodeToString(g[:])
 }
 
 func SumSHA256(b []byte) SHA256 {

@@ -268,7 +268,7 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     }
     if b.Header.PrevHash != self.Head.Header.PrevHash {
 
-        fmt.Printf("%s %s \n", b.Header.PrevHash, self.Head.Header.PrevHash)
+        fmt.Printf("%s %s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
         return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {
@@ -367,7 +367,6 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
             return errors.New("coin inputs do not match coin ouptuts")
         }
         if hoursIn < hoursOut {
-            //fmt.Printf("45: %v %v \n", hoursIn, hoursOut)
             return errors.New("insuffient coinhours for output")
         }
         for _, to := range t.TxOut {
@@ -500,7 +499,6 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
 
         //check inpossible condition
         if ux.Body.Hours > ux.CoinHours(self.Head.Header.Time) {
-            fmt.Printf("46: %v %v \n", ux.Body.Hours, self.Head.Header.Time)
             log.Panic("Coin Hours Invalid: Time Error!\n")
         }
     }
@@ -514,7 +512,6 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
         return errors.New("Error: Coin inputs do not match coin ouptuts")
     }
     if hoursIn < hoursOut {
-        fmt.Printf("45: %v %v \n", hoursIn, hoursOut)
         return errors.New("Error: insuffient coinhours for output")
     }
 

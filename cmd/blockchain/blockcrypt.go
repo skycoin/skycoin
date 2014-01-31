@@ -6,10 +6,10 @@ import (
     //"errors"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/keyring"
+    //"github.com/skycoin/skycoin/src/keyring"
 
     "log"
-    "math/rand"
+    //"math/rand"
     "encoding/hex"
 )
 
@@ -34,4 +34,8 @@ func init() {
 
 //just sign block header
 
-func SignBlock(func )
+func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
+	var block_hash coin.SHA256 = block.HashHeader()
+	sig, err := SignHash(block_hash, seckey)
+	return sig,err
+}

@@ -30,12 +30,14 @@ type Block struct {
 //transaction - Tx
 //Ouput - Ux
 type BlockHeader struct {
+    Version uint32
+
     Time  uint64
     BkSeq uint64 //increment every block
     Fee   uint64 //fee in block, used for Proof of Stake
 
-    HashPrevBlock SHA256 //hash of header of previous block
-    BodyHash      SHA256 //hash of transaction block
+    PrevHash SHA256 //hash of header of previous block
+    BodyHash SHA256 //hash of transaction block
 }
 
 type BlockBody struct {
@@ -75,23 +77,6 @@ func (self *Block) HashBody() SHA256 {
     }
     return Merkle(hashes) //merkle hash of transactions
 }
-
-<<<<<<< HEAD
-=======
-//block - Bk
-//transaction - Tx
-//Ouput - ux
-type BlockHeader struct {
-    Version uint32
-
-    Time  uint64
-    BkSeq uint64 //increment every block
-    Fee   uint64 //fee in block, used for Proof of Stake
-
-    PrevHash SHA256 //hash of header of previous block
-    BodyHash SHA256 //hash of transaction block
-}
->>>>>>> 86e387c2d9f87f85202ab21e591a1c37943f81cc
 
 func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
@@ -271,17 +256,13 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
-<<<<<<< HEAD
+
 
     if b.Head.BkSeq != 0 && self.Head.Header.BkSeq != b.Header.BkSeq+1 {
         return errors.New("Header BkSeq error")
     }
-    if b.Header.HashPrevBlock != self.Head.Header.HashPrevBlock {
-        return errors.New("HashPrevBlock does not match current head")
-=======
     if b.Header.PrevHash != self.Head.Header.PrevHash {
-        return errors.New("PrevHash does not match current head")
->>>>>>> 86e387c2d9f87f85202ab21e591a1c37943f81cc
+        return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")

@@ -2,7 +2,7 @@ package coin
 
 import (
     "errors"
-    "fmt"
+    //"fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
@@ -18,7 +18,7 @@ const (
     blockHeaderSecondsIncrement uint64 = 15
     genesisCoinVolume           uint64 = 100 * 1e6
     genesisCoinHours            uint64 = 1024 * 1024 * 1024
-    genesisBlockHashString      string = "Skycoin v0.1"
+    //genesisBlockHashString      string = "Skycoin v0.1"
 )
 
 type Block struct {
@@ -112,7 +112,7 @@ func NewBlockChain(genesisAddress Address) *BlockChain {
     //set genesis block
     var b Block = Block{} // genesis block
     b.Header.Time = uint64(time.Now().Unix())
-    b.Header.PrevHash = SumSHA256([]byte(genesisBlockHashString))
+    //b.Header.PrevHash = SumSHA256([]byte(genesisBlockHashString))
     bc.Blocks = append(bc.Blocks, b)
     bc.Head = &bc.Blocks[0] 
     // Genesis output
@@ -267,8 +267,7 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
         return errors.New("Header BkSeq error")
     }
     if b.Header.PrevHash != self.Head.HashHeader() {
-
-        fmt.Printf("hash mismatch\n%s \n%s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
+        //fmt.Printf("hash mismatch\n%s \n%s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
         return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {

@@ -13,8 +13,9 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     //"github.com/skycoin/skycoin/src/keyring"
 
-    //"log"
-    //"math/rand"
+
+    "log"
+    "math/rand"
     //"encoding/hex"
 )
 
@@ -40,6 +41,8 @@ func (self *BlockChainService) Run() {
 	self.BC = coin.NewBlockChain(address)
 
 	go func(){
+
+		block := self.BC.NewBlock()
 		for true {
 			time.Sleep(250*time.Millisecond)	
 			if self.BC.Head.Header.Time > uint64(time.Now().Unix()) {
@@ -47,7 +50,23 @@ func (self *BlockChainService) Run() {
 			}
 		}
 
+		//pull some transactions out
+		for _,t := range self.PendingTransactions {
+			if rand.Int() % 2 == 0 {
+				continue
+			}
+			err := self.BC.AppendTransaction(&block, t)
+			if err == nil {
+				continue
+			}
+		}
+		//execute the transactions
 		fmt.Printf("New Block!")
+		err := self.BC.ExecuteBlock(block) 
+		if err != nil {
+			log.Panic()
+		}
+		block = self.BC.NewBlock()
 
 	}()
 }

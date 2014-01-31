@@ -8,7 +8,8 @@ package keyring
 import (
     //"encoding/hex"
     //"errors"
-    //"fmt"
+    "fmt"
+    "time"
     "github.com/skycoin/skycoin/src/coin"
     //"github.com/skycoin/skycoin/src/keyring"
 
@@ -17,7 +18,10 @@ import (
     //"encoding/hex"
 )
 
+/*
+Creates a new block every 15 seconds
 
+*/
 type BlockChainService struct {
 	PendingBlock coin.Block
 	BC *coin.BlockChain
@@ -35,7 +39,17 @@ func (self *BlockChainService) Run() {
 
 	self.BC = coin.NewBlockChain(address)
 
+	go func(){
+		for true {
+			time.Sleep(250*time.Millisecond)	
+			if self.BC.Head.Header.Time > uint64(time.Now().Unix()) {
+				continue
+			}
+		}
 
+		fmt.Printf("New Block!")
+
+	}()
 }
 
 func (self *BlockChainService) InsertTransaction(transaction coin.Transaction) {

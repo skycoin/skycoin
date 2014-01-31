@@ -20,18 +20,21 @@ type PoolConfig struct {
     IdleCheckRate time.Duration
     // How often to check for stale connections
     ClearStaleRate time.Duration
+    // Buffer size for gnet.ConnectionPool's network Read events
+    EventChannelBufferSize int
 }
 
 func NewPoolConfig() PoolConfig {
     defIdleLimit := time.Minute * 90
     return PoolConfig{
-        Port:                6677,
-        DialTimeout:         time.Second * 30,
-        MessageHandlingRate: time.Millisecond * 30,
-        PingRate:            defIdleLimit / 3,
-        IdleLimit:           defIdleLimit,
-        IdleCheckRate:       time.Minute,
-        ClearStaleRate:      time.Minute,
+        Port:                   6677,
+        DialTimeout:            time.Second * 30,
+        MessageHandlingRate:    time.Millisecond * 30,
+        PingRate:               defIdleLimit / 3,
+        IdleLimit:              defIdleLimit,
+        IdleCheckRate:          time.Minute,
+        ClearStaleRate:         time.Minute,
+        EventChannelBufferSize: 4096,
     }
 }
 
@@ -51,10 +54,13 @@ func NewPool(c PoolConfig) *Pool {
 // messages on read_interval
 func (self *Pool) Init(d *Daemon) {
     logger.Info("InitPool on port %d", self.Config.Port)
-    gnet.DialTimeout = self.Config.DialTimeout
-    pool := gnet.NewConnectionPool(self.Config.Port, d)
-    pool.ConnectCallback = d.onGnetConnect
-    pool.DisconnectCallback = d.onGnetDisconnect
+    cfg := gnet.NewConfig()
+    cfg.DialTimeout = self.Config.DialTimeout
+    cfg.Port = uint16(self.Config.Port)
+    cfg.ConnectCallback = d.onGnetConnect
+    cfg.DisconnectCallback = d.onGnetDisconnect
+    cfg.EventChannelBufferSize = cfg.EventChannelBufferSize
+    pool := gnet.NewConnectionPool(cfg, d)
     self.Pool = pool
 }
 

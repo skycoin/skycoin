@@ -12,9 +12,9 @@ func TestInitPool(t *testing.T) {
     pool := NewPool(NewPoolConfig())
     assert.Nil(t, pool.Pool)
     assert.NotPanics(t, func() { pool.Init(d) })
-    assert.Equal(t, gnet.DialTimeout, pool.Config.DialTimeout)
-    assert.NotNil(t, pool.Pool.DisconnectCallback)
-    assert.NotNil(t, pool.Pool.ConnectCallback)
+    assert.Equal(t, pool.Pool.Config.DialTimeout, pool.Config.DialTimeout)
+    assert.NotNil(t, pool.Pool.Config.DisconnectCallback)
+    assert.NotNil(t, pool.Pool.Config.ConnectCallback)
     wait()
     go func() {
         assert.NotPanics(t, pool.Start)

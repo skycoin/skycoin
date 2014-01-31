@@ -107,7 +107,7 @@ func NewBlockChain(genesisAddress Address) *BlockChain {
     //set genesis block
     var b Block = Block{} // genesis block
     b.Header.Time = uint64(time.Now().Unix())
-    b.Header.HashPrevBlock = SumSHA256([]byte(genesisBlockHashString))
+    b.Header.PrevHash = SumSHA256([]byte(genesisBlockHashString))
     bc.Blocks = append(bc.Blocks, b)
     bc.Head = &bc.Blocks[0] 
     // Genesis output

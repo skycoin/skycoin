@@ -266,9 +266,9 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.BkSeq != 0 && self.Head.Header.BkSeq+1 != b.Header.BkSeq {
         return errors.New("Header BkSeq error")
     }
-    if b.Header.PrevHash != self.Head.Header.PrevHash {
+    if b.Header.PrevHash != self.Head.HashHeader() {
 
-        fmt.Printf("%s %s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
+        fmt.Printf("hash mismatch\n%s \n%s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
         return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {

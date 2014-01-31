@@ -45,7 +45,7 @@ type BlockBody struct {
 }
 
 /*
-Todo:
+Todo: merge header/body
 
 type Block struct {
     Time  uint64
@@ -69,6 +69,10 @@ func (self *Block) HashHeader() SHA256 {
     return SumDoubleSHA256(b1)
 }
 
+func (self *BlockHeader) Hash() SHA256 {
+    b1 := encoder.Serialize(*self)
+    return SumDoubleSHA256(b1)
+}
 //merkle hash of transactions in block
 func (self *Block) HashBody() SHA256 {
     var hashes []SHA256
@@ -81,6 +85,7 @@ func (self *Block) HashBody() SHA256 {
 func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
         // TODO -- what about the rest of the fields??
+        PrevHash: prev.Hash(),
         Time:  prev.Time + blockHeaderSecondsIncrement,
         BkSeq: prev.BkSeq + 1,
     }
@@ -262,6 +267,8 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
         return errors.New("Header BkSeq error")
     }
     if b.Header.PrevHash != self.Head.Header.PrevHash {
+
+        fmt.Printf("%s %s \n", b.Header.PrevHash, self.Head.Header.PrevHash)
         return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {

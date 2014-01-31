@@ -28,12 +28,17 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     // TODO
 }
 
+type blockMessage struct {
+    Block coin.Block
+    Sig   coin.Sig
+}
+
 type GiveBlocksMessage struct {
-    Blocks []coin.Block
+    Blocks []blockMessage
     c      *gnet.MessageContext `enc:"-"`
 }
 
-func NetGiveBlocksMessage(blocks []coin.Block) *GiveBlocksMessage {
+func NetGiveBlocksMessage(blocks []blockMessage) *GiveBlocksMessage {
     return &GiveBlocksMessage{
         Blocks: blocks,
     }

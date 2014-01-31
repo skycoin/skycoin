@@ -64,11 +64,11 @@ func TestIPAddrString(t *testing.T) {
 
 func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message) {
     assert.Nil(t, m.Handle(messageContext(addr), d))
-    assert.Equal(t, len(d.Messages.Events), 1)
-    if len(d.Messages.Events) != 1 {
+    assert.Equal(t, len(d.messageEvents), 1)
+    if len(d.messageEvents) != 1 {
         t.Fatal("messageEvent is empty")
     }
-    <-d.Messages.Events
+    <-d.messageEvents
 }
 
 func TestGetPeersMessage(t *testing.T) {
@@ -119,16 +119,16 @@ func TestIntroductionMessageHandle(t *testing.T) {
     d := newDefaultDaemon()
     mc := messageContext(addr)
     m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
-        d.Pool.Pool.ListenPort)
+        d.Pool.Pool.Config.Port)
 
     // Test valid handling
     m.Mirror = d.Messages.Mirror + 1
     err := m.Handle(mc, d)
     assert.Nil(t, err)
-    if len(d.Messages.Events) == 0 {
+    if len(d.messageEvents) == 0 {
         t.Fatalf("messageEvent is empty")
     }
-    <-d.Messages.Events
+    <-d.messageEvents
     assert.True(t, m.valid)
     m.valid = false
 
@@ -153,8 +153,8 @@ func TestIntroductionMessageHandle(t *testing.T) {
     delete(d.mirrorConnections, m.Mirror)
     assert.False(t, m.valid)
 
-    for len(d.Messages.Events) > 0 {
-        <-d.Messages.Events
+    for len(d.messageEvents) > 0 {
+        <-d.messageEvents
     }
     gnet.EraseMessages()
 }

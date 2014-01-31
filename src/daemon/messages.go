@@ -73,15 +73,12 @@ type Messages struct {
     Config MessagesConfig
     // Magic value for detecting self-connection
     Mirror uint32
-    // Message handling queue
-    Events chan AsyncMessage
 }
 
 func NewMessages(c MessagesConfig) *Messages {
     return &Messages{
         Config: c,
         Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
-        Events: make(chan AsyncMessage, gnet.EventChannelBufferSize),
     }
 }
 

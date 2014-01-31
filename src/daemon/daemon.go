@@ -144,6 +144,8 @@ type Daemon struct {
     // Tracking connections from the same base IP.  Multiple connections
     // from the same base IP are allowed but limited.
     ipCounts map[string]int
+    // Message handling queue
+    messageEvents chan AsyncMessage
 }
 
 // Returns a Daemon with primitives allocated
@@ -166,6 +168,8 @@ func NewDaemon(config *Config) *Daemon {
             config.Daemon.OutgoingMax),
         pendingConnections: make(map[string]*pex.Peer,
             config.Daemon.PendingMax),
+        messageEvents: make(chan AsyncMessage,
+            config.Pool.EventChannelBufferSize),
     }
     d.RPC = NewRPC(config.RPC, d)
     d.Messages.Config.Register()
@@ -263,7 +267,7 @@ main:
         case r := <-self.Pool.Pool.DisconnectQueue:
             self.Pool.Pool.HandleDisconnectEvent(r)
         // Message handlers
-        case m := <-self.Messages.Events:
+        case m := <-self.messageEvents:
             m.Process(self)
         // Process any pending API requests
         case fn := <-self.RPC.requests:
@@ -353,7 +357,7 @@ func (self *Daemon) recordMessageEvent(m AsyncMessage,
             return DisconnectNoIntroduction
         }
     }
-    self.Messages.Events <- m
+    self.messageEvents <- m
     return nil
 }
 
@@ -397,7 +401,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
     self.expectingIntroductions[a] = time.Now().UTC()
     logger.Debug("Sending introduction message to %s", a)
     m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
-        self.Pool.Pool.ListenPort)
+        self.Pool.Pool.Config.Port)
     err := self.Pool.Pool.Dispatcher.SendMessage(c, m)
     if err != nil {
         logger.Error("Failed to send introduction message: %v", err)

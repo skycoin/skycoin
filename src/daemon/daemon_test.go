@@ -146,7 +146,7 @@ func TestDaemonLoopMessageEvent(t *testing.T) {
     go d.Start(quit)
     called := false
     m := &DummyAsyncMessage{fn: func() { called = true }}
-    d.Messages.Events <- m
+    d.messageEvents <- m
     wait()
     assert.True(t, called)
     quit <- 1
@@ -269,8 +269,7 @@ func TestDaemonLoopPingCheckTicker(t *testing.T) {
 
 func TestDaemonLoopOutgoingConnectionsTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
-    dt := gnet.DialTimeout
-    gnet.DialTimeout = 1 // nanosecond
+    d.Pool.Pool.Config.DialTimeout = 1 // nanosecond
     d.Peers.Peers.AddPeer(addr)
     d.Config.OutgoingRate = time.Millisecond * 10
     go d.Start(quit)
@@ -281,7 +280,6 @@ func TestDaemonLoopOutgoingConnectionsTicker(t *testing.T) {
     quit <- 1
     wait()
     shutdown(d)
-    gnet.DialTimeout = dt
 }
 
 func TestDaemonLoopMessageHandlingTicker(t *testing.T) {
@@ -356,8 +354,7 @@ func TestSendPings(t *testing.T) {
 
 func TestConnectToRandomPeer(t *testing.T) {
     d := newDefaultDaemon()
-    dt := gnet.DialTimeout
-    gnet.DialTimeout = 1 // nanosecond
+    d.Pool.Pool.Config.DialTimeout = 1 // nanosecond
     // Valid attempt to connect
     d.Peers.Peers.AddPeer(addr)
     assert.NotPanics(t, d.connectToRandomPeer)
@@ -412,7 +409,6 @@ func TestConnectToRandomPeer(t *testing.T) {
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.ipCounts, addrIP)
 
-    gnet.DialTimeout = dt
     shutdown(d)
     cleanupPeers()
 }
@@ -470,17 +466,17 @@ func TestCullInvalidConnections(t *testing.T) {
 func TestRecordMessageEventValid(t *testing.T) {
     d := newDefaultDaemon()
     // Valid message, not expecting Introduction
-    assert.Equal(t, len(d.Messages.Events), 0)
+    assert.Equal(t, len(d.messageEvents), 0)
     delete(d.expectingIntroductions, addr)
     m := &PingMessage{}
     m.c = messageContext(addr)
     err := d.recordMessageEvent(m, m.c)
     assert.Nil(t, err)
-    assert.Equal(t, len(d.Messages.Events), 1)
-    if len(d.Messages.Events) == 0 {
-        t.Fatal("d.Messages.Events empty, would block")
+    assert.Equal(t, len(d.messageEvents), 1)
+    if len(d.messageEvents) == 0 {
+        t.Fatal("d.messageEvents empty, would block")
     }
-    me := <-d.Messages.Events
+    me := <-d.messageEvents
     _, ok := me.(*PingMessage)
     assert.True(t, ok)
     shutdown(d)
@@ -490,17 +486,17 @@ func TestRecordMessageEventIsIntroduction(t *testing.T) {
     // Needs Introduction and thats what it has received
     d := newDefaultDaemon()
     d.expectingIntroductions[addr] = time.Now().UTC()
-    assert.Equal(t, len(d.Messages.Events), 0)
+    assert.Equal(t, len(d.messageEvents), 0)
     m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
-        d.Pool.Pool.ListenPort)
+        d.Pool.Pool.Config.Port)
     m.c = messageContext(addr)
     err := d.recordMessageEvent(m, m.c)
     assert.Nil(t, err)
-    assert.Equal(t, len(d.Messages.Events), 1)
-    if len(d.Messages.Events) == 0 {
-        t.Fatal("d.Messages.Events empty, would block")
+    assert.Equal(t, len(d.messageEvents), 1)
+    if len(d.messageEvents) == 0 {
+        t.Fatal("d.messageEvents empty, would block")
     }
-    me := <-d.Messages.Events
+    me := <-d.messageEvents
     _, ok := me.(*IntroductionMessage)
     assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 0)
     assert.True(t, ok)
@@ -515,12 +511,12 @@ func TestRecordMessageEventNeedsIntroduction(t *testing.T) {
     m.c = messageContext(addr)
     d.Pool.Pool.Addresses[addr] = m.c.Conn
     d.Pool.Pool.Pool[m.c.Conn.Id] = m.c.Conn
-    assert.Equal(t, len(d.Messages.Events), 0)
+    assert.Equal(t, len(d.messageEvents), 0)
     d.expectingIntroductions[addr] = time.Now().UTC()
     err := d.recordMessageEvent(m, m.c)
     assert.NotNil(t, err)
     assert.Equal(t, err, DisconnectNoIntroduction)
-    assert.Equal(t, len(d.Messages.Events), 0)
+    assert.Equal(t, len(d.messageEvents), 0)
     assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 1)
     if len(d.Pool.Pool.DisconnectQueue) == 0 {
         t.Fatal("DisconnectQueue empty, would block")

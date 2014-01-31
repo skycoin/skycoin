@@ -395,6 +395,7 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
     return nil
 }
 
+//ExecuteBlock attempts to append block to blockchain
 func (self *BlockChain) ExecuteBlock(b Block) error {
     //check that all inputs exist
     if err := self.validateInputs(&b); err != nil {

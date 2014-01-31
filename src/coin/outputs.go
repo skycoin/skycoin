@@ -1,7 +1,6 @@
 package coin
 
 import (
-    "fmt"
     "github.com/skycoin/skycoin/src/lib/encoder"
 )
 

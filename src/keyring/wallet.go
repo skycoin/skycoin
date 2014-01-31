@@ -152,7 +152,7 @@ func NewWallet(n int) Wallet {
 //fmt.Printf("sec: %s \n", ToHex(sec))
 //fmt.Printf("pub: %s \n", ToHex(pub))
 
-func uxStr(ux UxOut) string {
+func uxStr(ux coin.UxOut) string {
     return fmt.Sprintf("%s, %d: %d %d", ux.Body.Address.String(), ux.Head.Time,
         ux.Body.Coins, ux.Body.Hours)   
 }

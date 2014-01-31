@@ -18,6 +18,7 @@ const (
     blockHeaderSecondsIncrement uint64 = 15
     genesisCoinVolume           uint64 = 100 * 1e6
     genesisCoinHours            uint64 = 1024 * 1024 * 1024
+    genesisBlockHashString      string = "Skycoin v0.1"
 )
 
 type Block struct {
@@ -29,8 +30,6 @@ type Block struct {
 //transaction - Tx
 //Ouput - Ux
 type BlockHeader struct {
-    Version uint32
-
     Time  uint64
     BkSeq uint64 //increment every block
     Fee   uint64 //fee in block, used for Proof of Stake
@@ -43,6 +42,21 @@ type BlockBody struct {
     Transactions []Transaction
 }
 
+/*
+Todo:
+
+type Block struct {
+    Time  uint64
+    BkSeq uint64 //increment every block
+    Fee   uint64 //fee in block, used for Proof of Stake
+
+    HashPrevBlock SHA256 //hash of header of previous block
+    BodyHash      SHA256 //hash of transaction block
+
+    Transactions []Transaction
+}
+
+*/
 func newBlock(prev *Block) Block {
     header := newBlockHeader(&prev.Header)
     return Block{Header: header, Body: BlockBody{}}
@@ -88,18 +102,20 @@ type BlockChain struct {
 func NewBlockChain(genesisAddress Address) *BlockChain {
     logger.Debug("Creating new block chain")
     var bc *BlockChain = &BlockChain{}
+    
+    //set genesis block
     var b Block = Block{} // genesis block
     b.Header.Time = uint64(time.Now().Unix())
-
+    b.Header.HashPrevBlock = SumSHA256([]byte(genesisBlockHashString))
     bc.Blocks = append(bc.Blocks, b)
-    bc.Head = &bc.Blocks[0]
+    bc.Head = &bc.Blocks[0] 
     // Genesis output
     ux := UxOut{
         Head: UxHead{
             // TODO -- what about the rest of the fields??
             // TODO -- write & use NewUxHead
+            Time: b.Header.Time,
             BkSeq: 0,
-            UxSeq: 0,
         },
         Body: UxBody{
             // TODO -- what about the rest of the fields??
@@ -238,6 +254,10 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     }
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
+    }
+
+    if b.Head.BkSeq != 0 && self.Head.Header.BkSeq != b.Header.BkSeq+1 {
+        return errors.New("Header BkSeq error")
     }
     if b.Header.HashPrevBlock != self.Head.Header.HashPrevBlock {
         return errors.New("HashPrevBlock does not match current head")

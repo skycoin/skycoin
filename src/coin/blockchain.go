@@ -258,7 +258,7 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     }
 
 
-    if b.Head.BkSeq != 0 && self.Head.Header.BkSeq != b.Header.BkSeq+1 {
+    if b.Header.BkSeq != 0 && self.Head.Header.BkSeq+1 != b.Header.BkSeq {
         return errors.New("Header BkSeq error")
     }
     if b.Header.PrevHash != self.Head.Header.PrevHash {

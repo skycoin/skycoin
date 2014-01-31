@@ -73,6 +73,7 @@ func (self *BlockHeader) Hash() SHA256 {
     b1 := encoder.Serialize(*self)
     return SumDoubleSHA256(b1)
 }
+
 //merkle hash of transactions in block
 func (self *Block) HashBody() SHA256 {
     var hashes []SHA256
@@ -86,8 +87,8 @@ func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
         // TODO -- what about the rest of the fields??
         PrevHash: prev.Hash(),
-        Time:  prev.Time + blockHeaderSecondsIncrement,
-        BkSeq: prev.BkSeq + 1,
+        Time:     prev.Time + blockHeaderSecondsIncrement,
+        BkSeq:    prev.BkSeq + 1,
     }
 }
 
@@ -99,28 +100,28 @@ func (self *BlockBody) Bytes() []byte {
     return encoder.Serialize(*self)
 }
 
-type BlockChain struct {
+type Blockchain struct {
     Head    *Block //link to current head block
     Blocks  []Block
     Unspent []UxOut
 }
 
-func NewBlockChain(genesisAddress Address) *BlockChain {
+func NewBlockChain(genesisAddress Address) *Blockchain {
     logger.Debug("Creating new block chain")
-    var bc *BlockChain = &BlockChain{}
-    
+    var bc *Blockchain = &Blockchain{}
+
     //set genesis block
     var b Block = Block{} // genesis block
     b.Header.Time = uint64(time.Now().Unix())
     b.Header.PrevHash = SumSHA256([]byte(genesisBlockHashString))
     bc.Blocks = append(bc.Blocks, b)
-    bc.Head = &bc.Blocks[0] 
+    bc.Head = &bc.Blocks[0]
     // Genesis output
     ux := UxOut{
         Head: UxHead{
             // TODO -- what about the rest of the fields??
             // TODO -- write & use NewUxHead
-            Time: b.Header.Time,
+            Time:  b.Header.Time,
             BkSeq: 0,
         },
         Body: UxBody{
@@ -135,7 +136,7 @@ func NewBlockChain(genesisAddress Address) *BlockChain {
     return bc
 }
 
-func (self *BlockChain) NewBlock() Block {
+func (self *Blockchain) NewBlock() Block {
     return newBlock(self.Head)
 }
 
@@ -144,7 +145,7 @@ func (self *BlockChain) NewBlock() Block {
 */
 
 // Returns the unspent outputs, UxOut, associated with an Address
-func (self *BlockChain) GetUnspentOutputs(address Address) []UxOut {
+func (self *Blockchain) GetUnspentOutputs(address Address) []UxOut {
     var uxo []UxOut
     for _, ux := range self.Unspent {
         if ux.Body.Address == address {
@@ -156,7 +157,7 @@ func (self *BlockChain) GetUnspentOutputs(address Address) []UxOut {
 
 // Return the UxOut for a given hash
 // TODO -- Slow because we are rehashing everytime we do lookup
-func (self *BlockChain) GetUnspentByHash(hash SHA256) (UxOut, error) {
+func (self *Blockchain) GetUnspentByHash(hash SHA256) (UxOut, error) {
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
             return self.Unspent[i], nil
@@ -166,7 +167,7 @@ func (self *BlockChain) GetUnspentByHash(hash SHA256) (UxOut, error) {
 }
 
 // Returns the hashes of all unspent outputs xor'd
-func (self *BlockChain) HashUnspent() SHA256 {
+func (self *Blockchain) HashUnspent() SHA256 {
     var h SHA256
     for _, ux := range self.Unspent {
         h = h.Xor(ux.Hash()) // dont rehash each time
@@ -175,7 +176,7 @@ func (self *BlockChain) HashUnspent() SHA256 {
 }
 
 // Add a new UxOut to the list of unspent transactions
-func (self *BlockChain) AddUnspent(ux UxOut) {
+func (self *Blockchain) AddUnspent(ux UxOut) {
     hash := ux.Hash()
     if _, err := self.GetUnspentByHash(hash); err == nil {
         log.Panic("Unspent transaction already known")
@@ -185,7 +186,7 @@ func (self *BlockChain) AddUnspent(ux UxOut) {
 
 // Removes a UxOut for a given hash
 // TODO -- Need to save, in order to do rollback
-func (self *BlockChain) RemoveUnspent(hash SHA256) {
+func (self *Blockchain) RemoveUnspent(hash SHA256) {
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
             //remove spent output from array
@@ -197,7 +198,7 @@ func (self *BlockChain) RemoveUnspent(hash SHA256) {
 }
 
 // Checks that all inputs exists
-func (self *BlockChain) validateInputs(b *Block) error {
+func (self *Blockchain) validateInputs(b *Block) error {
     for _, t := range b.Body.Transactions {
         for _, tx := range t.TxIn {
             _, err := self.GetUnspentByHash(tx.UxOut)
@@ -214,7 +215,7 @@ func (self *BlockChain) validateInputs(b *Block) error {
 */
 
 //check the signatures in the block
-func (self *BlockChain) validateSignatures(b *Block) error {
+func (self *Blockchain) validateSignatures(b *Block) error {
     //check that each idx is used
 
     //check signature idx
@@ -249,7 +250,7 @@ func (self *BlockChain) validateSignatures(b *Block) error {
 
 //important
 //TODO, check previous block hash for matching
-func (self *BlockChain) validateBlockHeader(b *Block) error {
+func (self *Blockchain) validateBlockHeader(b *Block) error {
     //check BkSeq
     if b.Header.BkSeq != self.Head.Header.BkSeq+1 {
         return errors.New("BkSeq invalid")
@@ -261,7 +262,6 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
-
 
     if b.Header.BkSeq != 0 && self.Head.Header.BkSeq+1 != b.Header.BkSeq {
         return errors.New("Header BkSeq error")
@@ -282,7 +282,7 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
 /*
 	Enforce immutability
 */
-func (self *BlockChain) validateBlockBody(b *Block) error {
+func (self *Blockchain) validateBlockBody(b *Block) error {
 
     //check merkle tree and compare against header
     if b.HashBody() != b.Header.BodyHash {
@@ -396,7 +396,7 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
 }
 
 //ExecuteBlock attempts to append block to blockchain
-func (self *BlockChain) ExecuteBlock(b Block) error {
+func (self *Blockchain) ExecuteBlock(b Block) error {
     //check that all inputs exist
     if err := self.validateInputs(&b); err != nil {
         return err
@@ -437,7 +437,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     return nil
 }
 
-func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
+func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
 
     //check that all inputs exist and are unspent
     for _, tx := range t.TxIn {

@@ -72,7 +72,7 @@ func (self *Wallet) Sign(address coin.Address, hash coin.SHA256) (coin.Sig, erro
 }
 
 // Refresh the unspent outputs for the wallet
-func (self *Wallet) RefeshUnspentOutputs(bc *coin.BlockChain) {
+func (self *Wallet) RefeshUnspentOutputs(bc *coin.Blockchain) {
     outputs := make([]coin.UxOut, 0)
     for _, a := range self.Addresses {
         unspentOutputs := bc.GetUnspentOutputs(a.Address)
@@ -82,7 +82,7 @@ func (self *Wallet) RefeshUnspentOutputs(bc *coin.BlockChain) {
 }
 
 // Returns the wallet's coins and coin hours balance
-func (self *Wallet) Balance(bc *coin.BlockChain) (coins uint64, hours uint64) {
+func (self *Wallet) Balance(bc *coin.Blockchain) (coins uint64, hours uint64) {
     self.RefeshUnspentOutputs(bc)
     t := bc.Head.Header.Time
     for _, ux := range self.Outputs {
@@ -93,7 +93,7 @@ func (self *Wallet) Balance(bc *coin.BlockChain) (coins uint64, hours uint64) {
 }
 
 /*
-func (self *Wallet) NewTransaction(bc *coin.BlockChain, Address coin.Address, amt1 uint64, amt2 uint64) (coin.Transaction, error) {
+func (self *Wallet) NewTransaction(bc *coin.Blockchain, Address coin.Address, amt1 uint64, amt2 uint64) (coin.Transaction, error) {
 	self.RefeshUnspentOutputs(bc)
 	bal1, bal2 := self.Balance()
 
@@ -141,7 +141,7 @@ func NewWallet(n int) Wallet {
     return w
 }
 
-//func (self *Address) GetOutputs(bc coin.BlockChain) []coin.UxOut {
+//func (self *Address) GetOutputs(bc coin.Blockchain) []coin.UxOut {
 //	ux := bc.GetUnspentOutputs(*self.Address)
 //	return ux
 //}
@@ -154,10 +154,11 @@ func NewWallet(n int) Wallet {
 
 func uxStr(ux coin.UxOut) string {
     return fmt.Sprintf("%s, %d: %d %d", ux.Body.Address.String(), ux.Head.Time,
-        ux.Body.Coins, ux.Body.Hours)   
+        ux.Body.Coins, ux.Body.Hours)
 }
+
 // Prints the balances for multiple wallets
-func PrintWalletBalances(bc *coin.BlockChain, wallets []Wallet) {
+func PrintWalletBalances(bc *coin.Blockchain, wallets []Wallet) {
     for i, w := range wallets {
         b1, b2 := w.Balance(bc)
         fmt.Printf("PWB: %v: %v %v \n", i, b1, b2)

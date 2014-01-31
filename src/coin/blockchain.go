@@ -2,12 +2,12 @@ package coin
 
 import (
     "errors"
+    "fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
     "math"
     "time"
-    "fmt"
 )
 
 var (
@@ -76,6 +76,22 @@ func (self *Block) HashBody() SHA256 {
     return Merkle(hashes) //merkle hash of transactions
 }
 
+<<<<<<< HEAD
+=======
+//block - Bk
+//transaction - Tx
+//Ouput - ux
+type BlockHeader struct {
+    Version uint32
+
+    Time  uint64
+    BkSeq uint64 //increment every block
+    Fee   uint64 //fee in block, used for Proof of Stake
+
+    PrevHash SHA256 //hash of header of previous block
+    BodyHash SHA256 //hash of transaction block
+}
+>>>>>>> 86e387c2d9f87f85202ab21e591a1c37943f81cc
 
 func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
@@ -183,7 +199,7 @@ func (self *BlockChain) RemoveUnspent(hash SHA256) {
     for i, ux := range self.Unspent {
         if hash == ux.Hash() {
             //remove spent output from array
-            self.Unspent= append(self.Unspent[:i], self.Unspent[i+1:]...)
+            self.Unspent = append(self.Unspent[:i], self.Unspent[i+1:]...)
             return
         }
     }
@@ -255,12 +271,17 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
+<<<<<<< HEAD
 
     if b.Head.BkSeq != 0 && self.Head.Header.BkSeq != b.Header.BkSeq+1 {
         return errors.New("Header BkSeq error")
     }
     if b.Header.HashPrevBlock != self.Head.Header.HashPrevBlock {
         return errors.New("HashPrevBlock does not match current head")
+=======
+    if b.Header.PrevHash != self.Head.Header.PrevHash {
+        return errors.New("PrevHash does not match current head")
+>>>>>>> 86e387c2d9f87f85202ab21e591a1c37943f81cc
     }
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")
@@ -422,7 +443,7 @@ func (self *BlockChain) ExecuteBlock(b Block) error {
     }
 
     //set new block head
-    self.Blocks = append(self.Blocks, b) //extend the blockchain
+    self.Blocks = append(self.Blocks, b)         //extend the blockchain
     self.Head = &self.Blocks[len(self.Blocks)-1] //set new header
 
     return nil
@@ -488,7 +509,7 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
         }
         coinsIn += ux.Body.Coins
         hoursIn += ux.CoinHours(self.Head.Header.Time)
-    
+
         //check inpossible condition
         if ux.Body.Hours > ux.CoinHours(self.Head.Header.Time) {
             fmt.Printf("46: %v %v \n", ux.Body.Hours, self.Head.Header.Time)

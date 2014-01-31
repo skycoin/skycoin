@@ -2,7 +2,6 @@ package daemon
 
 import (
     "github.com/nictuku/dht"
-    "github.com/skycoin/pex"
     "github.com/stretchr/testify/assert"
     "testing"
 )
@@ -11,43 +10,37 @@ var (
     port = 6677
 )
 
-func resetDHT() {
-    DHT = nil
-    dhtInfoHash = ""
-}
-
 func TestInitShutdownDHT(t *testing.T) {
-    resetDHT()
-    assert.Nil(t, DHT)
-    assert.Equal(t, string(dhtInfoHash), "")
-    InitDHT(port)
-    assert.NotNil(t, DHT)
-    assert.NotEqual(t, string(dhtInfoHash), "")
-    go DHT.Run()
+    d := NewDHT(NewDHTConfig())
+    assert.Equal(t, string(d.InfoHash), "")
+    e := d.Init()
+    assert.Nil(t, e)
+    assert.NotEqual(t, string(d.InfoHash), "")
+    go d.Start()
     wait()
-    ShutdownDHT()
-    wait()
-    resetDHT()
+    d.Shutdown()
 }
 
-func TestReceivedDHTPeers(t *testing.T) {
-    Peers = pex.NewPex(maxPeers)
+func TestReceivePeers(t *testing.T) {
+    cleanupPeers()
+    d := NewDHT(NewDHTConfig())
+    peers := NewPeers(NewPeersConfig())
+    peers.Init()
     m := make(map[dht.InfoHash][]string)
-    peers := make([]string, 0)
-    peers = append(peers, string([]byte{013, 026, 041, 054, 013, 013}))
-    peers = append(peers, string([]byte{013, 026, 041, 055, 013, 013}))
-    m[dht.InfoHash("")] = peers
-    receivedDHTPeers(m)
-    assert.Equal(t, len(Peers.Peerlist), 2)
-    assert.NotNil(t, Peers.Peerlist["11.22.33.45:2827"])
-    assert.NotNil(t, Peers.Peerlist["11.22.33.44:2827"])
-    resetPeers()
+    ps := make([]string, 0)
+    ps = append(ps, string([]byte{013, 026, 041, 054, 013, 013}))
+    ps = append(ps, string([]byte{013, 026, 041, 055, 013, 013}))
+    m[dht.InfoHash("")] = ps
+    d.ReceivePeers(m, peers.Peers)
+    assert.Equal(t, len(peers.Peers.Peerlist), 2)
+    assert.NotNil(t, peers.Peers.Peerlist["11.22.33.45:2827"])
+    assert.NotNil(t, peers.Peers.Peerlist["11.22.33.44:2827"])
 }
 
 func TestRequestDHTPeers(t *testing.T) {
-    resetDHT()
-    assert.Panics(t, RequestDHTPeers)
-    InitDHT(port)
-    assert.NotPanics(t, RequestDHTPeers)
-    resetDHT()
+    d := NewDHT(NewDHTConfig())
+    assert.Panics(t, d.RequestPeers)
+    e := d.Init()
+    assert.Nil(t, e)
+    assert.NotPanics(t, d.RequestPeers)
 }

@@ -4,69 +4,110 @@ import (
     "crypto/sha1"
     "encoding/hex"
     "github.com/nictuku/dht"
+    "github.com/skycoin/pex"
     "log"
     "time"
 )
 
-var (
-    // DHT manager
-    DHT *dht.DHT = nil
+type DHTConfig struct {
+    Port int
     // Info to be hashed for identifying peers on the skycoin network
-    dhtInfo = "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin"
-    // Hex encoded sha1 sum of dhtInfo
-    dhtInfoHash dht.InfoHash = ""
+    Info string
     // Number of peers to try to get via DHT
-    dhtDesiredPeers = 20
+    DesiredPeers int
     // How many local peers, from any source, before we stop requesting DHT peers
-    dhtPeerLimit = 100
+    PeerLimit int
     // DHT Bootstrap routers
-    dhtBootstrapNodes = []string{
-        "1.a.magnets.im:6881",
-        "router.bittorrent.com:6881",
-        "router.utorrent.com:6881",
-        "dht.transmissionbt.com:6881",
-    }
+    BootstrapNodes []string
     // How often to request more peers via DHT
-    dhtBootstrapRequestRate = time.Second * 10
-)
-
-// Sets up the DHT node for peer bootstrapping
-func InitDHT(port int) {
-    var err error
-    sum := sha1.Sum([]byte(dhtInfo))
-    // Create a hex encoded sha1 sum of a string to be used for DH
-    dhtInfoHash, err = dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
-    if err != nil {
-        log.Panicf("Failed to create InfoHash: %v", err)
-        return
-    }
-    cfg := dht.NewConfig()
-    cfg.Port = port
-    cfg.NumTargetPeers = dhtDesiredPeers
-    DHT, err = dht.New(cfg)
-    if err != nil {
-        log.Panicf("Failed to init DHT: %v", err)
-        return
-    }
-    logger.Info("Init DHT on port %d", port)
+    BootstrapRequestRate time.Duration
 }
 
-// Stops the DHT.  Warning: if DHT.Run() was never called, this will block
-// indefinitely.
-func ShutdownDHT() {
-    if DHT != nil {
-        DHT.Stop()
+func NewDHTConfig() DHTConfig {
+    return DHTConfig{
+        Port:         6677,
+        Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
+        DesiredPeers: 20,
+        PeerLimit:    100,
+        BootstrapNodes: []string{
+            "1.a.magnets.im:6881",
+            "router.bittorrent.com:6881",
+            "router.utorrent.com:6881",
+            "dht.transmissionbt.com:6881",
+        },
+        BootstrapRequestRate: time.Second * 10,
     }
-    DHT = nil
+}
+
+type DHT struct {
+    Config DHTConfig
+    // DHT manager
+    DHT *dht.DHT
+    // Hex encoded sha1 sum of Info
+    InfoHash dht.InfoHash
+}
+
+func NewDHT(c DHTConfig) *DHT {
+    return &DHT{
+        Config:   c,
+        DHT:      nil,
+        InfoHash: "",
+    }
+}
+
+/*
+   d, ih, err := InitDHT(state.Config.Port, state.Config.DesiredPeers,
+       state.Config.Info)
+   if err != nil {
+       log.Panicf("Failed to init dht: %v", err)
+   }
+   state.DHT = d
+   state.InfoHash = ih
+*/
+
+// Sets up the DHT node for peer bootstrapping
+func (self *DHT) Init() error {
+    sum := sha1.Sum([]byte(self.Config.Info))
+    // Create a hex encoded sha1 sum of a string to be used for DH
+    InfoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
+    if err != nil {
+        return err
+    }
+    cfg := dht.NewConfig()
+    cfg.Port = self.Config.Port
+    cfg.NumTargetPeers = self.Config.DesiredPeers
+    d, err := dht.New(cfg)
+    if err != nil {
+        return err
+    }
+    self.InfoHash = InfoHash
+    self.DHT = d
+
+    logger.Info("Init DHT on port %d", self.Config.Port)
+    return nil
+}
+
+// Stops the DHT
+func (self *DHT) Shutdown() {
+    if self.DHT != nil {
+        self.DHT.Stop()
+        // We must reset to nil since the DHT cannot restart once shutdown
+        self.DHT = nil
+    }
+}
+
+// Starts the DHT
+func (self *DHT) Start() {
+    self.DHT.Run()
 }
 
 // Called when the DHT finds a peer
-func receivedDHTPeers(r map[dht.InfoHash][]string) {
-    for _, peers := range r {
-        for _, p := range peers {
+func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string, peers *pex.Pex) {
+    for _, results := range r {
+        for _, p := range results {
             peer := dht.DecodePeerAddress(p)
             logger.Debug("DHT Peer: %s", peer)
-            _, err := Peers.AddPeer(peer)
+            _, err := peers.AddPeer(peer)
             if err != nil {
                 logger.Info("Failed to add DHT peer: %v", err)
             }
@@ -75,12 +116,12 @@ func receivedDHTPeers(r map[dht.InfoHash][]string) {
 }
 
 // Requests peers from the DHT
-func RequestDHTPeers() {
-    ih := string(dhtInfoHash)
+func (self *DHT) RequestPeers() {
+    ih := string(self.InfoHash)
     if ih == "" {
-        log.Panic("dhtInfoHash is not initialized")
+        log.Panic("InfoHash is not initialized")
         return
     }
     logger.Info("Requesting DHT Peers")
-    DHT.PeersRequest(ih, true)
+    self.DHT.PeersRequest(ih, true)
 }

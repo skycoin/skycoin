@@ -36,7 +36,8 @@ func init() {
 
 func TestRegisterMessages(t *testing.T) {
     gnet.EraseMessages()
-    assert.NotPanics(t, RegisterMessages)
+    c := NewMessagesConfig()
+    assert.NotPanics(t, c.Register)
     gnet.EraseMessages()
 }
 
@@ -61,42 +62,42 @@ func TestIPAddrString(t *testing.T) {
     assert.Equal(t, addr, i.String())
 }
 
-func testSimpleMessageHandler(t *testing.T, m gnet.Message) {
-    assert.Nil(t, m.Handle(messageContext(addr)))
-    assert.Equal(t, len(messageEvent), 1)
-    if len(messageEvent) != 1 {
+func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message) {
+    assert.Nil(t, m.Handle(messageContext(addr), d))
+    assert.Equal(t, len(d.Messages.Events), 1)
+    if len(d.Messages.Events) != 1 {
         t.Fatal("messageEvent is empty")
     }
-    <-messageEvent
+    <-d.Messages.Events
 }
 
 func TestGetPeersMessage(t *testing.T) {
-    RegisterMessages()
+    d := newDefaultDaemon()
     m := NewGetPeersMessage()
-    testSimpleMessageHandler(t, m)
-    Peers.AddPeer(addr)
+    testSimpleMessageHandler(t, d, m)
+    d.Peers.Peers.AddPeer(addr)
     m.c = messageContext(addr)
-    assert.NotPanics(t, m.Process)
+    assert.NotPanics(t, func() { m.Process(d) })
     assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
 
     // If no peers, nothing should happen
     m.c.Conn.LastSent = time.Unix(0, 0)
-    delete(Peers.Peerlist, addr)
-    assert.NotPanics(t, m.Process)
+    delete(d.Peers.Peers.Peerlist, addr)
+    assert.NotPanics(t, func() { m.Process(d) })
     assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
 
     // Test with failing send
-    Peers.AddPeer(addr)
+    d.Peers.Peers.AddPeer(addr)
     m.c.Conn.Conn = NewFailingConn(addr)
-    assert.NotPanics(t, m.Process)
+    assert.NotPanics(t, func() { m.Process(d) })
     assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
 
-    resetPeers()
     gnet.EraseMessages()
+    shutdown(d)
 }
 
 func TestGivePeersMessage(t *testing.T) {
-    RegisterMessages()
+    d := newDefaultDaemon()
     addrs := []string{addr, addrb, "7"}
     peers := make([]*pex.Peer, 0, 3)
     for _, addr := range addrs {
@@ -104,166 +105,159 @@ func TestGivePeersMessage(t *testing.T) {
     }
     m := NewGivePeersMessage(peers)
     assert.Equal(t, len(m.GetPeers()), 2)
-    testSimpleMessageHandler(t, m)
+    testSimpleMessageHandler(t, d, m)
     assert.Equal(t, m.GetPeers()[0], addrs[0])
     assert.Equal(t, m.GetPeers()[1], addrs[1])
     // Peers should be added to the pex when processed
-    m.Process()
-    assert.Equal(t, len(Peers.Peerlist), 2)
-    resetPeers()
+    m.Process(d)
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), 2)
     gnet.EraseMessages()
+    shutdown(d)
 }
 
 func TestIntroductionMessageHandle(t *testing.T) {
-    RegisterMessages()
-    Pool = gnet.NewConnectionPool(poolPort)
+    d := newDefaultDaemon()
     mc := messageContext(addr)
-    m := NewIntroductionMessage()
+    m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
+        d.Pool.Pool.ListenPort)
 
     // Test valid handling
-    m.Mirror = mirrorValue + 1
-    err := m.Handle(mc)
+    m.Mirror = d.Messages.Mirror + 1
+    err := m.Handle(mc, d)
     assert.Nil(t, err)
-    if len(messageEvent) == 0 {
+    if len(d.Messages.Events) == 0 {
         t.Fatalf("messageEvent is empty")
     }
-    <-messageEvent
+    <-d.Messages.Events
     assert.True(t, m.valid)
     m.valid = false
 
     // Test matching mirror
-    m.Mirror = mirrorValue
-    err = m.Handle(mc)
+    m.Mirror = d.Messages.Mirror
+    err = m.Handle(mc, d)
     assert.Equal(t, err, DisconnectSelf)
-    m.Mirror = mirrorValue + 1
+    m.Mirror = d.Messages.Mirror + 1
     assert.False(t, m.valid)
 
-    // Test mismatched version
-    m.Version = version + 1
-    err = m.Handle(mc)
+    // Test mismatched d.Config.Version
+    m.Version = d.Config.Version + 1
+    err = m.Handle(mc, d)
     assert.Equal(t, err, DisconnectInvalidVersion)
     assert.False(t, m.valid)
 
     // Test already connected
-    mirrorConnections[m.Mirror] = make(map[string]uint16)
-    mirrorConnections[m.Mirror][addrIP] = addrPort + 1
-    err = m.Handle(mc)
+    d.mirrorConnections[m.Mirror] = make(map[string]uint16)
+    d.mirrorConnections[m.Mirror][addrIP] = addrPort + 1
+    err = m.Handle(mc, d)
     assert.Equal(t, err, DisconnectConnectedTwice)
-    delete(mirrorConnections, m.Mirror)
+    delete(d.mirrorConnections, m.Mirror)
     assert.False(t, m.valid)
-    Pool = nil
 
-    for len(messageEvent) > 0 {
-        <-messageEvent
+    for len(d.Messages.Events) > 0 {
+        <-d.Messages.Events
     }
     gnet.EraseMessages()
 }
 
 func TestIntroductionMessageProcess(t *testing.T) {
-    RegisterMessages()
-    Pool = gnet.NewConnectionPool(poolPort)
-    m := NewIntroductionMessage()
+    cleanupPeers()
+    d := newDefaultDaemon()
+    m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
+        uint16(poolPort))
     m.c = messageContext(addr)
-    Pool.Pool[1] = m.c.Conn
+    d.Pool.Pool.Pool[1] = m.c.Conn
 
     // Test invalid
     m.valid = false
-    expectingIntroductions[addr] = time.Now()
-    m.Process()
-    // expectingIntroductions should get updated
-    _, x := expectingIntroductions[addr]
+    d.expectingIntroductions[addr] = time.Now()
+    m.Process(d)
+    // d.expectingIntroductions should get updated
+    _, x := d.expectingIntroductions[addr]
     assert.False(t, x)
-    // mirrorConnections should not have an entry
-    _, x = mirrorConnections[m.Mirror]
+    // d.mirrorConnections should not have an entry
+    _, x = d.mirrorConnections[m.Mirror]
     assert.False(t, x)
-    assert.Equal(t, len(Peers.Peerlist), 0)
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
 
     // Test valid
     m.valid = true
-    expectingIntroductions[addr] = time.Now()
-    m.Process()
-    // expectingIntroductions should get updated
-    _, x = expectingIntroductions[addr]
+    d.expectingIntroductions[addr] = time.Now()
+    m.Process(d)
+    // d.expectingIntroductions should get updated
+    _, x = d.expectingIntroductions[addr]
     assert.False(t, x)
-    assert.Equal(t, len(Peers.Peerlist), 1)
-    assert.Equal(t, connectionMirrors[addr], m.Mirror)
-    assert.NotNil(t, mirrorConnections[m.Mirror])
-    assert.Equal(t, mirrorConnections[m.Mirror][addrIP], addrPort)
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), 1)
+    assert.Equal(t, d.connectionMirrors[addr], m.Mirror)
+    assert.NotNil(t, d.mirrorConnections[m.Mirror])
+    assert.Equal(t, d.mirrorConnections[m.Mirror][addrIP], addrPort)
     peerAddr := fmt.Sprintf("%s:%d", addrIP, poolPort)
-    assert.NotNil(t, Peers.Peerlist[peerAddr])
-    resetPeers()
+    assert.NotNil(t, d.Peers.Peers.Peerlist[peerAddr])
 
     // Handle impossibly bad ip:port returned from conn.Addr()
     // User should be disconnected
     m.valid = true
     m.c = messageContext(badAddrPort)
-    m.Process()
-    if len(Pool.DisconnectQueue) != 1 {
+    m.Process(d)
+    if len(d.Pool.Pool.DisconnectQueue) != 1 {
         t.Fatalf("DisconnectQueue empty")
     }
-    <-Pool.DisconnectQueue
+    <-d.Pool.Pool.DisconnectQueue
 
     m.valid = true
     m.c = messageContext(badAddrNoPort)
-    m.Process()
-    if len(Pool.DisconnectQueue) != 1 {
+    m.Process(d)
+    if len(d.Pool.Pool.DisconnectQueue) != 1 {
         t.Fatalf("DisconnectQueue empty")
     }
-    <-Pool.DisconnectQueue
+    <-d.Pool.Pool.DisconnectQueue
 
-    Pool = nil
     gnet.EraseMessages()
 }
 
 func TestPingMessage(t *testing.T) {
-    RegisterMessages()
+    d := newDefaultDaemon()
     m := &PingMessage{}
-    testSimpleMessageHandler(t, m)
+    testSimpleMessageHandler(t, d, m)
 
     m.c = messageContext(addr)
-    assert.NotPanics(t, m.Process)
+    assert.NotPanics(t, func() { m.Process(d) })
     // A pong message should have been sent
     assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
 
     // Failing to send should not cause a panic
     m.c.Conn.Conn = NewFailingConn(addr)
     m.c.Conn.LastSent = time.Unix(0, 0)
-    assert.NotPanics(t, m.Process)
+    assert.NotPanics(t, func() { m.Process(d) })
     assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
 
     gnet.EraseMessages()
 }
 
 func TestPongMessage(t *testing.T) {
-    RegisterMessages()
+    cmsgs := NewMessagesConfig()
+    cmsgs.Register()
     m := &PongMessage{}
     // Pongs dont do anything
-    assert.Nil(t, m.Handle(messageContext(addr)))
+    assert.Nil(t, m.Handle(messageContext(addr), nil))
     gnet.EraseMessages()
 }
 
 /* Helpers */
 
 func gnetConnection(addr string) *gnet.Connection {
-    conn := &gnet.Connection{
+    return &gnet.Connection{
         Id:           1,
         Conn:         NewDummyConn(addr),
         LastSent:     time.Unix(0, 0),
         LastReceived: time.Unix(0, 0),
         Buffer:       &bytes.Buffer{},
     }
-    conn.Controller = gnet.NewConnectionController(conn)
-    return conn
 }
 
 func messageContext(addr string) *gnet.MessageContext {
     return &gnet.MessageContext{
         Conn: gnetConnection(addr),
     }
-}
-
-func resetPeers() {
-    Peers = pex.NewPex(maxPeers)
 }
 
 type DummyGivePeersMessage struct {

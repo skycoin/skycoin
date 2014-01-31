@@ -9,17 +9,14 @@ import (
 )
 
 func TestInitPeers(t *testing.T) {
-    Peers = pex.NewPex(maxPeers)
-    assert.Panics(t, func() { InitPeers("x") })
-    Peers = nil
+    defer cleanupPeers()
+    c := NewPeersConfig()
+    peers := NewPeers(c)
 
     // Write dummy peer db
     fn := "./" + pex.PeerDatabaseFilename
-    os.Remove(fn)
-    os.Remove("./" + pex.BlacklistedDatabaseFilename)
+    cleanupPeers()
     f, err := os.Create(fn)
-    defer os.Remove(fn)
-    defer os.Remove("./" + pex.BlacklistedDatabaseFilename)
     assert.Nil(t, err)
     if err != nil {
         t.Fatalf("Error creating %s", fn)
@@ -28,36 +25,34 @@ func TestInitPeers(t *testing.T) {
     assert.Nil(t, err)
     f.Close()
 
-    assert.NotPanics(t, func() { InitPeers("./") })
-    assert.NotNil(t, Peers)
-    assert.Equal(t, len(Peers.Peerlist), 1)
-    assert.NotNil(t, Peers.Peerlist[addr])
+    peers.Config.DataDirectory = "./"
+    assert.NotPanics(t, func() { peers.Init() })
+    assert.Equal(t, len(peers.Peers.Peerlist), 1)
+    assert.NotNil(t, peers.Peers.Peerlist[addr])
 }
 
 func TestShutdownPeers(t *testing.T) {
-    SetupPeersShutdown(t)
-    ShutdownPeers("./")
-    ConfirmPeersShutdown(t)
+    defer cleanupPeers()
+    peers := setupPeersShutdown(t)
+    peers.Shutdown()
+    confirmPeersShutdown(t)
 }
 
-func SetupPeersShutdown(t *testing.T) {
-    os.Remove("./" + pex.BlacklistedDatabaseFilename)
-    os.Remove("./" + pex.PeerDatabaseFilename)
+func setupPeersShutdown(t *testing.T) *Peers {
+    cleanupPeers()
     fn := "./" + pex.PeerDatabaseFilename
     _, err := os.Stat(fn)
     if err == nil {
         os.Remove(fn)
     }
-    Peers = pex.NewPex(maxPeers)
-    _, err = Peers.AddPeer(addr)
+    peers := NewPeers(NewPeersConfig())
+    peers.Init()
+    _, err = peers.Peers.AddPeer(addr)
     assert.Nil(t, err)
+    return peers
 }
 
-func ConfirmPeersShutdown(t *testing.T) {
-    defer os.Remove("./" + pex.BlacklistedDatabaseFilename)
-    defer os.Remove("./" + pex.PeerDatabaseFilename)
-    assert.Nil(t, Peers)
-
+func confirmPeersShutdown(t *testing.T) {
     f, err := os.Open("./" + pex.PeerDatabaseFilename)
     assert.Nil(t, err)
     if err != nil {
@@ -67,4 +62,9 @@ func ConfirmPeersShutdown(t *testing.T) {
     n, err := f.Read(b)
     assert.Nil(t, err)
     assert.Equal(t, strings.Split(string(b[:n]), " ")[0], addr)
+}
+
+func cleanupPeers() {
+    os.Remove("./" + pex.BlacklistedDatabaseFilename)
+    os.Remove("./" + pex.PeerDatabaseFilename)
 }

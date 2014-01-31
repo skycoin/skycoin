@@ -4,6 +4,7 @@ import (
     "errors"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
+    "encoding/hex"
 )
 
 type PubKey [33]byte
@@ -16,6 +17,21 @@ func NewPubKey(b []byte) PubKey {
     copy(p[:], b[:])
     return p
 }
+
+//seckey from hex string
+func PubKeyFromHex(s string) PubKey {
+    b, err := hex.DecodeString(s)
+    if err != nil || len(b) != 33 {
+        log.Panic(err)
+    }
+    return NewPubKey(b)
+}
+
+//seckey to hex string
+func (s PubKey) Hex() string {
+    return hex.EncodeToString(s[:])
+}
+
 type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
@@ -25,6 +41,20 @@ func NewSecKey(b []byte) SecKey {
     var p SecKey
     copy(p[:], b[:])
     return p
+}
+
+//seckey from hex string
+func SecKeyFromHex(s string) SecKey {
+    b, err := hex.DecodeString(s)
+    if err != nil || len(b) != 32 {
+        log.Panic(err)
+    }
+    return NewSecKey(b)
+}
+
+//seckey to hex string
+func (s SecKey) Hex() string {
+    return hex.EncodeToString(s[:])
 }
 
 type Sig [64 + 1]byte

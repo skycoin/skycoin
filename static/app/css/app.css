@@ -25,6 +25,10 @@ br {
     background-color:#F2F5F8;
 }
 
+.green {
+  color:green;
+}
+
 .tab-pane, .nav-tabs>li.active>a, .nav-tabs>li.active>a:hover{
   background-color:#EAEFF3;
 }
@@ -52,7 +56,8 @@ br {
   position:absolute;
   top: 8px;
   right: 8px;
-  color:#a3b0bb;
+  /*color:#a3b0bb;*/
+  color:#fff;
 }
 
 #sky-header{
@@ -161,16 +166,38 @@ label {
   position:relative;
   height:78%;
   padding:15px;
+  overflow:scroll;
 }
 
 #sky-footer{
   width: 100%;
-  height: 10%;
+  height: 12%;
   bottom:0;
-  margin-top:20px;
+  padding:10px 0 0 20px;
+  position:relative;
   background-color:#dbe1e6;
   border-top:1px solid #ddd;
+  box-shadow: 0px -5px 5px #dbe1e6;
 }
+  #sky-footer .message{
+  }
+  .progress-striped{
+    width:50%;
+    margin-bottom:0;
+    display:inline-block;
+  }
+  #sky-footer .percent{
+    display:inline-block;
+    position:relative;
+    bottom:5px;
+    left:2px;
+  }
+  #sky-footer .signal{
+    position: absolute;
+    right: 25px;
+    top: 21px;
+    font-size: 24px;
+  }
 
 .qr-container {
   text-align:right;
@@ -189,12 +216,18 @@ label {
   position: absolute;
   color: #fff;
   bottom: -7px;
-  right: 182px;
+  right: 5%;
   font-size: 52px;
   height: 60px;
   opacity: 1;
 
 }
+  .background-cloud-0 i{
+    position: absolute;
+    left: 11px;
+    font-size: 54px;
+    top: -3px;
+  }
 .background-cloud-1{
   position:absolute;
   color:#dbe1e6;

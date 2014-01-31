@@ -38,6 +38,12 @@ angular.module('skycoin.controllers', [])
 	    });
 	 }
 
+	 $scope.mainBackUp = function(){
+
+	 }
+
+
+
 
 	 $scope.openQR = function (address) {
 

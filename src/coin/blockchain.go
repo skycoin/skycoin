@@ -18,35 +18,17 @@ const (
     blockHeaderSecondsIncrement uint64 = 15
     genesisCoinVolume           uint64 = 100 * 1e6
     genesisCoinHours            uint64 = 1024 * 1024 * 1024
+    genesisBlockHashString      string = "Skycoin v0.1"
 )
 
 type Block struct {
     Header BlockHeader
-    Body   BlockBody //just transaction list
-}
-
-func newBlock(prev *Block) Block {
-    header := newBlockHeader(&prev.Header)
-    return Block{Header: header, Body: BlockBody{}}
-}
-
-func (self *Block) HashHeader() SHA256 {
-    b1 := encoder.Serialize(self.Header)
-    return SumDoubleSHA256(b1)
-}
-
-//merkle hash of transactions in block
-func (self *Block) HashBody() SHA256 {
-    var hashes []SHA256
-    for _, t := range self.Body.Transactions {
-        hashes = append(hashes, t.Hash())
-    }
-    return Merkle(hashes) //merkle hash of transactions
+    Body   BlockBody //transaction list
 }
 
 //block - Bk
 //transaction - Tx
-//Ouput - ux
+//Ouput - Ux
 type BlockHeader struct {
     Version uint32
 
@@ -58,9 +40,52 @@ type BlockHeader struct {
     BodyHash SHA256 //hash of transaction block
 }
 
+type BlockBody struct {
+    Transactions []Transaction
+}
+
+/*
+Todo: merge header/body
+
+type Block struct {
+    Time  uint64
+    BkSeq uint64 //increment every block
+    Fee   uint64 //fee in block, used for Proof of Stake
+
+    HashPrevBlock SHA256 //hash of header of previous block
+    BodyHash      SHA256 //hash of transaction block
+
+    Transactions []Transaction
+}
+
+*/
+func newBlock(prev *Block) Block {
+    header := newBlockHeader(&prev.Header)
+    return Block{Header: header, Body: BlockBody{}}
+}
+
+func (self *Block) HashHeader() SHA256 {
+    b1 := encoder.Serialize(self.Header)
+    return SumDoubleSHA256(b1)
+}
+
+func (self *BlockHeader) Hash() SHA256 {
+    b1 := encoder.Serialize(*self)
+    return SumDoubleSHA256(b1)
+}
+//merkle hash of transactions in block
+func (self *Block) HashBody() SHA256 {
+    var hashes []SHA256
+    for _, t := range self.Body.Transactions {
+        hashes = append(hashes, t.Hash())
+    }
+    return Merkle(hashes) //merkle hash of transactions
+}
+
 func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
         // TODO -- what about the rest of the fields??
+        PrevHash: prev.Hash(),
         Time:  prev.Time + blockHeaderSecondsIncrement,
         BkSeq: prev.BkSeq + 1,
     }
@@ -68,10 +93,6 @@ func newBlockHeader(prev *BlockHeader) BlockHeader {
 
 func (self *BlockHeader) Bytes() []byte {
     return encoder.Serialize(*self)
-}
-
-type BlockBody struct {
-    Transactions []Transaction
 }
 
 func (self *BlockBody) Bytes() []byte {
@@ -87,18 +108,20 @@ type BlockChain struct {
 func NewBlockChain(genesisAddress Address) *BlockChain {
     logger.Debug("Creating new block chain")
     var bc *BlockChain = &BlockChain{}
+    
+    //set genesis block
     var b Block = Block{} // genesis block
     b.Header.Time = uint64(time.Now().Unix())
-
+    b.Header.PrevHash = SumSHA256([]byte(genesisBlockHashString))
     bc.Blocks = append(bc.Blocks, b)
-    bc.Head = &bc.Blocks[0]
+    bc.Head = &bc.Blocks[0] 
     // Genesis output
     ux := UxOut{
         Head: UxHead{
             // TODO -- what about the rest of the fields??
             // TODO -- write & use NewUxHead
+            Time: b.Header.Time,
             BkSeq: 0,
-            UxSeq: 0,
         },
         Body: UxBody{
             // TODO -- what about the rest of the fields??
@@ -238,8 +261,15 @@ func (self *BlockChain) validateBlockHeader(b *Block) error {
     if b.Header.Time > uint64(time.Now().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
-    if b.Header.PrevHash != self.Head.Header.PrevHash {
-        return errors.New("PrevHash does not match current head")
+
+
+    if b.Header.BkSeq != 0 && self.Head.Header.BkSeq+1 != b.Header.BkSeq {
+        return errors.New("Header BkSeq error")
+    }
+    if b.Header.PrevHash != self.Head.HashHeader() {
+
+        fmt.Printf("hash mismatch\n%s \n%s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
+        return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")
@@ -337,7 +367,6 @@ func (self *BlockChain) validateBlockBody(b *Block) error {
             return errors.New("coin inputs do not match coin ouptuts")
         }
         if hoursIn < hoursOut {
-            //fmt.Printf("45: %v %v \n", hoursIn, hoursOut)
             return errors.New("insuffient coinhours for output")
         }
         for _, to := range t.TxOut {
@@ -470,7 +499,6 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
 
         //check inpossible condition
         if ux.Body.Hours > ux.CoinHours(self.Head.Header.Time) {
-            fmt.Printf("46: %v %v \n", ux.Body.Hours, self.Head.Header.Time)
             log.Panic("Coin Hours Invalid: Time Error!\n")
         }
     }
@@ -484,7 +512,6 @@ func (self *BlockChain) AppendTransaction(b *Block, t Transaction) error {
         return errors.New("Error: Coin inputs do not match coin ouptuts")
     }
     if hoursIn < hoursOut {
-        fmt.Printf("45: %v %v \n", hoursIn, hoursOut)
         return errors.New("Error: insuffient coinhours for output")
     }
 

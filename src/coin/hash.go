@@ -6,6 +6,7 @@ import (
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
     "log"
+    "encoding/hex"
 )
 
 var (
@@ -29,7 +30,7 @@ func HashRipemd160(data []byte) Ripemd160 {
     ripemd160Hash.Write(data)
     sum := ripemd160Hash.Sum(nil)
     var h Ripemd160
-    h.Set(sum[:])
+    copy(h[0:20], sum[0:20])
     return h
 }
 
@@ -44,12 +45,16 @@ func (g *SHA256) Set(b []byte) {
     copy(g[:], b[:32])
 }
 
+func (g *SHA256) Hex() string {
+    return hex.EncodeToString(g[:])
+}
+
 func SumSHA256(b []byte) SHA256 {
     sha256Hash.Reset()
     sha256Hash.Write(b)
     sum := sha256Hash.Sum(nil)
     var h SHA256
-    h.Set(sum[:])
+    copy(h[0:32], sum[0:32])
     return h
 }
 

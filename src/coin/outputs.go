@@ -1,7 +1,6 @@
 package coin
 
 import (
-    "fmt"
     "github.com/skycoin/skycoin/src/lib/encoder"
 )
 
@@ -39,12 +38,11 @@ type UxOut struct {
     //Meta UxMeta
 }
 
-//
+//not hashed, metdata
 type UxHead struct {
-    Time  uint64 //needed for coinhour calculation, time of block it was created in
-    UxSeq uint64 //increment every newly created block
+    Time  uint64 //time of block it was created in
     BkSeq uint64 //block it was created in
-    SpSeq uint64 //order it was spent
+    SpSeq uint64 //block it was spent in
 }
 
 //part that is hashed
@@ -63,11 +61,6 @@ func (self UxOut) Hash() SHA256 {
     return SumSHA256(b1)
 }
 
-func (self UxOut) String() string {
-    return fmt.Sprintf("%s, %d: %d %d", self.Body.Address.String(), self.Head.Time,
-        self.Body.Coins, self.Body.Hours)
-}
-
 /*
 func (self UxOut) HashTotal() *SHA256 {
 	b1 := encoder.Serialize(self.Head)
@@ -82,6 +75,8 @@ func (self UxOut) HashTotal() *SHA256 {
 	Then need creation time of output
 	Creation time of transaction cant be hashed
 */
+
+//calculate coinhour balance of output
 func (self *UxOut) CoinHours(t uint64) uint64 {
     if t < self.Head.Time {
         return 0

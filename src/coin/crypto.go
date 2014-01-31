@@ -4,6 +4,7 @@ import (
     "errors"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
+    "encoding/hex"
 )
 
 type PubKey [33]byte
@@ -16,6 +17,21 @@ func NewPubKey(b []byte) PubKey {
     copy(p[:], b[:])
     return p
 }
+
+//seckey from hex string
+func PubKeyFromHex(s string) PubKey {
+    b, err := hex.DecodeString(s)
+    if err != nil || len(b) != 33 {
+        log.Panic(err)
+    }
+    return NewPubKey(b)
+}
+
+//seckey to hex string
+func (s PubKey) Hex() string {
+    return hex.EncodeToString(s[:])
+}
+
 type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
@@ -25,6 +41,20 @@ func NewSecKey(b []byte) SecKey {
     var p SecKey
     copy(p[:], b[:])
     return p
+}
+
+//seckey from hex string
+func SecKeyFromHex(s string) SecKey {
+    b, err := hex.DecodeString(s)
+    if err != nil || len(b) != 32 {
+        log.Panic(err)
+    }
+    return NewSecKey(b)
+}
+
+//seckey to hex string
+func (s SecKey) Hex() string {
+    return hex.EncodeToString(s[:])
 }
 
 type Sig [64 + 1]byte
@@ -88,7 +118,23 @@ func PubKeyFromSecKey(seckey SecKey) PubKey {
     return NewPubKey(b)
 }
 
+func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
+    rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
+    if rawPubKey == nil {
+        return PubKey{}, errors.New("Invalig sig: PubKey recovery failed")
+    }
+    return NewPubKey(rawPubKey), nil
+}
+
+//verifies that mesh hash was signed by pubkey
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
+    pubkey_rec, err := PubKeyFromSig(sig, hash) //recovered pubkey
+    if err != nil {
+        return errors.New("Invalig sig: PubKey recovery failed")
+    }
+    if pubkey_rec != pubkey {
+        return errors.New("Recovered pubkey does not match pubkey")
+    }
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
         log.Panic("Invalid public key")
         return errors.New("Invalid public key")

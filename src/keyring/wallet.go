@@ -152,6 +152,10 @@ func NewWallet(n int) Wallet {
 //fmt.Printf("sec: %s \n", ToHex(sec))
 //fmt.Printf("pub: %s \n", ToHex(pub))
 
+func uxStr(ux coin.UxOut) string {
+    return fmt.Sprintf("%s, %d: %d %d", ux.Body.Address.String(), ux.Head.Time,
+        ux.Body.Coins, ux.Body.Hours)   
+}
 // Prints the balances for multiple wallets
 func PrintWalletBalances(bc *coin.BlockChain, wallets []Wallet) {
     for i, w := range wallets {
@@ -160,6 +164,6 @@ func PrintWalletBalances(bc *coin.BlockChain, wallets []Wallet) {
     }
 
     for i, ux := range bc.Unspent {
-        fmt.Printf("PWB,UX: %v: %v \n", i, ux.String())
+        fmt.Printf("PWB,UX: %v: %v \n", i, uxStr(ux))
     }
 }

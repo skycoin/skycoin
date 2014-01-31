@@ -43,8 +43,7 @@ func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
 	return coin.SignHash(block.HashHeader(), seckey)
 }
 
-func VerifyBlockSignature(block coin.Block, sig Sig) error {
-
-	block_hash := block.HashHeader()
-	pubkey = 
+//nil on success
+func VerifyBlockSignature(block coin.Block, pubkey PubKey, sig Sig) error {
+	return coin.VerifySignature(master_pubkey, sig, block.HashHeader())
 }

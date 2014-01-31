@@ -96,10 +96,14 @@ func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
     return NewPubKey(rawPubKey), nil
 }
 
-func VerifySignature(sig Sig, hash SHA256) error {
-    pubkey, err := PubKeyFromSig(sig, hash)
+//verifies that mesh hash was signed by pubkey
+func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
+    pubkey_rec, err := PubKeyFromSig(sig, hash) //recovered pubkey
     if err != nil {
         return errors.New("Invalig sig: PubKey recovery failed")
+    }
+    if pubkey_rec != pubkey {
+        return errors.New("Recovered pubkey does not match pubkey")
     }
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
         log.Panic("Invalid public key")

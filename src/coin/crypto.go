@@ -153,3 +153,8 @@ func GenerateKeyPair() (PubKey, SecKey) {
     public, secret := secp256k1.GenerateKeyPair()
     return NewPubKey(public), NewSecKey(secret)
 }
+
+func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
+    public, secret := secp256k1.GenerateDeterministicKeyPair(seed)
+    return NewPubKey(public), NewSecKey(secret)
+}

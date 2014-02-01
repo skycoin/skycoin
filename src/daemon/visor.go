@@ -2,6 +2,7 @@ package daemon
 
 import (
     "github.com/skycoin/gnet"
+    "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
 )
 
@@ -101,13 +102,26 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
-    for _, b := range self.Blocks {
+    processed := 0
+    for i, b := range self.Blocks {
         err := d.Visor.Visor.ExecuteSignedBlock(b)
         if err != nil {
             logger.Info("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
-            break
+        }
+        processed = i + 1
+    }
+
+    // Announce our new blocks to peers
+    if processed == 0 {
+        return
+    }
+    m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+    for _, c := range d.Pool.Pool.Pool {
+        err := d.Pool.Pool.Dispatcher.SendMessage(c, m)
+        if err != nil {
+            logger.Warning("Failed to announce blocks to %s", c.Addr())
         }
     }
 }
@@ -140,5 +154,98 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
     err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
     if err != nil {
         logger.Warning("Failed to send GetBlocksMessage: %v", err)
+    }
+}
+
+// Tells a peer that we have these transactions
+type AnnounceTxnsMessage struct {
+    Txns []coin.SHA256
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func NewAnnounceTxnsMessages(txns []coin.SHA256) *AnnounceTxnsMessage {
+    return &AnnounceTxnsMessage{
+        Txns: txns,
+    }
+}
+
+func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *AnnounceTxnsMessage) Process(d *Daemon) {
+    // TODO
+    // check if we have these txns already
+    // look in unconfirmed pool
+    // look in Blockchain (need datastructure for blockchain)
+    // if we don't have these txns already, send a GetTxnsMessage
+
+    unknown := d.Visor.Visor.UnconfirmedTxns.FilterKnown(self.Txns)
+    if len(unknown) == 0 {
+        return
+    }
+    m := NewGetTxnsMessage(unknown)
+    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
+    if err != nil {
+        logger.Warning("Failed to send GetTxnsMessage to %s",
+            self.c.Conn.Addr())
+    }
+}
+
+type GetTxnsMessage struct {
+    Txns []coin.SHA256
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func NewGetTxnsMessage(txns []coin.SHA256) *GetTxnsMessage {
+    return &GetTxnsMessage{
+        Txns: txns,
+    }
+}
+
+func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GetTxnsMessage) Process(d *Daemon) {
+    // Locate all txns from the unconfirmed pool
+    // reply to sender with GiveTxnsMessage
+    known := d.Visor.Visor.UnconfirmedTxns.GetKnown(self.Txns)
+    if len(known) == 0 {
+        return
+    }
+    m := NewGiveTxnsMessage(known)
+    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
+    if err != nil {
+        logger.Warning("Failed to send GiveTxnsMessage to %s",
+            self.c.Conn.Addr())
+    }
+}
+
+type GiveTxnsMessage struct {
+    Txns []coin.Transaction
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
+    return &GiveTxnsMessage{
+        Txns: txns,
+    }
+}
+
+func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GiveTxnsMessage) Process(d *Daemon) {
+    // Update unconfirmed pool with these transactions
+    for _, txn := range self.Txns {
+        d.Visor.Visor.RecordTxn(txn)
     }
 }

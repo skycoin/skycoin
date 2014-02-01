@@ -138,14 +138,50 @@ func (self *SignedBlocks) record(sb *SignedBlock) {
     }
 }
 
+// Holds unconfirmed transactions
+type UnconfirmedTxnPool struct {
+    Txns map[coin.SHA256]coin.Transaction
+}
+
+func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
+    return &UnconfirmedTxnPool{
+        Txns: make(map[coin.SHA256]coin.Transaction),
+    }
+}
+
+// Returns txn hashes with known ones removed
+func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
+    unknown := make([]coin.SHA256, 0)
+    for _, h := range txns {
+        _, known := self.Txns[h]
+        if !known {
+            unknown = append(unknown, h)
+        }
+    }
+    return unknown
+}
+
+// Returns all known coin.Transactions from the pool, given hashes to select
+func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) []coin.Transaction {
+    known := make([]coin.Transaction, 0)
+    for _, h := range txns {
+        txn, unknown := self.Txns[h]
+        if !unknown {
+            known = append(known, txn)
+        }
+    }
+    return known
+}
+
 // Manages the Blockchain as both a Master and a Normal
 type Visor struct {
     // Is this the master blockchain
     IsMaster bool
     // Master & personal keys
-    keys         VisorKeys
-    blockchain   *coin.Blockchain
-    signedBlocks SignedBlocks
+    keys            VisorKeys
+    blockchain      *coin.Blockchain
+    signedBlocks    SignedBlocks
+    UnconfirmedTxns *UnconfirmedTxnPool
 }
 
 // Creates a normal Visor given a master's public key
@@ -159,10 +195,11 @@ func NewVisor(master WalletEntry, isMaster bool) Visor {
         log.Panicf("Invalid master wallet entry: %v", err)
     }
     return Visor{
-        IsMaster:     isMaster,
-        keys:         NewVisorKeys(master),
-        blockchain:   coin.NewBlockchain(master.Address),
-        signedBlocks: NewSignedBlocks(),
+        IsMaster:        isMaster,
+        keys:            NewVisorKeys(master),
+        blockchain:      coin.NewBlockchain(master.Address),
+        signedBlocks:    NewSignedBlocks(),
+        UnconfirmedTxns: NewUnconfirmedTxnPool(),
     }
 }
 
@@ -194,7 +231,14 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     if err != nil {
         return err
     }
+    // TODO -- save them even if out of order, and execute later
+    // But make sure all prechecking as possible is done
+    // TODO -- check if bitcoin allows blocks to be receiving out of order
     self.signedBlocks.record(&b)
+    // Remove the transactions in the Block from the unconfirmed pool
+    for _, tx := range b.Block.Body.Transactions {
+        delete(self.UnconfirmedTxns.Txns, tx.Header.Hash)
+    }
     return nil
 }
 
@@ -222,6 +266,17 @@ func (self *Visor) GetSignedBlocksSince(seq uint64, ct int) []SignedBlock {
 // Returns the highest BkSeq we know
 func (self *Visor) MostRecentBkSeq() uint64 {
     return self.signedBlocks.MaxSeq
+}
+
+// Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// already in the blockchain
+func (self *Visor) RecordTxn(txn coin.Transaction) {
+    // TODO -- verify transaction as much as possible.
+    // TODO -- look for this transaction in the blockchain, by hash
+    logger.Warning("Saving txn as unconfirmed, but we aren't checking " +
+        "that it is valid and isnt already in a block")
+
+    self.UnconfirmedTxns.Txns[txn.Header.Hash] = txn
 }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block

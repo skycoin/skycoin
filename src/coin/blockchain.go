@@ -23,7 +23,7 @@ const (
 
 type Block struct {
     Header BlockHeader
-    Body   BlockBody //transaction list
+    Body   BlockBody
 }
 
 //block - Bk
@@ -106,7 +106,7 @@ type Blockchain struct {
     Unspent []UxOut
 }
 
-func NewBlockChain(genesisAddress Address) *Blockchain {
+func NewBlockchain(genesisAddress Address) *Blockchain {
     logger.Debug("Creating new block chain")
     var bc *Blockchain = &Blockchain{}
 

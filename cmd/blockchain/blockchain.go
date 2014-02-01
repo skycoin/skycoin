@@ -32,7 +32,7 @@ func (self *PendingTransactions) Rand() coin.Transaction {
 func tests() {
     genesisWallet := keyring.NewWallet(1)
     genesisAddress := genesisWallet.Addresses[0]
-    var bc *coin.Blockchain = coin.NewBlockChain(genesisAddress.Address)
+    var bc *coin.Blockchain = coin.NewBlockchain(genesisAddress.Address)
 
     genesisWallet.RefeshUnspentOutputs(bc)
     //create 16 wallets with 64 addresses

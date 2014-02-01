@@ -36,7 +36,7 @@ func (self *BlockChainService) Run() {
     pubkey := coin.PubKeyFromSecKey(seckey)
     address := coin.AddressFromPubKey(pubkey) //genesis address
 
-    self.BC = coin.NewBlockChain(address)
+    self.BC = coin.NewBlockchain(address)
 
     go func() {
 

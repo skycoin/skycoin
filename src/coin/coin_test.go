@@ -121,7 +121,7 @@ func TestBlockchain1(t *testing.T) {
 
     A := _gaddr_a1(S)
 
-    var bc *Blockchain = NewBlockChain(A[0])
+    var bc *Blockchain = NewBlockchain(A[0])
 
     for i := 0; i < 1024; i++ {
         b := bc.NewBlock()

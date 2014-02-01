@@ -28,6 +28,7 @@ var (
         "skycoin.coin",
         "skycoin.gui",
         "skycoin.util",
+        "skycoin.visor",
         "gnet",
         "pex",
     }

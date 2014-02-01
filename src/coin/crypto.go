@@ -1,71 +1,74 @@
 package coin
 
 import (
+    "encoding/hex"
     "errors"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
-    "encoding/hex"
 )
 
 type PubKey [33]byte
 
 func NewPubKey(b []byte) PubKey {
-    if len(b) != 33 {
+    var p PubKey
+    if len(b) != len(p) {
         log.Panic("Invalid public key length")
     }
-    var p PubKey
     copy(p[:], b[:])
     return p
 }
 
-//seckey from hex string
 func PubKeyFromHex(s string) PubKey {
     b, err := hex.DecodeString(s)
-    if err != nil || len(b) != 33 {
+    if err != nil {
         log.Panic(err)
     }
     return NewPubKey(b)
 }
 
-//seckey to hex string
-func (s PubKey) Hex() string {
-    return hex.EncodeToString(s[:])
+func (self *PubKey) Hex() string {
+    return hex.EncodeToString(self[:])
+}
+
+// Returns the public key as ripemd160(sha256(sha256(key)))
+func (self *PubKey) ToAddressHash() Ripemd160 {
+    r1 := SumSHA256(self[:])
+    r2 := SumSHA256(r1[:])
+    return HashRipemd160(r2[:])
 }
 
 type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
-    if len(b) != 32 {
+    var p SecKey
+    if len(b) != len(p) {
         log.Panic("Invalid secret key length")
     }
-    var p SecKey
     copy(p[:], b[:])
     return p
 }
 
-//seckey from hex string
 func SecKeyFromHex(s string) SecKey {
     b, err := hex.DecodeString(s)
-    if err != nil || len(b) != 32 {
+    if err != nil {
         log.Panic(err)
     }
     return NewSecKey(b)
 }
 
-//seckey to hex string
 func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
 
-type Sig [64 + 1]byte
+type Sig [65]byte
 
 func NewSig(b []byte) Sig {
-    if len(b) != 65 {
+    var s Sig
+    if len(b) != len(s) {
         log.Panic("Invalid secret key length")
     }
-    var p Sig
-    copy(p[:],b[:])
-    return p
+    copy(s[:], b[:])
+    return s
 }
 
 /*
@@ -153,8 +156,11 @@ func GenerateKeyPair() (PubKey, SecKey) {
     public, secret := secp256k1.GenerateKeyPair()
     return NewPubKey(public), NewSecKey(secret)
 }
+<<<<<<< HEAD
 
 func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
     public, secret := secp256k1.GenerateDeterministicKeyPair(seed)
     return NewPubKey(public), NewSecKey(secret)
 }
+=======
+>>>>>>> 0dc1aa5704f08519fb6b125b0275b5023d4ab537

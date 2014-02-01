@@ -38,6 +38,12 @@ type Config struct {
     // after parsing
     logLevel string
 
+    // Centralized network configuration
+    MasterPublic   string
+    MasterChain    bool
+    MasterKeys     string
+    GenesisAddress string
+
     /* Developer options */
 
     // Enable cpu profiling
@@ -56,13 +62,15 @@ func (self *Config) register() {
 }
 
 func (self *Config) postProcess() {
-    // app data
     self.DataDirectory = util.InitDataDir(self.DataDirectory)
     if self.WebInterfaceCert == "" {
         self.WebInterfaceCert = filepath.Join(self.DataDirectory, "cert.pem")
     }
     if self.WebInterfaceKey == "" {
         self.WebInterfaceKey = filepath.Join(self.DataDirectory, "key.pem")
+    }
+    if self.MasterKeys == "" {
+        self.MasterKeys = filepath.Join(self.DataDirectory, "master.keys")
     }
     // logging
     ll, err := logging.LogLevel(self.logLevel)

@@ -12,7 +12,7 @@
 </head>
 <body ng-controller="mainCtrl">
   <div id="sky-header">
-    <div class="fa fa-cloud background-cloud-0"></div>
+    <div class="fa fa-cloud background-cloud-0"><i class="fa fa-btc"></i></div>
   </div>
   <div id="sky-center">
 
@@ -52,7 +52,7 @@
             </tr>
           </table>
           <div class="wallet-buttons">
-            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Wallet</button> <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud-download"></i> Back Up</button>
+            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Wallet</button> <button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>
           </div>
 
           <!--<div id="overview-recent-transaction" class="outline">
@@ -154,7 +154,7 @@
 
       <tab>
         <tab-heading>
-          <i class="fa fa-sun-o"></i>
+          <i class="fa fa-sun-o"> Options</i>
         </tab-heading>
         <div class="outline">
           <table id="transaction-d">
@@ -240,7 +240,12 @@
 
   <div ng-view></div>
 
-  <div id="sky-footer"></div>
+  <div id="sky-footer">
+    <div class="message">Downloading Blockchain</div>
+    <progressbar class="progress-striped active" value="1" type="info"></progressbar>
+    <div class="percent">1%</div>
+    <div class="signal"><i class="fa fa-signal green"></i></div>
+  </div>
   <div ng-include="" src="'/partials/qr-modal.html'"></div>
 
   <!-- In production use:

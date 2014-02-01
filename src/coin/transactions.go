@@ -19,20 +19,20 @@ type TransactionMeta struct {
 */
 
 type Transaction struct {
-    TxHeader TransactionHeader //Outer Hash
-    TxIn     []TransactionInput
-    TxOut    []TransactionOutput
+    Header TransactionHeader //Outer Hash
+    In     []TransactionInput
+    Out    []TransactionOutput
 }
 
 type TransactionHeader struct { //not hashed
-    TransactionHash SHA256 //inner hash
-    Signatures      []Sig  //list of signatures, 64+1 bytes
+    Hash SHA256 //inner hash
+    Sigs []Sig  //list of signatures, 64+1 bytes
 }
 
 /*
 	Can remove SigIdx; recover address from signature
 	- only saves 2 bytes
-	Require Signatures are sorted to enforce immutability?
+	Require Sigs are sorted to enforce immutability?
 	- SidIdx enforces immutability
 */
 type TransactionInput struct {
@@ -40,7 +40,7 @@ type TransactionInput struct {
     UxOut  SHA256 //Unspent Block
 }
 
-//hash output/name is function of TransactionHash
+//hash output/name is function of Hash
 type TransactionOutput struct {
     DestinationAddress Address //address to send to
     Coins              uint64  //amount to be sent in coins
@@ -57,15 +57,15 @@ type TransactionOutput struct {
 */
 
 func (self *Transaction) PushInput(uxOut SHA256) uint16 {
-    if len(self.TxIn) >= math.MaxUint16 {
+    if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
-    sigIdx := uint16(len(self.TxIn))
+    sigIdx := uint16(len(self.In))
     ti := TransactionInput{
         SigIdx: sigIdx,
         UxOut:  uxOut,
     }
-    self.TxIn = append(self.TxIn, ti)
+    self.In = append(self.In, ti)
     return sigIdx
 }
 
@@ -75,7 +75,7 @@ func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
         Coins:              coins,
         Hours:              hours,
     }
-    self.TxOut = append(self.TxOut, to)
+    self.Out = append(self.Out, to)
 }
 
 func (self *Transaction) SetSig(idx uint16, sec SecKey) {
@@ -84,23 +84,23 @@ func (self *Transaction) SetSig(idx uint16, sec SecKey) {
     if err != nil {
         log.Panic("Failed to sign hash")
     }
-    txInLen := len(self.TxIn)
+    txInLen := len(self.In)
     if txInLen > math.MaxUint16 {
-        log.Panic("TxIn too large")
+        log.Panic("In too large")
     }
     if idx >= uint16(txInLen) {
-        log.Panic("Invalid TxIn idx")
+        log.Panic("Invalid In idx")
     }
-    for len(self.TxHeader.Signatures) <= int(idx) {
-        self.TxHeader.Signatures = append(self.TxHeader.Signatures, Sig{})
+    for len(self.Header.Sigs) <= int(idx) {
+        self.Header.Sigs = append(self.Header.Sigs, Sig{})
     }
-    self.TxHeader.Signatures[idx] = sig
+    self.Header.Sigs[idx] = sig
 }
 
 // Hashes only the Transction Inputs & Outputs
 func (self *Transaction) hashInner() SHA256 {
-    b1 := encoder.Serialize(self.TxIn)
-    b2 := encoder.Serialize(self.TxOut)
+    b1 := encoder.Serialize(self.In)
+    b2 := encoder.Serialize(self.Out)
     b3 := append(b1, b2...)
     return SumSHA256(b3)
 }
@@ -124,5 +124,5 @@ func TransactionDeserialize(b []byte) Transaction {
 }
 
 func (self *Transaction) UpdateHeader() {
-    self.TxHeader.TransactionHash = self.hashInner()
+    self.Header.Hash = self.hashInner()
 }

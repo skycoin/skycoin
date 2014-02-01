@@ -4,32 +4,31 @@ import (
     //"crypto/sha256"
     //"hash"
     "encoding/hex"
-    "log"
-    "testing"
-    "math/rand"
     "fmt"
+    "log"
+    "math/rand"
+    "testing"
 )
 
-
 func TestAddress1(t *testing.T) {
-	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
-	b, err := hex.DecodeString(a)
-	if err != nil {
-		log.Panic(err)
-	}
-	addr := AddressFromPubKey(NewPubKey(b))
-	_ = addr
+    a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
+    b, err := hex.DecodeString(a)
+    if err != nil {
+        log.Panic(err)
+    }
+    addr := AddressFromPubKey(NewPubKey(b))
+    _ = addr
 
-	///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+    ///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 
 }
 
 func TestAddress2(t *testing.T) {
-	a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
-	b, err := hex.DecodeString(a)
-	if err != nil {
-		log.Panic(err)
-	}
+    a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
+    b, err := hex.DecodeString(a)
+    if err != nil {
+        log.Panic(err)
+    }
 
     if len(b) != 32 {
         log.Panic()
@@ -37,16 +36,15 @@ func TestAddress2(t *testing.T) {
 
     seckey := NewSecKey(b)
     pubkey := PubKeyFromSecKey(seckey)
-	addr := AddressFromPubKey(pubkey)
-	_ = addr
+    addr := AddressFromPubKey(pubkey)
+    _ = addr
 
-	///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+    ///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 
 }
 
-
 func _gensec() SecKey {
-    _,s := GenerateKeyPair()
+    _, s := GenerateKeyPair()
     return s
 }
 
@@ -60,7 +58,7 @@ func _gaddr(s SecKey) Address {
 
 func _gaddr_a1(S []SecKey) []Address {
     A := make([]Address, len(S))
-    for i:=0; i<len(S); i++ {
+    for i := 0; i < len(S); i++ {
         A[i] = AddressFromPubKey(PubKeyFromSecKey(S[i]))
     }
     return A
@@ -69,23 +67,22 @@ func _gaddr_a1(S []SecKey) []Address {
 func _gaddr_a2(S []SecKey, O []UxOut) []int {
     A := _gaddr_a1(S)
     var M map[Address]int //address to int
-    for i,a := range A {
+    for i, a := range A {
         M[a] = i
     }
 
     I := make([]int, len(O)) //output to seckey/address index
-    for i,o := range O {
+    for i, o := range O {
         I[i] = M[o.Body.Address]
     }
 
     return I
 }
 
-
 func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
     A := _gaddr_a1(S)
     M := make(map[Address]int) //address to int
-    for i,a := range A {
+    for i, a := range A {
         M[a] = i
     }
     return M
@@ -94,10 +91,10 @@ func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
 //assign amt to n bins in randomized manner
 func _rand_bins(amt uint64, n int) []uint64 {
     var bins []uint64 = make([]uint64, n)
-    var max uint64 = amt / (4*uint64(n))
-    for i:=0; amt > 0; i++ {
+    var max uint64 = amt / (4 * uint64(n))
+    for i := 0; amt > 0; i++ {
         //amount going into this bin
-        var b uint64 = 1+ (uint64(rand.Int63()) % max)
+        var b uint64 = 1 + (uint64(rand.Int63()) % max)
         if b > amt {
             b = amt
         }
@@ -107,40 +104,39 @@ func _rand_bins(amt uint64, n int) []uint64 {
     return bins
 }
 
-
 /*
 TODO: check block header of new block
 TODO: check that coins are not created or destroyed
-TODO: 
+TODO:
 */
 
 //create 4096 addresses
 //send addreses randomly between each other over 1024 blocks
 func TestBlockchain1(t *testing.T) {
-    
+
     var S []SecKey
-    for i:= 0; i < 4096; i++ {
+    for i := 0; i < 4096; i++ {
         S = append(S, _gensec())
     }
 
     A := _gaddr_a1(S)
 
-    var bc *BlockChain = NewBlockChain(A[0])
+    var bc *Blockchain = NewBlockchain(A[0])
 
-    for i:=0; i<1024; i++ {
+    for i := 0; i < 1024; i++ {
         b := bc.NewBlock()
 
         //unspent outputs
         U := make([]UxOut, len(bc.Unspent))
         copy(U, bc.Unspent)
-        
+
         //for _,Ux := range U {
         //    if Ux.Hours() < Ux.Body.
         //}
         //I := _gaddr_a2(S,U)
-        M := _gaddr_a3(S,U)
-        var num_in int = 1+rand.Intn(len(U))% 15
-        var num_out int = 1+rand.Int() % 30
+        M := _gaddr_a3(S, U)
+        var num_in int = 1 + rand.Intn(len(U))%15
+        var num_out int = 1 + rand.Int()%30
 
         var t Transaction
 
@@ -148,9 +144,9 @@ func TestBlockchain1(t *testing.T) {
 
         var v1 uint64 = 0
         var v2 uint64 = 0
-        for i:=0;i<num_in; i++ {
-            idx := rand.Intn(len(U)) 
-            var Ux UxOut = U[idx] //unspent output to spend
+        for i := 0; i < num_in; i++ {
+            idx := rand.Intn(len(U))
+            var Ux UxOut = U[idx]                 //unspent output to spend
             U[idx], U = U[len(U)-1], U[:len(U)-1] //remove output idx
 
             v1 += Ux.Body.Coins
@@ -166,17 +162,17 @@ func TestBlockchain1(t *testing.T) {
         }
 
         //assign coins to output addresses in random manner
-        
+
         //check that inputs/outputs sum
         v1_ := v1
         v2_ := v2
 
-        vo1 := _rand_bins(v1,num_out)
-        vo2 := _rand_bins(v2,num_out)
+        vo1 := _rand_bins(v1, num_out)
+        vo2 := _rand_bins(v2, num_out)
 
         var v1_t uint64
         var v2_t uint64
-        for i,_ := range vo1 {
+        for i, _ := range vo1 {
             v1_t += vo1[i]
             v2_t += vo2[i]
         }
@@ -198,7 +194,7 @@ func TestBlockchain1(t *testing.T) {
         }
 
         //transaction complete, now set signatures
-        for i:=0;i<num_in; i++ {
+        for i := 0; i < num_in; i++ {
             t.SetSig(uint16(i), S[SigIdx[i]])
         }
         t.UpdateHeader() //sets hash

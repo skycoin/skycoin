@@ -31,6 +31,12 @@ var DaemonArgs = DaemonConfig{Config{
     ColorLog: false,
     logLevel: "notice",
 
+    // Centralized network configuration
+    MasterPublic:   "02eeb60535f8f22ee49b8cfadafb0e84621e283deb6572637f7b2aa70a003c5983",
+    GenesisAddress: "Db8Hc2ZVzx4P7K9jXaTpzeGRxTM3gJRxaC",
+    MasterChain:    false,
+    MasterKeys:     "",
+
     /* Developer options (don't parse these) */
 
     // Enable cpu profiling
@@ -71,4 +77,8 @@ func (self *DaemonConfig) register() {
         "Add terminal colors to log output")
     flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
         "static content directory for the html gui")
+    flag.StringVar(&self.MasterPublic, "master-public-key", self.MasterPublic,
+        "public key of the master chain")
+    flag.StringVar(&self.GenesisAddress, "genesis-address", self.GenesisAddress,
+        "blockchain genesis address")
 }

@@ -17,6 +17,7 @@ import (
     "github.com/skycoin/skycoin/src/cli"
     "github.com/skycoin/skycoin/src/daemon"
     "github.com/skycoin/skycoin/src/gui"
+    "github.com/skycoin/skycoin/src/visor"
 )
 
 var (
@@ -110,6 +111,20 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.Peers.DataDirectory = c.DataDirectory
     dc.DHT.Port = c.Port
     dc.Pool.Port = c.Port
+    dc.Visor.IsMaster = c.MasterChain
+    dc.Visor.MasterKeysFile = c.MasterKeys
+    if c.MasterChain {
+        err := dc.Visor.LoadMasterKeys()
+        if err != nil {
+            log.Panicf("Failed to load master keys: %v", err)
+        }
+    } else {
+        w := &visor.ReadableWalletEntry{
+            Address: c.GenesisAddress,
+            Public:  c.MasterPublic,
+        }
+        dc.Visor.MasterKeys = visor.WalletEntryFromReadable(w)
+    }
     return dc
 }
 

@@ -10,40 +10,47 @@ import (
 type PubKey [33]byte
 
 func NewPubKey(b []byte) PubKey {
-    if len(b) != 33 {
+    var p PubKey
+    if len(b) != len(p) {
         log.Panic("Invalid public key length")
     }
-    var p PubKey
     copy(p[:], b[:])
     return p
 }
 
 func PubKeyFromHex(s string) PubKey {
     b, err := hex.DecodeString(s)
-    if err != nil || len(b) != 33 {
+    if err != nil {
         log.Panic(err)
     }
     return NewPubKey(b)
 }
 
-func (s PubKey) Hex() string {
-    return hex.EncodeToString(s[:])
+func (self *PubKey) Hex() string {
+    return hex.EncodeToString(self[:])
+}
+
+// Returns the public key as ripemd160(sha256(sha256(key)))
+func (self *PubKey) ToAddressHash() Ripemd160 {
+    r1 := SumSHA256(self[:])
+    r2 := SumSHA256(r1[:])
+    return HashRipemd160(r2[:])
 }
 
 type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
-    if len(b) != 32 {
+    var p SecKey
+    if len(b) != len(p) {
         log.Panic("Invalid secret key length")
     }
-    var p SecKey
     copy(p[:], b[:])
     return p
 }
 
 func SecKeyFromHex(s string) SecKey {
     b, err := hex.DecodeString(s)
-    if err != nil || len(b) != 32 {
+    if err != nil {
         log.Panic(err)
     }
     return NewSecKey(b)
@@ -53,7 +60,7 @@ func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
 
-type Sig [64 + 1]byte
+type Sig [65]byte
 
 func NewSig(b []byte) Sig {
     var s Sig

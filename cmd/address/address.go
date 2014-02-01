@@ -22,26 +22,6 @@ func registerFlags() {
             "If the file exists, it will not be overwritten.")
 }
 
-type WalletEntry struct {
-    Address   coin.Address
-    PublicKey coin.PubKey
-    SecretKey coin.SecKey
-}
-
-type ReadableWalletEntry struct {
-    Address   string `json:"address"`
-    PublicKey string `json:"public_key"`
-    SecretKey string `json:"secret_key"`
-}
-
-func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
-    return ReadableWalletEntry{
-        Address:   w.Address.String(),
-        PublicKey: w.PublicKey.Hex(),
-        SecretKey: w.SecretKey.Hex(),
-    }
-}
-
 func main() {
     registerFlags()
     flag.Parse()
@@ -53,13 +33,13 @@ func main() {
         addr = coin.AddressFromPubKey(pub)
     }
 
-    w := WalletEntry{
+    w := visor.WalletEntry{
         Address:   addr,
         PublicKey: pub,
         SecretKey: sec,
     }
 
-    rw := NewReadableWalletEntry(&w)
+    rw := visor.NewReadableWalletEntry(&w)
 
     b, err := json.Marshal(rw)
     if err != nil {

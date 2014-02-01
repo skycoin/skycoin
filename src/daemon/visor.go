@@ -2,9 +2,50 @@ package daemon
 
 import (
     "github.com/skycoin/gnet"
-    "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
 )
+
+type VisorConfig struct {
+    // Is a master visor
+    IsMaster bool
+    // Location of master keys
+    MasterKeysFile string
+    // Master public/secret key and genesis address
+    MasterKeys visor.WalletEntry
+    // Is running on the test network
+    TestNetwork bool
+}
+
+func NewVisorConfig() VisorConfig {
+    return VisorConfig{
+        IsMaster:       false,
+        MasterKeysFile: "",
+        MasterKeys:     visor.WalletEntry{},
+        TestNetwork:    true,
+    }
+}
+
+func (self *VisorConfig) LoadMasterKeys() error {
+    keys, err := visor.LoadWalletEntry(self.MasterKeysFile)
+    if err != nil {
+        return err
+    }
+    self.MasterKeys = keys
+    return nil
+}
+
+type Visor struct {
+    Config VisorConfig
+    Visor  visor.Visor
+}
+
+func NewVisor(c VisorConfig) *Visor {
+    v := visor.NewVisor(c.MasterKeys, c.IsMaster)
+    return &Visor{
+        Config: c,
+        Visor:  v,
+    }
+}
 
 // Communication layer for the coin pkg
 
@@ -30,7 +71,7 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     // TODO -- we need the sig to be sent with the block, but only the master
     // can sign blocks.  Thus the sig needs to be stored with the block.
     // TODO -- move 20 to either Messages.Config or Visor.Config
-    blocks := d.Visor.GetSignedBlocksSince(self.LastBlock, 20)
+    blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock, 20)
     if blocks == nil {
         return
     }
@@ -41,30 +82,15 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     }
 }
 
-type BlockMessage struct {
-    Block coin.Block
-    // TODO -- its not clear where to store the Sig.  The Sig is created
-    // by the master server signing the block, but for others to relay it
-    // they need to save it.
-    Sig coin.Sig
-}
-
 // Sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-    Blocks []BlockMessage
+    Blocks []visor.SignedBlock
     c      *gnet.MessageContext `enc:"-"`
 }
 
 func NewGiveBlocksMessage(blocks []visor.SignedBlock) *GiveBlocksMessage {
-    bms := make([]BlockMessage, len(blocks))
-    for _, b := range blocks {
-        bms = append(bms, BlockMessage{
-            Block: b.Block,
-            Sig:   b.Sig,
-        })
-    }
     return &GiveBlocksMessage{
-        Blocks: bms,
+        Blocks: blocks,
     }
 }
 
@@ -76,9 +102,9 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
     for _, b := range self.Blocks {
-        err := d.Visor.ExecuteBlock(b)
+        err := d.Visor.Visor.ExecuteSignedBlock(b)
         if err != nil {
-            log.Info("Failed to execute received block: %v", err)
+            logger.Info("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
             break
@@ -99,14 +125,14 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
     }
 }
 
-func (self *AnnounceBlocksMessage) Handle(mc *gnet.messageContext,
+func (self *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc
     return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 func (self *AnnounceBlocksMessage) Process(d *Daemon) {
-    bkSeq := self.Visor.MostRecentBkSeq()
+    bkSeq := d.Visor.Visor.MostRecentBkSeq()
     if bkSeq >= self.MaxBkSeq {
         return
     }

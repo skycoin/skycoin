@@ -2,7 +2,6 @@ package coin
 
 import (
     "errors"
-    //"fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
@@ -26,9 +25,6 @@ type Block struct {
     Body   BlockBody
 }
 
-//block - Bk
-//transaction - Tx
-//Ouput - Ux
 type BlockHeader struct {
     Version uint32
 
@@ -107,7 +103,8 @@ type Blockchain struct {
 }
 
 func NewBlockchain(genesisAddress Address) *Blockchain {
-    logger.Debug("Creating new block chain")
+    logger.Debug("Creating new block chain with genesis %s",
+        genesisAddress.String())
     var bc *Blockchain = &Blockchain{}
 
     //set genesis block

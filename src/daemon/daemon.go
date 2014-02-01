@@ -5,7 +5,6 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
-    "github.com/skycoin/skycoin/src/visor"
     "log"
     "strconv"
     "strings"
@@ -61,6 +60,7 @@ type Config struct {
     Peers    PeersConfig
     DHT      DHTConfig
     RPC      RPCConfig
+    Visor    VisorConfig
 }
 
 // Returns a Config with defaults set
@@ -72,6 +72,7 @@ func NewConfig() *Config {
         DHT:      NewDHTConfig(),
         RPC:      NewRPCConfig(),
         Messages: NewMessagesConfig(),
+        Visor:    NewVisorConfig(),
     }
 }
 
@@ -121,7 +122,7 @@ type Daemon struct {
     Peers    *Peers
     DHT      *DHT
     RPC      *RPC
-    Visor    *visor.Visor
+    Visor    *Visor
 
     // Separate index of outgoing connections. The pool aggregates all
     // connections.
@@ -158,7 +159,7 @@ func NewDaemon(config *Config) *Daemon {
         Pool:     NewPool(config.Pool),
         Peers:    NewPeers(config.Peers),
         DHT:      NewDHT(config.DHT),
-        Visor:    visor.NewVisor(),
+        Visor:    NewVisor(config.Visor),
         expectingIntroductions: make(map[string]time.Time),
         connectionMirrors:      make(map[string]uint32),
         mirrorConnections:      make(map[uint32]map[string]uint16),

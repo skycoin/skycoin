@@ -31,6 +31,12 @@ var ClientArgs = ClientConfig{Config{
     ColorLog: false,
     logLevel: "notice",
 
+    // Centralized network configuration
+    MasterPublic:   "02eeb60535f8f22ee49b8cfadafb0e84621e283deb6572637f7b2aa70a003c5983",
+    GenesisAddress: "Db8Hc2ZVzx4P7K9jXaTpzeGRxTM3gJRxaC",
+    MasterChain:    false,
+    MasterKeys:     "",
+
     /* Developer options (don't parse these) */
 
     // Enable cpu profiling
@@ -53,4 +59,8 @@ func (self *ClientConfig) register() {
         "directory to store app data (defaults to ~/.skycoin)")
     flag.StringVar(&self.logLevel, "log-level", self.logLevel,
         "Choices are: debug, info, notice, warning, error, critical")
+    flag.StringVar(&self.MasterPublic, "master-public-key", self.MasterPublic,
+        "public key of the master chain")
+    flag.StringVar(&self.GenesisAddress, "genesis-address", self.GenesisAddress,
+        "blockchain genesis address")
 }

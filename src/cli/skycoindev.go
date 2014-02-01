@@ -31,6 +31,12 @@ var DevArgs = DevConfig{Config{
     ColorLog: true,
     logLevel: "DEBUG",
 
+    // Centralized network configuration
+    MasterPublic:   "02eeb60535f8f22ee49b8cfadafb0e84621e283deb6572637f7b2aa70a003c5983",
+    GenesisAddress: "Db8Hc2ZVzx4P7K9jXaTpzeGRxTM3gJRxaC",
+    MasterChain:    false,
+    MasterKeys:     "",
+
     /* Developer options */
 
     // Enable cpu profiling
@@ -81,4 +87,12 @@ func (self *DevConfig) register() {
         "Add terminal colors to log output")
     flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
         "static content directory for the html gui")
+    flag.BoolVar(&self.MasterChain, "master-chain", self.MasterChain,
+        "run the daemon as the master chain")
+    flag.StringVar(&self.MasterKeys, "master-keys", self.MasterKeys,
+        "file to load master keys and address from")
+    flag.StringVar(&self.MasterPublic, "master-public-key", self.MasterPublic,
+        "public key of the master chain")
+    flag.StringVar(&self.GenesisAddress, "genesis-address", self.GenesisAddress,
+        "blockchain genesis address")
 }

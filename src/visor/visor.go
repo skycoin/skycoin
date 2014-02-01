@@ -1,8 +1,10 @@
 package visor
 
 import (
+    "errors"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "log"
 )
 
@@ -10,40 +12,85 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
-// Holds a Secret/Public keypair
-type Keypair struct {
-    Secret coin.SecKey
-    Public coin.PubKey
+type WalletEntry struct {
+    Address coin.Address
+    Public  coin.PubKey
+    Secret  coin.SecKey
+}
+
+func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
+    // Wallet entries are shared as a form of identification, the secret key
+    // is not required
+    var s coin.SecKey
+    if w.Secret != "" {
+        s = coin.SecKeyFromHex(w.Secret)
+    }
+    return WalletEntry{
+        Address: coin.DecodeBase58Address(w.Address),
+        Public:  coin.PubKeyFromHex(w.Public),
+        Secret:  s,
+    }
+}
+
+// Checks that the public key is derivable from the secret key if present,
+// and that the public key is associated with the address
+func (self *WalletEntry) Verify(isMaster bool) error {
+    var emptySecret coin.SecKey
+    if self.Secret == emptySecret {
+        if isMaster {
+            return errors.New("WalletEntry is master, but has no secret key")
+        }
+    } else {
+        if coin.PubKeyFromSecKey(self.Secret) != self.Public {
+            return errors.New("Invalid public key for secret key")
+        }
+    }
+    return self.Address.Verify(self.Public)
+}
+
+type ReadableWalletEntry struct {
+    Address string `json:"address"`
+    Public  string `json:"public_key"`
+    Secret  string `json:"secret_key"`
+}
+
+func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
+    return ReadableWalletEntry{
+        Address: w.Address.String(),
+        Public:  w.Public.Hex(),
+        Secret:  w.Secret.Hex(),
+    }
+}
+
+// Loads a WalletEntry from filename, where the file contains a
+// ReadableWalletEntry
+func LoadWalletEntry(filename string) (WalletEntry, error) {
+    w := &ReadableWalletEntry{}
+    err := util.LoadJSON(filename, w)
+    if err != nil {
+        return WalletEntry{}, err
+    } else {
+        return WalletEntryFromReadable(w), nil
+    }
 }
 
 // Holds the master and personal keys
 type VisorKeys struct {
     // The master server's key.  The Secret will be empty unless running as
     // a master instance
-    Master Keypair
+    Master WalletEntry
     // // Our personal keys
     // Wallet Wallet
 }
 
-// Returns the VisorKeys for the master client
-func NewMasterVisorKeys(masterSecret string) VisorKeys {
-    secret := coin.SecKeyFromHex(masterSecret)
+func NewVisorKeys(master WalletEntry) VisorKeys {
     return VisorKeys{
-        Master: Keypair{
-            Secret: secret,
-            Public: coin.PubKeyFromSecKey(secret),
-        },
-        // Wallet: NewWallet(),
-    }
-}
-
-// Returns the VisorKeys for the normal client
-func NewVisorKeys(masterPublic string) VisorKeys {
-    pub := coin.PubKeyFromHex(masterPublic)
-    return VisorKeys{
-        Master: Keypair{
-            Public: pub,
-        },
+        Master: master,
+        // TODO -- use a deterministic wallet.  However, how do we know
+        // how many addresses we need to generate from the deterministic
+        // wallet? e.g. user creates 10,000 addresses with it, has balance on
+        // half of them including the 10,000th, loses wallet db and has to
+        // recreate from seed
         // Wallet: NewWallet(),
     }
 }
@@ -101,22 +148,20 @@ type Visor struct {
     signedBlocks SignedBlocks
 }
 
-// Creates a master Visor with a hex encoded secret key
-func NewMasterVisor(masterSecret string) *Visor {
-    return &Visor{
-        IsMaster:     true,
-        keys:         NewMasterVisorKeys(masterSecret),
-        blockchain:   coin.NewBlockchain(),
-        signedBlocks: NewSignedBlocks(),
-    }
-}
-
 // Creates a normal Visor given a master's public key
-func NewVisor(masterPublic string) *Visor {
-    return &Visor{
-        IsMaster:     false,
-        keys:         NewVisorKeys(masterPublic),
-        blockchain:   coin.NewBlockchain(),
+func NewVisor(master WalletEntry, isMaster bool) Visor {
+    logger.Debug("Creating new visor")
+    if isMaster {
+        logger.Debug("Visor is master")
+    }
+    err := master.Verify(isMaster)
+    if err != nil {
+        log.Panicf("Invalid master wallet entry: %v", err)
+    }
+    return Visor{
+        IsMaster:     isMaster,
+        keys:         NewVisorKeys(master),
+        blockchain:   coin.NewBlockchain(master.Address),
         signedBlocks: NewSignedBlocks(),
     }
 }

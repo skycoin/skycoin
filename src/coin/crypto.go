@@ -1,10 +1,10 @@
 package coin
 
 import (
+    "encoding/hex"
     "errors"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
-    "encoding/hex"
 )
 
 type PubKey [33]byte
@@ -18,7 +18,6 @@ func NewPubKey(b []byte) PubKey {
     return p
 }
 
-//seckey from hex string
 func PubKeyFromHex(s string) PubKey {
     b, err := hex.DecodeString(s)
     if err != nil || len(b) != 33 {
@@ -27,7 +26,6 @@ func PubKeyFromHex(s string) PubKey {
     return NewPubKey(b)
 }
 
-//seckey to hex string
 func (s PubKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
@@ -43,7 +41,6 @@ func NewSecKey(b []byte) SecKey {
     return p
 }
 
-//seckey from hex string
 func SecKeyFromHex(s string) SecKey {
     b, err := hex.DecodeString(s)
     if err != nil || len(b) != 32 {
@@ -52,7 +49,6 @@ func SecKeyFromHex(s string) SecKey {
     return NewSecKey(b)
 }
 
-//seckey to hex string
 func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
@@ -60,12 +56,12 @@ func (s SecKey) Hex() string {
 type Sig [64 + 1]byte
 
 func NewSig(b []byte) Sig {
-    if len(b) != 65 {
+    var s Sig
+    if len(b) != len(s) {
         log.Panic("Invalid secret key length")
     }
-    var p Sig
-    copy(p[:],b[:])
-    return p
+    copy(s[:], b[:])
+    return s
 }
 
 /*

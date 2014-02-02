@@ -86,7 +86,7 @@ func newBlockHeader(prev *BlockHeader) BlockHeader {
     return BlockHeader{
         // TODO -- what about the rest of the fields??
         PrevHash: prev.Hash(),
-        Time:     prev.Time + blockHeaderSecondsIncrement,
+        Time:     prev.Time + blockCreationInterval,
         BkSeq:    prev.BkSeq + 1,
     }
 }
@@ -283,7 +283,7 @@ func (self *Blockchain) validateBlockHeader(b *Block) error {
     if b.Header.Time < self.Head.Header.Time+blockCreationInterval {
         return errors.New("time invalid: block too soon")
     }
-    if b.Header.Time > uint64(time.Now().UTC().Unix()+blockTimeFutureMax) {
+    if b.Header.Time > uint64(time.Now().UTC().Unix())+blockTimeFutureMax {
         return errors.New("Block is too far in future; check clock")
     }
 

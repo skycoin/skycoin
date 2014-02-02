@@ -5,6 +5,7 @@ import (
     "flag"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/visor"
     "os"
 )
 
@@ -34,9 +35,9 @@ func main() {
     }
 
     w := visor.WalletEntry{
-        Address:   addr,
-        PublicKey: pub,
-        SecretKey: sec,
+        Address: addr,
+        Public:  pub,
+        Secret:  sec,
     }
 
     rw := visor.NewReadableWalletEntry(&w)

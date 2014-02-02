@@ -8,7 +8,6 @@ import (
     _ "net/http/pprof"
     "os"
     "os/signal"
-    "runtime/debug"
     "runtime/pprof"
     "syscall"
 )
@@ -36,18 +35,18 @@ var (
 )
 
 func printProgramStatus() {
-    fmt.Println("Program Status:")
-    debug.PrintStack()
+    fn := "goroutine.prof"
+    logger.Debug("Writing goroutine profile to %s", fn)
     p := pprof.Lookup("goroutine")
-    f, err := os.Create("goroutine.prof")
+    f, err := os.Create(fn)
     defer f.Close()
     if err != nil {
-        fmt.Println(err)
+        logger.Error("%v", err)
         return
     }
-    err = p.WriteTo(f, 1)
+    err = p.WriteTo(f, 2)
     if err != nil {
-        fmt.Println(err)
+        logger.Error("%v", err)
         return
     }
 }

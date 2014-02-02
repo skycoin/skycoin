@@ -32,8 +32,8 @@ var ClientArgs = ClientConfig{Config{
     logLevel: "notice",
 
     // Centralized network configuration
-    MasterPublic:   "02eeb60535f8f22ee49b8cfadafb0e84621e283deb6572637f7b2aa70a003c5983",
-    GenesisAddress: "Db8Hc2ZVzx4P7K9jXaTpzeGRxTM3gJRxaC",
+    MasterPublic:   "0223f1cd8652e64f0b2b6960e25c5799426220d44d50d016a4c64ecefb5b0043db",
+    GenesisAddress: "2bGDcaLJH8Ve7JBgqgSjNbHGSSSagEWtBrJ",
     MasterChain:    false,
     MasterKeys:     "",
 

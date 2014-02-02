@@ -53,10 +53,13 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
     if err != nil {
         return err
     }
-    // Backup the previous file
-    err := os.Rename(filename, filename+".bak")
-    if err != nil {
-        return err
+    // Backup the previous file, if there was one
+    _, err = os.Stat(filename)
+    if !os.IsNotExist(err) {
+        err = os.Rename(filename, filename+".bak")
+        if err != nil {
+            return err
+        }
     }
     // Move the temporary to the new file
     return os.Rename(tmpname, filename)

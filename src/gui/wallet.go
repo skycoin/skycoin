@@ -2,39 +2,69 @@
 package gui
 
 import (
+    "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/daemon"
+    "github.com/skycoin/skycoin/src/visor"
     "net/http"
+    "strconv"
 )
 
-type WalletAddressEntry struct {
-    Id      int
-    Address string
-    Balance string
+func walletBalanceHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        saddr := r.FormValue("addr")
+        var m interface{}
+        if saddr == "" {
+            m = rpc.GetTotalBalance()
+        } else {
+            addr, err := coin.DecodeBase58Address(saddr)
+            if err != nil {
+                Error400(w, "Invalid address")
+                return
+            }
+            m = rpc.GetBalance(addr)
+        }
+        balance := m.(*visor.Balance)
+        if balance == nil {
+            Error404(w)
+        } else if SendJSON(w, m) != nil {
+            Error500(w)
+        }
+    }
 }
 
-type WalletPage struct {
-    Title     string
-    Addresses []WalletAddressEntry
+func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        sdst := r.FormValue("dst")
+        if sdst == "" {
+            Error400(w, "Missing destination address \"dst\"")
+            return
+        }
+        dst, err := coin.DecodeBase58Address(sdst)
+        if err != nil {
+            Error400(w, "Invalid destination address")
+            return
+        }
+
+        scoins := r.FormValue("coins")
+        shours := r.FormValue("hours")
+        coins, err := strconv.ParseUint(scoins, 10, 64)
+        if err != nil {
+            Error400(w, "Invalid \"coins\" value")
+            return
+        }
+        hours, err := strconv.ParseUint(shours, 10, 64)
+        if err != nil {
+            Error400(w, "Invalid \"hours\" value")
+            return
+        }
+        m := rpc.Spend(visor.NewBalance(coins, hours), dst)
+        if SendJSON(w, m) != nil {
+            Error500(w)
+        }
+    }
 }
 
-// TODO -- strictly json api
-func walletPageHandler(w http.ResponseWriter, req *http.Request) {
-    var p WalletPage
-    //fmt.Printf("S= %v \n", len(p.Folders) );
-
-    /*
-       for i, FM := range FL.FileList {
-           var fpe FilePageEntry;
-           fpe.Name = FM.Name;
-           fpe.Size = FileSizeString(FM.Size)
-           fpe.Hash = base64.URLEncoding.EncodeToString(FM.Hash[:])
-           fpe.FileId = i
-           p.Folders = append(p.Folders, fpe)
-       }
-    */
-    //title := r.URL.Path[1:]
-    ShowTemplate(w, "wallet.html", p)
-}
-
-func RegisterWalletHandlers(mux *http.ServeMux) {
-    mux.HandleFunc("/wallet", walletPageHandler)
+func RegisterWalletHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
+    mux.HandleFunc("/wallet/balance", walletBalanceHandler(rpc))
+    mux.HandleFunc("/wallet/spend", walletSpendHandler(rpc))
 }

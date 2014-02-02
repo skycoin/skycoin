@@ -289,6 +289,9 @@ main:
         case <-blockCreationTicker.C:
             if e := self.Visor.CreateAndPublishBlock(self.Pool); e != nil {
                 logger.Error("Failed to create and publish block: %v", e)
+            } else {
+                // Not a critical error, but we want it very visible in logs
+                logger.Critical("Created and published a new block")
             }
         case <-quit:
             break main

@@ -163,16 +163,20 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
     wallet := NewWallet()
     if c.WalletFile != "" {
         err := wallet.Load(c.WalletFile)
-        if os.IsNotExist(err) {
-            logger.Info("Wallet file \"%s\" does not exist", c.WalletFile)
-        } else {
-            log.Panicf("Failed to load wallet file: %v", err)
+        if err != nil {
+            if os.IsNotExist(err) {
+                logger.Info("Wallet file \"%s\" does not exist", c.WalletFile)
+            } else {
+                log.Panicf("Failed to load wallet file: %v", err)
+            }
         }
     }
     wallet.Populate(c.WalletSizeMin)
     if c.WalletFile != "" {
         err := wallet.Save(c.WalletFile)
-        if err != nil {
+        if err == nil {
+            logger.Info("Saved wallet file to \"%s\"", c.WalletFile)
+        } else {
             log.Panicf("Failed to save wallet file to \"%s\": ", c.WalletFile,
                 err)
         }
@@ -198,20 +202,15 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
     if len(self.UnconfirmedTxns.Txns) == 0 {
         return sb, errors.New("No transactions")
     }
-    // TODO -- don't bother if no transactions
     // TODO -- need process for filtering colliding blocks
     // e.g. if two unconfirmed transactions are spending the same thing,
     // one must be chosen and the other discarded
-    b := self.blockchain.NewBlock()
-    txns := make([]coin.Transaction, len(self.UnconfirmedTxns.Txns))
+    txns := make([]coin.Transaction, 0, len(self.UnconfirmedTxns.Txns))
     for _, txn := range self.UnconfirmedTxns.Txns {
         txns = append(txns, txn)
     }
-    b, err := self.blockchain.AppendTransactionsToBlock(b, txns)
-    if err != nil {
-        return sb, err
-    }
-    sb, err = self.signBlock(b)
+    b := self.blockchain.NewBlockFromTransactions(txns)
+    sb, err := self.signBlock(b)
     if err == nil {
         return sb, self.ExecuteSignedBlock(sb)
     } else {
@@ -323,7 +322,7 @@ func (self *Visor) RecordTxn(txn coin.Transaction) error {
     if err := txn.Verify(); err != nil {
         return err
     }
-    if err := self.blockchain.VerifyTransaction(txn); err != nil {
+    if err := self.blockchain.VerifyTransaction(&txn); err != nil {
         return err
     }
     self.UnconfirmedTxns.Txns[txn.Header.Hash] = txn

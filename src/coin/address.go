@@ -51,14 +51,19 @@ func AddressFromPubkeyTestNet(pubKey PubKey) Address {
     return a
 }
 
-// Creates an Address from its base58 encoding
-func DecodeBase58Address(addr string) Address {
-    // TODO -- maybe this needs to be base58.String2Base58(addr).BitHex()
+// Creates an Address from its base58 encoding.  Will panic if the addr is
+// invalid
+func MustDecodeBase58Address(addr string) Address {
     a, err := addressFromBytes(base58.Base582Hex(addr))
     if err != nil {
-        log.Panicf("Invalid address %s", a)
+        log.Panicf("Invalid address %s", addr)
     }
     return a
+}
+
+// Creates an Address from its base58 encoding
+func DecodeBase58Address(addr string) (Address, error) {
+    return addressFromBytes(base58.Base582Hex(addr))
 }
 
 // Returns an address given an Address.Bytes()

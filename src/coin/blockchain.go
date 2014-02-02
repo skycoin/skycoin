@@ -5,7 +5,6 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
-    "math"
     "time"
 )
 
@@ -146,17 +145,26 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
     return bc
 }
 
-func (self *Blockchain) NewBlock() Block {
-    return newBlock(self.Head, self.CreationInterval)
+// Creates a Block given an array of Transactions.  It does not verify the
+// block; ExecuteBlock will handle verification
+func (self *Blockchain) NewBlockFromTransactions(txns []Transaction) Block {
+    b := newBlock(self.Head, self.CreationInterval)
+    b.Body.Transactions = make([]Transaction, len(txns))
+    copy(b.Body.Transactions[:], txns[:])
+    b.UpdateHeader()
+    return b
 }
 
 /*
    Validation
 */
 
-//VerifyTransaction determines whether a transaction could be executed in the current block
-//VerifyTransactions checks that the inputs to the transaction exist, that the transaction does not create or destroy coins and that the signatures on the transaction are valid
-func (self *Blockchain) VerifyTransaction(t Transaction) error {
+// VerifyTransaction determines whether a transaction could be executed in the
+// current block
+// VerifyTransactions checks that the inputs to the transaction exist,
+// that the transaction does not create or destroy coins and that the
+// signatures on the transaction are valid
+func (self *Blockchain) VerifyTransaction(t *Transaction) error {
     //SECURITY TODO: check for duplicate output coinbases
     //SECURITY TODO: check for double spending of same input
     //TODO: check to see if inputs of transaction have already been spent
@@ -213,56 +221,7 @@ func (self *Blockchain) VerifyTransaction(t Transaction) error {
     return nil
 }
 
-// Checks that all inputs exists
-func (self *Blockchain) validateInputs(b *Block) error {
-    for _, t := range b.Body.Transactions {
-        for _, tx := range t.In {
-            _, exists := self.Unspent.Get(tx.UxOut)
-            if !exists {
-                return errors.New("validateInputs: input does not exists")
-            }
-        }
-    }
-    return nil
-}
-
-//check the signatures in the block
-func (self *Blockchain) validateSignatures(b *Block) error {
-    //check that each idx is used
-
-    //check signature idx
-    for _, t := range b.Body.Transactions {
-        _maxidx := len(t.Header.Sigs)
-        if _maxidx >= math.MaxUint16 {
-            return errors.New("Too many signatures in transaction header")
-        }
-        maxidx := uint16(_maxidx)
-        for _, tx := range t.In {
-            if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
-                return errors.New("validateSignatures; invalid SigIdx")
-            }
-        }
-    }
-    //check signatures
-    for _, t := range b.Body.Transactions {
-        for _, tx := range t.In {
-            ux, exists := self.Unspent.Get(tx.UxOut) // output being spent
-            if !exists {
-                return errors.New("Unknown output")
-            }
-            err := ChkSig(ux.Body.Address, t.Header.Hash,
-                t.Header.Sigs[tx.SigIdx])
-            if err != nil {
-                return err // signature check failed
-            }
-        }
-    }
-    return nil
-}
-
-//important
-//TODO, check previous block hash for matching
-func (self *Blockchain) validateBlockHeader(b *Block) error {
+func (self *Blockchain) verifyBlockHeader(b *Block) error {
     //check BkSeq
     if b.Header.BkSeq != self.Head.Header.BkSeq+1 {
         return errors.New("BkSeq invalid")
@@ -276,200 +235,38 @@ func (self *Blockchain) validateBlockHeader(b *Block) error {
         return errors.New("Block is too far in future; check clock")
     }
 
+    // Check that this block is in the corrent sequence and refers to the
+    // previous block head
     if b.Header.BkSeq != 0 && self.Head.Header.BkSeq+1 != b.Header.BkSeq {
-        return errors.New("Header BkSeq error")
+        return errors.New("Header BkSeq not sequential")
     }
     if b.Header.PrevHash != self.Head.HashHeader() {
-        //fmt.Printf("hash mismatch\n%s \n%s \n", b.Header.PrevHash.Hex(), self.Head.Header.PrevHash.Hex())
         return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")
     }
-
-    //TODO, check that this is successor to previous block
     return nil
 }
 
-/*
-	Enforce immutability
-*/
-func (self *Blockchain) validateBlockBody(b *Block) error {
-
-    //check merkle tree and compare against header
-    if b.HashBody() != b.Header.BodyHash {
-        return errors.New("transaction body hash does not match header")
-    }
-
-    //check inner hash
-    for _, t := range b.Body.Transactions {
-        if t.hashInner() != t.Header.Hash {
-            return errors.New("transaction inner hash invalid")
-        }
-    }
-
-    //check for duplicate inputs in block
-    //TODO:make list, sort and check for increased speed
-    for i, t1 := range b.Body.Transactions {
-        for j := 0; j < i; i++ {
-            t2 := b.Body.Transactions[j]
-            for _, ti1 := range t1.In {
-                for _, ti2 := range t2.In {
-                    if ti1.UxOut == ti2.UxOut {
-                        return errors.New("Cannot spend same output twice")
-                    }
-                }
-            }
-        }
-    }
-
-    //make list
-    //TODO:make list, sort and check for increased speed
-    var outputs []SHA256
-    for _, t := range b.Body.Transactions {
-        for _, to := range t.Out {
-            var out UxOut
-            out.Body.Coins = to.Coins
-            out.Body.Hours = to.Hours
-            out.Body.SrcTransaction = t.Header.Hash
-            out.Body.Address = to.DestinationAddress
-            outputs = append(outputs, out.Hash())
-        }
-    }
-    for i := 0; i < len(outputs); i++ {
-        for j := 0; j < i; j++ {
-            if outputs[i] == outputs[j] {
-                return errors.New("Impossible Error: hash collision, " +
-                    "duplicate coinbase output")
-            }
-        }
-    }
-    //make sure output does not already exist in unspent blocks
-    for _, hash := range outputs {
-        out, exists := self.Unspent.Get(hash)
-        if exists {
-            if out.Hash() != hash {
-                log.Panic("impossible")
-            }
-            return errors.New("Impossible Error: hash collision, " +
-                "new output has same hash as existing output")
-        }
-    }
-
-    //check input/output balances for each transaction
-    for _, t := range b.Body.Transactions {
-        var coinsIn uint64
-        var hoursIn uint64
-        for _, tx := range t.In {
-            ux, exists := self.Unspent.Get(tx.UxOut)
-            if !exists {
-                return errors.New("Unknown output")
-            }
-            coinsIn += ux.Body.Coins
-            hoursIn += ux.CoinHours(b.Header.Time)
-        }
-        //compute coin ouputs in transactions out
-        var coinsOut uint64
-        var hoursOut uint64
-        for _, to := range t.Out {
-            coinsOut += to.Coins
-            hoursOut += to.Hours
-        }
-        if coinsIn != coinsOut {
-            return errors.New("coin inputs do not match coin ouptuts")
-        }
-        if hoursIn < hoursOut {
-            return errors.New("insuffient coinhours for output")
-        }
-        for _, to := range t.Out {
-            if to.Coins == 0 {
-                return errors.New("zero coin output")
-            }
-        }
-    }
-
-    //check fee
-    for _, t := range b.Body.Transactions {
-        var hoursIn uint64
-        var hoursOut uint64
-        for _, tx := range t.In {
-            ux, exists := self.Unspent.Get(tx.UxOut)
-            if !exists {
-                return errors.New("Unknown output")
-            }
-            hoursIn += ux.CoinHours(self.Head.Header.Time) //valid in future
-        }
-        for _, ux := range t.Out {
-            hoursOut += ux.Hours
-        }
-    }
-
-    return nil
-}
-
-//ExecuteBlock attempts to append block to blockchain
-func (self *Blockchain) ExecuteBlock(b Block) error {
-    //check that all inputs exist
-    if err := self.validateInputs(&b); err != nil {
-        return err
-    }
-    if err := self.validateSignatures(&b); err != nil {
-        return err
-    }
-    if err := self.validateBlockHeader(&b); err != nil {
-        return err
-    }
-    if err := self.validateBlockBody(&b); err != nil {
-        return err
-    }
-
-    for _, tx := range b.Body.Transactions {
-        //remove spent outputs
-        hashes := make([]SHA256, 0, len(tx.In))
-        for _, ti := range tx.In {
-            hashes = append(hashes, ti.UxOut)
-        }
-        self.Unspent.DelMultiple(hashes)
-        //create new outputs
-        for _, to := range tx.Out {
-            //TODO: use NewUxOut
-            var ux UxOut //create transaction output
-            ux.Body.SrcTransaction = tx.Hash()
-            ux.Body.Address = to.DestinationAddress
-            ux.Body.Coins = to.Coins
-            ux.Body.Hours = to.Hours
-
-            ux.Head.Time = b.Header.Time
-            self.Unspent.Add(ux)
-        }
-    }
-
-    //set new block head
-    self.Blocks = append(self.Blocks, b)         //extend the blockchain
-    self.Head = &self.Blocks[len(self.Blocks)-1] //set new header
-
-    return nil
-}
-
-// Adds an array of Transactions to a Block and updates state
-func (self *Blockchain) AppendTransactionsToBlock(b Block,
-    txns []Transaction) (Block, error) {
-    var ob Block = b
-    if len(b.Body.Transactions) != 0 {
-        log.Panic("Block must have no transactions when appending multiple")
-    }
-
+// Validates a set of Transactions, individually, against each other and
+// against the Blockchain
+func (self *Blockchain) verifyTransactions(txns []Transaction) error {
     if len(txns) == 0 {
-        return ob, errors.New("No transactions")
+        return errors.New("No transactions")
     }
 
+    // Check the transaction against itself.  This covers the hash,
+    // signature indices and duplicate spends within itself
     for _, t := range txns {
-        if err := self.VerifyTransaction(t); err != nil {
-            return ob, err
+        if err := self.VerifyTransaction(&t); err != nil {
+            return err
         }
     }
 
-    // Check to ensure that outputs do not appear twice in block
+    // Check to ensure that there are no duplicate spends in the entire block
+    // TODO -- this check will cause the blockchain to freeze, until we are
+    // able to arbitrate between conflicting transactions
     for i := 0; i < len(txns)-1; i++ {
         s := txns[i]
         for j := i + 1; j < len(txns); j++ {
@@ -478,17 +275,92 @@ func (self *Blockchain) AppendTransactionsToBlock(b Block,
                 for b := a + 1; b < len(t.In); b++ {
                     if s.In[a].UxOut == t.In[b].UxOut {
                         m := "Cannot spend output twice in the same block"
-                        return ob, errors.New(m)
+                        return errors.New(m)
                     }
                 }
             }
         }
     }
-    ctxns := make([]Transaction, len(txns))
-    copy(ctxns[:], txns[:])
-    ob.Body.Transactions = ctxns
-    ob.UpdateHeader()
-    return ob, nil
+
+    // Check that the resulting UxOuts are not already in the UnspentPool
+    var outputs []SHA256
+    for _, t := range txns {
+        for _, to := range t.Out {
+            out := UxOut{
+                Body: UxBody{
+                    Coins:          to.Coins,
+                    Hours:          to.Hours,
+                    SrcTransaction: t.Header.Hash,
+                    Address:        to.DestinationAddress,
+                },
+            }
+            outputs = append(outputs, out.Hash())
+        }
+    }
+    for i := 0; i < len(outputs)-1; i++ {
+        for j := i + 1; j < len(outputs); j++ {
+            if outputs[i] == outputs[j] {
+                return errors.New("Duplicate output encountered")
+            }
+        }
+    }
+
+    // Also disallow any output which somehow collides with the UnspentPool
+    for _, h := range outputs {
+        if self.Unspent.Has(h) {
+            return errors.New("Output hash is in the UnspentPool")
+        }
+    }
+
+    return nil
+}
+
+// Verifies the BlockHeader and BlockBody
+func (self *Blockchain) VerifyBlock(b *Block) error {
+    if err := self.verifyBlockHeader(b); err != nil {
+        return err
+    }
+    if err := self.verifyTransactions(b.Body.Transactions); err != nil {
+        return err
+    }
+    return nil
+}
+
+//ExecuteBlock attempts to append block to blockchain
+func (self *Blockchain) ExecuteBlock(b Block) error {
+    if err := self.VerifyBlock(&b); err != nil {
+        return err
+    }
+    for _, tx := range b.Body.Transactions {
+        // Remove spent outputs
+        hashes := make([]SHA256, 0, len(tx.In))
+        for _, ti := range tx.In {
+            hashes = append(hashes, ti.UxOut)
+        }
+        self.Unspent.DelMultiple(hashes)
+        // Create new outputs
+        for _, to := range tx.Out {
+            ux := UxOut{
+                Body: UxBody{
+                    SrcTransaction: tx.Header.Hash,
+                    Address:        to.DestinationAddress,
+                    Coins:          to.Coins,
+                    Hours:          to.Hours,
+                },
+                Head: UxHead{
+                    Time:  b.Header.Time,
+                    BkSeq: b.Header.BkSeq,
+                },
+            }
+            self.Unspent.Add(ux)
+        }
+    }
+
+    // Set new block head
+    self.Blocks = append(self.Blocks, b)         //extend the blockchain
+    self.Head = &self.Blocks[len(self.Blocks)-1] //set new header
+
+    return nil
 }
 
 // Returns the latest block head time

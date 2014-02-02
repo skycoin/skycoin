@@ -6,7 +6,7 @@ import (
     "net/http"
 )
 
-func connectionPage(rpc *daemon.RPC) HTTPHandler {
+func connectionHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
         addr := r.FormValue("addr")
         if addr == "" {
@@ -24,7 +24,7 @@ func connectionPage(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func connectionsPage(rpc *daemon.RPC) HTTPHandler {
+func connectionsHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
         m := rpc.GetConnections()
         if m == nil {
@@ -38,6 +38,6 @@ func connectionsPage(rpc *daemon.RPC) HTTPHandler {
 }
 
 func RegisterNetworkHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
-    mux.HandleFunc("/api/network/connection", connectionPage(rpc))
-    mux.HandleFunc("/api/network/connections", connectionsPage(rpc))
+    mux.HandleFunc("/api/network/connection", connectionHandler(rpc))
+    mux.HandleFunc("/api/network/connections", connectionsHandler(rpc))
 }

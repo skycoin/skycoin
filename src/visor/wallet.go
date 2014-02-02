@@ -25,12 +25,17 @@ func NewWalletEntry() WalletEntry {
 func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
     // Wallet entries are shared as a form of identification, the secret key
     // is not required
+    // TODO -- fix lib/base58 to not panic on invalid input -- should
+    // return error, so we can detect a broken wallet.
+    if w.Address == "" {
+        log.Panic("ReadableWalletEntry has no Address")
+    }
     var s coin.SecKey
     if w.Secret != "" {
         s = coin.SecKeyFromHex(w.Secret)
     }
     return WalletEntry{
-        Address: coin.DecodeBase58Address(w.Address),
+        Address: coin.MustDecodeBase58Address(w.Address),
         Public:  coin.PubKeyFromHex(w.Public),
         Secret:  s,
     }
@@ -139,14 +144,14 @@ func NewWallet() *Wallet {
 // are created if the Wallet already contains n or more entries.
 func (self *Wallet) Populate(n int) {
     for i := len(self.Entries); i < n; i++ {
-        p := len(self.Entries)
-        self.Entries = append(self.Entries, NewWalletEntry())
-        self.addressLookup[self.Entries[p].Address] = p
+        e := NewWalletEntry()
+        self.Entries = append(self.Entries, e)
+        self.addressLookup[e.Address] = len(self.Entries) - 1
     }
 }
 
 func NewWalletFromReadable(r *ReadableWallet) *Wallet {
-    entries := make([]WalletEntry, len(r.Entries))
+    entries := make([]WalletEntry, 0, len(r.Entries))
     for _, re := range r.Entries {
         entries = append(entries, WalletEntryFromReadable(&re))
     }
@@ -162,7 +167,7 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
 
 // Returns all coin.Addresses in this Wallet
 func (self *Wallet) GetAddresses() []coin.Address {
-    addrs := make([]coin.Address, len(self.Entries))
+    addrs := make([]coin.Address, 0, len(self.Entries))
     for a, _ := range self.addressLookup {
         addrs = append(addrs, a)
     }
@@ -227,7 +232,7 @@ type ReadableWallet struct {
 
 // Converts a Wallet to a ReadableWallet
 func NewReadableWallet(w *Wallet) *ReadableWallet {
-    readable := make([]ReadableWalletEntry, len(w.Entries))
+    readable := make([]ReadableWalletEntry, 0, len(w.Entries))
     for _, e := range w.Entries {
         readable = append(readable, NewReadableWalletEntry(&e))
     }

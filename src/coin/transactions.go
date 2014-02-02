@@ -58,9 +58,6 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
-    //SECURITY TODO: check for duplicate output coinbases
-    //SECURITY TODO: check for double spending of same input
-
     h := self.hashInner()
     if h != self.Header.Hash {
         return errors.New("Invalid header hash")
@@ -75,6 +72,15 @@ func (self *Transaction) Verify() error {
     for _, tx := range self.In {
         if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
             return errors.New("validateSignatures; invalid SigIdx")
+        }
+    }
+
+    // Check duplicate spends
+    for i := 0; i < len(self.In)-1; i++ {
+        for j := i + 1; i < len(self.In); j++ {
+            if self.In[i].UxOut == self.In[j].UxOut {
+                return errors.New("Duplicate spend")
+            }
         }
     }
 

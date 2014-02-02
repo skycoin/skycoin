@@ -45,14 +45,19 @@ func NewVisor(c VisorConfig) *Visor {
     }
 }
 
+// Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
-    err := self.Visor.Wallet.Save(self.Config.Config.WalletFile)
-    if err != nil {
-        logger.Error("Failed to save wallet file to \"%s\": %v",
-            self.Config.Config.WalletFile, err)
+    walletFile := self.Config.Config.WalletFile
+    err := self.Visor.Wallet.Save(walletFile)
+    if err == nil {
+        logger.Info("Saved wallet file to \"%s\"", walletFile)
+    } else {
+        logger.Error("Failed to save wallet file to \"%s\": %v", walletFile,
+            err)
     }
 }
 
+// Sends a signed block to all connections
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
     sent := false
@@ -69,6 +74,8 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     }
 }
 
+// Creates a block from unconfirmed transactions and sends it to the network.
+// Will panic if not running as a master chain.
 func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
     sb, err := self.Visor.CreateBlock()
     if err == nil {

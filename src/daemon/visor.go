@@ -7,22 +7,18 @@ import (
 )
 
 type VisorConfig struct {
-    // Is a master visor
-    IsMaster bool
+    Config visor.VisorConfig
     // Location of master keys
     MasterKeysFile string
     // Master public/secret key and genesis address
     MasterKeys visor.WalletEntry
-    // Is running on the test network
-    TestNetwork bool
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        IsMaster:       false,
+        Config:         visor.NewVisorConfig(),
         MasterKeysFile: "",
         MasterKeys:     visor.WalletEntry{},
-        TestNetwork:    true,
     }
 }
 
@@ -37,14 +33,22 @@ func (self *VisorConfig) LoadMasterKeys() error {
 
 type Visor struct {
     Config VisorConfig
-    Visor  visor.Visor
+    Visor  *visor.Visor
 }
 
 func NewVisor(c VisorConfig) *Visor {
-    v := visor.NewVisor(c.MasterKeys, c.IsMaster)
+    v := visor.NewVisor(c.Config, c.MasterKeys)
     return &Visor{
         Config: c,
         Visor:  v,
+    }
+}
+
+func (self *Visor) Shutdown() {
+    err := self.Visor.Wallet.Save(self.Config.Config.WalletFile)
+    if err != nil {
+        logger.Error("Failed to save wallet file to \"%s\": %v",
+            self.Config.Config.WalletFile, err)
     }
 }
 

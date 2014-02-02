@@ -202,6 +202,7 @@ func (self *Daemon) Shutdown() {
     self.DHT.Shutdown()
     self.Pool.Shutdown()
     self.Peers.Shutdown()
+    self.Visor.Shutdown()
     gnet.EraseMessages()
 }
 

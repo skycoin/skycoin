@@ -31,6 +31,10 @@ var DaemonArgs = DaemonConfig{Config{
     ColorLog: false,
     logLevel: "notice",
 
+    // Wallets
+    WalletFile:    "",
+    WalletSizeMin: 100,
+
     // Centralized network configuration
     MasterPublic:   "0223f1cd8652e64f0b2b6960e25c5799426220d44d50d016a4c64ecefb5b0043db",
     GenesisAddress: "2bGDcaLJH8Ve7JBgqgSjNbHGSSSagEWtBrJ",
@@ -81,4 +85,6 @@ func (self *DaemonConfig) register() {
         "public key of the master chain")
     flag.StringVar(&self.GenesisAddress, "genesis-address", self.GenesisAddress,
         "blockchain genesis address")
+    flag.StringVar(&self.WalletFile, "wallet-file", self.WalletFile,
+        "location of the wallet file. Defaults to ~/.skycoin/wallet.json")
 }

@@ -62,7 +62,9 @@ func (self *Transaction) Verify() error {
 	Check that sigs are sequential
 */
 
-func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+// Adds a TransactionInput to the Transaction given the hash of a UxOut.
+// Returns the signature index for later signing
+func (self *Transaction) pushInput(uxOut SHA256) uint16 {
     if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
@@ -75,7 +77,14 @@ func (self *Transaction) PushInput(uxOut SHA256) uint16 {
     return sigIdx
 }
 
-func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
+// Adds a TransactionInput to the Transaction and signs it
+func (self *Transaction) PushInput(spendUx SHA256, sec SecKey) {
+    sigIdx := self.pushInput(spendUx)
+    self.signInput(sigIdx, sec)
+}
+
+// Adds a TransactionOutput, sending coins & hours to an Address
+func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
     to := TransactionOutput{
         DestinationAddress: dst,
         Coins:              coins,
@@ -84,7 +93,8 @@ func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
     self.Out = append(self.Out, to)
 }
 
-func (self *Transaction) SetSig(idx uint16, sec SecKey) {
+// Signs a TransactionInput at its signature index
+func (self *Transaction) signInput(idx uint16, sec SecKey) {
     hash := self.hashInner()
     sig, err := SignHash(hash, sec)
     if err != nil {

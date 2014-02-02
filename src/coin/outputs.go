@@ -78,11 +78,31 @@ func (self *UnspentPool) DelMultiple(hashes []SHA256) {
     }
 }
 
+// Returns all Unspents for a single address
 func (self *UnspentPool) AllForAddress(a Address) []UxOut {
     uxo := make([]UxOut, 0)
     for _, ux := range self.Arr {
         if ux.Body.Address == a {
             uxo = append(uxo, ux)
+        }
+    }
+    return uxo
+}
+
+// Returns Unspents for multiple addresses
+func (self *UnspentPool) AllForAddresses(addrs []Address) map[Address][]UxOut {
+    m := make(map[Address]byte, len(addrs))
+    for _, a := range addrs {
+        m[a] = byte(1)
+    }
+    uxo := make(map[Address][]UxOut)
+    for a, _ := range m {
+        uxo[a] = make([]UxOut, 0)
+    }
+    for _, ux := range self.Arr {
+        _, exists := m[ux.Body.Address]
+        if exists {
+            uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
         }
     }
     return uxo

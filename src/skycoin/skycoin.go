@@ -110,7 +110,10 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.Peers.DataDirectory = c.DataDirectory
     dc.DHT.Port = c.Port
     dc.Pool.Port = c.Port
-    dc.Visor.IsMaster = c.MasterChain
+    dc.Visor.Config.IsMaster = c.MasterChain
+    dc.Visor.Config.CanSpend = !c.MasterChain
+    dc.Visor.Config.WalletFile = c.WalletFile
+    dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
     dc.Visor.MasterKeysFile = c.MasterKeys
     if c.MasterChain {
         err := dc.Visor.LoadMasterKeys()

@@ -42,15 +42,22 @@ func LoadJSON(filename string, thing interface{}) error {
     return json.Unmarshal(file, thing)
 }
 
-func SaveJSON(filename string, thing interface{}) error {
+func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
     data, err := json.Marshal(thing)
     if err != nil {
         return err
     }
+    // Write the new file to a temporary
     tmpname := filename + ".tmp"
-    err = ioutil.WriteFile(tmpname, data, os.FileMode(0644))
+    err = ioutil.WriteFile(tmpname, data, mode)
     if err != nil {
         return err
     }
+    // Backup the previous file
+    err := os.Rename(filename, filename+".bak")
+    if err != nil {
+        return err
+    }
+    // Move the temporary to the new file
     return os.Rename(tmpname, filename)
 }

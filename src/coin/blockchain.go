@@ -113,7 +113,7 @@ func NewBlockchain(genesisAddress Address) *Blockchain {
 
     //set genesis block
     var b Block = Block{} // genesis block
-    b.Header.Time = uint64(time.Now().Unix())
+    b.Header.Time = uint64(time.Now().UTC().Unix())
     //b.Header.PrevHash = SumSHA256([]byte(genesisBlockHashString))
     bc.Blocks = append(bc.Blocks, b)
     bc.Head = &bc.Blocks[0]
@@ -209,7 +209,7 @@ func (self *Blockchain) validateBlockHeader(b *Block) error {
     if b.Header.Time < self.Head.Header.Time+15 {
         return errors.New("time invalid: block too soon")
     }
-    if b.Header.Time > uint64(time.Now().Unix()+300) {
+    if b.Header.Time > uint64(time.Now().UTC().Unix()+300) {
         return errors.New("Block is too far in future; check clock")
     }
 

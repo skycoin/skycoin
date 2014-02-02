@@ -51,9 +51,39 @@ type TransactionOutput struct {
 	Add immutability and hash checks here
 */
 
-// Returns an error if the Transaction is invalid
-func (self *Transaction) Verify() error {
-    logger.Warning("Transaction.Verify() not implemented")
+//Verify attempts to determine if the transaction is well formed
+//Verify can check transaction signatures and signature indices
+//Verify cannot check if outputs being spent exist
+//Verify cannot check if the transaction would create or destroy coins or if the inputs have the required coin base
+func (txn *Transaction) Verify() error {
+    //SECURITY TODO: check for duplicate output coinbases
+    //SECURITY TODO: check for double spending of same input
+    
+    //check signature index fields
+    _maxidx := len(txn.Header.Sigs)
+    if _maxidx >= math.MaxUint16 {
+        return errors.New("Too many signatures in transaction header")
+    }
+    maxidx := uint16(_maxidx)
+    for _, tx := range txn.In {
+        if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
+            return errors.New("validateSignatures; invalid SigIdx")
+        }
+    }
+
+    //validate addresss signatures
+    for _, tx := range txn.In {
+        ux, exists := self.Unspent.Get(tx.UxOut) // output being spent
+        if !exists {
+            return errors.New("Unknown output")
+        }
+        err := ChkSig(ux.Body.Address, txn.Header.Hash,
+            txn.Header.Sigs[tx.SigIdx])
+        if err != nil {
+            return err // signature check failed
+        }
+    }
+
     return nil
 }
 

@@ -145,8 +145,81 @@ func (self *Blockchain) NewBlock() Block {
    Validation
 */
 
+//VerifyTransaction determines whether a transaction could be executed in the current block
+//VerifyTransactions checks that the inputs to the transaction exist, that the transaction does not create or destroy coins and that the signatures on the transaction are valid
 func (self *Blockchain) VerifyTransaction(txn Transaction) error {
-    logger.Warning("Blockchain.VerifyTransaction() not implemented")
+    //SECURITY TODO: check for duplicate output coinbases
+    //SECURITY TODO: check for double spending of same input
+    //TODO: check to see if inputs of transaction have already been spent
+    //TODO: check to see if inputs of transaction were created by pending transaction
+    //TODO: discriminate between transactions that cannot be executed in future (ex. transactions using already spent outputs) vs tranasctions that may become valid in future but are not yet valid
+    
+
+    //logger.Warning("Blockchain.VerifyTransaction() not implemented")
+
+    //validate signature index fields
+    _maxidx := len(txn.Header.Sigs)
+    if _maxidx >= math.MaxUint16 {
+        return errors.New("Too many signatures in transaction header")
+    }
+    maxidx := uint16(_maxidx)
+    for _, tx := range txn.In {
+        if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
+            return errors.New("validateSignatures; invalid SigIdx")
+        }
+    }
+
+    //check that inputs exist
+    for _, tx := range txn.In {
+        _, exists := self.Unspent.Get(tx.UxOut)
+        if !exists {
+            return errors.New("validateInputs: input does not exists")
+        }
+    }
+
+    //validate addresss signatures
+    for _, tx := range txn.In {
+        ux, exists := self.Unspent.Get(tx.UxOut) // output being spent
+        if !exists {
+            return errors.New("Unknown output")
+        }
+        err := ChkSig(ux.Body.Address, txn.Header.Hash,
+            txn.Header.Sigs[tx.SigIdx])
+        if err != nil {
+            return err // signature check failed
+        }
+    }
+
+    //check input/output balance for transaction
+    var coinsIn uint64
+    var hoursIn uint64
+    for _, tx := range txn.In {
+        ux, exists := self.Unspent.Get(tx.UxOut)
+        if !exists {
+            return errors.New("impossible: unspent does exist")
+        }
+        coinsIn += ux.Body.Coins
+        hoursIn += ux.CoinHours(b.Header.Time)
+    }
+    //compute coin ouputs in transactions out
+    var coins_out uint64
+    var hoursOut uint64
+    for _, to := range txn.Out {
+        coins_out += to.Coins
+        hoursOut += to.Hours
+    }
+    if coinsIn != coins_out {
+        return errors.New("error: transaction would create/destroy net coins")
+    }
+    if hoursIn < hoursOut {
+        return errors.New("insuffient coinhours for output")
+    }
+    for _, to := range txn.Out {
+        if to.Coins == 0 {
+            return errors.New("zero coin output")
+        }
+    }
+
     return nil
 }
 
@@ -245,8 +318,8 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
         }
     }
 
-    //make list
     //check for duplicate inputs in block
+    //TODO:make list, sort and check for increased speed
     for i, t1 := range b.Body.Transactions {
         for j := 0; j < i; i++ {
             t2 := b.Body.Transactions[j]
@@ -261,7 +334,7 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
     }
 
     //make list
-    //check for duplicate outputs
+    //TODO:make list, sort and check for increased speed
     var outputs []SHA256
     for _, t := range b.Body.Transactions {
         for _, to := range t.Out {
@@ -277,7 +350,7 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
         for j := 0; j < i; j++ {
             if outputs[i] == outputs[j] {
                 return errors.New("Impossible Error: hash collision, " +
-                    "duplicate output in same block")
+                    "duplicate coinbase output")
             }
         }
     }

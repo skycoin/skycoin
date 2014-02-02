@@ -93,14 +93,13 @@ func (self *Address) Bytes() []byte {
     return b
 }
 
-// Returns Address Checksum
+// Returns Address Checksum which is the first 4 bytes of sha256(key+version)
 func (self *Address) Checksum() Checksum {
     // Version comes after the address to support vanity addresses
-    r1 := append([]byte{self.Version}, self.Key[:]...)
+    r1 := append(self.Key[:], []byte{self.Version}...)
     r2 := SumSHA256(r1[:])
-    r3 := SumSHA256(r2[:])
     var c Checksum
-    copy(c[:], r3[:len(c)])
+    copy(c[:], r2[:len(c)])
     return c
 }
 

@@ -199,7 +199,7 @@ func (self *Blockchain) VerifyTransaction(txn Transaction) error {
             return errors.New("impossible: unspent does exist")
         }
         coinsIn += ux.Body.Coins
-        hoursIn += ux.CoinHours(b.Header.Time)
+        hoursIn += ux.CoinHours(self.Head.Header.Time)
     }
     //compute coin ouputs in transactions out
     var coins_out uint64

@@ -60,7 +60,7 @@ func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
 
-type Sig [65]byte
+type Sig [64+1]byte //64 byte signature with 1 byte for key recovery
 
 func NewSig(b []byte) Sig {
     var s Sig
@@ -154,5 +154,9 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 
 func GenerateKeyPair() (PubKey, SecKey) {
     public, secret := secp256k1.GenerateKeyPair()
+    return NewPubKey(public), NewSecKey(secret)
+}
+func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
+    public, secret := secp256k1.GenerateDeterministicKeyPair(seed)
     return NewPubKey(public), NewSecKey(secret)
 }

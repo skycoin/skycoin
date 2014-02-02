@@ -4,6 +4,42 @@ import (
     "github.com/skycoin/skycoin/src/lib/encoder"
 )
 
+
+
+type UxManager struct {
+    UxMap map[SHA256]int
+    UXArray []Ux
+}
+
+type (UxManager *self) AppendUx(ux Ux) {
+
+    _, exists := self.UxMap[hash]
+    if exists {
+        log.Panic()
+    }
+    self.UXArray = append(self.UXArray, ux)
+    //TODO: check this element does not exist!
+    UxMap[ux.Hash()] = ux 
+}
+
+type (UxManager *self) RemoveUx(hash SHA256) {
+    //TODO: check element exists
+    idx, exists := self.UxMap[hash]
+    if !exists {
+        log.Panic()
+    }
+    delete(self.UxMap, hash)
+    append(self.UXArray[:i], self.UXArray[i+1:]...)
+}
+
+type (UxManager *self) GetUx(hash SHA256) Ux {
+    idx, exists := self.UxMap[hash]
+    if !exists {
+        log.Panic()
+    }
+    return self.UxArray[idx]
+}
+
 /*
 	Unspent Outputs
 */

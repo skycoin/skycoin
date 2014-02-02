@@ -95,12 +95,12 @@ func (self *Address) Bytes() []byte {
 }
 
 // Returns Address Checksum
+// Address is 
 func (self *Address) Checksum() Checksum {
-    r1 := append([]byte{self.Version}, self.Key[:]...)
+    r1 := append(self.Key[:], []byte{self.Version})
     r2 := SumSHA256(r1[:])
-    r3 := SumSHA256(r2[:])
     var c Checksum
-    copy(c[:], r3[:len(c)])
+    copy(c[:], r2[:len(c)])
     return c
 }
 

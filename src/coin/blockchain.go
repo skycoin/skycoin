@@ -156,7 +156,6 @@ func (self *Blockchain) VerifyTransaction(txn Transaction) error {
     //TODO: check to see if inputs of transaction have already been spent
     //TODO: check to see if inputs of transaction were created by pending transaction
     //TODO: discriminate between transactions that cannot be executed in future (ex. transactions using already spent outputs) vs tranasctions that may become valid in future but are not yet valid
-    
 
     //logger.Warning("Blockchain.VerifyTransaction() not implemented")
 
@@ -205,13 +204,13 @@ func (self *Blockchain) VerifyTransaction(txn Transaction) error {
         hoursIn += ux.CoinHours(self.Head.Header.Time)
     }
     //compute coin ouputs in transactions out
-    var coins_out uint64
+    var coinsOut uint64
     var hoursOut uint64
     for _, to := range txn.Out {
-        coins_out += to.Coins
+        coinsOut += to.Coins
         hoursOut += to.Hours
     }
-    if coinsIn != coins_out {
+    if coinsIn != coinsOut {
         return errors.New("error: transaction would create/destroy net coins")
     }
     if hoursIn < hoursOut {
@@ -381,13 +380,13 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
             hoursIn += ux.CoinHours(b.Header.Time)
         }
         //compute coin ouputs in transactions out
-        var coins_out uint64
+        var coinsOut uint64
         var hoursOut uint64
         for _, to := range t.Out {
-            coins_out += to.Coins
+            coinsOut += to.Coins
             hoursOut += to.Hours
         }
-        if coinsIn != coins_out {
+        if coinsIn != coinsOut {
             return errors.New("coin inputs do not match coin ouptuts")
         }
         if hoursIn < hoursOut {
@@ -529,13 +528,13 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
             log.Panic("Coin Hours Invalid: Time Error!\n")
         }
     }
-    var coins_out uint64
+    var coinsOut uint64
     var hoursOut uint64
     for _, ux := range t.Out {
-        coins_out += ux.Coins
+        coinsOut += ux.Coins
         hoursOut += ux.Hours
     }
-    if coinsIn != coins_out {
+    if coinsIn != coinsOut {
         return errors.New("Error: Coin inputs do not match coin ouptuts")
     }
     if hoursIn < hoursOut {

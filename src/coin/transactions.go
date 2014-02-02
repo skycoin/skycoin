@@ -1,10 +1,10 @@
 package coin
 
 import (
+    "errors"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
     "math"
-    "errors"
 )
 
 /*

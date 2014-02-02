@@ -88,7 +88,6 @@ func (self *Address) Bytes() []byte {
     keyLen := len(self.Key)
     b := make([]byte, keyLen+len(self.ChkSum)+1)
     copy(b[:keyLen], self.Key[:])
-    // Version comes after the address to support vanity addresses
     b[keyLen] = self.Version
     copy(b[keyLen+1:], self.ChkSum[:])
     return b
@@ -96,6 +95,7 @@ func (self *Address) Bytes() []byte {
 
 // Returns Address Checksum
 func (self *Address) Checksum() Checksum {
+    // Version comes after the address to support vanity addresses
     r1 := append([]byte{self.Version}, self.Key[:]...)
     r2 := SumSHA256(r1[:])
     r3 := SumSHA256(r2[:])

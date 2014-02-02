@@ -209,8 +209,11 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
     for _, txn := range self.UnconfirmedTxns.Txns {
         txns = append(txns, txn)
     }
-    b := self.blockchain.NewBlockFromTransactions(txns)
-    sb, err := self.signBlock(b)
+    b, err := self.blockchain.NewBlockFromTransactions(txns)
+    if err != nil {
+        return sb, err
+    }
+    sb, err = self.signBlock(b)
     if err == nil {
         return sb, self.ExecuteSignedBlock(sb)
     } else {

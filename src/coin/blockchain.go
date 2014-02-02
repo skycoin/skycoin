@@ -1,6 +1,7 @@
 package coin
 
 import (
+    "bytes"
     "errors"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
@@ -147,12 +148,15 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
 
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification
-func (self *Blockchain) NewBlockFromTransactions(txns []Transaction) Block {
+func (self *Blockchain) NewBlockFromTransactions(txns []Transaction) (Block, error) {
     b := newBlock(self.Head, self.CreationInterval)
-    b.Body.Transactions = make([]Transaction, len(txns))
-    copy(b.Body.Transactions[:], txns[:])
+    txns, err := self.arbitrateTransactions(txns)
+    if err != nil {
+        return b, err
+    }
+    b.Body.Transactions = txns
     b.UpdateHeader()
-    return b
+    return b, nil
 }
 
 /*
@@ -178,7 +182,7 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
         return err
     }
     // Check that the inputs exist, are unspent and are owned by the
-    // spender.  Check that coins/hours in/out match
+    // spender.  Check that coins/hours in/out match.
     lastTime := self.Time()
     var coinsIn uint64 = 0
     var hoursIn uint64 = 0
@@ -249,6 +253,43 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
     return nil
 }
 
+// Removes conflicting transactions (i.e. ones spending the same thing)
+// Returns an error only if a conflict occured and could not be resolved
+func (self *Blockchain) arbitrateTransactions(txns []Transaction) ([]Transaction, error) {
+    skip := make(map[int]byte, 0)
+    for i := 0; i < len(txns)-1; i++ {
+        s := txns[i]
+        for j := i + 1; j < len(txns); j++ {
+            t := txns[j]
+            if s.Header.Hash == t.Header.Hash {
+                // This should not occur, assuming the input txns were
+                // extracted from a set or map
+                return nil, errors.New("Duplicate transactions")
+            }
+            for a := 0; a < len(s.In)-1; a++ {
+                for b := a + 1; b < len(t.In); b++ {
+                    if s.In[a].UxOut == t.In[b].UxOut {
+                        // The transaction with the lowest hash wins in a
+                        // duplicate spend
+                        if bytes.Compare(s.Header.Hash[:], t.Header.Hash[:]) < 0 {
+                            skip[j] = byte(1)
+                        } else {
+                            skip[i] = byte(1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    newtxns := make([]Transaction, 0, len(txns)-len(skip))
+    for i, txn := range txns {
+        if _, shouldSkip := skip[i]; !shouldSkip {
+            newtxns = append(newtxns, txn)
+        }
+    }
+    return newtxns, nil
+}
+
 // Validates a set of Transactions, individually, against each other and
 // against the Blockchain
 func (self *Blockchain) verifyTransactions(txns []Transaction) error {
@@ -271,6 +312,11 @@ func (self *Blockchain) verifyTransactions(txns []Transaction) error {
         s := txns[i]
         for j := i + 1; j < len(txns); j++ {
             t := txns[j]
+            if s.Header.Hash == t.Header.Hash {
+                // This should not occur, assuming the input txns were
+                // extracted from a set or map
+                return errors.New("Duplicate transactions")
+            }
             for a := 0; a < len(s.In)-1; a++ {
                 for b := a + 1; b < len(t.In); b++ {
                     if s.In[a].UxOut == t.In[b].UxOut {

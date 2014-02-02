@@ -6,7 +6,6 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "log"
     "os"
-    "time"
 )
 
 var (
@@ -122,15 +121,18 @@ type VisorConfig struct {
     WalletSizeMin int
     // Use test network addresses
     TestNetwork bool
+    // How often new blocks are created by the master
+    BlockCreationInterval uint64
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        IsMaster:      false,
-        CanSpend:      true,
-        TestNetwork:   true,
-        WalletFile:    "",
-        WalletSizeMin: 100,
+        IsMaster:              false,
+        CanSpend:              true,
+        TestNetwork:           true,
+        WalletFile:            "",
+        WalletSizeMin:         100,
+        BlockCreationInterval: 15,
     }
 }
 
@@ -177,30 +179,44 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
     }
 
     return &Visor{
-        Config:          c,
-        keys:            NewVisorKeys(master),
-        blockchain:      coin.NewBlockchain(master.Address),
+        Config: c,
+        keys:   NewVisorKeys(master),
+        blockchain: coin.NewBlockchain(master.Address,
+            c.BlockCreationInterval),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
         Wallet:          wallet,
     }
 }
 
-// Signs a block for master
-func (self *Visor) SignBlock(b coin.Block) (sb SignedBlock, e error) {
+// Creates a SignedBlock from pending transactions
+func (self *Visor) CreateBlock() (SignedBlock, error) {
+    var sb SignedBlock
     if !self.Config.IsMaster {
-        log.Panic("You cannot sign blocks")
+        return sb, errors.New("Only master chain can create blocks")
     }
-    sig, err := coin.SignHash(b.HashHeader(), self.keys.Master.Secret)
+    if len(self.UnconfirmedTxns.Txns) == 0 {
+        return sb, errors.New("No transactions")
+    }
+    // TODO -- don't bother if no transactions
+    // TODO -- need process for filtering colliding blocks
+    // e.g. if two unconfirmed transactions are spending the same thing,
+    // one must be chosen and the other discarded
+    b := self.blockchain.NewBlock()
+    txns := make([]coin.Transaction, len(self.UnconfirmedTxns.Txns))
+    for _, txn := range self.UnconfirmedTxns.Txns {
+        txns = append(txns, txn)
+    }
+    b, err := self.blockchain.AppendTransactionsToBlock(b, txns)
     if err != nil {
-        e = err
-        return
+        return sb, err
     }
-    sb = SignedBlock{
-        Block: b,
-        Sig:   sig,
+    sb, err = self.signBlock(b)
+    if err == nil {
+        return sb, self.ExecuteSignedBlock(sb)
+    } else {
+        return sb, err
     }
-    return
 }
 
 // Creates a Transaction spending coins and hours from our coins
@@ -211,9 +227,11 @@ func (self *Visor) Spend(amt Balance,
     if !self.Config.CanSpend {
         return txn, errors.New("Spending disabled")
     }
+    if amt.IsZero() {
+        return txn, errors.New("Zero spend amount")
+    }
     needed := amt
     // needed = needed.Add(fee)
-    t := uint64(time.Now().UTC().Unix())
     auxs := self.blockchain.Unspent.AllForAddresses(self.Wallet.GetAddresses())
     for a, uxs := range auxs {
         entry, exists := self.Wallet.GetEntry(a)
@@ -224,7 +242,8 @@ func (self *Visor) Spend(amt Balance,
             if needed.IsZero() {
                 break
             }
-            b := NewBalance(ux.Body.Coins, ux.CoinHours(t))
+            coinHours := ux.CoinHours(self.blockchain.Time())
+            b := NewBalance(ux.Body.Coins, coinHours)
             if needed.GreaterThanOrEqual(b) {
                 needed = needed.Sub(b)
                 txn.PushInput(ux.Hash(), entry.Secret)
@@ -238,6 +257,7 @@ func (self *Visor) Spend(amt Balance,
     }
 
     txn.PushOutput(dest, amt.Coins, amt.Hours)
+    txn.UpdateHeader()
 
     if needed.IsZero() {
         return txn, nil
@@ -312,16 +332,35 @@ func (self *Visor) RecordTxn(txn coin.Transaction) error {
 
 // Returns the total balance for addresses in the Wallet
 func (self *Visor) TotalBalance() Balance {
-    return self.Wallet.TotalBalance(self.blockchain.Unspent)
+    return self.Wallet.TotalBalance(self.blockchain.Unspent,
+        self.blockchain.Time())
 }
 
 // Returns the balance for a single address in the Wallet
 func (self *Visor) Balance(a coin.Address) Balance {
-    return self.Wallet.Balance(self.blockchain.Unspent, a)
+    return self.Wallet.Balance(self.blockchain.Unspent,
+        self.blockchain.Time(), a)
 }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
     return coin.VerifySignature(self.keys.Master.Public, b.Sig,
         b.Block.HashHeader())
+}
+
+// Signs a block for master
+func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
+    if !self.Config.IsMaster {
+        log.Panic("Only master chain can sign blocks")
+    }
+    sig, err := coin.SignHash(b.HashHeader(), self.keys.Master.Secret)
+    if err != nil {
+        e = err
+        return
+    }
+    sb = SignedBlock{
+        Block: b,
+        Sig:   sig,
+    }
+    return
 }

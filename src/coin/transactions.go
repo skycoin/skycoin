@@ -52,21 +52,27 @@ type TransactionOutput struct {
 	Add immutability and hash checks here
 */
 
-//Verify attempts to determine if the transaction is well formed
-//Verify cannot check transaction signatures and signature indices
-//Verify cannot check if outputs being spent exist
-//Verify cannot check if the transaction would create or destroy coins or if the inputs have the required coin base
-func (txn *Transaction) Verify() error {
+// Verify attempts to determine if the transaction is well formed
+// Verify cannot check transaction signatures and signature indices
+// Verify cannot check if outputs being spent exist
+// Verify cannot check if the transaction would create or destroy coins
+// or if the inputs have the required coin base
+func (self *Transaction) Verify() error {
     //SECURITY TODO: check for duplicate output coinbases
     //SECURITY TODO: check for double spending of same input
 
+    h := self.hashInner()
+    if h != self.Header.Hash {
+        return errors.New("Invalid header hash")
+    }
+
     //check signature index fields
-    _maxidx := len(txn.Header.Sigs)
+    _maxidx := len(self.Header.Sigs)
     if _maxidx >= math.MaxUint16 {
         return errors.New("Too many signatures in transaction header")
     }
     maxidx := uint16(_maxidx)
-    for _, tx := range txn.In {
+    for _, tx := range self.In {
         if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
             return errors.New("validateSignatures; invalid SigIdx")
         }
@@ -144,7 +150,7 @@ func (self *Transaction) Serialize() []byte {
 func TransactionDeserialize(b []byte) Transaction {
     var t Transaction
     if err := encoder.DeserializeRaw(b, t); err != nil {
-        log.Panic("Faild to deserialize transaction")
+        log.Panic("Failed to deserialize transaction")
     }
     return t
 }

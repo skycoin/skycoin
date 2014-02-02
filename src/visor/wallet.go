@@ -5,7 +5,6 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "log"
-    "time"
 )
 
 type WalletEntry struct {
@@ -181,25 +180,25 @@ func (self *Wallet) GetEntry(a coin.Address) (WalletEntry, bool) {
 }
 
 // Returns the Balance for a single Address
-func (self *Wallet) Balance(unspent *coin.UnspentPool, a coin.Address) Balance {
-    t := uint64(time.Now().UTC().Unix())
+func (self *Wallet) Balance(unspent *coin.UnspentPool, prevTime uint64,
+    a coin.Address) Balance {
     b := NewBalance(0, 0)
     uxs := unspent.AllForAddress(a)
     for _, ux := range uxs {
-        b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(t)))
+        b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
     }
     return b
 }
 
 // Returns the sum of all Balances for each Address in the wallet
-func (self *Wallet) TotalBalance(unspent *coin.UnspentPool) Balance {
-    t := uint64(time.Now().UTC().Unix())
+func (self *Wallet) TotalBalance(unspent *coin.UnspentPool,
+    prevTime uint64) Balance {
     b := NewBalance(0, 0)
     addrs := self.GetAddresses()
     auxs := unspent.AllForAddresses(addrs)
     for _, uxs := range auxs {
         for _, ux := range uxs {
-            b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(t)))
+            b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
         }
     }
     return b

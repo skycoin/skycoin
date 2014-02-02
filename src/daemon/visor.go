@@ -1,6 +1,7 @@
 package daemon
 
 import (
+    "errors"
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
@@ -49,6 +50,31 @@ func (self *Visor) Shutdown() {
     if err != nil {
         logger.Error("Failed to save wallet file to \"%s\": %v",
             self.Config.Config.WalletFile, err)
+    }
+}
+
+func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
+    m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
+    sent := false
+    for _, c := range pool.Pool.Pool {
+        err := pool.Pool.Dispatcher.SendMessage(c, m)
+        if err == nil {
+            sent = true
+        }
+    }
+    if sent {
+        return nil
+    } else {
+        return errors.New("Failed to AnnounceBlock to anyone")
+    }
+}
+
+func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
+    sb, err := self.Visor.CreateBlock()
+    if err == nil {
+        return self.broadcastBlock(sb, pool)
+    } else {
+        return err
     }
 }
 
@@ -116,11 +142,11 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
         }
         processed = i + 1
     }
-
-    // Announce our new blocks to peers
     if processed == 0 {
         return
     }
+
+    // Announce our new blocks to peers
     m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
     for _, c := range d.Pool.Pool.Pool {
         err := d.Pool.Pool.Dispatcher.SendMessage(c, m)

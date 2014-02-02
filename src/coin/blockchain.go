@@ -96,67 +96,9 @@ func (self *BlockBody) Bytes() []byte {
     return encoder.Serialize(*self)
 }
 
-// Wrapper around UxOuts held by UnspentPool
-type Unspent struct {
-    ux  UxOut
-    // Index into UnspentPool.Arr
-    index int
-}
-
-// Manages Unspents
-type UnspentPool struct {
-    Map map[SHA256]Unspent
-    Arr []UxOut
-    // Total running hash
-    XorHash SHA256
-}
-
-func NewUnspentPool() *UnspentPool {
-    return &UnspentPool{
-        Map:     make(map[SHA256]Unspent),
-        Arr:     make([]UxOut, 0),
-        XorHash: SHA256{},
-    }
-}
-
-// Adds a UxOut to the UnspentPool
-func (self *UnspentPool) Set(ux UxOut) {
-    u := Unspent{
-        ux:    ux,
-        index: len(self.arr),
-    }
-    self.Arr = append(self.Arr, u)
-    h := ux.Hash()
-    self.Map[h] = u
-    self.XorHash.Xor(h)
-}
-
-// Returns a UxOut by hash, and whether it actually exists (if it does not
-// exist, the map would return an empty UxOut)
-func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
-    ux, ok := self.Map[h].Ux
-    return ux, ok
-}
-
-// Returns true if an unspent exists for this hash
-func (self *UnspentPool) Has(h SHA256) bool {
-    _, ok := self.Map[h]
-    return ok
-}
-
-// Removes an unspent from the pool, by hash
-func (self *UnspentPool) Del(h SHA256) {
-    ux, ok := self.Map[h]
-    if !ok {
-        return
-    }
-    delete(self.Map, h)
-    self.Arr = append(self.Arr[:ux.Index], self.Arr[ux.Index+1:]...)
-    self.XorHash.Xor(h)
-}
-
 type Blockchain struct {
-    Head    *Block //link to current head block
+    // Points to current head block
+    Head    *Block
     Blocks  []Block
     Unspent *UnspentPool
 }
@@ -191,7 +133,7 @@ func NewBlockchain(genesisAddress Address) *Blockchain {
             Hours:   genesisCoinHours,
         },
     }
-    bc.AddUnspent(ux)
+    bc.Unspent.Add(ux)
     return bc
 }
 
@@ -199,69 +141,12 @@ func (self *Blockchain) NewBlock() Block {
     return newBlock(self.Head)
 }
 
-/*
-	Operations on unspent outputs
-*/
-
-// Returns the unspent outputs, UxOut, associated with an Address
-func (self *Blockchain) GetUnspentOutputs(address Address) []UxOut {
-    var uxo []UxOut
-    for _, ux := range self.Unspent {
-        if ux.Body.Address == address {
-            uxo = append(uxo, ux)
-        }
-    }
-    return uxo
-}
-
-// Return the UxOut for a given hash
-// TODO -- Slow because we are rehashing everytime we do lookup
-func (self *Blockchain) GetUnspentByHash(hash SHA256) (UxOut, error) {
-    for i, ux := range self.Unspent {
-        if hash == ux.Hash() {
-            return self.Unspent[i], nil
-        }
-    }
-    return UxOut{}, errors.New("Unspent transaction does not exist")
-}
-
-// Returns the hashes of all unspent outputs xor'd
-func (self *Blockchain) HashUnspent() SHA256 {
-    var h SHA256
-    for _, ux := range self.Unspent {
-        h = h.Xor(ux.Hash()) // dont rehash each time
-    }
-    return h
-}
-
-// Add a new UxOut to the list of unspent transactions
-func (self *Blockchain) AddUnspent(ux UxOut) {
-    hash := ux.Hash()
-    if _, err := self.GetUnspentByHash(hash); err == nil {
-        log.Panic("Unspent transaction already known")
-    }
-    self.Unspent = append(self.Unspent, ux)
-}
-
-// Removes a UxOut for a given hash
-// TODO -- Need to save, in order to do rollback
-func (self *Blockchain) RemoveUnspent(hash SHA256) {
-    for i, ux := range self.Unspent {
-        if hash == ux.Hash() {
-            //remove spent output from array
-            self.Unspent = append(self.Unspent[:i], self.Unspent[i+1:]...)
-            return
-        }
-    }
-    log.Panic("Unspent transaction not found")
-}
-
 // Checks that all inputs exists
 func (self *Blockchain) validateInputs(b *Block) error {
     for _, t := range b.Body.Transactions {
         for _, tx := range t.In {
-            _, err := self.GetUnspentByHash(tx.UxOut)
-            if err != nil {
+            _, exists := self.Unspent.Get(tx.UxOut)
+            if !exists {
                 return errors.New("validateInputs: input does not exists")
             }
         }
@@ -293,11 +178,11 @@ func (self *Blockchain) validateSignatures(b *Block) error {
     //check signatures
     for _, t := range b.Body.Transactions {
         for _, tx := range t.In {
-            ux, err := self.GetUnspentByHash(tx.UxOut) // output being spent
-            if err != nil {
-                return err
+            ux, exists := self.Unspent.Get(tx.UxOut) // output being spent
+            if !exists {
+                return errors.New("Unknown output")
             }
-            err = ChkSig(ux.Body.Address, t.Header.Hash,
+            err := ChkSig(ux.Body.Address, t.Header.Hash,
                 t.Header.Sigs[tx.SigIdx])
             if err != nil {
                 return err // signature check failed
@@ -393,8 +278,8 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
     }
     //make sure output does not already exist in unspent blocks
     for _, hash := range outputs {
-        out, err := self.GetUnspentByHash(hash)
-        if err == nil {
+        out, exists := self.Unspent.Get(hash)
+        if exists {
             if out.Hash() != hash {
                 log.Panic("impossible")
             }
@@ -408,9 +293,9 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
         var coinsIn uint64
         var hoursIn uint64
         for _, tx := range t.In {
-            ux, err := self.GetUnspentByHash(tx.UxOut)
-            if err != nil {
-                return err
+            ux, exists := self.Unspent.Get(tx.UxOut)
+            if !exists {
+                return errors.New("Unknown output")
             }
             coinsIn += ux.Body.Coins
             hoursIn += ux.CoinHours(b.Header.Time)
@@ -440,9 +325,9 @@ func (self *Blockchain) validateBlockBody(b *Block) error {
         var hoursIn uint64
         var hoursOut uint64
         for _, tx := range t.In {
-            ux, err := self.GetUnspentByHash(tx.UxOut)
-            if err != nil {
-                return err
+            ux, exists := self.Unspent.Get(tx.UxOut)
+            if !exists {
+                return errors.New("Unknown output")
             }
             hoursIn += ux.CoinHours(self.Head.Header.Time) //valid in future
         }
@@ -472,9 +357,11 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
 
     for _, tx := range b.Body.Transactions {
         //remove spent outputs
+        hashes := make([]SHA256, 0, len(tx.In))
         for _, ti := range tx.In {
-            self.RemoveUnspent(ti.UxOut)
+            hashes = append(hashes, ti.UxOut)
         }
+        self.Unspent.DelMultiple(hashes)
         //create new outputs
         for _, to := range tx.Out {
             //TODO: use NewUxOut
@@ -485,7 +372,7 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
             ux.Body.Hours = to.Hours
 
             ux.Head.Time = b.Header.Time
-            self.AddUnspent(ux)
+            self.Unspent.Add(ux)
         }
     }
 
@@ -500,8 +387,8 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
 
     //check that all inputs exist and are unspent
     for _, tx := range t.In {
-        _, err := self.GetUnspentByHash(tx.UxOut)
-        if err != nil {
+        _, exists := self.Unspent.Get(tx.UxOut)
+        if !exists {
             return errors.New("Unspent output does not exist")
         }
     }
@@ -534,11 +421,11 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
 
     //check signatures
     for _, tx := range t.In {
-        ux, err := self.GetUnspentByHash(tx.UxOut) //output being spent
-        if err != nil {
-            return err
+        ux, exists := self.Unspent.Get(tx.UxOut) //output being spent
+        if !exists {
+            return errors.New("Unknown output")
         }
-        err = ChkSig(ux.Body.Address, t.Header.Hash,
+        err := ChkSig(ux.Body.Address, t.Header.Hash,
             t.Header.Sigs[tx.SigIdx])
         if err != nil {
             return err // signature check failed
@@ -550,9 +437,9 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
     var hoursIn uint64
 
     for _, tx := range t.In {
-        ux, err := self.GetUnspentByHash(tx.UxOut)
-        if err != nil {
-            return err
+        ux, exists := self.Unspent.Get(tx.UxOut)
+        if !exists {
+            return errors.New("Unknown output")
         }
         coinsIn += ux.Body.Coins
         hoursIn += ux.CoinHours(self.Head.Header.Time)

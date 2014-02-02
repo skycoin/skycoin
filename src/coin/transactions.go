@@ -37,7 +37,7 @@ type TransactionHeader struct { //not hashed
 */
 type TransactionInput struct {
     SigIdx uint16 //signature index
-    UxOut  SHA256 //Unspent Block
+    UxOut  SHA256 //Unspent Block that is being spent
 }
 
 //hash output/name is function of Hash
@@ -50,6 +50,11 @@ type TransactionOutput struct {
 /*
 	Add immutability and hash checks here
 */
+
+// Returns an error if the Transaction is invalid
+func (self *Transaction) Verify() error {
+    return nil
+}
 
 /*
 	Check that all sigs all used

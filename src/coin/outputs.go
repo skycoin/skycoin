@@ -4,40 +4,88 @@ import (
     "github.com/skycoin/skycoin/src/lib/encoder"
 )
 
-
-
-type UxManager struct {
-    UxMap map[SHA256]int
-    UXArray []Ux
+// Manages Unspents
+type UnspentPool struct {
+    // Points to a UxOut in Arr
+    Map map[SHA256]int
+    Arr []UxOut
+    // Total running hash
+    XorHash SHA256
 }
 
-type (UxManager *self) AppendUx(ux Ux) {
-
-    _, exists := self.UxMap[hash]
-    if exists {
-        log.Panic()
+func NewUnspentPool() *UnspentPool {
+    return &UnspentPool{
+        Arr:     make([]UxOut, 0),
+        Map:     make(map[SHA256]int),
+        XorHash: SHA256{},
     }
-    self.UXArray = append(self.UXArray, ux)
-    //TODO: check this element does not exist!
-    UxMap[ux.Hash()] = ux 
 }
 
-type (UxManager *self) RemoveUx(hash SHA256) {
-    //TODO: check element exists
-    idx, exists := self.UxMap[hash]
-    if !exists {
-        log.Panic()
-    }
-    delete(self.UxMap, hash)
-    append(self.UXArray[:i], self.UXArray[i+1:]...)
+// Adds a UxOut to the UnspentPool
+func (self *UnspentPool) Add(ux UxOut) {
+    index := len(self.Arr)
+    h := ux.Hash()
+    self.Arr = append(self.Arr, ux)
+    self.Map[h] = index
+    self.XorHash.Xor(h)
 }
 
-type (UxManager *self) GetUx(hash SHA256) Ux {
-    idx, exists := self.UxMap[hash]
-    if !exists {
-        log.Panic()
+// Returns a UxOut by hash, and whether it actually exists (if it does not
+// exist, the map would return an empty UxOut)
+func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
+    i, ok := self.Map[h]
+    return self.Arr[i], ok
+}
+
+// Returns true if an unspent exists for this hash
+func (self *UnspentPool) Has(h SHA256) bool {
+    _, ok := self.Map[h]
+    return ok
+}
+
+// Removes an unspent from the pool, by hash
+func (self *UnspentPool) Del(h SHA256) {
+    i, ok := self.Map[h]
+    if !ok {
+        return
     }
-    return self.UxArray[idx]
+    delete(self.Map, h)
+    self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
+    for j := i; j < len(self.Arr); j++ {
+        // TODO -- store the UxOut hash in its header
+        self.Map[self.Arr[j].Hash()] = j
+    }
+    self.XorHash.Xor(h)
+}
+
+// Delete multiple hashes in a batch
+func (self *UnspentPool) DelMultiple(hashes []SHA256) {
+    lowest := len(self.Arr)
+    for _, h := range hashes {
+        i, ok := self.Map[h]
+        if !ok {
+            continue
+        }
+        if i < lowest {
+            lowest = i
+        }
+        delete(self.Map, h)
+        self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
+        self.XorHash.Xor(h)
+    }
+    for j := lowest; j < len(self.Arr); j++ {
+        self.Map[self.Arr[j].Hash()] = j
+    }
+}
+
+func (self *UnspentPool) AllForAddress(a Address) []UxOut {
+    uxo := make([]UxOut, 0)
+    for _, ux := range self.Arr {
+        if ux.Body.Address == a {
+            uxo = append(uxo, ux)
+        }
+    }
+    return uxo
 }
 
 /*

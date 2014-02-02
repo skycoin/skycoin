@@ -270,13 +270,17 @@ func (self *Visor) MostRecentBkSeq() uint64 {
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
-func (self *Visor) RecordTxn(txn coin.Transaction) {
+func (self *Visor) RecordTxn(txn coin.Transaction) error {
     // TODO -- verify transaction as much as possible.
     // TODO -- look for this transaction in the blockchain, by hash
-    logger.Warning("Saving txn as unconfirmed, but we aren't checking " +
-        "that it is valid and isnt already in a block")
-
+    if err := txn.Verify(); err != nil {
+        return err
+    }
+    if err := self.blockchain.VerifyTransaction(txn); err != nil {
+        return err
+    }
     self.UnconfirmedTxns.Txns[txn.Header.Hash] = txn
+    return nil
 }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block

@@ -141,6 +141,15 @@ func (self *Blockchain) NewBlock() Block {
     return newBlock(self.Head)
 }
 
+/*
+   Validation
+*/
+
+func (self *Blockchain) VerifyTransaction(txn Transaction) error {
+    logger.Warning("Blockchain.VerifyTransaction() not implemented")
+    return nil
+}
+
 // Checks that all inputs exists
 func (self *Blockchain) validateInputs(b *Block) error {
     for _, t := range b.Body.Transactions {
@@ -153,10 +162,6 @@ func (self *Blockchain) validateInputs(b *Block) error {
     }
     return nil
 }
-
-/*
-	Validation
-*/
 
 //check the signatures in the block
 func (self *Blockchain) validateSignatures(b *Block) error {

@@ -53,6 +53,7 @@ type TransactionOutput struct {
 
 // Returns an error if the Transaction is invalid
 func (self *Transaction) Verify() error {
+    logger.Warning("Transaction.Verify() not implemented")
     return nil
 }
 

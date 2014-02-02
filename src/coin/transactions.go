@@ -97,14 +97,6 @@ func (self *Transaction) SetSig(idx uint16, sec SecKey) {
     self.Header.Sigs[idx] = sig
 }
 
-// Hashes only the Transction Inputs & Outputs
-func (self *Transaction) hashInner() SHA256 {
-    b1 := encoder.Serialize(self.In)
-    b2 := encoder.Serialize(self.Out)
-    b3 := append(b1, b2...)
-    return SumSHA256(b3)
-}
-
 // Hashes an entire Transaction struct
 func (self *Transaction) Hash() SHA256 {
     b1 := encoder.Serialize(*self)
@@ -123,6 +115,15 @@ func TransactionDeserialize(b []byte) Transaction {
     return t
 }
 
+// Saves the txn body hash to TransactionHeader.Hash
 func (self *Transaction) UpdateHeader() {
     self.Header.Hash = self.hashInner()
+}
+
+// Hashes only the Transction Inputs & Outputs
+func (self *Transaction) hashInner() SHA256 {
+    b1 := encoder.Serialize(self.In)
+    b2 := encoder.Serialize(self.Out)
+    b3 := append(b1, b2...)
+    return SumSHA256(b3)
 }

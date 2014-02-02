@@ -68,8 +68,8 @@ func addressFromBytes(b []byte) (Address, error) {
     if len(b) != keyLen+len(a.ChkSum)+1 {
         return a, errors.New("Invalid address bytes")
     }
-    a.Version = b[0]
-    copy(a.Key[:], b[1:keyLen+1])
+    copy(a.Key[:], b[:keyLen])
+    a.Version = b[keyLen]
     copy(a.ChkSum[:], b[keyLen+1:])
     if !a.IsValidChecksum() {
         return a, errors.New("Invalid checksum")
@@ -87,8 +87,9 @@ func (self *Address) String() string {
 func (self *Address) Bytes() []byte {
     keyLen := len(self.Key)
     b := make([]byte, keyLen+len(self.ChkSum)+1)
-    b[0] = self.Version
-    copy(b[1:], self.Key[:])
+    copy(b[:keyLen], self.Key[:])
+    // Version comes after the address to support vanity addresses
+    b[keyLen] = self.Version
     copy(b[keyLen+1:], self.ChkSum[:])
     return b
 }

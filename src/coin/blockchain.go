@@ -96,16 +96,78 @@ func (self *BlockBody) Bytes() []byte {
     return encoder.Serialize(*self)
 }
 
+// Wrapper around UxOuts held by UnspentPool
+type Unspent struct {
+    ux  UxOut
+    // Index into UnspentPool.Arr
+    index int
+}
+
+// Manages Unspents
+type UnspentPool struct {
+    Map map[SHA256]Unspent
+    Arr []UxOut
+    // Total running hash
+    XorHash SHA256
+}
+
+func NewUnspentPool() *UnspentPool {
+    return &UnspentPool{
+        Map:     make(map[SHA256]Unspent),
+        Arr:     make([]UxOut, 0),
+        XorHash: SHA256{},
+    }
+}
+
+// Adds a UxOut to the UnspentPool
+func (self *UnspentPool) Set(ux UxOut) {
+    u := Unspent{
+        ux:    ux,
+        index: len(self.arr),
+    }
+    self.Arr = append(self.Arr, u)
+    h := ux.Hash()
+    self.Map[h] = u
+    self.XorHash.Xor(h)
+}
+
+// Returns a UxOut by hash, and whether it actually exists (if it does not
+// exist, the map would return an empty UxOut)
+func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
+    ux, ok := self.Map[h].Ux
+    return ux, ok
+}
+
+// Returns true if an unspent exists for this hash
+func (self *UnspentPool) Has(h SHA256) bool {
+    _, ok := self.Map[h]
+    return ok
+}
+
+// Removes an unspent from the pool, by hash
+func (self *UnspentPool) Del(h SHA256) {
+    ux, ok := self.Map[h]
+    if !ok {
+        return
+    }
+    delete(self.Map, h)
+    self.Arr = append(self.Arr[:ux.Index], self.Arr[ux.Index+1:]...)
+    self.XorHash.Xor(h)
+}
+
 type Blockchain struct {
     Head    *Block //link to current head block
     Blocks  []Block
-    Unspent []UxOut
+    Unspent *UnspentPool
 }
 
 func NewBlockchain(genesisAddress Address) *Blockchain {
     logger.Debug("Creating new block chain with genesis %s",
         genesisAddress.String())
-    var bc *Blockchain = &Blockchain{}
+    var bc *Blockchain = &Blockchain{
+        Blocks:  make([]Block, 0),
+        Unspent: NewUnspentPool(),
+    }
 
     //set genesis block
     var b Block = Block{} // genesis block

@@ -14,9 +14,12 @@ var (
 )
 
 const (
-    blockHeaderSecondsIncrement uint64 = 15
-    genesisCoinVolume           uint64 = 100 * 1e6
-    genesisCoinHours            uint64 = 1024 * 1024 * 1024
+    blockCreationInterval uint64 = 15
+    // If the block header time is further in the future than this, it is
+    // rejected.
+    blockTimeFutureMax uint64 = 300
+    genesisCoinVolume  uint64 = 100 * 1e6
+    genesisCoinHours   uint64 = 1024 * 1024 * 1024
     //genesisBlockHashString      string = "Skycoin v0.1"
 )
 
@@ -205,11 +208,10 @@ func (self *Blockchain) validateBlockHeader(b *Block) error {
         return errors.New("BkSeq invalid")
     }
     //check Time
-    // Every 15 seconds?
-    if b.Header.Time < self.Head.Header.Time+15 {
+    if b.Header.Time < self.Head.Header.Time+blockCreationInterval {
         return errors.New("time invalid: block too soon")
     }
-    if b.Header.Time > uint64(time.Now().UTC().Unix()+300) {
+    if b.Header.Time > uint64(time.Now().UTC().Unix()+blockTimeFutureMax) {
         return errors.New("Block is too far in future; check clock")
     }
 

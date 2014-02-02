@@ -246,6 +246,9 @@ func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 func (self *GiveTxnsMessage) Process(d *Daemon) {
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        d.Visor.Visor.RecordTxn(txn)
+        err := d.Visor.Visor.RecordTxn(txn)
+        if err != nil {
+            logger.Warning("Failed to record txn: %v", err)
+        }
     }
 }

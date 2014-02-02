@@ -95,41 +95,39 @@ func NewVisorKeys(master WalletEntry) VisorKeys {
     }
 }
 
-// Holds references to signed blocks outside of the blockchain
 type SignedBlock struct {
     Block coin.Block
-    // Block signature
-    Sig coin.Sig
+    Sig   coin.Sig
 }
 
-// Manages known SignedBlocks as received.
+// Manages known BlockSigs as received.
 // TODO -- support out of order blocks.  This requires a change to the
 // message protocol to support ranges similar to bitcoin's locator hashes.
 // We also need to keep track of whether a block has been executed so that
 // as continuity is established we can execute chains of blocks.
 // TODO -- Since we will need to hold blocks that cannot be verified
 // immediately against the blockchain, we need to be able to hold multiple
-// SignedBlocks per BkSeq, or use hashes as keys.  For now, this is not a
+// BlockSigs per BkSeq, or use hashes as keys.  For now, this is not a
 // problem assuming the signed blocks created from master are valid blocks,
 // because we can check the signature independently of the blockchain.
-type SignedBlocks struct {
-    Blocks map[uint64]SignedBlock
+type BlockSigs struct {
+    Sigs   map[uint64]coin.Sig
     MaxSeq uint64
     MinSeq uint64
 }
 
-func NewSignedBlocks() SignedBlocks {
-    return SignedBlocks{
-        Blocks: make(map[uint64]SignedBlock),
+func NewBlockSigs() BlockSigs {
+    return BlockSigs{
+        Sigs:   make(map[uint64]coin.Sig),
         MaxSeq: 0,
         MinSeq: 0,
     }
 }
 
 // Adds a SignedBlock
-func (self *SignedBlocks) record(sb *SignedBlock) {
+func (self *BlockSigs) record(sb *SignedBlock) {
     seq := sb.Block.Header.BkSeq
-    self.Blocks[seq] = *sb
+    self.Sigs[seq] = sb.Sig
     if seq > self.MaxSeq {
         self.MaxSeq = seq
     }
@@ -180,7 +178,7 @@ type Visor struct {
     // Master & personal keys
     keys            VisorKeys
     blockchain      *coin.Blockchain
-    signedBlocks    SignedBlocks
+    blockSigs       BlockSigs
     UnconfirmedTxns *UnconfirmedTxnPool
 }
 
@@ -198,7 +196,7 @@ func NewVisor(master WalletEntry, isMaster bool) Visor {
         IsMaster:        isMaster,
         keys:            NewVisorKeys(master),
         blockchain:      coin.NewBlockchain(master.Address),
-        signedBlocks:    NewSignedBlocks(),
+        blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
     }
 }
@@ -234,7 +232,7 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     // TODO -- save them even if out of order, and execute later
     // But make sure all prechecking as possible is done
     // TODO -- check if bitcoin allows blocks to be receiving out of order
-    self.signedBlocks.record(&b)
+    self.blockSigs.record(&b)
     // Remove the transactions in the Block from the unconfirmed pool
     for _, tx := range b.Block.Body.Transactions {
         delete(self.UnconfirmedTxns.Txns, tx.Header.Hash)
@@ -244,16 +242,19 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 
 // Returns N signed blocks more recent than Seq. Returns nil if no blocks
 func (self *Visor) GetSignedBlocksSince(seq uint64, ct int) []SignedBlock {
-    if seq < self.signedBlocks.MinSeq {
-        seq = self.signedBlocks.MinSeq
+    if seq < self.blockSigs.MinSeq {
+        seq = self.blockSigs.MinSeq
     }
-    if seq >= self.signedBlocks.MaxSeq {
+    if seq >= self.blockSigs.MaxSeq {
         return nil
     }
     blocks := make([]SignedBlock, 0, ct)
-    for i := seq; i < self.signedBlocks.MaxSeq; i++ {
-        if b, exists := self.signedBlocks.Blocks[i]; exists {
-            blocks = append(blocks, b)
+    for i := seq; i < self.blockSigs.MaxSeq; i++ {
+        if sig, exists := self.blockSigs.Sigs[i]; exists {
+            blocks = append(blocks, SignedBlock{
+                Sig:   sig,
+                Block: self.blockchain.Blocks[i],
+            })
         }
     }
     if len(blocks) == 0 {
@@ -265,14 +266,12 @@ func (self *Visor) GetSignedBlocksSince(seq uint64, ct int) []SignedBlock {
 
 // Returns the highest BkSeq we know
 func (self *Visor) MostRecentBkSeq() uint64 {
-    return self.signedBlocks.MaxSeq
+    return self.blockSigs.MaxSeq
 }
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction) error {
-    // TODO -- verify transaction as much as possible.
-    // TODO -- look for this transaction in the blockchain, by hash
     if err := txn.Verify(); err != nil {
         return err
     }

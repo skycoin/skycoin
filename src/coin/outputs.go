@@ -180,7 +180,7 @@ func (self UxOut) HashTotal() *SHA256 {
 	Creation time of transaction cant be hashed
 */
 
-//calculate coinhour balance of output
+//calculate coinhour balance of output. t is the current unix utc time
 func (self *UxOut) CoinHours(t uint64) uint64 {
     if t < self.Head.Time {
         return 0

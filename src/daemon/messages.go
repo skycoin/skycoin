@@ -303,6 +303,9 @@ func (self *IntroductionMessage) Process(d *Daemon) {
     if err != nil {
         logger.Error("Failed to add peer: %v", err)
     }
+
+    // Request blocks immediately after they're confirmed
+    d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

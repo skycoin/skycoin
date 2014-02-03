@@ -5,6 +5,7 @@ import (
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "time"
 )
 
 type VisorConfig struct {
@@ -13,13 +14,16 @@ type VisorConfig struct {
     MasterKeysFile string
     // Master public/secret key and genesis address
     MasterKeys visor.WalletEntry
+    // How often to request blocks from peers
+    BlocksRequestRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:         visor.NewVisorConfig(),
-        MasterKeysFile: "",
-        MasterKeys:     visor.WalletEntry{},
+        Config:            visor.NewVisorConfig(),
+        MasterKeysFile:    "",
+        MasterKeys:        visor.WalletEntry{},
+        BlocksRequestRate: time.Minute * 15,
     }
 }
 
@@ -60,6 +64,32 @@ func (self *Visor) Shutdown() {
         logger.Info("Saved blockchain to \"%s\"", bcFile)
     } else {
         logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
+    }
+}
+
+// Sends a GetBlocksMessage to all connections
+func (self *Visor) RequestBlocks(pool *Pool) {
+    m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+    for _, c := range pool.Pool.Pool {
+        err := pool.Pool.Dispatcher.SendMessage(c, m)
+        if err != nil {
+            logger.Error("Failed to send GetBlocksMessage to %s\n", c.Addr())
+        }
+    }
+}
+
+// Sends a GetBlocksMessage to one connection
+func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
+    m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+    c := pool.Pool.Addresses[addr]
+    if c == nil {
+        logger.Warning("Tried to send GetBlocksMessage to %s, but we're "+
+            "not connected", addr)
+        return
+    }
+    err := pool.Pool.Dispatcher.SendMessage(c, m)
+    if err != nil {
+        logger.Error("Failed to send GetBlocksMessage to %s\n", c.Addr())
     }
 }
 

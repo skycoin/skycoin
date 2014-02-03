@@ -219,6 +219,7 @@ func (self *Daemon) Start(quit chan int) {
         blockCreationTicker.Stop()
     }
     unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
+    blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
 
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
     cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
@@ -297,6 +298,8 @@ main:
             }
         case <-unconfirmedRefreshTicker:
             self.Visor.Visor.RefreshUnconfirmed()
+        case <-blocksRequestTicker:
+            self.Visor.RequestBlocks(self.Pool)
 
         case <-quit:
             break main

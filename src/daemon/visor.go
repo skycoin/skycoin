@@ -5,6 +5,7 @@ import (
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "time"
 )
 
 type VisorConfig struct {
@@ -13,13 +14,16 @@ type VisorConfig struct {
     MasterKeysFile string
     // Master public/secret key and genesis address
     MasterKeys visor.WalletEntry
+    // How often to request blocks from peers
+    BlocksRequestRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:         visor.NewVisorConfig(),
-        MasterKeysFile: "",
-        MasterKeys:     visor.WalletEntry{},
+        Config:            visor.NewVisorConfig(),
+        MasterKeysFile:    "",
+        MasterKeys:        visor.WalletEntry{},
+        BlocksRequestRate: time.Minute * 15,
     }
 }
 
@@ -48,29 +52,53 @@ func NewVisor(c VisorConfig) *Visor {
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
     walletFile := self.Config.Config.WalletFile
-    err := self.Visor.Wallet.Save(walletFile)
+    err := self.Visor.SaveWallet()
     if err == nil {
-        logger.Info("Saved wallet file to \"%s\"", walletFile)
+        logger.Info("Saved wallet to \"%s\"", walletFile)
     } else {
-        logger.Error("Failed to save wallet file to \"%s\": %v", walletFile,
-            err)
+        logger.Critical("Failed to save wallet to \"%s\": %v", walletFile, err)
+    }
+    bcFile := self.Config.Config.BlockchainFile
+    err = self.Visor.SaveBlockchain()
+    if err == nil {
+        logger.Info("Saved blockchain to \"%s\"", bcFile)
+    } else {
+        logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
+    }
+}
+
+// Sends a GetBlocksMessage to all connections
+func (self *Visor) RequestBlocks(pool *Pool) {
+    m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
+    for a, _ := range errs {
+        logger.Error("Failed to send GetBlocksMessage to %s\n", a)
+    }
+}
+
+// Sends a GetBlocksMessage to one connection
+func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
+    m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+    c := pool.Pool.Addresses[addr]
+    if c == nil {
+        logger.Warning("Tried to send GetBlocksMessage to %s, but we're "+
+            "not connected", addr)
+        return
+    }
+    err := pool.Pool.Dispatcher.SendMessage(c, m)
+    if err != nil {
+        logger.Error("Failed to send GetBlocksMessage to %s\n", c.Addr())
     }
 }
 
 // Sends a signed block to all connections
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
-    sent := false
-    for _, c := range pool.Pool.Pool {
-        err := pool.Pool.Dispatcher.SendMessage(c, m)
-        if err == nil {
-            sent = true
-        }
-    }
-    if sent {
-        return nil
-    } else {
+    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
+    if len(errs) == len(pool.Pool.Pool) {
         return errors.New("Failed to AnnounceBlock to anyone")
+    } else {
+        return nil
     }
 }
 
@@ -155,11 +183,17 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 
     // Announce our new blocks to peers
     m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-    for _, c := range d.Pool.Pool.Pool {
-        err := d.Pool.Pool.Dispatcher.SendMessage(c, m)
-        if err != nil {
-            logger.Warning("Failed to announce blocks to %s", c.Addr())
-        }
+    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
+    for a, _ := range errs {
+        logger.Warning("Failed to announce blocks to %s", a)
+    }
+
+    // Send a new GetBlocksMessage, in case we aren't finished yet
+    bkSeq := d.Visor.Visor.MostRecentBkSeq()
+    n := NewGetBlocksMessage(bkSeq)
+    errs = d.Pool.Pool.Dispatcher.BroadcastMessage(n)
+    for a, _ := range errs {
+        logger.Warning("Failed to send GetBlocksMessage to %s", a)
     }
 }
 

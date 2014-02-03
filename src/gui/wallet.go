@@ -44,7 +44,12 @@ func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
             Error400(w, "Invalid destination address")
             return
         }
-
+        sfee := r.FormValue("fee")
+        fee, err := strconv.ParseUint(sfee, 10, 64)
+        if err != nil {
+            Error400(w, "Invalid \"fee\" value")
+            return
+        }
         scoins := r.FormValue("coins")
         shours := r.FormValue("hours")
         coins, err := strconv.ParseUint(scoins, 10, 64)
@@ -57,7 +62,7 @@ func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
             Error400(w, "Invalid \"hours\" value")
             return
         }
-        m := rpc.Spend(visor.NewBalance(coins, hours), dst)
+        m := rpc.Spend(visor.NewBalance(coins, hours), fee, dst)
         if SendJSON(w, m) != nil {
             Error500(w)
         }

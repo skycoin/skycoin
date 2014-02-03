@@ -44,17 +44,21 @@ func LoadJSON(filename string, thing interface{}) error {
 
 func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
     data, err := json.Marshal(thing)
-    if err != nil {
+    if err == nil {
+        return SaveBinary(filename, data, mode)
+    } else {
         return err
     }
+}
+
+func SaveBinary(filename string, data []byte, mode os.FileMode) error {
     // Write the new file to a temporary
     tmpname := filename + ".tmp"
-    err = ioutil.WriteFile(tmpname, data, mode)
-    if err != nil {
+    if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
         return err
     }
     // Backup the previous file, if there was one
-    _, err = os.Stat(filename)
+    _, err := os.Stat(filename)
     if !os.IsNotExist(err) {
         err = os.Rename(filename, filename+".bak")
         if err != nil {
@@ -63,4 +67,5 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
     }
     // Move the temporary to the new file
     return os.Rename(tmpname, filename)
+
 }

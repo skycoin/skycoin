@@ -218,6 +218,8 @@ func (self *Daemon) Start(quit chan int) {
     if !self.Visor.Config.Config.IsMaster {
         blockCreationTicker.Stop()
     }
+    unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
+    blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
 
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
     cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
@@ -284,8 +286,9 @@ main:
         // Process any pending API requests
         case fn := <-self.RPC.requests:
             self.RPC.responses <- fn()
+
+        // TODO -- run these in the Visor
         // Create blocks, if master chain
-        // TODO -- run this in the Visor
         case <-blockCreationTicker.C:
             if e := self.Visor.CreateAndPublishBlock(self.Pool); e != nil {
                 logger.Error("Failed to create and publish block: %v", e)
@@ -293,6 +296,11 @@ main:
                 // Not a critical error, but we want it very visible in logs
                 logger.Critical("Created and published a new block")
             }
+        case <-unconfirmedRefreshTicker:
+            self.Visor.Visor.RefreshUnconfirmed()
+        case <-blocksRequestTicker:
+            self.Visor.RequestBlocks(self.Pool)
+
         case <-quit:
             break main
         }

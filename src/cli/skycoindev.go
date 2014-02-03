@@ -32,8 +32,10 @@ var DevArgs = DevConfig{Config{
     logLevel: "DEBUG",
 
     // Wallets
-    WalletFile:    "",
-    WalletSizeMin: 100,
+    WalletFile:     "",
+    WalletSizeMin:  100,
+    BlockchainFile: "",
+    CanSpend:       true,
 
     // Centralized network configuration
     MasterPublic:   "0223f1cd8652e64f0b2b6960e25c5799426220d44d50d016a4c64ecefb5b0043db",
@@ -103,5 +105,8 @@ func (self *DevConfig) register() {
         "location of the wallet file. Defaults to ~/.skycoin/wallet.json")
     flag.IntVar(&self.WalletSizeMin, "wallet-size-min", self.WalletSizeMin,
         "How many address the wallet should have, at a minimum")
-
+    flag.StringVar(&self.BlockchainFile, "blockchain-file", self.BlockchainFile,
+        "location of the blockchain file. Default to ~/.skycoin/blockchain.bin")
+    flag.BoolVar(&self.CanSpend, "can-spend", self.CanSpend,
+        "is allowed to make outgoing transactions")
 }

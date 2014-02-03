@@ -57,7 +57,7 @@ type Connection struct {
 // Result of a Spend() operation
 type Spend struct {
     RemainingBalance visor.Balance
-    Error            error
+    Error            string
 }
 
 // An array of connections
@@ -98,8 +98,8 @@ func (self *RPC) GetBalance(a coin.Address) interface{} {
 }
 
 // Returns a *Spend
-func (self *RPC) Spend(amt visor.Balance, dest coin.Address) interface{} {
-    self.requests <- func() interface{} { return self.spend(amt, dest) }
+func (self *RPC) Spend(amt visor.Balance, fee uint64, dest coin.Address) interface{} {
+    self.requests <- func() interface{} { return self.spend(amt, fee, dest) }
     r := <-self.responses
     return r
 }
@@ -160,7 +160,7 @@ func (self *RPC) getTotalBalance() *visor.Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b := self.Daemon.Visor.Visor.TotalBalance()
+    b := self.Daemon.Visor.Visor.TotalBalancePredicted()
     return &b
 }
 
@@ -168,38 +168,31 @@ func (self *RPC) getBalance(a coin.Address) *visor.Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b := self.Daemon.Visor.Visor.Balance(a)
+    b := self.Daemon.Visor.Visor.BalancePredicted(a)
     return &b
 }
 
-func (self *RPC) spend(amt visor.Balance, dest coin.Address) *Spend {
+func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    txn, err := self.Daemon.Visor.Visor.Spend(amt, dest)
-    if err != nil {
+    txn, err := self.Daemon.Visor.Visor.Spend(amt, fee, dest)
+    if err == nil {
         err = self.Daemon.Visor.Visor.RecordTxn(txn)
         if err != nil {
             m := NewGiveTxnsMessage([]coin.Transaction{txn})
-            // TODO -- SendToAll method in gnet
-            sent := false
-            for _, c := range self.Daemon.Pool.Pool.Pool {
-                err := self.Daemon.Pool.Pool.Dispatcher.SendMessage(c, m)
-                if err != nil {
-                    logger.Warning("Failed to send GiveTxnsMessage to %s",
-                        c.Addr())
-                } else {
-                    sent = true
-                }
+            errs := self.Daemon.Pool.Pool.Dispatcher.BroadcastMessage(m)
+            for a, _ := range errs {
+                logger.Warning("Failed to send GiveTxnsMessage to %s", a)
             }
-            if !sent {
+            if len(errs) == len(self.Daemon.Pool.Pool.Pool) {
                 err = errors.New("Failed to send GiveTxnsMessage to anyone")
             }
         }
     }
     return &Spend{
         RemainingBalance: *(self.getTotalBalance()),
-        Error:            err,
+        Error:            err.Error(),
     }
 }
 

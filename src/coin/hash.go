@@ -2,11 +2,11 @@ package coin
 
 import (
     "crypto/sha256"
-    "github.com/skycoin/skycoin/src/lib/encoder"
+    "encoding/hex"
+    "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
     "log"
-    "encoding/hex"
 )
 
 var (

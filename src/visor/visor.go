@@ -3,9 +3,14 @@ package visor
 import (
     "errors"
     "github.com/op/go-logging"
+    "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
+    "io/ioutil"
     "log"
     "os"
+    "sort"
+    "time"
 )
 
 var (
@@ -33,82 +38,6 @@ func NewVisorKeys(master WalletEntry) VisorKeys {
     }
 }
 
-type SignedBlock struct {
-    Block coin.Block
-    Sig   coin.Sig
-}
-
-// Manages known BlockSigs as received.
-// TODO -- support out of order blocks.  This requires a change to the
-// message protocol to support ranges similar to bitcoin's locator hashes.
-// We also need to keep track of whether a block has been executed so that
-// as continuity is established we can execute chains of blocks.
-// TODO -- Since we will need to hold blocks that cannot be verified
-// immediately against the blockchain, we need to be able to hold multiple
-// BlockSigs per BkSeq, or use hashes as keys.  For now, this is not a
-// problem assuming the signed blocks created from master are valid blocks,
-// because we can check the signature independently of the blockchain.
-type BlockSigs struct {
-    Sigs   map[uint64]coin.Sig
-    MaxSeq uint64
-    MinSeq uint64
-}
-
-func NewBlockSigs() BlockSigs {
-    return BlockSigs{
-        Sigs:   make(map[uint64]coin.Sig),
-        MaxSeq: 0,
-        MinSeq: 0,
-    }
-}
-
-// Adds a SignedBlock
-func (self *BlockSigs) record(sb *SignedBlock) {
-    seq := sb.Block.Header.BkSeq
-    self.Sigs[seq] = sb.Sig
-    if seq > self.MaxSeq {
-        self.MaxSeq = seq
-    }
-    if seq < self.MinSeq {
-        self.MinSeq = seq
-    }
-}
-
-// Holds unconfirmed transactions
-type UnconfirmedTxnPool struct {
-    Txns map[coin.SHA256]coin.Transaction
-}
-
-func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
-    return &UnconfirmedTxnPool{
-        Txns: make(map[coin.SHA256]coin.Transaction),
-    }
-}
-
-// Returns txn hashes with known ones removed
-func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
-    unknown := make([]coin.SHA256, 0)
-    for _, h := range txns {
-        _, known := self.Txns[h]
-        if !known {
-            unknown = append(unknown, h)
-        }
-    }
-    return unknown
-}
-
-// Returns all known coin.Transactions from the pool, given hashes to select
-func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) []coin.Transaction {
-    known := make([]coin.Transaction, 0)
-    for _, h := range txns {
-        txn, unknown := self.Txns[h]
-        if !unknown {
-            known = append(known, txn)
-        }
-    }
-    return known
-}
-
 // Configuration parameters for the Visor
 type VisorConfig struct {
     // Is this the master blockchain
@@ -123,16 +52,31 @@ type VisorConfig struct {
     TestNetwork bool
     // How often new blocks are created by the master
     BlockCreationInterval uint64
+    // How often an unconfirmed txn is checked against the blockchain
+    UnconfirmedCheckInterval time.Duration
+    // How long we'll hold onto an unconfirmed txn
+    UnconfirmedMaxAge time.Duration
+    // How often to refresh the unconfirmed pool
+    UnconfirmedRefreshRate time.Duration
+    // Maximum number of transactions per block, when creating
+    TransactionsPerBlock int
+    // Where the blockchain is saved
+    BlockchainFile string
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        IsMaster:              false,
-        CanSpend:              true,
-        TestNetwork:           true,
-        WalletFile:            "",
-        WalletSizeMin:         100,
-        BlockCreationInterval: 15,
+        IsMaster:                 false,
+        CanSpend:                 true,
+        TestNetwork:              true,
+        WalletFile:               "",
+        WalletSizeMin:            100,
+        BlockCreationInterval:    15,
+        UnconfirmedCheckInterval: time.Hour * 2,
+        UnconfirmedMaxAge:        time.Hour * 48,
+        UnconfirmedRefreshRate:   time.Minute * 30,
+        TransactionsPerBlock:     1000, // 1000/15 = 66tps. Bitcoin is 7tps
+        BlockchainFile:           "",
     }
 }
 
@@ -160,42 +104,45 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
         log.Panicf("Invalid master wallet entry: %v", err)
     }
 
-    wallet := NewWallet()
-    if c.WalletFile != "" {
-        err := wallet.Load(c.WalletFile)
-        if err != nil {
-            if os.IsNotExist(err) {
-                logger.Info("Wallet file \"%s\" does not exist", c.WalletFile)
-            } else {
-                log.Panicf("Failed to load wallet file: %v", err)
-            }
-        }
-    }
-    wallet.populate(c.WalletSizeMin)
-    if c.WalletFile != "" {
-        err := wallet.Save(c.WalletFile)
-        if err == nil {
-            logger.Info("Saved wallet file to \"%s\"", c.WalletFile)
-        } else {
-            log.Panicf("Failed to save wallet file to \"%s\": ", c.WalletFile,
-                err)
-        }
-    }
+    wallet := loadWallet(c.WalletFile, c.WalletSizeMin)
+    blockchain := loadBlockchain(c.BlockchainFile, master.Address,
+        c.BlockCreationInterval)
 
     return &Visor{
-        Config: c,
-        keys:   NewVisorKeys(master),
-        blockchain: coin.NewBlockchain(master.Address,
-            c.BlockCreationInterval),
+        Config:          c,
+        keys:            NewVisorKeys(master),
+        blockchain:      blockchain,
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
         Wallet:          wallet,
     }
 }
 
+// Checks unconfirmed txns against the blockchain and purges ones that too old
+func (self *Visor) RefreshUnconfirmed() {
+    logger.Debug("Refreshing unconfirmed transactions")
+    self.UnconfirmedTxns.Refresh(self.blockchain,
+        self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
+}
+
+// Saves the coin.Blockchain to disk
+func (self *Visor) SaveBlockchain() error {
+    if self.Config.BlockchainFile == "" {
+        return errors.New("No BlockchainFile location set")
+    } else {
+        // TODO -- blockchain file must be forward compatible
+        data := encoder.Serialize(self.blockchain)
+        return util.SaveBinary(self.Config.BlockchainFile, data, 0644)
+    }
+}
+
 // Saves the Wallet to disk
 func (self *Visor) SaveWallet() error {
-    return self.Wallet.Save(self.Config.WalletFile)
+    if self.Config.WalletFile == "" {
+        return errors.New("No WalletFile location set")
+    } else {
+        return self.Wallet.Save(self.Config.WalletFile)
+    }
 }
 
 // Creates and returns a WalletEntry and saves the wallet to disk
@@ -218,10 +165,14 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
     if len(self.UnconfirmedTxns.Txns) == 0 {
         return sb, errors.New("No transactions")
     }
-    // TODO -- need process for filtering colliding blocks
-    // e.g. if two unconfirmed transactions are spending the same thing,
-    // one must be chosen and the other discarded
-    b, err := self.blockchain.NewBlockFromTransactions(self.UnconfirmedTxns.Txns)
+    txns := self.UnconfirmedTxns.RawTxns()
+    // TODO -- transactions should be sorted by tx fee
+    sort.Sort(txns)
+    nTxns := len(txns)
+    if nTxns > self.Config.TransactionsPerBlock {
+        txns = txns[:self.Config.TransactionsPerBlock]
+    }
+    b, err := self.blockchain.NewBlockFromTransactions(txns)
     if err != nil {
         return sb, err
     }
@@ -235,7 +186,7 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
 
 // Creates a Transaction spending coins and hours from our coins
 // TODO -- handle txn fees.  coin.Transaciton does not implement fee support
-func (self *Visor) Spend(amt Balance,
+func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     var txn coin.Transaction
     if !self.Config.CanSpend {
@@ -245,8 +196,8 @@ func (self *Visor) Spend(amt Balance,
         return txn, errors.New("Zero spend amount")
     }
     needed := amt
-    // needed = needed.Add(fee)
-    auxs := self.blockchain.Unspent.AllForAddresses(self.Wallet.GetAddresses())
+    needed.Hours += fee
+    auxs := self.getAvailableBalances()
     for a, uxs := range auxs {
         entry, exists := self.Wallet.GetEntry(a)
         if !exists {
@@ -296,9 +247,8 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     // TODO -- check if bitcoin allows blocks to be receiving out of order
     self.blockSigs.record(&b)
     // Remove the transactions in the Block from the unconfirmed pool
-    for _, tx := range b.Block.Body.Transactions {
-        delete(self.UnconfirmedTxns.Txns, tx.Header.Hash)
-    }
+    self.UnconfirmedTxns.RemoveTransactions(self.blockchain,
+        b.Block.Body.Transactions)
     return nil
 }
 
@@ -334,26 +284,72 @@ func (self *Visor) MostRecentBkSeq() uint64 {
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction) error {
-    if err := txn.Verify(); err != nil {
-        return err
-    }
-    if err := self.blockchain.VerifyTransaction(&txn); err != nil {
-        return err
-    }
-    self.UnconfirmedTxns.Txns[txn.Header.Hash] = txn
-    return nil
+    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn)
 }
 
-// Returns the total balance for addresses in the Wallet
+// Returns the balance of the wallet
 func (self *Visor) TotalBalance() Balance {
-    return self.Wallet.TotalBalance(self.blockchain.Unspent,
-        self.blockchain.Time())
+    addrs := self.Wallet.GetAddresses()
+    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
+    return self.totalBalance(auxs)
+}
+
+// Returns the total balance of the wallet including unconfirmed outputs
+func (self *Visor) TotalBalancePredicted() Balance {
+    auxs := self.getAvailableBalances()
+    return self.totalBalance(auxs)
 }
 
 // Returns the balance for a single address in the Wallet
 func (self *Visor) Balance(a coin.Address) Balance {
-    return self.Wallet.Balance(self.blockchain.Unspent,
-        self.blockchain.Time(), a)
+    uxs := self.blockchain.Unspent.AllForAddress(a)
+    return self.balance(uxs)
+}
+
+// Returns the balance for a single address in the Wallet, including
+// unconfirmed outputs
+func (self *Visor) BalancePredicted(a coin.Address) Balance {
+    uxs := self.getAvailableBalance(a)
+    return self.balance(uxs)
+}
+
+// Computes the total balance for coin.Addresses and their coin.UxOuts
+func (self *Visor) totalBalance(auxs coin.AddressUnspents) Balance {
+    prevTime := self.blockchain.Time()
+    b := NewBalance(0, 0)
+    for _, uxs := range auxs {
+        for _, ux := range uxs {
+            b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+        }
+    }
+    return b
+}
+
+// Computes the balance for a coin.Address's coin.UxOuts
+func (self *Visor) balance(uxs []coin.UxOut) Balance {
+    prevTime := self.blockchain.Time()
+    b := NewBalance(0, 0)
+    for _, ux := range uxs {
+        b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+    }
+    return b
+}
+
+// Returns the total of known Unspents available to us, and our own
+// unconfirmed unspents
+func (self *Visor) getAvailableBalances() coin.AddressUnspents {
+    addrs := self.Wallet.GetAddresses()
+    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
+    uauxs := self.UnconfirmedTxns.Unspent.AllForAddresses(addrs)
+    return auxs.Merge(uauxs, addrs)
+}
+
+// Returns the total of known unspents available for an address, including
+// unconfirmed requests
+func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
+    auxs := self.blockchain.Unspent.AllForAddress(a)
+    uauxs := self.UnconfirmedTxns.Unspent.AllForAddress(a)
+    return append(auxs, uauxs...)
 }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
@@ -377,4 +373,112 @@ func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
         Sig:   sig,
     }
     return
+}
+
+// Loads a wallet but subdues errors into the logger, or panics
+func loadWallet(filename string, sizeMin int) *Wallet {
+    wallet := NewWallet()
+    if filename != "" {
+        err := wallet.Load(filename)
+        if err != nil {
+            if os.IsNotExist(err) {
+                logger.Info("Wallet file \"%s\" does not exist", filename)
+            } else {
+                log.Panicf("Failed to load wallet file: %v", err)
+            }
+        }
+    }
+    wallet.populate(sizeMin)
+    if filename != "" {
+        err := wallet.Save(filename)
+        if err == nil {
+            logger.Info("Saved wallet file to \"%s\"", filename)
+        } else {
+            log.Panicf("Failed to save wallet file to \"%s\": ", filename,
+                err)
+        }
+    }
+    return wallet
+}
+
+// Loads a blockchain but subdues errors into the logger, or panics
+func loadBlockchain(filename string, masterAddress coin.Address,
+    creationInterval uint64) *coin.Blockchain {
+    bc := &coin.Blockchain{}
+    created := false
+    if filename != "" {
+        data, err := ioutil.ReadFile(filename)
+        if err == nil {
+            err = encoder.DeserializeRaw(data, bc)
+            if err == nil {
+                created = true
+                logger.Info("Loaded blockchain from \"%s\"", filename)
+            } else {
+                log.Panicf("Failed to deserialize blockfrom from \"%s\"",
+                    filename)
+            }
+        } else {
+            if os.IsNotExist(err) {
+                logger.Info("No blockchain file, will create a new blockchain")
+            }
+        }
+    }
+
+    // Make sure we are not changing the blockchain configuration from the
+    // one we loaded
+    if created {
+        // TODO -- support changing the block creation interval.  Its used
+        // in the blockchain internally
+        if bc.CreationInterval != creationInterval {
+            log.Panic("Creation interval was changed since the old blockchain")
+        }
+        logger.Notice("Loaded blockchain's genesis address can't be " +
+            "checked against configured genesis address")
+        logger.Info("Rebuiling UnspentPool indices")
+        bc.Unspent.Rebuild()
+    } else {
+        bc = coin.NewBlockchain(masterAddress, creationInterval)
+    }
+    return bc
+}
+
+type SignedBlock struct {
+    Block coin.Block
+    Sig   coin.Sig
+}
+
+// Manages known BlockSigs as received.
+// TODO -- support out of order blocks.  This requires a change to the
+// message protocol to support ranges similar to bitcoin's locator hashes.
+// We also need to keep track of whether a block has been executed so that
+// as continuity is established we can execute chains of blocks.
+// TODO -- Since we will need to hold blocks that cannot be verified
+// immediately against the blockchain, we need to be able to hold multiple
+// BlockSigs per BkSeq, or use hashes as keys.  For now, this is not a
+// problem assuming the signed blocks created from master are valid blocks,
+// because we can check the signature independently of the blockchain.
+type BlockSigs struct {
+    Sigs   map[uint64]coin.Sig
+    MaxSeq uint64
+    MinSeq uint64
+}
+
+func NewBlockSigs() BlockSigs {
+    return BlockSigs{
+        Sigs:   make(map[uint64]coin.Sig),
+        MaxSeq: 0,
+        MinSeq: 0,
+    }
+}
+
+// Adds a SignedBlock
+func (self *BlockSigs) record(sb *SignedBlock) {
+    seq := sb.Block.Header.BkSeq
+    self.Sigs[seq] = sb.Sig
+    if seq > self.MaxSeq {
+        self.MaxSeq = seq
+    }
+    if seq < self.MinSeq {
+        self.MinSeq = seq
+    }
 }

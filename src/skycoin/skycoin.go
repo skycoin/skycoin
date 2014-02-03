@@ -10,6 +10,7 @@ import (
     "os/signal"
     "runtime/pprof"
     "syscall"
+    "time"
 )
 
 import (
@@ -114,6 +115,12 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.Visor.Config.CanSpend = !c.MasterChain
     dc.Visor.Config.WalletFile = c.WalletFile
     dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
+    dc.Visor.Config.BlockchainFile = c.BlockchainFile
+    if c.MasterChain {
+        // The master chain should be reluctant to expire transactions
+        dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096
+    }
+
     dc.Visor.MasterKeysFile = c.MasterKeys
     if c.MasterChain {
         err := dc.Visor.LoadMasterKeys()

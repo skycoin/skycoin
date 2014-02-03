@@ -1,7 +1,8 @@
 package coin
 
 import (
-    "github.com/skycoin/skycoin/src/lib/encoder"
+    "github.com/skycoin/encoder"
+    "log"
 )
 
 /*
@@ -80,18 +81,32 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 
 // Manages Unspents
 type UnspentPool struct {
-    // Points to a UxOut in Arr
-    Map map[SHA256]int
     Arr []UxOut
+    // Points to a UxOut in Arr
+    Map map[SHA256]int `enc:"-"`
     // Total running hash
-    XorHash SHA256
+    XorHash SHA256 `enc:"-"`
 }
 
-func NewUnspentPool() *UnspentPool {
-    return &UnspentPool{
+func NewUnspentPool() UnspentPool {
+    return UnspentPool{
         Arr:     make([]UxOut, 0),
         Map:     make(map[SHA256]int),
         XorHash: SHA256{},
+    }
+}
+
+// Reconstructs the indices from the underlying array
+func (self *UnspentPool) Rebuild() {
+    self.Map = make(map[SHA256]int)
+    self.XorHash = SHA256{}
+    for i, ux := range self.Arr {
+        h := ux.Hash()
+        self.Map[h] = i
+        self.XorHash = self.XorHash.Xor(h)
+    }
+    if len(self.Map) != len(self.Arr) {
+        log.Panic("Corrupt UnspentPool.Arr: contains duplicate UxOut")
     }
 }
 
@@ -108,7 +123,11 @@ func (self *UnspentPool) Add(ux UxOut) {
 // exist, the map would return an empty UxOut)
 func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
     i, ok := self.Map[h]
-    return self.Arr[i], ok
+    if ok {
+        return self.Arr[i], true
+    } else {
+        return UxOut{}, false
+    }
 }
 
 // Returns true if an unspent exists for this hash
@@ -164,12 +183,12 @@ func (self *UnspentPool) AllForAddress(a Address) []UxOut {
 }
 
 // Returns Unspents for multiple addresses
-func (self *UnspentPool) AllForAddresses(addrs []Address) map[Address][]UxOut {
+func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
     m := make(map[Address]byte, len(addrs))
     for _, a := range addrs {
         m[a] = byte(1)
     }
-    uxo := make(map[Address][]UxOut)
+    uxo := make(AddressUnspents)
     for a, _ := range m {
         uxo[a] = make([]UxOut, 0)
     }
@@ -180,4 +199,16 @@ func (self *UnspentPool) AllForAddresses(addrs []Address) map[Address][]UxOut {
         }
     }
     return uxo
+}
+
+type AddressUnspents map[Address][]UxOut
+
+// Combines two AddressUnspents
+func (self AddressUnspents) Merge(other AddressUnspents,
+    keys []Address) AddressUnspents {
+    final := make(AddressUnspents, len(keys))
+    for _, a := range keys {
+        final[a] = append(self[a], other[a]...)
+    }
+    return final
 }

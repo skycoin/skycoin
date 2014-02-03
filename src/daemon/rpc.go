@@ -98,8 +98,8 @@ func (self *RPC) GetBalance(a coin.Address) interface{} {
 }
 
 // Returns a *Spend
-func (self *RPC) Spend(amt visor.Balance, dest coin.Address) interface{} {
-    self.requests <- func() interface{} { return self.spend(amt, dest) }
+func (self *RPC) Spend(amt visor.Balance, fee uint64, dest coin.Address) interface{} {
+    self.requests <- func() interface{} { return self.spend(amt, fee, dest) }
     r := <-self.responses
     return r
 }
@@ -160,7 +160,7 @@ func (self *RPC) getTotalBalance() *visor.Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b := self.Daemon.Visor.Visor.TotalBalance()
+    b := self.Daemon.Visor.Visor.TotalBalancePredicted()
     return &b
 }
 
@@ -168,15 +168,15 @@ func (self *RPC) getBalance(a coin.Address) *visor.Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b := self.Daemon.Visor.Visor.Balance(a)
+    b := self.Daemon.Visor.Visor.BalancePredicted(a)
     return &b
 }
 
-func (self *RPC) spend(amt visor.Balance, dest coin.Address) *Spend {
+func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    txn, err := self.Daemon.Visor.Visor.Spend(amt, dest)
+    txn, err := self.Daemon.Visor.Visor.Spend(amt, fee, dest)
     if err != nil {
         err = self.Daemon.Visor.Visor.RecordTxn(txn)
         if err != nil {

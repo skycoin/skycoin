@@ -39,8 +39,9 @@ type Config struct {
     logLevel string
 
     // Wallets
-    WalletFile    string
-    WalletSizeMin int
+    WalletFile     string
+    WalletSizeMin  int
+    BlockchainFile string
 
     // Centralized network configuration
     MasterPublic   string
@@ -78,6 +79,9 @@ func (self *Config) postProcess() {
     }
     if self.WalletFile == "" {
         self.WalletFile = filepath.Join(self.DataDirectory, "wallet.json")
+    }
+    if self.BlockchainFile == "" {
+        self.BlockchainFile = filepath.Join(self.DataDirectory, "blockchain.bin")
     }
     // logging
     ll, err := logging.LogLevel(self.logLevel)

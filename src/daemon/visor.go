@@ -48,12 +48,18 @@ func NewVisor(c VisorConfig) *Visor {
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
     walletFile := self.Config.Config.WalletFile
-    err := self.Visor.Wallet.Save(walletFile)
+    err := self.Visor.SaveWallet()
     if err == nil {
-        logger.Info("Saved wallet file to \"%s\"", walletFile)
+        logger.Info("Saved wallet to \"%s\"", walletFile)
     } else {
-        logger.Error("Failed to save wallet file to \"%s\": %v", walletFile,
-            err)
+        logger.Critical("Failed to save wallet to \"%s\": %v", walletFile, err)
+    }
+    bcFile := self.Config.Config.BlockchainFile
+    err = self.Visor.SaveBlockchain()
+    if err == nil {
+        logger.Info("Saved blockchain to \"%s\"", bcFile)
+    } else {
+        logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
     }
 }
 
@@ -159,6 +165,16 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
         err := d.Pool.Pool.Dispatcher.SendMessage(c, m)
         if err != nil {
             logger.Warning("Failed to announce blocks to %s", c.Addr())
+        }
+    }
+
+    // Send a new GetBlocksMessage, in case we aren't finished yet
+    bkSeq := d.Visor.Visor.MostRecentBkSeq()
+    n := NewGetBlocksMessage(bkSeq)
+    for _, c := range d.Pool.Pool.Pool {
+        err := d.Pool.Pool.Dispatcher.SendMessage(c, n)
+        if err != nil {
+            logger.Warning("Failed to send GetBlocksMessage to %s", c.Addr())
         }
     }
 }

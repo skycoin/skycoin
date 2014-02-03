@@ -124,7 +124,7 @@ func (self *Transaction) Verify() error {
 
 // Adds a TransactionInput to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
-func (self *Transaction) pushInput(uxOut SHA256) uint16 {
+func (self *Transaction) PushInput(uxOut SHA256) uint16 {
     if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
@@ -135,12 +135,6 @@ func (self *Transaction) pushInput(uxOut SHA256) uint16 {
     }
     self.In = append(self.In, ti)
     return sigIdx
-}
-
-// Adds a TransactionInput to the Transaction and signs it
-func (self *Transaction) PushInput(spendUx SHA256, sec SecKey) {
-    sigIdx := self.pushInput(spendUx)
-    self.signInput(sigIdx, sec)
 }
 
 // Adds a TransactionOutput, sending coins & hours to an Address
@@ -171,6 +165,13 @@ func (self *Transaction) signInput(idx uint16, sec SecKey) {
         self.Header.Sigs = append(self.Header.Sigs, Sig{})
     }
     self.Header.Sigs[idx] = sig
+}
+
+// Signs all inputs in the transaction
+func (self *Transaction) SignInputs(keys map[uint16]SecKey) {
+    for _, ti := range self.In {
+        self.signInput(ti.SigIdx, keys[ti.SigIdx])
+    }
 }
 
 // Hashes an entire Transaction struct

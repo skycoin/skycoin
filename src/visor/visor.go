@@ -188,6 +188,8 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
 // TODO -- handle txn fees.  coin.Transaciton does not implement fee support
 func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
+    logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
+        amt.Coins, amt.Hours, dest.String(), fee)
     var txn coin.Transaction
     if !self.Config.CanSpend {
         return txn, errors.New("Spending disabled")
@@ -198,6 +200,9 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     needed := amt
     needed.Hours += fee
     auxs := self.getAvailableBalances()
+    toSign := make(map[uint16]coin.SecKey)
+
+loop:
     for a, uxs := range auxs {
         entry, exists := self.Wallet.GetEntry(a)
         if !exists {
@@ -205,23 +210,24 @@ func (self *Visor) Spend(amt Balance, fee uint64,
         }
         for _, ux := range uxs {
             if needed.IsZero() {
-                break
+                break loop
             }
             coinHours := ux.CoinHours(self.blockchain.Time())
             b := NewBalance(ux.Body.Coins, coinHours)
             if needed.GreaterThanOrEqual(b) {
                 needed = needed.Sub(b)
-                txn.PushInput(ux.Hash(), entry.Secret)
+                toSign[txn.PushInput(ux.Hash())] = entry.Secret
             } else {
                 change := b.Sub(needed)
                 needed = needed.Sub(needed)
-                txn.PushInput(ux.Hash(), entry.Secret)
+                toSign[txn.PushInput(ux.Hash())] = entry.Secret
                 txn.PushOutput(ux.Body.Address, change.Coins, change.Hours)
             }
         }
     }
 
     txn.PushOutput(dest, amt.Coins, amt.Hours)
+    txn.SignInputs(toSign)
     txn.UpdateHeader()
 
     if needed.IsZero() {

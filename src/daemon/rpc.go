@@ -57,7 +57,7 @@ type Connection struct {
 // Result of a Spend() operation
 type Spend struct {
     RemainingBalance visor.Balance
-    Error            error
+    Error            string
 }
 
 // An array of connections
@@ -177,7 +177,7 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
         return nil
     }
     txn, err := self.Daemon.Visor.Visor.Spend(amt, fee, dest)
-    if err != nil {
+    if err == nil {
         err = self.Daemon.Visor.Visor.RecordTxn(txn)
         if err != nil {
             m := NewGiveTxnsMessage([]coin.Transaction{txn})
@@ -192,7 +192,7 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
     }
     return &Spend{
         RemainingBalance: *(self.getTotalBalance()),
-        Error:            err,
+        Error:            err.Error(),
     }
 }
 

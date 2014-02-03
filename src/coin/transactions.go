@@ -222,7 +222,7 @@ func (self *Transaction) UpdateHeader() {
     self.Header.Hash = self.hashInner()
 }
 
-// Hashes only the Transction Inputs & Outputs
+// Hashes only the Transaction Inputs & Outputs
 func (self *Transaction) hashInner() SHA256 {
     b1 := encoder.Serialize(self.In)
     b2 := encoder.Serialize(self.Out)

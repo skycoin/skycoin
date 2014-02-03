@@ -13,13 +13,14 @@ var (
     logger = logging.MustGetLogger("skycoin.coin")
 )
 
+
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
     blockTimeFutureMultipleMax uint64 = 20
-    genesisCoinVolume          uint64 = 100 * 1e6
+    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6
     genesisCoinHours           uint64 = 1024 * 1024 * 1024
-    //genesisBlockHashString      string = "Skycoin v0.1"
+    //each coin is one million droplets, which are the base unit
 )
 
 type Block struct {

@@ -306,7 +306,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
             // This should never happen
             if self.Unspent.Has(h) {
                 if firstFail {
-                    return nil, errors.New("Output hash is in the UnspentPool")
+                    return nil, errors.New("Impossible: Output hash is in the UnspentPool")
                 } else {
                     skip[i] = byte(1)
                     continue
@@ -441,10 +441,10 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
-<<<<<<< HEAD
 //AppendTransaction takes a block and appends a transaction to the transaction array.
-func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
 
+/*
+func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
     //check that all inputs exist and are unspent
     for _, tx := range t.In {
         _, exists := self.Unspent.Get(tx.UxOut)
@@ -531,9 +531,9 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
     b.Body.Transactions = append(b.Body.Transactions, t)
 
     return nil
-=======
+}
+*/
 // Returns the latest block head time
 func (self *Blockchain) Time() uint64 {
     return self.Head.Header.Time
->>>>>>> 3860555bb911e37dc5fa2f6be82469c781e4000b
 }

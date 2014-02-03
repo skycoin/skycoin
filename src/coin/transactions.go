@@ -53,16 +53,6 @@ type TransactionOutput struct {
 	Add immutability and hash checks here
 */
 
-<<<<<<< HEAD
-//Verify attempts to determine if the transaction is well formed
-//Verify can check transaction signatures and signature indices
-//Verify cannot check that signatures correspond to pubkey of address which owns the outputs being spent
-//Verify cannot check if outputs being spent exist
-//Verify cannot check if the transaction would create or destroy coins or if the inputs have the required coin base
-func (txn *Transaction) Verify() error {
-    //SECURITY TODO: check for duplicate output coinbases
-    //SECURITY TODO: check for double spending of same input
-=======
 // Verify attempts to determine if the transaction is well formed
 // Verify cannot check transaction signatures, it needs the address from unspents
 // Verify cannot check if outputs being spent exist
@@ -81,7 +71,6 @@ func (self *Transaction) Verify() error {
     if len(self.Out) == 0 {
         return errors.New("No outputs")
     }
->>>>>>> 3860555bb911e37dc5fa2f6be82469c781e4000b
 
     // Check signature index fields
     _maxidx := len(self.Header.Sigs)
@@ -141,8 +130,6 @@ func (self *Transaction) Verify() error {
         if err != nil {
             return errors.New("pubkey recovery from signature failed")
         }
-        VerifySignature(
-
 
         err := VerifySignature(
         ChkSig(ux.Body.Address, txn.Header.Hash,

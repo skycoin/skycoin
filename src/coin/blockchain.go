@@ -3,7 +3,7 @@ package coin
 import (
     "errors"
     "github.com/op/go-logging"
-    "github.com/skycoin/skycoin/src/lib/encoder"
+    "github.com/skycoin/encoder"
     "log"
     "sort"
     "time"

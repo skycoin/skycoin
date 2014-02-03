@@ -3,7 +3,7 @@ package coin
 import (
     "bytes"
     "errors"
-    "github.com/skycoin/skycoin/src/lib/encoder"
+    "github.com/skycoin/encoder"
     "log"
     "math"
 )

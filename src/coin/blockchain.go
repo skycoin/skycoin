@@ -461,6 +461,7 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
+//AppendTransaction takes a block and appends a transaction to the transaction array.
 func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
 
     //check that all inputs exist and are unspent

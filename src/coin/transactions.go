@@ -53,7 +53,8 @@ type TransactionOutput struct {
 */
 
 //Verify attempts to determine if the transaction is well formed
-//Verify cannot check transaction signatures and signature indices
+//Verify can check transaction signatures and signature indices
+//Verify cannot check that signatures correspond to pubkey of address which owns the outputs being spent
 //Verify cannot check if outputs being spent exist
 //Verify cannot check if the transaction would create or destroy coins or if the inputs have the required coin base
 func (txn *Transaction) Verify() error {
@@ -69,6 +70,28 @@ func (txn *Transaction) Verify() error {
     for _, tx := range txn.In {
         if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
             return errors.New("validateSignatures; invalid SigIdx")
+        }
+    }
+
+    //validate addresss signatures
+    for _, tx := range txn.In {
+
+        sig := txn.Header.Sigs[tx.SigIdx]
+        hash := tx.UxOut
+
+        pubkey, err := PubKeyFromSig(sig)
+
+        if err != nil {
+            return errors.New("pubkey recovery from signature failed")
+        }
+        VerifySignature(
+
+
+        err := VerifySignature(
+        ChkSig(ux.Body.Address, txn.Header.Hash,
+            txn.Header.Sigs[tx.SigIdx])
+        if err != nil {
+            return "signature check failed" // signature check failed
         }
     }
 

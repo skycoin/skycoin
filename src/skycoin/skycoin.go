@@ -112,7 +112,7 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.DHT.Port = c.Port
     dc.Pool.Port = c.Port
     dc.Visor.Config.IsMaster = c.MasterChain
-    dc.Visor.Config.CanSpend = !c.MasterChain
+    dc.Visor.Config.CanSpend = c.CanSpend
     dc.Visor.Config.WalletFile = c.WalletFile
     dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
     dc.Visor.Config.BlockchainFile = c.BlockchainFile

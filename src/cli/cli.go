@@ -42,6 +42,8 @@ type Config struct {
     WalletFile     string
     WalletSizeMin  int
     BlockchainFile string
+    // Is allowed to make outgoing transactions
+    CanSpend bool
 
     // Centralized network configuration
     MasterPublic   string

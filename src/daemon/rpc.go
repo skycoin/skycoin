@@ -181,18 +181,11 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
         err = self.Daemon.Visor.Visor.RecordTxn(txn)
         if err != nil {
             m := NewGiveTxnsMessage([]coin.Transaction{txn})
-            // TODO -- SendToAll method in gnet
-            sent := false
-            for _, c := range self.Daemon.Pool.Pool.Pool {
-                err := self.Daemon.Pool.Pool.Dispatcher.SendMessage(c, m)
-                if err != nil {
-                    logger.Warning("Failed to send GiveTxnsMessage to %s",
-                        c.Addr())
-                } else {
-                    sent = true
-                }
+            errs := self.Daemon.Pool.Pool.Dispatcher.BroadcastMessage(m)
+            for a, _ := range errs {
+                logger.Warning("Failed to send GiveTxnsMessage to %s", a)
             }
-            if !sent {
+            if len(errs) == len(self.Daemon.Pool.Pool.Pool) {
                 err = errors.New("Failed to send GiveTxnsMessage to anyone")
             }
         }

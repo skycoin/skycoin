@@ -205,11 +205,7 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
     // TODO -- need process for filtering colliding blocks
     // e.g. if two unconfirmed transactions are spending the same thing,
     // one must be chosen and the other discarded
-    txns := make([]coin.Transaction, 0, len(self.UnconfirmedTxns.Txns))
-    for _, txn := range self.UnconfirmedTxns.Txns {
-        txns = append(txns, txn)
-    }
-    b, err := self.blockchain.NewBlockFromTransactions(txns)
+    b, err := self.blockchain.NewBlockFromTransactions(self.UnconfirmedTxns.Txns)
     if err != nil {
         return sb, err
     }

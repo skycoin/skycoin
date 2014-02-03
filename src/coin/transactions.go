@@ -1,6 +1,7 @@
 package coin
 
 import (
+    "bytes"
     "errors"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
@@ -63,6 +64,14 @@ func (self *Transaction) Verify() error {
         return errors.New("Invalid header hash")
     }
 
+    if len(self.In) == 0 {
+        return errors.New("No inputs")
+    }
+
+    if len(self.Out) == 0 {
+        return errors.New("No outputs")
+    }
+
     //check signature index fields
     _maxidx := len(self.Header.Sigs)
     if _maxidx >= math.MaxUint16 {
@@ -75,11 +84,30 @@ func (self *Transaction) Verify() error {
         }
     }
 
-    // Check duplicate spends
+    // Check duplicate inputs
     for i := 0; i < len(self.In)-1; i++ {
         for j := i + 1; i < len(self.In); j++ {
             if self.In[i].UxOut == self.In[j].UxOut {
                 return errors.New("Duplicate spend")
+            }
+        }
+    }
+
+    // Check duplicate outputs (would destroy coins)
+    outputs := make([]SHA256, 0)
+    uxb := UxBody{
+        SrcTransaction: self.Header.Hash,
+    }
+    for _, to := range self.Out {
+        uxb.Coins = to.Coins
+        uxb.Hours = to.Hours
+        uxb.Address = to.DestinationAddress
+        outputs = append(outputs, uxb.Hash())
+    }
+    for i := 0; i < len(outputs)-1; i++ {
+        for j := i + 1; j < len(outputs); j++ {
+            if outputs[i] == outputs[j] {
+                return errors.New("Duplicate output in transaction")
             }
         }
     }
@@ -172,4 +200,20 @@ func (self *Transaction) hashInner() SHA256 {
     b2 := encoder.Serialize(self.Out)
     b3 := append(b1, b2...)
     return SumSHA256(b3)
+}
+
+type Transactions []Transaction
+
+func (self Transactions) Len() int {
+    return len(self)
+}
+
+func (self Transactions) Less(i, j int) bool {
+    return bytes.Compare(self[i].Header.Hash[:], self[j].Header.Hash[:]) < 0
+}
+
+func (self Transactions) Swap(i, j int) {
+    t := self[i]
+    self[i] = self[j]
+    self[j] = t
 }

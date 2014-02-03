@@ -1,11 +1,11 @@
 package coin
 
 import (
-    "bytes"
     "errors"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
+    "sort"
     "time"
 )
 
@@ -39,7 +39,7 @@ type BlockHeader struct {
 }
 
 type BlockBody struct {
-    Transactions []Transaction
+    Transactions Transactions
 }
 
 /*
@@ -53,7 +53,7 @@ type Block struct {
     HashPrevBlock SHA256 //hash of header of previous block
     BodyHash      SHA256 //hash of transaction block
 
-    Transactions []Transaction
+    Transactions Transactions
 }
 
 */
@@ -129,17 +129,14 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
     // Genesis output
     ux := UxOut{
         Head: UxHead{
-            // TODO -- what about the rest of the fields??
-            // TODO -- write & use NewUxHead
             Time:  b.Header.Time,
             BkSeq: 0,
         },
         Body: UxBody{
-            // TODO -- what about the rest of the fields??
-            // TODO -- write & use NewUxBody
-            Address: genesisAddress,
-            Coins:   genesisCoinVolume, // 100 million
-            Hours:   genesisCoinHours,
+            SrcTransaction: SHA256{},
+            Address:        genesisAddress,
+            Coins:          genesisCoinVolume, // 100 million
+            Hours:          genesisCoinHours,
         },
     }
     bc.Unspent.Add(ux)
@@ -148,13 +145,10 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
 
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification
-func (self *Blockchain) NewBlockFromTransactions(txns []Transaction) (Block, error) {
+func (self *Blockchain) NewBlockFromTransactions(txns map[SHA256]Transaction) (Block, error) {
     b := newBlock(self.Head, self.CreationInterval)
-    txns, err := self.arbitrateTransactions(txns)
-    if err != nil {
-        return b, err
-    }
-    b.Body.Transactions = txns
+    newtxns := self.arbitrateTransactions(txns)
+    b.Body.Transactions = newtxns
     b.UpdateHeader()
     return b, nil
 }
@@ -253,112 +247,150 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
     return nil
 }
 
-// Removes conflicting transactions (i.e. ones spending the same thing)
-// Returns an error only if a conflict occured and could not be resolved
-func (self *Blockchain) arbitrateTransactions(txns []Transaction) ([]Transaction, error) {
-    skip := make(map[int]byte, 0)
+// Validates a set of Transactions, individually, against each other and
+// against the Blockchain.  If firstFail is true, it will return an error
+// as soon as it encounters one.  Else, it will return an array of
+// Transactions that are valid as a whole.  It may return an error if
+// firstFalse is false, if there is no way to filter the txns into a valid
+// array, i.e. processTransactions(processTransactions(txn, false), true)
+// should not result in an error, unless all txns are invalid.
+func (self *Blockchain) processTransactions(txns Transactions,
+    firstFail bool) (Transactions, error) {
+    // If there are no transactions, a block should not be made
+    if len(txns) == 0 {
+        if firstFail {
+            return nil, errors.New("No transactions")
+        } else {
+            return txns, nil
+        }
+    }
+
+    // Transactions must be sorted, so we can have deterministic filtering
+    if !sort.IsSorted(txns) {
+        return nil, errors.New("Txns not sorted")
+    }
+
+    skip := make(map[int]byte)
+    uxHashes := make(map[SHA256]byte, len(txns))
+    for i, t := range txns {
+        // Check the transaction against itself.  This covers the hash,
+        // signature indices and duplicate spends within itself
+        if err := self.VerifyTransaction(&t); err != nil {
+            if firstFail {
+                return nil, err
+            } else {
+                skip[i] = byte(1)
+                continue
+            }
+        }
+        // Check that each pending unspent will be unique
+        uxb := UxBody{
+            SrcTransaction: t.Header.Hash,
+        }
+        for _, to := range t.Out {
+            uxb.Coins = to.Coins
+            uxb.Hours = to.Hours
+            uxb.Address = to.DestinationAddress
+            h := uxb.Hash()
+            _, exists := uxHashes[h]
+            if exists {
+                if firstFail {
+                    m := "Duplicate unspent output across transactions"
+                    return nil, errors.New(m)
+                } else {
+                    skip[i] = byte(1)
+                    continue
+                }
+            }
+            // Check that the expected unspent is not already in the pool
+            // This should never happen
+            if self.Unspent.Has(h) {
+                if firstFail {
+                    return nil, errors.New("Output hash is in the UnspentPool")
+                } else {
+                    skip[i] = byte(1)
+                    continue
+                }
+            }
+            uxHashes[h] = byte(1)
+        }
+    }
+
+    // Filter invalid transactions before arbitrating between colliding ones
+    if len(skip) > 0 {
+        newtxns := make(Transactions, 0, len(txns)-len(skip))
+        for i, txn := range txns {
+            if _, shouldSkip := skip[i]; !shouldSkip {
+                newtxns = append(newtxns, txn)
+            }
+        }
+        txns = newtxns
+        skip = make(map[int]byte)
+    }
+
+    // Check to ensure that there are no duplicate spends in the entire block,
+    // and that we aren't creating duplicate outputs.  Duplicate outputs
+    // within a single Transaction are already checked by VerifyTransaction
     for i := 0; i < len(txns)-1; i++ {
         s := txns[i]
         for j := i + 1; j < len(txns); j++ {
             t := txns[j]
             if s.Header.Hash == t.Header.Hash {
-                // This should not occur, assuming the input txns were
-                // extracted from a set or map
-                return nil, errors.New("Duplicate transactions")
+                // This is a non-recoverable error for filtering, and should
+                // be considered a programming error
+                return nil, errors.New("Duplicate transaction found")
             }
             for a := 0; a < len(s.In)-1; a++ {
                 for b := a + 1; b < len(t.In); b++ {
                     if s.In[a].UxOut == t.In[b].UxOut {
-                        // The transaction with the lowest hash wins in a
-                        // duplicate spend
-                        if bytes.Compare(s.Header.Hash[:], t.Header.Hash[:]) < 0 {
-                            skip[j] = byte(1)
+                        if firstFail {
+                            m := "Cannot spend output twice in the same block"
+                            return nil, errors.New(m)
                         } else {
-                            skip[i] = byte(1)
+                            // The txn with the lowest hash is chosen when
+                            // attempting a double spend. Since the txns
+                            // are sorted, we skip the 2nd iterable
+                            skip[j] = byte(1)
                         }
                     }
                 }
             }
         }
     }
-    newtxns := make([]Transaction, 0, len(txns)-len(skip))
-    for i, txn := range txns {
-        if _, shouldSkip := skip[i]; !shouldSkip {
-            newtxns = append(newtxns, txn)
+
+    // Filter the final results, if necessary
+    if len(skip) > 0 {
+        newtxns := make(Transactions, 0, len(txns)-len(skip))
+        for i, txn := range txns {
+            if _, shouldSkip := skip[i]; !shouldSkip {
+                newtxns = append(newtxns, txn)
+            }
         }
+        return newtxns, nil
+    } else {
+        return txns, nil
     }
-    return newtxns, nil
 }
 
-// Validates a set of Transactions, individually, against each other and
-// against the Blockchain
-func (self *Blockchain) verifyTransactions(txns []Transaction) error {
-    if len(txns) == 0 {
-        return errors.New("No transactions")
-    }
+// Returns an error if any Transaction in txns is invalid
+func (self *Blockchain) verifyTransactions(txns Transactions) error {
+    _, err := self.processTransactions(txns, true)
+    return err
+}
 
-    // Check the transaction against itself.  This covers the hash,
-    // signature indices and duplicate spends within itself
+// Returns an array of Transactions with invalid ones removed from txns.
+// The Transaction hash is used to arbitrate between double spends.
+func (self *Blockchain) arbitrateTransactions(txns map[SHA256]Transaction) Transactions {
+    txnsarr := make(Transactions, 0)
     for _, t := range txns {
-        if err := self.VerifyTransaction(&t); err != nil {
-            return err
-        }
+        txnsarr = append(txnsarr, t)
     }
-
-    // Check to ensure that there are no duplicate spends in the entire block
-    // TODO -- this check will cause the blockchain to freeze, until we are
-    // able to arbitrate between conflicting transactions
-    for i := 0; i < len(txns)-1; i++ {
-        s := txns[i]
-        for j := i + 1; j < len(txns); j++ {
-            t := txns[j]
-            if s.Header.Hash == t.Header.Hash {
-                // This should not occur, assuming the input txns were
-                // extracted from a set or map
-                return errors.New("Duplicate transactions")
-            }
-            for a := 0; a < len(s.In)-1; a++ {
-                for b := a + 1; b < len(t.In); b++ {
-                    if s.In[a].UxOut == t.In[b].UxOut {
-                        m := "Cannot spend output twice in the same block"
-                        return errors.New(m)
-                    }
-                }
-            }
-        }
+    sort.Sort(txnsarr)
+    newtxns, err := self.processTransactions(txnsarr, false)
+    if err != nil {
+        log.Panic("arbitrateTransactions failed unexpectedly: %v", err)
     }
-
-    // Check that the resulting UxOuts are not already in the UnspentPool
-    var outputs []SHA256
-    for _, t := range txns {
-        for _, to := range t.Out {
-            out := UxOut{
-                Body: UxBody{
-                    Coins:          to.Coins,
-                    Hours:          to.Hours,
-                    SrcTransaction: t.Header.Hash,
-                    Address:        to.DestinationAddress,
-                },
-            }
-            outputs = append(outputs, out.Hash())
-        }
-    }
-    for i := 0; i < len(outputs)-1; i++ {
-        for j := i + 1; j < len(outputs); j++ {
-            if outputs[i] == outputs[j] {
-                return errors.New("Duplicate output encountered")
-            }
-        }
-    }
-
-    // Also disallow any output which somehow collides with the UnspentPool
-    for _, h := range outputs {
-        if self.Unspent.Has(h) {
-            return errors.New("Output hash is in the UnspentPool")
-        }
-    }
-
-    return nil
+    return newtxns
 }
 
 // Verifies the BlockHeader and BlockBody

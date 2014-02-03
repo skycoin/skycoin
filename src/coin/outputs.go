@@ -38,14 +38,13 @@ type UxOut struct {
     //Meta UxMeta
 }
 
-//not hashed, metdata
+// Metadata (not hashed)
 type UxHead struct {
     Time  uint64 //time of block it was created in
     BkSeq uint64 //block it was created in
     // SpSeq uint64 //block it was spent in
 }
 
-//part that is hashed
 type UxBody struct {
     SrcTransaction SHA256
     Address        Address //address of receiver
@@ -53,12 +52,12 @@ type UxBody struct {
     Hours          uint64  //coin hours
 }
 
-//type UxMeta struct {
-//}
+func (self *UxBody) Hash() SHA256 {
+    return SumSHA256(encoder.Serialize(self))
+}
 
 func (self *UxOut) Hash() SHA256 {
-    b1 := encoder.Serialize(self.Body)
-    return SumSHA256(b1)
+    return self.Body.Hash()
 }
 
 /*

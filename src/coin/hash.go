@@ -86,6 +86,24 @@ func (h1 *SHA256) Xor(h2 SHA256) SHA256 {
     return h3
 }
 
+func HashArraySort(ha []SHA256) {
+    log.Panic("implement HashArraySort")
+}
+
+func HashArraySort(ha []SHA256) {
+    log.Panic("implement HashArraySort")
+}
+
+func HashArrayHasDupes(ha []SHA256) bool {
+    for i := 0; i < len(ha); i++ {
+        for j := i + 1; j < len(ha); j++ {
+            if ha[i] == ha[j] {
+                return true
+            }
+        }
+    }
+    return false
+}
 //compute root merkle tree hash of hash list
 //pad input to power of 16
 //group inputs hashes into groups of 16 and hash them down to single hash

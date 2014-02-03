@@ -1,5 +1,11 @@
 package daemon
 
+import (
+    "errors"
+    "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/visor"
+)
+
 // Exposes a read-only api for use by the gui rpc interface
 
 type RPCConfig struct {
@@ -48,6 +54,12 @@ type Connection struct {
     ListenPort uint16 `json:"listen_port"`
 }
 
+// Result of a Spend() operation
+type Spend struct {
+    RemainingBalance visor.Balance
+    Error            error
+}
+
 // An array of connections
 type Connections struct {
     Connections []*Connection `json:"connections"`
@@ -57,23 +69,64 @@ type Connections struct {
    Requests for data must be synchronized by the DaemonLoop
 */
 
-// Returns a Connections struct
+// Returns a *Connections
 func (self *RPC) GetConnections() interface{} {
     self.requests <- func() interface{} { return self.getConnections() }
     r := <-self.responses
     return r
 }
 
-// Returns a Connection struct
+// Returns a *Connection
 func (self *RPC) GetConnection(addr string) interface{} {
     self.requests <- func() interface{} { return self.getConnection(addr) }
     r := <-self.responses
     return r
 }
 
+// Returns a *coin.Balance
+func (self *RPC) GetTotalBalance() interface{} {
+    self.requests <- func() interface{} { return self.getTotalBalance() }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *coin.Balance
+func (self *RPC) GetBalance(a coin.Address) interface{} {
+    self.requests <- func() interface{} { return self.getBalance(a) }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *Spend
+func (self *RPC) Spend(amt visor.Balance, dest coin.Address) interface{} {
+    self.requests <- func() interface{} { return self.spend(amt, dest) }
+    r := <-self.responses
+    return r
+}
+
+// Returns an error
+func (self *RPC) SaveWallet() interface{} {
+    self.requests <- func() interface{} { return self.saveWallet() }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *visor.ReadableWalletEntry
+func (self *RPC) CreateAddress() interface{} {
+    self.requests <- func() interface{} { return self.createAddress() }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *visor.ReadableWallet
+func (self *RPC) GetWallet() interface{} {
+    self.requests <- func() interface{} { return self.getWallet() }
+    r := <-self.responses
+    return r
+}
+
 /* Internal API */
 
-// Returns a Connection struct
 func (self *RPC) getConnection(addr string) *Connection {
     if self.Daemon.Pool.Pool == nil {
         return nil
@@ -92,7 +145,6 @@ func (self *RPC) getConnection(addr string) *Connection {
     }
 }
 
-// Returns a Connections struct
 func (self *RPC) getConnections() *Connections {
     if self.Daemon.Pool.Pool == nil {
         return nil
@@ -102,4 +154,77 @@ func (self *RPC) getConnections() *Connections {
         conns = append(conns, self.getConnection(c.Addr()))
     }
     return &Connections{Connections: conns}
+}
+
+func (self *RPC) getTotalBalance() *visor.Balance {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    b := self.Daemon.Visor.Visor.TotalBalance()
+    return &b
+}
+
+func (self *RPC) getBalance(a coin.Address) *visor.Balance {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    b := self.Daemon.Visor.Visor.Balance(a)
+    return &b
+}
+
+func (self *RPC) spend(amt visor.Balance, dest coin.Address) *Spend {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    txn, err := self.Daemon.Visor.Visor.Spend(amt, dest)
+    if err != nil {
+        err = self.Daemon.Visor.Visor.RecordTxn(txn)
+        if err != nil {
+            m := NewGiveTxnsMessage([]coin.Transaction{txn})
+            // TODO -- SendToAll method in gnet
+            sent := false
+            for _, c := range self.Daemon.Pool.Pool.Pool {
+                err := self.Daemon.Pool.Pool.Dispatcher.SendMessage(c, m)
+                if err != nil {
+                    logger.Warning("Failed to send GiveTxnsMessage to %s",
+                        c.Addr())
+                } else {
+                    sent = true
+                }
+            }
+            if !sent {
+                err = errors.New("Failed to send GiveTxnsMessage to anyone")
+            }
+        }
+    }
+    return &Spend{
+        RemainingBalance: *(self.getTotalBalance()),
+        Error:            err,
+    }
+}
+
+func (self *RPC) saveWallet() error {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    return self.Daemon.Visor.Visor.SaveWallet()
+}
+
+func (self *RPC) createAddress() *visor.ReadableWalletEntry {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    we, err := self.Daemon.Visor.Visor.CreateAddressAndSave()
+    if err != nil {
+        return nil
+    }
+    rwe := visor.NewReadableWalletEntry(&we)
+    return &rwe
+}
+
+func (self *RPC) getWallet() *visor.ReadableWallet {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    return visor.NewReadableWallet(self.Daemon.Visor.Visor.Wallet)
 }

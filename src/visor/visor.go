@@ -4,75 +4,13 @@ import (
     "errors"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/util"
     "log"
+    "os"
 )
 
 var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
-
-type WalletEntry struct {
-    Address coin.Address
-    Public  coin.PubKey
-    Secret  coin.SecKey
-}
-
-func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
-    // Wallet entries are shared as a form of identification, the secret key
-    // is not required
-    var s coin.SecKey
-    if w.Secret != "" {
-        s = coin.SecKeyFromHex(w.Secret)
-    }
-    return WalletEntry{
-        Address: coin.DecodeBase58Address(w.Address),
-        Public:  coin.PubKeyFromHex(w.Public),
-        Secret:  s,
-    }
-}
-
-// Checks that the public key is derivable from the secret key if present,
-// and that the public key is associated with the address
-func (self *WalletEntry) Verify(isMaster bool) error {
-    var emptySecret coin.SecKey
-    if self.Secret == emptySecret {
-        if isMaster {
-            return errors.New("WalletEntry is master, but has no secret key")
-        }
-    } else {
-        if coin.PubKeyFromSecKey(self.Secret) != self.Public {
-            return errors.New("Invalid public key for secret key")
-        }
-    }
-    return self.Address.Verify(self.Public)
-}
-
-type ReadableWalletEntry struct {
-    Address string `json:"address"`
-    Public  string `json:"public_key"`
-    Secret  string `json:"secret_key"`
-}
-
-func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
-    return ReadableWalletEntry{
-        Address: w.Address.String(),
-        Public:  w.Public.Hex(),
-        Secret:  w.Secret.Hex(),
-    }
-}
-
-// Loads a WalletEntry from filename, where the file contains a
-// ReadableWalletEntry
-func LoadWalletEntry(filename string) (WalletEntry, error) {
-    w := &ReadableWalletEntry{}
-    err := util.LoadJSON(filename, w)
-    if err != nil {
-        return WalletEntry{}, err
-    } else {
-        return WalletEntryFromReadable(w), nil
-    }
-}
 
 // Holds the master and personal keys
 type VisorKeys struct {
@@ -171,51 +109,175 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) []coin.Transaction 
     return known
 }
 
-// Manages the Blockchain as both a Master and a Normal
-type Visor struct {
+// Configuration parameters for the Visor
+type VisorConfig struct {
     // Is this the master blockchain
     IsMaster bool
-    // Master & personal keys
-    keys            VisorKeys
-    blockchain      *coin.Blockchain
-    blockSigs       BlockSigs
+    // Is allowed to create transactions
+    CanSpend bool
+    // Wallet file location
+    WalletFile string
+    // Minimum number of addresses to keep in the wallet
+    WalletSizeMin int
+    // Use test network addresses
+    TestNetwork bool
+    // How often new blocks are created by the master
+    BlockCreationInterval uint64
+}
+
+func NewVisorConfig() VisorConfig {
+    return VisorConfig{
+        IsMaster:              false,
+        CanSpend:              true,
+        TestNetwork:           true,
+        WalletFile:            "",
+        WalletSizeMin:         100,
+        BlockCreationInterval: 15,
+    }
+}
+
+// Manages the Blockchain as both a Master and a Normal
+type Visor struct {
+    Config VisorConfig
+    // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
+    // Wallet holding our keys for spending
+    Wallet *Wallet
+    // Master & personal keys
+    keys       VisorKeys
+    blockchain *coin.Blockchain
+    blockSigs  BlockSigs
 }
 
 // Creates a normal Visor given a master's public key
-func NewVisor(master WalletEntry, isMaster bool) Visor {
+func NewVisor(c VisorConfig, master WalletEntry) *Visor {
     logger.Debug("Creating new visor")
-    if isMaster {
+    if c.IsMaster {
         logger.Debug("Visor is master")
     }
-    err := master.Verify(isMaster)
+    err := master.Verify(c.IsMaster)
     if err != nil {
         log.Panicf("Invalid master wallet entry: %v", err)
     }
-    return Visor{
-        IsMaster:        isMaster,
-        keys:            NewVisorKeys(master),
-        blockchain:      coin.NewBlockchain(master.Address),
+
+    wallet := NewWallet()
+    if c.WalletFile != "" {
+        err := wallet.Load(c.WalletFile)
+        if err != nil {
+            if os.IsNotExist(err) {
+                logger.Info("Wallet file \"%s\" does not exist", c.WalletFile)
+            } else {
+                log.Panicf("Failed to load wallet file: %v", err)
+            }
+        }
+    }
+    wallet.populate(c.WalletSizeMin)
+    if c.WalletFile != "" {
+        err := wallet.Save(c.WalletFile)
+        if err == nil {
+            logger.Info("Saved wallet file to \"%s\"", c.WalletFile)
+        } else {
+            log.Panicf("Failed to save wallet file to \"%s\": ", c.WalletFile,
+                err)
+        }
+    }
+
+    return &Visor{
+        Config: c,
+        keys:   NewVisorKeys(master),
+        blockchain: coin.NewBlockchain(master.Address,
+            c.BlockCreationInterval),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
+        Wallet:          wallet,
     }
 }
 
-// Signs a block for master
-func (self *Visor) SignBlock(b coin.Block) (sb SignedBlock, e error) {
-    if !self.IsMaster {
-        log.Panic("You cannot sign blocks")
-    }
-    sig, err := coin.SignHash(b.HashHeader(), self.keys.Master.Secret)
+// Saves the Wallet to disk
+func (self *Visor) SaveWallet() error {
+    return self.Wallet.Save(self.Config.WalletFile)
+}
+
+// Creates and returns a WalletEntry and saves the wallet to disk
+func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
+    we := self.Wallet.CreateAddress()
+    err := self.SaveWallet()
     if err != nil {
-        e = err
-        return
+        m := "Failed to save wallet to \"%s\" after creating new address"
+        logger.Warning(m, self.Config.WalletFile)
     }
-    sb = SignedBlock{
-        Block: b,
-        Sig:   sig,
+    return we, err
+}
+
+// Creates a SignedBlock from pending transactions
+func (self *Visor) CreateBlock() (SignedBlock, error) {
+    var sb SignedBlock
+    if !self.Config.IsMaster {
+        return sb, errors.New("Only master chain can create blocks")
     }
-    return
+    if len(self.UnconfirmedTxns.Txns) == 0 {
+        return sb, errors.New("No transactions")
+    }
+    // TODO -- need process for filtering colliding blocks
+    // e.g. if two unconfirmed transactions are spending the same thing,
+    // one must be chosen and the other discarded
+    b, err := self.blockchain.NewBlockFromTransactions(self.UnconfirmedTxns.Txns)
+    if err != nil {
+        return sb, err
+    }
+    sb, err = self.signBlock(b)
+    if err == nil {
+        return sb, self.ExecuteSignedBlock(sb)
+    } else {
+        return sb, err
+    }
+}
+
+// Creates a Transaction spending coins and hours from our coins
+// TODO -- handle txn fees.  coin.Transaciton does not implement fee support
+func (self *Visor) Spend(amt Balance,
+    dest coin.Address) (coin.Transaction, error) {
+    var txn coin.Transaction
+    if !self.Config.CanSpend {
+        return txn, errors.New("Spending disabled")
+    }
+    if amt.IsZero() {
+        return txn, errors.New("Zero spend amount")
+    }
+    needed := amt
+    // needed = needed.Add(fee)
+    auxs := self.blockchain.Unspent.AllForAddresses(self.Wallet.GetAddresses())
+    for a, uxs := range auxs {
+        entry, exists := self.Wallet.GetEntry(a)
+        if !exists {
+            log.Panic("On second thought, the wallet entry does not exist")
+        }
+        for _, ux := range uxs {
+            if needed.IsZero() {
+                break
+            }
+            coinHours := ux.CoinHours(self.blockchain.Time())
+            b := NewBalance(ux.Body.Coins, coinHours)
+            if needed.GreaterThanOrEqual(b) {
+                needed = needed.Sub(b)
+                txn.PushInput(ux.Hash(), entry.Secret)
+            } else {
+                change := b.Sub(needed)
+                needed = needed.Sub(needed)
+                txn.PushInput(ux.Hash(), entry.Secret)
+                txn.PushOutput(ux.Body.Address, change.Coins, change.Hours)
+            }
+        }
+    }
+
+    txn.PushOutput(dest, amt.Coins, amt.Hours)
+    txn.UpdateHeader()
+
+    if needed.IsZero() {
+        return txn, nil
+    } else {
+        return txn, errors.New("Not enough coins or hours")
+    }
 }
 
 // Adds a block to the blockchain, or returns error.
@@ -275,15 +337,44 @@ func (self *Visor) RecordTxn(txn coin.Transaction) error {
     if err := txn.Verify(); err != nil {
         return err
     }
-    if err := self.blockchain.VerifyTransaction(txn); err != nil {
+    if err := self.blockchain.VerifyTransaction(&txn); err != nil {
         return err
     }
     self.UnconfirmedTxns.Txns[txn.Header.Hash] = txn
     return nil
 }
 
+// Returns the total balance for addresses in the Wallet
+func (self *Visor) TotalBalance() Balance {
+    return self.Wallet.TotalBalance(self.blockchain.Unspent,
+        self.blockchain.Time())
+}
+
+// Returns the balance for a single address in the Wallet
+func (self *Visor) Balance(a coin.Address) Balance {
+    return self.Wallet.Balance(self.blockchain.Unspent,
+        self.blockchain.Time(), a)
+}
+
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
     return coin.VerifySignature(self.keys.Master.Public, b.Sig,
         b.Block.HashHeader())
+}
+
+// Signs a block for master
+func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
+    if !self.Config.IsMaster {
+        log.Panic("Only master chain can sign blocks")
+    }
+    sig, err := coin.SignHash(b.HashHeader(), self.keys.Master.Secret)
+    if err != nil {
+        e = err
+        return
+    }
+    sb = SignedBlock{
+        Block: b,
+        Sig:   sig,
+    }
+    return
 }

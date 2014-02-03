@@ -1,28 +1,25 @@
 package daemon
 
 import (
+    "errors"
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
 )
 
 type VisorConfig struct {
-    // Is a master visor
-    IsMaster bool
+    Config visor.VisorConfig
     // Location of master keys
     MasterKeysFile string
     // Master public/secret key and genesis address
     MasterKeys visor.WalletEntry
-    // Is running on the test network
-    TestNetwork bool
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        IsMaster:       false,
+        Config:         visor.NewVisorConfig(),
         MasterKeysFile: "",
         MasterKeys:     visor.WalletEntry{},
-        TestNetwork:    true,
     }
 }
 
@@ -37,14 +34,54 @@ func (self *VisorConfig) LoadMasterKeys() error {
 
 type Visor struct {
     Config VisorConfig
-    Visor  visor.Visor
+    Visor  *visor.Visor
 }
 
 func NewVisor(c VisorConfig) *Visor {
-    v := visor.NewVisor(c.MasterKeys, c.IsMaster)
+    v := visor.NewVisor(c.Config, c.MasterKeys)
     return &Visor{
         Config: c,
         Visor:  v,
+    }
+}
+
+// Closes the Wallet, saving it to disk
+func (self *Visor) Shutdown() {
+    walletFile := self.Config.Config.WalletFile
+    err := self.Visor.Wallet.Save(walletFile)
+    if err == nil {
+        logger.Info("Saved wallet file to \"%s\"", walletFile)
+    } else {
+        logger.Error("Failed to save wallet file to \"%s\": %v", walletFile,
+            err)
+    }
+}
+
+// Sends a signed block to all connections
+func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
+    m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
+    sent := false
+    for _, c := range pool.Pool.Pool {
+        err := pool.Pool.Dispatcher.SendMessage(c, m)
+        if err == nil {
+            sent = true
+        }
+    }
+    if sent {
+        return nil
+    } else {
+        return errors.New("Failed to AnnounceBlock to anyone")
+    }
+}
+
+// Creates a block from unconfirmed transactions and sends it to the network.
+// Will panic if not running as a master chain.
+func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
+    sb, err := self.Visor.CreateBlock()
+    if err == nil {
+        return self.broadcastBlock(sb, pool)
+    } else {
+        return err
     }
 }
 
@@ -112,11 +149,11 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
         }
         processed = i + 1
     }
-
-    // Announce our new blocks to peers
     if processed == 0 {
         return
     }
+
+    // Announce our new blocks to peers
     m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
     for _, c := range d.Pool.Pool.Pool {
         err := d.Pool.Pool.Dispatcher.SendMessage(c, m)

@@ -202,6 +202,7 @@ func (self *Daemon) Shutdown() {
     self.DHT.Shutdown()
     self.Pool.Shutdown()
     self.Peers.Shutdown()
+    self.Visor.Shutdown()
     gnet.EraseMessages()
 }
 
@@ -210,6 +211,13 @@ func (self *Daemon) Shutdown() {
 func (self *Daemon) Start(quit chan int) {
     go self.Pool.Start()
     go self.DHT.Start()
+
+    // TODO -- run blockchain stuff in its own goroutine
+    blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
+    blockCreationTicker := time.NewTicker(time.Second * blockInterval)
+    if !self.Visor.Config.Config.IsMaster {
+        blockCreationTicker.Stop()
+    }
 
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
     cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
@@ -276,6 +284,15 @@ main:
         // Process any pending API requests
         case fn := <-self.RPC.requests:
             self.RPC.responses <- fn()
+        // Create blocks, if master chain
+        // TODO -- run this in the Visor
+        case <-blockCreationTicker.C:
+            if e := self.Visor.CreateAndPublishBlock(self.Pool); e != nil {
+                logger.Error("Failed to create and publish block: %v", e)
+            } else {
+                // Not a critical error, but we want it very visible in logs
+                logger.Critical("Created and published a new block")
+            }
         case <-quit:
             break main
         }

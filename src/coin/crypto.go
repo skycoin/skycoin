@@ -60,7 +60,7 @@ func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
 
-type Sig [64+1]byte //64 byte signature with 1 byte for key recovery
+type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 
 func NewSig(b []byte) Sig {
     var s Sig
@@ -102,20 +102,10 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
     return NewSig(sig), nil
 }
 
-/*
-func SignMessage(seckey SecKey, msg []byte) Sig {
-    if secp256k1.VerifySeckey(seckey[:]) != 1 {
-        log.Panic("Invalid secret key")
-    }
-    sig := secp256k1.Sign(msg, seckey[:])
-    return NewSig(sig)
-}
-*/
-
 func PubKeyFromSecKey(seckey SecKey) PubKey {
     b := secp256k1.PubkeyFromSeckey(seckey[:])
     if b == nil {
-        log.Panic("could not recover pubkey form sec key \n")
+        log.Panic("could not recover pubkey from seckey")
         return PubKey{}
     }
     return NewPubKey(b)

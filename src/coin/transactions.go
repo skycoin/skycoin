@@ -1,10 +1,11 @@
 package coin
 
 import (
+    "bytes"
+    "errors"
     "github.com/skycoin/skycoin/src/lib/encoder"
     "log"
     "math"
-    "errors"
 )
 
 /*
@@ -52,6 +53,7 @@ type TransactionOutput struct {
 	Add immutability and hash checks here
 */
 
+<<<<<<< HEAD
 //Verify attempts to determine if the transaction is well formed
 //Verify can check transaction signatures and signature indices
 //Verify cannot check that signatures correspond to pubkey of address which owns the outputs being spent
@@ -60,16 +62,71 @@ type TransactionOutput struct {
 func (txn *Transaction) Verify() error {
     //SECURITY TODO: check for duplicate output coinbases
     //SECURITY TODO: check for double spending of same input
+=======
+// Verify attempts to determine if the transaction is well formed
+// Verify cannot check transaction signatures, it needs the address from unspents
+// Verify cannot check if outputs being spent exist
+// Verify cannot check if the transaction would create or destroy coins
+// or if the inputs have the required coin base
+func (self *Transaction) Verify() error {
+    h := self.hashInner()
+    if h != self.Header.Hash {
+        return errors.New("Invalid header hash")
+    }
 
-    //check signature index fields
-    _maxidx := len(txn.Header.Sigs)
+    if len(self.In) == 0 {
+        return errors.New("No inputs")
+    }
+
+    if len(self.Out) == 0 {
+        return errors.New("No outputs")
+    }
+>>>>>>> 3860555bb911e37dc5fa2f6be82469c781e4000b
+
+    // Check signature index fields
+    _maxidx := len(self.Header.Sigs)
     if _maxidx >= math.MaxUint16 {
         return errors.New("Too many signatures in transaction header")
     }
     maxidx := uint16(_maxidx)
-    for _, tx := range txn.In {
+    var highest uint16 = 0
+    for _, tx := range self.In {
         if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
             return errors.New("validateSignatures; invalid SigIdx")
+        }
+        if tx.SigIdx > highest {
+            highest = tx.SigIdx
+        }
+    }
+    if uint16(len(self.Header.Sigs)) != highest {
+        return errors.New("Signature indices malformed")
+    }
+
+    // Check duplicate inputs
+    for i := 0; i < len(self.In)-1; i++ {
+        for j := i + 1; i < len(self.In); j++ {
+            if self.In[i].UxOut == self.In[j].UxOut {
+                return errors.New("Duplicate spend")
+            }
+        }
+    }
+
+    // Check duplicate outputs (would destroy coins)
+    outputs := make([]SHA256, 0)
+    uxb := UxBody{
+        SrcTransaction: self.Header.Hash,
+    }
+    for _, to := range self.Out {
+        uxb.Coins = to.Coins
+        uxb.Hours = to.Hours
+        uxb.Address = to.DestinationAddress
+        outputs = append(outputs, uxb.Hash())
+    }
+    for i := 0; i < len(outputs)-1; i++ {
+        for j := i + 1; j < len(outputs); j++ {
+            if outputs[i] == outputs[j] {
+                return errors.New("Duplicate output in transaction")
+            }
         }
     }
 
@@ -98,12 +155,9 @@ func (txn *Transaction) Verify() error {
     return nil
 }
 
-/*
-	Check that all sigs all used
-	Check that sigs are sequential
-*/
-
-func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+// Adds a TransactionInput to the Transaction given the hash of a UxOut.
+// Returns the signature index for later signing
+func (self *Transaction) pushInput(uxOut SHA256) uint16 {
     if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
@@ -116,7 +170,14 @@ func (self *Transaction) PushInput(uxOut SHA256) uint16 {
     return sigIdx
 }
 
-func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
+// Adds a TransactionInput to the Transaction and signs it
+func (self *Transaction) PushInput(spendUx SHA256, sec SecKey) {
+    sigIdx := self.pushInput(spendUx)
+    self.signInput(sigIdx, sec)
+}
+
+// Adds a TransactionOutput, sending coins & hours to an Address
+func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
     to := TransactionOutput{
         DestinationAddress: dst,
         Coins:              coins,
@@ -125,7 +186,8 @@ func (self *Transaction) PushOutput(dst Address, coins uint64, hours uint64) {
     self.Out = append(self.Out, to)
 }
 
-func (self *Transaction) SetSig(idx uint16, sec SecKey) {
+// Signs a TransactionInput at its signature index
+func (self *Transaction) signInput(idx uint16, sec SecKey) {
     hash := self.hashInner()
     sig, err := SignHash(hash, sec)
     if err != nil {
@@ -157,7 +219,7 @@ func (self *Transaction) Serialize() []byte {
 func TransactionDeserialize(b []byte) Transaction {
     var t Transaction
     if err := encoder.DeserializeRaw(b, t); err != nil {
-        log.Panic("Faild to deserialize transaction")
+        log.Panic("Failed to deserialize transaction")
     }
     return t
 }
@@ -173,4 +235,20 @@ func (self *Transaction) hashInner() SHA256 {
     b2 := encoder.Serialize(self.Out)
     b3 := append(b1, b2...)
     return SumSHA256(b3)
+}
+
+type Transactions []Transaction
+
+func (self Transactions) Len() int {
+    return len(self)
+}
+
+func (self Transactions) Less(i, j int) bool {
+    return bytes.Compare(self[i].Header.Hash[:], self[j].Header.Hash[:]) < 0
+}
+
+func (self Transactions) Swap(i, j int) {
+    t := self[i]
+    self[i] = self[j]
+    self[j] = t
 }

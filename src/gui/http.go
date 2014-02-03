@@ -73,7 +73,7 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
         mux.HandleFunc(route, newStaticHandler(appLoc))
     }
     // Wallet interface
-    RegisterWalletHandlers(mux)
+    RegisterWalletHandlers(mux, daemon.RPC)
     // Network stats interface
     RegisterNetworkHandlers(mux, daemon.RPC)
     return mux

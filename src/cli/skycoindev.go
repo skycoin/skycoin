@@ -31,6 +31,10 @@ var DevArgs = DevConfig{Config{
     ColorLog: true,
     logLevel: "DEBUG",
 
+    // Wallets
+    WalletFile:    "",
+    WalletSizeMin: 100,
+
     // Centralized network configuration
     MasterPublic:   "0223f1cd8652e64f0b2b6960e25c5799426220d44d50d016a4c64ecefb5b0043db",
     GenesisAddress: "2bGDcaLJH8Ve7JBgqgSjNbHGSSSagEWtBrJ",
@@ -95,4 +99,9 @@ func (self *DevConfig) register() {
         "public key of the master chain")
     flag.StringVar(&self.GenesisAddress, "genesis-address", self.GenesisAddress,
         "blockchain genesis address")
+    flag.StringVar(&self.WalletFile, "wallet-file", self.WalletFile,
+        "location of the wallet file. Defaults to ~/.skycoin/wallet.json")
+    flag.IntVar(&self.WalletSizeMin, "wallet-size-min", self.WalletSizeMin,
+        "How many address the wallet should have, at a minimum")
+
 }

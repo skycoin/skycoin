@@ -185,8 +185,7 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
         if !exists {
             return errors.New("Unspent output does not exist")
         }
-        err := ChkSig(ux.Body.Address, t.Header.Hash,
-            t.Header.Sigs[tx.SigIdx])
+        err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[tx.SigIdx])
         if err != nil {
             return err
         }
@@ -219,6 +218,7 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
     return nil
 }
 
+// Returns error if the BlockHeader is not valid
 func (self *Blockchain) verifyBlockHeader(b *Block) error {
     //check BkSeq
     if b.Header.BkSeq != self.Head.Header.BkSeq+1 {

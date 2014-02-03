@@ -171,7 +171,7 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
             }
         }
     }
-    wallet.Populate(c.WalletSizeMin)
+    wallet.populate(c.WalletSizeMin)
     if c.WalletFile != "" {
         err := wallet.Save(c.WalletFile)
         if err == nil {
@@ -191,6 +191,22 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
         Wallet:          wallet,
     }
+}
+
+// Saves the Wallet to disk
+func (self *Visor) SaveWallet() error {
+    return self.Wallet.Save(self.Config.WalletFile)
+}
+
+// Creates and returns a WalletEntry and saves the wallet to disk
+func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
+    we := self.Wallet.CreateAddress()
+    err := self.SaveWallet()
+    if err != nil {
+        m := "Failed to save wallet to \"%s\" after creating new address"
+        logger.Warning(m, self.Config.WalletFile)
+    }
+    return we, err
 }
 
 // Creates a SignedBlock from pending transactions

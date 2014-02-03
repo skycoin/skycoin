@@ -140,16 +140,6 @@ func NewWallet() *Wallet {
     }
 }
 
-// Creates new WalletEntries to fill the wallet up to n.  No WalletEntries
-// are created if the Wallet already contains n or more entries.
-func (self *Wallet) Populate(n int) {
-    for i := len(self.Entries); i < n; i++ {
-        e := NewWalletEntry()
-        self.Entries = append(self.Entries, e)
-        self.addressLookup[e.Address] = len(self.Entries) - 1
-    }
-}
-
 func NewWalletFromReadable(r *ReadableWallet) *Wallet {
     entries := make([]WalletEntry, 0, len(r.Entries))
     for _, re := range r.Entries {
@@ -162,6 +152,22 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
     return &Wallet{
         Entries:       entries,
         addressLookup: lookup,
+    }
+}
+
+// Creates a WalletEntry
+func (self *Wallet) CreateAddress() WalletEntry {
+    e := NewWalletEntry()
+    self.Entries = append(self.Entries, e)
+    self.addressLookup[e.Address] = len(self.Entries) - 1
+    return e
+}
+
+// Creates new WalletEntries to fill the wallet up to n.  No WalletEntries
+// are created if the Wallet already contains n or more entries.
+func (self *Wallet) populate(n int) {
+    for i := len(self.Entries); i < n; i++ {
+        self.CreateAddress()
     }
 }
 

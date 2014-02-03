@@ -54,7 +54,7 @@ type TransactionOutput struct {
 */
 
 // Verify attempts to determine if the transaction is well formed
-// Verify cannot check transaction signatures and signature indices
+// Verify cannot check transaction signatures, it needs the address from unspents
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
@@ -72,16 +72,23 @@ func (self *Transaction) Verify() error {
         return errors.New("No outputs")
     }
 
-    //check signature index fields
+    // Check signature index fields
     _maxidx := len(self.Header.Sigs)
     if _maxidx >= math.MaxUint16 {
         return errors.New("Too many signatures in transaction header")
     }
     maxidx := uint16(_maxidx)
+    var highest uint16 = 0
     for _, tx := range self.In {
         if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
             return errors.New("validateSignatures; invalid SigIdx")
         }
+        if tx.SigIdx > highest {
+            highest = tx.SigIdx
+        }
+    }
+    if uint16(len(self.Header.Sigs)) != highest {
+        return errors.New("Signature indices malformed")
     }
 
     // Check duplicate inputs
@@ -114,11 +121,6 @@ func (self *Transaction) Verify() error {
 
     return nil
 }
-
-/*
-	Check that all sigs all used
-	Check that sigs are sequential
-*/
 
 // Adds a TransactionInput to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing

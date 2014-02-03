@@ -104,6 +104,27 @@ func (self *RPC) Spend(amt visor.Balance, dest coin.Address) interface{} {
     return r
 }
 
+// Returns an error
+func (self *RPC) SaveWallet() interface{} {
+    self.requests <- func() interface{} { return self.saveWallet() }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *visor.ReadableWalletEntry
+func (self *RPC) CreateAddress() interface{} {
+    self.requests <- func() interface{} { return self.createAddress() }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *visor.ReadableWallet
+func (self *RPC) GetWallet() interface{} {
+    self.requests <- func() interface{} { return self.getWallet() }
+    r := <-self.responses
+    return r
+}
+
 /* Internal API */
 
 func (self *RPC) getConnection(addr string) *Connection {
@@ -180,4 +201,30 @@ func (self *RPC) spend(amt visor.Balance, dest coin.Address) *Spend {
         RemainingBalance: *(self.getTotalBalance()),
         Error:            err,
     }
+}
+
+func (self *RPC) saveWallet() error {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    return self.Daemon.Visor.Visor.SaveWallet()
+}
+
+func (self *RPC) createAddress() *visor.ReadableWalletEntry {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    we, err := self.Daemon.Visor.Visor.CreateAddressAndSave()
+    if err != nil {
+        return nil
+    }
+    rwe := visor.NewReadableWalletEntry(&we)
+    return &rwe
+}
+
+func (self *RPC) getWallet() *visor.ReadableWallet {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    return visor.NewReadableWallet(self.Daemon.Visor.Visor.Wallet)
 }

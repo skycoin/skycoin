@@ -64,7 +64,51 @@ func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
+func walletSaveHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        err := rpc.SaveWallet()
+        if err != nil {
+            Error500(w, err.(error).Error())
+        }
+    }
+}
+
+func walletCreateAddressHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        addr := rpc.CreateAddress()
+        if addr == nil {
+            Error404(w)
+        } else if SendJSON(w, addr) != nil {
+            Error500(w)
+        }
+    }
+}
+
+func walletCreateHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // TODO -- not clear to how to handle multiple wallets yet
+    }
+}
+
+func walletHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        wallet := rpc.GetWallet()
+        if wallet == nil {
+            Error404(w)
+        } else if SendJSON(w, wallet) != nil {
+            Error500(w)
+        }
+    }
+}
+
 func RegisterWalletHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
+    mux.HandleFunc("/wallet", walletHandler(rpc))
     mux.HandleFunc("/wallet/balance", walletBalanceHandler(rpc))
     mux.HandleFunc("/wallet/spend", walletSpendHandler(rpc))
+    mux.HandleFunc("/wallet/save", walletSaveHandler(rpc))
+    mux.HandleFunc("/wallet/address/create", walletCreateAddressHandler(rpc))
+    // mux.HandleFunc("/wallet/create", walletCreateHandler(rpc))
+    // History requires blockchain scans that will be very slow until
+    // we have a more efficient datastructure
+    // mux.HandleFunc("/wallet/history", walletHistoryHandler(rpc))
 }

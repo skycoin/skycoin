@@ -108,6 +108,7 @@ func (self *Transaction) Verify() error {
     outputs := make([]SHA256, 0)
 
     for _, to := range txnOut {
+        var uxb UxOut
         uxb.SrcTransaction = txnHeader.Hash,
         uxb.Coins = to.Coins
         uxb.Hours = to.Hours
@@ -118,15 +119,6 @@ func (self *Transaction) Verify() error {
     if  HashArrayHasDupes(outputs) == true {
         return errors.New("Duplicate output in transaction")
     }
-    /*
-    for i := 0; i < len(outputs); i++ {
-        for j := i + 1; j < len(outputs); j++ {
-            if outputs[i] == outputs[j] {
-                return errors.New("Duplicate output in transaction")
-            }
-        }
-    }
-    */
 
     //validate signature
     for _, txi := range txn.In {
@@ -151,6 +143,7 @@ func (self *Transaction) Verify() error {
 // Adds a TransactionInput to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
 func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+    //TODO: do no create new si
     if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }

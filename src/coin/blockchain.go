@@ -5,7 +5,7 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/encoder"
     "log"
-    "sort"
+    //"sort"
     "time"
 )
 
@@ -195,9 +195,10 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
 
 //TxUxIn returns an array of outputs a transaction would spend
 //TxUxIn returns error if outputs are not in the UTXO set
-func (self *Blockchain) TxUxIn(tx *Transaction) ([]UxOut, error) {
+func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
     //todo, check for duplicate inputs
-    var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
+    //var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
+    uxia := NewUxArray(len(tx.In))
     for idx, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
         if !exists {
@@ -213,6 +214,15 @@ func (self *Blockchain) TxUxIn(tx *Transaction) ([]UxOut, error) {
 //TxUxInChk checks for duplicate inputs and double spending
 //TxUxInChk returns the array of UxOut in sorted order by hash
 func (self *Blockchain) TxUxInChk(tx *Transaction) (UxArray, error) {
+    uxa, err := self.TxUxIn(tx)
+    if err != nil {
+        return nil, err
+    }
+
+    uxa.Sort()
+    if uxa.IsSorted() == false {
+        log.Panic("impossible error: fix sort functoin")
+    }
     return nil, nil
 }
 
@@ -406,7 +416,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
     }
 
     // Transactions must be sorted, so we can have deterministic filtering
-    if !sort.IsSorted(txns) {
+    if !txns.IsSorted() {
         return nil, errors.New("Txns not sorted")
     }
 

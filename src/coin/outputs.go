@@ -4,6 +4,7 @@ import (
     "github.com/skycoin/encoder"
     "log"
     "bytes"
+    "sort"
 )
 
 /*
@@ -86,6 +87,15 @@ type UxArray []UxOut
 
 func NewUxArray(n int) UxArray {
     return make([]UxOut, n)
+}
+
+func (self UxArray) Sort() {
+    //sort.Sort(UxArray(self))
+    sort.Sort(self)
+}
+
+func (self UxArray) IsSorted() bool {
+    return sort.IsSorted(self)
 }
 
 func (self UxArray) Len() int {

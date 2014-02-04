@@ -6,6 +6,7 @@ import (
     "github.com/skycoin/encoder"
     "log"
     "math"
+    "sort"
 )
 
 type Transaction struct {
@@ -194,6 +195,15 @@ func (self *Transaction) hashInner() SHA256 {
 }
 
 type Transactions []Transaction
+
+func (self Transactions) Sort() {
+    //sort.Sort(Transactions(self))
+    sort.Sort(self)
+}
+
+func (self Transactions) IsSorted() bool {
+    return sort.IsSorted(self)
+}
 
 func (self Transactions) Len() int {
     return len(self)

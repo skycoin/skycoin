@@ -286,11 +286,11 @@ func (self *Blockchain) TxUxOutChk(tx *Transaction) (error) {
     if err != nil {
         return err
     }
-
+    //check for outputs with duplicate hashes
     if uxo.HasDupes() == true {
         return errors.New("TxUxOutChk error, duplicate hash outputs")
     }
-
+    //check for hash collisions of outputs with unspent output set
     hash_array := uxo.HashArray()
     for _,uxhash := range hash_array {
         if _,exists := self.Unspent.Get(uxhash); exists == true {
@@ -298,9 +298,62 @@ func (self *Blockchain) TxUxOutChk(tx *Transaction) (error) {
         }
     }
 
+    //check misc outputs conditions
+    for _, ux := range uxo {
+        //disallow allow zero coin outputs
+        if ux.Body.Coins == 0 {
+            return errors.New("Zero coin output")
+        }
+        //each transaction output should multiple of 10e6 base units, to prevent utxo spam
+        if ux.Body.Coins % 10e6 != 0 {
+            return errors.New("outputs must be multiple of 10e6 base units")
+        }
+    }
+
     return nil
 }
 
+//TxUxChk checks for errors in relationship between the inputs and outputs of the transaction
+//TxUxChk will use uxa,uxo as intput and output transactions or will generate the arrays using TxUxIn() 
+// and TxUxOut() if nil is passed in
+func (self *Blockchain) TxUxChk(tx *Transaction, uxa UxArray, uxo UxArray) (error) {
+    if uxa == nil {
+        if uxa,err := self.TxUxIn(tx); err != nil {
+            return err
+        }
+    }
+    if uxo == nil {
+        if uxo,err := self.TxUxOut(tx); err != nil {
+            return err
+        }
+    }
+
+    //BlockChain.Time() returns time of block head
+    var head_time uint64 = self.Time()
+
+    var coinsIn uint64 = 0
+    var hoursIn uint64 = 0
+    for _, uxi := range uxa {
+        coinsIn += uxi.Body.Coins
+        hoursIn += uxi.CoinHours(head_time)
+    }
+
+    var coinsOut uint64 = 0
+    var hoursOut uint64 = 0
+    for _, uxo := range uxo {
+        coinsOut += uxo.Coins
+        hoursOut += uxo.Hours
+    }
+
+    if coinsIn != coinsOut {
+        return errors.New("TxUxChk error, Transactions may not create or destroy coins")
+    }
+    if hoursIn < hoursOut {
+        return errors.New("TxUxChk error, Insufficient coin hours for outputs")
+    }
+
+    return nil
+}
 // VerifyTransaction determines whether a transaction could be executed in the
 // current block
 // VerifyTransactions checks that the inputs to the transaction exist,
@@ -343,41 +396,9 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
 
     //check misc input conditions
 
-    //check misc outputs conditions
-    for _, uxo := range tx.Out {
-        //disallow allow zero coin outputs
-        if uxo.Coins == 0 {
-            return errors.New("Zero coin output")
-        }
-        //each transaction output should multiple of 10e6 base units
-        //artificial restriction to prevent utxo spam
-        if uxo.Coins % 10e6 != 0 {
-            return errors.New("outputs must be multiple of 10e6 base units")
-        }
-    }
 
     //check coinhours
-    var coinsIn uint64 = 0
-    var hoursIn uint64 = 0
-    for idx, _:= range tx.In {
-        var uxi UxOut = uxia[idx]
-        coinsIn += uxi.Body.Coins
-        hoursIn += uxi.CoinHours(head_time)
-    }
 
-    var coinsOut uint64 = 0
-    var hoursOut uint64 = 0
-    for _, uxo := range tx.Out {
-        coinsOut += uxo.Coins
-        hoursOut += uxo.Hours
-    }
-
-    if coinsIn != coinsOut {
-        return errors.New("Input coins do not equal output coins")
-    }
-    if hoursIn < hoursOut {
-        return errors.New("Insufficient coin hours for outputs")
-    }
 
     return nil
 }

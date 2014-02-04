@@ -222,6 +222,15 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
         return err
     }
 
+    //check signatures
+    for idx, txi := range tx.In {
+        var ux UxOut = uxia[idx]
+        err := ChkSig(ux.Body.Address, tx.Header.Hash, tx.Header.Sigs[txi.SigIdx])
+        if err != nil {
+            return errors.New("error: ChkSig fail")
+        }
+    }
+
     //testing sort functoin
     uxa.Sort()
     if uxa.IsSorted() == false {

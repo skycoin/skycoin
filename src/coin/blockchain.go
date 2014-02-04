@@ -314,35 +314,24 @@ func (self *Blockchain) TxUxOutChk(tx *Transaction) (error) {
 }
 
 //TxUxChk checks for errors in relationship between the inputs and outputs of the transaction
-//TxUxChk will use uxa,uxo as intput and output transactions or will generate the arrays using TxUxIn() 
-// and TxUxOut() if nil is passed in
+//TxUxChk is used as BC.TxUxChk(tx, BC.TxUxIn(tx), BC.TxUxOut(tx))
 func (self *Blockchain) TxUxChk(tx *Transaction, uxa UxArray, uxo UxArray) (error) {
-    if uxa == nil {
-        if uxa,err := self.TxUxIn(tx); err != nil {
-            return err
-        }
-    }
-    if uxo == nil {
-        if uxo,err := self.TxUxOut(tx); err != nil {
-            return err
-        }
-    }
 
     //BlockChain.Time() returns time of block head
     var head_time uint64 = self.Time()
 
     var coinsIn uint64 = 0
     var hoursIn uint64 = 0
-    for _, uxi := range uxa {
-        coinsIn += uxi.Body.Coins
-        hoursIn += uxi.CoinHours(head_time)
+    for _, ux := range uxa {
+        coinsIn += ux.Body.Coins
+        hoursIn += ux.CoinHours(head_time)
     }
 
     var coinsOut uint64 = 0
     var hoursOut uint64 = 0
-    for _, uxo := range uxo {
-        coinsOut += uxo.Coins
-        hoursOut += uxo.Hours
+    for _, ux := range uxo {
+        coinsOut += ux.Body.Coins
+        hoursOut += ux.Body.Hours
     }
 
     if coinsIn != coinsOut {
@@ -383,22 +372,26 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
 
     //this could be BlockChain.Time() which returns time of block head
     var head_time uint64 = self.Time()
-    
-    uxia, err := self.TxUxOut(tx) //set of inputs referenced by transaction
+
+    uxa, err := self.TxUxIn(tx) //set of inputs referenced by transaction
+    if err != nil {
+        return err
+    }
+
+    uxo, err := self.TxUxOut(tx) //set of inputs referenced by transaction
+    if err != nil {
+        return err
+    }
+
+    err = self.TxUxChk(tx, uxa, uxo)
     if err != nil {
         return err
     }
 
     // Q: why are coin hours based on last block time and not
     // current time?
-    // A: no two computers will agree on system time Need system clock indepedent timing that 
+    // A: no two computers will agree on system time. Need system clock indepedent timing that 
     //everyone agrees on. fee values would depend on local clock
-
-    //check misc input conditions
-
-
-    //check coinhours
-
 
     return nil
 }

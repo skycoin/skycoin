@@ -450,6 +450,7 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
 // should not result in an error, unless all txns are invalid.
 func (self *Blockchain) processTransactions(txns Transactions,
     firstFail bool) (Transactions, error) {
+    //TODO: audit
     // If there are no transactions, a block should not be made
     if len(txns) == 0 {
         if firstFail {

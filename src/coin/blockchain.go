@@ -208,10 +208,25 @@ func (self *Blockchain) TxUxIn(tx *Transaction) ([]UxOut, error) {
     return uxia
 }
 
+//TxUxInChk validates the inputs to a transaction
+//TxUxInChk checks signatures
+//TxUxInChk checks for duplicate inputs and double spending
+//TxUxInChk returns the array of UxOut in sorted order by hash
+func (self *Blockchain) TxUxInChk(tx *Transaction) (UxArray, error) {
+
+}
+
 //TxUxOut returns array of outputs that would be created by transaction
 //TxUxOut returns error on duplicate outputs
-func (self *Blockchain) TxUxOut(tx *Transaction) ([]UxOut, error) {
+func (self *Blockchain) TxUxOut(tx *Transaction) (UxArray, error) {
+    return nil, nil
+}
 
+//TxUxOutChk validates the outputs that would be created by the transaction
+//TxUxOutChk checks for hash collisions and duplicate outputs
+//TxUxOutChk checks for error conditions in outputs
+func (self *Blockchain) TxUxOutChk(tx *Transaction) (UxArray, error) {
+    return nil, nil
 }
 
 // VerifyTransaction determines whether a transaction could be executed in the

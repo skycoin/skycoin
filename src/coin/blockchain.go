@@ -11,7 +11,7 @@ import (
 
 var (
     logger = logging.MustGetLogger("skycoin.coin")
-    ExtraChecks = true //extra checks for impossible conditions
+    DebugLevel2 = true //enables paranoid checks for programmer error
 )
 
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
@@ -197,19 +197,23 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
 //TxUxIn returns an array of outputs a transaction would spend
 //TxUxIn returns error if outputs referenced by transaction do not exist
 func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
-    //todo, check for duplicate inputs
-    //var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
     uxia := NewUxArray(len(tx.In))
     for idx, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
         if !exists {
             return nil, errors.New("Unspent output does not exist")
         }
-        if ExtraChecks == true && txi.UxOut != uxi.Hash() {
-            log.Panic("Impossible Error: ux hash invalid")
-        }
         uxia[idx] = uxi
     }
+
+    if DebugLevel2 == true {
+        for idx,txi := range tx.In {
+            if txi.UxOut != uxia[idx].Hash() {
+                log.Panic("Programmer Error, DebugLevel2: ux hash mismatch")
+            }
+        }
+    }
+
     return uxia, nil
 }
 
@@ -231,14 +235,16 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
         }
     }
 
-    //testing sort functoin
-    uxa.Sort()
-    if uxa.IsSorted() == false {
-        log.Panic("impossible error: fix sort function")
-    }
-
+    //check for duplicate inputs
     if uxa.HasDupes() == true {
         return errors.New("duplicate inputs")
+    }
+
+    if DebugLevel2 == true { //assert sort function
+        uxa.Sort()
+        if uxa.IsSorted() == false {
+            log.Panic("Programmer Error, DebugLevel2: fix sort function")
+        }
     }
 
     return nil

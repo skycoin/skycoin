@@ -90,10 +90,6 @@ func HashArraySort(ha []SHA256) {
     log.Panic("implement HashArraySort")
 }
 
-func HashArraySort(ha []SHA256) {
-    log.Panic("implement HashArraySort")
-}
-
 func HashArrayHasDupes(ha []SHA256) bool {
     for i := 0; i < len(ha); i++ {
         for j := i + 1; j < len(ha); j++ {

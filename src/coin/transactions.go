@@ -93,7 +93,7 @@ func (self *Transaction) Verify() error {
 
     for _, to := range txnOut {
         var uxb UxOut
-        uxb.SrcTransaction = txnHeader.Hash,
+        uxb.SrcTransaction = txnHeader.Hash
         uxb.Coins = to.Coins
         uxb.Hours = to.Hours
         uxb.Address = to.DestinationAddress

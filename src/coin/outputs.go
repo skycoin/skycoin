@@ -85,10 +85,6 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 // Array of Outputs
 type UxArray []UxOut
 
-func NewUxArray(n int) UxArray {
-    return make([]UxOut, n)
-}
-
 //HashArray returns array of hashes for the Ux in the UxArray
 func (self UxArray) HashArray() []SHA256 {
     hashes := make([]SHA256, len(self))

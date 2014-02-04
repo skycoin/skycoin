@@ -59,6 +59,8 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
+    //TODO: optionally check that each signature is used at least once
+
     h := txnhashInner()
     if h != txnHeader.Hash {
         return errors.New("Invalid header hash")
@@ -77,24 +79,6 @@ func (self *Transaction) Verify() error {
         return errors.New("signatures count exceeds uint16")
     }
 
-    //TODO: optionally check that each signature is used at least once
-    //Note: a single signature can be used to sign multiple outputs that belonging to the same address
-
-/*
-    maxidx := uint16(len(txnHeader.Sigs))
-    var highest uint16 = 0
-    for _, tx := range txnIn {
-        if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
-            return errors.New("validateSignatures; invalid SigIdx")
-        }
-        if tx.SigIdx > highest {
-            highest = tx.SigIdx
-        }
-    }
-    if uint16(len(txnHeader.Sigs)) != highest {
-        return errors.New("Signature indices malformed")
-    }
-*/
     // Check duplicate inputs
     for i := 0; i < len(txnIn); i++ {
         for j := i + 1; i < len(txnIn); j++ {

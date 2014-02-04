@@ -540,7 +540,7 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
     return nil
 }
 */
-=======
+
 // Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
 // CreateOutputs
 func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
@@ -572,7 +572,6 @@ func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) []UxOut 
     return uxo
 }
 
->>>>>>> 1f5ae896657bff69f18754d95339375205dab87f
 // Returns the latest block head time
 func (self *Blockchain) Time() uint64 {
     return self.Head().Header.Time

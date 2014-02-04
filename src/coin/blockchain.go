@@ -10,8 +10,7 @@ import (
 )
 
 var (
-    logger   = logging.MustGetLogger("skycoin.coin")
-    Paranoid = true //enables paranoid checks for programmer error
+    logger = logging.MustGetLogger("skycoin.coin")
 )
 
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
@@ -131,6 +130,8 @@ type Blockchain struct {
     Unspent UnspentPool
     // How often new blocks are created
     CreationInterval uint64
+    // Enable security checks for internal and 'impossible' errors
+    Paranoid bool
 }
 
 func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain {
@@ -140,6 +141,7 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
         CreationInterval: creationInterval,
         Blocks:           make([]Block, 0),
         Unspent:          NewUnspentPool(),
+        Paranoid:         true,
     }
 
     //set genesis block
@@ -228,7 +230,7 @@ func (self *Blockchain) txUxInChk(tx *Transaction, uxIn UxArray) error {
         return errors.New("txUxInChk error: duplicate inputs")
     }
 
-    if Paranoid {
+    if self.Paranoid {
         // Check that hashes match.  This would imply a bug with txUxIn.
         for i, txi := range tx.In {
             if txi.UxOut != uxIn[i].Hash() {

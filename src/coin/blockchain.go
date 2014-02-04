@@ -269,17 +269,11 @@ func (self *Blockchain) TxUxOutChk(tx *Transaction) (UxArray, error) {
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
 func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
-    //SECURITY TODO: check for duplicate output coinbases
-    //SECURITY TODO: check for double spending of same input
-    //TODO: check to see if inputs of transaction have already been spent
-    //TODO: check to see if inputs of transaction were created by pending transaction
-
-    //CHECKLIST: check that there are no duplicate ux inputs
+    //CHECKLIST: DONE: check for duplicate ux inputs/double spending
+    //CHECKLIST: DONE: check that inputs of transaction have not been spent
     //CHECKLIST: check there are no duplicate outputs
 
-    //TODO: discriminate between transactions that cannot be executed in
-    // future (ex. transactions using already spent outputs) vs
-    // tranasctions that may become valid in future but are not yet valid
+    //TODO: check to see if inputs of transaction were created by pending transaction
 
     // Verify the transaction's internals (hash check, surface checks)
     if err := tx.Verify(); err != nil {
@@ -294,9 +288,6 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
 
     //this could be BlockChain.Time() which returns time of block head
     var head_time uint64 = self.Time()
-
-    //check existence of inputs
-    //ux input array
     
 /*
     var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
@@ -309,7 +300,6 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     }
 */
     uxia, err := self.TxUxOut(tx) //set of inputs referenced by transaction
-
     if err != nil {
         return err
     }

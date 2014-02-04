@@ -86,10 +86,6 @@ func (h1 *SHA256) Xor(h2 SHA256) SHA256 {
     return h3
 }
 
-func HashArraySort(ha []SHA256) {
-    log.Panic("implement HashArraySort")
-}
-
 //compute root merkle tree hash of hash list
 //pad input to power of 16
 //group inputs hashes into groups of 16 and hash them down to single hash

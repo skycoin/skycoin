@@ -131,7 +131,7 @@ type Blockchain struct {
     // How often new blocks are created
     CreationInterval uint64
     // Enable security checks for internal and 'impossible' errors
-    Paranoid bool
+    Paranoid bool `enc:"-"`
 }
 
 func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain {

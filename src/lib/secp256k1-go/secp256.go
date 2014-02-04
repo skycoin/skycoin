@@ -210,17 +210,17 @@ func VerifySeckey(seckey []byte) int {
 
 /*
 * Validate a public key.
-*  Returns: 1: valid public key
-*           0: invalid public key
+*  Returns: true: valid public key
+*           false: invalid public key
  */
 
-func VerifyPubkey(pubkey []byte) int {
+func VerifyPubkey(pubkey []byte) bool {
     if len(pubkey) != 33 {
-        return 0
+        return false
     }
     var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
     ret := C.secp256k1_ecdsa_pubkey_verify(pubkey_ptr, 33)
-    return int(ret)
+    return int(ret) > 0
 }
 
 func VerifySignatureValidity(sig []byte) error {
@@ -229,6 +229,7 @@ func VerifySignatureValidity(sig []byte) error {
         return errors.New("Invalid signature length")
     }
     //malleability check
+    // if (int(sig[32]) & 0x80) == 0x80 {
     if (sig[32] & 0x70) != sig[32] {
         return errors.New("Signature not malleable")
     }
@@ -236,11 +237,12 @@ func VerifySignatureValidity(sig []byte) error {
     if sig[64] >= 4 {
         return errors.New("Signature recovery id invalid")
     }
+
     return nil
 }
 
 //for compressed signatures, does not need pubkey
-func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
+func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) error {
     if msg == nil || sig == nil || pubkey1 == nil {
         log.Panic("ERROR: invalid input, nils")
     }
@@ -254,30 +256,36 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
     //to enforce malleability, highest bit of S must be 0
     //S starts at 32nd byte
 
-    var b int = int(sig[32])
-    if (b & 0x80) == 0x80 {
-        return 0 //valid signature, but fails malleability
+    if err := VerifySignatureValidity(sig); err != nil {
+        return err
     }
 
-    if sig[64] >= 4 {
-        return 0 //recover byte invalid
-    }
+    // var b int = int(sig[32])
+    // if (b & 0x80) == 0x80 {
+    //     // valid signature, but fails malleability
+    //     return 0
+    // }
+
+    // if sig[64] >= 4 {
+    //     return errors.New("Recovery byte invalid")
+    //     return 0 //recover byte invalid
+    // }
 
     pubkey2 := RecoverPubkey(msg, sig) //if pubkey recovered, signature valid
 
     if pubkey2 == nil {
-        return 0
+        return errors.New("Failed to recover public key")
     }
 
     if len(pubkey2) != 33 {
-        log.Panic("recovered pubkey length invalid")
+        log.Panic("Invalid recovered pubkey length")
     }
 
-    if bytes.Equal(pubkey1, pubkey2) == true {
-        return 1 //valid signature
+    if bytes.Equal(pubkey1, pubkey2) {
+        return nil
+    } else {
+        return errors.New("Recovered pubkey does not match pubkey")
     }
-
-    return 0
 }
 
 /*

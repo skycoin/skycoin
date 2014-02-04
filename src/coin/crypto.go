@@ -88,8 +88,8 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
     if address != AddressFromPubKey(NewPubKey(rawPubKey)) {
         return errors.New("Invalid sig: address does not match output address")
     }
-    if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]) != 1 {
-        return errors.New("Invalid sig: invalid for hash")
+    if err := secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]); err != nil {
+        return fmt.Errorf("Invalid sig: %v", err)
     }
     return nil
 }
@@ -129,14 +129,14 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
     if recoveredPubKey != pubkey {
         return errors.New("Recovered pubkey does not match pubkey")
     }
-    if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
+    if !secp256k1.VerifyPubkey(pubkey[:]) {
         return errors.New("Invalid public key")
     }
     if err := secp256k1.VerifySignatureValidity(sig[:]); err != nil {
         return fmt.Errorf("Invalid signature, %v", err)
     }
-    if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
-        return errors.New("Invalid signature for this message")
+    if err := secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]); err != nil {
+        return fmt.Errorf("Invalid signature for this message: %v", err)
     }
     return nil
 }

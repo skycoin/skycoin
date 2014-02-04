@@ -229,7 +229,7 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
 
     //check for duplicate inputs
     if uxa.HasDupes() == true {
-        return errors.New("duplicate inputs")
+        return errors.New("error: duplicate inputs")
     }
 
     if DebugLevel2 == true { //assert sort function
@@ -255,13 +255,31 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
 }
 
 //TxUxOut returns array of outputs that would be created by transaction
-func (self *Blockchain) TxUxOut(tx *Transaction) (UxArray, error) {
-    return nil, nil
+func (self *Blockchain) TxUxOut(tx *Transaction) (UxArray,error) {
+    uxo := NewUxArray(len(tx.Out))
+    for i, to := range tx.Out {
+        uxo[i] := UxOut{
+            Body: UxBody{
+                SrcTransaction: tx.Header.Hash,
+                Address:        to.DestinationAddress,
+                Coins:          to.Coins,
+                Hours:          to.Hours,
+            },
+        }
+    }
+
+    if DebugLevel2 == true {
+        if tx.Header.Hash != tx.hashInner() {
+            log.Panic("Programmer Error, DebugLevel2: tx.Header.Hash not set")
+        }
+    }
+    
+    return uxo, nil
 }
 
 //TxUxOutChk validates the outputs that would be created by the transaction
-//TxUxOutChk checks for hash collisions and duplicate outputs
-//TxUxOutChk checks for error conditions in outputs
+//TxUxOutChk checks for duplicate output hashes
+//TxUxOutChk checks for hash collisions with existing hashes
 func (self *Blockchain) TxUxOutChk(tx *Transaction) (UxArray, error) {
     return nil, nil
 }

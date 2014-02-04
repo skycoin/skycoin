@@ -418,8 +418,7 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
     if b.Header.BkSeq != self.Head().Header.BkSeq+1 {
         return errors.New("BkSeq invalid")
     }
-    //check Time
-    //give some room for error and clock skew
+    //check Time, give some room for error and clock skew
     if b.Header.Time < self.Head().Header.Time+self.CreationInterval {
         return errors.New("time invalid: block too soon")
     }
@@ -621,6 +620,7 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
 
 // Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
 // CreateOutputs
+//TODO: replace with Blockchain.TxUxOut(tx)
 func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
     uxo := make([]UxOut, 0, len(tx.Out))
     for _, to := range tx.Out {
@@ -638,6 +638,7 @@ func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
 }
 
 // Creates complete UxOuts from TransactionInputs
+// TODO: audit
 func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) []UxOut {
     head := UxHead{
         Time:  bh.Time,

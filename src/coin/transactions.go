@@ -61,28 +61,28 @@ type TransactionOutput struct {
 func (self *Transaction) Verify() error {
     //TODO: optionally check that each signature is used at least once
 
-    h := txnhashInner()
-    if h != txnHeader.Hash {
+    h := self.hashInner()
+    if h != self.Header.Hash {
         return errors.New("Invalid header hash")
     }
 
-    if len(txnIn) == 0 {
+    if len(self.In) == 0 {
         return errors.New("No inputs")
     }
 
-    if len(txnOut) == 0 {
+    if len(self.Out) == 0 {
         return errors.New("No outputs")
     }
 
     // Check signature index fields
-    if len(txnHeader.Sigs) >= math.MaxUint16 {
+    if len(self.Header.Sigs) >= math.MaxUint16 {
         return errors.New("signatures count exceeds uint16")
     }
 
     // Check duplicate inputs
-    for i := 0; i < len(txnIn); i++ {
-        for j := i + 1; i < len(txnIn); j++ {
-            if txnIn[i].UxOut == txnIn[j].UxOut {
+    for i := 0; i < len(self.In); i++ {
+        for j := i + 1; i < len(self.In); j++ {
+            if self.In[i].UxOut == self.In[j].UxOut {
                 return errors.New("Duplicate spend")
             }
         }
@@ -91,9 +91,9 @@ func (self *Transaction) Verify() error {
     // Check for hash collisions in outputs
     outputs := make([]SHA256, 0)
 
-    for _, to := range txnOut {
-        var uxb UxOut
-        uxb.SrcTransaction = txnHeader.Hash
+    var uxb UxBody
+    uxb.SrcTransaction = self.Hash()
+    for _, to := range self.Out {
         uxb.Coins = to.Coins
         uxb.Hours = to.Hours
         uxb.Address = to.DestinationAddress
@@ -105,17 +105,17 @@ func (self *Transaction) Verify() error {
     }
 
     //validate signature
-    for _, txi := range txn.In {
+    for _, txi := range self.In {
 
-        sig := txn.Header.Sigs[txi.SigIdx]
+        sig := self.Header.Sigs[txi.SigIdx]
         hash := txi.UxOut
-        pubkey, err := PubKeyFromSig(sig)
+        pubkey, err := PubKeyFromSig(sig,hash)
 
         if err != nil {
             return errors.New("pubkey recovery from signature failed")
         }
 
-        err := VerifySignature(pubkey, sig, hash)
+        err = VerifySignature(pubkey, sig, hash)
         if err != nil {
             return errors.New("signature verification failed")
         }

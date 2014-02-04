@@ -26,6 +26,7 @@ var (
 // to - transaction out?
 // ui - unspent in?
 // uo - unspent out?
+// Problem: symbols look alike
 
 //TODO: 
 // /s/UxOut/Ux ?

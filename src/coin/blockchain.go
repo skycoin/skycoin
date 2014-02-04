@@ -145,6 +145,12 @@ func (self *Blockchain) Head() *Block {
     return &self.Blocks[len(self.Blocks)-1]
 }
 
+//Time returns time of last block
+//used as system clock indepedent clock for coinhour calculations
+func (self *BlockChain) Time() uint64 {
+    return self.Head().Header.Time 
+}
+
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  txns must be sorted by hash
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, error) {
@@ -173,26 +179,52 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
     // future (ex. transactions using already spent outputs) vs
     // tranasctions that may become valid in future but are not yet valid
 
+    //SECURITY EXPLOIT: signatures are not checked against addresses/ownership
+    //SECURITY EXPLOIT: 
+
     // Verify the transaction's internals (hash check, signature indices)
+    // Transaction.Verify() only does surface checks
+    // does not check existence of inputs
+    // does not check ownership of inputs
+    // does not check that pubkey keys
     if err := t.Verify(); err != nil {
         return err
     }
     // Check that the inputs exist, are unspent and are owned by the
     // spender.  Check that coins/hours in/out match.
 
-    //must use time of last block, to avoid depedence on local system clock
-    var head_time uint64 = self.Head.Header.Time //time of last block
+    //must use time of last block for coinhour caulcation
+    //to avoid depedence on local system clock
 
-    var coinsIn uint64 = 0
-    var hoursIn uint64 = 0
+    //this could be BlockChain.Time() which returns time of block head
+    var head_time uint64 = self.Time() //time of last block
+
+    //check existence of inputs
+    var uxto []UxOut = make([]UxOut, len(t.In))
     for _, tx := range t.In {
         ux, exists := self.Unspent.Get(tx.UxOut)
         if !exists {
             return errors.New("Unspent output does not exist")
         }
+        utxo = append(uxto, ux)
+    }
+
+    //check signatures and ownership
+    for idx, tx := range t.In {
+        var ux UxOut = utxo[idx]
         err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[tx.SigIdx])
         if err != nil {
-            return err
+            return errors.New("error: ChkSig fail")
+        }
+    }
+
+    var coinsIn uint64 = 0
+    var hoursIn uint64 = 0
+    for idx, tx := range t.In {
+        var ux UxOut = utxo[idx]
+        err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[tx.SigIdx])
+        if err != nil {
+            return errors.New("error: ChkSig fail")
         }
         coinsIn += ux.Body.Coins
         // TODO -- why are coin hours based on last block time and not

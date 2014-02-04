@@ -201,7 +201,7 @@ func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
     for idx, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
         if !exists {
-            return nil, errors.New("Unspent output does not exist")
+            return nil, errors.New("TxUxIn error, unspent output does not exist")
         }
         uxia[idx] = uxi
     }
@@ -223,31 +223,31 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
         var ux UxOut = uxa[idx]
         err := ChkSig(ux.Body.Address, tx.Header.Hash, tx.Header.Sigs[txi.SigIdx])
         if err != nil {
-            return errors.New("error: ChkSig fail")
+            return errors.New("TxUxInChk error, ChkSig fail")
         }
     }
 
     //check for duplicate inputs
     if uxa.HasDupes() == true {
-        return errors.New("error: duplicate inputs")
+        return errors.New("TxUxInChk error: duplicate inputs")
     }
 
     if DebugLevel2 == true { //assert sort function
         //check that hashes match
         for idx,txi := range tx.In {
             if txi.UxOut != uxa[idx].Hash() {
-                log.Panic("Programmer Error, DebugLevel2: ux hash mismatch")
+                log.Panic("TxUxInChk Programmer Error, DebugLevel2: ux hash mismatch")
             }
         }
         //assert monotome time/coinhouse increase 
         for idx, _ := range tx.In {
             if uxa[idx].CoinHours(self.Time()) < uxa[idx].Body.Hours {
-                log.Panic("Programmer Error, DebugLevel2: uxi.CoinHours < uxi.Body.Hours")
+                log.Panic("TxUxInChk Programmer Error, DebugLevel2: uxi.CoinHours < uxi.Body.Hours")
             }
         }
         //assert sort function
         if uxa.Sort(); uxa.IsSorted() == false {
-            log.Panic("Programmer Error, DebugLevel2: fix sort function")
+            log.Panic("TxUxInChk Programmer Error, DebugLevel2: fix sort function")
         }
     }
 
@@ -270,18 +270,34 @@ func (self *Blockchain) TxUxOut(tx *Transaction) (UxArray,error) {
 
     if DebugLevel2 == true {
         if tx.Header.Hash != tx.hashInner() {
-            log.Panic("Programmer Error, DebugLevel2: tx.Header.Hash not set")
+            log.Panic("TxUxOut Programmer Error, DebugLevel2: tx.Header.Hash not set")
         }
     }
-    
+
     return uxo, nil
 }
 
 //TxUxOutChk validates the outputs that would be created by the transaction
 //TxUxOutChk checks for duplicate output hashes
 //TxUxOutChk checks for hash collisions with existing hashes
-func (self *Blockchain) TxUxOutChk(tx *Transaction) (UxArray, error) {
-    return nil, nil
+func (self *Blockchain) TxUxOutChk(tx *Transaction) (error) {
+    
+    uxo, err := self.TxUxOut(tx)
+    if err != nil {
+        return err
+    }
+
+    hash_array = uxo.HasDupes() == true {
+        return errors.New("TxUxOutChk error, duplicate hash outputs")
+    }
+
+    for _,uxhash := range hash_array {
+        if _,exists := self.Unspent.Get(uxhash); exists == true {
+            return errors.New("TxUxOutChk impossible error: output would create hash collision")
+        }
+    }
+
+    return nil
 }
 
 // VerifyTransaction determines whether a transaction could be executed in the
@@ -304,6 +320,10 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     //checks whether ux inputs exist
     //checks signatures
     if err := self.TxUxInChk(tx); err != nil {
+        return err
+    }
+
+    if err := self.TxUxOutChk(tx); err != nil {
         return err
     }
 

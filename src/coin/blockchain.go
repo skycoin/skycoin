@@ -258,7 +258,7 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
 func (self *Blockchain) TxUxOut(tx *Transaction) (UxArray,error) {
     uxo := NewUxArray(len(tx.Out))
     for i, to := range tx.Out {
-        uxo[i] := UxOut{
+        uxo[i] = UxOut{
             Body: UxBody{
                 SrcTransaction: tx.Header.Hash,
                 Address:        to.DestinationAddress,
@@ -287,13 +287,14 @@ func (self *Blockchain) TxUxOutChk(tx *Transaction) (error) {
         return err
     }
 
-    hash_array = uxo.HasDupes() == true {
+    if uxo.HasDupes() == true {
         return errors.New("TxUxOutChk error, duplicate hash outputs")
     }
 
+    hash_array := uxo.HashArray()
     for _,uxhash := range hash_array {
         if _,exists := self.Unspent.Get(uxhash); exists == true {
-            return errors.New("TxUxOutChk impossible error: output would create hash collision")
+            return errors.New("TxUxOutChk impossible error: output hash collision with unspent outputs")
         }
     }
 

@@ -206,22 +206,6 @@ func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
         uxia[idx] = uxi
     }
 
-    if DebugLevel2 == true {
-        //check that hashes match
-        for idx,txi := range tx.In {
-            if txi.UxOut != uxia[idx].Hash() {
-                log.Panic("Programmer Error, DebugLevel2: ux hash mismatch")
-            }
-        }
-        //assert monotome time/coinhouse increase 
-        for idx, _ := range tx.In {
-            if uxia[idx].CoinHours(self.Time()) < uxia[idx].Body.Hours {
-                log.Panic("Programmer Error, DebugLevel2: uxi.CoinHours < uxi.Body.Hours")
-            }
-        }
-    }
-
-    }
     return uxia, nil
 }
 
@@ -251,13 +235,13 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
     if DebugLevel2 == true { //assert sort function
         //check that hashes match
         for idx,txi := range tx.In {
-            if txi.UxOut != uxia[idx].Hash() {
+            if txi.UxOut != uxa[idx].Hash() {
                 log.Panic("Programmer Error, DebugLevel2: ux hash mismatch")
             }
         }
         //assert monotome time/coinhouse increase 
         for idx, _ := range tx.In {
-            if uxia[idx].CoinHours(self.Time()) < uxia[idx].Body.Hours {
+            if uxa[idx].CoinHours(self.Time()) < uxa[idx].Body.Hours {
                 log.Panic("Programmer Error, DebugLevel2: uxi.CoinHours < uxi.Body.Hours")
             }
         }

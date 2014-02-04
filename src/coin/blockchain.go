@@ -447,7 +447,6 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
-<<<<<<< HEAD
 //AppendTransaction takes a block and appends a transaction to the transaction array.
 
 /*

@@ -6,19 +6,8 @@ import (
     "github.com/skycoin/encoder"
     "log"
     "math"
+    "sort"
 )
-
-/*
-	Base Transaction Type
-*/
-
-/*
-Compute Later:
-
-type TransactionMeta struct {
-	Fee uint64
-}
-*/
 
 type Transaction struct {
     Header TransactionHeader //Outer Hash
@@ -28,19 +17,12 @@ type Transaction struct {
 
 type TransactionHeader struct { //not hashed
     Hash SHA256 //inner hash
-    Sigs []Sig  //list of signatures, 64+1 bytes
+    Sigs []Sig  //list of signatures, 64+1 bytes each
 }
 
-/*
-	Can remove SigIdx; recover address from signature
-	- only saves 2 bytes
-	Require Sigs are sorted to enforce immutability?
-	- SidIdx enforces immutability
-    len(Header.Sigs) must equal len(In) and index of txn in In corresponds
-    with index in Header.Sigs
-*/
 type TransactionInput struct {
-    UxOut SHA256 //Unspent Block that is being spent
+    // Unspent output that is being spent
+    UxOut SHA256
 }
 
 //hash output/name is function of Hash
@@ -49,10 +31,6 @@ type TransactionOutput struct {
     Coins              uint64  //amount to be sent in coins
     Hours              uint64  //amount to be sent in coin hours
 }
-
-/*
-	Add immutability and hash checks here
-*/
 
 // Verify attempts to determine if the transaction is well formed
 // Verify cannot check transaction signatures, it needs the address from unspents
@@ -113,6 +91,13 @@ func (self *Transaction) Verify() error {
         err = VerifySignature(pubkey, sig, self.Header.Hash)
         if err != nil {
             return err
+        }
+    }
+
+    //artificial restriction to prevent spam
+    for _, txo := range self.Out {
+        if txo.Coins%10e6 != 0 {
+            return errors.New("Error: transaction outputs must be multiple of 10e6 base units")
         }
     }
 
@@ -209,6 +194,15 @@ func (self *Transaction) hashInner() SHA256 {
 }
 
 type Transactions []Transaction
+
+func (self Transactions) Sort() {
+    //sort.Sort(Transactions(self))
+    sort.Sort(self)
+}
+
+func (self Transactions) IsSorted() bool {
+    return sort.IsSorted(self)
+}
 
 func (self Transactions) Len() int {
     return len(self)

@@ -26,7 +26,7 @@ func SignBlock(block coin.Block, seckey coin.SecKey) (coin.Sig, error) {
     return coin.SignHash(block.HashHeader(), seckey)
 }
 
-func ApplyBlock(bc *coin.BlockChain, block coin.Block, sig coin.Sig) error {
+func ApplyBlock(bc *coin.Blockchain, block coin.Block, sig coin.Sig) error {
     err := coin.VerifySignature(master_pubkey, sig, block.HashHeader())
     if err != nil {
         return err

@@ -75,7 +75,7 @@ func (self *Wallet) Sign(address coin.Address, hash coin.SHA256) (coin.Sig, erro
 func (self *Wallet) RefeshUnspentOutputs(bc *coin.Blockchain) {
     outputs := make([]coin.UxOut, 0)
     for _, a := range self.Addresses {
-        unspentOutputs := bc.GetUnspentOutputs(a.Address)
+        unspentOutputs := bc.Unspent.AllForAddress(a.Address)
         outputs = append(outputs, unspentOutputs...)
     }
     self.Outputs = outputs
@@ -84,7 +84,7 @@ func (self *Wallet) RefeshUnspentOutputs(bc *coin.Blockchain) {
 // Returns the wallet's coins and coin hours balance
 func (self *Wallet) Balance(bc *coin.Blockchain) (coins uint64, hours uint64) {
     self.RefeshUnspentOutputs(bc)
-    t := bc.Head.Header.Time
+    t := bc.Time()
     for _, ux := range self.Outputs {
         coins += ux.Body.Coins
         hours += ux.CoinHours(t)
@@ -164,7 +164,7 @@ func PrintWalletBalances(bc *coin.Blockchain, wallets []Wallet) {
         fmt.Printf("PWB: %v: %v %v \n", i, b1, b2)
     }
 
-    for i, ux := range bc.Unspent {
+    for i, ux := range bc.Unspent.Arr {
         fmt.Printf("PWB,UX: %v: %v \n", i, uxStr(ux))
     }
 }

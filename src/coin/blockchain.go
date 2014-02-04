@@ -5,19 +5,43 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/encoder"
     "log"
-    "sort"
+    //"sort"
     "time"
 )
 
 var (
-    logger = logging.MustGetLogger("skycoin.coin")
+    logger   = logging.MustGetLogger("skycoin.coin")
+    Paranoid = true //enables paranoid checks for programmer error
 )
+
+//Note: a droplet is the base coin unit. Each Skycoin is one million droplets
+
+//TODO: more abstract struct names
+// /s/UxOut/Ux ?
+// /s/Transaction/Tx ?
+
+//TODO:
+// HashArray - array of hashes
+// TxArray - array of Tx/transactions
+// UxArray - array of Ux/outputs
+// Blockchain.txUxIn(tx *Tx) ([]Ux, error)  - inputs of transaction
+// Blockchain.txUxOut(tx *Tx) ([]Ux, error) - outputs of transaction
+
+//Termonology:
+// UXTO - unspent transaction outputs
+// UX - outputs
+// TX - transactions
+
+//Notes:
+// transactions (TX) consume outputs (UX) and produce new outputs (UX)
+// Tx.Uxi() - set of outputs consumed by transaction
+// Tx.Uxo() - set of outputs created by transaction
 
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
     blockTimeFutureMultipleMax uint64 = 20
-    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6
+    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6 //100 million coins
     genesisCoinHours           uint64 = 1024 * 1024 * 1024
     //each coin is one million droplets, which are the base unit
 )
@@ -42,6 +66,8 @@ type BlockBody struct {
     Transactions Transactions
 }
 
+//TODO: merge header/body and cleanup top level interface
+
 /*
 Todo: merge header/body
 
@@ -55,16 +81,15 @@ type Block struct {
 
     Transactions Transactions
 }
-
 */
+
 func newBlock(prev *Block, creationInterval uint64) Block {
     header := newBlockHeader(&prev.Header, creationInterval)
     return Block{Header: header, Body: BlockBody{}}
 }
 
 func (self *Block) HashHeader() SHA256 {
-    b1 := encoder.Serialize(self.Header)
-    return SumDoubleSHA256(b1)
+    return self.Header.Hash()
 }
 
 func (self *BlockHeader) Hash() SHA256 {
@@ -120,7 +145,7 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
 
     //set genesis block
     var b Block = Block{} // genesis block
-    b.Header.Time = uint64(time.Now().UTC().Unix())
+    b.Header.Time = bc.TimeNow()
     bc.Blocks = append(bc.Blocks, b)
     // Genesis output
     ux := UxOut{
@@ -143,6 +168,19 @@ func (self *Blockchain) Head() *Block {
     return &self.Blocks[len(self.Blocks)-1]
 }
 
+//Time returns time of last block
+//used as system clock indepedent clock for coin hour calculations
+func (self *Blockchain) Time() uint64 {
+    return self.Head().Header.Time
+}
+
+//TimeNow returns current system time
+//TODO: use syncronized network time instead of system time
+//TODO: add function pointer to external network time callback?
+func (self *Blockchain) TimeNow() uint64 {
+    return uint64(time.Now().UTC().Unix())
+}
+
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  txns must be sorted by hash
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, error) {
@@ -157,77 +195,218 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
    Validation
 */
 
-// VerifyTransaction determines whether a transaction could be executed in the
-// current block
-// VerifyTransactions checks that the inputs to the transaction exist,
-// that the transaction does not create or destroy coins and that the
-// signatures on the transaction are valid
-func (self *Blockchain) VerifyTransaction(t *Transaction) error {
-    //SECURITY TODO: check for duplicate output coinbases
-    //SECURITY TODO: check for double spending of same input
-    //TODO: check to see if inputs of transaction have already been spent
-    //TODO: check to see if inputs of transaction were created by pending transaction
-    //TODO: discriminate between transactions that cannot be executed in
-    // future (ex. transactions using already spent outputs) vs
-    // tranasctions that may become valid in future but are not yet valid
+/*
+   Validation
+*/
 
-    // Verify the transaction's internals (hash check, signature indices)
-    if err := t.Verify(); err != nil {
+//txUxIn returns an array of outputs a transaction would spend
+//txUxIn returns error if outputs referenced by transaction do not exist
+func (self *Blockchain) txUxIn(tx *Transaction) (UxArray, error) {
+    uxia := NewUxArray(len(tx.In))
+    for i, txi := range tx.In {
+        uxi, exists := self.Unspent.Get(txi.UxOut)
+        if !exists {
+            return nil, errors.New("txUxIn error, unspent output does not exist")
+        }
+        uxia[i] = uxi
+    }
+
+    return uxia, nil
+}
+
+//txUxInChk validates the inputs to a transaction
+//txUxInChk checks signatures and returns error
+//txUxInChk checks for duplicate inputs and double spending
+func (self *Blockchain) txUxInChk(tx *Transaction) error {
+    uxa, err := self.txUxIn(tx) //array of outputs referenced by transaction
+    if err != nil {
         return err
     }
-    // Check that the inputs exist, are unspent and are owned by the
-    // spender.  Check that coins/hours in/out match.
-    lastTime := self.Time()
-    var coinsIn uint64 = 0
-    var hoursIn uint64 = 0
-    for i, tx := range t.In {
-        ux, exists := self.Unspent.Get(tx.UxOut)
-        if !exists {
-            return errors.New("Unspent output does not exist")
-        }
-        err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[i])
+
+    // check signatures
+    for i, _ := range tx.In {
+        ux := uxa[i]
+        err := ChkSig(ux.Body.Address, tx.Header.Hash, tx.Header.Sigs[i])
         if err != nil {
-            return err
+            return errors.New("txUxInChk error, ChkSig fail")
         }
-        coinsIn += ux.Body.Coins
-        // TODO -- why are coin hours based on last block time and not
-        // current time?
-        hours := ux.CoinHours(lastTime)
-        if hours < ux.Body.Hours {
-            log.Panic("Coin hours timing error")
-        }
-        hoursIn += hours
     }
 
-    var coinsOut uint64 = 0
-    var hoursOut uint64 = 0
-    for _, ux := range t.Out {
-        if ux.Coins == 0 {
-            return errors.New("Zero coin output")
+    // check for duplicate inputs
+    if uxa.HasDupes() {
+        return errors.New("txUxInChk error: duplicate inputs")
+    }
+
+    if Paranoid { //assert sort function
+        //check that hashes match
+        for i, txi := range tx.In {
+            if txi.UxOut != uxa[i].Hash() {
+                log.Panic("Ux hash mismatch")
+            }
         }
-        coinsOut += ux.Coins
-        hoursOut += ux.Hours
-    }
-    if coinsIn != coinsOut {
-        return errors.New("Input coins do not equal output coins")
-    }
-    if hoursIn < hoursOut {
-        return errors.New("Insufficient hours spent for outputs")
+        //assert monotome time/coinhouse increase
+        for i, _ := range tx.In {
+            if uxa[i].CoinHours(self.Time()) < uxa[i].Body.Hours {
+                log.Panic("Uxi.CoinHours < uxi.Body.Hours")
+            }
+        }
+        //assert sort function
+        if uxa.Sort(); !uxa.IsSorted() {
+            // WHAT THE FUCK ARE YOU DOING THIS HERE FOR THIS IS A FUCKING
+            // UNIT TEST
+            // STOP COMPARING TO FALSE OR TRUE ASSHOLE
+            log.Panic("Unspent sort function broken")
+        }
     }
 
     return nil
 }
 
-// Returns the fee in the transaction
+//txUxOut returns array of outputs that would be created by transaction
+func (self *Blockchain) txUxOut(tx *Transaction) (UxArray, error) {
+    uxo := NewUxArray(len(tx.Out))
+    for i, to := range tx.Out {
+        uxo[i] = UxOut{
+            Body: UxBody{
+                SrcTransaction: tx.Header.Hash,
+                Address:        to.DestinationAddress,
+                Coins:          to.Coins,
+                Hours:          to.Hours,
+            },
+        }
+    }
+
+    if Paranoid {
+        if tx.Header.Hash != tx.hashInner() {
+            log.Panic("txUxOut Programmer Error, Paranoid: tx.Header.Hash not set")
+        }
+    }
+
+    return uxo, nil
+}
+
+//txUxOutChk validates the outputs that would be created by the transaction
+//txUxOutChk checks for duplicate output hashes
+//txUxOutChk checks for hash collisions with existing hashes
+func (self *Blockchain) txUxOutChk(tx *Transaction) error {
+
+    uxo, err := self.txUxOut(tx)
+    if err != nil {
+        return err
+    }
+    //check for outputs with duplicate hashes
+    if uxo.HasDupes() {
+        return errors.New("txUxOutChk error, duplicate hash outputs")
+    }
+    //check for hash collisions of outputs with unspent output set
+    hash_array := uxo.HashArray()
+    for _, uxhash := range hash_array {
+        if _, exists := self.Unspent.Get(uxhash); exists {
+            return errors.New("txUxOutChk impossible error: output hash collision with unspent outputs")
+        }
+    }
+
+    //check misc outputs conditions
+    for _, ux := range uxo {
+        //disallow allow zero coin outputs
+        if ux.Body.Coins == 0 {
+            return errors.New("Zero coin output")
+        }
+        // each transaction output should multiple of 10e6 base units,
+        // to prevent utxo spam
+        if ux.Body.Coins%10e6 != 0 {
+            return errors.New("outputs must be multiple of 10e6 base units")
+        }
+    }
+
+    return nil
+}
+
+//txUxChk checks for errors in relationship between the inputs and outputs of
+// the transaction
+//txUxChk is used as bc.txUxChk(tx, bc.txUxIn(tx), bc.txUxOut(tx))
+func (self *Blockchain) txUxChk(tx *Transaction, uxa UxArray, uxo UxArray) error {
+
+    var headTime uint64 = self.Time()
+
+    var coinsIn uint64 = 0
+    var hoursIn uint64 = 0
+    for _, ux := range uxa {
+        coinsIn += ux.Body.Coins
+        hoursIn += ux.CoinHours(headTime)
+    }
+
+    var coinsOut uint64 = 0
+    var hoursOut uint64 = 0
+    for _, ux := range uxo {
+        coinsOut += ux.Body.Coins
+        hoursOut += ux.Body.Hours
+    }
+
+    if coinsIn != coinsOut {
+        return errors.New("txUxChk error, Transactions may not create or destroy coins")
+    }
+    if hoursIn < hoursOut {
+        return errors.New("txUxChk error, Insufficient coin hours for outputs")
+    }
+
+    return nil
+}
+
+// VerifyTransaction determines whether a transaction could be executed in the
+// current block
+// VerifyTransactions checks that the inputs to the transaction exist,
+// that the transaction does not create or destroy coins and that the
+// signatures on the transaction are valid
+func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
+    //CHECKLIST: DONE: check for duplicate ux inputs/double spending
+    //CHECKLIST: DONE: check that inputs of transaction have not been spent
+    //CHECKLIST: DONE: check there are no duplicate outputs
+
+    // Q: why are coin hours based on last block time and not
+    // current time?
+    // A: no two computers will agree on system time. Need system clock
+    // indepedent timing that everyone agrees on. fee values would depend on
+    // local clock
+
+    // Verify the transaction's internals (hash check, surface checks)
+    if err := tx.Verify(); err != nil {
+        return err
+    }
+    //checks whether ux inputs exist, check signatures, checks for duplicate outputs
+    if err := self.txUxInChk(tx); err != nil {
+        return err
+    }
+    //checks for duplicate outputs, checks for hash collisions with unspent outputs
+    if err := self.txUxOutChk(tx); err != nil {
+        return err
+    }
+    uxa, err := self.txUxIn(tx) //set of inputs referenced by transaction
+    if err != nil {
+        return err
+    }
+    uxo, err := self.txUxOut(tx) //set of outputs created by transaction
+    if err != nil {
+        return err
+    }
+    //checks coin balances and relationship between inputs and outputs
+    if err := self.txUxChk(tx, uxa, uxo); err != nil {
+        return err
+    }
+    return nil
+}
+
+// TransactionFee calculates the current transaction fee in coinhours of a transaction
 func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
+    var headTime uint64 = self.Time() //time of last block
     inHours := uint64(0)
     // Compute input hours
     for _, ti := range t.In {
         in, ok := self.Unspent.Get(ti.UxOut)
         if !ok {
-            return 0, errors.New("Unknown input")
+            return 0, errors.New("TransactionFee(), error, unspent output does not exist")
         }
-        inHours += in.Body.Hours
+        inHours += in.CoinHours(headTime)
     }
     // Compute output hours
     outHours := uint64(0)
@@ -246,7 +425,7 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
     if b.Header.BkSeq != self.Head().Header.BkSeq+1 {
         return errors.New("BkSeq invalid")
     }
-    //check Time
+    //check Time, give some room for error and clock skew
     if b.Header.Time < self.Head().Header.Time+self.CreationInterval {
         return errors.New("time invalid: block too soon")
     }
@@ -255,11 +434,11 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
         return errors.New("Block is too far in future; check clock")
     }
 
-    // Check that this block is in the corrent sequence and refers to the
-    // previous block head
+    // Check block sequence against previous head
     if b.Header.BkSeq != 0 && self.Head().Header.BkSeq+1 != b.Header.BkSeq {
         return errors.New("Header BkSeq not sequential")
     }
+    // Check block hash against previous head
     if b.Header.PrevHash != self.Head().HashHeader() {
         return errors.New("HashPrevBlock does not match current head")
     }
@@ -278,6 +457,7 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
 // should not result in an error, unless all txns are invalid.
 func (self *Blockchain) processTransactions(txns Transactions,
     firstFail bool) (Transactions, error) {
+    //TODO: audit
     // If there are no transactions, a block should not be made
     if len(txns) == 0 {
         if firstFail {
@@ -288,7 +468,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
     }
 
     // Transactions must be sorted, so we can have deterministic filtering
-    if !sort.IsSorted(txns) {
+    if !txns.IsSorted() {
         return nil, errors.New("Txns not sorted")
     }
 
@@ -446,6 +626,39 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
+// Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
+// CreateOutputs
+//TODO: replace with Blockchain.txUxOut(tx)
+func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
+    uxo := make([]UxOut, 0, len(tx.Out))
+    for _, to := range tx.Out {
+        ux := UxOut{
+            Body: UxBody{
+                SrcTransaction: tx.Header.Hash,
+                Address:        to.DestinationAddress,
+                Coins:          to.Coins,
+                Hours:          to.Hours,
+            },
+        }
+        uxo = append(uxo, ux)
+    }
+    return uxo
+}
+
+// Creates complete UxOuts from TransactionInputs
+// TODO: audit
+func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) []UxOut {
+    head := UxHead{
+        Time:  bh.Time,
+        BkSeq: bh.BkSeq,
+    }
+    uxo := self.CreateExpectedOutputs(tx)
+    for i := 0; i < len(uxo); i++ {
+        uxo[i].Head = head
+    }
+    return uxo
+}
+
 //AppendTransaction takes a block and appends a transaction to the transaction array.
 
 /*
@@ -538,39 +751,3 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
     return nil
 }
 */
-
-// Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
-// CreateOutputs
-func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
-    uxo := make([]UxOut, 0, len(tx.Out))
-    for _, to := range tx.Out {
-        ux := UxOut{
-            Body: UxBody{
-                SrcTransaction: tx.Header.Hash,
-                Address:        to.DestinationAddress,
-                Coins:          to.Coins,
-                Hours:          to.Hours,
-            },
-        }
-        uxo = append(uxo, ux)
-    }
-    return uxo
-}
-
-// Creates complete UxOuts from TransactionInputs
-func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) []UxOut {
-    head := UxHead{
-        Time:  bh.Time,
-        BkSeq: bh.BkSeq,
-    }
-    uxo := self.CreateExpectedOutputs(tx)
-    for i := 0; i < len(uxo); i++ {
-        uxo[i].Head = head
-    }
-    return uxo
-}
-
-// Returns the latest block head time
-func (self *Blockchain) Time() uint64 {
-    return self.Head().Header.Time
-}

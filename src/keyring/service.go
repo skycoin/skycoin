@@ -1,10 +1,11 @@
 package keyring
 
 /*
-   Start a local blockchain service
+   Start a local Blockchain service
 
 */
 
+/*
 import (
     //"encoding/hex"
     //"errors"
@@ -18,17 +19,15 @@ import (
     //"encoding/hex"
 )
 
-/*
-Creates a new block every 15 seconds
+//Creates a new block every 15 seconds
 
-*/
-type BlockChainService struct {
+type BlockchainService struct {
     PendingBlock        coin.Block
-    BC                  *coin.BlockChain
+    BC                  *coin.Blockchain
     PendingTransactions []coin.Transaction
 }
 
-func (self *BlockChainService) Run() {
+func (self *BlockchainService) Run() {
     //TODO, set genesis address
 
     seckey_hex := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
@@ -36,7 +35,7 @@ func (self *BlockChainService) Run() {
     pubkey := coin.PubKeyFromSecKey(seckey)
     address := coin.AddressFromPubKey(pubkey) //genesis address
 
-    self.BC = coin.NewBlockchain(address)
+    self.BC = coin.NewBlockchain(address, uint64(15))
 
     go func() {
 
@@ -69,6 +68,7 @@ func (self *BlockChainService) Run() {
     }()
 }
 
-func (self *BlockChainService) InsertTransaction(transaction coin.Transaction) {
+func (self *BlockchainService) InsertTransaction(transaction coin.Transaction) {
     self.PendingTransactions = append(self.PendingTransactions, transaction)
 }
+*/

@@ -1,8 +1,10 @@
 package coin
 
 import (
+    "bytes"
     "github.com/skycoin/encoder"
     "log"
+    "sort"
 )
 
 /*
@@ -57,6 +59,7 @@ func (self *UxBody) Hash() SHA256 {
     return SumSHA256(encoder.Serialize(self))
 }
 
+//Hash() is the hash of the UxOut Body
 func (self *UxOut) Hash() SHA256 {
     return self.Body.Hash()
 }
@@ -75,8 +78,60 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 
     v1 := self.Body.Hours             //starting coinshour
     ch := (t - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-    v2 := ch * self.Body.Coins        //accumulated coin-hours
+    v2 := ch * self.Body.Coins / 10e6 //accumulated coin-hours
     return v1 + v2                    //starting+earned
+}
+
+// Array of Outputs
+type UxArray []UxOut
+
+func NewUxArray(n int) UxArray {
+    return make([]UxOut, n)
+}
+
+//HashArray returns array of hashes for the Ux in the UxArray
+func (self UxArray) HashArray() []SHA256 {
+    hashes := make([]SHA256, len(self))
+    for i, ux := range self {
+        hashes[i] = ux.Hash()
+    }
+    return hashes
+}
+
+//HasDupes checks the UxArray for outputs which have the same hash
+func (self UxArray) HasDupes() bool {
+    m := make(map[SHA256]byte, len(self))
+    for _, ux := range self {
+        m[ux.Hash()] = byte(1)
+    }
+    return len(m) != len(self)
+}
+
+//UxArray sort functionality
+
+func (self UxArray) Sort() {
+    //sort.Sort(UxArray(self))
+    sort.Sort(self)
+}
+
+func (self UxArray) IsSorted() bool {
+    return sort.IsSorted(self)
+}
+
+func (self UxArray) Len() int {
+    return len(self)
+}
+
+func (self UxArray) Less(i, j int) bool {
+    hash1 := self[i].Hash()
+    hash2 := self[i].Hash()
+    return bytes.Compare(hash1[:], hash2[:]) < 0
+}
+
+func (self UxArray) Swap(i, j int) {
+    t := self[i]
+    self[i] = self[j]
+    self[j] = t
 }
 
 // Manages Unspents

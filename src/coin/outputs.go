@@ -57,6 +57,7 @@ func (self *UxBody) Hash() SHA256 {
     return SumSHA256(encoder.Serialize(self))
 }
 
+//Hash() is the hash of the UxOut Body
 func (self *UxOut) Hash() SHA256 {
     return self.Body.Hash()
 }

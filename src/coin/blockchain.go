@@ -209,6 +209,13 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
         utxo = append(uxto, ux)
     }
 
+    //check impossible condition
+    for idx, tx := range t.In {
+        if utxo[idx].Hash() != txin.UxOut {
+            return errors.New("Impossible Error: txin.UxOut != ux.Hash()")
+        }
+    }
+
     //check signatures and ownership
     for idx, tx := range t.In {
         var ux UxOut = utxo[idx]
@@ -220,48 +227,51 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
 
     // Q: why are coin hours based on last block time and not
     // current time?
-    // A: need system clock indepedent timing
+    // A: need system clock indepedent timing that everyone agrees on
+    // fee values would depend on local clock
 
-
-    //check impossible condition
-    for idx, tx := range t.In {
-        if coin_hours < utxo[idx].Body.Hours {
+    //check misc input conditions
+    for idx, _ := range t.In {
+        var ux UxOut = utxo[idx]
+        if ux.CoinHours(head_time) < ux.Body.Hours {
             log.Panic("Impossible Error: ux.CoinHours < ux.Body.Hours")
+        }
+    }
+
+    //check misc outputs conditions
+    for _, ux := range t.Out {
+        //disallow allow zero coin outputs
+        if ux.Coins == 0 {
+            return errors.New("Zero coin output")
+        }
+        //each transaction output should multiple of 10e6 base units
+        //artificial restriction to prevent uxto spam
+        if ux.Coins % 10e6 != 0 {
+            return errors.New("outputs must be multiple of 10e6 base units")
         }
     }
 
     //check coinhours
     var coinsIn uint64 = 0
     var hoursIn uint64 = 0
-    for idx, tx := range t.In {
+    for idx, _:= range t.In {
         var ux UxOut = utxo[idx]
         coinsIn += ux.Body.Coins
-        coin_hours := ux.CoinHours(head_time)
-        hoursIn += coin_hours
+        hoursIn += ux.CoinHours(head_time)
     }
-
 
     var coinsOut uint64 = 0
     var hoursOut uint64 = 0
     for _, ux := range t.Out {
-        if ux.Coins == 0 {
-            return errors.New("Zero coin output")
-        }
         coinsOut += ux.Coins
         hoursOut += ux.Hours
     }
+
     if coinsIn != coinsOut {
         return errors.New("Input coins do not equal output coins")
     }
     if hoursIn < hoursOut {
-        return errors.New("Insufficient hours spent for outputs")
-    }
-
-    //artificial restriction to prevent spam
-    for _, txo := range self.out {
-        if txo.Coins % 10e6 != 0 {
-            return errors.New("Error: transaction outputs must be multiple of 10e6 base units")
-        }
+        return errors.New("Insufficient coin hours for outputs")
     }
 
     return nil
@@ -269,7 +279,7 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
 
 // Returns the fee in the transaction
 func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
-    uint64 head_time = self.Head.Header.Time //time of last block
+    uint64 head_time = self.Time() //time of last block
     inHours := uint64(0)
     // Compute input hours
     for _, ti := range t.In {

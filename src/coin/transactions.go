@@ -138,7 +138,12 @@ func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
 
 // Signs a TransactionInput at its signature index
 func (self *Transaction) SignInput(idx uint16, sec SecKey) {
-    hash := self.hashInner()
+    if self.Header.Hash != self.hashInner() {
+        //set inputs, set outputs, then set hash, then sign hash for each input address
+        log.Panic("SignInput Error: programmer error transaction not finalized, finalize hash before signing")
+    }
+    hash := self.Header.Hash
+
     sig, err := SignHash(hash, sec)
     if err != nil {
         log.Panic("Failed to sign hash")

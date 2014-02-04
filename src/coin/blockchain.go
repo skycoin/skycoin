@@ -427,11 +427,11 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
         return errors.New("Block is too far in future; check clock")
     }
 
-    // Check that this block is in the corrent sequence and refers to the
-    // previous block head
+    // Check block sequence against previous head
     if b.Header.BkSeq != 0 && self.Head().Header.BkSeq+1 != b.Header.BkSeq {
         return errors.New("Header BkSeq not sequential")
     }
+    // Check block hash against previous head
     if b.Header.PrevHash != self.Head().HashHeader() {
         return errors.New("HashPrevBlock does not match current head")
     }

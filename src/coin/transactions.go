@@ -59,6 +59,8 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
+    //TODO: optionally check that each signature is used at least once
+
     h := self.hashInner()
     if h != self.Header.Hash {
         return errors.New("Invalid header hash")
@@ -73,26 +75,12 @@ func (self *Transaction) Verify() error {
     }
 
     // Check signature index fields
-    _maxidx := len(self.Header.Sigs)
-    if _maxidx >= math.MaxUint16 {
-        return errors.New("Too many signatures in transaction header")
-    }
-    maxidx := uint16(_maxidx)
-    var highest uint16 = 0
-    for _, tx := range self.In {
-        if tx.SigIdx >= maxidx || tx.SigIdx < 0 {
-            return errors.New("validateSignatures; invalid SigIdx")
-        }
-        if tx.SigIdx > highest {
-            highest = tx.SigIdx
-        }
-    }
-    if uint16(len(self.Header.Sigs)) != highest {
-        return errors.New("Signature indices malformed")
+    if len(self.Header.Sigs) >= math.MaxUint16 {
+        return errors.New("signatures count exceeds uint16")
     }
 
     // Check duplicate inputs
-    for i := 0; i < len(self.In)-1; i++ {
+    for i := 0; i < len(self.In); i++ {
         for j := i + 1; i < len(self.In); j++ {
             if self.In[i].UxOut == self.In[j].UxOut {
                 return errors.New("Duplicate spend")
@@ -100,22 +88,36 @@ func (self *Transaction) Verify() error {
         }
     }
 
-    // Check duplicate outputs (would destroy coins)
+    // Check for hash collisions in outputs
     outputs := make([]SHA256, 0)
-    uxb := UxBody{
-        SrcTransaction: self.Header.Hash,
-    }
+
+    var uxb UxBody
+    uxb.SrcTransaction = self.Hash()
     for _, to := range self.Out {
         uxb.Coins = to.Coins
         uxb.Hours = to.Hours
         uxb.Address = to.DestinationAddress
         outputs = append(outputs, uxb.Hash())
     }
-    for i := 0; i < len(outputs)-1; i++ {
-        for j := i + 1; j < len(outputs); j++ {
-            if outputs[i] == outputs[j] {
-                return errors.New("Duplicate output in transaction")
-            }
+
+    if  HashArrayHasDupes(outputs) == true {
+        return errors.New("Duplicate output in transaction")
+    }
+
+    //validate signature
+    for _, txi := range self.In {
+
+        sig := self.Header.Sigs[txi.SigIdx]
+        hash := txi.UxOut
+        pubkey, err := PubKeyFromSig(sig,hash)
+
+        if err != nil {
+            return errors.New("pubkey recovery from signature failed")
+        }
+
+        err = VerifySignature(pubkey, sig, hash)
+        if err != nil {
+            return errors.New("signature verification failed")
         }
     }
 
@@ -125,6 +127,7 @@ func (self *Transaction) Verify() error {
 // Adds a TransactionInput to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
 func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+    //TODO: do no create new si
     if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
@@ -197,7 +200,7 @@ func (self *Transaction) UpdateHeader() {
     self.Header.Hash = self.hashInner()
 }
 
-// Hashes only the Transction Inputs & Outputs
+// Hashes only the Transaction Inputs & Outputs
 func (self *Transaction) hashInner() SHA256 {
     b1 := encoder.Serialize(self.In)
     b2 := encoder.Serialize(self.Out)

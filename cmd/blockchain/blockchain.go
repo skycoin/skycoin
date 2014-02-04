@@ -79,7 +79,6 @@ func tests() {
             a := wa[i].GetRandomAddress()
             t.PushOutput(a.Address, uint64(1000), 1024*1024)
         }
-
         //var sec coin.SecKey
         //sec.Set(genesisAddress.SecKey[:])
         sec := coin.NewSecKey(genesisAddress.SecKey[:])

@@ -13,13 +13,14 @@ var (
     logger = logging.MustGetLogger("skycoin.coin")
 )
 
+
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
     blockTimeFutureMultipleMax uint64 = 20
-    genesisCoinVolume          uint64 = 100 * 1e6
+    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6
     genesisCoinHours           uint64 = 1024 * 1024 * 1024
-    //genesisBlockHashString      string = "Skycoin v0.1"
+    //each coin is one million droplets, which are the base unit
 )
 
 type Block struct {
@@ -328,7 +329,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
             // This should never happen
             if self.Unspent.Has(h) {
                 if firstFail {
-                    return nil, errors.New("Output hash is in the UnspentPool")
+                    return nil, errors.New("Impossible: Output hash is in the UnspentPool")
                 } else {
                     skip[i] = byte(1)
                     continue
@@ -445,6 +446,99 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
 
     return nil
 }
+
+//AppendTransaction takes a block and appends a transaction to the transaction array.
+
+/*
+func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
+    //check that all inputs exist and are unspent
+    for _, tx := range t.In {
+        _, exists := self.Unspent.Get(tx.UxOut)
+        if !exists {
+            return errors.New("Unspent output does not exist")
+        }
+    }
+
+    //check for double spending outputs twice in block
+    for i, tx1 := range t.In {
+        for j, tx2 := range t.In {
+            if j < i && tx1.UxOut == tx2.UxOut {
+                return errors.New("Cannot spend output twice in same block")
+            }
+        }
+    }
+
+    //check to ensure that outputs do not appear twice in block
+    for _, t := range b.Body.Transactions {
+        for i, tx1 := range t.In {
+            for j, tx2 := range t.In {
+                if j < i && tx1.UxOut == tx2.UxOut {
+                    return errors.New("Cannot spend output twice in same block")
+                }
+            }
+        }
+    }
+
+    hash := t.hashInner()
+    //t.Header.Hash = hash //set hash?
+    if hash != t.Header.Hash {
+        log.Panic("Transaction hash not set")
+    }
+
+    //check signatures
+    for _, tx := range t.In {
+        ux, exists := self.Unspent.Get(tx.UxOut) //output being spent
+        if !exists {
+            return errors.New("Unknown output")
+        }
+        err := ChkSig(ux.Body.Address, t.Header.Hash,
+            t.Header.Sigs[tx.SigIdx])
+        if err != nil {
+            return err // signature check failed
+        }
+    }
+
+    //check balances
+    var coinsIn uint64
+    var hoursIn uint64
+
+    for _, tx := range t.In {
+        ux, exists := self.Unspent.Get(tx.UxOut)
+        if !exists {
+            return errors.New("Unknown output")
+        }
+        coinsIn += ux.Body.Coins
+        hoursIn += ux.CoinHours(self.Head.Header.Time)
+
+        //check inpossible condition
+        if ux.Body.Hours > ux.CoinHours(self.Head.Header.Time) {
+            log.Panic("Coin Hours Invalid: Time Error!\n")
+        }
+    }
+    var coins_out uint64
+    var hoursOut uint64
+    for _, ux := range t.Out {
+        coins_out += ux.Coins
+        hoursOut += ux.Hours
+    }
+    if coinsIn != coins_out {
+        return errors.New("Error: Coin inputs do not match coin ouptuts")
+    }
+    if hoursIn < hoursOut {
+        return errors.New("Error: insuffient coinhours for output")
+    }
+
+    for _, ux := range t.Out {
+        if ux.Coins == 0 {
+            return errors.New("Error: zero coin output in transaction")
+        }
+    }
+
+    b.Body.Transactions = append(b.Body.Transactions, t)
+
+    return nil
+}
+*/
 
 // Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
 // CreateOutputs

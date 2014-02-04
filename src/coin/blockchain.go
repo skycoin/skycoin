@@ -13,12 +13,13 @@ var (
     logger = logging.MustGetLogger("skycoin.coin")
 )
 
+//each "coin" is 10e6 base units
 
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
     blockTimeFutureMultipleMax uint64 = 20
-    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6
+    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6 //100 million coins
     genesisCoinHours           uint64 = 1024 * 1024 * 1024
     //each coin is one million droplets, which are the base unit
 )
@@ -56,8 +57,8 @@ type Block struct {
 
     Transactions Transactions
 }
-
 */
+
 func newBlock(prev *Block, creationInterval uint64) Block {
     header := newBlockHeader(&prev.Header, creationInterval)
     return Block{Header: header, Body: BlockBody{}}
@@ -178,7 +179,10 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
     }
     // Check that the inputs exist, are unspent and are owned by the
     // spender.  Check that coins/hours in/out match.
-    lastTime := self.Time()
+
+    //must use time of last block, to avoid depedence on local system clock
+    var head_time uint64 = self.Head.Header.Time //time of last block
+
     var coinsIn uint64 = 0
     var hoursIn uint64 = 0
     for _, tx := range t.In {
@@ -193,11 +197,11 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
         coinsIn += ux.Body.Coins
         // TODO -- why are coin hours based on last block time and not
         // current time?
-        hours := ux.CoinHours(lastTime)
-        if hours < ux.Body.Hours {
-            log.Panic("Coin hours timing error")
+        coin_hours := ux.CoinHours(head_time)
+        if coin_hours < ux.Body.Hours {
+            log.Panic("Impossible Error: ux.CoinHours < ux.Body.Hours")
         }
-        hoursIn += hours
+        hoursIn += coin_hours
     }
 
     var coinsOut uint64 = 0
@@ -216,19 +220,28 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
         return errors.New("Insufficient hours spent for outputs")
     }
 
+    //artificial restriction to prevent spam
+    for _, txo := range self.out {
+        if txo.Coins % 10e6 != 0 {
+            return errors.New("Error: transaction outputs must be multiple of 10e6 base units")
+        }
+    }
+
     return nil
 }
 
 // Returns the fee in the transaction
 func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
+    uint64 head_time = self.Head.Header.Time //time of last block
     inHours := uint64(0)
     // Compute input hours
     for _, ti := range t.In {
         in, ok := self.Unspent.Get(ti.UxOut)
         if !ok {
-            return 0, errors.New("Unknown input")
+            return 0, errors.New("TransactionFee(), error, unspent output does not exist")
         }
-        inHours += in.Body.Hours
+        //inHours += in.Body.Hours //use CoinHours
+        CoinHours += in.CoinHours(head_time)
     }
     // Compute output hours
     outHours := uint64(0)
@@ -248,6 +261,7 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
         return errors.New("BkSeq invalid")
     }
     //check Time
+    //give some room for error and clock skew
     if b.Header.Time < self.Head().Header.Time+self.CreationInterval {
         return errors.New("time invalid: block too soon")
     }

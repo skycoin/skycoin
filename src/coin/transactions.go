@@ -8,18 +8,6 @@ import (
     "math"
 )
 
-/*
-	Base Transaction Type
-*/
-
-/*
-Compute Later:
-
-type TransactionMeta struct {
-	Fee uint64
-}
-*/
-
 type Transaction struct {
     Header TransactionHeader //Outer Hash
     In     []TransactionInput
@@ -31,12 +19,6 @@ type TransactionHeader struct { //not hashed
     Sigs []Sig  //list of signatures, 64+1 bytes
 }
 
-/*
-	Can remove SigIdx; recover address from signature
-	- only saves 2 bytes
-	Require Sigs are sorted to enforce immutability?
-	- SidIdx enforces immutability
-*/
 type TransactionInput struct {
     SigIdx uint16 //signature index
     UxOut  SHA256 //Unspent Block that is being spent
@@ -48,10 +30,6 @@ type TransactionOutput struct {
     Coins              uint64  //amount to be sent in coins
     Hours              uint64  //amount to be sent in coin hours
 }
-
-/*
-	Add immutability and hash checks here
-*/
 
 // Verify attempts to determine if the transaction is well formed
 // Verify cannot check transaction signatures, it needs the address from unspents
@@ -121,6 +99,13 @@ func (self *Transaction) Verify() error {
         }
     }
 
+    //artificial restriction to prevent spam
+    for _, txo := range self.out {
+        if txo.Coins % 10e6 != 0 {
+            return errors.New("Error: transaction outputs must be multiple of 10e6 base units")
+        }
+    }
+
     return nil
 }
 
@@ -151,7 +136,7 @@ func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
 }
 
 // Signs a TransactionInput at its signature index
-func (self *Transaction) signInput(idx uint16, sec SecKey) {
+func (self *Transaction) SignInput(idx uint16, sec SecKey) {
     hash := self.hashInner()
     sig, err := SignHash(hash, sec)
     if err != nil {
@@ -173,7 +158,7 @@ func (self *Transaction) signInput(idx uint16, sec SecKey) {
 // Signs all inputs in the transaction
 func (self *Transaction) SignInputs(keys map[uint16]SecKey) {
     for _, ti := range self.In {
-        self.signInput(ti.SigIdx, keys[ti.SigIdx])
+        self.SignInput(ti.SigIdx, keys[ti.SigIdx])
     }
 }
 

@@ -3,6 +3,7 @@ package coin
 import (
     "github.com/skycoin/encoder"
     "log"
+    "bytes"
 )
 
 /*
@@ -79,6 +80,30 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
     v2 := ch * self.Body.Coins / 10e6 //accumulated coin-hours
     return v1 + v2                    //starting+earned
 }
+
+// Array of Outputs
+type UxArray []UxOut
+
+func NewUxArray(n int) UxArray {
+    return make([]UxOut, n)
+}
+
+func (self UxArray) Len() int {
+    return len(self)
+}
+
+func (self UxArray) Less(i, j int) bool {
+    hash1 := self[i].Hash()
+    hash2 := self[i].Hash()
+    return bytes.Compare(hash1[:],hash2[:]) < 0
+}
+
+func (self UxArray) Swap(i, j int) {
+    t := self[i]
+    self[i] = self[j]
+    self[j] = t
+}
+
 
 // Manages Unspents
 type UnspentPool struct {

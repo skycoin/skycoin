@@ -363,11 +363,11 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
         return err
     }
 
-    //checks whether ux inputs exist, check signatures
+    //checks whether ux inputs exist, check signatures, checks for duplicate outputs
     if err := self.TxUxInChk(tx); err != nil {
         return err
     }
-
+    //checks for duplicate outputs, checks for hash collisions with unspent outputs
     if err := self.TxUxOutChk(tx); err != nil {
         return err
     }
@@ -377,11 +377,11 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
         return err
     }
 
-    uxo, err := self.TxUxOut(tx) //set of inputs referenced by transaction
+    uxo, err := self.TxUxOut(tx) //set of outputs created by transaction
     if err != nil {
         return err
     }
-
+    //checks coin balances and relationship between inputs and outputs
     err = self.TxUxChk(tx, uxa, uxo)
     if err != nil {
         return err

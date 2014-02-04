@@ -15,22 +15,27 @@ var (
 
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
 
-//TODO: convention for var transaction in, transactionout, unspent in, unspent out
-// should be able to tell type and relationship from variable name
-// txi - transaction in?
-// txo - transaction out?
-// uxi - unspent in?
-// uxo - unspent out?
-//Alt:
-// ti - transaction in?
-// to - transaction out?
-// ui - unspent in?
-// uo - unspent out?
-// Problem: symbols look alike
 
-//TODO: 
+//TODO: more abstract struct names
 // /s/UxOut/Ux ?
 // /s/Transaction/Tx ?
+
+//TODO:
+// HashArray - array of hashes
+// TxArray - array of Tx/transactions
+// UxArray - array of Ux/outputs
+// Blockchain.TxUxIn(tx *Tx) ([]Ux, error)  - inputs of transaction
+// Blockchain.TxUxOut(tx *Tx) ([]Ux, error) - outputs of transaction
+
+//Termonology:
+// UXTO - unspent transaction outputs
+// UX - outputs
+// TX - transactions
+
+//Notes:
+// transactions (TX) consume outputs (UX) and produce new outputs (UX)
+// Tx.Uxi() - set of outputs consumed by transaction
+// Tx.Uxo() - set of outputs created by transaction
 
 const (
     // If the block header time is further in the future than this, it is
@@ -82,8 +87,7 @@ func newBlock(prev *Block, creationInterval uint64) Block {
 }
 
 func (self *Block) HashHeader() SHA256 {
-    b1 := encoder.Serialize(self.Header)
-    return SumDoubleSHA256(b1)
+    return self.Header.Hash()
 }
 
 func (self *BlockHeader) Hash() SHA256 {
@@ -139,7 +143,7 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
 
     //set genesis block
     var b Block = Block{} // genesis block
-    b.Header.Time = uint64(time.Now().UTC().Unix())
+    b.Header.Time = bc.TimeNow()
     bc.Blocks = append(bc.Blocks, b)
     // Genesis output
     ux := UxOut{
@@ -168,6 +172,13 @@ func (self *Blockchain) Time() uint64 {
     return self.Head().Header.Time 
 }
 
+//TimeNow returns current system time
+//TODO: use syncronized network time instead of system time
+//TODO: add function pointer to external network time callback?
+func (self *Blockchain) TimeNow() uint64 {
+    return uint64(time.Now().UTC().Unix())
+}
+
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  txns must be sorted by hash
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, error) {
@@ -181,6 +192,27 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
 /*
    Validation
 */
+
+//TxUxIn returns an array of outputs a transaction would spend
+//TxUxIn returns error if outputs are not in the UTXO set
+func (self *Blockchain) TxUxIn(tx *Transaction) ([]UxOut, error) {
+    //todo, check for duplicate inputs
+    var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
+    for idx, txi := range tx.In {
+        uxi, exists := self.Unspent.Get(txi.UxOut)
+        if !exists {
+            return nil, errors.New("Unspent output does not exist")
+        }
+        uxia[idx] = uxi
+    }
+    return uxia
+}
+
+//TxUxOut returns array of outputs that would be created by transaction
+//TxUxOut returns error on duplicate outputs
+func (self *Blockchain) TxUxOut(tx *Transaction) ([]UxOut, error) {
+
+}
 
 // VerifyTransaction determines whether a transaction could be executed in the
 // current block
@@ -287,7 +319,7 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     return nil
 }
 
-// Returns the fee in the transaction
+// TransactionFee calculates the current transaction fee in coinhours of a transaction
 func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
     var head_time uint64 = self.Time() //time of last block
     inHours := uint64(0)
@@ -297,7 +329,6 @@ func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
         if !ok {
             return 0, errors.New("TransactionFee(), error, unspent output does not exist")
         }
-        //inHours += in.Body.Hours //use CoinHours
         inHours += in.CoinHours(head_time)
     }
     // Compute output hours
@@ -518,6 +549,39 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
+// Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
+// CreateOutputs
+func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
+    uxo := make([]UxOut, 0, len(tx.Out))
+    for _, to := range tx.Out {
+        ux := UxOut{
+            Body: UxBody{
+                SrcTransaction: tx.Header.Hash,
+                Address:        to.DestinationAddress,
+                Coins:          to.Coins,
+                Hours:          to.Hours,
+            },
+        }
+        uxo = append(uxo, ux)
+    }
+    return uxo
+}
+
+// Creates complete UxOuts from TransactionInputs
+func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) []UxOut {
+    head := UxHead{
+        Time:  bh.Time,
+        BkSeq: bh.BkSeq,
+    }
+    uxo := self.CreateExpectedOutputs(tx)
+    for i := 0; i < len(uxo); i++ {
+        uxo[i].Head = head
+    }
+    return uxo
+}
+
+
+
 //AppendTransaction takes a block and appends a transaction to the transaction array.
 
 /*
@@ -610,34 +674,3 @@ func (self *Blockchain) AppendTransaction(b *Block, t Transaction) error {
     return nil
 }
 */
-
-// Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
-// CreateOutputs
-func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) []UxOut {
-    uxo := make([]UxOut, 0, len(tx.Out))
-    for _, to := range tx.Out {
-        ux := UxOut{
-            Body: UxBody{
-                SrcTransaction: tx.Header.Hash,
-                Address:        to.DestinationAddress,
-                Coins:          to.Coins,
-                Hours:          to.Hours,
-            },
-        }
-        uxo = append(uxo, ux)
-    }
-    return uxo
-}
-
-// Creates complete UxOuts from TransactionInputs
-func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) []UxOut {
-    head := UxHead{
-        Time:  bh.Time,
-        BkSeq: bh.BkSeq,
-    }
-    uxo := self.CreateExpectedOutputs(tx)
-    for i := 0; i < len(uxo); i++ {
-        uxo[i].Head = head
-    }
-    return uxo
-}

@@ -221,14 +221,14 @@ func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
 //TxUxInChk checks signatures and returns error
 //TxUxInChk checks for duplicate inputs and double spending
 func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
-    uxa, err := self.TxUxIn(tx)
+    uxa, err := self.TxUxIn(tx) //array of outputs referenced by transaction
     if err != nil {
         return err
     }
 
     //check signatures
     for idx, txi := range tx.In {
-        var ux UxOut = uxia[idx]
+        var ux UxOut = uxa[idx]
         err := ChkSig(ux.Body.Address, tx.Header.Hash, tx.Header.Sigs[txi.SigIdx])
         if err != nil {
             return errors.New("error: ChkSig fail")

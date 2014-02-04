@@ -218,23 +218,28 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
         }
     }
 
+    // Q: why are coin hours based on last block time and not
+    // current time?
+    // A: need system clock indepedent timing
+
+
+    //check impossible condition
+    for idx, tx := range t.In {
+        if coin_hours < utxo[idx].Body.Hours {
+            log.Panic("Impossible Error: ux.CoinHours < ux.Body.Hours")
+        }
+    }
+
+    //check coinhours
     var coinsIn uint64 = 0
     var hoursIn uint64 = 0
     for idx, tx := range t.In {
         var ux UxOut = utxo[idx]
-        err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[tx.SigIdx])
-        if err != nil {
-            return errors.New("error: ChkSig fail")
-        }
         coinsIn += ux.Body.Coins
-        // TODO -- why are coin hours based on last block time and not
-        // current time?
         coin_hours := ux.CoinHours(head_time)
-        if coin_hours < ux.Body.Hours {
-            log.Panic("Impossible Error: ux.CoinHours < ux.Body.Hours")
-        }
         hoursIn += coin_hours
     }
+
 
     var coinsOut uint64 = 0
     var hoursOut uint64 = 0

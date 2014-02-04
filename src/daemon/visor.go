@@ -16,14 +16,17 @@ type VisorConfig struct {
     MasterKeys visor.WalletEntry
     // How often to request blocks from peers
     BlocksRequestRate time.Duration
+    // How often to announce our blocks to peers
+    BlocksAnnounceRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:            visor.NewVisorConfig(),
-        MasterKeysFile:    "",
-        MasterKeys:        visor.WalletEntry{},
-        BlocksRequestRate: time.Minute * 15,
+        Config:             visor.NewVisorConfig(),
+        MasterKeysFile:     "",
+        MasterKeys:         visor.WalletEntry{},
+        BlocksRequestRate:  time.Minute * 15,
+        BlocksAnnounceRate: time.Minute * 30,
     }
 }
 
@@ -76,6 +79,15 @@ func (self *Visor) RequestBlocks(pool *Pool) {
     }
 }
 
+// Sends an AnnounceBlocksMessage to all connections
+func (self *Visor) AnnounceBlocks(pool *Pool) {
+    m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
+    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
+    for a, _ := range errs {
+        logger.Error("Failed to send AnnounceBlocksMessage to %s\n", a)
+    }
+}
+
 // Sends a GetBlocksMessage to one connection
 func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
@@ -96,7 +108,7 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        return errors.New("Failed to AnnounceBlock to anyone")
+        return errors.New("Failed to give blocks to anyone")
     } else {
         return nil
     }
@@ -167,6 +179,9 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
+    if len(self.Blocks) == 0 {
+        return
+    }
     processed := 0
     for i, b := range self.Blocks {
         err := d.Visor.Visor.ExecuteSignedBlock(b)
@@ -177,21 +192,23 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
         }
         processed = i + 1
     }
-    if processed == 0 {
-        return
-    }
 
-    // Announce our new blocks to peers
-    m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
-    for a, _ := range errs {
-        logger.Warning("Failed to announce blocks to %s", a)
+    // Announce our new blocks to peers, if we got any
+    if processed > 0 {
+        m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+        errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
+        for a, _ := range errs {
+            logger.Warning("Failed to announce blocks to %s", a)
+        }
     }
 
     // Send a new GetBlocksMessage, in case we aren't finished yet
+    // This also helps in case we receive out of order - if we got blocks
+    // but couldn't insert them because they were not sequential for us,
+    // requesting the blocks will allow us to catch up
     bkSeq := d.Visor.Visor.MostRecentBkSeq()
     n := NewGetBlocksMessage(bkSeq)
-    errs = d.Pool.Pool.Dispatcher.BroadcastMessage(n)
+    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(n)
     for a, _ := range errs {
         logger.Warning("Failed to send GetBlocksMessage to %s", a)
     }

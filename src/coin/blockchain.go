@@ -11,6 +11,7 @@ import (
 
 var (
     logger = logging.MustGetLogger("skycoin.coin")
+    ExtraChecks = true //extra checks for impossible conditions
 )
 
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
@@ -194,7 +195,7 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
 */
 
 //TxUxIn returns an array of outputs a transaction would spend
-//TxUxIn returns error if outputs are not in the UTXO set
+//TxUxIn returns error if outputs referenced by transaction do not exist
 func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
     //todo, check for duplicate inputs
     //var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
@@ -204,26 +205,34 @@ func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
         if !exists {
             return nil, errors.New("Unspent output does not exist")
         }
+        if ExtraChecks == true && txi.UxOut != uxi.Hash() {
+            log.Panic("Impossible Error: ux hash invalid")
+        }
         uxia[idx] = uxi
     }
     return uxia, nil
 }
 
 //TxUxInChk validates the inputs to a transaction
-//TxUxInChk checks signatures
+//TxUxInChk checks signatures and returns error
 //TxUxInChk checks for duplicate inputs and double spending
-//TxUxInChk returns the array of UxOut in sorted order by hash
-func (self *Blockchain) TxUxInChk(tx *Transaction) (UxArray, error) {
+func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
     uxa, err := self.TxUxIn(tx)
     if err != nil {
-        return nil, err
+        return err
     }
 
+    //testing sort functoin
     uxa.Sort()
     if uxa.IsSorted() == false {
-        log.Panic("impossible error: fix sort functoin")
+        log.Panic("impossible error: fix sort function")
     }
-    return nil, nil
+
+    if uxa.HasDupes() == true {
+        return errors.New("duplicate inputs")
+    }
+
+    return nil
 }
 
 //TxUxOut returns array of outputs that would be created by transaction
@@ -262,11 +271,19 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
         return err
     }
 
+    //checks whether ux inputs exist
+    //checks signatures
+    if err := self.TxUxInChk(tx); err != nil {
+        return err
+    }
+
     //this could be BlockChain.Time() which returns time of block head
     var head_time uint64 = self.Time()
 
     //check existence of inputs
     //ux input array
+    
+/*
     var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
     for idx, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
@@ -275,14 +292,21 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
         }
         uxia[idx] = uxi
     }
+*/
+    uxia, err := self.TxUxOut(tx) //set of inputs referenced by transaction
 
+    if err != nil {
+        return err
+    }
     //check impossible condition
+
+/*
     for idx, txi := range tx.In {
         if uxia[idx].Hash() != txi.UxOut {
             return errors.New("Impossible Error: txin.UxOut != ux.Hash()")
         }
     }
-
+*/
     //check signatures and ownership
     for idx, txi := range tx.In {
         var ux UxOut = uxia[idx]

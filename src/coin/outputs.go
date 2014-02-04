@@ -89,6 +89,22 @@ func NewUxArray(n int) UxArray {
     return make([]UxOut, n)
 }
 
+//HashArray returns array of hashes for the Ux in the UxArray
+func (self UxArray) HashArray() []SHA256 {
+    var hash_array []SHA256 = make([]SHA256, len(self))
+    for i,ux := range self {
+        hash_array[i] = ux.Hash()
+    }
+    return hash_array
+}
+
+//HasDupes checks the UxArray for outputs which have the same hash
+func (self UxArray) HasDupes() bool {
+    return HashArrayHasDupes(self.HashArray())
+}
+
+//UxArray sort functionality
+
 func (self UxArray) Sort() {
     //sort.Sort(UxArray(self))
     sort.Sort(self)
@@ -113,7 +129,6 @@ func (self UxArray) Swap(i, j int) {
     self[i] = self[j]
     self[j] = t
 }
-
 
 // Manages Unspents
 type UnspentPool struct {

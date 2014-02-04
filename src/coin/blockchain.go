@@ -351,17 +351,19 @@ func (self *Blockchain) TxUxChk(tx *Transaction, uxa UxArray, uxo UxArray) (erro
 func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     //CHECKLIST: DONE: check for duplicate ux inputs/double spending
     //CHECKLIST: DONE: check that inputs of transaction have not been spent
-    //CHECKLIST: check there are no duplicate outputs
+    //CHECKLIST: DONE: check there are no duplicate outputs
 
-    //TODO: check to see if inputs of transaction were created by pending transaction
+    // Q: why are coin hours based on last block time and not
+    // current time?
+    // A: no two computers will agree on system time. Need system clock indepedent timing that 
+    // everyone agrees on. fee values would depend on local clock
 
     // Verify the transaction's internals (hash check, surface checks)
     if err := tx.Verify(); err != nil {
         return err
     }
 
-    //checks whether ux inputs exist
-    //checks signatures
+    //checks whether ux inputs exist, check signatures
     if err := self.TxUxInChk(tx); err != nil {
         return err
     }
@@ -369,9 +371,6 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     if err := self.TxUxOutChk(tx); err != nil {
         return err
     }
-
-    //this could be BlockChain.Time() which returns time of block head
-    var head_time uint64 = self.Time()
 
     uxa, err := self.TxUxIn(tx) //set of inputs referenced by transaction
     if err != nil {
@@ -387,12 +386,6 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     if err != nil {
         return err
     }
-
-    // Q: why are coin hours based on last block time and not
-    // current time?
-    // A: no two computers will agree on system time. Need system clock indepedent timing that 
-    //everyone agrees on. fee values would depend on local clock
-
     return nil
 }
 

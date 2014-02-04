@@ -67,6 +67,8 @@ type BlockBody struct {
     Transactions Transactions
 }
 
+//TODO: merge header/body and cleanup top level interface
+
 /*
 Todo: merge header/body
 
@@ -362,7 +364,6 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     if err := tx.Verify(); err != nil {
         return err
     }
-
     //checks whether ux inputs exist, check signatures, checks for duplicate outputs
     if err := self.TxUxInChk(tx); err != nil {
         return err
@@ -371,12 +372,10 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     if err := self.TxUxOutChk(tx); err != nil {
         return err
     }
-
     uxa, err := self.TxUxIn(tx) //set of inputs referenced by transaction
     if err != nil {
         return err
     }
-
     uxo, err := self.TxUxOut(tx) //set of outputs created by transaction
     if err != nil {
         return err

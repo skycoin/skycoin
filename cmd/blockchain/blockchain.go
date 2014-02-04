@@ -32,7 +32,7 @@ func (self *PendingTransactions) Rand() coin.Transaction {
 func tests() {
     genesisWallet := keyring.NewWallet(1)
     genesisAddress := genesisWallet.Addresses[0]
-    var bc *coin.Blockchain = coin.NewBlockchain(genesisAddress.Address)
+    var bc *coin.Blockchain = coin.NewBlockchain(genesisAddress.Address, uint64(15))
 
     genesisWallet.RefeshUnspentOutputs(bc)
     //create 16 wallets with 64 addresses
@@ -42,7 +42,7 @@ func tests() {
         wa = append(wa, keyring.NewWallet(64))
     }
 
-    b := bc.NewBlock()
+    //b := bc.NewBlock() //use new function
 
     var t coin.Transaction
 
@@ -51,12 +51,12 @@ func tests() {
         var ti coin.TransactionInput
         ti.SigIdx = uint16(0)
         ti.UxOut = genesisWallet.Outputs[0].Hash()
-        t.TxIn = append(t.TxIn, ti)
+        t.In = append(t.In, ti)
 
         var to coin.TransactionOutput
         to.DestinationAddress = genesisWallet.Addresses[0].Address
         to.Coins = uint64(100*1e6 - wn*1000)
-        t.TxOut = append(t.TxOut, to)
+        t.Out = append(t.Out, to)
 
         for i := 0; i < wn; i++ {
             var to coin.TransactionOutput
@@ -64,11 +64,12 @@ func tests() {
             to.DestinationAddress = a.Address
             to.Coins = 1000
             to.Hours = 1024
-            t.TxOut = append(t.TxOut, to)
+            t.Out = append(t.Out, to)
         }
 
         sec := coin.NewSecKey(genesisAddress.SecKey[:])
-        t.SetSig(0, sec)
+        t.UpdateHeader() //sets hash, finalize
+        t.SignInput(0, sec)
 
     } else {
         t.PushInput(genesisWallet.Outputs[0].Hash())
@@ -82,19 +83,20 @@ func tests() {
         //var sec coin.SecKey
         //sec.Set(genesisAddress.SecKey[:])
         sec := coin.NewSecKey(genesisAddress.SecKey[:])
-        t.SetSig(0, sec)
+        t.UpdateHeader() //sets hash, finalize
+        t.SignInput(0, sec)
     }
-    t.UpdateHeader() //sets hash
+    
 
     fmt.Printf("genesis transaction: \n")
 
-    err := bc.AppendTransaction(&b, t)
-    if err != nil {
-        log.Panic(err)
-    }
+    //err := bc.AppendTransaction(&b, t)
+    //if err != nil {
+    //    log.Panic(err)
+    //}
 
     keyring.PrintWalletBalances(bc, wa)
-    err = bc.ExecuteBlock(b)
+    err := bc.ExecuteBlock(b)
     if err != nil {
         log.Panic(err)
     }

@@ -207,13 +207,21 @@ func (self *Blockchain) TxUxIn(tx *Transaction) (UxArray, error) {
     }
 
     if DebugLevel2 == true {
+        //check that hashes match
         for idx,txi := range tx.In {
             if txi.UxOut != uxia[idx].Hash() {
                 log.Panic("Programmer Error, DebugLevel2: ux hash mismatch")
             }
         }
+        //assert monotome time/coinhouse increase 
+        for idx, _ := range tx.In {
+            if uxia[idx].CoinHours(self.Time()) < uxia[idx].Body.Hours {
+                log.Panic("Programmer Error, DebugLevel2: uxi.CoinHours < uxi.Body.Hours")
+            }
+        }
     }
 
+    }
     return uxia, nil
 }
 
@@ -241,8 +249,20 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
     }
 
     if DebugLevel2 == true { //assert sort function
-        uxa.Sort()
-        if uxa.IsSorted() == false {
+        //check that hashes match
+        for idx,txi := range tx.In {
+            if txi.UxOut != uxia[idx].Hash() {
+                log.Panic("Programmer Error, DebugLevel2: ux hash mismatch")
+            }
+        }
+        //assert monotome time/coinhouse increase 
+        for idx, _ := range tx.In {
+            if uxia[idx].CoinHours(self.Time()) < uxia[idx].Body.Hours {
+                log.Panic("Programmer Error, DebugLevel2: uxi.CoinHours < uxi.Body.Hours")
+            }
+        }
+        //assert sort function
+        if uxa.Sort(); uxa.IsSorted() == false {
             log.Panic("Programmer Error, DebugLevel2: fix sort function")
         }
     }
@@ -251,7 +271,6 @@ func (self *Blockchain) TxUxInChk(tx *Transaction) (error) {
 }
 
 //TxUxOut returns array of outputs that would be created by transaction
-//TxUxOut returns error on duplicate outputs
 func (self *Blockchain) TxUxOut(tx *Transaction) (UxArray, error) {
     return nil, nil
 }
@@ -289,50 +308,17 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     //this could be BlockChain.Time() which returns time of block head
     var head_time uint64 = self.Time()
     
-/*
-    var uxia []UxOut = make([]UxOut, len(tx.In)) //cache ux used by transaction
-    for idx, txi := range tx.In {
-        uxi, exists := self.Unspent.Get(txi.UxOut)
-        if !exists {
-            return errors.New("Unspent output does not exist")
-        }
-        uxia[idx] = uxi
-    }
-*/
     uxia, err := self.TxUxOut(tx) //set of inputs referenced by transaction
     if err != nil {
         return err
     }
-    //check impossible condition
-
-/*
-    for idx, txi := range tx.In {
-        if uxia[idx].Hash() != txi.UxOut {
-            return errors.New("Impossible Error: txin.UxOut != ux.Hash()")
-        }
-    }
-*/
-    //check signatures and ownership
-    for idx, txi := range tx.In {
-        var ux UxOut = uxia[idx]
-        err := ChkSig(ux.Body.Address, tx.Header.Hash, tx.Header.Sigs[txi.SigIdx])
-        if err != nil {
-            return errors.New("error: ChkSig fail")
-        }
-    }
 
     // Q: why are coin hours based on last block time and not
     // current time?
-    // A: need system clock indepedent timing that everyone agrees on
-    // fee values would depend on local clock
+    // A: no two computers will agree on system time Need system clock indepedent timing that 
+    //everyone agrees on. fee values would depend on local clock
 
     //check misc input conditions
-    for idx, _ := range tx.In {
-        var uxi UxOut = uxia[idx]
-        if uxi.CoinHours(head_time) < uxi.Body.Hours {
-            log.Panic("Impossible Error: uxi.CoinHours < uxi.Body.Hours")
-        }
-    }
 
     //check misc outputs conditions
     for _, uxo := range tx.Out {

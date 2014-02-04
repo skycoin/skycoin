@@ -13,7 +13,6 @@ var (
     logger = logging.MustGetLogger("skycoin.coin")
 )
 
-
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
@@ -181,12 +180,12 @@ func (self *Blockchain) VerifyTransaction(t *Transaction) error {
     lastTime := self.Time()
     var coinsIn uint64 = 0
     var hoursIn uint64 = 0
-    for _, tx := range t.In {
+    for i, tx := range t.In {
         ux, exists := self.Unspent.Get(tx.UxOut)
         if !exists {
             return errors.New("Unspent output does not exist")
         }
-        err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[tx.SigIdx])
+        err := ChkSig(ux.Body.Address, t.Header.Hash, t.Header.Sigs[i])
         if err != nil {
             return err
         }
@@ -329,7 +328,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
             // This should never happen
             if self.Unspent.Has(h) {
                 if firstFail {
-                    return nil, errors.New("Impossible: Output hash is in the UnspentPool")
+                    return nil, errors.New("Output hash is in the UnspentPool")
                 } else {
                     skip[i] = byte(1)
                     continue

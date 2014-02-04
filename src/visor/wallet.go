@@ -2,6 +2,7 @@ package visor
 
 import (
     "errors"
+    "fmt"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "log"
@@ -158,8 +159,9 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
 // Creates a WalletEntry
 func (self *Wallet) CreateAddress() WalletEntry {
     e := NewWalletEntry()
-    self.Entries = append(self.Entries, e)
-    self.addressLookup[e.Address] = len(self.Entries) - 1
+    if err := self.AddEntry(e); err != nil {
+        log.Panic("Somehow, we managed to create a duplicate Address: %v", err)
+    }
     return e
 }
 
@@ -187,6 +189,18 @@ func (self *Wallet) GetEntry(a coin.Address) (WalletEntry, bool) {
         return WalletEntry{}, false
     } else {
         return self.Entries[i], true
+    }
+}
+
+func (self *Wallet) AddEntry(e WalletEntry) error {
+    _, exists := self.addressLookup[e.Address]
+    if exists {
+        return fmt.Errorf("Wallet entry already exists for address %s",
+            e.Address.String())
+    } else {
+        self.Entries = append(self.Entries, e)
+        self.addressLookup[e.Address] = len(self.Entries) - 1
+        return nil
     }
 }
 

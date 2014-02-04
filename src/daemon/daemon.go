@@ -148,7 +148,7 @@ type Daemon struct {
     // from the same base IP are allowed but limited.
     ipCounts map[string]int
     // Message handling queue
-    messageEvents chan AsyncMessage
+    messageEvents chan MessageEvent
 }
 
 // Returns a Daemon with primitives allocated
@@ -172,7 +172,7 @@ func NewDaemon(config *Config) *Daemon {
             config.Daemon.OutgoingMax),
         pendingConnections: make(map[string]*pex.Peer,
             config.Daemon.PendingMax),
-        messageEvents: make(chan AsyncMessage,
+        messageEvents: make(chan MessageEvent,
             config.Pool.EventChannelBufferSize),
     }
     d.RPC = NewRPC(config.RPC, d)
@@ -193,6 +193,12 @@ type ConnectEvent struct {
 type ConnectionError struct {
     Addr  string
     Error error
+}
+
+// Encapsulates a deserialized message from the network
+type MessageEvent struct {
+    Message AsyncMessage
+    Context *gnet.MessageContext
 }
 
 // Terminates all subsystems safely.  To stop the Daemon run loop, send a value
@@ -283,7 +289,7 @@ main:
             self.Pool.Pool.HandleDisconnectEvent(r)
         // Message handlers
         case m := <-self.messageEvents:
-            m.Process(self)
+            self.processMessageEvent(m)
         // Process any pending API requests
         case fn := <-self.RPC.requests:
             self.RPC.responses <- fn()
@@ -380,17 +386,24 @@ func (self *Daemon) cullInvalidConnections() {
 // messageEvent directly.
 func (self *Daemon) recordMessageEvent(m AsyncMessage,
     c *gnet.MessageContext) error {
+    self.messageEvents <- MessageEvent{m, c}
+    return nil
+}
+
+// Processes a queued AsyncMessage.
+func (self *Daemon) processMessageEvent(e MessageEvent) {
     // The first message received must be an Introduction
-    _, needsIntro := self.expectingIntroductions[c.Conn.Addr()]
+    // We have to check at process time and not record time because
+    // Introduction message does not update expectingIntroductions until its
+    // Process() is called
+    _, needsIntro := self.expectingIntroductions[e.Context.Conn.Addr()]
     if needsIntro {
-        _, isIntro := m.(*IntroductionMessage)
+        _, isIntro := e.Message.(*IntroductionMessage)
         if !isIntro {
-            self.Pool.Pool.Disconnect(c.Conn, DisconnectNoIntroduction)
-            return DisconnectNoIntroduction
+            self.Pool.Pool.Disconnect(e.Context.Conn, DisconnectNoIntroduction)
         }
     }
-    self.messageEvents <- m
-    return nil
+    e.Message.Process(self)
 }
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel

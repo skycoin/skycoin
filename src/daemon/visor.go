@@ -54,15 +54,20 @@ func NewVisor(c VisorConfig) *Visor {
 
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
-    walletFile := self.Config.Config.WalletFile
-    err := self.Visor.SaveWallet()
-    if err == nil {
-        logger.Info("Saved wallet to \"%s\"", walletFile)
-    } else {
-        logger.Critical("Failed to save wallet to \"%s\": %v", walletFile, err)
+    // Save the wallet, as long as we're not a master chain.  Master chains
+    // don't have a wallet, they have a single genesis wallet entry which is
+    // loaded in a different path
+    if !self.Config.Config.IsMaster {
+        walletFile := self.Config.Config.WalletFile
+        err := self.Visor.SaveWallet()
+        if err == nil {
+            logger.Info("Saved wallet to \"%s\"", walletFile)
+        } else {
+            logger.Critical("Failed to save wallet to \"%s\": %v", walletFile, err)
+        }
     }
     bcFile := self.Config.Config.BlockchainFile
-    err = self.Visor.SaveBlockchain()
+    err := self.Visor.SaveBlockchain()
     if err == nil {
         logger.Info("Saved blockchain to \"%s\"", bcFile)
     } else {
@@ -112,6 +117,32 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     } else {
         return nil
     }
+}
+
+// Broadcasts a single transaction to all peers
+func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
+    m := NewGiveTxnsMessage([]coin.Transaction{t})
+    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
+    if len(errs) == len(pool.Pool.Pool) {
+        return errors.New("Failed to give transaction to anyone")
+    } else {
+        return nil
+    }
+}
+
+// Creates a spend transaction and broadcasts it to the network
+func (self *Visor) Spend(amt visor.Balance, fee uint64,
+    dest coin.Address, pool *Pool) (coin.Transaction, error) {
+    txn, err := self.Visor.Spend(amt, fee, dest)
+    if err != nil {
+        return txn, err
+    }
+    err = self.Visor.RecordTxn(txn)
+    if err != nil {
+        return txn, err
+    }
+    err = self.broadcastTransaction(txn, pool)
+    return txn, err
 }
 
 // Creates a block from unconfirmed transactions and sends it to the network.

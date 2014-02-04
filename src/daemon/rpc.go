@@ -1,7 +1,6 @@
 package daemon
 
 import (
-    "errors"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
 )
@@ -176,19 +175,9 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    txn, err := self.Daemon.Visor.Visor.Spend(amt, fee, dest)
-    if err == nil {
-        err = self.Daemon.Visor.Visor.RecordTxn(txn)
-        if err != nil {
-            m := NewGiveTxnsMessage([]coin.Transaction{txn})
-            errs := self.Daemon.Pool.Pool.Dispatcher.BroadcastMessage(m)
-            for a, _ := range errs {
-                logger.Warning("Failed to send GiveTxnsMessage to %s", a)
-            }
-            if len(errs) == len(self.Daemon.Pool.Pool.Pool) {
-                err = errors.New("Failed to send GiveTxnsMessage to anyone")
-            }
-        }
+    _, err := self.Daemon.Visor.Spend(amt, fee, dest, self.Daemon.Pool)
+    if err != nil {
+        logger.Error("Failed to make a spend: %v", err)
     }
     return &Spend{
         RemainingBalance: *(self.getTotalBalance()),

@@ -104,7 +104,12 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
         log.Panicf("Invalid master wallet entry: %v", err)
     }
 
-    wallet := loadWallet(c.WalletFile, c.WalletSizeMin)
+    var wallet *Wallet = nil
+    if c.IsMaster {
+        wallet = createMasterWallet(master)
+    } else {
+        wallet = loadWallet(c.WalletFile, c.WalletSizeMin)
+    }
     blockchain := loadBlockchain(c.BlockchainFile, master.Address,
         c.BlockCreationInterval)
 
@@ -200,7 +205,7 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     needed := amt
     needed.Hours += fee
     auxs := self.getAvailableBalances()
-    toSign := make(map[uint16]coin.SecKey)
+    toSign := make([]coin.SecKey, 0)
 
 loop:
     for a, uxs := range auxs {
@@ -216,11 +221,13 @@ loop:
             b := NewBalance(ux.Body.Coins, coinHours)
             if needed.GreaterThanOrEqual(b) {
                 needed = needed.Sub(b)
-                toSign[txn.PushInput(ux.Hash())] = entry.Secret
+                txn.PushInput(ux.Hash())
+                toSign = append(toSign, entry.Secret)
             } else {
                 change := b.Sub(needed)
                 needed = needed.Sub(needed)
-                toSign[txn.PushInput(ux.Hash())] = entry.Secret
+                txn.PushInput(ux.Hash())
+                toSign = append(toSign, entry.Secret)
                 txn.PushOutput(ux.Body.Address, change.Coins, change.Hours)
             }
         }
@@ -405,6 +412,15 @@ func loadWallet(filename string, sizeMin int) *Wallet {
         }
     }
     return wallet
+}
+
+// Creates a wallet with a single master entry
+func createMasterWallet(master WalletEntry) *Wallet {
+    w := NewWallet()
+    if err := w.AddEntry(master); err != nil {
+        log.Panic("Master entry already exists in wallet: %v", err)
+    }
+    return w
 }
 
 // Loads a blockchain but subdues errors into the logger, or panics

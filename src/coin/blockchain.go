@@ -202,7 +202,7 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
 
 // Validates the inputs to a transaction by checking signatures, duplicate
 // inputs and double spends
-func (self *Blockchain) txUxInChk(tx *Transaction, uxIn UxArray) error {
+func (self *Blockchain) txUxInChk(tx Transaction, uxIn UxArray) error {
     // Check signatures
     for i, _ := range tx.In {
         ux := uxIn[i]
@@ -415,7 +415,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
     for i, t := range txns {
         // Check the transaction against itself.  This covers the hash,
         // signature indices and duplicate spends within itself
-        if err := self.VerifyTransaction(&t); err != nil {
+        if err := self.VerifyTransaction(t); err != nil {
             if firstFail {
                 return nil, err
             } else {
@@ -567,7 +567,7 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
 
 // TxUxIn returns a copy of the set of inputs that a transaction spends
 //An error is returned if the any unspents inputs are not found.
-func (self *Blockchain) txUxIn(tx *Transaction) (UxArray, error) {
+func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
     uxia := make(UxArray, len(tx.In))
     for i, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
@@ -583,10 +583,10 @@ func (self *Blockchain) txUxIn(tx *Transaction) (UxArray, error) {
 func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     uxo := make(UxArray, 0, len(tx.Out))
     for _, to := range tx.Out {
-        ux := UxOut{
-            Head: {
+        ux := UxOut {
+            Head: UxHead{
                 Time:  bh.Time,
-                BkSeq: bh.BkSeq
+                BkSeq: bh.BkSeq,
             },
             Body: UxBody{
                 SrcTransaction: tx.Header.Hash,

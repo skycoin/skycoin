@@ -220,6 +220,7 @@ func VerifySeckey(seckey []byte) int {
 *           0: invalid public key
  */
 
+//VerifyPubkey returns 1 if pubkey appears valid
 func VerifyPubkey(pubkey []byte) int {
 	if len(pubkey) != 33 {
 		return 0
@@ -229,13 +230,16 @@ func VerifyPubkey(pubkey []byte) int {
 	return int(ret)
 }
 
+//VerifySignatureValidity returns 1 if signature appears valid
 func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {
 		return 0
 	}
-	//malleability check
-	if (sig[32] & 0x70) != sig[32] {
+	//malleability check:
+	//highest bit of 32nd byte must be 0
+	//0x7f us 126 or 0b01111111
+	if (sig[32] >> 7) == 1 {
 		return 0
 	}
 	//recovery id check
@@ -256,12 +260,12 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if len(pubkey1) != 33 {
 		log.Panic("invalid pubkey length")
 	}
-
+	//malleability check:
 	//to enforce malleability, highest bit of S must be 0
 	//S starts at 32nd byte
-
+	//0x80 is 0b10000000 or 128 and masks highest bit
 	var b int = int(sig[32])
-	if (b & 0x80) == 0x80 {
+	if (b >> 7) == 1 {
 		return 0 //valid signature, but fails malleability
 	}
 

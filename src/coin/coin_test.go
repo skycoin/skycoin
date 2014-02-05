@@ -4,17 +4,19 @@ import (
     //"crypto/sha256"
     //"hash"
     "encoding/hex"
-    "fmt"
-    "log"
+    //"fmt"
+    //"log"
     "math/rand"
     "testing"
+    "errors"
+    "github.com/skycoin/skycoin/src/lib/secp256k1-go"
 )
 
 func TestAddress1(t *testing.T) {
     a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
     b, err := hex.DecodeString(a)
     if err != nil {
-        log.Panic(err)
+        t.Fatal(err)
     }
     addr := AddressFromPubKey(NewPubKey(b))
     _ = addr
@@ -27,11 +29,11 @@ func TestAddress2(t *testing.T) {
     a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
     b, err := hex.DecodeString(a)
     if err != nil {
-        log.Panic(err)
+        t.Fail()
     }
 
     if len(b) != 32 {
-        log.Panic()
+        t.Fail()
     }
 
     seckey := NewSecKey(b)
@@ -43,29 +45,105 @@ func TestAddress2(t *testing.T) {
 
 }
 
+//TODO: 100% coverage over cryptographic functions
+
+//Crypto Functions to Test
+//func ChkSig(address Address, hash SHA256, sig Sig) error {
+//func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+//func PubKeyFromSecKey(seckey SecKey) (PubKey) {
+//func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
+//func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
+//func GenerateKeyPair() (PubKey, SecKey) {
+//func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
+//func TestSecKey(seckey SecKey) error {
+
+
+func TestCrypto1(t *testing.T) {
+    for i:=0; i<10; i++ {
+        _,seckey := GenerateKeyPair()
+        if TestSecKey(seckey) != nil {
+            t.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED")
+        }
+    }
+}
+
 //test signatures
-func TestAddress3(t *testing.T) {
+func TestCrypto2(t *testing.T) {
     a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
     b, err := hex.DecodeString(a)
     if err != nil {
-        log.Panic(err)
+        t.Fatal(err)
     }
 
     if len(b) != 32 {
-        log.Panic()
+        t.Fatal()
     }
 
     seckey := NewSecKey(b)
     pubkey := PubKeyFromSecKey(seckey)
+
     addr := AddressFromPubKey(pubkey)
     _ = addr
 
     test := []byte("test message")
     hash := SumSHA256(test)
 
-    
-    ///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+    err = testSecKey(seckey, hash)
+    if err != nil {
+        t.Fatal()
+    }
 
+}
+
+//testSecKey tests a hash and seckey in all known cryptographic contexts
+func testSecKey(seckey SecKey, hash SHA256) error {
+    //check seckey with verify
+    if secp256k1.VerifySeckey(seckey[:]) != 1 {
+        return errors.New("Seckey verification failed")
+    }
+
+    //check pubkey recovery
+    pubkey := PubKeyFromSecKey(seckey)
+    if pubkey == (PubKey{}) {
+        errors.New("impossible error, TestSecKey, nil pubkey recovered")
+    }
+    //verify recovered pubkey
+    if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
+        return errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
+    }
+
+    //check signature production
+    sig, err := SignHash(hash, seckey)
+    if err != nil {
+        errors.New("impossible error, TestSecKey, signature error")
+    }
+    if sig == (Sig{}) {
+        errors.New("impossible error TestSecKey, nil sig with no error == nil")
+    }
+
+    //check pubkey recovered from sig
+    recovered_pubkey, err := PubKeyFromSig(sig, hash)
+    if err != nil {
+        return errors.New("impossible error, TestSecKey, pubkey recovery from signature failed")
+    }
+    if pubkey != recovered_pubkey {
+        return errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
+    }
+
+    //verify produced signature
+    err = VerifySignature(pubkey, sig, hash)
+    if err != nil {
+        errors.New("impossible error, TestSecKey, verify signature failed for sig")
+    }
+
+    //verify ChkSig
+    addr := AddressFromPubKey(pubkey)
+    err = ChkSig(addr,hash, sig)
+    if err != nil {
+        return errors.New("impossible error TestSecKey, ChkSig Failed, should not get this far")
+    }
+
+    return nil
 }
 
 func _gensec() SecKey {

@@ -96,10 +96,14 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 func SignHash(hash SHA256, sec SecKey) (Sig, error) {
     sig := secp256k1.Sign(hash[:], sec[:])
     if sig == nil {
-        if Paranoid {
-            log.Panic("Paranoid: SignHash invalid private key")
+        if DebugLevel1 {
+            log.Panic("DebugLevel1: SignHash invalid private key")
         }
         return Sig{}, errors.New("SignHash invalid private key")
+    }
+
+    if DebugLevel2 { //verify
+        
     }
     return NewSig(sig), nil
 }

@@ -11,7 +11,14 @@ import (
 
 var (
     logger = logging.MustGetLogger("skycoin.coin")
+    DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
+    DebugLevel2 = true //enable checks for impossible conditions
 )
+
+
+// Note: DebugLevel1 adds additional checks for hash collisions that
+// are unlikely to occur. DebugLevel2 adds checks for conditions that 
+// can only occur through programmer error and malice.
 
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
 
@@ -40,7 +47,7 @@ const (
     // rejected.
     blockTimeFutureMultipleMax uint64 = 20
     genesisCoinVolume          uint64 = 100 * 1e6 * 1e6 //100 million coins
-    genesisCoinHours           uint64 = 1024 * 1024 * 1024
+    genesisCoinHours           uint64 = 1024 * 1024
     //each coin is one million droplets, which are the base unit
 )
 
@@ -130,8 +137,6 @@ type Blockchain struct {
     Unspent UnspentPool
     // How often new blocks are created
     CreationInterval uint64
-    // Enable security checks for internal and 'impossible' errors
-    Paranoid bool `enc:"-"`
 }
 
 func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain {
@@ -141,7 +146,6 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
         CreationInterval: creationInterval,
         Blocks:           make([]Block, 0),
         Unspent:          NewUnspentPool(),
-        Paranoid:         true,
     }
 
     //set genesis block
@@ -200,20 +204,6 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
    Validation
 */
 
-// Returns an array of outputs a transaction would spend, An error is returned
-// if the any unspents are not found.
-func (self *Blockchain) txUxIn(tx *Transaction) (UxArray, error) {
-    uxia := make(UxArray, len(tx.In))
-    for i, txi := range tx.In {
-        uxi, exists := self.Unspent.Get(txi.UxOut)
-        if !exists {
-            return nil, errors.New("txUxIn error, unspent output does not exist")
-        }
-        uxia[i] = uxi
-    }
-    return uxia, nil
-}
-
 // Validates the inputs to a transaction by checking signatures, duplicate
 // inputs and double spends
 func (self *Blockchain) txUxInChk(tx *Transaction, uxIn UxArray) error {
@@ -230,17 +220,17 @@ func (self *Blockchain) txUxInChk(tx *Transaction, uxIn UxArray) error {
         return errors.New("txUxInChk error: duplicate inputs")
     }
 
-    if self.Paranoid {
+    if DebugLevel2 {
         // Check that hashes match.  This would imply a bug with txUxIn.
         for i, txi := range tx.In {
             if txi.UxOut != uxIn[i].Hash() {
-                log.Panic("Ux hash mismatch")
+                log.Panic("impossible error: Ux hash mismatch")
             }
         }
         // Assert monotome time/coinhouse increase.
         for i, _ := range tx.In {
             if uxIn[i].CoinHours(self.Time()) < uxIn[i].Body.Hours {
-                log.Panic("Uxi.CoinHours < uxi.Body.Hours")
+                log.Panic("impossible error: Uxi.CoinHours < uxi.Body.Hours")
             }
         }
     }
@@ -251,29 +241,31 @@ func (self *Blockchain) txUxInChk(tx *Transaction, uxIn UxArray) error {
 //txUxOutChk validates the outputs that would be created by the transaction
 //txUxOutChk checks for duplicate output hashes
 //txUxOutChk checks for hash collisions with existing hashes
-func (self *Blockchain) txUxOutChk(tx *Transaction, uxOut UxArray) error {
+func (self *Blockchain) txUxOutChk(tx Transaction, uxOut UxArray) error {
     // Check for outputs with duplicate hashes
     if uxOut.HasDupes() {
         return errors.New("Duplicate hash outputs")
     }
     //check for hash collisions of outputs with unspent output set
-    hashes := uxOut.HashArray()
-    for _, uxhash := range hashes {
-        if _, exists := self.Unspent.Get(uxhash); exists {
-            return errors.New("Output hash collision with unspent outputs")
+    
+    if DebugLevel1 { //hash collision check
+        hashes := uxOut.HashArray()
+        for _, uxhash := range hashes {
+            if _, exists := self.Unspent.Get(uxhash); exists {
+                return errors.New("impossible error: hash collision, Output hash collision with unspent outputs")
+            }
         }
     }
-
     //check misc outputs conditions
     for _, ux := range uxOut {
         //disallow allow zero coin outputs
         if ux.Body.Coins == 0 {
-            return errors.New("Zero coin output")
+            return errors.New("uxto spam: Zero coin output")
         }
         // each transaction output should multiple of 10e6 base units,
         // to prevent utxo spam
         if ux.Body.Coins%10e6 != 0 {
-            return errors.New("Outputs must be multiple of 10e6 base units")
+            return errors.New("uxto spam: Outputs must be multiple of 10e6 base units")
         }
     }
 
@@ -282,7 +274,7 @@ func (self *Blockchain) txUxOutChk(tx *Transaction, uxOut UxArray) error {
 
 // Checks for errors in relationship between the inputs and outputs of
 // the transaction
-func (self *Blockchain) txUxChk(tx *Transaction, uxIn UxArray,
+func (self *Blockchain) txUxChk(tx Transaction, uxIn UxArray,
     uxOut UxArray) error {
     var headTime uint64 = self.Time()
     var coinsIn uint64 = 0
@@ -311,7 +303,7 @@ func (self *Blockchain) txUxChk(tx *Transaction, uxIn UxArray,
 // VerifyTransactions checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
-func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
+func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     //CHECKLIST: DONE: check for duplicate ux inputs/double spending
     //CHECKLIST: DONE: check that inputs of transaction have not been spent
     //CHECKLIST: DONE: check there are no duplicate outputs
@@ -334,7 +326,7 @@ func (self *Blockchain) VerifyTransaction(tx *Transaction) error {
     if err := self.txUxInChk(tx, uxIn); err != nil {
         return err
     }
-    uxOut := self.CreateExpectedOutputs(tx) // set of outputs created by transaction
+    uxOut := self.TxUxOut(tx, self.Head().Header) // set of outputs created by transaction
     //checks for duplicate outputs, checks for hash collisions with unspent outputs
     if err := self.txUxOutChk(tx, uxOut); err != nil {
         return err
@@ -364,7 +356,7 @@ func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
         outHours += to.Hours
     }
     if inHours < outHours {
-        return 0, errors.New("Overspending")
+        return 0, errors.New("Insufficient coinhours for transaction outputs")
     }
     return inHours - outHours, nil
 }
@@ -565,7 +557,7 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
         }
         self.Unspent.DelMultiple(hashes)
         // Create new outputs
-        uxs := self.CreateOutputs(&tx, &b.Header)
+        uxs := self.CreateOutputs(tx, b.Header)
         for _, ux := range uxs {
             self.Unspent.Add(ux)
         }
@@ -576,11 +568,30 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
-// Creates UxOut from TransactionInputs.  UxOut.Head() is not set here, use
-func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) UxArray {
+
+// TxUxIn returns a copy of the set of inputs that a transaction spends
+//An error is returned if the any unspents inputs are not found.
+func (self *Blockchain) txUxIn(tx *Transaction) (UxArray, error) {
+    uxia := make(UxArray, len(tx.In))
+    for i, txi := range tx.In {
+        uxi, exists := self.Unspent.Get(txi.UxOut)
+        if !exists {
+            return nil, errors.New("txUxIn error, unspent output does not exist")
+        }
+        uxia[i] = uxi
+    }
+    return uxia, nil
+}
+
+// TxUxOut creates the outputs for a transaction.
+func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     uxo := make(UxArray, 0, len(tx.Out))
     for _, to := range tx.Out {
         ux := UxOut{
+            Head: {
+                Time:  bh.Time,
+                BkSeq: bh.BkSeq
+            },
             Body: UxBody{
                 SrcTransaction: tx.Header.Hash,
                 Address:        to.DestinationAddress,
@@ -595,14 +606,11 @@ func (self *Blockchain) CreateExpectedOutputs(tx *Transaction) UxArray {
 
 // Creates complete UxOuts from TransactionInputs
 // TODO: audit
-func (self *Blockchain) CreateOutputs(tx *Transaction, bh *BlockHeader) UxArray {
-    head := UxHead{
-        Time:  bh.Time,
-        BkSeq: bh.BkSeq,
-    }
-    uxo := self.CreateExpectedOutputs(tx)
-    for i := 0; i < len(uxo); i++ {
-        uxo[i].Head = head
-    }
-    return uxo
+func (self *Blockchain) CreateOutputs(tx Transaction, bh BlockHeader) UxArray {
+    //err := self.txUxOutChk(tx)
+    //if err != nil {
+    //    log.Panic() //?? is this check meant to be here
+    //}
+
+    return self.TxUxOut(tx, bh)
 }

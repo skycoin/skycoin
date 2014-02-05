@@ -5,6 +5,7 @@ import (
     "errors"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
+    "time"
 )
 
 type PubKey [33]byte
@@ -199,10 +200,8 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
 // TestPrivKey performs a series of tests to determine if a seckey is valid.  
 // All generated keys and keys loaded from disc must pass the TestSecKey suite.
 // TestPrivKey returns error if a key fails any test in the test suite.
-func TestSecKey(seckey SecKey) error {
-
-    //generate random hash
-    hash := SumSHA256( []byte(time.Now().String()) )
+func TestSecKey(seckey Seckey) error {
+    hash := SumSHA256( []byte(time.Now().String()) ) //generate hash
 
     //check seckey with verify
     if secp256k1.VerifySeckey(seckey[:]) != 1 {
@@ -211,13 +210,13 @@ func TestSecKey(seckey SecKey) error {
 
     //check pubkey recovery
     pubkey, err = PubKeyFromSecKey(seckey)
-    if err != nil {
+    if err != nil { //all valid seckeys on curve should have public keys
         errors.New("impossible error, TestSecKey, pubkey from seckey recovery fail")
     }
 
     //verify recovered pubkey
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-        return errors.New("Seckey verification failed")
+        return errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
     }
 
     //check signature production
@@ -230,13 +229,28 @@ func TestSecKey(seckey SecKey) error {
         }
     }
 
+    //check pubkey recovered from sig
+    recovered_pubkey, err := PubKeyFromSig(sig, hash)
+    if err != nil {
+        return errors.New("impossible error, TestSecKey, pubkey recovery from signature failed")
+    }
+    if pubkey != recovered_pubkey {
+        return errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
+    }
+
     //verify produced signature
     err = VerifySignature(pubkey, sig, hash)
     if err != nil {
         errors.New("impossible error, TestSecKey, verify signature failed for sig")
     }
 
-    //
+    //verify ChkSig
+    addr := AddressFromPubKey(pubkey)
+    err := ChkSig(addr,hash, sig)
+    if err != nil {
+        return errors.New("impossible error TestSecKey, ChkSig Failed, should not get this far")
+    }
+
     return nil
 }
 
@@ -244,6 +258,6 @@ func TestSecKey(seckey SecKey) error {
 func init() {
     seckey,_ := GenerateKeyPair()
     if TestSecKey(seckey) != nil {
-        log.Fatal("CRYPTOGRAPHIC INTEGRITY COMPROMISED: TERMINATING TO PROTECT COINS")
+        log.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS")
     }
 }

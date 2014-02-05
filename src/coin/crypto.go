@@ -24,6 +24,10 @@ func PubKeyFromHex(s string) PubKey {
     if err != nil {
         log.Panic(err)
     }
+    //TODO: pubkey from hex may fail and should return error
+    if secp256k1.VerifyPubkey(b) == false { //disable check
+        log.Panic("PubKeyFromHex: Verify Pubkey Failed")
+    }
     return NewPubKey(b)
 }
 
@@ -42,7 +46,7 @@ type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
     var p SecKey
-    if len(b) != len(p) {
+    if len(b) != 32 { //seckey must be 32 bytes
         log.Panic("Invalid secret key length")
     }
     copy(p[:], b[:])
@@ -65,8 +69,8 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 
 func NewSig(b []byte) Sig {
     var s Sig
-    if len(b) != len(s) {
-        log.Panic("Invalid secret key length")
+    if len(b) != 65 { //signature must be 65 bytes
+        log.Panic("Invalid signature length")
     }
     copy(s[:], b[:])
     return s

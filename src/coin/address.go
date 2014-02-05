@@ -15,11 +15,12 @@ const (
 type Checksum [4]byte
 
 //version is after Key to enable better vanity address generation
+//Address stuct is a 25 byte with a 20 byte publickey hash, 1 byte address
+//type and 4 byte checksum.
 type Address struct {
-    // ripemd160(sha256(sha256(pubkey)))
-    Key     Ripemd160
-    Version byte
-    ChkSum  Checksum
+    Key     [20]byte //20 byte pubkey hash
+    Version byte    //1 byte
+    ChkSum  [4]byte //4 byte checksum, first 4 bytes of sha256 of key+version
 }
 
 // Creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
@@ -34,6 +35,7 @@ func AddressFromPubKey(pubKey PubKey) Address {
 
 // Checks that the address appears valid for the public key
 func (self *Address) Verify(key PubKey) error {
+    //TODO: check that pubkey is valid
     if self.Key != key.ToAddressHash() {
         return errors.New("Public key invalid for address")
     }

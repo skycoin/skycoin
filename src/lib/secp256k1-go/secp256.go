@@ -162,6 +162,10 @@ int secp256k1_ecdsa_sign_compact(const unsigned char *msg, int msglen,
 */
 
 func Sign(msg []byte, seckey []byte) []byte {
+    if VerifySeckey(seckey) == 0 {
+        log.Panic("Error: must verify seckey before using crypto functions")
+    }
+
     var nonce []byte = RandByte(32) //going to get bitcoins stolen!
 
     var sig []byte = make([]byte, 65)
@@ -182,6 +186,10 @@ func Sign(msg []byte, seckey []byte) []byte {
         seckey_ptr,
         nonce_ptr,
         &recid)
+
+    if int(recid) >4 {
+        log.Panic()
+    }
 
     sig[64] = byte(int(recid))
 

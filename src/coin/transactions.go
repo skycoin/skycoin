@@ -22,6 +22,7 @@ type TransactionHeader struct { //not hashed
 
 type TransactionInput struct {
     // Unspent output that is being spent
+    SigIdx uint16
     UxOut SHA256
 }
 

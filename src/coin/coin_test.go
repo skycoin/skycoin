@@ -43,6 +43,31 @@ func TestAddress2(t *testing.T) {
 
 }
 
+//test signatures
+func TestAddress3(t *testing.T) {
+    a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
+    b, err := hex.DecodeString(a)
+    if err != nil {
+        log.Panic(err)
+    }
+
+    if len(b) != 32 {
+        log.Panic()
+    }
+
+    seckey := NewSecKey(b)
+    pubkey := PubKeyFromSecKey(seckey)
+    addr := AddressFromPubKey(pubkey)
+    _ = addr
+
+    test := []byte("test message")
+    hash := SumSHA256(test)
+
+    
+    ///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+
+}
+
 func _gensec() SecKey {
     _, s := GenerateKeyPair()
     return s
@@ -112,6 +137,8 @@ TODO:
 
 //create 4096 addresses
 //send addreses randomly between each other over 1024 blocks
+
+/*
 func TestBlockchain1(t *testing.T) {
 
     var S []SecKey
@@ -212,6 +239,7 @@ func TestBlockchain1(t *testing.T) {
 
     }
 }
+*/
 
 /*
 func TestGetListenPort(t *testing.T) {

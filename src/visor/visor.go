@@ -117,7 +117,6 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
     }
     blockchain := loadBlockchain(c.BlockchainFile, master.Address,
         c.BlockCreationInterval)
-    blockchain.Paranoid = true
 
     return &Visor{
         Config:          c,

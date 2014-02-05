@@ -35,7 +35,7 @@ func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
 // Adds a coin.Transaction to the pool
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     t coin.Transaction) error {
-    if err := bc.VerifyTransaction(&t); err != nil {
+    if err := bc.VerifyTransaction(t); err != nil {
         return err
     }
     now := time.Now().UTC()
@@ -45,7 +45,7 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         Checked:  now,
     }
     // Add predicted unspents
-    for _, ux := range bc.CreateExpectedOutputs(&t) {
+    for _, ux := range bc.TxUxOut(t, coin.BlockHeader{}) {
         self.Unspent.Add(ux)
     }
     return nil
@@ -67,7 +67,7 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
         return
     }
     delete(self.Txns, h)
-    outputs := bc.CreateExpectedOutputs(&t.Txn)
+    outputs := bc.TxUxOut(t.Txn, coin.BlockHeader{})
     hashes := make([]coin.SHA256, len(outputs))
     for _, o := range outputs {
         hashes = append(hashes, o.Hash())
@@ -84,7 +84,7 @@ func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
         t, ok := self.Txns[h]
         if ok {
             delete(self.Txns, h)
-            uxo = append(uxo, bc.CreateExpectedOutputs(&t.Txn)...)
+            uxo = append(uxo, bc.TxUxOut(t.Txn, coin.BlockHeader{})...)
         }
     }
     uxhashes := make([]coin.SHA256, len(uxo))
@@ -105,7 +105,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
         if t.Received.Add(maxAge).After(now) {
             toRemove = append(toRemove, k)
         } else if t.Checked.Add(checkPeriod).After(now) {
-            if bc.VerifyTransaction(&t.Txn) == nil {
+            if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now
                 self.Txns[k] = t
             } else {

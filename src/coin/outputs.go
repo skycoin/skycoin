@@ -72,8 +72,8 @@ func (self *UxOut) Hash() SHA256 {
 
 //calculate coinhour balance of output. t is the current unix utc time
 func (self *UxOut) CoinHours(t uint64) uint64 {
-    if t < self.Head.Time {
-        return 0
+    if t < self.Head.Time { //add warning?
+        return self.Body.Hours
     }
 
     v1 := self.Body.Hours             //starting coinshour

@@ -579,14 +579,14 @@ func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
     return uxia, nil
 }
 
-// TxUxOut creates the outputs for a transaction.
+// TxUxOut creates the outputs for a transaction. If BlockHeader is not known, use coin.BlockHeader{}
 func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     uxo := make(UxArray, 0, len(tx.Out))
     for _, to := range tx.Out {
         ux := UxOut {
             Head: UxHead{
-                Time:  bh.Time,
-                BkSeq: bh.BkSeq,
+                Time:  bh.Time, //not hashed so doesnt matter
+                BkSeq: bh.BkSeq, //not hashed so doesnt matter
             },
             Body: UxBody{
                 SrcTransaction: tx.Header.Hash,

@@ -20,17 +20,13 @@ var (
 // are unlikely to occur. DebugLevel2 adds checks for conditions that 
 // can only occur through programmer error and malice.
 
+// Note: Handling of Debug Level 2 errors
+// DebugLevel2 errors should be logged and automaticly reported to network,
+// with parameters needed to replicate the error on third party system. 
+// Examples of DebugLevel2 errors which require reporting are generated seckey 
+// that pass seckey validation but fail signing tests.
+
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
-
-//TODO: more abstract struct names
-// /s/UxOut/Ux ?
-// /s/Transaction/Tx ?
-
-//TODO:
-// HashArray - array of hashes
-// TxArray - array of Tx/transactions
-// UxArray - array of Ux/outputs
-// Blockchain.txUxIn(tx *Tx) ([]Ux, error)  - inputs of transaction
 
 //Termonology:
 // UXTO - unspent transaction outputs

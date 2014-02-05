@@ -26,6 +26,13 @@ func PubKeyFromHex(s string) PubKey {
     return NewPubKey(b)
 }
 
+//Verify attempts to determine if pubkey is valid. Returns nil on success
+func (self PubKey) Verify() error {
+    if secp256k1.VerifyPubkey(self[:]) != 1 {
+        return errors.New("Invalid public key")
+    }
+}
+
 func (self *PubKey) Hex() string {
     return hex.EncodeToString(self[:])
 }
@@ -54,6 +61,21 @@ func SecKeyFromHex(s string) SecKey {
         log.Panic(err)
     }
     return NewSecKey(b)
+}
+
+//Verify attempts to determine if SecKey is valid. Returns nil on success.
+func (self SecKey) Verify() error {
+    if secp256k1.VerifySeckey(self[:]) != 1 {
+        return errors.New("Invalid SecKey")
+    }
+
+    if DebugLevel2 {
+        err := TestSecKey(self)
+        if err != nil {
+            log.Panic("DebugLevel2, WARNING CRYPTO ARMAGEDDON")
+        }
+    }
+
 }
 
 func (s SecKey) Hex() string {
@@ -152,11 +174,25 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 
 func GenerateKeyPair() (PubKey, SecKey) {
     public, secret := secp256k1.GenerateKeyPair()
+
+    if DebugLevel1 {
+        if TestSecKey(NewSecKey(secret)) != nil {
+            log.Panic("DebugLevel1, GenerateKeyPair, generated private key failed TestSecKey")
+            
+        }
+    }
+
     return NewPubKey(public), NewSecKey(secret)
 }
 
 func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
     public, secret := secp256k1.GenerateDeterministicKeyPair(seed)
+
+    if DebugLevel1 {
+        if TestSecKey(NewSecKey(secret)) != nil {
+            log.Panic("DebugLevel1, GenerateDeterministicKeyPair, generated private key failed TestSecKey")
+        }
+    }
     return NewPubKey(public), NewSecKey(secret)
 }
 
@@ -164,5 +200,29 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
 // All generated keys and keys loaded from disc must pass the TestSecKey suite.
 // TestPrivKey returns error if a key fails any test in the test suite.
 func TestSecKey(seckey SecKey) error {
+    hash := SumSHA256( []byte(time.Now().String()) )
+
+    sig, err := SignHash(hash, seckey) {
+        if err != nil {
+            errors.New("impossible error, TestSecKey, signature error")
+        }
+        if sig == Sig{} {
+            errors.New("impossible error TestSecKey, null key with no error == nil")
+        }
+    }
+
+    pubkey, err = PubKeyFromSecKey(seckey)
+
+    pubkey 
+    if err != nil {
+        errors.New("impossible error, TestSecKey, pubkey from seckey recovery fail")
+    }
+
+    err = VerifySignature(pubkey, sig, hash)
+    if err != nil {
+        errors.New("impossible error, TestSecKey, verify signature failed for sig")
+    }
+
+
     return nil
 }

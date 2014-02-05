@@ -99,9 +99,14 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
     if c.IsMaster {
         logger.Debug("Visor is master")
     }
-    err := master.Verify(c.IsMaster)
-    if err != nil {
-        log.Panicf("Invalid master wallet entry: %v", err)
+    if c.IsMaster {
+        if err := master.Verify(); err != nil {
+            log.Panicf("Invalid master wallet entry: %v", err)
+        }
+    } else {
+        if err := master.VerifyPublic(); err != nil {
+            log.Panicf("Invalid master address: %v", err)
+        }
     }
 
     var wallet *Wallet = nil
@@ -191,7 +196,6 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
 }
 
 // Creates a Transaction spending coins and hours from our coins
-// TODO -- handle txn fees.  coin.Transaciton does not implement fee support
 func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",

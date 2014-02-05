@@ -35,6 +35,14 @@ func (self *PubKey) Hex() string {
     return hex.EncodeToString(self[:])
 }
 
+func (self *PubKey) Verify() error {
+    if !secp256k1.VerifyPubkey(self[:]) {
+        return errors.New("Invalid public key")
+    } else {
+        return nil
+    }
+}
+
 // Returns the public key as ripemd160(sha256(sha256(key)))
 func (self *PubKey) ToAddressHash() Ripemd160 {
     r1 := SumSHA256(self[:])

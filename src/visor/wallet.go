@@ -42,20 +42,22 @@ func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
     }
 }
 
-// Checks that the public key is derivable from the secret key if present,
+// Checks that the public key is derivable from the secret key,
 // and that the public key is associated with the address
-func (self *WalletEntry) Verify(isMaster bool) error {
-    var emptySecret coin.SecKey
-    if self.Secret == emptySecret {
-        if isMaster {
-            return errors.New("WalletEntry is master, but has no secret key")
-        }
-    } else {
-        if coin.PubKeyFromSecKey(self.Secret) != self.Public {
-            return errors.New("Invalid public key for secret key")
-        }
+func (self *WalletEntry) Verify() error {
+    if coin.PubKeyFromSecKey(self.Secret) != self.Public {
+        return errors.New("Invalid public key for secret key")
     }
-    return self.Address.Verify(self.Public)
+    return self.VerifyPublic()
+}
+
+// Checks that the public key is associated with the address
+func (self *WalletEntry) VerifyPublic() error {
+    if err := self.Public.Verify(); err != nil {
+        return err
+    } else {
+        return self.Address.Verify(self.Public)
+    }
 }
 
 type ReadableWalletEntry struct {
@@ -144,7 +146,11 @@ func NewWallet() *Wallet {
 func NewWalletFromReadable(r *ReadableWallet) *Wallet {
     entries := make([]WalletEntry, 0, len(r.Entries))
     for _, re := range r.Entries {
-        entries = append(entries, WalletEntryFromReadable(&re))
+        we := WalletEntryFromReadable(&re)
+        if err := we.Verify(); err != nil {
+            log.Panicf("Invalid wallet entry loaded: %v", we)
+        }
+        entries = append(entries, we)
     }
     lookup := make(map[coin.Address]int, len(entries))
     for i, e := range entries {
@@ -159,6 +165,9 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
 // Creates a WalletEntry
 func (self *Wallet) CreateAddress() WalletEntry {
     e := NewWalletEntry()
+    if err := e.Verify(); err != nil {
+        log.Panic("Creating invalid wallet entry: %v", err)
+    }
     if err := self.AddEntry(e); err != nil {
         log.Panic("Somehow, we managed to create a duplicate Address: %v", err)
     }

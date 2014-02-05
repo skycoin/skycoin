@@ -13,6 +13,9 @@ import (
     "time"
 )
 
+
+//TODO, move /src/skycoin to /cmd/skycoin folder
+
 import (
     "github.com/skycoin/skycoin/src/cli"
     "github.com/skycoin/skycoin/src/daemon"

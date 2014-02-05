@@ -95,15 +95,17 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 
 func SignHash(hash SHA256, sec SecKey) (Sig, error) {
     sig := secp256k1.Sign(hash[:], sec[:])
+
     if sig == nil {
-        if DebugLevel1 {
-            log.Panic("DebugLevel1: SignHash invalid private key")
-        }
         return Sig{}, errors.New("SignHash invalid private key")
     }
 
-    if DebugLevel2 { //verify
-        
+    if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
+        sig := NewSig(sig)
+        err := VerifySignature(pubkey, sig, hash)
+        if err != nil {
+            log.Panic("DebugLevel2, SignHash, error: secp256k1.Sign returned non-null invalid non-null signature")
+        }
     }
     return NewSig(sig), nil
 }
@@ -152,7 +154,15 @@ func GenerateKeyPair() (PubKey, SecKey) {
     public, secret := secp256k1.GenerateKeyPair()
     return NewPubKey(public), NewSecKey(secret)
 }
+
 func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
     public, secret := secp256k1.GenerateDeterministicKeyPair(seed)
     return NewPubKey(public), NewSecKey(secret)
+}
+
+// TestPrivKey performs a series of tests to determine if a seckey is valid.  
+// All generated keys and keys loaded from disc must pass the TestSecKey suite.
+// TestPrivKey returns error if a key fails any test in the test suite.
+func TestSecKey(seckey SecKey) error {
+    return nil
 }

@@ -290,6 +290,28 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	return 0
 }
 
+//SignatureErrorString returns error string for signature failure
+func SignatureErrorString(msg []byte, sig []byte, pubkey1 []byte) string {
+
+	if (sig[32] >> 7) == 1 {
+		return "signature fails malleability requirement"
+	}
+
+	if sig[64] >= 4 {
+		return "signature recovery byte is invalid, must be 0 to 3"
+	}
+
+	pubkey2 := RecoverPubkey(msg, sig) //if pubkey recovered, signature valid
+	if pubkey2 == nil {
+		return "pubkey from signature failed"
+	}
+
+	if bytes.Equal(pubkey1, pubkey2) == false {
+		return "input pubkey and recovered pubkey do not match"
+	}
+
+	return "No Error!"
+}
 /*
 int secp256k1_ecdsa_recover_compact(const unsigned char *msg, int msglen,
                                     const unsigned char *sig64,

@@ -64,6 +64,9 @@ type VisorConfig struct {
     BlockchainFile string
 }
 
+//Note, put cap on block size, not on transactions/block
+//Skycoin transactions are smaller than Bitcoin transactions so skycoin has
+//a higher transactions per second for the same block size
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
         IsMaster:                 false,

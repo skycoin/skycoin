@@ -17,13 +17,12 @@ type Transaction struct {
 
 type TransactionHeader struct { //not hashed
     Hash SHA256 //inner hash
-    Sigs []Sig  //list of signatures, 64+1 bytes each
+    Sigs []Sig  //list of signatures, 64+1 bytes
 }
 
 type TransactionInput struct {
-    // Unspent output that is being spent
-    SigIdx uint16
-    UxOut SHA256
+    SigIdx uint16 //signature index
+    UxOut  SHA256 //Unspent Block that is being spent
 }
 
 //hash output/name is function of Hash
@@ -39,6 +38,8 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
+    //TODO: optionally check that each signature is used at least once
+
     h := self.hashInner()
     if h != self.Header.Hash {
         return errors.New("Invalid header hash")
@@ -47,57 +48,61 @@ func (self *Transaction) Verify() error {
     if len(self.In) == 0 {
         return errors.New("No inputs")
     }
+
     if len(self.Out) == 0 {
         return errors.New("No outputs")
     }
 
     // Check signature index fields
-    if len(self.Header.Sigs) != len(self.In) {
-        return errors.New("Invalid number of signatures")
-    }
     if len(self.Header.Sigs) >= math.MaxUint16 {
-        return errors.New("Too many signatures and inputs")
+        return errors.New("signatures count exceeds uint16")
     }
 
     // Check duplicate inputs
-    uxOuts := make(map[SHA256]byte, len(self.In))
-    for _, in := range self.In {
-        uxOuts[in.UxOut] = byte(1)
-    }
-    if len(uxOuts) != len(self.In) {
-        return errors.New("Duplicate spend")
+    for i := 0; i < len(self.In); i++ {
+        for j := i + 1; i < len(self.In); j++ {
+            if self.In[i].UxOut == self.In[j].UxOut {
+                return errors.New("Duplicate spend")
+            }
+        }
     }
 
-    // Check for duplicate potential outputs
-    outputs := make(map[SHA256]byte, len(self.Out))
-    uxb := UxBody{
-        SrcTransaction: self.Hash(),
-    }
+    // Check for hash collisions in outputs
+    outputs := make([]SHA256, 0)
+
+    var uxb UxBody
+    uxb.SrcTransaction = self.Hash()
     for _, to := range self.Out {
         uxb.Coins = to.Coins
         uxb.Hours = to.Hours
         uxb.Address = to.DestinationAddress
-        outputs[uxb.Hash()] = byte(1)
+        outputs = append(outputs, uxb.Hash())
     }
-    if len(outputs) != len(self.Out) {
+
+    if  HashArrayHasDupes(outputs) == true {
         return errors.New("Duplicate output in transaction")
     }
 
-    // Validate signature
-    for _, sig := range self.Header.Sigs {
-        pubkey, err := PubKeyFromSig(sig, self.Header.Hash)
+    //validate signature
+    for _, txi := range self.In {
+
+        sig := self.Header.Sigs[txi.SigIdx]
+        hash := txi.UxOut
+        pubkey, err := PubKeyFromSig(sig,hash)
+
         if err != nil {
-            return err
+            return errors.New("pubkey recovery from signature failed")
         }
-        err = VerifySignature(pubkey, sig, self.Header.Hash)
+
+        err = VerifySignature(pubkey, sig, hash)
         if err != nil {
-            return err
+            return errors.New("signature verification failed")
         }
     }
 
     //artificial restriction to prevent spam
     for _, txo := range self.Out {
-        if txo.Coins%10e6 != 0 {
+        if txo.Coins % 10e6 != 0 {
             return errors.New("Error: transaction outputs must be multiple of 10e6 base units")
         }
     }
@@ -108,14 +113,17 @@ func (self *Transaction) Verify() error {
 // Adds a TransactionInput to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
 func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+    //TODO: do no create new si
     if len(self.In) >= math.MaxUint16 {
         log.Panic("Max transaction inputs reached")
     }
+    sigIdx := uint16(len(self.In))
     ti := TransactionInput{
-        UxOut: uxOut,
+        SigIdx: sigIdx,
+        UxOut:  uxOut,
     }
     self.In = append(self.In, ti)
-    return uint16(len(self.In) - 1)
+    return sigIdx
 }
 
 // Adds a TransactionOutput, sending coins & hours to an Address
@@ -129,8 +137,14 @@ func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
 }
 
 // Signs a TransactionInput at its signature index
-func (self *Transaction) signInput(idx uint16, sec SecKey, h SHA256) {
-    sig, err := SignHash(h, sec)
+func (self *Transaction) SignInput(idx uint16, sec SecKey) {
+    if self.Header.Hash != self.hashInner() {
+        //set inputs, set outputs, then set hash, then sign hash for each input address
+        log.Panic("SignInput Error: programmer error transaction not finalized, finalize hash before signing")
+    }
+    hash := self.Header.Hash
+
+    sig, err := SignHash(hash, sec)
     if err != nil {
         log.Panic("Failed to sign hash")
     }
@@ -141,29 +155,20 @@ func (self *Transaction) signInput(idx uint16, sec SecKey, h SHA256) {
     if idx >= uint16(txInLen) {
         log.Panic("Invalid In idx")
     }
-    if int(idx) >= len(self.Header.Sigs) {
-        extendBy := int(idx) - len(self.Header.Sigs) + 1
-        self.Header.Sigs = append(self.Header.Sigs, make([]Sig, extendBy)...)
+    for len(self.Header.Sigs) <= int(idx) {
+        self.Header.Sigs = append(self.Header.Sigs, Sig{})
     }
     self.Header.Sigs[idx] = sig
 }
 
 // Signs all inputs in the transaction
-func (self *Transaction) SignInputs(keys []SecKey) {
-    if len(self.Header.Sigs) != 0 {
-        log.Panic("Transaction has been signed")
-    }
-    if len(keys) != len(self.In) {
-        log.Panic("Invalid number of keys")
-    }
-    self.Header.Sigs = make([]Sig, len(self.In))
-    h := self.hashInner()
-    for i, _ := range self.In {
-        self.signInput(uint16(i), keys[i], h)
+func (self *Transaction) SignInputs(keys map[uint16]SecKey) {
+    for _, ti := range self.In {
+        self.SignInput(ti.SigIdx, keys[ti.SigIdx])
     }
 }
 
-// Hashes an entire Transaction struct, including the TransactionHeader
+// Hashes an entire Transaction struct
 func (self *Transaction) Hash() SHA256 {
     b1 := encoder.Serialize(*self)
     return SumDoubleSHA256(b1) //double SHA256 hash

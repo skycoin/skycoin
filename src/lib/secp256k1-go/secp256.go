@@ -17,11 +17,11 @@ import "C"
 //for osx 'xcode-select --install'
 
 import (
-    "unsafe"
-    //"fmt"
-    "bytes"
-    "errors"
-    "log"
+	"unsafe"
+	//"fmt"
+	//"errors"
+	"bytes"
+	"log"
 )
 
 //#define USE_FIELD_5X64
@@ -42,11 +42,11 @@ import (
 */
 
 func init() {
-    C.secp256k1_start() //takes 10ms to 100ms
+	C.secp256k1_start() //takes 10ms to 100ms
 }
 
 func Stop() {
-    C.secp256k1_stop()
+	C.secp256k1_stop()
 }
 
 /*
@@ -70,76 +70,78 @@ int secp256k1_ecdsa_pubkey_create(
 
 func GenerateKeyPair() ([]byte, []byte) {
 
-    pubkey_len := C.int(33)
-    const seckey_len = 32
+	pubkey_len := C.int(33)
+	const seckey_len = 32
 
-    var pubkey []byte = make([]byte, pubkey_len)
-    var seckey []byte = RandByte(seckey_len)
+	var pubkey []byte = make([]byte, pubkey_len)
+	var seckey []byte = RandByte(seckey_len)
 
-    var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
-    var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
+	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
+	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
 
-    ret := C.secp256k1_ecdsa_pubkey_create(
-        pubkey_ptr, &pubkey_len,
-        seckey_ptr, 1)
+	ret := C.secp256k1_ecdsa_pubkey_create(
+		pubkey_ptr, &pubkey_len,
+		seckey_ptr, 1)
 
-    if ret != 1 {
-        return GenerateKeyPair() //invalid secret, try again
-    }
-    return pubkey, seckey
+	if ret != 1 {
+		return GenerateKeyPair() //invalid secret, try again
+	}
+	return pubkey, seckey
 }
 
 //returns nil on error
-func PubkeyFromSeckey(SecKey []byte) []byte {
-    if len(SecKey) != 32 {
-        log.Panic("PubkeyFromSeckey: invalid length")
-    }
+func PubkeyFromSeckey(SecKey []byte) ([]byte) {
+	if len(SecKey) != 32 {
+		log.Panic("PubkeyFromSeckey: invalid length")
+	}
 
-    pubkey_len := C.int(33)
-    const seckey_len = 32
+	pubkey_len := C.int(33)
+	const seckey_len = 32
 
-    var pubkey []byte = make([]byte, pubkey_len)
-    var seckey []byte = make([]byte, seckey_len)
-    copy(seckey, SecKey)
+	var pubkey []byte = make([]byte, pubkey_len)
+	var seckey []byte = make([]byte, seckey_len)
+	copy(seckey, SecKey)
 
-    var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
-    var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
+	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
+	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
 
-    ret := C.secp256k1_ecdsa_pubkey_create(
-        pubkey_ptr, &pubkey_len,
-        seckey_ptr, 1)
+	ret := C.secp256k1_ecdsa_pubkey_create(
+		pubkey_ptr, &pubkey_len,
+		seckey_ptr, 1)
 
-    if ret != 1 {
-        return nil
-    }
-    return pubkey
+	if ret != 1 {
+		return nil
+	}
+	return pubkey
 }
+
 
 func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
-    seed_hash := SumSHA256(seed) //hash the seed
+	seed_hash := SumSHA256(seed) //hash the seed
 
-    pubkey_len := C.int(33)
-    const seckey_len = 32
+	pubkey_len := C.int(33)
+	const seckey_len = 32
 
-    var pubkey []byte = make([]byte, pubkey_len)
-    var seckey []byte = make([]byte, seckey_len)
-    copy(seckey[0:32], seed_hash[0:32])
+	var pubkey []byte = make([]byte, pubkey_len)
+	var seckey []byte = make([]byte, seckey_len)
+	copy(seckey[0:32], seed_hash[0:32])
 
-    var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
-    var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
+	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
+	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
 
-    ret := C.secp256k1_ecdsa_pubkey_create(
-        pubkey_ptr, &pubkey_len,
-        seckey_ptr, 1)
+	ret := C.secp256k1_ecdsa_pubkey_create(
+		pubkey_ptr, &pubkey_len,
+		seckey_ptr, 1)
 
-    if ret != 1 {
-        //invalid secret, try different
-        seed_hash = SumSHA256(seed_hash[0:32])
-        return GenerateDeterministicKeyPair(seed_hash)
-    }
+	if ret != 1 {
+		//invalid secret, try different
+		seed_hash = SumSHA256(seed_hash[0:32])
+		return GenerateDeterministicKeyPair(seed_hash) 
+	}
 
-    return pubkey, seckey
+	return pubkey, seckey
 }
+
 
 /*
 *  Create a compact ECDSA signature (64 byte + recovery id).
@@ -162,42 +164,38 @@ int secp256k1_ecdsa_sign_compact(const unsigned char *msg, int msglen,
 */
 
 func Sign(msg []byte, seckey []byte) []byte {
-    if VerifySeckey(seckey) == 0 {
-        log.Panic("Error: must verify seckey before using crypto functions")
-    }
+	var nonce []byte = RandByte(32) //going to get bitcoins stolen!
 
-    var nonce []byte = RandByte(32) //going to get bitcoins stolen!
+	var sig []byte = make([]byte, 65)
+	var recid C.int
 
-    var sig []byte = make([]byte, 65)
-    var recid C.int
+	var msg_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&msg[0]))
+	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
+	var nonce_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&nonce[0]))
+	var sig_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&sig[0]))
 
-    var msg_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&msg[0]))
-    var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
-    var nonce_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&nonce[0]))
-    var sig_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&sig[0]))
+	if C.secp256k1_ecdsa_seckey_verify(seckey_ptr) != C.int(1) {
+		log.Panic() //invalid seckey
+	}
 
-    if C.secp256k1_ecdsa_seckey_verify(seckey_ptr) != C.int(1) {
-        log.Panic() //invalid seckey
-    }
+	ret := C.secp256k1_ecdsa_sign_compact(
+		msg_ptr, C.int(len(msg)),
+		sig_ptr,
+		seckey_ptr,
+		nonce_ptr,
+		&recid)
 
-    ret := C.secp256k1_ecdsa_sign_compact(
-        msg_ptr, C.int(len(msg)),
-        sig_ptr,
-        seckey_ptr,
-        nonce_ptr,
-        &recid)
+	sig[64] = byte(int(recid))
 
     if int(recid) >4 {
         log.Panic()
     }
+    
+	if ret != 1 {
+		return Sign(msg, seckey) //nonce invalid,retry
+	}
 
-    sig[64] = byte(int(recid))
-
-    if ret != 1 {
-        return Sign(msg, seckey) //nonce invalid,retry
-    }
-
-    return sig
+	return sig
 }
 
 /*
@@ -208,92 +206,84 @@ func Sign(msg []byte, seckey []byte) []byte {
  */
 
 func VerifySeckey(seckey []byte) int {
-    if len(seckey) != 32 {
-        return 0
-    }
-    var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
-    ret := C.secp256k1_ecdsa_seckey_verify(seckey_ptr)
-    return int(ret)
+	if len(seckey) != 32 {
+		return 0
+	}
+	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
+	ret := C.secp256k1_ecdsa_seckey_verify(seckey_ptr)
+	return int(ret)
 }
 
 /*
 * Validate a public key.
-*  Returns: true: valid public key
-*           false: invalid public key
+*  Returns: 1: valid public key
+*           0: invalid public key
  */
 
-func VerifyPubkey(pubkey []byte) bool {
-    if len(pubkey) != 33 {
-        return false
-    }
-    var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
-    ret := C.secp256k1_ecdsa_pubkey_verify(pubkey_ptr, 33)
-    return int(ret) > 0
+func VerifyPubkey(pubkey []byte) int {
+	if len(pubkey) != 33 {
+		return 0
+	}
+	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
+	ret := C.secp256k1_ecdsa_pubkey_verify(pubkey_ptr, 33)
+	return int(ret)
 }
 
-func VerifySignatureValidity(sig []byte) error {
-    //64+1
-    if len(sig) != 65 {
-        return errors.New("Invalid signature length")
-    }
-    //malleability check
-    // if (int(sig[32]) & 0x80) == 0x80 {
-    if (sig[32] & 0x70) != sig[32] {
-        return errors.New("Signature not malleable")
-    }
-    //recovery id check
-    if sig[64] >= 4 {
-        return errors.New("Signature recovery id invalid")
-    }
-
-    return nil
+func VerifySignatureValidity(sig []byte) int {
+	//64+1
+	if len(sig) != 65 {
+		return 0
+	}
+	//malleability check
+	if (sig[32] & 0x70) != sig[32] {
+		return 0
+	}
+	//recovery id check
+	if sig[64] >= 4 {
+		return 0
+	}
+	return 1
 }
 
 //for compressed signatures, does not need pubkey
-func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) error {
-    if msg == nil || sig == nil || pubkey1 == nil {
-        log.Panic("ERROR: invalid input, nils")
-    }
-    if len(sig) != 65 {
-        log.Panic("invalid signature length")
-    }
-    if len(pubkey1) != 33 {
-        log.Panic("invalid pubkey length")
-    }
+func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
+	if msg == nil || sig == nil || pubkey1 == nil {
+		log.Panic("ERROR: invalid input, nils")
+	}
+	if len(sig) != 65 {
+		log.Panic("invalid signature length")
+	}
+	if len(pubkey1) != 33 {
+		log.Panic("invalid pubkey length")
+	}
 
-    //to enforce malleability, highest bit of S must be 0
-    //S starts at 32nd byte
+	//to enforce malleability, highest bit of S must be 0
+	//S starts at 32nd byte
 
-    if err := VerifySignatureValidity(sig); err != nil {
-        return err
-    }
+	var b int = int(sig[32])
+	if (b & 0x80) == 0x80 {
+		return 0 //valid signature, but fails malleability
+	}
 
-    // var b int = int(sig[32])
-    // if (b & 0x80) == 0x80 {
-    //     // valid signature, but fails malleability
-    //     return 0
-    // }
+	if sig[64] >= 4 {
+		return 0 //recover byte invalid
+	}
 
-    // if sig[64] >= 4 {
-    //     return errors.New("Recovery byte invalid")
-    //     return 0 //recover byte invalid
-    // }
+	pubkey2 := RecoverPubkey(msg, sig) //if pubkey recovered, signature valid
 
-    pubkey2 := RecoverPubkey(msg, sig) //if pubkey recovered, signature valid
+	if pubkey2 == nil {
+		return 0
+	}
 
-    if pubkey2 == nil {
-        return errors.New("Failed to recover public key")
-    }
+	if len(pubkey2) != 33 {
+		log.Panic("recovered pubkey length invalid")
+	}
 
-    if len(pubkey2) != 33 {
-        log.Panic("Invalid recovered pubkey length")
-    }
+	if bytes.Equal(pubkey1, pubkey2) == true {
+		return 1 //valid signature
+	}
 
-    if bytes.Equal(pubkey1, pubkey2) {
-        return nil
-    } else {
-        return errors.New("Recovered pubkey does not match pubkey")
-    }
+	return 0
 }
 
 /*
@@ -318,28 +308,28 @@ int secp256k1_ecdsa_recover_compact(const unsigned char *msg, int msglen,
 //recovers the public key from the signature
 //recovery of pubkey means correct signature
 func RecoverPubkey(msg []byte, sig []byte) []byte {
-    if len(sig) != 65 {
-        log.Panic()
-    }
+	if len(sig) != 65 {
+		log.Panic()
+	}
 
-    var pubkey []byte = make([]byte, 33)
+	var pubkey []byte = make([]byte, 33)
 
-    var msg_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&msg[0]))
-    var sig_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&sig[0]))
-    var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
+	var msg_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&msg[0]))
+	var sig_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&sig[0]))
+	var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
 
-    var pubkeylen C.int
+	var pubkeylen C.int
 
-    ret := C.secp256k1_ecdsa_recover_compact(
-        msg_ptr, C.int(len(msg)),
-        sig_ptr,
-        pubkey_ptr, &pubkeylen,
-        C.int(1), C.int(sig[64]),
-    )
+	ret := C.secp256k1_ecdsa_recover_compact(
+		msg_ptr, C.int(len(msg)),
+		sig_ptr,
+		pubkey_ptr, &pubkeylen,
+		C.int(1), C.int(sig[64]),
+	)
 
-    if ret == 0 || int(pubkeylen) != 33 {
-        return nil
-    }
+	if ret == 0 || int(pubkeylen) != 33 {
+		return nil
+	}
 
-    return pubkey
+	return pubkey
 }

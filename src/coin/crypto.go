@@ -3,7 +3,6 @@ package coin
 import (
     "encoding/hex"
     "errors"
-    "fmt"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
 )
@@ -24,23 +23,11 @@ func PubKeyFromHex(s string) PubKey {
     if err != nil {
         log.Panic(err)
     }
-    //TODO: pubkey from hex may fail and should return error
-    if secp256k1.VerifyPubkey(b) == false { //disable check
-        log.Panic("PubKeyFromHex: Verify Pubkey Failed")
-    }
     return NewPubKey(b)
 }
 
 func (self *PubKey) Hex() string {
     return hex.EncodeToString(self[:])
-}
-
-func (self *PubKey) Verify() error {
-    if !secp256k1.VerifyPubkey(self[:]) {
-        return errors.New("Invalid public key")
-    } else {
-        return nil
-    }
 }
 
 // Returns the public key as ripemd160(sha256(sha256(key)))
@@ -54,7 +41,7 @@ type SecKey [32]byte
 
 func NewSecKey(b []byte) SecKey {
     var p SecKey
-    if len(b) != 32 { //seckey must be 32 bytes
+    if len(b) != len(p) {
         log.Panic("Invalid secret key length")
     }
     copy(p[:], b[:])
@@ -77,15 +64,15 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 
 func NewSig(b []byte) Sig {
     var s Sig
-    if len(b) != 65 { //signature must be 65 bytes
-        log.Panic("Invalid signature length")
+    if len(b) != len(s) {
+        log.Panic("Invalid secret key length")
     }
     copy(s[:], b[:])
     return s
 }
 
 /*
-	Checks whether PubKey corresponding to address signed hash
+	Checks whether PubKey corresponding to address hash signed hash
 	- recovers the PubKey from sig and hash
 	- fail if PubKey cannot be be recovered
 	- computes the address from the PubKey
@@ -100,8 +87,8 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
     if address != AddressFromPubKey(NewPubKey(rawPubKey)) {
         return errors.New("Invalid sig: address does not match output address")
     }
-    if err := secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]); err != nil {
-        return fmt.Errorf("Invalid sig: %v", err)
+    if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]) != 1 {
+        return errors.New("Invalid sig: invalid for hash")
     }
     return nil
 }
@@ -118,7 +105,7 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 func PubKeyFromSecKey(seckey SecKey) PubKey {
     b := secp256k1.PubkeyFromSeckey(seckey[:])
     if b == nil {
-        log.Panic("Could not recover pubkey from seckey")
+        log.Panic("could not recover pubkey from seckey")
         return PubKey{}
     }
     return NewPubKey(b)
@@ -134,21 +121,23 @@ func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
 
 //verifies that mesh hash was signed by pubkey
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
-    recoveredPubKey, err := PubKeyFromSig(sig, hash) //recovered pubkey
+    pubkey_rec, err := PubKeyFromSig(sig, hash) //recovered pubkey
     if err != nil {
         return errors.New("Invalig sig: PubKey recovery failed")
     }
-    if recoveredPubKey != pubkey {
+    if pubkey_rec != pubkey {
         return errors.New("Recovered pubkey does not match pubkey")
     }
-    if !secp256k1.VerifyPubkey(pubkey[:]) {
+    if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
+        log.Panic("Invalid public key")
         return errors.New("Invalid public key")
     }
-    if err := secp256k1.VerifySignatureValidity(sig[:]); err != nil {
-        return fmt.Errorf("Invalid signature, %v", err)
+    if secp256k1.VerifySignatureValidity(sig[:]) != 1 {
+        log.Panic("Invalid signature")
+        return errors.New("Invalid signature")
     }
-    if err := secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]); err != nil {
-        return fmt.Errorf("Invalid signature for this message: %v", err)
+    if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
+        return errors.New("Invalid signature for this message")
     }
     return nil
 }

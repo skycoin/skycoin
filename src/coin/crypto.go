@@ -96,7 +96,9 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 func SignHash(hash SHA256, sec SecKey) (Sig, error) {
     sig := secp256k1.Sign(hash[:], sec[:])
     if sig == nil {
-        log.Panic("SignHash invalid private key")
+        if Paranoid {
+            log.Panic("Paranoid: SignHash invalid private key")
+        }
         return Sig{}, errors.New("SignHash invalid private key")
     }
     return NewSig(sig), nil
@@ -129,12 +131,12 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
         return errors.New("Recovered pubkey does not match pubkey")
     }
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-        log.Panic("Invalid public key")
-        return errors.New("Invalid public key")
+        log.Panic("Invalid public key: check public key before signature verification")
+        //return errors.New("Invalid public key")
     }
     if secp256k1.VerifySignatureValidity(sig[:]) != 1 {
-        log.Panic("Invalid signature")
-        return errors.New("Invalid signature")
+        log.Panic("Invalid signature: check signature validity before verification")
+        //return errors.New("Invalid signature")
     }
     if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
         return errors.New("Invalid signature for this message")

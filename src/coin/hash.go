@@ -121,3 +121,14 @@ func Merkle(h0 []SHA256) SHA256 {
     }
     return h1[0]
 }
+
+func HashArrayHasDupes(ha []SHA256) bool {
+    for i := 0; i < len(ha); i++ {
+       for j := i + 1; j < len(ha); j++ {
+            if ha[i] == ha[j] {
+                return true
+            }
+        }
+    }
+    return false
+}

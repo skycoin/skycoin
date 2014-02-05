@@ -5,6 +5,7 @@ import (
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "log"
     "time"
 )
 
@@ -34,6 +35,9 @@ func (self *VisorConfig) LoadMasterKeys() error {
     keys, err := visor.LoadWalletEntry(self.MasterKeysFile)
     if err != nil {
         return err
+    }
+    if err := keys.Verify(); err != nil {
+        log.Panicf("Invalid master keys: %v", err)
     }
     self.MasterKeys = keys
     return nil

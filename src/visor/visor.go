@@ -99,9 +99,14 @@ func NewVisor(c VisorConfig, master WalletEntry) *Visor {
     if c.IsMaster {
         logger.Debug("Visor is master")
     }
-    err := master.Verify(c.IsMaster)
-    if err != nil {
-        log.Panicf("Invalid master wallet entry: %v", err)
+    if c.IsMaster {
+        if err := master.Verify(); err != nil {
+            log.Panicf("Invalid master wallet entry: %v", err)
+        }
+    } else {
+        if err := master.VerifyPublic(); err != nil {
+            log.Panicf("Invalid master address: %v", err)
+        }
     }
 
     var wallet *Wallet = nil

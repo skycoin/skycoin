@@ -196,7 +196,6 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
 }
 
 // Creates a Transaction spending coins and hours from our coins
-// TODO -- handle txn fees.  coin.Transaciton does not implement fee support
 func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",

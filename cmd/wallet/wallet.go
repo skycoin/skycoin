@@ -42,7 +42,6 @@ func main() {
 
 	//readWriteFile()
 
-	
 	http.Handle("/", http.FileServer(http.Dir(static_path)))
 
 	http.HandleFunc("/api/loadWallet", loadWallet)

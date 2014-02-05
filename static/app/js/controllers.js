@@ -8,22 +8,27 @@ angular.module('skycoin.controllers', [])
   function($scope,$http,$modal,$log) {
   	$scope.addresses = [];
 
-  	$scope.loadWallet = function(wallet){
-	  var data = {WalletName:wallet};
-	  console.log('wallet is loading:' + wallet);
-      $http.post('/api/loadWallet', JSON.stringify(data)).success(function(response){
+  	$scope.loadWallets = function(){
+      $http.post('/wallet').success(function(response){
         console.dir(response);
         $scope.loadedWallet = response;
-        $scope.addresses = response.Addresses;
+        for(var i=0;i<response.entries.length;i++){
+        	$scope.addresses[i] = {};
+        	$scope.addresses[i].address = response.entries[i].address;
+        }
+        for(var i=0;i<response.entries.length;i++){
+        	$scope.checkBalance(i,response.entries[i].address);
+        }
       });
 	 }
 
-	 console.log('local storage wallet is ' + localStorage.loadedWallet)
-	 $scope.loadWallet(localStorage.loadedWallet);
+	 //console.log('local storage wallet is ' + localStorage.loadedWallet)
+	 //$scope.loadWallet(localStorage.loadedWallet);
+	 $scope.loadWallets();
 
 	 $scope.saveWallet = function(){
 	  var data = {Addresses:$scope.addresses};
-      $http.post('/api/saveWallet', JSON.stringify(data)).success(function(response){
+      $http.post('/wallet/save', JSON.stringify(data)).success(function(response){
         console.dir(response);
         $scope.loadedWalletName = response;
         localStorage.loadedWallet = response.replace(/"/g, "");
@@ -31,19 +36,58 @@ angular.module('skycoin.controllers', [])
 	 }
 
 	 $scope.newAddress = function(){
-	  	$http.get('/api/newAddress').success(function(response) {
+	  	$http.get('/wallet/address/create').success(function(response) {
 	      console.dir(response);
-	      $scope.addresses.push(response.replace(/"/g, ""));
+	      $scope.addresses.push(response.address);
+	      //$scope.addresses.push(response.replace(/"/g, ""));
 	      $scope.saveWallet();
 	    });
+	 }
+
+	 $scope.spend = function(addr){
+	 	var xsrf = {dst:addr.address,
+	 				coins:addr.amount,
+	 				fee:1,
+	 				hours:1}
+		$http({
+		    method: 'POST',
+		    url: '/wallet/spend',
+		    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+		    transformRequest: function(obj) {
+		        var str = [];
+		        for(var p in obj)
+		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		        return str.join("&");
+		    },
+		    data: xsrf
+			}).success(function(response){
+		  	 	console.log('wallet spend is ')
+		        console.dir(response);
+		        $scope.checkBalance(addr.address);
+	      });
+	 }
+
+	 $scope.checkBalance = function(wI, address){
+	 	var xsrf = {addr:address}
+		$http({
+		    method: 'POST',
+		    url: '/wallet/balance',
+		    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+		    transformRequest: function(obj) {
+		        var str = [];
+		        for(var p in obj)
+		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		        return str.join("&");
+		    },
+		    data: xsrf
+			}).success(function(response){
+		        $scope.addresses[wI].balance = response;
+	      });
 	 }
 
 	 $scope.mainBackUp = function(){
 
 	 }
-
-
-
 
 	 $scope.openQR = function (address) {
 

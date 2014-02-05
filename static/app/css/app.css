@@ -64,12 +64,12 @@ br {
   width: 100%;
   background: #dbe1e6 url("../img/skycoin_logo.png") 14px 12px no-repeat;
   height:60px;
-  border-bottom:1px solide #ddd;
+  border-bottom:1px solid #ddd;
   position:relative;
 }
 
 #main-content{
-  max-width:800px;
+  max-width:900px;
 }
 
 .wallet-buttons{
@@ -103,7 +103,7 @@ br {
 }
 
 table#overview-wallet{
-  width: 378px;
+  width: 420px;
   float: left;
   margin-right: 10px;
   margin-top:10px;

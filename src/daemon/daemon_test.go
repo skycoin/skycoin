@@ -13,7 +13,9 @@ import (
 
 func newDefaultDaemon() *Daemon {
     cleanupPeers()
-    return NewDaemon(NewConfig())
+    c := NewConfig()
+    c.Visor.Disabled = true
+    return NewDaemon(c)
 }
 
 func TestGetListenPort(t *testing.T) {
@@ -146,7 +148,7 @@ func TestDaemonLoopMessageEvent(t *testing.T) {
     go d.Start(quit)
     called := false
     m := &DummyAsyncMessage{fn: func() { called = true }}
-    d.messageEvents <- m
+    d.messageEvents <- MessageEvent{m, messageContext(addr)}
     wait()
     assert.True(t, called)
     quit <- 1
@@ -477,7 +479,7 @@ func TestRecordMessageEventValid(t *testing.T) {
         t.Fatal("d.messageEvents empty, would block")
     }
     me := <-d.messageEvents
-    _, ok := me.(*PingMessage)
+    _, ok := me.Message.(*PingMessage)
     assert.True(t, ok)
     shutdown(d)
 }
@@ -497,7 +499,7 @@ func TestRecordMessageEventIsIntroduction(t *testing.T) {
         t.Fatal("d.messageEvents empty, would block")
     }
     me := <-d.messageEvents
-    _, ok := me.(*IntroductionMessage)
+    _, ok := me.Message.(*IntroductionMessage)
     assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 0)
     assert.True(t, ok)
     delete(d.expectingIntroductions, addr)
@@ -513,10 +515,7 @@ func TestRecordMessageEventNeedsIntroduction(t *testing.T) {
     d.Pool.Pool.Pool[m.c.Conn.Id] = m.c.Conn
     assert.Equal(t, len(d.messageEvents), 0)
     d.expectingIntroductions[addr] = time.Now().UTC()
-    err := d.recordMessageEvent(m, m.c)
-    assert.NotNil(t, err)
-    assert.Equal(t, err, DisconnectNoIntroduction)
-    assert.Equal(t, len(d.messageEvents), 0)
+    d.processMessageEvent(MessageEvent{m, m.c})
     assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 1)
     if len(d.Pool.Pool.DisconnectQueue) == 0 {
         t.Fatal("DisconnectQueue empty, would block")

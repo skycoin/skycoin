@@ -11,6 +11,8 @@ import (
 
 type VisorConfig struct {
     Config visor.VisorConfig
+    // Disabled the visor completely
+    Disabled bool
     // Location of master keys
     MasterKeysFile string
     // Master public/secret key and genesis address
@@ -24,6 +26,7 @@ type VisorConfig struct {
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
         Config:             visor.NewVisorConfig(),
+        Disabled:           false,
         MasterKeysFile:     "",
         MasterKeys:         visor.WalletEntry{},
         BlocksRequestRate:  time.Minute * 15,
@@ -32,6 +35,9 @@ func NewVisorConfig() VisorConfig {
 }
 
 func (self *VisorConfig) LoadMasterKeys() error {
+    if self.Disabled {
+        return nil
+    }
     keys, err := visor.LoadWalletEntry(self.MasterKeysFile)
     if err != nil {
         return err
@@ -49,7 +55,10 @@ type Visor struct {
 }
 
 func NewVisor(c VisorConfig) *Visor {
-    v := visor.NewVisor(c.Config, c.MasterKeys)
+    var v *visor.Visor = nil
+    if !c.Disabled {
+        v = visor.NewVisor(c.Config, c.MasterKeys)
+    }
     return &Visor{
         Config: c,
         Visor:  v,
@@ -58,6 +67,9 @@ func NewVisor(c VisorConfig) *Visor {
 
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
+    if self.Config.Disabled {
+        return
+    }
     // Save the wallet, as long as we're not a master chain.  Master chains
     // don't have a wallet, they have a single genesis wallet entry which is
     // loaded in a different path
@@ -81,6 +93,9 @@ func (self *Visor) Shutdown() {
 
 // Sends a GetBlocksMessage to all connections
 func (self *Visor) RequestBlocks(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     for a, _ := range errs {
@@ -90,6 +105,9 @@ func (self *Visor) RequestBlocks(pool *Pool) {
 
 // Sends an AnnounceBlocksMessage to all connections
 func (self *Visor) AnnounceBlocks(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
     m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     for a, _ := range errs {
@@ -99,6 +117,9 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
 
 // Sends a GetBlocksMessage to one connection
 func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
+    if self.Config.Disabled {
+        return
+    }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
     c := pool.Pool.Addresses[addr]
     if c == nil {
@@ -114,6 +135,9 @@ func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
 
 // Sends a signed block to all connections
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
+    if self.Config.Disabled {
+        return errors.New("Visor disabled")
+    }
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
@@ -125,6 +149,9 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
 
 // Broadcasts a single transaction to all peers
 func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
+    if self.Config.Disabled {
+        return errors.New("Visor disabled")
+    }
     m := NewGiveTxnsMessage([]coin.Transaction{t})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
@@ -137,6 +164,9 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 // Creates a spend transaction and broadcasts it to the network
 func (self *Visor) Spend(amt visor.Balance, fee uint64,
     dest coin.Address, pool *Pool) (coin.Transaction, error) {
+    if self.Config.Disabled {
+        return coin.Transaction{}, errors.New("Visor disabled")
+    }
     txn, err := self.Visor.Spend(amt, fee, dest)
     if err != nil {
         return txn, err
@@ -152,6 +182,9 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
 // Creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a master chain.
 func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
+    if self.Config.Disabled {
+        return errors.New("Visor disabled")
+    }
     sb, err := self.Visor.CreateBlock()
     if err == nil {
         return self.broadcastBlock(sb, pool)
@@ -184,6 +217,9 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     // TODO -- we need the sig to be sent with the block, but only the master
     // can sign blocks.  Thus the sig needs to be stored with the block.
     // TODO -- move 20 to either Messages.Config or Visor.Config
+    if d.Visor.Config.Disabled {
+        return
+    }
     blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock, 20)
     if blocks == nil {
         return
@@ -214,6 +250,9 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     if len(self.Blocks) == 0 {
         return
     }
@@ -269,6 +308,9 @@ func (self *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *AnnounceBlocksMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     bkSeq := d.Visor.Visor.MostRecentBkSeq()
     if bkSeq >= self.MaxBkSeq {
         return
@@ -299,12 +341,9 @@ func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *AnnounceTxnsMessage) Process(d *Daemon) {
-    // TODO
-    // check if we have these txns already
-    // look in unconfirmed pool
-    // look in Blockchain (need datastructure for blockchain)
-    // if we don't have these txns already, send a GetTxnsMessage
-
+    if d.Visor.Config.Disabled {
+        return
+    }
     unknown := d.Visor.Visor.UnconfirmedTxns.FilterKnown(self.Txns)
     if len(unknown) == 0 {
         return
@@ -335,6 +374,9 @@ func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GetTxnsMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     // Locate all txns from the unconfirmed pool
     // reply to sender with GiveTxnsMessage
     known := d.Visor.Visor.UnconfirmedTxns.GetKnown(self.Txns)
@@ -367,6 +409,9 @@ func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveTxnsMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
         err := d.Visor.Visor.RecordTxn(txn)

@@ -149,7 +149,7 @@ func NewUnspentPool() UnspentPool {
 
 // Reconstructs the indices from the underlying array
 func (self *UnspentPool) Rebuild() {
-    self.Map = make(map[SHA256]int)
+    self.Map = make(map[SHA256]int, len(self.Arr))
     self.XorHash = SHA256{}
     for i, ux := range self.Arr {
         h := ux.Hash()
@@ -187,38 +187,54 @@ func (self *UnspentPool) Has(h SHA256) bool {
     return ok
 }
 
-// Removes an unspent from the pool, by hash
-func (self *UnspentPool) Del(h SHA256) {
+// Removes an hash from the Arr and updates the XorHash. Returns the index of
+// the removed hash. If the hash is not found, returns -1.
+func (self *UnspentPool) del(h SHA256) int {
     i, ok := self.Map[h]
     if !ok {
-        return
+        return -1
     }
     delete(self.Map, h)
-    self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
-    for j := i; j < len(self.Arr); j++ {
+    if i == len(self.Arr)-1 {
+        self.Arr = self.Arr[:i]
+    } else {
+        logger.Critical("Removing element %d from array of length %d", i,
+            len(self.Arr))
+        self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
+    }
+    self.XorHash.Xor(h)
+    return i
+}
+
+// Updates the internal Map indices after Arr has changed
+func (self *UnspentPool) updateIndices(startIndex int) {
+    for j := startIndex; j < len(self.Arr); j++ {
         // TODO -- store the UxOut hash in its header
         self.Map[self.Arr[j].Hash()] = j
     }
-    self.XorHash.Xor(h)
+}
+
+// Removes an unspent from the pool, by hash
+func (self *UnspentPool) Del(h SHA256) {
+    if i := self.del(h); i >= 0 {
+        self.updateIndices(i)
+    }
 }
 
 // Delete multiple hashes in a batch
 func (self *UnspentPool) DelMultiple(hashes []SHA256) {
-    lowest := len(self.Arr)
+    // Lowest of < 0 means nothing removed, otherwise its the lowest index
+    // removed
+    lowest := -1
     for _, h := range hashes {
-        i, ok := self.Map[h]
-        if !ok {
-            continue
+        if i := self.del(h); i >= 0 {
+            if i < lowest || lowest < 0 {
+                lowest = i
+            }
         }
-        if i < lowest {
-            lowest = i
-        }
-        delete(self.Map, h)
-        self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
-        self.XorHash.Xor(h)
     }
-    for j := lowest; j < len(self.Arr); j++ {
-        self.Map[self.Arr[j].Hash()] = j
+    if lowest >= 0 {
+        self.updateIndices(lowest)
     }
 }
 

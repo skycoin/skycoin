@@ -86,7 +86,7 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 
 func NewSig(b []byte) Sig {
     var s Sig
-    if len(b) != len(s) {
+    if len(b) != 65 { //signatures must be 64 bytes
         log.Panic("Invalid secret key length")
     }
     copy(s[:], b[:])
@@ -200,8 +200,27 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
 // All generated keys and keys loaded from disc must pass the TestSecKey suite.
 // TestPrivKey returns error if a key fails any test in the test suite.
 func TestSecKey(seckey SecKey) error {
+
+    //generate random hash
     hash := SumSHA256( []byte(time.Now().String()) )
 
+    //check seckey with verify
+    if secp256k1.VerifySeckey(seckey[:]) != 1 {
+        return errors.New("Seckey verification failed")
+    }
+
+    //check pubkey recovery
+    pubkey, err = PubKeyFromSecKey(seckey)
+    if err != nil {
+        errors.New("impossible error, TestSecKey, pubkey from seckey recovery fail")
+    }
+
+    //verify recovered pubkey
+    if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
+        return errors.New("Seckey verification failed")
+    }
+
+    //check signature production
     sig, err := SignHash(hash, seckey) {
         if err != nil {
             errors.New("impossible error, TestSecKey, signature error")
@@ -211,18 +230,20 @@ func TestSecKey(seckey SecKey) error {
         }
     }
 
-    pubkey, err = PubKeyFromSecKey(seckey)
-
-    pubkey 
-    if err != nil {
-        errors.New("impossible error, TestSecKey, pubkey from seckey recovery fail")
-    }
-
+    //verify produced signature
     err = VerifySignature(pubkey, sig, hash)
     if err != nil {
         errors.New("impossible error, TestSecKey, verify signature failed for sig")
     }
 
-
+    //
     return nil
+}
+
+//do not allow program to start if crypto tests fail
+func init() {
+    seckey,_ := GenerateKeyPair()
+    if TestSecKey(seckey) != nil {
+        log.Fatal("CRYPTOGRAPHIC INTEGRITY COMPROMISED: TERMINATING TO PROTECT COINS")
+    }
 }

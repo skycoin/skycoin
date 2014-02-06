@@ -21,16 +21,19 @@ type VisorConfig struct {
     BlocksAnnounceRate time.Duration
     // How many blocks to respond with to a GetBlocksMessage
     BlocksResponseCount uint64
+    // How often to rebroadcast txns that we are a party to
+    TransactionRebroadcastRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:              visor.NewVisorConfig(),
-        Disabled:            false,
-        MasterKeysFile:      "",
-        BlocksRequestRate:   time.Minute * 5,
-        BlocksAnnounceRate:  time.Minute * 15,
-        BlocksResponseCount: 20,
+        Config:                     visor.NewVisorConfig(),
+        Disabled:                   false,
+        MasterKeysFile:             "",
+        BlocksRequestRate:          time.Minute * 5,
+        BlocksAnnounceRate:         time.Minute * 15,
+        BlocksResponseCount:        20,
+        TransactionRebroadcastRate: time.Minute * 5,
     }
 }
 
@@ -139,6 +142,27 @@ func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) error {
     }
 }
 
+// Broadcasts any txn that we are a party to
+func (self *Visor) BroadcastOurTransactions(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
+    since := (self.Config.TransactionRebroadcastRate * 2) - (time.Second * 30)
+    txns := self.Visor.UnconfirmedTxns.GetOwnedTransactionsSince(since)
+    hashes := make([]coin.SHA256, len(txns))
+    for _, tx := range txns {
+        hashes = append(hashes, tx.Txn.Header.Hash)
+    }
+    m := NewAnnounceTxnsMessages(hashes)
+    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
+    if len(errs) != len(pool.Pool.Pool) {
+        now := time.Now().UTC()
+        for _, tx := range txns {
+            tx.Announced = now
+        }
+    }
+}
+
 // Sends a signed block to all connections
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     if self.Config.Disabled {
@@ -161,6 +185,7 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
         logger.Warning("Failed to give transaction to anyone")
+        return errors.New("Did not broadcast to anyone")
     }
     return nil
 }
@@ -175,11 +200,8 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
     if err != nil {
         return txn, err
     }
-    err = self.Visor.RecordTxn(txn)
-    if err != nil {
-        return txn, err
-    }
-    err = self.broadcastTransaction(txn, pool)
+    didAnnounce := self.broadcastTransaction(txn, pool) == nil
+    err = self.Visor.RecordTxn(txn, didAnnounce)
     return txn, err
 }
 
@@ -410,11 +432,25 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     if d.Visor.Config.Disabled {
         return
     }
+    hashes := make([]coin.SHA256, 0, len(self.Txns))
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        err := d.Visor.Visor.RecordTxn(txn)
-        if err != nil {
+        err := d.Visor.Visor.RecordTxn(txn, false)
+        if err == nil {
+            hashes = append(hashes, txn.Header.Hash)
+        } else {
             logger.Warning("Failed to record txn: %v", err)
+        }
+    }
+    // Announce these transactions to peers
+    if len(hashes) != 0 {
+        now := time.Now().UTC()
+        m := NewAnnounceTxnsMessages(hashes)
+        errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
+        if len(errs) != len(d.Pool.Pool.Pool) {
+            for _, h := range hashes {
+                d.Visor.Visor.SetAnnounced(h, now)
+            }
         }
     }
 }

@@ -11,10 +11,12 @@ type UnconfirmedTxn struct {
     Received time.Time
     // Time the txn was last checked against the blockchain
     Checked time.Time
-}
-
-func (self *UnconfirmedTxn) GetTxn() *coin.Transaction {
-    return &self.Txn
+    // Last time we announced this txn
+    Announced time.Time
+    // We are a spender
+    IsOurSpend bool
+    // We are a receiver
+    IsOurReceive bool
 }
 
 // Manages unconfirmed transactions
@@ -32,24 +34,53 @@ func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
     }
 }
 
+func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
+    tx, ok := self.Txns[h]
+    if ok {
+        tx.Announced = t
+        self.Txns[h] = tx
+    }
+}
+
 // Adds a coin.Transaction to the pool
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs []coin.Address) error {
+    t coin.Transaction, addrs map[coin.Address]int, didAnnounce bool) error {
     if err := bc.VerifyTransaction(t); err != nil {
         return err
     }
     now := time.Now().UTC()
-    self.Txns[t.Header.Hash] = UnconfirmedTxn{
-        Txn:      t,
-        Received: now,
-        Checked:  now,
+    announcedAt := time.Unix(0, 0)
+    if didAnnounce {
+        announcedAt = now
+    }
+    ut := UnconfirmedTxn{
+        Txn:          t,
+        Received:     now,
+        Checked:      now,
+        Announced:    announcedAt,
+        IsOurReceive: false,
+        IsOurSpend:   false,
     }
     // Add predicted unspents
     for _, ux := range bc.TxUxOut(t, coin.BlockHeader{}) {
         self.Unspent.Add(ux)
     }
-    // TODO -- separately keep track of any transaction where we are the
-    // receiver or we are the sender
+    // Check if this is one of our receiving txns
+    for _, to := range t.Out {
+        if _, ok := addrs[to.DestinationAddress]; ok {
+            ut.IsOurReceive = true
+        }
+    }
+    // Check if this is one of our spending txns
+    for _, ti := range t.In {
+        if ux, ok := bc.Unspent.Get(ti.UxOut); ok {
+            if _, ok := addrs[ux.Body.Address]; ok {
+                ut.IsOurSpend = true
+            }
+        }
+    }
+    self.Txns[t.Header.Hash] = ut
+
     return nil
 }
 
@@ -116,6 +147,20 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
         }
     }
     self.removeTxns(bc, toRemove)
+}
+
+// Returns transactions in which we are a party and have not been announced
+// in ago duration
+func (self *UnconfirmedTxnPool) GetOwnedTransactionsSince(ago time.Duration) []*UnconfirmedTxn {
+    txns := make([]*UnconfirmedTxn, 0)
+    now := time.Now().UTC()
+    for _, tx := range self.Txns {
+        if (tx.IsOurSpend || tx.IsOurReceive) &&
+            tx.Announced.Add(ago).After(now) {
+            txns = append(txns, &tx)
+        }
+    }
+    return txns
 }
 
 // Removes confirmed txns from the pool

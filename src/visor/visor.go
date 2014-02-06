@@ -440,11 +440,16 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
     return blocks
 }
 
+// Updates an UnconfirmedTxn's Announce field
+func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
+    self.UnconfirmedTxns.SetAnnounced(h, t)
+}
+
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
-func (self *Visor) RecordTxn(txn coin.Transaction) error {
-    addrs := self.Wallet.GetAddresses()
-    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, addrs)
+func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
+    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn,
+        self.Wallet.addressLookup, didAnnounce)
 }
 
 // Returns the balance of the wallet

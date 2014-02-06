@@ -59,6 +59,13 @@ type Spend struct {
     Error            string
 }
 
+type BlockchainProgress struct {
+    // Our current blockchain length
+    Current uint64 `json:"current"`
+    // Our best guess at true blockchain length
+    Highest uint64 `json:"Highest"`
+}
+
 // Arrays must be wrapped in structs to avoid certain javascript exploits
 
 // An array of connections
@@ -138,16 +145,23 @@ func (self *RPC) GetBlockchainMetadata() interface{} {
     return r
 }
 
-// Returns a *coin.Block
+// Returns a *ReadableBlock
 func (self *RPC) GetBlock(seq uint64) interface{} {
     self.requests <- func() interface{} { return self.getBlock(seq) }
     r := <-self.responses
     return r
 }
 
-// Returns a []coin.Block
+// Returns a *ReadableBlocks
 func (self *RPC) GetBlocks(start, end uint64) interface{} {
     self.requests <- func() interface{} { return self.getBlocks(start, end) }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *BlockchainProgress
+func (self *RPC) GetBlockchainProgress() interface{} {
+    self.requests <- func() interface{} { return self.getBlockchainProgress() }
     r := <-self.responses
     return r
 }
@@ -266,4 +280,14 @@ func (self *RPC) getBlocks(start, end uint64) *ReadableBlocks {
     }
     blocks := self.Daemon.Visor.Visor.GetReadableBlocks(start, end)
     return &ReadableBlocks{blocks}
+}
+
+func (self *RPC) getBlockchainProgress() *BlockchainProgress {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    return &BlockchainProgress{
+        Current: self.Daemon.Visor.Visor.MostRecentBkSeq(),
+        Highest: self.Daemon.Visor.EstimateBlockchainLength(),
+    }
 }

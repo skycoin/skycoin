@@ -8,32 +8,17 @@ import (
 
 func connectionHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
-        addr := r.FormValue("addr")
-        if addr == "" {
+        if addr := r.FormValue("addr"); addr == "" {
             Error404(w)
-            return
-        }
-        m := rpc.GetConnection(addr)
-        if m == nil {
-            Error404(w)
-            return
-        }
-        if SendJSON(w, m) != nil {
-            Error500(w)
+        } else {
+            SendOr404(w, rpc.GetConnection(addr))
         }
     }
 }
 
 func connectionsHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
-        m := rpc.GetConnections()
-        if m == nil {
-            Error404(w)
-            return
-        }
-        if SendJSON(w, m) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.GetConnections())
     }
 }
 

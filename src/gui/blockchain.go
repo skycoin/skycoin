@@ -10,12 +10,7 @@ import (
 
 func blockchainHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
-        bc := rpc.GetBlockchainMetadata()
-        if bc == nil {
-            Error404(w)
-        } else if SendJSON(w, bc) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.GetBlockchainMetadata())
     }
 }
 
@@ -27,12 +22,7 @@ func blockchainBlockHandler(rpc *daemon.RPC) HTTPHandler {
             Error400(w, fmt.Sprintf("Invalid seq value \"%s\"", sseq))
             return
         }
-        block := rpc.GetBlock(seq)
-        if block == nil {
-            Error404(w)
-        } else if SendJSON(w, block) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.GetBlock(seq))
     }
 }
 
@@ -50,12 +40,13 @@ func blockchainBlocksHandler(rpc *daemon.RPC) HTTPHandler {
             Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
             return
         }
-        blocks := rpc.GetBlocks(start, end)
-        if blocks == nil {
-            Error404(w)
-        } else if SendJSON(w, blocks) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.GetBlocks(start, end))
+    }
+}
+
+func blockchainProgressHandler(rpc *daemon.RPC) HTTPHandler {
+    return func(w http.ResponseWriter, r *http.Request) {
+        SendOr404(w, rpc.GetBlockchainProgress())
     }
 }
 
@@ -63,4 +54,5 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
     mux.HandleFunc("/blockchain", blockchainHandler(rpc))
     mux.HandleFunc("/blockchain/block", blockchainBlockHandler(rpc))
     mux.HandleFunc("/blockchain/blocks", blockchainBlocksHandler(rpc))
+    mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(rpc))
 }

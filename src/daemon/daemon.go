@@ -471,6 +471,7 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
     }
     delete(self.outgoingConnections, a)
     delete(self.expectingIntroductions, a)
+    self.Visor.RemoveConnection(a)
     self.removeIPCount(a)
     self.removeConnectionMirror(a)
 }

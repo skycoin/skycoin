@@ -23,12 +23,7 @@ func walletBalanceHandler(rpc *daemon.RPC) HTTPHandler {
             }
             m = rpc.GetBalance(addr)
         }
-        balance := m.(*visor.Balance)
-        if balance == nil {
-            Error404(w)
-        } else if SendJSON(w, m) != nil {
-            Error500(w)
-        }
+        SendOr404(w, m)
     }
 }
 
@@ -62,10 +57,7 @@ func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
             Error400(w, "Invalid \"hours\" value")
             return
         }
-        m := rpc.Spend(visor.NewBalance(coins, hours), fee, dst)
-        if SendJSON(w, m) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.Spend(visor.NewBalance(coins, hours), fee, dst))
     }
 }
 
@@ -80,12 +72,7 @@ func walletSaveHandler(rpc *daemon.RPC) HTTPHandler {
 
 func walletCreateAddressHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
-        addr := rpc.CreateAddress()
-        if addr == nil {
-            Error404(w)
-        } else if SendJSON(w, addr) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.CreateAddress())
     }
 }
 
@@ -97,12 +84,7 @@ func walletCreateHandler(rpc *daemon.RPC) HTTPHandler {
 
 func walletHandler(rpc *daemon.RPC) HTTPHandler {
     return func(w http.ResponseWriter, r *http.Request) {
-        wallet := rpc.GetWallet()
-        if wallet == nil {
-            Error404(w)
-        } else if SendJSON(w, wallet) != nil {
-            Error500(w)
-        }
+        SendOr404(w, rpc.GetWallet())
     }
 }
 

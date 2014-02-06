@@ -6,6 +6,7 @@ import (
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "sort"
     "time"
 )
 
@@ -52,6 +53,8 @@ func (self *VisorConfig) LoadMasterKeys() error {
 type Visor struct {
     Config VisorConfig
     Visor  *visor.Visor
+    // Peer-reported blockchain length.  Use to estimate download progress
+    blockchainLengths map[string]uint64
 }
 
 func NewVisor(c VisorConfig) *Visor {
@@ -60,9 +63,14 @@ func NewVisor(c VisorConfig) *Visor {
         v = visor.NewVisor(c.Config)
     }
     return &Visor{
-        Config: c,
-        Visor:  v,
+        Config:            c,
+        Visor:             v,
+        blockchainLengths: make(map[string]uint64),
     }
+}
+
+func (self *Visor) RemoveConnection(addr string) {
+    delete(self.blockchainLengths, addr)
 }
 
 // Closes the Wallet, saving it to disk
@@ -219,6 +227,36 @@ func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
     }
 }
 
+// Saves a peer-reported blockchain length
+func (self *Visor) recordBlockchainLength(addr string, bkSeq uint64) {
+    self.blockchainLengths[addr] = bkSeq
+}
+
+// Returns the blockchain length estimated from peer reports
+func (self *Visor) EstimateBlockchainLength() uint64 {
+    maxSeq := self.Visor.MostRecentBkSeq() + 1
+    if len(self.blockchainLengths) == 0 {
+        return maxSeq
+    }
+    lengths := make(BlockchainLengths, 0, len(self.blockchainLengths))
+    for _, seq := range self.blockchainLengths {
+        lengths = append(lengths, seq)
+    }
+    sort.Sort(lengths)
+    median := len(lengths) / 2
+    var val uint64 = 0
+    if len(lengths)%2 == 0 {
+        val = (lengths[median] + lengths[median-1]) / 2
+    } else {
+        val = lengths[median]
+    }
+    if val < maxSeq {
+        return maxSeq
+    } else {
+        return val
+    }
+}
+
 // Communication layer for the coin pkg
 
 // Sent to request blocks since LastBlock
@@ -246,6 +284,9 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     if d.Visor.Config.Disabled {
         return
     }
+    // Record this as this peer's highest block
+    d.Visor.recordBlockchainLength(self.c.Conn.Addr(), self.LastBlock)
+    // Fetch and return signed blocks since LastBlock
     blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
         d.Visor.Config.BlocksResponseCount)
     logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
@@ -453,4 +494,18 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
             }
         }
     }
+}
+
+type BlockchainLengths []uint64
+
+func (self BlockchainLengths) Len() int {
+    return len(self)
+}
+func (self BlockchainLengths) Swap(i, j int) {
+    t := self[i]
+    self[i] = self[j]
+    self[j] = t
+}
+func (self BlockchainLengths) Less(i, j int) bool {
+    return i < j
 }

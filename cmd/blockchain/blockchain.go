@@ -25,12 +25,17 @@ func getBlock(filename string, seq uint64) (coin.Block, error) {
 func main() {
     bFile := flag.String("i", "blockchain.bin", "blockchain file to load")
     bkSeq := flag.Uint64("b", 0, "block sequence to dump")
+    timestamp := flag.Bool("timestamp", false, "Dump only the timestamp")
     flag.Parse()
 
     b, err := getBlock(*bFile, *bkSeq)
     if err != nil {
         fmt.Fprintln(os.Stderr, err)
     } else {
-        fmt.Println(b.String())
+        if *timestamp {
+            fmt.Println(b.Header.Time)
+        } else {
+            fmt.Println(b.String())
+        }
     }
 }

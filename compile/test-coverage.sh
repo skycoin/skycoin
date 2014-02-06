@@ -6,8 +6,27 @@
 #   SKYCOINPATH=/path/to/skycoinrepo ../../compile/test-coverage.sh
 # Coverage will open up in html
 # You don't need to do this if you are not symlinking the repo into $GOPATH
+# I recommend you put SKYCOINPATH in ~/.bashrc
+# Example:
+# If skycoin repo is located at
+#   /home/user/repos/skycoin
+# Then $SKYCOINPATH will be
+#   /home/user/repos
+
+MODULE="$1"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ ! -z "$MODULE" ]; then
+    pushd "$DIR" >/dev/null
+    pushd "../src/${MODULE}" > /dev/null
+fi
 
 go test -cover -coverprofile=coverage.out
 sed -i 's|_'${SKYCOINPATH}'|github.com/skycoin|g' coverage.out
 go tool cover -html=coverage.out
 rm coverage.out
+
+if [ ! -z "$MODULE" ]; then
+    popd >/dev/null
+    popd >/dev/null
+fi

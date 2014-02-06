@@ -24,16 +24,6 @@ const (
     GENESIS_SIGNATURE = "a1a09bee02a92fddaf34856aedde9c1ef626caaf31ada221fc2acc9212493e61064b32d4cfd92f38948e799f231f8c42428086405bbf42f9e913a149c0ca743f00"
 )
 
-// Encapsulates useful information from the coin.Blockchain
-type BlockchainMetadata struct {
-    // Most recent block's header
-    Head coin.BlockHeader `json:"head"`
-    // Number of unspent outputs in the coin.Blockchain
-    Unspents uint64 `json:"unspents"`
-    // Number of known unconfirmed txns
-    Unconfirmed uint64 `json:"unconfirmed"`
-}
-
 // Holds the master and personal keys
 type VisorKeys struct {
     // The master server's key.  The Secret will be empty unless running as
@@ -399,12 +389,28 @@ func (self *Visor) MostRecentBkSeq() uint64 {
 }
 
 // Returns descriptive coin.Blockchain information
-func (self *Visor) GetBlockchainMetadata() *BlockchainMetadata {
-    return &BlockchainMetadata{
-        Head:        self.blockchain.Head().Header,
-        Unspents:    uint64(len(self.blockchain.Unspent.Arr)),
-        Unconfirmed: uint64(len(self.UnconfirmedTxns.Txns)),
+func (self *Visor) GetBlockchainMetadata() BlockchainMetadata {
+    return NewBlockchainMetadata(self)
+}
+
+// Returns a readable copy of the block at seq. Returns error if seq out of range
+func (self *Visor) GetReadableBlock(seq uint64) (ReadableBlock, error) {
+    b, err := self.GetBlock(seq)
+    if err != nil {
+        return ReadableBlock{}, err
     }
+    return NewReadableBlock(&b), nil
+}
+
+// Returns multiple blocks between start and end (not including end). Returns
+// empty slice if unable to fulfill request, it does not return nil.
+func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
+    blocks := self.GetBlocks(start, end)
+    rbs := make([]ReadableBlock, 0, len(blocks))
+    for _, b := range blocks {
+        rbs = append(rbs, NewReadableBlock(&b))
+    }
+    return rbs
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range

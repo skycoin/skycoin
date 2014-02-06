@@ -66,9 +66,9 @@ type Connections struct {
     Connections []*Connection `json:"connections"`
 }
 
-// An array of blocks.
-type Blocks struct {
-    Blocks []coin.Block `json:"blocks"`
+// An array of readable blocks.
+type ReadableBlocks struct {
+    Blocks []visor.ReadableBlock `json:"blocks"`
 }
 
 /* Public API
@@ -245,23 +245,25 @@ func (self *RPC) getBlockchainMetadata() *visor.BlockchainMetadata {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    return self.Daemon.Visor.Visor.GetBlockchainMetadata()
+    bm := self.Daemon.Visor.Visor.GetBlockchainMetadata()
+    return &bm
 }
 
-func (self *RPC) getBlock(seq uint64) *coin.Block {
+func (self *RPC) getBlock(seq uint64) *visor.ReadableBlock {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b, err := self.Daemon.Visor.Visor.GetBlock(seq)
+    b, err := self.Daemon.Visor.Visor.GetReadableBlock(seq)
     if err != nil {
         return nil
     }
     return &b
 }
 
-func (self *RPC) getBlocks(start, end uint64) []coin.Block {
+func (self *RPC) getBlocks(start, end uint64) *ReadableBlocks {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    return self.Daemon.Visor.Visor.GetBlocks(start, end)
+    blocks := self.Daemon.Visor.Visor.GetReadableBlocks(start, end)
+    return &ReadableBlocks{blocks}
 }

@@ -19,8 +19,8 @@ type Checksum [4]byte
 //type and 4 byte checksum.
 type Address struct {
     Key     [20]byte //20 byte pubkey hash
-    Version byte    //1 byte
-    ChkSum  [4]byte //4 byte checksum, first 4 bytes of sha256 of key+version
+    Version byte     //1 byte
+    ChkSum  [4]byte  //4 byte checksum, first 4 bytes of sha256 of key+version
 }
 
 // Creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
@@ -31,18 +31,6 @@ func AddressFromPubKey(pubKey PubKey) Address {
     }
     addr.setChecksum()
     return addr
-}
-
-// Checks that the address appears valid for the public key
-func (self *Address) Verify(key PubKey) error {
-    //TODO: check that pubkey is valid
-    if self.Key != key.ToAddressHash() {
-        return errors.New("Public key invalid for address")
-    }
-    if !self.IsValidChecksum() {
-        return errors.New("Invalid address checksum")
-    }
-    return nil
 }
 
 // Creates an address for the test network
@@ -83,6 +71,18 @@ func addressFromBytes(b []byte) (Address, error) {
     } else {
         return a, nil
     }
+}
+
+// Checks that the address appears valid for the public key
+func (self *Address) Verify(key PubKey) error {
+    //TODO: check that pubkey is valid
+    if self.Key != key.ToAddressHash() {
+        return errors.New("Public key invalid for address")
+    }
+    if !self.IsValidChecksum() {
+        return errors.New("Invalid address checksum")
+    }
+    return nil
 }
 
 // Address as Base58 encoded string

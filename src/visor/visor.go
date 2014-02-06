@@ -83,7 +83,7 @@ func NewVisorConfig() VisorConfig {
         CanSpend:                 true,
         TestNetwork:              true,
         WalletFile:               "",
-        WalletSizeMin:            100,
+        WalletSizeMin:            1,
         BlockCreationInterval:    15,
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
@@ -135,7 +135,7 @@ func NewVisor(c VisorConfig) *Visor {
     }
 
     // Load the blockchain the block signatures
-    blockchain := loadBlockchain(c.BlockchainFile, c.BlockCreationInterval)
+    blockchain := loadBlockchain(c.BlockchainFile)
     blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
     if err != nil {
         if os.IsNotExist(err) {
@@ -172,7 +172,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
     return &Visor{
         Config:          c,
         keys:            NewVisorKeys(c.MasterKeys),
-        blockchain:      coin.NewBlockchain(c.BlockCreationInterval),
+        blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: nil,
         Wallet:          nil,
@@ -272,7 +272,8 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
     if nTxns > self.Config.TransactionsPerBlock {
         txns = txns[:self.Config.TransactionsPerBlock]
     }
-    b, err := self.blockchain.NewBlockFromTransactions(txns)
+    b, err := self.blockchain.NewBlockFromTransactions(txns,
+        self.Config.BlockCreationInterval)
     if err != nil {
         return sb, err
     }
@@ -322,6 +323,7 @@ loop:
                 needed = needed.Sub(needed)
                 txn.PushInput(ux.Hash())
                 toSign = append(toSign, entry.Secret)
+                // TODO -- Don't reuse address for change.
                 txn.PushOutput(ux.Body.Address, change.Coins, change.Hours)
             }
         }
@@ -445,7 +447,8 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction) error {
-    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn)
+    addrs := self.Wallet.GetAddresses()
+    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, addrs)
 }
 
 // Returns the balance of the wallet
@@ -582,7 +585,7 @@ func LoadBlockchain(filename string) (*coin.Blockchain, error) {
 }
 
 // Loads a blockchain but subdues errors into the logger, or panics
-func loadBlockchain(filename string, creationInterval uint64) *coin.Blockchain {
+func loadBlockchain(filename string) *coin.Blockchain {
     bc := &coin.Blockchain{}
     created := false
     if filename != "" {
@@ -591,6 +594,10 @@ func loadBlockchain(filename string, creationInterval uint64) *coin.Blockchain {
         if err == nil {
             created = true
             logger.Info("Loaded blockchain from \"%s\"", filename)
+            logger.Notice("Loaded blockchain's genesis address can't be " +
+                "checked against configured genesis address")
+            logger.Info("Rebuiling UnspentPool indices")
+            bc.Unspent.Rebuild()
         } else {
             if os.IsNotExist(err) {
                 logger.Info("No blockchain file, will create a new blockchain")
@@ -600,21 +607,8 @@ func loadBlockchain(filename string, creationInterval uint64) *coin.Blockchain {
             }
         }
     }
-
-    // Make sure we are not changing the blockchain configuration from the
-    // one we loaded
-    if created {
-        // TODO -- support changing the block creation interval.  Its used
-        // in the blockchain internally
-        if bc.CreationInterval != creationInterval {
-            log.Panic("Creation interval was changed since the old blockchain")
-        }
-        logger.Notice("Loaded blockchain's genesis address can't be " +
-            "checked against configured genesis address")
-        logger.Info("Rebuiling UnspentPool indices")
-        bc.Unspent.Rebuild()
-    } else {
-        bc = coin.NewBlockchain(creationInterval)
+    if !created {
+        bc = coin.NewBlockchain()
     }
     return bc
 }

@@ -34,7 +34,7 @@ func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
 
 // Adds a coin.Transaction to the pool
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction) error {
+    t coin.Transaction, addrs []coin.Address) error {
     if err := bc.VerifyTransaction(t); err != nil {
         return err
     }
@@ -48,6 +48,8 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     for _, ux := range bc.TxUxOut(t, coin.BlockHeader{}) {
         self.Unspent.Add(ux)
     }
+    // TODO -- separately keep track of any transaction where we are the
+    // receiver or we are the sender
     return nil
 }
 

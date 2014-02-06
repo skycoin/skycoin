@@ -140,16 +140,12 @@ func (self *BlockBody) Bytes() []byte {
 type Blockchain struct {
     Blocks  []Block
     Unspent UnspentPool
-    // How often new blocks are created
-    // TODO -- is this safe to change between blockchain loads?
-    CreationInterval uint64
 }
 
-func NewBlockchain(creationInterval uint64) *Blockchain {
+func NewBlockchain() *Blockchain {
     return &Blockchain{
-        CreationInterval: creationInterval,
-        Blocks:           make([]Block, 0),
-        Unspent:          NewUnspentPool(),
+        Blocks:  make([]Block, 0),
+        Unspent: NewUnspentPool(),
     }
 }
 
@@ -207,8 +203,9 @@ func (self *Blockchain) TimeNow() uint64 {
 
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  txns must be sorted by hash
-func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, error) {
-    b := newBlock(self.Head(), self.CreationInterval)
+func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
+    creationInterval uint64) (Block, error) {
+    b := newBlock(self.Head(), creationInterval)
     newtxns := self.arbitrateTransactions(txns)
     b.Body.Transactions = newtxns
     b.UpdateHeader()
@@ -388,10 +385,6 @@ func (self *Blockchain) verifyGenesisBlockHeader(b *Block) error {
     if b.HashBody() != b.Header.BodyHash {
         return errors.New("Body hash error hash error")
     }
-    // TODO -- not any block time is valid, due to the "too far in future"
-    // error.  Signed blocks solve this for now, but we will want to
-    // bundle a saved blockchain and blocksigs file with the distribution
-    // Or hardcode it
     return nil
 }
 
@@ -403,12 +396,8 @@ func (self *Blockchain) verifyBlockHeader(b *Block) error {
         return errors.New("BkSeq invalid")
     }
     //check Time, give some room for error and clock skew
-    if b.Header.Time < head.Header.Time+self.CreationInterval {
-        return errors.New("time invalid: block too soon")
-    }
-    maxDiff := blockTimeFutureMultipleMax * self.CreationInterval
-    if b.Header.Time > uint64(time.Now().UTC().Unix())+maxDiff {
-        return errors.New("Block is too far in future; check clock")
+    if b.Header.Time <= head.Header.Time {
+        return errors.New("time invalid: new time must be > head time")
     }
     // Check block sequence against previous head
     if head.Header.BkSeq+1 != b.Header.BkSeq {

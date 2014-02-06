@@ -115,6 +115,11 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.DHT.Disabled = c.DisableDHT
     dc.DHT.Port = c.Port
     dc.Pool.Port = c.Port
+    connectionRate := time.Second * time.Duration(c.OutgoingConnectionsRate)
+    if c.OutgoingConnectionsRate == 0 {
+        connectionRate = time.Millisecond * 30
+    }
+    dc.Daemon.OutgoingRate = connectionRate
     dc.Visor.Config.IsMaster = c.MasterChain
     dc.Visor.Config.CanSpend = c.CanSpend
     dc.Visor.Config.WalletFile = c.WalletFile

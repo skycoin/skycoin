@@ -21,6 +21,8 @@ type Config struct {
     DisableDHT    bool
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
+    // How often to make outgoing connections, in seconds
+    OutgoingConnectionsRate uint64
     // Remote web interface
     WebInterface      bool
     WebInterfacePort  int
@@ -92,7 +94,6 @@ func (self *Config) postProcess() {
     if self.BlockSigsFile == "" {
         self.BlockSigsFile = filepath.Join(self.DataDirectory, "blockchain.sigs")
     }
-    // logging
     ll, err := logging.LogLevel(self.logLevel)
     if err != nil {
         log.Panic("Invalid -log-level %s: %v\n", self.logLevel, err)

@@ -17,6 +17,7 @@ import (
 
 import (
     "github.com/skycoin/skycoin/src/cli"
+    "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/daemon"
     "github.com/skycoin/skycoin/src/gui"
     "github.com/skycoin/skycoin/src/visor"
@@ -120,6 +121,8 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
     dc.Visor.Config.BlockchainFile = c.BlockchainFile
     dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
+    dc.Visor.Config.GenesisSignature = coin.MustSigFromHex(c.GenesisSignature)
+    dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
     if c.MasterChain {
         // The master chain should be reluctant to expire transactions
         dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096

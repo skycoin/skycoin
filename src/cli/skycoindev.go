@@ -40,10 +40,12 @@ var DevArgs = DevConfig{Config{
     CanSpend:       true,
 
     // Centralized network configuration
-    MasterPublic:   "03c2fc73628b77512dc14c123ea741e72d27dc455e6d01141a8e7a0a83fff1fb23",
-    GenesisAddress: "CL9nba1DqVADzqH6HAGC4oJzf2pRtXKEyT",
-    MasterChain:    false,
-    MasterKeys:     "",
+    MasterPublic:     "03c2fc73628b77512dc14c123ea741e72d27dc455e6d01141a8e7a0a83fff1fb23",
+    MasterChain:      false,
+    MasterKeys:       "",
+    GenesisAddress:   "CL9nba1DqVADzqH6HAGC4oJzf2pRtXKEyT",
+    GenesisTimestamp: 1391649057,
+    GenesisSignature: "a1a09bee02a92fddaf34856aedde9c1ef626caaf31ada221fc2acc9212493e61064b32d4cfd92f38948e799f231f8c42428086405bbf42f9e913a149c0ca743f00",
 
     /* Developer options */
 
@@ -105,6 +107,10 @@ func (self *DevConfig) register() {
         "public key of the master chain")
     flag.StringVar(&self.GenesisAddress, "genesis-address", self.GenesisAddress,
         "blockchain genesis address")
+    flag.StringVar(&self.GenesisSignature, "genesis-signature", self.GenesisSignature,
+        "genesis block signature")
+    flag.Uint64Var(&self.GenesisTimestamp, "genesis-timestamp", self.GenesisTimestamp,
+        "genesis block timestamp")
     flag.StringVar(&self.WalletFile, "wallet-file", self.WalletFile,
         "location of the wallet file. Defaults to ~/.skycoin/wallet.json")
     flag.IntVar(&self.WalletSizeMin, "wallet-size-min", self.WalletSizeMin,

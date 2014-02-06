@@ -48,10 +48,12 @@ type Config struct {
     CanSpend bool
 
     // Centralized network configuration
-    MasterPublic   string
-    MasterChain    bool
-    MasterKeys     string
-    GenesisAddress string
+    MasterPublic     string
+    MasterChain      bool
+    MasterKeys       string
+    GenesisAddress   string
+    GenesisSignature string
+    GenesisTimestamp uint64
 
     /* Developer options */
 

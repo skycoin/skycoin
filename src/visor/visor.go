@@ -17,13 +17,6 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
-const (
-    // Timestamp of the genesis block
-    GENESIS_TIMESTAMP uint64 = 1391649057
-    // Signature of the genesis block
-    GENESIS_SIGNATURE = "a1a09bee02a92fddaf34856aedde9c1ef626caaf31ada221fc2acc9212493e61064b32d4cfd92f38948e799f231f8c42428086405bbf42f9e913a149c0ca743f00"
-)
-
 // Holds the master and personal keys
 type VisorKeys struct {
     // The master server's key.  The Secret will be empty unless running as
@@ -74,7 +67,9 @@ type VisorConfig struct {
     // Master keypair & address
     MasterKeys WalletEntry
     // Genesis block sig
-    GenesisSig coin.Sig
+    GenesisSignature coin.Sig
+    // Genesis block timestamp
+    GenesisTimestamp uint64
 }
 
 func NewVisorConfig() VisorConfig {
@@ -92,7 +87,8 @@ func NewVisorConfig() VisorConfig {
         BlockchainFile:           "",
         BlockSigsFile:            "",
         MasterKeys:               WalletEntry{},
-        GenesisSig:               coin.Sig{},
+        GenesisSignature:         coin.Sig{},
+        GenesisTimestamp:         0,
     }
 }
 
@@ -186,7 +182,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
     if self.Config.IsMaster {
         b = self.blockchain.CreateMasterGenesisBlock(addr)
     } else {
-        b = self.blockchain.CreateGenesisBlock(addr, GENESIS_TIMESTAMP)
+        b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp)
     }
     sb := SignedBlock{}
     if self.Config.IsMaster {
@@ -198,7 +194,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
     } else {
         sb = SignedBlock{
             Block: b,
-            Sig:   coin.MustSigFromHex(GENESIS_SIGNATURE),
+            Sig:   self.Config.GenesisSignature,
         }
     }
     self.blockSigs.record(&sb)

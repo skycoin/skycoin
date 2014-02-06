@@ -4,6 +4,7 @@ package cli
 import (
     "flag"
     "github.com/op/go-logging"
+    "time"
 )
 
 type DevConfig struct {
@@ -17,7 +18,7 @@ var DevArgs = DevConfig{Config{
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // How often to make outgoing connections, in seconds
-    OutgoingConnectionsRate: 5,
+    OutgoingConnectionsRate: time.Second * 5,
     // Remote web interface
     WebInterface:      false,
     WebInterfacePort:  6402,
@@ -123,6 +124,7 @@ func (self *DevConfig) register() {
         "location of the block signatures file. Default to ~/.skycoin/blockchain.sigs")
     flag.BoolVar(&self.CanSpend, "can-spend", self.CanSpend,
         "is allowed to make outgoing transactions")
-    flag.Uint64Var(&self.OutgoingConnectionsRate, "connection-rate",
-        self.OutgoingConnectionsRate, "How often to make an outgoing connection")
+    flag.DurationVar(&self.OutgoingConnectionsRate, "connection-rate",
+        self.OutgoingConnectionsRate,
+        "How often to make an outgoing connection")
 }

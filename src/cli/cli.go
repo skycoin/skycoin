@@ -7,6 +7,7 @@ import (
     "github.com/skycoin/skycoin/src/util"
     "log"
     "path/filepath"
+    "time"
 )
 
 type Args interface {
@@ -21,8 +22,8 @@ type Config struct {
     DisableDHT    bool
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
-    // How often to make outgoing connections, in seconds
-    OutgoingConnectionsRate uint64
+    // How often to make outgoing connections
+    OutgoingConnectionsRate time.Duration
     // Remote web interface
     WebInterface      bool
     WebInterfacePort  int

@@ -4,6 +4,7 @@ package cli
 import (
     "flag"
     "github.com/op/go-logging"
+    "time"
 )
 
 type DaemonConfig struct {
@@ -17,7 +18,7 @@ var DaemonArgs = DaemonConfig{Config{
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // How often to make outgoing connections, in seconds
-    OutgoingConnectionsRate: 5,
+    OutgoingConnectionsRate: time.Second * 5,
     // Remote web interface
     WebInterface:      false,
     WebInterfacePort:  6402,

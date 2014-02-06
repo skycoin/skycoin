@@ -11,8 +11,9 @@ type ClientConfig struct {
 }
 
 var ClientArgs = ClientConfig{Config{
-    DisableGUI:   false,
-    DisableCoind: false,
+    DisableGUI:    false,
+    DisableDaemon: false,
+    DisableDHT:    false,
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // Remote web interface
@@ -58,8 +59,10 @@ var ClientArgs = ClientConfig{Config{
 }}
 
 func (self *ClientConfig) register() {
-    flag.BoolVar(&self.DisableCoind, "disable-daemon", self.DisableCoind,
+    flag.BoolVar(&self.DisableDaemon, "disable-daemon", self.DisableDaemon,
         "disable the coin daemon")
+    flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
+        "disable DHT peer discovery")
     flag.IntVar(&self.Port, "port", self.Port,
         "Port to run application on")
     flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,

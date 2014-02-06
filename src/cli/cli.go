@@ -16,8 +16,9 @@ type Args interface {
 }
 
 type Config struct {
-    DisableGUI   bool
-    DisableCoind bool
+    DisableGUI    bool
+    DisableDaemon bool
+    DisableDHT    bool
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
     // Remote web interface

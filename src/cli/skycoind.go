@@ -11,8 +11,9 @@ type DaemonConfig struct {
 }
 
 var DaemonArgs = DaemonConfig{Config{
-    DisableGUI:   true,
-    DisableCoind: false,
+    DisableGUI:    true,
+    DisableDaemon: false,
+    DisableDHT:    false,
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // Remote web interface
@@ -58,8 +59,10 @@ var DaemonArgs = DaemonConfig{Config{
 }}
 
 func (self *DaemonConfig) register() {
-    flag.BoolVar(&self.DisableCoind, "disable-daemon", self.DisableCoind,
+    flag.BoolVar(&self.DisableDaemon, "disable-daemon", self.DisableDaemon,
         "disable the coin daemon")
+    flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
+        "disable DHT peer discovery")
     flag.BoolVar(&self.WebInterface, "web-interface",
         self.WebInterface, "enable the web interface")
     flag.IntVar(&self.WebInterfacePort, "web-interface-port",

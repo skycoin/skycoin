@@ -11,8 +11,9 @@ type DevConfig struct {
 }
 
 var DevArgs = DevConfig{Config{
-    DisableGUI:   true,
-    DisableCoind: false,
+    DisableGUI:    true,
+    DisableDaemon: false,
+    DisableDHT:    false,
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // Remote web interface
@@ -58,8 +59,10 @@ var DevArgs = DevConfig{Config{
 }}
 
 func (self *DevConfig) register() {
-    flag.BoolVar(&self.DisableCoind, "disable-daemon", self.DisableCoind,
+    flag.BoolVar(&self.DisableDaemon, "disable-daemon", self.DisableDaemon,
         "disable the coin daemon")
+    flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
+        "disable DHT peer discovery")
     flag.BoolVar(&self.DisableGUI, "disable-gui", self.DisableGUI,
         "disable the gui")
     flag.BoolVar(&self.WebInterface, "web-interface",

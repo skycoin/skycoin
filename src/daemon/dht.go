@@ -10,6 +10,9 @@ import (
 )
 
 type DHTConfig struct {
+    // Disable the DHT
+    Disabled bool
+    // Port for DHT traffic (uses UDP)
     Port int
     // Info to be hashed for identifying peers on the skycoin network
     Info string
@@ -25,6 +28,7 @@ type DHTConfig struct {
 
 func NewDHTConfig() DHTConfig {
     return DHTConfig{
+        Disabled:     false,
         Port:         6677,
         Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
         DesiredPeers: 20,
@@ -83,7 +87,14 @@ func (self *DHT) Init() error {
     self.InfoHash = InfoHash
     self.DHT = d
 
-    logger.Info("Init DHT on port %d", self.Config.Port)
+    if self.Config.Disabled {
+        // We have to initialize the DHT anyway because daemon loop needs
+        // to read from its initialized chans. As long as Start() is prevented,
+        // the DHT will not run.
+        logger.Info("DHT is disabled")
+    } else {
+        logger.Info("Init DHT on port %d", self.Config.Port)
+    }
     return nil
 }
 
@@ -98,7 +109,24 @@ func (self *DHT) Shutdown() {
 
 // Starts the DHT
 func (self *DHT) Start() {
+    if self.Config.Disabled {
+        return
+    }
     self.DHT.Run()
+}
+
+// Requests peers from the DHT
+func (self *DHT) RequestPeers() {
+    if self.Config.Disabled {
+        return
+    }
+    ih := string(self.InfoHash)
+    if ih == "" {
+        log.Panic("InfoHash is not initialized")
+        return
+    }
+    logger.Info("Requesting DHT Peers")
+    self.DHT.PeersRequest(ih, true)
 }
 
 // Called when the DHT finds a peer
@@ -113,15 +141,4 @@ func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string, peers *pex.Pex) {
             }
         }
     }
-}
-
-// Requests peers from the DHT
-func (self *DHT) RequestPeers() {
-    ih := string(self.InfoHash)
-    if ih == "" {
-        log.Panic("InfoHash is not initialized")
-        return
-    }
-    logger.Info("Requesting DHT Peers")
-    self.DHT.PeersRequest(ih, true)
 }

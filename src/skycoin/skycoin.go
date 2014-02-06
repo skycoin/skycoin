@@ -111,6 +111,7 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 func configureDaemon(c *cli.Config) *daemon.Config {
     dc := daemon.NewConfig()
     dc.Peers.DataDirectory = c.DataDirectory
+    dc.DHT.Disabled = c.DisableDHT
     dc.DHT.Port = c.Port
     dc.Pool.Port = c.Port
     dc.Visor.Config.IsMaster = c.MasterChain

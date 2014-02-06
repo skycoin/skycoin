@@ -86,6 +86,18 @@ func LoadWalletEntry(filename string) (WalletEntry, error) {
     }
 }
 
+// Loads a WalletEntry from filename but also panics if the entry is invalid
+func MustLoadWalletEntry(filename string) (WalletEntry, error) {
+    keys, err := LoadWalletEntry(filename)
+    if err != nil {
+        return keys, err
+    }
+    if err := keys.Verify(); err != nil {
+        log.Panicf("Invalid wallet entry: %v", err)
+    }
+    return keys, nil
+}
+
 type Balance struct {
     Coins uint64 `json:"coins"`
     Hours uint64 `json:"hours"`

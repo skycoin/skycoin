@@ -305,7 +305,13 @@ func (self *IntroductionMessage) Process(d *Daemon) {
     }
 
     // Request blocks immediately after they're confirmed
-    d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
+    err = d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
+    if err == nil {
+        logger.Debug("Successfully requested blocks from %s",
+            self.c.Conn.Addr())
+    } else {
+        logger.Warning("%v", err)
+    }
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

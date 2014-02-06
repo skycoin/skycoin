@@ -2,10 +2,10 @@ package daemon
 
 import (
     "errors"
+    "fmt"
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
-    "log"
     "time"
 )
 
@@ -15,22 +15,22 @@ type VisorConfig struct {
     Disabled bool
     // Location of master keys
     MasterKeysFile string
-    // Master public/secret key and genesis address
-    MasterKeys visor.WalletEntry
     // How often to request blocks from peers
     BlocksRequestRate time.Duration
     // How often to announce our blocks to peers
     BlocksAnnounceRate time.Duration
+    // How many blocks to respond with to a GetBlocksMessage
+    BlocksResponseCount uint64
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:             visor.NewVisorConfig(),
-        Disabled:           false,
-        MasterKeysFile:     "",
-        MasterKeys:         visor.WalletEntry{},
-        BlocksRequestRate:  time.Minute * 15,
-        BlocksAnnounceRate: time.Minute * 30,
+        Config:              visor.NewVisorConfig(),
+        Disabled:            false,
+        MasterKeysFile:      "",
+        BlocksRequestRate:   time.Minute * 5,
+        BlocksAnnounceRate:  time.Minute * 15,
+        BlocksResponseCount: 20,
     }
 }
 
@@ -38,14 +38,11 @@ func (self *VisorConfig) LoadMasterKeys() error {
     if self.Disabled {
         return nil
     }
-    keys, err := visor.LoadWalletEntry(self.MasterKeysFile)
+    keys, err := visor.MustLoadWalletEntry(self.MasterKeysFile)
     if err != nil {
         return err
     }
-    if err := keys.Verify(); err != nil {
-        log.Panicf("Invalid master keys: %v", err)
-    }
-    self.MasterKeys = keys
+    self.Config.MasterKeys = keys
     return nil
 }
 
@@ -57,7 +54,7 @@ type Visor struct {
 func NewVisor(c VisorConfig) *Visor {
     var v *visor.Visor = nil
     if !c.Disabled {
-        v = visor.NewVisor(c.Config, c.MasterKeys)
+        v = visor.NewVisor(c.Config)
     }
     return &Visor{
         Config: c,
@@ -89,6 +86,13 @@ func (self *Visor) Shutdown() {
     } else {
         logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
     }
+    bsFile := self.Config.Config.BlockSigsFile
+    err = self.Visor.SaveBlockSigs()
+    if err == nil {
+        logger.Info("Saved block sigs to \"%s\"", bsFile)
+    } else {
+        logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
+    }
 }
 
 // Sends a GetBlocksMessage to all connections
@@ -116,20 +120,22 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
 }
 
 // Sends a GetBlocksMessage to one connection
-func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
+func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) error {
     if self.Config.Disabled {
-        return
+        return nil
     }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
     c := pool.Pool.Addresses[addr]
     if c == nil {
-        logger.Warning("Tried to send GetBlocksMessage to %s, but we're "+
+        return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
             "not connected", addr)
-        return
     }
     err := pool.Pool.Dispatcher.SendMessage(c, m)
-    if err != nil {
-        logger.Error("Failed to send GetBlocksMessage to %s\n", c.Addr())
+    if err == nil {
+        return nil
+    } else {
+        return fmt.Errorf("Failed to send GetBlocksMessage to %s: %v\n",
+            c.Addr(), err)
     }
 }
 
@@ -141,10 +147,9 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        return errors.New("Failed to give blocks to anyone")
-    } else {
-        return nil
+        logger.Warning("Failed to give blocks to anyone")
     }
+    return nil
 }
 
 // Broadcasts a single transaction to all peers
@@ -155,10 +160,9 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
     m := NewGiveTxnsMessage([]coin.Transaction{t})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        return errors.New("Failed to give transaction to anyone")
-    } else {
-        return nil
+        logger.Warning("Failed to give transaction to anyone")
     }
+    return nil
 }
 
 // Creates a spend transaction and broadcasts it to the network
@@ -220,8 +224,10 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     if d.Visor.Config.Disabled {
         return
     }
-    blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock, 20)
-    if blocks == nil {
+    blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
+        d.Visor.Config.BlocksResponseCount)
+    logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
+    if len(blocks) == 0 {
         return
     }
     m := NewGiveBlocksMessage(blocks)
@@ -259,32 +265,24 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
     processed := 0
     for i, b := range self.Blocks {
         err := d.Visor.Visor.ExecuteSignedBlock(b)
-        if err != nil {
+        if err == nil {
+            logger.Debug("Added new block %d", b.Block.Header.BkSeq)
+        } else {
             logger.Info("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
+            break
         }
         processed = i + 1
     }
-
-    // Announce our new blocks to peers, if we got any
-    if processed > 0 {
-        m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-        errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
-        for a, _ := range errs {
-            logger.Warning("Failed to announce blocks to %s", a)
-        }
+    if processed == 0 {
+        return
     }
-
-    // Send a new GetBlocksMessage, in case we aren't finished yet
-    // This also helps in case we receive out of order - if we got blocks
-    // but couldn't insert them because they were not sequential for us,
-    // requesting the blocks will allow us to catch up
-    bkSeq := d.Visor.Visor.MostRecentBkSeq()
-    n := NewGetBlocksMessage(bkSeq)
-    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(n)
+    // Announce our new blocks to peers
+    m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
     for a, _ := range errs {
-        logger.Warning("Failed to send GetBlocksMessage to %s", a)
+        logger.Warning("Failed to announce blocks to %s", a)
     }
 }
 

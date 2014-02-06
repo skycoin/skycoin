@@ -35,11 +35,12 @@ var DaemonArgs = DaemonConfig{Config{
     WalletFile:     "",
     WalletSizeMin:  100,
     BlockchainFile: "",
+    BlockSigsFile:  "",
     CanSpend:       true,
 
     // Centralized network configuration
-    MasterPublic:   "0223f1cd8652e64f0b2b6960e25c5799426220d44d50d016a4c64ecefb5b0043db",
-    GenesisAddress: "2bGDcaLJH8Ve7JBgqgSjNbHGSSSagEWtBrJ",
+    MasterPublic:   "03c2fc73628b77512dc14c123ea741e72d27dc455e6d01141a8e7a0a83fff1fb23",
+    GenesisAddress: "CL9nba1DqVADzqH6HAGC4oJzf2pRtXKEyT",
     MasterChain:    false,
     MasterKeys:     "",
 
@@ -91,6 +92,8 @@ func (self *DaemonConfig) register() {
         "location of the wallet file. Defaults to ~/.skycoin/wallet.json")
     flag.StringVar(&self.BlockchainFile, "blockchain-file", self.BlockchainFile,
         "location of the blockchain file. Default to ~/.skycoin/blockchain.bin")
+    flag.StringVar(&self.BlockSigsFile, "blocksigs-file", self.BlockSigsFile,
+        "location of the block signatures file. Default to ~/.skycoin/blockchain.sigs")
     flag.BoolVar(&self.CanSpend, "can-spend", self.CanSpend,
         "is allowed to make outgoing transactions")
 }

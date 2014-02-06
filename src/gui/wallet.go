@@ -112,6 +112,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
     mux.HandleFunc("/wallet/spend", walletSpendHandler(rpc))
     mux.HandleFunc("/wallet/save", walletSaveHandler(rpc))
     mux.HandleFunc("/wallet/address/create", walletCreateAddressHandler(rpc))
+    // Multiple wallets not supported
     // mux.HandleFunc("/wallet/create", walletCreateHandler(rpc))
     // History requires blockchain scans that will be very slow until
     // we have a more efficient datastructure

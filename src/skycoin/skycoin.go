@@ -13,7 +13,6 @@ import (
     "time"
 )
 
-
 //TODO, move /src/skycoin to /cmd/skycoin folder
 
 import (
@@ -119,6 +118,7 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.Visor.Config.WalletFile = c.WalletFile
     dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
     dc.Visor.Config.BlockchainFile = c.BlockchainFile
+    dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
     if c.MasterChain {
         // The master chain should be reluctant to expire transactions
         dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096
@@ -135,7 +135,7 @@ func configureDaemon(c *cli.Config) *daemon.Config {
             Address: c.GenesisAddress,
             Public:  c.MasterPublic,
         }
-        dc.Visor.MasterKeys = visor.WalletEntryFromReadable(w)
+        dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(w)
     }
     return dc
 }

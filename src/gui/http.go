@@ -74,6 +74,8 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
     }
     // Wallet interface
     RegisterWalletHandlers(mux, daemon.RPC)
+    // Blockchain interface
+    RegisterBlockchainHandlers(mux, daemon.RPC)
     // Network stats interface
     RegisterNetworkHandlers(mux, daemon.RPC)
     return mux

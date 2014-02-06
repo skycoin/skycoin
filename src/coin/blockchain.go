@@ -2,28 +2,27 @@ package coin
 
 import (
     "errors"
+    "fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/encoder"
     "log"
-    //"sort"
     "time"
 )
 
 var (
-    logger = logging.MustGetLogger("skycoin.coin")
+    logger      = logging.MustGetLogger("skycoin.coin")
     DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
     DebugLevel2 = true //enable checks for impossible conditions
 )
 
-
 // Note: DebugLevel1 adds additional checks for hash collisions that
-// are unlikely to occur. DebugLevel2 adds checks for conditions that 
+// are unlikely to occur. DebugLevel2 adds checks for conditions that
 // can only occur through programmer error and malice.
 
 // Note: Handling of Debug Level 2 errors
 // DebugLevel2 errors should be logged and automaticly reported to network,
-// with parameters needed to replicate the error on third party system. 
-// Examples of DebugLevel2 errors which require reporting are generated seckey 
+// with parameters needed to replicate the error on third party system.
+// Examples of DebugLevel2 errors which require reporting are generated seckey
 // that pass seckey validation but fail signing tests.
 
 //Note: a droplet is the base coin unit. Each Skycoin is one million droplets
@@ -111,6 +110,10 @@ func (self *Block) UpdateHeader() {
     self.Header.BodyHash = self.HashBody()
 }
 
+func (self *Block) String() string {
+    return self.Header.String()
+}
+
 func newBlockHeader(prev *BlockHeader, creationInterval uint64) BlockHeader {
     return BlockHeader{
         // TODO -- what about the rest of the fields??
@@ -124,6 +127,12 @@ func (self *BlockHeader) Bytes() []byte {
     return encoder.Serialize(*self)
 }
 
+func (self *BlockHeader) String() string {
+    return fmt.Sprintf("Version: %d\nTime: %d\nBkSeq: %d\nFee: %d\n"+
+        "PrevHash: %s\nBodyHash: %s", self.Version, self.Time, self.BkSeq,
+        self.Fee, self.PrevHash.Hex(), self.BodyHash.Hex())
+}
+
 func (self *BlockBody) Bytes() []byte {
     return encoder.Serialize(*self)
 }
@@ -132,22 +141,36 @@ type Blockchain struct {
     Blocks  []Block
     Unspent UnspentPool
     // How often new blocks are created
+    // TODO -- is this safe to change between blockchain loads?
     CreationInterval uint64
 }
 
-func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain {
-    logger.Debug("Creating new block chain with genesis %s",
-        genesisAddress.String())
-    var bc *Blockchain = &Blockchain{
+func NewBlockchain(creationInterval uint64) *Blockchain {
+    return &Blockchain{
         CreationInterval: creationInterval,
         Blocks:           make([]Block, 0),
         Unspent:          NewUnspentPool(),
     }
+}
 
-    //set genesis block
-    var b Block = Block{} // genesis block
-    b.Header.Time = bc.TimeNow()
-    bc.Blocks = append(bc.Blocks, b)
+// Creates a genesis block with a new timestamp
+func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
+    return self.CreateGenesisBlock(genesisAddress, self.TimeNow())
+}
+
+// Creates a genesis block provided an address and initial timestamp.
+// Non-genesis clients need this because genesis block must be hardcoded
+func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
+    timestamp uint64) Block {
+    logger.Info("Creating new genesis block with address %s",
+        genesisAddress.String())
+    if len(self.Blocks) > 0 {
+        log.Panic("Genesis block already created")
+    }
+    var b Block = Block{}
+    b.Header.Time = timestamp
+    b.UpdateHeader()
+    self.Blocks = append(self.Blocks, b)
     // Genesis output
     ux := UxOut{
         Head: UxHead{
@@ -161,8 +184,8 @@ func NewBlockchain(genesisAddress Address, creationInterval uint64) *Blockchain 
             Hours:          genesisCoinHours,
         },
     }
-    bc.Unspent.Add(ux)
-    return bc
+    self.Unspent.Add(ux)
+    return b
 }
 
 func (self *Blockchain) Head() *Block {
@@ -191,10 +214,6 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions) (Block, erro
     b.UpdateHeader()
     return b, nil
 }
-
-/*
-   Validation
-*/
 
 /*
    Validation
@@ -243,7 +262,7 @@ func (self *Blockchain) txUxOutChk(tx Transaction, uxOut UxArray) error {
         return errors.New("Duplicate hash outputs")
     }
     //check for hash collisions of outputs with unspent output set
-    
+
     if DebugLevel1 { //hash collision check
         hashes := uxOut.HashArray()
         for _, uxhash := range hashes {
@@ -296,10 +315,18 @@ func (self *Blockchain) txUxChk(tx Transaction, uxIn UxArray,
 
 // VerifyTransaction determines whether a transaction could be executed in the
 // current block
-// VerifyTransactions checks that the inputs to the transaction exist,
+func (self *Blockchain) VerifyTransaction(tx Transaction) error {
+    // Verify the transaction's internals (hash check, surface checks)
+    if err := tx.Verify(); err != nil {
+        return err
+    }
+    return self.verifyTransaction(tx)
+}
+
+// VerifyTransaction checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
-func (self *Blockchain) VerifyTransaction(tx Transaction) error {
+func (self *Blockchain) verifyTransaction(tx Transaction) error {
     //CHECKLIST: DONE: check for duplicate ux inputs/double spending
     //CHECKLIST: DONE: check that inputs of transaction have not been spent
     //CHECKLIST: DONE: check there are no duplicate outputs
@@ -310,10 +337,6 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     // indepedent timing that everyone agrees on. fee values would depend on
     // local clock
 
-    // Verify the transaction's internals (hash check, surface checks)
-    if err := tx.Verify(); err != nil {
-        return err
-    }
     uxIn, err := self.txUxIn(tx) //set of inputs referenced by transaction
     if err != nil {
         return err
@@ -357,27 +380,42 @@ func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
     return inHours - outHours, nil
 }
 
+// Returns error if the BlockHeader is not valid as the genesis block
+func (self *Blockchain) verifyGenesisBlockHeader(b *Block) error {
+    if b.Header.BkSeq != 0 {
+        return errors.New("BkSeq invalid")
+    }
+    if b.HashBody() != b.Header.BodyHash {
+        return errors.New("Body hash error hash error")
+    }
+    // TODO -- not any block time is valid, due to the "too far in future"
+    // error.  Signed blocks solve this for now, but we will want to
+    // bundle a saved blockchain and blocksigs file with the distribution
+    // Or hardcode it
+    return nil
+}
+
 // Returns error if the BlockHeader is not valid
 func (self *Blockchain) verifyBlockHeader(b *Block) error {
     //check BkSeq
-    if b.Header.BkSeq != self.Head().Header.BkSeq+1 {
+    head := self.Head()
+    if b.Header.BkSeq != head.Header.BkSeq+1 {
         return errors.New("BkSeq invalid")
     }
     //check Time, give some room for error and clock skew
-    if b.Header.Time < self.Head().Header.Time+self.CreationInterval {
+    if b.Header.Time < head.Header.Time+self.CreationInterval {
         return errors.New("time invalid: block too soon")
     }
     maxDiff := blockTimeFutureMultipleMax * self.CreationInterval
     if b.Header.Time > uint64(time.Now().UTC().Unix())+maxDiff {
         return errors.New("Block is too far in future; check clock")
     }
-
     // Check block sequence against previous head
-    if b.Header.BkSeq != 0 && self.Head().Header.BkSeq+1 != b.Header.BkSeq {
+    if head.Header.BkSeq+1 != b.Header.BkSeq {
         return errors.New("Header BkSeq not sequential")
     }
     // Check block hash against previous head
-    if b.Header.PrevHash != self.Head().HashHeader() {
+    if b.Header.PrevHash != head.HashHeader() {
         return errors.New("HashPrevBlock does not match current head")
     }
     if b.HashBody() != b.Header.BodyHash {
@@ -514,6 +552,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
 
 // Returns an error if any Transaction in txns is invalid
 func (self *Blockchain) verifyTransactions(txns Transactions) error {
+    // TODO - Check special case for genesis block
     _, err := self.processTransactions(txns, true)
     return err
 }
@@ -564,7 +603,6 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
     return nil
 }
 
-
 // TxUxIn returns a copy of the set of inputs that a transaction spends
 //An error is returned if the any unspents inputs are not found.
 func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
@@ -572,7 +610,7 @@ func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
     for i, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
         if !exists {
-            return nil, errors.New("txUxIn error, unspent output does not exist")
+            return nil, errors.New("txUxIn: unspent output does not exist")
         }
         uxia[i] = uxi
     }
@@ -583,9 +621,9 @@ func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
 func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     uxo := make(UxArray, 0, len(tx.Out))
     for _, to := range tx.Out {
-        ux := UxOut {
+        ux := UxOut{
             Head: UxHead{
-                Time:  bh.Time, //not hashed so doesnt matter
+                Time:  bh.Time,  //not hashed so doesnt matter
                 BkSeq: bh.BkSeq, //not hashed so doesnt matter
             },
             Body: UxBody{

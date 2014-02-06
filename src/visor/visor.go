@@ -17,6 +17,23 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
+const (
+    // Timestamp of the genesis block
+    GENESIS_TIMESTAMP uint64 = 1391649057
+    // Signature of the genesis block
+    GENESIS_SIGNATURE = "a1a09bee02a92fddaf34856aedde9c1ef626caaf31ada221fc2acc9212493e61064b32d4cfd92f38948e799f231f8c42428086405bbf42f9e913a149c0ca743f00"
+)
+
+// Encapsulates useful information from the coin.Blockchain
+type BlockchainMetadata struct {
+    // Most recent block's header
+    Head coin.BlockHeader `json:"head"`
+    // Number of unspent outputs in the coin.Blockchain
+    Unspents uint64 `json:"unspents"`
+    // Number of known unconfirmed txns
+    Unconfirmed uint64 `json:"unconfirmed"`
+}
+
 // Holds the master and personal keys
 type VisorKeys struct {
     // The master server's key.  The Secret will be empty unless running as
@@ -62,6 +79,12 @@ type VisorConfig struct {
     TransactionsPerBlock int
     // Where the blockchain is saved
     BlockchainFile string
+    // Where the block signatures are saved
+    BlockSigsFile string
+    // Master keypair & address
+    MasterKeys WalletEntry
+    // Genesis block sig
+    GenesisSig coin.Sig
 }
 
 func NewVisorConfig() VisorConfig {
@@ -77,6 +100,9 @@ func NewVisorConfig() VisorConfig {
         UnconfirmedRefreshRate:   time.Minute * 30,
         TransactionsPerBlock:     1000, // 1000/15 = 66tps. Bitcoin is 7tps
         BlockchainFile:           "",
+        BlockSigsFile:            "",
+        MasterKeys:               WalletEntry{},
+        GenesisSig:               coin.Sig{},
     }
 }
 
@@ -94,38 +120,103 @@ type Visor struct {
 }
 
 // Creates a normal Visor given a master's public key
-func NewVisor(c VisorConfig, master WalletEntry) *Visor {
+func NewVisor(c VisorConfig) *Visor {
     logger.Debug("Creating new visor")
+    // Make sure inputs are correct
     if c.IsMaster {
         logger.Debug("Visor is master")
     }
     if c.IsMaster {
-        if err := master.Verify(); err != nil {
+        if err := c.MasterKeys.Verify(); err != nil {
             log.Panicf("Invalid master wallet entry: %v", err)
         }
     } else {
-        if err := master.VerifyPublic(); err != nil {
-            log.Panicf("Invalid master address: %v", err)
+        if err := c.MasterKeys.VerifyPublic(); err != nil {
+            log.Panicf("Invalid master address or pubkey: %v", err)
         }
     }
 
+    // Load the wallet
     var wallet *Wallet = nil
     if c.IsMaster {
-        wallet = createMasterWallet(master)
+        wallet = createMasterWallet(c.MasterKeys)
     } else {
         wallet = loadWallet(c.WalletFile, c.WalletSizeMin)
     }
-    blockchain := loadBlockchain(c.BlockchainFile, master.Address,
-        c.BlockCreationInterval)
 
-    return &Visor{
+    // Load the blockchain the block signatures
+    blockchain := loadBlockchain(c.BlockchainFile, c.BlockCreationInterval)
+    blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
+    if err != nil {
+        if os.IsNotExist(err) {
+            logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
+        } else {
+            log.Panic("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
+        }
+        blockSigs = NewBlockSigs()
+    }
+    err = blockSigs.Verify(c.MasterKeys.Public, blockchain)
+    if err != nil {
+        log.Panic("Invalid block signatures")
+    }
+
+    v := &Visor{
         Config:          c,
-        keys:            NewVisorKeys(master),
+        keys:            NewVisorKeys(c.MasterKeys),
         blockchain:      blockchain,
-        blockSigs:       NewBlockSigs(),
+        blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
         Wallet:          wallet,
     }
+
+    // Load the genesis block and sign it, if we need one
+    if len(blockchain.Blocks) == 0 {
+        v.CreateGenesisBlock()
+    }
+    return v
+}
+
+// Returns a Visor with minimum initialization necessary for empty blockchain
+// access
+func NewMinimalVisor(c VisorConfig) *Visor {
+    return &Visor{
+        Config:          c,
+        keys:            NewVisorKeys(c.MasterKeys),
+        blockchain:      coin.NewBlockchain(c.BlockCreationInterval),
+        blockSigs:       NewBlockSigs(),
+        UnconfirmedTxns: nil,
+        Wallet:          nil,
+    }
+}
+
+// Creates the genesis block as needed
+func (self *Visor) CreateGenesisBlock() SignedBlock {
+    b := coin.Block{}
+    addr := self.Config.MasterKeys.Address
+    if self.Config.IsMaster {
+        b = self.blockchain.CreateMasterGenesisBlock(addr)
+    } else {
+        b = self.blockchain.CreateGenesisBlock(addr, GENESIS_TIMESTAMP)
+    }
+    sb := SignedBlock{}
+    if self.Config.IsMaster {
+        var err error
+        sb, err = self.signBlock(b)
+        if err != nil {
+            log.Panicf("Failed to sign genesis block: %v", err)
+        }
+    } else {
+        sb = SignedBlock{
+            Block: b,
+            Sig:   coin.MustSigFromHex(GENESIS_SIGNATURE),
+        }
+    }
+    self.blockSigs.record(&sb)
+    err := self.blockSigs.Verify(self.Config.MasterKeys.Public, self.blockchain)
+    if err != nil {
+        log.Panicf("Signed the genesis block, but its invalid: %v", err)
+    }
+    return sb
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones that too old
@@ -152,6 +243,15 @@ func (self *Visor) SaveWallet() error {
         return errors.New("No WalletFile location set")
     } else {
         return self.Wallet.Save(self.Config.WalletFile)
+    }
+}
+
+// Saves BlockSigs to disk
+func (self *Visor) SaveBlockSigs() error {
+    if self.Config.BlockSigsFile == "" {
+        return errors.New("No BlockSigsFile location set")
+    } else {
+        return self.blockSigs.Save(self.Config.BlockSigsFile)
     }
 }
 
@@ -269,16 +369,20 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     return nil
 }
 
-// Returns N signed blocks more recent than Seq. Returns nil if no blocks
-func (self *Visor) GetSignedBlocksSince(seq uint64, ct int) []SignedBlock {
-    if seq < self.blockSigs.MinSeq {
-        seq = self.blockSigs.MinSeq
+// Returns N signed blocks more recent than Seq. Does not return nil.
+func (self *Visor) GetSignedBlocksSince(seq uint64, ct uint64) []SignedBlock {
+    var avail uint64 = 0
+    if self.blockSigs.MaxSeq > seq {
+        avail = self.blockSigs.MaxSeq - seq
     }
-    if seq >= self.blockSigs.MaxSeq {
-        return nil
+    if avail > ct {
+        avail = ct
     }
-    blocks := make([]SignedBlock, 0, ct)
-    for i := seq; i < self.blockSigs.MaxSeq; i++ {
+    if avail == 0 {
+        return []SignedBlock{}
+    }
+    blocks := make([]SignedBlock, 0, avail)
+    for i := seq + 1; i <= self.blockSigs.MaxSeq; i++ {
         if sig, exists := self.blockSigs.Sigs[i]; exists {
             blocks = append(blocks, SignedBlock{
                 Sig:   sig,
@@ -286,16 +390,50 @@ func (self *Visor) GetSignedBlocksSince(seq uint64, ct int) []SignedBlock {
             })
         }
     }
-    if len(blocks) == 0 {
-        return nil
-    } else {
-        return blocks
-    }
+    return blocks
 }
 
 // Returns the highest BkSeq we know
 func (self *Visor) MostRecentBkSeq() uint64 {
     return self.blockSigs.MaxSeq
+}
+
+// Returns descriptive coin.Blockchain information
+func (self *Visor) GetBlockchainMetadata() *BlockchainMetadata {
+    return &BlockchainMetadata{
+        Head:        self.blockchain.Head().Header,
+        Unspents:    uint64(len(self.blockchain.Unspent.Arr)),
+        Unconfirmed: uint64(len(self.UnconfirmedTxns.Txns)),
+    }
+}
+
+// Returns a copy of the block at seq. Returns error if seq out of range
+func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
+    var b coin.Block
+    if seq >= uint64(len(self.blockchain.Blocks)) {
+        return b, errors.New("Block seq out of range")
+    }
+    return self.blockchain.Blocks[seq], nil
+}
+
+// Returns multiple blocks between start and end (not including end). Returns
+// empty slice if unable to fulfill request, it does not return nil.
+func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
+    if end > uint64(len(self.blockchain.Blocks)) {
+        end = uint64(len(self.blockchain.Blocks))
+    }
+    var length uint64 = 0
+    if start < end {
+        length = end - start
+    }
+    blocks := make([]coin.Block, 0, length)
+    for i := start; i < end; i++ {
+        if i >= uint64(len(self.blockchain.Blocks)) {
+            break
+        }
+        blocks = append(blocks, self.blockchain.Blocks[i])
+    }
+    return blocks
 }
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
@@ -427,25 +565,32 @@ func createMasterWallet(master WalletEntry) *Wallet {
     return w
 }
 
+// Loads a coin.Blockchain from disk
+func LoadBlockchain(filename string) (*coin.Blockchain, error) {
+    bc := &coin.Blockchain{}
+    data, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return bc, err
+    }
+    return bc, encoder.DeserializeRaw(data, bc)
+}
+
 // Loads a blockchain but subdues errors into the logger, or panics
-func loadBlockchain(filename string, masterAddress coin.Address,
-    creationInterval uint64) *coin.Blockchain {
+func loadBlockchain(filename string, creationInterval uint64) *coin.Blockchain {
     bc := &coin.Blockchain{}
     created := false
     if filename != "" {
-        data, err := ioutil.ReadFile(filename)
+        var err error
+        bc, err = LoadBlockchain(filename)
         if err == nil {
-            err = encoder.DeserializeRaw(data, bc)
-            if err == nil {
-                created = true
-                logger.Info("Loaded blockchain from \"%s\"", filename)
-            } else {
-                log.Panicf("Failed to deserialize blockfrom from \"%s\"",
-                    filename)
-            }
+            created = true
+            logger.Info("Loaded blockchain from \"%s\"", filename)
         } else {
             if os.IsNotExist(err) {
                 logger.Info("No blockchain file, will create a new blockchain")
+            } else {
+                log.Panicf("Failed to load blockchain file \"%s\": %v",
+                    filename, err)
             }
         }
     }
@@ -463,7 +608,7 @@ func loadBlockchain(filename string, masterAddress coin.Address,
         logger.Info("Rebuiling UnspentPool indices")
         bc.Unspent.Rebuild()
     } else {
-        bc = coin.NewBlockchain(masterAddress, creationInterval)
+        bc = coin.NewBlockchain(creationInterval)
     }
     return bc
 }
@@ -471,6 +616,17 @@ func loadBlockchain(filename string, masterAddress coin.Address,
 type SignedBlock struct {
     Block coin.Block
     Sig   coin.Sig
+}
+
+// Used to serialize the BlockSigs.Sigs map
+type BlockSigSerialized struct {
+    BkSeq uint64
+    Sig   coin.Sig
+}
+
+// Used to serialize the BlockSigs.Sigs map
+type BlockSigsSerialized struct {
+    Sigs []BlockSigSerialized
 }
 
 // Manages known BlockSigs as received.
@@ -486,15 +642,70 @@ type SignedBlock struct {
 type BlockSigs struct {
     Sigs   map[uint64]coin.Sig
     MaxSeq uint64
-    MinSeq uint64
 }
 
 func NewBlockSigs() BlockSigs {
-    return BlockSigs{
+    bs := BlockSigs{
         Sigs:   make(map[uint64]coin.Sig),
         MaxSeq: 0,
-        MinSeq: 0,
     }
+    return bs
+}
+
+func LoadBlockSigs(filename string) (BlockSigs, error) {
+    bs := NewBlockSigs()
+    data, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return bs, err
+    }
+    sigs := BlockSigsSerialized{make([]BlockSigSerialized, 0)}
+    err = encoder.DeserializeRaw(data, &sigs)
+    if err != nil {
+        return bs, err
+    }
+    bs.Sigs = make(map[uint64]coin.Sig, len(sigs.Sigs))
+    for _, s := range sigs.Sigs {
+        bs.Sigs[s.BkSeq] = s.Sig
+        if s.BkSeq > bs.MaxSeq {
+            bs.MaxSeq = s.BkSeq
+        }
+    }
+    return bs, nil
+}
+
+func (self *BlockSigs) Save(filename string) error {
+    // Convert the Sigs map to an array of element
+    sigs := make([]BlockSigSerialized, 0, len(self.Sigs))
+    for k, v := range self.Sigs {
+        sigs = append(sigs, BlockSigSerialized{
+            BkSeq: k,
+            Sig:   v,
+        })
+    }
+    bss := BlockSigsSerialized{sigs}
+    data := encoder.Serialize(bss)
+    return util.SaveBinary(filename, data, 0644)
+}
+
+// Checks that BlockSigs state correspond with coin.Blockchain state
+// and that all signatures are valid.
+func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) error {
+    blocks := uint64(len(bc.Blocks))
+    if blocks != uint64(len(self.Sigs)) {
+        return errors.New("NSigs != NBlocks")
+    }
+    for k, v := range self.Sigs {
+        if k > self.MaxSeq {
+            return errors.New("Invalid MaxSeq")
+        } else if k > blocks {
+            return errors.New("Signature for unknown block")
+        }
+        err := coin.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 // Adds a SignedBlock
@@ -503,8 +714,5 @@ func (self *BlockSigs) record(sb *SignedBlock) {
     self.Sigs[seq] = sb.Sig
     if seq > self.MaxSeq {
         self.MaxSeq = seq
-    }
-    if seq < self.MinSeq {
-        self.MinSeq = seq
     }
 }

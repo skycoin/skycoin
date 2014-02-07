@@ -5,7 +5,15 @@ Skycoin is a next-generation post proof-of-work cryptocurrency.
 
 It is currently in `alpha`.
 
-*For installation instructions, see [Installing Skycoin](../../wiki/Installation)*
+Installation
+------------
+
+*For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation)*
+
+```
+./setup.sh
+./run.sh -h
+```
 
 No Mining
 ---------

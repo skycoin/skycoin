@@ -29,7 +29,7 @@
     <tabset id="main-content">
       <tab>
         <tab-heading>
-          <i class="fa fa-cloud fa-lg"></i> Wallets
+          <i class="fa fa-cloud fa-lg"></i> Wallet
         </tab-heading>
 
         <div class="outline">
@@ -41,7 +41,7 @@
               <td><div id="overview-wallet-balance">Address: </div></td><td>{{address.address}}</td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance.coins}} SKY</td>
+              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance.coins | number}} SKY</td>
             </tr>
             <tr>
               <td colspan="2">
@@ -52,7 +52,7 @@
             </tr>
           </table>
           <div class="wallet-buttons">
-            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Wallet</button> <button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>
+            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Address</button> <button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>
           </div>
 
           <!--<div id="overview-recent-transaction" class="outline">

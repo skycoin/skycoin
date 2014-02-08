@@ -20,6 +20,8 @@ type PeersConfig struct {
     RequestRate time.Duration
     // How many peers to send back in response to a peers request
     ReplyCount int
+    // Disable exchanging of peers.  Peers are still loaded from disk
+    Disabled bool
 }
 
 func NewPeersConfig() PeersConfig {
@@ -31,6 +33,7 @@ func NewPeersConfig() PeersConfig {
         UpdateBlacklistRate: time.Minute,
         RequestRate:         time.Minute,
         ReplyCount:          30,
+        Disabled:            false,
     }
 }
 
@@ -41,6 +44,9 @@ type Peers struct {
 }
 
 func NewPeers(c PeersConfig) *Peers {
+    if c.Disabled {
+        logger.Info("PEX is disabled")
+    }
     return &Peers{
         Config: c,
         Peers:  nil,
@@ -72,4 +78,14 @@ func (self *Peers) Shutdown() error {
     }
     logger.Debug("Shutdown peers")
     return nil
+}
+
+// Requests peers from our connections
+// TODO -- batching all peer requests at once may cause performance issues
+func (self *Peers) requestPeers(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
+    m := NewGetPeersMessage()
+    pool.Pool.Dispatcher.BroadcastMessage(m)
 }

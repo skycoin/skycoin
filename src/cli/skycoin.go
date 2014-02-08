@@ -12,9 +12,17 @@ type ClientConfig struct {
 }
 
 var ClientArgs = ClientConfig{Config{
-    DisableGUI:    false,
-    DisableDaemon: false,
-    DisableDHT:    false,
+    DisableGUI: false,
+    // Disable DHT peer discovery
+    DisableDHT: false,
+    // Disable peer exchange
+    DisablePEX: false,
+    // Don't make any outgoing connections
+    DisableOutgoingConnections: false,
+    // Don't allowing incoming connections
+    DisableIncomingConnections: false,
+    // Disables networking altogether
+    DisableNetworking: false,
     // Which address to serve on. Leave blank to automatically assign to a
     // public interface
     Address: "",
@@ -66,12 +74,17 @@ var ClientArgs = ClientConfig{Config{
 }}
 
 func (self *ClientConfig) register() {
-    flag.BoolVar(&self.DisableDaemon, "disable-daemon", self.DisableDaemon,
-        "disable the coin daemon")
     flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
         "disable DHT peer discovery")
-    flag.IntVar(&self.Port, "port", self.Port,
-        "Port to run application on")
+    flag.BoolVar(&self.DisablePEX, "disable-pex", self.DisablePEX,
+        "disable PEX peer discovery")
+    flag.BoolVar(&self.DisableOutgoingConnections, "disable-outgoing",
+        self.DisableOutgoingConnections, "Don't make outgoing connections")
+    flag.BoolVar(&self.DisableIncomingConnections, "disable-incoming",
+        self.DisableIncomingConnections, "Don't make incoming connections")
+    flag.BoolVar(&self.DisableNetworking, "disable-networking",
+        self.DisableNetworking, "Disable all network activity")
+    flag.IntVar(&self.Port, "port", self.Port, "Port to run application on")
     flag.StringVar(&self.Address, "address", self.Address,
         "IP Address to run application on. Leave empty to default to a public interface")
     flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,

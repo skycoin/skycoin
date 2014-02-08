@@ -217,6 +217,7 @@ func TestDaemonLoopRequestPeersTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
     c := gnetConnection(addr)
     d.Pool.Pool.Pool[1] = c
+    d.Pool.Pool.Addresses[c.Addr()] = c
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
     d.Peers.Config.RequestRate = time.Millisecond * 10
     go d.Start(quit)
@@ -301,17 +302,18 @@ func TestRequestPeers(t *testing.T) {
     d.Peers.Peers.AddPeer(addr)
     // Nothing should happen if the peer list is full. It would have a nil
     // dereference of Pool if it continued further
-    assert.NotPanics(t, d.Pool.requestPeers)
+    assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
 
     c := gnetConnection(addr)
     d.Pool.Pool.Pool[1] = c
-    assert.NotPanics(t, d.Pool.requestPeers)
+    d.Pool.Pool.Addresses[c.Addr()] = c
+    assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
     assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
 
     // Failing send should not panic
     c.Conn = NewFailingConn(addr)
     c.LastSent = time.Unix(0, 0)
-    assert.NotPanics(t, d.Pool.requestPeers)
+    assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
     assert.Equal(t, c.LastSent, time.Unix(0, 0))
 
     shutdown(d)

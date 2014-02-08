@@ -12,9 +12,17 @@ type DevConfig struct {
 }
 
 var DevArgs = DevConfig{Config{
-    DisableGUI:    true,
-    DisableDaemon: false,
-    DisableDHT:    false,
+    DisableGUI: true,
+    // Disable DHT peer discovery
+    DisableDHT: false,
+    // Disable peer exchange
+    DisablePEX: false,
+    // Don't make any outgoing connections
+    DisableOutgoingConnections: false,
+    // Don't allowing incoming connections
+    DisableIncomingConnections: false,
+    // Disables networking altogether
+    DisableNetworking: false,
     // Which address to serve on. Leave blank to automatically assign to a
     // public interface
     Address: "",
@@ -66,14 +74,23 @@ var DevArgs = DevConfig{Config{
 }}
 
 func (self *DevConfig) register() {
-    flag.BoolVar(&self.DisableDaemon, "disable-daemon", self.DisableDaemon,
-        "disable the coin daemon")
     flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
         "disable DHT peer discovery")
+    flag.BoolVar(&self.DisablePEX, "disable-pex", self.DisablePEX,
+        "disable PEX peer discovery")
+    flag.BoolVar(&self.DisableOutgoingConnections, "disable-outgoing",
+        self.DisableOutgoingConnections, "Don't make outgoing connections")
+    flag.BoolVar(&self.DisableIncomingConnections, "disable-incoming",
+        self.DisableIncomingConnections, "Don't make incoming connections")
+    flag.BoolVar(&self.DisableNetworking, "disable-networking",
+        self.DisableNetworking, "Disable all network activity")
+    flag.StringVar(&self.Address, "address", self.Address,
+        "IP Address to run application on. Leave empty to default to a public interface")
+    flag.IntVar(&self.Port, "port", self.Port, "Port to run application on")
     flag.BoolVar(&self.DisableGUI, "disable-gui", self.DisableGUI,
         "disable the gui")
-    flag.BoolVar(&self.WebInterface, "web-interface",
-        self.WebInterface, "enable the web interface")
+    flag.BoolVar(&self.WebInterface, "web-interface", self.WebInterface,
+        "enable the web interface")
     flag.IntVar(&self.WebInterfacePort, "web-interface-port",
         self.WebInterfacePort, "port to serve web interface on")
     flag.StringVar(&self.WebInterfaceAddr, "web-interface-addr",
@@ -86,10 +103,6 @@ func (self *DevConfig) register() {
             "If not provided, will use key.pem in -data-directory")
     flag.BoolVar(&self.WebInterfaceHTTPS, "web-interface-https",
         self.WebInterfaceHTTPS, "enable HTTPS for web interface")
-    flag.StringVar(&self.Address, "address", self.Address,
-        "IP Address to run application on. Leave empty to default to a public interface")
-    flag.IntVar(&self.Port, "port", self.Port,
-        "Port to run application on")
     flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,
         "directory to store app data (defaults to ~/.skycoin)")
     flag.StringVar(&self.ConnectTo, "connect-to", self.ConnectTo,

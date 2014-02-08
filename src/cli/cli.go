@@ -17,9 +17,17 @@ type Args interface {
 }
 
 type Config struct {
-    DisableGUI    bool
-    DisableDaemon bool
-    DisableDHT    bool
+    DisableGUI bool
+    // Disable DHT peer discovery
+    DisableDHT bool
+    // Disable peer exchange
+    DisablePEX bool
+    // Don't make any outgoing connections
+    DisableOutgoingConnections bool
+    // Don't allowing incoming connections
+    DisableIncomingConnections bool
+    // Disables networking altogether
+    DisableNetworking bool
     // Which address to serve on. Leave blank to automatically assign to a
     // public interface
     Address string

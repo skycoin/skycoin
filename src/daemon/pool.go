@@ -106,15 +106,3 @@ func (self *Pool) clearStaleConnections() {
         }
     }
 }
-
-// Requests peers from our connections
-// TODO -- batching all peer requests at once may cause performance issues
-func (self *Pool) requestPeers() {
-    for _, c := range self.Pool.Pool {
-        m := NewGetPeersMessage()
-        err := self.Pool.Dispatcher.SendMessage(c, m)
-        if err != nil {
-            logger.Warning("Failed to request peers from %s", c.Addr())
-        }
-    }
-}

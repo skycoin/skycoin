@@ -98,19 +98,28 @@ type DaemonConfig struct {
     CullInvalidRate time.Duration
     // How many connections are allowed from the same base IP
     IPCountsMax int
+    // Disable all networking activity
+    DisableNetworking bool
+    // Don't make outgoing connections
+    DisableOutgoingConnections bool
+    // Don't allow incoming connections
+    DisableIncomingConnections bool
 }
 
 func NewDaemonConfig() DaemonConfig {
     return DaemonConfig{
-        Version:          1,
-        Address:          "",
-        Port:             6677,
-        OutgoingRate:     time.Second * 5,
-        OutgoingMax:      8,
-        PendingMax:       16,
-        IntroductionWait: time.Second * 30,
-        CullInvalidRate:  time.Second * 3,
-        IPCountsMax:      3,
+        Version:                    1,
+        Address:                    "",
+        Port:                       6677,
+        OutgoingRate:               time.Second * 5,
+        OutgoingMax:                8,
+        PendingMax:                 16,
+        IntroductionWait:           time.Second * 30,
+        CullInvalidRate:            time.Second * 3,
+        IPCountsMax:                3,
+        DisableNetworking:          false,
+        DisableOutgoingConnections: false,
+        DisableIncomingConnections: false,
     }
 }
 
@@ -159,6 +168,19 @@ func NewDaemon(config *Config) *Daemon {
     config.Pool.port = config.Daemon.Port
     config.Pool.address = config.Daemon.Address
     config.DHT.port = config.Daemon.Port
+    if config.Daemon.DisableNetworking {
+        config.Peers.Disabled = true
+        config.DHT.Disabled = true
+        config.Daemon.DisableIncomingConnections = true
+        config.Daemon.DisableOutgoingConnections = true
+    } else {
+        if config.Daemon.DisableIncomingConnections {
+            logger.Info("Incoming connections are disabled.")
+        }
+        if config.Daemon.DisableOutgoingConnections {
+            logger.Info("Outgoing connections are disabled.")
+        }
+    }
     // TODO -- dht lib does not allow choosing address, should we add that?
     // c.DHT.address = c.Daemon.Address
     d := &Daemon{
@@ -223,8 +245,12 @@ func (self *Daemon) Shutdown() {
 // Main loop for peer/connection management. Send anything to quit to shut it
 // down
 func (self *Daemon) Start(quit chan int) {
-    go self.Pool.Start()
-    go self.DHT.Start()
+    if !self.Config.DisableIncomingConnections {
+        go self.Pool.Start()
+    }
+    if !self.DHT.Config.Disabled {
+        go self.DHT.Start()
+    }
 
     // TODO -- run blockchain stuff in its own goroutine
     blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
@@ -251,53 +277,82 @@ main:
         select {
         // Continually make requests to the DHT, if we need peers
         case <-dhtBootstrapTicker:
-            if len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
+            if !self.DHT.Config.Disabled &&
+                len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
                 go self.DHT.RequestPeers()
             }
         // Flush expired blacklisted peers
         case <-updateBlacklistTicker:
-            self.Peers.Peers.Blacklist.Refresh()
+            if !self.Peers.Config.Disabled {
+                self.Peers.Peers.Blacklist.Refresh()
+            }
         // Remove connections that failed to complete the handshake
         case <-cullInvalidTicker:
-            self.cullInvalidConnections()
+            if !self.Config.DisableNetworking {
+                self.cullInvalidConnections()
+            }
         // Request peers via PEX
         case <-requestPeersTicker:
-            if !self.Peers.Peers.Full() {
-                self.Pool.requestPeers()
+            if !self.Peers.Config.Disabled && !self.Peers.Peers.Full() {
+                self.Peers.requestPeers(self.Pool)
             }
         // Remove peers we haven't seen in a while
         case <-clearOldPeersTicker:
-            self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
+            if !self.Peers.Config.Disabled {
+                self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
+            }
         // Remove connections that haven't said anything in a while
         case <-clearStaleConnectionsTicker:
-            self.Pool.clearStaleConnections()
+            if !self.Config.DisableNetworking {
+                self.Pool.clearStaleConnections()
+            }
         // Sends pings as needed
         case <-idleCheckTicker:
-            self.Pool.sendPings()
+            if !self.Config.DisableNetworking {
+                self.Pool.sendPings()
+            }
         // Fill up our outgoing connections
         case <-outgoingConnectionsTicker:
-            if len(self.outgoingConnections) < self.Config.OutgoingMax &&
+            if !self.Config.DisableOutgoingConnections &&
+                len(self.outgoingConnections) < self.Config.OutgoingMax &&
                 len(self.pendingConnections) < self.Config.PendingMax {
                 self.connectToRandomPeer()
             }
         // Process the connection queue
         case <-messageHandlingTicker:
-            self.Pool.Pool.HandleMessages()
+            if !self.Config.DisableNetworking {
+                self.Pool.Pool.HandleMessages()
+            }
         // Process callbacks for when a client connects. No disconnect chan
         // is needed because the callback is triggered by HandleDisconnectEvent
         // which is already select{}ed here
         case r := <-self.onConnectEvent:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be no connect events")
+            }
             self.onConnect(r)
         // Handle connection errors
         case r := <-self.connectionErrors:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be no connection errors")
+            }
             self.handleConnectionError(r)
         // Update Peers when DHT reports a new one
         case r := <-self.DHT.DHT.PeersRequestResults:
+            if self.DHT.Config.Disabled {
+                log.Panic("There should be no DHT peer results")
+            }
             self.DHT.ReceivePeers(r, self.Peers.Peers)
         case r := <-self.Pool.Pool.DisconnectQueue:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be nothing in the DisconnectQueue")
+            }
             self.Pool.Pool.HandleDisconnectEvent(r)
         // Message handlers
         case m := <-self.messageEvents:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be no message events")
+            }
             self.processMessageEvent(m)
         // Process any pending API requests
         case fn := <-self.RPC.requests:
@@ -343,6 +398,9 @@ func (self *Daemon) getListenPort(addr string) uint16 {
 
 // Attempts to connect to a random peer. If it fails, the peer is removed
 func (self *Daemon) connectToRandomPeer() {
+    if self.Config.DisableOutgoingConnections {
+        return
+    }
     // Make a connection to a random peer
     peers := self.Peers.Peers.Peerlist.Random(0)
     for _, p := range peers {

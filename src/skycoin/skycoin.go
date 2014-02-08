@@ -113,6 +113,10 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc := daemon.NewConfig()
     dc.Peers.DataDirectory = c.DataDirectory
     dc.DHT.Disabled = c.DisableDHT
+    dc.Peers.Disabled = c.DisablePEX
+    dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
+    dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
+    dc.Daemon.DisableNetworking = c.DisableNetworking
     dc.Daemon.Port = c.Port
     dc.Daemon.Address = c.Address
     if c.OutgoingConnectionsRate == 0 {

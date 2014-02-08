@@ -143,8 +143,12 @@ func NewGetPeersMessage() *GetPeersMessage {
 
 func (self *GetPeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
+    d := daemon.(*Daemon)
+    if d.Peers.Config.Disabled {
+        return nil
+    }
     self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+    return d.recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were requested
@@ -195,8 +199,12 @@ func (self *GivePeersMessage) GetPeers() []string {
 
 func (self *GivePeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
+    d := daemon.(*Daemon)
+    if d.Peers.Config.Disabled {
+        return nil
+    }
     self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+    return d.recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were received

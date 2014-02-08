@@ -8,6 +8,18 @@ angular.module('skycoin.controllers', [])
   function($scope,$http,$modal,$log) {
   	$scope.addresses = [];
 
+
+  	$scope.getProgress = function(){
+      $http.get('/blockchain/progress').success(function(response){
+        $scope.progress = (parseInt(response.current,10)+1) / parseInt(response.Highest,10) * 100;
+
+      });
+	 }
+
+	 $scope.getProgress();
+
+
+
   	$scope.loadWallets = function(){
       $http.post('/wallet').success(function(response){
         console.dir(response);
@@ -63,7 +75,7 @@ angular.module('skycoin.controllers', [])
 			}).success(function(response){
 		  	 	console.log('wallet spend is ')
 		        console.dir(response);
-		        $scope.checkBalance(addr.address);
+		        $scope.loadWallets();
 	      });
 	 }
 
@@ -116,6 +128,14 @@ angular.module('skycoin.controllers', [])
   $scope.address = address;
   $scope.qro = {};
   $scope.qro.fm = address;
+
+  $scope.$watch('qro.label', function() {
+  	$scope.qro.new = 'skycoin:' + $scope.address.address + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
+  });
+
+  $scope.$watch('qro.message', function() {
+  	$scope.qro.new = 'skycoin:' + $scope.address.address + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
+  });
 
 
   $scope.ok = function () {

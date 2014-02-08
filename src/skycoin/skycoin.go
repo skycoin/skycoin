@@ -109,7 +109,7 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
     }
 }
 
-func configureDaemon(c *cli.Config) *daemon.Config {
+func configureDaemon(c *cli.Config) daemon.Config {
     dc := daemon.NewConfig()
     dc.Peers.DataDirectory = c.DataDirectory
     dc.DHT.Disabled = c.DisableDHT
@@ -119,6 +119,7 @@ func configureDaemon(c *cli.Config) *daemon.Config {
     dc.Daemon.DisableNetworking = c.DisableNetworking
     dc.Daemon.Port = c.Port
     dc.Daemon.Address = c.Address
+    dc.Daemon.LocalhostOnly = c.LocalhostOnly
     if c.OutgoingConnectionsRate == 0 {
         c.OutgoingConnectionsRate = time.Millisecond
     }

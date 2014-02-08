@@ -28,6 +28,8 @@ type Config struct {
     DisableIncomingConnections bool
     // Disables networking altogether
     DisableNetworking bool
+    // Only run on localhost and only connect to others on localhost
+    LocalhostOnly bool
     // Which address to serve on. Leave blank to automatically assign to a
     // public interface
     Address string

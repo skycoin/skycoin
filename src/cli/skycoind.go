@@ -23,6 +23,8 @@ var DaemonArgs = DaemonConfig{Config{
     DisableIncomingConnections: false,
     // Disables networking altogether
     DisableNetworking: false,
+    // Only run on localhost and only connect to others on localhost
+    LocalhostOnly: false,
     // Which address to serve on. Leave blank to automatically assign to a
     // public interface
     Address: "",

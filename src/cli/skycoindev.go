@@ -23,6 +23,8 @@ var DevArgs = DevConfig{Config{
     DisableIncomingConnections: false,
     // Disables networking altogether
     DisableNetworking: false,
+    // Only run on localhost and only connect to others on localhost
+    LocalhostOnly: false,
     // Which address to serve on. Leave blank to automatically assign to a
     // public interface
     Address: "",
@@ -140,6 +142,7 @@ func (self *DevConfig) register() {
     flag.BoolVar(&self.CanSpend, "can-spend", self.CanSpend,
         "is allowed to make outgoing transactions")
     flag.DurationVar(&self.OutgoingConnectionsRate, "connection-rate",
-        self.OutgoingConnectionsRate,
-        "How often to make an outgoing connection")
+        self.OutgoingConnectionsRate, "How often to make an outgoing connection")
+    flag.BoolVar(&self.LocalhostOnly, "localhost-only", self.LocalhostOnly,
+        "Run on localhost and only connect to localhost peers")
 }

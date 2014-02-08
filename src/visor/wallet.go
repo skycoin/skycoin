@@ -42,6 +42,29 @@ func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
     }
 }
 
+// Loads a WalletEntry from filename, where the file contains a
+// ReadableWalletEntry
+func LoadWalletEntry(filename string) (WalletEntry, error) {
+    w, err := LoadReadableWalletEntry(filename)
+    if err != nil {
+        return WalletEntry{}, err
+    } else {
+        return WalletEntryFromReadable(&w), nil
+    }
+}
+
+// Loads a WalletEntry from filename but also panics if the entry is invalid
+func MustLoadWalletEntry(filename string) (WalletEntry, error) {
+    keys, err := LoadWalletEntry(filename)
+    if err != nil {
+        return keys, err
+    }
+    if err := keys.Verify(); err != nil {
+        log.Panicf("Invalid wallet entry: %v", err)
+    }
+    return keys, nil
+}
+
 // Checks that the public key is derivable from the secret key,
 // and that the public key is associated with the address
 func (self *WalletEntry) Verify() error {
@@ -58,44 +81,6 @@ func (self *WalletEntry) VerifyPublic() error {
     } else {
         return self.Address.Verify(self.Public)
     }
-}
-
-type ReadableWalletEntry struct {
-    Address string `json:"address"`
-    Public  string `json:"public_key"`
-    Secret  string `json:"secret_key"`
-}
-
-func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
-    return ReadableWalletEntry{
-        Address: w.Address.String(),
-        Public:  w.Public.Hex(),
-        Secret:  w.Secret.Hex(),
-    }
-}
-
-// Loads a WalletEntry from filename, where the file contains a
-// ReadableWalletEntry
-func LoadWalletEntry(filename string) (WalletEntry, error) {
-    w := &ReadableWalletEntry{}
-    err := util.LoadJSON(filename, w)
-    if err != nil {
-        return WalletEntry{}, err
-    } else {
-        return WalletEntryFromReadable(w), nil
-    }
-}
-
-// Loads a WalletEntry from filename but also panics if the entry is invalid
-func MustLoadWalletEntry(filename string) (WalletEntry, error) {
-    keys, err := LoadWalletEntry(filename)
-    if err != nil {
-        return keys, err
-    }
-    if err := keys.Verify(); err != nil {
-        log.Panicf("Invalid wallet entry: %v", err)
-    }
-    return keys, nil
 }
 
 type Balance struct {
@@ -241,6 +226,37 @@ func (self *Wallet) Load(filename string) error {
     return nil
 }
 
+type ReadableWalletEntry struct {
+    Address string `json:"address"`
+    Public  string `json:"public_key"`
+    Secret  string `json:"secret_key"`
+}
+
+func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
+    return ReadableWalletEntry{
+        Address: w.Address.String(),
+        Public:  w.Public.Hex(),
+        Secret:  w.Secret.Hex(),
+    }
+}
+
+func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
+    w := ReadableWalletEntry{}
+    err := util.LoadJSON(filename, &w)
+    return w, err
+}
+
+// Creates a ReadableWalletEntry given a pubkey hex string.  The Secret field
+// is left empty.
+func ReadableWalletEntryFromPubkey(pub string) ReadableWalletEntry {
+    pubkey := coin.PubKeyFromHex(pub)
+    addr := coin.AddressFromPubKey(pubkey)
+    return ReadableWalletEntry{
+        Address: addr.String(),
+        Public:  pub,
+    }
+}
+
 // Used for [de]serialization of the Wallet
 type ReadableWallet struct {
     Entries []ReadableWalletEntry `json:"entries"`
@@ -255,6 +271,13 @@ func NewReadableWallet(w *Wallet) *ReadableWallet {
     return &ReadableWallet{
         Entries: readable,
     }
+}
+
+// Loads a ReadableWallet from disk
+func LoadReadableWallet(filename string) (*ReadableWallet, error) {
+    w := &ReadableWallet{}
+    err := w.Load(filename)
+    return w, err
 }
 
 // Saves to filename

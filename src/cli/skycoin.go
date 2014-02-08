@@ -46,7 +46,6 @@ var ClientArgs = ClientConfig{Config{
     MasterPublic:     "03c2fc73628b77512dc14c123ea741e72d27dc455e6d01141a8e7a0a83fff1fb23",
     MasterChain:      false,
     MasterKeys:       "",
-    GenesisAddress:   "CL9nba1DqVADzqH6HAGC4oJzf2pRtXKEyT",
     GenesisTimestamp: 1391649057,
     GenesisSignature: "a1a09bee02a92fddaf34856aedde9c1ef626caaf31ada221fc2acc9212493e61064b32d4cfd92f38948e799f231f8c42428086405bbf42f9e913a149c0ca743f00",
 

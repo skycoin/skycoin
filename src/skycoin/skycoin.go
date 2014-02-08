@@ -139,11 +139,8 @@ func configureDaemon(c *cli.Config) *daemon.Config {
             log.Panicf("Failed to load master keys: %v", err)
         }
     } else {
-        w := &visor.ReadableWalletEntry{
-            Address: c.GenesisAddress,
-            Public:  c.MasterPublic,
-        }
-        dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(w)
+        w := visor.ReadableWalletEntryFromPubkey(c.MasterPublic)
+        dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(&w)
     }
     return dc
 }

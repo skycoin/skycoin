@@ -54,7 +54,6 @@ type Config struct {
     MasterPublic     string
     MasterChain      bool
     MasterKeys       string
-    GenesisAddress   string
     GenesisSignature string
     GenesisTimestamp uint64
 

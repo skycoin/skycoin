@@ -80,6 +80,8 @@ func NewConfig() *Config {
 type DaemonConfig struct {
     // Application version. TODO -- manage version better
     Version int32
+    // IP Address to serve on. Leave empty for automatic assignment
+    Address string
     // TCP/UDP port for connections and DHT
     Port int
     // Directory where application data is stored
@@ -101,6 +103,7 @@ type DaemonConfig struct {
 func NewDaemonConfig() DaemonConfig {
     return DaemonConfig{
         Version:          1,
+        Address:          "",
         Port:             6677,
         OutgoingRate:     time.Second * 5,
         OutgoingMax:      8,
@@ -153,6 +156,11 @@ type Daemon struct {
 
 // Returns a Daemon with primitives allocated
 func NewDaemon(config *Config) *Daemon {
+    config.Pool.port = config.Daemon.Port
+    config.Pool.address = config.Daemon.Address
+    config.DHT.port = config.Daemon.Port
+    // TODO -- dht lib does not allow choosing address, should we add that?
+    // c.DHT.address = c.Daemon.Address
     d := &Daemon{
         Config:   config.Daemon,
         Messages: NewMessages(config.Messages),

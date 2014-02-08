@@ -20,6 +20,9 @@ type Config struct {
     DisableGUI    bool
     DisableDaemon bool
     DisableDHT    bool
+    // Which address to serve on. Leave blank to automatically assign to a
+    // public interface
+    Address string
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
     // How often to make outgoing connections

@@ -15,6 +15,9 @@ var DaemonArgs = DaemonConfig{Config{
     DisableGUI:    true,
     DisableDaemon: false,
     DisableDHT:    false,
+    // Which address to serve on. Leave blank to automatically assign to a
+    // public interface
+    Address: "",
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port: 5798,
     // How often to make outgoing connections, in seconds
@@ -83,6 +86,8 @@ func (self *DaemonConfig) register() {
         self.WebInterfaceHTTPS, "enable HTTPS for web interface")
     flag.IntVar(&self.Port, "port", self.Port,
         "Port to run application on")
+    flag.StringVar(&self.Address, "address", self.Address,
+        "IP Address to run application on. Leave empty to default to a public interface")
     flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,
         "directory to store app data (defaults to ~/.skycoin)")
     flag.StringVar(&self.logLevel, "log-level", self.logLevel,

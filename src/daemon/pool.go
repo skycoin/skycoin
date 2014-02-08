@@ -7,7 +7,6 @@ import (
 )
 
 type PoolConfig struct {
-    Port int
     // Timeout when trying to connect to new peers through the pool
     DialTimeout time.Duration
     // How often to process message buffers and generate events
@@ -22,12 +21,16 @@ type PoolConfig struct {
     ClearStaleRate time.Duration
     // Buffer size for gnet.ConnectionPool's network Read events
     EventChannelBufferSize int
+    // These should be assigned by the controlling daemon
+    address string
+    port    int
 }
 
 func NewPoolConfig() PoolConfig {
     defIdleLimit := time.Minute * 90
     return PoolConfig{
-        Port:                   6677,
+        port:                   6677,
+        address:                "",
         DialTimeout:            time.Second * 30,
         MessageHandlingRate:    time.Millisecond * 30,
         PingRate:               defIdleLimit / 3,
@@ -53,10 +56,11 @@ func NewPool(c PoolConfig) *Pool {
 // Begins listening on port for connections and periodically scanning for
 // messages on read_interval
 func (self *Pool) Init(d *Daemon) {
-    logger.Info("InitPool on port %d", self.Config.Port)
+    logger.Info("InitPool on port %d", self.Config.port)
     cfg := gnet.NewConfig()
     cfg.DialTimeout = self.Config.DialTimeout
-    cfg.Port = uint16(self.Config.Port)
+    cfg.Port = uint16(self.Config.port)
+    cfg.Address = self.Config.address
     cfg.ConnectCallback = d.onGnetConnect
     cfg.DisconnectCallback = d.onGnetDisconnect
     cfg.EventChannelBufferSize = cfg.EventChannelBufferSize

@@ -21,10 +21,12 @@ if [ ! -z "$MODULE" ]; then
     pushd "../src/${MODULE}" > /dev/null
 fi
 
-go test -cover -coverprofile=coverage.out
-sed -i 's|_'${SKYCOINPATH}'|github.com/skycoin|g' coverage.out
-go tool cover -html=coverage.out
-rm coverage.out
+go test -v -cover -coverprofile=coverage.out
+if [ $? -eq 0 ]; then
+    sed -i 's|_'${SKYCOINPATH}'|github.com/skycoin|g' coverage.out
+    go tool cover -html=coverage.out
+    rm coverage.out
+fi
 
 if [ ! -z "$MODULE" ]; then
     popd >/dev/null

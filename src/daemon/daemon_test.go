@@ -18,6 +18,60 @@ func newDefaultDaemon() *Daemon {
     return NewDaemon(c)
 }
 
+func TestConfigPreprocess(t *testing.T) {
+    c := NewConfig()
+    a := "127.0.0.1"
+    p := 7779
+    // Test that addr, port are copied to subconfigs
+    c.Daemon.Port = p
+    c.Daemon.Address = a
+    d := c.preprocess()
+    assert.Equal(t, d.Pool.port, p)
+    assert.Equal(t, d.Pool.address, a)
+    assert.Equal(t, d.DHT.port, p)
+
+    // Test localhost only with localhost addr
+    c = NewConfig()
+    c.Daemon.LocalhostOnly = true
+    c.Daemon.Address = a
+    assert.NotPanics(t, func() { c.preprocess() })
+    d = c.preprocess()
+    assert.True(t, d.DHT.Disabled)
+    assert.Equal(t, d.Pool.address, a)
+
+    // Test localhost only with unassigned addr
+    c = NewConfig()
+    c.Daemon.LocalhostOnly = true
+    c.Daemon.Address = ""
+    assert.NotPanics(t, func() { c.preprocess() })
+    d = c.preprocess()
+    assert.True(t, IsLocalhost(d.Daemon.Address))
+    assert.True(t, IsLocalhost(d.Pool.address))
+
+    // Test localhost only with nonlocal addr
+    c = NewConfig()
+    c.Daemon.LocalhostOnly = true
+    c.Daemon.Address = "11.22.33.44"
+    assert.Panics(t, func() { c.preprocess() })
+
+    // Test disable networking disables all
+    c = NewConfig()
+    c.Daemon.DisableNetworking = true
+    d = c.preprocess()
+    assert.True(t, d.Daemon.DisableNetworking)
+    assert.True(t, d.Daemon.DisableOutgoingConnections)
+    assert.True(t, d.Daemon.DisableIncomingConnections)
+    assert.True(t, d.DHT.Disabled)
+    assert.True(t, d.Peers.Disabled)
+
+    // Test coverage for logging statements
+    c = NewConfig()
+    c.Daemon.DisableNetworking = false
+    c.Daemon.DisableIncomingConnections = true
+    c.Daemon.DisableOutgoingConnections = true
+    assert.NotPanics(t, func() { c.preprocess() })
+}
+
 func TestGetListenPort(t *testing.T) {
     d := newDefaultDaemon()
     // No connectionMirror found
@@ -69,6 +123,40 @@ func setupDaemonLoop() (*Daemon, chan int) {
     d := newDefaultDaemon()
     quit := make(chan int)
     return d, quit
+}
+
+func TestDaemonLoopDisabledPanics(t *testing.T) {
+    c := NewConfig()
+    c.Daemon.DisableNetworking = true
+    c.Visor.Disabled = true
+    d := NewDaemon(c)
+    quit := make(chan int)
+    done := make(chan bool)
+    panics := func() {
+        assert.Panics(t, func() { d.Start(quit) })
+        done <- true
+    }
+
+    d.onConnectEvent <- ConnectEvent{}
+    go panics()
+    <-done
+
+    d.connectionErrors <- ConnectionError{}
+    go panics()
+    <-done
+
+    d.DHT.DHT.PeersRequestResults <- make(map[dht.InfoHash][]string)
+    go panics()
+    <-done
+
+    d.Pool.Pool.DisconnectQueue <- gnet.DisconnectEvent{}
+    go panics()
+    <-done
+
+    d.messageEvents <- MessageEvent{}
+    go panics()
+    <-done
+    shutdown(d)
 }
 
 func TestDaemonLoopQuit(t *testing.T) {
@@ -171,11 +259,7 @@ func TestDaemonLoopDHTResults(t *testing.T) {
     shutdown(d)
 }
 
-// TODO -- how to test tickers?
-// TODO -- override rate to something very fast?
-
-func TestDaemonLoopDHTBootstrapTicker(t *testing.T) {
-    d, quit := setupDaemonLoop()
+func testDaemonLoopDHTBootstrapTicker(t *testing.T, d *Daemon, quit chan int) {
     d.DHT.Config.BootstrapRequestRate = time.Millisecond * 10
     go d.Start(quit)
     // Can't really test DHT internals, but we'll know if it crashes or not
@@ -187,15 +271,49 @@ func TestDaemonLoopDHTBootstrapTicker(t *testing.T) {
     shutdown(d)
 }
 
-func TestDaemonLoopBlacklistTicker(t *testing.T) {
+func TestDaemonLoopDHTBootstrapTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
+    testDaemonLoopDHTBootstrapTicker(t, d, quit)
+}
+
+func TestDaemonLoopDHTBootstrapTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.DHT.Config.Disabled = true
+    testDaemonLoopDHTBootstrapTicker(t, d, quit)
+}
+
+func testDaemonLoopBlacklistTicker(t *testing.T, d *Daemon, quit chan int,
+    count int) {
     assert.Equal(t, len(d.Peers.Peers.Blacklist), 0)
     d.Peers.Peers.AddBlacklistEntry(addr, time.Millisecond)
     assert.Equal(t, len(d.Peers.Peers.Blacklist), 1)
     d.Peers.Config.UpdateBlacklistRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
-    assert.Equal(t, len(d.Peers.Peers.Blacklist), 0)
+    assert.Equal(t, len(d.Peers.Peers.Blacklist), count)
+    quit <- 1
+    wait()
+    shutdown(d)
+}
+
+func TestDaemonLoopBlacklistTicker(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    testDaemonLoopBlacklistTicker(t, d, quit, 0)
+}
+
+func TestDaemonLoopBlacklistTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Peers.Config.Disabled = true
+    testDaemonLoopBlacklistTicker(t, d, quit, 1)
+}
+
+func testDaemonLoopCullInvalidTicker(t *testing.T, d *Daemon, quit chan int,
+    count int) {
+    d.expectingIntroductions[addr] = time.Now().Add(-time.Hour)
+    d.Config.CullInvalidRate = time.Millisecond * 10
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(d.expectingIntroductions), count)
     quit <- 1
     wait()
     shutdown(d)
@@ -203,18 +321,17 @@ func TestDaemonLoopBlacklistTicker(t *testing.T) {
 
 func TestDaemonLoopCullInvalidTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
-    d.expectingIntroductions[addr] = time.Now().Add(-time.Hour)
-    d.Config.CullInvalidRate = time.Millisecond * 10
-    go d.Start(quit)
-    time.Sleep(time.Millisecond * 15)
-    assert.Equal(t, len(d.expectingIntroductions), 0)
-    quit <- 1
-    wait()
-    shutdown(d)
+    testDaemonLoopCullInvalidTicker(t, d, quit, 0)
 }
 
-func TestDaemonLoopRequestPeersTicker(t *testing.T) {
+func TestDaemonLoopCullInvalidTickerDisabled(t *testing.T) {
     d, quit := setupDaemonLoop()
+    d.Config.DisableNetworking = true
+    testDaemonLoopCullInvalidTicker(t, d, quit, 1)
+}
+
+func testDaemonLoopRequestPeersTicker(t *testing.T, d *Daemon, quit chan int,
+    sent bool) {
     c := gnetConnection(addr)
     d.Pool.Pool.Pool[1] = c
     d.Pool.Pool.Addresses[c.Addr()] = c
@@ -222,7 +339,46 @@ func TestDaemonLoopRequestPeersTicker(t *testing.T) {
     d.Peers.Config.RequestRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
-    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    if sent {
+        assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    } else {
+        assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    }
+    quit <- 1
+    wait()
+    shutdown(d)
+}
+
+func TestDaemonLoopRequestPeersTicker(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    testDaemonLoopRequestPeersTicker(t, d, quit, true)
+}
+
+func TestDaemonLoopRequestPeersTickerFull(t *testing.T) {
+    cfg := NewConfig()
+    cfg.Visor.Disabled = true
+    cfg.Peers.Max = 1
+    d := NewDaemon(cfg)
+    d.Peers.Peers.AddPeer(addr)
+    quit := make(chan int)
+    testDaemonLoopRequestPeersTicker(t, d, quit, false)
+}
+
+func TestDaemonLoopRequestPeersTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Peers.Config.Disabled = true
+    testDaemonLoopRequestPeersTicker(t, d, quit, false)
+}
+
+func testDaemonLoopClearOldPeersTicker(t *testing.T, d *Daemon, quit chan int,
+    count int) {
+    p := pex.NewPeer(addr)
+    p.LastSeen = time.Unix(0, 0)
+    d.Peers.Peers.Peerlist[addr] = p
+    d.Peers.Config.CullRate = time.Millisecond * 10
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), count)
     quit <- 1
     wait()
     shutdown(d)
@@ -230,13 +386,24 @@ func TestDaemonLoopRequestPeersTicker(t *testing.T) {
 
 func TestDaemonLoopClearOldPeersTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
-    p := pex.NewPeer(addr)
-    p.LastSeen = time.Unix(0, 0)
-    d.Peers.Peers.Peerlist[addr] = p
-    d.Peers.Config.CullRate = time.Millisecond * 10
+    testDaemonLoopClearOldPeersTicker(t, d, quit, 0)
+}
+
+func TestDaemonLoopClearOldPeersTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Peers.Config.Disabled = true
+    testDaemonLoopClearOldPeersTicker(t, d, quit, 1)
+}
+
+func testDaemonLoopClearStaleConnectionsTicker(t *testing.T, d *Daemon,
+    quit chan int, poolCount int) {
+    c := gnetConnection(addr)
+    c.LastReceived = time.Unix(0, 0)
+    d.Pool.Pool.Pool[c.Id] = c
+    d.Pool.Config.ClearStaleRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
-    assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
+    assert.Equal(t, len(d.Pool.Pool.Pool), poolCount)
     quit <- 1
     wait()
     shutdown(d)
@@ -244,13 +411,28 @@ func TestDaemonLoopClearOldPeersTicker(t *testing.T) {
 
 func TestDaemonLoopClearStaleConnectionsTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
+    testDaemonLoopClearStaleConnectionsTicker(t, d, quit, 0)
+}
+
+func TestDaemonLoopClearStaleConnectionsTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.DisableNetworking = true
+    testDaemonLoopClearStaleConnectionsTicker(t, d, quit, 1)
+}
+
+func testDaemonLoopPingCheckTicker(t *testing.T, d *Daemon, quit chan int,
+    sent bool) {
     c := gnetConnection(addr)
-    c.LastReceived = time.Unix(0, 0)
+    c.LastSent = time.Unix(0, 0)
     d.Pool.Pool.Pool[c.Id] = c
-    d.Pool.Config.ClearStaleRate = time.Millisecond * 10
+    d.Pool.Config.IdleCheckRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
-    assert.Equal(t, len(d.Pool.Pool.Pool), 0)
+    if sent {
+        assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    } else {
+        assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    }
     quit <- 1
     wait()
     shutdown(d)
@@ -258,13 +440,25 @@ func TestDaemonLoopClearStaleConnectionsTicker(t *testing.T) {
 
 func TestDaemonLoopPingCheckTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
-    c := gnetConnection(addr)
-    c.LastSent = time.Unix(0, 0)
-    d.Pool.Pool.Pool[c.Id] = c
-    d.Pool.Config.IdleCheckRate = time.Millisecond * 10
+    testDaemonLoopPingCheckTicker(t, d, quit, true)
+}
+
+func TestDaemonLoopPingCheckTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.DisableNetworking = true
+    testDaemonLoopPingCheckTicker(t, d, quit, false)
+}
+
+func testDaemonLoopOutgoingConnectionsTicker(t *testing.T, d *Daemon,
+    quit chan int, peerCount int) {
+    d.Pool.Pool.Config.DialTimeout = 1 // nanosecond
+    d.Config.OutgoingRate = time.Millisecond * 10
+    d.Peers.Peers.AddPeer(addr)
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
-    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    // Should have made a connection attempt, timed out, put an error
+    // the queue, handled by d.Run, resulting in the peer being removed
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), peerCount)
     quit <- 1
     wait()
     shutdown(d)
@@ -272,21 +466,29 @@ func TestDaemonLoopPingCheckTicker(t *testing.T) {
 
 func TestDaemonLoopOutgoingConnectionsTicker(t *testing.T) {
     d, quit := setupDaemonLoop()
-    d.Pool.Pool.Config.DialTimeout = 1 // nanosecond
-    d.Peers.Peers.AddPeer(addr)
-    d.Config.OutgoingRate = time.Millisecond * 10
-    go d.Start(quit)
-    time.Sleep(time.Millisecond * 15)
-    // Should have made a connection attempt, timed out, put an error
-    // the queue, handled by d.Run, resulting in the peer being removed
-    assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
-    quit <- 1
-    wait()
-    shutdown(d)
+    testDaemonLoopOutgoingConnectionsTicker(t, d, quit, 0)
 }
 
-func TestDaemonLoopMessageHandlingTicker(t *testing.T) {
+func TestDaemonLoopOutgoingConnectionsTickerDisabled(t *testing.T) {
     d, quit := setupDaemonLoop()
+    d.Config.DisableOutgoingConnections = true
+    testDaemonLoopOutgoingConnectionsTicker(t, d, quit, 1)
+}
+
+func TestDaemonLoopOutgoingConnectionsTickerOutgoingMax(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.OutgoingMax = 0
+    testDaemonLoopOutgoingConnectionsTicker(t, d, quit, 1)
+}
+
+func TestDaemonLoopOutgoingConnectionsTickerPendingMax(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.PendingMax = 0
+    testDaemonLoopOutgoingConnectionsTicker(t, d, quit, 1)
+}
+
+func testDaemonLoopMessageHandlingTicker(t *testing.T, d *Daemon, 
+    quit chan int) {
     d.Pool.Config.MessageHandlingRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
@@ -294,6 +496,17 @@ func TestDaemonLoopMessageHandlingTicker(t *testing.T) {
     quit <- 1
     wait()
     shutdown(d)
+}
+
+func TestDaemonLoopMessageHandlingTickerD(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    testDaemonLoopMessageHandlingTicker(t, d, quit)
+}
+
+func TestDaemonLoopMessageHandlingTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.DisableNetworking = true
+    testDaemonLoopMessageHandlingTicker(t, d, quit)
 }
 
 func TestRequestPeers(t *testing.T) {
@@ -755,11 +968,11 @@ func TestIPCountMaxed(t *testing.T) {
     d := newDefaultDaemon()
     assert.Equal(t, d.ipCounts[addrIP], 0)
     d.ipCounts[addrIP] = d.Config.IPCountsMax
-    assert.True(t, d.ipCountMaxed(addrIP))
+    assert.True(t, d.ipCountMaxed(addr))
     d.ipCounts[addrIP] = 1
-    assert.False(t, d.ipCountMaxed(addrIP))
+    assert.False(t, d.ipCountMaxed(addr))
     delete(d.ipCounts, addrIP)
-    assert.False(t, d.ipCountMaxed(addrIP))
+    assert.False(t, d.ipCountMaxed(addr))
     shutdown(d)
 }
 

@@ -11,8 +11,9 @@ import (
 )
 
 var (
-    logger      = logging.MustGetLogger("skycoin.gui")
-    resources   = []string{"js", "css", "lib", "partials", "img", "assets"}
+    logger    = logging.MustGetLogger("skycoin.gui")
+    resources = []string{"js", "css", "lib", "partials", "img", "assets",
+        "fonts", "bower_components"}
     resourceDir = "app/"
     indexPage   = "index.html"
 )

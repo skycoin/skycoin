@@ -6,7 +6,7 @@ import (
     "net/http"
 )
 
-func connectionHandler(rpc *daemon.RPC) HTTPHandler {
+func connectionHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         if addr := r.FormValue("addr"); addr == "" {
             Error404(w)
@@ -16,7 +16,7 @@ func connectionHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func connectionsHandler(rpc *daemon.RPC) HTTPHandler {
+func connectionsHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         SendOr404(w, rpc.GetConnections())
     }

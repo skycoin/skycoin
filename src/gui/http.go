@@ -18,8 +18,6 @@ var (
     indexPage   = "index.html"
 )
 
-type HTTPHandler func(w http.ResponseWriter, r *http.Request)
-
 // Begins listening on the node-webkit localhost
 func LaunchGUI(daemon *daemon.Daemon) {
     // Create a link back to node-webkit using the environment variable
@@ -68,9 +66,10 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
 // Creates an http.ServeMux with handlers registered
 func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
     mux := http.NewServeMux()
+    mux.HandleFunc("/", newIndexHandler(appLoc))
     for _, s := range resources {
         route := fmt.Sprintf("/%s/", s)
-        mux.HandleFunc(route, newStaticHandler(appLoc))
+        mux.Handle(route, http.FileServer(http.Dir(appLoc)))
     }
     // Wallet interface
     RegisterWalletHandlers(mux, daemon.RPC)
@@ -78,28 +77,19 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
     RegisterBlockchainHandlers(mux, daemon.RPC)
     // Network stats interface
     RegisterNetworkHandlers(mux, daemon.RPC)
-    mux.HandleFunc("/", newIndexHandler(appLoc))
     return mux
 }
 
-// Returns a func(http.ResponseWriter, *http.Request) for index.html,
-// where index.html is in appLoc
-func newIndexHandler(appLoc string) func(http.ResponseWriter, *http.Request) {
+// Returns a http.HandlerFunc for index.html, where index.html is in appLoc
+func newIndexHandler(appLoc string) http.HandlerFunc {
     // Serves the main page
     return func(w http.ResponseWriter, r *http.Request) {
         page := filepath.Join(appLoc, indexPage)
         logger.Debug("Serving index page: %s", page)
-        http.ServeFile(w, r, page)
-    }
-}
-
-// Returns a func(http.ResponseWriter, *http.Request) for files in
-// appLoc/static/
-func newStaticHandler(appLoc string) func(http.ResponseWriter, *http.Request) {
-    // Serves files out of ./static/
-    return func(w http.ResponseWriter, r *http.Request) {
-        fp := filepath.Join(appLoc, r.URL.Path[1:])
-        logger.Debug("Serving static file: %s", fp)
-        http.ServeFile(w, r, fp)
+        if r.URL.Path == "/" {
+            http.ServeFile(w, r, page)
+        } else {
+            Error404(w)
+        }
     }
 }

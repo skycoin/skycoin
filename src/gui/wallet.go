@@ -9,7 +9,7 @@ import (
     "strconv"
 )
 
-func walletBalanceHandler(rpc *daemon.RPC) HTTPHandler {
+func walletBalanceHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         saddr := r.FormValue("addr")
         var m interface{}
@@ -27,7 +27,7 @@ func walletBalanceHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
+func walletSpendHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         sdst := r.FormValue("dst")
         if sdst == "" {
@@ -61,7 +61,7 @@ func walletSpendHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func walletSaveHandler(rpc *daemon.RPC) HTTPHandler {
+func walletSaveHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         err := rpc.SaveWallet()
         if err != nil {
@@ -70,19 +70,19 @@ func walletSaveHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func walletCreateAddressHandler(rpc *daemon.RPC) HTTPHandler {
+func walletCreateAddressHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         SendOr404(w, rpc.CreateAddress())
     }
 }
 
-func walletCreateHandler(rpc *daemon.RPC) HTTPHandler {
+func walletCreateHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         // TODO -- not clear to how to handle multiple wallets yet
     }
 }
 
-func walletHandler(rpc *daemon.RPC) HTTPHandler {
+func walletHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         SendOr404(w, rpc.GetWallet())
     }

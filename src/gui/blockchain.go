@@ -8,13 +8,13 @@ import (
     "strconv"
 )
 
-func blockchainHandler(rpc *daemon.RPC) HTTPHandler {
+func blockchainHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         SendOr404(w, rpc.GetBlockchainMetadata())
     }
 }
 
-func blockchainBlockHandler(rpc *daemon.RPC) HTTPHandler {
+func blockchainBlockHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         sseq := r.FormValue("seq")
         seq, err := strconv.ParseUint(sseq, 10, 64)
@@ -26,7 +26,7 @@ func blockchainBlockHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func blockchainBlocksHandler(rpc *daemon.RPC) HTTPHandler {
+func blockchainBlocksHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         sstart := r.FormValue("start")
         start, err := strconv.ParseUint(sstart, 10, 64)
@@ -44,7 +44,7 @@ func blockchainBlocksHandler(rpc *daemon.RPC) HTTPHandler {
     }
 }
 
-func blockchainProgressHandler(rpc *daemon.RPC) HTTPHandler {
+func blockchainProgressHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         SendOr404(w, rpc.GetBlockchainProgress())
     }

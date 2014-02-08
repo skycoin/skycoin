@@ -68,7 +68,6 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
 // Creates an http.ServeMux with handlers registered
 func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
     mux := http.NewServeMux()
-    mux.HandleFunc("/", newIndexHandler(appLoc))
     for _, s := range resources {
         route := fmt.Sprintf("/%s/", s)
         mux.HandleFunc(route, newStaticHandler(appLoc))
@@ -79,6 +78,7 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
     RegisterBlockchainHandlers(mux, daemon.RPC)
     // Network stats interface
     RegisterNetworkHandlers(mux, daemon.RPC)
+    mux.HandleFunc("/", newIndexHandler(appLoc))
     return mux
 }
 
@@ -88,7 +88,7 @@ func newIndexHandler(appLoc string) func(http.ResponseWriter, *http.Request) {
     // Serves the main page
     return func(w http.ResponseWriter, r *http.Request) {
         page := filepath.Join(appLoc, indexPage)
-        logger.Debug("Serving %s", page)
+        logger.Debug("Serving index page: %s", page)
         http.ServeFile(w, r, page)
     }
 }
@@ -99,7 +99,7 @@ func newStaticHandler(appLoc string) func(http.ResponseWriter, *http.Request) {
     // Serves files out of ./static/
     return func(w http.ResponseWriter, r *http.Request) {
         fp := filepath.Join(appLoc, r.URL.Path[1:])
-        logger.Debug("Serving %s", fp)
+        logger.Debug("Serving static file: %s", fp)
         http.ServeFile(w, r, fp)
     }
 }

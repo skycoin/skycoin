@@ -50,10 +50,14 @@ Skycoin was designed to eliminate mining completely and eliminate the problems i
 Current Status
 --------------
 
-* Peering infrastucture complete.  Clients are able to connect to each other, if configured appropriately.
-* Blockchain v1 functioning
-* Transactions are not networked.
-* JSON RPC for wallet
+* Everything but Obelisk works
+* Crypto is done
+* Blockchain is done
+* Networking is done
+* Wallet is working with on going improvements
+
+* Working on Obelisk
+* Working on Darknet
 
 Tests
 -----

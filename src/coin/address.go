@@ -9,8 +9,8 @@ import (
 
 var (
     addressVersions = map[string]byte{
-        "main": 0x0F,
-        "test": 0x1F,
+        "main": 0x0F, //main network
+        "test": 0x1F, //test network
     }
     // Address version is a global default version used for all address
     // creation and checking

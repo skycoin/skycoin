@@ -134,4 +134,55 @@ func TestUnconfirmedRefreshTicker(t *testing.T) {
     assert.Equal(t, len(d.Visor.Visor.UnconfirmedTxns.Txns), 0)
 }
 
+func TestBlocksRequestTicker(t *testing.T) {
+    vc, _ := setupVisor()
+    vc.BlocksRequestRate = time.Millisecond * 10
+    d, quit := newVisorDaemon(vc)
+    gc := gnetConnection(addr)
+    d.Pool.Pool.Pool[gc.Id] = gc
+    d.Pool.Pool.Addresses[gc.Addr()] = gc
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    closeDaemon(d, quit)
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+}
+
+func TestBlocksAnnounceTicker(t *testing.T) {
+    vc, _ := setupVisor()
+    vc.BlocksAnnounceRate = time.Millisecond * 10
+    d, quit := newVisorDaemon(vc)
+    gc := gnetConnection(addr)
+    d.Pool.Pool.Pool[gc.Id] = gc
+    d.Pool.Pool.Addresses[gc.Addr()] = gc
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    closeDaemon(d, quit)
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+}
+
+func TestTransactionRebroadcastTicker(t *testing.T) {
+    vc, _ := setupVisor()
+    vc.TransactionRebroadcastRate = time.Millisecond * 10
+    d, quit := newVisorDaemon(vc)
+    gc := gnetConnection(addr)
+    d.Pool.Pool.Pool[gc.Id] = gc
+    d.Pool.Pool.Addresses[gc.Addr()] = gc
+    ut := visor.UnconfirmedTxn{}
+    ut.Txn = coin.Transaction{}
+    ut.Received = time.Now().UTC()
+    ut.Checked = ut.Received
+    ut.Announced = ut.Received
+    ut.IsOurSpend = true
+    ut.IsOurReceive = true
+    d.Visor.Visor.UnconfirmedTxns.Txns[ut.Txn.Header.Hash] = ut
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    time.Sleep(time.Millisecond * 15)
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    closeDaemon(d, quit)
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+}
+
 /* Tests for daemon.Visor */

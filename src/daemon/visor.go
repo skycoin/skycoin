@@ -163,8 +163,12 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     if self.Config.Disabled {
         return
     }
-    since := (self.Config.TransactionRebroadcastRate * 2) - (time.Second * 30)
+    since := self.Config.TransactionRebroadcastRate * 2
+    since = (since * 9) / 10
     txns := self.Visor.UnconfirmedTxns.GetOwnedTransactionsSince(since)
+    if len(txns) == 0 {
+        return
+    }
     hashes := make([]coin.SHA256, len(txns))
     for _, tx := range txns {
         hashes = append(hashes, tx.Txn.Header.Hash)

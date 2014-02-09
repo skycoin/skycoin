@@ -41,7 +41,7 @@
               <td><div id="overview-wallet-balance">Address: </div></td><td>{{address.address}}</td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance.coins | number}} SKY</td>
+              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance | number}} SKY</td>
             </tr>
             <tr>
               <td colspan="2">
@@ -76,13 +76,28 @@
 
           <table id="send-table">
             <tr>
-              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input id="send_pay_to" type="text" ng-model="spend.address"  /></td>
+              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input ng-disabled="sendDisable" id="send_pay_to" type="text" ng-model="spend.address"  /></td>
             </tr>
+            <!--<tr>
+              <td class="send-pay-col1"><label for="send_label">Label</label></td><td><input ng-disabled="sendDisable" id="send_label" type="text" ng-model="spend.label"  /></td>
+            </tr> -->
             <tr>
-              <td class="send-pay-col1"><label for="send_label">Label</label></td><td><input id="send_label" type="text" ng-model="spend.label"  /></td>
+              <td class="send-pay-col1"><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-disabled="sendDisable" ng-model="spend.amount" /> SKY <button type="button" class="btn btn-default" ng-click="ready()">Ready</button> <button ng-disabled="readyDisable" type="button" class="btn btn-default" ng-click="spend(spend)">Send</button></td>
             </tr>
-            <tr>
-              <td class="send-pay-col1"><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-model="spend.amount" /> SKY <button type="button" class="btn btn-default">Ready</button> <button type="button" class="btn btn-default" ng-click="spend(spend)">Send</button></td>
+          </table>
+          <table id="pending-table">
+            <tr class="dark-row">
+              <td><i class="fa fa-check"></i> Pending</td>
+
+              <td>Address
+              </td>
+              <td>Amount
+              </td>
+              <!--<td>Label
+              </td> -->
+            </tr>
+            <tr ng-repeat="transaction in pendingTable">
+              <td>{{transaction.complete}}</td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td>
             </tr>
           </table>
 
@@ -140,8 +155,8 @@
               <td>Label
               </td>
             </tr>
-            <tr>
-              <td></td><td></td><td></td><td></td><td></td><td></td>
+            <tr ng-repeat="transaction in historyTable">
+              <td></td><td></td><td></td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td><td></td>
             </tr>
           </table>
         </div>
@@ -240,7 +255,7 @@
     <div ng-if="progress>100" class="message">Downloading Blockchain</div>
     <progressbar  ng-if="progress>100" class="progress-striped active" value="progress" type="info"></progressbar>
     <div  ng-if="progress>100" class="percent">{{progress}}%</div>
-    <div class="signal"><i class="fa fa-signal green"></i></div>
+    <!--<div class="signal"><i class="fa fa-signal green"></i></div>-->
   </div>
   <div ng-include="" src="'/partials/qr-modal.html'"></div>
 

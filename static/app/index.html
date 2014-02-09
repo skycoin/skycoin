@@ -237,9 +237,9 @@
   <div ng-view></div>
 
   <div id="sky-footer">
-    <div ng-if="{{progress>100}}" class="message">Downloading Blockchain</div>
-    <progressbar  ng-if="{{progress>100}}" class="progress-striped active" value="progress" type="info"></progressbar>
-    <div  ng-if="{{progress>100}}" class="percent">{{progress}}%</div>
+    <div ng-if="progress>100" class="message">Downloading Blockchain</div>
+    <progressbar  ng-if="progress>100" class="progress-striped active" value="progress" type="info"></progressbar>
+    <div  ng-if="progress>100" class="percent">{{progress}}%</div>
     <div class="signal"><i class="fa fa-signal green"></i></div>
   </div>
   <div ng-include="" src="'/partials/qr-modal.html'"></div>

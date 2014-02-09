@@ -4,8 +4,8 @@
 
 angular.module('skycoin.controllers', [])
 
-.controller('mainCtrl', ['$scope','$http', '$modal', '$log',
-  function($scope,$http,$modal,$log) {
+.controller('mainCtrl', ['$scope','$http', '$modal', '$log', '$timeout',
+  function($scope,$http,$modal,$log,$timeout) {
   	$scope.addresses = [];
 
 
@@ -16,7 +16,15 @@ angular.module('skycoin.controllers', [])
       });
 	 }
 
+	$scope.refreshBalances = function() {
+	    $scope.loadWallets();
+	    $timeout($scope.refreshBalances, 15000);
+    }
+
 	 $scope.getProgress();
+	 $timeout($scope.refreshBalances, 15000);
+
+
 
 
 

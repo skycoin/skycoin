@@ -29,6 +29,11 @@ func TestInitPeers(t *testing.T) {
     assert.NotPanics(t, func() { peers.Init() })
     assert.Equal(t, len(peers.Peers.Peerlist), 1)
     assert.NotNil(t, peers.Peers.Peerlist[addr])
+    assert.False(t, peers.Peers.AllowLocalhost)
+
+    peers.Config.AllowLocalhost = true
+    assert.NotPanics(t, func() { peers.Init() })
+    assert.True(t, peers.Peers.AllowLocalhost)
 }
 
 func TestShutdownPeers(t *testing.T) {
@@ -36,6 +41,19 @@ func TestShutdownPeers(t *testing.T) {
     peers := setupPeersShutdown(t)
     peers.Shutdown()
     confirmPeersShutdown(t)
+}
+
+func TestShutdownPeersNil(t *testing.T) {
+    p := NewPeers(NewPeersConfig())
+    assert.Nil(t, p.Peers)
+    assert.Nil(t, p.Shutdown())
+}
+
+func TestRequestPeers(t *testing.T) {
+    c := NewPeersConfig()
+    c.Disabled = true
+    p := NewPeers(c)
+    assert.NotPanics(t, func() { p.requestPeers(nil) })
 }
 
 func setupPeersShutdown(t *testing.T) *Peers {

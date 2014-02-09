@@ -2,62 +2,82 @@ package daemon
 
 import (
     "errors"
+    "fmt"
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
-    "log"
+    "sort"
     "time"
 )
 
 type VisorConfig struct {
     Config visor.VisorConfig
+    // Disabled the visor completely
+    Disabled bool
     // Location of master keys
     MasterKeysFile string
-    // Master public/secret key and genesis address
-    MasterKeys visor.WalletEntry
     // How often to request blocks from peers
     BlocksRequestRate time.Duration
     // How often to announce our blocks to peers
     BlocksAnnounceRate time.Duration
+    // How many blocks to respond with to a GetBlocksMessage
+    BlocksResponseCount uint64
+    // How often to rebroadcast txns that we are a party to
+    TransactionRebroadcastRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:             visor.NewVisorConfig(),
-        MasterKeysFile:     "",
-        MasterKeys:         visor.WalletEntry{},
-        BlocksRequestRate:  time.Minute * 15,
-        BlocksAnnounceRate: time.Minute * 30,
+        Config:                     visor.NewVisorConfig(),
+        Disabled:                   false,
+        MasterKeysFile:             "",
+        BlocksRequestRate:          time.Minute * 5,
+        BlocksAnnounceRate:         time.Minute * 15,
+        BlocksResponseCount:        20,
+        TransactionRebroadcastRate: time.Minute * 5,
     }
 }
 
 func (self *VisorConfig) LoadMasterKeys() error {
-    keys, err := visor.LoadWalletEntry(self.MasterKeysFile)
+    if self.Disabled {
+        return nil
+    }
+    keys, err := visor.MustLoadWalletEntry(self.MasterKeysFile)
     if err != nil {
         return err
     }
-    if err := keys.Verify(); err != nil {
-        log.Panicf("Invalid master keys: %v", err)
-    }
-    self.MasterKeys = keys
+    self.Config.MasterKeys = keys
     return nil
 }
 
 type Visor struct {
     Config VisorConfig
     Visor  *visor.Visor
+    // Peer-reported blockchain length.  Use to estimate download progress
+    blockchainLengths map[string]uint64
 }
 
 func NewVisor(c VisorConfig) *Visor {
-    v := visor.NewVisor(c.Config, c.MasterKeys)
-    return &Visor{
-        Config: c,
-        Visor:  v,
+    var v *visor.Visor = nil
+    if !c.Disabled {
+        v = visor.NewVisor(c.Config)
     }
+    return &Visor{
+        Config:            c,
+        Visor:             v,
+        blockchainLengths: make(map[string]uint64),
+    }
+}
+
+func (self *Visor) RemoveConnection(addr string) {
+    delete(self.blockchainLengths, addr)
 }
 
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
+    if self.Config.Disabled {
+        return
+    }
     // Save the wallet, as long as we're not a master chain.  Master chains
     // don't have a wallet, they have a single genesis wallet entry which is
     // loaded in a different path
@@ -77,10 +97,28 @@ func (self *Visor) Shutdown() {
     } else {
         logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
     }
+    bsFile := self.Config.Config.BlockSigsFile
+    err = self.Visor.SaveBlockSigs()
+    if err == nil {
+        logger.Info("Saved block sigs to \"%s\"", bsFile)
+    } else {
+        logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
+    }
+}
+
+// Checks unconfirmed txns against the blockchain and purges ones too old
+func (self *Visor) RefreshUnconfirmed() {
+    if self.Config.Disabled {
+        return
+    }
+    self.Visor.RefreshUnconfirmed()
 }
 
 // Sends a GetBlocksMessage to all connections
 func (self *Visor) RequestBlocks(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     for a, _ := range errs {
@@ -90,6 +128,9 @@ func (self *Visor) RequestBlocks(pool *Pool) {
 
 // Sends an AnnounceBlocksMessage to all connections
 func (self *Visor) AnnounceBlocks(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
     m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     for a, _ := range errs {
@@ -98,65 +139,129 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
 }
 
 // Sends a GetBlocksMessage to one connection
-func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) {
+func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) error {
+    if self.Config.Disabled {
+        return nil
+    }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
     c := pool.Pool.Addresses[addr]
     if c == nil {
-        logger.Warning("Tried to send GetBlocksMessage to %s, but we're "+
+        return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
             "not connected", addr)
-        return
     }
     err := pool.Pool.Dispatcher.SendMessage(c, m)
-    if err != nil {
-        logger.Error("Failed to send GetBlocksMessage to %s\n", c.Addr())
+    if err == nil {
+        return nil
+    } else {
+        return fmt.Errorf("Failed to send GetBlocksMessage to %s: %v\n",
+            c.Addr(), err)
+    }
+}
+
+// Broadcasts any txn that we are a party to
+func (self *Visor) BroadcastOurTransactions(pool *Pool) {
+    if self.Config.Disabled {
+        return
+    }
+    since := (self.Config.TransactionRebroadcastRate * 2) - (time.Second * 30)
+    txns := self.Visor.UnconfirmedTxns.GetOwnedTransactionsSince(since)
+    hashes := make([]coin.SHA256, len(txns))
+    for _, tx := range txns {
+        hashes = append(hashes, tx.Txn.Header.Hash)
+    }
+    m := NewAnnounceTxnsMessages(hashes)
+    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
+    if len(errs) != len(pool.Pool.Pool) {
+        now := time.Now().UTC()
+        for _, tx := range txns {
+            tx.Announced = now
+        }
     }
 }
 
 // Sends a signed block to all connections
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
+    if self.Config.Disabled {
+        return errors.New("Visor disabled")
+    }
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        return errors.New("Failed to give blocks to anyone")
-    } else {
-        return nil
+        logger.Warning("Failed to give blocks to anyone")
     }
+    return nil
 }
 
 // Broadcasts a single transaction to all peers
 func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
+    if self.Config.Disabled {
+        return errors.New("Visor disabled")
+    }
     m := NewGiveTxnsMessage([]coin.Transaction{t})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        return errors.New("Failed to give transaction to anyone")
-    } else {
-        return nil
+        logger.Warning("Failed to give transaction to anyone")
+        return errors.New("Did not broadcast to anyone")
     }
+    return nil
 }
 
 // Creates a spend transaction and broadcasts it to the network
 func (self *Visor) Spend(amt visor.Balance, fee uint64,
     dest coin.Address, pool *Pool) (coin.Transaction, error) {
+    if self.Config.Disabled {
+        return coin.Transaction{}, errors.New("Visor disabled")
+    }
     txn, err := self.Visor.Spend(amt, fee, dest)
     if err != nil {
         return txn, err
     }
-    err = self.Visor.RecordTxn(txn)
-    if err != nil {
-        return txn, err
-    }
-    err = self.broadcastTransaction(txn, pool)
+    didAnnounce := self.broadcastTransaction(txn, pool) == nil
+    err = self.Visor.RecordTxn(txn, didAnnounce)
     return txn, err
 }
 
 // Creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a master chain.
 func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
+    if self.Config.Disabled {
+        return errors.New("Visor disabled")
+    }
     sb, err := self.Visor.CreateBlock()
     if err == nil {
         return self.broadcastBlock(sb, pool)
     } else {
         return err
+    }
+}
+
+// Saves a peer-reported blockchain length
+func (self *Visor) recordBlockchainLength(addr string, bkSeq uint64) {
+    self.blockchainLengths[addr] = bkSeq
+}
+
+// Returns the blockchain length estimated from peer reports
+func (self *Visor) EstimateBlockchainLength() uint64 {
+    maxSeq := self.Visor.MostRecentBkSeq() + 1
+    if len(self.blockchainLengths) == 0 {
+        return maxSeq
+    }
+    lengths := make(BlockchainLengths, 0, len(self.blockchainLengths))
+    for _, seq := range self.blockchainLengths {
+        lengths = append(lengths, seq)
+    }
+    sort.Sort(lengths)
+    median := len(lengths) / 2
+    var val uint64 = 0
+    if len(lengths)%2 == 0 {
+        val = (lengths[median] + lengths[median-1]) / 2
+    } else {
+        val = lengths[median]
+    }
+    if val < maxSeq {
+        return maxSeq
+    } else {
+        return val
     }
 }
 
@@ -184,8 +289,16 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
     // TODO -- we need the sig to be sent with the block, but only the master
     // can sign blocks.  Thus the sig needs to be stored with the block.
     // TODO -- move 20 to either Messages.Config or Visor.Config
-    blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock, 20)
-    if blocks == nil {
+    if d.Visor.Config.Disabled {
+        return
+    }
+    // Record this as this peer's highest block
+    d.Visor.recordBlockchainLength(self.c.Conn.Addr(), self.LastBlock)
+    // Fetch and return signed blocks since LastBlock
+    blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
+        d.Visor.Config.BlocksResponseCount)
+    logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
+    if len(blocks) == 0 {
         return
     }
     m := NewGiveBlocksMessage(blocks)
@@ -214,38 +327,33 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     if len(self.Blocks) == 0 {
         return
     }
     processed := 0
     for i, b := range self.Blocks {
         err := d.Visor.Visor.ExecuteSignedBlock(b)
-        if err != nil {
+        if err == nil {
+            logger.Debug("Added new block %d", b.Block.Header.BkSeq)
+        } else {
             logger.Info("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
+            break
         }
         processed = i + 1
     }
-
-    // Announce our new blocks to peers, if we got any
-    if processed > 0 {
-        m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-        errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
-        for a, _ := range errs {
-            logger.Warning("Failed to announce blocks to %s", a)
-        }
+    if processed == 0 {
+        return
     }
-
-    // Send a new GetBlocksMessage, in case we aren't finished yet
-    // This also helps in case we receive out of order - if we got blocks
-    // but couldn't insert them because they were not sequential for us,
-    // requesting the blocks will allow us to catch up
-    bkSeq := d.Visor.Visor.MostRecentBkSeq()
-    n := NewGetBlocksMessage(bkSeq)
-    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(n)
+    // Announce our new blocks to peers
+    m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
     for a, _ := range errs {
-        logger.Warning("Failed to send GetBlocksMessage to %s", a)
+        logger.Warning("Failed to announce blocks to %s", a)
     }
 }
 
@@ -269,6 +377,9 @@ func (self *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *AnnounceBlocksMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     bkSeq := d.Visor.Visor.MostRecentBkSeq()
     if bkSeq >= self.MaxBkSeq {
         return
@@ -299,12 +410,9 @@ func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *AnnounceTxnsMessage) Process(d *Daemon) {
-    // TODO
-    // check if we have these txns already
-    // look in unconfirmed pool
-    // look in Blockchain (need datastructure for blockchain)
-    // if we don't have these txns already, send a GetTxnsMessage
-
+    if d.Visor.Config.Disabled {
+        return
+    }
     unknown := d.Visor.Visor.UnconfirmedTxns.FilterKnown(self.Txns)
     if len(unknown) == 0 {
         return
@@ -335,6 +443,9 @@ func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GetTxnsMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
     // Locate all txns from the unconfirmed pool
     // reply to sender with GiveTxnsMessage
     known := d.Visor.Visor.UnconfirmedTxns.GetKnown(self.Txns)
@@ -367,11 +478,42 @@ func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveTxnsMessage) Process(d *Daemon) {
+    if d.Visor.Config.Disabled {
+        return
+    }
+    hashes := make([]coin.SHA256, 0, len(self.Txns))
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        err := d.Visor.Visor.RecordTxn(txn)
-        if err != nil {
+        err := d.Visor.Visor.RecordTxn(txn, false)
+        if err == nil {
+            hashes = append(hashes, txn.Header.Hash)
+        } else {
             logger.Warning("Failed to record txn: %v", err)
         }
     }
+    // Announce these transactions to peers
+    if len(hashes) != 0 {
+        now := time.Now().UTC()
+        m := NewAnnounceTxnsMessages(hashes)
+        errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
+        if len(errs) != len(d.Pool.Pool.Pool) {
+            for _, h := range hashes {
+                d.Visor.Visor.SetAnnounced(h, now)
+            }
+        }
+    }
+}
+
+type BlockchainLengths []uint64
+
+func (self BlockchainLengths) Len() int {
+    return len(self)
+}
+func (self BlockchainLengths) Swap(i, j int) {
+    t := self[i]
+    self[i] = self[j]
+    self[j] = t
+}
+func (self BlockchainLengths) Less(i, j int) bool {
+    return i < j
 }

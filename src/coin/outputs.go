@@ -85,7 +85,7 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 // Array of Outputs
 type UxArray []UxOut
 
-//HashArray returns array of hashes for the Ux in the UxArray
+//HashArray returns Array of hashes for the Ux in the UxArray
 func (self UxArray) HashArray() []SHA256 {
     hashes := make([]SHA256, len(self))
     for i, ux := range self {
@@ -134,29 +134,29 @@ func (self UxArray) Swap(i, j int) {
 type UnspentPool struct {
     Arr []UxOut
     // Points to a UxOut in Arr
-    Map map[SHA256]int `enc:"-"`
+    hashIndex map[SHA256]int `enc:"-"`
     // Total running hash
     XorHash SHA256 `enc:"-"`
 }
 
 func NewUnspentPool() UnspentPool {
     return UnspentPool{
-        Arr:     make([]UxOut, 0),
-        Map:     make(map[SHA256]int),
-        XorHash: SHA256{},
+        Arr:       make([]UxOut, 0),
+        hashIndex: make(map[SHA256]int),
+        XorHash:   SHA256{},
     }
 }
 
-// Reconstructs the indices from the underlying array
+// Reconstructs the indices from the underlying Array
 func (self *UnspentPool) Rebuild() {
-    self.Map = make(map[SHA256]int)
+    self.hashIndex = make(map[SHA256]int, len(self.Arr))
     self.XorHash = SHA256{}
     for i, ux := range self.Arr {
         h := ux.Hash()
-        self.Map[h] = i
+        self.hashIndex[h] = i
         self.XorHash = self.XorHash.Xor(h)
     }
-    if len(self.Map) != len(self.Arr) {
+    if len(self.hashIndex) != len(self.Arr) {
         log.Panic("Corrupt UnspentPool.Arr: contains duplicate UxOut")
     }
 }
@@ -166,14 +166,14 @@ func (self *UnspentPool) Add(ux UxOut) {
     index := len(self.Arr)
     h := ux.Hash()
     self.Arr = append(self.Arr, ux)
-    self.Map[h] = index
+    self.hashIndex[h] = index
     self.XorHash.Xor(h)
 }
 
 // Returns a UxOut by hash, and whether it actually exists (if it does not
 // exist, the map would return an empty UxOut)
 func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
-    i, ok := self.Map[h]
+    i, ok := self.hashIndex[h]
     if ok {
         return self.Arr[i], true
     } else {
@@ -183,42 +183,73 @@ func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
 
 // Returns true if an unspent exists for this hash
 func (self *UnspentPool) Has(h SHA256) bool {
-    _, ok := self.Map[h]
+    _, ok := self.hashIndex[h]
     return ok
+}
+
+// Removes an element from the Arr.  Does not touch the hashIndex or XorHash
+func (self *UnspentPool) delFromArray(index int) {
+    if index == len(self.Arr)-1 {
+        self.Arr = self.Arr[:index]
+    } else {
+        self.Arr = append(self.Arr[:index], self.Arr[index+1:]...)
+    }
+}
+
+// Removes a hash from the Arr and updates the XorHash. Returns the index of
+// the removed hash. If the hash is not found, returns -1.
+// The hashIndex needs to be updated sometime after calling this
+func (self *UnspentPool) del(h SHA256) int {
+    i, ok := self.hashIndex[h]
+    if !ok {
+        return -1
+    }
+    delete(self.hashIndex, h)
+    self.delFromArray(i)
+    self.XorHash.Xor(h)
+    return i
+}
+
+// Remove a hash at index.  Will crash if index is out of bounds.
+// The hashIndex needs to be updated sometime after calling this.
+func (self *UnspentPool) delAt(index int) {
+    h := self.Arr[index].Hash()
+    delete(self.hashIndex, h)
+    self.delFromArray(index)
+    self.XorHash.Xor(h)
+}
+
+// Updates the internal hashIndex indices after Arr has changed
+func (self *UnspentPool) updateIndices(startIndex int) {
+    for j := startIndex; j < len(self.Arr); j++ {
+        // TODO -- store the UxOut hash in its header
+        self.hashIndex[self.Arr[j].Hash()] = j
+    }
 }
 
 // Removes an unspent from the pool, by hash
 func (self *UnspentPool) Del(h SHA256) {
-    i, ok := self.Map[h]
-    if !ok {
-        return
+    if i := self.del(h); i >= 0 {
+        self.updateIndices(i)
     }
-    delete(self.Map, h)
-    self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
-    for j := i; j < len(self.Arr); j++ {
-        // TODO -- store the UxOut hash in its header
-        self.Map[self.Arr[j].Hash()] = j
-    }
-    self.XorHash.Xor(h)
 }
 
 // Delete multiple hashes in a batch
 func (self *UnspentPool) DelMultiple(hashes []SHA256) {
-    lowest := len(self.Arr)
+    indices := make([]int, 0, len(hashes))
     for _, h := range hashes {
-        i, ok := self.Map[h]
+        i, ok := self.hashIndex[h]
         if !ok {
             continue
         }
-        if i < lowest {
-            lowest = i
-        }
-        delete(self.Map, h)
-        self.Arr = append(self.Arr[:i], self.Arr[i+1:]...)
-        self.XorHash.Xor(h)
+        indices = append(indices, i)
     }
-    for j := lowest; j < len(self.Arr); j++ {
-        self.Map[self.Arr[j].Hash()] = j
+    sort.Sort(sort.Reverse(sort.IntSlice(indices)))
+    for _, i := range indices {
+        self.delAt(i)
+    }
+    if len(indices) > 0 {
+        self.updateIndices(indices[len(indices)-1])
     }
 }
 

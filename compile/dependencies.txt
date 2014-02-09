@@ -5,3 +5,4 @@ github.com/op/go-logging
 github.com/skycoin/gnet
 github.com/skycoin/pex
 github.com/stretchr/testify/assert
+github.com/skycoin/encoder

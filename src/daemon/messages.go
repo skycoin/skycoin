@@ -8,8 +8,6 @@ import (
     "github.com/skycoin/pex"
     "math/rand"
     "net"
-    "strconv"
-    "strings"
     "time"
 )
 
@@ -96,22 +94,16 @@ type IPAddr struct {
 // returned
 func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
     // TODO -- support ipv6
-    ipport := strings.Split(addr, ":")
-    if len(ipport) != 2 {
-        err = errors.New("Invalid ip:port string")
+    ips, port, err := SplitAddr(addr)
+    if err != nil {
         return
     }
-    ipb := net.ParseIP(ipport[0]).To4()
+    ipb := net.ParseIP(ips).To4()
     if ipb == nil {
         err = errors.New("Ignoring IPv6 address")
         return
     }
     ip := binary.BigEndian.Uint32(ipb)
-    port, err := strconv.ParseUint(ipport[1], 10, 16)
-    if err != nil {
-        err = errors.New("Invalid port")
-        return
-    }
     ipaddr.IP = ip
     ipaddr.Port = uint16(port)
     return
@@ -143,8 +135,12 @@ func NewGetPeersMessage() *GetPeersMessage {
 
 func (self *GetPeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
+    d := daemon.(*Daemon)
+    if d.Peers.Config.Disabled {
+        return nil
+    }
     self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+    return d.recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were requested
@@ -195,8 +191,12 @@ func (self *GivePeersMessage) GetPeers() []string {
 
 func (self *GivePeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
+    d := daemon.(*Daemon)
+    if d.Peers.Config.Disabled {
+        return nil
+    }
     self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+    return d.recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were received
@@ -281,8 +281,8 @@ func (self *IntroductionMessage) Process(d *Daemon) {
     }
     // Add the remote peer with their chosen listening port
     a := self.c.Conn.Addr()
-    ipport := strings.Split(a, ":")
-    if len(ipport) != 2 {
+    ip, _, err := SplitAddr(a)
+    if err != nil {
         // This should never happen, but the program should still work if it
         // does.
         logger.Error("Invalid Addr() for connection: %s", a)
@@ -290,7 +290,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
         return
     }
     // Record their listener, to avoid double connections
-    err := d.recordConnectionMirror(a, self.Mirror)
+    err = d.recordConnectionMirror(a, self.Mirror)
     if err != nil {
         // This should never happen, but the program should not allow itself
         // to be corrupted in case it does
@@ -298,14 +298,19 @@ func (self *IntroductionMessage) Process(d *Daemon) {
         d.Pool.Pool.Disconnect(self.c.Conn, DisconnectOtherError)
         return
     }
-    ip := ipport[0]
     _, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
     if err != nil {
         logger.Error("Failed to add peer: %v", err)
     }
 
     // Request blocks immediately after they're confirmed
-    d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
+    err = d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
+    if err == nil {
+        logger.Debug("Successfully requested blocks from %s",
+            self.c.Conn.Addr())
+    } else {
+        logger.Warning("%v", err)
+    }
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

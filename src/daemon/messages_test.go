@@ -25,6 +25,7 @@ var (
     addrc                = "112.22.33.55:4343"
     badAddrPort          = "111.22.44.33:x"
     badAddrNoPort        = "111.22.44.33"
+    localAddr            = "127.0.0.1:5555"
     silenceLogger        = false
 )
 
@@ -62,19 +63,27 @@ func TestIPAddrString(t *testing.T) {
     assert.Equal(t, addr, i.String())
 }
 
-func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message) {
+func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message,
+    disabled ...bool) {
     assert.Nil(t, m.Handle(messageContext(addr), d))
-    assert.Equal(t, len(d.messageEvents), 1)
-    if len(d.messageEvents) != 1 {
-        t.Fatal("messageEvent is empty")
+    if len(disabled) == 0 || !disabled[0] {
+        assert.Equal(t, len(d.messageEvents), 1)
+        if len(d.messageEvents) != 1 {
+            t.Fatal("messageEvent is empty")
+        }
+        <-d.messageEvents
+    } else {
+        assert.Equal(t, len(d.messageEvents), 0)
     }
-    <-d.messageEvents
 }
 
 func TestGetPeersMessage(t *testing.T) {
     d := newDefaultDaemon()
     m := NewGetPeersMessage()
+    d.Peers.Config.Disabled = false
     testSimpleMessageHandler(t, d, m)
+    d.Peers.Config.Disabled = true
+    testSimpleMessageHandler(t, d, m, true)
     d.Peers.Peers.AddPeer(addr)
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
@@ -105,7 +114,10 @@ func TestGivePeersMessage(t *testing.T) {
     }
     m := NewGivePeersMessage(peers)
     assert.Equal(t, len(m.GetPeers()), 2)
+    d.Peers.Config.Disabled = false
     testSimpleMessageHandler(t, d, m)
+    d.Peers.Config.Disabled = true
+    testSimpleMessageHandler(t, d, m, true)
     assert.Equal(t, m.GetPeers()[0], addrs[0])
     assert.Equal(t, m.GetPeers()[1], addrs[1])
     // Peers should be added to the pex when processed

@@ -2,10 +2,12 @@ package daemon
 
 import (
     "errors"
+    "fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
     "log"
+    "net"
     "strconv"
     "strings"
     "time"
@@ -64,8 +66,8 @@ type Config struct {
 }
 
 // Returns a Config with defaults set
-func NewConfig() *Config {
-    return &Config{
+func NewConfig() Config {
+    return Config{
         Daemon:   NewDaemonConfig(),
         Pool:     NewPoolConfig(),
         Peers:    NewPeersConfig(),
@@ -76,10 +78,49 @@ func NewConfig() *Config {
     }
 }
 
+func (self *Config) preprocess() Config {
+    config := *self
+    if config.Daemon.LocalhostOnly {
+        if config.Daemon.Address == "" {
+            local, err := LocalhostIP()
+            if err != nil {
+                log.Panicf("Failed to obtain localhost IP: %v", err)
+            }
+            config.Daemon.Address = local
+        } else {
+            if !IsLocalhost(config.Daemon.Address) {
+                log.Panicf("Invalid address for localhost-only: %s",
+                    config.Daemon.Address)
+            }
+        }
+        config.DHT.Disabled = true
+        config.Peers.AllowLocalhost = true
+    }
+    config.Pool.port = config.Daemon.Port
+    config.Pool.address = config.Daemon.Address
+    config.DHT.port = config.Daemon.Port
+    if config.Daemon.DisableNetworking {
+        config.Peers.Disabled = true
+        config.DHT.Disabled = true
+        config.Daemon.DisableIncomingConnections = true
+        config.Daemon.DisableOutgoingConnections = true
+    } else {
+        if config.Daemon.DisableIncomingConnections {
+            logger.Info("Incoming connections are disabled.")
+        }
+        if config.Daemon.DisableOutgoingConnections {
+            logger.Info("Outgoing connections are disabled.")
+        }
+    }
+    return config
+}
+
 // Configuration for the Daemon
 type DaemonConfig struct {
     // Application version. TODO -- manage version better
     Version int32
+    // IP Address to serve on. Leave empty for automatic assignment
+    Address string
     // TCP/UDP port for connections and DHT
     Port int
     // Directory where application data is stored
@@ -96,18 +137,31 @@ type DaemonConfig struct {
     CullInvalidRate time.Duration
     // How many connections are allowed from the same base IP
     IPCountsMax int
+    // Disable all networking activity
+    DisableNetworking bool
+    // Don't make outgoing connections
+    DisableOutgoingConnections bool
+    // Don't allow incoming connections
+    DisableIncomingConnections bool
+    // Run on localhost and only connect to localhost peers
+    LocalhostOnly bool
 }
 
 func NewDaemonConfig() DaemonConfig {
     return DaemonConfig{
-        Version:          1,
-        Port:             6677,
-        OutgoingRate:     time.Second * 5,
-        OutgoingMax:      8,
-        PendingMax:       16,
-        IntroductionWait: time.Second * 30,
-        CullInvalidRate:  time.Second * 3,
-        IPCountsMax:      3,
+        Version:                    1,
+        Address:                    "",
+        Port:                       6677,
+        OutgoingRate:               time.Second * 5,
+        OutgoingMax:                8,
+        PendingMax:                 16,
+        IntroductionWait:           time.Second * 30,
+        CullInvalidRate:            time.Second * 3,
+        IPCountsMax:                3,
+        DisableNetworking:          false,
+        DisableOutgoingConnections: false,
+        DisableIncomingConnections: false,
+        LocalhostOnly:              false,
     }
 }
 
@@ -152,7 +206,10 @@ type Daemon struct {
 }
 
 // Returns a Daemon with primitives allocated
-func NewDaemon(config *Config) *Daemon {
+func NewDaemon(config Config) *Daemon {
+    config = config.preprocess()
+    // TODO -- dht lib does not allow choosing address, should we add that?
+    // c.DHT.address = c.Daemon.Address
     d := &Daemon{
         Config:   config.Daemon,
         Messages: NewMessages(config.Messages),
@@ -215,8 +272,12 @@ func (self *Daemon) Shutdown() {
 // Main loop for peer/connection management. Send anything to quit to shut it
 // down
 func (self *Daemon) Start(quit chan int) {
-    go self.Pool.Start()
-    go self.DHT.Start()
+    if !self.Config.DisableIncomingConnections {
+        go self.Pool.Start()
+    }
+    if !self.DHT.Config.Disabled {
+        go self.DHT.Start()
+    }
 
     // TODO -- run blockchain stuff in its own goroutine
     blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
@@ -227,6 +288,7 @@ func (self *Daemon) Start(quit chan int) {
     unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
     blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
     blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
+    transactionRebroadcastTicker := time.Tick(self.Visor.Config.TransactionRebroadcastRate)
 
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
     cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
@@ -242,53 +304,82 @@ main:
         select {
         // Continually make requests to the DHT, if we need peers
         case <-dhtBootstrapTicker:
-            if len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
+            if !self.DHT.Config.Disabled &&
+                len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
                 go self.DHT.RequestPeers()
             }
         // Flush expired blacklisted peers
         case <-updateBlacklistTicker:
-            self.Peers.Peers.Blacklist.Refresh()
+            if !self.Peers.Config.Disabled {
+                self.Peers.Peers.Blacklist.Refresh()
+            }
         // Remove connections that failed to complete the handshake
         case <-cullInvalidTicker:
-            self.cullInvalidConnections()
+            if !self.Config.DisableNetworking {
+                self.cullInvalidConnections()
+            }
         // Request peers via PEX
         case <-requestPeersTicker:
-            if !self.Peers.Peers.Full() {
-                self.Pool.requestPeers()
+            if !self.Peers.Config.Disabled && !self.Peers.Peers.Full() {
+                self.Peers.requestPeers(self.Pool)
             }
         // Remove peers we haven't seen in a while
         case <-clearOldPeersTicker:
-            self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
+            if !self.Peers.Config.Disabled {
+                self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
+            }
         // Remove connections that haven't said anything in a while
         case <-clearStaleConnectionsTicker:
-            self.Pool.clearStaleConnections()
+            if !self.Config.DisableNetworking {
+                self.Pool.clearStaleConnections()
+            }
         // Sends pings as needed
         case <-idleCheckTicker:
-            self.Pool.sendPings()
+            if !self.Config.DisableNetworking {
+                self.Pool.sendPings()
+            }
         // Fill up our outgoing connections
         case <-outgoingConnectionsTicker:
-            if len(self.outgoingConnections) < self.Config.OutgoingMax &&
+            if !self.Config.DisableOutgoingConnections &&
+                len(self.outgoingConnections) < self.Config.OutgoingMax &&
                 len(self.pendingConnections) < self.Config.PendingMax {
                 self.connectToRandomPeer()
             }
         // Process the connection queue
         case <-messageHandlingTicker:
-            self.Pool.Pool.HandleMessages()
+            if !self.Config.DisableNetworking {
+                self.Pool.Pool.HandleMessages()
+            }
         // Process callbacks for when a client connects. No disconnect chan
         // is needed because the callback is triggered by HandleDisconnectEvent
         // which is already select{}ed here
         case r := <-self.onConnectEvent:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be no connect events")
+            }
             self.onConnect(r)
         // Handle connection errors
         case r := <-self.connectionErrors:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be no connection errors")
+            }
             self.handleConnectionError(r)
         // Update Peers when DHT reports a new one
         case r := <-self.DHT.DHT.PeersRequestResults:
+            if self.DHT.Config.Disabled {
+                log.Panic("There should be no DHT peer results")
+            }
             self.DHT.ReceivePeers(r, self.Peers.Peers)
         case r := <-self.Pool.Pool.DisconnectQueue:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be nothing in the DisconnectQueue")
+            }
             self.Pool.Pool.HandleDisconnectEvent(r)
         // Message handlers
         case m := <-self.messageEvents:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be no message events")
+            }
             self.processMessageEvent(m)
         // Process any pending API requests
         case fn := <-self.RPC.requests:
@@ -304,11 +395,13 @@ main:
                 logger.Critical("Created and published a new block")
             }
         case <-unconfirmedRefreshTicker:
-            self.Visor.Visor.RefreshUnconfirmed()
+            self.Visor.RefreshUnconfirmed()
         case <-blocksRequestTicker:
             self.Visor.RequestBlocks(self.Pool)
         case <-blocksAnnounceTicker:
             self.Visor.AnnounceBlocks(self.Pool)
+        case <-transactionRebroadcastTicker:
+            self.Visor.BroadcastOurTransactions(self.Pool)
 
         case <-quit:
             break main
@@ -327,17 +420,36 @@ func (self *Daemon) getListenPort(addr string) uint16 {
     if mc == nil {
         log.Panic("mirrorConnections map does not exist, but mirror does")
     }
-    return mc[strings.Split(addr, ":")[0]]
+    a, _, err := SplitAddr(addr)
+    if err != nil {
+        logger.Error("getListenPort received invalid addr: %v", err)
+        return 0
+    } else {
+        return mc[a]
+    }
 }
 
 // Attempts to connect to a random peer. If it fails, the peer is removed
 func (self *Daemon) connectToRandomPeer() {
+    if self.Config.DisableOutgoingConnections {
+        return
+    }
     // Make a connection to a random peer
     peers := self.Peers.Peers.Peerlist.Random(0)
     for _, p := range peers {
+        a, _, err := SplitAddr(p.Addr)
+        logger.Warning("Split random peer from %s to %s", p.Addr, a)
+        logger.Warning("%s is localhost? %v", a, IsLocalhost(a))
+        if err != nil {
+            logger.Warning("PEX gave us an invalid peer: %v", err)
+            continue
+        }
+        if self.Config.LocalhostOnly && !IsLocalhost(a) {
+            continue
+        }
         isConnected := self.Pool.Pool.Addresses[p.Addr] != nil
         isPending := self.pendingConnections[p.Addr] != nil
-        ipInUse := self.ipCounts[strings.Split(p.Addr, ":")[0]] != 0
+        ipInUse := !self.Config.LocalhostOnly && self.ipCounts[a] != 0
         if !isConnected && !isPending && !ipInUse {
             logger.Debug("Trying to connect to %s", p.Addr)
             self.pendingConnections[p.Addr] = p
@@ -468,6 +580,7 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
     }
     delete(self.outgoingConnections, a)
     delete(self.expectingIntroductions, a)
+    self.Visor.RemoveConnection(a)
     self.removeIPCount(a)
     self.removeConnectionMirror(a)
 }
@@ -479,13 +592,21 @@ func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
 
 // Returns whether the ipCount maximum has been reached
 func (self *Daemon) ipCountMaxed(addr string) bool {
-    ip := strings.Split(addr, ":")[0]
+    ip, _, err := SplitAddr(addr)
+    if err != nil {
+        logger.Warning("ipCountMaxed called with invalid addr: %v", err)
+        return true
+    }
     return self.ipCounts[ip] >= self.Config.IPCountsMax
 }
 
 // Adds base IP to ipCount or returns error if max is reached
 func (self *Daemon) recordIPCount(addr string) {
-    ip := strings.Split(addr, ":")[0]
+    ip, _, err := SplitAddr(addr)
+    if err != nil {
+        logger.Warning("recordIPCount called with invalid addr: %v", err)
+        return
+    }
     _, hasCount := self.ipCounts[ip]
     if !hasCount {
         self.ipCounts[ip] = 0
@@ -495,7 +616,11 @@ func (self *Daemon) recordIPCount(addr string) {
 
 // Removes base IP from ipCount
 func (self *Daemon) removeIPCount(addr string) {
-    ip := strings.Split(addr, ":")[0]
+    ip, _, err := SplitAddr(addr)
+    if err != nil {
+        logger.Warning("removeIPCount called with invalid addr: %v", err)
+        return
+    }
     if self.ipCounts[ip] <= 1 {
         delete(self.ipCounts, ip)
     } else {
@@ -505,14 +630,12 @@ func (self *Daemon) removeIPCount(addr string) {
 
 // Adds addr + mirror to the connectionMirror mappings
 func (self *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
-    ipPort := strings.Split(addr, ":")
-    ip := ipPort[0]
-    sport := ipPort[1]
-    port64, err := strconv.ParseUint(sport, 10, 16)
+    ip, port, err := SplitAddr(addr)
     if err != nil {
+        logger.Warning("recordConnectionMirror called with invalid addr: %v",
+            err)
         return err
     }
-    port := uint16(port64)
     self.connectionMirrors[addr] = mirror
     m := self.mirrorConnections[mirror]
     if m == nil {
@@ -529,7 +652,12 @@ func (self *Daemon) removeConnectionMirror(addr string) {
     if !ok {
         return
     }
-    ip := strings.Split(addr, ":")[0]
+    ip, _, err := SplitAddr(addr)
+    if err != nil {
+        logger.Warning("removeConnectionMirror called with invalid addr: %v",
+            err)
+        return
+    }
     m := self.mirrorConnections[mirror]
     if len(m) <= 1 {
         delete(self.mirrorConnections, mirror)
@@ -545,7 +673,49 @@ func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
     if ips == nil {
         return 0, false
     }
-    ip := strings.Split(addr, ":")[0]
+    ip, _, err := SplitAddr(addr)
+    if err != nil {
+        logger.Warning("getMirrorPort called with invalid addr: %v", err)
+        return 0, false
+    }
     port, exists := ips[ip]
     return port, exists
+}
+
+// Returns the address for localhost on the machine
+func LocalhostIP() (string, error) {
+    tt, err := net.Interfaces()
+    if err != nil {
+        return "", err
+    }
+    for _, t := range tt {
+        aa, err := t.Addrs()
+        if err != nil {
+            return "", err
+        }
+        for _, a := range aa {
+            if ipnet, ok := a.(*net.IPNet); ok && ipnet.IP.IsLoopback() {
+                return ipnet.IP.String(), nil
+            }
+        }
+    }
+    return "", errors.New("No local IP found")
+}
+
+// Returns true if addr is a localhost address
+func IsLocalhost(addr string) bool {
+    return net.ParseIP(addr).IsLoopback()
+}
+
+// Splits an ip:port string to ip, port
+func SplitAddr(addr string) (string, uint16, error) {
+    pts := strings.Split(addr, ":")
+    if len(pts) != 2 {
+        return pts[0], 0, fmt.Errorf("Invalid addr %s", addr)
+    }
+    port64, err := strconv.ParseUint(pts[1], 10, 16)
+    if err != nil {
+        return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
+    }
+    return pts[0], uint16(port64), nil
 }

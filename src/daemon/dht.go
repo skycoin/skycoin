@@ -10,7 +10,8 @@ import (
 )
 
 type DHTConfig struct {
-    Port int
+    // Disable the DHT
+    Disabled bool
     // Info to be hashed for identifying peers on the skycoin network
     Info string
     // Number of peers to try to get via DHT
@@ -21,11 +22,15 @@ type DHTConfig struct {
     BootstrapNodes []string
     // How often to request more peers via DHT
     BootstrapRequestRate time.Duration
+
+    // These should be set by the controlling daemon:
+    // Port for DHT traffic (uses UDP)
+    port int
 }
 
 func NewDHTConfig() DHTConfig {
     return DHTConfig{
-        Port:         6677,
+        Disabled:     false,
         Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
         DesiredPeers: 20,
         PeerLimit:    100,
@@ -36,6 +41,7 @@ func NewDHTConfig() DHTConfig {
             "dht.transmissionbt.com:6881",
         },
         BootstrapRequestRate: time.Second * 10,
+        port:                 6677,
     }
 }
 
@@ -55,50 +61,65 @@ func NewDHT(c DHTConfig) *DHT {
     }
 }
 
-/*
-   d, ih, err := InitDHT(state.Config.Port, state.Config.DesiredPeers,
-       state.Config.Info)
-   if err != nil {
-       log.Panicf("Failed to init dht: %v", err)
-   }
-   state.DHT = d
-   state.InfoHash = ih
-*/
-
 // Sets up the DHT node for peer bootstrapping
 func (self *DHT) Init() error {
     sum := sha1.Sum([]byte(self.Config.Info))
     // Create a hex encoded sha1 sum of a string to be used for DH
-    InfoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
+    infoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
     if err != nil {
         return err
     }
     cfg := dht.NewConfig()
-    cfg.Port = self.Config.Port
+    cfg.Port = self.Config.port
     cfg.NumTargetPeers = self.Config.DesiredPeers
     d, err := dht.New(cfg)
     if err != nil {
         return err
     }
-    self.InfoHash = InfoHash
+    self.InfoHash = infoHash
     self.DHT = d
 
-    logger.Info("Init DHT on port %d", self.Config.Port)
+    if self.Config.Disabled {
+        // We have to initialize the DHT anyway because daemon loop needs
+        // to read from its initialized chans. As long as Start() is prevented,
+        // the DHT will not run.
+        logger.Info("DHT is disabled")
+    } else {
+        logger.Info("Init DHT on port %d", self.Config.port)
+    }
     return nil
 }
 
 // Stops the DHT
 func (self *DHT) Shutdown() {
     if self.DHT != nil {
+        logger.Debug("Stopping the DHT")
         self.DHT.Stop()
-        // We must reset to nil since the DHT cannot restart once shutdown
+        // The DHT cannot be restarted once stopped, so we clear it
         self.DHT = nil
     }
 }
 
 // Starts the DHT
 func (self *DHT) Start() {
+    if self.Config.Disabled {
+        return
+    }
     self.DHT.Run()
+}
+
+// Requests peers from the DHT
+func (self *DHT) RequestPeers() {
+    if self.Config.Disabled {
+        return
+    }
+    ih := string(self.InfoHash)
+    if ih == "" {
+        log.Panic("InfoHash is not initialized")
+        return
+    }
+    logger.Info("Requesting DHT Peers")
+    self.DHT.PeersRequest(ih, true)
 }
 
 // Called when the DHT finds a peer
@@ -113,15 +134,4 @@ func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string, peers *pex.Pex) {
             }
         }
     }
-}
-
-// Requests peers from the DHT
-func (self *DHT) RequestPeers() {
-    ih := string(self.InfoHash)
-    if ih == "" {
-        log.Panic("InfoHash is not initialized")
-        return
-    }
-    logger.Info("Requesting DHT Peers")
-    self.DHT.PeersRequest(ih, true)
 }

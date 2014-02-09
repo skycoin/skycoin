@@ -7,6 +7,7 @@ import (
     "github.com/skycoin/skycoin/src/util"
     "log"
     "path/filepath"
+    "time"
 )
 
 type Args interface {
@@ -16,10 +17,28 @@ type Args interface {
 }
 
 type Config struct {
-    DisableGUI   bool
-    DisableCoind bool
+    DisableGUI bool
+    // Disable DHT peer discovery
+    DisableDHT bool
+    // Disable peer exchange
+    DisablePEX bool
+    // Don't make any outgoing connections
+    DisableOutgoingConnections bool
+    // Don't allowing incoming connections
+    DisableIncomingConnections bool
+    // Disables networking altogether
+    DisableNetworking bool
+    // Only run on localhost and only connect to others on localhost
+    LocalhostOnly bool
+    // Which address to serve on. Leave blank to automatically assign to a
+    // public interface
+    Address string
     // DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
     Port int
+    // How often to make outgoing connections
+    OutgoingConnectionsRate time.Duration
+    // Wallet Address Version
+    AddressVersion string
     // Remote web interface
     WebInterface      bool
     WebInterfacePort  int
@@ -42,14 +61,16 @@ type Config struct {
     WalletFile     string
     WalletSizeMin  int
     BlockchainFile string
+    BlockSigsFile  string
     // Is allowed to make outgoing transactions
     CanSpend bool
 
     // Centralized network configuration
-    MasterPublic   string
-    MasterChain    bool
-    MasterKeys     string
-    GenesisAddress string
+    MasterPublic     string
+    MasterChain      bool
+    MasterKeys       string
+    GenesisSignature string
+    GenesisTimestamp uint64
 
     /* Developer options */
 
@@ -85,7 +106,9 @@ func (self *Config) postProcess() {
     if self.BlockchainFile == "" {
         self.BlockchainFile = filepath.Join(self.DataDirectory, "blockchain.bin")
     }
-    // logging
+    if self.BlockSigsFile == "" {
+        self.BlockSigsFile = filepath.Join(self.DataDirectory, "blockchain.sigs")
+    }
     ll, err := logging.LogLevel(self.logLevel)
     if err != nil {
         log.Panic("Invalid -log-level %s: %v\n", self.logLevel, err)

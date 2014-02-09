@@ -15,4 +15,8 @@ config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/view1', {templateUrl: 'partials/partial1.html', controller: 'mainCtrl'});
   $routeProvider.when('/view2', {templateUrl: 'partials/partial2.html', controller: 'mainCtrl'});
   $routeProvider.otherwise({redirectTo: '/'});
+}]).config(['$locationProvider', function($locationProvider){
+    $locationProvider.html5Mode(true).hashPrefix('');
 }]);
+
+

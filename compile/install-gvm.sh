@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# Install gvm and go1.2
+# Install gvm
 bash < <(curl -s https://raw.github.com/moovweb/gvm/master/binscripts/gvm-installer)
-gvm install go1.2
 grep -q "scripts/gvm" ~/.bashrc;
 if [[ $? -ne 0 ]]; then
     echo "" >> ~/.bashrc
@@ -10,6 +9,9 @@ if [[ $? -ne 0 ]]; then
     echo '[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"' >> ~/.bashrc
     [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
 fi
+
+# Install go1.2 with gvm
+gvm install go1.2
 grep -q 'gvm use' ~/.bashrc;
 if [[ $? -ne 0 ]]; then
     echo "" >> ~/.bashrc

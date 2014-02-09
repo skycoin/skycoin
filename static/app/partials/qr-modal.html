@@ -4,19 +4,18 @@
 
         <div class="qr-container">
 
-            <qrcode size="300" data="{{address}}"></qrcode>
+            <qrcode ng-if="!qro.new" size="300" data="{{address.address}}"></qrcode>
+
+            <qrcode ng-if="qro.new" size="300" data="{{qro.new}}"></qrcode>
             <br />
 
-            <!--<qrcode size="300" data="{{qro.new}}"></qrcode>
-            <br />-->
-
-            <textarea rows="4" cols="46">{{address}}{{qro.label}}{{qro.message}}</textarea>
+            <textarea rows="4" ng-model="qro.new" cols="46"></textarea>
             <br />
 
             Label: <input id="qr-label" type="text" ng-model="qro.label"  />
             <br />
 
-            Message: <input id="qr-message" type="text" ng-model="qro.message"  />
+            <!-- Message: <input id="qr-message" type="text" ng-model="qro.message"  /> -->
 
         </div>
 

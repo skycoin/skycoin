@@ -13,11 +13,11 @@ import (
     "time"
 )
 
-
 //TODO, move /src/skycoin to /cmd/skycoin folder
 
 import (
     "github.com/skycoin/skycoin/src/cli"
+    "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/daemon"
     "github.com/skycoin/skycoin/src/gui"
     "github.com/skycoin/skycoin/src/visor"
@@ -109,16 +109,30 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
     }
 }
 
-func configureDaemon(c *cli.Config) *daemon.Config {
+func configureDaemon(c *cli.Config) daemon.Config {
+    coin.SetAddressVersion(c.AddressVersion)
     dc := daemon.NewConfig()
     dc.Peers.DataDirectory = c.DataDirectory
-    dc.DHT.Port = c.Port
-    dc.Pool.Port = c.Port
+    dc.DHT.Disabled = c.DisableDHT
+    dc.Peers.Disabled = c.DisablePEX
+    dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
+    dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
+    dc.Daemon.DisableNetworking = c.DisableNetworking
+    dc.Daemon.Port = c.Port
+    dc.Daemon.Address = c.Address
+    dc.Daemon.LocalhostOnly = c.LocalhostOnly
+    if c.OutgoingConnectionsRate == 0 {
+        c.OutgoingConnectionsRate = time.Millisecond
+    }
+    dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
     dc.Visor.Config.IsMaster = c.MasterChain
     dc.Visor.Config.CanSpend = c.CanSpend
     dc.Visor.Config.WalletFile = c.WalletFile
     dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
     dc.Visor.Config.BlockchainFile = c.BlockchainFile
+    dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
+    dc.Visor.Config.GenesisSignature = coin.MustSigFromHex(c.GenesisSignature)
+    dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
     if c.MasterChain {
         // The master chain should be reluctant to expire transactions
         dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096
@@ -131,11 +145,8 @@ func configureDaemon(c *cli.Config) *daemon.Config {
             log.Panicf("Failed to load master keys: %v", err)
         }
     } else {
-        w := &visor.ReadableWalletEntry{
-            Address: c.GenesisAddress,
-            Public:  c.MasterPublic,
-        }
-        dc.Visor.MasterKeys = visor.WalletEntryFromReadable(w)
+        w := visor.ReadableWalletEntryFromPubkey(c.MasterPublic)
+        dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(&w)
     }
     return dc
 }

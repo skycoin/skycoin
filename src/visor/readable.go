@@ -1,0 +1,131 @@
+package visor
+
+import (
+    "github.com/skycoin/skycoin/src/coin"
+)
+
+// Encapsulates useful information from the coin.Blockchain
+type BlockchainMetadata struct {
+    // Most recent block's header
+    Head ReadableBlockHeader `json:"head"`
+    // Number of unspent outputs in the coin.Blockchain
+    Unspents uint64 `json:"unspents"`
+    // Number of known unconfirmed txns
+    Unconfirmed uint64 `json:"unconfirmed"`
+}
+
+func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
+    return BlockchainMetadata{
+        Head:        NewReadableBlockHeader(&v.blockchain.Head().Header),
+        Unspents:    uint64(len(v.blockchain.Unspent.Arr)),
+        Unconfirmed: uint64(len(v.UnconfirmedTxns.Txns)),
+    }
+}
+
+type ReadableTransactionHeader struct {
+    Hash string   `json:"hash"`
+    Sigs []string `json:"sigs"`
+}
+
+func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
+    sigs := make([]string, 0, len(t.Sigs))
+    for _, s := range t.Sigs {
+        sigs = append(sigs, s.Hex())
+    }
+    return ReadableTransactionHeader{
+        Hash: t.Hash.Hex(),
+        Sigs: sigs,
+    }
+}
+
+type ReadableTransactionOutput struct {
+    DestinationAddress string `json:"dst"`
+    Coins              uint64 `json:"coins"`
+    Hours              uint64 `json:"hours"`
+}
+
+func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransactionOutput {
+    return ReadableTransactionOutput{
+        DestinationAddress: t.DestinationAddress.String(),
+        Coins:              t.Coins,
+        Hours:              t.Hours,
+    }
+}
+
+type ReadableTransactionInput struct {
+    UxOut string `json:"ux_hash"`
+}
+
+func NewReadableTransactionInput(t *coin.TransactionInput) ReadableTransactionInput {
+    return ReadableTransactionInput{
+        UxOut: t.UxOut.Hex(),
+    }
+}
+
+type ReadableTransaction struct {
+    Header ReadableTransactionHeader   `json:"header"`
+    In     []ReadableTransactionInput  `json:"inputs"`
+    Out    []ReadableTransactionOutput `json:"outputs"`
+}
+
+func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
+    in := make([]ReadableTransactionInput, 0, len(t.In))
+    for _, i := range t.In {
+        in = append(in, NewReadableTransactionInput(&i))
+    }
+    out := make([]ReadableTransactionOutput, 0, len(t.Out))
+    for _, o := range t.Out {
+        out = append(out, NewReadableTransactionOutput(&o))
+    }
+    return ReadableTransaction{
+        Header: NewReadableTransactionHeader(&t.Header),
+        In:     in,
+        Out:    out,
+    }
+}
+
+type ReadableBlockHeader struct {
+    Version  uint32 `json:"version"`
+    Time     uint64 `json:"timestamp"`
+    BkSeq    uint64 `json:"seq"`
+    Fee      uint64 `json:"fee"`
+    PrevHash string `json:"prev_hash"`
+    BodyHash string `json:"hash"`
+}
+
+func NewReadableBlockHeader(b *coin.BlockHeader) ReadableBlockHeader {
+    return ReadableBlockHeader{
+        Version:  b.Version,
+        Time:     b.Time,
+        BkSeq:    b.BkSeq,
+        Fee:      b.Fee,
+        PrevHash: b.PrevHash.Hex(),
+        BodyHash: b.BodyHash.Hex(),
+    }
+}
+
+type ReadableBlockBody struct {
+    Transactions []ReadableTransaction `json:"txns"`
+}
+
+func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
+    txns := make([]ReadableTransaction, 0, len(b.Transactions))
+    for _, txn := range b.Transactions {
+        txns = append(txns, NewReadableTransaction(&txn))
+    }
+    return ReadableBlockBody{
+        Transactions: txns,
+    }
+}
+
+type ReadableBlock struct {
+    Header ReadableBlockHeader `json:"header"`
+    Body   ReadableBlockBody   `json:"body"`
+}
+
+func NewReadableBlock(b *coin.Block) ReadableBlock {
+    return ReadableBlock{
+        Header: NewReadableBlockHeader(&b.Header),
+        Body:   NewReadableBlockBody(&b.Body),
+    }
+}

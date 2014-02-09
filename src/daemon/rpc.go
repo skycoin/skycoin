@@ -59,9 +59,23 @@ type Spend struct {
     Error            string
 }
 
+type BlockchainProgress struct {
+    // Our current blockchain length
+    Current uint64 `json:"current"`
+    // Our best guess at true blockchain length
+    Highest uint64 `json:"Highest"`
+}
+
+// Arrays must be wrapped in structs to avoid certain javascript exploits
+
 // An array of connections
 type Connections struct {
     Connections []*Connection `json:"connections"`
+}
+
+// An array of readable blocks.
+type ReadableBlocks struct {
+    Blocks []visor.ReadableBlock `json:"blocks"`
 }
 
 /* Public API
@@ -124,6 +138,34 @@ func (self *RPC) GetWallet() interface{} {
     return r
 }
 
+// Returns a *visor.BlockchainMetadata
+func (self *RPC) GetBlockchainMetadata() interface{} {
+    self.requests <- func() interface{} { return self.getBlockchainMetadata() }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *ReadableBlock
+func (self *RPC) GetBlock(seq uint64) interface{} {
+    self.requests <- func() interface{} { return self.getBlock(seq) }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *ReadableBlocks
+func (self *RPC) GetBlocks(start, end uint64) interface{} {
+    self.requests <- func() interface{} { return self.getBlocks(start, end) }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *BlockchainProgress
+func (self *RPC) GetBlockchainProgress() interface{} {
+    self.requests <- func() interface{} { return self.getBlockchainProgress() }
+    r := <-self.responses
+    return r
+}
+
 /* Internal API */
 
 func (self *RPC) getConnection(addr string) *Connection {
@@ -176,12 +218,14 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
         return nil
     }
     _, err := self.Daemon.Visor.Spend(amt, fee, dest, self.Daemon.Pool)
+    errString := ""
     if err != nil {
+        errString = err.Error()
         logger.Error("Failed to make a spend: %v", err)
     }
     return &Spend{
         RemainingBalance: *(self.getTotalBalance()),
-        Error:            err.Error(),
+        Error:            errString,
     }
 }
 
@@ -209,4 +253,41 @@ func (self *RPC) getWallet() *visor.ReadableWallet {
         return nil
     }
     return visor.NewReadableWallet(self.Daemon.Visor.Visor.Wallet)
+}
+
+func (self *RPC) getBlockchainMetadata() *visor.BlockchainMetadata {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    bm := self.Daemon.Visor.Visor.GetBlockchainMetadata()
+    return &bm
+}
+
+func (self *RPC) getBlock(seq uint64) *visor.ReadableBlock {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    b, err := self.Daemon.Visor.Visor.GetReadableBlock(seq)
+    if err != nil {
+        return nil
+    }
+    return &b
+}
+
+func (self *RPC) getBlocks(start, end uint64) *ReadableBlocks {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    blocks := self.Daemon.Visor.Visor.GetReadableBlocks(start, end)
+    return &ReadableBlocks{blocks}
+}
+
+func (self *RPC) getBlockchainProgress() *BlockchainProgress {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    return &BlockchainProgress{
+        Current: self.Daemon.Visor.Visor.MostRecentBkSeq(),
+        Highest: self.Daemon.Visor.EstimateBlockchainLength(),
+    }
 }

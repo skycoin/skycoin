@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <title>Skycoin</title>
 
-  <link href="css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="css/font-awesome.min.css" rel="stylesheet">
-  <link href="css/bootstrap.icon-large.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css"/>
+  <link href="/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="/css/font-awesome.min.css" rel="stylesheet">
+  <link href="/css/bootstrap.icon-large.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css"/>
 
 </head>
 <body ng-controller="mainCtrl">
@@ -29,7 +29,7 @@
     <tabset id="main-content">
       <tab>
         <tab-heading>
-          <i class="fa fa-cloud fa-lg"></i> Wallets
+          <i class="fa fa-cloud fa-lg"></i> Wallet
         </tab-heading>
 
         <div class="outline">
@@ -41,7 +41,7 @@
               <td><div id="overview-wallet-balance">Address: </div></td><td>{{address.address}}</td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance.coins}} SKY</td>
+              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance.coins | number}} SKY</td>
             </tr>
             <tr>
               <td colspan="2">
@@ -52,7 +52,7 @@
             </tr>
           </table>
           <div class="wallet-buttons">
-            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Wallet</button> <button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>
+            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Address</button> <button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>
           </div>
 
           <!--<div id="overview-recent-transaction" class="outline">
@@ -237,9 +237,9 @@
   <div ng-view></div>
 
   <div id="sky-footer">
-    <div class="message">Downloading Blockchain</div>
-    <progressbar class="progress-striped active" value="1" type="info"></progressbar>
-    <div class="percent">1%</div>
+    <div ng-if="{{progress>100}}" class="message">Downloading Blockchain</div>
+    <progressbar  ng-if="{{progress>100}}" class="progress-striped active" value="progress" type="info"></progressbar>
+    <div  ng-if="{{progress>100}}" class="percent">{{progress}}%</div>
     <div class="signal"><i class="fa fa-signal green"></i></div>
   </div>
   <div ng-include="" src="'/partials/qr-modal.html'"></div>
@@ -256,6 +256,6 @@
   <script src="/js/controllers.js"></script>
   <script src="/js/filters.js"></script>
   <script src="/js/directives.js"></script>
-  <!-- <script src="/bower_components/qrcode-generator/js/qrcode.js"></script>-->
+  <script src="/bower_components/qrcode-generator/js/qrcode.js"></script>
 </body>
 </html>

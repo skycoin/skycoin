@@ -93,8 +93,9 @@ func (self *DHT) Init() error {
 // Stops the DHT
 func (self *DHT) Shutdown() {
     if self.DHT != nil {
+        logger.Debug("Stopping the DHT")
         self.DHT.Stop()
-        // We must reset to nil since the DHT cannot restart once shutdown
+        // The DHT cannot be restarted once stopped, so we clear it
         self.DHT = nil
     }
 }

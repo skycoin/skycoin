@@ -7,10 +7,35 @@ import (
     "log"
 )
 
-const (
-    mainAddressVersion = 0x0F
-    testAddressVersion = 0x1F
+var (
+    addressVersions = map[string]byte{
+        "main": 0x0F,
+        "test": 0x1F,
+    }
+    // Address version is a global default version used for all address
+    // creation and checking
+    addressVersion = addressVersions["test"]
 )
+
+// Returns the named address version and whether it is a known version
+func VersionByName(name string) (byte, bool) {
+    v, ok := addressVersions[name]
+    return v, ok
+}
+
+// Returns the named address version, panics if unknown name
+func MustVersionByName(name string) byte {
+    v, ok := VersionByName(name)
+    if !ok {
+        log.Panicf("Invalid version name: %s", name)
+    }
+    return v
+}
+
+// Sets the address version used for all address creation and checking
+func SetAddressVersion(name string) {
+    addressVersion = MustVersionByName(name)
+}
 
 type Checksum [4]byte
 
@@ -26,19 +51,11 @@ type Address struct {
 // Creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
 func AddressFromPubKey(pubKey PubKey) Address {
     addr := Address{
-        Version: mainAddressVersion,
+        Version: addressVersion,
         Key:     pubKey.ToAddressHash(),
     }
     addr.setChecksum()
     return addr
-}
-
-// Creates an address for the test network
-func AddressFromPubkeyTestNet(pubKey PubKey) Address {
-    a := AddressFromPubKey(pubKey)
-    a.Version = testAddressVersion
-    a.setChecksum()
-    return a
 }
 
 // Creates an Address from its base58 encoding.  Will panic if the addr is

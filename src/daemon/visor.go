@@ -106,6 +106,14 @@ func (self *Visor) Shutdown() {
     }
 }
 
+// Checks unconfirmed txns against the blockchain and purges ones too old
+func (self *Visor) RefreshUnconfirmed() {
+    if self.Config.Disabled {
+        return
+    }
+    self.Visor.RefreshUnconfirmed()
+}
+
 // Sends a GetBlocksMessage to all connections
 func (self *Visor) RequestBlocks(pool *Pool) {
     if self.Config.Disabled {

@@ -205,7 +205,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
     return sb
 }
 
-// Checks unconfirmed txns against the blockchain and purges ones that too old
+// Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
     self.UnconfirmedTxns.Refresh(self.blockchain,
@@ -381,9 +381,25 @@ func (self *Visor) GetSignedBlocksSince(seq uint64, ct uint64) []SignedBlock {
     return blocks
 }
 
+// Returns the signed genesis block. Panics if signature or block not found
+func (self *Visor) GetGenesisBlock() SignedBlock {
+    gsig, ok := self.blockSigs.Sigs[0]
+    if !ok {
+        log.Panic("No genesis signature")
+    }
+    if len(self.blockchain.Blocks) == 0 {
+        log.Panic("No genesis block")
+    }
+    return SignedBlock{
+        Sig:   gsig,
+        Block: self.blockchain.Blocks[0],
+    }
+}
+
 // Returns the highest BkSeq we know
 func (self *Visor) MostRecentBkSeq() uint64 {
-    return self.blockSigs.MaxSeq
+    h := self.blockchain.Head()
+    return h.Header.BkSeq
 }
 
 // Returns descriptive coin.Blockchain information

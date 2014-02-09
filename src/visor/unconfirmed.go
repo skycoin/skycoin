@@ -135,9 +135,9 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     now := time.Now().UTC()
     toRemove := make([]coin.SHA256, 0)
     for k, t := range self.Txns {
-        if t.Received.Add(maxAge).After(now) {
+        if t.Received.Add(maxAge).Before(now) {
             toRemove = append(toRemove, k)
-        } else if t.Checked.Add(checkPeriod).After(now) {
+        } else if t.Checked.Add(checkPeriod).Before(now) {
             if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now
                 self.Txns[k] = t
@@ -156,7 +156,7 @@ func (self *UnconfirmedTxnPool) GetOwnedTransactionsSince(ago time.Duration) []*
     now := time.Now().UTC()
     for _, tx := range self.Txns {
         if (tx.IsOurSpend || tx.IsOurReceive) &&
-            tx.Announced.Add(ago).After(now) {
+            tx.Announced.Add(ago).Before(now) {
             txns = append(txns, &tx)
         }
     }

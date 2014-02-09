@@ -395,7 +395,7 @@ main:
                 logger.Critical("Created and published a new block")
             }
         case <-unconfirmedRefreshTicker:
-            self.Visor.Visor.RefreshUnconfirmed()
+            self.Visor.RefreshUnconfirmed()
         case <-blocksRequestTicker:
             self.Visor.RequestBlocks(self.Pool)
         case <-blocksAnnounceTicker:

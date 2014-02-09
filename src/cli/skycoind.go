@@ -32,6 +32,8 @@ var DaemonArgs = DaemonConfig{Config{
     Port: 5798,
     // How often to make outgoing connections, in seconds
     OutgoingConnectionsRate: time.Second * 5,
+    // Wallet Address Version
+    AddressVersion: "test",
     // Remote web interface
     WebInterface:      false,
     WebInterfacePort:  6402,

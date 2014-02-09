@@ -243,7 +243,7 @@ func (self *Visor) SaveBlockSigs() error {
 
 // Creates and returns a WalletEntry and saves the wallet to disk
 func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
-    we := self.Wallet.CreateAddress()
+    we := self.Wallet.CreateEntry()
     err := self.SaveWallet()
     if err != nil {
         m := "Failed to save wallet to \"%s\" after creating new address"

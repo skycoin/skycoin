@@ -37,6 +37,8 @@ type Config struct {
     Port int
     // How often to make outgoing connections
     OutgoingConnectionsRate time.Duration
+    // Wallet Address Version
+    AddressVersion string
     // Remote web interface
     WebInterface      bool
     WebInterfacePort  int

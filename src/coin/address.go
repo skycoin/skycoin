@@ -35,6 +35,7 @@ func MustVersionByName(name string) byte {
 // Sets the address version used for all address creation and checking
 func SetAddressVersion(name string) {
     addressVersion = MustVersionByName(name)
+    logger.Debug("Set address version to %s", name)
 }
 
 type Checksum [4]byte
@@ -92,9 +93,11 @@ func addressFromBytes(b []byte) (Address, error) {
 
 // Checks that the address appears valid for the public key
 func (self *Address) Verify(key PubKey) error {
-    //TODO: check that pubkey is valid
     if self.Key != key.ToAddressHash() {
         return errors.New("Public key invalid for address")
+    }
+    if self.Version != addressVersion {
+        return errors.New("Invalid address version")
     }
     if !self.IsValidChecksum() {
         return errors.New("Invalid address checksum")

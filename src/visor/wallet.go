@@ -145,7 +145,7 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
     for _, re := range r.Entries {
         we := WalletEntryFromReadable(&re)
         if err := we.Verify(); err != nil {
-            log.Panicf("Invalid wallet entry loaded: %v", we)
+            log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
         }
         entries = append(entries, we)
     }
@@ -160,7 +160,7 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
 }
 
 // Creates a WalletEntry
-func (self *Wallet) CreateAddress() WalletEntry {
+func (self *Wallet) CreateEntry() WalletEntry {
     e := NewWalletEntry()
     if err := e.Verify(); err != nil {
         log.Panic("Creating invalid wallet entry: %v", err)
@@ -175,7 +175,7 @@ func (self *Wallet) CreateAddress() WalletEntry {
 // are created if the Wallet already contains n or more entries.
 func (self *Wallet) populate(n int) {
     for i := len(self.Entries); i < n; i++ {
-        self.CreateAddress()
+        self.CreateEntry()
     }
 }
 

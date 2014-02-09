@@ -32,6 +32,8 @@ var DevArgs = DevConfig{Config{
     Port: 5798,
     // How often to make outgoing connections, in seconds
     OutgoingConnectionsRate: time.Second * 5,
+    // Wallet Address Version
+    AddressVersion: "test",
     // Remote web interface
     WebInterface:      false,
     WebInterfacePort:  6402,
@@ -145,4 +147,6 @@ func (self *DevConfig) register() {
         self.OutgoingConnectionsRate, "How often to make an outgoing connection")
     flag.BoolVar(&self.LocalhostOnly, "localhost-only", self.LocalhostOnly,
         "Run on localhost and only connect to localhost peers")
+    flag.StringVar(&self.AddressVersion, "address-version", self.AddressVersion,
+        "Wallet address version. Options are 'test' and 'main'")
 }

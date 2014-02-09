@@ -110,6 +110,7 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 }
 
 func configureDaemon(c *cli.Config) daemon.Config {
+    coin.SetAddressVersion(c.AddressVersion)
     dc := daemon.NewConfig()
     dc.Peers.DataDirectory = c.DataDirectory
     dc.DHT.Disabled = c.DisableDHT

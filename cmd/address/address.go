@@ -54,7 +54,7 @@ func createWalletEntry(filename string, testNetwork bool) *visor.ReadableWalletE
     pub, sec := coin.GenerateKeyPair()
     var addr coin.Address
     if testNetwork {
-        addr = coin.AddressFromPubkeyTestNet(pub)
+        addr = coin.AddressFromPubKey(pub)
     } else {
         addr = coin.AddressFromPubKey(pub)
     }

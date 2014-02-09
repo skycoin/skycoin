@@ -15,8 +15,7 @@ Installation
 ./run.sh -h
 ```
 
-Running Wallet
---------------
+*Running Wallet
 
 ```
 ./run.sh -web-interface=true

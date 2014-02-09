@@ -65,7 +65,7 @@ func NewDHT(c DHTConfig) *DHT {
 func (self *DHT) Init() error {
     sum := sha1.Sum([]byte(self.Config.Info))
     // Create a hex encoded sha1 sum of a string to be used for DH
-    InfoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
+    infoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
     if err != nil {
         return err
     }
@@ -76,7 +76,7 @@ func (self *DHT) Init() error {
     if err != nil {
         return err
     }
-    self.InfoHash = InfoHash
+    self.InfoHash = infoHash
     self.DHT = d
 
     if self.Config.Disabled {

@@ -38,6 +38,7 @@ func TestConfigPreprocess(t *testing.T) {
     d = c.preprocess()
     assert.True(t, d.DHT.Disabled)
     assert.Equal(t, d.Pool.address, a)
+    assert.True(t, d.Peers.AllowLocalhost)
 
     // Test localhost only with unassigned addr
     c = NewConfig()
@@ -47,6 +48,7 @@ func TestConfigPreprocess(t *testing.T) {
     d = c.preprocess()
     assert.True(t, IsLocalhost(d.Daemon.Address))
     assert.True(t, IsLocalhost(d.Pool.address))
+    assert.True(t, d.Peers.AllowLocalhost)
 
     // Test localhost only with nonlocal addr
     c = NewConfig()
@@ -85,6 +87,10 @@ func TestGetListenPort(t *testing.T) {
     m[addrIP] = uint16(6667)
     assert.Equal(t, d.getListenPort(addr), uint16(6667))
     shutdown(d)
+    // Bad addr
+    d.connectionMirrors["xcasca"] = uint32(4)
+    d.mirrorConnections[uint32(4)] = m
+    assert.Equal(t, d.getListenPort("xcasca"), uint16(0))
 }
 
 func TestStart(t *testing.T) {
@@ -487,7 +493,7 @@ func TestDaemonLoopOutgoingConnectionsTickerPendingMax(t *testing.T) {
     testDaemonLoopOutgoingConnectionsTicker(t, d, quit, 1)
 }
 
-func testDaemonLoopMessageHandlingTicker(t *testing.T, d *Daemon, 
+func testDaemonLoopMessageHandlingTicker(t *testing.T, d *Daemon,
     quit chan int) {
     d.Pool.Config.MessageHandlingRate = time.Millisecond * 10
     go d.Start(quit)
@@ -509,7 +515,7 @@ func TestDaemonLoopMessageHandlingTickerDisabled(t *testing.T) {
     testDaemonLoopMessageHandlingTicker(t, d, quit)
 }
 
-func TestRequestPeers(t *testing.T) {
+func TestDaemonRequestPeers(t *testing.T) {
     d := newDefaultDaemon()
     d.Peers.Config.Max = 1
     d.Peers.Peers.AddPeer(addr)
@@ -572,6 +578,56 @@ func TestSendPings(t *testing.T) {
 func TestConnectToRandomPeer(t *testing.T) {
     d := newDefaultDaemon()
     d.Pool.Pool.Config.DialTimeout = 1 // nanosecond
+
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
+
+    // PEX somehow has invalid peer
+    d.Peers.Peers.Peerlist["xcasca"] = &pex.Peer{Addr: "xcasca"}
+    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.Equal(t, len(d.pendingConnections), 0)
+    assert.Equal(t, len(d.connectionErrors), 0)
+    delete(d.Peers.Peers.Peerlist, "xcasca")
+
+    // Disabled outgoing conns
+    d.Config.DisableOutgoingConnections = true
+    d.Peers.Peers.AddPeer(addr)
+    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.Equal(t, len(d.pendingConnections), 0)
+    assert.Equal(t, len(d.connectionErrors), 0)
+    d.Config.DisableOutgoingConnections = false
+
+    // Localhost only, and peer isn't
+    d.Config.LocalhostOnly = true
+    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.Equal(t, len(d.pendingConnections), 0)
+    assert.Equal(t, len(d.connectionErrors), 0)
+    delete(d.Peers.Peers.Peerlist, addr)
+
+    // Valid attempt to connect to localhost
+    d.Peers.Peers.AllowLocalhost = true
+    _, err := d.Peers.Peers.AddPeer(localAddr)
+    assert.Nil(t, err)
+    if err != nil {
+        t.Logf("Error with local addr: %v\n", err)
+    }
+    t.Logf("Peerlist: %v\n", d.Peers.Peers.Peerlist)
+    assert.NotPanics(t, d.connectToRandomPeer)
+    wait()
+    assert.Equal(t, len(d.pendingConnections), 1)
+    assert.Equal(t, len(d.connectionErrors), 1)
+    if len(d.connectionErrors) == 0 {
+        shutdown(d)
+        cleanupPeers()
+        t.Fatalf("connectionErrors empty, would block")
+    }
+    ce := <-d.connectionErrors
+    assert.Equal(t, ce.Addr, localAddr)
+    assert.NotNil(t, ce.Error)
+    delete(d.pendingConnections, localAddr)
+    delete(d.Peers.Peers.Peerlist, localAddr)
+    d.Config.LocalhostOnly = false
+    d.Peers.Peers.AllowLocalhost = false
+
     // Valid attempt to connect
     d.Peers.Peers.AddPeer(addr)
     assert.NotPanics(t, d.connectToRandomPeer)
@@ -581,7 +637,7 @@ func TestConnectToRandomPeer(t *testing.T) {
     if len(d.connectionErrors) == 0 {
         t.Fatalf("connectionErrors empty, would block")
     }
-    ce := <-d.connectionErrors
+    ce = <-d.connectionErrors
     assert.Equal(t, ce.Addr, addr)
     assert.NotNil(t, ce.Error)
     delete(d.pendingConnections, addr)
@@ -973,6 +1029,8 @@ func TestIPCountMaxed(t *testing.T) {
     assert.False(t, d.ipCountMaxed(addr))
     delete(d.ipCounts, addrIP)
     assert.False(t, d.ipCountMaxed(addr))
+    // Invalid addr
+    assert.True(t, d.ipCountMaxed("xcasca"))
     shutdown(d)
 }
 
@@ -984,6 +1042,9 @@ func TestRecordIPCount(t *testing.T) {
     d.recordIPCount(addr)
     assert.Equal(t, d.ipCounts[addrIP], 2)
     delete(d.ipCounts, addrIP)
+    // Invalid addr
+    d.recordIPCount("xcasca")
+    assert.Equal(t, len(d.ipCounts), 0)
     shutdown(d)
 }
 
@@ -995,6 +1056,12 @@ func TestRemoveIPCount(t *testing.T) {
     d.ipCounts[addrIP] = 7
     d.removeIPCount(addr)
     assert.Equal(t, d.ipCounts[addrIP], 6)
+    // Invalid addr
+    d.ipCounts["xcasca"] = 1
+    d.removeIPCount("xcasca")
+    assert.Equal(t, d.ipCounts[addrIP], 6)
+    assert.Equal(t, d.ipCounts["xcasca"], 1)
+    assert.Equal(t, len(d.ipCounts), 2)
     delete(d.ipCounts, addrIP)
     shutdown(d)
 }
@@ -1016,11 +1083,14 @@ func TestRecordConnectionMirror(t *testing.T) {
     d := newDefaultDaemon()
     assert.Equal(t, len(d.connectionMirrors), 0)
     assert.Equal(t, len(d.mirrorConnections), 0)
-    d.recordConnectionMirror(addr, d.Messages.Mirror)
+    assert.Nil(t, d.recordConnectionMirror(addr, d.Messages.Mirror))
     assertConnectMirrors(t, d)
 
     // 2nd attempt should be a noop
-    d.recordConnectionMirror(addr, d.Messages.Mirror)
+    assert.Nil(t, d.recordConnectionMirror(addr, d.Messages.Mirror))
+    assertConnectMirrors(t, d)
+
+    assert.NotNil(t, d.recordConnectionMirror("xcasca", d.Messages.Mirror))
     assertConnectMirrors(t, d)
 
     delete(d.connectionMirrors, addr)
@@ -1030,12 +1100,24 @@ func TestRecordConnectionMirror(t *testing.T) {
 
 func TestRemoveConnectionMirror(t *testing.T) {
     d := newDefaultDaemon()
+
     // No recorded addr should be noop
     assert.Equal(t, len(d.connectionMirrors), 0)
     assert.Equal(t, len(d.mirrorConnections), 0)
     assert.NotPanics(t, func() { d.removeConnectionMirror(addr) })
     assert.Equal(t, len(d.connectionMirrors), 0)
     assert.Equal(t, len(d.mirrorConnections), 0)
+
+    // Invalid addr should be rejected
+    d.connectionMirrors["xcasca"] = d.Messages.Mirror
+    d.mirrorConnections[d.Messages.Mirror] = make(map[string]uint16)
+    d.mirrorConnections[d.Messages.Mirror]["xcasca"] = 0
+    assert.NotPanics(t, func() { d.removeConnectionMirror("xcasca") })
+    assert.Equal(t, len(d.connectionMirrors), 1)
+    assert.Equal(t, len(d.mirrorConnections), 1)
+    assert.Equal(t, len(d.mirrorConnections[d.Messages.Mirror]), 1)
+    delete(d.mirrorConnections, d.Messages.Mirror)
+    delete(d.connectionMirrors, "xcasca")
 
     // With no connectionMirror recorded, we can't clean up the
     // d.mirrorConnections
@@ -1076,8 +1158,32 @@ func TestGetMirrorPort(t *testing.T) {
     p, exists = d.getMirrorPort(addr, d.Messages.Mirror)
     assert.Equal(t, p, addrPort)
     assert.True(t, exists)
+    // Invalid addr
+    p, exists = d.getMirrorPort("xcasca", d.Messages.Mirror)
+    assert.Equal(t, p, uint16(0))
+    assert.False(t, exists)
     delete(d.mirrorConnections, d.Messages.Mirror)
     shutdown(d)
+}
+
+func TestIsLocalhost(t *testing.T) {
+    assert.True(t, IsLocalhost("127.0.0.1"))
+    assert.False(t, IsLocalhost(addrIP))
+}
+
+func TestLocalhostIP(t *testing.T) {
+    ip, err := LocalhostIP()
+    assert.Nil(t, err)
+    assert.True(t, strings.HasPrefix(ip, "127"))
+}
+
+func TestSplitAddr(t *testing.T) {
+    a, p, err := SplitAddr(addr)
+    assert.Nil(t, err)
+    assert.Equal(t, a, addrIP)
+    assert.Equal(t, p, addrPort)
+    a, p, err = SplitAddr(addrIP)
+    assert.NotNil(t, err)
 }
 
 /* Helpers */

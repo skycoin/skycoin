@@ -10,8 +10,10 @@ var (
     port = 6677
 )
 
-func TestInitShutdownDHT(t *testing.T) {
-    d := NewDHT(NewDHTConfig())
+func testInitShutdownDHT(t *testing.T, disabled bool) {
+    c := NewDHTConfig()
+    c.Disabled = disabled
+    d := NewDHT(c)
     assert.Equal(t, string(d.InfoHash), "")
     e := d.Init()
     assert.Nil(t, e)
@@ -19,6 +21,12 @@ func TestInitShutdownDHT(t *testing.T) {
     go d.Start()
     wait()
     d.Shutdown()
+    wait()
+}
+
+func TestInitShutdownDHT(t *testing.T) {
+    testInitShutdownDHT(t, false)
+    testInitShutdownDHT(t, true)
 }
 
 func TestReceivePeers(t *testing.T) {
@@ -35,6 +43,9 @@ func TestReceivePeers(t *testing.T) {
     assert.Equal(t, len(peers.Peers.Peerlist), 2)
     assert.NotNil(t, peers.Peers.Peerlist["11.22.33.45:2827"])
     assert.NotNil(t, peers.Peers.Peerlist["11.22.33.44:2827"])
+    wait()
+    d.Shutdown()
+    wait()
 }
 
 func TestRequestDHTPeers(t *testing.T) {
@@ -43,4 +54,10 @@ func TestRequestDHTPeers(t *testing.T) {
     e := d.Init()
     assert.Nil(t, e)
     assert.NotPanics(t, d.RequestPeers)
+    wait()
+    d.Config.Disabled = true
+    assert.NotPanics(t, d.RequestPeers)
+    wait()
+    d.Shutdown()
+    wait()
 }

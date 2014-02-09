@@ -78,8 +78,7 @@ func (self *Pool) Shutdown() {
 
 // Starts listening on the configured Port
 func (self *Pool) Start() {
-    err := self.Pool.StartListen()
-    if err != nil {
+    if err := self.Pool.StartListen(); err != nil {
         log.Panic(err)
     }
 }

@@ -94,6 +94,7 @@ func (self *Config) preprocess() Config {
             }
         }
         config.DHT.Disabled = true
+        config.Peers.AllowLocalhost = true
     }
     config.Pool.port = config.Daemon.Port
     config.Pool.address = config.Daemon.Address
@@ -437,6 +438,8 @@ func (self *Daemon) connectToRandomPeer() {
     peers := self.Peers.Peers.Peerlist.Random(0)
     for _, p := range peers {
         a, _, err := SplitAddr(p.Addr)
+        logger.Warning("Split random peer from %s to %s", p.Addr, a)
+        logger.Warning("%s is localhost? %v", a, IsLocalhost(a))
         if err != nil {
             logger.Warning("PEX gave us an invalid peer: %v", err)
             continue
@@ -691,11 +694,7 @@ func LocalhostIP() (string, error) {
             return "", err
         }
         for _, a := range aa {
-            ipnet, ok := a.(*net.IPNet)
-            if !ok {
-                continue
-            }
-            if ipnet.IP.IsLoopback() {
+            if ipnet, ok := a.(*net.IPNet); ok && ipnet.IP.IsLoopback() {
                 return ipnet.IP.String(), nil
             }
         }

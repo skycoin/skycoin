@@ -20,6 +20,8 @@ type PeersConfig struct {
     RequestRate time.Duration
     // How many peers to send back in response to a peers request
     ReplyCount int
+    // Localhost peers are allowed in the peerlist
+    AllowLocalhost bool
     // Disable exchanging of peers.  Peers are still loaded from disk
     Disabled bool
 }
@@ -33,6 +35,7 @@ func NewPeersConfig() PeersConfig {
         UpdateBlacklistRate: time.Minute,
         RequestRate:         time.Minute,
         ReplyCount:          30,
+        AllowLocalhost:      false,
         Disabled:            false,
     }
 }
@@ -62,6 +65,7 @@ func (self *Peers) Init() {
         logger.Notice("Reason: %v", err)
     }
     logger.Debug("Init peers")
+    peers.AllowLocalhost = self.Config.AllowLocalhost
     self.Peers = peers
 }
 

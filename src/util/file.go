@@ -3,6 +3,7 @@ package util
 
 import (
     "encoding/json"
+    "errors"
     "fmt"
     "io/ioutil"
     "os"
@@ -49,6 +50,28 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
     } else {
         return err
     }
+}
+
+// Saves json to disk, but refuses if file already exists
+func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
+    b, err := json.Marshal(thing)
+    if err != nil {
+        return err
+    }
+    flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
+    f, err := os.OpenFile(filename, flags, mode)
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+    n, err := f.Write(b)
+    if n != len(b) && err != nil {
+        err = errors.New("Failed to save complete file")
+    }
+    if err != nil {
+        os.Remove(filename)
+    }
+    return err
 }
 
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {

@@ -304,7 +304,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
     }
 
     // Request blocks immediately after they're confirmed
-    err = d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
+    err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Conn.Addr())
     if err == nil {
         logger.Debug("Successfully requested blocks from %s",
             self.c.Conn.Addr())

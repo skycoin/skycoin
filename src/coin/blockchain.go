@@ -15,6 +15,10 @@ var (
     DebugLevel2 = true //enable checks for impossible conditions
 )
 
+//Warning:
+//10e6 is 10 million
+//1e6 is 1 million
+
 // Note: DebugLevel1 adds additional checks for hash collisions that
 // are unlikely to occur. DebugLevel2 adds checks for conditions that
 // can only occur through programmer error and malice.
@@ -29,7 +33,7 @@ var (
 
 //Termonology:
 // UXTO - unspent transaction outputs
-// UX - outputs
+// UX - outputs10
 // TX - transactions
 
 //Notes:
@@ -274,10 +278,10 @@ func (self *Blockchain) txUxOutChk(tx Transaction, uxOut UxArray) error {
         if ux.Body.Coins == 0 {
             return errors.New("uxto spam: Zero coin output")
         }
-        // each transaction output should multiple of 10e6 base units,
+        // each transaction output should multiple of 1e6 base units,
         // to prevent utxo spam
-        if ux.Body.Coins%10e6 != 0 {
-            return errors.New("uxto spam: Outputs must be multiple of 10e6 base units")
+        if ux.Body.Coins%1e6 != 0 {
+            return errors.New("uxto spam: Outputs must be multiple of 1e6 base units")
         }
     }
 

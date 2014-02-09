@@ -96,8 +96,8 @@ func (self *Transaction) Verify() error {
 
     //artificial restriction to prevent spam
     for _, txo := range self.Out {
-        if txo.Coins%10e6 != 0 {
-            return errors.New("Error: transaction outputs must be multiple of 10e6 base units")
+        if txo.Coins%1e6 != 0 {
+            return errors.New("Error: transaction outputs must be multiple of 1e6 base units")
         }
     }
 

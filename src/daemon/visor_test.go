@@ -70,7 +70,7 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     if !master {
         // Give the nonmaster some money to spend
         addr := d.Visor.Visor.Wallet.Entries[0].Address
-        tx, err := mv.Spend(visor.Balance{10 * 10e6, 0}, 0, addr)
+        tx, err := mv.Spend(visor.Balance{10 * 1e6, 0}, 0, addr)
         assert.Nil(t, err)
         mv.RecordTxn(tx, false)
         sb, err := mv.CreateBlock()
@@ -92,7 +92,7 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
 
     // Creation should occur with a transaction, if not a master
     dest := visor.NewWalletEntry()
-    _, err := d.Visor.Spend(visor.Balance{10 * 10e6, 0}, 0, dest.Address,
+    _, err := d.Visor.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address,
         d.Pool)
     assert.Nil(t, err)
     time.Sleep(time.Millisecond * 1250)

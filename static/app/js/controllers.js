@@ -4,8 +4,8 @@
 
 angular.module('skycoin.controllers', [])
 
-.controller('mainCtrl', ['$scope','$http', '$modal', '$log',
-  function($scope,$http,$modal,$log) {
+.controller('mainCtrl', ['$scope','$http', '$modal', '$log', '$timeout',
+  function($scope,$http,$modal,$log,$timeout) {
   	$scope.addresses = [];
 
 
@@ -16,16 +16,24 @@ angular.module('skycoin.controllers', [])
       });
 	 }
 
+	$scope.refreshBalances = function() {
+	    $scope.loadWallets();
+	    $timeout($scope.refreshBalances, 15000);
+    }
+
 	 $scope.getProgress();
+	 $timeout($scope.refreshBalances, 15000);
+
+
 
 
 
   	$scope.loadWallets = function(){
       $http.post('/wallet').success(function(response){
         console.dir(response);
-        $scope.loadedWallet = response;
+        //$scope.loadedWallet = response;
         for(var i=0;i<response.entries.length;i++){
-        	$scope.addresses[i] = {};
+        	if(!$scope.addresses[i]) $scope.addresses[i] = {};
         	$scope.addresses[i].address = response.entries[i].address;
         }
         for(var i=0;i<response.entries.length;i++){
@@ -56,9 +64,23 @@ angular.module('skycoin.controllers', [])
 	    });
 	 }
 
+	 $scope.sendDisable = false;
+	 $scope.readyDisable = true;
+
+	 $scope.ready = function(){
+	 	$scope.readyDisable = !$scope.readyDisable;
+	 	$scope.sendDisable = !$scope.sendDisable;
+	 }
+
+	 $scope.pendingTable = [];
+	 $scope.historyTable = [];
+
 	 $scope.spend = function(addr){
+	 	$scope.sendDisable = true;
+	 	$scope.pendingTable.push(addr);
+	 	$scope.historyTable.push(addr);
 	 	var xsrf = {dst:addr.address,
-	 				coins:addr.amount,
+	 				coins:addr.amount*1000000,
 	 				fee:1,
 	 				hours:1}
 		$http({
@@ -93,7 +115,7 @@ angular.module('skycoin.controllers', [])
 		    },
 		    data: xsrf
 			}).success(function(response){
-		        $scope.addresses[wI].balance = response;
+		        $scope.addresses[wI].balance = response.coins / 1000000;
 	      });
 	 }
 

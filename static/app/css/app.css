@@ -144,6 +144,23 @@ table#overview-wallet{
     background-color:#F2F5F8;
     cursor:pointer;
   }
+#pending-table{
+  width:100%;
+  background-color:#fff;
+}
+  #pending-table button, #transaction-table .btn-group{
+    width:100%;
+  }
+  #pending-table tr{
+    background-color:#fff;
+  }
+    #pending-table td{
+      text-align:left;
+    }
+  #pending-table .dark-row{
+    background-color:#F2F5F8;
+    cursor:pointer;
+  }
 
 label {
   float:left;

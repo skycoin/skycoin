@@ -8,3 +8,6 @@ angular.module('myApp.filters', []).
       return String(text).replace(/\%VERSION\%/mg, version);
     }
   }]);
+
+
+

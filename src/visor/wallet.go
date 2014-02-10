@@ -53,16 +53,17 @@ func LoadWalletEntry(filename string) (WalletEntry, error) {
     }
 }
 
-// Loads a WalletEntry from filename but also panics if the entry is invalid
-func MustLoadWalletEntry(filename string) (WalletEntry, error) {
+// Loads a WalletEntry from filename but panics is unable to load or contents
+// are invalid
+func MustLoadWalletEntry(filename string) WalletEntry {
     keys, err := LoadWalletEntry(filename)
     if err != nil {
-        return keys, err
+        log.Panicf("Failed to load wallet entry: %v", err)
     }
     if err := keys.Verify(); err != nil {
         log.Panicf("Invalid wallet entry: %v", err)
     }
-    return keys, nil
+    return keys
 }
 
 // Checks that the public key is derivable from the secret key,
@@ -255,6 +256,10 @@ func ReadableWalletEntryFromPubkey(pub string) ReadableWalletEntry {
         Address: addr.String(),
         Public:  pub,
     }
+}
+
+func (self *ReadableWalletEntry) Save(filename string) error {
+    return util.SaveJSONSafe(filename, self, 0600)
 }
 
 // Used for [de]serialization of the Wallet

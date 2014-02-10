@@ -388,8 +388,11 @@ main:
         // TODO -- run these in the Visor
         // Create blocks, if master chain
         case <-blockCreationTicker.C:
-            if e := self.Visor.CreateAndPublishBlock(self.Pool); e != nil {
-                logger.Error("Failed to create and publish block: %v", e)
+            err, published := self.Visor.CreateAndPublishBlock(self.Pool)
+            if err != nil {
+                logger.Error("Failed to create block: %v", err)
+            } else if !published {
+                logger.Warning("Failed to publish block to anyone")
             } else {
                 // Not a critical error, but we want it very visible in logs
                 logger.Critical("Created and published a new block")

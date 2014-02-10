@@ -38,16 +38,11 @@ func NewVisorConfig() VisorConfig {
     }
 }
 
-func (self *VisorConfig) LoadMasterKeys() error {
+func (self *VisorConfig) LoadMasterKeys() {
     if self.Disabled {
-        return nil
+        return
     }
-    keys, err := visor.MustLoadWalletEntry(self.MasterKeysFile)
-    if err != nil {
-        return err
-    }
-    self.Config.MasterKeys = keys
-    return nil
+    self.Config.MasterKeys = visor.MustLoadWalletEntry(self.MasterKeysFile)
 }
 
 type Visor struct {
@@ -67,10 +62,6 @@ func NewVisor(c VisorConfig) *Visor {
         Visor:             v,
         blockchainLengths: make(map[string]uint64),
     }
-}
-
-func (self *Visor) RemoveConnection(addr string) {
-    delete(self.blockchainLengths, addr)
 }
 
 // Closes the Wallet, saving it to disk
@@ -138,8 +129,8 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
     }
 }
 
-// Sends a GetBlocksMessage to one connection
-func (self *Visor) RequestBlocksFromConn(pool *Pool, addr string) error {
+// Sends a GetBlocksMessage to one connected address
+func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
     if self.Config.Disabled {
         return nil
     }
@@ -163,23 +154,28 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     if self.Config.Disabled {
         return
     }
-    since := (self.Config.TransactionRebroadcastRate * 2) - (time.Second * 30)
+    since := self.Config.TransactionRebroadcastRate * 2
+    since = (since * 9) / 10
     txns := self.Visor.UnconfirmedTxns.GetOwnedTransactionsSince(since)
+    if len(txns) == 0 {
+        return
+    }
     hashes := make([]coin.SHA256, len(txns))
     for _, tx := range txns {
         hashes = append(hashes, tx.Txn.Header.Hash)
     }
-    m := NewAnnounceTxnsMessages(hashes)
+    m := NewAnnounceTxnsMessage(hashes)
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) != len(pool.Pool.Pool) {
         now := time.Now().UTC()
-        for _, tx := range txns {
-            tx.Announced = now
+        for _, h := range hashes {
+            self.Visor.UnconfirmedTxns.SetAnnounced(h, now)
         }
     }
 }
 
-// Sends a signed block to all connections
+// Sends a signed block to all connections. Returns error only if disabled.
+// No error is returned if it fails to send to anyone.
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     if self.Config.Disabled {
         return errors.New("Visor disabled")
@@ -187,12 +183,14 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        logger.Warning("Failed to give blocks to anyone")
+        logger.Warning("Failed to send block to anyone")
+        return errors.New("Did not send block to anyone")
     }
     return nil
 }
 
-// Broadcasts a single transaction to all peers
+// Broadcasts a single transaction to all peers. Returns error if disabled or
+// if broadcast completely failed
 func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
     if self.Config.Disabled {
         return errors.New("Visor disabled")
@@ -200,8 +198,8 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
     m := NewGiveTxnsMessage([]coin.Transaction{t})
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) == len(pool.Pool.Pool) {
-        logger.Warning("Failed to give transaction to anyone")
-        return errors.New("Did not broadcast to anyone")
+        logger.Warning("Failed to send transaction to anyone")
+        return errors.New("Did not send transaction to anyone")
     }
     return nil
 }
@@ -222,29 +220,35 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
 }
 
 // Creates a block from unconfirmed transactions and sends it to the network.
-// Will panic if not running as a master chain.
-func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
+// Will panic if not running as a master chain.  Returns creation error and
+// whether it was published or not
+func (self *Visor) CreateAndPublishBlock(pool *Pool) (error, bool) {
     if self.Config.Disabled {
-        return errors.New("Visor disabled")
+        return errors.New("Visor disabled"), false
     }
     sb, err := self.Visor.CreateBlock()
     if err == nil {
-        return self.broadcastBlock(sb, pool)
+        return nil, (self.broadcastBlock(sb, pool) == nil)
     } else {
-        return err
+        return err, false
     }
 }
 
+// Updates internal state when a connection disconnects
+func (self *Visor) RemoveConnection(addr string) {
+    delete(self.blockchainLengths, addr)
+}
+
 // Saves a peer-reported blockchain length
-func (self *Visor) recordBlockchainLength(addr string, bkSeq uint64) {
-    self.blockchainLengths[addr] = bkSeq
+func (self *Visor) recordBlockchainLength(addr string, bkLen uint64) {
+    self.blockchainLengths[addr] = bkLen
 }
 
 // Returns the blockchain length estimated from peer reports
 func (self *Visor) EstimateBlockchainLength() uint64 {
-    maxSeq := self.Visor.MostRecentBkSeq() + 1
-    if len(self.blockchainLengths) == 0 {
-        return maxSeq
+    ourLen := self.Visor.MostRecentBkSeq() + 1
+    if len(self.blockchainLengths) < 2 {
+        return ourLen
     }
     lengths := make(BlockchainLengths, 0, len(self.blockchainLengths))
     for _, seq := range self.blockchainLengths {
@@ -258,8 +262,8 @@ func (self *Visor) EstimateBlockchainLength() uint64 {
     } else {
         val = lengths[median]
     }
-    if val < maxSeq {
-        return maxSeq
+    if val < ourLen {
+        return ourLen
     } else {
         return val
     }
@@ -330,21 +334,28 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
     if d.Visor.Config.Disabled {
         return
     }
-    if len(self.Blocks) == 0 {
-        return
-    }
     processed := 0
-    for i, b := range self.Blocks {
+    maxSeq := d.Visor.Visor.MostRecentBkSeq()
+    for _, b := range self.Blocks {
+        // To minimize waste when receiving multiple responses from peers
+        // we only break out of the loop if the block itself is invalid.
+        // E.g. if we request 20 blocks since 0 from 2 peers, and one peer
+        // replies with 15 and the other 20, if we did not do this check and
+        // the reply with 15 was received first, we would toss the one with 20
+        // even though we could process it at the time.
+        if b.Block.Header.BkSeq <= maxSeq {
+            continue
+        }
         err := d.Visor.Visor.ExecuteSignedBlock(b)
         if err == nil {
             logger.Debug("Added new block %d", b.Block.Header.BkSeq)
+            processed++
         } else {
             logger.Info("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
             break
         }
-        processed = i + 1
     }
     if processed == 0 {
         return
@@ -397,7 +408,7 @@ type AnnounceTxnsMessage struct {
     c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewAnnounceTxnsMessages(txns []coin.SHA256) *AnnounceTxnsMessage {
+func NewAnnounceTxnsMessage(txns []coin.SHA256) *AnnounceTxnsMessage {
     return &AnnounceTxnsMessage{
         Txns: txns,
     }
@@ -452,6 +463,7 @@ func (self *GetTxnsMessage) Process(d *Daemon) {
     if len(known) == 0 {
         return
     }
+    logger.Debug("%d/%d txns known", len(known), len(self.Txns))
     m := NewGiveTxnsMessage(known)
     err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
     if err != nil {
@@ -494,7 +506,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     // Announce these transactions to peers
     if len(hashes) != 0 {
         now := time.Now().UTC()
-        m := NewAnnounceTxnsMessages(hashes)
+        m := NewAnnounceTxnsMessage(hashes)
         errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
         if len(errs) != len(d.Pool.Pool.Pool) {
             for _, h := range hashes {
@@ -515,5 +527,5 @@ func (self BlockchainLengths) Swap(i, j int) {
     self[j] = t
 }
 func (self BlockchainLengths) Less(i, j int) bool {
-    return i < j
+    return self[i] < self[j]
 }

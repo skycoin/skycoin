@@ -189,8 +189,8 @@ func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
 func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
     known := make(coin.Transactions, 0)
     for _, h := range txns {
-        txn, unknown := self.Txns[h]
-        if !unknown {
+        txn, have := self.Txns[h]
+        if have {
             known = append(known, txn.Txn)
         }
     }

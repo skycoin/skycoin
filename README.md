@@ -15,6 +15,13 @@ Installation
 ./run.sh -h
 ```
 
+*Running Wallet
+
+```
+./run.sh -web-interface=true
+Goto http://127.0.0.1:6402
+```
+
 No Mining
 ---------
 

@@ -55,8 +55,9 @@ type Connection struct {
 
 // Result of a Spend() operation
 type Spend struct {
-    RemainingBalance Balance `json:"remaining_balance"`
-    Error            string  `json:"error"`
+    RemainingBalance Balance                   `json:"remaining_balance"`
+    Transaction      visor.ReadableTransaction `json:"txn"`
+    Error            string                    `json:"error"`
 }
 
 type BlockchainProgress struct {
@@ -283,7 +284,7 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    _, err := self.Daemon.Visor.Spend(amt, fee, dest, self.Daemon.Pool)
+    txn, err := self.Daemon.Visor.Spend(amt, fee, dest, self.Daemon.Pool)
     errString := ""
     if err != nil {
         errString = err.Error()
@@ -291,6 +292,7 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
     }
     return &Spend{
         RemainingBalance: *(self.getTotalBalance(true)),
+        Transaction:      visor.NewReadableTransaction(&txn),
         Error:            errString,
     }
 }

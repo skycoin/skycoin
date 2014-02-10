@@ -663,6 +663,56 @@ func TestVisorSpend(t *testing.T) {
     })
 }
 
+func TestVisorResendTransaction(t *testing.T) {
+    defer cleanupVisor()
+    defer gnet.EraseMessages()
+    p, gc := setupPool()
+    vc, mv := setupVisor()
+    v := NewVisor(vc)
+    assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 0)
+
+    // Nothing should happen if txn unknown
+    assert.False(t, v.ResendTransaction(coin.SumSHA256([]byte("garbage")), p))
+    assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+
+    // give the visor some coins, and make a spend to add a txn
+    assert.Nil(t, transferCoins(mv, v.Visor))
+    tx, err := v.Spend(visor.Balance{10e6, 0}, 0,
+        mv.Wallet.Entries[0].Address, p)
+    assert.Nil(t, err)
+    assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
+    h := tx.Header.Hash
+    ut := v.Visor.UnconfirmedTxns.Txns[h]
+    ut.Announced = time.Unix(0, 0)
+    v.Visor.UnconfirmedTxns.Txns[h] = ut
+    assert.Equal(t, v.Visor.UnconfirmedTxns.Txns[h].Announced, time.Unix(0, 0))
+    // Reset the sent timer since we made a successful spend
+    gc.LastSent = time.Unix(0, 0)
+
+    // Nothing should send if disabled
+    v.Config.Disabled = true
+    assert.False(t, v.ResendTransaction(h, p))
+    ann := v.Visor.UnconfirmedTxns.Txns[h].Announced
+    assert.Equal(t, ann, time.Unix(0, 0))
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+
+    // Nothing should send if failed to send
+    gc.Conn = NewFailingConn(addr)
+    v.Config.Disabled = false
+    assert.False(t, v.ResendTransaction(h, p))
+    ann = v.Visor.UnconfirmedTxns.Txns[h].Announced
+    assert.Equal(t, ann, time.Unix(0, 0))
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+
+    // Should have resent
+    gc.Conn = NewDummyConn(addr)
+    assert.True(t, v.ResendTransaction(h, p))
+    ann = v.Visor.UnconfirmedTxns.Txns[h].Announced
+    assert.NotEqual(t, ann, time.Unix(0, 0))
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+}
+
 func TestCreateAndPublishBlock(t *testing.T) {
     defer cleanupVisor()
     defer gnet.EraseMessages()

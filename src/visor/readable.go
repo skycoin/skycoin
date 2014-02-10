@@ -26,8 +26,8 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 // Wrapper around coin.Transaction, tagged with its status.  This allows us
 // to include unconfirmed txns
 type Transaction struct {
-    Txn    coin.Transaction
-    Status TransactionStatus
+    Txn    coin.Transaction  `json:"txn"`
+    Status TransactionStatus `json:"status"`
 }
 
 type TransactionStatus struct {
@@ -67,7 +67,7 @@ func NewConfirmedTransactionStatus(height uint64) TransactionStatus {
     }
     return TransactionStatus{
         Unconfirmed: false,
-        Unknown:     true,
+        Unknown:     false,
         Confirmed:   true,
         Height:      height,
     }

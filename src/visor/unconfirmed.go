@@ -35,8 +35,7 @@ func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
 }
 
 func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
-    tx, ok := self.Txns[h]
-    if ok {
+    if tx, ok := self.Txns[h]; ok {
         tx.Announced = t
         self.Txns[h] = tx
     }

@@ -2,6 +2,7 @@ package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
+    "log"
 )
 
 // Encapsulates useful information from the coin.Blockchain
@@ -19,6 +20,56 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
         Head:        NewReadableBlockHeader(&v.blockchain.Head().Header),
         Unspents:    uint64(len(v.blockchain.Unspent.Arr)),
         Unconfirmed: uint64(len(v.UnconfirmedTxns.Txns)),
+    }
+}
+
+// Wrapper around coin.Transaction, tagged with its status.  This allows us
+// to include unconfirmed txns
+type Transaction struct {
+    Txn    coin.Transaction
+    Status TransactionStatus
+}
+
+type TransactionStatus struct {
+    // This txn is in the unconfirmed pool
+    Unconfirmed bool `json:"unconfirmed"`
+    // We can't find anything about this txn.  Be aware that the txn may be
+    // in someone else's unconfirmed pool, and if valid, it may become a
+    // confirmed txn in the future
+    Unknown   bool `json:"unknown"`
+    Confirmed bool `json:"confirmed"`
+    // If confirmed, how many blocks deep in the chain it is. Will be at least
+    // 1 if confirmed.
+    Height uint64 `json:"height"`
+}
+
+func NewUnconfirmedTransactionStatus() TransactionStatus {
+    return TransactionStatus{
+        Unconfirmed: true,
+        Unknown:     false,
+        Confirmed:   false,
+        Height:      0,
+    }
+}
+
+func NewUnknownTransactionStatus() TransactionStatus {
+    return TransactionStatus{
+        Unconfirmed: false,
+        Unknown:     true,
+        Confirmed:   false,
+        Height:      0,
+    }
+}
+
+func NewConfirmedTransactionStatus(height uint64) TransactionStatus {
+    if height == 0 {
+        log.Panic("Invalid confirmed transaction height")
+    }
+    return TransactionStatus{
+        Unconfirmed: false,
+        Unknown:     true,
+        Confirmed:   true,
+        Height:      height,
     }
 }
 

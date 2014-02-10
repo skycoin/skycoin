@@ -55,15 +55,30 @@ type Connection struct {
 
 // Result of a Spend() operation
 type Spend struct {
-    RemainingBalance visor.Balance
-    Error            string
+    RemainingBalance Balance `json:"remaining_balance"`
+    Error            string  `json:"error"`
 }
 
 type BlockchainProgress struct {
     // Our current blockchain length
     Current uint64 `json:"current"`
     // Our best guess at true blockchain length
-    Highest uint64 `json:"Highest"`
+    Highest uint64 `json:"highest"`
+}
+
+type Balance struct {
+    Balance visor.Balance `json:"balance"`
+    // Whether this balance includes unconfirmed txns in its calculation
+    Predicted bool `json:"predicted"`
+}
+
+type Transaction struct {
+    Transaction visor.ReadableTransaction `json:"txn"`
+    Status      visor.TransactionStatus   `json:"status"`
+}
+
+type ResendResult struct {
+    Sent bool `json:"sent"`
 }
 
 // Arrays must be wrapped in structs to avoid certain javascript exploits
@@ -76,6 +91,10 @@ type Connections struct {
 // An array of readable blocks.
 type ReadableBlocks struct {
     Blocks []visor.ReadableBlock `json:"blocks"`
+}
+
+type Transactions struct {
+    Txns []Transaction `json:"txns"`
 }
 
 /* Public API
@@ -96,16 +115,20 @@ func (self *RPC) GetConnection(addr string) interface{} {
     return r
 }
 
-// Returns a *coin.Balance
-func (self *RPC) GetTotalBalance() interface{} {
-    self.requests <- func() interface{} { return self.getTotalBalance() }
+// Returns a *Balance
+func (self *RPC) GetTotalBalance(predicted bool) interface{} {
+    self.requests <- func() interface{} {
+        return self.getTotalBalance(predicted)
+    }
     r := <-self.responses
     return r
 }
 
-// Returns a *coin.Balance
-func (self *RPC) GetBalance(a coin.Address) interface{} {
-    self.requests <- func() interface{} { return self.getBalance(a) }
+// Returns a *Balance
+func (self *RPC) GetBalance(a coin.Address, predicted bool) interface{} {
+    self.requests <- func() interface{} {
+        return self.getBalance(a, predicted)
+    }
     r := <-self.responses
     return r
 }
@@ -166,6 +189,33 @@ func (self *RPC) GetBlockchainProgress() interface{} {
     return r
 }
 
+// Returns a *Transactions
+func (self *RPC) GetAddressTransactions(a coin.Address) interface{} {
+    self.requests <- func() interface{} {
+        return self.getAddressTransactions(a)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *Transaction
+func (self *RPC) GetTransaction(txn coin.SHA256) interface{} {
+    self.requests <- func() interface{} {
+        return self.getTransaction(txn)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *ResendResult
+func (self *RPC) ResendTransaction(txn coin.SHA256) interface{} {
+    self.requests <- func() interface{} {
+        return self.resendTransaction(txn)
+    }
+    r := <-self.responses
+    return r
+}
+
 /* Internal API */
 
 func (self *RPC) getConnection(addr string) *Connection {
@@ -197,20 +247,36 @@ func (self *RPC) getConnections() *Connections {
     return &Connections{Connections: conns}
 }
 
-func (self *RPC) getTotalBalance() *visor.Balance {
+func (self *RPC) getTotalBalance(predicted bool) *Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b := self.Daemon.Visor.Visor.TotalBalancePredicted()
-    return &b
+    var b visor.Balance
+    if predicted {
+        b = self.Daemon.Visor.Visor.TotalBalancePredicted()
+    } else {
+        b = self.Daemon.Visor.Visor.TotalBalance()
+    }
+    return &Balance{
+        Balance:   b,
+        Predicted: predicted,
+    }
 }
 
-func (self *RPC) getBalance(a coin.Address) *visor.Balance {
+func (self *RPC) getBalance(a coin.Address, predicted bool) *Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    b := self.Daemon.Visor.Visor.BalancePredicted(a)
-    return &b
+    var b visor.Balance
+    if predicted {
+        b = self.Daemon.Visor.Visor.BalancePredicted(a)
+    } else {
+        b = self.Daemon.Visor.Visor.Balance(a)
+    }
+    return &Balance{
+        Balance:   b,
+        Predicted: predicted,
+    }
 }
 
 func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend {
@@ -224,7 +290,7 @@ func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend 
         logger.Error("Failed to make a spend: %v", err)
     }
     return &Spend{
-        RemainingBalance: *(self.getTotalBalance()),
+        RemainingBalance: *(self.getTotalBalance(true)),
         Error:            errString,
     }
 }
@@ -289,5 +355,43 @@ func (self *RPC) getBlockchainProgress() *BlockchainProgress {
     return &BlockchainProgress{
         Current: self.Daemon.Visor.Visor.MostRecentBkSeq(),
         Highest: self.Daemon.Visor.EstimateBlockchainLength(),
+    }
+}
+
+func (self *RPC) getTransaction(txHash coin.SHA256) *Transaction {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    txn := self.Daemon.Visor.Visor.GetTransaction(txHash)
+    return &Transaction{
+        Transaction: visor.NewReadableTransaction(&txn.Txn),
+        Status:      txn.Status,
+    }
+}
+
+func (self *RPC) getAddressTransactions(addr coin.Address) *Transactions {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    addrTxns := self.Daemon.Visor.Visor.GetAddressTransactions(addr)
+    txns := make([]Transaction, 0, len(addrTxns))
+    for _, tx := range addrTxns {
+        txns = append(txns, Transaction{
+            Transaction: visor.NewReadableTransaction(&tx.Txn),
+            Status:      tx.Status,
+        })
+    }
+    return &Transactions{
+        Txns: txns,
+    }
+}
+
+func (self *RPC) resendTransaction(txHash coin.SHA256) *ResendResult {
+    if self.Daemon.Visor.Visor == nil {
+        return nil
+    }
+    sent := self.Daemon.Visor.ResendTransaction(txHash, self.Daemon.Pool)
+    return &ResendResult{
+        Sent: sent,
     }
 }

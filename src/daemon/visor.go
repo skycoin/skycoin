@@ -219,6 +219,20 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
     return txn, err
 }
 
+// Resends a known UnconfirmedTxn. Returns whether or not it was sent to anyone
+func (self *Visor) ResendTransaction(h coin.SHA256, pool *Pool) bool {
+    if self.Config.Disabled {
+        return false
+    }
+    if ut, ok := self.Visor.UnconfirmedTxns.Txns[h]; ok {
+        if self.broadcastTransaction(ut.Txn, pool) == nil {
+            self.Visor.UnconfirmedTxns.SetAnnounced(h, time.Now().UTC())
+            return true
+        }
+    }
+    return false
+}
+
 // Creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a master chain.  Returns creation error and
 // whether it was published or not

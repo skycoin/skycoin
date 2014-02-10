@@ -135,16 +135,15 @@ func NewGetPeersMessage() *GetPeersMessage {
 
 func (self *GetPeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
-    d := daemon.(*Daemon)
-    if d.Peers.Config.Disabled {
-        return nil
-    }
     self.c = mc
-    return d.recordMessageEvent(self, mc)
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were requested
 func (self *GetPeersMessage) Process(d *Daemon) {
+    if d.Peers.Config.Disabled {
+        return
+    }
     peers := d.Peers.Peers.Peerlist.Random(d.Peers.Config.ReplyCount)
     if len(peers) == 0 {
         logger.Debug("We have no peers to send in reply")
@@ -191,16 +190,15 @@ func (self *GivePeersMessage) GetPeers() []string {
 
 func (self *GivePeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
-    d := daemon.(*Daemon)
-    if d.Peers.Config.Disabled {
-        return nil
-    }
     self.c = mc
-    return d.recordMessageEvent(self, mc)
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were received
 func (self *GivePeersMessage) Process(d *Daemon) {
+    if d.Peers.Config.Disabled {
+        return
+    }
     peers := self.GetPeers()
     if len(peers) != 0 {
         logger.Debug("Got these peers via PEX:")

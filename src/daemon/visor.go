@@ -164,7 +164,7 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     for _, tx := range txns {
         hashes = append(hashes, tx.Txn.Header.Hash)
     }
-    m := NewAnnounceTxnsMessages(hashes)
+    m := NewAnnounceTxnsMessage(hashes)
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) != len(pool.Pool.Pool) {
         now := time.Now().UTC()
@@ -334,21 +334,28 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
     if d.Visor.Config.Disabled {
         return
     }
-    if len(self.Blocks) == 0 {
-        return
-    }
     processed := 0
-    for i, b := range self.Blocks {
+    maxSeq := d.Visor.Visor.MostRecentBkSeq()
+    for _, b := range self.Blocks {
+        // To minimize waste when receiving multiple responses from peers
+        // we only break out of the loop if the block itself is invalid.
+        // E.g. if we request 20 blocks since 0 from 2 peers, and one peer
+        // replies with 15 and the other 20, if we did not do this check and
+        // the reply with 15 was received first, we would toss the one with 20
+        // even though we could process it at the time.
+        if b.Block.Header.BkSeq <= maxSeq {
+            continue
+        }
         err := d.Visor.Visor.ExecuteSignedBlock(b)
         if err == nil {
             logger.Debug("Added new block %d", b.Block.Header.BkSeq)
+            processed++
         } else {
             logger.Info("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
             break
         }
-        processed = i + 1
     }
     if processed == 0 {
         return
@@ -401,7 +408,7 @@ type AnnounceTxnsMessage struct {
     c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewAnnounceTxnsMessages(txns []coin.SHA256) *AnnounceTxnsMessage {
+func NewAnnounceTxnsMessage(txns []coin.SHA256) *AnnounceTxnsMessage {
     return &AnnounceTxnsMessage{
         Txns: txns,
     }
@@ -456,6 +463,7 @@ func (self *GetTxnsMessage) Process(d *Daemon) {
     if len(known) == 0 {
         return
     }
+    logger.Debug("%d/%d txns known", len(known), len(self.Txns))
     m := NewGiveTxnsMessage(known)
     err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
     if err != nil {
@@ -498,7 +506,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     // Announce these transactions to peers
     if len(hashes) != 0 {
         now := time.Now().UTC()
-        m := NewAnnounceTxnsMessages(hashes)
+        m := NewAnnounceTxnsMessage(hashes)
         errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
         if len(errs) != len(d.Pool.Pool.Pool) {
             for _, h := range hashes {
@@ -519,5 +527,5 @@ func (self BlockchainLengths) Swap(i, j int) {
     self[j] = t
 }
 func (self BlockchainLengths) Less(i, j int) bool {
-    return i < j
+    return self[i] < self[j]
 }

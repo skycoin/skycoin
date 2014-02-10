@@ -6,6 +6,7 @@ import (
     "github.com/skycoin/skycoin/src/visor"
     "github.com/stretchr/testify/assert"
     "os"
+    "sort"
     "testing"
     "time"
 )
@@ -119,6 +120,11 @@ func setupPool() (*Pool, *gnet.Connection) {
     return p, setupExistingPool(p)
 }
 
+func makeValidTxn(mv *visor.Visor) (coin.Transaction, error) {
+    we := visor.NewWalletEntry()
+    return mv.Spend(visor.Balance{10 * 1e6, 0}, 0, we.Address)
+}
+
 func transferCoins(mv *visor.Visor, v *visor.Visor) error {
     // Give the nonmaster some money to spend
     addr := v.Wallet.Entries[0].Address
@@ -132,6 +138,24 @@ func transferCoins(mv *visor.Visor, v *visor.Visor) error {
         return err
     }
     return v.ExecuteSignedBlock(sb)
+}
+
+func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
+    dest := visor.NewWalletEntry()
+    blocks := make([]visor.SignedBlock, 0, n)
+    for i := 0; i < n; i++ {
+        tx, err := mv.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address)
+        if err != nil {
+            return nil, err
+        }
+        mv.RecordTxn(tx, false)
+        sb, err := mv.CreateBlock()
+        if err != nil {
+            return nil, err
+        }
+        blocks = append(blocks, sb)
+    }
+    return blocks, nil
 }
 
 /* Tests for daemon's loop related to visor */
@@ -735,4 +759,325 @@ func TestEstimateBlockchainLength(t *testing.T) {
     v.recordBlockchainLength(addrc, 9)
     v.recordBlockchainLength(addrd, 100)
     assert.Equal(t, v.EstimateBlockchainLength(), uint64(7))
+}
+
+/* Visor Messages */
+
+func TestGetBlocksMessageHandle(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    m := NewGetBlocksMessage(uint64(1))
+    assert.Equal(t, m.LastBlock, uint64(1))
+    testSimpleMessageHandler(t, d, m)
+}
+
+func TestGetBlocksMessageProcess(t *testing.T) {
+    v, mv := setupVisor()
+    d, _ := newVisorDaemon(v)
+    defer shutdown(d)
+    assert.Nil(t, transferCoins(mv, d.Visor.Visor))
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(1))
+    m := NewGetBlocksMessage(uint64(7))
+    m.c = messageContext(addr)
+    d.Visor.Config.Disabled = true
+    m.Process(d)
+    // Disabled should not record a blockchain length
+    assert.Equal(t, len(d.Visor.blockchainLengths), 0)
+
+    // Enabled handler, should record bc length not not send anything since
+    // we have nothing new enough
+    d.Visor.Config.Disabled = false
+    m.Process(d)
+    assert.Equal(t, len(d.Visor.blockchainLengths), 1)
+    assert.Equal(t, d.Visor.blockchainLengths[addr], uint64(7))
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We have something for them, but failed to send
+    m.c.Conn.Conn = NewFailingConn(addr)
+    m.LastBlock = uint64(0)
+    m.Process(d)
+    assert.Equal(t, len(d.Visor.blockchainLengths), 1)
+    assert.Equal(t, d.Visor.blockchainLengths[addr], uint64(0))
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    m.c.Conn.Conn = NewDummyConn(addr)
+    m.Process(d)
+    assert.Equal(t, len(d.Visor.blockchainLengths), 1)
+    assert.Equal(t, d.Visor.blockchainLengths[addr], uint64(0))
+    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+}
+
+func TestGiveBlocksMessageHandle(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    _, mv := setupVisor()
+    blocks := []visor.SignedBlock{mv.GetGenesisBlock()}
+    m := NewGiveBlocksMessage(blocks)
+    assert.Equal(t, m.Blocks, blocks)
+    testSimpleMessageHandler(t, d, m)
+}
+
+func TestGiveBlocksMessageProcess(t *testing.T) {
+    v, mv := setupVisor()
+    d, _ := newVisorDaemon(v)
+    defer shutdown(d)
+    gc := setupExistingPool(d.Pool)
+
+    blocks, err := makeBlocks(mv, 2)
+    assert.Nil(t, err)
+    assert.Equal(t, len(blocks), 2)
+    m := NewGiveBlocksMessage(blocks)
+    m.c = messageContext(addr)
+
+    // Disabled should have nothing happen
+    d.Visor.Config.Disabled = true
+    m.Process(d)
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(0))
+
+    // Not disabled, should add blocks, but fail to send
+    gc.Conn = NewFailingConn(addr)
+    d.Visor.Config.Disabled = false
+    m.Process(d)
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(2))
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+
+    // Not disabled and blocks were reannounced
+    gc.Conn = NewDummyConn(addr)
+    blocks, err = makeBlocks(mv, 2)
+    assert.Nil(t, err)
+    assert.Equal(t, len(blocks), 2)
+    assert.Equal(t, len(blocks), 2)
+    m = NewGiveBlocksMessage(blocks)
+    m.c = messageContext(addr)
+    m.Process(d)
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(4))
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+
+    // Send blocks we have and some we dont, as long as they are in order
+    // we can use the ones at the end
+    gc.LastSent = time.Unix(0, 0)
+    moreBlocks, err := makeBlocks(mv, 2)
+    assert.Nil(t, err)
+    blocks = append(blocks, moreBlocks...)
+    m = NewGiveBlocksMessage(blocks)
+    m.c = messageContext(addr)
+    m.Process(d)
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(6))
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+
+    // Send invalid blocks
+    gc.LastSent = time.Unix(0, 0)
+    bb := visor.SignedBlock{
+        Block: coin.Block{
+            Header: coin.BlockHeader{
+                BkSeq: uint64(7),
+            }}}
+    m = NewGiveBlocksMessage([]visor.SignedBlock{bb})
+    m.c = messageContext(addr)
+    m.Process(d)
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(6))
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+}
+
+func TestAnnounceBlocksMessageHandle(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    m := NewAnnounceBlocksMessage(uint64(7))
+    assert.Equal(t, m.MaxBkSeq, uint64(7))
+    testSimpleMessageHandler(t, d, m)
+}
+
+func TestAnnounceBlocksMessageProcess(t *testing.T) {
+    v, mv := setupVisor()
+    d, _ := newVisorDaemon(v)
+    defer shutdown(d)
+    assert.Nil(t, transferCoins(mv, d.Visor.Visor))
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(1))
+
+    // Disabled, nothing should happen
+    d.Visor.Config.Disabled = true
+    m := NewAnnounceBlocksMessage(uint64(2))
+    m.c = messageContext(addr)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We know all the blocks
+    d.Visor.Config.Disabled = false
+    m.MaxBkSeq = uint64(1)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We send a GetBlocksMessage in response to a higher MaxBkSeq
+    m.MaxBkSeq = uint64(7)
+    assert.False(t, d.Visor.Visor.MostRecentBkSeq() >= m.MaxBkSeq)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We send a GetBlocksMessage in response to a higher MaxBkSeq,
+    // but the send failed
+    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.Conn = NewFailingConn(addr)
+    m.MaxBkSeq = uint64(7)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+}
+
+func TestAnnounceTxnsMessageHandle(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    tx := createUnconfirmedTxn()
+    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    m := NewAnnounceTxnsMessage(txns)
+    assert.Equal(t, m.Txns, txns)
+    testSimpleMessageHandler(t, d, m)
+}
+
+func TestAnnounceTxnsMessageProcess(t *testing.T) {
+    v, _ := setupVisor()
+    d, _ := newVisorDaemon(v)
+    defer shutdown(d)
+
+    tx := createUnconfirmedTxn()
+    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    m := NewAnnounceTxnsMessage(txns)
+    m.c = messageContext(addr)
+
+    // Disabled, nothing should happen
+    d.Visor.Config.Disabled = true
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We don't know some, request them
+    d.Visor.Config.Disabled = false
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We don't know some, request them, but fail to request
+    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.Conn = NewFailingConn(addr)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We know all the reported txns, nothing should be sent
+    d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash] = tx
+    m.c.Conn.Conn = NewDummyConn(addr)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+}
+
+func TestGetTxnsMessageHandle(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    tx := createUnconfirmedTxn()
+    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    m := NewGetTxnsMessage(txns)
+    assert.Equal(t, m.Txns, txns)
+    testSimpleMessageHandler(t, d, m)
+}
+
+func TestGetTxnsMessageProcess(t *testing.T) {
+    v, _ := setupVisor()
+    d, _ := newVisorDaemon(v)
+    defer shutdown(d)
+
+    tx := createUnconfirmedTxn()
+    tx.Txn.Header.Hash = coin.SumSHA256([]byte("asdadwadwada"))
+    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    m := NewGetTxnsMessage(txns)
+    m.c = messageContext(addr)
+
+    // We don't have any to reply with
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // Disabled, nothing should happen
+    d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash] = tx
+    d.Visor.Config.Disabled = true
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We have some to reply with
+    d.Visor.Config.Disabled = false
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+
+    // We have some to reply with, but fail to send
+    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.Conn = NewFailingConn(addr)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+}
+
+func TestGiveTxnsMessageHandle(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    tx := createUnconfirmedTxn()
+    txns := []coin.Transaction{tx.Txn}
+    m := NewGiveTxnsMessage(txns)
+    assert.Equal(t, m.Txns, txns)
+    testSimpleMessageHandler(t, d, m)
+}
+
+func TestGiveTxnsMessageProcess(t *testing.T) {
+    v, mv := setupVisor()
+    d, _ := newVisorDaemon(v)
+    defer shutdown(d)
+    gc := setupExistingPool(d.Pool)
+
+    utx := createUnconfirmedTxn()
+    txns := []coin.Transaction{utx.Txn}
+    m := NewGiveTxnsMessage(txns)
+    m.c = messageContext(addr)
+
+    // No valid txns, nothing should be sent
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+
+    // Disabled, nothing should happen
+    tx, err := makeValidTxn(mv)
+    assert.Nil(t, err)
+    m.Txns = []coin.Transaction{tx}
+    d.Visor.Config.Disabled = true
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+
+    // A valid txn, we should broadcast. Txn's announce state should be updated
+    d.Visor.Config.Disabled = false
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    ut := d.Visor.Visor.UnconfirmedTxns.Txns[tx.Header.Hash]
+    now := time.Now().UTC()
+    assert.True(t, ut.Announced.Add(time.Second).After(now))
+
+    // A valid txn, but we fail to broadcast.  Txn's announce state should not
+    // have been updated
+    tx, err = makeValidTxn(mv)
+    assert.Nil(t, err)
+    m.Txns = []coin.Transaction{tx}
+    gc.LastSent = time.Unix(0, 0)
+    gc.Conn = NewFailingConn(addr)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    ut = d.Visor.Visor.UnconfirmedTxns.Txns[tx.Header.Hash]
+    assert.Equal(t, ut.Announced, time.Unix(0, 0))
+}
+
+/* Misc */
+
+func TestBlockchainLengths(t *testing.T) {
+    b := make(BlockchainLengths, 10)
+    for i := 0; i < 10; i++ {
+        b[i] = uint64(9 - i)
+    }
+    assert.Equal(t, b.Len(), 10)
+    assert.True(t, b.Less(4, 3))
+    assert.Equal(t, b[4], uint64(5))
+    assert.Equal(t, b[3], uint64(6))
+    b.Swap(4, 3)
+    assert.Equal(t, b[4], uint64(6))
+    assert.Equal(t, b[3], uint64(5))
+    sort.Sort(b)
+    for i := 0; i < 10; i++ {
+        assert.Equal(t, b[i], uint64(i))
+    }
 }

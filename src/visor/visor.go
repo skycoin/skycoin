@@ -144,10 +144,6 @@ func NewVisor(c VisorConfig) *Visor {
         }
         blockSigs = NewBlockSigs()
     }
-    err = blockSigs.Verify(c.MasterKeys.Public, blockchain)
-    if err != nil {
-        log.Panic("Invalid block signatures")
-    }
 
     v := &Visor{
         Config:          c,
@@ -162,6 +158,11 @@ func NewVisor(c VisorConfig) *Visor {
     if len(blockchain.Blocks) == 0 {
         v.CreateGenesisBlock()
     }
+    err = blockSigs.Verify(c.MasterKeys.Public, blockchain)
+    if err != nil {
+        log.Panicf("Invalid block signatures: %v", err)
+    }
+
     return v
 }
 

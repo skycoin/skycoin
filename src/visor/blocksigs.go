@@ -87,14 +87,20 @@ func (self *BlockSigs) Save(filename string) error {
 func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) error {
     blocks := uint64(len(bc.Blocks))
     if blocks != uint64(len(self.Sigs)) {
-        return errors.New("NSigs != NBlocks")
+        return errors.New("Missing signatures for blocks or vice versa")
     }
-    for k, v := range self.Sigs {
-        if k > self.MaxSeq {
-            return errors.New("Invalid MaxSeq")
-        } else if k > blocks {
-            return errors.New("Signature for unknown block")
+
+    // For now, block sigs must all be sequential and continuous
+    if self.MaxSeq+1 != blocks {
+        return errors.New("MaxSeq does not match blockchain size")
+    }
+    for i := uint64(0); i < self.MaxSeq; i++ {
+        if _, ok := self.Sigs[i]; !ok {
+            return errors.New("Blocksigs missing signature")
         }
+    }
+
+    for k, v := range self.Sigs {
         err := coin.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
         if err != nil {
             return err

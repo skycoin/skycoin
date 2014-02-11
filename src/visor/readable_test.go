@@ -47,13 +47,17 @@ func setupVisor() (v *Visor, mv *Visor) {
     return
 }
 
-func setupMasterVisor() VisorConfig {
+func setupMasterVisorConfig() VisorConfig {
     // Create testmaster.keys file
     coin.SetAddressVersion("test")
     c := NewVisorConfig()
     c.IsMaster = true
     c.MasterKeys = NewWalletEntry()
     return c
+}
+
+func setupMasterVisor() *Visor {
+    return NewVisor(setupMasterVisorConfig())
 }
 
 func cleanupVisor() {

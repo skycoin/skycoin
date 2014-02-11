@@ -69,12 +69,16 @@ func cleanupVisor() {
     os.Remove(testWalletEntryFile)
 }
 
+func randSHA256() coin.SHA256 {
+    b := make([]byte, 128)
+    rand.Read(b)
+    return coin.SumSHA256(b)
+}
+
 func createUnconfirmedTxn() UnconfirmedTxn {
     ut := UnconfirmedTxn{}
     ut.Txn = coin.Transaction{}
-    b := make([]byte, 32)
-    rand.Read(b)
-    ut.Txn.Header.Hash = coin.SumSHA256(b)
+    ut.Txn.Header.Hash = randSHA256()
     ut.Received = util.Now()
     ut.Checked = ut.Received
     ut.Announced = util.ZeroTime()
@@ -85,7 +89,13 @@ func createUnconfirmedTxn() UnconfirmedTxn {
 
 func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
     ut := createUnconfirmedTxn()
-    v.UnconfirmedTxns.Txns[ut.Txn.Header.Hash] = ut
+    v.UnconfirmedTxns.Txns[ut.Hash()] = ut
+    return ut
+}
+
+func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
+    ut := createUnconfirmedTxn()
+    utp.Txns[ut.Hash()] = ut
     return ut
 }
 

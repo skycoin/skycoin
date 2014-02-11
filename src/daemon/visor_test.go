@@ -43,7 +43,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
 }
 
 func setupMasterVisor() VisorConfig {
-    // Create testmaster.keys file
+    cleanupVisor()
     coin.SetAddressVersion("test")
     c := NewVisorConfig()
     c.Config.IsMaster = true

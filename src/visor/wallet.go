@@ -127,36 +127,28 @@ func (self Balance) IsZero() bool {
     return self.Coins == 0 && self.Hours == 0
 }
 
-// Simplest wallet implementation -- array of addres, keypairs
+// Simplest wallet implementation
 type Wallet struct {
-    Entries []WalletEntry
-    // Lookup table pointing from coin.Address to position in Entries
-    addressLookup map[coin.Address]int
+    Entries map[coin.Address]WalletEntry
 }
 
 func NewWallet() *Wallet {
     return &Wallet{
-        Entries:       make([]WalletEntry, 0),
-        addressLookup: make(map[coin.Address]int),
+        Entries: make(map[coin.Address]WalletEntry),
     }
 }
 
 func NewWalletFromReadable(r *ReadableWallet) *Wallet {
-    entries := make([]WalletEntry, 0, len(r.Entries))
+    entries := make(map[coin.Address]WalletEntry, len(r.Entries))
     for _, re := range r.Entries {
         we := WalletEntryFromReadable(&re)
         if err := we.Verify(); err != nil {
             log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
         }
-        entries = append(entries, we)
-    }
-    lookup := make(map[coin.Address]int, len(entries))
-    for i, e := range entries {
-        lookup[e.Address] = i
+        entries[we.Address] = we
     }
     return &Wallet{
-        Entries:       entries,
-        addressLookup: lookup,
+        Entries: entries,
     }
 }
 
@@ -183,7 +175,7 @@ func (self *Wallet) populate(n int) {
 // Returns all coin.Addresses in this Wallet
 func (self *Wallet) GetAddresses() []coin.Address {
     addrs := make([]coin.Address, 0, len(self.Entries))
-    for a, _ := range self.addressLookup {
+    for a, _ := range self.Entries {
         addrs = append(addrs, a)
     }
     return addrs
@@ -191,22 +183,19 @@ func (self *Wallet) GetAddresses() []coin.Address {
 
 // Returns the WalletEntry for a coin.Address
 func (self *Wallet) GetEntry(a coin.Address) (WalletEntry, bool) {
-    i, exists := self.addressLookup[a]
-    if !exists {
-        return WalletEntry{}, false
-    } else {
-        return self.Entries[i], true
-    }
+    we, exists := self.Entries[a]
+    return we, exists
 }
 
+// Adds a WalletEntry to the wallet. Returns an error if the coin.Address is
+// already in the wallet
 func (self *Wallet) AddEntry(e WalletEntry) error {
-    _, exists := self.addressLookup[e.Address]
+    _, exists := self.Entries[e.Address]
     if exists {
         return fmt.Errorf("Wallet entry already exists for address %s",
             e.Address.String())
     } else {
-        self.Entries = append(self.Entries, e)
-        self.addressLookup[e.Address] = len(self.Entries) - 1
+        self.Entries[e.Address] = e
         return nil
     }
 }

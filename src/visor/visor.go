@@ -468,8 +468,12 @@ func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
+    entries := make(map[coin.Address]byte, len(self.Wallet.Entries))
+    for a, _ := range self.Wallet.Entries {
+        entries[a] = byte(1)
+    }
     return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn,
-        self.Wallet.addressLookup, didAnnounce)
+        entries, didAnnounce)
 }
 
 // Returns the Transactions associated with a coin.Address. This includes

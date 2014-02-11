@@ -31,6 +31,12 @@ func assertFileExists(t *testing.T, filename string) {
     assert.True(t, stat.Mode().IsRegular())
 }
 
+func assertFileNotExists(t *testing.T, filename string) {
+    _, err := os.Stat(filename)
+    assert.NotNil(t, err)
+    assert.True(t, os.IsNotExist(err))
+}
+
 func TestNewBlockSigs(t *testing.T) {
     bs := NewBlockSigs()
     assert.NotNil(t, bs.Sigs)

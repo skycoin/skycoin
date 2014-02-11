@@ -12,10 +12,11 @@ import (
 )
 
 const (
-    testMasterKeysFile = "testmaster.keys"
-    testWalletFile     = "testwallet.json"
-    testBlocksigsFile  = "testblockchain.sigs"
-    testBlockchainFile = "testblockchain.bin"
+    testMasterKeysFile  = "testmaster.keys"
+    testWalletFile      = "testwallet.json"
+    testBlocksigsFile   = "testblockchain.sigs"
+    testBlockchainFile  = "testblockchain.bin"
+    testWalletEntryFile = "testwalletentry.json"
 )
 
 // Returns an appropriate VisorConfig and a master visor
@@ -65,6 +66,7 @@ func cleanupVisor() {
     os.Remove(testBlockchainFile)
     os.Remove(testBlocksigsFile)
     os.Remove(testWalletFile)
+    os.Remove(testWalletEntryFile)
 }
 
 func createUnconfirmedTxn() UnconfirmedTxn {
@@ -89,7 +91,11 @@ func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
 
 func transferCoins(mv *Visor, v *Visor) error {
     // Give the nonmaster some money to spend
-    addr := v.Wallet.Entries[0].Address
+    addr := coin.Address{}
+    for a, _ := range v.Wallet.Entries {
+        addr = a
+        break
+    }
     tx, err := mv.Spend(Balance{10 * 1e6, 0}, 0, addr)
     if err != nil {
         return err

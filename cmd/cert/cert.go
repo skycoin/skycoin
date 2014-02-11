@@ -48,7 +48,7 @@ func main() {
     var err error
     var notBefore time.Time
     if len(*validFrom) == 0 {
-        notBefore = time.Now().UTC()
+        notBefore = util.Now()
     } else {
         notBefore, err = time.Parse("Jan 2 15:04:05 2006", *validFrom)
         if err != nil {

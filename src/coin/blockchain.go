@@ -215,7 +215,7 @@ func (self *Blockchain) Time() uint64 {
 //TODO: use syncronized network time instead of system time
 //TODO: add function pointer to external network time callback?
 func (self *Blockchain) TimeNow() uint64 {
-    return uint64(time.Now().UTC().Unix())
+    return uint64(time.Now().Unix())
 }
 
 // Creates a Block given an array of Transactions.  It does not verify the

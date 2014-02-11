@@ -2,6 +2,7 @@ package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "time"
 )
 
@@ -17,6 +18,11 @@ type UnconfirmedTxn struct {
     IsOurSpend bool
     // We are a receiver
     IsOurReceive bool
+}
+
+// Returns the coin.Transaction's hash
+func (self *UnconfirmedTxn) Hash() coin.SHA256 {
+    return self.Txn.Header.Hash
 }
 
 // Manages unconfirmed transactions
@@ -47,8 +53,8 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     if err := bc.VerifyTransaction(t); err != nil {
         return err
     }
-    now := time.Now().UTC()
-    announcedAt := time.Unix(0, 0)
+    now := util.Now()
+    announcedAt := util.ZeroTime()
     if didAnnounce {
         announcedAt = now
     }
@@ -131,7 +137,7 @@ func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
 // checkPeriod is how often we check the txn against the blockchain.
 func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     checkPeriod, maxAge time.Duration) {
-    now := time.Now().UTC()
+    now := util.Now()
     toRemove := make([]coin.SHA256, 0)
     for k, t := range self.Txns {
         if t.Received.Add(maxAge).Before(now) {
@@ -152,7 +158,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
 // in ago duration
 func (self *UnconfirmedTxnPool) GetOwnedTransactionsSince(ago time.Duration) []*UnconfirmedTxn {
     txns := make([]*UnconfirmedTxn, 0)
-    now := time.Now().UTC()
+    now := util.Now()
     for _, tx := range self.Txns {
         if (tx.IsOurSpend || tx.IsOurReceive) &&
             tx.Announced.Add(ago).Before(now) {

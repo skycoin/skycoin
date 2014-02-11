@@ -6,6 +6,7 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/util"
     "log"
     "net"
     "strconv"
@@ -479,7 +480,7 @@ func (self *Daemon) handleConnectionError(c ConnectionError) {
 func (self *Daemon) cullInvalidConnections() {
     // This method only handles the erroneous people from the DHT, but not
     // malicious nodes
-    now := time.Now().UTC()
+    now := util.Now()
     for a, t := range self.expectingIntroductions {
         // Forget about anyone that already disconnected
         if self.Pool.Pool.Addresses[a] == nil {
@@ -558,7 +559,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
     if e.Solicited {
         self.outgoingConnections[a] = c
     }
-    self.expectingIntroductions[a] = time.Now().UTC()
+    self.expectingIntroductions[a] = util.Now()
     logger.Debug("Sending introduction message to %s", a)
     m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
         self.Pool.Pool.Config.Port)

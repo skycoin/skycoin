@@ -5,6 +5,7 @@ import (
     "fmt"
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
     "sort"
     "time"
@@ -167,7 +168,7 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     m := NewAnnounceTxnsMessage(hashes)
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
     if len(errs) != len(pool.Pool.Pool) {
-        now := time.Now().UTC()
+        now := util.Now()
         for _, h := range hashes {
             self.Visor.UnconfirmedTxns.SetAnnounced(h, now)
         }
@@ -226,7 +227,7 @@ func (self *Visor) ResendTransaction(h coin.SHA256, pool *Pool) bool {
     }
     if ut, ok := self.Visor.UnconfirmedTxns.Txns[h]; ok {
         if self.broadcastTransaction(ut.Txn, pool) == nil {
-            self.Visor.UnconfirmedTxns.SetAnnounced(h, time.Now().UTC())
+            self.Visor.UnconfirmedTxns.SetAnnounced(h, util.Now())
             return true
         }
     }
@@ -519,7 +520,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     }
     // Announce these transactions to peers
     if len(hashes) != 0 {
-        now := time.Now().UTC()
+        now := util.Now()
         m := NewAnnounceTxnsMessage(hashes)
         errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
         if len(errs) != len(d.Pool.Pool.Pool) {

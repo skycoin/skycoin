@@ -7,6 +7,7 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "io/ioutil"
     "net"
@@ -87,25 +88,25 @@ func TestGetPeersMessage(t *testing.T) {
     d.Peers.Peers.AddPeer(addr)
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // Test enabled
     d.Peers.Config.Disabled = false
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // If no peers, nothing should happen
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     delete(d.Peers.Peers.Peerlist, addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // Test with failing send
     d.Peers.Peers.AddPeer(addr)
     m.c.Conn.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     gnet.EraseMessages()
 }
@@ -246,13 +247,13 @@ func TestPingMessage(t *testing.T) {
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
     // A pong message should have been sent
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // Failing to send should not cause a panic
     m.c.Conn.Conn = NewFailingConn(addr)
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     gnet.EraseMessages()
 }
@@ -272,8 +273,8 @@ func gnetConnection(addr string) *gnet.Connection {
     return &gnet.Connection{
         Id:           1,
         Conn:         NewDummyConn(addr),
-        LastSent:     time.Unix(0, 0),
-        LastReceived: time.Unix(0, 0),
+        LastSent:     util.ZeroTime(),
+        LastReceived: util.ZeroTime(),
         Buffer:       &bytes.Buffer{},
     }
 }

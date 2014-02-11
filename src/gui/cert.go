@@ -51,7 +51,7 @@ func CreateCertIfNotExists(host, certFile, keyFile string) []error {
         logger.Info("Creating certificate %s", certFile)
         logger.Info("Creating key %s", keyFile)
         err := util.GenerateCert(certFile, keyFile, host, "Skycoind", 2048,
-            false, time.Now().UTC(), 365*24*time.Hour)
+            false, util.Now(), 365*24*time.Hour)
         if err == nil {
             logger.Info("Created certificate %s for host %s", certFile, host)
             logger.Info("Created key %s for host %s", keyFile, host)

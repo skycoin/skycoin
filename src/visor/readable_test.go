@@ -4,11 +4,11 @@ import (
     "crypto/rand"
     "encoding/json"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "os"
     "reflect"
     "testing"
-    "time"
 )
 
 const (
@@ -75,9 +75,9 @@ func createUnconfirmedTxn() UnconfirmedTxn {
     b := make([]byte, 32)
     rand.Read(b)
     ut.Txn.Header.Hash = coin.SumSHA256(b)
-    ut.Received = time.Now().UTC()
+    ut.Received = util.Now()
     ut.Checked = ut.Received
-    ut.Announced = ut.Received
+    ut.Announced = util.ZeroTime()
     ut.IsOurSpend = true
     ut.IsOurReceive = true
     return ut

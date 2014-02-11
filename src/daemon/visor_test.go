@@ -3,6 +3,7 @@ package daemon
 import (
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
     "github.com/stretchr/testify/assert"
     "os"
@@ -91,7 +92,7 @@ func createUnconfirmedTxn() visor.UnconfirmedTxn {
     ut := visor.UnconfirmedTxn{}
     ut.Txn = coin.Transaction{}
     ut.Txn.Header.Hash = coin.SumSHA256([]byte("cascas"))
-    ut.Received = time.Now().UTC()
+    ut.Received = util.Now()
     ut.Checked = ut.Received
     ut.Announced = ut.Received
     ut.IsOurSpend = true
@@ -127,7 +128,7 @@ func makeValidTxn(mv *visor.Visor) (coin.Transaction, error) {
 
 func transferCoins(mv *visor.Visor, v *visor.Visor) error {
     // Give the nonmaster some money to spend
-    addr := v.Wallet.Entries[0].Address
+    addr := v.Wallet.GetAddresses()[0]
     tx, err := mv.Spend(visor.Balance{10 * 1e6, 0}, 0, addr)
     if err != nil {
         return err
@@ -178,7 +179,7 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     if master && !published {
         gc.Conn = NewFailingConn(addr)
     }
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     assert.Equal(t, len(d.Pool.Pool.Pool), 1)
     assert.Equal(t, len(d.Pool.Pool.Addresses), 1)
     start := 0
@@ -192,15 +193,15 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(start))
 
     // Creation should occur with a transaction, if not a master
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     dest := visor.NewWalletEntry()
     _, err := d.Visor.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address,
         d.Pool)
     assert.Nil(t, err)
     if master && !published {
-        assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+        assert.True(t, gc.LastSent.IsZero())
     } else {
-        assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+        assert.False(t, gc.LastSent.IsZero())
     }
     time.Sleep(time.Millisecond * 1250)
     final := start
@@ -209,12 +210,12 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     }
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(final))
     if !published {
-        gc.LastSent = time.Unix(0, 0)
+        gc.LastSent = util.ZeroTime()
     }
     if published {
-        assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+        assert.False(t, gc.LastSent.IsZero())
     } else {
-        assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+        assert.True(t, gc.LastSent.IsZero())
     }
 }
 
@@ -262,11 +263,11 @@ func TestBlocksRequestTicker(t *testing.T) {
     gc := gnetConnection(addr)
     d.Pool.Pool.Pool[gc.Id] = gc
     d.Pool.Pool.Addresses[gc.Addr()] = gc
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
     closeDaemon(d, quit)
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestBlocksAnnounceTicker(t *testing.T) {
@@ -277,11 +278,11 @@ func TestBlocksAnnounceTicker(t *testing.T) {
     gc := gnetConnection(addr)
     d.Pool.Pool.Pool[gc.Id] = gc
     d.Pool.Pool.Addresses[gc.Addr()] = gc
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
     closeDaemon(d, quit)
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestTransactionRebroadcastTicker(t *testing.T) {
@@ -293,12 +294,12 @@ func TestTransactionRebroadcastTicker(t *testing.T) {
     d.Pool.Pool.Pool[gc.Id] = gc
     d.Pool.Pool.Addresses[gc.Addr()] = gc
     addUnconfirmedTxn(d.Visor)
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     time.Sleep(time.Millisecond * 15)
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
     closeDaemon(d, quit)
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 /* Tests for daemon.Visor */
@@ -414,18 +415,18 @@ func TestVisorRequestBlocks(t *testing.T) {
     vc.Disabled = true
     v := NewVisor(vc)
     assert.NotPanics(t, func() { v.RequestBlocks(p) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     vc.Disabled = false
     gc.Conn = NewFailingConn(addr)
     v = NewVisor(vc)
     assert.NotPanics(t, func() { v.RequestBlocks(p) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     gc.Conn = NewDummyConn(addr)
     v = NewVisor(vc)
     assert.NotPanics(t, func() { v.RequestBlocks(p) })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestVisorAnnounceBlocks(t *testing.T) {
@@ -436,18 +437,18 @@ func TestVisorAnnounceBlocks(t *testing.T) {
     vc.Disabled = true
     v := NewVisor(vc)
     assert.NotPanics(t, func() { v.AnnounceBlocks(p) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     vc.Disabled = false
     gc.Conn = NewFailingConn(addr)
     v = NewVisor(vc)
     assert.NotPanics(t, func() { v.AnnounceBlocks(p) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     gc.Conn = NewDummyConn(addr)
     v = NewVisor(vc)
     assert.NotPanics(t, func() { v.AnnounceBlocks(p) })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestVisorRequestBlocksFromAddr(t *testing.T) {
@@ -460,30 +461,30 @@ func TestVisorRequestBlocksFromAddr(t *testing.T) {
     assert.NotPanics(t, func() {
         assert.Nil(t, v.RequestBlocksFromAddr(p, addr))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     vc.Disabled = false
     v = NewVisor(vc)
     assert.NotPanics(t, func() {
         assert.Nil(t, v.RequestBlocksFromAddr(p, addr))
     })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 
-    gc.LastSent = time.Unix(0, 0)
+    gc.LastSent = util.ZeroTime()
     gc.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() {
         assert.NotNil(t, v.RequestBlocksFromAddr(p, addr))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
-    gc.LastSent = time.Unix(0, 0)
+    gc.LastSent = util.ZeroTime()
     gc.Conn = NewDummyConn(addr)
     delete(p.Pool.Pool, gc.Id)
     delete(p.Pool.Addresses, gc.Addr())
     assert.NotPanics(t, func() {
         assert.NotNil(t, v.RequestBlocksFromAddr(p, addr))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 }
 
 func TestVisorBroadcastOurTransactions(t *testing.T) {
@@ -496,7 +497,7 @@ func TestVisorBroadcastOurTransactions(t *testing.T) {
     assert.NotPanics(t, func() {
         v.BroadcastOurTransactions(p)
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // With no transactions, nothing should be sent
     vc.Disabled = false
@@ -506,7 +507,7 @@ func TestVisorBroadcastOurTransactions(t *testing.T) {
     assert.NotPanics(t, func() {
         v.BroadcastOurTransactions(p)
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // We have a stale owned unconfirmed txn but we failed to send it
     gc.Conn = NewFailingConn(addr)
@@ -516,7 +517,7 @@ func TestVisorBroadcastOurTransactions(t *testing.T) {
     assert.NotPanics(t, func() {
         v.BroadcastOurTransactions(p)
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     newtx := v.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash]
     assert.Equal(t, newtx.Announced, tx.Announced)
 
@@ -529,7 +530,7 @@ func TestVisorBroadcastOurTransactions(t *testing.T) {
     assert.NotPanics(t, func() {
         v.BroadcastOurTransactions(p)
     })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
     newtx = v.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash]
     assert.True(t, newtx.Announced.After(tx.Announced))
 }
@@ -545,7 +546,7 @@ func TestVisorBroadcastBlock(t *testing.T) {
         // Should return error if disabled
         assert.NotNil(t, v.broadcastBlock(visor.SignedBlock{}, p))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // Fail to send
     gc.Conn = NewFailingConn(addr)
@@ -556,7 +557,7 @@ func TestVisorBroadcastBlock(t *testing.T) {
         // Returns error if nobody received
         assert.NotNil(t, v.broadcastBlock(sb, p))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // Succeed in sending
     gc.Conn = NewDummyConn(addr)
@@ -565,7 +566,7 @@ func TestVisorBroadcastBlock(t *testing.T) {
     assert.NotPanics(t, func() {
         assert.Nil(t, v.broadcastBlock(sb, p))
     })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestVisorBroadcastTransaction(t *testing.T) {
@@ -580,7 +581,7 @@ func TestVisorBroadcastTransaction(t *testing.T) {
         // Should return error if disabled
         assert.NotNil(t, v.broadcastTransaction(ut.Txn, p))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // Fail to send
     gc.Conn = NewFailingConn(addr)
@@ -590,7 +591,7 @@ func TestVisorBroadcastTransaction(t *testing.T) {
         // Returns error if nobody received
         assert.NotNil(t, v.broadcastTransaction(ut.Txn, p))
     })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // Succeed in sending
     gc.Conn = NewDummyConn(addr)
@@ -598,7 +599,7 @@ func TestVisorBroadcastTransaction(t *testing.T) {
     assert.NotPanics(t, func() {
         assert.Nil(t, v.broadcastTransaction(ut.Txn, p))
     })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestVisorSpend(t *testing.T) {
@@ -611,10 +612,10 @@ func TestVisorSpend(t *testing.T) {
     // Spending while disabled
     assert.NotPanics(t, func() {
         _, err := v.Spend(visor.Balance{10e6, 0}, 0,
-            mv.Wallet.Entries[0].Address, p)
+            mv.Wallet.GetAddresses()[0], p)
         assert.NotNil(t, err)
         assert.Equal(t, err.Error(), "Visor disabled")
-        assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+        assert.True(t, gc.LastSent.IsZero())
     })
 
     // Spending but spend fails (no money)
@@ -622,10 +623,10 @@ func TestVisorSpend(t *testing.T) {
     v = NewVisor(vc)
     assert.NotPanics(t, func() {
         _, err := v.Spend(visor.Balance{1000 * 10e6, 0}, 0,
-            mv.Wallet.Entries[0].Address, p)
+            mv.Wallet.GetAddresses()[0], p)
         assert.NotNil(t, err)
         assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 0)
-        assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+        assert.True(t, gc.LastSent.IsZero())
     })
 
     // Spending succeeds, but didn't announce
@@ -636,13 +637,13 @@ func TestVisorSpend(t *testing.T) {
     assert.Nil(t, transferCoins(mv, v.Visor))
     assert.NotPanics(t, func() {
         _, err := v.Spend(visor.Balance{10e6, 0}, 0,
-            mv.Wallet.Entries[0].Address, p)
+            mv.Wallet.GetAddresses()[0], p)
         assert.Nil(t, err)
         assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
         for _, tx := range v.Visor.UnconfirmedTxns.Txns {
-            assert.Equal(t, tx.Announced, time.Unix(0, 0))
+            assert.True(t, tx.Announced.IsZero())
         }
-        assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+        assert.True(t, gc.LastSent.IsZero())
     })
 
     // Spending succeeds, and announced
@@ -653,13 +654,13 @@ func TestVisorSpend(t *testing.T) {
     assert.Nil(t, transferCoins(mv, v.Visor))
     assert.NotPanics(t, func() {
         _, err := v.Spend(visor.Balance{10e6, 0}, 0,
-            mv.Wallet.Entries[0].Address, p)
+            mv.Wallet.GetAddresses()[0], p)
         assert.Nil(t, err)
         assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
         for _, tx := range v.Visor.UnconfirmedTxns.Txns {
-            assert.NotEqual(t, tx.Announced, time.Unix(0, 0))
+            assert.False(t, tx.Announced.IsZero())
         }
-        assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+        assert.False(t, gc.LastSent.IsZero())
     })
 }
 
@@ -674,43 +675,43 @@ func TestVisorResendTransaction(t *testing.T) {
     // Nothing should happen if txn unknown
     assert.False(t, v.ResendTransaction(coin.SumSHA256([]byte("garbage")), p))
     assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 0)
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // give the visor some coins, and make a spend to add a txn
     assert.Nil(t, transferCoins(mv, v.Visor))
     tx, err := v.Spend(visor.Balance{10e6, 0}, 0,
-        mv.Wallet.Entries[0].Address, p)
+        mv.Wallet.GetAddresses()[0], p)
     assert.Nil(t, err)
     assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
     h := tx.Header.Hash
     ut := v.Visor.UnconfirmedTxns.Txns[h]
-    ut.Announced = time.Unix(0, 0)
+    ut.Announced = util.ZeroTime()
     v.Visor.UnconfirmedTxns.Txns[h] = ut
-    assert.Equal(t, v.Visor.UnconfirmedTxns.Txns[h].Announced, time.Unix(0, 0))
+    assert.True(t, v.Visor.UnconfirmedTxns.Txns[h].Announced.IsZero())
     // Reset the sent timer since we made a successful spend
-    gc.LastSent = time.Unix(0, 0)
+    gc.LastSent = util.ZeroTime()
 
     // Nothing should send if disabled
     v.Config.Disabled = true
     assert.False(t, v.ResendTransaction(h, p))
     ann := v.Visor.UnconfirmedTxns.Txns[h].Announced
-    assert.Equal(t, ann, time.Unix(0, 0))
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, ann.IsZero())
+    assert.True(t, gc.LastSent.IsZero())
 
     // Nothing should send if failed to send
     gc.Conn = NewFailingConn(addr)
     v.Config.Disabled = false
     assert.False(t, v.ResendTransaction(h, p))
     ann = v.Visor.UnconfirmedTxns.Txns[h].Announced
-    assert.Equal(t, ann, time.Unix(0, 0))
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, ann.IsZero())
+    assert.True(t, gc.LastSent.IsZero())
 
     // Should have resent
     gc.Conn = NewDummyConn(addr)
     assert.True(t, v.ResendTransaction(h, p))
     ann = v.Visor.UnconfirmedTxns.Txns[h].Announced
-    assert.NotEqual(t, ann, time.Unix(0, 0))
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, ann.IsZero())
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestCreateAndPublishBlock(t *testing.T) {
@@ -840,7 +841,7 @@ func TestGetBlocksMessageProcess(t *testing.T) {
     m.Process(d)
     assert.Equal(t, len(d.Visor.blockchainLengths), 1)
     assert.Equal(t, d.Visor.blockchainLengths[addr], uint64(7))
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We have something for them, but failed to send
     m.c.Conn.Conn = NewFailingConn(addr)
@@ -848,13 +849,13 @@ func TestGetBlocksMessageProcess(t *testing.T) {
     m.Process(d)
     assert.Equal(t, len(d.Visor.blockchainLengths), 1)
     assert.Equal(t, d.Visor.blockchainLengths[addr], uint64(0))
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     m.c.Conn.Conn = NewDummyConn(addr)
     m.Process(d)
     assert.Equal(t, len(d.Visor.blockchainLengths), 1)
     assert.Equal(t, d.Visor.blockchainLengths[addr], uint64(0))
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 }
 
 func TestGiveBlocksMessageHandle(t *testing.T) {
@@ -889,7 +890,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
     d.Visor.Config.Disabled = false
     m.Process(d)
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(2))
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // Not disabled and blocks were reannounced
     gc.Conn = NewDummyConn(addr)
@@ -901,11 +902,11 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
     m.c = messageContext(addr)
     m.Process(d)
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(4))
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 
     // Send blocks we have and some we dont, as long as they are in order
     // we can use the ones at the end
-    gc.LastSent = time.Unix(0, 0)
+    gc.LastSent = util.ZeroTime()
     moreBlocks, err := makeBlocks(mv, 2)
     assert.Nil(t, err)
     blocks = append(blocks, moreBlocks...)
@@ -913,10 +914,10 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
     m.c = messageContext(addr)
     m.Process(d)
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(6))
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
 
     // Send invalid blocks
-    gc.LastSent = time.Unix(0, 0)
+    gc.LastSent = util.ZeroTime()
     bb := visor.SignedBlock{
         Block: coin.Block{
             Header: coin.BlockHeader{
@@ -926,7 +927,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
     m.c = messageContext(addr)
     m.Process(d)
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(6))
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 }
 
 func TestAnnounceBlocksMessageHandle(t *testing.T) {
@@ -949,27 +950,27 @@ func TestAnnounceBlocksMessageProcess(t *testing.T) {
     m := NewAnnounceBlocksMessage(uint64(2))
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We know all the blocks
     d.Visor.Config.Disabled = false
     m.MaxBkSeq = uint64(1)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We send a GetBlocksMessage in response to a higher MaxBkSeq
     m.MaxBkSeq = uint64(7)
     assert.False(t, d.Visor.Visor.MostRecentBkSeq() >= m.MaxBkSeq)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // We send a GetBlocksMessage in response to a higher MaxBkSeq,
     // but the send failed
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     m.c.Conn.Conn = NewFailingConn(addr)
     m.MaxBkSeq = uint64(7)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 }
 
 func TestAnnounceTxnsMessageHandle(t *testing.T) {
@@ -995,24 +996,24 @@ func TestAnnounceTxnsMessageProcess(t *testing.T) {
     // Disabled, nothing should happen
     d.Visor.Config.Disabled = true
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We don't know some, request them
     d.Visor.Config.Disabled = false
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // We don't know some, request them, but fail to request
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     m.c.Conn.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We know all the reported txns, nothing should be sent
     d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash] = tx
     m.c.Conn.Conn = NewDummyConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 }
 
 func TestGetTxnsMessageHandle(t *testing.T) {
@@ -1038,24 +1039,24 @@ func TestGetTxnsMessageProcess(t *testing.T) {
 
     // We don't have any to reply with
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // Disabled, nothing should happen
     d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash] = tx
     d.Visor.Config.Disabled = true
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We have some to reply with
     d.Visor.Config.Disabled = false
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // We have some to reply with, but fail to send
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     m.c.Conn.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 }
 
 func TestGiveTxnsMessageHandle(t *testing.T) {
@@ -1081,7 +1082,7 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
 
     // No valid txns, nothing should be sent
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // Disabled, nothing should happen
     tx, err := makeValidTxn(mv)
@@ -1089,14 +1090,14 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
     m.Txns = []coin.Transaction{tx}
     d.Visor.Config.Disabled = true
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
 
     // A valid txn, we should broadcast. Txn's announce state should be updated
     d.Visor.Config.Disabled = false
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.NotEqual(t, gc.LastSent, time.Unix(0, 0))
+    assert.False(t, gc.LastSent.IsZero())
     ut := d.Visor.Visor.UnconfirmedTxns.Txns[tx.Header.Hash]
-    now := time.Now().UTC()
+    now := util.Now()
     assert.True(t, ut.Announced.Add(time.Second).After(now))
 
     // A valid txn, but we fail to broadcast.  Txn's announce state should not
@@ -1104,12 +1105,12 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
     tx, err = makeValidTxn(mv)
     assert.Nil(t, err)
     m.Txns = []coin.Transaction{tx}
-    gc.LastSent = time.Unix(0, 0)
+    gc.LastSent = util.ZeroTime()
     gc.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, gc.LastSent, time.Unix(0, 0))
+    assert.True(t, gc.LastSent.IsZero())
     ut = d.Visor.Visor.UnconfirmedTxns.Txns[tx.Header.Hash]
-    assert.Equal(t, ut.Announced, time.Unix(0, 0))
+    assert.True(t, ut.Announced.IsZero())
 }
 
 /* Misc */

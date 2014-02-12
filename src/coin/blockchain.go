@@ -118,6 +118,19 @@ func (self *Block) String() string {
     return self.Header.String()
 }
 
+// Looks up a Transaction by hash.  Returns the Transaction and whether it
+// was found or not
+// TODO -- build a private index on the block, or a global blockchain one
+// mapping txns to their block + tx index
+func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
+    for _, tx := range self.Body.Transactions {
+        if tx.Header.Hash == txHash {
+            return tx, true
+        }
+    }
+    return Transaction{}, false
+}
+
 func newBlockHeader(prev *BlockHeader, creationInterval uint64) BlockHeader {
     return BlockHeader{
         // TODO -- what about the rest of the fields??
@@ -202,7 +215,7 @@ func (self *Blockchain) Time() uint64 {
 //TODO: use syncronized network time instead of system time
 //TODO: add function pointer to external network time callback?
 func (self *Blockchain) TimeNow() uint64 {
-    return uint64(time.Now().UTC().Unix())
+    return uint64(time.Now().Unix())
 }
 
 // Creates a Block given an array of Transactions.  It does not verify the

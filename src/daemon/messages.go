@@ -6,9 +6,9 @@ import (
     "fmt"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/util"
     "math/rand"
     "net"
-    "time"
 )
 
 // Message represent a packet to be serialized over the network by
@@ -80,7 +80,7 @@ type Messages struct {
 func NewMessages(c MessagesConfig) *Messages {
     return &Messages{
         Config: c,
-        Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+        Mirror: rand.New(rand.NewSource(util.Now().UnixNano())).Uint32(),
     }
 }
 
@@ -135,16 +135,15 @@ func NewGetPeersMessage() *GetPeersMessage {
 
 func (self *GetPeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
-    d := daemon.(*Daemon)
-    if d.Peers.Config.Disabled {
-        return nil
-    }
     self.c = mc
-    return d.recordMessageEvent(self, mc)
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were requested
 func (self *GetPeersMessage) Process(d *Daemon) {
+    if d.Peers.Config.Disabled {
+        return
+    }
     peers := d.Peers.Peers.Peerlist.Random(d.Peers.Config.ReplyCount)
     if len(peers) == 0 {
         logger.Debug("We have no peers to send in reply")
@@ -191,16 +190,15 @@ func (self *GivePeersMessage) GetPeers() []string {
 
 func (self *GivePeersMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
-    d := daemon.(*Daemon)
-    if d.Peers.Config.Disabled {
-        return nil
-    }
     self.c = mc
-    return d.recordMessageEvent(self, mc)
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 // Notifies the Pex instance that peers were received
 func (self *GivePeersMessage) Process(d *Daemon) {
+    if d.Peers.Config.Disabled {
+        return
+    }
     peers := self.GetPeers()
     if len(peers) != 0 {
         logger.Debug("Got these peers via PEX:")
@@ -304,7 +302,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
     }
 
     // Request blocks immediately after they're confirmed
-    err = d.Visor.RequestBlocksFromConn(d.Pool, self.c.Conn.Addr())
+    err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Conn.Addr())
     if err == nil {
         logger.Debug("Successfully requested blocks from %s",
             self.c.Conn.Addr())

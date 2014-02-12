@@ -5,6 +5,7 @@ import (
     "github.com/nictuku/dht"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "strings"
     "testing"
@@ -351,14 +352,14 @@ func testDaemonLoopRequestPeersTicker(t *testing.T, d *Daemon, quit chan int,
     c := gnetConnection(addr)
     d.Pool.Pool.Pool[1] = c
     d.Pool.Pool.Addresses[c.Addr()] = c
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
     d.Peers.Config.RequestRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
     if sent {
-        assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+        assert.False(t, c.LastSent.IsZero())
     } else {
-        assert.Equal(t, c.LastSent, time.Unix(0, 0))
+        assert.True(t, c.LastSent.IsZero())
     }
 }
 
@@ -389,7 +390,7 @@ func TestDaemonLoopRequestPeersTickerDisabled(t *testing.T) {
 func testDaemonLoopClearOldPeersTicker(t *testing.T, d *Daemon, quit chan int,
     count int) {
     p := pex.NewPeer(addr)
-    p.LastSeen = time.Unix(0, 0)
+    p.LastSeen = util.ZeroTime()
     d.Peers.Peers.Peerlist[addr] = p
     d.Peers.Config.CullRate = time.Millisecond * 10
     go d.Start(quit)
@@ -413,7 +414,7 @@ func TestDaemonLoopClearOldPeersTickerDisabled(t *testing.T) {
 func testDaemonLoopClearStaleConnectionsTicker(t *testing.T, d *Daemon,
     quit chan int, poolCount int) {
     c := gnetConnection(addr)
-    c.LastReceived = time.Unix(0, 0)
+    c.LastReceived = util.ZeroTime()
     d.Pool.Pool.Pool[c.Id] = c
     d.Pool.Config.ClearStaleRate = time.Millisecond * 10
     go d.Start(quit)
@@ -437,15 +438,15 @@ func TestDaemonLoopClearStaleConnectionsTickerDisabled(t *testing.T) {
 func testDaemonLoopPingCheckTicker(t *testing.T, d *Daemon, quit chan int,
     sent bool) {
     c := gnetConnection(addr)
-    c.LastSent = time.Unix(0, 0)
+    c.LastSent = util.ZeroTime()
     d.Pool.Pool.Pool[c.Id] = c
     d.Pool.Config.IdleCheckRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
     if sent {
-        assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+        assert.False(t, c.LastSent.IsZero())
     } else {
-        assert.Equal(t, c.LastSent, time.Unix(0, 0))
+        assert.True(t, c.LastSent.IsZero())
     }
 }
 
@@ -534,13 +535,13 @@ func TestDaemonRequestPeers(t *testing.T) {
     d.Pool.Pool.Pool[1] = c
     d.Pool.Pool.Addresses[c.Addr()] = c
     assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
-    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    assert.False(t, c.LastSent.IsZero())
 
     // Failing send should not panic
     c.Conn = NewFailingConn(addr)
-    c.LastSent = time.Unix(0, 0)
+    c.LastSent = util.ZeroTime()
     assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
 
     shutdown(d)
 }
@@ -549,7 +550,7 @@ func TestClearStaleConnections(t *testing.T) {
     dm := newDefaultDaemon()
     c := gnetConnection(addr)
     d := gnetConnection(addrb)
-    c.LastReceived = time.Unix(0, 0)
+    c.LastReceived = util.ZeroTime()
     d.LastReceived = time.Now()
     dm.Pool.Pool.Pool[1] = c
     dm.Pool.Pool.Pool[2] = d
@@ -569,16 +570,16 @@ func TestSendPings(t *testing.T) {
     c := gnetConnection(addr)
     d.Pool.Pool.Pool[1] = c
     assert.NotPanics(t, d.Pool.sendPings)
-    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    assert.False(t, c.LastSent.IsZero())
     lastSent := c.LastSent
     assert.NotPanics(t, d.Pool.sendPings)
     assert.Equal(t, c.LastSent, lastSent)
 
     // Failing write should not panic
     c.Conn = NewFailingConn(addr)
-    c.LastSent = time.Unix(0, 0)
+    c.LastSent = util.ZeroTime()
     assert.NotPanics(t, d.Pool.sendPings)
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
     shutdown(d)
 }
 
@@ -717,9 +718,9 @@ func TestCullInvalidConnections(t *testing.T) {
     // Is fine
     d.expectingIntroductions[addr] = time.Now()
     // Is expired
-    d.expectingIntroductions[addrb] = time.Unix(0, 0)
+    d.expectingIntroductions[addrb] = util.ZeroTime()
     // Is not in pool
-    d.expectingIntroductions[addrc] = time.Unix(0, 0)
+    d.expectingIntroductions[addrc] = util.ZeroTime()
     d.Peers.Peers.AddPeer(addr)
     d.Peers.Peers.AddPeer(addrb)
     d.Peers.Peers.AddPeer(addrc)
@@ -765,7 +766,7 @@ func TestRecordMessageEventValid(t *testing.T) {
 func TestRecordMessageEventIsIntroduction(t *testing.T) {
     // Needs Introduction and thats what it has received
     d := newDefaultDaemon()
-    d.expectingIntroductions[addr] = time.Now().UTC()
+    d.expectingIntroductions[addr] = util.Now()
     assert.Equal(t, len(d.messageEvents), 0)
     m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
         d.Pool.Pool.Config.Port)
@@ -792,7 +793,7 @@ func TestRecordMessageEventNeedsIntroduction(t *testing.T) {
     d.Pool.Pool.Addresses[addr] = m.c.Conn
     d.Pool.Pool.Pool[m.c.Conn.Id] = m.c.Conn
     assert.Equal(t, len(d.messageEvents), 0)
-    d.expectingIntroductions[addr] = time.Now().UTC()
+    d.expectingIntroductions[addr] = util.Now()
     d.processMessageEvent(MessageEvent{m, m.c})
     assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 1)
     if len(d.Pool.Pool.DisconnectQueue) == 0 {
@@ -825,7 +826,7 @@ func TestOnConnect(t *testing.T) {
     _, exists := d.expectingIntroductions[addr]
     assert.True(t, exists)
     // An introduction should have been sent
-    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    assert.False(t, c.LastSent.IsZero())
     // d.ipCounts should be 1
     assert.Equal(t, d.ipCounts[addrIP], 1)
     // Cleanup
@@ -848,7 +849,7 @@ func TestOnConnect(t *testing.T) {
     _, exists = d.expectingIntroductions[addr]
     assert.True(t, exists)
     // An introduction should have been sent
-    assert.NotEqual(t, c.LastSent, time.Unix(0, 0))
+    assert.False(t, c.LastSent.IsZero())
     // d.ipCounts should be 1
     assert.Equal(t, d.ipCounts[addrIP], 1)
     // Cleanup
@@ -874,7 +875,7 @@ func TestOnConnect(t *testing.T) {
     _, exists = d.expectingIntroductions[addr]
     assert.True(t, exists)
     // An introduction should not have been sent, it failed
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
     // We should be looking to disconnect this client
     assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 1)
     if len(d.Pool.Pool.DisconnectQueue) == 0 {
@@ -898,7 +899,7 @@ func TestOnConnect(t *testing.T) {
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // No message should have been sent
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
     // We should not be expecting its version
     assert.Equal(t, len(d.expectingIntroductions), 0)
     // We should not have recorded it to ipCount
@@ -914,7 +915,7 @@ func TestOnConnect(t *testing.T) {
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // No message should have been sent
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
     // We should not be expecting its version
     assert.Equal(t, len(d.expectingIntroductions), 0)
     // We should not have recorded its ipCount
@@ -940,7 +941,7 @@ func TestOnConnect(t *testing.T) {
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // No message should have been sent
-    assert.Equal(t, c.LastSent, time.Unix(0, 0))
+    assert.True(t, c.LastSent.IsZero())
     // We should not be expecting its version
     assert.Equal(t, len(d.expectingIntroductions), 0)
     // d.ipCounts should be unchanged

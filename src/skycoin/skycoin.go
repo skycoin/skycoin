@@ -140,10 +140,8 @@ func configureDaemon(c *cli.Config) daemon.Config {
 
     dc.Visor.MasterKeysFile = c.MasterKeys
     if c.MasterChain {
-        err := dc.Visor.LoadMasterKeys()
-        if err != nil {
-            log.Panicf("Failed to load master keys: %v", err)
-        }
+        // Will panic if fails
+        dc.Visor.LoadMasterKeys()
     } else {
         w := visor.ReadableWalletEntryFromPubkey(c.MasterPublic)
         dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(&w)

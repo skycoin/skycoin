@@ -6,6 +6,7 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/util"
     "log"
     "net"
     "strconv"
@@ -388,8 +389,11 @@ main:
         // TODO -- run these in the Visor
         // Create blocks, if master chain
         case <-blockCreationTicker.C:
-            if e := self.Visor.CreateAndPublishBlock(self.Pool); e != nil {
-                logger.Error("Failed to create and publish block: %v", e)
+            err, published := self.Visor.CreateAndPublishBlock(self.Pool)
+            if err != nil {
+                logger.Error("Failed to create block: %v", err)
+            } else if !published {
+                logger.Warning("Failed to publish block to anyone")
             } else {
                 // Not a critical error, but we want it very visible in logs
                 logger.Critical("Created and published a new block")
@@ -476,7 +480,7 @@ func (self *Daemon) handleConnectionError(c ConnectionError) {
 func (self *Daemon) cullInvalidConnections() {
     // This method only handles the erroneous people from the DHT, but not
     // malicious nodes
-    now := time.Now().UTC()
+    now := util.Now()
     for a, t := range self.expectingIntroductions {
         // Forget about anyone that already disconnected
         if self.Pool.Pool.Addresses[a] == nil {
@@ -555,7 +559,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
     if e.Solicited {
         self.outgoingConnections[a] = c
     }
-    self.expectingIntroductions[a] = time.Now().UTC()
+    self.expectingIntroductions[a] = util.Now()
     logger.Debug("Sending introduction message to %s", a)
     m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
         self.Pool.Pool.Config.Port)

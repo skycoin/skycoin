@@ -67,26 +67,8 @@ func createWalletEntry(filename string, testNetwork bool) *visor.ReadableWalletE
 
     rw := visor.NewReadableWalletEntry(&w)
 
-    b, err := json.Marshal(rw)
+    err := rw.Save(filename)
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to encode wallet entry\n")
-        fmt.Fprintf(os.Stderr, "%v\n", err)
-        return nil
-    }
-
-    flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-    f, err := os.OpenFile(filename, flags, 0600)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to open \"%s\" for writing\n",
-            filename)
-        fmt.Fprintf(os.Stderr, "%v\n", err)
-        return nil
-    }
-    defer f.Close()
-    _, err = f.Write(b)
-    if err == nil {
-        fmt.Printf("Wrote wallet entry to \"%s\"\n", filename)
-    } else {
         fmt.Fprintf(os.Stderr, "Failed to write wallet entry to \"%s\"\n",
             filename)
         fmt.Fprintf(os.Stderr, "%v\n", err)

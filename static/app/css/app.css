@@ -244,6 +244,7 @@ label {
     left: 11px;
     font-size: 48px;
     top: -1px;
+    display:none;
   }
 .background-cloud-1{
   position:absolute;

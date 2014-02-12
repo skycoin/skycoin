@@ -2,6 +2,7 @@ package daemon
 
 import (
     "github.com/skycoin/gnet"
+    "github.com/skycoin/skycoin/src/util"
     "log"
     "time"
 )
@@ -85,7 +86,7 @@ func (self *Pool) Start() {
 
 // Send a ping if our last message sent was over pingRate ago
 func (self *Pool) sendPings() {
-    now := time.Now().UTC()
+    now := util.Now()
     for _, c := range self.Pool.Pool {
         if c.LastSent.Add(self.Config.PingRate).Before(now) {
             err := self.Pool.Dispatcher.SendMessage(c, &PingMessage{})
@@ -98,7 +99,7 @@ func (self *Pool) sendPings() {
 
 // Removes connections that have not sent a message in too long
 func (self *Pool) clearStaleConnections() {
-    now := time.Now().UTC()
+    now := util.Now()
     for _, c := range self.Pool.Pool {
         if c.LastReceived.Add(self.Config.IdleLimit).Before(now) {
             self.Pool.Disconnect(c, DisconnectIdle)

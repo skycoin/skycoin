@@ -12,16 +12,17 @@ import (
 func walletBalanceHandler(rpc *daemon.RPC) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         saddr := r.FormValue("addr")
+        predicted := r.FormValue("predicted")
         var m interface{}
         if saddr == "" {
-            m = rpc.GetTotalBalance()
+            m = rpc.GetTotalBalance(predicted != "")
         } else {
             addr, err := coin.DecodeBase58Address(saddr)
             if err != nil {
                 Error400(w, "Invalid address")
                 return
             }
-            m = rpc.GetBalance(addr)
+            m = rpc.GetBalance(addr, predicted != "")
         }
         SendOr404(w, m)
     }
@@ -88,15 +89,49 @@ func walletHandler(rpc *daemon.RPC) http.HandlerFunc {
     }
 }
 
+func walletTransactionResendHandler(rpc *daemon.RPC) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        hash, err := coin.SHA256FromHex(r.FormValue("hash"))
+        if err != nil {
+            Error404(w)
+            return
+        }
+        SendOr404(w, rpc.ResendTransaction(hash))
+    }
+}
+
+func walletAddressTransactionsHandler(rpc *daemon.RPC) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        saddr := r.FormValue("addr")
+        addr, err := coin.DecodeBase58Address(saddr)
+        if err != nil {
+            Error404(w)
+            return
+        }
+        SendOr404(w, rpc.GetAddressTransactions(addr))
+    }
+}
+
+func walletTransactionHandler(rpc *daemon.RPC) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        hash, err := coin.SHA256FromHex(r.FormValue("hash"))
+        if err != nil {
+            Error404(w)
+            return
+        }
+        SendOr404(w, rpc.GetTransaction(hash))
+    }
+}
+
 func RegisterWalletHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
     mux.HandleFunc("/wallet", walletHandler(rpc))
     mux.HandleFunc("/wallet/balance", walletBalanceHandler(rpc))
     mux.HandleFunc("/wallet/spend", walletSpendHandler(rpc))
     mux.HandleFunc("/wallet/save", walletSaveHandler(rpc))
     mux.HandleFunc("/wallet/address/create", walletCreateAddressHandler(rpc))
+    mux.HandleFunc("/wallet/transaction", walletTransactionHandler(rpc))
+    mux.HandleFunc("/wallet/address/transactions", walletAddressTransactionsHandler(rpc))
+    mux.HandleFunc("/wallet/transaction/resend", walletTransactionResendHandler(rpc))
     // Multiple wallets not supported
     // mux.HandleFunc("/wallet/create", walletCreateHandler(rpc))
-    // History requires blockchain scans that will be very slow until
-    // we have a more efficient datastructure
-    // mux.HandleFunc("/wallet/history", walletHistoryHandler(rpc))
 }

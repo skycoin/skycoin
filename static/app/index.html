@@ -35,7 +35,7 @@
         <div class="outline">
           <table id="overview-wallet" class="outline" ng-repeat="address in addresses">
             <tr class="dark-row">
-              <td><div id="overview-wallet-title">Wallet {{$index}}</div></td><td><i class="fa fa-align-justify"></i></td>
+              <td><div id="overview-wallet-title"><!-- Address {{$index}}</div>--></td><td><!--<i class="fa fa-align-justify"></i>--></td>
             </tr>
             <tr>
               <td><div id="overview-wallet-balance">Address: </div></td><td>{{address.address}}</td>
@@ -46,13 +46,13 @@
             <tr>
               <td colspan="2">
                 <a href="#"><i class="fa fa-qrcode"></i> <a ng-click="openQR(address)">QR Code</a>
-                <a href="#"><i class="fa fa-cloud-upload"></i> Send </a>
-                <a href="#"><i class="fa fa-pencil"></i> Edit</a>
+                <a href="#" ng-click="sendTab()"><i class="fa fa-cloud-upload"></i> Send </a>
+                <!--<a href="#"><i class="fa fa-pencil"></i> Edit</a>-->
               </td>
             </tr>
           </table>
           <div class="wallet-buttons">
-            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Address</button> <button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>
+            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Address</button> <!--<button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>-->
           </div>
 
           <!--<div id="overview-recent-transaction" class="outline">
@@ -67,7 +67,7 @@
 
       </tab>
 
-      <tab>
+      <tab active="tab.sendActive">
         <tab-heading>
           <i class="fa fa-cloud-upload fa-lg"></i> Send
         </tab-heading>
@@ -76,13 +76,13 @@
 
           <table id="send-table">
             <tr>
-              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input ng-disabled="sendDisable" id="send_pay_to" type="text" ng-model="spend.address"  /></td>
+              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input ng-disabled="readyDisable" id="send_pay_to" type="text" ng-model="spend.address"  /></td>
             </tr>
             <!--<tr>
               <td class="send-pay-col1"><label for="send_label">Label</label></td><td><input ng-disabled="sendDisable" id="send_label" type="text" ng-model="spend.label"  /></td>
             </tr> -->
             <tr>
-              <td class="send-pay-col1"><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-disabled="sendDisable" ng-model="spend.amount" /> SKY <button type="button" class="btn btn-default" ng-click="ready()">Ready</button> <button ng-disabled="readyDisable" type="button" class="btn btn-default" ng-click="spend(spend)">Send</button></td>
+              <td class="send-pay-col1"><label for="send_amount">Amount</label></td><td><input id="send_amount" type="text" ng-disabled="readyDisable" ng-model="spend.amount" /> SKY <button type="button" class="btn btn-default" ng-disabled="readyDiable" ng-click="ready()">Ready</button> <button ng-disabled="sendDisable" type="button" class="btn btn-default" ng-click="spend(spend)">Send</button></td>
             </tr>
           </table>
           <table id="pending-table">
@@ -140,7 +140,7 @@
                     Wallet <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu">
-                    <li ng-repeat="address in addresses"><a href="#">{{address}}</a></li>
+                    <li ng-repeat="address in addresses"><a href="#">{{address.address}}</a></li>
                     <li class="divider"></li>
                     <li><a href="#">All</a></li>
                   </ul>
@@ -156,21 +156,22 @@
               </td>
             </tr>
             <tr ng-repeat="transaction in historyTable">
-              <td></td><td></td><td></td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td><td></td>
+              <td><i class="fa fa-check"></i></td><td></td><td></td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td><td></td>
             </tr>
           </table>
         </div>
         <!-- <span class="receive-button">Export</span> -->
       </tab>
 
-      <tab>
+      <!--<tab>
         <tab-heading>
-          <i class="fa fa-sun-o"> Options</i>
+          <i class="fa fa-sun-o"> Tools</i>
         </tab-heading>
         <div class="outline">
           <table id="transaction-d">
+
             <tr class="dark-row">
-              <td><i class="fa fa-check"></i></td>
+              <td></td>
               <td>
 
               </td>
@@ -187,7 +188,7 @@
               <td></td><td></td><td></td><td></td><td></td><td></td>
             </tr>
           </table>
-        </div>
+        </div> -->
         <!-- <span class="receive-button">Export</span> -->
       </tab>
 

@@ -3,6 +3,7 @@ package coin
 import (
     "crypto/sha256"
     "encoding/hex"
+    "errors"
     "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
@@ -30,7 +31,7 @@ func HashRipemd160(data []byte) Ripemd160 {
     ripemd160Hash.Write(data)
     sum := ripemd160Hash.Sum(nil)
     var h Ripemd160
-    copy(h[0:20], sum[0:20])
+    copy(h[:], sum[:])
     return h
 }
 
@@ -42,7 +43,7 @@ func (g *SHA256) Set(b []byte) {
     if len(b) != 32 {
         log.Panic("Invalid sha256 length")
     }
-    copy(g[:], b[:32])
+    copy(g[:], b[:])
 }
 
 func (g *SHA256) Hex() string {
@@ -54,7 +55,28 @@ func SumSHA256(b []byte) SHA256 {
     sha256Hash.Write(b)
     sum := sha256Hash.Sum(nil)
     var h SHA256
-    copy(h[0:32], sum[0:32])
+    copy(h[:], sum[:])
+    return h
+}
+
+func SHA256FromHex(hs string) (SHA256, error) {
+    h := SHA256{}
+    b, err := hex.DecodeString(hs)
+    if err != nil {
+        return h, err
+    }
+    if len(b) != len(h) {
+        return h, errors.New("Invalid hex length")
+    }
+    h.Set(b)
+    return h, nil
+}
+
+func MustSHA256FromHex(hs string) SHA256 {
+    h, err := SHA256FromHex(hs)
+    if err != nil {
+        log.Panic(err)
+    }
     return h
 }
 
@@ -75,7 +97,7 @@ func SumDoubleSHA256(b []byte) SHA256 {
 // Returns the SHA256 hash of to two concatenated hashes
 func AddSHA256(a1 SHA256, b1 SHA256) SHA256 {
     b := append(a1[:], b1[:]...)
-    return MustSumSHA256(b, 32*2)
+    return MustSumSHA256(b, len(b))
 }
 
 func (h1 *SHA256) Xor(h2 SHA256) SHA256 {
@@ -124,7 +146,7 @@ func Merkle(h0 []SHA256) SHA256 {
 
 func HashArrayHasDupes(ha []SHA256) bool {
     for i := 0; i < len(ha); i++ {
-       for j := i + 1; j < len(ha); j++ {
+        for j := i + 1; j < len(ha); j++ {
             if ha[i] == ha[j] {
                 return true
             }

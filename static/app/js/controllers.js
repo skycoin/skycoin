@@ -8,6 +8,12 @@ angular.module('skycoin.controllers', [])
   function($scope,$http,$modal,$log,$timeout) {
   	$scope.addresses = [];
 
+  	$scope.tab = {};
+
+  	$scope.sendTab = function(){
+      $scope.tab.sendActive = true;
+	 };
+
 
   	$scope.getProgress = function(){
       $http.get('/blockchain/progress').success(function(response){
@@ -30,7 +36,7 @@ angular.module('skycoin.controllers', [])
 
   	$scope.loadWallets = function(){
       $http.post('/wallet').success(function(response){
-        console.dir(response);
+        //console.dir(response);
         //$scope.loadedWallet = response;
         for(var i=0;i<response.entries.length;i++){
         	if(!$scope.addresses[i]) $scope.addresses[i] = {};
@@ -58,31 +64,50 @@ angular.module('skycoin.controllers', [])
 	 $scope.newAddress = function(){
 	  	$http.get('/wallet/address/create').success(function(response) {
 	      console.dir(response);
-	      $scope.addresses.push(response.address);
+	      //$scope.addresses.push(response.address);
+	      $scope.loadWallets();
 	      //$scope.addresses.push(response.replace(/"/g, ""));
-	      $scope.saveWallet();
+	      //$scope.saveWallet();
 	    });
 	 }
 
-	 $scope.sendDisable = false;
-	 $scope.readyDisable = true;
+	 $scope.sendDisable = true;
+	 $scope.readyDisable = false;
 
 	 $scope.ready = function(){
 	 	$scope.readyDisable = !$scope.readyDisable;
 	 	$scope.sendDisable = !$scope.sendDisable;
 	 }
 
+	 $scope.clearSend = function(){
+	 	$scope.sendDisable = true;
+	 	$scope.readyDisable = false;
+	 	$scope.spend.amount = '';
+	 	$scope.spend.address = '';
+	 }
+
 	 $scope.pendingTable = [];
-	 $scope.historyTable = [];
+
+
+	 //localStorage.setItem('historyTable',JSON.stringify([]));
+
+
+	 $scope.historyTable = JSON.parse(localStorage.getItem('historyTable'));
+	 console.log('localStorage.history')
+	 console.dir(JSON.parse(localStorage.getItem('historyTable')))
 
 	 $scope.spend = function(addr){
 	 	$scope.sendDisable = true;
+	 	$scope.readyDisable = true;
+	 	$timeout($scope.clearSend, 1000);
 	 	$scope.pendingTable.push(addr);
-	 	$scope.historyTable.push(addr);
 	 	var xsrf = {dst:addr.address,
 	 				coins:addr.amount*1000000,
 	 				fee:1,
 	 				hours:1}
+	 	$scope.historyTable.push({address:addr.address,amount:addr.amount});
+	 	localStorage.setItem('historyTable',JSON.stringify($scope.historyTable));
+	 	console.dir($scope.historyTable);
 		$http({
 		    method: 'POST',
 		    url: '/wallet/spend',
@@ -152,11 +177,11 @@ angular.module('skycoin.controllers', [])
   $scope.qro.fm = address;
 
   $scope.$watch('qro.label', function() {
-  	$scope.qro.new = 'skycoin:' + $scope.address.address + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
+  	$scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
   });
 
   $scope.$watch('qro.message', function() {
-  	$scope.qro.new = 'skycoin:' + $scope.address.address + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
+  	$scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
   });
 
 

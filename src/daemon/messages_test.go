@@ -7,6 +7,7 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "io/ioutil"
     "net"
@@ -23,6 +24,7 @@ var (
     addr                 = "111.22.33.44:5555"
     addrb                = "112.33.44.55:6666"
     addrc                = "112.22.33.55:4343"
+    addrd                = "112.21.11.55:4045"
     badAddrPort          = "111.22.44.33:x"
     badAddrNoPort        = "111.22.44.33"
     localAddr            = "127.0.0.1:5555"
@@ -63,50 +65,55 @@ func TestIPAddrString(t *testing.T) {
     assert.Equal(t, addr, i.String())
 }
 
-func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message,
-    disabled ...bool) {
-    assert.Nil(t, m.Handle(messageContext(addr), d))
-    if len(disabled) == 0 || !disabled[0] {
-        assert.Equal(t, len(d.messageEvents), 1)
-        if len(d.messageEvents) != 1 {
-            t.Fatal("messageEvent is empty")
-        }
-        <-d.messageEvents
-    } else {
-        assert.Equal(t, len(d.messageEvents), 0)
+func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message) {
+    mc := messageContext(addr)
+    assert.Nil(t, m.Handle(mc, d))
+    assert.Equal(t, len(d.messageEvents), 1)
+    if len(d.messageEvents) != 1 {
+        t.Fatal("messageEvents is empty")
     }
+    me := <-d.messageEvents
+    assert.Equal(t, me.Message, m)
+    assert.Equal(t, me.Context, mc)
 }
 
 func TestGetPeersMessage(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
     m := NewGetPeersMessage()
-    d.Peers.Config.Disabled = false
     testSimpleMessageHandler(t, d, m)
+
+    // Test disabled
     d.Peers.Config.Disabled = true
-    testSimpleMessageHandler(t, d, m, true)
     d.Peers.Peers.AddPeer(addr)
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
+
+    // Test enabled
+    d.Peers.Config.Disabled = false
+    m.c = messageContext(addr)
+    assert.NotPanics(t, func() { m.Process(d) })
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // If no peers, nothing should happen
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     delete(d.Peers.Peers.Peerlist, addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // Test with failing send
     d.Peers.Peers.AddPeer(addr)
     m.c.Conn.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     gnet.EraseMessages()
-    shutdown(d)
 }
 
 func TestGivePeersMessage(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
     addrs := []string{addr, addrb, "7"}
     peers := make([]*pex.Peer, 0, 3)
     for _, addr := range addrs {
@@ -114,21 +121,25 @@ func TestGivePeersMessage(t *testing.T) {
     }
     m := NewGivePeersMessage(peers)
     assert.Equal(t, len(m.GetPeers()), 2)
-    d.Peers.Config.Disabled = false
     testSimpleMessageHandler(t, d, m)
-    d.Peers.Config.Disabled = true
-    testSimpleMessageHandler(t, d, m, true)
     assert.Equal(t, m.GetPeers()[0], addrs[0])
     assert.Equal(t, m.GetPeers()[1], addrs[1])
+
+    // Test disabled
+    d.Peers.Config.Disabled = true
+    m.Process(d)
+    assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
+
     // Peers should be added to the pex when processed
+    d.Peers.Config.Disabled = false
     m.Process(d)
     assert.Equal(t, len(d.Peers.Peers.Peerlist), 2)
     gnet.EraseMessages()
-    shutdown(d)
 }
 
 func TestIntroductionMessageHandle(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
     mc := messageContext(addr)
     m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
         d.Pool.Pool.Config.Port)
@@ -174,6 +185,7 @@ func TestIntroductionMessageHandle(t *testing.T) {
 func TestIntroductionMessageProcess(t *testing.T) {
     cleanupPeers()
     d := newDefaultDaemon()
+    defer shutdown(d)
     m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
         uint16(poolPort))
     m.c = messageContext(addr)
@@ -228,19 +240,20 @@ func TestIntroductionMessageProcess(t *testing.T) {
 
 func TestPingMessage(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
     m := &PingMessage{}
     testSimpleMessageHandler(t, d, m)
 
     m.c = messageContext(addr)
     assert.NotPanics(t, func() { m.Process(d) })
     // A pong message should have been sent
-    assert.NotEqual(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // Failing to send should not cause a panic
     m.c.Conn.Conn = NewFailingConn(addr)
-    m.c.Conn.LastSent = time.Unix(0, 0)
+    m.c.Conn.LastSent = util.ZeroTime()
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.Equal(t, m.c.Conn.LastSent, time.Unix(0, 0))
+    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     gnet.EraseMessages()
 }
@@ -260,8 +273,8 @@ func gnetConnection(addr string) *gnet.Connection {
     return &gnet.Connection{
         Id:           1,
         Conn:         NewDummyConn(addr),
-        LastSent:     time.Unix(0, 0),
-        LastReceived: time.Unix(0, 0),
+        LastSent:     util.ZeroTime(),
+        LastReceived: util.ZeroTime(),
         Buffer:       &bytes.Buffer{},
     }
 }

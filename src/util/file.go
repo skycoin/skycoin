@@ -3,6 +3,7 @@ package util
 
 import (
     "encoding/json"
+    "errors"
     "fmt"
     "io/ioutil"
     "os"
@@ -10,14 +11,17 @@ import (
     "path/filepath"
 )
 
+var (
+    defaultDataDir = ".skycoin/"
+)
+
 // If dir is "", uses the default directory of ~/.skycoin.  The path to dir
 // is created, and the dir used is returned
 func InitDataDir(dir string) string {
     if dir == "" {
-        dir = ".skycoin/"
         home, err := UserHome()
         if err == nil {
-            dir = filepath.Join(home, dir)
+            dir = filepath.Join(home, defaultDataDir)
         } else {
             fmt.Printf("Warning, failed to get home directory: %v\n", err)
         }
@@ -51,6 +55,28 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
     }
 }
 
+// Saves json to disk, but refuses if file already exists
+func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
+    b, err := json.Marshal(thing)
+    if err != nil {
+        return err
+    }
+    flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
+    f, err := os.OpenFile(filename, flags, mode)
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+    n, err := f.Write(b)
+    if n != len(b) && err != nil {
+        err = errors.New("Failed to save complete file")
+    }
+    if err != nil {
+        os.Remove(filename)
+    }
+    return err
+}
+
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
     // Write the new file to a temporary
     tmpname := filename + ".tmp"
@@ -60,8 +86,7 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
     // Backup the previous file, if there was one
     _, err := os.Stat(filename)
     if !os.IsNotExist(err) {
-        err = os.Rename(filename, filename+".bak")
-        if err != nil {
+        if err := os.Rename(filename, filename+".bak"); err != nil {
             return err
         }
     }

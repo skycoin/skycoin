@@ -110,6 +110,7 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
 
 // Removes multiple txns at once. Slightly more efficient than a series of
 // single RemoveTxns
+// Note -- efficiency does not matter
 func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
     hashes []coin.SHA256) {
     uxo := make([]coin.UxOut, 0, len(hashes))

@@ -654,6 +654,8 @@ type BlockSigsSerialized struct {
 // message protocol to support ranges similar to bitcoin's locator hashes.
 // We also need to keep track of whether a block has been executed so that
 // as continuity is established we can execute chains of blocks.
+// Note -- out of order blocks can be supported in Daemon, by buffering blocks
+// into pool. Visor should only accept blocks in order
 // TODO -- Since we will need to hold blocks that cannot be verified
 // immediately against the blockchain, we need to be able to hold multiple
 // BlockSigs per BkSeq, or use hashes as keys.  For now, this is not a

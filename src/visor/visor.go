@@ -21,20 +21,20 @@ var (
 type VisorKeys struct {
     // The master server's key.  The Secret will be empty unless running as
     // a master instance
-    Master WalletEntry
+    //Master WalletEntry
     // // Our personal keys
     // Wallet Wallet
+    PubKey coin.PubKey
+    SecKey coin.SecKey
 }
 
-func NewVisorKeys(master WalletEntry) VisorKeys {
+//GenerateVisorKey generates visor privatekey deterministicly from seed valud
+func GenerateVisorKey(seed string) VisorKeys {
+    pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
     return VisorKeys{
-        Master: master,
-        // TODO -- use a deterministic wallet.  However, how do we know
-        // how many addresses we need to generate from the deterministic
-        // wallet? e.g. user creates 10,000 addresses with it, has balance on
-        // half of them including the 10,000th, loses wallet db and has to
-        // recreate from seed
-        // Wallet: NewWallet(),
+        //Master: master,
+        Seckey: sec,
+        PubKey: pub,
     }
 }
 
@@ -43,11 +43,12 @@ type VisorConfig struct {
     // Is this the master blockchain
     IsMaster bool
     // Is allowed to create transactions
-    CanSpend bool
+    //CanSpend bool
     // Wallet file location
-    WalletFile string
+    //WalletFile string
+    
     // Minimum number of addresses to keep in the wallet
-    WalletSizeMin int
+    //WalletSizeMin int
     // Use test network addresses
     TestNetwork bool
     // How often new blocks are created by the master
@@ -65,7 +66,7 @@ type VisorConfig struct {
     // Where the block signatures are saved
     BlockSigsFile string
     // Master keypair & address
-    MasterKeys WalletEntry
+    MasterKeys coin.Sig
     // Genesis block sig
     GenesisSignature coin.Sig
     // Genesis block timestamp
@@ -78,10 +79,10 @@ type VisorConfig struct {
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
         IsMaster:                 false,
-        CanSpend:                 true,
+        //CanSpend:                 true,
         TestNetwork:              true,
-        WalletFile:               "",
-        WalletSizeMin:            1,
+        //WalletFile:               "",
+        //WalletSizeMin:            1,
         BlockCreationInterval:    15,
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
@@ -89,9 +90,11 @@ func NewVisorConfig() VisorConfig {
         TransactionsPerBlock:     1000, // 1000/15 = 66tps. Bitcoin is 7tps
         BlockchainFile:           "",
         BlockSigsFile:            "",
-        MasterKeys:               WalletEntry{},
+        //MasterKeys:               WalletEntry{},
         GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
+
+        keys       VisorKeys
     }
 }
 
@@ -101,9 +104,8 @@ type Visor struct {
     // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
     // Wallet holding our keys for spending
-    Wallet *Wallet
+    //Wallet *Wallet
     // Master & personal keys
-    keys       VisorKeys
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -125,13 +127,15 @@ func NewVisor(c VisorConfig) *Visor {
         }
     }
 
+    //TODO: add privatekey from seed
+
     // Load the wallet
-    var wallet *Wallet = nil
-    if c.IsMaster {
-        wallet = createMasterWallet(c.MasterKeys)
-    } else {
-        wallet = loadWallet(c.WalletFile, c.WalletSizeMin)
-    }
+    //var wallet *Wallet = nil
+    //if c.IsMaster {
+    //    wallet = createMasterWallet(c.MasterKeys)
+    //} else {
+    //    wallet = loadWallet(c.WalletFile, c.WalletSizeMin)
+    //}
 
     // Load the blockchain the block signatures
     blockchain := loadBlockchain(c.BlockchainFile)
@@ -147,11 +151,10 @@ func NewVisor(c VisorConfig) *Visor {
 
     v := &Visor{
         Config:          c,
-        keys:            NewVisorKeys(c.MasterKeys),
+        keys:            GenerateVisorKey(c.MasterKeys),
         blockchain:      blockchain,
         blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
-        Wallet:          wallet,
     }
 
     // Load the genesis block and sign it, if we need one
@@ -171,11 +174,10 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
     return &Visor{
         Config:          c,
-        keys:            NewVisorKeys(c.MasterKeys),
+        //keys:            GenerateVisorKey(c.MasterKeys),
         blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: nil,
-        Wallet:          nil,
     }
 }
 
@@ -228,6 +230,8 @@ func (self *Visor) SaveBlockchain() error {
 }
 
 // Saves the Wallet to disk
+
+/*
 func (self *Visor) SaveWallet() error {
     if self.Config.WalletFile == "" {
         return errors.New("No WalletFile location set")
@@ -235,6 +239,7 @@ func (self *Visor) SaveWallet() error {
         return self.Wallet.Save(self.Config.WalletFile)
     }
 }
+*/
 
 // Saves BlockSigs to disk
 func (self *Visor) SaveBlockSigs() error {
@@ -246,6 +251,7 @@ func (self *Visor) SaveBlockSigs() error {
 }
 
 // Creates and returns a WalletEntry and saves the wallet to disk
+/*
 func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
     we := self.Wallet.CreateEntry()
     err := self.SaveWallet()
@@ -255,6 +261,7 @@ func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
     }
     return we, err
 }
+*/
 
 // Creates a SignedBlock from pending transactions
 func (self *Visor) CreateBlock() (SignedBlock, error) {
@@ -286,14 +293,16 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
 }
 
 // Creates a Transaction spending coins and hours from our coins
+
+/*
 func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
         amt.Coins, amt.Hours, dest.String(), fee)
     var txn coin.Transaction
-    if !self.Config.CanSpend {
-        return txn, errors.New("Spending disabled")
-    }
+    //if !self.Config.CanSpend {
+    //    return txn, errors.New("Spending disabled")
+    //}
     if amt.IsZero() {
         return txn, errors.New("Zero spend amount")
     }
@@ -339,6 +348,15 @@ loop:
         return txn, errors.New("Not enough coins or hours")
     }
 }
+*/
+
+//InjectTransaction injections a raw transaction into unconfirmed/pending transaction set.
+//raw transactions are created by wallets
+func (self *Visor) InjectTransaction(coin.Transaction) (error) {
+
+
+}
+
 
 // Adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
@@ -543,6 +561,8 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
 }
 
 // Returns the balance of the wallet
+
+/*
 func (self *Visor) TotalBalance() Balance {
     addrs := self.Wallet.GetAddresses()
     auxs := self.blockchain.Unspent.AllForAddresses(addrs)
@@ -606,6 +626,9 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
     uauxs := self.UnconfirmedTxns.Unspent.AllForAddress(a)
     return append(auxs, uauxs...)
 }
+*/
+
+//TODO - return UxOut
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
@@ -630,6 +653,7 @@ func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
     return
 }
 
+/*
 // Loads a wallet but subdues errors into the logger, or panics
 func loadWallet(filename string, sizeMin int) *Wallet {
     wallet := NewWallet()
@@ -655,7 +679,9 @@ func loadWallet(filename string, sizeMin int) *Wallet {
     }
     return wallet
 }
+*/
 
+/*
 // Creates a wallet with a single master entry
 func createMasterWallet(master WalletEntry) *Wallet {
     w := NewWallet()
@@ -664,6 +690,7 @@ func createMasterWallet(master WalletEntry) *Wallet {
     }
     return w
 }
+*/
 
 // Loads a coin.Blockchain from disk
 func LoadBlockchain(filename string) (*coin.Blockchain, error) {

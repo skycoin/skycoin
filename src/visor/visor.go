@@ -17,27 +17,6 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
-// Holds the master and personal keys
-type VisorKeys struct {
-    // The master server's key.  The Secret will be empty unless running as
-    // a master instance
-    Master WalletEntry
-    // // Our personal keys
-    // Wallet Wallet
-}
-
-func NewVisorKeys(master WalletEntry) VisorKeys {
-    return VisorKeys{
-        Master: master,
-        // TODO -- use a deterministic wallet.  However, how do we know
-        // how many addresses we need to generate from the deterministic
-        // wallet? e.g. user creates 10,000 addresses with it, has balance on
-        // half of them including the 10,000th, loses wallet db and has to
-        // recreate from seed
-        // Wallet: NewWallet(),
-    }
-}
-
 // Configuration parameters for the Visor
 type VisorConfig struct {
     // Is this the master blockchain
@@ -48,8 +27,6 @@ type VisorConfig struct {
     WalletFile string
     // Minimum number of addresses to keep in the wallet
     WalletSizeMin int
-    // Use test network addresses
-    TestNetwork bool
     // How often new blocks are created by the master
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
@@ -79,7 +56,6 @@ func NewVisorConfig() VisorConfig {
     return VisorConfig{
         IsMaster:                 false,
         CanSpend:                 true,
-        TestNetwork:              true,
         WalletFile:               "",
         WalletSizeMin:            1,
         BlockCreationInterval:    15,
@@ -103,7 +79,7 @@ type Visor struct {
     // Wallet holding our keys for spending
     Wallet *Wallet
     // Master & personal keys
-    keys       VisorKeys
+    masterKeys WalletEntry
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -140,20 +116,19 @@ func NewVisor(c VisorConfig) *Visor {
         if os.IsNotExist(err) {
             logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
         } else {
-            log.Panic("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
+            log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
         }
         blockSigs = NewBlockSigs()
     }
 
     v := &Visor{
         Config:          c,
-        keys:            NewVisorKeys(c.MasterKeys),
+        masterKeys:      c.MasterKeys,
         blockchain:      blockchain,
         blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
         Wallet:          wallet,
     }
-
     // Load the genesis block and sign it, if we need one
     if len(blockchain.Blocks) == 0 {
         v.CreateGenesisBlock()
@@ -171,7 +146,7 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
     return &Visor{
         Config:          c,
-        keys:            NewVisorKeys(c.MasterKeys),
+        masterKeys:      c.MasterKeys,
         blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: nil,
@@ -609,7 +584,7 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.keys.Master.Public, b.Sig,
+    return coin.VerifySignature(self.masterKeys.Public, b.Sig,
         b.Block.HashHeader())
 }
 
@@ -618,7 +593,7 @@ func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-    sig, err := coin.SignHash(b.HashHeader(), self.keys.Master.Secret)
+    sig, err := coin.SignHash(b.HashHeader(), self.masterKeys.Secret)
     if err != nil {
         e = err
         return
@@ -683,11 +658,12 @@ func loadBlockchain(filename string) *coin.Blockchain {
         var err error
         bc, err = LoadBlockchain(filename)
         if err == nil {
+            if len(bc.Blocks) == 0 {
+                log.Panic("Loaded empty blockchain")
+            }
             created = true
             logger.Info("Loaded blockchain from \"%s\"", filename)
-            logger.Notice("Loaded blockchain's genesis address can't be " +
-                "checked against configured genesis address")
-            logger.Info("Rebuiling UnspentPool indices")
+            logger.Debug("Rebuiling UnspentPool indices")
             bc.Unspent.Rebuild()
         } else {
             if os.IsNotExist(err) {

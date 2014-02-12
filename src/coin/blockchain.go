@@ -201,6 +201,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     return b
 }
 
+// Returns the most recent confirmed block
 func (self *Blockchain) Head() *Block {
     return &self.Blocks[len(self.Blocks)-1]
 }

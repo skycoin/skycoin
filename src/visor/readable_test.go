@@ -62,11 +62,18 @@ func setupMasterVisor() *Visor {
 }
 
 func cleanupVisor() {
-    os.Remove(testMasterKeysFile)
-    os.Remove(testBlockchainFile)
-    os.Remove(testBlocksigsFile)
-    os.Remove(testWalletFile)
-    os.Remove(testWalletEntryFile)
+    filenames := []string{
+        testMasterKeysFile,
+        testBlockchainFile,
+        testBlocksigsFile,
+        testWalletFile,
+        testWalletEntryFile,
+    }
+    for _, fn := range filenames {
+        os.Remove(fn)
+        os.Remove(fn + ".bak")
+        os.Remove(fn + ".tmp")
+    }
 }
 
 func randSHA256() coin.SHA256 {

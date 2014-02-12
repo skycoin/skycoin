@@ -150,12 +150,13 @@ func NewUnspentPool() UnspentPool {
 // Reconstructs the indices from the underlying Array
 func (self *UnspentPool) Rebuild() {
     self.hashIndex = make(map[SHA256]int, len(self.Arr))
-    self.XorHash = SHA256{}
+    xh := SHA256{}
     for i, ux := range self.Arr {
         h := ux.Hash()
         self.hashIndex[h] = i
-        self.XorHash = self.XorHash.Xor(h)
+        xh = xh.Xor(h)
     }
+    self.XorHash = xh
     if len(self.hashIndex) != len(self.Arr) {
         log.Panic("Corrupt UnspentPool.Arr: contains duplicate UxOut")
     }
@@ -167,7 +168,7 @@ func (self *UnspentPool) Add(ux UxOut) {
     h := ux.Hash()
     self.Arr = append(self.Arr, ux)
     self.hashIndex[h] = index
-    self.XorHash.Xor(h)
+    self.XorHash = self.XorHash.Xor(h)
 }
 
 // Returns a UxOut by hash, and whether it actually exists (if it does not
@@ -206,7 +207,7 @@ func (self *UnspentPool) del(h SHA256) int {
     }
     delete(self.hashIndex, h)
     self.delFromArray(i)
-    self.XorHash.Xor(h)
+    self.XorHash = self.XorHash.Xor(h)
     return i
 }
 
@@ -216,7 +217,7 @@ func (self *UnspentPool) delAt(index int) {
     h := self.Arr[index].Hash()
     delete(self.hashIndex, h)
     self.delFromArray(index)
-    self.XorHash.Xor(h)
+    self.XorHash = self.XorHash.Xor(h)
 }
 
 // Updates the internal hashIndex indices after Arr has changed

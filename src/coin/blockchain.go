@@ -652,6 +652,8 @@ func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     }
     return uxo
 }
+
+/*
 <<<<<<< HEAD
 
 // Creates complete UxOuts from TransactionInputs
@@ -667,3 +669,4 @@ func (self *Blockchain) CreateOutputs(tx Transaction, bh BlockHeader) UxArray {
 }
 =======
 >>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
+*/

@@ -23,32 +23,13 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
-<<<<<<< HEAD
-/*
-// Holds the master and personal keys
-type VisorKeys struct {
-    // The Secret will be empty unless running as master instance
-    PubKey coin.PubKey
-    SecKey coin.SecKey
-}
-
-//GenerateVisorKey generates visor privatekey deterministicly from seed valud
-func GenerateVisorKey(seed string) VisorKeys {
-    pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
-    return VisorKeys{
-        SecKey: sec, // is coin.SecKey{} if in slave mode
-        PubKey: pub,
-    }
-}
-*/
-
+// Note: can use testnetpubkey as genesis address
 var (
     genesis_address = "26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p"
     testnet_pubkey_hex = "025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b"
     mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
 )
-=======
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
+
 // Configuration parameters for the Visor
 type VisorConfig struct {
     // Is this the master blockchain
@@ -59,13 +40,10 @@ type VisorConfig struct {
     //WalletFile string
     
     // Minimum number of addresses to keep in the wallet
-<<<<<<< HEAD
+
     //WalletSizeMin int
     // Use test network addresses
     TestNetwork bool
-=======
-    WalletSizeMin int
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
     // How often new blocks are created by the master
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
@@ -106,21 +84,13 @@ func NewVisorConfig() VisorConfig {
     //set pubkey based upon testnet, mainnet and local
     return VisorConfig{
         IsMaster:                 false,
-<<<<<<< HEAD
-        //CanSpend:                 true,
         TestNetwork:              true,
-        //WalletFile:               "",
-        //WalletSizeMin:            1,
-=======
-        CanSpend:                 true,
-        WalletFile:               "",
-        WalletSizeMin:            1,
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
+
         BlockCreationInterval:    15,
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
         UnconfirmedRefreshRate:   time.Minute * 30,
-        TransactionsPerBlock:     1000, // 1000/15 = 66tps. Bitcoin is 7tps
+        TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
         BlockchainFile:           "",
         BlockSigsFile:            "",
         //MasterKeys:               WalletEntry{},
@@ -163,14 +133,7 @@ type Visor struct {
     Config VisorConfig
     // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
-<<<<<<< HEAD
     //blockchain storag
-=======
-    // Wallet holding our keys for spending
-    Wallet *Wallet
-    // Master & personal keys
-    masterKeys WalletEntry
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -220,10 +183,6 @@ func NewVisor(c VisorConfig) *Visor {
 
     v := &Visor{
         Config:          c,
-<<<<<<< HEAD
-        //keys:            GenerateVisorKey(c.MasterKeys),
-=======
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         blockchain:      blockchain,
         blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
@@ -245,10 +204,6 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
     return &Visor{
         Config:          c,
-<<<<<<< HEAD
-        //keys:            GenerateVisorKey(c.MasterKeys),
-=======
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: nil,
@@ -569,59 +524,10 @@ func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
+// replace with InjectTransaction
 func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
-    //entries := make(map[coin.Address]byte, len(self.Wallet.Entries))
-    //for a, _ := range self.Wallet.Entries {
-    //    entries[a] = byte(1)
-    //}
-
-    //replace with InjectTransaction
     return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, didAnnounce)
 }
-
-<<<<<<< HEAD
-// Returns the Transactions associated with a coin.Address. This includes
-// unconfirmed txns.
-
-/*
-=======
-// Returns the Transactions whose unspents give coins to a coin.Address.
-// This includes unconfirmed txns' predicted unspents.
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
-func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
-    txns := make([]Transaction, 0)
-    // Look in the blockchain
-    uxs := self.blockchain.Unspent.AllForAddress(a)
-    mxSeq := self.MostRecentBkSeq()
-    for _, ux := range uxs {
-        bk := self.blockchain.Blocks[ux.Head.BkSeq]
-        tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
-        if ok {
-            h := mxSeq - bk.Header.BkSeq + 1
-            txns = append(txns, Transaction{
-                Txn:    tx,
-                Status: NewConfirmedTransactionStatus(h),
-            })
-        }
-    }
-
-    // Look in the unconfirmed pool
-    uxs = self.UnconfirmedTxns.Unspent.AllForAddress(a)
-    for _, ux := range uxs {
-        tx, ok := self.UnconfirmedTxns.Txns[ux.Body.SrcTransaction]
-        if !ok {
-            logger.Critical("Unconfirmed unspent missing unconfirmed txn")
-            continue
-        }
-        txns = append(txns, Transaction{
-            Txn:    tx.Txn,
-            Status: NewUnconfirmedTransactionStatus(),
-        })
-    }
-
-    return txns
-}
-*/
 
 // Returns a Transaction by hash.
 func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
@@ -727,9 +633,9 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
 //TODO - return UxOut
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
-func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.Config.PubKey, b.Sig,
-=======
+//func (self *Visor) verifySignedBlock(b *SignedBlock) error {
+//    return coin.VerifySignature(self.Config.PubKey, b.Sig,
+//=======
 // // Returns the total of known Unspents available to us, and our own
 // // unconfirmed unspents
 // func (self *Visor) getAvailableBalances() coin.AddressUnspents {
@@ -750,9 +656,14 @@ func (self *Visor) verifySignedBlock(b *SignedBlock) error {
 // }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
+//func (self *Visor) verifySignedBlock(b *SignedBlock) error {
+//    return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
+//>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
+//        b.Block.HashHeader())
+//}
+
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
     return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         b.Block.HashHeader())
 }
 
@@ -761,17 +672,8 @@ func (self *Visor) signBlock(b coin.Block) SignedBlock {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-<<<<<<< HEAD
-    sig, err := coin.SignHash(b.HashHeader(), self.Config.SecKey)
-    if err != nil {
-        e = err
-        return
-    }
-    sb = SignedBlock{
-=======
-    sig := coin.SignHash(b.HashHeader(), self.Config.MasterKeys.Secret)
+    sig := coin.SignHash(b.HashHeader(), self.Config.SecKey)
     sb := SignedBlock{
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         Block: b,
         Sig:   sig,
     }

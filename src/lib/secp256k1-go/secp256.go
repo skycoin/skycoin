@@ -89,10 +89,10 @@ func GenerateKeyPair() ([]byte, []byte) {
     return pubkey, seckey
 }
 
-//returns nil on error
-func PubkeyFromSeckey(SecKey []byte) []byte {
-    if len(SecKey) != 32 {
-        log.Panic("PubkeyFromSeckey: invalid length")
+// Returns nil on error
+func PubkeyFromSeckey(secIn []byte) []byte {
+    if VerifySeckey(secIn) != 1 {
+        log.Panic("PubkeyFromSeckey: invalid secret key")
     }
 
     pubkey_len := C.int(33)
@@ -100,7 +100,7 @@ func PubkeyFromSeckey(SecKey []byte) []byte {
 
     var pubkey []byte = make([]byte, pubkey_len)
     var seckey []byte = make([]byte, seckey_len)
-    copy(seckey, SecKey)
+    copy(seckey, secIn)
 
     var pubkey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
     var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))

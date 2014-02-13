@@ -1,15 +1,9 @@
 package coin
 
 import (
-    //"crypto/sha256"
-    //"hash"
     "encoding/hex"
-    //"fmt"
-    //"log"
     "math/rand"
     "testing"
-    "errors"
-    "github.com/skycoin/skycoin/src/lib/secp256k1-go"
 )
 
 func TestAddress1(t *testing.T) {
@@ -55,13 +49,12 @@ func TestAddress2(t *testing.T) {
 //func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 //func GenerateKeyPair() (PubKey, SecKey) {
 //func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
-//func TestSecKey(seckey SecKey) error {
-
+//func testSecKey(seckey SecKey) error {
 
 func TestCrypto1(t *testing.T) {
-    for i:=0; i<10; i++ {
-        _,seckey := GenerateKeyPair()
-        if TestSecKey(seckey) != nil {
+    for i := 0; i < 10; i++ {
+        _, seckey := GenerateKeyPair()
+        if testSecKey(seckey) != nil {
             t.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED")
         }
     }
@@ -87,63 +80,11 @@ func TestCrypto2(t *testing.T) {
 
     test := []byte("test message")
     hash := SumSHA256(test)
-
-    err = testSecKey(seckey, hash)
+    err = testSecKeyHash(seckey, hash)
     if err != nil {
         t.Fatal()
     }
 
-}
-
-//testSecKey tests a hash and seckey in all known cryptographic contexts
-func testSecKey(seckey SecKey, hash SHA256) error {
-    //check seckey with verify
-    if secp256k1.VerifySeckey(seckey[:]) != 1 {
-        return errors.New("Seckey verification failed")
-    }
-
-    //check pubkey recovery
-    pubkey := PubKeyFromSecKey(seckey)
-    if pubkey == (PubKey{}) {
-        errors.New("impossible error, TestSecKey, nil pubkey recovered")
-    }
-    //verify recovered pubkey
-    if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-        return errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
-    }
-
-    //check signature production
-    sig, err := SignHash(hash, seckey)
-    if err != nil {
-        errors.New("impossible error, TestSecKey, signature error")
-    }
-    if sig == (Sig{}) {
-        errors.New("impossible error TestSecKey, nil sig with no error == nil")
-    }
-
-    //check pubkey recovered from sig
-    recovered_pubkey, err := PubKeyFromSig(sig, hash)
-    if err != nil {
-        return errors.New("impossible error, TestSecKey, pubkey recovery from signature failed")
-    }
-    if pubkey != recovered_pubkey {
-        return errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
-    }
-
-    //verify produced signature
-    err = VerifySignature(pubkey, sig, hash)
-    if err != nil {
-        errors.New("impossible error, TestSecKey, verify signature failed for sig")
-    }
-
-    //verify ChkSig
-    addr := AddressFromPubKey(pubkey)
-    err = ChkSig(addr,hash, sig)
-    if err != nil {
-        return errors.New("impossible error TestSecKey, ChkSig Failed, should not get this far")
-    }
-
-    return nil
 }
 
 func _gensec() SecKey {

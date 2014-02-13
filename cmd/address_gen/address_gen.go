@@ -5,6 +5,7 @@ import (
     "flag"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
+    "log"
     //"github.com/skycoin/skycoin/src/visor"
     //"os"
 )
@@ -84,7 +85,7 @@ func parseFlags() {
 }
 
 
-func tstring(pub coin.Pubkey, sec coin.Seckey) string {
+func tstring(pub coin.PubKey, sec coin.SecKey) string {
 
     addr := coin.AddressFromPubKey(pub)
 
@@ -102,7 +103,7 @@ func tstring(pub coin.Pubkey, sec coin.Seckey) string {
         str3 = ""
     }
 
-    return fmt.Sprintf("%s%s%s\n", str1,str2,str3)
+    return fmt.Sprintf("%s%s%s", str1,str2,str3)
 }
 
 func main() {
@@ -113,17 +114,17 @@ func main() {
 
         for i:=0; i<genCount; i++ {
             pub, sec := coin.GenerateKeyPair()
-
-
+            log.Printf("%s\n", tstring(pub,sec))
         }
     }
 
     if seed != "" {
-        if n != 1 {
+        if genCount != 1 {
             log.Panic("multiple deterministic addresses not implemented yet")
         }
 
-
+        pub, sec := coin.GenerateDeterministicKeyPair([]byte(seed))
+        fmt.Printf("%s\n", tstring(pub,sec))
     }
 
 /*

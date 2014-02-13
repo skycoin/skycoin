@@ -48,6 +48,16 @@ func setupVisor() (v *Visor, mv *Visor) {
     return
 }
 
+func setupVisorFromMaster(mv *Visor) *Visor {
+    vc := NewVisorConfig()
+    vc.IsMaster = false
+    vc.MasterKeys = mv.Config.MasterKeys
+    vc.MasterKeys.Secret = coin.SecKey{}
+    vc.GenesisSignature = mv.blockSigs.Sigs[0]
+    vc.GenesisTimestamp = mv.blockchain.Blocks[0].Header.Time
+    return NewVisor(vc)
+}
+
 func setupMasterVisorConfig() VisorConfig {
     // Create testmaster.keys file
     coin.SetAddressVersion("test")
@@ -104,6 +114,16 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
     ut := createUnconfirmedTxn()
     utp.Txns[ut.Hash()] = ut
     return ut
+}
+
+func transferCoinsToSelf(v *Visor, addr coin.Address) error {
+    tx, err := v.Spend(Balance{1e6, 0}, 0, addr)
+    if err != nil {
+        return err
+    }
+    v.RecordTxn(tx, false)
+    _, err = v.CreateAndExecuteBlock()
+    return err
 }
 
 func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,

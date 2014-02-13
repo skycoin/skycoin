@@ -190,9 +190,7 @@ func (self *Visor) SaveBlockchain() error {
     if self.Config.BlockchainFile == "" {
         return errors.New("No BlockchainFile location set")
     } else {
-        // TODO -- blockchain file must be forward compatible
-        data := encoder.Serialize(self.blockchain)
-        return util.SaveBinary(self.Config.BlockchainFile, data, 0644)
+        return SaveBlockchain(self.blockchain, self.Config.BlockchainFile)
     }
 }
 
@@ -655,7 +653,14 @@ func LoadBlockchain(filename string) (*coin.Blockchain, error) {
     if err != nil {
         return bc, err
     }
-    return bc, encoder.DeserializeRaw(data, bc)
+    err = encoder.DeserializeRaw(data, bc)
+    if err != nil {
+        return bc, err
+    }
+    logger.Info("Loaded blockchain from \"%s\"", filename)
+    logger.Debug("Rebuilding UnspentPool indices")
+    bc.Unspent.Rebuild()
+    return bc, nil
 }
 
 // Loads a blockchain but subdues errors into the logger, or panics.
@@ -671,9 +676,6 @@ func loadBlockchain(filename string) *coin.Blockchain {
                 log.Panic("Loaded empty blockchain")
             }
             created = true
-            logger.Info("Loaded blockchain from \"%s\"", filename)
-            logger.Debug("Rebuiling UnspentPool indices")
-            bc.Unspent.Rebuild()
         } else {
             if os.IsNotExist(err) {
                 logger.Info("No blockchain file, will create a new blockchain")
@@ -687,4 +689,11 @@ func loadBlockchain(filename string) *coin.Blockchain {
         bc = coin.NewBlockchain()
     }
     return bc
+}
+
+// Saves blockchain to disk
+func SaveBlockchain(bc *coin.Blockchain, filename string) error {
+    // TODO -- blockchain file must be forward compatible
+    data := encoder.Serialize(bc)
+    return util.SaveBinary(filename, data, 0644)
 }

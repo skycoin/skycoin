@@ -280,6 +280,12 @@ func TestWalletAddEntry(t *testing.T) {
 
     assert.Equal(t, w.Entries[we2.Address], we2)
     assert.Equal(t, w.Entries[we.Address], we)
+
+    // Invalid entry should return err
+    we = NewWalletEntry()
+    we.Secret = coin.SecKey{}
+    assert.NotNil(t, w.AddEntry(we))
+    assert.Equal(t, len(w.Entries), 2)
 }
 
 func TestWalletSaveLoad(t *testing.T) {

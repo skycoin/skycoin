@@ -27,9 +27,9 @@ import (
 var (
     testNetwork  = false
     //outFile      = ""
-    printAddress = false
-    printPubkey  = true
-    printSeckey  = true
+    PrintAddress = false
+    PrintPubKey  = true
+    PrintSeckey  = true
     //labelStdout  = false
     //inFile       = ""
     seed = ""
@@ -44,11 +44,11 @@ func registerFlags() {
     flag.IntVar(&genCount, "n", genCount,
         "number of addresses to generate")
 
-    flag.BoolVar(&printAddress, "a", printAddress,
+    flag.BoolVar(&PrintAddress, "a", PrintAddress,
         "print address for generated")
-    flag.BoolVar(&printPubkey, "p", printPubkey,
+    flag.BoolVar(&PrintPubKey, "p", PrintPubKey,
         "print public keys for generated")
-    flag.BoolVar(&printSeckey, "s", printSeckey,
+    flag.BoolVar(&PrintSeckey, "s", PrintSeckey,
         "print secret keys for generated")
 
     flag.StringVar(&seed, "seed", seed,
@@ -57,7 +57,7 @@ func registerFlags() {
     //flag.StringVar(&outFile, "o", outFile,
     //    "If present, will create a new wallet entry and write to disk. "+
     //        "For safety, it will not overwrite an existing keypair")
-    //flag.BoolVar(&printAddress, "print-address", printAddress,
+    //flag.BoolVar(&PrintAddress, "print-address", PrintAddress,
     //    "Print the wallet entry's address")
     //flag.BoolVar(&printPublic, "print-public", printPublic,
     //    "Print the wallet entry's public key")
@@ -82,6 +82,28 @@ func parseFlags() {
     //}
 }
 
+
+func tstring(pub coin.Pubkey, sec coin.Seckey) string {
+
+    addr := coin.AddressFromPubKey(pub)
+
+    str1 := fmt.Sprintf("%v ", pub.Base64())
+    str2 := fmt.Sprintf("%v ", sec.Base64())
+    str3 := fmt.Sprintf("%v", addr.String())
+
+    if PrintPubKey == false {
+        str1 = ""
+    }
+    if PrintSeckey == false {
+        str2 = ""
+    }
+    if PrintAddress == false {
+        str3 = ""
+    }
+
+    return fmt.Sprintf("%s%s%s\n", str1,str2,str3)
+}
+
 func main() {
     registerFlags()
     parseFlags()
@@ -90,35 +112,29 @@ func main() {
 
         for i:=0; i<genCount; i++ {
             pub, sec := coin.GenerateKeyPair()
-            addr := coin.AddressFromPubKey(pub)
 
-            str1 := fmt.Sprintf("%v ", pub.Base64())
-            str2 := fmt.Sprintf("%v ", sec.Base64())
-            str3 := fmt.Sprintf("%v", addr.String())
 
-            if printPubKey == false {
-                str1 = ""
-            }
-            if printSecKey == false {
-                str2 = ""
-            }
-            if printAddress == false {
-                str3 = ""
-            }
-            fmt.Printf("%s%s%s\n", pub.Base64(), sec.Base64(), addr.String(),)
         }
+    }
+
+    if seed != "" {
+        if n != 1 {
+            log.Panic("multiple deterministic addresses not implemented yet")
+        }
+
+
     }
 
 /*
     if outFile != "" {
         w := createWalletEntry(outFile, testNetwork)
         if w != nil {
-            printWalletEntry(w, labelStdout, printAddress, printPublic,
+            printWalletEntry(w, labelStdout, PrintAddress, printPublic,
                 printSecret)
         }
     }
     if inFile != "" {
-        printWalletEntryFromFile(inFile, labelStdout, printAddress,
+        printWalletEntryFromFile(inFile, labelStdout, PrintAddress,
             printPublic, printSecret)
     }
 */

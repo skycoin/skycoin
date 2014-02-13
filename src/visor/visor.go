@@ -166,10 +166,15 @@ func NewVisor(c VisorConfig) *Visor {
         if err := c.SecKey.Verify(); err != nil {
             log.Panicf("Invalid privatekey: %v", err)
         }
+
+        if self.PubKey != coin.PubKeyFromSecKey(c.SecKey) {
+            log.Panic()
+        }
     } else {
         if err := c.PubKey.Verify(); err != nil {
             log.Panicf("Invalid pubkey: %v", err)
         }
+
     }
 
     //TODO: add privatekey from seed

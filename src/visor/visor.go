@@ -42,6 +42,7 @@ func GenerateVisorKey(seed string) VisorKeys {
 */
 
 var (
+    genesis_address = "26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p"
     testnet_pubkey_hex = "025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b"
     mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
 )
@@ -85,7 +86,7 @@ type VisorConfig struct {
 
 func (self *VisorConfig) SetVisorSecKey(seed string) {
     pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
-    if pub != self.pub {
+    if pub != self.PubKey {
         log.Panic("ERROR: pubkey does not correspond to loaded pubkey")
     }
     self.SecKey = sec
@@ -94,9 +95,9 @@ func (self *VisorConfig) SetVisorSecKey(seed string) {
 //Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
-func NewVisorConfig(pubkey coin.PubKey) VisorConfig {
+func NewVisorConfig() VisorConfig {
     //set pubkey based upon testnet, mainnet and local
-    CF := VisorConfig{
+    return VisorConfig{
         IsMaster:                 false,
         //CanSpend:                 true,
         TestNetwork:              true,
@@ -110,18 +111,18 @@ func NewVisorConfig(pubkey coin.PubKey) VisorConfig {
         BlockchainFile:           "",
         BlockSigsFile:            "",
         //MasterKeys:               WalletEntry{},
-        GenesisSignature:         coin.Sig{},
+        //GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
 
-        PubKey: coin.PubKey{}
-        SecKey: coin.SecKey{}
+        PubKey: coin.PubKey{},
+        SecKey: coin.SecKey{},
     }
 }
 
 //NewTestnetVisor Config creates visor for the testnet
 func NewTestnetVisorConfig() VisorConfig {
     VC := NewVisorConfig()
-    VC.PubKey = PubKeyFromHex(testnet_pubkey_hex)
+    VC.PubKey = coin.PubKeyFromHex(testnet_pubkey_hex)
     VC.TestNetwork = true
     return VC
 }
@@ -129,7 +130,7 @@ func NewTestnetVisorConfig() VisorConfig {
 //NewTestnetVisor Config creates visor for the mainnet
 func NewMainnetVisorConfig() VisorConfig {
     VC := NewVisorConfig()
-    VC.PubKey = PubKeyFromHex(mainnet_pubkey_hex)
+    VC.PubKey = coin.PubKeyFromHex(mainnet_pubkey_hex)
     VC.TestNetwork = false
     return VC
 }
@@ -149,9 +150,7 @@ type Visor struct {
     Config VisorConfig
     // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
-    // Wallet holding our keys for spending
-    //Wallet *Wallet
-    // Master & personal keys
+    //blockchain storag
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -164,12 +163,12 @@ func NewVisor(c VisorConfig) *Visor {
         logger.Debug("Visor is master")
     }
     if c.IsMaster {
-        if err := c.MasterKeys.Verify(); err != nil {
-            log.Panicf("Invalid master wallet entry: %v", err)
+        if err := c.SecKey.Verify(); err != nil {
+            log.Panicf("Invalid privatekey: %v", err)
         }
     } else {
-        if err := c.MasterKeys.VerifyPublic(); err != nil {
-            log.Panicf("Invalid master address or pubkey: %v", err)
+        if err := c.PubKey.Verify(); err != nil {
+            log.Panicf("Invalid pubkey: %v", err)
         }
     }
 
@@ -197,7 +196,7 @@ func NewVisor(c VisorConfig) *Visor {
 
     v := &Visor{
         Config:          c,
-        keys:            GenerateVisorKey(c.MasterKeys),
+        //keys:            GenerateVisorKey(c.MasterKeys),
         blockchain:      blockchain,
         blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
@@ -207,7 +206,7 @@ func NewVisor(c VisorConfig) *Visor {
     if len(blockchain.Blocks) == 0 {
         v.CreateGenesisBlock()
     }
-    err = blockSigs.Verify(c.MasterKeys.Public, blockchain)
+    err = blockSigs.Verify(c.PubKey, blockchain)
     if err != nil {
         log.Panicf("Invalid block signatures: %v", err)
     }

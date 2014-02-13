@@ -13,6 +13,12 @@ import (
     "time"
 )
 
+// Note: Wallets are moved into RPC. RPC loads/unloads wallets
+// Visor allows for injection of raw transactions and new blocks
+// Visor saves blocks and loads them from disc
+// Visor checks the signature on blocks
+// Visor does not generate transactions, but accepts raw transactions
+
 var (
     logger = logging.MustGetLogger("skycoin.visor")
 )

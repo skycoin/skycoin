@@ -97,7 +97,8 @@ func (self *Transaction) Verify() error {
     //artificial restriction to prevent spam
     for _, txo := range self.Out {
         if txo.Coins%1e6 != 0 {
-            return errors.New("Error: transaction outputs must be multiple of 1e6 base units")
+            return errors.New("Error: transaction outputs must be multiple " +
+                "of 1e6 base units")
         }
     }
 
@@ -129,10 +130,7 @@ func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
 
 // Signs a TransactionInput at its signature index
 func (self *Transaction) signInput(idx uint16, sec SecKey, h SHA256) {
-    sig, err := SignHash(h, sec)
-    if err != nil {
-        log.Panic("Failed to sign hash")
-    }
+    sig := SignHash(h, sec)
     txInLen := len(self.In)
     if txInLen > math.MaxUint16 {
         log.Panic("In too large")
@@ -209,7 +207,9 @@ func (self Transactions) Len() int {
 }
 
 func (self Transactions) Less(i, j int) bool {
-    return bytes.Compare(self[i].Header.Hash[:], self[j].Header.Hash[:]) < 0
+    ih := self[i].Hash()
+    jh := self[j].Hash()
+    return bytes.Compare(ih[:], jh[:]) < 0
 }
 
 func (self Transactions) Swap(i, j int) {

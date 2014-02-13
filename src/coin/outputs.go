@@ -98,9 +98,14 @@ func (self UxArray) HashArray() []SHA256 {
 func (self UxArray) HasDupes() bool {
     m := make(map[SHA256]byte, len(self))
     for _, ux := range self {
-        m[ux.Hash()] = byte(1)
+        h := ux.Hash()
+        if _, ok := m[h]; ok {
+            return true
+        } else {
+            m[h] = byte(1)
+        }
     }
-    return len(m) != len(self)
+    return false
 }
 
 //UxArray sort functionality
@@ -164,8 +169,11 @@ func (self *UnspentPool) Rebuild() {
 
 // Adds a UxOut to the UnspentPool
 func (self *UnspentPool) Add(ux UxOut) {
-    index := len(self.Arr)
     h := ux.Hash()
+    if self.Has(h) {
+        return
+    }
+    index := len(self.Arr)
     self.Arr = append(self.Arr, ux)
     self.hashIndex[h] = index
     self.XorHash = self.XorHash.Xor(h)

@@ -106,6 +106,20 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
     return ut
 }
 
+func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
+    addr coin.Address) error {
+    tx, err := mv.Spend(b, fee, addr)
+    if err != nil {
+        return err
+    }
+    mv.RecordTxn(tx, false)
+    sb, err := mv.CreateAndExecuteBlock()
+    if err != nil {
+        return err
+    }
+    return v.ExecuteSignedBlock(sb)
+}
+
 func transferCoins(mv *Visor, v *Visor) error {
     // Give the nonmaster some money to spend
     addr := coin.Address{}
@@ -113,16 +127,7 @@ func transferCoins(mv *Visor, v *Visor) error {
         addr = a
         break
     }
-    tx, err := mv.Spend(Balance{10 * 1e6, 0}, 0, addr)
-    if err != nil {
-        return err
-    }
-    mv.RecordTxn(tx, false)
-    sb, err := mv.CreateBlock()
-    if err != nil {
-        return err
-    }
-    return v.ExecuteSignedBlock(sb)
+    return transferCoinsAdvanced(mv, v, Balance{10e6, 0}, 0, addr)
 }
 
 func assertJSONSerializability(t *testing.T, thing interface{}) {

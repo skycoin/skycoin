@@ -288,8 +288,8 @@ func TestWalletSaveLoad(t *testing.T) {
     we := w.CreateEntry()
     assert.Nil(t, w.Save(testWalletFile))
     assertFileMode(t, testWalletFile, 0600)
-    w2 := NewWallet()
-    assert.Nil(t, w2.Load(testWalletFile))
+    w2, err := LoadWallet(testWalletFile)
+    assert.Nil(t, err)
     assert.Equal(t, w, w2)
     assert.Equal(t, w2.Entries[we.Address], we)
 

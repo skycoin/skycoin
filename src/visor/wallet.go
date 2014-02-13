@@ -138,6 +138,11 @@ func NewWallet() *Wallet {
     }
 }
 
+func LoadWallet(filename string) (*Wallet, error) {
+    w := NewWallet()
+    return w, w.Load(filename)
+}
+
 func NewWalletFromReadable(r *ReadableWallet) *Wallet {
     entries := make(map[coin.Address]WalletEntry, len(r.Entries))
     for _, re := range r.Entries {

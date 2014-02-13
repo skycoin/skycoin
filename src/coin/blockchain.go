@@ -103,11 +103,12 @@ func (self *BlockHeader) Hash() SHA256 {
 
 //merkle hash of transactions in block
 func (self *Block) HashBody() SHA256 {
-    var hashes []SHA256
-    for _, t := range self.Body.Transactions {
-        hashes = append(hashes, t.Hash())
+    hashes := make([]SHA256, len(self.Body.Transactions))
+    for i, t := range self.Body.Transactions {
+        hashes[i] = t.Hash()
     }
-    return Merkle(hashes) //merkle hash of transactions
+    // Merkle hash of transactions
+    return Merkle(hashes)
 }
 
 func (self *Block) UpdateHeader() {
@@ -118,13 +119,13 @@ func (self *Block) String() string {
     return self.Header.String()
 }
 
-// Looks up a Transaction by hash.  Returns the Transaction and whether it
-// was found or not
+// Looks up a Transaction by its Header.Hash.
+// Returns the Transaction and whether it was found or not
 // TODO -- build a private index on the block, or a global blockchain one
 // mapping txns to their block + tx index
 func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
     for _, tx := range self.Body.Transactions {
-        if tx.Header.Hash == txHash {
+        if tx.Hash() == txHash {
             return tx, true
         }
     }
@@ -223,8 +224,14 @@ func (self *Blockchain) TimeNow() uint64 {
 // block; ExecuteBlock will handle verification.  txns must be sorted by hash
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     creationInterval uint64) (Block, error) {
+    if creationInterval == 0 {
+        log.Panic("Creation interval must be > 0")
+    }
     b := newBlock(self.Head(), creationInterval)
     newtxns := self.arbitrateTransactions(txns)
+    if len(newtxns) == 0 {
+        return Block{}, errors.New("No valid transactions")
+    }
     b.Body.Transactions = newtxns
     b.UpdateHeader()
     return b, nil
@@ -470,7 +477,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
         }
         // Check that each pending unspent will be unique
         uxb := UxBody{
-            SrcTransaction: t.Header.Hash,
+            SrcTransaction: t.Hash(),
         }
         for _, to := range t.Out {
             uxb.Coins = to.Coins
@@ -520,7 +527,8 @@ func (self *Blockchain) processTransactions(txns Transactions,
         s := txns[i]
         for j := i + 1; j < len(txns); j++ {
             t := txns[j]
-            if s.Header.Hash == t.Header.Hash {
+            // TODO -- don't recompute hashes in the loop
+            if s.Hash() == t.Hash() {
                 // This is a non-recoverable error for filtering, and should
                 // be considered a programming error
                 return nil, errors.New("Duplicate transaction found")
@@ -599,7 +607,7 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
         }
         self.Unspent.DelMultiple(hashes)
         // Create new outputs
-        uxs := self.CreateOutputs(tx, b.Header)
+        uxs := self.TxUxOut(tx, b.Header)
         for _, ux := range uxs {
             self.Unspent.Add(ux)
         }
@@ -624,17 +632,17 @@ func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
     return uxia, nil
 }
 
-// TxUxOut creates the outputs for a transaction. If BlockHeader is not known, use coin.BlockHeader{}
+// TxUxOut creates the outputs for a transaction.
 func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     uxo := make(UxArray, 0, len(tx.Out))
     for _, to := range tx.Out {
         ux := UxOut{
             Head: UxHead{
-                Time:  bh.Time,  //not hashed so doesnt matter
-                BkSeq: bh.BkSeq, //not hashed so doesnt matter
+                Time:  bh.Time,
+                BkSeq: bh.BkSeq,
             },
             Body: UxBody{
-                SrcTransaction: tx.Header.Hash,
+                SrcTransaction: tx.Hash(),
                 Address:        to.DestinationAddress,
                 Coins:          to.Coins,
                 Hours:          to.Hours,
@@ -643,15 +651,4 @@ func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
         uxo = append(uxo, ux)
     }
     return uxo
-}
-
-// Creates complete UxOuts from TransactionInputs
-// TODO: audit
-func (self *Blockchain) CreateOutputs(tx Transaction, bh BlockHeader) UxArray {
-    //err := self.txUxOutChk(tx)
-    //if err != nil {
-    //    log.Panic() //?? is this check meant to be here
-    //}
-
-    return self.TxUxOut(tx, bh)
 }

@@ -146,6 +146,14 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, ut.RecordTxn(mv.blockchain, txn, addrs, false))
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, false, true, true)
+    assert.Equal(t, len(ut.Txns), 1)
+    assert.Equal(t, len(ut.Unspent.Arr), 2)
+
+    // Test duplicate Record, should be no-op besides state change
+    assert.Nil(t, ut.RecordTxn(mv.blockchain, txn, addrs, true))
+    assertValidUnconfirmed(t, ut.Txns, txn, true, true, true)
+    assert.Equal(t, len(ut.Txns), 1)
+    assert.Equal(t, len(ut.Unspent.Arr), 2)
 }
 
 func TestRawTxns(t *testing.T) {
@@ -262,11 +270,9 @@ func TestRemoveTransactions(t *testing.T) {
     assert.True(t, ok)
 }
 
-func TestRefresh(t *testing.T) {
-    defer cleanupVisor()
-    mv := setupMasterVisor()
+func testRefresh(t *testing.T, mv *Visor,
+    refresh func(checkPeriod, maxAge time.Duration)) {
     up := mv.UnconfirmedTxns
-
     // Add a transaction that is invalid, but will not be checked yet
     // Add a transaction that is invalid, and will be checked and removed
     invalidTxUnchecked, err := makeValidTxn(mv)
@@ -280,7 +286,7 @@ func TestRefresh(t *testing.T) {
     assert.Nil(t, err)
     assert.Nil(t, up.RecordTxn(mv.blockchain, invalidator, nil, false))
     assert.Equal(t, len(up.Txns), 1)
-    _, err = mv.CreateBlock()
+    _, err = mv.CreateAndExecuteBlock()
     assert.Nil(t, err)
     assert.Equal(t, len(up.Txns), 0)
     assert.NotNil(t, mv.blockchain.VerifyTransaction(invalidTxUnchecked))
@@ -338,7 +344,7 @@ func TestRefresh(t *testing.T) {
     // Refresh
     checkPeriod := time.Second * 2
     maxAge := time.Second * 4
-    up.Refresh(mv.blockchain, checkPeriod, maxAge)
+    refresh(checkPeriod, maxAge)
 
     // All utxns that are unchecked should be exactly the same
     assert.Equal(t, up.Txns[validUtxUnchecked.Hash()], validUtxUnchecked)
@@ -356,6 +362,14 @@ func TestRefresh(t *testing.T) {
     // Also, the unspents should have 2 * nRemaining
     assert.Equal(t, len(up.Unspent.Arr), 2*3)
     assert.Equal(t, len(up.Txns), 3)
+}
+
+func TestRefresh(t *testing.T) {
+    defer cleanupVisor()
+    mv := setupMasterVisor()
+    testRefresh(t, mv, func(checkPeriod, maxAge time.Duration) {
+        mv.UnconfirmedTxns.Refresh(mv.blockchain, checkPeriod, maxAge)
+    })
 }
 
 func TestGetOldOwnedTransactions(t *testing.T) {

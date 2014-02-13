@@ -241,7 +241,7 @@ func (self *Visor) CreateAndPublishBlock(pool *Pool) (error, bool) {
     if self.Config.Disabled {
         return errors.New("Visor disabled"), false
     }
-    sb, err := self.Visor.CreateBlock()
+    sb, err := self.Visor.CreateAndExecuteBlock()
     if err == nil {
         return nil, (self.broadcastBlock(sb, pool) == nil)
     } else {

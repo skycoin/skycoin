@@ -4,7 +4,6 @@ import (
     "crypto/sha256"
     "encoding/hex"
     "errors"
-    "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/lib/ripemd160"
     "hash"
     "log"
@@ -83,7 +82,8 @@ func MustSHA256FromHex(hs string) SHA256 {
 // Like SumSHA256, but len(b) must equal n, or panic
 func MustSumSHA256(b []byte, n int) SHA256 {
     if len(b) != n {
-        log.Panic("len(b) != n")
+        log.Panicf("Invalid sumsha256 byte length. Expected %d, have %d",
+            n, len(b))
     }
     return SumSHA256(b)
 }
@@ -102,7 +102,7 @@ func AddSHA256(a1 SHA256, b1 SHA256) SHA256 {
 
 func (h1 *SHA256) Xor(h2 SHA256) SHA256 {
     var h3 SHA256
-    for i := 0; i < len(h1); i++ {
+    for i := 0; i < len(h3); i++ {
         h3[i] = h1[i] ^ h2[i]
     }
     return h3
@@ -132,25 +132,14 @@ func Merkle(h0 []SHA256) SHA256 {
     for len(h1) != 1 {
         //fmt.Printf("Merkle 1: len= %v \n", len(h1))
         h2 := make([]SHA256, len(h1)/16)
-        var h3 [16]SHA256
+        h3 := make([]byte, 16*32)
         for i := 0; i < len(h2); i++ {
             for j := 0; j < 16; j++ {
-                h3[j] = h1[16*i+j]
+                copy(h3[32*i:32*(i+1)], h1[16*i+j][:])
             }
-            h2[i] = MustSumSHA256(encoder.Serialize(h3), 16*32)
+            h2[i] = MustSumSHA256(h3, 16*32)
         }
         h1 = h2
     }
     return h1[0]
-}
-
-func HashArrayHasDupes(ha []SHA256) bool {
-    for i := 0; i < len(ha); i++ {
-        for j := i + 1; j < len(ha); j++ {
-            if ha[i] == ha[j] {
-                return true
-            }
-        }
-    }
-    return false
 }

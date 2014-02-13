@@ -134,7 +134,7 @@ func transferCoins(mv *visor.Visor, v *visor.Visor) error {
         return err
     }
     mv.RecordTxn(tx, false)
-    sb, err := mv.CreateBlock()
+    sb, err := mv.CreateAndExecuteBlock()
     if err != nil {
         return err
     }
@@ -150,7 +150,7 @@ func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
             return nil, err
         }
         mv.RecordTxn(tx, false)
-        sb, err := mv.CreateBlock()
+        sb, err := mv.CreateAndExecuteBlock()
         if err != nil {
             return nil, err
         }

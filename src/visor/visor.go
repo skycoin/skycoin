@@ -399,12 +399,6 @@ loop:
 }
 */
 
-//InjectTransaction injections a raw transaction into unconfirmed/pending transaction set.
-//raw transactions are created by wallets
-func (self *Visor) InjectTransaction(coin.Transaction) (error) {
-
-    return nil
-}
 
 
 // Adds a block to the blockchain, or returns error.
@@ -532,13 +526,21 @@ func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
     self.UnconfirmedTxns.SetAnnounced(h, t)
 }
 
+
+//InjectTransaction injections a raw transaction into unconfirmed/pending transaction set.
+//raw transactions are created by wallets. Something should clear out transaction
+//pool every once in a while
+func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
+    return self.RecordTxn(txn, false) //reanounce
+}
+
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
-    entries := make(map[coin.Address]byte, len(self.Wallet.Entries))
-    for a, _ := range self.Wallet.Entries {
-        entries[a] = byte(1)
-    }
+    //entries := make(map[coin.Address]byte, len(self.Wallet.Entries))
+    //for a, _ := range self.Wallet.Entries {
+    //    entries[a] = byte(1)
+    //}
     return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn,
         entries, didAnnounce)
 }

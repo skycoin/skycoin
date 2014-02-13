@@ -30,7 +30,7 @@ type UnconfirmedTxnPool struct {
     Txns map[coin.SHA256]UnconfirmedTxn
     // Predicted unspents, assuming txns are valid.  Needed to predict
     // our future balance and avoid double spending our own coins
-    Unspent coin.UnspentPool
+    //Unspent coin.UnspentPool
 }
 
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
@@ -47,9 +47,21 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
     }
 }
 
+// Note: let wallet read the unconfirmed and the unspents and make its own decision
+
+// Note: use notion of transaction "degree". A "degree 0" transaction requires zero
+// other transactions to execute before a spend can occur.  A "degree 1" transaction
+// spends inputs that are created in a pending/unconfirmed transaction.
+// A "degree 2" transaction spends inputs that are created in an unconfirmed transaction
+// that requires inputs created by an unconfirmed transaction.
+// A transaction's degree is one greater than the highest degree of any of the transactions
+// creating an input spent by the transaction
+
 // Adds a coin.Transaction to the pool
+//func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
+//    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
+    t coin.Transaction, didAnnounce bool) error {
     if err := bc.VerifyTransaction(t); err != nil {
         return err
     }
@@ -66,6 +78,8 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         IsOurReceive: false,
         IsOurSpend:   false,
     }
+
+    /*
     // Add predicted unspents
     for _, ux := range bc.TxUxOut(t, coin.BlockHeader{}) {
         self.Unspent.Add(ux)
@@ -90,6 +104,7 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
             }
         }
     }
+    */
     self.Txns[t.Hash()] = ut
 
     return nil

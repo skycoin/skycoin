@@ -157,13 +157,13 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     }
     since := self.Config.TransactionRebroadcastRate * 2
     since = (since * 9) / 10
-    txns := self.Visor.UnconfirmedTxns.GetOwnedTransactionsSince(since)
+    txns := self.Visor.UnconfirmedTxns.GetOldOwnedTransactions(since)
     if len(txns) == 0 {
         return
     }
     hashes := make([]coin.SHA256, len(txns))
     for _, tx := range txns {
-        hashes = append(hashes, tx.Txn.Header.Hash)
+        hashes = append(hashes, tx.Txn.Hash())
     }
     m := NewAnnounceTxnsMessage(hashes)
     errs := pool.Pool.Dispatcher.BroadcastMessage(m)
@@ -241,7 +241,7 @@ func (self *Visor) CreateAndPublishBlock(pool *Pool) (error, bool) {
     if self.Config.Disabled {
         return errors.New("Visor disabled"), false
     }
-    sb, err := self.Visor.CreateBlock()
+    sb, err := self.Visor.CreateAndExecuteBlock()
     if err == nil {
         return nil, (self.broadcastBlock(sb, pool) == nil)
     } else {
@@ -511,9 +511,8 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     hashes := make([]coin.SHA256, 0, len(self.Txns))
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        err := d.Visor.Visor.RecordTxn(txn, false)
-        if err == nil {
-            hashes = append(hashes, txn.Header.Hash)
+        if err := d.Visor.Visor.RecordTxn(txn, false); err == nil {
+            hashes = append(hashes, txn.Hash())
         } else {
             logger.Warning("Failed to record txn: %v", err)
         }

@@ -23,6 +23,7 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
+<<<<<<< HEAD
 /*
 // Holds the master and personal keys
 type VisorKeys struct {
@@ -46,6 +47,8 @@ var (
     testnet_pubkey_hex = "025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b"
     mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
 )
+=======
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
 // Configuration parameters for the Visor
 type VisorConfig struct {
     // Is this the master blockchain
@@ -56,9 +59,13 @@ type VisorConfig struct {
     //WalletFile string
     
     // Minimum number of addresses to keep in the wallet
+<<<<<<< HEAD
     //WalletSizeMin int
     // Use test network addresses
     TestNetwork bool
+=======
+    WalletSizeMin int
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
     // How often new blocks are created by the master
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
@@ -99,10 +106,16 @@ func NewVisorConfig() VisorConfig {
     //set pubkey based upon testnet, mainnet and local
     return VisorConfig{
         IsMaster:                 false,
+<<<<<<< HEAD
         //CanSpend:                 true,
         TestNetwork:              true,
         //WalletFile:               "",
         //WalletSizeMin:            1,
+=======
+        CanSpend:                 true,
+        WalletFile:               "",
+        WalletSizeMin:            1,
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         BlockCreationInterval:    15,
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
@@ -150,7 +163,14 @@ type Visor struct {
     Config VisorConfig
     // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
+<<<<<<< HEAD
     //blockchain storag
+=======
+    // Wallet holding our keys for spending
+    Wallet *Wallet
+    // Master & personal keys
+    masterKeys WalletEntry
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -193,19 +213,21 @@ func NewVisor(c VisorConfig) *Visor {
         if os.IsNotExist(err) {
             logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
         } else {
-            log.Panic("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
+            log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
         }
         blockSigs = NewBlockSigs()
     }
 
     v := &Visor{
         Config:          c,
+<<<<<<< HEAD
         //keys:            GenerateVisorKey(c.MasterKeys),
+=======
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         blockchain:      blockchain,
         blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
     }
-
     // Load the genesis block and sign it, if we need one
     if len(blockchain.Blocks) == 0 {
         v.CreateGenesisBlock()
@@ -223,7 +245,10 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
     return &Visor{
         Config:          c,
+<<<<<<< HEAD
         //keys:            GenerateVisorKey(c.MasterKeys),
+=======
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: nil,
@@ -241,11 +266,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
     }
     sb := SignedBlock{}
     if self.Config.IsMaster {
-        var err error
-        sb, err = self.signBlock(b)
-        if err != nil {
-            log.Panicf("Failed to sign genesis block: %v", err)
-        }
+        sb = self.signBlock(b)
     } else {
         sb = SignedBlock{
             Block: b,
@@ -272,9 +293,7 @@ func (self *Visor) SaveBlockchain() error {
     if self.Config.BlockchainFile == "" {
         return errors.New("No BlockchainFile location set")
     } else {
-        // TODO -- blockchain file must be forward compatible
-        data := encoder.Serialize(self.blockchain)
-        return util.SaveBinary(self.Config.BlockchainFile, data, 0644)
+        return SaveBlockchain(self.blockchain, self.Config.BlockchainFile)
     }
 }
 
@@ -313,16 +332,19 @@ func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
 */
 
 // Creates a SignedBlock from pending transactions
-func (self *Visor) CreateBlock() (SignedBlock, error) {
+func (self *Visor) createBlock() (SignedBlock, error) {
     var sb SignedBlock
     if !self.Config.IsMaster {
-        return sb, errors.New("Only master chain can create blocks")
+        log.Panic("Only master chain can create blocks")
     }
     if len(self.UnconfirmedTxns.Txns) == 0 {
         return sb, errors.New("No transactions")
     }
     txns := self.UnconfirmedTxns.RawTxns()
-    // TODO -- transactions should be sorted by tx fee
+    // TODO -- transactions should be sorted by tx fee first, then hash to
+    // arbitrate between conflicting txns
+    // TODO -- prefiltering # of blocks conflicts with arbitration.  We need
+    // to let blockchain do all the sorting and checks.
     sort.Sort(txns)
     nTxns := len(txns)
     if nTxns > self.Config.TransactionsPerBlock {
@@ -333,7 +355,12 @@ func (self *Visor) CreateBlock() (SignedBlock, error) {
     if err != nil {
         return sb, err
     }
-    sb, err = self.signBlock(b)
+    return self.signBlock(b), nil
+}
+
+// Creates a SignedBlock from pending transactions and executes it
+func (self *Visor) CreateAndExecuteBlock() (SignedBlock, error) {
+    sb, err := self.createBlock()
     if err == nil {
         return sb, self.ExecuteSignedBlock(sb)
     } else {
@@ -357,7 +384,12 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     }
     needed := amt
     needed.Hours += fee
-    auxs := self.getAvailableBalances()
+    // TODO -- re-enable once prediction is fixed
+    // We need to keep track of only what we spent that is unconfirmed
+    // And subtract those from auxs' balances
+    // auxs := self.getAvailableBalances()
+    addrs := self.Wallet.GetAddresses()
+    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
     toSign := make([]coin.SecKey, 0)
 
 loop:
@@ -376,6 +408,13 @@ loop:
                 needed = needed.Sub(b)
                 txn.PushInput(ux.Hash())
                 toSign = append(toSign, entry.Secret)
+            } else if needed.Hours >= b.Hours {
+                needed.Hours -= b.Hours
+                txn.PushInput(ux.Hash())
+                toSign = append(toSign, entry.Secret)
+                if b.Coins != 0 {
+                    txn.PushOutput(ux.Body.Address, b.Coins, 0)
+                }
             } else {
                 change := b.Sub(needed)
                 needed = needed.Sub(needed)
@@ -404,12 +443,10 @@ loop:
 // Adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
-    err := self.verifySignedBlock(&b)
-    if err != nil {
+    if err := self.verifySignedBlock(&b); err != nil {
         return err
     }
-    err = self.blockchain.ExecuteBlock(b.Block)
-    if err != nil {
+    if err := self.blockchain.ExecuteBlock(b.Block); err != nil {
         return err
     }
     // TODO -- save them even if out of order, and execute later
@@ -423,25 +460,24 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 }
 
 // Returns N signed blocks more recent than Seq. Does not return nil.
-func (self *Visor) GetSignedBlocksSince(seq uint64, ct uint64) []SignedBlock {
+func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
     var avail uint64 = 0
     if self.blockSigs.MaxSeq > seq {
         avail = self.blockSigs.MaxSeq - seq
     }
-    if avail > ct {
-        avail = ct
+    if avail < ct {
+        ct = avail
     }
-    if avail == 0 {
+    if ct == 0 {
         return []SignedBlock{}
     }
-    blocks := make([]SignedBlock, 0, avail)
-    for i := seq + 1; i <= self.blockSigs.MaxSeq; i++ {
-        if sig, exists := self.blockSigs.Sigs[i]; exists {
-            blocks = append(blocks, SignedBlock{
-                Sig:   sig,
-                Block: self.blockchain.Blocks[i],
-            })
-        }
+    blocks := make([]SignedBlock, 0, ct)
+    for j := uint64(0); j < ct; j++ {
+        i := seq + 1 + j
+        blocks = append(blocks, SignedBlock{
+            Sig:   self.blockSigs.Sigs[i],
+            Block: self.blockchain.Blocks[i],
+        })
     }
     return blocks
 }
@@ -474,11 +510,11 @@ func (self *Visor) GetBlockchainMetadata() BlockchainMetadata {
 
 // Returns a readable copy of the block at seq. Returns error if seq out of range
 func (self *Visor) GetReadableBlock(seq uint64) (ReadableBlock, error) {
-    b, err := self.GetBlock(seq)
-    if err != nil {
+    if b, err := self.GetBlock(seq); err == nil {
+        return NewReadableBlock(&b), nil
+    } else {
         return ReadableBlock{}, err
     }
-    return NewReadableBlock(&b), nil
 }
 
 // Returns multiple blocks between start and end (not including end). Returns
@@ -513,9 +549,6 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
     }
     blocks := make([]coin.Block, 0, length)
     for i := start; i < end; i++ {
-        if i >= uint64(len(self.blockchain.Blocks)) {
-            break
-        }
         blocks = append(blocks, self.blockchain.Blocks[i])
     }
     return blocks
@@ -546,21 +579,28 @@ func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
     return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, didAnnounce)
 }
 
+<<<<<<< HEAD
 // Returns the Transactions associated with a coin.Address. This includes
 // unconfirmed txns.
 
 /*
+=======
+// Returns the Transactions whose unspents give coins to a coin.Address.
+// This includes unconfirmed txns' predicted unspents.
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
 func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
     txns := make([]Transaction, 0)
     // Look in the blockchain
     uxs := self.blockchain.Unspent.AllForAddress(a)
+    mxSeq := self.MostRecentBkSeq()
     for _, ux := range uxs {
         bk := self.blockchain.Blocks[ux.Head.BkSeq]
         tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
         if ok {
+            h := mxSeq - bk.Header.BkSeq + 1
             txns = append(txns, Transaction{
                 Txn:    tx,
-                Status: NewUnconfirmedTransactionStatus(),
+                Status: NewConfirmedTransactionStatus(h),
             })
         }
     }
@@ -624,11 +664,11 @@ func (self *Visor) TotalBalance() Balance {
     return self.totalBalance(auxs)
 }
 
-// Returns the total balance of the wallet including unconfirmed outputs
-func (self *Visor) TotalBalancePredicted() Balance {
-    auxs := self.getAvailableBalances()
-    return self.totalBalance(auxs)
-}
+// // Returns the total balance of the wallet including unconfirmed outputs
+// func (self *Visor) TotalBalancePredicted() Balance {
+//     auxs := self.getAvailableBalances()
+//     return self.totalBalance(auxs)
+// }
 
 // Returns the balance for a single address in the Wallet
 func (self *Visor) Balance(a coin.Address) Balance {
@@ -636,12 +676,12 @@ func (self *Visor) Balance(a coin.Address) Balance {
     return self.balance(uxs)
 }
 
-// Returns the balance for a single address in the Wallet, including
-// unconfirmed outputs
-func (self *Visor) BalancePredicted(a coin.Address) Balance {
-    uxs := self.getAvailableBalance(a)
-    return self.balance(uxs)
-}
+// // Returns the balance for a single address in the Wallet, including
+// // unconfirmed outputs
+// func (self *Visor) BalancePredicted(a coin.Address) Balance {
+//     uxs := self.getAvailableBalance(a)
+//     return self.balance(uxs)
+// }
 
 // Computes the total balance for coin.Addresses and their coin.UxOuts
 func (self *Visor) totalBalance(auxs coin.AddressUnspents) Balance {
@@ -665,6 +705,7 @@ func (self *Visor) balance(uxs []coin.UxOut) Balance {
     return b
 }
 
+<<<<<<< HEAD
 // Returns the total of known Unspents available to us, and our own
 // unconfirmed unspents
 func (self *Visor) getAvailableBalances() coin.AddressUnspents {
@@ -688,24 +729,53 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
     return coin.VerifySignature(self.Config.PubKey, b.Sig,
+=======
+// // Returns the total of known Unspents available to us, and our own
+// // unconfirmed unspents
+// func (self *Visor) getAvailableBalances() coin.AddressUnspents {
+//     addrs := self.Wallet.GetAddresses()
+//     auxs := self.blockchain.Unspent.AllForAddresses(addrs)
+//     uauxs := self.UnconfirmedTxns.Unspent.AllForAddresses(addrs)
+//     logger.Warning("Confirmed unspents: %v\n", auxs)
+//     logger.Warning("Unconfirmed unspents: %v\n", uauxs)
+//     return auxs.Merge(uauxs, addrs)
+// }
+
+// // Returns the total of known unspents available for an address, including
+// // unconfirmed requests
+// func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
+//     auxs := self.blockchain.Unspent.AllForAddress(a)
+//     uauxs := self.UnconfirmedTxns.Unspent.AllForAddress(a)
+//     return append(auxs, uauxs...)
+// }
+
+// Returns an error if the coin.Sig is not valid for the coin.Block
+func (self *Visor) verifySignedBlock(b *SignedBlock) error {
+    return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         b.Block.HashHeader())
 }
 
-// Signs a block for master
-func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
+// Signs a block for master.  Will panic if anything is invalid
+func (self *Visor) signBlock(b coin.Block) SignedBlock {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
+<<<<<<< HEAD
     sig, err := coin.SignHash(b.HashHeader(), self.Config.SecKey)
     if err != nil {
         e = err
         return
     }
     sb = SignedBlock{
+=======
+    sig := coin.SignHash(b.HashHeader(), self.Config.MasterKeys.Secret)
+    sb := SignedBlock{
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
         Block: b,
         Sig:   sig,
     }
-    return
+    return sb
 }
 
 /*
@@ -754,10 +824,18 @@ func LoadBlockchain(filename string) (*coin.Blockchain, error) {
     if err != nil {
         return bc, err
     }
-    return bc, encoder.DeserializeRaw(data, bc)
+    err = encoder.DeserializeRaw(data, bc)
+    if err != nil {
+        return bc, err
+    }
+    logger.Info("Loaded blockchain from \"%s\"", filename)
+    logger.Debug("Rebuilding UnspentPool indices")
+    bc.Unspent.Rebuild()
+    return bc, nil
 }
 
-// Loads a blockchain but subdues errors into the logger, or panics
+// Loads a blockchain but subdues errors into the logger, or panics.
+// If no blockchain is found, it creates a new empty one
 func loadBlockchain(filename string) *coin.Blockchain {
     bc := &coin.Blockchain{}
     created := false
@@ -765,12 +843,10 @@ func loadBlockchain(filename string) *coin.Blockchain {
         var err error
         bc, err = LoadBlockchain(filename)
         if err == nil {
+            if len(bc.Blocks) == 0 {
+                log.Panic("Loaded empty blockchain")
+            }
             created = true
-            logger.Info("Loaded blockchain from \"%s\"", filename)
-            logger.Notice("Loaded blockchain's genesis address can't be " +
-                "checked against configured genesis address")
-            logger.Info("Rebuiling UnspentPool indices")
-            bc.Unspent.Rebuild()
         } else {
             if os.IsNotExist(err) {
                 logger.Info("No blockchain file, will create a new blockchain")
@@ -784,4 +860,11 @@ func loadBlockchain(filename string) *coin.Blockchain {
         bc = coin.NewBlockchain()
     }
     return bc
+}
+
+// Saves blockchain to disk
+func SaveBlockchain(bc *coin.Blockchain, filename string) error {
+    // TODO -- blockchain file must be forward compatible
+    data := encoder.Serialize(bc)
+    return util.SaveBinary(filename, data, 0644)
 }

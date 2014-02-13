@@ -104,7 +104,7 @@ func createUnconfirmedTxn() visor.UnconfirmedTxn {
 
 func addUnconfirmedTxn(v *Visor) visor.UnconfirmedTxn {
     ut := createUnconfirmedTxn()
-    v.Visor.UnconfirmedTxns.Txns[ut.Txn.Header.Hash] = ut
+    v.Visor.UnconfirmedTxns.Txns[ut.Txn.Hash()] = ut
     return ut
 }
 
@@ -136,7 +136,7 @@ func transferCoins(mv *visor.Visor, v *visor.Visor) error {
         return err
     }
     mv.RecordTxn(tx, false)
-    sb, err := mv.CreateBlock()
+    sb, err := mv.CreateAndExecuteBlock()
     if err != nil {
         return err
     }
@@ -152,7 +152,7 @@ func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
             return nil, err
         }
         mv.RecordTxn(tx, false)
-        sb, err := mv.CreateBlock()
+        sb, err := mv.CreateAndExecuteBlock()
         if err != nil {
             return nil, err
         }
@@ -520,7 +520,7 @@ func TestVisorBroadcastOurTransactions(t *testing.T) {
         v.BroadcastOurTransactions(p)
     })
     assert.True(t, gc.LastSent.IsZero())
-    newtx := v.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash]
+    newtx := v.Visor.UnconfirmedTxns.Txns[tx.Txn.Hash()]
     assert.Equal(t, newtx.Announced, tx.Announced)
 
     // We have a stale owned unconfirmed txn, should be sent, and the
@@ -533,7 +533,7 @@ func TestVisorBroadcastOurTransactions(t *testing.T) {
         v.BroadcastOurTransactions(p)
     })
     assert.False(t, gc.LastSent.IsZero())
-    newtx = v.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash]
+    newtx = v.Visor.UnconfirmedTxns.Txns[tx.Txn.Hash()]
     assert.True(t, newtx.Announced.After(tx.Announced))
 }
 
@@ -685,7 +685,7 @@ func TestVisorResendTransaction(t *testing.T) {
         mv.Wallet.GetAddresses()[0], p)
     assert.Nil(t, err)
     assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
-    h := tx.Header.Hash
+    h := tx.Hash()
     ut := v.Visor.UnconfirmedTxns.Txns[h]
     ut.Announced = util.ZeroTime()
     v.Visor.UnconfirmedTxns.Txns[h] = ut
@@ -979,7 +979,7 @@ func TestAnnounceTxnsMessageHandle(t *testing.T) {
     d := newDefaultDaemon()
     defer shutdown(d)
     tx := createUnconfirmedTxn()
-    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    txns := []coin.SHA256{tx.Txn.Hash()}
     m := NewAnnounceTxnsMessage(txns)
     assert.Equal(t, m.Txns, txns)
     testSimpleMessageHandler(t, d, m)
@@ -991,7 +991,7 @@ func TestAnnounceTxnsMessageProcess(t *testing.T) {
     defer shutdown(d)
 
     tx := createUnconfirmedTxn()
-    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    txns := []coin.SHA256{tx.Txn.Hash()}
     m := NewAnnounceTxnsMessage(txns)
     m.c = messageContext(addr)
 
@@ -1012,7 +1012,7 @@ func TestAnnounceTxnsMessageProcess(t *testing.T) {
     assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // We know all the reported txns, nothing should be sent
-    d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash] = tx
+    d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Hash()] = tx
     m.c.Conn.Conn = NewDummyConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
     assert.True(t, m.c.Conn.LastSent.IsZero())
@@ -1022,7 +1022,7 @@ func TestGetTxnsMessageHandle(t *testing.T) {
     d := newDefaultDaemon()
     defer shutdown(d)
     tx := createUnconfirmedTxn()
-    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    txns := []coin.SHA256{tx.Txn.Hash()}
     m := NewGetTxnsMessage(txns)
     assert.Equal(t, m.Txns, txns)
     testSimpleMessageHandler(t, d, m)
@@ -1035,7 +1035,7 @@ func TestGetTxnsMessageProcess(t *testing.T) {
 
     tx := createUnconfirmedTxn()
     tx.Txn.Header.Hash = coin.SumSHA256([]byte("asdadwadwada"))
-    txns := []coin.SHA256{tx.Txn.Header.Hash}
+    txns := []coin.SHA256{tx.Txn.Hash()}
     m := NewGetTxnsMessage(txns)
     m.c = messageContext(addr)
 
@@ -1044,7 +1044,7 @@ func TestGetTxnsMessageProcess(t *testing.T) {
     assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // Disabled, nothing should happen
-    d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Header.Hash] = tx
+    d.Visor.Visor.UnconfirmedTxns.Txns[tx.Txn.Hash()] = tx
     d.Visor.Config.Disabled = true
     assert.NotPanics(t, func() { m.Process(d) })
     assert.True(t, m.c.Conn.LastSent.IsZero())
@@ -1084,6 +1084,7 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
 
     // No valid txns, nothing should be sent
     assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, len(mv.UnconfirmedTxns.Txns), 0)
     assert.True(t, gc.LastSent.IsZero())
 
     // Disabled, nothing should happen
@@ -1092,14 +1093,19 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
     m.Txns = []coin.Transaction{tx}
     d.Visor.Config.Disabled = true
     assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, len(mv.UnconfirmedTxns.Txns), 0)
     assert.True(t, gc.LastSent.IsZero())
 
     // A valid txn, we should broadcast. Txn's announce state should be updated
     d.Visor.Config.Disabled = false
+    assert.True(t, gc.LastSent.IsZero())
     assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, len(d.Visor.Visor.UnconfirmedTxns.Txns), 1)
     assert.False(t, gc.LastSent.IsZero())
-    ut := d.Visor.Visor.UnconfirmedTxns.Txns[tx.Header.Hash]
+    ut, ok := d.Visor.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    assert.True(t, ok)
     now := util.Now()
+    assert.False(t, ut.Announced.IsZero())
     assert.True(t, ut.Announced.Add(time.Second).After(now))
 
     // A valid txn, but we fail to broadcast.  Txn's announce state should not
@@ -1110,8 +1116,9 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
     gc.LastSent = util.ZeroTime()
     gc.Conn = NewFailingConn(addr)
     assert.NotPanics(t, func() { m.Process(d) })
+    assert.Equal(t, len(d.Visor.Visor.UnconfirmedTxns.Txns), 2)
     assert.True(t, gc.LastSent.IsZero())
-    ut = d.Visor.Visor.UnconfirmedTxns.Txns[tx.Header.Hash]
+    ut = d.Visor.Visor.UnconfirmedTxns.Txns[tx.Hash()]
     assert.True(t, ut.Announced.IsZero())
 }
 

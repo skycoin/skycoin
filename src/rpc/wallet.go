@@ -138,6 +138,11 @@ func NewWallet() *Wallet {
     }
 }
 
+func LoadWallet(filename string) (*Wallet, error) {
+    w := NewWallet()
+    return w, w.Load(filename)
+}
+
 func NewWalletFromReadable(r *ReadableWallet) *Wallet {
     entries := make(map[coin.Address]WalletEntry, len(r.Entries))
     for _, re := range r.Entries {
@@ -155,11 +160,8 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
 // Creates a WalletEntry
 func (self *Wallet) CreateEntry() WalletEntry {
     e := NewWalletEntry()
-    if err := e.Verify(); err != nil {
-        log.Panic("Creating invalid wallet entry: %v", err)
-    }
     if err := self.AddEntry(e); err != nil {
-        log.Panic("Somehow, we managed to create a duplicate Address: %v", err)
+        log.Panic("Somehow, we managed to create a bad entry: %v", err)
     }
     return e
 }
@@ -190,6 +192,9 @@ func (self *Wallet) GetEntry(a coin.Address) (WalletEntry, bool) {
 // Adds a WalletEntry to the wallet. Returns an error if the coin.Address is
 // already in the wallet
 func (self *Wallet) AddEntry(e WalletEntry) error {
+    if err := e.Verify(); err != nil {
+        return err
+    }
     _, exists := self.Entries[e.Address]
     if exists {
         return fmt.Errorf("Wallet entry already exists for address %s",

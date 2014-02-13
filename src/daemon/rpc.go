@@ -252,12 +252,15 @@ func (self *RPC) getTotalBalance(predicted bool) *Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    var b visor.Balance
     if predicted {
-        b = self.Daemon.Visor.Visor.TotalBalancePredicted()
-    } else {
-        b = self.Daemon.Visor.Visor.TotalBalance()
+        return nil
     }
+    var b visor.Balance
+    // if predicted {
+    // b = self.Daemon.Visor.Visor.TotalBalancePredicted()
+    // } else {
+    b = self.Daemon.Visor.Visor.TotalBalance()
+    // }
     return &Balance{
         Balance:   b,
         Predicted: predicted,
@@ -268,12 +271,17 @@ func (self *RPC) getBalance(a coin.Address, predicted bool) *Balance {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }
-    var b visor.Balance
     if predicted {
-        b = self.Daemon.Visor.Visor.BalancePredicted(a)
-    } else {
-        b = self.Daemon.Visor.Visor.Balance(a)
+        // TODO -- prediction is disabled because implementation is not
+        // clear
+        return nil
     }
+    var b visor.Balance
+    // if predicted {
+    //     b = self.Daemon.Visor.Visor.BalancePredicted(a)
+    // } else {
+    b = self.Daemon.Visor.Visor.Balance(a)
+    // }
     return &Balance{
         Balance:   b,
         Predicted: predicted,

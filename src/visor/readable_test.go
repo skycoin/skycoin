@@ -48,6 +48,16 @@ func setupVisor() (v *Visor, mv *Visor) {
     return
 }
 
+func setupVisorFromMaster(mv *Visor) *Visor {
+    vc := NewVisorConfig()
+    vc.IsMaster = false
+    vc.MasterKeys = mv.Config.MasterKeys
+    vc.MasterKeys.Secret = coin.SecKey{}
+    vc.GenesisSignature = mv.blockSigs.Sigs[0]
+    vc.GenesisTimestamp = mv.blockchain.Blocks[0].Header.Time
+    return NewVisor(vc)
+}
+
 func setupMasterVisorConfig() VisorConfig {
     // Create testmaster.keys file
     coin.SetAddressVersion("test")
@@ -62,11 +72,18 @@ func setupMasterVisor() *Visor {
 }
 
 func cleanupVisor() {
-    os.Remove(testMasterKeysFile)
-    os.Remove(testBlockchainFile)
-    os.Remove(testBlocksigsFile)
-    os.Remove(testWalletFile)
-    os.Remove(testWalletEntryFile)
+    filenames := []string{
+        testMasterKeysFile,
+        testBlockchainFile,
+        testBlocksigsFile,
+        testWalletFile,
+        testWalletEntryFile,
+    }
+    for _, fn := range filenames {
+        os.Remove(fn)
+        os.Remove(fn + ".bak")
+        os.Remove(fn + ".tmp")
+    }
 }
 
 func randSHA256() coin.SHA256 {
@@ -99,6 +116,30 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
     return ut
 }
 
+func transferCoinsToSelf(v *Visor, addr coin.Address) error {
+    tx, err := v.Spend(Balance{1e6, 0}, 0, addr)
+    if err != nil {
+        return err
+    }
+    v.RecordTxn(tx, false)
+    _, err = v.CreateAndExecuteBlock()
+    return err
+}
+
+func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
+    addr coin.Address) error {
+    tx, err := mv.Spend(b, fee, addr)
+    if err != nil {
+        return err
+    }
+    mv.RecordTxn(tx, false)
+    sb, err := mv.CreateAndExecuteBlock()
+    if err != nil {
+        return err
+    }
+    return v.ExecuteSignedBlock(sb)
+}
+
 func transferCoins(mv *Visor, v *Visor) error {
     // Give the nonmaster some money to spend
     addr := coin.Address{}
@@ -106,16 +147,7 @@ func transferCoins(mv *Visor, v *Visor) error {
         addr = a
         break
     }
-    tx, err := mv.Spend(Balance{10 * 1e6, 0}, 0, addr)
-    if err != nil {
-        return err
-    }
-    mv.RecordTxn(tx, false)
-    sb, err := mv.CreateBlock()
-    if err != nil {
-        return err
-    }
-    return v.ExecuteSignedBlock(sb)
+    return transferCoinsAdvanced(mv, v, Balance{10e6, 0}, 0, addr)
 }
 
 func assertJSONSerializability(t *testing.T, thing interface{}) {

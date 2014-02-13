@@ -2,7 +2,6 @@ package coin
 
 import (
     "encoding/hex"
-    "encoding/base64"
     "errors"
     "github.com/skycoin/skycoin/src/lib/secp256k1-go"
     "log"
@@ -39,11 +38,6 @@ func (self PubKey) Verify() error {
 func (self *PubKey) Hex() string {
     return hex.EncodeToString(self[:])
 }
-
-func (self *PubKey) Base64() string {
-    return base64.StdEncoding.EncodeToString(self[:])
-}
-
 
 // Returns the public key as ripemd160(sha256(sha256(key)))
 func (self *PubKey) ToAddressHash() Ripemd160 {
@@ -90,11 +84,6 @@ func (self SecKey) Verify() error {
 func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
-
-func (s SecKey) Base64() string {
-    return base64.StdEncoding.EncodeToString(s[:])
-}
-
 
 type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 

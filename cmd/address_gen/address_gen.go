@@ -30,6 +30,7 @@ var (
     PrintAddress = false
     PrintPubKey  = true
     PrintSeckey  = true
+
     //labelStdout  = false
     //inFile       = ""
     seed = ""
@@ -87,8 +88,8 @@ func tstring(pub coin.Pubkey, sec coin.Seckey) string {
 
     addr := coin.AddressFromPubKey(pub)
 
-    str1 := fmt.Sprintf("%v ", pub.Base64())
-    str2 := fmt.Sprintf("%v ", sec.Base64())
+    str1 := fmt.Sprintf("%v ", pub.Hex())
+    str2 := fmt.Sprintf("%v ", sec.Hex())
     str3 := fmt.Sprintf("%v", addr.String())
 
     if PrintPubKey == false {

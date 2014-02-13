@@ -69,12 +69,14 @@ func newVisorDaemon(vc VisorConfig) (*Daemon, chan int) {
 }
 
 // Writes a wallet entry to disk at filename
+/*
 func writeMasterKeysFile() (visor.WalletEntry, error) {
     we := visor.NewWalletEntry()
     rwe := visor.NewReadableWalletEntry(&we)
     err := rwe.Save(testMasterKeysFile)
     return we, err
 }
+*/
 
 func assertFileExists(t *testing.T, filename string) {
     stat, err := os.Stat(filename)

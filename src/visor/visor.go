@@ -23,13 +23,10 @@ var (
     logger = logging.MustGetLogger("skycoin.visor")
 )
 
+/*
 // Holds the master and personal keys
 type VisorKeys struct {
-    // The master server's key.  The Secret will be empty unless running as
-    // a master instance
-    //Master WalletEntry
-    // // Our personal keys
-    // Wallet Wallet
+    // The Secret will be empty unless running as master instance
     PubKey coin.PubKey
     SecKey coin.SecKey
 }
@@ -38,12 +35,16 @@ type VisorKeys struct {
 func GenerateVisorKey(seed string) VisorKeys {
     pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
     return VisorKeys{
-        //Master: master,
-        Seckey: sec,
+        SecKey: sec, // is coin.SecKey{} if in slave mode
         PubKey: pub,
     }
 }
+*/
 
+var (
+    testnet_pubkey_hex = "025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b"
+    mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
+)
 // Configuration parameters for the Visor
 type VisorConfig struct {
     // Is this the master blockchain
@@ -77,13 +78,25 @@ type VisorConfig struct {
     GenesisSignature coin.Sig
     // Genesis block timestamp
     GenesisTimestamp uint64
+
+    PubKey coin.PubKey
+    SecKey coin.SecKey
+}
+
+func (self *VisorConfig) SetVisorSecKey(seed string) {
+    pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
+    if pub != self.pub {
+        log.Panic("ERROR: pubkey does not correspond to loaded pubkey")
+    }
+    self.SecKey = sec
 }
 
 //Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
-func NewVisorConfig() VisorConfig {
-    return VisorConfig{
+func NewVisorConfig(pubkey coni.PubKey) VisorConfig {
+    //set pubkey based upon testnet, mainnet and local
+    CF := VisorConfig{
         IsMaster:                 false,
         //CanSpend:                 true,
         TestNetwork:              true,
@@ -100,9 +113,29 @@ func NewVisorConfig() VisorConfig {
         GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
 
-        keys       VisorKeys
+        PubKey: pubkey
+        SecKey: coin.SecKey{}
     }
 }
+
+//NewTestnetVisor Config creates visor for the testnet
+func NewTestnetVisorConfig() VisorConfig {
+    return NewVisorConfig(PubKeyFromHex(testnet_pubkey_hex))
+}
+
+//NewTestnetVisor Config creates visor for the mainnet
+func NewMainnetVisorConfig() VisorConfig {
+    return NewVisorConfig(PubKeyFromHex(mainnet_pubkey_hex))
+}
+
+//Generate visor configuration for client only visor, not intended to be synced to network
+func NewLocalVisorConfig() VisorConfig {
+    pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
+    VC := NewVisorConfig(pubkey)
+    VC.SecKey = seckey //set seckey for writes
+    return VC
+}
+
 
 // Manages the Blockchain as both a Master and a Normal
 type Visor struct {

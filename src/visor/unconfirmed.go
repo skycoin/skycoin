@@ -15,9 +15,9 @@ type UnconfirmedTxn struct {
     // Last time we announced this txn
     Announced time.Time
     // We are a spender
-    IsOurSpend bool
+    //IsOurSpend bool
     // We are a receiver
-    IsOurReceive bool
+    //IsOurReceive bool
 }
 
 // Returns the coin.Transaction's hash
@@ -36,7 +36,7 @@ type UnconfirmedTxnPool struct {
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
     return &UnconfirmedTxnPool{
         Txns:    make(map[coin.SHA256]UnconfirmedTxn),
-        Unspent: coin.NewUnspentPool(),
+        //Unspent: coin.NewUnspentPool(),
     }
 }
 
@@ -75,8 +75,8 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         Received:     now,
         Checked:      now,
         Announced:    announcedAt,
-        IsOurReceive: false,
-        IsOurSpend:   false,
+        //IsOurReceive: false,
+        //IsOurSpend:   false,
     }
 
     /*
@@ -119,19 +119,21 @@ func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
     return txns
 }
 
-// Remove a single txn
-func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
-    t, ok := self.Txns[h]
+// Remove a single txn from the unconfirmed transaction pool
+func (self *UnconfirmedTxnPool) removeTxn(h coin.SHA256) {
+    _, ok := self.Txns[h]
     if !ok {
         return
     }
     delete(self.Txns, h)
+/*
     outputs := bc.TxUxOut(t.Txn, coin.BlockHeader{})
     hashes := make([]coin.SHA256, len(outputs))
     for _, o := range outputs {
         hashes = append(hashes, o.Hash())
     }
     self.Unspent.DelMultiple(hashes)
+*/
 }
 
 // Removes multiple txns at once. Slightly more efficient than a series of
@@ -139,18 +141,20 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
 // Note -- efficiency does not matter
 func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
     hashes []coin.SHA256) {
-    uxo := make([]coin.UxOut, 0, len(hashes))
+    //uxo := make([]coin.UxOut, 0, len(hashes))
     for _, h := range hashes {
-        if t, ok := self.Txns[h]; ok {
+        if _, ok := self.Txns[h]; ok {
             delete(self.Txns, h)
-            uxo = append(uxo, bc.TxUxOut(t.Txn, coin.BlockHeader{})...)
+    //        uxo = append(uxo, bc.TxUxOut(t.Txn, coin.BlockHeader{})...)
         }
     }
+/*
     uxhashes := make([]coin.SHA256, len(uxo))
     for _, o := range uxo {
         uxhashes = append(uxhashes, o.Hash())
     }
     self.Unspent.DelMultiple(uxhashes)
+*/
 }
 
 // Removes confirmed txns from the pool
@@ -187,6 +191,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
 
 // Returns transactions in which we are a party and have not been announced
 // in ago duration
+/*
 func (self *UnconfirmedTxnPool) GetOldOwnedTransactions(ago time.Duration) []UnconfirmedTxn {
     txns := make([]UnconfirmedTxn, 0)
     now := util.Now()
@@ -197,6 +202,7 @@ func (self *UnconfirmedTxnPool) GetOldOwnedTransactions(ago time.Duration) []Unc
     }
     return txns
 }
+*/
 
 // Returns txn hashes with known ones removed
 func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {

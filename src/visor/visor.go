@@ -526,7 +526,7 @@ func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
     self.UnconfirmedTxns.SetAnnounced(h, t)
 }
 
-
+//replace with InjectTransaction
 //InjectTransaction injections a raw transaction into unconfirmed/pending transaction set.
 //raw transactions are created by wallets. Something should clear out transaction
 //pool every once in a while
@@ -541,12 +541,15 @@ func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
     //for a, _ := range self.Wallet.Entries {
     //    entries[a] = byte(1)
     //}
-    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn,
-        entries, didAnnounce)
+
+    //replace with InjectTransaction
+    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, didAnnounce)
 }
 
 // Returns the Transactions associated with a coin.Address. This includes
 // unconfirmed txns.
+
+/*
 func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
     txns := make([]Transaction, 0)
     // Look in the blockchain
@@ -578,6 +581,7 @@ func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
 
     return txns
 }
+*/
 
 // Returns a Transaction by hash.
 func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
@@ -683,7 +687,7 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.keys.Master.Public, b.Sig,
+    return coin.VerifySignature(self.Config.PubKey, b.Sig,
         b.Block.HashHeader())
 }
 
@@ -692,7 +696,7 @@ func (self *Visor) signBlock(b coin.Block) (sb SignedBlock, e error) {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-    sig, err := coin.SignHash(b.HashHeader(), self.keys.Master.Secret)
+    sig, err := coin.SignHash(b.HashHeader(), self.Config.SecKey)
     if err != nil {
         e = err
         return

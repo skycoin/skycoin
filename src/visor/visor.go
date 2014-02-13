@@ -94,7 +94,7 @@ func (self *VisorConfig) SetVisorSecKey(seed string) {
 //Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
-func NewVisorConfig(pubkey coni.PubKey) VisorConfig {
+func NewVisorConfig(pubkey coin.PubKey) VisorConfig {
     //set pubkey based upon testnet, mainnet and local
     CF := VisorConfig{
         IsMaster:                 false,
@@ -113,26 +113,33 @@ func NewVisorConfig(pubkey coni.PubKey) VisorConfig {
         GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
 
-        PubKey: pubkey
+        PubKey: coin.PubKey{}
         SecKey: coin.SecKey{}
     }
 }
 
 //NewTestnetVisor Config creates visor for the testnet
 func NewTestnetVisorConfig() VisorConfig {
-    return NewVisorConfig(PubKeyFromHex(testnet_pubkey_hex))
+    VC := NewVisorConfig()
+    VC.PubKey = PubKeyFromHex(testnet_pubkey_hex)
+    VC.TestNetwork = true
+    return VC
 }
 
 //NewTestnetVisor Config creates visor for the mainnet
 func NewMainnetVisorConfig() VisorConfig {
-    return NewVisorConfig(PubKeyFromHex(mainnet_pubkey_hex))
+    VC := NewVisorConfig()
+    VC.PubKey = PubKeyFromHex(mainnet_pubkey_hex)
+    VC.TestNetwork = false
+    return VC
 }
 
 //Generate visor configuration for client only visor, not intended to be synced to network
 func NewLocalVisorConfig() VisorConfig {
     pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
-    VC := NewVisorConfig(pubkey)
-    VC.SecKey = seckey //set seckey for writes
+    VC := NewVisorConfig()
+    VC.SecKey = seckey
+    VC.PubKey = pubkey
     return VC
 }
 

@@ -166,9 +166,8 @@ func NewVisor(c VisorConfig) *Visor {
         if err := c.SecKey.Verify(); err != nil {
             log.Panicf("Invalid privatekey: %v", err)
         }
-
-        if self.PubKey != coin.PubKeyFromSecKey(c.SecKey) {
-            log.Panic()
+        if c.PubKey != coin.PubKeyFromSecKey(c.SecKey) {
+            log.Panic("SecKey does not correspond to PubKey")
         }
     } else {
         if err := c.PubKey.Verify(); err != nil {
@@ -234,7 +233,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 // Creates the genesis block as needed
 func (self *Visor) CreateGenesisBlock() SignedBlock {
     b := coin.Block{}
-    addr := self.Config.MasterKeys.Address
+    addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
     if self.Config.IsMaster {
         b = self.blockchain.CreateMasterGenesisBlock(addr)
     } else {
@@ -254,7 +253,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
         }
     }
     self.blockSigs.record(&sb)
-    err := self.blockSigs.Verify(self.Config.MasterKeys.Public, self.blockchain)
+    err := self.blockSigs.Verify(self.Config.PubKey, self.blockchain)
     if err != nil {
         log.Panicf("Signed the genesis block, but its invalid: %v", err)
     }
@@ -404,7 +403,7 @@ loop:
 //raw transactions are created by wallets
 func (self *Visor) InjectTransaction(coin.Transaction) (error) {
 
-
+    return nil
 }
 
 

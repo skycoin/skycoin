@@ -8,6 +8,7 @@ package base58
 
 import (
     "encoding/hex"
+    "errors"
     "math/big"
 )
 
@@ -68,13 +69,21 @@ func (b Base58) ToInt() int {
 }
 
 //convert base58 to hex bytes
-func (b Base58) ToHex() []byte {
+func (b Base58) ToHex() ([]byte, error) {
     value := b.ToBig() //convert to big.Int
     oneCount := 0
-    for string(b)[oneCount] == '1' {
-        oneCount++
+    bs := string(b)
+    if len(bs) == 0 {
+        return nil, errors.New("Invalid base58 string")
     }
-    return append(make([]byte, oneCount), value.Bytes()...) //convert big.Int to bytes
+    for bs[oneCount] == '1' {
+        oneCount++
+        if oneCount >= len(bs) {
+            return nil, errors.New("Invalid base58 string")
+        }
+    }
+    //convert big.Int to bytes
+    return append(make([]byte, oneCount), value.Bytes()...), nil
 }
 
 func (b Base58) Base582Big() *big.Int {
@@ -97,7 +106,7 @@ func (b Base58) Base582Int() int {
 }
 
 //convert base58 to hex bytes
-func Base582Hex(b string) []byte {
+func Base582Hex(b string) ([]byte, error) {
     return Base58(b).ToHex()
 }
 

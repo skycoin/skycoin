@@ -44,9 +44,9 @@ type Checksum [4]byte
 //Address stuct is a 25 byte with a 20 byte publickey hash, 1 byte address
 //type and 4 byte checksum.
 type Address struct {
-    Key     [20]byte //20 byte pubkey hash
-    Version byte     //1 byte
-    ChkSum  [4]byte  //4 byte checksum, first 4 bytes of sha256 of key+version
+    Key      Ripemd160 //20 byte pubkey hash
+    Version  byte      //1 byte
+    Checksum Checksum  //4 byte checksum, first 4 bytes of sha256 of key+version
 }
 
 // Creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
@@ -62,29 +62,33 @@ func AddressFromPubKey(pubKey PubKey) Address {
 // Creates an Address from its base58 encoding.  Will panic if the addr is
 // invalid
 func MustDecodeBase58Address(addr string) Address {
-    a, err := addressFromBytes(base58.Base582Hex(addr))
+    a, err := DecodeBase58Address(addr)
     if err != nil {
-        log.Panicf("Invalid address %s", addr)
+        log.Panicf("Invalid address %s: %v", addr, err)
     }
     return a
 }
 
 // Creates an Address from its base58 encoding
 func DecodeBase58Address(addr string) (Address, error) {
-    return addressFromBytes(base58.Base582Hex(addr))
+    b, err := base58.Base582Hex(addr)
+    if err != nil {
+        return Address{}, err
+    }
+    return addressFromBytes(b)
 }
 
 // Returns an address given an Address.Bytes()
 func addressFromBytes(b []byte) (Address, error) {
-    var a Address
+    a := Address{}
     keyLen := len(a.Key)
-    if len(b) != keyLen+len(a.ChkSum)+1 {
+    if len(b) != keyLen+len(a.Checksum)+1 {
         return a, errors.New("Invalid address bytes")
     }
     copy(a.Key[:], b[:keyLen])
     a.Version = b[keyLen]
-    copy(a.ChkSum[:], b[keyLen+1:])
-    if !a.IsValidChecksum() {
+    copy(a.Checksum[:], b[keyLen+1:])
+    if !a.HasValidChecksum() {
         return a, errors.New("Invalid checksum")
     } else {
         return a, nil
@@ -99,7 +103,7 @@ func (self *Address) Verify(key PubKey) error {
     if self.Version != addressVersion {
         return errors.New("Invalid address version")
     }
-    if !self.IsValidChecksum() {
+    if !self.HasValidChecksum() {
         return errors.New("Invalid address checksum")
     }
     return nil
@@ -113,29 +117,29 @@ func (self *Address) String() string {
 // Returns address as raw bytes, containing version and then key
 func (self *Address) Bytes() []byte {
     keyLen := len(self.Key)
-    b := make([]byte, keyLen+len(self.ChkSum)+1)
+    b := make([]byte, keyLen+len(self.Checksum)+1)
     copy(b[:keyLen], self.Key[:])
     b[keyLen] = self.Version
-    copy(b[keyLen+1:], self.ChkSum[:])
+    copy(b[keyLen+1:], self.Checksum[:])
     return b
 }
 
 // Returns Address Checksum which is the first 4 bytes of sha256(key+version)
-func (self *Address) Checksum() Checksum {
+func (self *Address) CreateChecksum() Checksum {
     // Version comes after the address to support vanity addresses
     r1 := append(self.Key[:], []byte{self.Version}...)
     r2 := SumSHA256(r1[:])
-    var c Checksum
+    c := Checksum{}
     copy(c[:], r2[:len(c)])
     return c
 }
 
 // Returns whether the checksum on address is valid for its key
-func (self *Address) IsValidChecksum() bool {
-    c := self.Checksum()
-    return bytes.Equal(c[:], self.ChkSum[:])
+func (self *Address) HasValidChecksum() bool {
+    c := self.CreateChecksum()
+    return bytes.Equal(c[:], self.Checksum[:])
 }
 
 func (self *Address) setChecksum() {
-    self.ChkSum = self.Checksum()
+    self.Checksum = self.CreateChecksum()
 }

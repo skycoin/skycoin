@@ -114,7 +114,7 @@ func main() {
 
         for i:=0; i<genCount; i++ {
             pub, sec := coin.GenerateKeyPair()
-            log.Printf("%s\n", tstring(pub,sec))
+            fmt.Printf("%s\n", tstring(pub,sec))
         }
     }
 

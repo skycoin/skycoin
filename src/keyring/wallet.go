@@ -1,4 +1,4 @@
-package rpc
+package keyring
 
 import (
     "errors"

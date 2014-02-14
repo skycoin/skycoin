@@ -1,13 +1,17 @@
-package rpc
+package daemon
 
-<<<<<<< HEAD:src/rpc/rpc.go
-=======
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/rpc"
 )
 
 // Exposes a read-only api for use by the gui rpc interface
+
+type rpc_Balance struct {
+    Coins uint64 `json:"coins"`
+    Hours uint64 `json:"hours"`
+}
 
 type RPCConfig struct {
     BufferSize int
@@ -70,7 +74,7 @@ type BlockchainProgress struct {
 }
 
 type Balance struct {
-    Balance visor.Balance `json:"balance"`
+    Balance rpc_Balance `json:"balance"`
     // Whether this balance includes unconfirmed txns in its calculation
     Predicted bool `json:"predicted"`
 }
@@ -407,4 +411,3 @@ func (self *RPC) resendTransaction(txHash coin.SHA256) *ResendResult {
         Sent: sent,
     }
 }
->>>>>>> e760bf27ed477fbfee537a49f9e9927b5d55e5f8:src/daemon/rpc.go

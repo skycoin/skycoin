@@ -1,4 +1,4 @@
-package visor
+package keyring
 
 import (
     "github.com/skycoin/skycoin/src/coin"

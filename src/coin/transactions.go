@@ -88,17 +88,22 @@ func (self *Transaction) Verify() error {
         if err != nil {
             return err
         }
-        err = VerifySignature(pubkey, sig, self.Header.Hash)
-        if err != nil {
-            return err
+        if DebugLevel1 {
+            // This should never fail, the pubkey should not have been recovered
+            // from sig if sig is invalid for hash
+            err := VerifySignature(pubkey, sig, self.Header.Hash)
+            if err != nil {
+                return err
+            }
         }
     }
 
-    //artificial restriction to prevent spam
+    // Artificial restriction to prevent spam
+    // Must spend only multiples of 1e6
     for _, txo := range self.Out {
         if txo.Coins%1e6 != 0 {
-            return errors.New("Error: transaction outputs must be multiple " +
-                "of 1e6 base units")
+            return errors.New("Transaction outputs must be multiple of 1e6 " +
+                "base units")
         }
     }
 
@@ -155,27 +160,16 @@ func (self *Transaction) SignInputs(keys []SecKey) {
     }
     self.Header.Sigs = make([]Sig, len(self.In))
     h := self.hashInner()
-    for i, _ := range self.In {
-        self.signInput(uint16(i), keys[i], h)
+    for i, k := range keys {
+        self.signInput(uint16(i), k, h)
     }
 }
 
 // Hashes an entire Transaction struct, including the TransactionHeader
 func (self *Transaction) Hash() SHA256 {
+    // TODO -- don't use encoder to serialize, in case it needs to change
     b1 := encoder.Serialize(*self)
-    return SumDoubleSHA256(b1) //double SHA256 hash
-}
-
-func (self *Transaction) Serialize() []byte {
-    return encoder.Serialize(*self)
-}
-
-func TransactionDeserialize(b []byte) Transaction {
-    var t Transaction
-    if err := encoder.DeserializeRaw(b, t); err != nil {
-        log.Panic("Failed to deserialize transaction")
-    }
-    return t
+    return SumDoubleSHA256(b1)
 }
 
 // Saves the txn body hash to TransactionHeader.Hash
@@ -185,16 +179,29 @@ func (self *Transaction) UpdateHeader() {
 
 // Hashes only the Transaction Inputs & Outputs
 func (self *Transaction) hashInner() SHA256 {
+    // WARNING -- using encoder to calculate hash is prone to error.
+    // Encoder connot be considered stable.
     b1 := encoder.Serialize(self.In)
     b2 := encoder.Serialize(self.Out)
     b3 := append(b1, b2...)
     return SumSHA256(b3)
 }
 
+func (self *Transaction) Serialize() []byte {
+    return encoder.Serialize(*self)
+}
+
+func TransactionDeserialize(b []byte) Transaction {
+    t := Transaction{}
+    if err := encoder.DeserializeRaw(b, &t); err != nil {
+        log.Panic("Failed to deserialize transaction")
+    }
+    return t
+}
+
 type Transactions []Transaction
 
 func (self Transactions) Sort() {
-    //sort.Sort(Transactions(self))
     sort.Sort(self)
 }
 
@@ -213,7 +220,5 @@ func (self Transactions) Less(i, j int) bool {
 }
 
 func (self Transactions) Swap(i, j int) {
-    t := self[i]
-    self[i] = self[j]
-    self[j] = t
+    self[i], self[j] = self[j], self[i]
 }

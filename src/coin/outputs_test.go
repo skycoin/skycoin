@@ -8,23 +8,34 @@ import (
 )
 
 func makeUxBody(t *testing.T) UxBody {
-    p, _ := GenerateKeyPair()
+    body, _ := makeUxBodyWithSecret(t)
+    return body
+}
+
+func makeUxOut(t *testing.T) UxOut {
+    ux, _ := makeUxOutWithSecret(t)
+    return ux
+}
+
+func makeUxBodyWithSecret(t *testing.T) (UxBody, SecKey) {
+    p, s := GenerateKeyPair()
     return UxBody{
         SrcTransaction: SumSHA256(randBytes(t, 128)),
         Address:        AddressFromPubKey(p),
         Coins:          1e6,
         Hours:          100,
-    }
+    }, s
 }
 
-func makeUxOut(t *testing.T) UxOut {
+func makeUxOutWithSecret(t *testing.T) (UxOut, SecKey) {
+    body, sec := makeUxBodyWithSecret(t)
     return UxOut{
         Head: UxHead{
             Time:  100,
             BkSeq: 2,
         },
-        Body: makeUxBody(t),
-    }
+        Body: body,
+    }, sec
 }
 
 func TestUxBodyHash(t *testing.T) {

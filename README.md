@@ -30,7 +30,7 @@ Skycoin is inspired by Bitcoin but emphasizes
 - simplicity
 
 Skycoin Improves on Bitcoin in several ways
-- easy to use wallet designed for mainstream users
+- easy to use wallet designed for the mainstream
 - 15 second transactions. Skycoin transactions are forty times faster than Bitcoin
 - better name and branding
 - clean, easy to use API for merchants and developers
@@ -39,32 +39,32 @@ Skycoin Improves on Bitcoin in several ways
 
 Security Improvements:
 - immunity from the Transaction Malleability attack
-- safe against mining cartels and 51% attacks
-- no hash collisions from duplicate coinbase outputs
+- immunity to the 51% attack
 - ECDSA signature compression support for smaller/faster transactions
-- HTTPS/TLS encryption
+- no hash collisions or duplicate coinbase outputs
+- HTTPS encryption
 
-Skycoin is the most secure cryptocoin that has even been designed. Skycoin is heavily based upon Bitcoin, but written from scratch to address the known issues with Bitcoin.
+Skycoin is the most secure and most usable cryptocoin that has ever been designed.
 
 No Mining
 ---------
 
-Satoshi has stated that mining is Bitcoin's only flaw. Miners are the greatest threat to Bitcoin's survival. Mining introduces human factors and greed into the survivability of Bitcoin as a currency.
+Satoshi has stated that mining is Bitcoin's only flaw. Miners are the greatest threat to Bitcoin's survival. Mining introduces social factors and greed into the survivability of Bitcoin as a currency.
 
 Problems with Mining:
 - Dishonest miners are the greatest threat to Bitcoin
-- gigahash.io has abused its hashing power to steal Bitcoin from gambling sites
-- Every month mining power is concentrated in the hands of fewer people
-- cex.io allows people to rent a 51% attack by the minute
-- mining pools can form cartels to orphan blocks by honest miners
 - Bitcoin puts honest miners at a disadvantage to the mining cartels
-- mining cartels will rent capacity to orphan blocks from other pools, if they can
+- cex.io allows people to rent a 51% attack by the minute
+- gigahash.io has abused its hashing power to steal Bitcoin from gambling sites
 - pools have begun capping block size to drive up transaction fees
+- Every month mining power is concentrated in the hands of fewer people
+- the costs of mining are passed on to every Bitcoin holder
+- mining pools can form cartels to orphan blocks by honest miners
+- mining cartels can rent capacity to orphan blocks from other pools
 - Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public
 - miners and electricity companies profit. Everyone else pays the costs.
 - block rewards create incentive to sybil attack network and influence block propagation. These attacks have slowed down blockchain downloads to unacceptable levels.
 - electricity used by mining is wasted
-- the costs of mining is passed on to every Bitcoin holder
 - Mining increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions.
 - Miners driving up transaction fees will make Bitcoin transaction fees higher than the banking system Bitcoin was created to replace.
 - rapid changes in hash rate and mining profitability introduce unnecessary price volatility into Bitcoin. Price volatility caused by mining discourages Merchants from transacting in Bitcoin.

@@ -105,7 +105,7 @@ func NewVisorConfig() VisorConfig {
 //NewTestnetVisor Config creates visor for the testnet
 func NewTestnetVisorConfig() VisorConfig {
     VC := NewVisorConfig()
-    VC.PubKey = coin.PubKeyFromHex(testnet_pubkey_hex)
+    VC.PubKey = coin.MustPubKeyFromHex(testnet_pubkey_hex)
     VC.TestNetwork = true
     return VC
 }
@@ -113,7 +113,7 @@ func NewTestnetVisorConfig() VisorConfig {
 //NewTestnetVisor Config creates visor for the mainnet
 func NewMainnetVisorConfig() VisorConfig {
     VC := NewVisorConfig()
-    VC.PubKey = coin.PubKeyFromHex(mainnet_pubkey_hex)
+    VC.PubKey = coin.MustPubKeyFromHex(mainnet_pubkey_hex)
     VC.TestNetwork = false
     return VC
 }
@@ -214,6 +214,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 func (self *Visor) CreateGenesisBlock() SignedBlock {
     b := coin.Block{}
     addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
+    //addr := coin.AddressFromPubKey(self.Config.PubKey)
     if self.Config.IsMaster {
         b = self.blockchain.CreateMasterGenesisBlock(addr)
     } else {

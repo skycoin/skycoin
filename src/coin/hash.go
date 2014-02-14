@@ -113,19 +113,11 @@ func (a *SHA256) Xor(b SHA256) SHA256 {
 // Returns the next highest power of 2 above n, if n is not already a
 // power of 2
 func nextPowerOfTwo(n uint64) uint64 {
-    if n == 0 {
-        return 1
+    var k uint64 = 1
+    for k < n {
+        k *= 2
     }
-    // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-    n--
-    n |= n >> 1
-    n |= n >> 2
-    n |= n >> 4
-    n |= n >> 8
-    n |= n >> 16
-    n |= n >> 32
-    n++
-    return n
+    return k
 }
 
 // Computes the merkle root of a hash array

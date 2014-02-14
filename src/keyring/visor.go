@@ -13,21 +13,8 @@ import (
     "time"
 )
 
-// Note: Wallets are moved into RPC. RPC loads/unloads wallets
-// Visor allows for injection of raw transactions and new blocks
-// Visor saves blocks and loads them from disc
-// Visor checks the signature on blocks
-// Visor does not generate transactions, but accepts raw transactions
-
 var (
     logger = logging.MustGetLogger("skycoin.visor")
-)
-
-// Note: can use testnetpubkey as genesis address
-var (
-    genesis_address = "26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p"
-    testnet_pubkey_hex = "025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b"
-    mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
 )
 
 // Configuration parameters for the Visor
@@ -35,15 +22,11 @@ type VisorConfig struct {
     // Is this the master blockchain
     IsMaster bool
     // Is allowed to create transactions
-    //CanSpend bool
+    CanSpend bool
     // Wallet file location
-    //WalletFile string
-    
+    WalletFile string
     // Minimum number of addresses to keep in the wallet
-
-    //WalletSizeMin int
-    // Use test network addresses
-    TestNetwork bool
+    WalletSizeMin int
     // How often new blocks are created by the master
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
@@ -59,81 +42,44 @@ type VisorConfig struct {
     // Where the block signatures are saved
     BlockSigsFile string
     // Master keypair & address
-    MasterKeys coin.Sig
+    MasterKeys WalletEntry
     // Genesis block sig
     GenesisSignature coin.Sig
     // Genesis block timestamp
     GenesisTimestamp uint64
-
-    PubKey coin.PubKey
-    SecKey coin.SecKey
-}
-
-func (self *VisorConfig) SetVisorSecKey(seed string) {
-    pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
-    if pub != self.PubKey {
-        log.Panic("ERROR: pubkey does not correspond to loaded pubkey")
-    }
-    self.SecKey = sec
 }
 
 //Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
 func NewVisorConfig() VisorConfig {
-    //set pubkey based upon testnet, mainnet and local
     return VisorConfig{
         IsMaster:                 false,
-        TestNetwork:              true,
-
+        CanSpend:                 true,
+        WalletFile:               "",
+        WalletSizeMin:            1,
         BlockCreationInterval:    15,
-        UnconfirmedCheckInterval: time.Minute * 5,
-        UnconfirmedMaxAge:        time.Hour * 48, //drop transaction not executed in 48 hours
+        UnconfirmedCheckInterval: time.Hour * 2,
+        UnconfirmedMaxAge:        time.Hour * 48,
         UnconfirmedRefreshRate:   time.Minute * 30,
-        TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
+        TransactionsPerBlock:     1000, // 1000/15 = 66tps. Bitcoin is 7tps
         BlockchainFile:           "",
         BlockSigsFile:            "",
-        //MasterKeys:               WalletEntry{},
-        //GenesisSignature:         coin.Sig{},
+        MasterKeys:               WalletEntry{},
+        GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
-
-        PubKey: coin.PubKey{},
-        SecKey: coin.SecKey{},
     }
 }
-
-//NewTestnetVisor Config creates visor for the testnet
-func NewTestnetVisorConfig() VisorConfig {
-    VC := NewVisorConfig()
-    VC.PubKey = coin.MustPubKeyFromHex(testnet_pubkey_hex)
-    VC.TestNetwork = true
-    return VC
-}
-
-//NewTestnetVisor Config creates visor for the mainnet
-func NewMainnetVisorConfig() VisorConfig {
-    VC := NewVisorConfig()
-    VC.PubKey = coin.MustPubKeyFromHex(mainnet_pubkey_hex)
-    VC.TestNetwork = false
-    return VC
-}
-
-//Generate visor configuration for client only visor, not intended to be synced to network
-func NewLocalVisorConfig() VisorConfig {
-    pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
-    VC := NewVisorConfig()
-    VC.SecKey = seckey
-    VC.PubKey = pubkey
-    return VC
-}
-
 
 // Manages the Blockchain as both a Master and a Normal
 type Visor struct {
     Config VisorConfig
     // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
-    //blockchain storag
+    // Wallet holding our keys for spending
+    Wallet *Wallet
+    // Master & personal keys
+    masterKeys WalletEntry
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -146,28 +92,22 @@ func NewVisor(c VisorConfig) *Visor {
         logger.Debug("Visor is master")
     }
     if c.IsMaster {
-        if err := c.SecKey.Verify(); err != nil {
-            log.Panicf("Invalid privatekey: %v", err)
-        }
-        if c.PubKey != coin.PubKeyFromSecKey(c.SecKey) {
-            log.Panic("SecKey does not correspond to PubKey")
+        if err := c.MasterKeys.Verify(); err != nil {
+            log.Panicf("Invalid master wallet entry: %v", err)
         }
     } else {
-        if err := c.PubKey.Verify(); err != nil {
-            log.Panicf("Invalid pubkey: %v", err)
+        if err := c.MasterKeys.VerifyPublic(); err != nil {
+            log.Panicf("Invalid master address or pubkey: %v", err)
         }
-
     }
 
-    //TODO: add privatekey from seed
-
     // Load the wallet
-    //var wallet *Wallet = nil
-    //if c.IsMaster {
-    //    wallet = createMasterWallet(c.MasterKeys)
-    //} else {
-    //    wallet = loadWallet(c.WalletFile, c.WalletSizeMin)
-    //}
+    var wallet *Wallet = nil
+    if c.IsMaster {
+        wallet = createMasterWallet(c.MasterKeys)
+    } else {
+        wallet = loadWallet(c.WalletFile, c.WalletSizeMin)
+    }
 
     // Load the blockchain the block signatures
     blockchain := loadBlockchain(c.BlockchainFile)
@@ -186,12 +126,13 @@ func NewVisor(c VisorConfig) *Visor {
         blockchain:      blockchain,
         blockSigs:       blockSigs,
         UnconfirmedTxns: NewUnconfirmedTxnPool(),
+        Wallet:          wallet,
     }
     // Load the genesis block and sign it, if we need one
     if len(blockchain.Blocks) == 0 {
         v.CreateGenesisBlock()
     }
-    err = blockSigs.Verify(c.PubKey, blockchain)
+    err = blockSigs.Verify(c.MasterKeys.Public, blockchain)
     if err != nil {
         log.Panicf("Invalid block signatures: %v", err)
     }
@@ -207,14 +148,14 @@ func NewMinimalVisor(c VisorConfig) *Visor {
         blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
         UnconfirmedTxns: nil,
+        Wallet:          nil,
     }
 }
 
 // Creates the genesis block as needed
 func (self *Visor) CreateGenesisBlock() SignedBlock {
     b := coin.Block{}
-    addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
-    //addr := coin.AddressFromPubKey(self.Config.PubKey)
+    addr := self.Config.MasterKeys.Address
     if self.Config.IsMaster {
         b = self.blockchain.CreateMasterGenesisBlock(addr)
     } else {
@@ -230,7 +171,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
         }
     }
     self.blockSigs.record(&sb)
-    err := self.blockSigs.Verify(self.Config.PubKey, self.blockchain)
+    err := self.blockSigs.Verify(self.Config.MasterKeys.Public, self.blockchain)
     if err != nil {
         log.Panicf("Signed the genesis block, but its invalid: %v", err)
     }
@@ -254,8 +195,6 @@ func (self *Visor) SaveBlockchain() error {
 }
 
 // Saves the Wallet to disk
-
-/*
 func (self *Visor) SaveWallet() error {
     if self.Config.WalletFile == "" {
         return errors.New("No WalletFile location set")
@@ -263,7 +202,6 @@ func (self *Visor) SaveWallet() error {
         return self.Wallet.Save(self.Config.WalletFile)
     }
 }
-*/
 
 // Saves BlockSigs to disk
 func (self *Visor) SaveBlockSigs() error {
@@ -275,7 +213,6 @@ func (self *Visor) SaveBlockSigs() error {
 }
 
 // Creates and returns a WalletEntry and saves the wallet to disk
-/*
 func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
     we := self.Wallet.CreateEntry()
     err := self.SaveWallet()
@@ -285,7 +222,6 @@ func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
     }
     return we, err
 }
-*/
 
 // Creates a SignedBlock from pending transactions
 func (self *Visor) createBlock() (SignedBlock, error) {
@@ -325,16 +261,14 @@ func (self *Visor) CreateAndExecuteBlock() (SignedBlock, error) {
 }
 
 // Creates a Transaction spending coins and hours from our coins
-
-/*
 func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
         amt.Coins, amt.Hours, dest.String(), fee)
     var txn coin.Transaction
-    //if !self.Config.CanSpend {
-    //    return txn, errors.New("Spending disabled")
-    //}
+    if !self.Config.CanSpend {
+        return txn, errors.New("Spending disabled")
+    }
     if amt.IsZero() {
         return txn, errors.New("Zero spend amount")
     }
@@ -392,9 +326,6 @@ loop:
         return txn, errors.New("Not enough coins or hours")
     }
 }
-*/
-
-
 
 // Adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
@@ -410,7 +341,8 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     // TODO -- check if bitcoin allows blocks to be receiving out of order
     self.blockSigs.record(&b)
     // Remove the transactions in the Block from the unconfirmed pool
-    self.UnconfirmedTxns.RemoveTransactions(b.Block.Body.Transactions)
+    self.UnconfirmedTxns.RemoveTransactions(self.blockchain,
+        b.Block.Body.Transactions)
     return nil
 }
 
@@ -514,23 +446,54 @@ func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
     self.UnconfirmedTxns.SetAnnounced(h, t)
 }
 
-//replace with InjectTransaction
-//InjectTransaction injections a raw transaction into unconfirmed/pending transaction set.
-//raw transactions are created by wallets. Something should clear out transaction
-//pool every once in a while
-func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
-    return self.RecordTxn(txn, false) //reanounce
-}
-
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
-// replace with InjectTransaction
 func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
-    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, didAnnounce)
+    entries := make(map[coin.Address]byte, len(self.Wallet.Entries))
+    for a, _ := range self.Wallet.Entries {
+        entries[a] = byte(1)
+    }
+    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn,
+        entries, didAnnounce)
+}
+
+// Returns the Transactions whose unspents give coins to a coin.Address.
+// This includes unconfirmed txns' predicted unspents.
+func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
+    txns := make([]Transaction, 0)
+    // Look in the blockchain
+    uxs := self.blockchain.Unspent.AllForAddress(a)
+    mxSeq := self.MostRecentBkSeq()
+    for _, ux := range uxs {
+        bk := self.blockchain.Blocks[ux.Head.BkSeq]
+        tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
+        if ok {
+            h := mxSeq - bk.Header.BkSeq + 1
+            txns = append(txns, Transaction{
+                Txn:    tx,
+                Status: NewConfirmedTransactionStatus(h),
+            })
+        }
+    }
+
+    // Look in the unconfirmed pool
+    uxs = self.UnconfirmedTxns.Unspent.AllForAddress(a)
+    for _, ux := range uxs {
+        tx, ok := self.UnconfirmedTxns.Txns[ux.Body.SrcTransaction]
+        if !ok {
+            logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+            continue
+        }
+        txns = append(txns, Transaction{
+            Txn:    tx.Txn,
+            Status: NewUnconfirmedTransactionStatus(),
+        })
+    }
+
+    return txns
 }
 
 // Returns a Transaction by hash.
-/*
 func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
     // Look in the unconfirmed pool
     tx, ok := self.UnconfirmedTxns.Txns[txHash]
@@ -561,10 +524,8 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
         Status: NewUnknownTransactionStatus(),
     }
 }
-*/
-// Returns the balance of the wallet
 
-/*
+// Returns the balance of the wallet
 func (self *Visor) TotalBalance() Balance {
     addrs := self.Wallet.GetAddresses()
     auxs := self.blockchain.Unspent.AllForAddresses(addrs)
@@ -612,31 +573,6 @@ func (self *Visor) balance(uxs []coin.UxOut) Balance {
     return b
 }
 
-<<<<<<< HEAD
-// Returns the total of known Unspents available to us, and our own
-// unconfirmed unspents
-func (self *Visor) getAvailableBalances() coin.AddressUnspents {
-    addrs := self.Wallet.GetAddresses()
-    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
-    uauxs := self.UnconfirmedTxns.Unspent.AllForAddresses(addrs)
-    return auxs.Merge(uauxs, addrs)
-}
-
-// Returns the total of known unspents available for an address, including
-// unconfirmed requests
-func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
-    auxs := self.blockchain.Unspent.AllForAddress(a)
-    uauxs := self.UnconfirmedTxns.Unspent.AllForAddress(a)
-    return append(auxs, uauxs...)
-}
-*/
-
-//TODO - return UxOut
-
-// Returns an error if the coin.Sig is not valid for the coin.Block
-//func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-//    return coin.VerifySignature(self.Config.PubKey, b.Sig,
-//=======
 // // Returns the total of known Unspents available to us, and our own
 // // unconfirmed unspents
 // func (self *Visor) getAvailableBalances() coin.AddressUnspents {
@@ -657,14 +593,8 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
 // }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
-//func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-//    return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
-//>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
-//        b.Block.HashHeader())
-//}
-
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.Config.PubKey, b.Sig,
+    return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
         b.Block.HashHeader())
 }
 
@@ -673,7 +603,7 @@ func (self *Visor) signBlock(b coin.Block) SignedBlock {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-    sig := coin.SignHash(b.HashHeader(), self.Config.SecKey)
+    sig := coin.SignHash(b.HashHeader(), self.Config.MasterKeys.Secret)
     sb := SignedBlock{
         Block: b,
         Sig:   sig,
@@ -681,7 +611,6 @@ func (self *Visor) signBlock(b coin.Block) SignedBlock {
     return sb
 }
 
-/*
 // Loads a wallet but subdues errors into the logger, or panics
 func loadWallet(filename string, sizeMin int) *Wallet {
     wallet := NewWallet()
@@ -707,18 +636,15 @@ func loadWallet(filename string, sizeMin int) *Wallet {
     }
     return wallet
 }
-*/
 
-/*
 // Creates a wallet with a single master entry
 func createMasterWallet(master WalletEntry) *Wallet {
     w := NewWallet()
     if err := w.AddEntry(master); err != nil {
-        log.Panic("Master entry already exists in wallet: %v", err)
+        log.Panic("Failed to add master wallet entry: %v", err)
     }
     return w
 }
-*/
 
 // Loads a coin.Blockchain from disk
 func LoadBlockchain(filename string) (*coin.Blockchain, error) {

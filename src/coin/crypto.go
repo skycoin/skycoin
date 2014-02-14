@@ -137,18 +137,7 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
     return nil
 }
 
-func SignHash(hash SHA256, sec SecKey) (Sig) {
-
-    if sec == (SecKey{}) {
-        log.Panic("SignHash, SecKey is nil, check for condition before calling Sign")
-    }
-
-    /*
-        sig := secp256k1.Sign(hash[:], sec[:])
-        if sig == nil {
-            return Sig{}, errors.New("SignHash invalid private key")
-        }
-    */
+func SignHash(hash SHA256, sec SecKey) Sig {
     sig := NewSig(secp256k1.Sign(hash[:], sec[:]))
 
     if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss

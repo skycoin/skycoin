@@ -159,7 +159,8 @@ func TestNewVisorConfig(t *testing.T) {
     assert.Equal(t, vc.WalletFile, "")
     assert.Equal(t, vc.BlockchainFile, "")
     assert.Equal(t, vc.BlockSigsFile, "")
-    assert.NotNil(t, vc.MasterKeys.Verify())
+    assert.Panics(t, func() { vc.MasterKeys.Verify() })
+    assert.NotNil(t, vc.MasterKeys.VerifyPublic())
     assert.Equal(t, vc.GenesisSignature, coin.Sig{})
     assert.Equal(t, vc.WalletSizeMin, 1)
 }
@@ -169,13 +170,20 @@ func TestNewVisor(t *testing.T) {
 
     // Not master, Invalid master keys
     cleanupVisor()
+    we := NewWalletEntry()
+    we.Public = coin.PubKey{}
     vc := NewVisorConfig()
     vc.IsMaster = false
+    assert.Panics(t, func() { NewVisor(vc) })
+    vc.MasterKeys = we
     assert.Panics(t, func() { NewVisor(vc) })
 
     // Master, invalid master keys
     cleanupVisor()
     vc.IsMaster = true
+    vc.MasterKeys = WalletEntry{}
+    assert.Panics(t, func() { NewVisor(vc) })
+    vc.MasterKeys = we
     assert.Panics(t, func() { NewVisor(vc) })
 
     // Not master, no wallet, blockchain, blocksigs file
@@ -665,6 +673,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     // TODO -- empty BodyHash is being accepted, fix blockchain verification
     sb.Block.Header.BodyHash = coin.SHA256{}
     sb.Block.Body.Transactions = make(coin.Transactions, 0)
+    sb = v.signBlock(sb.Block)
     err = v.ExecuteSignedBlock(sb)
     assert.NotNil(t, err)
     assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
@@ -1107,6 +1116,9 @@ func TestCreateMasterWallet(t *testing.T) {
     // Creating with an invalid wallet entry should panic
     we = NewWalletEntry()
     we.Secret = coin.SecKey{}
+    assert.Panics(t, func() { createMasterWallet(we) })
+    we = NewWalletEntry()
+    we.Public = coin.PubKey{}
     assert.Panics(t, func() { createMasterWallet(we) })
 }
 

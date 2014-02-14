@@ -1,172 +1,130 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/keyring"
-	"github.com/skycoin/skycoin/src/util"
-	//"io"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"path/filepath"
-	"time"
+    "encoding/json"
+    "flag"
+    "fmt"
+    "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/visor"
+    "os"
 )
-
-type Profile struct {
-	Name    string
-	Hobbies []string
-}
-
-type test_struct struct {
-	WalletName string
-}
-
-type walletData struct {
-	Seed      string
-	Addresses []string
-	History   []string
-}
 
 var (
-	logger = logging.MustGetLogger("skycoin.gui")
+    testNetwork  = false
+    outFile      = ""
+    printPublic  = false
+    printSecret  = false
+    printAddress = false
+    labelStdout  = false
+    inFile       = ""
 )
 
-var WalletFile = walletData{}
+func registerFlags() {
+    flag.BoolVar(&testNetwork, "test-network", testNetwork,
+        "Use test network for address verson, if creating with -o")
+    flag.StringVar(&outFile, "o", outFile,
+        "If present, will create a new wallet entry and write to disk. "+
+            "For safety, it will not overwrite an existing keypair")
+    flag.BoolVar(&printAddress, "print-address", printAddress,
+        "Print the wallet entry's address")
+    flag.BoolVar(&printPublic, "print-public", printPublic,
+        "Print the wallet entry's public key")
+    flag.BoolVar(&printSecret, "print-secret", printSecret,
+        "Print the wallet entry's secret key")
+    flag.StringVar(&inFile, "i", inFile,
+        "Will read a wallet entry from this file for printing info")
+    flag.BoolVar(&labelStdout, "label-output", labelStdout,
+        "Add a label to each printed field. This is useful if you are "+
+            "printing multiple fields")
+}
+
+func parseFlags() {
+    flag.Parse()
+    if inFile != "" && outFile != "" {
+        fmt.Printf("-i and -o are mutually exclusive\n")
+        os.Exit(0)
+    }
+    if inFile != "" && !printPublic && !printSecret {
+        fmt.Printf("Input file present, but not requested to print anything\n")
+        os.Exit(0)
+    }
+}
+
+func createWalletEntry(filename string, testNetwork bool) *visor.ReadableWalletEntry {
+    pub, sec := coin.GenerateKeyPair()
+    var addr coin.Address
+    if testNetwork {
+        addr = coin.AddressFromPubKey(pub)
+    } else {
+        addr = coin.AddressFromPubKey(pub)
+    }
+
+    w := visor.WalletEntry{
+        Address: addr,
+        Public:  pub,
+        Secret:  sec,
+    }
+
+    rw := visor.NewReadableWalletEntry(&w)
+
+    err := rw.Save(filename)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Failed to write wallet entry to \"%s\"\n",
+            filename)
+        fmt.Fprintf(os.Stderr, "%v\n", err)
+        return nil
+    }
+
+    return &rw
+}
+
+func printWalletEntryFromFile(filename string, label, address, public,
+    secret bool) {
+    // Read wallet entry from disk
+    w, err := visor.LoadReadableWalletEntry(filename)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Failed to load wallet entry \"%s\": %v\n",
+            filename, err)
+        return
+    }
+    printWalletEntry(&w, label, address, public, secret)
+}
+
+func printWalletEntry(w *visor.ReadableWalletEntry, label, address, public,
+    secret bool) {
+    if public {
+        if label {
+            fmt.Printf("Public: ")
+        }
+        fmt.Printf("%s\n", w.Public)
+    }
+    if address {
+        if label {
+            fmt.Printf("Address: ")
+        }
+        fmt.Printf("%s\n", w.Address)
+    }
+    if secret {
+        if label {
+            fmt.Printf("Secret: ")
+        }
+        fmt.Printf("%s\n", w.Secret)
+    }
+}
 
 func main() {
-	static_path, _ := filepath.Abs("../../static/app/")
-	logger.Debug("Serving %s", static_path)
+    registerFlags()
+    parseFlags()
 
-	//readWriteFile()
-
-	http.Handle("/", http.FileServer(http.Dir(static_path)))
-
-	http.HandleFunc("/api/loadWallet", loadWallet)
-
-	http.HandleFunc("/api/saveWallet", saveWallet)
-
-	http.HandleFunc("/api/newAddress", newAddress)
-
-	fmt.Printf("Server Running on: 127.0.0.1:3003 \n")
-	err := http.ListenAndServe(":3003", nil)
-	if err != nil {
-		log.Panic(err)
-	}
-
-}
-
-func loadWallet(w http.ResponseWriter, r *http.Request) {
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(string(body))
-	var t test_struct
-
-	err = json.Unmarshal(body, &t)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	value := t.WalletName
-
-	logger.Debug("Serving %s", value)
-
-	fmt.Printf("walletName = %s", value+".wallet")
-
-	//LoadedJSON := util.LoadJSON(value+".wallet", WalletFile)
-
-	err = util.LoadJSON(value+".wallet", &WalletFile)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	fmt.Printf("json= %v type= %T \n", WalletFile, WalletFile)
-
-	logger.Debug("LoadedJSON = %s", WalletFile)
-
-	js, err := json.Marshal(WalletFile)
-
-	_ = err
-
-	w.Header().Set("Content-Type", "application/json")
-
-	w.Write(js)
-
-}
-
-func saveWallet(w http.ResponseWriter, r *http.Request) {
-	//data, err := json.Marshal(thing)
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(string(body))
-	var t walletData
-
-	err = json.Unmarshal(body, &t)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	year, month, day := time.Now().Date()
-
-	DateStr := fmt.Sprintf("%04d_%02d_%02d", year, month, day)
-
-	util.SaveJSON(DateStr+".wallet", t)
-
-	//fmt.Printf("address= %s \n", DateStr)
-
-	js, err := json.Marshal(DateStr)
-	_ = err
-	//js, err := json.Marshal(addr.Address.String())
-
-	w.Header().Set("Content-Type", "application/json")
-
-	w.Write(js)
-}
-
-func newAddress(w http.ResponseWriter, r *http.Request) {
-
-	//js, err := json.Marshal(profile)
-	addr := keyring.NewAddress()
-
-	//walletFile.Addresses = append(walletFile.Addresses, addr)
-	fmt.Printf("address= %s \n", addr.Address.String())
-
-	js, err := json.Marshal(addr.Address.String())
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
-}
-
-func LoadJSON(filename string, thing interface{}) error {
-	file, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(file, thing)
-}
-
-func SaveJSON(filename string, thing interface{}) error {
-	data, err := json.Marshal(thing)
-	if err != nil {
-		return err
-	}
-	tmpname := filename + ".tmp"
-	err = ioutil.WriteFile(tmpname, data, os.FileMode(0644))
-	if err != nil {
-		return err
-	}
-	return os.Rename(tmpname, filename)
+    if outFile != "" {
+        w := createWalletEntry(outFile, testNetwork)
+        if w != nil {
+            printWalletEntry(w, labelStdout, printAddress, printPublic,
+                printSecret)
+        }
+    }
+    if inFile != "" {
+        printWalletEntryFromFile(inFile, labelStdout, printAddress,
+            printPublic, printSecret)
+    }
 }

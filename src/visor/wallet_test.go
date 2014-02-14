@@ -1,4 +1,4 @@
-package rpc
+package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
@@ -210,7 +210,12 @@ func TestNewWalletFromReadable(t *testing.T) {
     }
     assert.Equal(t, len(w.Entries), len(w2.Entries))
     sec := coin.SecKey{}
+    oldSec := rw.Entries[0].Secret
     rw.Entries[0].Secret = sec.Hex()
+    assert.Panics(t, func() { NewWalletFromReadable(rw) })
+    pub := coin.PubKey{}
+    rw.Entries[0].Secret = oldSec
+    rw.Entries[0].Public = pub.Hex()
     assert.Panics(t, func() { NewWalletFromReadable(rw) })
 }
 
@@ -281,9 +286,13 @@ func TestWalletAddEntry(t *testing.T) {
     assert.Equal(t, w.Entries[we2.Address], we2)
     assert.Equal(t, w.Entries[we.Address], we)
 
-    // Invalid entry should return err
+    // Invalid entry should panic or return err
     we = NewWalletEntry()
     we.Secret = coin.SecKey{}
+    assert.Panics(t, func() { w.AddEntry(we) })
+    assert.Equal(t, len(w.Entries), 2)
+    we = NewWalletEntry()
+    we.Public = coin.PubKey{}
     assert.NotNil(t, w.AddEntry(we))
     assert.Equal(t, len(w.Entries), 2)
 }

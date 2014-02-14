@@ -3,7 +3,6 @@ package daemon
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
-    "github.com/skycoin/skycoin/src/rpc"
 )
 
 // Exposes a read-only api for use by the gui rpc interface
@@ -69,7 +68,7 @@ type BlockchainProgress struct {
 }
 
 type Balance struct {
-    Balance rpc.Balance `json:"balance"`
+    Balance visor.Balance `json:"balance"`
     // Whether this balance includes unconfirmed txns in its calculation
     Predicted bool `json:"predicted"`
 }

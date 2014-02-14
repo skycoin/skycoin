@@ -1,4 +1,4 @@
-package visor
+package rpc
 
 import (
     "errors"

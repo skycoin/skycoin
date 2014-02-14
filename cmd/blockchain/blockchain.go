@@ -8,6 +8,7 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
     "os"
+    //"log"
 )
 
 func getBlock(filename string, seq uint64) (coin.Block, error) {

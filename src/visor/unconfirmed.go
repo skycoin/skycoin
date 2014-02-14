@@ -15,9 +15,9 @@ type UnconfirmedTxn struct {
     // Last time we announced this txn
     Announced time.Time
     // We are a spender
-    IsOurSpend bool
+    //IsOurSpend bool
     // We are a receiver
-    IsOurReceive bool
+    //IsOurReceive bool
 }
 
 // Returns the coin.Transaction's hash
@@ -30,13 +30,13 @@ type UnconfirmedTxnPool struct {
     Txns map[coin.SHA256]UnconfirmedTxn
     // Predicted unspents, assuming txns are valid.  Needed to predict
     // our future balance and avoid double spending our own coins
-    Unspent coin.UnspentPool
+    //Unspent coin.UnspentPool
 }
 
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
     return &UnconfirmedTxnPool{
         Txns:    make(map[coin.SHA256]UnconfirmedTxn),
-        Unspent: coin.NewUnspentPool(),
+        //Unspent: coin.NewUnspentPool(),
     }
 }
 
@@ -47,9 +47,21 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
     }
 }
 
+// Note: let wallet read the unconfirmed and the unspents and make its own decision
+
+// Note: use notion of transaction "degree". A "degree 0" transaction requires zero
+// other transactions to execute before a spend can occur.  A "degree 1" transaction
+// spends inputs that are created in a pending/unconfirmed transaction.
+// A "degree 2" transaction spends inputs that are created in an unconfirmed transaction
+// that requires inputs created by an unconfirmed transaction.
+// A transaction's degree is one greater than the highest degree of any of the transactions
+// creating an input spent by the transaction
+
 // Adds a coin.Transaction to the pool
+//func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
+//    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
+    t coin.Transaction, didAnnounce bool) error {
     if err := bc.VerifyTransaction(t); err != nil {
         return err
     }
@@ -63,35 +75,8 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         Received:     now,
         Checked:      now,
         Announced:    announcedAt,
-        IsOurReceive: false,
-        IsOurSpend:   false,
-    }
-    // Add predicted unspents
-    for _, ux := range bc.TxUxOut(t, coin.BlockHeader{}) {
-        self.Unspent.Add(ux)
-    }
-    if addrs != nil {
-        // Check if this is one of our receiving txns
-        for _, to := range t.Out {
-            logger.Debug("To address: %s", to.DestinationAddress.String())
-            if _, ok := addrs[to.DestinationAddress]; ok {
-                ut.IsOurReceive = true
-                break
-            }
-        }
-        // Check if this is one of our spending txns
-        for _, ti := range t.In {
-            if ux, ok := bc.Unspent.Get(ti.UxOut); ok {
-                logger.Debug("Ux address: %s", ux.Body.Address.String())
-                if _, ok := addrs[ux.Body.Address]; ok {
-                    ut.IsOurSpend = true
-                    break
-                }
-            }
-        }
     }
     self.Txns[t.Hash()] = ut
-
     return nil
 }
 
@@ -104,47 +89,35 @@ func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
     return txns
 }
 
-// Remove a single txn
-func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
-    t, ok := self.Txns[h]
+// Remove a single txn from the unconfirmed transaction pool
+func (self *UnconfirmedTxnPool) removeTxn(h coin.SHA256) {
+    _, ok := self.Txns[h]
     if !ok {
         return
     }
     delete(self.Txns, h)
-    outputs := bc.TxUxOut(t.Txn, coin.BlockHeader{})
-    hashes := make([]coin.SHA256, len(outputs))
-    for _, o := range outputs {
-        hashes = append(hashes, o.Hash())
-    }
-    self.Unspent.DelMultiple(hashes)
 }
 
 // Removes multiple txns at once. Slightly more efficient than a series of
 // single RemoveTxns
-func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
-    hashes []coin.SHA256) {
-    uxo := make([]coin.UxOut, 0, len(hashes))
+// Note -- efficiency does not matter. Only doing ~10 transactions/second
+
+
+func (self *UnconfirmedTxnPool) removeTxns(hashes []coin.SHA256) {
     for _, h := range hashes {
-        if t, ok := self.Txns[h]; ok {
+        if _, ok := self.Txns[h]; ok {
             delete(self.Txns, h)
-            uxo = append(uxo, bc.TxUxOut(t.Txn, coin.BlockHeader{})...)
         }
     }
-    uxhashes := make([]coin.SHA256, len(uxo))
-    for _, o := range uxo {
-        uxhashes = append(uxhashes, o.Hash())
-    }
-    self.Unspent.DelMultiple(uxhashes)
 }
 
+
+// Duplicate of removeTxns
 // Removes confirmed txns from the pool
-func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
-    txns coin.Transactions) {
-    toRemove := make([]coin.SHA256, 0, len(txns))
+func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
     for _, tx := range txns {
-        toRemove = append(toRemove, tx.Hash())
+        self.removeTxn(tx.Hash())
     }
-    self.removeTxns(bc, toRemove)
 }
 
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
@@ -157,7 +130,9 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     for k, t := range self.Txns {
         if now.Sub(t.Received) >= maxAge {
             toRemove = append(toRemove, k)
-        } else if now.Sub(t.Checked) >= checkPeriod {
+            continue
+        } 
+        if now.Sub(t.Checked) >= checkPeriod {
             if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now
                 self.Txns[k] = t
@@ -166,20 +141,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
             }
         }
     }
-    self.removeTxns(bc, toRemove)
-}
-
-// Returns transactions in which we are a party and have not been announced
-// in ago duration
-func (self *UnconfirmedTxnPool) GetOldOwnedTransactions(ago time.Duration) []UnconfirmedTxn {
-    txns := make([]UnconfirmedTxn, 0)
-    now := util.Now()
-    for _, tx := range self.Txns {
-        if (tx.IsOurSpend || tx.IsOurReceive) && now.Sub(tx.Announced) > ago {
-            txns = append(txns, tx)
-        }
-    }
-    return txns
+    self.removeTxns(toRemove)
 }
 
 // Returns txn hashes with known ones removed

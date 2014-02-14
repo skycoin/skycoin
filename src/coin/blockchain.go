@@ -652,3 +652,21 @@ func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     }
     return uxo
 }
+
+/*
+<<<<<<< HEAD
+
+// Creates complete UxOuts from TransactionInputs
+// TODO: audit
+// TODO: replace with TxUxOut(tx, bh)
+func (self *Blockchain) CreateOutputs(tx Transaction, bh BlockHeader) UxArray {
+    //err := self.txUxOutChk(tx)
+    //if err != nil {
+    //    log.Panic() //?? is this check meant to be here
+    //}
+
+    return self.TxUxOut(tx, bh)
+}
+=======
+>>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
+*/

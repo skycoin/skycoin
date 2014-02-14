@@ -62,7 +62,7 @@ type Config struct {
     Pool     PoolConfig
     Peers    PeersConfig
     DHT      DHTConfig
-    //RPC      rpc.RPCConfig
+    RPC      RPCConfig
     Visor    VisorConfig
 }
 
@@ -73,7 +73,7 @@ func NewConfig() Config {
         Pool:     NewPoolConfig(),
         Peers:    NewPeersConfig(),
         DHT:      NewDHTConfig(),
-        //RPC:      NewRPCConfig(),
+        RPC:      NewRPCConfig(),
         Messages: NewMessagesConfig(),
         Visor:    NewVisorConfig(),
     }
@@ -176,7 +176,7 @@ type Daemon struct {
     Pool     *Pool
     Peers    *Peers
     DHT      *DHT
-    //RPC      *RPC
+    RPC      *RPC
     Visor    *Visor
 
     // Separate index of outgoing connections. The pool aggregates all
@@ -233,7 +233,7 @@ func NewDaemon(config Config) *Daemon {
         messageEvents: make(chan MessageEvent,
             config.Pool.EventChannelBufferSize),
     }
-    //d.RPC = NewRPC(config.RPC, d)
+    d.RPC = NewRPC(config.RPC, d)
     d.Messages.Config.Register()
     d.Pool.Init(d)
     d.Peers.Init()

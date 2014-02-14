@@ -1,170 +1,290 @@
-package keyring
+package rpc
 
 import (
-    "encoding/hex"
     "errors"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "log"
-    "math/rand"
 )
 
-func ToHex(b []byte) string {
-    return hex.EncodeToString(b)
-}
-
-func MustFromHex(s string) []byte {
-    b, err := hex.DecodeString(s)
-    if err != nil {
-        log.Panic(err)
-    }
-    return b
-}
-
-// An Address contains a public and secret key,
-type Address struct {
+type WalletEntry struct {
     Address coin.Address
-    PubKey  coin.PubKey
-    SecKey  coin.SecKey // Keep secret
+    Public  coin.PubKey
+    Secret  coin.SecKey
 }
 
-func NewAddress() Address {
+func NewWalletEntry() WalletEntry {
     pub, sec := coin.GenerateKeyPair()
-    return Address{
+    return WalletEntry{
         Address: coin.AddressFromPubKey(pub),
-        PubKey:  pub,
-        SecKey:  sec,
+        Public:  pub,
+        Secret:  sec,
     }
 }
 
-/*
-   genesis address
-   pub: 02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8
-   sec: f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0
+func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
+    // Wallet entries are shared as a form of identification, the secret key
+    // is not required
+    // TODO -- fix lib/base58 to not panic on invalid input -- should
+    // return error, so we can detect a broken wallet.
+    if w.Address == "" {
+        log.Panic("ReadableWalletEntry has no Address")
+    }
+    var s coin.SecKey
+    if w.Secret != "" {
+        s = coin.MustSecKeyFromHex(w.Secret)
+    }
+    return WalletEntry{
+        Address: coin.MustDecodeBase58Address(w.Address),
+        Public:  coin.MustPubKeyFromHex(w.Public),
+        Secret:  s,
+    }
+}
 
-*/
+// Loads a WalletEntry from filename, where the file contains a
+// ReadableWalletEntry
+func LoadWalletEntry(filename string) (WalletEntry, error) {
+    w, err := LoadReadableWalletEntry(filename)
+    if err != nil {
+        return WalletEntry{}, err
+    } else {
+        return WalletEntryFromReadable(&w), nil
+    }
+}
 
+// Loads a WalletEntry from filename but panics is unable to load or contents
+// are invalid
+func MustLoadWalletEntry(filename string) WalletEntry {
+    keys, err := LoadWalletEntry(filename)
+    if err != nil {
+        log.Panicf("Failed to load wallet entry: %v", err)
+    }
+    if err := keys.Verify(); err != nil {
+        log.Panicf("Invalid wallet entry: %v", err)
+    }
+    return keys
+}
+
+// Checks that the public key is derivable from the secret key,
+// and that the public key is associated with the address
+func (self *WalletEntry) Verify() error {
+    if coin.PubKeyFromSecKey(self.Secret) != self.Public {
+        return errors.New("Invalid public key for secret key")
+    }
+    return self.VerifyPublic()
+}
+
+// Checks that the public key is associated with the address
+func (self *WalletEntry) VerifyPublic() error {
+    if err := self.Public.Verify(); err != nil {
+        return err
+    } else {
+        return self.Address.Verify(self.Public)
+    }
+}
+
+type Balance struct {
+    Coins uint64 `json:"coins"`
+    Hours uint64 `json:"hours"`
+}
+
+func NewBalance(coins, hours uint64) Balance {
+    return Balance{
+        Coins: coins,
+        Hours: hours,
+    }
+}
+
+func (self Balance) Add(other Balance) Balance {
+    return Balance{
+        Coins: self.Coins + other.Coins,
+        Hours: self.Hours + other.Hours,
+    }
+}
+
+// Subtracts other from self and returns the new Balance.  Will panic if
+// other is greater than balance, because Coins and Hours are unsigned.
+func (self Balance) Sub(other Balance) Balance {
+    if other.GreaterThan(self) {
+        log.Panic("Cannot subtract balances, second balance is too large")
+    }
+    return Balance{
+        Coins: self.Coins - other.Coins,
+        Hours: self.Hours - other.Hours,
+    }
+}
+
+func (self Balance) GreaterThan(other Balance) bool {
+    return self.Coins > other.Coins && self.Hours > other.Hours
+}
+
+func (self Balance) GreaterThanOrEqual(other Balance) bool {
+    return self.Coins >= other.Coins && self.Hours >= other.Hours
+}
+
+func (self Balance) IsZero() bool {
+    return self.Coins == 0 && self.Hours == 0
+}
+
+// Simplest wallet implementation
 type Wallet struct {
-    Addresses []Address    //address array
-    Outputs   []coin.UxOut //unspent outputs, must be refreshed
+    Entries map[coin.Address]WalletEntry
 }
 
-// Returns a random Address
-func (self *Wallet) GetRandomAddress() Address {
-    index := rand.Int() % len(self.Addresses)
-    return self.Addresses[index]
+func NewWallet() *Wallet {
+    return &Wallet{
+        Entries: make(map[coin.Address]WalletEntry),
+    }
 }
 
-// Signs a hash for a given address. nil on failure.
-// use error
-func (self *Wallet) Sign(address coin.Address, hash coin.SHA256) (coin.Sig, error) {
-    for _, a := range self.Addresses {
-        if a.Address == address {
-            sig, err := coin.SignHash(hash, a.SecKey)
-            if err != nil {
-                log.Panic("Error signing")
-                return coin.Sig{}, err
-            }
-            return sig, err
+func LoadWallet(filename string) (*Wallet, error) {
+    w := NewWallet()
+    return w, w.Load(filename)
+}
+
+func NewWalletFromReadable(r *ReadableWallet) *Wallet {
+    entries := make(map[coin.Address]WalletEntry, len(r.Entries))
+    for _, re := range r.Entries {
+        we := WalletEntryFromReadable(&re)
+        if err := we.Verify(); err != nil {
+            log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
         }
+        entries[we.Address] = we
     }
-    return coin.Sig{}, errors.New("Failed to sign: Unknown address")
+    return &Wallet{
+        Entries: entries,
+    }
 }
 
-// Refresh the unspent outputs for the wallet
-func (self *Wallet) RefeshUnspentOutputs(bc *coin.Blockchain) {
-    outputs := make([]coin.UxOut, 0)
-    for _, a := range self.Addresses {
-        unspentOutputs := bc.Unspent.AllForAddress(a.Address)
-        outputs = append(outputs, unspentOutputs...)
+// Creates a WalletEntry
+func (self *Wallet) CreateEntry() WalletEntry {
+    e := NewWalletEntry()
+    if err := self.AddEntry(e); err != nil {
+        log.Panic("Somehow, we managed to create a bad entry: %v", err)
     }
-    self.Outputs = outputs
+    return e
 }
 
-// Returns the wallet's coins and coin hours balance
-func (self *Wallet) Balance(bc *coin.Blockchain) (coins uint64, hours uint64) {
-    self.RefeshUnspentOutputs(bc)
-    t := bc.Time()
-    for _, ux := range self.Outputs {
-        coins += ux.Body.Coins
-        hours += ux.CoinHours(t)
+// Creates new WalletEntries to fill the wallet up to n.  No WalletEntries
+// are created if the Wallet already contains n or more entries.
+func (self *Wallet) populate(n int) {
+    for i := len(self.Entries); i < n; i++ {
+        self.CreateEntry()
     }
-    return
 }
 
-/*
-func (self *Wallet) NewTransaction(bc *coin.Blockchain, Address coin.Address, amt1 uint64, amt2 uint64) (coin.Transaction, error) {
-	self.RefeshUnspentOutputs(bc)
-	bal1, bal2 := self.Balance()
-
-	if bal1 < amt1 {
-		return coin.Transaction{}, errors.New("insufficient coin balance")
-	}
-	if bal2 < amt2 {
-		return coin.Transaction{}, errors.New("insufficient coinhour balance")
-	}
-
-	//decide which outputs get spent
-
-	var ti coin.TransactionInput
-	ti.SigIdx = uint16(0)
-	ti.UxOut = genesisWallet.Outputs[0].Hash()
-	T.TI = append(T.TI, ti)
-
-	var to coin.TransactionOutput
-	to.DestinationAddress = genesisWallet.Addresses[0].Address
-	to.Value1 = uint64(100*1000000 - wn*1000)
-	T.TO = append(T.TO, to)
-
-	for i := 0; i < wn; i++ {
-		var to coin.TransactionOutput
-		a := WA[i].GetRandom()
-		to.DestinationAddress = a.Address
-		to.Value1 = 1000
-		to.Value2 = 1024
-		T.TO = append(T.TO, to)
-	}
-
-	var sec coin.SecKey
-	sec.Set(genesisAddress.SecKey)
-	T.SetSig(0, sec)
-
-}
-*/
-
-// Creates a new wallet with n addresses
-func NewWallet(n int) Wallet {
-    var w Wallet
-    for i := 0; i < n; i++ {
-        w.Addresses = append(w.Addresses, NewAddress())
+// Returns all coin.Addresses in this Wallet
+func (self *Wallet) GetAddresses() []coin.Address {
+    addrs := make([]coin.Address, 0, len(self.Entries))
+    for a, _ := range self.Entries {
+        addrs = append(addrs, a)
     }
-    return w
+    return addrs
 }
 
-//func (self *Address) GetOutputs(bc coin.Blockchain) []coin.UxOut {
-//	ux := bc.GetUnspentOutputs(*self.Address)
-//	return ux
-//}
-
-//pub, sec := util.GenerateKeyPair()
-//pub := MustF("02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8")
-//sec := MustF("f2de015e7096a8b2416ea6232ea3ee2f9b928bf4672bc9801dea6ef9a0aee7a0")
-//fmt.Printf("sec: %s \n", ToHex(sec))
-//fmt.Printf("pub: %s \n", ToHex(pub))
-
-func uxStr(ux coin.UxOut) string {
-    return fmt.Sprintf("%s, %d: %d %d", ux.Body.Address.String(), ux.Head.Time,
-        ux.Body.Coins, ux.Body.Hours)
+// Returns the WalletEntry for a coin.Address
+func (self *Wallet) GetEntry(a coin.Address) (WalletEntry, bool) {
+    we, exists := self.Entries[a]
+    return we, exists
 }
 
-// Prints the balances for multiple wallets
-func PrintWalletBalances(bc *coin.Blockchain, wallets []Wallet) {
-    for i, w := range wallets {
-        b1, b2 := w.Balance(bc)
-        fmt.Printf("PWB: %v: %v %v \n", i, b1, b2)
+// Adds a WalletEntry to the wallet. Returns an error if the coin.Address is
+// already in the wallet
+func (self *Wallet) AddEntry(e WalletEntry) error {
+    if err := e.Verify(); err != nil {
+        return err
     }
+    _, exists := self.Entries[e.Address]
+    if exists {
+        return fmt.Errorf("Wallet entry already exists for address %s",
+            e.Address.String())
+    } else {
+        self.Entries[e.Address] = e
+        return nil
+    }
+}
 
-    for i, ux := range bc.Unspent.Arr {
-        fmt.Printf("PWB,UX: %v: %v \n", i, uxStr(ux))
+// Saves to filename
+func (self *Wallet) Save(filename string) error {
+    r := NewReadableWallet(self)
+    return r.Save(filename)
+}
+
+// Loads from filename
+func (self *Wallet) Load(filename string) error {
+    r := &ReadableWallet{}
+    if err := r.Load(filename); err != nil {
+        return err
     }
+    *self = *(NewWalletFromReadable(r))
+    return nil
+}
+
+type ReadableWalletEntry struct {
+    Address string `json:"address"`
+    Public  string `json:"public_key"`
+    Secret  string `json:"secret_key"`
+}
+
+func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
+    return ReadableWalletEntry{
+        Address: w.Address.String(),
+        Public:  w.Public.Hex(),
+        Secret:  w.Secret.Hex(),
+    }
+}
+
+func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
+    w := ReadableWalletEntry{}
+    err := util.LoadJSON(filename, &w)
+    return w, err
+}
+
+// Creates a ReadableWalletEntry given a pubkey hex string.  The Secret field
+// is left empty.
+func ReadableWalletEntryFromPubkey(pub string) ReadableWalletEntry {
+    pubkey := coin.MustPubKeyFromHex(pub)
+    addr := coin.AddressFromPubKey(pubkey)
+    return ReadableWalletEntry{
+        Address: addr.String(),
+        Public:  pub,
+    }
+}
+
+func (self *ReadableWalletEntry) Save(filename string) error {
+    return util.SaveJSONSafe(filename, self, 0600)
+}
+
+// Used for [de]serialization of the Wallet
+type ReadableWallet struct {
+    Entries []ReadableWalletEntry `json:"entries"`
+}
+
+// Converts a Wallet to a ReadableWallet
+func NewReadableWallet(w *Wallet) *ReadableWallet {
+    readable := make([]ReadableWalletEntry, 0, len(w.Entries))
+    for _, e := range w.Entries {
+        readable = append(readable, NewReadableWalletEntry(&e))
+    }
+    return &ReadableWallet{
+        Entries: readable,
+    }
+}
+
+// Loads a ReadableWallet from disk
+func LoadReadableWallet(filename string) (*ReadableWallet, error) {
+    w := &ReadableWallet{}
+    err := w.Load(filename)
+    return w, err
+}
+
+// Saves to filename
+func (self *ReadableWallet) Save(filename string) error {
+    return util.SaveJSON(filename, self, 0600)
+}
+
+// Loads from filename
+func (self *ReadableWallet) Load(filename string) error {
+    return util.LoadJSON(filename, self)
 }

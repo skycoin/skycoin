@@ -6,23 +6,23 @@ import (
     "net/http"
 )
 
-func connectionHandler(rpc *daemon.RPC) http.HandlerFunc {
+func connectionHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         if addr := r.FormValue("addr"); addr == "" {
             Error404(w)
         } else {
-            SendOr404(w, rpc.GetConnection(addr))
+            SendOr404(w, gateway.GetConnection(addr))
         }
     }
 }
 
-func connectionsHandler(rpc *daemon.RPC) http.HandlerFunc {
+func connectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        SendOr404(w, rpc.GetConnections())
+        SendOr404(w, gateway.GetConnections())
     }
 }
 
-func RegisterNetworkHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
-    mux.HandleFunc("/api/network/connection", connectionHandler(rpc))
-    mux.HandleFunc("/api/network/connections", connectionsHandler(rpc))
+func RegisterNetworkHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+    mux.HandleFunc("/api/network/connection", connectionHandler(gateway))
+    mux.HandleFunc("/api/network/connections", connectionsHandler(gateway))
 }

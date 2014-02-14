@@ -8,13 +8,13 @@ import (
     "strconv"
 )
 
-func blockchainHandler(rpc *daemon.RPC) http.HandlerFunc {
+func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        SendOr404(w, rpc.GetBlockchainMetadata())
+        SendOr404(w, gateway.GetBlockchainMetadata())
     }
 }
 
-func blockchainBlockHandler(rpc *daemon.RPC) http.HandlerFunc {
+func blockchainBlockHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         sseq := r.FormValue("seq")
         seq, err := strconv.ParseUint(sseq, 10, 64)
@@ -22,11 +22,11 @@ func blockchainBlockHandler(rpc *daemon.RPC) http.HandlerFunc {
             Error400(w, fmt.Sprintf("Invalid seq value \"%s\"", sseq))
             return
         }
-        SendOr404(w, rpc.GetBlock(seq))
+        SendOr404(w, gateway.GetBlock(seq))
     }
 }
 
-func blockchainBlocksHandler(rpc *daemon.RPC) http.HandlerFunc {
+func blockchainBlocksHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         sstart := r.FormValue("start")
         start, err := strconv.ParseUint(sstart, 10, 64)
@@ -40,19 +40,19 @@ func blockchainBlocksHandler(rpc *daemon.RPC) http.HandlerFunc {
             Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
             return
         }
-        SendOr404(w, rpc.GetBlocks(start, end))
+        SendOr404(w, gateway.GetBlocks(start, end))
     }
 }
 
-func blockchainProgressHandler(rpc *daemon.RPC) http.HandlerFunc {
+func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        SendOr404(w, rpc.GetBlockchainProgress())
+        SendOr404(w, gateway.GetBlockchainProgress())
     }
 }
 
-func RegisterBlockchainHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
-    mux.HandleFunc("/blockchain", blockchainHandler(rpc))
-    mux.HandleFunc("/blockchain/block", blockchainBlockHandler(rpc))
-    mux.HandleFunc("/blockchain/blocks", blockchainBlocksHandler(rpc))
-    mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(rpc))
+func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+    mux.HandleFunc("/blockchain", blockchainHandler(gateway))
+    mux.HandleFunc("/blockchain/block", blockchainBlockHandler(gateway))
+    mux.HandleFunc("/blockchain/blocks", blockchainBlocksHandler(gateway))
+    mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(gateway))
 }

@@ -51,7 +51,8 @@ type VisorConfig struct {
     // Where the blockchain is saved
     BlockchainFile string
     // Where the block signatures are saved
-    BlockSigsFile string
+    //BlockSigsFile string
+    
     // Master keypair & address
     MasterKeys coin.Sig
     // Genesis block sig
@@ -270,10 +271,7 @@ func (self *Visor) createBlock() (SignedBlock, error) {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can create blocks")
     }
-    //if len(self.UnconfirmedTxns.Txns) == 0 {
-    //    return sb, errors.New("No transactions")
-    //}
-    
+
     txns := self.UnconfirmedTxns.RawTxns()
 
     //TODO: sort by arrival time/announce time
@@ -300,39 +298,29 @@ func (self *Visor) SignBlock() (block coin.Block) (SignedBlock, error) {
     return self.signBlock(b), nil
 }
 
-func (self *Visor) InjectBlock(block SignedBlock) (error) {
+//InjectBLock inputs a new block and applies it against the block chain
+// state if it is valid
+func (self *Visor) InjectBlock(b SignedBlock) (error) {
 
-}
-
-
-// Creates a SignedBlock from pending transactions and executes it
-func (self *Visor) CreateAndExecuteBlock() (SignedBlock, error) {
-    sb, err := self.createBlock()
-    if err == nil {
-        return sb, self.ExecuteSignedBlock(sb)
-    } else {
-        return sb, err
-    }
-}
-
-// Adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by the master server
-func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     if err := self.verifySignedBlock(&b); err != nil {
         return err
     }
+
+    if b.Block.Seq +1 != b.Block.Header.BkSeq {
+        return errors.New("Out of Sequence Block")
+    }
+
+    //apply block against blockchain
     if err := self.blockchain.ExecuteBlock(b.Block); err != nil {
         return err
     }
-    // TODO -- save them even if out of order, and execute later
-    // But make sure all prechecking as possible is done
-    // TODO -- check if bitcoin allows blocks to be receiving out of order
-    self.blockSigs.record(&b)
-    // Remove the transactions in the Block from the unconfirmed pool
-    self.UnconfirmedTxns.RemoveTransactions(b.Block.Body.Transactions)
+
+    self.blockSigs.record(&b) //save block to disc
     return nil
 }
 
+
+// Should only need 1 block at time
 // Returns N signed blocks more recent than Seq. Does not return nil.
 func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
     var avail uint64 = 0
@@ -355,6 +343,7 @@ func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
     }
     return blocks
 }
+
 
 // Returns the signed genesis block. Panics if signature or block not found
 func (self *Visor) GetGenesisBlock() SignedBlock {
@@ -429,23 +418,24 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
+func (self *Visor) SetTxnAnnounce(h coin.SHA256, t time.Time) {
     self.UnconfirmedTxns.SetAnnounced(h, t)
 }
 
-//replace with InjectTransaction
-//InjectTransaction injections a raw transaction into unconfirmed/pending transaction set.
-//raw transactions are created by wallets. Something should clear out transaction
-//pool every once in a while
-func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
-    return self.RecordTxn(txn, false) //reanounce
-}
 
-// Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
-// already in the blockchain
-// replace with InjectTransaction
-func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
-    return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn, didAnnounce)
+//InjectTransaction makes the blockchain server aware of raw transactions
+//InjectTransaction inserts the transaction into the unconfirmed set
+func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
+
+    //should not be doing verification here
+    //verification against blockchain will fail if user creates
+    //output that spends outputs created by unspent transctions
+    //should check signature validity     
+    if err := self.blockchain.VerifyTransaction(t); err != nil {
+        return err
+    }
+
+    self.UnconfirmedTxns.RecordTxn(txn, didAnnounce)
 }
 
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
@@ -467,6 +457,9 @@ func (self *Visor) signBlock(b coin.Block) SignedBlock {
 }
 
 // Loads a coin.Blockchain from disk
+// DANGER, safer to reparse whole block chain
+
+/*
 func LoadBlockchain(filename string) (*coin.Blockchain, error) {
     bc := &coin.Blockchain{}
     data, err := ioutil.ReadFile(filename)
@@ -482,7 +475,9 @@ func LoadBlockchain(filename string) (*coin.Blockchain, error) {
     bc.Unspent.Rebuild()
     return bc, nil
 }
+*/
 
+/*
 // Loads a blockchain but subdues errors into the logger, or panics.
 // If no blockchain is found, it creates a new empty one
 func loadBlockchain(filename string) *coin.Blockchain {
@@ -510,10 +505,16 @@ func loadBlockchain(filename string) *coin.Blockchain {
     }
     return bc
 }
+*/
 
 // Saves blockchain to disk
+// Safer to reparse whole block chain
+
+/*
 func SaveBlockchain(bc *coin.Blockchain, filename string) error {
     // TODO -- blockchain file must be forward compatible
+    // No -- If chain 
     data := encoder.Serialize(bc)
     return util.SaveBinary(filename, data, 0644)
 }
+*/

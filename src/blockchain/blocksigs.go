@@ -6,48 +6,58 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "io/ioutil"
+
+    "hash/fnv"
+    "hash"
 )
 
-type SignedBlock struct {
-    Block coin.Block
-    Sig   coin.Sig
+
+var (
+    fnvs    hash.Hash = fnvs.New64a()
+)
+
+func FnvsHash(data []byte) uint64 {
+    fnvs.Reset()
+    fnvs.Write(data)
+    return fnvs.Sum64(nil)
 }
 
-// Used to serialize the BlockSigs.Sigs map
-type BlockSigSerialized struct {
+//Todo:
+// - store signature and block in same
+// - prefix block with size
+// - blockchain should be append only
+
+type SignedBlock struct {
     BkSeq uint64
     Sig   coin.Sig
+    Block coin.Block
 }
 
 // Used to serialize the BlockSigs.Sigs map
-type BlockSigsSerialized struct {
-    Sigs []BlockSigSerialized
+type BlockSerialized struct {
+    Length uint64
+    Data []byte
 }
 
-// Manages known BlockSigs as received.
-// TODO -- support out of order blocks.  This requires a change to the
-// message protocol to support ranges similar to bitcoin's locator hashes.
-// We also need to keep track of whether a block has been executed so that
-// as continuity is established we can execute chains of blocks.
-// TODO -- Since we will need to hold blocks that cannot be verified
-// immediately against the blockchain, we need to be able to hold multiple
-// BlockSigs per BkSeq, or use hashes as keys.  For now, this is not a
-// problem assuming the signed blocks created from master are valid blocks,
-// because we can check the signature independently of the blockchain.
-type BlockSigs struct {
-    Sigs   map[uint64]coin.Sig
-    MaxSeq uint64
+// Used to serialize the BlockSigs.Sigs map
+type BlockchainFile struct {
+    BA []BlockSerialized //
 }
 
-func NewBlockSigs() BlockSigs {
-    bs := BlockSigs{
-        Sigs:   make(map[uint64]coin.Sig),
-        MaxSeq: 0,
-    }
-    return bs
+func (self *BlockchainFile) Load(filename string) error {
+
 }
 
-func LoadBlockSigs(filename string) (BlockSigs, error) {
+func SaveBlockchain(filename string) (BlockSigs, error) {
+
+}
+
+func LoadBlockchain(filename string) (BlockSigs, error) {
+    
+
+}
+
+func LoadBlockchain(filename string) (BlockSigs, error) {
     bs := NewBlockSigs()
     data, err := ioutil.ReadFile(filename)
     if err != nil {

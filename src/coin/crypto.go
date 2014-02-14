@@ -10,8 +10,9 @@ import (
 
 type PubKey [33]byte
 
+// Converts []byte to a PubKey. Panics is []byte is not the exact size
 func NewPubKey(b []byte) PubKey {
-    var p PubKey
+    p := PubKey{}
     if len(b) != len(p) {
         log.Panic("Invalid public key length")
     }
@@ -19,7 +20,8 @@ func NewPubKey(b []byte) PubKey {
     return p
 }
 
-func PubKeyFromHex(s string) PubKey {
+// Decodes a hex encoded PubKey, or panics
+func MustPubKeyFromHex(s string) PubKey {
     b, err := hex.DecodeString(s)
     if err != nil {
         log.Panic(err)
@@ -35,6 +37,7 @@ func (self PubKey) Verify() error {
     return nil
 }
 
+// Returns a hex encoded PubKey string
 func (self *PubKey) Hex() string {
     return hex.EncodeToString(self[:])
 }
@@ -48,8 +51,9 @@ func (self *PubKey) ToAddressHash() Ripemd160 {
 
 type SecKey [32]byte
 
+// Converts []byte to a SecKey. Panics is []byte is not the exact size
 func NewSecKey(b []byte) SecKey {
-    var p SecKey
+    p := SecKey{}
     if len(b) != len(p) {
         log.Panic("Invalid secret key length")
     }
@@ -57,7 +61,8 @@ func NewSecKey(b []byte) SecKey {
     return p
 }
 
-func SecKeyFromHex(s string) SecKey {
+// Decodes a hex encoded SecKey, or panics
+func MustSecKeyFromHex(s string) SecKey {
     b, err := hex.DecodeString(s)
     if err != nil {
         log.Panic(err)
@@ -65,30 +70,31 @@ func SecKeyFromHex(s string) SecKey {
     return NewSecKey(b)
 }
 
-//Verify attempts to determine if SecKey is valid. Returns nil on success.
+// Verify attempts to determine if SecKey is valid. Returns nil on success.
+// If DebugLevel2, will do additional sanity checking
 func (self SecKey) Verify() error {
     if secp256k1.VerifySeckey(self[:]) != 1 {
         return errors.New("Invalid SecKey")
     }
-
     if DebugLevel2 {
         err := testSecKey(self)
         if err != nil {
             log.Panic("DebugLevel2, WARNING CRYPTO ARMAGEDDON")
         }
     }
-
     return nil
 }
 
+// Returns a hex encoded SecKey string
 func (s SecKey) Hex() string {
     return hex.EncodeToString(s[:])
 }
 
 type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 
+// Converts []byte to a Sig. Panics is []byte is not the exact size
 func NewSig(b []byte) Sig {
-    var s Sig
+    s := Sig{}
     if len(b) != len(s) {
         log.Panic("Invalid secret key length")
     }
@@ -158,11 +164,12 @@ func SignHash(hash SHA256, sec SecKey) (Sig) {
     return sig
 }
 
-//PubKeyFromSecKey assumes that the seckey is valid. SecKey must be valid.
+// Recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
     b := secp256k1.PubkeyFromSeckey(seckey[:])
     if b == nil {
-        log.Panic("PubKeyFromSecKey, pubkey recovery failed. Function assumes seckey is valid. Check seckey")
+        log.Panic("PubKeyFromSecKey, pubkey recovery failed. Function " +
+            "assumes seckey is valid. Check seckey")
     }
     return NewPubKey(b)
 }
@@ -175,7 +182,7 @@ func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
     return NewPubKey(rawPubKey), nil
 }
 
-//verifies that mesh hash was signed by pubkey
+// Verifies that hash was signed by PubKey
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
     pubkey_rec, err := PubKeyFromSig(sig, hash) //recovered pubkey
     if err != nil {
@@ -193,7 +200,7 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
         return errors.New("VerifySignature, secp256k1.VerifyPubkey failed")
     }
     if secp256k1.VerifySignatureValidity(sig[:]) != 1 {
-        return errors.New("VerifySignature, secp256k1.VerifySignatureValidity failed")
+        return errors.New("VerifySignature, VerifySignatureValidity failed")
     }
     if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
         return errors.New("Invalid signature for this message")
@@ -206,7 +213,8 @@ func GenerateKeyPair() (PubKey, SecKey) {
 
     if DebugLevel1 {
         if testSecKey(NewSecKey(secret)) != nil {
-            log.Panic("DebugLevel1, GenerateKeyPair, generated private key failed testSecKey")
+            log.Panic("DebugLevel1, GenerateKeyPair, generated private key " +
+                "failed testSecKey")
         }
     }
 
@@ -218,18 +226,22 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
 
     if DebugLevel1 {
         if testSecKey(NewSecKey(secret)) != nil {
-            log.Panic("DebugLevel1, GenerateDeterministicKeyPair, generated private key failed testSecKey")
+            log.Panic("DebugLevel1, GenerateDeterministicKeyPair, " +
+                "generated private key failed testSecKey")
         }
     }
     return NewPubKey(public), NewSecKey(secret)
 }
 
+func testSecKey(seckey SecKey) error {
+    hash := SumSHA256([]byte(time.Now().String()))
+    return testSecKeyHash(seckey, hash)
+}
+
 // TestPrivKey performs a series of tests to determine if a seckey is valid.
 // All generated keys and keys loaded from disc must pass the testSecKey suite.
 // TestPrivKey returns error if a key fails any test in the test suite.
-func testSecKey(seckey SecKey) error {
-    hash := SumSHA256([]byte(time.Now().String())) //generate hash
-
+func testSecKeyHash(seckey SecKey, hash SHA256) error {
     //check seckey with verify
     if secp256k1.VerifySeckey(seckey[:]) != 1 {
         return errors.New("Seckey verification failed")
@@ -242,7 +254,8 @@ func testSecKey(seckey SecKey) error {
     }
     //verify recovered pubkey
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-        return errors.New("impossible error, testSecKey, Derived Pubkey verification failed")
+        return errors.New("impossible error, testSecKey, Derived Pubkey " +
+            "verification failed")
     }
 
     //check signature production
@@ -258,23 +271,27 @@ func testSecKey(seckey SecKey) error {
     //check pubkey recovered from sig
     recovered_pubkey, err := PubKeyFromSig(sig, hash)
     if err != nil {
-        return errors.New("impossible error, testSecKey, pubkey recovery from signature failed")
+        return errors.New("impossible error, testSecKey, pubkey recovery " +
+            "from signature failed")
     }
     if pubkey != recovered_pubkey {
-        return errors.New("impossible error testSecKey, pubkey does not match recovered pubkey")
+        return errors.New("impossible error testSecKey, pubkey does not " +
+            "match recovered pubkey")
     }
 
     //verify produced signature
     err = VerifySignature(pubkey, sig, hash)
     if err != nil {
-        errors.New("impossible error, testSecKey, verify signature failed for sig")
+        errors.New("impossible error, testSecKey, verify signature failed " +
+            "for sig")
     }
 
     //verify ChkSig
     addr := AddressFromPubKey(pubkey)
     err = ChkSig(addr, hash, sig)
     if err != nil {
-        return errors.New("impossible error testSecKey, ChkSig Failed, should not get this far")
+        return errors.New("impossible error testSecKey, ChkSig Failed, " +
+            "should not get this far")
     }
 
     return nil
@@ -284,6 +301,7 @@ func testSecKey(seckey SecKey) error {
 func init() {
     _, seckey := GenerateKeyPair()
     if testSecKey(seckey) != nil {
-        log.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS")
+        log.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING " +
+            "PROGRAM TO PROTECT COINS")
     }
 }

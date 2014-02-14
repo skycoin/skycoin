@@ -29,8 +29,8 @@ func HashRipemd160(data []byte) Ripemd160 {
     ripemd160Hash.Reset()
     ripemd160Hash.Write(data)
     sum := ripemd160Hash.Sum(nil)
-    var h Ripemd160
-    copy(h[:], sum[:])
+    h := Ripemd160{}
+    h.Set(sum)
     return h
 }
 
@@ -53,11 +53,13 @@ func SumSHA256(b []byte) SHA256 {
     sha256Hash.Reset()
     sha256Hash.Write(b)
     sum := sha256Hash.Sum(nil)
-    var h SHA256
-    copy(h[:], sum[:])
+    h := SHA256{}
+    h.Set(sum)
     return h
 }
 
+// Decodes a hex encoded SHA256 hash to bytes.  If invalid, will return error.
+// Does not panic.
 func SHA256FromHex(hs string) (SHA256, error) {
     h := SHA256{}
     b, err := hex.DecodeString(hs)
@@ -95,49 +97,46 @@ func SumDoubleSHA256(b []byte) SHA256 {
 }
 
 // Returns the SHA256 hash of to two concatenated hashes
-func AddSHA256(a1 SHA256, b1 SHA256) SHA256 {
-    b := append(a1[:], b1[:]...)
-    return MustSumSHA256(b, len(b))
+func AddSHA256(a SHA256, b SHA256) SHA256 {
+    c := append(a[:], b[:]...)
+    return SumSHA256(c)
 }
 
-func (h1 *SHA256) Xor(h2 SHA256) SHA256 {
-    var h3 SHA256
-    for i := 0; i < len(h3); i++ {
-        h3[i] = h1[i] ^ h2[i]
+func (a *SHA256) Xor(b SHA256) SHA256 {
+    c := SHA256{}
+    for i := 0; i < len(c); i++ {
+        c[i] = a[i] ^ b[i]
     }
-    return h3
+    return c
 }
 
-//compute root merkle tree hash of hash list
-//pad input to power of 16
-//group inputs hashes into groups of 16 and hash them down to single hash
-//repeat until there is single hash in list
+// Returns the next highest power of 2 above n, if n is not already a
+// power of 2
+func nextPowerOfTwo(n uint64) uint64 {
+    if n == 0 {
+        return 1
+    }
+    // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+    n--
+    n |= n >> 1
+    n |= n >> 2
+    n |= n >> 4
+    n |= n >> 8
+    n |= n >> 16
+    n |= n >> 32
+    n++
+    return n
+}
+
+// Computes the merkle root of a hash array
 func Merkle(h0 []SHA256) SHA256 {
-    //fmt.Printf("Merkle 0: len= %v \n", len(h0))
-    if len(h0) == 0 {
-        return SHA256{} //zero hash
-    }
-    np := 0
-    for np = 1; np < len(h0); np *= 16 {
-    }
-    h1 := make([]SHA256, np)
-
-    //var th SHA256 = h0[0]
-
-    var lh0 = len(h0)
-    for i := lh0; i < np; i++ { //pad to power of 16
-        h1[i] = h0[0] //pad first element till 16
-    }
-
+    lh := uint64(len(h0))
+    np := nextPowerOfTwo(lh)
+    h1 := append(h0, make([]SHA256, np-lh)...)
     for len(h1) != 1 {
-        //fmt.Printf("Merkle 1: len= %v \n", len(h1))
-        h2 := make([]SHA256, len(h1)/16)
-        h3 := make([]byte, 16*32)
+        h2 := make([]SHA256, len(h1)/2)
         for i := 0; i < len(h2); i++ {
-            for j := 0; j < 16; j++ {
-                copy(h3[32*i:32*(i+1)], h1[16*i+j][:])
-            }
-            h2[i] = MustSumSHA256(h3, 16*32)
+            h2[i] = AddSHA256(h1[2*i], h1[2*i+1])
         }
         h1 = h2
     }

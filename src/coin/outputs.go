@@ -78,14 +78,14 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 
     v1 := self.Body.Hours             //starting coinshour
     ch := (t - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-    v2 := ch * self.Body.Coins / 10e6 //accumulated coin-hours
+    v2 := ch * self.Body.Coins / 1e6  //accumulated coin-hours
     return v1 + v2                    //starting+earned
 }
 
 // Array of Outputs
 type UxArray []UxOut
 
-//HashArray returns Array of hashes for the Ux in the UxArray
+// Returns Array of hashes for the Ux in the UxArray
 func (self UxArray) HashArray() []SHA256 {
     hashes := make([]SHA256, len(self))
     for i, ux := range self {
@@ -94,7 +94,7 @@ func (self UxArray) HashArray() []SHA256 {
     return hashes
 }
 
-//HasDupes checks the UxArray for outputs which have the same hash
+// Checks the UxArray for outputs which have the same hash
 func (self UxArray) HasDupes() bool {
     m := make(map[SHA256]byte, len(self))
     for _, ux := range self {
@@ -108,10 +108,23 @@ func (self UxArray) HasDupes() bool {
     return false
 }
 
+// Returns a copy of self with duplicates removed
+func (self UxArray) removeDupes() UxArray {
+    m := make(map[SHA256]byte, len(self))
+    deduped := make(UxArray, 0, len(self))
+    for _, ux := range self {
+        h := ux.Hash()
+        if _, ok := m[h]; !ok {
+            deduped = append(deduped, ux)
+            m[h] = byte(1)
+        }
+    }
+    return deduped
+}
+
 //UxArray sort functionality
 
 func (self UxArray) Sort() {
-    //sort.Sort(UxArray(self))
     sort.Sort(self)
 }
 
@@ -125,14 +138,12 @@ func (self UxArray) Len() int {
 
 func (self UxArray) Less(i, j int) bool {
     hash1 := self[i].Hash()
-    hash2 := self[i].Hash()
+    hash2 := self[j].Hash()
     return bytes.Compare(hash1[:], hash2[:]) < 0
 }
 
 func (self UxArray) Swap(i, j int) {
-    t := self[i]
-    self[i] = self[j]
-    self[j] = t
+    self[i], self[j] = self[j], self[i]
 }
 
 // Manages Unspents
@@ -196,7 +207,8 @@ func (self *UnspentPool) Has(h SHA256) bool {
     return ok
 }
 
-// Removes an element from the Arr.  Does not touch the hashIndex or XorHash
+// Removes an element from the Arr.  Does not touch the hashIndex or XorHash.
+// Does not do bounds checking, make sure index is valid for Arr.
 func (self *UnspentPool) delFromArray(index int) {
     if index == len(self.Arr)-1 {
         self.Arr = self.Arr[:index]
@@ -219,10 +231,11 @@ func (self *UnspentPool) del(h SHA256) int {
     return i
 }
 
-// Remove a hash at index.  Will crash if index is out of bounds.
+// Remove a hash at index.  Will panic if index is out of bounds.
 // The hashIndex needs to be updated sometime after calling this.
 func (self *UnspentPool) delAt(index int) {
-    h := self.Arr[index].Hash()
+    ux := self.Arr[index]
+    h := ux.Hash()
     delete(self.hashIndex, h)
     self.delFromArray(index)
     self.XorHash = self.XorHash.Xor(h)
@@ -230,6 +243,9 @@ func (self *UnspentPool) delAt(index int) {
 
 // Updates the internal hashIndex indices after Arr has changed
 func (self *UnspentPool) updateIndices(startIndex int) {
+    if startIndex < 0 {
+        log.Panic("Invalid start index")
+    }
     for j := startIndex; j < len(self.Arr); j++ {
         // TODO -- store the UxOut hash in its header
         self.hashIndex[self.Arr[j].Hash()] = j
@@ -263,8 +279,8 @@ func (self *UnspentPool) DelMultiple(hashes []SHA256) {
 }
 
 // Returns all Unspents for a single address
-func (self *UnspentPool) AllForAddress(a Address) []UxOut {
-    uxo := make([]UxOut, 0)
+func (self *UnspentPool) AllForAddress(a Address) UxArray {
+    uxo := make(UxArray, 0)
     for _, ux := range self.Arr {
         if ux.Body.Address == a {
             uxo = append(uxo, ux)
@@ -292,14 +308,24 @@ func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
     return uxo
 }
 
-type AddressUnspents map[Address][]UxOut
+type AddressUnspents map[Address]UxArray
 
-// Combines two AddressUnspents
+// Returns the Address keys
+func (self AddressUnspents) Keys() []Address {
+    addrs := make([]Address, 0, len(self))
+    for k, _ := range self {
+        addrs = append(addrs, k)
+    }
+    return addrs
+}
+
+// Combines two AddressUnspents where they overlap with keys
 func (self AddressUnspents) Merge(other AddressUnspents,
     keys []Address) AddressUnspents {
     final := make(AddressUnspents, len(keys))
     for _, a := range keys {
-        final[a] = append(self[a], other[a]...)
+        row := append(self[a], other[a]...)
+        final[a] = row.removeDupes()
     }
     return final
 }

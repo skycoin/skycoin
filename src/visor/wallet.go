@@ -33,11 +33,11 @@ func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
     }
     var s coin.SecKey
     if w.Secret != "" {
-        s = coin.SecKeyFromHex(w.Secret)
+        s = coin.MustSecKeyFromHex(w.Secret)
     }
     return WalletEntry{
         Address: coin.MustDecodeBase58Address(w.Address),
-        Public:  coin.PubKeyFromHex(w.Public),
+        Public:  coin.MustPubKeyFromHex(w.Public),
         Secret:  s,
     }
 }
@@ -244,7 +244,7 @@ func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
 // Creates a ReadableWalletEntry given a pubkey hex string.  The Secret field
 // is left empty.
 func ReadableWalletEntryFromPubkey(pub string) ReadableWalletEntry {
-    pubkey := coin.PubKeyFromHex(pub)
+    pubkey := coin.MustPubKeyFromHex(pub)
     addr := coin.AddressFromPubKey(pubkey)
     return ReadableWalletEntry{
         Address: addr.String(),

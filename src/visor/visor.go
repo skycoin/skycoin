@@ -530,6 +530,7 @@ func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
 }
 
 // Returns a Transaction by hash.
+/*
 func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
     // Look in the unconfirmed pool
     tx, ok := self.UnconfirmedTxns.Txns[txHash]
@@ -560,7 +561,7 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
         Status: NewUnknownTransactionStatus(),
     }
 }
-
+*/
 // Returns the balance of the wallet
 
 /*

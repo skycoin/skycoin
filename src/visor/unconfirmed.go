@@ -116,7 +116,7 @@ func (self *UnconfirmedTxnPool) removeTxns(hashes []coin.SHA256) {
 // Removes confirmed txns from the pool
 func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
     for _, tx := range txns {
-        self.removeTxn(bc, tx.Hash())
+        self.removeTxn(tx.Hash())
     }
 }
 

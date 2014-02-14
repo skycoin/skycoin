@@ -87,8 +87,8 @@ func NewVisorConfig() VisorConfig {
         TestNetwork:              true,
 
         BlockCreationInterval:    15,
-        UnconfirmedCheckInterval: time.Hour * 2,
-        UnconfirmedMaxAge:        time.Hour * 48,
+        UnconfirmedCheckInterval: time.Minute * 5,
+        UnconfirmedMaxAge:        time.Hour * 48, //drop transaction not executed in 48 hours
         UnconfirmedRefreshRate:   time.Minute * 30,
         TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
         BlockchainFile:           "",
@@ -663,7 +663,7 @@ func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
 //}
 
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
+    return coin.VerifySignature(self.Config.PubKey, b.Sig,
         b.Block.HashHeader())
 }
 

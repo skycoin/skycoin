@@ -409,8 +409,7 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     // TODO -- check if bitcoin allows blocks to be receiving out of order
     self.blockSigs.record(&b)
     // Remove the transactions in the Block from the unconfirmed pool
-    self.UnconfirmedTxns.RemoveTransactions(self.blockchain,
-        b.Block.Body.Transactions)
+    self.UnconfirmedTxns.RemoveTransactions(b.Block.Body.Transactions)
     return nil
 }
 

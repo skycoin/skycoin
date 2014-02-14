@@ -103,8 +103,7 @@ func (self *UnconfirmedTxnPool) removeTxn(h coin.SHA256) {
 // Note -- efficiency does not matter. Only doing ~10 transactions/second
 
 
-func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
-    hashes []coin.SHA256) {
+func (self *UnconfirmedTxnPool) removeTxns(hashes []coin.SHA256) {
     for _, h := range hashes {
         if _, ok := self.Txns[h]; ok {
             delete(self.Txns, h)
@@ -115,12 +114,11 @@ func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
 
 // Duplicate of removeTxns
 // Removes confirmed txns from the pool
-//func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
-//    txns coin.Transactions) {
-//    for _, tx := range txns {
-//        self.removeTxn(bc, tx.Hash())
-//    }
-//}
+func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
+    for _, tx := range txns {
+        self.removeTxn(bc, tx.Hash())
+    }
+}
 
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
@@ -143,7 +141,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
             }
         }
     }
-    self.removeTxns(bc, toRemove)
+    self.removeTxns(toRemove)
 }
 
 // Returns txn hashes with known ones removed

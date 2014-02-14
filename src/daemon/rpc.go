@@ -136,7 +136,7 @@ func (self *RPC) GetBalance(a coin.Address, predicted bool) interface{} {
 }
 
 // Returns a *Spend
-func (self *RPC) Spend(amt visor.Balance, fee uint64, dest coin.Address) interface{} {
+func (self *RPC) Spend(amt rpc.Balance, fee uint64, dest coin.Address) interface{} {
     self.requests <- func() interface{} { return self.spend(amt, fee, dest) }
     r := <-self.responses
     return r
@@ -256,7 +256,7 @@ func (self *RPC) getTotalBalance(predicted bool) *Balance {
     if predicted {
         return nil
     }
-    var b visor.Balance
+    var b rpc.Balance
     // if predicted {
     // b = self.Daemon.Visor.Visor.TotalBalancePredicted()
     // } else {
@@ -277,11 +277,11 @@ func (self *RPC) getBalance(a coin.Address, predicted bool) *Balance {
         // clear
         return nil
     }
-    var b visor.Balance
+    var b rpc.Balance
     // if predicted {
-    //     b = self.Daemon.Visor.Visor.BalancePredicted(a)
+    //     b = self.Daemon.Visor.rpc.BalancePredicted(a)
     // } else {
-    b = self.Daemon.Visor.Visor.Balance(a)
+    b = self.Daemon.Visor.rpc.Balance(a)
     // }
     return &Balance{
         Balance:   b,
@@ -289,7 +289,7 @@ func (self *RPC) getBalance(a coin.Address, predicted bool) *Balance {
     }
 }
 
-func (self *RPC) spend(amt visor.Balance, fee uint64, dest coin.Address) *Spend {
+func (self *RPC) spend(amt rpc.Balance, fee uint64, dest coin.Address) *Spend {
     if self.Daemon.Visor.Visor == nil {
         return nil
     }

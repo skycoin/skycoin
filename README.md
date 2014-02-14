@@ -3,8 +3,6 @@ skycoin
 
 Skycoin is a next-generation post proof-of-work cryptocurrency.
 
-It is currently in `alpha`.
-
 Installation
 ------------
 
@@ -21,6 +19,32 @@ Installation
 ./run.sh -web-interface=true
 Goto http://127.0.0.1:6402
 ```
+
+
+Skycoin
+-------
+
+Skycoin is inspired by Bitcoin but emphasizes
+- usability
+- security
+- simplicity
+
+Skycoin Improves on Bitcoin in several ways
+- easy to use wallet designed for mainstream users
+- 15 second transactions. Skycoin transactions are forty times faster than Bitcoin
+- better name and branding
+- clean, easy to use API for merchants and developers
+- increased transaction privacy
+- native support for off-block chain transactions for instant payments at point-of-sale
+
+Security Improvements:
+- immunity from the Transaction Malleability attack
+- safe against mining cartels and 51% attacks
+- no hash collisions from duplicate coinbase outputs
+- ECDSA signature compression support for smaller/faster transactions
+- HTTPS/TLS encryption
+
+Skycoin is the most secure cryptocoin that has even been designed. Skycoin is heavily based upon Bitcoin, but written from scratch to address the known issues with Bitcoin.
 
 No Mining
 ---------
@@ -54,10 +78,29 @@ Skycoin was designed to eliminate mining completely and eliminate the problems i
 - Skycoin transactions are not subject to 51% attacks by mining cartels
 - Skycoin is environmentally friendly and sustainable. Skycoin does not require twelve coal power plants to power mining
 
+Distributed Consensus
+---------------------
+
+Skycoin uses a new distributed consensus algorithm called Obelisk to replace miners.
+
+Key features of Obelisk
+- first provably secure distributed consensus algorithm.
+- extremely simple
+- easy to model
+- more ecologically friendly than mining
+
+The Obelisk white paper draft will be released with the first Skycoin client.
+
+Skycoin Project
+---------------
+
+Skycoin is more than a coin. Skycoin is at the core of number of projects that will be announced over the next year.
+
 Current Status
 --------------
 
-* Everything but Obelisk works
+Skycoin was announced in December with first Public Release scheduled by March. 
+
 * Crypto is done
 * Blockchain is done
 * Networking is done

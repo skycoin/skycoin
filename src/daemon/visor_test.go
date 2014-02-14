@@ -69,14 +69,12 @@ func newVisorDaemon(vc VisorConfig) (*Daemon, chan int) {
 }
 
 // Writes a wallet entry to disk at filename
-/*
 func writeMasterKeysFile() (visor.WalletEntry, error) {
     we := visor.NewWalletEntry()
     rwe := visor.NewReadableWalletEntry(&we)
     err := rwe.Save(testMasterKeysFile)
     return we, err
 }
-*/
 
 func assertFileExists(t *testing.T, filename string) {
     stat, err := os.Stat(filename)
@@ -760,14 +758,21 @@ func TestCreateAndPublishBlock(t *testing.T) {
 
     // Can't create, don't have coins
     vc, _ = setupVisor()
-    vc.Config.IsMaster = false
+    vc.Config.IsMaster = true
+    vc.Config.MasterKeys = visor.NewWalletEntry()
     vc.Disabled = false
     v = NewVisor(vc)
+    _, err = v.Spend(visor.Balance{100 * 1e6 * 1e6, 0}, 1024*1024,
+        dest.Address, p)
+    assert.Nil(t, err)
+    err, _ = v.CreateAndPublishBlock(p)
+    assert.Nil(t, err)
+    assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
     _, err = v.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address, p)
     assert.NotNil(t, err)
     err, published = v.CreateAndPublishBlock(p)
     assert.NotNil(t, err)
-    assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(0))
+    assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
     assert.False(t, published)
 }
 

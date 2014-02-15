@@ -96,19 +96,8 @@ func (self *Block) HashHeader() SHA256 {
     return self.Header.Hash()
 }
 
-func (self *BlockHeader) Hash() SHA256 {
-    b1 := encoder.Serialize(*self)
-    return SumDoubleSHA256(b1)
-}
-
-//merkle hash of transactions in block
 func (self *Block) HashBody() SHA256 {
-    hashes := make([]SHA256, len(self.Body.Transactions))
-    for i, t := range self.Body.Transactions {
-        hashes[i] = t.Hash()
-    }
-    // Merkle hash of transactions
-    return Merkle(hashes)
+    return self.Body.Hash()
 }
 
 func (self *Block) UpdateHeader() {
@@ -133,12 +122,17 @@ func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
 }
 
 func newBlockHeader(prev *BlockHeader, creationInterval uint64) BlockHeader {
+    // TODO -- deprecate creationInterval in favor of clock time
     return BlockHeader{
-        // TODO -- what about the rest of the fields??
         PrevHash: prev.Hash(),
         Time:     prev.Time + creationInterval,
         BkSeq:    prev.BkSeq + 1,
     }
+}
+
+func (self *BlockHeader) Hash() SHA256 {
+    b1 := encoder.Serialize(*self)
+    return SumDoubleSHA256(b1)
 }
 
 func (self *BlockHeader) Bytes() []byte {
@@ -149,6 +143,16 @@ func (self *BlockHeader) String() string {
     return fmt.Sprintf("Version: %d\nTime: %d\nBkSeq: %d\nFee: %d\n"+
         "PrevHash: %s\nBodyHash: %s", self.Version, self.Time, self.BkSeq,
         self.Fee, self.PrevHash.Hex(), self.BodyHash.Hex())
+}
+
+// Returns the merkle hash of contained transactions
+func (self *BlockBody) Hash() SHA256 {
+    hashes := make([]SHA256, len(self.Transactions))
+    for i, t := range self.Transactions {
+        hashes[i] = t.Hash()
+    }
+    // Merkle hash of transactions
+    return Merkle(hashes)
 }
 
 func (self *BlockBody) Bytes() []byte {
@@ -169,7 +173,7 @@ func NewBlockchain() *Blockchain {
 
 // Creates a genesis block with a new timestamp
 func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
-    return self.CreateGenesisBlock(genesisAddress, self.TimeNow())
+    return self.CreateGenesisBlock(genesisAddress, Now())
 }
 
 // Creates a genesis block provided an address and initial timestamp.
@@ -181,7 +185,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     if len(self.Blocks) > 0 {
         log.Panic("Genesis block already created")
     }
-    var b Block = Block{}
+    b := Block{}
     b.Header.Time = timestamp
     b.UpdateHeader()
     self.Blocks = append(self.Blocks, b)
@@ -211,13 +215,6 @@ func (self *Blockchain) Head() *Block {
 //used as system clock indepedent clock for coin hour calculations
 func (self *Blockchain) Time() uint64 {
     return self.Head().Header.Time
-}
-
-//TimeNow returns current system time
-//TODO: use syncronized network time instead of system time
-//TODO: add function pointer to external network time callback?
-func (self *Blockchain) TimeNow() uint64 {
-    return uint64(time.Now().Unix())
 }
 
 // Creates a Block given an array of Transactions.  It does not verify the
@@ -275,9 +272,9 @@ func (self *Blockchain) txUxInChk(tx Transaction, uxIn UxArray) error {
     return nil
 }
 
-//txUxOutChk validates the outputs that would be created by the transaction
-//txUxOutChk checks for duplicate output hashes
-//txUxOutChk checks for hash collisions with existing hashes
+// Validates the outputs that would be created by the transaction
+// Checks for duplicate output hashes
+// Checks for hash collisions with existing hashes
 func (self *Blockchain) txUxOutChk(tx Transaction, uxOut UxArray) error {
     // Check for outputs with duplicate hashes
     if uxOut.HasDupes() {
@@ -313,15 +310,15 @@ func (self *Blockchain) txUxOutChk(tx Transaction, uxOut UxArray) error {
 // the transaction
 func (self *Blockchain) txUxChk(tx Transaction, uxIn UxArray,
     uxOut UxArray) error {
-    var headTime uint64 = self.Time()
-    var coinsIn uint64 = 0
-    var hoursIn uint64 = 0
+    headTime := self.Time()
+    coinsIn := uint64(0)
+    hoursIn := uint64(0)
     for _, ux := range uxIn {
         coinsIn += ux.Body.Coins
         hoursIn += ux.CoinHours(headTime)
     }
-    var coinsOut uint64 = 0
-    var hoursOut uint64 = 0
+    coinsOut := uint64(0)
+    hoursOut := uint64(0)
     for _, ux := range uxOut {
         coinsOut += ux.Body.Coins
         hoursOut += ux.Body.Hours
@@ -335,8 +332,7 @@ func (self *Blockchain) txUxChk(tx Transaction, uxIn UxArray,
     return nil
 }
 
-// VerifyTransaction determines whether a transaction could be executed in the
-// current block
+// Determines whether a transaction could be executed in the current block
 func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     // Verify the transaction's internals (hash check, surface checks)
     if err := tx.Verify(); err != nil {
@@ -345,7 +341,7 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     return self.verifyTransaction(tx)
 }
 
-// VerifyTransaction checks that the inputs to the transaction exist,
+// Checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
 func (self *Blockchain) verifyTransaction(tx Transaction) error {
@@ -379,15 +375,16 @@ func (self *Blockchain) verifyTransaction(tx Transaction) error {
     return nil
 }
 
-// TransactionFee calculates the current transaction fee in coinhours of a transaction
+// Calculates the current transaction fee in coinhours of a Transaction
 func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
-    var headTime uint64 = self.Time() //time of last block
+    headTime := self.Time()
     inHours := uint64(0)
     // Compute input hours
     for _, ti := range t.In {
         in, ok := self.Unspent.Get(ti.UxOut)
         if !ok {
-            return 0, errors.New("TransactionFee(), error, unspent output does not exist")
+            return 0, errors.New("TransactionFee(), error, unspent output " +
+                "does not exist")
         }
         inHours += in.CoinHours(headTime)
     }
@@ -594,7 +591,7 @@ func (self *Blockchain) VerifyBlock(b *Block) error {
     return nil
 }
 
-//ExecuteBlock attempts to append block to blockchain
+// ExecuteBlock attempts to append block to blockchain
 func (self *Blockchain) ExecuteBlock(b Block) error {
     if err := self.VerifyBlock(&b); err != nil {
         return err
@@ -619,13 +616,13 @@ func (self *Blockchain) ExecuteBlock(b Block) error {
 }
 
 // TxUxIn returns a copy of the set of inputs that a transaction spends
-//An error is returned if the any unspents inputs are not found.
+// An error is returned if the any unspents inputs are not found.
 func (self *Blockchain) txUxIn(tx Transaction) (UxArray, error) {
     uxia := make(UxArray, len(tx.In))
     for i, txi := range tx.In {
         uxi, exists := self.Unspent.Get(txi.UxOut)
         if !exists {
-            return nil, errors.New("txUxIn: unspent output does not exist")
+            return nil, errors.New("Unspent output does not exist")
         }
         uxia[i] = uxi
     }
@@ -653,20 +650,9 @@ func (self *Blockchain) TxUxOut(tx Transaction, bh BlockHeader) UxArray {
     return uxo
 }
 
-/*
-<<<<<<< HEAD
-
-// Creates complete UxOuts from TransactionInputs
-// TODO: audit
-// TODO: replace with TxUxOut(tx, bh)
-func (self *Blockchain) CreateOutputs(tx Transaction, bh BlockHeader) UxArray {
-    //err := self.txUxOutChk(tx)
-    //if err != nil {
-    //    log.Panic() //?? is this check meant to be here
-    //}
-
-    return self.TxUxOut(tx, bh)
+//Now returns current system time
+//TODO: use syncronized network time instead of system time
+//TODO: add function pointer to external network time callback?
+func Now() uint64 {
+    return uint64(time.Now().UTC().Unix())
 }
-=======
->>>>>>> fff657741a7b0de0a8ba67085bbd740fcea36efc
-*/

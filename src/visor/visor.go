@@ -110,7 +110,7 @@ func NewVisor(c VisorConfig) *Visor {
     }
 
     // Load the blockchain the block signatures
-    blockchain := loadBlockchain(c.BlockchainFile)
+    blockchain := loadBlockchain(c.BlockchainFile, c.MasterKeys.Address)
     blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
     if err != nil {
         if os.IsNotExist(err) {
@@ -665,7 +665,7 @@ func LoadBlockchain(filename string) (*coin.Blockchain, error) {
 
 // Loads a blockchain but subdues errors into the logger, or panics.
 // If no blockchain is found, it creates a new empty one
-func loadBlockchain(filename string) *coin.Blockchain {
+func loadBlockchain(filename string, genAddr coin.Address) *coin.Blockchain {
     bc := &coin.Blockchain{}
     created := false
     if filename != "" {
@@ -674,6 +674,11 @@ func loadBlockchain(filename string) *coin.Blockchain {
         if err == nil {
             if len(bc.Blocks) == 0 {
                 log.Panic("Loaded empty blockchain")
+            }
+            loadedGenAddr := bc.Blocks[0].Body.Transactions[0].Out[0].Address
+            if loadedGenAddr != genAddr {
+                log.Panic("Configured genesis address does not match the " +
+                    "address in the blockchain")
             }
             created = true
         } else {

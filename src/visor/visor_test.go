@@ -405,9 +405,12 @@ func TestVisorSaveBlockchain(t *testing.T) {
     v = NewVisor(vc)
     assert.Nil(t, v.SaveBlockchain())
     assertFileExists(t, testBlockchainFile)
-    assert.NotPanics(t, func() { loadBlockchain(testBlockchainFile) })
-    bc := loadBlockchain(testBlockchainFile)
+    assert.NotPanics(t, func() {
+        loadBlockchain(testBlockchainFile, vc.MasterKeys.Address)
+    })
+    bc := loadBlockchain(testBlockchainFile, vc.MasterKeys.Address)
     assert.Equal(t, v.blockchain, bc)
+
 }
 
 func TestVisorSaveWallet(t *testing.T) {
@@ -1156,33 +1159,49 @@ func TestLoadBlockchainPrivate(t *testing.T) {
     defer cleanupVisor()
     cleanupVisor()
 
+    we := NewWalletEntry()
+
     // No filename should return fresh blockchain
-    bc := loadBlockchain("")
+    bc := loadBlockchain("", we.Address)
     assert.Equal(t, len(bc.Blocks), 0)
 
     // Filename with no file should return fresh blockchain
     assertFileNotExists(t, testBlockchainFile)
-    bc = loadBlockchain(testBlockchainFile)
+    bc = loadBlockchain(testBlockchainFile, we.Address)
     assert.Equal(t, len(bc.Blocks), 0)
 
     // Loading an empty blockchain should panic
     assert.Nil(t, SaveBlockchain(bc, testBlockchainFile))
     assertFileExists(t, testBlockchainFile)
-    assert.Panics(t, func() { loadBlockchain(testBlockchainFile) })
+    assert.Panics(t, func() {
+        loadBlockchain(testBlockchainFile, we.Address)
+    })
+
+    // Loading a blockchain with a different genesis address should panic
+    vc := newMasterVisorConfig(t)
+    bc.CreateMasterGenesisBlock(vc.MasterKeys.Address)
+    assert.Equal(t, len(bc.Blocks), 1)
+    assert.Nil(t, SaveBlockchain(bc, testBlockchainFile))
+    assertFileExists(t, testBlockchainFile)
+    assert.Panics(t, func() {
+        loadBlockchain(testBlockchainFile, coin.Address{})
+    })
 
     // Loading a corrupt blockchain should panic
     corruptFile(t, testBlockchainFile)
-    assert.Panics(t, func() { loadBlockchain(testBlockchainFile) })
+    assert.Panics(t, func() {
+        loadBlockchain(testBlockchainFile, we.Address)
+    })
     cleanupVisor()
 
     // Loading a valid blockchain should be safe
-    vc := newMasterVisorConfig(t)
+    vc = newMasterVisorConfig(t)
     vc.BlockchainFile = testBlockchainFile
     v := NewVisor(vc)
     assert.Nil(t, transferCoinsToSelf(v, v.Config.MasterKeys.Address))
     assert.Equal(t, len(v.blockchain.Blocks), 2)
     assert.Nil(t, v.SaveBlockchain())
     assertFileExists(t, testBlockchainFile)
-    bc = loadBlockchain(testBlockchainFile)
+    bc = loadBlockchain(testBlockchainFile, v.Config.MasterKeys.Address)
     assert.Equal(t, v.blockchain, bc)
 }

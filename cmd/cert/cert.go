@@ -4,8 +4,6 @@
 
 // Modifications Copyright 2014 Skycoin authors.
 
-// +build ignore
-
 // Generate a self-signed X.509 certificate for a TLS server. Outputs to
 // certFile and keyFile and will overwrite existing files.
 

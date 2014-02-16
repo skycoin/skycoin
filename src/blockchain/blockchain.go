@@ -51,7 +51,7 @@ func init() {
 }
 
 // Configuration parameters for the Blockchain
-type BlockchainConfig struct {
+type Blockchain struct {
 
     Genesis GenesisBlockCfg
     // Is this the master blockchain
@@ -60,6 +60,8 @@ type BlockchainConfig struct {
 
     // Use test network addresses
     TestNetwork bool
+
+/*
     // How often new blocks are created by the master
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
@@ -74,10 +76,10 @@ type BlockchainConfig struct {
     
     // Where the blockchain is saved
     BlockchainFile string    
-
+*/
 }
 
-func (self *BlockchainConfig) SetBlockchainSecKey(seed string) {
+func (self *Blockchain) SetBlockchainSecKey(seed string) {
     pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
     if pub != self.PubKey {
         log.Panic("ERROR: pubkey does not correspond to loaded pubkey")
@@ -88,122 +90,70 @@ func (self *BlockchainConfig) SetBlockchainSecKey(seed string) {
 //Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
-func NewBlockchainConfig() BlockchainConfig {
+func NewBlockchain() Blockchain {
     //set pubkey based upon testnet, mainnet and local
-    return BlockchainConfig{
+    bc := Blockchain{
 
         IsMaster:                 false,
         TestNetwork:              true,
 
-        BlockCreationInterval:    15,
-        UnconfirmedCheckInterval: time.Minute * 5,
-        UnconfirmedMaxAge:        time.Hour * 48, //drop transaction not executed in 48 hours
-        UnconfirmedRefreshRate:   time.Minute * 30,
-        TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
+        //BlockCreationInterval:    15,
+        //UnconfirmedCheckInterval: time.Minute * 5,
+        //UnconfirmedMaxAge:        time.Hour * 48, //drop transaction not executed in 48 hours
+        //UnconfirmedRefreshRate:   time.Minute * 30,
+        //TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
+        
         BlockchainFile:           "",
-        BlockSigsFile:            "",
+        //BlockSigsFile:            "",
 
         SecKey: coin.SecKey{},
+
+
+        UnconfirmedTxns *UnconfirmedTxnPool
+        //blockchain storag
+        blockchain *coin.Blockchain
+        blocksigs map[coin.SHA256] coin.Sig
     }
+
+    bc.blocksigs = new(map[coin.SHA256] coin.Sig)
+    bc.UnconfirmedTxns = NewUnconfirmedTxnPool()
+    return bc
 }
 
 //NewTestnetBlockchain Config creates Blockchain for the testnet
-func NewTestnetBlockchainConfig() BlockchainConfig {
-    VC := NewBlockchainConfig()
-    VC.PubKey = coin.MustPubKeyFromHex(testnet_pubkey_hex)
+func NewTestnetBlockchain() Blockchain {
+    VC := NewBlockchain()
     VC.TestNetwork = true
     VC.Genesis = TestNet
     return VC
 }
 
 //NewTestnetBlockchain Config creates Blockchain for the mainnet
-func NewMainnetBlockchainConfig() BlockchainConfig {
-    VC := NewBlockchainConfig()
-    VC.PubKey = coin.MustPubKeyFromHex(mainnet_pubkey_hex)
+func NewMainnetBlockchain() Blockchain {
+    VC := NewBlockchain()
     VC.TestNetwork = false
     VC.Genesis = MainNet
     return VC
 }
 
 //Generate Blockchain configuration for client only Blockchain, not intended to be synced to network
-func NewLocalBlockchainConfig() BlockchainConfig {
+func NewLocalBlockchain() Blockchain {
     pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
-    
-    VC := NewBlockchainConfig()
+    VC := NewBlockchain()
     VC.SecKey = seckey
-    VC.Genesis.Pubkey = PubKey
     VC.Genesis.GenesisAddress = coin.AddressFromPubKey(pubkey)
+    VC.GenesisTime = uint64(time.Now().Unix())
     return VC
 }
 
 
-// Manages the Blockchain as both a Master and a Normal
-type Blockchain struct {
-    Config BlockchainConfig
-    // Unconfirmed transactions, held for relay until we get block confirmation
-    UnconfirmedTxns *UnconfirmedTxnPool
-    //blockchain storag
-    blockchain *coin.Blockchain
-    blockSigs  BlockSigs
-}
 
-// Creates a normal Blockchain given a master's public key
-func NewBlockchain(c BlockchainConfig) *Blockchain {
-    logger.Debug("Creating new Blockchain")
-    // Make sure inputs are correct
-    if c.IsMaster {
-        logger.Debug("Blockchain is master")
-    }
-    if c.IsMaster {
-        if err := c.SecKey.Verify(); err != nil {
-            log.Panicf("Invalid privatekey: %v", err)
-        }
-        if c.PubKey != coin.PubKeyFromSecKey(c.SecKey) {
-            log.Panic("SecKey does not correspond to PubKey")
-        }
-    } else {
-        if err := c.PubKey.Verify(); err != nil {
-            log.Panicf("Invalid pubkey: %v", err)
-        }
-
-    }
-
-/*
-    // Load the blockchain the block signatures
-    blockchain := loadBlockchain(c.BlockchainFile)
-    blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
-    if err != nil {
-        if os.IsNotExist(err) {
-            logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
-        } else {
-            log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
-        }
-        blockSigs = NewBlockSigs()
-    }
-
-    v := &Blockchain{
-        Config:          c,
-        blockchain:      blockchain,
-        blockSigs:       blockSigs,
-        UnconfirmedTxns: NewUnconfirmedTxnPool(),
-    }
-    // Load the genesis block and sign it, if we need one
-    if len(blockchain.Blocks) == 0 {
-        v.CreateGenesisBlock()
-    }
-    err = blockSigs.Verify(c.PubKey, blockchain)
-    if err != nil {
-        log.Panicf("Invalid block signatures: %v", err)
-    }
-*/
-    return v
-}
 
 // Returns a Blockchain with minimum initialization necessary for empty blockchain
 // access
 
 /*
-func NewMinimalBlockchain(c BlockchainConfig) *Blockchain {
+func NewMinimalBlockchain(c Blockchain) *Blockchain {
     return &Blockchain{
         Config:          c,
         blockchain:      coin.NewBlockchain(),
@@ -259,25 +209,6 @@ func (self *Blockchain) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
     self.UnconfirmedTxns.Refresh(self.blockchain,
         self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
-}
-
-// Saves the coin.Blockchain to disk
-func (self *Blockchain) SaveBlockchain() error {
-    if self.Config.BlockchainFile == "" {
-        return errors.New("No BlockchainFile location set")
-    } else {
-        return SaveBlockchain(self.blockchain, self.Config.BlockchainFile)
-    }
-}
-
-
-// Saves BlockSigs file to disk
-func (self *Blockchain) SaveBlockSigs() error {
-    if self.Config.BlockSigsFile == "" {
-        return errors.New("No BlockSigsFile location set")
-    } else {
-        return self.blockSigs.Save(self.Config.BlockSigsFile)
-    }
 }
 
 // Creates a SignedBlock from pending transactions
@@ -337,6 +268,8 @@ func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
 
 // Should only need 1 block at time
 // Returns N signed blocks more recent than Seq. Does not return nil.
+
+
 func (self *Blockchain) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
     var avail uint64 = 0
     if self.blockSigs.MaxSeq > seq {

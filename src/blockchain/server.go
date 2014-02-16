@@ -3,8 +3,8 @@ package blockchain
 
 
 type ServerConfig struct {
-    //Config visor.ServerConfig
-    // Disabled the visor completely
+    //Config Blockchain.ServerConfig
+    // Disabled the Blockchain completely
     //Disabled bool
 
     // How often to request blocks from peers
@@ -21,7 +21,7 @@ type ServerConfig struct {
 
 func NewServerConfig() ServerConfig {
     return ServerConfig{
-        //Config:                     visor.NewServerConfig(),
+        //Config:                     Blockchain.NewServerConfig(),
         //Disabled:                   false,
         //MasterKeysFile:             "",
         //BlocksRequestRate:          time.Minute * 5,
@@ -33,19 +33,17 @@ func NewServerConfig() ServerConfig {
 
 type Server struct {
     Config ServerConfig
-    Visor  *visor.Visor
-    // Peer-reported blockchain length.  Use to estimate download progress
-    blockchainLengths map[string]uint64
+    Blockchain  *Blockchain
 }
 
-func NewServer(c ServerConfig) *Visor {
-    var v *visor.Visor = nil
+func NewServer(c ServerConfig) *Blockchain {
+    var v *Blockchain.Blockchain = nil
     if !c.Disabled {
-        v = visor.NewVisor(c.Config)
+        v = Blockchain.NewBlockchain(c.Config)
     }
-    return &Visor{
+    return &Blockchain{
         Config:            c,
-        Visor:             v,
+        Blockchain:             v,
         blockchainLengths: make(map[string]uint64),
     }
 }
@@ -70,14 +68,14 @@ func (self *Server) Start() {
 func (self *Server) Shutdown() {
 
     bcFile := self.Config.Config.BlockchainFile
-    err := self.Visor.SaveBlockchain()
+    err := self.Blockchain.SaveBlockchain()
     if err == nil {
         logger.Info("Saved blockchain to \"%s\"", bcFile)
     } else {
         logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
     }
     bsFile := self.Config.Config.BlockSigsFile
-    err = self.Visor.SaveBlockSigs()
+    err = self.Blockchain.SaveBlockSigs()
     if err == nil {
         logger.Info("Saved block sigs to \"%s\"", bsFile)
     } else {

@@ -5,16 +5,18 @@ package blockchain
 type ServerConfig struct {
     //Config visor.ServerConfig
     // Disabled the visor completely
-    Disabled bool
+    //Disabled bool
 
     // How often to request blocks from peers
-    BlocksRequestRate time.Duration
+    //BlocksRequestRate time.Duration
+    
     // How often to announce our blocks to peers
-    BlocksAnnounceRate time.Duration
+    //BlocksAnnounceRate time.Duration
+    
     // How many blocks to respond with to a GetBlocksMessage
-    BlocksResponseCount uint64
+    //BlocksResponseCount uint64
     // How often to rebroadcast txns that we are a party to
-    TransactionRebroadcastRate time.Duration
+    //TransactionRebroadcastRate time.Duration
 }
 
 func NewServerConfig() ServerConfig {
@@ -60,7 +62,7 @@ func (self *Server) Start() {
 			time.Sleep(50)
 		}
 
-		
+
 	}
 }
 

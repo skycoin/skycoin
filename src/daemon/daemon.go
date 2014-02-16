@@ -62,7 +62,7 @@ type Config struct {
     Pool     PoolConfig
     Peers    PeersConfig
     DHT      DHTConfig
-    RPC      RPCConfig
+    Gateway  GatewayConfig
     Visor    VisorConfig
 }
 
@@ -73,7 +73,7 @@ func NewConfig() Config {
         Pool:     NewPoolConfig(),
         Peers:    NewPeersConfig(),
         DHT:      NewDHTConfig(),
-        RPC:      NewRPCConfig(),
+        Gateway:  NewGatewayConfig(),
         Messages: NewMessagesConfig(),
         Visor:    NewVisorConfig(),
     }
@@ -176,20 +176,20 @@ type Daemon struct {
     Pool     *Pool
     Peers    *Peers
     DHT      *DHT
-    RPC      *RPC
+    Gateway  *Gateway
     Visor    *Visor
 
     // Separate index of outgoing connections. The pool aggregates all
     // connections.
-    outgoingConnections map[string]*gnet.Connection
+    OutgoingConnections map[string]*gnet.Connection
     // Number of connections waiting to be formed or timeout
     pendingConnections map[string]*pex.Peer
     // Keep track of unsolicited clients who should notify us of their version
-    expectingIntroductions map[string]time.Time
+    ExpectingIntroductions map[string]time.Time
     // Keep track of a connection's mirror value, to avoid double
     // connections (one to their listener, and one to our listener)
     // Maps from addr to mirror value
-    connectionMirrors map[string]uint32
+    ConnectionMirrors map[string]uint32
     // Maps from mirror value to a map of ip (no port)
     // We use a map of ip as value because multiple peers can have the same
     // mirror (to avoid attacks enabled by our use of mirrors),
@@ -218,22 +218,22 @@ func NewDaemon(config Config) *Daemon {
         Peers:    NewPeers(config.Peers),
         DHT:      NewDHT(config.DHT),
         Visor:    NewVisor(config.Visor),
-        expectingIntroductions: make(map[string]time.Time),
-        connectionMirrors:      make(map[string]uint32),
+        ExpectingIntroductions: make(map[string]time.Time),
+        ConnectionMirrors:      make(map[string]uint32),
         mirrorConnections:      make(map[uint32]map[string]uint16),
         ipCounts:               make(map[string]int),
         onConnectEvent: make(chan ConnectEvent,
             config.Daemon.OutgoingMax),
         connectionErrors: make(chan ConnectionError,
             config.Daemon.OutgoingMax),
-        outgoingConnections: make(map[string]*gnet.Connection,
+        OutgoingConnections: make(map[string]*gnet.Connection,
             config.Daemon.OutgoingMax),
         pendingConnections: make(map[string]*pex.Peer,
             config.Daemon.PendingMax),
         messageEvents: make(chan MessageEvent,
             config.Pool.EventChannelBufferSize),
     }
-    d.RPC = NewRPC(config.RPC, d)
+    d.Gateway = NewGateway(config.Gateway, d)
     d.Messages.Config.Register()
     d.Pool.Init(d)
     d.Peers.Init()
@@ -342,7 +342,7 @@ main:
         // Fill up our outgoing connections
         case <-outgoingConnectionsTicker:
             if !self.Config.DisableOutgoingConnections &&
-                len(self.outgoingConnections) < self.Config.OutgoingMax &&
+                len(self.OutgoingConnections) < self.Config.OutgoingMax &&
                 len(self.pendingConnections) < self.Config.PendingMax {
                 self.connectToRandomPeer()
             }
@@ -383,8 +383,8 @@ main:
             }
             self.processMessageEvent(m)
         // Process any pending API requests
-        case fn := <-self.RPC.requests:
-            self.RPC.responses <- fn()
+        case fn := <-self.Gateway.requests:
+            self.Gateway.responses <- fn()
 
         // TODO -- run these in the Visor
         // Create blocks, if master chain
@@ -417,8 +417,8 @@ main:
 
 // Returns the ListenPort for a given address.  If no port is found, 0 is
 // returned
-func (self *Daemon) getListenPort(addr string) uint16 {
-    m, ok := self.connectionMirrors[addr]
+func (self *Daemon) GetListenPort(addr string) uint16 {
+    m, ok := self.ConnectionMirrors[addr]
     if !ok {
         return 0
     }
@@ -428,7 +428,7 @@ func (self *Daemon) getListenPort(addr string) uint16 {
     }
     a, _, err := SplitAddr(addr)
     if err != nil {
-        logger.Error("getListenPort received invalid addr: %v", err)
+        logger.Error("GetListenPort received invalid addr: %v", err)
         return 0
     } else {
         return mc[a]
@@ -483,16 +483,16 @@ func (self *Daemon) cullInvalidConnections() {
     // This method only handles the erroneous people from the DHT, but not
     // malicious nodes
     now := util.Now()
-    for a, t := range self.expectingIntroductions {
+    for a, t := range self.ExpectingIntroductions {
         // Forget about anyone that already disconnected
         if self.Pool.Pool.Addresses[a] == nil {
-            delete(self.expectingIntroductions, a)
+            delete(self.ExpectingIntroductions, a)
             continue
         }
         // Remove anyone that fails to send a version within introductionWait time
         if t.Add(self.Config.IntroductionWait).Before(now) {
             logger.Info("Removing %s for not sending a version", a)
-            delete(self.expectingIntroductions, a)
+            delete(self.ExpectingIntroductions, a)
             self.Pool.Pool.Disconnect(self.Pool.Pool.Addresses[a],
                 DisconnectIntroductionTimeout)
             delete(self.Peers.Peers.Peerlist, a)
@@ -512,9 +512,9 @@ func (self *Daemon) recordMessageEvent(m AsyncMessage,
 func (self *Daemon) processMessageEvent(e MessageEvent) {
     // The first message received must be an Introduction
     // We have to check at process time and not record time because
-    // Introduction message does not update expectingIntroductions until its
+    // Introduction message does not update ExpectingIntroductions until its
     // Process() is called
-    _, needsIntro := self.expectingIntroductions[e.Context.Conn.Addr()]
+    _, needsIntro := self.ExpectingIntroductions[e.Context.Conn.Addr()]
     if needsIntro {
         _, isIntro := e.Message.(*IntroductionMessage)
         if !isIntro {
@@ -559,9 +559,9 @@ func (self *Daemon) onConnect(e ConnectEvent) {
     self.recordIPCount(a)
 
     if e.Solicited {
-        self.outgoingConnections[a] = c
+        self.OutgoingConnections[a] = c
     }
-    self.expectingIntroductions[a] = util.Now()
+    self.ExpectingIntroductions[a] = util.Now()
     logger.Debug("Sending introduction message to %s", a)
     m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
         self.Pool.Pool.Config.Port)
@@ -584,8 +584,8 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
     if exists {
         self.Peers.Peers.AddBlacklistEntry(a, duration)
     }
-    delete(self.outgoingConnections, a)
-    delete(self.expectingIntroductions, a)
+    delete(self.OutgoingConnections, a)
+    delete(self.ExpectingIntroductions, a)
     self.Visor.RemoveConnection(a)
     self.removeIPCount(a)
     self.removeConnectionMirror(a)
@@ -642,7 +642,7 @@ func (self *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
             err)
         return err
     }
-    self.connectionMirrors[addr] = mirror
+    self.ConnectionMirrors[addr] = mirror
     m := self.mirrorConnections[mirror]
     if m == nil {
         m = make(map[string]uint16, 1)
@@ -654,7 +654,7 @@ func (self *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
 
 // Removes an addr from the connectionMirror mappings
 func (self *Daemon) removeConnectionMirror(addr string) {
-    mirror, ok := self.connectionMirrors[addr]
+    mirror, ok := self.ConnectionMirrors[addr]
     if !ok {
         return
     }
@@ -670,7 +670,7 @@ func (self *Daemon) removeConnectionMirror(addr string) {
     } else {
         delete(m, ip)
     }
-    delete(self.connectionMirrors, addr)
+    delete(self.ConnectionMirrors, addr)
 }
 
 // Returns whether an addr+mirror's port and whether the port exists

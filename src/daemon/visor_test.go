@@ -56,6 +56,14 @@ func cleanupVisor() {
     os.Remove(testBlockchainFile)
     os.Remove(testBlocksigsFile)
     os.Remove(testWalletFile)
+    os.Remove(testMasterKeysFile + ".tmp")
+    os.Remove(testBlockchainFile + ".tmp")
+    os.Remove(testBlocksigsFile + ".tmp")
+    os.Remove(testWalletFile + ".tmp")
+    os.Remove(testMasterKeysFile + ".bak")
+    os.Remove(testBlockchainFile + ".bak")
+    os.Remove(testBlocksigsFile + ".bak")
+    os.Remove(testWalletFile + ".bak")
 }
 
 // Returns a daemon with the visor enabled, but networking disabled

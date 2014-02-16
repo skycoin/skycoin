@@ -265,7 +265,7 @@ func TestGetListenPort(t *testing.T) {
     // No connectionMirror found
     assert.Equal(t, getListenPort(addr), uint16(0))
     // No mirrorConnection map exists
-    connectionMirrors[addr] = uint32(4)
+    ConnectionMirrors[addr] = uint32(4)
     assert.Panics(t, func() { getListenPort(addr) })
     // Everything is good
     m := make(map[string]uint16)
@@ -275,6 +275,6 @@ func TestGetListenPort(t *testing.T) {
 
     // cleanup
     delete(mirrorConnections, uint32(4))
-    delete(connectionMirrors, addr)
+    delete(ConnectionMirrors, addr)
 }
 */

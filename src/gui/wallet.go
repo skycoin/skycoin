@@ -9,26 +9,26 @@ import (
     "strconv"
 )
 
-func walletBalanceHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         saddr := r.FormValue("addr")
         predicted := r.FormValue("predicted")
         var m interface{}
         if saddr == "" {
-            m = rpc.GetTotalBalance(predicted != "")
+            m = gateway.GetTotalBalance(predicted != "")
         } else {
             addr, err := coin.DecodeBase58Address(saddr)
             if err != nil {
                 Error400(w, "Invalid address")
                 return
             }
-            m = rpc.GetBalance(addr, predicted != "")
+            m = gateway.GetBalance(addr, predicted != "")
         }
         SendOr404(w, m)
     }
 }
 
-func walletSpendHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         sdst := r.FormValue("dst")
         if sdst == "" {
@@ -58,49 +58,49 @@ func walletSpendHandler(rpc *daemon.RPC) http.HandlerFunc {
             Error400(w, "Invalid \"hours\" value")
             return
         }
-        SendOr404(w, rpc.Spend(visor.NewBalance(coins, hours), fee, dst))
+        SendOr404(w, gateway.Spend(visor.NewBalance(coins, hours), fee, dst))
     }
 }
 
-func walletSaveHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        err := rpc.SaveWallet()
+        err := gateway.SaveWallet()
         if err != nil {
             Error500(w, err.(error).Error())
         }
     }
 }
 
-func walletCreateAddressHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletCreateAddressHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        SendOr404(w, rpc.CreateAddress())
+        SendOr404(w, gateway.CreateAddress())
     }
 }
 
-func walletCreateHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletCreateHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         // TODO -- not clear to how to handle multiple wallets yet
     }
 }
 
-func walletHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        SendOr404(w, rpc.GetWallet())
+        SendOr404(w, gateway.GetWallet())
     }
 }
 
-func walletTransactionResendHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletTransactionResendHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         hash, err := coin.SHA256FromHex(r.FormValue("hash"))
         if err != nil {
             Error404(w)
             return
         }
-        SendOr404(w, rpc.ResendTransaction(hash))
+        SendOr404(w, gateway.ResendTransaction(hash))
     }
 }
 
-func walletAddressTransactionsHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletAddressTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         saddr := r.FormValue("addr")
         addr, err := coin.DecodeBase58Address(saddr)
@@ -108,30 +108,33 @@ func walletAddressTransactionsHandler(rpc *daemon.RPC) http.HandlerFunc {
             Error404(w)
             return
         }
-        SendOr404(w, rpc.GetAddressTransactions(addr))
+        SendOr404(w, gateway.GetAddressTransactions(addr))
     }
 }
 
-func walletTransactionHandler(rpc *daemon.RPC) http.HandlerFunc {
+func walletTransactionHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         hash, err := coin.SHA256FromHex(r.FormValue("hash"))
         if err != nil {
             Error404(w)
             return
         }
-        SendOr404(w, rpc.GetTransaction(hash))
+        SendOr404(w, gateway.GetTransaction(hash))
     }
 }
 
-func RegisterWalletHandlers(mux *http.ServeMux, rpc *daemon.RPC) {
-    mux.HandleFunc("/wallet", walletHandler(rpc))
-    mux.HandleFunc("/wallet/balance", walletBalanceHandler(rpc))
-    mux.HandleFunc("/wallet/spend", walletSpendHandler(rpc))
-    mux.HandleFunc("/wallet/save", walletSaveHandler(rpc))
-    mux.HandleFunc("/wallet/address/create", walletCreateAddressHandler(rpc))
-    mux.HandleFunc("/wallet/transaction", walletTransactionHandler(rpc))
-    mux.HandleFunc("/wallet/address/transactions", walletAddressTransactionsHandler(rpc))
-    mux.HandleFunc("/wallet/transaction/resend", walletTransactionResendHandler(rpc))
+func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+    mux.HandleFunc("/wallet", walletHandler(gateway))
+    mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
+    mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
+    mux.HandleFunc("/wallet/save", walletSaveHandler(gateway))
+    mux.HandleFunc("/wallet/transaction", walletTransactionHandler(gateway))
+    mux.HandleFunc("/wallet/address/create",
+        walletCreateAddressHandler(gateway))
+    mux.HandleFunc("/wallet/address/transactions",
+        walletAddressTransactionsHandler(gateway))
+    mux.HandleFunc("/wallet/transaction/resend",
+        walletTransactionResendHandler(gateway))
     // Multiple wallets not supported
-    // mux.HandleFunc("/wallet/create", walletCreateHandler(rpc))
+    // mux.HandleFunc("/wallet/create", walletCreateHandler(gateway))
 }

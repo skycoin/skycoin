@@ -61,7 +61,7 @@ type SignedBlock struct {
 
 // Used to serialize the BlockSigs.Sigs map
 type BlockchainFile struct {
-    BA []SignedBlock //
+    Blocks []SignedBlock //
 }
 
 //encode block to bytes
@@ -112,18 +112,23 @@ func Dec_block(b []byte) (SignedBlock, error) {
 
 
 func (self *BlockchainFile) Save(filename string) error {
-
-    bs := make([]BlockSerialized, len())
-    for i,b := range self.BA {
-
-        bser := ser_block(b)
-        bs[i] = bser
+    data := make([]byte)
+    for _,b := range self.Blocks {
+        data = append(data, Enc_block(b))
     }
+    util.SaveBinary(filename, buf, 0644)
+}
 
+func (self *BlockchainFile) Load(filename string) error {
+    data := make([]byte)
+    for _,b := range self.Blocks {
+        data = append(data, Enc_block(b))
+    }
+    util.SaveBinary(filename, buf, 0644)
 }
 
 
-
+/*
 func LoadBlockchain(filename string) (BlockSigs, error) {
     bs := NewBlockSigs()
     data, err := ioutil.ReadFile(filename)
@@ -158,9 +163,12 @@ func (self *BlockSigs) Save(filename string) error {
     data := encoder.Serialize(bss)
     return util.SaveBinary(filename, data, 0644)
 }
+*/
 
 // Checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
+
+/*
 func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) error {
     blocks := uint64(len(bc.Blocks))
     if blocks != uint64(len(self.Sigs)) {
@@ -185,3 +193,4 @@ func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) err
     }
     return nil
 }
+*/

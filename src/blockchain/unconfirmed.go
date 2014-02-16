@@ -14,10 +14,6 @@ type UnconfirmedTxn struct {
     Checked time.Time
     // Last time we announced this txn
     Announced time.Time
-    // We are a spender
-    //IsOurSpend bool
-    // We are a receiver
-    //IsOurReceive bool
 }
 
 // Returns the coin.Transaction's hash
@@ -28,9 +24,6 @@ func (self *UnconfirmedTxn) Hash() coin.SHA256 {
 // Manages unconfirmed transactions
 type UnconfirmedTxnPool struct {
     Txns map[coin.SHA256]UnconfirmedTxn
-    // Predicted unspents, assuming txns are valid.  Needed to predict
-    // our future balance and avoid double spending our own coins
-    //Unspent coin.UnspentPool
 }
 
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
@@ -100,7 +93,6 @@ func (self *UnconfirmedTxnPool) removeTxn(h coin.SHA256) {
 // single RemoveTxns
 // Note -- efficiency does not matter. Only doing ~10 transactions/second
 
-
 func (self *UnconfirmedTxnPool) removeTxns(hashes []coin.SHA256) {
     for _, h := range hashes {
         if _, ok := self.Txns[h]; ok {
@@ -108,7 +100,6 @@ func (self *UnconfirmedTxnPool) removeTxns(hashes []coin.SHA256) {
         }
     }
 }
-
 
 // Duplicate of removeTxns
 // Removes confirmed txns from the pool
@@ -142,6 +133,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     self.removeTxns(toRemove)
 }
 
+/*
 // Returns txn hashes with known ones removed
 func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
     unknown := make([]coin.SHA256, 0)
@@ -163,3 +155,4 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
     }
     return known
 }
+*/

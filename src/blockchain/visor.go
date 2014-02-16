@@ -1,4 +1,4 @@
-package visor
+package Blockchain
 
 import (
     "errors"
@@ -14,7 +14,7 @@ import (
 )
 
 var (
-    logger = logging.MustGetLogger("skycoin.visor")
+    logger = logging.MustGetLogger("skycoin.Blockchain")
 )
 
 // Note: can use testnetpubkey as genesis address
@@ -24,36 +24,40 @@ var (
     mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
 )
 
-type GenesisCfg {
+type GenesisBlockCfg {
     GenesisAddress coin.Address
     GenesisTime uint64
     PubKey coin.PubKey
+    Coins uint64
 }
 
-var TestNet GenesisCfg
-var SkyNet GenesisCfg //main blockchain
+var TestNet GenesisBlockCfg
+var SkyNet GenesisBlockCfg //main blockchain
 
+//testnet config
 func init() {
     TestNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
-    TestNet.GenesisTime = 0 //set time
+    TestNet.GenesisTime = 1392584986 //set time
     TestNet.PubKey = coin.MustPubKeyFromHex("025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b")
-
-    SkyNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
-    SkyNet.GenesisTime = 0 //set time
-    SkyNet.PubKey = coin.MustPubKeyFromHex("02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99")
+    TestNet.Coins = 1e12 //almost as many as Ripple
 }
-// Configuration parameters for the Visor
-type VisorConfig struct {
+
+//main net config
+func init() {
+    SkyNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
+    SkyNet.GenesisTime = 1392584987 //set time
+    SkyNet.PubKey = coin.MustPubKeyFromHex("02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99")
+    SkyNet.Coins = 100e6 //100 million
+}
+
+// Configuration parameters for the Blockchain
+type BlockchainConfig struct {
+
+    Genesis GenesisBlockCfg
     // Is this the master blockchain
     IsMaster bool
-    // Is allowed to create transactions
-    //CanSpend bool
-    // Wallet file location
-    //WalletFile string
-    
-    // Minimum number of addresses to keep in the wallet
+    SecKey coin.SecKey //set for writes
 
-    //WalletSizeMin int
     // Use test network addresses
     TestNetwork bool
     // How often new blocks are created by the master
@@ -63,26 +67,17 @@ type VisorConfig struct {
     // How long we'll hold onto an unconfirmed txn
     UnconfirmedMaxAge time.Duration
     // How often to refresh the unconfirmed pool
-    UnconfirmedRefreshRate time.Duration
-    // Maximum number of transactions per block, when creating
-    TransactionsPerBlock int
-    // Where the blockchain is saved
-    BlockchainFile string
-    // Where the block signatures are saved
-    //BlockSigsFile string
     
-    // Master keypair & address
-    MasterKeys coin.Sig
-    // Genesis block sig
-    GenesisSignature coin.Sig
-    // Genesis block timestamp
-    GenesisTimestamp uint64
+    UnconfirmedRefreshRate time.Duration
+     Maximum number of transactions per block, when creating
+    TransactionsPerBlock int
+    
+    // Where the blockchain is saved
+    BlockchainFile string    
 
-    PubKey coin.PubKey
-    SecKey coin.SecKey
 }
 
-func (self *VisorConfig) SetVisorSecKey(seed string) {
+func (self *BlockchainConfig) SetBlockchainSecKey(seed string) {
     pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
     if pub != self.PubKey {
         log.Panic("ERROR: pubkey does not correspond to loaded pubkey")
@@ -93,9 +88,10 @@ func (self *VisorConfig) SetVisorSecKey(seed string) {
 //Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
-func NewVisorConfig() VisorConfig {
+func NewBlockchainConfig() BlockchainConfig {
     //set pubkey based upon testnet, mainnet and local
-    return VisorConfig{
+    return BlockchainConfig{
+
         IsMaster:                 false,
         TestNetwork:              true,
 
@@ -106,44 +102,44 @@ func NewVisorConfig() VisorConfig {
         TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
         BlockchainFile:           "",
         BlockSigsFile:            "",
-        //MasterKeys:               WalletEntry{},
-        //GenesisSignature:         coin.Sig{},
-        GenesisTimestamp:         0,
 
-        PubKey: coin.PubKey{},
         SecKey: coin.SecKey{},
     }
 }
 
-//NewTestnetVisor Config creates visor for the testnet
-func NewTestnetVisorConfig() VisorConfig {
-    VC := NewVisorConfig()
+//NewTestnetBlockchain Config creates Blockchain for the testnet
+func NewTestnetBlockchainConfig() BlockchainConfig {
+    VC := NewBlockchainConfig()
     VC.PubKey = coin.MustPubKeyFromHex(testnet_pubkey_hex)
     VC.TestNetwork = true
+    VC.Genesis = TestNet
     return VC
 }
 
-//NewTestnetVisor Config creates visor for the mainnet
-func NewMainnetVisorConfig() VisorConfig {
-    VC := NewVisorConfig()
+//NewTestnetBlockchain Config creates Blockchain for the mainnet
+func NewMainnetBlockchainConfig() BlockchainConfig {
+    VC := NewBlockchainConfig()
     VC.PubKey = coin.MustPubKeyFromHex(mainnet_pubkey_hex)
     VC.TestNetwork = false
+    VC.Genesis = MainNet
     return VC
 }
 
-//Generate visor configuration for client only visor, not intended to be synced to network
-func NewLocalVisorConfig() VisorConfig {
+//Generate Blockchain configuration for client only Blockchain, not intended to be synced to network
+func NewLocalBlockchainConfig() BlockchainConfig {
     pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
-    VC := NewVisorConfig()
+    
+    VC := NewBlockchainConfig()
     VC.SecKey = seckey
-    VC.PubKey = pubkey
+    VC.Genesis.Pubkey = PubKey
+    VC.Genesis.GenesisAddress = coin.AddressFromPubKey(pubkey)
     return VC
 }
 
 
 // Manages the Blockchain as both a Master and a Normal
-type Visor struct {
-    Config VisorConfig
+type Blockchain struct {
+    Config BlockchainConfig
     // Unconfirmed transactions, held for relay until we get block confirmation
     UnconfirmedTxns *UnconfirmedTxnPool
     //blockchain storag
@@ -151,12 +147,12 @@ type Visor struct {
     blockSigs  BlockSigs
 }
 
-// Creates a normal Visor given a master's public key
-func NewVisor(c VisorConfig) *Visor {
-    logger.Debug("Creating new visor")
+// Creates a normal Blockchain given a master's public key
+func NewBlockchain(c BlockchainConfig) *Blockchain {
+    logger.Debug("Creating new Blockchain")
     // Make sure inputs are correct
     if c.IsMaster {
-        logger.Debug("Visor is master")
+        logger.Debug("Blockchain is master")
     }
     if c.IsMaster {
         if err := c.SecKey.Verify(); err != nil {
@@ -184,7 +180,7 @@ func NewVisor(c VisorConfig) *Visor {
         blockSigs = NewBlockSigs()
     }
 
-    v := &Visor{
+    v := &Blockchain{
         Config:          c,
         blockchain:      blockchain,
         blockSigs:       blockSigs,
@@ -202,12 +198,12 @@ func NewVisor(c VisorConfig) *Visor {
     return v
 }
 
-// Returns a Visor with minimum initialization necessary for empty blockchain
+// Returns a Blockchain with minimum initialization necessary for empty blockchain
 // access
 
 /*
-func NewMinimalVisor(c VisorConfig) *Visor {
-    return &Visor{
+func NewMinimalBlockchain(c BlockchainConfig) *Blockchain {
+    return &Blockchain{
         Config:          c,
         blockchain:      coin.NewBlockchain(),
         blockSigs:       NewBlockSigs(),
@@ -217,7 +213,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 */
 
 // Creates the genesis block
-func (self *Visor) PushGenesisBlock() SignedBlock {
+func (self *Blockchain) PushGenesisBlock() SignedBlock {
     
     self.Config.IsMaster == false {
         log.Panic()
@@ -235,7 +231,7 @@ func (self *Visor) PushGenesisBlock() SignedBlock {
     return sb
 }
 
-func (self *Visor) CreateGenesisBlock() SignedBlock {
+func (self *Blockchain) CreateGenesisBlock() SignedBlock {
     b := coin.Block{}
     addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
     //addr := coin.AddressFromPubKey(self.Config.PubKey)
@@ -258,14 +254,14 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
-func (self *Visor) RefreshUnconfirmed() {
+func (self *Blockchain) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
     self.UnconfirmedTxns.Refresh(self.blockchain,
         self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
 }
 
 // Saves the coin.Blockchain to disk
-func (self *Visor) SaveBlockchain() error {
+func (self *Blockchain) SaveBlockchain() error {
     if self.Config.BlockchainFile == "" {
         return errors.New("No BlockchainFile location set")
     } else {
@@ -275,7 +271,7 @@ func (self *Visor) SaveBlockchain() error {
 
 
 // Saves BlockSigs file to disk
-func (self *Visor) SaveBlockSigs() error {
+func (self *Blockchain) SaveBlockSigs() error {
     if self.Config.BlockSigsFile == "" {
         return errors.New("No BlockSigsFile location set")
     } else {
@@ -284,7 +280,7 @@ func (self *Visor) SaveBlockSigs() error {
 }
 
 // Creates a SignedBlock from pending transactions
-func (self *Visor) createBlock() (SignedBlock, error) {
+func (self *Blockchain) createBlock() (SignedBlock, error) {
     //var sb SignedBlock
     if !self.Config.IsMaster {
         log.Panic("Only master chain can create blocks")
@@ -308,7 +304,7 @@ func (self *Visor) createBlock() (SignedBlock, error) {
     return b, err
 }
 
-func (self *Visor) SignBlock() (block coin.Block) (SignedBlock, error) {
+func (self *Blockchain) SignBlock() (block coin.Block) (SignedBlock, error) {
     if self.Config.SecKey == {} {
         log.Panic("Only master chain can create blocks")
     }
@@ -318,7 +314,7 @@ func (self *Visor) SignBlock() (block coin.Block) (SignedBlock, error) {
 
 //InjectBLock inputs a new block and applies it against the block chain
 // state if it is valid
-func (self *Visor) InjectBlock(b SignedBlock) (error) {
+func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
 
     if err := self.verifySignedBlock(&b); err != nil {
         return err
@@ -340,7 +336,7 @@ func (self *Visor) InjectBlock(b SignedBlock) (error) {
 
 // Should only need 1 block at time
 // Returns N signed blocks more recent than Seq. Does not return nil.
-func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
+func (self *Blockchain) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
     var avail uint64 = 0
     if self.blockSigs.MaxSeq > seq {
         avail = self.blockSigs.MaxSeq - seq
@@ -364,7 +360,7 @@ func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
 
 
 // Returns the signed genesis block. Panics if signature or block not found
-func (self *Visor) GetGenesisBlock() SignedBlock {
+func (self *Blockchain) GetGenesisBlock() SignedBlock {
     gsig, ok := self.blockSigs.Sigs[0]
     if !ok {
         log.Panic("No genesis signature")
@@ -379,18 +375,18 @@ func (self *Visor) GetGenesisBlock() SignedBlock {
 }
 
 // Returns the highest BkSeq we know
-func (self *Visor) MostRecentBkSeq() uint64 {
+func (self *Blockchain) MostRecentBkSeq() uint64 {
     h := self.blockchain.Head()
     return h.Header.BkSeq
 }
 
 // Returns descriptive coin.Blockchain information
-func (self *Visor) GetBlockchainMetadata() BlockchainMetadata {
+func (self *Blockchain) GetBlockchainMetadata() BlockchainMetadata {
     return NewBlockchainMetadata(self)
 }
 
 // Returns a readable copy of the block at seq. Returns error if seq out of range
-func (self *Visor) GetReadableBlock(seq uint64) (ReadableBlock, error) {
+func (self *Blockchain) GetReadableBlock(seq uint64) (ReadableBlock, error) {
     if b, err := self.GetBlock(seq); err == nil {
         return NewReadableBlock(&b), nil
     } else {
@@ -400,7 +396,7 @@ func (self *Visor) GetReadableBlock(seq uint64) (ReadableBlock, error) {
 
 // Returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
-func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
+func (self *Blockchain) GetReadableBlocks(start, end uint64) []ReadableBlock {
     blocks := self.GetBlocks(start, end)
     rbs := make([]ReadableBlock, 0, len(blocks))
     for _, b := range blocks {
@@ -410,7 +406,7 @@ func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range
-func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
+func (self *Blockchain) GetBlock(seq uint64) (coin.Block, error) {
     var b coin.Block
     if seq >= uint64(len(self.blockchain.Blocks)) {
         return b, errors.New("Block seq out of range")
@@ -420,7 +416,7 @@ func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 
 // Returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
-func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
+func (self *Blockchain) GetBlocks(start, end uint64) []coin.Block {
     if end > uint64(len(self.blockchain.Blocks)) {
         end = uint64(len(self.blockchain.Blocks))
     }
@@ -436,14 +432,14 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Visor) SetTxnAnnounce(h coin.SHA256, t time.Time) {
+func (self *Blockchain) SetTxnAnnounce(h coin.SHA256, t time.Time) {
     self.UnconfirmedTxns.SetAnnounced(h, t)
 }
 
 
 //InjectTransaction makes the blockchain server aware of raw transactions
 //InjectTransaction inserts the transaction into the unconfirmed set
-func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
+func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
 
     //should not be doing verification here
     //verification against blockchain will fail if user creates
@@ -456,13 +452,13 @@ func (self *Visor) InjectTransaction(txn coin.Transaction) (error) {
     self.UnconfirmedTxns.RecordTxn(txn, didAnnounce)
 }
 
-func (self *Visor) verifySignedBlock(b *SignedBlock) error {
+func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {
     return coin.VerifySignature(self.Config.PubKey, b.Sig,
         b.Block.HashHeader())
 }
 
 // Signs a block for master.  Will panic if anything is invalid
-func (self *Visor) signBlock(b coin.Block) SignedBlock {
+func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }

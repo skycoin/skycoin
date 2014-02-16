@@ -17,7 +17,7 @@ type BlockchainMetadata struct {
 
 func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
     return BlockchainMetadata{
-        Head:        NewReadableBlockHeader(&v.blockchain.Head().Header),
+        Head:        NewReadableBlockHeader(&v.blockchain.Head().Head),
         Unspents:    uint64(len(v.blockchain.Unspent.Arr)),
         Unconfirmed: uint64(len(v.UnconfirmedTxns.Txns)),
     }
@@ -79,9 +79,9 @@ type ReadableTransactionHeader struct {
 }
 
 func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
-    sigs := make([]string, 0, len(t.Sigs))
-    for _, s := range t.Sigs {
-        sigs = append(sigs, s.Hex())
+    sigs := make([]string, len(t.Sigs))
+    for i, _ := range t.Sigs {
+        sigs[i] = t.Sigs[i].Hex()
     }
     return ReadableTransactionHeader{
         Hash: t.Hash.Hex(),
@@ -90,48 +90,38 @@ func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransaction
 }
 
 type ReadableTransactionOutput struct {
-    DestinationAddress string `json:"dst"`
-    Coins              uint64 `json:"coins"`
-    Hours              uint64 `json:"hours"`
+    Address string `json:"dst"`
+    Coins   uint64 `json:"coins"`
+    Hours   uint64 `json:"hours"`
 }
 
 func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransactionOutput {
     return ReadableTransactionOutput{
-        DestinationAddress: t.DestinationAddress.String(),
-        Coins:              t.Coins,
-        Hours:              t.Hours,
-    }
-}
-
-type ReadableTransactionInput struct {
-    UxOut string `json:"ux_hash"`
-}
-
-func NewReadableTransactionInput(t *coin.TransactionInput) ReadableTransactionInput {
-    return ReadableTransactionInput{
-        UxOut: t.UxOut.Hex(),
+        Address: t.Address.String(),
+        Coins:   t.Coins,
+        Hours:   t.Hours,
     }
 }
 
 type ReadableTransaction struct {
-    Header ReadableTransactionHeader   `json:"header"`
-    In     []ReadableTransactionInput  `json:"inputs"`
-    Out    []ReadableTransactionOutput `json:"outputs"`
+    Head ReadableTransactionHeader   `json:"header"`
+    In   []string                    `json:"inputs"`
+    Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
 func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
-    in := make([]ReadableTransactionInput, 0, len(t.In))
-    for _, i := range t.In {
-        in = append(in, NewReadableTransactionInput(&i))
+    in := make([]string, len(t.In))
+    for i, _ := range t.In {
+        in[i] = t.In[i].Hex()
     }
-    out := make([]ReadableTransactionOutput, 0, len(t.Out))
-    for _, o := range t.Out {
-        out = append(out, NewReadableTransactionOutput(&o))
+    out := make([]ReadableTransactionOutput, len(t.Out))
+    for i, _ := range t.Out {
+        out[i] = NewReadableTransactionOutput(&t.Out[i])
     }
     return ReadableTransaction{
-        Header: NewReadableTransactionHeader(&t.Header),
-        In:     in,
-        Out:    out,
+        Head: NewReadableTransactionHeader(&t.Head),
+        In:   in,
+        Out:  out,
     }
 }
 
@@ -160,9 +150,9 @@ type ReadableBlockBody struct {
 }
 
 func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
-    txns := make([]ReadableTransaction, 0, len(b.Transactions))
-    for _, txn := range b.Transactions {
-        txns = append(txns, NewReadableTransaction(&txn))
+    txns := make([]ReadableTransaction, len(b.Transactions))
+    for i, _ := range b.Transactions {
+        txns[i] = NewReadableTransaction(&b.Transactions[i])
     }
     return ReadableBlockBody{
         Transactions: txns,
@@ -170,13 +160,13 @@ func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
 }
 
 type ReadableBlock struct {
-    Header ReadableBlockHeader `json:"header"`
-    Body   ReadableBlockBody   `json:"body"`
+    Head ReadableBlockHeader `json:"header"`
+    Body ReadableBlockBody   `json:"body"`
 }
 
 func NewReadableBlock(b *coin.Block) ReadableBlock {
     return ReadableBlock{
-        Header: NewReadableBlockHeader(&b.Header),
-        Body:   NewReadableBlockBody(&b.Body),
+        Head: NewReadableBlockHeader(&b.Head),
+        Body: NewReadableBlockBody(&b.Body),
     }
 }

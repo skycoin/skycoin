@@ -3,52 +3,7 @@ package daemon
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
-    "github.com/skycoin/skycoin/src/rpc"
 )
-
-/*
-<<<<<<< HEAD
-// Exposes a read-only api for use by the gui rpc interface
-
-type rpc_Balance struct {
-    Coins uint64 `json:"coins"`
-    Hours uint64 `json:"hours"`
-}
-
-type RPCConfig struct {
-    BufferSize int
-}
-
-func NewRPCConfig() RPCConfig {
-    return RPCConfig{
-        BufferSize: 32,
-    }
-}
-
-// RPC interface for daemon state
-type RPC struct {
-    // Backref to Daemon
-    Daemon *Daemon
-    Config RPCConfig
-
-    // Requests are queued on this channel
-    requests chan func() interface{}
-    // When a request is done processing, it is placed on this channel
-    responses chan interface{}
-}
-
-func NewRPC(c RPCConfig, d *Daemon) *RPC {
-    return &RPC{
-        Config:    c,
-        Daemon:    d,
-        requests:  make(chan func() interface{}, c.BufferSize),
-        responses: make(chan interface{}, c.BufferSize),
-    }
-}
-
-=======
->>>>>>> b05c239d59caca3d6b0af41830cfa2d76b0ea226
-*/
 
 // A connection's state within the daemon
 type Connection struct {
@@ -83,23 +38,6 @@ type BlockchainProgress struct {
     // Our best guess at true blockchain length
     Highest uint64 `json:"highest"`
 }
-
-/*
-<<<<<<< HEAD
-type Balance struct {
-    Balance rpc_Balance `json:"balance"`
-    // Whether this balance includes unconfirmed txns in its calculation
-    Predicted bool `json:"predicted"`
-}
-
-type Transaction struct {
-    Transaction visor.ReadableTransaction `json:"txn"`
-    Status      visor.TransactionStatus   `json:"status"`
-}
-
-=======
->>>>>>> b05c239d59caca3d6b0af41830cfa2d76b0ea226
-*/
 
 type ResendResult struct {
     Sent bool `json:"sent"`

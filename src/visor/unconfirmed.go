@@ -1,4 +1,4 @@
-package keyring
+package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
@@ -67,21 +67,22 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         IsOurSpend:   false,
     }
     // Add predicted unspents
-    for _, ux := range bc.TxUxOut(t, coin.BlockHeader{}) {
-        self.Unspent.Add(ux)
+    uxs := coin.CreateExpectedUnspents(t)
+    for i, _ := range uxs {
+        self.Unspent.Add(uxs[i])
     }
     if addrs != nil {
         // Check if this is one of our receiving txns
-        for _, to := range t.Out {
-            logger.Debug("To address: %s", to.DestinationAddress.String())
-            if _, ok := addrs[to.DestinationAddress]; ok {
+        for i, _ := range t.Out {
+            logger.Debug("To address: %s", t.Out[i].Address.String())
+            if _, ok := addrs[t.Out[i].Address]; ok {
                 ut.IsOurReceive = true
                 break
             }
         }
         // Check if this is one of our spending txns
-        for _, ti := range t.In {
-            if ux, ok := bc.Unspent.Get(ti.UxOut); ok {
+        for i, _ := range t.In {
+            if ux, ok := bc.Unspent.Get(t.In[i]); ok {
                 logger.Debug("Ux address: %s", ux.Body.Address.String())
                 if _, ok := addrs[ux.Body.Address]; ok {
                     ut.IsOurSpend = true
@@ -111,7 +112,7 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
         return
     }
     delete(self.Txns, h)
-    outputs := bc.TxUxOut(t.Txn, coin.BlockHeader{})
+    outputs := coin.CreateExpectedUnspents(t.Txn)
     hashes := make([]coin.SHA256, len(outputs))
     for _, o := range outputs {
         hashes = append(hashes, o.Hash())
@@ -124,15 +125,15 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
 func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
     hashes []coin.SHA256) {
     uxo := make([]coin.UxOut, 0, len(hashes))
-    for _, h := range hashes {
-        if t, ok := self.Txns[h]; ok {
-            delete(self.Txns, h)
-            uxo = append(uxo, bc.TxUxOut(t.Txn, coin.BlockHeader{})...)
+    for i, _ := range hashes {
+        if t, ok := self.Txns[hashes[i]]; ok {
+            delete(self.Txns, hashes[i])
+            uxo = append(uxo, coin.CreateExpectedUnspents(t.Txn)...)
         }
     }
     uxhashes := make([]coin.SHA256, len(uxo))
-    for _, o := range uxo {
-        uxhashes = append(uxhashes, o.Hash())
+    for i, _ := range uxo {
+        uxhashes[i] = uxo[i].Hash()
     }
     self.Unspent.DelMultiple(uxhashes)
 }
@@ -140,9 +141,9 @@ func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
 // Removes confirmed txns from the pool
 func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
     txns coin.Transactions) {
-    toRemove := make([]coin.SHA256, 0, len(txns))
-    for _, tx := range txns {
-        toRemove = append(toRemove, tx.Hash())
+    toRemove := make([]coin.SHA256, len(txns))
+    for i, _ := range txns {
+        toRemove[i] = txns[i].Hash()
     }
     self.removeTxns(bc, toRemove)
 }

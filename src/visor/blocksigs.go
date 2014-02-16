@@ -1,4 +1,4 @@
-package keyring
+package visor
 
 import (
     "errors"
@@ -111,7 +111,7 @@ func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) err
 
 // Adds a SignedBlock
 func (self *BlockSigs) record(sb *SignedBlock) {
-    seq := sb.Block.Header.BkSeq
+    seq := sb.Block.Head.BkSeq
     self.Sigs[seq] = sb.Sig
     if seq > self.MaxSeq {
         self.MaxSeq = seq

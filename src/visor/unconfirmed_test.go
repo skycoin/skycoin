@@ -26,13 +26,13 @@ func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
     if err != nil {
         return txn, err
     }
-    txn.Out[0].DestinationAddress = coin.Address{}
+    txn.Out[0].Address = coin.Address{}
     return txn, nil
 }
 
 func assertValidUnspent(t *testing.T, bc *coin.Blockchain,
     unspent *coin.UnspentPool, tx coin.Transaction) {
-    expect := bc.TxUxOut(tx, coin.BlockHeader{})
+    expect := coin.CreateExpectedUnspents(tx)
     assert.NotEqual(t, len(expect), 0)
     assert.Equal(t, len(expect), len(unspent.Arr))
     for _, ux := range expect {
@@ -55,7 +55,7 @@ func assertValidUnconfirmed(t *testing.T, txns map[coin.SHA256]UnconfirmedTxn,
 func TestUnconfirmedTxnHash(t *testing.T) {
     utx := createUnconfirmedTxn()
     assert.Equal(t, utx.Hash(), utx.Txn.Hash())
-    assert.NotEqual(t, utx.Hash(), utx.Txn.Header.Hash)
+    assert.NotEqual(t, utx.Hash(), utx.Txn.Head.Hash)
 }
 
 func TestNewUnconfirmedTxnPool(t *testing.T) {
@@ -114,7 +114,7 @@ func TestRecordTxn(t *testing.T) {
     txn, err = makeValidTxn(mv)
     assert.Nil(t, err)
     addrs := make(map[coin.Address]byte, 1)
-    addrs[txn.Out[1].DestinationAddress] = byte(1)
+    addrs[txn.Out[1].Address] = byte(1)
     assert.Nil(t, ut.RecordTxn(mv.blockchain, txn, addrs, false))
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, false, true, false)
@@ -126,7 +126,7 @@ func TestRecordTxn(t *testing.T) {
     txn, err = makeValidTxnNoChange(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 1)
-    ux, ok := mv.blockchain.Unspent.Get(txn.In[0].UxOut)
+    ux, ok := mv.blockchain.Unspent.Get(txn.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
     assert.Nil(t, ut.RecordTxn(mv.blockchain, txn, addrs, false))
@@ -139,8 +139,8 @@ func TestRecordTxn(t *testing.T) {
     txn, err = makeValidTxn(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 2)
-    addrs[txn.Out[0].DestinationAddress] = byte(1)
-    ux, ok = mv.blockchain.Unspent.Get(txn.In[0].UxOut)
+    addrs[txn.Out[0].Address] = byte(1)
+    ux, ok = mv.blockchain.Unspent.Get(txn.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
     assert.Nil(t, ut.RecordTxn(mv.blockchain, txn, addrs, false))
@@ -305,11 +305,10 @@ func testRefresh(t *testing.T, mv *Visor,
     up.Txns[invalidUtxUnchecked.Hash()] = invalidUtxUnchecked
     up.Txns[invalidUtxChecked.Hash()] = invalidUtxChecked
     assert.Equal(t, len(up.Txns), 2)
-    bh := coin.BlockHeader{}
-    for _, ux := range mv.blockchain.TxUxOut(invalidTxUnchecked, bh) {
+    for _, ux := range coin.CreateExpectedUnspents(invalidTxUnchecked) {
         up.Unspent.Add(ux)
     }
-    for _, ux := range mv.blockchain.TxUxOut(invalidTxChecked, bh) {
+    for _, ux := range coin.CreateExpectedUnspents(invalidTxChecked) {
         up.Unspent.Add(ux)
     }
     // Add a transaction that is valid, and will not be checked yet
@@ -387,14 +386,14 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     ourSpendNew, err := makeValidTxn(mv)
     assert.Nil(t, err)
     addrs := make(map[coin.Address]byte, 1)
-    ux, ok := mv.blockchain.Unspent.Get(ourSpendNew.In[0].UxOut)
+    ux, ok := mv.blockchain.Unspent.Get(ourSpendNew.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
     assert.Nil(t, up.RecordTxn(mv.blockchain, ourSpendNew, addrs, true))
     ourSpendOld, err := makeValidTxn(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 1)
-    ux, ok = mv.blockchain.Unspent.Get(ourSpendNew.In[0].UxOut)
+    ux, ok = mv.blockchain.Unspent.Get(ourSpendNew.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
     assert.Nil(t, up.RecordTxn(mv.blockchain, ourSpendOld, addrs, false))
@@ -402,30 +401,30 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     ourReceiveNew, err := makeValidTxn(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 1)
-    addrs[ourReceiveNew.Out[1].DestinationAddress] = byte(1)
+    addrs[ourReceiveNew.Out[1].Address] = byte(1)
     assert.Nil(t, up.RecordTxn(mv.blockchain, ourReceiveNew, addrs, true))
     ourReceiveOld, err := makeValidTxn(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 1)
-    addrs[ourReceiveOld.Out[1].DestinationAddress] = byte(1)
+    addrs[ourReceiveOld.Out[1].Address] = byte(1)
     assert.Nil(t, up.RecordTxn(mv.blockchain, ourReceiveOld, addrs, false))
     // Add a transaction that is both our spend and receive, both new and old
     ourBothNew, err := makeValidTxn(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 2)
-    ux, ok = mv.blockchain.Unspent.Get(ourBothNew.In[0].UxOut)
+    ux, ok = mv.blockchain.Unspent.Get(ourBothNew.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
-    addrs[ourBothNew.Out[1].DestinationAddress] = byte(1)
+    addrs[ourBothNew.Out[1].Address] = byte(1)
     assert.Equal(t, len(addrs), 2)
     assert.Nil(t, up.RecordTxn(mv.blockchain, ourBothNew, addrs, true))
     ourBothOld, err := makeValidTxn(mv)
     assert.Nil(t, err)
     addrs = make(map[coin.Address]byte, 1)
-    ux, ok = mv.blockchain.Unspent.Get(ourBothOld.In[0].UxOut)
+    ux, ok = mv.blockchain.Unspent.Get(ourBothOld.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
-    addrs[ourBothOld.Out[1].DestinationAddress] = byte(1)
+    addrs[ourBothOld.Out[1].Address] = byte(1)
     assert.Equal(t, len(addrs), 2)
     assert.Nil(t, up.RecordTxn(mv.blockchain, ourBothOld, addrs, false))
 

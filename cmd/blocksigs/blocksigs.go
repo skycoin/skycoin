@@ -5,9 +5,14 @@ import (
     "errors"
     "flag"
     "fmt"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
     "os"
 )
+
+func init() {
+    util.DisableLogging()
+}
 
 // Fetches the saved block signature at sequence bkSeq from sigsFile
 func readSignature(sigsFile string, bkSeq uint64) (string, error) {

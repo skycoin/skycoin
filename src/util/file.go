@@ -5,6 +5,7 @@ import (
     "encoding/json"
     "errors"
     "fmt"
+    "github.com/op/go-logging"
     "io/ioutil"
     "os"
     "os/user"
@@ -14,6 +15,11 @@ import (
 var (
     defaultDataDir = ".skycoin/"
 )
+
+// Disable the logger completely
+func DisableLogging() {
+    logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+}
 
 // If dir is "", uses the default directory of ~/.skycoin.  The path to dir
 // is created, and the dir used is returned

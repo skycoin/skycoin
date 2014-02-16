@@ -45,9 +45,16 @@ func TestPubKeyHex(t *testing.T) {
 }
 
 func TestPubKeyVerify(t *testing.T) {
-    // Random bytes should not be valid
-    b := randBytes(t, 33)
-    assert.NotNil(t, NewPubKey(b).Verify())
+    // Random bytes should not be valid, most of the time
+    failed := false
+    for i := 0; i < 10; i++ {
+        b := randBytes(t, 33)
+        if NewPubKey(b).Verify() != nil {
+            failed = true
+            break
+        }
+    }
+    assert.True(t, failed)
 
     // Empty public key should not be valid
     p := PubKey{}

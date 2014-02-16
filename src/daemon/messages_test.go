@@ -4,12 +4,10 @@ import (
     "bytes"
     "errors"
     "fmt"
-    "github.com/op/go-logging"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
     "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
-    "io/ioutil"
     "net"
     "testing"
     "time"
@@ -33,7 +31,7 @@ var (
 
 func init() {
     if silenceLogger {
-        logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+        util.DisableLogging()
     }
 }
 

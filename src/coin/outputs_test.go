@@ -7,6 +7,10 @@ import (
     "testing"
 )
 
+func randSHA256(t *testing.T) SHA256 {
+    return SumSHA256(randBytes(t, 128))
+}
+
 func makeUxBody(t *testing.T) UxBody {
     body, _ := makeUxBodyWithSecret(t)
     return body
@@ -71,7 +75,7 @@ func TestUxArrayHashArray(t *testing.T) {
     for i := 0; i < len(uxa); i++ {
         uxa[i] = makeUxOut(t)
     }
-    hashes := uxa.HashArray()
+    hashes := uxa.Hashes()
     assert.Equal(t, len(hashes), len(uxa))
     for i, h := range hashes {
         assert.Equal(t, h, uxa[i].Hash())
@@ -506,6 +510,82 @@ func TestUnspentPoolAllForAddresses(t *testing.T) {
     sort.Sort(expect)
     assert.Equal(t, got, expect)
     assert.Equal(t, uxs[ux2.Body.Address], UxArray{ux2})
+}
+
+func TestUnspentGetMultiple(t *testing.T) {
+    unspent := NewUnspentPool()
+    // Valid
+    txn := Transaction{}
+    ux0 := makeUxOut(t)
+    ux1 := makeUxOut(t)
+    unspent.Add(ux0)
+    unspent.Add(ux1)
+    assert.Equal(t, len(unspent.Arr), 2)
+    txn.PushInput(ux0.Hash())
+    txn.PushInput(ux1.Hash())
+    txin, err := unspent.GetMultiple(txn.In)
+    assert.Nil(t, err)
+    assert.Equal(t, len(txin), 2)
+    assert.Equal(t, len(txin), len(txn.In))
+
+    // Empty txn
+    txn = Transaction{}
+    txin, err = unspent.GetMultiple(txn.In)
+    assert.Nil(t, err)
+    assert.Equal(t, len(txin), 0)
+
+    // Spending unknown output
+    txn = makeTransaction(t)
+    txn.In[0] = SHA256{}
+    _, err = unspent.GetMultiple(txn.In)
+    assertError(t, err, "Unspent output does not exist")
+
+    // Multiple inputs
+    unspent.Add(makeUxOut(t))
+    unspent.Add(makeUxOut(t))
+    txn = Transaction{}
+    ux0 = unspent.Arr[0]
+    ux1 = unspent.Arr[1]
+    txn.PushInput(ux0.Hash())
+    txn.PushInput(ux1.Hash())
+    txn.PushOutput(genAddress, ux0.Body.Coins+ux1.Body.Coins, ux0.Body.Hours)
+    txn.SignInputs([]SecKey{genSecret, genSecret})
+    txn.UpdateHeader()
+    assert.Nil(t, txn.Verify())
+    txin, err = unspent.GetMultiple(txn.In)
+    assert.Nil(t, err)
+    assert.Equal(t, len(txin), 2)
+    assert.Equal(t, txin[0], ux0)
+    assert.Equal(t, txin[1], ux1)
+
+    // Duplicate tx.In
+    unspent.Add(makeUxOut(t))
+    txn = Transaction{}
+    txn.In = append(txn.In, unspent.Arr[0].Hash())
+    txn.In = append(txn.In, txn.In[0])
+    txn.In = append(txn.In, txn.In[0])
+    txin, err = unspent.GetMultiple(txn.In)
+    assert.Nil(t, err)
+    ux0 = unspent.Arr[0]
+    assert.Equal(t, len(txin), 3)
+    assert.Equal(t, len(txin), len(txn.In))
+    assert.Equal(t, txin[0], ux0)
+    assert.Equal(t, txin[1], ux0)
+    assert.Equal(t, txin[2], ux0)
+    assert.True(t, txin.HasDupes())
+}
+
+func TestUnspentCollides(t *testing.T) {
+    unspent := NewUnspentPool()
+    assert.False(t, unspent.Collides([]SHA256{}))
+    assert.False(t, unspent.Collides([]SHA256{randSHA256(t)}))
+    ux := makeUxOut(t)
+    unspent.Add(ux)
+    assert.False(t, unspent.Collides([]SHA256{}))
+    assert.False(t, unspent.Collides([]SHA256{randSHA256(t)}))
+    assert.True(t, unspent.Collides([]SHA256{ux.Hash()}))
+    assert.True(t, unspent.Collides([]SHA256{randSHA256(t), ux.Hash()}))
+    assert.True(t, unspent.Collides([]SHA256{ux.Hash(), randSHA256(t)}))
 }
 
 func TestAddressUnspentsKeys(t *testing.T) {

@@ -29,6 +29,25 @@ func MustPubKeyFromHex(s string) PubKey {
     return NewPubKey(b)
 }
 
+// Recovers the public key for a secret key
+func PubKeyFromSecKey(seckey SecKey) PubKey {
+    b := secp256k1.PubkeyFromSeckey(seckey[:])
+    if b == nil {
+        log.Panic("PubKeyFromSecKey, pubkey recovery failed. Function " +
+            "assumes seckey is valid. Check seckey")
+    }
+    return NewPubKey(b)
+}
+
+// Recovers the public key from a signed hash
+func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
+    rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
+    if rawPubKey == nil {
+        return PubKey{}, errors.New("Invalig sig: PubKey recovery failed")
+    }
+    return NewPubKey(rawPubKey), nil
+}
+
 //Verify attempts to determine if pubkey is valid. Returns nil on success
 func (self PubKey) Verify() error {
     if secp256k1.VerifyPubkey(self[:]) != 1 {
@@ -115,6 +134,22 @@ func (s Sig) Hex() string {
     return hex.EncodeToString(s[:])
 }
 
+func SignHash(hash SHA256, sec SecKey) Sig {
+    sig := NewSig(secp256k1.Sign(hash[:], sec[:]))
+
+    if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
+        pubkey, err := PubKeyFromSig(sig, hash)
+        if err != nil {
+            log.Panic("SignHash, error: pubkey from sig recovery failure")
+        }
+        if VerifySignature(pubkey, sig, hash) != nil {
+            log.Panic("SignHash, error: secp256k1.Sign returned non-null " +
+                "invalid non-null signature")
+        }
+    }
+    return sig
+}
+
 /*
 	Checks whether PubKey corresponding to address hash signed hash
 	- recovers the PubKey from sig and hash
@@ -137,38 +172,20 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
     return nil
 }
 
-func SignHash(hash SHA256, sec SecKey) Sig {
-    sig := NewSig(secp256k1.Sign(hash[:], sec[:]))
-
-    if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
-        pubkey, err := PubKeyFromSig(sig, hash)
-        if err != nil {
-            log.Panic("SignHash, error: pubkey from sig recovery failure")
-        }
-        if VerifySignature(pubkey, sig, hash) != nil {
-            log.Panic("SignHash, error: secp256k1.Sign returned non-null " +
-                "invalid non-null signature")
-        }
-    }
-    return sig
-}
-
-// Recovers the public key for a secret key
-func PubKeyFromSecKey(seckey SecKey) PubKey {
-    b := secp256k1.PubkeyFromSeckey(seckey[:])
-    if b == nil {
-        log.Panic("PubKeyFromSecKey, pubkey recovery failed. Function " +
-            "assumes seckey is valid. Check seckey")
-    }
-    return NewPubKey(b)
-}
-
-func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
+// This only checks that the signature can be converted to a public key
+// Since there is no pubkey or address argument, it cannot check that the
+// signature is valid in that context.
+func VerifySignedHash(sig Sig, hash SHA256) error {
     rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
     if rawPubKey == nil {
-        return PubKey{}, errors.New("Invalig sig: PubKey recovery failed")
+        return errors.New("Failed to recover public key")
     }
-    return NewPubKey(rawPubKey), nil
+    if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
+        // If this occurs, secp256k1 is bugged
+        logger.Critical("Recovered public key is not valid for signed hash")
+        return errors.New("Signature invalid for hash")
+    }
+    return nil
 }
 
 // Verifies that hash was signed by PubKey

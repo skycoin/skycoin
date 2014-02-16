@@ -1,4 +1,4 @@
-package keyring
+package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
@@ -51,7 +51,7 @@ func TestSaveLoadBlockSigs(t *testing.T) {
     assert.Nil(t, err)
     bs := NewBlockSigs()
     for _, sb := range sbs {
-        bs.Sigs[sb.Block.Header.BkSeq] = sb.Sig
+        bs.Sigs[sb.Block.Head.BkSeq] = sb.Sig
     }
     // We give it an invalid BkSeq, because the BkSeq should be corrected
     // when loaded
@@ -101,7 +101,7 @@ func TestBlockSigsVerify(t *testing.T) {
 
     // MaxSeq incorrect
     for _, sb := range sbs {
-        bs.Sigs[sb.Block.Header.BkSeq] = sb.Sig
+        bs.Sigs[sb.Block.Head.BkSeq] = sb.Sig
     }
     err = bs.Verify(pub, bc)
     assert.NotNil(t, err)
@@ -151,6 +151,6 @@ func TestBlockSigsRecord(t *testing.T) {
         bs.record(&sbs[i])
         assert.Equal(t, len(bs.Sigs), i+2)
         assert.Equal(t, bs.Sigs[uint64(i+1)], sbs[i].Sig)
-        assert.Equal(t, bs.MaxSeq, sbs[i].Block.Header.BkSeq)
+        assert.Equal(t, bs.MaxSeq, sbs[i].Block.Head.BkSeq)
     }
 }

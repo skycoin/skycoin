@@ -159,17 +159,7 @@ func (self *Blockchain) PushGenesisBlock() SignedBlock {
     Note: the genesis block is part of block chain initialization
 */
 func (self *Blockchain) InjectGenesisBlock() {
-    //b := coin.Block{}
-    //addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
-    //addr := coin.AddressFromPubKey(self.Config.PubKey)
-
-    //set genesis block and apply it state again chain
     var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress. self.GenesisTime)
-
-
-
-    //Blockchain  *Blockchain
-
 }
 
 

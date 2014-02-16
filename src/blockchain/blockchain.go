@@ -57,26 +57,8 @@ type Blockchain struct {
     // Is this the master blockchain
     IsMaster bool
     SecKey coin.SecKey //set for writes
-
     // Use test network addresses
     TestNetwork bool
-
-/*
-    // How often new blocks are created by the master
-    BlockCreationInterval uint64
-    // How often an unconfirmed txn is checked against the blockchain
-    UnconfirmedCheckInterval time.Duration
-    // How long we'll hold onto an unconfirmed txn
-    UnconfirmedMaxAge time.Duration
-    // How often to refresh the unconfirmed pool
-    
-    UnconfirmedRefreshRate time.Duration
-    //Maximum number of transactions per block, when creating
-    TransactionsPerBlock int
-    
-    // Where the blockchain is saved
-    BlockchainFile string    
-*/
 }
 
 func (self *Blockchain) SetBlockchainSecKey(seed string) {
@@ -148,61 +130,48 @@ func NewLocalBlockchain() Blockchain {
 
 
 
-
-// Returns a Blockchain with minimum initialization necessary for empty blockchain
-// access
-
-/*
-func NewMinimalBlockchain(c Blockchain) *Blockchain {
-    return &Blockchain{
-        Config:          c,
-        blockchain:      coin.NewBlockchain(),
-        blockSigs:       NewBlockSigs(),
-        UnconfirmedTxns: nil,
-    }
-}
-*/
-
 // Creates the genesis block
+/*
 func (self *Blockchain) PushGenesisBlock() SignedBlock {
     
-    self.Config.IsMaster == false {
+    self.Seckey{} == coin.SecKey{} {
         log.Panic()
     }
 
     //b := coin.Block{}
-    addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
-    b := self.blockchain.CreateMasterGenesisBlock(addr)
-    sb = self.signBlock(b)
-    self.blockSigs.record(&sb)
-    err := self.blockSigs.Verify(self.Config.PubKey, self.blockchain)
-    if err != nil {
-        log.Panicf("Signed the genesis block, but its invalid: %v", err)
-    }
+    b := self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress. self.GenesisTime)
+    
+
+    //sb = self.signBlock(b)
+    //self.blockSigs.record(&sb)
+    //err := self.blockSigs.Verify(self.Config.PubKey, self.blockchain)
+    //if err != nil {
+    //    log.Panicf("Signed the genesis block, but its invalid: %v", err)
+    //}
     return sb
 }
+*/
 
-func (self *Blockchain) CreateGenesisBlock() SignedBlock {
-    b := coin.Block{}
-    addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
+
+/*
+    Note: the genesis block does not need to be saved to disc
+    Note: the genesis does not have signature because its implicit
+    Note: the genesis block is part of block chain initialization
+*/
+func (self *Blockchain) InjectGenesisBlock() {
+    //b := coin.Block{}
+    //addr := coin.MustDecodeBase58Address(genesis_address) //genesis address
     //addr := coin.AddressFromPubKey(self.Config.PubKey)
 
-    b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp)
+    //set genesis block and apply it state again chain
+    var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress. self.GenesisTime)
 
-    //sb := SignedBlock{}
 
-    sb := SignedBlock{
-        Block: b,
-        Sig:   self.Config.GenesisSignature,
-    }
 
-    self.blockSigs.record(&sb)
-    err := self.blockSigs.Verify(self.Config.PubKey, self.blockchain)
-    if err != nil {
-        log.Panicf("Signed the genesis block, but its invalid: %v", err)
-    }
-    return sb
+    //Blockchain  *Blockchain
+
 }
+
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Blockchain) RefreshUnconfirmed() {

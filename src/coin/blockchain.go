@@ -41,10 +41,13 @@ var (
 // Tx.Uxi() - set of outputs consumed by transaction
 // Tx.Uxo() - set of outputs created by transaction
 
+//Deprecate
+// block time requestion is handled in top level
+// genesis coin volume is passed into genesis
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
-    blockTimeFutureMultipleMax uint64 = 20
+    blockTimeFutureMultipleMax uint64 = 20 //deprecate
     genesisCoinVolume          uint64 = 100 * 1e6 * 1e6 //100 million coins
     genesisCoinHours           uint64 = 1024 * 1024
     //each coin is one million droplets, which are the base unit
@@ -87,6 +90,7 @@ type Block struct {
 }
 */
 
+//must pass in time
 func newBlock(prev *Block, creationInterval uint64) Block {
     header := newBlockHeader(&prev.Head, creationInterval)
     return Block{Head: header, Body: BlockBody{}}
@@ -176,12 +180,14 @@ func NewBlockchain() *Blockchain {
 }
 
 // Creates a genesis block with a new timestamp
+// Deprecate
 func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
     return self.CreateGenesisBlock(genesisAddress, Now())
 }
 
-// Creates a genesis block provided an address and initial timestamp.
-// Non-genesis clients need this because genesis block must be hardcoded
+// Creates a genesis block and applies it against chain
+// Takes in time as parameter
+// Todo, take in number of coins
 func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     timestamp uint64) Block {
     logger.Info("Creating new genesis block with address %s",
@@ -220,6 +226,7 @@ func (self *Blockchain) Head() *Block {
 
 //Time returns time of last block
 //used as system clock indepedent clock for coin hour calculations
+//Deprecate
 func (self *Blockchain) Time() uint64 {
     return self.Head().Head.Time
 }

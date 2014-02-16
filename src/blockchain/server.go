@@ -67,6 +67,7 @@ func (self *Server) Start() {
 // Closes the block chain server, saving blockchain to disk
 func (self *Server) Shutdown() {
 
+/*
     bcFile := self.Config.Config.BlockchainFile
     err := self.Blockchain.SaveBlockchain()
     if err == nil {
@@ -81,4 +82,5 @@ func (self *Server) Shutdown() {
     } else {
         logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
     }
+*/
 }

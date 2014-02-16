@@ -37,7 +37,7 @@ func setupVisorConfig() (VisorConfig, *Visor) {
     c.IsMaster = false
     c.MasterKeys = mw
     c.MasterKeys.Secret = coin.SecKey{}
-    c.GenesisTimestamp = sb.Block.Header.Time
+    c.GenesisTimestamp = sb.Block.Head.Time
     c.GenesisSignature = sb.Sig
     return c, mv
 }
@@ -54,7 +54,7 @@ func setupVisorFromMaster(mv *Visor) *Visor {
     vc.MasterKeys = mv.Config.MasterKeys
     vc.MasterKeys.Secret = coin.SecKey{}
     vc.GenesisSignature = mv.blockSigs.Sigs[0]
-    vc.GenesisTimestamp = mv.blockchain.Blocks[0].Header.Time
+    vc.GenesisTimestamp = mv.blockchain.Blocks[0].Head.Time
     return NewVisor(vc)
 }
 
@@ -95,7 +95,7 @@ func randSHA256() coin.SHA256 {
 func createUnconfirmedTxn() UnconfirmedTxn {
     ut := UnconfirmedTxn{}
     ut.Txn = coin.Transaction{}
-    ut.Txn.Header.Hash = randSHA256()
+    ut.Txn.Head.Hash = randSHA256()
     ut.Received = util.Now()
     ut.Checked = ut.Received
     ut.Announced = util.ZeroTime()
@@ -170,7 +170,7 @@ func TestNewBlockchainMetadata(t *testing.T) {
     bcm := NewBlockchainMetadata(v)
     assert.Equal(t, bcm.Unspents, uint64(2))
     assert.Equal(t, bcm.Unconfirmed, uint64(2))
-    assertReadableBlockHeader(t, bcm.Head, v.blockchain.Head().Header)
+    assertReadableBlockHeader(t, bcm.Head, v.blockchain.Head().Head)
     assertJSONSerializability(t, &bcm)
 }
 
@@ -216,7 +216,7 @@ func TestReadableTransactionHeader(t *testing.T) {
     v, mv := setupVisor()
     assert.Nil(t, transferCoins(mv, v))
     b := mv.blockchain.Head()
-    th := b.Body.Transactions[0].Header
+    th := b.Body.Transactions[0].Head
     rth := NewReadableTransactionHeader(&th)
     assertReadableTransactionHeader(t, rth, th)
 }
@@ -224,8 +224,8 @@ func TestReadableTransactionHeader(t *testing.T) {
 func assertReadableTransactionOutput(t *testing.T,
     rto ReadableTransactionOutput, to coin.TransactionOutput) {
     assert.NotPanics(t, func() {
-        assert.Equal(t, coin.MustDecodeBase58Address(rto.DestinationAddress),
-            to.DestinationAddress)
+        assert.Equal(t, coin.MustDecodeBase58Address(rto.Address),
+            to.Address)
     })
     assert.Equal(t, rto.Coins, to.Coins)
     assert.Equal(t, rto.Hours, to.Hours)
@@ -265,7 +265,7 @@ func assertReadableTransaction(t *testing.T, rtx ReadableTransaction,
     tx coin.Transaction) {
     assert.Equal(t, len(tx.In), len(rtx.In))
     assert.Equal(t, len(tx.Out), len(rtx.Out))
-    assertReadableTransactionHeader(t, rtx.Header, tx.Header)
+    assertReadableTransactionHeader(t, rtx.Head, tx.Head)
     for i, ti := range rtx.In {
         assertReadableTransactionInput(t, ti, tx.In[i])
     }
@@ -303,7 +303,7 @@ func TestNewReadableBlockHeader(t *testing.T) {
     defer cleanupVisor()
     v, mv := setupVisor()
     assert.Nil(t, transferCoins(mv, v))
-    bh := mv.blockchain.Head().Header
+    bh := mv.blockchain.Head().Head
     assert.Equal(t, bh.BkSeq, uint64(1))
     rb := NewReadableBlockHeader(&bh)
     assertReadableBlockHeader(t, rb, bh)
@@ -319,7 +319,7 @@ func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody,
 }
 
 func assertReadableBlock(t *testing.T, rb ReadableBlock, b coin.Block) {
-    assertReadableBlockHeader(t, rb.Header, b.Header)
+    assertReadableBlockHeader(t, rb.Head, b.Head)
     assertReadableBlockBody(t, rb.Body, b.Body)
     assertJSONSerializability(t, &rb)
 }
@@ -329,7 +329,7 @@ func TestNewReadableBlock(t *testing.T) {
     v, mv := setupVisor()
     assert.Nil(t, transferCoins(mv, v))
     b := *(mv.blockchain.Head())
-    assert.Equal(t, b.Header.BkSeq, uint64(1))
+    assert.Equal(t, b.Head.BkSeq, uint64(1))
     rb := NewReadableBlock(&b)
     assertReadableBlock(t, rb, b)
 }

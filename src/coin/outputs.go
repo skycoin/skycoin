@@ -2,6 +2,7 @@ package coin
 
 import (
     "bytes"
+    "errors"
     "github.com/skycoin/encoder"
     "log"
     "sort"
@@ -41,6 +42,11 @@ type UxOut struct {
     //Meta UxMeta
 }
 
+// Returns the hash of UxBody
+func (self *UxOut) Hash() SHA256 {
+    return self.Body.Hash()
+}
+
 // Metadata (not hashed)
 type UxHead struct {
     Time  uint64 //time of block it was created in
@@ -57,11 +63,6 @@ type UxBody struct {
 
 func (self *UxBody) Hash() SHA256 {
     return SumSHA256(encoder.Serialize(self))
-}
-
-//Hash() is the hash of the UxOut Body
-func (self *UxOut) Hash() SHA256 {
-    return self.Body.Hash()
 }
 
 /*
@@ -86,7 +87,7 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 type UxArray []UxOut
 
 // Returns Array of hashes for the Ux in the UxArray
-func (self UxArray) HashArray() []SHA256 {
+func (self UxArray) Hashes() []SHA256 {
     hashes := make([]SHA256, len(self))
     for i, ux := range self {
         hashes[i] = ux.Hash()
@@ -122,8 +123,6 @@ func (self UxArray) removeDupes() UxArray {
     return deduped
 }
 
-//UxArray sort functionality
-
 func (self UxArray) Sort() {
     sort.Sort(self)
 }
@@ -148,7 +147,7 @@ func (self UxArray) Swap(i, j int) {
 
 // Manages Unspents
 type UnspentPool struct {
-    Arr []UxOut
+    Arr UxArray
     // Points to a UxOut in Arr
     hashIndex map[SHA256]int `enc:"-"`
     // Total running hash
@@ -157,7 +156,7 @@ type UnspentPool struct {
 
 func NewUnspentPool() UnspentPool {
     return UnspentPool{
-        Arr:       make([]UxOut, 0),
+        Arr:       make(UxArray, 0),
         hashIndex: make(map[SHA256]int),
         XorHash:   SHA256{},
     }
@@ -199,6 +198,29 @@ func (self *UnspentPool) Get(h SHA256) (UxOut, bool) {
     } else {
         return UxOut{}, false
     }
+}
+
+// Returns a UxArray for hashes, or error if any not found
+func (self *UnspentPool) GetMultiple(hashes []SHA256) (UxArray, error) {
+    uxia := make(UxArray, len(hashes))
+    for i, _ := range hashes {
+        uxi, exists := self.Get(hashes[i])
+        if !exists {
+            return nil, errors.New("Unspent output does not exist")
+        }
+        uxia[i] = uxi
+    }
+    return uxia, nil
+}
+
+// Checks for hash collisions with existing hashes
+func (self *UnspentPool) Collides(hashes []SHA256) bool {
+    for i, _ := range hashes {
+        if _, ok := self.hashIndex[hashes[i]]; ok {
+            return true
+        }
+    }
+    return false
 }
 
 // Returns true if an unspent exists for this hash
@@ -297,7 +319,7 @@ func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
     }
     uxo := make(AddressUnspents)
     for a, _ := range m {
-        uxo[a] = make([]UxOut, 0)
+        uxo[a] = make(UxArray, 0)
     }
     for _, ux := range self.Arr {
         _, exists := m[ux.Body.Address]

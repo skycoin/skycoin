@@ -358,12 +358,12 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
         // replies with 15 and the other 20, if we did not do this check and
         // the reply with 15 was received first, we would toss the one with 20
         // even though we could process it at the time.
-        if b.Block.Header.BkSeq <= maxSeq {
+        if b.Block.Head.BkSeq <= maxSeq {
             continue
         }
         err := d.Visor.Visor.ExecuteSignedBlock(b)
         if err == nil {
-            logger.Debug("Added new block %d", b.Block.Header.BkSeq)
+            logger.Debug("Added new block %d", b.Block.Head.BkSeq)
             processed++
         } else {
             logger.Info("Failed to execute received block: %v", err)

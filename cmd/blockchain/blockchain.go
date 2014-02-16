@@ -6,10 +6,14 @@ import (
     "flag"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
     "os"
-    //"log"
 )
+
+func init() {
+    util.DisableLogging()
+}
 
 func getBlock(filename string, seq uint64) (coin.Block, error) {
     b := coin.Block{}
@@ -34,7 +38,7 @@ func main() {
         fmt.Fprintln(os.Stderr, err)
     } else {
         if *timestamp {
-            fmt.Println(b.Header.Time)
+            fmt.Println(b.Head.Time)
         } else {
             fmt.Println(b.String())
         }

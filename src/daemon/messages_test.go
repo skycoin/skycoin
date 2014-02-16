@@ -33,7 +33,7 @@ var (
 
 func init() {
     if silenceLogger {
-        logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+        util.DisableLogging()
     }
 }
 

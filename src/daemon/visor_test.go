@@ -37,7 +37,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
     c.Config.IsMaster = false
     c.Config.MasterKeys = mw
     c.Config.MasterKeys.Secret = coin.SecKey{}
-    c.Config.GenesisTimestamp = sb.Block.Header.Time
+    c.Config.GenesisTimestamp = sb.Block.Head.Time
     c.Config.GenesisSignature = sb.Sig
     return c, mv
 }
@@ -99,7 +99,7 @@ func assertFileNotExists(t *testing.T, filename string) {
 func createUnconfirmedTxn() visor.UnconfirmedTxn {
     ut := visor.UnconfirmedTxn{}
     ut.Txn = coin.Transaction{}
-    ut.Txn.Header.Hash = coin.SumSHA256([]byte("cascas"))
+    ut.Txn.Head.Hash = coin.SumSHA256([]byte("cascas"))
     ut.Received = util.Now()
     ut.Checked = ut.Received
     ut.Announced = ut.Received
@@ -935,7 +935,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
     gc.LastSent = util.ZeroTime()
     bb := visor.SignedBlock{
         Block: coin.Block{
-            Header: coin.BlockHeader{
+            Head: coin.BlockHeader{
                 BkSeq: uint64(7),
             }}}
     m = NewGiveBlocksMessage([]visor.SignedBlock{bb})
@@ -1047,7 +1047,7 @@ func TestGetTxnsMessageProcess(t *testing.T) {
     defer shutdown(d)
 
     tx := createUnconfirmedTxn()
-    tx.Txn.Header.Hash = coin.SumSHA256([]byte("asdadwadwada"))
+    tx.Txn.Head.Hash = coin.SumSHA256([]byte("asdadwadwada"))
     txns := []coin.SHA256{tx.Txn.Hash()}
     m := NewGetTxnsMessage(txns)
     m.c = messageContext(addr)

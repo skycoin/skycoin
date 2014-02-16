@@ -4,17 +4,20 @@ package main
 import (
     "flag"
     "fmt"
+    "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
     "os"
 )
 
+func init() {
+    util.DisableLogging()
+}
+
 // Creates a new blockchain with a single genesis block.
 // Returns the visor and signed genesis block
 func createGenesisVisor(masterKeys, bcFile, bsFile string) (*visor.Visor, visor.SignedBlock, error) {
-    we, err := visor.MustLoadWalletEntry(masterKeys)
-    if err != nil {
-        return nil, visor.SignedBlock{}, err
-    }
+    we := visor.MustLoadWalletEntry(masterKeys)
     c := visor.NewVisorConfig()
     c.MasterKeys = we
     c.IsMaster = true
@@ -25,6 +28,8 @@ func createGenesisVisor(masterKeys, bcFile, bsFile string) (*visor.Visor, visor.
 }
 
 func main() {
+    addressVersion := flag.String("address-version", "test",
+        "Address verson to be loaded from -keys")
     masterKeys := flag.String("keys", "master.keys", "Master keys file")
     bcFile := flag.String("bc", "blockchain.bin",
         "Where to write the blockchain to")
@@ -32,6 +37,8 @@ func main() {
         "Where to write the blockchain signatures to")
     help := flag.Bool("help", true, "Display help message after creating")
     flag.Parse()
+
+    coin.SetAddressVersion(*addressVersion)
 
     v, _, err := createGenesisVisor(*masterKeys, *bcFile, *bsFile)
     if err != nil {

@@ -112,14 +112,14 @@ func (self *Wallet) NewTransaction(bc *coin.Blockchain, Address coin.Address, am
 	T.TI = append(T.TI, ti)
 
 	var to coin.TransactionOutput
-	to.DestinationAddress = genesisWallet.Addresses[0].Address
+	to.Address = genesisWallet.Addresses[0].Address
 	to.Value1 = uint64(100*1000000 - wn*1000)
 	T.TO = append(T.TO, to)
 
 	for i := 0; i < wn; i++ {
 		var to coin.TransactionOutput
 		a := WA[i].GetRandom()
-		to.DestinationAddress = a.Address
+		to.Address = a.Address
 		to.Value1 = 1000
 		to.Value2 = 1024
 		T.TO = append(T.TO, to)

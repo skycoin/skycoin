@@ -42,7 +42,7 @@ func (self *BlockchainService) Run() {
         block := self.BC.NewBlock()
         for true {
             time.Sleep(250 * time.Millisecond)
-            if self.BC.Head.Header.Time > uint64(time.Now().Unix()) {
+            if self.BC.Head.Head.Time > uint64(time.Now().Unix()) {
                 continue
             }
         }

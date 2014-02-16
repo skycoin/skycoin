@@ -333,7 +333,7 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     if err := self.verifySignedBlock(&b); err != nil {
         return err
     }
-    if err := self.blockchain.ExecuteBlock(b.Block); err != nil {
+    if _, err := self.blockchain.ExecuteBlock(b.Block); err != nil {
         return err
     }
     // TODO -- save them even if out of order, and execute later
@@ -387,7 +387,7 @@ func (self *Visor) GetGenesisBlock() SignedBlock {
 // Returns the highest BkSeq we know
 func (self *Visor) MostRecentBkSeq() uint64 {
     h := self.blockchain.Head()
-    return h.Header.BkSeq
+    return h.Head.BkSeq
 }
 
 // Returns descriptive coin.Blockchain information
@@ -468,7 +468,7 @@ func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
         bk := self.blockchain.Blocks[ux.Head.BkSeq]
         tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
         if ok {
-            h := mxSeq - bk.Header.BkSeq + 1
+            h := mxSeq - bk.Head.BkSeq + 1
             txns = append(txns, Transaction{
                 Txn:    tx,
                 Status: NewConfirmedTransactionStatus(h),
@@ -511,7 +511,7 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
     for _, b := range self.blockchain.Blocks {
         tx, ok := b.GetTransaction(txHash)
         if ok {
-            height := self.MostRecentBkSeq() - b.Header.BkSeq + 1
+            height := self.MostRecentBkSeq() - b.Head.BkSeq + 1
             return Transaction{
                 Txn:    tx,
                 Status: NewConfirmedTransactionStatus(height),

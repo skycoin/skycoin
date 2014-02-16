@@ -48,7 +48,7 @@ func setupGenesis(t *testing.T) (WalletEntry, coin.Sig, uint64) {
     vc.MasterKeys = we
     v := NewVisor(vc)
     we.Secret = coin.SecKey{}
-    return we, v.blockSigs.Sigs[0], v.blockchain.Blocks[0].Header.Time
+    return we, v.blockSigs.Sigs[0], v.blockchain.Blocks[0].Head.Time
 }
 
 func newGenesisConfig(t *testing.T) VisorConfig {
@@ -129,8 +129,8 @@ func assertSignedBlocks(t *testing.T, v *Visor, sbs []SignedBlock,
     }
     for i, sb := range sbs {
         assert.Nil(t, v.verifySignedBlock(&sb))
-        assert.Equal(t, sb.Sig, v.blockSigs.Sigs[sb.Block.Header.BkSeq])
-        assert.Equal(t, sb.Block.Header.BkSeq, start+uint64(i)+1)
+        assert.Equal(t, sb.Sig, v.blockSigs.Sigs[sb.Block.Head.BkSeq])
+        assert.Equal(t, sb.Block.Head.BkSeq, start+uint64(i)+1)
         assert.Equal(t, v.blockchain.Blocks[start+uint64(i)+1], sb.Block)
     }
 }
@@ -343,7 +343,7 @@ func TestCreateGenesisBlock(t *testing.T) {
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
     assert.Nil(t, v.blockSigs.Verify(vc.MasterKeys.Public, v.blockchain))
     assert.Equal(t, v.Config.GenesisSignature, sb.Sig)
-    assert.Equal(t, v.blockchain.Blocks[0].Header.Time, v.Config.GenesisTimestamp)
+    assert.Equal(t, v.blockchain.Blocks[0].Head.Time, v.Config.GenesisTimestamp)
 
     // Test as master, blockSigs invalid for pubkey
     vc = newMasterVisorConfig(t)
@@ -517,7 +517,7 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Equal(t, v.blockchain.Blocks[1], sb.Block)
     assert.Equal(t, v.blockSigs.Sigs[1], sb.Sig)
     assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
-    assert.Equal(t, sb.Block.Header.Time-v.blockchain.Blocks[0].Header.Time,
+    assert.Equal(t, sb.Block.Head.Time-v.blockchain.Blocks[0].Head.Time,
         vc.BlockCreationInterval)
     rawTxns := v.UnconfirmedTxns.RawTxns()
     for _, tx := range sb.Block.Body.Transactions {
@@ -575,16 +575,16 @@ func TestVisorSpend(t *testing.T) {
     assert.Equal(t, len(tx.In), 1)
     assert.Equal(t, len(tx.Out), 2)
     // Hash should be updated
-    assert.NotEqual(t, tx.Header.Hash, coin.SHA256{})
+    assert.NotEqual(t, tx.Head.Hash, coin.SHA256{})
     // Should be 1 signature for the single input
-    assert.Equal(t, len(tx.Header.Sigs), 1)
+    assert.Equal(t, len(tx.Head.Sigs), 1)
     // Spent amount should be correct
-    assert.Equal(t, tx.Out[1].DestinationAddress, addr)
+    assert.Equal(t, tx.Out[1].Address, addr)
     assert.Equal(t, tx.Out[1].Coins, b.Coins)
     assert.Equal(t, tx.Out[1].Hours, b.Hours)
     // Change amount should be correct
     ourAddr := v.Wallet.GetAddresses()[0]
-    assert.Equal(t, tx.Out[0].DestinationAddress, ourAddr)
+    assert.Equal(t, tx.Out[0].Address, ourAddr)
     assert.Equal(t, tx.Out[0].Coins, ogb.Coins-b.Coins)
     assert.Equal(t, tx.Out[0].Hours, ogb.Hours-b.Hours)
     assert.Nil(t, tx.Verify())
@@ -604,12 +604,12 @@ func TestVisorSpend(t *testing.T) {
     assert.Nil(t, err)
     assert.Equal(t, len(tx.In), 2)
     assert.Equal(t, len(tx.Out), 2)
-    assert.NotEqual(t, tx.Header.Hash, coin.SHA256{})
-    assert.Equal(t, len(tx.Header.Sigs), 2)
-    assert.Equal(t, tx.Out[1].DestinationAddress, addr)
+    assert.NotEqual(t, tx.Head.Hash, coin.SHA256{})
+    assert.Equal(t, len(tx.Head.Sigs), 2)
+    assert.Equal(t, tx.Out[1].Address, addr)
     assert.Equal(t, tx.Out[1].Coins, b.Coins)
     assert.Equal(t, tx.Out[1].Hours, b.Hours)
-    assert.Equal(t, tx.Out[0].DestinationAddress, addrs[1])
+    assert.Equal(t, tx.Out[0].Address, addrs[1])
     assert.Equal(t, tx.Out[0].Coins, uint64(5e6))
     assert.Equal(t, tx.Out[0].Hours, uint64(5))
     assert.Nil(t, tx.Verify())
@@ -630,15 +630,15 @@ func TestVisorSpend(t *testing.T) {
     // assert.Nil(t, err)
     // assert.Equal(t, len(tx.In), 2)
     // assert.Equal(t, len(tx.Out), 3)
-    // assert.NotEqual(t, tx.Header.Hash, coin.SHA256{})
-    // assert.Equal(t, len(tx.Header.Sigs), 3)
-    // assert.Equal(t, tx.Out[2].DestinationAddress, addr)
+    // assert.NotEqual(t, tx.Head.Hash, coin.SHA256{})
+    // assert.Equal(t, len(tx.Head.Sigs), 3)
+    // assert.Equal(t, tx.Out[2].Address, addr)
     // assert.Equal(t, tx.Out[2].Coins, b.Coins)
     // assert.Equal(t, tx.Out[2].Hours, b.Hours)
-    // assert.Equal(t, tx.Out[1].DestinationAddress, addrs[1])
+    // assert.Equal(t, tx.Out[1].Address, addrs[1])
     // assert.Equal(t, tx.Out[1].Coins, uint64(5e6))
     // assert.Equal(t, tx.Out[1].Hours, uint64(0))
-    // assert.Equal(t, tx.Out[0].DestinationAddress, addrs[0])
+    // assert.Equal(t, tx.Out[0].Address, addrs[0])
     // assert.Equal(t, tx.Out[0].Coins, uint64(0))
     // assert.Equal(t, tx.Out[0].Hours, uint64(5))
     // assert.Nil(t, tx.Verify())
@@ -671,7 +671,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     sb, err = v.createBlock()
     assert.Nil(t, err)
     // TODO -- empty BodyHash is being accepted, fix blockchain verification
-    sb.Block.Header.BodyHash = coin.SHA256{}
+    sb.Block.Head.BodyHash = coin.SHA256{}
     sb.Block.Body.Transactions = make(coin.Transactions, 0)
     sb = v.signBlock(sb.Block)
     err = v.ExecuteSignedBlock(sb)
@@ -773,7 +773,7 @@ func TestGetBlockchainMetadata(t *testing.T) {
     bcm := v.GetBlockchainMetadata()
     assert.Equal(t, bcm.Unspents, uint64(9))
     assert.Equal(t, bcm.Unconfirmed, uint64(2))
-    assertReadableBlockHeader(t, bcm.Head, v.blockchain.Head().Header)
+    assertReadableBlockHeader(t, bcm.Head, v.blockchain.Head().Head)
 }
 
 func TestGetReadableBlock(t *testing.T) {

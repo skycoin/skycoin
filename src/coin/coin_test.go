@@ -233,7 +233,7 @@ func TestBlockchain1(t *testing.T) {
 
         for i := 0; i < num_out; i++ {
             var to TransactionOutput
-            to.DestinationAddress = A[rand.Intn(len(A))]
+            to.Address = A[rand.Intn(len(A))]
             to.Coins = vo1[i]
             to.Hours = vo2[i]
             t.TxOut = append(t.TxOut, to)

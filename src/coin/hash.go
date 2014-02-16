@@ -115,7 +115,11 @@ func (a *SHA256) Xor(b SHA256) SHA256 {
 func nextPowerOfTwo(n uint64) uint64 {
     var k uint64 = 1
     for k < n {
+<<<<<<< HEAD
         k *=2
+=======
+        k *= 2
+>>>>>>> new_branch_name
     }
     return k
 }

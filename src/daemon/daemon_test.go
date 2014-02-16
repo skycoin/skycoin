@@ -139,7 +139,7 @@ func TestStart(t *testing.T) {
     assert.NotNil(t, d.Peers)
     assert.NotNil(t, d.DHT)
     assert.NotNil(t, d.Messages)
-    assert.NotNil(t, d.RPC)
+    assert.NotNil(t, d.Gateway)
 }
 
 func TestShutdown(t *testing.T) {
@@ -209,8 +209,8 @@ func TestDaemonLoopApiRequest(t *testing.T) {
     d, quit := setupDaemonLoop()
     defer closeDaemon(d, quit)
     go d.Start(quit)
-    d.RPC.requests <- func() interface{} { return &Connection{Id: 7} }
-    resp := <-d.RPC.responses
+    d.Gateway.requests <- func() interface{} { return &Connection{Id: 7} }
+    resp := <-d.Gateway.responses
     assert.Equal(t, resp.(*Connection).Id, 7)
 }
 

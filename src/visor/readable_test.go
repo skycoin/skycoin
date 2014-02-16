@@ -243,10 +243,9 @@ func TestReadableTransactionOutput(t *testing.T) {
     assertReadableTransactionOutput(t, rto, to)
 }
 
-func assertReadableTransactionInput(t *testing.T,
-    rti ReadableTransactionInput, ti coin.TransactionInput) {
+func assertReadableTransactionInput(t *testing.T, rti string, ti coin.SHA256) {
     assert.NotPanics(t, func() {
-        assert.Equal(t, coin.MustSHA256FromHex(rti.UxOut), ti.UxOut)
+        assert.Equal(t, coin.MustSHA256FromHex(rti), ti)
     })
     assertJSONSerializability(t, &rti)
 }
@@ -257,7 +256,7 @@ func TestReadableTransactionInput(t *testing.T) {
     assert.Nil(t, transferCoins(mv, v))
     b := mv.blockchain.Head()
     ti := b.Body.Transactions[0].In[0]
-    rti := NewReadableTransactionInput(&ti)
+    rti := ti.Hex()
     assertReadableTransactionInput(t, rti, ti)
 }
 

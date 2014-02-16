@@ -505,10 +505,11 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Equal(t, err.Error(), "No transactions")
 
     // Test as master, more txns than allowed
-    vc.TransactionsPerBlock = 2
+    vc.TransactionsPerBlock = 1
     vc.BlockCreationInterval = uint64(101)
     v = NewVisor(vc)
     txns := addValidTxns(t, v, 3)
+    txns.Sort()
     sb, err := v.CreateAndExecuteBlock()
     assert.Nil(t, err)
 
@@ -516,14 +517,16 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Equal(t, len(v.blockSigs.Sigs), 2)
     assert.Equal(t, v.blockchain.Blocks[1], sb.Block)
     assert.Equal(t, v.blockSigs.Sigs[1], sb.Sig)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
+    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 2)
     assert.Equal(t, sb.Block.Head.Time-v.blockchain.Blocks[0].Head.Time,
         vc.BlockCreationInterval)
     rawTxns := v.UnconfirmedTxns.RawTxns()
+    rawTxns.Sort()
     for _, tx := range sb.Block.Body.Transactions {
         assert.NotEqual(t, tx.Hash(), rawTxns[0].Hash())
     }
-    assert.Equal(t, txns[2].Hash(), rawTxns[0].Hash())
+    assert.Equal(t, txns[1].Hash(), rawTxns[0].Hash())
+    assert.Equal(t, txns[2].Hash(), rawTxns[1].Hash())
     assert.Nil(t, v.blockSigs.Verify(v.Config.MasterKeys.Public, v.blockchain))
 
     // No txns, forcing NewBlockFromTransactions to fail

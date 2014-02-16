@@ -1,6 +1,7 @@
 package daemon
 
 import (
+    "github.com/skycoin/encoder"
     "github.com/skycoin/gnet"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
@@ -835,6 +836,13 @@ func TestGetBlocksMessageHandle(t *testing.T) {
     m := NewGetBlocksMessage(uint64(1))
     assert.Equal(t, m.LastBlock, uint64(1))
     testSimpleMessageHandler(t, d, m)
+
+    // Test serialization
+    m = NewGetBlocksMessage(uint64(106))
+    b := encoder.Serialize(m)
+    m2 := GetBlocksMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 }
 
 func TestGetBlocksMessageProcess(t *testing.T) {
@@ -881,6 +889,16 @@ func TestGiveBlocksMessageHandle(t *testing.T) {
     m := NewGiveBlocksMessage(blocks)
     assert.Equal(t, m.Blocks, blocks)
     testSimpleMessageHandler(t, d, m)
+
+    // Test serialization
+    bks, err := makeBlocks(mv, 4)
+    assert.Nil(t, err)
+    blocks = append(blocks, bks...)
+    m = NewGiveBlocksMessage(blocks)
+    b := encoder.Serialize(m)
+    m2 := GiveBlocksMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 }
 
 func TestGiveBlocksMessageProcess(t *testing.T) {
@@ -951,6 +969,13 @@ func TestAnnounceBlocksMessageHandle(t *testing.T) {
     m := NewAnnounceBlocksMessage(uint64(7))
     assert.Equal(t, m.MaxBkSeq, uint64(7))
     testSimpleMessageHandler(t, d, m)
+
+    // Test serialization
+    m = NewAnnounceBlocksMessage(uint64(101))
+    b := encoder.Serialize(m)
+    m2 := AnnounceBlocksMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 }
 
 func TestAnnounceBlocksMessageProcess(t *testing.T) {
@@ -996,6 +1021,18 @@ func TestAnnounceTxnsMessageHandle(t *testing.T) {
     m := NewAnnounceTxnsMessage(txns)
     assert.Equal(t, m.Txns, txns)
     testSimpleMessageHandler(t, d, m)
+
+    // Test serialization
+    tx = createUnconfirmedTxn()
+    txns = append(txns, tx.Txn.Hash())
+    tx = createUnconfirmedTxn()
+    txns = append(txns, tx.Txn.Hash())
+    m = NewAnnounceTxnsMessage(txns)
+    assert.Equal(t, len(m.Txns), 3)
+    b := encoder.Serialize(m)
+    m2 := AnnounceTxnsMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 }
 
 func TestAnnounceTxnsMessageProcess(t *testing.T) {
@@ -1039,6 +1076,18 @@ func TestGetTxnsMessageHandle(t *testing.T) {
     m := NewGetTxnsMessage(txns)
     assert.Equal(t, m.Txns, txns)
     testSimpleMessageHandler(t, d, m)
+
+    // Test serialization
+    tx = createUnconfirmedTxn()
+    txns = append(txns, tx.Txn.Hash())
+    tx = createUnconfirmedTxn()
+    txns = append(txns, tx.Txn.Hash())
+    m = NewGetTxnsMessage(txns)
+    assert.Equal(t, len(m.Txns), 3)
+    b := encoder.Serialize(m)
+    m2 := GetTxnsMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 }
 
 func TestGetTxnsMessageProcess(t *testing.T) {
@@ -1082,6 +1131,18 @@ func TestGiveTxnsMessageHandle(t *testing.T) {
     m := NewGiveTxnsMessage(txns)
     assert.Equal(t, m.Txns, txns)
     testSimpleMessageHandler(t, d, m)
+
+    // Test serialization
+    tx = createUnconfirmedTxn()
+    txns = append(txns, tx.Txn)
+    tx = createUnconfirmedTxn()
+    txns = append(txns, tx.Txn)
+    m = NewGiveTxnsMessage(txns)
+    assert.Equal(t, len(m.Txns), 3)
+    b := encoder.Serialize(m)
+    m2 := GiveTxnsMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 }
 
 func TestGiveTxnsMessageProcess(t *testing.T) {

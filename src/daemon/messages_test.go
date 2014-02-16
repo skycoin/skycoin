@@ -4,6 +4,7 @@ import (
     "bytes"
     "errors"
     "fmt"
+    "github.com/skycoin/encoder"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
     "github.com/skycoin/skycoin/src/util"
@@ -106,6 +107,13 @@ func TestGetPeersMessage(t *testing.T) {
     assert.NotPanics(t, func() { m.Process(d) })
     assert.True(t, m.c.Conn.LastSent.IsZero())
 
+    // Test serialization
+    m = NewGetPeersMessage()
+    b := encoder.Serialize(m)
+    m2 := GetPeersMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
+
     gnet.EraseMessages()
 }
 
@@ -127,6 +135,13 @@ func TestGivePeersMessage(t *testing.T) {
     d.Peers.Config.Disabled = true
     m.Process(d)
     assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
+
+    // Test serialization
+    m = NewGivePeersMessage(peers)
+    b := encoder.Serialize(m)
+    m2 := GivePeersMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 
     // Peers should be added to the pex when processed
     d.Peers.Config.Disabled = false
@@ -165,6 +180,14 @@ func TestIntroductionMessageHandle(t *testing.T) {
     err = m.Handle(mc, d)
     assert.Equal(t, err, DisconnectInvalidVersion)
     assert.False(t, m.valid)
+
+    // Test serialization
+    m = NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
+        d.Pool.Pool.Config.Port)
+    b := encoder.Serialize(m)
+    m2 := IntroductionMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, *m, m2)
 
     // Test already connected
     d.mirrorConnections[m.Mirror] = make(map[string]uint16)
@@ -247,6 +270,13 @@ func TestPingMessage(t *testing.T) {
     // A pong message should have been sent
     assert.False(t, m.c.Conn.LastSent.IsZero())
 
+    // Test serialization
+    mm := PingMessage{}
+    b := encoder.Serialize(mm)
+    m2 := PingMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, mm, m2)
+
     // Failing to send should not cause a panic
     m.c.Conn.Conn = NewFailingConn(addr)
     m.c.Conn.LastSent = util.ZeroTime()
@@ -263,6 +293,14 @@ func TestPongMessage(t *testing.T) {
     // Pongs dont do anything
     assert.Nil(t, m.Handle(messageContext(addr), nil))
     gnet.EraseMessages()
+
+    // Test serialization
+    mm := PongMessage{}
+    b := encoder.Serialize(mm)
+    m2 := PongMessage{}
+    assert.Nil(t, encoder.DeserializeRaw(b, &m2))
+    assert.Equal(t, mm, m2)
+
 }
 
 /* Helpers */

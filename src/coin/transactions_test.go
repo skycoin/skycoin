@@ -24,19 +24,39 @@ func makeTransaction(t *testing.T) Transaction {
     return tx
 }
 
+func makeTransactions(t *testing.T, n int) Transactions {
+    txns := make(Transactions, n)
+    for i, _ := range txns {
+        txns[i] = makeTransaction(t)
+    }
+    return txns
+}
+
 func makeAddress() Address {
     p, _ := GenerateKeyPair()
     return AddressFromPubKey(p)
 }
 
-func manualTransactionsIsSorted(txns Transactions) bool {
+func manualTransactionsIsSorted(t *testing.T, txns Transactions,
+    getFee FeeCalculator) bool {
     isSorted := true
     for i := 0; i < len(txns)-1; i++ {
-        hi := txns[i].Hash()
-        hj := txns[i+1].Hash()
-        if bytes.Compare(hi[:], hj[:]) > 0 {
-            isSorted = false
-            break
+        ifee, err := getFee(&txns[i])
+        assert.Nil(t, err)
+        jfee, err := getFee(&txns[i+1])
+        assert.Nil(t, err)
+        if ifee == jfee {
+            hi := txns[i].Hash()
+            hj := txns[i+1].Hash()
+            if bytes.Compare(hi[:], hj[:]) > 0 {
+                isSorted = false
+                break
+            }
+        } else {
+            if ifee < jfee {
+                isSorted = false
+                break
+            }
         }
     }
     return isSorted
@@ -58,33 +78,33 @@ func TestTransactionVerify(t *testing.T) {
     // Mismatch header hash
     tx := makeTransaction(t)
     tx.Head.Hash = SHA256{}
-    assertError(t, tx.Verify(), "Invalid header hash")
+    assertError(t, tx.Verify(testMaxSize), "Invalid header hash")
 
     // No inputs
     tx = makeTransaction(t)
     tx.In = make([]SHA256, 0)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(), "No inputs")
+    assertError(t, tx.Verify(testMaxSize), "No inputs")
 
     // No outputs
     tx = makeTransaction(t)
     tx.Out = make([]TransactionOutput, 0)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(), "No outputs")
+    assertError(t, tx.Verify(testMaxSize), "No outputs")
 
     // Invalid number of sigs
     tx = makeTransaction(t)
     tx.Head.Sigs = make([]Sig, 0)
-    assertError(t, tx.Verify(), "Invalid number of signatures")
+    assertError(t, tx.Verify(testMaxSize), "Invalid number of signatures")
     tx.Head.Sigs = make([]Sig, 20)
-    assertError(t, tx.Verify(), "Invalid number of signatures")
+    assertError(t, tx.Verify(testMaxSize), "Invalid number of signatures")
 
     // Too many sigs & inputs
     tx = makeTransaction(t)
     tx.Head.Sigs = make([]Sig, math.MaxUint16)
     tx.In = make([]SHA256, math.MaxUint16)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(), "Too many signatures and inputs")
+    assertError(t, tx.Verify(testMaxSize), "Too many signatures and inputs")
 
     // Duplicate inputs
     tx, s := makeTransactionWithSecret(t)
@@ -92,20 +112,19 @@ func TestTransactionVerify(t *testing.T) {
     tx.Head.Sigs = nil
     tx.SignInputs([]SecKey{s, s})
     tx.UpdateHeader()
-    assertError(t, tx.Verify(), "Duplicate spend")
+    assertError(t, tx.Verify(testMaxSize), "Duplicate spend")
 
     // Duplicate outputs
     tx = makeTransaction(t)
     to := tx.Out[0]
     tx.PushOutput(to.Address, to.Coins, to.Hours)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(), "Duplicate output in transaction")
+    assertError(t, tx.Verify(testMaxSize), "Duplicate output in transaction")
 
     // Invalid signature, empty
     tx = makeTransaction(t)
     tx.Head.Sigs[0] = Sig{}
-    assertError(t, tx.Verify(), "Failed to recover public key")
-    // Invalid signature, haKify(), "Invalid transaction signature")
+    assertError(t, tx.Verify(testMaxSize), "Failed to recover public key")
     // We can't check here for other invalid signatures:
     //      - Signatures signed by someone else, spending coins they don't own
     //      - Signature is for wrong hash
@@ -119,21 +138,29 @@ func TestTransactionVerify(t *testing.T) {
     tx.Head.Sigs = nil
     tx.SignInputs([]SecKey{genSecret})
     assert.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
-    assertError(t, tx.Verify(), "Transaction outputs must be multiple of "+
+    assertError(t, tx.Verify(testMaxSize), "Transaction outputs must be multiple of "+
         "1e6 base units")
 
     // Output coins are 0
     tx = makeTransaction(t)
     tx.Out[0].Coins = 0
     tx.UpdateHeader()
-    assertError(t, tx.Verify(), "Zero coin output")
+    assertError(t, tx.Verify(testMaxSize), "Zero coin output")
+
+    // Transaction too large
+    tx = makeTransaction(t)
+    tx.Out[0].Coins = 10e6
+    tx.Out[1].Coins = 1e6
+    tx.UpdateHeader()
+    maxSize := tx.Size()
+    assert.Error(t, tx.Verify(maxSize-1), "Transaction too large")
 
     // Valid
     tx = makeTransaction(t)
     tx.Out[0].Coins = 10e6
     tx.Out[1].Coins = 1e6
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify())
+    assert.Nil(t, tx.Verify(tx.Size()))
 }
 
 func TestTransactionPushInput(t *testing.T) {
@@ -280,52 +307,143 @@ func TestTransactionSerialization(t *testing.T) {
     assert.Panics(t, func() { TransactionDeserialize([]byte{0x04}) })
 }
 
+func TestNewSortableTransactions(t *testing.T) {
+    bc := NewBlockchain()
+    bc.CreateMasterGenesisBlock(genAddress)
+    txns := make(Transactions, 4)
+    for i, _ := range txns {
+        txns[i] = makeTransactionForChainWithFee(t, bc, uint64(i*100))
+    }
+    sTxns := newSortableTransactions(txns, bc.TransactionFee)
+    assert.Equal(t, len(sTxns.Txns), len(txns))
+    assert.Equal(t, len(sTxns.Fees), len(txns))
+    assert.Equal(t, len(sTxns.Hashes), len(txns))
+    for i, tx := range txns {
+        assert.Equal(t, sTxns.Txns[i], tx)
+        assert.Equal(t, sTxns.Hashes[i], tx.Hash())
+        fee, err := bc.TransactionFee(&tx)
+        assert.Nil(t, err)
+        assert.Equal(t, sTxns.Fees[i], (fee*1024)/uint64(tx.Size()))
+    }
+}
+
 func TestTransactionSorting(t *testing.T) {
+    bc := NewBlockchain()
+    bc.CreateMasterGenesisBlock(genAddress)
     txns := make(Transactions, 4)
     for i := 0; i < len(txns); i++ {
-        txns[i] = makeTransaction(t)
+        fee := uint64(0)
+        if i == 0 || i == 2 {
+            fee = uint64(1000)
+        } else {
+            fee = uint64(i * 100)
+        }
+        txns[i] = makeTransactionForChainWithFee(t, bc, fee)
     }
+
+    // TODO -- check that things are actually sorted, and test with something
+    // that has matching fee
 
     // Sort(), IsSorted(), Less()
-    isSorted := manualTransactionsIsSorted(txns)
-    assert.Equal(t, sort.IsSorted(txns), isSorted)
-    assert.Equal(t, txns.IsSorted(), isSorted)
+    isSorted := manualTransactionsIsSorted(t, txns, bc.TransactionFee)
+    sTxns := newSortableTransactions(txns, bc.TransactionFee)
+    for i, _ := range txns {
+        assert.Equal(t, sTxns.Txns[i], txns[i])
+        assert.Equal(t, sTxns.Hashes[i], txns[i].Hash())
+        fee, err := bc.TransactionFee(&txns[i])
+        assert.Nil(t, err)
+        assert.Equal(t, sTxns.Fees[i], (fee*1024)/uint64(txns[i].Size()))
+    }
+
+    assert.Equal(t, sort.IsSorted(sTxns), isSorted)
+    assert.Equal(t, sTxns.IsSorted(), isSorted)
     if isSorted {
         txns[0], txns[1] = txns[1], txns[0]
-        assert.False(t, txns.Less(0, 1))
-        assert.True(t, txns.Less(1, 0))
+        sTxns = newSortableTransactions(txns, bc.TransactionFee)
+        assert.False(t, sTxns.Less(0, 1))
+        assert.True(t, sTxns.Less(1, 0))
     }
-    assert.False(t, manualTransactionsIsSorted(txns))
-    assert.False(t, sort.IsSorted(txns))
-    assert.False(t, txns.IsSorted())
-    txns.Sort()
-    assert.True(t, manualTransactionsIsSorted(txns))
-    assert.True(t, sort.IsSorted(txns))
-    assert.True(t, txns.IsSorted())
-    for i := 0; i < len(txns)-1; i++ {
-        assert.True(t, txns.Less(i, i+1))
-        assert.False(t, txns.Less(i+1, i))
+    sTxns = newSortableTransactions(txns, bc.TransactionFee)
+    assert.False(t, manualTransactionsIsSorted(t, txns, bc.TransactionFee))
+    assert.False(t, sort.IsSorted(sTxns))
+    assert.False(t, sTxns.IsSorted())
+    txns2 := SortTransactions(txns, bc.TransactionFee)
+    assert.True(t, manualTransactionsIsSorted(t, txns2, bc.TransactionFee))
+    sTxns = newSortableTransactions(txns2, bc.TransactionFee)
+    assert.True(t, sort.IsSorted(sTxns))
+    assert.True(t, sTxns.IsSorted())
+    for i := 0; i < len(txns2)-1; i++ {
+        assert.True(t, sTxns.Less(i, i+1))
+        assert.False(t, sTxns.Less(i+1, i))
     }
+
+    // Check that sorting works
+    sTxns = newSortableTransactions(txns, bc.TransactionFee)
+    sTxns.Sort()
+    hashChecked := false
+    for i, _ := range txns[:len(txns)-1] {
+        j := i + 1
+        assert.True(t, sTxns.Fees[i] >= sTxns.Fees[j])
+        if sTxns.Fees[i] == sTxns.Fees[j] {
+            hashChecked = true
+            cmp := bytes.Compare(sTxns.Hashes[i][:], sTxns.Hashes[j][:])
+            assert.True(t, cmp < 0)
+        }
+    }
+    assert.True(t, hashChecked)
 
     // Len()
-    assert.Equal(t, len(txns), txns.Len())
-    assert.Equal(t, 4, txns.Len())
+    assert.Equal(t, len(txns), sTxns.Len())
+    assert.Equal(t, len(sTxns.Txns), sTxns.Len())
+    assert.Equal(t, len(sTxns.Fees), sTxns.Len())
+    assert.Equal(t, len(sTxns.Hashes), sTxns.Len())
+    assert.Equal(t, 4, sTxns.Len())
 
     // Swap()
-    tx1 := txns[0]
-    tx2 := txns[1]
-    txns.Swap(0, 1)
-    assert.Equal(t, txns[0], tx2)
-    assert.Equal(t, txns[1], tx1)
-    txns.Swap(0, 1)
-    assert.Equal(t, txns[0], tx1)
-    assert.Equal(t, txns[1], tx2)
-    txns.Swap(1, 0)
-    assert.Equal(t, txns[0], tx2)
-    assert.Equal(t, txns[1], tx1)
-    txns.Swap(1, 0)
-    assert.Equal(t, txns[0], tx1)
-    assert.Equal(t, txns[1], tx2)
+    tx1 := sTxns.Txns[0]
+    tx2 := sTxns.Txns[1]
+    fee1 := sTxns.Fees[0]
+    fee2 := sTxns.Fees[1]
+    hash1 := sTxns.Hashes[0]
+    hash2 := sTxns.Hashes[1]
+    sTxns.Swap(0, 1)
+    assert.Equal(t, sTxns.Txns[0], tx2)
+    assert.Equal(t, sTxns.Txns[1], tx1)
+    assert.Equal(t, sTxns.Fees[0], fee2)
+    assert.Equal(t, sTxns.Fees[1], fee1)
+    assert.Equal(t, sTxns.Hashes[0], hash2)
+    assert.Equal(t, sTxns.Hashes[1], hash1)
+    sTxns.Swap(0, 1)
+    assert.Equal(t, sTxns.Txns[0], tx1)
+    assert.Equal(t, sTxns.Txns[1], tx2)
+    assert.Equal(t, sTxns.Fees[0], fee1)
+    assert.Equal(t, sTxns.Fees[1], fee2)
+    assert.Equal(t, sTxns.Hashes[0], hash1)
+    assert.Equal(t, sTxns.Hashes[1], hash2)
+    sTxns.Swap(1, 0)
+    assert.Equal(t, sTxns.Txns[0], tx2)
+    assert.Equal(t, sTxns.Txns[1], tx1)
+    assert.Equal(t, sTxns.Fees[0], fee2)
+    assert.Equal(t, sTxns.Fees[1], fee1)
+    assert.Equal(t, sTxns.Hashes[0], hash2)
+    assert.Equal(t, sTxns.Hashes[1], hash1)
+    sTxns.Swap(1, 0)
+    assert.Equal(t, sTxns.Txns[0], tx1)
+    assert.Equal(t, sTxns.Txns[1], tx2)
+    assert.Equal(t, sTxns.Fees[0], fee1)
+    assert.Equal(t, sTxns.Fees[1], fee2)
+    assert.Equal(t, sTxns.Hashes[0], hash1)
+    assert.Equal(t, sTxns.Hashes[1], hash2)
+
+    // SortTransaction()
+    sTxns.Sort()
+    assert.True(t, sTxns.IsSorted())
+    assert.NotEqual(t, txns, sTxns.Txns)
+    txns2 = SortTransactions(txns, bc.TransactionFee)
+    assert.Equal(t, sTxns.Txns, txns2)
+    sTxns2 := newSortableTransactions(txns2, bc.TransactionFee)
+    assert.True(t, sTxns2.IsSorted())
+    assert.Equal(t, sTxns, sTxns2)
 }
 
 func TestTransactionsHashes(t *testing.T) {
@@ -338,6 +456,54 @@ func TestTransactionsHashes(t *testing.T) {
     for i, h := range hashes {
         assert.Equal(t, h, txns[i].Hash())
     }
+}
+
+func TestTransactionsTruncateBytesTo(t *testing.T) {
+    txns := makeTransactions(t, 10)
+    trunc := 0
+    for i := 0; i < len(txns)/2; i++ {
+        trunc += txns[i].Size()
+    }
+    // Truncating halfway
+    txns2 := txns.TruncateBytesTo(trunc)
+    assert.Equal(t, len(txns2), len(txns)/2)
+    assert.Equal(t, txns2.Size(), trunc)
+
+    // Stepping into next boundary has same cutoff, must exceed
+    trunc += 1
+    txns2 = txns.TruncateBytesTo(trunc)
+    assert.Equal(t, len(txns2), len(txns)/2)
+    assert.Equal(t, txns2.Size(), trunc-1)
+
+    // Moving to 1 before next level
+    trunc += txns[5].Size() - 2
+    txns2 = txns.TruncateBytesTo(trunc)
+    assert.Equal(t, len(txns2), len(txns)/2)
+    assert.Equal(t, txns2.Size(), trunc-txns[5].Size()+1)
+
+    // Moving to next level
+    trunc += 1
+    txns2 = txns.TruncateBytesTo(trunc)
+    assert.Equal(t, len(txns2), len(txns)/2+1)
+    assert.Equal(t, txns2.Size(), trunc)
+
+    // Truncating to full available amt
+    trunc = txns.Size()
+    txns2 = txns.TruncateBytesTo(trunc)
+    assert.Equal(t, txns, txns2)
+    assert.Equal(t, txns2.Size(), trunc)
+
+    // Truncating over amount
+    trunc += 1
+    txns2 = txns.TruncateBytesTo(trunc)
+    assert.Equal(t, txns, txns2)
+    assert.Equal(t, txns2.Size(), trunc-1)
+
+    // Truncating to 0
+    trunc = 0
+    txns2 = txns.TruncateBytesTo(0)
+    assert.Equal(t, len(txns2), 0)
+    assert.Equal(t, txns2.Size(), trunc)
 }
 
 func TestFullTransaction(t *testing.T) {
@@ -355,11 +521,11 @@ func TestFullTransaction(t *testing.T) {
     tx.PushOutput(a2, 5e6, 100)
     tx.SignInputs([]SecKey{s1})
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify())
-    assert.Nil(t, bc.VerifyTransaction(tx))
-    b, err := bc.NewBlockFromTransactions(Transactions{tx}, 10)
+    assert.Nil(t, tx.Verify(testMaxSize))
+    assert.Nil(t, bc.VerifyTransaction(tx, testMaxSize))
+    b, err := bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
     assert.Nil(t, err)
-    _, err = bc.ExecuteBlock(b)
+    _, err = bc.ExecuteBlock(b, testMaxSize)
     assert.Nil(t, err)
 
     txo := CreateExpectedUnspents(tx)
@@ -380,10 +546,10 @@ func TestFullTransaction(t *testing.T) {
     tx.PushOutput(a1, ux.Body.Coins-10e6, 100)
     tx.SignInputs([]SecKey{s1, s2, s2})
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify())
-    assert.Nil(t, bc.VerifyTransaction(tx))
-    b, err = bc.NewBlockFromTransactions(Transactions{tx}, 10)
+    assert.Nil(t, tx.Verify(testMaxSize))
+    assert.Nil(t, bc.VerifyTransaction(tx, testMaxSize))
+    b, err = bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
     assert.Nil(t, err)
-    _, err = bc.ExecuteBlock(b)
+    _, err = bc.ExecuteBlock(b, testMaxSize)
     assert.Nil(t, err)
 }

@@ -551,7 +551,7 @@ func TestUnspentGetMultiple(t *testing.T) {
     txn.PushOutput(genAddress, ux0.Body.Coins+ux1.Body.Coins, ux0.Body.Hours)
     txn.SignInputs([]SecKey{genSecret, genSecret})
     txn.UpdateHeader()
-    assert.Nil(t, txn.Verify())
+    assert.Nil(t, txn.Verify(testMaxSize))
     txin, err = unspent.GetMultiple(txn.In)
     assert.Nil(t, err)
     assert.Equal(t, len(txin), 2)

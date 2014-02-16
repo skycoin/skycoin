@@ -104,6 +104,11 @@ func (self *Block) UpdateHeader() {
     self.Head.BodyHash = self.HashBody()
 }
 
+// Returns the size of the Block's Transactions, in bytes
+func (self *Block) Size() int {
+    return self.Body.Size()
+}
+
 func (self *Block) String() string {
     return self.Head.String()
 }
@@ -157,6 +162,13 @@ func (self *BlockBody) Hash() SHA256 {
     }
     // Merkle hash of transactions
     return Merkle(hashes)
+}
+
+// Returns the size of Transactions, in bytes
+func (self *BlockBody) Size() int {
+    // We can't use length of self.Bytes() because it has a length prefix
+    // Need only the sum of transaction sizes
+    return self.Transactions.Size()
 }
 
 func (self *BlockBody) Bytes() []byte {
@@ -227,17 +239,20 @@ func (self *Blockchain) Time() uint64 {
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
-    creationInterval uint64) (Block, error) {
+    creationInterval uint64, maxByteSize int) (Block, error) {
     if creationInterval == 0 {
         log.Panic("Creation interval must be > 0")
     }
     b := newBlock(self.Head(), creationInterval)
-    newtxns := self.arbitrateTransactions(txns)
-    if len(newtxns) == 0 {
+    newTxns := self.arbitrateTransactions(txns, maxByteSize)
+    // Restrict txns by size
+    newTxns = newTxns.TruncateBytesTo(maxByteSize)
+    if len(newTxns) == 0 {
         return Block{}, errors.New("No valid transactions")
     }
-    b.Body.Transactions = newtxns
-    fee, err := self.TransactionFees(newtxns)
+
+    b.Body.Transactions = newTxns
+    fee, err := self.TransactionFees(newTxns)
     if err != nil {
         // This should have been caught by arbitrateTransactions
         log.Panicf("Invalid transaction fees: %v", err)
@@ -248,9 +263,10 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
 }
 
 // Attempts to append block to blockchain
-func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
+func (self *Blockchain) ExecuteBlock(b Block,
+    maxByteSize int) (UxArray, error) {
     var uxs UxArray = nil
-    err := self.VerifyBlock(&b)
+    err := self.VerifyBlock(&b, maxByteSize)
     if err != nil {
         return uxs, err
     }
@@ -272,11 +288,14 @@ func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
 }
 
 // Verifies the BlockHeader and BlockBody
-func (self *Blockchain) VerifyBlock(b *Block) error {
+func (self *Blockchain) VerifyBlock(b *Block, maxSize int) error {
     if err := verifyBlockHeader(self.Head(), b); err != nil {
         return err
     }
-    err := self.verifyTransactions(b.Body.Transactions)
+    if b.Size() > maxSize {
+        return errors.New("Block too large")
+    }
+    err := self.verifyTransactions(b.Body.Transactions, maxSize)
     if err != nil {
         return err
     }
@@ -286,7 +305,7 @@ func (self *Blockchain) VerifyBlock(b *Block) error {
 // Checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
-func (self *Blockchain) VerifyTransaction(tx Transaction) error {
+func (self *Blockchain) VerifyTransaction(tx Transaction, maxSize int) error {
     //CHECKLIST: DONE: check for duplicate ux inputs/double spending
     //CHECKLIST: DONE: check that inputs of transaction have not been spent
     //CHECKLIST: DONE: check there are no duplicate outputs
@@ -305,7 +324,7 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     // Check for non 1e6 multiple coin outputs
     // Check for zero coin outputs
     // Check valid looking signatures
-    if err := tx.Verify(); err != nil {
+    if err := tx.Verify(maxSize); err != nil {
         return err
     }
 
@@ -357,7 +376,7 @@ func CreateExpectedUnspents(tx Transaction) UxArray {
 func (self *Blockchain) TransactionFees(txns Transactions) (uint64, error) {
     total := uint64(0)
     for i, _ := range txns {
-        fee, err := self.transactionFee(&txns[i])
+        fee, err := self.TransactionFee(&txns[i])
         if err != nil {
             return 0, err
         }
@@ -382,21 +401,20 @@ func Now() uint64 {
 // firstFalse is false, if there is no way to filter the txns into a valid
 // array, i.e. processTransactions(processTransactions(txn, false), true)
 // should not result in an error, unless all txns are invalid.
-func (self *Blockchain) processTransactions(txns Transactions,
-    firstFail bool) (Transactions, error) {
-    //TODO: audit
-    // If there are no transactions, a block should not be made
-    if len(txns) == 0 {
-        if firstFail {
-            return nil, errors.New("No transactions")
-        } else {
-            return txns, nil
-        }
+func (self *Blockchain) processTransactions(txns Transactions, maxSize int,
+    arbitrating bool) (Transactions, error) {
+    // Transactions need to be sorted by fee and hash before arbitrating
+    if arbitrating {
+        txns = SortTransactions(txns, self.TransactionFee)
     }
-
-    // Transactions must be sorted, so we can have deterministic filtering
-    if !txns.IsSorted() {
-        return nil, errors.New("Transactions not sorted")
+    //TODO: audit
+    if len(txns) == 0 {
+        if arbitrating {
+            return txns, nil
+        } else {
+            // If there are no transactions, a block should not be made
+            return nil, errors.New("No transactions")
+        }
     }
 
     skip := make(map[int]byte)
@@ -404,13 +422,13 @@ func (self *Blockchain) processTransactions(txns Transactions,
     for i, tx := range txns {
         // Check the transaction against itself.  This covers the hash,
         // signature indices and duplicate spends within itself
-        err := self.VerifyTransaction(tx)
+        err := self.VerifyTransaction(tx, maxSize)
         if err != nil {
-            if firstFail {
-                return nil, err
-            } else {
+            if arbitrating {
                 skip[i] = byte(1)
                 continue
+            } else {
+                return nil, err
             }
         }
         // Check that each pending unspent will be unique
@@ -424,12 +442,12 @@ func (self *Blockchain) processTransactions(txns Transactions,
             h := uxb.Hash()
             _, exists := uxHashes[h]
             if exists {
-                if firstFail {
-                    m := "Duplicate unspent output across transactions"
-                    return nil, errors.New(m)
-                } else {
+                if arbitrating {
                     skip[i] = byte(1)
                     continue
+                } else {
+                    m := "Duplicate unspent output across transactions"
+                    return nil, errors.New(m)
                 }
             }
             if DebugLevel1 {
@@ -437,12 +455,12 @@ func (self *Blockchain) processTransactions(txns Transactions,
                 // This should never happen, and is also check by
                 // VerifyTransaction
                 if self.Unspent.Has(h) {
-                    if firstFail {
-                        m := "Output hash is in the UnspentPool"
-                        return nil, errors.New(m)
-                    } else {
+                    if arbitrating {
                         skip[i] = byte(1)
                         continue
+                    } else {
+                        m := "Output hash is in the UnspentPool"
+                        return nil, errors.New(m)
                     }
                 }
             }
@@ -485,14 +503,15 @@ func (self *Blockchain) processTransactions(txns Transactions,
             for a, _ := range s.In {
                 for b, _ := range t.In {
                     if s.In[a] == t.In[b] {
-                        if firstFail {
+                        if arbitrating {
+                            // The txn with the highest fee and lowest hash
+                            // is chosen when attempting a double spend.
+                            // Since the txns are sorted, we skip the 2nd
+                            // iterable
+                            skip[j] = byte(1)
+                        } else {
                             m := "Cannot spend output twice in the same block"
                             return nil, errors.New(m)
-                        } else {
-                            // The txn with the lowest hash is chosen when
-                            // attempting a double spend. Since the txns
-                            // are sorted, we skip the 2nd iterable
-                            skip[j] = byte(1)
                         }
                     }
                 }
@@ -517,17 +536,19 @@ func (self *Blockchain) processTransactions(txns Transactions,
 }
 
 // Returns an error if any Transaction in txns is invalid
-func (self *Blockchain) verifyTransactions(txns Transactions) error {
+func (self *Blockchain) verifyTransactions(txns Transactions,
+    maxSize int) error {
     // TODO - Check special case for genesis block
-    _, err := self.processTransactions(txns, true)
+    _, err := self.processTransactions(txns, maxSize, false)
     return err
 }
 
 // Returns an array of Transactions with invalid ones removed from txns.
 // The Transaction hash is used to arbitrate between double spends.
 // txns must be sorted by hash.
-func (self *Blockchain) arbitrateTransactions(txns Transactions) Transactions {
-    newtxns, err := self.processTransactions(txns, false)
+func (self *Blockchain) arbitrateTransactions(txns Transactions,
+    maxSize int) Transactions {
+    newtxns, err := self.processTransactions(txns, maxSize, true)
     if err != nil {
         log.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
     }
@@ -535,7 +556,7 @@ func (self *Blockchain) arbitrateTransactions(txns Transactions) Transactions {
 }
 
 // Calculates the current transaction fee in coinhours of a Transaction
-func (self *Blockchain) transactionFee(t *Transaction) (uint64, error) {
+func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
     headTime := self.Time()
     inHours := uint64(0)
     // Compute input hours

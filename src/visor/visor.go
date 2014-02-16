@@ -9,7 +9,6 @@ import (
     "io/ioutil"
     "log"
     "os"
-    "sort"
     "time"
 )
 
@@ -35,8 +34,8 @@ type VisorConfig struct {
     UnconfirmedMaxAge time.Duration
     // How often to refresh the unconfirmed pool
     UnconfirmedRefreshRate time.Duration
-    // Maximum number of transactions per block, when creating
-    TransactionsPerBlock int
+    // Maximum size of a block, in bytes.
+    MaxBlockSize int
     // Where the blockchain is saved
     BlockchainFile string
     // Where the block signatures are saved
@@ -62,7 +61,7 @@ func NewVisorConfig() VisorConfig {
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
         UnconfirmedRefreshRate:   time.Minute * 30,
-        TransactionsPerBlock:     1000, // 1000/15 = 66tps. Bitcoin is 7tps
+        MaxBlockSize:             1024 * 1024 * 32,
         BlockchainFile:           "",
         BlockSigsFile:            "",
         MasterKeys:               WalletEntry{},
@@ -181,7 +180,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
-    self.UnconfirmedTxns.Refresh(self.blockchain,
+    self.UnconfirmedTxns.Refresh(self.blockchain, self.Config.MaxBlockSize,
         self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
 }
 
@@ -233,17 +232,8 @@ func (self *Visor) createBlock() (SignedBlock, error) {
         return sb, errors.New("No transactions")
     }
     txns := self.UnconfirmedTxns.RawTxns()
-    // TODO -- transactions should be sorted by tx fee first, then hash to
-    // arbitrate between conflicting txns
-    // TODO -- prefiltering # of blocks conflicts with arbitration.  We need
-    // to let blockchain do all the sorting and checks.
-    sort.Sort(txns)
-    nTxns := len(txns)
-    if nTxns > self.Config.TransactionsPerBlock {
-        txns = txns[:self.Config.TransactionsPerBlock]
-    }
     b, err := self.blockchain.NewBlockFromTransactions(txns,
-        self.Config.BlockCreationInterval)
+        self.Config.BlockCreationInterval, self.Config.MaxBlockSize)
     if err != nil {
         return sb, err
     }
@@ -333,7 +323,8 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     if err := self.verifySignedBlock(&b); err != nil {
         return err
     }
-    if _, err := self.blockchain.ExecuteBlock(b.Block); err != nil {
+    _, err := self.blockchain.ExecuteBlock(b.Block, self.Config.MaxBlockSize)
+    if err != nil {
         return err
     }
     // TODO -- save them even if out of order, and execute later
@@ -454,7 +445,7 @@ func (self *Visor) RecordTxn(txn coin.Transaction, didAnnounce bool) error {
         entries[a] = byte(1)
     }
     return self.UnconfirmedTxns.RecordTxn(self.blockchain, txn,
-        entries, didAnnounce)
+        entries, didAnnounce, self.Config.MaxBlockSize)
 }
 
 // Returns the Transactions whose unspents give coins to a coin.Address.

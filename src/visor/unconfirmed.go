@@ -49,8 +49,9 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 
 // Adds a coin.Transaction to the pool
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
-    if err := bc.VerifyTransaction(t); err != nil {
+    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool,
+    maxSize int) error {
+    if err := bc.VerifyTransaction(t, maxSize); err != nil {
         return err
     }
     now := util.Now()
@@ -151,7 +152,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
-func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, maxSize int,
     checkPeriod, maxAge time.Duration) {
     now := util.Now()
     toRemove := make([]coin.SHA256, 0)
@@ -159,7 +160,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
         if now.Sub(t.Received) >= maxAge {
             toRemove = append(toRemove, k)
         } else if now.Sub(t.Checked) >= checkPeriod {
-            if bc.VerifyTransaction(t.Txn) == nil {
+            if bc.VerifyTransaction(t.Txn, maxSize) == nil {
                 t.Checked = now
                 self.Txns[k] = t
             } else {

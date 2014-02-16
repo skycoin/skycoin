@@ -32,7 +32,7 @@ type TransactionOutput struct {
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
-func (self *Transaction) Verify() error {
+func (self *Transaction) Verify(maxSize int) error {
     h := self.hashInner()
     if h != self.Head.Hash {
         return errors.New("Invalid header hash")
@@ -51,6 +51,11 @@ func (self *Transaction) Verify() error {
     }
     if len(self.Head.Sigs) >= math.MaxUint16 {
         return errors.New("Too many signatures and inputs")
+    }
+
+    // Transaction are size limited
+    if self.Size() > maxSize {
+        return errors.New("Transaction too large")
     }
 
     // Check duplicate inputs
@@ -151,11 +156,21 @@ func (self *Transaction) SignInputs(keys []SecKey) {
     }
 }
 
+// Returns the encoded byte size of the transaction
+func (self *Transaction) Size() int {
+    return len(self.Serialize())
+}
+
 // Hashes an entire Transaction struct, including the TransactionHeader
 func (self *Transaction) Hash() SHA256 {
-    // TODO -- don't use encoder to serialize, in case it needs to change
-    b1 := encoder.Serialize(*self)
-    return SumDoubleSHA256(b1)
+    b := self.Serialize()
+    return SumDoubleSHA256(b)
+}
+
+// Returns the encoded size and the hash of it (avoids duplicate encoding)
+func (self *Transaction) SizeHash() (int, SHA256) {
+    b := self.Serialize()
+    return len(b), SumDoubleSHA256(b)
 }
 
 // Saves the txn body hash to TransactionHeader.Hash
@@ -195,25 +210,100 @@ func (self Transactions) Hashes() []SHA256 {
     return hashes
 }
 
-func (self Transactions) Sort() {
+// Returns the sum of contained Transactions' sizes.  It is not the size if
+// serialized, since that would have a length prefix.
+func (self Transactions) Size() int {
+    size := 0
+    for i, _ := range self {
+        size += self[i].Size()
+    }
+    return size
+}
+
+func (self Transactions) TruncateBytesTo(size int) Transactions {
+    total := 0
+    max := 0
+    for i, _ := range self {
+        pending := self[i].Size()
+        if total+pending > size {
+            break
+        }
+        total += pending
+        max++
+    }
+    return self[:max]
+}
+
+// Allows sorting transactions by fee & hash
+type SortableTransactions struct {
+    Txns   Transactions
+    Fees   []uint64
+    Hashes []SHA256
+}
+
+type FeeCalculator func(*Transaction) (uint64, error)
+
+// Returns transactions sorted by fee per kB, and sorted by lowest hash if
+// tied.  Transactions that fail in fee computation are excluded.
+func SortTransactions(txns Transactions,
+    feeCalc FeeCalculator) Transactions {
+    sorted := newSortableTransactions(txns, feeCalc)
+    sorted.Sort()
+    return sorted.Txns
+}
+
+// Returns an array of txns that can be sorted by fee.  On creation, fees are
+// calculated, and if any txns have invalid fee, there are removed from
+// consideration
+func newSortableTransactions(txns Transactions,
+    feeCalc FeeCalculator) SortableTransactions {
+    newTxns := make(Transactions, len(txns))
+    fees := make([]uint64, len(txns))
+    hashes := make([]SHA256, len(txns))
+    j := 0
+    for i, _ := range txns {
+        fee, err := feeCalc(&txns[i])
+        if err == nil {
+            newTxns[j] = txns[i]
+            size := 0
+            size, hashes[j] = txns[i].SizeHash()
+            // Calculate fee priority based on fee per kb
+            fees[j] = (fee * 1024) / uint64(size)
+            j++
+        }
+    }
+    return SortableTransactions{
+        Txns:   newTxns[:j],
+        Fees:   fees[:j],
+        Hashes: hashes[:j],
+    }
+}
+
+// Sorts by tx fee, and then by hash if fee equal
+func (self SortableTransactions) Sort() {
     sort.Sort(self)
 }
 
-func (self Transactions) IsSorted() bool {
+func (self SortableTransactions) IsSorted() bool {
     return sort.IsSorted(self)
 }
 
-func (self Transactions) Len() int {
-    return len(self)
+func (self SortableTransactions) Len() int {
+    return len(self.Txns)
 }
 
-func (self Transactions) Less(i, j int) bool {
-    // TODO -- cache hash value on the Transaction itself. Subdue the encoder
-    ih := self[i].Hash()
-    jh := self[j].Hash()
-    return bytes.Compare(ih[:], jh[:]) < 0
+// Default sorting is fees descending, hash ascending if fees equal
+func (self SortableTransactions) Less(i, j int) bool {
+    if self.Fees[i] == self.Fees[j] {
+        // If fees match, hashes are sorted ascending
+        return bytes.Compare(self.Hashes[i][:], self.Hashes[j][:]) < 0
+    }
+    // Fees are sorted descending
+    return self.Fees[i] > self.Fees[j]
 }
 
-func (self Transactions) Swap(i, j int) {
-    self[i], self[j] = self[j], self[i]
+func (self SortableTransactions) Swap(i, j int) {
+    self.Txns[i], self.Txns[j] = self.Txns[j], self.Txns[i]
+    self.Fees[i], self.Fees[j] = self.Fees[j], self.Fees[i]
+    self.Hashes[i], self.Hashes[j] = self.Hashes[j], self.Hashes[i]
 }

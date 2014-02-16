@@ -18,14 +18,10 @@ var (
 )
 
 // Note: can use testnetpubkey as genesis address
-var (
-    genesis_address = "26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p"
-    testnet_pubkey_hex = "025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b"
-    mainnet_pubkey_hex = "02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99"
-)
 
 type GenesisBlockCfg {
     GenesisAddress coin.Address
+    GenesisSignature coin.Sig
     GenesisTime uint64
     PubKey coin.PubKey
     Coins uint64
@@ -36,17 +32,21 @@ var SkyNet GenesisBlockCfg //main blockchain
 
 //testnet config
 func init() {
+    TestNet.PubKey = coin.MustPubKeyFromHex("025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b")
+    //TestNet.GenesisSignature = coin.MustSigFromHex()
     TestNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
     TestNet.GenesisTime = 1392584986 //set time
-    TestNet.PubKey = coin.MustPubKeyFromHex("025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b")
     TestNet.Coins = 1e12 //almost as many as Ripple
+    //TestNet.GenesisSignature = coin.MustSigFromHex()
+
 }
 
 //main net config
 func init() {
+    SkyNet.PubKey = coin.MustPubKeyFromHex("02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99")
+    //TestNet.GenesisSignature = coin.MustSigFromHex()
     SkyNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
     SkyNet.GenesisTime = 1392584987 //set time
-    SkyNet.PubKey = coin.MustPubKeyFromHex("02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99")
     SkyNet.Coins = 100e6 //100 million
 }
 
@@ -69,7 +69,7 @@ type BlockchainConfig struct {
     // How often to refresh the unconfirmed pool
     
     UnconfirmedRefreshRate time.Duration
-     Maximum number of transactions per block, when creating
+    //Maximum number of transactions per block, when creating
     TransactionsPerBlock int
     
     // Where the blockchain is saved
@@ -168,6 +168,7 @@ func NewBlockchain(c BlockchainConfig) *Blockchain {
 
     }
 
+/*
     // Load the blockchain the block signatures
     blockchain := loadBlockchain(c.BlockchainFile)
     blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
@@ -194,7 +195,7 @@ func NewBlockchain(c BlockchainConfig) *Blockchain {
     if err != nil {
         log.Panicf("Invalid block signatures: %v", err)
     }
-
+*/
     return v
 }
 

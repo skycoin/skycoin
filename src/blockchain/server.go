@@ -49,6 +49,7 @@ func (self *Server) Start() {
 
 		if t + 15 < time.Now.Unix() {
 			time.Sleep(50)
+            continue
 		}
 
         //create block

@@ -37,14 +37,17 @@ type Server struct {
 }
 
 func NewServer(c ServerConfig) *Blockchain {
+    //var v *Blockchain.Blockchain = nil
+    //if !c.Disabled {
+    //    v = Blockchain.NewBlockchain(c.Config)
+    //}
+    
     var v *Blockchain.Blockchain = nil
-    if !c.Disabled {
-        v = Blockchain.NewBlockchain(c.Config)
-    }
+    v = NewLocalBlockchain()
+
     return &Blockchain{
         Config:            c,
-        Blockchain:             v,
-        blockchainLengths: make(map[string]uint64),
+        Blockchain: v,
     }
 }
 
@@ -68,7 +71,7 @@ func (self *Server) Start() {
             continue
         }
 
-        
+
         bc.RefreshUnconfirmed()
 
 	}

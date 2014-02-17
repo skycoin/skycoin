@@ -73,7 +73,6 @@ func (self *Blockchain) SetBlockchainSecKey(seed string) {
     self.SecKey = sec
 }
 
-//Note, put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
 func NewBlockchain() Blockchain {
@@ -150,34 +149,23 @@ func (self *Blockchain) RefreshUnconfirmed() {
 //InjectTransaction makes the blockchain server aware of raw transactions
 //InjectTransaction inserts the transaction into the unconfirmed set
 func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
-
-    //should not be doing verification here
-    //verification against blockchain will fail if user creates
-    //output that spends outputs created by unspent transctions
-    //should check signature validity
-
-    //check validity at basic level, but not against ux set
+    //strict filter would disallow transactions that cant be executed from unspent output set
     if err := self.blockchain.VerifyTransaction(t); err != nil {
         return err
     }
-
     self.UnconfirmedTxns.RecordTxn(txn, didAnnounce)
 }
 
 
 // Creates a SignedBlock from pending transactions
-func (self *Blockchain) CreateBlock(SignedBlock, error) {
+func (self *Blockchain) CreateBlock(coin.Block, error) {
     //var sb SignedBlock
     if self.Config.SecKey == {} {
         log.Panic("Only master chain can create blocks")
     }
 
     txns := self.UnconfirmedTxns.RawTxns()
-
     //TODO: sort by arrival time/announce time
-    sort.Sort(txns) //sort by priority and arrival time
-    nTxns := len(txns)
-
     //TODO: filter valid first
     if nTxns > self.Config.TransactionsPerBlock {
         txns = txns[:self.Config.TransactionsPerBlock]
@@ -190,6 +178,18 @@ func (self *Blockchain) CreateBlock(SignedBlock, error) {
     return b, err
 }
 
+// Signs a block for master.  Will panic if anything is invalid
+func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
+    if !self.Config.IsMaster {
+        log.Panic("Only master chain can sign blocks")
+    }
+    sig := coin.SignHash(b.HashHeader(), self.Config.SecKey)
+    sb := SignedBlock{
+        Block: b,
+        Sig:   sig,
+    }
+    return sb
+}
 
 //InjectBLock inputs a new block and applies it against the block chain
 // state if it is valid
@@ -213,47 +213,15 @@ func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
 }
 
 
-// Should only need 1 block at time
-// Returns N signed blocks more recent than Seq. Does not return nil.
-
-
-func (self *Blockchain) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
-    var avail uint64 = 0
-    if self.blockSigs.MaxSeq > seq {
-        avail = self.blockSigs.MaxSeq - seq
-    }
-    if avail < ct {
-        ct = avail
-    }
-    if ct == 0 {
-        return []SignedBlock{}
-    }
-    blocks := make([]SignedBlock, 0, ct)
-    for j := uint64(0); j < ct; j++ {
-        i := seq + 1 + j
-        blocks = append(blocks, SignedBlock{
-            Sig:   self.blockSigs.Sigs[i],
-            Block: self.blockchain.Blocks[i],
-        })
-    }
-    return blocks
-}
-
-
 // Returns the signed genesis block. Panics if signature or block not found
 func (self *Blockchain) GetGenesisBlock() coin.Block {
     return self.blockchain.Blocks[0]
 }
 
 // Returns the highest BkSeq we know
-func (self *Blockchain) MostRecentBkSeq() uint64 {
+func (self *Blockchain) MostRecentBkSeq() uint64 { //alread in meta
     h := self.blockchain.Head()
     return h.Header.BkSeq
-}
-
-// Returns descriptive coin.Blockchain information
-func (self *Blockchain) GetBlockchainMetadata() BlockchainMetadata {
-    return NewBlockchainMetadata(self)
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range
@@ -291,79 +259,3 @@ func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {
     return coin.VerifySignature(self.Config.PubKey, b.Sig,
         b.Block.HashHeader())
 }
-
-// Signs a block for master.  Will panic if anything is invalid
-func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
-    if !self.Config.IsMaster {
-        log.Panic("Only master chain can sign blocks")
-    }
-    sig := coin.SignHash(b.HashHeader(), self.Config.SecKey)
-    sb := SignedBlock{
-        Block: b,
-        Sig:   sig,
-    }
-    return sb
-}
-
-// Loads a coin.Blockchain from disk
-// DANGER, safer to reparse whole block chain
-
-/*
-func LoadBlockchain(filename string) (*coin.Blockchain, error) {
-    bc := &coin.Blockchain{}
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return bc, err
-    }
-    err = encoder.DeserializeRaw(data, bc)
-    if err != nil {
-        return bc, err
-    }
-    logger.Info("Loaded blockchain from \"%s\"", filename)
-    logger.Debug("Rebuilding UnspentPool indices")
-    bc.Unspent.Rebuild()
-    return bc, nil
-}
-*/
-
-/*
-// Loads a blockchain but subdues errors into the logger, or panics.
-// If no blockchain is found, it creates a new empty one
-func loadBlockchain(filename string) *coin.Blockchain {
-    bc := &coin.Blockchain{}
-    created := false
-    if filename != "" {
-        var err error
-        bc, err = LoadBlockchain(filename)
-        if err == nil {
-            if len(bc.Blocks) == 0 {
-                log.Panic("Loaded empty blockchain")
-            }
-            created = true
-        } else {
-            if os.IsNotExist(err) {
-                logger.Info("No blockchain file, will create a new blockchain")
-            } else {
-                log.Panicf("Failed to load blockchain file \"%s\": %v",
-                    filename, err)
-            }
-        }
-    }
-    if !created {
-        bc = coin.NewBlockchain()
-    }
-    return bc
-}
-*/
-
-// Saves blockchain to disk
-// Safer to reparse whole block chain
-
-/*
-func SaveBlockchain(bc *coin.Blockchain, filename string) error {
-    // TODO -- blockchain file must be forward compatible
-    // No -- If chain 
-    data := encoder.Serialize(bc)
-    return util.SaveBinary(filename, data, 0644)
-}
-*/

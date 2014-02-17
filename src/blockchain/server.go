@@ -52,24 +52,28 @@ func (self *Server) Start() {
 
 	t := time.Now.Unix()
 
-
-    bc := NewMainnetBlockchain()
-
 	for true {
 
 		if t + 15 < time.Now.Unix() {
 			time.Sleep(50)
 		}
 
-        sb, err = bc.CreateBlock()
+        //create block
+        block, err = self.Blockchain.CreateBlock()
         if err {
             fmt.Printf("Create Block Error: %s \n", err)
             continue
         }
+        //sign block
+        signedBlock = self.Blockchain.signBlock(block)
 
-
+        //inject block/execute
+        err := self.InjectBlock(signedBlock)
+        if err != nil {
+            log.Panic(err)
+        }
+        //prune unconfirmed transactions
         bc.RefreshUnconfirmed()
-
 	}
 }
 

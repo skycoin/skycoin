@@ -174,8 +174,8 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
     txns = coin.ArbitrateTransactions(txns)
     n := 0
     for i:=0; i<len(txns); i++ {
-        n += tnxs[i].Len()
-        if n > 32*1024 {
+        n += tnxs[i].Size()
+        if n > 32*1024 {  //put in blockchain size here
             txns = txns[i:]
             break
         } 

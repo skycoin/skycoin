@@ -7,6 +7,7 @@ import (
     "log"
 )
 
+//Move address version checks to visor/transaction validation?
 var (
     addressVersions = map[string]byte{
         "main": 0x0F, //main network

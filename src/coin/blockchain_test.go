@@ -791,10 +791,10 @@ func TestProcessTransactions(t *testing.T) {
     assert.Equal(t, len(txns), 0)
     assert.Nil(t, err)
 
-    // Invalid, txn.Verify(testMaxSize) fails
-    // TODO -- combine all txn.Verify(testMaxSize) failures into one test
+    // Invalid, txn.Verify() fails
+    // TODO -- combine all txn.Verify() failures into one test
     // method, and call it from here, from ExecuteBlock(), from
-    // Verify(testMaxSize), from VerifyTransaction()
+    // Verify(), from VerifyTransaction()
     txns = Transactions{}
     txn := Transaction{}
     txn.PushInput(bc.Unspent.Arr[0].Hash())

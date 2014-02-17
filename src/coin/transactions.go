@@ -220,6 +220,8 @@ func (self Transactions) Size() int {
     return size
 }
 
+// Returns the first n transactions whose total size is less than or equal to
+// size.
 func (self Transactions) TruncateBytesTo(size int) Transactions {
     total := 0
     for i, _ := range self {
@@ -239,6 +241,8 @@ type SortableTransactions struct {
     Hashes []SHA256
 }
 
+// Given a transaction, return its fee or an error if the fee cannot be
+// calculated
 type FeeCalculator func(*Transaction) (uint64, error)
 
 // Returns transactions sorted by fee per kB, and sorted by lowest hash if

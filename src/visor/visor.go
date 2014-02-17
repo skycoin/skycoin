@@ -61,7 +61,7 @@ func NewVisorConfig() VisorConfig {
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
         UnconfirmedRefreshRate:   time.Minute * 30,
-        MaxBlockSize:             1024 * 1024 * 32,
+        MaxBlockSize:             1024 * 32,
         BlockchainFile:           "",
         BlockSigsFile:            "",
         MasterKeys:               WalletEntry{},

@@ -222,16 +222,14 @@ func (self Transactions) Size() int {
 
 func (self Transactions) TruncateBytesTo(size int) Transactions {
     total := 0
-    max := 0
     for i, _ := range self {
         pending := self[i].Size()
         if total+pending > size {
-            break
+            return self[:i]
         }
         total += pending
-        max++
     }
-    return self[:max]
+    return self
 }
 
 // Allows sorting transactions by fee & hash

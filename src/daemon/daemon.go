@@ -9,6 +9,7 @@ import (
     "github.com/skycoin/skycoin/src/util"
     "log"
     "net"
+    "reflect"
     "strconv"
     "strings"
     "time"
@@ -30,8 +31,6 @@ var (
         "Already connected")
     DisconnectIdle gnet.DisconnectReason = errors.New(
         "Idle")
-    DisconnectFailedSend gnet.DisconnectReason = errors.New(
-        "Failed to send data to this connection")
     DisconnectNoIntroduction gnet.DisconnectReason = errors.New(
         "First message was not an Introduction")
     DisconnectIPLimitReached gnet.DisconnectReason = errors.New(
@@ -231,7 +230,7 @@ func NewDaemon(config Config) *Daemon {
         pendingConnections: make(map[string]*pex.Peer,
             config.Daemon.PendingMax),
         messageEvents: make(chan MessageEvent,
-            config.Pool.EventChannelBufferSize),
+            config.Pool.EventChannelSize),
     }
     d.Gateway = NewGateway(config.Gateway, d)
     d.Messages.Config.Register()
@@ -371,11 +370,15 @@ main:
                 log.Panic("There should be no DHT peer results")
             }
             self.DHT.ReceivePeers(r, self.Peers.Peers)
+        // Process disconnections
         case r := <-self.Pool.Pool.DisconnectQueue:
             if self.Config.DisableNetworking {
                 log.Panic("There should be nothing in the DisconnectQueue")
             }
             self.Pool.Pool.HandleDisconnectEvent(r)
+        // Process message sending results
+        case r := <-self.Pool.Pool.SendResults:
+            self.handleMessageSendResult(r)
         // Message handlers
         case m := <-self.messageEvents:
             if self.Config.DisableNetworking {
@@ -390,11 +393,9 @@ main:
         // Create blocks, if master chain
         case <-blockCreationTicker.C:
             if self.Visor.Config.Config.IsMaster {
-                err, published := self.Visor.CreateAndPublishBlock(self.Pool)
+                err := self.Visor.CreateAndPublishBlock(self.Pool)
                 if err != nil {
                     logger.Error("Failed to create block: %v", err)
-                } else if !published {
-                    logger.Warning("Failed to publish block to anyone")
                 } else {
                     // Not a critical error, but we want it visible in logs
                     logger.Critical("Created and published a new block")
@@ -565,12 +566,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
     logger.Debug("Sending introduction message to %s", a)
     m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
         self.Pool.Pool.Config.Port)
-    err := self.Pool.Pool.Dispatcher.SendMessage(c, m)
-    if err != nil {
-        logger.Error("Failed to send introduction message: %v", err)
-        self.Pool.Pool.Disconnect(c, DisconnectFailedSend)
-        return
-    }
+    self.Pool.Pool.SendMessage(c, m)
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not
@@ -686,6 +682,19 @@ func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
     }
     port, exists := ips[ip]
     return port, exists
+}
+
+// When an async message send finishes, its result is handled by this
+func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
+    if r.Error != nil {
+        logger.Warning("Failed to send %s to %s: %v",
+            reflect.TypeOf(r.Message).Name(), r.Connection.Addr(), r.Error)
+    }
+    switch r.Message.(type) {
+    case *AnnounceTxnsMessage:
+        self.Visor.SetTxnsAnnounced(r.Message.(*AnnounceTxnsMessage).Txns)
+    default:
+    }
 }
 
 // Returns the address for localhost on the machine

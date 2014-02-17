@@ -112,10 +112,7 @@ func (self *Visor) RequestBlocks(pool *Pool) {
         return
     }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
-    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
-    for a, _ := range errs {
-        logger.Error("Failed to send GetBlocksMessage to %s\n", a)
-    }
+    pool.Pool.BroadcastMessage(m)
 }
 
 // Sends an AnnounceBlocksMessage to all connections
@@ -124,16 +121,13 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
         return
     }
     m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
-    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
-    for a, _ := range errs {
-        logger.Error("Failed to send AnnounceBlocksMessage to %s\n", a)
-    }
+    pool.Pool.BroadcastMessage(m)
 }
 
 // Sends a GetBlocksMessage to one connected address
 func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
     if self.Config.Disabled {
-        return nil
+        return errors.New("Visor disabled")
     }
     m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
     c := pool.Pool.Addresses[addr]
@@ -141,13 +135,8 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
         return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
             "not connected", addr)
     }
-    err := pool.Pool.Dispatcher.SendMessage(c, m)
-    if err == nil {
-        return nil
-    } else {
-        return fmt.Errorf("Failed to send GetBlocksMessage to %s: %v\n",
-            c.Addr(), err)
-    }
+    pool.Pool.SendMessage(c, m)
+    return nil
 }
 
 // Broadcasts any txn that we are a party to
@@ -166,43 +155,33 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
         hashes = append(hashes, tx.Txn.Hash())
     }
     m := NewAnnounceTxnsMessage(hashes)
-    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
-    if len(errs) != len(pool.Pool.Pool) {
-        now := util.Now()
-        for _, h := range hashes {
-            self.Visor.UnconfirmedTxns.SetAnnounced(h, now)
-        }
+    pool.Pool.BroadcastMessage(m)
+}
+
+// Sets all txns as announced
+func (self *Visor) SetTxnsAnnounced(txns []coin.SHA256) {
+    now := util.Now()
+    for _, h := range txns {
+        self.Visor.UnconfirmedTxns.SetAnnounced(h, now)
     }
 }
 
-// Sends a signed block to all connections. Returns error only if disabled.
-// No error is returned if it fails to send to anyone.
-func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) error {
+// Sends a signed block to all connections.
+func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
     if self.Config.Disabled {
-        return errors.New("Visor disabled")
+        return
     }
     m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
-    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
-    if len(errs) == len(pool.Pool.Pool) {
-        logger.Warning("Failed to send block to anyone")
-        return errors.New("Did not send block to anyone")
-    }
-    return nil
+    pool.Pool.BroadcastMessage(m)
 }
 
-// Broadcasts a single transaction to all peers. Returns error if disabled or
-// if broadcast completely failed
-func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
+// Broadcasts a single transaction to all peers.
+func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
     if self.Config.Disabled {
-        return errors.New("Visor disabled")
+        return
     }
     m := NewGiveTxnsMessage([]coin.Transaction{t})
-    errs := pool.Pool.Dispatcher.BroadcastMessage(m)
-    if len(errs) == len(pool.Pool.Pool) {
-        logger.Warning("Failed to send transaction to anyone")
-        return errors.New("Did not send transaction to anyone")
-    }
-    return nil
+    pool.Pool.BroadcastMessage(m)
 }
 
 // Creates a spend transaction and broadcasts it to the network
@@ -215,38 +194,34 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
     if err != nil {
         return txn, err
     }
-    didAnnounce := self.broadcastTransaction(txn, pool) == nil
-    err = self.Visor.RecordTxn(txn, didAnnounce)
-    return txn, err
+    self.broadcastTransaction(txn, pool)
+    return txn, self.Visor.RecordTxn(txn)
 }
 
-// Resends a known UnconfirmedTxn. Returns whether or not it was sent to anyone
-func (self *Visor) ResendTransaction(h coin.SHA256, pool *Pool) bool {
+// Resends a known UnconfirmedTxn.
+func (self *Visor) ResendTransaction(h coin.SHA256, pool *Pool) {
     if self.Config.Disabled {
-        return false
+        return
     }
     if ut, ok := self.Visor.UnconfirmedTxns.Txns[h]; ok {
-        if self.broadcastTransaction(ut.Txn, pool) == nil {
-            self.Visor.UnconfirmedTxns.SetAnnounced(h, util.Now())
-            return true
-        }
+        self.broadcastTransaction(ut.Txn, pool)
     }
-    return false
+    return
 }
 
 // Creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a master chain.  Returns creation error and
 // whether it was published or not
-func (self *Visor) CreateAndPublishBlock(pool *Pool) (error, bool) {
+func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
     if self.Config.Disabled {
-        return errors.New("Visor disabled"), false
+        return errors.New("Visor disabled")
     }
     sb, err := self.Visor.CreateAndExecuteBlock()
-    if err == nil {
-        return nil, (self.broadcastBlock(sb, pool) == nil)
-    } else {
-        return err, false
+    if err != nil {
+        return err
     }
+    self.broadcastBlock(sb, pool)
+    return nil
 }
 
 // Updates internal state when a connection disconnects
@@ -321,10 +296,7 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
         return
     }
     m := NewGiveBlocksMessage(blocks)
-    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
-    if err != nil {
-        logger.Warning("Failed to send GiveBlocksMessage: %v", err)
-    }
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
 // Sent in response to GetBlocksMessage, or unsolicited
@@ -377,10 +349,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
     }
     // Announce our new blocks to peers
     m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-    errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
-    for a, _ := range errs {
-        logger.Warning("Failed to announce blocks to %s", a)
-    }
+    d.Pool.Pool.BroadcastMessage(m)
 }
 
 // Tells a peer our highest known BkSeq. The receiving peer can choose
@@ -411,10 +380,7 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
         return
     }
     m := NewGetBlocksMessage(bkSeq)
-    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
-    if err != nil {
-        logger.Warning("Failed to send GetBlocksMessage: %v", err)
-    }
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
 // Tells a peer that we have these transactions
@@ -444,11 +410,7 @@ func (self *AnnounceTxnsMessage) Process(d *Daemon) {
         return
     }
     m := NewGetTxnsMessage(unknown)
-    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
-    if err != nil {
-        logger.Warning("Failed to send GetTxnsMessage to %s",
-            self.c.Conn.Addr())
-    }
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
 type GetTxnsMessage struct {
@@ -480,11 +442,7 @@ func (self *GetTxnsMessage) Process(d *Daemon) {
     }
     logger.Debug("%d/%d txns known", len(known), len(self.Txns))
     m := NewGiveTxnsMessage(known)
-    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
-    if err != nil {
-        logger.Warning("Failed to send GiveTxnsMessage to %s",
-            self.c.Conn.Addr())
-    }
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
 type GiveTxnsMessage struct {
@@ -511,7 +469,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     hashes := make([]coin.SHA256, 0, len(self.Txns))
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        if err := d.Visor.Visor.RecordTxn(txn, false); err == nil {
+        if err := d.Visor.Visor.RecordTxn(txn); err == nil {
             hashes = append(hashes, txn.Hash())
         } else {
             logger.Warning("Failed to record txn: %v", err)
@@ -519,14 +477,8 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     }
     // Announce these transactions to peers
     if len(hashes) != 0 {
-        now := util.Now()
         m := NewAnnounceTxnsMessage(hashes)
-        errs := d.Pool.Pool.Dispatcher.BroadcastMessage(m)
-        if len(errs) != len(d.Pool.Pool.Pool) {
-            for _, h := range hashes {
-                d.Visor.Visor.SetAnnounced(h, now)
-            }
-        }
+        d.Pool.Pool.BroadcastMessage(m)
     }
 }
 

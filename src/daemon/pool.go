@@ -21,7 +21,7 @@ type PoolConfig struct {
     // How often to check for stale connections
     ClearStaleRate time.Duration
     // Buffer size for gnet.ConnectionPool's network Read events
-    EventChannelBufferSize int
+    EventChannelSize int
     // These should be assigned by the controlling daemon
     address string
     port    int
@@ -30,15 +30,15 @@ type PoolConfig struct {
 func NewPoolConfig() PoolConfig {
     defIdleLimit := time.Minute * 90
     return PoolConfig{
-        port:                   6677,
-        address:                "",
-        DialTimeout:            time.Second * 30,
-        MessageHandlingRate:    time.Millisecond * 30,
-        PingRate:               defIdleLimit / 3,
-        IdleLimit:              defIdleLimit,
-        IdleCheckRate:          time.Minute,
-        ClearStaleRate:         time.Minute,
-        EventChannelBufferSize: 4096,
+        port:                6677,
+        address:             "",
+        DialTimeout:         time.Second * 30,
+        MessageHandlingRate: time.Millisecond * 30,
+        PingRate:            defIdleLimit / 3,
+        IdleLimit:           defIdleLimit,
+        IdleCheckRate:       time.Minute,
+        ClearStaleRate:      time.Minute,
+        EventChannelSize:    4096,
     }
 }
 
@@ -64,7 +64,7 @@ func (self *Pool) Init(d *Daemon) {
     cfg.Address = self.Config.address
     cfg.ConnectCallback = d.onGnetConnect
     cfg.DisconnectCallback = d.onGnetDisconnect
-    cfg.EventChannelBufferSize = cfg.EventChannelBufferSize
+    cfg.EventChannelSize = cfg.EventChannelSize
     pool := gnet.NewConnectionPool(cfg, d)
     self.Pool = pool
 }
@@ -89,10 +89,7 @@ func (self *Pool) sendPings() {
     now := util.Now()
     for _, c := range self.Pool.Pool {
         if c.LastSent.Add(self.Config.PingRate).Before(now) {
-            err := self.Pool.Dispatcher.SendMessage(c, &PingMessage{})
-            if err != nil {
-                logger.Warning("Failed to send ping message to %s", c.Addr())
-            }
+            self.Pool.SendMessage(c, &PingMessage{})
         }
     }
 }

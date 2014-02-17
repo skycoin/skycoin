@@ -150,10 +150,7 @@ func (self *GetPeersMessage) Process(d *Daemon) {
         return
     }
     m := NewGivePeersMessage(peers)
-    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, m)
-    if err != nil {
-        logger.Warning("Failed to send GivePeersMessage: %v", err)
-    }
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
 // Sent in response to GetPeersMessage
@@ -325,11 +322,7 @@ func (self *PingMessage) Handle(mc *gnet.MessageContext,
 // Sends a PongMessage to the sender of PingMessage
 func (self *PingMessage) Process(d *Daemon) {
     logger.Debug("Reply to ping from %s", self.c.Conn.Addr())
-    err := d.Pool.Pool.Dispatcher.SendMessage(self.c.Conn, &PongMessage{})
-    if err != nil {
-        logger.Warning("Failed to send PongMessage to %s", self.c.Conn.Addr())
-        logger.Warning("Reason: %v", err)
-    }
+    d.Pool.Pool.SendMessage(self.c.Conn, &PongMessage{})
 }
 
 // Sent in reply to a PingMessage.  No action is taken when this is received.

@@ -40,7 +40,6 @@ type BlockchainProgress struct {
 }
 
 type ResendResult struct {
-    Sent bool `json:"sent"`
 }
 
 type RPC struct{}
@@ -108,8 +107,6 @@ func (self RPC) ResendTransaction(v *Visor, p *Pool,
     if v.Visor == nil {
         return nil
     }
-    sent := v.ResendTransaction(txHash, p)
-    return &ResendResult{
-        Sent: sent,
-    }
+    v.ResendTransaction(txHash, p)
+    return &ResendResult{}
 }

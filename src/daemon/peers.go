@@ -91,5 +91,5 @@ func (self *Peers) requestPeers(pool *Pool) {
         return
     }
     m := NewGetPeersMessage()
-    pool.Pool.Dispatcher.BroadcastMessage(m)
+    pool.Pool.BroadcastMessage(m)
 }

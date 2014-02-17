@@ -49,21 +49,16 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 
 // Adds a coin.Transaction to the pool
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool,
-    maxSize int) error {
+    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) error {
     if err := bc.VerifyTransaction(t, maxSize); err != nil {
         return err
     }
     now := util.Now()
-    announcedAt := util.ZeroTime()
-    if didAnnounce {
-        announcedAt = now
-    }
     ut := UnconfirmedTxn{
         Txn:          t,
         Received:     now,
         Checked:      now,
-        Announced:    announcedAt,
+        Announced:    util.ZeroTime(),
         IsOurReceive: false,
         IsOurSpend:   false,
     }

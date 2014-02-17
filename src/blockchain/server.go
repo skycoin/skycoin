@@ -21,9 +21,6 @@ type ServerConfig struct {
 
 func NewServerConfig() ServerConfig {
     return ServerConfig{
-        //Config:                     Blockchain.NewServerConfig(),
-        //Disabled:                   false,
-        //MasterKeysFile:             "",
         //BlocksRequestRate:          time.Minute * 5,
         //BlocksAnnounceRate:         time.Minute * 15,
         //BlocksResponseCount:        20,
@@ -33,17 +30,13 @@ func NewServerConfig() ServerConfig {
 
 type Server struct {
     Config ServerConfig
-    Blockchain  *Blockchain
+    Blockchain  Blockchain
 }
 
 func NewServer(c ServerConfig) *Blockchain {
-
-    var v *Blockchain.Blockchain = nil
-    v = NewLocalBlockchain() //generates random pubkey
-
     return &Blockchain{
-        Config:            c,
-        Blockchain: v,
+        Config:     NewServerConfig(),
+        Blockchain: NewLocalBlockchain(),
     }
 }
 

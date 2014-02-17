@@ -5,7 +5,6 @@ import (
     "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "os"
-    "sort"
     "testing"
     "time"
 )
@@ -94,7 +93,7 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
         txns[i] = txn
         assert.Nil(t, v.RecordTxn(txn, false))
     }
-    sort.Sort(txns)
+    txns = coin.SortTransactions(txns, getFee)
     assert.Equal(t, len(v.UnconfirmedTxns.Txns), n)
     return txns
 }
@@ -508,14 +507,17 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Equal(t, err.Error(), "No transactions")
 
     // Test as master, more txns than allowed
-    vc.TransactionsPerBlock = 1
     vc.BlockCreationInterval = uint64(101)
     v = NewVisor(vc)
     txns := addValidTxns(t, v, 3)
-    txns.Sort()
+    txns = coin.SortTransactions(txns, getFee)
+    v.Config.MaxBlockSize = txns[0].Size()
+    assert.Equal(t, len(v.blockchain.Blocks), 1)
+    assert.Equal(t, len(v.blockSigs.Sigs), 1)
     sb, err := v.CreateAndExecuteBlock()
     assert.Nil(t, err)
 
+    assert.Equal(t, len(sb.Block.Body.Transactions), 1)
     assert.Equal(t, len(v.blockchain.Blocks), 2)
     assert.Equal(t, len(v.blockSigs.Sigs), 2)
     assert.Equal(t, v.blockchain.Blocks[1], sb.Block)
@@ -524,18 +526,21 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Equal(t, sb.Block.Head.Time-v.blockchain.Blocks[0].Head.Time,
         vc.BlockCreationInterval)
     rawTxns := v.UnconfirmedTxns.RawTxns()
-    rawTxns.Sort()
+    rawTxns = coin.SortTransactions(rawTxns, getFee)
+    assert.Equal(t, len(rawTxns), 2)
     for _, tx := range sb.Block.Body.Transactions {
         assert.NotEqual(t, tx.Hash(), rawTxns[0].Hash())
+        assert.NotEqual(t, tx.Hash(), rawTxns[1].Hash())
     }
     assert.Equal(t, txns[1].Hash(), rawTxns[0].Hash())
     assert.Equal(t, txns[2].Hash(), rawTxns[1].Hash())
     assert.Nil(t, v.blockSigs.Verify(v.Config.MasterKeys.Public, v.blockchain))
 
     // No txns, forcing NewBlockFromTransactions to fail
-    vc.TransactionsPerBlock = 0
     v = NewVisor(vc)
+    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
     txns = addValidTxns(t, v, 3)
+    v.Config.MaxBlockSize = 0
     sb, err = v.CreateAndExecuteBlock()
     assert.NotNil(t, err)
     assert.Equal(t, len(v.blockchain.Blocks), 1)
@@ -593,7 +598,7 @@ func TestVisorSpend(t *testing.T) {
     assert.Equal(t, tx.Out[0].Address, ourAddr)
     assert.Equal(t, tx.Out[0].Coins, ogb.Coins-b.Coins)
     assert.Equal(t, tx.Out[0].Hours, ogb.Hours-b.Hours)
-    assert.Nil(t, tx.Verify())
+    assert.Nil(t, tx.Verify(testBlockSize))
 
     // Test spend with 2 addresses and a fee
     // WARNING -- not deterministic, because GetAddresses() converts map to
@@ -618,7 +623,7 @@ func TestVisorSpend(t *testing.T) {
     assert.Equal(t, tx.Out[0].Address, addrs[1])
     assert.Equal(t, tx.Out[0].Coins, uint64(5e6))
     assert.Equal(t, tx.Out[0].Hours, uint64(5))
-    assert.Nil(t, tx.Verify())
+    assert.Nil(t, tx.Verify(testBlockSize))
 
     // TODO -- waiting on removal of 1e6 multiple restriction
     // Test spend with 2 addresses, a fee, and 2 change outputs
@@ -647,7 +652,7 @@ func TestVisorSpend(t *testing.T) {
     // assert.Equal(t, tx.Out[0].Address, addrs[0])
     // assert.Equal(t, tx.Out[0].Coins, uint64(0))
     // assert.Equal(t, tx.Out[0].Hours, uint64(5))
-    // assert.Nil(t, tx.Verify())
+    // assert.Nil(t, tx.Verify(testBlockSize))
 }
 
 func TestExecuteSignedBlock(t *testing.T) {

@@ -112,15 +112,10 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
-func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
-    checkPeriod, maxAge time.Duration) {
+func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain checkPeriod) {
     now := util.Now()
     toRemove := make([]coin.SHA256, 0)
     for k, t := range self.Txns {
-        if now.Sub(t.Received) >= maxAge {
-            toRemove = append(toRemove, k)
-            continue
-        } 
         if now.Sub(t.Checked) >= checkPeriod {
             if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now

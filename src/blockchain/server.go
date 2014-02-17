@@ -48,11 +48,13 @@ func NewServer(c ServerConfig) *Blockchain {
     }
 }
 
-//start running
+//Start server as master
 func (self *Server) Start() {
 
 	t := time.Now.Unix()
 
+
+    bc := NewMainnetBlockchain()
 
 	for true {
 
@@ -60,6 +62,14 @@ func (self *Server) Start() {
 			time.Sleep(50)
 		}
 
+        sb, err = bc.CreateBlock()
+        if err {
+            fmt.Printf("Create Block Error: %s \n", err)
+            continue
+        }
+
+        
+        bc.RefreshUnconfirmed()
 
 	}
 }

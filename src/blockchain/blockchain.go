@@ -59,6 +59,10 @@ type Blockchain struct {
     SecKey coin.SecKey //set for writes
     // Use test network addresses
     TestNetwork bool
+
+    UnconfirmedTxns *UnconfirmedTxnPool
+    blockchain *coin.Blockchain
+    Blocks []SignedBlock
 }
 
 func (self *Blockchain) SetBlockchainSecKey(seed string) {
@@ -76,7 +80,7 @@ func NewBlockchain() Blockchain {
     //set pubkey based upon testnet, mainnet and local
     bc := Blockchain{
 
-        IsMaster:                 false,
+        IsMaster:                 false, //writes blocks
         TestNetwork:              true,
 
         //BlockCreationInterval:    15,
@@ -85,19 +89,13 @@ func NewBlockchain() Blockchain {
         //UnconfirmedRefreshRate:   time.Minute * 30,
         //TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
         
-        BlockchainFile:           "",
+        //BlockchainFile:           "",
         //BlockSigsFile:            "",
 
         SecKey: coin.SecKey{},
-
-
-        UnconfirmedTxns *UnconfirmedTxnPool
-        //blockchain storag
-        blockchain *coin.Blockchain
-        blocksigs map[coin.SHA256] coin.Sig
     }
-
-    bc.blocksigs = new(map[coin.SHA256] coin.Sig)
+    bc.Blocks = make([]SignedBlockm,0)
+    bc.blockchain = coin.NewBlockchain()
     bc.UnconfirmedTxns = NewUnconfirmedTxnPool()
     return bc
 }
@@ -107,6 +105,7 @@ func NewTestnetBlockchain() Blockchain {
     VC := NewBlockchain()
     VC.TestNetwork = true
     VC.Genesis = TestNet
+    VC.InjectGenesisBlock()
     return VC
 }
 
@@ -115,6 +114,7 @@ func NewMainnetBlockchain() Blockchain {
     VC := NewBlockchain()
     VC.TestNetwork = false
     VC.Genesis = MainNet
+    VC.InjectGenesisBlock()
     return VC
 }
 
@@ -125,32 +125,9 @@ func NewLocalBlockchain() Blockchain {
     VC.SecKey = seckey
     VC.Genesis.GenesisAddress = coin.AddressFromPubKey(pubkey)
     VC.GenesisTime = uint64(time.Now().Unix())
+    VC.InjectGenesisBlock()
     return VC
 }
-
-
-
-// Creates the genesis block
-/*
-func (self *Blockchain) PushGenesisBlock() SignedBlock {
-    
-    self.Seckey{} == coin.SecKey{} {
-        log.Panic()
-    }
-
-    //b := coin.Block{}
-    b := self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress. self.GenesisTime)
-    
-
-    //sb = self.signBlock(b)
-    //self.blockSigs.record(&sb)
-    //err := self.blockSigs.Verify(self.Config.PubKey, self.blockchain)
-    //if err != nil {
-    //    log.Panicf("Signed the genesis block, but its invalid: %v", err)
-    //}
-    return sb
-}
-*/
 
 
 /*
@@ -167,11 +144,11 @@ func (self *Blockchain) InjectGenesisBlock() {
 func (self *Blockchain) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
     self.UnconfirmedTxns.Refresh(self.blockchain,
-        self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
+        self.Config.UnconfirmedCheckInterval)
 }
 
 // Creates a SignedBlock from pending transactions
-func (self *Blockchain) createBlock() (SignedBlock, error) {
+func (self *Blockchain) CreateBlock() (SignedBlock, error) {
     //var sb SignedBlock
     if !self.Config.IsMaster {
         log.Panic("Only master chain can create blocks")
@@ -199,7 +176,6 @@ func (self *Blockchain) SignBlock() (block coin.Block) (SignedBlock, error) {
     if self.Config.SecKey == {} {
         log.Panic("Only master chain can create blocks")
     }
-
     return self.signBlock(b), nil
 }
 
@@ -253,18 +229,8 @@ func (self *Blockchain) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
 
 
 // Returns the signed genesis block. Panics if signature or block not found
-func (self *Blockchain) GetGenesisBlock() SignedBlock {
-    gsig, ok := self.blockSigs.Sigs[0]
-    if !ok {
-        log.Panic("No genesis signature")
-    }
-    if len(self.blockchain.Blocks) == 0 {
-        log.Panic("No genesis block")
-    }
-    return SignedBlock{
-        Sig:   gsig,
-        Block: self.blockchain.Blocks[0],
-    }
+func (self *Blockchain) GetGenesisBlock() coin.Block {
+    return self.blockchain.Blocks[0]
 }
 
 // Returns the highest BkSeq we know
@@ -278,6 +244,7 @@ func (self *Blockchain) GetBlockchainMetadata() BlockchainMetadata {
     return NewBlockchainMetadata(self)
 }
 
+/*
 // Returns a readable copy of the block at seq. Returns error if seq out of range
 func (self *Blockchain) GetReadableBlock(seq uint64) (ReadableBlock, error) {
     if b, err := self.GetBlock(seq); err == nil {
@@ -297,6 +264,7 @@ func (self *Blockchain) GetReadableBlocks(start, end uint64) []ReadableBlock {
     }
     return rbs
 }
+*/
 
 // Returns a copy of the block at seq. Returns error if seq out of range
 func (self *Blockchain) GetBlock(seq uint64) (coin.Block, error) {
@@ -337,7 +305,9 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     //should not be doing verification here
     //verification against blockchain will fail if user creates
     //output that spends outputs created by unspent transctions
-    //should check signature validity     
+    //should check signature validity
+
+    //check validity at basic level, but not against ux set
     if err := self.blockchain.VerifyTransaction(t); err != nil {
         return err
     }

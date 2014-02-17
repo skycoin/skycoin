@@ -148,7 +148,8 @@ func (self *Blockchain) RefreshUnconfirmed() {
 }
 
 // Creates a SignedBlock from pending transactions
-func (self *Blockchain) CreateBlock() (SignedBlock, error) {
+func (self *Blockchain) 
+ (SignedBlock, error) {
     //var sb SignedBlock
     if !self.Config.IsMaster {
         log.Panic("Only master chain can create blocks")
@@ -157,7 +158,7 @@ func (self *Blockchain) CreateBlock() (SignedBlock, error) {
     txns := self.UnconfirmedTxns.RawTxns()
 
     //TODO: sort by arrival time/announce time
-    sort.Sort(txns) //sort by arrival time
+    sort.Sort(txns) //sort by priority and arrival time
     nTxns := len(txns)
 
     //TODO: filter valid first

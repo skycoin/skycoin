@@ -170,6 +170,17 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
     if nTxns > self.Config.TransactionsPerBlock {
         txns = txns[:self.Config.TransactionsPerBlock]
     }
+
+    txns = coin.ArbitrateTransactions(txns)
+    n := 0
+    for i:=0; i<len(txns); i++ {
+        n += tnxs[i].Len()
+        if n > 32*1024 {
+            txns = txns[i:]
+            break
+        } 
+    }
+
     b, err := self.blockchain.NewBlockFromTransactions(txns,
         self.Config.BlockCreationInterval)
     if err != nil {

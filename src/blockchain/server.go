@@ -37,13 +37,9 @@ type Server struct {
 }
 
 func NewServer(c ServerConfig) *Blockchain {
-    //var v *Blockchain.Blockchain = nil
-    //if !c.Disabled {
-    //    v = Blockchain.NewBlockchain(c.Config)
-    //}
-    
+
     var v *Blockchain.Blockchain = nil
-    v = NewLocalBlockchain()
+    v = NewLocalBlockchain() //generates random pubkey
 
     return &Blockchain{
         Config:            c,

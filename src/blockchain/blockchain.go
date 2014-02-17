@@ -147,11 +147,28 @@ func (self *Blockchain) RefreshUnconfirmed() {
         self.Config.UnconfirmedCheckInterval)
 }
 
+//InjectTransaction makes the blockchain server aware of raw transactions
+//InjectTransaction inserts the transaction into the unconfirmed set
+func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
+
+    //should not be doing verification here
+    //verification against blockchain will fail if user creates
+    //output that spends outputs created by unspent transctions
+    //should check signature validity
+
+    //check validity at basic level, but not against ux set
+    if err := self.blockchain.VerifyTransaction(t); err != nil {
+        return err
+    }
+
+    self.UnconfirmedTxns.RecordTxn(txn, didAnnounce)
+}
+
+
 // Creates a SignedBlock from pending transactions
-func (self *Blockchain) 
- (SignedBlock, error) {
+func (self *Blockchain) CreateBlock(SignedBlock, error) {
     //var sb SignedBlock
-    if !self.Config.IsMaster {
+    if self.Config.SecKey == {} {
         log.Panic("Only master chain can create blocks")
     }
 
@@ -173,12 +190,6 @@ func (self *Blockchain)
     return b, err
 }
 
-func (self *Blockchain) SignBlock() (block coin.Block) (SignedBlock, error) {
-    if self.Config.SecKey == {} {
-        log.Panic("Only master chain can create blocks")
-    }
-    return self.signBlock(b), nil
-}
 
 //InjectBLock inputs a new block and applies it against the block chain
 // state if it is valid
@@ -245,28 +256,6 @@ func (self *Blockchain) GetBlockchainMetadata() BlockchainMetadata {
     return NewBlockchainMetadata(self)
 }
 
-/*
-// Returns a readable copy of the block at seq. Returns error if seq out of range
-func (self *Blockchain) GetReadableBlock(seq uint64) (ReadableBlock, error) {
-    if b, err := self.GetBlock(seq); err == nil {
-        return NewReadableBlock(&b), nil
-    } else {
-        return ReadableBlock{}, err
-    }
-}
-
-// Returns multiple blocks between start and end (not including end). Returns
-// empty slice if unable to fulfill request, it does not return nil.
-func (self *Blockchain) GetReadableBlocks(start, end uint64) []ReadableBlock {
-    blocks := self.GetBlocks(start, end)
-    rbs := make([]ReadableBlock, 0, len(blocks))
-    for _, b := range blocks {
-        rbs = append(rbs, NewReadableBlock(&b))
-    }
-    return rbs
-}
-*/
-
 // Returns a copy of the block at seq. Returns error if seq out of range
 func (self *Blockchain) GetBlock(seq uint64) (coin.Block, error) {
     var b coin.Block
@@ -296,24 +285,6 @@ func (self *Blockchain) GetBlocks(start, end uint64) []coin.Block {
 // Updates an UnconfirmedTxn's Announce field
 func (self *Blockchain) SetTxnAnnounce(h coin.SHA256, t time.Time) {
     self.UnconfirmedTxns.SetAnnounced(h, t)
-}
-
-
-//InjectTransaction makes the blockchain server aware of raw transactions
-//InjectTransaction inserts the transaction into the unconfirmed set
-func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
-
-    //should not be doing verification here
-    //verification against blockchain will fail if user creates
-    //output that spends outputs created by unspent transctions
-    //should check signature validity
-
-    //check validity at basic level, but not against ux set
-    if err := self.blockchain.VerifyTransaction(t); err != nil {
-        return err
-    }
-
-    self.UnconfirmedTxns.RecordTxn(txn, didAnnounce)
 }
 
 func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {

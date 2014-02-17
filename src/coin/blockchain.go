@@ -251,7 +251,7 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
         log.Panic("Creation interval must be > 0")
     }
     b := newBlock(self.Head(), creationInterval)
-    newTxns := self.arbitrateTransactions(txns, maxByteSize)
+    newTxns := self.ArbitrateTransactions(txns, maxByteSize)
     // Restrict txns by size
     newTxns = newTxns.TruncateBytesTo(maxByteSize)
     if len(newTxns) == 0 {
@@ -553,7 +553,7 @@ func (self *Blockchain) verifyTransactions(txns Transactions,
 // Returns an array of Transactions with invalid ones removed from txns.
 // The Transaction hash is used to arbitrate between double spends.
 // txns must be sorted by hash.
-func (self *Blockchain) arbitrateTransactions(txns Transactions,
+func (self *Blockchain) ArbitrateTransactions(txns Transactions,
     maxSize int) Transactions {
     newtxns, err := self.processTransactions(txns, maxSize, true)
     if err != nil {

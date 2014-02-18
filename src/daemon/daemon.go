@@ -320,9 +320,7 @@ main:
             }
         // Request peers via PEX
         case <-requestPeersTicker:
-            if !self.Peers.Config.Disabled && !self.Peers.Peers.Full() {
-                self.Peers.requestPeers(self.Pool)
-            }
+            self.Peers.requestPeers(self.Pool)
         // Remove peers we haven't seen in a while
         case <-clearOldPeersTicker:
             if !self.Peers.Config.Disabled {
@@ -378,6 +376,9 @@ main:
             self.Pool.Pool.HandleDisconnectEvent(r)
         // Process message sending results
         case r := <-self.Pool.Pool.SendResults:
+            if self.Config.DisableNetworking {
+                log.Panic("There should be nothing in SendResults")
+            }
             self.handleMessageSendResult(r)
         // Message handlers
         case m := <-self.messageEvents:
@@ -385,7 +386,7 @@ main:
                 log.Panic("There should be no message events")
             }
             self.processMessageEvent(m)
-        // Process any pending API requests
+        // Process any pending RPC requests
         case fn := <-self.Gateway.requests:
             self.Gateway.responses <- fn()
 
@@ -445,8 +446,6 @@ func (self *Daemon) connectToRandomPeer() {
     peers := self.Peers.Peers.Peerlist.Random(0)
     for _, p := range peers {
         a, _, err := SplitAddr(p.Addr)
-        logger.Warning("Split random peer from %s to %s", p.Addr, a)
-        logger.Warning("%s is localhost? %v", a, IsLocalhost(a))
         if err != nil {
             logger.Warning("PEX gave us an invalid peer: %v", err)
             continue

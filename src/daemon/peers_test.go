@@ -1,6 +1,7 @@
 package daemon
 
 import (
+    "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
     "github.com/stretchr/testify/assert"
     "os"
@@ -50,10 +51,40 @@ func TestShutdownPeersNil(t *testing.T) {
 }
 
 func TestRequestPeers(t *testing.T) {
+    defer cleanupPeers()
+    gnet.EraseMessages()
+    defer gnet.EraseMessages()
+
+    // Disabled
     c := NewPeersConfig()
     c.Disabled = true
     p := NewPeers(c)
     assert.NotPanics(t, func() { p.requestPeers(nil) })
+
+    // Full
+    c.Disabled = false
+    p = NewPeers(c)
+    p.Init()
+    p.Peers.SetMaxPeers(1)
+    p.Peers.AddPeer(addr)
+    assert.NotPanics(t, func() { p.requestPeers(nil) })
+
+    // Not full, will send message
+    p.Peers.SetMaxPeers(10)
+    pool, gc := setupPool()
+    go pool.Pool.ConnectionWriteLoop(gc)
+    defer gc.Close()
+    assert.NotPanics(t, func() { p.requestPeers(pool) })
+    wait()
+    assert.Equal(t, len(pool.Pool.SendResults), 1)
+    if len(pool.Pool.SendResults) == 0 {
+        t.Fatalf("SendResults empty, would block")
+    }
+    sr := <-pool.Pool.SendResults
+    assert.Equal(t, sr.Connection, gc)
+    assert.Nil(t, sr.Error)
+    _, ok := sr.Message.(*GetPeersMessage)
+    assert.True(t, ok)
 }
 
 func setupPeersShutdown(t *testing.T) *Peers {

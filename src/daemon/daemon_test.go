@@ -5,6 +5,7 @@ import (
     "github.com/nictuku/dht"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
+    "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "strings"
@@ -530,22 +531,6 @@ func TestDaemonLoopMessageHandlingTickerDisabled(t *testing.T) {
     testDaemonLoopMessageHandlingTicker(t, d, quit)
 }
 
-func TestDaemonRequestPeers(t *testing.T) {
-    d := newDefaultDaemon()
-    defer shutdown(d)
-    d.Peers.Config.Max = 1
-    d.Peers.Peers.AddPeer(addr)
-    // Nothing should happen if the peer list is full. It would have a nil
-    // dereference of Pool if it continued further
-    assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
-
-    c := gnetConnection(addr)
-    d.Pool.Pool.Pool[1] = c
-    d.Pool.Pool.Addresses[c.Addr()] = c
-    assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
-    assert.False(t, c.LastSent.IsZero())
-}
-
 func TestClearStaleConnections(t *testing.T) {
     dm := newDefaultDaemon()
     defer shutdown(dm)
@@ -583,14 +568,12 @@ func TestSendPings(t *testing.T) {
     _, ok := sr.Message.(*PingMessage)
     assert.True(t, ok)
     assert.False(t, c.LastSent.IsZero())
+
+    // No pings should be sent, since we just pinged
     lastSent := c.LastSent
     assert.NotPanics(t, d.Pool.sendPings)
     wait()
-    assert.Equal(t, len(d.Pool.Pool.SendResults), 1)
-    if len(d.Pool.Pool.SendResults) == 0 {
-        t.Fatal("SendResults empty, would block")
-    }
-    <-d.Pool.Pool.SendResults
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
     assert.Equal(t, c.LastSent, lastSent)
 }
 
@@ -822,14 +805,20 @@ func TestOnConnect(t *testing.T) {
     // Test a valid connection, unsolicited
     e := ConnectEvent{addr, false}
     p, _ := d.Peers.Peers.AddPeer(addr)
-    c := gnetConnection(addr)
+    c := setupExistingPool(d.Pool)
     go d.Pool.Pool.ConnectionWriteLoop(c)
     d.pendingConnections[addr] = p
-    d.Pool.Pool.Pool[1] = c
-    d.Pool.Pool.Addresses[addr] = c
     assert.NotPanics(t, func() { d.onConnect(e) })
     wait()
-    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 1)
+    if len(d.Pool.Pool.SendResults) == 0 {
+        t.Fatalf("SendResults empty, would block")
+    }
+    sr := <-d.Pool.Pool.SendResults
+    assert.Equal(t, sr.Connection, c)
+    assert.Nil(t, sr.Error)
+    _, ok := sr.Message.(*IntroductionMessage)
+    assert.True(t, ok)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // This is not an outgoing connection, we did not solicit it
@@ -860,10 +849,10 @@ func TestOnConnect(t *testing.T) {
     if len(d.Pool.Pool.SendResults) == 0 {
         t.Fatalf("SendResults empty, would block")
     }
-    sr := <-d.Pool.Pool.SendResults
+    sr = <-d.Pool.Pool.SendResults
     assert.Equal(t, sr.Connection, c)
     assert.Nil(t, sr.Error)
-    _, ok := sr.Message.(*IntroductionMessage)
+    _, ok = sr.Message.(*IntroductionMessage)
     assert.True(t, ok)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
@@ -885,6 +874,7 @@ func TestOnConnect(t *testing.T) {
     delete(d.ipCounts, addrIP)
 
     // Test a connection that is not connected by the time of processing
+    c.LastSent = util.ZeroTime()
     e = ConnectEvent{addr, true}
     delete(d.Pool.Pool.Addresses, addr)
     d.pendingConnections[addr] = p
@@ -1180,6 +1170,43 @@ func TestGetMirrorPort(t *testing.T) {
     assert.False(t, exists)
     delete(d.mirrorConnections, d.Messages.Mirror)
     shutdown(d)
+}
+
+func TestHandleMessageSendResult(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+
+    // Nothing happens: Message successfully sent and isnt a SendingTxnsMessage
+    m := NewGetBlocksMessage(6)
+    sr := gnet.SendResult{
+        Message:    m,
+        Connection: nil,
+        Error:      nil,
+    }
+    assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
+
+    // Logs a warning
+    sr.Error = errors.New("Failed")
+    sr.Connection = gnetConnection(addr)
+    assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
+
+    // Updates announcement
+    vc, _ := setupVisor()
+    v := NewVisor(vc)
+    tx := addUnconfirmedTxn(v)
+    assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
+    ut := v.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    assert.True(t, ut.Announced.IsZero())
+    txns := coin.Transactions{tx.Txn}
+    m2 := NewAnnounceTxnsMessage(txns.Hashes())
+    sr.Error = nil
+    sr.Message = m2
+    d.Visor = v
+    assert.NotPanics(t, func() {
+        d.handleMessageSendResult(sr)
+    })
+    ut = v.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    assert.False(t, ut.Announced.IsZero())
 }
 
 func TestIsLocalhost(t *testing.T) {

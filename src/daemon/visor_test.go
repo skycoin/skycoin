@@ -195,7 +195,7 @@ func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
 /* Tests for daemon's loop related to visor */
 
 func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
-    mv *visor.Visor, published bool) {
+    mv *visor.Visor) {
     vcfg.Config.BlockCreationInterval = 1
     defer gnet.EraseMessages()
     c := NewConfig()
@@ -209,12 +209,10 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     quit := make(chan int)
     defer closeDaemon(d, quit)
     gc := setupExistingPool(d.Pool)
-    if master && !published {
-        gc.Conn = NewFailingConn(addr)
-    }
     go d.Pool.Pool.ConnectionWriteLoop(gc)
     assert.True(t, gc.LastSent.IsZero())
     assert.Equal(t, len(d.Pool.Pool.Pool), 1)
+    assert.Equal(t, d.Pool.Pool.Pool[gc.Id], gc)
     assert.Equal(t, len(d.Pool.Pool.Addresses), 1)
     start := 0
     if !master {
@@ -222,68 +220,63 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     }
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(start))
     go d.Start(quit)
-    time.Sleep(time.Millisecond * 1250)
+    time.Sleep(time.Second + (time.Millisecond * 50))
     // Creation should not have occured, because no transaction
     assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(start))
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
 
     // Creation should occur with a transaction, if not a master
+    // Make a transaction
+    assert.False(t, d.Visor.Config.Disabled)
     assert.True(t, gc.LastSent.IsZero())
     dest := visor.NewWalletEntry()
-    _, err := d.Visor.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address,
+    tx, err := d.Visor.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address,
         d.Pool)
     wait()
     assert.Nil(t, err)
+    assert.Equal(t, d.Pool.Pool.Pool[gc.Id], gc)
+    assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 0)
     assert.Equal(t, len(d.Pool.Pool.Pool), 1)
-    assert.Equal(t, len(d.Pool.Pool.SendResults), 1)
-    if len(d.Pool.Pool.SendResults) == 0 {
-        t.Fatal("SendResults empty, would block")
-    }
-    sr := <-d.Pool.Pool.SendResults
-    assert.Equal(t, sr.Connection, gc)
-    _, ok := sr.Message.(*GiveTxnsMessage)
-    assert.True(t, ok)
-    if master && !published {
-        assert.NotNil(t, sr.Error)
-        assert.True(t, gc.LastSent.IsZero())
-    } else {
-        assert.Nil(t, sr.Error)
-        assert.False(t, gc.LastSent.IsZero())
-    }
-    time.Sleep(time.Millisecond * 1250)
+    assert.Equal(t, len(d.Pool.Pool.Addresses), 1)
+    // Since the daemon loop is running, it will have processed the SendResult
+    // Instead we can check if the txn was announced
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
+    ut := d.Visor.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    assert.False(t, ut.Announced.IsZero())
+    assert.False(t, gc.LastSent.IsZero())
+    ls := gc.LastSent
+
+    // Now, block should be created
+    time.Sleep(time.Second + (time.Millisecond * 50))
     final := start
     if master {
         final += 1
     }
-    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(final))
-    if !published {
-        gc.LastSent = util.ZeroTime()
-    }
-    if published {
-        assert.False(t, gc.LastSent.IsZero())
+    assert.Equal(t, len(d.Pool.Pool.Pool), 1)
+    // Again, we can't check SendResults since the daemon loop is running.
+    // We can only check that LastSent was updated, if its the master and it
+    // created the block.
+    if master {
+        assert.True(t, gc.LastSent.After(ls))
     } else {
-        assert.True(t, gc.LastSent.IsZero())
+        assert.Equal(t, gc.LastSent, ls)
     }
+    assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(final))
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestBlockCreationTicker(t *testing.T) {
     defer cleanupVisor()
     vcfg, mv := setupVisor()
     // No blocks should get created if we are not master
-    testBlockCreationTicker(t, vcfg, false, mv, false)
+    testBlockCreationTicker(t, vcfg, false, mv)
 }
 
 func TestBlockCreationTickerMaster(t *testing.T) {
     defer cleanupVisor()
     vcfg := setupMasterVisor()
     // Master should make a block
-    testBlockCreationTicker(t, vcfg, true, nil, true)
-}
-
-func TestBlockCreationTickerMasterUnpublished(t *testing.T) {
-    defer cleanupVisor()
-    vcfg := setupMasterVisor()
-    // Master should make a block, but fail to send to anyone
-    testBlockCreationTicker(t, vcfg, true, nil, false)
+    testBlockCreationTicker(t, vcfg, true, nil)
 }
 
 func TestUnconfirmedRefreshTicker(t *testing.T) {
@@ -306,6 +299,7 @@ func TestBlocksRequestTicker(t *testing.T) {
     vc, _ := setupVisor()
     vc.BlocksRequestRate = time.Millisecond * 10
     d, quit := newVisorDaemon(vc)
+    d.Config.DisableNetworking = false
     gc := gnetConnection(addr)
     go d.Pool.Pool.ConnectionWriteLoop(gc)
     d.Pool.Pool.Pool[gc.Id] = gc
@@ -322,6 +316,7 @@ func TestBlocksAnnounceTicker(t *testing.T) {
     vc, _ := setupVisor()
     vc.BlocksAnnounceRate = time.Millisecond * 10
     d, quit := newVisorDaemon(vc)
+    d.Config.DisableNetworking = false
     gc := gnetConnection(addr)
     go d.Pool.Pool.ConnectionWriteLoop(gc)
     d.Pool.Pool.Pool[gc.Id] = gc
@@ -338,6 +333,7 @@ func TestTransactionRebroadcastTicker(t *testing.T) {
     vc, _ := setupVisor()
     vc.TransactionRebroadcastRate = time.Millisecond * 10
     d, quit := newVisorDaemon(vc)
+    d.Config.DisableNetworking = false
     gc := gnetConnection(addr)
     go d.Pool.Pool.ConnectionWriteLoop(gc)
     d.Pool.Pool.Pool[gc.Id] = gc
@@ -880,6 +876,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
     v = NewVisor(vc)
     _, err = v.Spend(visor.Balance{100 * 1e6 * 1e6, 0}, 1024*1024,
         dest.Address, p)
+    wait()
     assert.Equal(t, len(p.Pool.SendResults), 1)
     for len(p.Pool.SendResults) > 0 {
         <-p.Pool.SendResults

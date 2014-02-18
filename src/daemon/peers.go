@@ -90,6 +90,9 @@ func (self *Peers) requestPeers(pool *Pool) {
     if self.Config.Disabled {
         return
     }
+    if self.Peers.Full() {
+        return
+    }
     m := NewGetPeersMessage()
     pool.Pool.BroadcastMessage(m)
 }

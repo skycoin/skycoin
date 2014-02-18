@@ -182,6 +182,8 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
         return
     }
     m := NewGiveTxnsMessage(coin.Transactions{t})
+    logger.Debug("Broadcasting GiveTxnsMessage to %d conns",
+        len(pool.Pool.Pool))
     pool.Pool.BroadcastMessage(m)
 }
 
@@ -195,8 +197,10 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
     if err != nil {
         return txn, err
     }
-    self.broadcastTransaction(txn, pool)
     err, _ = self.Visor.RecordTxn(txn)
+    if err == nil {
+        self.broadcastTransaction(txn, pool)
+    }
     return txn, err
 }
 

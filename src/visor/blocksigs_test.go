@@ -15,7 +15,7 @@ func makeBlocks(mv *Visor, n int) ([]SignedBlock, error) {
         if err != nil {
             return nil, err
         }
-        mv.RecordTxn(tx, false)
+        mv.RecordTxn(tx)
         sb, err := mv.CreateAndExecuteBlock()
         if err != nil {
             return nil, err

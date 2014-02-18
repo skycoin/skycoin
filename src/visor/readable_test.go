@@ -121,7 +121,7 @@ func transferCoinsToSelf(v *Visor, addr coin.Address) error {
     if err != nil {
         return err
     }
-    v.RecordTxn(tx, false)
+    v.RecordTxn(tx)
     _, err = v.CreateAndExecuteBlock()
     return err
 }
@@ -132,7 +132,7 @@ func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
     if err != nil {
         return err
     }
-    mv.RecordTxn(tx, false)
+    mv.RecordTxn(tx)
     sb, err := mv.CreateAndExecuteBlock()
     if err != nil {
         return err

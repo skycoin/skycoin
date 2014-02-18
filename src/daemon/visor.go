@@ -147,12 +147,13 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     since := self.Config.TransactionRebroadcastRate * 2
     since = (since * 9) / 10
     txns := self.Visor.UnconfirmedTxns.GetOldOwnedTransactions(since)
+    logger.Debug("Reannouncing %d of our old transactions", len(txns))
     if len(txns) == 0 {
         return
     }
     hashes := make([]coin.SHA256, len(txns))
-    for _, tx := range txns {
-        hashes = append(hashes, tx.Txn.Hash())
+    for i, tx := range txns {
+        hashes[i] = tx.Txn.Hash()
     }
     m := NewAnnounceTxnsMessage(hashes)
     pool.Pool.BroadcastMessage(m)
@@ -180,7 +181,7 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
     if self.Config.Disabled {
         return
     }
-    m := NewGiveTxnsMessage([]coin.Transaction{t})
+    m := NewGiveTxnsMessage(coin.Transactions{t})
     pool.Pool.BroadcastMessage(m)
 }
 
@@ -195,7 +196,8 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
         return txn, err
     }
     self.broadcastTransaction(txn, pool)
-    return txn, self.Visor.RecordTxn(txn)
+    err, _ = self.Visor.RecordTxn(txn)
+    return txn, err
 }
 
 // Resends a known UnconfirmedTxn.
@@ -240,9 +242,11 @@ func (self *Visor) EstimateBlockchainLength() uint64 {
     if len(self.blockchainLengths) < 2 {
         return ourLen
     }
-    lengths := make(BlockchainLengths, 0, len(self.blockchainLengths))
+    lengths := make(BlockchainLengths, len(self.blockchainLengths))
+    i := 0
     for _, seq := range self.blockchainLengths {
-        lengths = append(lengths, seq)
+        lengths[i] = seq
+        i++
     }
     sort.Sort(lengths)
     median := len(lengths) / 2
@@ -318,7 +322,9 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
+    logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
     if d.Visor.Config.Disabled {
+        logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
         return
     }
     processed := 0
@@ -335,15 +341,16 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
         }
         err := d.Visor.Visor.ExecuteSignedBlock(b)
         if err == nil {
-            logger.Debug("Added new block %d", b.Block.Head.BkSeq)
+            logger.Critical("Added new block %d", b.Block.Head.BkSeq)
             processed++
         } else {
-            logger.Info("Failed to execute received block: %v", err)
+            logger.Critical("Failed to execute received block: %v", err)
             // Blocks must be received in order, so if one fails its assumed
             // the rest are failing
             break
         }
     }
+    logger.Critical("Processed %d/%d blocks", processed, len(self.Blocks))
     if processed == 0 {
         return
     }
@@ -383,6 +390,10 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
     d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
+type SendingTxnsMessage interface {
+    GetTxns() []coin.SHA256
+}
+
 // Tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
     Txns []coin.SHA256
@@ -393,6 +404,10 @@ func NewAnnounceTxnsMessage(txns []coin.SHA256) *AnnounceTxnsMessage {
     return &AnnounceTxnsMessage{
         Txns: txns,
     }
+}
+
+func (self *AnnounceTxnsMessage) GetTxns() []coin.SHA256 {
+    return self.Txns
 }
 
 func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
@@ -446,14 +461,18 @@ func (self *GetTxnsMessage) Process(d *Daemon) {
 }
 
 type GiveTxnsMessage struct {
-    Txns []coin.Transaction
+    Txns coin.Transactions
     c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
+func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
     return &GiveTxnsMessage{
         Txns: txns,
     }
+}
+
+func (self *GiveTxnsMessage) GetTxns() []coin.SHA256 {
+    return self.Txns.Hashes()
 }
 
 func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
@@ -469,7 +488,8 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     hashes := make([]coin.SHA256, 0, len(self.Txns))
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        if err := d.Visor.Visor.RecordTxn(txn); err == nil {
+        // Only announce transactions that are new to us
+        if err, known := d.Visor.Visor.RecordTxn(txn); err == nil && !known {
             hashes = append(hashes, txn.Hash())
         } else {
             logger.Warning("Failed to record txn: %v", err)
@@ -487,11 +507,11 @@ type BlockchainLengths []uint64
 func (self BlockchainLengths) Len() int {
     return len(self)
 }
+
 func (self BlockchainLengths) Swap(i, j int) {
-    t := self[i]
-    self[i] = self[j]
-    self[j] = t
+    self[i], self[j] = self[j], self[i]
 }
+
 func (self BlockchainLengths) Less(i, j int) bool {
     return self[i] < self[j]
 }

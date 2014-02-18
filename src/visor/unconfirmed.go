@@ -47,12 +47,9 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
     }
 }
 
-// Adds a coin.Transaction to the pool
-func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) error {
-    if err := bc.VerifyTransaction(t, maxSize); err != nil {
-        return err
-    }
+// Creates an unconfirmed transaction
+func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
+    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) UnconfirmedTxn {
     now := util.Now()
     ut := UnconfirmedTxn{
         Txn:          t,
@@ -62,15 +59,17 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         IsOurReceive: false,
         IsOurSpend:   false,
     }
+
     // Add predicted unspents
     uxs := coin.CreateExpectedUnspents(t)
     for i, _ := range uxs {
         self.Unspent.Add(uxs[i])
     }
+
+    // Check if this unspent is related to us
     if addrs != nil {
         // Check if this is one of our receiving txns
         for i, _ := range t.Out {
-            logger.Debug("To address: %s", t.Out[i].Address.String())
             if _, ok := addrs[t.Out[i].Address]; ok {
                 ut.IsOurReceive = true
                 break
@@ -79,7 +78,6 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         // Check if this is one of our spending txns
         for i, _ := range t.In {
             if ux, ok := bc.Unspent.Get(t.In[i]); ok {
-                logger.Debug("Ux address: %s", ux.Body.Address.String())
                 if _, ok := addrs[ux.Body.Address]; ok {
                     ut.IsOurSpend = true
                     break
@@ -87,9 +85,33 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
             }
         }
     }
-    self.Txns[t.Hash()] = ut
 
-    return nil
+    return ut
+}
+
+// Adds a coin.Transaction to the pool, or updates an existing one's timestamps
+// Returns an error if txn is invalid, and whether the transaction already
+// existed in the pool.
+func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
+    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) (error, bool) {
+
+    if err := bc.VerifyTransaction(t, maxSize); err != nil {
+        return err, false
+    }
+
+    // Update if we already have this txn
+    ut, ok := self.Txns[t.Hash()]
+    if ok {
+        now := util.Now()
+        ut.Received = now
+        ut.Checked = now
+        self.Txns[ut.Txn.Hash()] = ut
+        return nil, true
+    }
+
+    self.Txns[t.Hash()] = self.createUnconfirmedTxn(bc, t, addrs, maxSize)
+
+    return nil, false
 }
 
 // Returns underlying coin.Transactions

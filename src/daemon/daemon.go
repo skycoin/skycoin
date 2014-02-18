@@ -691,8 +691,8 @@ func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
             reflect.TypeOf(r.Message).Name(), r.Connection.Addr(), r.Error)
     }
     switch r.Message.(type) {
-    case *AnnounceTxnsMessage:
-        self.Visor.SetTxnsAnnounced(r.Message.(*AnnounceTxnsMessage).Txns)
+    case SendingTxnsMessage:
+        self.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
     default:
     }
 }

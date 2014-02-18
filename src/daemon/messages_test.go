@@ -79,32 +79,43 @@ func testSimpleMessageHandler(t *testing.T, d *Daemon, m gnet.Message) {
 func TestGetPeersMessage(t *testing.T) {
     d := newDefaultDaemon()
     defer shutdown(d)
+    p := d.Pool
     m := NewGetPeersMessage()
     testSimpleMessageHandler(t, d, m)
-
-    // Test disabled
-    d.Peers.Config.Disabled = true
     d.Peers.Peers.AddPeer(addr)
     m.c = messageContext(addr)
+
+    // Peers disabled
+    d.Peers.Config.Disabled = true
     assert.NotPanics(t, func() { m.Process(d) })
+    wait()
+    assert.Equal(t, len(p.Pool.SendResults), 0)
     assert.True(t, m.c.Conn.LastSent.IsZero())
 
-    // Test enabled
+    // Peers enabled
     d.Peers.Config.Disabled = false
     m.c = messageContext(addr)
+    defer m.c.Conn.Close()
+    go p.Pool.ConnectionWriteLoop(m.c.Conn)
     assert.NotPanics(t, func() { m.Process(d) })
+    wait()
+    assert.Equal(t, len(p.Pool.SendResults), 1)
+    if len(p.Pool.SendResults) == 0 {
+        t.Fatal("SendResults empty, would block")
+    }
+    sr := <-p.Pool.SendResults
+    assert.Nil(t, sr.Error)
+    assert.Equal(t, sr.Connection, m.c.Conn)
+    _, ok := sr.Message.(*GivePeersMessage)
+    assert.True(t, ok)
     assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // If no peers, nothing should happen
     m.c.Conn.LastSent = util.ZeroTime()
     delete(d.Peers.Peers.Peerlist, addr)
     assert.NotPanics(t, func() { m.Process(d) })
-    assert.True(t, m.c.Conn.LastSent.IsZero())
-
-    // Test with failing send
-    d.Peers.Peers.AddPeer(addr)
-    m.c.Conn.Conn = NewFailingConn(addr)
-    assert.NotPanics(t, func() { m.Process(d) })
+    wait()
+    assert.Equal(t, len(p.Pool.SendResults), 0)
     assert.True(t, m.c.Conn.LastSent.IsZero())
 
     // Test serialization
@@ -262,12 +273,25 @@ func TestIntroductionMessageProcess(t *testing.T) {
 func TestPingMessage(t *testing.T) {
     d := newDefaultDaemon()
     defer shutdown(d)
+    p := d.Pool.Pool
     m := &PingMessage{}
     testSimpleMessageHandler(t, d, m)
 
     m.c = messageContext(addr)
+    go p.ConnectionWriteLoop(m.c.Conn)
+    defer m.c.Conn.Close()
     assert.NotPanics(t, func() { m.Process(d) })
     // A pong message should have been sent
+    wait()
+    assert.Equal(t, len(p.SendResults), 1)
+    if len(p.SendResults) == 0 {
+        t.Fatalf("SendResults empty, would block")
+    }
+    sr := <-p.SendResults
+    assert.Equal(t, sr.Connection, m.c.Conn)
+    assert.Nil(t, sr.Error)
+    _, ok := sr.Message.(*PongMessage)
+    assert.True(t, ok)
     assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // Test serialization
@@ -276,12 +300,6 @@ func TestPingMessage(t *testing.T) {
     m2 := PingMessage{}
     assert.Nil(t, encoder.DeserializeRaw(b, &m2))
     assert.Equal(t, mm, m2)
-
-    // Failing to send should not cause a panic
-    m.c.Conn.Conn = NewFailingConn(addr)
-    m.c.Conn.LastSent = util.ZeroTime()
-    assert.NotPanics(t, func() { m.Process(d) })
-    assert.True(t, m.c.Conn.LastSent.IsZero())
 
     gnet.EraseMessages()
 }
@@ -312,6 +330,7 @@ func gnetConnection(addr string) *gnet.Connection {
         LastSent:     util.ZeroTime(),
         LastReceived: util.ZeroTime(),
         Buffer:       &bytes.Buffer{},
+        WriteQueue:   make(chan gnet.Message, 16),
     }
 }
 

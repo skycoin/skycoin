@@ -350,17 +350,21 @@ func TestDaemonLoopCullInvalidTickerDisabled(t *testing.T) {
 func testDaemonLoopRequestPeersTicker(t *testing.T, d *Daemon, quit chan int,
     sent bool) {
     c := gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     d.Pool.Pool.Pool[1] = c
     d.Pool.Pool.Addresses[c.Addr()] = c
     assert.True(t, c.LastSent.IsZero())
     d.Peers.Config.RequestRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
+    wait()
     if sent {
         assert.False(t, c.LastSent.IsZero())
     } else {
         assert.True(t, c.LastSent.IsZero())
     }
+    c.Close()
+    wait()
 }
 
 func TestDaemonLoopRequestPeersTicker(t *testing.T) {
@@ -438,6 +442,7 @@ func TestDaemonLoopClearStaleConnectionsTickerDisabled(t *testing.T) {
 func testDaemonLoopPingCheckTicker(t *testing.T, d *Daemon, quit chan int,
     sent bool) {
     c := gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     c.LastSent = util.ZeroTime()
     d.Pool.Pool.Pool[c.Id] = c
     d.Pool.Config.IdleCheckRate = time.Millisecond * 10
@@ -448,6 +453,8 @@ func testDaemonLoopPingCheckTicker(t *testing.T, d *Daemon, quit chan int,
     } else {
         assert.True(t, c.LastSent.IsZero())
     }
+    c.Close()
+    wait()
 }
 
 func TestDaemonLoopPingCheckTicker(t *testing.T) {
@@ -525,6 +532,7 @@ func TestDaemonLoopMessageHandlingTickerDisabled(t *testing.T) {
 
 func TestDaemonRequestPeers(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
     d.Peers.Config.Max = 1
     d.Peers.Peers.AddPeer(addr)
     // Nothing should happen if the peer list is full. It would have a nil
@@ -536,18 +544,11 @@ func TestDaemonRequestPeers(t *testing.T) {
     d.Pool.Pool.Addresses[c.Addr()] = c
     assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
     assert.False(t, c.LastSent.IsZero())
-
-    // Failing send should not panic
-    c.Conn = NewFailingConn(addr)
-    c.LastSent = util.ZeroTime()
-    assert.NotPanics(t, func() { d.Peers.requestPeers(d.Pool) })
-    assert.True(t, c.LastSent.IsZero())
-
-    shutdown(d)
 }
 
 func TestClearStaleConnections(t *testing.T) {
     dm := newDefaultDaemon()
+    defer shutdown(dm)
     c := gnetConnection(addr)
     d := gnetConnection(addrb)
     c.LastReceived = util.ZeroTime()
@@ -562,29 +563,41 @@ func TestClearStaleConnections(t *testing.T) {
     de := <-dm.Pool.Pool.DisconnectQueue
     assert.Equal(t, de.ConnId, 1)
     assert.Equal(t, de.Reason, DisconnectIdle)
-    shutdown(dm)
 }
 
 func TestSendPings(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
     c := gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     d.Pool.Pool.Pool[1] = c
     assert.NotPanics(t, d.Pool.sendPings)
+    wait()
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 1)
+    if len(d.Pool.Pool.SendResults) == 0 {
+        t.Fatal("SendResults empty, would block")
+    }
+    sr := <-d.Pool.Pool.SendResults
+    assert.Equal(t, sr.Connection, c)
+    assert.Nil(t, sr.Error)
+    _, ok := sr.Message.(*PingMessage)
+    assert.True(t, ok)
     assert.False(t, c.LastSent.IsZero())
     lastSent := c.LastSent
     assert.NotPanics(t, d.Pool.sendPings)
+    wait()
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 1)
+    if len(d.Pool.Pool.SendResults) == 0 {
+        t.Fatal("SendResults empty, would block")
+    }
+    <-d.Pool.Pool.SendResults
     assert.Equal(t, c.LastSent, lastSent)
-
-    // Failing write should not panic
-    c.Conn = NewFailingConn(addr)
-    c.LastSent = util.ZeroTime()
-    assert.NotPanics(t, d.Pool.sendPings)
-    assert.True(t, c.LastSent.IsZero())
-    shutdown(d)
 }
 
 func TestConnectToRandomPeer(t *testing.T) {
     d := newDefaultDaemon()
+    defer shutdown(d)
+    defer cleanupPeers()
     d.Pool.Pool.Config.DialTimeout = 1 // nanosecond
 
     assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
@@ -689,9 +702,6 @@ func TestConnectToRandomPeer(t *testing.T) {
     assert.Equal(t, len(d.pendingConnections), 0)
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.ipCounts, addrIP)
-
-    shutdown(d)
-    cleanupPeers()
 }
 
 func TestHandleConnectionError(t *testing.T) {
@@ -813,10 +823,13 @@ func TestOnConnect(t *testing.T) {
     e := ConnectEvent{addr, false}
     p, _ := d.Peers.Peers.AddPeer(addr)
     c := gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     d.pendingConnections[addr] = p
     d.Pool.Pool.Pool[1] = c
     d.Pool.Pool.Addresses[addr] = c
     assert.NotPanics(t, func() { d.onConnect(e) })
+    wait()
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // This is not an outgoing connection, we did not solicit it
@@ -832,13 +845,26 @@ func TestOnConnect(t *testing.T) {
     // Cleanup
     delete(d.ipCounts, addrIP)
     delete(d.ExpectingIntroductions, addr)
+    c.Close()
 
     // Test a valid connection, solicited
     e = ConnectEvent{addr, true}
     c = gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     d.pendingConnections[addr] = p
     d.Pool.Pool.Addresses[addr] = c
+    d.Pool.Pool.Pool[c.Id] = c
     assert.NotPanics(t, func() { d.onConnect(e) })
+    wait()
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 1)
+    if len(d.Pool.Pool.SendResults) == 0 {
+        t.Fatalf("SendResults empty, would block")
+    }
+    sr := <-d.Pool.Pool.SendResults
+    assert.Equal(t, sr.Connection, c)
+    assert.Nil(t, sr.Error)
+    _, ok := sr.Message.(*IntroductionMessage)
+    assert.True(t, ok)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // We should mark this as an outgoing connection since we solicited it
@@ -853,40 +879,7 @@ func TestOnConnect(t *testing.T) {
     // d.ipCounts should be 1
     assert.Equal(t, d.ipCounts[addrIP], 1)
     // Cleanup
-    delete(d.ExpectingIntroductions, addr)
-    delete(d.OutgoingConnections, addr)
-    delete(d.ipCounts, addrIP)
-
-    // Test a valid connection, but failing to send a message
-    e = ConnectEvent{addr, true}
-    c = gnetConnection(addr)
-    c.Conn = NewFailingConn(addr)
-    d.pendingConnections[addr] = p
-    d.Pool.Pool.Addresses[addr] = c
-    assert.NotPanics(t, func() { d.onConnect(e) })
-    wait()
-    // This connection should no longer be pending
-    assert.Equal(t, len(d.pendingConnections), 0)
-    // We should mark this as an outgoing connection since we solicited it
-    assert.Equal(t, len(d.OutgoingConnections), 1)
-    assert.NotNil(t, d.OutgoingConnections[addr])
-    // We should be expecting its version
-    assert.Equal(t, len(d.ExpectingIntroductions), 1)
-    _, exists = d.ExpectingIntroductions[addr]
-    assert.True(t, exists)
-    // An introduction should not have been sent, it failed
-    assert.True(t, c.LastSent.IsZero())
-    // We should be looking to disconnect this client
-    assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 1)
-    if len(d.Pool.Pool.DisconnectQueue) == 0 {
-        t.Fatal("Pool.DisconnectQueue is empty, would block")
-    }
-    de := <-d.Pool.Pool.DisconnectQueue
-    assert.Equal(t, de.ConnId, 1)
-    assert.Equal(t, de.Reason, DisconnectFailedSend)
-    // d.ipCounts should be 1, since we haven't processed the disconnect yet
-    assert.Equal(t, d.ipCounts[addrIP], 1)
-    // Cleanup
+    c.Close()
     delete(d.ExpectingIntroductions, addr)
     delete(d.OutgoingConnections, addr)
     delete(d.ipCounts, addrIP)
@@ -896,6 +889,8 @@ func TestOnConnect(t *testing.T) {
     delete(d.Pool.Pool.Addresses, addr)
     d.pendingConnections[addr] = p
     assert.NotPanics(t, func() { d.onConnect(e) })
+    wait()
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // No message should have been sent
@@ -908,10 +903,15 @@ func TestOnConnect(t *testing.T) {
     // Test a connection that is blacklisted
     e = ConnectEvent{addr, true}
     c = gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     d.Peers.Peers.AddBlacklistEntry(addr, time.Hour)
     d.pendingConnections[addr] = p
     d.Pool.Pool.Addresses[addr] = c
+    d.Pool.Pool.Pool[c.Id] = c
     assert.NotPanics(t, func() { d.onConnect(e) })
+    wait()
+    // No introduction should have been sent
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // No message should have been sent
@@ -925,19 +925,25 @@ func TestOnConnect(t *testing.T) {
     if len(d.Pool.Pool.DisconnectQueue) == 0 {
         t.Fatal("pool.Pool.DisconnectQueue is empty, would block")
     }
-    de = <-d.Pool.Pool.DisconnectQueue
+    de := <-d.Pool.Pool.DisconnectQueue
     assert.Equal(t, de.ConnId, 1)
     assert.Equal(t, de.Reason, DisconnectIsBlacklisted)
     // Cleanup
+    c.Close()
     delete(d.Peers.Peers.Blacklist, addr)
 
     // Test a connection that has reached maxed ipCount
     e = ConnectEvent{addr, true}
     c = gnetConnection(addr)
+    go d.Pool.Pool.ConnectionWriteLoop(c)
     d.ipCounts[addrIP] = d.Config.IPCountsMax
     d.pendingConnections[addr] = p
     d.Pool.Pool.Addresses[addr] = c
+    d.Pool.Pool.Pool[c.Id] = c
     assert.NotPanics(t, func() { d.onConnect(e) })
+    wait()
+    // No introduction should have been sent
+    assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
     // This connection should no longer be pending
     assert.Equal(t, len(d.pendingConnections), 0)
     // No message should have been sent
@@ -955,6 +961,7 @@ func TestOnConnect(t *testing.T) {
     assert.Equal(t, de.ConnId, 1)
     assert.Equal(t, de.Reason, DisconnectIPLimitReached)
     // Cleanup
+    c.Close()
     delete(d.ipCounts, addrIP)
     gnet.EraseMessages()
     shutdown(d)
@@ -969,12 +976,13 @@ func setupTestOnDisconnect(d *Daemon, c *gnet.Connection, mirror uint32) {
 }
 
 func TestOnDisconnect(t *testing.T) {
+    gnet.EraseMessages()
     d := newDefaultDaemon()
     c := gnetConnection(addr)
     var mirror uint32 = 100
 
     // Not blacklistable
-    reason := DisconnectFailedSend
+    reason := gnet.DisconnectWriteFailed
     setupTestOnDisconnect(d, c, mirror)
     assert.NotPanics(t, func() { d.onGnetDisconnect(c, reason) })
     // Should not be in blacklist
@@ -1010,7 +1018,7 @@ func TestOnDisconnect(t *testing.T) {
 
     // d.mirrorConnections should retain a submap if there are other ports
     // inside
-    reason = DisconnectFailedSend
+    reason = gnet.DisconnectWriteFailed
     setupTestOnDisconnect(d, c, mirror)
     d.mirrorConnections[mirror][strings.Split(addrb, ":")[0]] = addrPort
     assert.NotPanics(t, func() { d.onGnetDisconnect(c, reason) })

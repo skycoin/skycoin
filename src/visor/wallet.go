@@ -176,9 +176,11 @@ func (self *Wallet) populate(n int) {
 
 // Returns all coin.Addresses in this Wallet
 func (self *Wallet) GetAddresses() []coin.Address {
-    addrs := make([]coin.Address, 0, len(self.Entries))
+    addrs := make([]coin.Address, len(self.Entries))
+    i := 0
     for a, _ := range self.Entries {
-        addrs = append(addrs, a)
+        addrs[i] = a
+        i++
     }
     return addrs
 }
@@ -263,9 +265,11 @@ type ReadableWallet struct {
 
 // Converts a Wallet to a ReadableWallet
 func NewReadableWallet(w *Wallet) *ReadableWallet {
-    readable := make([]ReadableWalletEntry, 0, len(w.Entries))
+    readable := make([]ReadableWalletEntry, len(w.Entries))
+    i := 0
     for _, e := range w.Entries {
-        readable = append(readable, NewReadableWalletEntry(&e))
+        readable[i] = NewReadableWalletEntry(&e)
+        i++
     }
     return &ReadableWallet{
         Entries: readable,

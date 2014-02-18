@@ -492,7 +492,8 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
     hashes := make([]coin.SHA256, 0, len(self.Txns))
     // Update unconfirmed pool with these transactions
     for _, txn := range self.Txns {
-        // Only announce transactions that are new to us
+        // Only announce transactions that are new to us, so that peers can't
+        // spam relays
         if err, known := d.Visor.Visor.RecordTxn(txn); err == nil && !known {
             hashes = append(hashes, txn.Hash())
         } else {

@@ -284,12 +284,10 @@ func (self *UnspentPool) Del(h SHA256) {
 // Delete multiple hashes in a batch
 func (self *UnspentPool) DelMultiple(hashes []SHA256) {
     indices := make([]int, 0, len(hashes))
-    for _, h := range hashes {
-        i, ok := self.hashIndex[h]
-        if !ok {
-            continue
+    for i, _ := range hashes {
+        if j, ok := self.hashIndex[hashes[i]]; ok {
+            indices = append(indices, j)
         }
-        indices = append(indices, i)
     }
     sort.Sort(sort.Reverse(sort.IntSlice(indices)))
     for _, i := range indices {
@@ -322,8 +320,7 @@ func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
         uxo[a] = make(UxArray, 0)
     }
     for _, ux := range self.Arr {
-        _, exists := m[ux.Body.Address]
-        if exists {
+        if _, exists := m[ux.Body.Address]; exists {
             uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
         }
     }
@@ -334,9 +331,11 @@ type AddressUnspents map[Address]UxArray
 
 // Returns the Address keys
 func (self AddressUnspents) Keys() []Address {
-    addrs := make([]Address, 0, len(self))
+    addrs := make([]Address, len(self))
+    i := 0
     for k, _ := range self {
-        addrs = append(addrs, k)
+        addrs[i] = k
+        i++
     }
     return addrs
 }

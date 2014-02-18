@@ -132,9 +132,9 @@ func TestGivePeersMessage(t *testing.T) {
     d := newDefaultDaemon()
     defer shutdown(d)
     addrs := []string{addr, addrb, "7"}
-    peers := make([]*pex.Peer, 0, 3)
-    for _, addr := range addrs {
-        peers = append(peers, &pex.Peer{Addr: addr})
+    peers := make([]*pex.Peer, 3)
+    for i, addr := range addrs {
+        peers[i] = &pex.Peer{Addr: addr}
     }
     m := NewGivePeersMessage(peers)
     assert.Equal(t, len(m.GetPeers()), 2)
@@ -349,9 +349,9 @@ func (self *DummyGivePeersMessage) Send(c net.Conn) error {
 }
 
 func (self *DummyGivePeersMessage) GetPeers() []string {
-    p := make([]string, 0, len(self.peers))
-    for _, ps := range self.peers {
-        p = append(p, ps.Addr)
+    p := make([]string, len(self.peers))
+    for i, ps := range self.peers {
+        p[i] = ps.Addr
     }
     return p
 }

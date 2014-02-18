@@ -137,12 +137,12 @@ func (self RPC) GetAddressTransactions(v *Visor,
         return nil
     }
     addrTxns := v.GetAddressTransactions(addr)
-    txns := make([]TransactionResult, 0, len(addrTxns))
-    for _, tx := range addrTxns {
-        txns = append(txns, TransactionResult{
+    txns := make([]TransactionResult, len(addrTxns))
+    for i, tx := range addrTxns {
+        txns[i] = TransactionResult{
             Transaction: NewReadableTransaction(&tx.Txn),
             Status:      tx.Status,
-        })
+        }
     }
     return &TransactionResults{
         Txns: txns,

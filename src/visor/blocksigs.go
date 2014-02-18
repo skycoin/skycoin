@@ -70,12 +70,14 @@ func LoadBlockSigs(filename string) (BlockSigs, error) {
 
 func (self *BlockSigs) Save(filename string) error {
     // Convert the Sigs map to an array of element
-    sigs := make([]BlockSigSerialized, 0, len(self.Sigs))
+    sigs := make([]BlockSigSerialized, len(self.Sigs))
+    i := 0
     for k, v := range self.Sigs {
-        sigs = append(sigs, BlockSigSerialized{
+        sigs[i] = BlockSigSerialized{
             BkSeq: k,
             Sig:   v,
-        })
+        }
+        i++
     }
     bss := BlockSigsSerialized{sigs}
     data := encoder.Serialize(bss)

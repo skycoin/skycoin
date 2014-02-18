@@ -178,9 +178,9 @@ func NewGivePeersMessage(peers []*pex.Peer) *GivePeersMessage {
 // It returns the peers contained in the message as an array of "ip:port"
 // strings.
 func (self *GivePeersMessage) GetPeers() []string {
-    peers := make([]string, 0, len(self.Peers))
-    for _, ipaddr := range self.Peers {
-        peers = append(peers, ipaddr.String())
+    peers := make([]string, len(self.Peers))
+    for i, ipaddr := range self.Peers {
+        peers[i] = ipaddr.String()
     }
     return peers
 }

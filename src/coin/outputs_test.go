@@ -276,8 +276,18 @@ func TestUnspentPoolDelFromArray(t *testing.T) {
     assert.NotPanics(t, func() { up.delFromArray(0) })
     assert.Equal(t, len(up.Arr), 0)
 
-    delete(up.hashIndex, ux.Hash())
+    up = NewUnspentPool()
     ux2 := makeUxOut(t)
+    up.Add(ux)
+    up.Add(ux2)
+    assert.Equal(t, len(up.Arr), 2)
+    assert.NotPanics(t, func() { up.delFromArray(1) })
+    assert.Equal(t, len(up.Arr), 1)
+    assert.Equal(t, up.Arr[0], ux)
+    up.delFromArray(0)
+    assert.Equal(t, len(up.Arr), 0)
+
+    up = NewUnspentPool()
     ux3 := makeUxOut(t)
     up.Add(ux)
     up.Add(ux2)
@@ -287,6 +297,9 @@ func TestUnspentPoolDelFromArray(t *testing.T) {
     assert.Equal(t, len(up.Arr), 2)
     assert.Equal(t, up.Arr[0], ux)
     assert.Equal(t, up.Arr[1], ux3)
+    assert.NotPanics(t, func() { up.delFromArray(0) })
+    assert.Equal(t, len(up.Arr), 1)
+    assert.Equal(t, up.Arr[0], ux3)
 }
 
 func TestUnspentPoolDelPrivate(t *testing.T) {

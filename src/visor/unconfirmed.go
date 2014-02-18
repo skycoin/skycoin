@@ -116,9 +116,11 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
 
 // Returns underlying coin.Transactions
 func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
-    txns := make(coin.Transactions, 0, len(self.Txns))
+    txns := make(coin.Transactions, len(self.Txns))
+    i := 0
     for _, t := range self.Txns {
-        txns = append(txns, t.Txn)
+        txns[i] = t.Txn
+        i++
     }
     return txns
 }
@@ -132,8 +134,8 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
     delete(self.Txns, h)
     outputs := coin.CreateExpectedUnspents(t.Txn)
     hashes := make([]coin.SHA256, len(outputs))
-    for _, o := range outputs {
-        hashes = append(hashes, o.Hash())
+    for i, _ := range outputs {
+        hashes[i] = outputs[i].Hash()
     }
     self.Unspent.DelMultiple(hashes)
 }
@@ -142,7 +144,7 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
 // single RemoveTxns
 func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
     hashes []coin.SHA256) {
-    uxo := make([]coin.UxOut, 0, len(hashes))
+    uxo := make([]coin.UxOut, 0)
     for i, _ := range hashes {
         if t, ok := self.Txns[hashes[i]]; ok {
             delete(self.Txns, hashes[i])

@@ -47,7 +47,7 @@ var (
 const (
     // If the block header time is further in the future than this, it is
     // rejected.
-    blockTimeFutureMultipleMax uint64 = 20 //deprecate
+    blockTimeFutureMultipleMax uint64 = 20              //deprecate
     genesisCoinVolume          uint64 = 100 * 1e6 * 1e6 //100 million coins
     genesisCoinHours           uint64 = 1024 * 1024
     //each coin is one million droplets, which are the base unit
@@ -299,6 +299,10 @@ func (self *Blockchain) VerifyBlock(b *Block, maxSize int) error {
     if err := verifyBlockHeader(self.Head(), b); err != nil {
         return err
     }
+    // TODO -- might want to remove this check, to allow block size limits
+    // to change over time.  At least, for new blocks, check the size against
+    // the currently allowed size, but for old blocks, assume the size is
+    // correct.
     if b.Size() > maxSize {
         return errors.New("Block too large")
     }

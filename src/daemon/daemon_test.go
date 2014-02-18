@@ -189,6 +189,11 @@ func TestDaemonLoopDisabledPanics(t *testing.T) {
     d.messageEvents <- MessageEvent{}
     go panics()
     <-done
+
+    d.Pool.Pool.SendResults <- gnet.SendResult{}
+    go panics()
+    <-done
+
     shutdown(d)
 }
 
@@ -246,6 +251,27 @@ func TestDaemonLoopDisconnectQueue(t *testing.T) {
     d.Pool.Pool.DisconnectQueue <- e
     wait()
     assert.Equal(t, len(d.Pool.Pool.Pool), 0)
+}
+
+func TestDaemonLoopSendResults(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    defer closeDaemon(d, quit)
+    go d.Start(quit)
+    c := gnetConnection(addr)
+    d.Pool.Pool.Pool[1] = c
+    vc, _ := setupVisor()
+    v := NewVisor(vc)
+    d.Visor = v
+    txn := addUnconfirmedTxn(d.Visor)
+    ut := d.Visor.Visor.UnconfirmedTxns.Txns[txn.Hash()]
+    assert.True(t, ut.Announced.IsZero())
+    txns := coin.Transactions{txn.Txn}
+    m := NewAnnounceTxnsMessage(txns.Hashes())
+    sr := gnet.SendResult{Connection: c, Error: nil, Message: m}
+    d.Pool.Pool.SendResults <- sr
+    wait()
+    ut = d.Visor.Visor.UnconfirmedTxns.Txns[txn.Hash()]
+    assert.False(t, ut.Announced.IsZero())
 }
 
 type DummyAsyncMessage struct {
@@ -1185,12 +1211,7 @@ func TestHandleMessageSendResult(t *testing.T) {
     }
     assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
 
-    // Logs a warning
-    sr.Error = errors.New("Failed")
-    sr.Connection = gnetConnection(addr)
-    assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
-
-    // Updates announcement
+    // Add a txn for txn announce update testing
     vc, _ := setupVisor()
     v := NewVisor(vc)
     tx := addUnconfirmedTxn(v)
@@ -1199,6 +1220,16 @@ func TestHandleMessageSendResult(t *testing.T) {
     assert.True(t, ut.Announced.IsZero())
     txns := coin.Transactions{tx.Txn}
     m2 := NewAnnounceTxnsMessage(txns.Hashes())
+
+    // Logs a warning, and exits
+    sr.Message = m2
+    sr.Error = errors.New("Failed")
+    sr.Connection = gnetConnection(addr)
+    assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
+    ut = v.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    assert.True(t, ut.Announced.IsZero())
+
+    // Updates announcement
     sr.Error = nil
     sr.Message = m2
     d.Visor = v

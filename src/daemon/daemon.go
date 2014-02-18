@@ -688,6 +688,7 @@ func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
     if r.Error != nil {
         logger.Warning("Failed to send %s to %s: %v",
             reflect.TypeOf(r.Message).Name(), r.Connection.Addr(), r.Error)
+        return
     }
     switch r.Message.(type) {
     case SendingTxnsMessage:

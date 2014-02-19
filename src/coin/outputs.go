@@ -317,7 +317,7 @@ func (self UxArray) Set() map[SHA256]byte {
 func (self UxArray) Sub(other UxArray) UxArray {
     uxa := make(UxArray, 0)
     m := other.Set()
-    for i, _ := range other {
+    for i, _ := range self {
         if _, ok := m[self[i].Hash()]; !ok {
             uxa = append(uxa, self[i])
         }
@@ -388,43 +388,13 @@ func (self AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
     return ox
 }
 
-// Converts an AddressUxOuts map to an array
-func (self AddressUxOuts) Flatten() AddressUnspents {
-    oxs := make(AddressUnspents, 0, len(self))
-    for a, uxs := range self {
+// Converts an AddressUxOuts map to a UxArray
+func (self AddressUxOuts) Flatten() UxArray {
+    oxs := make(UxArray, 0, len(self))
+    for _, uxs := range self {
         for i, _ := range uxs {
-            oxs = append(oxs, AddressUnspent{
-                Address: a,
-                Unspent: uxs[i],
-            })
+            oxs = append(oxs, uxs[i])
         }
     }
     return oxs
-}
-
-// An elemented for flattened AddressUxOuts
-type AddressUnspent struct {
-    Address Address
-    Unspent UxOut
-}
-
-type AddressUnspents []AddressUnspent
-
-func (self AddressUnspents) Set() map[SHA256]byte {
-    m := make(map[SHA256]byte, len(self))
-    for i, _ := range self {
-        m[self[i].Unspent.Hash()] = byte(1)
-    }
-    return m
-}
-
-func (self AddressUnspents) Sub(other AddressUnspents) AddressUnspents {
-    m := other.Set()
-    o := make(AddressUnspents, 0)
-    for i, _ := range self {
-        if _, ok := m[self[i].Unspent.Hash()]; !ok {
-            o = append(o, self[i])
-        }
-    }
-    return o
 }

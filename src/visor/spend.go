@@ -10,7 +10,7 @@ import (
 
 // Sorts Balances with coins ascending, and hours ascending if coins equal
 type CoinsAscending struct {
-    Unspents coin.AddressUnspents
+    Unspents coin.UxArray
     HeadTime uint64
 }
 
@@ -23,18 +23,18 @@ func (self CoinsAscending) Swap(i, j int) {
 }
 
 func (self CoinsAscending) Less(i, j int) bool {
-    c := self.Unspents[i].Unspent.Body.Coins
-    d := self.Unspents[j].Unspent.Body.Coins
+    c := self.Unspents[i].Body.Coins
+    d := self.Unspents[j].Body.Coins
     if c == d {
-        c = self.Unspents[i].Unspent.CoinHours(self.HeadTime)
-        d = self.Unspents[j].Unspent.CoinHours(self.HeadTime)
+        c = self.Unspents[i].CoinHours(self.HeadTime)
+        d = self.Unspents[j].CoinHours(self.HeadTime)
     }
     return c < d
 }
 
 // Sorts AddressUxOuts with hours descending, and coins descending if equal
 type HoursDescending struct {
-    Unspents coin.AddressUnspents
+    Unspents coin.UxArray
     HeadTime uint64
 }
 
@@ -47,11 +47,11 @@ func (self HoursDescending) Swap(i, j int) {
 }
 
 func (self HoursDescending) Less(i, j int) bool {
-    c := self.Unspents[i].Unspent.CoinHours(self.HeadTime)
-    d := self.Unspents[j].Unspent.CoinHours(self.HeadTime)
+    c := self.Unspents[i].CoinHours(self.HeadTime)
+    d := self.Unspents[j].CoinHours(self.HeadTime)
     if c == d {
-        c = self.Unspents[i].Unspent.Body.Coins
-        d = self.Unspents[j].Unspent.Body.Coins
+        c = self.Unspents[i].Body.Coins
+        d = self.Unspents[j].Body.Coins
     }
     return c > d
 }
@@ -77,7 +77,7 @@ func removePartialCoins(ix coin.AddressUxOuts) coin.AddressUxOuts {
     return ox
 }
 
-// Returns a list of coin.AddressUnspents to be used for txn construction.
+// Returns a list of coin.UxArray to be used for txn construction.
 // Note: amt should include the fee.  auxs should not include unconfirmed
 // spends
 // Goals:
@@ -85,7 +85,7 @@ func removePartialCoins(ix coin.AddressUxOuts) coin.AddressUxOuts {
 //   2. Preserve coin hours, i.e. always change with at least 1e6 coins if
 //      hours need to be returned
 func createSpends(headTime uint64, auxs coin.AddressUxOuts,
-    amt Balance) (coin.AddressUnspents, error) {
+    amt Balance) (coin.UxArray, error) {
     if amt.IsZero() {
         return nil, errors.New("Zero spend amount")
     }
@@ -109,15 +109,15 @@ func createSpends(headTime uint64, auxs coin.AddressUxOuts,
     //      If hours are not exactly satisfied, we amt to spend from one
     //      more address so that it can receive hours as change, due to the
     //      1e6 restriction
-    spending := make(coin.AddressUnspents, 0)
+    spending := make(coin.UxArray, 0)
     have := Balance{0, 0}
     for i, _ := range uxs {
         if have.Coins > amt.Coins ||
             (have.Coins == amt.Coins && have.Hours == amt.Hours) {
             break
         }
-        have.Coins += uxs[i].Unspent.Body.Coins
-        have.Hours += uxs[i].Unspent.CoinHours(headTime)
+        have.Coins += uxs[i].Body.Coins
+        have.Hours += uxs[i].CoinHours(headTime)
         spending = append(spending, uxs[i])
     }
 
@@ -140,8 +140,8 @@ func createSpends(headTime uint64, auxs coin.AddressUxOuts,
         if have.Hours >= amt.Hours {
             break
         }
-        have.Coins += uxs[i].Unspent.Body.Coins
-        have.Hours += uxs[i].Unspent.CoinHours(headTime)
+        have.Coins += uxs[i].Body.Coins
+        have.Hours += uxs[i].CoinHours(headTime)
         spending = append(spending, uxs[i])
     }
 
@@ -176,19 +176,19 @@ func CreateSpendingTransaction(wallet Wallet, unconfirmed *UnconfirmedTxnPool,
     toSign := make([]coin.SecKey, len(spends))
     spending := Balance{0, 0}
     for i, au := range spends {
-        entry, exists := wallet.GetEntry(au.Address)
+        entry, exists := wallet.GetEntry(au.Body.Address)
         if !exists {
             log.Panic("On second thought, the wallet entry does not exist")
         }
-        txn.PushInput(au.Unspent.Hash())
+        txn.PushInput(au.Hash())
         toSign[i] = entry.Secret
-        spending.Coins += au.Unspent.Body.Coins
-        spending.Hours += au.Unspent.CoinHours(headTime)
+        spending.Coins += au.Body.Coins
+        spending.Hours += au.CoinHours(headTime)
     }
 
     change := spending.Sub(need)
     // TODO -- send change to a new address
-    changeAddr := spends[0].Address
+    changeAddr := spends[0].Body.Address
     if change.Coins == 0 {
         if change.Hours > fee {
             msg := ("Have enough coins, but not enough to send coin hours change " +

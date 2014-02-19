@@ -602,7 +602,7 @@ func TestUnspentCollides(t *testing.T) {
 }
 
 func TestAddressUnspentsKeys(t *testing.T) {
-    unspents := make(AddressUnspents)
+    unspents := make(AddressUxOuts)
     ux := makeUxOut(t)
     ux2 := makeUxOut(t)
     ux3 := makeUxOut(t)
@@ -621,8 +621,8 @@ func TestAddressUnspentsKeys(t *testing.T) {
 }
 
 func TestAddressUnspentsMerge(t *testing.T) {
-    unspents := make(AddressUnspents)
-    unspents2 := make(AddressUnspents)
+    unspents := make(AddressUxOuts)
+    unspents2 := make(AddressUxOuts)
     ux := makeUxOut(t)
     ux2 := makeUxOut(t)
     ux3 := makeUxOut(t)

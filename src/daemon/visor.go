@@ -193,6 +193,8 @@ func (self *Visor) Spend(amt visor.Balance, fee uint64,
     if self.Config.Disabled {
         return coin.Transaction{}, errors.New("Visor disabled")
     }
+    logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
+        amt.Coins, amt.Hours, dest.String(), fee)
     txn, err := self.Visor.Spend(amt, fee, dest)
     if err != nil {
         return txn, err

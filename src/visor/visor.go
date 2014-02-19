@@ -250,73 +250,6 @@ func (self *Visor) CreateAndExecuteBlock() (SignedBlock, error) {
     }
 }
 
-// Creates a Transaction spending coins and hours from our coins
-func (self *Visor) Spend(amt Balance, fee uint64,
-    dest coin.Address) (coin.Transaction, error) {
-    logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
-        amt.Coins, amt.Hours, dest.String(), fee)
-    var txn coin.Transaction
-    if !self.Config.CanSpend {
-        return txn, errors.New("Spending disabled")
-    }
-    if amt.IsZero() {
-        return txn, errors.New("Zero spend amount")
-    }
-    needed := amt
-    needed.Hours += fee
-    // TODO -- re-enable once prediction is fixed
-    // We need to keep track of only what we spent that is unconfirmed
-    // And subtract those from auxs' balances
-    // auxs := self.getAvailableBalances()
-    addrs := self.Wallet.GetAddresses()
-    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
-    toSign := make([]coin.SecKey, 0)
-
-loop:
-    for a, uxs := range auxs {
-        entry, exists := self.Wallet.GetEntry(a)
-        if !exists {
-            log.Panic("On second thought, the wallet entry does not exist")
-        }
-        for _, ux := range uxs {
-            if needed.IsZero() {
-                break loop
-            }
-            coinHours := ux.CoinHours(self.blockchain.Time())
-            b := NewBalance(ux.Body.Coins, coinHours)
-            if needed.GreaterThanOrEqual(b) {
-                needed = needed.Sub(b)
-                txn.PushInput(ux.Hash())
-                toSign = append(toSign, entry.Secret)
-            } else if needed.Hours >= b.Hours {
-                needed.Hours -= b.Hours
-                txn.PushInput(ux.Hash())
-                toSign = append(toSign, entry.Secret)
-                if b.Coins != 0 {
-                    txn.PushOutput(ux.Body.Address, b.Coins, 0)
-                }
-            } else {
-                change := b.Sub(needed)
-                needed = needed.Sub(needed)
-                txn.PushInput(ux.Hash())
-                toSign = append(toSign, entry.Secret)
-                // TODO -- Don't reuse address for change.
-                txn.PushOutput(ux.Body.Address, change.Coins, change.Hours)
-            }
-        }
-    }
-
-    txn.PushOutput(dest, amt.Coins, amt.Hours)
-    txn.SignInputs(toSign)
-    txn.UpdateHeader()
-
-    if needed.IsZero() {
-        return txn, nil
-    } else {
-        return txn, errors.New("Not enough coins or hours")
-    }
-}
-
 // Adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
@@ -543,7 +476,7 @@ func (self *Visor) Balance(a coin.Address) Balance {
 // }
 
 // Computes the total balance for coin.Addresses and their coin.UxOuts
-func (self *Visor) totalBalance(auxs coin.AddressUnspents) Balance {
+func (self *Visor) totalBalance(auxs coin.AddressUxOuts) Balance {
     prevTime := self.blockchain.Time()
     b := NewBalance(0, 0)
     for _, uxs := range auxs {
@@ -566,7 +499,7 @@ func (self *Visor) balance(uxs []coin.UxOut) Balance {
 
 // // Returns the total of known Unspents available to us, and our own
 // // unconfirmed unspents
-// func (self *Visor) getAvailableBalances() coin.AddressUnspents {
+// func (self *Visor) getAvailableBalances() coin.AddressUxOuts {
 //     addrs := self.Wallet.GetAddresses()
 //     auxs := self.blockchain.Unspent.AllForAddresses(addrs)
 //     uauxs := self.UnconfirmedTxns.Unspent.AllForAddresses(addrs)

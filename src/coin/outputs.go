@@ -310,12 +310,12 @@ func (self *UnspentPool) AllForAddress(a Address) UxArray {
 }
 
 // Returns Unspents for multiple addresses
-func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
+func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUxOuts {
     m := make(map[Address]byte, len(addrs))
     for _, a := range addrs {
         m[a] = byte(1)
     }
-    uxo := make(AddressUnspents)
+    uxo := make(AddressUxOuts)
     for a, _ := range m {
         uxo[a] = make(UxArray, 0)
     }
@@ -327,10 +327,10 @@ func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
     return uxo
 }
 
-type AddressUnspents map[Address]UxArray
+type AddressUxOuts map[Address]UxArray
 
 // Returns the Address keys
-func (self AddressUnspents) Keys() []Address {
+func (self AddressUxOuts) Keys() []Address {
     addrs := make([]Address, len(self))
     i := 0
     for k, _ := range self {
@@ -340,10 +340,10 @@ func (self AddressUnspents) Keys() []Address {
     return addrs
 }
 
-// Combines two AddressUnspents where they overlap with keys
-func (self AddressUnspents) Merge(other AddressUnspents,
-    keys []Address) AddressUnspents {
-    final := make(AddressUnspents, len(keys))
+// Combines two AddressUxOuts where they overlap with keys
+func (self AddressUxOuts) Merge(other AddressUxOuts,
+    keys []Address) AddressUxOuts {
+    final := make(AddressUxOuts, len(keys))
     for _, a := range keys {
         row := append(self[a], other[a]...)
         final[a] = row.removeDupes()

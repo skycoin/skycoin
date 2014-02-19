@@ -146,7 +146,7 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     }
     since := self.Config.TransactionRebroadcastRate * 2
     since = (since * 9) / 10
-    txns := self.Visor.UnconfirmedTxns.GetOldOwnedTransactions(since)
+    txns := self.Visor.Unconfirmed.GetOldOwnedTransactions(since)
     logger.Debug("Reannouncing %d of our old transactions", len(txns))
     if len(txns) == 0 {
         return
@@ -163,7 +163,7 @@ func (self *Visor) BroadcastOurTransactions(pool *Pool) {
 func (self *Visor) SetTxnsAnnounced(txns []coin.SHA256) {
     now := util.Now()
     for _, h := range txns {
-        self.Visor.UnconfirmedTxns.SetAnnounced(h, now)
+        self.Visor.Unconfirmed.SetAnnounced(h, now)
     }
 }
 
@@ -211,7 +211,7 @@ func (self *Visor) ResendTransaction(h coin.SHA256, pool *Pool) {
     if self.Config.Disabled {
         return
     }
-    if ut, ok := self.Visor.UnconfirmedTxns.Txns[h]; ok {
+    if ut, ok := self.Visor.Unconfirmed.Txns[h]; ok {
         self.broadcastTransaction(ut.Txn, pool)
     }
     return
@@ -426,7 +426,7 @@ func (self *AnnounceTxnsMessage) Process(d *Daemon) {
     if d.Visor.Config.Disabled {
         return
     }
-    unknown := d.Visor.Visor.UnconfirmedTxns.FilterKnown(self.Txns)
+    unknown := d.Visor.Visor.Unconfirmed.FilterKnown(self.Txns)
     if len(unknown) == 0 {
         return
     }
@@ -457,7 +457,7 @@ func (self *GetTxnsMessage) Process(d *Daemon) {
     }
     // Locate all txns from the unconfirmed pool
     // reply to sender with GiveTxnsMessage
-    known := d.Visor.Visor.UnconfirmedTxns.GetKnown(self.Txns)
+    known := d.Visor.Visor.Unconfirmed.GetKnown(self.Txns)
     if len(known) == 0 {
         return
     }

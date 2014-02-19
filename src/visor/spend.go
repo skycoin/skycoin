@@ -1,61 +1,16 @@
 package visor
 
-// Returns the UxArray as a hash to byte map to be used as a set.  The byte's
-// value should be ignored, although it will be 1.  Should only be used for
-// membership detection.
-func (self UxArray) Set() map[SHA256]byte {
-    m := make(map[SHA256]byte, len(self))
-    for i, _ := range self {
-        m[self[i].Hash()] = byte(1)
-    }
-    return m
-}
-
-// Returns a new UxArray with elements in other removed from self
-func (self UxArray) Sub(other UxArray) UxArray {
-    // Assume everything will be removed for initial allocation
-    uxa := make(UxArray, 0, len(self)-len(other))
-    selfm := self.Set()
-    for i, _ := range other {
-        if ux, ok := selfm[other[i].Hash()]; !ok {
-            uxa = append(uxa, ux)
-        }
-    }
-    return uxa
-}
-
-// Returns a new set of unspents, with unspents found in other removed.
-// No address's unspent set will be empty
-func (self AddressUxOuts) Sub(other coin.AddressUxOuts) AddressUxOuts {
-    ox := make(coin.AddressUxOuts, len(ix))
-    for a, uxs := range other {
-        if suxs, ok := self[a]; ok {
-            ouxs := suxs.Sub(uxs)
-            if len(ouxs) > 0 {
-                ox[a] = ouxs
-            }
-        }
-    }
-    return ox
-}
-
-// Converts an AddressUxOuts map to an array
-func (self AddressUxOuts) Flatten() AddressUnspents {
-    oxs := make([]AddressUxOuts, 0, len(self))
-    for a, uxs := range self {
-        for i, _ := range uxs {
-            oxs = append(oxs, AddressUnspent{
-                Address: a,
-                Unspent: uxs[i],
-            })
-        }
-    }
-    return oxs
-}
+import (
+    "errors"
+    "fmt"
+    "github.com/skycoin/skycoin/src/coin"
+    "log"
+    "sort"
+)
 
 // Sorts Balances with coins ascending, and hours ascending if coins equal
 type CoinsAscending struct {
-    Unspents AddressUnspents
+    Unspents coin.AddressUnspents
     HeadTime uint64
 }
 
@@ -68,18 +23,18 @@ func (self CoinsAscending) Swap(i, j int) {
 }
 
 func (self CoinsAscending) Less(i, j int) bool {
-    c := self.Unspent[i].Body.Coins
-    d := self.Unspent[j].Body.Coins
+    c := self.Unspents[i].Unspent.Body.Coins
+    d := self.Unspents[j].Unspent.Body.Coins
     if c == d {
-        c = self.Unspent[i].CoinHours(self.HeadTime)
-        d = self.Unspent[j].CoinHours(self.HeadTime)
+        c = self.Unspents[i].Unspent.CoinHours(self.HeadTime)
+        d = self.Unspents[j].Unspent.CoinHours(self.HeadTime)
     }
     return c < d
 }
 
-// Sorts AddressUxOuts with hours descending, and coins descending if hours equal
+// Sorts AddressUxOuts with hours descending, and coins descending if equal
 type HoursDescending struct {
-    Unspents AddressUnspents
+    Unspents coin.AddressUnspents
     HeadTime uint64
 }
 
@@ -92,39 +47,13 @@ func (self HoursDescending) Swap(i, j int) {
 }
 
 func (self HoursDescending) Less(i, j int) bool {
-    c := self.Unspent[i].CoinHours(self.HeadTime)
-    d := self.Unspent[j].CoinHours(self.HeadTime)
+    c := self.Unspents[i].Unspent.CoinHours(self.HeadTime)
+    d := self.Unspents[j].Unspent.CoinHours(self.HeadTime)
     if c == d {
-        c = self.Unspent[i].Body.Coins
-        d = self.Unspent[j].Body.Coins
+        c = self.Unspents[i].Unspent.Body.Coins
+        d = self.Unspents[j].Unspent.Body.Coins
     }
     return c > d
-}
-
-type AddressUnspent struct {
-    Address Address
-    Unspent UxOut
-}
-
-type AddressUnspents []AddressUnspent
-
-func (self AddressUnspents) Set() map[SHA256]byte {
-    m := make(map[SHA256]byte, len(self))
-    for i, _ := range self {
-        m[self[i].Unspent.Hash()] = self[i]
-    }
-    return m
-}
-
-func (self AddressUnspents) Sub(other AddressUnspents) AddressUnspents {
-    m := other.Set()
-    o := make(AddressUnspents, 0, len(self)-len(other))
-    for i, _ := range self {
-        if _, ok := m[self[i].Unspent.Hash()]; !ok {
-            o = append(o, self[i])
-        }
-    }
-    return o
 }
 
 // Removes any balances that are 0 or not multiples of 1e6.
@@ -135,12 +64,12 @@ func removePartialCoins(ix coin.AddressUxOuts) coin.AddressUxOuts {
     for a, uxs := range ix {
         // Disallowed unspents should be nonexistent initially, so its fine
         // preallocate everything.
-        oxs := make(UxArray, 0, len(uxs))
-        for i, ux := range uxs {
-            if ux.Coins == 0 || ux.Coins%1e6 != 0 {
-                logger.Warning("Found unspent with invalid coins: %v", ux)
-            } else {
+        oxs := make(coin.UxArray, 0, len(uxs))
+        for _, ux := range uxs {
+            if ux.Body.Coins != 0 && ux.Body.Coins%1e6 == 0 {
                 oxs = append(oxs, ux)
+            } else {
+                logger.Warning("Found unspent with invalid coins: %v", ux)
             }
         }
         ox[a] = oxs
@@ -148,11 +77,15 @@ func removePartialCoins(ix coin.AddressUxOuts) coin.AddressUxOuts {
     return ox
 }
 
-// Returns a list of AddressUnspents to be used for txn construction.
+// Returns a list of coin.AddressUnspents to be used for txn construction.
 // Note: amt should include the fee.  auxs should not include unconfirmed
 // spends
-func createSpends(headTime uint64, auxs, AddressUxOuts,
-    amt Balance) (AddressUnspents, error) {
+// Goals:
+//   1. Use the least number of unspents
+//   2. Preserve coin hours, i.e. always change with at least 1e6 coins if
+//      hours need to be returned
+func createSpends(headTime uint64, auxs coin.AddressUxOuts,
+    amt Balance) (coin.AddressUnspents, error) {
     if amt.IsZero() {
         return nil, errors.New("Zero spend amount")
     }
@@ -170,22 +103,22 @@ func createSpends(headTime uint64, auxs, AddressUxOuts,
         HeadTime: headTime,
     }
     sort.Sort(asc)
-    uxs = asc.uxs
+    uxs = asc.Unspents
 
     // 3. For each balance, add coins + hours towards amt.
     //      If hours are not exactly satisfied, we amt to spend from one
     //      more address so that it can receive hours as change, due to the
     //      1e6 restriction
-    spending := make(AddressUnspents, 0)
+    spending := make(coin.AddressUnspents, 0)
     have := Balance{0, 0}
     for i, _ := range uxs {
-        have.Coins += uxs[i].Unspent.Body.Coins
-        have.Hours += uxs[i].Unspent.CoinHours(headTime)
-        spending = append(spending, uxs[i])
         if have.Coins > amt.Coins ||
             (have.Coins == amt.Coins && have.Hours == amt.Hours) {
             break
         }
+        have.Coins += uxs[i].Unspent.Body.Coins
+        have.Hours += uxs[i].Unspent.CoinHours(headTime)
+        spending = append(spending, uxs[i])
     }
 
     // 4. If coins cannot be met, fail
@@ -200,16 +133,16 @@ func createSpends(headTime uint64, auxs, AddressUxOuts,
         HeadTime: headTime,
     }
     sort.Sort(dsc)
-    uxs = asc.uxs
+    uxs = asc.Unspents
 
     // 6. For each balance, add until hours are met.
     for i, _ := range uxs {
-        have.Coins += uxs[i].Unspent.Coins
-        have.Hours += uxs[i].Unspent.CoinHours(headTime)
-        spending = append(spending, uxs[i])
         if have.Hours >= amt.Hours {
             break
         }
+        have.Coins += uxs[i].Unspent.Body.Coins
+        have.Hours += uxs[i].Unspent.CoinHours(headTime)
+        spending = append(spending, uxs[i])
     }
 
     // 7. If hours are not met, fail
@@ -221,27 +154,21 @@ func createSpends(headTime uint64, auxs, AddressUxOuts,
 }
 
 // Creates a Transaction spending coins and hours from our coins
-func (self *Visor) Spend(amt Balance, fee uint64,
+func CreateSpendingTransaction(wallet Wallet, unconfirmed *UnconfirmedTxnPool,
+    unspent *coin.UnspentPool, headTime uint64, amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
-    var txn coin.Transaction
-    if !self.Config.CanSpend {
-        return txn, errors.New("Spending disabled")
-    }
-    if amt.IsZero() {
+    txn := coin.Transaction{}
+    if amt.Coins == 0 {
         return txn, errors.New("Zero spend amount")
     }
     need := amt
     need.Hours += fee
-    // TODO -- re-enable once prediction is fixed
-    // We amt to keep track of only what we spent that is unconfirmed
-    // And subtract those from auxs' balances
-    // auxs := self.getAvailableBalances()
-    addrs := self.Wallet.GetAddresses()
-    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
-    puxs := self.PendingUnspents.AllForAddresses(addrs)
+    addrs := wallet.GetAddresses()
+    auxs := unspent.AllForAddresses(addrs)
+    // Subtract pending spends from available
+    puxs := unconfirmed.SpendsForAddresses(unspent, addrs)
     auxs = auxs.Sub(puxs)
 
-    headTime := self.blockchain.HeadTime()
     spends, err := createSpends(headTime, auxs, need)
     if err != nil {
         return txn, err
@@ -249,24 +176,35 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     toSign := make([]coin.SecKey, len(spends))
     spending := Balance{0, 0}
     for i, au := range spends {
-        entry, exists := self.Wallet.GetEntry(a)
+        entry, exists := wallet.GetEntry(au.Address)
         if !exists {
             log.Panic("On second thought, the wallet entry does not exist")
         }
         txn.PushInput(au.Unspent.Hash())
         toSign[i] = entry.Secret
-        spending.Coins += au.Unspent.Coins
+        spending.Coins += au.Unspent.Body.Coins
         spending.Hours += au.Unspent.CoinHours(headTime)
     }
 
     change := spending.Sub(need)
-    change = change.Sub(Balance{Coins: 0, Hours: fee})
     // TODO -- send change to a new address
     changeAddr := spends[0].Address
+    if change.Coins == 0 {
+        if change.Hours > fee {
+            msg := ("Have enough coins, but not enough to send coin hours change " +
+                "back. Would spend %d more hours than requested.")
+            return txn, fmt.Errorf(msg, change.Hours-fee)
+        }
+    } else {
+        logger.Info("Sending change to %s: %d, %d", changeAddr.String(),
+            change.Coins, change.Hours)
+        txn.PushOutput(changeAddr, change.Coins, change.Hours)
+    }
 
-    txn.PushOutput(changeAddr, change.Coins, change.Hours)
+    logger.Info("Sending money to %s: %d, %d", dest.String(), amt.Coins,
+        amt.Hours)
     txn.PushOutput(dest, amt.Coins, amt.Hours)
     txn.SignInputs(toSign)
     txn.UpdateHeader()
-    return txn
+    return txn, nil
 }

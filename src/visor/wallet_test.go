@@ -191,19 +191,19 @@ func TestBalanceIsZero(t *testing.T) {
 }
 
 func TestNewWallet(t *testing.T) {
-    w := NewWallet()
+    w := NewSimpleWallet()
     assert.NotNil(t, w.Entries)
     assert.Equal(t, len(w.Entries), 0)
 }
 
 func TestNewWalletFromReadable(t *testing.T) {
-    w := NewWallet()
+    w := NewSimpleWallet()
     we := NewWalletEntry()
     w.Entries[we.Address] = we
     we2 := NewWalletEntry()
     w.Entries[we2.Address] = we2
     rw := NewReadableWallet(w)
-    w2 := NewWalletFromReadable(rw)
+    w2 := NewSimpleWalletFromReadable(rw)
     for a, e := range w2.Entries {
         assert.Equal(t, a, e.Address)
         assert.Equal(t, e, w.Entries[a])
@@ -212,15 +212,15 @@ func TestNewWalletFromReadable(t *testing.T) {
     sec := coin.SecKey{}
     oldSec := rw.Entries[0].Secret
     rw.Entries[0].Secret = sec.Hex()
-    assert.Panics(t, func() { NewWalletFromReadable(rw) })
+    assert.Panics(t, func() { NewSimpleWalletFromReadable(rw) })
     pub := coin.PubKey{}
     rw.Entries[0].Secret = oldSec
     rw.Entries[0].Public = pub.Hex()
-    assert.Panics(t, func() { NewWalletFromReadable(rw) })
+    assert.Panics(t, func() { NewSimpleWalletFromReadable(rw) })
 }
 
 func TestWalletCreateEntry(t *testing.T) {
-    w := NewWallet()
+    w := NewSimpleWallet()
     we := w.CreateEntry()
     // Not testing:
     //  Can't force NewWalletEntry to make an invalid entry
@@ -231,22 +231,22 @@ func TestWalletCreateEntry(t *testing.T) {
 }
 
 func TestWalletPopulate(t *testing.T) {
-    w := NewWallet()
+    w := NewSimpleWallet()
     // Populating should only grow if not enough entries
     assert.Equal(t, len(w.Entries), 0)
-    w.populate(10)
+    w.Populate(10)
     assert.Equal(t, len(w.Entries), 10)
-    w.populate(10)
+    w.Populate(10)
     assert.Equal(t, len(w.Entries), 10)
-    w.populate(15)
+    w.Populate(15)
     assert.Equal(t, len(w.Entries), 15)
-    w.populate(10)
+    w.Populate(10)
     assert.Equal(t, len(w.Entries), 15)
 }
 
 func TestWalletGetAddresses(t *testing.T) {
-    w := NewWallet()
-    w.populate(10)
+    w := NewSimpleWallet()
+    w.Populate(10)
     addrs := w.GetAddresses()
     assert.Equal(t, len(addrs), 10)
     addrsMap := make(map[coin.Address]byte, len(addrs))
@@ -260,7 +260,7 @@ func TestWalletGetAddresses(t *testing.T) {
 }
 
 func TestWalletGetEntry(t *testing.T) {
-    w := NewWallet()
+    w := NewSimpleWallet()
     we := w.CreateEntry()
     we2, ok := w.GetEntry(we.Address)
     assert.True(t, ok)
@@ -271,7 +271,7 @@ func TestWalletGetEntry(t *testing.T) {
 }
 
 func TestWalletAddEntry(t *testing.T) {
-    w := NewWallet()
+    w := NewSimpleWallet()
     assert.Equal(t, len(w.Entries), 0)
     we := w.CreateEntry()
     assert.Equal(t, len(w.Entries), 1)
@@ -299,11 +299,11 @@ func TestWalletAddEntry(t *testing.T) {
 
 func TestWalletSaveLoad(t *testing.T) {
     defer cleanupVisor()
-    w := NewWallet()
+    w := NewSimpleWallet()
     we := w.CreateEntry()
     assert.Nil(t, w.Save(testWalletFile))
     assertFileMode(t, testWalletFile, 0600)
-    w2, err := LoadWallet(testWalletFile)
+    w2, err := LoadSimpleWallet(testWalletFile)
     assert.Nil(t, err)
     assert.Equal(t, w, w2)
     assert.Equal(t, w2.Entries[we.Address], we)
@@ -348,29 +348,29 @@ func TestReadableWalletEntryFromPubKey(t *testing.T) {
 
 func TestNewReadableWallet(t *testing.T) {
     defer cleanupVisor()
-    w := NewWallet()
-    w.populate(10)
+    w := NewSimpleWallet()
+    w.Populate(10)
     rw := NewReadableWallet(w)
     assert.Equal(t, len(w.Entries), 10)
-    w2 := NewWalletFromReadable(rw)
+    w2 := NewSimpleWalletFromReadable(rw)
     assert.Equal(t, w, w2)
 }
 
 func TestSaveLoadReadableWallet(t *testing.T) {
     defer cleanupVisor()
-    w := NewWallet()
-    w.populate(10)
+    w := NewSimpleWallet()
+    w.Populate(10)
     rw := NewReadableWallet(w)
     assert.Nil(t, rw.Save(testWalletFile))
     assertFileMode(t, testWalletFile, 0600)
     rw2 := &ReadableWallet{}
     assert.Nil(t, rw2.Load(testWalletFile))
     assert.Equal(t, rw, rw2)
-    w2 := NewWalletFromReadable(rw2)
+    w2 := NewSimpleWalletFromReadable(rw2)
     assert.Equal(t, w, w2)
     rw3, err := LoadReadableWallet(testWalletFile)
     assert.Nil(t, err)
     assert.Equal(t, rw, rw3)
-    w3 := NewWalletFromReadable(rw3)
+    w3 := NewSimpleWalletFromReadable(rw3)
     assert.Equal(t, w, w3)
 }

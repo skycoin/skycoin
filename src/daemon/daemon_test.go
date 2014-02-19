@@ -263,14 +263,14 @@ func TestDaemonLoopSendResults(t *testing.T) {
     v := NewVisor(vc)
     d.Visor = v
     txn := addUnconfirmedTxn(d.Visor)
-    ut := d.Visor.Visor.UnconfirmedTxns.Txns[txn.Hash()]
+    ut := d.Visor.Visor.Unconfirmed.Txns[txn.Hash()]
     assert.True(t, ut.Announced.IsZero())
     txns := coin.Transactions{txn.Txn}
     m := NewAnnounceTxnsMessage(txns.Hashes())
     sr := gnet.SendResult{Connection: c, Error: nil, Message: m}
     d.Pool.Pool.SendResults <- sr
     wait()
-    ut = d.Visor.Visor.UnconfirmedTxns.Txns[txn.Hash()]
+    ut = d.Visor.Visor.Unconfirmed.Txns[txn.Hash()]
     assert.False(t, ut.Announced.IsZero())
 }
 
@@ -1215,8 +1215,8 @@ func TestHandleMessageSendResult(t *testing.T) {
     vc, _ := setupVisor()
     v := NewVisor(vc)
     tx := addUnconfirmedTxn(v)
-    assert.Equal(t, len(v.Visor.UnconfirmedTxns.Txns), 1)
-    ut := v.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 1)
+    ut := v.Visor.Unconfirmed.Txns[tx.Hash()]
     assert.True(t, ut.Announced.IsZero())
     txns := coin.Transactions{tx.Txn}
     m2 := NewAnnounceTxnsMessage(txns.Hashes())
@@ -1226,7 +1226,7 @@ func TestHandleMessageSendResult(t *testing.T) {
     sr.Error = errors.New("Failed")
     sr.Connection = gnetConnection(addr)
     assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
-    ut = v.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    ut = v.Visor.Unconfirmed.Txns[tx.Hash()]
     assert.True(t, ut.Announced.IsZero())
 
     // Updates announcement
@@ -1236,7 +1236,7 @@ func TestHandleMessageSendResult(t *testing.T) {
     assert.NotPanics(t, func() {
         d.handleMessageSendResult(sr)
     })
-    ut = v.Visor.UnconfirmedTxns.Txns[tx.Hash()]
+    ut = v.Visor.Unconfirmed.Txns[tx.Hash()]
     assert.False(t, ut.Announced.IsZero())
 }
 

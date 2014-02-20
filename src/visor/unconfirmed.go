@@ -196,6 +196,8 @@ func (self *UnconfirmedTxnPool) GetOldOwnedTransactions(ago time.Duration) []Unc
     txns := make([]UnconfirmedTxn, 0)
     now := util.Now()
     for _, tx := range self.Txns {
+        // TODO -- don't record IsOurSpend/IsOurReceive and do lookup each time?
+        // Slower but more correct
         if (tx.IsOurSpend || tx.IsOurReceive) && now.Sub(tx.Announced) > ago {
             txns = append(txns, tx)
         }
@@ -223,4 +225,21 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
         }
     }
     return known
+}
+
+// Returns all unconfirmed coin.UxOut spends for addresses
+// TODO -- optimize or cache
+func (self *UnconfirmedTxnPool) SpendsForAddresses(unspent *coin.UnspentPool,
+    a []coin.Address) coin.AddressUxOuts {
+    auxs := make(coin.AddressUxOuts, len(a))
+    for _, utx := range self.Txns {
+        for _, h := range utx.Txn.In {
+            if ux, ok := unspent.Get(h); ok {
+                if x, ok := auxs[ux.Body.Address]; ok {
+                    auxs[ux.Body.Address] = append(x, ux)
+                }
+            }
+        }
+    }
+    return auxs
 }

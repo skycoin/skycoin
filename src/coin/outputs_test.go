@@ -68,13 +68,23 @@ func TestUxOutCoinHours(t *testing.T) {
     assert.Equal(t, uxo.CoinHours(now), uxo.Body.Hours+(uxo.Body.Coins/1e6)*6)
     now = uxo.Head.Time / 2
     assert.Equal(t, uxo.CoinHours(now), uxo.Body.Hours)
+    uxo.Body.Coins = genesisCoinVolume
+    uxo.Body.Hours = genesisCoinHours
+    assert.Equal(t, uxo.CoinHours(uxo.Head.Time), uxo.Body.Hours)
+    assert.Equal(t, uxo.CoinHours(uxo.Head.Time+3600),
+        uxo.Body.Hours+(genesisCoinVolume/1e6))
 }
 
-func TestUxArrayHashArray(t *testing.T) {
+func makeUxArray(t *testing.T, n int) UxArray {
     uxa := make(UxArray, 4)
     for i := 0; i < len(uxa); i++ {
         uxa[i] = makeUxOut(t)
     }
+    return uxa
+}
+
+func TestUxArrayHashArray(t *testing.T) {
+    uxa := makeUxArray(t, 4)
     hashes := uxa.Hashes()
     assert.Equal(t, len(hashes), len(uxa))
     for i, h := range hashes {
@@ -83,20 +93,14 @@ func TestUxArrayHashArray(t *testing.T) {
 }
 
 func TestUxArrayHasDupes(t *testing.T) {
-    uxa := make(UxArray, 4)
-    for i := 0; i < len(uxa); i++ {
-        uxa[i] = makeUxOut(t)
-    }
+    uxa := makeUxArray(t, 4)
     assert.False(t, uxa.HasDupes())
     uxa[0] = uxa[1]
     assert.True(t, uxa.HasDupes())
 }
 
 func TestUxArrayRemoveDupes(t *testing.T) {
-    uxa := make(UxArray, 4)
-    for i := 0; i < len(uxa); i++ {
-        uxa[i] = makeUxOut(t)
-    }
+    uxa := makeUxArray(t, 4)
     assert.False(t, uxa.HasDupes())
     assert.Equal(t, uxa, uxa.removeDupes())
     uxa[0] = uxa[1]
@@ -107,6 +111,26 @@ func TestUxArrayRemoveDupes(t *testing.T) {
     assert.Equal(t, uxb[0], uxa[0])
     assert.Equal(t, uxb[1], uxa[2])
     assert.Equal(t, uxb[2], uxa[3])
+}
+
+func TestUxArraySub(t *testing.T) {
+    uxa := makeUxArray(t, 4)
+    uxb := makeUxArray(t, 4)
+    uxc := append(uxa[:1], uxb...)
+    uxc = append(uxc, uxa[1:2]...)
+
+    uxd := uxc.Sub(uxa)
+    assert.Equal(t, uxd, uxb)
+
+    uxd = uxc.Sub(uxb)
+    assert.Equal(t, len(uxd), 2)
+    assert.Equal(t, uxd, uxa[:2])
+
+    // No intersection
+    uxd = uxa.Sub(uxb)
+    assert.Equal(t, uxa, uxd)
+    uxd = uxb.Sub(uxa)
+    assert.Equal(t, uxd, uxb)
 }
 
 func manualUxArrayIsSorted(uxa UxArray) bool {
@@ -601,8 +625,8 @@ func TestUnspentCollides(t *testing.T) {
     assert.True(t, unspent.Collides([]SHA256{ux.Hash(), randSHA256(t)}))
 }
 
-func TestAddressUnspentsKeys(t *testing.T) {
-    unspents := make(AddressUnspents)
+func TestAddressUxOutsKeys(t *testing.T) {
+    unspents := make(AddressUxOuts)
     ux := makeUxOut(t)
     ux2 := makeUxOut(t)
     ux3 := makeUxOut(t)
@@ -620,9 +644,9 @@ func TestAddressUnspentsKeys(t *testing.T) {
     assert.Equal(t, len(keys), len(dupes))
 }
 
-func TestAddressUnspentsMerge(t *testing.T) {
-    unspents := make(AddressUnspents)
-    unspents2 := make(AddressUnspents)
+func TestAddressUxOutsMerge(t *testing.T) {
+    unspents := make(AddressUxOuts)
+    unspents2 := make(AddressUxOuts)
     ux := makeUxOut(t)
     ux2 := makeUxOut(t)
     ux3 := makeUxOut(t)
@@ -659,4 +683,75 @@ func TestAddressUnspentsMerge(t *testing.T) {
     merged = unspents.Merge(unspents2, []Address{ux4.Body.Address})
     assert.Equal(t, len(merged), 1)
     assert.Equal(t, merged[ux4.Body.Address], UxArray{ux4})
+}
+
+func TestAddressUxOutsSub(t *testing.T) {
+    up := make(AddressUxOuts)
+    up2 := make(AddressUxOuts)
+    uxs := makeUxArray(t, 4)
+
+    uxs[1].Body.Address = uxs[0].Body.Address
+    up[uxs[0].Body.Address] = UxArray{uxs[0], uxs[1]}
+    up[uxs[2].Body.Address] = UxArray{uxs[2]}
+    up[uxs[3].Body.Address] = UxArray{uxs[3]}
+
+    up2[uxs[0].Body.Address] = UxArray{uxs[0]}
+    up2[uxs[2].Body.Address] = UxArray{uxs[2]}
+
+    up3 := up.Sub(up2)
+    // One address should have been removed, because no elements
+    assert.Equal(t, len(up3), 2)
+    _, ok := up3[uxs[2].Body.Address]
+    assert.False(t, ok)
+    // Ux3 should be untouched
+    ux3 := up3[uxs[3].Body.Address]
+    assert.Equal(t, ux3, UxArray{uxs[3]})
+    // Ux0,Ux1 should be missing Ux0
+    ux1 := up3[uxs[0].Body.Address]
+    assert.Equal(t, ux1, UxArray{uxs[1]})
+
+    // Originals should be unmodified
+    assert.Equal(t, len(up), 3)
+    assert.Equal(t, len(up[uxs[0].Body.Address]), 2)
+    assert.Equal(t, len(up[uxs[2].Body.Address]), 1)
+    assert.Equal(t, len(up[uxs[3].Body.Address]), 1)
+    assert.Equal(t, len(up2), 2)
+    assert.Equal(t, len(up2[uxs[0].Body.Address]), 1)
+    assert.Equal(t, len(up2[uxs[2].Body.Address]), 1)
+}
+
+func TestAddressUxOutsFlatten(t *testing.T) {
+    up := make(AddressUxOuts)
+    uxs := makeUxArray(t, 3)
+    uxs[2].Body.Address = uxs[1].Body.Address
+    emptyAddr := makeAddress()
+
+    // An empty array
+    up[emptyAddr] = UxArray{}
+    // 1 element array
+    up[uxs[0].Body.Address] = UxArray{uxs[0]}
+    // 2 element array
+    up[uxs[1].Body.Address] = UxArray{uxs[1], uxs[2]}
+
+    flat := up.Flatten()
+    assert.Equal(t, len(flat), 3)
+    // emptyAddr should not be in the array
+    for _, ux := range flat {
+        assert.NotEqual(t, ux.Body.Address, emptyAddr)
+    }
+    if flat[0].Body.Address == uxs[0].Body.Address {
+        assert.Equal(t, flat[0], uxs[0])
+        assert.Equal(t, flat[0].Body.Address, uxs[0].Body.Address)
+        assert.Equal(t, flat[0+1], uxs[1])
+        assert.Equal(t, flat[1+1], uxs[2])
+        assert.Equal(t, flat[0+1].Body.Address, uxs[1].Body.Address)
+        assert.Equal(t, flat[1+1].Body.Address, uxs[2].Body.Address)
+    } else {
+        assert.Equal(t, flat[0], uxs[1])
+        assert.Equal(t, flat[1], uxs[2])
+        assert.Equal(t, flat[0].Body.Address, uxs[1].Body.Address)
+        assert.Equal(t, flat[1].Body.Address, uxs[2].Body.Address)
+        assert.Equal(t, flat[2], uxs[0])
+        assert.Equal(t, flat[2].Body.Address, uxs[0].Body.Address)
+    }
 }

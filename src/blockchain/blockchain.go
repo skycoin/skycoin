@@ -60,7 +60,7 @@ type Blockchain struct {
     // Use test network addresses
     TestNetwork bool
 
-    UnconfirmedTxns *UnconfirmedTxnPool
+    Unconfirmed *UnconfirmedTxnPool
     blockchain *coin.Blockchain
     Blocks []SignedBlock
 }
@@ -87,7 +87,7 @@ func NewBlockchain() Blockchain {
         //UnconfirmedMaxAge:        time.Hour * 48, //drop transaction not executed in 48 hours
         //UnconfirmedRefreshRate:   time.Minute * 30,
         //TransactionsPerBlock:     150, //10 transactions/second, 1.5 KB/s
-        
+
         //BlockchainFile:           "",
         //BlockSigsFile:            "",
 
@@ -95,7 +95,7 @@ func NewBlockchain() Blockchain {
     }
     bc.Blocks = make([]SignedBlockm,0)
     bc.blockchain = coin.NewBlockchain()
-    bc.UnconfirmedTxns = NewUnconfirmedTxnPool()
+    bc.Unconfirmed = NewUnconfirmedTxnPool()
     return bc
 }
 
@@ -142,7 +142,7 @@ func (self *Blockchain) InjectGenesisBlock() {
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Blockchain) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
-    self.UnconfirmedTxns.Refresh(self.blockchain,
+    self.Unconfirmed.Refresh(self.blockchain,
         self.Config.UnconfirmedCheckInterval)
 }
 
@@ -153,7 +153,7 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     if err := self.blockchain.VerifyTransaction(t); err != nil {
         return err
     }
-    self.UnconfirmedTxns.RecordTxn(txn, didAnnounce)
+    self.Unconfirmed.RecordTxn(txn, didAnnounce)
 }
 
 
@@ -164,7 +164,7 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
         log.Panic("Only master chain can create blocks")
     }
 
-    txns := self.UnconfirmedTxns.RawTxns()
+    txns := self.Unconfirmed.RawTxns()
     //TODO: sort by arrival time/announce time
     //TODO: filter valid first
     if nTxns > self.Config.TransactionsPerBlock {
@@ -180,7 +180,7 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
         if n+s > 32*1024 {  //put in blockchain size here
             txns = txns[i:]
             break
-        } 
+        }
     }
 */
 
@@ -277,7 +277,7 @@ func (self *Blockchain) GetBlocks(start, end uint64) []coin.Block {
 
 // Updates an UnconfirmedTxn's Announce field
 func (self *Blockchain) SetTxnAnnounce(h coin.SHA256, t time.Time) {
-    self.UnconfirmedTxns.SetAnnounced(h, t)
+    self.Unconfirmed.SetAnnounced(h, t)
 }
 
 func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {

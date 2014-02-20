@@ -24,7 +24,7 @@ func NewWalletEntry() WalletEntry {
 }
 
 func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
-    // Wallet entries are shared as a form of identification, the secret key
+    // SimpleWallet entries are shared as a form of identification, the secret key
     // is not required
     // TODO -- fix lib/base58 to not panic on invalid input -- should
     // return error, so we can detect a broken wallet.
@@ -127,23 +127,50 @@ func (self Balance) IsZero() bool {
     return self.Coins == 0 && self.Hours == 0
 }
 
+// Wallet interface, to support multiple implementations
+type Wallet interface {
+    // Returns all entries
+    GetEntries() map[coin.Address]WalletEntry
+    // Returns all addresses stored in the wallet as a set
+    GetAddressSet() map[coin.Address]byte
+    // Returns all addresses stored in the wallet as array
+    GetAddresses() []coin.Address
+    // Adds an entry that was created externally. Should return error if
+    // entry is not valid or already existed.
+    AddEntry(entry WalletEntry) error
+    // Creates and adds a new entry to the wallet
+    CreateEntry() WalletEntry
+    // Returns a wallet entry by address and whether it exists
+    GetEntry(addr coin.Address) (WalletEntry, bool)
+    // Returns the number of entries in the wallet
+    NumEntries() int
+    // Adds entries to the wallet up to n, if number of entries is less than n
+    Populate(max int)
+    // Saves wallet to filename
+    Save(filename string) error
+    // Loads wallet from filename
+    Load(filename string) error
+    // Converts Wallet to a ReadableWallet, i.e. one that is json serializable
+    ToReadable() *ReadableWallet
+}
+
 // Simplest wallet implementation
-type Wallet struct {
+type SimpleWallet struct {
     Entries map[coin.Address]WalletEntry
 }
 
-func NewWallet() *Wallet {
-    return &Wallet{
+func NewSimpleWallet() *SimpleWallet {
+    return &SimpleWallet{
         Entries: make(map[coin.Address]WalletEntry),
     }
 }
 
-func LoadWallet(filename string) (*Wallet, error) {
-    w := NewWallet()
+func LoadSimpleWallet(filename string) (*SimpleWallet, error) {
+    w := NewSimpleWallet()
     return w, w.Load(filename)
 }
 
-func NewWalletFromReadable(r *ReadableWallet) *Wallet {
+func NewSimpleWalletFromReadable(r *ReadableWallet) *SimpleWallet {
     entries := make(map[coin.Address]WalletEntry, len(r.Entries))
     for _, re := range r.Entries {
         we := WalletEntryFromReadable(&re)
@@ -152,13 +179,29 @@ func NewWalletFromReadable(r *ReadableWallet) *Wallet {
         }
         entries[we.Address] = we
     }
-    return &Wallet{
+    return &SimpleWallet{
         Entries: entries,
     }
 }
 
+func (self *SimpleWallet) NumEntries() int {
+    return len(self.Entries)
+}
+
+func (self *SimpleWallet) GetEntries() map[coin.Address]WalletEntry {
+    return self.Entries
+}
+
+func (self *SimpleWallet) GetAddressSet() map[coin.Address]byte {
+    m := make(map[coin.Address]byte, len(self.Entries))
+    for a, _ := range self.Entries {
+        m[a] = byte(1)
+    }
+    return m
+}
+
 // Creates a WalletEntry
-func (self *Wallet) CreateEntry() WalletEntry {
+func (self *SimpleWallet) CreateEntry() WalletEntry {
     e := NewWalletEntry()
     if err := self.AddEntry(e); err != nil {
         log.Panic("Somehow, we managed to create a bad entry: %v", err)
@@ -167,15 +210,15 @@ func (self *Wallet) CreateEntry() WalletEntry {
 }
 
 // Creates new WalletEntries to fill the wallet up to n.  No WalletEntries
-// are created if the Wallet already contains n or more entries.
-func (self *Wallet) populate(n int) {
+// are created if the SimpleWallet already contains n or more entries.
+func (self *SimpleWallet) Populate(n int) {
     for i := len(self.Entries); i < n; i++ {
         self.CreateEntry()
     }
 }
 
-// Returns all coin.Addresses in this Wallet
-func (self *Wallet) GetAddresses() []coin.Address {
+// Returns all coin.Addresses in this SimpleWallet
+func (self *SimpleWallet) GetAddresses() []coin.Address {
     addrs := make([]coin.Address, len(self.Entries))
     i := 0
     for a, _ := range self.Entries {
@@ -186,20 +229,20 @@ func (self *Wallet) GetAddresses() []coin.Address {
 }
 
 // Returns the WalletEntry for a coin.Address
-func (self *Wallet) GetEntry(a coin.Address) (WalletEntry, bool) {
+func (self *SimpleWallet) GetEntry(a coin.Address) (WalletEntry, bool) {
     we, exists := self.Entries[a]
     return we, exists
 }
 
 // Adds a WalletEntry to the wallet. Returns an error if the coin.Address is
 // already in the wallet
-func (self *Wallet) AddEntry(e WalletEntry) error {
+func (self *SimpleWallet) AddEntry(e WalletEntry) error {
     if err := e.Verify(); err != nil {
         return err
     }
     _, exists := self.Entries[e.Address]
     if exists {
-        return fmt.Errorf("Wallet entry already exists for address %s",
+        return fmt.Errorf("SimpleWallet entry already exists for address %s",
             e.Address.String())
     } else {
         self.Entries[e.Address] = e
@@ -208,19 +251,23 @@ func (self *Wallet) AddEntry(e WalletEntry) error {
 }
 
 // Saves to filename
-func (self *Wallet) Save(filename string) error {
+func (self *SimpleWallet) Save(filename string) error {
     r := NewReadableWallet(self)
     return r.Save(filename)
 }
 
 // Loads from filename
-func (self *Wallet) Load(filename string) error {
+func (self *SimpleWallet) Load(filename string) error {
     r := &ReadableWallet{}
     if err := r.Load(filename); err != nil {
         return err
     }
-    *self = *(NewWalletFromReadable(r))
+    *self = *(NewSimpleWalletFromReadable(r))
     return nil
+}
+
+func (self *SimpleWallet) ToReadable() *ReadableWallet {
+    return NewReadableWallet(self)
 }
 
 type ReadableWalletEntry struct {
@@ -258,13 +305,13 @@ func (self *ReadableWalletEntry) Save(filename string) error {
     return util.SaveJSONSafe(filename, self, 0600)
 }
 
-// Used for [de]serialization of the Wallet
+// Used for [de]serialization of the SimpleWallet
 type ReadableWallet struct {
     Entries []ReadableWalletEntry `json:"entries"`
 }
 
-// Converts a Wallet to a ReadableWallet
-func NewReadableWallet(w *Wallet) *ReadableWallet {
+// Converts a SimpleWallet to a ReadableWallet
+func NewReadableWallet(w *SimpleWallet) *ReadableWallet {
     readable := make([]ReadableWalletEntry, len(w.Entries))
     i := 0
     for _, e := range w.Entries {

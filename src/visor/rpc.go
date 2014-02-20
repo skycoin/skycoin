@@ -90,7 +90,7 @@ func (self RPC) GetWallet(v *Visor) *ReadableWallet {
     if v == nil {
         return nil
     }
-    return NewReadableWallet(v.Wallet)
+    return v.Wallet.ToReadable()
 }
 
 func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {

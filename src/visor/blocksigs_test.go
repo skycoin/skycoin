@@ -7,22 +7,26 @@ import (
     "testing"
 )
 
-func makeBlocks(mv *Visor, n int) ([]SignedBlock, error) {
+func makeBlocks(t *testing.T, mv *Visor, n int) []SignedBlock {
     dest := NewWalletEntry()
     blocks := make([]SignedBlock, 0, n)
     for i := 0; i < n; i++ {
         tx, err := mv.Spend(Balance{10 * 1e6, 0}, 0, dest.Address)
+        assert.Nil(t, err)
         if err != nil {
-            return nil, err
+            return nil
         }
         mv.RecordTxn(tx)
+        assert.Equal(t, len(mv.Unconfirmed.Txns), 1)
         sb, err := mv.CreateAndExecuteBlock()
+        assert.Equal(t, len(mv.Unconfirmed.Txns), 0)
+        assert.Nil(t, err)
         if err != nil {
-            return nil, err
+            return nil
         }
         blocks = append(blocks, sb)
     }
-    return blocks, nil
+    return blocks
 }
 
 func assertFileExists(t *testing.T, filename string) {
@@ -47,8 +51,7 @@ func TestNewBlockSigs(t *testing.T) {
 func TestSaveLoadBlockSigs(t *testing.T) {
     defer cleanupVisor()
     mv := setupMasterVisor()
-    sbs, err := makeBlocks(mv, 7)
-    assert.Nil(t, err)
+    sbs := makeBlocks(t, mv, 7)
     bs := NewBlockSigs()
     for _, sb := range sbs {
         bs.Sigs[sb.Block.Head.BkSeq] = sb.Sig
@@ -57,7 +60,7 @@ func TestSaveLoadBlockSigs(t *testing.T) {
     // when loaded
     bs.MaxSeq = uint64(0)
 
-    err = bs.Save(testBlocksigsFile)
+    err := bs.Save(testBlocksigsFile)
     assert.Nil(t, err)
     assertFileExists(t, testBlocksigsFile)
 
@@ -89,13 +92,12 @@ func TestBlockSigsVerify(t *testing.T) {
     mv := setupMasterVisor()
     bc := mv.blockchain
     pub := mv.Config.MasterKeys.Public
-    sbs, err := makeBlocks(mv, 7)
-    assert.Nil(t, err)
+    sbs := makeBlocks(t, mv, 7)
 
     bs := NewBlockSigs()
     bs.Sigs[uint64(0)] = mv.blockSigs.Sigs[0]
 
-    err = bs.Verify(pub, bc)
+    err := bs.Verify(pub, bc)
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), "Missing signatures for blocks or vice versa")
 
@@ -145,8 +147,7 @@ func TestBlockSigsRecord(t *testing.T) {
         Block: mv.blockchain.Blocks[0],
     })
     assert.Equal(t, len(bs.Sigs), 1)
-    sbs, err := makeBlocks(mv, 5)
-    assert.Nil(t, err)
+    sbs := makeBlocks(t, mv, 5)
     for i := 0; i < 5; i++ {
         bs.record(&sbs[i])
         assert.Equal(t, len(bs.Sigs), i+2)

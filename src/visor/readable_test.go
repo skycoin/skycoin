@@ -106,7 +106,7 @@ func createUnconfirmedTxn() UnconfirmedTxn {
 
 func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
     ut := createUnconfirmedTxn()
-    v.UnconfirmedTxns.Txns[ut.Hash()] = ut
+    v.Unconfirmed.Txns[ut.Hash()] = ut
     return ut
 }
 
@@ -142,11 +142,7 @@ func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
 
 func transferCoins(mv *Visor, v *Visor) error {
     // Give the nonmaster some money to spend
-    addr := coin.Address{}
-    for a, _ := range v.Wallet.Entries {
-        addr = a
-        break
-    }
+    addr := v.Wallet.GetAddresses()[0]
     return transferCoinsAdvanced(mv, v, Balance{10e6, 0}, 0, addr)
 }
 

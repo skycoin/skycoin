@@ -73,76 +73,14 @@ func (self *UxBody) Hash() SHA256 {
 
 //calculate coinhour balance of output. t is the current unix utc time
 func (self *UxOut) CoinHours(t uint64) uint64 {
-    if t < self.Head.Time { //add warning?
+    if t < self.Head.Time {
+        logger.Warning("Calculating coin hours with t < head time")
         return self.Body.Hours
     }
 
-    v1 := self.Body.Hours             //starting coinshour
-    ch := (t - self.Head.Time) / 3600 //number of hours, one hour every 240 block
-    v2 := ch * self.Body.Coins / 1e6  //accumulated coin-hours
-    return v1 + v2                    //starting+earned
-}
-
-// Array of Outputs
-type UxArray []UxOut
-
-// Returns Array of hashes for the Ux in the UxArray
-func (self UxArray) Hashes() []SHA256 {
-    hashes := make([]SHA256, len(self))
-    for i, ux := range self {
-        hashes[i] = ux.Hash()
-    }
-    return hashes
-}
-
-// Checks the UxArray for outputs which have the same hash
-func (self UxArray) HasDupes() bool {
-    m := make(map[SHA256]byte, len(self))
-    for _, ux := range self {
-        h := ux.Hash()
-        if _, ok := m[h]; ok {
-            return true
-        } else {
-            m[h] = byte(1)
-        }
-    }
-    return false
-}
-
-// Returns a copy of self with duplicates removed
-func (self UxArray) removeDupes() UxArray {
-    m := make(map[SHA256]byte, len(self))
-    deduped := make(UxArray, 0, len(self))
-    for _, ux := range self {
-        h := ux.Hash()
-        if _, ok := m[h]; !ok {
-            deduped = append(deduped, ux)
-            m[h] = byte(1)
-        }
-    }
-    return deduped
-}
-
-func (self UxArray) Sort() {
-    sort.Sort(self)
-}
-
-func (self UxArray) IsSorted() bool {
-    return sort.IsSorted(self)
-}
-
-func (self UxArray) Len() int {
-    return len(self)
-}
-
-func (self UxArray) Less(i, j int) bool {
-    hash1 := self[i].Hash()
-    hash2 := self[j].Hash()
-    return bytes.Compare(hash1[:], hash2[:]) < 0
-}
-
-func (self UxArray) Swap(i, j int) {
-    self[i], self[j] = self[j], self[i]
+    hours := (t - self.Head.Time) / 3600     //number of hours, one hour every 240 block
+    accum := hours * (self.Body.Coins / 1e6) //accumulated coin-hours
+    return self.Body.Hours + accum           //starting+earned
 }
 
 // Manages Unspents
@@ -310,15 +248,12 @@ func (self *UnspentPool) AllForAddress(a Address) UxArray {
 }
 
 // Returns Unspents for multiple addresses
-func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
+func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUxOuts {
     m := make(map[Address]byte, len(addrs))
     for _, a := range addrs {
         m[a] = byte(1)
     }
-    uxo := make(AddressUnspents)
-    for a, _ := range m {
-        uxo[a] = make(UxArray, 0)
-    }
+    uxo := make(AddressUxOuts)
     for _, ux := range self.Arr {
         if _, exists := m[ux.Body.Address]; exists {
             uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
@@ -327,10 +262,95 @@ func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUnspents {
     return uxo
 }
 
-type AddressUnspents map[Address]UxArray
+// Array of Outputs
+type UxArray []UxOut
+
+// Returns Array of hashes for the Ux in the UxArray
+func (self UxArray) Hashes() []SHA256 {
+    hashes := make([]SHA256, len(self))
+    for i, ux := range self {
+        hashes[i] = ux.Hash()
+    }
+    return hashes
+}
+
+// Checks the UxArray for outputs which have the same hash
+func (self UxArray) HasDupes() bool {
+    m := make(map[SHA256]byte, len(self))
+    for _, ux := range self {
+        h := ux.Hash()
+        if _, ok := m[h]; ok {
+            return true
+        } else {
+            m[h] = byte(1)
+        }
+    }
+    return false
+}
+
+// Returns a copy of self with duplicates removed
+func (self UxArray) removeDupes() UxArray {
+    m := make(map[SHA256]byte, len(self))
+    deduped := make(UxArray, 0, len(self))
+    for _, ux := range self {
+        h := ux.Hash()
+        if _, ok := m[h]; !ok {
+            deduped = append(deduped, ux)
+            m[h] = byte(1)
+        }
+    }
+    return deduped
+}
+
+// Returns the UxArray as a hash to byte map to be used as a set.  The byte's
+// value should be ignored, although it will be 1.  Should only be used for
+// membership detection.
+func (self UxArray) Set() map[SHA256]byte {
+    m := make(map[SHA256]byte, len(self))
+    for i, _ := range self {
+        m[self[i].Hash()] = byte(1)
+    }
+    return m
+}
+
+// Returns a new UxArray with elements in other removed from self
+func (self UxArray) Sub(other UxArray) UxArray {
+    uxa := make(UxArray, 0)
+    m := other.Set()
+    for i, _ := range self {
+        if _, ok := m[self[i].Hash()]; !ok {
+            uxa = append(uxa, self[i])
+        }
+    }
+    return uxa
+}
+
+func (self UxArray) Sort() {
+    sort.Sort(self)
+}
+
+func (self UxArray) IsSorted() bool {
+    return sort.IsSorted(self)
+}
+
+func (self UxArray) Len() int {
+    return len(self)
+}
+
+func (self UxArray) Less(i, j int) bool {
+    hash1 := self[i].Hash()
+    hash2 := self[j].Hash()
+    return bytes.Compare(hash1[:], hash2[:]) < 0
+}
+
+func (self UxArray) Swap(i, j int) {
+    self[i], self[j] = self[j], self[i]
+}
+
+type AddressUxOuts map[Address]UxArray
 
 // Returns the Address keys
-func (self AddressUnspents) Keys() []Address {
+func (self AddressUxOuts) Keys() []Address {
     addrs := make([]Address, len(self))
     i := 0
     for k, _ := range self {
@@ -340,13 +360,41 @@ func (self AddressUnspents) Keys() []Address {
     return addrs
 }
 
-// Combines two AddressUnspents where they overlap with keys
-func (self AddressUnspents) Merge(other AddressUnspents,
-    keys []Address) AddressUnspents {
-    final := make(AddressUnspents, len(keys))
+// Combines two AddressUxOuts where they overlap with keys
+func (self AddressUxOuts) Merge(other AddressUxOuts,
+    keys []Address) AddressUxOuts {
+    final := make(AddressUxOuts, len(keys))
     for _, a := range keys {
         row := append(self[a], other[a]...)
         final[a] = row.removeDupes()
     }
     return final
+}
+
+// Returns a new set of unspents, with unspents found in other removed.
+// No address's unspent set will be empty
+func (self AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
+    ox := make(AddressUxOuts, len(self))
+    for a, uxs := range self {
+        if suxs, ok := other[a]; ok {
+            ouxs := uxs.Sub(suxs)
+            if len(ouxs) > 0 {
+                ox[a] = ouxs
+            }
+        } else {
+            ox[a] = uxs
+        }
+    }
+    return ox
+}
+
+// Converts an AddressUxOuts map to a UxArray
+func (self AddressUxOuts) Flatten() UxArray {
+    oxs := make(UxArray, 0, len(self))
+    for _, uxs := range self {
+        for i, _ := range uxs {
+            oxs = append(oxs, uxs[i])
+        }
+    }
+    return oxs
 }

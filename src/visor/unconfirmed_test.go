@@ -320,7 +320,7 @@ func TestRemoveTransactions(t *testing.T) {
 
 func testRefresh(t *testing.T, mv *Visor,
     refresh func(checkPeriod, maxAge time.Duration)) {
-    up := mv.UnconfirmedTxns
+    up := mv.Unconfirmed
     // Add a transaction that is invalid, but will not be checked yet
     // Add a transaction that is invalid, and will be checked and removed
     invalidTxUnchecked, err := makeValidTxn(mv)
@@ -425,14 +425,14 @@ func TestRefresh(t *testing.T) {
     defer cleanupVisor()
     mv := setupMasterVisor()
     testRefresh(t, mv, func(checkPeriod, maxAge time.Duration) {
-        mv.UnconfirmedTxns.Refresh(mv.blockchain, testBlockSize, checkPeriod,
+        mv.Unconfirmed.Refresh(mv.blockchain, testBlockSize, checkPeriod,
             maxAge)
     })
 }
 
 func TestGetOldOwnedTransactions(t *testing.T) {
     mv := setupMasterVisor()
-    up := mv.UnconfirmedTxns
+    up := mv.Unconfirmed
 
     // Add a transaction that is not ours, both new and old
     notOursNew, err := makeValidTxn(mv)

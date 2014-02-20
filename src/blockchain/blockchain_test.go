@@ -95,7 +95,7 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
         assert.Nil(t, v.RecordTxn(txn, false))
     }
     sort.Sort(txns)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), n)
+    assert.Equal(t, len(v.Unconfirmed.Txns), n)
     return txns
 }
 
@@ -301,7 +301,7 @@ func TestNewMinimalVisor(t *testing.T) {
     vc.WalletSizeMin = 10000
     v := NewMinimalVisor(vc)
     assert.Equal(t, v.Config, vc)
-    assert.Nil(t, v.UnconfirmedTxns)
+    assert.Nil(t, v.Unconfirmed)
     assert.Nil(t, v.Wallet)
     assert.Equal(t, len(v.blockchain.Blocks), 0)
     assert.Equal(t, len(v.blockSigs.Sigs), 0)
@@ -423,7 +423,7 @@ func TestVisorSaveWallet(t *testing.T) {
     v = NewVisor(vc)
     assert.Nil(t, v.SaveWallet())
     assertFileExists(t, testWalletFile)
-    w, err := LoadWallet(testWalletFile)
+    w, err := LoadSimpleWallet(testWalletFile)
     assert.Nil(t, err)
     assert.Equal(t, v.Wallet, w)
 }
@@ -476,7 +476,7 @@ func TestCreateAddressAndSave(t *testing.T) {
     assert.Equal(t, len(v.Wallet.Entries), 12)
     assert.Nil(t, we.Verify())
 
-    w, err := LoadWallet(testWalletFile)
+    w, err := LoadSimpleWallet(testWalletFile)
     assert.Nil(t, err)
     assert.Equal(t, v.Wallet, w)
 }
@@ -508,10 +508,10 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Equal(t, len(v.blockSigs.Sigs), 2)
     assert.Equal(t, v.blockchain.Blocks[1], sb.Block)
     assert.Equal(t, v.blockSigs.Sigs[1], sb.Sig)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, sb.Block.Header.Time-v.blockchain.Blocks[0].Header.Time,
         vc.BlockCreationInterval)
-    rawTxns := v.UnconfirmedTxns.RawTxns()
+    rawTxns := v.Unconfirmed.RawTxns()
     for _, tx := range sb.Block.Body.Transactions {
         assert.NotEqual(t, tx.Hash(), rawTxns[0].Hash())
     }
@@ -526,7 +526,7 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.NotNil(t, err)
     assert.Equal(t, len(v.blockchain.Blocks), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 3)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 3)
 }
 
 func TestVisorSpend(t *testing.T) {
@@ -642,11 +642,11 @@ func TestExecuteSignedBlock(t *testing.T) {
     we := NewWalletEntry()
     vc := newMasterVisorConfig(t)
     v := NewVisor(vc)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     v.RecordTxn(tx, false)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
     // Invalid signed block
@@ -656,7 +656,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     sb.Sig = coin.Sig{}
     err = v.ExecuteSignedBlock(sb)
     assert.NotNil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
     // Invalid block
@@ -667,7 +667,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     sb.Block.Body.Transactions = make(coin.Transactions, 0)
     err = v.ExecuteSignedBlock(sb)
     assert.NotNil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
     // Valid block
@@ -678,7 +678,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     assert.Equal(t, len(v.blockSigs.Sigs), 2)
     assert.Equal(t, v.blockSigs.Sigs[uint64(1)], sb.Sig)
     assert.Equal(t, v.blockchain.Blocks[1], sb.Block)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 0)
 
     // Test a valid block created by a master but executing in non master
     vc2, mv := setupVisorConfig()
@@ -694,7 +694,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     assert.Equal(t, len(v2.blockSigs.Sigs), 2)
     assert.Equal(t, v2.blockSigs.Sigs[uint64(1)], sb.Sig)
     assert.Equal(t, v2.blockchain.Blocks[1], sb.Block)
-    assert.Equal(t, len(v2.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, len(v2.Unconfirmed.Txns), 0)
 }
 
 func TestGetSignedBlocksSince(t *testing.T) {
@@ -843,10 +843,10 @@ func TestVisorSetAnnounced(t *testing.T) {
     now := util.Now()
     utx := addUnconfirmedTxn(v)
     assert.True(t, utx.Announced.IsZero())
-    assert.True(t, v.UnconfirmedTxns.Txns[utx.Hash()].Announced.IsZero())
+    assert.True(t, v.Unconfirmed.Txns[utx.Hash()].Announced.IsZero())
     v.SetAnnounced(utx.Hash(), now)
-    assert.False(t, v.UnconfirmedTxns.Txns[utx.Hash()].Announced.IsZero())
-    assert.Equal(t, v.UnconfirmedTxns.Txns[utx.Hash()].Announced, now)
+    assert.False(t, v.Unconfirmed.Txns[utx.Hash()].Announced.IsZero())
+    assert.Equal(t, v.Unconfirmed.Txns[utx.Hash()].Announced, now)
 }
 
 func TestVisorRecordTxn(t *testing.T) {
@@ -857,26 +857,26 @@ func TestVisorRecordTxn(t *testing.T) {
     // Valid record, did not announce
     tx, err := makeValidTxn(v)
     assert.Nil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     err = v.RecordTxn(tx, false)
     assert.Nil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
-    assert.True(t, v.UnconfirmedTxns.Txns[tx.Hash()].Announced.IsZero())
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
+    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
 
     // Invalid txn
     tx.Out = make([]coin.TransactionOutput, 0)
     err = v.RecordTxn(tx, true)
     assert.NotNil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
-    assert.True(t, v.UnconfirmedTxns.Txns[tx.Hash()].Announced.IsZero())
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
+    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
 
     // Make sure didAnnounce is passed through
     tx, err = makeValidTxn(v)
     assert.Nil(t, err)
     err = v.RecordTxn(tx, true)
     assert.Nil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 2)
-    assert.False(t, v.UnconfirmedTxns.Txns[tx.Hash()].Announced.IsZero())
+    assert.Equal(t, len(v.Unconfirmed.Txns), 2)
+    assert.False(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
 
     // Make sure isOurSpend and isOurReceive is correct
     we := v.Wallet.CreateEntry()
@@ -884,10 +884,10 @@ func TestVisorRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     err = v.RecordTxn(tx, false)
     assert.Nil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 3)
-    assert.True(t, v.UnconfirmedTxns.Txns[tx.Hash()].Announced.IsZero())
-    assert.True(t, v.UnconfirmedTxns.Txns[tx.Hash()].IsOurReceive)
-    assert.True(t, v.UnconfirmedTxns.Txns[tx.Hash()].IsOurSpend)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 3)
+    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
+    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].IsOurReceive)
+    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].IsOurSpend)
 }
 
 func TestGetAddressTransactions(t *testing.T) {
@@ -900,10 +900,10 @@ func TestGetAddressTransactions(t *testing.T) {
     tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     assert.Nil(t, v.RecordTxn(tx, false))
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     _, err = v.CreateAndExecuteBlock()
     assert.Nil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     txns := v.GetAddressTransactions(we.Address)
     assert.Equal(t, len(txns), 1)
     assert.Equal(t, txns[0].Txn, tx)
@@ -911,20 +911,20 @@ func TestGetAddressTransactions(t *testing.T) {
     assert.Equal(t, txns[0].Status.Height, uint64(1))
 
     // An unconfirmed txn
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
-    assert.Equal(t, len(v.UnconfirmedTxns.Unspent.Arr), 0)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 0)
+    assert.Equal(t, len(v.Unconfirmed.Unspent.Arr), 0)
     we = v.Wallet.CreateEntry()
     tx, err = v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, v.RecordTxn(tx, false))
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 1)
-    assert.Equal(t, len(v.UnconfirmedTxns.Unspent.Arr), 2)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 1)
+    assert.Equal(t, len(v.Unconfirmed.Unspent.Arr), 2)
     found := false
-    for _, ux := range v.UnconfirmedTxns.Unspent.Arr {
+    for _, ux := range v.Unconfirmed.Unspent.Arr {
         if ux.Body.Address == we.Address {
             found = true
         }
     }
-    auxs := v.UnconfirmedTxns.Unspent.AllForAddress(we.Address)
+    auxs := v.Unconfirmed.Unspent.AllForAddress(we.Address)
     assert.Equal(t, len(auxs), 1)
     assert.True(t, found)
     txns = v.GetAddressTransactions(we.Address)
@@ -933,8 +933,8 @@ func TestGetAddressTransactions(t *testing.T) {
     assert.True(t, txns[0].Status.Unconfirmed)
 
     // An unconfirmed txn, but pool is corrupted
-    srcTxn := v.UnconfirmedTxns.Unspent.Arr[0].Body.SrcTransaction
-    delete(v.UnconfirmedTxns.Txns, srcTxn)
+    srcTxn := v.Unconfirmed.Unspent.Arr[0].Body.SrcTransaction
+    delete(v.Unconfirmed.Txns, srcTxn)
     txns = v.GetAddressTransactions(we.Address)
     assert.Equal(t, len(txns), 0)
 }
@@ -959,7 +959,7 @@ func TestGetTransaction(t *testing.T) {
     // Confirmed
     _, err = v.CreateAndExecuteBlock()
     assert.Nil(t, err)
-    assert.Equal(t, len(v.UnconfirmedTxns.Txns), 0)
+    assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     tx2 = v.GetTransaction(tx.Hash())
     assert.True(t, tx2.Status.Confirmed)
     assert.Equal(t, tx2.Status.Height, uint64(1))
@@ -1051,23 +1051,23 @@ func TestLoadWallet(t *testing.T) {
     cleanupVisor()
 
     // Test with no filename (not saving or loading)
-    w := loadWallet("", 20)
+    w := loadSimpleWallet("", 20)
     assert.Equal(t, len(w.Entries), 20)
     assertFileNotExists(t, testWalletFile)
 
     // Test with filename, file does not exist for loading
-    w = loadWallet(testWalletFile, 20)
+    w = loadSimpleWallet(testWalletFile, 20)
     assert.Equal(t, len(w.Entries), 20)
     assertFileExists(t, testWalletFile)
 
     // Test with filename, file exists for loading
-    w2 := loadWallet(testWalletFile, 20)
+    w2 := loadSimpleWallet(testWalletFile, 20)
     assert.Equal(t, len(w2.Entries), 20)
     assert.Equal(t, w, w2)
     assertFileExists(t, testWalletFile)
 
-    // Test with filename, file exists for loading, and we populate more
-    w2 = loadWallet(testWalletFile, 30)
+    // Test with filename, file exists for loading, and we Populate more
+    w2 = loadSimpleWallet(testWalletFile, 30)
     assert.Equal(t, len(w2.Entries), 30)
     for a, we := range w.Entries {
         we2, ok := w2.Entries[a]
@@ -1076,15 +1076,15 @@ func TestLoadWallet(t *testing.T) {
     }
     assertFileExists(t, testWalletFile)
 
-    // Test with filename, file exists for loading, and we populate less
-    w = loadWallet(testWalletFile, 10)
+    // Test with filename, file exists for loading, and we Populate less
+    w = loadSimpleWallet(testWalletFile, 10)
     assert.Equal(t, len(w.Entries), 30)
     assert.Equal(t, w, w2)
     assertFileExists(t, testWalletFile)
 
     // Test with corrupted wallet file for loading
     corruptFile(t, testWalletFile)
-    assert.Panics(t, func() { loadWallet(testWalletFile, 10) })
+    assert.Panics(t, func() { loadSimpleWallet(testWalletFile, 10) })
 
     // Can't test saving failure since can't force save failure
 }

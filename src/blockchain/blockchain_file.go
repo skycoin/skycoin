@@ -1,11 +1,11 @@
-package visor
+package blockchain
 
 import (
-    "errors"
+    //"errors"
     "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
-    "io/ioutil"
+    //"io/ioutil"
 
     "hash/fnv"
     "hash"
@@ -14,13 +14,13 @@ import (
 
 
 var (
-    fnvs    hash.Hash = fnvs.New64a()
+    fnvs    hash.Hash = fnv.New64a()
 )
 
 func FnvsHash(data []byte) uint64 {
-    fnvs.Reset()
-    fnvs.Write(data)
-    return fnvs.Sum64(nil)
+    fnv.Reset()
+    fnv.Write(data)
+    return fnv.Sum64(nil)
 }
 
 func le_Uint64(b []byte) uint64 {

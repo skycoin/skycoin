@@ -1,15 +1,15 @@
-package Blockchain
+package blockchain
 
 import (
     "errors"
     "github.com/op/go-logging"
-    "github.com/skycoin/encoder"
+    //"github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/util"
-    "io/ioutil"
+    //"github.com/skycoin/skycoin/src/util"
+    //"io/ioutil"
     "log"
-    "os"
-    "sort"
+    //"os"
+    //"sort"
     "time"
 )
 
@@ -19,7 +19,7 @@ var (
 
 // Note: can use testnetpubkey as genesis address
 
-type GenesisBlockCfg {
+type GenesisBlockCfg struct {
     GenesisAddress coin.Address
     GenesisSignature coin.Sig
     GenesisTime uint64
@@ -55,7 +55,7 @@ type Blockchain struct {
 
     Genesis GenesisBlockCfg
     // Is this the master blockchain
-    IsMaster bool
+    //IsMaster bool
     SecKey coin.SecKey //set for writes
     // Use test network addresses
     TestNetwork bool
@@ -67,7 +67,7 @@ type Blockchain struct {
 
 func (self *Blockchain) SetBlockchainSecKey(seed string) {
     pub,sec := coin.GenerateDeterministicKeyPair([]byte(seed))
-    if pub != self.PubKey {
+    if pub != self.Genesis.Pubkey {
         log.Panic("ERROR: pubkey does not correspond to loaded pubkey")
     }
     self.SecKey = sec
@@ -160,7 +160,7 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
 // Creates a SignedBlock from pending transactions
 func (self *Blockchain) CreateBlock(coin.Block, error) {
     //var sb SignedBlock
-    if self.Config.SecKey == {} {
+    if self.Config.SecKey == (coin.SecKey{}) {
         log.Panic("Only master chain can create blocks")
     }
 

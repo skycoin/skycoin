@@ -171,8 +171,6 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
         txns = txns[:self.Config.TransactionsPerBlock]
     }
 
-    
-
     txns = coin.ArbitrateTransactions(txns)
     txns = txns.TruncateBytesTo(32*1024) //cap at 32 KB
 /*
@@ -185,6 +183,18 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
         } 
     }
 */
+
+    /*
+
+        n := 0
+    for i, _ := range txns{
+        s := tnxs[i].Size()
+        if n+s > 32*1024 {  //put in blockchain size here
+            txns = txns[i:]
+            break
+        } 
+    }
+    */
     b, err := self.blockchain.NewBlockFromTransactions(txns,
         self.Config.BlockCreationInterval)
     if err != nil {

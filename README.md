@@ -31,6 +31,7 @@ Skycoin is inspired by Bitcoin but emphasizes
 
 Skycoin Improves on Bitcoin in several ways
 - easy to use wallet designed for the mainstream
+- more secure than Bitcoin (51% attack immune, no double spending)
 - 15 second transactions. Skycoin transactions are forty times faster than Bitcoin
 - better name and branding
 - clean, easy to use API for merchants and developers
@@ -38,13 +39,27 @@ Skycoin Improves on Bitcoin in several ways
 - native support for off-block chain transactions for instant payments at point-of-sale
 
 Security Improvements:
-- immunity from the Transaction Malleability attack
-- immunity to the 51% attack
+- immunity from Transaction Malleability attack
+- no 51% attack and no double spending
+- strict transaction propagation rules, increased DDoS resistance
 - ECDSA signature compression support for smaller/faster transactions
 - no hash collisions or duplicate coinbase outputs
 - HTTPS encryption
 
 Skycoin is the most secure and most usable cryptocoin that has ever been designed.
+
+Distributed Consensus
+---------------------
+
+Skycoin uses a new distributed consensus algorithm called Obelisk to replace miners. Skycoin achieves a higher level of blockchain security than Bitcoin, with lower electricity and hardware costs.
+
+Key features of Obelisk
+- first provably secure distributed consensus algorithm.
+- extremely simple
+- easy to model
+- more ecologically friendly than mining
+
+The Obelisk white paper draft will be released with the first Skycoin client.
 
 No Mining
 ---------
@@ -78,18 +93,6 @@ Skycoin was designed to eliminate mining completely and eliminate the problems i
 - Skycoin transactions are not subject to 51% attacks by mining cartels
 - Skycoin is environmentally friendly and sustainable. Skycoin does not require twelve coal power plants to power mining
 
-Distributed Consensus
----------------------
-
-Skycoin uses a new distributed consensus algorithm called Obelisk to replace miners.
-
-Key features of Obelisk
-- first provably secure distributed consensus algorithm.
-- extremely simple
-- easy to model
-- more ecologically friendly than mining
-
-The Obelisk white paper draft will be released with the first Skycoin client.
 
 Skycoin Project
 ---------------
@@ -99,13 +102,7 @@ Skycoin is more than a coin. Skycoin is at the core of number of projects that w
 Current Status
 --------------
 
-Skycoin was announced in December with first Public Release scheduled by March. 
-
-* Crypto is done
-* Blockchain is done
-* Networking is done
-* Wallet is working with on going improvements
-
+* Preparing for IPO
 * Working on Obelisk
 * Working on Darknet
 

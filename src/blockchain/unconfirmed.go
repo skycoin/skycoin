@@ -1,4 +1,4 @@
-package visor
+package blockchain
 
 import (
     "github.com/skycoin/skycoin/src/coin"
@@ -112,7 +112,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
-func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain checkPeriod) {
+func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, checkPeriod int) {
     now := util.Now()
     toRemove := make([]coin.SHA256, 0)
     for k, t := range self.Txns {

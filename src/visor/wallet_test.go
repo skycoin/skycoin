@@ -124,6 +124,20 @@ func TestNewBalance(t *testing.T) {
     assert.Equal(t, b.Hours, uint64(20))
 }
 
+func TestBalanceEquals(t *testing.T) {
+    b := NewBalance(10, 10)
+    assert.True(t, b.Equals(b))
+    c := NewBalance(10, 20)
+    assert.False(t, b.Equals(c))
+    assert.False(t, c.Equals(b))
+    c = NewBalance(20, 10)
+    assert.False(t, b.Equals(c))
+    assert.False(t, c.Equals(b))
+    c = NewBalance(20, 20)
+    assert.False(t, b.Equals(c))
+    assert.False(t, c.Equals(b))
+}
+
 func TestBalanceAdd(t *testing.T) {
     b := NewBalance(uint64(10), uint64(20))
     c := NewBalance(uint64(15), uint64(25))
@@ -141,42 +155,22 @@ func TestBalanceSub(t *testing.T) {
     assert.Equal(t, d.Coins, uint64(5))
     assert.Equal(t, d.Hours, uint64(5))
     assert.Panics(t, func() { b.Sub(c) })
-}
 
-func TestBalanceGreaterThan(t *testing.T) {
-    b := NewBalance(uint64(10), uint64(20))
-    c := NewBalance(uint64(15), uint64(25))
-    assert.True(t, c.GreaterThan(b))
-    assert.False(t, b.GreaterThan(c))
-    // Both have a field greater than the other's
-    b.Hours = uint64(35)
-    assert.False(t, c.GreaterThan(b))
-    assert.False(t, b.GreaterThan(c))
-    b.Hours = uint64(20)
-    b.Coins = uint64(25)
-    assert.False(t, c.GreaterThan(b))
-    assert.False(t, b.GreaterThan(c))
-}
+    // Sub with bad coins
+    b = NewBalance(10, 20)
+    c = NewBalance(20, 10)
+    assert.Panics(t, func() { b.Sub(c) })
 
-func TestBalanceGreaterThanOrEqual(t *testing.T) {
-    // One fully greater than the other
-    b := NewBalance(uint64(10), uint64(20))
-    c := NewBalance(uint64(15), uint64(25))
-    assert.True(t, c.GreaterThanOrEqual(b))
-    assert.False(t, b.GreaterThanOrEqual(c))
-    // Both equal
-    b.Coins = c.Coins
-    b.Hours = c.Hours
-    assert.True(t, c.GreaterThanOrEqual(b))
-    assert.True(t, b.GreaterThanOrEqual(c))
-    // Both have fields greater than or equal to each other
-    b.Hours = uint64(25)
-    assert.False(t, c.GreaterThan(b))
-    assert.False(t, b.GreaterThan(c))
-    b.Hours = uint64(15)
-    b.Coins = uint64(20)
-    assert.False(t, c.GreaterThan(b))
-    assert.False(t, b.GreaterThan(c))
+    // Sub with bad hours
+    b = NewBalance(20, 10)
+    c = NewBalance(10, 20)
+    assert.Panics(t, func() { b.Sub(c) })
+
+    // Sub equal
+    b = NewBalance(20, 20)
+    c = NewBalance(20, 20)
+    assert.Equal(t, NewBalance(0, 0), b.Sub(c))
+    assert.Equal(t, NewBalance(0, 0), c.Sub(b))
 }
 
 func TestBalanceIsZero(t *testing.T) {

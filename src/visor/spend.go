@@ -40,7 +40,7 @@ func (self OldestUxOut) Less(i, j int) bool {
     return a < b
 }
 
-func createSpends(headTime uint64, auxs coin.AddressUxOuts,
+func createSpends(headTime uint64, uxa coin.UxArray,
     amt Balance) (coin.UxArray, error) {
     if amt.Coins == 0 {
         return nil, errors.New("Zero spend amount")
@@ -49,7 +49,7 @@ func createSpends(headTime uint64, auxs coin.AddressUxOuts,
         return nil, errors.New("Coins must be multiple of 1e6")
     }
 
-    uxs := OldestUxOut(auxs.Flatten())
+    uxs := OldestUxOut(uxa)
     sort.Sort(uxs)
 
     have := Balance{0, 0}
@@ -87,13 +87,12 @@ func CreateSpendingTransaction(wallet Wallet, unconfirmed *UnconfirmedTxnPool,
     txn := coin.Transaction{}
     need := amt
     need.Hours += fee
-    addrs := wallet.GetAddresses()
-    auxs := unspent.AllForAddresses(addrs)
+    auxs := unspent.AllForAddresses(wallet.GetAddresses())
     // Subtract pending spends from available
-    puxs := unconfirmed.SpendsForAddresses(unspent, addrs)
+    puxs := unconfirmed.SpendsForAddresses(unspent, wallet.GetAddressSet())
     auxs = auxs.Sub(puxs)
 
-    spends, err := createSpends(headTime, auxs, need)
+    spends, err := createSpends(headTime, auxs.Flatten(), need)
     if err != nil {
         return txn, err
     }
@@ -114,19 +113,15 @@ func CreateSpendingTransaction(wallet Wallet, unconfirmed *UnconfirmedTxnPool,
     // TODO -- send change to a new address
     changeAddr := spends[0].Body.Address
     if change.Coins == 0 {
-        if change.Hours > fee {
+        if change.Hours > 0 {
             msg := ("Have enough coins, but not enough to send coin hours " +
                 "change back. Would spend %d more hours than requested.")
-            return txn, fmt.Errorf(msg, change.Hours-fee)
+            return txn, fmt.Errorf(msg, change.Hours)
         }
     } else {
-        logger.Info("Sending change to %s: %d, %d", changeAddr.String(),
-            change.Coins, change.Hours)
         txn.PushOutput(changeAddr, change.Coins, change.Hours)
     }
 
-    logger.Info("Sending money to %s: %d, %d", dest.String(), amt.Coins,
-        amt.Hours)
     txn.PushOutput(dest, amt.Coins, amt.Hours)
     txn.SignInputs(toSign)
     txn.UpdateHeader()

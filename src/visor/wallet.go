@@ -113,21 +113,13 @@ func (self Balance) Add(other Balance) Balance {
 // Subtracts other from self and returns the new Balance.  Will panic if
 // other is greater than balance, because Coins and Hours are unsigned.
 func (self Balance) Sub(other Balance) Balance {
-    if other.GreaterThan(self) {
+    if other.Coins > self.Coins || other.Hours > self.Hours {
         log.Panic("Cannot subtract balances, second balance is too large")
     }
     return Balance{
         Coins: self.Coins - other.Coins,
         Hours: self.Hours - other.Hours,
     }
-}
-
-func (self Balance) GreaterThan(other Balance) bool {
-    return self.Coins > other.Coins && self.Hours > other.Hours
-}
-
-func (self Balance) GreaterThanOrEqual(other Balance) bool {
-    return self.Coins >= other.Coins && self.Hours >= other.Hours
 }
 
 func (self Balance) Equals(other Balance) bool {

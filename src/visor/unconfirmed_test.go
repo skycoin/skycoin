@@ -327,8 +327,8 @@ func testRefresh(t *testing.T, mv *Visor,
     assert.Nil(t, err)
     invalidTxChecked, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    assert.Nil(t, invalidTxUnchecked.Verify(testBlockSize))
-    assert.Nil(t, invalidTxChecked.Verify(testBlockSize))
+    assert.Nil(t, invalidTxUnchecked.Verify())
+    assert.Nil(t, invalidTxChecked.Verify())
     // Invalidate it by spending the output that this txn references
     invalidator, err := makeValidTxn(mv)
     assert.Nil(t, err)
@@ -339,10 +339,8 @@ func testRefresh(t *testing.T, mv *Visor,
     _, err = mv.CreateAndExecuteBlock()
     assert.Nil(t, err)
     assert.Equal(t, len(up.Txns), 0)
-    assert.NotNil(t, mv.blockchain.VerifyTransaction(invalidTxUnchecked,
-        testBlockSize))
-    assert.NotNil(t, mv.blockchain.VerifyTransaction(invalidTxChecked,
-        testBlockSize))
+    assert.NotNil(t, mv.blockchain.VerifyTransaction(invalidTxUnchecked))
+    assert.NotNil(t, mv.blockchain.VerifyTransaction(invalidTxChecked))
 
     invalidUtxUnchecked := UnconfirmedTxn{
         Txn:       invalidTxUnchecked,
@@ -366,7 +364,8 @@ func testRefresh(t *testing.T, mv *Visor,
     // Add a transaction that is valid, and will not be checked yet
     validTxUnchecked, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = up.RecordTxn(mv.blockchain, validTxUnchecked, nil, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, validTxUnchecked, nil,
+        testBlockSize)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(up.Txns), 3)
@@ -425,8 +424,7 @@ func TestRefresh(t *testing.T) {
     defer cleanupVisor()
     mv := setupMasterVisor()
     testRefresh(t, mv, func(checkPeriod, maxAge time.Duration) {
-        mv.Unconfirmed.Refresh(mv.blockchain, testBlockSize, checkPeriod,
-            maxAge)
+        mv.Unconfirmed.Refresh(mv.blockchain, checkPeriod, maxAge)
     })
 }
 

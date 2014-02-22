@@ -246,14 +246,14 @@ func (self *Blockchain) Time() uint64 {
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
-    creationInterval uint64, maxByteSize int) (Block, error) {
+    creationInterval uint64, maxBlockSize int) (Block, error) {
     if creationInterval == 0 {
         log.Panic("Creation interval must be > 0")
     }
     b := newBlock(self.Head(), creationInterval)
-    newTxns := self.ArbitrateTransactions(txns, maxByteSize)
+    newTxns := self.ArbitrateTransactions(txns)
     // Restrict txns by size
-    newTxns = newTxns.TruncateBytesTo(maxByteSize)
+    newTxns = newTxns.TruncateBytesTo(maxBlockSize)
     if len(newTxns) == 0 {
         return Block{}, errors.New("No valid transactions")
     }
@@ -270,10 +270,9 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
 }
 
 // Attempts to append block to blockchain
-func (self *Blockchain) ExecuteBlock(b Block,
-    maxByteSize int) (UxArray, error) {
+func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
     var uxs UxArray = nil
-    err := self.VerifyBlock(&b, maxByteSize)
+    err := self.VerifyBlock(&b)
     if err != nil {
         return uxs, err
     }
@@ -295,18 +294,11 @@ func (self *Blockchain) ExecuteBlock(b Block,
 }
 
 // Verifies the BlockHeader and BlockBody
-func (self *Blockchain) VerifyBlock(b *Block, maxSize int) error {
+func (self *Blockchain) VerifyBlock(b *Block) error {
     if err := verifyBlockHeader(self.Head(), b); err != nil {
         return err
     }
-    // TODO -- might want to remove this check, to allow block size limits
-    // to change over time.  At least, for new blocks, check the size against
-    // the currently allowed size, but for old blocks, assume the size is
-    // correct.
-    if b.Size() > maxSize {
-        return errors.New("Block too large")
-    }
-    err := self.verifyTransactions(b.Body.Transactions, maxSize)
+    err := self.verifyTransactions(b.Body.Transactions)
     if err != nil {
         return err
     }
@@ -316,7 +308,7 @@ func (self *Blockchain) VerifyBlock(b *Block, maxSize int) error {
 // Checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
-func (self *Blockchain) VerifyTransaction(tx Transaction, maxSize int) error {
+func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     //CHECKLIST: DONE: check for duplicate ux inputs/double spending
     //CHECKLIST: DONE: check that inputs of transaction have not been spent
     //CHECKLIST: DONE: check there are no duplicate outputs
@@ -335,7 +327,7 @@ func (self *Blockchain) VerifyTransaction(tx Transaction, maxSize int) error {
     // Check for non 1e6 multiple coin outputs
     // Check for zero coin outputs
     // Check valid looking signatures
-    if err := tx.Verify(maxSize); err != nil {
+    if err := tx.Verify(); err != nil {
         return err
     }
 
@@ -412,7 +404,7 @@ func Now() uint64 {
 // firstFalse is false, if there is no way to filter the txns into a valid
 // array, i.e. processTransactions(processTransactions(txn, false), true)
 // should not result in an error, unless all txns are invalid.
-func (self *Blockchain) processTransactions(txns Transactions, maxSize int,
+func (self *Blockchain) processTransactions(txns Transactions,
     arbitrating bool) (Transactions, error) {
     // Transactions need to be sorted by fee and hash before arbitrating
     if arbitrating {
@@ -433,7 +425,7 @@ func (self *Blockchain) processTransactions(txns Transactions, maxSize int,
     for i, tx := range txns {
         // Check the transaction against itself.  This covers the hash,
         // signature indices and duplicate spends within itself
-        err := self.VerifyTransaction(tx, maxSize)
+        err := self.VerifyTransaction(tx)
         if err != nil {
             if arbitrating {
                 skip[i] = byte(1)
@@ -547,19 +539,17 @@ func (self *Blockchain) processTransactions(txns Transactions, maxSize int,
 }
 
 // Returns an error if any Transaction in txns is invalid
-func (self *Blockchain) verifyTransactions(txns Transactions,
-    maxSize int) error {
+func (self *Blockchain) verifyTransactions(txns Transactions) error {
     // TODO - Check special case for genesis block
-    _, err := self.processTransactions(txns, maxSize, false)
+    _, err := self.processTransactions(txns, false)
     return err
 }
 
 // Returns an array of Transactions with invalid ones removed from txns.
 // The Transaction hash is used to arbitrate between double spends.
 // txns must be sorted by hash.
-func (self *Blockchain) ArbitrateTransactions(txns Transactions,
-    maxSize int) Transactions {
-    newtxns, err := self.processTransactions(txns, maxSize, true)
+func (self *Blockchain) ArbitrateTransactions(txns Transactions) Transactions {
+    newtxns, err := self.processTransactions(txns, true)
     if err != nil {
         log.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
     }

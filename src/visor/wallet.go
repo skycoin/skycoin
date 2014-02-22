@@ -96,6 +96,13 @@ func NewBalance(coins, hours uint64) Balance {
     }
 }
 
+func NewBalanceFromUxOut(headTime uint64, ux *coin.UxOut) Balance {
+    return Balance{
+        Coins: ux.Body.Coins,
+        Hours: ux.CoinHours(headTime),
+    }
+}
+
 func (self Balance) Add(other Balance) Balance {
     return Balance{
         Coins: self.Coins + other.Coins,
@@ -121,6 +128,10 @@ func (self Balance) GreaterThan(other Balance) bool {
 
 func (self Balance) GreaterThanOrEqual(other Balance) bool {
     return self.Coins >= other.Coins && self.Hours >= other.Hours
+}
+
+func (self Balance) Equals(other Balance) bool {
+    return self.Coins == other.Coins && self.Hours == other.Hours
 }
 
 func (self Balance) IsZero() bool {

@@ -32,7 +32,7 @@ type TransactionOutput struct {
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
-func (self *Transaction) Verify(maxSize int) error {
+func (self *Transaction) Verify() error {
     h := self.hashInner()
     if h != self.Head.Hash {
         return errors.New("Invalid header hash")
@@ -51,11 +51,6 @@ func (self *Transaction) Verify(maxSize int) error {
     }
     if len(self.Head.Sigs) >= math.MaxUint16 {
         return errors.New("Too many signatures and inputs")
-    }
-
-    // Transaction are size limited
-    if self.Size() > maxSize {
-        return errors.New("Transaction too large")
     }
 
     // Check duplicate inputs

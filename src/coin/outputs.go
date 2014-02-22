@@ -349,6 +349,14 @@ func (self UxArray) Swap(i, j int) {
 
 type AddressUxOuts map[Address]UxArray
 
+func NewAddressUxOuts(uxs UxArray) AddressUxOuts {
+    uxo := make(AddressUxOuts)
+    for _, ux := range uxs {
+        uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
+    }
+    return uxo
+}
+
 // Returns the Address keys
 func (self AddressUxOuts) Keys() []Address {
     addrs := make([]Address, len(self))

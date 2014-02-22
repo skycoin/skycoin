@@ -1,6 +1,7 @@
 package visor
 
 import (
+    "errors"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "time"
@@ -49,7 +50,7 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 
 // Creates an unconfirmed transaction
 func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) UnconfirmedTxn {
+    t coin.Transaction, addrs map[coin.Address]byte) UnconfirmedTxn {
     now := util.Now()
     ut := UnconfirmedTxn{
         Txn:          t,
@@ -94,8 +95,10 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     t coin.Transaction, addrs map[coin.Address]byte, maxSize int) (error, bool) {
-
-    if err := bc.VerifyTransaction(t, maxSize); err != nil {
+    if t.Size() > maxSize {
+        return errors.New("Transaction too large"), false
+    }
+    if err := bc.VerifyTransaction(t); err != nil {
         return err, false
     }
 
@@ -109,7 +112,7 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         return nil, true
     }
 
-    self.Txns[t.Hash()] = self.createUnconfirmedTxn(bc, t, addrs, maxSize)
+    self.Txns[t.Hash()] = self.createUnconfirmedTxn(bc, t, addrs)
 
     return nil, false
 }
@@ -171,7 +174,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
-func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, maxSize int,
+func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     checkPeriod, maxAge time.Duration) {
     now := util.Now()
     toRemove := make([]coin.SHA256, 0)
@@ -179,7 +182,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, maxSize int,
         if now.Sub(t.Received) >= maxAge {
             toRemove = append(toRemove, k)
         } else if now.Sub(t.Checked) >= checkPeriod {
-            if bc.VerifyTransaction(t.Txn, maxSize) == nil {
+            if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now
                 self.Txns[k] = t
             } else {

@@ -602,7 +602,7 @@ func TestVisorSpend(t *testing.T) {
     assert.Equal(t, tx.Out[0].Address, ourAddr)
     assert.Equal(t, tx.Out[0].Coins, ogb.Coins-b.Coins)
     assert.Equal(t, tx.Out[0].Hours, ogb.Hours-b.Hours)
-    assert.Nil(t, tx.Verify(testBlockSize))
+    assert.Nil(t, tx.Verify())
 }
 
 func TestExecuteSignedBlock(t *testing.T) {

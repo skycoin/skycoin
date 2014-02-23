@@ -127,6 +127,9 @@ type DaemonConfig struct {
     DataDirectory string
     // How often to check and initiate an outgoing connection if needed
     OutgoingRate time.Duration
+    // How often to re-attempt to fill any missing private (aka required)
+    // connections
+    PrivateRate time.Duration
     // Number of outgoing connections to maintain
     OutgoingMax int
     // Maximum number of connections to try at once
@@ -153,6 +156,7 @@ func NewDaemonConfig() DaemonConfig {
         Address:                    "",
         Port:                       6677,
         OutgoingRate:               time.Second * 5,
+        PrivateRate:                time.Minute,
         OutgoingMax:                8,
         PendingMax:                 16,
         IntroductionWait:           time.Second * 30,
@@ -278,6 +282,7 @@ func (self *Daemon) Start(quit chan int) {
     if !self.DHT.Config.Disabled {
         go self.DHT.Start()
     }
+    self.makePrivateConnections()
 
     // TODO -- run blockchain stuff in its own goroutine
     blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
@@ -290,6 +295,7 @@ func (self *Daemon) Start(quit chan int) {
     blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
     transactionRebroadcastTicker := time.Tick(self.Visor.Config.TransactionRebroadcastRate)
 
+    privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
     cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
     outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
@@ -342,6 +348,12 @@ main:
                 len(self.OutgoingConnections) < self.Config.OutgoingMax &&
                 len(self.pendingConnections) < self.Config.PendingMax {
                 self.connectToRandomPeer()
+            }
+        // Always try to stay connected to our private peers
+        // TODO (also, connect to all of them on start)
+        case <-privateConnectionsTicker:
+            if !self.Config.DisableOutgoingConnections {
+                self.makePrivateConnections()
             }
         // Process the connection queue
         case <-messageHandlingTicker:
@@ -437,34 +449,62 @@ func (self *Daemon) GetListenPort(addr string) uint16 {
     }
 }
 
+// Connects to a given peer.  Returns an error if no connection attempt was
+// made.  If the connection attempt itself fails, the error is sent to
+// the connectionErrors channel.
+func (self *Daemon) connectToPeer(p *pex.Peer) error {
+    if self.Config.DisableOutgoingConnections {
+        return errors.New("Outgoing connections disabled")
+    }
+    a, _, err := SplitAddr(p.Addr)
+    if err != nil {
+        logger.Warning("PEX gave us an invalid peer: %v", err)
+        return errors.New("Invalid peer")
+    }
+    if self.Config.LocalhostOnly && !IsLocalhost(a) {
+        return errors.New("Not localhost")
+    }
+    if self.Pool.Pool.Addresses[p.Addr] != nil {
+        return errors.New("Already connected")
+    }
+    if self.pendingConnections[p.Addr] != nil {
+        return errors.New("Connection is pending")
+    }
+    if !self.Config.LocalhostOnly && self.ipCounts[a] != 0 {
+        return errors.New("Already connected to a peer with this base IP")
+    }
+    logger.Debug("Trying to connect to %s", p.Addr)
+    self.pendingConnections[p.Addr] = p
+    go func() {
+        _, err := self.Pool.Pool.Connect(p.Addr)
+        if err != nil {
+            self.connectionErrors <- ConnectionError{p.Addr, err}
+        }
+    }()
+    return nil
+}
+
+// Connects to all private peers
+func (self *Daemon) makePrivateConnections() {
+    if self.Config.DisableOutgoingConnections {
+        return
+    }
+    for _, p := range self.Peers.Peers.Peerlist {
+        if p.Private {
+            self.connectToPeer(p)
+        }
+    }
+}
+
 // Attempts to connect to a random peer. If it fails, the peer is removed
 func (self *Daemon) connectToRandomPeer() {
     if self.Config.DisableOutgoingConnections {
         return
     }
-    // Make a connection to a random peer
-    peers := self.Peers.Peers.Peerlist.Random(0)
+    // Make a connection to a random (public) peer
+    peers := self.Peers.Peers.Peerlist.RandomPublic(0)
     for _, p := range peers {
-        a, _, err := SplitAddr(p.Addr)
-        if err != nil {
-            logger.Warning("PEX gave us an invalid peer: %v", err)
-            continue
-        }
-        if self.Config.LocalhostOnly && !IsLocalhost(a) {
-            continue
-        }
-        isConnected := self.Pool.Pool.Addresses[p.Addr] != nil
-        isPending := self.pendingConnections[p.Addr] != nil
-        ipInUse := !self.Config.LocalhostOnly && self.ipCounts[a] != 0
-        if !isConnected && !isPending && !ipInUse {
-            logger.Debug("Trying to connect to %s", p.Addr)
-            self.pendingConnections[p.Addr] = p
-            go func() {
-                _, err := self.Pool.Pool.Connect(p.Addr)
-                if err != nil {
-                    self.connectionErrors <- ConnectionError{p.Addr, err}
-                }
-            }()
+        if self.connectToPeer(p) == nil {
             break
         }
     }
@@ -475,7 +515,7 @@ func (self *Daemon) handleConnectionError(c ConnectionError) {
     logger.Debug("Removing %s because failed to connect: %v", c.Addr,
         c.Error)
     delete(self.pendingConnections, c.Addr)
-    delete(self.Peers.Peers.Peerlist, c.Addr)
+    self.Peers.RemovePeer(c.Addr)
 }
 
 // Removes unsolicited connections who haven't sent a version
@@ -495,7 +535,7 @@ func (self *Daemon) cullInvalidConnections() {
             delete(self.ExpectingIntroductions, a)
             self.Pool.Pool.Disconnect(self.Pool.Pool.Addresses[a],
                 DisconnectIntroductionTimeout)
-            delete(self.Peers.Peers.Peerlist, a)
+            self.Peers.RemovePeer(a)
         }
     }
 }

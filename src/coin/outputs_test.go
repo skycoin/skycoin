@@ -73,10 +73,12 @@ func TestUxOutCoinHours(t *testing.T) {
     assert.Equal(t, uxo.CoinHours(uxo.Head.Time), uxo.Body.Hours)
     assert.Equal(t, uxo.CoinHours(uxo.Head.Time+3600),
         uxo.Body.Hours+(genesisCoinVolume/1e6))
+    uxo.Body.Hours = 0
+    assert.Equal(t, uxo.CoinHours(uxo.Head.Time), uint64(0))
 }
 
 func makeUxArray(t *testing.T, n int) UxArray {
-    uxa := make(UxArray, 4)
+    uxa := make(UxArray, n)
     for i := 0; i < len(uxa); i++ {
         uxa[i] = makeUxOut(t)
     }
@@ -588,7 +590,7 @@ func TestUnspentGetMultiple(t *testing.T) {
     txn.PushOutput(genAddress, ux0.Body.Coins+ux1.Body.Coins, ux0.Body.Hours)
     txn.SignInputs([]SecKey{genSecret, genSecret})
     txn.UpdateHeader()
-    assert.Nil(t, txn.Verify(testMaxSize))
+    assert.Nil(t, txn.Verify())
     txin, err = unspent.GetMultiple(txn.In)
     assert.Nil(t, err)
     assert.Equal(t, len(txin), 2)
@@ -754,4 +756,22 @@ func TestAddressUxOutsFlatten(t *testing.T) {
         assert.Equal(t, flat[2], uxs[0])
         assert.Equal(t, flat[2].Body.Address, uxs[0].Body.Address)
     }
+}
+
+func TestNewAddressUxOuts(t *testing.T) {
+    uxs := makeUxArray(t, 6)
+    uxs[1].Body.Address = uxs[0].Body.Address
+    uxs[3].Body.Address = uxs[2].Body.Address
+    uxs[4].Body.Address = uxs[2].Body.Address
+    uxo := NewAddressUxOuts(uxs)
+    assert.Equal(t, len(uxo), 3)
+    assert.Equal(t, uxo[uxs[0].Body.Address], UxArray{
+        uxs[0], uxs[1],
+    })
+    assert.Equal(t, uxo[uxs[3].Body.Address], UxArray{
+        uxs[2], uxs[3], uxs[4],
+    })
+    assert.Equal(t, uxo[uxs[5].Body.Address], UxArray{
+        uxs[5],
+    })
 }

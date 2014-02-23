@@ -1,6 +1,7 @@
 package visor
 
 import (
+    "errors"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "time"
@@ -48,8 +49,8 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 }
 
 // Creates an unconfirmed transaction
-func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) UnconfirmedTxn {
+func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
+    t coin.Transaction, addrs map[coin.Address]byte) UnconfirmedTxn {
     now := util.Now()
     ut := UnconfirmedTxn{
         Txn:          t,
@@ -58,12 +59,6 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
         Announced:    util.ZeroTime(),
         IsOurReceive: false,
         IsOurSpend:   false,
-    }
-
-    // Add predicted unspents
-    uxs := coin.CreateExpectedUnspents(t)
-    for i, _ := range uxs {
-        self.Unspent.Add(uxs[i])
     }
 
     // Check if this unspent is related to us
@@ -77,7 +72,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
         }
         // Check if this is one of our spending txns
         for i, _ := range t.In {
-            if ux, ok := bc.Unspent.Get(t.In[i]); ok {
+            if ux, ok := bcUnsp.Get(t.In[i]); ok {
                 if _, ok := addrs[ux.Body.Address]; ok {
                     ut.IsOurSpend = true
                     break
@@ -94,8 +89,10 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bc *coin.Blockchain,
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     t coin.Transaction, addrs map[coin.Address]byte, maxSize int) (error, bool) {
-
-    if err := bc.VerifyTransaction(t, maxSize); err != nil {
+    if t.Size() > maxSize {
+        return errors.New("Transaction too large"), false
+    }
+    if err := bc.VerifyTransaction(t); err != nil {
         return err, false
     }
 
@@ -109,7 +106,13 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
         return nil, true
     }
 
-    self.Txns[t.Hash()] = self.createUnconfirmedTxn(bc, t, addrs, maxSize)
+    // Add txn to index
+    self.Txns[t.Hash()] = self.createUnconfirmedTxn(&bc.Unspent, t, addrs)
+    // Add predicted unspents
+    uxs := coin.CreateExpectedUnspents(t)
+    for i, _ := range uxs {
+        self.Unspent.Add(uxs[i])
+    }
 
     return nil, false
 }
@@ -171,7 +174,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
-func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, maxSize int,
+func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     checkPeriod, maxAge time.Duration) {
     now := util.Now()
     toRemove := make([]coin.SHA256, 0)
@@ -179,7 +182,7 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, maxSize int,
         if now.Sub(t.Received) >= maxAge {
             toRemove = append(toRemove, k)
         } else if now.Sub(t.Checked) >= checkPeriod {
-            if bc.VerifyTransaction(t.Txn, maxSize) == nil {
+            if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now
                 self.Txns[k] = t
             } else {
@@ -228,15 +231,17 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
 }
 
 // Returns all unconfirmed coin.UxOut spends for addresses
+// Looks at all inputs for unconfirmed txns, gets their source UxOut from the
+// blockchain's unspent pool, and returns as coin.AddressUxOuts
 // TODO -- optimize or cache
-func (self *UnconfirmedTxnPool) SpendsForAddresses(unspent *coin.UnspentPool,
-    a []coin.Address) coin.AddressUxOuts {
+func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
+    a map[coin.Address]byte) coin.AddressUxOuts {
     auxs := make(coin.AddressUxOuts, len(a))
     for _, utx := range self.Txns {
         for _, h := range utx.Txn.In {
-            if ux, ok := unspent.Get(h); ok {
-                if x, ok := auxs[ux.Body.Address]; ok {
-                    auxs[ux.Body.Address] = append(x, ux)
+            if ux, ok := bcUnspent.Get(h); ok {
+                if _, ok := a[ux.Body.Address]; ok {
+                    auxs[ux.Body.Address] = append(auxs[ux.Body.Address], ux)
                 }
             }
         }

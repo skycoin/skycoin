@@ -78,33 +78,33 @@ func TestTransactionVerify(t *testing.T) {
     // Mismatch header hash
     tx := makeTransaction(t)
     tx.Head.Hash = SHA256{}
-    assertError(t, tx.Verify(testMaxSize), "Invalid header hash")
+    assertError(t, tx.Verify(), "Invalid header hash")
 
     // No inputs
     tx = makeTransaction(t)
     tx.In = make([]SHA256, 0)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(testMaxSize), "No inputs")
+    assertError(t, tx.Verify(), "No inputs")
 
     // No outputs
     tx = makeTransaction(t)
     tx.Out = make([]TransactionOutput, 0)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(testMaxSize), "No outputs")
+    assertError(t, tx.Verify(), "No outputs")
 
     // Invalid number of sigs
     tx = makeTransaction(t)
     tx.Head.Sigs = make([]Sig, 0)
-    assertError(t, tx.Verify(testMaxSize), "Invalid number of signatures")
+    assertError(t, tx.Verify(), "Invalid number of signatures")
     tx.Head.Sigs = make([]Sig, 20)
-    assertError(t, tx.Verify(testMaxSize), "Invalid number of signatures")
+    assertError(t, tx.Verify(), "Invalid number of signatures")
 
     // Too many sigs & inputs
     tx = makeTransaction(t)
     tx.Head.Sigs = make([]Sig, math.MaxUint16)
     tx.In = make([]SHA256, math.MaxUint16)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(testMaxSize), "Too many signatures and inputs")
+    assertError(t, tx.Verify(), "Too many signatures and inputs")
 
     // Duplicate inputs
     tx, s := makeTransactionWithSecret(t)
@@ -112,19 +112,19 @@ func TestTransactionVerify(t *testing.T) {
     tx.Head.Sigs = nil
     tx.SignInputs([]SecKey{s, s})
     tx.UpdateHeader()
-    assertError(t, tx.Verify(testMaxSize), "Duplicate spend")
+    assertError(t, tx.Verify(), "Duplicate spend")
 
     // Duplicate outputs
     tx = makeTransaction(t)
     to := tx.Out[0]
     tx.PushOutput(to.Address, to.Coins, to.Hours)
     tx.UpdateHeader()
-    assertError(t, tx.Verify(testMaxSize), "Duplicate output in transaction")
+    assertError(t, tx.Verify(), "Duplicate output in transaction")
 
     // Invalid signature, empty
     tx = makeTransaction(t)
     tx.Head.Sigs[0] = Sig{}
-    assertError(t, tx.Verify(testMaxSize), "Failed to recover public key")
+    assertError(t, tx.Verify(), "Failed to recover public key")
     // We can't check here for other invalid signatures:
     //      - Signatures signed by someone else, spending coins they don't own
     //      - Signature is for wrong hash
@@ -138,29 +138,21 @@ func TestTransactionVerify(t *testing.T) {
     tx.Head.Sigs = nil
     tx.SignInputs([]SecKey{genSecret})
     assert.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
-    assertError(t, tx.Verify(testMaxSize), "Transaction outputs must be multiple of "+
+    assertError(t, tx.Verify(), "Transaction outputs must be multiple of "+
         "1e6 base units")
 
     // Output coins are 0
     tx = makeTransaction(t)
     tx.Out[0].Coins = 0
     tx.UpdateHeader()
-    assertError(t, tx.Verify(testMaxSize), "Zero coin output")
-
-    // Transaction too large
-    tx = makeTransaction(t)
-    tx.Out[0].Coins = 10e6
-    tx.Out[1].Coins = 1e6
-    tx.UpdateHeader()
-    maxSize := tx.Size()
-    assert.Error(t, tx.Verify(maxSize-1), "Transaction too large")
+    assertError(t, tx.Verify(), "Zero coin output")
 
     // Valid
     tx = makeTransaction(t)
     tx.Out[0].Coins = 10e6
     tx.Out[1].Coins = 1e6
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify(tx.Size()))
+    assert.Nil(t, tx.Verify())
 }
 
 func TestTransactionPushInput(t *testing.T) {
@@ -521,11 +513,11 @@ func TestFullTransaction(t *testing.T) {
     tx.PushOutput(a2, 5e6, 100)
     tx.SignInputs([]SecKey{s1})
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify(testMaxSize))
-    assert.Nil(t, bc.VerifyTransaction(tx, testMaxSize))
+    assert.Nil(t, tx.Verify())
+    assert.Nil(t, bc.VerifyTransaction(tx))
     b, err := bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
     assert.Nil(t, err)
-    _, err = bc.ExecuteBlock(b, testMaxSize)
+    _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)
 
     txo := CreateExpectedUnspents(tx)
@@ -546,10 +538,10 @@ func TestFullTransaction(t *testing.T) {
     tx.PushOutput(a1, ux.Body.Coins-10e6, 100)
     tx.SignInputs([]SecKey{s1, s2, s2})
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify(testMaxSize))
-    assert.Nil(t, bc.VerifyTransaction(tx, testMaxSize))
+    assert.Nil(t, tx.Verify())
+    assert.Nil(t, bc.VerifyTransaction(tx))
     b, err = bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
     assert.Nil(t, err)
-    _, err = bc.ExecuteBlock(b, testMaxSize)
+    _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)
 }

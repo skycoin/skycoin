@@ -180,7 +180,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
     logger.Debug("Refreshing unconfirmed transactions")
-    self.Unconfirmed.Refresh(self.blockchain, self.Config.MaxBlockSize,
+    self.Unconfirmed.Refresh(self.blockchain,
         self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
 }
 
@@ -256,7 +256,7 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
     if err := self.verifySignedBlock(&b); err != nil {
         return err
     }
-    _, err := self.blockchain.ExecuteBlock(b.Block, self.Config.MaxBlockSize)
+    _, err := self.blockchain.ExecuteBlock(b.Block)
     if err != nil {
         return err
     }
@@ -456,7 +456,11 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     if err != nil {
         return tx, err
     }
-    err = self.blockchain.VerifyTransaction(tx, self.Config.MaxBlockSize)
+    if tx.Size() > self.Config.MaxBlockSize {
+        // TODO -- this can cause permanent failure to spend a given amount
+        log.Panicf("Created transaction too large")
+    }
+    err = self.blockchain.VerifyTransaction(tx)
     if err != nil {
         log.Panicf("Created invalid spending txn: %v", err)
     }

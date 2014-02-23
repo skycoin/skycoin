@@ -91,6 +91,8 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
         txn, err := makeValidTxn(v)
         assert.Nil(t, err)
         txns[i] = txn
+    }
+    for _, txn := range txns {
         err, known := v.RecordTxn(txn)
         assert.Nil(t, err)
         assert.False(t, known)
@@ -582,6 +584,12 @@ func TestVisorSpend(t *testing.T) {
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), "Not enough coins")
 
+    // Test created txn too large
+    v = NewVisor(vc)
+    v.Config.MaxBlockSize = 0
+    b = Balance{10e6, 10}
+    assert.Panics(t, func() { v.Spend(b, 0, addr) })
+
     // Test simple spend (we have only 1 address to spend from, no fee)
     v = NewVisor(vc)
     b = Balance{10e6, 10}
@@ -602,7 +610,7 @@ func TestVisorSpend(t *testing.T) {
     assert.Equal(t, tx.Out[0].Address, ourAddr)
     assert.Equal(t, tx.Out[0].Coins, ogb.Coins-b.Coins)
     assert.Equal(t, tx.Out[0].Hours, ogb.Hours-b.Hours)
-    assert.Nil(t, tx.Verify(testBlockSize))
+    assert.Nil(t, tx.Verify())
 }
 
 func TestExecuteSignedBlock(t *testing.T) {
@@ -828,9 +836,14 @@ func TestVisorRecordTxn(t *testing.T) {
     vc := newMasterVisorConfig(t)
     v := NewVisor(vc)
 
-    // Valid record, did not announce
+    // Setup txns
     tx, err := makeValidTxn(v)
     assert.Nil(t, err)
+    we := v.Wallet.CreateEntry()
+    tx2, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
+    assert.Nil(t, err)
+
+    // Valid record, did not announce
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     err, known := v.RecordTxn(tx)
     assert.Nil(t, err)
@@ -847,9 +860,7 @@ func TestVisorRecordTxn(t *testing.T) {
     assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
 
     // Make sure isOurSpend and isOurReceive is correct
-    we := v.Wallet.CreateEntry()
-    tx, err = v.Spend(Balance{1e6, 0}, 0, we.Address)
-    assert.Nil(t, err)
+    tx = tx2
     err, known = v.RecordTxn(tx)
     assert.Nil(t, err)
     assert.False(t, known)

@@ -47,8 +47,8 @@ func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
     tx.PushOutput(genAddress, ux.Body.Coins-1e6, ux.Body.Hours-100-fee)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
-    assert.Nil(t, tx.Verify(testMaxSize))
-    assert.Nil(t, bc.VerifyTransaction(tx, testMaxSize))
+    assert.Nil(t, tx.Verify())
+    assert.Nil(t, bc.VerifyTransaction(tx))
     return tx
 }
 
@@ -80,7 +80,7 @@ func splitGenesisBlock(t *testing.T, bc *Blockchain) UxArray {
     txn.UpdateHeader()
     b, err := bc.NewBlockFromTransactions(Transactions{txn}, 22, testMaxSize)
     assert.Nil(t, err)
-    uxs, err := bc.ExecuteBlock(b, testMaxSize)
+    uxs, err := bc.ExecuteBlock(b)
     assert.Nil(t, err)
     assert.Equal(t, len(uxs), 2)
     return uxs
@@ -95,8 +95,8 @@ func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
     txn.PushOutput(genAddress, genesisCoinVolume-3e6, 100)
     txn.SignInputs([]SecKey{genSecret})
     txn.UpdateHeader()
-    assert.Nil(t, txn.Verify(testMaxSize))
-    assert.Nil(t, bc.VerifyTransaction(txn, testMaxSize))
+    assert.Nil(t, txn.Verify())
+    assert.Nil(t, bc.VerifyTransaction(txn))
     b, err := bc.NewBlockFromTransactions(Transactions{txn}, 100, testMaxSize)
     assert.Nil(t, err)
     assertExecuteBlock(t, bc, b, txn)
@@ -104,7 +104,7 @@ func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
 
 func assertExecuteBlock(t *testing.T, bc *Blockchain, b Block,
     tx Transaction) {
-    uxs, err := bc.ExecuteBlock(b, testMaxSize)
+    uxs, err := bc.ExecuteBlock(b)
     assert.Nil(t, err)
     assert.Equal(t, len(uxs), len(tx.Out))
     assert.False(t, uxs.HasDupes())
@@ -534,7 +534,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
     tx.UpdateHeader()
     b, err := bc.NewBlockFromTransactions(Transactions{tx}, 20, testMaxSize)
     assert.Nil(t, err)
-    uxs, err := bc.ExecuteBlock(b, testMaxSize)
+    uxs, err := bc.ExecuteBlock(b)
     assert.Nil(t, err)
     tx = Transaction{}
     tx.PushInput(uxs[0].Hash())
@@ -552,13 +552,12 @@ func TestVerifyTransaction(t *testing.T) {
     bc := NewBlockchain()
     gb := bc.CreateMasterGenesisBlock(genAddress)
     // Genesis block is not valid by normal standards
-    assert.NotNil(t, bc.VerifyTransaction(gb.Body.Transactions[0],
-        testMaxSize))
+    assert.NotNil(t, bc.VerifyTransaction(gb.Body.Transactions[0]))
     assert.Equal(t, len(bc.Blocks), 1)
 
     // Valid txn
     tx := makeTransactionForChain(t, bc)
-    assert.Nil(t, bc.VerifyTransaction(tx, testMaxSize))
+    assert.Nil(t, bc.VerifyTransaction(tx))
     assert.Equal(t, len(bc.Blocks), 1)
 
     // Failure, spending unknown output
@@ -567,7 +566,7 @@ func TestVerifyTransaction(t *testing.T) {
     tx.In[0] = SHA256{}
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "Unspent output does not exist")
     assert.Equal(t, len(bc.Blocks), 1)
 
@@ -577,7 +576,7 @@ func TestVerifyTransaction(t *testing.T) {
     tx.In = append(tx.In, tx.In[0])
     tx.SignInputs([]SecKey{genSecret, genSecret})
     tx.UpdateHeader()
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "Duplicate spend")
     assert.Equal(t, len(bc.Blocks), 1)
 
@@ -587,14 +586,14 @@ func TestVerifyTransaction(t *testing.T) {
     tx.PushOutput(genAddress, 0, 100)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "Zero coin output")
 
     // Failure, hash collision with unspents
     tx = makeTransactionForChain(t, bc)
     uxOut := CreateExpectedUnspents(tx)
     bc.Unspent.Add(uxOut[0])
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "New unspents collide with existing unspents")
 
     // Failure, not spending enough coins
@@ -603,7 +602,7 @@ func TestVerifyTransaction(t *testing.T) {
     tx.Head.Sigs = nil
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "Insufficient coins")
 
     // Failure, spending outputs we don't own
@@ -614,7 +613,7 @@ func TestVerifyTransaction(t *testing.T) {
     tx.PushOutput(genAddress, ux.Body.Coins, ux.Body.Hours)
     tx.SignInputs([]SecKey{s})
     tx.UpdateHeader()
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "Signature not valid for output spend")
 
     // Failure, wrong signature for txn hash
@@ -623,7 +622,7 @@ func TestVerifyTransaction(t *testing.T) {
     tx.SignInputs([]SecKey{genSecret})
     tx.PushOutput(genAddress, ux.Body.Coins, ux.Body.Hours)
     tx.UpdateHeader()
-    assertError(t, bc.VerifyTransaction(tx, testMaxSize),
+    assertError(t, bc.VerifyTransaction(tx),
         "Signature not valid for output spend")
 }
 
@@ -631,7 +630,7 @@ func TestBlockchainVerifyBlock(t *testing.T) {
     bc := NewBlockchain()
     gb := bc.CreateMasterGenesisBlock(genAddress)
     // Genesis block not valid after the fact
-    assert.NotNil(t, bc.VerifyBlock(&gb, testMaxSize))
+    assert.NotNil(t, bc.VerifyBlock(&gb))
 
     // Valid block
     tx := Transaction{}
@@ -641,22 +640,18 @@ func TestBlockchainVerifyBlock(t *testing.T) {
     tx.UpdateHeader()
     b, err := bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
     assert.Nil(t, err)
-    assert.Nil(t, bc.VerifyBlock(&b, b.Size()))
-    assert.Nil(t, bc.VerifyBlock(&b, b.Size()+1))
-
-    // Block too large
-    assertError(t, bc.VerifyBlock(&b, b.Size()-1), "Block too large")
+    assert.Nil(t, bc.VerifyBlock(&b))
 
     // Invalid block header
     b.Head.BkSeq = gb.Head.BkSeq
-    assertError(t, bc.VerifyBlock(&b, testMaxSize),
+    assertError(t, bc.VerifyBlock(&b),
         "BkSeq invalid")
 
     // Invalid transactions
     b.Head.BkSeq = gb.Head.BkSeq + 1
     b.Body.Transactions = append(b.Body.Transactions, b.Body.Transactions[0])
     b.Head.BodyHash = b.HashBody()
-    assertError(t, bc.VerifyBlock(&b, testMaxSize),
+    assertError(t, bc.VerifyBlock(&b),
         "Duplicate unspent output across transactions")
 }
 
@@ -783,11 +778,11 @@ func TestProcessTransactions(t *testing.T) {
 
     // Invalid, no transactions in block
     // arbitrating=false
-    txns, err := bc.processTransactions(Transactions{}, testMaxSize, false)
+    txns, err := bc.processTransactions(Transactions{}, false)
     assert.Nil(t, txns)
     assertError(t, err, "No transactions")
     // arbitrating=true
-    txns, err = bc.processTransactions(Transactions{}, testMaxSize, true)
+    txns, err = bc.processTransactions(Transactions{}, true)
     assert.Equal(t, len(txns), 0)
     assert.Nil(t, err)
 
@@ -803,12 +798,12 @@ func TestProcessTransactions(t *testing.T) {
     txn.UpdateHeader()
     txns = append(txns, txn)
     // arbitrating=false
-    txns2, err := bc.processTransactions(txns, testMaxSize, false)
+    txns2, err := bc.processTransactions(txns, false)
     assert.Nil(t, txns2)
     assertError(t, err,
         "Transaction outputs must be multiple of 1e6 base units")
     // arbitrating=true
-    txns2, err = bc.processTransactions(txns, testMaxSize, true)
+    txns2, err = bc.processTransactions(txns, true)
     assert.NotNil(t, txns2)
     assert.Nil(t, err)
     assert.Equal(t, len(txns2), 0)
@@ -817,11 +812,11 @@ func TestProcessTransactions(t *testing.T) {
     txn = makeTransactionForChain(t, bc)
     txns = Transactions{txn, txn}
     // arbitrating=false
-    txns2, err = bc.processTransactions(txns, testMaxSize, false)
+    txns2, err = bc.processTransactions(txns, false)
     assertError(t, err, "Duplicate unspent output across transactions")
     assert.Nil(t, txns2)
     // arbitrating=true.  One of the offending transactions should be removed
-    txns2, err = bc.processTransactions(txns, testMaxSize, true)
+    txns2, err = bc.processTransactions(txns, true)
     assert.Nil(t, err)
     assert.Equal(t, len(txns2), 1)
     assert.Equal(t, txns2[0], txn)
@@ -837,11 +832,11 @@ func TestProcessTransactions(t *testing.T) {
     }
     bc.Unspent.Add(UxOut{Body: uxb})
     // arbitrating=false
-    txns2, err = bc.processTransactions(txns, testMaxSize, false)
+    txns2, err = bc.processTransactions(txns, false)
     assertError(t, err, "New unspents collide with existing unspents")
     assert.Nil(t, txns2)
     // arbitrating=true
-    txns2, err = bc.processTransactions(txns, testMaxSize, true)
+    txns2, err = bc.processTransactions(txns, true)
     assert.Equal(t, len(txns2), 0)
     assert.NotNil(t, txns2)
     assert.Nil(t, err)
@@ -857,11 +852,11 @@ func TestProcessTransactions(t *testing.T) {
     txn2.UpdateHeader()
     txns = SortTransactions(Transactions{txn, txn2}, bc.TransactionFee)
     // arbitrating=false
-    txns2, err = bc.processTransactions(txns, testMaxSize, false)
+    txns2, err = bc.processTransactions(txns, false)
     assertError(t, err, "Cannot spend output twice in the same block")
     assert.Nil(t, txns2)
     // arbitrating=true
-    txns2, err = bc.processTransactions(txns, testMaxSize, true)
+    txns2, err = bc.processTransactions(txns, true)
     assert.Nil(t, err)
     assert.Equal(t, len(txns2), 1)
     assert.Equal(t, txns2[0], txns[0])
@@ -873,7 +868,7 @@ func TestExecuteBlock(t *testing.T) {
 
     // Invalid block returns error
     b := Block{}
-    uxs, err := bc.ExecuteBlock(b, testMaxSize)
+    uxs, err := bc.ExecuteBlock(b)
     assert.NotNil(t, err)
     assert.Nil(t, uxs)
 
@@ -897,13 +892,13 @@ func TestExecuteBlock(t *testing.T) {
     sTxns := newSortableTransactions(txns, bc.TransactionFee)
     unswapped := sTxns.IsSorted()
     txns = SortTransactions(txns, bc.TransactionFee)
-    assert.Nil(t, bc.verifyTransactions(txns, testMaxSize))
+    assert.Nil(t, bc.verifyTransactions(txns))
     b, err = bc.NewBlockFromTransactions(txns, 20, testMaxSize)
     assert.Equal(t, b.Head.BkSeq, uint64(2))
     assert.Nil(t, err)
     assert.Equal(t, len(b.Body.Transactions), 2)
     assert.Equal(t, b.Body.Transactions, txns)
-    uxs, err = bc.ExecuteBlock(b, testMaxSize)
+    uxs, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)
     assert.Equal(t, len(uxs), 5)
     // Check that all unspents look correct and are in the unspent pool

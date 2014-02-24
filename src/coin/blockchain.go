@@ -245,6 +245,9 @@ func (self *Blockchain) Time() uint64 {
 
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
+// TODO: remove blocksize (soft limit)
+// TODO: remove creation interval
+// TODO: require block creation time as input to function
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     creationInterval uint64, maxBlockSize int) (Block, error) {
     if creationInterval == 0 {

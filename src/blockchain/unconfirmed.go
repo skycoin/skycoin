@@ -53,8 +53,7 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 // Adds a coin.Transaction to the pool
 //func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
 //    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
-func (self *UnconfirmedTxnPool) RecordTxn(
-    t coin.Transaction, didAnnounce bool) error {
+func (self *UnconfirmedTxnPool) RecordTxn(t coin.Transaction) error {
 
     now := util.Now()
     announcedAt := util.ZeroTime()

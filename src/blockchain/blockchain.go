@@ -50,10 +50,12 @@ func init() {
     MainNet.Coins = 100e6 //100 million
 }
 
-var (
+//var (
+    var BlockCreationInterval int = 15
     var MaxTransactionSize int = 16*1024
     var MaxBlockSize int = 32*1024
-)
+    var MaxTransactionsPerBlock int = 1024
+//)
 
 // Configuration parameters for the Blockchain
 type Blockchain struct {
@@ -160,29 +162,33 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     if err := self.blockchain.VerifyTransaction(txn); err != nil {
         return err
     }
-    self.Unconfirmed.RecordTxn(txn, didAnnounce)
+    self.Unconfirmed.RecordTxn(txn)
+    return nil
 }
 
 
 // Creates a SignedBlock from pending transactions
 func (self *Blockchain) CreateBlock(coin.Block, error) {
     //var sb SignedBlock
-    if self.Config.SecKey == (coin.SecKey{}) {
+    if self.SecKey == (coin.SecKey{}) {
         log.Panic("Only master chain can create blocks")
     }
 
     txns := self.Unconfirmed.RawTxns()
+
+    nTxns := len(txns)
     //TODO: sort by arrival time/announce time
     //TODO: filter valid first
-    if nTxns > self.Config.TransactionsPerBlock {
-        txns = txns[:self.Config.TransactionsPerBlock]
+    if nTxns > MaxTransactionsPerBlock {
+        txns = txns[:MaxTransactionsPerBlock]
     }
 
-    txns = coin.ArbitrateTransactions(txns)
+    txns = self.Blockchain.ArbitrateTransactions(txns)
     txns = txns.TruncateBytesTo(MaxBlockSize) //cap at 32 KB
 
     b, err := self.blockchain.NewBlockFromTransactions(txns,
-        self.Config.BlockCreationInterval)
+        BlockCreationInterval)
+    //remove creation interval, from new block
     if err != nil {
         return b, err
     }

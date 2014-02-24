@@ -22,7 +22,7 @@ func TestInitPeers(t *testing.T) {
     if err != nil {
         t.Fatalf("Error creating %s", fn)
     }
-    _, err = f.Write([]byte(addr + " 0\n"))
+    _, err = f.Write([]byte(addr + " 0 0\n"))
     assert.Nil(t, err)
     f.Close()
 
@@ -63,14 +63,17 @@ func TestRequestPeers(t *testing.T) {
 
     // Full
     c.Disabled = false
+    c.Max = 1
     p = NewPeers(c)
     p.Init()
-    p.Peers.SetMaxPeers(1)
     p.Peers.AddPeer(addr)
     assert.NotPanics(t, func() { p.requestPeers(nil) })
 
     // Not full, will send message
-    p.Peers.SetMaxPeers(10)
+    c.Max = 10
+    p = NewPeers(c)
+    p.Init()
+    p.Peers.AddPeer(addr)
     pool, gc := setupPool()
     go pool.Pool.ConnectionWriteLoop(gc)
     defer gc.Close()
@@ -85,6 +88,24 @@ func TestRequestPeers(t *testing.T) {
     assert.Nil(t, sr.Error)
     _, ok := sr.Message.(*GetPeersMessage)
     assert.True(t, ok)
+}
+
+func TestRemovePeer(t *testing.T) {
+    cleanupPeers()
+    defer cleanupPeers()
+    p := NewPeers(NewPeersConfig())
+    p.Init()
+    assert.Equal(t, len(p.Peers.Peerlist), 0)
+    q, err := p.Peers.AddPeer(addr)
+    assert.Equal(t, len(p.Peers.Peerlist), 1)
+    assert.Nil(t, err)
+    q.Private = true
+    p.RemovePeer(addr)
+    assert.Equal(t, len(p.Peers.Peerlist), 1)
+    q.Private = false
+    p.RemovePeer(addr)
+    assert.Equal(t, len(p.Peers.Peerlist), 0)
+    assert.NotPanics(t, func() { p.RemovePeer(addr) })
 }
 
 func setupPeersShutdown(t *testing.T) *Peers {

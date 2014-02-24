@@ -144,7 +144,7 @@ func (self *GetPeersMessage) Process(d *Daemon) {
     if d.Peers.Config.Disabled {
         return
     }
-    peers := d.Peers.Peers.Peerlist.Random(d.Peers.Config.ReplyCount)
+    peers := d.Peers.Peers.Peerlist.RandomPublic(d.Peers.Config.ReplyCount)
     if len(peers) == 0 {
         logger.Debug("We have no peers to send in reply")
         return

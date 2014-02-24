@@ -84,8 +84,15 @@ func (self *Peers) Shutdown() error {
     return nil
 }
 
+// Removes a peer, if not private
+func (self *Peers) RemovePeer(a string) {
+    p := self.Peers.Peerlist[a]
+    if p != nil && !p.Private {
+        delete(self.Peers.Peerlist, a)
+    }
+}
+
 // Requests peers from our connections
-// TODO -- batching all peer requests at once may cause performance issues
 func (self *Peers) requestPeers(pool *Pool) {
     if self.Config.Disabled {
         return

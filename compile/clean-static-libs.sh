@@ -5,3 +5,4 @@
 
 rm ${GOPATH}/pkg/*/github.com/skycoin/skycoin/src/*.a
 rm ${GOPATH}/pkg/*/github.com/skycoin/skycoin/src/lib/*.a
+rm ${GOPATH}/pkg/*/github.com/skycoin/*.a

@@ -156,7 +156,7 @@ func NewDaemonConfig() DaemonConfig {
         Address:                    "",
         Port:                       6677,
         OutgoingRate:               time.Second * 5,
-        PrivateRate:                time.Minute,
+        PrivateRate:                time.Second * 5,
         OutgoingMax:                8,
         PendingMax:                 16,
         IntroductionWait:           time.Second * 30,
@@ -225,6 +225,9 @@ func NewDaemon(config Config) *Daemon {
         ConnectionMirrors:      make(map[string]uint32),
         mirrorConnections:      make(map[uint32]map[string]uint16),
         ipCounts:               make(map[string]int),
+        // TODO -- if there are performance problems from blocking chans,
+        // Its because we are connecting to more things than OutgoingMax
+        // if we have private peers
         onConnectEvent: make(chan ConnectEvent,
             config.Daemon.OutgoingMax),
         connectionErrors: make(chan ConnectionError,
@@ -282,7 +285,6 @@ func (self *Daemon) Start(quit chan int) {
     if !self.DHT.Config.Disabled {
         go self.DHT.Start()
     }
-    self.makePrivateConnections()
 
     // TODO -- run blockchain stuff in its own goroutine
     blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
@@ -305,6 +307,7 @@ func (self *Daemon) Start(quit chan int) {
     messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
     clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
     idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
+
 main:
     for {
         select {
@@ -491,7 +494,10 @@ func (self *Daemon) makePrivateConnections() {
     }
     for _, p := range self.Peers.Peers.Peerlist {
         if p.Private {
-            self.connectToPeer(p)
+            logger.Info("Private peer attempt: %s", p.Addr)
+            if err := self.connectToPeer(p); err != nil {
+                logger.Debug("Did not connect to private peer: %v", err)
+            }
         }
     }
 }

@@ -26,7 +26,8 @@ var (
     addrd                = "112.21.11.55:4045"
     badAddrPort          = "111.22.44.33:x"
     badAddrNoPort        = "111.22.44.33"
-    localAddr            = "127.0.0.1:5555"
+    localAddr            = "127.0.0.1:43521"
+    localAddrb           = "127.0.0.1:59831"
     silenceLogger        = false
 )
 
@@ -83,6 +84,10 @@ func TestGetPeersMessage(t *testing.T) {
     m := NewGetPeersMessage()
     testSimpleMessageHandler(t, d, m)
     d.Peers.Peers.AddPeer(addr)
+    q, err := d.Peers.Peers.AddPeer(addrb)
+    assert.Nil(t, err)
+    q.Private = true
+    d.Peers.Config.ReplyCount = 100
     m.c = messageContext(addr)
 
     // Peers disabled
@@ -106,8 +111,12 @@ func TestGetPeersMessage(t *testing.T) {
     sr := <-p.Pool.SendResults
     assert.Nil(t, sr.Error)
     assert.Equal(t, sr.Connection, m.c.Conn)
-    _, ok := sr.Message.(*GivePeersMessage)
+    msg, ok := sr.Message.(*GivePeersMessage)
     assert.True(t, ok)
+    // Private peer should not be included
+    ipAddr, err := NewIPAddr(addr)
+    assert.Nil(t, err)
+    assert.Equal(t, msg.Peers, []IPAddr{ipAddr})
     assert.False(t, m.c.Conn.LastSent.IsZero())
 
     // If no peers, nothing should happen

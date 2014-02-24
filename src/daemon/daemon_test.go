@@ -536,12 +536,54 @@ func TestDaemonLoopOutgoingConnectionsTickerPendingMax(t *testing.T) {
     testDaemonLoopOutgoingConnectionsTicker(t, d, quit, 1)
 }
 
+func TestDaemonLoopPrivateConnectionsTicker(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.DisableOutgoingConnections = false
+    d.Config.PrivateRate = time.Millisecond * 10
+    d.Config.OutgoingRate = time.Hour
+    // Add private peer
+    d.Peers.Peers.AllowLocalhost = true
+    addr := "192.168.1.155:45339"
+    p, err := d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
+    p.Private = true
+    // Add public peer. This one shouldn't get sent to
+    r, err := d.Peers.Peers.AddPeer(addrb)
+    assert.Nil(t, err)
+    assert.NotNil(t, r)
+    r.Private = false
+    defer closeDaemon(d, quit)
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    assert.Equal(t, len(d.pendingConnections), 1)
+    assert.NotNil(t, d.pendingConnections[addr])
+}
+
+func TestDaemonLoopPrivateConnectionsTickerDisabled(t *testing.T) {
+    d, quit := setupDaemonLoop()
+    d.Config.DisableOutgoingConnections = true
+    d.Config.PrivateRate = time.Millisecond * 10
+    // Add private peer
+    p, err := d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
+    p.Private = true
+    // Add public peer. This one shouldn't get sent to
+    r, err := d.Peers.Peers.AddPeer(addrb)
+    assert.Nil(t, err)
+    r.Private = false
+    defer closeDaemon(d, quit)
+    go d.Start(quit)
+    time.Sleep(time.Millisecond * 15)
+    // Nothing should happen if disabled
+    assert.Equal(t, len(d.pendingConnections), 0)
+}
+
 func testDaemonLoopMessageHandlingTicker(t *testing.T, d *Daemon,
     quit chan int) {
     d.Pool.Config.MessageHandlingRate = time.Millisecond * 10
     go d.Start(quit)
     time.Sleep(time.Millisecond * 15)
-    // Can't test Pool internals from here
+    // Can't test Pool internals from here, just see that it doesn't crash
 }
 
 func TestDaemonLoopMessageHandlingTickerD(t *testing.T) {
@@ -603,7 +645,39 @@ func TestSendPings(t *testing.T) {
     assert.Equal(t, c.LastSent, lastSent)
 }
 
-func TestConnectToRandomPeer(t *testing.T) {
+func TestMakePrivateConnections(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    d.Pool.Config.DialTimeout = time.Hour
+    addr := "192.168.1.198:43071"
+    addrb := "192.168.1.197:43072"
+    // Two privates
+    p, err := d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
+    p.Private = true
+    p, err = d.Peers.Peers.AddPeer(addrb)
+    assert.Nil(t, err)
+    p.Private = true
+    // Not private
+    p, err = d.Peers.Peers.AddPeer(addrc)
+    assert.Nil(t, err)
+    p.Private = false
+
+    // Disabled
+    d.Config.DisableOutgoingConnections = true
+    d.makePrivateConnections()
+    assert.Equal(t, len(d.pendingConnections), 0)
+
+    // Enabled
+    d.Config.DisableOutgoingConnections = false
+    d.makePrivateConnections()
+    assert.Equal(t, len(d.pendingConnections), 2)
+    assert.NotNil(t, d.pendingConnections[addr])
+    assert.NotNil(t, d.pendingConnections[addrb])
+    assert.Nil(t, d.pendingConnections[addrc])
+}
+
+func TestConnectToPeer(t *testing.T) {
     d := newDefaultDaemon()
     defer shutdown(d)
     defer cleanupPeers()
@@ -612,36 +686,38 @@ func TestConnectToRandomPeer(t *testing.T) {
     assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
 
     // PEX somehow has invalid peer
-    d.Peers.Peers.Peerlist["xcasca"] = &pex.Peer{Addr: "xcasca"}
-    assert.NotPanics(t, d.connectToRandomPeer)
+    p := &pex.Peer{Addr: "xcasca"}
+    d.Peers.Peers.Peerlist["xcasca"] = p
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     assert.Equal(t, len(d.pendingConnections), 0)
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.Peers.Peers.Peerlist, "xcasca")
 
     // Disabled outgoing conns
     d.Config.DisableOutgoingConnections = true
-    d.Peers.Peers.AddPeer(addr)
-    assert.NotPanics(t, d.connectToRandomPeer)
+    p, err := d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     assert.Equal(t, len(d.pendingConnections), 0)
     assert.Equal(t, len(d.connectionErrors), 0)
     d.Config.DisableOutgoingConnections = false
 
     // Localhost only, and peer isn't
     d.Config.LocalhostOnly = true
-    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     assert.Equal(t, len(d.pendingConnections), 0)
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.Peers.Peers.Peerlist, addr)
 
     // Valid attempt to connect to localhost
     d.Peers.Peers.AllowLocalhost = true
-    _, err := d.Peers.Peers.AddPeer(localAddr)
+    p, err = d.Peers.Peers.AddPeer(localAddr)
     assert.Nil(t, err)
     if err != nil {
         t.Logf("Error with local addr: %v\n", err)
     }
     t.Logf("Peerlist: %v\n", d.Peers.Peers.Peerlist)
-    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     wait()
     assert.Equal(t, len(d.pendingConnections), 1)
     assert.Equal(t, len(d.connectionErrors), 1)
@@ -659,8 +735,9 @@ func TestConnectToRandomPeer(t *testing.T) {
     d.Peers.Peers.AllowLocalhost = false
 
     // Valid attempt to connect
-    d.Peers.Peers.AddPeer(addr)
-    assert.NotPanics(t, d.connectToRandomPeer)
+    p, err = d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     wait()
     assert.Equal(t, len(d.pendingConnections), 1)
     assert.Equal(t, len(d.connectionErrors), 1)
@@ -673,8 +750,9 @@ func TestConnectToRandomPeer(t *testing.T) {
     delete(d.pendingConnections, addr)
 
     // Two peers, one successful connect attempt and one skipped
-    d.Peers.Peers.AddPeer(addrb)
-    assert.NotPanics(t, d.connectToRandomPeer)
+    p, err = d.Peers.Peers.AddPeer(addrb)
+    assert.Nil(t, err)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     wait()
     assert.Equal(t, len(d.pendingConnections), 1)
     assert.Equal(t, len(d.connectionErrors), 1)
@@ -689,28 +767,56 @@ func TestConnectToRandomPeer(t *testing.T) {
     delete(d.Peers.Peers.Peerlist, addrb)
 
     // Already connected, skip
-    d.Peers.Peers.AddPeer(addr)
+    p, err = d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
     d.Pool.Pool.Addresses[addr] = gnetConnection(addr)
-    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     assert.Equal(t, len(d.pendingConnections), 0)
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.Pool.Pool.Addresses, addr)
 
     // Pending connection, skip
-    d.pendingConnections[addr] = pex.NewPeer(addr)
-    assert.NotPanics(t, d.connectToRandomPeer)
+    p = pex.NewPeer(addr)
+    d.pendingConnections[addr] = p
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     assert.Equal(t, len(d.pendingConnections), 1)
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.pendingConnections, addr)
 
     // Already connected to this base IP at least once, skip
     d.ipCounts[addrIP] = 1
-    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.NotPanics(t, func() { d.connectToPeer(p) })
     assert.Equal(t, len(d.ipCounts), 1)
     assert.Equal(t, d.ipCounts[addrIP], 1)
     assert.Equal(t, len(d.pendingConnections), 0)
     assert.Equal(t, len(d.connectionErrors), 0)
     delete(d.ipCounts, addrIP)
+}
+
+func TestConnectToRandomPeer(t *testing.T) {
+    d := newDefaultDaemon()
+    defer shutdown(d)
+    defer cleanupPeers()
+
+    // Disabled
+    d.Config.DisableOutgoingConnections = true
+    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.Equal(t, len(d.pendingConnections), 0)
+
+    // Enabled, but only private peers
+    addr := "192.168.1.196:30954"
+    p, err := d.Peers.Peers.AddPeer(addr)
+    assert.Nil(t, err)
+    p.Private = true
+    d.Config.DisableOutgoingConnections = false
+    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.Equal(t, len(d.pendingConnections), 0)
+
+    // Enabled, and we have a public peer
+    p.Private = false
+    assert.NotPanics(t, d.connectToRandomPeer)
+    assert.Equal(t, len(d.pendingConnections), 1)
+    assert.NotNil(t, d.pendingConnections[addr])
 }
 
 func TestHandleConnectionError(t *testing.T) {

@@ -65,10 +65,16 @@ func (self *Server) Start() {
 
 	for true {
 
+        //wait 15 seconds between blocks
 		if t + 15 < time.Now().Unix() {
 			time.Sleep(50)
             continue
-		}
+		} else {
+            t = time.Now().Unix() //update time
+        }
+
+
+
         if self.Blockchain.PendingTransactions() == false {
             continue
         }
@@ -90,6 +96,14 @@ func (self *Server) Start() {
         //prune unconfirmed transactions
         self.Blockchain.RefreshUnconfirmed()
 	}
+}
+
+
+func (self *Server) StartSlave() {
+    for true {
+        time.Sleep(500)
+        self.Blockchain.RefreshUnconfirmed()
+    }
 }
 
 // Closes the block chain server, saving blockchain to disk

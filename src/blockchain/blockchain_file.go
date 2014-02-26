@@ -45,7 +45,7 @@ func le_PutUint64(b []byte, v uint64) {
 // - blockchain should be append only
 
 type SignedBlock struct {
-    BkSeq uint64
+    //BkSeq uint64
     Sig   coin.Sig
     Block coin.Block
 }
@@ -70,10 +70,12 @@ func Enc_block(sb SignedBlock) []byte {
     b := encoder.Serialize(sb)
 
     var dln uint64 = uint64(len(b))
+    var seq uint64 = uint64(sb.Block.Head.BkSeq)
     var chk uint64 = FnvsHash(b)
 
     le_PutUint64(prefix[0:8], dln)
-    le_PutUint64(prefix[8:16], chk)
+    le_PutUint64(prefix[8:16], seq)
+    le_PutUint64(prefix[16:24], chk)
 
     b = append(prefix[:], b...)
 
@@ -87,7 +89,8 @@ func Dec_block(b []byte) (SignedBlock, error) {
     }
 
     var dln uint64 = le_Uint64(b[0:8])
-    var chk uint64 = le_Uint64(b[8:16])
+    var seq uint64 = le_Uint64(b[8:16])
+    var chk uint64 = le_Uint64(b[16:24])
 
     b = b[16:]
 
@@ -105,6 +108,10 @@ func Dec_block(b []byte) (SignedBlock, error) {
 
     if err != nil {
         log.Panic("Dec_block, deserialization failed")
+    }
+
+    if seq != sb.Block.Head.BkSeq {
+        log.Panic("Dec_block, seq invalid")
     }
 
     return sb, nil

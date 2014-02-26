@@ -92,7 +92,7 @@ func Dec_block(b []byte) (SignedBlock, error) {
     var seq uint64 = le_Uint64(b[8:16])
     var chk uint64 = le_Uint64(b[16:24])
 
-    b = b[16:]
+    b = b[24:] //cleave off header
 
     if dln != uint64(len(b)) {
         log.Panic("Dec_block, length check failed")

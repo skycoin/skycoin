@@ -143,6 +143,10 @@ func NewLocalBlockchain() Blockchain {
 */
 func (self *Blockchain) InjectGenesisBlock() {
     var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress, self.Genesis.GenesisTime)
+    _, err := self.blockchain.ExecuteBlock(block)
+    if err != nil {
+        log.Panic("Failure executing genesis block")
+    }
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
@@ -273,8 +277,8 @@ func (self *Blockchain) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Blockchain) SetTxnAnnounce(h coin.SHA256, t time.Time) {
-    self.Unconfirmed.SetAnnounced(h, t)
+func (self *Blockchain) SetTxnAnnounce(h coin.SHA256) {
+    self.Unconfirmed.SetAnnounced(h, time.Now().Unix())
 }
 
 func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {

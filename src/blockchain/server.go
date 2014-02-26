@@ -1,6 +1,10 @@
 package blockchain
 
-
+import(
+    "time"
+    "fmt"
+    "log"
+)
 
 type ServerConfig struct {
     //Config Blockchain.ServerConfig
@@ -33,8 +37,8 @@ type Server struct {
     Blockchain  Blockchain
 }
 
-func NewServer(c ServerConfig) *Blockchain {
-    return &Blockchain{
+func NewServer(c ServerConfig) *Server {
+    return &Server{
         Config:     NewServerConfig(),
         Blockchain: NewLocalBlockchain(),
     }
@@ -43,31 +47,31 @@ func NewServer(c ServerConfig) *Blockchain {
 //Start server as master
 func (self *Server) Start() {
 
-	t := time.Now.Unix()
+	t := time.Now().Unix()
 
 	for true {
 
-		if t + 15 < time.Now.Unix() {
+		if t + 15 < time.Now().Unix() {
 			time.Sleep(50)
             continue
 		}
 
         //create block
-        block, err = self.Blockchain.CreateBlock()
-        if err {
+        block, err := self.Blockchain.CreateBlock()
+        if err != nil {
             fmt.Printf("Create Block Error: %s \n", err)
             continue
         }
         //sign block
-        signedBlock = self.Blockchain.signBlock(block)
+        signedBlock := self.Blockchain.signBlock(block)
 
         //inject block/execute
-        err := self.InjectBlock(signedBlock)
+        err = self.Blockchain.InjectBlock(signedBlock)
         if err != nil {
             log.Panic(err)
         }
         //prune unconfirmed transactions
-        bc.RefreshUnconfirmed()
+        self.Blockchain.RefreshUnconfirmed()
 	}
 }
 

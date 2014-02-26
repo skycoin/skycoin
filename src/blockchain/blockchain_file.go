@@ -110,21 +110,23 @@ func Dec_block(b []byte) (SignedBlock, error) {
     return sb, nil
 }
 
-
+//TODO: write individual blocks. append as they come in
 func (self *BlockchainFile) Save(filename string) error {
-    data := make([]byte)
+    var data []byte
     for _,b := range self.Blocks {
-        data = append(data, Enc_block(b))
+        data = append(data, Enc_block(b)...)
     }
-    util.SaveBinary(filename, buf, 0644)
+    util.SaveBinary(filename, data, 0644)
+    return nil
 }
 
 func (self *BlockchainFile) Load(filename string) error {
-    data := make([]byte)
+    var data []byte
     for _,b := range self.Blocks {
-        data = append(data, Enc_block(b))
+        data = append(data, Enc_block(b)...)
     }
-    util.SaveBinary(filename, buf, 0644)
+    util.SaveBinary(filename, data, 0644)
+    return nil
 }
 
 

@@ -464,12 +464,11 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     if err != nil {
         return tx, err
     }
-    if tx.Size() > self.Config.MaxBlockSize {
-        // TODO -- this can cause permanent failure to spend a given amount
-        log.Panicf("Created transaction too large")
+    if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize,
+        self.Config.CoinHourBurnFactor); err != nil {
+        log.Panicf("Created invalid spending txn: %v", err)
     }
-    err = self.blockchain.VerifyTransaction(tx)
-    if err != nil {
+    if err := self.blockchain.VerifyTransaction(tx); err != nil {
         log.Panicf("Created invalid spending txn: %v", err)
     }
     return tx, err

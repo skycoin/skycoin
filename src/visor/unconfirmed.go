@@ -7,6 +7,23 @@ import (
     "time"
 )
 
+// Performs additional transaction verification at the unconfirmed pool level.
+// This checks tunable parameters that should prevent the transaction from
+// entering the blockchain, but cannot be done at the blockchain level because
+// they may be changed.
+func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int,
+    burnFactor uint64) error {
+    if t.Size() > maxSize {
+        return errors.New("Transaction too large")
+    }
+    if fee, err := bc.TransactionFee(t); err != nil {
+        return err
+    } else if burnFactor != 0 && t.OutputHours()/burnFactor > fee {
+        return errors.New("Transaction fee minimum not met")
+    }
+    return nil
+}
+
 type UnconfirmedTxn struct {
     Txn coin.Transaction
     // Time the txn was last received
@@ -90,13 +107,8 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     t coin.Transaction, addrs map[coin.Address]byte, maxSize int,
     burnFactor uint64) (error, bool) {
-    if t.Size() > maxSize {
-        return errors.New("Transaction too large"), false
-    }
-    if fee, err := bc.TransactionFee(&t); err != nil {
+    if err := VerifyTransaction(bc, &t, maxSize, burnFactor); err != nil {
         return err, false
-    } else if burnFactor != 0 && t.OutputHours()/burnFactor > fee {
-        return errors.New("Transaction fee minimum not met"), false
     }
     if err := bc.VerifyTransaction(t); err != nil {
         return err, false

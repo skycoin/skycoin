@@ -76,6 +76,16 @@ func makeValidTxnWithFeeFactor(mv *Visor,
     return tx, err
 }
 
+func makeValidTxnWithFeeFactorAndExtraChange(mv *Visor,
+    factor, extra, change uint64) (coin.Transaction, error) {
+    we := NewWalletEntry()
+    tmp := mv.Config.CoinHourBurnFactor
+    mv.Config.CoinHourBurnFactor = factor
+    tx, err := mv.Spend(Balance{10 * 1e6, 1002}, extra, we.Address)
+    mv.Config.CoinHourBurnFactor = tmp
+    return tx, err
+}
+
 func makeValidTxnNoChange(mv *Visor) (coin.Transaction, error) {
     we := NewWalletEntry()
     b := mv.Balance(mv.Config.MasterKeys.Address)
@@ -124,6 +134,29 @@ func createUnconfirmedTxns(t *testing.T, up *UnconfirmedTxnPool,
     }
     assert.Equal(t, len(up.Txns), 4)
     return uts
+}
+
+func TestVerifyTransaction(t *testing.T) {
+    mv := setupMasterVisor()
+    tx, err := makeValidTxn(mv)
+    assert.Nil(t, err)
+    err = VerifyTransaction(mv.blockchain, &tx, tx.Size()-1, 0)
+    assertError(t, err, "Transaction too large")
+    err = VerifyTransaction(mv.blockchain, &tx, tx.Size(), 2)
+    assertError(t, err, "Transaction fee minimum not met")
+    err = VerifyTransaction(mv.blockchain, &tx, tx.Size(), 0)
+    assert.Nil(t, err)
+    tx, err = makeValidTxnWithFeeFactor(mv, 4, 10)
+    assert.Nil(t, err)
+    err = VerifyTransaction(mv.blockchain, &tx, tx.Size(), 4)
+    assert.Nil(t, err)
+
+    // Make sure that the minimum fee is floor(output/factor)
+    tx, err = makeValidTxnWithFeeFactorAndExtraChange(mv, 4, 10, 2)
+    assert.NotEqual(t, tx.OutputHours()%4, 0)
+    assert.Nil(t, err)
+    err = VerifyTransaction(mv.blockchain, &tx, tx.Size(), 4)
+    assert.Nil(t, err)
 }
 
 func TestUnconfirmedTxnHash(t *testing.T) {
@@ -324,7 +357,6 @@ func TestRecordTxn(t *testing.T) {
     assertError(t, err, "Insufficient coinhours for transaction outputs")
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 0)
-
 }
 
 func TestRawTxns(t *testing.T) {

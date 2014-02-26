@@ -129,6 +129,75 @@ func TestOldestUxOut(t *testing.T) {
     assert.Panics(t, func() { sort.Sort(uxs) })
 }
 
+func TestCalculateBurnAndChange(t *testing.T) {
+    // Not enough for fee
+    burn, change, err := calculateBurnAndChange(100, 50, 200, 1)
+    assertError(t, err, "Insufficient total")
+
+    // Not enough for spend
+    burn, change, err = calculateBurnAndChange(100, 200, 10, 1)
+    assertError(t, err, "Insufficient total")
+
+    // 0 factor is no burn
+    burn, change, err = calculateBurnAndChange(100, 50, 10, 0)
+    assert.Nil(t, err)
+    assert.Equal(t, burn, uint64(0))
+    assert.Equal(t, change, uint64(40))
+
+    // 1 factor is 100% burn
+    // 110 - 10 / 2 = 50
+    // 110 - 50 - 10 - 50 = 0
+    // 50 + 0 / 1 = 50
+    burn, change, err = calculateBurnAndChange(110, 50, 10, 1)
+    assert.Nil(t, err)
+    assert.Equal(t, burn, uint64(50))
+    assert.Equal(t, change, uint64(0))
+
+    // 50% burn
+    // (100 - 10) / 3 = 30
+    // 100 - 10 - 50 - 30 = 10
+    // 50 + 10 / 2 = 30
+    burn, change, err = calculateBurnAndChange(100, 50, 10, 2)
+    assert.Nil(t, err)
+    assert.Equal(t, burn, uint64(30))
+    assert.Equal(t, change, uint64(10))
+
+    // 33% burn
+    // 100 / 4 = 25
+    // 100 - 0 - 60 - 25 = 15
+    // 60 + 15 / 3 = 25
+    burn, change, err = calculateBurnAndChange(100, 60, 0, 3)
+    assert.Nil(t, err)
+    assert.Equal(t, burn, uint64(25))
+    assert.Equal(t, change, uint64(15))
+
+    // 25% burn
+    // 100 / 5 = 20
+    // 100 - 0 - 70 - 20 = 10
+    // 70 + 10 / 4 = 20
+    burn, change, err = calculateBurnAndChange(100, 70, 0, 4)
+    assert.Nil(t, err)
+    assert.Equal(t, burn, uint64(20))
+    assert.Equal(t, change, uint64(10))
+
+    // Leftover coins from division remainder go to change, not burn
+    for i := uint64(1); i < uint64(5); i++ {
+        burn, change, err = calculateBurnAndChange(100+i, 70, 0, 4)
+        assert.Nil(t, err)
+        assert.Equal(t, burn, uint64(20))
+        assert.Equal(t, change, uint64(10+i))
+    }
+
+    // 25% burn
+    // 105 / 5 = 21
+    // 105 - 0 - 70 - 21 = 14
+    // 70 + 14 / 4 = 24
+    burn, change, err = calculateBurnAndChange(105, 70, 0, 4)
+    assert.Nil(t, err)
+    assert.Equal(t, burn, uint64(21))
+    assert.Equal(t, change, uint64(14))
+}
+
 func TestCreateSpendsNotEnoughCoins(t *testing.T) {
     now := coin.Now()
     amt := Balance{10e6, 100}
@@ -191,6 +260,52 @@ func TestCreateSpendsExact(t *testing.T) {
     assert.Nil(t, err)
     assert.Equal(t, len(spends), 2)
     assert.Equal(t, spends, coin.UxArray{cuxs[2], cuxs[1]})
+}
+
+func TestCreateSpendsWithBurn(t *testing.T) {
+    now := coin.Now()
+    amt := Balance{10e6, 100}
+    uxs := makeUxBalances([]Balance{
+        Balance{1e6, 50},
+        Balance{8e6, 40},
+        Balance{2e6, 60},
+    }, now)
+    // Force them to get sorted
+    uxs[2].Head.BkSeq = uint64(0)
+    uxs[1].Head.BkSeq = uint64(1)
+    uxs[0].Head.BkSeq = uint64(2)
+    cuxs := append(coin.UxArray{}, uxs...)
+    // Should spend 8e6,2e6 for the exact amount, but have to add 1e6 to
+    // obtain +50 for a 50% fee
+    spends, err := createSpends(now, uxs, amt, 0, 2)
+    assert.Nil(t, err)
+    assert.Equal(t, len(spends), 3)
+    assert.Equal(t, spends, coin.UxArray{cuxs[2], cuxs[1], cuxs[0]})
+
+    have := Balance{0, 0}
+    for _, ux := range spends {
+        have = have.Add(NewBalanceFromUxOut(now, &ux))
+    }
+    burn, change, err := calculateBurnAndChange(have.Hours, amt.Hours, 0, 2)
+    assert.Equal(t, burn, uint64(50))
+    assert.Equal(t, change, uint64(0))
+    assert.Nil(t, err)
+}
+
+func TestCreateSpendsNotEnoughBurn(t *testing.T) {
+    now := coin.Now()
+    amt := Balance{10e6, 100}
+    uxs := makeUxBalances([]Balance{
+        Balance{1e6, 40},
+        Balance{8e6, 40},
+        Balance{2e6, 60},
+    }, now)
+    // Force them to get sorted
+    uxs[2].Head.BkSeq = uint64(0)
+    uxs[1].Head.BkSeq = uint64(1)
+    uxs[0].Head.BkSeq = uint64(2)
+    _, err := createSpends(now, uxs, amt, 0, 2)
+    assertError(t, err, "Not enough hours to burn")
 }
 
 func TestCreateSpends(t *testing.T) {

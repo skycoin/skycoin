@@ -136,7 +136,7 @@ func TestCreateSpendsNotEnoughCoins(t *testing.T) {
         Balance{1e6, 100},
         Balance{8e6, 0},
     }, now)
-    _, err := createSpends(now, uxs, amt)
+    _, err := createSpends(now, uxs, amt, 0, 0)
     assertError(t, err, "Not enough coins")
 }
 
@@ -147,7 +147,7 @@ func TestCreateSpendsNotEnoughHours(t *testing.T) {
         Balance{2e6, 100},
         Balance{8e6, 0},
     }, now)
-    _, err := createSpends(now, uxs, amt)
+    _, err := createSpends(now, uxs, amt, 0, 0)
     assertError(t, err, "Not enough hours")
 }
 
@@ -161,16 +161,16 @@ func TestIgnoreBadCoins(t *testing.T) {
         Balance{0, 100},
         Balance{1e6 + 1, 100},
     }, now)
-    _, err := createSpends(now, uxs, amt)
+    _, err := createSpends(now, uxs, amt, 0, 0)
     assertError(t, err, "Not enough hours")
 }
 
 func TestBadSpending(t *testing.T) {
     _, err := createSpends(coin.Now(), coin.UxArray{},
-        Balance{1e6 + 1, 1000})
+        Balance{1e6 + 1, 1000}, 0, 1)
     assertError(t, err, "Coins must be multiple of 1e6")
     _, err = createSpends(coin.Now(), coin.UxArray{},
-        Balance{0, 100})
+        Balance{0, 100}, 0, 1)
     assertError(t, err, "Zero spend amount")
 }
 
@@ -187,7 +187,7 @@ func TestCreateSpendsExact(t *testing.T) {
     uxs[1].Head.BkSeq = uint64(1)
     uxs[0].Head.BkSeq = uint64(2)
     cuxs := append(coin.UxArray{}, uxs...)
-    spends, err := createSpends(now, uxs, amt)
+    spends, err := createSpends(now, uxs, amt, 0, 0)
     assert.Nil(t, err)
     assert.Equal(t, len(spends), 2)
     assert.Equal(t, spends, coin.UxArray{cuxs[2], cuxs[1]})
@@ -220,7 +220,7 @@ func TestCreateSpends(t *testing.T) {
     assert.False(t, sort.IsSorted(OldestUxOut(uxs)))
 
     ouxs := append(coin.UxArray{}, uxs...)
-    spends, err := createSpends(now, uxs, amt)
+    spends, err := createSpends(now, uxs, amt, 0, 0)
     assert.True(t, sort.IsSorted(OldestUxOut(uxs)))
     assert.Nil(t, err)
     assert.Equal(t, spends, cuxs[:len(spends)])
@@ -252,7 +252,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
     // Failing createSpends
     amt := Balance{0, 0}
     unsp := coin.NewUnspentPool()
-    _, err := CreateSpendingTransaction(w, uncf, &unsp, now, amt, 0, a)
+    _, err := CreateSpendingTransaction(w, uncf, &unsp, now, amt, 0, 0, a)
     assert.NotNil(t, err)
 
     // Valid txn, fee, no change
@@ -263,7 +263,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
     unsp = coin.NewUnspentPool()
     addUxArrayToUnspentPool(&unsp, uxs)
     amt = Balance{25e6, 200}
-    tx, err := CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, a)
+    tx, err := CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, 0, a)
     assert.Nil(t, err)
     assert.Equal(t, len(tx.Out), 1)
     assert.Equal(t, tx.Out[0], coin.TransactionOutput{
@@ -284,7 +284,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
     unsp = coin.NewUnspentPool()
     addUxArrayToUnspentPool(&unsp, uxs)
     amt = Balance{25e6, 200}
-    tx, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, a)
+    tx, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, 0, a)
     assert.Nil(t, err)
     assert.Equal(t, len(tx.Out), 2)
     assert.Equal(t, tx.Out[0], coin.TransactionOutput{
@@ -311,7 +311,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
     unsp = coin.NewUnspentPool()
     addUxArrayToUnspentPool(&unsp, uxs)
     amt = Balance{25e6, 200}
-    _, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, a)
+    _, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, 0, a)
     assertError(t, err, "Have enough coins, but not enough to send coin "+
         "hours change back. Would spend 50 more hours than requested.")
 
@@ -324,12 +324,12 @@ func TestCreateSpendingTransaction(t *testing.T) {
     unsp = coin.NewUnspentPool()
     addUxArrayToUnspentPool(&unsp, uxs)
     amt = Balance{25e6, 200}
-    tx, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, a)
+    tx, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, 0, a)
     assert.Nil(t, err)
     // Add it to the unconfirmed pool (bypass RecordTxn to avoid blockchain)
     uncf.Txns[tx.Hash()] = uncf.createUnconfirmedTxn(&unsp, tx,
         w.GetAddressSet())
     // Make a spend that must not reuse previous addresses
-    _, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, a)
+    _, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, 0, a)
     assertError(t, err, "Not enough coins")
 }

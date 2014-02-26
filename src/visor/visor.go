@@ -26,7 +26,7 @@ type VisorConfig struct {
     WalletFile string
     // Minimum number of addresses to keep in the wallet
     WalletSizeMin int
-    // How often new blocks are created by the master
+    // How often new blocks are created by the master, in seconds
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
     UnconfirmedCheckInterval time.Duration
@@ -36,6 +36,10 @@ type VisorConfig struct {
     UnconfirmedRefreshRate time.Duration
     // Maximum size of a block, in bytes.
     MaxBlockSize int
+    // Divisor of coin hours required as fee. E.g. with hours=100 and factor=4,
+    // 25 additional hours are required as a fee.  A value of 0 disables
+    // the fee requirement.
+    CoinHourBurnFactor uint64
     // Where the blockchain is saved
     BlockchainFile string
     // Where the block signatures are saved
@@ -62,6 +66,7 @@ func NewVisorConfig() VisorConfig {
         UnconfirmedMaxAge:        time.Hour * 48,
         UnconfirmedRefreshRate:   time.Minute * 30,
         MaxBlockSize:             1024 * 32,
+        CoinHourBurnFactor:       2,
         BlockchainFile:           "",
         BlockSigsFile:            "",
         MasterKeys:               WalletEntry{},
@@ -375,7 +380,7 @@ func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
 func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
     addrs := self.Wallet.GetAddressSet()
     return self.Unconfirmed.RecordTxn(self.blockchain, txn, addrs,
-        self.Config.MaxBlockSize)
+        self.Config.MaxBlockSize, self.Config.CoinHourBurnFactor)
 }
 
 // Returns the Transactions whose unspents give coins to a coin.Address.
@@ -446,13 +451,16 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
     }
 }
 
+// Creates a transaction spending amt with additional fee.  Fee is in addition
+// to the base required fee given amt.Hours.
 func (self *Visor) Spend(amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     if !self.Config.CanSpend {
         return coin.Transaction{}, errors.New("Spending disabled")
     }
     tx, err := CreateSpendingTransaction(self.Wallet, self.Unconfirmed,
-        &self.blockchain.Unspent, self.blockchain.Time(), amt, fee, dest)
+        &self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
+        self.Config.CoinHourBurnFactor, dest)
     if err != nil {
         return tx, err
     }

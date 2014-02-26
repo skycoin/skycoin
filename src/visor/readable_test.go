@@ -27,6 +27,7 @@ func setupVisorConfig() (VisorConfig, *Visor) {
     // Get the signed genesis block,
     mw := NewWalletEntry()
     mvc := NewVisorConfig()
+    mvc.CoinHourBurnFactor = 0
     mvc.IsMaster = true
     mvc.MasterKeys = mw
     mv := NewVisor(mvc)
@@ -62,6 +63,7 @@ func setupMasterVisorConfig() VisorConfig {
     // Create testmaster.keys file
     coin.SetAddressVersion("test")
     c := NewVisorConfig()
+    c.CoinHourBurnFactor = 0
     c.IsMaster = true
     c.MasterKeys = NewWalletEntry()
     return c

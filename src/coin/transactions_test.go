@@ -299,6 +299,15 @@ func TestTransactionSerialization(t *testing.T) {
     assert.Panics(t, func() { TransactionDeserialize([]byte{0x04}) })
 }
 
+func TestTransactionOutputHours(t *testing.T) {
+    tx := Transaction{}
+    tx.PushOutput(makeAddress(), 1e6, 100)
+    tx.PushOutput(makeAddress(), 1e6, 200)
+    tx.PushOutput(makeAddress(), 1e6, 500)
+    tx.PushOutput(makeAddress(), 1e6, 0)
+    assert.Equal(t, tx.OutputHours(), uint64(800))
+}
+
 func TestNewSortableTransactions(t *testing.T) {
     bc := NewBlockchain()
     bc.CreateMasterGenesisBlock(genAddress)

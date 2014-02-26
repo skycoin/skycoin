@@ -88,9 +88,15 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-    t coin.Transaction, addrs map[coin.Address]byte, maxSize int) (error, bool) {
+    t coin.Transaction, addrs map[coin.Address]byte, maxSize int,
+    burnFactor uint64) (error, bool) {
     if t.Size() > maxSize {
         return errors.New("Transaction too large"), false
+    }
+    if fee, err := bc.TransactionFee(&t); err != nil {
+        return err, false
+    } else if burnFactor != 0 && t.OutputHours()/burnFactor > fee {
+        return errors.New("Transaction fee minimum not met"), false
     }
     if err := bc.VerifyTransaction(t); err != nil {
         return err, false

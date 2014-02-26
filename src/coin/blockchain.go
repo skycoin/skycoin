@@ -273,6 +273,8 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
 }
 
 // Attempts to append block to blockchain
+// TODO: what is UxArray return? the created or deleted?
+// if the created are returned, the deleted should also be returned or neither
 func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
     var uxs UxArray = nil
     err := self.VerifyBlock(&b)

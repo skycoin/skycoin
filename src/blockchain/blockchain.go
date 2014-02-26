@@ -168,7 +168,7 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
 
 
 // Creates a SignedBlock from pending transactions
-func (self *Blockchain) CreateBlock(coin.Block, error) {
+func (self *Blockchain) CreateBlock() (coin.Block, error) {
     //var sb SignedBlock
     if self.SecKey == (coin.SecKey{}) {
         log.Panic("Only master chain can create blocks")
@@ -183,11 +183,11 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
         txns = txns[:MaxTransactionsPerBlock]
     }
 
-    txns = self.Blockchain.ArbitrateTransactions(txns)
+    txns = self.blockchain.ArbitrateTransactions(txns)
     txns = txns.TruncateBytesTo(MaxBlockSize) //cap at 32 KB
 
     b, err := self.blockchain.NewBlockFromTransactions(txns,
-        BlockCreationInterval)
+        uint64(BlockCreationInterval), MaxBlockSize)
     //remove creation interval, from new block
     if err != nil {
         return b, err
@@ -197,10 +197,10 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
 
 // Signs a block for master.  Will panic if anything is invalid
 func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
-    if !self.Config.IsMaster {
+    if !self.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-    sig := coin.SignHash(b.HashHeader(), self.Config.SecKey)
+    sig := coin.SignHash(b.HashHeader(), self.SecKey)
     sb := SignedBlock{
         Block: b,
         Sig:   sig,
@@ -215,17 +215,21 @@ func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
         return err
     }
 
-    if b.Block.Seq +1 != b.Block.Header.BkSeq {
+    if b.Block.Head.BkSeq +1 != self.blockchain.Head().Head.BkSeq {
         return errors.New("Out of Sequence Block")
     }
 
     //apply block against blockchain
     //this should not fail if signature is valid
-    if err := self.blockchain.ExecuteBlock(b.Block); err != nil {
+    if _,err := self.blockchain.ExecuteBlock(b.Block); err != nil {
         return err
     }
 
-    self.blockSigs.record(&b) //save block to disc
+    //self.blockSigs.record(&b) //save block to disc
+    //self.Save()
+    
+    self.Blocks = append(self.Blocks, b)
+
     return nil
 }
 
@@ -234,7 +238,7 @@ func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
 // Replace with GetHead
 func (self *Blockchain) MostRecentBkSeq() uint64 { //alread in meta
     h := self.blockchain.Head()
-    return h.Header.BkSeq
+    return h.Head.BkSeq
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range
@@ -274,6 +278,6 @@ func (self *Blockchain) SetTxnAnnounce(h coin.SHA256, t time.Time) {
 }
 
 func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.Config.PubKey, b.Sig,
+    return coin.VerifySignature(self.Genesis.PubKey, b.Sig,
         b.Block.HashHeader())
 }

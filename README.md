@@ -24,12 +24,15 @@ Goto http://127.0.0.1:6402
 Skycoin
 -------
 
+Several emerging problems are throwing the long term survival of Bitcoin into question. Bitcoin was a proof-of-concept and an experiment. Satoshi never believed that it would reach as far as it has. Bitcoin was a seed of an idea and never intended as its final form. Skycoin is a coin born out of necessarily, which addresses the challenges Bitcoin is facing.
+
 Skycoin is inspired by Bitcoin but emphasizes
 - usability
 - security
 - simplicity
 
 Skycoin Improves on Bitcoin in several ways
+- does not rely on miners for blockchain consensus
 - easy to use wallet designed for the mainstream
 - more secure than Bitcoin (51% attack immune, no double spending)
 - 15 second transactions. Skycoin transactions are forty times faster than Bitcoin
@@ -51,7 +54,13 @@ Skycoin is the most secure and most usable cryptocoin that has ever been designe
 Distributed Consensus
 ---------------------
 
-Skycoin uses a new distributed consensus algorithm called Obelisk to replace miners. Skycoin achieves a higher level of blockchain security than Bitcoin, with lower electricity and hardware costs.
+Bitcoin miners currently receive $34 in mining reward subsidies and $0.10 in fees, per transaction. Mathematical modeling of mining rewards suggests a difficulty peak and declining mining profitability by 2040. Without sufficient price deflation, transaction volume growth and increased transaction fees the difficulty peak leaves the level of resources securing the Bitcoin network at levels which leave Bitcoin open to attack and control by governments and competing corporations.
+
+Reliance on mining and the resource level required to control the Bitcoin network is the primary existential threat facing Bitcoin over the next decade. The cost to disrupt the Bitcoin network currently stands at 50 million dollars ASICs. The capactity to disrupt or shutdown the Bitcoin network is therefore within the capacity of governments and finantial corporations.
+
+The survivability of the Bitcoin network depends upon Bitcoin mining reaching a level of resource consumption and cost, beyond the reach of governments and finantial institions, while passing this cost onto the Bitcoin user base. 
+
+Skycoin eliminates the cost of resource consumption for mining and replaces the dependence on miners with a distributed consensus algorithm called Obelisk. Skycoin achieves a higher level of blockchain security than Bitcoin, with lower electricity and hardware costs
 
 Key features of Obelisk
 - first provably secure distributed consensus algorithm.
@@ -68,12 +77,12 @@ Satoshi has stated that mining is Bitcoin's only flaw. Miners are the greatest t
 
 Problems with Mining:
 - Dishonest miners are the greatest threat to Bitcoin
+- the costs of mining are passed on to every Bitcoin user
 - Bitcoin puts honest miners at a disadvantage to the mining cartels
 - cex.io allows people to rent a 51% attack by the minute
 - gigahash.io has abused its hashing power to steal Bitcoin from gambling sites
 - pools have begun capping block size to drive up transaction fees
 - Every month mining power is concentrated in the hands of fewer people
-- the costs of mining are passed on to every Bitcoin holder
 - mining pools can form cartels to orphan blocks by honest miners
 - mining cartels can rent capacity to orphan blocks from other pools
 - Mining ensures majority of new crypto-coins go to people with botnets, GPU farms and ASICs not available to the public
@@ -83,15 +92,15 @@ Problems with Mining:
 - Mining increases transaction fees to unsustainable levels when block rewards decrease. Satoshi has stated that this will make Bitcoin unusable for microtransactions.
 - Miners driving up transaction fees will make Bitcoin transaction fees higher than the banking system Bitcoin was created to replace.
 - rapid changes in hash rate and mining profitability introduce unnecessary price volatility into Bitcoin. Price volatility caused by mining discourages Merchants from transacting in Bitcoin.
-- If Bitcoin reaches viability as the next global reserve currency, the incentives for nation states to monopolize and control mining are too great.
 - Miners sell Bitcoins to pay equipment and electricity costs, driving down the price of Bitcoin. Every Bitcoin holder pays the cost of mining.
+- If Bitcoin reaches viability as the next global reserve currency, the incentives for nation states to monopolize and control mining are too great.
 
 Skycoin was designed to eliminate mining completely and eliminate the problems it creates
 - Skycoin replaces reliance on miners with reliance on mathematics
 - Skycoin is more secure because it does not rely upon the good will of miners
 - Skycoin transactions will be cheaper because there are no mining costs passed on to users
 - Skycoin transactions are not subject to 51% attacks by mining cartels
-- Skycoin is environmentally friendly and sustainable. Skycoin does not require twelve coal power plants to power mining
+- Skycoin is environmentally friendly and sustainable. Skycoin does not use twelve coal power plants of electricity to be secure
 
 
 Skycoin Project

@@ -14,13 +14,13 @@ import (
 
 
 var (
-    fnvs    hash.Hash = fnv.New64a()
+    fnvs hash.Hash64 = fnv.New64a()
 )
 
 func FnvsHash(data []byte) uint64 {
-    fnv.Reset()
-    fnv.Write(data)
-    return fnv.Sum64(nil)
+    fnvs.Reset()
+    fnvs.Write(data)
+    return fnvs.Sum64()
 }
 
 func le_Uint64(b []byte) uint64 {
@@ -69,7 +69,7 @@ func Enc_block(sb SignedBlock) []byte {
     var prefix []byte = make([]byte, 16)
     b := encoder.Serialize(sb)
 
-    var dln uint64 = len(b)
+    var dln uint64 = uint64(len(b))
     var chk uint64 = FnvsHash(b)
 
     le_PutUint64(prefix[0:8], dln)
@@ -91,7 +91,7 @@ func Dec_block(b []byte) (SignedBlock, error) {
 
     b = b[16:]
 
-    if dln != len(b) {
+    if dln != uint64(len(b)) {
         log.Panic("Dec_block, length check failed")
     }
 
@@ -107,7 +107,7 @@ func Dec_block(b []byte) (SignedBlock, error) {
         log.Panic("Dec_block, deserialization failed")
     }
 
-    return sb
+    return sb, nil
 }
 
 

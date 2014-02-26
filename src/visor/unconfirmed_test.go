@@ -66,6 +66,16 @@ func makeValidTxn(mv *Visor) (coin.Transaction, error) {
     return mv.Spend(Balance{10 * 1e6, 0}, 0, we.Address)
 }
 
+func makeValidTxnWithFeeFactor(mv *Visor,
+    factor, extra uint64) (coin.Transaction, error) {
+    we := NewWalletEntry()
+    tmp := mv.Config.CoinHourBurnFactor
+    mv.Config.CoinHourBurnFactor = factor
+    tx, err := mv.Spend(Balance{10 * 1e6, 1000}, extra, we.Address)
+    mv.Config.CoinHourBurnFactor = tmp
+    return tx, err
+}
+
 func makeValidTxnNoChange(mv *Visor) (coin.Transaction, error) {
     we := NewWalletEntry()
     b := mv.Balance(mv.Config.MasterKeys.Address)
@@ -151,7 +161,7 @@ func TestRecordTxn(t *testing.T) {
     ut := NewUnconfirmedTxnPool()
     txn, err := makeInvalidTxn(mv)
     assert.Nil(t, err)
-    err, known := ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize)
+    err, known := ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize, 0)
     assert.NotNil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 0)
@@ -161,7 +171,7 @@ func TestRecordTxn(t *testing.T) {
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
@@ -172,7 +182,7 @@ func TestRecordTxn(t *testing.T) {
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
@@ -183,7 +193,7 @@ func TestRecordTxn(t *testing.T) {
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = ut.RecordTxn(mv.blockchain, txn, nil, txn.Size()-1)
+    err, known = ut.RecordTxn(mv.blockchain, txn, nil, txn.Size()-1, 1)
     assertError(t, err, "Transaction too large")
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 0)
@@ -196,7 +206,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     addrs := make(map[coin.Address]byte, 1)
     addrs[txn.Out[1].Address] = byte(1)
-    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
@@ -212,7 +222,7 @@ func TestRecordTxn(t *testing.T) {
     ux, ok := mv.blockchain.Unspent.Get(txn.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
-    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
@@ -228,7 +238,7 @@ func TestRecordTxn(t *testing.T) {
     ux, ok = mv.blockchain.Unspent.Get(txn.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
-    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
@@ -241,7 +251,7 @@ func TestRecordTxn(t *testing.T) {
     // Set a placeholder value on the utx to check if we overwrote it
     utx.Announced = util.ZeroTime().Add(time.Minute)
     ut.Txns[txn.Hash()] = utx
-    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.True(t, known)
     utx2 := ut.Txns[txn.Hash()]
@@ -254,6 +264,67 @@ func TestRecordTxn(t *testing.T) {
     assertValidUnconfirmed(t, ut.Txns, txn, true, true)
     assert.Equal(t, len(ut.Txns), 1)
     assert.Equal(t, len(ut.Unspent.Arr), 2)
+
+    // Test with valid fee, exact
+    mv = setupMasterVisor()
+    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    ut = NewUnconfirmedTxnPool()
+    txn, err = makeValidTxnWithFeeFactor(mv, 4, 0)
+    assert.Nil(t, err)
+    addrs = make(map[coin.Address]byte, 1)
+    addrs[txn.Out[1].Address] = byte(1)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
+    assert.Nil(t, err)
+    assert.False(t, known)
+    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnconfirmed(t, ut.Txns, txn, true, false)
+
+    // Test with valid fee, surplus
+    mv = setupMasterVisor()
+    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    ut = NewUnconfirmedTxnPool()
+    txn, err = makeValidTxnWithFeeFactor(mv, 4, 100)
+    assert.Nil(t, err)
+    addrs = make(map[coin.Address]byte, 1)
+    addrs[txn.Out[1].Address] = byte(1)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
+    assert.Nil(t, err)
+    assert.False(t, known)
+    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnconfirmed(t, ut.Txns, txn, true, false)
+
+    // Test with invalid fee
+    mv = setupMasterVisor()
+    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    ut = NewUnconfirmedTxnPool()
+    txn, err = makeValidTxnWithFeeFactor(mv, 5, 0)
+    assert.Nil(t, err)
+    _, err = mv.blockchain.TransactionFee(&txn)
+    assert.Nil(t, err)
+    addrs = make(map[coin.Address]byte, 1)
+    addrs[txn.Out[1].Address] = byte(1)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
+    assertError(t, err, "Transaction fee minimum not met")
+    assert.False(t, known)
+    assert.Equal(t, len(ut.Txns), 0)
+
+    // Test with bc.TransactionFee failing
+    mv = setupMasterVisor()
+    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    ut = NewUnconfirmedTxnPool()
+    txn, err = makeValidTxnWithFeeFactor(mv, 4, 100)
+    assert.Nil(t, err)
+    txn.Out[1].Hours = 1e16
+    txn.Head.Sigs = make([]coin.Sig, 0)
+    txn.SignInputs([]coin.SecKey{mv.Config.MasterKeys.Secret})
+    txn.UpdateHeader()
+    addrs = make(map[coin.Address]byte, 1)
+    addrs[txn.Out[1].Address] = byte(1)
+    err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
+    assertError(t, err, "Insufficient coinhours for transaction outputs")
+    assert.False(t, known)
+    assert.Equal(t, len(ut.Txns), 0)
+
 }
 
 func TestRawTxns(t *testing.T) {
@@ -278,7 +349,7 @@ func TestRemoveTxn(t *testing.T) {
 
     utx, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known := ut.RecordTxn(mv.blockchain, utx, nil, testBlockSize)
+    err, known := ut.RecordTxn(mv.blockchain, utx, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 1)
@@ -296,7 +367,7 @@ func TestRemoveTxn(t *testing.T) {
     // Known txn updates Txns, predicted Unspents
     utx2, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = ut.RecordTxn(mv.blockchain, utx2, nil, testBlockSize)
+    err, known = ut.RecordTxn(mv.blockchain, utx2, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 2)
@@ -323,19 +394,19 @@ func TestRemoveTxns(t *testing.T) {
     hashes = append(hashes, randSHA256()) // unknown hash
     ut, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known := up.RecordTxn(mv.blockchain, ut, nil, testBlockSize)
+    err, known := up.RecordTxn(mv.blockchain, ut, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     hashes = append(hashes, ut.Hash())
     ut2, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = up.RecordTxn(mv.blockchain, ut2, nil, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ut2, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     hashes = append(hashes, ut2.Hash())
     ut3, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = up.RecordTxn(mv.blockchain, ut3, nil, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ut3, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
 
@@ -361,19 +432,19 @@ func TestRemoveTransactions(t *testing.T) {
     txns = append(txns, unkUt) // unknown txn
     ut, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known := up.RecordTxn(mv.blockchain, ut, nil, testBlockSize)
+    err, known := up.RecordTxn(mv.blockchain, ut, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     txns = append(txns, ut)
     ut2, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = up.RecordTxn(mv.blockchain, ut2, nil, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ut2, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     txns = append(txns, ut2)
     ut3, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known = up.RecordTxn(mv.blockchain, ut3, nil, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ut3, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
 
@@ -400,7 +471,7 @@ func testRefresh(t *testing.T, mv *Visor,
     // Invalidate it by spending the output that this txn references
     invalidator, err := makeValidTxn(mv)
     assert.Nil(t, err)
-    err, known := up.RecordTxn(mv.blockchain, invalidator, nil, testBlockSize)
+    err, known := up.RecordTxn(mv.blockchain, invalidator, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(up.Txns), 1)
@@ -442,7 +513,7 @@ func testRefresh(t *testing.T, mv *Visor,
 
     // Add the transaction that is valid, and will not be checked yet
     err, known = up.RecordTxn(mv.blockchain, validTxUnchecked, nil,
-        testBlockSize)
+        testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     validUtxUnchecked := up.Txns[validTxUnchecked.Hash()]
@@ -452,7 +523,7 @@ func testRefresh(t *testing.T, mv *Visor,
 
     // Add the transaction that is valid, and will be checked
     err, known = up.RecordTxn(mv.blockchain, validTxChecked, nil,
-        testBlockSize)
+        testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     validUtxChecked := up.Txns[validTxChecked.Hash()]
@@ -462,7 +533,7 @@ func testRefresh(t *testing.T, mv *Visor,
 
     // Add the transaction that is expired
     err, known = up.RecordTxn(mv.blockchain, validTxExpired, nil,
-        testBlockSize)
+        testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     validUtxExpired := up.Txns[validTxExpired.Hash()]
@@ -529,11 +600,11 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     assert.Nil(t, err)
 
     // Add a transaction that is not ours, both new and old
-    err, known := up.RecordTxn(mv.blockchain, notOursNew, nil, testBlockSize)
+    err, known := up.RecordTxn(mv.blockchain, notOursNew, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     up.SetAnnounced(notOursNew.Hash(), util.Now())
-    err, known = up.RecordTxn(mv.blockchain, notOursOld, nil, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, notOursOld, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
 
@@ -542,7 +613,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     ux, ok := mv.blockchain.Unspent.Get(ourSpendNew.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
-    err, known = up.RecordTxn(mv.blockchain, ourSpendNew, addrs, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ourSpendNew, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     up.SetAnnounced(ourSpendNew.Hash(), util.Now())
@@ -550,7 +621,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     ux, ok = mv.blockchain.Unspent.Get(ourSpendNew.In[0])
     assert.True(t, ok)
     addrs[ux.Body.Address] = byte(1)
-    err, known = up.RecordTxn(mv.blockchain, ourSpendOld, addrs, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ourSpendOld, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
 
@@ -558,14 +629,14 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     addrs = make(map[coin.Address]byte, 1)
     addrs[ourReceiveNew.Out[1].Address] = byte(1)
     err, known = up.RecordTxn(mv.blockchain, ourReceiveNew, addrs,
-        testBlockSize)
+        testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     up.SetAnnounced(ourReceiveNew.Hash(), util.Now())
     addrs = make(map[coin.Address]byte, 1)
     addrs[ourReceiveOld.Out[1].Address] = byte(1)
     err, known = up.RecordTxn(mv.blockchain, ourReceiveOld, addrs,
-        testBlockSize)
+        testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     // Add a transaction that is both our spend and receive, both new and old
@@ -575,7 +646,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     addrs[ux.Body.Address] = byte(1)
     addrs[ourBothNew.Out[1].Address] = byte(1)
     assert.Equal(t, len(addrs), 2)
-    err, known = up.RecordTxn(mv.blockchain, ourBothNew, addrs, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ourBothNew, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
     up.SetAnnounced(ourBothNew.Hash(), util.Now())
@@ -585,7 +656,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     addrs[ux.Body.Address] = byte(1)
     addrs[ourBothOld.Out[1].Address] = byte(1)
     assert.Equal(t, len(addrs), 2)
-    err, known = up.RecordTxn(mv.blockchain, ourBothOld, addrs, testBlockSize)
+    err, known = up.RecordTxn(mv.blockchain, ourBothOld, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
 

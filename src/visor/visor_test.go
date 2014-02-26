@@ -80,6 +80,7 @@ func setupChildVisorConfig(refvc VisorConfig, master bool) VisorConfig {
 
 func newMasterVisorConfig(t *testing.T) VisorConfig {
     vc := NewVisorConfig()
+    vc.CoinHourBurnFactor = 0
     vc.MasterKeys = newWalletEntry(t)
     vc.IsMaster = true
     return vc
@@ -559,6 +560,7 @@ func TestVisorSpend(t *testing.T) {
     we := NewWalletEntry()
     addr := we.Address
     vc := newMasterVisorConfig(t)
+    assert.Equal(t, vc.CoinHourBurnFactor, uint64(0))
     v := NewVisor(vc)
     ogb := v.TotalBalance()
 
@@ -592,6 +594,7 @@ func TestVisorSpend(t *testing.T) {
 
     // Test simple spend (we have only 1 address to spend from, no fee)
     v = NewVisor(vc)
+    assert.Equal(t, v.Config.CoinHourBurnFactor, uint64(0))
     b = Balance{10e6, 10}
     tx, err := v.Spend(b, 0, addr)
     assert.Nil(t, err)

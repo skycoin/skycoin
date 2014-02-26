@@ -109,13 +109,6 @@ Skycoin Project
 
 Skycoin is more than a coin. Skycoin is at the core of number of projects that will be announced over the next year.
 
-Current Status
---------------
-
-* Preparing for IPO
-* Working on Obelisk
-* Working on Darknet
-
 Tests
 -----
 

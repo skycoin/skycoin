@@ -10,6 +10,7 @@ import (
     "hash/fnv"
     "hash"
     "log"
+    "io/ioutil"
 )
 
 
@@ -69,7 +70,7 @@ func Enc_block(sb SignedBlock) []byte {
     var prefix []byte = make([]byte, 16)
     b := encoder.Serialize(sb)
 
-    var dln uint64 = uint64(len(b))
+    var dln uint64 = uint64(len(b)+24) //length include prefix
     var seq uint64 = uint64(sb.Block.Head.BkSeq)
     var chk uint64 = FnvsHash(b)
 
@@ -82,6 +83,12 @@ func Enc_block(sb SignedBlock) []byte {
     return b
 }
 
+//Decode Length, return length of next data element
+func Dec_len(b []byte) uint64 {
+    var dln uint64 = le_Uint64(b[0:8])
+    return dln
+}
+
 //decode block to bytes
 func Dec_block(b []byte) (SignedBlock, error) {
     if len(b) < 16 {
@@ -92,26 +99,24 @@ func Dec_block(b []byte) (SignedBlock, error) {
     var seq uint64 = le_Uint64(b[8:16])
     var chk uint64 = le_Uint64(b[16:24])
 
-    b = b[24:] //cleave off header
-
     if dln != uint64(len(b)) {
         log.Panic("Dec_block, length check failed")
     }
+
+    b = b[24:] //cleave off header
 
     if chk != FnvsHash(b) {
         log.Panic("Dec_block, checksum failed")
     }
 
     var sb SignedBlock
-
     err := encoder.DeserializeRaw(b, &sb)
-
     if err != nil {
         log.Panic("Dec_block, deserialization failed")
     }
 
     if seq != sb.Block.Head.BkSeq {
-        log.Panic("Dec_block, seq invalid")
+        log.Panic("Dec_block, seq mismatch")
     }
 
     return sb, nil
@@ -127,11 +132,25 @@ func (self *BlockchainFile) Save(filename string) error {
     return nil
 }
 
-func (self *BlockchainFile) Load(filename string) error {
-    var data []byte
-    for _,b := range self.Blocks {
-        data = append(data, Enc_block(b)...)
+//can steam and buffer into 50 meg buffer
+//does not need to read in all blocks at once
+func (self *BlockchainFile) Load(filename string) ([]SignedBlock, error) {
+    var sb []SignedBlock
+
+    data, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return nil, err
     }
-    util.SaveBinary(filename, data, 0644)
-    return nil
+
+    for len(data) > 4 {
+        var dln uint64 = Dec_len(data)
+        bd := data[:dln] //block data
+        data = data[dln:]
+        b, err := Dec_block(bd)
+        if err != nil {
+            log.Panic("BlockchainFile, Load, Decoding Block failed")
+        }
+        sb = append(sb, b)
+    }
+    return sb, nil
 }

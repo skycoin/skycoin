@@ -24,7 +24,7 @@ Goto http://127.0.0.1:6402
 Skycoin
 -------
 
-Several emerging problems are throwing the long term survival of Bitcoin into doubt. Bitcoin was a proof-of-concept and an experiment. Satoshi never believed that it would reach as far as it has. Bitcoin was a seed of an idea and never intended as its final form. Skycoin is a coin born out of necessarily, which attempts to address many of the core challenges Bitcoin is facing.
+Several emerging problems are throwing the long term survival of Bitcoin into doubt. Bitcoin was a proof-of-concept and an experiment. Satoshi never believed that it would reach as far as it has. Bitcoin was a seed of an idea and never intended as its final form. Skycoin is a coin which addresses the core challenges Bitcoin is facing.
 
 Skycoin is inspired by Bitcoin but emphasizes
 - usability

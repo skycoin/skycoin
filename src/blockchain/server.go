@@ -4,6 +4,7 @@ import(
     "time"
     "fmt"
     "log"
+    //"net/http"
 )
 
 type ServerConfig struct {
@@ -44,6 +45,19 @@ func NewServer(c ServerConfig) *Server {
     }
 }
 
+
+/*
+func handler(w http.ResponseWriter, r *http.Request) {
+}
+
+func StartTransactionServer() {
+    fmt.Printf("starting transaction server on port 666")
+    http.HandleFunc("/injectTransaction", handler)
+    http.ListenAndServe(":666", nil)
+
+}
+*/
+
 //Start server as master
 func (self *Server) Start() {
 
@@ -55,6 +69,9 @@ func (self *Server) Start() {
 			time.Sleep(50)
             continue
 		}
+        if self.Blockchain.PendingTransactions() == false {
+            continue
+        }
 
         //create block
         block, err := self.Blockchain.CreateBlock()

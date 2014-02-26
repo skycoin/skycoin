@@ -192,7 +192,7 @@ func NewBlockchain() *Blockchain {
 }
 
 // Creates a genesis block with a new timestamp
-// Deprecate
+// TODO: Deprecate
 func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
     return self.CreateGenesisBlock(genesisAddress, Now())
 }

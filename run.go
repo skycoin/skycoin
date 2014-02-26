@@ -8,4 +8,6 @@ func main() {
 	
 
 	blockchain_server := blockchain.NewServer(blockchain.ServerConfig{})
+
+	blockchain_server.Start()
 }

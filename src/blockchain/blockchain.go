@@ -11,6 +11,7 @@ import (
     //"os"
     //"sort"
     "time"
+    "fmt"
 )
 
 var (
@@ -127,6 +128,8 @@ func NewMainnetBlockchain() Blockchain {
 //Generate Blockchain configuration for client only Blockchain, not intended to be synced to network
 func NewLocalBlockchain() Blockchain {
     pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
+    
+    fmt.Printf("NewLocalBlockchain: genesis address seckey= %v \n", seckey.Hex() )
     VC := NewBlockchain()
     VC.SecKey = seckey
     VC.Genesis.GenesisAddress = coin.AddressFromPubKey(pubkey)
@@ -143,10 +146,7 @@ func NewLocalBlockchain() Blockchain {
 */
 func (self *Blockchain) InjectGenesisBlock() {
     var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress, self.Genesis.GenesisTime)
-    _, err := self.blockchain.ExecuteBlock(block)
-    if err != nil {
-        log.Panic("Failure executing genesis block")
-    }
+    _ = block //genesis block is automaticly applied to chain
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
@@ -158,6 +158,7 @@ func (self *Blockchain) RefreshUnconfirmed() {
 
 //InjectTransaction makes the blockchain server aware of raw transactions
 //InjectTransaction inserts the transaction into the unconfirmed set
+// TODO: lock for thread safety
 func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     //strict filter would disallow transactions that cant be executed from unspent output set
     if txn.Size() >  MaxTransactionSize { //16 KB/max size
@@ -170,8 +171,17 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     return nil
 }
 
+func (self *Blockchain) PendingTransactions() bool {
+    if len(self.Unconfirmed.RawTxns()) == 0 {
+        return false
+    }
+    return true
+}
 
 // Creates a SignedBlock from pending transactions
+// Applies transaction limit constraint
+// Applies max block size constraint
+// Should order transactions by priority
 func (self *Blockchain) CreateBlock() (coin.Block, error) {
     //var sb SignedBlock
     if self.SecKey == (coin.SecKey{}) {
@@ -214,6 +224,7 @@ func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
 
 //InjectBLock inputs a new block and applies it against the block chain
 // state if it is valid
+// TODO: lock for thread safety
 func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
     if err := self.verifySignedBlock(&b); err != nil {
         return err

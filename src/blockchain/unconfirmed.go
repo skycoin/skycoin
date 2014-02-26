@@ -2,18 +2,18 @@ package blockchain
 
 import (
     "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/util"
+    //"github.com/skycoin/skycoin/src/util"
     "time"
 )
 
 type UnconfirmedTxn struct {
     Txn coin.Transaction
     // Time the txn was last received
-    Received time.Time
+    Received int64
     // Time the txn was last checked against the blockchain
-    Checked time.Time
+    Checked int64
     // Last time we announced this txn
-    Announced time.Time
+    Announced int64 //unix time
 }
 
 // Returns the coin.Transaction's hash
@@ -33,7 +33,7 @@ func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
     }
 }
 
-func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
+func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t int64) {
     if tx, ok := self.Txns[h]; ok {
         tx.Announced = t
         self.Txns[h] = tx
@@ -53,19 +53,16 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 // Adds a coin.Transaction to the pool
 //func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
 //    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
-func (self *UnconfirmedTxnPool) RecordTxn(
-    t coin.Transaction, didAnnounce bool) error {
+func (self *UnconfirmedTxnPool) RecordTxn(t coin.Transaction) error {
 
-    now := util.Now()
-    announcedAt := util.ZeroTime()
-    if didAnnounce {
-        announcedAt = now
-    }
+    now := time.Now().Unix()
+    //announcedAt := util.ZeroTime()
+
     ut := UnconfirmedTxn{
         Txn:          t,
         Received:     now,
         Checked:      now,
-        Announced:    announcedAt,
+        Announced:    0, //set to 0 until announced
     }
     self.Txns[t.Hash()] = ut
     return nil
@@ -113,10 +110,10 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
 func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, checkPeriod int) {
-    now := util.Now()
+    now := time.Now().Unix()
     toRemove := make([]coin.SHA256, 0)
     for k, t := range self.Txns {
-        if now.Sub(t.Checked) >= checkPeriod {
+        if now - t.Checked >= int64(checkPeriod) {
             if bc.VerifyTransaction(t.Txn) == nil {
                 t.Checked = now
                 self.Txns[k] = t

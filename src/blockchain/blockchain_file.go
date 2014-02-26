@@ -10,17 +10,18 @@ import (
     "hash/fnv"
     "hash"
     "log"
+    "io/ioutil"
 )
 
 
 var (
-    fnvs    hash.Hash = fnv.New64a()
+    fnvs hash.Hash64 = fnv.New64a()
 )
 
 func FnvsHash(data []byte) uint64 {
-    fnv.Reset()
-    fnv.Write(data)
-    return fnv.Sum64(nil)
+    fnvs.Reset()
+    fnvs.Write(data)
+    return fnvs.Sum64()
 }
 
 func le_Uint64(b []byte) uint64 {
@@ -45,7 +46,7 @@ func le_PutUint64(b []byte, v uint64) {
 // - blockchain should be append only
 
 type SignedBlock struct {
-    BkSeq uint64
+    //BkSeq uint64
     Sig   coin.Sig
     Block coin.Block
 }
@@ -69,15 +70,23 @@ func Enc_block(sb SignedBlock) []byte {
     var prefix []byte = make([]byte, 16)
     b := encoder.Serialize(sb)
 
-    var dln uint64 = len(b)
+    var dln uint64 = uint64(len(b)+24) //length include prefix
+    var seq uint64 = uint64(sb.Block.Head.BkSeq)
     var chk uint64 = FnvsHash(b)
 
     le_PutUint64(prefix[0:8], dln)
-    le_PutUint64(prefix[8:16], chk)
+    le_PutUint64(prefix[8:16], seq)
+    le_PutUint64(prefix[16:24], chk)
 
     b = append(prefix[:], b...)
 
     return b
+}
+
+//Decode Length, return length of next data element
+func Dec_len(b []byte) uint64 {
+    var dln uint64 = le_Uint64(b[0:8])
+    return dln
 }
 
 //decode block to bytes
@@ -87,110 +96,61 @@ func Dec_block(b []byte) (SignedBlock, error) {
     }
 
     var dln uint64 = le_Uint64(b[0:8])
-    var chk uint64 = le_Uint64(b[8:16])
+    var seq uint64 = le_Uint64(b[8:16])
+    var chk uint64 = le_Uint64(b[16:24])
 
-    b = b[16:]
-
-    if dln != len(b) {
+    if dln != uint64(len(b)) {
         log.Panic("Dec_block, length check failed")
     }
+
+    b = b[24:] //cleave off header
 
     if chk != FnvsHash(b) {
         log.Panic("Dec_block, checksum failed")
     }
 
     var sb SignedBlock
-
     err := encoder.DeserializeRaw(b, &sb)
-
     if err != nil {
         log.Panic("Dec_block, deserialization failed")
     }
 
-    return sb
+    if seq != sb.Block.Head.BkSeq {
+        log.Panic("Dec_block, seq mismatch")
+    }
+
+    return sb, nil
 }
 
-
+//TODO: write individual blocks. append as they come in
 func (self *BlockchainFile) Save(filename string) error {
-    data := make([]byte)
+    var data []byte
     for _,b := range self.Blocks {
-        data = append(data, Enc_block(b))
+        data = append(data, Enc_block(b)...)
     }
-    util.SaveBinary(filename, buf, 0644)
-}
-
-func (self *BlockchainFile) Load(filename string) error {
-    data := make([]byte)
-    for _,b := range self.Blocks {
-        data = append(data, Enc_block(b))
-    }
-    util.SaveBinary(filename, buf, 0644)
-}
-
-
-/*
-func LoadBlockchain(filename string) (BlockSigs, error) {
-    bs := NewBlockSigs()
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return bs, err
-    }
-    sigs := BlockSigsSerialized{make([]BlockSigSerialized, 0)}
-    err = encoder.DeserializeRaw(data, &sigs)
-    if err != nil {
-        return bs, err
-    }
-    bs.Sigs = make(map[uint64]coin.Sig, len(sigs.Sigs))
-    for _, s := range sigs.Sigs {
-        bs.Sigs[s.BkSeq] = s.Sig
-        if s.BkSeq > bs.MaxSeq {
-            bs.MaxSeq = s.BkSeq
-        }
-    }
-    return bs, nil
-}
-
-func (self *BlockSigs) Save(filename string) error {
-    // Convert the Sigs map to an array of element
-    sigs := make([]BlockSigSerialized, 0, len(self.Sigs))
-    for k, v := range self.Sigs {
-        sigs = append(sigs, BlockSigSerialized{
-            BkSeq: k,
-            Sig:   v,
-        })
-    }
-    bss := BlockSigsSerialized{sigs}
-    data := encoder.Serialize(bss)
-    return util.SaveBinary(filename, data, 0644)
-}
-*/
-
-// Checks that BlockSigs state correspond with coin.Blockchain state
-// and that all signatures are valid.
-
-/*
-func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) error {
-    blocks := uint64(len(bc.Blocks))
-    if blocks != uint64(len(self.Sigs)) {
-        return errors.New("Missing signatures for blocks or vice versa")
-    }
-
-    // For now, block sigs must all be sequential and continuous
-    if self.MaxSeq+1 != blocks {
-        return errors.New("MaxSeq does not match blockchain size")
-    }
-    for i := uint64(0); i < self.MaxSeq; i++ {
-        if _, ok := self.Sigs[i]; !ok {
-            return errors.New("Blocksigs missing signature")
-        }
-    }
-
-    for k, v := range self.Sigs {
-        err := coin.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
-        if err != nil {
-            return err
-        }
-    }
+    util.SaveBinary(filename, data, 0644)
     return nil
 }
-*/
+
+//can steam and buffer into 50 meg buffer
+//does not need to read in all blocks at once
+func (self *BlockchainFile) Load(filename string) ([]SignedBlock, error) {
+    var sb []SignedBlock
+
+    data, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return nil, err
+    }
+
+    for len(data) > 4 {
+        var dln uint64 = Dec_len(data)
+        bd := data[:dln] //block data
+        data = data[dln:]
+        b, err := Dec_block(bd)
+        if err != nil {
+            log.Panic("BlockchainFile, Load, Decoding Block failed")
+        }
+        sb = append(sb, b)
+    }
+    return sb, nil
+}

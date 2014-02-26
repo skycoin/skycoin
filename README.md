@@ -24,7 +24,7 @@ Goto http://127.0.0.1:6402
 Skycoin
 -------
 
-Several emerging problems are throwing the long term survival of Bitcoin into question. Bitcoin was a proof-of-concept and an experiment. Satoshi never believed that it would reach as far as it has. Bitcoin was a seed of an idea and never intended as its final form. Skycoin is a coin born out of necessarily, which addresses the challenges Bitcoin is facing.
+Several emerging problems are throwing the long term survival of Bitcoin into doubt. Bitcoin was a proof-of-concept and an experiment. Satoshi never believed that it would reach as far as it has. Bitcoin was a seed of an idea and never intended as its final form. Skycoin is a coin which addresses the core challenges Bitcoin is facing.
 
 Skycoin is inspired by Bitcoin but emphasizes
 - usability
@@ -39,7 +39,8 @@ Skycoin Improves on Bitcoin in several ways
 - better name and branding
 - clean, easy to use API for merchants and developers
 - increased transaction privacy
-- native support for off-block chain transactions for instant payments at point-of-sale
+- instant payments at point-of-sale with off-block chain transactions
+- snapshot support. Devices will never need more than 1 GB of storage or RAM to run full Skycoin client
 
 Security Improvements:
 - immunity from Transaction Malleability attack
@@ -54,13 +55,13 @@ Skycoin is the most secure and most usable cryptocoin that has ever been designe
 Distributed Consensus
 ---------------------
 
-Bitcoin miners currently receive $34 in mining reward subsidies and $0.10 in fees, per transaction. Mathematical modeling of mining rewards suggests a difficulty peak and declining mining profitability by 2040. Without sufficient price deflation, transaction volume growth and increased transaction fees the difficulty peak leaves the level of resources securing the Bitcoin network at levels which leave Bitcoin open to attack and control by governments and competing corporations.
+Bitcoin miners currently receive $34 in mining reward subsidies and $0.10 in fees, per transaction. Mathematical modeling of mining rewards suggests a difficulty peak and declining mining profitability by 2040. Without sufficient price deflation, transaction volume growth and increased transaction fees the difficulty peak will the resources securing the Bitcoin network at levels which leave Bitcoin open to attack and control by governments and corporations.
 
-Reliance on mining and the resource level required to control the Bitcoin network is the primary existential threat facing Bitcoin over the next decade. The cost to disrupt the Bitcoin network currently stands at 50 million dollars ASICs. The capactity to disrupt or shutdown the Bitcoin network is therefore within the capacity of governments and finantial corporations.
+Reliance on mining is the primary existential threat facing Bitcoin over the next decade. The cost to disrupt the Bitcoin network currently stands at 50 million dollars in ASICs. The capactity to disrupt or shutdown the Bitcoin network is therefore within the capacity of governments and corporations.
 
 The survivability of the Bitcoin network depends upon Bitcoin mining reaching a level of resource consumption and cost, beyond the reach of governments and finantial institions, while passing this cost onto the Bitcoin user base. 
 
-Skycoin eliminates the cost of resource consumption for mining and replaces the dependence on miners with a distributed consensus algorithm called Obelisk. Skycoin achieves a higher level of blockchain security than Bitcoin, with lower electricity and hardware costs
+Skycoin eliminates the cost of resource consumption for mining and replaces the dependence on miners with a distributed consensus algorithm called Obelisk. Skycoin achieves a higher level of blockchain security than Bitcoin, with lower electricity and hardware costs.
 
 Key features of Obelisk
 - first provably secure distributed consensus algorithm.
@@ -107,13 +108,6 @@ Skycoin Project
 ---------------
 
 Skycoin is more than a coin. Skycoin is at the core of number of projects that will be announced over the next year.
-
-Current Status
---------------
-
-* Preparing for IPO
-* Working on Obelisk
-* Working on Darknet
 
 Tests
 -----

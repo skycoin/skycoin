@@ -11,6 +11,7 @@ import (
     //"os"
     //"sort"
     "time"
+    "fmt"
 )
 
 var (
@@ -50,10 +51,12 @@ func init() {
     MainNet.Coins = 100e6 //100 million
 }
 
-var (
+//var (
+    var BlockCreationInterval int = 15
     var MaxTransactionSize int = 16*1024
     var MaxBlockSize int = 32*1024
-)
+    var MaxTransactionsPerBlock int = 1024
+//)
 
 // Configuration parameters for the Blockchain
 type Blockchain struct {
@@ -125,6 +128,8 @@ func NewMainnetBlockchain() Blockchain {
 //Generate Blockchain configuration for client only Blockchain, not intended to be synced to network
 func NewLocalBlockchain() Blockchain {
     pubkey,seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
+    
+    fmt.Printf("NewLocalBlockchain: genesis address seckey= %v \n", seckey.Hex() )
     VC := NewBlockchain()
     VC.SecKey = seckey
     VC.Genesis.GenesisAddress = coin.AddressFromPubKey(pubkey)
@@ -141,6 +146,7 @@ func NewLocalBlockchain() Blockchain {
 */
 func (self *Blockchain) InjectGenesisBlock() {
     var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress, self.Genesis.GenesisTime)
+    _ = block //genesis block is automaticly applied to chain
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
@@ -152,6 +158,7 @@ func (self *Blockchain) RefreshUnconfirmed() {
 
 //InjectTransaction makes the blockchain server aware of raw transactions
 //InjectTransaction inserts the transaction into the unconfirmed set
+// TODO: lock for thread safety
 func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     //strict filter would disallow transactions that cant be executed from unspent output set
     if txn.Size() >  MaxTransactionSize { //16 KB/max size
@@ -160,29 +167,42 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) (error) {
     if err := self.blockchain.VerifyTransaction(txn); err != nil {
         return err
     }
-    self.Unconfirmed.RecordTxn(txn, didAnnounce)
+    self.Unconfirmed.RecordTxn(txn)
+    return nil
 }
 
+func (self *Blockchain) PendingTransactions() bool {
+    if len(self.Unconfirmed.RawTxns()) == 0 {
+        return false
+    }
+    return true
+}
 
 // Creates a SignedBlock from pending transactions
-func (self *Blockchain) CreateBlock(coin.Block, error) {
+// Applies transaction limit constraint
+// Applies max block size constraint
+// Should order transactions by priority
+func (self *Blockchain) CreateBlock() (coin.Block, error) {
     //var sb SignedBlock
-    if self.Config.SecKey == (coin.SecKey{}) {
+    if self.SecKey == (coin.SecKey{}) {
         log.Panic("Only master chain can create blocks")
     }
 
     txns := self.Unconfirmed.RawTxns()
+
+    nTxns := len(txns)
     //TODO: sort by arrival time/announce time
     //TODO: filter valid first
-    if nTxns > self.Config.TransactionsPerBlock {
-        txns = txns[:self.Config.TransactionsPerBlock]
+    if nTxns > MaxTransactionsPerBlock {
+        txns = txns[:MaxTransactionsPerBlock]
     }
 
-    txns = coin.ArbitrateTransactions(txns)
+    txns = self.blockchain.ArbitrateTransactions(txns)
     txns = txns.TruncateBytesTo(MaxBlockSize) //cap at 32 KB
 
     b, err := self.blockchain.NewBlockFromTransactions(txns,
-        self.Config.BlockCreationInterval)
+        uint64(BlockCreationInterval), MaxBlockSize)
+    //remove creation interval, from new block
     if err != nil {
         return b, err
     }
@@ -191,10 +211,10 @@ func (self *Blockchain) CreateBlock(coin.Block, error) {
 
 // Signs a block for master.  Will panic if anything is invalid
 func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
-    if !self.Config.IsMaster {
+    if !self.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-    sig := coin.SignHash(b.HashHeader(), self.Config.SecKey)
+    sig := coin.SignHash(b.HashHeader(), self.SecKey)
     sb := SignedBlock{
         Block: b,
         Sig:   sig,
@@ -204,22 +224,27 @@ func (self *Blockchain) signBlock(b coin.Block) SignedBlock {
 
 //InjectBLock inputs a new block and applies it against the block chain
 // state if it is valid
+// TODO: lock for thread safety
 func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
     if err := self.verifySignedBlock(&b); err != nil {
         return err
     }
 
-    if b.Block.Seq +1 != b.Block.Header.BkSeq {
+    if b.Block.Head.BkSeq +1 != self.blockchain.Head().Head.BkSeq {
         return errors.New("Out of Sequence Block")
     }
 
     //apply block against blockchain
     //this should not fail if signature is valid
-    if err := self.blockchain.ExecuteBlock(b.Block); err != nil {
+    if _,err := self.blockchain.ExecuteBlock(b.Block); err != nil {
         return err
     }
 
-    self.blockSigs.record(&b) //save block to disc
+    //self.blockSigs.record(&b) //save block to disc
+    //self.Save()
+    
+    self.Blocks = append(self.Blocks, b)
+
     return nil
 }
 
@@ -228,7 +253,7 @@ func (self *Blockchain) InjectBlock(b SignedBlock) (error) {
 // Replace with GetHead
 func (self *Blockchain) MostRecentBkSeq() uint64 { //alread in meta
     h := self.blockchain.Head()
-    return h.Header.BkSeq
+    return h.Head.BkSeq
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range
@@ -263,11 +288,11 @@ func (self *Blockchain) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Blockchain) SetTxnAnnounce(h coin.SHA256, t time.Time) {
-    self.Unconfirmed.SetAnnounced(h, t)
+func (self *Blockchain) SetTxnAnnounce(h coin.SHA256) {
+    self.Unconfirmed.SetAnnounced(h, time.Now().Unix())
 }
 
 func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.Config.PubKey, b.Sig,
+    return coin.VerifySignature(self.Genesis.PubKey, b.Sig,
         b.Block.HashHeader())
 }

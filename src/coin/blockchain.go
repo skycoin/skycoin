@@ -192,7 +192,7 @@ func NewBlockchain() *Blockchain {
 }
 
 // Creates a genesis block with a new timestamp
-// Deprecate
+// TODO: Deprecate
 func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
     return self.CreateGenesisBlock(genesisAddress, Now())
 }
@@ -245,6 +245,9 @@ func (self *Blockchain) Time() uint64 {
 
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
+// TODO: remove blocksize (soft limit)
+// TODO: remove creation interval
+// TODO: require block creation time as input to function
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     creationInterval uint64, maxBlockSize int) (Block, error) {
     if creationInterval == 0 {
@@ -270,6 +273,8 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
 }
 
 // Attempts to append block to blockchain
+// TODO: what is UxArray return? the created or deleted?
+// if the created are returned, the deleted should also be returned or neither
 func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
     var uxs UxArray = nil
     err := self.VerifyBlock(&b)

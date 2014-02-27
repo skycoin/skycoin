@@ -3,10 +3,7 @@ package visor
 import (
     "errors"
     "github.com/op/go-logging"
-    "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/util"
-    "io/ioutil"
     "log"
     "os"
     "time"
@@ -481,24 +478,11 @@ func (self *Visor) TotalBalance() Balance {
     return self.totalBalance(auxs)
 }
 
-// // Returns the total balance of the wallet including unconfirmed outputs
-// func (self *Visor) TotalBalancePredicted() Balance {
-//     auxs := self.getAvailableBalances()
-//     return self.totalBalance(auxs)
-// }
-
 // Returns the balance for a single address in the Wallet
 func (self *Visor) Balance(a coin.Address) Balance {
     uxs := self.blockchain.Unspent.AllForAddress(a)
     return self.balance(uxs)
 }
-
-// // Returns the balance for a single address in the Wallet, including
-// // unconfirmed outputs
-// func (self *Visor) BalancePredicted(a coin.Address) Balance {
-//     uxs := self.getAvailableBalance(a)
-//     return self.balance(uxs)
-// }
 
 // Computes the total balance for coin.Addresses and their coin.UxOuts
 func (self *Visor) totalBalance(auxs coin.AddressUxOuts) Balance {
@@ -521,25 +505,6 @@ func (self *Visor) balance(uxs []coin.UxOut) Balance {
     }
     return b
 }
-
-// // Returns the total of known Unspents available to us, and our own
-// // unconfirmed unspents
-// func (self *Visor) getAvailableBalances() coin.AddressUxOuts {
-//     addrs := self.Wallet.GetAddresses()
-//     auxs := self.blockchain.Unspent.AllForAddresses(addrs)
-//     uauxs := self.Unconfirmed.Unspent.AllForAddresses(addrs)
-//     logger.Warning("Confirmed unspents: %v\n", auxs)
-//     logger.Warning("Unconfirmed unspents: %v\n", uauxs)
-//     return auxs.Merge(uauxs, addrs)
-// }
-
-// // Returns the total of known unspents available for an address, including
-// // unconfirmed requests
-// func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
-//     auxs := self.blockchain.Unspent.AllForAddress(a)
-//     uauxs := self.Unconfirmed.Unspent.AllForAddress(a)
-//     return append(auxs, uauxs...)
-// }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
@@ -593,61 +558,4 @@ func CreateMasterWallet(master WalletEntry) *SimpleWallet {
         log.Panic("Failed to add master wallet entry: %v", err)
     }
     return w
-}
-
-// Loads a coin.Blockchain from disk
-func LoadBlockchain(filename string) (*coin.Blockchain, error) {
-    bc := &coin.Blockchain{}
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return bc, err
-    }
-    err = encoder.DeserializeRaw(data, bc)
-    if err != nil {
-        return bc, err
-    }
-    logger.Info("Loaded blockchain from \"%s\"", filename)
-    logger.Debug("Rebuilding UnspentPool indices")
-    bc.Unspent.Rebuild()
-    return bc, nil
-}
-
-// Loads a blockchain but subdues errors into the logger, or panics.
-// If no blockchain is found, it creates a new empty one
-func loadBlockchain(filename string, genAddr coin.Address) *coin.Blockchain {
-    bc := &coin.Blockchain{}
-    created := false
-    if filename != "" {
-        var err error
-        bc, err = LoadBlockchain(filename)
-        if err == nil {
-            if len(bc.Blocks) == 0 {
-                log.Panic("Loaded empty blockchain")
-            }
-            loadedGenAddr := bc.Blocks[0].Body.Transactions[0].Out[0].Address
-            if loadedGenAddr != genAddr {
-                log.Panic("Configured genesis address does not match the " +
-                    "address in the blockchain")
-            }
-            created = true
-        } else {
-            if os.IsNotExist(err) {
-                logger.Info("No blockchain file, will create a new blockchain")
-            } else {
-                log.Panicf("Failed to load blockchain file \"%s\": %v",
-                    filename, err)
-            }
-        }
-    }
-    if !created {
-        bc = coin.NewBlockchain()
-    }
-    return bc
-}
-
-// Saves blockchain to disk
-func SaveBlockchain(bc *coin.Blockchain, filename string) error {
-    // TODO -- blockchain file must be forward compatible
-    data := encoder.Serialize(bc)
-    return util.SaveBinary(filename, data, 0644)
 }

@@ -40,9 +40,9 @@ func makeNewBlock() Block {
 func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
     fee uint64) Transaction {
     tx := Transaction{}
-    ux := bc.Unspent.Arr[0]
+    ux := bc.Unspent.Array()[0]
     assert.Equal(t, ux.Body.Address, genAddress)
-    tx.PushInput(bc.Unspent.Arr[0].Hash())
+    tx.PushInput(bc.Unspent.Array()[0].Hash())
     tx.PushOutput(makeAddress(), 1e6, 100)
     tx.PushOutput(genAddress, ux.Body.Coins-1e6, ux.Body.Hours-100-fee)
     tx.SignInputs([]SecKey{genSecret})
@@ -72,7 +72,7 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) Block {
 
 func splitGenesisBlock(t *testing.T, bc *Blockchain) UxArray {
     txn := Transaction{}
-    ux := bc.Unspent.Arr[0]
+    ux := bc.Unspent.Array()[0]
     txn.PushInput(ux.Hash())
     txn.PushOutput(genAddress, ux.Body.Coins/2, ux.Body.Hours/4)
     txn.PushOutput(genAddress, ux.Body.Coins/2, ux.Body.Hours/2)
@@ -88,7 +88,7 @@ func splitGenesisBlock(t *testing.T, bc *Blockchain) UxArray {
 
 func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
     txn := Transaction{}
-    ux := bc.Unspent.Arr[0]
+    ux := bc.Unspent.Array()[0]
     txn.PushInput(ux.Hash())
     txn.PushOutput(genAddress, 1e6, 100)
     txn.PushOutput(genAddress, 2e6, 100)
@@ -265,7 +265,7 @@ func TestNewBlockchain(t *testing.T) {
     assert.NotNil(t, b.Blocks)
     assert.Equal(t, len(b.Blocks), 0)
     assert.NotNil(t, b.Unspent)
-    assert.Equal(t, len(b.Unspent.Arr), 0)
+    assert.Equal(t, len(b.Unspent.Pool), 0)
 }
 
 func TestCreateMasterGenesisBlock(t *testing.T) {
@@ -274,8 +274,8 @@ func TestCreateMasterGenesisBlock(t *testing.T) {
     gb := b.CreateMasterGenesisBlock(a)
     assert.Equal(t, len(b.Blocks), 1)
     assert.Equal(t, b.Blocks[0], gb)
-    assert.Equal(t, len(b.Unspent.Arr), 1)
-    assert.Equal(t, b.Unspent.Arr[0].Body.Address, a)
+    assert.Equal(t, len(b.Unspent.Pool), 1)
+    assert.Equal(t, b.Unspent.Array()[0].Body.Address, a)
     assert.NotEqual(t, gb.Head.Time, uint64(0))
     assert.Equal(t, gb.Head.BkSeq, uint64(0))
     // Panicing
@@ -296,7 +296,7 @@ func TestCreateGenesisBlock(t *testing.T) {
     assert.Equal(t, txo.Address, genAddress)
     assert.Equal(t, txo.Coins, genesisCoinVolume)
     assert.Equal(t, txo.Hours, genesisCoinHours)
-    ux := b.Unspent.Arr[0]
+    ux := b.Unspent.Array()[0]
     assert.Equal(t, ux.Head.BkSeq, uint64(0))
     assert.Equal(t, ux.Head.Time, now)
     assert.Equal(t, ux.Body.SrcTransaction, txn.Hash())
@@ -306,7 +306,11 @@ func TestCreateGenesisBlock(t *testing.T) {
     h := Merkle([]SHA256{gb.Body.Transactions[0].Hash()})
     assert.Equal(t, gb.Head.BodyHash, h)
     assert.Equal(t, gb.Head.PrevHash, SHA256{})
-    assert.Equal(t, createUnspents(txn, gb.Head), b.Unspent.Arr)
+    expect := createUnspents(txn, gb.Head)
+    expect.Sort()
+    have := b.Unspent.Array()
+    have.Sort()
+    assert.Equal(t, expect, have)
     // Panicing
     assert.Panics(t, func() { b.CreateGenesisBlock(genAddress, now) })
 }
@@ -499,7 +503,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 
     // Destroying coins
     tx = Transaction{}
-    tx.PushInput(bc.Unspent.Arr[0].Hash())
+    tx.PushInput(bc.Unspent.Array()[0].Hash())
     tx.PushOutput(genAddress, 1e6, 0)
     tx.PushOutput(genAddress, 10e6, 0)
     uxIn, err = bc.Unspent.GetMultiple(tx.In)
@@ -514,9 +518,9 @@ func TestVerifyTransactionSpending(t *testing.T) {
 
     // Overspending hours
     tx = Transaction{}
-    tx.PushInput(bc.Unspent.Arr[0].Hash())
-    tx.PushOutput(genAddress, 1e6, bc.Unspent.Arr[0].Body.Hours)
-    tx.PushOutput(genAddress, bc.Unspent.Arr[0].Body.Coins-1e6, 1)
+    tx.PushInput(bc.Unspent.Array()[0].Hash())
+    tx.PushOutput(genAddress, 1e6, bc.Unspent.Array()[0].Body.Hours)
+    tx.PushOutput(genAddress, bc.Unspent.Array()[0].Body.Coins-1e6, 1)
     uxIn, err = bc.Unspent.GetMultiple(tx.In)
     assert.Nil(t, err)
     uxOut = CreateExpectedUnspents(tx)
@@ -525,7 +529,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 
     // Insufficient coins
     tx = Transaction{}
-    tx.PushInput(bc.Unspent.Arr[0].Hash())
+    tx.PushInput(bc.Unspent.Array()[0].Hash())
     p, s := GenerateKeyPair()
     a := AddressFromPubKey(p)
     tx.PushOutput(a, 1e6, 100)
@@ -608,7 +612,7 @@ func TestVerifyTransaction(t *testing.T) {
     // Failure, spending outputs we don't own
     _, s := GenerateKeyPair()
     tx = Transaction{}
-    ux := bc.Unspent.Arr[0]
+    ux := bc.Unspent.Array()[0]
     tx.PushInput(ux.Hash())
     tx.PushOutput(genAddress, ux.Body.Coins, ux.Body.Hours)
     tx.SignInputs([]SecKey{s})
@@ -634,7 +638,7 @@ func TestBlockchainVerifyBlock(t *testing.T) {
 
     // Valid block
     tx := Transaction{}
-    tx.PushInput(bc.Unspent.Arr[0].Hash())
+    tx.PushInput(bc.Unspent.Array()[0].Hash())
     tx.PushOutput(genAddress, genesisCoinVolume, genesisCoinHours)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
@@ -792,7 +796,7 @@ func TestProcessTransactions(t *testing.T) {
     // Verify(), from VerifyTransaction()
     txns = Transactions{}
     txn := Transaction{}
-    txn.PushInput(bc.Unspent.Arr[0].Hash())
+    txn.PushInput(bc.Unspent.Array()[0].Hash())
     txn.PushOutput(genAddress, 777, 100)
     txn.SignInputs([]SecKey{genSecret})
     txn.UpdateHeader()
@@ -846,7 +850,7 @@ func TestProcessTransactions(t *testing.T) {
     txn2 := makeTransactionForChain(t, bc)
     txn2.Out = nil
     txn2.PushOutput(makeAddress(), 1e6, 100)
-    txn2.PushOutput(makeAddress(), bc.Unspent.Arr[0].Body.Coins-1e6, 100)
+    txn2.PushOutput(makeAddress(), bc.Unspent.Array()[0].Body.Coins-1e6, 100)
     txn2.Head.Sigs = nil
     txn2.SignInputs([]SecKey{genSecret})
     txn2.UpdateHeader()

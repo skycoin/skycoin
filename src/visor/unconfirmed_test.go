@@ -106,7 +106,7 @@ func assertValidUnspent(t *testing.T, bc *coin.Blockchain,
     unspent *coin.UnspentPool, tx coin.Transaction) {
     expect := coin.CreateExpectedUnspents(tx)
     assert.NotEqual(t, len(expect), 0)
-    assert.Equal(t, len(expect), len(unspent.Arr))
+    assert.Equal(t, len(expect), len(unspent.Pool))
     for _, ux := range expect {
         assert.True(t, unspent.Has(ux.Hash()))
     }
@@ -233,7 +233,7 @@ func TestRecordTxn(t *testing.T) {
 
     // Test where we are receiver of ux outputs
     mv = setupMasterVisor()
-    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    assert.Equal(t, len(mv.blockchain.Unspent.Pool), 1)
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxn(mv)
     assert.Nil(t, err)
@@ -247,7 +247,7 @@ func TestRecordTxn(t *testing.T) {
 
     // Test where we are spender of ux outputs
     mv = setupMasterVisor()
-    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    assert.Equal(t, len(mv.blockchain.Unspent.Pool), 1)
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxnNoChange(mv)
     assert.Nil(t, err)
@@ -277,7 +277,7 @@ func TestRecordTxn(t *testing.T) {
     assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, true, true)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
 
     // Test duplicate Record, should be no-op besides state change
     utx := ut.Txns[txn.Hash()]
@@ -296,11 +296,11 @@ func TestRecordTxn(t *testing.T) {
     assert.True(t, utx2.Checked.After(utx.Checked))
     assertValidUnconfirmed(t, ut.Txns, txn, true, true)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
 
     // Test with valid fee, exact
     mv = setupMasterVisor()
-    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    assert.Equal(t, len(mv.blockchain.Unspent.Pool), 1)
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxnWithFeeFactor(mv, 4, 0)
     assert.Nil(t, err)
@@ -314,7 +314,7 @@ func TestRecordTxn(t *testing.T) {
 
     // Test with valid fee, surplus
     mv = setupMasterVisor()
-    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    assert.Equal(t, len(mv.blockchain.Unspent.Pool), 1)
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxnWithFeeFactor(mv, 4, 100)
     assert.Nil(t, err)
@@ -328,7 +328,7 @@ func TestRecordTxn(t *testing.T) {
 
     // Test with invalid fee
     mv = setupMasterVisor()
-    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    assert.Equal(t, len(mv.blockchain.Unspent.Pool), 1)
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxnWithFeeFactor(mv, 5, 0)
     assert.Nil(t, err)
@@ -343,7 +343,7 @@ func TestRecordTxn(t *testing.T) {
 
     // Test with bc.TransactionFee failing
     mv = setupMasterVisor()
-    assert.Equal(t, len(mv.blockchain.Unspent.Arr), 1)
+    assert.Equal(t, len(mv.blockchain.Unspent.Pool), 1)
     ut = NewUnconfirmedTxnPool()
     txn, err = makeValidTxnWithFeeFactor(mv, 4, 100)
     assert.Nil(t, err)
@@ -385,16 +385,16 @@ func TestRemoveTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
 
     // Unknown txn is no-op
     badh := randSHA256()
     assert.NotEqual(t, badh, utx.Hash())
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
     ut.removeTxn(mv.blockchain, badh)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
 
     // Known txn updates Txns, predicted Unspents
     utx2, err := makeValidTxn(mv)
@@ -403,16 +403,16 @@ func TestRemoveTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 2)
-    assert.Equal(t, len(ut.Unspent.Arr), 4)
+    assert.Equal(t, len(ut.Unspent.Pool), 4)
     ut.removeTxn(mv.blockchain, utx.Hash())
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
     ut.removeTxn(mv.blockchain, utx.Hash())
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Arr), 2)
+    assert.Equal(t, len(ut.Unspent.Pool), 2)
     ut.removeTxn(mv.blockchain, utx2.Hash())
     assert.Equal(t, len(ut.Txns), 0)
-    assert.Equal(t, len(ut.Unspent.Arr), 0)
+    assert.Equal(t, len(ut.Unspent.Pool), 0)
 }
 
 func TestRemoveTxns(t *testing.T) {
@@ -442,10 +442,10 @@ func TestRemoveTxns(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
 
-    assert.Equal(t, len(up.Unspent.Arr), 3*2)
+    assert.Equal(t, len(up.Unspent.Pool), 3*2)
     assert.Equal(t, len(up.Txns), 3)
     up.removeTxns(mv.blockchain, hashes)
-    assert.Equal(t, len(up.Unspent.Arr), 1*2)
+    assert.Equal(t, len(up.Unspent.Pool), 1*2)
     assert.Equal(t, len(up.Txns), 1)
     _, ok := up.Txns[ut3.Hash()]
     assert.True(t, ok)
@@ -480,10 +480,10 @@ func TestRemoveTransactions(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
 
-    assert.Equal(t, len(up.Unspent.Arr), 3*2)
+    assert.Equal(t, len(up.Unspent.Pool), 3*2)
     assert.Equal(t, len(up.Txns), 3)
     up.RemoveTransactions(mv.blockchain, txns)
-    assert.Equal(t, len(up.Unspent.Arr), 1*2)
+    assert.Equal(t, len(up.Unspent.Pool), 1*2)
     assert.Equal(t, len(up.Txns), 1)
     _, ok := up.Txns[ut3.Hash()]
     assert.True(t, ok)
@@ -574,7 +574,7 @@ func testRefresh(t *testing.T, mv *Visor,
     assert.Equal(t, len(up.Txns), 5)
 
     // Pre-sanity check
-    assert.Equal(t, len(up.Unspent.Arr), 2*5)
+    assert.Equal(t, len(up.Unspent.Pool), 2*5)
     assert.Equal(t, len(up.Txns), 5)
 
     // Refresh
@@ -597,7 +597,7 @@ func testRefresh(t *testing.T, mv *Visor,
     _, ok = up.Txns[validUtxExpired.Hash()]
     assert.False(t, ok)
     // Also, the unspents should have 2 * nRemaining
-    assert.Equal(t, len(up.Unspent.Arr), 2*3)
+    assert.Equal(t, len(up.Unspent.Pool), 2*3)
     assert.Equal(t, len(up.Txns), 3)
 }
 

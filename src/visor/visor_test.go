@@ -897,16 +897,16 @@ func TestGetAddressTransactions(t *testing.T) {
 
     // An unconfirmed txn
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
-    assert.Equal(t, len(v.Unconfirmed.Unspent.Arr), 0)
+    assert.Equal(t, len(v.Unconfirmed.Unspent.Pool), 0)
     we = v.Wallet.CreateEntry()
     tx, err = v.Spend(Balance{2e6, 0}, 0, we.Address)
     err, known = v.RecordTxn(tx)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
-    assert.Equal(t, len(v.Unconfirmed.Unspent.Arr), 2)
+    assert.Equal(t, len(v.Unconfirmed.Unspent.Pool), 2)
     found := false
-    for _, ux := range v.Unconfirmed.Unspent.Arr {
+    for _, ux := range v.Unconfirmed.Unspent.Pool {
         if ux.Body.Address == we.Address {
             found = true
         }
@@ -920,7 +920,7 @@ func TestGetAddressTransactions(t *testing.T) {
     assert.True(t, txns[0].Status.Unconfirmed)
 
     // An unconfirmed txn, but pool is corrupted
-    srcTxn := v.Unconfirmed.Unspent.Arr[0].Body.SrcTransaction
+    srcTxn := v.Unconfirmed.Unspent.Array()[0].Body.SrcTransaction
     delete(v.Unconfirmed.Txns, srcTxn)
     txns = v.GetAddressTransactions(we.Address)
     assert.Equal(t, len(txns), 0)
@@ -1104,82 +1104,4 @@ func TestCreateMasterWallet(t *testing.T) {
     we = NewWalletEntry()
     we.Public = coin.PubKey{}
     assert.Panics(t, func() { CreateMasterWallet(we) })
-}
-
-func TestLoadBlockchain(t *testing.T) {
-    defer cleanupVisor()
-    cleanupVisor()
-
-    // Loading a non-existent blockchain should return error
-    bc, err := LoadBlockchain(testBlockchainFile)
-    assert.NotNil(t, err)
-    assert.True(t, os.IsNotExist(err))
-
-    // Loading a real blockchain should be fine
-    vc := newMasterVisorConfig(t)
-    v := NewVisor(vc)
-    v.Config.BlockchainFile = testBlockchainFile
-    assert.Nil(t, transferCoinsToSelf(v, v.Config.MasterKeys.Address))
-    assert.Equal(t, len(v.blockchain.Blocks), 2)
-    v.SaveBlockchain()
-    assertFileExists(t, testBlockchainFile)
-    bc, err = LoadBlockchain(testBlockchainFile)
-    assert.Nil(t, err)
-    assert.Equal(t, v.blockchain, bc)
-
-    // Loading a corrupted blockchain should return error
-    corruptFile(t, testBlockchainFile)
-    _, err = LoadBlockchain(testBlockchainFile)
-    assert.NotNil(t, err)
-}
-
-func TestLoadBlockchainPrivate(t *testing.T) {
-    defer cleanupVisor()
-    cleanupVisor()
-
-    we := NewWalletEntry()
-
-    // No filename should return fresh blockchain
-    bc := loadBlockchain("", we.Address)
-    assert.Equal(t, len(bc.Blocks), 0)
-
-    // Filename with no file should return fresh blockchain
-    assertFileNotExists(t, testBlockchainFile)
-    bc = loadBlockchain(testBlockchainFile, we.Address)
-    assert.Equal(t, len(bc.Blocks), 0)
-
-    // Loading an empty blockchain should panic
-    assert.Nil(t, SaveBlockchain(bc, testBlockchainFile))
-    assertFileExists(t, testBlockchainFile)
-    assert.Panics(t, func() {
-        loadBlockchain(testBlockchainFile, we.Address)
-    })
-
-    // Loading a blockchain with a different genesis address should panic
-    vc := newMasterVisorConfig(t)
-    bc.CreateMasterGenesisBlock(vc.MasterKeys.Address)
-    assert.Equal(t, len(bc.Blocks), 1)
-    assert.Nil(t, SaveBlockchain(bc, testBlockchainFile))
-    assertFileExists(t, testBlockchainFile)
-    assert.Panics(t, func() {
-        loadBlockchain(testBlockchainFile, coin.Address{})
-    })
-
-    // Loading a corrupt blockchain should panic
-    corruptFile(t, testBlockchainFile)
-    assert.Panics(t, func() {
-        loadBlockchain(testBlockchainFile, we.Address)
-    })
-    cleanupVisor()
-
-    // Loading a valid blockchain should be safe
-    vc = newMasterVisorConfig(t)
-    vc.BlockchainFile = testBlockchainFile
-    v := NewVisor(vc)
-    assert.Nil(t, transferCoinsToSelf(v, v.Config.MasterKeys.Address))
-    assert.Equal(t, len(v.blockchain.Blocks), 2)
-    assert.Nil(t, v.SaveBlockchain())
-    assertFileExists(t, testBlockchainFile)
-    bc = loadBlockchain(testBlockchainFile, v.Config.MasterKeys.Address)
-    assert.Equal(t, v.blockchain, bc)
 }

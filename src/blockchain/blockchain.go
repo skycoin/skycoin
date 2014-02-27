@@ -51,6 +51,39 @@ func init() {
     MainNet.Coins = 100e6 //100 million
 }
 
+/*
+type GenesisBlockCfg struct {
+    GenesisAddress coin.Address
+    GenesisSignature coin.Sig
+    GenesisTime uint64
+    PubKey coin.PubKey
+    Coins uint64
+}
+
+var TestNet GenesisBlockCfg
+var MainNet GenesisBlockCfg //main blockchain
+
+//testnet config
+func init() {
+    TestNet.PubKey = coin.MustPubKeyFromHex("025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b")
+    //TestNet.GenesisSignature = coin.MustSigFromHex()
+    TestNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
+    TestNet.GenesisTime = 1392584986 //set time
+    TestNet.Coins = 1e12 //almost as many as Ripple
+    //TestNet.GenesisSignature = coin.MustSigFromHex()
+
+}
+
+//main net config
+func init() {
+    MainNet.PubKey = coin.MustPubKeyFromHex("02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99")
+    //TestNet.GenesisSignature = coin.MustSigFromHex()
+    MainNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
+    MainNet.GenesisTime = 1392584987 //set time
+    MainNet.Coins = 100e6 //100 million
+}
+*/
+
 //var (
     var BlockCreationInterval int = 15
     var MaxTransactionSize int = 16*1024

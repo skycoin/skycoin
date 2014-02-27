@@ -1,38 +1,54 @@
 package main
 
 import (
-    "encoding/json"
     "flag"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
     "os"
 )
 
 var (
-    testNetwork  = false
-    outFile      = ""
-    printPublic  = false
-    printSecret  = false
-    printAddress = false
-    labelStdout  = false
-    inFile       = ""
+    addressVersion = "test"
+    outFile        = ""
+    printPublic    = false
+    printSecret    = false
+    printAddress   = false
+    labelStdout    = false
+    inFile         = ""
+    entryNumber    = -1
+    populateTo     = 1
 )
 
+func init() {
+    util.DisableLogging()
+}
+
 func registerFlags() {
-    flag.BoolVar(&testNetwork, "test-network", testNetwork,
-        "Use test network for address verson, if creating with -o")
+    flag.StringVar(&addressVersion, "address-version", addressVersion,
+        "Network address version. Options are \"test\" and \"main\"")
+
+    // Writing
     flag.StringVar(&outFile, "o", outFile,
-        "If present, will create a new wallet entry and write to disk. "+
-            "For safety, it will not overwrite an existing keypair")
+        "If present, will create a new wallet and write to disk. "+
+            "For safety, it will not overwrite an existing wallet")
+    flag.IntVar(&populateTo, "entries", populateTo,
+        "When creating a wallet, initialize with this many entries")
+
+    // Reading
+    flag.StringVar(&inFile, "i", inFile,
+        "Will read a wallet from this file for printing info")
+    flag.IntVar(&entryNumber, "entry", entryNumber,
+        "Which entry to print values from.  -1 means all entries")
+
+    // Stdout controls
     flag.BoolVar(&printAddress, "print-address", printAddress,
         "Print the wallet entry's address")
     flag.BoolVar(&printPublic, "print-public", printPublic,
         "Print the wallet entry's public key")
     flag.BoolVar(&printSecret, "print-secret", printSecret,
         "Print the wallet entry's secret key")
-    flag.StringVar(&inFile, "i", inFile,
-        "Will read a wallet entry from this file for printing info")
     flag.BoolVar(&labelStdout, "label-output", labelStdout,
         "Add a label to each printed field. This is useful if you are "+
             "printing multiple fields")
@@ -44,53 +60,56 @@ func parseFlags() {
         fmt.Printf("-i and -o are mutually exclusive\n")
         os.Exit(0)
     }
-    if inFile != "" && !printPublic && !printSecret {
+    if inFile != "" && !printPublic && !printSecret && !printAddress {
         fmt.Printf("Input file present, but not requested to print anything\n")
         os.Exit(0)
     }
 }
 
-func createWalletEntry(filename string, testNetwork bool) *visor.ReadableWalletEntry {
-    pub, sec := coin.GenerateKeyPair()
-    var addr coin.Address
-    if testNetwork {
-        addr = coin.AddressFromPubKey(pub)
-    } else {
-        addr = coin.AddressFromPubKey(pub)
-    }
-
-    w := visor.WalletEntry{
-        Address: addr,
-        Public:  pub,
-        Secret:  sec,
-    }
-
-    rw := visor.NewReadableWalletEntry(&w)
-
-    err := rw.Save(filename)
+func createWallet(filename string, addressVersion string,
+    populateTo int) *visor.ReadableWallet {
+    coin.SetAddressVersion(addressVersion)
+    w := visor.NewSimpleWallet()
+    w.Populate(populateTo)
+    rw := visor.NewReadableWallet(w)
+    err := rw.SaveSafe(filename)
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to write wallet entry to \"%s\"\n",
+        fmt.Fprintf(os.Stderr, "Failed to write wallet to \"%s\"\n",
             filename)
         fmt.Fprintf(os.Stderr, "%v\n", err)
         return nil
     }
-
-    return &rw
+    return rw
 }
 
-func printWalletEntryFromFile(filename string, label, address, public,
-    secret bool) {
+func printWalletFromFile(filename string, label, address, public, secret bool,
+    entry int) {
     // Read wallet entry from disk
-    w, err := visor.LoadReadableWalletEntry(filename)
+    w, err := visor.LoadReadableWallet(filename)
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to load wallet entry \"%s\": %v\n",
+        fmt.Fprintf(os.Stderr, "Failed to load wallet \"%s\": %v\n",
             filename, err)
         return
     }
-    printWalletEntry(&w, label, address, public, secret)
+    printWallet(w, label, address, public, secret, entry)
 }
 
-func printWalletEntry(w *visor.ReadableWalletEntry, label, address, public,
+func printWallet(w *visor.ReadableWallet, label, address, public, secret bool,
+    entry int) {
+    if entry >= len(w.Entries) || entry < -1 {
+        fmt.Fprintf(os.Stderr, "Invalid entry number %d", entry)
+        os.Exit(1)
+    }
+    if entry == -1 {
+        for _, e := range w.Entries {
+            printEntry(e, label, address, public, secret)
+        }
+    } else {
+        printEntry(w.Entries[entry], label, address, public, secret)
+    }
+}
+
+func printEntry(w visor.ReadableWalletEntry, label, address, public,
     secret bool) {
     if public {
         if label {
@@ -117,14 +136,14 @@ func main() {
     parseFlags()
 
     if outFile != "" {
-        w := createWalletEntry(outFile, testNetwork)
+        w := createWallet(outFile, addressVersion, populateTo)
         if w != nil {
-            printWalletEntry(w, labelStdout, printAddress, printPublic,
-                printSecret)
+            printWallet(w, labelStdout, printAddress, printPublic, printSecret,
+                entryNumber)
         }
     }
     if inFile != "" {
-        printWalletEntryFromFile(inFile, labelStdout, printAddress,
-            printPublic, printSecret)
+        printWalletFromFile(inFile, labelStdout, printAddress, printPublic,
+            printSecret, entryNumber)
     }
 }

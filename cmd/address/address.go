@@ -1,7 +1,6 @@
 package main
 
 import (
-    "encoding/json"
     "flag"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
@@ -56,7 +55,7 @@ func parseFlags() {
     }
 }
 
-func createWalletEntry(filename string) *visor.ReadableWalletEntry {
+func createWalletEntry(filename string) (*visor.ReadableWalletEntry, error) {
     pub, sec := coin.GenerateKeyPair()
     addr := coin.AddressFromPubKey(pub)
 
@@ -67,46 +66,27 @@ func createWalletEntry(filename string) *visor.ReadableWalletEntry {
     }
 
     rw := visor.NewReadableWalletEntry(&w)
-
-    b, err := json.Marshal(rw)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to encode wallet entry\n")
-        fmt.Fprintf(os.Stderr, "%v\n", err)
-        return nil
-    }
-
-    flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-    f, err := os.OpenFile(filename, flags, 0600)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to open \"%s\" for writing\n",
-            filename)
-        fmt.Fprintf(os.Stderr, "%v\n", err)
-        return nil
-    }
-    defer f.Close()
-    _, err = f.Write(b)
-    if err == nil {
+    if err := rw.Save(filename); err == nil {
         fmt.Printf("Wrote wallet entry to \"%s\"\n", filename)
+        return &rw, nil
     } else {
         fmt.Fprintf(os.Stderr, "Failed to write wallet entry to \"%s\"\n",
             filename)
-        fmt.Fprintf(os.Stderr, "%v\n", err)
-        return nil
+        return nil, err
     }
-
-    return &rw
 }
 
 func printWalletEntryFromFile(filename string, label, address, public,
-    secret bool) {
+    secret bool) error {
     // Read wallet entry from disk
     w, err := visor.LoadReadableWalletEntry(filename)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Failed to load wallet entry \"%s\": %v\n",
             filename, err)
-        return
+        return err
     }
     printWalletEntry(&w, label, address, public, secret)
+    return nil
 }
 
 func printWalletEntry(w *visor.ReadableWalletEntry, label, address, public,
@@ -131,6 +111,13 @@ func printWalletEntry(w *visor.ReadableWalletEntry, label, address, public,
     }
 }
 
+func handleError(err error) {
+    if err != nil {
+        fmt.Fprintln(os.Stderr, err)
+        os.Exit(1)
+    }
+}
+
 func main() {
     registerFlags()
     parseFlags()
@@ -138,14 +125,14 @@ func main() {
     coin.SetAddressVersion(addressVersion)
 
     if outFile != "" {
-        w := createWalletEntry(outFile)
-        if w != nil {
-            printWalletEntry(w, labelStdout, printAddress, printPublic,
-                printSecret)
-        }
+        w, err := createWalletEntry(outFile)
+        handleError(err)
+        printWalletEntry(w, labelStdout, printAddress, printPublic,
+            printSecret)
     }
     if inFile != "" {
-        printWalletEntryFromFile(inFile, labelStdout, printAddress,
+        err := printWalletEntryFromFile(inFile, labelStdout, printAddress,
             printPublic, printSecret)
+        handleError(err)
     }
 }

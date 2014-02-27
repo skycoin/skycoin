@@ -108,7 +108,7 @@ func NewVisor(c VisorConfig) *Visor {
     // Load the wallet
     wallet := Wallet(nil)
     if c.IsMaster {
-        wallet = createMasterWallet(c.MasterKeys)
+        wallet = CreateMasterWallet(c.MasterKeys)
     } else {
         wallet = loadSimpleWallet(c.WalletFile, c.WalletSizeMin)
     }
@@ -151,7 +151,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
         Config:      c,
         blockchain:  coin.NewBlockchain(),
         blockSigs:   NewBlockSigs(),
-        Unconfirmed: nil,
+        Unconfirmed: NewUnconfirmedTxnPool(),
         Wallet:      nil,
     }
 }
@@ -579,7 +579,7 @@ func loadSimpleWallet(filename string, sizeMin int) *SimpleWallet {
         if err == nil {
             logger.Info("Saved wallet file to \"%s\"", filename)
         } else {
-            log.Panicf("Failed to save wallet file to \"%s\": ", filename,
+            log.Panicf("Failed to save wallet file to \"%s\": %v", filename,
                 err)
         }
     }
@@ -587,7 +587,7 @@ func loadSimpleWallet(filename string, sizeMin int) *SimpleWallet {
 }
 
 // Creates a wallet with a single master entry
-func createMasterWallet(master WalletEntry) *SimpleWallet {
+func CreateMasterWallet(master WalletEntry) *SimpleWallet {
     w := NewSimpleWallet()
     if err := w.AddEntry(master); err != nil {
         log.Panic("Failed to add master wallet entry: %v", err)

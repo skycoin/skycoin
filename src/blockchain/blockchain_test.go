@@ -1093,21 +1093,21 @@ func TestCreateMasterWallet(t *testing.T) {
     defer cleanupVisor()
     cleanupVisor()
     we := NewWalletEntry()
-    w := createMasterWallet(we)
+    w := CreateMasterWallet(we)
     assert.Equal(t, len(w.Entries), 1)
     assert.Equal(t, w.GetAddresses()[0], we.Address)
 
     // Having a wallet file present should not affect loading master wallet
     w.Save(testWalletFile)
     we = NewWalletEntry()
-    w = createMasterWallet(we)
+    w = CreateMasterWallet(we)
     assert.Equal(t, len(w.Entries), 1)
     assert.Equal(t, w.GetAddresses()[0], we.Address)
 
     // Creating with an invalid wallet entry should panic
     we = NewWalletEntry()
     we.Secret = coin.SecKey{}
-    assert.Panics(t, func() { createMasterWallet(we) })
+    assert.Panics(t, func() { CreateMasterWallet(we) })
 }
 
 func TestLoadBlockchain(t *testing.T) {

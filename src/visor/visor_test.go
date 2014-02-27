@@ -315,7 +315,7 @@ func TestNewMinimalVisor(t *testing.T) {
     vc.WalletSizeMin = 10000
     v := NewMinimalVisor(vc)
     assert.Equal(t, v.Config, vc)
-    assert.Nil(t, v.Unconfirmed)
+    assert.NotNil(t, v.Unconfirmed)
     assert.Nil(t, v.Wallet)
     assert.Equal(t, len(v.blockchain.Blocks), 0)
     assert.Equal(t, len(v.blockSigs.Sigs), 0)

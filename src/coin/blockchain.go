@@ -41,18 +41,6 @@ var (
 // Tx.Uxi() - set of outputs consumed by transaction
 // Tx.Uxo() - set of outputs created by transaction
 
-//Deprecate
-// block time requestion is handled in top level
-// genesis coin volume is passed into genesis
-const (
-    // If the block header time is further in the future than this, it is
-    // rejected.
-    blockTimeFutureMultipleMax uint64 = 20              //deprecate
-    genesisCoinVolume          uint64 = 100 * 1e6 * 1e6 //100 million coins
-    genesisCoinHours           uint64 = 1024 * 1024
-    //each coin is one million droplets, which are the base unit
-)
-
 type Block struct {
     Head BlockHeader
     Body BlockBody
@@ -91,8 +79,8 @@ type Block struct {
 */
 
 //must pass in time
-func newBlock(prev *Block, creationInterval uint64) Block {
-    header := newBlockHeader(&prev.Head, creationInterval)
+func newBlock(prev *Block, current_time uint64) Block {
+    header := newBlockHeader(&prev.Head, current_time)
     return Block{Head: header, Body: BlockBody{}}
 }
 
@@ -131,12 +119,16 @@ func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
     return Transaction{}, false
 }
 
-func newBlockHeader(prev *BlockHeader, creationInterval uint64) BlockHeader {
+func newBlockHeader(prev *BlockHeader, current_time uint64) BlockHeader {
     // TODO -- deprecate creationInterval in favor of clock time
+    
+    if current_time < prev.Time {
+        log.Panic("Cannot create block with early timestamp than previous block")
+    }
     return BlockHeader{
         Version:  prev.Version,
         PrevHash: prev.Hash(),
-        Time:     prev.Time + creationInterval,
+        Time:     current_time,
         BkSeq:    prev.BkSeq + 1,
         // Make sure to set the fee
         Fee: 0,
@@ -194,23 +186,25 @@ func NewBlockchain() *Blockchain {
 // Creates a genesis block with a new timestamp
 // TODO: Deprecate
 func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
-    return self.CreateGenesisBlock(genesisAddress, Now())
+    return self.CreateGenesisBlock(genesisAddress, Now(), 100e6)
 }
 
 // Creates a genesis block and applies it against chain
 // Takes in time as parameter
 // Todo, take in number of coins
 func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
-    timestamp uint64) Block {
+    timestamp uint64, genesisCoins uint64) Block {
     logger.Info("Creating new genesis block with address %s",
         genesisAddress.String())
     if len(self.Blocks) > 0 {
         log.Panic("Genesis block already created")
     }
     b := Block{}
+    //Why is there a transaction in the genesis block?
     txn := Transaction{}
-    txn.PushOutput(genesisAddress, genesisCoinVolume, genesisCoinHours)
+    txn.PushOutput(genesisAddress, genesisCoinVolume, 0)
     b.Body.Transactions = append(b.Body.Transactions, txn)
+
     b.Head.Time = timestamp
     b.UpdateHeader()
     self.Blocks = append(self.Blocks, b)
@@ -223,8 +217,8 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
         Body: UxBody{
             SrcTransaction: txn.Hash(),
             Address:        genesisAddress,
-            Coins:          genesisCoinVolume,
-            Hours:          genesisCoinHours,
+            Coins:          genesisCoins,
+            Hours:          0, //zero genesis coins
         },
     }
     self.Unspent.Add(ux)
@@ -248,8 +242,14 @@ func (self *Blockchain) Time() uint64 {
 // TODO: remove blocksize (soft limit)
 // TODO: remove creation interval
 // TODO: require block creation time as input to function
-func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
-    creationInterval uint64, maxBlockSize int) (Block, error) {
+
+//func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
+//    creationInterval uint64, maxBlockSize int) (Block, error) {
+// Note: maxBlockSize must be enforced outside of coin parser.
+// Note: creationInterval!?
+
+func (self *Blockchain) NewBlockFromTransactions(txns Transactions) 
+(Block, error) {
     if creationInterval == 0 {
         log.Panic("Creation interval must be > 0")
     }

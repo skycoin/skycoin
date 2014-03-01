@@ -5,7 +5,7 @@ import (
     "github.com/nictuku/dht"
     "github.com/skycoin/gnet"
     "github.com/skycoin/pex"
-    "github.com/skycoin/skycoin/src/coin"
+    //"github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "strings"

@@ -4,19 +4,20 @@ import (
     "errors"
     "fmt"
     "github.com/skycoin/gnet"
-    "github.com/skycoin/skycoin/src/coin"
+    //"github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
-    "github.com/skycoin/skycoin/src/visor"
+    //"github.com/skycoin/skycoin/src/visor"
     "sort"
     "time"
 )
 
+
 type VisorConfig struct {
-    Config visor.VisorConfig
+    //Config visor.VisorConfig
     // Disabled the visor completely
     Disabled bool
     // Location of master keys
-    MasterKeysFile string
+    //MasterKeysFile string
     // How often to request blocks from peers
     BlocksRequestRate time.Duration
     // How often to announce our blocks to peers
@@ -29,9 +30,9 @@ type VisorConfig struct {
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:                     visor.NewVisorConfig(),
+        //Config:                     visor.NewVisorConfig(),
         Disabled:                   false,
-        MasterKeysFile:             "",
+        //MasterKeysFile:             "",
         BlocksRequestRate:          time.Minute * 5,
         BlocksAnnounceRate:         time.Minute * 15,
         BlocksResponseCount:        20,
@@ -39,16 +40,9 @@ func NewVisorConfig() VisorConfig {
     }
 }
 
-func (self *VisorConfig) LoadMasterKeys() {
-    if self.Disabled {
-        return
-    }
-    self.Config.MasterKeys = visor.MustLoadWalletEntry(self.MasterKeysFile)
-}
-
 type Visor struct {
     Config VisorConfig
-    Visor  *visor.Visor
+    //Visor  *visor.Visor
     // Peer-reported blockchain length.  Use to estimate download progress
     blockchainLengths map[string]uint64
 }
@@ -66,6 +60,8 @@ func NewVisor(c VisorConfig) *Visor {
 }
 
 // Closes the Wallet, saving it to disk
+
+/*
 func (self *Visor) Shutdown() {
     if self.Config.Disabled {
         return
@@ -97,6 +93,7 @@ func (self *Visor) Shutdown() {
         logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
     }
 }
+*/
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {

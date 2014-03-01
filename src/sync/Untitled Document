@@ -1,0 +1,11 @@
+package daemon
+
+import (
+    "crypto/sha256"
+    "hash"
+)
+
+var (
+    sha256Hash    hash.Hash = sha256.New()
+    ripemd160Hash hash.Hash = ripemd160.New()
+)

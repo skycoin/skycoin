@@ -160,7 +160,8 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
     if self.Config.IsMaster {
         b = self.blockchain.CreateMasterGenesisBlock(addr)
     } else {
-        b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp)
+        b = self.blockchain.CreateGenesisBlock(addr,
+            self.Config.GenesisTimestamp)
     }
     sb := SignedBlock{}
     if self.Config.IsMaster {
@@ -172,7 +173,8 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
         }
     }
     self.blockSigs.record(&sb)
-    err := self.blockSigs.Verify(self.Config.MasterKeys.Public, self.blockchain)
+    err := self.blockSigs.Verify(self.Config.MasterKeys.Public,
+        self.blockchain)
     if err != nil {
         log.Panicf("Signed the genesis block, but its invalid: %v", err)
     }

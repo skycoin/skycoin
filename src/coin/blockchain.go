@@ -15,21 +15,13 @@ var (
     DebugLevel2 = true //enable checks for impossible conditions
 )
 
-//Warning:
-//10e6 is 10 million
-//1e6 is 1 million
+//Warning: 10e6 is 10 million, 1e6 is 1 million
 
 // Note: DebugLevel1 adds additional checks for hash collisions that
 // are unlikely to occur. DebugLevel2 adds checks for conditions that
 // can only occur through programmer error and malice.
 
-// Note: Handling of Debug Level 2 errors
-// DebugLevel2 errors should be logged and automaticly reported to network,
-// with parameters needed to replicate the error on third party system.
-// Examples of DebugLevel2 errors which require reporting are generated seckey
-// that pass seckey validation but fail signing tests.
-
-//Note: a droplet is the base coin unit. Each Skycoin is one million droplets
+// Note: a droplet is the base coin unit. Each Skycoin is one million droplets
 
 //Termonology:
 // UXTO - unspent transaction outputs
@@ -109,6 +101,7 @@ func (self *Block) String() string {
 // Returns the Transaction and whether it was found or not
 // TODO -- build a private index on the block, or a global blockchain one
 // mapping txns to their block + tx index
+// TODO: Deprecate? Utility Function
 func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
     txns := self.Body.Transactions
     for i, _ := range txns {
@@ -120,7 +113,6 @@ func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
 }
 
 func newBlockHeader(prev *BlockHeader, current_time uint64) BlockHeader {
-    // TODO -- deprecate creationInterval in favor of clock time
     
     if current_time < prev.Time {
         log.Panic("Cannot create block with early timestamp than previous block")
@@ -181,12 +173,6 @@ func NewBlockchain() *Blockchain {
         Blocks:  make([]Block, 0),
         Unspent: NewUnspentPool(),
     }
-}
-
-// Creates a genesis block with a new timestamp
-// TODO: Deprecate
-func (self *Blockchain) CreateMasterGenesisBlock(genesisAddress Address) Block {
-    return self.CreateGenesisBlock(genesisAddress, Now(), 100e6)
 }
 
 // Creates a genesis block and applies it against chain
@@ -551,7 +537,7 @@ func (self *Blockchain) verifyTransactions(txns Transactions) error {
 // The Transaction hash is used to arbitrate between double spends.
 // txns must be sorted by hash.
 func (self *Blockchain) ArbitrateTransactions(txns Transactions) Transactions {
-    newtxns, err := self.verifyBlockHeader(txns, true)
+    newtxns, err := self.processTransactions(txns, true)
     if err != nil {
         log.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
     }

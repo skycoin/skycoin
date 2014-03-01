@@ -8,28 +8,10 @@ import(
 )
 
 type ServerConfig struct {
-    //Config Blockchain.ServerConfig
-    // Disabled the Blockchain completely
-    //Disabled bool
-
-    // How often to request blocks from peers
-    //BlocksRequestRate time.Duration
-    
-    // How often to announce our blocks to peers
-    //BlocksAnnounceRate time.Duration
-    
-    // How many blocks to respond with to a GetBlocksMessage
-    //BlocksResponseCount uint64
-    // How often to rebroadcast txns that we are a party to
-    //TransactionRebroadcastRate time.Duration
 }
 
 func NewServerConfig() ServerConfig {
     return ServerConfig{
-        //BlocksRequestRate:          time.Minute * 5,
-        //BlocksAnnounceRate:         time.Minute * 15,
-        //BlocksResponseCount:        20,
-        //TransactionRebroadcastRate: time.Minute * 5,
     }
 }
 

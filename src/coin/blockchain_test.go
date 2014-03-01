@@ -147,10 +147,10 @@ func TestConstantsStayConstant(t *testing.T) {
 
 func TestNewBlock(t *testing.T) {
     prev := Block{Head: BlockHeader{Version: 0x02, Time: 100, BkSeq: 0}}
-    b := newBlock(&prev, 33)
+    b := newBlock(&prev, 133) //newBlock takes in absolute, not relative time1
     assert.Equal(t, b.Body, BlockBody{})
     assert.Equal(t, b.Head.PrevHash, prev.HashHeader())
-    assert.Equal(t, b.Head.Time, prev.Head.Time+33)
+    assert.Equal(t, b.Head.Time, 133)
     assert.Equal(t, b.Head.BkSeq, uint64(1))
 }
 

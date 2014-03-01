@@ -157,12 +157,12 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 func (self *Visor) CreateGenesisBlock() SignedBlock {
     b := coin.Block{}
     addr := self.Config.MasterKeys.Address
-    if self.Config.IsMaster {
-        b = self.blockchain.CreateMasterGenesisBlock(addr)
-    } else {
-        b = self.blockchain.CreateGenesisBlock(addr,
-            self.Config.GenesisTimestamp)
-    }
+
+    //TODO: both master and slave have the same genesis block!!!
+    //!!! master should not have different genesis block than slaves
+
+    b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp, 100e6)
+
     sb := SignedBlock{}
     if self.Config.IsMaster {
         sb = self.signBlock(b)

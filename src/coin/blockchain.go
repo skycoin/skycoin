@@ -202,7 +202,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     b := Block{}
     //Why is there a transaction in the genesis block?
     txn := Transaction{}
-    txn.PushOutput(genesisAddress, genesisCoinVolume, 0)
+    txn.PushOutput(genesisAddress, genesisCoins, 0)
     b.Body.Transactions = append(b.Body.Transactions, txn)
 
     b.Head.Time = timestamp
@@ -248,15 +248,12 @@ func (self *Blockchain) Time() uint64 {
 // Note: maxBlockSize must be enforced outside of coin parser.
 // Note: creationInterval!?
 
-func (self *Blockchain) NewBlockFromTransactions(txns Transactions) 
-(Block, error) {
-    if creationInterval == 0 {
-        log.Panic("Creation interval must be > 0")
-    }
-    b := newBlock(self.Head(), creationInterval)
+func (self *Blockchain) NewBlockFromTransactions(txns Transactions, current_time uint64) (Block, error) {
+    b := newBlock(self.Head(), current_time)
     newTxns := self.ArbitrateTransactions(txns)
     // Restrict txns by size
-    newTxns = newTxns.TruncateBytesTo(maxBlockSize)
+    //newTxns = newTxns.TruncateBytesTo(maxBlockSize)
+    // Note: size limits,soft limits enforced at higher level
     if len(newTxns) == 0 {
         return Block{}, errors.New("No valid transactions")
     }
@@ -554,7 +551,7 @@ func (self *Blockchain) verifyTransactions(txns Transactions) error {
 // The Transaction hash is used to arbitrate between double spends.
 // txns must be sorted by hash.
 func (self *Blockchain) ArbitrateTransactions(txns Transactions) Transactions {
-    newtxns, err := self.processTransactions(txns, true)
+    newtxns, err := self.verifyBlockHeader(txns, true)
     if err != nil {
         log.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
     }
@@ -669,7 +666,7 @@ func verifyBlockHeader(head *Block, b *Block) error {
     if b.Head.BkSeq != head.Head.BkSeq+1 {
         return errors.New("BkSeq invalid")
     }
-    //check Time, give some room for error and clock skew
+    //check Time, only requirement is that its monotonely increasing
     if b.Head.Time <= head.Head.Time {
         return errors.New("Block time must be > head time")
     }

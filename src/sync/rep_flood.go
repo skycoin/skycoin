@@ -77,7 +77,6 @@ type BlobReplicator struct {
 	d *Daemon //... need for sending messages
 }
 
-
 //Adds blob replicator to Daemon
 func (d *Daemon) NewBlobReplicator(channel uint16, callback &BlobCallback) *BlobReplicator {
 	br := BlobReplicator {
@@ -92,9 +91,9 @@ func (d *Daemon) NewBlobReplicator(channel uint16, callback &BlobCallback) *Blob
 }
 
 //Must set callback function for handling blob data
-func (self *BlobReplicator) SetCallback(function &BlobCallback) {
-	self.BlobCallback = function
-}
+//func (self *BlobReplicator) SetCallback(function &BlobCallback) {
+//	self.BlobCallback = function
+//}
 
 //inject blobs at startup
 func (self *BlobReplicator) InjectBlob(data []byte) (error) {
@@ -124,20 +123,24 @@ func (self *BlobReplicator) HasBlob(hash SHA256) bool {
 /*
 	Networking:
 
-	There are 3 packets
-	- announce object (by hash)
-	- get object from hash
-	- get list of all hashes a peer has
+	====================================
+	| Four Operations:                 |
+	| - request blob                   |
+	| - receive blob                   |
+	| - tell friends about blob        |
+	| - ask friend about all his blobs |
+	====================================
 
+	There are 4 packets
+	- announce blob to peers (by hash)
+	- get list of all hashes a peer has
+	- request blob data (by blob hash)
+	- receive blob data
+
+	//TODO: ask peers about their blobs on connect
 */
 
-//deprecated. Should only broadcast announce
-//how do i send to just one peer
-func (self *BlobReplicator) broadcastBlobData(blob Blob) {
-	m := self.newBlobDataMessage(blob)
-	self.d.pool.Pool.BroadcastMessage(m)
-}
-
+//Broadcast anounce
 func (self *BlobReplicator) broadcastBlobAnnounce(blob Blob) {
 	var hashlist []SHA256
 	hashlist = append(hashlist, blob.Hash)
@@ -145,6 +148,17 @@ func (self *BlobReplicator) broadcastBlobAnnounce(blob Blob) {
 	self.d.pool.Pool.BroadcastMessage(m)
 }
 
+func (self *BlobReplicator) broadcastBlobHashlistRequest(blob Blob) {
+	m := NewGetBlobListMessage()
+	self.d.pool.Pool.BroadcastMessage(m)
+}
+
+
+/*
+	------------------------------
+	- Blob Data Message          -
+	------------------------------
+*/
 
 
 //message containing a blob
@@ -184,7 +198,6 @@ func (self *BlobDataMessage) Process(d *Daemon) {
 	------------------------------
 	- Blob Announcemence Message -
 	------------------------------
-
 
 	//WARNING: 
 	- If two peers announce data, will make download request from both peers
@@ -276,92 +289,42 @@ func (self *GetBlobsMessage) Process(d *Daemon) {
     }
 }
 
-/*
+//	--------------------------------------
+//	- Request Blob Hash List -
+//  --------------------------------------
 
+//call this this on connect for new clients
 
-*/
-
-/*
-type SendingTxnsMessage interface {
-    GetTxns() []coin.SHA256
-}
-
-
-func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *GiveTxnsMessage) Process(d *Daemon) {
-    if d.Sync.Config.Disabled {
-        return
-    }
-    hashes := make([]coin.SHA256, 0, len(self.Txns))
-    // Update unconfirmed pool with these transactions
-    for _, txn := range self.Txns {
-        // Only announce transactions that are new to us, so that peers can't
-        // spam relays
-        if err, known := d.Sync.Sync.RecordTxn(txn); err == nil && !known {
-            hashes = append(hashes, txn.Hash())
-        } else {
-            logger.Warning("Failed to record txn: %v", err)
-        }
-    }
-    // Announce these transactions to peers
-    if len(hashes) != 0 {
-        m := NewAnnounceTxnsMessage(hashes)
-        d.Pool.Pool.BroadcastMessage(m)
-    }
-}
-*/
-
-
-/*
-*/
-
-/*
-type GiveTxnsMessage struct {
-    Txns coin.Transactions
+type GetBlobListMessage struct {
+	Channel uint16
     c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
-    return &GiveTxnsMessage{
-        Txns: txns,
-    }
+func (self *BlobReplicator) NewGetBlobListMessage() *GetBlobListMessage {   
+	var bl GetBlobList
+    bl.Channel = self.Channel
+    return &bm
 }
-*/
 
-// Broadcasts a single transaction to all peers.
-/*
-func (self *Sync) broadcastTransaction(t coin.Transaction, pool *Pool) {
-    if self.Config.Disabled {
-        return
-    }
-    m := NewGiveTxnsMessage(coin.Transactions{t})
-    logger.Debug("Broadcasting GiveTxnsMessage to %d conns",
-        len(pool.Pool.Pool))
-    pool.Pool.BroadcastMessage(m)
+//deprecate, boiler plate
+func (self *GetBlobListMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
-*/
 
-// Resends a known UnconfirmedTxn.
+func (self *GetBlobListMessage) Process(d *Daemon) {
+    br := d.GetBlobReplicator(self.Channel)
+    if br == nil {
+    	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
+    }
 
-/*
-func (self *Sync) ResendTransaction(h coin.SHA256, pool *Pool) {
-    if self.Config.Disabled {
-        return
-    }
-    if ut, ok := self.Sync.Unconfirmed.Txns[h]; ok {
-        self.broadcastTransaction(ut.Txn, pool)
-    }
-    return
+	//list of hashes for local blobs
+	var hashlist []SHA256
+	for k, _ := range br.BlobMap {
+		hashlist = append(hashlist, key)
+	}
+
+	m :=  NewAnnounceBlobs(hashlist)
+   	d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
-*/

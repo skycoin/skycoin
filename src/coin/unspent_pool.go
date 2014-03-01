@@ -108,7 +108,8 @@ func (self *UnspentPool) DelMultiple(hashes []SHA256) {
 }
 
 // Returns all Unspents for a single address
-// Warning: Not threadsafe. User application should not be querying this
+// Warning: Not threadsafe. 
+// Deprecate: User application should not be querying this
 func (self *UnspentPool) AllForAddress(a Address) UxArray {
     uxo := make(UxArray, 0)
     for _, ux := range self.Pool {
@@ -120,7 +121,8 @@ func (self *UnspentPool) AllForAddress(a Address) UxArray {
 }
 
 // Returns Unspents for multiple addresses
-// Warning: Not threadsafe. User application should not be querying this
+// Warning: Not threadsafe.
+// Deprecate: User application should not be querying this
 func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUxOuts {
     m := make(map[Address]byte, len(addrs))
     for _, a := range addrs {

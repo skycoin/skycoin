@@ -236,8 +236,16 @@ func (self *Visor) createBlock() (SignedBlock, error) {
         return sb, errors.New("No transactions")
     }
     txns := self.Unconfirmed.RawTxns()
-    b, err := self.blockchain.NewBlockFromTransactions(txns,
-        self.Config.BlockCreationInterval, self.Config.MaxBlockSize)
+    
+    //apply size limit
+    newTxns = newTxns.TruncateBytesTo(self.Config.MaxBlockSize)
+    //current time
+    b, err := self.blockchain.NewBlockFromTransactions(txns, uint64(time.Now().Unix()))
+
+    if self.blockchain.Head().Head.Time  < b.Head.Time + self.Config.BlockCreationInterval {
+        log.Panic("trying to create block too soon")
+    }
+
     if err != nil {
         return sb, err
     }

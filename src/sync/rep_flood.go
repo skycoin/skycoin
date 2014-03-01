@@ -3,6 +3,7 @@ package daemon
 import (
     "crypto/sha256"
     "hash"
+    "errors"
 )
 
 var (
@@ -13,8 +14,12 @@ var (
 /*
 	Replication for flood objects
 	- objects are referenced by hash
-	- objects are verified by hookin 
-	- 
+	- objects are verified by callback function
+	
+	How it Works
+	- clients poll each other for lists of hashs
+	- clients download data for hashes they dont have
+	- clients verify blobs as they come in, through a callback function
 */
 
 //data object that is replicated
@@ -31,17 +36,40 @@ func NewBlob(data []byte) Blob {
 	return blob
 }
 
+//type SomeFunction func(int, int)int)
+
+//this function is called when a new blob is received
+//if this function returns error, the blob is invalid and was rejected
+type BlobCallback func([]byte)(error)
+
 //Todo: add id for dealing with multiple blob types
 type BlobReplicator struct {
-	HashList []SHA256 
+	BlobMap map[SHA256]Blob
+	BlobCallback *BlobCallback //function which verifies the blob
+}
 
+func NewBlobReplicator() BlobReplicator {
+	return BlobReplicator {
+		BlobMap : new(map[SHA256]Blob),
+	} 
+}
+
+//Must set callback function for handling blob data
+func (self *BlobReplicator) SetCallback(function &BlobCallback) {
+	self.BlobCallback = function
+}
+
+//inject blobs at startup
+func (self *BlobReplicator) InjectBlob(data []byte) (error) {
+	blob := NewBlob(data)
+	_, ok := self.BlobMap[blob.Hash]; ok == true {
+		log.Panic("InjectBloc, fail, duplicate")
+		return errors.New("InjectBlob, fail, duplicate")
+	}
+	self.BlobMap[blob.Hash] = blob
 }
 
 
-func (self *BlobReplicator) InjectBloc(data []byte) {
-
-
-}
 //
 
 

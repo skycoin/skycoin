@@ -8,7 +8,6 @@ import (
 
 var (
     sha256Hash    hash.Hash = sha256.New()
-    ripemd160Hash hash.Hash = ripemd160.New()
 )
 
 /*
@@ -36,22 +35,30 @@ func NewBlob(data []byte) Blob {
 	return blob
 }
 
-//type SomeFunction func(int, int)int)
-
 //this function is called when a new blob is received
 //if this function returns error, the blob is invalid and was rejected
 type BlobCallback func([]byte)(error)
 
 //Todo: add id for dealing with multiple blob types
 type BlobReplicator struct {
+	Channel uint16 //for multiple replicators
 	BlobMap map[SHA256]Blob
 	BlobCallback *BlobCallback //function which verifies the blob
+	d *Daemon //... need for sending messages
 }
 
-func NewBlobReplicator() BlobReplicator {
-	return BlobReplicator {
+
+//Adds blob replicator to Daemon
+func (d *Daemon) NewBlobReplicator(channel uint16, callback &BlobCallback) *BlobReplicator {
+	br := BlobReplicator {
+		Channel : channel
 		BlobMap : new(map[SHA256]Blob),
-	} 
+		BlobCallback : callback,
+		d : d,
+	}
+	//Todo, check that daemon doesnt have other channels
+	d.BlobReplicators = append(d.BlobReplicators, &br)
+	return br
 }
 
 //Must set callback function for handling blob data
@@ -69,46 +76,65 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 	self.BlobMap[blob.Hash] = blob
 }
 
+func (self *BlobReplicator) PruneBlob(data []byte) (error) {
 
-//
+}
 
 
+func (self *BlobReplicator) BroadcastBlob(blob Blob) {
+	m := NewBlobMessage(blob)
+	self.d.pool.Pool.BroadcastMessage(m)
+}
 
-// Broadcasts any txn that we are a party to
+//message containing a blob
+type BlobMessage struct {
+	//Channel int16
+	Data []byte
+}
+
+func NewBlobMessage(blob Blob) *BlobMessage {
+	bm := BlobMessage{}
+	bm.Data = make([]byte, len(blob.Data))
+	copy(bm.Data, blob.Data)
+    return &bm
+}
+
+func (self *BlobMessage) Process(d *Daemon) {
+    //route to channel? or just process directly
+}
 
 /*
-func (self *Sync) BroadcastOurTransactions(pool *Pool) {
-    if self.Config.Disabled {
+func (self *GetTxnsMessage) Process(d *Daemon) {
+    if d.Sync.Config.Disabled {
         return
     }
-    since := self.Config.TransactionRebroadcastRate * 2
-    since = (since * 9) / 10
-    txns := self.Sync.Unconfirmed.GetOldOwnedTransactions(since)
-    logger.Debug("Reannouncing %d of our old transactions", len(txns))
-    if len(txns) == 0 {
+    // Locate all txns from the unconfirmed pool
+    // reply to sender with GiveTxnsMessage
+    known := d.Sync.Sync.Unconfirmed.GetKnown(self.Txns)
+    if len(known) == 0 {
         return
     }
-    hashes := make([]coin.SHA256, len(txns))
-    for i, tx := range txns {
-        hashes[i] = tx.Txn.Hash()
-    }
-    m := NewAnnounceTxnsMessage(hashes)
-    pool.Pool.BroadcastMessage(m)
+    logger.Debug("%d/%d txns known", len(known), len(self.Txns))
+    m := NewGiveTxnsMessage(known)
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 */
 
-// Sets all txns as announced
 /*
-func (self *Sync) SetTxnsAnnounced(txns []coin.SHA256) {
-    now := util.Now()
-    for _, h := range txns {
-        self.Sync.Unconfirmed.SetAnnounced(h, now)
+type GiveTxnsMessage struct {
+    Txns coin.Transactions
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
+    return &GiveTxnsMessage{
+        Txns: txns,
     }
 }
 */
-
 
 // Broadcasts a single transaction to all peers.
+/*
 func (self *Sync) broadcastTransaction(t coin.Transaction, pool *Pool) {
     if self.Config.Disabled {
         return
@@ -118,8 +144,11 @@ func (self *Sync) broadcastTransaction(t coin.Transaction, pool *Pool) {
         len(pool.Pool.Pool))
     pool.Pool.BroadcastMessage(m)
 }
+*/
 
 // Resends a known UnconfirmedTxn.
+
+/*
 func (self *Sync) ResendTransaction(h coin.SHA256, pool *Pool) {
     if self.Config.Disabled {
         return
@@ -129,6 +158,7 @@ func (self *Sync) ResendTransaction(h coin.SHA256, pool *Pool) {
     }
     return
 }
+*/
 
 /*
 
@@ -187,32 +217,6 @@ func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc
     return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *GetTxnsMessage) Process(d *Daemon) {
-    if d.Sync.Config.Disabled {
-        return
-    }
-    // Locate all txns from the unconfirmed pool
-    // reply to sender with GiveTxnsMessage
-    known := d.Sync.Sync.Unconfirmed.GetKnown(self.Txns)
-    if len(known) == 0 {
-        return
-    }
-    logger.Debug("%d/%d txns known", len(known), len(self.Txns))
-    m := NewGiveTxnsMessage(known)
-    d.Pool.Pool.SendMessage(self.c.Conn, m)
-}
-
-type GiveTxnsMessage struct {
-    Txns coin.Transactions
-    c    *gnet.MessageContext `enc:"-"`
-}
-
-func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
-    return &GiveTxnsMessage{
-        Txns: txns,
-    }
 }
 
 func (self *GiveTxnsMessage) GetTxns() []coin.SHA256 {

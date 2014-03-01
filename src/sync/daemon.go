@@ -207,6 +207,8 @@ type Daemon struct {
     ipCounts map[string]int
     // Message handling queue
     messageEvents chan MessageEvent
+
+    BlobReplicators []*BlobReplicator //blob replicator list
 }
 
 // Returns a Daemon with primitives allocated

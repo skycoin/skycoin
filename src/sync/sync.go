@@ -12,6 +12,10 @@ import (
 )
 
 
+/*
+Sync is useless
+*/
+
 type SyncConfig struct {
     //Config Sync.SyncConfig
     // Disabled the Sync completely
@@ -24,8 +28,10 @@ type SyncConfig struct {
     BlocksAnnounceRate time.Duration
     // How many blocks to respond with to a GetBlocksMessage
     BlocksResponseCount uint64
+    
+
     // How often to rebroadcast txns that we are a party to
-    TransactionRebroadcastRate time.Duration
+    //TransactionRebroadcastRate time.Duration
 }
 
 func NewSyncConfig() SyncConfig {

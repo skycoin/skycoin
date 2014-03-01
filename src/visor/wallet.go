@@ -338,6 +338,11 @@ func (self *ReadableWallet) Save(filename string) error {
     return util.SaveJSON(filename, self, 0600)
 }
 
+// Saves to filename, but won't overwrite existing
+func (self *ReadableWallet) SaveSafe(filename string) error {
+    return util.SaveJSONSafe(filename, self, 0600)
+}
+
 // Loads from filename
 func (self *ReadableWallet) Load(filename string) error {
     return util.LoadJSON(filename, self)

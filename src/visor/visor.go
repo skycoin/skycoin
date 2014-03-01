@@ -3,10 +3,7 @@ package visor
 import (
     "errors"
     "github.com/op/go-logging"
-    "github.com/skycoin/encoder"
     "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/util"
-    "io/ioutil"
     "log"
     "os"
     "time"
@@ -108,7 +105,7 @@ func NewVisor(c VisorConfig) *Visor {
     // Load the wallet
     wallet := Wallet(nil)
     if c.IsMaster {
-        wallet = createMasterWallet(c.MasterKeys)
+        wallet = CreateMasterWallet(c.MasterKeys)
     } else {
         wallet = loadSimpleWallet(c.WalletFile, c.WalletSizeMin)
     }
@@ -151,7 +148,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
         Config:      c,
         blockchain:  coin.NewBlockchain(),
         blockSigs:   NewBlockSigs(),
-        Unconfirmed: nil,
+        Unconfirmed: NewUnconfirmedTxnPool(),
         Wallet:      nil,
     }
 }
@@ -163,7 +160,8 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
     if self.Config.IsMaster {
         b = self.blockchain.CreateMasterGenesisBlock(addr)
     } else {
-        b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp)
+        b = self.blockchain.CreateGenesisBlock(addr,
+            self.Config.GenesisTimestamp)
     }
     sb := SignedBlock{}
     if self.Config.IsMaster {
@@ -175,7 +173,8 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
         }
     }
     self.blockSigs.record(&sb)
-    err := self.blockSigs.Verify(self.Config.MasterKeys.Public, self.blockchain)
+    err := self.blockSigs.Verify(self.Config.MasterKeys.Public,
+        self.blockchain)
     if err != nil {
         log.Panicf("Signed the genesis block, but its invalid: %v", err)
     }
@@ -464,12 +463,11 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     if err != nil {
         return tx, err
     }
-    if tx.Size() > self.Config.MaxBlockSize {
-        // TODO -- this can cause permanent failure to spend a given amount
-        log.Panicf("Created transaction too large")
+    if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize,
+        self.Config.CoinHourBurnFactor); err != nil {
+        log.Panicf("Created invalid spending txn: %v", err)
     }
-    err = self.blockchain.VerifyTransaction(tx)
-    if err != nil {
+    if err := self.blockchain.VerifyTransaction(tx); err != nil {
         log.Panicf("Created invalid spending txn: %v", err)
     }
     return tx, err
@@ -482,24 +480,11 @@ func (self *Visor) TotalBalance() Balance {
     return self.totalBalance(auxs)
 }
 
-// // Returns the total balance of the wallet including unconfirmed outputs
-// func (self *Visor) TotalBalancePredicted() Balance {
-//     auxs := self.getAvailableBalances()
-//     return self.totalBalance(auxs)
-// }
-
 // Returns the balance for a single address in the Wallet
 func (self *Visor) Balance(a coin.Address) Balance {
     uxs := self.blockchain.Unspent.AllForAddress(a)
     return self.balance(uxs)
 }
-
-// // Returns the balance for a single address in the Wallet, including
-// // unconfirmed outputs
-// func (self *Visor) BalancePredicted(a coin.Address) Balance {
-//     uxs := self.getAvailableBalance(a)
-//     return self.balance(uxs)
-// }
 
 // Computes the total balance for coin.Addresses and their coin.UxOuts
 func (self *Visor) totalBalance(auxs coin.AddressUxOuts) Balance {
@@ -522,25 +507,6 @@ func (self *Visor) balance(uxs []coin.UxOut) Balance {
     }
     return b
 }
-
-// // Returns the total of known Unspents available to us, and our own
-// // unconfirmed unspents
-// func (self *Visor) getAvailableBalances() coin.AddressUxOuts {
-//     addrs := self.Wallet.GetAddresses()
-//     auxs := self.blockchain.Unspent.AllForAddresses(addrs)
-//     uauxs := self.Unconfirmed.Unspent.AllForAddresses(addrs)
-//     logger.Warning("Confirmed unspents: %v\n", auxs)
-//     logger.Warning("Unconfirmed unspents: %v\n", uauxs)
-//     return auxs.Merge(uauxs, addrs)
-// }
-
-// // Returns the total of known unspents available for an address, including
-// // unconfirmed requests
-// func (self *Visor) getAvailableBalance(a coin.Address) []coin.UxOut {
-//     auxs := self.blockchain.Unspent.AllForAddress(a)
-//     uauxs := self.Unconfirmed.Unspent.AllForAddress(a)
-//     return append(auxs, uauxs...)
-// }
 
 // Returns an error if the coin.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
@@ -580,7 +546,7 @@ func loadSimpleWallet(filename string, sizeMin int) *SimpleWallet {
         if err == nil {
             logger.Info("Saved wallet file to \"%s\"", filename)
         } else {
-            log.Panicf("Failed to save wallet file to \"%s\": ", filename,
+            log.Panicf("Failed to save wallet file to \"%s\": %v", filename,
                 err)
         }
     }
@@ -588,67 +554,10 @@ func loadSimpleWallet(filename string, sizeMin int) *SimpleWallet {
 }
 
 // Creates a wallet with a single master entry
-func createMasterWallet(master WalletEntry) *SimpleWallet {
+func CreateMasterWallet(master WalletEntry) *SimpleWallet {
     w := NewSimpleWallet()
     if err := w.AddEntry(master); err != nil {
         log.Panic("Failed to add master wallet entry: %v", err)
     }
     return w
-}
-
-// Loads a coin.Blockchain from disk
-func LoadBlockchain(filename string) (*coin.Blockchain, error) {
-    bc := &coin.Blockchain{}
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return bc, err
-    }
-    err = encoder.DeserializeRaw(data, bc)
-    if err != nil {
-        return bc, err
-    }
-    logger.Info("Loaded blockchain from \"%s\"", filename)
-    logger.Debug("Rebuilding UnspentPool indices")
-    bc.Unspent.Rebuild()
-    return bc, nil
-}
-
-// Loads a blockchain but subdues errors into the logger, or panics.
-// If no blockchain is found, it creates a new empty one
-func loadBlockchain(filename string, genAddr coin.Address) *coin.Blockchain {
-    bc := &coin.Blockchain{}
-    created := false
-    if filename != "" {
-        var err error
-        bc, err = LoadBlockchain(filename)
-        if err == nil {
-            if len(bc.Blocks) == 0 {
-                log.Panic("Loaded empty blockchain")
-            }
-            loadedGenAddr := bc.Blocks[0].Body.Transactions[0].Out[0].Address
-            if loadedGenAddr != genAddr {
-                log.Panic("Configured genesis address does not match the " +
-                    "address in the blockchain")
-            }
-            created = true
-        } else {
-            if os.IsNotExist(err) {
-                logger.Info("No blockchain file, will create a new blockchain")
-            } else {
-                log.Panicf("Failed to load blockchain file \"%s\": %v",
-                    filename, err)
-            }
-        }
-    }
-    if !created {
-        bc = coin.NewBlockchain()
-    }
-    return bc
-}
-
-// Saves blockchain to disk
-func SaveBlockchain(bc *coin.Blockchain, filename string) error {
-    // TODO -- blockchain file must be forward compatible
-    data := encoder.Serialize(bc)
-    return util.SaveBinary(filename, data, 0644)
 }

@@ -513,7 +513,7 @@ func TestFullTransaction(t *testing.T) {
     bc := NewBlockchain()
     bc.CreateMasterGenesisBlock(a1)
     tx := Transaction{}
-    ux := bc.Unspent.Arr[0]
+    ux := bc.Unspent.Array()[0]
     tx.PushInput(ux.Hash())
     p2, s2 := GenerateKeyPair()
     a2 := AddressFromPubKey(p2)

@@ -58,11 +58,11 @@ var DaemonArgs = DaemonConfig{Config{
     CanSpend:       true,
 
     // Centralized network configuration
-    MasterPublic:     "03c2fc73628b77512dc14c123ea741e72d27dc455e6d01141a8e7a0a83fff1fb23",
+    MasterPublic:     "02887355c1d32bfdff37d16de654b0e64704deaaa0c8db93acbfade81220e59727",
     MasterChain:      false,
     MasterKeys:       "",
-    GenesisTimestamp: 1391649057,
-    GenesisSignature: "a1a09bee02a92fddaf34856aedde9c1ef626caaf31ada221fc2acc9212493e61064b32d4cfd92f38948e799f231f8c42428086405bbf42f9e913a149c0ca743f00",
+    GenesisTimestamp: 1393645856,
+    GenesisSignature: "a4feb6aac432b636e93e824d28f727c045fd7ba9cc7da92fd0a64db229b48dae46ebabc91284de55bed9a772f6450e46fa2743421d9c48fae813115f05413c9801",
 
     /* Developer options (don't parse these) */
 

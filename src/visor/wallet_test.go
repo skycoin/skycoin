@@ -60,7 +60,7 @@ func TestLoadWalletEntry(t *testing.T) {
     assert.NotNil(t, err)
 }
 
-func TestMustLoadLoadWalletEntry(t *testing.T) {
+func TestMustLoadWalletEntry(t *testing.T) {
     defer cleanupVisor()
     // File doesn't exist, panics
     assertFileNotExists(t, testWalletEntryFile)
@@ -116,6 +116,23 @@ func TestWalletEntryVerifyPublic(t *testing.T) {
     we3 := NewWalletEntry()
     we3.Address = we.Address
     assert.NotNil(t, we3.VerifyPublic())
+}
+
+func TestSimpleWalletGetEntries(t *testing.T) {
+    defer cleanupVisor()
+    w := NewSimpleWallet()
+    w.Populate(10)
+    entries := w.GetEntries()
+    assert.Equal(t, w.Entries, entries)
+}
+
+func TestSimpleWalletToReadable(t *testing.T) {
+    defer cleanupVisor()
+    w := NewSimpleWallet()
+    w.Populate(10)
+    rw := w.ToReadable()
+    w2 := NewSimpleWalletFromReadable(rw)
+    assert.Equal(t, w, w2)
 }
 
 func TestNewBalance(t *testing.T) {
@@ -326,6 +343,8 @@ func TestSaveLoadReadableWalletEntry(t *testing.T) {
     assert.Equal(t, rwe, rwe2)
     we2 := WalletEntryFromReadable(&rwe2)
     assert.Equal(t, we, we2)
+    // Overwriting fails
+    assert.NotNil(t, rwe.Save(testWalletEntryFile))
 }
 
 func TestReadableWalletEntryFromPubKey(t *testing.T) {
@@ -367,4 +386,7 @@ func TestSaveLoadReadableWallet(t *testing.T) {
     assert.Equal(t, rw, rw3)
     w3 := NewSimpleWalletFromReadable(rw3)
     assert.Equal(t, w, w3)
+
+    // overwriting fails
+    assert.NotNil(t, rw.SaveSafe(testWalletFile))
 }

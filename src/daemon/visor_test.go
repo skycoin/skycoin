@@ -43,6 +43,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
     mvc := visor.NewVisorConfig()
     mvc.IsMaster = true
     mvc.MasterKeys = mw
+    mvc.CoinHourBurnFactor = 0
     mv := visor.NewVisor(mvc)
     sb := mv.GetGenesisBlock()
 
@@ -86,6 +87,7 @@ func newVisorDaemon(vc VisorConfig) (*Daemon, chan int) {
     c := NewConfig()
     c.Daemon.DisableNetworking = true
     c.Visor = vc
+    c.Visor.Config.CoinHourBurnFactor = 0
     d := NewDaemon(c)
     return d, quit
 }

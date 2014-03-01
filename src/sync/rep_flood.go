@@ -102,7 +102,8 @@ func (self *BlobReplicator) newBlobMessage(blob Blob) *BlobMessage {
     return &bm
 }
 
-//Todo: Boiler plate, deprecate for Process
+//Todo: Boiler plate, Deprecate
+//recordMessageEvent is just checking for intro and calling process
 func (self *BlobMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc
@@ -124,23 +125,25 @@ func (self *BlobMessage) Process(d *Daemon) {
 
 */
 
-//use for responding to request for all blobs
 //use for anouncing single blob to all connected peers
+//use for responding to request for all blobs
 type AnnounceBlobsMessage struct {
 	Channel uint16
     BlobHashes []SHA256
     c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewAnnounceBlobs(hashes BlobHashes) *AnnounceBlobsMessage {
-    return &AnnounceBlobsMessage{
-        BlobHashes: hashes,
+func (self *BlobReplicator) NewAnnounceBlobs(blobs []Blob) *AnnounceBlobsMessage {
+    ab := AnnounceBlobsMessage{}
+    ab.Channel = self.Channel
+    for _,b := range blobs {
+    	ab.BlobHashes = append(ab.BlobHashes)
     }
+    return &ab
 }
 
-// Tells a peer that we have these transactions
-
-//boiler plate, fix this
+//Todo: Boiler plate, Deprecate
+//recordMessageEvent is just checking for intro and calling process
 func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc

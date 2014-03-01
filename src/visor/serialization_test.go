@@ -95,7 +95,7 @@ func TestLoadBlockchainPrivate(t *testing.T) {
 
     // Loading a blockchain with a different genesis address should panic
     vc := newMasterVisorConfig(t)
-    bc.CreateMasterGenesisBlock(vc.MasterKeys.Address)
+    bc.CreateGenesisBlock(vc.MasterKeys.Address, 0, 100e6)
     assert.Equal(t, len(bc.Blocks), 1)
     assert.Nil(t, SaveBlockchain(bc, testBlockchainFile))
     assertFileExists(t, testBlockchainFile)

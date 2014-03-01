@@ -238,17 +238,18 @@ func (self *Visor) createBlock() (SignedBlock, error) {
     txns := self.Unconfirmed.RawTxns()
     
     //apply size limit
-    newTxns = newTxns.TruncateBytesTo(self.Config.MaxBlockSize)
+    txns = txns.TruncateBytesTo(self.Config.MaxBlockSize)
     //current time
     b, err := self.blockchain.NewBlockFromTransactions(txns, uint64(time.Now().Unix()))
-
-    if self.blockchain.Head().Head.Time  < b.Head.Time + self.Config.BlockCreationInterval {
-        log.Panic("trying to create block too soon")
-    }
 
     if err != nil {
         return sb, err
     }
+
+    if self.blockchain.Head().Head.Time < b.Head.Time + self.Config.BlockCreationInterval {
+        return sb, errors.New("trying to create block too soon, must wait creation interval")
+    }
+
     return self.signBlock(b), nil
 }
 

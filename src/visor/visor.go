@@ -163,15 +163,31 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 
     b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp, 100e6)
 
-    sb := SignedBlock{}
+    //sb := SignedBlock{}
+
+    //master and slave should have same genesis block
+    sb := SignedBlock{
+            Block: b,
+            Sig:   self.Config.GenesisSignature,
+        }
+    /*
     if self.Config.IsMaster {
-        sb = self.signBlock(b)
+        log.Printf("Generating Genesis Block as Master \n")
+        sb = SignedBlock{
+            Block: b,
+            Sig:   self.Config.GenesisSignature,
+        }
+
+        //we dont have deterministic ECDSA so will generate a differnet signature
+        //sb = self.signBlock(b)
     } else {
+        log.Printf("Generating Genesis Block as Slave \n")
         sb = SignedBlock{
             Block: b,
             Sig:   self.Config.GenesisSignature,
         }
     }
+    */
     self.blockSigs.record(&sb)
     err := self.blockSigs.Verify(self.Config.MasterKeys.Public,
         self.blockchain)

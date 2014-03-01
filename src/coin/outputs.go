@@ -82,6 +82,7 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
 }
 
 // Array of Outputs
+// Used by unspent output pool, spent tests
 type UxArray []UxOut
 
 // Returns Array of hashes for the Ux in the UxArray.
@@ -168,6 +169,7 @@ func (self UxArray) Swap(i, j int) {
 
 type AddressUxOuts map[Address]UxArray
 
+//used once in /src/Visor
 func NewAddressUxOuts(uxs UxArray) AddressUxOuts {
     uxo := make(AddressUxOuts)
     for _, ux := range uxs {

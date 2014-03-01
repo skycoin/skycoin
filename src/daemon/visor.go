@@ -140,6 +140,7 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 }
 
 // Broadcasts any txn that we are a party to
+// TODO: deprecate, should only send to clients that request by hash
 func (self *Visor) BroadcastOurTransactions(pool *Pool) {
     if self.Config.Disabled {
         return
@@ -168,6 +169,7 @@ func (self *Visor) SetTxnsAnnounced(txns []coin.SHA256) {
 }
 
 // Sends a signed block to all connections.
+// TODO: deprecate, should only send to clients that request by hash
 func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
     if self.Config.Disabled {
         return

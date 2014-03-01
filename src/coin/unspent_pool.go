@@ -49,7 +49,8 @@ func (self *UnspentPool) Array() UxArray {
 func (self *UnspentPool) Add(ux UxOut) {
     h := ux.Hash()
     if self.Has(h) {
-        return
+        log.Panic("Fatal Hash Collision in UnspentPool")
+        return //This is fatal bug
     }
     self.Pool[h] = ux
     self.XorHash = self.XorHash.Xor(h)
@@ -107,6 +108,7 @@ func (self *UnspentPool) DelMultiple(hashes []SHA256) {
 }
 
 // Returns all Unspents for a single address
+// Warning: Not threadsafe. User application should not be querying this
 func (self *UnspentPool) AllForAddress(a Address) UxArray {
     uxo := make(UxArray, 0)
     for _, ux := range self.Pool {
@@ -118,6 +120,7 @@ func (self *UnspentPool) AllForAddress(a Address) UxArray {
 }
 
 // Returns Unspents for multiple addresses
+// Warning: Not threadsafe. User application should not be querying this
 func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUxOuts {
     m := make(map[Address]byte, len(addrs))
     for _, a := range addrs {

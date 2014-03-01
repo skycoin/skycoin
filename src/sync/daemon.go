@@ -239,7 +239,7 @@ func NewDaemon(config Config) *Daemon {
         messageEvents: make(chan MessageEvent,
             config.Pool.EventChannelSize),
     }
-    d.Gateway = NewGateway(config.Gateway, d)
+    //d.Gateway = NewGateway(config.Gateway, d)
     d.Messages.Config.Register()
     d.Pool.Init(d)
     d.Peers.Init()

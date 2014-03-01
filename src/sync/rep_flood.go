@@ -76,32 +76,155 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 	self.BlobMap[blob.Hash] = blob
 }
 
-func (self *BlobReplicator) PruneBlob(data []byte) (error) {
-
-}
+//remove blob, add to ignore list
+//func (self *BlobReplicator) PruneBlob(data []byte) (error) {
+// //if blob exists, remove it
+// //add block hash to ignore list
+//}
 
 
 func (self *BlobReplicator) BroadcastBlob(blob Blob) {
-	m := NewBlobMessage(blob)
+	m := self.newBlobMessage(blob)
 	self.d.pool.Pool.BroadcastMessage(m)
 }
 
 //message containing a blob
 type BlobMessage struct {
-	//Channel int16
+	Channel int16
 	Data []byte
 }
 
-func NewBlobMessage(blob Blob) *BlobMessage {
+func (self *BlobReplicator) newBlobMessage(blob Blob) *BlobMessage {
 	bm := BlobMessage{}
+	bm.Channel = self.Channel
 	bm.Data = make([]byte, len(blob.Data))
 	copy(bm.Data, blob.Data)
     return &bm
 }
 
-func (self *BlobMessage) Process(d *Daemon) {
-    //route to channel? or just process directly
+//Todo: Boiler plate, deprecate for Process
+func (self *BlobMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
+
+func (self *BlobMessage) Process(d *Daemon) {
+    //route to channel
+    for _, br := range d.BlobReplicators {
+    	if br.Channel == self.Channel {
+    		br.InjectBlob(self.Data)
+    		return
+    	}
+    }
+    log.Panic("Daemon Does Not Have Blob Replicator Channel")
+}
+
+/*
+
+*/
+
+//use for responding to request for all blobs
+//use for anouncing single blob to all connected peers
+type AnnounceBlobsMessage struct {
+	Channel uint16
+    BlobHashes []SHA256
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func NewAnnounceBlobs(hashes BlobHashes) *AnnounceBlobsMessage {
+    return &AnnounceBlobsMessage{
+        BlobHashes: hashes,
+    }
+}
+
+// Tells a peer that we have these transactions
+
+//boiler plate, fix this
+func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *AnnounceTxnsMessage) Process(d *Daemon) {
+    if d.Sync.Config.Disabled {
+        return
+    }
+    unknown := d.Sync.Sync.Unconfirmed.FilterKnown(self.Txns)
+    if len(unknown) == 0 {
+        return
+    }
+    m := NewGetTxnsMessage(unknown)
+    d.Pool.Pool.SendMessage(self.c.Conn, m)
+}
+
+/*
+
+
+*/
+type SendingTxnsMessage interface {
+    GetTxns() []coin.SHA256
+}
+
+
+func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+
+type GetTxnsMessage struct {
+    Txns []coin.SHA256
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func NewGetTxnsMessage(txns []coin.SHA256) *GetTxnsMessage {
+    return &GetTxnsMessage{
+        Txns: txns,
+    }
+}
+
+func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GiveTxnsMessage) GetTxns() []coin.SHA256 {
+    return self.Txns.Hashes()
+}
+
+func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GiveTxnsMessage) Process(d *Daemon) {
+    if d.Sync.Config.Disabled {
+        return
+    }
+    hashes := make([]coin.SHA256, 0, len(self.Txns))
+    // Update unconfirmed pool with these transactions
+    for _, txn := range self.Txns {
+        // Only announce transactions that are new to us, so that peers can't
+        // spam relays
+        if err, known := d.Sync.Sync.RecordTxn(txn); err == nil && !known {
+            hashes = append(hashes, txn.Hash())
+        } else {
+            logger.Warning("Failed to record txn: %v", err)
+        }
+    }
+    // Announce these transactions to peers
+    if len(hashes) != 0 {
+        m := NewAnnounceTxnsMessage(hashes)
+        d.Pool.Pool.BroadcastMessage(m)
+    }
+}
+
+
 
 /*
 func (self *GetTxnsMessage) Process(d *Daemon) {
@@ -159,94 +282,3 @@ func (self *Sync) ResendTransaction(h coin.SHA256, pool *Pool) {
     return
 }
 */
-
-/*
-
-*/
-
-type SendingTxnsMessage interface {
-    GetTxns() []coin.SHA256
-}
-
-// Tells a peer that we have these transactions
-type AnnounceTxnsMessage struct {
-    Txns []coin.SHA256
-    c    *gnet.MessageContext `enc:"-"`
-}
-
-func NewAnnounceTxnsMessage(txns []coin.SHA256) *AnnounceTxnsMessage {
-    return &AnnounceTxnsMessage{
-        Txns: txns,
-    }
-}
-
-func (self *AnnounceTxnsMessage) GetTxns() []coin.SHA256 {
-    return self.Txns
-}
-
-func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *AnnounceTxnsMessage) Process(d *Daemon) {
-    if d.Sync.Config.Disabled {
-        return
-    }
-    unknown := d.Sync.Sync.Unconfirmed.FilterKnown(self.Txns)
-    if len(unknown) == 0 {
-        return
-    }
-    m := NewGetTxnsMessage(unknown)
-    d.Pool.Pool.SendMessage(self.c.Conn, m)
-}
-
-type GetTxnsMessage struct {
-    Txns []coin.SHA256
-    c    *gnet.MessageContext `enc:"-"`
-}
-
-func NewGetTxnsMessage(txns []coin.SHA256) *GetTxnsMessage {
-    return &GetTxnsMessage{
-        Txns: txns,
-    }
-}
-
-func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *GiveTxnsMessage) GetTxns() []coin.SHA256 {
-    return self.Txns.Hashes()
-}
-
-func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *GiveTxnsMessage) Process(d *Daemon) {
-    if d.Sync.Config.Disabled {
-        return
-    }
-    hashes := make([]coin.SHA256, 0, len(self.Txns))
-    // Update unconfirmed pool with these transactions
-    for _, txn := range self.Txns {
-        // Only announce transactions that are new to us, so that peers can't
-        // spam relays
-        if err, known := d.Sync.Sync.RecordTxn(txn); err == nil && !known {
-            hashes = append(hashes, txn.Hash())
-        } else {
-            logger.Warning("Failed to record txn: %v", err)
-        }
-    }
-    // Announce these transactions to peers
-    if len(hashes) != 0 {
-        m := NewAnnounceTxnsMessage(hashes)
-        d.Pool.Pool.BroadcastMessage(m)
-    }
-}

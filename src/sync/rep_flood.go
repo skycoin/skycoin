@@ -21,6 +21,36 @@ var (
 	- clients verify blobs as they come in, through a callback function
 */
 
+/*
+	------------------------------
+	- Todo: Advanced Sync
+	------------------------------
+	- put ids on requests
+	- have request timeout
+	- data received must have valid request id
+	- keep track of peers who can satisfy request ("data want")
+	------------------------------
+	- current requests
+	- future requests (that have not been made yet)
+	- rate limiting requests to N outstanding requests per peer
+	------------------------------
+*/
+
+
+//null on error
+func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
+    var br *BlobReplicator = nil
+    for i, _ := range d.BlobReplicators {
+    	if d.BlobReplicators[i].Channel == self.Channel {
+    		br = &d.BlobReplicators[i]
+    		break
+    	}
+    }
+    return br
+}
+
+
+
 //data object that is replicated
 type Blob struct {
 	Hash SHA256 
@@ -74,6 +104,14 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 		return errors.New("InjectBlob, fail, duplicate")
 	}
 	self.BlobMap[blob.Hash] = blob
+	broadcastBlobAnnounce(blob) //anounce blob to world
+}
+
+//returns true if local has blob or if blob is on ignore list
+//returns false if local should felt blob from remote
+func (self *BlobReplicator) HasBlob(hash SHA256) bool {
+	_,ok := self.BlobMap[hash]
+	return ok
 }
 
 //remove blob, add to ignore list
@@ -83,19 +121,40 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 //}
 
 
-func (self *BlobReplicator) BroadcastBlob(blob Blob) {
-	m := self.newBlobMessage(blob)
+/*
+	Networking:
+
+	There are 3 packets
+	- announce object (by hash)
+	- get object from hash
+	- get list of all hashes a peer has
+
+*/
+
+//deprecated. Should only broadcast announce
+//how do i send to just one peer
+func (self *BlobReplicator) broadcastBlobData(blob Blob) {
+	m := self.newBlobDataMessage(blob)
 	self.d.pool.Pool.BroadcastMessage(m)
 }
 
+func (self *BlobReplicator) broadcastBlobAnnounce(blob Blob) {
+	var hashlist []SHA256
+	hashlist = append(hashlist, blob.Hash)
+	m := NewAnnounceBlobsMessage(hashlist)
+	self.d.pool.Pool.BroadcastMessage(m)
+}
+
+
+
 //message containing a blob
-type BlobMessage struct {
+type BlobDataMessage struct {
 	Channel int16
 	Data []byte
 }
 
-func (self *BlobReplicator) newBlobMessage(blob Blob) *BlobMessage {
-	bm := BlobMessage{}
+func (self *BlobReplicator) newBlobDataMessage(blob Blob) *BlobDataMessage {
+	bm := BlobDataMessage{}
 	bm.Channel = self.Channel
 	bm.Data = make([]byte, len(blob.Data))
 	copy(bm.Data, blob.Data)
@@ -104,25 +163,33 @@ func (self *BlobReplicator) newBlobMessage(blob Blob) *BlobMessage {
 
 //Todo: Boiler plate, Deprecate
 //recordMessageEvent is just checking for intro and calling process
-func (self *BlobMessage) Handle(mc *gnet.MessageContext,
+func (self *BlobDataMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc
     return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
-func (self *BlobMessage) Process(d *Daemon) {
+//upon receiving data, inject it
+//if injection succeeds, then broadcast to all peers
+func (self *BlobDataMessage) Process(d *Daemon) {
     //route to channel
-    for _, br := range d.BlobReplicators {
-    	if br.Channel == self.Channel {
-    		br.InjectBlob(self.Data)
-    		return
-    	}
+    br := d.GetBlobReplicator(self.Channel)
+    if br == nil {
+    	log.Panic("BlobDataMessage, Process blob replicator channel does not exist\n ")
     }
-    log.Panic("Daemon Does Not Have Blob Replicator Channel")
+   	br.InjectBlob(self.Data)
 }
 
 /*
+	------------------------------
+	- Blob Announcemence Message -
+	------------------------------
 
+
+	//WARNING: 
+	- If two peers announce data, will make download request from both peers
+	- Makes many redundant data requests
+	- Does not keep track of requests
 */
 
 //use for anouncing single blob to all connected peers
@@ -142,30 +209,79 @@ func (self *BlobReplicator) NewAnnounceBlobs(blobs []Blob) *AnnounceBlobsMessage
     return &ab
 }
 
-//Todo: Boiler plate, Deprecate
-//recordMessageEvent is just checking for intro and calling process
-func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
+//Todo: Boiler plate, Deprecate, recordMessageEvent is just checking for intro and calling process
+func (self *AnnounceBlobsMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc
     return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
-func (self *AnnounceTxnsMessage) Process(d *Daemon) {
-    if d.Sync.Config.Disabled {
-        return
+func (self *AnnounceBlobsMessage) Process(d *Daemon) {
+    br := d.GetBlobReplicator(self.Channel)
+    if br == nil {
+    	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
     }
-    unknown := d.Sync.Sync.Unconfirmed.FilterKnown(self.Txns)
-    if len(unknown) == 0 {
-        return
+
+    //get list of blocks we dont have yet
+    var hashList []SHA256
+    for _,hash := range self.BlobHashes {
+    	if br.HasBlob(hash) == false {
+    		hashList = append(hashList, hash)
+    	}
     }
-    m := NewGetTxnsMessage(unknown)
-    d.Pool.Pool.SendMessage(self.c.Conn, m)
+    //request blobs we dont have yet
+    if len(hashList) == 0 {
+    	return //do nothing
+    }
+  	m := br.NewGetBlobsMessage(hashList)
+   	d.Pool.Pool.SendMessage(self.c.Conn, m)
+    
+}
+
+//	--------------------------------------
+//	- Request Blob Data Elements by hash -
+//  --------------------------------------
+
+type GetBlobsMessage struct {
+	Channel uint16
+    Hashs []SHA256
+    c    *gnet.MessageContext `enc:"-"`
+}
+
+func (self *BlobReplicator) NewGetBlobsMessage(hashList []SHA256) *GetBlobsMessage {   
+	var bm GetBlobsMessage
+    bm.Hashes = hashList
+    bm.Channel = self.Channel
+    return &bm
+}
+
+//deprecate, boiler plate
+func (self *GetBlobsMessage) Handle(mc *gnet.MessageContext,
+    daemon interface{}) error {
+    self.c = mc
+    return daemon.(*Daemon).recordMessageEvent(self, mc)
+}
+
+func (self *GetBlobsMessage) Process(d *Daemon) {
+    br := d.GetBlobReplicator(self.Channel)
+    if br == nil {
+    	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
+    }
+    for _,hash := range self.Hashes {
+    	//if we have the block, send it to peer
+    	if br.HasBlob(hash) == true {
+    		m := newBlobDataMessage(br.BlobMap[hash])
+    		d.Pool.Pool.SendMessage(self.c.Conn, m)
+    	}
+    }
 }
 
 /*
 
 
 */
+
+/*
 type SendingTxnsMessage interface {
     GetTxns() []coin.SHA256
 }
@@ -175,28 +291,6 @@ func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
     daemon interface{}) error {
     self.c = mc
     return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-
-type GetTxnsMessage struct {
-    Txns []coin.SHA256
-    c    *gnet.MessageContext `enc:"-"`
-}
-
-func NewGetTxnsMessage(txns []coin.SHA256) *GetTxnsMessage {
-    return &GetTxnsMessage{
-        Txns: txns,
-    }
-}
-
-func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
-}
-
-func (self *GiveTxnsMessage) GetTxns() []coin.SHA256 {
-    return self.Txns.Hashes()
 }
 
 func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
@@ -226,24 +320,10 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
         d.Pool.Pool.BroadcastMessage(m)
     }
 }
-
+*/
 
 
 /*
-func (self *GetTxnsMessage) Process(d *Daemon) {
-    if d.Sync.Config.Disabled {
-        return
-    }
-    // Locate all txns from the unconfirmed pool
-    // reply to sender with GiveTxnsMessage
-    known := d.Sync.Sync.Unconfirmed.GetKnown(self.Txns)
-    if len(known) == 0 {
-        return
-    }
-    logger.Debug("%d/%d txns known", len(known), len(self.Txns))
-    m := NewGiveTxnsMessage(known)
-    d.Pool.Pool.SendMessage(self.c.Conn, m)
-}
 */
 
 /*

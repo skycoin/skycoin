@@ -556,6 +556,7 @@ func (self *Daemon) recordMessageEvent(m AsyncMessage,
     return nil
 }
 
+// TODO: move handshake authentication into gnet
 // Processes a queued AsyncMessage.
 func (self *Daemon) processMessageEvent(e MessageEvent) {
     // The first message received must be an Introduction

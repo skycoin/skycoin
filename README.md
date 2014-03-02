@@ -55,11 +55,13 @@ Skycoin is the most secure and most usable cryptocoin that has ever been designe
 Distributed Consensus
 ---------------------
 
-Bitcoin miners currently receive $34 in mining reward subsidies and $0.10 in fees, per transaction. Mathematical modeling of mining rewards suggests a difficulty peak and declining mining profitability by 2040. Without sufficient price deflation, transaction volume growth and increased transaction fees the difficulty peak will the resources securing the Bitcoin network at levels which leave Bitcoin open to attack and control by governments and corporations.
+Bitcoin miners currently receive $34 in mining reward subsidies and $0.10 in fees, per Bitcoin transaction. Every Bitcoin user is paying the cost for mining. The cost of mining drags down the price of Bitcoin. We need alternatives to mining for securing blockchains.
 
-Reliance on mining is the primary existential threat facing Bitcoin over the next decade. The cost to disrupt the Bitcoin network currently stands at 50 million dollars in ASICs. The capactity to disrupt or shutdown the Bitcoin network is therefore within the capacity of governments and corporations.
+Mathematical modeling of mining rewards suggests a difficulty peak and declining mining profitability by 2040. Without sufficient price deflation, transaction volume growth and increased transaction fees the difficulty peak leaves the resources securing the Bitcoin network at levels which Bitcoin open to attack and control by governments and corporations.
 
-The survivability of the Bitcoin network depends upon Bitcoin mining reaching a level of resource consumption and cost, beyond the reach of governments and finantial institions, while passing this cost onto the Bitcoin user base. 
+Reliance on mining is the primary existential threat facing Bitcoin over the next decade. The cost to disrupt the Bitcoin network stands at 50 million dollars in ASICs. The capactity to disrupt or shutdown the Bitcoin network is therefore within the capacity of governments and corporations.
+
+If Bitcoin becomes a "threat", it will not survive technical attacks on the blockchain. The survivability of the Bitcoin network depends upon Bitcoin mining reaching a level of resource consumption and cost, beyond the reach of governments and finantial institions, while passing this cost onto the Bitcoin user base. 
 
 Skycoin eliminates the cost of resource consumption for mining and replaces the dependence on miners with a distributed consensus algorithm called Obelisk. Skycoin achieves a higher level of blockchain security than Bitcoin, with lower electricity and hardware costs.
 

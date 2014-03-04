@@ -6,10 +6,6 @@ import (
     "errors"
 )
 
-var (
-    sha256Hash    hash.Hash = sha256.New()
-)
-
 /*
 	Replication for flood objects
 	- objects are referenced by hash
@@ -35,19 +31,6 @@ var (
 	- rate limiting requests to N outstanding requests per peer
 	------------------------------
 */
-
-
-//null on error
-func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
-    var br *BlobReplicator = nil
-    for i, _ := range d.BlobReplicators {
-    	if d.BlobReplicators[i].Channel == self.Channel {
-    		br = &d.BlobReplicators[i]
-    		break
-    	}
-    }
-    return br
-}
 
 
 
@@ -89,6 +72,19 @@ func (d *Daemon) NewBlobReplicator(channel uint16, callback &BlobCallback) *Blob
 	d.BlobReplicators = append(d.BlobReplicators, &br)
 	return br
 }
+
+//null on error
+func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
+    var br *BlobReplicator = nil
+    for i, _ := range d.BlobReplicators {
+    	if d.BlobReplicators[i].Channel == self.Channel {
+    		br = &d.BlobReplicators[i]
+    		break
+    	}
+    }
+    return br
+}
+
 
 //Must set callback function for handling blob data
 //func (self *BlobReplicator) SetCallback(function &BlobCallback) {

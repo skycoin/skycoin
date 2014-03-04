@@ -109,7 +109,9 @@ Skycoin was designed to eliminate mining completely and eliminate the problems i
 Skycoin Project
 ---------------
 
-Skycoin is more than a coin. Skycoin is at the core of number of projects that will be announced over the next year.
+Skycoin is more than a coin. Skycoin has several associated applications being developed to drive coin adaption.
+
+See: https://github.com/skycoin/darknet
 
 Tests
 -----

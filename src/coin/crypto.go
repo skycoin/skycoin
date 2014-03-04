@@ -235,8 +235,41 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
             log.Panic("DebugLevel1, GenerateDeterministicKeyPair, " +
                 "generated private key failed testSecKey")
         }
+        if PubKeyFromSecKey(NewSecKey(secret)) == NewPubKey(public) {
+            log.Panic("DebugLevel1, GenerateDeterministicKeyPair, " +
+                "public key does not match private key")
+        }
     }
     return NewPubKey(public), NewSecKey(secret)
+}
+
+//DeterministicKeyPairIterator takes SHA256 value, returns a new 
+//SHA256 value and publickey and private key. Apply multiple times
+//feeding the SHA256 value back into generate sequence of keys
+func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey) {
+    hash, public, secret := secp256k1.DeterministicKeyPairIterator(seed)
+    if DebugLevel1 {
+        if testSecKey(NewSecKey(secret)) != nil {
+            log.Panic("DebugLevel1, GenerateDeterministicKeyPair, " +
+                "generated private key failed testSecKey")
+        }
+        if PubKeyFromSecKey(NewSecKey(secret)) == NewPubKey(public) {
+            log.Panic("DebugLevel1, GenerateDeterministicKeyPair, " +
+                "public key does not match private key")
+        }
+    }
+    return hash, NewPubKey(public), NewSecKey(secret)
+}
+
+//Returns sequence of n private keys from intial seed
+func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
+    var keys []SecKey
+    var seckey SecKey
+    for i:=0; i<n; i++ {
+        seed, _, seckey = DeterministicKeyPairIterator(seed)
+        keys = append(keys, seckey)
+    }
+    return keys
 }
 
 func testSecKey(seckey SecKey) error {

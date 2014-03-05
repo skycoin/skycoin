@@ -1,4 +1,4 @@
-package daemon
+package sync
 
 import (
     "errors"
@@ -61,8 +61,8 @@ type Config struct {
     Pool     PoolConfig
     Peers    PeersConfig
     DHT      DHTConfig
-    Gateway  GatewayConfig
-    Visor    VisorConfig
+    //Gateway  GatewayConfig
+    //Visor    VisorConfig
 }
 
 // Returns a Config with defaults set

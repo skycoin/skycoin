@@ -1,9 +1,11 @@
-package daemon
+package sync
 
 import (
-    "crypto/sha256"
-    "hash"
+    //"crypto/sha256"
+    //"hash"
     "errors"
+    "github.com/skycoin/gnet"
+    "log"
 )
 
 /*
@@ -61,24 +63,24 @@ type BlobReplicator struct {
 }
 
 //Adds blob replicator to Daemon
-func (d *Daemon) NewBlobReplicator(channel uint16, callback &BlobCallback) *BlobReplicator {
+func (d *Daemon) NewBlobReplicator(channel uint16, callback *BlobCallback) *BlobReplicator {
 	br := BlobReplicator {
-		Channel : channel
-		BlobMap : new(map[SHA256]Blob),
+		Channel : channel,
+		BlobMap : make(map[SHA256]Blob),
 		BlobCallback : callback,
 		d : d,
 	}
 	//Todo, check that daemon doesnt have other channels
 	d.BlobReplicators = append(d.BlobReplicators, &br)
-	return br
+	return &br
 }
 
 //null on error
 func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
     var br *BlobReplicator = nil
     for i, _ := range d.BlobReplicators {
-    	if d.BlobReplicators[i].Channel == self.Channel {
-    		br = &d.BlobReplicators[i]
+    	if d.BlobReplicators[i].Channel == channel {
+    		br = d.BlobReplicators[i]
     		break
     	}
     }
@@ -94,12 +96,13 @@ func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
 //inject blobs at startup
 func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 	blob := NewBlob(data)
-	_, ok := self.BlobMap[blob.Hash]; ok == true {
+	if _, ok := self.BlobMap[blob.Hash]; ok == true {
 		log.Panic("InjectBloc, fail, duplicate")
 		return errors.New("InjectBlob, fail, duplicate")
 	}
 	self.BlobMap[blob.Hash] = blob
-	broadcastBlobAnnounce(blob) //anounce blob to world
+	self.broadcastBlobAnnounce(blob) //anounce blob to worldr
+	return nil
 }
 
 //returns true if local has blob or if blob is on ignore list

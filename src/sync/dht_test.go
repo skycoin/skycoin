@@ -1,4 +1,4 @@
-package daemon
+package sync
 
 import (
     "github.com/nictuku/dht"

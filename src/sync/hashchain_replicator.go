@@ -1,4 +1,4 @@
-package daemon
+package sync
 
 /*
 	Replicates hash chain objects

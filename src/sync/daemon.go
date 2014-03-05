@@ -72,9 +72,9 @@ func NewConfig() Config {
         Pool:     NewPoolConfig(),
         Peers:    NewPeersConfig(),
         DHT:      NewDHTConfig(),
-        Gateway:  NewGatewayConfig(),
+        //Gateway:  NewGatewayConfig(),
         Messages: NewMessagesConfig(),
-        Visor:    NewVisorConfig(),
+        //Visor:    NewVisorConfig(),
     }
 }
 

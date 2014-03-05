@@ -141,15 +141,15 @@ func (self *BlobReplicator) HasBlob(hash SHA256) bool {
 
 //Broadcast anounce
 func (self *BlobReplicator) broadcastBlobAnnounce(blob Blob) {
-	var hashlist []SHA256
-	hashlist = append(hashlist, blob.Hash)
-	m := NewAnnounceBlobsMessage(hashlist)
-	self.d.pool.Pool.BroadcastMessage(m)
+	var bloblist []Blob
+	bloblist = append(bloblist, blob)
+	m := self.NewAnnounceBlobsMessage(bloblist)
+	self.d.Pool.Pool.BroadcastMessage(m)
 }
 
 func (self *BlobReplicator) broadcastBlobHashlistRequest(blob Blob) {
-	m := NewGetBlobListMessage()
-	self.d.pool.Pool.BroadcastMessage(m)
+	m := self.NewGetBlobListMessage()
+	self.d.Pool.Pool.BroadcastMessage(m)
 }
 
 
@@ -162,8 +162,9 @@ func (self *BlobReplicator) broadcastBlobHashlistRequest(blob Blob) {
 
 //message containing a blob
 type BlobDataMessage struct {
-	Channel int16
+	Channel uint16
 	Data []byte
+	c    *gnet.MessageContext `enc:"-"`
 }
 
 func (self *BlobReplicator) newBlobDataMessage(blob Blob) *BlobDataMessage {
@@ -262,7 +263,7 @@ type GetBlobsMessage struct {
 
 func (self *BlobReplicator) NewGetBlobsMessage(hashList []SHA256) *GetBlobsMessage {   
 	var bm GetBlobsMessage
-    bm.Hashes = hashList
+    bm.Hashs = hashList
     bm.Channel = self.Channel
     return &bm
 }
@@ -279,10 +280,10 @@ func (self *GetBlobsMessage) Process(d *Daemon) {
     if br == nil {
     	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
     }
-    for _,hash := range self.Hashes {
+    for _,hash := range self.Hashs {
     	//if we have the block, send it to peer
     	if br.HasBlob(hash) == true {
-    		m := newBlobDataMessage(br.BlobMap[hash])
+    		m := br.newBlobDataMessage(br.BlobMap[hash])
     		d.Pool.Pool.SendMessage(self.c.Conn, m)
     	}
     }
@@ -300,9 +301,9 @@ type GetBlobListMessage struct {
 }
 
 func (self *BlobReplicator) NewGetBlobListMessage() *GetBlobListMessage {   
-	var bl GetBlobList
-    bl.Channel = self.Channel
-    return &bm
+	var m GetBlobListMessage
+    m.Channel = self.Channel
+    return &m
 }
 
 //deprecate, boiler plate

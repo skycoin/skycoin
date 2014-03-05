@@ -320,11 +320,11 @@ func (self *GetBlobListMessage) Process(d *Daemon) {
     }
 
 	//list of hashes for local blobs
-	var hashlist []SHA256
-	for k, _ := range br.BlobMap {
-		hashlist = append(hashlist, key)
+	var bloblist []Blob
+	for _, blob := range br.BlobMap {
+		bloblist = append(bloblist, blob)
 	}
 
-	m :=  NewAnnounceBlobs(hashlist)
+	m :=  br.NewAnnounceBlobsMessage(bloblist)
    	d.Pool.Pool.SendMessage(self.c.Conn, m)
 }

@@ -212,7 +212,7 @@ type AnnounceBlobsMessage struct {
     c    *gnet.MessageContext `enc:"-"`
 }
 
-func (self *BlobReplicator) NewAnnounceBlobs(blobs []Blob) *AnnounceBlobsMessage {
+func (self *BlobReplicator) NewAnnounceBlobsMessage(blobs []Blob) *AnnounceBlobsMessage {
     ab := AnnounceBlobsMessage{}
     ab.Channel = self.Channel
     for _,b := range blobs {

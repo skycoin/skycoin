@@ -24,8 +24,8 @@ type GenesisBlockCfg struct {
     GenesisAddress coin.Address
     GenesisSignature coin.Sig
     GenesisTime uint64
+    GenesisCoins uint64
     PubKey coin.PubKey
-    Coins uint64
 }
 
 var TestNet GenesisBlockCfg
@@ -37,7 +37,7 @@ func init() {
     //TestNet.GenesisSignature = coin.MustSigFromHex()
     TestNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
     TestNet.GenesisTime = 1392584986 //set time
-    TestNet.Coins = 1e12 //almost as many as Ripple
+    TestNet.GenesisCoins = 1e12 //almost as many as Ripple
     //TestNet.GenesisSignature = coin.MustSigFromHex()
 }
 
@@ -47,7 +47,7 @@ func init() {
     //TestNet.GenesisSignature = coin.MustSigFromHex()
     MainNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
     MainNet.GenesisTime = 1392584987 //set time
-    MainNet.Coins = 100e6 //100 million
+    MainNet.GenesisCoins = 100e6 //100 million
 }
 
 //var (
@@ -144,7 +144,7 @@ func NewLocalBlockchain() Blockchain {
     Note: the genesis block is part of block chain initialization
 */
 func (self *Blockchain) InjectGenesisBlock() {
-    var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress, self.Genesis.GenesisTime)
+    var block coin.Block = self.blockchain.CreateGenesisBlock(self.Genesis.GenesisAddress, self.Genesis.GenesisTime, self.Genesis.GenesisCoins)
     _ = block //genesis block is automaticly applied to chain
 }
 
@@ -200,7 +200,7 @@ func (self *Blockchain) CreateBlock() (coin.Block, error) {
     txns = txns.TruncateBytesTo(MaxBlockSize) //cap at 32 KB
 
     b, err := self.blockchain.NewBlockFromTransactions(txns,
-        uint64(BlockCreationInterval), MaxBlockSize)
+        uint64(time.Now().Unix()))
     //remove creation interval, from new block
     if err != nil {
         return b, err

@@ -43,12 +43,19 @@ func getMessageConfigs() []MessageConfig {
         NewMessageConfig("GIVP", GivePeersMessage{}),
         NewMessageConfig("PING", PingMessage{}),
         NewMessageConfig("PONG", PongMessage{}),
-        NewMessageConfig("GETB", GetBlocksMessage{}),
-        NewMessageConfig("GIVB", GiveBlocksMessage{}),
-        NewMessageConfig("ANNB", AnnounceBlocksMessage{}),
-        NewMessageConfig("GETT", GetTxnsMessage{}),
-        NewMessageConfig("GIVT", GiveTxnsMessage{}),
-        NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
+        
+        //Blob replicator
+        NewMessageConfig("GETB", GetBlocksMessage{})
+        NewMessageConfig("GETB", GetBlocksMessage{})
+        NewMessageConfig("GETB", GetBlocksMessage{})
+        NewMessageConfig("GETB", GetBlocksMessage{})
+
+        ///NewMessageConfig("GETB", GetBlocksMessage{}),
+        //NewMessageConfig("GIVB", GiveBlocksMessage{}),
+        //NewMessageConfig("ANNB", AnnounceBlocksMessage{}),
+        //NewMessageConfig("GETT", GetTxnsMessage{}),
+        //NewMessageConfig("GIVT", GiveTxnsMessage{}),
+        //NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
     }
 }
 
@@ -299,7 +306,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
     }
 
 
-    for be := range d.BlobReplicators {
+    for _,be := range d.BlobReplicators {
         be.OnConnect(d.Pool, self.c.Conn.Addr())
     }
     // Request blocks immediately after they're confirmed

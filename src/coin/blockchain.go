@@ -71,8 +71,8 @@ type Block struct {
 */
 
 //must pass in time
-func newBlock(prev *Block, current_time uint64) Block {
-    header := newBlockHeader(&prev.Head, current_time)
+func newBlock(prev *Block, currentTime uint64) Block {
+    header := newBlockHeader(&prev.Head, currentTime)
     return Block{Head: header, Body: BlockBody{}}
 }
 
@@ -112,15 +112,15 @@ func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
     return Transaction{}, false
 }
 
-func newBlockHeader(prev *BlockHeader, current_time uint64) BlockHeader {
+func newBlockHeader(prev *BlockHeader, currentTime uint64) BlockHeader {
     
-    if current_time < prev.Time {
+    if currentTime < prev.Time {
         log.Panic("Cannot create block with early timestamp than previous block")
     }
     return BlockHeader{
         Version:  prev.Version,
         PrevHash: prev.Hash(),
-        Time:     current_time,
+        Time:     currentTime,
         BkSeq:    prev.BkSeq + 1,
         // Make sure to set the fee
         Fee: 0,
@@ -234,8 +234,8 @@ func (self *Blockchain) Time() uint64 {
 // Note: maxBlockSize must be enforced outside of coin parser.
 // Note: creationInterval!?
 
-func (self *Blockchain) NewBlockFromTransactions(txns Transactions, current_time uint64) (Block, error) {
-    b := newBlock(self.Head(), current_time)
+func (self *Blockchain) NewBlockFromTransactions(txns Transactions, currentTime uint64) (Block, error) {
+    b := newBlock(self.Head(), currentTime)
     newTxns := self.ArbitrateTransactions(txns)
     // Restrict txns by size
     //newTxns = newTxns.TruncateBytesTo(maxBlockSize)

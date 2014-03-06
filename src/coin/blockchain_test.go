@@ -13,13 +13,21 @@ var (
     testMaxSize          = 1024 * 1024
 )
 
-var genesisTime uint64 = 0
+var genTime uint64 = 1000
 var incTime uint64 = 15 //increment time per block
 
-//underscore to prevent masking
-var _genesisCoinVolume uint64 = 1e6 //1 million coins for testing
+//underscore to prevent masking/alias bug
+var _genCoins uint64 = 1e6 //1 million coins for testing
 var _genesisCoinHours  uint64 = 0
 /* Helpers */
+
+//genesis block for testing
+func _createGenesisBlock(bc *Blockchain, genesisAddress Address) Block {
+
+
+    return bc.CreateGenesisBlock(genesisAddress, genTime, _genCoins)
+
+}
 
 func assertError(t *testing.T, err error, msg string) {
     assert.NotNil(t, err)
@@ -98,7 +106,7 @@ func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
     txn.PushInput(ux.Hash())
     txn.PushOutput(genAddress, 1e6, 100)
     txn.PushOutput(genAddress, 2e6, 100)
-    txn.PushOutput(genAddress, _genesisCoinVolume-3e6, 100)
+    txn.PushOutput(genAddress, _genCoins-3e6, 100)
     txn.SignInputs([]SecKey{genSecret})
     txn.UpdateHeader()
     assert.Nil(t, txn.Verify())
@@ -147,8 +155,8 @@ func assertValidUnspentsNoHeader(t *testing.T, tx Transaction, uxo UxArray) {
 /* Tests */
 
 func TestConstantsStayConstant(t *testing.T) {
-    assert.Equal(t, _genesisCoinVolume, uint64(100*1e6*1e6))
-    assert.Equal(t, genesisCoinHours, uint64(1024*1024))
+    assert.Equal(t, _genCoins, uint64(100*1e6*1e6))
+    assert.Equal(t, _genesisCoinHours, uint64(1024*1024))
 }
 
 func TestNewBlock(t *testing.T) {
@@ -277,7 +285,9 @@ func TestNewBlockchain(t *testing.T) {
 func TestCreateMasterGenesisBlock(t *testing.T) {
     b := NewBlockchain()
     a := makeAddress()
-    gb := b.CreateMasterGenesisBlock(a)
+    //gb := _createGenesisBlock(b,a)
+    gb := bc.CreateGenesisBlock(a, genTime, _genCoins)
+
     assert.Equal(t, len(b.Blocks), 1)
     assert.Equal(t, b.Blocks[0], gb)
     assert.Equal(t, len(b.Unspent.Pool), 1)
@@ -285,13 +295,14 @@ func TestCreateMasterGenesisBlock(t *testing.T) {
     assert.NotEqual(t, gb.Head.Time, uint64(0))
     assert.Equal(t, gb.Head.BkSeq, uint64(0))
     // Panicing
-    assert.Panics(t, func() { b.CreateMasterGenesisBlock(a) })
+    assert.Panics(t, func() { bc.CreateGenesisBlock(a, genTime, _genCoins) })
 }
 
 func TestCreateGenesisBlock(t *testing.T) {
     b := NewBlockchain()
     now := Now()
-    gb := b.CreateGenesisBlock(genAddress, now)
+    //gb := b.CreateGenesisBlock(genTime, _genCoins)
+    gb := b.CreateGenesisBlock(genAddress, genTime, _genCoins)
     assert.Equal(t, gb.Head.Time, now)
     assert.Equal(t, gb.Head.BkSeq, uint64(0))
     assert.Equal(t, len(gb.Body.Transactions), 1)
@@ -300,15 +311,15 @@ func TestCreateGenesisBlock(t *testing.T) {
     txn := gb.Body.Transactions[0]
     txo := txn.Out[0]
     assert.Equal(t, txo.Address, genAddress)
-    assert.Equal(t, txo.Coins, _genesisCoinVolume)
-    assert.Equal(t, txo.Hours, genesisCoinHours)
+    assert.Equal(t, txo.Coins, _genCoins)
+    assert.Equal(t, txo.Hours, _genesisCoinHours)
     ux := b.Unspent.Array()[0]
     assert.Equal(t, ux.Head.BkSeq, uint64(0))
     assert.Equal(t, ux.Head.Time, now)
     assert.Equal(t, ux.Body.SrcTransaction, txn.Hash())
     assert.Equal(t, ux.Body.Address, genAddress)
-    assert.Equal(t, ux.Body.Coins, _genesisCoinVolume)
-    assert.Equal(t, ux.Body.Hours, genesisCoinHours)
+    assert.Equal(t, ux.Body.Coins, _genCoins)
+    assert.Equal(t, ux.Body.Hours, _genesisCoinHours)
     h := Merkle([]SHA256{gb.Body.Transactions[0].Hash()})
     assert.Equal(t, gb.Head.BodyHash, h)
     assert.Equal(t, gb.Head.PrevHash, SHA256{})
@@ -318,12 +329,12 @@ func TestCreateGenesisBlock(t *testing.T) {
     have.Sort()
     assert.Equal(t, expect, have)
     // Panicing
-    assert.Panics(t, func() { b.CreateGenesisBlock(genAddress, now) })
+    assert.Panics(t, func() { b.CreateGenesisBlock(genAddress, genTime, _genCoins) })
 }
 
 func TestBlockchainHead(t *testing.T) {
     b := NewBlockchain()
-    gb := b.CreateMasterGenesisBlock(genAddress)
+    gb := b.CreateGenesisBlock(genAddress, genTime, _genCoins)
     assert.Equal(t, *(b.Head()), gb)
     nb := addBlockToBlockchain(t, b)
     assert.Equal(t, *(b.Head()), nb)
@@ -331,7 +342,7 @@ func TestBlockchainHead(t *testing.T) {
 
 func TestBlockchainTime(t *testing.T) {
     b := NewBlockchain()
-    gb := b.CreateMasterGenesisBlock(genAddress)
+    gb := b.CreateGenesisBlock(genAddress, genTime, _genCoins)
     assert.Equal(t, b.Time(), gb.Head.Time)
     nb := addBlockToBlockchain(t, b)
     assert.Equal(t, b.Time(), nb.Head.Time)
@@ -339,7 +350,7 @@ func TestBlockchainTime(t *testing.T) {
 
 func TestNewBlockFromTransactions(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateMasterGenesisBlock(genAddress)
+    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     gb.Head.Version = 0x0F
     bc.Blocks[0] = gb
     assert.Equal(t, bc.Blocks[0].Head.Version, uint32(0x0F))
@@ -363,7 +374,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
     assert.Equal(t, b.Head.Version, gb.Head.Version)
     assert.Equal(t, b.Head.Fee, uint64(100))
     assert.Equal(t, b.Head.Fee,
-        genesisCoinHours-txn.Out[0].Hours-txn.Out[1].Hours)
+        _genesisCoinHours-txn.Out[0].Hours-txn.Out[1].Hours)
     assert.NotEqual(t, b.Head.Fee, uint64(0))
 
     // Invalid transaction
@@ -414,7 +425,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
 
 func TestVerifyTransactionInputs(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     tx := makeTransactionForChain(t, bc)
     // Valid txn
     uxIn, err := bc.Unspent.GetMultiple(tx.In)
@@ -441,7 +452,7 @@ func TestVerifyTransactionInputs(t *testing.T) {
 
 func TestCreateUnspents(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     // 1 out
     tx := Transaction{}
     tx.PushOutput(genAddress, 11e6, 255)
@@ -472,7 +483,7 @@ func TestCreateUnspents(t *testing.T) {
 
 func TestCreateExpectedUnspents(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     // 1 out
     tx := Transaction{}
     tx.PushOutput(genAddress, 11e6, 255)
@@ -498,7 +509,7 @@ func TestCreateExpectedUnspents(t *testing.T) {
 
 func TestVerifyTransactionSpending(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
 
     // Valid
     tx := makeTransactionForChain(t, bc)
@@ -539,7 +550,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
     p, s := GenerateKeyPair()
     a := AddressFromPubKey(p)
     tx.PushOutput(a, 1e6, 100)
-    tx.PushOutput(genAddress, _genesisCoinVolume-1e6, 100)
+    tx.PushOutput(genAddress, _genCoins-1e6, 100)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
     b, err := bc.NewBlockFromTransactionsInc(Transactions{tx}, 20, testMaxSize)
@@ -560,7 +571,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 
 func TestVerifyTransaction(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateMasterGenesisBlock(genAddress)
+    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     // Genesis block is not valid by normal standards
     assert.NotNil(t, bc.VerifyTransaction(gb.Body.Transactions[0]))
     assert.Equal(t, len(bc.Blocks), 1)
@@ -638,14 +649,14 @@ func TestVerifyTransaction(t *testing.T) {
 
 func TestBlockchainVerifyBlock(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateMasterGenesisBlock(genAddress)
+    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     // Genesis block not valid after the fact
     assert.NotNil(t, bc.VerifyBlock(&gb))
 
     // Valid block
     tx := Transaction{}
     tx.PushInput(bc.Unspent.Array()[0].Hash())
-    tx.PushOutput(genAddress, _genesisCoinVolume, genesisCoinHours)
+    tx.PushOutput(genAddress, _genCoins, _genesisCoinHours)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
     b, err := bc.NewBlockFromTransactionsInc(Transactions{tx}, 10, testMaxSize)
@@ -667,7 +678,7 @@ func TestBlockchainVerifyBlock(t *testing.T) {
 
 func TestVerifyBlockHeader(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateMasterGenesisBlock(genAddress)
+    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     b := Block{Body: BlockBody{}}
     b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
     h := BlockHeader{}
@@ -714,7 +725,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 
 func TestVerifyGenesisBlockHeader(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateMasterGenesisBlock(genAddress)
+    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     assert.Nil(t, verifyGenesisBlockHeader(&gb))
     gb.Head.BkSeq += 1
     assertError(t, verifyGenesisBlockHeader(&gb), "BkSeq invalid")
@@ -726,7 +737,7 @@ func TestVerifyGenesisBlockHeader(t *testing.T) {
 
 func TestTransactionFee(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     // Valid txn, 100 hours fee
     tx := makeTransactionForChain(t, bc)
     fee, err := bc.TransactionFee(&tx)
@@ -749,7 +760,7 @@ func TestTransactionFee(t *testing.T) {
 
 func TestTransactionFees(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     // Valid txn, 100 hours fee
     tx := makeTransactionForChain(t, bc)
     fee, err := bc.TransactionFees(Transactions{tx})
@@ -784,7 +795,7 @@ func TestNow(t *testing.T) {
 
 func TestProcessTransactions(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
 
     // Invalid, no transactions in block
     // arbitrating=false
@@ -874,7 +885,7 @@ func TestProcessTransactions(t *testing.T) {
 
 func TestExecuteBlock(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
 
     // Invalid block returns error
     b := Block{}

@@ -223,6 +223,14 @@ func (self *Blockchain) Time() uint64 {
     return self.Head().Head.Time
 }
 
+
+//Increments time from head instead of using block time
+func (self *Blockchain) NewBlockFromTransactionsInc(txns Transactions, incTime uint64) (Block, error) {
+    ctime := self.Head().Head.Time + incTime
+    b,err := self.NewBlockFromTransactions(txns, ctime)
+    return b,err
+}
+
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
 // TODO: remove blocksize (soft limit)
@@ -232,18 +240,22 @@ func (self *Blockchain) Time() uint64 {
 //func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
 //    creationInterval uint64, maxBlockSize int) (Block, error) {
 // Note: maxBlockSize must be enforced outside of coin parser.
-// Note: creationInterval!?
 
+//TODO: ERROR NewBlockFromTransactions arbritrates again...
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions, currentTime uint64) (Block, error) {
     b := newBlock(self.Head(), currentTime)
+    
+    //TODO: replace arbitrate with verify
     newTxns := self.ArbitrateTransactions(txns)
     // Restrict txns by size
     //newTxns = newTxns.TruncateBytesTo(maxBlockSize)
     // Note: size limits,soft limits enforced at higher level
     if len(newTxns) == 0 {
-        return Block{}, errors.New("No valid transactions")
+        return Block{}, errors.New("Coin.NewBlockFromTransactions, No valid transactions")
     }
-
+    if len(newTxns) != len(txns) {
+        log.Panic("Coin.NewBlockFromTransactions, invalid input transactions")
+    }
     b.Body.Transactions = newTxns
     fee, err := self.TransactionFees(newTxns)
     if err != nil {
@@ -252,6 +264,16 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions, currentTime 
     }
     b.Head.Fee = fee
     b.UpdateHeader()
+
+    //make sure block is valid
+    if DebugLevel2 == true {
+        if err := verifyBlockHeader(self.Head(), &b); err != nil {
+            log.Panic("Impossible Error: not allowed to fail")
+        }
+        if err := self.verifyTransactions(b.Body.Transactions); err != nil {
+            log.Panic("Impossible Error: not allowed to fail")
+        }
+    }
     return b, nil
 }
 

@@ -310,7 +310,7 @@ func TestTransactionOutputHours(t *testing.T) {
 
 func TestNewSortableTransactions(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     txns := make(Transactions, 4)
     for i, _ := range txns {
         txns[i] = makeTransactionForChainWithFee(t, bc, uint64(i*100))
@@ -330,7 +330,7 @@ func TestNewSortableTransactions(t *testing.T) {
 
 func TestTransactionSorting(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(genAddress)
+    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
     txns := make(Transactions, 4)
     for i := 0; i < len(txns); i++ {
         fee := uint64(0)
@@ -511,7 +511,7 @@ func TestFullTransaction(t *testing.T) {
     p1, s1 := GenerateKeyPair()
     a1 := AddressFromPubKey(p1)
     bc := NewBlockchain()
-    bc.CreateMasterGenesisBlock(a1)
+    bc.CreateGenesisBlock(a1, genTime, _genCoins)
     tx := Transaction{}
     ux := bc.Unspent.Array()[0]
     tx.PushInput(ux.Hash())
@@ -524,7 +524,7 @@ func TestFullTransaction(t *testing.T) {
     tx.UpdateHeader()
     assert.Nil(t, tx.Verify())
     assert.Nil(t, bc.VerifyTransaction(tx))
-    b, err := bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
+    b, err := bc.NewBlockFromTransactionsInc(Transactions{tx}, blkTime)
     assert.Nil(t, err)
     _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)
@@ -549,7 +549,7 @@ func TestFullTransaction(t *testing.T) {
     tx.UpdateHeader()
     assert.Nil(t, tx.Verify())
     assert.Nil(t, bc.VerifyTransaction(tx))
-    b, err = bc.NewBlockFromTransactions(Transactions{tx}, 10, testMaxSize)
+    b, err = bc.NewBlockFromTransactionsInc(Transactions{tx}, blkTime)
     assert.Nil(t, err)
     _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)

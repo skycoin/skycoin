@@ -68,11 +68,11 @@ func TestUxOutCoinHours(t *testing.T) {
     assert.Equal(t, uxo.CoinHours(now), uxo.Body.Hours+(uxo.Body.Coins/1e6)*6)
     now = uxo.Head.Time / 2
     assert.Equal(t, uxo.CoinHours(now), uxo.Body.Hours)
-    uxo.Body.Coins = genesisCoinVolume
-    uxo.Body.Hours = genesisCoinHours
+    uxo.Body.Coins = _genCoins
+    uxo.Body.Hours = _genCoinHours
     assert.Equal(t, uxo.CoinHours(uxo.Head.Time), uxo.Body.Hours)
     assert.Equal(t, uxo.CoinHours(uxo.Head.Time+3600),
-        uxo.Body.Hours+(genesisCoinVolume/1e6))
+        uxo.Body.Hours+(_genCoins/1e6))
     uxo.Body.Hours = 0
     assert.Equal(t, uxo.CoinHours(uxo.Head.Time), uint64(0))
 }

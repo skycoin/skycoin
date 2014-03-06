@@ -274,7 +274,7 @@ func (self *Daemon) Shutdown() {
     self.DHT.Shutdown()
     self.Pool.Shutdown()
     self.Peers.Shutdown()
-    self.Visor.Shutdown()
+    //self.Visor.Shutdown()
     gnet.EraseMessages()
 }
 
@@ -289,15 +289,15 @@ func (self *Daemon) Start(quit chan int) {
     }
 
     // TODO -- run blockchain stuff in its own goroutine
-    blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
-    blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-    if !self.Visor.Config.Config.IsMaster {
-        blockCreationTicker.Stop()
-    }
-    unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
-    blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
-    blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
-    transactionRebroadcastTicker := time.Tick(self.Visor.Config.TransactionRebroadcastRate)
+    //blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
+    //blockCreationTicker := time.NewTicker(time.Second * blockInterval)
+    //if !self.Visor.Config.Config.IsMaster {
+    //    blockCreationTicker.Stop()
+    //}
+    //unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
+    //blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
+    //blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
+    //transactionRebroadcastTicker := time.Tick(self.Visor.Config.TransactionRebroadcastRate)
 
     privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
@@ -404,11 +404,12 @@ main:
             }
             self.processMessageEvent(m)
         // Process any pending RPC requests
-        case fn := <-self.Gateway.requests:
-            self.Gateway.responses <- fn()
+        //case fn := <-self.Gateway.requests:
+        //    self.Gateway.responses <- fn()
 
         // TODO -- run these in the Visor
         // Create blocks, if master chain
+        /*
         case <-blockCreationTicker.C:
             if self.Visor.Config.Config.IsMaster {
                 err := self.Visor.CreateAndPublishBlock(self.Pool)
@@ -419,14 +420,15 @@ main:
                     logger.Critical("Created and published a new block")
                 }
             }
-        case <-unconfirmedRefreshTicker:
-            self.Visor.RefreshUnconfirmed()
-        case <-blocksRequestTicker:
-            self.Visor.RequestBlocks(self.Pool)
-        case <-blocksAnnounceTicker:
-            self.Visor.AnnounceBlocks(self.Pool)
-        case <-transactionRebroadcastTicker:
-            self.Visor.BroadcastOurTransactions(self.Pool)
+        */
+        //case <-unconfirmedRefreshTicker:
+        //    self.Visor.RefreshUnconfirmed()
+        //case <-blocksRequestTicker:
+        //    self.Visor.RequestBlocks(self.Pool)
+        //case <-blocksAnnounceTicker:
+        //    self.Visor.AnnounceBlocks(self.Pool)
+        //case <-transactionRebroadcastTicker:
+        //    self.Visor.BroadcastOurTransactions(self.Pool)
 
         case <-quit:
             break main
@@ -630,7 +632,7 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
     }
     delete(self.OutgoingConnections, a)
     delete(self.ExpectingIntroductions, a)
-    self.Visor.RemoveConnection(a)
+    //self.Visor.RemoveConnection(a)
     self.removeIPCount(a)
     self.removeConnectionMirror(a)
 }
@@ -740,8 +742,8 @@ func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
         return
     }
     switch r.Message.(type) {
-    case SendingTxnsMessage:
-        self.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
+    //case SendingTxnsMessage:
+    //    self.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
     default:
     }
 }

@@ -87,7 +87,16 @@ func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
     return br
 }
 
+func (self* BlobReplicator) OnConnect(pool *Pool, addr string) {
+	//pool *Pool, addr string
+	m := self.NewGetBlobListMessage()
+    c := pool.Pool.Addresses[addr]
+    if c == nil {
+        log.Panic("ERROR Address does not exist")
+    }
+    pool.Pool.SendMessage(c, m)
 
+}
 //Must set callback function for handling blob data
 //func (self *BlobReplicator) SetCallback(function &BlobCallback) {
 //	self.BlobCallback = function

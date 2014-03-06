@@ -298,14 +298,18 @@ func (self *IntroductionMessage) Process(d *Daemon) {
         logger.Error("Failed to add peer: %v", err)
     }
 
-    // Request blocks immediately after they're confirmed
-    err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Conn.Addr())
-    if err == nil {
-        logger.Debug("Successfully requested blocks from %s",
-            self.c.Conn.Addr())
-    } else {
-        logger.Warning("%v", err)
+
+    for be := range d.BlobReplicators {
+        be.OnConnect(d.Pool, self.c.Conn.Addr())
     }
+    // Request blocks immediately after they're confirmed
+    //err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Conn.Addr())
+    //if err == nil {
+    //    logger.Debug("Successfully requested blocks from %s",
+    //        self.c.Conn.Addr())
+    //} else {
+    //    logger.Warning("%v", err)
+    //}
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

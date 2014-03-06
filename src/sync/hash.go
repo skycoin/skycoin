@@ -4,6 +4,7 @@ import (
     "crypto/sha256"
     "hash"
     "encoding/hex"
+    "log"
 )
 
 var (

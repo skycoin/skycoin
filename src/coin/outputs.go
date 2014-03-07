@@ -76,9 +76,10 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
         return self.Body.Hours
     }
 
-    hours := (t - self.Head.Time) / 3600     //number of hours, one hour every 240 block
-    accum := hours * (self.Body.Coins / 1e6) //accumulated coin-hours
-    return self.Body.Hours + accum           //starting+earned
+    seconds := (t - self.Head.Time)                     //number of seconds
+    coinSeconds := (seconds * self.Body.Coins) / 1e6    //coin seconds
+    coinHours := coinSeconds / 3600                     //coin hours
+    return self.Body.Hours + coinHours                  //starting+earned
 }
 
 // Array of Outputs

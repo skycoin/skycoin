@@ -54,9 +54,9 @@ type UxHead struct {
 
 type UxBody struct {
     SrcTransaction SHA256
-    Address        Address //address of receiver
-    Coins          uint64  //number of coins
-    Hours          uint64  //coin hours
+    Address        Address // Address of receiver
+    Coins          uint64  // Number of coins
+    Hours          uint64  // Coin hours
 }
 
 func (self *UxBody) Hash() SHA256 {
@@ -69,17 +69,17 @@ func (self *UxBody) Hash() SHA256 {
 	Creation time of transaction cant be hashed
 */
 
-//calculate coinhour balance of output. t is the current unix utc time
+// Calculate coinhour balance of output. t is the current unix utc time
 func (self *UxOut) CoinHours(t uint64) uint64 {
     if t < self.Head.Time {
         logger.Warning("Calculating coin hours with t < head time")
         return self.Body.Hours
     }
 
-    seconds := (t - self.Head.Time)                     //number of seconds
-    coinSeconds := (seconds * self.Body.Coins) / 1e6    //coin seconds
-    coinHours := coinSeconds / 3600                     //coin hours
-    return self.Body.Hours + coinHours                  //starting+earned
+    seconds := (t - self.Head.Time)                  //number of seconds
+    coinSeconds := (seconds * self.Body.Coins) / 1e6 //coin seconds
+    coinHours := coinSeconds / 3600                  //coin hours
+    return self.Body.Hours + coinHours               //starting+earned
 }
 
 // Array of Outputs

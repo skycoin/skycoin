@@ -253,9 +253,8 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     return b, nil
 }
 
-// Attempts to append block to blockchain
-// TODO: what is UxArray return? the created or deleted?
-// if the created are returned, the deleted should also be returned or neither
+// Attempts to append block to blockchain.  Returns the UxOuts created,
+// and an error if the block is invalid.
 func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
     var uxs UxArray = nil
     err := self.VerifyBlock(&b)
@@ -267,7 +266,7 @@ func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
         // Remove spent outputs
         self.Unspent.DelMultiple(tx.In)
         // Create new outputs
-        txUxs := createUnspents(tx, b.Head)
+        txUxs := CreateUnspents(b.Head, tx)
         for i, _ := range txUxs {
             self.Unspent.Add(txUxs[i])
         }
@@ -327,14 +326,13 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
         return err
     }
 
-    uxOut := CreateExpectedUnspents(tx)
-    if DebugLevel1 {
-        // Checks for hash collisions with unspent outputs
-        hashes := uxOut.Hashes()
-        if self.Unspent.Collides(hashes) {
-            return errors.New("New unspents collide with existing unspents")
-        }
+    // Get the UxOuts we expect to have when the block is created.
+    uxOut := CreateUnspents(self.Head().Head, tx)
+    // Check that there are any duplicates within this set
+    if uxOut.HasDupes() {
+        return errors.New("Duplicate unspent outputs in transaction")
     }
+
     // Check that no coins are lost, and sufficient coins and hours are spent
     err = verifyTransactionSpending(self.Time(), tx, uxIn, uxOut)
     if err != nil {
@@ -343,20 +341,23 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     return nil
 }
 
-// Creates the expected outputs for a transaction.  Does not set UxOut.Head,
-// since it can't be determined until time of blockchain insertion.
-func CreateExpectedUnspents(tx Transaction) UxArray {
+// Creates the expected outputs for a transaction.
+func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
+    h := tx.Hash()
     uxo := make(UxArray, len(tx.Out))
     for i, _ := range tx.Out {
-        ux := UxOut{
+        uxo[i] = UxOut{
+            Head: UxHead{
+                Time:  bh.Time,
+                BkSeq: bh.BkSeq,
+            },
             Body: UxBody{
-                SrcTransaction: tx.Hash(),
+                SrcTransaction: h,
                 Address:        tx.Out[i].Address,
                 Coins:          tx.Out[i].Coins,
                 Hours:          tx.Out[i].Hours,
             },
         }
-        uxo[i] = ux
     }
     return uxo
 }
@@ -441,8 +442,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
             }
             if DebugLevel1 {
                 // Check that the expected unspent is not already in the pool.
-                // This should never happen, and is also check by
-                // VerifyTransaction
+                // This should never happen because its a hash collision
                 if self.Unspent.Has(h) {
                     if arbitrating {
                         skip[i] = byte(1)
@@ -567,27 +567,23 @@ func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
 
 /* Unassigned operators */
 
-// Creates the outputs for a transaction.
-func createUnspents(tx Transaction, bh BlockHeader) UxArray {
-    uxo := CreateExpectedUnspents(tx)
-    for i, _ := range uxo {
-        ux := &uxo[i]
-        ux.Head = UxHead{
-            Time:  bh.Time,
-            BkSeq: bh.BkSeq,
-        }
-    }
-    return uxo
-}
-
 // Validates the inputs to a transaction by checking signatures. Assumes txn
 // has valid number of signatures for inputs.
 func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
+    if DebugLevel2 {
+        if len(tx.In) != len(tx.Head.Sigs) || len(tx.In) != len(uxIn) {
+            log.Panic("tx.In != tx.Head.Sigs != uxIn")
+        }
+        if tx.Head.Hash != tx.hashInner() {
+            log.Panic("Invalid Tx Header Hash")
+        }
+    }
+
     // Check signatures against unspent address
     for i, _ := range tx.In {
         err := ChkSig(uxIn[i].Body.Address, tx.Head.Hash, tx.Head.Sigs[i])
         if err != nil {
-            return errors.New("Signature not valid for output spend")
+            return errors.New("Signature not valid for output being spent")
         }
     }
     if DebugLevel2 {
@@ -628,7 +624,6 @@ func verifyTransactionSpending(headTime uint64, tx Transaction,
         return errors.New("Transactions may not create or destroy coins")
     }
     if hoursIn < hoursOut {
-        logger.Critical("Hours in, out: %d, %d", hoursIn, hoursOut)
         return errors.New("Insufficient coin hours")
     }
     return nil

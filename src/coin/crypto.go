@@ -146,6 +146,9 @@ func SignHash(hash SHA256, sec SecKey) Sig {
             log.Panic("SignHash, error: secp256k1.Sign returned non-null " +
                 "invalid non-null signature")
         }
+        if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
+            log.Panic("SignHash error: ChkSig failed for signature")
+        }
     }
     return sig
 }
@@ -190,11 +193,11 @@ func VerifySignedHash(sig Sig, hash SHA256) error {
 
 // Verifies that hash was signed by PubKey
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
-    pubkey_rec, err := PubKeyFromSig(sig, hash) //recovered pubkey
+    pubkeyRec, err := PubKeyFromSig(sig, hash) //recovered pubkey
     if err != nil {
         return errors.New("Invalig sig: PubKey recovery failed")
     }
-    if pubkey_rec != pubkey {
+    if pubkeyRec != pubkey {
         return errors.New("Recovered pubkey does not match pubkey")
     }
     if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
@@ -243,7 +246,7 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
     return NewPubKey(public), NewSecKey(secret)
 }
 
-//DeterministicKeyPairIterator takes SHA256 value, returns a new 
+//DeterministicKeyPairIterator takes SHA256 value, returns a new
 //SHA256 value and publickey and private key. Apply multiple times
 //feeding the SHA256 value back into generate sequence of keys
 func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey) {
@@ -265,7 +268,7 @@ func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey) {
 func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
     var keys []SecKey
     var seckey SecKey
-    for i:=0; i<n; i++ {
+    for i := 0; i < n; i++ {
         seed, _, seckey = DeterministicKeyPairIterator(seed)
         keys = append(keys, seckey)
     }
@@ -308,12 +311,12 @@ func testSecKeyHash(seckey SecKey, hash SHA256) error {
     }
 
     //check pubkey recovered from sig
-    recovered_pubkey, err := PubKeyFromSig(sig, hash)
+    recoveredPubkey, err := PubKeyFromSig(sig, hash)
     if err != nil {
         return errors.New("impossible error, testSecKey, pubkey recovery " +
             "from signature failed")
     }
-    if pubkey != recovered_pubkey {
+    if pubkey != recoveredPubkey {
         return errors.New("impossible error testSecKey, pubkey does not " +
             "match recovered pubkey")
     }

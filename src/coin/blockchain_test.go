@@ -50,36 +50,41 @@ func makeNewBlock() Block {
 }
 
 func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
-    hours, fee uint64) Transaction {
-    tx := Transaction{}
-    ux := UxOut{}
-    ux.Head.Time = 0
-    arr := bc.Unspent.Array()
-    assert.NotEqual(t, len(arr), 0)
-    for _, u := range arr {
-        if u.Head.Time >= ux.Head.Time {
-            ux = u
-        }
-    }
-    assert.Equal(t, ux.Body.Address, genAddress)
-    tx.PushInput(ux.Hash())
-    tx.PushOutput(makeAddress(), 1e6, hours)
+    ux UxOut, sec SecKey, hours, fee uint64) (Transaction, SecKey) {
+    logger.Critical("TX with hours, fee: %d, %d", hours, fee)
     chrs := ux.CoinHours(bc.Time())
     if chrs < hours+fee {
         log.Panicf("CoinHours underflow. Have %d, need at least %d", chrs,
             hours+fee)
     }
-    tx.PushOutput(genAddress, ux.Body.Coins-1e6, chrs-hours-fee)
-    tx.SignInputs([]SecKey{genSecret})
+    assert.Equal(t, AddressFromPubKey(PubKeyFromSecKey(sec)), ux.Body.Address)
+    tx := Transaction{}
+    tx.PushInput(ux.Hash())
+    p, sec := GenerateKeyPair()
+    addr := AddressFromPubKey(p)
+    tx.PushOutput(addr, 1e6, hours)
+    coinsOut := ux.Body.Coins - 1e6
+    if coinsOut > 0 {
+        tx.PushOutput(genAddress, coinsOut, chrs-hours-fee)
+    }
+    // TODO -- the bug seems to be occurring somewhere around here
+    tx.SignInputs([]SecKey{sec})
     tx.UpdateHeader()
+    assert.Nil(t, ChkSig(ux.Body.Address, tx.Head.Hash, tx.Head.Sigs[0]))
+    // TODO END
     assert.Nil(t, tx.Verify())
-    assert.Nil(t, bc.VerifyTransaction(tx))
-    return tx
+    err := bc.VerifyTransaction(tx)
+    assert.Nil(t, err)
+    return tx, sec
 }
 
 func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
     fee uint64) Transaction {
-    return makeTransactionForChainWithHoursFee(t, bc, 100, fee)
+    ux := bc.Unspent.Array()[0]
+    assert.Equal(t, ux.Body.Address, genAddress)
+    tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
+        fee)
+    return tx
 }
 
 func makeTransactionForChain(t *testing.T, bc *Blockchain) Transaction {
@@ -93,16 +98,37 @@ func addTransactionToBlock(t *testing.T, b *Block) Transaction {
 }
 
 func addBlockToBlockchain(t *testing.T, bc *Blockchain) Block {
-    // Make a late txn to move the head time along so we have some coin hours
-    tx := makeTransactionForChainWithHoursFee(t, bc, 0, 0)
+    // Split the genesis block into two transactions
+    ux := bc.Unspent.Array()[0]
+    assert.Equal(t, ux.Body.Address, genAddress)
+    pub := PubKeyFromSecKey(genSecret)
+    assert.Equal(t, genAddress, AddressFromPubKey(pub))
+    sig := SignHash(ux.Hash(), genSecret)
+    assert.Nil(t, ChkSig(ux.Body.Address, ux.Hash(), sig))
+    tx, sec := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 0, 0)
     b, err := bc.NewBlockFromTransactions(Transactions{tx}, _incTime)
     assert.Nil(t, err)
     assertExecuteBlock(t, bc, b, tx)
-    tx = makeTransactionForChain(t, bc)
+
+    // Spend one of them
+    // The other will have hours now
+    ux = UxOut{}
+    for _, u := range bc.Unspent.Pool {
+        if u.Body.Address != genAddress {
+            ux = u
+        }
+    }
+    assert.NotEqual(t, ux.Body.Address, Address{})
+    assert.NotEqual(t, ux.Body.Address, genAddress)
+    pub = PubKeyFromSecKey(sec)
+    addr := AddressFromPubKey(pub)
+    assert.Equal(t, ux.Body.Address, addr)
+    tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, sec, 0, 0)
     b, err = bc.NewBlockFromTransactions(Transactions{tx},
         bc.Time()+_incTime)
     assert.Nil(t, err)
     assertExecuteBlock(t, bc, b, tx)
+
     return b
 }
 
@@ -152,7 +178,7 @@ func assertExecuteBlock(t *testing.T, bc *Blockchain, b Block,
         assert.True(t, ok)
         assert.Equal(t, ux, ux2)
     }
-    uxs2 := CreateExpectedUnspents(tx)
+    uxs2 := CreateUnspents(bc.Head().Head, tx)
     assert.Equal(t, len(uxs2), len(uxs))
     for i, u := range uxs2 {
         assert.Equal(t, u.Body, uxs[i].Body)
@@ -341,7 +367,7 @@ func TestCreateGenesisBlock(t *testing.T) {
     h := Merkle([]SHA256{gb.Body.Transactions[0].Hash()})
     assert.Equal(t, gb.Head.BodyHash, h)
     assert.Equal(t, gb.Head.PrevHash, SHA256{})
-    expect := createUnspents(txn, gb.Head)
+    expect := CreateUnspents(gb.Head, txn)
     expect.Sort()
     have := b.Unspent.Array()
     have.Sort()
@@ -488,7 +514,7 @@ func TestCreateUnspents(t *testing.T) {
         Time:  Now(),
         BkSeq: uint64(1),
     }
-    uxout := createUnspents(tx, bh)
+    uxout := CreateUnspents(bh, tx)
     assert.Equal(t, len(uxout), 1)
     assertValidUnspents(t, bh, tx, uxout)
 
@@ -499,13 +525,13 @@ func TestCreateUnspents(t *testing.T) {
     tx.PushOutput(genAddress, 100, 150)
     tx.PushOutput(genAddress, 200, 77)
     bh.BkSeq += 1
-    uxout = createUnspents(tx, bh)
+    uxout = CreateUnspents(bh, tx)
     assert.Equal(t, len(uxout), 2)
     assertValidUnspents(t, bh, tx, uxout)
 
     // No outs
     tx = Transaction{}
-    uxout = createUnspents(tx, bh)
+    uxout = CreateUnspents(bh, tx)
     assertValidUnspents(t, bh, tx, uxout)
 }
 
@@ -515,7 +541,7 @@ func TestCreateExpectedUnspents(t *testing.T) {
     // 1 out
     tx := Transaction{}
     tx.PushOutput(genAddress, 11e6, 255)
-    uxout := CreateExpectedUnspents(tx)
+    uxout := CreateUnspents(bc.Head().Head, tx)
     assert.Equal(t, len(uxout), 1)
     assertValidUnspentsNoHeader(t, tx, uxout)
 
@@ -525,13 +551,13 @@ func TestCreateExpectedUnspents(t *testing.T) {
     tx.PushInput(ux.Hash())
     tx.PushOutput(genAddress, 100, 150)
     tx.PushOutput(genAddress, 200, 77)
-    uxout = CreateExpectedUnspents(tx)
+    uxout = CreateUnspents(bc.Head().Head, tx)
     assert.Equal(t, len(uxout), 2)
     assertValidUnspentsNoHeader(t, tx, uxout)
 
     // No outs
     tx = Transaction{}
-    uxout = CreateExpectedUnspents(tx)
+    uxout = CreateUnspents(bc.Head().Head, tx)
     assertValidUnspentsNoHeader(t, tx, uxout)
 }
 
@@ -543,7 +569,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
     tx := makeTransactionForChain(t, bc)
     uxIn, err := bc.Unspent.GetMultiple(tx.In)
     assert.Nil(t, err)
-    uxOut := CreateExpectedUnspents(tx)
+    uxOut := CreateUnspents(bc.Head().Head, tx)
     assert.Nil(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut))
 
     // Destroying coins
@@ -553,7 +579,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
     tx.PushOutput(genAddress, 10e6, 0)
     uxIn, err = bc.Unspent.GetMultiple(tx.In)
     assert.Nil(t, err)
-    uxOut = CreateExpectedUnspents(tx)
+    uxOut = CreateUnspents(bc.Head().Head, tx)
     err = verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut)
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(),
@@ -568,7 +594,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
     tx.PushOutput(genAddress, bc.Unspent.Array()[0].Body.Coins-1e6, 1)
     uxIn, err = bc.Unspent.GetMultiple(tx.In)
     assert.Nil(t, err)
-    uxOut = CreateExpectedUnspents(tx)
+    uxOut = CreateUnspents(bc.Head().Head, tx)
     assertError(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut),
         "Insufficient coin hours")
 
@@ -593,7 +619,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
     tx.UpdateHeader()
     uxIn, err = bc.Unspent.GetMultiple(tx.In)
     assert.Nil(t, err)
-    uxOut = CreateExpectedUnspents(tx)
+    uxOut = CreateUnspents(bc.Head().Head, tx)
     assertError(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut),
         "Insufficient coins")
 }
@@ -641,7 +667,7 @@ func TestVerifyTransaction(t *testing.T) {
 
     // Failure, hash collision with unspents
     tx = makeTransactionForChain(t, bc)
-    uxOut := CreateExpectedUnspents(tx)
+    uxOut := CreateUnspents(bc.Head().Head, tx)
     bc.Unspent.Add(uxOut[0])
     assertError(t, bc.VerifyTransaction(tx),
         "New unspents collide with existing unspents")

@@ -188,34 +188,6 @@ func TestTransactionPushOutput(t *testing.T) {
     }
 }
 
-func TestTransactionSignInput(t *testing.T) {
-    tx := &Transaction{}
-    // Panics if too many inputs exist
-    tx.In = append(tx.In, make([]SHA256, math.MaxUint16+2)...)
-    _, s := GenerateKeyPair()
-    assert.Panics(t, func() { tx.signInput(0, s, SHA256{}) })
-
-    // Panics if idx too large for number of inputs
-    tx = &Transaction{}
-    ux, s := makeUxOutWithSecret(t)
-    tx.PushInput(ux.Hash())
-    assert.Panics(t, func() { tx.signInput(1, s, SHA256{}) })
-
-    // Sigs should be extended if needed
-    assert.Equal(t, len(tx.Head.Sigs), 0)
-    ux2, s2 := makeUxOutWithSecret(t)
-    tx.PushInput(ux2.Hash())
-    tx.signInput(1, s2, tx.hashInner())
-    assert.Equal(t, len(tx.Head.Sigs), 2)
-    assert.Equal(t, tx.Head.Sigs[0], Sig{})
-    assert.NotEqual(t, tx.Head.Sigs[1], Sig{})
-    // Signing the earlier sig should be ok
-    tx.signInput(0, s, tx.hashInner())
-    assert.Equal(t, len(tx.Head.Sigs), 2)
-    assert.NotEqual(t, tx.Head.Sigs[0], Sig{})
-    assert.NotEqual(t, tx.Head.Sigs[1], Sig{})
-}
-
 func TestTransactionSignInputs(t *testing.T) {
     tx := &Transaction{}
     // Panics if txns already signed
@@ -529,7 +501,7 @@ func TestFullTransaction(t *testing.T) {
     _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)
 
-    txo := CreateExpectedUnspents(tx)
+    txo := CreateUnspents(bc.Head().Head, tx)
     tx = Transaction{}
     assert.Equal(t, txo[0].Body.Address, a1)
     assert.Equal(t, txo[1].Body.Address, a2)

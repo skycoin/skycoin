@@ -24,6 +24,40 @@ func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int,
     return nil
 }
 
+// Maps from coin.Transaction hash to its expected unspents.  The unspents'
+// Head can be different at execution time, but the Unspent's hash is fixed.
+type TxnUnspents map[coin.SHA256]coin.UxArray
+
+// // Returns Unspents for multiple addresses
+// func (self TxnUnspents) AllForAddresses(addrs []coin.Address) coin.AddressUxOuts {
+//     m := make(map[coin.Address]byte, len(addrs))
+//     for _, a := range addrs {
+//         m[a] = byte(1)
+//     }
+//     uxo := make(coin.AddressUxOuts)
+//     for _, uxa := range self {
+//         for _, ux := range uxa {
+//             if _, exists := m[ux.Body.Address]; exists {
+//                 uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
+//             }
+//         }
+//     }
+//     return uxo
+// }
+
+// Returns all Unspents for a single address
+func (self TxnUnspents) AllForAddress(a coin.Address) coin.UxArray {
+    uxo := make(coin.UxArray, 0)
+    for _, uxa := range self {
+        for i, _ := range uxa {
+            if uxa[i].Body.Address == a {
+                uxo = append(uxo, uxa[i])
+            }
+        }
+    }
+    return uxo
+}
+
 type UnconfirmedTxn struct {
     Txn coin.Transaction
     // Time the txn was last received
@@ -48,13 +82,14 @@ type UnconfirmedTxnPool struct {
     Txns map[coin.SHA256]UnconfirmedTxn
     // Predicted unspents, assuming txns are valid.  Needed to predict
     // our future balance and avoid double spending our own coins
-    Unspent coin.UnspentPool
+    // Maps from Transaction.Hash() to UxArray.
+    Unspent TxnUnspents
 }
 
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
     return &UnconfirmedTxnPool{
         Txns:    make(map[coin.SHA256]UnconfirmedTxn),
-        Unspent: coin.NewUnspentPool(),
+        Unspent: make(TxnUnspents),
     }
 }
 
@@ -115,22 +150,20 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
     }
 
     // Update if we already have this txn
-    ut, ok := self.Txns[t.Hash()]
+    h := t.Hash()
+    ut, ok := self.Txns[h]
     if ok {
         now := util.Now()
         ut.Received = now
         ut.Checked = now
-        self.Txns[ut.Txn.Hash()] = ut
+        self.Txns[h] = ut
         return nil, true
     }
 
     // Add txn to index
-    self.Txns[t.Hash()] = self.createUnconfirmedTxn(&bc.Unspent, t, addrs)
+    self.Txns[h] = self.createUnconfirmedTxn(&bc.Unspent, t, addrs)
     // Add predicted unspents
-    uxs := coin.CreateExpectedUnspents(t)
-    for i, _ := range uxs {
-        self.Unspent.Add(uxs[i])
-    }
+    self.Unspent[h] = coin.CreateUnspents(bc.Head().Head, t)
 
     return nil, false
 }
@@ -146,37 +179,21 @@ func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
     return txns
 }
 
-// Remove a single txn
-func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain, h coin.SHA256) {
-    t, ok := self.Txns[h]
-    if !ok {
-        return
-    }
-    delete(self.Txns, h)
-    outputs := coin.CreateExpectedUnspents(t.Txn)
-    hashes := make([]coin.SHA256, len(outputs))
-    for i, _ := range outputs {
-        hashes[i] = outputs[i].Hash()
-    }
-    self.Unspent.DelMultiple(hashes)
+// Remove a single txn by hash
+func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain,
+    txHash coin.SHA256) {
+    delete(self.Txns, txHash)
+    delete(self.Unspent, txHash)
 }
 
 // Removes multiple txns at once. Slightly more efficient than a series of
-// single RemoveTxns
+// single RemoveTxns.  Hashes is an array of Transaction hashes.
 func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
     hashes []coin.SHA256) {
-    uxo := make([]coin.UxOut, 0)
     for i, _ := range hashes {
-        if t, ok := self.Txns[hashes[i]]; ok {
-            delete(self.Txns, hashes[i])
-            uxo = append(uxo, coin.CreateExpectedUnspents(t.Txn)...)
-        }
+        delete(self.Txns, hashes[i])
+        delete(self.Unspent, hashes[i])
     }
-    uxhashes := make([]coin.SHA256, len(uxo))
-    for i, _ := range uxo {
-        uxhashes[i] = uxo[i].Hash()
-    }
-    self.Unspent.DelMultiple(uxhashes)
 }
 
 // Removes confirmed txns from the pool

@@ -113,7 +113,7 @@ func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
 }
 
 func newBlockHeader(prev *BlockHeader, currentTime uint64) BlockHeader {
-    
+
     if currentTime < prev.Time {
         log.Panic("Cannot create block with early timestamp than previous block")
     }
@@ -204,7 +204,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
             SrcTransaction: txn.Hash(),
             Address:        genesisAddress,
             Coins:          genesisCoins,
-            Hours:          0, //zero genesis coins
+            Hours:          0,
         },
     }
     self.Unspent.Add(ux)
@@ -216,48 +216,24 @@ func (self *Blockchain) Head() *Block {
     return &self.Blocks[len(self.Blocks)-1]
 }
 
-//Time returns time of last block
-//used as system clock indepedent clock for coin hour calculations
-//Deprecate
+// Time returns time of last block
+// used as system clock indepedent clock for coin hour calculations
+// TODO: Deprecate
 func (self *Blockchain) Time() uint64 {
     return self.Head().Head.Time
 }
 
-
-//Increments time from head instead of using block time
-func (self *Blockchain) NewBlockFromTransactionsInc(txns Transactions, incTime uint64) (Block, error) {
-    ctime := self.Head().Head.Time + incTime
-    b,err := self.NewBlockFromTransactions(txns, ctime)
-    return b,err
-}
-
 // Creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
-// TODO: remove blocksize (soft limit)
-// TODO: remove creation interval
-// TODO: require block creation time as input to function
-
-//func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
-//    creationInterval uint64, maxBlockSize int) (Block, error) {
-// Note: maxBlockSize must be enforced outside of coin parser.
-
-//TODO: ERROR NewBlockFromTransactions arbritrates again...
-func (self *Blockchain) NewBlockFromTransactions(txns Transactions, currentTime uint64) (Block, error) {
+func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
+    currentTime uint64) (Block, error) {
+    err := self.verifyTransactions(txns)
+    if err != nil {
+        return Block{}, err
+    }
     b := newBlock(self.Head(), currentTime)
-    
-    //TODO: replace arbitrate with verify
-    newTxns := self.ArbitrateTransactions(txns)
-    // Restrict txns by size
-    //newTxns = newTxns.TruncateBytesTo(maxBlockSize)
-    // Note: size limits,soft limits enforced at higher level
-    if len(newTxns) == 0 {
-        return Block{}, errors.New("Coin.NewBlockFromTransactions, No valid transactions")
-    }
-    if len(newTxns) != len(txns) {
-        log.Panic("Coin.NewBlockFromTransactions, invalid input transactions")
-    }
-    b.Body.Transactions = newTxns
-    fee, err := self.TransactionFees(newTxns)
+    b.Body.Transactions = txns
+    fee, err := self.TransactionFees(txns)
     if err != nil {
         // This should have been caught by arbitrateTransactions
         log.Panicf("Invalid transaction fees: %v", err)
@@ -652,6 +628,7 @@ func verifyTransactionSpending(headTime uint64, tx Transaction,
         return errors.New("Transactions may not create or destroy coins")
     }
     if hoursIn < hoursOut {
+        logger.Critical("Hours in, out: %d, %d", hoursIn, hoursOut)
         return errors.New("Insufficient coin hours")
     }
     return nil

@@ -3,6 +3,7 @@ package coin
 import (
     "bytes"
     "github.com/stretchr/testify/assert"
+    "log"
     "testing"
     "time"
 )
@@ -13,32 +14,24 @@ var (
     testMaxSize          = 1024 * 1024
 )
 
-var genTime uint64 = 1000
-var blkTime uint64 = 15 //increment time per block
-
-//underscore to prevent masking/alias bug
-var _genCoins uint64 = 1e6 //1 million coins for testing
-var _genCoinHours  uint64 = 0
+var _genTime uint64 = 1000
+var _incTime uint64 = 3600 * 1000
+var _genCoins uint64 = 1000e6
+var _genCoinHours uint64 = 1000 * 1000
 
 /*
-    
+
 
 
 */
 
 /* Helpers */
 
-//genesis block for testing
-//func _createGenesisBlock(bc *Blockchain, genesisAddress Address) Block {
-//    return bc.CreateGenesisBlock(genesisAddress, genTime, _genCoins)
-//}
-
 func assertError(t *testing.T, err error, msg string) {
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), msg)
 }
 
-//WTF: should take in time?
 func makeNewBlock() Block {
     body := BlockBody{
         Transactions: nil,
@@ -56,19 +49,37 @@ func makeNewBlock() Block {
     return newBlock(&prev, 100+20)
 }
 
-func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
-    fee uint64) Transaction {
+func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
+    hours, fee uint64) Transaction {
     tx := Transaction{}
-    ux := bc.Unspent.Array()[0]
+    ux := UxOut{}
+    ux.Head.Time = 0
+    arr := bc.Unspent.Array()
+    assert.NotEqual(t, len(arr), 0)
+    for _, u := range arr {
+        if u.Head.Time >= ux.Head.Time {
+            ux = u
+        }
+    }
     assert.Equal(t, ux.Body.Address, genAddress)
-    tx.PushInput(bc.Unspent.Array()[0].Hash())
-    tx.PushOutput(makeAddress(), 1e6, 100)
-    tx.PushOutput(genAddress, ux.Body.Coins-1e6, ux.Body.Hours-100-fee)
+    tx.PushInput(ux.Hash())
+    tx.PushOutput(makeAddress(), 1e6, hours)
+    chrs := ux.CoinHours(bc.Time())
+    if chrs < hours+fee {
+        log.Panicf("CoinHours underflow. Have %d, need at least %d", chrs,
+            hours+fee)
+    }
+    tx.PushOutput(genAddress, ux.Body.Coins-1e6, chrs-hours-fee)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
     assert.Nil(t, tx.Verify())
     assert.Nil(t, bc.VerifyTransaction(tx))
     return tx
+}
+
+func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
+    fee uint64) Transaction {
+    return makeTransactionForChainWithHoursFee(t, bc, 100, fee)
 }
 
 func makeTransactionForChain(t *testing.T, bc *Blockchain) Transaction {
@@ -82,8 +93,14 @@ func addTransactionToBlock(t *testing.T, b *Block) Transaction {
 }
 
 func addBlockToBlockchain(t *testing.T, bc *Blockchain) Block {
-    tx := makeTransactionForChain(t, bc)
-    b, err := bc.NewBlockFromTransactionsInc(Transactions{tx},blkTime)
+    // Make a late txn to move the head time along so we have some coin hours
+    tx := makeTransactionForChainWithHoursFee(t, bc, 0, 0)
+    b, err := bc.NewBlockFromTransactions(Transactions{tx}, _incTime)
+    assert.Nil(t, err)
+    assertExecuteBlock(t, bc, b, tx)
+    tx = makeTransactionForChain(t, bc)
+    b, err = bc.NewBlockFromTransactions(Transactions{tx},
+        bc.Time()+_incTime)
     assert.Nil(t, err)
     assertExecuteBlock(t, bc, b, tx)
     return b
@@ -97,7 +114,8 @@ func splitGenesisBlock(t *testing.T, bc *Blockchain) UxArray {
     txn.PushOutput(genAddress, ux.Body.Coins/2, ux.Body.Hours/2)
     txn.SignInputs([]SecKey{genSecret})
     txn.UpdateHeader()
-    b, err := bc.NewBlockFromTransactionsInc(Transactions{txn},blkTime)
+    b, err := bc.NewBlockFromTransactions(Transactions{txn},
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     uxs, err := bc.ExecuteBlock(b)
     assert.Nil(t, err)
@@ -116,7 +134,8 @@ func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
     txn.UpdateHeader()
     assert.Nil(t, txn.Verify())
     assert.Nil(t, bc.VerifyTransaction(txn))
-    b, err := bc.NewBlockFromTransactionsInc(Transactions{txn}, blkTime)
+    b, err := bc.NewBlockFromTransactions(Transactions{txn},
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     assertExecuteBlock(t, bc, b, txn)
 }
@@ -159,17 +178,13 @@ func assertValidUnspentsNoHeader(t *testing.T, tx Transaction, uxo UxArray) {
 
 /* Tests */
 
-func TestConstantsStayConstant(t *testing.T) {
-    assert.Equal(t, _genCoins, uint64(_genCoins))
-    assert.Equal(t, _genCoinHours, uint64(_genCoinHours))
-}
-
 func TestNewBlock(t *testing.T) {
     prev := Block{Head: BlockHeader{Version: 0x02, Time: 100, BkSeq: 0}}
-    b := newBlock(&prev, 133) //newBlock takes in absolute, not relative time1
+    // newBlock takes in absolute, not relative time
+    b := newBlock(&prev, 133)
     assert.Equal(t, b.Body, BlockBody{})
     assert.Equal(t, b.Head.PrevHash, prev.HashHeader())
-    assert.Equal(t, b.Head.Time, 133)
+    assert.Equal(t, b.Head.Time, uint64(133))
     assert.Equal(t, b.Head.BkSeq, uint64(1))
 }
 
@@ -228,11 +243,11 @@ func TestBlockGetTransaction(t *testing.T) {
 func TestNewBlockHeader(t *testing.T) {
     b := makeNewBlock()
     prev := &b.Head
-    bh := newBlockHeader(prev, genTime)
+    bh := newBlockHeader(prev, prev.Time+22)
     assert.Equal(t, bh.PrevHash, prev.Hash())
     assert.NotEqual(t, bh.PrevHash, prev.PrevHash)
-    assert.Equal(t, bh.Time, prev.Time+22)
-    assert.Equal(t, bh.BkSeq, prev.BkSeq+1)
+    assert.Equal(t, bh.Time, uint64(prev.Time+22))
+    assert.Equal(t, bh.BkSeq, uint64(prev.BkSeq+1))
 }
 
 func TestBlockHeaderHash(t *testing.T) {
@@ -290,8 +305,7 @@ func TestNewBlockchain(t *testing.T) {
 func TestCreateMasterGenesisBlock(t *testing.T) {
     b := NewBlockchain()
     a := makeAddress()
-    //gb := _createGenesisBlock(b,a)
-    gb := b.CreateGenesisBlock(a, genTime, _genCoins)
+    gb := b.CreateGenesisBlock(a, _genTime, _genCoins)
 
     assert.Equal(t, len(b.Blocks), 1)
     assert.Equal(t, b.Blocks[0], gb)
@@ -300,14 +314,13 @@ func TestCreateMasterGenesisBlock(t *testing.T) {
     assert.NotEqual(t, gb.Head.Time, uint64(0))
     assert.Equal(t, gb.Head.BkSeq, uint64(0))
     // Panicing
-    assert.Panics(t, func() { b.CreateGenesisBlock(a, genTime, _genCoins) })
+    assert.Panics(t, func() { b.CreateGenesisBlock(a, _genTime, _genCoins) })
 }
 
 func TestCreateGenesisBlock(t *testing.T) {
     b := NewBlockchain()
     now := Now()
-    //gb := b.CreateGenesisBlock(genTime, _genCoins)
-    gb := b.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := b.CreateGenesisBlock(genAddress, now, _genCoins)
     assert.Equal(t, gb.Head.Time, now)
     assert.Equal(t, gb.Head.BkSeq, uint64(0))
     assert.Equal(t, len(gb.Body.Transactions), 1)
@@ -317,14 +330,14 @@ func TestCreateGenesisBlock(t *testing.T) {
     txo := txn.Out[0]
     assert.Equal(t, txo.Address, genAddress)
     assert.Equal(t, txo.Coins, _genCoins)
-    assert.Equal(t, txo.Hours, _genCoinHours)
+    assert.Equal(t, txo.Hours, uint64(0))
     ux := b.Unspent.Array()[0]
     assert.Equal(t, ux.Head.BkSeq, uint64(0))
     assert.Equal(t, ux.Head.Time, now)
     assert.Equal(t, ux.Body.SrcTransaction, txn.Hash())
     assert.Equal(t, ux.Body.Address, genAddress)
     assert.Equal(t, ux.Body.Coins, _genCoins)
-    assert.Equal(t, ux.Body.Hours, _genCoinHours)
+    assert.Equal(t, ux.Body.Hours, uint64(0))
     h := Merkle([]SHA256{gb.Body.Transactions[0].Hash()})
     assert.Equal(t, gb.Head.BodyHash, h)
     assert.Equal(t, gb.Head.PrevHash, SHA256{})
@@ -334,12 +347,14 @@ func TestCreateGenesisBlock(t *testing.T) {
     have.Sort()
     assert.Equal(t, expect, have)
     // Panicing
-    assert.Panics(t, func() { b.CreateGenesisBlock(genAddress, genTime, _genCoins) })
+    assert.Panics(t, func() {
+        b.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+    })
 }
 
 func TestBlockchainHead(t *testing.T) {
     b := NewBlockchain()
-    gb := b.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := b.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     assert.Equal(t, *(b.Head()), gb)
     nb := addBlockToBlockchain(t, b)
     assert.Equal(t, *(b.Head()), nb)
@@ -347,7 +362,7 @@ func TestBlockchainHead(t *testing.T) {
 
 func TestBlockchainTime(t *testing.T) {
     b := NewBlockchain()
-    gb := b.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := b.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     assert.Equal(t, b.Time(), gb.Head.Time)
     nb := addBlockToBlockchain(t, b)
     assert.Equal(t, b.Time(), nb.Head.Time)
@@ -355,22 +370,27 @@ func TestBlockchainTime(t *testing.T) {
 
 func TestNewBlockFromTransactions(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     gb.Head.Version = 0x0F
     bc.Blocks[0] = gb
     assert.Equal(t, bc.Blocks[0].Head.Version, uint32(0x0F))
 
     // No transactions
-    _, err := bc.NewBlockFromTransactionsInc(Transactions{}, blkTime)
+    _, err := bc.NewBlockFromTransactions(Transactions{},
+        bc.Head().Head.Time+_incTime)
     assertError(t, err, "No valid transactions")
 
     // Bad creation interval
     txn := makeTransactionForChain(t, bc)
     txns := Transactions{txn}
-    assert.Panics(t, func() { bc.NewBlockFromTransactionsInc(txns, blkTime) })
+    assert.Panics(t, func() {
+        bc.NewBlockFromTransactions(txns,
+            bc.Head().Head.Time+_incTime)
+    })
 
     // Valid transaction
-    b, err := bc.NewBlockFromTransactionsInc(txns, blkTime)
+    b, err := bc.NewBlockFromTransactions(txns,
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     assert.Equal(t, len(b.Body.Transactions), 1)
     assert.Equal(t, b.Body.Transactions[0], txn)
@@ -385,7 +405,8 @@ func TestNewBlockFromTransactions(t *testing.T) {
     // Invalid transaction
     txn.Head.Hash = SHA256{}
     txns = Transactions{txn}
-    _, err = bc.NewBlockFromTransactionsInc(txns, blkTime)
+    _, err = bc.NewBlockFromTransactions(txns,
+        bc.Head().Head.Time+_incTime)
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), "No valid transactions")
 
@@ -408,7 +429,8 @@ func TestNewBlockFromTransactions(t *testing.T) {
     // Combine them and sort
     txns = Transactions{txn, txn2}
     txns = SortTransactions(txns, bc.TransactionFee)
-    b, err = bc.NewBlockFromTransactionsInc(txns, blkTime)
+    b, err = bc.NewBlockFromTransactions(txns,
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     assert.Equal(t, len(b.Body.Transactions), 2)
     assert.Equal(t, b.Body.Transactions, txns)
@@ -419,7 +441,8 @@ func TestNewBlockFromTransactions(t *testing.T) {
     if sTxns.IsSorted() {
         txns2[0], txns2[1] = txns2[1], txns2[0]
     }
-    b, err = bc.NewBlockFromTransactionsInc(txns2, blkTime)
+    b, err = bc.NewBlockFromTransactions(txns2,
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     assert.Equal(t, len(b.Body.Transactions), 2)
     assert.NotEqual(t, b.Body.Transactions, txns2)
@@ -430,7 +453,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
 
 func TestVerifyTransactionInputs(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     tx := makeTransactionForChain(t, bc)
     // Valid txn
     uxIn, err := bc.Unspent.GetMultiple(tx.In)
@@ -457,7 +480,7 @@ func TestVerifyTransactionInputs(t *testing.T) {
 
 func TestCreateUnspents(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     // 1 out
     tx := Transaction{}
     tx.PushOutput(genAddress, 11e6, 255)
@@ -488,7 +511,7 @@ func TestCreateUnspents(t *testing.T) {
 
 func TestCreateExpectedUnspents(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     // 1 out
     tx := Transaction{}
     tx.PushOutput(genAddress, 11e6, 255)
@@ -514,7 +537,7 @@ func TestCreateExpectedUnspents(t *testing.T) {
 
 func TestVerifyTransactionSpending(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
 
     // Valid
     tx := makeTransactionForChain(t, bc)
@@ -558,7 +581,8 @@ func TestVerifyTransactionSpending(t *testing.T) {
     tx.PushOutput(genAddress, _genCoins-1e6, 100)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
-    b, err := bc.NewBlockFromTransactionsInc(Transactions{tx}, blkTime)
+    b, err := bc.NewBlockFromTransactions(Transactions{tx},
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     uxs, err := bc.ExecuteBlock(b)
     assert.Nil(t, err)
@@ -576,7 +600,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 
 func TestVerifyTransaction(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     // Genesis block is not valid by normal standards
     assert.NotNil(t, bc.VerifyTransaction(gb.Body.Transactions[0]))
     assert.Equal(t, len(bc.Blocks), 1)
@@ -654,7 +678,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 func TestBlockchainVerifyBlock(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     // Genesis block not valid after the fact
     assert.NotNil(t, bc.VerifyBlock(&gb))
 
@@ -664,7 +688,8 @@ func TestBlockchainVerifyBlock(t *testing.T) {
     tx.PushOutput(genAddress, _genCoins, _genCoinHours)
     tx.SignInputs([]SecKey{genSecret})
     tx.UpdateHeader()
-    b, err := bc.NewBlockFromTransactionsInc(Transactions{tx}, blkTime)
+    b, err := bc.NewBlockFromTransactions(Transactions{tx},
+        bc.Head().Head.Time+_incTime)
     assert.Nil(t, err)
     assert.Nil(t, bc.VerifyBlock(&b))
 
@@ -683,7 +708,7 @@ func TestBlockchainVerifyBlock(t *testing.T) {
 
 func TestVerifyBlockHeader(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     b := Block{Body: BlockBody{}}
     b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
     h := BlockHeader{}
@@ -730,7 +755,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 
 func TestVerifyGenesisBlockHeader(t *testing.T) {
     bc := NewBlockchain()
-    gb := bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     assert.Nil(t, verifyGenesisBlockHeader(&gb))
     gb.Head.BkSeq += 1
     assertError(t, verifyGenesisBlockHeader(&gb), "BkSeq invalid")
@@ -742,7 +767,7 @@ func TestVerifyGenesisBlockHeader(t *testing.T) {
 
 func TestTransactionFee(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     // Valid txn, 100 hours fee
     tx := makeTransactionForChain(t, bc)
     fee, err := bc.TransactionFee(&tx)
@@ -765,7 +790,7 @@ func TestTransactionFee(t *testing.T) {
 
 func TestTransactionFees(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     // Valid txn, 100 hours fee
     tx := makeTransactionForChain(t, bc)
     fee, err := bc.TransactionFees(Transactions{tx})
@@ -800,7 +825,7 @@ func TestNow(t *testing.T) {
 
 func TestProcessTransactions(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
 
     // Invalid, no transactions in block
     // arbitrating=false
@@ -890,7 +915,7 @@ func TestProcessTransactions(t *testing.T) {
 
 func TestExecuteBlock(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
 
     // Invalid block returns error
     b := Block{}
@@ -919,7 +944,8 @@ func TestExecuteBlock(t *testing.T) {
     unswapped := sTxns.IsSorted()
     txns = SortTransactions(txns, bc.TransactionFee)
     assert.Nil(t, bc.verifyTransactions(txns))
-    b, err = bc.NewBlockFromTransactionsInc(txns, blkTime)
+    b, err = bc.NewBlockFromTransactions(txns,
+        bc.Head().Head.Time+_incTime)
     assert.Equal(t, b.Head.BkSeq, uint64(2))
     assert.Nil(t, err)
     assert.Equal(t, len(b.Body.Transactions), 2)

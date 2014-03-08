@@ -244,10 +244,10 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
                 "generated private key failed testSecKey")
         }
         if PubKeyFromSecKey(NewSecKey(secret)) != NewPubKey(public) {
-            s1 := NewSecKey(secret).Hex()
-            s2 := NewPubKey(public).Hex()
-            s3 := PubKeyFromSecKey(NewSecKey(secret)).Hex()
-            log.Printf("sec= %s, pub= %s recpub= %s \n", s1,s2, s3 )
+            //s1 := NewSecKey(secret).Hex()
+            //s2 := NewPubKey(public).Hex()
+            //s3 := PubKeyFromSecKey(NewSecKey(secret)).Hex()
+            //log.Printf("sec= %s, pub= %s recpub= %s \n", s1,s2, s3 )
             log.Panic("DebugLevel1, GenerateDeterministicKeyPair, " +
                 "public key does not match private key")
         }

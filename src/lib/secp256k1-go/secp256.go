@@ -138,6 +138,7 @@ func generateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
         seckey_ptr, 1)
 
     if ret != 1 {
+        //is this even possible?
         //invalid secret, try different
         seed_hash = SumSHA256(seed_hash[0:32])
         return GenerateDeterministicKeyPair(seed_hash)

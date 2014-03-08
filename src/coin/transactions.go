@@ -119,23 +119,6 @@ func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
     self.Out = append(self.Out, to)
 }
 
-// Signs a UxOut hash at its signature index
-func (self *Transaction) signInput(idx uint16, sec SecKey, h SHA256) {
-    sig := SignHash(h, sec)
-    txInLen := len(self.In)
-    if txInLen > math.MaxUint16 {
-        log.Panic("In too large")
-    }
-    if idx >= uint16(txInLen) {
-        log.Panic("Invalid In idx")
-    }
-    if int(idx) >= len(self.Head.Sigs) {
-        extendBy := int(idx) - len(self.Head.Sigs) + 1
-        self.Head.Sigs = append(self.Head.Sigs, make([]Sig, extendBy)...)
-    }
-    self.Head.Sigs[idx] = sig
-}
-
 // Signs all inputs in the transaction
 func (self *Transaction) SignInputs(keys []SecKey) {
     if len(self.Head.Sigs) != 0 {
@@ -144,11 +127,18 @@ func (self *Transaction) SignInputs(keys []SecKey) {
     if len(keys) != len(self.In) {
         log.Panic("Invalid number of keys")
     }
-    self.Head.Sigs = make([]Sig, len(self.In))
+    if len(keys) > math.MaxUint16 {
+        log.Panic("Too many key")
+    }
+    if len(keys) == 0 {
+        log.Panic("No keys")
+    }
+    sigs := make([]Sig, len(self.In))
     h := self.hashInner()
     for i, k := range keys {
-        self.signInput(uint16(i), k, h)
+        sigs[i] = SignHash(h, k)
     }
+    self.Head.Sigs = sigs
 }
 
 // Returns the encoded byte size of the transaction
@@ -175,8 +165,6 @@ func (self *Transaction) UpdateHeader() {
 
 // Hashes only the Transaction Inputs & Outputs
 func (self *Transaction) hashInner() SHA256 {
-    // WARNING -- using encoder to calculate hash is prone to error.
-    // Encoder connot be considered stable.
     b1 := encoder.Serialize(self.In)
     b2 := encoder.Serialize(self.Out)
     b3 := append(b1, b2...)
@@ -205,6 +193,19 @@ func TransactionDeserialize(b []byte) Transaction {
 }
 
 type Transactions []Transaction
+
+// Calculates all the fees in Transactions
+func (self Transactions) Fees(calc FeeCalculator) (uint64, error) {
+    total := uint64(0)
+    for i, _ := range self {
+        fee, err := calc(&self[i])
+        if err != nil {
+            return 0, err
+        }
+        total += fee
+    }
+    return total, nil
+}
 
 func (self Transactions) Hashes() []SHA256 {
     hashes := make([]SHA256, len(self))

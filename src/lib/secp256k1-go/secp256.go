@@ -140,34 +140,34 @@ func generateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
     if ret != 1 {
         //invalid secret, try different
         seed_hash = SumSHA256(seed_hash[0:32])
-        return GenerateDeterministicKeyPair(seed_hash) 
+        return GenerateDeterministicKeyPair(seed_hash)
     }
 
     return pubkey, seckey
 }
 
 //this is a GPU and ASIC resistant hash function that combines SHA256 with operations on
-// elliptic curve through  slow secp256k1 signature operations. designed to protect 
+// elliptic curve through  slow secp256k1 signature operations. designed to protect
 // brainwallet seeds against GPU brute forcing
-func Secp256k1Hash(hash []byte) ([]byte) {
-    hash = SumSHA256(hash) //sha256
-    _,seckey := generateDeterministicKeyPair(hash) //generate key
-    sig := SignDeterministic(hash, seckey, hash)   //sign with key
+func Secp256k1Hash(hash []byte) []byte {
+    hash = SumSHA256(hash)                            //sha256
+    _, seckey := generateDeterministicKeyPair(hash)   //generate key
+    sig := SignDeterministic(hash, seckey, hash)      //sign with key
     return SumSHA256(append(SumSHA256(hash), sig...)) //append signature to sha256(seed) and hash
 }
 
 //generate a single secure key
 func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
     seed = Secp256k1Hash(seed)
-    pubkey,seckey := generateDeterministicKeyPair(seed)
-    return pubkey,seckey
+    pubkey, seckey := generateDeterministicKeyPair(seed)
+    return pubkey, seckey
 }
 
 //Iterator for deterministic keypair generation. Returns SHA256, Pubkey, Seckey
 //Feed SHA256 back into function to generate sequence of seckeys
 func DeterministicKeyPairIterator(seed []byte) ([]byte, []byte, []byte) {
     seed = Secp256k1Hash(seed)
-    pubkey,seckey := generateDeterministicKeyPair(seed) //this is our seckey
+    pubkey, seckey := generateDeterministicKeyPair(seed) //this is our seckey
     return seed, pubkey, seckey
 }
 
@@ -400,7 +400,7 @@ int secp256k1_ecdsa_recover_compact(const unsigned char *msg, int msglen,
 //recovery of pubkey means correct signature
 func RecoverPubkey(msg []byte, sig []byte) []byte {
     if len(sig) != 65 {
-        log.Panic()
+        log.Panic("Invalid signature length")
     }
 
     var pubkey []byte = make([]byte, 33)

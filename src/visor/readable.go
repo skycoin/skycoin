@@ -16,8 +16,9 @@ type BlockchainMetadata struct {
 }
 
 func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
+    head := v.blockchain.Head().Head
     return BlockchainMetadata{
-        Head:        NewReadableBlockHeader(&v.blockchain.Head().Head),
+        Head:        NewReadableBlockHeader(&head),
         Unspents:    uint64(len(v.blockchain.Unspent.Pool)),
         Unconfirmed: uint64(len(v.Unconfirmed.Txns)),
     }

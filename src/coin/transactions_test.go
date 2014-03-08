@@ -188,34 +188,6 @@ func TestTransactionPushOutput(t *testing.T) {
     }
 }
 
-func TestTransactionSignInput(t *testing.T) {
-    tx := &Transaction{}
-    // Panics if too many inputs exist
-    tx.In = append(tx.In, make([]SHA256, math.MaxUint16+2)...)
-    _, s := GenerateKeyPair()
-    assert.Panics(t, func() { tx.signInput(0, s, SHA256{}) })
-
-    // Panics if idx too large for number of inputs
-    tx = &Transaction{}
-    ux, s := makeUxOutWithSecret(t)
-    tx.PushInput(ux.Hash())
-    assert.Panics(t, func() { tx.signInput(1, s, SHA256{}) })
-
-    // Sigs should be extended if needed
-    assert.Equal(t, len(tx.Head.Sigs), 0)
-    ux2, s2 := makeUxOutWithSecret(t)
-    tx.PushInput(ux2.Hash())
-    tx.signInput(1, s2, tx.hashInner())
-    assert.Equal(t, len(tx.Head.Sigs), 2)
-    assert.Equal(t, tx.Head.Sigs[0], Sig{})
-    assert.NotEqual(t, tx.Head.Sigs[1], Sig{})
-    // Signing the earlier sig should be ok
-    tx.signInput(0, s, tx.hashInner())
-    assert.Equal(t, len(tx.Head.Sigs), 2)
-    assert.NotEqual(t, tx.Head.Sigs[0], Sig{})
-    assert.NotEqual(t, tx.Head.Sigs[1], Sig{})
-}
-
 func TestTransactionSignInputs(t *testing.T) {
     tx := &Transaction{}
     // Panics if txns already signed
@@ -310,7 +282,7 @@ func TestTransactionOutputHours(t *testing.T) {
 
 func TestNewSortableTransactions(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     txns := make(Transactions, 4)
     for i, _ := range txns {
         txns[i] = makeTransactionForChainWithFee(t, bc, uint64(i*100))
@@ -330,7 +302,7 @@ func TestNewSortableTransactions(t *testing.T) {
 
 func TestTransactionSorting(t *testing.T) {
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(genAddress, genTime, _genCoins)
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
     txns := make(Transactions, 4)
     for i := 0; i < len(txns); i++ {
         fee := uint64(0)
@@ -511,7 +483,7 @@ func TestFullTransaction(t *testing.T) {
     p1, s1 := GenerateKeyPair()
     a1 := AddressFromPubKey(p1)
     bc := NewBlockchain()
-    bc.CreateGenesisBlock(a1, genTime, _genCoins)
+    bc.CreateGenesisBlock(a1, _genTime, _genCoins)
     tx := Transaction{}
     ux := bc.Unspent.Array()[0]
     tx.PushInput(ux.Hash())
@@ -524,12 +496,12 @@ func TestFullTransaction(t *testing.T) {
     tx.UpdateHeader()
     assert.Nil(t, tx.Verify())
     assert.Nil(t, bc.VerifyTransaction(tx))
-    b, err := bc.NewBlockFromTransactionsInc(Transactions{tx}, blkTime)
+    b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
     assert.Nil(t, err)
     _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)
 
-    txo := CreateExpectedUnspents(tx)
+    txo := CreateUnspents(bc.Head().Head, tx)
     tx = Transaction{}
     assert.Equal(t, txo[0].Body.Address, a1)
     assert.Equal(t, txo[1].Body.Address, a2)
@@ -549,7 +521,7 @@ func TestFullTransaction(t *testing.T) {
     tx.UpdateHeader()
     assert.Nil(t, tx.Verify())
     assert.Nil(t, bc.VerifyTransaction(tx))
-    b, err = bc.NewBlockFromTransactionsInc(Transactions{tx}, blkTime)
+    b, err = bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
     assert.Nil(t, err)
     _, err = bc.ExecuteBlock(b)
     assert.Nil(t, err)

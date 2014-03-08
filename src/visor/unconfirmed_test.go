@@ -104,7 +104,7 @@ func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
 
 func assertValidUnspent(t *testing.T, bc *coin.Blockchain,
     unspent *coin.UnspentPool, tx coin.Transaction) {
-    expect := coin.CreateExpectedUnspents(tx)
+    expect := coin.CreateUnspents(bc.Head().Head, tx)
     assert.NotEqual(t, len(expect), 0)
     assert.Equal(t, len(expect), len(unspent.Pool))
     for _, ux := range expect {
@@ -526,10 +526,10 @@ func testRefresh(t *testing.T, mv *Visor,
     up.Txns[invalidUtxUnchecked.Hash()] = invalidUtxUnchecked
     up.Txns[invalidUtxChecked.Hash()] = invalidUtxChecked
     assert.Equal(t, len(up.Txns), 2)
-    for _, ux := range coin.CreateExpectedUnspents(invalidTxUnchecked) {
+    for _, ux := range coin.CreateUnspents(bc.Head().Head, invalidTxUnchecked) {
         up.Unspent.Add(ux)
     }
-    for _, ux := range coin.CreateExpectedUnspents(invalidTxChecked) {
+    for _, ux := range coin.CreateUnspents(bc.Head().Head, invalidTxChecked) {
         up.Unspent.Add(ux)
     }
 
@@ -774,7 +774,7 @@ func TestSpendsForAddresses(t *testing.T) {
         txn := coin.Transaction{}
         txn.PushInput(randSHA256())
         txn.PushOutput(useAddrs[i], 10e6, 1000)
-        uxa := coin.CreateExpectedUnspents(txn)
+        uxa := coin.CreateUnspents(bc.Head().Head, txn)
         for _, ux := range uxa {
             unspent.Add(ux)
         }

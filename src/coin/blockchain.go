@@ -227,6 +227,9 @@ func (self *Blockchain) Time() uint64 {
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     currentTime uint64) (Block, error) {
+    if currentTime <= self.Time() {
+        log.Panic("Time can only move forward")
+    }
     err := self.verifyTransactions(txns)
     if err != nil {
         return Block{}, err
@@ -332,6 +335,15 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
     if uxOut.HasDupes() {
         return errors.New("Duplicate unspent outputs in transaction")
     }
+    if DebugLevel1 {
+        // Check that new unspents don't collide with existing.  This should
+        // also be checked in verifyTransactions
+        for i, _ := range uxOut {
+            if self.Unspent.Has(uxOut[i].Hash()) {
+                return errors.New("New unspent collides with existing unspent")
+            }
+        }
+    }
 
     // Check that no coins are lost, and sufficient coins and hours are spent
     err = verifyTransactionSpending(self.Time(), tx, uxIn, uxOut)
@@ -408,7 +420,7 @@ func (self *Blockchain) processTransactions(txns Transactions,
     }
 
     skip := make(map[int]byte)
-    uxHashes := make(map[SHA256]byte, len(txns))
+    uxHashes := make(UxHashSet, len(txns))
     for i, tx := range txns {
         // Check the transaction against itself.  This covers the hash,
         // signature indices and duplicate spends within itself
@@ -526,7 +538,6 @@ func (self *Blockchain) processTransactions(txns Transactions,
 
 // Returns an error if any Transaction in txns is invalid
 func (self *Blockchain) verifyTransactions(txns Transactions) error {
-    // TODO - Check special case for genesis block
     _, err := self.processTransactions(txns, false)
     return err
 }
@@ -625,17 +636,6 @@ func verifyTransactionSpending(headTime uint64, tx Transaction,
     }
     if hoursIn < hoursOut {
         return errors.New("Insufficient coin hours")
-    }
-    return nil
-}
-
-// Returns error if the BlockHeader is not valid as the genesis block
-func verifyGenesisBlockHeader(b *Block) error {
-    if b.Head.BkSeq != 0 {
-        return errors.New("BkSeq invalid")
-    }
-    if b.HashBody() != b.Head.BodyHash {
-        return errors.New("Computed body hash does not match")
     }
     return nil
 }

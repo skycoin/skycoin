@@ -82,6 +82,10 @@ func (self *UxOut) CoinHours(t uint64) uint64 {
     return self.Body.Hours + coinHours               //starting+earned
 }
 
+// Set mapping from UxHash to a placeholder value. Ignore the byte value,
+// only check for existence
+type UxHashSet map[SHA256]byte
+
 // Array of Outputs
 // Used by unspent output pool, spent tests
 type UxArray []UxOut
@@ -97,26 +101,32 @@ func (self UxArray) Hashes() []SHA256 {
 
 // Checks the UxArray for outputs which have the same hash
 func (self UxArray) HasDupes() bool {
-    m := make(map[SHA256]byte, len(self))
-    for _, ux := range self {
-        h := ux.Hash()
+    m := make(UxHashSet, len(self))
+    for i, _ := range self {
+        h := self[i].Hash()
         if _, ok := m[h]; ok {
             return true
         } else {
             m[h] = byte(1)
         }
+        // TODO -- benchmark that vs this:
+        // prev := len(m)
+        // m[h] = byte(1)
+        // if len(m) == prev {
+        //     return true
+        // }
     }
     return false
 }
 
 // Returns a copy of self with duplicates removed
 func (self UxArray) removeDupes() UxArray {
-    m := make(map[SHA256]byte, len(self))
+    m := make(UxHashSet, len(self))
     deduped := make(UxArray, 0, len(self))
-    for _, ux := range self {
-        h := ux.Hash()
+    for i, _ := range self {
+        h := self[i].Hash()
         if _, ok := m[h]; !ok {
-            deduped = append(deduped, ux)
+            deduped = append(deduped, self[i])
             m[h] = byte(1)
         }
     }
@@ -126,8 +136,8 @@ func (self UxArray) removeDupes() UxArray {
 // Returns the UxArray as a hash to byte map to be used as a set.  The byte's
 // value should be ignored, although it will be 1.  Should only be used for
 // membership detection.
-func (self UxArray) Set() map[SHA256]byte {
-    m := make(map[SHA256]byte, len(self))
+func (self UxArray) Set() UxHashSet {
+    m := make(UxHashSet, len(self))
     for i, _ := range self {
         m[self[i].Hash()] = byte(1)
     }

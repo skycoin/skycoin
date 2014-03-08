@@ -40,6 +40,7 @@ type Block struct {
 
 type BlockHeader struct {
     Version uint32
+    UxSnapshot [4]byte //first 4 bytes of sha256 of Ux set hash
 
     Time  uint64
     BkSeq uint64 //increment every block
@@ -177,7 +178,6 @@ func NewBlockchain() *Blockchain {
 
 // Creates a genesis block and applies it against chain
 // Takes in time as parameter
-// Todo, take in number of coins
 func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     timestamp uint64, genesisCoins uint64) Block {
     logger.Info("Creating new genesis block with address %s",
@@ -244,7 +244,12 @@ func (self *Blockchain) NewBlockFromTransactionsInc(txns Transactions, incTime u
 //TODO: ERROR NewBlockFromTransactions arbritrates again...
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions, currentTime uint64) (Block, error) {
     b := newBlock(self.Head(), currentTime)
-    
+    //set snapshot hash
+    uxHash := AddSHA256(self.Unspent.XorHash, b.Head.PrevHash)
+    copy(b.Head.UxSnapshot[0:4], uxHash[0:4])    
+
+    b.Head.UxSnapshot
+
     //TODO: replace arbitrate with verify
     newTxns := self.ArbitrateTransactions(txns)
     // Restrict txns by size
@@ -305,11 +310,13 @@ func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
 
 // Verifies the BlockHeader and BlockBody
 func (self *Blockchain) VerifyBlock(b *Block) error {
-    if err := verifyBlockHeader(self.Head(), b); err != nil {
+    if err := self.verifyBlockHeader(self.Head(), b); err != nil {
         return err
     }
-    err := self.verifyTransactions(b.Body.Transactions)
-    if err != nil {
+    if err := self.verifyTransactions(b.Body.Transactions); err != nil {
+        return err
+    }
+    if err := self.verifyUxSnapshop(b); err != nil {
         return err
     }
     return nil
@@ -668,6 +675,17 @@ func verifyGenesisBlockHeader(b *Block) error {
     return nil
 }
 
+// Compares the state of the current UxSnapshot hash to state of unspent
+// output pool.
+func (self *Blockchain) verifyUxSnapshop(b *Block) error {
+    headHash = self.Head().Head.Hash()
+    uxHash := AddSHA256(self.UnspentPool.XorHash, headHash)
+    if bytes.Equal(b.Head.UxSnapshot, uxHash) == false {
+        return errors.New("UxSnapshot does not match")
+    }
+    return nil
+}
+
 // Returns error if the BlockHeader is not valid
 func verifyBlockHeader(head *Block, b *Block) error {
     //check BkSeq
@@ -685,5 +703,28 @@ func verifyBlockHeader(head *Block, b *Block) error {
     if b.HashBody() != b.Head.BodyHash {
         return errors.New("Computed body hash does not match")
     }
+
     return nil
 }
+
+/*
+// partial header verification, no blockchain depedence
+func (self *Blockchain) verifyBlockHeader(head *Block, b *Block) error {
+    //check BkSeq
+    if b.Head.BkSeq != head.Head.BkSeq+1 {
+        return errors.New("BkSeq invalid")
+    }
+    //check Time, only requirement is that its monotonely increasing
+    if b.Head.Time <= head.Head.Time {
+        return errors.New("Block time must be > head time")
+    }
+    // Check block hash against previous head
+    if b.Head.PrevHash != head.HashHeader() {
+        return errors.New("PrevHash does not match current head")
+    }
+    if b.HashBody() != b.Head.BodyHash {
+        return errors.New("Computed body hash does not match")
+    }
+    return nil
+}
+*/

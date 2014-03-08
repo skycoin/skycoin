@@ -6,7 +6,8 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/encoder"
     "log"
-    "time"
+    //"time"
+    "bytes"
 )
 
 var (
@@ -39,7 +40,8 @@ type Block struct {
 }
 
 type BlockHeader struct {
-    Version uint32
+    Version    uint32
+    UxSnapshot [4]byte //first 4 bytes of sha256 of Ux set hash
 
     Time  uint64
     BkSeq uint64 //increment every block
@@ -177,7 +179,6 @@ func NewBlockchain() *Blockchain {
 
 // Creates a genesis block and applies it against chain
 // Takes in time as parameter
-// Todo, take in number of coins
 func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     timestamp uint64, genesisCoins uint64) Block {
     logger.Info("Creating new genesis block with address %s",
@@ -190,9 +191,9 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
     txn := Transaction{}
     txn.PushOutput(genesisAddress, genesisCoins, 0)
     b.Body.Transactions = append(b.Body.Transactions, txn)
-
     b.Head.Time = timestamp
     b.UpdateHeader()
+    self.setSnapshotHash(&b)
     self.Blocks = append(self.Blocks, b)
     // Genesis output
     ux := UxOut{
@@ -204,7 +205,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
             SrcTransaction: txn.Hash(),
             Address:        genesisAddress,
             Coins:          genesisCoins,
-            Hours:          0,
+            Hours:          genesisCoins, // Allocate 1 coin hour per coin
         },
     }
     self.Unspent.Add(ux)
@@ -227,6 +228,9 @@ func (self *Blockchain) Time() uint64 {
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
 func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     currentTime uint64) (Block, error) {
+    if len(txns) == 0 {
+        return Block{}, errors.New("No transactions")
+    }
     if currentTime <= self.Time() {
         log.Panic("Time can only move forward")
     }
@@ -243,6 +247,7 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions,
     }
     b.Head.Fee = fee
     b.UpdateHeader()
+    self.setSnapshotHash(&b)
 
     //make sure block is valid
     if DebugLevel2 == true {
@@ -286,8 +291,10 @@ func (self *Blockchain) VerifyBlock(b *Block) error {
     if err := verifyBlockHeader(self.Head(), b); err != nil {
         return err
     }
-    err := self.verifyTransactions(b.Body.Transactions)
-    if err != nil {
+    if err := self.verifyTransactions(b.Body.Transactions); err != nil {
+        return err
+    }
+    if err := self.verifyUxSnapshop(b); err != nil {
         return err
     }
     return nil
@@ -385,13 +392,6 @@ func (self *Blockchain) TransactionFees(txns Transactions) (uint64, error) {
         total += fee
     }
     return total, nil
-}
-
-//Now returns current system time
-//TODO: use syncronized network time instead of system time
-//TODO: add function pointer to external network time callback?
-func Now() uint64 {
-    return uint64(time.Now().UTC().Unix())
 }
 
 /* Private */
@@ -656,6 +656,28 @@ func verifyBlockHeader(head *Block, b *Block) error {
     }
     if b.HashBody() != b.Head.BodyHash {
         return errors.New("Computed body hash does not match")
+    }
+
+    return nil
+}
+
+// Sets the unspent output checksum on the BlockHeader.  Must be called
+// after Block is fully initialized, and before its outputs are added to the
+// unspent pool
+func (self *Blockchain) setSnapshotHash(b *Block) {
+    uxHash := AddSHA256(self.Unspent.XorHash, b.Head.PrevHash)
+    if copy(b.Head.UxSnapshot[:], uxHash[:]) != 4 {
+        log.Panic("UxSnapshot copy is broken")
+    }
+}
+
+// Compares the state of the current UxSnapshot hash to state of unspent
+// output pool.
+func (self *Blockchain) verifyUxSnapshot(b *Block) error {
+    headHash := self.Head().Head.Hash() // hash of current head
+    uxHash := AddSHA256(self.Unspent.XorHash, headHash)
+    if !bytes.Equal(b.Head.UxSnapshot[:], uxHash[:4]) {
+        return errors.New("UxSnapshot does not match")
     }
     return nil
 }

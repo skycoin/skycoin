@@ -25,6 +25,11 @@ var _genCoinHours uint64 = 1000 * 1000
 
 */
 
+func Now() uint64 {
+    return uint64(time.Now().UTC().Unix())
+}
+
+
 /* Helpers */
 
 func assertError(t *testing.T, err error, msg string) {

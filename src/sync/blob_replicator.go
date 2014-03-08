@@ -226,7 +226,7 @@ func (self *BlobReplicator) NewAnnounceBlobsMessage(blobs []Blob) *AnnounceBlobs
     ab := AnnounceBlobsMessage{}
     ab.Channel = self.Channel
     for _,b := range blobs {
-    	ab.BlobHashes = append(ab.BlobHashes)
+    	ab.BlobHashes = append(ab.BlobHashes,b.Hash)
     }
     return &ab
 }

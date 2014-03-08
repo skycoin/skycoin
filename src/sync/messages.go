@@ -45,10 +45,10 @@ func getMessageConfigs() []MessageConfig {
         NewMessageConfig("PONG", PongMessage{}),
         
         //Blob replicator
-        NewMessageConfig("GETB", GetBlocksMessage{})
-        NewMessageConfig("GETB", GetBlocksMessage{})
-        NewMessageConfig("GETB", GetBlocksMessage{})
-        NewMessageConfig("GETB", GetBlocksMessage{})
+        NewMessageConfig("BDMM", BlobDataMessage{}),
+        NewMessageConfig("ABMM", AnnounceBlobsMessage{}),
+        NewMessageConfig("GBMM", GetBlobsMessage{}),
+        NewMessageConfig("GBLM", GetBlobListMessage{}),
 
         ///NewMessageConfig("GETB", GetBlocksMessage{}),
         //NewMessageConfig("GIVB", GiveBlocksMessage{}),

@@ -189,16 +189,20 @@ func (self *Blockchain) CreateBlock() (coin.Block, error) {
 
     txns := self.Unconfirmed.RawTxns()
 
-    nTxns := len(txns)
+    //sort
+    //arbritrate
+    //truncate
+
     //TODO: sort by arrival time/announce time
     //TODO: filter valid first
+
+    txns = coin.SortTransactions(txns, self.Blockchain.TransactionFee)
+    txns = self.blockchain.ArbitrateTransactions(txns)
+    nTxns := len(txns)
     if nTxns > MaxTransactionsPerBlock {
         txns = txns[:MaxTransactionsPerBlock]
     }
-
-    txns = self.blockchain.ArbitrateTransactions(txns)
     txns = txns.TruncateBytesTo(MaxBlockSize) //cap at 32 KB
-
     //TODO: ERROR< NewBlockFromTransactions arbritates!
     b, err := self.blockchain.NewBlockFromTransactions(txns,
         uint64(time.Now().Unix()))

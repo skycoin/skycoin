@@ -6,7 +6,8 @@ import (
     "github.com/op/go-logging"
     "github.com/skycoin/encoder"
     "log"
-    "time"
+    //"time"
+    "bytes"
 )
 
 var (
@@ -208,6 +209,9 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
         },
     }
     self.Unspent.Add(ux)
+    //set snapshot hash
+    uxHash := AddSHA256(self.Unspent.XorHash, b.Head.PrevHash)
+    copy(b.Head.UxSnapshot[0:4], uxHash[0:4])
     return b
 }
 
@@ -247,8 +251,6 @@ func (self *Blockchain) NewBlockFromTransactions(txns Transactions, currentTime 
     //set snapshot hash
     uxHash := AddSHA256(self.Unspent.XorHash, b.Head.PrevHash)
     copy(b.Head.UxSnapshot[0:4], uxHash[0:4])    
-
-    b.Head.UxSnapshot
 
     //TODO: replace arbitrate with verify
     newTxns := self.ArbitrateTransactions(txns)
@@ -310,7 +312,7 @@ func (self *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
 
 // Verifies the BlockHeader and BlockBody
 func (self *Blockchain) VerifyBlock(b *Block) error {
-    if err := self.verifyBlockHeader(self.Head(), b); err != nil {
+    if err := verifyBlockHeader(self.Head(), b); err != nil {
         return err
     }
     if err := self.verifyTransactions(b.Body.Transactions); err != nil {
@@ -403,13 +405,6 @@ func (self *Blockchain) TransactionFees(txns Transactions) (uint64, error) {
         total += fee
     }
     return total, nil
-}
-
-//Now returns current system time
-//TODO: use syncronized network time instead of system time
-//TODO: add function pointer to external network time callback?
-func Now() uint64 {
-    return uint64(time.Now().UTC().Unix())
 }
 
 /* Private */
@@ -678,9 +673,9 @@ func verifyGenesisBlockHeader(b *Block) error {
 // Compares the state of the current UxSnapshot hash to state of unspent
 // output pool.
 func (self *Blockchain) verifyUxSnapshop(b *Block) error {
-    headHash = self.Head().Head.Hash()
-    uxHash := AddSHA256(self.UnspentPool.XorHash, headHash)
-    if bytes.Equal(b.Head.UxSnapshot, uxHash) == false {
+    headHash := self.Head().Head.Hash() //hash of current head
+    uxHash := AddSHA256(self.Unspent.XorHash, headHash)
+    if bytes.Equal(b.Head.UxSnapshot[0:4], uxHash[0:4]) == false {
         return errors.New("UxSnapshot does not match")
     }
     return nil

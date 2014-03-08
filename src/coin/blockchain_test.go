@@ -26,6 +26,11 @@ var _genCoinHours  uint64 = 0
 
 */
 
+func Now() uint64 {
+    return uint64(time.Now().UTC().Unix())
+}
+
+
 /* Helpers */
 
 //genesis block for testing

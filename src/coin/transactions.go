@@ -194,6 +194,19 @@ func TransactionDeserialize(b []byte) Transaction {
 
 type Transactions []Transaction
 
+// Calculates all the fees in Transactions
+func (self Transactions) Fees(calc FeeCalculator) (uint64, error) {
+    total := uint64(0)
+    for i, _ := range self {
+        fee, err := calc(&self[i])
+        if err != nil {
+            return 0, err
+        }
+        total += fee
+    }
+    return total, nil
+}
+
 func (self Transactions) Hashes() []SHA256 {
     hashes := make([]SHA256, len(self))
     for i, _ := range self {

@@ -45,6 +45,13 @@ func (self *UxOut) Hash() SHA256 {
     return self.Body.Hash()
 }
 
+func (self *UxOut) SnapshotHash() SHA256 {
+    b1 := encoder.Serialize(self.Body) //body
+    b2 := encoder.Serialize(self.Head) //time, bkseq
+    b3 := append(b1,b2...)
+    return SumSHA256(b3)
+}
+
 // Metadata (not hashed)
 type UxHead struct {
     Time  uint64 //time of block it was created in

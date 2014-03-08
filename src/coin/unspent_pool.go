@@ -26,7 +26,7 @@ func (self *UnspentPool) Rebuild(uxs UxArray) {
     for i, _ := range uxs {
         h := uxs[i].Hash()
         self.Pool[h] = uxs[i]
-        xh = xh.Xor(h)
+        xh = xh.Xor(uxs[i].SnapshotHash())
     }
     self.XorHash = xh
     if len(self.Pool) != len(uxs) {
@@ -53,7 +53,7 @@ func (self *UnspentPool) Add(ux UxOut) {
         return //This is fatal bug
     }
     self.Pool[h] = ux
-    self.XorHash = self.XorHash.Xor(h)
+    self.XorHash = self.XorHash.Xor(ux.SnapshotHash())
 }
 
 // Returns a UxOut by hash, and whether it actually exists (if it does not
@@ -94,9 +94,9 @@ func (self *UnspentPool) Has(h SHA256) bool {
 
 // Removes an unspent from the pool, by hash
 func (self *UnspentPool) Del(h SHA256) {
-    if _, ok := self.Pool[h]; ok {
-        delete(self.Pool, h)
-        self.XorHash = self.XorHash.Xor(h)
+    if ux, ok := self.Pool[h]; ok {
+        self.XorHash = self.XorHash.Xor(ux.SnapshotHash())
+        delete(self.Pool, h)   
     }
 }
 

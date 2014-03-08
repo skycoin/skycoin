@@ -204,7 +204,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
             SrcTransaction: txn.Hash(),
             Address:        genesisAddress,
             Coins:          genesisCoins,
-            Hours:          0, //zero genesis coins
+            Hours:          genesisCoins, //1 coin hour per genesis coin
         },
     }
     self.Unspent.Add(ux)

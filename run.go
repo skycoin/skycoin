@@ -66,12 +66,16 @@ func main() {
 
 	quit := make(chan int) //write to this to shutdown
 
-	d1.Start(quit)
-	d2.Start(quit)
-	time.Sleep(1000* time.Millisecond)
+	go d1.Start(quit) //goroutine
+	go d2.Start(quit) //goroutine
+
+
+
+
+	//time.Sleep(1000* time.Millisecond)
 
 	fmt.Printf("sleep done\n")
-	
+
 	addr1 := "127.0.0.1:5050"
     addr2 := "127.0.0.1:5051"
 

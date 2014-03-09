@@ -282,7 +282,7 @@ func (self *Daemon) Shutdown() {
 // down
 func (self *Daemon) Start(quit chan int) {
     if !self.Config.DisableIncomingConnections {
-        go self.Pool.Start()
+        self.Pool.Start()
     }
     if !self.DHT.Config.Disabled {
         go self.DHT.Start()

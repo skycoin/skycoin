@@ -30,9 +30,42 @@ func blobVerify(data []byte) sync.BlobCallbackResponse {
 	}
 }
 
+func daemon_spawn(port int) (*sync.Daemon, *sync.BlobReplicator) {
+	cfg := sync.NewConfig()
+	cfg.Daemon.Port = 5050
+	cfg.DHT.Disabled = true
+	cfg.Peers.AllowLocalhost = true
+	cfg.Peers.Ephemerial = true //disable load/save to disable
+	daemon := sync.NewDaemon(cfg)
+
+	//the callback response
+	callback := func (data []byte) (sync.BlobCallbackResponse) {
+		fmt.Printf("port: %v, callback= %v \n", port, string(data))
+		return sync.BlobCallbackResponse {
+			Valid : true, //is data valid (if false, will discard)
+			Ignore : false, //should be on ignore list?
+			KickPeer: false, //kick the peer
+		}
+	}
+
+	br := daemon.NewBlobReplicator(uint16(1), callback) //channel 0
+	return daemon, br
+}
+
+func testRep() {
+
+
+	//quit := make(chan int) //write to this to shutdown
+
+}
 
 func main() {
 
+	d1, br1 := daemon_spawn(5050)
+	d2, br2 := daemon_spawn(5051)
+
+
+/*
 	cfg := sync.NewConfig()
 	cfg.Daemon.Port = 5050
 	cfg.DHT.Disabled = true
@@ -49,6 +82,7 @@ func main() {
 	}
 
 	daemon.Start(quit)	
+*/
 
 	for true {
 		time.Sleep(50)

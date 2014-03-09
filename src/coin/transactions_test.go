@@ -2,6 +2,7 @@ package coin
 
 import (
     "bytes"
+    "github.com/skycoin/encoder"
     "github.com/stretchr/testify/assert"
     "math"
     "sort"
@@ -280,12 +281,51 @@ func TestTransactionOutputHours(t *testing.T) {
     assert.Equal(t, tx.OutputHours(), uint64(800))
 }
 
+func TestTransactionFees(t *testing.T) {
+    bc := NewBlockchain()
+    bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+    assert.Equal(t, len(bc.Blocks), 1)
+    _, ux := addBlockToBlockchain(t, bc)
+    assert.Equal(t, len(bc.Blocks), 3)
+
+    // Valid txn, 100 hours fee
+    tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
+        100)
+    fee, err := Transactions{tx}.Fees(bc.TransactionFee)
+    assert.Nil(t, err)
+    assert.Equal(t, fee, uint64(100))
+
+    // Multiple txns, 100 hours fee each
+    tx2, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
+        100)
+    fee, err = Transactions{tx, tx2}.Fees(bc.TransactionFee)
+    assert.Nil(t, err)
+    assert.Equal(t, fee, uint64(200))
+
+    // Txn spending unknown output
+    tx = Transaction{}
+    unknownUx := makeUxOut(t)
+    tx.PushInput(unknownUx.Hash())
+    _, err = Transactions{tx}.Fees(bc.TransactionFee)
+    assertError(t, err, "Unspent output does not exist")
+
+    // Txn spending more hours than avail
+    tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
+        100)
+    tx.PushOutput(makeAddress(), 1e6, 10000)
+    _, err = Transactions{tx}.Fees(bc.TransactionFee)
+    assertError(t, err, "Insufficient coinhours for transaction outputs")
+}
+
 func TestNewSortableTransactions(t *testing.T) {
     bc := NewBlockchain()
     bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+    _, ux := addBlockToBlockchain(t, bc)
     txns := make(Transactions, 4)
     for i, _ := range txns {
-        txns[i] = makeTransactionForChainWithFee(t, bc, uint64(i*100))
+        tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret,
+            100, uint64(i*100))
+        txns[i] = tx
     }
     sTxns := newSortableTransactions(txns, bc.TransactionFee)
     assert.Equal(t, len(sTxns.Txns), len(txns))
@@ -300,9 +340,20 @@ func TestNewSortableTransactions(t *testing.T) {
     }
 }
 
+func TestTransactionsSize(t *testing.T) {
+    txns := makeTransactions(t, 10)
+    size := 0
+    for _, tx := range txns {
+        size += len(encoder.Serialize(&tx))
+    }
+    assert.NotEqual(t, size, 0)
+    assert.Equal(t, txns.Size(), size)
+}
+
 func TestTransactionSorting(t *testing.T) {
     bc := NewBlockchain()
     bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+    _, ux := addBlockToBlockchain(t, bc)
     txns := make(Transactions, 4)
     for i := 0; i < len(txns); i++ {
         fee := uint64(0)
@@ -311,7 +362,8 @@ func TestTransactionSorting(t *testing.T) {
         } else {
             fee = uint64(i * 100)
         }
-        txns[i] = makeTransactionForChainWithFee(t, bc, fee)
+        txns[i], _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret,
+            100, fee)
     }
 
     // TODO -- check that things are actually sorted, and test with something

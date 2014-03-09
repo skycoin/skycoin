@@ -27,8 +27,8 @@ func TestUnspentPoolRebuild(t *testing.T) {
         assert.Equal(t, x, ux)
     }
     h := SHA256{}
-    h = h.Xor(arr[0].Hash())
-    h = h.Xor(arr[1].Hash())
+    h = h.Xor(arr[0].SnapshotHash())
+    h = h.Xor(arr[1].SnapshotHash())
     assert.Equal(t, up.XorHash, h)
     assert.NotEqual(t, up.XorHash, SHA256{})
 
@@ -46,10 +46,10 @@ func TestUnspentPoolAdd(t *testing.T) {
     ux, ok := up.Pool[ux.Hash()]
     assert.True(t, ok)
     assert.NotEqual(t, up.XorHash, SHA256{})
-    assert.Equal(t, up.XorHash, ux.Hash())
-    // Duplicate add doesnt change state
+    assert.Equal(t, up.XorHash, ux.SnapshotHash())
+    // Duplicate add panics
     h := up.XorHash
-    up.Add(ux)
+    assert.Panics(t, func() { up.Add(ux) })
     assert.Equal(t, len(up.Pool), 1)
     assert.Equal(t, up.XorHash, h)
     // Add a 2nd is ok
@@ -58,8 +58,8 @@ func TestUnspentPoolAdd(t *testing.T) {
     _, ok = up.Pool[ux2.Hash()]
     assert.True(t, ok)
     assert.Equal(t, len(up.Pool), 2)
-    h = ux.Hash()
-    h = h.Xor(ux2.Hash())
+    h = ux.SnapshotHash()
+    h = h.Xor(ux2.SnapshotHash())
     assert.Equal(t, up.XorHash, h)
 }
 
@@ -101,15 +101,15 @@ func TestUnspentPoolDel(t *testing.T) {
     assert.True(t, ok)
     _, ok = up.Pool[ux3.Hash()]
     assert.True(t, ok)
-    h := ux.Hash()
-    h = h.Xor(ux3.Hash())
+    h := ux.SnapshotHash()
+    h = h.Xor(ux3.SnapshotHash())
     assert.Equal(t, up.XorHash, h)
     // Delete first one
     up.Del(ux.Hash())
     assert.Equal(t, len(up.Pool), 1)
     _, ok = up.Pool[ux3.Hash()]
     assert.True(t, ok)
-    assert.Equal(t, up.XorHash, ux3.Hash())
+    assert.Equal(t, up.XorHash, ux3.SnapshotHash())
     // Delete remaining one
     up.Del(ux3.Hash())
     assert.Equal(t, len(up.Pool), 0)
@@ -135,8 +135,8 @@ func TestUnspentPoolDelMultiple(t *testing.T) {
     assert.True(t, ok)
     _, ok = up.Pool[ux4.Hash()]
     assert.True(t, ok)
-    h := ux2.Hash()
-    h = h.Xor(ux4.Hash())
+    h := ux2.SnapshotHash()
+    h = h.Xor(ux4.SnapshotHash())
     assert.Equal(t, up.XorHash, h)
 }
 

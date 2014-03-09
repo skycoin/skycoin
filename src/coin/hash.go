@@ -45,7 +45,7 @@ func (g *SHA256) Set(b []byte) {
     copy(g[:], b[:])
 }
 
-func (g *SHA256) Hex() string {
+func (g SHA256) Hex() string {
     return hex.EncodeToString(g[:])
 }
 

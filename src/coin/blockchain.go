@@ -74,6 +74,9 @@ type Block struct {
 
 func newBlock(prev Block, currentTime uint64, unspent UnspentPool,
     txns Transactions, calc FeeCalculator) Block {
+    if len(txns) == 0 {
+        log.Panic("Refusing to create block with no transactions")
+    }
     fee, err := txns.Fees(calc)
     if err != nil {
         // This should have been caught earlier
@@ -306,6 +309,17 @@ func (self *Blockchain) VerifyBlock(b Block) error {
     }
     if err := self.verifyUxSnapshot(b); err != nil {
         return err
+    }
+    return nil
+}
+
+// Compares the state of the current UxSnapshot hash to state of unspent
+// output pool.
+func (self *Blockchain) verifyUxSnapshot(b Block) error {
+    head := self.Head().Head
+    uxHash := AddSHA256(self.Unspent.XorHash, head.Hash())
+    if !bytes.Equal(b.Head.UxSnapshot[:], uxHash[:4]) {
+        return errors.New("UxSnapshot does not match")
     }
     return nil
 }
@@ -654,7 +668,6 @@ func verifyBlockHeader(head Block, b Block) error {
     if b.HashBody() != b.Head.BodyHash {
         return errors.New("Computed body hash does not match")
     }
-
     return nil
 }
 
@@ -667,15 +680,4 @@ func getSnapshotHash(unspent UnspentPool, prevHash SHA256) [4]byte {
         log.Panic("UxSnapshot copy is broken")
     }
     return snapshot
-}
-
-// Compares the state of the current UxSnapshot hash to state of unspent
-// output pool.
-func (self *Blockchain) verifyUxSnapshot(b Block) error {
-    head := self.Head().Head
-    uxHash := AddSHA256(self.Unspent.XorHash, head.Hash())
-    if !bytes.Equal(b.Head.UxSnapshot[:], uxHash[:4]) {
-        return errors.New("UxSnapshot does not match")
-    }
-    return nil
 }

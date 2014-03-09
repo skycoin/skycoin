@@ -45,10 +45,11 @@ func (self *UxOut) Hash() SHA256 {
     return self.Body.Hash()
 }
 
+// Returns hash of UxBody + UxHead
 func (self *UxOut) SnapshotHash() SHA256 {
     b1 := encoder.Serialize(self.Body) //body
     b2 := encoder.Serialize(self.Head) //time, bkseq
-    b3 := append(b1,b2...)
+    b3 := append(b1, b2...)
     return SumSHA256(b3)
 }
 

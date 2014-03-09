@@ -57,6 +57,30 @@ func TestUxOutHash(t *testing.T) {
     assert.Equal(t, uxb.Hash(), uxo.Hash())
 }
 
+func TestUxOutSnapshotHash(t *testing.T) {
+    ux := makeUxOut(t)
+    h := ux.SnapshotHash()
+    // snapshot hash should be dependent on every field in body and head
+    ux2 := ux
+    ux2.Head.Time = 20
+    assert.NotEqual(t, ux2.SnapshotHash(), h)
+    ux2 = ux
+    ux2.Head.BkSeq = 4
+    assert.NotEqual(t, ux2.SnapshotHash(), h)
+    ux2 = ux
+    ux2.Body.SrcTransaction = randSHA256(t)
+    assert.NotEqual(t, ux2.SnapshotHash(), h)
+    ux2 = ux
+    ux2.Body.Address = makeAddress()
+    assert.NotEqual(t, ux2.SnapshotHash(), h)
+    ux2 = ux
+    ux2.Body.Coins = ux.Body.Coins * 2
+    assert.NotEqual(t, ux2.SnapshotHash(), h)
+    ux2 = ux
+    ux2.Body.Hours = ux.Body.Hours * 2
+    assert.NotEqual(t, ux2.SnapshotHash(), h)
+}
+
 func TestUxOutCoinHours(t *testing.T) {
     uxo := makeUxOut(t)
     // No hours passed

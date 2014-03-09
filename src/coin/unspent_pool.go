@@ -50,8 +50,7 @@ func (self *UnspentPool) Array() UxArray {
 func (self *UnspentPool) Add(ux UxOut) {
     h := ux.Hash()
     if self.Has(h) {
-        log.Panic("Fatal Hash Collision in UnspentPool")
-        return //This is fatal bug
+        log.Panic("Attempt to insert UxOut twice")
     }
     self.Pool[h] = ux
     self.XorHash = self.XorHash.Xor(ux.SnapshotHash())
@@ -97,7 +96,7 @@ func (self *UnspentPool) Has(h SHA256) bool {
 func (self *UnspentPool) Del(h SHA256) {
     if ux, ok := self.Pool[h]; ok {
         self.XorHash = self.XorHash.Xor(ux.SnapshotHash())
-        delete(self.Pool, h)   
+        delete(self.Pool, h)
     }
 }
 

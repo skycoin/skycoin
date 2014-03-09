@@ -82,6 +82,8 @@ func (self *Pool) Listen() {
     if err := self.Pool.StartListen(); err != nil {
         log.Panic(err)
     }
+    //loop that pops packets off as they come in
+    go self.Pool.AcceptConnections()
 }
 
 // Accepts connections in a blocking loop.  Call in a goroutine.

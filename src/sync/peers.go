@@ -24,6 +24,8 @@ type PeersConfig struct {
     AllowLocalhost bool
     // Disable exchanging of peers.  Peers are still loaded from disk
     Disabled bool
+    //Ephemerial mode does not save or load from disc
+    Ephemerial bool
 }
 
 func NewPeersConfig() PeersConfig {
@@ -37,6 +39,7 @@ func NewPeersConfig() PeersConfig {
         ReplyCount:          30,
         AllowLocalhost:      false,
         Disabled:            false,
+        Ephemerial:          false, //disable load/save to disc
     }
 }
 
@@ -59,11 +62,14 @@ func NewPeers(c PeersConfig) *Peers {
 // Configure the pex.PeerList and load local data
 func (self *Peers) Init() {
     peers := pex.NewPex(self.Config.Max)
-    err := peers.Load(self.Config.DataDirectory)
-    if err != nil {
-        logger.Notice("Failed to load peer database")
-        logger.Notice("Reason: %v", err)
+    if self.Config.Ephemerial == false {
+        err := peers.Load(self.Config.DataDirectory)
+        if err != nil {
+            logger.Notice("Failed to load peer database")
+            logger.Notice("Reason: %v", err)
+        }
     }
+
     logger.Debug("Init peers")
     peers.AllowLocalhost = self.Config.AllowLocalhost
     self.Peers = peers
@@ -74,11 +80,13 @@ func (self *Peers) Shutdown() error {
     if self.Peers == nil {
         return nil
     }
-    err := self.Peers.Save(self.Config.DataDirectory)
-    if err != nil {
-        logger.Warning("Failed to save peer database")
-        logger.Warning("Reason: %v", err)
-        return err
+    if self.Config.Ephemerial == false {
+        err := self.Peers.Save(self.Config.DataDirectory)
+        if err != nil {
+            logger.Warning("Failed to save peer database")
+            logger.Warning("Reason: %v", err)
+            return err
+        }
     }
     logger.Debug("Shutdown peers")
     return nil

@@ -70,8 +70,16 @@ func NewMessagesConfig() MessagesConfig {
     }
 }
 
+//TODO: gnet instances might need local message tables
+var _messages_registered = false 
 // Registers our Messages with gnet
 func (self *MessagesConfig) Register() {
+    //dont register messages twice
+    if _messages_registered == true {
+        return
+    }
+    _messages_registered = true
+
     for _, mc := range self.Messages {
         gnet.RegisterMessage(mc.Prefix, mc.Message)
     }

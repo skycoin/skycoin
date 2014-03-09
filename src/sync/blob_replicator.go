@@ -146,7 +146,7 @@ func (self *BlobReplicator) AddIgnoreHash(hash SHA256) (error) {
 		return errors.New("IgnoreHash, hash is already ignored, handle condition\n")
 	}
 
-	currentTime := uint32(time.Now().Unix()
+	currentTime := uint32(time.Now().Unix())
 	self.IgnoreMap[hash] = currentTime
 
 	return nil
@@ -158,6 +158,7 @@ func (self *BlobReplicator) RemoveIgnoreHash(hash SHA256) (error) {
 		return errors.New("RemoveIgnoreHash, has is not ignored\n")
 	}
 	delete(self.IgnoreMap, hash)
+	return nil
 }
 
 

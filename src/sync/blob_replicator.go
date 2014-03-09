@@ -6,6 +6,7 @@ import (
     "errors"
     "github.com/skycoin/gnet"
     "log"
+    "time"
 )
 
 /*
@@ -34,7 +35,13 @@ import (
 	------------------------------
 */
 
-
+/*
+	Todo: 
+	- split hash lists into multiple pages
+	- do query for each page from remote peer
+	- 
+	
+*/
 
 //data object that is replicated
 type Blob struct {
@@ -50,20 +57,31 @@ func NewBlob(data []byte) Blob {
 	return blob
 }
 
+//gets hash of blob
+func BlobHash(data []byte) SHA256 {
+	return SumSHA256(data)
+}
+
 //this function is called when a new blob is received
 //if this function returns error, the blob is invalid and was rejected
-type BlobCallback func([]byte)(error)
+type BlobCallback func([]byte)(BlobCallbackResponse)
 
+type BlobCallbackResponse struct {
+	Valid bool //is blob data valid
+	Ignore bool //put data on ignore list?
+	KickPeer bool //should peer be kicked?
+}
 //Todo: add id for dealing with multiple blob types
 type BlobReplicator struct {
 	Channel uint16 //for multiple replicators
 	BlobMap map[SHA256]Blob
-	BlobCallback *BlobCallback //function which verifies the blob
+	IgnoreMap map[SHA256]uint32 //hash of ignored blobs and time added
+	BlobCallback BlobCallback //function which verifies the blob
 	d *Daemon //... need for sending messages
 }
 
 //Adds blob replicator to Daemon
-func (d *Daemon) NewBlobReplicator(channel uint16, callback *BlobCallback) *BlobReplicator {
+func (d *Daemon) NewBlobReplicator(channel uint16, callback BlobCallback) *BlobReplicator {
 	br := BlobReplicator {
 		Channel : channel,
 		BlobMap : make(map[SHA256]Blob),
@@ -109,15 +127,49 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 		log.Panic("InjectBloc, fail, duplicate")
 		return errors.New("InjectBlob, fail, duplicate")
 	}
+	if self.IsIgnored(blob.Hash) == true {
+		return errors.New("InjectBlob, fail, ignore list")
+	}
 	self.BlobMap[blob.Hash] = blob
 	self.broadcastBlobAnnounce(blob) //anounce blob to worldr
 	return nil
 }
 
+//adds to ignore list. blobs on ignore list wont be replicated
+func (self *BlobReplicator) AddIgnoreHash(hash SHA256) (error) {
+
+	if self.HasBlob(hash) == true {
+		return errors.New("IgnoreHash, blob is replicated, handle condition")
+	}
+
+	if self.IsIgnored(hash) == true {
+		return errors.New("IgnoreHash, hash is already ignored, handle condition\n")
+	}
+
+	currentTime := uint32(time.Now().Unix()
+	self.IgnoreMap[hash] = currentTime
+
+	return nil
+}
+
+func (self *BlobReplicator) RemoveIgnoreHash(hash SHA256) (error) {
+	
+	if self.IsIgnored(hash) != true {
+		return errors.New("RemoveIgnoreHash, has is not ignored\n")
+	}
+	delete(self.IgnoreMap, hash)
+}
+
+
 //returns true if local has blob or if blob is on ignore list
 //returns false if local should felt blob from remote
 func (self *BlobReplicator) HasBlob(hash SHA256) bool {
 	_,ok := self.BlobMap[hash]
+	return ok
+}
+
+func (self *BlobReplicator) IsIgnored(hash SHA256) bool {
+	_,ok := self.IgnoreMap[hash]
 	return ok
 }
 
@@ -247,7 +299,7 @@ func (self *AnnounceBlobsMessage) Process(d *Daemon) {
     //get list of blocks we dont have yet
     var hashList []SHA256
     for _,hash := range self.BlobHashes {
-    	if br.HasBlob(hash) == false {
+    	if br.HasBlob(hash) == false && br.IsIgnored(hash) == false {
     		hashList = append(hashList, hash)
     	}
     }

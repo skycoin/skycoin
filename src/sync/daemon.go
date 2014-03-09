@@ -68,10 +68,10 @@ type Config struct {
 // Returns a Config with defaults set
 func NewConfig() Config {
     return Config{
-        Daemon:   NewDaemonConfig(),
-        Pool:     NewPoolConfig(),
-        Peers:    NewPeersConfig(),
-        DHT:      NewDHTConfig(),
+        Daemon: NewDaemonConfig(),
+        Pool:   NewPoolConfig(),
+        Peers:  NewPeersConfig(),
+        DHT:    NewDHTConfig(),
         //Gateway:  NewGatewayConfig(),
         Messages: NewMessagesConfig(),
         //Visor:    NewVisorConfig(),
@@ -278,11 +278,18 @@ func (self *Daemon) Shutdown() {
     gnet.EraseMessages()
 }
 
+// Runs initialization that must complete before the Start goroutine
+func (self *Daemon) Init() {
+    if !self.Config.DisableIncomingConnections {
+        self.Pool.Listen()
+    }
+}
+
 // Main loop for peer/connection management. Send anything to quit to shut it
 // down
 func (self *Daemon) Start(quit chan int) {
     if !self.Config.DisableIncomingConnections {
-        self.Pool.Start()
+        go self.Pool.Accept()
     }
     if !self.DHT.Config.Disabled {
         go self.DHT.Start()
@@ -410,16 +417,16 @@ main:
         // TODO -- run these in the Visor
         // Create blocks, if master chain
         /*
-        case <-blockCreationTicker.C:
-            if self.Visor.Config.Config.IsMaster {
-                err := self.Visor.CreateAndPublishBlock(self.Pool)
-                if err != nil {
-                    logger.Error("Failed to create block: %v", err)
-                } else {
-                    // Not a critical error, but we want it visible in logs
-                    logger.Critical("Created and published a new block")
-                }
-            }
+           case <-blockCreationTicker.C:
+               if self.Visor.Config.Config.IsMaster {
+                   err := self.Visor.CreateAndPublishBlock(self.Pool)
+                   if err != nil {
+                       logger.Error("Failed to create block: %v", err)
+                   } else {
+                       // Not a critical error, but we want it visible in logs
+                       logger.Critical("Created and published a new block")
+                   }
+               }
         */
         //case <-unconfirmedRefreshTicker:
         //    self.Visor.RefreshUnconfirmed()

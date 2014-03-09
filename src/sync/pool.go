@@ -78,10 +78,15 @@ func (self *Pool) Shutdown() {
 }
 
 // Starts listening on the configured Port
-func (self *Pool) Start() {
+func (self *Pool) Listen() {
     if err := self.Pool.StartListen(); err != nil {
         log.Panic(err)
     }
+}
+
+// Accepts connections in a blocking loop.  Call in a goroutine.
+func (self *Pool) Accept() {
+    self.Pool.AcceptConnections()
 }
 
 // Send a ping if our last message sent was over pingRate ago

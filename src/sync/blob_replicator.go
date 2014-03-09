@@ -34,7 +34,13 @@ import (
 	------------------------------
 */
 
-
+/*
+	Todo: 
+	- split hash lists into multiple pages
+	- do query for each page from remote peer
+	- 
+	
+*/
 
 //data object that is replicated
 type Blob struct {
@@ -52,18 +58,23 @@ func NewBlob(data []byte) Blob {
 
 //this function is called when a new blob is received
 //if this function returns error, the blob is invalid and was rejected
-type BlobCallback func([]byte)(error)
+type BlobCallback func([]byte)(BlobCallbackResponse)
 
+type BlobCallbackResponse struct {
+	Valid bool //is blob data valid
+	Ignore bool //put data on ignore list?
+	KickPeer bool //should peer be kicked?
+}
 //Todo: add id for dealing with multiple blob types
 type BlobReplicator struct {
 	Channel uint16 //for multiple replicators
 	BlobMap map[SHA256]Blob
-	BlobCallback *BlobCallback //function which verifies the blob
+	BlobCallback BlobCallback //function which verifies the blob
 	d *Daemon //... need for sending messages
 }
 
 //Adds blob replicator to Daemon
-func (d *Daemon) NewBlobReplicator(channel uint16, callback *BlobCallback) *BlobReplicator {
+func (d *Daemon) NewBlobReplicator(channel uint16, callback BlobCallback) *BlobReplicator {
 	br := BlobReplicator {
 		Channel : channel,
 		BlobMap : make(map[SHA256]Blob),

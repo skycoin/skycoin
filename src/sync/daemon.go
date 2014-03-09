@@ -152,7 +152,7 @@ type DaemonConfig struct {
 
 func NewDaemonConfig() DaemonConfig {
     return DaemonConfig{
-        Version:                    1,
+        Version:                    2,
         Address:                    "",
         Port:                       6677,
         OutgoingRate:               time.Second * 5,

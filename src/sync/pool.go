@@ -82,6 +82,8 @@ func (self *Pool) Start() {
     if err := self.Pool.StartListen(); err != nil {
         log.Panic(err)
     }
+    //loop that pops packets off as they come in
+    go self.Pool.AcceptConnections()
 }
 
 // Send a ping if our last message sent was over pingRate ago

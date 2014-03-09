@@ -69,6 +69,7 @@ type BlobCallbackResponse struct {
 type BlobReplicator struct {
 	Channel uint16 //for multiple replicators
 	BlobMap map[SHA256]Blob
+	IgnoreMap map[SHA256]uint32 //hash of ignored blobs and time added
 	BlobCallback BlobCallback //function which verifies the blob
 	d *Daemon //... need for sending messages
 }
@@ -125,10 +126,33 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 	return nil
 }
 
+//adds to ignore list. blobs on ignore list wont be replicated
+func (self *BlobReplicator) IgnoreHash(hash SHA256) (error) {
+
+	if self.HasBlob(hash) == true {
+		return errors.New("IgnoreHash, blob is replicated, handle condition")
+	}
+
+	if IsIgnored(hash) == true {
+		return errors.New("IgnoreHash, hash is already ignored, handle condition\n")
+	}
+
+	
+}
+
+func (self *BlobReplicator) IgnoreBlob(data []byte) (error) {
+	return self.IgnoreHash(SumSHA256(data))
+}
+
 //returns true if local has blob or if blob is on ignore list
 //returns false if local should felt blob from remote
 func (self *BlobReplicator) HasBlob(hash SHA256) bool {
 	_,ok := self.BlobMap[hash]
+	return ok
+}
+
+func (self *BlobReplicator) IsIgnored(hash SHA256) bool {
+	_,ok := self.IgnoreMap[hash]
 	return ok
 }
 

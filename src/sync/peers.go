@@ -24,6 +24,8 @@ type PeersConfig struct {
     AllowLocalhost bool
     // Disable exchanging of peers.  Peers are still loaded from disk
     Disabled bool
+    //Ephemerial mode does not save or load from disc
+    Ephemerial bool
 }
 
 func NewPeersConfig() PeersConfig {

@@ -15,7 +15,7 @@ import (
 	"time"
 	"github.com/skycoin/skycoin/src/sync"
 	//"errors"
-	"log"
+	//"log"
 	"fmt"
 )
 
@@ -32,7 +32,7 @@ func blobVerify(data []byte) sync.BlobCallbackResponse {
 
 func daemon_spawn(port int) (*sync.Daemon, *sync.BlobReplicator) {
 	cfg := sync.NewConfig()
-	cfg.Daemon.Port = 5050
+	cfg.Daemon.Port = port
 	cfg.DHT.Disabled = true
 	cfg.Peers.AllowLocalhost = true
 	cfg.Peers.Ephemerial = true //disable load/save to disable
@@ -64,6 +64,22 @@ func main() {
 	d1, br1 := daemon_spawn(5050)
 	d2, br2 := daemon_spawn(5051)
 
+	quit := make(chan int) //write to this to shutdown
+
+	d1.Start(quit)
+	d2.Start(quit)
+	time.Sleep(1000* time.Millisecond)
+
+	fmt.Printf("sleep done\n")
+	
+	addr1 := "127.0.0.1:5050"
+    addr2 := "127.0.0.1:5051"
+
+    d1.Peers.Peers.AddPeer(addr2)
+    d2.Peers.Peers.AddPeer(addr1)
+
+	_ = br1
+	_ = br2
 
 /*
 	cfg := sync.NewConfig()

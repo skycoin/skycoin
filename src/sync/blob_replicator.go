@@ -6,6 +6,7 @@ import (
     "errors"
     "github.com/skycoin/gnet"
     "log"
+    "time"
 )
 
 /*
@@ -54,6 +55,11 @@ func NewBlob(data []byte) Blob {
 	copy(blob.Data, data)
 	blob.Hash =  SumSHA256(data)
 	return blob
+}
+
+//gets hash of blob
+func BlobHash(data []byte) SHA256 {
+	return SumSHA256(data)
 }
 
 //this function is called when a new blob is received
@@ -121,28 +127,39 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 		log.Panic("InjectBloc, fail, duplicate")
 		return errors.New("InjectBlob, fail, duplicate")
 	}
+	if self.IsIgnored(blob.Hash) == true {
+		return errors.New("InjectBlob, fail, ignore list")
+	}
 	self.BlobMap[blob.Hash] = blob
 	self.broadcastBlobAnnounce(blob) //anounce blob to worldr
 	return nil
 }
 
 //adds to ignore list. blobs on ignore list wont be replicated
-func (self *BlobReplicator) IgnoreHash(hash SHA256) (error) {
+func (self *BlobReplicator) AddIgnoreHash(hash SHA256) (error) {
 
 	if self.HasBlob(hash) == true {
 		return errors.New("IgnoreHash, blob is replicated, handle condition")
 	}
 
-	if IsIgnored(hash) == true {
+	if self.IsIgnored(hash) == true {
 		return errors.New("IgnoreHash, hash is already ignored, handle condition\n")
 	}
 
-	
+	currentTime := uint32(time.Now().Unix()
+	self.IgnoreMap[hash] = currentTime
+
+	return nil
 }
 
-func (self *BlobReplicator) IgnoreBlob(data []byte) (error) {
-	return self.IgnoreHash(SumSHA256(data))
+func (self *BlobReplicator) RemoveIgnoreHash(hash SHA256) (error) {
+	
+	if self.IsIgnored(hash) != true {
+		return errors.New("RemoveIgnoreHash, has is not ignored\n")
+	}
+	delete(self.IgnoreMap, hash)
 }
+
 
 //returns true if local has blob or if blob is on ignore list
 //returns false if local should felt blob from remote
@@ -282,7 +299,7 @@ func (self *AnnounceBlobsMessage) Process(d *Daemon) {
     //get list of blocks we dont have yet
     var hashList []SHA256
     for _,hash := range self.BlobHashes {
-    	if br.HasBlob(hash) == false {
+    	if br.HasBlob(hash) == false && br.IsIgnored(hash) == false {
     		hashList = append(hashList, hash)
     	}
     }

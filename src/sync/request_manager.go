@@ -93,7 +93,10 @@ func (self *RequestManager) removeExpiredRequests() {
 	self.Requests = requests
 }
 
+//physically make request for data, by hash
 func (self *RequestManager) makeRequest(hash SHA256, addr string) {
+	fmt.Printf("addr: %s request: %s \n", addr, hash.Hex())
+
 	//add request to list
 	req := Request {
 			RequestTime : int(time.Now().Unix()),
@@ -139,25 +142,18 @@ for (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 	self.PeerStats[addr].LastRequest = int(time.Now().Unix())
 }
 
-
-func (self *RequestManager) newRequests() {
+//current implementation requests data in random order
+func (self *RequestManager) tickRequests() {
 	for addr,p := range self.PeerStats {
 
 		if p.OpenRequests < self.Config.RequestsPerPeer {
 			var hash SHA256
 			for h, _ := range p.Data {
 				if _,ok = requests[h]; ok == false {
-					hash = h
+					self.makeRequest(hash, addr)
 					break
 				}
-
 			}
-			//nothing to do 
-			if hash = SHA256{} {
-				break
-			}
-			//make a request
-			fmt.Printf("addr: %s request: %s \n", addr, hash.Hex())
 		}
 	}
 }

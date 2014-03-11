@@ -313,7 +313,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
         logger.Error("Failed to add peer: %v", err)
     }
 
-
+    //blob replicators on connect
     for _,be := range d.BlobReplicators {
         be.OnConnect(d.Pool, self.c.Conn.Addr())
     }

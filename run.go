@@ -15,13 +15,13 @@ import (
     "github.com/skycoin/skycoin/src/sync"
     // "time"
     //"errors"
-    //"log"
+    "log"
     "fmt"
 )
 
 func blobVerify(data []byte) sync.BlobCallbackResponse {
 
-    fmt.Printf("blob: %v \n", string(data))
+    fmt.Printf("!!! blob: %v \n", string(data))
     return sync.BlobCallbackResponse{
         Valid:    true,  //is data valid (if false, will discard)
         Ignore:   false, //should be on ignore list?
@@ -63,6 +63,13 @@ func main() {
 
     d1, br1 := daemon_spawn(5050)
     d2, br2 := daemon_spawn(5051)
+
+    //inject
+    blobData := []byte ("BLOB DATA") //replicate this to world!
+    err := br1.InjectBlob(blobData)
+    if err != nil {
+        log.Panic(err) //inject will fail if blob data is duplicate
+    }
 
     quit := make(chan int) //write to this to shutdown
 

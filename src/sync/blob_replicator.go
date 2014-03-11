@@ -7,6 +7,7 @@ import (
     "github.com/skycoin/gnet"
     "log"
     "time"
+    "fmt"
 )
 
 /*
@@ -36,11 +37,7 @@ import (
 */
 
 /*
-	Todo: 
-	- split hash lists into multiple pages
-	- do query for each page from remote peer
-	- 
-	
+
 */
 
 //data object that is replicated
@@ -77,6 +74,7 @@ type BlobReplicator struct {
 	BlobMap map[SHA256]Blob
 	IgnoreMap map[SHA256]uint32 //hash of ignored blobs and time added
 	BlobCallback BlobCallback //function which verifies the blob
+	RequestManager requestManager //handles request que
 	d *Daemon //... need for sending messages
 }
 
@@ -86,6 +84,7 @@ func (d *Daemon) NewBlobReplicator(channel uint16, callback BlobCallback) *BlobR
 		Channel : channel,
 		BlobMap : make(map[SHA256]Blob),
 		BlobCallback : callback,
+		RequestManager : newRequestManager()
 		d : d,
 	}
 	//Todo, check that daemon doesnt have other channels
@@ -113,6 +112,14 @@ func (self* BlobReplicator) OnConnect(pool *Pool, addr string) {
         log.Panic("ERROR Address does not exist")
     }
     pool.Pool.SendMessage(c, m)
+    //setup request manager for address
+    self.RequestManager.OnConnect(addr)
+}
+
+func (self* BlobReplicator) OnDisconnect(pool *Pool, addr string) {
+    //setup request manager for address
+    self.RequestManager.OnDisconnect(addr)
+	return
 
 }
 //Must set callback function for handling blob data
@@ -120,8 +127,29 @@ func (self* BlobReplicator) OnConnect(pool *Pool, addr string) {
 //	self.BlobCallback = function
 //}
 
+
+//deals with blobs coming in over network
+func (self *BlobReplicator) blobHandleIncoming(data []byte, addr string) {
+
+	callbackResponse := self.BlobCallback(data)
+	
+	if callbackResponse.KickPeer == true {
+		//kick the peer
+		log.Panic("InjectBloc implement kick peer")
+	}
+	if callbackResponse.Ignore == true {
+		//put blob on ignore list
+		log.Panic("implement ignore == true")
+	}
+	if callbackResponse.Valid == false {
+		return
+	}
+	self.InjectBlob(data) //inject the blob
+}
 //inject blobs at startup
 func (self *BlobReplicator) InjectBlob(data []byte) (error) {
+	fmt.Printf("InjectBlob: \n")
+
 	blob := NewBlob(data)
 	if _, ok := self.BlobMap[blob.Hash]; ok == true {
 		log.Panic("InjectBloc, fail, duplicate")
@@ -131,7 +159,7 @@ func (self *BlobReplicator) InjectBlob(data []byte) (error) {
 		return errors.New("InjectBlob, fail, ignore list")
 	}
 	self.BlobMap[blob.Hash] = blob
-	self.broadcastBlobAnnounce(blob) //anounce blob to worldr
+	self.broadcastBlobAnnounce(blob) //anounce blob to world
 	return nil
 }
 
@@ -382,11 +410,23 @@ func (self *GetBlobListMessage) Process(d *Daemon) {
     }
 
 	//list of hashes for local blobs
-	var bloblist []Blob
+	var bloblist []Blob = make([]Blob,0)
 	for _, blob := range br.BlobMap {
+
+		if len(bloblist) > 256 {
+			m :=  br.NewAnnounceBlobsMessage(bloblist)
+   			d.Pool.Pool.SendMessage(self.c.Conn, m)
+   			bloblist = make([]Blob,0)
+		}
 		bloblist = append(bloblist, blob)
 	}
+	//send remainer
+	if len(bloblist) != 0 {
+		m :=  br.NewAnnounceBlobsMessage(bloblist)
+		d.Pool.Pool.SendMessage(self.c.Conn, m)
+	}
 
-	m :=  br.NewAnnounceBlobsMessage(bloblist)
-   	d.Pool.Pool.SendMessage(self.c.Conn, m)
+
+	//m :=  br.NewAnnounceBlobsMessage(bloblist)
+	//d.Pool.Pool.SendMessage(self.c.Conn, m)
 }

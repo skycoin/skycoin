@@ -631,6 +631,12 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 // by a queue in the daemon.Run() select{}.
 func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
     reason gnet.DisconnectReason) {
+
+    //blob replicators on disconnect
+    for _,br := range self.BlobReplicators {
+        br.OnDisconnect(self.Pool, c.Conn.Addr())
+    }
+
     a := c.Addr()
     logger.Info("%s disconnected because: %v", a, reason)
     duration, exists := BlacklistOffenses[reason]

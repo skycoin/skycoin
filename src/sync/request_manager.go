@@ -11,6 +11,10 @@ import (
     "fmt"
 )
 
+
+/*
+	Request mangager handles rate limiting data requests on a per peer basis
+*/
 /*
 	Todo: 
 	- split hash lists into multiple pages
@@ -25,12 +29,12 @@ import (
 // - kick peers 
 
 //open request
-type request struct {
+type Request struct {
 	RequestTime uint32 //time of request
 	Addr string //address request was made to
 }
 
-type peerStats struct {
+type PeerStats struct {
 	Addr string
 	OpenRequests int
 	lastRequest int64 //time last request was received
@@ -40,39 +44,42 @@ type peerStats struct {
 
 }
 
-type requestManagerConfig struct {
+type RequestManagerConfig struct {
 	RequestTimeout int //timeout for requests
 	RequestsPerPeer int //max requests per peer
 }
 
-func newRequestManagerConfig() requestManagerConfig {
-	return requestManagerConfig {
+func NewRequestManagerConfig() RequestManagerConfig {
+	return RequestManagerConfig {
 		RequestTimeout : 20,
 		RequestsPerPeer : 6,
 	}
 }
 
-type requestManager struct {
-	Config requestManagerConfig
 
-	PeerStats map[string]peerStats
-	Requests map[SHA256]request //hash to time
+type BlobCallback func([]byte)(BlobCallbackResponse)
+
+type RequestManager struct {
+	Config RequestManagerConfig
+
+	PeerStats map[string]PeerStats
+	Requests map[SHA256]Request //hash to time
 }
 
-func newRequestManager(config requestManagerConfig) requestManager {
-	var rm requestManager
-	rm.Requests = make(map[SHA256]request)
+func NewRequestManager(config RequestManagerConfig) RequestManager {
+	var rm RequestManager
+	rm.Requests = make(map[SHA256]Request)
 	rm.Data = make(map[SHA256][]string)
 	rm.Config = config
 }
 
 //send out requests
-func (self *requestManager) Tick() {
+func (self *RequestManager) Tick() {
 	self.removeExpiredRequests()
 	self.newRequests()
 }
 
-func (self *requestManager) removeExpiredRequests() {
+func (self *RequestManager) removeExpiredRequests() {
 	t := uint32(time.Now().Unix())
 	var requests []request
 	for _, r := range self.Requests {
@@ -83,12 +90,12 @@ func (self *requestManager) removeExpiredRequests() {
 	self.Requests = requests
 }
 
-func (self *requestManager) makeRequest(hash SHA256, addr string) {
+func (self *RequestManager) makeRequest(hash SHA256, addr string) {
 	
 
 }
 
-func (self *requestManager) newRequests() {
+func (self *RequestManager) newRequests() {
 	for addr,p := range self.PeerStats {
 
 		if p.OpenRequests < self.Config.RequestsPerPeer {
@@ -110,12 +117,12 @@ func (self *requestManager) newRequests() {
 	}
 }
 //call when peer connects
-func (self *requestManager) OnConnect(addr string) {
+func (self *RequestManager) OnConnect(addr string) {
 
 	self.PeerStats[addr] = peerInfo{}
 }
 
-func (self *requestManager) OnDisconnect(addr string) {
+func (self *RequestManager) OnDisconnect(addr string) {
 
 	delete(self.PeerStats, addr)
 
@@ -126,6 +133,6 @@ func (self *requestManager) OnDisconnect(addr string) {
 	}
 }
 
-for (self *requestManager) DataAnnounce(hashList []SHA256, addr string) {
+for (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
 	append(self.PeerStats[addr].Data, hashList)
 }

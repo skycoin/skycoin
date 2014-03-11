@@ -30,7 +30,7 @@ import (
 
 //open request
 type Request struct {
-	RequestTime uint32 //time of request
+	RequestTime int //time of request
 	Addr string //address request was made to
 }
 
@@ -56,21 +56,24 @@ func NewRequestManagerConfig() RequestManagerConfig {
 	}
 }
 
-
-type BlobCallback func([]byte)(BlobCallbackResponse)
+//this makes the request
+type RequestFunction func(hash SHA256, addr string)(RequestFunction)
 
 type RequestManager struct {
 	Config RequestManagerConfig
 
 	PeerStats map[string]PeerStats
 	Requests map[SHA256]Request //hash to time
+
+	requestFunction
 }
 
-func NewRequestManager(config RequestManagerConfig) RequestManager {
+func NewRequestManager(config RequestManagerConfig, requestFunction RequestFunction) RequestManager {
 	var rm RequestManager
-	rm.Requests = make(map[SHA256]Request)
-	rm.Data = make(map[SHA256][]string)
+	//rm.Requests = make(map[SHA256]Request)
+	//rm.Data = make(map[SHA256][]string)
 	rm.Config = config
+	rm.requestFunction = requestFunction
 }
 
 //send out requests
@@ -80,20 +83,40 @@ func (self *RequestManager) Tick() {
 }
 
 func (self *RequestManager) removeExpiredRequests() {
-	t := uint32(time.Now().Unix())
+	t := int(time.Now().Unix())
 	var requests []request
 	for _, r := range self.Requests {
 		if t - r.RequestTime < self.RequestTimeout {
-			requests = append(requests, r) //only keep rececent
+			requests = append(requests, r) //only keep recent
 		}
 	}
 	self.Requests = requests
 }
 
 func (self *RequestManager) makeRequest(hash SHA256, addr string) {
-	
-
+	//add request to list
+	req := Request {
+			RequestTime : int(time.Now().Unix()),
+			Addr : addr,
+		}
+	self.Requests = append(self.Requests, req)
+	//increment open requests for peer
+	self.PeerStats[addr].OpenRequests += 1
+	self.requestFunction(hash, addr)
 }
+
+//call when there is new data to download
+for (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
+	append(self.PeerStats[addr].Data, hashList)
+}
+
+//call when request FinishedRequests
+for (self *RequestManager) RequestFinished(hash SHA256, addr string) {
+	self.PeerStats[addr].OpenRequests -= 1
+
+	delete(self.Request, )
+}
+
 
 func (self *RequestManager) newRequests() {
 	for addr,p := range self.PeerStats {
@@ -116,12 +139,16 @@ func (self *RequestManager) newRequests() {
 		}
 	}
 }
-//call when peer connects
+
+//called when peer connects
 func (self *RequestManager) OnConnect(addr string) {
 
-	self.PeerStats[addr] = peerInfo{}
+	self.PeerStats[addr] = peerInfo{
+		Addr: addr,
+	}
 }
 
+//called when peer disconnects
 func (self *RequestManager) OnDisconnect(addr string) {
 
 	delete(self.PeerStats, addr)
@@ -131,8 +158,4 @@ func (self *RequestManager) OnDisconnect(addr string) {
 			r.RequestTime = 0 //set request for collection
 		}
 	}
-}
-
-for (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
-	append(self.PeerStats[addr].Data, hashList)
 }

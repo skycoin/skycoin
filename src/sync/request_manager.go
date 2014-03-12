@@ -68,37 +68,36 @@ type RequestManager struct {
 
 func NewRequestManager(config RequestManagerConfig) RequestManager {
 	var rm RequestManager
-	//rm.Requests = make(map[SHA256]Request)
-	//rm.Data = make(map[SHA256][]string)
 	rm.Config = config
-	//rm.RequestFunction = requestFunction
-
+	rm.PeerStats = make(map[string]*PeerStats)
+	rm.Requests = make(map[SHA256]Request)
 	return rm
 }
 
-//returns list of requests to make
-func (self *RequestManager) GetRequests() map[SHA256]string {
-	self.removeExpiredRequests()
-	return self.generateRequests()
+func NewPeerStats(addr string) *PeerStats {
+	var ps PeerStats
+	ps.Addr = addr
+	ps.Data = make(map[SHA256]int)
+	return &ps
 }
 
 //prune expired requestss
-func (self *RequestManager) removeExpiredRequests() {
+func (self *RequestManager) RemoveExpiredRequests() {
 	t := int(time.Now().Unix())
 	for k, r := range self.Requests {
-		if t-r.RequestTime < self.Config.RequestTimeout {
+		if t-r.RequestTime >= self.Config.RequestTimeout {
+			log.Printf("RemoveExpiredRequests, request expired, hash=%s addr= %s \n", k.Hex(), r.Addr)
 			delete(self.Requests, k)
 		}
 	}
 }
 
 //current implementation requests data in random order
-func (self *RequestManager) generateRequests() map[SHA256]string {
+func (self *RequestManager) GenerateRequests() map[SHA256]string {
 
-	var requests map[SHA256]string
+	var requests map[SHA256]string = make(map[SHA256]string)
 	for addr, p := range self.PeerStats {
 		if p.OpenRequests < self.Config.RequestsPerPeer {
-			var hash SHA256
 			for h, _ := range p.Data {
 				if _, ok := self.Requests[h]; ok == false {
 					//add request to return
@@ -108,8 +107,10 @@ func (self *RequestManager) generateRequests() map[SHA256]string {
 						RequestTime: int(time.Now().Unix()),
 						Addr:        addr,
 					}
-					self.Requests[hash] = req
+					self.Requests[h] = req
 					self.PeerStats[addr].OpenRequests += 1
+
+					log.Printf("generateRequests, request for: %s from %s \n", h.Hex(), addr)
 				}
 			}
 		}
@@ -127,6 +128,8 @@ func (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
 
 //call when request FinishedRequests
 func (self *RequestManager) RequestFinished(hash SHA256, addr string) {
+
+	log.Printf("RequestFinished, hash= %s, addr= %s \n", hash.Hex(), addr)
 	//remove data from peer data list
 	if _, ok := self.PeerStats[addr].Data[hash]; ok == false {
 		log.Printf("RequestFinished: warning received unannounced data from peer, addr= %s, hash= %s \n", addr, hash.Hex())
@@ -148,10 +151,7 @@ func (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 
 //called when peer connects
 func (self *RequestManager) OnConnect(addr string) {
-
-	self.PeerStats[addr] = &PeerStats{
-		Addr: addr,
-	}
+	self.PeerStats[addr] = NewPeerStats(addr)
 }
 
 //called when peer disconnects

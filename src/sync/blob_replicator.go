@@ -109,8 +109,9 @@ func (d *Daemon) GetBlobReplicator(channel uint16) *BlobReplicator {
 }
 
 //ask request manager what requests to make and send them out
-func (self *BlobReplicator) TickRequests(hash SHA256, addr string) {
-	var requests map[SHA256]string = self.RequestManager.GetRequests()
+func (self *BlobReplicator) TickRequests() {
+	self.RequestManager.RemoveExpiredRequests()
+	var requests map[SHA256]string = self.RequestManager.GenerateRequests()
 
 	for hash, addr := range requests {
 		self.SendRequest(hash, addr)
@@ -181,7 +182,7 @@ func (self *BlobReplicator) InjectBlob(data []byte) error {
 
 	blob := NewBlob(data)
 	if _, ok := self.BlobMap[blob.Hash]; ok == true {
-		log.Panic("InjectBloc, fail, duplicate")
+		log.Printf("InjectBlob, Warning, fail, duplicate, %s \n", blob.Hash.Hex())
 		return errors.New("InjectBlob, fail, duplicate")
 	}
 	if self.IsIgnored(blob.Hash) == true {
@@ -228,6 +229,17 @@ func (self *BlobReplicator) HasBlob(hash SHA256) bool {
 func (self *BlobReplicator) IsIgnored(hash SHA256) bool {
 	_, ok := self.IgnoreMap[hash]
 	return ok
+}
+
+//filter known and ignored
+func (self *BlobReplicator) FilterHashList(hashList []SHA256) []SHA256 {
+	var list []SHA256
+	for _, hash := range hashList {
+		if self.HasBlob(hash) == false && self.IsIgnored(hash) == false {
+			list = append(list, hash)
+		}
+	}
+	return list
 }
 
 //remove blob, add to ignore list
@@ -306,6 +318,10 @@ func (self *BlobDataMessage) Process(d *Daemon) {
 	if br == nil {
 		log.Panic("BlobDataMessage, Process blob replicator channel does not exist\n ")
 	}
+
+	br.CompleteRequest(BlobHash(self.Data), self.c.Conn.Addr())
+	//BlobHash(
+
 	br.InjectBlob(self.Data)
 }
 
@@ -350,23 +366,10 @@ func (self *AnnounceBlobsMessage) Process(d *Daemon) {
 		log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
 	}
 
-	//get list of blocks we dont have yet
-	var hashList []SHA256
-	for _, hash := range self.BlobHashes {
-		if br.HasBlob(hash) == false && br.IsIgnored(hash) == false {
-			hashList = append(hashList, hash)
-		}
-	}
-	//request blobs we dont have yet
-	if len(hashList) == 0 {
-		return //do nothing
-	}
-
-	//data data manager about new blobs
+	//get list of hashes we dont have yet
+	hashList := br.FilterHashList(self.BlobHashes)
+	//tell data manager about new blobs
 	br.RequestManager.DataAnnounce(hashList, self.c.Conn.Addr())
-	//m := br.NewGetBlobsMessage(hashList)
-	//d.Pool.Pool.SendMessage(self.c.Conn, m)
-
 }
 
 //	--------------------------------------

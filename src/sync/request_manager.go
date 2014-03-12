@@ -5,7 +5,7 @@ import (
 	//"hash"
 	//"errors"
 	//"github.com/skycoin/gnet"
-	"fmt"
+	//"fmt"
 	"log"
 	"time"
 )
@@ -55,7 +55,7 @@ func NewRequestManagerConfig() RequestManagerConfig {
 }
 
 //this makes the request
-type RequestFunction func(hash SHA256, addr string)
+//type RequestFunction func(hash SHA256, addr string)
 
 type RequestManager struct {
 	Config RequestManagerConfig
@@ -63,25 +63,26 @@ type RequestManager struct {
 	PeerStats map[string]*PeerStats
 	Requests  map[SHA256]Request //hash to time
 
-	RequestFunction RequestFunction
+	//RequestFunction RequestFunction
 }
 
-func NewRequestManager(config RequestManagerConfig, requestFunction RequestFunction) RequestManager {
+func NewRequestManager(config RequestManagerConfig) RequestManager {
 	var rm RequestManager
 	//rm.Requests = make(map[SHA256]Request)
 	//rm.Data = make(map[SHA256][]string)
 	rm.Config = config
-	rm.RequestFunction = requestFunction
+	//rm.RequestFunction = requestFunction
 
 	return rm
 }
 
-//send out requests and clears timeouts
-func (self *RequestManager) Tick() {
+//returns list of requests to make
+func (self *RequestManager) GetRequests() map[SHA256]string {
 	self.removeExpiredRequests()
-	self.tickRequests()
+	return self.generateRequests()
 }
 
+//prune expired requestss
 func (self *RequestManager) removeExpiredRequests() {
 	t := int(time.Now().Unix())
 	for k, r := range self.Requests {
@@ -91,21 +92,29 @@ func (self *RequestManager) removeExpiredRequests() {
 	}
 }
 
-//physically make request for data, by hash
-func (self *RequestManager) makeRequest(hash SHA256, addr string) {
-	fmt.Printf("addr: %s request: %s \n", addr, hash.Hex())
+//current implementation requests data in random order
+func (self *RequestManager) generateRequests() map[SHA256]string {
 
-	//add request to list
-	req := Request{
-		RequestTime: int(time.Now().Unix()),
-		Addr:        addr,
+	var requests map[SHA256]string
+	for addr, p := range self.PeerStats {
+		if p.OpenRequests < self.Config.RequestsPerPeer {
+			var hash SHA256
+			for h, _ := range p.Data {
+				if _, ok := self.Requests[h]; ok == false {
+					//add request to return
+					requests[h] = addr
+					//record in request log
+					req := Request{
+						RequestTime: int(time.Now().Unix()),
+						Addr:        addr,
+					}
+					self.Requests[hash] = req
+					self.PeerStats[addr].OpenRequests += 1
+				}
+			}
+		}
 	}
-	//self.Requests = append(self.Requests, req)
-	self.Requests[hash] = req
-
-	//increment open requests for peer
-	self.PeerStats[addr].OpenRequests += 1
-	self.RequestFunction(hash, addr) //call external request function
+	return requests
 }
 
 //call when there is new data to download
@@ -135,22 +144,6 @@ func (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 	self.PeerStats[addr].OpenRequests -= 1
 	self.PeerStats[addr].FinishedRequests += 1
 	self.PeerStats[addr].LastRequest = int(time.Now().Unix())
-}
-
-//current implementation requests data in random order
-func (self *RequestManager) tickRequests() {
-	for addr, p := range self.PeerStats {
-
-		if p.OpenRequests < self.Config.RequestsPerPeer {
-			var hash SHA256
-			for h, _ := range p.Data {
-				if _, ok := self.Requests[h]; ok == false {
-					self.makeRequest(hash, addr)
-					break
-				}
-			}
-		}
-	}
 }
 
 //called when peer connects

@@ -74,19 +74,22 @@ type BlobReplicator struct {
 	BlobMap map[SHA256]Blob
 	IgnoreMap map[SHA256]uint32 //hash of ignored blobs and time added
 	BlobCallback BlobCallback //function which verifies the blob
-	RequestManager requestManager //handles request que
+	RequestManager RequestManager //handles request que
 	d *Daemon //... need for sending messages
 }
 
 //Adds blob replicator to Daemon
 func (d *Daemon) NewBlobReplicator(channel uint16, callback BlobCallback) *BlobReplicator {
+	
 	br := BlobReplicator {
 		Channel : channel,
 		BlobMap : make(map[SHA256]Blob),
 		BlobCallback : callback,
-		RequestManager : newRequestManager()
+		//RequestManager : requestManager
 		d : d,
 	}
+
+	br.RequestManager = NewRequestManager(NewRequestManagerConfig(), br.MakeRequest)
 	//Todo, check that daemon doesnt have other channels
 	d.BlobReplicators = append(d.BlobReplicators, &br)
 	return &br
@@ -102,6 +105,16 @@ func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
     	}
     }
     return br
+}
+
+//callback for triggering request to peer
+func (self* BlobReplicator) MakeRequest(hash SHA256, addr string) {
+
+}
+
+//call when requested data is received
+func (self* BlobReplicator) CompleteRequest(hash SHA256, addr string) {
+
 }
 
 func (self* BlobReplicator) OnConnect(pool *Pool, addr string) {

@@ -634,7 +634,7 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 
     //blob replicators on disconnect
     for _,br := range self.BlobReplicators {
-        br.OnDisconnect(self.Pool, c.Conn.Addr())
+        br.OnDisconnect(self.Pool, c.Addr())
     }
 
     a := c.Addr()

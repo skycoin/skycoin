@@ -4,8 +4,8 @@ package sync
 import (
     //"crypto/sha256"
     //"hash"
-    "errors"
-    "github.com/skycoin/gnet"
+    //"errors"
+    //"github.com/skycoin/gnet"
     "log"
     "time"
     "fmt"
@@ -57,7 +57,7 @@ func NewRequestManagerConfig() RequestManagerConfig {
 }
 
 //this makes the request
-type RequestFunction func(hash SHA256, addr string)(RequestFunction)
+type RequestFunction func(hash SHA256, addr string)()
 
 type RequestManager struct {
 	Config RequestManagerConfig
@@ -65,7 +65,7 @@ type RequestManager struct {
 	PeerStats map[string]PeerStats
 	Requests map[SHA256]Request //hash to time
 
-	requestFunction
+	RequestFunction RequestFunction
 }
 
 func NewRequestManager(config RequestManagerConfig, requestFunction RequestFunction) RequestManager {
@@ -73,20 +73,22 @@ func NewRequestManager(config RequestManagerConfig, requestFunction RequestFunct
 	//rm.Requests = make(map[SHA256]Request)
 	//rm.Data = make(map[SHA256][]string)
 	rm.Config = config
-	rm.requestFunction = requestFunction
+	rm.RequestFunction = requestFunction
+
+	return rm
 }
 
 //send out requests and clears timeouts
 func (self *RequestManager) Tick() {
 	self.removeExpiredRequests()
-	self.newRequests()
+	self.tickRequests()
 }
 
 func (self *RequestManager) removeExpiredRequests() {
 	t := int(time.Now().Unix())
-	var requests []request
+	var requests []Request
 	for _, r := range self.Requests {
-		if t - r.RequestTime < self.RequestTimeout {
+		if t - r.RequestTime < self.Config.RequestTimeout {
 			requests = append(requests, r) //only keep recent
 		}
 	}
@@ -102,14 +104,16 @@ func (self *RequestManager) makeRequest(hash SHA256, addr string) {
 			RequestTime : int(time.Now().Unix()),
 			Addr : addr,
 		}
-	self.Requests = append(self.Requests, req)
+	//self.Requests = append(self.Requests, req)
+	self.Requests[req] = req
+
 	//increment open requests for peer
 	self.PeerStats[addr].OpenRequests += 1
 	self.requestFunction(hash, addr) //call external request function
 }
 
 //call when there is new data to download
-for (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
+func (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
 	append(self.PeerStats[addr].Data, hashList)
 
 	t := int(time.Now().Unix()) 
@@ -119,7 +123,7 @@ for (self *RequestManager) DataAnnounce(hashList []SHA256, addr string) {
 }
 
 //call when request FinishedRequests
-for (self *RequestManager) RequestFinished(hash SHA256, addr string) {
+func (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 	//remove data from peer data list
 	if _, ok := self.PeerStats[addr].Data[hash]; ok == false {
 		log.Printf("RequestFinished: warning received unannounced data from peer, addr= %s, hash= %s \n", addr, hash.Hex())
@@ -129,7 +133,6 @@ for (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 	}
 	//
 	var index int = -1
-	for self.Requests[]
 
 	if req, ok := self.Requests[hash]; ok == false {
 		log.Printf("RequestFinished: warning received unrequested data from peer, addr= %s, hash= %s \n", addr, hash.Hex())

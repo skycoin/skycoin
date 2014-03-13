@@ -1,7 +1,6 @@
 package daemon
 
 import (
-    "bytes"
     "errors"
     "fmt"
     "github.com/skycoin/encoder"
@@ -333,14 +332,10 @@ func TestPongMessage(t *testing.T) {
 /* Helpers */
 
 func gnetConnection(addr string) *gnet.Connection {
-    return &gnet.Connection{
-        Id:           1,
-        Conn:         NewDummyConn(addr),
-        LastSent:     util.ZeroTime(),
-        LastReceived: util.ZeroTime(),
-        Buffer:       &bytes.Buffer{},
-        WriteQueue:   make(chan gnet.Message, 16),
-    }
+    c := gnet.NewConnection(nil, 1, NewDummyConn(addr), 16)
+    c.LastSent = util.ZeroTime()
+    c.LastReceived = util.ZeroTime()
+    return c
 }
 
 func messageContext(addr string) *gnet.MessageContext {

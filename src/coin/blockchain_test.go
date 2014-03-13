@@ -831,17 +831,23 @@ func TestGetUxSnapshot(t *testing.T) {
     xor := randSHA256(t)
     unsp.XorHash = xor
     prev := randSHA256(t)
-    sh := getSnapshotHash(unsp, prevHash)
-    assert.True(t, bytes.Compare(AddSHA256(xor, prev)[:4], sh[:]))
+    sh := getSnapshotHash(unsp, prev)
+    expect := AddSHA256(xor, prev)
+    assert.True(t, bytes.Equal(expect[:4], sh[:]))
     assert.NotEqual(t, sh, [4]byte{})
 }
 
 func TestVerifyUxSnapshot(t *testing.T) {
     bc := NewBlockchain()
     gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
-    b := Block{Body: BlockBody{}}
+    b := Block{Body: BlockBody{}, Head: BlockHeader{}}
     b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
-    h := BlockHeader{}
+    bc.Unspent.XorHash = randSHA256(t)
+    uxHash := AddSHA256(bc.Unspent.XorHash, gb.Head.Hash())
+    copy(b.Head.UxSnapshot[:], uxHash[:])
+    assert.Nil(t, bc.verifyUxSnapshot(b))
+    b.Head.UxSnapshot = [4]byte{}
+    assertError(t, bc.verifyUxSnapshot(b), "UxSnapshot does not match")
 }
 
 func TestVerifyBlockHeader(t *testing.T) {

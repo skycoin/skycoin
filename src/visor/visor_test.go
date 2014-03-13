@@ -897,18 +897,24 @@ func TestGetAddressTransactions(t *testing.T) {
 
     // An unconfirmed txn
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
-    assert.Equal(t, len(v.Unconfirmed.Unspent.Pool), 0)
+    assert.Equal(t, len(v.Unconfirmed.Unspent), 0)
     we = v.Wallet.CreateEntry()
     tx, err = v.Spend(Balance{2e6, 0}, 0, we.Address)
     err, known = v.RecordTxn(tx)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
-    assert.Equal(t, len(v.Unconfirmed.Unspent.Pool), 2)
+    assert.Equal(t, len(v.Unconfirmed.Unspent), 2)
     found := false
-    for _, ux := range v.Unconfirmed.Unspent.Pool {
-        if ux.Body.Address == we.Address {
-            found = true
+    for _, uxs := range v.Unconfirmed.Unspent {
+        if found {
+            break
+        }
+        for _, ux := range uxs {
+            if ux.Body.Address == we.Address {
+                found = true
+                break
+            }
         }
     }
     auxs := v.Unconfirmed.Unspent.AllForAddress(we.Address)
@@ -920,7 +926,18 @@ func TestGetAddressTransactions(t *testing.T) {
     assert.True(t, txns[0].Status.Unconfirmed)
 
     // An unconfirmed txn, but pool is corrupted
-    srcTxn := v.Unconfirmed.Unspent.Array()[0].Body.SrcTransaction
+    assert.True(t, len(v.Unconfirmed.Unspent) > 0)
+    ux := coin.UxOut{}
+    found = false
+    for _, uxs := range v.Unconfirmed.Unspent {
+        if len(uxs) > 0 {
+            ux = uxs[0]
+            found = true
+            break
+        }
+    }
+    assert.True(t, found)
+    srcTxn := ux.Body.SrcTransaction
     delete(v.Unconfirmed.Txns, srcTxn)
     txns = v.GetAddressTransactions(we.Address)
     assert.Equal(t, len(txns), 0)

@@ -7,15 +7,34 @@ import (
     "github.com/skycoin/pex"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
+    "github.com/skycoin/skycoin/src/visor"
     "github.com/stretchr/testify/assert"
+    "os"
+    "os/signal"
+    "runtime/pprof"
     "strings"
+    "syscall"
     "testing"
     "time"
 )
 
+func catchSigusr1() {
+    sigchan := make(chan os.Signal, 1)
+    signal.Notify(sigchan, syscall.SIGUSR1)
+    for {
+        select {
+        case <-sigchan:
+            pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
+        }
+    }
+}
+
 func newDefaultDaemon() *Daemon {
     cleanupPeers()
     c := NewConfig()
+    we := visor.NewWalletEntry()
+    c.Visor.Config.MasterKeys = we
+    c.Visor.Config.GenesisSignature = createGenesisSignature(we)
     c.Visor.Disabled = true
     c.DHT.Disabled = true
     return NewDaemon(c)
@@ -39,7 +58,9 @@ func setupDaemonLoopDHT() (*Daemon, chan int) {
 
 func closeDaemon(d *Daemon, quit chan int) {
     wait()
+    logger.Critical("sending quit")
     quit <- 1
+    logger.Critical("quit sent")
     shutdown(d)
 }
 
@@ -390,8 +411,6 @@ func testDaemonLoopRequestPeersTicker(t *testing.T, d *Daemon, quit chan int,
     } else {
         assert.True(t, c.LastSent.IsZero())
     }
-    c.Close()
-    wait()
 }
 
 func TestDaemonLoopRequestPeersTicker(t *testing.T) {

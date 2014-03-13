@@ -19,6 +19,18 @@ const (
     testWalletEntryFile = "testwalletentry.json"
 )
 
+func createGenesisSignature(master visor.WalletEntry) coin.Sig {
+    c := visor.NewVisorConfig()
+    bc := coin.NewBlockchain()
+    gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
+        c.GenesisCoinVolume)
+    sig := coin.SignHash(gb.HashHeader(), master.Secret)
+    err := coin.VerifySignature(master.Public, sig, gb.HashHeader())
+    logger.Critical("Valid sig? %v", err)
+    logger.Critical("Sig: %v", sig)
+    return sig
+}
+
 // Returns an appropriate VisorConfig and a master visor
 func setupVisorConfig() (VisorConfig, *Visor) {
     coin.SetAddressVersion("test")
@@ -30,16 +42,16 @@ func setupVisorConfig() (VisorConfig, *Visor) {
     mvc.CoinHourBurnFactor = 0
     mvc.IsMaster = true
     mvc.MasterKeys = mw
+    mvc.GenesisSignature = createGenesisSignature(mw)
     mv := NewVisor(mvc)
-    sb := mv.GetGenesisBlock()
 
     // Use the master values for a client configuration
     c := NewVisorConfig()
     c.IsMaster = false
+    c.GenesisSignature = mvc.Sig
+    c.GenesisTimestamp = mvc.GenesisTimestamp
     c.MasterKeys = mw
     c.MasterKeys.Secret = coin.SecKey{}
-    c.GenesisTimestamp = sb.Block.Head.Time
-    c.GenesisSignature = sb.Sig
     return c, mv
 }
 
@@ -325,7 +337,7 @@ func TestNewReadableBlock(t *testing.T) {
     defer cleanupVisor()
     v, mv := setupVisor()
     assert.Nil(t, transferCoins(mv, v))
-    b := *(mv.blockchain.Head())
+    b := mv.blockchain.Head()
     assert.Equal(t, b.Head.BkSeq, uint64(1))
     rb := NewReadableBlock(&b)
     assertReadableBlock(t, rb, b)

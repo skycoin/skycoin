@@ -4,6 +4,7 @@ import (
     "errors"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "log"
     "os"
     "time"
@@ -47,6 +48,8 @@ type VisorConfig struct {
     GenesisSignature coin.Sig
     // Genesis block timestamp
     GenesisTimestamp uint64
+    // Number of coins in genesis block
+    GenesisCoinVolume uint64
 }
 
 //Note, put cap on block size, not on transactions/block
@@ -69,6 +72,7 @@ func NewVisorConfig() VisorConfig {
         MasterKeys:               WalletEntry{},
         GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
+        GenesisCoinVolume:        100e6,
     }
 }
 
@@ -155,39 +159,16 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 
 // Creates the genesis block as needed
 func (self *Visor) CreateGenesisBlock() SignedBlock {
-    b := coin.Block{}
-    addr := self.Config.MasterKeys.Address
-
-    //TODO: both master and slave have the same genesis block!!!
-    //!!! master should not have different genesis block than slaves
-
-    b = self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp, 100e6)
-
-    //sb := SignedBlock{}
-
-    //master and slave should have same genesis block
-    sb := SignedBlock{
-            Block: b,
-            Sig:   self.Config.GenesisSignature,
-        }
-    /*
-    if self.Config.IsMaster {
-        log.Printf("Generating Genesis Block as Master \n")
-        sb = SignedBlock{
-            Block: b,
-            Sig:   self.Config.GenesisSignature,
-        }
-
-        //we dont have deterministic ECDSA so will generate a differnet signature
-        //sb = self.signBlock(b)
-    } else {
-        log.Printf("Generating Genesis Block as Slave \n")
-        sb = SignedBlock{
-            Block: b,
-            Sig:   self.Config.GenesisSignature,
-        }
+    if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+        log.Panic("Blockchain already has genesis")
     }
-    */
+    addr := self.Config.MasterKeys.Address
+    b := self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp,
+        self.Config.GenesisCoinVolume)
+    sb := SignedBlock{
+        Block: b,
+        Sig:   self.Config.GenesisSignature,
+    }
     self.blockSigs.record(&sb)
     err := self.blockSigs.Verify(self.Config.MasterKeys.Public,
         self.blockchain)
@@ -243,7 +224,7 @@ func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
 }
 
 // Creates a SignedBlock from pending transactions
-func (self *Visor) createBlock() (SignedBlock, error) {
+func (self *Visor) CreateBlock(when uint64) (SignedBlock, error) {
     var sb SignedBlock
     if !self.Config.IsMaster {
         log.Panic("Only master chain can create blocks")
@@ -252,26 +233,17 @@ func (self *Visor) createBlock() (SignedBlock, error) {
         return sb, errors.New("No transactions")
     }
     txns := self.Unconfirmed.RawTxns()
-    
-    //apply size limit
     txns = txns.TruncateBytesTo(self.Config.MaxBlockSize)
-    //current time
-    b, err := self.blockchain.NewBlockFromTransactions(txns, uint64(time.Now().Unix()))
-
+    b, err := self.blockchain.NewBlockFromTransactions(txns, when)
     if err != nil {
         return sb, err
     }
-
-    if self.blockchain.Head().Head.Time < b.Head.Time + self.Config.BlockCreationInterval {
-        return sb, errors.New("trying to create block too soon, must wait creation interval")
-    }
-
     return self.signBlock(b), nil
 }
 
 // Creates a SignedBlock from pending transactions and executes it
 func (self *Visor) CreateAndExecuteBlock() (SignedBlock, error) {
-    sb, err := self.createBlock()
+    sb, err := self.CreateBlock(uint64(util.UnixNow()))
     if err == nil {
         return sb, self.ExecuteSignedBlock(sb)
     } else {

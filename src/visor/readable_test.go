@@ -24,9 +24,7 @@ func createGenesisSignature(master WalletEntry) coin.Sig {
     bc := coin.NewBlockchain()
     gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
         c.GenesisCoinVolume)
-    sig := coin.SignHash(gb.HashHeader(), master.Secret)
-    err := coin.VerifySignature(master.Public, sig, gb.HashHeader())
-    return sig
+    return coin.SignHash(gb.HashHeader(), master.Secret)
 }
 
 // Returns an appropriate VisorConfig and a master visor
@@ -46,7 +44,7 @@ func setupVisorConfig() (VisorConfig, *Visor) {
     // Use the master values for a client configuration
     c := NewVisorConfig()
     c.IsMaster = false
-    c.GenesisSignature = mvc.Sig
+    c.GenesisSignature = mvc.GenesisSignature
     c.GenesisTimestamp = mvc.GenesisTimestamp
     c.MasterKeys = mw
     c.MasterKeys.Secret = coin.SecKey{}
@@ -75,7 +73,9 @@ func setupMasterVisorConfig() VisorConfig {
     c := NewVisorConfig()
     c.CoinHourBurnFactor = 0
     c.IsMaster = true
-    c.MasterKeys = NewWalletEntry()
+    mw := NewWalletEntry()
+    c.MasterKeys = mw
+    c.GenesisSignature = createGenesisSignature(mw)
     return c
 }
 
@@ -145,7 +145,15 @@ func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
         return err
     }
     mv.RecordTxn(tx)
-    sb, err := mv.CreateAndExecuteBlock()
+    now := uint64(util.UnixNow())
+    if len(mv.blockchain.Blocks) > 0 {
+        now = mv.blockchain.Time() + 1
+    }
+    sb, err := mv.CreateBlock(now)
+    if err != nil {
+        return err
+    }
+    err = mv.ExecuteSignedBlock(sb)
     if err != nil {
         return err
     }

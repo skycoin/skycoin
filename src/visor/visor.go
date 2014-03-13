@@ -233,6 +233,7 @@ func (self *Visor) CreateBlock(when uint64) (SignedBlock, error) {
         return sb, errors.New("No transactions")
     }
     txns := self.Unconfirmed.RawTxns()
+    txns = coin.SortTransactions(txns, self.blockchain.TransactionFee)
     txns = txns.TruncateBytesTo(self.Config.MaxBlockSize)
     b, err := self.blockchain.NewBlockFromTransactions(txns, when)
     if err != nil {

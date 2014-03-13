@@ -1,19 +1,20 @@
 package sync
 
 import (
-    //"crypto/sha256"
-    //"hash"
-    "errors"
-    "github.com/skycoin/gnet"
-    "log"
-    "time"
+	//"crypto/sha256"
+	//"hash"
+	"errors"
+	"fmt"
+	"github.com/skycoin/gnet"
+	"log"
+	"time"
 )
 
 /*
 	Replication for flood objects
 	- objects are referenced by hash
 	- objects are verified by callback function
-	
+
 	How it Works
 	- clients poll each other for lists of hashs
 	- clients download data for hashes they dont have
@@ -36,16 +37,12 @@ import (
 */
 
 /*
-	Todo: 
-	- split hash lists into multiple pages
-	- do query for each page from remote peer
-	- 
-	
+
 */
 
 //data object that is replicated
 type Blob struct {
-	Hash SHA256 
+	Hash SHA256
 	Data []byte
 }
 
@@ -53,7 +50,7 @@ func NewBlob(data []byte) Blob {
 	var blob Blob
 	blob.Data = make([]byte, len(data))
 	copy(blob.Data, data)
-	blob.Hash =  SumSHA256(data)
+	blob.Hash = SumSHA256(data)
 	return blob
 }
 
@@ -64,79 +61,140 @@ func BlobHash(data []byte) SHA256 {
 
 //this function is called when a new blob is received
 //if this function returns error, the blob is invalid and was rejected
-type BlobCallback func([]byte)(BlobCallbackResponse)
+type BlobCallback func([]byte) BlobCallbackResponse
 
 type BlobCallbackResponse struct {
-	Valid bool //is blob data valid
-	Ignore bool //put data on ignore list?
+	Valid    bool //is blob data valid
+	Ignore   bool //put data on ignore list?
 	KickPeer bool //should peer be kicked?
 }
+
 //Todo: add id for dealing with multiple blob types
 type BlobReplicator struct {
-	Channel uint16 //for multiple replicators
-	BlobMap map[SHA256]Blob
-	IgnoreMap map[SHA256]uint32 //hash of ignored blobs and time added
-	BlobCallback BlobCallback //function which verifies the blob
-	d *Daemon //... need for sending messages
+	Channel        uint16 //for multiple replicators
+	BlobMap        map[SHA256]Blob
+	IgnoreMap      map[SHA256]uint32 //hash of ignored blobs and time added
+	BlobCallback   BlobCallback      //function which verifies the blob
+	RequestManager RequestManager    //handles request que
+	d              *Daemon           //... need for sending messages
 }
 
 //Adds blob replicator to Daemon
 func (d *Daemon) NewBlobReplicator(channel uint16, callback BlobCallback) *BlobReplicator {
-	br := BlobReplicator {
-		Channel : channel,
-		BlobMap : make(map[SHA256]Blob),
-		BlobCallback : callback,
-		d : d,
+
+	br := BlobReplicator{
+		Channel:      channel,
+		BlobMap:      make(map[SHA256]Blob),
+		BlobCallback: callback,
+		//RequestManager : requestManager
+		d: d,
 	}
+
+	br.RequestManager = NewRequestManager(NewRequestManagerConfig())
 	//Todo, check that daemon doesnt have other channels
 	d.BlobReplicators = append(d.BlobReplicators, &br)
 	return &br
 }
 
 //null on error
-func (d *Daemon) GetBlobReplicator(channel uint16) (*BlobReplicator) {
-    var br *BlobReplicator = nil
-    for i, _ := range d.BlobReplicators {
-    	if d.BlobReplicators[i].Channel == channel {
-    		br = d.BlobReplicators[i]
-    		break
-    	}
-    }
-    return br
+func (d *Daemon) GetBlobReplicator(channel uint16) *BlobReplicator {
+	var br *BlobReplicator = nil
+	for i, _ := range d.BlobReplicators {
+		if d.BlobReplicators[i].Channel == channel {
+			br = d.BlobReplicators[i]
+			break
+		}
+	}
+	return br
 }
 
-func (self* BlobReplicator) OnConnect(pool *Pool, addr string) {
+//ask request manager what requests to make and send them out
+func (self *BlobReplicator) TickRequests() {
+	self.RequestManager.RemoveExpiredRequests()
+	var requests map[SHA256]string = self.RequestManager.GenerateRequests()
+
+	for hash, addr := range requests {
+		self.SendRequest(hash, addr)
+	}
+}
+
+//send data request packet
+func (self *BlobReplicator) SendRequest(hash SHA256, addr string) {
+	m := self.NewGetBlobMessage(hash)
+	c := self.d.Pool.Pool.Addresses[addr]
+	if c == nil {
+		log.Panic("ERROR: Address does not exist")
+	}
+	self.d.Pool.Pool.SendMessage(c, m)
+}
+
+//call when requested data is received. informs request manager
+func (self *BlobReplicator) CompleteRequest(hash SHA256, addr string) {
+	self.RequestManager.RequestFinished(hash, addr)
+}
+
+func (self *BlobReplicator) OnConnect(pool *Pool, addr string) {
 	//pool *Pool, addr string
 	m := self.NewGetBlobListMessage()
-    c := pool.Pool.Addresses[addr]
-    if c == nil {
-        log.Panic("ERROR Address does not exist")
-    }
-    pool.Pool.SendMessage(c, m)
+	c := pool.Pool.Addresses[addr]
+	if c == nil {
+		log.Panic("ERROR Address does not exist")
+	}
+	pool.Pool.SendMessage(c, m)
+	//setup request manager for address
+	self.RequestManager.OnConnect(addr)
+}
+
+func (self *BlobReplicator) OnDisconnect(pool *Pool, addr string) {
+	//setup request manager for address
+	self.RequestManager.OnDisconnect(addr)
+	return
 
 }
+
 //Must set callback function for handling blob data
 //func (self *BlobReplicator) SetCallback(function &BlobCallback) {
 //	self.BlobCallback = function
 //}
 
+//deals with blobs coming in over network
+func (self *BlobReplicator) blobHandleIncoming(data []byte, addr string) {
+
+	callbackResponse := self.BlobCallback(data)
+
+	if callbackResponse.KickPeer == true {
+		//kick the peer
+		log.Panic("InjectBloc implement kick peer")
+	}
+	if callbackResponse.Ignore == true {
+		//put blob on ignore list
+		log.Panic("implement ignore == true")
+	}
+	if callbackResponse.Valid == false {
+		return
+	}
+	self.InjectBlob(data) //inject the blob
+}
+
 //inject blobs at startup
-func (self *BlobReplicator) InjectBlob(data []byte) (error) {
+func (self *BlobReplicator) InjectBlob(data []byte) error {
+	fmt.Printf("InjectBlob: \n")
+
 	blob := NewBlob(data)
 	if _, ok := self.BlobMap[blob.Hash]; ok == true {
-		log.Panic("InjectBloc, fail, duplicate")
+		log.Printf("InjectBlob, Warning, fail, duplicate, %s \n", blob.Hash.Hex())
 		return errors.New("InjectBlob, fail, duplicate")
 	}
 	if self.IsIgnored(blob.Hash) == true {
 		return errors.New("InjectBlob, fail, ignore list")
 	}
 	self.BlobMap[blob.Hash] = blob
-	self.broadcastBlobAnnounce(blob) //anounce blob to worldr
+	self.broadcastBlobAnnounce(blob) //anounce blob to world
 	return nil
 }
 
 //adds to ignore list. blobs on ignore list wont be replicated
-func (self *BlobReplicator) AddIgnoreHash(hash SHA256) (error) {
+func (self *BlobReplicator) AddIgnoreHash(hash SHA256) error {
 
 	if self.HasBlob(hash) == true {
 		return errors.New("IgnoreHash, blob is replicated, handle condition")
@@ -152,8 +210,8 @@ func (self *BlobReplicator) AddIgnoreHash(hash SHA256) (error) {
 	return nil
 }
 
-func (self *BlobReplicator) RemoveIgnoreHash(hash SHA256) (error) {
-	
+func (self *BlobReplicator) RemoveIgnoreHash(hash SHA256) error {
+
 	if self.IsIgnored(hash) != true {
 		return errors.New("RemoveIgnoreHash, has is not ignored\n")
 	}
@@ -161,17 +219,27 @@ func (self *BlobReplicator) RemoveIgnoreHash(hash SHA256) (error) {
 	return nil
 }
 
-
 //returns true if local has blob or if blob is on ignore list
 //returns false if local should felt blob from remote
 func (self *BlobReplicator) HasBlob(hash SHA256) bool {
-	_,ok := self.BlobMap[hash]
+	_, ok := self.BlobMap[hash]
 	return ok
 }
 
 func (self *BlobReplicator) IsIgnored(hash SHA256) bool {
-	_,ok := self.IgnoreMap[hash]
+	_, ok := self.IgnoreMap[hash]
 	return ok
+}
+
+//filter known and ignored
+func (self *BlobReplicator) FilterHashList(hashList []SHA256) []SHA256 {
+	var list []SHA256
+	for _, hash := range hashList {
+		if self.HasBlob(hash) == false && self.IsIgnored(hash) == false {
+			list = append(list, hash)
+		}
+	}
+	return list
 }
 
 //remove blob, add to ignore list
@@ -179,7 +247,6 @@ func (self *BlobReplicator) IsIgnored(hash SHA256) bool {
 // //if blob exists, remove it
 // //add block hash to ignore list
 //}
-
 
 /*
 	Networking:
@@ -214,19 +281,17 @@ func (self *BlobReplicator) broadcastBlobHashlistRequest(blob Blob) {
 	self.d.Pool.Pool.BroadcastMessage(m)
 }
 
-
 /*
 	------------------------------
 	- Blob Data Message          -
 	------------------------------
 */
 
-
 //message containing a blob
 type BlobDataMessage struct {
 	Channel uint16
-	Data []byte
-	c    *gnet.MessageContext `enc:"-"`
+	Data    []byte
+	c       *gnet.MessageContext `enc:"-"`
 }
 
 func (self *BlobReplicator) newBlobDataMessage(blob Blob) *BlobDataMessage {
@@ -234,26 +299,30 @@ func (self *BlobReplicator) newBlobDataMessage(blob Blob) *BlobDataMessage {
 	bm.Channel = self.Channel
 	bm.Data = make([]byte, len(blob.Data))
 	copy(bm.Data, blob.Data)
-    return &bm
+	return &bm
 }
 
 //Todo: Boiler plate, Deprecate
 //recordMessageEvent is just checking for intro and calling process
 func (self *BlobDataMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+	daemon interface{}) error {
+	self.c = mc
+	return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 //upon receiving data, inject it
 //if injection succeeds, then broadcast to all peers
 func (self *BlobDataMessage) Process(d *Daemon) {
-    //route to channel
-    br := d.GetBlobReplicator(self.Channel)
-    if br == nil {
-    	log.Panic("BlobDataMessage, Process blob replicator channel does not exist\n ")
-    }
-   	br.InjectBlob(self.Data)
+	//route to channel
+	br := d.GetBlobReplicator(self.Channel)
+	if br == nil {
+		log.Panic("BlobDataMessage, Process blob replicator channel does not exist\n ")
+	}
+
+	br.CompleteRequest(BlobHash(self.Data), self.c.Conn.Addr())
+	//BlobHash(
+
+	br.InjectBlob(self.Data)
 }
 
 /*
@@ -261,7 +330,7 @@ func (self *BlobDataMessage) Process(d *Daemon) {
 	- Blob Announcemence Message -
 	------------------------------
 
-	//WARNING: 
+	//WARNING:
 	- If two peers announce data, will make download request from both peers
 	- Makes many redundant data requests
 	- Does not keep track of requests
@@ -270,85 +339,87 @@ func (self *BlobDataMessage) Process(d *Daemon) {
 //use for anouncing single blob to all connected peers
 //use for responding to request for all blobs
 type AnnounceBlobsMessage struct {
-	Channel uint16
-    BlobHashes []SHA256
-    c    *gnet.MessageContext `enc:"-"`
+	Channel    uint16
+	BlobHashes []SHA256
+	c          *gnet.MessageContext `enc:"-"`
 }
 
 func (self *BlobReplicator) NewAnnounceBlobsMessage(blobs []Blob) *AnnounceBlobsMessage {
-    ab := AnnounceBlobsMessage{}
-    ab.Channel = self.Channel
-    for _,b := range blobs {
-    	ab.BlobHashes = append(ab.BlobHashes,b.Hash)
-    }
-    return &ab
+	ab := AnnounceBlobsMessage{}
+	ab.Channel = self.Channel
+	for _, b := range blobs {
+		ab.BlobHashes = append(ab.BlobHashes, b.Hash)
+	}
+	return &ab
 }
 
 //Todo: Boiler plate, Deprecate, recordMessageEvent is just checking for intro and calling process
 func (self *AnnounceBlobsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+	daemon interface{}) error {
+	self.c = mc
+	return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 func (self *AnnounceBlobsMessage) Process(d *Daemon) {
-    br := d.GetBlobReplicator(self.Channel)
-    if br == nil {
-    	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
-    }
+	br := d.GetBlobReplicator(self.Channel)
+	if br == nil {
+		log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
+	}
 
-    //get list of blocks we dont have yet
-    var hashList []SHA256
-    for _,hash := range self.BlobHashes {
-    	if br.HasBlob(hash) == false && br.IsIgnored(hash) == false {
-    		hashList = append(hashList, hash)
-    	}
-    }
-    //request blobs we dont have yet
-    if len(hashList) == 0 {
-    	return //do nothing
-    }
-  	m := br.NewGetBlobsMessage(hashList)
-   	d.Pool.Pool.SendMessage(self.c.Conn, m)
-    
+	//get list of hashes we dont have yet
+	hashList := br.FilterHashList(self.BlobHashes)
+	//tell data manager about new blobs
+	br.RequestManager.DataAnnounce(hashList, self.c.Conn.Addr())
 }
 
 //	--------------------------------------
 //	- Request Blob Data Elements by hash -
 //  --------------------------------------
 
-type GetBlobsMessage struct {
+type GetBlobMessage struct {
 	Channel uint16
-    Hashs []SHA256
-    c    *gnet.MessageContext `enc:"-"`
+	Hash    SHA256
+	c       *gnet.MessageContext `enc:"-"`
 }
 
-func (self *BlobReplicator) NewGetBlobsMessage(hashList []SHA256) *GetBlobsMessage {   
+/*
+func (self *BlobReplicator) NewGetBlobsMessage(hashList []SHA256) *GetBlobsMessage {
 	var bm GetBlobsMessage
-    bm.Hashs = hashList
-    bm.Channel = self.Channel
-    return &bm
+	bm.Hashs = hashList
+	bm.Channel = self.Channel
+	return &bm
+}
+*/
+
+func (self *BlobReplicator) NewGetBlobMessage(hash SHA256) *GetBlobMessage {
+	var bm GetBlobMessage
+	bm.Hash = hash
+	bm.Channel = self.Channel
+	return &bm
 }
 
 //deprecate, boiler plate
-func (self *GetBlobsMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+func (self *GetBlobMessage) Handle(mc *gnet.MessageContext,
+	daemon interface{}) error {
+	self.c = mc
+	return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
-func (self *GetBlobsMessage) Process(d *Daemon) {
-    br := d.GetBlobReplicator(self.Channel)
-    if br == nil {
-    	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
-    }
-    for _,hash := range self.Hashs {
-    	//if we have the block, send it to peer
-    	if br.HasBlob(hash) == true {
-    		m := br.newBlobDataMessage(br.BlobMap[hash])
-    		d.Pool.Pool.SendMessage(self.c.Conn, m)
-    	}
-    }
+func (self *GetBlobMessage) Process(d *Daemon) {
+	br := d.GetBlobReplicator(self.Channel)
+	if br == nil {
+		log.Printf("GetBlobMessage, Process: blob replicator channel not found, kick peer")
+		return
+	}
+
+	//if we have the block, send it to peer
+	if br.HasBlob(self.Hash) == true {
+		m := br.newBlobDataMessage(br.BlobMap[self.Hash])
+		d.Pool.Pool.SendMessage(self.c.Conn, m)
+	} else {
+		log.Printf("GetBlobMessage, warning, peer requested blob we do not have")
+	}
+
 }
 
 //	--------------------------------------
@@ -359,34 +430,45 @@ func (self *GetBlobsMessage) Process(d *Daemon) {
 
 type GetBlobListMessage struct {
 	Channel uint16
-    c    *gnet.MessageContext `enc:"-"`
+	c       *gnet.MessageContext `enc:"-"`
 }
 
-func (self *BlobReplicator) NewGetBlobListMessage() *GetBlobListMessage {   
+func (self *BlobReplicator) NewGetBlobListMessage() *GetBlobListMessage {
 	var m GetBlobListMessage
-    m.Channel = self.Channel
-    return &m
+	m.Channel = self.Channel
+	return &m
 }
 
 //deprecate, boiler plate
 func (self *GetBlobListMessage) Handle(mc *gnet.MessageContext,
-    daemon interface{}) error {
-    self.c = mc
-    return daemon.(*Daemon).recordMessageEvent(self, mc)
+	daemon interface{}) error {
+	self.c = mc
+	return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
 func (self *GetBlobListMessage) Process(d *Daemon) {
-    br := d.GetBlobReplicator(self.Channel)
-    if br == nil {
-    	log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
-    }
-
-	//list of hashes for local blobs
-	var bloblist []Blob
-	for _, blob := range br.BlobMap {
-		bloblist = append(bloblist, blob)
+	br := d.GetBlobReplicator(self.Channel)
+	if br == nil {
+		log.Panic("AnnounceBlobsMessage, Process: blob replicator channel not found")
 	}
 
-	m :=  br.NewAnnounceBlobsMessage(bloblist)
-   	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	//list of hashes for local blobs
+	var bloblist []Blob = make([]Blob, 0)
+	for _, blob := range br.BlobMap {
+
+		if len(bloblist) > 256 {
+			m := br.NewAnnounceBlobsMessage(bloblist)
+			d.Pool.Pool.SendMessage(self.c.Conn, m)
+			bloblist = make([]Blob, 0)
+		}
+		bloblist = append(bloblist, blob)
+	}
+	//send remainer
+	if len(bloblist) != 0 {
+		m := br.NewAnnounceBlobsMessage(bloblist)
+		d.Pool.Pool.SendMessage(self.c.Conn, m)
+	}
+
+	//m :=  br.NewAnnounceBlobsMessage(bloblist)
+	//d.Pool.Pool.SendMessage(self.c.Conn, m)
 }

@@ -55,7 +55,7 @@ func printProgramStatus() {
     }
 }
 
-func catchInterrupt(quit chan int) {
+func catchInterrupt(quit chan<- int) {
     sigchan := make(chan os.Signal, 1)
     signal.Notify(sigchan, os.Interrupt)
     <-sigchan
@@ -166,6 +166,7 @@ func Run(args cli.Args) {
     stopDaemon := make(chan int)
     go d.Start(stopDaemon)
 
+    // Debug only - forces connection on start.  Violates thread safety.
     if c.ConnectTo != "" {
         _, err := d.Pool.Pool.Connect(c.ConnectTo)
         if err != nil {

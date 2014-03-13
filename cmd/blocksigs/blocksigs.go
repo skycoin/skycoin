@@ -40,6 +40,7 @@ func main() {
     sig, err := readSignature(*sigsFile, *bkSeq)
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     } else {
         fmt.Println(sig)
     }

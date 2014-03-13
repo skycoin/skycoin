@@ -103,12 +103,24 @@ func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
 }
 
 func assertValidUnspent(t *testing.T, bc *coin.Blockchain,
-    unspent *coin.UnspentPool, tx coin.Transaction) {
+    unspent TxnUnspents, tx coin.Transaction) {
     expect := coin.CreateUnspents(bc.Head().Head, tx)
     assert.NotEqual(t, len(expect), 0)
-    assert.Equal(t, len(expect), len(unspent.Pool))
+    sum := 0
+    for _, uxs := range unspent {
+        sum += len(uxs)
+    }
+    assert.Equal(t, len(expect), sum)
+    uxs := unspent[tx.Hash()]
     for _, ux := range expect {
-        assert.True(t, unspent.Has(ux.Hash()))
+        found := false
+        for _, u := range uxs {
+            if u.Hash() == ux.Hash() {
+                found = true
+                break
+            }
+        }
+        assert.True(t, found)
     }
 }
 
@@ -207,7 +219,7 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, false, false)
 
     // Test didAnnounce=true
@@ -218,7 +230,7 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, nil, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, false, false)
 
     // Test txn too large
@@ -242,7 +254,7 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, true, false)
 
     // Test where we are spender of ux outputs
@@ -258,7 +270,7 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, false, true)
 
     // Test where we are both spender and receiver of ux outputs
@@ -274,10 +286,13 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, true, true)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
 
     // Test duplicate Record, should be no-op besides state change
     utx := ut.Txns[txn.Hash()]
@@ -296,7 +311,10 @@ func TestRecordTxn(t *testing.T) {
     assert.True(t, utx2.Checked.After(utx.Checked))
     assertValidUnconfirmed(t, ut.Txns, txn, true, true)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
 
     // Test with valid fee, exact
     mv = setupMasterVisor()
@@ -309,7 +327,7 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, true, false)
 
     // Test with valid fee, surplus
@@ -323,7 +341,7 @@ func TestRecordTxn(t *testing.T) {
     err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
     assert.Nil(t, err)
     assert.False(t, known)
-    assertValidUnspent(t, mv.blockchain, &ut.Unspent, txn)
+    assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
     assertValidUnconfirmed(t, ut.Txns, txn, true, false)
 
     // Test with invalid fee
@@ -385,16 +403,25 @@ func TestRemoveTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
 
     // Unknown txn is no-op
     badh := randSHA256()
     assert.NotEqual(t, badh, utx.Hash())
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     ut.removeTxn(mv.blockchain, badh)
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
 
     // Known txn updates Txns, predicted Unspents
     utx2, err := makeValidTxn(mv)
@@ -403,16 +430,25 @@ func TestRemoveTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(ut.Txns), 2)
-    assert.Equal(t, len(ut.Unspent.Pool), 4)
+    assert.Equal(t, len(ut.Unspent), 2)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     ut.removeTxn(mv.blockchain, utx.Hash())
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     ut.removeTxn(mv.blockchain, utx.Hash())
     assert.Equal(t, len(ut.Txns), 1)
-    assert.Equal(t, len(ut.Unspent.Pool), 2)
+    assert.Equal(t, len(ut.Unspent), 1)
+    for _, uxs := range ut.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     ut.removeTxn(mv.blockchain, utx2.Hash())
     assert.Equal(t, len(ut.Txns), 0)
-    assert.Equal(t, len(ut.Unspent.Pool), 0)
+    assert.Equal(t, len(ut.Unspent), 0)
 }
 
 func TestRemoveTxns(t *testing.T) {
@@ -442,10 +478,16 @@ func TestRemoveTxns(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
 
-    assert.Equal(t, len(up.Unspent.Pool), 3*2)
+    assert.Equal(t, len(up.Unspent), 3)
+    for _, uxs := range up.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     assert.Equal(t, len(up.Txns), 3)
     up.removeTxns(mv.blockchain, hashes)
-    assert.Equal(t, len(up.Unspent.Pool), 1*2)
+    assert.Equal(t, len(up.Unspent), 1)
+    for _, uxs := range up.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     assert.Equal(t, len(up.Txns), 1)
     _, ok := up.Txns[ut3.Hash()]
     assert.True(t, ok)
@@ -480,10 +522,16 @@ func TestRemoveTransactions(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
 
-    assert.Equal(t, len(up.Unspent.Pool), 3*2)
+    assert.Equal(t, len(up.Unspent), 3)
+    for _, uxs := range up.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     assert.Equal(t, len(up.Txns), 3)
     up.RemoveTransactions(mv.blockchain, txns)
-    assert.Equal(t, len(up.Unspent.Pool), 1*2)
+    assert.Equal(t, len(up.Unspent), 1)
+    for _, uxs := range up.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     assert.Equal(t, len(up.Txns), 1)
     _, ok := up.Txns[ut3.Hash()]
     assert.True(t, ok)
@@ -526,12 +574,12 @@ func testRefresh(t *testing.T, mv *Visor,
     up.Txns[invalidUtxUnchecked.Hash()] = invalidUtxUnchecked
     up.Txns[invalidUtxChecked.Hash()] = invalidUtxChecked
     assert.Equal(t, len(up.Txns), 2)
-    for _, ux := range coin.CreateUnspents(bc.Head().Head, invalidTxUnchecked) {
-        up.Unspent.Add(ux)
-    }
-    for _, ux := range coin.CreateUnspents(bc.Head().Head, invalidTxChecked) {
-        up.Unspent.Add(ux)
-    }
+    uncheckedHash := invalidTxUnchecked.Hash()
+    checkedHash := invalidTxChecked.Hash()
+    up.Unspent[uncheckedHash] = coin.CreateUnspents(coin.BlockHeader{},
+        invalidTxUnchecked)
+    up.Unspent[checkedHash] = coin.CreateUnspents(coin.BlockHeader{},
+        invalidTxChecked)
 
     // Create a transaction that is valid, and will not be checked yet
     validTxUnchecked, err := makeValidTxn(mv)
@@ -574,7 +622,10 @@ func testRefresh(t *testing.T, mv *Visor,
     assert.Equal(t, len(up.Txns), 5)
 
     // Pre-sanity check
-    assert.Equal(t, len(up.Unspent.Pool), 2*5)
+    assert.Equal(t, len(up.Unspent), 5)
+    for _, uxs := range up.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     assert.Equal(t, len(up.Txns), 5)
 
     // Refresh
@@ -597,7 +648,10 @@ func testRefresh(t *testing.T, mv *Visor,
     _, ok = up.Txns[validUtxExpired.Hash()]
     assert.False(t, ok)
     // Also, the unspents should have 2 * nRemaining
-    assert.Equal(t, len(up.Unspent.Pool), 2*3)
+    assert.Equal(t, len(up.Unspent), 3)
+    for _, uxs := range up.Unspent {
+        assert.Equal(t, len(uxs), 2)
+    }
     assert.Equal(t, len(up.Txns), 3)
 }
 
@@ -774,7 +828,7 @@ func TestSpendsForAddresses(t *testing.T) {
         txn := coin.Transaction{}
         txn.PushInput(randSHA256())
         txn.PushOutput(useAddrs[i], 10e6, 1000)
-        uxa := coin.CreateUnspents(bc.Head().Head, txn)
+        uxa := coin.CreateUnspents(coin.BlockHeader{}, txn)
         for _, ux := range uxa {
             unspent.Add(ux)
         }

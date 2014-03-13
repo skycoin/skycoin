@@ -40,11 +40,10 @@ type BlockSigs struct {
 }
 
 func NewBlockSigs() BlockSigs {
-    bs := BlockSigs{
+    return BlockSigs{
         Sigs:   make(map[uint64]coin.Sig),
         MaxSeq: 0,
     }
-    return bs
 }
 
 func LoadBlockSigs(filename string) (BlockSigs, error) {
@@ -86,12 +85,12 @@ func (self *BlockSigs) Save(filename string) error {
 
 // Checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (self *BlockSigs) Verify(masterPublic coin.PubKey, bc *coin.Blockchain) error {
-    blocks := uint64(len(bc.Blocks))
-    if blocks != uint64(len(self.Sigs)) {
+func (self *BlockSigs) Verify(masterPublic coin.PubKey,
+    bc *coin.Blockchain) error {
+    if len(bc.Blocks) != len(self.Sigs) {
         return errors.New("Missing signatures for blocks or vice versa")
     }
-
+    blocks := uint64(len(bc.Blocks))
     // For now, block sigs must all be sequential and continuous
     if self.MaxSeq+1 != blocks {
         return errors.New("MaxSeq does not match blockchain size")

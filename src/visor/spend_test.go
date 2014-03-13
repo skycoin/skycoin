@@ -7,7 +7,12 @@ import (
     "log"
     "sort"
     "testing"
+    "time"
 )
+
+func tNow() uint64 {
+    return uint64(time.Now().UTC().Unix())
+}
 
 func assertError(t *testing.T, err error, msg string) {
     assert.NotNil(t, err)
@@ -54,7 +59,7 @@ func makeUxOut(t *testing.T) coin.UxOut {
     return coin.UxOut{
         Head: coin.UxHead{
             BkSeq: 1,
-            Time:  coin.Now(),
+            Time:  tNow(),
         },
         Body: coin.UxBody{
             SrcTransaction: randSHA256(),
@@ -199,7 +204,7 @@ func TestCalculateBurnAndChange(t *testing.T) {
 }
 
 func TestCreateSpendsNotEnoughCoins(t *testing.T) {
-    now := coin.Now()
+    now := tNow()
     amt := Balance{10e6, 100}
     uxs := makeUxBalances([]Balance{
         Balance{1e6, 100},
@@ -210,7 +215,7 @@ func TestCreateSpendsNotEnoughCoins(t *testing.T) {
 }
 
 func TestCreateSpendsNotEnoughHours(t *testing.T) {
-    now := coin.Now()
+    now := tNow()
     amt := Balance{10e6, 110}
     uxs := makeUxBalances([]Balance{
         Balance{2e6, 100},
@@ -222,7 +227,7 @@ func TestCreateSpendsNotEnoughHours(t *testing.T) {
 
 func TestIgnoreBadCoins(t *testing.T) {
     // We would satisfy this spend if the bad coins were not skipped
-    now := coin.Now()
+    now := tNow()
     amt := Balance{10e6, 100}
     uxs := makeUxBalances([]Balance{
         Balance{2e6, 50},
@@ -235,16 +240,16 @@ func TestIgnoreBadCoins(t *testing.T) {
 }
 
 func TestBadSpending(t *testing.T) {
-    _, err := createSpends(coin.Now(), coin.UxArray{},
+    _, err := createSpends(tNow(), coin.UxArray{},
         Balance{1e6 + 1, 1000}, 0, 1)
     assertError(t, err, "Coins must be multiple of 1e6")
-    _, err = createSpends(coin.Now(), coin.UxArray{},
+    _, err = createSpends(tNow(), coin.UxArray{},
         Balance{0, 100}, 0, 1)
     assertError(t, err, "Zero spend amount")
 }
 
 func TestCreateSpendsExact(t *testing.T) {
-    now := coin.Now()
+    now := tNow()
     amt := Balance{10e6, 100}
     uxs := makeUxBalances([]Balance{
         Balance{1e6, 50},
@@ -263,7 +268,7 @@ func TestCreateSpendsExact(t *testing.T) {
 }
 
 func TestCreateSpendsWithBurn(t *testing.T) {
-    now := coin.Now()
+    now := tNow()
     amt := Balance{10e6, 100}
     uxs := makeUxBalances([]Balance{
         Balance{1e6, 50},
@@ -293,7 +298,7 @@ func TestCreateSpendsWithBurn(t *testing.T) {
 }
 
 func TestCreateSpendsNotEnoughBurn(t *testing.T) {
-    now := coin.Now()
+    now := tNow()
     amt := Balance{10e6, 100}
     uxs := makeUxBalances([]Balance{
         Balance{1e6, 40},
@@ -309,7 +314,7 @@ func TestCreateSpendsNotEnoughBurn(t *testing.T) {
 }
 
 func TestCreateSpends(t *testing.T) {
-    now := coin.Now()
+    now := tNow()
     amt := Balance{12e6, 125}
     uxs := makeUxBalances([]Balance{
         Balance{1e6, 50},
@@ -361,7 +366,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
     w := NewSimpleWallet()
     w.Populate(4)
     uncf := NewUnconfirmedTxnPool()
-    now := coin.Now()
+    now := tNow()
     a := makeAddress()
 
     // Failing createSpends

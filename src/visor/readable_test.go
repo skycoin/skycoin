@@ -19,6 +19,14 @@ const (
     testWalletEntryFile = "testwalletentry.json"
 )
 
+func createGenesisSignature(master WalletEntry) coin.Sig {
+    c := NewVisorConfig()
+    bc := coin.NewBlockchain()
+    gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
+        c.GenesisCoinVolume)
+    return coin.SignHash(gb.HashHeader(), master.Secret)
+}
+
 // Returns an appropriate VisorConfig and a master visor
 func setupVisorConfig() (VisorConfig, *Visor) {
     coin.SetAddressVersion("test")
@@ -30,16 +38,16 @@ func setupVisorConfig() (VisorConfig, *Visor) {
     mvc.CoinHourBurnFactor = 0
     mvc.IsMaster = true
     mvc.MasterKeys = mw
+    mvc.GenesisSignature = createGenesisSignature(mw)
     mv := NewVisor(mvc)
-    sb := mv.GetGenesisBlock()
 
     // Use the master values for a client configuration
     c := NewVisorConfig()
     c.IsMaster = false
+    c.GenesisSignature = mvc.GenesisSignature
+    c.GenesisTimestamp = mvc.GenesisTimestamp
     c.MasterKeys = mw
     c.MasterKeys.Secret = coin.SecKey{}
-    c.GenesisTimestamp = sb.Block.Head.Time
-    c.GenesisSignature = sb.Sig
     return c, mv
 }
 
@@ -65,7 +73,9 @@ func setupMasterVisorConfig() VisorConfig {
     c := NewVisorConfig()
     c.CoinHourBurnFactor = 0
     c.IsMaster = true
-    c.MasterKeys = NewWalletEntry()
+    mw := NewWalletEntry()
+    c.MasterKeys = mw
+    c.GenesisSignature = createGenesisSignature(mw)
     return c
 }
 
@@ -135,7 +145,15 @@ func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
         return err
     }
     mv.RecordTxn(tx)
-    sb, err := mv.CreateAndExecuteBlock()
+    now := uint64(util.UnixNow())
+    if len(mv.blockchain.Blocks) > 0 {
+        now = mv.blockchain.Time() + 1
+    }
+    sb, err := mv.CreateBlock(now)
+    if err != nil {
+        return err
+    }
+    err = mv.ExecuteSignedBlock(sb)
     if err != nil {
         return err
     }
@@ -325,7 +343,7 @@ func TestNewReadableBlock(t *testing.T) {
     defer cleanupVisor()
     v, mv := setupVisor()
     assert.Nil(t, transferCoins(mv, v))
-    b := *(mv.blockchain.Head())
+    b := mv.blockchain.Head()
     assert.Equal(t, b.Head.BkSeq, uint64(1))
     rb := NewReadableBlock(&b)
     assertReadableBlock(t, rb, b)

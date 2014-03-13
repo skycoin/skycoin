@@ -33,6 +33,14 @@ func randSHA256(t *testing.T) coin.SHA256 {
     return coin.SumSHA256(randBytes(t, 32))
 }
 
+func createGenesisSignature(master visor.WalletEntry) coin.Sig {
+    c := visor.NewVisorConfig()
+    bc := coin.NewBlockchain()
+    gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
+        c.GenesisCoinVolume)
+    return coin.SignHash(gb.HashHeader(), master.Secret)
+}
+
 // Returns an appropriate VisorConfig and a master visor
 func setupVisor() (VisorConfig, *visor.Visor) {
     coin.SetAddressVersion("test")
@@ -44,16 +52,16 @@ func setupVisor() (VisorConfig, *visor.Visor) {
     mvc.IsMaster = true
     mvc.MasterKeys = mw
     mvc.CoinHourBurnFactor = 0
+    mvc.GenesisSignature = createGenesisSignature(mw)
     mv := visor.NewVisor(mvc)
-    sb := mv.GetGenesisBlock()
 
     // Use the master values for a client configuration
     c := NewVisorConfig()
     c.Config.IsMaster = false
     c.Config.MasterKeys = mw
     c.Config.MasterKeys.Secret = coin.SecKey{}
-    c.Config.GenesisTimestamp = sb.Block.Head.Time
-    c.Config.GenesisSignature = sb.Sig
+    c.Config.GenesisSignature = mvc.GenesisSignature
+    c.Config.GenesisTimestamp = mvc.GenesisTimestamp
     return c, mv
 }
 
@@ -62,7 +70,9 @@ func setupMasterVisor() VisorConfig {
     coin.SetAddressVersion("test")
     c := NewVisorConfig()
     c.Config.IsMaster = true
-    c.Config.MasterKeys = visor.NewWalletEntry()
+    mw := visor.NewWalletEntry()
+    c.Config.MasterKeys = mw
+    c.Config.GenesisSignature = createGenesisSignature(mw)
     return c
 }
 
@@ -176,7 +186,8 @@ func transferCoins(mv *visor.Visor, v *visor.Visor) error {
     return v.ExecuteSignedBlock(sb)
 }
 
-func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
+func makeMoreBlocks(mv *visor.Visor, n int,
+    now uint64) ([]visor.SignedBlock, error) {
     dest := visor.NewWalletEntry()
     blocks := make([]visor.SignedBlock, n)
     for i := 0; i < n; i++ {
@@ -185,13 +196,21 @@ func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
             return nil, err
         }
         mv.RecordTxn(tx)
-        sb, err := mv.CreateAndExecuteBlock()
+        sb, err := mv.CreateBlock(now + uint64(i) + 1)
+        if err != nil {
+            return nil, err
+        }
+        err = mv.ExecuteSignedBlock(sb)
         if err != nil {
             return nil, err
         }
         blocks[i] = sb
     }
     return blocks, nil
+}
+
+func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
+    return makeMoreBlocks(mv, n, uint64(util.UnixNow()))
 }
 
 /* Tests for daemon's loop related to visor */
@@ -871,13 +890,16 @@ func TestCreateAndPublishBlock(t *testing.T) {
 
     // Can't create, don't have coins
     // First, spend all of our coins
-    vc, _ = setupVisor()
+    // vc2, _ := setupVisor()
+    // vc2.Config.GenesisSignature = vc.Config.GenesisSignature
+    // vc2.Config.MasterKeys = vc.Config.MasterKeys
+    // vc2.Config.IsMaster = true
+    // vc2.Disabled = false
     vc.Config.IsMaster = true
-    vc.Config.MasterKeys = visor.NewWalletEntry()
     vc.Disabled = false
     v = NewVisor(vc)
-    tx, err := v.Spend(visor.Balance{100 * 1e6 * 1e6, 0}, 1024*1024,
-        dest.Address, p)
+    tx, err := v.Spend(visor.Balance{vc.Config.GenesisCoinVolume, 0},
+        vc.Config.GenesisCoinVolume, dest.Address, p)
     mv.RecordTxn(tx)
     wait()
     assert.Nil(t, err)
@@ -1082,7 +1104,8 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
     // Send blocks we have and some we dont, as long as they are in order
     // we can use the ones at the end
     gc.LastSent = util.ZeroTime()
-    moreBlocks, err := makeBlocks(mv, 2)
+    moreBlocks, err := makeMoreBlocks(mv, 2,
+        blocks[len(blocks)-1].Block.Head.Time)
     assert.Nil(t, err)
     blocks = append(blocks, moreBlocks...)
     m = NewGiveBlocksMessage(blocks)

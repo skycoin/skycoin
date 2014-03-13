@@ -45,6 +45,7 @@ func setupGenesis(t *testing.T) (WalletEntry, coin.Sig, uint64) {
     vc := NewVisorConfig()
     vc.IsMaster = true
     vc.MasterKeys = we
+    vc.GenesisSignature = createGenesisSignature(we)
     v := NewVisor(vc)
     we.Secret = coin.SecKey{}
     return we, v.blockSigs.Sigs[0], v.blockchain.Blocks[0].Head.Time
@@ -81,7 +82,9 @@ func setupChildVisorConfig(refvc VisorConfig, master bool) VisorConfig {
 func newMasterVisorConfig(t *testing.T) VisorConfig {
     vc := NewVisorConfig()
     vc.CoinHourBurnFactor = 0
-    vc.MasterKeys = newWalletEntry(t)
+    mw := newWalletEntry(t)
+    vc.MasterKeys = mw
+    vc.GenesisSignature = createGenesisSignature(mw)
     vc.IsMaster = true
     return vc
 }
@@ -103,22 +106,32 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
     return txns
 }
 
-func addSignedBlock(t *testing.T, v *Visor) SignedBlock {
+func addSignedBlockAt(t *testing.T, v *Visor, when uint64) SignedBlock {
     we := NewWalletEntry()
     tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     err, known := v.RecordTxn(tx)
     assert.Nil(t, err)
     assert.False(t, known)
-    sb, err := v.CreateAndExecuteBlock()
+    sb, err := v.CreateBlock(when)
+    assert.Nil(t, err)
+    if err != nil {
+        return sb
+    }
+    err = v.ExecuteSignedBlock(sb)
     assert.Nil(t, err)
     return sb
 }
 
+func addSignedBlock(t *testing.T, v *Visor) SignedBlock {
+    return addSignedBlockAt(t, v, uint64(util.UnixNow()))
+}
+
 func addSignedBlocks(t *testing.T, v *Visor, n int) []SignedBlock {
     sbs := make([]SignedBlock, n)
+    now := uint64(util.UnixNow())
     for i := 0; i < n; i++ {
-        sbs[i] = addSignedBlock(t, v)
+        sbs[i] = addSignedBlockAt(t, v, now+1+uint64(i))
     }
     return sbs
 }
@@ -209,7 +222,9 @@ func TestNewVisor(t *testing.T) {
     // Master, no wallet, blockchain, blocksigs file
     cleanupVisor()
     vc = NewVisorConfig()
-    vc.MasterKeys = newWalletEntry(t)
+    we = newWalletEntry(t)
+    vc.MasterKeys = we
+    vc.GenesisSignature = createGenesisSignature(we)
     vc.WalletSizeMin = 10
     vc.IsMaster = true
     v = NewVisor(vc)
@@ -372,6 +387,7 @@ func TestCreateGenesisBlock(t *testing.T) {
     // Test as master, signing failed
     vc = newMasterVisorConfig(t)
     vc.MasterKeys.Secret = coin.SecKey{}
+    vc.GenesisSignature = coin.Sig{}
     assert.Equal(t, vc.MasterKeys.Secret, coin.SecKey{})
     v = NewMinimalVisor(vc)
     assert.True(t, v.Config.IsMaster)
@@ -517,7 +533,7 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     vc.BlockCreationInterval = uint64(101)
     v = NewVisor(vc)
     txns := addValidTxns(t, v, 3)
-    txns = coin.SortTransactions(txns, getFee)
+    txns = coin.SortTransactions(txns, v.blockchain.TransactionFee)
     v.Config.MaxBlockSize = txns[0].Size()
     assert.Equal(t, len(v.blockchain.Blocks), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
@@ -525,22 +541,24 @@ func TestCreateAndExecuteBlock(t *testing.T) {
     assert.Nil(t, err)
 
     assert.Equal(t, len(sb.Block.Body.Transactions), 1)
+    assert.Equal(t, sb.Block.Body.Transactions[0], txns[0])
     assert.Equal(t, len(v.blockchain.Blocks), 2)
     assert.Equal(t, len(v.blockSigs.Sigs), 2)
     assert.Equal(t, v.blockchain.Blocks[1], sb.Block)
     assert.Equal(t, v.blockSigs.Sigs[1], sb.Sig)
     assert.Equal(t, len(v.Unconfirmed.Txns), 2)
-    assert.Equal(t, sb.Block.Head.Time-v.blockchain.Blocks[0].Head.Time,
-        vc.BlockCreationInterval)
+    assert.True(t, sb.Block.Head.Time > v.blockchain.Blocks[0].Head.Time)
     rawTxns := v.Unconfirmed.RawTxns()
-    rawTxns = coin.SortTransactions(rawTxns, getFee)
     assert.Equal(t, len(rawTxns), 2)
     for _, tx := range sb.Block.Body.Transactions {
         assert.NotEqual(t, tx.Hash(), rawTxns[0].Hash())
         assert.NotEqual(t, tx.Hash(), rawTxns[1].Hash())
     }
-    assert.Equal(t, txns[1].Hash(), rawTxns[0].Hash())
-    assert.Equal(t, txns[2].Hash(), rawTxns[1].Hash())
+    if txns[1].Hash() == rawTxns[0].Hash() {
+        assert.Equal(t, txns[2].Hash(), rawTxns[1].Hash())
+    } else {
+        assert.Equal(t, txns[2].Hash(), rawTxns[0].Hash())
+    }
     assert.Nil(t, v.blockSigs.Verify(v.Config.MasterKeys.Public, v.blockchain))
 
     // No txns, forcing NewBlockFromTransactions to fail
@@ -630,9 +648,10 @@ func TestExecuteSignedBlock(t *testing.T) {
     assert.False(t, known)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
+    now := uint64(util.UnixNow())
 
     // Invalid signed block
-    sb, err := v.createBlock()
+    sb, err := v.CreateBlock(now)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
     assert.Nil(t, err)
     sb.Sig = coin.Sig{}
@@ -642,19 +661,19 @@ func TestExecuteSignedBlock(t *testing.T) {
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
     // Invalid block
-    sb, err = v.createBlock()
+    sb, err = v.CreateBlock(now)
     assert.Nil(t, err)
     // TODO -- empty BodyHash is being accepted, fix blockchain verification
     sb.Block.Head.BodyHash = coin.SHA256{}
     sb.Block.Body.Transactions = make(coin.Transactions, 0)
-    sb = v.signBlock(sb.Block)
+    sb = v.SignBlock(sb.Block)
     err = v.ExecuteSignedBlock(sb)
     assert.NotNil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
     // Valid block
-    sb, err = v.createBlock()
+    sb, err = v.CreateBlock(now)
     assert.Nil(t, err)
     err = v.ExecuteSignedBlock(sb)
     assert.Nil(t, err)
@@ -733,8 +752,6 @@ func TestMostRecentBkSeq(t *testing.T) {
     assert.Equal(t, v.MostRecentBkSeq(), uint64(0))
     addSignedBlocks(t, v, 10)
     assert.Equal(t, v.MostRecentBkSeq(), uint64(10))
-    addSignedBlocks(t, v, 7)
-    assert.Equal(t, v.MostRecentBkSeq(), uint64(17))
     v = NewMinimalVisor(vc)
     assert.Panics(t, func() { v.MostRecentBkSeq() })
 }
@@ -897,18 +914,25 @@ func TestGetAddressTransactions(t *testing.T) {
 
     // An unconfirmed txn
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
-    assert.Equal(t, len(v.Unconfirmed.Unspent.Pool), 0)
+    assert.Equal(t, len(v.Unconfirmed.Unspent), 0)
     we = v.Wallet.CreateEntry()
     tx, err = v.Spend(Balance{2e6, 0}, 0, we.Address)
     err, known = v.RecordTxn(tx)
     assert.Nil(t, err)
     assert.False(t, known)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
-    assert.Equal(t, len(v.Unconfirmed.Unspent.Pool), 2)
+    assert.Equal(t, len(v.Unconfirmed.Unspent), 1)
+    assert.Equal(t, len(v.Unconfirmed.Unspent[tx.Hash()]), 2)
     found := false
-    for _, ux := range v.Unconfirmed.Unspent.Pool {
-        if ux.Body.Address == we.Address {
-            found = true
+    for _, uxs := range v.Unconfirmed.Unspent {
+        if found {
+            break
+        }
+        for _, ux := range uxs {
+            if ux.Body.Address == we.Address {
+                found = true
+                break
+            }
         }
     }
     auxs := v.Unconfirmed.Unspent.AllForAddress(we.Address)
@@ -920,7 +944,18 @@ func TestGetAddressTransactions(t *testing.T) {
     assert.True(t, txns[0].Status.Unconfirmed)
 
     // An unconfirmed txn, but pool is corrupted
-    srcTxn := v.Unconfirmed.Unspent.Array()[0].Body.SrcTransaction
+    assert.True(t, len(v.Unconfirmed.Unspent) > 0)
+    ux := coin.UxOut{}
+    found = false
+    for _, uxs := range v.Unconfirmed.Unspent {
+        if len(uxs) > 0 {
+            ux = uxs[0]
+            found = true
+            break
+        }
+    }
+    assert.True(t, found)
+    srcTxn := ux.Body.SrcTransaction
     delete(v.Unconfirmed.Txns, srcTxn)
     txns = v.GetAddressTransactions(we.Address)
     assert.Equal(t, len(txns), 0)
@@ -960,6 +995,7 @@ func TestBalances(t *testing.T) {
     v, mv := setupVisor()
     we := v.Wallet.CreateEntry()
     we2 := v.Wallet.CreateEntry()
+    startCoins := mv.Config.GenesisCoinVolume
 
     // Without predicted outputs
     assert.Nil(t, transferCoinsAdvanced(mv, v, Balance{10e6, 10}, 0, we.Address))
@@ -967,7 +1003,7 @@ func TestBalances(t *testing.T) {
     assert.Nil(t, transferCoinsAdvanced(mv, v, Balance{5e6, 5}, 0, we2.Address))
     assert.Equal(t, v.TotalBalance(), Balance{25e6, 25})
     // assert.Equal(t, v.TotalBalancePredicted(), Balance{25e6, 25})
-    mvBalance := Balance{100e12 - 25e6, 1024*1024 - 25}
+    mvBalance := Balance{startCoins - 25e6, startCoins - 25}
     assert.Equal(t, mv.TotalBalance(), mvBalance)
     // assert.Equal(t, mv.TotalBalancePredicted(), mvBalance)
     assert.Equal(t, v.Balance(we.Address), Balance{20e6, 20})
@@ -1009,7 +1045,7 @@ func TestVisorVerifySignedBlock(t *testing.T) {
     err, known := v.RecordTxn(txn)
     assert.Nil(t, err)
     assert.False(t, known)
-    b, err := v.createBlock()
+    b, err := v.CreateBlock(uint64(util.UnixNow()))
     assert.Nil(t, err)
     assert.Nil(t, v.verifySignedBlock(&b))
     badb := b
@@ -1031,11 +1067,11 @@ func TestVisorSignBlock(t *testing.T) {
     // Non master should panic
     b := v.blockchain.Blocks[0]
     v.Config.IsMaster = false
-    assert.Panics(t, func() { v.signBlock(b) })
+    assert.Panics(t, func() { v.SignBlock(b) })
 
     // Master should generate valid signed block
     v.Config.IsMaster = true
-    sb := v.signBlock(b)
+    sb := v.SignBlock(b)
     assert.Nil(t, v.verifySignedBlock(&sb))
 }
 

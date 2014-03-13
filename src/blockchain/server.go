@@ -1,9 +1,9 @@
 package blockchain
 
-import(
-    "time"
+import (
     "fmt"
     "log"
+    "time"
     //"net/http"
 )
 
@@ -11,13 +11,12 @@ type ServerConfig struct {
 }
 
 func NewServerConfig() ServerConfig {
-    return ServerConfig{
-    }
+    return ServerConfig{}
 }
 
 type Server struct {
-    Config ServerConfig
-    Blockchain  Blockchain
+    Config     ServerConfig
+    Blockchain Blockchain
 }
 
 func NewServer(c ServerConfig) *Server {
@@ -26,7 +25,6 @@ func NewServer(c ServerConfig) *Server {
         Blockchain: NewLocalBlockchain(),
     }
 }
-
 
 /*
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -43,19 +41,17 @@ func StartTransactionServer() {
 //Start server as master
 func (self *Server) Start() {
 
-	t := time.Now().Unix()
+    t := time.Now().Unix()
 
-	for true {
+    for true {
 
         //wait 15 seconds between blocks
-		if t + 15 < time.Now().Unix() {
-			time.Sleep(50)
+        if t+15 < time.Now().Unix() {
+            time.Sleep(50)
             continue
-		} else {
+        } else {
             t = time.Now().Unix() //update time
         }
-
-
 
         if self.Blockchain.PendingTransactions() == false {
             continue
@@ -68,7 +64,7 @@ func (self *Server) Start() {
             continue
         }
         //sign block
-        signedBlock := self.Blockchain.signBlock(block)
+        signedBlock := self.Blockchain.SignBlock(block)
 
         //inject block/execute
         err = self.Blockchain.InjectBlock(signedBlock)
@@ -77,9 +73,8 @@ func (self *Server) Start() {
         }
         //prune unconfirmed transactions
         self.Blockchain.RefreshUnconfirmed()
-	}
+    }
 }
-
 
 func (self *Server) StartSlave() {
     for true {
@@ -91,20 +86,20 @@ func (self *Server) StartSlave() {
 // Closes the block chain server, saving blockchain to disk
 func (self *Server) Shutdown() {
 
-/*
-    bcFile := self.Config.Config.BlockchainFile
-    err := self.Blockchain.SaveBlockchain()
-    if err == nil {
-        logger.Info("Saved blockchain to \"%s\"", bcFile)
-    } else {
-        logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
-    }
-    bsFile := self.Config.Config.BlockSigsFile
-    err = self.Blockchain.SaveBlockSigs()
-    if err == nil {
-        logger.Info("Saved block sigs to \"%s\"", bsFile)
-    } else {
-        logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
-    }
-*/
+    /*
+       bcFile := self.Config.Config.BlockchainFile
+       err := self.Blockchain.SaveBlockchain()
+       if err == nil {
+           logger.Info("Saved blockchain to \"%s\"", bcFile)
+       } else {
+           logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
+       }
+       bsFile := self.Config.Config.BlockSigsFile
+       err = self.Blockchain.SaveBlockSigs()
+       if err == nil {
+           logger.Info("Saved block sigs to \"%s\"", bsFile)
+       } else {
+           logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
+       }
+    */
 }

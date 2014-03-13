@@ -2,12 +2,13 @@ package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/util"
     "github.com/stretchr/testify/assert"
     "os"
     "testing"
 )
 
-func makeBlocks(t *testing.T, mv *Visor, n int) []SignedBlock {
+func makeMoreBlocks(t *testing.T, mv *Visor, n int, when uint64) []SignedBlock {
     dest := NewWalletEntry()
     blocks := make([]SignedBlock, 0, n)
     for i := 0; i < n; i++ {
@@ -18,15 +19,24 @@ func makeBlocks(t *testing.T, mv *Visor, n int) []SignedBlock {
         }
         mv.RecordTxn(tx)
         assert.Equal(t, len(mv.Unconfirmed.Txns), 1)
-        sb, err := mv.CreateAndExecuteBlock()
-        assert.Equal(t, len(mv.Unconfirmed.Txns), 0)
+        sb, err := mv.CreateBlock(when + 1 + uint64(i))
         assert.Nil(t, err)
         if err != nil {
             return nil
         }
+        err = mv.ExecuteSignedBlock(sb)
+        assert.Nil(t, err)
+        if err != nil {
+            return nil
+        }
+        assert.Equal(t, len(mv.Unconfirmed.Txns), 0)
         blocks = append(blocks, sb)
     }
     return blocks
+}
+
+func makeBlocks(t *testing.T, mv *Visor, n int) []SignedBlock {
+    return makeMoreBlocks(t, mv, n, uint64(util.UnixNow()))
 }
 
 func assertFileExists(t *testing.T, filename string) {

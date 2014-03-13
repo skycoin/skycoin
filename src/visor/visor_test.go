@@ -666,7 +666,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     // TODO -- empty BodyHash is being accepted, fix blockchain verification
     sb.Block.Head.BodyHash = coin.SHA256{}
     sb.Block.Body.Transactions = make(coin.Transactions, 0)
-    sb = v.signBlock(sb.Block)
+    sb = v.SignBlock(sb.Block)
     err = v.ExecuteSignedBlock(sb)
     assert.NotNil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
@@ -1067,11 +1067,11 @@ func TestVisorSignBlock(t *testing.T) {
     // Non master should panic
     b := v.blockchain.Blocks[0]
     v.Config.IsMaster = false
-    assert.Panics(t, func() { v.signBlock(b) })
+    assert.Panics(t, func() { v.SignBlock(b) })
 
     // Master should generate valid signed block
     v.Config.IsMaster = true
-    sb := v.signBlock(b)
+    sb := v.SignBlock(b)
     assert.Nil(t, v.verifySignedBlock(&sb))
 }
 

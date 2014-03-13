@@ -78,3 +78,4 @@ blockchain.sigs
 master.keys
 *.bak
 benefactor-wallet.json
+masterdata/

@@ -52,7 +52,8 @@ func createGenesisVisor(masterKeys, bcFile,
     c.CoinHourBurnFactor = 0
     v := visor.NewMinimalVisor(c)
     v.Wallet = visor.CreateMasterWallet(c.MasterKeys)
-    return v, v.CreateGenesisBlock(), nil
+    sb, err := v.CreateFreshGenesisBlock()
+    return v, sb, err
 }
 
 // Transfers all the coins and hours in genesis block to an address
@@ -81,7 +82,11 @@ func transferAllToAddress(v *visor.Visor, gb visor.SignedBlock,
         return sb, err
     }
     // Put the tx in a block and commit
-    sb, err = v.CreateAndExecuteBlock()
+    sb, err = v.CreateBlock(gb.Block.Head.Time + 1)
+    if err != nil {
+        return sb, err
+    }
+    err = v.ExecuteSignedBlock(sb)
     if err != nil {
         return sb, err
     }

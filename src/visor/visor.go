@@ -157,6 +157,20 @@ func NewMinimalVisor(c VisorConfig) *Visor {
     }
 }
 
+func (self *Visor) CreateFreshGenesisBlock() (SignedBlock, error) {
+    if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+        log.Panic("Blockchain already has genesis")
+    }
+    gb := self.blockchain.CreateGenesisBlock(self.Config.MasterKeys.Address,
+        uint64(util.UnixNow()), self.Config.GenesisCoinVolume)
+    sb := self.SignBlock(gb)
+    if err := self.verifySignedBlock(&sb); err != nil {
+        log.Panic("Signed a fresh genesis block, but its invalid: %v", err)
+    }
+    self.blockSigs.record(&sb)
+    return sb, nil
+}
+
 // Creates the genesis block as needed
 func (self *Visor) CreateGenesisBlock() SignedBlock {
     if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
@@ -239,7 +253,7 @@ func (self *Visor) CreateBlock(when uint64) (SignedBlock, error) {
     if err != nil {
         return sb, err
     }
-    return self.signBlock(b), nil
+    return self.SignBlock(b), nil
 }
 
 // Creates a SignedBlock from pending transactions and executes it
@@ -513,7 +527,7 @@ func (self *Visor) verifySignedBlock(b *SignedBlock) error {
 }
 
 // Signs a block for master.  Will panic if anything is invalid
-func (self *Visor) signBlock(b coin.Block) SignedBlock {
+func (self *Visor) SignBlock(b coin.Block) SignedBlock {
     if !self.Config.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }

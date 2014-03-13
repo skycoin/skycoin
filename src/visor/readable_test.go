@@ -19,15 +19,13 @@ const (
     testWalletEntryFile = "testwalletentry.json"
 )
 
-func createGenesisSignature(master visor.WalletEntry) coin.Sig {
-    c := visor.NewVisorConfig()
+func createGenesisSignature(master WalletEntry) coin.Sig {
+    c := NewVisorConfig()
     bc := coin.NewBlockchain()
     gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
         c.GenesisCoinVolume)
     sig := coin.SignHash(gb.HashHeader(), master.Secret)
     err := coin.VerifySignature(master.Public, sig, gb.HashHeader())
-    logger.Critical("Valid sig? %v", err)
-    logger.Critical("Sig: %v", sig)
     return sig
 }
 

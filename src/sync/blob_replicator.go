@@ -111,11 +111,14 @@ func (d *Daemon) GetBlobReplicator(channel uint16) *BlobReplicator {
 //ask request manager what requests to make and send them out
 func (self *BlobReplicator) TickRequests() {
 	self.RequestManager.RemoveExpiredRequests()
-	var requests map[SHA256]string = self.RequestManager.GenerateRequests()
+	var requests map[string]([]SHA256) = self.RequestManager.GenerateRequests()
 
-	for hash, addr := range requests {
-		self.SendRequest(hash, addr)
+	for addr, hashList := range requests {
+		for _, hash := range hashList {
+			self.SendRequest(hash, addr)
+		}
 	}
+
 }
 
 //send data request packet

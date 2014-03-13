@@ -94,15 +94,16 @@ func (self *RequestManager) RemoveExpiredRequests() {
 }
 
 //current implementation requests data in random order
-func (self *RequestManager) GenerateRequests() map[SHA256]string {
+func (self *RequestManager) GenerateRequests() map[string]([]SHA256) {
 
-	var requests map[SHA256]string = make(map[SHA256]string)
+	var requests map[string]([]SHA256) = make(map[string]([]SHA256))
 	for addr, p := range self.PeerStats {
 		if p.OpenRequests < self.Config.RequestsPerPeer {
 			for h, _ := range p.Data {
 				if _, ok := self.Requests[h]; ok == false {
 					//add request to return
-					requests[h] = addr
+					requests[addr] = append(requests[addr], h)
+
 					//record in request log
 					req := Request{
 						RequestTime: int(time.Now().Unix()),

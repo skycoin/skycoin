@@ -5,6 +5,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ARCH=`uname -m`
 OS=`uname -s`
 
+
+pushd "$DIR" >/dev/null
+./compile/clean-static-libs.sh >/dev/null 2>&1
+popd >/dev/null
+
 if [[ "$ARCH" != "x86_64" ]]; then
     ARCH="x86"
 fi

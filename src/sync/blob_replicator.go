@@ -178,7 +178,7 @@ func (self *BlobReplicator) blobHandleIncoming(data []byte, addr string) {
 
 //inject blobs at startup
 func (self *BlobReplicator) InjectBlob(data []byte) error {
-	fmt.Printf("InjectBlob: \n")
+	fmt.Printf("InjectBlob: %s \n", BlobHash(data).Hex())
 
 	blob := NewBlob(data)
 	if _, ok := self.BlobMap[blob.Hash]; ok == true {
@@ -377,9 +377,9 @@ func (self *AnnounceBlobsMessage) Process(d *Daemon) {
 //  --------------------------------------
 
 type GetBlobMessage struct {
-	Channel uint16
-	Hash    SHA256
-	c       *gnet.MessageContext `enc:"-"`
+	Channel  uint16
+	HashList []SHA256
+	c        *gnet.MessageContext `enc:"-"`
 }
 
 /*
@@ -393,7 +393,7 @@ func (self *BlobReplicator) NewGetBlobsMessage(hashList []SHA256) *GetBlobsMessa
 
 func (self *BlobReplicator) NewGetBlobMessage(hash SHA256) *GetBlobMessage {
 	var bm GetBlobMessage
-	bm.Hash = hash
+	bm.HashList = append(bm.HashList, hash)
 	bm.Channel = self.Channel
 	return &bm
 }
@@ -412,14 +412,15 @@ func (self *GetBlobMessage) Process(d *Daemon) {
 		return
 	}
 
-	//if we have the block, send it to peer
-	if br.HasBlob(self.Hash) == true {
-		m := br.newBlobDataMessage(br.BlobMap[self.Hash])
-		d.Pool.Pool.SendMessage(self.c.Conn, m)
-	} else {
-		log.Printf("GetBlobMessage, warning, peer requested blob we do not have")
+	for _, hash := range self.HashList {
+		//if we have the block, send it to peer
+		if br.HasBlob(hash) == true {
+			m := br.newBlobDataMessage(br.BlobMap[hash])
+			d.Pool.Pool.SendMessage(self.c.Conn, m)
+		} else {
+			log.Printf("GetBlobMessage, warning, peer requested blob we do not have")
+		}
 	}
-
 }
 
 //	--------------------------------------

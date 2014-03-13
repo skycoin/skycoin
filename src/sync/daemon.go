@@ -317,7 +317,7 @@ func (self *Daemon) Start(quit chan int) {
 	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
 
-	blobReplicatorTicker := time.Tick(100 * time.Millisecond)
+	blobReplicatorTicker := time.Tick(20 * time.Millisecond)
 
 main:
 	for {

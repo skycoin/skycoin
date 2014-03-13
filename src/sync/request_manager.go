@@ -49,7 +49,7 @@ type RequestManagerConfig struct {
 
 func NewRequestManagerConfig() RequestManagerConfig {
 	return RequestManagerConfig{
-		RequestTimeout:  20,
+		RequestTimeout:  30,
 		RequestsPerPeer: 6,
 	}
 }
@@ -87,6 +87,7 @@ func (self *RequestManager) RemoveExpiredRequests() {
 	for k, r := range self.Requests {
 		if t-r.RequestTime >= self.Config.RequestTimeout {
 			log.Printf("RemoveExpiredRequests, request expired, hash=%s addr= %s \n", k.Hex(), r.Addr)
+			self.PeerStats[r.Addr].OpenRequests -= 1
 			delete(self.Requests, k)
 		}
 	}

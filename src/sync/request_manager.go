@@ -146,6 +146,13 @@ func (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 		delete(self.Requests, hash)
 	}
 
+	//remove request for other peers
+	for _, peer := range self.PeerStats {
+		if _, ok := peer.Data[hash]; ok == true {
+			delete(peer.Data, hash)
+		}
+	}
+
 	self.PeerStats[addr].OpenRequests -= 1
 	self.PeerStats[addr].FinishedRequests += 1
 	self.PeerStats[addr].LastRequest = int(time.Now().Unix())

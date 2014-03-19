@@ -23,7 +23,7 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        walletId := wallet.WalletID(r.FormValue("wallet_id"))
+        walletId := wallet.WalletID(r.FormValue("id"))
         if walletId == "" {
             Error400(w, "Missing wallet_id")
             return

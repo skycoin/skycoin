@@ -245,7 +245,11 @@ func (self *Visor) SaveWallets() map[wallet.WalletID]error {
 
 // Loads & unloads wallets based on WalletDirectory contents
 func (self *Visor) ReloadWallets() error {
-    // TODO -- implement
+    wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
+    if err != nil {
+        return err
+    }
+    self.Wallets = wallets
     return nil
 }
 

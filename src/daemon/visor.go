@@ -24,19 +24,16 @@ type VisorConfig struct {
     BlocksAnnounceRate time.Duration
     // How many blocks to respond with to a GetBlocksMessage
     BlocksResponseCount uint64
-    // How often to rebroadcast txns that we are a party to
-    TransactionRebroadcastRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
     return VisorConfig{
-        Config:                     visor.NewVisorConfig(),
-        Disabled:                   false,
-        MasterKeysFile:             "",
-        BlocksRequestRate:          time.Minute * 5,
-        BlocksAnnounceRate:         time.Minute * 15,
-        BlocksResponseCount:        20,
-        TransactionRebroadcastRate: time.Minute * 5,
+        Config:              visor.NewVisorConfig(),
+        Disabled:            false,
+        MasterKeysFile:      "",
+        BlocksRequestRate:   time.Minute * 5,
+        BlocksAnnounceRate:  time.Minute * 15,
+        BlocksResponseCount: 20,
     }
 }
 
@@ -137,27 +134,6 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
     }
     pool.Pool.SendMessage(c, m)
     return nil
-}
-
-// Broadcasts any txn that we are a party to
-// TODO: deprecate, should only send to clients that request by hash
-func (self *Visor) BroadcastOurTransactions(pool *Pool) {
-    if self.Config.Disabled {
-        return
-    }
-    since := self.Config.TransactionRebroadcastRate * 2
-    since = (since * 9) / 10
-    txns := self.Visor.Unconfirmed.GetOldOwnedTransactions(since)
-    logger.Debug("Reannouncing %d of our old transactions", len(txns))
-    if len(txns) == 0 {
-        return
-    }
-    hashes := make([]coin.SHA256, len(txns))
-    for i, tx := range txns {
-        hashes[i] = tx.Txn.Hash()
-    }
-    m := NewAnnounceTxnsMessage(hashes)
-    pool.Pool.BroadcastMessage(m)
 }
 
 // Sets all txns as announced

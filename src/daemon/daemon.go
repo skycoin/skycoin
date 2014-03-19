@@ -295,7 +295,6 @@ func (self *Daemon) Start(quit chan int) {
     unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
     blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
     blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
-    transactionRebroadcastTicker := time.Tick(self.Visor.Config.TransactionRebroadcastRate)
 
     privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
     dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
@@ -423,8 +422,6 @@ main:
             self.Visor.RequestBlocks(self.Pool)
         case <-blocksAnnounceTicker:
             self.Visor.AnnounceBlocks(self.Pool)
-        case <-transactionRebroadcastTicker:
-            self.Visor.BroadcastOurTransactions(self.Pool)
 
         case <-quit:
             break main

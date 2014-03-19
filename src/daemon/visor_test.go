@@ -425,7 +425,7 @@ func TestVisorShutdown(t *testing.T) {
     c.Disabled = true
     c.Config.BlockchainFile = testBlockchainFile
     c.Config.BlockSigsFile = testBlocksigsFile
-    c.Config.WalletFile = testWalletFile
+    c.Config.WalletDirectory = testWalletFile
     v := NewVisor(c)
     assert.NotPanics(t, v.Shutdown)
     // Should not save anything
@@ -446,7 +446,7 @@ func TestVisorShutdown(t *testing.T) {
     c = setupMasterVisor()
     c.Config.BlockchainFile = testBlockchainFile
     c.Config.BlockSigsFile = testBlocksigsFile
-    c.Config.WalletFile = testWalletFile
+    c.Config.WalletDirectory = testWalletFile
     v = NewVisor(c)
     assert.NotPanics(t, v.Shutdown)
     assertFileExists(t, testBlockchainFile)

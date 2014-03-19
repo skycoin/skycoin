@@ -12,7 +12,7 @@ import (
 /* Helper functions */
 
 func setupVisorWriting(vc VisorConfig) *Visor {
-    vc.WalletFile = testWalletFile
+    vc.WalletDirectory = testWalletFile
     vc.BlockSigsFile = testBlocksigsFile
     vc.BlockchainFile = testBlockchainFile
     return NewVisor(vc)
@@ -22,7 +22,7 @@ func writeVisorFilesDirect(t *testing.T, v *Visor) {
     assert.Nil(t, v.SaveWallet())
     assert.Nil(t, v.SaveBlockSigs())
     assert.Nil(t, v.SaveBlockchain())
-    assertFileExists(t, v.Config.WalletFile)
+    assertFileExists(t, v.Config.WalletDirectory)
     assertFileExists(t, v.Config.BlockSigsFile)
     assertFileExists(t, v.Config.BlockchainFile)
 }
@@ -73,7 +73,7 @@ func setupChildVisorConfig(refvc VisorConfig, master bool) VisorConfig {
     vc := NewVisorConfig()
     vc.IsMaster = master
     vc.MasterKeys = refvc.MasterKeys
-    vc.WalletFile = testWalletFile
+    vc.WalletDirectory = testWalletFile
     vc.BlockchainFile = testBlockchainFile
     vc.BlockSigsFile = testBlocksigsFile
     return vc
@@ -175,7 +175,7 @@ func TestNewVisorConfig(t *testing.T) {
     vc := NewVisorConfig()
     assert.False(t, vc.IsMaster)
     assert.True(t, vc.CanSpend)
-    assert.Equal(t, vc.WalletFile, "")
+    assert.Equal(t, vc.WalletDirectory, "")
     assert.Equal(t, vc.BlockchainFile, "")
     assert.Equal(t, vc.BlockSigsFile, "")
     assert.Panics(t, func() { vc.MasterKeys.Verify() })
@@ -439,7 +439,7 @@ func TestVisorSaveWallet(t *testing.T) {
     cleanupVisor()
     defer cleanupVisor()
     vc := newGenesisConfig(t)
-    vc.WalletFile = ""
+    vc.WalletDirectory = ""
     vc.WalletSizeMin = 10
     assert.False(t, vc.IsMaster)
 
@@ -448,11 +448,11 @@ func TestVisorSaveWallet(t *testing.T) {
     assertFileNotExists(t, testWalletFile)
     err := v.SaveWallet()
     assert.NotNil(t, err)
-    assert.Equal(t, err.Error(), "No WalletFile location set")
+    assert.Equal(t, err.Error(), "No WalletDirectory location set")
     assertFileNotExists(t, testWalletFile)
 
     // Test with wallet file set
-    vc.WalletFile = testWalletFile
+    vc.WalletDirectory = testWalletFile
     v = NewVisor(vc)
     assert.Nil(t, v.SaveWallet())
     assertFileExists(t, testWalletFile)
@@ -489,7 +489,7 @@ func TestCreateAddressAndSave(t *testing.T) {
     cleanupVisor()
     defer cleanupVisor()
     vc := newGenesisConfig(t)
-    vc.WalletFile = ""
+    vc.WalletDirectory = ""
     vc.WalletSizeMin = 10
 
     // Test with no wallet file set
@@ -502,7 +502,7 @@ func TestCreateAddressAndSave(t *testing.T) {
     assert.Nil(t, we.Verify())
 
     // Test with wallet file set
-    v.Config.WalletFile = testWalletFile
+    v.Config.WalletDirectory = testWalletFile
     we, err = v.CreateAddressAndSave()
     assert.Nil(t, err)
     assertFileExists(t, testWalletFile)

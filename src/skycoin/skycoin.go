@@ -20,7 +20,7 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/daemon"
     "github.com/skycoin/skycoin/src/gui"
-    "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -127,8 +127,7 @@ func configureDaemon(c *cli.Config) daemon.Config {
     dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
     dc.Visor.Config.IsMaster = c.MasterChain
     dc.Visor.Config.CanSpend = c.CanSpend
-    dc.Visor.Config.WalletFile = c.WalletFile
-    dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
+    dc.Visor.Config.WalletDirectory = c.WalletDirectory
     dc.Visor.Config.BlockchainFile = c.BlockchainFile
     dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
     dc.Visor.Config.GenesisSignature = coin.MustSigFromHex(c.GenesisSignature)
@@ -143,8 +142,8 @@ func configureDaemon(c *cli.Config) daemon.Config {
         // Will panic if fails
         dc.Visor.LoadMasterKeys()
     } else {
-        w := visor.ReadableWalletEntryFromPubkey(c.MasterPublic)
-        dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(&w)
+        w := wallet.ReadableWalletEntryFromPubkey(c.MasterPublic)
+        dc.Visor.Config.MasterKeys = wallet.WalletEntryFromReadable(&w)
     }
     return dc
 }

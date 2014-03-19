@@ -1,4 +1,4 @@
-package visor
+package wallet
 
 import (
     "github.com/skycoin/skycoin/src/coin"

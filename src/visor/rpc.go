@@ -2,13 +2,8 @@ package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/wallet"
 )
-
-type BalanceResult struct {
-    Balance Balance `json:"balance"`
-    // Whether this balance includes unconfirmed txns in its calculation
-    Predicted bool `json:"predicted"`
-}
 
 type TransactionResult struct {
     Transaction ReadableTransaction `json:"txn"`
@@ -26,71 +21,57 @@ type TransactionResults struct {
 
 type RPC struct{}
 
-func (self RPC) GetTotalBalance(v *Visor, predicted bool) *BalanceResult {
+func (self RPC) GetWalletBalance(v *Visor, walletID wallet.WalletID) *BalancePair {
     if v == nil {
         return nil
     }
-    if predicted {
+    bp := v.WalletBalance(walletID)
+    return &bp
+}
+
+func (self RPC) ReloadWallets(v *Visor) error {
+    return v.ReloadWallets()
+}
+
+func (self RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
+    if v == nil {
         return nil
     }
-    b := Balance{}
-    // if predicted {
-    // b = Visor.TotalBalancePredicted()
-    // } else {
-    b = v.TotalBalance()
-    // }
-    return &BalanceResult{
-        Balance:   b,
-        Predicted: predicted,
+    return v.SaveWallet(walletID)
+}
+
+func (self RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
+    if v == nil {
+        return nil
+    }
+    return v.SaveWallets()
+}
+
+func (self RPC) CreateWallet(v *Visor) *wallet.ReadableWallet {
+    if v == nil {
+        return nil
+    }
+    w := v.CreateWallet()
+    return wallet.NewReadableWallet(w)
+}
+
+func (self RPC) GetWallet(v *Visor, walletID wallet.WalletID) *wallet.ReadableWallet {
+    if v == nil {
+        return nil
+    }
+    w := v.Wallets.Get(walletID)
+    if w == nil {
+        return nil
+    } else {
+        return wallet.NewReadableWallet(w)
     }
 }
 
-func (self RPC) GetBalance(v *Visor, a coin.Address,
-    predicted bool) *BalanceResult {
+func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
     if v == nil {
         return nil
     }
-    if predicted {
-        // TODO -- prediction is disabled because implementation is not
-        // clear
-        return nil
-    }
-    b := Balance{}
-    // if predicted {
-    //     b = Visor.BalancePredicted(a)
-    // } else {
-    b = v.Balance(a)
-    // }
-    return &BalanceResult{
-        Balance:   b,
-        Predicted: predicted,
-    }
-}
-
-func (self RPC) SaveWallet(v *Visor) error {
-    if v == nil {
-        return nil
-    }
-    return v.SaveWallet()
-}
-
-func (self RPC) CreateAddress(v *Visor) *ReadableWalletEntry {
-    if v == nil {
-        return nil
-    }
-    we, err := v.CreateAddressAndSave()
-    if err != nil {
-        return nil
-    }
-    rwe := NewReadableWalletEntry(&we)
-    return &rwe
-}
-
-func (self RPC) GetWallet(v *Visor) *ReadableWallet {
-    if v == nil {
-        return nil
-    }
-    return v.Wallet.ToReadable()
+    return v.Wallets.ToReadable()
 }
 
 func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {

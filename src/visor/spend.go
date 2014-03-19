@@ -5,6 +5,7 @@ import (
     "errors"
     "fmt"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/wallet"
     "log"
     "sort"
 )
@@ -109,9 +110,10 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 }
 
 // Creates a Transaction spending coins and hours from our coins
-func CreateSpendingTransaction(wallet Wallet, unconfirmed *UnconfirmedTxnPool,
-    unspent *coin.UnspentPool, headTime uint64, amt Balance,
-    fee, burnFactor uint64, dest coin.Address) (coin.Transaction, error) {
+func CreateSpendingTransaction(wallet wallet.Wallet,
+    unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
+    headTime uint64, amt Balance, fee, burnFactor uint64,
+    dest coin.Address) (coin.Transaction, error) {
     txn := coin.Transaction{}
     auxs := unspent.AllForAddresses(wallet.GetAddresses())
     // Subtract pending spends from available

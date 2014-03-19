@@ -58,10 +58,9 @@ type Config struct {
     logLevel string
 
     // Wallets
-    WalletFile     string
-    WalletSizeMin  int
-    BlockchainFile string
-    BlockSigsFile  string
+    WalletDirectory string
+    BlockchainFile  string
+    BlockSigsFile   string
     // Is allowed to make outgoing transactions
     CanSpend bool
 
@@ -100,14 +99,14 @@ func (self *Config) postProcess() {
     if self.MasterKeys == "" {
         self.MasterKeys = filepath.Join(self.DataDirectory, "master.keys")
     }
-    if self.WalletFile == "" {
-        self.WalletFile = filepath.Join(self.DataDirectory, "wallet.json")
-    }
     if self.BlockchainFile == "" {
         self.BlockchainFile = filepath.Join(self.DataDirectory, "blockchain.bin")
     }
     if self.BlockSigsFile == "" {
         self.BlockSigsFile = filepath.Join(self.DataDirectory, "blockchain.sigs")
+    }
+    if self.WalletDirectory == "" {
+        self.WalletDirectory = filepath.Join(self.DataDirectory, "wallet/")
     }
     ll, err := logging.LogLevel(self.logLevel)
     if err != nil {

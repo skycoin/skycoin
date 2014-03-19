@@ -38,3 +38,12 @@ func SendOr404(w http.ResponseWriter, m interface{}) {
         Error500(w)
     }
 }
+
+// Sends an interface as JSON if its not nil (500) or fails (500)
+func SendOr500(w http.ResponseWriter, m interface{}) {
+    if m == nil {
+        Error500(w)
+    } else if SendJSON(w, m) != nil {
+        Error500(w)
+    }
+}

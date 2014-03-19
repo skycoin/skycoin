@@ -7,6 +7,7 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
     "sort"
     "time"
 )
@@ -43,7 +44,7 @@ func (self *VisorConfig) LoadMasterKeys() {
     if self.Disabled {
         return
     }
-    self.Config.MasterKeys = visor.MustLoadWalletEntry(self.MasterKeysFile)
+    self.Config.MasterKeys = wallet.MustLoadWalletEntry(self.MasterKeysFile)
 }
 
 type Visor struct {
@@ -74,12 +75,11 @@ func (self *Visor) Shutdown() {
     // don't have a wallet, they have a single genesis wallet entry which is
     // loaded in a different path
     if !self.Config.Config.IsMaster {
-        walletFile := self.Config.Config.WalletFile
-        err := self.Visor.SaveWallet()
-        if err == nil {
-            logger.Info("Saved wallet to \"%s\"", walletFile)
+        errs := self.Visor.SaveWallets()
+        if len(errs) == 0 {
+            logger.Info("Saved wallets")
         } else {
-            logger.Critical("Failed to save wallet to \"%s\": %v", walletFile, err)
+            logger.Critical("Failed to save wallets: %v", errs)
         }
     }
     bcFile := self.Config.Config.BlockchainFile
@@ -190,14 +190,14 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
 }
 
 // Creates a spend transaction and broadcasts it to the network
-func (self *Visor) Spend(amt visor.Balance, fee uint64,
-    dest coin.Address, pool *Pool) (coin.Transaction, error) {
+func (self *Visor) Spend(walletID wallet.WalletID, amt visor.Balance,
+    fee uint64, dest coin.Address, pool *Pool) (coin.Transaction, error) {
     if self.Config.Disabled {
         return coin.Transaction{}, errors.New("Visor disabled")
     }
     logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
         amt.Coins, amt.Hours, dest.String(), fee)
-    txn, err := self.Visor.Spend(amt, fee, dest)
+    txn, err := self.Visor.Spend(walletID, amt, fee, dest)
     if err != nil {
         return txn, err
     }

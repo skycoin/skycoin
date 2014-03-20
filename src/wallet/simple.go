@@ -17,14 +17,21 @@ type SimpleWallet struct {
     Entries  WalletEntries
 }
 
-func NewSimpleWallet() Wallet {
+func NewEmptySimpleWallet() Wallet {
     idHash := coin.SumSHA256(secp256k1.RandByte(256))
     id := WalletID(hex.EncodeToString(idHash[:16]))
     return &SimpleWallet{
         Filename: NewWalletFilename(id),
-        Entries:  make(WalletEntries),
+        Entries:  WalletEntries{},
         ID:       id,
     }
+}
+
+func NewSimpleWallet() Wallet {
+    w := NewEmptySimpleWallet().(*SimpleWallet)
+    e := NewWalletEntry()
+    w.Entries = WalletEntries{e.Address: e}
+    return w
 }
 
 func LoadSimpleWallet(dir, filename string) (Wallet, error) {

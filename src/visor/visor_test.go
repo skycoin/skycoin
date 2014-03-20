@@ -17,14 +17,21 @@ func setupVisorWriting(vc VisorConfig) *Visor {
     vc.WalletDirectory = testWalletDir
     vc.BlockSigsFile = testBlocksigsFile
     vc.BlockchainFile = testBlockchainFile
-    return NewVisor(vc)
+    v := NewVisor(vc)
+    v.Wallets[0].SetFilename(testWalletFile)
+    cleanupVisor() // delete the automatically saved wallet
+    return v
 }
 
 func writeVisorFilesDirect(t *testing.T, v *Visor) {
-    assert.Nil(t, v.SaveWallet(testWalletDir))
+    assert.True(t, len(v.Wallets) > 0)
+    for _, w := range v.Wallets {
+        assert.NotEqual(t, w.GetFilename(), "")
+    }
+    assert.Nil(t, v.SaveWallet(v.Wallets[0].GetID()))
     assert.Nil(t, v.SaveBlockSigs())
     assert.Nil(t, v.SaveBlockchain())
-    assertFileExists(t, v.Config.WalletDirectory)
+    assertDirExists(t, v.Config.WalletDirectory)
     walletFile := filepath.Join(v.Config.WalletDirectory, testWalletFile)
     assertFileExists(t, walletFile)
     assertFileExists(t, v.Config.BlockSigsFile)
@@ -62,6 +69,7 @@ func newGenesisConfig(t *testing.T) VisorConfig {
     refvc.GenesisSignature = sig
     refvc.GenesisTimestamp = ts
     refvc.IsMaster = false
+    refvc.WalletDirectory = testWalletDir
     return refvc
 }
 
@@ -241,6 +249,7 @@ func TestNewVisor(t *testing.T) {
     vc = setupChildVisorConfig(refvc, false)
     v = NewVisor(vc)
     assert.Equal(t, v.Wallets, refv.Wallets)
+    assert.Equal(t, len(v.Wallets), 1)
     assert.Equal(t, v.blockchain, refv.blockchain)
     assert.Equal(t, v.blockSigs, refv.blockSigs)
 
@@ -250,14 +259,16 @@ func TestNewVisor(t *testing.T) {
     refv = writeVisorFiles(t, refvc)
     vc = setupChildVisorConfig(refvc, true)
     v = NewVisor(vc)
-    assert.Equal(t, v.Wallets, refv.Wallets)
+    assert.Equal(t, v.Wallets[0].GetEntries(), refv.Wallets[0].GetEntries())
     assert.Equal(t, v.blockchain, refv.blockchain)
 
     // Not master, wallet is corrupt
     cleanupVisor()
     refvc = newGenesisConfig(t)
     refv = writeVisorFiles(t, refvc)
-    corruptFile(t, testWalletFile)
+    walletFile := filepath.Join(testWalletDir, testWalletFile)
+    assertFileExists(t, walletFile)
+    corruptFile(t, walletFile)
     vc = setupChildVisorConfig(refvc, false)
     assert.Panics(t, func() { NewVisor(vc) })
 
@@ -266,7 +277,8 @@ func TestNewVisor(t *testing.T) {
     cleanupVisor()
     refvc = newMasterVisorConfig(t)
     refv = writeVisorFiles(t, refvc)
-    corruptFile(t, testWalletFile)
+    assertFileExists(t, walletFile)
+    corruptFile(t, walletFile)
     vc = setupChildVisorConfig(refvc, true)
     assert.NotPanics(t, func() { NewVisor(vc) })
 
@@ -956,8 +968,11 @@ func TestBalances(t *testing.T) {
     defer cleanupVisor()
     v, mv := setupVisor()
     w := v.Wallets[0]
+    assert.Equal(t, len(w.GetEntries()), 1)
     we := w.CreateEntry()
     we2 := w.CreateEntry()
+    assert.Equal(t, len(w.GetEntries()), 3)
+    assert.Equal(t, v.TotalBalance().Confirmed, Balance{0, 0})
     startCoins := mv.Config.GenesisCoinVolume
 
     // Without predicted outputs
@@ -967,6 +982,9 @@ func TestBalances(t *testing.T) {
         transferCoinsAdvanced(mv, v, Balance{10e6, 10}, 0, we.Address))
     assert.Nil(t,
         transferCoinsAdvanced(mv, v, Balance{5e6, 5}, 0, we2.Address))
+    assert.Equal(t, v.WalletBalance(w.GetID()).Confirmed, Balance{25e6, 25})
+    assert.Equal(t, v.AddressBalance(we.Address).Confirmed, Balance{20e6, 20})
+    assert.Equal(t, v.AddressBalance(we2.Address).Confirmed, Balance{5e6, 5})
     assert.Equal(t, v.TotalBalance().Confirmed, Balance{25e6, 25})
     mvBalance := Balance{startCoins - 25e6, startCoins - 25}
     assert.Equal(t, mv.TotalBalance().Confirmed, mvBalance)

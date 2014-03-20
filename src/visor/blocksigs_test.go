@@ -50,6 +50,15 @@ func assertFileExists(t *testing.T, filename string) {
     }
 }
 
+func assertDirExists(t *testing.T, dirname string) {
+    stat, err := os.Stat(dirname)
+    assert.Nil(t, err)
+    assert.NotNil(t, stat)
+    if stat != nil {
+        assert.True(t, stat.Mode().IsDir())
+    }
+}
+
 func assertFileNotExists(t *testing.T, filename string) {
     _, err := os.Stat(filename)
     assert.NotNil(t, err)

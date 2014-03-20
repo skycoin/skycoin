@@ -13,6 +13,8 @@ type Wallets []Wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered
 func LoadWallets(dir string) (Wallets, error) {
+    // TODO -- don't load duplicate wallets.
+    // TODO -- save a last_modified value in wallets to decide which to load
     entries, err := ioutil.ReadDir(dir)
     if err != nil {
         return nil, err

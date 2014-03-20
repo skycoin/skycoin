@@ -63,7 +63,7 @@ func NewVisorConfig() VisorConfig {
     return VisorConfig{
         IsMaster:                 false,
         CanSpend:                 true,
-        WalletDirectory:          "./",
+        WalletDirectory:          "",
         BlockCreationInterval:    15,
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
@@ -125,13 +125,12 @@ func NewVisor(c VisorConfig) *Visor {
         }
         if len(wallets) == 0 {
             wallets.Add(c.WalletConstructor())
-        }
-    }
-    // Save loaded wallets if configured for it
-    if c.WalletDirectory != "" {
-        errs := wallets.Save(c.WalletDirectory)
-        if len(errs) != 0 {
-            log.Panicf("Failed to save wallets: %v", errs)
+            if c.WalletDirectory != "" {
+                errs := wallets.Save(c.WalletDirectory)
+                if len(errs) != 0 {
+                    log.Panicf("Failed to save wallets: %v", errs)
+                }
+            }
         }
     }
 
@@ -595,7 +594,9 @@ func (self *Visor) SignBlock(b coin.Block) SignedBlock {
 
 // Creates a wallet with a single master entry
 func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
-    w := wallet.NewSimpleWallet()
+    w := wallet.NewEmptySimpleWallet()
+    // The master wallet shouldn't be saved to disk so we clear its filename
+    w.SetFilename("")
     if err := w.AddEntry(master); err != nil {
         log.Panic("Failed to add master wallet entry: %v", err)
     }

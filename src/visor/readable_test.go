@@ -15,7 +15,7 @@ import (
 
 const (
     testMasterKeysFile  = "testmaster.keys"
-    testWalletFile      = "testwallet.json"
+    testWalletFile      = "testwallet.wlt"
     testBlocksigsFile   = "testblockchain.sigs"
     testBlockchainFile  = "testblockchain.bin"
     testWalletEntryFile = "testwalletentry.json"
@@ -150,7 +150,7 @@ func transferCoinsToSelf(v *Visor, addr coin.Address) error {
 
 func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
     addr coin.Address) error {
-    tx, err := mv.Spend(v.Wallets[0].GetID(), b, fee, addr)
+    tx, err := mv.Spend(mv.Wallets[0].GetID(), b, fee, addr)
     if err != nil {
         return err
     }

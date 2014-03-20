@@ -4,13 +4,14 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "io/ioutil"
     "path/filepath"
+    "strings"
 )
 
 type Wallets []Wallet
 
 // Loads all wallets contained in wallet dir.  If any regular file in wallet
-// dir fails to load (e.g. its not a wallet file), loading is aborted and
-// error returned.
+// dir fails to load, loading is aborted and error returned.  Only files with
+// extension WalletExt are considered
 func LoadWallets(dir string) (Wallets, error) {
     entries, err := ioutil.ReadDir(dir)
     if err != nil {
@@ -19,7 +20,11 @@ func LoadWallets(dir string) (Wallets, error) {
     wallets := make(Wallets, 0)
     for _, e := range entries {
         if e.Mode().IsRegular() {
-            rw, err := LoadReadableWallet(filepath.Join(dir, e.Name()))
+            name := e.Name()
+            if !strings.HasSuffix(name, WalletExt) {
+                continue
+            }
+            rw, err := LoadReadableWallet(filepath.Join(dir, name))
             if err != nil {
                 return nil, err
             }
@@ -27,7 +32,7 @@ func LoadWallets(dir string) (Wallets, error) {
             if err != nil {
                 return nil, err
             }
-            w.SetFilename(e.Name())
+            w.SetFilename(name)
             wallets = append(wallets, w)
         }
     }

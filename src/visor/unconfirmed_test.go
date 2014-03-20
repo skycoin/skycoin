@@ -4,6 +4,7 @@ import (
     "crypto/rand"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "testing"
     "time"
@@ -62,39 +63,42 @@ func getFee(t *coin.Transaction) (uint64, error) {
 }
 
 func makeValidTxn(mv *Visor) (coin.Transaction, error) {
-    we := NewWalletEntry()
-    return mv.Spend(Balance{10 * 1e6, 0}, 0, we.Address)
+    we := wallet.NewWalletEntry()
+    return mv.Spend(mv.Wallets[0].GetID(), Balance{10 * 1e6, 0}, 0, we.Address)
 }
 
 func makeValidTxnWithFeeFactor(mv *Visor,
     factor, extra uint64) (coin.Transaction, error) {
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
     tmp := mv.Config.CoinHourBurnFactor
     mv.Config.CoinHourBurnFactor = factor
-    tx, err := mv.Spend(Balance{10 * 1e6, 1000}, extra, we.Address)
+    tx, err := mv.Spend(mv.Wallets[0].GetID(), Balance{10 * 1e6, 1000}, extra,
+        we.Address)
     mv.Config.CoinHourBurnFactor = tmp
     return tx, err
 }
 
 func makeValidTxnWithFeeFactorAndExtraChange(mv *Visor,
     factor, extra, change uint64) (coin.Transaction, error) {
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
     tmp := mv.Config.CoinHourBurnFactor
     mv.Config.CoinHourBurnFactor = factor
-    tx, err := mv.Spend(Balance{10 * 1e6, 1002}, extra, we.Address)
+    tx, err := mv.Spend(mv.Wallets[0].GetID(), Balance{10 * 1e6, 1002}, extra,
+        we.Address)
     mv.Config.CoinHourBurnFactor = tmp
     return tx, err
 }
 
 func makeValidTxnNoChange(mv *Visor) (coin.Transaction, error) {
-    we := NewWalletEntry()
-    b := mv.Balance(mv.Config.MasterKeys.Address)
-    return mv.Spend(b, 0, we.Address)
+    we := wallet.NewWalletEntry()
+    b := mv.AddressBalance(mv.Config.MasterKeys.Address)
+    return mv.Spend(mv.Wallets[0].GetID(), b.Confirmed, 0, we.Address)
 }
 
 func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
-    we := NewWalletEntry()
-    txn, err := mv.Spend(Balance{10 * 1e6, 0}, 0, we.Address)
+    we := wallet.NewWalletEntry()
+    txn, err := mv.Spend(mv.Wallets[0].GetID(), Balance{10 * 1e6, 0}, 0,
+        we.Address)
     if err != nil {
         return txn, err
     }
@@ -125,12 +129,10 @@ func assertValidUnspent(t *testing.T, bc *coin.Blockchain,
 }
 
 func assertValidUnconfirmed(t *testing.T, txns map[coin.SHA256]UnconfirmedTxn,
-    txn coin.Transaction, isOurReceive, isOurSpend bool) {
+    txn coin.Transaction) {
     ut, ok := txns[txn.Hash()]
     assert.True(t, ok)
     assert.Equal(t, ut.Txn, txn)
-    assert.Equal(t, ut.IsOurReceive, isOurReceive)
-    assert.Equal(t, ut.IsOurSpend, isOurSpend)
     assert.True(t, ut.Announced.IsZero())
     assert.False(t, ut.Received.IsZero())
     assert.False(t, ut.Checked.IsZero())
@@ -220,7 +222,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, false, false)
+    assertValidUnconfirmed(t, ut.Txns, txn)
 
     // Test didAnnounce=true
     mv = setupMasterVisor()
@@ -231,7 +233,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, false, false)
+    assertValidUnconfirmed(t, ut.Txns, txn)
 
     // Test txn too large
     mv = setupMasterVisor()
@@ -255,7 +257,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, true, false)
+    assertValidUnconfirmed(t, ut.Txns, txn)
 
     // Test where we are spender of ux outputs
     mv = setupMasterVisor()
@@ -271,7 +273,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, false, true)
+    assertValidUnconfirmed(t, ut.Txns, txn)
 
     // Test where we are both spender and receiver of ux outputs
     mv = setupMasterVisor()
@@ -287,7 +289,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, true, true)
+    assertValidUnconfirmed(t, ut.Txns, txn)
     assert.Equal(t, len(ut.Txns), 1)
     assert.Equal(t, len(ut.Unspent), 1)
     for _, uxs := range ut.Unspent {
@@ -309,7 +311,7 @@ func TestRecordTxn(t *testing.T) {
     // Received & checked should be updated
     assert.True(t, utx2.Received.After(utx.Received))
     assert.True(t, utx2.Checked.After(utx.Checked))
-    assertValidUnconfirmed(t, ut.Txns, txn, true, true)
+    assertValidUnconfirmed(t, ut.Txns, txn)
     assert.Equal(t, len(ut.Txns), 1)
     assert.Equal(t, len(ut.Unspent), 1)
     for _, uxs := range ut.Unspent {
@@ -328,7 +330,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, true, false)
+    assertValidUnconfirmed(t, ut.Txns, txn)
 
     // Test with valid fee, surplus
     mv = setupMasterVisor()
@@ -342,7 +344,7 @@ func TestRecordTxn(t *testing.T) {
     assert.Nil(t, err)
     assert.False(t, known)
     assertValidUnspent(t, mv.blockchain, ut.Unspent, txn)
-    assertValidUnconfirmed(t, ut.Txns, txn, true, false)
+    assertValidUnconfirmed(t, ut.Txns, txn)
 
     // Test with invalid fee
     mv = setupMasterVisor()
@@ -745,25 +747,6 @@ func TestGetOldOwnedTransactions(t *testing.T) {
     err, known = up.RecordTxn(mv.blockchain, ourBothOld, addrs, testBlockSize, 0)
     assert.Nil(t, err)
     assert.False(t, known)
-
-    // Get the old owned txns
-    utxns := up.GetOldOwnedTransactions(time.Hour)
-
-    // Check that the 3 txns are ones we are interested in and old enough
-    assert.Equal(t, len(utxns), 3)
-    mapTxns := make(map[coin.SHA256]bool)
-    txns := make(coin.Transactions, len(utxns))
-    for i, utx := range utxns {
-        txns[i] = utx.Txn
-        assert.True(t, utx.IsOurSpend || utx.IsOurReceive)
-        assert.True(t, utx.Announced.IsZero())
-        mapTxns[utx.Hash()] = true
-    }
-    assert.Equal(t, len(mapTxns), 3)
-    txns = coin.SortTransactions(txns, getFee)
-    expectTxns := coin.Transactions{ourSpendOld, ourReceiveOld, ourBothOld}
-    expectTxns = coin.SortTransactions(expectTxns, getFee)
-    assert.Equal(t, txns, expectTxns)
 }
 
 func TestFilterKnown(t *testing.T) {

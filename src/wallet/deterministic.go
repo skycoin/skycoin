@@ -39,10 +39,9 @@ type DeterministicWallet struct {
 
 func NewDeterministicWallet() Wallet {
     seed := NewDeterministicWalletSeed()
-    filename := string(seed.toWalletID()) + WalletExt
     pub, sec := coin.GenerateDeterministicKeyPair(seed[:])
     return &DeterministicWallet{
-        Filename: filename,
+        Filename: NewWalletFilename(seed.toWalletID()),
         Seed:     seed,
         Entry:    NewWalletEntryFromKeypair(pub, sec),
     }

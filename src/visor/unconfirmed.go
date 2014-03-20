@@ -28,23 +28,6 @@ func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int,
 // Head can be different at execution time, but the Unspent's hash is fixed.
 type TxnUnspents map[coin.SHA256]coin.UxArray
 
-// // Returns Unspents for multiple addresses
-// func (self TxnUnspents) AllForAddresses(addrs []coin.Address) coin.AddressUxOuts {
-//     m := make(map[coin.Address]byte, len(addrs))
-//     for _, a := range addrs {
-//         m[a] = byte(1)
-//     }
-//     uxo := make(coin.AddressUxOuts)
-//     for _, uxa := range self {
-//         for _, ux := range uxa {
-//             if _, exists := m[ux.Body.Address]; exists {
-//                 uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
-//             }
-//         }
-//     }
-//     return uxo
-// }
-
 // Returns all Unspents for a single address
 func (self TxnUnspents) AllForAddress(a coin.Address) coin.UxArray {
     uxo := make(coin.UxArray, 0)
@@ -239,4 +222,11 @@ func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
         }
     }
     return auxs
+}
+
+func (self *UnconfirmedTxnPool) SpendsForAddress(bcUnspent *coin.UnspentPool,
+    a coin.Address) coin.UxArray {
+    ma := map[coin.Address]byte{a: 1}
+    auxs := self.SpendsForAddresses(bcUnspent, ma)
+    return auxs[a]
 }

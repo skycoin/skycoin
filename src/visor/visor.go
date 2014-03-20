@@ -111,24 +111,28 @@ func NewVisor(c VisorConfig) *Visor {
         }
     }
 
-    // Load the wallet
-    wallets := wallet.Wallets(nil)
+    // Load the wallets
+    wallets := wallet.Wallets{}
     if c.IsMaster {
         wallets = wallet.Wallets{CreateMasterWallet(c.MasterKeys)}
     } else {
-        w, err := wallet.LoadWallets(c.WalletDirectory)
-        if err != nil {
-            log.Panicf("Failed to load all wallets: %v", err)
+        if c.WalletDirectory != "" {
+            w, err := wallet.LoadWallets(c.WalletDirectory)
+            if err != nil {
+                log.Panicf("Failed to load all wallets: %v", err)
+            }
+            wallets = w
         }
-        if len(w) == 0 {
-            w.Add(c.WalletConstructor())
+        if len(wallets) == 0 {
+            wallets.Add(c.WalletConstructor())
         }
-        wallets = w
     }
-    // Save loaded wallets
-    errs := wallets.Save(c.WalletDirectory)
-    if len(errs) != 0 {
-        log.Panicf("Failed to save wallets: %v", errs)
+    // Save loaded wallets if configured for it
+    if c.WalletDirectory != "" {
+        errs := wallets.Save(c.WalletDirectory)
+        if len(errs) != 0 {
+            log.Panicf("Failed to save wallets: %v", errs)
+        }
     }
 
     // Load the blockchain the block signatures
@@ -514,7 +518,16 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt Balance, fee uint64,
     return tx, err
 }
 
-// Returns the confirmed & predicted balance for a single address in the Wallet
+// Returns the confirmed & predicted balance for a single address
+func (self *Visor) AddressBalance(addr coin.Address) BalancePair {
+    auxs := self.blockchain.Unspent.AllForAddress(addr)
+    puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
+    confirmed := self.balance(auxs)
+    predicted := self.balance(auxs.Sub(puxs))
+    return BalancePair{confirmed, predicted}
+}
+
+// Returns the confirmed & predicted balance for a Wallet
 func (self *Visor) WalletBalance(walletID wallet.WalletID) BalancePair {
     wallet := self.Wallets.Get(walletID)
     if wallet == nil {
@@ -526,6 +539,27 @@ func (self *Visor) WalletBalance(walletID wallet.WalletID) BalancePair {
     confirmed := self.totalBalance(auxs)
     predicted := self.totalBalance(auxs.Sub(puxs))
     return BalancePair{confirmed, predicted}
+}
+
+// Return the total balance of all loaded wallets
+func (self *Visor) TotalBalance() BalancePair {
+    b := BalancePair{}
+    for _, w := range self.Wallets {
+        c := self.WalletBalance(w.GetID())
+        b.Confirmed = b.Confirmed.Add(c.Confirmed)
+        b.Predicted = b.Confirmed.Add(c.Predicted)
+    }
+    return b
+}
+
+// Computes the total balance for a coin.Address's coin.UxOuts
+func (self *Visor) balance(uxs coin.UxArray) Balance {
+    prevTime := self.blockchain.Time()
+    b := NewBalance(0, 0)
+    for _, ux := range uxs {
+        b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+    }
+    return b
 }
 
 // Computes the total balance for coin.Addresses and their coin.UxOuts

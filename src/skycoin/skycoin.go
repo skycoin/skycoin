@@ -33,6 +33,7 @@ var (
         "skycoin.gui",
         "skycoin.util",
         "skycoin.visor",
+        "skycoin.wallet",
         "gnet",
         "pex",
     }
@@ -158,6 +159,11 @@ func Run(args cli.Args) {
     go catchInterrupt(quit)
     // Watch for SIGUSR1
     go catchDebug()
+
+    err := os.MkdirAll(c.WalletDirectory, os.FileMode(0700))
+    if err != nil {
+        logger.Critical("Failed to create wallet directory: %v", err)
+    }
 
     dconf := configureDaemon(c)
     d := daemon.NewDaemon(dconf)

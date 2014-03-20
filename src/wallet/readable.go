@@ -58,8 +58,10 @@ func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
 
 // Used for [de]serialization of a Wallet
 type ReadableWallet struct {
-    Type     WalletType             `json:"name"`
-    Name     string                 `json:"name"`
+    Type WalletType `json:"type"`
+    Name string     `json:"name"`
+    // Filename is only included here for RPC information.  The value saved
+    // to disk should be ignored and overwritten when loaded by a Wallet.
     Filename string                 `json:"filename"`
     Entries  ReadableWalletEntries  `json:"entries"`
     Extra    map[string]interface{} `json:"extra"`
@@ -103,6 +105,8 @@ func (self *ReadableWallet) ToWallet() (Wallet, error) {
 
 // Saves to filename
 func (self *ReadableWallet) Save(filename string) error {
+    logger.Critical("Saving readable wallet to %s with filename %s", filename,
+        self.Filename)
     return util.SaveJSON(filename, self, 0600)
 }
 

@@ -106,7 +106,7 @@ func (self *Config) postProcess() {
         self.BlockSigsFile = filepath.Join(self.DataDirectory, "blockchain.sigs")
     }
     if self.WalletDirectory == "" {
-        self.WalletDirectory = filepath.Join(self.DataDirectory, "wallet/")
+        self.WalletDirectory = filepath.Join(self.DataDirectory, "wallets/")
     }
     ll, err := logging.LogLevel(self.logLevel)
     if err != nil {

@@ -2,6 +2,7 @@ package visor
 
 import (
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "os"
     "testing"
@@ -75,7 +76,7 @@ func TestLoadBlockchainPrivate(t *testing.T) {
     defer cleanupVisor()
     cleanupVisor()
 
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
 
     // No filename should return fresh blockchain
     bc := loadBlockchain("", we.Address)

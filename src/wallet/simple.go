@@ -20,9 +20,8 @@ type SimpleWallet struct {
 func NewSimpleWallet() Wallet {
     idHash := coin.SumSHA256(secp256k1.RandByte(256))
     id := WalletID(hex.EncodeToString(idHash[:16]))
-    filename := string(id) + WalletExt
     return &SimpleWallet{
-        Filename: filename,
+        Filename: NewWalletFilename(id),
         Entries:  make(WalletEntries),
         ID:       id,
     }
@@ -38,8 +37,10 @@ func LoadSimpleWallet(dir, filename string) (Wallet, error) {
 
 func NewSimpleWalletFromReadable(r *ReadableWallet) Wallet {
     return &SimpleWallet{
-        Entries: r.Entries.ToWalletEntries(),
-        ID:      r.Extra["id"].(WalletID),
+        Name:     r.Name,
+        Filename: r.Filename,
+        Entries:  r.Entries.ToWalletEntries(),
+        ID:       WalletID(r.Extra["id"].(string)),
     }
 }
 
@@ -133,11 +134,13 @@ func (self *SimpleWallet) Save(dir string) error {
 
 // Loads from filename
 func (self *SimpleWallet) Load(dir string) error {
-    r := &ReadableWallet{}
-    if err := r.Load(filepath.Join(dir, self.Filename)); err != nil {
+    fn := self.Filename
+    r, err := LoadReadableWallet(filepath.Join(dir, fn))
+    if err != nil {
         return err
     }
     *self = *(NewSimpleWalletFromReadable(r)).(*SimpleWallet)
+    self.Filename = fn
     return nil
 }
 

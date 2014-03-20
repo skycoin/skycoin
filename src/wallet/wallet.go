@@ -1,17 +1,25 @@
 package wallet
 
 import (
+    "fmt"
+    "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/coin"
+    "time"
 )
 
-const WalletExt = ".wlt"
-
-type WalletType string
+var (
+    logger = logging.MustGetLogger("skycoin.visor")
+)
 
 const (
     SimpleWalletType        WalletType = "Simple"
     DeterministicWalletType WalletType = "Deterministic"
 )
+
+const WalletExt = "wlt"
+const WalletTimestampFormat = "2006-01-01"
+
+type WalletType string
 
 type WalletID string
 type AddressSet map[coin.Address]byte
@@ -24,6 +32,11 @@ func (self AddressSet) Update(other AddressSet) AddressSet {
 }
 
 type WalletConstructor func() Wallet
+
+func NewWalletFilename(id WalletID) string {
+    timestamp := time.Now().Format(WalletTimestampFormat)
+    return fmt.Sprintf("%s-%s.%s", timestamp, id, WalletExt)
+}
 
 // Wallet interface, to support multiple implementations
 type Wallet interface {

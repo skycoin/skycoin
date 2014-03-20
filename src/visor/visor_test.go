@@ -3,8 +3,10 @@ package visor
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "os"
+    "path/filepath"
     "testing"
     "time"
 )
@@ -12,17 +14,19 @@ import (
 /* Helper functions */
 
 func setupVisorWriting(vc VisorConfig) *Visor {
-    vc.WalletDirectory = testWalletFile
+    vc.WalletDirectory = testWalletDir
     vc.BlockSigsFile = testBlocksigsFile
     vc.BlockchainFile = testBlockchainFile
     return NewVisor(vc)
 }
 
 func writeVisorFilesDirect(t *testing.T, v *Visor) {
-    assert.Nil(t, v.SaveWallet())
+    assert.Nil(t, v.SaveWallet(testWalletDir))
     assert.Nil(t, v.SaveBlockSigs())
     assert.Nil(t, v.SaveBlockchain())
     assertFileExists(t, v.Config.WalletDirectory)
+    walletFile := filepath.Join(v.Config.WalletDirectory, testWalletFile)
+    assertFileExists(t, walletFile)
     assertFileExists(t, v.Config.BlockSigsFile)
     assertFileExists(t, v.Config.BlockchainFile)
 }
@@ -34,13 +38,13 @@ func writeVisorFiles(t *testing.T, vc VisorConfig) *Visor {
     return v
 }
 
-func newWalletEntry(t *testing.T) WalletEntry {
-    we := NewWalletEntry()
+func newWalletEntry(t *testing.T) wallet.WalletEntry {
+    we := wallet.NewWalletEntry()
     assert.Nil(t, we.Verify())
     return we
 }
 
-func setupGenesis(t *testing.T) (WalletEntry, coin.Sig, uint64) {
+func setupGenesis(t *testing.T) (wallet.WalletEntry, coin.Sig, uint64) {
     we := newWalletEntry(t)
     vc := NewVisorConfig()
     vc.IsMaster = true
@@ -73,7 +77,7 @@ func setupChildVisorConfig(refvc VisorConfig, master bool) VisorConfig {
     vc := NewVisorConfig()
     vc.IsMaster = master
     vc.MasterKeys = refvc.MasterKeys
-    vc.WalletDirectory = testWalletFile
+    vc.WalletDirectory = testWalletDir
     vc.BlockchainFile = testBlockchainFile
     vc.BlockSigsFile = testBlocksigsFile
     return vc
@@ -107,8 +111,8 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
 }
 
 func addSignedBlockAt(t *testing.T, v *Visor, when uint64) SignedBlock {
-    we := NewWalletEntry()
-    tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
+    we := wallet.NewWalletEntry()
+    tx, err := v.Spend(v.Wallets[0].GetID(), Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     err, known := v.RecordTxn(tx)
     assert.Nil(t, err)
@@ -181,7 +185,6 @@ func TestNewVisorConfig(t *testing.T) {
     assert.Panics(t, func() { vc.MasterKeys.Verify() })
     assert.NotNil(t, vc.MasterKeys.VerifyPublic())
     assert.Equal(t, vc.GenesisSignature, coin.Sig{})
-    assert.Equal(t, vc.WalletSizeMin, 1)
 }
 
 func TestNewVisor(t *testing.T) {
@@ -189,7 +192,7 @@ func TestNewVisor(t *testing.T) {
 
     // Not master, Invalid master keys
     cleanupVisor()
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
     we.Public = coin.PubKey{}
     vc := NewVisorConfig()
     vc.IsMaster = false
@@ -200,7 +203,7 @@ func TestNewVisor(t *testing.T) {
     // Master, invalid master keys
     cleanupVisor()
     vc.IsMaster = true
-    vc.MasterKeys = WalletEntry{}
+    vc.MasterKeys = wallet.WalletEntry{}
     assert.Panics(t, func() { NewVisor(vc) })
     vc.MasterKeys = we
     assert.Panics(t, func() { NewVisor(vc) })
@@ -213,9 +216,7 @@ func TestNewVisor(t *testing.T) {
     vc.MasterKeys = we
     vc.GenesisSignature = sig
     vc.GenesisTimestamp = ts
-    vc.WalletSizeMin = 10
     v := NewVisor(vc)
-    assert.Equal(t, v.Wallet.NumEntries(), 10)
     assert.Equal(t, len(v.blockchain.Blocks), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
@@ -225,11 +226,11 @@ func TestNewVisor(t *testing.T) {
     we = newWalletEntry(t)
     vc.MasterKeys = we
     vc.GenesisSignature = createGenesisSignature(we)
-    vc.WalletSizeMin = 10
     vc.IsMaster = true
     v = NewVisor(vc)
+    assert.Equal(t, len(v.Wallets), 1)
     // Wallet should only have 1 entry if master
-    assert.Equal(t, v.Wallet.NumEntries(), 1)
+    assert.Equal(t, v.Wallets[0].NumEntries(), 1)
     assert.Equal(t, len(v.blockchain.Blocks), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
@@ -239,7 +240,7 @@ func TestNewVisor(t *testing.T) {
     refv := writeVisorFiles(t, refvc)
     vc = setupChildVisorConfig(refvc, false)
     v = NewVisor(vc)
-    assert.Equal(t, v.Wallet, refv.Wallet)
+    assert.Equal(t, v.Wallets, refv.Wallets)
     assert.Equal(t, v.blockchain, refv.blockchain)
     assert.Equal(t, v.blockSigs, refv.blockSigs)
 
@@ -249,7 +250,7 @@ func TestNewVisor(t *testing.T) {
     refv = writeVisorFiles(t, refvc)
     vc = setupChildVisorConfig(refvc, true)
     v = NewVisor(vc)
-    assert.Equal(t, v.Wallet, refv.Wallet)
+    assert.Equal(t, v.Wallets, refv.Wallets)
     assert.Equal(t, v.blockchain, refv.blockchain)
 
     // Not master, wallet is corrupt
@@ -327,11 +328,10 @@ func TestNewVisor(t *testing.T) {
 func TestNewMinimalVisor(t *testing.T) {
     defer cleanupVisor()
     vc := newMasterVisorConfig(t)
-    vc.WalletSizeMin = 10000
     v := NewMinimalVisor(vc)
     assert.Equal(t, v.Config, vc)
     assert.NotNil(t, v.Unconfirmed)
-    assert.Nil(t, v.Wallet)
+    assert.Nil(t, v.Wallets)
     assert.Equal(t, len(v.blockchain.Blocks), 0)
     assert.Equal(t, len(v.blockSigs.Sigs), 0)
 }
@@ -432,33 +432,22 @@ func TestVisorSaveBlockchain(t *testing.T) {
     })
     bc := loadBlockchain(testBlockchainFile, vc.MasterKeys.Address)
     assert.Equal(t, v.blockchain, bc)
-
 }
 
-func TestVisorSaveWallet(t *testing.T) {
+func TestVisorSaveWallets(t *testing.T) {
     cleanupVisor()
     defer cleanupVisor()
     vc := newGenesisConfig(t)
-    vc.WalletDirectory = ""
-    vc.WalletSizeMin = 10
     assert.False(t, vc.IsMaster)
-
-    // Test with no wallet file set
+    vc.WalletDirectory = testWalletDir
     v := NewVisor(vc)
-    assertFileNotExists(t, testWalletFile)
-    err := v.SaveWallet()
-    assert.NotNil(t, err)
-    assert.Equal(t, err.Error(), "No WalletDirectory location set")
-    assertFileNotExists(t, testWalletFile)
-
-    // Test with wallet file set
-    vc.WalletDirectory = testWalletFile
-    v = NewVisor(vc)
-    assert.Nil(t, v.SaveWallet())
-    assertFileExists(t, testWalletFile)
-    w, err := LoadSimpleWallet(testWalletFile)
+    assertFileNotExists(t, filepath.Join(testWalletDir, testWalletFile))
+    v.Wallets[0].SetFilename(testWalletFile)
+    assert.Equal(t, len(v.SaveWallets()), 0)
+    assertFileExists(t, filepath.Join(testWalletDir, testWalletFile))
+    w, err := wallet.LoadSimpleWallet(testWalletDir, testWalletFile)
     assert.Nil(t, err)
-    assert.Equal(t, v.Wallet, w)
+    assert.Equal(t, v.Wallets[0], w)
 }
 
 func TestVisorSaveBlockSigs(t *testing.T) {
@@ -483,35 +472,6 @@ func TestVisorSaveBlockSigs(t *testing.T) {
     bs, err := LoadBlockSigs(testBlocksigsFile)
     assert.Nil(t, err)
     assert.Equal(t, v.blockSigs, bs)
-}
-
-func TestCreateAddressAndSave(t *testing.T) {
-    cleanupVisor()
-    defer cleanupVisor()
-    vc := newGenesisConfig(t)
-    vc.WalletDirectory = ""
-    vc.WalletSizeMin = 10
-
-    // Test with no wallet file set
-    v := NewVisor(vc)
-    assert.Equal(t, v.Wallet.NumEntries(), 10)
-    we, err := v.CreateAddressAndSave()
-    assert.NotNil(t, err)
-    assertFileNotExists(t, testWalletFile)
-    assert.Equal(t, v.Wallet.NumEntries(), 11)
-    assert.Nil(t, we.Verify())
-
-    // Test with wallet file set
-    v.Config.WalletDirectory = testWalletFile
-    we, err = v.CreateAddressAndSave()
-    assert.Nil(t, err)
-    assertFileExists(t, testWalletFile)
-    assert.Equal(t, v.Wallet.NumEntries(), 12)
-    assert.Nil(t, we.Verify())
-
-    w, err := LoadSimpleWallet(testWalletFile)
-    assert.Nil(t, err)
-    assert.Equal(t, v.Wallet, w)
 }
 
 func TestCreateAndExecuteBlock(t *testing.T) {
@@ -575,32 +535,33 @@ func TestCreateAndExecuteBlock(t *testing.T) {
 
 func TestVisorSpend(t *testing.T) {
     defer cleanupVisor()
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
     addr := we.Address
     vc := newMasterVisorConfig(t)
     assert.Equal(t, vc.CoinHourBurnFactor, uint64(0))
     v := NewVisor(vc)
-    ogb := v.TotalBalance()
+    wid := v.Wallets[0].GetID()
+    ogb := v.WalletBalance(wid).Confirmed
 
     // Test can't spend
     v = NewVisor(vc)
     b := Balance{10e6, 0}
     v.Config.CanSpend = false
-    _, err := v.Spend(b, 0, addr)
+    _, err := v.Spend(wid, b, 0, addr)
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), "Spending disabled")
 
     // Test spend 0 amount
     v = NewVisor(vc)
     b = Balance{0, 0}
-    _, err = v.Spend(b, 0, addr)
+    _, err = v.Spend(v.Wallets[0].GetID(), b, 0, addr)
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), "Zero spend amount")
 
     // Test lacking funds
     v = NewVisor(vc)
     b = Balance{10e16, 10e16}
-    _, err = v.Spend(b, 10e16, addr)
+    _, err = v.Spend(v.Wallets[0].GetID(), b, 10e16, addr)
     assert.NotNil(t, err)
     assert.Equal(t, err.Error(), "Not enough coins")
 
@@ -608,13 +569,13 @@ func TestVisorSpend(t *testing.T) {
     v = NewVisor(vc)
     v.Config.MaxBlockSize = 0
     b = Balance{10e6, 10}
-    assert.Panics(t, func() { v.Spend(b, 0, addr) })
+    assert.Panics(t, func() { v.Spend(v.Wallets[0].GetID(), b, 0, addr) })
 
     // Test simple spend (we have only 1 address to spend from, no fee)
     v = NewVisor(vc)
     assert.Equal(t, v.Config.CoinHourBurnFactor, uint64(0))
     b = Balance{10e6, 10}
-    tx, err := v.Spend(b, 0, addr)
+    tx, err := v.Spend(v.Wallets[0].GetID(), b, 0, addr)
     assert.Nil(t, err)
     assert.Equal(t, len(tx.In), 1)
     assert.Equal(t, len(tx.Out), 2)
@@ -627,7 +588,7 @@ func TestVisorSpend(t *testing.T) {
     assert.Equal(t, tx.Out[1].Coins, b.Coins)
     assert.Equal(t, tx.Out[1].Hours, b.Hours)
     // Change amount should be correct
-    ourAddr := v.Wallet.GetAddresses()[0]
+    ourAddr := v.Wallets[0].GetAddresses()[0]
     assert.Equal(t, tx.Out[0].Address, ourAddr)
     assert.Equal(t, tx.Out[0].Coins, ogb.Coins-b.Coins)
     assert.Equal(t, tx.Out[0].Hours, ogb.Hours-b.Hours)
@@ -637,11 +598,12 @@ func TestVisorSpend(t *testing.T) {
 func TestExecuteSignedBlock(t *testing.T) {
     defer cleanupVisor()
     cleanupVisor()
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
     vc := newMasterVisorConfig(t)
     v := NewVisor(vc)
+    wid := v.Wallets[0].GetID()
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
-    tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
+    tx, err := v.Spend(wid, Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     err, known := v.RecordTxn(tx)
     assert.Nil(t, err)
@@ -685,8 +647,9 @@ func TestExecuteSignedBlock(t *testing.T) {
     // Test a valid block created by a master but executing in non master
     vc2, mv := setupVisorConfig()
     v2 := NewVisor(vc2)
-    addr := v2.Wallet.GetAddresses()[0]
-    tx, err = mv.Spend(Balance{1e6, 0}, 0, addr)
+    w := v2.Wallets[0]
+    addr := w.GetAddresses()[0]
+    tx, err = mv.Spend(mv.Wallets[0].GetID(), Balance{1e6, 0}, 0, addr)
     assert.Nil(t, err)
     err, known = mv.RecordTxn(tx)
     assert.Nil(t, err)
@@ -859,8 +822,8 @@ func TestVisorRecordTxn(t *testing.T) {
     // Setup txns
     tx, err := makeValidTxn(v)
     assert.Nil(t, err)
-    we := v.Wallet.CreateEntry()
-    tx2, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
+    we := v.Wallets[0].CreateEntry()
+    tx2, err := v.Spend(v.Wallets[0].GetID(), Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
 
     // Valid record, did not announce
@@ -886,8 +849,6 @@ func TestVisorRecordTxn(t *testing.T) {
     assert.False(t, known)
     assert.Equal(t, len(v.Unconfirmed.Txns), 2)
     assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
-    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].IsOurReceive)
-    assert.True(t, v.Unconfirmed.Txns[tx.Hash()].IsOurSpend)
 }
 
 func TestGetAddressTransactions(t *testing.T) {
@@ -896,8 +857,9 @@ func TestGetAddressTransactions(t *testing.T) {
     v := NewVisor(vc)
 
     // An confirmed txn
-    we := v.Wallet.CreateEntry()
-    tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
+    w := v.Wallets[0]
+    we := w.CreateEntry()
+    tx, err := v.Spend(w.GetID(), Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     err, known := v.RecordTxn(tx)
     assert.Nil(t, err)
@@ -915,8 +877,8 @@ func TestGetAddressTransactions(t *testing.T) {
     // An unconfirmed txn
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     assert.Equal(t, len(v.Unconfirmed.Unspent), 0)
-    we = v.Wallet.CreateEntry()
-    tx, err = v.Spend(Balance{2e6, 0}, 0, we.Address)
+    we = w.CreateEntry()
+    tx, err = v.Spend(w.GetID(), Balance{2e6, 0}, 0, we.Address)
     err, known = v.RecordTxn(tx)
     assert.Nil(t, err)
     assert.False(t, known)
@@ -993,54 +955,36 @@ func TestGetTransaction(t *testing.T) {
 func TestBalances(t *testing.T) {
     defer cleanupVisor()
     v, mv := setupVisor()
-    we := v.Wallet.CreateEntry()
-    we2 := v.Wallet.CreateEntry()
+    w := v.Wallets[0]
+    we := w.CreateEntry()
+    we2 := w.CreateEntry()
     startCoins := mv.Config.GenesisCoinVolume
 
     // Without predicted outputs
-    assert.Nil(t, transferCoinsAdvanced(mv, v, Balance{10e6, 10}, 0, we.Address))
-    assert.Nil(t, transferCoinsAdvanced(mv, v, Balance{10e6, 10}, 0, we.Address))
-    assert.Nil(t, transferCoinsAdvanced(mv, v, Balance{5e6, 5}, 0, we2.Address))
-    assert.Equal(t, v.TotalBalance(), Balance{25e6, 25})
-    // assert.Equal(t, v.TotalBalancePredicted(), Balance{25e6, 25})
+    assert.Nil(t,
+        transferCoinsAdvanced(mv, v, Balance{10e6, 10}, 0, we.Address))
+    assert.Nil(t,
+        transferCoinsAdvanced(mv, v, Balance{10e6, 10}, 0, we.Address))
+    assert.Nil(t,
+        transferCoinsAdvanced(mv, v, Balance{5e6, 5}, 0, we2.Address))
+    assert.Equal(t, v.TotalBalance().Confirmed, Balance{25e6, 25})
     mvBalance := Balance{startCoins - 25e6, startCoins - 25}
-    assert.Equal(t, mv.TotalBalance(), mvBalance)
-    // assert.Equal(t, mv.TotalBalancePredicted(), mvBalance)
-    assert.Equal(t, v.Balance(we.Address), Balance{20e6, 20})
-    assert.Equal(t, v.Balance(we2.Address), Balance{5e6, 5})
-    // assert.Equal(t, v.BalancePredicted(we.Address), Balance{20e6, 20})
-    // assert.Equal(t, v.BalancePredicted(we2.Address), Balance{5e6, 5})
+    assert.Equal(t, mv.TotalBalance().Confirmed, mvBalance)
+    assert.Equal(t, v.AddressBalance(we.Address).Confirmed, Balance{20e6, 20})
+    assert.Equal(t, v.AddressBalance(we2.Address).Confirmed, Balance{5e6, 5})
 
-    // // With predicted outputs
-    // tx, err := mv.Spend(Balance{1e6, 10}, 0, we.Address)
-    // assert.Nil(t, err)
-    // v.RecordTxn(tx)
-    // assert.Nil(t, err)
-    // assert.False(t, known)
-    // assert.Nil(t, mv.RecordTxn(tx))
-    // // Regular balance should not have changed
-    // assert.Equal(t, v.TotalBalance(), Balance{25e6, 25})
-    // assert.Equal(t, v.TotalBalancePredicted(), Balance{35e6, 35})
-    // assert.Equal(t, mv.TotalBalance(), mvBalance)
-    // mvBalancePredicted := mvBalance.Sub(Balance{1e6, 10})
-    // assert.Equal(t, mv.TotalBalancePredicted(), mvBalancePredicted)
-    // assert.Equal(t, v.Balance(we.Address), Balance{20e6, 20})
-    // assert.Equal(t, v.Balance(we2.Address), Balance{5e6, 5})
-    // assert.Equal(t, v.BalancePredicted(we.Address), Balance{30e6, 30})
-    // assert.Equal(t, v.BalancePredicted(we2.Address), Balance{5e6, 5})
-
-    // Can't check CoinHours() is actually used because we'd have to wait
-    // an hour
+    // TODO -- test the predicted balances
 }
 
 func TestVisorVerifySignedBlock(t *testing.T) {
     defer cleanupVisor()
     vc := newMasterVisorConfig(t)
     v := NewVisor(vc)
-    we := v.Wallet.CreateEntry()
+    w := v.Wallets[0]
+    we := w.CreateEntry()
 
     // Master should verify its own blocks correctly
-    txn, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
+    txn, err := v.Spend(w.GetID(), Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
     err, known := v.RecordTxn(txn)
     assert.Nil(t, err)
@@ -1075,69 +1019,26 @@ func TestVisorSignBlock(t *testing.T) {
     assert.Nil(t, v.verifySignedBlock(&sb))
 }
 
-func TestLoadWallet(t *testing.T) {
-    defer cleanupVisor()
-    cleanupVisor()
-
-    // Test with no filename (not saving or loading)
-    w := loadSimpleWallet("", 20)
-    assert.Equal(t, w.NumEntries(), 20)
-    assertFileNotExists(t, testWalletFile)
-
-    // Test with filename, file does not exist for loading
-    w = loadSimpleWallet(testWalletFile, 20)
-    assert.Equal(t, w.NumEntries(), 20)
-    assertFileExists(t, testWalletFile)
-
-    // Test with filename, file exists for loading
-    w2 := loadSimpleWallet(testWalletFile, 20)
-    assert.Equal(t, w2.NumEntries(), 20)
-    assert.Equal(t, w, w2)
-    assertFileExists(t, testWalletFile)
-
-    // Test with filename, file exists for loading, and we Populate more
-    w2 = loadSimpleWallet(testWalletFile, 30)
-    assert.Equal(t, w2.NumEntries(), 30)
-    for a, we := range w.Entries {
-        we2, ok := w2.Entries[a]
-        assert.True(t, ok)
-        assert.Equal(t, we, we2)
-    }
-    assertFileExists(t, testWalletFile)
-
-    // Test with filename, file exists for loading, and we Populate less
-    w = loadSimpleWallet(testWalletFile, 10)
-    assert.Equal(t, w.NumEntries(), 30)
-    assert.Equal(t, w, w2)
-    assertFileExists(t, testWalletFile)
-
-    // Test with corrupted wallet file for loading
-    corruptFile(t, testWalletFile)
-    assert.Panics(t, func() { loadSimpleWallet(testWalletFile, 10) })
-
-    // Can't test saving failure since can't force save failure
-}
-
 func TestCreateMasterWallet(t *testing.T) {
     defer cleanupVisor()
     cleanupVisor()
-    we := NewWalletEntry()
+    we := wallet.NewWalletEntry()
     w := CreateMasterWallet(we)
     assert.Equal(t, w.NumEntries(), 1)
     assert.Equal(t, w.GetAddresses()[0], we.Address)
 
     // Having a wallet file present should not affect loading master wallet
     w.Save(testWalletFile)
-    we = NewWalletEntry()
+    we = wallet.NewWalletEntry()
     w = CreateMasterWallet(we)
     assert.Equal(t, w.NumEntries(), 1)
     assert.Equal(t, w.GetAddresses()[0], we.Address)
 
     // Creating with an invalid wallet entry should panic
-    we = NewWalletEntry()
+    we = wallet.NewWalletEntry()
     we.Secret = coin.SecKey{}
     assert.Panics(t, func() { CreateMasterWallet(we) })
-    we = NewWalletEntry()
+    we = wallet.NewWalletEntry()
     we.Public = coin.PubKey{}
     assert.Panics(t, func() { CreateMasterWallet(we) })
 }

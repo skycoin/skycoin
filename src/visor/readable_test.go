@@ -5,8 +5,10 @@ import (
     "encoding/json"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "os"
+    "path/filepath"
     "reflect"
     "testing"
 )
@@ -17,9 +19,10 @@ const (
     testBlocksigsFile   = "testblockchain.sigs"
     testBlockchainFile  = "testblockchain.bin"
     testWalletEntryFile = "testwalletentry.json"
+    testWalletDir       = "./"
 )
 
-func createGenesisSignature(master WalletEntry) coin.Sig {
+func createGenesisSignature(master wallet.WalletEntry) coin.Sig {
     c := NewVisorConfig()
     bc := coin.NewBlockchain()
     gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
@@ -33,7 +36,7 @@ func setupVisorConfig() (VisorConfig, *Visor) {
 
     // Make a new master visor + blockchain
     // Get the signed genesis block,
-    mw := NewWalletEntry()
+    mw := wallet.NewWalletEntry()
     mvc := NewVisorConfig()
     mvc.CoinHourBurnFactor = 0
     mvc.IsMaster = true
@@ -73,7 +76,7 @@ func setupMasterVisorConfig() VisorConfig {
     c := NewVisorConfig()
     c.CoinHourBurnFactor = 0
     c.IsMaster = true
-    mw := NewWalletEntry()
+    mw := wallet.NewWalletEntry()
     c.MasterKeys = mw
     c.GenesisSignature = createGenesisSignature(mw)
     return c
@@ -96,6 +99,15 @@ func cleanupVisor() {
         os.Remove(fn + ".bak")
         os.Remove(fn + ".tmp")
     }
+    wallets, err := filepath.Glob("*." + wallet.WalletExt)
+    if err != nil {
+        logger.Critical("Failed to glob wallet files: %v", err)
+    } else {
+        for _, w := range wallets {
+            os.Remove(w)
+            os.Remove(w + ".bak")
+        }
+    }
 }
 
 func randSHA256() coin.SHA256 {
@@ -111,8 +123,6 @@ func createUnconfirmedTxn() UnconfirmedTxn {
     ut.Received = util.Now()
     ut.Checked = ut.Received
     ut.Announced = util.ZeroTime()
-    ut.IsOurSpend = true
-    ut.IsOurReceive = true
     return ut
 }
 
@@ -129,7 +139,7 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
 }
 
 func transferCoinsToSelf(v *Visor, addr coin.Address) error {
-    tx, err := v.Spend(Balance{1e6, 0}, 0, addr)
+    tx, err := v.Spend(v.Wallets[0].GetID(), Balance{1e6, 0}, 0, addr)
     if err != nil {
         return err
     }
@@ -140,7 +150,7 @@ func transferCoinsToSelf(v *Visor, addr coin.Address) error {
 
 func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
     addr coin.Address) error {
-    tx, err := mv.Spend(b, fee, addr)
+    tx, err := mv.Spend(v.Wallets[0].GetID(), b, fee, addr)
     if err != nil {
         return err
     }
@@ -162,7 +172,7 @@ func transferCoinsAdvanced(mv *Visor, v *Visor, b Balance, fee uint64,
 
 func transferCoins(mv *Visor, v *Visor) error {
     // Give the nonmaster some money to spend
-    addr := v.Wallet.GetAddresses()[0]
+    addr := v.Wallets[0].GetAddresses()[0]
     return transferCoinsAdvanced(mv, v, Balance{10e6, 0}, 0, addr)
 }
 

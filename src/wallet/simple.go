@@ -153,6 +153,6 @@ func (self *SimpleWallet) Load(dir string) error {
 
 func (self *SimpleWallet) GetExtraSerializerData() map[string]interface{} {
     m := make(map[string]interface{}, 1)
-    m["id"] = self.ID
+    m["id"] = string(self.ID)
     return m
 }

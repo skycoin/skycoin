@@ -106,6 +106,7 @@ func cleanupVisor() {
         for _, w := range wallets {
             os.Remove(w)
             os.Remove(w + ".bak")
+            os.Remove(w + ".tmp")
         }
     }
 }

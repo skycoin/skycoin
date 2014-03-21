@@ -7,8 +7,10 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "os"
+    "path/filepath"
     "sort"
     "testing"
     "time"
@@ -16,9 +18,14 @@ import (
 
 const (
     testMasterKeysFile = "testmaster.keys"
-    testWalletFile     = "testwallet.json"
+    testWalletFile     = "testwallet.wlt"
+    testWalletDir      = "./"
     testBlocksigsFile  = "testblockchain.sigs"
     testBlockchainFile = "testblockchain.bin"
+)
+
+var (
+    fullWalletFile = filepath.Join(testWalletDir, testWalletFile)
 )
 
 func randBytes(t *testing.T, n int) []byte {
@@ -33,7 +40,7 @@ func randSHA256(t *testing.T) coin.SHA256 {
     return coin.SumSHA256(randBytes(t, 32))
 }
 
-func createGenesisSignature(master visor.WalletEntry) coin.Sig {
+func createGenesisSignature(master wallet.WalletEntry) coin.Sig {
     c := visor.NewVisorConfig()
     bc := coin.NewBlockchain()
     gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
@@ -47,7 +54,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
 
     // Make a new master visor + blockchain
     // Get the signed genesis block,
-    mw := visor.NewWalletEntry()
+    mw := wallet.NewWalletEntry()
     mvc := visor.NewVisorConfig()
     mvc.IsMaster = true
     mvc.MasterKeys = mw
@@ -57,6 +64,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
 
     // Use the master values for a client configuration
     c := NewVisorConfig()
+    c.Config.WalletDirectory = testWalletDir
     c.Config.IsMaster = false
     c.Config.MasterKeys = mw
     c.Config.MasterKeys.Secret = coin.SecKey{}
@@ -70,25 +78,35 @@ func setupMasterVisor() VisorConfig {
     coin.SetAddressVersion("test")
     c := NewVisorConfig()
     c.Config.IsMaster = true
-    mw := visor.NewWalletEntry()
+    mw := wallet.NewWalletEntry()
     c.Config.MasterKeys = mw
     c.Config.GenesisSignature = createGenesisSignature(mw)
     return c
 }
 
 func cleanupVisor() {
+    os.Remove(fullWalletFile)
     os.Remove(testMasterKeysFile)
     os.Remove(testBlockchainFile)
     os.Remove(testBlocksigsFile)
-    os.Remove(testWalletFile)
+    os.Remove(fullWalletFile + ".tmp")
     os.Remove(testMasterKeysFile + ".tmp")
     os.Remove(testBlockchainFile + ".tmp")
     os.Remove(testBlocksigsFile + ".tmp")
-    os.Remove(testWalletFile + ".tmp")
+    os.Remove(fullWalletFile + ".bak")
     os.Remove(testMasterKeysFile + ".bak")
     os.Remove(testBlockchainFile + ".bak")
     os.Remove(testBlocksigsFile + ".bak")
-    os.Remove(testWalletFile + ".bak")
+    wallets, err := filepath.Glob("*." + wallet.WalletExt)
+    if err != nil {
+        logger.Critical("Failed to glob wallet files: %v", err)
+    } else {
+        for _, w := range wallets {
+            os.Remove(w)
+            os.Remove(w + ".bak")
+            os.Remove(w + ".tmp")
+        }
+    }
 }
 
 // Returns a daemon with the visor enabled, but networking disabled
@@ -103,9 +121,9 @@ func newVisorDaemon(vc VisorConfig) (*Daemon, chan int) {
 }
 
 // Writes a wallet entry to disk at filename
-func writeMasterKeysFile() (visor.WalletEntry, error) {
-    we := visor.NewWalletEntry()
-    rwe := visor.NewReadableWalletEntry(&we)
+func writeMasterKeysFile() (wallet.WalletEntry, error) {
+    we := wallet.NewWalletEntry()
+    rwe := wallet.NewReadableWalletEntry(&we)
     err := rwe.Save(testMasterKeysFile)
     return we, err
 }
@@ -113,7 +131,10 @@ func writeMasterKeysFile() (visor.WalletEntry, error) {
 func assertFileExists(t *testing.T, filename string) {
     stat, err := os.Stat(filename)
     assert.Nil(t, err)
-    assert.True(t, stat.Mode().IsRegular())
+    assert.NotNil(t, stat)
+    if stat != nil {
+        assert.True(t, stat.Mode().IsRegular())
+    }
 }
 
 func assertFileNotExists(t *testing.T, filename string) {
@@ -130,11 +151,9 @@ func createUnconfirmedTxn() visor.UnconfirmedTxn {
                 Hash: coin.SumSHA256([]byte("cascas")),
             },
         },
-        Received:     now,
-        Checked:      now,
-        Announced:    util.ZeroTime(),
-        IsOurSpend:   true,
-        IsOurReceive: true,
+        Received:  now,
+        Checked:   now,
+        Announced: util.ZeroTime(),
     }
 }
 
@@ -160,21 +179,24 @@ func setupPool() (*Pool, *gnet.Connection) {
 }
 
 func makeValidTxn(mv *visor.Visor) (coin.Transaction, error) {
-    we := visor.NewWalletEntry()
-    return mv.Spend(visor.Balance{10 * 1e6, 0}, 0, we.Address)
+    we := wallet.NewWalletEntry()
+    return mv.Spend(mv.Wallets[0].GetID(), visor.Balance{10 * 1e6, 0}, 0,
+        we.Address)
 }
 
 func makeValidTxnNoError(t *testing.T, mv *visor.Visor) coin.Transaction {
-    we := visor.NewWalletEntry()
-    tx, err := mv.Spend(visor.Balance{10 * 1e6, 0}, 0, we.Address)
+    we := wallet.NewWalletEntry()
+    tx, err := mv.Spend(mv.Wallets[0].GetID(), visor.Balance{10 * 1e6, 0}, 0,
+        we.Address)
     assert.Nil(t, err)
     return tx
 }
 
 func transferCoins(mv *visor.Visor, v *visor.Visor) error {
     // Give the nonmaster some money to spend
-    addr := v.Wallet.GetAddresses()[0]
-    tx, err := mv.Spend(visor.Balance{10 * 1e6, 0}, 0, addr)
+    addr := v.Wallets[0].GetAddresses()[0]
+    tx, err := mv.Spend(mv.Wallets[0].GetID(), visor.Balance{10 * 1e6, 0}, 0,
+        addr)
     if err != nil {
         return err
     }
@@ -188,10 +210,11 @@ func transferCoins(mv *visor.Visor, v *visor.Visor) error {
 
 func makeMoreBlocks(mv *visor.Visor, n int,
     now uint64) ([]visor.SignedBlock, error) {
-    dest := visor.NewWalletEntry()
+    dest := wallet.NewWalletEntry()
     blocks := make([]visor.SignedBlock, n)
     for i := 0; i < n; i++ {
-        tx, err := mv.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address)
+        tx, err := mv.Spend(mv.Wallets[0].GetID(), visor.Balance{10 * 1e6, 0},
+            0, dest.Address)
         if err != nil {
             return nil, err
         }
@@ -250,9 +273,9 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
     // Make a transaction
     assert.False(t, d.Visor.Config.Disabled)
     assert.True(t, gc.LastSent.IsZero())
-    dest := visor.NewWalletEntry()
-    tx, err := d.Visor.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address,
-        d.Pool)
+    dest := wallet.NewWalletEntry()
+    tx, err := d.Visor.Spend(d.Visor.Visor.Wallets[0].GetID(),
+        visor.Balance{10 * 1e6, 0}, 0, dest.Address, d.Pool)
     wait()
     assert.Nil(t, err)
     assert.Equal(t, d.Pool.Pool.Pool[gc.Id], gc)
@@ -349,25 +372,6 @@ func TestBlocksAnnounceTicker(t *testing.T) {
     assert.False(t, gc.LastSent.IsZero())
 }
 
-func TestTransactionRebroadcastTicker(t *testing.T) {
-    defer cleanupVisor()
-    vc, _ := setupVisor()
-    vc.TransactionRebroadcastRate = time.Millisecond * 10
-    d, quit := newVisorDaemon(vc)
-    d.Config.DisableNetworking = false
-    gc := gnetConnection(addr)
-    go d.Pool.Pool.ConnectionWriteLoop(gc)
-    d.Pool.Pool.Pool[gc.Id] = gc
-    d.Pool.Pool.Addresses[gc.Addr()] = gc
-    addUnconfirmedTxn(d.Visor)
-    assert.True(t, gc.LastSent.IsZero())
-    time.Sleep(time.Millisecond * 15)
-    go d.Start(quit)
-    time.Sleep(time.Millisecond * 15)
-    closeDaemon(d, quit)
-    assert.False(t, gc.LastSent.IsZero())
-}
-
 /* Tests for daemon.Visor */
 
 func TestVisorConfigLoadMasterKeys(t *testing.T) {
@@ -425,33 +429,38 @@ func TestVisorShutdown(t *testing.T) {
     c.Disabled = true
     c.Config.BlockchainFile = testBlockchainFile
     c.Config.BlockSigsFile = testBlocksigsFile
-    c.Config.WalletDirectory = testWalletFile
+    c.Config.WalletDirectory = testWalletDir
     v := NewVisor(c)
     assert.NotPanics(t, v.Shutdown)
     // Should not save anything
     assertFileNotExists(t, testBlockchainFile)
     assertFileNotExists(t, testBlocksigsFile)
-    assertFileNotExists(t, testWalletFile)
+    assertFileNotExists(t, fullWalletFile)
+    wallets, err := filepath.Glob(testWalletDir + "*.wlt")
+    assert.Nil(t, err)
+    assert.Equal(t, len(wallets), 0)
     cleanupVisor()
 
     c.Disabled = false
     v = NewVisor(c)
+    v.Visor.Wallets[0].SetFilename(testWalletFile)
     assert.NotPanics(t, v.Shutdown)
     assertFileExists(t, testBlockchainFile)
     assertFileExists(t, testBlocksigsFile)
-    assertFileExists(t, testWalletFile)
+    assertFileExists(t, fullWalletFile)
     cleanupVisor()
 
     // If master, no wallet should be saved
     c = setupMasterVisor()
     c.Config.BlockchainFile = testBlockchainFile
     c.Config.BlockSigsFile = testBlocksigsFile
-    c.Config.WalletDirectory = testWalletFile
+    c.Config.WalletDirectory = testWalletDir
     v = NewVisor(c)
+    v.Visor.Wallets[0].SetFilename(testWalletFile)
     assert.NotPanics(t, v.Shutdown)
     assertFileExists(t, testBlockchainFile)
     assertFileExists(t, testBlocksigsFile)
-    assertFileNotExists(t, testWalletFile)
+    assertFileNotExists(t, fullWalletFile)
     cleanupVisor()
 }
 
@@ -592,58 +601,6 @@ func TestVisorRequestBlocksFromAddr(t *testing.T) {
     assert.True(t, gc.LastSent.IsZero())
 }
 
-func TestVisorBroadcastOurTransactions(t *testing.T) {
-    defer cleanupVisor()
-    defer gnet.EraseMessages()
-    p, gc := setupPool()
-    vc, _ := setupVisor()
-    go p.Pool.ConnectionWriteLoop(gc)
-
-    // Disabled
-    vc.Disabled = true
-    v := NewVisor(vc)
-    assert.NotPanics(t, func() {
-        v.BroadcastOurTransactions(p)
-    })
-    wait()
-    assert.Equal(t, len(p.Pool.SendResults), 0)
-    assert.True(t, gc.LastSent.IsZero())
-
-    // With no transactions, nothing should be sent
-    vc.Disabled = false
-    vc.TransactionRebroadcastRate = time.Millisecond * 5
-    v = NewVisor(vc)
-    time.Sleep(time.Millisecond * 20)
-    assert.NotPanics(t, func() {
-        v.BroadcastOurTransactions(p)
-    })
-    wait()
-    assert.Equal(t, len(p.Pool.SendResults), 0)
-    assert.True(t, gc.LastSent.IsZero())
-
-    // We have a stale owned unconfirmed txn, it should be sent
-    gc.Conn = NewDummyConn(addr)
-    vc.Disabled = false
-    v = NewVisor(vc)
-    tx := addUnconfirmedTxn(v)
-    assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 1)
-    assert.NotPanics(t, func() {
-        v.BroadcastOurTransactions(p)
-    })
-    wait()
-    assert.Equal(t, len(p.Pool.SendResults), 1)
-    if len(p.Pool.SendResults) == 0 {
-        t.Fatal("SendResults empty, would block")
-    }
-    sr := <-p.Pool.SendResults
-    assert.Nil(t, sr.Error)
-    assert.Equal(t, sr.Connection, gc)
-    msg, ok := sr.Message.(*AnnounceTxnsMessage)
-    assert.True(t, ok)
-    assert.Equal(t, msg.Txns, coin.Transactions{tx.Txn}.Hashes())
-    assert.False(t, gc.LastSent.IsZero())
-}
-
 func TestVisorBroadcastBlock(t *testing.T) {
     defer cleanupVisor()
     defer gnet.EraseMessages()
@@ -725,28 +682,25 @@ func TestVisorSpend(t *testing.T) {
     vc.Disabled = true
     v := NewVisor(vc)
     // Spending while disabled
-    assert.NotPanics(t, func() {
-        _, err := v.Spend(visor.Balance{10e6, 0}, 0,
-            mv.Wallet.GetAddresses()[0], p)
-        assert.NotNil(t, err)
-        assert.Equal(t, err.Error(), "Visor disabled")
-        wait()
-        assert.Equal(t, len(p.Pool.SendResults), 0)
-        assert.True(t, gc.LastSent.IsZero())
-    })
+    _, err := v.Spend("xxx", visor.Balance{10e6, 0}, 0,
+        mv.Wallets[0].GetAddresses()[0], p)
+    assert.NotNil(t, err)
+    assert.Equal(t, err.Error(), "Visor disabled")
+    wait()
+    assert.Equal(t, len(p.Pool.SendResults), 0)
+    assert.True(t, gc.LastSent.IsZero())
 
     // Spending but spend fails (no money)
     vc.Disabled = false
     v = NewVisor(vc)
-    assert.NotPanics(t, func() {
-        _, err := v.Spend(visor.Balance{1000 * 10e6, 0}, 0,
-            mv.Wallet.GetAddresses()[0], p)
-        wait()
-        assert.NotNil(t, err)
-        assert.Equal(t, len(p.Pool.SendResults), 0)
-        assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 0)
-        assert.True(t, gc.LastSent.IsZero())
-    })
+    _, err = v.Spend(v.Visor.Wallets[0].GetID(),
+        visor.Balance{1000 * 10e6, 0}, 0, mv.Wallets[0].GetAddresses()[0],
+        p)
+    wait()
+    assert.NotNil(t, err)
+    assert.Equal(t, len(p.Pool.SendResults), 0)
+    assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 0)
+    assert.True(t, gc.LastSent.IsZero())
 
     // Spending succeeds, and announced
     vc, mv = setupVisor()
@@ -754,23 +708,21 @@ func TestVisorSpend(t *testing.T) {
     gc.Conn = NewDummyConn(addr)
     v = NewVisor(vc)
     assert.Nil(t, transferCoins(mv, v.Visor))
-    assert.NotPanics(t, func() {
-        _, err := v.Spend(visor.Balance{10e6, 0}, 0,
-            mv.Wallet.GetAddresses()[0], p)
-        wait()
-        assert.Equal(t, len(p.Pool.SendResults), 1)
-        if len(p.Pool.SendResults) == 0 {
-            t.Fatal("SendResults empty, would block")
-        }
-        sr := <-p.Pool.SendResults
-        assert.Equal(t, sr.Connection, gc)
-        assert.Nil(t, sr.Error)
-        _, ok := sr.Message.(*GiveTxnsMessage)
-        assert.True(t, ok)
-        assert.Nil(t, err)
-        assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 1)
-        assert.False(t, gc.LastSent.IsZero())
-    })
+    _, err = v.Spend(v.Visor.Wallets[0].GetID(), visor.Balance{10e6, 0},
+        0, mv.Wallets[0].GetAddresses()[0], p)
+    wait()
+    assert.Equal(t, len(p.Pool.SendResults), 1)
+    if len(p.Pool.SendResults) == 0 {
+        t.Fatal("SendResults empty, would block")
+    }
+    sr := <-p.Pool.SendResults
+    assert.Equal(t, sr.Connection, gc)
+    assert.Nil(t, sr.Error)
+    _, ok := sr.Message.(*GiveTxnsMessage)
+    assert.True(t, ok)
+    assert.Nil(t, err)
+    assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 1)
+    assert.False(t, gc.LastSent.IsZero())
 }
 
 func TestVisorResendTransaction(t *testing.T) {
@@ -792,8 +744,8 @@ func TestVisorResendTransaction(t *testing.T) {
 
     // give the visor some coins, and make a spend to add a txn
     assert.Nil(t, transferCoins(mv, v.Visor))
-    tx, err := v.Spend(visor.Balance{10e6, 0}, 0,
-        mv.Wallet.GetAddresses()[0], p)
+    tx, err := v.Spend(v.Visor.Wallets[0].GetID(), visor.Balance{10e6, 0}, 0,
+        mv.Wallets[0].GetAddresses()[0], p)
     assert.Nil(t, err)
     wait()
     assert.Equal(t, len(p.Pool.SendResults), 1)
@@ -844,7 +796,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
     defer gnet.EraseMessages()
     p, gc := setupPool()
     vc, mv := setupVisor()
-    dest := visor.NewWalletEntry()
+    dest := wallet.NewWalletEntry()
     go p.Pool.ConnectionWriteLoop(gc)
 
     // Disabled
@@ -865,7 +817,8 @@ func TestCreateAndPublishBlock(t *testing.T) {
     vc.Config = mv.Config
     v = NewVisor(vc)
     gc.Conn = NewDummyConn(addr)
-    _, err = v.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address, p)
+    _, err = v.Spend(v.Visor.Wallets[0].GetID(), visor.Balance{10 * 1e6, 0}, 0,
+        dest.Address, p)
     assert.Nil(t, err)
     wait()
     assert.Equal(t, len(p.Pool.SendResults), 1)
@@ -898,7 +851,8 @@ func TestCreateAndPublishBlock(t *testing.T) {
     vc.Config.IsMaster = true
     vc.Disabled = false
     v = NewVisor(vc)
-    tx, err := v.Spend(visor.Balance{vc.Config.GenesisCoinVolume, 0},
+    tx, err := v.Spend(v.Visor.Wallets[0].GetID(),
+        visor.Balance{vc.Config.GenesisCoinVolume, 0},
         vc.Config.GenesisCoinVolume, dest.Address, p)
     mv.RecordTxn(tx)
     wait()
@@ -916,7 +870,8 @@ func TestCreateAndPublishBlock(t *testing.T) {
     }
     // No coins to spend, fail
     assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
-    _, err = v.Spend(visor.Balance{10 * 1e6, 0}, 0, dest.Address, p)
+    _, err = v.Spend(v.Visor.Wallets[0].GetID(), visor.Balance{10 * 1e6, 0}, 0,
+        dest.Address, p)
     assert.NotNil(t, err)
     wait()
     assert.Equal(t, len(p.Pool.SendResults), 0)

@@ -1,6 +1,7 @@
 package wallet
 
 import (
+    "fmt"
     "github.com/skycoin/skycoin/src/coin"
     "io/ioutil"
     "path/filepath"
@@ -19,6 +20,7 @@ func LoadWallets(dir string) (Wallets, error) {
     if err != nil {
         return nil, err
     }
+    have := make(map[WalletID]Wallet, len(entries))
     wallets := make(Wallets, 0)
     for _, e := range entries {
         if e.Mode().IsRegular() {
@@ -34,6 +36,13 @@ func LoadWallets(dir string) (Wallets, error) {
             if err != nil {
                 return nil, err
             }
+            id := w.GetID()
+            if kw, ok := have[id]; ok {
+                return nil, fmt.Errorf("Duplicate wallet file detected. "+
+                    "%s and %s are the same wallet.",
+                    kw.GetFilename(), w.GetFilename())
+            }
+            have[id] = w
             w.SetFilename(name)
             wallets = append(wallets, w)
         }

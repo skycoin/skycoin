@@ -24,15 +24,31 @@ type HashChain struct {
 	//Data  []byte
 }
 
-/*
-func NewHashChain(data []byte) HashChain {
-	var HashChain HashChain
-	HashChain.Data = make([]byte, len(data))
-	copy(HashChain.Data, data)
-	HashChain.Hash = SumSHA256(data)
-	return HashChain
+type HashChainRequest struct {
+	//Hash SHA256         //hash of requested object
+	RequestTime int    //time of request
+	Addr        string //address request was made to
 }
-*/
+//manage hash chain
+type HashChainManager struct {
+	HeadHash SHA256 //head of chain
+	HashMap map[SHA256]int //hash to internal id
+	SeqMap map[SHA256]int //hash to sequence number
+
+	Requests map[SHA256]HashChainRequest
+}
+
+func NewHashChainManager(head SHA256) *HashChainManager {
+	var t HashChainManager
+	t.HeadHash.HeadHash = head
+	t.HashMap = make(map[SHA256]int)
+	t.SeqMap = make(map[SHA256]int)
+	t.Requests = make(map[SHA256]HashChainRequest)
+	return &t
+}
+
+func (self *Hash)
+
 
 //gets hash of HashChain
 //func HashChainHash(data []byte) SHA256 {
@@ -46,6 +62,8 @@ type HashChainCallback func(SHA256, SHA256, []byte) HashChainCallbackResponse
 type HashChainCallbackResponse struct {
 	//Valid    bool //is HashChain data valid
 	//Ignore   bool //put data on ignore list?
+
+	Announce bool //should announce
 	Replicate bool // should be replicated?
 	KickPeer  bool //should peer be kicked?
 }

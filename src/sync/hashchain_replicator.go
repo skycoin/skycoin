@@ -47,7 +47,6 @@ func NewHashChainManager(head SHA256) *HashChainManager {
 	return &t
 }
 
-func (self *Hash)
 
 
 //gets hash of HashChain

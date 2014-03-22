@@ -74,8 +74,8 @@ type HashChainManager struct {
 type HashTreeEntry struct {
 	Hash  SHA256
 	Hashp SHA256
-	Depth int //is -1 if not connected to root hash
-	Has   bool
+	//Depth int //is -1 if not connected to root hash
+	Has bool //do we have body data
 }
 
 func NewHashChainManager(head SHA256) *HashChainManager {
@@ -92,6 +92,14 @@ func NewHashChainManager(head SHA256) *HashChainManager {
 	t.HashAddrMap = make(map[SHA256]([]string))
 
 	t.Requests = make(map[SHA256]HashChainRequest)
+
+	//genesis/root block
+	t.HashTree[head] = HashTreeEntry{
+		Hash:  head,
+		HAshp: SHA256{},
+		//Depth: -1
+		Has: true,
+	}
 
 	return &t
 }
@@ -113,6 +121,10 @@ func (self *HashChainManager) HasBlock(hash SHA256) bool {
 func (self *HashChainManager) HashAnnounce(hash SHA256, hashp SHA256, addr string) {
 	//self.HashTree[]
 
+	//if _, ok := self.HashTree[phash]; ok == false {
+	//	log.Panic("missing previous block")
+	//}
+
 	he, ok := self.HashTree[hash]
 
 	//insert if it doesnt exist
@@ -120,12 +132,12 @@ func (self *HashChainManager) HashAnnounce(hash SHA256, hashp SHA256, addr strin
 		self.HashTree[hash] = HashTreeEntry{
 			Hash:  hash,
 			HAshp: hashp,
-			Depth: -1,
-			Has:   false,
+			//Depth: -1,
+			Has: false,
 		}
-		if hash == self.RootHash {
-			self.HashTree[hash].Depth = 0 //root hash depth 0
-		}
+		//if hash == self.RootHash {
+		//	self.HashTree[hash].Depth = 0 //root hash depth 0
+		//}
 	}
 
 	if ok == true && he.Hashp != phash {
@@ -144,58 +156,8 @@ func (self *HashChainManager) HashAnnounce(hash SHA256, hashp SHA256, addr strin
 	if _, ok := self.HashHash; ok == false {
 		self.HashAddrMap[hash] = append(self.HashAddrMap[hash], addr)
 	}
-
-	self.UpdateChain(hash)
 }
 
 func (self *HashChainManager) TickRequests() map[string]([]SHA256) {
 
-}
-
-/*
-	For each head, record the highest link in chain that we dont have
-	Iterate backwards for this link
-
-*/
-//updates chain depth, updates chain heads
-//speed up; N^2
-func (self *HashChainManager) UpdateChain(hash SHA256) {
-	/*
-		var index int = 0
-		var vp SHA256 = hash
-
-		for true {
-			he, ok := self.HashTree[vp]
-
-			if ok != false {
-				log.Panic("error")
-			}
-			if vp == self.RootHash {
-				break
-			}
-
-			if ok == false {
-				break
-			}
-
-			vp = he.Hashp
-			index += 1
-		}
-
-		//update depth
-		if vp == self.RootHash {
-
-			for true {
-				he, ok := self.HashTree[hash]
-
-				if ok == false {
-					log.Panic()
-				}
-
-				self.HashTree[hash].Depth = index
-				index -= 1
-			}
-		}
-	*/
-	//update chain heads
 }

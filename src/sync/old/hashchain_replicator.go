@@ -39,7 +39,7 @@ type HashChainCallbackResponse struct {
 	//Ignore   bool //put data on ignore list?
 
 	Announce bool //should announce block to peers
-	Replicate bool // should be replicated?
+	Replicate bool //should be replicated?
 	KickPeer  bool //should peer be kicked?
 }
 

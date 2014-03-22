@@ -16,9 +16,34 @@ type HashChainRequest struct {
 	Addr        string //address request was made to
 }
 
+type HashChainPeerStats struct {
+	Addr             string
+	OpenRequests     int
+	LastRequest      int //time last request was received
+	FinishedRequests int //number of requests served
+
+	Data map[SHA256]int //hash to time received
+
+}
+
+type HashChainRequestConfig struct {
+	RequestTimeout  int //timeout for requests
+	RequestsPerPeer int //max requests per peer
+}
+
+func NewHashChainRequestConfig() HashChainRequestConfig {
+	return HashChainRequestConfig{
+		RequestTimeout:  30,
+		RequestsPerPeer: 6,
+	}
+}
+
 //manage hash chain
 type HashChainManager struct {
-	HeadHash SHA256 //head of chain
+	Config    HashChainRequestConfig
+	PeerStats map[string]*HashChainPeerStats
+
+	RootHash SHA256 //root of tree; genesis block hash
 	//HashMap  map[SHA256]int //hash to internal id
 	//SeqMap   map[SHA256]int //hash to sequence number
 	HashTree map[SHA256]HashTreeEntry
@@ -55,7 +80,10 @@ type HashTreeEntry struct {
 
 func NewHashChainManager(head SHA256) *HashChainManager {
 	var t HashChainManager
-	t.HeadHash.HeadHash = head
+
+	t.Config = NewHashChainRequestConfig()
+	t.PeerStats = make(map[string]*HashChainPeerStats)
+	t.RootHash.RootHash = head
 	//t.HashMap = make(map[SHA256]int)
 	//t.SeqMap = make(map[SHA256]int)
 
@@ -86,6 +114,20 @@ func (self *HashChainManager) HashAnnounce(hash SHA256, hashp SHA256, addr strin
 	//self.HashTree[]
 
 	he, ok := self.HashTree[hash]
+
+	//insert if it doesnt exist
+	if ok == false {
+		self.HashTree[hash] = HashTreeEntry{
+			Hash:  hash,
+			HAshp: hashp,
+			Depth: -1,
+			Has:   false,
+		}
+		if hash == self.RootHash {
+			self.HashTree[hash].Depth = 0 //root hash depth 0
+		}
+	}
+
 	if ok == true && he.Hashp != phash {
 		log.Panic("Hash Collision")
 
@@ -103,61 +145,57 @@ func (self *HashChainManager) HashAnnounce(hash SHA256, hashp SHA256, addr strin
 		self.HashAddrMap[hash] = append(self.HashAddrMap[hash], addr)
 	}
 
-	//insert if it doesnt exist
-	if ok == false {
-		self.HashTree[hash] = HashTreeEntry{
-			Hash:  hash,
-			HAshp: hashp,
-			Depth: -1,
-			Has:   false,
-		}
-	}
-
-	ret := self.UpdateChain(hash)
-	if ret == false {
-		//no head
-	} else {
-		//new hash chain head
-	}
+	self.UpdateChain(hash)
 }
 
-//updates chain depth
-//iterates backwards
-//returns true on new head, false otherwise
-func (self *HashChainManager) UpdateChain(hash SHA256) bool {
-	var index int = 0
-	var vp SHA256 = hash
-	for true {
-		he, ok := self.HashHash[vp]
-		//parent does not exist
-		if ok == false {
-			break
-		}
-		vp = he.Hashp
+func (self *HashChainManager) TickRequests() map[string]([]SHA256) {
 
-		if he.Depth != -1 {
-			index += he.Depth
-			break
-		}
-		index += 1
-	}
+}
 
-	//we found the head
-	if vp == self.HeadHash {
-		//update depth along chain path
+/*
+	For each head, record the highest link in chain that we dont have
+	Iterate backwards for this link
+
+*/
+//updates chain depth, updates chain heads
+//speed up; N^2
+func (self *HashChainManager) UpdateChain(hash SHA256) {
+	/*
+		var index int = 0
 		var vp SHA256 = hash
+
 		for true {
-			if self.HashHash[vp].Depth != -1 {
+			he, ok := self.HashTree[vp]
+
+			if ok != false {
+				log.Panic("error")
+			}
+			if vp == self.RootHash {
 				break
 			}
-			self.HashHash[vp].Depth = index
-			index -= 1
-			vp = he.Hashp
-			if index == 0 {
+
+			if ok == false {
 				break
+			}
+
+			vp = he.Hashp
+			index += 1
+		}
+
+		//update depth
+		if vp == self.RootHash {
+
+			for true {
+				he, ok := self.HashTree[hash]
+
+				if ok == false {
+					log.Panic()
+				}
+
+				self.HashTree[hash].Depth = index
+				index -= 1
 			}
 		}
-		return true
-	}
-	return false
+	*/
+	//update chain heads
 }

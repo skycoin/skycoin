@@ -321,6 +321,8 @@ func (self *Daemon) Start(quit chan int) {
 
 main:
 	for {
+
+		//DHT module
 		select {
 		// Continually make requests to the DHT, if we need peers
 		case <-dhtBootstrapTicker:
@@ -328,6 +330,16 @@ main:
 				len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
 				go self.DHT.RequestPeers()
 			}
+		// Update Peers when DHT reports a new one
+		case r := <-self.DHT.DHT.PeersRequestResults:
+			if self.DHT.Config.Disabled {
+				log.Panic("There should be no DHT peer results")
+			}
+			self.DHT.ReceivePeers(r, self.Peers.Peers)
+		}
+
+		select {
+
 		// Flush expired blacklisted peers
 		case <-updateBlacklistTicker:
 			if !self.Peers.Config.Disabled {
@@ -394,12 +406,6 @@ main:
 				log.Panic("There should be no connection errors")
 			}
 			self.handleConnectionError(r)
-		// Update Peers when DHT reports a new one
-		case r := <-self.DHT.DHT.PeersRequestResults:
-			if self.DHT.Config.Disabled {
-				log.Panic("There should be no DHT peer results")
-			}
-			self.DHT.ReceivePeers(r, self.Peers.Peers)
 		// Process disconnections
 		case r := <-self.Pool.Pool.DisconnectQueue:
 			if self.Config.DisableNetworking {

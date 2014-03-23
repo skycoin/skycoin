@@ -55,18 +55,6 @@ func (self *ChainOverlord) OnConnect(pool *Pool, addr string) {
 	}
 
 	self.Peers = append(self.Peers, ps)
-
-	//pool *Pool, addr string
-	/*
-		m := self.NewGetBlobListMessage()
-		c := pool.Pool.Addresses[addr]
-		if c == nil {
-			log.Panic("ERROR Address does not exist")
-		}
-		pool.Pool.SendMessage(c, m)
-		//setup request manager for address
-		self.RequestManager.OnConnect(addr)
-	*/
 }
 
 func (self *ChainOverlord) OnDisconnect(pool *Pool, addr string) {
@@ -78,10 +66,35 @@ func (self *ChainOverlord) OnDisconnect(pool *Pool, addr string) {
 		}
 	}
 	//setup request manager for address
-	self.RequestManager.OnDisconnect(addr)
+	//self.RequestManager.OnDisconnect(addr)
 	return
 
 }
+
+//send message to all peers replicating chain for roothash
+func (self *ChainOverlord) BroadcastMessage(rootHash SHA256, m interface{}) {
+	for _, ps := range self.Peers {
+		if ps.RootHash == rootHash {
+			c := pool.Pool.Addresses[addr]
+			if c == nil {
+				log.Panic("ERROR Address does not exist")
+			}
+			pool.Pool.SendMessage(c, m)
+		}
+	}
+}
+
+//pool *Pool, addr string
+/*
+	m := self.NewGetBlobListMessage()
+	c := pool.Pool.Addresses[addr]
+	if c == nil {
+		log.Panic("ERROR Address does not exist")
+	}
+	pool.Pool.SendMessage(c, m)
+	//setup request manager for address
+	self.RequestManager.OnConnect(addr)
+*/
 
 /*
    Networking:

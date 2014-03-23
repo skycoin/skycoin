@@ -289,40 +289,38 @@ func (self *Daemon) Init() {
 // down
 func (self *Daemon) Start(quit chan int) {
 	if !self.Config.DisableIncomingConnections {
-		go self.Pool.Accept()
+		go self.Pool.Accept() //accepting connections is in own goroutine
 	}
+
 	if !self.DHT.Config.Disabled {
-		go self.DHT.Start()
+		go self.DHT.Start() //DHT is run in own goroutine
 	}
 
-	// TODO -- run blockchain stuff in its own goroutine
-	//blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
-	//blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	//if !self.Visor.Config.Config.IsMaster {
-	//    blockCreationTicker.Stop()
-	//}
-	//unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
-	//blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
-	//blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
-	//transactionRebroadcastTicker := time.Tick(self.Visor.Config.TransactionRebroadcastRate)
-
-	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
+	//DHT ticker
 	dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
-	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
-	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
+
+	//Blob replicator ticker
+	blobReplicatorTicker := time.Tick(20 * time.Millisecond)
+
+	//pool tickers
+	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
+	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
+	messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
+
+	//peer exchange tickers
 	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
 	requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
 	updateBlacklistTicker := time.Tick(self.Peers.Config.UpdateBlacklistRate)
-	messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
-	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
-	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
 
-	blobReplicatorTicker := time.Tick(20 * time.Millisecond)
+	//daemon tickers
+	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
+	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
+	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
 
 main:
 	for {
 
-		//DHT module
+		//Module: DHT
 		select {
 		// Continually make requests to the DHT, if we need peers
 		case <-dhtBootstrapTicker:
@@ -338,17 +336,23 @@ main:
 			self.DHT.ReceivePeers(r, self.Peers.Peers)
 		}
 
+		//Module: blob replicator
 		select {
+		//send out blob replicator requests
+		case <-blobReplicatorTicker:
+			for _, br := range self.BlobReplicators {
+				br.TickRequests() //send out requests
+			}
+		}
+
+		select {
+
+		//Module: Peers
 
 		// Flush expired blacklisted peers
 		case <-updateBlacklistTicker:
 			if !self.Peers.Config.Disabled {
 				self.Peers.Peers.Blacklist.Refresh()
-			}
-		// Remove connections that failed to complete the handshake
-		case <-cullInvalidTicker:
-			if !self.Config.DisableNetworking {
-				self.cullInvalidConnections()
 			}
 		// Request peers via PEX
 		case <-requestPeersTicker:
@@ -358,6 +362,9 @@ main:
 			if !self.Peers.Config.Disabled {
 				self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
 			}
+
+		// Module: Pool
+
 		// Remove connections that haven't said anything in a while
 		case <-clearStaleConnectionsTicker:
 			if !self.Config.DisableNetworking {
@@ -367,6 +374,31 @@ main:
 		case <-idleCheckTicker:
 			if !self.Config.DisableNetworking {
 				self.Pool.sendPings()
+			}
+		//process the connection queue
+		case <-messageHandlingTicker:
+			if !self.Config.DisableNetworking {
+				self.Pool.Pool.HandleMessages()
+			}
+		// Process disconnections
+		case r := <-self.Pool.Pool.DisconnectQueue:
+			if self.Config.DisableNetworking {
+				log.Panic("There should be nothing in the DisconnectQueue")
+			}
+			self.Pool.Pool.HandleDisconnectEvent(r)
+		// Process message sending results
+		case r := <-self.Pool.Pool.SendResults:
+			if self.Config.DisableNetworking {
+				log.Panic("There should be nothing in SendResults")
+			}
+			self.handleMessageSendResult(r)
+
+		//Module: Daemon
+
+		// Remove connections that failed to complete the handshake
+		case <-cullInvalidTicker:
+			if !self.Config.DisableNetworking {
+				self.cullInvalidConnections()
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
@@ -381,17 +413,6 @@ main:
 			if !self.Config.DisableOutgoingConnections {
 				self.makePrivateConnections()
 			}
-		// Process the connection queue
-		case <-messageHandlingTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.Pool.HandleMessages()
-			}
-		//send out blob replicator requests
-		case <-blobReplicatorTicker:
-			for _, br := range self.BlobReplicators {
-				br.TickRequests() //send out requests
-			}
-
 		// Process callbacks for when a client connects. No disconnect chan
 		// is needed because the callback is triggered by HandleDisconnectEvent
 		// which is already select{}ed here
@@ -406,51 +427,12 @@ main:
 				log.Panic("There should be no connection errors")
 			}
 			self.handleConnectionError(r)
-		// Process disconnections
-		case r := <-self.Pool.Pool.DisconnectQueue:
-			if self.Config.DisableNetworking {
-				log.Panic("There should be nothing in the DisconnectQueue")
-			}
-			self.Pool.Pool.HandleDisconnectEvent(r)
-		// Process message sending results
-		case r := <-self.Pool.Pool.SendResults:
-			if self.Config.DisableNetworking {
-				log.Panic("There should be nothing in SendResults")
-			}
-			self.handleMessageSendResult(r)
-			// Message handlers
+		// Message handlers
 		case m := <-self.messageEvents:
 			if self.Config.DisableNetworking {
 				log.Panic("There should be no message events")
 			}
 			self.processMessageEvent(m)
-
-		// Process any pending RPC requests
-		//case fn := <-self.Gateway.requests:
-		//    self.Gateway.responses <- fn()
-
-		// TODO -- run these in the Visor
-		// Create blocks, if master chain
-		/*
-		   case <-blockCreationTicker.C:
-		       if self.Visor.Config.Config.IsMaster {
-		           err := self.Visor.CreateAndPublishBlock(self.Pool)
-		           if err != nil {
-		               logger.Error("Failed to create block: %v", err)
-		           } else {
-		               // Not a critical error, but we want it visible in logs
-		               logger.Critical("Created and published a new block")
-		           }
-		       }
-		*/
-		//case <-unconfirmedRefreshTicker:
-		//    self.Visor.RefreshUnconfirmed()
-		//case <-blocksRequestTicker:
-		//    self.Visor.RequestBlocks(self.Pool)
-		//case <-blocksAnnounceTicker:
-		//    self.Visor.AnnounceBlocks(self.Pool)
-		//case <-transactionRebroadcastTicker:
-		//    self.Visor.BroadcastOurTransactions(self.Pool)
 
 		case <-quit:
 			break main

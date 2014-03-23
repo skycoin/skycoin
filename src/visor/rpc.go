@@ -21,7 +21,8 @@ type TransactionResults struct {
 
 type RPC struct{}
 
-func (self RPC) GetWalletBalance(v *Visor, walletID wallet.WalletID) *BalancePair {
+func (self RPC) GetWalletBalance(v *Visor,
+    walletID wallet.WalletID) *BalancePair {
     if v == nil {
         return nil
     }
@@ -30,6 +31,9 @@ func (self RPC) GetWalletBalance(v *Visor, walletID wallet.WalletID) *BalancePai
 }
 
 func (self RPC) ReloadWallets(v *Visor) error {
+    if v == nil {
+        return nil
+    }
     return v.ReloadWallets()
 }
 
@@ -55,7 +59,8 @@ func (self RPC) CreateWallet(v *Visor) *wallet.ReadableWallet {
     return wallet.NewReadableWallet(w)
 }
 
-func (self RPC) GetWallet(v *Visor, walletID wallet.WalletID) *wallet.ReadableWallet {
+func (self RPC) GetWallet(v *Visor,
+    walletID wallet.WalletID) *wallet.ReadableWallet {
     if v == nil {
         return nil
     }
@@ -101,7 +106,8 @@ func (self RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
     return &ReadableBlocks{blocks}
 }
 
-func (self RPC) GetTransaction(v *Visor, txHash coin.SHA256) *TransactionResult {
+func (self RPC) GetTransaction(v *Visor,
+    txHash coin.SHA256) *TransactionResult {
     if v == nil {
         return nil
     }

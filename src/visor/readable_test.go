@@ -51,6 +51,7 @@ func setupVisorConfig() (VisorConfig, *Visor) {
     c.GenesisTimestamp = mvc.GenesisTimestamp
     c.MasterKeys = mw
     c.MasterKeys.Secret = coin.SecKey{}
+    c.WalletDirectory = testWalletDir
     return c, mv
 }
 

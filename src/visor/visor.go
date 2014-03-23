@@ -598,7 +598,7 @@ func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
     // The master wallet shouldn't be saved to disk so we clear its filename
     w.SetFilename("")
     if err := w.AddEntry(master); err != nil {
-        log.Panic("Failed to add master wallet entry: %v", err)
+        log.Panicf("Failed to add master wallet entry: %v", err)
     }
     return w
 }

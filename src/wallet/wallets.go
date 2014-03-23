@@ -70,6 +70,9 @@ func (self Wallets) Save(dir string) map[WalletID]error {
             errs[w.GetID()] = err
         }
     }
+    if len(errs) == 0 {
+        return nil
+    }
     return errs
 }
 

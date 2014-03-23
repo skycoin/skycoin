@@ -133,6 +133,7 @@ func configureDaemon(c *cli.Config) daemon.Config {
     dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
     dc.Visor.Config.GenesisSignature = coin.MustSigFromHex(c.GenesisSignature)
     dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
+    dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
     if c.MasterChain {
         // The master chain should be reluctant to expire transactions
         dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096

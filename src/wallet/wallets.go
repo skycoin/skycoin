@@ -28,7 +28,8 @@ func LoadWallets(dir string) (Wallets, error) {
             if !strings.HasSuffix(name, WalletExt) {
                 continue
             }
-            rw, err := LoadReadableWallet(filepath.Join(dir, name))
+            fullpath := filepath.Join(dir, name)
+            rw, err := LoadReadableWallet(fullpath)
             if err != nil {
                 return nil, err
             }
@@ -36,11 +37,11 @@ func LoadWallets(dir string) (Wallets, error) {
             if err != nil {
                 return nil, err
             }
+            logger.Info("Loaded wallet from %s", fullpath)
             id := w.GetID()
             if kw, ok := have[id]; ok {
                 return nil, fmt.Errorf("Duplicate wallet file detected. "+
-                    "%s and %s are the same wallet.",
-                    kw.GetFilename(), w.GetFilename())
+                    "%s and %s are the same wallet.", kw.GetFilename(), name)
             }
             have[id] = w
             w.SetFilename(name)

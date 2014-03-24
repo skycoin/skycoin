@@ -6,6 +6,11 @@ import (
 	"errors"
 )
 
+/*
+	Todo:
+	- add proof of work or signature
+*/
+
 type BlockHeader struct {
 	Time     uint64
 	BkSeq    uint64 //increment every block
@@ -50,6 +55,11 @@ func NewBlockChain(phash SHA256) *BlockChain {
 	return &bc
 }
 
+//returns the genesis block
+func (bc *BlockChain) Genesis() *Block {
+	return &bc.Blocks[0]
+}
+
 //returns head block
 func (bc *BlockChain) Head() *Block {
 	return &bc.Blocks[len(bc.Blocks)-1]
@@ -72,6 +82,20 @@ func (bc *BlockChain) ApplyBlock(block Block) error {
 	//check body hash
 	//check BkSeq
 
+	if block.Head.BkSeq != bc.Head.Head.BkSeq+1 {
+		return errors.New("block sequence is out of order")
+	}
+	if block.Head.PrevHash != bc.Head().Hash() {
+		return errors.New("block PrevHash does not match current head")
+	}
+	if block.Head.Time < bc.Head().Head.Time {
+		return errors.New("block time invalid")
+	}
+	if block.Head.BodyHash != SumSHA256(block.Body) {
+		return errors.New("block body hash is wrong")
+	}
+
+	//block is valid, apply
 	bc.Blocks = append(bc.Blocks, block)
 	return nil
 }

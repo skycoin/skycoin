@@ -1,4 +1,4 @@
-package chain
+package hashchain
 
 import (
 	"github.com/skycoin/encoder"

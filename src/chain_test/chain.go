@@ -42,13 +42,23 @@ type Block struct {
 	Body []byte //data here
 }
 
+//encode block as bytes
+func (self *Block) Bytes() []byte {
+	return encoder.Serialize(*self)
+}
+
+//creates block from byte array
+func BlockFromBytes(data []byte) (Block, errors) {
+	var b block
+	return b, encoder.DeserializeRaw(data, &b)
+}
+
 /*
 	Blockchain
 */
 
 type BlockChain struct {
 	Blocks []Block
-	//Head   *Block
 }
 
 //returns the genesis block
@@ -62,16 +72,16 @@ func (bc *BlockChain) Head() *Block {
 }
 
 func NewBlockChain(seckey) *BlockChain {
-	var bc BlockChain
-
+	//genesis block
 	var b Block
-
 	b.Head.Time = 0
 	b.Head.BkSeq = 0
 	b.Head.PrevHash = SumSHA256(PubKeyFromSecKey(seckey)[:])
+	b.Head.BodyHash = SHA256{}
 
+	//blockchain
+	var bc BlockChain
 	bc.Blocks = append(bc.Blocks, b)
-
 	return &bc
 }
 

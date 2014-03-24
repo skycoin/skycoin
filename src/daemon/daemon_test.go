@@ -7,7 +7,7 @@ import (
     "github.com/skycoin/pex"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
-    "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "os"
     "os/signal"
@@ -32,7 +32,7 @@ func catchSigusr1() {
 func newDefaultDaemon() *Daemon {
     cleanupPeers()
     c := NewConfig()
-    we := visor.NewWalletEntry()
+    we := wallet.NewWalletEntry()
     c.Visor.Config.MasterKeys = we
     c.Visor.Config.GenesisSignature = createGenesisSignature(we)
     c.Visor.Disabled = true

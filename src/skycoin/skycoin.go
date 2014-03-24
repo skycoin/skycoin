@@ -20,7 +20,7 @@ import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/daemon"
     "github.com/skycoin/skycoin/src/gui"
-    "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -33,6 +33,7 @@ var (
         "skycoin.gui",
         "skycoin.util",
         "skycoin.visor",
+        "skycoin.wallet",
         "gnet",
         "pex",
     }
@@ -127,12 +128,12 @@ func configureDaemon(c *cli.Config) daemon.Config {
     dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
     dc.Visor.Config.IsMaster = c.MasterChain
     dc.Visor.Config.CanSpend = c.CanSpend
-    dc.Visor.Config.WalletFile = c.WalletFile
-    dc.Visor.Config.WalletSizeMin = c.WalletSizeMin
+    dc.Visor.Config.WalletDirectory = c.WalletDirectory
     dc.Visor.Config.BlockchainFile = c.BlockchainFile
     dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
     dc.Visor.Config.GenesisSignature = coin.MustSigFromHex(c.GenesisSignature)
     dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
+    dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
     if c.MasterChain {
         // The master chain should be reluctant to expire transactions
         dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096
@@ -143,8 +144,8 @@ func configureDaemon(c *cli.Config) daemon.Config {
         // Will panic if fails
         dc.Visor.LoadMasterKeys()
     } else {
-        w := visor.ReadableWalletEntryFromPubkey(c.MasterPublic)
-        dc.Visor.Config.MasterKeys = visor.WalletEntryFromReadable(&w)
+        w := wallet.ReadableWalletEntryFromPubkey(c.MasterPublic)
+        dc.Visor.Config.MasterKeys = wallet.WalletEntryFromReadable(&w)
     }
     return dc
 }
@@ -159,6 +160,11 @@ func Run(args cli.Args) {
     go catchInterrupt(quit)
     // Watch for SIGUSR1
     go catchDebug()
+
+    err := os.MkdirAll(c.WalletDirectory, os.FileMode(0700))
+    if err != nil {
+        logger.Critical("Failed to create wallet directory: %v", err)
+    }
 
     dconf := configureDaemon(c)
     d := daemon.NewDaemon(dconf)

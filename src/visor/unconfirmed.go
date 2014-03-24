@@ -28,23 +28,6 @@ func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int,
 // Head can be different at execution time, but the Unspent's hash is fixed.
 type TxnUnspents map[coin.SHA256]coin.UxArray
 
-// // Returns Unspents for multiple addresses
-// func (self TxnUnspents) AllForAddresses(addrs []coin.Address) coin.AddressUxOuts {
-//     m := make(map[coin.Address]byte, len(addrs))
-//     for _, a := range addrs {
-//         m[a] = byte(1)
-//     }
-//     uxo := make(coin.AddressUxOuts)
-//     for _, uxa := range self {
-//         for _, ux := range uxa {
-//             if _, exists := m[ux.Body.Address]; exists {
-//                 uxo[ux.Body.Address] = append(uxo[ux.Body.Address], ux)
-//             }
-//         }
-//     }
-//     return uxo
-// }
-
 // Returns all Unspents for a single address
 func (self TxnUnspents) AllForAddress(a coin.Address) coin.UxArray {
     uxo := make(coin.UxArray, 0)
@@ -66,10 +49,6 @@ type UnconfirmedTxn struct {
     Checked time.Time
     // Last time we announced this txn
     Announced time.Time
-    // We are a spender
-    IsOurSpend bool
-    // We are a receiver
-    IsOurReceive bool
 }
 
 // Returns the coin.Transaction's hash
@@ -104,36 +83,12 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
     t coin.Transaction, addrs map[coin.Address]byte) UnconfirmedTxn {
     now := util.Now()
-    ut := UnconfirmedTxn{
-        Txn:          t,
-        Received:     now,
-        Checked:      now,
-        Announced:    util.ZeroTime(),
-        IsOurReceive: false,
-        IsOurSpend:   false,
+    return UnconfirmedTxn{
+        Txn:       t,
+        Received:  now,
+        Checked:   now,
+        Announced: util.ZeroTime(),
     }
-
-    // Check if this unspent is related to us
-    if addrs != nil {
-        // Check if this is one of our receiving txns
-        for i, _ := range t.Out {
-            if _, ok := addrs[t.Out[i].Address]; ok {
-                ut.IsOurReceive = true
-                break
-            }
-        }
-        // Check if this is one of our spending txns
-        for i, _ := range t.In {
-            if ux, ok := bcUnsp.Get(t.In[i]); ok {
-                if _, ok := addrs[ux.Body.Address]; ok {
-                    ut.IsOurSpend = true
-                    break
-                }
-            }
-        }
-    }
-
-    return ut
 }
 
 // Adds a coin.Transaction to the pool, or updates an existing one's timestamps
@@ -228,21 +183,6 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
     self.removeTxns(bc, toRemove)
 }
 
-// Returns transactions in which we are a party and have not been announced
-// in ago duration
-func (self *UnconfirmedTxnPool) GetOldOwnedTransactions(ago time.Duration) []UnconfirmedTxn {
-    txns := make([]UnconfirmedTxn, 0)
-    now := util.Now()
-    for _, tx := range self.Txns {
-        // TODO -- don't record IsOurSpend/IsOurReceive and do lookup each time?
-        // Slower but more correct
-        if (tx.IsOurSpend || tx.IsOurReceive) && now.Sub(tx.Announced) > ago {
-            txns = append(txns, tx)
-        }
-    }
-    return txns
-}
-
 // Returns txn hashes with known ones removed
 func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
     unknown := make([]coin.SHA256, 0)
@@ -282,4 +222,11 @@ func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
         }
     }
     return auxs
+}
+
+func (self *UnconfirmedTxnPool) SpendsForAddress(bcUnspent *coin.UnspentPool,
+    a coin.Address) coin.UxArray {
+    ma := map[coin.Address]byte{a: 1}
+    auxs := self.SpendsForAddresses(bcUnspent, ma)
+    return auxs[a]
 }

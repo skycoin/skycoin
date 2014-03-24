@@ -51,11 +51,10 @@ var ClientArgs = ClientConfig{Config{
     logLevel: "notice",
 
     // Wallets
-    WalletFile:     "",
-    WalletSizeMin:  100,
-    BlockchainFile: "",
-    BlockSigsFile:  "",
-    CanSpend:       true,
+    WalletDirectory: "",
+    BlockchainFile:  "",
+    BlockSigsFile:   "",
+    CanSpend:        true,
 
     // Centralized network configuration
     MasterPublic:     "02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc",
@@ -97,8 +96,8 @@ func (self *ClientConfig) register() {
         "Choices are: debug, info, notice, warning, error, critical")
     flag.StringVar(&self.MasterPublic, "master-public-key", self.MasterPublic,
         "public key of the master chain")
-    flag.StringVar(&self.WalletFile, "wallet-file", self.WalletFile,
-        "location of the wallet file. Defaults to ~/.skycoin/wallet.json")
+    flag.StringVar(&self.WalletDirectory, "wallet-dir", self.WalletDirectory,
+        "location of the wallet files. Defaults to ~/.skycoin/wallet/")
     flag.StringVar(&self.BlockchainFile, "blockchain-file", self.BlockchainFile,
         "location of the blockchain file. Default to ~/.skycoin/blockchain.bin")
     flag.StringVar(&self.BlockSigsFile, "blocksigs-file", self.BlockSigsFile,

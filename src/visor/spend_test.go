@@ -3,6 +3,7 @@ package visor
 import (
     "bytes"
     "github.com/skycoin/skycoin/src/coin"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "log"
     "sort"
@@ -363,8 +364,10 @@ func TestCreateSpends(t *testing.T) {
 
 func TestCreateSpendingTransaction(t *testing.T) {
     // Setup
-    w := NewSimpleWallet()
-    w.Populate(4)
+    w := wallet.NewSimpleWallet()
+    for i := 0; i < 4; i++ {
+        w.CreateEntry()
+    }
     uncf := NewUnconfirmedTxnPool()
     now := tNow()
     a := makeAddress()

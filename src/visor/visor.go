@@ -2,9 +2,11 @@ package visor
 
 import (
     "errors"
+    "fmt"
     "github.com/op/go-logging"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
+    "github.com/skycoin/skycoin/src/wallet"
     "log"
     "os"
     "time"
@@ -20,10 +22,8 @@ type VisorConfig struct {
     IsMaster bool
     // Is allowed to create transactions
     CanSpend bool
-    // Wallet file location
-    WalletFile string
-    // Minimum number of addresses to keep in the wallet
-    WalletSizeMin int
+    // Wallet files location
+    WalletDirectory string
     // How often new blocks are created by the master, in seconds
     BlockCreationInterval uint64
     // How often an unconfirmed txn is checked against the blockchain
@@ -43,13 +43,17 @@ type VisorConfig struct {
     // Where the block signatures are saved
     BlockSigsFile string
     // Master keypair & address
-    MasterKeys WalletEntry
+    MasterKeys wallet.WalletEntry
     // Genesis block sig
     GenesisSignature coin.Sig
     // Genesis block timestamp
     GenesisTimestamp uint64
     // Number of coins in genesis block
     GenesisCoinVolume uint64
+    // Function that creates a new Wallet
+    WalletConstructor wallet.WalletConstructor
+    // Default type of wallet to create
+    WalletTypeDefault wallet.WalletType
 }
 
 //Note, put cap on block size, not on transactions/block
@@ -59,8 +63,7 @@ func NewVisorConfig() VisorConfig {
     return VisorConfig{
         IsMaster:                 false,
         CanSpend:                 true,
-        WalletFile:               "",
-        WalletSizeMin:            1,
+        WalletDirectory:          "",
         BlockCreationInterval:    15,
         UnconfirmedCheckInterval: time.Hour * 2,
         UnconfirmedMaxAge:        time.Hour * 48,
@@ -69,10 +72,12 @@ func NewVisorConfig() VisorConfig {
         CoinHourBurnFactor:       2,
         BlockchainFile:           "",
         BlockSigsFile:            "",
-        MasterKeys:               WalletEntry{},
+        MasterKeys:               wallet.WalletEntry{},
         GenesisSignature:         coin.Sig{},
         GenesisTimestamp:         0,
         GenesisCoinVolume:        100e6,
+        WalletConstructor:        wallet.NewSimpleWallet,
+        WalletTypeDefault:        wallet.SimpleWalletType,
     }
 }
 
@@ -81,10 +86,10 @@ type Visor struct {
     Config VisorConfig
     // Unconfirmed transactions, held for relay until we get block confirmation
     Unconfirmed *UnconfirmedTxnPool
-    // Wallet holding our keys for spending
-    Wallet Wallet
+    // Wallets holding our keys for spending
+    Wallets wallet.Wallets
     // Master & personal keys
-    masterKeys WalletEntry
+    masterKeys wallet.WalletEntry
     blockchain *coin.Blockchain
     blockSigs  BlockSigs
 }
@@ -106,12 +111,27 @@ func NewVisor(c VisorConfig) *Visor {
         }
     }
 
-    // Load the wallet
-    wallet := Wallet(nil)
+    // Load the wallets
+    wallets := wallet.Wallets{}
     if c.IsMaster {
-        wallet = CreateMasterWallet(c.MasterKeys)
+        wallets = wallet.Wallets{CreateMasterWallet(c.MasterKeys)}
     } else {
-        wallet = loadSimpleWallet(c.WalletFile, c.WalletSizeMin)
+        if c.WalletDirectory != "" {
+            w, err := wallet.LoadWallets(c.WalletDirectory)
+            if err != nil {
+                log.Panicf("Failed to load all wallets: %v", err)
+            }
+            wallets = w
+        }
+        if len(wallets) == 0 {
+            wallets.Add(c.WalletConstructor())
+            if c.WalletDirectory != "" {
+                errs := wallets.Save(c.WalletDirectory)
+                if len(errs) != 0 {
+                    log.Panicf("Failed to save wallets: %v", errs)
+                }
+            }
+        }
     }
 
     // Load the blockchain the block signatures
@@ -131,7 +151,7 @@ func NewVisor(c VisorConfig) *Visor {
         blockchain:  blockchain,
         blockSigs:   blockSigs,
         Unconfirmed: NewUnconfirmedTxnPool(),
-        Wallet:      wallet,
+        Wallets:     wallets,
     }
     // Load the genesis block and sign it, if we need one
     if len(blockchain.Blocks) == 0 {
@@ -153,7 +173,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
         blockchain:  coin.NewBlockchain(),
         blockSigs:   NewBlockSigs(),
         Unconfirmed: NewUnconfirmedTxnPool(),
-        Wallet:      nil,
+        Wallets:     nil,
     }
 }
 
@@ -208,13 +228,32 @@ func (self *Visor) SaveBlockchain() error {
     }
 }
 
-// Saves the Wallet to disk
-func (self *Visor) SaveWallet() error {
-    if self.Config.WalletFile == "" {
-        return errors.New("No WalletFile location set")
-    } else {
-        return self.Wallet.Save(self.Config.WalletFile)
+func (self *Visor) CreateWallet() wallet.Wallet {
+    w := self.Config.WalletConstructor()
+    self.Wallets.Add(w)
+    return w
+}
+
+func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
+    w := self.Wallets.Get(walletID)
+    if w == nil {
+        return fmt.Errorf("Unknown wallet %s", walletID)
     }
+    return w.Save(self.Config.WalletDirectory)
+}
+
+func (self *Visor) SaveWallets() map[wallet.WalletID]error {
+    return self.Wallets.Save(self.Config.WalletDirectory)
+}
+
+// Loads & unloads wallets based on WalletDirectory contents
+func (self *Visor) ReloadWallets() error {
+    wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
+    if err != nil {
+        return err
+    }
+    self.Wallets = wallets
+    return nil
 }
 
 // Saves BlockSigs to disk
@@ -224,17 +263,6 @@ func (self *Visor) SaveBlockSigs() error {
     } else {
         return self.blockSigs.Save(self.Config.BlockSigsFile)
     }
-}
-
-// Creates and returns a WalletEntry and saves the wallet to disk
-func (self *Visor) CreateAddressAndSave() (WalletEntry, error) {
-    we := self.Wallet.CreateEntry()
-    err := self.SaveWallet()
-    if err != nil {
-        m := "Failed to save wallet to \"%s\" after creating new address"
-        logger.Warning(m, self.Config.WalletFile)
-    }
-    return we, err
 }
 
 // Creates a SignedBlock from pending transactions
@@ -389,7 +417,7 @@ func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
-    addrs := self.Wallet.GetAddressSet()
+    addrs := self.Wallets.GetAddressSet()
     return self.Unconfirmed.RecordTxn(self.blockchain, txn, addrs,
         self.Config.MaxBlockSize, self.Config.CoinHourBurnFactor)
 }
@@ -464,12 +492,16 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
 
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
-func (self *Visor) Spend(amt Balance, fee uint64,
+func (self *Visor) Spend(walletID wallet.WalletID, amt Balance, fee uint64,
     dest coin.Address) (coin.Transaction, error) {
     if !self.Config.CanSpend {
         return coin.Transaction{}, errors.New("Spending disabled")
     }
-    tx, err := CreateSpendingTransaction(self.Wallet, self.Unconfirmed,
+    wallet := self.Wallets.Get(walletID)
+    if wallet == nil {
+        return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
+    }
+    tx, err := CreateSpendingTransaction(wallet, self.Unconfirmed,
         &self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
         self.Config.CoinHourBurnFactor, dest)
     if err != nil {
@@ -485,17 +517,48 @@ func (self *Visor) Spend(amt Balance, fee uint64,
     return tx, err
 }
 
-// Returns the balance of the wallet
-func (self *Visor) TotalBalance() Balance {
-    addrs := self.Wallet.GetAddresses()
-    auxs := self.blockchain.Unspent.AllForAddresses(addrs)
-    return self.totalBalance(auxs)
+// Returns the confirmed & predicted balance for a single address
+func (self *Visor) AddressBalance(addr coin.Address) BalancePair {
+    auxs := self.blockchain.Unspent.AllForAddress(addr)
+    puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
+    confirmed := self.balance(auxs)
+    predicted := self.balance(auxs.Sub(puxs))
+    return BalancePair{confirmed, predicted}
 }
 
-// Returns the balance for a single address in the Wallet
-func (self *Visor) Balance(a coin.Address) Balance {
-    uxs := self.blockchain.Unspent.AllForAddress(a)
-    return self.balance(uxs)
+// Returns the confirmed & predicted balance for a Wallet
+func (self *Visor) WalletBalance(walletID wallet.WalletID) BalancePair {
+    wallet := self.Wallets.Get(walletID)
+    if wallet == nil {
+        return BalancePair{}
+    }
+    auxs := self.blockchain.Unspent.AllForAddresses(wallet.GetAddresses())
+    puxs := self.Unconfirmed.SpendsForAddresses(&self.blockchain.Unspent,
+        wallet.GetAddressSet())
+    confirmed := self.totalBalance(auxs)
+    predicted := self.totalBalance(auxs.Sub(puxs))
+    return BalancePair{confirmed, predicted}
+}
+
+// Return the total balance of all loaded wallets
+func (self *Visor) TotalBalance() BalancePair {
+    b := BalancePair{}
+    for _, w := range self.Wallets {
+        c := self.WalletBalance(w.GetID())
+        b.Confirmed = b.Confirmed.Add(c.Confirmed)
+        b.Predicted = b.Confirmed.Add(c.Predicted)
+    }
+    return b
+}
+
+// Computes the total balance for a coin.Address's coin.UxOuts
+func (self *Visor) balance(uxs coin.UxArray) Balance {
+    prevTime := self.blockchain.Time()
+    b := NewBalance(0, 0)
+    for _, ux := range uxs {
+        b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+    }
+    return b
 }
 
 // Computes the total balance for coin.Addresses and their coin.UxOuts
@@ -506,16 +569,6 @@ func (self *Visor) totalBalance(auxs coin.AddressUxOuts) Balance {
         for _, ux := range uxs {
             b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
         }
-    }
-    return b
-}
-
-// Computes the balance for a coin.Address's coin.UxOuts
-func (self *Visor) balance(uxs []coin.UxOut) Balance {
-    prevTime := self.blockchain.Time()
-    b := NewBalance(0, 0)
-    for _, ux := range uxs {
-        b = b.Add(NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
     }
     return b
 }
@@ -539,37 +592,13 @@ func (self *Visor) SignBlock(b coin.Block) SignedBlock {
     return sb
 }
 
-// Loads a wallet but subdues errors into the logger, or panics
-func loadSimpleWallet(filename string, sizeMin int) *SimpleWallet {
-    wallet := NewSimpleWallet()
-    if filename != "" {
-        err := wallet.Load(filename)
-        if err != nil {
-            if os.IsNotExist(err) {
-                logger.Info("Wallet file \"%s\" does not exist", filename)
-            } else {
-                log.Panicf("Failed to load wallet file: %v", err)
-            }
-        }
-    }
-    wallet.Populate(sizeMin)
-    if filename != "" {
-        err := wallet.Save(filename)
-        if err == nil {
-            logger.Info("Saved wallet file to \"%s\"", filename)
-        } else {
-            log.Panicf("Failed to save wallet file to \"%s\": %v", filename,
-                err)
-        }
-    }
-    return wallet
-}
-
 // Creates a wallet with a single master entry
-func CreateMasterWallet(master WalletEntry) *SimpleWallet {
-    w := NewSimpleWallet()
+func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
+    w := wallet.NewEmptySimpleWallet()
+    // The master wallet shouldn't be saved to disk so we clear its filename
+    w.SetFilename("")
     if err := w.AddEntry(master); err != nil {
-        log.Panic("Failed to add master wallet entry: %v", err)
+        log.Panicf("Failed to add master wallet entry: %v", err)
     }
     return w
 }

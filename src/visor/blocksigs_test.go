@@ -3,16 +3,18 @@ package visor
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
+    "github.com/skycoin/skycoin/src/wallet"
     "github.com/stretchr/testify/assert"
     "os"
     "testing"
 )
 
 func makeMoreBlocks(t *testing.T, mv *Visor, n int, when uint64) []SignedBlock {
-    dest := NewWalletEntry()
+    dest := wallet.NewWalletEntry()
     blocks := make([]SignedBlock, 0, n)
     for i := 0; i < n; i++ {
-        tx, err := mv.Spend(Balance{10 * 1e6, 0}, 0, dest.Address)
+        tx, err := mv.Spend(mv.Wallets[0].GetID(), Balance{10 * 1e6, 0}, 0,
+            dest.Address)
         assert.Nil(t, err)
         if err != nil {
             return nil
@@ -42,7 +44,19 @@ func makeBlocks(t *testing.T, mv *Visor, n int) []SignedBlock {
 func assertFileExists(t *testing.T, filename string) {
     stat, err := os.Stat(filename)
     assert.Nil(t, err)
-    assert.True(t, stat.Mode().IsRegular())
+    assert.NotNil(t, stat)
+    if stat != nil {
+        assert.True(t, stat.Mode().IsRegular())
+    }
+}
+
+func assertDirExists(t *testing.T, dirname string) {
+    stat, err := os.Stat(dirname)
+    assert.Nil(t, err)
+    assert.NotNil(t, stat)
+    if stat != nil {
+        assert.True(t, stat.Mode().IsDir())
+    }
 }
 
 func assertFileNotExists(t *testing.T, filename string) {

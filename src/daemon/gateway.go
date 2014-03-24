@@ -3,6 +3,7 @@ package daemon
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
 )
 
 // Exposes a read-only api for use by the gui rpc interface
@@ -44,6 +45,8 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 
 /* Daemon RPC wrappers */
 
+/* Daemon internal status */
+
 // Returns a *Connections
 func (self *Gateway) GetConnections() interface{} {
     self.requests <- func() interface{} {
@@ -62,16 +65,83 @@ func (self *Gateway) GetConnection(addr string) interface{} {
     return r
 }
 
+/* Wallet API */
+
 // Returns a *Spend
-func (self *Gateway) Spend(amt visor.Balance, fee uint64,
-    dest coin.Address) interface{} {
+func (self *Gateway) Spend(walletID wallet.WalletID, amt visor.Balance,
+    fee uint64, dest coin.Address) interface{} {
     self.requests <- func() interface{} {
-        return self.Daemon.Spend(self.d.Visor, self.d.Pool, self.Visor, amt,
-            fee, dest)
+        return self.Daemon.Spend(self.d.Visor, self.d.Pool, self.Visor,
+            walletID, amt, fee, dest)
     }
     r := <-self.responses
     return r
 }
+
+// Returns a *Balance
+func (self *Gateway) GetWalletBalance(walletID wallet.WalletID) interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.GetWalletBalance(self.d.Visor.Visor, walletID)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns map[WalletID]error
+func (self *Gateway) SaveWallets() interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.SaveWallets(self.d.Visor.Visor)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns error
+func (self *Gateway) SaveWallet(walletID wallet.WalletID) interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.SaveWallet(self.d.Visor.Visor, walletID)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns an error
+func (self *Gateway) ReloadWallets() interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.ReloadWallets(self.d.Visor.Visor)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *visor.ReadableWallet
+func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.GetWallet(self.d.Visor.Visor, walletID)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *ReadableWallets
+func (self *Gateway) GetWallets() interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.GetWallets(self.d.Visor.Visor)
+    }
+    r := <-self.responses
+    return r
+}
+
+// Returns a *ReadableWallet
+func (self *Gateway) CreateWallet() interface{} {
+    self.requests <- func() interface{} {
+        return self.Visor.CreateWallet(self.d.Visor.Visor)
+    }
+    r := <-self.responses
+    return r
+}
+
+/* Blockchain & Transaction status */
 
 // Returns a *BlockchainProgress
 func (self *Gateway) GetBlockchainProgress() interface{} {
@@ -86,53 +156,6 @@ func (self *Gateway) GetBlockchainProgress() interface{} {
 func (self *Gateway) ResendTransaction(txn coin.SHA256) interface{} {
     self.requests <- func() interface{} {
         return self.Daemon.ResendTransaction(self.d.Visor, self.d.Pool, txn)
-    }
-    r := <-self.responses
-    return r
-}
-
-/* Visor RPC wrappers */
-
-// Returns a *Balance
-func (self *Gateway) GetTotalBalance(predicted bool) interface{} {
-    self.requests <- func() interface{} {
-        return self.Visor.GetTotalBalance(self.d.Visor.Visor, predicted)
-    }
-    r := <-self.responses
-    return r
-}
-
-// Returns a *Balance
-func (self *Gateway) GetBalance(a coin.Address, predicted bool) interface{} {
-    self.requests <- func() interface{} {
-        return self.Visor.GetBalance(self.d.Visor.Visor, a, predicted)
-    }
-    r := <-self.responses
-    return r
-}
-
-// Returns an error
-func (self *Gateway) SaveWallet() interface{} {
-    self.requests <- func() interface{} {
-        return self.Visor.SaveWallet(self.d.Visor.Visor)
-    }
-    r := <-self.responses
-    return r
-}
-
-// Returns a *visor.ReadableWalletEntry
-func (self *Gateway) CreateAddress() interface{} {
-    self.requests <- func() interface{} {
-        return self.Visor.CreateAddress(self.d.Visor.Visor)
-    }
-    r := <-self.responses
-    return r
-}
-
-// Returns a *visor.ReadableWallet
-func (self *Gateway) GetWallet() interface{} {
-    self.requests <- func() interface{} {
-        return self.Visor.GetWallet(self.d.Visor.Visor)
     }
     r := <-self.responses
     return r

@@ -3,6 +3,7 @@ package daemon
 import (
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/visor"
+    "github.com/skycoin/skycoin/src/wallet"
 )
 
 // A connection's state within the daemon
@@ -27,9 +28,9 @@ type Connections struct {
 }
 
 type SpendResult struct {
-    RemainingBalance visor.BalanceResult       `json:"remaining_balance"`
-    Transaction      visor.ReadableTransaction `json:"txn"`
-    Error            string                    `json:"error"`
+    Balance     visor.BalancePair         `json:"balance"`
+    Transaction visor.ReadableTransaction `json:"txn"`
+    Error       string                    `json:"error"`
 }
 
 type BlockchainProgress struct {
@@ -73,22 +74,23 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
     return &Connections{Connections: conns}
 }
 
-func (self RPC) Spend(v *Visor, pool *Pool, vrpc visor.RPC, amt visor.Balance,
-    fee uint64, dest coin.Address) *SpendResult {
+func (self RPC) Spend(v *Visor, pool *Pool, vrpc visor.RPC,
+    walletID wallet.WalletID, amt visor.Balance, fee uint64,
+    dest coin.Address) *SpendResult {
     if v.Visor == nil {
         return nil
     }
-    txn, err := v.Spend(amt, fee, dest, pool)
+    txn, err := v.Spend(walletID, amt, fee, dest, pool)
     errString := ""
     if err != nil {
         errString = err.Error()
         logger.Error("Failed to make a spend: %v", err)
     }
-    b := vrpc.GetTotalBalance(v.Visor, true)
+    b := vrpc.GetWalletBalance(v.Visor, walletID)
     return &SpendResult{
-        RemainingBalance: *b,
-        Transaction:      visor.NewReadableTransaction(&txn),
-        Error:            errString,
+        Balance:     *b,
+        Transaction: visor.NewReadableTransaction(&txn),
+        Error:       errString,
     }
 }
 

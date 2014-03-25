@@ -1,4 +1,4 @@
-package hashcoin
+package hashchain
 
 import (
 	"crypto/sha256"

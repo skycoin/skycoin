@@ -10,6 +10,11 @@ import (
 
 type PubKey [33]byte
 
+var (
+	DebugLevel1 = true
+	DebugLevel2 = true
+)
+
 // Converts []byte to a PubKey. Panics is []byte is not the exact size
 func NewPubKey(b []byte) PubKey {
 	p := PubKey{}
@@ -185,7 +190,7 @@ func VerifySignedHash(sig Sig, hash SHA256) error {
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
 		// If this occurs, secp256k1 is bugged
-		logger.Critical("Recovered public key is not valid for signed hash")
+		//logger.Critical("Recovered public key is not valid for signed hash")
 		return errors.New("Signature invalid for hash")
 	}
 	return nil

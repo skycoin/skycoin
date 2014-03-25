@@ -8,7 +8,7 @@ import (
 )
 
 /*
-	This is a block chain
+	This is an example block chain
 	- only the person with the private key whose pubkey SHA256 hashes
 	to the genesis block PrevHash can mint valid blocks for
 	the blockchain
@@ -48,8 +48,8 @@ func (self *Block) Bytes() []byte {
 }
 
 //creates block from byte array
-func BlockFromBytes(data []byte) (Block, errors) {
-	var b block
+func BlockFromBytes(data []byte) (Block, error) {
+	var b Block
 	return b, encoder.DeserializeRaw(data, &b)
 }
 
@@ -71,12 +71,12 @@ func (bc *BlockChain) Head() *Block {
 	return &bc.Blocks[len(bc.Blocks)-1]
 }
 
-func NewBlockChain(seckey) *BlockChain {
+func NewBlockChain(seckey SecKey) *BlockChain {
 	//genesis block
 	var b Block
 	b.Head.Time = 0
 	b.Head.BkSeq = 0
-	b.Head.PrevHash = SumSHA256(PubKeyFromSecKey(seckey)[:])
+	b.Head.PrevHash = PubKeyHash(PubKeyFromSecKey(seckey))
 	b.Head.BodyHash = SHA256{}
 
 	//blockchain
@@ -85,24 +85,31 @@ func NewBlockChain(seckey) *BlockChain {
 	return &bc
 }
 
+func PubKeyHash(pubkey PubKey) SHA256 {
+	return SumSHA256(pubkey[:])
+}
+
 //sign a block with seckey
-func (bc *BlockChain) SignBlock(seckey, block *Block) {
+func (bc *BlockChain) SignBlock(seckey SecKey, block *Block) {
 	//set signature
-	if SumSHA256(PubKeyFromSecKey(seckey)[:]) != bc.Genesis().Head.PrevHash {
+	if PubKeyHash(PubKeyFromSecKey(seckey)) != bc.Genesis().Head.PrevHash {
 		log.Panic("NewBlock, invalid sec key")
 	}
-	b.Sig = SignHash(b.Head.Hash()[:], seckey)
+	block.Sig = SignHash(block.Head.Hash(), seckey)
 }
 
 //verify block signature
-func (bc *BlockChain) VerifyBlockSignature(block Block) {
+func (bc *BlockChain) VerifyBlockSignature(block Block) error {
 	//set signature
-	hash := block.Head.Hash()                //block hash
-	pubkey := PubKeyFromSig(block.Sig, hash) //recovered pubkey for sig
-	if bc.Genesis().Head.PrevHash != SumSHA256(pubkey[:]) {
+	hash := block.Head.Hash()                     //block hash
+	pubkey, err := PubKeyFromSig(block.Sig, hash) //recovered pubkey for sig
+	if err != nil {
+		return errors.New("Pubkey recovery failed")
+	}
+	if bc.Genesis().Head.PrevHash != PubKeyHash(pubkey) {
 		return errors.New("NewBlock, signature is not for pubkey for genesis")
 	}
-	err := VerifySignedHash(block.Sig, hash)
+	err = VerifySignedHash(block.Sig, hash)
 	if err != nil {
 		return errors.New("Signature verification failed for hash")
 	}
@@ -113,11 +120,11 @@ func (bc *BlockChain) VerifyBlockSignature(block Block) {
 func (bc *BlockChain) NewBlock(seckey SecKey, blockTime uint64, data []byte) Block {
 	var b Block
 	b.Head.Time = blockTime
-	b.BkSeq = bc.Head().Head.BkSeq + 1
-	b.PrevHash = bc.Head().Head.Hash()
-	b.BodyHash = SumSHA256(data)
+	b.Head.BkSeq = bc.Head().Head.BkSeq + 1
+	b.Head.PrevHash = bc.Head().Head.Hash()
+	b.Head.BodyHash = SumSHA256(data)
 	b.Body = data
-	bc.SignBlock(seckey, block)
+	bc.SignBlock(seckey, &b)
 	return b
 }
 
@@ -128,10 +135,10 @@ func (bc *BlockChain) ApplyBlock(block Block) error {
 	//check body hash
 	//check BkSeq
 
-	if block.Head.BkSeq != bc.Head.Head.BkSeq+1 {
+	if block.Head.BkSeq != bc.Head().Head.BkSeq+1 {
 		return errors.New("block sequence is out of order")
 	}
-	if block.Head.PrevHash != bc.Head().Hash() {
+	if block.Head.PrevHash != bc.Head().Head.Hash() {
 		return errors.New("block PrevHash does not match current head")
 	}
 	if block.Head.Time < bc.Head().Head.Time {

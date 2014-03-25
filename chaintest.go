@@ -9,4 +9,8 @@ import (
 
 func main() {
 
+	_, seckey := hashchain.GenerateDeterministicKeyPair([]byte("seed"))
+	bc := hashchain.NewBlockChain(seckey)
+
+	_ = bc
 }

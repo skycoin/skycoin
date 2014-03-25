@@ -11,6 +11,42 @@ import (
 )
 
 /*
+	Todo:
+	- make its own library/module
+	- move packet registration functions into blob replicator
+	- associate with daemon at runtime?
+
+*/
+
+/*
+	Notes: Advanced Networking Module Architecture:
+
+	?:
+	- move packet/messaging handling out of gnet, into library?
+	- get peers should be in own library/module with packet registration
+	- module registers with daemon and gets a channel
+	- messages are module to module
+
+	Module Interface:
+	- modules have "OnConnect"
+	- modules have "OnDisconnect"
+	- modules have "OnMessage"
+
+	Q: Whats the point vs hardcoding it?
+	- advertise services on remote server
+	- establish channel to services
+	- peer exchange becomes service lookup
+
+	Interface:
+	- associate server with daemon, register channel, description
+	- advertise services
+	- setup service channel (open channel, close channel)
+
+	Notes:
+	- packets are still length prefixed, followed by channel prefix
+*/
+
+/*
 	Replication for flood objects
 	- objects are referenced by hash
 	- objects are verified by callback function

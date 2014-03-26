@@ -8,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 	"log"
 	"net"
-	"reflect"
+	//"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -388,11 +388,13 @@ main:
 			}
 			self.Pool.Pool.HandleDisconnectEvent(r)
 		// Process message sending results
-		case r := <-self.Pool.Pool.SendResults:
-			if self.Config.DisableNetworking {
-				log.Panic("There should be nothing in SendResults")
-			}
-			self.handleMessageSendResult(r)
+		/*
+			case r := <-self.Pool.Pool.SendResults:
+				if self.Config.DisableNetworking {
+					log.Panic("There should be nothing in SendResults")
+				}
+				self.handleMessageSendResult(r)
+		*/
 
 		//Module: Daemon
 
@@ -746,6 +748,7 @@ func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 }
 
 // When an async message send finishes, its result is handled by this
+/*
 func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
 		logger.Warning("Failed to send %s to %s: %v",
@@ -758,6 +761,7 @@ func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	default:
 	}
 }
+*/
 
 // Returns the address for localhost on the machine
 func LocalhostIP() (string, error) {

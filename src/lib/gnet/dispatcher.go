@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"github.com/skycoin/encoder"
 	"log"
-	"net"
+	//"net"
 	"reflect"
-	"time"
+	//"time"
 )
 
 // Serializes a Message over a net.Conn
-func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
-	m := encodeMessage(msg)
-	return sendByteMessage(conn, m, timeout)
-}
+
+//func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
+//	m := encodeMessage(msg)
+//	return sendByteMessage(conn, m, timeout)
+//}
 
 // Event handler that is called after a Connection sends a complete message
 func convertToMessage(c *Connection, msg []byte) (Message, error) {

@@ -434,18 +434,18 @@ func (self *ConnectionPool) GetRawConnections() []net.Conn {
 
 // Sends []byte over a net.Conn
 // Why does this set deadline every packet
-var sendByteMessage = func(conn net.Conn, channel uint16, msg []byte) {
-
-    //message length and channel id
-    bLen := encoder.SerializeAtomic(uint32(6 + len(msg)))
-    chanByte := encoder.SerializeAtomic(uint16(channel))
-
-    d := make([]byte, len(msg)+6)
-    d = append(d, bLen...)     //length prefix
-    d = apppend(d, chanByte...) //channel id
-    d = append(d, msg)   //message data
-
+var sendByteMessage = func(conn net.Conn, channel uint16, msg []byte,
 	timeout time.Duration) error {
+
+	//message length and channel id
+	bLen := encoder.SerializeAtomic(uint32(6 + len(msg)))
+	chanByte := encoder.SerializeAtomic(uint16(channel))
+
+	d := make([]byte, len(msg)+6)
+	d = append(d, bLen...)     //length prefix
+	d = append(d, chanByte...) //channel id
+	d = append(d, msg...)      //message data
+
 	deadline := time.Time{}
 	if timeout != 0 {
 		deadline = time.Now().Add(timeout)
@@ -566,8 +566,8 @@ func (self *ConnectionPool) processEvents() {
 
 const (
 	// uint32 size prefix
-    // uint16 channel id prefix
-	messageLengthSize = 4 + 2 
+	// uint16 channel id prefix
+	messageLengthSize = 4 + 2
 )
 
 // Converts a client's connection buffer to byte messages
@@ -581,9 +581,8 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		encoder.DeserializeAtomic(prefix[0:4], &tmpLength)
 		length := int(tmpLength)
 
-		tmpChannel := uint16(0)
-		encoder.DeserializeAtomic(prefix[4:6], &tmpChannel)
-		channel := int(tmpChannel)
+		channel := uint16(0)
+		encoder.DeserializeAtomic(prefix[4:6], &channel)
 
 		logger.Debug("Extracting message: addr= %s, len(msg)=%d bytes", c.Addr(), length)
 		// Disconnect if we received an invalid length.
@@ -667,7 +666,7 @@ func (self *ConnectionPool) BroadcastMessage(channel uint16, msg []byte) {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (self *ConnectionPool) receiveMessage(c *Connection,
-	channel int, msg []byte) (error, DisconnectReason) {
+	channel uint16, msg []byte) (error, DisconnectReason) {
 
 	/*
 	   Message handler here

@@ -4,7 +4,6 @@ import (
 	//"crypto/sha256"
 	//"hash"
 	//"errors"
-	//"github.com/skycoin/gnet"
 	//"fmt"
 	"log"
 	"time"

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/op/go-logging"
-	"github.com/skycoin/gnet"
 	"github.com/skycoin/pex"
 	"github.com/skycoin/skycoin/src/util"
 	"log"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/skycoin/sync/src/lib/gnet" //use local gnet
 )
 
 var (

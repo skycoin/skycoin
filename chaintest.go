@@ -5,9 +5,21 @@ import (
 
 	"fmt"
 	"log"
+	"time"
 )
 
-func main() {
+//Blockchain sync example
+/*
+	Todo
+	- publish chain
+	- get chain public key hash
+	- look up peers through DHT via hash
+	- peers download the chain and apply blocks
+
+*/
+
+//creates chain and hosts
+func runChain() {
 
 	_, seckey := hashchain.GenerateDeterministicKeyPair([]byte("seed"))
 	bc := hashchain.NewBlockChain(seckey)
@@ -23,7 +35,18 @@ func main() {
 		if err != nil {
 			log.Panic(err)
 		}
+
+		//do something with the data, if block is valid
 	}
 
 	_ = bc
+}
+
+//attempts to download the chain and sync it
+func syncChain(chainhash hashchain.SHA256) {
+
+}
+
+func main() {
+	runChain()
 }

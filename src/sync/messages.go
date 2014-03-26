@@ -4,9 +4,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/skycoin/gnet"
 	"github.com/skycoin/pex"
 	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/sync/src/lib/gnet"
 	"math/rand"
 	"net"
 )

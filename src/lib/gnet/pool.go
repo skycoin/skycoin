@@ -12,6 +12,24 @@ import (
 	"time"
 )
 
+/*
+   The new connection pool sends length prefixed byte messages and receives
+   length prefixed byte messages. Each message has a "channel".
+
+   Each message may correspond to a UDP datagram or individual messages.
+
+   - Channel zero is the "control channel"
+   - Messages within a channel are ordered.
+   - Messages within a channel must be received in the order they are sent.
+   - Channel zero messages should be prioritized
+   - Current implementation uses TCP but future will use UDP
+
+    Design:
+    - send length (uint32) prefixed messages with (uint16) channel prefix
+    - all writes should go through pool
+    - no writes into connection object
+*/
+
 // TODO -- parameterize configuration per pool
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -89,10 +107,19 @@ func NewConfig() Config {
 	}
 }
 
-const (
-	// Byte size of the length prefix in message, sizeof(int32)
-	messageLengthSize = 4
-)
+/*
+type ConnectionId {
+    Id int
+    Addr string
+}
+*/
+
+//type BlobCallback func([]byte) BlobCallbackResponse
+
+type BinMessage struct {
+	Channel uint16
+	Message []byte
+}
 
 // Connection is stored by the ConnectionPool
 type Connection struct {
@@ -109,7 +136,7 @@ type Connection struct {
 	// Last time a message was sent to the connection
 	LastSent time.Time
 	// Message send queue.
-	WriteQueue chan Message
+	WriteQueue chan BinMessage
 	// Synchronizers for read/write loop termination
 	writeLoopDone chan bool
 	readLoopDone  chan bool
@@ -125,7 +152,7 @@ func NewConnection(pool *ConnectionPool, id int, conn net.Conn,
 		ConnectionPool: pool,
 		LastReceived:   Now(),
 		LastSent:       Now(),
-		WriteQueue:     make(chan Message, writeQueueSize),
+		WriteQueue:     make(chan BinMessage, writeQueueSize),
 		writeLoopDone:  make(chan bool, 1),
 		readLoopDone:   make(chan bool, 1),
 	}
@@ -153,23 +180,6 @@ func (self *Connection) Close() {
 	self.Buffer.Reset()
 	self.WriteQueue = nil
 }
-
-// Outgoing data written to channel for thread safety
-/*
-type SendResult struct {
-	Connection *Connection
-	Message    Message
-	//Error      error
-}
-
-func newSendResult(c *Connection, m Message) SendResult {
-	return SendResult{
-		Connection: c,
-		Message:    m,
-		//Error:      err,
-	}
-}
-*/
 
 // Channel event for incoming socket data
 type dataEvent struct {
@@ -419,6 +429,36 @@ func (self *ConnectionPool) GetRawConnections() []net.Conn {
 	return conns
 }
 
+// An idle timeout can be implemented by repeatedly extending
+// the deadline after successful Read or Write calls.
+
+// Sends []byte over a net.Conn
+// Why does this set deadline every packet
+var sendByteMessage = func(conn net.Conn, channel uint16, msg []byte) {
+
+    //message length and channel id
+    bLen := encoder.SerializeAtomic(uint32(6 + len(msg)))
+    chanByte := encoder.SerializeAtomic(uint16(channel))
+
+    d := make([]byte, len(msg)+6)
+    d = append(d, bLen...)     //length prefix
+    d = apppend(d, chanByte...) //channel id
+    d = append(d, msg)   //message data
+
+	timeout time.Duration) error {
+	deadline := time.Time{}
+	if timeout != 0 {
+		deadline = time.Now().Add(timeout)
+	}
+	if err := conn.SetWriteDeadline(deadline); err != nil {
+		return err
+	}
+	if _, err := conn.Write(d); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Writes message to a client socket in a goroutine.
 // This is only public because its very helpful for testing applications
 // that use this module.  Don't call it from non-test code.
@@ -429,7 +469,10 @@ func (self *ConnectionPool) ConnectionWriteLoop(c *Connection) {
 		if !ok {
 			break
 		}
-		err := sendMessage(c.Conn, m, self.Config.WriteTimeout)
+		//err := sendMessage(c.Conn, m, self.Config.WriteTimeout)
+		//err := sendMessage(c.Conn, m.Message, self.Config.WriteTimeout)
+
+		err := sendByteMessage(c.Conn, m.Channel, m.Message, self.Config.WriteTimeout)
 		if err != nil {
 			self.Disconnect(c, DisconnectWriteFailed)
 			break
@@ -521,6 +564,12 @@ func (self *ConnectionPool) processEvents() {
 	}
 }
 
+const (
+	// uint32 size prefix
+    // uint16 channel id prefix
+	messageLengthSize = 4 + 2 
+)
+
 // Converts a client's connection buffer to byte messages
 // Keep extracting message events until we dont have enough bytes to read in
 func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
@@ -529,8 +578,13 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		prefix := c.Buffer.Bytes()[:messageLengthSize]
 		// decode message length
 		tmpLength := uint32(0)
-		encoder.DeserializeAtomic(prefix, &tmpLength)
+		encoder.DeserializeAtomic(prefix[0:4], &tmpLength)
 		length := int(tmpLength)
+
+		tmpChannel := uint16(0)
+		encoder.DeserializeAtomic(prefix[4:6], &tmpChannel)
+		channel := int(tmpChannel)
+
 		logger.Debug("Extracting message: addr= %s, len(msg)=%d bytes", c.Addr(), length)
 		// Disconnect if we received an invalid length.
 		if length < messagePrefixLength ||
@@ -550,7 +604,7 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		data := c.Buffer.Next(length)    // read the message contents
 
 		//logger.Debug("Telling the message unpacker about this message")
-		err, dc := self.receiveMessage(c, data)
+		err, dc := self.receiveMessage(c, channel, data)
 		if err != nil {
 			logger.Debug("Error with the event: %v", err)
 			self.Disconnect(c, DisconnectMalformedMessage)
@@ -586,9 +640,9 @@ func (self *ConnectionPool) HandleMessages() {
 
 // Sends a Message to a Connection and pushes the result onto the
 // SendResults channel.
-func (self *ConnectionPool) SendMessage(c *Connection, msg Message) {
+func (self *ConnectionPool) SendMessage(c *Connection, channel uint16, msg []byte) {
 	select {
-	case c.WriteQueue <- msg:
+	case c.WriteQueue <- BinMessage{Channel: channel, Message: msg}:
 	default:
 		logger.Debug("Warning: disconnecting client because write queue full")
 		self.Disconnect(c, DisconnectWriteQueueFull)
@@ -596,9 +650,9 @@ func (self *ConnectionPool) SendMessage(c *Connection, msg Message) {
 }
 
 // Sends a Message to all connections in the Pool.
-func (self *ConnectionPool) BroadcastMessage(msg Message) {
+func (self *ConnectionPool) BroadcastMessage(channel uint16, msg []byte) {
 	for _, c := range self.Pool {
-		self.SendMessage(c, msg)
+		self.SendMessage(c, channel, msg)
 	}
 }
 
@@ -613,7 +667,12 @@ func (self *ConnectionPool) BroadcastMessage(msg Message) {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (self *ConnectionPool) receiveMessage(c *Connection,
-	msg []byte) (error, DisconnectReason) {
+	channel int, msg []byte) (error, DisconnectReason) {
+
+	/*
+	   Message handler here
+	*/
+
 	m, err := convertToMessage(c, msg)
 	if err != nil {
 		return err, nil

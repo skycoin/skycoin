@@ -96,19 +96,3 @@ var encodeMessage = func(msg Message) []byte {
 	m = append(m, bMsg...)     // message bytes
 	return m
 }
-
-// Sends []byte over a net.Conn
-var sendByteMessage = func(conn net.Conn, msg []byte,
-	timeout time.Duration) error {
-	deadline := time.Time{}
-	if timeout != 0 {
-		deadline = time.Now().Add(timeout)
-	}
-	if err := conn.SetWriteDeadline(deadline); err != nil {
-		return err
-	}
-	if _, err := conn.Write(msg); err != nil {
-		return err
-	}
-	return nil
-}

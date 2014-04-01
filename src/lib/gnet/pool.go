@@ -21,8 +21,9 @@ import (
 
 	Channel 0 is the control channel.
 
-	Connection pool triggers ConnectCallbacks and DisconnectCallbacks on
-	client connections and disconnections.
+	Connection pool triggers ConnectCallback on client connect
+	Connection pool trigger DisconnectCallback on client disconnection
+	Connection pool triggers MessageCallback on receiving message
 */
 
 /*
@@ -71,6 +72,15 @@ var (
 	logger = logging.MustGetLogger("gnet")
 )
 
+// Triggered on client disconnect
+type DisconnectCallback func(c *Connection, reason DisconnectReason)
+
+// Triggered on client connect
+type ConnectCallback func(c *Connection, solicited bool)
+
+// Triggered on incoming message
+type MessageCallback func(c *Connection, channel uint16, msg []byte) error
+
 type Config struct {
 	// Address to listen on. Leave empty for arbitrary assignment
 	Address string
@@ -100,6 +110,8 @@ type Config struct {
 	DisconnectCallback DisconnectCallback
 	// Triggered on client connect
 	ConnectCallback ConnectCallback
+	// Triggered on client receiving data
+	MesageCallback MessageCallback
 }
 
 // Returns a Config with defaults set
@@ -206,16 +218,6 @@ type DisconnectEvent struct {
 	Reason DisconnectReason
 }
 
-// Triggered on client disconnect
-type DisconnectCallback func(c *Connection, reason DisconnectReason)
-
-// Triggered on client connect
-type ConnectCallback func(c *Connection, solicited bool)
-
-//function that handles incoming messages
-//on error, will disconnect the client
-//type MessageCallback func(uint16 channel, msg []byte) error
-
 type ConnectionPool struct {
 	// Configuration parameters
 	Config Config
@@ -240,8 +242,6 @@ type ConnectionPool struct {
 	// channel for synchronizing teardown
 	acceptLock chan bool
 }
-
-type MessageHandlerCallback func(c *Connection, channel uint16, msg []byte) (error, DisconnectReason)
 
 //receiveMessage(c *Connection, channel uint16, msg []byte) (error, DisconnectReason)
 
@@ -620,16 +620,16 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		data := c.Buffer.Next(length)    // read the message contents
 
 		//logger.Debug("Telling the message unpacker about this message")
-		err, dc := self.receiveMessage(c, channel, data)
+		c.LastReceived = Now()
+		//err, dc := self.receiveMessage(c, channel, data)
+		err := self.Config.MessageCallback(c, channel, data)
+
 		if err != nil {
 			logger.Debug("Error with the event: %v", err)
 			self.Disconnect(c, DisconnectMalformedMessage)
 			break
 		}
-		if dc != nil {
-			// The handler disconnected the connection, stop processing
-			break
-		}
+
 	}
 }
 
@@ -682,12 +682,13 @@ func (self *ConnectionPool) BroadcastMessage(channel uint16, msg []byte) {
 // the bytes cannot be converted to a Message, the error is returned as the
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
+
+/*
 func (self *ConnectionPool) receiveMessage(c *Connection,
 	channel uint16, msg []byte) (error, DisconnectReason) {
 
-	/*
-	   Message handler here
-	*/
+	//   Message handler here
+
 
 	m, err := convertToMessage(c, msg)
 	if err != nil {
@@ -700,6 +701,7 @@ func (self *ConnectionPool) receiveMessage(c *Connection,
 	//callback must associate with a
 	return nil, m.Handle(NewMessageContext(c), self.messageState)
 }
+*/
 
 // Returns the current UTC time
 func Now() time.Time {

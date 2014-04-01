@@ -12,6 +12,7 @@ import (
 
 //routes messages to services
 type Dispatcher struct {
+	Channel      uint16 //channel the dispatcher handles
 	Pool         *ConnectionPool
 	MessageIdMap map[reflect.Type]MessagePrefix
 }

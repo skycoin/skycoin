@@ -10,6 +10,17 @@ import (
 	//"time"
 )
 
+//per pool factory for dispatchers
+type DispatcherManager struct {
+	Dispatchers map[uint16]*Dispatcher
+}
+
+func NewDispatcherManager() *DispatcherManager {
+	var dm DispatcherManager
+	dm.Dispatchers = make(map[uint16]*Dispatcher)
+	return &dm
+}
+
 //routes messages to services
 type Dispatcher struct {
 	Channel      uint16 //channel the dispatcher handles

@@ -626,7 +626,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 	logger.Debug("Sending introduction message to %s", a)
 	m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
 		self.Pool.Pool.Config.Port)
-	self.Pool.Pool.SendMessage(c, m)
+	self.Pool.Pool.SendMessage(c, m) //channel and byte
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not

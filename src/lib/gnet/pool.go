@@ -13,6 +13,19 @@ import (
 )
 
 /*
+	This is a connection pool for real/physical TCP/ip connections.
+
+	It sends and receives length prefixed byte messages over a channel (uint16). A
+	dispatcher Object handles the message serialization/deserialization and passes
+	the message to the service object.
+
+	Channel 0 is the control channel.
+
+	Connection pool triggers ConnectCallbacks and DisconnectCallbacks on
+	client connections and disconnections.
+*/
+
+/*
    The new connection pool sends length prefixed byte messages and receives
    length prefixed byte messages. Each message has a "channel".
 

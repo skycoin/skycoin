@@ -10,6 +10,21 @@ import (
 	//"time"
 )
 
+//routes messages to services
+type Dispatcher struct {
+	Pool         *ConnectionPool
+	MessageIdMap map[reflect.Type]MessagePrefix
+}
+
+//dispatchers have channels in and channels out
+func (self *ConnectionPool) NewDispatcher(channel) {
+	var d Dispatcher
+	d.Pool = self
+
+	var MessageIdMap = make(map[reflect.Type]MessagePrefix)
+
+}
+
 // Serializes a Message over a net.Conn
 
 //func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {

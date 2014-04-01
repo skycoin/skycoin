@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/skycoin/sync/src/hashchain"
+	"github.com/skycoin/skywire/src/hashchain"
 
 	"fmt"
 	"log"

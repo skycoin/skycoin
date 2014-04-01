@@ -1,7 +1,7 @@
 package sync
 
 import (
-	"github.com/skycoin/sync/src/lib/gnet"
+	"github.com/skycoin/skywire/src/lib/gnet"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

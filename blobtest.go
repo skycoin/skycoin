@@ -12,7 +12,7 @@ func main() {
 */
 
 import (
-	"github.com/skycoin/sync/src/sync"
+	"github.com/skycoin/skywire/src/sync"
 	"time"
 	//"errors"
 	"fmt"

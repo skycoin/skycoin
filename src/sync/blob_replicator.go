@@ -5,7 +5,7 @@ import (
 	//"hash"
 	"errors"
 	"fmt"
-	"github.com/skycoin/sync/src/lib/gnet"
+	"github.com/skycoin/skywire/src/lib/gnet"
 	"log"
 	"time"
 )

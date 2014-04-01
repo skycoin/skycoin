@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/sync/src/lib/gnet" //use local gnet
+	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
 )
 
 var (

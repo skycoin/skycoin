@@ -228,6 +228,10 @@ type ConnectionPool struct {
 	acceptLock chan bool
 }
 
+type MessageHandlerCallback func(c *Connection, channel uint16, msg []byte) (error, DisconnectReason)
+
+//receiveMessage(c *Connection, channel uint16, msg []byte) (error, DisconnectReason)
+
 // Creates a new ConnectionPool that will listen on Config.Port upon
 // StartListen.  State is an application defined object that will be
 // passed to a Message's Handle().

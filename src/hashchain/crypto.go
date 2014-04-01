@@ -3,7 +3,7 @@ package hashchain
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/skycoin/sync/src/lib/secp256k1-go"
+	"github.com/skycoin/skywire/src/lib/secp256k1-go"
 	"log"
 	"time"
 )

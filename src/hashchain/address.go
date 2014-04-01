@@ -3,7 +3,7 @@ package hashchain
 import (
 	"bytes"
 	"errors"
-	"github.com/skycoin/sync/src/lib/base58"
+	"github.com/skycoin/skywire/src/lib/base58"
 	"log"
 )
 

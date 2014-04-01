@@ -13,7 +13,7 @@ fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 LINKPATH="${GOPATH}/src/github.com/skycoin"
-LINKTO="${LINKPATH}/sync"
+LINKTO="${LINKPATH}/skywire"
 
 if [[ -d "$LINKTO" ]]; then
     POINTSTO=`readlink "$LINKTO"`

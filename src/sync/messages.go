@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/skycoin/pex"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/sync/src/lib/gnet"
+	"github.com/skycoin/skywire/src/lib/gnet"
 	"math/rand"
 	"net"
 )

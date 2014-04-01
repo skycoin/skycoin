@@ -45,10 +45,10 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("PONG", PongMessage{}),
 
 		//Blob replicator
-		NewMessageConfig("BDMM", BlobDataMessage{}),
-		NewMessageConfig("ABMM", AnnounceBlobsMessage{}),
-		NewMessageConfig("GBMM", GetBlobMessage{}),
-		NewMessageConfig("GBLM", GetBlobListMessage{}),
+		//NewMessageConfig("BDMM", BlobDataMessage{}),
+		//NewMessageConfig("ABMM", AnnounceBlobsMessage{}),
+		//NewMessageConfig("GBMM", GetBlobMessage{}),
+		//NewMessageConfig("GBLM", GetBlobListMessage{}),
 
 		///NewMessageConfig("GETB", GetBlocksMessage{}),
 		//NewMessageConfig("GIVB", GiveBlocksMessage{}),
@@ -315,9 +315,11 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	}
 
 	//blob replicators on connect
-	for _, be := range d.BlobReplicators {
-		be.OnConnect(d.Pool, self.c.Conn.Addr())
-	}
+
+	//for _, be := range d.BlobReplicators {
+	//	be.OnConnect(d.Pool, self.c.Conn.Addr())
+	//}
+
 	// Request blocks immediately after they're confirmed
 	//err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Conn.Addr())
 	//if err == nil {

@@ -10,6 +10,34 @@ import (
 	"time"
 )
 
+//register messages
+/*
+// Creates and populates the message configs
+func getMessageConfigs() []MessageConfig {
+	return []MessageConfig{
+		//NewMessageConfig("INTR", IntroductionMessage{}),
+		//NewMessageConfig("GETP", GetPeersMessage{}),
+		//NewMessageConfig("GIVP", GivePeersMessage{}),
+		//NewMessageConfig("PING", PingMessage{}),
+		//NewMessageConfig("PONG", PongMessage{}),
+
+		//Blob replicator
+		NewMessageConfig("BDMM", BlobDataMessage{}),
+		NewMessageConfig("ABMM", AnnounceBlobsMessage{}),
+		NewMessageConfig("GBMM", GetBlobMessage{}),
+		NewMessageConfig("GBLM", GetBlobListMessage{}),
+
+		///NewMessageConfig("GETB", GetBlocksMessage{}),
+		//NewMessageConfig("GIVB", GiveBlocksMessage{}),
+		//NewMessageConfig("ANNB", AnnounceBlocksMessage{}),
+		//NewMessageConfig("GETT", GetTxnsMessage{}),
+		//NewMessageConfig("GIVT", GiveTxnsMessage{}),
+		//NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
+	}
+}
+
+*/
+
 /*
 	Todo:
 	- make its own library/module

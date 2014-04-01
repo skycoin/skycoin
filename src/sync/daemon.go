@@ -209,7 +209,7 @@ type Daemon struct {
 	// Message handling queue
 	messageEvents chan MessageEvent
 
-	BlobReplicators []*BlobReplicator //blob replicator list
+	//BlobReplicators []*BlobReplicator //blob replicator list
 }
 
 // Returns a Daemon with primitives allocated
@@ -301,7 +301,7 @@ func (self *Daemon) Start(quit chan int) {
 	dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
 
 	//Blob replicator ticker
-	blobReplicatorTicker := time.Tick(20 * time.Millisecond)
+	//blobReplicatorTicker := time.Tick(20 * time.Millisecond)
 
 	//pool tickers
 	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
@@ -338,13 +338,16 @@ main:
 		}
 
 		//Module: blob replicator
-		select {
-		//send out blob replicator requests
-		case <-blobReplicatorTicker:
-			for _, br := range self.BlobReplicators {
-				br.TickRequests() //send out requests
+
+		/*
+			select {
+			//send out blob replicator requests
+			case <-blobReplicatorTicker:
+				for _, br := range self.BlobReplicators {
+					br.TickRequests() //send out requests
+				}
 			}
-		}
+		*/
 
 		select {
 
@@ -633,9 +636,9 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 	reason gnet.DisconnectReason) {
 
 	//blob replicators on disconnect
-	for _, br := range self.BlobReplicators {
-		br.OnDisconnect(self.Pool, c.Addr())
-	}
+	//for _, br := range self.BlobReplicators {
+	//	br.OnDisconnect(self.Pool, c.Addr())
+	//}
 
 	a := c.Addr()
 	logger.Info("%s disconnected because: %v", a, reason)

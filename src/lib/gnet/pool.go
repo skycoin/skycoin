@@ -111,7 +111,7 @@ type Config struct {
 	// Triggered on client connect
 	ConnectCallback ConnectCallback
 	// Triggered on client receiving data
-	MesageCallback MessageCallback
+	MessageCallback MessageCallback
 }
 
 // Returns a Config with defaults set
@@ -246,9 +246,8 @@ type ConnectionPool struct {
 //receiveMessage(c *Connection, channel uint16, msg []byte) (error, DisconnectReason)
 
 // Creates a new ConnectionPool that will listen on Config.Port upon
-// StartListen.  State is an application defined object that will be
-// passed to a Message's Handle().
-func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
+// StartListen.
+func NewConnectionPool(c Config) *ConnectionPool {
 	pool := &ConnectionPool{
 		Config:          c,
 		Pool:            make(map[int]*Connection),
@@ -605,7 +604,7 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		// Disconnect if we received an invalid length.
 		if length < messagePrefixLength ||
 			length > self.Config.MaxMessageLength {
-			logger.Debug("Invalid message length %d received from %s; mesage size mismatch",
+			logger.Debug("Invalid message length %d received from %s; message size mismatch",
 				length, c.Addr())
 			self.Disconnect(c, DisconnectInvalidMessageLength)
 			break

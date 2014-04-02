@@ -374,6 +374,7 @@ func (self *ConnectionPool) handleConnection(conn net.Conn,
 	if self.Config.ConnectCallback != nil {
 		self.Config.ConnectCallback(c, solicited)
 	}
+	//note, spawning two goroutine per connection...
 	go self.connectionReadLoop(c)
 	go self.ConnectionWriteLoop(c)
 	return c
@@ -478,6 +479,7 @@ var sendByteMessage = func(conn net.Conn, channel uint16, msg []byte,
 // Writes message to a client socket in a goroutine.
 // This is only public because its very helpful for testing applications
 // that use this module.  Don't call it from non-test code.
+// TODO: Why is there a write que?
 func (self *ConnectionPool) ConnectionWriteLoop(c *Connection) {
 	<-c.writeLoopDone
 	for {
@@ -539,6 +541,11 @@ func (self *ConnectionPool) connectionReadLoop(conn *Connection) {
 		}
 		// Write data to channel for processing
 		self.eventChannel <- dataEvent{ConnId: conn.Id, Data: data}
+
+		// Write data to buffer
+		//n, _ = conn.Buffer.Write(data)
+		logger.Debug("Received Data: addr= %s, %s bytes", conn.Addr(), len(data))
+
 	}
 	conn.readLoopDone <- true
 }
@@ -561,6 +568,7 @@ func (self *ConnectionPool) handleConnectionQueue() *Connection {
 // client's buffer
 // TODO -- this might not need to be separate, the client can maybe
 // write to their buffer directly?
+
 func (self *ConnectionPool) processEvents() {
 	for len(self.eventChannel) > 0 {
 		event := <-self.eventChannel
@@ -589,7 +597,10 @@ const (
 // Converts a client's connection buffer to byte messages
 // Keep extracting message events until we dont have enough bytes to read in
 func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
-	for c.Buffer.Len() > messageLengthSize {
+
+	log.Printf("processConnectionBuffer \n")
+
+	for c.Buffer.Len() >= messageLengthSize {
 		//logger.Debug("There is data in the buffer, extracting")
 		prefix := c.Buffer.Bytes()[:messageLengthSize]
 		// decode message length
@@ -611,7 +622,7 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		}
 
 		if c.Buffer.Len()-messageLengthSize < length {
-			//logger.Debug("Skipping, not enough data to read this")
+			logger.Debug("Skipping, not enough data to read this")
 			break
 		}
 
@@ -621,6 +632,8 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		//logger.Debug("Telling the message unpacker about this message")
 		c.LastReceived = Now()
 		//err, dc := self.receiveMessage(c, channel, data)
+
+		log.Printf("MESSAGE CALLBACK \n")
 		err := self.Config.MessageCallback(c, channel, data)
 
 		if err != nil {
@@ -641,15 +654,19 @@ func (self *ConnectionPool) processConnectionBuffers() {
 
 // Processes and clears pending messages
 func (self *ConnectionPool) HandleMessages() {
+	log.Printf("HandleMessages \n")
 	// Update the Pool for new connections. We do this here so that there is
 	// no contention for RW access to the pool or addresses (assuming
 	// HandleMessages() is in the same select as the DisconnectQueue
 	self.handleConnectionQueue()
 
 	// Copy event data to the client's buffer
+	// incoming event data... write to buffer
+
 	self.processEvents()
 
 	// Process all messages from the client buffer
+	// trigger callbacks from buffer data
 	self.processConnectionBuffers()
 }
 
@@ -670,37 +687,6 @@ func (self *ConnectionPool) BroadcastMessage(channel uint16, msg []byte) {
 		self.SendMessage(c, channel, msg)
 	}
 }
-
-/*
-   Todo:
-   - Associate a dispatcher object or callback function
-   - add channel
-*/
-
-// Unpacks incoming bytes to a Message and calls the message handler.  If
-// the bytes cannot be converted to a Message, the error is returned as the
-// first return value.  Otherwise, error will be nil and DisconnectReason will
-// be the value returned from the message handler.
-
-/*
-func (self *ConnectionPool) receiveMessage(c *Connection,
-	channel uint16, msg []byte) (error, DisconnectReason) {
-
-	//   Message handler here
-
-
-	m, err := convertToMessage(c, msg)
-	if err != nil {
-		return err, nil
-	}
-	c.LastReceived = Now()
-
-	//pass off to a dispatcher object?
-	//use callback function
-	//callback must associate with a
-	return nil, m.Handle(NewMessageContext(c), self.messageState)
-}
-*/
 
 // Returns the current UTC time
 func Now() time.Time {

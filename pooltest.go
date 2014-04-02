@@ -1,24 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	"log"
 	"time"
 )
 
 func onConnect(c *gnet.Connection, solicited bool) {
-	fmt.Printf("connnect event")
+	fmt.Printf("connnect event \n")
 }
 
 func onDisconnect(c *gnet.Connection,
 	reason gnet.DisconnectReason) {
-	fmt.Printf("disconnect event")
+	fmt.Printf("disconnect event \n")
 }
 
 func onMessage(c *gnet.Connection, channel uint16,
 	msg []byte) error {
 
-	fmt.Printf("message event: channel %v", channel)
+	fmt.Printf("message event: channel %v, msg= %s \n", channel, msg)
 	return nil
 }
 
@@ -42,8 +43,8 @@ func main() {
 		log.Panic()
 	}
 
-	err := cpool2.StartListen()
-	if err = nil {
+	err = cpool2.StartListen()
+	if err != nil {
 		log.Panic()
 	}
 
@@ -51,30 +52,26 @@ func main() {
 	go cpool1.AcceptConnections()
 	go cpool2.AcceptConnections()
 
-	go {
-		con, err := cpoo1.Connect("127.0.0.1:6061")
-		_ = con
-		if err != nil {
-			log.Panic(err)
+	//process data and connection events
+	go func() {
+
+		//required for connection event
+		for true {
+			time.Sleep(time.Second * 1)
+			fmt.Printf("wtf \n")
+			cpool1.HandleMessages()
+			cpool2.HandleMessages()
 		}
+
+	}()
+
+	con, err := cpool1.Connect("127.0.0.1:6061")
+	_ = con
+	if err != nil {
+		log.Panic(err)
 	}
-	cpool1 
-	for true {
-		time.Sleep(time.Second * 1)
-		cpool1.HandleMessages()
-		cpool2.HandleMessages()
-	}
-	
-	//HandleMessages()
 
-	//go cpool1.Accept()
+	cpool1.SendMessage(con, 0, []byte("test message"))
 
-/*
-	_ = cpool
-
-	//pool tickers
-	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
-	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
-	messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
-*/
+	time.Sleep(time.Second * 10)
 }

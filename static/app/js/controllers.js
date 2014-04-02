@@ -17,6 +17,8 @@ angular.module('skycoin.controllers', [])
 
   	$scope.getProgress = function(){
       $http.get('/blockchain/progress').success(function(response){
+      	console.log('Block chain progress: ')
+      	console.dir(response)
         $scope.progress = (parseInt(response.current,10)+1) / parseInt(response.Highest,10) * 100;
 
       });
@@ -35,26 +37,29 @@ angular.module('skycoin.controllers', [])
 
 
   	$scope.loadWallets = function(){
-      $http.post('/wallet').success(function(response){
-        //console.dir(response);
+      $http.post('/wallets').success(function(response){
+      	console.log('Loading wallets');
+        console.dir(response);
         //$scope.loadedWallet = response;
-        for(var i=0;i<response.entries.length;i++){
+        $scope.wallets = response;
+        /*for(var i=0;i<response.length;i++){
         	if(!$scope.addresses[i]) $scope.addresses[i] = {};
-        	$scope.addresses[i].address = response.entries[i].address;
-        }
-        for(var i=0;i<response.entries.length;i++){
-        	$scope.checkBalance(i,response.entries[i].address);
+        	$scope.addresses[i].address = response[i].address;
+        }*/
+        for(var i=0;i<response.length;i++){
+        	$scope.checkBalance(i,response[i].address);
         }
       });
 	 }
 
-	 //console.log('local storage wallet is ' + localStorage.loadedWallet)
-	 //$scope.loadWallet(localStorage.loadedWallet);
+	 console.log('local storage wallet is ' + localStorage.loadedWallet)
+
 	 $scope.loadWallets();
 
 	 $scope.saveWallet = function(){
 	  var data = {Addresses:$scope.addresses};
-      $http.post('/wallet/save', JSON.stringify(data)).success(function(response){
+      $http.post('/wallets/save', JSON.stringify(data)).success(function(response){
+      	console.log('Wallet Save: ');
         console.dir(response);
         $scope.loadedWalletName = response;
         localStorage.loadedWallet = response.replace(/"/g, "");
@@ -62,12 +67,13 @@ angular.module('skycoin.controllers', [])
 	 }
 
 	 $scope.newAddress = function(){
-	  	$http.get('/wallet/address/create').success(function(response) {
-	      console.dir(response);
-	      //$scope.addresses.push(response.address);
-	      $scope.loadWallets();
-	      //$scope.addresses.push(response.replace(/"/g, ""));
-	      //$scope.saveWallet();
+	  	$http.get('/wallet').success(function(response) {
+	  		conole.log('New address: ')
+		     console.dir(response);
+		     //$scope.addresses.push(response.address);
+		     $scope.loadWallets();
+		     //$scope.addresses.push(response.replace(/"/g, ""));
+		     //$scope.saveWallet();
 	    });
 	 }
 
@@ -89,7 +95,8 @@ angular.module('skycoin.controllers', [])
 	 $scope.pendingTable = [];
 
 
-	 //localStorage.setItem('historyTable',JSON.stringify([]));
+	 //reset local storage
+	 localStorage.setItem('historyTable',JSON.stringify([]));
 
 
 	 $scope.historyTable = JSON.parse(localStorage.getItem('historyTable'));
@@ -127,6 +134,10 @@ angular.module('skycoin.controllers', [])
 	 }
 
 	 $scope.checkBalance = function(wI, address){
+	 	console.log('Checking bal of: ');
+	 	console.dir(wI);
+	 	console.log('Checking address: ');
+	 	console.dir(address)
 	 	var xsrf = {addr:address}
 		$http({
 		    method: 'POST',
@@ -140,7 +151,9 @@ angular.module('skycoin.controllers', [])
 		    },
 		    data: xsrf
 			}).success(function(response){
-		        $scope.addresses[wI].balance = response.coins / 1000000;
+				console.log("Check balance: ");
+				console.dir(response);
+		        $scope.wallets[wI].balance = response.confirmed.coins / 1000000;
 	      });
 	 }
 

@@ -28,5 +28,6 @@ func main() {
 	config.ConnectCallback = onConnect
 	config.MessageCallback = onMessage
 
-	_ := gnet.NewConnectionPool(config)
+	cpool := gnet.NewConnectionPool(config)
+	_ = cpool
 }

@@ -230,7 +230,7 @@ type ConnectionPool struct {
 	// Channel for async message sending
 	//SendResults chan SendResult
 	// User-defined state to be passed into message handlers
-	messageState interface{}
+	//messageState interface{}
 	// Connection ID counter
 	connId int
 	// Channel for this pool
@@ -255,7 +255,7 @@ func NewConnectionPool(c Config) *ConnectionPool {
 		DisconnectQueue: make(chan DisconnectEvent, c.MaxConnections),
 		//SendResults:     make(chan SendResult, c.BroadcastResultSize),
 		eventChannel: make(chan dataEvent, c.EventChannelSize),
-		messageState: state,
+		//messageState: state,
 		// connectionQueue must not be buffered to guarantee the Pool is
 		// updated before processing is done
 		connectionQueue: make(chan *Connection),

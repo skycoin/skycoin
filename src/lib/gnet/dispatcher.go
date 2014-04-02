@@ -29,12 +29,13 @@ type Dispatcher struct {
 }
 
 //dispatchers have channels in and channels out
-func (self *ConnectionPool) NewDispatcher(channel) {
+func (self *ConnectionPool) NewDispatcher(channel uint16) *Dispatcher {
 	var d Dispatcher
 	d.Pool = self
 
-	var MessageIdMap = make(map[reflect.Type]MessagePrefix)
+	d.MessageIdMap = make(map[reflect.Type]MessagePrefix)
 
+	return &d
 }
 
 // Serializes a Message over a net.Conn

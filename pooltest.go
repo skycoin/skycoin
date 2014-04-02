@@ -58,7 +58,6 @@ func main() {
 		//required for connection event
 		for true {
 			time.Sleep(time.Second * 1)
-			fmt.Printf("wtf \n")
 			cpool1.HandleMessages()
 			cpool2.HandleMessages()
 		}

@@ -455,13 +455,16 @@ var sendByteMessage = func(conn net.Conn, channel uint16, msg []byte,
 	timeout time.Duration) error {
 
 	//message length and channel id
-	bLen := encoder.SerializeAtomic(uint32(6 + len(msg)))
+	bLen := encoder.SerializeAtomic(uint32(len(msg)))
 	chanByte := encoder.SerializeAtomic(uint16(channel))
 
-	d := make([]byte, len(msg)+6)
+	//log.Printf("len= %v blen= %v chans= %v \n", len(msg), len(bLen), len(chanByte))
+	d := make([]byte, 0, len(msg)+6)
 	d = append(d, bLen...)     //length prefix
 	d = append(d, chanByte...) //channel id
 	d = append(d, msg...)      //message data
+
+	//log.Printf("len2= %v \n ", len(d))
 
 	deadline := time.Time{}
 	if timeout != 0 {
@@ -584,7 +587,7 @@ func (self *ConnectionPool) processEvents() {
 		// If the buffer becomes too large, Write will panic with ErrTooLarge."
 
 		n, _ := c.Buffer.Write(event.Data)
-		logger.Debug("Received Data: addr= %s, %s bytes", c.Addr(), n)
+		logger.Debug("Received Data: addr= %s, %d bytes", c.Addr(), n)
 	}
 }
 
@@ -597,9 +600,6 @@ const (
 // Converts a client's connection buffer to byte messages
 // Keep extracting message events until we dont have enough bytes to read in
 func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
-
-	log.Printf("processConnectionBuffer \n")
-
 	for c.Buffer.Len() >= messageLengthSize {
 		//logger.Debug("There is data in the buffer, extracting")
 		prefix := c.Buffer.Bytes()[:messageLengthSize]
@@ -633,7 +633,6 @@ func (self *ConnectionPool) processConnectionBuffer(c *Connection) {
 		c.LastReceived = Now()
 		//err, dc := self.receiveMessage(c, channel, data)
 
-		log.Printf("MESSAGE CALLBACK \n")
 		err := self.Config.MessageCallback(c, channel, data)
 
 		if err != nil {
@@ -654,7 +653,7 @@ func (self *ConnectionPool) processConnectionBuffers() {
 
 // Processes and clears pending messages
 func (self *ConnectionPool) HandleMessages() {
-	log.Printf("HandleMessages \n")
+
 	// Update the Pool for new connections. We do this here so that there is
 	// no contention for RW access to the pool or addresses (assuming
 	// HandleMessages() is in the same select as the DisconnectQueue

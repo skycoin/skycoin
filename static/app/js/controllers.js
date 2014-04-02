@@ -66,15 +66,24 @@ angular.module('skycoin.controllers', [])
       });
 	 }
 
-	 $scope.newAddress = function(){
-	  	$http.get('/wallet').success(function(response) {
-	  		conole.log('New address: ')
-		     console.dir(response);
-		     //$scope.addresses.push(response.address);
-		     $scope.loadWallets();
-		     //$scope.addresses.push(response.replace(/"/g, ""));
-		     //$scope.saveWallet();
-	    });
+	 $scope.newWallet = function(wI, address){
+	 	console.log('New wallet called');
+	 	var xsrf = {name:'test'}
+		$http({
+		    method: 'POST',
+		    url: '/wallet',
+		    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+		    transformRequest: function(obj) {
+		        var str = [];
+		        for(var p in obj)
+		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		        return str.join("&");
+		    },
+		    data: xsrf
+			}).success(function(response){
+				console.log("New wallet response: ");
+				console.dir(response);
+	      });
 	 }
 
 	 $scope.sendDisable = true;
@@ -108,7 +117,7 @@ angular.module('skycoin.controllers', [])
 	 	$scope.readyDisable = true;
 	 	$timeout($scope.clearSend, 1000);
 	 	$scope.pendingTable.push(addr);
-	 	var xsrf = {dst:addr.address,
+	 	var xsrf = {id:addr.address,
 	 				coins:addr.amount*1000000,
 	 				fee:1,
 	 				hours:1}

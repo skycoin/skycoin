@@ -30,19 +30,30 @@
     <!--<tabset vertical="true" id="main-content">-->
       <tab>
         <tab-heading>
-          <i class="fa fa-cloud fa-lg"></i> Wallet
+          <i class="fa fa-cloud fa-lg"></i> Wallets
         </tab-heading>
 
         <div class="outline">
-          <table id="overview-wallet" class="outline" ng-repeat="address in addresses">
+          <table id="overview-wallet" class="outline" ng-repeat="wallet in wallets">
             <tr class="dark-row">
-              <td><div id="overview-wallet-title"><!-- Address {{$index}}</div>--></td><td><!--<i class="fa fa-align-justify"></i>--></td>
+              <td><div id="overview-wallet-title">Wallet {{$index}}: {{wallet.name}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-balance">Address: </div></td><td>{{address.address}}</td>
+              <td><div id="overview-wallet-balance">Addresses: </div></td>
+              <td>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    {{wallet.entries[0].address}} <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" role="menu">
+                    <li ng-repeat="entry in wallet.entries">{{entry.address}}</li>
+                    <li class="divider"></li>
+                    <li><a href="#">All</a></li>
+                  </ul>
+                </div>
             </tr>
             <tr>
-              <td><div id="overview-wallet-address">Balance: </div></td><td>{{address.balance | number}} SKY</td>
+              <td><div id="overview-wallet-address">Balance Confirmed: </div></td><td>{{wallet.balance | number}} SKY</td>
             </tr>
             <tr>
               <td colspan="2">
@@ -53,7 +64,7 @@
             </tr>
           </table>
           <div class="wallet-buttons">
-            <button ng-click="newAddress()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Address</button> <!--<button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>-->
+            <button ng-click="newWallet()" type="button" class="btn btn-default"><i class="fa fa-cloud"></i> New Wallet</button> <!--<button type="button" class="btn btn-default" ng-click="mainBackUp()"><i class="fa fa-cloud-download"></i> Back Up</button>-->
           </div>
 
           <!--<div id="overview-recent-transaction" class="outline">

@@ -15,6 +15,37 @@ type DispatcherManager struct {
 	Dispatchers map[uint16]*Dispatcher
 }
 
+//optional callback for message handling
+func (self *DispatcherManager) OnMessage(c *Connection, channel uint16,
+	msg []byte) error {
+
+	d, ok := self.Dispatchers[channel]
+
+	if ok == false {
+		log.Panic("channel doesnt exist") //channel doesnt exist
+		return errors.New("channel does not have dispatcher")
+	}
+
+	message, err := d.convertToMessage(c, msg)
+	if err != nil {
+		log.Panic("message conversion failed") //cleanup
+		return err
+	}
+
+	context := MessageContext{
+		Conn: c,
+	}
+
+	err = message.Handle(&context, nil)
+
+	if err != nil {
+		log.Panic() //why can handle function return error?
+		return err
+	}
+
+	return nil
+}
+
 func NewDispatcherManager() *DispatcherManager {
 	var dm DispatcherManager
 	dm.Dispatchers = make(map[uint16]*Dispatcher)
@@ -23,9 +54,10 @@ func NewDispatcherManager() *DispatcherManager {
 
 //routes messages to services
 type Dispatcher struct {
-	Channel      uint16 //channel the dispatcher handles
-	Pool         *ConnectionPool
-	MessageIdMap map[reflect.Type]MessagePrefix
+	Channel             uint16 //channel the dispatcher handles
+	Pool                *ConnectionPool
+	MessageIdMap        map[reflect.Type]MessagePrefix
+	MessageIdReverseMap map[MessagePrefix]reflect.Type
 }
 
 //dispatchers have channels in and channels out
@@ -34,7 +66,7 @@ func (self *ConnectionPool) NewDispatcher(channel uint16) *Dispatcher {
 	d.Pool = self
 
 	d.MessageIdMap = make(map[reflect.Type]MessagePrefix)
-
+	d.MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
 	return &d
 }
 
@@ -46,7 +78,7 @@ func (self *ConnectionPool) NewDispatcher(channel uint16) *Dispatcher {
 //}
 
 // Event handler that is called after a Connection sends a complete message
-func convertToMessage(c *Connection, msg []byte) (Message, error) {
+func (self *Dispatcher) convertToMessage(c *Connection, msg []byte) (Message, error) {
 	msgId := [4]byte{}
 	if len(msg) < len(msgId) {
 		return nil, errors.New("Not enough data to read msg id")
@@ -54,7 +86,7 @@ func convertToMessage(c *Connection, msg []byte) (Message, error) {
 	copy(msgId[:], msg[:len(msgId)])
 	msg = msg[len(msgId):]
 
-	t, succ := MessageIdReverseMap[msgId]
+	t, succ := self.MessageIdReverseMap[msgId]
 	if !succ {
 		logger.Debug("Connection %d sent unknown message id %s",
 			c.Id, string(msgId[:]))

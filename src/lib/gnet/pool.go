@@ -547,7 +547,7 @@ func (self *ConnectionPool) connectionReadLoop(conn *Connection) {
 
 		// Write data to buffer
 		//n, _ = conn.Buffer.Write(data)
-		logger.Debug("Received Data: addr= %s, %s bytes", conn.Addr(), len(data))
+		logger.Debug("Received Data: addr= %s, %d bytes", conn.Addr(), len(data))
 
 	}
 	conn.readLoopDone <- true

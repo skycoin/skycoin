@@ -67,6 +67,15 @@ func (self *Dispatcher) RegisterMessage(prefix MessagePrefix, msg interface{}) {
 	self.MessageIdReverseMap[id] = t
 }
 
+//Takes in map with string to message and registers them
+func (self *Dispatcher) RegisterMessages(msgMap map[string](interface{})) {
+	for k, msg := range msgMap {
+		prefix := MessagePrefixFromString(k)
+		self.RegisterMessage(prefix, msg)
+	}
+	self.VerifyMessages()
+}
+
 // Calls log.Panic if message registration violates sanity checks
 func (self *Dispatcher) VerifyMessages() {
 	for t, k := range self.MessageIdMap {

@@ -7,70 +7,68 @@ import (
 	"time"
 )
 
+//this is called when client connects
 func onConnect(c *gnet.Connection, solicited bool) {
-	fmt.Printf("connnect event \n")
+	fmt.Printf("Event Callback: connnect event \n")
 }
 
+//this is called when client disconnects
 func onDisconnect(c *gnet.Connection,
 	reason gnet.DisconnectReason) {
-	fmt.Printf("disconnect event \n")
+	fmt.Printf("Event Callback: disconnect event \n")
 }
 
+//this is called when a message is received
 func onMessage(c *gnet.Connection, channel uint16,
 	msg []byte) error {
-
-	fmt.Printf("message event: channel %v, msg= %s \n", channel, msg)
+	fmt.Printf("Event Callback: message event: channel %v, msg= %s \n", channel, msg)
 	return nil
 }
 
-//create connection pool and tests
-
-func main() {
-
+func SpawnConnectionPool(Port int) *gnet.ConnectionPool {
 	config := gnet.NewConfig()
-	config.Port = 6060
-	config.DisconnectCallback = onDisconnect
-	config.ConnectCallback = onConnect
-	config.MessageCallback = onMessage
+	config.Port = uint16(Port)               //set listening port
+	config.DisconnectCallback = onDisconnect //disconnect callback
+	config.ConnectCallback = onConnect       //connect callback
+	config.MessageCallback = onMessage       //message callback
 
-	cpool1 := gnet.NewConnectionPool(config)
-
-	config.Port = 6061
-	cpool2 := gnet.NewConnectionPool(config)
-
-	err := cpool1.StartListen()
-	if err != nil {
-		log.Panic()
+	//create pool
+	cpool := gnet.NewConnectionPool(config)
+	//open lsitening port
+	if err := cpool.StartListen(); err != nil {
+		log.Panic(err)
 	}
 
-	err = cpool2.StartListen()
-	if err != nil {
-		log.Panic()
-	}
+	//listen for connections in new goroutine
+	go cpool.AcceptConnections()
 
-	//blocks, run in goroutine
-	go cpool1.AcceptConnections()
-	go cpool2.AcceptConnections()
-
-	//process data and connection events
+	//handle income data in new goroutine
 	go func() {
-
-		//required for connection event
 		for true {
-			time.Sleep(time.Second * 1)
-			cpool1.HandleMessages()
-			cpool2.HandleMessages()
+			time.Sleep(time.Millisecond * 100)
+			cpool.HandleMessages()
 		}
-
 	}()
 
+	return cpool
+}
+
+//create connection pool and tests
+func main() {
+
+	cpool1 := SpawnConnectionPool(6060)
+	cpool2 := SpawnConnectionPool(6061)
+
+	//connect to peer
 	con, err := cpool1.Connect("127.0.0.1:6061")
-	_ = con
+
 	if err != nil {
 		log.Panic(err)
 	}
 
+	//send a raw binary message on channel 0
 	cpool1.SendMessage(con, 0, []byte("test message"))
+	_ = cpool2
 
 	time.Sleep(time.Second * 10)
 }

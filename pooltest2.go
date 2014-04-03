@@ -23,8 +23,15 @@ func onMessage(c *gnet.Connection, channel uint16,
 	return nil
 }
 
-//create connection pool and tests
+type TestMessage struct {
+	Text []byte
+}
 
+func (self *TestMessage) Handle(context *gnet.MessageContext, state interface{}) error {
+	fmt.Printf("Handle Test Message: Text= %s ", string(self.Text))
+}
+
+//create connection pool and tests
 func main() {
 
 	config := gnet.NewConfig()
@@ -52,9 +59,8 @@ func main() {
 	go cpool1.AcceptConnections()
 	go cpool2.AcceptConnections()
 
-	//process data and connection events
+	//process data and connection events in another goroutine
 	go func() {
-
 		//required for connection event
 		for true {
 			time.Sleep(time.Second * 1)
@@ -64,13 +70,30 @@ func main() {
 
 	}()
 
+	//connect to remote peer
 	con, err := cpool1.Connect("127.0.0.1:6061")
 	_ = con
 	if err != nil {
 		log.Panic(err)
 	}
 
-	cpool1.SendMessage(con, 0, []byte("test message"))
+
+	//array of messages to register
+	var map[string](interface{}) =  {
+		"test" : TestMessage{},
+	}
+
+	//cpool1.SendMessage(con, 0, []byte("test message"))
+
+	dm1 := gnet.NewDispatcherManager()
+	dm1.NewDispatcher(3)                         //channel 3
+	cpoo1.Config.MessageCallback = dm1.OnMessage //set message handler
+
+	dm2 := gnet.NewDispatcherManager()
+	dm2.NewDispatcher(3)
+	cool2.Config.MessageCallback = dm2.OnMessage
+
+
 
 	time.Sleep(time.Second * 10)
 }

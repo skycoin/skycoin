@@ -32,10 +32,7 @@ func (self *DispatcherManager) OnMessage(c *Connection, channel uint16,
 		return err
 	}
 
-	context := MessageContext{
-		Conn: c,
-	}
-
+	context := MessageContext{Conn: c}
 	err = message.Handle(&context, nil)
 
 	if err != nil {
@@ -140,6 +137,8 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 }
 
 // Packgs a Message into []byte containing length, id and data
+
+/*
 var encodeMessage = func(msg Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
 	msgId, succ := MessageIdMap[t]
@@ -157,3 +156,4 @@ var encodeMessage = func(msg Message) []byte {
 	m = append(m, bMsg...)     // message bytes
 	return m
 }
+*/

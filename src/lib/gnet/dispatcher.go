@@ -58,12 +58,15 @@ type Dispatcher struct {
 }
 
 //dispatchers have channels in and channels out
-func (self *ConnectionPool) NewDispatcher(channel uint16) *Dispatcher {
+func (self *DispatcherManager) NewDispatcher(pool ConnectionPool, channel uint16) *Dispatcher {
 	var d Dispatcher
-	d.Pool = self
+	d.Pool = pool
 
 	d.MessageIdMap = make(map[reflect.Type]MessagePrefix)
 	d.MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
+
+	self.
+	
 	return &d
 }
 

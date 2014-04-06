@@ -21,7 +21,7 @@ func onDisconnect(c *gnet.Connection,
 //this is called when a message is received
 func onMessage(c *gnet.Connection, channel uint16,
 	msg []byte) error {
-	fmt.Printf("Event Callback: message event: channel %v, msg= %s \n", channel, msg)
+	fmt.Printf("Event Callback: message event: addr= %s, channel %v, msg= %s \n", c.Addr(), channel, msg)
 	return nil
 }
 

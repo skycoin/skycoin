@@ -64,6 +64,11 @@ func (self *TestMessage) Handle(context *gnet.MessageContext, state interface{})
 	return nil
 }
 
+//array of messages to register
+var messageMap map[string](interface{}) = map[string](interface{}){
+	"id01": TestMessage{}, //message id, message type
+}
+
 //create connection pool and tests
 func main() {
 
@@ -77,13 +82,6 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-
-	//array of messages to register
-	var messageMap map[string](interface{}) = map[string](interface{}){
-		"test": TestMessage{},
-	}
-
-	//cpool1.SendMessage(con, 0, []byte("test message"))
 
 	//new dispatch manager
 	dm1 := gnet.NewDispatcherManager()

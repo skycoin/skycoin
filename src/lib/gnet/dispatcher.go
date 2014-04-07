@@ -58,15 +58,13 @@ type Dispatcher struct {
 }
 
 //dispatchers have channels in and channels out
-func (self *DispatcherManager) NewDispatcher(pool ConnectionPool, channel uint16) *Dispatcher {
+func (self *DispatcherManager) NewDispatcher(pool *ConnectionPool, channel uint16) *Dispatcher {
 	var d Dispatcher
 	d.Pool = pool
 
 	d.MessageIdMap = make(map[reflect.Type]MessagePrefix)
 	d.MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
 
-	self.
-	
 	return &d
 }
 
@@ -76,6 +74,21 @@ func (self *DispatcherManager) NewDispatcher(pool ConnectionPool, channel uint16
 //	m := encodeMessage(msg)
 //	return sendByteMessage(conn, m, timeout)
 //}
+
+func (self *Dispatcher) EncodeMessage(msg Message) []byte {
+    t := reflect.ValueOf(msg).Elem().Type()
+    msgId, succ := self.MessageIdMap[t]
+    if !succ {
+        txt := "Attempted to serialize message struct not in MessageIdMap: %v"
+        log.Panicf(txt, msg)
+    }
+    bMsg := encoder.Serialize(msg)
+}
+
+
+func (self *Dispatcher) SendMessage(c *Connection, channel uint16, Message) (error) {
+
+}
 
 // Event handler that is called after a Connection sends a complete message
 func (self *Dispatcher) convertToMessage(c *Connection, msg []byte) (Message, error) {

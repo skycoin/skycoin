@@ -71,6 +71,7 @@ func main() {
 
 	//connect to peer
 	con, err := cpool1.Connect("127.0.0.1:6061")
+	_ = con
 
 	if err != nil {
 		log.Panic(err)
@@ -83,13 +84,21 @@ func main() {
 
 	//cpool1.SendMessage(con, 0, []byte("test message"))
 
+	//new dispatch manager
 	dm1 := gnet.NewDispatcherManager()
-	dm1.NewDispatcher(3)                         //channel 3
-	cpoo1.Config.MessageCallback = dm1.OnMessage //set message handler
+	cpool1.Config.MessageCallback = dm1.OnMessage //set message handler
+	//new dispatcher for handling messages on channel 3
+	d1 := dm1.NewDispatcher(cpool1, 3) //dispatcher 1
+	d1.RegisterMessages(messageMap)
 
 	dm2 := gnet.NewDispatcherManager()
-	dm2.NewDispatcher(3)
-	cool2.Config.MessageCallback = dm2.OnMessage
+	cpool2.Config.MessageCallback = dm2.OnMessage
+	d2 := dm2.NewDispatcher(cpool2, 3) //dispatcher 2
+	d2.RegisterMessages(messageMap)
+
+	//create a message to send
+	tm := TestMessage{Text: "Message test"}
+	d1.SendMessage(tm, 3, tm)
 
 	time.Sleep(time.Second * 10)
 }

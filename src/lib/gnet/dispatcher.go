@@ -22,7 +22,7 @@ func (self *DispatcherManager) OnMessage(c *Connection, channel uint16,
 	d, ok := self.Dispatchers[channel]
 
 	if ok == false {
-		log.Panic("channel doesnt exist") //channel doesnt exist
+		log.Panicf("channel %d doesnt exist", channel) //channel doesnt exist
 		return errors.New("channel does not have dispatcher")
 	}
 
@@ -65,6 +65,7 @@ func (self *DispatcherManager) NewDispatcher(pool *ConnectionPool, channel uint1
 	d.MessageIdMap = make(map[reflect.Type]MessagePrefix)
 	d.MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
 
+	self.Dispatchers[channel] = &d
 	return &d
 }
 
@@ -76,18 +77,25 @@ func (self *DispatcherManager) NewDispatcher(pool *ConnectionPool, channel uint1
 //}
 
 func (self *Dispatcher) EncodeMessage(msg Message) []byte {
-    t := reflect.ValueOf(msg).Elem().Type()
-    msgId, succ := self.MessageIdMap[t]
-    if !succ {
-        txt := "Attempted to serialize message struct not in MessageIdMap: %v"
-        log.Panicf(txt, msg)
-    }
-    bMsg := encoder.Serialize(msg)
+	t := reflect.ValueOf(msg).Elem().Type()
+	msgId, succ := self.MessageIdMap[t]
+	if !succ {
+		txt := "Attempted to serialize message struct not in MessageIdMap: %v"
+		log.Panicf(txt, msg)
+	}
+	bMsg := encoder.Serialize(msg)
+
+	m := make([]byte, 4+len(bMsg))
+	m = append(m, msgId[:]...) // message id
+	m = append(m, bMsg...)     // message bytes
+	return m
+	return bMsg
 }
 
-
-func (self *Dispatcher) SendMessage(c *Connection, channel uint16, Message) (error) {
-
+func (self *Dispatcher) SendMessage(c *Connection, channel uint16, msg Message) error {
+	bMsg := self.EncodeMessage(msg)         //convert msg to binary
+	self.Pool.SendMessage(c, channel, bMsg) //send message over connection
+	return nil
 }
 
 // Event handler that is called after a Connection sends a complete message

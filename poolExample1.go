@@ -53,6 +53,7 @@ func SpawnConnectionPool(Port int) *gnet.ConnectionPool {
 	return cpool
 }
 
+//define message we want to be able to handle
 type TestMessage struct {
 	Text []byte
 }
@@ -97,8 +98,8 @@ func main() {
 	d2.RegisterMessages(messageMap)
 
 	//create a message to send
-	tm := TestMessage{Text: "Message test"}
-	d1.SendMessage(tm, 3, tm)
+	tm := TestMessage{Text: []byte("Message test")}
+	d1.SendMessage(con, 3, &tm)
 
 	time.Sleep(time.Second * 10)
 }

@@ -85,11 +85,10 @@ func (self *Dispatcher) EncodeMessage(msg Message) []byte {
 	}
 	bMsg := encoder.Serialize(msg)
 
-	m := make([]byte, 4+len(bMsg))
+	m := make([]byte, 0, 4+len(bMsg))
 	m = append(m, msgId[:]...) // message id
 	m = append(m, bMsg...)     // message bytes
 	return m
-	return bMsg
 }
 
 func (self *Dispatcher) SendMessage(c *Connection, channel uint16, msg Message) error {
@@ -109,8 +108,8 @@ func (self *Dispatcher) convertToMessage(c *Connection, msg []byte) (Message, er
 
 	t, succ := self.MessageIdReverseMap[msgId]
 	if !succ {
-		logger.Debug("Connection %d sent unknown message id %s",
-			c.Id, string(msgId[:]))
+		logger.Debug("Connection %d sent unknown message id %v",
+			c.Id, msgId) //string(msgId[:]))
 		return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
 	}
 	logger.Debug("Message type %v is handling it", t)

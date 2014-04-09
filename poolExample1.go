@@ -87,12 +87,12 @@ func main() {
 	dm1 := gnet.NewDispatcherManager()
 	cpool1.Config.MessageCallback = dm1.OnMessage //set message handler
 	//new dispatcher for handling messages on channel 3
-	d1 := dm1.NewDispatcher(cpool1, 3) //dispatcher 1
+	d1 := dm1.NewDispatcher(cpool1, 3, nil) //dispatcher 1
 	d1.RegisterMessages(messageMap)
 
 	dm2 := gnet.NewDispatcherManager()
 	cpool2.Config.MessageCallback = dm2.OnMessage
-	d2 := dm2.NewDispatcher(cpool2, 3) //dispatcher 2
+	d2 := dm2.NewDispatcher(cpool2, 3, nil) //dispatcher 2
 	d2.RegisterMessages(messageMap)
 
 	//create a message to send

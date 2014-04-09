@@ -33,7 +33,7 @@ func (self *DispatcherManager) OnMessage(c *Connection, channel uint16,
 	}
 
 	context := MessageContext{Conn: c}
-	err = message.Handle(&context, nil)
+	err = message.Handle(&context, d.ReceivingObject)
 
 	if err != nil {
 		log.Panic() //why can handle function return error?
@@ -53,15 +53,16 @@ func NewDispatcherManager() *DispatcherManager {
 type Dispatcher struct {
 	Channel             uint16 //channel the dispatcher handles
 	Pool                *ConnectionPool
+	ReceivingObject     interface{}
 	MessageIdMap        map[reflect.Type]MessagePrefix
 	MessageIdReverseMap map[MessagePrefix]reflect.Type
 }
 
 //dispatchers have channels in and channels out
-func (self *DispatcherManager) NewDispatcher(pool *ConnectionPool, channel uint16) *Dispatcher {
+func (self *DispatcherManager) NewDispatcher(pool *ConnectionPool, channel uint16, receivingObject interface{}) *Dispatcher {
 	var d Dispatcher
 	d.Pool = pool
-
+	d.ReceivingObject = receivingObject
 	d.MessageIdMap = make(map[reflect.Type]MessagePrefix)
 	d.MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
 
@@ -138,23 +139,6 @@ func (self *Dispatcher) convertToMessage(c *Connection, msg []byte) (Message, er
 
 // Wraps encoder.DeserializeRawToValue and traps panics as an error
 func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
-	//deserializer panic should not be allowed
-	//deserializer panic means error in serializer
-	/*
-	   defer func() {
-	       if r := recover(); r != nil {
-	           logger.Debug("Recovering from deserializer panic: %v", r)
-	           switch x := r.(type) {
-	           case string:
-	               e = errors.New(x)
-	           case error:
-	               e = x
-	           default:
-	               e = errors.New("Message deserialization failed")
-	           }
-	       }
-	   }()
-	*/
 	n, e = encoder.DeserializeRawToValue(msg, v)
 	return
 }

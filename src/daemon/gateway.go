@@ -68,7 +68,7 @@ func (self *Gateway) GetConnection(addr string) interface{} {
 /* Wallet API */
 
 // Returns a *Spend
-func (self *Gateway) Spend(walletID wallet.WalletID, amt visor.Balance,
+func (self *Gateway) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest coin.Address) interface{} {
 	self.requests <- func() interface{} {
 		return self.Daemon.Spend(self.d.Visor, self.d.Pool, self.Visor,
@@ -126,7 +126,7 @@ func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
 // Returns a *ReadableWallets
 func (self *Gateway) GetWallets() interface{} {
 	self.requests <- func() interface{} {
-		return self.Visor.GetPublicWallets(self.d.Visor.Visor)
+		return self.Visor.GetWallets(self.d.Visor.Visor)
 	}
 	r := <-self.responses
 	return r

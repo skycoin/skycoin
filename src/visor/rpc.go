@@ -22,7 +22,7 @@ type TransactionResults struct {
 type RPC struct{}
 
 func (self RPC) GetWalletBalance(v *Visor,
-	walletID wallet.WalletID) *BalancePair {
+	walletID wallet.WalletID) *wallet.BalancePair {
 	if v == nil {
 		return nil
 	}

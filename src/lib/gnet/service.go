@@ -16,6 +16,8 @@ func NewServiceManager(pool *ConnectionPool) *ServiceManager {
 
 	var sm ServiceManager
 
+	sm.Services = make(map[uint16]*Service)
+
 	sm.ConnectionPool = pool
 	sm.DispatchManager = NewDispatcherManager()
 
@@ -39,6 +41,7 @@ func (sm *ServiceManager) AddService(name []byte, channel uint16, server Service
 	//need to pass in object
 	s.Dispatcher = sm.DispatchManager.NewDispatcher(sm.ConnectionPool, channel, server)
 	s.Server = server
+	s.Connections = make(map[*Connection]uint16)
 
 	server.RegisterMessages(s.Dispatcher) //register server messages
 

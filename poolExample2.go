@@ -54,16 +54,58 @@ func SpawnConnectionPool(Port int) *gnet.ConnectionPool {
 //	"id01": TestMessage{}, //message id, message type
 //}
 
+type ServiceConnectMessage struct {
+	LocalChannel  uint16
+	RemoteChannel uint16
+	Originating   bool
+	ErrorMessage  []byte
+}
+
+func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
+	state interface{}) error {
+	server := state.(SkywireDaemon) //service server state
+
+	if self.Originating == true {
+
+		service, ok := server.ServiceManager.Services[self.RemoteChannel]
+		if ok == false {
+			log.Panicf("local service does not exist on channel %d \n", self.RemoteChannel)
+
+			var scm ServiceConnectMessage
+			scm.LocalChannel = scm.RemoteChannel
+			scm.RemoteChannel = scm.LocalChannel
+			scm.Originating = false
+			scm.ErrorMessage = []byte("no service on channel")
+
+			server.ServiceManage.Service.Send()
+		}
+		var scm ServiceConnectMessage
+		scm.LocalChannel = scm.RemoteChannel
+		scm.RemoteChannel = scm.LocalChannel
+
+	}
+}
+
 //Daemon on channel 0
 //The channel 0 service manages exposing service metainformation and
 //server setup and teardown
 type SkywireDaemon struct {
+	Service        *gnet.Service //service for daemon
 	ServiceManager *gnet.ServiceManager
 }
+
+// TODO:
+// - add request packet for service list
+// - add connection packet for service
+// - move into daemon
 
 func NewSkywireDaemon(sm *gnet.ServiceManager) *SkywireDaemon {
 	var swd SkywireDaemon
 	swd.ServiceManager = sm
+
+	//associate service with channel 0
+	self.Service = sm.AddService([]byte("Skywire Daemon"), 0, &swd)
+
 	return &swd
 }
 
@@ -144,7 +186,7 @@ func main() {
 	sm1 := gnet.NewServiceManager(cpool1) //service manager
 	//add services
 	swd1 := NewSkywireDaemon(sm1) //server
-	sm1.AddService([]byte("Skywire Daemon"), 0, swd1)
+
 	tss1 := NewTestServiceServer()
 	sm1.AddService([]byte("TestServiceServer"), 1, tss1)
 
@@ -152,7 +194,8 @@ func main() {
 	sm2 := gnet.NewServiceManager(cpool2)
 	//add services
 	swd2 := NewSkywireDaemon(sm2)
-	sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
+	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
+
 	tss2 := NewTestServiceServer()
 	sm2.AddService([]byte("TestServiceServer"), 1, tss2)
 

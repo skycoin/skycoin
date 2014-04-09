@@ -107,6 +107,7 @@ func (self *Service) ConnectionEvent(c *Connection, channel uint16) {
 	}
 	self.Connections[c] = channel
 	//TODO: notify object?
+	self.Server.OnConnect(c)
 }
 
 //service level disconnection event
@@ -116,6 +117,7 @@ func (self *Service) DisconnectEvent(c *Connection) {
 	}
 	delete(self.Connections, c)
 	//TODO: notify object?
+	self.Server.OnDisconnect(c)
 }
 
 //implements a service

@@ -65,6 +65,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Name the wallet with "name".
 func walletHandlerPOST(gateway *daemon.Gateway, w http.ResponseWriter,
 	r *http.Request) {
+	logger.Info("API request made to create a wallet")
 	id := wallet.WalletID(r.FormValue("id"))
 	name := r.FormValue("name")
 	if id == "" {

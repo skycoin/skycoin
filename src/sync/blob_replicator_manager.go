@@ -49,7 +49,7 @@ type RequestManagerConfig struct {
 
 func NewRequestManagerConfig() RequestManagerConfig {
 	return RequestManagerConfig{
-		RequestTimeout:  20,
+		RequestTimeout:  30,
 		RequestsPerPeer: 6,
 	}
 }
@@ -87,21 +87,23 @@ func (self *RequestManager) RemoveExpiredRequests() {
 	for k, r := range self.Requests {
 		if t-r.RequestTime >= self.Config.RequestTimeout {
 			log.Printf("RemoveExpiredRequests, request expired, hash=%s addr= %s \n", k.Hex(), r.Addr)
+			self.PeerStats[r.Addr].OpenRequests -= 1
 			delete(self.Requests, k)
 		}
 	}
 }
 
 //current implementation requests data in random order
-func (self *RequestManager) GenerateRequests() map[SHA256]string {
+func (self *RequestManager) GenerateRequests() map[string]([]SHA256) {
 
-	var requests map[SHA256]string = make(map[SHA256]string)
+	var requests map[string]([]SHA256) = make(map[string]([]SHA256))
 	for addr, p := range self.PeerStats {
 		if p.OpenRequests < self.Config.RequestsPerPeer {
 			for h, _ := range p.Data {
 				if _, ok := self.Requests[h]; ok == false {
 					//add request to return
-					requests[h] = addr
+					requests[addr] = append(requests[addr], h)
+
 					//record in request log
 					req := Request{
 						RequestTime: int(time.Now().Unix()),
@@ -142,6 +144,13 @@ func (self *RequestManager) RequestFinished(hash SHA256, addr string) {
 		log.Printf("RequestFinished: warning received unrequested data from peer, addr= %s, hash= %s \n", addr, hash.Hex())
 	} else {
 		delete(self.Requests, hash)
+	}
+
+	//remove request for other peers
+	for _, peer := range self.PeerStats {
+		if _, ok := peer.Data[hash]; ok == true {
+			delete(peer.Data, hash)
+		}
 	}
 
 	self.PeerStats[addr].OpenRequests -= 1

@@ -1,5 +1,9 @@
 package gnet
 
+import (
+	"log"
+)
+
 //deal with to and from and connection handlings
 type ServiceManager struct {
 	ConnectionPool  *ConnectionPool
@@ -35,6 +39,8 @@ func (sm *ServiceManager) AddService(name []byte, channel uint16, server Service
 	//need to pass in object
 	s.Dispatcher = sm.DispatchManager.NewDispatcher(sm.ConnectionPool, channel, server)
 	s.Server = server
+
+	server.RegisterMessages(s.Dispatcher) //register server messages
 
 	sm.Services[channel] = &s
 	return &s
@@ -113,4 +119,5 @@ func (self *Service) DisconnectEvent(c *Connection) {
 type ServiceServer interface {
 	OnConnect(c *Connection)
 	OnDisconnect(c *Connection)
+	RegisterMessages(d *Dispatcher)
 }

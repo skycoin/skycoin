@@ -75,7 +75,7 @@ func (self *Dispatcher) RegisterMessages(msgMap map[string](interface{})) {
 	}
 	self.VerifyMessages()
 
-	log.Printf("message_map: %v \n", self.MessageIdReverseMap)
+	//log.Printf("message_map: %v \n", self.MessageIdReverseMap)
 }
 
 // Calls log.Panic if message registration violates sanity checks

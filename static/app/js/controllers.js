@@ -112,13 +112,13 @@ angular.module('skycoin.controllers', [])
 	 console.log('localStorage.history')
 	 console.dir(JSON.parse(localStorage.getItem('historyTable')))
 
-	 $scope.spend = function(addr){
+	 $scope.spend = function(wallet){
 	 	$scope.sendDisable = true;
 	 	$scope.readyDisable = true;
 	 	$timeout($scope.clearSend, 1000);
 	 	$scope.pendingTable.push(addr);
-	 	var xsrf = {id:addr.address,
-	 				coins:addr.amount*1000000,
+	 	var xsrf = {id:wallet.id,
+	 				coins:wallet.amount*1000000,
 	 				fee:1,
 	 				hours:1}
 	 	$scope.historyTable.push({address:addr.address,amount:addr.amount});
@@ -170,14 +170,14 @@ angular.module('skycoin.controllers', [])
 
 	 }
 
-	 $scope.openQR = function (address) {
+	 $scope.openQR = function (wallet) {
 
       var modalInstance = $modal.open({
         templateUrl: 'qrModalContent.html',
         controller: "qrInstanceCtrl",
         resolve: {
-          address: function () {
-            return address;
+          wallet: function () {
+            return wallet;
           }
         }
       });
@@ -191,12 +191,12 @@ angular.module('skycoin.controllers', [])
 }])
 
 
-.controller('qrInstanceCtrl', ['$http', '$scope', '$modalInstance', 'address',
-  function($http, $scope, $modalInstance, address) {
+.controller('qrInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
+  function($http, $scope, $modalInstance, wallet) {
 
-  $scope.address = address;
+  $scope.address = wallet.entries[0].address;
   $scope.qro = {};
-  $scope.qro.fm = address;
+  $scope.qro.fm = wallet.entries[0].address;
 
   $scope.$watch('qro.label', function() {
   	$scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;

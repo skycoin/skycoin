@@ -36,7 +36,7 @@
         <div class="outline">
           <table id="overview-wallet" class="outline" ng-repeat="wallet in wallets">
             <tr class="dark-row">
-              <td><div id="overview-wallet-title">Wallet {{$index}}: {{wallet.name}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
+              <td><div id="overview-wallet-title">Wallet {{wallet.id}}: {{wallet.name}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
             </tr>
             <tr>
               <td><div id="overview-wallet-balance">Addresses: </div></td>
@@ -46,7 +46,7 @@
                     {{wallet.entries[0].address}} <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu">
-                    <li ng-repeat="entry in wallet.entries">{{entry.address}}</li>
+                    <li ng-repeat="entry in wallet.entries" ng-click="spend.address = entry.address">{{entry.address}}</li>
                     <li class="divider"></li>
                     <li><a href="#">All</a></li>
                   </ul>
@@ -57,7 +57,7 @@
             </tr>
             <tr>
               <td colspan="2">
-                <a href="#"><i class="fa fa-qrcode"></i> <a ng-click="openQR(address)">QR Code</a>
+                <a href="#"><i class="fa fa-qrcode"></i> <a ng-click="openQR(wallet)">QR Code</a>
                 <a href="#" ng-click="sendTab()"><i class="fa fa-cloud-upload"></i> Send </a>
                 <!--<a href="#"><i class="fa fa-pencil"></i> Edit</a>-->
               </td>
@@ -88,7 +88,7 @@
 
           <table id="send-table">
             <tr>
-              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input ng-disabled="readyDisable" id="send_pay_to" type="text" ng-model="spend.address"  /></td>
+              <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input ng-disabled="readyDisable" id="send_pay_to" type="text" ng-model="spend.id"  /></td>
             </tr>
             <!--<tr>
               <td class="send-pay-col1"><label for="send_label">Label</label></td><td><input ng-disabled="sendDisable" id="send_label" type="text" ng-model="spend.label"  /></td>

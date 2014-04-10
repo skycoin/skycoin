@@ -57,16 +57,16 @@ func SpawnConnectionPool(Port int) *gnet.ConnectionPool {
 type ServiceConnectMessage struct {
 	LocalChannel  uint16 //channel of service on sender
 	RemoteChannel uint16 //channel of service on receiver
-	Originating   bool   //peer originating requests sets to true
+	Originating   uint32 //peer originating requests sets to 1
 	ErrorMessage  []byte //fail if error len != 0
 }
 
 func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	state interface{}) error {
-	server := state.(SkywireDaemon) //service server state
+	server := state.(*SkywireDaemon) //service server state
 
 	//message from remote for connection
-	if self.Originating == true {
+	if self.Originating == 1 {
 		service, ok := server.ServiceManager.Services[self.RemoteChannel]
 		if ok == false {
 			//server does not exist
@@ -76,7 +76,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 			var scm ServiceConnectMessage
 			scm.LocalChannel = self.RemoteChannel
 			scm.RemoteChannel = self.LocalChannel
-			scm.Originating = false
+			scm.Originating = 0
 			scm.ErrorMessage = []byte("no service on channel")
 			server.Service.Send(context.Conn, &scm) //channel 0
 			return nil
@@ -85,7 +85,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 			var scm ServiceConnectMessage
 			scm.LocalChannel = self.RemoteChannel
 			scm.RemoteChannel = self.LocalChannel
-			scm.Originating = false
+			scm.Originating = 0
 			scm.ErrorMessage = []byte("")
 			server.Service.Send(context.Conn, &scm) //channel 0
 			//trigger connection event
@@ -94,7 +94,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 		}
 	}
 	//message reponse from remote for connection
-	if self.Originating == false {
+	if self.Originating == 0 {
 		if len(self.ErrorMessage) != 0 {
 			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",
 				context.Conn.Addr(), self.LocalChannel, self.RemoteChannel)
@@ -164,7 +164,7 @@ type TestMessage struct {
 }
 
 func (self *TestMessage) Handle(context *gnet.MessageContext, state interface{}) error {
-	server := state.(TestServiceServer) //service server state
+	server := state.(*TestServiceServer) //service server state
 
 	fmt.Printf("TestMessage Handle: ServerName= %s, Text= %s \n", string(server.Name), string(self.Text))
 	return nil
@@ -240,7 +240,7 @@ func main() {
 	scm := ServiceConnectMessage{}
 	scm.LocalChannel = 1  //channel of local service
 	scm.RemoteChannel = 1 //channel of remote service
-	scm.Originating = true
+	scm.Originating = 1
 	scm.ErrorMessage = []byte("")
 	//send connection intiation
 	swd1.Service.Send(con, &scm)

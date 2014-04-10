@@ -55,35 +55,63 @@ func SpawnConnectionPool(Port int) *gnet.ConnectionPool {
 //}
 
 type ServiceConnectMessage struct {
-	LocalChannel  uint16
-	RemoteChannel uint16
-	Originating   bool
-	ErrorMessage  []byte
+	LocalChannel  uint16 //channel of service on sender
+	RemoteChannel uint16 //channel of service on receiver
+	Originating   bool   //peer originating requests sets to true
+	ErrorMessage  []byte //fail if error len != 0
 }
 
 func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	state interface{}) error {
 	server := state.(SkywireDaemon) //service server state
 
+	//message from remote for connection
 	if self.Originating == true {
-
 		service, ok := server.ServiceManager.Services[self.RemoteChannel]
 		if ok == false {
-			log.Panicf("local service does not exist on channel %d \n", self.RemoteChannel)
+			//server does not exist
+			log.Printf("local service does not exist on channel %d \n", self.RemoteChannel)
 
+			//failure message
 			var scm ServiceConnectMessage
-			scm.LocalChannel = scm.RemoteChannel
-			scm.RemoteChannel = scm.LocalChannel
+			scm.LocalChannel = self.RemoteChannel
+			scm.RemoteChannel = self.LocalChannel
 			scm.Originating = false
 			scm.ErrorMessage = []byte("no service on channel")
-
-			server.ServiceManage.Service.Send()
+			server.Service.Send(context.Conn, &scm) //channel 0
+			return nil
+		} else {
+			//service exists, send success message
+			var scm ServiceConnectMessage
+			scm.LocalChannel = self.RemoteChannel
+			scm.RemoteChannel = self.LocalChannel
+			scm.Originating = false
+			scm.ErrorMessage = []byte("")
+			server.Service.Send(context.Conn, &scm) //channel 0
+			//trigger connection event
+			service.ConnectionEvent(context.Conn, self.LocalChannel)
+			return nil
 		}
-		var scm ServiceConnectMessage
-		scm.LocalChannel = scm.RemoteChannel
-		scm.RemoteChannel = scm.LocalChannel
-
 	}
+	//message reponse from remote for connection
+	if self.Originating == false {
+		if len(self.ErrorMessage) != 0 {
+			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",
+				context.Conn.Addr(), self.LocalChannel, self.RemoteChannel)
+			return nil
+		}
+
+		service, ok := server.ServiceManager.Services[self.RemoteChannel]
+
+		if ok == false {
+			log.Printf("service does not exist on local, LocalChannel= %d from addr= %s \n",
+				self.RemoteChannel, context.Conn.Addr())
+		}
+
+		service.ConnectionEvent(context.Conn, self.LocalChannel)
+		return nil
+	}
+	return nil
 }
 
 //Daemon on channel 0
@@ -104,7 +132,7 @@ func NewSkywireDaemon(sm *gnet.ServiceManager) *SkywireDaemon {
 	swd.ServiceManager = sm
 
 	//associate service with channel 0
-	self.Service = sm.AddService([]byte("Skywire Daemon"), 0, &swd)
+	swd.Service = sm.AddService([]byte("Skywire Daemon"), 0, &swd)
 
 	return &swd
 }
@@ -121,8 +149,8 @@ func (sd *SkywireDaemon) RegisterMessages(d *gnet.Dispatcher) {
 	fmt.Printf("SkywireDaemon: RegisterMessages \n")
 
 	var messageMap map[string](interface{}) = map[string](interface{}){
-	//put messages here
-	//"id01": TestMessage{}, //message id, message type
+		//put messages here
+		"SCON": ServiceConnectMessage{}, //connect to service
 	}
 	d.RegisterMessages(messageMap)
 
@@ -208,9 +236,21 @@ func main() {
 		log.Panic(err)
 	}
 
+	//connection attempt message
+	scm := ServiceConnectMessage{}
+	scm.LocalChannel = 1  //channel of local service
+	scm.RemoteChannel = 1 //channel of remote service
+	scm.Originating = true
+	scm.ErrorMessage = []byte("")
+	//send connection intiation
+	swd1.Service.Send(con, &scm)
+
 	//create a message to send
 	//tm := TestMessage{Text: []byte("Message test")}
 	//d1.SendMessage(con, 3, &tm)
+
+	_ = swd1
+	_ = swd2
 
 	time.Sleep(time.Second * 10)
 }

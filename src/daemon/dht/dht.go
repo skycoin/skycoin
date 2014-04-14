@@ -94,6 +94,11 @@ func (self *DHT) Init() error {
 	//self.InfoHash = infoHash
 	self.DHT = d
 
+	//add the bootstrap nodes
+	for _, addr := range self.Config.BootstrapNodes {
+		self.DHT.AddNode(addr)
+	}
+
 	if self.Config.Disabled {
 		// We have to initialize the DHT anyway because daemon loop needs
 		// to read from its initialized chans. As long as Start() is prevented,
@@ -120,6 +125,7 @@ func (self *DHT) Start() {
 	if self.Config.Disabled {
 		return
 	}
+
 	self.DHT.Run()
 
 }

@@ -19,9 +19,7 @@ func main() {
 
 	dht := daemon_dht.NewDHT(config)
 
-	err := dht.Init()
-
-	if err != nil {
+	if err := dht.Init(); err != nil {
 		log.Panic()
 	}
 

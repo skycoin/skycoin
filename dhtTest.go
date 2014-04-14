@@ -25,13 +25,11 @@ func main() {
 		log.Panic()
 	}
 
-	log.Printf("init")
 	go dht.Start()
-	log.Printf("start")
-
-	go dht.Listen()
+	//go dht.Listen() //flushes
 
 	for i := 0; i < 10; i++ {
+		dht.FlushResults()
 		dht.RequestPeers("skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin")
 		time.Sleep(time.Second * 1)
 	}

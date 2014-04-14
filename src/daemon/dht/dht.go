@@ -124,6 +124,7 @@ func (self *DHT) Start() {
 
 }
 
+//run in seperate goroutine for constantly flushing
 func (self *DHT) Listen() {
 
 	if self.Config.Disabled {
@@ -136,6 +137,25 @@ func (self *DHT) Listen() {
 			log.Panic("There should be no DHT peer results")
 		}
 		self.ReceivePeers(r)
+	}
+
+}
+
+//call to flush pending events
+func (self *DHT) FlushResults() {
+
+	if self.Config.Disabled {
+		return
+	}
+
+	select {
+	case r := <-self.DHT.PeersRequestResults:
+		if self.Config.Disabled {
+			log.Panic("There should be no DHT peer results")
+		}
+		self.ReceivePeers(r)
+
+	default:
 	}
 
 }

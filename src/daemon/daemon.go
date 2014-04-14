@@ -293,13 +293,6 @@ func (self *Daemon) Start(quit chan int) {
 		go self.Pool.Accept() //accepting connections is in own goroutine
 	}
 
-	if !self.DHT.Config.Disabled {
-		go self.DHT.Start() //DHT is run in own goroutine
-	}
-
-	//DHT ticker
-	dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
-
 	//Blob replicator ticker
 	//blobReplicatorTicker := time.Tick(20 * time.Millisecond)
 
@@ -319,23 +312,8 @@ func (self *Daemon) Start(quit chan int) {
 	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
 
 main:
-	for {
 
-		//Module: DHT
-		select {
-		// Continually make requests to the DHT, if we need peers
-		case <-dhtBootstrapTicker:
-			if !self.DHT.Config.Disabled &&
-				len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
-				go self.DHT.RequestPeers()
-			}
-		// Update Peers when DHT reports a new one
-		case r := <-self.DHT.DHT.PeersRequestResults:
-			if self.DHT.Config.Disabled {
-				log.Panic("There should be no DHT peer results")
-			}
-			self.DHT.ReceivePeers(r, self.Peers.Peers)
-		}
+	for {
 
 		//Module: blob replicator
 

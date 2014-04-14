@@ -1,12 +1,19 @@
-package daemon
+package daemon_dht
 
 import (
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/nictuku/dht"
-	"github.com/skycoin/pex"
+	"github.com/op/go-logging"
+	//"github.com/skycoin/pex"
 	"log"
 	"time"
+)
+
+type AddPeerCallback func(infoHash string, peerAddress string)
+
+var (
+	logger = logging.MustGetLogger("skycoin.daemon_dht")
 )
 
 type DHTConfig struct {
@@ -26,6 +33,8 @@ type DHTConfig struct {
 	// These should be set by the controlling daemon:
 	// Port for DHT traffic (uses UDP)
 	port int
+
+	AddPeerCallback AddPeerCallback
 }
 
 /*
@@ -36,8 +45,8 @@ type DHTConfig struct {
 
 func NewDHTConfig() DHTConfig {
 	return DHTConfig{
-		Disabled:     false,
-		Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
+		Disabled: false,
+		//Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
 		DesiredPeers: 20,
 		PeerLimit:    100,
 		BootstrapNodes: []string{
@@ -56,25 +65,25 @@ type DHT struct {
 	// DHT manager
 	DHT *dht.DHT
 	// Hex encoded sha1 sum of Info
-	InfoHash dht.InfoHash
+	//InfoHash dht.InfoHash
+	InfoHashes map[string]string //reverse map
 }
 
 func NewDHT(c DHTConfig) *DHT {
 	return &DHT{
-		Config:   c,
-		DHT:      nil,
-		InfoHash: "",
+		Config:     c,
+		DHT:        nil,
+		InfoHashes: make(map[string]string),
+		//InfoHash: "",
 	}
 }
 
 // Sets up the DHT node for peer bootstrapping
 func (self *DHT) Init() error {
-	sum := sha1.Sum([]byte(self.Config.Info))
+	//sum := sha1.Sum([]byte(self.Config.Info))
 	// Create a hex encoded sha1 sum of a string to be used for DH
-	infoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
-	if err != nil {
-		return err
-	}
+	//infoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
+
 	cfg := dht.NewConfig()
 	cfg.Port = self.Config.port
 	cfg.NumTargetPeers = self.Config.DesiredPeers
@@ -82,7 +91,7 @@ func (self *DHT) Init() error {
 	if err != nil {
 		return err
 	}
-	self.InfoHash = infoHash
+	//self.InfoHash = infoHash
 	self.DHT = d
 
 	if self.Config.Disabled {
@@ -112,32 +121,75 @@ func (self *DHT) Start() {
 		return
 	}
 	self.DHT.Run()
+
 }
 
-// Requests peers from the DHT
-func (self *DHT) RequestPeers() {
+func (self *DHT) Listen() {
+
 	if self.Config.Disabled {
 		return
 	}
-	ih := string(self.InfoHash)
+
+	for {
+		r := <-self.DHT.PeersRequestResults
+		if self.Config.Disabled {
+			log.Panic("There should be no DHT peer results")
+		}
+		self.ReceivePeers(r)
+	}
+
+}
+
+// Requests peers from the DHT
+func (self *DHT) RequestPeers(infoHashString string) {
+	if self.Config.Disabled {
+		return
+	}
+
+	sum := sha1.Sum([]byte(infoHashString))
+	// Create a hex encoded sha1 sum of a string to be used for DH
+	infoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
+	if err != nil {
+		log.Panic()
+	}
+
+	ih := string(infoHash)
 	if ih == "" {
 		log.Panic("InfoHash is not initialized")
 		return
 	}
-	logger.Info("Requesting DHT Peers")
+
+	self.InfoHashes[ih] = infoHashString
+
+	logger.Info("Requesting DHT Peers: infoHashString= %s", infoHashString)
 	self.DHT.PeersRequest(ih, true)
 }
 
+//type InfoHash string
+
 // Called when the DHT finds a peer
-func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string, peers *pex.Pex) {
-	for _, results := range r {
+func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string) {
+
+	for infoHash, results := range r {
 		for _, p := range results {
-			peer := dht.DecodePeerAddress(p)
-			logger.Debug("DHT Peer: %s", peer)
-			_, err := peers.AddPeer(peer)
-			if err != nil {
-				logger.Info("Failed to add DHT peer: %v", err)
+			peerAddress := dht.DecodePeerAddress(p)
+			logger.Debug("DHT Peer: %s", peerAddress)
+
+			if self.Config.AddPeerCallback == nil {
+				log.Panic("Must set callback for receiving DHT peers")
 			}
+
+			str, ok := self.InfoHashes[string(infoHash)]
+			if ok != true {
+				log.Panic("infohash not requested")
+			}
+
+			self.Config.AddPeerCallback(str, peerAddress)
+
+			//_, err := peers.AddPeer(peer)
+			//if err != nil {
+			//	logger.Info("Failed to add DHT peer: %v", err)
+			//}
 		}
 	}
 }

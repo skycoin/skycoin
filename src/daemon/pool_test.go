@@ -1,4 +1,4 @@
-package sync
+package daemon
 
 import (
 	"github.com/skycoin/skywire/src/lib/gnet"

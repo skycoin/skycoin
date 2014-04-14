@@ -1,4 +1,4 @@
-package sync
+package daemon
 
 import (
 	"crypto/sha256"

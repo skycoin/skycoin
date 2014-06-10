@@ -11,93 +11,51 @@ import (
 	"net"
 )
 
-// Message represent a packet to be serialized over the network by
-// the gnet encoder.
-// They must implement the gnet.Message interface
-// All concurrent daemon write operations are synchronized by the daemon's
-// DaemonLoop().
-// Message do this by caching the gnet.MessageContext received in Handle()
-// and placing itself on the messageEvent channel.
-// When the message is retrieved from the messageEvent channel, its Process()
-// method is called.
-
-// Message config contains a gnet.Message's 4byte prefix and a
-// reference interface
-type MessageConfig struct {
-	Prefix  gnet.MessagePrefix
-	Message interface{}
+//Daemon on channel 0
+//The channel 0 service manages exposing service metainformation and
+//server setup and teardown
+type DaemonService struct {
+	Service        *gnet.Service //service for daemon
+	ServiceManager *gnet.ServiceManager
 }
 
-func NewMessageConfig(prefix string, m interface{}) MessageConfig {
-	return MessageConfig{
-		Message: m,
-		Prefix:  gnet.MessagePrefixFromString(prefix),
+// TODO:
+// - add request packet for service list
+// - add connection packet for service
+// - move into daemon
+
+func NewDaemonService(sm *gnet.ServiceManager) *SkywireDaemon {
+	var swd DaemonService
+	swd.ServiceManager = sm
+	//associate service with channel 0
+	swd.Service = sm.AddService([]byte("Skywire Daemon"), 0, &swd)
+
+	return &swd
+}
+
+//move to daemon
+
+func (sd *DaemonService) OnConnect(c *gnet.Connection) {
+	fmt.Printf("SkywireDaemon: OnConnect, addr= %s \n", c.Addr())
+}
+
+func (sd *DaemonService) OnDisconnect(c *gnet.Connection) {
+	fmt.Printf("SkywireDaemon: OnDisconnect, addr= %s \n", c.Addr())
+}
+
+func (sd *DaemonService) RegisterMessages(d *gnet.Dispatcher) {
+	fmt.Printf("SkywireDaemon: RegisterMessages \n")
+
+	var messageMap map[string](interface{}) = map[string](interface{}){
+		//put messages here
+		//"SCON": ServiceConnectMessage{}, //connect to service
+		"INTR", IntroductionMessage{},
+		"GETP", GetPeersMessage{},
+		"GIVP", GivePeersMessage{},
+		"PING", PingMessage{},
+		"PONG", PongMessage{},
 	}
-}
-
-// Creates and populates the message configs
-func getMessageConfigs() []MessageConfig {
-	return []MessageConfig{
-		NewMessageConfig("INTR", IntroductionMessage{}),
-		NewMessageConfig("GETP", GetPeersMessage{}),
-		NewMessageConfig("GIVP", GivePeersMessage{}),
-		NewMessageConfig("PING", PingMessage{}),
-		NewMessageConfig("PONG", PongMessage{}),
-
-		//Blob replicator
-		//NewMessageConfig("BDMM", BlobDataMessage{}),
-		//NewMessageConfig("ABMM", AnnounceBlobsMessage{}),
-		//NewMessageConfig("GBMM", GetBlobMessage{}),
-		//NewMessageConfig("GBLM", GetBlobListMessage{}),
-
-		///NewMessageConfig("GETB", GetBlocksMessage{}),
-		//NewMessageConfig("GIVB", GiveBlocksMessage{}),
-		//NewMessageConfig("ANNB", AnnounceBlocksMessage{}),
-		//NewMessageConfig("GETT", GetTxnsMessage{}),
-		//NewMessageConfig("GIVT", GiveTxnsMessage{}),
-		//NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
-	}
-}
-
-type MessagesConfig struct {
-	// Message ID prefices
-	Messages []MessageConfig
-}
-
-func NewMessagesConfig() MessagesConfig {
-	return MessagesConfig{
-		Messages: getMessageConfigs(),
-	}
-}
-
-//TODO: gnet instances might need local message tables
-var _messages_registered = false
-
-// Registers our Messages with gnet
-func (self *MessagesConfig) Register() {
-	//dont register messages twice
-	if _messages_registered == true {
-		return
-	}
-	_messages_registered = true
-
-	for _, mc := range self.Messages {
-		gnet.RegisterMessage(mc.Prefix, mc.Message)
-	}
-	gnet.VerifyMessages()
-}
-
-type Messages struct {
-	Config MessagesConfig
-	// Magic value for detecting self-connection
-	Mirror uint32
-}
-
-func NewMessages(c MessagesConfig) *Messages {
-	return &Messages{
-		Config: c,
-		Mirror: rand.New(rand.NewSource(util.Now().UnixNano())).Uint32(),
-	}
+	d.RegisterMessages(messageMap)
 }
 
 // Compact representation of IP:Port
@@ -136,9 +94,9 @@ func (self IPAddr) String() string {
 // Process() is called after the message is pulled off of messageEvent channel.
 // Messages should place themselves on the messageEvent channel in their
 // Handle() method required by gnet.
-type AsyncMessage interface {
-	Process(d *Daemon)
-}
+//type AsyncMessage interface {
+//	Process(d *Daemon)
+//}
 
 // Sent to request peers
 type GetPeersMessage struct {

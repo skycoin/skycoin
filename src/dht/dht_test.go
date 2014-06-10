@@ -1,4 +1,4 @@
-package daemon_dht
+package dht
 
 import (
 	"github.com/nictuku/dht"

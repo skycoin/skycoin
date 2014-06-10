@@ -147,6 +147,8 @@ func NewSkywireDaemon() *daemon.Daemon {
 
 }
 
+//move to daemon
+/*
 func (sd *SkywireDaemon) OnConnect(c *gnet.Connection) {
 	fmt.Printf("SkywireDaemon: OnConnect, addr= %s \n", c.Addr())
 }
@@ -163,8 +165,8 @@ func (sd *SkywireDaemon) RegisterMessages(d *gnet.Dispatcher) {
 		"SCON": ServiceConnectMessage{}, //connect to service
 	}
 	d.RegisterMessages(messageMap)
-
 }
+*/
 
 //Daemon on Channel 1
 
@@ -206,7 +208,6 @@ func (sd *TestServiceServer) RegisterMessages(d *gnet.Dispatcher) {
 		"id01": TestMessage{}, //message id, message type
 	}
 	d.RegisterMessages(messageMap)
-
 }
 
 /*

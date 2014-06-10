@@ -13,15 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skywire/src/dht"      //dht library
 	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
 )
 
 /*
 	Todo:
 	- give each daemon a pubkey and address
-	-
-
-
 */
 
 var (
@@ -69,7 +67,7 @@ type Config struct {
 	Messages MessagesConfig
 	Pool     PoolConfig
 	Peers    PeersConfig
-	DHT      DHTConfig
+	DHT      dht.DHTConfig
 	//Gateway  GatewayConfig
 	//Visor    VisorConfig
 }
@@ -80,7 +78,7 @@ func NewConfig() Config {
 		Daemon: NewDaemonConfig(),
 		Pool:   NewPoolConfig(),
 		Peers:  NewPeersConfig(),
-		DHT:    NewDHTConfig(),
+		DHT:    dht.NewDHTConfig(),
 		//Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
 		//Visor:    NewVisorConfig(),
@@ -107,7 +105,7 @@ func (self *Config) preprocess() Config {
 	}
 	config.Pool.port = config.Daemon.Port
 	config.Pool.address = config.Daemon.Address
-	config.DHT.port = config.Daemon.Port
+	config.DHT.Port = config.Daemon.Port
 	if config.Daemon.DisableNetworking {
 		config.Peers.Disabled = true
 		config.DHT.Disabled = true
@@ -187,7 +185,7 @@ type Daemon struct {
 	Messages *Messages
 	Pool     *Pool
 	Peers    *Peers
-	DHT      *DHT
+	DHT      *dht.DHT
 	//Gateway  *Gateway
 	//Visor    *Visor
 
@@ -230,7 +228,7 @@ func NewDaemon(config Config) *Daemon {
 		Messages: NewMessages(config.Messages),
 		Pool:     NewPool(config.Pool),
 		Peers:    NewPeers(config.Peers),
-		DHT:      NewDHT(config.DHT),
+		DHT:      dht.NewDHT(config.DHT),
 		//Visor:    NewVisor(config.Visor),
 		ExpectingIntroductions: make(map[string]time.Time),
 		ConnectionMirrors:      make(map[string]uint32),
@@ -284,7 +282,7 @@ func (self *Daemon) Shutdown() {
 	self.Pool.Shutdown()
 	self.Peers.Shutdown()
 	//self.Visor.Shutdown()
-	gnet.EraseMessages()
+	//gnet.EraseMessages() //pool shutdown?
 }
 
 // Runs initialization that must complete before the Start goroutine
@@ -612,7 +610,10 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 	logger.Debug("Sending introduction message to %s", a)
 	m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
 		self.Pool.Pool.Config.Port)
-	self.Pool.Pool.SendMessage(c, m) //channel and byte
+
+	//self.Pool.Pool.SendMessage(c, 0, m) //connection, channel, message
+
+	//Use Service instead?
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not

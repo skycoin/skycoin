@@ -1,4 +1,4 @@
-package daemon_dht
+package dht
 
 import (
 	"crypto/sha1"
@@ -40,7 +40,7 @@ type DHTConfig struct {
 
 	// These should be set by the controlling daemon:
 	// Port for DHT traffic (uses UDP)
-	port int
+	Port int
 
 	AddPeerCallback AddPeerCallback
 }
@@ -64,7 +64,7 @@ func NewDHTConfig() DHTConfig {
 			"dht.transmissionbt.com:6881",
 		},
 		BootstrapRequestRate: time.Second * 10,
-		port:                 6677,
+		Port:                 6677,
 	}
 }
 
@@ -93,7 +93,7 @@ func (self *DHT) Init() error {
 	//infoHash, err := dht.DecodeInfoHash(hex.EncodeToString(sum[:]))
 
 	cfg := dht.NewConfig()
-	cfg.Port = self.Config.port
+	cfg.Port = self.Config.Port
 	cfg.NumTargetPeers = self.Config.DesiredPeers
 	d, err := dht.New(cfg)
 	if err != nil {
@@ -113,7 +113,7 @@ func (self *DHT) Init() error {
 		// the DHT will not run.
 		logger.Info("DHT is disabled")
 	} else {
-		logger.Info("Init DHT on port %d", self.Config.port)
+		logger.Info("Init DHT on port %d", self.Config.Port)
 	}
 	return nil
 }

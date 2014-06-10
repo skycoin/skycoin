@@ -16,6 +16,14 @@ import (
 	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
 )
 
+/*
+	Todo:
+	- give each daemon a pubkey and address
+	-
+
+
+*/
+
 var (
 	// DisconnectReasons
 	DisconnectInvalidVersion gnet.DisconnectReason = errors.New(

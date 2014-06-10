@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+/*
+	TODO:
+	- fix memory leak in map
+	- map does not release memory after lookup
+	- will use increasing memory for large number of lookups
+	- add timer for last query and push out oldest after queries exceed number
+
+*/
 type AddPeerCallback func(infoHash string, peerAddress string)
 
 var (

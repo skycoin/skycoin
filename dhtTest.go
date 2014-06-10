@@ -2,13 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/skycoin/skywire/src/daemon/dht"
+	"github.com/skycoin/skywire/src/dht"
 	"log"
 	"time"
 )
 
-func PeerCallback(infoHash string, peerAddress string) {
+/*
+ Takes a string, hashes it and finds people who are also looking for people
+ who are looking for people with the same hash
+*/
 
+func PeerCallback(infoHash string, peerAddress string) {
 	fmt.Printf("PeerCallback: infoHash= %s, peerAddres= %s \n", infoHash, peerAddress)
 }
 

@@ -159,7 +159,7 @@ type DaemonConfig struct {
 
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		Version:                    2,
+		Version:                    3,
 		Address:                    "",
 		Port:                       6677,
 		OutgoingRate:               time.Second * 5,
@@ -226,9 +226,9 @@ func NewDaemon(config Config) *Daemon {
 	d := &Daemon{
 		Config:   config.Daemon,
 		Messages: NewMessages(config.Messages),
-		Pool:     NewPool(config.Pool),
-		Peers:    NewPeers(config.Peers),
-		DHT:      dht.NewDHT(config.DHT),
+		//Pool:     NewPool(config.Pool),
+		Peers: NewPeers(config.Peers),
+		DHT:   dht.NewDHT(config.DHT),
 		//Visor:    NewVisor(config.Visor),
 		ExpectingIntroductions: make(map[string]time.Time),
 		ConnectionMirrors:      make(map[string]uint32),
@@ -253,6 +253,12 @@ func NewDaemon(config Config) *Daemon {
 	d.Pool.Init(d)
 	d.Peers.Init()
 	d.DHT.Init()
+
+	//gnet set connection pool
+	gnet_config := gnet.NewConfig()
+	gnet_config.Port = uint16(d.Config.Port) //set listening port
+	d.Pool = gnet.NewConnectionPool(gnet_config)
+
 	return d
 }
 
@@ -288,7 +294,11 @@ func (self *Daemon) Shutdown() {
 // Runs initialization that must complete before the Start goroutine
 func (self *Daemon) Init() {
 	if !self.Config.DisableIncomingConnections {
-		self.Pool.Listen()
+		//self.Pool.Listen()
+		//if err := self.Pool.StartListen(); err != nil {
+		//	log.Panic(err)
+		//}
+		//go self.Pool.AcceptConnections() //listen for connections
 	}
 }
 
@@ -296,7 +306,12 @@ func (self *Daemon) Init() {
 // down
 func (self *Daemon) Start(quit chan int) {
 	if !self.Config.DisableIncomingConnections {
-		go self.Pool.Accept() //accepting connections is in own goroutine
+		//listen for incoming
+		if err := self.Pool.StartListen(); err != nil {
+			log.Panic(err)
+		}
+		//goroutine for accepting incoming
+		go self.Pool.AcceptConnections() //listen for connections
 	}
 
 	//Blob replicator ticker
@@ -363,10 +378,10 @@ main:
 			if !self.Config.DisableNetworking {
 				self.Pool.sendPings()
 			}
-		//process the connection queue
+		//process incoming messages
 		case <-messageHandlingTicker:
 			if !self.Config.DisableNetworking {
-				self.Pool.Pool.HandleMessages()
+				self.Pool.HandleMessages()
 			}
 		// Process disconnections
 		case r := <-self.Pool.Pool.DisconnectQueue:

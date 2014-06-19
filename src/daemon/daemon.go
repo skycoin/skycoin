@@ -139,19 +139,18 @@ type DaemonConfig struct {
 
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		Version:          3,
-		Address:          "",
-		Port:             6677,
-		OutgoingRate:     time.Second * 5,
-		PrivateRate:      time.Second * 5,
-		OutgoingMax:      8,
-		PendingMax:       16, //for pex
-		IntroductionWait: time.Second * 30,
-		CullInvalidRate:  time.Second * 3,
-		//IPCountsMax:                3,
-		DisableNetworking:          false, //deprecate?
-		DisableOutgoingConnections: false, //deprecate?
-		DisableIncomingConnections: false, //deprecate?
+		Version:                    3,
+		Address:                    "",
+		Port:                       6677,
+		OutgoingRate:               time.Second * 5,
+		PrivateRate:                time.Second * 5,
+		OutgoingMax:                8,
+		PendingMax:                 16, //for pex
+		IntroductionWait:           time.Second * 30,
+		CullInvalidRate:            time.Second * 3,
+		DisableNetworking:          false,
+		DisableOutgoingConnections: false, //makes random connections to new peers
+		DisableIncomingConnections: false,
 		LocalhostOnly:              false,
 	}
 }
@@ -200,16 +199,10 @@ func NewDaemon(config Config) *Daemon {
 		pendingConnections: make(map[string]*pex.Peer,
 			config.Daemon.PendingMax),
 	}
-	//d.Gateway = NewGateway(config.Gateway, d)
-	//d.Messages.Config.Register()
-	//d.Pool.Init(d)
 	d.Peers.Init()
 	d.DHT.Init()
 
 	//gnet set connection pool
-
-	//config.Pool.port = config.Daemon.Port
-	//config.Pool.address = config.Daemon.Address
 	gnet_config := gnet.NewConfig()
 	gnet_config.Port = uint16(d.Config.Port) //set listening port
 	gnet_config.Address = d.Config.Address
@@ -235,12 +228,6 @@ type ConnectionError struct {
 	Error error
 }
 
-// Encapsulates a deserialized message from the network
-//type MessageEvent struct {
-//	Message AsyncMessage
-//	Context *gnet.MessageContext
-//}
-
 // Terminates all subsystems safely.  To stop the Daemon run loop, send a value
 // over the quit channel provided to Init.  The Daemon run lopp must be stopped
 // before calling this function.
@@ -249,7 +236,6 @@ func (self *Daemon) Shutdown() {
 	self.Peers.Shutdown()
 
 	self.Pool.StopListen() //have to do anything?
-
 	for _, con := range self.Pool.Addresses {
 		con.Close()
 	}
@@ -280,13 +266,6 @@ func (self *Daemon) Start(quit chan int) {
 		go self.Pool.AcceptConnections() //listen for connections
 	}
 
-	//Blob replicator ticker
-	//blobReplicatorTicker := time.Tick(20 * time.Millisecond)
-
-	//pool tickers
-	//clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
-	//idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
-
 	//fix this, should poll without delay
 	messageHandlingTicker := time.Tick(time.Millisecond * 10)
 
@@ -303,18 +282,6 @@ func (self *Daemon) Start(quit chan int) {
 main:
 
 	for {
-
-		//Module: blob replicator
-
-		/*
-			select {
-			//send out blob replicator requests
-			case <-blobReplicatorTicker:
-				for _, br := range self.BlobReplicators {
-					br.TickRequests() //send out requests
-				}
-			}
-		*/
 
 		select {
 
@@ -336,16 +303,6 @@ main:
 
 		// Module: Pool
 
-		// Remove connections that haven't said anything in a while
-		//case <-clearStaleConnectionsTicker:
-		//	if !self.Config.DisableNetworking {
-		//		self.Pool.clearStaleConnections()
-		//	}
-		// Sends pings as needed
-		//case <-idleCheckTicker:
-		//	if !self.Config.DisableNetworking {
-		//		self.Pool.sendPings()
-		//	}
 		//process incoming messages
 		case <-messageHandlingTicker:
 			if !self.Config.DisableNetworking {
@@ -378,29 +335,13 @@ main:
 			if !self.Config.DisableOutgoingConnections {
 				self.makePrivateConnections()
 			}
-		// Process callbacks for when a client connects. No disconnect chan
-		// is needed because the callback is triggered by HandleDisconnectEvent
-		// which is already select{}ed here
 
-		//case r := <-self.onConnectEvent:
-		//	if self.Config.DisableNetworking {
-		//		log.Panic("There should be no connect events")
-		//	}
-		//	self.onConnect(r)
-		// Handle connection errors
 		case r := <-self.connectionErrors:
 			if self.Config.DisableNetworking {
 				log.Panic("There should be no connection errors")
 			}
 			self.handleConnectionError(r)
-		// Message handlers
-		/*
-			case m := <-self.messageEvents:
-				if self.Config.DisableNetworking {
-					log.Panic("There should be no message events")
-				}
-				self.processMessageEvent(m)
-		*/
+
 		case <-quit:
 			break main
 		}

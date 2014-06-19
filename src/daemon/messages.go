@@ -235,13 +235,6 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext,
 	} else {
 		logger.Info("%s verified for version %d", addr, self.Version)
 	}
-	// Disconnect if connected twice to the same peer (judging by ip:mirror)
-	//knownPort, exists := d.getMirrorPort(addr, self.Mirror)
-	//if exists {
-	//	logger.Info("%s is already connected on port %d", addr, knownPort)
-	//	d.Pool.Pool.Disconnect(mc.Conn, DisconnectConnectedTwice)
-	//	err = DisconnectConnectedTwice
-	//}
 
 	if err != nil {
 		return nil

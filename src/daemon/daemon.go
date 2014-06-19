@@ -429,7 +429,7 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 	if self.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
-	a, _, err := SplitAddr(p.Addr)
+	_, _, err := SplitAddr(p.Addr)
 	if err != nil {
 		logger.Warning("PEX gave us an invalid peer: %v", err)
 		return errors.New("Invalid peer")
@@ -437,10 +437,6 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 
 	if self.Pool.Addresses[p.Addr] != nil {
 		return errors.New("Already connected")
-	}
-
-	if self.ipCounts[a] != 0 {
-		return errors.New("Already connected to a peer with this base IP")
 	}
 
 	self.pendingConnections[p.Addr] = p
@@ -535,24 +531,17 @@ func (self *Daemon) processMessageEvent(e MessageEvent) {
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel
 func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
-	e := ConnectEvent{Addr: c.Addr(), Solicited: solicited}
+	//e := ConnectEvent{Addr: c.Addr(), Solicited: solicited}
 
-	a := e.Addr
+	a := c.Addr()
 
-	if e.Solicited {
+	if solicited {
 		logger.Info("Connected to %s as we requested", a)
 	} else {
 		logger.Info("Received unsolicited connection to %s", a)
 	}
 
 	delete(self.pendingConnections, a)
-
-	c := self.Pool.Addresses[a]
-	if c == nil {
-		logger.Warning("While processing an onConnect event, no pool " +
-			"connection was found")
-		return
-	}
 
 	blacklisted := self.Peers.Peers.IsBlacklisted(a)
 	if blacklisted {
@@ -566,7 +555,7 @@ func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 		self.Pool.Disconnect(c, DisconnectConnectedTwice)
 	}
 
-	if e.Solicited {
+	if solicited {
 		self.OutgoingConnections[a] = c
 	}
 	self.ExpectingIntroductions[a] = util.Now()

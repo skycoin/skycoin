@@ -193,8 +193,6 @@ func NewDaemon(config Config) *Daemon {
 		// Its because we are connecting to more things than OutgoingMax
 		// if we have private peers
 
-		//onConnectEvent: make(chan ConnectEvent,
-		//	config.Daemon.OutgoingMax),
 		connectionErrors: make(chan ConnectionError,
 			config.Daemon.OutgoingMax),
 		OutgoingConnections: make(map[string]*gnet.Connection,
@@ -509,30 +507,8 @@ func (self *Daemon) cullInvalidConnections() {
 	}
 }
 
-// TODO: move handshake authentication into gnet
-// Processes a queued AsyncMessage.
-
-/*
-func (self *Daemon) processMessageEvent(e MessageEvent) {
-	// The first message received must be an Introduction
-	// We have to check at process time and not record time because
-	// Introduction message does not update ExpectingIntroductions until its
-	// Process() is called
-	_, needsIntro := self.ExpectingIntroductions[e.Context.Conn.Addr()]
-	if needsIntro {
-		_, isIntro := e.Message.(*IntroductionMessage)
-		if !isIntro {
-			self.Pool.Pool.Disconnect(e.Context.Conn, DisconnectNoIntroduction)
-		}
-	}
-	e.Message.Process(self)
-}
-*/
-
 // Called when a ConnectEvent is processed off the onConnectEvent channel
 func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
-	//e := ConnectEvent{Addr: c.Addr(), Solicited: solicited}
-
 	a := c.Addr()
 
 	if solicited {
@@ -572,11 +548,6 @@ func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 	reason gnet.DisconnectReason) {
 
-	//blob replicators on disconnect
-	//for _, br := range self.BlobReplicators {
-	//	br.OnDisconnect(self.Pool, c.Addr())
-	//}
-
 	a := c.Addr()
 	logger.Info("%s disconnected because: %v", a, reason)
 	duration, exists := BlacklistOffenses[reason]
@@ -585,129 +556,12 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 	}
 	delete(self.OutgoingConnections, a)
 	delete(self.ExpectingIntroductions, a)
-	//self.Visor.RemoveConnection(a)
-	//self.removeIPCount(a)
-	//self.removeConnectionMirror(a)
 }
 
 // Triggered when an gnet.Connection is connected
 //func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
 //	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
 //}
-
-/*
-// Returns whether the ipCount maximum has been reached
-func (self *Daemon) ipCountMaxed(addr string) bool {
-	ip, _, err := SplitAddr(addr)
-	if err != nil {
-		logger.Warning("ipCountMaxed called with invalid addr: %v", err)
-		return true
-	}
-	return self.ipCounts[ip] >= self.Config.IPCountsMax
-}
-
-// Adds base IP to ipCount or returns error if max is reached
-func (self *Daemon) recordIPCount(addr string) {
-	ip, _, err := SplitAddr(addr)
-	if err != nil {
-		logger.Warning("recordIPCount called with invalid addr: %v", err)
-		return
-	}
-	_, hasCount := self.ipCounts[ip]
-	if !hasCount {
-		self.ipCounts[ip] = 0
-	}
-	self.ipCounts[ip] += 1
-}
-
-// Removes base IP from ipCount
-func (self *Daemon) removeIPCount(addr string) {
-	ip, _, err := SplitAddr(addr)
-	if err != nil {
-		logger.Warning("removeIPCount called with invalid addr: %v", err)
-		return
-	}
-	if self.ipCounts[ip] <= 1 {
-		delete(self.ipCounts, ip)
-	} else {
-		self.ipCounts[ip] -= 1
-	}
-}
-*/
-
-// Adds addr + mirror to the connectionMirror mappings
-
-// nodes are identified by public key in future
-/*
-func (self *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
-	ip, port, err := SplitAddr(addr)
-	if err != nil {
-		logger.Warning("recordConnectionMirror called with invalid addr: %v",
-			err)
-		return err
-	}
-	self.ConnectionMirrors[addr] = mirror
-	m := self.mirrorConnections[mirror]
-	if m == nil {
-		m = make(map[string]uint16, 1)
-	}
-	m[ip] = port
-	self.mirrorConnections[mirror] = m
-	return nil
-}
-
-// Removes an addr from the connectionMirror mappings
-func (self *Daemon) removeConnectionMirror(addr string) {
-	mirror, ok := self.ConnectionMirrors[addr]
-	if !ok {
-		return
-	}
-	ip, _, err := SplitAddr(addr)
-	if err != nil {
-		logger.Warning("removeConnectionMirror called with invalid addr: %v",
-			err)
-		return
-	}
-	m := self.mirrorConnections[mirror]
-	if len(m) <= 1 {
-		delete(self.mirrorConnections, mirror)
-	} else {
-		delete(m, ip)
-	}
-	delete(self.ConnectionMirrors, addr)
-}
-
-// Returns whether an addr+mirror's port and whether the port exists
-func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
-	ips := self.mirrorConnections[mirror]
-	if ips == nil {
-		return 0, false
-	}
-	ip, _, err := SplitAddr(addr)
-	if err != nil {
-		logger.Warning("getMirrorPort called with invalid addr: %v", err)
-		return 0, false
-	}
-	port, exists := ips[ip]
-	return port, exists
-}
-*/
-
-// When an async message send finishes, its result is handled by this
-/*
-func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
-	if r.Error != nil {
-		logger.Warning("Failed to send %s to %s: %v",
-			reflect.TypeOf(r.Message).Name(), r.Connection.Addr(), r.Error)
-		return
-	}
-	switch r.Message.(type) {
-	//case SendingTxnsMessage:
-	//    self.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
-	default:
-	}
-}
-*/
 
 // Returns the address for localhost on the machine
 func LocalhostIP() (string, error) {

@@ -380,7 +380,7 @@ func (self *ConnectionPool) handleConnection(conn net.Conn,
 	return c
 }
 
-// Connect to an address
+// Connect to an address. Blocks until connected
 func (self *ConnectionPool) Connect(address string) (*Connection, error) {
 	if c := self.Addresses[address]; c != nil {
 		return c, nil

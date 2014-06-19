@@ -35,10 +35,6 @@ var (
 	DisconnectConnectedTwice gnet.DisconnectReason = errors.New(
 		"Already connected")
 
-	//DisconnectIPLimitReached gnet.DisconnectReason = errors.New(
-	//	"Maximum number of connections for this IP was reached")
-	// This is returned when a seemingly impossible error is encountered
-	// e.g. net.Conn.Addr() returns an invalid ip:port
 	DisconnectOtherError gnet.DisconnectReason = errors.New(
 		"Incomprehensible error")
 
@@ -58,24 +54,16 @@ var (
 // Subsystem configurations
 type Config struct {
 	Daemon DaemonConfig
-	//Messages MessagesConfig
-	//Pool  PoolConfig
-	Peers PeersConfig
-	DHT   dht.DHTConfig
-	//Gateway  GatewayConfig
-	//Visor    VisorConfig
+	Peers  PeersConfig
+	DHT    dht.DHTConfig
 }
 
 // Returns a Config with defaults set
 func NewConfig() Config {
 	return Config{
 		Daemon: NewDaemonConfig(),
-		//Pool:   NewPoolConfig(),
-		Peers: NewPeersConfig(),
-		DHT:   dht.NewDHTConfig(),
-		//Gateway:  NewGatewayConfig(),
-		//Messages: NewMessagesConfig(),
-		//Visor:    NewVisorConfig(),
+		Peers:  NewPeersConfig(),
+		DHT:    dht.NewDHTConfig(),
 	}
 }
 
@@ -139,8 +127,6 @@ type DaemonConfig struct {
 	IntroductionWait time.Duration
 	// How often to check for peers that have decided to stop communicating
 	CullInvalidRate time.Duration
-	// How many connections are allowed from the same base IP
-	//IPCountsMax int
 	// Disable all networking activity
 	DisableNetworking bool
 	// Don't make outgoing connections
@@ -176,42 +162,20 @@ type Daemon struct {
 	Config DaemonConfig
 
 	// Components
-	//Messages *Messages
-	Pool  *gnet.ConnectionPool //what does this do
-	Peers *Peers
-	DHT   *dht.DHT
-	//Gateway  *Gateway
-	//Visor    *Visor
+	Pool           *gnet.ConnectionPool //what does this do
+	Peers          *Peers
+	DHT            *dht.DHT
 	ServiceManager *gnet.ServiceManager //service manager for pool
 	Service        *gnet.Service        //base service for daemon
 
-	// Separate index of outgoing connections. The pool aggregates all
-	// connections.
-	OutgoingConnections map[string]*gnet.Connection
+	// Separate index of outgoing connections
+	OutgoingConnections map[string]*gnet.Connection //deprecate?
 	// Number of connections waiting to be formed or timeout
 	pendingConnections map[string]*pex.Peer
 	// Keep track of unsolicited clients who should notify us of their version
 	ExpectingIntroductions map[string]time.Time
-	// Keep track of a connection's mirror value, to avoid double
-	// connections (one to their listener, and one to our listener)
-	// Maps from addr to mirror value
-	//ConnectionMirrors map[string]uint32
-	// Maps from mirror value to a map of ip (no port)
-	// We use a map of ip as value because multiple peers can have the same
-	// mirror (to avoid attacks enabled by our use of mirrors),
-	// but only one per base ip
-	//mirrorConnections map[uint32]map[string]uint16
-	// Client connection/disconnection callbacks
-	onConnectEvent chan ConnectEvent
 	// Connection failure events
 	connectionErrors chan ConnectionError
-	// Tracking connections from the same base IP.  Multiple connections
-	// from the same base IP are allowed but limited.
-	ipCounts map[string]int
-	// Message handling queue
-	//messageEvents chan MessageEvent
-
-	//BlobReplicators []*BlobReplicator //blob replicator list
 }
 
 // Returns a Daemon with primitives allocated
@@ -221,28 +185,22 @@ func NewDaemon(config Config) *Daemon {
 	// c.DHT.address = c.Daemon.Address
 	d := &Daemon{
 		Config: config.Daemon,
-		//Messages: NewMessages(config.Messages),
-		//Pool:     NewPool(config.Pool),
-		Peers: NewPeers(config.Peers),
-		DHT:   dht.NewDHT(config.DHT),
-		//Visor:    NewVisor(config.Visor),
+		Peers:  NewPeers(config.Peers),
+		DHT:    dht.NewDHT(config.DHT),
 		ExpectingIntroductions: make(map[string]time.Time),
-		//ConnectionMirrors:      make(map[string]uint32),
-		//mirrorConnections:      make(map[uint32]map[string]uint16),
-		//ipCounts:               make(map[string]int),
+
 		// TODO -- if there are performance problems from blocking chans,
 		// Its because we are connecting to more things than OutgoingMax
 		// if we have private peers
-		onConnectEvent: make(chan ConnectEvent,
-			config.Daemon.OutgoingMax),
+
+		//onConnectEvent: make(chan ConnectEvent,
+		//	config.Daemon.OutgoingMax),
 		connectionErrors: make(chan ConnectionError,
 			config.Daemon.OutgoingMax),
 		OutgoingConnections: make(map[string]*gnet.Connection,
 			config.Daemon.OutgoingMax),
 		pendingConnections: make(map[string]*pex.Peer,
 			config.Daemon.PendingMax),
-		//messageEvents: make(chan MessageEvent,
-		//	config.Pool.EventChannelSize),
 	}
 	//d.Gateway = NewGateway(config.Gateway, d)
 	//d.Messages.Config.Register()
@@ -425,11 +383,12 @@ main:
 		// Process callbacks for when a client connects. No disconnect chan
 		// is needed because the callback is triggered by HandleDisconnectEvent
 		// which is already select{}ed here
-		case r := <-self.onConnectEvent:
-			if self.Config.DisableNetworking {
-				log.Panic("There should be no connect events")
-			}
-			self.onConnect(r)
+
+		//case r := <-self.onConnectEvent:
+		//	if self.Config.DisableNetworking {
+		//		log.Panic("There should be no connect events")
+		//	}
+		//	self.onConnect(r)
 		// Handle connection errors
 		case r := <-self.connectionErrors:
 			if self.Config.DisableNetworking {
@@ -575,7 +534,9 @@ func (self *Daemon) processMessageEvent(e MessageEvent) {
 */
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel
-func (self *Daemon) onConnect(e ConnectEvent) {
+func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
+	e := ConnectEvent{Addr: c.Addr(), Solicited: solicited}
+
 	a := e.Addr
 
 	if e.Solicited {
@@ -613,11 +574,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 
 	m := NewIntroductionMessage(MirrorConstant, self.Config.Version,
 		self.Pool.Config.Port)
-
 	self.Service.Send(c, m)
-	//self.Pool.Pool.SendMessage(c, 0, m) //connection, channel, message
-
-	//Use Service instead?
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not
@@ -645,9 +602,9 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 }
 
 // Triggered when an gnet.Connection is connected
-func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
-	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
-}
+//func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
+//	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
+//}
 
 /*
 // Returns whether the ipCount maximum has been reached

@@ -63,11 +63,11 @@ var (
 
 // Subsystem configurations
 type Config struct {
-	Daemon   DaemonConfig
-	Messages MessagesConfig
-	Pool     PoolConfig
-	Peers    PeersConfig
-	DHT      dht.DHTConfig
+	Daemon DaemonConfig
+	//Messages MessagesConfig
+	//Pool  PoolConfig
+	Peers PeersConfig
+	DHT   dht.DHTConfig
 	//Gateway  GatewayConfig
 	//Visor    VisorConfig
 }
@@ -76,11 +76,11 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		Daemon: NewDaemonConfig(),
-		Pool:   NewPoolConfig(),
-		Peers:  NewPeersConfig(),
-		DHT:    dht.NewDHTConfig(),
+		//Pool:   NewPoolConfig(),
+		Peers: NewPeersConfig(),
+		DHT:   dht.NewDHTConfig(),
 		//Gateway:  NewGatewayConfig(),
-		Messages: NewMessagesConfig(),
+		//Messages: NewMessagesConfig(),
 		//Visor:    NewVisorConfig(),
 	}
 }
@@ -103,9 +103,9 @@ func (self *Config) preprocess() Config {
 		config.DHT.Disabled = true
 		config.Peers.AllowLocalhost = true
 	}
-	config.Pool.port = config.Daemon.Port
-	config.Pool.address = config.Daemon.Address
+
 	config.DHT.Port = config.Daemon.Port
+
 	if config.Daemon.DisableNetworking {
 		config.Peers.Disabled = true
 		config.DHT.Disabled = true
@@ -182,10 +182,10 @@ type Daemon struct {
 	Config DaemonConfig
 
 	// Components
-	Messages *Messages
-	Pool     *Pool
-	Peers    *Peers
-	DHT      *dht.DHT
+	//Messages *Messages
+	Pool  *gnet.ConnectionPool //what does this do
+	Peers *Peers
+	DHT   *dht.DHT
 	//Gateway  *Gateway
 	//Visor    *Visor
 
@@ -213,7 +213,7 @@ type Daemon struct {
 	// from the same base IP are allowed but limited.
 	ipCounts map[string]int
 	// Message handling queue
-	messageEvents chan MessageEvent
+	//messageEvents chan MessageEvent
 
 	//BlobReplicators []*BlobReplicator //blob replicator list
 }
@@ -224,8 +224,8 @@ func NewDaemon(config Config) *Daemon {
 	// TODO -- dht lib does not allow choosing address, should we add that?
 	// c.DHT.address = c.Daemon.Address
 	d := &Daemon{
-		Config:   config.Daemon,
-		Messages: NewMessages(config.Messages),
+		Config: config.Daemon,
+		//Messages: NewMessages(config.Messages),
 		//Pool:     NewPool(config.Pool),
 		Peers: NewPeers(config.Peers),
 		DHT:   dht.NewDHT(config.DHT),
@@ -245,18 +245,23 @@ func NewDaemon(config Config) *Daemon {
 			config.Daemon.OutgoingMax),
 		pendingConnections: make(map[string]*pex.Peer,
 			config.Daemon.PendingMax),
-		messageEvents: make(chan MessageEvent,
-			config.Pool.EventChannelSize),
+		//messageEvents: make(chan MessageEvent,
+		//	config.Pool.EventChannelSize),
 	}
 	//d.Gateway = NewGateway(config.Gateway, d)
-	d.Messages.Config.Register()
-	d.Pool.Init(d)
+	//d.Messages.Config.Register()
+	//d.Pool.Init(d)
 	d.Peers.Init()
 	d.DHT.Init()
 
 	//gnet set connection pool
+
+	//config.Pool.port = config.Daemon.Port
+	//config.Pool.address = config.Daemon.Address
 	gnet_config := gnet.NewConfig()
 	gnet_config.Port = uint16(d.Config.Port) //set listening port
+	gnet_config.Address = d.Config.Address
+	//gnet_config.address = config.Daemon.Address
 	d.Pool = gnet.NewConnectionPool(gnet_config)
 
 	return d
@@ -275,18 +280,23 @@ type ConnectionError struct {
 }
 
 // Encapsulates a deserialized message from the network
-type MessageEvent struct {
-	Message AsyncMessage
-	Context *gnet.MessageContext
-}
+//type MessageEvent struct {
+//	Message AsyncMessage
+//	Context *gnet.MessageContext
+//}
 
 // Terminates all subsystems safely.  To stop the Daemon run loop, send a value
 // over the quit channel provided to Init.  The Daemon run lopp must be stopped
 // before calling this function.
 func (self *Daemon) Shutdown() {
 	self.DHT.Shutdown()
-	self.Pool.Shutdown()
 	self.Peers.Shutdown()
+
+	self.Pool.StopListen() //have to do anything?
+
+	for _, con := range self.Pool.Addresses {
+		con.Close()
+	}
 	//self.Visor.Shutdown()
 	//gnet.EraseMessages() //pool shutdown?
 }
@@ -318,9 +328,11 @@ func (self *Daemon) Start(quit chan int) {
 	//blobReplicatorTicker := time.Tick(20 * time.Millisecond)
 
 	//pool tickers
-	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
-	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
-	messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
+	//clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
+	//idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
+
+	//fix this, should poll without delay
+	messageHandlingTicker := time.Tick(time.Millisecond * 10)
 
 	//peer exchange tickers
 	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
@@ -369,34 +381,26 @@ main:
 		// Module: Pool
 
 		// Remove connections that haven't said anything in a while
-		case <-clearStaleConnectionsTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.clearStaleConnections()
-			}
+		//case <-clearStaleConnectionsTicker:
+		//	if !self.Config.DisableNetworking {
+		//		self.Pool.clearStaleConnections()
+		//	}
 		// Sends pings as needed
-		case <-idleCheckTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.sendPings()
-			}
+		//case <-idleCheckTicker:
+		//	if !self.Config.DisableNetworking {
+		//		self.Pool.sendPings()
+		//	}
 		//process incoming messages
 		case <-messageHandlingTicker:
 			if !self.Config.DisableNetworking {
 				self.Pool.HandleMessages()
 			}
 		// Process disconnections
-		case r := <-self.Pool.Pool.DisconnectQueue:
+		case r := <-self.Pool.DisconnectQueue:
 			if self.Config.DisableNetworking {
 				log.Panic("There should be nothing in the DisconnectQueue")
 			}
-			self.Pool.Pool.HandleDisconnectEvent(r)
-		// Process message sending results
-		/*
-			case r := <-self.Pool.Pool.SendResults:
-				if self.Config.DisableNetworking {
-					log.Panic("There should be nothing in SendResults")
-				}
-				self.handleMessageSendResult(r)
-		*/
+			self.Pool.HandleDisconnectEvent(r)
 
 		//Module: Daemon
 
@@ -433,12 +437,13 @@ main:
 			}
 			self.handleConnectionError(r)
 		// Message handlers
-		case m := <-self.messageEvents:
-			if self.Config.DisableNetworking {
-				log.Panic("There should be no message events")
-			}
-			self.processMessageEvent(m)
-
+		/*
+			case m := <-self.messageEvents:
+				if self.Config.DisableNetworking {
+					log.Panic("There should be no message events")
+				}
+				self.processMessageEvent(m)
+		*/
 		case <-quit:
 			break main
 		}
@@ -469,6 +474,7 @@ func (self *Daemon) GetListenPort(addr string) uint16 {
 // made.  If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
 func (self *Daemon) connectToPeer(p *pex.Peer) error {
+	logger.Debug("Trying to connect to %s", p.Addr)
 	if self.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
@@ -477,22 +483,18 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 		logger.Warning("PEX gave us an invalid peer: %v", err)
 		return errors.New("Invalid peer")
 	}
-	if self.Config.LocalhostOnly && !IsLocalhost(a) {
-		return errors.New("Not localhost")
-	}
-	if self.Pool.Pool.Addresses[p.Addr] != nil {
+
+	if self.Pool.Addresses[p.Addr] != nil {
 		return errors.New("Already connected")
 	}
-	if self.pendingConnections[p.Addr] != nil {
-		return errors.New("Connection is pending")
-	}
-	if !self.Config.LocalhostOnly && self.ipCounts[a] != 0 {
+
+	if self.ipCounts[a] != 0 {
 		return errors.New("Already connected to a peer with this base IP")
 	}
-	logger.Debug("Trying to connect to %s", p.Addr)
+
 	self.pendingConnections[p.Addr] = p
 	go func() {
-		_, err := self.Pool.Pool.Connect(p.Addr)
+		_, err := self.Pool.Connect(p.Addr)
 		if err != nil {
 			self.connectionErrors <- ConnectionError{p.Addr, err}
 		}
@@ -538,13 +540,14 @@ func (self *Daemon) handleConnectionError(c ConnectionError) {
 }
 
 // Removes unsolicited connections who haven't sent a version
+
 func (self *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
 	now := util.Now()
 	for a, t := range self.ExpectingIntroductions {
 		// Forget about anyone that already disconnected
-		if self.Pool.Pool.Addresses[a] == nil {
+		if self.Pool.Addresses[a] == nil {
 			delete(self.ExpectingIntroductions, a)
 			continue
 		}
@@ -552,23 +555,17 @@ func (self *Daemon) cullInvalidConnections() {
 		if t.Add(self.Config.IntroductionWait).Before(now) {
 			logger.Info("Removing %s for not sending a version", a)
 			delete(self.ExpectingIntroductions, a)
-			self.Pool.Pool.Disconnect(self.Pool.Pool.Addresses[a],
+			self.Pool.Disconnect(self.Pool.Addresses[a],
 				DisconnectIntroductionTimeout)
 			self.Peers.RemovePeer(a)
 		}
 	}
 }
 
-// Records an AsyncMessage to the messageEvent chan.  Do not access
-// messageEvent directly.
-func (self *Daemon) recordMessageEvent(m AsyncMessage,
-	c *gnet.MessageContext) error {
-	self.messageEvents <- MessageEvent{m, c}
-	return nil
-}
-
 // TODO: move handshake authentication into gnet
 // Processes a queued AsyncMessage.
+
+/*
 func (self *Daemon) processMessageEvent(e MessageEvent) {
 	// The first message received must be an Introduction
 	// We have to check at process time and not record time because
@@ -583,6 +580,7 @@ func (self *Daemon) processMessageEvent(e MessageEvent) {
 	}
 	e.Message.Process(self)
 }
+*/
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel
 func (self *Daemon) onConnect(e ConnectEvent) {
@@ -596,7 +594,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 
 	delete(self.pendingConnections, a)
 
-	c := self.Pool.Pool.Addresses[a]
+	c := self.Pool.Addresses[a]
 	if c == nil {
 		logger.Warning("While processing an onConnect event, no pool " +
 			"connection was found")
@@ -606,13 +604,13 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 	blacklisted := self.Peers.Peers.IsBlacklisted(a)
 	if blacklisted {
 		logger.Info("%s is blacklisted, disconnecting", a)
-		self.Pool.Pool.Disconnect(c, DisconnectIsBlacklisted)
+		self.Pool.Disconnect(c, DisconnectIsBlacklisted)
 		return
 	}
 
 	if self.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)
-		self.Pool.Pool.Disconnect(c, DisconnectIPLimitReached)
+		self.Pool.Disconnect(c, DisconnectIPLimitReached)
 		return
 	}
 
@@ -623,8 +621,9 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 	}
 	self.ExpectingIntroductions[a] = util.Now()
 	logger.Debug("Sending introduction message to %s", a)
-	m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
-		self.Pool.Pool.Config.Port)
+
+	m := NewIntroductionMessage(MirrorConstant, self.Config.Version,
+		self.Pool.Config.Port)
 
 	//self.Pool.Pool.SendMessage(c, 0, m) //connection, channel, message
 

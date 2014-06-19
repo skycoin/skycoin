@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/skycoin/pex"
-	"github.com/skycoin/skycoin/src/util"
+	//"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	"math/rand"
 	"net"
 )
+
+var MirrorConstant uint32 = rand.Uint32()
 
 //Daemon on channel 0
 //The channel 0 service manages exposing service metainformation and
@@ -24,7 +26,7 @@ type DaemonService struct {
 // - add connection packet for service
 // - move into daemon
 
-func NewDaemonService(sm *gnet.ServiceManager) *SkywireDaemon {
+func NewDaemonService(sm *gnet.ServiceManager) *DaemonService {
 	var swd DaemonService
 	swd.ServiceManager = sm
 	//associate service with channel 0

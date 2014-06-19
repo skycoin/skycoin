@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"github.com/skycoin/pex"
+	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
 	"time"
 )
 
@@ -101,7 +102,7 @@ func (self *Peers) RemovePeer(a string) {
 }
 
 // Requests peers from our connections
-func (self *Peers) requestPeers(pool *Pool) {
+func (self *Peers) requestPeers(service *gnet.Service) {
 	if self.Config.Disabled {
 		return
 	}
@@ -109,5 +110,7 @@ func (self *Peers) requestPeers(pool *Pool) {
 		return
 	}
 	m := NewGetPeersMessage()
-	pool.Pool.BroadcastMessage(m)
+
+	service.Broadcast(m)
+	//pool.Pool.BroadcastMessage(m)
 }

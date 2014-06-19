@@ -28,20 +28,15 @@ var (
 		"Invalid version")
 	DisconnectIntroductionTimeout gnet.DisconnectReason = errors.New(
 		"Version timeout")
-	DisconnectVersionSendFailed gnet.DisconnectReason = errors.New(
-		"Version send failed")
 	DisconnectIsBlacklisted gnet.DisconnectReason = errors.New(
 		"Blacklisted")
 	DisconnectSelf gnet.DisconnectReason = errors.New(
 		"Self connect")
 	DisconnectConnectedTwice gnet.DisconnectReason = errors.New(
 		"Already connected")
-	DisconnectIdle gnet.DisconnectReason = errors.New(
-		"Idle")
-	DisconnectNoIntroduction gnet.DisconnectReason = errors.New(
-		"First message was not an Introduction")
-	DisconnectIPLimitReached gnet.DisconnectReason = errors.New(
-		"Maximum number of connections for this IP was reached")
+
+	//DisconnectIPLimitReached gnet.DisconnectReason = errors.New(
+	//	"Maximum number of connections for this IP was reached")
 	// This is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
 	DisconnectOtherError gnet.DisconnectReason = errors.New(
@@ -52,7 +47,6 @@ var (
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
 		DisconnectSelf:                      time.Hour * 24,
 		DisconnectIntroductionTimeout:       time.Hour,
-		DisconnectNoIntroduction:            time.Hour * 8,
 		gnet.DisconnectInvalidMessageLength: time.Hour * 8,
 		gnet.DisconnectMalformedMessage:     time.Hour * 8,
 		gnet.DisconnectUnknownMessage:       time.Hour * 8,
@@ -146,7 +140,7 @@ type DaemonConfig struct {
 	// How often to check for peers that have decided to stop communicating
 	CullInvalidRate time.Duration
 	// How many connections are allowed from the same base IP
-	IPCountsMax int
+	//IPCountsMax int
 	// Disable all networking activity
 	DisableNetworking bool
 	// Don't make outgoing connections
@@ -159,19 +153,19 @@ type DaemonConfig struct {
 
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		Version:                    3,
-		Address:                    "",
-		Port:                       6677,
-		OutgoingRate:               time.Second * 5,
-		PrivateRate:                time.Second * 5,
-		OutgoingMax:                8,
-		PendingMax:                 16,
-		IntroductionWait:           time.Second * 30,
-		CullInvalidRate:            time.Second * 3,
-		IPCountsMax:                3,
-		DisableNetworking:          false,
-		DisableOutgoingConnections: false,
-		DisableIncomingConnections: false,
+		Version:          3,
+		Address:          "",
+		Port:             6677,
+		OutgoingRate:     time.Second * 5,
+		PrivateRate:      time.Second * 5,
+		OutgoingMax:      8,
+		PendingMax:       16, //for pex
+		IntroductionWait: time.Second * 30,
+		CullInvalidRate:  time.Second * 3,
+		//IPCountsMax:                3,
+		DisableNetworking:          false, //deprecate?
+		DisableOutgoingConnections: false, //deprecate?
+		DisableIncomingConnections: false, //deprecate?
 		LocalhostOnly:              false,
 	}
 }
@@ -188,6 +182,8 @@ type Daemon struct {
 	DHT   *dht.DHT
 	//Gateway  *Gateway
 	//Visor    *Visor
+	ServiceManager *gnet.ServiceManager //service manager for pool
+	Service        *gnet.Service        //base service for daemon
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
@@ -199,12 +195,12 @@ type Daemon struct {
 	// Keep track of a connection's mirror value, to avoid double
 	// connections (one to their listener, and one to our listener)
 	// Maps from addr to mirror value
-	ConnectionMirrors map[string]uint32
+	//ConnectionMirrors map[string]uint32
 	// Maps from mirror value to a map of ip (no port)
 	// We use a map of ip as value because multiple peers can have the same
 	// mirror (to avoid attacks enabled by our use of mirrors),
 	// but only one per base ip
-	mirrorConnections map[uint32]map[string]uint16
+	//mirrorConnections map[uint32]map[string]uint16
 	// Client connection/disconnection callbacks
 	onConnectEvent chan ConnectEvent
 	// Connection failure events
@@ -231,9 +227,9 @@ func NewDaemon(config Config) *Daemon {
 		DHT:   dht.NewDHT(config.DHT),
 		//Visor:    NewVisor(config.Visor),
 		ExpectingIntroductions: make(map[string]time.Time),
-		ConnectionMirrors:      make(map[string]uint32),
-		mirrorConnections:      make(map[uint32]map[string]uint16),
-		ipCounts:               make(map[string]int),
+		//ConnectionMirrors:      make(map[string]uint32),
+		//mirrorConnections:      make(map[uint32]map[string]uint16),
+		//ipCounts:               make(map[string]int),
 		// TODO -- if there are performance problems from blocking chans,
 		// Its because we are connecting to more things than OutgoingMax
 		// if we have private peers
@@ -261,8 +257,12 @@ func NewDaemon(config Config) *Daemon {
 	gnet_config := gnet.NewConfig()
 	gnet_config.Port = uint16(d.Config.Port) //set listening port
 	gnet_config.Address = d.Config.Address
-	//gnet_config.address = config.Daemon.Address
 	d.Pool = gnet.NewConnectionPool(gnet_config)
+
+	//service manager
+	d.ServiceManager = gnet.NewServiceManager(d.Pool)
+	ds := NewDaemonService(d.ServiceManager, d)
+	d.Service = ds.Service
 
 	return d
 }
@@ -371,7 +371,7 @@ main:
 			}
 		// Request peers via PEX
 		case <-requestPeersTicker:
-			self.Peers.requestPeers(self.Pool)
+			self.Peers.requestPeers(self.Service)
 		// Remove peers we haven't seen in a while
 		case <-clearOldPeersTicker:
 			if !self.Peers.Config.Disabled {
@@ -452,22 +452,14 @@ main:
 
 // Returns the ListenPort for a given address.  If no port is found, 0 is
 // returned
+//this might be broken now
 func (self *Daemon) GetListenPort(addr string) uint16 {
-	m, ok := self.ConnectionMirrors[addr]
-	if !ok {
-		return 0
-	}
-	mc := self.mirrorConnections[m]
-	if mc == nil {
-		log.Panic("mirrorConnections map does not exist, but mirror does")
-	}
-	a, _, err := SplitAddr(addr)
+	_, p, err := SplitAddr(addr)
 	if err != nil {
 		logger.Error("GetListenPort received invalid addr: %v", err)
 		return 0
-	} else {
-		return mc[a]
 	}
+	return p
 }
 
 // Connects to a given peer.  Returns an error if no connection attempt was
@@ -608,13 +600,10 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 		return
 	}
 
-	if self.ipCountMaxed(a) {
-		logger.Info("Max connections for %s reached, disconnecting", a)
-		self.Pool.Disconnect(c, DisconnectIPLimitReached)
-		return
+	if self.Pool.Addresses[a] != nil {
+		logger.Info("Already connected to %s, disconnecting", a)
+		self.Pool.Disconnect(c, DisconnectConnectedTwice)
 	}
-
-	self.recordIPCount(a)
 
 	if e.Solicited {
 		self.OutgoingConnections[a] = c
@@ -625,6 +614,7 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 	m := NewIntroductionMessage(MirrorConstant, self.Config.Version,
 		self.Pool.Config.Port)
 
+	self.Service.Send(c, m)
 	//self.Pool.Pool.SendMessage(c, 0, m) //connection, channel, message
 
 	//Use Service instead?
@@ -650,8 +640,8 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 	delete(self.OutgoingConnections, a)
 	delete(self.ExpectingIntroductions, a)
 	//self.Visor.RemoveConnection(a)
-	self.removeIPCount(a)
-	self.removeConnectionMirror(a)
+	//self.removeIPCount(a)
+	//self.removeConnectionMirror(a)
 }
 
 // Triggered when an gnet.Connection is connected
@@ -659,6 +649,7 @@ func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
 	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
 }
 
+/*
 // Returns whether the ipCount maximum has been reached
 func (self *Daemon) ipCountMaxed(addr string) bool {
 	ip, _, err := SplitAddr(addr)
@@ -696,8 +687,12 @@ func (self *Daemon) removeIPCount(addr string) {
 		self.ipCounts[ip] -= 1
 	}
 }
+*/
 
 // Adds addr + mirror to the connectionMirror mappings
+
+// nodes are identified by public key in future
+/*
 func (self *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
 	ip, port, err := SplitAddr(addr)
 	if err != nil {
@@ -750,6 +745,7 @@ func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 	port, exists := ips[ip]
 	return port, exists
 }
+*/
 
 // When an async message send finishes, its result is handled by this
 /*

@@ -17,9 +17,8 @@ import (
 func NewDaemon(port int) *daemon.Daemon {
 
 	config := daemon.NewConfig()
-	config.LocalhostOnly = True
-	config.Port = uint16(port)
-
+	//config.Daemon.LocalhostOnly = true
+	config.Daemon.Port = port
 	daemon := daemon.NewDaemon(config)
 	return daemon
 	//var swd SkywireDaemon
@@ -83,20 +82,26 @@ TODO:
 func main() {
 
 	d1 := NewDaemon(6060) //server
+	var q1 chan int
+	d1.Start(q1)
 
 	tss1 := NewTestServiceServer()
-	sm1.AddService([]byte("TestServiceServer"), 1, tss1)
+	d1.ServiceManager.AddService([]byte("TestServiceServer"), 1, tss1)
 
 	//add services
 	d2 := NewDaemon(6061)
+	var q2 chan int
+	d2.Start(q2)
 	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
 
 	tss2 := NewTestServiceServer()
-	sm2.AddService([]byte("TestServiceServer"), 1, tss2)
+	d2.ServiceManager.AddService([]byte("TestServiceServer"), 1, tss2)
 
 	//TODO: do need servive level connect function?
 	//connect to peer
-	con, err := d11.Pool.Connect("127.0.0.1:6061")
+
+	//use daemon method?
+	con, err := d1.Pool.Connect("127.0.0.1:6061")
 	_ = con
 
 	if err != nil {
@@ -118,9 +123,6 @@ func main() {
 	//create a message to send
 	//tm := TestMessage{Text: []byte("Message test")}
 	//d1.SendMessage(con, 3, &tm)
-
-	_ = swd1
-	_ = swd2
 
 	time.Sleep(time.Second * 10)
 }

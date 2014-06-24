@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skywire/src/lib/pex"
 	//"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skywire/src/lib/gnet"
+	"log"
 	"math/rand"
 	"net"
 )

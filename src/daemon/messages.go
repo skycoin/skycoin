@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/skycoin/pex"
+	"github.com/skycoin/skywire/src/lib/pex"
 	//"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	"math/rand"
@@ -284,5 +284,65 @@ func (self *PongMessage) Handle(mc *gnet.MessageContext,
 	//d := s.Daemon
 
 	logger.Debug("Received pong from %s", mc.Conn.Addr())
+	return nil
+}
+
+type ServiceConnectMessage struct {
+	LocalChannel  uint16 //channel of service on sender
+	RemoteChannel uint16 //channel of service on receiver
+	Originating   uint32 //peer originating requests sets to 1
+	ErrorMessage  []byte //fail if error len != 0
+}
+
+func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
+	state interface{}) error {
+	server := state.(*DaemonService) //service server state
+
+	//message from remote for connection
+	if self.Originating == 1 {
+		service, ok := server.ServiceManager.Services[self.RemoteChannel]
+		if ok == false {
+			//server does not exist
+			log.Printf("local service does not exist on channel %d \n", self.RemoteChannel)
+
+			//failure message
+			var scm ServiceConnectMessage
+			scm.LocalChannel = self.RemoteChannel
+			scm.RemoteChannel = self.LocalChannel
+			scm.Originating = 0
+			scm.ErrorMessage = []byte("no service on channel")
+			server.Service.Send(context.Conn, &scm) //channel 0
+			return nil
+		} else {
+			//service exists, send success message
+			var scm ServiceConnectMessage
+			scm.LocalChannel = self.RemoteChannel
+			scm.RemoteChannel = self.LocalChannel
+			scm.Originating = 0
+			scm.ErrorMessage = []byte("")
+			server.Service.Send(context.Conn, &scm) //channel 0
+			//trigger connection event
+			service.ConnectionEvent(context.Conn, self.LocalChannel)
+			return nil
+		}
+	}
+	//message reponse from remote for connection
+	if self.Originating == 0 {
+		if len(self.ErrorMessage) != 0 {
+			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",
+				context.Conn.Addr(), self.LocalChannel, self.RemoteChannel)
+			return nil
+		}
+
+		service, ok := server.ServiceManager.Services[self.RemoteChannel]
+
+		if ok == false {
+			log.Printf("service does not exist on local, LocalChannel= %d from addr= %s \n",
+				self.RemoteChannel, context.Conn.Addr())
+		}
+
+		service.ConnectionEvent(context.Conn, self.LocalChannel)
+		return nil
+	}
 	return nil
 }

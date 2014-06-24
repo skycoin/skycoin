@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skywire/src/lib/gnet"
+	"github.com/skycoin/skywire/src/lib/pex"
 	"log"
 	"net"
 	//"reflect"

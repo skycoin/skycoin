@@ -81,17 +81,18 @@ TODO:
 //create connection pool and tests
 func main() {
 
+	var quit1 chan int
+	var quit2 chan int
+
 	d1 := NewDaemon(6060) //server
-	var q1 chan int
-	d1.Start(q1)
+	d1.Start(quit1)
 
 	tss1 := NewTestServiceServer()
 	d1.ServiceManager.AddService([]byte("TestServiceServer"), 1, tss1)
 
 	//add services
 	d2 := NewDaemon(6061)
-	var q2 chan int
-	d2.Start(q2)
+	d2.Start(quit2)
 	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
 
 	tss2 := NewTestServiceServer()
@@ -125,4 +126,8 @@ func main() {
 	//d1.SendMessage(con, 3, &tm)
 
 	time.Sleep(time.Second * 10)
+
+	quit1 <- 1
+	quit2 <- 2
+
 }

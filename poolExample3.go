@@ -19,6 +19,7 @@ func NewDaemon(port int) *daemon.Daemon {
 	config := daemon.NewConfig()
 	//config.Daemon.LocalhostOnly = true
 	config.Daemon.Port = port
+	config.DHT.Disabled = true
 	daemon := daemon.NewDaemon(config)
 	return daemon
 	//var swd SkywireDaemon
@@ -85,23 +86,27 @@ func main() {
 	var quit2 chan int
 
 	d1 := NewDaemon(6060) //server
-	d1.Start(quit1)
-
 	tss1 := NewTestServiceServer()
 	d1.ServiceManager.AddService([]byte("TestServiceServer"), 1, tss1)
 
+	//start daemon mainloop
+	go d1.Start(quit1)
+
 	//add services
 	d2 := NewDaemon(6061)
-	d2.Start(quit2)
-	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
-
 	tss2 := NewTestServiceServer()
 	d2.ServiceManager.AddService([]byte("TestServiceServer"), 1, tss2)
+
+	go d2.Start(quit2) //start daemon main loop
+
+	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
 
 	//TODO: do need servive level connect function?
 	//connect to peer
 
 	//use daemon method?
+	time.Sleep(time.Second * 1)
+
 	con, err := d1.Pool.Connect("127.0.0.1:6061")
 	_ = con
 

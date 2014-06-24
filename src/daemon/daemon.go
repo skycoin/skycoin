@@ -200,7 +200,10 @@ func NewDaemon(config Config) *Daemon {
 			config.Daemon.PendingMax),
 	}
 	d.Peers.Init()
-	d.DHT.Init()
+
+	if config.DHT.Disabled == false {
+		d.DHT.Init()
+	}
 
 	//gnet set connection pool
 	gnet_config := gnet.NewConfig()
@@ -244,6 +247,7 @@ func (self *Daemon) Shutdown() {
 }
 
 // Runs initialization that must complete before the Start goroutine
+
 func (self *Daemon) Init() {
 	if !self.Config.DisableIncomingConnections {
 		//self.Pool.Listen()
@@ -343,6 +347,7 @@ main:
 			self.handleConnectionError(r)
 
 		case <-quit:
+			logger.Info("Breaking From Daemon Main")
 			break main
 		}
 	}

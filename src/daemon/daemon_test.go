@@ -3,7 +3,6 @@ package daemon
 import (
 	"errors"
 	"github.com/nictuku/dht"
-	"github.com/skycoin/pex"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	//"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"

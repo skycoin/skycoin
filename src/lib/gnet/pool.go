@@ -691,3 +691,11 @@ func (self *ConnectionPool) BroadcastMessage(channel uint16, msg []byte) {
 func Now() time.Time {
 	return time.Now().UTC()
 }
+
+//stops listening and closes all connections
+func (self *ConnectionPool) Shutdown() {
+	self.StopListen() //have to do anything?
+	for _, con := range self.Addresses {
+		con.Close()
+	}
+}

@@ -55,7 +55,7 @@ var (
 type Config struct {
 	Daemon DaemonConfig
 	Peers  PeersConfig
-	DHT    dht.DHTConfig
+	DHT    dht.DHTConfig //useless after config!
 }
 
 // Returns a Config with defaults set
@@ -70,9 +70,6 @@ func NewConfig() Config {
 func (self *Config) preprocess() Config {
 	config := *self
 	if config.Daemon.LocalhostOnly {
-		//if config.Daemon.Address == "" {
-		//	config.Daemon.Address = LocalhostIP()
-		//}
 		config.Daemon.Address = LocalhostIP()
 		config.DHT.Disabled = true
 		config.Peers.AllowLocalhost = true
@@ -153,8 +150,9 @@ type Daemon struct {
 	Config DaemonConfig
 
 	// Components
-	Pool           *gnet.ConnectionPool //what does this do
-	Peers          *Peers
+	Pool  *gnet.ConnectionPool //what does this do
+	Peers *Peers
+
 	DHT            *dht.DHT
 	ServiceManager *gnet.ServiceManager //service manager for pool
 	Service        *gnet.Service        //base service for daemon
@@ -172,12 +170,10 @@ type Daemon struct {
 // Returns a Daemon with primitives allocated
 func NewDaemon(config Config) *Daemon {
 	config = config.preprocess()
-	// TODO -- dht lib does not allow choosing address, should we add that?
 	// c.DHT.address = c.Daemon.Address
 	d := &Daemon{
 		Config: config.Daemon,
 		Peers:  NewPeers(config.Peers),
-		DHT:    dht.NewDHT(config.DHT),
 		ExpectingIntroductions: make(map[string]time.Time),
 
 		// TODO -- if there are performance problems from blocking chans,
@@ -194,6 +190,7 @@ func NewDaemon(config Config) *Daemon {
 	d.Peers.Init()
 
 	if config.DHT.Disabled == false {
+		d.DHT = dht.NewDHT(config.DHT)
 		d.DHT.Init()
 	}
 
@@ -227,28 +224,29 @@ type ConnectionError struct {
 // over the quit channel provided to Init.  The Daemon run lopp must be stopped
 // before calling this function.
 func (self *Daemon) Shutdown() {
-	self.DHT.Shutdown()
-	self.Peers.Shutdown()
-
-	self.Pool.StopListen() //have to do anything?
-	for _, con := range self.Pool.Addresses {
-		con.Close()
+	if DHT != nil {
+		self.DHT.Shutdown()
 	}
-	//self.Visor.Shutdown()
-	//gnet.EraseMessages() //pool shutdown?
+
+	self.Peers.Shutdown()
+	self.Pool.Shutdown() //send disconnect message first
+
+	self.Pool = nil
+	self.DHT = nil
+	self.Peers = nil
 }
 
 // Runs initialization that must complete before the Start goroutine
 
-func (self *Daemon) Init() {
-	if !self.Config.DisableIncomingConnections {
-		//self.Pool.Listen()
-		//if err := self.Pool.StartListen(); err != nil {
-		//	log.Panic(err)
-		//}
-		//go self.Pool.AcceptConnections() //listen for connections
-	}
-}
+//func (self *Daemon) Init() {
+//	if !self.Config.DisableIncomingConnections {
+//self.Pool.Listen()
+//if err := self.Pool.StartListen(); err != nil {
+//	log.Panic(err)
+//}
+//go self.Pool.AcceptConnections() //listen for connections
+//	}
+//}
 
 // Main loop for peer/connection management. Send anything to quit to shut it
 // down

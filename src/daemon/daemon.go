@@ -224,7 +224,7 @@ type ConnectionError struct {
 // over the quit channel provided to Init.  The Daemon run lopp must be stopped
 // before calling this function.
 func (self *Daemon) Shutdown() {
-	if DHT != nil {
+	if self.DHT != nil {
 		self.DHT.Shutdown()
 	}
 

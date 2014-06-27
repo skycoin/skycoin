@@ -70,18 +70,10 @@ func NewConfig() Config {
 func (self *Config) preprocess() Config {
 	config := *self
 	if config.Daemon.LocalhostOnly {
-		if config.Daemon.Address == "" {
-			local, err := LocalhostIP()
-			if err != nil {
-				log.Panicf("Failed to obtain localhost IP: %v", err)
-			}
-			config.Daemon.Address = local
-		} else {
-			if !IsLocalhost(config.Daemon.Address) {
-				log.Panicf("Invalid address for localhost-only: %s",
-					config.Daemon.Address)
-			}
-		}
+		//if config.Daemon.Address == "" {
+		//	config.Daemon.Address = LocalhostIP()
+		//}
+		config.Daemon.Address = LocalhostIP()
 		config.DHT.Disabled = true
 		config.Peers.AllowLocalhost = true
 	}
@@ -510,29 +502,32 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 //}
 
 // Returns the address for localhost on the machine
-func LocalhostIP() (string, error) {
+func LocalhostIP() string {
 	tt, err := net.Interfaces()
 	if err != nil {
-		return "", err
+		log.Panicf("Failed to obtain localhost IP: %v", err)
+		return ""
 	}
 	for _, t := range tt {
 		aa, err := t.Addrs()
 		if err != nil {
-			return "", err
+			log.Panicf("Failed to obtain localhost IP: %v", err)
+			return ""
 		}
 		for _, a := range aa {
 			if ipnet, ok := a.(*net.IPNet); ok && ipnet.IP.IsLoopback() {
-				return ipnet.IP.String(), nil
+				return ipnet.IP.String()
 			}
 		}
 	}
-	return "", errors.New("No local IP found")
+	log.Panicf("Failed to obtain localhost IP: No Local IP found")
+	return ""
 }
 
 // Returns true if addr is a localhost address
-func IsLocalhost(addr string) bool {
-	return net.ParseIP(addr).IsLoopback()
-}
+//func IsLocalhost(addr string) bool {
+//	return net.ParseIP(addr).IsLoopback()
+//}
 
 // Splits an ip:port string to ip, port
 func SplitAddr(addr string) (string, uint16, error) {

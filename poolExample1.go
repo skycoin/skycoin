@@ -53,22 +53,6 @@ func SpawnConnectionPool(Port int) *gnet.ConnectionPool {
 	return cpool
 }
 
-//define message we want to be able to handle
-type TestMessage struct {
-	Text []byte
-}
-
-func (self *TestMessage) Handle(context *gnet.MessageContext, state interface{}) error {
-
-	fmt.Printf("TestMessage Handle: Text= %s \n", string(self.Text))
-	return nil
-}
-
-//array of messages to register
-var messageMap map[string](interface{}) = map[string](interface{}){
-	"id01": TestMessage{}, //message id, message type
-}
-
 //create connection pool and tests
 func main() {
 
@@ -77,27 +61,14 @@ func main() {
 
 	//connect to peer
 	con, err := cpool1.Connect("127.0.0.1:6061")
-	_ = con
 
 	if err != nil {
 		log.Panic(err)
 	}
 
-	//new dispatch manager
-	dm1 := gnet.NewDispatcherManager()
-	cpool1.Config.MessageCallback = dm1.OnMessage //set message handler
-	//new dispatcher for handling messages on channel 3
-	d1 := dm1.NewDispatcher(cpool1, 3, nil) //dispatcher 1
-	d1.RegisterMessages(messageMap)
-
-	dm2 := gnet.NewDispatcherManager()
-	cpool2.Config.MessageCallback = dm2.OnMessage
-	d2 := dm2.NewDispatcher(cpool2, 3, nil) //dispatcher 2
-	d2.RegisterMessages(messageMap)
-
-	//create a message to send
-	tm := TestMessage{Text: []byte("Message test")}
-	d1.SendMessage(con, 3, &tm)
+	//send a raw binary message on channel 0
+	cpool1.SendMessage(con, 0, []byte("test message"))
+	_ = cpool2
 
 	time.Sleep(time.Second * 10)
 }

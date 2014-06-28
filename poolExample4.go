@@ -88,6 +88,7 @@ func main() {
 	d1 := NewDaemon(6060) //server
 	tss1 := NewTestServiceServer()
 	tss1.Service = d1.ServiceManager.AddService(
+		[]byte("test service"),
 		[]byte("{service=\"test service\"}"), 1, tss1)
 
 	//start daemon mainloop
@@ -97,6 +98,7 @@ func main() {
 	d2 := NewDaemon(6061)
 	tss2 := NewTestServiceServer()
 	tss2.Service = d2.ServiceManager.AddService(
+		[]byte("test service"),
 		[]byte("{service=\"test service\"}"), 1, tss2)
 
 	go d2.Start(quit2) //start daemon main loop

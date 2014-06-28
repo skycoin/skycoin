@@ -34,7 +34,10 @@ func NewDaemonService(sm *gnet.ServiceManager, daemon *Daemon) *DaemonService {
 	swd.Daemon = daemon
 	swd.ServiceManager = sm
 	//associate service with channel 0
-	swd.Service = sm.AddService([]byte("Skywire Daemon"), []byte("{service:\"Skywire Daemon\",version=0"), 0, &swd)
+	swd.Service = sm.AddService(
+		[]byte("Skywire Daemon"),
+		[]byte("{service:'Skywire Daemon',version=0"),
+		0, &swd)
 
 	return &swd
 }
@@ -304,9 +307,15 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	state interface{}) error {
 	server := state.(*DaemonService) //service server state
 
+	if len(self.ServiceIdentifer) > 140 {
+		log.Printf("ServiceConnectMessage: Error service identifer exceeds 140 bytes, ignored")
+		return nil
+	}
+
 	//message from remote for connection
 	if self.Originating == 1 {
 		service, ok := server.ServiceManager.Services[self.RemoteChannel]
+
 		if ok == false {
 			//server does not exist
 			log.Printf("ServiceConnectMessage: local service does not exist on channel %d \n", self.RemoteChannel)

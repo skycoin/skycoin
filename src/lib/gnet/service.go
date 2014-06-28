@@ -29,14 +29,19 @@ func NewServiceManager(pool *ConnectionPool) *ServiceManager {
 	return &sm
 }
 
-func (sm *ServiceManager) AddService(name []byte, channel uint16, server ServiceServer) *Service {
+func (sm *ServiceManager) AddService(name []byte, identifier []byte, channel uint16, server ServiceServer) *Service {
 
 	if _, ok := sm.Services[channel]; ok != false {
 		log.Panic("duplicate service channels")
 	}
 
+	if len(identifier) > 140 {
+		log.Panic("Serivce Identifier must not be longer than 140 characters")
+	}
+
 	var s Service
 	s.Name = name
+	s.ServiceIdentifer = identifier
 	s.Channel = channel
 	//need to pass in object
 	s.Dispatcher = sm.DispatchManager.NewDispatcher(sm.ConnectionPool, channel, server)
@@ -76,10 +81,11 @@ func (sm *ServiceManager) OnDisconnect(c *Connection,
 //}
 
 type Service struct {
-	Name        []byte
-	Channel     uint16                 //channel for receiving
-	Connections map[*Connection]uint16 //outgoing channel for connection
-	Dispatcher  *Dispatcher
+	Name             []byte
+	ServiceIdentifer []byte
+	Channel          uint16                 //channel for receiving
+	Connections      map[*Connection]uint16 //outgoing channel for connection
+	Dispatcher       *Dispatcher
 
 	Server ServiceServer //server implementing service
 }

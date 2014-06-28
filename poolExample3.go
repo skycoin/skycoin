@@ -63,7 +63,6 @@ func (sd *TestServiceServer) OnDisconnect(c *gnet.Connection) {
 
 func (sd *TestServiceServer) RegisterMessages(d *gnet.Dispatcher) {
 	fmt.Printf("TestServiceServer: RegisterMessages \n")
-
 	var messageMap map[string](interface{}) = map[string](interface{}){
 		//put messages here
 		"id01": TestMessage{}, //message id, message type
@@ -100,7 +99,6 @@ func main() {
 	go d2.Start(quit2) //start daemon main loop
 
 	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
-
 	//TODO: do need servive level connect function?
 	//connect to peer
 
@@ -113,6 +111,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	//connect to service
 
 	//connection attempt message
 

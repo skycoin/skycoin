@@ -289,10 +289,15 @@ func (self *PongMessage) Handle(mc *gnet.MessageContext,
 }
 
 type ServiceConnectMessage struct {
-	LocalChannel  uint16 //channel of service on sender
-	RemoteChannel uint16 //channel of service on receiver
-	Originating   uint32 //peer originating requests sets to 1
-	ErrorMessage  []byte //fail if error len != 0
+	//peer originating requests sets to 1
+	//peer responding sets to 0
+	Originating uint32
+
+	ServiceIdentifer [20]byte //20 byte hash, identifying service
+	OriginChannel    uint16   //channel of initiator
+	RemoteChannel    uint16   //channel of responder
+
+	ErrorMessage []byte //fail if error len != 0
 }
 
 func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
@@ -304,7 +309,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 		service, ok := server.ServiceManager.Services[self.RemoteChannel]
 		if ok == false {
 			//server does not exist
-			log.Printf("local service does not exist on channel %d \n", self.RemoteChannel)
+			log.Printf("ServiceConnectMessage: local service does not exist on channel %d \n", self.RemoteChannel)
 
 			//failure message
 			var scm ServiceConnectMessage

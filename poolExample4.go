@@ -44,7 +44,8 @@ func (self *TestMessage) Handle(context *gnet.MessageContext, state interface{})
 }
 
 type TestServiceServer struct {
-	Name []byte
+	Name    []byte
+	Service *gnet.Service
 }
 
 func NewTestServiceServer() *TestServiceServer {
@@ -86,7 +87,8 @@ func main() {
 
 	d1 := NewDaemon(6060) //server
 	tss1 := NewTestServiceServer()
-	d1.ServiceManager.AddService([]byte("TestServiceServer"), []byte(""), 1, tss1)
+	tss1.Service = d1.ServiceManager.AddService(
+		[]byte("{service=\"test service\"}"), 1, tss1)
 
 	//start daemon mainloop
 	go d1.Start(quit1)
@@ -94,7 +96,8 @@ func main() {
 	//add services
 	d2 := NewDaemon(6061)
 	tss2 := NewTestServiceServer()
-	d2.ServiceManager.AddService([]byte("TestServiceServer"), 1, tss2)
+	tss2.Service = d2.ServiceManager.AddService(
+		[]byte("{service=\"test service\"}"), 1, tss2)
 
 	go d2.Start(quit2) //start daemon main loop
 

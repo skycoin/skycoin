@@ -216,7 +216,7 @@ func main() {
 	swd1 := NewSkywireDaemon(sm1) //server
 
 	tss1 := NewTestServiceServer()
-	sm1.AddService([]byte("TestServiceServer"), []byte(""), 1, tss1)
+	sm1.AddService([]byte([]byte("test service"), 1, tss1)
 
 	cpool2 := SpawnConnectionPool(6061)
 	sm2 := gnet.NewServiceManager(cpool2)
@@ -225,7 +225,7 @@ func main() {
 	//sm2.AddService([]byte("Skywire Daemon"), 0, swd2)
 
 	tss2 := NewTestServiceServer()
-	sm2.AddService([]byte("TestServiceServer"), []byte(""), 1, tss2)
+	sm2.AddService([]byte([]byte("test service"), 1, tss2)
 
 	//TODO: do need servive level connect function?
 	//connect to peer

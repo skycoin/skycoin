@@ -29,7 +29,7 @@ func NewServiceManager(pool *ConnectionPool) *ServiceManager {
 	return &sm
 }
 
-func (sm *ServiceManager) AddService(name []byte, identifier []byte, channel uint16, server ServiceServer) *Service {
+func (sm *ServiceManager) AddService(identifier []byte, channel uint16, server ServiceServer) *Service {
 
 	if _, ok := sm.Services[channel]; ok != false {
 		log.Panic("duplicate service channels")
@@ -40,7 +40,6 @@ func (sm *ServiceManager) AddService(name []byte, identifier []byte, channel uin
 	}
 
 	var s Service
-	s.Name = name
 	s.ServiceIdentifer = identifier
 	s.Channel = channel
 	//need to pass in object
@@ -81,7 +80,7 @@ func (sm *ServiceManager) OnDisconnect(c *Connection,
 //}
 
 type Service struct {
-	Name             []byte
+	//Name             []byte
 	ServiceIdentifer []byte
 	Channel          uint16                 //channel for receiving
 	Connections      map[*Connection]uint16 //outgoing channel for connection

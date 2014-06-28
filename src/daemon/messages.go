@@ -313,8 +313,8 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 
 			//failure message
 			var scm ServiceConnectMessage
-			scm.LocalChannel = self.RemoteChannel
-			scm.RemoteChannel = self.LocalChannel
+			scm.OriginChannel = self.OriginChannel
+			scm.RemoteChannel = self.RemoteChannel
 			scm.Originating = 0
 			scm.ErrorMessage = []byte("no service on channel")
 			server.Service.Send(context.Conn, &scm) //channel 0
@@ -322,13 +322,13 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 		} else {
 			//service exists, send success message
 			var scm ServiceConnectMessage
-			scm.LocalChannel = self.RemoteChannel
-			scm.RemoteChannel = self.LocalChannel
+			scm.OriginChannel = self.OriginChannel
+			scm.RemoteChannel = self.RemoteChannel
 			scm.Originating = 0
 			scm.ErrorMessage = []byte("")
 			server.Service.Send(context.Conn, &scm) //channel 0
 			//trigger connection event
-			service.ConnectionEvent(context.Conn, self.LocalChannel)
+			service.ConnectionEvent(context.Conn, self.OriginChannel)
 			return nil
 		}
 	}
@@ -336,7 +336,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	if self.Originating == 0 {
 		if len(self.ErrorMessage) != 0 {
 			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",
-				context.Conn.Addr(), self.LocalChannel, self.RemoteChannel)
+				context.Conn.Addr(), self.OriginChannel, self.RemoteChannel)
 			return nil
 		}
 
@@ -347,7 +347,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 				self.RemoteChannel, context.Conn.Addr())
 		}
 
-		service.ConnectionEvent(context.Conn, self.LocalChannel)
+		service.ConnectionEvent(context.Conn, self.OriginChannel)
 		return nil
 	}
 	return nil

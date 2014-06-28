@@ -34,7 +34,7 @@ func NewDaemonService(sm *gnet.ServiceManager, daemon *Daemon) *DaemonService {
 	swd.Daemon = daemon
 	swd.ServiceManager = sm
 	//associate service with channel 0
-	swd.Service = sm.AddService([]byte("Skywire Daemon"), 0, &swd)
+	swd.Service = sm.AddService([]byte("Skywire Daemon"), []byte("{service:\"Skywire Daemon\",version=0"), 0, &swd)
 
 	return &swd
 }

@@ -314,25 +314,14 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 
 	//message from remote for connection
 	if self.Originating == 1 {
-		service, ok := server.ServiceManager.Services[self.RemoteChannel]
 
-		if ok == false {
-			//server does not exist
-			log.Printf("ServiceConnectMessage: local service does not exist on channel %d \n", self.RemoteChannel)
+		service = server.ServiceManager.ServiceById(self.ServiceIdentifer)
 
-			//failure message
-			var scm ServiceConnectMessage
-			scm.OriginChannel = self.OriginChannel
-			scm.RemoteChannel = self.RemoteChannel
-			scm.Originating = 0
-			scm.ErrorMessage = []byte("no service on channel")
-			server.Service.Send(context.Conn, &scm) //channel 0
-			return nil
-		} else {
+		if service != nil {
 			//service exists, send success message
 			var scm ServiceConnectMessage
 			scm.OriginChannel = self.OriginChannel
-			scm.RemoteChannel = self.RemoteChannel
+			scm.RemoteChannel = service.Channel
 			scm.Originating = 0
 			scm.ErrorMessage = []byte("")
 			server.Service.Send(context.Conn, &scm) //channel 0
@@ -340,11 +329,26 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 			service.ConnectionEvent(context.Conn, self.OriginChannel)
 			return nil
 		}
+
+		if server == nil {
+			//server does not exist
+			log.Printf("ServiceConnectMessage: no service with id exists \n")
+
+			//failure message
+			var scm ServiceConnectMessage
+			scm.OriginChannel = self.OriginChannel
+			scm.RemoteChannel = 0
+			scm.Originating = 0
+			scm.ErrorMessage = []byte("no service with id exists")
+			server.Service.Send(context.Conn, &scm) //channel 0
+			return nil
+		}
+
 	}
 	//message reponse from remote for connection
 	if self.Originating == 0 {
 		if len(self.ErrorMessage) != 0 {
-			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",
+			log.Printf("Service Connection Failed:addr= %s, LocalChannel= %d, Remotechannel= %d \n",
 				context.Conn.Addr(), self.OriginChannel, self.RemoteChannel)
 			return nil
 		}

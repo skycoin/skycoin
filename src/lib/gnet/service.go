@@ -81,6 +81,16 @@ func (sm *ServiceManager) OnDisconnect(c *Connection,
 	}
 }
 
+//return service by ID or return null
+func (sm *ServiceManager) ServiceById(Id [20]byte) *Service {
+	for _, service := range self.Services {
+		if self.ServiceIdentifer == ID {
+			return service
+		}
+	}
+	return nil
+}
+
 //func (sm *ServiceManager) OnMessage(c *Connection, channel uint16,
 //	msg []byte) {
 //}

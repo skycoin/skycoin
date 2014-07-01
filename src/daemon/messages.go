@@ -291,6 +291,16 @@ func (self *PongMessage) Handle(mc *gnet.MessageContext,
 	return nil
 }
 
+func (*Daemon) ConnectToService(Conn *gnet.Connection, Service *gnet.Service, Identifier [20]byte) {
+	scm := ServiceConnectMessage{}
+	scm.Originating = 1
+	scm.ServiceIdentifer = Identifier
+	scm.OriginChannel = Service.Channel
+	scm.RemoteChannel = 0 //unknown
+
+	server.Service.Send(context.Conn, &scm) //channel 0
+}
+
 type ServiceConnectMessage struct {
 	//peer originating requests sets to 1
 	//peer responding sets to 0
@@ -357,10 +367,10 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 
 		if ok == false {
 			log.Printf("service does not exist on local, LocalChannel= %d from addr= %s \n",
-				self.RemoteChannel, context.Conn.Addr())
+				self.OriginChannel, context.Conn.Addr())
 		}
 
-		service.ConnectionEvent(context.Conn, self.OriginChannel)
+		service.ConnectionEvent(context.Conn, self.RemoteChannel)
 		return nil
 	}
 	return nil

@@ -93,6 +93,8 @@ func (self *Dispatcher) EncodeMessage(msg Message) []byte {
 }
 
 func (self *Dispatcher) SendMessage(c *Connection, channel uint16, msg Message) error {
+	log.Printf("SendMessage Channel= %v \n", channel)
+
 	bMsg := self.EncodeMessage(msg)         //convert msg to binary
 	self.Pool.SendMessage(c, channel, bMsg) //send message over connection
 	return nil

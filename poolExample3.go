@@ -210,6 +210,8 @@ TODO:
 //create connection pool and tests
 func main() {
 
+	service_id := []byte("id short")
+
 	cpool1 := SpawnConnectionPool(6060)   //connection pool
 	sm1 := gnet.NewServiceManager(cpool1) //service manager
 	//add services
@@ -217,7 +219,7 @@ func main() {
 
 	tss1 := NewTestServiceServer()
 	sm1.AddService(
-		[]byte("id short"),
+		service_id,
 		[]byte("id long"), 1, tss1)
 
 	cpool2 := SpawnConnectionPool(6061)
@@ -228,7 +230,7 @@ func main() {
 
 	tss2 := NewTestServiceServer()
 	sm2.AddService(
-		[]byte("id short"),
+		service_id,
 		[]byte("id long"), 1, tss2)
 
 	//TODO: do need servive level connect function?
@@ -239,10 +241,6 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-
-
-	sm1.ConnectToService(con, sm1, 
-
 
 	//connection attempt message
 	scm := ServiceConnectMessage{}

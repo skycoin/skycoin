@@ -83,8 +83,8 @@ func (sm *ServiceManager) OnDisconnect(c *Connection,
 
 //return service by ID or return null
 func (sm *ServiceManager) ServiceById(Id [20]byte) *Service {
-	for _, service := range self.Services {
-		if self.ServiceIdentifer == ID {
+	for _, service := range sm.Services {
+		if service.Id == Id {
 			return service
 		}
 	}

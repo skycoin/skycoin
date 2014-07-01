@@ -63,6 +63,7 @@ func (sd *DaemonService) RegisterMessages(d *gnet.Dispatcher) {
 		"GIVP": GivePeersMessage{},
 		"PING": PingMessage{},
 		"PONG": PongMessage{},
+		"SCON": ServiceConnectMessage{},
 	}
 	d.RegisterMessages(messageMap)
 }
@@ -291,14 +292,21 @@ func (self *PongMessage) Handle(mc *gnet.MessageContext,
 	return nil
 }
 
-func (*Daemon) ConnectToService(Conn *gnet.Connection, Service *gnet.Service, Identifier [20]byte) {
+func (self *Daemon) ConnectToService(Conn *gnet.Connection, Service *gnet.Service, Identifier []byte) {
+
+	if len(Identifier) > 20 {
+		log.Panic("Identifer Is Max of 20 bytes")
+	}
+	var Id [20]byte
+	copy(Id[0:20], Identifier[:])
+
 	scm := ServiceConnectMessage{}
 	scm.Originating = 1
-	scm.ServiceIdentifer = Identifier
+	scm.ServiceIdentifer = Id
 	scm.OriginChannel = Service.Channel
 	scm.RemoteChannel = 0 //unknown
 
-	server.Service.Send(context.Conn, &scm) //channel 0
+	self.Service.Send(Conn, &scm) //channel 0
 }
 
 type ServiceConnectMessage struct {
@@ -325,7 +333,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	//message from remote for connection
 	if self.Originating == 1 {
 
-		service = server.ServiceManager.ServiceById(self.ServiceIdentifer)
+		service := server.ServiceManager.ServiceById(self.ServiceIdentifer)
 
 		if service != nil {
 			//service exists, send success message

@@ -118,6 +118,19 @@ func main() {
 	}
 
 	//connect to service
+	d1.ConnectToService(con, tss1.Service, []byte("test service"))
+	time.Sleep(time.Second * 1)
+
+	tm1 := TestMessage{Text: []byte("Message test 1")}
+	tss1.Service.Send(con, &tm1)
+
+	time.Sleep(time.Second * 1)
+	tm2 := TestMessage{Text: []byte("Message test 2")}
+
+	time.Sleep(time.Second * 1)
+	tss2.Service.Broadcast(&tm2)
+
+	//connect to service
 
 	//connection attempt message
 

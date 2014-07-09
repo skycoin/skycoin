@@ -418,23 +418,34 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 //func (self *Daemon) ConnectToService(Conn *gnet.Connection,
 //Service *gnet.Service, Identifier []byte) {
 
-func (d *Daemon) connectToPeer(peer string, service *gnet.Service) error {
-
-	var serviceId [20]byte = service.Id
+func (d *Daemon) ConnectToPeer(peer string, service *gnet.Service) error {
 
 	//peer should be ip:port and ip/port must be valid
 	//if its not, the connect attempt will just fail
+
+	var serviceId [20]byte = service.Id
+
+	//connected to daemon, connect to service
 	if d.Pool.Addresses[peer] != nil {
 		c := d.Pool.Addresses[peer]
 		d.ConnectToService(c, service)
-
+		return nil
+	}
+	//not connected
+	if d.Pool.Addresses[peer] == nil {
+		//only the first service connection triggers connection attempt
 		if self.pendingConnections[peer] == nil {
 			self.pendingConnections[peer] = make([]*gnet.Service)
+			go func() {
+				_, err := self.Pool.Connect(p.Addr)
+				if err != nil {
+					self.connectionErrors <- ConnectionError{p.Addr, err}
+				}
+			}()
 		}
 		self.pendingConnections[peer] = append(self.pendingConnections[peer], service)
 		return nil
 	}
-
 	return nil
 }
 
@@ -489,7 +500,7 @@ func (self *Daemon) cullInvalidConnections() {
 		}
 		// Remove anyone that fails to send a version within introductionWait time
 		if t.Add(self.Config.IntroductionWait).Before(now) {
-			logger.Info("Removing %s for not sending a version", a)
+			logger.Info("Removing %s for not sending introduction", a)
 			delete(self.ExpectingIntroductions, a)
 			self.Pool.Disconnect(self.Pool.Addresses[a],
 				DisconnectIntroductionTimeout)

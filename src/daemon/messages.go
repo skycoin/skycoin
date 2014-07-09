@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/skycoin/skywire/src/lib/pex"
+	"github.com/skycoin/skywire/src/daemon/pex"
 	//"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	"log"
@@ -292,13 +292,14 @@ func (self *PongMessage) Handle(mc *gnet.MessageContext,
 	return nil
 }
 
-func (self *Daemon) ConnectToService(Conn *gnet.Connection, Service *gnet.Service, Identifier []byte) {
+func (self *Daemon) ConnectToService(Conn *gnet.Connection, Service *gnet.Service) {
 
 	if len(Identifier) > 20 {
 		log.Panic("Identifer Is Max of 20 bytes")
 	}
+
 	var Id [20]byte
-	copy(Id[0:20], Identifier[:])
+	copy(Id[0:20], Service.Id[0:20])
 
 	scm := ServiceConnectMessage{}
 	scm.Originating = 1
@@ -383,3 +384,32 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	}
 	return nil
 }
+
+//do not need list servics right now
+
+//func ListServices() {
+//
+//}
+
+/*
+type ListServices struct {
+	Origin uint8 //1 for send, 0 for response
+	IdList [][32]byte
+}
+
+func (self *PongMessage) Handle(mc *gnet.MessageContext,
+	state interface{}) error {
+	//s := state.(*DaemonService)
+	d := s.Daemon
+
+	if Origin == 1 {
+		ls := ListServices{}
+		ls.Origin = 0
+
+	}
+
+	if Origin == 0 {
+		//what do I do with data?
+	}
+}
+*/

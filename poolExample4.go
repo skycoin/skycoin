@@ -39,18 +39,16 @@ type TestMessage struct {
 func (self *TestMessage) Handle(context *gnet.MessageContext, state interface{}) error {
 	server := state.(*TestServiceServer) //service server state
 
-	fmt.Printf("TestMessage Handle: ServerName= %s, Text= %s \n", string(server.Name), string(self.Text))
+	fmt.Printf("TestMessage Handle: ServiceIdLong= %s, Text= %s \n", string(server.Service.IdLong), string(self.Text))
 	return nil
 }
 
 type TestServiceServer struct {
-	Name    []byte
-	Service *gnet.Service
+	Service *gnet.Service // Service
 }
 
 func NewTestServiceServer() *TestServiceServer {
 	var tss TestServiceServer
-	tss.Name = []byte("Server1")
 	return &tss
 }
 
@@ -118,7 +116,7 @@ func main() {
 	}
 
 	//connect to service
-	d1.ConnectToService(con, tss1.Service, []byte("test service"))
+	d1.ConnectToService(con, tss1.Service)
 	time.Sleep(time.Second * 1)
 
 	tm1 := TestMessage{Text: []byte("Message test 1")}
@@ -129,24 +127,6 @@ func main() {
 
 	time.Sleep(time.Second * 1)
 	tss2.Service.Broadcast(&tm2)
-
-	//connect to service
-
-	//connection attempt message
-
-	/*
-		scm := ServiceConnectMessage{}
-		scm.LocalChannel = 1  //channel of local service
-		scm.RemoteChannel = 1 //channel of remote service
-		scm.Originating = 1
-		scm.ErrorMessage = []byte("")
-		//send connection intiation
-		swd1.Service.Send(con, &scm)
-	*/
-
-	//create a message to send
-	//tm := TestMessage{Text: []byte("Message test")}
-	//d1.SendMessage(con, 3, &tm)
 
 	time.Sleep(time.Second * 10)
 

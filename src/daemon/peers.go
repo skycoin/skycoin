@@ -1,11 +1,18 @@
 package daemon
 
 import (
+	"github.com/skycoin/skywire/src/daemon/pex"
 	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
-	"github.com/skycoin/skywire/src/lib/pex"
 	"time"
 )
 
+/*
+	Service Peer Discovery
+	- a service wants to find peers
+	-
+
+
+*/
 type PeersConfig struct {
 	// Folder where peers database should be saved
 	DataDirectory string
@@ -21,8 +28,6 @@ type PeersConfig struct {
 	RequestRate time.Duration
 	// How many peers to send back in response to a peers request
 	ReplyCount int
-	// Localhost peers are allowed in the peerlist
-	AllowLocalhost bool
 	// Disable exchanging of peers.  Peers are still loaded from disk
 	Disabled bool
 	//Ephemerial mode does not save or load from disc
@@ -38,7 +43,6 @@ func NewPeersConfig() PeersConfig {
 		UpdateBlacklistRate: time.Minute,
 		RequestRate:         time.Minute,
 		ReplyCount:          30,
-		AllowLocalhost:      false,
 		Disabled:            false,
 		Ephemerial:          false, //disable load/save to disc
 	}
@@ -102,15 +106,14 @@ func (self *Peers) RemovePeer(a string) {
 }
 
 // Requests peers from our connections
-func (self *Peers) requestPeers(service *gnet.Service) {
-	if self.Config.Disabled {
+func (d *Daemon) requestPeers(serviceId []bytes) {
+	if d.Peers.Config.Disabled {
 		return
 	}
-	if self.Peers.Full() {
+	if d.Peers.Peers.Full() {
 		return
 	}
 	m := NewGetPeersMessage()
 
-	service.Broadcast(m)
-	//pool.Pool.BroadcastMessage(m)
+	d.Service.Broadcast(m)
 }

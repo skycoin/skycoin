@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skywire/src/lib/pex"
+	"github.com/skycoin/skywire/src/daemon/pex"
 	"log"
 	"net"
 	//"reflect"
@@ -20,6 +20,40 @@ import (
 /*
 	Todo:
 	- give each daemon a pubkey and address
+*/
+
+/*
+	Problems:
+	- DHT Does not appear to be used anywhere!?
+	- why isnt DHT being used for peer lookups?
+
+*/
+
+/*
+	Why does daemon exist?
+	- manage blacklists
+	- DHT
+	- peer exchange
+
+	Can Daemon be eliminated?
+	- would just be individual services
+	- is there any reason that daemons should connect to each other? No
+	- only advantage is single end-point for TCP/IP
+
+	Future:
+	- let daemon handle finding peers
+	- services should not go through daemon?
+
+	Right now
+	- existing system works...
+	- just get it working to minimum degree
+	Todo:
+	- peer list store applications
+
+	Just gut everything
+	- rip out peer list
+	- have DHT query and callback for peer exchange
+	- make connection to service in introduction message
 */
 
 var (
@@ -72,7 +106,6 @@ func (self *Config) preprocess() Config {
 	if config.Daemon.LocalhostOnly {
 		config.Daemon.Address = LocalhostIP()
 		config.DHT.Disabled = true
-		config.Peers.AllowLocalhost = true
 	}
 
 	config.DHT.Port = config.Daemon.Port
@@ -160,7 +193,7 @@ type Daemon struct {
 	// Separate index of outgoing connections
 	OutgoingConnections map[string]*gnet.Connection //deprecate?
 	// Number of connections waiting to be formed or timeout
-	pendingConnections map[string]*pex.Peer
+	pendingConnections map[string]([]*gnet.Service)
 	// Keep track of unsolicited clients who should notify us of their version
 	ExpectingIntroductions map[string]time.Time
 	// Connection failure events
@@ -184,7 +217,7 @@ func NewDaemon(config Config) *Daemon {
 			config.Daemon.OutgoingMax),
 		OutgoingConnections: make(map[string]*gnet.Connection,
 			config.Daemon.OutgoingMax),
-		pendingConnections: make(map[string]*pex.Peer,
+		pendingConnections: make(map[string]([]*gnet.Service),
 			config.Daemon.PendingMax),
 	}
 	d.Peers.Init()
@@ -287,8 +320,9 @@ main:
 				self.Peers.Peers.Blacklist.Refresh()
 			}
 		// Request peers via PEX
-		case <-requestPeersTicker:
-			self.Peers.requestPeers(self.Service)
+		//case <-requestPeersTicker:
+		//	self.Peers.requestPeers(self.Service)
+
 		// Remove peers we haven't seen in a while
 		case <-clearOldPeersTicker:
 			if !self.Peers.Config.Disabled {
@@ -358,15 +392,12 @@ func (self *Daemon) GetListenPort(addr string) uint16 {
 // Connects to a given peer.  Returns an error if no connection attempt was
 // made.  If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
+
+/*
 func (self *Daemon) connectToPeer(p *pex.Peer) error {
 	logger.Debug("Trying to connect to %s", p.Addr)
 	if self.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
-	}
-	_, _, err := SplitAddr(p.Addr)
-	if err != nil {
-		logger.Warning("PEX gave us an invalid peer: %v", err)
-		return errors.New("Invalid peer")
 	}
 
 	if self.Pool.Addresses[p.Addr] != nil {
@@ -380,6 +411,30 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 			self.connectionErrors <- ConnectionError{p.Addr, err}
 		}
 	}()
+	return nil
+}
+*/
+
+//func (self *Daemon) ConnectToService(Conn *gnet.Connection,
+//Service *gnet.Service, Identifier []byte) {
+
+func (d *Daemon) connectToPeer(peer string, service *gnet.Service) error {
+
+	var serviceId [20]byte = service.Id
+
+	//peer should be ip:port and ip/port must be valid
+	//if its not, the connect attempt will just fail
+	if d.Pool.Addresses[peer] != nil {
+		c := d.Pool.Addresses[peer]
+		d.ConnectToService(c, service)
+
+		if self.pendingConnections[peer] == nil {
+			self.pendingConnections[peer] = make([]*gnet.Service)
+		}
+		self.pendingConnections[peer] = append(self.pendingConnections[peer], service)
+		return nil
+	}
+
 	return nil
 }
 
@@ -453,6 +508,7 @@ func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 		logger.Info("Received unsolicited connection to %s", a)
 	}
 
+	serviceConList := pendingConnections[a] //list of services to connect to
 	delete(self.pendingConnections, a)
 
 	blacklisted := self.Peers.Peers.IsBlacklisted(a)
@@ -476,6 +532,11 @@ func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 	m := NewIntroductionMessage(MirrorConstant, self.Config.Version,
 		self.Pool.Config.Port)
 	self.Service.Send(c, m)
+
+	//send connection message to each service in list
+	for _, service := range serviceConList {
+		self.ConnectToService(c, service)
+	}
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not

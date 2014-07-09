@@ -69,35 +69,20 @@ func (sd *DaemonService) RegisterMessages(d *gnet.Dispatcher) {
 }
 
 // Compact representation of IP:Port
+// Addresses in future can be darknet addresses or IPv6, should be strings
 type IPAddr struct {
-	IP   uint32
-	Port uint16
+	Addr []byte // as string
 }
 
 // Returns an IPAddr from an ip:port string.  If ipv6 or invalid, error is
 // returned
 func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
-	// TODO -- support ipv6
-	ips, port, err := SplitAddr(addr)
-	if err != nil {
-		return
-	}
-	ipb := net.ParseIP(ips).To4()
-	if ipb == nil {
-		err = errors.New("Ignoring IPv6 address")
-		return
-	}
-	ip := binary.BigEndian.Uint32(ipb)
-	ipaddr.IP = ip
-	ipaddr.Port = uint16(port)
-	return
+	return IPAddr{Addr: addr}
 }
 
 // Returns IPAddr as "ip:port"
 func (self IPAddr) String() string {
-	ipb := make([]byte, 4)
-	binary.BigEndian.PutUint32(ipb, self.IP)
-	return fmt.Sprintf("%s:%d", net.IP(ipb).String(), self.Port)
+	return string(self.Addr)
 }
 
 // Messages that perform an action when received must implement this interface.

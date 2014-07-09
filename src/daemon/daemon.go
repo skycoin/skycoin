@@ -455,14 +455,17 @@ func (self *Daemon) makePrivateConnections() {
 	if self.Config.DisableOutgoingConnections {
 		return
 	}
-	for _, p := range self.Peers.Peers.Peerlist {
-		if p.Private {
-			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := self.ConnectToPeer(p.Addr); err != nil {
-				logger.Debug("Did not connect to private peer: %v", err)
+	//implement, for each service on local, connect to private services
+
+		for _, p := range self.Peers.Peers.Peerlist {
+			if p.Private {
+				logger.Info("Private peer attempt: %s", p.Addr)
+				if err := self.ConnectToPeer(p.Addr); err != nil {
+					logger.Debug("Did not connect to private peer: %v", err)
+				}
 			}
 		}
-	}
+
 }
 */
 

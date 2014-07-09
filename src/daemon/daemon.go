@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skywire/src/daemon/pex"
+	//"github.com/skycoin/skywire/src/daemon/pex"
 	"log"
 	"net"
 	//"reflect"
@@ -298,13 +298,13 @@ func (self *Daemon) Start(quit chan int) {
 
 	//peer exchange tickers
 	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
-	requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
+	//requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
 	updateBlacklistTicker := time.Tick(self.Peers.Config.UpdateBlacklistRate)
 
 	//daemon tickers
-	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
+	//privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
-	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
+	//outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
 
 main:
 
@@ -351,18 +351,19 @@ main:
 				self.cullInvalidConnections()
 			}
 		// Fill up our outgoing connections
-		case <-outgoingConnectionsTicker:
-			if !self.Config.DisableOutgoingConnections &&
-				len(self.OutgoingConnections) < self.Config.OutgoingMax &&
-				len(self.pendingConnections) < self.Config.PendingMax {
-				self.connectToRandomPeer()
-			}
+		//case <-outgoingConnectionsTicker:
+		//	if !self.Config.DisableOutgoingConnections &&
+		//		len(self.OutgoingConnections) < self.Config.OutgoingMax &&
+		//		len(self.pendingConnections) < self.Config.PendingMax {
+		//		self.connectToRandomPeer()
+		//	}
+
 		// Always try to stay connected to our private peers
 		// TODO (also, connect to all of them on start)
-		case <-privateConnectionsTicker:
-			if !self.Config.DisableOutgoingConnections {
-				self.makePrivateConnections()
-			}
+		//case <-privateConnectionsTicker:
+		//	if !self.Config.DisableOutgoingConnections {
+		//		self.makePrivateConnections()
+		//	}
 
 		case r := <-self.connectionErrors:
 			if self.Config.DisableNetworking {
@@ -418,38 +419,38 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 //func (self *Daemon) ConnectToService(Conn *gnet.Connection,
 //Service *gnet.Service, Identifier []byte) {
 
-func (d *Daemon) ConnectToPeer(peer string, service *gnet.Service) error {
+func (d *Daemon) ConnectToaddr(addr string, service *gnet.Service) error {
 
-	//peer should be ip:port and ip/port must be valid
+	//addr should be ip:port and ip/port must be valid
 	//if its not, the connect attempt will just fail
 
-	var serviceId [20]byte = service.Id
-
 	//connected to daemon, connect to service
-	if d.Pool.Addresses[peer] != nil {
-		c := d.Pool.Addresses[peer]
+	if d.Pool.Addresses[addr] != nil {
+		c := d.Pool.Addresses[addr]
 		d.ConnectToService(c, service)
 		return nil
 	}
 	//not connected
-	if d.Pool.Addresses[peer] == nil {
+	if d.Pool.Addresses[addr] == nil {
 		//only the first service connection triggers connection attempt
-		if self.pendingConnections[peer] == nil {
-			self.pendingConnections[peer] = make([]*gnet.Service)
+		if d.pendingConnections[addr] == nil {
+			d.pendingConnections[addr] = make([]*gnet.Service, 0)
 			go func() {
-				_, err := self.Pool.Connect(p.Addr)
+				_, err := d.Pool.Connect(addr)
 				if err != nil {
-					self.connectionErrors <- ConnectionError{p.Addr, err}
+					d.connectionErrors <- ConnectionError{addr, err}
 				}
 			}()
 		}
-		self.pendingConnections[peer] = append(self.pendingConnections[peer], service)
+		d.pendingConnections[addr] = append(d.pendingConnections[addr], service)
 		return nil
 	}
 	return nil
 }
 
 // Connects to all private peers
+//Connections are now to services, not peers
+/*
 func (self *Daemon) makePrivateConnections() {
 	if self.Config.DisableOutgoingConnections {
 		return
@@ -457,14 +458,16 @@ func (self *Daemon) makePrivateConnections() {
 	for _, p := range self.Peers.Peers.Peerlist {
 		if p.Private {
 			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := self.connectToPeer(p); err != nil {
+			if err := self.ConnectToPeer(p.Addr); err != nil {
 				logger.Debug("Did not connect to private peer: %v", err)
 			}
 		}
 	}
 }
+*/
 
 // Attempts to connect to a random peer. If it fails, the peer is removed
+/*
 func (self *Daemon) connectToRandomPeer() {
 	if self.Config.DisableOutgoingConnections {
 		return
@@ -472,11 +475,12 @@ func (self *Daemon) connectToRandomPeer() {
 	// Make a connection to a random (public) peer
 	peers := self.Peers.Peers.Peerlist.RandomPublic(0)
 	for _, p := range peers {
-		if self.connectToPeer(p) == nil {
+		if self.ConnectToPeer(p.Addr) == nil {
 			break
 		}
 	}
 }
+*/
 
 // We remove a peer from the Pex if we failed to connect
 func (self *Daemon) handleConnectionError(c ConnectionError) {
@@ -519,7 +523,7 @@ func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 		logger.Info("Received unsolicited connection to %s", a)
 	}
 
-	serviceConList := pendingConnections[a] //list of services to connect to
+	serviceConList := self.pendingConnections[a] //list of services to connect to
 	delete(self.pendingConnections, a)
 
 	blacklisted := self.Peers.Peers.IsBlacklisted(a)

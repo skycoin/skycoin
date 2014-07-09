@@ -293,11 +293,6 @@ func (self *PongMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *Daemon) ConnectToService(Conn *gnet.Connection, Service *gnet.Service) {
-
-	if len(Identifier) > 20 {
-		log.Panic("Identifer Is Max of 20 bytes")
-	}
-
 	var Id [20]byte
 	copy(Id[0:20], Service.Id[0:20])
 

@@ -76,7 +76,6 @@ func (self *Peers) Init() {
 	}
 
 	logger.Debug("Init peers")
-	peers.AllowLocalhost = self.Config.AllowLocalhost
 	self.Peers = peers
 }
 
@@ -106,14 +105,17 @@ func (self *Peers) RemovePeer(a string) {
 }
 
 // Requests peers from our connections
-func (d *Daemon) requestPeers(serviceId []bytes) {
+// TODO:
+// - needs a callback for handling peers
+// - needs DHT and PEX implemented
+func (d *Daemon) requestPeers(service *gnet.Service) {
 	if d.Peers.Config.Disabled {
 		return
 	}
 	if d.Peers.Peers.Full() {
 		return
 	}
-	m := NewGetPeersMessage()
 
-	d.Service.Broadcast(m)
+	//m := NewGetPeersMessage()
+	//d.Service.Broadcast(m)
 }

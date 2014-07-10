@@ -1,16 +1,18 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"github.com/skycoin/skywire/src/aether"
 	"github.com/skycoin/skywire/src/cipher"
 	"github.com/skycoin/skywire/src/daemon"
-	"github.com/skycoin/skywire/src/lib/gnet"
+	//"github.com/skycoin/skywire/src/lib/gnet"
 	//"log"
 	//"time"
 )
 
 func main() {
+
+	var quit1 chan int
 
 	//create the daemon
 	config := daemon.NewConfig()
@@ -21,17 +23,15 @@ func main() {
 
 	//create aether server
 
-	pubkey, seckey := hashchain.GenerateDeterministicKeyPair([]byte("seed"))
+	pubkey, seckey := cipher.GenerateDeterministicKeyPair([]byte("seed"))
 	_ = seckey
 	_ = pubkey
 
 	a := aether.NewAetherServer(pubkey)
 
-	d1.ServiceManager.AddService(
-		[]byte("test service"),
-		[]byte("{service=\"test service\"}"), 1, tss1)
+	a.RegisterWithDaemon(daemon)
 
 	//start daemon mainloop
-	go d1.Start(quit1)
+	go daemon.Start(quit1)
 
 }

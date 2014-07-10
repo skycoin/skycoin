@@ -5,17 +5,23 @@ import (
 	"github.com/skycoin/skywire/src/cipher"
 	"github.com/skycoin/skywire/src/daemon"
 	"github.com/skycoin/skywire/src/lib/gnet"
-	"log"
-	"time"
+	//"log"
+	//"time"
 )
 
 type AetherServer struct {
 	Service *gnet.Service // Service
 }
 
-func NewAetherServer(pubkey cipher.Pubkey) *AetherServer {
+func NewAetherServer(pubkey cipher.PubKey) *AetherServer {
 	var x AetherServer
 	return &x
+}
+
+func (self *AetherServer) RegisterWithDaemon(daemon *daemon.Daemon) {
+	self.Service = daemon.ServiceManager.AddService(
+		[]byte("test service"),
+		[]byte("{service=\"test service\"}"), 1, self)
 }
 
 func (self *AetherServer) OnConnect(c *gnet.Connection) {

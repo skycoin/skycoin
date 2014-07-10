@@ -1,15 +1,15 @@
 package daemon
 
 import (
-	"encoding/binary"
-	"errors"
+	//"encoding/binary"
+	//"errors"
 	"fmt"
 	"github.com/skycoin/skywire/src/daemon/pex"
 	//"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	"log"
 	"math/rand"
-	"net"
+	//"net"
 )
 
 //used to detect self connection; replace with public key
@@ -57,7 +57,6 @@ func (sd *DaemonService) RegisterMessages(d *gnet.Dispatcher) {
 
 	var messageMap map[string](interface{}) = map[string](interface{}){
 		//put messages here
-		//"SCON": ServiceConnectMessage{}, //connect to service
 		"INTR": IntroductionMessage{},
 		"GETP": GetPeersMessage{},
 		"GIVP": GivePeersMessage{},
@@ -77,7 +76,7 @@ type IPAddr struct {
 // Returns an IPAddr from an ip:port string.  If ipv6 or invalid, error is
 // returned
 func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
-	return IPAddr{Addr: addr}
+	return IPAddr{Addr: []byte(addr)}, nil
 }
 
 // Returns IPAddr as "ip:port"
@@ -364,32 +363,3 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 	}
 	return nil
 }
-
-//do not need list servics right now
-
-//func ListServices() {
-//
-//}
-
-/*
-type ListServices struct {
-	Origin uint8 //1 for send, 0 for response
-	IdList [][32]byte
-}
-
-func (self *PongMessage) Handle(mc *gnet.MessageContext,
-	state interface{}) error {
-	//s := state.(*DaemonService)
-	d := s.Daemon
-
-	if Origin == 1 {
-		ls := ListServices{}
-		ls.Origin = 0
-
-	}
-
-	if Origin == 0 {
-		//what do I do with data?
-	}
-}
-*/

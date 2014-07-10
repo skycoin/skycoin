@@ -350,20 +350,6 @@ main:
 			if !self.Config.DisableNetworking {
 				self.cullInvalidConnections()
 			}
-		// Fill up our outgoing connections
-		//case <-outgoingConnectionsTicker:
-		//	if !self.Config.DisableOutgoingConnections &&
-		//		len(self.OutgoingConnections) < self.Config.OutgoingMax &&
-		//		len(self.pendingConnections) < self.Config.PendingMax {
-		//		self.connectToRandomPeer()
-		//	}
-
-		// Always try to stay connected to our private peers
-		// TODO (also, connect to all of them on start)
-		//case <-privateConnectionsTicker:
-		//	if !self.Config.DisableOutgoingConnections {
-		//		self.makePrivateConnections()
-		//	}
 
 		case r := <-self.connectionErrors:
 			if self.Config.DisableNetworking {
@@ -390,36 +376,8 @@ func (self *Daemon) GetListenPort(addr string) uint16 {
 	return p
 }
 
-// Connects to a given peer.  Returns an error if no connection attempt was
-// made.  If the connection attempt itself fails, the error is sent to
-// the connectionErrors channel.
-
-/*
-func (self *Daemon) connectToPeer(p *pex.Peer) error {
-	logger.Debug("Trying to connect to %s", p.Addr)
-	if self.Config.DisableOutgoingConnections {
-		return errors.New("Outgoing connections disabled")
-	}
-
-	if self.Pool.Addresses[p.Addr] != nil {
-		return errors.New("Already connected")
-	}
-
-	self.pendingConnections[p.Addr] = p
-	go func() {
-		_, err := self.Pool.Connect(p.Addr)
-		if err != nil {
-			self.connectionErrors <- ConnectionError{p.Addr, err}
-		}
-	}()
-	return nil
-}
-*/
-
-//func (self *Daemon) ConnectToService(Conn *gnet.Connection,
-//Service *gnet.Service, Identifier []byte) {
-
-func (d *Daemon) ConnectToaddr(addr string, service *gnet.Service) error {
+//connects to a particular service on daemon
+func (d *Daemon) ConnectToAddr(addr string, service *gnet.Service) error {
 
 	//addr should be ip:port and ip/port must be valid
 	//if its not, the connect attempt will just fail
@@ -442,48 +400,13 @@ func (d *Daemon) ConnectToaddr(addr string, service *gnet.Service) error {
 				}
 			}()
 		}
-		d.pendingConnections[addr] = append(d.pendingConnections[addr], service)
+		if service != nil {
+			d.pendingConnections[addr] = append(d.pendingConnections[addr], service)
+		}
 		return nil
 	}
 	return nil
 }
-
-// Connects to all private peers
-//Connections are now to services, not peers
-/*
-func (self *Daemon) makePrivateConnections() {
-	if self.Config.DisableOutgoingConnections {
-		return
-	}
-	//implement, for each service on local, connect to private services
-
-		for _, p := range self.Peers.Peers.Peerlist {
-			if p.Private {
-				logger.Info("Private peer attempt: %s", p.Addr)
-				if err := self.ConnectToPeer(p.Addr); err != nil {
-					logger.Debug("Did not connect to private peer: %v", err)
-				}
-			}
-		}
-
-}
-*/
-
-// Attempts to connect to a random peer. If it fails, the peer is removed
-/*
-func (self *Daemon) connectToRandomPeer() {
-	if self.Config.DisableOutgoingConnections {
-		return
-	}
-	// Make a connection to a random (public) peer
-	peers := self.Peers.Peers.Peerlist.RandomPublic(0)
-	for _, p := range peers {
-		if self.ConnectToPeer(p.Addr) == nil {
-			break
-		}
-	}
-}
-*/
 
 // We remove a peer from the Pex if we failed to connect
 func (self *Daemon) handleConnectionError(c ConnectionError) {

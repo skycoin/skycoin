@@ -108,14 +108,6 @@ func (self *Peers) RemovePeer(a string) {
 // TODO:
 // - needs a callback for handling peers
 // - needs DHT and PEX implemented
-func (d *Daemon) requestPeers(service *gnet.Service) {
-	if d.Peers.Config.Disabled {
-		return
-	}
-	if d.Peers.Peers.Full() {
-		return
-	}
-
-	//m := NewGetPeersMessage()
-	//d.Service.Broadcast(m)
+func (d *Daemon) requestPeers(service *gnet.Service, callback func(string)) {
+	//d.DHT.RequestPeers(service.Id)
 }

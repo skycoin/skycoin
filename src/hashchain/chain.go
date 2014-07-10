@@ -4,12 +4,13 @@ import (
 	"github.com/skycoin/encoder"
 	//"time"
 	"errors"
+	"github.com/skycoin/skywire/src/cipher"
 	"log"
 )
 
 /*
 	This is an example block chain
-	- only the person with the private key whose pubkey SHA256 hashes
+	- only the person with the private key whose pubkey cipher.SHA256 hashes
 	to the genesis block PrevHash can mint valid blocks for
 	the blockchain
 	- the blockchain body can contain any bytes
@@ -22,14 +23,14 @@ import (
 
 type BlockHeader struct {
 	Time     uint64
-	BkSeq    uint64 //increment every block
-	PrevHash SHA256 //hash of header of previous block
-	BodyHash SHA256 //hash of block body
+	BkSeq    uint64        //increment every block
+	PrevHash cipher.SHA256 //hash of header of previous block
+	BodyHash cipher.SHA256 //hash of block body
 }
 
-func (self *BlockHeader) Hash() SHA256 {
+func (self *BlockHeader) Hash() cipher.SHA256 {
 	b1 := encoder.Serialize(*self)
-	return SumDoubleSHA256(b1)
+	return cipher.SumDoubleSHA256(b1)
 }
 
 func (self *BlockHeader) Bytes() []byte {
@@ -37,7 +38,7 @@ func (self *BlockHeader) Bytes() []byte {
 }
 
 type Block struct {
-	Sig  Sig //signature for verifification
+	Sig  cipher.Sig //signature for verifification
 	Head BlockHeader
 	Body []byte //data here
 }
@@ -71,13 +72,13 @@ func (bc *BlockChain) Head() *Block {
 	return &bc.Blocks[len(bc.Blocks)-1]
 }
 
-func NewBlockChain(seckey SecKey) *BlockChain {
+func NewBlockChain(seckey cipher.SecKey) *BlockChain {
 	//genesis block
 	var b Block
 	b.Head.Time = 0
 	b.Head.BkSeq = 0
-	b.Head.PrevHash = PubKeyHash(PubKeyFromSecKey(seckey))
-	b.Head.BodyHash = SHA256{}
+	b.Head.PrevHash = PubKeyHash(cipher.PubKeyFromSecKey(seckey))
+	b.Head.BodyHash = cipher.SHA256{}
 
 	//blockchain
 	var bc BlockChain
@@ -85,31 +86,31 @@ func NewBlockChain(seckey SecKey) *BlockChain {
 	return &bc
 }
 
-func PubKeyHash(pubkey PubKey) SHA256 {
-	return SumSHA256(pubkey[:])
+func PubKeyHash(pubkey cipher.PubKey) cipher.SHA256 {
+	return cipher.SumSHA256(pubkey[:])
 }
 
 //sign a block with seckey
-func (bc *BlockChain) SignBlock(seckey SecKey, block *Block) {
+func (bc *BlockChain) SignBlock(seckey cipher.SecKey, block *Block) {
 	//set signature
-	if PubKeyHash(PubKeyFromSecKey(seckey)) != bc.Genesis().Head.PrevHash {
+	if PubKeyHash(cipher.PubKeyFromSecKey(seckey)) != bc.Genesis().Head.PrevHash {
 		log.Panic("NewBlock, invalid sec key")
 	}
-	block.Sig = SignHash(block.Head.Hash(), seckey)
+	block.Sig = cipher.SignHash(block.Head.Hash(), seckey)
 }
 
 //verify block signature
 func (bc *BlockChain) VerifyBlockSignature(block Block) error {
 	//set signature
-	hash := block.Head.Hash()                     //block hash
-	pubkey, err := PubKeyFromSig(block.Sig, hash) //recovered pubkey for sig
+	hash := block.Head.Hash()                            //block hash
+	pubkey, err := cipher.PubKeyFromSig(block.Sig, hash) //recovered pubkey for sig
 	if err != nil {
 		return errors.New("Pubkey recovery failed")
 	}
 	if bc.Genesis().Head.PrevHash != PubKeyHash(pubkey) {
 		return errors.New("NewBlock, signature is not for pubkey for genesis")
 	}
-	err = VerifySignedHash(block.Sig, hash)
+	err = cipher.VerifySignedHash(block.Sig, hash)
 	if err != nil {
 		return errors.New("Signature verification failed for hash")
 	}
@@ -117,12 +118,12 @@ func (bc *BlockChain) VerifyBlockSignature(block Block) error {
 }
 
 //creates new block
-func (bc *BlockChain) NewBlock(seckey SecKey, blockTime uint64, data []byte) Block {
+func (bc *BlockChain) NewBlock(seckey cipher.SecKey, blockTime uint64, data []byte) Block {
 	var b Block
 	b.Head.Time = blockTime
 	b.Head.BkSeq = bc.Head().Head.BkSeq + 1
 	b.Head.PrevHash = bc.Head().Head.Hash()
-	b.Head.BodyHash = SumSHA256(data)
+	b.Head.BodyHash = cipher.SumSHA256(data)
 	b.Body = data
 	bc.SignBlock(seckey, &b)
 	return b
@@ -144,7 +145,7 @@ func (bc *BlockChain) ApplyBlock(block Block) error {
 	if block.Head.Time < bc.Head().Head.Time {
 		return errors.New("block time invalid")
 	}
-	if block.Head.BodyHash != SumSHA256(block.Body) {
+	if block.Head.BodyHash != cipher.SumSHA256(block.Body) {
 		return errors.New("block body hash is wrong")
 	}
 

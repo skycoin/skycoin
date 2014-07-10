@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/skycoin/skywire/src/hashchain"
-
 	"fmt"
+	"github.com/skycoin/skywire/src/cipher"
+	"github.com/skycoin/skywire/src/hashchain"
 	"log"
 	"time"
 )
@@ -21,7 +21,7 @@ import (
 //creates chain and hosts
 func runChain() {
 
-	_, seckey := hashchain.GenerateDeterministicKeyPair([]byte("seed"))
+	_, seckey := cipher.GenerateDeterministicKeyPair([]byte("seed"))
 	bc := hashchain.NewBlockChain(seckey)
 
 	for i := 0; i < 256; i++ {
@@ -40,11 +40,6 @@ func runChain() {
 	}
 
 	_ = bc
-}
-
-//attempts to download the chain and sync it
-func syncChain(chainhash hashchain.SHA256) {
-
 }
 
 func main() {

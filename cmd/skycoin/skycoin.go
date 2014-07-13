@@ -1,14 +1,22 @@
 package main
 
 import (
-    "github.com/skycoin/skycoin/src/cli"
-    "github.com/skycoin/skycoin/src/skycoin"
+	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/skycoin"
 )
 
 func main() {
-    skycoin.Run(&cli.ClientArgs)
+	/*
+		skycoin.Run(&cli.DaemonArgs)
+	*/
 
-    stop := make(chan int)
-    <-stop
+	/*
+	   skycoin.Run(&cli.ClientArgs)
+
+	   stop := make(chan int)
+	   <-stop
+	*/
+
+	skycoin.Run(&cli.DevArgs)
 
 }

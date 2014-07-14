@@ -56,7 +56,7 @@ func TestAddress2(t *testing.T) {
 func TestCrypto1(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		_, seckey := cipher.GenerateKeyPair()
-		if TestSecKey(seckey) != nil {
+		if cipher.TestSecKey(seckey) != nil {
 			t.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED")
 		}
 	}

@@ -234,7 +234,7 @@ func assertReadableTransactionHeader(t *testing.T,
 	assert.Equal(t, len(rth.Sigs), len(th.Sigs))
 	assert.NotPanics(t, func() {
 		for i, s := range rth.Sigs {
-			assert.Equal(t, coin.MustSigFromHex(s), th.Sigs[i])
+			assert.Equal(t, cipher.MustSigFromHex(s), th.Sigs[i])
 		}
 		assert.Equal(t, cipher.MustSHA256FromHex(rth.Hash), th.Hash)
 	})

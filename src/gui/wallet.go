@@ -4,8 +4,7 @@ package gui
 import (
 	"net/http"
 	"strconv"
-
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -33,7 +32,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			Error400(w, "Missing destination address \"dst\"")
 			return
 		}
-		dst, err := coin.DecodeBase58Address(sdst)
+		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
 			Error400(w, "Invalid destination address")
 			return

@@ -17,7 +17,7 @@ import (
 
 import (
 	//"github.com/skycoin/skycoin/src/cli"
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
@@ -379,7 +379,7 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 }
 
 func configureDaemon(c *Config) daemon.Config {
-	coin.SetAddressVersion(c.AddressVersion)
+	cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
 	dc.DHT.Disabled = c.DisableDHT
@@ -399,7 +399,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BlockchainFile = c.BlockchainFile
 	dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
-	dc.Visor.Config.GenesisSignature = coin.MustSigFromHex(c.GenesisSignature)
+	dc.Visor.Config.GenesisSignature = cipher.MustSigFromHex(c.GenesisSignature)
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
 	if c.MasterChain {

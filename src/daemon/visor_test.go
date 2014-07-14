@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/encoder"
 	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"

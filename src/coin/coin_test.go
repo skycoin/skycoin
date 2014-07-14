@@ -1,151 +1,151 @@
 package coin
 
 import (
-    "encoding/hex"
-    "math/rand"
-    "testing"
+	"encoding/hex"
+	"math/rand"
+	"testing"
 )
 
 func TestAddress1(t *testing.T) {
-    a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
-    b, err := hex.DecodeString(a)
-    if err != nil {
-        t.Fatal(err)
-    }
-    addr := AddressFromPubKey(NewPubKey(b))
-    _ = addr
+	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
+	b, err := hex.DecodeString(a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := AddressFromPubKey(NewPubKey(b))
+	_ = addr
 
-    ///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+	///func SignHash(hash cipher.SHA256, sec SecKey) (Sig, error) {
 
 }
 
 func TestAddress2(t *testing.T) {
-    a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
-    b, err := hex.DecodeString(a)
-    if err != nil {
-        t.Fail()
-    }
+	a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
+	b, err := hex.DecodeString(a)
+	if err != nil {
+		t.Fail()
+	}
 
-    if len(b) != 32 {
-        t.Fail()
-    }
+	if len(b) != 32 {
+		t.Fail()
+	}
 
-    seckey := NewSecKey(b)
-    pubkey := PubKeyFromSecKey(seckey)
-    addr := AddressFromPubKey(pubkey)
-    _ = addr
+	seckey := NewSecKey(b)
+	pubkey := PubKeyFromSecKey(seckey)
+	addr := AddressFromPubKey(pubkey)
+	_ = addr
 
-    ///func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+	///func SignHash(hash cipher.SHA256, sec SecKey) (Sig, error) {
 
 }
 
 //TODO: 100% coverage over cryptographic functions
 
 //Crypto Functions to Test
-//func ChkSig(address Address, hash SHA256, sig Sig) error {
-//func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+//func ChkSig(address Address, hash cipher.SHA256, sig Sig) error {
+//func SignHash(hash cipher.SHA256, sec SecKey) (Sig, error) {
 //func PubKeyFromSecKey(seckey SecKey) (PubKey) {
-//func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
-//func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
+//func PubKeyFromSig(sig Sig, hash cipher.SHA256) (PubKey, error) {
+//func VerifySignature(pubkey PubKey, sig Sig, hash cipher.SHA256) error {
 //func GenerateKeyPair() (PubKey, SecKey) {
 //func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
 //func testSecKey(seckey SecKey) error {
 
 func TestCrypto1(t *testing.T) {
-    for i := 0; i < 10; i++ {
-        _, seckey := GenerateKeyPair()
-        if testSecKey(seckey) != nil {
-            t.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED")
-        }
-    }
+	for i := 0; i < 10; i++ {
+		_, seckey := GenerateKeyPair()
+		if testSecKey(seckey) != nil {
+			t.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED")
+		}
+	}
 }
 
 //test signatures
 func TestCrypto2(t *testing.T) {
-    a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
-    b, err := hex.DecodeString(a)
-    if err != nil {
-        t.Fatal(err)
-    }
+	a := "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d"
+	b, err := hex.DecodeString(a)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-    if len(b) != 32 {
-        t.Fatal()
-    }
+	if len(b) != 32 {
+		t.Fatal()
+	}
 
-    seckey := NewSecKey(b)
-    pubkey := PubKeyFromSecKey(seckey)
+	seckey := NewSecKey(b)
+	pubkey := PubKeyFromSecKey(seckey)
 
-    addr := AddressFromPubKey(pubkey)
-    _ = addr
+	addr := AddressFromPubKey(pubkey)
+	_ = addr
 
-    test := []byte("test message")
-    hash := SumSHA256(test)
-    err = testSecKeyHash(seckey, hash)
-    if err != nil {
-        t.Fatal()
-    }
+	test := []byte("test message")
+	hash := SumSHA256(test)
+	err = testSecKeyHash(seckey, hash)
+	if err != nil {
+		t.Fatal()
+	}
 
 }
 
 func _gensec() SecKey {
-    _, s := GenerateKeyPair()
-    return s
+	_, s := GenerateKeyPair()
+	return s
 }
 
 func _gpub(s SecKey) PubKey {
-    return PubKeyFromSecKey(s)
+	return PubKeyFromSecKey(s)
 }
 
 func _gaddr(s SecKey) Address {
-    return AddressFromPubKey(PubKeyFromSecKey(s))
+	return AddressFromPubKey(PubKeyFromSecKey(s))
 }
 
 func _gaddr_a1(S []SecKey) []Address {
-    A := make([]Address, len(S))
-    for i := 0; i < len(S); i++ {
-        A[i] = AddressFromPubKey(PubKeyFromSecKey(S[i]))
-    }
-    return A
+	A := make([]Address, len(S))
+	for i := 0; i < len(S); i++ {
+		A[i] = AddressFromPubKey(PubKeyFromSecKey(S[i]))
+	}
+	return A
 }
 
 func _gaddr_a2(S []SecKey, O []UxOut) []int {
-    A := _gaddr_a1(S)
-    var M map[Address]int //address to int
-    for i, a := range A {
-        M[a] = i
-    }
+	A := _gaddr_a1(S)
+	var M map[Address]int //address to int
+	for i, a := range A {
+		M[a] = i
+	}
 
-    I := make([]int, len(O)) //output to seckey/address index
-    for i, o := range O {
-        I[i] = M[o.Body.Address]
-    }
+	I := make([]int, len(O)) //output to seckey/address index
+	for i, o := range O {
+		I[i] = M[o.Body.Address]
+	}
 
-    return I
+	return I
 }
 
 func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
-    A := _gaddr_a1(S)
-    M := make(map[Address]int) //address to int
-    for i, a := range A {
-        M[a] = i
-    }
-    return M
+	A := _gaddr_a1(S)
+	M := make(map[Address]int) //address to int
+	for i, a := range A {
+		M[a] = i
+	}
+	return M
 }
 
 //assign amt to n bins in randomized manner
 func _rand_bins(amt uint64, n int) []uint64 {
-    var bins []uint64 = make([]uint64, n)
-    var max uint64 = amt / (4 * uint64(n))
-    for i := 0; amt > 0; i++ {
-        //amount going into this bin
-        var b uint64 = 1 + (uint64(rand.Int63()) % max)
-        if b > amt {
-            b = amt
-        }
-        bins[i%n] += b
-        amt -= b
-    }
-    return bins
+	var bins []uint64 = make([]uint64, n)
+	var max uint64 = amt / (4 * uint64(n))
+	for i := 0; amt > 0; i++ {
+		//amount going into this bin
+		var b uint64 = 1 + (uint64(rand.Int63()) % max)
+		if b > amt {
+			b = amt
+		}
+		bins[i%n] += b
+		amt -= b
+	}
+	return bins
 }
 
 /*

@@ -67,8 +67,8 @@ type Block struct {
     BkSeq uint64 //increment every block
     Fee   uint64 //fee in block, used for Proof of Stake
 
-    HashPrevBlock SHA256 //hash of header of previous block
-    BodyHash      SHA256 //hash of transaction block
+    HashPrevBlock cipher.SHA256 //hash of header of previous block
+    BodyHash      cipher.SHA256 //hash of transaction block
 
     Transactions Transactions
 }
@@ -91,11 +91,11 @@ func newBlock(prev Block, currentTime uint64, unspent UnspentPool,
 	}
 }
 
-func (self *Block) HashHeader() SHA256 {
+func (self *Block) HashHeader() cipher.SHA256 {
 	return self.Head.Hash()
 }
 
-func (self *Block) HashBody() SHA256 {
+func (self *Block) HashBody() cipher.SHA256 {
 	return self.Body.Hash()
 }
 
@@ -113,7 +113,7 @@ func (self *Block) String() string {
 // TODO -- build a private index on the block, or a global blockchain one
 // mapping txns to their block + tx index
 // TODO: Deprecate? Utility Function
-func (self *Block) GetTransaction(txHash SHA256) (Transaction, bool) {
+func (self *Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
 	txns := self.Body.Transactions
 	for i, _ := range txns {
 		if txns[i].Hash() == txHash {
@@ -140,9 +140,9 @@ func newBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 	}
 }
 
-func (self *BlockHeader) Hash() SHA256 {
+func (self *BlockHeader) Hash() cipher.SHA256 {
 	b1 := encoder.Serialize(*self)
-	return SumDoubleSHA256(b1)
+	return cipher.SumDoubleSHA256(b1)
 }
 
 func (self *BlockHeader) Bytes() []byte {
@@ -156,13 +156,13 @@ func (self *BlockHeader) String() string {
 }
 
 // Returns the merkle hash of contained transactions
-func (self *BlockBody) Hash() SHA256 {
-	hashes := make([]SHA256, len(self.Transactions))
+func (self *BlockBody) Hash() cipher.SHA256 {
+	hashes := make([]cipher.SHA256, len(self.Transactions))
 	for i, _ := range self.Transactions {
 		hashes[i] = self.Transactions[i].Hash()
 	}
 	// Merkle hash of transactions
-	return Merkle(hashes)
+	return cipher.Merkle(hashes)
 }
 
 // Returns the size of Transactions, in bytes
@@ -190,7 +190,7 @@ func NewBlockchain() *Blockchain {
 
 // Creates a genesis block and applies it against chain
 // Takes in time as parameter
-func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
+func (self *Blockchain) CreateGenesisBlock(genesisAddress cipher.Address,
 	timestamp uint64, genesisCoins uint64) Block {
 	logger.Info("Creating new genesis block with address %s",
 		genesisAddress.String())
@@ -204,7 +204,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress Address,
 	txn := Transaction{}
 	txn.PushOutput(genesisAddress, genesisCoins, genesisCoins)
 	body := BlockBody{Transactions{txn}}
-	prevHash := SHA256{}
+	prevHash := cipher.SHA256{}
 	head := BlockHeader{
 		Time:       timestamp,
 		BodyHash:   body.Hash(),
@@ -319,7 +319,7 @@ func (self *Blockchain) VerifyBlock(b Block) error {
 // output pool.
 func (self *Blockchain) verifyUxSnapshot(b Block) error {
 	head := self.Head().Head
-	uxHash := AddSHA256(self.Unspent.XorHash, head.Hash())
+	uxHash := cipher.AddSHA256(self.Unspent.XorHash, head.Hash())
 	if !bytes.Equal(b.Head.UxSnapshot[:], uxHash[:4]) {
 		return errors.New("UxSnapshot does not match")
 	}
@@ -605,7 +605,7 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i, _ := range tx.In {
-		err := ChkSig(uxIn[i].Body.Address, tx.Head.Hash, tx.Head.Sigs[i])
+		err := cipher.ChkSig(uxIn[i].Body.Address, tx.Head.Hash, tx.Head.Sigs[i])
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}
@@ -675,8 +675,8 @@ func verifyBlockHeader(head Block, b Block) error {
 
 // Returns unspent output checksum for the Block. Must be called after Block
 // is fully initialized, and before its outputs are added to the unspent pool
-func getSnapshotHash(unspent UnspentPool, prevHash SHA256) [4]byte {
-	uxHash := AddSHA256(unspent.XorHash, prevHash)
+func getSnapshotHash(unspent UnspentPool, prevHash cipher.SHA256) [4]byte {
+	uxHash := cipher.AddSHA256(unspent.XorHash, prevHash)
 	var snapshot [4]byte
 	if copy(snapshot[:], uxHash[:]) != 4 {
 		log.Panic("UxSnapshot copy is broken")

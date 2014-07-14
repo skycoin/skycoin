@@ -103,7 +103,7 @@ func (self *Transaction) Verify() error {
 
 // Adds a UxArray to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
-func (self *Transaction) PushInput(uxOut SHA256) uint16 {
+func (self *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 	if len(self.In) >= math.MaxUint16 {
 		log.Panic("Max transaction inputs reached")
 	}
@@ -112,7 +112,7 @@ func (self *Transaction) PushInput(uxOut SHA256) uint16 {
 }
 
 // Adds a TransactionOutput, sending coins & hours to an Address
-func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
+func (self *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 	to := TransactionOutput{
 		Address: dst,
 		Coins:   coins,
@@ -122,7 +122,7 @@ func (self *Transaction) PushOutput(dst Address, coins, hours uint64) {
 }
 
 // Signs all inputs in the transaction
-func (self *Transaction) SignInputs(keys []SecKey) {
+func (self *Transaction) SignInputs(keys []cipher.SecKey) {
 	if len(self.Head.Sigs) != 0 {
 		log.Panic("Transaction has been signed")
 	}
@@ -209,7 +209,7 @@ func (self Transactions) Fees(calc FeeCalculator) (uint64, error) {
 	return total, nil
 }
 
-func (self Transactions) Hashes() []SHA256 {
+func (self Transactions) Hashes() []cipher.SHA256 {
 	hashes := make([]SHA256, len(self))
 	for i, _ := range self {
 		hashes[i] = self[i].Hash()
@@ -245,7 +245,7 @@ func (self Transactions) TruncateBytesTo(size int) Transactions {
 type SortableTransactions struct {
 	Txns   Transactions
 	Fees   []uint64
-	Hashes []SHA256
+	Hashes []cipher.SHA256
 }
 
 // Given a transaction, return its fee or an error if the fee cannot be

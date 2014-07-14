@@ -34,7 +34,7 @@ func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
 
 // Returns an appropriate VisorConfig and a master visor
 func setupVisorConfig() (VisorConfig, *Visor) {
-	coin.SetAddressVersion("test")
+	cipher.SetAddressVersion("test")
 
 	// Make a new master visor + blockchain
 	// Get the signed genesis block,
@@ -75,7 +75,7 @@ func setupVisorFromMaster(mv *Visor) *Visor {
 
 func setupMasterVisorConfig() VisorConfig {
 	// Create testmaster.keys file
-	coin.SetAddressVersion("test")
+	cipher.SetAddressVersion("test")
 	c := NewVisorConfig()
 	c.CoinHourBurnFactor = 0
 	c.IsMaster = true
@@ -117,7 +117,7 @@ func cleanupVisor() {
 func randSHA256() cipher.SHA256 {
 	b := make([]byte, 128)
 	rand.Read(b)
-	return coin.SumSHA256(b)
+	return cipher.SumSHA256(b)
 }
 
 func createUnconfirmedTxn() UnconfirmedTxn {
@@ -236,7 +236,7 @@ func assertReadableTransactionHeader(t *testing.T,
 		for i, s := range rth.Sigs {
 			assert.Equal(t, coin.MustSigFromHex(s), th.Sigs[i])
 		}
-		assert.Equal(t, coin.MustSHA256FromHex(rth.Hash), th.Hash)
+		assert.Equal(t, cipher.MustSHA256FromHex(rth.Hash), th.Hash)
 	})
 	assertJSONSerializability(t, &rth)
 }
@@ -254,7 +254,7 @@ func TestReadableTransactionHeader(t *testing.T) {
 func assertReadableTransactionOutput(t *testing.T,
 	rto ReadableTransactionOutput, to coin.TransactionOutput) {
 	assert.NotPanics(t, func() {
-		assert.Equal(t, coin.MustDecodeBase58Address(rto.Address),
+		assert.Equal(t, cipher.MustDecodeBase58Address(rto.Address),
 			to.Address)
 	})
 	assert.Equal(t, rto.Coins, to.Coins)
@@ -275,7 +275,7 @@ func TestReadableTransactionOutput(t *testing.T) {
 
 func assertReadableTransactionInput(t *testing.T, rti string, ti cipher.SHA256) {
 	assert.NotPanics(t, func() {
-		assert.Equal(t, coin.MustSHA256FromHex(rti), ti)
+		assert.Equal(t, cipher.MustSHA256FromHex(rti), ti)
 	})
 	assertJSONSerializability(t, &rti)
 }
@@ -322,8 +322,8 @@ func assertReadableBlockHeader(t *testing.T, rb ReadableBlockHeader,
 	assert.Equal(t, rb.BkSeq, bh.BkSeq)
 	assert.Equal(t, rb.Fee, bh.Fee)
 	assert.NotPanics(t, func() {
-		assert.Equal(t, coin.MustSHA256FromHex(rb.PrevHash), bh.PrevHash)
-		assert.Equal(t, coin.MustSHA256FromHex(rb.BodyHash), bh.BodyHash)
+		assert.Equal(t, cipher.MustSHA256FromHex(rb.PrevHash), bh.PrevHash)
+		assert.Equal(t, cipher.MustSHA256FromHex(rb.BodyHash), bh.BodyHash)
 	})
 	assertJSONSerializability(t, &rb)
 }

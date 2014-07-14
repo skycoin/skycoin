@@ -23,10 +23,10 @@ func makeUxOut(t *testing.T) UxOut {
 	return ux
 }
 
-func makeUxBodyWithSecret(t *testing.T) (UxBody, SecKey) {
+func makeUxBodyWithSecret(t *testing.T) (UxBody, cipher.SecKey) {
 	p, s := GenerateKeyPair()
 	return UxBody{
-		SrcTransaction: SumSHA256(randBytes(t, 128)),
+		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
 		Address:        AddressFromPubKey(p),
 		Coins:          1e6,
 		Hours:          100,

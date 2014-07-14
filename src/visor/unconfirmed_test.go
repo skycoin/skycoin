@@ -17,9 +17,9 @@ const (
 )
 
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
-	p, s := coin.GenerateKeyPair()
+	p, s := cipher.GenerateKeyPair()
 	return coin.UxBody{
-		SrcTransaction: coin.SumSHA256(randBytes(t, 128)),
+		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          10e6,
 		Hours:          100,

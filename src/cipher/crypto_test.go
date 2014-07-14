@@ -262,13 +262,13 @@ func TestGenerateDeterministicKeyPair(t *testing.T) {
 	assert.Nil(t, s.Verify())
 }
 
-func TestSecKey(t *testing.T) {
+func TestSecKeTest(t *testing.T) {
 	_, s := GenerateKeyPair()
 	assert.Nil(t, testSecKey(s))
 	assert.NotNil(t, testSecKey(SecKey{}))
 }
 
-func TestSecKeyHash(t *testing.T) {
+func TestSecKeyHashTest(t *testing.T) {
 	_, s := GenerateKeyPair()
 	h := SumSHA256(randBytes(t, 256))
 	assert.Nil(t, testSecKeyHash(s, h))

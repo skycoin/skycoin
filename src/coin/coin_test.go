@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"math/rand"
 	"testing"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 func TestAddress1(t *testing.T) {
@@ -12,7 +14,7 @@ func TestAddress1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	addr := AddressFromPubKey(NewPubKey(b))
+	addr := cipher.AddressFromPubKey(cipher.NewPubKey(b))
 	_ = addr
 
 	///func SignHash(hash cipher.SHA256, sec SecKey) (Sig, error) {
@@ -30,9 +32,9 @@ func TestAddress2(t *testing.T) {
 		t.Fail()
 	}
 
-	seckey := NewSecKey(b)
-	pubkey := PubKeyFromSecKey(seckey)
-	addr := AddressFromPubKey(pubkey)
+	seckey := cipher.NewSecKey(b)
+	pubkey := cipher.PubKeyFromSecKey(seckey)
+	addr := cipher.AddressFromPubKey(pubkey)
 	_ = addr
 
 	///func SignHash(hash cipher.SHA256, sec SecKey) (Sig, error) {
@@ -53,8 +55,8 @@ func TestAddress2(t *testing.T) {
 
 func TestCrypto1(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		_, seckey := GenerateKeyPair()
-		if testSecKey(seckey) != nil {
+		_, seckey := cipher.GenerateKeyPair()
+		if TestSecKey(seckey) != nil {
 			t.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED")
 		}
 	}
@@ -72,45 +74,45 @@ func TestCrypto2(t *testing.T) {
 		t.Fatal()
 	}
 
-	seckey := NewSecKey(b)
-	pubkey := PubKeyFromSecKey(seckey)
+	seckey := cipher.NewSecKey(b)
+	pubkey := cipher.PubKeyFromSecKey(seckey)
 
-	addr := AddressFromPubKey(pubkey)
+	addr := cipher.AddressFromPubKey(pubkey)
 	_ = addr
 
 	test := []byte("test message")
-	hash := SumSHA256(test)
-	err = testSecKeyHash(seckey, hash)
+	hash := cipher.SumSHA256(test)
+	err = TestSecKeyHash(seckey, hash)
 	if err != nil {
 		t.Fatal()
 	}
 
 }
 
-func _gensec() SecKey {
-	_, s := GenerateKeyPair()
+func _gensec() cipher.SecKey {
+	_, s := cipher.GenerateKeyPair()
 	return s
 }
 
-func _gpub(s SecKey) PubKey {
+func _gpub(s cipher.SecKey) cipher.PubKey {
 	return PubKeyFromSecKey(s)
 }
 
-func _gaddr(s SecKey) Address {
+func _gaddr(s cipher.SecKey) cipher.Address {
 	return AddressFromPubKey(PubKeyFromSecKey(s))
 }
 
-func _gaddr_a1(S []SecKey) []Address {
-	A := make([]Address, len(S))
+func _gaddr_a1(S []cipher.SecKey) []cipber.Address {
+	A := make([]cipher.Address, len(S))
 	for i := 0; i < len(S); i++ {
 		A[i] = AddressFromPubKey(PubKeyFromSecKey(S[i]))
 	}
 	return A
 }
 
-func _gaddr_a2(S []SecKey, O []UxOut) []int {
+func _gaddr_a2(S []cipher.SecKey, O []UxOut) []int {
 	A := _gaddr_a1(S)
-	var M map[Address]int //address to int
+	var M map[cipher.Address]int //address to int
 	for i, a := range A {
 		M[a] = i
 	}
@@ -123,9 +125,9 @@ func _gaddr_a2(S []SecKey, O []UxOut) []int {
 	return I
 }
 
-func _gaddr_a3(S []SecKey, O []UxOut) map[Address]int {
+func _gaddr_a3(S []cipher.SecKey, O []UxOut) map[cipher.Address]int {
 	A := _gaddr_a1(S)
-	M := make(map[Address]int) //address to int
+	M := make(map[cipher.Address]int) //address to int
 	for i, a := range A {
 		M[a] = i
 	}

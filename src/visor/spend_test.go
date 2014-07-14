@@ -23,7 +23,7 @@ func assertError(t *testing.T, err error, msg string) {
 }
 
 func makeAddress() cipher.Address {
-	p, _ := coin.GenerateKeyPair()
+	p, _ := cipher.GenerateKeyPair()
 	return cipher.AddressFromPubKey(p)
 }
 

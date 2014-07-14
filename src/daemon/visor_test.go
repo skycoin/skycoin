@@ -39,7 +39,7 @@ func randBytes(t *testing.T, n int) []byte {
 }
 
 func randSHA256(t *testing.T) cipher.SHA256 {
-	return coin.SumSHA256(randBytes(t, 32))
+	return cipher.SumSHA256(randBytes(t, 32))
 }
 
 func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
@@ -52,7 +52,7 @@ func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
 
 // Returns an appropriate VisorConfig and a master visor
 func setupVisor() (VisorConfig, *visor.Visor) {
-	coin.SetAddressVersion("test")
+	cipher.SetAddressVersion("test")
 
 	// Make a new master visor + blockchain
 	// Get the signed genesis block,
@@ -77,7 +77,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
 
 func setupMasterVisor() VisorConfig {
 	cleanupVisor()
-	coin.SetAddressVersion("test")
+	cipher.SetAddressVersion("test")
 	c := NewVisorConfig()
 	c.Config.IsMaster = true
 	mw := wallet.NewWalletEntry()
@@ -150,7 +150,7 @@ func createUnconfirmedTxn() visor.UnconfirmedTxn {
 	return visor.UnconfirmedTxn{
 		Txn: coin.Transaction{
 			Head: coin.TransactionHeader{
-				Hash: coin.SumSHA256([]byte("cascas")),
+				Hash: cipher.SumSHA256([]byte("cascas")),
 			},
 		},
 		Received:  now,
@@ -737,7 +737,7 @@ func TestVisorResendTransaction(t *testing.T) {
 	assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 0)
 
 	// Nothing should happen if txn unknown
-	v.ResendTransaction(coin.SumSHA256([]byte("garbage")), p)
+	v.ResendTransaction(cipher.SumSHA256([]byte("garbage")), p)
 	wait()
 	assert.Equal(t, len(p.Pool.SendResults), 0)
 	assert.Equal(t, len(p.Pool.SendResults), 0)
@@ -1263,7 +1263,7 @@ func TestGetTxnsMessageProcess(t *testing.T) {
 	p := d.Pool
 	go p.Pool.ConnectionWriteLoop(gc)
 	tx := createUnconfirmedTxn()
-	tx.Txn.Head.Hash = coin.SumSHA256([]byte("asdadwadwada"))
+	tx.Txn.Head.Hash = cipher.SumSHA256([]byte("asdadwadwada"))
 	txns := []cipher.SHA256{tx.Txn.Hash()}
 	m := NewGetTxnsMessage(txns)
 	m.c = messageContext(addr)

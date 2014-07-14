@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	genPublic, genSecret = GenerateKeyPair()
-	genAddress           = AddressFromPubKey(genPublic)
+	genPublic, genSecret = cipher.GenerateKeyPair()
+	genAddress           = cipher.AddressFromPubKey(genPublic)
 	testMaxSize          = 1024 * 1024
 )
 
@@ -69,20 +69,20 @@ func makeNewBlock() Block {
 }
 
 func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
-	ux UxOut, sec SecKey, hours, fee uint64) (Transaction, SecKey) {
+	ux UxOut, sec cipher.SecKey, hours, fee uint64) (Transaction, cipher.SecKey) {
 	chrs := ux.CoinHours(bc.Time())
 	if chrs < hours+fee {
 		log.Panicf("CoinHours underflow. Have %d, need at least %d", chrs,
 			hours+fee)
 	}
-	assert.Equal(t, AddressFromPubKey(PubKeyFromSecKey(sec)), ux.Body.Address)
+	assert.Equal(t, cipher.cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
 	knownUx, exists := bc.Unspent.Get(ux.Hash())
 	assert.True(t, exists)
 	assert.Equal(t, knownUx, ux)
 	tx := Transaction{}
 	tx.PushInput(ux.Hash())
-	p, newSec := GenerateKeyPair()
-	addr := AddressFromPubKey(p)
+	p, newSec := cipher.cipher.GenerateKeyPair()
+	addr := cipher.cipher.AddressFromPubKey(p)
 	tx.PushOutput(addr, 1e6, hours)
 	coinsOut := ux.Body.Coins - 1e6
 	if coinsOut > 0 {
@@ -130,9 +130,9 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	assert.Equal(t, len(bc.Unspent.Array()), 1)
 	ux := bc.Unspent.Array()[0]
 	assert.Equal(t, ux.Body.Address, genAddress)
-	pub := PubKeyFromSecKey(genSecret)
-	assert.Equal(t, genAddress, AddressFromPubKey(pub))
-	sig := SignHash(ux.Hash(), genSecret)
+	pub := cipher.PubKeyFromSecKey(genSecret)
+	assert.Equal(t, genAddress, cipher.AddressFromPubKey(pub))
+	sig := cipher.SignHash(ux.Hash(), genSecret)
 	assert.Nil(t, ChkSig(ux.Body.Address, ux.Hash(), sig))
 	tx, sec := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 0, 0)
 	b, err := bc.NewBlockFromTransactions(Transactions{tx}, _incTime)
@@ -151,8 +151,8 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	}
 	assert.NotEqual(t, ux.Body.Address, Address{})
 	assert.NotEqual(t, ux.Body.Address, genAddress)
-	pub = PubKeyFromSecKey(sec)
-	addr := AddressFromPubKey(pub)
+	pub = cipher.PubKeyFromSecKey(sec)
+	addr := cipher.cipher.AddressFromPubKey(pub)
 	assert.Equal(t, ux.Body.Address, addr)
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, sec, 0, 0)
 	b, err = bc.NewBlockFromTransactions(Transactions{tx},
@@ -687,8 +687,8 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	// Insufficient coins
 	tx = Transaction{}
 	tx.PushInput(ux.Hash())
-	p, s := GenerateKeyPair()
-	a := AddressFromPubKey(p)
+	p, s := cipher.GenerateKeyPair()
+	a := cipher.AddressFromPubKey(p)
 	coins := ux.Body.Coins
 	assert.True(t, coins > 1e6)
 	tx.PushOutput(a, 1e6, 100)
@@ -767,7 +767,7 @@ func TestVerifyTransaction(t *testing.T) {
 	assertError(t, bc.VerifyTransaction(tx), "Insufficient coins")
 
 	// Failure, spending outputs we don't own
-	_, s := GenerateKeyPair()
+	_, s := cipher.GenerateKeyPair()
 	tx = Transaction{}
 	for _, u := range bc.Unspent.Pool {
 		if u.Body.Address != genAddress {
@@ -834,7 +834,7 @@ func TestGetUxSnapshot(t *testing.T) {
 	unsp.XorHash = xor
 	prev := randSHA256(t)
 	sh := getSnapshotHash(unsp, prev)
-	expect := AddSHA256(xor, prev)
+	expect := cipher.AddSHA256(xor, prev)
 	assert.True(t, bytes.Equal(expect[:4], sh[:]))
 	assert.NotEqual(t, sh, [4]byte{})
 }
@@ -845,7 +845,7 @@ func TestVerifyUxSnapshot(t *testing.T) {
 	b := Block{Body: BlockBody{}, Head: BlockHeader{}}
 	b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
 	bc.Unspent.XorHash = randSHA256(t)
-	uxHash := AddSHA256(bc.Unspent.XorHash, gb.Head.Hash())
+	uxHash := cipher.AddSHA256(bc.Unspent.XorHash, gb.Head.Hash())
 	copy(b.Head.UxSnapshot[:], uxHash[:])
 	assert.Nil(t, bc.verifyUxSnapshot(b))
 	b.Head.UxSnapshot = [4]byte{}
@@ -1103,7 +1103,7 @@ func TestExecuteBlock(t *testing.T) {
 		assert.True(t, bc.Unspent.Has(ux.Hash()))
 	}
 	// Check that all spends are no longer in the pool
-	txIns := []SHA256{}
+	txIns := []cipher.SHA256{}
 	txIns = append(txIns, tx.In...)
 	txIns = append(txIns, tx2.In...)
 	for _, ux := range txIns {

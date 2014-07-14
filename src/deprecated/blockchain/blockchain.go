@@ -35,7 +35,7 @@ var MainNet GenesisBlockCfg //main blockchain
 func init() {
     TestNet.PubKey = coin.MustPubKeyFromHex("025a3b22eb1e132a01f485119ae343342d92ab8599d9ad613a76e3b27f878bca8b")
     //TestNet.GenesisSignature = coin.MustSigFromHex()
-    TestNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
+    TestNet.GenesisAddress = cipher.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
     TestNet.GenesisTime = 1392584986 //set time
     TestNet.GenesisCoins = 1e12      //almost as many as Ripple
     //TestNet.GenesisSignature = coin.MustSigFromHex()
@@ -45,7 +45,7 @@ func init() {
 func init() {
     MainNet.PubKey = coin.MustPubKeyFromHex("02bb0be2976457d2e30a9aea9b0057b0eb9d1ad6509ef743c25c737f24d6241a99")
     //TestNet.GenesisSignature = coin.MustSigFromHex()
-    MainNet.GenesisAddress = coin.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
+    MainNet.GenesisAddress = cipher.MustDecodeBase58Address("26HbgWGwrToLZ6aX8VHtQmH4SPj4baQ5S3p")
     MainNet.GenesisTime = 1392584987 //set time
     MainNet.GenesisCoins = 100e6     //100 million
 }
@@ -126,7 +126,7 @@ func NewMainnetBlockchain() Blockchain {
 
 //Generate Blockchain configuration for client only Blockchain, not intended to be synced to network
 func NewLocalBlockchain() Blockchain {
-    pubkey, seckey := coin.GenerateKeyPair() //generate new/random pubkey/private key
+    pubkey, seckey := cipher.GenerateKeyPair() //generate new/random pubkey/private key
 
     fmt.Printf("NewLocalBlockchain: genesis address seckey= %v \n", seckey.Hex())
     VC := NewBlockchain()

@@ -138,7 +138,7 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 }
 
 // Sets all txns as announced
-func (self *Visor) SetTxnsAnnounced(txns []coin.SHA256) {
+func (self *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 	now := util.Now()
 	for _, h := range txns {
 		self.Visor.Unconfirmed.SetAnnounced(h, now)
@@ -168,7 +168,7 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
 
 // Creates a spend transaction and broadcasts it to the network
 func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest coin.Address, pool *Pool) (coin.Transaction, error) {
+	fee uint64, dest cipher.Address, pool *Pool) (coin.Transaction, error) {
 	if self.Config.Disabled {
 		return coin.Transaction{}, errors.New("Visor disabled")
 	}
@@ -186,7 +186,7 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 }
 
 // Resends a known UnconfirmedTxn.
-func (self *Visor) ResendTransaction(h coin.SHA256, pool *Pool) {
+func (self *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
@@ -376,22 +376,22 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
 }
 
 type SendingTxnsMessage interface {
-	GetTxns() []coin.SHA256
+	GetTxns() []cipher.SHA256
 }
 
 // Tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
-	Txns []coin.SHA256
+	Txns []cipher.SHA256
 	c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewAnnounceTxnsMessage(txns []coin.SHA256) *AnnounceTxnsMessage {
+func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	return &AnnounceTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *AnnounceTxnsMessage) GetTxns() []coin.SHA256 {
+func (self *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
 	return self.Txns
 }
 
@@ -414,11 +414,11 @@ func (self *AnnounceTxnsMessage) Process(d *Daemon) {
 }
 
 type GetTxnsMessage struct {
-	Txns []coin.SHA256
+	Txns []cipher.SHA256
 	c    *gnet.MessageContext `enc:"-"`
 }
 
-func NewGetTxnsMessage(txns []coin.SHA256) *GetTxnsMessage {
+func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 	return &GetTxnsMessage{
 		Txns: txns,
 	}
@@ -456,7 +456,7 @@ func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 	}
 }
 
-func (self *GiveTxnsMessage) GetTxns() []coin.SHA256 {
+func (self *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
 	return self.Txns.Hashes()
 }
 
@@ -470,7 +470,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	hashes := make([]coin.SHA256, 0, len(self.Txns))
+	hashes := make([]cipher.SHA256, 0, len(self.Txns))
 	// Update unconfirmed pool with these transactions
 	for _, txn := range self.Txns {
 		// Only announce transactions that are new to us, so that peers can't

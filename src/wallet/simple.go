@@ -101,7 +101,7 @@ func (self *SimpleWallet) CreateEntry() WalletEntry {
 	return e
 }
 
-// Returns all coin.Addresses in this SimpleWallet
+// Returns all cipher.Addresses in this SimpleWallet
 func (self *SimpleWallet) GetAddresses() []cipher.Address {
 	addrs := make([]cipher.Address, len(self.Entries))
 	i := 0
@@ -112,13 +112,13 @@ func (self *SimpleWallet) GetAddresses() []cipher.Address {
 	return addrs
 }
 
-// Returns the WalletEntry for a coin.Address
+// Returns the WalletEntry for a cipher.Address
 func (self *SimpleWallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
 	we, exists := self.Entries[a]
 	return we, exists
 }
 
-// Adds a WalletEntry to the wallet. Returns an error if the coin.Address is
+// Adds a WalletEntry to the wallet. Returns an error if the cipher.Address is
 // already in the wallet
 func (self *SimpleWallet) AddEntry(e WalletEntry) error {
 	if err := e.Verify(); err != nil {

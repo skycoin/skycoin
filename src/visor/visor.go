@@ -75,7 +75,7 @@ func NewVisorConfig() VisorConfig {
 		BlockchainFile:           "",
 		BlockSigsFile:            "",
 		MasterKeys:               wallet.WalletEntry{},
-		GenesisSignature:         coin.Sig{},
+		GenesisSignature:         cipher.Sig{},
 		GenesisTimestamp:         0,
 		GenesisCoinVolume:        100e6,
 		WalletConstructor:        wallet.NewSimpleWallet,
@@ -412,7 +412,7 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Visor) SetAnnounced(h coin.SHA256, t time.Time) {
+func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
 	self.Unconfirmed.SetAnnounced(h, t)
 }
 
@@ -424,9 +424,9 @@ func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
 		self.Config.MaxBlockSize, self.Config.CoinHourBurnFactor)
 }
 
-// Returns the Transactions whose unspents give coins to a coin.Address.
+// Returns the Transactions whose unspents give coins to a cipher.Address.
 // This includes unconfirmed txns' predicted unspents.
-func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
+func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	txns := make([]Transaction, 0)
 	// Look in the blockchain
 	uxs := self.blockchain.Unspent.AllForAddress(a)
@@ -461,7 +461,7 @@ func (self *Visor) GetAddressTransactions(a coin.Address) []Transaction {
 }
 
 // Returns a Transaction by hash.
-func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
+func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	// Look in the unconfirmed pool
 	tx, ok := self.Unconfirmed.Txns[txHash]
 	if ok {
@@ -495,7 +495,7 @@ func (self *Visor) GetTransaction(txHash coin.SHA256) Transaction {
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
 func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest coin.Address) (coin.Transaction, error) {
+	fee uint64, dest cipher.Address) (coin.Transaction, error) {
 	if !self.Config.CanSpend {
 		return coin.Transaction{}, errors.New("Spending disabled")
 	}
@@ -520,7 +520,7 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 }
 
 // Returns the confirmed & predicted balance for a single address
-func (self *Visor) AddressBalance(addr coin.Address) wallet.BalancePair {
+func (self *Visor) AddressBalance(addr cipher.Address) wallet.BalancePair {
 	auxs := self.blockchain.Unspent.AllForAddress(addr)
 	puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
 	confirmed := self.balance(auxs)
@@ -553,7 +553,7 @@ func (self *Visor) TotalBalance() wallet.BalancePair {
 	return b
 }
 
-// Computes the total balance for a coin.Address's coin.UxOuts
+// Computes the total balance for a cipher.Address's coin.UxOuts
 func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
 	prevTime := self.blockchain.Time()
 	b := wallet.NewBalance(0, 0)
@@ -563,7 +563,7 @@ func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
 	return b
 }
 
-// Computes the total balance for coin.Addresses and their coin.UxOuts
+// Computes the total balance for cipher.Addresses and their coin.UxOuts
 func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 	prevTime := self.blockchain.Time()
 	b := wallet.NewBalance(0, 0)
@@ -575,9 +575,9 @@ func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 	return b
 }
 
-// Returns an error if the coin.Sig is not valid for the coin.Block
+// Returns an error if the cipher.Sig is not valid for the coin.Block
 func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-	return coin.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
+	return cipher.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
 		b.Block.HashHeader())
 }
 
@@ -586,7 +586,7 @@ func (self *Visor) SignBlock(b coin.Block) SignedBlock {
 	if !self.Config.IsMaster {
 		log.Panic("Only master chain can sign blocks")
 	}
-	sig := coin.SignHash(b.HashHeader(), self.Config.MasterKeys.Secret)
+	sig := cipher.SignHash(b.HashHeader(), self.Config.MasterKeys.Secret)
 	sb := SignedBlock{
 		Block: b,
 		Sig:   sig,

@@ -21,11 +21,11 @@ var (
 // Note: can use testnetpubkey as genesis address
 
 type GenesisBlockCfg struct {
-    GenesisAddress   coin.Address
-    GenesisSignature coin.Sig
+    GenesisAddress   cipher.Address
+    GenesisSignature cipher.Sig
     GenesisTime      uint64
     GenesisCoins     uint64
-    PubKey           coin.PubKey
+    PubKey           cipher.PubKey
 }
 
 var TestNet GenesisBlockCfg
@@ -63,7 +63,7 @@ type Blockchain struct {
     Genesis GenesisBlockCfg
     // Is this the master blockchain
     IsMaster bool
-    SecKey   coin.SecKey //set for writes
+    SecKey   cipher.SecKey //set for writes
     // Use test network addresses
     TestNetwork bool
 
@@ -98,7 +98,7 @@ func NewBlockchain() Blockchain {
         //BlockchainFile:           "",
         //BlockSigsFile:            "",
 
-        SecKey: coin.SecKey{},
+        SecKey: cipher.SecKey{},
     }
     bc.Blocks = make([]SignedBlock, 0) //save blocks to disc and only store head block
     bc.blockchain = coin.NewBlockchain()
@@ -131,7 +131,7 @@ func NewLocalBlockchain() Blockchain {
     fmt.Printf("NewLocalBlockchain: genesis address seckey= %v \n", seckey.Hex())
     VC := NewBlockchain()
     VC.SecKey = seckey
-    VC.Genesis.GenesisAddress = coin.AddressFromPubKey(pubkey)
+    VC.Genesis.GenesisAddress = cipher.AddressFromPubKey(pubkey)
     VC.Genesis.GenesisTime = uint64(time.Now().Unix())
     VC.InjectGenesisBlock()
     return VC
@@ -182,7 +182,7 @@ func (self *Blockchain) PendingTransactions() bool {
 // Should order transactions by priority
 func (self *Blockchain) CreateBlock() (coin.Block, error) {
     //var sb SignedBlock
-    if self.SecKey == (coin.SecKey{}) {
+    if self.SecKey == (cipher.SecKey{}) {
         log.Panic("Only master chain can create blocks")
     }
 
@@ -217,7 +217,7 @@ func (self *Blockchain) SignBlock(b coin.Block) SignedBlock {
     if !self.IsMaster {
         log.Panic("Only master chain can sign blocks")
     }
-    sig := coin.SignHash(b.HashHeader(), self.SecKey)
+    sig := cipher.SignHash(b.HashHeader(), self.SecKey)
     sb := SignedBlock{
         Block: b,
         Sig:   sig,
@@ -290,11 +290,11 @@ func (self *Blockchain) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Blockchain) SetTxnAnnounce(h coin.SHA256) {
+func (self *Blockchain) SetTxnAnnounce(h cipher.SHA256) {
     self.Unconfirmed.SetAnnounced(h, time.Now().Unix())
 }
 
 func (self *Blockchain) verifySignedBlock(b *SignedBlock) error {
-    return coin.VerifySignature(self.Genesis.PubKey, b.Sig,
+    return cipher.VerifySignature(self.Genesis.PubKey, b.Sig,
         b.Block.HashHeader())
 }

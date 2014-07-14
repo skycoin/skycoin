@@ -37,16 +37,16 @@ func randBytes(t *testing.T, n int) []byte {
 	return b
 }
 
-func randSHA256(t *testing.T) coin.SHA256 {
+func randSHA256(t *testing.T) cipher.SHA256 {
 	return coin.SumSHA256(randBytes(t, 32))
 }
 
-func createGenesisSignature(master wallet.WalletEntry) coin.Sig {
+func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
 	c := visor.NewVisorConfig()
 	bc := coin.NewBlockchain()
 	gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
 		c.GenesisCoinVolume)
-	return coin.SignHash(gb.HashHeader(), master.Secret)
+	return cipher.SignHash(gb.HashHeader(), master.Secret)
 }
 
 // Returns an appropriate VisorConfig and a master visor
@@ -68,7 +68,7 @@ func setupVisor() (VisorConfig, *visor.Visor) {
 	c.Config.WalletDirectory = testWalletDir
 	c.Config.IsMaster = false
 	c.Config.MasterKeys = mw
-	c.Config.MasterKeys.Secret = coin.SecKey{}
+	c.Config.MasterKeys.Secret = cipher.SecKey{}
 	c.Config.GenesisSignature = mvc.GenesisSignature
 	c.Config.GenesisTimestamp = mvc.GenesisTimestamp
 	return c, mv
@@ -1164,7 +1164,7 @@ func TestAnnounceTxnsMessageHandle(t *testing.T) {
 	d := newDefaultDaemon()
 	defer shutdown(d)
 	tx := createUnconfirmedTxn()
-	txns := []coin.SHA256{tx.Txn.Hash()}
+	txns := []cipher.SHA256{tx.Txn.Hash()}
 	m := NewAnnounceTxnsMessage(txns)
 	assert.Equal(t, m.Txns, txns)
 	testSimpleMessageHandler(t, d, m)
@@ -1190,7 +1190,7 @@ func TestAnnounceTxnsMessageProcess(t *testing.T) {
 	go d.Pool.Pool.ConnectionWriteLoop(gc)
 
 	tx := createUnconfirmedTxn()
-	txns := []coin.SHA256{tx.Txn.Hash()}
+	txns := []cipher.SHA256{tx.Txn.Hash()}
 	m := NewAnnounceTxnsMessage(txns)
 	m.c = messageContext(addr)
 	go d.Pool.Pool.ConnectionWriteLoop(m.c.Conn)
@@ -1236,7 +1236,7 @@ func TestGetTxnsMessageHandle(t *testing.T) {
 	d := newDefaultDaemon()
 	defer shutdown(d)
 	tx := createUnconfirmedTxn()
-	txns := []coin.SHA256{tx.Txn.Hash()}
+	txns := []cipher.SHA256{tx.Txn.Hash()}
 	m := NewGetTxnsMessage(txns)
 	assert.Equal(t, m.Txns, txns)
 	testSimpleMessageHandler(t, d, m)
@@ -1263,7 +1263,7 @@ func TestGetTxnsMessageProcess(t *testing.T) {
 	go p.Pool.ConnectionWriteLoop(gc)
 	tx := createUnconfirmedTxn()
 	tx.Txn.Head.Hash = coin.SumSHA256([]byte("asdadwadwada"))
-	txns := []coin.SHA256{tx.Txn.Hash()}
+	txns := []cipher.SHA256{tx.Txn.Hash()}
 	m := NewGetTxnsMessage(txns)
 	m.c = messageContext(addr)
 	go p.Pool.ConnectionWriteLoop(m.c.Conn)
@@ -1372,7 +1372,7 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
 /* Misc */
 
 func assertSendingTxnsMessageInterface(t *testing.T, i interface{},
-	hashes []coin.SHA256, isSending bool) {
+	hashes []cipher.SHA256, isSending bool) {
 	m, ok := i.(SendingTxnsMessage)
 	assert.Equal(t, ok, isSending)
 	if isSending {
@@ -1381,7 +1381,7 @@ func assertSendingTxnsMessageInterface(t *testing.T, i interface{},
 }
 
 func TestSendingTxnsMessageInterface(t *testing.T) {
-	hashes := []coin.SHA256{randSHA256(t), randSHA256(t)}
+	hashes := []cipher.SHA256{randSHA256(t), randSHA256(t)}
 
 	// GetTxnsMessage should not be a SendingTxnsMessage, it is a request for
 	// them

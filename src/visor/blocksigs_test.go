@@ -3,8 +3,7 @@ package visor
 import (
 	"os"
 	"testing"
-
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/assert"
@@ -145,7 +144,7 @@ func TestBlockSigsVerify(t *testing.T) {
 	delete(bs.Sigs, uint64(100))
 
 	// Invalid signature
-	bs.Sigs[uint64(3)] = coin.Sig{}
+	bs.Sigs[uint64(3)] = cipher.Sig{}
 	err = bs.Verify(pub, bc)
 	assert.NotNil(t, err)
 

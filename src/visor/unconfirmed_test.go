@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -15,17 +16,17 @@ const (
 	testBlockSize = 1024 * 1024
 )
 
-func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, coin.SecKey) {
+func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	p, s := coin.GenerateKeyPair()
 	return coin.UxBody{
 		SrcTransaction: coin.SumSHA256(randBytes(t, 128)),
-		Address:        coin.AddressFromPubKey(p),
+		Address:        cipher.AddressFromPubKey(p),
 		Coins:          10e6,
 		Hours:          100,
 	}, s
 }
 
-func makeUxOutWithSecret(t *testing.T) (coin.UxOut, coin.SecKey) {
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 	body, sec := makeUxBodyWithSecret(t)
 	return coin.UxOut{
 		Head: coin.UxHead{
@@ -36,11 +37,11 @@ func makeUxOutWithSecret(t *testing.T) (coin.UxOut, coin.SecKey) {
 	}, sec
 }
 
-func makeTransactionWithSecret(t *testing.T) (coin.Transaction, coin.SecKey) {
+func makeTransactionWithSecret(t *testing.T) (coin.Transaction, cipher.SecKey) {
 	tx := coin.Transaction{}
 	ux, s := makeUxOutWithSecret(t)
 	tx.PushInput(ux.Hash())
-	tx.SignInputs([]coin.SecKey{s})
+	tx.SignInputs([]cipher.SecKey{s})
 	tx.PushOutput(makeAddress(), 10e6, 100)
 	tx.UpdateHeader()
 	return tx, s
@@ -104,7 +105,7 @@ func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
 	if err != nil {
 		return txn, err
 	}
-	txn.Out[0].Address = coin.Address{}
+	txn.Out[0].Address = cipher.Address{}
 	return txn, nil
 }
 
@@ -130,7 +131,7 @@ func assertValidUnspent(t *testing.T, bc *coin.Blockchain,
 	}
 }
 
-func assertValidUnconfirmed(t *testing.T, txns map[coin.SHA256]UnconfirmedTxn,
+func assertValidUnconfirmed(t *testing.T, txns map[cipher.SHA256]UnconfirmedTxn,
 	txn coin.Transaction) {
 	ut, ok := txns[txn.Hash()]
 	assert.True(t, ok)
@@ -192,7 +193,7 @@ func TestSetAnnounced(t *testing.T) {
 	assert.Equal(t, len(ut.Txns), 0)
 	// Unknown should be safe and a noop
 	assert.NotPanics(t, func() {
-		ut.SetAnnounced(coin.SHA256{}, util.Now())
+		ut.SetAnnounced(cipher.SHA256{}, util.Now())
 	})
 	assert.Equal(t, len(ut.Txns), 0)
 	utx := createUnconfirmedTxn()
@@ -253,7 +254,7 @@ func TestRecordTxn(t *testing.T) {
 	ut = NewUnconfirmedTxnPool()
 	txn, err = makeValidTxn(mv)
 	assert.Nil(t, err)
-	addrs := make(map[coin.Address]byte, 1)
+	addrs := make(map[cipher.Address]byte, 1)
 	addrs[txn.Out[1].Address] = byte(1)
 	err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 0)
 	assert.Nil(t, err)
@@ -267,7 +268,7 @@ func TestRecordTxn(t *testing.T) {
 	ut = NewUnconfirmedTxnPool()
 	txn, err = makeValidTxnNoChange(mv)
 	assert.Nil(t, err)
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	ux, ok := mv.blockchain.Unspent.Get(txn.In[0])
 	assert.True(t, ok)
 	addrs[ux.Body.Address] = byte(1)
@@ -282,7 +283,7 @@ func TestRecordTxn(t *testing.T) {
 	ut = NewUnconfirmedTxnPool()
 	txn, err = makeValidTxn(mv)
 	assert.Nil(t, err)
-	addrs = make(map[coin.Address]byte, 2)
+	addrs = make(map[cipher.Address]byte, 2)
 	addrs[txn.Out[0].Address] = byte(1)
 	ux, ok = mv.blockchain.Unspent.Get(txn.In[0])
 	assert.True(t, ok)
@@ -326,7 +327,7 @@ func TestRecordTxn(t *testing.T) {
 	ut = NewUnconfirmedTxnPool()
 	txn, err = makeValidTxnWithFeeFactor(mv, 4, 0)
 	assert.Nil(t, err)
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	addrs[txn.Out[1].Address] = byte(1)
 	err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
 	assert.Nil(t, err)
@@ -340,7 +341,7 @@ func TestRecordTxn(t *testing.T) {
 	ut = NewUnconfirmedTxnPool()
 	txn, err = makeValidTxnWithFeeFactor(mv, 4, 100)
 	assert.Nil(t, err)
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	addrs[txn.Out[1].Address] = byte(1)
 	err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
 	assert.Nil(t, err)
@@ -356,7 +357,7 @@ func TestRecordTxn(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = mv.blockchain.TransactionFee(&txn)
 	assert.Nil(t, err)
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	addrs[txn.Out[1].Address] = byte(1)
 	err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
 	assertError(t, err, "Transaction fee minimum not met")
@@ -370,10 +371,10 @@ func TestRecordTxn(t *testing.T) {
 	txn, err = makeValidTxnWithFeeFactor(mv, 4, 100)
 	assert.Nil(t, err)
 	txn.Out[1].Hours = 1e16
-	txn.Head.Sigs = make([]coin.Sig, 0)
-	txn.SignInputs([]coin.SecKey{mv.Config.MasterKeys.Secret})
+	txn.Head.Sigs = make([]cipher.Sig, 0)
+	txn.SignInputs([]cipher.SecKey{mv.Config.MasterKeys.Secret})
 	txn.UpdateHeader()
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	addrs[txn.Out[1].Address] = byte(1)
 	err, known = ut.RecordTxn(mv.blockchain, txn, addrs, testBlockSize, 4)
 	assertError(t, err, "Insufficient coinhours for transaction outputs")
@@ -462,7 +463,7 @@ func TestRemoveTxns(t *testing.T) {
 
 	// Include an unknown hash, and omit a known hash. The other two should
 	// be removed.
-	hashes := make([]coin.SHA256, 0, 3)
+	hashes := make([]cipher.SHA256, 0, 3)
 	hashes = append(hashes, randSHA256()) // unknown hash
 	ut, err := makeValidTxn(mv)
 	assert.Nil(t, err)
@@ -699,7 +700,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
 	assert.False(t, known)
 
 	// Add a transaction that is our spend, both new and old
-	addrs := make(map[coin.Address]byte, 1)
+	addrs := make(map[cipher.Address]byte, 1)
 	ux, ok := mv.blockchain.Unspent.Get(ourSpendNew.In[0])
 	assert.True(t, ok)
 	addrs[ux.Body.Address] = byte(1)
@@ -707,7 +708,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.False(t, known)
 	up.SetAnnounced(ourSpendNew.Hash(), util.Now())
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	ux, ok = mv.blockchain.Unspent.Get(ourSpendNew.In[0])
 	assert.True(t, ok)
 	addrs[ux.Body.Address] = byte(1)
@@ -716,21 +717,21 @@ func TestGetOldOwnedTransactions(t *testing.T) {
 	assert.False(t, known)
 
 	// Add a transaction that is our receive, both new and old
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	addrs[ourReceiveNew.Out[1].Address] = byte(1)
 	err, known = up.RecordTxn(mv.blockchain, ourReceiveNew, addrs,
 		testBlockSize, 0)
 	assert.Nil(t, err)
 	assert.False(t, known)
 	up.SetAnnounced(ourReceiveNew.Hash(), util.Now())
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	addrs[ourReceiveOld.Out[1].Address] = byte(1)
 	err, known = up.RecordTxn(mv.blockchain, ourReceiveOld, addrs,
 		testBlockSize, 0)
 	assert.Nil(t, err)
 	assert.False(t, known)
 	// Add a transaction that is both our spend and receive, both new and old
-	addrs = make(map[coin.Address]byte, 2)
+	addrs = make(map[cipher.Address]byte, 2)
 	ux, ok = mv.blockchain.Unspent.Get(ourBothNew.In[0])
 	assert.True(t, ok)
 	addrs[ux.Body.Address] = byte(1)
@@ -740,7 +741,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.False(t, known)
 	up.SetAnnounced(ourBothNew.Hash(), util.Now())
-	addrs = make(map[coin.Address]byte, 1)
+	addrs = make(map[cipher.Address]byte, 1)
 	ux, ok = mv.blockchain.Unspent.Get(ourBothOld.In[0])
 	assert.True(t, ok)
 	addrs[ux.Body.Address] = byte(1)
@@ -754,7 +755,7 @@ func TestGetOldOwnedTransactions(t *testing.T) {
 func TestFilterKnown(t *testing.T) {
 	up := NewUnconfirmedTxnPool()
 	uts := createUnconfirmedTxns(t, up, 4)
-	hashes := []coin.SHA256{
+	hashes := []cipher.SHA256{
 		uts[0].Hash(),
 		uts[1].Hash(),
 		randSHA256(),
@@ -775,7 +776,7 @@ func TestFilterKnown(t *testing.T) {
 func TestGetKnown(t *testing.T) {
 	up := NewUnconfirmedTxnPool()
 	uts := createUnconfirmedTxns(t, up, 4)
-	hashes := []coin.SHA256{
+	hashes := []cipher.SHA256{
 		uts[0].Hash(),
 		uts[1].Hash(),
 		randSHA256(),
@@ -797,9 +798,9 @@ func TestGetKnown(t *testing.T) {
 func TestSpendsForAddresses(t *testing.T) {
 	up := NewUnconfirmedTxnPool()
 	unspent := coin.NewUnspentPool()
-	addrs := make(map[coin.Address]byte, 0)
+	addrs := make(map[cipher.Address]byte, 0)
 	n := 4
-	useAddrs := make([]coin.Address, n)
+	useAddrs := make([]cipher.Address, n)
 	for i, _ := range useAddrs {
 		useAddrs[i] = makeAddress()
 	}

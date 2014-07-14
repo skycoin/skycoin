@@ -1,7 +1,7 @@
 package visor
 
 import (
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -107,7 +107,7 @@ func (self RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 }
 
 func (self RPC) GetTransaction(v *Visor,
-	txHash coin.SHA256) *TransactionResult {
+	txHash cipher.SHA256) *TransactionResult {
 	if v == nil {
 		return nil
 	}
@@ -119,7 +119,7 @@ func (self RPC) GetTransaction(v *Visor,
 }
 
 func (self RPC) GetAddressTransactions(v *Visor,
-	addr coin.Address) *TransactionResults {
+	addr cipher.Address) *TransactionResults {
 	if v == nil {
 		return nil
 	}

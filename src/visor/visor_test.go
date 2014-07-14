@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -52,14 +53,14 @@ func newWalletEntry(t *testing.T) wallet.WalletEntry {
 	return we
 }
 
-func setupGenesis(t *testing.T) (wallet.WalletEntry, coin.Sig, uint64) {
+func setupGenesis(t *testing.T) (wallet.WalletEntry, cipher.Sig, uint64) {
 	we := newWalletEntry(t)
 	vc := NewVisorConfig()
 	vc.IsMaster = true
 	vc.MasterKeys = we
 	vc.GenesisSignature = createGenesisSignature(we)
 	v := NewVisor(vc)
-	we.Secret = coin.SecKey{}
+	we.Secret = cipher.SecKey{}
 	return we, v.blockSigs.Sigs[0], v.blockchain.Blocks[0].Head.Time
 }
 
@@ -193,7 +194,7 @@ func TestNewVisorConfig(t *testing.T) {
 	assert.Equal(t, vc.BlockSigsFile, "")
 	assert.Panics(t, func() { vc.MasterKeys.Verify() })
 	assert.NotNil(t, vc.MasterKeys.VerifyPublic())
-	assert.Equal(t, vc.GenesisSignature, coin.Sig{})
+	assert.Equal(t, vc.GenesisSignature, cipher.Sig{})
 }
 
 func TestNewVisor(t *testing.T) {
@@ -202,7 +203,7 @@ func TestNewVisor(t *testing.T) {
 	// Not master, Invalid master keys
 	cleanupVisor()
 	we := wallet.NewWalletEntry()
-	we.Public = coin.PubKey{}
+	we.Public = cipher.PubKey{}
 	vc := NewVisorConfig()
 	vc.IsMaster = false
 	assert.Panics(t, func() { NewVisor(vc) })
@@ -322,7 +323,7 @@ func TestNewVisor(t *testing.T) {
 	refvc = newGenesisConfig(t)
 	refv = setupVisorWriting(refvc)
 	// Corrupt the signature
-	refv.blockSigs.Sigs[uint64(0)] = coin.Sig{}
+	refv.blockSigs.Sigs[uint64(0)] = cipher.Sig{}
 	writeVisorFilesDirect(t, refv)
 	vc = setupChildVisorConfig(refvc, false)
 	assert.Panics(t, func() { NewVisor(vc) })
@@ -332,7 +333,7 @@ func TestNewVisor(t *testing.T) {
 	refvc = newMasterVisorConfig(t)
 	refv = setupVisorWriting(refvc)
 	// Corrupt the signature
-	refv.blockSigs.Sigs[uint64(0)] = coin.Sig{}
+	refv.blockSigs.Sigs[uint64(0)] = cipher.Sig{}
 	writeVisorFilesDirect(t, refv)
 	vc = setupChildVisorConfig(refvc, true)
 	assert.Panics(t, func() { NewVisor(vc) })
@@ -359,7 +360,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 	assert.Equal(t, len(v.blockSigs.Sigs), 0)
 	sb := v.CreateGenesisBlock()
 	assert.NotEqual(t, sb.Block, coin.Block{})
-	assert.NotEqual(t, sb.Sig, coin.Sig{})
+	assert.NotEqual(t, sb.Sig, cipher.Sig{})
 	assert.Equal(t, len(v.blockchain.Blocks), 1)
 	assert.Equal(t, len(v.blockSigs.Sigs), 1)
 	assert.Nil(t, v.blockSigs.Verify(vc.MasterKeys.Public, v.blockchain))
@@ -372,7 +373,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 	assert.Equal(t, len(v.blockSigs.Sigs), 0)
 	sb = v.CreateGenesisBlock()
 	assert.NotEqual(t, sb.Block, coin.Block{})
-	assert.NotEqual(t, sb.Sig, coin.Sig{})
+	assert.NotEqual(t, sb.Sig, cipher.Sig{})
 	assert.Equal(t, len(v.blockchain.Blocks), 1)
 	assert.Equal(t, len(v.blockSigs.Sigs), 1)
 	assert.Nil(t, v.blockSigs.Verify(vc.MasterKeys.Public, v.blockchain))
@@ -381,7 +382,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 
 	// Test as master, blockSigs invalid for pubkey
 	vc = newMasterVisorConfig(t)
-	vc.MasterKeys.Public = coin.PubKey{}
+	vc.MasterKeys.Public = cipher.PubKey{}
 	v = NewMinimalVisor(vc)
 	assert.True(t, v.Config.IsMaster)
 	assert.Equal(t, len(v.blockchain.Blocks), 0)
@@ -390,7 +391,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 
 	// Test as not master, blockSigs invalid for pubkey
 	vc = newGenesisConfig(t)
-	vc.MasterKeys.Public = coin.PubKey{}
+	vc.MasterKeys.Public = cipher.PubKey{}
 	v = NewMinimalVisor(vc)
 	assert.False(t, v.Config.IsMaster)
 	assert.Equal(t, len(v.blockchain.Blocks), 0)
@@ -399,13 +400,13 @@ func TestCreateGenesisBlock(t *testing.T) {
 
 	// Test as master, signing failed
 	vc = newMasterVisorConfig(t)
-	vc.MasterKeys.Secret = coin.SecKey{}
-	vc.GenesisSignature = coin.Sig{}
-	assert.Equal(t, vc.MasterKeys.Secret, coin.SecKey{})
+	vc.MasterKeys.Secret = cipher.SecKey{}
+	vc.GenesisSignature = cipher.Sig{}
+	assert.Equal(t, vc.MasterKeys.Secret, cipher.SecKey{})
 	v = NewMinimalVisor(vc)
 	assert.True(t, v.Config.IsMaster)
 	assert.Equal(t, v.Config, vc)
-	assert.Equal(t, v.Config.MasterKeys.Secret, coin.SecKey{})
+	assert.Equal(t, v.Config.MasterKeys.Secret, cipher.SecKey{})
 	assert.Equal(t, len(v.blockchain.Blocks), 0)
 	assert.Equal(t, len(v.blockSigs.Sigs), 0)
 	assert.Panics(t, func() { v.CreateGenesisBlock() })
@@ -593,7 +594,7 @@ func TestVisorSpend(t *testing.T) {
 	assert.Equal(t, len(tx.In), 1)
 	assert.Equal(t, len(tx.Out), 2)
 	// Hash should be updated
-	assert.NotEqual(t, tx.Head.Hash, coin.SHA256{})
+	assert.NotEqual(t, tx.Head.Hash, cipher.SHA256{})
 	// Should be 1 signature for the single input
 	assert.Equal(t, len(tx.Head.Sigs), 1)
 	// Spent amount should be correct
@@ -629,7 +630,7 @@ func TestExecuteSignedBlock(t *testing.T) {
 	sb, err := v.CreateBlock(now)
 	assert.Equal(t, len(v.blockSigs.Sigs), 1)
 	assert.Nil(t, err)
-	sb.Sig = coin.Sig{}
+	sb.Sig = cipher.Sig{}
 	err = v.ExecuteSignedBlock(sb)
 	assert.NotNil(t, err)
 	assert.Equal(t, len(v.Unconfirmed.Txns), 1)
@@ -639,7 +640,7 @@ func TestExecuteSignedBlock(t *testing.T) {
 	sb, err = v.CreateBlock(now)
 	assert.Nil(t, err)
 	// TODO -- empty BodyHash is being accepted, fix blockchain verification
-	sb.Block.Head.BodyHash = coin.SHA256{}
+	sb.Block.Head.BodyHash = cipher.SHA256{}
 	sb.Block.Body.Transactions = make(coin.Transactions, 0)
 	sb = v.SignBlock(sb.Block)
 	err = v.ExecuteSignedBlock(sb)
@@ -711,7 +712,7 @@ func TestGetGenesisBlock(t *testing.T) {
 
 	// Panics with no blocks
 	v = NewMinimalVisor(vc)
-	v.blockSigs.Sigs[0] = coin.Sig{}
+	v.blockSigs.Sigs[0] = cipher.Sig{}
 	assert.Panics(t, func() { v.GetGenesisBlock() })
 
 	// Correct result
@@ -1012,7 +1013,7 @@ func TestVisorVerifySignedBlock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, v.verifySignedBlock(&b))
 	badb := b
-	badb.Sig = coin.Sig{}
+	badb.Sig = cipher.Sig{}
 	assert.NotNil(t, v.verifySignedBlock(&badb))
 
 	// Non master should verify signed blocks generated by master
@@ -1055,9 +1056,9 @@ func TestCreateMasterWallet(t *testing.T) {
 
 	// Creating with an invalid wallet entry should panic
 	we = wallet.NewWalletEntry()
-	we.Secret = coin.SecKey{}
+	we.Secret = cipher.SecKey{}
 	assert.Panics(t, func() { CreateMasterWallet(we) })
 	we = wallet.NewWalletEntry()
-	we.Public = coin.PubKey{}
+	we.Public = cipher.PubKey{}
 	assert.Panics(t, func() { CreateMasterWallet(we) })
 }

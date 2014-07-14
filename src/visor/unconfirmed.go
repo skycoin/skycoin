@@ -31,7 +31,7 @@ func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int,
 type TxnUnspents map[cipher.SHA256]coin.UxArray
 
 // Returns all Unspents for a single address
-func (self TxnUnspents) AllForAddress(a coin.Address) coin.UxArray {
+func (self TxnUnspents) AllForAddress(a cipher.Address) coin.UxArray {
 	uxo := make(coin.UxArray, 0)
 	for _, uxa := range self {
 		for i, _ := range uxa {
@@ -69,12 +69,12 @@ type UnconfirmedTxnPool struct {
 
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
 	return &UnconfirmedTxnPool{
-		Txns:    make(map[coin.SHA256]UnconfirmedTxn),
+		Txns:    make(map[cipher.SHA256]UnconfirmedTxn),
 		Unspent: make(TxnUnspents),
 	}
 }
 
-func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
+func (self *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) {
 	if tx, ok := self.Txns[h]; ok {
 		tx.Announced = t
 		self.Txns[h] = tx
@@ -83,7 +83,7 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t time.Time) {
 
 // Creates an unconfirmed transaction
 func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
-	t coin.Transaction, addrs map[coin.Address]byte) UnconfirmedTxn {
+	t coin.Transaction, addrs map[cipher.Address]byte) UnconfirmedTxn {
 	now := util.Now()
 	return UnconfirmedTxn{
 		Txn:       t,
@@ -97,7 +97,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-	t coin.Transaction, addrs map[coin.Address]byte, maxSize int,
+	t coin.Transaction, addrs map[cipher.Address]byte, maxSize int,
 	burnFactor uint64) (error, bool) {
 	if err := VerifyTransaction(bc, &t, maxSize, burnFactor); err != nil {
 		return err, false
@@ -138,7 +138,7 @@ func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
 
 // Remove a single txn by hash
 func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain,
-	txHash coin.SHA256) {
+	txHash cipher.SHA256) {
 	delete(self.Txns, txHash)
 	delete(self.Unspent, txHash)
 }
@@ -146,7 +146,7 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain,
 // Removes multiple txns at once. Slightly more efficient than a series of
 // single RemoveTxns.  Hashes is an array of Transaction hashes.
 func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
-	hashes []coin.SHA256) {
+	hashes []cipher.SHA256) {
 	for i, _ := range hashes {
 		delete(self.Txns, hashes[i])
 		delete(self.Unspent, hashes[i])
@@ -156,7 +156,7 @@ func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
 // Removes confirmed txns from the pool
 func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 	txns coin.Transactions) {
-	toRemove := make([]coin.SHA256, len(txns))
+	toRemove := make([]cipher.SHA256, len(txns))
 	for i, _ := range txns {
 		toRemove[i] = txns[i].Hash()
 	}
@@ -169,7 +169,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
 	checkPeriod, maxAge time.Duration) {
 	now := util.Now()
-	toRemove := make([]coin.SHA256, 0)
+	toRemove := make([]cipher.SHA256, 0)
 	for k, t := range self.Txns {
 		if now.Sub(t.Received) >= maxAge {
 			toRemove = append(toRemove, k)
@@ -186,8 +186,8 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
 }
 
 // Returns txn hashes with known ones removed
-func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
-	unknown := make([]coin.SHA256, 0)
+func (self *UnconfirmedTxnPool) FilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
+	unknown := make([]cipher.SHA256, 0)
 	for _, h := range txns {
 		if _, known := self.Txns[h]; !known {
 			unknown = append(unknown, h)
@@ -197,7 +197,7 @@ func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
 }
 
 // Returns all known coin.Transactions from the pool, given hashes to select
-func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
+func (self *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions {
 	known := make(coin.Transactions, 0)
 	for _, h := range txns {
 		if txn, have := self.Txns[h]; have {
@@ -212,7 +212,7 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
 // blockchain's unspent pool, and returns as coin.AddressUxOuts
 // TODO -- optimize or cache
 func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
-	a map[coin.Address]byte) coin.AddressUxOuts {
+	a map[cipher.Address]byte) coin.AddressUxOuts {
 	auxs := make(coin.AddressUxOuts, len(a))
 	for _, utx := range self.Txns {
 		for _, h := range utx.Txn.In {
@@ -227,8 +227,8 @@ func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
 }
 
 func (self *UnconfirmedTxnPool) SpendsForAddress(bcUnspent *coin.UnspentPool,
-	a coin.Address) coin.UxArray {
-	ma := map[coin.Address]byte{a: 1}
+	a cipher.Address) coin.UxArray {
+	ma := map[cipher.Address]byte{a: 1}
 	auxs := self.SpendsForAddresses(bcUnspent, ma)
 	return auxs[a]
 }

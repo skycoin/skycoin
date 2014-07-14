@@ -47,7 +47,7 @@ func le_PutUint64(b []byte, v uint64) {
 
 type SignedBlock struct {
     //BkSeq uint64
-    Sig   coin.Sig
+    Sig   cipher.Sig
     Block coin.Block
 }
 

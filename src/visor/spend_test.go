@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/assert"
@@ -21,9 +22,9 @@ func assertError(t *testing.T, err error, msg string) {
 	assert.Equal(t, err.Error(), msg)
 }
 
-func makeAddress() coin.Address {
+func makeAddress() cipher.Address {
 	p, _ := coin.GenerateKeyPair()
-	return coin.AddressFromPubKey(p)
+	return cipher.AddressFromPubKey(p)
 }
 
 func makeUxBalances(b []wallet.Balance, headTime uint64) coin.UxArray {
@@ -45,7 +46,7 @@ func makeUxBalances(b []wallet.Balance, headTime uint64) coin.UxArray {
 }
 
 func makeUxBalancesForAddresses(b []wallet.Balance, headTime uint64,
-	addrs []coin.Address) coin.UxArray {
+	addrs []cipher.Address) coin.UxArray {
 	if len(b) != len(addrs) {
 		log.Panic("Need as many addresses and balances")
 	}
@@ -396,7 +397,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
 		Address: a,
 	})
 	assert.Equal(t, len(tx.In), 2)
-	assert.Equal(t, tx.In, []coin.SHA256{uxs[0].Hash(), uxs[1].Hash()})
+	assert.Equal(t, tx.In, []cipher.SHA256{uxs[0].Hash(), uxs[1].Hash()})
 	assert.Nil(t, tx.Verify())
 
 	// Valid txn, change
@@ -422,7 +423,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
 		Address: a,
 	})
 	assert.Equal(t, len(tx.In), 3)
-	assert.Equal(t, tx.In, []coin.SHA256{
+	assert.Equal(t, tx.In, []cipher.SHA256{
 		uxs[0].Hash(), uxs[1].Hash(), uxs[2].Hash(),
 	})
 	assert.Nil(t, tx.Verify())

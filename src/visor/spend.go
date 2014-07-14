@@ -7,6 +7,7 @@ import (
 	"log"
 	"sort"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -114,7 +115,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 func CreateSpendingTransaction(wlt wallet.Wallet,
 	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
 	headTime uint64, amt wallet.Balance, fee, burnFactor uint64,
-	dest coin.Address) (coin.Transaction, error) {
+	dest cipher.Address) (coin.Transaction, error) {
 	txn := coin.Transaction{}
 	auxs := unspent.AllForAddresses(wlt.GetAddresses())
 	// Subtract pending spends from available
@@ -128,7 +129,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 	}
 
 	// Add these unspents as tx inputs
-	toSign := make([]coin.SecKey, len(spends))
+	toSign := make([]cipher.SecKey, len(spends))
 	spending := wallet.Balance{0, 0}
 	for i, au := range spends {
 		entry, exists := wlt.GetEntry(au.Body.Address)

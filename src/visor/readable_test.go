@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -23,12 +24,12 @@ const (
 	testWalletDir       = "./"
 )
 
-func createGenesisSignature(master wallet.WalletEntry) coin.Sig {
+func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
 	c := NewVisorConfig()
 	bc := coin.NewBlockchain()
 	gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
 		c.GenesisCoinVolume)
-	return coin.SignHash(gb.HashHeader(), master.Secret)
+	return cipher.SignHash(gb.HashHeader(), master.Secret)
 }
 
 // Returns an appropriate VisorConfig and a master visor
@@ -51,7 +52,7 @@ func setupVisorConfig() (VisorConfig, *Visor) {
 	c.GenesisSignature = mvc.GenesisSignature
 	c.GenesisTimestamp = mvc.GenesisTimestamp
 	c.MasterKeys = mw
-	c.MasterKeys.Secret = coin.SecKey{}
+	c.MasterKeys.Secret = cipher.SecKey{}
 	c.WalletDirectory = testWalletDir
 	return c, mv
 }
@@ -66,7 +67,7 @@ func setupVisorFromMaster(mv *Visor) *Visor {
 	vc := NewVisorConfig()
 	vc.IsMaster = false
 	vc.MasterKeys = mv.Config.MasterKeys
-	vc.MasterKeys.Secret = coin.SecKey{}
+	vc.MasterKeys.Secret = cipher.SecKey{}
 	vc.GenesisSignature = mv.blockSigs.Sigs[0]
 	vc.GenesisTimestamp = mv.blockchain.Blocks[0].Head.Time
 	return NewVisor(vc)
@@ -113,7 +114,7 @@ func cleanupVisor() {
 	}
 }
 
-func randSHA256() coin.SHA256 {
+func randSHA256() cipher.SHA256 {
 	b := make([]byte, 128)
 	rand.Read(b)
 	return coin.SumSHA256(b)
@@ -141,7 +142,7 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
 	return ut
 }
 
-func transferCoinsToSelf(v *Visor, addr coin.Address) error {
+func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
 	tx, err := v.Spend(v.Wallets[0].GetID(), wallet.Balance{1e6, 0}, 0, addr)
 	if err != nil {
 		return err
@@ -152,7 +153,7 @@ func transferCoinsToSelf(v *Visor, addr coin.Address) error {
 }
 
 func transferCoinsAdvanced(mv *Visor, v *Visor, b wallet.Balance, fee uint64,
-	addr coin.Address) error {
+	addr cipher.Address) error {
 	tx, err := mv.Spend(mv.Wallets[0].GetID(), b, fee, addr)
 	if err != nil {
 		return err
@@ -272,7 +273,7 @@ func TestReadableTransactionOutput(t *testing.T) {
 	assertReadableTransactionOutput(t, rto, to)
 }
 
-func assertReadableTransactionInput(t *testing.T, rti string, ti coin.SHA256) {
+func assertReadableTransactionInput(t *testing.T, rti string, ti cipher.SHA256) {
 	assert.NotPanics(t, func() {
 		assert.Equal(t, coin.MustSHA256FromHex(rti), ti)
 	})

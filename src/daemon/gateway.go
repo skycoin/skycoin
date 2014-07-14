@@ -69,7 +69,7 @@ func (self *Gateway) GetConnection(addr string) interface{} {
 
 // Returns a *Spend
 func (self *Gateway) Spend(walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest coin.Address) interface{} {
+	fee uint64, dest cipher.Address) interface{} {
 	self.requests <- func() interface{} {
 		return self.Daemon.Spend(self.d.Visor, self.d.Pool, self.Visor,
 			walletID, amt, fee, dest)
@@ -153,7 +153,7 @@ func (self *Gateway) GetBlockchainProgress() interface{} {
 }
 
 // Returns a *ResendResult
-func (self *Gateway) ResendTransaction(txn coin.SHA256) interface{} {
+func (self *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
 	self.requests <- func() interface{} {
 		return self.Daemon.ResendTransaction(self.d.Visor, self.d.Pool, txn)
 	}
@@ -189,7 +189,7 @@ func (self *Gateway) GetBlocks(start, end uint64) interface{} {
 }
 
 // Returns a *visor.TransactionResult
-func (self *Gateway) GetTransaction(txn coin.SHA256) interface{} {
+func (self *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.GetTransaction(self.d.Visor.Visor, txn)
 	}
@@ -198,7 +198,7 @@ func (self *Gateway) GetTransaction(txn coin.SHA256) interface{} {
 }
 
 // Returns a *visor.TransactionResults
-func (self *Gateway) GetAddressTransactions(a coin.Address) interface{} {
+func (self *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.GetAddressTransactions(self.d.Visor.Visor, a)
 	}

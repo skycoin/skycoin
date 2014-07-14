@@ -76,7 +76,7 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
 
 func (self RPC) Spend(v *Visor, pool *Pool, vrpc visor.RPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
-	dest coin.Address) *SpendResult {
+	dest cipher.Address) *SpendResult {
 	if v.Visor == nil {
 		return nil
 	}
@@ -105,7 +105,7 @@ func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 }
 
 func (self RPC) ResendTransaction(v *Visor, p *Pool,
-	txHash coin.SHA256) *ResendResult {
+	txHash cipher.SHA256) *ResendResult {
 	if v.Visor == nil {
 		return nil
 	}

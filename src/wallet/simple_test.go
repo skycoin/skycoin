@@ -54,9 +54,9 @@ func assertFileMode(t *testing.T, filename string, mode os.FileMode) {
 
 func TestNewWalletEntry(t *testing.T) {
 	we := NewWalletEntry()
-	assert.NotEqual(t, we.Address, coin.Address{})
-	assert.NotEqual(t, we.Public, coin.PubKey{})
-	assert.NotEqual(t, we.Secret, coin.SecKey{})
+	assert.NotEqual(t, we.Address, cipher.Address{})
+	assert.NotEqual(t, we.Public, cipher.PubKey{})
+	assert.NotEqual(t, we.Secret, cipher.SecKey{})
 	assert.Nil(t, we.Public.Verify())
 	assert.Nil(t, we.Secret.Verify())
 	assert.Nil(t, we.Address.Verify(we.Public))
@@ -78,7 +78,7 @@ func TestWalletEntryFromReadable(t *testing.T) {
 	rwe.Address = addr
 	rwe.Secret = ""
 	we = WalletEntryFromReadable(&rwe)
-	assert.Equal(t, we.Secret, coin.SecKey{})
+	assert.Equal(t, we.Secret, cipher.SecKey{})
 	assert.Equal(t, we.Public, we2.Public)
 	assert.Equal(t, we.Address, we2.Address)
 }
@@ -117,7 +117,7 @@ func TestMustLoadWalletEntry(t *testing.T) {
 	assert.Equal(t, we, we2)
 
 	// Invalid entry panics
-	we.Public = coin.PubKey{}
+	we.Public = cipher.PubKey{}
 	rwe = NewReadableWalletEntry(&we)
 	cleanupWallets()
 	assert.Nil(t, rwe.Save(testWalletEntryFile))
@@ -150,7 +150,7 @@ func TestWalletEntryVerifyPublic(t *testing.T) {
 	assert.Nil(t, we.VerifyPublic())
 	// Invalid public
 	we2 := NewWalletEntry()
-	we2.Public = coin.PubKey{}
+	we2.Public = cipher.PubKey{}
 	assert.NotNil(t, we2.VerifyPublic())
 	// Invalid address
 	we3 := NewWalletEntry()
@@ -254,11 +254,11 @@ func TestNewWalletFromReadable(t *testing.T) {
 		assert.Equal(t, e, w.Entries[a])
 	}
 	assert.Equal(t, len(w.Entries), len(w2.Entries))
-	sec := coin.SecKey{}
+	sec := cipher.SecKey{}
 	oldSec := rw.Entries[0].Secret
 	rw.Entries[0].Secret = sec.Hex()
 	assert.Panics(t, func() { NewSimpleWalletFromReadable(rw) })
-	pub := coin.PubKey{}
+	pub := cipher.PubKey{}
 	rw.Entries[0].Secret = oldSec
 	rw.Entries[0].Public = pub.Hex()
 	assert.Panics(t, func() { NewSimpleWalletFromReadable(rw) })
@@ -283,7 +283,7 @@ func TestWalletGetAddresses(t *testing.T) {
 	w.CreateEntry()
 	addrs := w.GetAddresses()
 	assert.Equal(t, len(addrs), 4)
-	addrsMap := make(map[coin.Address]byte, len(addrs))
+	addrsMap := make(map[cipher.Address]byte, len(addrs))
 	for _, a := range addrs {
 		_, ok := w.Entries[a]
 		assert.True(t, ok)
@@ -299,7 +299,7 @@ func TestWalletGetEntry(t *testing.T) {
 	we2, ok := w.GetEntry(we.Address)
 	assert.True(t, ok)
 	assert.Equal(t, we, we2)
-	we2, ok = w.GetEntry(coin.Address{})
+	we2, ok = w.GetEntry(cipher.Address{})
 	assert.False(t, ok)
 	assert.NotEqual(t, we, we2)
 }
@@ -322,11 +322,11 @@ func TestWalletAddEntry(t *testing.T) {
 
 	// Invalid entry should panic or return err
 	we = NewWalletEntry()
-	we.Secret = coin.SecKey{}
+	we.Secret = cipher.SecKey{}
 	assert.Panics(t, func() { w.AddEntry(we) })
 	assert.Equal(t, len(w.Entries), 3)
 	we = NewWalletEntry()
-	we.Public = coin.PubKey{}
+	we.Public = cipher.PubKey{}
 	assert.NotNil(t, w.AddEntry(we))
 	assert.Equal(t, len(w.Entries), 3)
 }

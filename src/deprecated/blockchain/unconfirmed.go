@@ -17,23 +17,23 @@ type UnconfirmedTxn struct {
 }
 
 // Returns the coin.Transaction's hash
-func (self *UnconfirmedTxn) Hash() coin.SHA256 {
+func (self *UnconfirmedTxn) Hash() cipher.SHA256 {
     return self.Txn.Hash()
 }
 
 // Manages unconfirmed transactions
 type UnconfirmedTxnPool struct {
-    Txns map[coin.SHA256]UnconfirmedTxn
+    Txns map[cipher.SHA256]UnconfirmedTxn
 }
 
 func NewUnconfirmedTxnPool() *UnconfirmedTxnPool {
     return &UnconfirmedTxnPool{
-        Txns:    make(map[coin.SHA256]UnconfirmedTxn),
+        Txns:    make(map[cipher.SHA256]UnconfirmedTxn),
         //Unspent: coin.NewUnspentPool(),
     }
 }
 
-func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t int64) {
+func (self *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t int64) {
     if tx, ok := self.Txns[h]; ok {
         tx.Announced = t
         self.Txns[h] = tx
@@ -52,7 +52,7 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h coin.SHA256, t int64) {
 
 // Adds a coin.Transaction to the pool
 //func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-//    t coin.Transaction, addrs map[coin.Address]byte, didAnnounce bool) error {
+//    t coin.Transaction, addrs map[cipher.Address]byte, didAnnounce bool) error {
 func (self *UnconfirmedTxnPool) RecordTxn(t coin.Transaction) error {
 
     now := time.Now().Unix()
@@ -78,7 +78,7 @@ func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
 }
 
 // Remove a single txn from the unconfirmed transaction pool
-func (self *UnconfirmedTxnPool) removeTxn(h coin.SHA256) {
+func (self *UnconfirmedTxnPool) removeTxn(h cipher.SHA256) {
     _, ok := self.Txns[h]
     if !ok {
         return
@@ -90,7 +90,7 @@ func (self *UnconfirmedTxnPool) removeTxn(h coin.SHA256) {
 // single RemoveTxns
 // Note -- efficiency does not matter. Only doing ~10 transactions/second
 
-func (self *UnconfirmedTxnPool) removeTxns(hashes []coin.SHA256) {
+func (self *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
     for _, h := range hashes {
         if _, ok := self.Txns[h]; ok {
             delete(self.Txns, h)
@@ -111,7 +111,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
 // checkPeriod is how often we check the txn against the blockchain.
 func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, checkPeriod int) {
     now := time.Now().Unix()
-    toRemove := make([]coin.SHA256, 0)
+    toRemove := make([]cipher.SHA256, 0)
     for k, t := range self.Txns {
         if now - t.Checked >= int64(checkPeriod) {
             if bc.VerifyTransaction(t.Txn) == nil {
@@ -127,8 +127,8 @@ func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain, checkPeriod int) {
 
 /*
 // Returns txn hashes with known ones removed
-func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
-    unknown := make([]coin.SHA256, 0)
+func (self *UnconfirmedTxnPool) FilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
+    unknown := make([]cipher.SHA256, 0)
     for _, h := range txns {
         if _, known := self.Txns[h]; !known {
             unknown = append(unknown, h)
@@ -138,7 +138,7 @@ func (self *UnconfirmedTxnPool) FilterKnown(txns []coin.SHA256) []coin.SHA256 {
 }
 
 // Returns all known coin.Transactions from the pool, given hashes to select
-func (self *UnconfirmedTxnPool) GetKnown(txns []coin.SHA256) coin.Transactions {
+func (self *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions {
     known := make(coin.Transactions, 0)
     for _, h := range txns {
         if txn, have := self.Txns[h]; have {

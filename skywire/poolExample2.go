@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/skycoin/skywire/src/lib/gnet"
 	"log"
 	"time"
+
+	"github.com/skycoin/skywire/src/lib/gnet"
 )
 
 //this is called when client connects

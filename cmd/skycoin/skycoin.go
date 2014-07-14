@@ -1,19 +1,18 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/op/go-logging"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/pprof"
 	"syscall"
 	"time"
-	"flag"
-	"path/filepath"
-)
+	"github.com/op/go-logging"
 )
 
 import (
@@ -493,5 +492,5 @@ func main() {
 	*/
 
 	//skycoin.Run(&cli.DevArgs)
-	skycoin.Run(&DevArgs)
+	Run(&DevArgs)
 }

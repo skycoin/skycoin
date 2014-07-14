@@ -1,11 +1,19 @@
-package coin
+package cipher
 
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/skycoin/skycoin/src/lib/secp256k1-go"
 	"log"
 	"time"
+
+	"github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/lib/secp256k1-go"
+)
+
+var (
+	logger      = logging.MustGetLogger("skycoin.coin")
+	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
+	DebugLevel2 = true //enable checks for impossible conditions
 )
 
 type PubKey [33]byte

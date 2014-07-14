@@ -4,7 +4,7 @@ GOCMD="go test"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 declare -a libs=(./src/lib/secp256k1-go)
-declare -a pkgs=(./src/cli ./src/gui ./src/util ./src/coin 
+declare -a pkgs=(./src/cipher ./src/gui ./src/util ./src/coin 
                 ./src/daemon ./src/skycoin ./src/visor)
 declare -a cmds=(./cmd/skycoin
                  ./cmd/blockchain ./cmd/address ./cmd/blocksigs

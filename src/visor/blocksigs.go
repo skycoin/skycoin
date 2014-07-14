@@ -1,27 +1,29 @@
 package visor
 
 import (
-    "errors"
-    "github.com/skycoin/encoder"
-    "github.com/skycoin/skycoin/src/coin"
-    "github.com/skycoin/skycoin/src/util"
-    "io/ioutil"
+	"errors"
+	"io/ioutil"
+
+	"github.com/skycoin/encoder"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util"
 )
 
 type SignedBlock struct {
-    Block coin.Block
-    Sig   coin.Sig
+	Block coin.Block
+	Sig   cipher.Sig
 }
 
 // Used to serialize the BlockSigs.Sigs map
 type BlockSigSerialized struct {
-    BkSeq uint64
-    Sig   coin.Sig
+	BkSeq uint64
+	Sig   cipher.Sig
 }
 
 // Used to serialize the BlockSigs.Sigs map
 type BlockSigsSerialized struct {
-    Sigs []BlockSigSerialized
+	Sigs []BlockSigSerialized
 }
 
 // Manages known BlockSigs as received.
@@ -35,86 +37,86 @@ type BlockSigsSerialized struct {
 // problem assuming the signed blocks created from master are valid blocks,
 // because we can check the signature independently of the blockchain.
 type BlockSigs struct {
-    Sigs   map[uint64]coin.Sig
-    MaxSeq uint64
+	Sigs   map[uint64]cipher.Sig
+	MaxSeq uint64
 }
 
 func NewBlockSigs() BlockSigs {
-    return BlockSigs{
-        Sigs:   make(map[uint64]coin.Sig),
-        MaxSeq: 0,
-    }
+	return BlockSigs{
+		Sigs:   make(map[uint64]cipher.Sig),
+		MaxSeq: 0,
+	}
 }
 
 func LoadBlockSigs(filename string) (BlockSigs, error) {
-    bs := NewBlockSigs()
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return bs, err
-    }
-    sigs := BlockSigsSerialized{make([]BlockSigSerialized, 0)}
-    err = encoder.DeserializeRaw(data, &sigs)
-    if err != nil {
-        return bs, err
-    }
-    bs.Sigs = make(map[uint64]coin.Sig, len(sigs.Sigs))
-    for _, s := range sigs.Sigs {
-        bs.Sigs[s.BkSeq] = s.Sig
-        if s.BkSeq > bs.MaxSeq {
-            bs.MaxSeq = s.BkSeq
-        }
-    }
-    return bs, nil
+	bs := NewBlockSigs()
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return bs, err
+	}
+	sigs := BlockSigsSerialized{make([]BlockSigSerialized, 0)}
+	err = encoder.DeserializeRaw(data, &sigs)
+	if err != nil {
+		return bs, err
+	}
+	bs.Sigs = make(map[uint64]cipher.Sig, len(sigs.Sigs))
+	for _, s := range sigs.Sigs {
+		bs.Sigs[s.BkSeq] = s.Sig
+		if s.BkSeq > bs.MaxSeq {
+			bs.MaxSeq = s.BkSeq
+		}
+	}
+	return bs, nil
 }
 
 func (self *BlockSigs) Save(filename string) error {
-    // Convert the Sigs map to an array of element
-    sigs := make([]BlockSigSerialized, len(self.Sigs))
-    i := 0
-    for k, v := range self.Sigs {
-        sigs[i] = BlockSigSerialized{
-            BkSeq: k,
-            Sig:   v,
-        }
-        i++
-    }
-    bss := BlockSigsSerialized{sigs}
-    data := encoder.Serialize(bss)
-    return util.SaveBinary(filename, data, 0644)
+	// Convert the Sigs map to an array of element
+	sigs := make([]BlockSigSerialized, len(self.Sigs))
+	i := 0
+	for k, v := range self.Sigs {
+		sigs[i] = BlockSigSerialized{
+			BkSeq: k,
+			Sig:   v,
+		}
+		i++
+	}
+	bss := BlockSigsSerialized{sigs}
+	data := encoder.Serialize(bss)
+	return util.SaveBinary(filename, data, 0644)
 }
 
 // Checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (self *BlockSigs) Verify(masterPublic coin.PubKey,
-    bc *coin.Blockchain) error {
-    if len(bc.Blocks) != len(self.Sigs) {
-        return errors.New("Missing signatures for blocks or vice versa")
-    }
-    blocks := uint64(len(bc.Blocks))
-    // For now, block sigs must all be sequential and continuous
-    if self.MaxSeq+1 != blocks {
-        return errors.New("MaxSeq does not match blockchain size")
-    }
-    for i := uint64(0); i < self.MaxSeq; i++ {
-        if _, ok := self.Sigs[i]; !ok {
-            return errors.New("Blocksigs missing signature")
-        }
-    }
+func (self *BlockSigs) Verify(masterPublic cipher.PubKey,
+	bc *coin.Blockchain) error {
+	if len(bc.Blocks) != len(self.Sigs) {
+		return errors.New("Missing signatures for blocks or vice versa")
+	}
+	blocks := uint64(len(bc.Blocks))
+	// For now, block sigs must all be sequential and continuous
+	if self.MaxSeq+1 != blocks {
+		return errors.New("MaxSeq does not match blockchain size")
+	}
+	for i := uint64(0); i < self.MaxSeq; i++ {
+		if _, ok := self.Sigs[i]; !ok {
+			return errors.New("Blocksigs missing signature")
+		}
+	}
 
-    for k, v := range self.Sigs {
-        err := coin.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+	for k, v := range self.Sigs {
+		err := cipher.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Adds a SignedBlock
 func (self *BlockSigs) record(sb *SignedBlock) {
-    seq := sb.Block.Head.BkSeq
-    self.Sigs[seq] = sb.Sig
-    if seq > self.MaxSeq {
-        self.MaxSeq = seq
-    }
+	seq := sb.Block.Head.BkSeq
+	self.Sigs[seq] = sb.Sig
+	if seq > self.MaxSeq {
+		self.MaxSeq = seq
+	}
 }

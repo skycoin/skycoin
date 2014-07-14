@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -46,7 +47,7 @@ type VisorConfig struct {
 	// Master keypair & address
 	MasterKeys wallet.WalletEntry
 	// Genesis block sig
-	GenesisSignature coin.Sig
+	GenesisSignature cipher.Sig
 	// Genesis block timestamp
 	GenesisTimestamp uint64
 	// Number of coins in genesis block

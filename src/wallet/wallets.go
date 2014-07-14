@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 type Wallets []Wallet
@@ -78,7 +78,7 @@ func (self Wallets) Save(dir string) map[WalletID]error {
 	return errs
 }
 
-func (self Wallets) GetAddressSet() map[coin.Address]byte {
+func (self Wallets) GetAddressSet() map[cipher.Address]byte {
 	set := make(AddressSet)
 	for _, w := range self {
 		set.Update(w.GetAddressSet())

@@ -52,7 +52,7 @@ func (self *UxOut) SnapshotHash() cipher.SHA256 {
 	b1 := encoder.Serialize(self.Body) //body
 	b2 := encoder.Serialize(self.Head) //time, bkseq
 	b3 := append(b1, b2...)
-	return SumSHA256(b3)
+	return cipher.SumSHA256(b3)
 }
 
 // Metadata (not hashed)
@@ -70,7 +70,7 @@ type UxBody struct {
 }
 
 func (self *UxBody) Hash() cipher.SHA256 {
-	return SumSHA256(encoder.Serialize(self))
+	return cipher.SumSHA256(encoder.Serialize(self))
 }
 
 /*
@@ -201,7 +201,7 @@ func NewAddressUxOuts(uxs UxArray) AddressUxOuts {
 
 // Returns the Address keys
 func (self AddressUxOuts) Keys() []cipher.Address {
-	addrs := make([]Address, len(self))
+	addrs := make([]cipher.Address, len(self))
 	i := 0
 	for k, _ := range self {
 		addrs[i] = k

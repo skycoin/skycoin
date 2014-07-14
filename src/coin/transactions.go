@@ -56,7 +56,7 @@ func (self *Transaction) Verify() error {
 	}
 
 	// Check duplicate inputs
-	uxOuts := make(map[SHA256]byte, len(self.In))
+	uxOuts := make(map[cipher.SHA256]byte, len(self.In))
 	for i, _ := range self.In {
 		uxOuts[self.In[i]] = byte(1)
 	}
@@ -65,7 +65,7 @@ func (self *Transaction) Verify() error {
 	}
 
 	// Check for duplicate potential outputs
-	outputs := make(map[SHA256]byte, len(self.Out))
+	outputs := make(map[cipher.SHA256]byte, len(self.Out))
 	uxb := UxBody{
 		SrcTransaction: self.Hash(),
 	}
@@ -81,7 +81,7 @@ func (self *Transaction) Verify() error {
 
 	// Validate signature
 	for _, sig := range self.Head.Sigs {
-		if err := VerifySignedHash(sig, self.Head.Hash); err != nil {
+		if err := cipher.VerifySignedHash(sig, self.Head.Hash); err != nil {
 			return err
 		}
 	}
@@ -135,10 +135,10 @@ func (self *Transaction) SignInputs(keys []cipher.SecKey) {
 	if len(keys) == 0 {
 		log.Panic("No keys")
 	}
-	sigs := make([]Sig, len(self.In))
+	sigs := make([]cipher.Sig, len(self.In))
 	h := self.hashInner()
 	for i, k := range keys {
-		sigs[i] = SignHash(h, k)
+		sigs[i] = cipher.SignHash(h, k)
 	}
 	self.Head.Sigs = sigs
 }
@@ -151,13 +151,13 @@ func (self *Transaction) Size() int {
 // Hashes an entire Transaction struct, including the TransactionHeader
 func (self *Transaction) Hash() cipher.SHA256 {
 	b := self.Serialize()
-	return SumDoubleSHA256(b)
+	return cipher.SumDoubleSHA256(b)
 }
 
 // Returns the encoded size and the hash of it (avoids duplicate encoding)
 func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 	b := self.Serialize()
-	return len(b), SumDoubleSHA256(b)
+	return len(b), cipher.SumDoubleSHA256(b)
 }
 
 // Saves the txn body hash to TransactionHeader.Hash
@@ -170,7 +170,7 @@ func (self *Transaction) hashInner() cipher.SHA256 {
 	b1 := encoder.Serialize(self.In)
 	b2 := encoder.Serialize(self.Out)
 	b3 := append(b1, b2...)
-	return SumSHA256(b3)
+	return cipher.SumSHA256(b3)
 }
 
 func (self *Transaction) Serialize() []byte {
@@ -210,7 +210,7 @@ func (self Transactions) Fees(calc FeeCalculator) (uint64, error) {
 }
 
 func (self Transactions) Hashes() []cipher.SHA256 {
-	hashes := make([]SHA256, len(self))
+	hashes := make([]cipher.SHA256, len(self))
 	for i, _ := range self {
 		hashes[i] = self[i].Hash()
 	}
@@ -268,7 +268,7 @@ func newSortableTransactions(txns Transactions,
 	feeCalc FeeCalculator) SortableTransactions {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))
-	hashes := make([]SHA256, len(txns))
+	hashes := make([]cipher.SHA256, len(txns))
 	j := 0
 	for i, _ := range txns {
 		fee, err := feeCalc(&txns[i])

@@ -79,7 +79,7 @@ func (self *UnspentPool) GetMultiple(hashes []cipher.SHA256) (UxArray, error) {
 }
 
 // Checks for hash collisions with existing hashes
-func (self *UnspentPool) Collides(hashes []SHA256) bool {
+func (self *UnspentPool) Collides(hashes []cipher.SHA256) bool {
 	for i, _ := range hashes {
 		if _, ok := self.Pool[hashes[i]]; ok {
 			return true
@@ -103,7 +103,7 @@ func (self *UnspentPool) Del(h cipher.SHA256) {
 }
 
 // Delete multiple hashes in a batch
-func (self *UnspentPool) DelMultiple(hashes []SHA256) {
+func (self *UnspentPool) DelMultiple(hashes []cipher.SHA256) {
 	for i, _ := range hashes {
 		self.Del(hashes[i])
 	}
@@ -113,7 +113,7 @@ func (self *UnspentPool) DelMultiple(hashes []SHA256) {
 // Warning: Not threadsafe.
 // Deprecate: User application should not be querying this
 // ^^^ Can't do a Spend without this info
-func (self *UnspentPool) AllForAddress(a Address) UxArray {
+func (self *UnspentPool) AllForAddress(a cipher.Address) UxArray {
 	uxo := make(UxArray, 0)
 	for _, ux := range self.Pool {
 		if ux.Body.Address == a {
@@ -127,8 +127,8 @@ func (self *UnspentPool) AllForAddress(a Address) UxArray {
 // Warning: Not threadsafe.
 // Deprecate: User application should not be querying this
 // ^^^ Can't do a Spend without this info
-func (self *UnspentPool) AllForAddresses(addrs []Address) AddressUxOuts {
-	m := make(map[Address]byte, len(addrs))
+func (self *UnspentPool) AllForAddresses(addrs []cipher.Address) AddressUxOuts {
+	m := make(map[cipher.Address]byte, len(addrs))
 	for _, a := range addrs {
 		m[a] = byte(1)
 	}

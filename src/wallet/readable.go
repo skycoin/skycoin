@@ -3,8 +3,7 @@ package wallet
 import (
 	"fmt"
 	"log"
-
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
 )
 
@@ -41,8 +40,8 @@ func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
 // Creates a ReadableWalletEntry given a pubkey hex string.  The Secret field
 // is left empty.
 func ReadableWalletEntryFromPubkey(pub string) ReadableWalletEntry {
-	pubkey := coin.MustPubKeyFromHex(pub)
-	addr := coin.AddressFromPubKey(pubkey)
+	pubkey := cipher.MustPubKeyFromHex(pub)
+	addr := cipher.AddressFromPubKey(pubkey)
 	return ReadableWalletEntry{
 		Address: addr.String(),
 		Public:  pub,

@@ -2,6 +2,7 @@ package coin
 
 import (
 	"bytes"
+	"crypto/rand"
 	"sort"
 	"testing"
 
@@ -9,8 +10,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func randBytes(t *testing.T, n int) []byte {
+	b := make([]byte, n)
+	x, err := rand.Read(b)
+	assert.Equal(t, n, x) //end unit testing.
+	assert.Nil(t, err)
+	return b
+}
+
 func randSHA256(t *testing.T) cipher.SHA256 {
-	return SumSHA256(randBytes(t, 128))
+	return cipher.SumSHA256(randBytes(t, 128))
 }
 
 func makeUxBody(t *testing.T) UxBody {
@@ -24,16 +33,16 @@ func makeUxOut(t *testing.T) UxOut {
 }
 
 func makeUxBodyWithSecret(t *testing.T) (UxBody, cipher.SecKey) {
-	p, s := GenerateKeyPair()
+	p, s := cipher.GenerateKeyPair()
 	return UxBody{
 		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
-		Address:        AddressFromPubKey(p),
+		Address:        cipher.AddressFromPubKey(p),
 		Coins:          1e6,
 		Hours:          100,
 	}, s
 }
 
-func makeUxOutWithSecret(t *testing.T) (UxOut, SecKey) {
+func makeUxOutWithSecret(t *testing.T) (UxOut, cipher.SecKey) {
 	body, sec := makeUxBodyWithSecret(t)
 	return UxOut{
 		Head: UxHead{
@@ -214,7 +223,7 @@ func TestUxArrayLess(t *testing.T) {
 	uxa := make(UxArray, 2)
 	uxa[0] = makeUxOut(t)
 	uxa[1] = makeUxOut(t)
-	h := make([]SHA256, 2)
+	h := make([]cipher.SHA256, 2)
 	h[0] = uxa[0].Hash()
 	h[1] = uxa[1].Hash()
 	assert.Equal(t, uxa.Less(0, 1), bytes.Compare(h[0][:], h[1][:]) < 0)
@@ -248,7 +257,7 @@ func TestAddressUxOutsKeys(t *testing.T) {
 	unspents[ux3.Body.Address] = UxArray{ux3}
 	keys := unspents.Keys()
 	assert.Equal(t, len(keys), 3)
-	dupes := make(map[Address]byte, 3)
+	dupes := make(map[cipher.Address]byte, 3)
 	for _, k := range keys {
 		dupes[k] = byte(1)
 		assert.True(t, k == ux.Body.Address || k == ux2.Body.Address ||
@@ -272,7 +281,7 @@ func TestAddressUxOutsMerge(t *testing.T) {
 	unspents2[ux4.Body.Address] = UxArray{ux4}
 
 	// Valid merge
-	keys := []Address{ux.Body.Address, ux2.Body.Address, ux4.Body.Address}
+	keys := []cipher.Address{ux.Body.Address, ux2.Body.Address, ux4.Body.Address}
 	merged := unspents.Merge(unspents2, keys)
 	assert.Equal(t, len(unspents), 2)
 	assert.Equal(t, len(unspents2), 2)
@@ -291,9 +300,9 @@ func TestAddressUxOutsMerge(t *testing.T) {
 	assert.Equal(t, merged[ux4.Body.Address], UxArray{ux4})
 
 	// Missing keys should not be merged
-	merged = unspents.Merge(unspents2, []Address{})
+	merged = unspents.Merge(unspents2, []cipher.Address{})
 	assert.Equal(t, len(merged), 0)
-	merged = unspents.Merge(unspents2, []Address{ux4.Body.Address})
+	merged = unspents.Merge(unspents2, []cipher.Address{ux4.Body.Address})
 	assert.Equal(t, len(merged), 1)
 	assert.Equal(t, merged[ux4.Body.Address], UxArray{ux4})
 }

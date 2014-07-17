@@ -15,7 +15,7 @@ func makeTransactionWithSecret(t *testing.T) (Transaction, cipher.SecKey) {
 	tx := Transaction{}
 	ux, s := makeUxOutWithSecret(t)
 	tx.PushInput(ux.Hash())
-	tx.SignInputs([]SecKey{s})
+	tx.SignInputs([]cipher.SecKey{s})
 	tx.PushOutput(makeAddress(), 1e6, 50)
 	tx.PushOutput(makeAddress(), 5e6, 50)
 	tx.UpdateHeader()
@@ -68,9 +68,9 @@ func manualTransactionsIsSorted(t *testing.T, txns Transactions,
 func copyTransaction(tx Transaction) Transaction {
 	txo := Transaction{}
 	txo.Head = tx.Head
-	txo.Head.Sigs = make([]Sig, len(tx.Head.Sigs))
+	txo.Head.Sigs = make([]cipher.Sig, len(tx.Head.Sigs))
 	copy(txo.Head.Sigs, tx.Head.Sigs)
-	txo.In = make([]SHA256, len(tx.In))
+	txo.In = make([]cipher.SHA256, len(tx.In))
 	copy(txo.In, tx.In)
 	txo.Out = make([]TransactionOutput, len(tx.Out))
 	copy(txo.Out, tx.Out)
@@ -80,12 +80,12 @@ func copyTransaction(tx Transaction) Transaction {
 func TestTransactionVerify(t *testing.T) {
 	// Mismatch header hash
 	tx := makeTransaction(t)
-	tx.Head.Hash = SHA256{}
+	tx.Head.Hash = cipher.SHA256{}
 	assertError(t, tx.Verify(), "Invalid header hash")
 
 	// No inputs
 	tx = makeTransaction(t)
-	tx.In = make([]SHA256, 0)
+	tx.In = make([]cipher.SHA256, 0)
 	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "No inputs")
 
@@ -97,15 +97,15 @@ func TestTransactionVerify(t *testing.T) {
 
 	// Invalid number of sigs
 	tx = makeTransaction(t)
-	tx.Head.Sigs = make([]Sig, 0)
+	tx.Head.Sigs = make([]cipher.Sig, 0)
 	assertError(t, tx.Verify(), "Invalid number of signatures")
-	tx.Head.Sigs = make([]Sig, 20)
+	tx.Head.Sigs = make([]cipher.Sig, 20)
 	assertError(t, tx.Verify(), "Invalid number of signatures")
 
 	// Too many sigs & inputs
 	tx = makeTransaction(t)
-	tx.Head.Sigs = make([]Sig, math.MaxUint16)
-	tx.In = make([]SHA256, math.MaxUint16)
+	tx.Head.Sigs = make([]cipher.Sig, math.MaxUint16)
+	tx.In = make([]cipher.SHA256, math.MaxUint16)
 	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "Too many signatures and inputs")
 
@@ -113,7 +113,7 @@ func TestTransactionVerify(t *testing.T) {
 	tx, s := makeTransactionWithSecret(t)
 	tx.PushInput(tx.In[0])
 	tx.Head.Sigs = nil
-	tx.SignInputs([]SecKey{s, s})
+	tx.SignInputs([]cipher.SecKey{s, s})
 	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "Duplicate spend")
 
@@ -126,7 +126,7 @@ func TestTransactionVerify(t *testing.T) {
 
 	// Invalid signature, empty
 	tx = makeTransaction(t)
-	tx.Head.Sigs[0] = Sig{}
+	tx.Head.Sigs[0] = cipher.Sig{}
 	assertError(t, tx.Verify(), "Failed to recover public key")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
@@ -139,7 +139,7 @@ func TestTransactionVerify(t *testing.T) {
 	tx.Out[0].Coins += 10
 	tx.UpdateHeader()
 	tx.Head.Sigs = nil
-	tx.SignInputs([]SecKey{genSecret})
+	tx.SignInputs([]cipher.SecKey{genSecret})
 	assert.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
 	assertError(t, tx.Verify(), "Transaction outputs must be multiple of "+
 		"1e6 base units")
@@ -164,7 +164,7 @@ func TestTransactionPushInput(t *testing.T) {
 	assert.Equal(t, tx.PushInput(ux.Hash()), uint16(0))
 	assert.Equal(t, len(tx.In), 1)
 	assert.Equal(t, tx.In[0], ux.Hash())
-	tx.In = append(tx.In, make([]SHA256, math.MaxUint16)...)
+	tx.In = append(tx.In, make([]cipher.SHA256, math.MaxUint16)...)
 	ux = makeUxOut(t)
 	assert.Panics(t, func() { tx.PushInput(ux.Hash()) })
 }
@@ -194,8 +194,8 @@ func TestTransactionPushOutput(t *testing.T) {
 func TestTransactionSignInputs(t *testing.T) {
 	tx := &Transaction{}
 	// Panics if txns already signed
-	tx.Head.Sigs = append(tx.Head.Sigs, Sig{})
-	assert.Panics(t, func() { tx.SignInputs([]SecKey{}) })
+	tx.Head.Sigs = append(tx.Head.Sigs, cipher.Sig{})
+	assert.Panics(t, func() { tx.SignInputs([]cipher.SecKey{}) })
 	// Panics if not enough keys
 	tx = &Transaction{}
 	ux, s := makeUxOutWithSecret(t)
@@ -204,35 +204,35 @@ func TestTransactionSignInputs(t *testing.T) {
 	tx.PushInput(ux2.Hash())
 	tx.PushOutput(makeAddress(), 40, 80)
 	assert.Equal(t, len(tx.Head.Sigs), 0)
-	assert.Panics(t, func() { tx.SignInputs([]SecKey{s}) })
+	assert.Panics(t, func() { tx.SignInputs([]cipher.SecKey{s}) })
 	assert.Equal(t, len(tx.Head.Sigs), 0)
 	// Valid signing
 	h := tx.hashInner()
-	assert.NotPanics(t, func() { tx.SignInputs([]SecKey{s, s2}) })
+	assert.NotPanics(t, func() { tx.SignInputs([]cipher.SecKey{s, s2}) })
 	assert.Equal(t, len(tx.Head.Sigs), 2)
 	assert.Equal(t, tx.hashInner(), h)
-	p := PubKeyFromSecKey(s)
+	p := cipher.PubKeyFromSecKey(s)
 	a := cipher.AddressFromPubKey(p)
-	p = PubKeyFromSecKey(s2)
+	p = cipher.PubKeyFromSecKey(s2)
 	a2 := cipher.AddressFromPubKey(p)
-	assert.Nil(t, ChkSig(a, h, tx.Head.Sigs[0]))
-	assert.Nil(t, ChkSig(a2, h, tx.Head.Sigs[1]))
-	assert.NotNil(t, ChkSig(a, h, tx.Head.Sigs[1]))
-	assert.NotNil(t, ChkSig(a2, h, tx.Head.Sigs[0]))
+	assert.Nil(t, cipher.ChkSig(a, h, tx.Head.Sigs[0]))
+	assert.Nil(t, cipher.ChkSig(a2, h, tx.Head.Sigs[1]))
+	assert.NotNil(t, cipher.ChkSig(a, h, tx.Head.Sigs[1]))
+	assert.NotNil(t, cipher.ChkSig(a2, h, tx.Head.Sigs[0]))
 }
 
 func TestTransactionHash(t *testing.T) {
 	tx := makeTransaction(t)
-	assert.NotEqual(t, tx.Hash(), SHA256{})
+	assert.NotEqual(t, tx.Hash(), cipher.SHA256{})
 	assert.NotEqual(t, tx.hashInner(), tx.Hash())
 }
 
 func TestTransactionUpdateHeader(t *testing.T) {
 	tx := makeTransaction(t)
 	h := tx.Head.Hash
-	tx.Head.Hash = SHA256{}
+	tx.Head.Hash = cipher.SHA256{}
 	tx.UpdateHeader()
-	assert.NotEqual(t, tx.Head.Hash, SHA256{})
+	assert.NotEqual(t, tx.Head.Hash, cipher.SHA256{})
 	assert.Equal(t, tx.Head.Hash, h)
 	assert.Equal(t, tx.Head.Hash, tx.hashInner())
 }
@@ -241,7 +241,7 @@ func TestTransactionHashInner(t *testing.T) {
 	tx := makeTransaction(t)
 
 	h := tx.hashInner()
-	assert.NotEqual(t, h, SHA256{})
+	assert.NotEqual(t, h, cipher.SHA256{})
 
 	// If tx.In is changed, hash should change
 	tx2 := copyTransaction(tx)
@@ -261,7 +261,7 @@ func TestTransactionHashInner(t *testing.T) {
 
 	// If tx.Head is changed, hash should not change
 	tx2 = copyTransaction(tx)
-	tx.Head.Sigs = append(tx.Head.Sigs, Sig{})
+	tx.Head.Sigs = append(tx.Head.Sigs, cipher.Sig{})
 	assert.Equal(t, tx.hashInner(), tx2.hashInner())
 }
 
@@ -546,7 +546,7 @@ func TestFullTransaction(t *testing.T) {
 	tx.PushOutput(a1, ux.Body.Coins-6e6, 100)
 	tx.PushOutput(a2, 1e6, 100)
 	tx.PushOutput(a2, 5e6, 100)
-	tx.SignInputs([]SecKey{s1})
+	tx.SignInputs([]cipher.SecKey{s1})
 	tx.UpdateHeader()
 	assert.Nil(t, tx.Verify())
 	assert.Nil(t, bc.VerifyTransaction(tx))
@@ -571,7 +571,7 @@ func TestFullTransaction(t *testing.T) {
 	tx.PushInput(ux2.Hash())
 	tx.PushOutput(a2, 10e6, 200)
 	tx.PushOutput(a1, ux.Body.Coins-10e6, 100)
-	tx.SignInputs([]SecKey{s1, s2, s2})
+	tx.SignInputs([]cipher.SecKey{s1, s2, s2})
 	tx.UpdateHeader()
 	assert.Nil(t, tx.Verify())
 	assert.Nil(t, bc.VerifyTransaction(tx))

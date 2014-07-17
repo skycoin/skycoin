@@ -46,7 +46,7 @@ func TestAddress2(t *testing.T) {
 //Crypto Functions to Test
 //func ChkSig(address Address, hash cipher.SHA256, sig Sig) error {
 //func SignHash(hash cipher.SHA256, sec SecKey) (Sig, error) {
-//func PubKeyFromSecKey(seckey SecKey) (PubKey) {
+//func cipher.PubKeyFromSecKey(seckey SecKey) (PubKey) {
 //func PubKeyFromSig(sig Sig, hash cipher.SHA256) (PubKey, error) {
 //func VerifySignature(pubkey PubKey, sig Sig, hash cipher.SHA256) error {
 //func GenerateKeyPair() (PubKey, SecKey) {
@@ -82,7 +82,7 @@ func TestCrypto2(t *testing.T) {
 
 	test := []byte("test message")
 	hash := cipher.SumSHA256(test)
-	err = TestSecKeyHash(seckey, hash)
+	err = cipher.TestSecKeyHash(seckey, hash)
 	if err != nil {
 		t.Fatal()
 	}
@@ -95,17 +95,17 @@ func _gensec() cipher.SecKey {
 }
 
 func _gpub(s cipher.SecKey) cipher.PubKey {
-	return PubKeyFromSecKey(s)
+	return cipher.PubKeyFromSecKey(s)
 }
 
 func _gaddr(s cipher.SecKey) cipher.Address {
-	return AddressFromPubKey(PubKeyFromSecKey(s))
+	return cipher.AddressFromSecKey(s)
 }
 
-func _gaddr_a1(S []cipher.SecKey) []cipber.Address {
+func _gaddr_a1(S []cipher.SecKey) []cipher.Address {
 	A := make([]cipher.Address, len(S))
 	for i := 0; i < len(S); i++ {
-		A[i] = AddressFromPubKey(PubKeyFromSecKey(S[i]))
+		A[i] = cipher.AddressFromSecKey(S[i])
 	}
 	return A
 }

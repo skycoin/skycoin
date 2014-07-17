@@ -61,6 +61,10 @@ func AddressFromPubKey(pubKey PubKey) Address {
 	return addr
 }
 
+func AddressFromSecKey(secKey SecKey) Address {
+	return AddressFromPubKey(PubKeyFromSecKey(secKey))
+}
+
 // Creates an Address from its base58 encoding.  Will panic if the addr is
 // invalid
 func MustDecodeBase58Address(addr string) Address {

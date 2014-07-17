@@ -94,7 +94,7 @@ func TestUnspentPoolDel(t *testing.T) {
 	up.Add(ux3)
 	assert.Equal(t, len(up.Pool), 3)
 	// Unknown hash
-	up.Del(SHA256{})
+	up.Del(cipher.SHA256{})
 	assert.Equal(t, len(up.Pool), 3)
 	// Delete middle one
 	up.Del(ux2.Hash())
@@ -131,7 +131,7 @@ func TestUnspentPoolDelMultiple(t *testing.T) {
 	up.Add(ux4)
 	assert.Equal(t, len(up.Pool), 4)
 	// Delete 1st and 3rd and an unknown
-	up.DelMultiple([]SHA256{ux.Hash(), ux3.Hash(), ux5.Hash()})
+	up.DelMultiple([]cipher.SHA256{ux.Hash(), ux3.Hash(), ux5.Hash()})
 	assert.Equal(t, len(up.Pool), 2)
 	_, ok := up.Pool[ux2.Hash()]
 	assert.True(t, ok)
@@ -162,7 +162,7 @@ func TestUnspentPoolAllForAddress(t *testing.T) {
 	assert.Equal(t, len(uxs), 1)
 	assert.Equal(t, uxs[0], ux2)
 	// No known addresses
-	uxs = up.AllForAddress(Address{})
+	uxs = up.AllForAddress(cipher.Address{})
 	assert.Equal(t, len(uxs), 0)
 }
 
@@ -179,15 +179,15 @@ func TestUnspentPoolAllForAddresses(t *testing.T) {
 	up.Add(ux4)
 
 	// No addresses
-	uxs := up.AllForAddresses([]Address{})
+	uxs := up.AllForAddresses([]cipher.Address{})
 	assert.Equal(t, len(uxs), 0)
 	// 1 address
-	uxs = up.AllForAddresses([]Address{ux4.Body.Address})
+	uxs = up.AllForAddresses([]cipher.Address{ux4.Body.Address})
 	assert.Equal(t, len(uxs), 1)
 	assert.Equal(t, len(uxs[ux4.Body.Address]), 1)
 	assert.Equal(t, uxs[ux4.Body.Address][0], ux4)
 	// 2 addresses
-	uxs = up.AllForAddresses([]Address{ux.Body.Address, ux2.Body.Address})
+	uxs = up.AllForAddresses([]cipher.Address{ux.Body.Address, ux2.Body.Address})
 	assert.Equal(t, len(uxs), 2)
 	assert.Equal(t, len(uxs[ux.Body.Address]), 2)
 	assert.Equal(t, len(uxs[ux2.Body.Address]), 1)
@@ -236,7 +236,7 @@ func TestUnspentGetMultiple(t *testing.T) {
 	txn.PushInput(ux0.Hash())
 	txn.PushInput(ux1.Hash())
 	txn.PushOutput(genAddress, ux0.Body.Coins+ux1.Body.Coins, ux0.Body.Hours)
-	txn.SignInputs([]SecKey{genSecret, genSecret})
+	txn.SignInputs([]cipher.SecKey{genSecret, genSecret})
 	txn.UpdateHeader()
 	assert.Nil(t, txn.Verify())
 	txin, err = unspent.GetMultiple(txn.In)
@@ -262,13 +262,13 @@ func TestUnspentGetMultiple(t *testing.T) {
 
 func TestUnspentCollides(t *testing.T) {
 	unspent := NewUnspentPool()
-	assert.False(t, unspent.Collides([]SHA256{}))
-	assert.False(t, unspent.Collides([]SHA256{randSHA256(t)}))
+	assert.False(t, unspent.Collides([]cipher.SHA256{}))
+	assert.False(t, unspent.Collides([]cipher.SHA256{randSHA256(t)}))
 	ux := makeUxOut(t)
 	unspent.Add(ux)
-	assert.False(t, unspent.Collides([]SHA256{}))
-	assert.False(t, unspent.Collides([]SHA256{randSHA256(t)}))
-	assert.True(t, unspent.Collides([]SHA256{ux.Hash()}))
-	assert.True(t, unspent.Collides([]SHA256{randSHA256(t), ux.Hash()}))
-	assert.True(t, unspent.Collides([]SHA256{ux.Hash(), randSHA256(t)}))
+	assert.False(t, unspent.Collides([]cipher.SHA256{}))
+	assert.False(t, unspent.Collides([]cipher.SHA256{randSHA256(t)}))
+	assert.True(t, unspent.Collides([]cipher.SHA256{ux.Hash()}))
+	assert.True(t, unspent.Collides([]cipher.SHA256{randSHA256(t), ux.Hash()}))
+	assert.True(t, unspent.Collides([]cipher.SHA256{ux.Hash(), randSHA256(t)}))
 }

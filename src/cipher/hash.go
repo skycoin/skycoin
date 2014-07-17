@@ -7,7 +7,7 @@ import (
 	"hash"
 	"log"
 
-	"github.com/skycoin/skycoin/src/lib/ripemd160"
+	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 )
 
 var (

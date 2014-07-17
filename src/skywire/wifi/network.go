@@ -3,7 +3,7 @@ package network
 import (
 	"errors"
 	"github.com/op/go-logging"
-	"github.com/skycoin/darknet/src/network/linux"
+	"github.com/skycoin/skycoin/src/skywire/wifi/linux"
 	"net"
 )
 

@@ -4,8 +4,8 @@ import (
 	"github.com/skycoin/encoder"
 	//"time"
 	"errors"
-	"github.com/skycoin/skywire/src/cipher"
 	"log"
+	"github.com/skycoin/src/cipher"
 )
 
 /*

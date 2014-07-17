@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/skycoin/skywire/src/lib/gnet"
+	"github.com/skycoin/skycoin/src/skywire/lib/gnet"
 )
 
 //this is called when client connects

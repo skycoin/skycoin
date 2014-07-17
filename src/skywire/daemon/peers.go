@@ -1,8 +1,8 @@
 package daemon
 
 import (
-	"github.com/skycoin/skywire/src/daemon/pex"
-	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
+	"github.com/skycoin/skycoin/src/skywire/daemon/pex"
+	"github.com/skycoin/skycoin/src/skywire/lib/gnet" //use local gnet
 	"time"
 )
 

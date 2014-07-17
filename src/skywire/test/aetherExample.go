@@ -2,10 +2,10 @@ package main
 
 import (
 	//"fmt"
-	"github.com/skycoin/skywire/src/aether"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skywire/src/daemon"
-	//"github.com/skycoin/skywire/src/lib/gnet"
+	"github.com/skycoin/skycoin/src/skywire/aether"
+	"github.com/skycoin/skycoin/src/skywire/daemon"
+	//"github.com/skycoin/skycoin/src/skywire/lib/gnet"
 	//"log"
 	//"time"
 )

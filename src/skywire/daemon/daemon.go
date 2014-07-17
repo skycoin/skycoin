@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/util"
-	//"github.com/skycoin/skywire/src/daemon/pex"
+	//"github.com/skycoin/skycoin/src/skywire/daemon/pex"
 	"log"
 	"net"
 	//"reflect"
@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skywire/src/dht"      //dht library
-	"github.com/skycoin/skywire/src/lib/gnet" //use local gnet
+	"github.com/skycoin/skycoin/src/skywire/lib/gnet" //use local gnet
 )
 
 /*

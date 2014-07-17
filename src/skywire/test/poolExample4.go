@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/skycoin/skywire/src/daemon"
-	"github.com/skycoin/skywire/src/lib/gnet"
+	"github.com/skycoin/skycoin/src/skywire/daemon"
+	"github.com/skycoin/skycoin/src/skywire/lib/gnet"
 	"log"
 	"time"
 )

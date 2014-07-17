@@ -3,7 +3,7 @@ package main
 import (
 	//"fmt"
 	"github.com/skycoin/skywire/src/aether"
-	"github.com/skycoin/skywire/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skywire/src/daemon"
 	//"github.com/skycoin/skywire/src/lib/gnet"
 	//"log"

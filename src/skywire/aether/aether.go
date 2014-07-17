@@ -2,7 +2,7 @@ package aether
 
 import (
 	"fmt"
-	"github.com/skycoin/skywire/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skywire/src/daemon"
 	"github.com/skycoin/skywire/src/lib/gnet"
 	//"log"

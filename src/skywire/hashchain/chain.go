@@ -5,7 +5,7 @@ import (
 	//"time"
 	"errors"
 	"log"
-	"github.com/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 /*

@@ -3,8 +3,9 @@ package cipher
 import (
 	//"bytes"
 	"errors"
-	"github.com/skycoin/skywire/src/lib/base58"
 	"log"
+
+	"github.com/skycoin/skywire/src/lib/base58"
 )
 
 type Checksum [4]byte
@@ -61,7 +62,6 @@ func addressFromBytes(b []byte) (Address, error) {
 	if checksum != chksum {
 		return Address{}, errors.New("Invalid checksum")
 	}
-
 	return a, nil
 }
 

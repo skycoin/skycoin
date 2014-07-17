@@ -379,7 +379,7 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 }
 
 func configureDaemon(c *Config) daemon.Config {
-	cipher.SetAddressVersion(c.AddressVersion)
+	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
 	dc.DHT.Disabled = c.DisableDHT

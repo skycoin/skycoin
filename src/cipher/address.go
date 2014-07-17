@@ -1,44 +1,11 @@
 package cipher
 
 import (
-	"bytes"
 	"errors"
 	"log"
 
 	"github.com/skycoin/skycoin/src/lib/base58"
 )
-
-//Move address version checks to visor/transaction validation?
-var (
-	addressVersions = map[string]byte{
-		"main": 0x0F, //main network
-		"test": 0x1F, //test network
-	}
-	// Address version is a global default version used for all address
-	// creation and checking
-	addressVersion = addressVersions["test"]
-)
-
-// Returns the named address version and whether it is a known version
-func VersionByName(name string) (byte, bool) {
-	v, ok := addressVersions[name]
-	return v, ok
-}
-
-// Returns the named address version, panics if unknown name
-func MustVersionByName(name string) byte {
-	v, ok := VersionByName(name)
-	if !ok {
-		log.Panicf("Invalid version name: %s", name)
-	}
-	return v
-}
-
-// Sets the address version used for all address creation and checking
-func SetAddressVersion(name string) {
-	addressVersion = MustVersionByName(name)
-	logger.Debug("Set address version to %s", name)
-}
 
 type Checksum [4]byte
 
@@ -46,18 +13,16 @@ type Checksum [4]byte
 //Address stuct is a 25 byte with a 20 byte publickey hash, 1 byte address
 //type and 4 byte checksum.
 type Address struct {
-	Key      Ripemd160 //20 byte pubkey hash
-	Version  byte      //1 byte
-	Checksum Checksum  //4 byte checksum, first 4 bytes of sha256 of key+version
+	Version byte      //1 byte
+	Key     Ripemd160 //20 byte pubkey hash
 }
 
 // Creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
 func AddressFromPubKey(pubKey PubKey) Address {
 	addr := Address{
-		Version: addressVersion,
+		Version: 0,
 		Key:     pubKey.ToAddressHash(),
 	}
-	addr.setChecksum()
 	return addr
 }
 
@@ -86,19 +51,25 @@ func DecodeBase58Address(addr string) (Address, error) {
 
 // Returns an address given an Address.Bytes()
 func addressFromBytes(b []byte) (Address, error) {
+	if len(b) != 20+1+4 {
+		return Address{}, errors.New("Invalid address bytes")
+	}
 	a := Address{}
-	keyLen := len(a.Key)
-	if len(b) != keyLen+len(a.Checksum)+1 {
-		return a, errors.New("Invalid address bytes")
+	copy(a.Key[0:20], b[0:20])
+	a.Version = b[20]
+	if a.Version != 0 {
+		return Address{}, errors.New("Invalid Version")
 	}
-	copy(a.Key[:], b[:keyLen])
-	a.Version = b[keyLen]
-	copy(a.Checksum[:], b[keyLen+1:])
-	if !a.HasValidChecksum() {
-		return a, errors.New("Invalid checksum")
-	} else {
-		return a, nil
+
+	chksum := a.Checksum()
+	var checksum [4]byte
+	copy(checksum[0:4], b[21:25])
+
+	if checksum != chksum {
+		return Address{}, errors.New("Invalid checksum")
 	}
+
+	return a, nil
 }
 
 // Checks that the address appears valid for the public key
@@ -106,46 +77,28 @@ func (self *Address) Verify(key PubKey) error {
 	if self.Key != key.ToAddressHash() {
 		return errors.New("Public key invalid for address")
 	}
-	if self.Version != addressVersion {
-		return errors.New("Invalid address version")
-	}
-	if !self.HasValidChecksum() {
-		return errors.New("Invalid address checksum")
-	}
 	return nil
 }
 
 // Address as Base58 encoded string
+// Returns address as printable
+// version is first byte in binary format
+// in printed address its key, version, checksum
 func (self *Address) String() string {
-	return string(base58.Hex2Base58(self.Bytes()))
-}
-
-// Returns address as raw bytes, containing version and then key
-func (self *Address) Bytes() []byte {
-	keyLen := len(self.Key)
-	b := make([]byte, keyLen+len(self.Checksum)+1)
-	copy(b[:keyLen], self.Key[:])
-	b[keyLen] = self.Version
-	copy(b[keyLen+1:], self.Checksum[:])
-	return b
+	b := make([]byte, 20+1+4)
+	copy(b[0:20], self.Key[0:20])
+	b[20] = self.Version
+	chksum := self.Checksum()
+	copy(b[21:25], chksum[0:4])
+	return string(base58.Hex2Base58(b))
 }
 
 // Returns Address Checksum which is the first 4 bytes of sha256(key+version)
-func (self *Address) CreateChecksum() Checksum {
+func (self *Address) Checksum() Checksum {
 	// Version comes after the address to support vanity addresses
 	r1 := append(self.Key[:], []byte{self.Version}...)
 	r2 := SumSHA256(r1[:])
 	c := Checksum{}
 	copy(c[:], r2[:len(c)])
 	return c
-}
-
-// Returns whether the checksum on address is valid for its key
-func (self *Address) HasValidChecksum() bool {
-	c := self.CreateChecksum()
-	return bytes.Equal(c[:], self.Checksum[:])
-}
-
-func (self *Address) setChecksum() {
-	self.Checksum = self.CreateChecksum()
 }

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skywire/src/dht"      //dht library
+	"github.com/skycoin/skycoin/src/skywire/dht"      //dht library
 	"github.com/skycoin/skycoin/src/skywire/lib/gnet" //use local gnet
 )
 

@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/skycoin/skywire/src/dht"
 	"log"
 	"time"
+
+	//"github.com/skycoin/skycoin/src/skywire/dht"
 )
 
 /*

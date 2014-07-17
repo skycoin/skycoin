@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/skycoin/skycoin/src/lib/base58"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
 type Checksum [4]byte

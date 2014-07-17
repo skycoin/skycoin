@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/lib/secp256k1-go"
+	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
 var (

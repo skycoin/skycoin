@@ -1,6 +1,6 @@
 
 - delete daemon
 - change gnet to rpc interface
-- delete cipher dep and use mainline cipher
 - deprecate visor in main repo
 - switch main repository to new gnet
+- deprecate gnet for new library

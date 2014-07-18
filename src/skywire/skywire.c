@@ -4,8 +4,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
-#include <openssl/sha.h>
+//#include <string.h>
 
 #include <stdio.h>
 
@@ -40,52 +39,14 @@ clang++ -O2 ./skywire.c -lssl -lcrypto -lrt
 */
 
 typedef uint32_t uint32;
+//#define uint32 uint32_t
 
 #define ROUTE_MAX 256
 #define CONNECTION_MAX 256
 
-struct Router {
-	*uint32 table; //routing table
-	int table_idx;
-
-	*Connection pool; //table of connections
-	int pool_idx;
-}
-
-#define ENFORCE_ROUTE_DST 0 //should source/dst connection on routes be enforced
-
-struct Route {
-	uint32 src_id; //packet comes from
-	uint32 dst_id; //packet goes to
-	
-	uint32 src_con;
-	uint32 dst_con;	
-}
-
-void NewRouter() *Router {
-
-	struct *Router R;
-	R = (*Router) calloc(1, sizeof(Router));
-
-	R.table = (*Route ) calloc(1, ROUTE_MAX*sizeof(Route));
-	R.table_idx = 0;
-
-	R.pool = (*Connection) calloc(1, ROUTE_MAX*sizeof(Connection));
-	R.pool.idx = 0;
-
-}
-
-//connection id should be index in array
-*Connection GetConnection(*Router router, int ConnectionId) {
-	for(int i=0; i<router.pool.idx; i++) {
-		if(router.pool[i].id == ConnectionId) {
-			return router.pool[i];
-		}
-	}
-	return NULL;
-}
-
-Router *gRouter; //global router
+struct Connection;
+struct Router;
+struct Route;
 
 //function pointer definition
 //connectionid, data to write, amount of data to write
@@ -107,6 +68,50 @@ struct Connection {
 };
 
 
+struct Route {
+	uint32 src_id; //packet comes from
+	uint32 dst_id; //packet goes to
+	
+	uint32 src_con;
+	uint32 dst_con;	
+};
+
+struct Router {
+	Route* table; //routing table
+	int table_idx;
+
+	Connection* pool; //table of connections
+	int pool_idx;
+};
+
+#define ENFORCE_ROUTE_DST 0 //should source/dst connection on routes be enforced
+
+
+struct Router* NewRouter() {
+
+	Router* R;
+
+	R = (Router*) calloc(1, sizeof(Router));
+
+	R->table = (Route*) calloc(1, ROUTE_MAX*sizeof(Route));
+	R->table_idx = 0;
+
+	R->pool = (Connection*) calloc(1, ROUTE_MAX*sizeof(Connection));
+	R->pool.idx = 0;
+
+}
+
+//connection id should be index in array
+*Connection GetConnection(*Router router, int ConnectionId) {
+	for(int i=0; i<router.pool.idx; i++) {
+		if(router.pool[i].id == ConnectionId) {
+			return router.pool[i];
+		}
+	}
+	return NULL;
+}
+
+Router *gRouter; //global router
 
 /*
 	Crytography Stubs
@@ -136,8 +141,7 @@ struct PubKey {
 	char[33];
 };
 
-//writes 20 bytes to dst
-SHA256 SumSHA256(char* dst, char* src, int len) {
+SHA256 SumSHA256(char* src, int len) {
 	struct SHA256 sha256;
 	return sha256;
 }
@@ -160,8 +164,8 @@ struct Key ECDH(PubKey pubkey, SecKey seckey) {
 	return key;
 }
 
-//8 rounds?
-//data must be padded to multiple of 20 bytes
+//8 rounds? in place
+//data must be padded to multiple of 32 bytes
 void ChaCha20(ChaCha20Key key, char* data, int size) {
 	if(size < 0 || size % 20 != 0) {
 		printf("ChaCha20 invalid size parameter \n");

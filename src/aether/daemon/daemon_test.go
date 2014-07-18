@@ -3,7 +3,7 @@ package daemon
 import (
 	"errors"
 	"github.com/nictuku/dht"
-	"github.com/skycoin/skycoin/src/aetherlib/gnet"
+	"github.com/skycoin/skycoin/src/aether/lib/gnet"
 	//"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/stretchr/testify/assert"

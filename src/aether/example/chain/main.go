@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/aetherhashchain"
+	"github.com/skycoin/skycoin/src/aether/hashchain"
 	"log"
 	"time"
 )

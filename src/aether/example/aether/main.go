@@ -3,9 +3,9 @@ package main
 import (
 	//"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/aetheraether"
-	"github.com/skycoin/skycoin/src/aetherdaemon"
-	//"github.com/skycoin/skycoin/src/aetherlib/gnet"
+	"github.com/skycoin/skycoin/src/aether/aether"
+	"github.com/skycoin/skycoin/src/aether/daemon"
+	//"github.com/skycoin/skycoin/src/aether/lib/gnet"
 	//"log"
 	//"time"
 )

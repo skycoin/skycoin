@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	//"github.com/skycoin/skycoin/src/aetherdht"
+	//"github.com/skycoin/skycoin/src/aether/dht"
 )
 
 /*

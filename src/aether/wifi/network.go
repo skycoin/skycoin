@@ -3,7 +3,7 @@ package network
 import (
 	"errors"
 	"github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/aetherwifi/linux"
+	"github.com/skycoin/skycoin/src/aether/wifi/linux"
 	"net"
 )
 

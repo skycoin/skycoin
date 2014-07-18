@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/skycoin/skycoin/src/aetherlib/gnet"
+	"github.com/skycoin/skycoin/src/aether/lib/gnet"
 )
 
 //this is called when client connects

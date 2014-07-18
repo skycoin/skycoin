@@ -52,7 +52,7 @@ struct Router {
 	int pool_idx;
 }
 
-#define ENFORCE_ROUTE_DST 0 //should source/dst on routes be enforced
+#define ENFORCE_ROUTE_DST 0 //should source/dst connection on routes be enforced
 
 struct Route {
 	uint32 src_id; //packet comes from
@@ -75,6 +75,14 @@ void NewRouter() *Router {
 
 }
 
+*Connection GetConnection(*Router router, int ConnectionId) {
+	for(int i=0; i<router.pool.idx; i++) {
+		if(router.pool[i].id == ConnectionId) {
+			return router.pool[i];
+		}
+	}
+	return NULL;
+}
 
 Router *gRouter; //global router
 
@@ -93,8 +101,52 @@ struct Connection {
 
 	char[20] snd_secret; //secret for sending
 	char[20] rcv_secret; //secret for receiving
+
+	int state; //0 for not inited
 };
 
+
+
+/*
+	Crytography Stubs
+*/
+
+struct SHA256 {
+	char[20];
+};
+
+struct SecKey {
+	char[20]; //secp256k1
+};
+
+struct PubKey {
+	char[65];
+};
+
+//writes 20 bytes to dst
+void SumSHA256(char* dst, char* src, int len) {
+	for(int i=0;i<20;i++) {dst[i] = 0;}
+}
+
+//generates 20 byte seckey
+SecKey KeyGen() {
+	struct SecKey seckey;
+	return seckey;
+}
+
+PubKey PubFromSec(Pubkey) {
+	struct PubKey pubkey;
+	return pubkey;
+}
+
+/*
+	Messages
+*/
+
+struct IntroMsg {
+	char[65] pubkey //ephermeral public key 
+	char[20] secret //ephemeral
+}
 
 /*
 	Global State Setup
@@ -111,20 +163,30 @@ void TEARDOWN() {
 	free(gRouter);
 }
 
+int verifyIntroMessage(char* buf, int size) {
 
+}
 //0 on success
 int AddConnection(int connectionId, 
 		ConnectionWriteFunc writeFunc,
-		DisconnectCallback on_disconnect) 
+		DisconnectCallback on_disconnect,
+		*char connectMsg, int size ) 
 {
 	int idx = gRouter.connectionsIdx
 	if(idx == CONNECTION_MAX) {
 		return 1; //connection max
 	}
+	//verify the connect message
 
+	int ret = verifyIntroMessage(connectMsg, size);
+	if ret != 0 {
+		return 2; //intro message failed
+	}
+
+	//setup
 	for(int i=0;i<gRouter.pool_idx;i++) {
 		if gRouter.pool[idx].id = connectionid {
-			return 2; //connection id already in use
+			return 3; //connection id already in use
 		}
 	}
 
@@ -134,10 +196,20 @@ int AddConnection(int connectionId,
 	gRouter.DisconnectCallback = on_disconnect
 
 	gRouter.idx++;
+
+
 }
 
-int void ConnectionData(int connectionId, char* data, int size) {
+int ConnectionDataIn(int connectionId, char* data, int size) {
 	//process data incoming
+	struct *Connection con;
+	con = GetConnection(gRouter, connectionid);
+	if(con == NULL) {
+		return 1; //connectionId does not exist
+	}
+
+
+
 }
 
 /*

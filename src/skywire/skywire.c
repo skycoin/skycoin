@@ -67,7 +67,7 @@ void NewRouter() *Router {
 	struct *Router R;
 	R = (*Router) calloc(1, sizeof(Router));
 
-	R.table = (*Route ) calloc(1, ROUTE_MAX*sizeof(*Route));
+	R.table = (*Route ) calloc(1, ROUTE_MAX*sizeof(Route));
 	R.table_idx = 0;
 
 	R.pool = (*Connection) calloc(1, ROUTE_MAX*sizeof(Connection));
@@ -75,6 +75,7 @@ void NewRouter() *Router {
 
 }
 
+//connection id should be index in array
 *Connection GetConnection(*Router router, int ConnectionId) {
 	for(int i=0; i<router.pool.idx; i++) {
 		if(router.pool[i].id == ConnectionId) {
@@ -96,13 +97,13 @@ struct Connection {
 	ConnectionWriteFunc write_func;
 	DisconnectCallback on_disconnect;
 
-	char[65] snd_pubkey; //secp256k1 public key
-	char[20] rcv_seckey;
+	PubKey snd_pubkey; //secp256k1 public key
+	SecKey rcv_seckey;
 
-	char[20] snd_secret; //secret for sending
-	char[20] rcv_secret; //secret for receiving
+	ChaCha20Key snd_secret; //secret for sending
+	ChaCha20Key rcv_secret; //secret for receiving
 
-	int state; //0 for not inited
+	int state; //0 for not inited. deprecate?
 };
 
 
@@ -112,31 +113,61 @@ struct Connection {
 */
 
 struct SHA256 {
-	char[20];
+	char[32];
 };
 
 struct SecKey {
-	char[20]; //secp256k1
+	char[32]; //secp256k1
 };
 
+struct ChaCha20Key {
+	char[32];
+}
+
+struct Key {
+	union {
+		SecKey seckey;
+		SHA256 sha256;
+		ChaCha20Key chacha20;
+	}
+}
+
 struct PubKey {
-	char[65];
+	char[33];
 };
 
 //writes 20 bytes to dst
-void SumSHA256(char* dst, char* src, int len) {
-	for(int i=0;i<20;i++) {dst[i] = 0;}
+SHA256 SumSHA256(char* dst, char* src, int len) {
+	struct SHA256 sha256;
+	return sha256;
 }
 
 //generates 20 byte seckey
-SecKey KeyGen() {
+struct SecKey KeyGen() {
 	struct SecKey seckey;
 	return seckey;
 }
 
-PubKey PubFromSec(Pubkey) {
+struct PubKey PubFromSec(Pubkey) {
 	struct PubKey pubkey;
 	return pubkey;
+}
+
+struct Key ECDH(PubKey pubkey, SecKey seckey) {
+	//right multiplication operation in curve
+	//verify that Q*p = P*q
+	struct Key key; 
+	return key;
+}
+
+//8 rounds?
+//data must be padded to multiple of 20 bytes
+void ChaCha20(ChaCha20Key key, char* data, int size) {
+	if(size < 0 || size % 20 != 0) {
+		printf("ChaCha20 invalid size parameter \n");
+		return;
+	}
+	return;
 }
 
 /*
@@ -144,8 +175,9 @@ PubKey PubFromSec(Pubkey) {
 */
 
 struct IntroMsg {
-	char[65] pubkey //ephermeral public key 
-	char[20] secret //ephemeral
+	PubKey pubkey //ephermeral public key
+	Key nonce; 
+	Key secret; //ephemeral
 }
 
 /*
@@ -160,12 +192,18 @@ void SETUP() {
 
 //shutdown module
 void TEARDOWN() {
+
+	for(int i=0; i<gRouter.pool_idx; i++) {
+		gRouter.pool[i].DisconnectCallback
+	}
 	free(gRouter);
 }
 
 int verifyIntroMessage(char* buf, int size) {
-
+	//verify public key and secret
+	return 0;
 }
+
 //0 on success
 int AddConnection(int connectionId, 
 		ConnectionWriteFunc writeFunc,

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/aether/daemon"
-	"github.com/skycoin/skycoin/src/aether/lib/gnet"
+	gnet "github.com/skycoin/skycoin/src/aether"
 )
 
 //move into daemon

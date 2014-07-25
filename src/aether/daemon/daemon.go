@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/aether/dht"      //dht library
-	"github.com/skycoin/skycoin/src/aether/lib/gnet" //use local gnet
+	gnet "github.com/skycoin/skycoin/src/aether" //use local gnet
 )
 
 /*

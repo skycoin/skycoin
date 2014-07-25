@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/skycoin/skycoin/src/aether/daemon/pex"
 	//"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/aether/lib/gnet"
+	gnet "github.com/skycoin/skycoin/src/aether"
 	"log"
 	"math/rand"
 	//"net"

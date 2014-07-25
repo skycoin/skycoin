@@ -5,7 +5,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/aether/aether"
 	"github.com/skycoin/skycoin/src/aether/daemon"
-	//"github.com/skycoin/skycoin/src/aether/lib/gnet"
+	//gnet "github.com/skycoin/skycoin/src/aether"
 	//"log"
 	//"time"
 )

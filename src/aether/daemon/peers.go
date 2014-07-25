@@ -2,7 +2,7 @@ package daemon
 
 import (
 	"github.com/skycoin/skycoin/src/aether/daemon/pex"
-	"github.com/skycoin/skycoin/src/aether/lib/gnet" //use local gnet
+	gnet "github.com/skycoin/skycoin/src/aether" //use local gnet
 	"time"
 )
 

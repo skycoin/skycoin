@@ -2,7 +2,7 @@ package blockchain
 
 import (
     //"errors"
-    "github.com/skycoin/encoder"
+    "github.com/skycoin/skycoin/src/aether/encoder"
     "github.com/skycoin/skycoin/src/coin"
     "github.com/skycoin/skycoin/src/util"
     //"io/ioutil"

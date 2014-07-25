@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/op/go-logging"
-	"github.com/skycoin/encoder"
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"log"
 	"net"
 	"time"

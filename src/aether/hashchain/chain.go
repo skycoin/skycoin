@@ -1,7 +1,7 @@
 package hashchain
 
 import (
-	"github.com/skycoin/encoder"
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	//"time"
 	"errors"
 	"log"

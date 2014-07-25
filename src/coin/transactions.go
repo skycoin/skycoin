@@ -7,7 +7,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/skycoin/encoder"
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 )
 

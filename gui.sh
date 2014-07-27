@@ -34,7 +34,7 @@ usage () {
 pushd "$DIR/compile/gui" >/dev/null
 
 if [[ "$CMD" = "build" ]]; then
-    ./build-${OS}-${ARCH}.sh skycoindev
+    ./build-${OS}-${ARCH}.sh skycoin
 elif [[ "$CMD" = "clean" ]]; then
     ./clean.sh
 elif [[ "$CMD" = "run" || "$CMD" = "" ]]; then

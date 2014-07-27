@@ -184,7 +184,7 @@ var DevArgs = DevConfig{Config{
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory: "",
 	// Data directory holds app data -- defaults to ~/.skycoin
-	GUIDirectory: "./static/",
+	GUIDirectory: "./src/gui/static/",
 	// Logging
 	LogLevel: logging.DEBUG,
 	ColorLog: true,

@@ -7,7 +7,7 @@ BINDIR="./.bin"
 CACHEDIR="./.cache"
 PKGDIR=../../
 RELEASEDIR="./release"
-HTMLDIR=../../static
+HTMLDIR="../../src/gui/static"
 LICENSE=../../LICENSE
 
 . "$CONFIG"

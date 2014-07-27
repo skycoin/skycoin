@@ -2,10 +2,10 @@ package secp256k1
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"testing"
-	"encoding/hex"
 )
 
 const TESTS = 10000 // how many tests
@@ -24,7 +24,7 @@ func Test_Secp256_00(t *testing.T) {
 //test agreement for highest bit test
 func Test_BitTwiddle(t *testing.T) {
 	var b byte
-	for i:=0; i<512; i++ {
+	for i := 0; i < 512; i++ {
 		var bool1 bool = ((b >> 7) == 1)
 		var bool2 bool = ((b & 0x80) == 0x80)
 		if bool1 != bool2 {
@@ -37,7 +37,6 @@ func Test_BitTwiddle(t *testing.T) {
 //tests for Malleability
 //highest bit of S must be 0; 32nd byte
 func CompactSigTest(sig []byte) {
-
 	var b int = int(sig[32])
 	if b < 0 {
 		log.Panic()
@@ -61,12 +60,36 @@ func Test_Secp256_01(t *testing.T) {
 	}
 }
 
+// test compressed pubkey from private key
+func Test_PubkeyFromSeckey(t *testing.T) {
+	// http://www.righto.com/2014/02/bitcoins-hard-way-using-raw-bitcoin.html
+	privkey, _ := hex.DecodeString(`f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4`)
+	desiredPubKey, _ := hex.DecodeString(`03fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef1`)
+	if pubkey := PubkeyFromSeckey(privkey); pubkey == nil {
+		t.Fatal()
+	} else if !bytes.Equal(pubkey, desiredPubKey) {
+		t.Fatal()
+	}
+}
+
+// test uncompressed pubkey from private key
+func Test_UncompressedPubkeyFromSeckey(t *testing.T) {
+	// http://www.righto.com/2014/02/bitcoins-hard-way-using-raw-bitcoin.html
+	privkey, _ := hex.DecodeString(`f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4`)
+	desiredPubKey, _ := hex.DecodeString(`04fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef10fe85eb3ce193405c2dd8453b7aeb6c1752361efdbf4f52ea8bf8f304aab37ab`)
+	if pubkey := UncompressedPubkeyFromSeckey(privkey); pubkey == nil {
+		t.Fatal()
+	} else if !bytes.Equal(pubkey, desiredPubKey) {
+		t.Fatal()
+	}
+}
+
 //returns random pubkey, seckey, hash and signature
-func RandX () ([]byte,[]byte,[]byte,[]byte) {
+func RandX() ([]byte, []byte, []byte, []byte) {
 	pubkey, seckey := GenerateKeyPair()
 	msg := RandByte(32)
 	sig := Sign(msg, seckey)
-	return pubkey,seckey,msg,sig
+	return pubkey, seckey, msg, sig
 }
 
 func Test_SignatureVerifyPubkey(t *testing.T) {
@@ -83,7 +106,7 @@ func Test_SignatureVerifyPubkey(t *testing.T) {
 }
 
 func Test_verify_functions(t *testing.T) {
-	pubkey,seckey,hash,sig := RandX()
+	pubkey, seckey, hash, sig := RandX()
 	if VerifySeckey(seckey) == 0 {
 		t.Fail()
 	}
@@ -93,7 +116,7 @@ func Test_verify_functions(t *testing.T) {
 	if VerifyPubkey(pubkey) == 0 {
 		t.Fail()
 	}
-	if VerifySignature(hash,sig,pubkey) == 0 {
+	if VerifySignature(hash, sig, pubkey) == 0 {
 		t.Fail()
 	}
 	_ = sig
@@ -294,45 +317,45 @@ func Test_Secp256_06b(t *testing.T) {
 */
 
 func Test_Deterministic_Keypairs_00(t *testing.T) {
-	for i := 0;i<64; i++ {
+	for i := 0; i < 64; i++ {
 		seed := RandByte(64)
-		_,pub1,sec1 := DeterministicKeyPairIterator(seed)
-		pub2,sec2 := GenerateDeterministicKeyPair(seed)
+		_, pub1, sec1 := DeterministicKeyPairIterator(seed)
+		pub2, sec2 := GenerateDeterministicKeyPair(seed)
 
-		if bytes.Equal(pub1,pub2) == false {
+		if bytes.Equal(pub1, pub2) == false {
 			t.Fail()
 		}
-		if bytes.Equal(sec1,sec2) == false {
+		if bytes.Equal(sec1, sec2) == false {
 			t.Fail()
 		}
 	}
 }
 
 func Test_Deterministic_Keypairs_01(t *testing.T) {
-	for i := 0;i<64; i++ {
+	for i := 0; i < 64; i++ {
 		seed := RandByte(32)
-		_,pub1,sec1 := DeterministicKeyPairIterator(seed)
-		pub2,sec2 := GenerateDeterministicKeyPair(seed)
+		_, pub1, sec1 := DeterministicKeyPairIterator(seed)
+		pub2, sec2 := GenerateDeterministicKeyPair(seed)
 
-		if bytes.Equal(pub1,pub2) == false {
+		if bytes.Equal(pub1, pub2) == false {
 			t.Fail()
 		}
-		if bytes.Equal(sec1,sec2) == false {
+		if bytes.Equal(sec1, sec2) == false {
 			t.Fail()
 		}
 	}
 }
 
 func Test_Deterministic_Keypairs_02(t *testing.T) {
-	for i := 0;i<64; i++ {
+	for i := 0; i < 64; i++ {
 		seed := RandByte(32)
-		_,pub1,sec1 := DeterministicKeyPairIterator(seed)
-		pub2,sec2 := GenerateDeterministicKeyPair(seed)
+		_, pub1, sec1 := DeterministicKeyPairIterator(seed)
+		pub2, sec2 := GenerateDeterministicKeyPair(seed)
 
-		if bytes.Equal(pub1,pub2) == false {
+		if bytes.Equal(pub1, pub2) == false {
 			t.Fail()
 		}
-		if bytes.Equal(sec1,sec2) == false {
+		if bytes.Equal(sec1, sec2) == false {
 			t.Fail()
 		}
 	}
@@ -349,65 +372,180 @@ func Decode(str string) []byte {
 func Test_Deterministic_Keypairs_03(t *testing.T) {
 
 	//test vectors: seed, seckey
-	var test_array []string = []string {
-		"tQ93w5Aqcunm9SGUfnmF4fJv", "ea2ed66a9e9a15b755d40e42d562e474bb6504925dc597ad5b2f952b92490347",
-		"DC7qdQQtbWSSaekXnFmvQgse", "798e38e35c8a7c0386dff87a068f62e86adec98e82d343c012221a6b777e85b4",
-		"X8EkuUZC7Td7PAXeS7Duc7vR", "c9391c4e706ecc69af7583ade913e1dd279e229d24b3b54d6fb2da25d3a15a99",
-		"tVqPYHHNVPRWyEed62v7f23u", "11b1c5334efb8c8c4e342e0ba9f668cafc1126381285965bb781c60292fe349c",
-		"kCy4R57HDfLqF3pVhBWxuMcg", "5361af256a58704970cc0a4d193959b8bf57b3d66f1a2c8df895ab137b4c7115",
-		"j8bjv86ZNjKqzafR6mtSUVCE", "67243db363bd0b9b9dfbd5796a2753c15f9cb4693e2aedbe8e80d0a368f6ffa3",
-		"qShryAzVY8EtsuD3dsAc7qnG", "76873fc7f324b3afa40f1d87cb8ae9f82ae25391ec9d6993d03eeef99edb6657",
-		"5FGG7ZBa8wVMBJkmzpXj5ESX", "4029cd2863cdede053cac9869f78f53b814105fcf3fda79f2282239f8ea80937",
-		"f46TZG4xJHXUGWx8ekbNqa9F", "cb9d5100049b0a50f7f7a2a47e74b76ec8f0993809c9959c554202b81c8b6687",
-		"XkZdQJ5LT96wshN8JBH8rvEt", "738d97db6281485a2bffc1a574baf51d0962bfffcceecd061065ed75c3911141",
-		"GFDqXU4zYymhJJ9UGqRgS8ty", "a54431cb5d397d29ebfe42bce88427976f60f127b74d9142fa777b4745b6a047",
-		"tmwZksH2XyvuamnddYxyJ5Lp", "51e48511d1c3515a01f21dfe84c38f815c049c6b641eb674e469ea461d7a4bcf",
-		"EuqZFsbAV5amTzkhgAMgjr7W", "4516c1712581afc300daff0bb7c9d2a9d6586f4fb82db6ca402d1dd47d9765f8",
-		"TW6j8rMffZfmhyDEt2JUCrLB", "6997bde88a9c74079b7970b23b161b631de352892e01c5f45fdc10cff79b94d9",
-		"8rvkBnygfhWP8kjX9aXq68CY", "35a6ee7823f23b63aecca98de891fa59d14cc3b60ab6a06a9bfed5a257009f8a",
-		"phyRfPDuf9JMRFaWdGh7NXPX", "8f0fd7a670e3cc18d76c43d252da00ba44a99dd806fe03064a32ab025c73cd89",
+	var test_array []string = []string{
+		"tQ93w5Aqcunm9SGUfnmF4fJv", "9b8c3e36adce64dedc80d6dfe51ff1742cc1d755bbad457ac01177c5a18a789f",
+		"DC7qdQQtbWSSaekXnFmvQgse", "d2deaf4a9ff7a5111fe1d429d6976cbde78811fdd075371a2a4449bb0f4d8bf9",
+		"X8EkuUZC7Td7PAXeS7Duc7vR", "cad79b6dcf7bd21891cbe20a51c57d59689ae6e3dc482cd6ec22898ac00cd86b",
+		"tVqPYHHNVPRWyEed62v7f23u", "2a386e94e9ffaa409517cbed81b9b2d4e1c5fb4afe3cbd67ce8aba11af0b02fa",
+		"kCy4R57HDfLqF3pVhBWxuMcg", "26a7c6d8809c476a56f7455209f58b5ff3f16435fcf208ff2931ece60067f305",
+		"j8bjv86ZNjKqzafR6mtSUVCE", "ea5c0f8c9f091a70bf38327adb9b2428a9293e7a7a75119920d759ecfa03a995",
+		"qShryAzVY8EtsuD3dsAc7qnG", "331206176509bcae31c881dc51e90a4e82ec33cd7208a5fb4171ed56602017fa",
+		"5FGG7ZBa8wVMBJkmzpXj5ESX", "4ea2ad82e7730d30c0c21d01a328485a0cf5543e095139ba613929be7739b52c",
+		"f46TZG4xJHXUGWx8ekbNqa9F", "dcddd403d3534c4ef5703cc07a771c107ed49b7e0643c6a2985a96149db26108",
+		"XkZdQJ5LT96wshN8JBH8rvEt", "3e276219081f072dff5400ca29a9346421eaaf3c419ff1474ac1c81ad8a9d6e1",
+		"GFDqXU4zYymhJJ9UGqRgS8ty", "95be4163085b571e725edeffa83fff8e7a7db3c1ccab19d0f3c6e105859b5e10",
+		"tmwZksH2XyvuamnddYxyJ5Lp", "2666dd54e469df56c02e82dffb4d3ea067daafe72c54dc2b4f08c4fb3a7b7e42",
+		"EuqZFsbAV5amTzkhgAMgjr7W", "40c325c01f2e4087fcc97fcdbea6c35c88a12259ebf1bce0b14a4d77f075abbf",
+		"TW6j8rMffZfmhyDEt2JUCrLB", "e676e0685c5d1afd43ad823b83db5c6100135c35485146276ee0b0004bd6689e",
+		"8rvkBnygfhWP8kjX9aXq68CY", "21450a646eed0d4aa50a1736e6c9bf99fff006a470aab813a2eff3ee4d460ae4",
+		"phyRfPDuf9JMRFaWdGh7NXPX", "ca7bc04196c504d0e815e125f7f1e086c8ae8c10d5e9df984aeab4b41bf9e398",
 	}
 
-	for i:=0; i<len(test_array)/2; i++ {
+	for i := 0; i < len(test_array)/2; i++ {
 		seed := []byte(test_array[2*i+0])
 		sec1 := Decode(test_array[2*i+1])
 
-		_,sec2 := GenerateDeterministicKeyPair(seed)
-		if bytes.Equal(sec1,sec2) == false {
+		_, sec2 := GenerateDeterministicKeyPair(seed)
+		if bytes.Equal(sec1, sec2) == false {
 			t.Fail()
 		}
 	}
+}
 
+func Test_DeterministicWallets1(t *testing.T) {
+
+	var test_array []string = []string{
+		"90c56f5b8d78a46fb4cddf6fd9c6d88d6d2d7b0ec35917c7dac12c03b04e444e", "94dd1a9de9ffd57b5516b8a7f090da67f142f7d22356fa5d1b894ee4d4fba95b",
+		"a3b08ccf8cbae4955c02f223be1f97d2bb41d92b7f0c516eb8467a17da1e6057", "82fba4cc2bc29eef122f116f45d01d82ff488d7ee713f8a95c162a64097239e0",
+		"7048eb8fa93cec992b93dc8e93c5543be34aad05239d4c036cf9e587bbcf7654", "44c059496aac871ac168bb6889b9dd3decdb9e1fa082442a95fcbca982643425",
+		"6d25375591bbfce7f601fc5eb40e4f3dde2e453dc4bf31595d8ec29e4370cd80", "d709ceb1a6fb906de506ea091c844ca37c65e52778b8d257d1dd3a942ab367fb",
+		"7214b4c09f584c5ddff971d469df130b9a3c03e0277e92be159279de39462120", "5fe4986fa964773041e119d2b6549acb392b2277a72232af75cbfb62c357c1a7",
+		"b13e78392d5446ae304b5fc9d45b85f26996982b2c0c86138afdac8d2ea9016e", "f784abc2e7f11ee84b4adb72ea4730a6aabe27b09604c8e2b792d8a1a31881ac",
+		"9403bff4240a5999e17e0ab4a645d6942c3a7147c7834e092e461a4580249e6e", "d495174b8d3f875226b9b939121ec53f9383bd560d34aa5ca3ac6b257512adf4",
+		"2665312a3e3628f4df0b9bc6334f530608a9bcdd4d1eef174ecda99f51a6db94", "1fdc9fbfc6991b9416b3a8385c9942e2db59009aeb2d8de349b73d9f1d389374",
+		"6cb37532c80765b7c07698502a49d69351036f57a45a5143e33c57c236d841ca", "c87c85a6f482964db7f8c31720981925b1e357a9fdfcc585bc2164fdef1f54d0",
+		"8654a32fa120bfdb7ca02c487469070eba4b5a81b03763a2185fdf5afd756f3c", "e2767d788d1c5620f3ef21d57f2d64559ab203c044f0a5f0730b21984e77019c",
+		"66d1945ceb6ef8014b1b6703cb624f058913e722f15d03225be27cb9d8aabe4a", "3fcb80eb1d5b91c491408447ac4e221fcb2254c861adbb5a178337c2750b0846",
+		"22c7623bf0e850538329e3e6d9a6f9b1235350824a3feaad2580b7a853550deb", "5577d4be25f1b44487140a626c8aeca2a77507a1fc4fd466dd3a82234abb6785",
+		"a5eebe3469d68c8922a1a8b5a0a2b55293b7ff424240c16feb9f51727f734516", "c07275582d0681eb07c7b51f0bca0c48c056d571b7b83d84980ab40ac7d7d720",
+		"479ec3b589b14aa7290b48c2e64072e4e5b15ce395d2072a5a18b0a2cf35f3fd", "f10e2b7675dfa557d9e3188469f12d3e953c2d46dce006cd177b6ae7f465cfc0",
+		"63952334b731ec91d88c54614925576f82e3610d009657368fc866e7b1efbe73", "0bcbebb39d8fe1cb3eab952c6f701656c234e462b945e2f7d4be2c80b8f2d974",
+		"256472ee754ef6af096340ab1e161f58e85fb0cc7ae6e6866b9359a1657fa6c1", "88ba6f6c66fc0ef01c938569c2dd1f05475cb56444f4582d06828e77d54ffbe6",
+	}
+
+	for i := 0; i < len(test_array)/2; i++ {
+		seed := Decode(test_array[2*i+0])                   //input
+		seckey1 := Decode(test_array[2*i+1])                //target
+		_, _, seckey2 := DeterministicKeyPairIterator(seed) //output
+		if bytes.Equal(seckey1, seckey2) == false {
+			t.Fail()
+		}
+	}
 }
 
 func Test_Secp256k1_Hash(t *testing.T) {
 
-	var test_array []string = []string {
-		"90c56f5b8d78a46fb4cddf6fd9c6d88d6d2d7b0ec35917c7dac12c03b04e444e", "3ba7d58b05e10404495be334112d091156428c2592f30bbc8aa265f485463996", 
-		"a3b08ccf8cbae4955c02f223be1f97d2bb41d92b7f0c516eb8467a17da1e6057", "cd795bad4879245ef404dbed2efe07a778cb4f3d7aa1fce60b0ba13593c546a5", 
-		"7048eb8fa93cec992b93dc8e93c5543be34aad05239d4c036cf9e587bbcf7654", "bbe219d1eb66de01d4b6db8e40447844b06d670e3cd647e704fd87a5bc2f2ede", 
-		"6d25375591bbfce7f601fc5eb40e4f3dde2e453dc4bf31595d8ec29e4370cd80", "e1ed422c053beee6b5699bfb6fcb0e69e9c8895e1965941287ea1519b09c687b", 
-		"7214b4c09f584c5ddff971d469df130b9a3c03e0277e92be159279de39462120", "6b4bb8a2fff16594e89c4984e8a1966b7d3516370a89d9c72bcc45e647330431", 
-		"b13e78392d5446ae304b5fc9d45b85f26996982b2c0c86138afdac8d2ea9016e", "e99d5a71a85e6c9929785dc43b42a751037904d1dfee4e46021a2a07783d5422", 
-		"9403bff4240a5999e17e0ab4a645d6942c3a7147c7834e092e461a4580249e6e", "549b681f62f57a04f6a59f0f8e15651af04541a36bff80ed4790cac91b8bdcc1", 
-		"2665312a3e3628f4df0b9bc6334f530608a9bcdd4d1eef174ecda99f51a6db94", "95b4d173248bc8951b5e298e725e658119043d30759dbdf1efeadab23d4f9819", 
-		"6cb37532c80765b7c07698502a49d69351036f57a45a5143e33c57c236d841ca", "200d88191bb1e1bb68f9982deb50da1525f60e1f1be5d5c5a814c0c952a166bb", 
-		"8654a32fa120bfdb7ca02c487469070eba4b5a81b03763a2185fdf5afd756f3c", "c78e16eeee4bcfe989b5c6cf7c57c9ccd7d7f71f67b21ab9efbcf2f5dd2213a0", 
-		"66d1945ceb6ef8014b1b6703cb624f058913e722f15d03225be27cb9d8aabe4a", "bbf814ee428d9c9c311c6a93b76b354cd25672b3bd6dde6c5e8fd6b6aa9a9742", 
-		"22c7623bf0e850538329e3e6d9a6f9b1235350824a3feaad2580b7a853550deb", "e32e5e510d366405259460bc3bffa020312f26423f0d5ac02139e6de089ea6cd", 
-		"a5eebe3469d68c8922a1a8b5a0a2b55293b7ff424240c16feb9f51727f734516", "a8f3a8e070c3ca6d064a31132b810e4725f6bc0ca5b5bdb99836147a4faff2ea", 
-		"479ec3b589b14aa7290b48c2e64072e4e5b15ce395d2072a5a18b0a2cf35f3fd", "582863a7eafded008f3c3080c2574322c5a7dfc9dedde5cb2c60bdca8eea023e", 
-		"63952334b731ec91d88c54614925576f82e3610d009657368fc866e7b1efbe73", "703c941f9d39cfa83c93c6dbe603c604f88ba8c944c92967ff81ee3c6ef07791", 
-		"256472ee754ef6af096340ab1e161f58e85fb0cc7ae6e6866b9359a1657fa6c1", "7b3b46d80a2608dfe230fc142af2b88a2558f018473820d3ca600624d231eee6",
+	var test_array []string = []string{
+		"90c56f5b8d78a46fb4cddf6fd9c6d88d6d2d7b0ec35917c7dac12c03b04e444e", "a70c36286be722d8111e69e910ce4490005bbf9135b0ce8e7a59f84eee24b88b",
+		"a3b08ccf8cbae4955c02f223be1f97d2bb41d92b7f0c516eb8467a17da1e6057", "e9db072fe5817325504174253a056be7b53b512f1e588f576f1f5a82cdcad302",
+		"7048eb8fa93cec992b93dc8e93c5543be34aad05239d4c036cf9e587bbcf7654", "5e9133e83c4add2b0420d485e1dcda5c00e283c6509388ab8ceb583b0485c13b",
+		"6d25375591bbfce7f601fc5eb40e4f3dde2e453dc4bf31595d8ec29e4370cd80", "8d5579cd702c06c40fb98e1d55121ea0d29f3a6c42f5582b902ac243f29b571a",
+		"7214b4c09f584c5ddff971d469df130b9a3c03e0277e92be159279de39462120", "3a4e8c72921099a0e6a4e7f979df4c8bced63063097835cdfd5ee94548c9c41a",
+		"b13e78392d5446ae304b5fc9d45b85f26996982b2c0c86138afdac8d2ea9016e", "462efa1bf4f639ffaedb170d6fb8ba363efcb1bdf0c5aef0c75afb59806b8053",
+		"9403bff4240a5999e17e0ab4a645d6942c3a7147c7834e092e461a4580249e6e", "68dd702ea7c7352632876e9dc2333142fce857a542726e402bb480cad364f260",
+		"2665312a3e3628f4df0b9bc6334f530608a9bcdd4d1eef174ecda99f51a6db94", "5db72c31d575c332e60f890c7e68d59bd3d0ac53a832e06e821d819476e1f010",
+		"6cb37532c80765b7c07698502a49d69351036f57a45a5143e33c57c236d841ca", "0deb20ec503b4c678213979fd98018c56f24e9c1ec99af3cd84b43c161a9bb5c",
+		"8654a32fa120bfdb7ca02c487469070eba4b5a81b03763a2185fdf5afd756f3c", "36f3ede761aa683813013ffa84e3738b870ce7605e0a958ed4ffb540cd3ea504",
+		"66d1945ceb6ef8014b1b6703cb624f058913e722f15d03225be27cb9d8aabe4a", "6bcb4819a96508efa7e32ee52b0227ccf5fbe5539687aae931677b24f6d0bbbd",
+		"22c7623bf0e850538329e3e6d9a6f9b1235350824a3feaad2580b7a853550deb", "8bb257a1a17fd2233935b33441d216551d5ff1553d02e4013e03f14962615c16",
+		"a5eebe3469d68c8922a1a8b5a0a2b55293b7ff424240c16feb9f51727f734516", "d6b780983a63a3e4bcf643ee68b686421079c835a99eeba6962fe41bb355f8da",
+		"479ec3b589b14aa7290b48c2e64072e4e5b15ce395d2072a5a18b0a2cf35f3fd", "39c5f108e7017e085fe90acfd719420740e57768ac14c94cb020d87e36d06752",
+		"63952334b731ec91d88c54614925576f82e3610d009657368fc866e7b1efbe73", "79f654976732106c0e4a97ab3b6d16f343a05ebfcc2e1d679d69d396e6162a77",
+		"256472ee754ef6af096340ab1e161f58e85fb0cc7ae6e6866b9359a1657fa6c1", "387883b86e2acc153aa334518cea48c0c481b573ccaacf17c575623c392f78b2",
 	}
 
-	for i:=0; i<len(test_array)/2; i++ {
+	for i := 0; i < len(test_array)/2; i++ {
 		hash1 := Decode(test_array[2*i+0]) //input
 		hash2 := Decode(test_array[2*i+1]) //target
-		hash3 := Secp256k1Hash(hash1)	   //output
+		hash3 := Secp256k1Hash(hash1)      //output
 		if bytes.Equal(hash2, hash3) == false {
 			t.Fail()
 		}
 	}
+}
+
+func Test_Secp256k1_Equal(t *testing.T) {
+
+	for i := 0; i < 64; i++ {
+		seed := RandByte(128)
+
+		hash1 := Secp256k1Hash(seed)
+		hash2, _, _ := DeterministicKeyPairIterator(seed)
+
+		if bytes.Equal(hash1, hash2) == false {
+			t.Fail()
+		}
+	}
+}
+
+func Test_DeterministicWalletGeneration(t *testing.T) {
+	in := "8654a32fa120bfdb7ca02c487469070eba4b5a81b03763a2185fdf5afd756f3c"
+	sec_out := "10ba0325f1b8633ca463542950b5cd5f97753a9829ba23477c584e7aee9cfbd5"
+	pub_out := "0249964ac7e3fe1b2c182a2f10abe031784e374cc0c665a63bc76cc009a05bc7c6"
+
+	var seed []byte = []byte(in)
+	var pubkey []byte
+	var seckey []byte
+
+	for i := 0; i < 1024; i++ {
+		seed, pubkey, seckey = DeterministicKeyPairIterator(seed)
+	}
+
+	if bytes.Equal(seckey, Decode(sec_out)) == false {
+		t.Fail()
+	}
+
+	if bytes.Equal(pubkey, Decode(pub_out)) == false {
+		t.Fail()
+	}
+}
+
+func Test_ECDH(t *testing.T) {
+
+	pubkey1, seckey1 := GenerateKeyPair()
+	pubkey2, seckey2 := GenerateKeyPair()
+
+	puba := ECDH(pubkey1, seckey2)
+	pubb := ECDH(pubkey2, seckey1)
+
+	if puba == nil {
+		t.Fail()
+	}
+
+	if pubb == nil {
+		t.Fail()
+	}
+
+	if bytes.Equal(puba, pubb) == false {
+		t.Fail()
+	}
+
+}
+
+func Test_ECDH2(t *testing.T) {
+
+	for i := 0; i < 1024; i++ {
+
+		pubkey1, seckey1 := GenerateKeyPair()
+		pubkey2, seckey2 := GenerateKeyPair()
+
+		puba := ECDH(pubkey1, seckey2)
+		pubb := ECDH(pubkey2, seckey1)
+
+		if puba == nil {
+			t.Fail()
+		}
+
+		if pubb == nil {
+			t.Fail()
+		}
+
+		if bytes.Equal(puba, pubb) == false {
+			t.Fail()
+		}
+	}
+}
+
+func Test_det(t *testing.T) {
 
 }

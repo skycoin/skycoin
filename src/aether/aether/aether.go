@@ -2,12 +2,18 @@ package aether
 
 import (
 	"fmt"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/aether/daemon"
+
 	gnet "github.com/skycoin/skycoin/src/aether"
+	"github.com/skycoin/skycoin/src/aether/daemon"
+	"github.com/skycoin/skycoin/src/cipher"
 	//"log"
 	//"time"
 )
+
+/*
+	TODO:
+	- finish
+*/
 
 type AetherServer struct {
 	Service *gnet.Service // Service

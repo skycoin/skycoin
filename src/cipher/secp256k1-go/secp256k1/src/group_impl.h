@@ -7,9 +7,9 @@
 
 #include <string.h>
 
-#include "../num.h"
-#include "../field.h"
-#include "../group.h"
+#include "num.h"
+#include "field.h"
+#include "group.h"
 
 void static secp256k1_ge_set_infinity(secp256k1_ge_t *r) {
     r->infinity = 1;
@@ -77,17 +77,19 @@ void static secp256k1_gej_set_xy(secp256k1_gej_t *r, const secp256k1_fe_t *x, co
     secp256k1_fe_set_int(&r->z, 1);
 }
 
-void static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int odd) {
+int static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int odd) {
     r->x = *x;
     secp256k1_fe_t x2; secp256k1_fe_sqr(&x2, x);
     secp256k1_fe_t x3; secp256k1_fe_mul(&x3, x, &x2);
     r->infinity = 0;
     secp256k1_fe_t c; secp256k1_fe_set_int(&c, 7);
     secp256k1_fe_add(&c, &x3);
-    secp256k1_fe_sqrt(&r->y, &c);
+    if (!secp256k1_fe_sqrt(&r->y, &c))
+        return 0;
     secp256k1_fe_normalize(&r->y);
     if (secp256k1_fe_is_odd(&r->y) != odd)
         secp256k1_fe_negate(&r->y, &r->y, 1);
+    return 1;
 }
 
 void static secp256k1_gej_set_ge(secp256k1_gej_t *r, const secp256k1_ge_t *a) {
@@ -268,6 +270,7 @@ void static secp256k1_gej_get_hex(char *r, int *rlen, const secp256k1_gej_t *a) 
     secp256k1_ge_get_hex(r, rlen, &t);
 }
 
+#ifdef USE_ENDOMORPHISM
 void static secp256k1_gej_mul_lambda(secp256k1_gej_t *r, const secp256k1_gej_t *a) {
     const secp256k1_fe_t *beta = &secp256k1_ge_consts->beta;
     *r = *a;
@@ -309,6 +312,7 @@ void static secp256k1_gej_split_exp(secp256k1_num_t *r1, secp256k1_num_t *r2, co
     secp256k1_num_free(&bnt2);
     secp256k1_num_free(&bnn2);
 }
+#endif
 
 
 void static secp256k1_ge_start(void) {
@@ -330,6 +334,7 @@ void static secp256k1_ge_start(void) {
         0xFD,0x17,0xB4,0x48,0xA6,0x85,0x54,0x19,
         0x9C,0x47,0xD0,0x8F,0xFB,0x10,0xD4,0xB8
     };
+#ifdef USE_ENDOMORPHISM
     // properties of secp256k1's efficiently computable endomorphism
     static const unsigned char secp256k1_ge_consts_lambda[] = {
         0x53,0x63,0xad,0x4c,0xc0,0x5c,0x30,0xe0,
@@ -356,22 +361,25 @@ void static secp256k1_ge_start(void) {
         0x14,0xca,0x50,0xf7,0xa8,0xe2,0xf3,0xf6,
         0x57,0xc1,0x10,0x8d,0x9d,0x44,0xcf,0xd8
     };
+#endif
     if (secp256k1_ge_consts == NULL) {
         secp256k1_ge_consts_t *ret = (secp256k1_ge_consts_t*)malloc(sizeof(secp256k1_ge_consts_t));
         secp256k1_num_init(&ret->order);
         secp256k1_num_init(&ret->half_order);
+        secp256k1_num_set_bin(&ret->order,  secp256k1_ge_consts_order,  sizeof(secp256k1_ge_consts_order));
+        secp256k1_num_copy(&ret->half_order, &ret->order);
+        secp256k1_num_shift(&ret->half_order, 1);
+#ifdef USE_ENDOMORPHISM
         secp256k1_num_init(&ret->lambda);
         secp256k1_num_init(&ret->a1b2);
         secp256k1_num_init(&ret->a2);
         secp256k1_num_init(&ret->b1);
-        secp256k1_num_set_bin(&ret->order,  secp256k1_ge_consts_order,  sizeof(secp256k1_ge_consts_order));
         secp256k1_num_set_bin(&ret->lambda, secp256k1_ge_consts_lambda, sizeof(secp256k1_ge_consts_lambda));
         secp256k1_num_set_bin(&ret->a1b2,   secp256k1_ge_consts_a1b2,   sizeof(secp256k1_ge_consts_a1b2));
         secp256k1_num_set_bin(&ret->a2,     secp256k1_ge_consts_a2,     sizeof(secp256k1_ge_consts_a2));
         secp256k1_num_set_bin(&ret->b1,     secp256k1_ge_consts_b1,     sizeof(secp256k1_ge_consts_b1));
-        secp256k1_num_copy(&ret->half_order, &ret->order);
-        secp256k1_num_shift(&ret->half_order, 1);
         secp256k1_fe_set_b32(&ret->beta, secp256k1_ge_consts_beta);
+#endif
         secp256k1_fe_t g_x, g_y;
         secp256k1_fe_set_b32(&g_x, secp256k1_ge_consts_g_x);
         secp256k1_fe_set_b32(&g_y, secp256k1_ge_consts_g_y);
@@ -385,10 +393,12 @@ void static secp256k1_ge_stop(void) {
         secp256k1_ge_consts_t *c = (secp256k1_ge_consts_t*)secp256k1_ge_consts;
         secp256k1_num_free(&c->order);
         secp256k1_num_free(&c->half_order);
+#ifdef USE_ENDOMORPHISM
         secp256k1_num_free(&c->lambda);
         secp256k1_num_free(&c->a1b2);
         secp256k1_num_free(&c->a2);
         secp256k1_num_free(&c->b1);
+#endif
         free((void*)c);
         secp256k1_ge_consts = NULL;
     }

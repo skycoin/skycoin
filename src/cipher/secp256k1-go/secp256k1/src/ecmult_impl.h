@@ -5,9 +5,10 @@
 #ifndef _SECP256K1_ECMULT_IMPL_H_
 #define _SECP256K1_ECMULT_IMPL_H_
 
-#include "../num.h"
-#include "../group.h"
-#include "../ecmult.h"
+#include <assert.h>
+#include "num.h"
+#include "group.h"
+#include "ecmult.h"
 
 // optimal for 128-bit and 256-bit exponents.
 #define WINDOW_A 5
@@ -64,9 +65,20 @@ void static secp256k1_ecmult_table_precomp_ge(secp256k1_ge_t *pre, const secp256
 #define ECMULT_TABLE_GET_GE(r,pre,n,w)  ECMULT_TABLE_GET((r),(pre),(n),(w),secp256k1_ge_neg)
 
 typedef struct {
+    // For accelerating the computation of a*P + b*G:
     secp256k1_ge_t pre_g[ECMULT_TABLE_SIZE(WINDOW_G)];    // odd multiples of the generator
     secp256k1_ge_t pre_g_128[ECMULT_TABLE_SIZE(WINDOW_G)]; // odd multiples of 2^128*generator
-    secp256k1_ge_t prec[64][16]; // prec[j][i] = 16^j * (i+1) * G
+
+    // For accelerating the computation of a*G:
+    // To harden against timing attacks, use the following mechanism:
+    // * Break up the multiplicand into groups of 4 bits, called n_0, n_1, n_2, ..., n_63.
+    // * Compute sum((n_i + 1) * 16^i * G, i=0..63).
+    // * Subtract sum(1 * 16^i * G, i=0..63).
+    // For each i, and each of the 16 possible values of n_i, ((n_i + 1) * 16^i * G) is
+    // precomputed (call it prec(i,n_i), as well as -sum(1 * 16^i * G) (called fin).
+    // The formula now becomes sum(prec(i, n_i), i=0..63) + fin.
+    // To make memory access uniform, the bytes of prec(i,n_i) are sliced per value of n_i.
+    unsigned char prec[64][sizeof(secp256k1_ge_t)][16]; // prec[j][k][i] = k'th byte of (16^j * (i+1) * G)
     secp256k1_ge_t fin; // -(sum(prec[j][0], j=0..63))
 } secp256k1_ecmult_consts_t;
 
@@ -94,16 +106,21 @@ static void secp256k1_ecmult_start(void) {
 
     // compute prec and fin
     secp256k1_gej_t gg; secp256k1_gej_set_ge(&gg, g);
+    secp256k1_ge_t ggn; ggn = *g;
     secp256k1_ge_t ad = *g;
     secp256k1_gej_t fn; secp256k1_gej_set_infinity(&fn);
     for (int j=0; j<64; j++) {
-        secp256k1_ge_set_gej(&ret->prec[j][0], &gg);
+        for (int k=0; k<sizeof(secp256k1_ge_t); k++)
+            ret->prec[j][k][0] = ((unsigned char*)(&ggn))[k];
         secp256k1_gej_add(&fn, &fn, &gg);
         for (int i=1; i<16; i++) {
             secp256k1_gej_add_ge(&gg, &gg, &ad);
-            secp256k1_ge_set_gej(&ret->prec[j][i], &gg);
+            secp256k1_ge_set_gej(&ggn, &gg);
+            if (i == 15)
+              ad = ggn;
+            for (int k=0; k<sizeof(secp256k1_ge_t); k++)
+              ret->prec[j][k][i] = ((unsigned char*)(&ggn))[k];
         }
-        ad = ret->prec[j][15];
     }
     secp256k1_ge_set_gej(&ret->fin, &fn);
     secp256k1_ge_neg(&ret->fin, &ret->fin);
@@ -163,9 +180,14 @@ void static secp256k1_ecmult_gen(secp256k1_gej_t *r, const secp256k1_num_t *gn) 
     secp256k1_num_init(&n);
     secp256k1_num_copy(&n, gn);
     const secp256k1_ecmult_consts_t *c = secp256k1_ecmult_consts;
-    secp256k1_gej_set_ge(r, &c->prec[0][secp256k1_num_shift(&n, 4)]);
-    for (int j=1; j<64; j++)
-        secp256k1_gej_add_ge(r, r, &c->prec[j][secp256k1_num_shift(&n, 4)]);
+    secp256k1_gej_set_infinity(r);
+    for (int j=0; j<64; j++) {
+        secp256k1_ge_t add;
+        int bits = secp256k1_num_shift(&n, 4);
+        for (int k=0; k<sizeof(secp256k1_ge_t); k++)
+            ((unsigned char*)(&add))[k] = c->prec[j][k][bits];
+        secp256k1_gej_add_ge(r, r, &add);
+    }
     secp256k1_num_free(&n);
     secp256k1_gej_add_ge(r, r, &c->fin);
 }
@@ -173,34 +195,45 @@ void static secp256k1_ecmult_gen(secp256k1_gej_t *r, const secp256k1_num_t *gn) 
 void static secp256k1_ecmult(secp256k1_gej_t *r, const secp256k1_gej_t *a, const secp256k1_num_t *na, const secp256k1_num_t *ng) {
     const secp256k1_ecmult_consts_t *c = secp256k1_ecmult_consts;
 
+#ifdef USE_ENDOMORPHISM
     secp256k1_num_t na_1, na_lam;
-    secp256k1_num_t ng_1, ng_128;
     secp256k1_num_init(&na_1);
     secp256k1_num_init(&na_lam);
+    // split na into na_1 and na_lam (where na = na_1 + na_lam*lambda, and na_1 and na_lam are ~128 bit)
+    secp256k1_gej_split_exp(&na_1, &na_lam, na);
+
+    // build wnaf representation for na_1 and na_lam.
+    int wnaf_na_1[129];   int bits_na_1   = secp256k1_ecmult_wnaf(wnaf_na_1,   &na_1,   WINDOW_A);
+    int wnaf_na_lam[129]; int bits_na_lam = secp256k1_ecmult_wnaf(wnaf_na_lam, &na_lam, WINDOW_A);
+    int bits = bits_na_1;
+    if (bits_na_lam > bits) bits = bits_na_lam;
+#else
+    // build wnaf representation for na.
+    int wnaf_na[257];     int bits_na     = secp256k1_ecmult_wnaf(wnaf_na,     na,      WINDOW_A);
+    int bits = bits_na;
+#endif
+
+    // calculate odd multiples of a
+    secp256k1_gej_t pre_a[ECMULT_TABLE_SIZE(WINDOW_A)];
+    secp256k1_ecmult_table_precomp_gej(pre_a, a, WINDOW_A);
+
+#ifdef USE_ENDOMORPHISM
+    secp256k1_gej_t pre_a_lam[ECMULT_TABLE_SIZE(WINDOW_A)];
+    for (int i=0; i<ECMULT_TABLE_SIZE(WINDOW_A); i++)
+        secp256k1_gej_mul_lambda(&pre_a_lam[i], &pre_a[i]);
+#endif
+
+    // Splitted G factors.
+    secp256k1_num_t ng_1, ng_128;
     secp256k1_num_init(&ng_1);
     secp256k1_num_init(&ng_128);
 
-    // split na into na_1 and na_lam (where na = na_1 + na_lam*lambda, and na_1 and na_lam are ~128 bit)
-    secp256k1_gej_split_exp(&na_1, &na_lam, na);
     // split ng into ng_1 and ng_128 (where gn = gn_1 + gn_128*2^128, and gn_1 and gn_128 are ~128 bit)
     secp256k1_num_split(&ng_1, &ng_128, ng, 128);
 
-    // build wnaf representation for na_1, na_lam, ng_1, ng_128
-    int wnaf_na_1[129];   int bits_na_1   = secp256k1_ecmult_wnaf(wnaf_na_1,   &na_1,   WINDOW_A);
-    int wnaf_na_lam[129]; int bits_na_lam = secp256k1_ecmult_wnaf(wnaf_na_lam, &na_lam, WINDOW_A);
+    // Build wnaf representation for ng_1 and ng_128
     int wnaf_ng_1[129];   int bits_ng_1   = secp256k1_ecmult_wnaf(wnaf_ng_1,   &ng_1,   WINDOW_G);
     int wnaf_ng_128[129]; int bits_ng_128 = secp256k1_ecmult_wnaf(wnaf_ng_128, &ng_128, WINDOW_G);
-
-    // calculate a_lam = a*lambda
-    secp256k1_gej_t a_lam; secp256k1_gej_mul_lambda(&a_lam, a);
-
-    // calculate odd multiples of a and a_lam
-    secp256k1_gej_t pre_a_1[ECMULT_TABLE_SIZE(WINDOW_A)], pre_a_lam[ECMULT_TABLE_SIZE(WINDOW_A)];
-    secp256k1_ecmult_table_precomp_gej(pre_a_1,   a,      WINDOW_A);
-    secp256k1_ecmult_table_precomp_gej(pre_a_lam, &a_lam, WINDOW_A);
-
-    int bits = bits_na_1;
-    if (bits_na_lam > bits) bits = bits_na_lam;
     if (bits_ng_1 > bits) bits = bits_ng_1;
     if (bits_ng_128 > bits) bits = bits_ng_128;
 
@@ -211,14 +244,21 @@ void static secp256k1_ecmult(secp256k1_gej_t *r, const secp256k1_gej_t *a, const
     for (int i=bits-1; i>=0; i--) {
         secp256k1_gej_double(r, r);
         int n;
+#ifdef USE_ENDOMORPHISM
         if (i < bits_na_1 && (n = wnaf_na_1[i])) {
-            ECMULT_TABLE_GET_GEJ(&tmpj, pre_a_1, n, WINDOW_A);
+            ECMULT_TABLE_GET_GEJ(&tmpj, pre_a, n, WINDOW_A);
             secp256k1_gej_add(r, r, &tmpj);
         }
         if (i < bits_na_lam && (n = wnaf_na_lam[i])) {
             ECMULT_TABLE_GET_GEJ(&tmpj, pre_a_lam, n, WINDOW_A);
             secp256k1_gej_add(r, r, &tmpj);
         }
+#else
+        if (i < bits_na && (n = wnaf_na[i])) {
+            ECMULT_TABLE_GET_GEJ(&tmpj, pre_a, n, WINDOW_A);
+            secp256k1_gej_add(r, r, &tmpj);
+        }
+#endif
         if (i < bits_ng_1 && (n = wnaf_ng_1[i])) {
             ECMULT_TABLE_GET_GE(&tmpa, c->pre_g, n, WINDOW_G);
             secp256k1_gej_add_ge(r, r, &tmpa);
@@ -229,8 +269,10 @@ void static secp256k1_ecmult(secp256k1_gej_t *r, const secp256k1_gej_t *a, const
         }
     }
 
+#ifdef USE_ENDOMORPHISM
     secp256k1_num_free(&na_1);
     secp256k1_num_free(&na_lam);
+#endif
     secp256k1_num_free(&ng_1);
     secp256k1_num_free(&ng_128);
 }

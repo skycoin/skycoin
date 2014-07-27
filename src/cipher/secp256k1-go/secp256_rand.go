@@ -8,20 +8,19 @@ import (
 	"strings"
 	"time"
 
-    "crypto/sha256"
-    "hash"
+	"crypto/sha256"
+	"hash"
 )
 
-
 var (
-    sha256Hash    hash.Hash = sha256.New()
+	sha256Hash hash.Hash = sha256.New()
 )
 
 func SumSHA256(b []byte) []byte {
-    sha256Hash.Reset()
-    sha256Hash.Write(b)
-    sum := sha256Hash.Sum(nil)
-    return sum[:]
+	sha256Hash.Reset()
+	sha256Hash.Write(b)
+	sum := sha256Hash.Sum(nil)
+	return sum[:]
 }
 
 /*

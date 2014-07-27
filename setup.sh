@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR/compile" >/dev/null
 # Install gvm
-echo "Installing gvm and go1.2"
+echo "Installing gvm and go1.3"
 ./install-gvm.sh
 # Add to $GOPATH
 echo "Installing skycoin to \$GOPATH"

@@ -5,8 +5,14 @@ import (
 	//"time"
 	"errors"
 	"log"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
+
+/*
+	TODO:
+	- finish
+*/
 
 /*
 	This is an example block chain

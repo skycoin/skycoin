@@ -29,9 +29,11 @@ typedef struct {
     secp256k1_num_t half_order; // half the order of the curve (= order of its generator)
     secp256k1_ge_t g; // the generator point
 
+#ifdef USE_ENDOMORPHISM
     // constants related to secp256k1's efficiently computable endomorphism
     secp256k1_fe_t beta;
     secp256k1_num_t lambda, a1b2, b1, a2;
+#endif
 } secp256k1_ge_consts_t;
 
 static const secp256k1_ge_consts_t *secp256k1_ge_consts = NULL;
@@ -48,9 +50,9 @@ void static secp256k1_ge_set_infinity(secp256k1_ge_t *r);
 /** Set a group element equal to the point with given X and Y coordinates */
 void static secp256k1_ge_set_xy(secp256k1_ge_t *r, const secp256k1_fe_t *x, const secp256k1_fe_t *y);
 
-/** Set a group element (jacobian) equal to the point with given X coordinate, and given oddness for Y.
-    The result is not guaranteed to be valid. */
-void static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int odd);
+/** Set a group element (affine) equal to the point with the given X coordinate, and given oddness
+ *  for Y. Return value indicates whether the result is valid. */
+int  static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int odd);
 
 /** Check whether a group element is the point at infinity. */
 int  static secp256k1_ge_is_infinity(const secp256k1_ge_t *a);
@@ -91,18 +93,20 @@ void static secp256k1_gej_double(secp256k1_gej_t *r, const secp256k1_gej_t *a);
 /** Set r equal to the sum of a and b. */
 void static secp256k1_gej_add(secp256k1_gej_t *r, const secp256k1_gej_t *a, const secp256k1_gej_t *b);
 
-/** Set r equal to the sum of a and b (with b given in jacobian coordinates). This is more efficient
+/** Set r equal to the sum of a and b (with b given in affine coordinates). This is more efficient
     than secp256k1_gej_add. */
 void static secp256k1_gej_add_ge(secp256k1_gej_t *r, const secp256k1_gej_t *a, const secp256k1_ge_t *b);
 
 /** Get a hex representation of a point. *rlen will be overwritten with the real length. */
 void static secp256k1_gej_get_hex(char *r, int *rlen, const secp256k1_gej_t *a);
 
+#ifdef USE_ENDOMORPHISM
 /** Set r to be equal to lambda times a, where lambda is chosen in a way such that this is very fast. */
 void static secp256k1_gej_mul_lambda(secp256k1_gej_t *r, const secp256k1_gej_t *a);
 
 /** Find r1 and r2 such that r1+r2*lambda = a, and r1 and r2 are maximum 128 bits long (given that a is
     not more than 256 bits). */
 void static secp256k1_gej_split_exp(secp256k1_num_t *r1, secp256k1_num_t *r2, const secp256k1_num_t *a);
+#endif
 
 #endif

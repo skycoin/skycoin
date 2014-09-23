@@ -34,8 +34,6 @@ func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
 
 // Returns an appropriate VisorConfig and a master visor
 func setupVisorConfig() (VisorConfig, *Visor) {
-	cipher.SetAddressVersion("test")
-
 	// Make a new master visor + blockchain
 	// Get the signed genesis block,
 	mw := wallet.NewWalletEntry()
@@ -75,7 +73,6 @@ func setupVisorFromMaster(mv *Visor) *Visor {
 
 func setupMasterVisorConfig() VisorConfig {
 	// Create testmaster.keys file
-	cipher.SetAddressVersion("test")
 	c := NewVisorConfig()
 	c.CoinHourBurnFactor = 0
 	c.IsMaster = true

@@ -23,6 +23,8 @@ type VisorConfig struct {
 	// Is this the master blockchain
 	IsMaster bool
 
+	WalletDirectory string //move out
+
 	//Public key of blockchain authority
 	BlockchainPubkey cipher.PubKey
 
@@ -71,7 +73,12 @@ func NewVisorConfig() VisorConfig {
 	c := VisorConfig{
 		IsMaster: false,
 
-		GenesisAddress:   cipher.Address{},
+		//move wallet management out
+		WalletDirectory: "",
+
+		WalletConstructor: wallet.NewSimpleWallet,
+		WalletTypeDefault: wallet.SimpleWalletType,
+
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
@@ -83,20 +90,12 @@ func NewVisorConfig() VisorConfig {
 		CoinHourBurnFactor:       2,
 		BlockchainFile:           "",
 		BlockSigsFile:            "",
-		//MasterKeys:               wallet.WalletEntry{},
+
+		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
 		GenesisTimestamp:  0,
 		GenesisCoinVolume: 100e6,
-		WalletConstructor: wallet.NewSimpleWallet,
-		WalletTypeDefault: wallet.SimpleWalletType,
 	}
-
-	//generate new private/public key
-	pub, sec := cipher.GenerateDeterministicKeyPair("genesis")
-
-	c.BlockchainPubkey = pub
-	c.BlockchainSeckey = sec
-	c.GenesisAddress = cipher.AddressFromPubKey(c.BlockchainPubkey)
 
 	return c
 }
@@ -128,33 +127,31 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 
 	// Load the wallets
+	//TODO: move this out of visor
 
-	/*
-		wallets := wallet.Wallets{}
-		if c.IsMaster {
-			wallets = wallet.Wallets{CreateMasterWallet(c.MasterKeys)}
-		} else {
-			if c.WalletDirectory != "" {
-				w, err := wallet.LoadWallets(c.WalletDirectory)
-				if err != nil {
-					log.Panicf("Failed to load all wallets: %v", err)
-				}
-				wallets = w
-			}
-			if len(wallets) == 0 {
-				wallets.Add(c.WalletConstructor())
-				if c.WalletDirectory != "" {
-					errs := wallets.Save(c.WalletDirectory)
-					if len(errs) != 0 {
-						log.Panicf("Failed to save wallets: %v", errs)
-					}
-				}
+	logger.Debug("Wallet Directory= %v", c.WalletDirectory)
+
+	wallets := wallet.Wallets{}
+
+	if c.WalletDirectory != "" {
+		w, err := wallet.LoadWallets(c.WalletDirectory)
+		if err != nil {
+			log.Panicf("Failed to load all wallets: %v", err)
+		}
+		wallets = w
+	}
+	if len(wallets) == 0 {
+		wallets.Add(c.WalletConstructor())
+		if c.WalletDirectory != "" {
+			errs := wallets.Save(c.WalletDirectory)
+			if len(errs) != 0 {
+				log.Panicf("Failed to save wallets: %v", errs)
 			}
 		}
-	*/
+	}
 
 	// Load the blockchain the block signatures
-	blockchain := loadBlockchain(c.BlockchainFile, c.MasterKeys.Address)
+	blockchain := loadBlockchain(c.BlockchainFile, c.GenesisAddress)
 	blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -176,7 +173,7 @@ func NewVisor(c VisorConfig) *Visor {
 	if len(blockchain.Blocks) == 0 {
 		v.CreateGenesisBlock()
 	}
-	err = blockSigs.Verify(c.MasterKeys.Public, blockchain)
+	err = blockSigs.Verify(c.BlockchainPubkey, blockchain)
 	if err != nil {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
@@ -200,6 +197,9 @@ func (self *Visor) CreateFreshGenesisBlock() (SignedBlock, error) {
 	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}
+	if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
+		log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
+	}
 
 	gb := self.blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
 		uint64(util.UnixNow()), self.Config.GenesisCoinVolume)
@@ -216,15 +216,15 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}
-	addr := self.Config.MasterKeys.Address
-	b := self.blockchain.CreateGenesisBlock(addr, self.Config.GenesisTimestamp,
+	//addr := self.Config.GenesisAddress
+	b := self.blockchain.CreateGenesisBlock(self.Config.GenesisAddress, self.Config.GenesisTimestamp,
 		self.Config.GenesisCoinVolume)
 	sb := SignedBlock{
 		Block: b,
 		Sig:   self.Config.GenesisSignature,
 	}
 	self.blockSigs.record(&sb)
-	err := self.blockSigs.Verify(self.Config.MasterKeys.Public,
+	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
 		self.blockchain)
 	if err != nil {
 		log.Panicf("Signed the genesis block, but its invalid: %v", err)
@@ -246,34 +246,6 @@ func (self *Visor) SaveBlockchain() error {
 	} else {
 		return SaveBlockchain(self.blockchain, self.Config.BlockchainFile)
 	}
-}
-
-func (self *Visor) CreateWallet() wallet.Wallet {
-	w := self.Config.WalletConstructor()
-	self.Wallets.Add(w)
-	return w
-}
-
-func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
-	w := self.Wallets.Get(walletID)
-	if w == nil {
-		return fmt.Errorf("Unknown wallet %s", walletID)
-	}
-	return w.Save(self.Config.WalletDirectory)
-}
-
-func (self *Visor) SaveWallets() map[wallet.WalletID]error {
-	return self.Wallets.Save(self.Config.WalletDirectory)
-}
-
-// Loads & unloads wallets based on WalletDirectory contents
-func (self *Visor) ReloadWallets() error {
-	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
-	if err != nil {
-		return err
-	}
-	self.Wallets = wallets
-	return nil
 }
 
 // Saves BlockSigs to disk
@@ -332,6 +304,25 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	self.Unconfirmed.RemoveTransactions(self.blockchain,
 		b.Block.Body.Transactions)
 	return nil
+}
+
+// Returns an error if the cipher.Sig is not valid for the coin.Block
+func (self *Visor) verifySignedBlock(b *SignedBlock) error {
+	return cipher.VerifySignature(self.Config.BlockchainPubkey, b.Sig,
+		b.Block.HashHeader())
+}
+
+// Signs a block for master.  Will panic if anything is invalid
+func (self *Visor) SignBlock(b coin.Block) SignedBlock {
+	if !self.Config.IsMaster {
+		log.Panic("Only master chain can sign blocks")
+	}
+	sig := cipher.SignHash(b.HashHeader(), self.Config.BlockchainSeckey)
+	sb := SignedBlock{
+		Block: b,
+		Sig:   sig,
+	}
+	return sb
 }
 
 // Returns N signed blocks more recent than Seq. Does not return nil.
@@ -510,6 +501,34 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	}
 }
 
+func (self *Visor) CreateWallet() wallet.Wallet {
+	w := self.Config.WalletConstructor()
+	self.Wallets.Add(w)
+	return w
+}
+
+func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
+	w := self.Wallets.Get(walletID)
+	if w == nil {
+		return fmt.Errorf("Unknown wallet %s", walletID)
+	}
+	return w.Save(self.Config.WalletDirectory)
+}
+
+func (self *Visor) SaveWallets() map[wallet.WalletID]error {
+	return self.Wallets.Save(self.Config.WalletDirectory)
+}
+
+// Loads & unloads wallets based on WalletDirectory contents
+func (self *Visor) ReloadWallets() error {
+	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
+	if err != nil {
+		return err
+	}
+	self.Wallets = wallets
+	return nil
+}
+
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
 func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
@@ -589,25 +608,6 @@ func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 		}
 	}
 	return b
-}
-
-// Returns an error if the cipher.Sig is not valid for the coin.Block
-func (self *Visor) verifySignedBlock(b *SignedBlock) error {
-	return cipher.VerifySignature(self.Config.MasterKeys.Public, b.Sig,
-		b.Block.HashHeader())
-}
-
-// Signs a block for master.  Will panic if anything is invalid
-func (self *Visor) SignBlock(b coin.Block) SignedBlock {
-	if !self.Config.IsMaster {
-		log.Panic("Only master chain can sign blocks")
-	}
-	sig := cipher.SignHash(b.HashHeader(), self.Config.BlockchainSeckey)
-	sb := SignedBlock{
-		Block: b,
-		Sig:   sig,
-	}
-	return sb
 }
 
 // Creates a wallet with a single master entry

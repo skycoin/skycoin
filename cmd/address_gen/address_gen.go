@@ -4,7 +4,8 @@ import (
 	//"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/skycoin/skycoin/src/coin"
+
+	"github.com/skycoin/skycoin/src/cipher"
 	//"log"
 	//"github.com/skycoin/skycoin/src/visor"
 	//"os"
@@ -84,9 +85,9 @@ func parseFlags() {
 	//}
 }
 
-func tstring(pub coin.PubKey, sec coin.SecKey) string {
+func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
 
-	addr := coin.AddressFromPubKey(pub)
+	addr := cipher.AddressFromPubKey(pub)
 
 	str1 := fmt.Sprintf("%v ", pub.Hex())
 	str2 := fmt.Sprintf("%v ", sec.Hex())
@@ -112,19 +113,19 @@ func main() {
 	if seed == "" {
 
 		for i := 0; i < genCount; i++ {
-			pub, sec := coin.GenerateKeyPair()
+			pub, sec := cipher.GenerateKeyPair()
 			fmt.Printf("%s\n", tstring(pub, sec))
 		}
 	}
 
 	if seed != "" {
 
-		seckeys := coin.GenerateDeterministicKeyPairs([]byte(seed), genCount)
+		seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
 		for _, sec := range seckeys {
-			pub := coin.PubKeyFromSecKey(sec)
+			pub := cipher.PubKeyFromSecKey(sec)
 			fmt.Printf("%s\n", tstring(pub, sec))
 		}
-		//pub, sec := coin.GenerateDeterministicKeyPair([]byte(seed))
+		//pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed))
 		//fmt.Printf("%s\n", tstring(pub, sec))
 	}
 

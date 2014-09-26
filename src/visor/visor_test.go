@@ -188,7 +188,6 @@ func assertBlocks(t *testing.T, v *Visor, bs []coin.Block, sbs []SignedBlock) {
 func TestNewVisorConfig(t *testing.T) {
 	vc := NewVisorConfig()
 	assert.False(t, vc.IsMaster)
-	assert.True(t, vc.CanSpend)
 	assert.Equal(t, vc.WalletDirectory, "")
 	assert.Equal(t, vc.BlockchainFile, "")
 	assert.Equal(t, vc.BlockSigsFile, "")
@@ -556,14 +555,6 @@ func TestVisorSpend(t *testing.T) {
 	v := NewVisor(vc)
 	wid := v.Wallets[0].GetID()
 	ogb := v.WalletBalance(wid).Confirmed
-
-	// Test can't spend
-	v = NewVisor(vc)
-	b := wallet.Balance{10e6, 0}
-	v.Config.CanSpend = false
-	_, err := v.Spend(wid, b, 0, addr)
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Spending disabled")
 
 	// Test spend 0 amount
 	v = NewVisor(vc)

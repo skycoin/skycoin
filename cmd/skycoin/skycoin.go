@@ -12,6 +12,7 @@ import (
 	"runtime/pprof"
 	"syscall"
 	"time"
+
 	"github.com/op/go-logging"
 )
 
@@ -81,8 +82,8 @@ type Config struct {
 	CanSpend bool
 
 	// Centralized network configuration
-	MasterPublic     string
-	MasterChain      bool
+	BlockchainPubkey string
+	RunMaster        bool
 	MasterKeys       string
 	GenesisSignature string
 	GenesisTimestamp uint64
@@ -197,8 +198,10 @@ var DevArgs = DevConfig{Config{
 	CanSpend:        true,
 
 	// Centralized network configuration
-	MasterPublic:     "02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc",
-	MasterChain:      false,
+	RunMaster:        true,
+	BlockchainPubkey: cipher.MustPubKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
+	BlockchainSeckey: cipher.MustSecKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
+
 	MasterKeys:       "",
 	GenesisTimestamp: 1394689119,
 	GenesisSignature: "173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800",
@@ -262,11 +265,11 @@ func (self *DevConfig) register() {
 		"Add terminal colors to log output")
 	flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
 		"static content directory for the html gui")
-	flag.BoolVar(&self.MasterChain, "master-chain", self.MasterChain,
-		"run the daemon as the master chain")
+	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
+		"run the daemon as blockchain master server")
 	flag.StringVar(&self.MasterKeys, "master-keys", self.MasterKeys,
 		"file to load master keys and address from")
-	flag.StringVar(&self.MasterPublic, "master-public-key", self.MasterPublic,
+	flag.StringVar(&self.BlockchainPubkey, "master-public-key", self.BlockchainPubkey,
 		"public key of the master chain")
 	flag.StringVar(&self.GenesisSignature, "genesis-signature", self.GenesisSignature,
 		"genesis block signature")
@@ -394,27 +397,35 @@ func configureDaemon(c *Config) daemon.Config {
 		c.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
-	dc.Visor.Config.IsMaster = c.MasterChain
-	dc.Visor.Config.CanSpend = c.CanSpend
+
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BlockchainFile = c.BlockchainFile
 	dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
-	dc.Visor.Config.GenesisSignature = cipher.MustSigFromHex(c.GenesisSignature)
+
+	dc.Visor.Config.IsMaster = c.RunMaster
+
+	//generate new private/public key
+	pub, sec := cipher.GenerateDeterministicKeyPair([]byte("genesis"))
+
+	dc.Visor.Config.BlockchainPubkey = pub
+	dc.Visor.Config.BlockchainSeckey = sec
+	dc.Visor.Config.GenesisAddress = cipher.AddressFromPubKey(c.BlockchainPubkey)
+
+	dc.Visor.Config.GenesisSignature = cipher.Sig{}
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
-	if c.MasterChain {
-		// The master chain should be reluctant to expire transactions
-		dc.Visor.Config.UnconfirmedRefreshRate = time.Hour * 4096
-	}
 
-	dc.Visor.MasterKeysFile = c.MasterKeys
-	if c.MasterChain {
-		// Will panic if fails
-		dc.Visor.LoadMasterKeys()
-	} else {
-		w := wallet.ReadableWalletEntryFromPubkey(c.MasterPublic)
-		dc.Visor.Config.MasterKeys = wallet.WalletEntryFromReadable(&w)
-	}
+	/*
+		dc.Visor.MasterKeysFile = c.MasterKeys
+		if c.RunMaster {
+			// Will panic if fails
+			//dc.Visor.LoadMasterKeys()
+		} else {
+			//w := wallet.ReadableWalletEntryFromPubkey(c.BlockchainPubkey)
+			//dc.Visor.Config.MasterKeys = wallet.WalletEntryFromReadable(&w)
+		}
+	*/
+
 	return dc
 }
 

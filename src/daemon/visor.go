@@ -39,12 +39,14 @@ func NewVisorConfig() VisorConfig {
 	}
 }
 
+/*
 func (self *VisorConfig) LoadMasterKeys() {
 	if self.Disabled {
 		return
 	}
-	self.Config.MasterKeys = wallet.MustLoadWalletEntry(self.MasterKeysFile)
+	//self.Config.MasterKeys = wallet.MustLoadWalletEntry(self.MasterKeysFile)
 }
+*/
 
 type Visor struct {
 	Config VisorConfig

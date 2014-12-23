@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
 // Simplest wallet implementation
@@ -19,7 +18,7 @@ type SimpleWallet struct {
 }
 
 func NewEmptySimpleWallet() Wallet {
-	idHash := cipher.SumSHA256(secp256k1.RandByte(256))
+	idHash := cipher.SumSHA256(cipher.RandByte(256))
 	id := WalletID(hex.EncodeToString(idHash[:16]))
 	return &SimpleWallet{
 		Filename: NewWalletFilename(id),

@@ -13,8 +13,7 @@ import (
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int,
-	burnFactor uint64) error {
+func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int) error {
 	if t.Size() > maxSize {
 		return errors.New("Transaction too large")
 	}
@@ -97,8 +96,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-	t coin.Transaction, addrs map[cipher.Address]byte, maxSize int,
-	burnFactor uint64) (error, bool) {
+	t coin.Transaction, addrs map[cipher.Address]byte, maxSize int) (error, bool) {
 	if err := VerifyTransaction(bc, &t, maxSize, burnFactor); err != nil {
 		return err, false
 	}

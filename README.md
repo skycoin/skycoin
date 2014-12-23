@@ -105,14 +105,6 @@ Skycoin was designed to eliminate mining completely and eliminate the problems i
 - Skycoin transactions are not subject to 51% attacks by mining cartels
 - Skycoin is environmentally friendly and sustainable. Skycoin does not use twelve coal power plants of electricity to be secure
 
-
-Skycoin Project
----------------
-
-Skycoin is more than a coin. Skycoin has several associated applications being developed to drive coin adaption.
-
-See: https://github.com/skycoin/darknet
-
 Tests
 -----
 
@@ -121,16 +113,3 @@ Skycoin tests can be run with
 ```
 ./test.sh
 ```
-
-### Test Roadmap
-
-##### Libraries
-
-* [pex](https://github.com/skycoin/pex) *Complete*
-* [gnet](https://github.com/skycoin/gnet) *Complete*
-
-##### Submodules
-
-* coin
-* daemon *Complete*
-* util *Complete*

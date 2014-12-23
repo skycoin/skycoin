@@ -18,6 +18,10 @@ var (
 
 type PubKey [33]byte
 
+func RandByte(n int) []byte {
+	return secp256k1.RandByte(n)
+}
+
 // Converts []byte to a PubKey. Panics is []byte is not the exact size
 func NewPubKey(b []byte) PubKey {
 	p := PubKey{}

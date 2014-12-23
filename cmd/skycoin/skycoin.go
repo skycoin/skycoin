@@ -55,7 +55,7 @@ type Config struct {
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// Wallet Address Version
-	AddressVersion string
+	//AddressVersion string
 	// Remote web interface
 	WebInterface      bool
 	WebInterfacePort  int
@@ -69,7 +69,7 @@ type Config struct {
 	GUIDirectory string
 	// Logging
 	LogLevel logging.Level
-	ColorLog bool
+	//ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel
 	// after parsing
 	logLevel string
@@ -82,12 +82,13 @@ type Config struct {
 	CanSpend bool
 
 	// Centralized network configuration
-	BlockchainPubkey string
+	BlockchainPubkey cipher.PubKey
 	RunMaster        bool
 	MasterKeys       string
 	GenesisSignature string
 	GenesisTimestamp uint64
 
+	BlockchainSeckey cipher.SecKey
 	/* Developer options */
 
 	// Enable cpu profiling
@@ -174,7 +175,7 @@ var DevArgs = DevConfig{Config{
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	// Wallet Address Version
-	AddressVersion: "test",
+	//AddressVersion: "test",
 	// Remote web interface
 	WebInterface:      false,
 	WebInterfacePort:  6402,
@@ -200,7 +201,8 @@ var DevArgs = DevConfig{Config{
 	// Centralized network configuration
 	RunMaster:        true,
 	BlockchainPubkey: cipher.MustPubKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
-	BlockchainSeckey: cipher.MustSecKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
+	BlockchainSeckey: cipher.SecKey{},
+	//cipher.MustSecKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
 
 	MasterKeys:       "",
 	GenesisTimestamp: 1394689119,
@@ -261,8 +263,8 @@ func (self *DevConfig) register() {
 		"Run the http profiling interface")
 	flag.StringVar(&self.logLevel, "log-level", self.logLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
-	flag.BoolVar(&self.ColorLog, "color-log", self.ColorLog,
-		"Add terminal colors to log output")
+	//flag.BoolVar(&self.ColorLog, "color-log", self.ColorLog,
+	//	"Add terminal colors to log output")
 	flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
 		"static content directory for the html gui")
 	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
@@ -287,8 +289,8 @@ func (self *DevConfig) register() {
 		self.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&self.LocalhostOnly, "localhost-only", self.LocalhostOnly,
 		"Run on localhost and only connect to localhost peers")
-	flag.StringVar(&self.AddressVersion, "address-version", self.AddressVersion,
-		"Wallet address version. Options are 'test' and 'main'")
+	//flag.StringVar(&self.AddressVersion, "address-version", self.AddressVersion,
+	//	"Wallet address version. Options are 'test' and 'main'")
 }
 
 /*

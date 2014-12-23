@@ -44,7 +44,8 @@ type VisorConfig struct {
 	// Divisor of coin hours required as fee. E.g. with hours=100 and factor=4,
 	// 25 additional hours are required as a fee.  A value of 0 disables
 	// the fee requirement.
-	CoinHourBurnFactor uint64
+	//CoinHourBurnFactor uint64
+
 	// Where the blockchain is saved
 	BlockchainFile string
 	// Where the block signatures are saved
@@ -87,9 +88,9 @@ func NewVisorConfig() VisorConfig {
 		UnconfirmedMaxAge:        time.Hour * 48,
 		UnconfirmedRefreshRate:   time.Minute * 30,
 		MaxBlockSize:             1024 * 32,
-		CoinHourBurnFactor:       2,
-		BlockchainFile:           "",
-		BlockSigsFile:            "",
+		//CoinHourBurnFactor:       2,
+		BlockchainFile: "",
+		BlockSigsFile:  "",
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -430,7 +431,7 @@ func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
 func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
 	addrs := self.Wallets.GetAddressSet()
 	return self.Unconfirmed.RecordTxn(self.blockchain, txn, addrs,
-		self.Config.MaxBlockSize, self.Config.CoinHourBurnFactor)
+		self.Config.MaxBlockSize)
 }
 
 // Returns the Transactions whose unspents give coins to a cipher.Address.
@@ -540,12 +541,11 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	}
 	tx, err := CreateSpendingTransaction(wallet, self.Unconfirmed,
 		&self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
-		self.Config.CoinHourBurnFactor, dest)
+		dest)
 	if err != nil {
 		return tx, err
 	}
-	if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize,
-		self.Config.CoinHourBurnFactor); err != nil {
+	if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize); err != nil {
 		log.Panicf("Created invalid spending txn: %v", err)
 	}
 	if err := self.blockchain.VerifyTransaction(tx); err != nil {

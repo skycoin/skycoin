@@ -43,8 +43,8 @@ func (self OldestUxOut) Less(i, j int) bool {
 	return a < b
 }
 
-func calculateBurnAndChange(total, spending, fee,
-	factor uint64) (uint64, uint64, error) {
+//set burn to 50% of coin hours
+func calculateBurnAndChange(total, spending, fee) (uint64, uint64, error) {
 	if total < fee {
 		return 0, 0, errors.New("Insufficient total")
 	}
@@ -61,7 +61,7 @@ func calculateBurnAndChange(total, spending, fee,
 }
 
 func createSpends(headTime uint64, uxa coin.UxArray,
-	amt wallet.Balance, fee, burnFactor uint64) (coin.UxArray, error) {
+	amt wallet.Balance, fee) (coin.UxArray, error) {
 	if amt.Coins == 0 {
 		return nil, errors.New("Zero spend amount")
 	}
@@ -76,7 +76,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	spending := make(coin.UxArray, 0)
 	for i, _ := range uxs {
 		burn, _, err := calculateBurnAndChange(have.Hours, amt.Hours,
-			fee, burnFactor)
+			fee)
 		if err == nil {
 			trueHours := amt.Hours + fee + burn
 			// Adjust hours as a moving target as outputs change
@@ -104,8 +104,8 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	if amt.Hours+fee > have.Hours {
 		return nil, errors.New("Not enough hours")
 	}
-	if _, _, err := calculateBurnAndChange(have.Hours, amt.Hours, fee,
-		burnFactor); err != nil {
+	if _, _, err := calculateBurnAndChange(have.Hours, amt.Hours, fee
+		); err != nil {
 		return nil, errors.New("Not enough hours to burn")
 	}
 	return spending, nil
@@ -114,7 +114,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 // Creates a Transaction spending coins and hours from our coins
 func CreateSpendingTransaction(wlt wallet.Wallet,
 	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
-	headTime uint64, amt wallet.Balance, fee, burnFactor uint64,
+	headTime uint64, amt wallet.Balance, fee,
 	dest cipher.Address) (coin.Transaction, error) {
 	txn := coin.Transaction{}
 	auxs := unspent.AllForAddresses(wlt.GetAddresses())
@@ -123,7 +123,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 	auxs = auxs.Sub(puxs)
 
 	// Determine which unspents to spend
-	spends, err := createSpends(headTime, auxs.Flatten(), amt, fee, burnFactor)
+	spends, err := createSpends(headTime, auxs.Flatten(), amt, fee)
 	if err != nil {
 		return txn, err
 	}
@@ -144,7 +144,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 
 	// Determine how much change we get back, if any
 	_, changeHours, err := calculateBurnAndChange(spending.Hours,
-		amt.Hours, fee, burnFactor)
+		amt.Hours, fee)
 	if err != nil {
 		// This should not occur, else createSpends is broken
 		return txn, err

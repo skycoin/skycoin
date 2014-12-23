@@ -5,6 +5,10 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+/*
+RPC is balance check and transaction injection
+- seperate wallets out of visor
+*/
 type TransactionResult struct {
 	Transaction ReadableTransaction `json:"txn"`
 	Status      TransactionStatus   `json:"status"`

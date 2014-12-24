@@ -201,12 +201,11 @@ var DevArgs = DevConfig{Config{
 	// Centralized network configuration
 	RunMaster:        true,
 	BlockchainPubkey: cipher.MustPubKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
-	BlockchainSeckey: cipher.SecKey{},
-	//cipher.MustSecKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
+	//BlockchainSeckey: cipher.SecKey{},
+	BlockchainSeckey: cipher.MustSecKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
 
-	MasterKeys:       "",
 	GenesisTimestamp: 1394689119,
-	GenesisSignature: "173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800",
+	GenesisSignature: cipher.MustSigFromHex("173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800"),
 
 	/* Developer options */
 
@@ -271,12 +270,15 @@ func (self *DevConfig) register() {
 	//Key Configuration Data
 	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
 		"run the daemon as blockchain master server")
-	flag.StringVar(&self.BlockchainPubkey, "master-public-key", self.BlockchainPubkey,
+	flag.StringVar(&self.BlockchainPubkeyStr, "master-public-key", self.BlockchainPubkeyStr,
 		"public key of the master chain")
-	flag.StringVar(&self.GenesisSignature, "genesis-signature", self.GenesisSignature,
+	flag.StringVar(&self.BlockchainSeckeyStr, "master-secret-key", self.BlockchainSeckeyStr,
+		"secret key, set for master")
+	flag.StringVar(&self.GenesisSignatureStr, "genesis-signature", self.GenesisSignatureStr,
 		"genesis block signature")
 	flag.Uint64Var(&self.GenesisTimestamp, "genesis-timestamp", self.GenesisTimestamp,
 		"genesis block timestamp")
+
 	flag.StringVar(&self.WalletDirectory, "wallet-dir", self.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
 

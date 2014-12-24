@@ -50,8 +50,6 @@ type VisorConfig struct {
 	BlockchainFile string
 	// Where the block signatures are saved
 	BlockSigsFile string
-	// Master keypair & address
-	//MasterKeys wallet.WalletEntry
 
 	//address for genesis
 	GenesisAddress cipher.Address
@@ -109,7 +107,6 @@ type Visor struct {
 	// Wallets holding our keys for spending
 	Wallets wallet.Wallets
 	// Master & personal keys
-	masterKeys wallet.WalletEntry
 	blockchain *coin.Blockchain
 	blockSigs  BlockSigs
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+// Deprecate dependency on wallet
+
 /*
 
 Sort unspents oldest to newest
@@ -44,7 +46,10 @@ func (self OldestUxOut) Less(i, j int) bool {
 }
 
 //set burn to 50% of coin hours
-func calculateBurnAndChange(total, spending, fee) (uint64, uint64, error) {
+//what is purpose of this
+func calculateBurnAndChange(total uint64, spending uint64, fee uint64) (uint64, uint64, error) {
+
+	var factor uint64 = 2
 	if total < fee {
 		return 0, 0, errors.New("Insufficient total")
 	}
@@ -57,11 +62,12 @@ func calculateBurnAndChange(total, spending, fee) (uint64, uint64, error) {
 		return 0, 0, errors.New("Insufficient total")
 	}
 	change := total - others
+
 	return burn, change, nil
 }
 
 func createSpends(headTime uint64, uxa coin.UxArray,
-	amt wallet.Balance, fee) (coin.UxArray, error) {
+	amt wallet.Balance, fee uint64) (coin.UxArray, error) {
 	if amt.Coins == 0 {
 		return nil, errors.New("Zero spend amount")
 	}
@@ -75,6 +81,8 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	have := wallet.Balance{0, 0}
 	spending := make(coin.UxArray, 0)
 	for i, _ := range uxs {
+
+		//wtf?
 		burn, _, err := calculateBurnAndChange(have.Hours, amt.Hours,
 			fee)
 		if err == nil {
@@ -104,17 +112,17 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	if amt.Hours+fee > have.Hours {
 		return nil, errors.New("Not enough hours")
 	}
-	if _, _, err := calculateBurnAndChange(have.Hours, amt.Hours, fee
-		); err != nil {
+	if _, _, err := calculateBurnAndChange(have.Hours, amt.Hours, fee); err != nil {
 		return nil, errors.New("Not enough hours to burn")
 	}
 	return spending, nil
 }
 
+//deprecate dependency on wallet
 // Creates a Transaction spending coins and hours from our coins
 func CreateSpendingTransaction(wlt wallet.Wallet,
 	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
-	headTime uint64, amt wallet.Balance, fee,
+	headTime uint64, amt wallet.Balance, fee uint64,
 	dest cipher.Address) (coin.Transaction, error) {
 	txn := coin.Transaction{}
 	auxs := unspent.AllForAddresses(wlt.GetAddresses())

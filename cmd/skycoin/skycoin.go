@@ -69,7 +69,7 @@ type Config struct {
 	GUIDirectory string
 	// Logging
 	LogLevel logging.Level
-	//ColorLog bool
+	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel
 	// after parsing
 	logLevel string
@@ -78,17 +78,20 @@ type Config struct {
 	WalletDirectory string
 	BlockchainFile  string
 	BlockSigsFile   string
-	// Is allowed to make outgoing transactions
-	CanSpend bool
 
 	// Centralized network configuration
-	BlockchainPubkey cipher.PubKey
-	RunMaster        bool
-	MasterKeys       string
-	GenesisSignature string
-	GenesisTimestamp uint64
 
+	RunMaster bool
+
+	GenesisSignature cipher.Sig
+	GenesisTimestamp uint64
+	BlockchainPubkey cipher.PubKey
 	BlockchainSeckey cipher.SecKey
+
+	GenesisSignatureStr string //only set if passed in command line arg
+	BlockchainPubkeyStr string //only set if passed in command line arg
+	BlockchainSeckeyStr string //only set if passed in command line arg
+
 	/* Developer options */
 
 	// Enable cpu profiling
@@ -114,9 +117,7 @@ func (self *Config) postProcess() {
 	if self.WebInterfaceKey == "" {
 		self.WebInterfaceKey = filepath.Join(self.DataDirectory, "key.pem")
 	}
-	if self.MasterKeys == "" {
-		self.MasterKeys = filepath.Join(self.DataDirectory, "master.keys")
-	}
+
 	if self.BlockchainFile == "" {
 		self.BlockchainFile = filepath.Join(self.DataDirectory, "blockchain.bin")
 	}
@@ -196,7 +197,6 @@ var DevArgs = DevConfig{Config{
 	WalletDirectory: "",
 	BlockchainFile:  "",
 	BlockSigsFile:   "",
-	CanSpend:        true,
 
 	// Centralized network configuration
 	RunMaster:        true,
@@ -267,10 +267,10 @@ func (self *DevConfig) register() {
 	//	"Add terminal colors to log output")
 	flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
 		"static content directory for the html gui")
+
+	//Key Configuration Data
 	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
 		"run the daemon as blockchain master server")
-	flag.StringVar(&self.MasterKeys, "master-keys", self.MasterKeys,
-		"file to load master keys and address from")
 	flag.StringVar(&self.BlockchainPubkey, "master-public-key", self.BlockchainPubkey,
 		"public key of the master chain")
 	flag.StringVar(&self.GenesisSignature, "genesis-signature", self.GenesisSignature,
@@ -279,12 +279,12 @@ func (self *DevConfig) register() {
 		"genesis block timestamp")
 	flag.StringVar(&self.WalletDirectory, "wallet-dir", self.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
+
 	flag.StringVar(&self.BlockchainFile, "blockchain-file", self.BlockchainFile,
 		"location of the blockchain file. Default to ~/.skycoin/blockchain.bin")
 	flag.StringVar(&self.BlockSigsFile, "blocksigs-file", self.BlockSigsFile,
 		"location of the block signatures file. Default to ~/.skycoin/blockchain.sigs")
-	flag.BoolVar(&self.CanSpend, "can-spend", self.CanSpend,
-		"is allowed to make outgoing transactions")
+
 	flag.DurationVar(&self.OutgoingConnectionsRate, "connection-rate",
 		self.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&self.LocalhostOnly, "localhost-only", self.LocalhostOnly,

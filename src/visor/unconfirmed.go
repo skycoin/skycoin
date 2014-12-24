@@ -9,6 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
+var BurnFactor uint64 = 2 //half of coinhours must be burnt
+
 // Performs additional transaction verification at the unconfirmed pool level.
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
@@ -19,8 +21,8 @@ func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int) er
 	}
 	if fee, err := bc.TransactionFee(t); err != nil {
 		return err
-	} else if burnFactor != 0 && t.OutputHours()/burnFactor > fee {
-		return errors.New("Transaction fee minimum not met")
+	} else if BurnFactor != 0 && t.OutputHours()/BurnFactor > fee {
+		return errors.New("Transaction coinhour fee minimum not met")
 	}
 	return nil
 }
@@ -97,7 +99,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
 	t coin.Transaction, addrs map[cipher.Address]byte, maxSize int) (error, bool) {
-	if err := VerifyTransaction(bc, &t, maxSize, burnFactor); err != nil {
+	if err := VerifyTransaction(bc, &t, maxSize); err != nil {
 		return err, false
 	}
 	if err := bc.VerifyTransaction(t); err != nil {

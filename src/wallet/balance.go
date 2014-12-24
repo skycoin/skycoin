@@ -6,9 +6,14 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
+/*
+Do not show balances or outputs that have not cleared yet
+- should only allow spends against outputs that are on head
+*/
+
 type BalancePair struct {
 	Confirmed Balance `json:"confirmed"`
-	Predicted Balance `json:"predicted"`
+	Predicted Balance `json:"predicted"` //do "pending"
 }
 
 type Balance struct {

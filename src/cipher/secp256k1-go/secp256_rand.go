@@ -10,6 +10,7 @@ import (
 
 	"crypto/sha256"
 	"hash"
+	"log"
 )
 
 var (
@@ -53,17 +54,23 @@ func knuth_hash(in []byte) uint64 {
 	return acc
 }
 
-var _rand *mrand.Rand
+var _rand *mrand.Rand //pseudorandom number generator
 
+//seed pseudo random number generator with
+// hash of system time in nano seconds
+// hash of system environmental variables
+// hash of process id
 func init() {
 	var seed1 uint64 = mmh3f(uint64(time.Now().UnixNano()))
 	var seed2 uint64 = knuth_hash([]byte(strings.Join(os.Environ(), "")))
 	var seed3 uint64 = mmh3f(uint64(os.Getpid()))
 
-	_rand = mrand.New(mrand.NewSource(int64(seed1 ^ seed2 ^ seed3)))
+	_rand = mrand.New(mrand.NewSource(int64(seed1 ^ seed2 ^ seed3))) //pseudo random
 }
 
-func saltByte(buff []byte) []byte {
+//generate pseudo-random numbers from the
+func saltByte(n int) []byte {
+	buff := make([]byte, n)
 	for i := 0; i < len(buff); i++ {
 		var v uint64 = uint64(_rand.Int63())
 		var b byte
@@ -76,35 +83,33 @@ func saltByte(buff []byte) []byte {
 	return buff
 }
 
+//Secure Random number generator for forwards security
 //On Unix-like systems, Reader reads from /dev/urandom.
 //On Windows systems, Reader uses the CryptGenRandom API.
-
-//use entropy pool etc and cryptographic random number generator
-//mix in time
-//mix in mix in cpu cycle count
+//Pseudo-random sequence, seeded from program start time, environmental variables,
+//and process id is mixed in for forward security. Future version should use entropy pool
+// mix in cpu cycle count and system time
 func RandByte(n int) []byte {
 	buff := make([]byte, n)
-	ret, err := io.ReadFull(crand.Reader, buff)
+	ret, err := io.ReadFull(crand.Reader, buff) //system secure random number generator
 	if len(buff) != ret || err != nil {
-		return nil
+		log.Panic()
 	}
-
-	buff2 := RandByteWeakCrypto(n)
+	buff2 := saltByte(n)
 	for i := 0; i < n; i++ {
-		buff[i] ^= buff2[2]
+		buff[i] ^= buff2[i]
 	}
 	return buff
 }
 
-/*
-	On Unix-like systems, Reader reads from /dev/urandom.
-	On Windows systems, Reader uses the CryptGenRandom API.
-*/
-func RandByteWeakCrypto(n int) []byte {
+//System "secure" random number generator
+//On Unix-like systems, Reader reads from /dev/urandom.
+//On Windows systems, Reader uses the CryptGenRandom API.
+func RandByteSystem(n int) []byte {
 	buff := make([]byte, n)
-	ret, err := io.ReadFull(crand.Reader, buff)
+	ret, err := io.ReadFull(crand.Reader, buff) //system secure random number generator
 	if len(buff) != ret || err != nil {
-		return nil
+		log.Panic()
 	}
 	return buff
 }

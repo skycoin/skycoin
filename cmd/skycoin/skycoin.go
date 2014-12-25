@@ -218,13 +218,12 @@ var DevArgs = DevConfig{Config{
 
 	// Centralized network configuration
 	RunMaster:        true,
-	BlockchainPubkey: cipher.MustPubKeyFromHex("03e56ab0597167882813864bd71305660edc128d45ed41ff583b15a44e4e95233f"),
-	//BlockchainSeckey: cipher.SecKey{},
-	BlockchainSeckey: cipher.MustSecKeyFromHex("f399bd1b78792da9cc49b1157c73016450c949df565ce3ddbf2f9d65fd8f0dac"),
+	BlockchainPubkey: cipher.PubKey{},
+	BlockchainSeckey: cipher.SecKey{},
 
-	GenesisAddress:   cipher.MustDecodeBase58Address("WyPXrQpAJ7bL6kXZ9ZB6c1p3yUMhBMF7u8"),
+	GenesisAddress:   cipher.Address{},
 	GenesisTimestamp: 1394689119,
-	GenesisSignature: cipher.MustSigFromHex("173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800"),
+	GenesisSignature: cipher.Sig{},
 
 	/* Developer options */
 
@@ -240,10 +239,10 @@ var DevArgs = DevConfig{Config{
 }}
 
 //clear these after loading
-var GenesisSignatureStr string //only set if passed in command line arg
-var GenesisAddressStr string   //only set if passed in command line arg
-var BlockchainPubkeyStr string //only set if passed in command line arg
-var BlockchainSeckeyStr string //only set if passed in command line arg
+var GenesisSignatureStr string = "173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800"
+var GenesisAddressStr string = "WyPXrQpAJ7bL6kXZ9ZB6c1p3yUMhBMF7u8"
+var BlockchainPubkeyStr string = "03e56ab0597167882813864bd71305660edc128d45ed41ff583b15a44e4e95233f"
+var BlockchainSeckeyStr string = "f399bd1b78792da9cc49b1157c73016450c949df565ce3ddbf2f9d65fd8f0dac"
 
 func (self *DevConfig) register() {
 	flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
@@ -295,6 +294,7 @@ func (self *DevConfig) register() {
 	//Key Configuration Data
 	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
 		"run the daemon as blockchain master server")
+
 	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr,
 		"public key of the master chain")
 	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr,

@@ -443,7 +443,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.BlockchainSeckey = c.BlockchainSeckey
 
 	dc.Visor.Config.GenesisAddress = c.GenesisAddress
-	dc.Visor.Config.GenesisSignature = cipher.Sig{}
+	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 
 	dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet

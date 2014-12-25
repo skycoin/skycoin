@@ -18,8 +18,6 @@ type VisorConfig struct {
 	Config visor.VisorConfig
 	// Disabled the visor completely
 	Disabled bool
-	// Location of master keys
-	MasterKeysFile string
 	// How often to request blocks from peers
 	BlocksRequestRate time.Duration
 	// How often to announce our blocks to peers
@@ -32,21 +30,11 @@ func NewVisorConfig() VisorConfig {
 	return VisorConfig{
 		Config:              visor.NewVisorConfig(),
 		Disabled:            false,
-		MasterKeysFile:      "",
 		BlocksRequestRate:   time.Minute * 5,
 		BlocksAnnounceRate:  time.Minute * 15,
 		BlocksResponseCount: 20,
 	}
 }
-
-/*
-func (self *VisorConfig) LoadMasterKeys() {
-	if self.Disabled {
-		return
-	}
-	//self.Config.MasterKeys = wallet.MustLoadWalletEntry(self.MasterKeysFile)
-}
-*/
 
 type Visor struct {
 	Config VisorConfig

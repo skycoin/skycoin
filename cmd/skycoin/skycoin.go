@@ -436,9 +436,6 @@ func configureDaemon(c *Config) daemon.Config {
 
 	dc.Visor.Config.IsMaster = c.RunMaster
 
-	//generate new private/public key
-	//pub, sec := cipher.GenerateDeterministicKeyPair([]byte("genesis"))
-
 	dc.Visor.Config.BlockchainPubkey = c.BlockchainPubkey
 	dc.Visor.Config.BlockchainSeckey = c.BlockchainSeckey
 
@@ -447,17 +444,6 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 
 	dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
-
-	/*
-		dc.Visor.MasterKeysFile = c.MasterKeys
-		if c.RunMaster {
-			// Will panic if fails
-			//dc.Visor.LoadMasterKeys()
-		} else {
-			//w := wallet.ReadableWalletEntryFromPubkey(c.BlockchainPubkey)
-			//dc.Visor.Config.MasterKeys = wallet.WalletEntryFromReadable(&w)
-		}
-	*/
 
 	return dc
 }

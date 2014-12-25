@@ -169,7 +169,12 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 	// Load the genesis block and sign it, if we need one
 	if len(blockchain.Blocks) == 0 {
-		v.CreateGenesisBlock()
+		if (c.BlockchainSeckey == cipher.SecKey{}) || (c.IsMaster == false) {
+			v.CreateGenesisBlock()
+		} else {
+			v.CreateGenesisBlockInit()
+		}
+
 	}
 	err = blockSigs.Verify(c.BlockchainPubkey, blockchain)
 	if err != nil {
@@ -191,7 +196,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 	}
 }
 
-func (self *Visor) CreateFreshGenesisBlock() (SignedBlock, error) {
+func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}

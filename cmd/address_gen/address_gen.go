@@ -29,7 +29,7 @@ import (
 var (
 	testNetwork = false
 	//outFile      = ""
-	PrintAddress = false
+	PrintAddress = true
 	PrintPubKey  = true
 	PrintSeckey  = true
 

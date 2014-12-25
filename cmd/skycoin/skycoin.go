@@ -85,12 +85,10 @@ type Config struct {
 
 	GenesisSignature cipher.Sig
 	GenesisTimestamp uint64
+	GenesisAddress   cipher.Address
+
 	BlockchainPubkey cipher.PubKey
 	BlockchainSeckey cipher.SecKey
-
-	GenesisSignatureStr string //only set if passed in command line arg
-	BlockchainPubkeyStr string //only set if passed in command line arg
-	BlockchainSeckeyStr string //only set if passed in command line arg
 
 	/* Developer options */
 
@@ -110,6 +108,26 @@ func (self *Config) register() {
 }
 
 func (self *Config) postProcess() {
+
+	//var GenesisSignatureStr string //only set if passed in command line arg
+	//var GenesisAddressStr string   //only set if passed in command line arg
+	//var BlockchainPubkeyStr string //only set if passed in command line arg
+	//var BlockchainSeckeyStr string //only set if passed in command line arg
+
+	if GenesisSignatureStr != "" {
+		self.GenesisSignature = cipher.MustSigFromHex(GenesisSignatureStr)
+	}
+	if GenesisAddressStr != "" {
+		self.GenesisAddress = cipher.MustDecodeBase58Address(GenesisAddressStr)
+	}
+	if BlockchainPubkeyStr != "" {
+		self.BlockchainPubkey = cipher.MustPubKeyFromHex(BlockchainPubkeyStr)
+	}
+	if BlockchainSeckeyStr != "" {
+		self.BlockchainSeckey = cipher.MustSecKeyFromHex(BlockchainSeckeyStr)
+		BlockchainSeckeyStr = ""
+	}
+
 	self.DataDirectory = util.InitDataDir(self.DataDirectory)
 	if self.WebInterfaceCert == "" {
 		self.WebInterfaceCert = filepath.Join(self.DataDirectory, "cert.pem")
@@ -200,10 +218,11 @@ var DevArgs = DevConfig{Config{
 
 	// Centralized network configuration
 	RunMaster:        true,
-	BlockchainPubkey: cipher.MustPubKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
+	BlockchainPubkey: cipher.MustPubKeyFromHex("03e56ab0597167882813864bd71305660edc128d45ed41ff583b15a44e4e95233f"),
 	//BlockchainSeckey: cipher.SecKey{},
-	BlockchainSeckey: cipher.MustSecKeyFromHex("02b0333bd8f1910663b8b1f60fb2e154b70436a2c19efb79cdbdf09bf9bb2056dc"),
+	BlockchainSeckey: cipher.MustSecKeyFromHex("f399bd1b78792da9cc49b1157c73016450c949df565ce3ddbf2f9d65fd8f0dac"),
 
+	GenesisAddress:   cipher.MustDecodeBase58Address("WyPXrQpAJ7bL6kXZ9ZB6c1p3yUMhBMF7u8"),
 	GenesisTimestamp: 1394689119,
 	GenesisSignature: cipher.MustSigFromHex("173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800"),
 
@@ -219,6 +238,12 @@ var DevArgs = DevConfig{Config{
 	// to show up as a peer
 	ConnectTo: "",
 }}
+
+//clear these after loading
+var GenesisSignatureStr string //only set if passed in command line arg
+var GenesisAddressStr string   //only set if passed in command line arg
+var BlockchainPubkeyStr string //only set if passed in command line arg
+var BlockchainSeckeyStr string //only set if passed in command line arg
 
 func (self *DevConfig) register() {
 	flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
@@ -270,11 +295,14 @@ func (self *DevConfig) register() {
 	//Key Configuration Data
 	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
 		"run the daemon as blockchain master server")
-	flag.StringVar(&self.BlockchainPubkeyStr, "master-public-key", self.BlockchainPubkeyStr,
+	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr,
 		"public key of the master chain")
-	flag.StringVar(&self.BlockchainSeckeyStr, "master-secret-key", self.BlockchainSeckeyStr,
+	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr,
 		"secret key, set for master")
-	flag.StringVar(&self.GenesisSignatureStr, "genesis-signature", self.GenesisSignatureStr,
+
+	flag.StringVar(&GenesisAddressStr, "genesis-address", GenesisAddressStr,
+		"genesis address")
+	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr,
 		"genesis block signature")
 	flag.Uint64Var(&self.GenesisTimestamp, "genesis-timestamp", self.GenesisTimestamp,
 		"genesis block timestamp")
@@ -409,14 +437,15 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.IsMaster = c.RunMaster
 
 	//generate new private/public key
-	pub, sec := cipher.GenerateDeterministicKeyPair([]byte("genesis"))
+	//pub, sec := cipher.GenerateDeterministicKeyPair([]byte("genesis"))
 
-	dc.Visor.Config.BlockchainPubkey = pub
-	dc.Visor.Config.BlockchainSeckey = sec
-	dc.Visor.Config.GenesisAddress = cipher.AddressFromPubKey(c.BlockchainPubkey)
+	dc.Visor.Config.BlockchainPubkey = c.BlockchainPubkey
+	dc.Visor.Config.BlockchainSeckey = c.BlockchainSeckey
 
+	dc.Visor.Config.GenesisAddress = c.GenesisAddress
 	dc.Visor.Config.GenesisSignature = cipher.Sig{}
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
+
 	dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
 
 	/*

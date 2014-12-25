@@ -86,7 +86,7 @@ func NewVisorConfig() VisorConfig {
 		UnconfirmedMaxAge:        time.Hour * 48,
 		UnconfirmedRefreshRate:   time.Minute * 30,
 		MaxBlockSize:             1024 * 32,
-		//CoinHourBurnFactor:       2,
+
 		BlockchainFile: "",
 		BlockSigsFile:  "",
 
@@ -206,6 +206,12 @@ func (self *Visor) CreateFreshGenesisBlock() (SignedBlock, error) {
 		log.Panic("Signed a fresh genesis block, but its invalid: %v", err)
 	}
 	self.blockSigs.record(&sb)
+
+	log.Printf("New Genesis:")
+	log.Printf("genesis_time= %v", sb.Block.Head.Time)
+	log.Printf("genesis_address= %v", self.Config.GenesisAddress.String())
+	log.Printf("genesis_signature= %v", self.Config.GenesisSignature.Hex())
+
 	return sb, nil
 }
 
@@ -225,7 +231,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
 		self.blockchain)
 	if err != nil {
-		log.Panicf("Signed the genesis block, but its invalid: %v", err)
+		log.Panicf("Cannot create genesis block, signature verification failed: %v", err)
 	}
 	return sb
 }

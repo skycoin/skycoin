@@ -135,6 +135,16 @@ func TestECDHonce(t *testing.T) {
 	assert.True(t, bytes.Equal(buf1, buf2))
 }
 
+func TestECDHloop(t *testing.T) {
+	for i := 0; i < 128; i++ {
+		pub1, sec1 := GenerateKeyPair()
+		pub2, sec2 := GenerateKeyPair()
+		buf1 := ECDH(pub2, sec1)
+		buf2 := ECDH(pub1, sec2)
+		assert.True(t, bytes.Equal(buf1, buf2))
+	}
+}
+
 func TestNewSig(t *testing.T) {
 	assert.Panics(t, func() { NewSig(randBytes(t, 64)) })
 	assert.Panics(t, func() { NewSig(randBytes(t, 66)) })

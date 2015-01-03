@@ -105,7 +105,7 @@ func AddSHA256(a SHA256, b SHA256) SHA256 {
 
 func (a *SHA256) Xor(b SHA256) SHA256 {
 	c := SHA256{}
-	for i := 0; i < len(c); i++ {
+	for i := 0; i < 32; i++ {
 		c[i] = a[i] ^ b[i]
 	}
 	return c

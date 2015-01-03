@@ -43,6 +43,9 @@ func MustPubKeyFromHex(s string) PubKey {
 
 // Recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
+	if seckey == (SecKey{}) {
+		log.Panic("PubKeyFromSecKey, attempt to load null seckey, unsafe")
+	}
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
 		log.Panic("PubKeyFromSecKey, pubkey recovery failed. Function " +
@@ -119,6 +122,31 @@ func (self SecKey) Verify() error {
 // Returns a hex encoded SecKey string
 func (s SecKey) Hex() string {
 	return hex.EncodeToString(s[:])
+}
+
+//Generates a shared secret
+// A: pub1,sec1
+// B: pub2,sec2
+// person A sends their public key pub1
+// person B sends an emphameral pubkey pub2
+// person A computes cipher.ECDH(pub2, sec1)
+// person B computes cipher.ECDH(pub1, sec2)
+// cipher.ECDH(pub2, sec1) equals cipher.ECDH(pub1, sec2)
+// This is their shared secret
+func ECDH(pub PubKey, sec SecKey) []byte {
+
+	if err := pub.Verify(); err != nil {
+		log.Panic("ECDH invalid pubkey input")
+	}
+
+	if err := sec.Verify(); err != nil {
+		log.Panic("ECDH invalid seckey input")
+	}
+
+	buff := secp256k1.ECDH(pub[:], sec[:])
+	ret := SumSHA256(buff) //hash this so they cant screw up
+	return ret[:]
+
 }
 
 type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery

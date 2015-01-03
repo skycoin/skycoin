@@ -32,7 +32,7 @@ type DHTConfig struct {
 func NewDHTConfig() DHTConfig {
 	return DHTConfig{
 		Disabled:     false,
-		Info:         "skycoin-skycoin-skycoin-skycoin-skycoin-skycoin-skycoin",
+		Info:         "WyPXrQpAJ7bL6kXZ9ZB6c1p3yUMhBMF7u8", //use genesis address for now
 		DesiredPeers: 20,
 		PeerLimit:    100,
 		BootstrapNodes: []string{

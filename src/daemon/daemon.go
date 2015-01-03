@@ -113,6 +113,7 @@ func (self *Config) preprocess() Config {
 			logger.Info("Outgoing connections are disabled.")
 		}
 	}
+
 	return config
 }
 

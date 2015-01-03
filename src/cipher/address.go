@@ -7,6 +7,23 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
+/*
+Addresses are the Ripemd160 of the double SHA256 of the public key
+- public key must be in compressed format
+
+In the block chain the address is 20+1 bytes
+- the first byte is the version byte
+- the next twenty bytes are RIPMD160(SHA256(SHA256(pubkey)))
+
+In base 58 format the address is 20+1+4 bytes
+- the first 20 bytes are RIPMD160(SHA256(SHA256(pubkey))).
+-- this is to allow for any prefix in vanity addresses
+- the next byte is the version byte
+- the next 4 bytes are a checksum
+-- the first 4 bytes of the SHA256 of the 21 bytes that come before
+
+*/
+
 type Checksum [4]byte
 
 //version is after Key to enable better vanity address generation
@@ -72,8 +89,21 @@ func addressFromBytes(b []byte) (Address, error) {
 	return a, nil
 }
 
+//return address as a byte slice
+func (self *Address) Bytes() []byte {
+	b := make([]byte, 20+1+4)
+	copy(b[0:20], self.Key[0:20])
+	b[20] = self.Version
+	chksum := self.Checksum()
+	copy(b[21:25], chksum[0:4])
+	return b
+}
+
 // Checks that the address appears valid for the public key
-func (self *Address) Verify(key PubKey) error {
+func (self Address) Verify(key PubKey) error {
+	if self.Version != 0x00 {
+		return errors.New("Address version invalid")
+	}
 	if self.Key != key.ToAddressHash() {
 		return errors.New("Public key invalid for address")
 	}
@@ -84,13 +114,8 @@ func (self *Address) Verify(key PubKey) error {
 // Returns address as printable
 // version is first byte in binary format
 // in printed address its key, version, checksum
-func (self *Address) String() string {
-	b := make([]byte, 20+1+4)
-	copy(b[0:20], self.Key[0:20])
-	b[20] = self.Version
-	chksum := self.Checksum()
-	copy(b[21:25], chksum[0:4])
-	return string(base58.Hex2Base58(b))
+func (self Address) String() string {
+	return string(base58.Hex2Base58(self.Bytes()))
 }
 
 // Returns Address Checksum which is the first 4 bytes of sha256(key+version)

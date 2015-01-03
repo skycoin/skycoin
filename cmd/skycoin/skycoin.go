@@ -379,13 +379,6 @@ func catchDebug() {
 	}
 }
 
-// func initSettings() {
-//     sb.InitSettings()
-//     sb.Settings.Load()
-//     we resave the settings, in case they were not found and had to be generated
-//     sb.Settings.Save()
-// }
-
 func initLogging(level logging.Level, color bool) {
 	format := logging.MustStringFormatter(logFormat)
 	logging.SetFormatter(format)

@@ -288,7 +288,7 @@ func TestNewBlock(t *testing.T) {
 	assert.Equal(t, b.Head.Time, currentTime)
 	assert.Equal(t, b.Head.BkSeq, prev.Head.BkSeq+1)
 	assert.Equal(t, b.Head.UxHash,
-		getSnapshotHash(unsp, prev.HashHeader()))
+		getUxHash(unsp))
 }
 
 func TestBlockHashHeader(t *testing.T) {
@@ -362,7 +362,7 @@ func TestNewBlockHeader(t *testing.T) {
 	assert.Equal(t, bh.Fee, fee)
 	assert.Equal(t, bh.Version, prev.Version)
 	assert.Equal(t, bh.BodyHash, b.Body.Hash())
-	assert.Equal(t, bh.UxHash, getSnapshotHash(unsp, prev.Hash()))
+	assert.Equal(t, bh.UxHash, getUxHash(unsp))
 }
 
 func TestBlockHeaderHash(t *testing.T) {
@@ -547,7 +547,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
 	assert.NotEqual(t, b.Head.Fee, uint64(0))
 
 	// Invalid transaction
-	txn.Head.Hash = cipher.SHA256{}
+	txn.InnerHash = cipher.SHA256{}
 	txns = Transactions{txn}
 	_, err = bc.NewBlockFromTransactions(txns, bc.Time()+_incTime)
 	assertError(t, err, "Invalid header hash")
@@ -829,18 +829,18 @@ func TestBlockchainVerifyBlock(t *testing.T) {
 		"Duplicate unspent output across transactions")
 }
 
-func TestGetUxSnapshot(t *testing.T) {
+func TestGetUxHash(t *testing.T) {
 	unsp := NewUnspentPool()
 	xor := randSHA256(t)
 	unsp.XorHash = xor
 	prev := randSHA256(t)
-	sh := getSnapshotHash(unsp, prev)
+	sh := getUxHash(unsp)
 	expect := cipher.AddSHA256(xor, prev)
 	assert.True(t, bytes.Equal(expect[:4], sh[:]))
 	assert.NotEqual(t, sh, [4]byte{})
 }
 
-func TestVerifyUxSnapshot(t *testing.T) {
+func TestVerifyUxHash(t *testing.T) {
 	bc := NewBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
 	b := Block{Body: BlockBody{}, Head: BlockHeader{}}
@@ -848,9 +848,9 @@ func TestVerifyUxSnapshot(t *testing.T) {
 	bc.Unspent.XorHash = randSHA256(t)
 	uxHash := cipher.AddSHA256(bc.Unspent.XorHash, gb.Head.Hash())
 	copy(b.Head.UxHash[:], uxHash[:])
-	assert.Nil(t, bc.verifyUxSnapshot(b))
-	b.Head.UxHash = [4]byte{}
-	assertError(t, bc.verifyUxSnapshot(b), "UxSnapshot does not match")
+	assert.Nil(t, bc.verifyUxHash(b))
+	b.Head.UxHash = cipher.SHA256{}
+	assertError(t, bc.verifyUxHash(b), "UxHash does not match")
 }
 
 func TestVerifyBlockHeader(t *testing.T) {

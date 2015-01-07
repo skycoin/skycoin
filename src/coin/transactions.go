@@ -29,9 +29,8 @@ The outer hash is the hash of the whole transaction serialization
 */
 
 type Transaction struct {
-	Length uint32 //length prefix
-	Type   uint8  //transaction type
-
+	Length    uint32        //length prefix
+	Type      uint8         //transaction type
 	InnerHash cipher.SHA256 //inner hash SHA256 of In[],Out[]
 
 	Sigs []cipher.Sig        //list of signatures, 64+1 bytes each
@@ -191,6 +190,7 @@ func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 
 // Saves the txn body hash to TransactionHeader.Hash
 func (self *Transaction) UpdateHeader() {
+	self.Length = uint32(self.Size())
 	self.InnerHash = self.hashInner()
 }
 

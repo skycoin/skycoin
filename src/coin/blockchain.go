@@ -340,6 +340,7 @@ func (self *Blockchain) VerifyTransaction(tx Transaction) error {
 	// indepedent timing that everyone agrees on. fee values would depend on
 	// local clock
 
+	// Check transaction type and length
 	// Check for duplicate outputs
 	// Check for duplicate inputs
 	// Check for invalid hash

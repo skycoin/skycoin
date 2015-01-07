@@ -42,8 +42,7 @@ type Block struct {
 }
 
 type BlockHeader struct {
-	Version    uint32
-	UxSnapshot [4]byte //first 4 bytes of sha256 of Ux set hash
+	Version uint32
 
 	Time  uint64
 	BkSeq uint64 //increment every block
@@ -51,6 +50,9 @@ type BlockHeader struct {
 
 	PrevHash cipher.SHA256 //hash of header of previous block
 	BodyHash cipher.SHA256 //hash of transaction block
+
+	UxHash cipher.SHA256 //XOR of sha256 of elements in unspent output set
+
 }
 
 type BlockBody struct {
@@ -130,13 +132,13 @@ func newBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 	}
 	prevHash := prev.Hash()
 	return BlockHeader{
-		BodyHash:   body.Hash(),
-		Version:    prev.Version,
-		PrevHash:   prevHash,
-		Time:       currentTime,
-		BkSeq:      prev.BkSeq + 1,
-		Fee:        fee,
-		UxSnapshot: getSnapshotHash(unspent, prevHash),
+		BodyHash: body.Hash(),
+		Version:  prev.Version,
+		PrevHash: prevHash,
+		Time:     currentTime,
+		BkSeq:    prev.BkSeq + 1,
+		Fee:      fee,
+		UxHash:   getUxHash(unspent),
 	}
 }
 
@@ -206,13 +208,13 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress cipher.Address,
 	body := BlockBody{Transactions{txn}}
 	prevHash := cipher.SHA256{}
 	head := BlockHeader{
-		Time:       timestamp,
-		BodyHash:   body.Hash(),
-		PrevHash:   prevHash,
-		BkSeq:      0,
-		Version:    0,
-		Fee:        0,
-		UxSnapshot: getSnapshotHash(self.Unspent, prevHash),
+		Time:     timestamp,
+		BodyHash: body.Hash(),
+		PrevHash: prevHash,
+		BkSeq:    0,
+		Version:  0,
+		Fee:      0,
+		UxHash:   getUxHash(self.Unspent),
 	}
 	b := Block{
 		Head: head,
@@ -309,19 +311,19 @@ func (self *Blockchain) VerifyBlock(b Block) error {
 	if err := self.verifyTransactions(b.Body.Transactions); err != nil {
 		return err
 	}
-	if err := self.verifyUxSnapshot(b); err != nil {
+	if err := self.verifyUxHash(b); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Compares the state of the current UxSnapshot hash to state of unspent
+// Compares the state of the current UxHash hash to state of unspent
 // output pool.
-func (self *Blockchain) verifyUxSnapshot(b Block) error {
+func (self *Blockchain) verifyUxHash(b Block) error {
 	head := self.Head().Head
 	uxHash := cipher.AddSHA256(self.Unspent.XorHash, head.Hash())
-	if !bytes.Equal(b.Head.UxSnapshot[:], uxHash[:4]) {
-		return errors.New("UxSnapshot does not match")
+	if !bytes.Equal(b.Head.UxHash[:], uxHash[:]) {
+		return errors.New("UxHash does not match")
 	}
 	return nil
 }
@@ -677,11 +679,6 @@ func verifyBlockHeader(head Block, b Block) error {
 
 // Returns unspent output checksum for the Block. Must be called after Block
 // is fully initialized, and before its outputs are added to the unspent pool
-func getSnapshotHash(unspent UnspentPool, prevHash cipher.SHA256) [4]byte {
-	uxHash := cipher.AddSHA256(unspent.XorHash, prevHash)
-	var snapshot [4]byte
-	if copy(snapshot[:], uxHash[:]) != 4 {
-		log.Panic("UxSnapshot copy is broken")
-	}
-	return snapshot
+func getUxHash(unspent UnspentPool) cipher.SHA256 {
+	return unspent.XorHash
 }

@@ -67,7 +67,9 @@ func manualTransactionsIsSorted(t *testing.T, txns Transactions,
 
 func copyTransaction(tx Transaction) Transaction {
 	txo := Transaction{}
-	txo.Head = tx.Head
+	txo.Length = tx.Length
+	txo.Type = tx.Type
+	txo.InnerHash = tx.InnerHash
 	txo.Sigs = make([]cipher.Sig, len(tx.Sigs))
 	copy(txo.Sigs, tx.Sigs)
 	txo.In = make([]cipher.SHA256, len(tx.In))
@@ -80,7 +82,7 @@ func copyTransaction(tx Transaction) Transaction {
 func TestTransactionVerify(t *testing.T) {
 	// Mismatch header hash
 	tx := makeTransaction(t)
-	tx.Head.Hash = cipher.SHA256{}
+	tx.InnerHash = cipher.SHA256{}
 	assertError(t, tx.Verify(), "Invalid header hash")
 
 	// No inputs
@@ -229,12 +231,12 @@ func TestTransactionHash(t *testing.T) {
 
 func TestTransactionUpdateHeader(t *testing.T) {
 	tx := makeTransaction(t)
-	h := tx.Head.Hash
-	tx.Head.Hash = cipher.SHA256{}
+	h := tx.InnerHash
+	tx.InnerHash = cipher.SHA256{}
 	tx.UpdateHeader()
-	assert.NotEqual(t, tx.Head.Hash, cipher.SHA256{})
-	assert.Equal(t, tx.Head.Hash, h)
-	assert.Equal(t, tx.Head.Hash, tx.hashInner())
+	assert.NotEqual(t, tx.InnerHash, cipher.SHA256{})
+	assert.Equal(t, tx.InnerHash, h)
+	assert.Equal(t, tx.InnerHash, tx.hashInner())
 }
 
 func TestTransactionHashInner(t *testing.T) {

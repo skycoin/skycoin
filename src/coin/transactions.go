@@ -17,8 +17,10 @@ Transaction with N inputs, M ouputs is
 - 32+65 bytes per input
 - 21+8+8 bytes per output
 
-Transaction with N inputs, M ouputs is
-- 32 + 94*N + 37*M bytes
+Skycoin Transactions are
+- 94 bytes per input +  37 bytes per output + 37 bytes
+Bitcoin Transactions are
+- 180 bytes per input + 34 bytes per output + 10 bytes
 
 Sigs is the array of signatures
 - the Nth signature is the authorization to spend the Nth output consumed in transaction

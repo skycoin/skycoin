@@ -287,7 +287,7 @@ func TestNewBlock(t *testing.T) {
 	assert.Equal(t, b.Head.PrevHash, prev.HashHeader())
 	assert.Equal(t, b.Head.Time, currentTime)
 	assert.Equal(t, b.Head.BkSeq, prev.Head.BkSeq+1)
-	assert.Equal(t, b.Head.UxSnapshot,
+	assert.Equal(t, b.Head.UxHash,
 		getSnapshotHash(unsp, prev.HashHeader()))
 }
 
@@ -362,7 +362,7 @@ func TestNewBlockHeader(t *testing.T) {
 	assert.Equal(t, bh.Fee, fee)
 	assert.Equal(t, bh.Version, prev.Version)
 	assert.Equal(t, bh.BodyHash, b.Body.Hash())
-	assert.Equal(t, bh.UxSnapshot, getSnapshotHash(unsp, prev.Hash()))
+	assert.Equal(t, bh.UxHash, getSnapshotHash(unsp, prev.Hash()))
 }
 
 func TestBlockHeaderHash(t *testing.T) {
@@ -479,7 +479,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 	assert.Equal(t, gb.Head.BodyHash, h)
 	assert.Equal(t, gb.Head.PrevHash, cipher.SHA256{})
 	// TODO -- check valid snapshot
-	assert.NotEqual(t, gb.Head.UxSnapshot, [4]byte{})
+	assert.NotEqual(t, gb.Head.UxHash, [4]byte{})
 	expect := CreateUnspents(gb.Head, txn)
 	expect.Sort()
 	have := b.Unspent.Array()
@@ -847,9 +847,9 @@ func TestVerifyUxSnapshot(t *testing.T) {
 	b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
 	bc.Unspent.XorHash = randSHA256(t)
 	uxHash := cipher.AddSHA256(bc.Unspent.XorHash, gb.Head.Hash())
-	copy(b.Head.UxSnapshot[:], uxHash[:])
+	copy(b.Head.UxHash[:], uxHash[:])
 	assert.Nil(t, bc.verifyUxSnapshot(b))
-	b.Head.UxSnapshot = [4]byte{}
+	b.Head.UxHash = [4]byte{}
 	assertError(t, bc.verifyUxSnapshot(b), "UxSnapshot does not match")
 }
 

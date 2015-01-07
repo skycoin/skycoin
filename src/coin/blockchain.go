@@ -3,10 +3,10 @@ package coin
 import (
 	"errors"
 	"fmt"
-	"log"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"log"
 
 	//"time"
 	"bytes"
@@ -595,8 +595,8 @@ func (self *Blockchain) TransactionFee(t *Transaction) (uint64, error) {
 // has valid number of signatures for inputs.
 func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 	if DebugLevel2 {
-		if len(tx.In) != len(tx.Head.Sigs) || len(tx.In) != len(uxIn) {
-			log.Panic("tx.In != tx.Head.Sigs != uxIn")
+		if len(tx.In) != len(tx.Sigs) || len(tx.In) != len(uxIn) {
+			log.Panic("tx.In != tx.Sigs != uxIn")
 		}
 		if tx.Head.Hash != tx.hashInner() {
 			log.Panic("Invalid Tx Header Hash")
@@ -605,7 +605,8 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i, _ := range tx.In {
-		err := cipher.ChkSig(uxIn[i].Body.Address, tx.Head.Hash, tx.Head.Sigs[i])
+		hash := cipher.AddSHA256(tx.Head.Hash, tx.In[i])
+		err := cipher.ChkSig(uxIn[i].Body.Address, hash, tx.Sigs[i])
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}

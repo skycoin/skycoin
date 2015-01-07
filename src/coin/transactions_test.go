@@ -68,8 +68,8 @@ func manualTransactionsIsSorted(t *testing.T, txns Transactions,
 func copyTransaction(tx Transaction) Transaction {
 	txo := Transaction{}
 	txo.Head = tx.Head
-	txo.Head.Sigs = make([]cipher.Sig, len(tx.Head.Sigs))
-	copy(txo.Head.Sigs, tx.Head.Sigs)
+	txo.Sigs = make([]cipher.Sig, len(tx.Sigs))
+	copy(txo.Sigs, tx.Sigs)
 	txo.In = make([]cipher.SHA256, len(tx.In))
 	copy(txo.In, tx.In)
 	txo.Out = make([]TransactionOutput, len(tx.Out))
@@ -97,14 +97,14 @@ func TestTransactionVerify(t *testing.T) {
 
 	// Invalid number of sigs
 	tx = makeTransaction(t)
-	tx.Head.Sigs = make([]cipher.Sig, 0)
+	tx.Sigs = make([]cipher.Sig, 0)
 	assertError(t, tx.Verify(), "Invalid number of signatures")
-	tx.Head.Sigs = make([]cipher.Sig, 20)
+	tx.Sigs = make([]cipher.Sig, 20)
 	assertError(t, tx.Verify(), "Invalid number of signatures")
 
 	// Too many sigs & inputs
 	tx = makeTransaction(t)
-	tx.Head.Sigs = make([]cipher.Sig, math.MaxUint16)
+	tx.Sigs = make([]cipher.Sig, math.MaxUint16)
 	tx.In = make([]cipher.SHA256, math.MaxUint16)
 	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "Too many signatures and inputs")
@@ -112,7 +112,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Duplicate inputs
 	tx, s := makeTransactionWithSecret(t)
 	tx.PushInput(tx.In[0])
-	tx.Head.Sigs = nil
+	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{s, s})
 	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "Duplicate spend")
@@ -126,7 +126,7 @@ func TestTransactionVerify(t *testing.T) {
 
 	// Invalid signature, empty
 	tx = makeTransaction(t)
-	tx.Head.Sigs[0] = cipher.Sig{}
+	tx.Sigs[0] = cipher.Sig{}
 	assertError(t, tx.Verify(), "Failed to recover public key")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
@@ -138,7 +138,7 @@ func TestTransactionVerify(t *testing.T) {
 	tx = makeTransaction(t)
 	tx.Out[0].Coins += 10
 	tx.UpdateHeader()
-	tx.Head.Sigs = nil
+	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	assert.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
 	assertError(t, tx.Verify(), "Transaction outputs must be multiple of "+
@@ -194,7 +194,7 @@ func TestTransactionPushOutput(t *testing.T) {
 func TestTransactionSignInputs(t *testing.T) {
 	tx := &Transaction{}
 	// Panics if txns already signed
-	tx.Head.Sigs = append(tx.Head.Sigs, cipher.Sig{})
+	tx.Sigs = append(tx.Sigs, cipher.Sig{})
 	assert.Panics(t, func() { tx.SignInputs([]cipher.SecKey{}) })
 	// Panics if not enough keys
 	tx = &Transaction{}
@@ -203,22 +203,22 @@ func TestTransactionSignInputs(t *testing.T) {
 	ux2, s2 := makeUxOutWithSecret(t)
 	tx.PushInput(ux2.Hash())
 	tx.PushOutput(makeAddress(), 40, 80)
-	assert.Equal(t, len(tx.Head.Sigs), 0)
+	assert.Equal(t, len(tx.Sigs), 0)
 	assert.Panics(t, func() { tx.SignInputs([]cipher.SecKey{s}) })
-	assert.Equal(t, len(tx.Head.Sigs), 0)
+	assert.Equal(t, len(tx.Sigs), 0)
 	// Valid signing
 	h := tx.hashInner()
 	assert.NotPanics(t, func() { tx.SignInputs([]cipher.SecKey{s, s2}) })
-	assert.Equal(t, len(tx.Head.Sigs), 2)
+	assert.Equal(t, len(tx.Sigs), 2)
 	assert.Equal(t, tx.hashInner(), h)
 	p := cipher.PubKeyFromSecKey(s)
 	a := cipher.AddressFromPubKey(p)
 	p = cipher.PubKeyFromSecKey(s2)
 	a2 := cipher.AddressFromPubKey(p)
-	assert.Nil(t, cipher.ChkSig(a, h, tx.Head.Sigs[0]))
-	assert.Nil(t, cipher.ChkSig(a2, h, tx.Head.Sigs[1]))
-	assert.NotNil(t, cipher.ChkSig(a, h, tx.Head.Sigs[1]))
-	assert.NotNil(t, cipher.ChkSig(a2, h, tx.Head.Sigs[0]))
+	assert.Nil(t, cipher.ChkSig(a, cipher.AddSHA256(h, tx.In[0]), tx.Sigs[0]))
+	assert.Nil(t, cipher.ChkSig(a2, cipher.AddSHA256(h, tx.In[1]), tx.Sigs[1]))
+	assert.NotNil(t, cipher.ChkSig(a, h, tx.Sigs[1]))
+	assert.NotNil(t, cipher.ChkSig(a2, h, tx.Sigs[0]))
 }
 
 func TestTransactionHash(t *testing.T) {
@@ -261,7 +261,7 @@ func TestTransactionHashInner(t *testing.T) {
 
 	// If tx.Head is changed, hash should not change
 	tx2 = copyTransaction(tx)
-	tx.Head.Sigs = append(tx.Head.Sigs, cipher.Sig{})
+	tx.Sigs = append(tx.Sigs, cipher.Sig{})
 	assert.Equal(t, tx.hashInner(), tx2.hashInner())
 }
 

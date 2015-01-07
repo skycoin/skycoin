@@ -29,17 +29,19 @@ The outer hash is the hash of the whole transaction serialization
 */
 
 type Transaction struct {
-	Size uint32 //length prefix
-	Type uint8  //transaction type
+	Length uint32 //length prefix
+	Type   uint8  //transaction type
 
 	Head TransactionHeader //Outer Hash
+
+	Sigs []cipher.Sig //list of signatures, 64+1 bytes each
 	In   []cipher.SHA256
 	Out  []TransactionOutput
 }
 
 type TransactionHeader struct { //not hashed
 	Hash cipher.SHA256 //inner hash
-	Sigs []cipher.Sig  //list of signatures, 64+1 bytes each
+
 }
 
 //hash output/name is function of Hash
@@ -68,10 +70,10 @@ func (self *Transaction) Verify() error {
 	}
 
 	// Check signature index fields
-	if len(self.Head.Sigs) != len(self.In) {
+	if len(self.Sigs) != len(self.In) {
 		return errors.New("Invalid number of signatures")
 	}
-	if len(self.Head.Sigs) >= math.MaxUint16 {
+	if len(self.Sigs) >= math.MaxUint16 {
 		return errors.New("Too many signatures and inputs")
 	}
 
@@ -100,8 +102,8 @@ func (self *Transaction) Verify() error {
 	}
 
 	// Validate signature
-	for i, sig := range self.Head.Sigs {
-		hash := cipher.SHA256sum(self.Head.Hash, self.In[i])
+	for i, sig := range self.Sigs {
+		hash := cipher.AddSHA256(self.Head.Hash, self.In[i])
 		if err := cipher.VerifySignedHash(sig, hash); err != nil {
 			return err
 		}
@@ -144,7 +146,7 @@ func (self *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 
 // Signs all inputs in the transaction
 func (self *Transaction) SignInputs(keys []cipher.SecKey) {
-	if len(self.Head.Sigs) != 0 {
+	if len(self.Sigs) != 0 {
 		log.Panic("Transaction has been signed")
 	}
 	if len(keys) != len(self.In) {
@@ -159,10 +161,10 @@ func (self *Transaction) SignInputs(keys []cipher.SecKey) {
 	sigs := make([]cipher.Sig, len(self.In))
 	inner_hash := self.hashInner()
 	for i, k := range keys {
-		h := cipher.SHA256sum(inner_hash, self.In[i]) //hash to sign
+		h := cipher.AddSHA256(inner_hash, self.In[i]) //hash to sign
 		sigs[i] = cipher.SignHash(h, k)
 	}
-	self.Head.Sigs = sigs
+	self.Sigs = sigs
 }
 
 // Returns the encoded byte size of the transaction

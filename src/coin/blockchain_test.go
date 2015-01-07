@@ -89,8 +89,8 @@ func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
 		tx.PushOutput(genAddress, coinsOut, chrs-hours-fee)
 	}
 	tx.SignInputs([]cipher.SecKey{sec})
-	assert.Equal(t, len(tx.Head.Sigs), 1)
-	assert.Nil(t, cipher.ChkSig(ux.Body.Address, tx.hashInner(), tx.Head.Sigs[0]))
+	assert.Equal(t, len(tx.Sigs), 1)
+	assert.Nil(t, cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.hashInner(), tx.In[0]), tx.Sigs[0]))
 	tx.UpdateHeader()
 	assert.Nil(t, tx.Verify())
 	err := bc.VerifyTransaction(tx)
@@ -134,6 +134,7 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	assert.Equal(t, genAddress, cipher.AddressFromPubKey(pub))
 	sig := cipher.SignHash(ux.Hash(), genSecret)
 	assert.Nil(t, cipher.ChkSig(ux.Body.Address, ux.Hash(), sig))
+
 	tx, sec := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 0, 0)
 	b, err := bc.NewBlockFromTransactions(Transactions{tx}, _incTime)
 	assert.Nil(t, err)
@@ -597,11 +598,11 @@ func TestVerifyTransactionInputs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, verifyTransactionInputs(tx, uxIn))
 	// Bad sigs
-	sig := tx.Head.Sigs[0]
-	tx.Head.Sigs[0] = cipher.Sig{}
+	sig := tx.Sigs[0]
+	tx.Sigs[0] = cipher.Sig{}
 	assert.NotNil(t, verifyTransactionInputs(tx, uxIn))
 	// Too many uxIn
-	tx.Head.Sigs[0] = sig
+	tx.Sigs[0] = sig
 	uxIn, err = bc.Unspent.GetMultiple(tx.In)
 	assert.Nil(t, err)
 	assert.Equal(t, len(uxIn), len(tx.In))
@@ -727,7 +728,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// Failure, spending unknown output
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
-	tx.Head.Sigs = nil
+	tx.Sigs = nil
 	tx.In[0] = cipher.SHA256{}
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
@@ -736,7 +737,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// Failure, duplicate input
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
-	tx.Head.Sigs = nil
+	tx.Sigs = nil
 	tx.In = append(tx.In, tx.In[0])
 	tx.SignInputs([]cipher.SecKey{genSecret, genSecret})
 	tx.UpdateHeader()
@@ -745,7 +746,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// Failure, zero coin output
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
-	tx.Head.Sigs = nil
+	tx.Sigs = nil
 	tx.PushOutput(genAddress, 0, 100)
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
@@ -761,7 +762,7 @@ func TestVerifyTransaction(t *testing.T) {
 	// Failure, not spending enough coins
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
 	tx.PushOutput(genAddress, 10e6, 100)
-	tx.Head.Sigs = nil
+	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
 	assertError(t, bc.VerifyTransaction(tx), "Insufficient coins")
@@ -1009,7 +1010,7 @@ func TestProcessTransactions(t *testing.T) {
 	txn2.Out = nil
 	txn2.PushOutput(makeAddress(), 1e6, 100)
 	txn2.PushOutput(makeAddress(), ux.Body.Coins-1e6, 100)
-	txn2.Head.Sigs = nil
+	txn2.Sigs = nil
 	txn2.SignInputs([]cipher.SecKey{genSecret})
 	txn2.UpdateHeader()
 	txns = SortTransactions(Transactions{txn, txn2}, bc.TransactionFee)

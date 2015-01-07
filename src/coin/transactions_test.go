@@ -100,8 +100,10 @@ func TestTransactionVerify(t *testing.T) {
 	// Invalid number of sigs
 	tx = makeTransaction(t)
 	tx.Sigs = make([]cipher.Sig, 0)
+	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "Invalid number of signatures")
 	tx.Sigs = make([]cipher.Sig, 20)
+	tx.UpdateHeader()
 	assertError(t, tx.Verify(), "Invalid number of signatures")
 
 	// Too many sigs & inputs

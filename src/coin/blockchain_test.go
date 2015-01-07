@@ -675,6 +675,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 		"Transactions may not create or destroy coins")
 
 	// Overspending hours
+
 	tx = Transaction{}
 	tx.PushInput(bc.Unspent.Array()[0].Hash())
 	tx.PushOutput(genAddress, 1e6, bc.Unspent.Array()[0].Body.Hours)
@@ -702,7 +703,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	assert.Nil(t, err)
 	tx = Transaction{}
 	tx.PushInput(uxs[0].Hash())
-	tx.PushOutput(a, 10e6, 100)
+	tx.PushOutput(a, 10e6, 1)
 	tx.SignInputs([]cipher.SecKey{s})
 	tx.UpdateHeader()
 	uxIn, err = bc.Unspent.GetMultiple(tx.In)
@@ -833,20 +834,19 @@ func TestGetUxHash(t *testing.T) {
 	unsp := NewUnspentPool()
 	xor := randSHA256(t)
 	unsp.XorHash = xor
-	prev := randSHA256(t)
+	//prev := randSHA256(t)
 	sh := getUxHash(unsp)
-	expect := cipher.AddSHA256(xor, prev)
-	assert.True(t, bytes.Equal(expect[:4], sh[:]))
+	assert.True(t, bytes.Equal(xor[:], sh[:]))
 	assert.NotEqual(t, sh, [4]byte{})
 }
 
 func TestVerifyUxHash(t *testing.T) {
 	bc := NewBlockchain()
-	gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+	//gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
 	b := Block{Body: BlockBody{}, Head: BlockHeader{}}
 	b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
 	bc.Unspent.XorHash = randSHA256(t)
-	uxHash := cipher.AddSHA256(bc.Unspent.XorHash, gb.Head.Hash())
+	uxHash := bc.Unspent.XorHash
 	copy(b.Head.UxHash[:], uxHash[:])
 	assert.Nil(t, bc.verifyUxHash(b))
 	b.Head.UxHash = cipher.SHA256{}

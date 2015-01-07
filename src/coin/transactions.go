@@ -54,13 +54,6 @@ type TransactionOutput struct {
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
 
-	if self.Type != 0 {
-		return errors.New("transaction type invalid")
-	}
-	if self.Length != uint32(self.Size()) {
-		return errors.New("transaction size prefix invalid")
-	}
-
 	h := self.hashInner()
 	if h != self.InnerHash {
 		return errors.New("Invalid header hash")
@@ -88,6 +81,13 @@ func (self *Transaction) Verify() error {
 	}
 	if len(uxOuts) != len(self.In) {
 		return errors.New("Duplicate spend")
+	}
+
+	if self.Type != 0 {
+		return errors.New("transaction type invalid")
+	}
+	if self.Length != uint32(self.Size()) {
+		return errors.New("transaction size prefix invalid")
 	}
 
 	// Check for duplicate potential outputs
@@ -193,6 +193,7 @@ func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 // Saves the txn body hash to TransactionHeader.Hash
 func (self *Transaction) UpdateHeader() {
 	self.Length = uint32(self.Size())
+	self.Type = byte(0x00)
 	self.InnerHash = self.hashInner()
 }
 

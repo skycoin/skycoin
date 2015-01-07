@@ -320,9 +320,7 @@ func (self *Blockchain) VerifyBlock(b Block) error {
 // Compares the state of the current UxHash hash to state of unspent
 // output pool.
 func (self *Blockchain) verifyUxHash(b Block) error {
-	head := self.Head().Head
-	uxHash := cipher.AddSHA256(self.Unspent.XorHash, head.Hash())
-	if !bytes.Equal(b.Head.UxHash[:], uxHash[:]) {
+	if !bytes.Equal(b.Head.UxHash[:], self.Unspent.XorHash[:]) {
 		return errors.New("UxHash does not match")
 	}
 	return nil

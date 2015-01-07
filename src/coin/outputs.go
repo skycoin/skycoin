@@ -42,19 +42,6 @@ type UxOut struct {
 	//Meta UxMeta
 }
 
-// Returns the hash of UxBody
-func (self *UxOut) Hash() cipher.SHA256 {
-	return self.Body.Hash()
-}
-
-// Returns hash of UxBody + UxHead
-func (self *UxOut) SnapshotHash() cipher.SHA256 {
-	b1 := encoder.Serialize(self.Body) //body
-	b2 := encoder.Serialize(self.Head) //time, bkseq
-	b3 := append(b1, b2...)
-	return cipher.SumSHA256(b3)
-}
-
 // Metadata (not hashed)
 type UxHead struct {
 	Time  uint64 //time of block it was created in
@@ -67,6 +54,19 @@ type UxBody struct {
 	Address        cipher.Address // Address of receiver
 	Coins          uint64         // Number of coins
 	Hours          uint64         // Coin hours
+}
+
+// Returns the hash of UxBody
+func (self *UxOut) Hash() cipher.SHA256 {
+	return self.Body.Hash()
+}
+
+// Returns hash of UxBody + UxHead
+func (self *UxOut) SnapshotHash() cipher.SHA256 {
+	b1 := encoder.Serialize(self.Body) //body
+	b2 := encoder.Serialize(self.Head) //time, bkseq
+	b3 := append(b1, b2...)
+	return cipher.SumSHA256(b3)
 }
 
 func (self *UxBody) Hash() cipher.SHA256 {

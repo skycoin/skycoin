@@ -11,7 +11,27 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
+/*
+Transaction with N inputs, M ouputs is
+- 32 bytes constant
+- 32+65 bytes per input
+- 21+8+8 bytes per output
+
+Transaction with N inputs, M ouputs is
+- 32 + 94*N + 37*M bytes
+
+Sigs is the array of signatures
+- the Nth signature is the authorization to spend the Nth output consumed in transaction
+- the hash signed is SHA256sum of transaction inner hash and the hash of output being spent
+
+The inner hash is SHA256 hash of the serialization of Input and Ouput array
+The outer hash is the hash of the whole transaction serialization
+*/
+
 type Transaction struct {
+	Size uint32 //length prefix
+	Type uint8  //transaction type
+
 	Head TransactionHeader //Outer Hash
 	In   []cipher.SHA256
 	Out  []TransactionOutput
@@ -80,8 +100,9 @@ func (self *Transaction) Verify() error {
 	}
 
 	// Validate signature
-	for _, sig := range self.Head.Sigs {
-		if err := cipher.VerifySignedHash(sig, self.Head.Hash); err != nil {
+	for i, sig := range self.Head.Sigs {
+		hash := cipher.SHA256sum(self.Head.Hash, self.In[i])
+		if err := cipher.VerifySignedHash(sig, hash); err != nil {
 			return err
 		}
 	}
@@ -136,8 +157,9 @@ func (self *Transaction) SignInputs(keys []cipher.SecKey) {
 		log.Panic("No keys")
 	}
 	sigs := make([]cipher.Sig, len(self.In))
-	h := self.hashInner()
+	inner_hash := self.hashInner()
 	for i, k := range keys {
+		h := cipher.SHA256sum(inner_hash, self.In[i]) //hash to sign
 		sigs[i] = cipher.SignHash(h, k)
 	}
 	self.Head.Sigs = sigs

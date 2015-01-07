@@ -32,16 +32,11 @@ type Transaction struct {
 	Length uint32 //length prefix
 	Type   uint8  //transaction type
 
-	//Head TransactionHeader //Outer Hash
-	Hash cipher.SHA256 //inner hash SHA256 of In,Out
+	InnerHash cipher.SHA256 //inner hash SHA256 of In[],Out[]
 
-	Sigs []cipher.Sig //list of signatures, 64+1 bytes each
-	In   []cipher.SHA256
-	Out  []TransactionOutput
-}
-
-type TransactionHeader struct { //not hashed
-
+	Sigs []cipher.Sig        //list of signatures, 64+1 bytes each
+	In   []cipher.SHA256     //ouputs being spent
+	Out  []TransactionOutput //ouputs being created
 }
 
 //hash output/name is function of Hash
@@ -61,12 +56,12 @@ func (self *Transaction) Verify() error {
 	if self.Type != 0 {
 		return errors.New("transaction type invalid")
 	}
-	if self.Length != self.Size() {
+	if self.Length != uint32(self.Size()) {
 		return errors.New("transaction size prefix invalid")
 	}
 
 	h := self.hashInner()
-	if h != self.Head.Hash {
+	if h != self.InnerHash {
 		return errors.New("Invalid header hash")
 	}
 
@@ -86,16 +81,16 @@ func (self *Transaction) Verify() error {
 	}
 
 	// Check duplicate inputs
-	uxOuts := make(map[cipher.SHA256]byte, len(self.In))
+	uxOuts := make(map[cipher.SHA256]int, len(self.In))
 	for i, _ := range self.In {
-		uxOuts[self.In[i]] = byte(1)
+		uxOuts[self.In[i]] = 1
 	}
 	if len(uxOuts) != len(self.In) {
 		return errors.New("Duplicate spend")
 	}
 
 	// Check for duplicate potential outputs
-	outputs := make(map[cipher.SHA256]byte, len(self.Out))
+	outputs := make(map[cipher.SHA256]int, len(self.Out))
 	uxb := UxBody{
 		SrcTransaction: self.Hash(),
 	}
@@ -103,7 +98,7 @@ func (self *Transaction) Verify() error {
 		uxb.Coins = to.Coins
 		uxb.Hours = to.Hours
 		uxb.Address = to.Address
-		outputs[uxb.Hash()] = byte(1)
+		outputs[uxb.Hash()] = 1
 	}
 	if len(outputs) != len(self.Out) {
 		return errors.New("Duplicate output in transaction")
@@ -111,7 +106,7 @@ func (self *Transaction) Verify() error {
 
 	// Validate signature
 	for i, sig := range self.Sigs {
-		hash := cipher.AddSHA256(self.Head.Hash, self.In[i])
+		hash := cipher.AddSHA256(self.InnerHash, self.In[i])
 		if err := cipher.VerifySignedHash(sig, hash); err != nil {
 			return err
 		}
@@ -154,6 +149,8 @@ func (self *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 
 // Signs all inputs in the transaction
 func (self *Transaction) SignInputs(keys []cipher.SecKey) {
+	self.InnerHash = self.hashInner() //update hash
+
 	if len(self.Sigs) != 0 {
 		log.Panic("Transaction has been signed")
 	}
@@ -194,7 +191,7 @@ func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 
 // Saves the txn body hash to TransactionHeader.Hash
 func (self *Transaction) UpdateHeader() {
-	self.Head.Hash = self.hashInner()
+	self.InnerHash = self.hashInner()
 }
 
 // Hashes only the Transaction Inputs & Outputs

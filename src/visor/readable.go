@@ -75,6 +75,7 @@ func NewConfirmedTransactionStatus(height uint64) TransactionStatus {
 	}
 }
 
+/*
 type ReadableTransactionHeader struct {
 	Hash string   `json:"hash"`
 	Sigs []string `json:"sigs"`
@@ -90,6 +91,7 @@ func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransaction
 		Sigs: sigs,
 	}
 }
+*/
 
 type ReadableTransactionOutput struct {
 	Address string `json:"dst"`
@@ -106,12 +108,23 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransaction
 }
 
 type ReadableTransaction struct {
-	Head ReadableTransactionHeader   `json:"header"`
+	Length    uint32 `json:"length"`
+	Type      uint8  `json:"type"`
+	Hash      string `json:"hash"`
+	InnerHash string `json:"inner_hash"`
+
+	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
 func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
+
+	sigs := make([]string, len(t.Sigs))
+	for i, _ := range t.Sigs {
+		sigs[i] = t.Sigs[i].Hex()
+	}
+
 	in := make([]string, len(t.In))
 	for i, _ := range t.In {
 		in[i] = t.In[i].Hex()
@@ -121,7 +134,12 @@ func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
 		out[i] = NewReadableTransactionOutput(&t.Out[i])
 	}
 	return ReadableTransaction{
-		Head: NewReadableTransactionHeader(&t.Head),
+		Length:    t.Length,
+		Type:      t.Type,
+		Hash:      t.Hash().Hex(),
+		InnerHash: t.InnerHash.Hex(),
+
+		Sigs: sigs,
 		In:   in,
 		Out:  out,
 	}

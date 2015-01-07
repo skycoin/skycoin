@@ -598,14 +598,14 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 		if len(tx.In) != len(tx.Sigs) || len(tx.In) != len(uxIn) {
 			log.Panic("tx.In != tx.Sigs != uxIn")
 		}
-		if tx.Head.Hash != tx.hashInner() {
+		if tx.InnerHash != tx.hashInner() {
 			log.Panic("Invalid Tx Header Hash")
 		}
 	}
 
 	// Check signatures against unspent address
 	for i, _ := range tx.In {
-		hash := cipher.AddSHA256(tx.Head.Hash, tx.In[i])
+		hash := cipher.AddSHA256(tx.InnerHash, tx.In[i])
 		err := cipher.ChkSig(uxIn[i].Body.Address, hash, tx.Sigs[i])
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")

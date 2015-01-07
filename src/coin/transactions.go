@@ -32,7 +32,8 @@ type Transaction struct {
 	Length uint32 //length prefix
 	Type   uint8  //transaction type
 
-	Head TransactionHeader //Outer Hash
+	//Head TransactionHeader //Outer Hash
+	Hash cipher.SHA256 //inner hash SHA256 of In,Out
 
 	Sigs []cipher.Sig //list of signatures, 64+1 bytes each
 	In   []cipher.SHA256
@@ -40,7 +41,6 @@ type Transaction struct {
 }
 
 type TransactionHeader struct { //not hashed
-	Hash cipher.SHA256 //inner hash
 
 }
 
@@ -57,6 +57,14 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
+
+	if self.Type != 0 {
+		return errors.New("transaction type invalid")
+	}
+	if self.Length != self.Size() {
+		return errors.New("transaction size prefix invalid")
+	}
+
 	h := self.hashInner()
 	if h != self.Head.Hash {
 		return errors.New("Invalid header hash")
@@ -190,6 +198,8 @@ func (self *Transaction) UpdateHeader() {
 }
 
 // Hashes only the Transaction Inputs & Outputs
+// This is what is signed
+// Client hashes the inner hash with hash of output being spent and signs it with private key
 func (self *Transaction) hashInner() cipher.SHA256 {
 	b1 := encoder.Serialize(self.In)
 	b2 := encoder.Serialize(self.Out)

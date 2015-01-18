@@ -112,6 +112,18 @@ func MustSecKeyFromHex(s string) SecKey {
 	return NewSecKey(b)
 }
 
+// Decodes a hex encoded SecKey, or panics
+func SecKeyFromHex(s string) (SecKey, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return SecKey{}, errors.New("Invalid SecKey: not valid hex")
+	}
+	if len(b) != 32 {
+		return SecKey{}, errors.New("Invalid SecKey: invalid length")
+	}
+	return NewSecKey(b), nil
+}
+
 // Verify attempts to determine if SecKey is valid. Returns nil on success.
 // If DebugLevel2, will do additional sanity checking
 func (self SecKey) Verify() error {

@@ -217,7 +217,7 @@ var DevArgs = DevConfig{Config{
 	BlockSigsFile:   "",
 
 	// Centralized network configuration
-	RunMaster:        true,
+	RunMaster:        false,
 	BlockchainPubkey: cipher.PubKey{},
 	BlockchainSeckey: cipher.SecKey{},
 
@@ -240,8 +240,8 @@ var DevArgs = DevConfig{Config{
 
 //clear these after loading
 var GenesisSignatureStr string = "173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800"
-var GenesisAddressStr string = "WyPXrQpAJ7bL6kXZ9ZB6c1p3yUMhBMF7u8"
-var BlockchainPubkeyStr string = "03e56ab0597167882813864bd71305660edc128d45ed41ff583b15a44e4e95233f"
+var GenesisAddressStr string = "2EP5k1HQJq95mjBvqX7iP4ip4iQmLFwM3GV"
+var BlockchainPubkeyStr string = "025d68456f09d4d50d2b9e789a9c30a4ddc35088e9791a494a248037e9ffee9634"
 var BlockchainSeckeyStr string = "f399bd1b78792da9cc49b1157c73016450c949df565ce3ddbf2f9d65fd8f0dac"
 
 func (self *DevConfig) register() {

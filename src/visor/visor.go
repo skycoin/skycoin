@@ -223,7 +223,7 @@ func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 	}
 
 	gb := self.blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
-		uint64(util.UnixNow()), self.Config.GenesisCoinVolume)
+		self.Config.GenesisTimestamp, self.Config.GenesisCoinVolume)
 	sb := self.SignBlock(gb)
 	if err := self.verifySignedBlock(&sb); err != nil {
 		log.Panic("Signed a fresh genesis block, but its invalid: %v", err)

@@ -395,3 +395,34 @@ func TestNewAddressUxOuts(t *testing.T) {
 		uxs[5],
 	})
 }
+
+/*
+	Utility Functions
+*/
+
+// Returns a copy of self with duplicates removed
+// Is this needed?
+func (self UxArray) removeDupes() UxArray {
+	m := make(UxHashSet, len(self))
+	deduped := make(UxArray, 0, len(self))
+	for i, _ := range self {
+		h := self[i].Hash()
+		if _, ok := m[h]; !ok {
+			deduped = append(deduped, self[i])
+			m[h] = byte(1)
+		}
+	}
+	return deduped
+}
+
+// Combines two AddressUxOuts where they overlap with keys
+// Remove?
+func (self AddressUxOuts) Merge(other AddressUxOuts,
+	keys []cipher.Address) AddressUxOuts {
+	final := make(AddressUxOuts, len(keys))
+	for _, a := range keys {
+		row := append(self[a], other[a]...)
+		final[a] = row.removeDupes()
+	}
+	return final
+}

@@ -36,7 +36,7 @@ type BlockHeader struct {
 
 func (self *BlockHeader) Hash() cipher.SHA256 {
 	b1 := encoder.Serialize(*self)
-	return cipher.SumDoubleSHA256(b1)
+	return cipher.DoubleSHA256(b1)
 }
 
 func (self *BlockHeader) Bytes() []byte {

@@ -144,7 +144,7 @@ func newBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 
 func (self *BlockHeader) Hash() cipher.SHA256 {
 	b1 := encoder.Serialize(*self)
-	return cipher.SumDoubleSHA256(b1)
+	return cipher.SumSHA256(b1)
 }
 
 func (self *BlockHeader) Bytes() []byte {
@@ -228,7 +228,7 @@ func (self *Blockchain) CreateGenesisBlock(genesisAddress cipher.Address,
 			BkSeq: 0,
 		},
 		Body: UxBody{
-			SrcTransaction: txn.Hash(),
+			SrcTransaction: txn.InnerHash, //user inner hash
 			Address:        genesisAddress,
 			Coins:          genesisCoins,
 			Hours:          genesisCoins, // Allocate 1 coin hour per coin
@@ -606,7 +606,7 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i, _ := range tx.In {
-		hash := cipher.AddSHA256(tx.InnerHash, tx.In[i])
+		hash := cipher.AddSHA256(tx.InnerHash, tx.In[i]) //use inner hash, not outer hash
 		err := cipher.ChkSig(uxIn[i].Body.Address, hash, tx.Sigs[i])
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")

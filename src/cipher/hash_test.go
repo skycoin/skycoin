@@ -177,9 +177,9 @@ func TestMustSumSHA256(t *testing.T) {
 	assert.Equal(t, h, freshSumSHA256(b))
 }
 
-func TestSumDoubleSHA256(t *testing.T) {
+func TestDoubleSHA256(t *testing.T) {
 	b := randBytes(t, 128)
-	h := SumDoubleSHA256(b)
+	h := DoubleSHA256(b)
 	assert.NotEqual(t, h, SHA256{})
 	assert.NotEqual(t, h, freshSumSHA256(b))
 }

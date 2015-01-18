@@ -92,9 +92,12 @@ func MustSumSHA256(b []byte, n int) SHA256 {
 }
 
 // Double SHA256
-func SumDoubleSHA256(b []byte) SHA256 {
-	h := SumSHA256(b)
-	return AddSHA256(h, h)
+func DoubleSHA256(b []byte) SHA256 {
+	//h := SumSHA256(b)
+	//return AddSHA256(h, h)
+	h1 := SumSHA256(b)
+	h2 := SumSHA256(h1[:])
+	return h2
 }
 
 // Returns the SHA256 hash of to two concatenated hashes

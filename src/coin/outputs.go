@@ -50,7 +50,7 @@ type UxHead struct {
 }
 
 type UxBody struct {
-	SrcTransaction cipher.SHA256
+	SrcTransaction cipher.SHA256  // Inner Hash of Transaction
 	Address        cipher.Address // Address of receiver
 	Coins          uint64         // Number of coins
 	Hours          uint64         // Coin hours
@@ -129,20 +129,6 @@ func (self UxArray) HasDupes() bool {
 	return false
 }
 
-// Returns a copy of self with duplicates removed
-func (self UxArray) removeDupes() UxArray {
-	m := make(UxHashSet, len(self))
-	deduped := make(UxArray, 0, len(self))
-	for i, _ := range self {
-		h := self[i].Hash()
-		if _, ok := m[h]; !ok {
-			deduped = append(deduped, self[i])
-			m[h] = byte(1)
-		}
-	}
-	return deduped
-}
-
 // Returns the UxArray as a hash to byte map to be used as a set.  The byte's
 // value should be ignored, although it will be 1.  Should only be used for
 // membership detection.
@@ -152,18 +138,6 @@ func (self UxArray) Set() UxHashSet {
 		m[self[i].Hash()] = byte(1)
 	}
 	return m
-}
-
-// Returns a new UxArray with elements in other removed from self
-func (self UxArray) Sub(other UxArray) UxArray {
-	uxa := make(UxArray, 0)
-	m := other.Set()
-	for i, _ := range self {
-		if _, ok := m[self[i].Hash()]; !ok {
-			uxa = append(uxa, self[i])
-		}
-	}
-	return uxa
 }
 
 func (self UxArray) Sort() {
@@ -210,19 +184,20 @@ func (self AddressUxOuts) Keys() []cipher.Address {
 	return addrs
 }
 
-// Combines two AddressUxOuts where they overlap with keys
-func (self AddressUxOuts) Merge(other AddressUxOuts,
-	keys []cipher.Address) AddressUxOuts {
-	final := make(AddressUxOuts, len(keys))
-	for _, a := range keys {
-		row := append(self[a], other[a]...)
-		final[a] = row.removeDupes()
+// Converts an AddressUxOuts map to a UxArray
+func (self AddressUxOuts) Flatten() UxArray {
+	oxs := make(UxArray, 0, len(self))
+	for _, uxs := range self {
+		for i, _ := range uxs {
+			oxs = append(oxs, uxs[i])
+		}
 	}
-	return final
+	return oxs
 }
 
 // Returns a new set of unspents, with unspents found in other removed.
 // No address's unspent set will be empty
+// Depreciate this: only visor uses it
 func (self AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
 	ox := make(AddressUxOuts, len(self))
 	for a, uxs := range self {
@@ -238,13 +213,15 @@ func (self AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
 	return ox
 }
 
-// Converts an AddressUxOuts map to a UxArray
-func (self AddressUxOuts) Flatten() UxArray {
-	oxs := make(UxArray, 0, len(self))
-	for _, uxs := range self {
-		for i, _ := range uxs {
-			oxs = append(oxs, uxs[i])
+// Returns a new UxArray with elements in other removed from self
+// Deprecate
+func (self UxArray) Sub(other UxArray) UxArray {
+	uxa := make(UxArray, 0)
+	m := other.Set()
+	for i, _ := range self {
+		if _, ok := m[self[i].Hash()]; !ok {
+			uxa = append(uxa, self[i])
 		}
 	}
-	return oxs
+	return uxa
 }

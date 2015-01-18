@@ -662,8 +662,8 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	// Destroying coins
 	tx = Transaction{}
 	tx.PushInput(ux.Hash())
-	tx.PushOutput(genAddress, 1e6, 0)
-	tx.PushOutput(genAddress, 10e6, 0)
+	tx.PushOutput(genAddress, 1e6, 100)
+	tx.PushOutput(genAddress, 10e6, 100)
 	uxIn, err = bc.Unspent.GetMultiple(tx.In)
 	assert.Nil(t, err)
 	uxOut = CreateUnspents(bc.Head().Head, tx)

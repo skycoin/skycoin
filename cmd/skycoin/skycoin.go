@@ -114,14 +114,27 @@ func (self *Config) postProcess() {
 	//var BlockchainPubkeyStr string //only set if passed in command line arg
 	//var BlockchainSeckeyStr string //only set if passed in command line arg
 
+	var err error
 	if GenesisSignatureStr != "" {
-		self.GenesisSignature = cipher.MustSigFromHex(GenesisSignatureStr)
+		self.GenesisSignature, err = cipher.SigFromHex(GenesisSignatureStr)
+		if err != nil {
+			log.Printf("Invalid Signature")
+			log.Panic("Invalid Signature")
+		}
 	}
 	if GenesisAddressStr != "" {
-		self.GenesisAddress = cipher.MustDecodeBase58Address(GenesisAddressStr)
+		self.GenesisAddress, err = cipher.DecodeBase58Address(GenesisAddressStr)
+		if err != nil {
+			log.Printf("Invalid Address")
+			log.Panic("Invalid Address")
+		}
 	}
 	if BlockchainPubkeyStr != "" {
-		self.BlockchainPubkey = cipher.MustPubKeyFromHex(BlockchainPubkeyStr)
+		self.BlockchainPubkey, err = cipher.PubKeyFromHex(BlockchainPubkeyStr)
+		if err != nil {
+			log.Printf("Invalid Pubkey")
+			log.Panic("Invalid Pubkey")
+		}
 	}
 	if BlockchainSeckeyStr != "" {
 		self.BlockchainSeckey = cipher.MustSecKeyFromHex(BlockchainSeckeyStr)
@@ -158,9 +171,13 @@ func (self *Config) getConfig() *Config {
 
 // Parses arguments defined in a struct that satisfies Config interface
 func ParseArgs(args Args) *Config {
+	log.Printf("L1")
 	args.register()
+	log.Printf("L2")
 	flag.Parse()
+	log.Printf("L3")
 	args.postProcess()
+	log.Printf("L4")
 	return args.getConfig()
 }
 

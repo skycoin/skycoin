@@ -41,6 +41,14 @@ func MustPubKeyFromHex(s string) PubKey {
 	return NewPubKey(b)
 }
 
+func PubKeyFromHex(s string) (PubKey, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return PubKey{}, errors.New("Invalid public key")
+	}
+	return NewPubKey(b), nil
+}
+
 // Recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
 	if seckey == (SecKey{}) {
@@ -167,7 +175,21 @@ func MustSigFromHex(s string) Sig {
 	if err != nil {
 		log.Panic(err)
 	}
+	if len(b) != 65 {
+		log.Panic("Signature Length is Invalid")
+	}
 	return NewSig(b)
+}
+
+func SigFromHex(s string) (Sig, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return Sig{}, err
+	}
+	if len(b) != 65 {
+		return Sig{}, errors.New("Signature Length is Invalid")
+	}
+	return NewSig(b), nil
 }
 
 func (s Sig) Hex() string {

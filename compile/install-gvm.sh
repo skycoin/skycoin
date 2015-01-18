@@ -11,12 +11,12 @@ if [[ $? -ne 0 ]]; then
     [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
 fi
 
-# Install go1.3 with gvm
-gvm install go1.3
+# Install go1.4 with gvm
+gvm install go1.4
 grep -q 'gvm use' ~/.bashrc;
 if [[ $? -ne 0 ]]; then
     echo "" >> ~/.bashrc
-    echo "# Use go1.3 on shell start" >> ~/.bashrc
-    echo "gvm use go1.3 >/dev/null" >> ~/.bashrc
-    gvm use go1.3
+    echo "# Use go1.4 on shell start" >> ~/.bashrc
+    echo "gvm use go1.4 >/dev/null" >> ~/.bashrc
+    gvm use go1.4
 fi

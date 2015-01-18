@@ -11,6 +11,9 @@ if [[ $? -ne 0 ]]; then
     [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
 fi
 
+#for get dependencies
+source "$HOME/.gvm/scripts/gvm"
+
 # Install go1.4 with gvm
 gvm install go1.4
 grep -q 'gvm use' ~/.bashrc;

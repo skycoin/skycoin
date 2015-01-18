@@ -196,7 +196,25 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 	}
 }
 
+//panics if conditions for genesis block are not met
+func (self *Visor) GenesisPreconditions() {
+
+	//if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+	//	log.Panic("Blockchain already has genesis")
+	//}
+
+	//if seckey is set
+	if self.Config.BlockchainSeckey != (cipher.SecKey{}) {
+		if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
+			log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
+		}
+	}
+
+}
+
 func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
+	self.GenesisPreconditions()
+
 	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}
@@ -222,6 +240,8 @@ func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 
 // Creates the genesis block as needed
 func (self *Visor) CreateGenesisBlock() SignedBlock {
+	self.GenesisPreconditions()
+
 	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}

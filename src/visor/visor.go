@@ -233,7 +233,7 @@ func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 	log.Printf("New Genesis:")
 	log.Printf("genesis_time= %v", sb.Block.Head.Time)
 	log.Printf("genesis_address= %v", self.Config.GenesisAddress.String())
-	log.Printf("genesis_signature= %v", self.Config.GenesisSignature.Hex())
+	log.Printf("genesis_signature= %v", sb.Sig.Hex())
 
 	return sb, nil
 }

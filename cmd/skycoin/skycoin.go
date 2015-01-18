@@ -259,9 +259,7 @@ var DevArgs = DevConfig{Config{
 }}
 
 //clear these after loading
-var GenesisSignatureStr string = "173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800"
-
-//173e1cdf628e78ae4946af4415f070e2aad5a1f4273b77971f8d42a6eb7ff3af68d0d7a3360460e96123f93decf43c28abbc02a65ffb243e525131ba357f21d800
+var GenesisSignatureStr string = "af3ce90786992f79c841a6ebce7a060e7c85ed82eb71193e9ef39c9a722d30bc068cb8d82ddbd345c3d66a592218484413d40e7fdb9285c917bed37d9b8d244b00"
 var GenesisAddressStr string = "2EP5k1HQJq95mjBvqX7iP4ip4iQmLFwM3GV"
 var BlockchainPubkeyStr string = "025d68456f09d4d50d2b9e789a9c30a4ddc35088e9791a494a248037e9ffee9634"
 var BlockchainSeckeyStr string = ""

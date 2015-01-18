@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # Install gvm
-bash < <(curl -s https://raw.github.com/moovweb/gvm/master/binscripts/gvm-installer)
+bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+
 grep -q "scripts/gvm" ~/.bashrc;
 if [[ $? -ne 0 ]]; then
     echo "" >> ~/.bashrc

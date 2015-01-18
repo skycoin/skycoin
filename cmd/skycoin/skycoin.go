@@ -222,7 +222,7 @@ var DevArgs = DevConfig{Config{
 	BlockchainSeckey: cipher.SecKey{},
 
 	GenesisAddress:   cipher.Address{},
-	GenesisTimestamp: 1394689119,
+	GenesisTimestamp: 1421595691,
 	GenesisSignature: cipher.Sig{},
 
 	/* Developer options */

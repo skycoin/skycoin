@@ -19,7 +19,7 @@ const (
 )
 
 const WalletExt = "wlt"
-const WalletTimestampFormat = "2006-01-01"
+const WalletTimestampFormat = "2006_01_01"
 
 type WalletType string
 
@@ -39,7 +39,7 @@ type WalletConstructor func() Wallet
 func NewWalletFilename(id_ WalletID) string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	id := rand.Int() % 9999 //should read in wallet files and make sure does not exist
-	return fmt.Sprintf("%s_%04i.%s", timestamp, id, WalletExt)
+	return fmt.Sprintf("%s_%04d.%s", timestamp, id, WalletExt)
 }
 
 // Wallet interface, to support multiple implementations

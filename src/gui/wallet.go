@@ -2,11 +2,11 @@
 package gui
 
 import (
-	"net/http"
-	"strconv"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/wallet"
+	"net/http"
+	"strconv"
 )
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
@@ -62,12 +62,13 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 // Create a wallet if no ID provided.  Otherwise update an existing wallet.
 // Name the wallet with "name".
-func walletHandlerPOST(gateway *daemon.Gateway, w http.ResponseWriter,
-	r *http.Request) {
-	logger.Info("API request made to create a wallet")
-	id := wallet.WalletID(r.FormValue("id"))
-	name := r.FormValue("name")
-	if id == "" {
+func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("API request made to create a wallet")
+		//id := wallet.WalletID(r.FormValue("id"))
+		name := r.FormValue("name")
+
 		// Create wallet
 		iw := gateway.CreateWallet()
 		if iw != nil {
@@ -79,8 +80,14 @@ func walletHandlerPOST(gateway *daemon.Gateway, w http.ResponseWriter,
 			}
 		}
 		SendOr500(w, iw)
-	} else {
+	}
+}
+
+func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
+		id := wallet.WalletID(r.FormValue("id"))
+		name := r.FormValue("name")
 		iw := gateway.GetWallet(id)
 		if iw != nil {
 			w := iw.(wallet.Wallet)
@@ -95,14 +102,10 @@ func walletHandlerPOST(gateway *daemon.Gateway, w http.ResponseWriter,
 }
 
 // Returns a wallet by ID if GET.  Creates or updates a wallet if POST.
-func walletHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			SendOr404(w, gateway.GetWallet(wallet.WalletID(r.FormValue("id"))))
-		} else if r.Method == "POST" {
-			walletHandlerPOST(gateway, w, r)
-		} else {
-			Error405(w)
 		}
 	}
 }
@@ -142,11 +145,18 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns wallet info
 	// GET Arguments:
 	//      id - Wallet ID.
-	// POST Arguments:
-	//      id [optional]
-	//      name [optional]
+
 	//   Creates a new wallet if no id given.  Will be assigned name if present.
-	mux.HandleFunc("/wallet", walletHandler(gateway))
+	mux.HandleFunc("/wallet", walletGet(gateway))
+
+	// POST/GET Arguments:
+	//      name [optional]
+	//		seed [optional]
+	//create new wallet
+	mux.HandleFunc("/wallet/create", walletCreate(gateway))
+
+	//update an existing wallet
+	mux.HandleFunc("/wallet/update", walletUpdate(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.
 	// The predicted balance is the confirmed balance minus any pending
@@ -154,11 +164,12 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// GET arguments:
 	//      id: Wallet ID
 	mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
+
 	// Sends coins&hours to another address.
 	// POST arguments:
 	//  id: Wallet ID
 	//  coins: Number of coins to spend
-	//  hours: Number of hours to spend
+	//  hours: Number of hours to spends
 	//  fee: Number of hours to use as fee, on top of the default fee.
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
@@ -168,6 +179,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/wallets", walletsHandler(gateway))
 	// Saves all wallets to disk. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
+
 	mux.HandleFunc("/wallets/save", walletsSaveHandler(gateway))
 	// Rescans the wallet directory and loads/unloads wallets based on which
 	// files are present. Returns nothing if it works. Otherwise returns

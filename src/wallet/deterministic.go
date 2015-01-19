@@ -10,39 +10,44 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
-const DeterministicSeedLength = 1024
+//const DeterministicSeedLength = 1024
 
-type DeterministicWalletSeed cipher.SHA256
+//type DeterministicWalletSeed cipher.SHA256
 
-func NewDeterministicWalletSeed() DeterministicWalletSeed {
+/*
+func NewDeterministicWalletSeed() string {
 	seed := cipher.SumSHA256(secp256k1.RandByte(DeterministicSeedLength))
-	return DeterministicWalletSeed(seed)
+	return hex.EncodeToString(seed[:])
 }
+*/
 
+/*
 func (self *DeterministicWalletSeed) toWalletID() WalletID {
 	// Uses the first 16 bytes of SHA256(seed) as id
 	shaid := cipher.SumSHA256(self[:])
 	return WalletID(hex.EncodeToString(shaid[:16]))
 }
-
-func (self DeterministicWalletSeed) Hex() string {
-	return cipher.SHA256(self).Hex()
-}
+*/
+//func (self DeterministicWalletSeed) Hex() string {
+//	return cipher.SHA256(self).Hex()
+//}
 
 type DeterministicWallet struct {
-	Name     string
-	Filename string
-	Seed     DeterministicWalletSeed
+	Name     string //deprecate
+	Filename string //deprecate
+	Seed     string
 	// Only holds one entry for now, and is assumed to be the first
 	// entry generated from seed.
 	Entry WalletEntry
 }
 
 func NewDeterministicWallet() Wallet {
-	seed := NewDeterministicWalletSeed()
-	pub, sec := cipher.GenerateDeterministicKeyPair(seed[:])
+	seed_raw := cipher.SumSHA256(secp256k1.RandByte(64))
+	seed := hex.EncodeToString(seed_raw[:])
+
+	pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
 	return &DeterministicWallet{
-		Filename: NewWalletFilename(seed.toWalletID()),
+		Filename: NewWalletFilename(""),
 		Seed:     seed,
 		Entry:    NewWalletEntryFromKeypair(pub, sec),
 	}
@@ -55,12 +60,13 @@ func NewDeterministicWalletFromReadable(r *ReadableWallet) Wallet {
 	if len(r.Entries) != 1 {
 		log.Panic("Deterministic wallets have exactly 1 entry")
 	}
-	seed := cipher.MustSHA256FromHex(r.Extra["seed"].(string))
+	//should be string
+	seed := r.Extra["seed"].(string)
 	return &DeterministicWallet{
 		Filename: r.Filename,
 		Name:     r.Name,
 		Entry:    r.Entries.ToWalletEntries().ToArray()[0],
-		Seed:     DeterministicWalletSeed(seed),
+		Seed:     seed,
 	}
 }
 
@@ -77,7 +83,7 @@ func (self *DeterministicWallet) SetFilename(fn string) {
 }
 
 func (self *DeterministicWallet) GetID() WalletID {
-	return self.Seed.toWalletID()
+	return WalletID(self.Seed[0:4])
 }
 
 func (self *DeterministicWallet) GetName() string {
@@ -141,6 +147,6 @@ func (self *DeterministicWallet) Load(dir string) error {
 
 func (self *DeterministicWallet) GetExtraSerializerData() map[string]interface{} {
 	m := make(map[string]interface{}, 1)
-	m["seed"] = self.Seed.Hex()
+	m["seed"] = self.Seed
 	return m
 }

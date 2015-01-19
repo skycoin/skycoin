@@ -217,7 +217,7 @@ var DevArgs = DevConfig{Config{
 	//AddressVersion: "test",
 	// Remote web interface
 	WebInterface:      false,
-	WebInterfacePort:  6402,
+	WebInterfacePort:  6420,
 	WebInterfaceAddr:  "127.0.0.1",
 	WebInterfaceCert:  "",
 	WebInterfaceKey:   "",

@@ -133,6 +133,7 @@ func (self *Gateway) GetWallets() interface{} {
 }
 
 // Returns a *ReadableWallet
+// Deprecate
 func (self *Gateway) CreateWallet() interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.CreateWallet(self.d.Visor.Visor)

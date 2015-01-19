@@ -8,6 +8,12 @@ Installation
 
 *For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation)*
 
+For linux:
+sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev -y
+
+OSX:
+brew install mercurial bzr
+
 ```
 ./setup.sh
 ./run.sh -h

@@ -81,7 +81,9 @@ func NewVisorConfig() VisorConfig {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		BlockCreationInterval:    15,
+		BlockCreationInterval: 10,
+		//BlockCreationForceInterval: 120, //create block if no block within this many seconds
+
 		UnconfirmedCheckInterval: time.Hour * 2,
 		UnconfirmedMaxAge:        time.Hour * 48,
 		UnconfirmedRefreshRate:   time.Minute * 30,

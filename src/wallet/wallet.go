@@ -6,6 +6,7 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
+	"math/rand"
 )
 
 var (
@@ -34,9 +35,11 @@ func (self AddressSet) Update(other AddressSet) AddressSet {
 
 type WalletConstructor func() Wallet
 
-func NewWalletFilename(id WalletID) string {
+//check for collisions and retry if failure
+func NewWalletFilename(id_ WalletID) string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
-	return fmt.Sprintf("%s-%s.%s", timestamp, id, WalletExt)
+	id := rand.Int() % 9999 //should read in wallet files and make sure does not exist
+	return fmt.Sprintf("%s_%04i.%s", timestamp, id, WalletExt)
 }
 
 // Wallet interface, to support multiple implementations

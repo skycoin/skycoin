@@ -20,7 +20,7 @@ func NewJSONResponse(message string) JSONMessage {
 
 // Emits JSON to an http response
 func SendJSON(w http.ResponseWriter, message JSONMessage) error {
-    out, err := json.Marshal(message)
+    out, err := json.MarshalIndent(message, "", "    ")
     if err == nil {
         _, err := w.Write(out)
         if err != nil {

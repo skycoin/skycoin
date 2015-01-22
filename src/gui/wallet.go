@@ -9,12 +9,97 @@ import (
 	"strconv"
 )
 
+//var Wallets wallet.Wallets
+
+/*
+REFACTOR
+*/
+
+// Returns a *Balance
+
+func GetWalletBalance(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
+	self.requests <- func() interface{} {
+		return self.Visor.GetWalletBalance(self.d.Visor.Visor, walletID)
+	}
+	r := <-self.responses
+	return r
+}
+
+// Returns map[WalletID]error
+
+func SaveWallets(self *daemon.Gateway) interface{} {
+	self.requests <- func() interface{} {
+		return self.Visor.SaveWallets(self.d.Visor.Visor)
+	}
+	r := <-self.responses
+	return r
+}
+
+// Returns error
+func SaveWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
+	self.requests <- func() interface{} {
+		return self.Visor.SaveWallet(self.d.Visor.Visor, walletID)
+	}
+	r := <-self.responses
+	return r
+}
+
+// Returns an error
+func ReloadWallets(self *daemon.Gateway) interface{} {
+	self.requests <- func() interface{} {
+		return self.Visor.ReloadWallets(self.d.Visor.Visor)
+	}
+	r := <-self.responses
+	return r
+}
+
+// Returns a *visor.ReadableWallet
+
+func GetWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
+	self.requests <- func() interface{} {
+		return self.Visor.GetWallet(self.d.Visor.Visor, walletID)
+	}
+	r := <-self.responses
+	return r
+}
+
+// Returns a *ReadableWallets
+
+func GetWallets(self *daemon.Gateway) interface{} {
+	self.requests <- func() interface{} {
+		return self.Visor.GetWallets(self.d.Visor.Visor)
+	}
+	r := <-self.responses
+	return r
+}
+
+// Returns a *ReadableWallet
+// Deprecate
+
+func CreateWallet(self *daemon.Gateway, seed string) interface{} {
+
+	//w := v.CreateWallet()
+	//return wallet.NewReadableWallet(w)
+
+	//
+	self.requests <- func() interface{} {
+		return self.Visor.CreateWallet(self.d.Visor.Visor)
+	}
+	r := <-self.responses
+	return r
+	//
+}
+
+/*
+REFACTOR
+*/
+
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.FormValue("id")
-		SendOr404(w, gateway.GetWalletBalance(wallet.WalletID(id)))
+		SendOr404(w, GetWalletBalance(gateway, wallet.WalletID(id)))
 	}
 }
 
@@ -55,7 +140,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			Error400(w, "Invalid \"hours\" value")
 			return
 		}
-		SendOr404(w, gateway.Spend(walletId, wallet.NewBalance(coins, hours),
+		SendOr404(w, Spend(gateway, walletId, wallet.NewBalance(coins, hours),
 			fee, dst))
 	}
 }
@@ -68,13 +153,18 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		logger.Info("API request made to create a wallet")
 		//id := wallet.WalletID(r.FormValue("id"))
 		name := r.FormValue("name")
+		seed := r.FormValue("seed")
 
 		// Create wallet
-		iw := gateway.CreateWallet()
+		//iw := gateway.CreateWallet("") //returns wallet
+		//iw := wallet.NewReadableWallet(w)
+
+		iw := wallet.NewReadableWallet(w)
+
 		if iw != nil {
 			w := iw.(wallet.Wallet)
 			w.SetName(name)
-			if err := gateway.SaveWallet(w.GetID()); err != nil {
+			if err := SaveWallet(gateway, w.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}
@@ -88,11 +178,11 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 		// Update wallet
 		id := wallet.WalletID(r.FormValue("id"))
 		name := r.FormValue("name")
-		iw := gateway.GetWallet(id)
+		iw := GetWallet(gateway, id)
 		if iw != nil {
 			w := iw.(wallet.Wallet)
 			w.SetName(name)
-			if err := gateway.SaveWallet(w.GetID()); err != nil {
+			if err := SaveWallet(gateway, w.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}
@@ -105,7 +195,8 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			SendOr404(w, gateway.GetWallet(wallet.WalletID(r.FormValue("id"))))
+			ret := GetWallet(gateway, wallet.WalletID(r.FormValue("id")))
+			SendOr404(w, ret)
 		}
 	}
 }
@@ -113,14 +204,16 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 // Returns all loaded wallets
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetWallets())
+		//ret := wallet.Wallets.ToPublicReadable()
+		ret := GetWallets(gateway)
+		SendOr404(w, ret)
 	}
 }
 
 // Saves all loaded wallets
 func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errs := gateway.SaveWallets().(map[wallet.WalletID]error)
+		errs := SaveWallets(gateway).(map[wallet.WalletID]error)
 		if len(errs) != 0 {
 			err := ""
 			for id, e := range errs {
@@ -134,7 +227,7 @@ func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Loads/unloads wallets from the wallet directory
 func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := gateway.ReloadWallets()
+		err := ReloadWallets(gateway)
 		if err != nil {
 			Error500(w, err.(error).Error())
 		}

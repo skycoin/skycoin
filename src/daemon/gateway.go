@@ -79,6 +79,7 @@ func (self *Gateway) Spend(walletID wallet.WalletID, amt wallet.Balance,
 }
 
 // Returns a *Balance
+/*
 func (self *Gateway) GetWalletBalance(walletID wallet.WalletID) interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.GetWalletBalance(self.d.Visor.Visor, walletID)
@@ -86,8 +87,10 @@ func (self *Gateway) GetWalletBalance(walletID wallet.WalletID) interface{} {
 	r := <-self.responses
 	return r
 }
+*/
 
 // Returns map[WalletID]error
+/*
 func (self *Gateway) SaveWallets() interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.SaveWallets(self.d.Visor.Visor)
@@ -113,8 +116,10 @@ func (self *Gateway) ReloadWallets() interface{} {
 	r := <-self.responses
 	return r
 }
+*/
 
 // Returns a *visor.ReadableWallet
+/*
 func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.GetWallet(self.d.Visor.Visor, walletID)
@@ -122,8 +127,10 @@ func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
 	r := <-self.responses
 	return r
 }
+*/
 
 // Returns a *ReadableWallets
+/*
 func (self *Gateway) GetWallets() interface{} {
 	self.requests <- func() interface{} {
 		return self.Visor.GetWallets(self.d.Visor.Visor)
@@ -131,17 +138,25 @@ func (self *Gateway) GetWallets() interface{} {
 	r := <-self.responses
 	return r
 }
+*/
 
 // Returns a *ReadableWallet
 // Deprecate
-func (self *Gateway) CreateWallet() interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.CreateWallet(self.d.Visor.Visor)
-	}
-	r := <-self.responses
-	return r
-}
+/*
+func (self *Gateway) CreateWallet(seed string) interface{} {
 
+	//w := v.CreateWallet()
+	return wallet.NewReadableWallet(w)
+
+	//
+		self.requests <- func() interface{} {
+			return self.Visor.CreateWallet(self.d.Visor.Visor)
+		}
+		r := <-self.responses
+		return r
+	//
+}
+*/
 /* Blockchain & Transaction status */
 
 // Returns a *BlockchainProgress

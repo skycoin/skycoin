@@ -53,7 +53,7 @@ func LoadJSON(filename string, thing interface{}) error {
 }
 
 func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
-    data, err := json.Marshal(thing)
+    data, err := json.MarshalIndent(thing, "", "    ")
     if err == nil {
         return SaveBinary(filename, data, mode)
     } else {
@@ -63,7 +63,7 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
 
 // Saves json to disk, but refuses if file already exists
 func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
-    b, err := json.Marshal(thing)
+    b, err := json.MarshalIndent(thing, "", "    ")
     if err != nil {
         return err
     }

@@ -25,21 +25,24 @@ type Gateway struct {
 	Visor  visor.RPC
 
 	// Backref to Daemon
-	d *Daemon
+	D *Daemon
+	// Backref to Visor
+	V *visor.Visor
 	// Requests are queued on this channel
-	requests chan func() interface{}
+	Requests chan func() interface{}
 	// When a request is done processing, it is placed on this channel
-	responses chan interface{}
+	Responses chan interface{}
 }
 
-func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
+func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
 		Config:    c,
 		Daemon:    RPC{},
 		Visor:     visor.RPC{},
-		d:         d,
-		requests:  make(chan func() interface{}, c.BufferSize),
-		responses: make(chan interface{}, c.BufferSize),
+		D:         D,
+		V:         D.Visor,
+		Requests:  make(chan func() interface{}, c.BufferSize),
+		Responses: make(chan interface{}, c.BufferSize),
 	}
 }
 
@@ -49,19 +52,19 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 
 // Returns a *Connections
 func (self *Gateway) GetConnections() interface{} {
-	self.requests <- func() interface{} {
-		return self.Daemon.GetConnections(self.d)
+	self.Requests <- func() interface{} {
+		return self.Daemon.GetConnections(self.D)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *Connection
 func (self *Gateway) GetConnection(addr string) interface{} {
-	self.requests <- func() interface{} {
-		return self.Daemon.GetConnection(self.d, addr)
+	self.Requests <- func() interface{} {
+		return self.Daemon.GetConnection(self.D, addr)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
@@ -70,21 +73,21 @@ func (self *Gateway) GetConnection(addr string) interface{} {
 // Returns a *Spend
 func (self *Gateway) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) interface{} {
-	self.requests <- func() interface{} {
-		return self.Daemon.Spend(self.d.Visor, self.d.Pool, self.Visor,
+	self.Requests <- func() interface{} {
+		return self.Daemon.Spend(self.V, self.D.Pool, self.Visor,
 			walletID, amt, fee, dest)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *Balance
 /*
 func (self *Gateway) GetWalletBalance(walletID wallet.WalletID) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetWalletBalance(self.d.Visor.Visor, walletID)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetWalletBalance(self.V, walletID)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 */
@@ -92,28 +95,28 @@ func (self *Gateway) GetWalletBalance(walletID wallet.WalletID) interface{} {
 // Returns map[WalletID]error
 /*
 func (self *Gateway) SaveWallets() interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.SaveWallets(self.d.Visor.Visor)
+	self.Requests <- func() interface{} {
+		return self.Visor.SaveWallets(self.V)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns error
 func (self *Gateway) SaveWallet(walletID wallet.WalletID) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.SaveWallet(self.d.Visor.Visor, walletID)
+	self.Requests <- func() interface{} {
+		return self.Visor.SaveWallet(self.V, walletID)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns an error
 func (self *Gateway) ReloadWallets() interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.ReloadWallets(self.d.Visor.Visor)
+	self.Requests <- func() interface{} {
+		return self.Visor.ReloadWallets(self.V)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 */
@@ -121,10 +124,10 @@ func (self *Gateway) ReloadWallets() interface{} {
 // Returns a *visor.ReadableWallet
 /*
 func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetWallet(self.d.Visor.Visor, walletID)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetWallet(self.V, walletID)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 */
@@ -132,10 +135,10 @@ func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
 // Returns a *ReadableWallets
 /*
 func (self *Gateway) GetWallets() interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetWallets(self.d.Visor.Visor)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetWallets(self.V)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 */
@@ -149,10 +152,10 @@ func (self *Gateway) CreateWallet(seed string) interface{} {
 	return wallet.NewReadableWallet(w)
 
 	//
-		self.requests <- func() interface{} {
-			return self.Visor.CreateWallet(self.d.Visor.Visor)
+		self.Requests <- func() interface{} {
+			return self.Visor.CreateWallet(self.V)
 		}
-		r := <-self.responses
+		r := <-self.Responses
 		return r
 	//
 }
@@ -161,63 +164,63 @@ func (self *Gateway) CreateWallet(seed string) interface{} {
 
 // Returns a *BlockchainProgress
 func (self *Gateway) GetBlockchainProgress() interface{} {
-	self.requests <- func() interface{} {
-		return self.Daemon.GetBlockchainProgress(self.d.Visor)
+	self.Requests <- func() interface{} {
+		return self.Daemon.GetBlockchainProgress(self.V)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *ResendResult
 func (self *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
-	self.requests <- func() interface{} {
-		return self.Daemon.ResendTransaction(self.d.Visor, self.d.Pool, txn)
+	self.Requests <- func() interface{} {
+		return self.Daemon.ResendTransaction(self.V, self.D.Pool, txn)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *visor.BlockchainMetadata
 func (self *Gateway) GetBlockchainMetadata() interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetBlockchainMetadata(self.d.Visor.Visor)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetBlockchainMetadata(self.V)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *visor.ReadableBlock
 func (self *Gateway) GetBlock(seq uint64) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetBlock(self.d.Visor.Visor, seq)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetBlock(self.V, seq)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *visor.ReadableBlocks
 func (self *Gateway) GetBlocks(start, end uint64) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetBlocks(self.d.Visor.Visor, start, end)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetBlocks(self.V, start, end)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *visor.TransactionResult
 func (self *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetTransaction(self.d.Visor.Visor, txn)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetTransaction(self.V, txn)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *visor.TransactionResults
 func (self *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
-	self.requests <- func() interface{} {
-		return self.Visor.GetAddressTransactions(self.d.Visor.Visor, a)
+	self.Requests <- func() interface{} {
+		return self.Visor.GetAddressTransactions(self.V, a)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }

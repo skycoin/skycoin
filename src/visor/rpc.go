@@ -55,13 +55,13 @@ func (self RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
 	return v.SaveWallets()
 }
 
-/*
 func (self RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
 	if v == nil {
 		return nil
 	}
+	w := v.CreateWallet()
+	return wallet.NewReadableWallet(w)
 }
-*/
 
 func (self RPC) GetWallet(v *Visor,
 	walletID wallet.WalletID) *wallet.ReadableWallet {
@@ -76,14 +76,12 @@ func (self RPC) GetWallet(v *Visor,
 	}
 }
 
-/*
 func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
 	if v == nil {
 		return nil
 	}
 	return v.Wallets.ToPublicReadable()
 }
-*/
 
 func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 	if v == nil {

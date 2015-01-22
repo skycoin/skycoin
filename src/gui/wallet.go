@@ -4,6 +4,7 @@ package gui
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	"net/http"
 	"strconv"
@@ -15,11 +16,49 @@ import (
 REFACTOR
 */
 
+/*
+REFACTOR
+*/
+
+func Spend(self *daemon.Gateway, walletID wallet.WalletID, amt wallet.Balance,
+	fee uint64, dest cipher.Address) interface{} {
+	self.Requests <- func() interface{} {
+		return Spend2(self.D.Visor, self.D.Pool, self.Visor,
+			walletID, amt, fee, dest)
+	}
+	r := <-self.Responses
+	return r
+}
+
+type SpendResult struct {
+	Balance     wallet.BalancePair        `json:"balance"`
+	Transaction visor.ReadableTransaction `json:"txn"`
+	Error       string                    `json:"error"`
+}
+
+func Spend2(v *daemon.Visor, pool *daemon.Pool, vrpc visor.RPC,
+	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
+	dest cipher.Address) *SpendResult {
+
+	txn, err := v.Spend(walletID, amt, fee, dest, pool)
+	errString := ""
+	if err != nil {
+		errString = err.Error()
+		logger.Error("Failed to make a spend: %v", err)
+	}
+	b := vrpc.GetWalletBalance(v.Visor, walletID)
+	return &SpendResult{
+		Balance:     *b,
+		Transaction: visor.NewReadableTransaction(&txn),
+		Error:       errString,
+	}
+}
+
 // Returns a *Balance
 
 func GetWalletBalance(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.GetWalletBalance(self.d.Visor.Visor, walletID)
+		return self.Visor.GetWalletBalance(self.D.Visor.Visor, walletID)
 	}
 	r := <-self.Responses
 	return r
@@ -29,7 +68,7 @@ func GetWalletBalance(self *daemon.Gateway, walletID wallet.WalletID) interface{
 
 func SaveWallets(self *daemon.Gateway) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.SaveWallets(self.d.Visor.Visor)
+		return self.Visor.SaveWallets(self.D.Visor.Visor)
 	}
 	r := <-self.Responses
 	return r
@@ -38,7 +77,7 @@ func SaveWallets(self *daemon.Gateway) interface{} {
 // Returns error
 func SaveWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.SaveWallet(self.d.Visor.Visor, walletID)
+		return self.Visor.SaveWallet(self.D.Visor.Visor, walletID)
 	}
 	r := <-self.Responses
 	return r
@@ -47,7 +86,7 @@ func SaveWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 // Returns an error
 func ReloadWallets(self *daemon.Gateway) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.ReloadWallets(self.d.Visor.Visor)
+		return self.Visor.ReloadWallets(self.D.Visor.Visor)
 	}
 	r := <-self.Responses
 	return r
@@ -57,7 +96,7 @@ func ReloadWallets(self *daemon.Gateway) interface{} {
 
 func GetWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.GetWallet(self.d.Visor.Visor, walletID)
+		return self.Visor.GetWallet(self.D.Visor.Visor, walletID)
 	}
 	r := <-self.Responses
 	return r
@@ -67,7 +106,7 @@ func GetWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 
 func GetWallets(self *daemon.Gateway) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.GetWallets(self.d.Visor.Visor)
+		return self.Visor.GetWallets(self.D.Visor.Visor)
 	}
 	r := <-self.Responses
 	return r
@@ -83,7 +122,7 @@ func CreateWallet(self *daemon.Gateway, seed string) interface{} {
 
 	//
 	self.Requests <- func() interface{} {
-		return self.Visor.CreateWallet(self.d.Visor.Visor)
+		return self.Visor.CreateWallet(self.D.Visor.Visor, "")
 	}
 	r := <-self.Responses
 	return r
@@ -159,7 +198,8 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		//iw := gateway.CreateWallet("") //returns wallet
 		//iw := wallet.NewReadableWallet(w)
 
-		iw := wallet.NewReadableWallet(w)
+		w1 := gateway.V.CreateWallet()
+		iw := wallet.NewReadableWallet(w1)
 
 		if iw != nil {
 			w := iw.(wallet.Wallet)

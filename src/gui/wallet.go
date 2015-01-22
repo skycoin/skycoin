@@ -193,7 +193,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		//id := wallet.WalletID(r.FormValue("id"))
 		name := r.FormValue("name")
 		seed := r.FormValue("seed")
-
+		_ = seed
 		// Create wallet
 		//iw := gateway.CreateWallet("") //returns wallet
 		//iw := wallet.NewReadableWallet(w)
@@ -202,9 +202,9 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		iw := wallet.NewReadableWallet(w1)
 
 		if iw != nil {
-			w := iw.(wallet.Wallet)
-			w.SetName(name)
-			if err := SaveWallet(gateway, w.GetID()); err != nil {
+			//w2 := iw.(wallet.Wallet)
+			w1.SetName(name)
+			if err := SaveWallet(gateway, w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}
@@ -220,9 +220,9 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 		name := r.FormValue("name")
 		iw := GetWallet(gateway, id)
 		if iw != nil {
-			w := iw.(wallet.Wallet)
-			w.SetName(name)
-			if err := SaveWallet(gateway, w.GetID()); err != nil {
+			w1 := iw.(wallet.Wallet)
+			w1.SetName(name)
+			if err := SaveWallet(gateway, w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}

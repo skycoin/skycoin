@@ -40,7 +40,7 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 		Daemon:    RPC{},
 		Visor:     visor.RPC{},
 		D:         D,
-		V:         D.Visor,
+		V:         D.Visor.Visor,
 		Requests:  make(chan func() interface{}, c.BufferSize),
 		Responses: make(chan interface{}, c.BufferSize),
 	}
@@ -74,7 +74,7 @@ func (self *Gateway) GetConnection(addr string) interface{} {
 func (self *Gateway) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Daemon.Spend(self.V, self.D.Pool, self.Visor,
+		return self.Daemon.Spend(self.D.Visor, self.D.Pool, self.Visor,
 			walletID, amt, fee, dest)
 	}
 	r := <-self.Responses
@@ -165,7 +165,7 @@ func (self *Gateway) CreateWallet(seed string) interface{} {
 // Returns a *BlockchainProgress
 func (self *Gateway) GetBlockchainProgress() interface{} {
 	self.Requests <- func() interface{} {
-		return self.Daemon.GetBlockchainProgress(self.V)
+		return self.Daemon.GetBlockchainProgress(self.D.Visor)
 	}
 	r := <-self.Responses
 	return r
@@ -174,7 +174,7 @@ func (self *Gateway) GetBlockchainProgress() interface{} {
 // Returns a *ResendResult
 func (self *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Daemon.ResendTransaction(self.V, self.D.Pool, txn)
+		return self.Daemon.ResendTransaction(self.D.Visor, self.D.Pool, txn)
 	}
 	r := <-self.Responses
 	return r

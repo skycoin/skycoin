@@ -14,6 +14,11 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+/*
+Visor should not be duplicated
+- this should be pushed into /src/visor
+*/
+
 type VisorConfig struct {
 	Config visor.VisorConfig
 	// Disabled the visor completely

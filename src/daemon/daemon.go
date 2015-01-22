@@ -403,8 +403,8 @@ main:
 			}
 			self.processMessageEvent(m)
 		// Process any pending RPC requests
-		case fn := <-self.Gateway.requests:
-			self.Gateway.responses <- fn()
+		case fn := <-self.Gateway.Requests:
+			self.Gateway.Responses <- fn()
 
 		// TODO -- run these in the Visor
 		// Create blocks, if master chain

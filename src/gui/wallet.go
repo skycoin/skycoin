@@ -18,58 +18,58 @@ REFACTOR
 // Returns a *Balance
 
 func GetWalletBalance(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.GetWalletBalance(self.d.Visor.Visor, walletID)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns map[WalletID]error
 
 func SaveWallets(self *daemon.Gateway) interface{} {
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.SaveWallets(self.d.Visor.Visor)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns error
 func SaveWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.SaveWallet(self.d.Visor.Visor, walletID)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns an error
 func ReloadWallets(self *daemon.Gateway) interface{} {
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.ReloadWallets(self.d.Visor.Visor)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *visor.ReadableWallet
 
 func GetWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.GetWallet(self.d.Visor.Visor, walletID)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
 // Returns a *ReadableWallets
 
 func GetWallets(self *daemon.Gateway) interface{} {
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.GetWallets(self.d.Visor.Visor)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 }
 
@@ -82,10 +82,10 @@ func CreateWallet(self *daemon.Gateway, seed string) interface{} {
 	//return wallet.NewReadableWallet(w)
 
 	//
-	self.requests <- func() interface{} {
+	self.Requests <- func() interface{} {
 		return self.Visor.CreateWallet(self.d.Visor.Visor)
 	}
-	r := <-self.responses
+	r := <-self.Responses
 	return r
 	//
 }

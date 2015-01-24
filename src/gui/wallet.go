@@ -29,23 +29,24 @@ func NewWalletRPC() *RPC {
 	rpc := RPC{}
 
 	//wallet directory
+	//cleanup, pass as parameter during init
 	DataDirectory := util.InitDataDir("")
 	rpc.WalletDirectory = filepath.Join(DataDirectory, "wallets/")
 	logger.Debug("Wallet Directory= %v", WalletDirectory)
 
-	wallets := wallet.Wallets{}
+	rpc.Wallets := wallet.Wallets{}
 
-	if c.WalletDirectory != "" {
-		w, err := wallet.LoadWallets(c.WalletDirectory)
+	if rpc.WalletDirectory != "" {
+		w, err := wallet.LoadWallets(rpc.WalletDirectory)
 		if err != nil {
 			log.Panicf("Failed to load all wallets: %v", err)
 		}
 		wallets = w
 	}
 	if len(wallets) == 0 {
-		wallets.Add(c.WalletConstructor())
+		wallets.Add(wallet.NewSimpleWallet) //deterministic
 		if c.WalletDirectory != "" {
-			errs := wallets.Save(c.WalletDirectory)
+			errs := wallets.Save(rpc.WalletDirectory)
 			if len(errs) != 0 {
 				log.Panicf("Failed to save wallets: %v", errs)
 			}
@@ -61,16 +62,26 @@ func (self *RPC) GetWalletBalance(v *Visor,
 	return &bp
 }
 
-func (self *RPC) ReloadWallets(v *Visor) error {
-	return v.ReloadWallets()
+
+func (self *RPC) ReloadWallets() error {
+	wallets, err := wallet.LoadWallets(self.WalletDirectory)
+	if err != nil {
+		return err
+	}
+	self.Wallets = wallets
+	return nil
 }
 
 func (self *RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
-	return v.SaveWallet(walletID)
+	w := self.Wallets.Get(walletID)
+	if w == nil {
+		return fmt.Errorf("Unknown wallet %s", walletID)
+	}
+	return w.Save(self.Config.WalletDirectory)
 }
 
 func (self *RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
-	return v.SaveWallets()
+	return self.Wallets.Save(self.Config.WalletDirectory)
 }
 
 func (self *RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
@@ -111,6 +122,7 @@ func CreateWallet(self *Visor) wallet.Wallet {
 }
 */
 
+/*
 func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
@@ -122,8 +134,10 @@ func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
 func (self *Visor) SaveWallets() map[wallet.WalletID]error {
 	return self.Wallets.Save(self.Config.WalletDirectory)
 }
+*/
 
 // Loads & unloads wallets based on WalletDirectory contents
+/*
 func (self *Visor) ReloadWallets() error {
 	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
 	if err != nil {
@@ -132,6 +146,7 @@ func (self *Visor) ReloadWallets() error {
 	self.Wallets = wallets
 	return nil
 }
+*/
 
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.

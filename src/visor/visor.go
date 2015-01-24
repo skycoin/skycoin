@@ -356,6 +356,32 @@ func (self *Visor) SignBlock(b coin.Block) SignedBlock {
 	return sb
 }
 
+/*
+	Return Data
+*/
+
+//Make local copy and update when block header changes
+// update should lock
+// isolate effect of threading
+func (self *Visor) GetUnspentOutputs() []coin.UxOut {
+	//self.blockchain
+
+	uxs := self.blockchain.Unspent.Array()
+	return uxs
+}
+
+func (self *Visor) GetUnspentOutputReadables() []ReadableOutput {
+	//self.blockchain
+
+	uxs := self.GetUnspentOutputs()
+
+	rx_readables := make([]ReadableOutput, len(uxs))
+	for i, ux := range uxs {
+		rx_readables[i] = NewReadableOutput(ux)
+	}
+	return rx_readables
+}
+
 // Returns N signed blocks more recent than Seq. Does not return nil.
 func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
 	var avail uint64 = 0
@@ -641,6 +667,7 @@ func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 }
 
 // Creates a wallet with a single master entry
+/*
 func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
 	w := wallet.NewEmptySimpleWallet()
 	// The master wallet shouldn't be saved to disk so we clear its filename
@@ -650,3 +677,4 @@ func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
 	}
 	return w
 }
+*/

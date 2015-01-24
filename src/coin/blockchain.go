@@ -417,6 +417,9 @@ func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 // firstFalse is false, if there is no way to filter the txns into a valid
 // array, i.e. processTransactions(processTransactions(txn, false), true)
 // should not result in an error, unless all txns are invalid.
+// TODO:
+//  - move arbitration to visor
+//  - blockchain should have strict checking
 func (self *Blockchain) processTransactions(txns Transactions,
 	arbitrating bool) (Transactions, error) {
 	// Transactions need to be sorted by fee and hash before arbitrating
@@ -630,7 +633,7 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 // Checks that coins will not be destroyed and that enough coins are hours
 // are being spent for the outputs
 func verifyTransactionSpending(headTime uint64, tx Transaction,
-	uxIn, uxOut UxArray) error {
+	uxIn UxArray, uxOut UxArray) error {
 	coinsIn := uint64(0)
 	hoursIn := uint64(0)
 	for i, _ := range uxIn {

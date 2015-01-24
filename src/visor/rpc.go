@@ -67,6 +67,11 @@ func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 	return &bm
 }
 
+func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
+	ret := v.GetUnspentOutputReadables()
+	return ret
+}
+
 func (self RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {
 	b, err := v.GetReadableBlock(seq)
 	if err != nil {

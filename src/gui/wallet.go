@@ -274,12 +274,26 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// Loads/unloads wallets from the wallet directory
+func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
+		//self.Visor.GetWallets(self.D.Visor.Visor)
+
+		//	Error500(w, err.(error).Error())
+		//ret := GetWallets(gateway)
+		SendOr404(w, ret)
+
+	}
+}
+
 func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns wallet info
 	// GET Arguments:
 	//      id - Wallet ID.
 
-	//   Creates a new wallet if no id given.  Will be assigned name if present.
+	//  Gets a wallet .  Will be assigned name if present.
 	mux.HandleFunc("/wallet", walletGet(gateway))
 
 	// POST/GET Arguments:
@@ -318,4 +332,8 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// files are present. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
 	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
+
+	//get set of unspent outputs
+	mux.HandleFunc("/outputs", getOutputsHandler(gateway))
+
 }

@@ -4,9 +4,11 @@ package gui
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	"net/http"
+	"path/filepath"
 	"strconv"
 )
 
@@ -16,32 +18,74 @@ import (
 REFACTOR
 */
 
-type RPC struct{}
+//type RPC struct{}
 
-func (self RPC) GetWalletBalance(v *Visor,
+type RPC struct {
+	Wallets         wallet.Wallets
+	WalletDirectory string
+}
+
+func NewWalletRPC() *RPC {
+	rpc := RPC{}
+
+	//wallet directory
+	DataDirectory := util.InitDataDir("")
+	rpc.WalletDirectory = filepath.Join(DataDirectory, "wallets/")
+	logger.Debug("Wallet Directory= %v", WalletDirectory)
+
+	wallets := wallet.Wallets{}
+
+	if c.WalletDirectory != "" {
+		w, err := wallet.LoadWallets(c.WalletDirectory)
+		if err != nil {
+			log.Panicf("Failed to load all wallets: %v", err)
+		}
+		wallets = w
+	}
+	if len(wallets) == 0 {
+		wallets.Add(c.WalletConstructor())
+		if c.WalletDirectory != "" {
+			errs := wallets.Save(c.WalletDirectory)
+			if len(errs) != 0 {
+				log.Panicf("Failed to save wallets: %v", errs)
+			}
+		}
+	}
+
+	return rpc
+}
+
+func (self *RPC) GetWalletBalance(v *Visor,
 	walletID wallet.WalletID) *wallet.BalancePair {
 	bp := v.WalletBalance(walletID)
 	return &bp
 }
 
-func (self RPC) ReloadWallets(v *Visor) error {
+func (self *RPC) ReloadWallets(v *Visor) error {
 	return v.ReloadWallets()
 }
 
-func (self RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
+func (self *RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
 	return v.SaveWallet(walletID)
 }
 
-func (self RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
+func (self *RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
 	return v.SaveWallets()
 }
 
-func (self RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
-	w := v.CreateWallet()
+func (self *RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
+	//WalletConstructor: wallet.NewSimpleWallet,
+	//WalletTypeDefault: wallet.SimpleWalletType,
+
+	//w := v.CreateWallet()
+
+	w := wallet.NewSimpleWallet //wallet constructor
+	self.Wallets.Add(w)
+
 	return wallet.NewReadableWallet(w)
 }
 
-func (self RPC) GetWallet(v *Visor,
+func (self *RPC) GetWallet(v *Visor,
 	walletID wallet.WalletID) *wallet.ReadableWallet {
 	w := v.Wallets.Get(walletID)
 	if w == nil {
@@ -51,7 +95,7 @@ func (self RPC) GetWallet(v *Visor,
 	}
 }
 
-func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
+func (self *RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
 	return v.Wallets.ToPublicReadable()
 }
 
@@ -59,11 +103,13 @@ func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
 REFACTOR
 */
 
+/*
 func CreateWallet(self *Visor) wallet.Wallet {
 	w := self.Config.WalletConstructor()
 	self.Wallets.Add(w)
 	return w
 }
+*/
 
 func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
 	w := self.Wallets.Get(walletID)

@@ -129,26 +129,28 @@ func NewVisor(c VisorConfig) *Visor {
 	// Load the wallets
 	//TODO: move this out of visor
 
-	logger.Debug("Wallet Directory= %v", c.WalletDirectory)
+	/*
+		logger.Debug("Wallet Directory= %v", c.WalletDirectory)
 
-	wallets := wallet.Wallets{}
+		wallets := wallet.Wallets{}
 
-	if c.WalletDirectory != "" {
-		w, err := wallet.LoadWallets(c.WalletDirectory)
-		if err != nil {
-			log.Panicf("Failed to load all wallets: %v", err)
-		}
-		wallets = w
-	}
-	if len(wallets) == 0 {
-		wallets.Add(c.WalletConstructor())
 		if c.WalletDirectory != "" {
-			errs := wallets.Save(c.WalletDirectory)
-			if len(errs) != 0 {
-				log.Panicf("Failed to save wallets: %v", errs)
+			w, err := wallet.LoadWallets(c.WalletDirectory)
+			if err != nil {
+				log.Panicf("Failed to load all wallets: %v", err)
+			}
+			wallets = w
+		}
+		if len(wallets) == 0 {
+			wallets.Add(c.WalletConstructor())
+			if c.WalletDirectory != "" {
+				errs := wallets.Save(c.WalletDirectory)
+				if len(errs) != 0 {
+					log.Panicf("Failed to save wallets: %v", errs)
+				}
 			}
 		}
-	}
+	*/
 
 	// Load the blockchain the block signatures
 	blockchain := loadBlockchain(c.BlockchainFile, c.GenesisAddress)

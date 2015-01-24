@@ -558,6 +558,7 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	}
 }
 
+/*
 func (self *Visor) CreateWallet() wallet.Wallet {
 	w := self.Config.WalletConstructor()
 	self.Wallets.Add(w)
@@ -665,6 +666,7 @@ func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 	}
 	return b
 }
+*/
 
 // Creates a wallet with a single master entry
 /*

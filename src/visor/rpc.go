@@ -25,6 +25,7 @@ type TransactionResults struct {
 
 type RPC struct{}
 
+/*
 func (self RPC) GetWalletBalance(v *Visor,
 	walletID wallet.WalletID) *wallet.BalancePair {
 	bp := v.WalletBalance(walletID)
@@ -61,6 +62,7 @@ func (self RPC) GetWallet(v *Visor,
 func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
 	return v.Wallets.ToPublicReadable()
 }
+*/
 
 func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 	bm := v.GetBlockchainMetadata()

@@ -16,6 +16,157 @@ import (
 REFACTOR
 */
 
+type RPC struct{}
+
+func (self RPC) GetWalletBalance(v *Visor,
+	walletID wallet.WalletID) *wallet.BalancePair {
+	bp := v.WalletBalance(walletID)
+	return &bp
+}
+
+func (self RPC) ReloadWallets(v *Visor) error {
+	return v.ReloadWallets()
+}
+
+func (self RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
+	return v.SaveWallet(walletID)
+}
+
+func (self RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
+	return v.SaveWallets()
+}
+
+func (self RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
+	w := v.CreateWallet()
+	return wallet.NewReadableWallet(w)
+}
+
+func (self RPC) GetWallet(v *Visor,
+	walletID wallet.WalletID) *wallet.ReadableWallet {
+	w := v.Wallets.Get(walletID)
+	if w == nil {
+		return nil
+	} else {
+		return wallet.NewReadableWallet(w)
+	}
+}
+
+func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
+	return v.Wallets.ToPublicReadable()
+}
+
+/*
+REFACTOR
+*/
+
+func CreateWallet(self *Visor) wallet.Wallet {
+	w := self.Config.WalletConstructor()
+	self.Wallets.Add(w)
+	return w
+}
+
+func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
+	w := self.Wallets.Get(walletID)
+	if w == nil {
+		return fmt.Errorf("Unknown wallet %s", walletID)
+	}
+	return w.Save(self.Config.WalletDirectory)
+}
+
+func (self *Visor) SaveWallets() map[wallet.WalletID]error {
+	return self.Wallets.Save(self.Config.WalletDirectory)
+}
+
+// Loads & unloads wallets based on WalletDirectory contents
+func (self *Visor) ReloadWallets() error {
+	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
+	if err != nil {
+		return err
+	}
+	self.Wallets = wallets
+	return nil
+}
+
+// Creates a transaction spending amt with additional fee.  Fee is in addition
+// to the base required fee given amt.Hours.
+func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
+	fee uint64, dest cipher.Address) (coin.Transaction, error) {
+
+	wallet := self.Wallets.Get(walletID)
+	if wallet == nil {
+		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
+	}
+	tx, err := CreateSpendingTransaction(wallet, self.Unconfirmed,
+		&self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
+		dest)
+	if err != nil {
+		return tx, err
+	}
+	if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize); err != nil {
+		log.Panicf("Created invalid spending txn: %v", err)
+	}
+	if err := self.blockchain.VerifyTransaction(tx); err != nil {
+		log.Panicf("Created invalid spending txn: %v", err)
+	}
+	return tx, err
+}
+
+// Returns the confirmed & predicted balance for a single address
+func (self *Visor) AddressBalance(addr cipher.Address) wallet.BalancePair {
+	auxs := self.blockchain.Unspent.AllForAddress(addr)
+	puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
+	confirmed := self.balance(auxs)
+	predicted := self.balance(auxs.Sub(puxs))
+	return wallet.BalancePair{confirmed, predicted}
+}
+
+// Returns the confirmed & predicted balance for a Wallet
+func (self *Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
+	wlt := self.Wallets.Get(walletID)
+	if wlt == nil {
+		return wallet.BalancePair{}
+	}
+	auxs := self.blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
+	puxs := self.Unconfirmed.SpendsForAddresses(&self.blockchain.Unspent,
+		wlt.GetAddressSet())
+	confirmed := self.totalBalance(auxs)
+	predicted := self.totalBalance(auxs.Sub(puxs))
+	return wallet.BalancePair{confirmed, predicted}
+}
+
+// Return the total balance of all loaded wallets
+func (self *Visor) TotalBalance() wallet.BalancePair {
+	b := wallet.BalancePair{}
+	for _, w := range self.Wallets {
+		c := self.WalletBalance(w.GetID())
+		b.Confirmed = b.Confirmed.Add(c.Confirmed)
+		b.Predicted = b.Confirmed.Add(c.Predicted)
+	}
+	return b
+}
+
+// Computes the total balance for a cipher.Address's coin.UxOuts
+func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
+	prevTime := self.blockchain.Time()
+	b := wallet.NewBalance(0, 0)
+	for _, ux := range uxs {
+		b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+	}
+	return b
+}
+
+// Computes the total balance for cipher.Addresses and their coin.UxOuts
+func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
+	prevTime := self.blockchain.Time()
+	b := wallet.NewBalance(0, 0)
+	for _, uxs := range auxs {
+		for _, ux := range uxs {
+			b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+		}
+	}
+	return b
+}
+
 /*
 REFACTOR
 */

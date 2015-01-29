@@ -490,7 +490,7 @@ func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
 // TODO
 // - rename InjectTransaction
 func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
-	addrs := self.Wallets.GetAddressSet()
+	//addrs := self.Wallets.GetAddressSet()
 	return self.Unconfirmed.RecordTxn(self.Blockchain, txn, self.Config.MaxBlockSize)
 }
 

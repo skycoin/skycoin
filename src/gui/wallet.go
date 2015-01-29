@@ -94,7 +94,7 @@ func (self *WalletRPC) CreateWallet(v *visor.Visor, seed string) *wallet.Readabl
 
 func (self *WalletRPC) GetWallet(v *visor.Visor,
 	walletID wallet.WalletID) *wallet.ReadableWallet {
-	w := v.Wallets.Get(walletID)
+	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return nil
 	} else {
@@ -103,7 +103,7 @@ func (self *WalletRPC) GetWallet(v *visor.Visor,
 }
 
 func (self *WalletRPC) GetWallets(v *visor.Visor) []*wallet.ReadableWallet {
-	return v.Wallets.ToPublicReadable()
+	return self.Wallets.ToPublicReadable()
 }
 
 //modify to return error
@@ -168,36 +168,9 @@ func (self *visor.Visor) ReloadWallets() error {
 }
 */
 
-// Creates a transaction spending amt with additional fee.  Fee is in addition
-// to the base required fee given amt.Hours.
-// TODO
-// - pull in outputs from blockchain from wallet
-// - create transaction here
-// - sign transction and return
-func Spend(self *visor.Visor, walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest cipher.Address) (coin.Transaction, error) {
-
-	wallet := self.Wallets.Get(walletID)
-	if wallet == nil {
-		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
-	}
-	//pull in outputs and do this here
-	tx, err := visor.CreateSpendingTransaction(wallet, self.Unconfirmed,
-		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
-		dest)
-	if err != nil {
-		return tx, err
-	}
-	if err := VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
-	}
-	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
-	}
-	return tx, err
-}
-
 // Returns the confirmed & predicted balance for a single address
+// IMPLEMENT?
+/*
 func AddressBalance(self *visor.Visor, addr cipher.Address) wallet.BalancePair {
 	auxs := self.Blockchain.Unspent.AllForAddress(addr)
 	puxs := self.Unconfirmed.SpendsForAddress(&self.Blockchain.Unspent, addr)
@@ -205,6 +178,7 @@ func AddressBalance(self *visor.Visor, addr cipher.Address) wallet.BalancePair {
 	predicted := self.balance(auxs.Sub(puxs))
 	return wallet.BalancePair{confirmed, predicted}
 }
+*/
 
 // Returns the confirmed & predicted balance for a Wallet
 /*
@@ -261,10 +235,17 @@ func (self *visor.Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 REFACTOR
 */
 
-func Spend(self *daemon.Gateway, walletID wallet.WalletID, amt wallet.Balance,
+// TODO
+// - split send into
+// -- get addresses
+// -- get unspent outputs
+// -- construct transaction
+// -- sign transaction
+// -- inject transaction
+func Spend(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) interface{} {
 	self.Requests <- func() interface{} {
-		return Spend2(self.D.Visor, self.D.Pool, self.Visor,
+		return Spend2(self.D.Visor, self.D.Pool, wrpc,
 			walletID, amt, fee, dest)
 	}
 	r := <-self.Responses
@@ -277,22 +258,51 @@ type SpendResult struct {
 	Error       string                    `json:"error"`
 }
 
-func Spend2(v *daemon.Visor, pool *daemon.Pool, vrpc visor.WalletRPC,
+func Spend2(v *daemon.Visor, pool *daemon.Pool, wrpc WalletRPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 
-	txn, err := v.Spend(walletID, amt, fee, dest, pool)
+	txn, err := Spend3(v.Visor, wrpc, walletID, amt, fee, dest)
 	errString := ""
 	if err != nil {
 		errString = err.Error()
 		logger.Error("Failed to make a spend: %v", err)
 	}
-	b := vrpc.GetWalletBalance(v.Visor, walletID)
+	b := wrpc.GetWalletBalance(v.Visor, walletID)
 	return &SpendResult{
-		Balance:     *b,
+		Balance:     b,
 		Transaction: visor.NewReadableTransaction(&txn),
 		Error:       errString,
 	}
+}
+
+// Creates a transaction spending amt with additional fee.  Fee is in addition
+// to the base required fee given amt.Hours.
+// TODO
+// - pull in outputs from blockchain from wallet
+// - create transaction here
+// - sign transction and return
+func Spend3(self *visor.Visor, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
+	fee uint64, dest cipher.Address) (coin.Transaction, error) {
+
+	wallet := wrpc.Wallets.Get(walletID)
+	if wallet == nil {
+		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
+	}
+	//pull in outputs and do this here
+	tx, err := visor.CreateSpendingTransaction(wallet, self.Unconfirmed,
+		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
+		dest)
+	if err != nil {
+		return tx, err
+	}
+	if err := visor.VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
+		log.Panicf("Created invalid spending txn: %v", err)
+	}
+	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
+		log.Panicf("Created invalid spending txn: %v", err)
+	}
+	return tx, err
 }
 
 // Returns a *Balance

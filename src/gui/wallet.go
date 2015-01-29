@@ -29,7 +29,7 @@ type WalletRPC struct {
 }
 
 //use a global for now
-var WalletRPCGlobal *WalletRPC = NewWalletRPC()
+var Wg *WalletRPC = NewWalletRPC()
 
 func NewWalletRPC() *WalletRPC {
 	rpc := WalletRPC{}
@@ -238,13 +238,7 @@ func (self *visor.Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 REFACTOR
 */
 
-// TODO
-// - split send into
-// -- get addresses
-// -- get unspent outputs
-// -- construct transaction
-// -- sign transaction
-// -- inject transaction
+/*
 func Spend(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) interface{} {
 	self.Requests <- func() interface{} {
@@ -254,6 +248,7 @@ func Spend(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID, amt w
 	r := <-self.Responses
 	return r
 }
+*/
 
 type SpendResult struct {
 	Balance     wallet.BalancePair        `json:"balance"`
@@ -261,11 +256,18 @@ type SpendResult struct {
 	Error       string                    `json:"error"`
 }
 
-func Spend2(v *daemon.Visor, wrpc WalletRPC,
+// TODO
+// - split send into
+// -- get addresses
+// -- get unspent outputs
+// -- construct transaction
+// -- sign transaction
+// -- inject transaction
+func Spend(v *daemon.Visor, wrpc WalletRPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 
-	txn, err := Spend3(v.Visor, wrpc, walletID, amt, fee, dest)
+	txn, err := Spend2(v.Visor, wrpc, walletID, amt, fee, dest)
 	errString := ""
 	if err != nil {
 		errString = err.Error()
@@ -285,7 +287,7 @@ func Spend2(v *daemon.Visor, wrpc WalletRPC,
 // - pull in outputs from blockchain from wallet
 // - create transaction here
 // - sign transction and return
-func Spend3(self *visor.Visor, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
+func Spend2(self *visor.Visor, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) (coin.Transaction, error) {
 
 	wallet := wrpc.Wallets.Get(walletID)
@@ -308,6 +310,7 @@ func Spend3(self *visor.Visor, wrpc WalletRPC, walletID wallet.WalletID, amt wal
 	return tx, err
 }
 
+/*
 // Returns a *Balance
 //DEPRECATE
 func GetWalletBalance(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID) interface{} {
@@ -377,6 +380,7 @@ func CreateWallet(self *daemon.Gateway, seed string) interface{} {
 	r := <-self.Responses
 	return r
 }
+*/
 
 /*
 REFACTOR
@@ -387,7 +391,7 @@ REFACTOR
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.FormValue("id")
-		SendOr404(w, GetWalletBalance(gateway, wallet.WalletID(id)))
+		SendOr404(w, Wg.GetWalletBalance(gateway.D.Visor.Visor, wallet.WalletID(id)))
 	}
 }
 
@@ -428,7 +432,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			Error400(w, "Invalid \"hours\" value")
 			return
 		}
-		SendOr404(w, Spend(gateway, walletId, wallet.NewBalance(coins, hours),
+		SendOr404(w, Spend(self.D.Visor, walletId, wallet.NewBalance(coins, hours),
 			fee, dst))
 	}
 }
@@ -447,12 +451,13 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		//iw := gateway.CreateWallet("") //returns wallet
 		//iw := wallet.NewReadableWallet(w)
 
-		w1 := gateway.V.CreateWallet()
+		//make this use seed
+		w1 := Wg.CreateWallet() //use seed!
 		iw := wallet.NewReadableWallet(w1)
 
 		if iw != nil {
 			w1.SetName(name)
-			if err := SaveWallet(gateway, w1.GetID()); err != nil {
+			if err := Wg.SaveWallet(w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}
@@ -466,11 +471,11 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 		// Update wallet
 		id := wallet.WalletID(r.FormValue("id"))
 		name := r.FormValue("name")
-		iw := GetWallet(gateway, id)
+		iw := Wg.GetWallet(id)
 		if iw != nil {
 			w1 := iw.(wallet.Wallet)
 			w1.SetName(name)
-			if err := SaveWallet(gateway, w1.GetID()); err != nil {
+			if err := Wg.SaveWallet(w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}
@@ -483,7 +488,7 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			ret := GetWallet(gateway, wallet.WalletID(r.FormValue("id")))
+			ret := Wg.GetWallet(wallet.WalletID(r.FormValue("id")))
 			SendOr404(w, ret)
 		}
 	}
@@ -493,7 +498,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//ret := wallet.Wallets.ToPublicReadable()
-		ret := GetWallets(gateway)
+		ret := Wg.GetWallets()
 		SendOr404(w, ret)
 	}
 }
@@ -501,7 +506,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Saves all loaded wallets
 func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errs := SaveWallets(gateway).(map[wallet.WalletID]error)
+		errs := Wg.SaveWallets().(map[wallet.WalletID]error)
 		if len(errs) != 0 {
 			err := ""
 			for id, e := range errs {
@@ -515,7 +520,7 @@ func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Loads/unloads wallets from the wallet directory
 func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := ReloadWallets(gateway)
+		err := Wg.ReloadWallets()
 		if err != nil {
 			Error500(w, err.(error).Error())
 		}
@@ -525,14 +530,8 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Loads/unloads wallets from the wallet directory
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		//self.Visor.GetWallets(self.D.Visor.Visor)
-
-		//	Error500(w, err.(error).Error())
-		//ret := GetWallets(gateway)
 		SendOr404(w, ret)
-
 	}
 }
 

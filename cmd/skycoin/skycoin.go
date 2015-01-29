@@ -22,7 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/wallet"
+	//"github.com/skycoin/skycoin/src/wallet"
 )
 
 // Command line interface arguments
@@ -443,7 +443,7 @@ func configureDaemon(c *Config) daemon.Config {
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
 
-	dc.Visor.Config.WalletDirectory = c.WalletDirectory
+	//dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BlockchainFile = c.BlockchainFile
 	dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
 
@@ -456,7 +456,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 
-	dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
+	//dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
 
 	return dc
 }

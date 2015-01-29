@@ -21,6 +21,11 @@ import (
 REFACTOR
 */
 
+/*
+This section is redundant
+- after moving the wallets out of visor and daemon, wallet should be in the wallet module
+- there is no need for multiple wallets in the same application
+*/
 //type WalletRPC struct{}
 
 type WalletRPC struct {
@@ -83,7 +88,7 @@ func (self *WalletRPC) SaveWallets() map[wallet.WalletID]error {
 	return self.Wallets.Save(self.WalletDirectory)
 }
 
-func (self *WalletRPC) CreateWallet(seed string) *wallet.ReadableWallet {
+func (self *WalletRPC) CreateWallet(seed string) wallet.Wallet {
 	//WalletConstructor: wallet.NewSimpleWallet,
 	//WalletTypeDefault: wallet.SimpleWalletType,
 
@@ -91,11 +96,15 @@ func (self *WalletRPC) CreateWallet(seed string) *wallet.ReadableWallet {
 
 	w := wallet.NewSimpleWallet() //wallet constructor
 	self.Wallets.Add(w)
-
-	return wallet.NewReadableWallet(w)
+	return w
+	//return wallet.NewReadableWallet(w)
 }
 
-func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.ReadableWallet {
+func (self *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
+	return self.Wallets.ToPublicReadable()
+}
+
+func (self *WalletRPC) GetWalletReadable(walletID wallet.WalletID) *wallet.ReadableWallet {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return nil
@@ -104,9 +113,18 @@ func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.ReadableWalle
 	}
 }
 
-func (self *WalletRPC) GetWallets() []*wallet.ReadableWallet {
-	return self.Wallets.ToPublicReadable()
+func (self *WalletRPC) GetWallet(walletID wallet.WalletID) wallet.Wallet {
+	w := self.Wallets.Get(walletID)
+	if w == nil {
+		return nil
+	} else {
+		return w
+	}
 }
+
+//func (self *WalletRPC) GetWallets() []wallet.Wallet {
+//	return self.Wallets
+//}
 
 //modify to return error
 // NOT WORKING
@@ -263,7 +281,7 @@ type SpendResult struct {
 // -- construct transaction
 // -- sign transaction
 // -- inject transaction
-func Spend(v *daemon.Visor, wrpc WalletRPC,
+func Spend(v *daemon.Visor, wrpc *WalletRPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 
@@ -287,7 +305,7 @@ func Spend(v *daemon.Visor, wrpc WalletRPC,
 // - pull in outputs from blockchain from wallet
 // - create transaction here
 // - sign transction and return
-func Spend2(self *visor.Visor, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
+func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) (coin.Transaction, error) {
 
 	wallet := wrpc.Wallets.Get(walletID)
@@ -432,7 +450,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			Error400(w, "Invalid \"hours\" value")
 			return
 		}
-		SendOr404(w, Spend(self.D.Visor, walletId, wallet.NewBalance(coins, hours),
+		SendOr404(w, Spend(gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
 			fee, dst))
 	}
 }
@@ -452,7 +470,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		//iw := wallet.NewReadableWallet(w)
 
 		//make this use seed
-		w1 := Wg.CreateWallet() //use seed!
+		w1 := Wg.CreateWallet("") //use seed!
 		iw := wallet.NewReadableWallet(w1)
 
 		if iw != nil {
@@ -471,15 +489,16 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 		// Update wallet
 		id := wallet.WalletID(r.FormValue("id"))
 		name := r.FormValue("name")
-		iw := Wg.GetWallet(id)
-		if iw != nil {
-			w1 := iw.(wallet.Wallet)
+		w1 := Wg.GetWallet(id)
+		if w1 != nil {
+			//w1 := iw.(wallet.Wallet)
 			w1.SetName(name)
 			if err := Wg.SaveWallet(w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
 			}
 		}
+		iw := wallet.NewReadableWallet(w1)
 		SendOr404(w, iw)
 	}
 }
@@ -498,7 +517,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//ret := wallet.Wallets.ToPublicReadable()
-		ret := Wg.GetWallets()
+		ret := Wg.GetWalletsReadable()
 		SendOr404(w, ret)
 	}
 }
@@ -506,7 +525,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Saves all loaded wallets
 func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errs := Wg.SaveWallets().(map[wallet.WalletID]error)
+		errs := Wg.SaveWallets() // (map[wallet.WalletID]error)
 		if len(errs) != 0 {
 			err := ""
 			for id, e := range errs {

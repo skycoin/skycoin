@@ -121,8 +121,8 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 			log.Printf("GetWalletBalance: ID NOT FOUND")
 			return wallet.BalancePair{}
 		}
-		auxs := self.blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-		puxs := self.Unconfirmed.SpendsForAddresses(&self.blockchain.Unspent,
+		auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
+		puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
 			wlt.GetAddressSet())
 		confirmed := self.totalBalance(auxs)
 		predicted := self.totalBalance(auxs.Sub(puxs))
@@ -183,15 +183,15 @@ func Spend(self *visor.Visor, walletID wallet.WalletID, amt wallet.Balance,
 	}
 	//pull in outputs and do this here
 	tx, err := visor.CreateSpendingTransaction(wallet, self.Unconfirmed,
-		&self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
+		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
 		dest)
 	if err != nil {
 		return tx, err
 	}
-	if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize); err != nil {
+	if err := VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
 		log.Panicf("Created invalid spending txn: %v", err)
 	}
-	if err := self.blockchain.VerifyTransaction(tx); err != nil {
+	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
 		log.Panicf("Created invalid spending txn: %v", err)
 	}
 	return tx, err
@@ -199,8 +199,8 @@ func Spend(self *visor.Visor, walletID wallet.WalletID, amt wallet.Balance,
 
 // Returns the confirmed & predicted balance for a single address
 func AddressBalance(self *visor.Visor, addr cipher.Address) wallet.BalancePair {
-	auxs := self.blockchain.Unspent.AllForAddress(addr)
-	puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
+	auxs := self.Blockchain.Unspent.AllForAddress(addr)
+	puxs := self.Unconfirmed.SpendsForAddress(&self.Blockchain.Unspent, addr)
 	confirmed := self.balance(auxs)
 	predicted := self.balance(auxs.Sub(puxs))
 	return wallet.BalancePair{confirmed, predicted}
@@ -213,8 +213,8 @@ func (self *visor.Visor) WalletBalance(walletID wallet.WalletID) wallet.BalanceP
 	if wlt == nil {
 		return wallet.BalancePair{}
 	}
-	auxs := self.blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-	puxs := self.Unconfirmed.SpendsForAddresses(&self.blockchain.Unspent,
+	auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
+	puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
 		wlt.GetAddressSet())
 	confirmed := self.totalBalance(auxs)
 	predicted := self.totalBalance(auxs.Sub(puxs))
@@ -236,7 +236,7 @@ func (self *visor.Visor) TotalBalance() wallet.BalancePair {
 
 // Computes the total balance for a cipher.Address's coin.UxOuts
 func (self *visor.Visor) balance(uxs coin.UxArray) wallet.Balance {
-	prevTime := self.blockchain.Time()
+	prevTime := self.Blockchain.Time()
 	b := wallet.NewBalance(0, 0)
 	for _, ux := range uxs {
 		b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
@@ -246,7 +246,7 @@ func (self *visor.Visor) balance(uxs coin.UxArray) wallet.Balance {
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts
 func (self *visor.Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
-	prevTime := self.blockchain.Time()
+	prevTime := self.Blockchain.Time()
 	b := wallet.NewBalance(0, 0)
 	for _, uxs := range auxs {
 		for _, ux := range uxs {

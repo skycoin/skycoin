@@ -23,7 +23,7 @@ type VisorConfig struct {
 	// Is this the master blockchain
 	IsMaster bool
 
-	WalletDirectory string //move out
+	//WalletDirectory string //move out
 
 	//Public key of blockchain authority
 	BlockchainPubkey cipher.PubKey
@@ -60,9 +60,9 @@ type VisorConfig struct {
 	// Number of coins in genesis block
 	GenesisCoinVolume uint64
 	// Function that creates a new Wallet
-	WalletConstructor wallet.WalletConstructor
+	//WalletConstructor wallet.WalletConstructor
 	// Default type of wallet to create
-	WalletTypeDefault wallet.WalletType
+	//WalletTypeDefault wallet.WalletType
 }
 
 //Note, put cap on block size, not on transactions/block
@@ -73,10 +73,10 @@ func NewVisorConfig() VisorConfig {
 		IsMaster: false,
 
 		//move wallet management out
-		WalletDirectory: "",
+		//WalletDirectory: "",
 
-		WalletConstructor: wallet.NewSimpleWallet,
-		WalletTypeDefault: wallet.SimpleWalletType,
+		//WalletConstructor: wallet.NewSimpleWallet,
+		//WalletTypeDefault: wallet.SimpleWalletType,
 
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
@@ -107,7 +107,7 @@ type Visor struct {
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed *UnconfirmedTxnPool
 	// Wallets holding our keys for spending
-	Wallets wallet.Wallets
+	//Wallets wallet.Wallets
 	// Master & personal keys
 	blockchain *coin.Blockchain
 	blockSigs  BlockSigs
@@ -203,7 +203,7 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 //panics if conditions for genesis block are not met
 func (self *Visor) GenesisPreconditions() {
 
-	//if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+	//if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 	//	log.Panic("Blockchain already has genesis")
 	//}
 
@@ -219,14 +219,14 @@ func (self *Visor) GenesisPreconditions() {
 func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 	self.GenesisPreconditions()
 
-	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}
 	if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
 		log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
 	}
 
-	gb := self.blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
+	gb := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
 		self.Config.GenesisTimestamp, self.Config.GenesisCoinVolume)
 	sb := self.SignBlock(gb)
 	if err := self.verifySignedBlock(&sb); err != nil {
@@ -246,11 +246,11 @@ func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 func (self *Visor) CreateGenesisBlock() SignedBlock {
 	self.GenesisPreconditions()
 
-	if len(self.blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
 		log.Panic("Blockchain already has genesis")
 	}
 	//addr := self.Config.GenesisAddress
-	b := self.blockchain.CreateGenesisBlock(self.Config.GenesisAddress, self.Config.GenesisTimestamp,
+	b := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress, self.Config.GenesisTimestamp,
 		self.Config.GenesisCoinVolume)
 	sb := SignedBlock{
 		Block: b,
@@ -258,7 +258,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 	}
 	self.blockSigs.record(&sb)
 	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
-		self.blockchain)
+		self.Blockchain)
 	if err != nil {
 		log.Panicf("Cannot create genesis block, signature verification failed: %v", err)
 	}
@@ -268,7 +268,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
 	logger.Debug("Refreshing unconfirmed transactions")
-	self.Unconfirmed.Refresh(self.blockchain,
+	self.Unconfirmed.Refresh(self.Blockchain,
 		self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
 }
 
@@ -277,7 +277,7 @@ func (self *Visor) SaveBlockchain() error {
 	if self.Config.BlockchainFile == "" {
 		return errors.New("No BlockchainFile location set")
 	} else {
-		return SaveBlockchain(self.blockchain, self.Config.BlockchainFile)
+		return SaveBlockchain(self.Blockchain, self.Config.BlockchainFile)
 	}
 }
 
@@ -300,9 +300,9 @@ func (self *Visor) CreateBlock(when uint64) (SignedBlock, error) {
 		return sb, errors.New("No transactions")
 	}
 	txns := self.Unconfirmed.RawTxns()
-	txns = coin.SortTransactions(txns, self.blockchain.TransactionFee)
+	txns = coin.SortTransactions(txns, self.Blockchain.TransactionFee)
 	txns = txns.TruncateBytesTo(self.Config.MaxBlockSize)
-	b, err := self.blockchain.NewBlockFromTransactions(txns, when)
+	b, err := self.Blockchain.NewBlockFromTransactions(txns, when)
 	if err != nil {
 		return sb, err
 	}
@@ -325,7 +325,7 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	if err := self.verifySignedBlock(&b); err != nil {
 		return err
 	}
-	_, err := self.blockchain.ExecuteBlock(b.Block)
+	_, err := self.Blockchain.ExecuteBlock(b.Block)
 	if err != nil {
 		return err
 	}
@@ -334,7 +334,7 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	// TODO -- check if bitcoin allows blocks to be receiving out of order
 	self.blockSigs.record(&b)
 	// Remove the transactions in the Block from the unconfirmed pool
-	self.Unconfirmed.RemoveTransactions(self.blockchain,
+	self.Unconfirmed.RemoveTransactions(self.Blockchain,
 		b.Block.Body.Transactions)
 	return nil
 }
@@ -365,18 +365,19 @@ func (self *Visor) SignBlock(b coin.Block) SignedBlock {
 //Make local copy and update when block header changes
 // update should lock
 // isolate effect of threading
+// call .Array() to get []UxOut array
 func (self *Visor) GetUnspentOutputs() []coin.UxOut {
-	//self.blockchain
+	uxs := self.Blockchain.Unspent.Array()
+	return uxs
+}
 
-	uxs := self.blockchain.Unspent.Array()
+func (self *Visor) GetUnspentOutputsMap() coin.UnspentPool {
+	uxs := self.Blockchain.Unspent
 	return uxs
 }
 
 func (self *Visor) GetUnspentOutputReadables() []ReadableOutput {
-	//self.blockchain
-
 	uxs := self.GetUnspentOutputs()
-
 	rx_readables := make([]ReadableOutput, len(uxs))
 	for i, ux := range uxs {
 		rx_readables[i] = NewReadableOutput(ux)
@@ -401,7 +402,7 @@ func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
 		i := seq + 1 + j
 		blocks = append(blocks, SignedBlock{
 			Sig:   self.blockSigs.Sigs[i],
-			Block: self.blockchain.Blocks[i],
+			Block: self.Blockchain.Blocks[i],
 		})
 	}
 	return blocks
@@ -413,18 +414,18 @@ func (self *Visor) GetGenesisBlock() SignedBlock {
 	if !ok {
 		log.Panic("No genesis signature")
 	}
-	if len(self.blockchain.Blocks) == 0 {
+	if len(self.Blockchain.Blocks) == 0 {
 		log.Panic("No genesis block")
 	}
 	return SignedBlock{
 		Sig:   gsig,
-		Block: self.blockchain.Blocks[0],
+		Block: self.Blockchain.Blocks[0],
 	}
 }
 
 // Returns the highest BkSeq we know
 func (self *Visor) MostRecentBkSeq() uint64 {
-	h := self.blockchain.Head()
+	h := self.Blockchain.Head()
 	return h.Head.BkSeq
 }
 
@@ -456,17 +457,17 @@ func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
 // Returns a copy of the block at seq. Returns error if seq out of range
 func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 	var b coin.Block
-	if seq >= uint64(len(self.blockchain.Blocks)) {
+	if seq >= uint64(len(self.Blockchain.Blocks)) {
 		return b, errors.New("Block seq out of range")
 	}
-	return self.blockchain.Blocks[seq], nil
+	return self.Blockchain.Blocks[seq], nil
 }
 
 // Returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
 func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
-	if end > uint64(len(self.blockchain.Blocks)) {
-		end = uint64(len(self.blockchain.Blocks))
+	if end > uint64(len(self.Blockchain.Blocks)) {
+		end = uint64(len(self.Blockchain.Blocks))
 	}
 	var length uint64 = 0
 	if start < end {
@@ -474,7 +475,7 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 	}
 	blocks := make([]coin.Block, 0, length)
 	for i := start; i < end; i++ {
-		blocks = append(blocks, self.blockchain.Blocks[i])
+		blocks = append(blocks, self.Blockchain.Blocks[i])
 	}
 	return blocks
 }
@@ -488,7 +489,7 @@ func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
 // already in the blockchain
 func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
 	addrs := self.Wallets.GetAddressSet()
-	return self.Unconfirmed.RecordTxn(self.blockchain, txn, addrs,
+	return self.Unconfirmed.RecordTxn(self.Blockchain, txn, addrs,
 		self.Config.MaxBlockSize)
 }
 
@@ -497,10 +498,10 @@ func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
 func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	txns := make([]Transaction, 0)
 	// Look in the blockchain
-	uxs := self.blockchain.Unspent.AllForAddress(a)
+	uxs := self.Blockchain.Unspent.AllForAddress(a)
 	mxSeq := self.MostRecentBkSeq()
 	for _, ux := range uxs {
-		bk := self.blockchain.Blocks[ux.Head.BkSeq]
+		bk := self.Blockchain.Blocks[ux.Head.BkSeq]
 		tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
 		if ok {
 			h := mxSeq - bk.Head.BkSeq + 1
@@ -543,7 +544,7 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	// TODO -- this is extremely slow as it does a full blockchain scan
 	// We need an index from txn hash to block.  At least an index per block
 	// to its contained txns
-	for _, b := range self.blockchain.Blocks {
+	for _, b := range self.Blockchain.Blocks {
 		tx, ok := b.GetTransaction(txHash)
 		if ok {
 			height := self.MostRecentBkSeq() - b.Head.BkSeq + 1
@@ -599,15 +600,15 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
 	}
 	tx, err := CreateSpendingTransaction(wallet, self.Unconfirmed,
-		&self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
+		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
 		dest)
 	if err != nil {
 		return tx, err
 	}
-	if err := VerifyTransaction(self.blockchain, &tx, self.Config.MaxBlockSize); err != nil {
+	if err := VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
 		log.Panicf("Created invalid spending txn: %v", err)
 	}
-	if err := self.blockchain.VerifyTransaction(tx); err != nil {
+	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
 		log.Panicf("Created invalid spending txn: %v", err)
 	}
 	return tx, err
@@ -615,8 +616,8 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 
 // Returns the confirmed & predicted balance for a single address
 func (self *Visor) AddressBalance(addr cipher.Address) wallet.BalancePair {
-	auxs := self.blockchain.Unspent.AllForAddress(addr)
-	puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
+	auxs := self.Blockchain.Unspent.AllForAddress(addr)
+	puxs := self.Unconfirmed.SpendsForAddress(&self.Blockchain.Unspent, addr)
 	confirmed := self.balance(auxs)
 	predicted := self.balance(auxs.Sub(puxs))
 	return wallet.BalancePair{confirmed, predicted}
@@ -628,8 +629,8 @@ func (self *Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
 	if wlt == nil {
 		return wallet.BalancePair{}
 	}
-	auxs := self.blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-	puxs := self.Unconfirmed.SpendsForAddresses(&self.blockchain.Unspent,
+	auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
+	puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
 		wlt.GetAddressSet())
 	confirmed := self.totalBalance(auxs)
 	predicted := self.totalBalance(auxs.Sub(puxs))
@@ -649,7 +650,7 @@ func (self *Visor) TotalBalance() wallet.BalancePair {
 
 // Computes the total balance for a cipher.Address's coin.UxOuts
 func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
-	prevTime := self.blockchain.Time()
+	prevTime := self.Blockchain.Time()
 	b := wallet.NewBalance(0, 0)
 	for _, ux := range uxs {
 		b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
@@ -659,7 +660,7 @@ func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts
 func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
-	prevTime := self.blockchain.Time()
+	prevTime := self.Blockchain.Time()
 	b := wallet.NewBalance(0, 0)
 	for _, uxs := range auxs {
 		for _, ux := range uxs {

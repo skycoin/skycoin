@@ -28,6 +28,9 @@ type WalletRPC struct {
 	WalletDirectory string
 }
 
+//use a global for now
+var WalletRPCGlobal *WalletRPC = NewWalletRPC()
+
 func NewWalletRPC() *WalletRPC {
 	rpc := WalletRPC{}
 
@@ -68,7 +71,7 @@ func (self *WalletRPC) ReloadWallets() error {
 	return nil
 }
 
-func (self *WalletRPC) SaveWallet(v *visor.Visor, walletID wallet.WalletID) error {
+func (self *WalletRPC) SaveWallet(walletID wallet.WalletID) error {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return fmt.Errorf("Unknown wallet %s", walletID)
@@ -76,11 +79,11 @@ func (self *WalletRPC) SaveWallet(v *visor.Visor, walletID wallet.WalletID) erro
 	return w.Save(self.WalletDirectory)
 }
 
-func (self *WalletRPC) SaveWallets(v *visor.Visor) map[wallet.WalletID]error {
+func (self *WalletRPC) SaveWallets() map[wallet.WalletID]error {
 	return self.Wallets.Save(self.WalletDirectory)
 }
 
-func (self *WalletRPC) CreateWallet(v *visor.Visor, seed string) *wallet.ReadableWallet {
+func (self *WalletRPC) CreateWallet(seed string) *wallet.ReadableWallet {
 	//WalletConstructor: wallet.NewSimpleWallet,
 	//WalletTypeDefault: wallet.SimpleWalletType,
 
@@ -92,8 +95,7 @@ func (self *WalletRPC) CreateWallet(v *visor.Visor, seed string) *wallet.Readabl
 	return wallet.NewReadableWallet(w)
 }
 
-func (self *WalletRPC) GetWallet(v *visor.Visor,
-	walletID wallet.WalletID) *wallet.ReadableWallet {
+func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.ReadableWallet {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return nil
@@ -102,12 +104,13 @@ func (self *WalletRPC) GetWallet(v *visor.Visor,
 	}
 }
 
-func (self *WalletRPC) GetWallets(v *visor.Visor) []*wallet.ReadableWallet {
+func (self *WalletRPC) GetWallets() []*wallet.ReadableWallet {
 	return self.Wallets.ToPublicReadable()
 }
 
 //modify to return error
 // NOT WORKING
+// actually uses visor
 func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 	walletID wallet.WalletID) wallet.BalancePair {
 	/*
@@ -245,7 +248,7 @@ REFACTOR
 func Spend(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) interface{} {
 	self.Requests <- func() interface{} {
-		return Spend2(self.D.Visor, self.D.Pool, wrpc,
+		return Spend2(self.D.Visor, wrpc,
 			walletID, amt, fee, dest)
 	}
 	r := <-self.Responses
@@ -258,7 +261,7 @@ type SpendResult struct {
 	Error       string                    `json:"error"`
 }
 
-func Spend2(v *daemon.Visor, pool *daemon.Pool, wrpc WalletRPC,
+func Spend2(v *daemon.Visor, wrpc WalletRPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 
@@ -448,7 +451,6 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		iw := wallet.NewReadableWallet(w1)
 
 		if iw != nil {
-			//w2 := iw.(wallet.Wallet)
 			w1.SetName(name)
 			if err := SaveWallet(gateway, w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"

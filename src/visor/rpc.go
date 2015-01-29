@@ -2,7 +2,7 @@ package visor
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/wallet"
+	//"github.com/skycoin/skycoin/src/wallet"
 )
 
 /*

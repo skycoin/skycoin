@@ -2,7 +2,7 @@ package visor
 
 import (
 	"errors"
-	"fmt"
+	//"fmt"
 	"log"
 	"os"
 	"time"
@@ -169,7 +169,7 @@ func NewVisor(c VisorConfig) *Visor {
 		blockchain:  blockchain,
 		blockSigs:   blockSigs,
 		Unconfirmed: NewUnconfirmedTxnPool(),
-		Wallets:     wallets,
+		//Wallets:     wallets,
 	}
 	// Load the genesis block and sign it, if we need one
 	if len(blockchain.Blocks) == 0 {

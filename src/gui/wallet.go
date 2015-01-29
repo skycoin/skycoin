@@ -2,11 +2,14 @@
 package gui
 
 import (
+	"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -18,52 +21,45 @@ import (
 REFACTOR
 */
 
-//type RPC struct{}
+//type WalletRPC struct{}
 
-type RPC struct {
+type WalletRPC struct {
 	Wallets         wallet.Wallets
 	WalletDirectory string
 }
 
-func NewWalletRPC() *RPC {
-	rpc := RPC{}
+func NewWalletRPC() *WalletRPC {
+	rpc := WalletRPC{}
 
 	//wallet directory
 	//cleanup, pass as parameter during init
 	DataDirectory := util.InitDataDir("")
 	rpc.WalletDirectory = filepath.Join(DataDirectory, "wallets/")
-	logger.Debug("Wallet Directory= %v", WalletDirectory)
+	logger.Debug("Wallet Directory= %v", rpc.WalletDirectory)
 
-	rpc.Wallets := wallet.Wallets{}
+	rpc.Wallets = wallet.Wallets{}
 
-	if rpc.WalletDirectory != "" {
-		w, err := wallet.LoadWallets(rpc.WalletDirectory)
-		if err != nil {
-			log.Panicf("Failed to load all wallets: %v", err)
-		}
-		wallets = w
+	//if rpc.WalletDirectory != "" {
+	w, err := wallet.LoadWallets(rpc.WalletDirectory)
+	if err != nil {
+		log.Panicf("Failed to load all wallets: %v", err)
 	}
-	if len(wallets) == 0 {
-		wallets.Add(wallet.NewSimpleWallet) //deterministic
-		if c.WalletDirectory != "" {
-			errs := wallets.Save(rpc.WalletDirectory)
+	rpc.Wallets = w
+	//}
+	if len(rpc.Wallets) == 0 {
+		rpc.Wallets.Add(wallet.NewSimpleWallet()) //deterministic
+		if rpc.WalletDirectory != "" {
+			errs := rpc.Wallets.Save(rpc.WalletDirectory)
 			if len(errs) != 0 {
 				log.Panicf("Failed to save wallets: %v", errs)
 			}
 		}
 	}
 
-	return rpc
+	return &rpc
 }
 
-func (self *RPC) GetWalletBalance(v *Visor,
-	walletID wallet.WalletID) *wallet.BalancePair {
-	bp := v.WalletBalance(walletID)
-	return &bp
-}
-
-
-func (self *RPC) ReloadWallets() error {
+func (self *WalletRPC) ReloadWallets() error {
 	wallets, err := wallet.LoadWallets(self.WalletDirectory)
 	if err != nil {
 		return err
@@ -72,31 +68,31 @@ func (self *RPC) ReloadWallets() error {
 	return nil
 }
 
-func (self *RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
+func (self *WalletRPC) SaveWallet(v *visor.Visor, walletID wallet.WalletID) error {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return fmt.Errorf("Unknown wallet %s", walletID)
 	}
-	return w.Save(self.Config.WalletDirectory)
+	return w.Save(self.WalletDirectory)
 }
 
-func (self *RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
-	return self.Wallets.Save(self.Config.WalletDirectory)
+func (self *WalletRPC) SaveWallets(v *visor.Visor) map[wallet.WalletID]error {
+	return self.Wallets.Save(self.WalletDirectory)
 }
 
-func (self *RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
+func (self *WalletRPC) CreateWallet(v *visor.Visor, seed string) *wallet.ReadableWallet {
 	//WalletConstructor: wallet.NewSimpleWallet,
 	//WalletTypeDefault: wallet.SimpleWalletType,
 
 	//w := v.CreateWallet()
 
-	w := wallet.NewSimpleWallet //wallet constructor
+	w := wallet.NewSimpleWallet() //wallet constructor
 	self.Wallets.Add(w)
 
 	return wallet.NewReadableWallet(w)
 }
 
-func (self *RPC) GetWallet(v *Visor,
+func (self *WalletRPC) GetWallet(v *visor.Visor,
 	walletID wallet.WalletID) *wallet.ReadableWallet {
 	w := v.Wallets.Get(walletID)
 	if w == nil {
@@ -106,8 +102,32 @@ func (self *RPC) GetWallet(v *Visor,
 	}
 }
 
-func (self *RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
+func (self *WalletRPC) GetWallets(v *visor.Visor) []*wallet.ReadableWallet {
 	return v.Wallets.ToPublicReadable()
+}
+
+//modify to return error
+// NOT WORKING
+func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
+	walletID wallet.WalletID) wallet.BalancePair {
+	/*
+		bp := WalletBalance(v, walletID)
+		return &bp
+	*/
+	return wallet.BalancePair{}
+	/*
+		wlt := self.Wallets.Get(walletID)
+		if wlt == nil {
+			log.Printf("GetWalletBalance: ID NOT FOUND")
+			return wallet.BalancePair{}
+		}
+		auxs := self.blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
+		puxs := self.Unconfirmed.SpendsForAddresses(&self.blockchain.Unspent,
+			wlt.GetAddressSet())
+		confirmed := self.totalBalance(auxs)
+		predicted := self.totalBalance(auxs.Sub(puxs))
+		return wallet.BalancePair{confirmed, predicted}
+	*/
 }
 
 /*
@@ -115,7 +135,7 @@ REFACTOR
 */
 
 /*
-func CreateWallet(self *Visor) wallet.Wallet {
+func CreateWallet(self *visor.Visor) wallet.Wallet {
 	w := self.Config.WalletConstructor()
 	self.Wallets.Add(w)
 	return w
@@ -123,7 +143,7 @@ func CreateWallet(self *Visor) wallet.Wallet {
 */
 
 /*
-func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
+func (self *visor.Visor) SaveWallet(walletID wallet.WalletID) error {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return fmt.Errorf("Unknown wallet %s", walletID)
@@ -131,14 +151,14 @@ func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
 	return w.Save(self.Config.WalletDirectory)
 }
 
-func (self *Visor) SaveWallets() map[wallet.WalletID]error {
+func (self *visor.Visor) SaveWallets() map[wallet.WalletID]error {
 	return self.Wallets.Save(self.Config.WalletDirectory)
 }
 */
 
 // Loads & unloads wallets based on WalletDirectory contents
 /*
-func (self *Visor) ReloadWallets() error {
+func (self *visor.Visor) ReloadWallets() error {
 	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
 	if err != nil {
 		return err
@@ -150,14 +170,19 @@ func (self *Visor) ReloadWallets() error {
 
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
-func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
+// TODO
+// - pull in outputs from blockchain from wallet
+// - create transaction here
+// - sign transction and return
+func Spend(self *visor.Visor, walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address) (coin.Transaction, error) {
 
 	wallet := self.Wallets.Get(walletID)
 	if wallet == nil {
 		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
 	}
-	tx, err := CreateSpendingTransaction(wallet, self.Unconfirmed,
+	//pull in outputs and do this here
+	tx, err := visor.CreateSpendingTransaction(wallet, self.Unconfirmed,
 		&self.blockchain.Unspent, self.blockchain.Time(), amt, fee,
 		dest)
 	if err != nil {
@@ -173,7 +198,7 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 }
 
 // Returns the confirmed & predicted balance for a single address
-func (self *Visor) AddressBalance(addr cipher.Address) wallet.BalancePair {
+func AddressBalance(self *visor.Visor, addr cipher.Address) wallet.BalancePair {
 	auxs := self.blockchain.Unspent.AllForAddress(addr)
 	puxs := self.Unconfirmed.SpendsForAddress(&self.blockchain.Unspent, addr)
 	confirmed := self.balance(auxs)
@@ -182,7 +207,8 @@ func (self *Visor) AddressBalance(addr cipher.Address) wallet.BalancePair {
 }
 
 // Returns the confirmed & predicted balance for a Wallet
-func (self *Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
+/*
+func (self *visor.Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
 	wlt := self.Wallets.Get(walletID)
 	if wlt == nil {
 		return wallet.BalancePair{}
@@ -194,9 +220,11 @@ func (self *Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
 	predicted := self.totalBalance(auxs.Sub(puxs))
 	return wallet.BalancePair{confirmed, predicted}
 }
+*/
 
+/*
 // Return the total balance of all loaded wallets
-func (self *Visor) TotalBalance() wallet.BalancePair {
+func (self *visor.Visor) TotalBalance() wallet.BalancePair {
 	b := wallet.BalancePair{}
 	for _, w := range self.Wallets {
 		c := self.WalletBalance(w.GetID())
@@ -207,7 +235,7 @@ func (self *Visor) TotalBalance() wallet.BalancePair {
 }
 
 // Computes the total balance for a cipher.Address's coin.UxOuts
-func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
+func (self *visor.Visor) balance(uxs coin.UxArray) wallet.Balance {
 	prevTime := self.blockchain.Time()
 	b := wallet.NewBalance(0, 0)
 	for _, ux := range uxs {
@@ -217,7 +245,7 @@ func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
 }
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts
-func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
+func (self *visor.Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 	prevTime := self.blockchain.Time()
 	b := wallet.NewBalance(0, 0)
 	for _, uxs := range auxs {
@@ -227,6 +255,7 @@ func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
 	}
 	return b
 }
+*/
 
 /*
 REFACTOR
@@ -248,7 +277,7 @@ type SpendResult struct {
 	Error       string                    `json:"error"`
 }
 
-func Spend2(v *daemon.Visor, pool *daemon.Pool, vrpc visor.RPC,
+func Spend2(v *daemon.Visor, pool *daemon.Pool, vrpc visor.WalletRPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 

@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
+	//"github.com/skycoin/skycoin/src/wallet"
 )
 
 /*
@@ -65,17 +65,16 @@ func (self *Visor) Shutdown() {
 	if self.Config.Disabled {
 		return
 	}
-	// Save the wallet, as long as we're not a master chain.  Master chains
-	// don't have a wallet, they have a single genesis wallet entry which is
-	// loaded in a different path
-	if !self.Config.Config.IsMaster {
+	// Save the wallet
+	/*
 		errs := self.Visor.SaveWallets()
 		if len(errs) == 0 {
 			logger.Info("Saved wallets")
 		} else {
 			logger.Critical("Failed to save wallets: %v", errs)
 		}
-	}
+	*/
+
 	bcFile := self.Config.Config.BlockchainFile
 	err := self.Visor.SaveBlockchain()
 	if err == nil {
@@ -163,6 +162,9 @@ func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
 }
 
 // Creates a spend transaction and broadcasts it to the network
+// Spend is replaced with transaction injection
+
+/*
 func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	fee uint64, dest cipher.Address, pool *Pool) (coin.Transaction, error) {
 	if self.Config.Disabled {
@@ -174,6 +176,29 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	if err != nil {
 		return txn, err
 	}
+	err, _ = self.Visor.RecordTxn(txn)
+	if err == nil {
+		self.broadcastTransaction(txn, pool)
+	}
+	return txn, err
+}
+*/
+
+func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+
+	//logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
+	//	amt.Coins, amt.Hours, dest.String(), fee)
+	//txn, err := self.Visor.Spend(walletID, amt, fee, dest)
+	//if err != nil {
+	//	return txn, err
+	//}
+
+	err := txn.Verify()
+
+	if err != nil {
+		return txn, errors.New("Transaction Verification Failed")
+	}
+
 	err, _ = self.Visor.RecordTxn(txn)
 	if err == nil {
 		self.broadcastTransaction(txn, pool)

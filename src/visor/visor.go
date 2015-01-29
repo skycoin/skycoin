@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/wallet"
+	//"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -109,7 +109,7 @@ type Visor struct {
 	// Wallets holding our keys for spending
 	//Wallets wallet.Wallets
 	// Master & personal keys
-	blockchain *coin.Blockchain
+	Blockchain *coin.Blockchain
 	blockSigs  BlockSigs
 }
 
@@ -166,7 +166,7 @@ func NewVisor(c VisorConfig) *Visor {
 
 	v := &Visor{
 		Config:      c,
-		blockchain:  blockchain,
+		Blockchain:  blockchain,
 		blockSigs:   blockSigs,
 		Unconfirmed: NewUnconfirmedTxnPool(),
 		//Wallets:     wallets,
@@ -193,10 +193,10 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
 	return &Visor{
 		Config:      c,
-		blockchain:  coin.NewBlockchain(),
+		Blockchain:  coin.NewBlockchain(),
 		blockSigs:   NewBlockSigs(),
 		Unconfirmed: NewUnconfirmedTxnPool(),
-		Wallets:     nil,
+		//Wallets:     nil,
 	}
 }
 
@@ -487,10 +487,11 @@ func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
+// TODO
+// - rename InjectTransaction
 func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
 	addrs := self.Wallets.GetAddressSet()
-	return self.Unconfirmed.RecordTxn(self.Blockchain, txn, addrs,
-		self.Config.MaxBlockSize)
+	return self.Unconfirmed.RecordTxn(self.Blockchain, txn, self.Config.MaxBlockSize)
 }
 
 // Returns the Transactions whose unspents give coins to a cipher.Address.

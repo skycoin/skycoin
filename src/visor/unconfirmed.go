@@ -84,7 +84,7 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) {
 
 // Creates an unconfirmed transaction
 func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
-	t coin.Transaction, addrs map[cipher.Address]byte) UnconfirmedTxn {
+	t coin.Transaction) UnconfirmedTxn {
 	now := util.Now()
 	return UnconfirmedTxn{
 		Txn:       t,
@@ -98,7 +98,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-	t coin.Transaction, addrs map[cipher.Address]byte, maxSize int) (error, bool) {
+	t coin.Transaction, maxSize int) (error, bool) {
 	if err := VerifyTransaction(bc, &t, maxSize); err != nil {
 		return err, false
 	}
@@ -118,7 +118,7 @@ func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
 	}
 
 	// Add txn to index
-	self.Txns[h] = self.createUnconfirmedTxn(&bc.Unspent, t, addrs)
+	self.Txns[h] = self.createUnconfirmedTxn(&bc.Unspent, t)
 	// Add predicted unspents
 	self.Unspent[h] = coin.CreateUnspents(bc.Head().Head, t)
 

@@ -17,10 +17,10 @@ type BlockchainMetadata struct {
 }
 
 func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
-	head := v.blockchain.Head().Head
+	head := v.Blockchain.Head().Head
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
-		Unspents:    uint64(len(v.blockchain.Unspent.Pool)),
+		Unspents:    uint64(len(v.Blockchain.Unspent.Pool)),
 		Unconfirmed: uint64(len(v.Unconfirmed.Txns)),
 	}
 }

@@ -306,17 +306,17 @@ func Spend3(self *visor.Visor, wrpc WalletRPC, walletID wallet.WalletID, amt wal
 }
 
 // Returns a *Balance
-
-func GetWalletBalance(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
+//DEPRECATE
+func GetWalletBalance(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID) interface{} {
 	self.Requests <- func() interface{} {
-		return self.Visor.GetWalletBalance(self.D.Visor.Visor, walletID)
+		return wrpc.GetWalletBalance(self.D.Visor.Visor, walletID)
 	}
 	r := <-self.Responses
 	return r
 }
 
 // Returns map[WalletID]error
-
+//DEPRECATE
 func SaveWallets(self *daemon.Gateway) interface{} {
 	self.Requests <- func() interface{} {
 		return self.Visor.SaveWallets(self.D.Visor.Visor)
@@ -326,6 +326,7 @@ func SaveWallets(self *daemon.Gateway) interface{} {
 }
 
 // Returns error
+//DEPRECATE
 func SaveWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 	self.Requests <- func() interface{} {
 		return self.Visor.SaveWallet(self.D.Visor.Visor, walletID)
@@ -335,6 +336,7 @@ func SaveWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 }
 
 // Returns an error
+//DEPRECATE
 func ReloadWallets(self *daemon.Gateway) interface{} {
 	self.Requests <- func() interface{} {
 		return self.Visor.ReloadWallets(self.D.Visor.Visor)
@@ -344,7 +346,7 @@ func ReloadWallets(self *daemon.Gateway) interface{} {
 }
 
 // Returns a *visor.ReadableWallet
-
+//DEPRECATE
 func GetWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 	self.Requests <- func() interface{} {
 		return self.Visor.GetWallet(self.D.Visor.Visor, walletID)
@@ -354,7 +356,7 @@ func GetWallet(self *daemon.Gateway, walletID wallet.WalletID) interface{} {
 }
 
 // Returns a *ReadableWallets
-
+//DEPRECATE
 func GetWallets(self *daemon.Gateway) interface{} {
 	self.Requests <- func() interface{} {
 		return self.Visor.GetWallets(self.D.Visor.Visor)
@@ -364,20 +366,13 @@ func GetWallets(self *daemon.Gateway) interface{} {
 }
 
 // Returns a *ReadableWallet
-// Deprecate
-
+// DEPRECATE
 func CreateWallet(self *daemon.Gateway, seed string) interface{} {
-
-	//w := v.CreateWallet()
-	//return wallet.NewReadableWallet(w)
-
-	//
 	self.Requests <- func() interface{} {
 		return self.Visor.CreateWallet(self.D.Visor.Visor, "")
 	}
 	r := <-self.Responses
 	return r
-	//
 }
 
 /*

@@ -47,6 +47,9 @@ func NewWalletRPC() *WalletRPC {
 
 	rpc.Wallets = wallet.Wallets{}
 
+	util.InitDataDir(".skycoin")
+	util.InitDataDir(".skycoin/wallets")
+
 	//if rpc.WalletDirectory != "" {
 	w, err := wallet.LoadWallets(rpc.WalletDirectory)
 	if err != nil {

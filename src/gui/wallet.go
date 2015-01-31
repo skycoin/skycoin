@@ -41,14 +41,16 @@ func NewWalletRPC() *WalletRPC {
 
 	//wallet directory
 	//cleanup, pass as parameter during init
+
 	DataDirectory := util.InitDataDir("")
 	rpc.WalletDirectory = filepath.Join(DataDirectory, "wallets/")
 	logger.Debug("Wallet Directory= %v", rpc.WalletDirectory)
+	util.InitDataDir(rpc.WalletDirectory)
 
 	rpc.Wallets = wallet.Wallets{}
 
-	util.InitDataDir(".skycoin")
-	util.InitDataDir(".skycoin/wallets")
+	//util.InitDataDir(".skycoin")
+	//util.InitDataDir(".skycoin/wallets")
 
 	//if rpc.WalletDirectory != "" {
 	w, err := wallet.LoadWallets(rpc.WalletDirectory)

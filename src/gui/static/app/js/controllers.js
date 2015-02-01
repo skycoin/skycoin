@@ -71,7 +71,7 @@ angular.module('skycoin.controllers', [])
 	 	var xsrf = {name:'test'}
 		$http({
 		    method: 'POST',
-		    url: '/wallet',
+		    url: '/wallet/create',
 		    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 		    transformRequest: function(obj) {
 		        var str = [];
@@ -83,6 +83,7 @@ angular.module('skycoin.controllers', [])
 			}).success(function(response){
 				console.log("New wallet response: ");
 				console.dir(response);
+        $scope.loadWallets();
 	      });
 	 }
 

@@ -103,7 +103,7 @@ br {
 }
 
 table#overview-wallet{
-  width: 454px;
+  width: 700px;
   float: left;
   margin-right: 10px;
   margin-top:10px;
@@ -227,8 +227,40 @@ label {
   }
 
 .modal-content {
-  width:363px;
+  width:463px;
 }
+
+.load-wallet-container {
+  text-align:left;
+  position:relative;
+  padding:10px;
+  width:463px;
+}
+  .load-wallet-container label{
+    margin-top:10px;
+    float:none;
+  }
+  .load-wallet-container input {
+    margin-top:20px;
+
+  }
+
+.update-wallet-container {
+  text-align:left;
+  position:relative;
+  padding:10px;
+  width:463px;
+}
+  .update-wallet-container label{
+    margin-top:10px;
+    float:none;
+  }
+  .update-wallet-container input {
+    margin-top:20px;
+
+  }
+
+
 .background-cloud-0{
   position: absolute;
   color: #fff;

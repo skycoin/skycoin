@@ -68,7 +68,7 @@ angular.module('skycoin.controllers', [])
 
 	 $scope.newWallet = function(wI, address){
 	 	console.log('New wallet called');
-	 	var xsrf = {name:'test'}
+	 	var xsrf = {name:''}
 		$http({
 		    method: 'POST',
 		    url: '/wallet/create',
@@ -86,6 +86,7 @@ angular.module('skycoin.controllers', [])
         $scope.loadWallets();
 	      });
 	 }
+
 
 	 $scope.sendDisable = true;
 	 $scope.readyDisable = false;
@@ -113,16 +114,18 @@ angular.module('skycoin.controllers', [])
 	 console.log('localStorage.history')
 	 console.dir(JSON.parse(localStorage.getItem('historyTable')))
 
-	 $scope.spend = function(wallet){
+	 $scope.spend = function(spend){
 	 	$scope.sendDisable = true;
 	 	$scope.readyDisable = true;
 	 	$timeout($scope.clearSend, 1000);
-	 	$scope.pendingTable.push(addr);
-	 	var xsrf = {id:wallet.id,
-	 				coins:wallet.amount*1000000,
+	 	$scope.pendingTable.push(spend);
+	 	var xsrf = {id:spend.id,
+	 				coins:spend.amount*1000000,
 	 				fee:1,
-	 				hours:1}
-	 	$scope.historyTable.push({address:addr.address,amount:addr.amount});
+	 				hours:1,
+	 				address:spend.address}
+	 	console.log('spend xsrf is ' , xsrf);
+	 	$scope.historyTable.push({address:spend.address,amount:spend.amount});
 	 	localStorage.setItem('historyTable',JSON.stringify($scope.historyTable));
 	 	console.dir($scope.historyTable);
 		$http({
@@ -189,6 +192,42 @@ angular.module('skycoin.controllers', [])
       });
     };
 
+    $scope.openLoadWallet = function (wallet) {
+
+      var modalInstance = $modal.open({
+        templateUrl: 'loadWalletModalContent.html',
+        controller: "loadWalletInstanceCtrl",
+        resolve: {
+          wallet: function () {
+            return wallet;
+          }
+        }
+      });
+
+      modalInstance.result.then(function () {
+      }, function () {
+        $log.info('Modal dismissed at: ' + new Date());
+      });
+    };
+
+    $scope.updateWallet = function (wallet) {
+
+      var modalInstance = $modal.open({
+        templateUrl: 'updateWalletModalContent.html',
+        controller: "updateWalletInstanceCtrl",
+        resolve: {
+          wallet: function () {
+            return wallet;
+          }
+        }
+      });
+
+      modalInstance.result.then(function () {
+      }, function () {
+        $log.info('Modal dismissed at: ' + new Date());
+      });
+    };
+
 }])
 
 
@@ -210,6 +249,86 @@ angular.module('skycoin.controllers', [])
 
   $scope.ok = function () {
     $modalInstance.close($scope.selected.item);
+  };
+
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
+  };
+}])
+
+.controller('loadWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
+  function($http, $scope, $modalInstance, wallet) {
+
+  $scope.wallet = {};
+  $scope.wallet.name = '';
+  $scope.wallet.new = '';
+
+  $scope.ok = function () {
+
+	 	console.log('New wallet called');
+	 	var xsrf = {
+	 		name:$scope.wallet.name,
+	 		seed:$scope.wallet.seed
+	 	}
+	 	console.log('xsrf: ', xsrf);
+		$http({
+		    method: 'POST',
+		    url: '/wallet/create',
+		    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+		    transformRequest: function(obj) {
+		        var str = [];
+		        for(var p in obj)
+		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		        return str.join("&");
+		    },
+		    data: xsrf
+			}).success(function(response){
+				console.log("Load wallet response: ");
+				console.dir(response);
+        //$scope.loadWallets();
+	      });
+
+    $modalInstance.close();
+  };
+
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
+  };
+}])
+
+.controller('updateWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
+  function($http, $scope, $modalInstance, wallet) {
+
+  $scope.wallet = {};
+  $scope.wallet.name = wallet.name;
+  $scope.wallet.filename = wallet.filename;
+
+  $scope.ok = function () {
+
+	 	console.log('New wallet called');
+	 	var xsrf = {
+	 		name:$scope.wallet.name,
+	 		id:$scope.wallet.filename
+	 	}
+	 	console.log('xsrf: ', xsrf);
+		$http({
+		    method: 'POST',
+		    url: '/wallet/update',
+		    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+		    transformRequest: function(obj) {
+		        var str = [];
+		        for(var p in obj)
+		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		        return str.join("&");
+		    },
+		    data: xsrf
+			}).success(function(response){
+				console.log("Update wallet response: ");
+				console.dir(response);
+        //$scope.loadWallets();
+	      });
+
+    $modalInstance.close();
   };
 
   $scope.cancel = function () {

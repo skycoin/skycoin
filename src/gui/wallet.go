@@ -489,6 +489,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+//all this does is update the wallet name
 func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
@@ -574,6 +575,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/wallet/create", walletCreate(gateway))
 
 	//update an existing wallet
+	//all this does is update the wallet name
 	mux.HandleFunc("/wallet/update", walletUpdate(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.

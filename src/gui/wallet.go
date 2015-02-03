@@ -60,7 +60,7 @@ func NewWalletRPC() *WalletRPC {
 	rpc.Wallets = w
 	//}
 	if len(rpc.Wallets) == 0 {
-		rpc.Wallets.Add(wallet.NewSimpleWallet()) //deterministic
+		rpc.Wallets.Add(wallet.NewWallet("")) //deterministic
 		if rpc.WalletDirectory != "" {
 			errs := rpc.Wallets.Save(rpc.WalletDirectory)
 			if len(errs) != 0 {
@@ -99,14 +99,14 @@ func (self *WalletRPC) CreateWallet(seed string) wallet.Wallet {
 
 	//w := v.CreateWallet()
 
-	w := wallet.NewSimpleWallet() //wallet constructor
+	w := wallet.NewWallet(seed) //wallet constructor
 	self.Wallets.Add(w)
 	return w
 	//return wallet.NewReadableWallet(w)
 }
 
 func (self *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
-	return self.Wallets.ToPublicReadable()
+	return self.Wallets.ToReadable()
 }
 
 func (self *WalletRPC) GetWalletReadable(walletID wallet.WalletID) *wallet.ReadableWallet {
@@ -114,11 +114,11 @@ func (self *WalletRPC) GetWalletReadable(walletID wallet.WalletID) *wallet.Reada
 	if w == nil {
 		return nil
 	} else {
-		return wallet.NewReadableWallet(w)
+		return wallet.NewReadableWallet(*w)
 	}
 }
 
-func (self *WalletRPC) GetWallet(walletID wallet.WalletID) wallet.Wallet {
+func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.Wallet {
 	w := self.Wallets.Get(walletID)
 	if w == nil {
 		return nil
@@ -318,7 +318,7 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
 	}
 	//pull in outputs and do this here
-	tx, err := visor.CreateSpendingTransaction(wallet, self.Unconfirmed,
+	tx, err := visor.CreateSpendingTransaction(*wallet, self.Unconfirmed,
 		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
 		dest)
 	if err != nil {
@@ -504,7 +504,7 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 				logger.Critical(m, err)
 			}
 		}
-		iw := wallet.NewReadableWallet(w1)
+		iw := wallet.NewReadableWallet(*w1)
 		SendOr404(w, iw)
 	}
 }

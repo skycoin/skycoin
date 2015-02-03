@@ -43,6 +43,7 @@ func NewWalletFilename(id_ WalletID) string {
 }
 
 // Wallet interface, to support multiple implementations
+/*
 type Wallet interface {
 	// Returns all entries
 	GetEntries() WalletEntries
@@ -76,3 +77,4 @@ type Wallet interface {
 	// Returns extra info to be serialized with the wallet
 	GetExtraSerializerData() map[string]interface{}
 }
+*/

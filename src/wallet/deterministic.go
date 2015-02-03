@@ -12,27 +12,27 @@ import (
 
 //const DeterministicSeedLength = 1024
 
-//type DeterministicWalletSeed cipher.SHA256
+//type WalletSeed cipher.SHA256
 
 /*
-func NewDeterministicWalletSeed() string {
+func NewWalletSeed() string {
 	seed := cipher.SumSHA256(secp256k1.RandByte(DeterministicSeedLength))
 	return hex.EncodeToString(seed[:])
 }
 */
 
 /*
-func (self *DeterministicWalletSeed) toWalletID() WalletID {
+func (self *WalletSeed) toWalletID() WalletID {
 	// Uses the first 16 bytes of SHA256(seed) as id
 	shaid := cipher.SumSHA256(self[:])
 	return WalletID(hex.EncodeToString(shaid[:16]))
 }
 */
-//func (self DeterministicWalletSeed) Hex() string {
+//func (self WalletSeed) Hex() string {
 //	return cipher.SHA256(self).Hex()
 //}
 
-type DeterministicWallet struct {
+type Wallet struct {
 	Name     string //deprecate
 	Filename string //deprecate
 	Seed     string
@@ -41,28 +41,34 @@ type DeterministicWallet struct {
 	Entry WalletEntry
 }
 
-func NewDeterministicWallet() Wallet {
-	seed_raw := cipher.SumSHA256(secp256k1.RandByte(64))
-	seed := hex.EncodeToString(seed_raw[:])
+//Generate Deterministic Wallet
+//generates a random seed if seed is ""
+func NewWallet(seed string) Wallet {
+
+	//if seed is blank, generate a new seed
+	if seed == "" {
+		seed_raw := cipher.SumSHA256(secp256k1.RandByte(64))
+		seed = hex.EncodeToString(seed_raw[:])
+	}
 
 	pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
-	return &DeterministicWallet{
+	return Wallet{
 		Filename: NewWalletFilename(""),
 		Seed:     seed,
 		Entry:    NewWalletEntryFromKeypair(pub, sec),
 	}
 }
 
-func NewDeterministicWalletFromReadable(r *ReadableWallet) Wallet {
-	if r.Type != DeterministicWalletType {
-		log.Panic("ReadableWallet type must be Deterministic")
-	}
+func NewWalletFromReadable(r *ReadableWallet) Wallet {
+	//if r.Type != WalletType {
+	//	log.Panic("ReadableWallet type must be Deterministic")
+	//}
 	if len(r.Entries) != 1 {
 		log.Panic("Deterministic wallets have exactly 1 entry")
 	}
 	//should be string
 	seed := r.Extra["seed"].(string)
-	return &DeterministicWallet{
+	return Wallet{
 		Filename: r.Filename,
 		Name:     r.Name,
 		Entry:    r.Entries.ToWalletEntries().ToArray()[0],
@@ -70,56 +76,56 @@ func NewDeterministicWalletFromReadable(r *ReadableWallet) Wallet {
 	}
 }
 
-func (self *DeterministicWallet) GetType() WalletType {
-	return DeterministicWalletType
+func (self *Wallet) GetType() string {
+	return "deterministic"
 }
 
-func (self *DeterministicWallet) GetFilename() string {
+func (self *Wallet) GetFilename() string {
 	return self.Filename
 }
 
-func (self *DeterministicWallet) SetFilename(fn string) {
+func (self *Wallet) SetFilename(fn string) {
 	self.Filename = fn
 }
 
-func (self *DeterministicWallet) GetID() WalletID {
+func (self *Wallet) GetID() WalletID {
 	return WalletID(self.Seed[0:4])
 }
 
-func (self *DeterministicWallet) GetName() string {
+func (self *Wallet) GetName() string {
 	return self.Name
 }
 
-func (self *DeterministicWallet) SetName(name string) {
+func (self *Wallet) SetName(name string) {
 	self.Name = name
 }
 
-func (self *DeterministicWallet) NumEntries() int {
+func (self *Wallet) NumEntries() int {
 	return 1
 }
 
-func (self *DeterministicWallet) GetEntries() WalletEntries {
+func (self *Wallet) GetEntries() WalletEntries {
 	m := make(WalletEntries, 1)
 	m[self.Entry.Address] = self.Entry
 	return m
 }
 
-func (self *DeterministicWallet) GetAddressSet() AddressSet {
+func (self *Wallet) GetAddressSet() AddressSet {
 	m := make(AddressSet, 1)
 	m[self.Entry.Address] = byte(1)
 	return m
 }
 
-func (self *DeterministicWallet) CreateEntry() WalletEntry {
+func (self *Wallet) CreateEntry() WalletEntry {
 	log.Panic("Multiple entries not implemented for deterministic wallet")
 	return WalletEntry{}
 }
 
-func (self *DeterministicWallet) GetAddresses() []cipher.Address {
+func (self *Wallet) GetAddresses() []cipher.Address {
 	return []cipher.Address{self.Entry.Address}
 }
 
-func (self *DeterministicWallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
+func (self *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
 	if a == self.Entry.Address {
 		return self.Entry, true
 	} else {
@@ -127,25 +133,25 @@ func (self *DeterministicWallet) GetEntry(a cipher.Address) (WalletEntry, bool) 
 	}
 }
 
-func (self *DeterministicWallet) AddEntry(e WalletEntry) error {
+func (self *Wallet) AddEntry(e WalletEntry) error {
 	return errors.New("Adding entries to deterministic wallet not allowed")
 }
 
-func (self *DeterministicWallet) Save(dir string) error {
-	r := NewReadableWallet(self)
+func (self *Wallet) Save(dir string) error {
+	r := NewReadableWallet(*self)
 	return r.Save(filepath.Join(dir, self.Filename))
 }
 
-func (self *DeterministicWallet) Load(dir string) error {
+func (self *Wallet) Load(dir string) error {
 	r := &ReadableWallet{}
 	if err := r.Load(filepath.Join(dir, self.Filename)); err != nil {
 		return err
 	}
-	*self = *(NewDeterministicWalletFromReadable(r)).(*DeterministicWallet)
+	*self = NewWalletFromReadable(r)
 	return nil
 }
 
-func (self *DeterministicWallet) GetExtraSerializerData() map[string]interface{} {
+func (self *Wallet) GetExtraSerializerData() map[string]interface{} {
 	m := make(map[string]interface{}, 1)
 	m["seed"] = self.Seed
 	return m

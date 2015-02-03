@@ -1,10 +1,10 @@
 package wallet
 
 import (
-	"fmt"
-	"log"
+	//"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
+	"log"
 )
 
 type ReadableWalletEntry struct {
@@ -23,6 +23,7 @@ func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
 	}
 }
 
+/*
 func NewPublicReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
 	return ReadableWalletEntry{
 		Address: w.Address.String(),
@@ -30,7 +31,7 @@ func NewPublicReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
 		Secret:  "",
 	}
 }
-
+*/
 func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
 	w := ReadableWalletEntry{}
 	err := util.LoadJSON(filename, &w)
@@ -68,9 +69,9 @@ func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
 
 // Used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	ID   WalletID   `json:"id"`
-	Type WalletType `json:"type"`
-	Name string     `json:"name"`
+	ID   WalletID `json:"id"`
+	Type string   `json:"type"`
+	Name string   `json:"name"`
 	// Filename is only included here for RPC information.  The value saved
 	// to disk should be ignored and overwritten when loaded by a Wallet.
 	Filename string                 `json:"filename"`
@@ -105,9 +106,9 @@ func NewReadableWallet(w Wallet) *ReadableWallet {
 }
 
 // Converts a Wallet to a ReadableWallet, but omits private keys
-func NewPublicReadableWallet(w Wallet) *ReadableWallet {
-	return newReadableWallet(w, NewPublicReadableWalletEntry)
-}
+//func NewPublicReadableWallet(w *Wallet) *ReadableWallet {
+//	return newReadableWallet(*w, NewPublicReadableWalletEntry)
+//}
 
 // Loads a ReadableWallet from disk
 func LoadReadableWallet(filename string) (*ReadableWallet, error) {
@@ -117,14 +118,7 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 }
 
 func (self *ReadableWallet) ToWallet() (Wallet, error) {
-	switch self.Type {
-	case DeterministicWalletType:
-		return NewDeterministicWalletFromReadable(self), nil
-	case SimpleWalletType:
-		return NewSimpleWalletFromReadable(self), nil
-	default:
-		return nil, fmt.Errorf("Unknown wallet type \"%s\"", self.Type)
-	}
+	return NewWalletFromReadable(self), nil
 }
 
 // Saves to filename

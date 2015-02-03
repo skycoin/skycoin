@@ -56,10 +56,10 @@ func (self *Wallets) Add(w Wallet) {
 	*self = append(*self, w)
 }
 
-func (self Wallets) Get(walletID WalletID) Wallet {
+func (self Wallets) Get(walletID WalletID) *Wallet {
 	for _, w := range self {
 		if w.GetID() == walletID {
-			return w
+			return &w
 		}
 	}
 	return nil
@@ -98,6 +98,6 @@ func (self Wallets) ToReadable() []*ReadableWallet {
 	return self.toReadable(NewReadableWallet)
 }
 
-func (self Wallets) ToPublicReadable() []*ReadableWallet {
-	return self.toReadable(NewPublicReadableWallet)
-}
+//func (self Wallets) ToPublicReadable() []*ReadableWallet {
+//	return self.toReadable(NewPublicReadableWallet)
+//}

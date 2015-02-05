@@ -86,12 +86,18 @@ type ReadableWallet struct {
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
 // Converts a Wallet to a ReadableWallet, converting entries
-func newReadableWallet(w Wallet, f ReadableWalletEntryCtor) *ReadableWallet {
+//func newReadableWallet(w Wallet, f ReadableWalletEntryCtor) *ReadableWallet {
+//
+//}
+
+// Converts a Wallet to a ReadableWallet
+func NewReadableWallet(w Wallet) *ReadableWallet {
+	//return newReadableWallet(w, NewReadableWalletEntry)
 	entries := w.GetEntries()
 	readable := make(ReadableWalletEntries, len(entries))
 	i := 0
 	for _, e := range entries {
-		readable[i] = f(&e)
+		readable[i] = NewReadableWalletEntry(&e)
 		i++
 	}
 	return &ReadableWallet{
@@ -103,11 +109,6 @@ func newReadableWallet(w Wallet, f ReadableWalletEntryCtor) *ReadableWallet {
 		//Filename: w.GetFilename(),
 		//Extra:    w.GetExtraSerializerData(),
 	}
-}
-
-// Converts a Wallet to a ReadableWallet
-func NewReadableWallet(w Wallet) *ReadableWallet {
-	return newReadableWallet(w, NewReadableWalletEntry)
 }
 
 // Converts a Wallet to a ReadableWallet, but omits private keys

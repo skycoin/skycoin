@@ -23,15 +23,6 @@ func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
 	}
 }
 
-/*
-func NewPublicReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
-	return ReadableWalletEntry{
-		Address: w.Address.String(),
-		Public:  w.Public.Hex(),
-		Secret:  "",
-	}
-}
-*/
 func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
 	w := ReadableWalletEntry{}
 	err := util.LoadJSON(filename, &w)
@@ -69,28 +60,12 @@ func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
 
 // Used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	/*
-		ID       WalletID               `json:"id"`
-		Type     string                 `json:"type"`
-		Name     string                 `json:"name"`
-		Filename string                 `json:"filename"`
-		Extra    map[string]interface{} `json:"extra"`
-	*/
-
-	// Filename is only included here for RPC information.  The value saved
-	// to disk should be ignored and overwritten when loaded by a Wallet.
 	Meta    map[string]string     `json:"meta"`
 	Entries ReadableWalletEntries `json:"entries"`
 }
 
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
-// Converts a Wallet to a ReadableWallet, converting entries
-//func newReadableWallet(w Wallet, f ReadableWalletEntryCtor) *ReadableWallet {
-//
-//}
-
-// Converts a Wallet to a ReadableWallet
 func NewReadableWallet(w Wallet) *ReadableWallet {
 	//return newReadableWallet(w, NewReadableWalletEntry)
 	entries := w.GetEntries()
@@ -103,18 +78,8 @@ func NewReadableWallet(w Wallet) *ReadableWallet {
 	return &ReadableWallet{
 		Meta:    w.Meta,
 		Entries: readable,
-		//ID:       w.GetID(),
-		//Type:     w.GetType(),
-		//Name:     w.GetName(),
-		//Filename: w.GetFilename(),
-		//Extra:    w.GetExtraSerializerData(),
 	}
 }
-
-// Converts a Wallet to a ReadableWallet, but omits private keys
-//func NewPublicReadableWallet(w *Wallet) *ReadableWallet {
-//	return newReadableWallet(*w, NewPublicReadableWalletEntry)
-//}
 
 // Loads a ReadableWallet from disk
 func LoadReadableWallet(filename string) (*ReadableWallet, error) {

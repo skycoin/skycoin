@@ -10,34 +10,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
-//const DeterministicSeedLength = 1024
-
-//type WalletSeed cipher.SHA256
-
-/*
-func NewWalletSeed() string {
-	seed := cipher.SumSHA256(secp256k1.RandByte(DeterministicSeedLength))
-	return hex.EncodeToString(seed[:])
-}
-*/
-
-/*
-func (self *WalletSeed) toWalletID() WalletID {
-	// Uses the first 16 bytes of SHA256(seed) as id
-	shaid := cipher.SumSHA256(self[:])
-	return WalletID(hex.EncodeToString(shaid[:16]))
-}
-*/
-//func (self WalletSeed) Hex() string {
-//	return cipher.SHA256(self).Hex()
-//}
-
+//Filename
+//Seed
+//Type - wallet type
+//Coin - coin type
 type Wallet struct {
-	//Name     string //deprecate
-	//Filename string //deprecate
-	//Seed     string
-	// Only holds one entry for now, and is assumed to be the first
-	// entry generated from seed.
 	Meta  map[string]string
 	Entry WalletEntry
 }
@@ -54,36 +31,21 @@ func NewWallet(seed string) Wallet {
 
 	pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
 	return Wallet{
-		//Filename: NewWalletFilename(""),
 		Meta: map[string]string{
 			"filename": NewWalletFilename(),
 			"seed":     seed,
 			"type":     "deterministic",
 			"coin":     "sky"},
-
-		//Seed:  seed,
 		Entry: NewWalletEntryFromKeypair(pub, sec),
 	}
 }
 
 func NewWalletFromReadable(r *ReadableWallet) Wallet {
-	//if r.Type != WalletType {
-	//	log.Panic("ReadableWallet type must be Deterministic")
-	//}
 	if len(r.Entries) != 1 {
 		log.Panic("Deterministic wallets have exactly 1 entry")
 	}
-	//should be string
-	//seed := r.Extra["seed"].(string)
+
 	w := Wallet{
-		/*
-			Meta: map[string]string{
-				"filename": r.Meta["filename"],
-				"seed":     r.Meta["seed"],
-				"type":     r.Meta["type"],
-				"coin":     r.Meta["coin"],
-			},
-		*/
 		Meta:  r.Meta,
 		Entry: r.Entries.ToWalletEntries().ToArray()[0],
 	}
@@ -140,19 +102,12 @@ func (self *Wallet) GetID() WalletID {
 	return WalletID(self.Meta["filename"])
 }
 
-//deprecate
-//func (self *Wallet) GetName() string {
-//	return self.Meta["filename"]
-//}
-
-//deprecate
-//func (self *Wallet) SetName(name string) {
-//	self.Meta["filename"] = name
-//}
-
 /*
-	Refactor
+Refactor
+- should be list of entries
+- should deterministically generate new entries
 */
+
 func (self *Wallet) NumEntries() int {
 	return 1
 }
@@ -190,7 +145,9 @@ func (self *Wallet) AddEntry(e WalletEntry) error {
 	return errors.New("Adding entries to deterministic wallet not allowed")
 }
 
-//
+/*
+	End Refactor
+*/
 
 func (self *Wallet) Save(dir string) error {
 	r := NewReadableWallet(*self)
@@ -205,11 +162,3 @@ func (self *Wallet) Load(dir string) error {
 	*self = NewWalletFromReadable(r)
 	return nil
 }
-
-/*
-func (self *Wallet) GetExtraSerializerData() map[string]interface{} {
-	m := make(map[string]interface{}, 1)
-	m["seed"] = self.Seed
-	return m
-}
-*/

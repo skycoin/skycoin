@@ -13,15 +13,8 @@ var (
 	logger = logging.MustGetLogger("skycoin.visor")
 )
 
-const (
-	SimpleWalletType        WalletType = "Simple"
-	DeterministicWalletType WalletType = "Deterministic"
-)
-
 const WalletExt = "wlt"
 const WalletTimestampFormat = "2006_01_01"
-
-type WalletType string
 
 type WalletID string
 type AddressSet map[cipher.Address]byte
@@ -33,10 +26,10 @@ func (self AddressSet) Update(other AddressSet) AddressSet {
 	return self
 }
 
-type WalletConstructor func() Wallet
+//type WalletConstructor func() Wallet
 
 //check for collisions and retry if failure
-func NewWalletFilename(id_ WalletID) string {
+func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	id := rand.Int() % 9999 //should read in wallet files and make sure does not exist
 	return fmt.Sprintf("%s_%04d.%s", timestamp, id, WalletExt)

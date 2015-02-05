@@ -69,14 +69,18 @@ func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
 
 // Used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	ID   WalletID `json:"id"`
-	Type string   `json:"type"`
-	Name string   `json:"name"`
+	/*
+		ID       WalletID               `json:"id"`
+		Type     string                 `json:"type"`
+		Name     string                 `json:"name"`
+		Filename string                 `json:"filename"`
+		Extra    map[string]interface{} `json:"extra"`
+	*/
+
 	// Filename is only included here for RPC information.  The value saved
 	// to disk should be ignored and overwritten when loaded by a Wallet.
-	Filename string                 `json:"filename"`
-	Entries  ReadableWalletEntries  `json:"entries"`
-	Extra    map[string]interface{} `json:"extra"`
+	Meta    map[string]string     `json:"meta"`
+	Entries ReadableWalletEntries `json:"entries"`
 }
 
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
@@ -91,12 +95,13 @@ func newReadableWallet(w Wallet, f ReadableWalletEntryCtor) *ReadableWallet {
 		i++
 	}
 	return &ReadableWallet{
-		ID:       w.GetID(),
-		Type:     w.GetType(),
-		Name:     w.GetName(),
-		Filename: w.GetFilename(),
-		Entries:  readable,
-		Extra:    w.GetExtraSerializerData(),
+		Meta:    w.Meta,
+		Entries: readable,
+		//ID:       w.GetID(),
+		//Type:     w.GetType(),
+		//Name:     w.GetName(),
+		//Filename: w.GetFilename(),
+		//Extra:    w.GetExtraSerializerData(),
 	}
 }
 
@@ -124,7 +129,7 @@ func (self *ReadableWallet) ToWallet() (Wallet, error) {
 // Saves to filename
 func (self *ReadableWallet) Save(filename string) error {
 	logger.Info("Saving readable wallet to %s with filename %s", filename,
-		self.Filename)
+		self.Meta["filename"])
 	return util.SaveJSON(filename, self, 0600)
 }
 

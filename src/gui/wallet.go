@@ -461,25 +461,25 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Create a wallet if no ID provided.  Otherwise update an existing wallet.
-// Name the wallet with "name".
+// Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("API request made to create a wallet")
 		//id := wallet.WalletID(r.FormValue("id"))
-		name := r.FormValue("name")
+		//name := r.FormValue("name")
 		seed := r.FormValue("seed")
-		_ = seed
+
 		// Create wallet
 		//iw := gateway.CreateWallet("") //returns wallet
 		//iw := wallet.NewReadableWallet(w)
 
 		//make this use seed
-		w1 := Wg.CreateWallet("") //use seed!
+		w1 := Wg.CreateWallet(seed) //use seed!
 		iw := wallet.NewReadableWallet(w1)
 
 		if iw != nil {
-			w1.SetName(name)
+			//w1.SetName(name)
 			if err := Wg.SaveWallet(w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
@@ -490,15 +490,16 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 //all this does is update the wallet name
+// Does Nothing
 func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
 		id := wallet.WalletID(r.FormValue("id"))
-		name := r.FormValue("name")
+		//name := r.FormValue("name")
 		w1 := Wg.GetWallet(id)
 		if w1 != nil {
 			//w1 := iw.(wallet.Wallet)
-			w1.SetName(name)
+			//w1.SetName(name)
 			if err := Wg.SaveWallet(w1.GetID()); err != nil {
 				m := "Failed to save wallet after renaming: %v"
 				logger.Critical(m, err)
@@ -569,13 +570,12 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/wallet", walletGet(gateway))
 
 	// POST/GET Arguments:
-	//      name [optional]
 	//		seed [optional]
 	//create new wallet
 	mux.HandleFunc("/wallet/create", walletCreate(gateway))
 
 	//update an existing wallet
-	//all this does is update the wallet name
+	//does nothing
 	mux.HandleFunc("/wallet/update", walletUpdate(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.

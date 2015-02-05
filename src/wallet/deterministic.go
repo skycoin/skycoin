@@ -33,11 +33,12 @@ func (self *WalletSeed) toWalletID() WalletID {
 //}
 
 type Wallet struct {
-	Name     string //deprecate
-	Filename string //deprecate
-	Seed     string
+	//Name     string //deprecate
+	//Filename string //deprecate
+	//Seed     string
 	// Only holds one entry for now, and is assumed to be the first
 	// entry generated from seed.
+	Meta  map[string]string
 	Entry WalletEntry
 }
 
@@ -53,9 +54,15 @@ func NewWallet(seed string) Wallet {
 
 	pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
 	return Wallet{
-		Filename: NewWalletFilename(""),
-		Seed:     seed,
-		Entry:    NewWalletEntryFromKeypair(pub, sec),
+		//Filename: NewWalletFilename(""),
+		Meta: map[string]string{
+			"filename": NewWalletFilename(),
+			"seed":     seed,
+			"type":     "deterministic",
+			"coin":     "sky"},
+
+		//Seed:  seed,
+		Entry: NewWalletEntryFromKeypair(pub, sec),
 	}
 }
 
@@ -67,39 +74,85 @@ func NewWalletFromReadable(r *ReadableWallet) Wallet {
 		log.Panic("Deterministic wallets have exactly 1 entry")
 	}
 	//should be string
-	seed := r.Extra["seed"].(string)
-	return Wallet{
-		Filename: r.Filename,
-		Name:     r.Name,
-		Entry:    r.Entries.ToWalletEntries().ToArray()[0],
-		Seed:     seed,
+	//seed := r.Extra["seed"].(string)
+	w := Wallet{
+		/*
+			Meta: map[string]string{
+				"filename": r.Meta["filename"],
+				"seed":     r.Meta["seed"],
+				"type":     r.Meta["type"],
+				"coin":     r.Meta["coin"],
+			},
+		*/
+		Meta:  r.Meta,
+		Entry: r.Entries.ToWalletEntries().ToArray()[0],
 	}
+
+	err := w.Validate()
+	if err != nil {
+		log.Panic("Wallet %s invalid: %v", w.GetFilename, err)
+	}
+	return w
+
+}
+
+func (self *Wallet) Validate() error {
+
+	if _, ok := self.Meta["filename"]; !ok {
+		return errors.New("filename not set")
+	}
+	if _, ok := self.Meta["seed"]; !ok {
+		return errors.New("seed not set")
+	}
+	wallet_type, ok := self.Meta["type"]
+	if !ok {
+		return errors.New("type not set")
+	}
+	if wallet_type != "deterministic" {
+		return errors.New("wallet type invalid")
+	}
+
+	coin_type, ok := self.Meta["coin"]
+	if !ok {
+		return errors.New("coin field not set")
+	}
+	if coin_type != "sky" {
+		return errors.New("coin type invalid")
+	}
+
+	return nil
+
 }
 
 func (self *Wallet) GetType() string {
-	return "deterministic"
+	return self.Meta["type"]
 }
 
 func (self *Wallet) GetFilename() string {
-	return self.Filename
+	return self.Meta["filename"]
 }
 
 func (self *Wallet) SetFilename(fn string) {
-	self.Filename = fn
+	self.Meta["filename"] = fn
 }
 
 func (self *Wallet) GetID() WalletID {
-	return WalletID(self.Seed[0:4])
+	return WalletID(self.Meta["filename"])
 }
 
-func (self *Wallet) GetName() string {
-	return self.Name
-}
+//deprecate
+//func (self *Wallet) GetName() string {
+//	return self.Meta["filename"]
+//}
 
-func (self *Wallet) SetName(name string) {
-	self.Name = name
-}
+//deprecate
+//func (self *Wallet) SetName(name string) {
+//	self.Meta["filename"] = name
+//}
 
+/*
+	Refactor
+*/
 func (self *Wallet) NumEntries() int {
 	return 1
 }
@@ -137,22 +190,26 @@ func (self *Wallet) AddEntry(e WalletEntry) error {
 	return errors.New("Adding entries to deterministic wallet not allowed")
 }
 
+//
+
 func (self *Wallet) Save(dir string) error {
 	r := NewReadableWallet(*self)
-	return r.Save(filepath.Join(dir, self.Filename))
+	return r.Save(filepath.Join(dir, self.GetFilename()))
 }
 
 func (self *Wallet) Load(dir string) error {
 	r := &ReadableWallet{}
-	if err := r.Load(filepath.Join(dir, self.Filename)); err != nil {
+	if err := r.Load(filepath.Join(dir, self.GetFilename())); err != nil {
 		return err
 	}
 	*self = NewWalletFromReadable(r)
 	return nil
 }
 
+/*
 func (self *Wallet) GetExtraSerializerData() map[string]interface{} {
 	m := make(map[string]interface{}, 1)
 	m["seed"] = self.Seed
 	return m
 }
+*/

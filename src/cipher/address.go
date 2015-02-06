@@ -132,6 +132,7 @@ func (self *Address) Checksum() Checksum {
 Bitcoin Functions
 */
 
+/*
 //prints the bitcoin address for a seckey
 func BitcoinAddressFromSeckey(seckey SecKey) string {
 
@@ -155,3 +156,4 @@ func MustSecKeyFromWalletImportFormat(intput string) SecKey {
 func SecKeyFromWalletImportFormat(input string) (SecKey, errors) {
 
 }
+*/

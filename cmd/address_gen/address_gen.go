@@ -11,6 +11,8 @@ import (
 	//"os"
 )
 
+// TODO: Make this print JSON! Needs labels and printy printing
+
 // Note: Address_gen generates public keys and addresses
 // address, pubkey, privatekey
 // -n for number of addresses

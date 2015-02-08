@@ -33,6 +33,7 @@ var (
 	PrintPubKey  = true
 	PrintSeckey  = true
 
+	BitcoinAddress = false
 	//labelStdout  = false
 	//inFile       = ""
 	seed     = ""
@@ -40,9 +41,6 @@ var (
 )
 
 func registerFlags() {
-
-	flag.BoolVar(&testNetwork, "t", testNetwork,
-		"generate testnet addresses")
 
 	flag.IntVar(&genCount, "n", genCount,
 		"number of addresses to generate")
@@ -53,6 +51,9 @@ func registerFlags() {
 		"print public keys for generated")
 	flag.BoolVar(&PrintSeckey, "s", PrintSeckey,
 		"print secret keys for generated")
+
+	flag.BoolVar(&BitcoinAddress, "b", BitcoinAddress,
+		"print seckey address as bitcoin address")
 
 	flag.StringVar(&seed, "seed", seed,
 		"seed for deterministic key generation")
@@ -87,11 +88,17 @@ func parseFlags() {
 
 func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
 
-	addr := cipher.AddressFromPubKey(pub)
+	var addr_str string // cipher.Address
+	if BitcoinAddress == false {
+		addr := cipher.AddressFromPubKey(pub)
+		addr_str = addr.String()
+	} else {
+		addr_str = cipher.BitcoinAddressFromPubkey(pub)
+	}
 
 	str1 := fmt.Sprintf("%v ", pub.Hex())
 	str2 := fmt.Sprintf("%v ", sec.Hex())
-	str3 := fmt.Sprintf("%v", addr.String())
+	str3 := fmt.Sprintf("%v", addr_str)
 
 	if PrintPubKey == false {
 		str1 = ""

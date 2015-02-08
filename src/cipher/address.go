@@ -127,3 +127,33 @@ func (self *Address) Checksum() Checksum {
 	copy(c[:], r2[:len(c)])
 	return c
 }
+
+/*
+Bitcoin Functions
+*/
+
+/*
+//prints the bitcoin address for a seckey
+func BitcoinAddressFromSeckey(seckey SecKey) string {
+
+}
+
+//exports seckey in wallet import format
+//key must be compressed
+func WalletImportFormat(seckey SecKey) string {
+
+}
+
+func MustSecKeyFromWalletImportFormat(intput string) SecKey {
+	seckey, err := SecKeyFromWalletImportFormat(input)
+	if err != nil {
+		log.Panic("MustSecKeyFromWalletImportFormat, invalid seckey")
+	}
+	return seckey
+}
+
+//extracts a seckey from wallet import format
+func SecKeyFromWalletImportFormat(input string) (SecKey, errors) {
+
+}
+*/

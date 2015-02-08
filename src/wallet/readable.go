@@ -1,10 +1,10 @@
 package wallet
 
 import (
-	"fmt"
-	"log"
+	//"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
+	"log"
 )
 
 type ReadableWalletEntry struct {
@@ -20,14 +20,6 @@ func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
 		Address: w.Address.String(),
 		Public:  w.Public.Hex(),
 		Secret:  w.Secret.Hex(),
-	}
-}
-
-func NewPublicReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
-	return ReadableWalletEntry{
-		Address: w.Address.String(),
-		Public:  w.Public.Hex(),
-		Secret:  "",
 	}
 }
 
@@ -68,45 +60,25 @@ func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
 
 // Used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	ID   WalletID   `json:"id"`
-	Type WalletType `json:"type"`
-	Name string     `json:"name"`
-	// Filename is only included here for RPC information.  The value saved
-	// to disk should be ignored and overwritten when loaded by a Wallet.
-	Filename string                 `json:"filename"`
-	Entries  ReadableWalletEntries  `json:"entries"`
-	Extra    map[string]interface{} `json:"extra"`
+	Meta    map[string]string     `json:"meta"`
+	Entries ReadableWalletEntries `json:"entries"`
 }
 
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
-// Converts a Wallet to a ReadableWallet, converting entries
-func newReadableWallet(w Wallet, f ReadableWalletEntryCtor) *ReadableWallet {
+func NewReadableWallet(w Wallet) *ReadableWallet {
+	//return newReadableWallet(w, NewReadableWalletEntry)
 	entries := w.GetEntries()
 	readable := make(ReadableWalletEntries, len(entries))
 	i := 0
 	for _, e := range entries {
-		readable[i] = f(&e)
+		readable[i] = NewReadableWalletEntry(&e)
 		i++
 	}
 	return &ReadableWallet{
-		ID:       w.GetID(),
-		Type:     w.GetType(),
-		Name:     w.GetName(),
-		Filename: w.GetFilename(),
-		Entries:  readable,
-		Extra:    w.GetExtraSerializerData(),
+		Meta:    w.Meta,
+		Entries: readable,
 	}
-}
-
-// Converts a Wallet to a ReadableWallet
-func NewReadableWallet(w Wallet) *ReadableWallet {
-	return newReadableWallet(w, NewReadableWalletEntry)
-}
-
-// Converts a Wallet to a ReadableWallet, but omits private keys
-func NewPublicReadableWallet(w Wallet) *ReadableWallet {
-	return newReadableWallet(w, NewPublicReadableWalletEntry)
 }
 
 // Loads a ReadableWallet from disk
@@ -117,20 +89,13 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 }
 
 func (self *ReadableWallet) ToWallet() (Wallet, error) {
-	switch self.Type {
-	case DeterministicWalletType:
-		return NewDeterministicWalletFromReadable(self), nil
-	case SimpleWalletType:
-		return NewSimpleWalletFromReadable(self), nil
-	default:
-		return nil, fmt.Errorf("Unknown wallet type \"%s\"", self.Type)
-	}
+	return NewWalletFromReadable(self), nil
 }
 
 // Saves to filename
 func (self *ReadableWallet) Save(filename string) error {
 	logger.Info("Saving readable wallet to %s with filename %s", filename,
-		self.Filename)
+		self.Meta["filename"])
 	return util.SaveJSON(filename, self, 0600)
 }
 

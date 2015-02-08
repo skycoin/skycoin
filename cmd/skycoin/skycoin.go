@@ -216,7 +216,7 @@ var DevArgs = DevConfig{Config{
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
-	WebInterface:      false,
+	WebInterface:      true,
 	WebInterfacePort:  6420,
 	WebInterfaceAddr:  "127.0.0.1",
 	WebInterfaceCert:  "",

@@ -84,3 +84,33 @@ func TestAddressString(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, a2, a3)
 }
+
+func TestBitcoinAddress1(t *testing.T) {
+	seckey := MustSecKeyFromHex("1111111111111111111111111111111111111111111111111111111111111111")
+	pubkey := PubKeyFromSecKey(seckey)
+	pubkey_str := "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa"
+	assert.Equal(t, pubkey_str, pubkey.Hex())
+	bitcoin_str := "1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9"
+	bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
+	assert.Equal(t, bitcoin_str, bitcoin_addr)
+}
+
+func TestBitcoinAddress2(t *testing.T) {
+	seckey := MustSecKeyFromHex("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
+	pubkey := PubKeyFromSecKey(seckey)
+	pubkey_str := "02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd"
+	assert.Equal(t, pubkey_str, pubkey.Hex())
+	bitcoin_str := "1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a"
+	bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
+	assert.Equal(t, bitcoin_str, bitcoin_addr)
+}
+
+func TestBitcoinAddress3(t *testing.T) {
+	seckey := MustSecKeyFromHex("47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012")
+	pubkey := PubKeyFromSecKey(seckey)
+	pubkey_str := "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3"
+	assert.Equal(t, pubkey_str, pubkey.Hex())
+	bitcoin_str := "19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV"
+	bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
+	assert.Equal(t, bitcoin_str, bitcoin_addr)
+}

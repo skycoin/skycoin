@@ -156,7 +156,7 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 func MustSecKeyFromWalletImportFormat(input string) SecKey {
 	seckey, err := SecKeyFromWalletImportFormat(input)
 	if err != nil {
-		log.Panic("MustSecKeyFromWalletImportFormat, invalid seckey")
+		log.Panicf("MustSecKeyFromWalletImportFormat, invalid seckey, %v", err)
 	}
 	return seckey
 }
@@ -168,23 +168,29 @@ func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 		return SecKey{}, err
 	}
 
-	//1+20+1+4
-	if len(b) != 26 {
+	//1+32+1+4
+	if len(b) != 38 {
+		//log.Printf("len= %v ", len(b))
 		return SecKey{}, errors.New("invalid length")
 	}
 	if b[0] != 0x80 {
 		return SecKey{}, errors.New("first byte invalid")
 	}
 
-	if b[21] != 0x01 {
-		return SecKey{}, errors.New("invalid 21st byte")
+	if b[1+32] != 0x01 {
+		return SecKey{}, errors.New("invalid 33rd byte")
 	}
 
-	b2 := DoubleSHA256(b[0:22])
+	b2 := DoubleSHA256(b[0:34])
+	chksum := b[34:38]
 
-	if !bytes.Equal(b[22:26], b2[0:4]) {
+	if !bytes.Equal(chksum, b2[0:4]) {
 		return SecKey{}, errors.New("checksum fail")
 	}
 
-	return SecKey{}, nil
+	seckey := b[1:33]
+	if len(seckey) != 32 {
+		log.Panic("...")
+	}
+	return NewSecKey(b[1:33]), nil
 }

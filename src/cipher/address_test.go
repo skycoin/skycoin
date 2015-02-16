@@ -58,6 +58,16 @@ func TestAddressFromBytes(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+//encode and decode
+func TestAddressRoundtrip(t *testing.T) {
+	p, _ := GenerateKeyPair()
+	a := AddressFromPubKey(p)
+	a2, err := addressFromBytes(a.Bytes())
+	assert.Nil(t, err)
+	assert.Equal(t, a, a2)
+	assert.Equal(t, a.String(), a2.String())
+}
+
 func TestAddressVerify(t *testing.T) {
 	p, _ := GenerateKeyPair()
 	a := AddressFromPubKey(p)
@@ -115,38 +125,56 @@ func TestBitcoinAddress3(t *testing.T) {
 	assert.Equal(t, bitcoin_str, bitcoin_addr)
 }
 
+func TestBitcoinWIPRoundTrio(t *testing.T) {
+
+	_, seckey1 := GenerateKeyPair()
+	wip1 := BitcoinWalletImportFormatFromSeckey(seckey1)
+	seckey2, err := SecKeyFromWalletImportFormat(wip1)
+	wip2 := BitcoinWalletImportFormatFromSeckey(seckey2)
+
+	assert.Nil(t, err)
+	assert.Equal(t, seckey1, seckey2)
+	assert.Equal(t, seckey1.Hex(), seckey2.Hex())
+	assert.Equal(t, wip1, wip2)
+
+}
 func TestBitcoinWIP(t *testing.T) {
-	var wip []string {
-		"5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
-		"5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
-		"5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
-
+	//wallet input format string
+	var wip []string = []string{
+		"KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp",
+		"L4ezQvyC6QoBhxB4GVs9fAPhUKtbaXYUn8YTqoeXwbevQq4U92vN",
+		"KydbzBtk6uc7M6dXwEgTEH2sphZxSPbmDSz6kUUHi4eUpSQuhEbq",
 	}
-/*
-    def test_2(self):
-        secret = "5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3"
-        address = "1F5y5E5FMc5YzdJtB9hLaUe43GDxEKXENJ"
-        self._test(BitcoinMainNet, secret, address, False)
+	//the expected pubkey to generate
+	var pub []string = []string{
+		"034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+		"02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd",
+		"032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3",
+	}
+	//the expected addrss to generate
+	var addr []string = []string{
+		"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",
+		"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a",
+		"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",
+	}
 
-    def test_3(self):
-        secret = "Kwr371tjA9u2rFSMZjTNun2PXXP3WPZu2afRHTcta6KxEUdm1vEw"
-        address = "1NoJrossxPBKfCHuJXT4HadJrXRE9Fxiqs"
-        self._test(BitcoinMainNet, secret, address, True)
+	for i, _ := range wip {
+		seckey, err := SecKeyFromWalletImportFormat(wip[i])
+		assert.Equal(t, nil, err)
+		_ = MustSecKeyFromWalletImportFormat(wip[i])
+		pubkey := PubKeyFromSecKey(seckey)
+		assert.Equal(t, pub[i], pubkey.Hex())
+		bitcoin_address := BitcoinAddressFromPubkey(pubkey)
+		assert.Equal(t, addr[i], bitcoin_address)
+	}
 
-    def test_4(self):
-        secret = "L3Hq7a8FEQwJkW1M2GNKDW28546Vp5miewcCzSqUD9kCAXrJdS3g"
-        address = "1CRj2HyM1CXWzHAXLQtiGLyggNT9WQqsDs"
-        self._test(BitcoinMainNet, secret, address, True)
-*/
-
-
-
-
-	seckey := MustSecKeyFromHex("47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012")
-	pubkey := PubKeyFromSecKey(seckey)
-	pubkey_str := "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3"
-	assert.Equal(t, pubkey_str, pubkey.Hex())
-	bitcoin_str := "19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV"
-	bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
-	assert.Equal(t, bitcoin_str, bitcoin_addr)
+	/*
+		seckey := MustSecKeyFromHex("47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012")
+		pubkey := PubKeyFromSecKey(seckey)
+		pubkey_str := "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3"
+		assert.Equal(t, pubkey_str, pubkey.Hex())
+		bitcoin_str := "19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV"
+		bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
+		assert.Equal(t, bitcoin_str, bitcoin_addr)
+	*/
 }

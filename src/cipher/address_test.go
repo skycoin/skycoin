@@ -114,3 +114,39 @@ func TestBitcoinAddress3(t *testing.T) {
 	bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
 	assert.Equal(t, bitcoin_str, bitcoin_addr)
 }
+
+func TestBitcoinWIP(t *testing.T) {
+	var wip []string {
+		"5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
+		"5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
+		"5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
+
+	}
+/*
+    def test_2(self):
+        secret = "5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3"
+        address = "1F5y5E5FMc5YzdJtB9hLaUe43GDxEKXENJ"
+        self._test(BitcoinMainNet, secret, address, False)
+
+    def test_3(self):
+        secret = "Kwr371tjA9u2rFSMZjTNun2PXXP3WPZu2afRHTcta6KxEUdm1vEw"
+        address = "1NoJrossxPBKfCHuJXT4HadJrXRE9Fxiqs"
+        self._test(BitcoinMainNet, secret, address, True)
+
+    def test_4(self):
+        secret = "L3Hq7a8FEQwJkW1M2GNKDW28546Vp5miewcCzSqUD9kCAXrJdS3g"
+        address = "1CRj2HyM1CXWzHAXLQtiGLyggNT9WQqsDs"
+        self._test(BitcoinMainNet, secret, address, True)
+*/
+
+
+
+
+	seckey := MustSecKeyFromHex("47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012")
+	pubkey := PubKeyFromSecKey(seckey)
+	pubkey_str := "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3"
+	assert.Equal(t, pubkey_str, pubkey.Hex())
+	bitcoin_str := "19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV"
+	bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
+	assert.Equal(t, bitcoin_str, bitcoin_addr)
+}

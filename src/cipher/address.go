@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"bytes"
 	"errors"
 	"log"
 
@@ -142,14 +143,17 @@ func BitcoinAddressFromPubkey(pubkey PubKey) string {
 	return string(base58.Hex2Base58(b5))
 }
 
-/*
 //exports seckey in wallet import format
 //key must be compressed
-func WalletImportFormat(seckey SecKey) string {
-
+func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
+	b1 := append([]byte{byte(0x80)}, seckey[:]...)
+	b2 := append(b1[:], []byte{0x01}...)
+	b3 := DoubleSHA256(b2) //checksum
+	b4 := append(b2, b3[0:4]...)
+	return string(base58.Hex2Base58(b4))
 }
 
-func MustSecKeyFromWalletImportFormat(intput string) SecKey {
+func MustSecKeyFromWalletImportFormat(input string) SecKey {
 	seckey, err := SecKeyFromWalletImportFormat(input)
 	if err != nil {
 		log.Panic("MustSecKeyFromWalletImportFormat, invalid seckey")
@@ -158,7 +162,29 @@ func MustSecKeyFromWalletImportFormat(intput string) SecKey {
 }
 
 //extracts a seckey from wallet import format
-func SecKeyFromWalletImportFormat(input string) (SecKey, errors) {
+func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
+	b, err := base58.Base582Hex(input)
+	if err != nil {
+		return SecKey{}, err
+	}
 
+	//1+20+1+4
+	if len(b) != 26 {
+		return SecKey{}, errors.New("invalid length")
+	}
+	if b[0] != 0x80 {
+		return SecKey{}, errors.New("first byte invalid")
+	}
+
+	if b[21] != 0x01 {
+		return SecKey{}, errors.New("invalid 21st byte")
+	}
+
+	b2 := DoubleSHA256(b[0:22])
+
+	if !bytes.Equal(b[22:26], b2[0:4]) {
+		return SecKey{}, errors.New("checksum fail")
+	}
+
+	return SecKey{}, nil
 }
-*/

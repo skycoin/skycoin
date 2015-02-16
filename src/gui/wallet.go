@@ -130,6 +130,24 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 		bp := WalletBalance(v, walletID)
 		return &bp
 	*/
+
+	wlt := self.Wallets.Get(walletID)
+	if wlt == nil {
+		log.Printf("GetWalletBalance: ID NOT FOUND")
+		return wallet.BalancePair{}
+	}
+	auxs := v.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
+	puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent,
+		wlt.GetAddressSet())
+
+	coins1, hours1 := v.AddressBalance(auxs)
+	coins2, hours2 := v.AddressBalance(auxs.Sub(puxs))
+
+	confirmed := wallet.Balance{coins1, hours1}
+	predicted := wallet.Balance{coins2, hours2}
+
+	return wallet.BalancePair{confirmed, predicted}
+
 	return wallet.BalancePair{}
 	/*
 		wlt := self.Wallets.Get(walletID)

@@ -658,18 +658,6 @@ func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
 	}
 	return b
 }
-
-// Computes the total balance for cipher.Addresses and their coin.UxOuts
-func (self *Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
-	prevTime := self.Blockchain.Time()
-	b := wallet.NewBalance(0, 0)
-	for _, uxs := range auxs {
-		for _, ux := range uxs {
-			b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
-		}
-	}
-	return b
-}
 */
 
 // Creates a wallet with a single master entry
@@ -684,3 +672,19 @@ func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
 	return w
 }
 */
+
+// Computes the total balance for cipher.Addresses and their coin.UxOuts
+func (self *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
+	prevTime := self.Blockchain.Time()
+	//b := wallet.NewBalance(0, 0)
+	var coins uint64 = 0
+	var hours uint64 = 0
+	for _, uxs := range auxs {
+		for _, ux := range uxs {
+			coins += ux.Body.Coins
+			hours += ux.CoinHours(prevTime)
+			//b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+		}
+	}
+	return coins, hours
+}

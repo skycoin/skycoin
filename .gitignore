@@ -79,3 +79,4 @@ master.keys
 *.bak
 benefactor-wallet.json
 masterdata/
+.genv

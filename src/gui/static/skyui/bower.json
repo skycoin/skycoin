@@ -1,0 +1,32 @@
+{
+  "name": "skycoin-gui",
+  "version": "1.0.0",
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skycoin/skycoin"
+  },
+  "private": false,
+  "devDependencies": {},
+  "dependencies": {
+    "jquery": "latest",
+    "bootstrap": "latest",
+    "font-awesome": "latest",
+    "animate.css": "latest",
+    "angular": "latest",
+    "angular-bootstrap": "latest",
+    "angular-ui-utils": "latest",
+    "angular-ui-router": "latest",
+    "angular-route": "latest",
+    "angular-animate": "latest",
+    "angular-cookies": "latest",
+    "angular-resource": "latest",
+    "angular-sanitize": "latest",
+    "angular-qrcode": "latest",
+    "domready": "latest",
+    "alertify.js": "latest",
+    "lodash": "latest",
+    "restangular": "latest",
+    "bootstrap-glyphicons": "marcoceppi/bootstrap-glyphicons"
+  }
+}

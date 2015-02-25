@@ -57,7 +57,8 @@ var filePath = {
     src:
       [
       './libs/jquery/dist/jquery.js', // v2.1.1
-      './libs/bootstrap/dist/js/bootstrap.js' // v3.1.1
+      './libs/bootstrap/dist/js/bootstrap.js', // v3.1.1
+      './libs/qrcode-generator/js/qrcode.js'
     ]
   },
   vendorFONTS: {

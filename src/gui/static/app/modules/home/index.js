@@ -1,8 +1,11 @@
 'use strict';
 
+require('./controllers');
+require('angular-route');
+require('angular-qrcode');
 
 // Declare app level module which depends on filters, and services
-angular.module('skycoin', [
+module.exports = angular.module('skycoin', [
   'ngRoute',
   'ui.bootstrap',
   //'skycoin.filters',
@@ -12,11 +15,15 @@ angular.module('skycoin', [
   'monospaced.qrcode'
 ]).
 config(['$routeProvider', function($routeProvider) {
-  $routeProvider.when('/view1', {templateUrl: 'partials/partial1.html', controller: 'mainCtrl'});
-  $routeProvider.when('/view2', {templateUrl: 'partials/partial2.html', controller: 'mainCtrl'});
+  $routeProvider.when('/view1', {
+    template: require('./partial1.html'),
+    controller: 'mainCtrl'
+  });
+  $routeProvider.when('/view2', {
+    template: require('./partial2.html'),
+    controller: 'mainCtrl'
+  });
   $routeProvider.otherwise({redirectTo: '/'});
 }]).config(['$locationProvider', function($locationProvider){
-    $locationProvider.html5Mode(true).hashPrefix('');
+  $locationProvider.html5Mode(true).hashPrefix('');
 }]);
-
-

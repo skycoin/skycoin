@@ -87,7 +87,7 @@ var filePath = {
     watch: './app/index.html'
   },
   copyFavicon: {
-    src: './app/favicon.png'
+    src: './app/favicon.ico'
   }
 };
 

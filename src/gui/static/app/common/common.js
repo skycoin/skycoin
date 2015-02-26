@@ -11,17 +11,16 @@ require('domready/ready');
 require('lodash');
 require('restangular');
 
-module.exports = angular.module('common',
-	[
-        'ui.bootstrap',
-        'ui.router',
-        'ngAnimate',
-        'ngCookies',
-        'ngSanitize',
-        'restangular',
-        require('./components/header').name,
-        require('./components/footer').name,
-        require('./directives').name,
-        require('./resources').name,
-        require('./services').name
-	]);
+module.exports = angular.module('common', [
+  'ui.bootstrap',
+  'ui.router',
+  'ngAnimate',
+  'ngCookies',
+  'ngSanitize',
+  'restangular',
+  require('./components/header').name,
+  require('./components/footer').name,
+  require('./directives').name,
+  require('./resources').name,
+  require('./services').name
+]);

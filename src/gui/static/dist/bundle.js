@@ -3,7 +3,7 @@
 
 require("./../libs/angular/angular.js");
 
-module.exports = angular.module('myApp',
+module.exports = angular.module('skycoin',
 	[
 		require('./common/common.js').name,
 		require('./modules').name
@@ -12,7 +12,7 @@ module.exports = angular.module('myApp',
 	.constant('version', require('../package.json').version)
 	.run(require('./common/common-init.js'));
 
-},{"../package.json":36,"./../libs/angular/angular.js":31,"./appConfig":2,"./common/common-init.js":3,"./common/common.js":4,"./modules":23}],2:[function(require,module,exports){
+},{"../package.json":43,"./../libs/angular/angular.js":38,"./appConfig":2,"./common/common-init.js":3,"./common/common.js":4,"./modules":20}],2:[function(require,module,exports){
 // These routes are to define any app-level paths to modules. 
 // For module-level route definitions, use the Routes.js files found in the module folders.
 
@@ -103,7 +103,7 @@ module.exports = angular.module('common', [
   require('./services').name
 ]);
 
-},{"./../../libs/angular-animate/angular-animate.js":24,"./../../libs/angular-bootstrap/ui-bootstrap-tpls.js":25,"./../../libs/angular-cookies/angular-cookies.js":26,"./../../libs/angular-resource/angular-resource.js":28,"./../../libs/angular-sanitize/angular-sanitize.js":29,"./../../libs/angular-ui-router/release/angular-ui-router.js":30,"./../../libs/domready/ready":32,"./../../libs/jquery/dist/jquery.js":33,"./../../libs/lodash/dist/lodash.compat.js":34,"./../../libs/restangular/dist/restangular.js":35,"./components/footer":6,"./components/header":8,"./directives":10,"./resources":12,"./services":14}],5:[function(require,module,exports){
+},{"./../../libs/angular-animate/angular-animate.js":31,"./../../libs/angular-bootstrap/ui-bootstrap-tpls.js":32,"./../../libs/angular-cookies/angular-cookies.js":33,"./../../libs/angular-resource/angular-resource.js":35,"./../../libs/angular-sanitize/angular-sanitize.js":36,"./../../libs/angular-ui-router/release/angular-ui-router.js":37,"./../../libs/domready/ready":39,"./../../libs/jquery/dist/jquery.js":40,"./../../libs/lodash/dist/lodash.compat.js":41,"./../../libs/restangular/dist/restangular.js":42,"./components/footer":6,"./components/header":8,"./directives":10,"./resources":12,"./services":14}],5:[function(require,module,exports){
 module.exports = '<footer class="footer">\n' +
     '\n' +
     '</footer>';
@@ -111,13 +111,14 @@ module.exports = '<footer class="footer">\n' +
 'use strict';
 
 module.exports = angular.module('common.components.commonFooter', [])
-	.directive('commonFooter', function () {
-		return {
-			template: require('./common-footer.html'),
-			restrict: 'EA',
-			replace: true
-		};
-	});
+.directive('commonFooter', function () {
+  return {
+    template: require('./common-footer.html'),
+    restrict: 'EA',
+    replace: true
+  };
+});
+
 },{"./common-footer.html":5}],7:[function(require,module,exports){
 module.exports = '<header class="header">\n' +
     '\n' +
@@ -126,57 +127,63 @@ module.exports = '<header class="header">\n' +
 'use strict';
 
 module.exports = angular.module('common.components.commonHeader', [])
-	.directive('commonHeader', function () {
-		return {
-			template: require('./common-header.html'),
-			restrict: 'EA',
-			replace: true
-		};
-	});
+.directive('commonHeader', function () {
+  return {
+    template: require('./common-header.html'),
+    restrict: 'EA',
+    replace: true
+  };
+});
+
 },{"./common-header.html":7}],9:[function(require,module,exports){
 'use strict';
 
 var directiveName = function() {
-    return {
-        restrict: 'EA',
-        link: function () {
-            
-        }
-    };
+  return {
+    restrict: 'EA',
+    link: function () {
+
+    }
+  };
 };
 
 directiveName.$inject = [''];
 module.exports = directiveName;
+
 },{}],10:[function(require,module,exports){
 'use strict';
 
 module.exports = angular.module('common.directives', [])
-	.directive('directiveName', require('./directiveName.js'));
+.directive('directiveName', require('./directiveName.js'));
+
 },{"./directiveName.js":9}],11:[function(require,module,exports){
 'use strict';
 
 var ResourceName = function($resource) {
-	return $resource({
+  return $resource({
 
-    });
+  });
 };
 
 ResourceName.$inject = ['$resource'];
 module.exports = ResourceName;
+
 },{}],12:[function(require,module,exports){
 'use strict';
 
 module.exports = angular.module('common.resources', [])
-	.factory('ResourceName', require('./ResourceName.js'));
+.factory('ResourceName', require('./ResourceName.js'));
+
 },{"./ResourceName.js":11}],13:[function(require,module,exports){
 'use strict';
 
 var ServiceName = function() {
-	
+
 };
 
 ServiceName.$inject = [''];
 module.exports = ServiceName;
+
 },{}],14:[function(require,module,exports){
 'use strict';
 
@@ -184,33 +191,21 @@ module.exports = ServiceName;
 // Factories have first letter capitalized like Controllers
 
 module.exports = angular.module('common.services', [])
-	.factory('ServiceName', require('./ServiceName.js'));
+.factory('ServiceName', require('./ServiceName.js'));
 
 // NOTE: Services and Factories MUST be injected with a resource or another service
 // in order to be injected into other modules.
+
 },{"./ServiceName.js":13}],15:[function(require,module,exports){
-'use strict';
-// Controller naming conventions should start with an uppercase letter
-function MainCtrl($rootScope, $scope) {
-
-	$scope.test = null;
-
-	console.log('Up and running!');
-	
-}
-
-// $inject is necessary for minification. See http://bit.ly/1lNICde for explanation.
-MainCtrl.$inject = ['$rootScope', '$scope'];
-module.exports = MainCtrl;
-},{}],16:[function(require,module,exports){
 'use strict';
 
 /* Controllers */
 
 module.exports = angular.module('skycoin.controllers', [])
 
-.controller('mainCtrl', ['$scope','$http', '$modal', '$log', '$timeout',
-  function($scope,$http,$modal,$log,$timeout) {
+.controller('mainCtrl', ['$scope','$http', '$modal', '$log',
+            '$timeout', '$wallet',
+            function($scope, $http, $modal, $log, $timeout, $wallet) {
     $scope.addresses = [];
 
     $scope.tab = {};
@@ -376,45 +371,13 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.mainBackUp = function(){
     };
 
-    $scope.openQR = function (wallet) {
-      var modalInstance = $modal.open({
-        template: require('./qr-modal.html'),
-        controller: 'qrInstanceCtrl',
-        resolve: {
-          wallet: function () {
-            return wallet;
-          }
-        }
-      });
-
-      modalInstance.result.then(function () {
-      }, function () {
-        $log.info('Modal dismissed at: ' + new Date());
-      });
-    };
-
-    $scope.openLoadWallet = function (wallet) {
-
-      var modalInstance = $modal.open({
-        template: require('./loadWalletModal.html'),
-        controller: 'loadWalletInstanceCtrl',
-        resolve: {
-          wallet: function () {
-            return wallet;
-          }
-        }
-      });
-
-      modalInstance.result.then(function () {
-      }, function () {
-        $log.info('Modal dismissed at: ' + new Date());
-      });
-    };
+    $scope.openQR = $wallet.showQR;
+    $scope.openLoadWallet = $wallet.loadSeed;
 
     $scope.updateWallet = function (wallet) {
 
       var modalInstance = $modal.open({
-        template: require('./updateWalletModal.html'),
+        template: require('./updateWalletModal.jade'),
         controller: 'updateWalletInstanceCtrl',
         resolve: {
           wallet: function () {
@@ -432,72 +395,6 @@ module.exports = angular.module('skycoin.controllers', [])
   }
 ])
 
-
-.controller('qrInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
-  function($http, $scope, $modalInstance, wallet) {
-
-  $scope.address = wallet.entries[0].address;
-  $scope.qro = {};
-  $scope.qro.fm = wallet.entries[0].address;
-
-  $scope.$watch('qro.label', function() {
-    $scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
-  });
-
-  $scope.$watch('qro.message', function() {
-    $scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
-  });
-
-
-  $scope.ok = function () {
-    $modalInstance.close($scope.selected.item);
-  };
-
-  $scope.cancel = function () {
-    $modalInstance.dismiss('cancel');
-  };
-}])
-
-.controller('loadWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
-  function($http, $scope, $modalInstance) {
-
-  $scope.wallet = {};
-  $scope.wallet.name = '';
-  $scope.wallet.new = '';
-
-  $scope.ok = function () {
-
-    console.log('New wallet called');
-    var xsrf = {
-      name:$scope.wallet.name,
-      seed:$scope.wallet.seed
-    };
-    console.log('xsrf: ', xsrf);
-    $http({
-      method: 'POST',
-      url: '/wallet/create',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      transformRequest: function(obj) {
-        var str = [];
-        for(var p in obj){
-          str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
-        }
-        return str.join('&');
-      },
-      data: xsrf
-    }).success(function(response){
-      console.log('Load wallet response: ');
-      console.dir(response);
-      //$scope.loadWallets();
-    });
-
-    $modalInstance.close();
-  };
-
-  $scope.cancel = function () {
-    $modalInstance.dismiss('cancel');
-  };
-}])
 
 .controller('updateWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
   function($http, $scope, $modalInstance, wallet) {
@@ -539,18 +436,17 @@ module.exports = angular.module('skycoin.controllers', [])
   };
 }]);
 
-},{"./loadWalletModal.html":18,"./qr-modal.html":21,"./updateWalletModal.html":22}],17:[function(require,module,exports){
+},{"./updateWalletModal.jade":19}],16:[function(require,module,exports){
 'use strict';
 
 require('./controllers');
-require("./../../../libs/angular-qrcode/qrcode.js");
 
 // Declare app level module which depends on filters, and services
-module.exports = angular.module('skycoin', [
+module.exports = angular.module('skycoin.home', [
   'ui.router',
   'ui.bootstrap',
   'skycoin.controllers',
-  'monospaced.qrcode'
+  'skycoin.wallet.services'
 ])
 .config([
   '$stateProvider', '$urlRouterProvider',
@@ -573,78 +469,195 @@ module.exports = angular.module('skycoin', [
   }
 ]);
 
-},{"./../../../libs/angular-qrcode/qrcode.js":27,"./controllers":16,"./partial1.html":19,"./partial2.html":20}],18:[function(require,module,exports){
-module.exports = '<div class="load-wallet-container">\n' +
-    '\n' +
-    '  <label>Name:\n' +
-    '    <input maxlength="60" ng-model="wallet.name" />\n' +
-    '  </label>\n' +
-    '  <br />\n' +
-    '\n' +
-    '  <label>Seed:\n' +
-    '    <textarea rows="4" ng-model="wallet.seed" cols="46"></textarea>\n' +
-    '  </label>\n' +
-    '\n' +
-    '  <br />\n' +
-    '\n' +
-    '</div>\n' +
-    '\n' +
-    '<div class="modal-footer">\n' +
-    '  <button type="button" class="btn btn-default" ng-click="ok()">OK</button>\n' +
-    '  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>\n' +
-    '</div>\n' +
-    '';
-},{}],19:[function(require,module,exports){
+},{"./controllers":15,"./partial1.html":17,"./partial2.html":18}],17:[function(require,module,exports){
 module.exports = 'Not found';
-},{}],20:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 module.exports = '';
-},{}],21:[function(require,module,exports){
-module.exports = '<div class="qr-container">\n' +
-    '\n' +
-    '  <qrcode ng-if="!qro.new" size="300" data="{{address.address}}"></qrcode>\n' +
-    '\n' +
-    '  <qrcode ng-if="qro.new" size="300" data="{{qro.new}}"></qrcode>\n' +
-    '  <br />\n' +
-    '\n' +
-    '  <textarea rows="4" ng-model="qro.new" cols="46"></textarea>\n' +
-    '  <br />\n' +
-    '\n' +
-    '  <!-- Label: <input id="qr-label" type="text" ng-model="qro.label"  />\n' +
-    '  <br /> -->\n' +
-    '\n' +
-    '  <!-- Message: <input id="qr-message" type="text" ng-model="qro.message"  /> -->\n' +
-    '\n' +
-    '</div>\n' +
-    '\n' +
-    '<div class="modal-footer">\n' +
-    '  <button type="button" class="btn btn-default" ng-click="ok()">OK</button>\n' +
-    '  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>\n' +
-    '</div>\n' +
-    '';
-},{}],22:[function(require,module,exports){
-module.exports = '<div class="update-wallet-container">\n' +
-    '\n' +
-    '  <label>Name:\n' +
-    '    <input maxlength="60" ng-model="wallet.name" />\n' +
-    '  </label>\n' +
-    '  <br />\n' +
-    '\n' +
-    '</div>\n' +
-    '\n' +
-    '<div class="modal-footer">\n' +
-    '  <button type="button" class="btn btn-default" ng-click="ok()">OK</button>\n' +
-    '  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>\n' +
-    '</div>\n' +
-    '';
-},{}],23:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
+module.exports = "<div class=\"update-wallet-container\"><label>Name: &nbsp<input maxlength=\"60\" ng-model=\"wallet.name\"/></label><br/></div><div class=\"modal-footer\"><button type=\"button\" ng-click=\"ok()\" class=\"btn\">OK</button><button type=\"button\" ng-click=\"cancel()\" class=\"btn btn-default\">Cancel</button></div>" ;
+
+},{}],20:[function(require,module,exports){
 'use strict';
 
-module.exports = angular.module('modules',
-	[
-		require('./home').name
-	])
-	.controller('MainCtrl', require('./MainController'));
-},{"./MainController":15,"./home":17}],24:[function(require,module,exports){
+require('./home');
+
+module.exports = angular.module('modules', [
+  'skycoin.home',
+  require('./wallet').name
+]);
+
+},{"./home":16,"./wallet":21}],21:[function(require,module,exports){
+'use strict';
+
+
+module.exports = angular.module('skycoin.wallet', [
+  require('./services').name
+]);
+
+
+module.name = 'skycoin.wallet';
+
+},{"./services":22}],22:[function(require,module,exports){
+'use strict';
+
+module.exports = angular.module('skycoin.wallet.services', [
+  require('./showQR').name,
+  require('./loadSeed').name
+])
+.factory('$wallet', function(showQR, loadSeed){
+  return {
+    showQR: showQR,
+    loadSeed: loadSeed
+  };
+});
+
+module.name = 'skycoin.wallet';
+
+},{"./loadSeed":24,"./showQR":28}],23:[function(require,module,exports){
+'use strict';
+
+// Controller naming conventions should start with an uppercase letter
+function ModalCtrl($http, $scope, $modalInstance) {
+
+  $scope.wallet = {};
+  $scope.wallet.name = '';
+  $scope.wallet.new = '';
+
+  $scope.ok = function () {
+
+    console.log('New wallet called');
+    var xsrf = {
+      name:$scope.wallet.name,
+      seed:$scope.wallet.seed
+    };
+    console.log('xsrf: ', xsrf);
+    $http({
+      method: 'POST',
+      url: '/wallet/create',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      transformRequest: function(obj) {
+        var str = [];
+        for(var p in obj){
+          str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+        }
+        return str.join('&');
+      },
+      data: xsrf
+    }).success(function(response){
+      console.log('Load wallet response: ');
+      console.dir(response);
+      //$scope.loadWallets();
+    });
+
+    $modalInstance.close();
+  };
+
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
+  };
+}
+
+// $inject is necessary for minification. See http://bit.ly/1lNICde for explanation.
+ModalCtrl.$inject = ['$http', '$scope', '$modalInstance', 'wallet'];
+
+module.exports = ModalCtrl;
+
+},{}],24:[function(require,module,exports){
+'use strict';
+
+module.exports = angular.module('skycoin.wallet.services.loadSeed', [])
+.factory('loadSeed', require('./service'))
+.controller('ModalCtrl', require('./controller.js'));
+
+module.name = 'skycoin.wallet.services.loadSeed';
+
+},{"./controller.js":23,"./service":26}],25:[function(require,module,exports){
+module.exports = "<div class=\"modal-header\"><button type=\"button\" ng-click=\"cancel()\" class=\"close\">&times;</button><h4 class=\"modal-title\">Load wallet by seed</h4></div><div class=\"modal-body\"><form class=\"form-horizontal\"><div class=\"form-group\"><label class=\"col-sm-2 control-label\">Name</label><div class=\"col-sm-9\"><input maxlength=\"60\" ng-model=\"wallet.name\" placeholder=\"Enter label for this wallet\" class=\"form-control\"/></div></div><div class=\"form-group\"><label class=\"col-sm-2 control-label\">Seed</label><div class=\"col-sm-9\"><textarea rows=\"4\" ng-model=\"wallet.seed\" cols=\"46\" class=\"form-control\"></textarea></div></div></form></div><div class=\"modal-footer\"><button type=\"button\" ng-click=\"ok()\" class=\"btn btn-default\">OK</button><button type=\"button\" ng-click=\"cancel()\" class=\"btn\">Cancel</button></div>" ;
+
+},{}],26:[function(require,module,exports){
+'use strict';
+
+var loadSeed = function ($modal, $log) {
+  return function(wallet){
+    var modalInstance = $modal.open({
+      template: require('./modal.jade'),
+      controller: require('./controller'),
+      resolve: {
+        wallet: function () {
+          return wallet;
+        }
+      }
+    });
+
+    modalInstance.result.then(function () {
+    }, function () {
+      $log.info('Modal dismissed at: ' + new Date());
+    });
+  };
+};
+
+loadSeed.$inject = ['$modal', '$log'];
+module.exports = loadSeed;
+
+},{"./controller":23,"./modal.jade":25}],27:[function(require,module,exports){
+'use strict';
+
+// Controller naming conventions should start with an uppercase letter
+function ModalCtrl($http, $scope, $modalInstance, wallet) {
+
+  $scope.address = wallet.entries[0].address;
+
+  $scope.ok = function () {
+    $modalInstance.close();
+  };
+}
+// $inject is necessary for minification. See http://bit.ly/1lNICde for explanation.
+ModalCtrl.$inject = ['$http', '$scope', '$modalInstance', 'wallet'];
+
+module.exports = ModalCtrl;
+
+},{}],28:[function(require,module,exports){
+'use strict';
+
+require("./../../../../../libs/angular-qrcode/qrcode.js");
+
+module.exports = angular.module('skycoin.wallet.services.showQR', [
+  'monospaced.qrcode'
+])
+.factory('showQR', require('./service'))
+.controller('ModalCtrl', require('./controller'));
+
+module.name = 'skycoin.wallet.services.showQR';
+
+},{"./../../../../../libs/angular-qrcode/qrcode.js":34,"./controller":27,"./service":30}],29:[function(require,module,exports){
+module.exports = "<div class=\"qr-container\"><qrcode size=\"300\" data=\"{{address}}\"></qrcode><div>{{address}}</div><br/></div><div class=\"modal-footer\"><button type=\"button\" ng-click=\"ok()\" class=\"btn\">OK</button></div>" ;
+
+},{}],30:[function(require,module,exports){
+'use strict';
+
+var openQR = function ($modal, $log) {
+  return function(wallet){
+    var modalInstance = $modal.open({
+      template: require('./modal.jade'),
+      controller: require('./controller'),
+      resolve: {
+        wallet: function () {
+          return wallet;
+        }
+      }
+    });
+
+    modalInstance.result.then(function () {
+    }, function () {
+      $log.info('Modal dismissed at: ' + new Date());
+    });
+  };
+};
+
+openQR.$inject = ['$modal', '$log'];
+module.exports = openQR;
+
+},{"./controller":27,"./modal.jade":29}],31:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.14
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -2783,7 +2796,7 @@ angular.module('ngAnimate', ['ng'])
 
 })(window, window.angular);
 
-},{}],25:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /*
  * angular-ui-bootstrap
  * http://angular-ui.github.io/bootstrap/
@@ -6996,7 +7009,7 @@ angular.module("template/typeahead/typeahead-popup.html", []).run(["$templateCac
     "");
 }]);
 
-},{}],26:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.14
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -7204,7 +7217,7 @@ angular.module('ngCookies', ['ng']).
 
 })(window, window.angular);
 
-},{}],27:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /*
  * angular-qrcode v5.1.0
  * (c) 2013 Monospaced http://monospaced.com
@@ -7396,7 +7409,7 @@ angular.module('monospaced.qrcode', [])
     };
   }]);
 
-},{}],28:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.14
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -8066,7 +8079,7 @@ angular.module('ngResource', ['ng']).
 
 })(window, window.angular);
 
-},{}],29:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.14
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -8736,7 +8749,7 @@ angular.module('ngSanitize').filter('linky', ['$sanitize', function($sanitize) {
 
 })(window, window.angular);
 
-},{}],30:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /**
  * State-based routing for AngularJS
  * @version v0.2.13
@@ -12969,7 +12982,7 @@ angular.module('ui.router.state')
   .filter('isState', $IsStateFilter)
   .filter('includedByState', $IncludedByStateFilter);
 })(window, window.angular);
-},{}],31:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 /**
  * @license AngularJS v1.2.28
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -20618,7 +20631,8 @@ function $HttpProvider() {
      * ```
      *
      * Since the returned value of calling the $http function is a `promise`, you can also use
-     * the `then` method to register callbacks, and these callbacks will receive a single argument ���
+     * the `then` method to register callbacks, and these callbacks will receive a single argument –
+�
      * an object representing the response. See the API signature and type info below for more
      * details.
      *
@@ -35124,7 +35138,7 @@ var styleDirective = valueFn({
 })(window, document);
 
 !window.angular.$$csp() && window.angular.element(document).find('head').prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide{display:none !important;}ng\\:form{display:block;}.ng-animate-block-transitions{transition:0s all!important;-webkit-transition:0s all!important;}.ng-hide-add-active,.ng-hide-remove{display:block!important;}</style>');
-},{}],32:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2014 - License MIT
   */
@@ -35156,7 +35170,7 @@ var styleDirective = valueFn({
 
 });
 
-},{}],33:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.3
  * http://jquery.com/
@@ -44363,7 +44377,7 @@ return jQuery;
 
 }));
 
-},{}],34:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -51524,7 +51538,7 @@ return jQuery;
 }.call(this));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],35:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 /**
  * Restful Resources service for AngularJS apps
  * @version v1.4.0 - 2014-04-25 * @link https://github.com/mgonto/restangular
@@ -52831,7 +52845,7 @@ module.provider('Restangular', function() {
 
 })();
 
-},{}],36:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 module.exports={
   "name": "skycoin-gui",
   "version": "1.0.0",
@@ -52850,7 +52864,8 @@ module.exports={
   "browserify": {
     "transform": [
       "html2js-browserify",
-      "debowerify"
+      "debowerify",
+      "browserify-plain-jade"
     ]
   },
   "browser": {},
@@ -52863,6 +52878,7 @@ module.exports={
   },
   "dependencies": {
     "browserify": "^4.1.11",
+    "browserify-plain-jade": "^0.2.2",
     "browserify-shim": "^3.6.0",
     "connect": "^3.2.0",
     "debowerify": "^0.7.1",

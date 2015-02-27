@@ -1,9 +1,9 @@
 'use strict';
 
 var ResourceName = function($resource) {
-	return $resource({
+  return $resource({
 
-    });
+  });
 };
 
 ResourceName.$inject = ['$resource'];

@@ -1,6 +1,11 @@
-.update-wallet-container
+.load-wallet-container
+
   label Name: &nbsp
     input(maxlength="60", ng-model="wallet.name")
+  br
+
+  label Seed: &nbsp
+    textarea(rows="4", ng-model="wallet.seed", cols="46")
   br
 
 .modal-footer

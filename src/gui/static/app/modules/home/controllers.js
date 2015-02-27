@@ -173,7 +173,7 @@ module.exports = angular.module('skycoin.controllers', [])
 
     $scope.openQR = function (wallet) {
       var modalInstance = $modal.open({
-        template: require('./qr-modal.html'),
+        template: require('./qr-modal.jade'),
         controller: 'qrInstanceCtrl',
         resolve: {
           wallet: function () {
@@ -191,7 +191,7 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.openLoadWallet = function (wallet) {
 
       var modalInstance = $modal.open({
-        template: require('./loadWalletModal.html'),
+        template: require('./loadWalletModal.jade'),
         controller: 'loadWalletInstanceCtrl',
         resolve: {
           wallet: function () {

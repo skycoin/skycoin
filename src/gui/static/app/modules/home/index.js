@@ -8,6 +8,7 @@ module.exports = angular.module('skycoin', [
   'ui.router',
   'ui.bootstrap',
   'skycoin.controllers',
+  'skycoin.qr',
   'monospaced.qrcode'
 ])
 .config([

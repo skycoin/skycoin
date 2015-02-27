@@ -4,8 +4,9 @@
 
 module.exports = angular.module('skycoin.controllers', [])
 
-.controller('mainCtrl', ['$scope','$http', '$modal', '$log', '$timeout',
-  function($scope,$http,$modal,$log,$timeout) {
+.controller('mainCtrl', ['$scope','$http', '$modal', '$log',
+            '$timeout', 'OpenQR',
+            function($scope,$http,$modal,$log,$timeout, OpenQR) {
     $scope.addresses = [];
 
     $scope.tab = {};
@@ -171,22 +172,7 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.mainBackUp = function(){
     };
 
-    $scope.openQR = function (wallet) {
-      var modalInstance = $modal.open({
-        template: require('./qr-modal.jade'),
-        controller: 'qrInstanceCtrl',
-        resolve: {
-          wallet: function () {
-            return wallet;
-          }
-        }
-      });
-
-      modalInstance.result.then(function () {
-      }, function () {
-        $log.info('Modal dismissed at: ' + new Date());
-      });
-    };
+    $scope.openQR = OpenQR;
 
     $scope.openLoadWallet = function (wallet) {
 
@@ -226,32 +212,6 @@ module.exports = angular.module('skycoin.controllers', [])
 
   }
 ])
-
-
-.controller('qrInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
-  function($http, $scope, $modalInstance, wallet) {
-
-  $scope.address = wallet.entries[0].address;
-  $scope.qro = {};
-  $scope.qro.fm = wallet.entries[0].address;
-
-  $scope.$watch('qro.label', function() {
-    $scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
-  });
-
-  $scope.$watch('qro.message', function() {
-    $scope.qro.new = 'skycoin:' + $scope.address.address;// + '?' + 'label=' + $scope.qro.label; //+ '&message=' + $scope.qro.message;
-  });
-
-
-  $scope.ok = function () {
-    $modalInstance.close($scope.selected.item);
-  };
-
-  $scope.cancel = function () {
-    $modalInstance.dismiss('cancel');
-  };
-}])
 
 .controller('loadWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
   function($http, $scope, $modalInstance) {

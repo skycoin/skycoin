@@ -1,8 +1,8 @@
 'use strict';
 
+require('./home');
+
 module.exports = angular.module('modules', [
-		require('./home').name,
-		require('./qr').name
-  ]
-)
-.controller('MainCtrl', require('./MainController'));
+  'skycoin.home',
+  require('./wallet').name
+]);

@@ -5,8 +5,8 @@
 module.exports = angular.module('skycoin.controllers', [])
 
 .controller('mainCtrl', ['$scope','$http', '$modal', '$log',
-            '$timeout', 'OpenQR',
-            function($scope,$http,$modal,$log,$timeout, OpenQR) {
+            '$timeout', '$wallet',
+            function($scope, $http, $modal, $log, $timeout, $wallet) {
     $scope.addresses = [];
 
     $scope.tab = {};
@@ -172,7 +172,7 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.mainBackUp = function(){
     };
 
-    $scope.openQR = OpenQR;
+    $scope.openQR = $wallet.qr;
 
     $scope.openLoadWallet = function (wallet) {
 

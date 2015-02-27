@@ -2,7 +2,7 @@
 
 require('angular');
 
-module.exports = angular.module('myApp',
+module.exports = angular.module('skycoin',
 	[
 		require('./common/common.js').name,
 		require('./modules').name

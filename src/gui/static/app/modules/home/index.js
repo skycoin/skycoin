@@ -1,15 +1,13 @@
 'use strict';
 
 require('./controllers');
-require('angular-qrcode');
 
 // Declare app level module which depends on filters, and services
 module.exports = angular.module('skycoin.home', [
   'ui.router',
   'ui.bootstrap',
   'skycoin.controllers',
-  'skycoin.wallet.services',
-  'monospaced.qrcode'
+  'skycoin.wallet.services'
 ])
 .config([
   '$stateProvider', '$urlRouterProvider',

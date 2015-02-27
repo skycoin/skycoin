@@ -4,7 +4,7 @@ var loadSeed = function ($modal, $log) {
   return function(wallet){
     var modalInstance = $modal.open({
       template: require('./modal.jade'),
-      controller: 'ModalCtrl',
+      controller: require('./controller'),
       resolve: {
         wallet: function () {
           return wallet;

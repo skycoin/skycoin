@@ -172,25 +172,8 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.mainBackUp = function(){
     };
 
-    $scope.openQR = $wallet.qr;
-
-    $scope.openLoadWallet = function (wallet) {
-
-      var modalInstance = $modal.open({
-        template: require('./loadWalletModal.jade'),
-        controller: 'loadWalletInstanceCtrl',
-        resolve: {
-          wallet: function () {
-            return wallet;
-          }
-        }
-      });
-
-      modalInstance.result.then(function () {
-      }, function () {
-        $log.info('Modal dismissed at: ' + new Date());
-      });
-    };
+    $scope.openQR = $wallet.showQR;
+    $scope.openLoadWallet = $wallet.loadSeed;
 
     $scope.updateWallet = function (wallet) {
 
@@ -213,46 +196,6 @@ module.exports = angular.module('skycoin.controllers', [])
   }
 ])
 
-.controller('loadWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
-  function($http, $scope, $modalInstance) {
-
-  $scope.wallet = {};
-  $scope.wallet.name = '';
-  $scope.wallet.new = '';
-
-  $scope.ok = function () {
-
-    console.log('New wallet called');
-    var xsrf = {
-      name:$scope.wallet.name,
-      seed:$scope.wallet.seed
-    };
-    console.log('xsrf: ', xsrf);
-    $http({
-      method: 'POST',
-      url: '/wallet/create',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      transformRequest: function(obj) {
-        var str = [];
-        for(var p in obj){
-          str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
-        }
-        return str.join('&');
-      },
-      data: xsrf
-    }).success(function(response){
-      console.log('Load wallet response: ');
-      console.dir(response);
-      //$scope.loadWallets();
-    });
-
-    $modalInstance.close();
-  };
-
-  $scope.cancel = function () {
-    $modalInstance.dismiss('cancel');
-  };
-}])
 
 .controller('updateWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
   function($http, $scope, $modalInstance, wallet) {

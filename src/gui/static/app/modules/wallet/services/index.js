@@ -1,11 +1,13 @@
 'use strict';
 
 module.exports = angular.module('skycoin.wallet.services', [
-  require('./qr').name
+  require('./showQR').name,
+  require('./loadSeed').name
 ])
-.factory('$wallet', function(OpenQR){
+.factory('$wallet', function(showQR, loadSeed){
   return {
-    qr: OpenQR
+    showQR: showQR,
+    loadSeed: loadSeed
   };
 });
 

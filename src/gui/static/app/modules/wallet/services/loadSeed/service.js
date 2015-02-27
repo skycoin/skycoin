@@ -1,10 +1,10 @@
 'use strict';
 
-var OpenQR = function ($modal, $log) {
+var loadSeed = function ($modal, $log) {
   return function(wallet){
     var modalInstance = $modal.open({
-      template: require('./qrModal.jade'),
-      controller: 'QRInstanceCtrl',
+      template: require('./modal.jade'),
+      controller: 'ModalCtrl',
       resolve: {
         wallet: function () {
           return wallet;
@@ -19,5 +19,5 @@ var OpenQR = function ($modal, $log) {
   };
 };
 
-OpenQR.$inject = ['$modal', '$log'];
-module.exports = OpenQR;
+loadSeed.$inject = ['$modal', '$log'];
+module.exports = loadSeed;

@@ -1,7 +1,7 @@
 'use strict';
 
 // Controller naming conventions should start with an uppercase letter
-function QRInstanceCtrl($http, $scope, $modalInstance, wallet) {
+function ModalCtrl($http, $scope, $modalInstance, wallet) {
 
   $scope.address = wallet.entries[0].address;
   $scope.qro = {};
@@ -26,6 +26,6 @@ function QRInstanceCtrl($http, $scope, $modalInstance, wallet) {
 
 }
 // $inject is necessary for minification. See http://bit.ly/1lNICde for explanation.
-QRInstanceCtrl.$inject = ['$http', '$scope', '$modalInstance', 'wallet'];
+ModalCtrl.$inject = ['$http', '$scope', '$modalInstance', 'wallet'];
 
-module.exports = QRInstanceCtrl;
+module.exports = ModalCtrl;

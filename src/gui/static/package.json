@@ -16,7 +16,8 @@
   "browserify": {
     "transform": [
       "html2js-browserify",
-      "debowerify"
+      "debowerify",
+      "browserify-plain-jade"
     ]
   },
   "browser": {},
@@ -29,6 +30,7 @@
   },
   "dependencies": {
     "browserify": "^4.1.11",
+    "browserify-plain-jade": "^0.2.2",
     "browserify-shim": "^3.6.0",
     "connect": "^3.2.0",
     "debowerify": "^0.7.1",

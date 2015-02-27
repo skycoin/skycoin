@@ -209,7 +209,7 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.updateWallet = function (wallet) {
 
       var modalInstance = $modal.open({
-        template: require('./updateWalletModal.html'),
+        template: require('./updateWalletModal.jade'),
         controller: 'updateWalletInstanceCtrl',
         resolve: {
           wallet: function () {

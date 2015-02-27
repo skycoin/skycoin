@@ -35,12 +35,12 @@ var filePath = {
   },
   browserify: {
     src: './app/app.js',
-    watch:
-      [
+    watch: [
       '!./app/assets/libs/*.js',
       '!./app/assets/libs/**/*.js',
       './app/*.js','./app/**/*.js',
-      '/app/**/*.html'
+      '/app/**/*.html',
+      '/app/**/*.jade'
     ]
   },
   styles: {

@@ -17,7 +17,6 @@
     "angular-bootstrap": "~0.12.1",
     "angular-ui-utils": "latest",
     "angular-ui-router": "latest",
-    "angular-route": "latest",
     "angular-animate": "latest",
     "angular-cookies": "latest",
     "angular-resource": "latest",

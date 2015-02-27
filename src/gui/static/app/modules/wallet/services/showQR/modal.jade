@@ -1,9 +1,7 @@
 .qr-container
-  qrcode(ng-if="!qro.new", size="300", data="{{address.address}}")
-  qrcode(ng-if="qro.new", size="300", data="{{qro.new}}")
-  textarea(rows="4", ng-model="qro.new", cols="46")
+  qrcode(size="300", data="{{address}}")
+  div {{address}}
   br
 
 .modal-footer
   button.btn(type="button", ng-click="ok()") OK
-  button.btn.btn-default(type="button", ng-click="cancel()") Cancel

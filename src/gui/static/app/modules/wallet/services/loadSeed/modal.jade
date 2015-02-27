@@ -1,13 +1,20 @@
-.load-wallet-container
+.modal-header
+  button.close(type="button" ng-click="cancel()")&times;
+  h4.modal-title Load wallet by seed
 
-  label Name: &nbsp
-    input(maxlength="60", ng-model="wallet.name")
-  br
+.modal-body
+  form.form-horizontal
+    .form-group
+      label.col-sm-2.control-label Name
+      .col-sm-9
+        input.form-control(maxlength="60", ng-model="wallet.name",
+          placeholder="Enter label for this wallet")
 
-  label Seed: &nbsp
-    textarea(rows="4", ng-model="wallet.seed", cols="46")
-  br
+    .form-group
+      label.col-sm-2.control-label Seed
+      .col-sm-9
+        textarea.form-control(rows="4", ng-model="wallet.seed", cols="46")
 
 .modal-footer
-  button.btn(type="button", ng-click="ok()") OK
-  button.btn.btn-default(type="button", ng-click="cancel()") Cancel
+  button.btn.btn-default(type="button", ng-click="ok()") OK
+  button.btn(type="button", ng-click="cancel()") Cancel

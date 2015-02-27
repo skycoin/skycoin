@@ -1,5 +1,6 @@
 'use strict';
 
+// @ngInject
 var openQR = function ($modal, $log) {
   return function(wallet){
     var modalInstance = $modal.open({
@@ -19,5 +20,4 @@ var openQR = function ($modal, $log) {
   };
 };
 
-openQR.$inject = ['$modal', '$log'];
 module.exports = openQR;

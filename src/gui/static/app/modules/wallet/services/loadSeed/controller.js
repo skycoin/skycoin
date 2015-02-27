@@ -1,6 +1,7 @@
 'use strict';
 
 // Controller naming conventions should start with an uppercase letter
+// @ngInject
 function ModalCtrl($http, $scope, $modalInstance) {
 
   $scope.wallet = {};
@@ -40,8 +41,5 @@ function ModalCtrl($http, $scope, $modalInstance) {
     $modalInstance.dismiss('cancel');
   };
 }
-
-// $inject is necessary for minification. See http://bit.ly/1lNICde for explanation.
-ModalCtrl.$inject = ['$http', '$scope', '$modalInstance', 'wallet'];
 
 module.exports = ModalCtrl;

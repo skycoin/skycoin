@@ -1,8 +1,9 @@
-// These routes are to define any app-level paths to modules. 
+// These routes are to define any app-level paths to modules.
 // For module-level route definitions, use the Routes.js files found in the module folders.
 
 'use strict';
 
+// @ngInject
 function appRoutes($stateProvider, $urlRouterProvider, $locationProvider) {
 
 	// Add hasbang prefix for SEO and HTML5 mode to remove #! from the URL.
@@ -28,5 +29,4 @@ function appRoutes($stateProvider, $urlRouterProvider, $locationProvider) {
 
 }
 
-appRoutes.$inject = ['$stateProvider', '$urlRouterProvider', '$locationProvider'];
 module.exports = appRoutes;

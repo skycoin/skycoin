@@ -8,6 +8,7 @@ var gulp          = require('gulp'),
   jshint          = require('gulp-jshint'),
   stylish         = require('jshint-stylish'),
   concat          = require('gulp-concat'),
+  ngAnnotate      = require('gulp-ng-annotate'),
   streamify       = require('gulp-streamify'),
   uglify          = require('gulp-uglify'),
   sourcemaps      = require('gulp-sourcemaps'),
@@ -189,6 +190,7 @@ gulp.task('bundle-dev', function() {
     return bundler.bundle({ debug: true })
     .pipe(source('bundle.js'))
     .on('error', handleError)
+    .pipe(ngAnnotate())
     .pipe(buffer())
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sourcemaps.write('./'))
@@ -211,6 +213,7 @@ gulp.task('bundle-prod', function() {
     return bundler.bundle({ debug: true })
     .pipe(source('bundle.js'))
     .on('error', handleError)
+    .pipe(ngAnnotate())
     .pipe(buffer())
     .pipe(streamify(uglify({mangle: false})))
     .pipe(gulp.dest(filePath.build.dest))

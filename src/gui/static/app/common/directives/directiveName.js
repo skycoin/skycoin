@@ -9,5 +9,4 @@ var directiveName = function() {
   };
 };
 
-directiveName.$inject = [''];
 module.exports = directiveName;

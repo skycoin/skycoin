@@ -1,5 +1,6 @@
 'use strict';
 
+// @ngInject
 function commonInit($rootScope, $state) {
   $rootScope.$state = $state;
 
@@ -24,5 +25,4 @@ function commonInit($rootScope, $state) {
 
 }
 
-commonInit.$inject = ['$rootScope', '$state'];
 module.exports = commonInit;

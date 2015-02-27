@@ -1,5 +1,6 @@
 'use strict';
 
+// @ngInject
 var loadSeed = function ($modal, $log) {
   return function(wallet){
     var modalInstance = $modal.open({
@@ -19,5 +20,4 @@ var loadSeed = function ($modal, $log) {
   };
 };
 
-loadSeed.$inject = ['$modal', '$log'];
 module.exports = loadSeed;

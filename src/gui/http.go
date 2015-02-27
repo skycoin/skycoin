@@ -5,18 +5,14 @@ import (
 	"github.com/lonnc/golang-nw"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/daemon"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
 )
 
 var (
-	logger    = logging.MustGetLogger("skycoin.gui")
-	resources = []string{
-		"img/", "images/", "fonts/", "favicon.ico",
-		"app.css", "bundle.js", "bundle.js.map",
-		"index.html", "vendor.css", "vendor.js",
-	}
+	logger      = logging.MustGetLogger("skycoin.gui")
 	resourceDir = "dist/"
 	indexPage   = "index.html"
 )
@@ -70,8 +66,13 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
 func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", newIndexHandler(appLoc))
-	for _, s := range resources {
-		route := fmt.Sprintf("/%s", s)
+
+	fileInfos, _ := ioutil.ReadDir(appLoc)
+	for _, fileInfo := range fileInfos {
+		route := fmt.Sprintf("/%s", fileInfo.Name())
+		if fileInfo.IsDir() {
+			route = route + "/"
+		}
 		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
 	}
 

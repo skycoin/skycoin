@@ -1,29 +1,21 @@
-<div>
+<div class="qr-container">
 
-    <script type="text/ng-template" id="qrModalContent.html">
+  <qrcode ng-if="!qro.new" size="300" data="{{address.address}}"></qrcode>
 
-        <div class="qr-container">
+  <qrcode ng-if="qro.new" size="300" data="{{qro.new}}"></qrcode>
+  <br />
 
-            <qrcode ng-if="!qro.new" size="300" data="{{address.address}}"></qrcode>
+  <textarea rows="4" ng-model="qro.new" cols="46"></textarea>
+  <br />
 
-            <qrcode ng-if="qro.new" size="300" data="{{qro.new}}"></qrcode>
-            <br />
+  <!-- Label: <input id="qr-label" type="text" ng-model="qro.label"  />
+  <br /> -->
 
-            <textarea rows="4" ng-model="qro.new" cols="46"></textarea>
-            <br />
+  <!-- Message: <input id="qr-message" type="text" ng-model="qro.message"  /> -->
 
-            <!-- Label: <input id="qr-label" type="text" ng-model="qro.label"  />
-            <br /> -->
+</div>
 
-            <!-- Message: <input id="qr-message" type="text" ng-model="qro.message"  /> -->
-
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn btn-default" ng-click="ok()">OK</button>
-            <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
-        </div>
-    </script>
-
-
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" ng-click="ok()">OK</button>
+  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
 </div>

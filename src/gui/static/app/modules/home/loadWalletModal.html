@@ -1,27 +1,19 @@
-<div>
+<div class="load-wallet-container">
 
-    <script type="text/ng-template" id="loadWalletModalContent.html">
+  <label>Name:
+    <input maxlength="60" ng-model="wallet.name" />
+  </label>
+  <br />
 
-        <div class="load-wallet-container">
+  <label>Seed:
+    <textarea rows="4" ng-model="wallet.seed" cols="46"></textarea>
+  </label>
 
-            <label>Name:
-            <input maxlength="60" ng-model="wallet.name" />
-            </label>
-            <br />
+  <br />
 
-            <label>Seed:
-            <textarea rows="4" ng-model="wallet.seed" cols="46"></textarea>
-            </label>
-            <br />
+</div>
 
-
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn btn-default" ng-click="ok()">OK</button>
-            <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
-        </div>
-    </script>
-
-
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" ng-click="ok()">OK</button>
+  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
 </div>

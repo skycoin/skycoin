@@ -1,23 +1,13 @@
-<div>
+<div class="update-wallet-container">
 
-    <script type="text/ng-template" id="updateWalletModalContent.html">
+  <label>Name:
+    <input maxlength="60" ng-model="wallet.name" />
+  </label>
+  <br />
 
-        <div class="update-wallet-container">
+</div>
 
-            <label>Name:
-            <input maxlength="60" ng-model="wallet.name" />
-            </label>
-            <br />
-
-
-
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn btn-default" ng-click="ok()">OK</button>
-            <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
-        </div>
-    </script>
-
-
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" ng-click="ok()">OK</button>
+  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
 </div>

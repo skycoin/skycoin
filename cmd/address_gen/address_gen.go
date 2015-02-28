@@ -1,10 +1,10 @@
 package main
 
 import (
-	//"encoding/json"
+	"encoding/json"
 	"flag"
 	"fmt"
-
+	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/cipher"
 	//"log"
 	//"github.com/skycoin/skycoin/src/visor"
@@ -88,7 +88,7 @@ func parseFlags() {
 	//}
 }
 
-func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
+func getReadableWalletEntry(pub cipher.PubKey, sec cipher.SecKey) wallet.ReadableWalletEntry {
 
 	var addr_str string // cipher.Address
 	if BitcoinAddress == false {
@@ -111,33 +111,48 @@ func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
 	if PrintAddress == false {
 		str3 = ""
 	}
-
-	return fmt.Sprintf("%s%s%s", str1, str2, str3)
+	return wallet.ReadableWalletEntry{
+		Address: str3,
+                Public:  str1,
+                Secret:  str2,
+        }
 }
 
 func main() {
 	registerFlags()
 	parseFlags()
-
+	meta := map[string]string{"coin": "sky"}
+	entries := make([]wallet.ReadableWalletEntry, genCount)
+	rw := wallet.ReadableWallet{
+		Meta : meta,
+		Entries : entries,
+	}
 	if seed == "" {
-
+		meta["type"] = "simple"
 		for i := 0; i < genCount; i++ {
 			pub, sec := cipher.GenerateKeyPair()
-			fmt.Printf("%s\n", tstring(pub, sec))
+                        entries[i] = getReadableWalletEntry(pub,sec)
 		}
 	}
 
 	if seed != "" {
-
+		meta["seed"] = seed
+		meta["type"] = "deterministic"
 		seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
+		i := 0
 		for _, sec := range seckeys {
 			pub := cipher.PubKeyFromSecKey(sec)
-			fmt.Printf("%s\n", tstring(pub, sec))
+			entries[i] = getReadableWalletEntry(pub,sec)
+			i++
 		}
 		//pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed))
-		//fmt.Printf("%s\n", tstring(pub, sec))
 	}
-
+	output, err := json.MarshalIndent(rw,  "", "    ")
+	if err != nil {
+		fmt.Printf("Error formating wallet to JSON. Error : %s\n", err.Error())
+		return
+	}
+	fmt.Printf("%s\n",string(output))
 	/*
 	   if outFile != "" {
 	       w := createWalletEntry(outFile, testNetwork)

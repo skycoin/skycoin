@@ -1,14 +1,25 @@
 'use strict';
 
-module.exports = angular.module('skycoin.wallet.services', [
-  require('./showQR').name,
-  require('./loadSeed').name
-])
-.factory('$wallet', function(showQR, loadSeed){
+var mod = 'skycoin.wallet.services';
+var factory = function(showQR, loadSeed, update){
   return {
     showQR: showQR,
-    loadSeed: loadSeed
+    loadSeed: loadSeed,
+    update: update
   };
-});
+};
 
-module.name = 'skycoin.wallet';
+factory.$inject = [
+  mod + '.showQR.showQRService',
+  mod + '.loadSeed.loadSeedService',
+  mod + '.update.updateService'
+];
+
+module.exports = angular.module(mod, [
+  require('./showQR').name,
+  require('./loadSeed').name,
+  require('./update').name
+])
+.factory('$wallet', factory);
+
+module.name = mod;

@@ -2,10 +2,12 @@
 
 require('angular-qrcode');
 
-module.exports = angular.module('skycoin.wallet.services.showQR', [
+var mod = 'skycoin.wallet.services.showQR';
+
+module.exports = angular.module(mod, [
   'monospaced.qrcode'
 ])
-.factory('showQR', require('./service'))
-.controller('ModalCtrl', require('./controller'));
+.factory(mod + '.showQRService', require('./service'))
+.controller(mod + '.ModalCtrl', require('./controller'));
 
-module.name = 'skycoin.wallet.services.showQR';
+module.name = mod;

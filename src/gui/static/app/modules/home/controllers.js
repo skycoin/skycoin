@@ -174,65 +174,6 @@ module.exports = angular.module('skycoin.controllers', [])
 
     $scope.openQR = $wallet.showQR;
     $scope.openLoadWallet = $wallet.loadSeed;
-
-    $scope.updateWallet = function (wallet) {
-
-      var modalInstance = $modal.open({
-        template: require('./updateWalletModal.jade'),
-        controller: 'updateWalletInstanceCtrl',
-        resolve: {
-          wallet: function () {
-            return wallet;
-          }
-        }
-      });
-
-      modalInstance.result.then(function () {
-      }, function () {
-        $log.info('Modal dismissed at: ' + new Date());
-      });
-    };
-
+    $scope.updateWallet = $wallet.update;
   }
-])
-
-
-.controller('updateWalletInstanceCtrl', ['$http', '$scope', '$modalInstance', 'wallet',
-  function($http, $scope, $modalInstance, wallet) {
-
-  $scope.wallet = {};
-  $scope.wallet.name = wallet.name;
-  $scope.wallet.filename = wallet.filename;
-
-  $scope.ok = function () {
-    console.log('New wallet called');
-    var xsrf = {
-      name:$scope.wallet.name,
-      id:$scope.wallet.filename
-    };
-    console.log('xsrf: ', xsrf);
-    $http({
-      method: 'POST',
-      url: '/wallet/update',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      transformRequest: function(obj) {
-        var str = [];
-        for(var p in obj){
-          str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
-        }
-        return str.join('&');
-      },
-      data: xsrf
-    }).success(function(response){
-      console.log('Update wallet response: ');
-      console.dir(response);
-      //$scope.loadWallets();
-    });
-
-    $modalInstance.close();
-  };
-
-  $scope.cancel = function () {
-    $modalInstance.dismiss('cancel');
-  };
-}]);
+]);

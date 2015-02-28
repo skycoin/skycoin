@@ -1,7 +1,9 @@
 'use strict';
 
-module.exports = angular.module('skycoin.wallet.services.loadSeed', [])
-.factory('loadSeed', require('./service'))
-.controller('ModalCtrl', require('./controller.js'));
+var mod = 'skycoin.wallet.services.loadSeed';
 
-module.name = 'skycoin.wallet.services.loadSeed';
+module.exports = angular.module(mod, [])
+.factory(mod + '.loadSeedService', require('./service'))
+.controller(mod + 'ModalCtrl', require('./controller.js'));
+
+module.name = mod;

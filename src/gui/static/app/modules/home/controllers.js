@@ -62,29 +62,6 @@ module.exports = angular.module('skycoin.controllers', [])
       });
     };
 
-    $scope.newWallet = function(){
-      console.log('New wallet called');
-      var xsrf = {name:''};
-      $http({
-        method: 'POST',
-        url: '/wallet/create',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        transformRequest: function(obj) {
-          var str = [];
-          for(var p in obj){
-            str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
-          }
-          return str.join('&');
-        },
-        data: xsrf
-      }).success(function(response){
-        console.log('New wallet response: ');
-        console.dir(response);
-        $scope.loadWallets();
-      });
-    };
-
-
     $scope.sendDisable = true;
     $scope.readyDisable = false;
 
@@ -175,5 +152,6 @@ module.exports = angular.module('skycoin.controllers', [])
     $scope.openQR = $wallet.showQR;
     $scope.openLoadWallet = $wallet.loadSeed;
     $scope.updateWallet = $wallet.update;
+    $scope.newWallet = $wallet.create;
   }
 ]);

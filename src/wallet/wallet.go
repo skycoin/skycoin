@@ -14,7 +14,7 @@ var (
 )
 
 const WalletExt = "wlt"
-const WalletTimestampFormat = "2006_01_01"
+const WalletTimestampFormat = "2006_01_02"
 
 type WalletID string
 type AddressSet map[cipher.Address]byte

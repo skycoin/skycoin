@@ -1,14 +1,12 @@
 package main
 
 import (
-	//"encoding/json"
+	"encoding/json"
 	"flag"
 	"fmt"
-
 	"github.com/skycoin/skycoin/src/cipher"
-	//"log"
-	//"github.com/skycoin/skycoin/src/visor"
-	//"os"
+	//"github.com/skycoin/skycoin/src/wallet"
+	"log"
 )
 
 // TODO: Make this print JSON! Needs labels and printy printing
@@ -88,7 +86,18 @@ func parseFlags() {
 	//}
 }
 
-func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
+type Wallet struct {
+	Meta    map[string]string `json:"meta"`
+	Entries []KeyEntry        `json:"entries"`
+}
+
+type KeyEntry struct {
+	Address string `json:"address"`
+	Public  string `json:"public_key"`
+	Secret  string `json:"secret_key"`
+}
+
+func getKeyEntry(pub cipher.PubKey, sec cipher.SecKey) KeyEntry {
 
 	var str1 string
 	var str2 string
@@ -121,45 +130,75 @@ func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
 	if PrintSeckey == false {
 		str3 = ""
 	}
+	//return fmt.Sprintf("{\naddress: \"%s\",\npubkey: \"%s\", \nseckey: \"%s\",\n}", str1, str2, str3)
 
-	return fmt.Sprintf("{\naddress: \"%s\",\npubkey: \"%s\", \nseckey: \"%s\",\n}", str1, str2, str3)
+	return KeyEntry{
+		Address: str3,
+		Public:  str1,
+		Secret:  str2,
+	}
 }
 
 func main() {
 	registerFlags()
 	parseFlags()
 
+	w := Wallet{
+		Meta:    make(map[string]string), //map[string]string
+		Entries: make([]KeyEntry, genCount),
+	}
+
+	//entries := make([]KeyEntry, genCount)
+
+	if BitcoinAddress == false {
+		w.Meta = map[string]string{"coin": "skycoin"}
+	} else {
+		w.Meta = map[string]string{"coin": "bitcoin"}
+	}
+
 	if seed == "" {
+		//generate a new seed, as hex string
+		seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
+	}
 
-		for i := 0; i < genCount; i++ {
-			pub, sec := cipher.GenerateKeyPair()
-			fmt.Printf("%s\n", tstring(pub, sec))
+	w.Meta["seed"] = seed
+	//w.Meta["type"] = "deterministic"
+
+	seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
+
+	//do unnessary test
+	if true {
+		seckey1 := seckeys[0]
+		_, seckey2 := cipher.GenerateDeterministicKeyPair([]byte(seed))
+		if seckey1 != seckey2 {
+			log.Panic("ERROR: critical failure in determinstistic generation")
 		}
 	}
 
-	if seed != "" {
-
-		seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
-		for _, sec := range seckeys {
-			pub := cipher.PubKeyFromSecKey(sec)
-			fmt.Printf("%s\n", tstring(pub, sec))
-		}
-		//pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed))
-		//fmt.Printf("%s\n", tstring(pub, sec))
+	for i, sec := range seckeys {
+		pub := cipher.PubKeyFromSecKey(sec)
+		w.Entries[i] = getKeyEntry(pub, sec)
 	}
 
-	/*
-	   if outFile != "" {
-	       w := createWalletEntry(outFile, testNetwork)
-	       if w != nil {
-	           printWalletEntry(w, labelStdout, PrintAddress, printPublic,
-	               printSecret)
-	       }
-	   }
-	   if inFile != "" {
-	       printWalletEntryFromFile(inFile, labelStdout, PrintAddress,
-	           printPublic, printSecret)
-	   }
-	*/
+	output, err := json.MarshalIndent(w, "", "    ")
+	if err != nil {
+		fmt.Printf("Error formating wallet to JSON. Error : %s\n", err.Error())
+		return
+	}
+	fmt.Printf("%s\n", string(output))
 
 }
+
+/*
+   if outFile != "" {
+       w := createWalletEntry(outFile, testNetwork)
+       if w != nil {
+           printWalletEntry(w, labelStdout, PrintAddress, printPublic,
+               printSecret)
+       }
+   }
+   if inFile != "" {
+       printWalletEntryFromFile(inFile, labelStdout, PrintAddress,
+           printPublic, printSecret)
+   }
+*/

@@ -90,29 +90,39 @@ func parseFlags() {
 
 func tstring(pub cipher.PubKey, sec cipher.SecKey) string {
 
-	var addr_str string // cipher.Address
+	var str1 string
+	var str2 string
+	var str3 string
+
 	if BitcoinAddress == false {
 		addr := cipher.AddressFromPubKey(pub)
-		addr_str = addr.String()
+		addr_str := addr.String()
+
+		str1 = fmt.Sprintf("%v", addr_str)
+		str2 = fmt.Sprintf("%v", pub.Hex())
+		str3 = fmt.Sprintf("%v", sec.Hex())
+
 	} else {
-		addr_str = cipher.BitcoinAddressFromPubkey(pub)
+		addr_str := cipher.BitcoinAddressFromPubkey(pub)
+		wip_str := cipher.BitcoinWalletImportFormatFromSeckey(sec)
+
+		str1 = fmt.Sprintf("%v", addr_str)
+		str2 = fmt.Sprintf("%v", pub.Hex())
+		str3 = fmt.Sprintf("%v", wip_str)
+
 	}
 
-	str1 := fmt.Sprintf("%v ", pub.Hex())
-	str2 := fmt.Sprintf("%v ", sec.Hex())
-	str3 := fmt.Sprintf("%v", addr_str)
-
-	if PrintPubKey == false {
+	if PrintAddress == false {
 		str1 = ""
 	}
-	if PrintSeckey == false {
+	if PrintPubKey == false {
 		str2 = ""
 	}
-	if PrintAddress == false {
+	if PrintSeckey == false {
 		str3 = ""
 	}
 
-	return fmt.Sprintf("%s%s%s", str1, str2, str3)
+	return fmt.Sprintf("{\naddress: \"%s\",\npubkey: \"%s\", \nseckey: \"%s\",\n}", str1, str2, str3)
 }
 
 func main() {

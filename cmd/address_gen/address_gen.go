@@ -148,8 +148,6 @@ func main() {
 		Entries: make([]KeyEntry, genCount),
 	}
 
-	//entries := make([]KeyEntry, genCount)
-
 	if BitcoinAddress == false {
 		w.Meta = map[string]string{"coin": "skycoin"}
 	} else {

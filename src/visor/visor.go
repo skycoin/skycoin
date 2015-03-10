@@ -455,6 +455,7 @@ func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range
+// Move to blockdb
 func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 	var b coin.Block
 	if seq >= uint64(len(self.Blockchain.Blocks)) {
@@ -465,6 +466,7 @@ func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 
 // Returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
+// move to blockdb
 func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 	if end > uint64(len(self.Blockchain.Blocks)) {
 		end = uint64(len(self.Blockchain.Blocks))
@@ -481,9 +483,9 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
-	self.Unconfirmed.SetAnnounced(h, t)
-}
+//func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
+//	self.Unconfirmed.SetAnnounced(h, t)
+//}
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain

@@ -805,6 +805,7 @@ func TestGetBlocks(t *testing.T) {
 	assertBlocks(t, v, bs, sbs)
 }
 
+/*
 func TestVisorSetAnnounced(t *testing.T) {
 	defer cleanupVisor()
 	vc := newMasterVisorConfig(t)
@@ -818,6 +819,7 @@ func TestVisorSetAnnounced(t *testing.T) {
 	assert.False(t, v.Unconfirmed.Txns[utx.Hash()].Announced.IsZero())
 	assert.Equal(t, v.Unconfirmed.Txns[utx.Hash()].Announced, now)
 }
+*/
 
 func TestVisorInjectTxn(t *testing.T) {
 	defer cleanupVisor()

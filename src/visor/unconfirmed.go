@@ -97,7 +97,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) InjectTxn(bc *coin.Blockchain,
 	t coin.Transaction, maxSize int) (error, bool) {
 	if err := VerifyTransaction(bc, &t, maxSize); err != nil {
 		return err, false

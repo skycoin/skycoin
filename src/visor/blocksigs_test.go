@@ -19,7 +19,7 @@ func makeMoreBlocks(t *testing.T, mv *Visor, n int, when uint64) []SignedBlock {
 		if err != nil {
 			return nil
 		}
-		mv.RecordTxn(tx)
+		mv.InjectTxn(tx)
 		assert.Equal(t, len(mv.Unconfirmed.Txns), 1)
 		sb, err := mv.CreateBlock(when + 1 + uint64(i))
 		assert.Nil(t, err)

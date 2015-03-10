@@ -489,9 +489,9 @@ func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
 // already in the blockchain
 // TODO
 // - rename InjectTransaction
-func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
+func (self *Visor) InjectTxn(txn coin.Transaction) (error, bool) {
 	//addrs := self.Wallets.GetAddressSet()
-	return self.Unconfirmed.RecordTxn(self.Blockchain, txn, self.Config.MaxBlockSize)
+	return self.Unconfirmed.InjectTxn(self.Blockchain, txn, self.Config.MaxBlockSize)
 }
 
 // Returns the Transactions whose unspents give coins to a cipher.Address.

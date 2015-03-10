@@ -176,7 +176,7 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	if err != nil {
 		return txn, err
 	}
-	err, _ = self.Visor.RecordTxn(txn)
+	err, _ = self.Visor.InjectTxn(txn)
 	if err == nil {
 		self.broadcastTransaction(txn, pool)
 	}
@@ -199,7 +199,7 @@ func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Tra
 		return txn, errors.New("Transaction Verification Failed")
 	}
 
-	err, _ = self.Visor.RecordTxn(txn)
+	err, _ = self.Visor.InjectTxn(txn)
 	if err == nil {
 		self.broadcastTransaction(txn, pool)
 	}
@@ -496,7 +496,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 	for _, txn := range self.Txns {
 		// Only announce transactions that are new to us, so that peers can't
 		// spam relays
-		if err, known := d.Visor.Visor.RecordTxn(txn); err == nil && !known {
+		if err, known := d.Visor.Visor.InjectTxn(txn); err == nil && !known {
 			hashes = append(hashes, txn.Hash())
 		} else {
 			logger.Warning("Failed to record txn: %v", err)

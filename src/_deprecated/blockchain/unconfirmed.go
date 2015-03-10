@@ -51,9 +51,9 @@ func (self *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t int64) {
 // creating an input spent by the transaction
 
 // Adds a coin.Transaction to the pool
-//func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
+//func (self *UnconfirmedTxnPool) InjectTxn(bc *coin.Blockchain,
 //    t coin.Transaction, addrs map[cipher.Address]byte, didAnnounce bool) error {
-func (self *UnconfirmedTxnPool) RecordTxn(t coin.Transaction) error {
+func (self *UnconfirmedTxnPool) InjectTxn(t coin.Transaction) error {
 
     now := time.Now().Unix()
     //announcedAt := util.ZeroTime()

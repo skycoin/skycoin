@@ -144,7 +144,7 @@ func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
 	if err != nil {
 		return err
 	}
-	v.RecordTxn(tx)
+	v.InjectTxn(tx)
 	_, err = v.CreateAndExecuteBlock()
 	return err
 }
@@ -155,7 +155,7 @@ func transferCoinsAdvanced(mv *Visor, v *Visor, b wallet.Balance, fee uint64,
 	if err != nil {
 		return err
 	}
-	mv.RecordTxn(tx)
+	mv.InjectTxn(tx)
 	now := uint64(util.UnixNow())
 	if len(mv.blockchain.Blocks) > 0 {
 		now = mv.blockchain.Time() + 1

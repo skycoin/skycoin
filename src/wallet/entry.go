@@ -7,8 +7,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
+//should just be array
 type WalletEntries map[cipher.Address]WalletEntry
 
+//Deprecate
 func (self WalletEntries) ToArray() []WalletEntry {
 	e := make([]WalletEntry, len(self))
 	i := 0
@@ -27,9 +29,9 @@ type WalletEntry struct {
 
 func NewWalletEntryFromKeypair(pub cipher.PubKey, sec cipher.SecKey) WalletEntry {
 	return WalletEntry{
+		Address: cipher.AddressFromPubKey(pub),
 		Public:  pub,
 		Secret:  sec,
-		Address: cipher.AddressFromPubKey(pub),
 	}
 }
 

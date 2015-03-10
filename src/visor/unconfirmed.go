@@ -210,7 +210,6 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions
 // Returns all unconfirmed coin.UxOut spends for addresses
 // Looks at all inputs for unconfirmed txns, gets their source UxOut from the
 // blockchain's unspent pool, and returns as coin.AddressUxOuts
-// TODO -- optimize or cache
 func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
 	a map[cipher.Address]byte) coin.AddressUxOuts {
 	auxs := make(coin.AddressUxOuts, len(a))

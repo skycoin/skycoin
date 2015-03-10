@@ -259,9 +259,9 @@ var DevArgs = DevConfig{Config{
 }}
 
 //clear these after loading
-var GenesisSignatureStr string = "af3ce90786992f79c841a6ebce7a060e7c85ed82eb71193e9ef39c9a722d30bc068cb8d82ddbd345c3d66a592218484413d40e7fdb9285c917bed37d9b8d244b00"
-var GenesisAddressStr string = "2EP5k1HQJq95mjBvqX7iP4ip4iQmLFwM3GV"
-var BlockchainPubkeyStr string = "025d68456f09d4d50d2b9e789a9c30a4ddc35088e9791a494a248037e9ffee9634"
+var GenesisSignatureStr string = "1b377770f01227d6e128f6e04ff107e84e4331c97e1f1a7bccab638e37d9f6202010c71b29bcf1157125774e249424d48ed979574abc3b49bb96fac3ef4d830b01"
+var GenesisAddressStr string = "pPvGjkjN1zwLZFWH1iTGDELnZN9MXzR6Co"
+var BlockchainPubkeyStr string = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 var BlockchainSeckeyStr string = ""
 
 func (self *DevConfig) register() {

@@ -563,33 +563,6 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 }
 
 /*
-func (self *Visor) CreateWallet() wallet.Wallet {
-	w := self.Config.WalletConstructor()
-	self.Wallets.Add(w)
-	return w
-}
-
-func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
-	w := self.Wallets.Get(walletID)
-	if w == nil {
-		return fmt.Errorf("Unknown wallet %s", walletID)
-	}
-	return w.Save(self.Config.WalletDirectory)
-}
-
-func (self *Visor) SaveWallets() map[wallet.WalletID]error {
-	return self.Wallets.Save(self.Config.WalletDirectory)
-}
-
-// Loads & unloads wallets based on WalletDirectory contents
-func (self *Visor) ReloadWallets() error {
-	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
-	if err != nil {
-		return err
-	}
-	self.Wallets = wallets
-	return nil
-}
 
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
@@ -649,28 +622,6 @@ func (self *Visor) TotalBalance() wallet.BalancePair {
 	return b
 }
 
-// Computes the total balance for a cipher.Address's coin.UxOuts
-func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
-	prevTime := self.Blockchain.Time()
-	b := wallet.NewBalance(0, 0)
-	for _, ux := range uxs {
-		b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
-	}
-	return b
-}
-*/
-
-// Creates a wallet with a single master entry
-/*
-func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
-	w := wallet.NewEmptySimpleWallet()
-	// The master wallet shouldn't be saved to disk so we clear its filename
-	w.SetFilename("")
-	if err := w.AddEntry(master); err != nil {
-		log.Panicf("Failed to add master wallet entry: %v", err)
-	}
-	return w
-}
 */
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts

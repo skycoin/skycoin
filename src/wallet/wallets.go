@@ -80,6 +80,9 @@ func (self Wallets) Save(dir string) map[WalletID]error {
 	return errs
 }
 
+//convert to array, why map?
+//example where compiler should be able to swap out
+//an array with fast membership function
 func (self Wallets) GetAddressSet() map[cipher.Address]byte {
 	set := make(AddressSet)
 	for _, w := range self {

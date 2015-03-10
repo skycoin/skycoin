@@ -211,6 +211,14 @@ func (self *Transaction) Serialize() []byte {
 	return encoder.Serialize(*self)
 }
 
+func TransactionDeserialize(b []byte) Transaction {
+	t := Transaction{}
+	if err := encoder.DeserializeRaw(b, &t); err != nil {
+		log.Panic("Failed to deserialize transaction")
+	}
+	return t
+}
+
 // Returns the coin hours sent as outputs. This does not include the fee.
 func (self *Transaction) OutputHours() uint64 {
 	hours := uint64(0)
@@ -218,14 +226,6 @@ func (self *Transaction) OutputHours() uint64 {
 		hours += self.Out[i].Hours
 	}
 	return hours
-}
-
-func TransactionDeserialize(b []byte) Transaction {
-	t := Transaction{}
-	if err := encoder.DeserializeRaw(b, &t); err != nil {
-		log.Panic("Failed to deserialize transaction")
-	}
-	return t
 }
 
 type Transactions []Transaction

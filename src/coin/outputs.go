@@ -12,11 +12,7 @@ import (
 	Unspent Outputs
 */
 
-//needs a nonce
-//think through replay atacks
-
 /*
-
 - hash must only depend on factors known to sender
 -- hash cannot depend on block executed
 -- hash cannot depend on sequence number
@@ -119,12 +115,6 @@ func (self UxArray) HasDupes() bool {
 		} else {
 			m[h] = byte(1)
 		}
-		// TODO -- benchmark that vs this:
-		// prev := len(m)
-		// m[h] = byte(1)
-		// if len(m) == prev {
-		//     return true
-		// }
 	}
 	return false
 }

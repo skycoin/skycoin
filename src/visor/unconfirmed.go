@@ -15,10 +15,7 @@ var BurnFactor uint64 = 2 //half of coinhours must be burnt
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int) error {
-	if t.Size() > maxSize {
-		return errors.New("Transaction too large")
-	}
+func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction) error {
 	if fee, err := bc.TransactionFee(t); err != nil {
 		return err
 	} else if BurnFactor != 0 && t.OutputHours()/BurnFactor > fee {
@@ -98,8 +95,8 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (self *UnconfirmedTxnPool) InjectTxn(bc *coin.Blockchain,
-	t coin.Transaction, maxSize int) (error, bool) {
-	if err := VerifyTransaction(bc, &t, maxSize); err != nil {
+	t coin.Transaction) (error, bool) {
+	if err := VerifyTransaction(bc, &t); err != nil {
 		return err, false
 	}
 	if err := bc.VerifyTransaction(t); err != nil {

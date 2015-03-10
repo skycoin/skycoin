@@ -143,21 +143,6 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 	predicted := wallet.Balance{coins2, hours2}
 
 	return wallet.BalancePair{confirmed, predicted}
-
-	return wallet.BalancePair{}
-	/*
-		wlt := self.Wallets.Get(walletID)
-		if wlt == nil {
-			log.Printf("GetWalletBalance: ID NOT FOUND")
-			return wallet.BalancePair{}
-		}
-		auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-		puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
-			wlt.GetAddressSet())
-		confirmed := self.totalBalance(auxs)
-		predicted := self.totalBalance(auxs.Sub(puxs))
-		return wallet.BalancePair{confirmed, predicted}
-	*/
 }
 
 /*
@@ -323,24 +308,18 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 	if err != nil {
 		return tx, err
 	}
-	if err := visor.VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
+
+	if err := tx.Verify(); err != nil {
+		log.Panicf("Invalid transaction, %v", err)
+	}
+
+	if err := visor.VerifyTransaction(self.Blockchain, &tx); err != nil {
+		log.Panicf("Created invalid spending txn: visor fail, %v", err)
 	}
 	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
+		log.Panicf("Created invalid spending txn: blockchain fail, %v", err)
 	}
 	return tx, err
-}
-
-/*
-// Returns a *Balance
-//DEPRECATE
-func GetWalletBalance(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID) interface{} {
-	self.Requests <- func() interface{} {
-		return wrpc.GetWalletBalance(self.D.Visor.Visor, walletID)
-	}
-	r := <-self.Responses
-	return r
 }
 
 /*

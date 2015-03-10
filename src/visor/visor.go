@@ -493,7 +493,7 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 // - rename InjectTransaction
 func (self *Visor) InjectTxn(txn coin.Transaction) (error, bool) {
 	//addrs := self.Wallets.GetAddressSet()
-	return self.Unconfirmed.InjectTxn(self.Blockchain, txn, self.Config.MaxBlockSize)
+	return self.Unconfirmed.InjectTxn(self.Blockchain, txn)
 }
 
 // Returns the Transactions whose unspents give coins to a cipher.Address.

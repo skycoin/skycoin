@@ -287,8 +287,39 @@ func TransactionToJSON(tx coin.Transaction) string {
 	return string(b)
 }
 
-/*
-func TransactionFromJSON(str string) coin.Transaction {
+func TransactionFromJSON(str string) (coin.Transaction, error) {
 
+	var TxIn TransactionJSON
+	err := json.Unmarshal([]byte(str), TxIn)
+
+	if err != nil {
+		errors.New("cannot deserialize")
+	}
+
+	var tx coin.Transaction
+
+	tx.Sigs = make([]cipher.Sig, len(o.Sigs))
+	tx.In = make([]cipher.SHA256, len(o.In))
+	tx.Out = make([]cipher.TransactionOutput, len(o.Out))
+
+	for i, sig := range txIn.Sigs {
+		sig2, err := coin.SigFromHex(o.In[i])
+		if err != nil {
+			return coin.Transaction{}, errors.New("invalid signature")
+		}
+		tx.Sigs[i] = sig2
+	}
+
+	for i, in := range txIn.In {
+		sig2, err := coin.SigFromHex(o.In[i])
+		if err != nil {
+			return coin.Transaction{}, errors.New("invalid signature")
+		}
+		tx.Sigs[i] = sig2
+	}
+
+	tx.Length = tx.Size()
+	tx.Type = 0
+
+	return coin.Transaction{}, nil
 }
-*/

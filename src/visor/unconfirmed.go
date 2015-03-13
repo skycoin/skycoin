@@ -15,10 +15,7 @@ var BurnFactor uint64 = 2 //half of coinhours must be burnt
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction, maxSize int) error {
-	if t.Size() > maxSize {
-		return errors.New("Transaction too large")
-	}
+func VerifyTransaction(bc *coin.Blockchain, t *coin.Transaction) error {
 	if fee, err := bc.TransactionFee(t); err != nil {
 		return err
 	} else if BurnFactor != 0 && t.OutputHours()/BurnFactor > fee {
@@ -97,9 +94,9 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (self *UnconfirmedTxnPool) RecordTxn(bc *coin.Blockchain,
-	t coin.Transaction, maxSize int) (error, bool) {
-	if err := VerifyTransaction(bc, &t, maxSize); err != nil {
+func (self *UnconfirmedTxnPool) InjectTxn(bc *coin.Blockchain,
+	t coin.Transaction) (error, bool) {
+	if err := VerifyTransaction(bc, &t); err != nil {
 		return err, false
 	}
 	if err := bc.VerifyTransaction(t); err != nil {
@@ -210,7 +207,6 @@ func (self *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions
 // Returns all unconfirmed coin.UxOut spends for addresses
 // Looks at all inputs for unconfirmed txns, gets their source UxOut from the
 // blockchain's unspent pool, and returns as coin.AddressUxOuts
-// TODO -- optimize or cache
 func (self *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
 	a map[cipher.Address]byte) coin.AddressUxOuts {
 	auxs := make(coin.AddressUxOuts, len(a))

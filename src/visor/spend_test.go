@@ -451,7 +451,7 @@ func TestCreateSpendingTransaction(t *testing.T) {
 	amt = wallet.Balance{25e6, 200}
 	tx, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, 100, 0, a)
 	assert.Nil(t, err)
-	// Add it to the unconfirmed pool (bypass RecordTxn to avoid blockchain)
+	// Add it to the unconfirmed pool (bypass InjectTxn to avoid blockchain)
 	uncf.Txns[tx.Hash()] = uncf.createUnconfirmedTxn(&unsp, tx,
 		w.GetAddressSet())
 	// Make a spend that must not reuse previous addresses

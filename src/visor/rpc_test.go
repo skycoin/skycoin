@@ -22,7 +22,7 @@ func TestGetWalletBalance(t *testing.T) {
 	addr := v2.Wallets[0].GetAddresses()[0]
 	tx, err := v.Spend(id, spend, 0, addr)
 	assert.Nil(t, err)
-	v.RecordTxn(tx)
+	v.InjectTxn(tx)
 	assert.Equal(t, len(v.Unconfirmed.Txns), 1)
 
 	assert.Equal(t, rpc.GetWalletBalance(v, id).Confirmed, b)

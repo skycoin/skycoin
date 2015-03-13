@@ -455,6 +455,7 @@ func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
 }
 
 // Returns a copy of the block at seq. Returns error if seq out of range
+// Move to blockdb
 func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 	var b coin.Block
 	if seq >= uint64(len(self.Blockchain.Blocks)) {
@@ -465,6 +466,7 @@ func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 
 // Returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
+// move to blockdb
 func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 	if end > uint64(len(self.Blockchain.Blocks)) {
 		end = uint64(len(self.Blockchain.Blocks))
@@ -481,17 +483,17 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 }
 
 // Updates an UnconfirmedTxn's Announce field
-func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
-	self.Unconfirmed.SetAnnounced(h, t)
-}
+//func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
+//	self.Unconfirmed.SetAnnounced(h, t)
+//}
 
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 // TODO
 // - rename InjectTransaction
-func (self *Visor) RecordTxn(txn coin.Transaction) (error, bool) {
+func (self *Visor) InjectTxn(txn coin.Transaction) (error, bool) {
 	//addrs := self.Wallets.GetAddressSet()
-	return self.Unconfirmed.RecordTxn(self.Blockchain, txn, self.Config.MaxBlockSize)
+	return self.Unconfirmed.InjectTxn(self.Blockchain, txn)
 }
 
 // Returns the Transactions whose unspents give coins to a cipher.Address.
@@ -563,33 +565,6 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 }
 
 /*
-func (self *Visor) CreateWallet() wallet.Wallet {
-	w := self.Config.WalletConstructor()
-	self.Wallets.Add(w)
-	return w
-}
-
-func (self *Visor) SaveWallet(walletID wallet.WalletID) error {
-	w := self.Wallets.Get(walletID)
-	if w == nil {
-		return fmt.Errorf("Unknown wallet %s", walletID)
-	}
-	return w.Save(self.Config.WalletDirectory)
-}
-
-func (self *Visor) SaveWallets() map[wallet.WalletID]error {
-	return self.Wallets.Save(self.Config.WalletDirectory)
-}
-
-// Loads & unloads wallets based on WalletDirectory contents
-func (self *Visor) ReloadWallets() error {
-	wallets, err := wallet.LoadWallets(self.Config.WalletDirectory)
-	if err != nil {
-		return err
-	}
-	self.Wallets = wallets
-	return nil
-}
 
 // Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
@@ -649,28 +624,6 @@ func (self *Visor) TotalBalance() wallet.BalancePair {
 	return b
 }
 
-// Computes the total balance for a cipher.Address's coin.UxOuts
-func (self *Visor) balance(uxs coin.UxArray) wallet.Balance {
-	prevTime := self.Blockchain.Time()
-	b := wallet.NewBalance(0, 0)
-	for _, ux := range uxs {
-		b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
-	}
-	return b
-}
-*/
-
-// Creates a wallet with a single master entry
-/*
-func CreateMasterWallet(master wallet.WalletEntry) wallet.Wallet {
-	w := wallet.NewEmptySimpleWallet()
-	// The master wallet shouldn't be saved to disk so we clear its filename
-	w.SetFilename("")
-	if err := w.AddEntry(master); err != nil {
-		log.Panicf("Failed to add master wallet entry: %v", err)
-	}
-	return w
-}
 */
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts

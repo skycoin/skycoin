@@ -3,6 +3,9 @@ package visor
 import (
 	"log"
 
+	"encoding/json"
+	"errors"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 )
 
@@ -213,4 +216,110 @@ func NewReadableBlock(b *coin.Block) ReadableBlock {
 		Head: NewReadableBlockHeader(&b.Head),
 		Body: NewReadableBlockBody(&b.Body),
 	}
+}
+
+/*
+	Transactions to and from JSON
+*/
+
+type TransactionOutputJSON struct {
+	Address string `json:"address"` // Address of receiver
+	Coins   uint64 `json:"coins"`   // Number of coins
+	Hours   uint64 `json:"hours"`   // Coin hours
+}
+
+func NewTransactionOutputJSON(ux coin.TransactionOutput) TransactionOutputJSON {
+	var o TransactionOutputJSON
+	o.Address = ux.Address.String()
+	o.Coins = ux.Coins
+	o.Hours = ux.Hours
+	return o
+}
+
+func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput, error) {
+	var tx coin.TransactionOutput
+
+	addr, err := cipher.DecodeBase58Address(in.Address)
+	if err != nil {
+		return coin.TransactionOutput{}, errors.New("Adress decode fail")
+	}
+	tx.Address = addr
+	tx.Coins = in.Coins
+	tx.Hours = in.Hours
+	return tx, nil
+}
+
+type TransactionJSON struct {
+	Hash      string `json:"hash"`
+	InnerHash string `json:"inner_hash"`
+
+	Sigs []string                `json:"sigs"`
+	In   []string                `json:"in"`
+	Out  []TransactionOutputJSON `json:"out"`
+}
+
+func TransactionToJSON(tx coin.Transaction) string {
+
+	var o TransactionJSON
+
+	if err := tx.Verify(); err != nil {
+		log.Panic("Transaction Invalid: Cannot serialize to JSON")
+	}
+
+	o.Sigs = make([]string, len(tx.Sigs))
+	o.In = make([]string, len(tx.In))
+	o.Out = make([]TransactionOutputJSON, len(tx.Out))
+
+	for i, sig := range tx.Sigs {
+		o.Sigs[i] = sig.Hex()
+	}
+	for i, x := range tx.In {
+		o.In[i] = x.Hex() //hash to hex
+	}
+	for i, y := range tx.Out {
+		o.Out[i] = NewTransactionOutputJSON(y)
+	}
+
+	b, err := json.MarshalIndent(o, "", "  ")
+	if err != nil {
+		log.Panic("Cannot serialize transaction as JSON")
+	}
+	return string(b)
+}
+
+func TransactionFromJSON(str string) (coin.Transaction, error) {
+
+	var TxIn TransactionJSON
+	err := json.Unmarshal([]byte(str), TxIn)
+
+	if err != nil {
+		errors.New("cannot deserialize")
+	}
+
+	var tx coin.Transaction
+
+	tx.Sigs = make([]cipher.Sig, len(TxIn.Sigs))
+	tx.In = make([]cipher.SHA256, len(TxIn.In))
+	tx.Out = make([]coin.TransactionOutput, len(TxIn.Out))
+
+	for i, _ := range tx.Sigs {
+		sig2, err := cipher.SigFromHex(TxIn.Sigs[i])
+		if err != nil {
+			return coin.Transaction{}, errors.New("invalid signature")
+		}
+		tx.Sigs[i] = sig2
+	}
+
+	for i, _ := range tx.In {
+		sig2, err := cipher.SigFromHex(TxIn.In[i])
+		if err != nil {
+			return coin.Transaction{}, errors.New("invalid signature")
+		}
+		tx.Sigs[i] = sig2
+	}
+
+	tx.Length = uint32(tx.Size())
+	tx.Type = 0
+
+	return coin.Transaction{}, nil
 }

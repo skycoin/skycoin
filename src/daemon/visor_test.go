@@ -202,7 +202,7 @@ func transferCoins(mv *visor.Visor, v *visor.Visor) error {
 	if err != nil {
 		return err
 	}
-	mv.RecordTxn(tx)
+	mv.InjectTxn(tx)
 	sb, err := mv.CreateAndExecuteBlock()
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func makeMoreBlocks(mv *visor.Visor, n int,
 		if err != nil {
 			return nil, err
 		}
-		mv.RecordTxn(tx)
+		mv.InjectTxn(tx)
 		sb, err := mv.CreateBlock(now + uint64(i) + 1)
 		if err != nil {
 			return nil, err
@@ -856,7 +856,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	tx, err := v.Spend(v.Visor.Wallets[0].GetID(),
 		wallet.Balance{vc.Config.GenesisCoinVolume, 0},
 		vc.Config.GenesisCoinVolume, dest.Address, p)
-	mv.RecordTxn(tx)
+	mv.InjectTxn(tx)
 	wait()
 	assert.Nil(t, err)
 	assert.Equal(t, len(p.Pool.SendResults), 1)

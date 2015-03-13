@@ -92,7 +92,7 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
         txn, err := makeValidTxn(v)
         assert.Nil(t, err)
         txns[i] = txn
-        assert.Nil(t, v.RecordTxn(txn, false))
+        assert.Nil(t, v.InjectTxn(txn, false))
     }
     sort.Sort(txns)
     assert.Equal(t, len(v.Unconfirmed.Txns), n)
@@ -103,7 +103,7 @@ func addSignedBlock(t *testing.T, v *Visor) SignedBlock {
     we := NewWalletEntry()
     tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
-    v.RecordTxn(tx, false)
+    v.InjectTxn(tx, false)
     sb, err := v.CreateAndExecuteBlock()
     assert.Nil(t, err)
     return sb
@@ -645,7 +645,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
     tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
-    v.RecordTxn(tx, false)
+    v.InjectTxn(tx, false)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.blockSigs.Sigs), 1)
 
@@ -686,7 +686,7 @@ func TestExecuteSignedBlock(t *testing.T) {
     addr := v2.Wallet.GetAddresses()[0]
     tx, err = mv.Spend(Balance{1e6, 0}, 0, addr)
     assert.Nil(t, err)
-    mv.RecordTxn(tx, false)
+    mv.InjectTxn(tx, false)
     sb, err = mv.CreateAndExecuteBlock()
     assert.Nil(t, err)
     err = v2.ExecuteSignedBlock(sb)
@@ -849,7 +849,7 @@ func TestVisorSetAnnounced(t *testing.T) {
     assert.Equal(t, v.Unconfirmed.Txns[utx.Hash()].Announced, now)
 }
 
-func TestVisorRecordTxn(t *testing.T) {
+func TestVisorInjectTxn(t *testing.T) {
     defer cleanupVisor()
     vc := newMasterVisorConfig(t)
     v := NewVisor(vc)
@@ -858,14 +858,14 @@ func TestVisorRecordTxn(t *testing.T) {
     tx, err := makeValidTxn(v)
     assert.Nil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 0)
-    err = v.RecordTxn(tx, false)
+    err = v.InjectTxn(tx, false)
     assert.Nil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
 
     // Invalid txn
     tx.Out = make([]coin.TransactionOutput, 0)
-    err = v.RecordTxn(tx, true)
+    err = v.InjectTxn(tx, true)
     assert.NotNil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
@@ -873,7 +873,7 @@ func TestVisorRecordTxn(t *testing.T) {
     // Make sure didAnnounce is passed through
     tx, err = makeValidTxn(v)
     assert.Nil(t, err)
-    err = v.RecordTxn(tx, true)
+    err = v.InjectTxn(tx, true)
     assert.Nil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 2)
     assert.False(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
@@ -882,7 +882,7 @@ func TestVisorRecordTxn(t *testing.T) {
     we := v.Wallet.CreateEntry()
     tx, err = v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
-    err = v.RecordTxn(tx, false)
+    err = v.InjectTxn(tx, false)
     assert.Nil(t, err)
     assert.Equal(t, len(v.Unconfirmed.Txns), 3)
     assert.True(t, v.Unconfirmed.Txns[tx.Hash()].Announced.IsZero())
@@ -899,7 +899,7 @@ func TestGetAddressTransactions(t *testing.T) {
     we := v.Wallet.CreateEntry()
     tx, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
-    assert.Nil(t, v.RecordTxn(tx, false))
+    assert.Nil(t, v.InjectTxn(tx, false))
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     _, err = v.CreateAndExecuteBlock()
     assert.Nil(t, err)
@@ -915,7 +915,7 @@ func TestGetAddressTransactions(t *testing.T) {
     assert.Equal(t, len(v.Unconfirmed.Unspent.Arr), 0)
     we = v.Wallet.CreateEntry()
     tx, err = v.Spend(Balance{1e6, 0}, 0, we.Address)
-    assert.Nil(t, v.RecordTxn(tx, false))
+    assert.Nil(t, v.InjectTxn(tx, false))
     assert.Equal(t, len(v.Unconfirmed.Txns), 1)
     assert.Equal(t, len(v.Unconfirmed.Unspent.Arr), 2)
     found := false
@@ -951,7 +951,7 @@ func TestGetTransaction(t *testing.T) {
     assert.True(t, tx2.Status.Unknown)
 
     // Unconfirmed
-    assert.Nil(t, v.RecordTxn(tx, false))
+    assert.Nil(t, v.InjectTxn(tx, false))
     tx2 = v.GetTransaction(tx.Hash())
     assert.True(t, tx2.Status.Unconfirmed)
     assert.Equal(t, tx, tx2.Txn)
@@ -989,8 +989,8 @@ func TestBalances(t *testing.T) {
     // // With predicted outputs
     // tx, err := mv.Spend(Balance{1e6, 10}, 0, we.Address)
     // assert.Nil(t, err)
-    // assert.Nil(t, v.RecordTxn(tx, false))
-    // assert.Nil(t, mv.RecordTxn(tx, false))
+    // assert.Nil(t, v.InjectTxn(tx, false))
+    // assert.Nil(t, mv.InjectTxn(tx, false))
     // // Regular balance should not have changed
     // assert.Equal(t, v.TotalBalance(), Balance{25e6, 25})
     // assert.Equal(t, v.TotalBalancePredicted(), Balance{35e6, 35})
@@ -1015,7 +1015,7 @@ func TestVisorVerifySignedBlock(t *testing.T) {
     // Master should verify its own blocks correctly
     txn, err := v.Spend(Balance{1e6, 0}, 0, we.Address)
     assert.Nil(t, err)
-    assert.Nil(t, v.RecordTxn(txn, false))
+    assert.Nil(t, v.InjectTxn(txn, false))
     b, err := v.createBlock()
     assert.Nil(t, err)
     assert.Nil(t, v.verifySignedBlock(&b))

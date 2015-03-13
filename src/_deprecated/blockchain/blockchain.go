@@ -165,7 +165,7 @@ func (self *Blockchain) InjectTransaction(txn coin.Transaction) error {
     if err := self.blockchain.VerifyTransaction(txn); err != nil {
         return err
     }
-    self.Unconfirmed.RecordTxn(txn)
+    self.Unconfirmed.InjectTxn(txn)
     return nil
 }
 

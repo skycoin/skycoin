@@ -126,14 +126,10 @@ func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.Wallet {
 // actually uses visor
 func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 	walletID wallet.WalletID) wallet.BalancePair {
-	/*
-		bp := WalletBalance(v, walletID)
-		return &bp
-	*/
 
 	wlt := self.Wallets.Get(walletID)
 	if wlt == nil {
-		log.Printf("GetWalletBalance: ID NOT FOUND")
+		log.Printf("GetWalletBalance: ID NOT FOUND: id= %s", walletID)
 		return wallet.BalancePair{}
 	}
 	auxs := v.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
@@ -147,21 +143,6 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 	predicted := wallet.Balance{coins2, hours2}
 
 	return wallet.BalancePair{confirmed, predicted}
-
-	return wallet.BalancePair{}
-	/*
-		wlt := self.Wallets.Get(walletID)
-		if wlt == nil {
-			log.Printf("GetWalletBalance: ID NOT FOUND")
-			return wallet.BalancePair{}
-		}
-		auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-		puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
-			wlt.GetAddressSet())
-		confirmed := self.totalBalance(auxs)
-		predicted := self.totalBalance(auxs.Sub(puxs))
-		return wallet.BalancePair{confirmed, predicted}
-	*/
 }
 
 /*
@@ -247,6 +228,34 @@ func Spend(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID, amt w
 }
 */
 
+/*
+Checks if the wallet has pending, unconfirmed transactions
+- do not allow any transactions if there are pending
+*/
+//Check if any of the outputs are spent
+func (self *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
+	wallet *wallet.Wallet) bool {
+
+	if wallet == nil {
+		log.Panic("Wallet does not exist")
+	}
+
+	auxs := v.Blockchain.Unspent.AllForAddresses(wallet.GetAddresses())
+	puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent,
+		wallet.GetAddressSet())
+
+	_ = auxs
+	_ = puxs
+
+	//no transactions
+	if len(puxs) == 0 {
+		return true
+	}
+
+	return false
+
+}
+
 type SpendResult struct {
 	Balance     wallet.BalancePair        `json:"balance"`
 	Transaction visor.ReadableTransaction `json:"txn"`
@@ -271,6 +280,7 @@ func Spend(v *daemon.Visor, wrpc *WalletRPC,
 		logger.Error("Failed to make a spend: %v", err)
 	}
 	b := wrpc.GetWalletBalance(v.Visor, walletID)
+
 	return &SpendResult{
 		Balance:     b,
 		Transaction: visor.NewReadableTransaction(&txn),
@@ -298,24 +308,18 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 	if err != nil {
 		return tx, err
 	}
-	if err := visor.VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
+
+	if err := tx.Verify(); err != nil {
+		log.Panicf("Invalid transaction, %v", err)
+	}
+
+	if err := visor.VerifyTransaction(self.Blockchain, &tx); err != nil {
+		log.Panicf("Created invalid spending txn: visor fail, %v", err)
 	}
 	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
+		log.Panicf("Created invalid spending txn: blockchain fail, %v", err)
 	}
 	return tx, err
-}
-
-/*
-// Returns a *Balance
-//DEPRECATE
-func GetWalletBalance(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID) interface{} {
-	self.Requests <- func() interface{} {
-		return wrpc.GetWalletBalance(self.D.Visor.Visor, walletID)
-	}
-	r := <-self.Responses
-	return r
 }
 
 /*
@@ -327,6 +331,15 @@ REFACTOR
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.FormValue("id")
+		//addr := r.FormValue("addr")
+
+		r.ParseForm()
+		//r.ParseMultipartForm()
+		log.Println(r.Form)
+
+		//r.URL.String()
+		r.ParseForm()
+		log.Printf("%v, %v, %v \n", r.URL.String(), r.RequestURI, r.Form)
 		SendOr404(w, Wg.GetWalletBalance(gateway.D.Visor.Visor, wallet.WalletID(id)))
 	}
 }
@@ -453,11 +466,18 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Loads/unloads wallets from the wallet directory
+// Returns the outputs for a wallet
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
 		SendOr404(w, ret)
+	}
+}
+
+func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
+		//SendOr404(w, ret)
 	}
 }
 
@@ -509,4 +529,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(gateway))
 
+	//inject a transaction into network
+	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
 }

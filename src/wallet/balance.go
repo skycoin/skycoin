@@ -35,6 +35,7 @@ func NewBalanceFromUxOut(headTime uint64, ux *coin.UxOut) Balance {
 	}
 }
 
+// Deprecate
 func (self Balance) Add(other Balance) Balance {
 	return Balance{
 		Coins: self.Coins + other.Coins,
@@ -44,6 +45,7 @@ func (self Balance) Add(other Balance) Balance {
 
 // Subtracts other from self and returns the new Balance.  Will panic if
 // other is greater than balance, because Coins and Hours are unsigned.
+// Deprecate
 func (self Balance) Sub(other Balance) Balance {
 	if other.Coins > self.Coins || other.Hours > self.Hours {
 		log.Panic("Cannot subtract balances, second balance is too large")
@@ -54,10 +56,12 @@ func (self Balance) Sub(other Balance) Balance {
 	}
 }
 
+// Deprecate
 func (self Balance) Equals(other Balance) bool {
 	return self.Coins == other.Coins && self.Hours == other.Hours
 }
 
+// Deprecate
 func (self Balance) IsZero() bool {
 	return self.Coins == 0 && self.Hours == 0
 }

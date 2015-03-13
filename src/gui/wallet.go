@@ -330,16 +330,16 @@ REFACTOR
 // balance is the confirmed balance minus the pending spends.
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//id := r.FormValue("id")
+		id := r.FormValue("id")
 		//addr := r.FormValue("addr")
 
-		req.ParseForm()
-		//req.ParseMultipartForm()
+		r.ParseForm()
+		//r.ParseMultipartForm()
 		log.Println(r.Form)
 
 		//r.URL.String()
 		r.ParseForm()
-		log.Printf("%v, %v, %v, %v\n", r.URL.String(), r.RequestURI, addr, r.Form)
+		log.Printf("%v, %v, %v \n", r.URL.String(), r.RequestURI, r.Form)
 		SendOr404(w, Wg.GetWalletBalance(gateway.D.Visor.Visor, wallet.WalletID(id)))
 	}
 }

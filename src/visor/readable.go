@@ -298,27 +298,27 @@ func TransactionFromJSON(str string) (coin.Transaction, error) {
 
 	var tx coin.Transaction
 
-	tx.Sigs = make([]cipher.Sig, len(o.Sigs))
-	tx.In = make([]cipher.SHA256, len(o.In))
-	tx.Out = make([]cipher.TransactionOutput, len(o.Out))
+	tx.Sigs = make([]cipher.Sig, len(TxIn.Sigs))
+	tx.In = make([]cipher.SHA256, len(TxIn.In))
+	tx.Out = make([]coin.TransactionOutput, len(TxIn.Out))
 
-	for i, sig := range txIn.Sigs {
-		sig2, err := coin.SigFromHex(o.In[i])
+	for i, _ := range tx.Sigs {
+		sig2, err := cipher.SigFromHex(TxIn.Sigs[i])
 		if err != nil {
 			return coin.Transaction{}, errors.New("invalid signature")
 		}
 		tx.Sigs[i] = sig2
 	}
 
-	for i, in := range txIn.In {
-		sig2, err := coin.SigFromHex(o.In[i])
+	for i, _ := range tx.In {
+		sig2, err := cipher.SigFromHex(TxIn.In[i])
 		if err != nil {
 			return coin.Transaction{}, errors.New("invalid signature")
 		}
 		tx.Sigs[i] = sig2
 	}
 
-	tx.Length = tx.Size()
+	tx.Length = uint32(tx.Size())
 	tx.Type = 0
 
 	return coin.Transaction{}, nil

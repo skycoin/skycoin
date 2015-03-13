@@ -43,7 +43,7 @@ module.exports = angular.module('skycoin.controllers', [])
           $scope.addresses[i].address = response[i].address;
         }*/
         for(var i=0;i<response.length;i++){
-          $scope.checkBalance(i,response[i].address);
+          $scope.checkBalance(i,response[i].meta.filename);
         }
       });
     };
@@ -126,7 +126,7 @@ module.exports = angular.module('skycoin.controllers', [])
       console.dir(wI);
       console.log('Checking address: ');
       console.dir(address);
-      var xsrf = {addr:address};
+      var xsrf = {id:address};
       $http({
         method: 'POST',
         url: '/wallet/balance',

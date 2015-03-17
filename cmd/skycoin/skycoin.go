@@ -242,7 +242,7 @@ var DevArgs = DevConfig{Config{
 	BlockchainSeckey: cipher.SecKey{},
 
 	GenesisAddress:   cipher.Address{},
-	GenesisTimestamp: 1421595691,
+	GenesisTimestamp: 1426562704,
 	GenesisSignature: cipher.Sig{},
 
 	/* Developer options */
@@ -259,8 +259,8 @@ var DevArgs = DevConfig{Config{
 }}
 
 //clear these after loading
-var GenesisSignatureStr string = "1b377770f01227d6e128f6e04ff107e84e4331c97e1f1a7bccab638e37d9f6202010c71b29bcf1157125774e249424d48ed979574abc3b49bb96fac3ef4d830b01"
-var GenesisAddressStr string = "pPvGjkjN1zwLZFWH1iTGDELnZN9MXzR6Co"
+var GenesisSignatureStr string = "723df4e964c0f35f53ed60a862f47ed230541a71d1181dd1cfeadb622402b38038fd127771921d6a2564ad4d14853df5e08d99282bcf83f493a06013d27b75d901"
+var GenesisAddressStr string = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
 var BlockchainPubkeyStr string = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 var BlockchainSeckeyStr string = ""
 

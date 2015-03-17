@@ -311,15 +311,42 @@ func TransactionFromJSON(str string) (coin.Transaction, error) {
 	}
 
 	for i, _ := range tx.In {
-		sig2, err := cipher.SigFromHex(TxIn.In[i])
+		hash, err := cipher.SHA256FromHex(TxIn.In[i])
 		if err != nil {
 			return coin.Transaction{}, errors.New("invalid signature")
 		}
-		tx.Sigs[i] = sig2
+		tx.In[i] = hash
+	}
+
+	for i, _ := range tx.Out {
+		out, err := TransactionOutputFromJSON(TxIn.Out[i])
+		if err != nil {
+			return coin.Transaction{}, errors.New("invalid output")
+		}
+		tx.Out[i] = out
 	}
 
 	tx.Length = uint32(tx.Size())
 	tx.Type = 0
 
-	return coin.Transaction{}, nil
+	hash, err := cipher.SHA256FromHex(TxIn.Hash)
+	if err != nil {
+		return coin.Transaction{}, errors.New("invalid hash")
+	}
+	if hash != tx.Hash() {
+
+	}
+
+	InnerHash, err := cipher.SHA256FromHex(TxIn.Hash)
+
+	if InnerHash != tx.InnerHash {
+		return coin.Transaction{}, errors.New("inner hash")
+	}
+
+	err = tx.Verify()
+	if err != nil {
+		return coin.Transaction{}, errors.New("transaction failed verification")
+	}
+
+	return tx, nil
 }

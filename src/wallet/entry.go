@@ -45,13 +45,27 @@ func WalletEntryFromReadable(w *ReadableWalletEntry) WalletEntry {
 	// is not required
 	// TODO -- fix lib/base58 to not panic on invalid input -- should
 	// return error, so we can detect a broken wallet.
+
 	if w.Address == "" {
-		log.Panic("ReadableWalletEntry has no Address")
+		//log.Panic("ReadableWalletEntry has no Address")
 	}
 	var s cipher.SecKey
 	if w.Secret != "" {
 		s = cipher.MustSecKeyFromHex(w.Secret)
 	}
+
+	//regen from the private key
+	if w.Address == "" {
+		addr := cipher.AddressFromSecKey(s)
+		pub := cipher.PubKeyFromSecKey(s)
+
+		return WalletEntry{
+			Address: addr,
+			Public:  pub,
+			Secret:  s,
+		}
+	}
+
 	return WalletEntry{
 		Address: cipher.MustDecodeBase58Address(w.Address),
 		Public:  cipher.MustPubKeyFromHex(w.Public),

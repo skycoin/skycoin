@@ -2,6 +2,7 @@
 package gui
 
 import (
+	"errors"
 	"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -125,12 +126,12 @@ func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.Wallet {
 // NOT WORKING
 // actually uses visor
 func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
-	walletID wallet.WalletID) wallet.BalancePair {
+	walletID wallet.WalletID) (wallet.BalancePair, error) {
 
 	wlt := self.Wallets.Get(walletID)
 	if wlt == nil {
 		log.Printf("GetWalletBalance: ID NOT FOUND: id= %s", walletID)
-		return wallet.BalancePair{}
+		return wallet.BalancePair{}, errors.New("Id not found")
 	}
 	auxs := v.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
 	puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent,
@@ -142,7 +143,7 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 	confirmed := wallet.Balance{coins1, hours1}
 	predicted := wallet.Balance{coins2, hours2}
 
-	return wallet.BalancePair{confirmed, predicted}
+	return wallet.BalancePair{confirmed, predicted}, nil
 }
 
 /*
@@ -279,7 +280,7 @@ func Spend(v *daemon.Visor, wrpc *WalletRPC,
 		errString = err.Error()
 		logger.Error("Failed to make a spend: %v", err)
 	}
-	b := wrpc.GetWalletBalance(v.Visor, walletID)
+	b, _ := wrpc.GetWalletBalance(v.Visor, walletID)
 
 	return &SpendResult{
 		Balance:     b,
@@ -333,14 +334,20 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		id := r.FormValue("id")
 		//addr := r.FormValue("addr")
 
-		r.ParseForm()
+		//r.ParseForm()
 		//r.ParseMultipartForm()
-		log.Println(r.Form)
+		//log.Println(r.Form)
 
 		//r.URL.String()
 		r.ParseForm()
-		log.Printf("%v, %v, %v \n", r.URL.String(), r.RequestURI, r.Form)
-		SendOr404(w, Wg.GetWalletBalance(gateway.D.Visor.Visor, wallet.WalletID(id)))
+
+		b, err := Wg.GetWalletBalance(gateway.D.Visor.Visor, wallet.WalletID(id))
+
+		if err != nil {
+			_ = err
+		}
+		//log.Printf("%v, %v, %v \n", r.URL.String(), r.RequestURI, r.Form)
+		SendOr404(w, b)
 	}
 }
 

@@ -282,6 +282,8 @@ func Spend(v *daemon.Visor, wrpc *WalletRPC,
 	}
 	b, _ := wrpc.GetWalletBalance(v.Visor, walletID)
 
+	log.Printf("tx= \n %s \n", visor.TransactionToJSON(txn))
+
 	return &SpendResult{
 		Balance:     b,
 		Transaction: visor.NewReadableTransaction(&txn),
@@ -355,9 +357,17 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		//log.Printf("Spend1")
+
+		if r.FormValue("id") == "" {
+			Error400(w, "Missing wallet_id")
+			return
+		}
+
 		walletId := wallet.WalletID(r.FormValue("id"))
 		if walletId == "" {
-			Error400(w, "Missing wallet_id")
+			Error400(w, "Invalid Wallet Id")
 			return
 		}
 		sdst := r.FormValue("dst")
@@ -388,6 +398,66 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			Error400(w, "Invalid \"hours\" value")
 			return
 		}
+
+		//log.Printf("Spend2")
+
+		SendOr404(w, Spend(gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
+			fee, dst))
+	}
+}
+
+// HACK
+// Introduced to get send working with broken API
+// is error, passes id as address and address as ID
+func walletSpendHandlerDEPRECATE(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		log.Printf("Spend2a")
+
+		if r.FormValue("id") == "" {
+			Error400(w, "Missing wallet_id")
+			return
+		}
+
+		log.Printf("id= %s\b", r.FormValue("id"))
+		log.Printf("id= %s\b", r.FormValue("id"))
+
+		walletId := wallet.WalletID(r.FormValue("id"))
+		if walletId == "" {
+			Error400(w, "Invalid Wallet Id")
+			return
+		}
+		sdst := r.FormValue("dst")
+		if sdst == "" {
+			Error400(w, "Missing destination address \"dst\"")
+			return
+		}
+		dst, err := cipher.DecodeBase58Address(sdst)
+		if err != nil {
+			Error400(w, "Invalid destination address")
+			return
+		}
+		sfee := r.FormValue("fee")
+		fee, err := strconv.ParseUint(sfee, 10, 64)
+		if err != nil {
+			Error400(w, "Invalid \"fee\" value")
+			return
+		}
+		scoins := r.FormValue("coins")
+		shours := r.FormValue("hours")
+		coins, err := strconv.ParseUint(scoins, 10, 64)
+		if err != nil {
+			Error400(w, "Invalid \"coins\" value")
+			return
+		}
+		hours, err := strconv.ParseUint(shours, 10, 64)
+		if err != nil {
+			Error400(w, "Invalid \"hours\" value")
+			return
+		}
+
+		log.Printf("Spend2b")
+
 		SendOr404(w, Spend(gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
 			fee, dst))
 	}
@@ -521,6 +591,9 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
 	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
+
+	//DEPRECATE. SPEND function when wallet id is broken
+	mux.HandleFunc("/wallet/spend2", walletSpendHandlerDEPRECATE(gateway))
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))

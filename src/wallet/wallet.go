@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"encoding/hex"
 	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
-	"math/rand"
+	//"math/rand"
 )
 
 var (
@@ -31,6 +32,8 @@ func (self AddressSet) Update(other AddressSet) AddressSet {
 //check for collisions and retry if failure
 func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
-	id := rand.Int() % 9999 //should read in wallet files and make sure does not exist
-	return fmt.Sprintf("%s_%04d.%s", timestamp, id, WalletExt)
+	//should read in wallet files and make sure does not exist
+	padding := hex.EncodeToString((cipher.RandByte(2)))
+	fmt.Printf("padding= %s", padding)
+	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }

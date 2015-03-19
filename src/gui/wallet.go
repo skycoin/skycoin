@@ -420,9 +420,17 @@ func walletSpendHandlerDEPRECATE(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		log.Printf("id= %s\b", r.FormValue("id"))
-		log.Printf("id= %s\b", r.FormValue("id"))
+		//log.Printf("id= %s\b", r.FormValue("id"))
 
 		walletId := wallet.WalletID(r.FormValue("id"))
+
+		for _, wa := range Wg.Wallets {
+			f := wa.Meta["filename"]
+			log.Printf("id= %s \n", f)
+		}
+
+		//wallet := wrpc.Wallets.Get(walletID)
+
 		if walletId == "" {
 			Error400(w, "Invalid Wallet Id")
 			return

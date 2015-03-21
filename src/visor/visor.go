@@ -267,7 +267,7 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
-	logger.Debug("Refreshing unconfirmed transactions")
+	//logger.Debug("Refreshing unconfirmed transactions")
 	self.Unconfirmed.Refresh(self.Blockchain,
 		self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
 }

@@ -83,6 +83,8 @@ func (self Wallets) Save(dir string) map[WalletID]error {
 //convert to array, why map?
 //example where compiler should be able to swap out
 //an array with fast membership function
+//WTF? set of all addresses for each wallet with no index?
+//Needed for querying the pending incoming transactions across all wallets
 func (self Wallets) GetAddressSet() map[cipher.Address]byte {
 	set := make(AddressSet)
 	for _, w := range self {
@@ -102,7 +104,3 @@ func (self Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
 func (self Wallets) ToReadable() []*ReadableWallet {
 	return self.toReadable(NewReadableWallet)
 }
-
-//func (self Wallets) ToPublicReadable() []*ReadableWallet {
-//	return self.toReadable(NewPublicReadableWallet)
-//}

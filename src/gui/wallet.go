@@ -147,89 +147,6 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 }
 
 /*
-REFACTOR
-*/
-
-// Returns the confirmed & predicted balance for a single address
-// IMPLEMENT?
-/*
-func AddressBalance(self *visor.Visor, addr cipher.Address) wallet.BalancePair {
-	auxs := self.Blockchain.Unspent.AllForAddress(addr)
-	puxs := self.Unconfirmed.SpendsForAddress(&self.Blockchain.Unspent, addr)
-	confirmed := self.balance(auxs)
-	predicted := self.balance(auxs.Sub(puxs))
-	return wallet.BalancePair{confirmed, predicted}
-}
-*/
-
-// Returns the confirmed & predicted balance for a Wallet
-/*
-func (self *visor.Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
-	wlt := self.Wallets.Get(walletID)
-	if wlt == nil {
-		return wallet.BalancePair{}
-	}
-	auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-	puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
-		wlt.GetAddressSet())
-	confirmed := self.totalBalance(auxs)
-	predicted := self.totalBalance(auxs.Sub(puxs))
-	return wallet.BalancePair{confirmed, predicted}
-}
-*/
-
-/*
-// Return the total balance of all loaded wallets
-func (self *visor.Visor) TotalBalance() wallet.BalancePair {
-	b := wallet.BalancePair{}
-	for _, w := range self.Wallets {
-		c := self.WalletBalance(w.GetID())
-		b.Confirmed = b.Confirmed.Add(c.Confirmed)
-		b.Predicted = b.Confirmed.Add(c.Predicted)
-	}
-	return b
-}
-
-// Computes the total balance for a cipher.Address's coin.UxOuts
-func (self *visor.Visor) balance(uxs coin.UxArray) wallet.Balance {
-	prevTime := self.Blockchain.Time()
-	b := wallet.NewBalance(0, 0)
-	for _, ux := range uxs {
-		b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
-	}
-	return b
-}
-
-// Computes the total balance for cipher.Addresses and their coin.UxOuts
-func (self *visor.Visor) totalBalance(auxs coin.AddressUxOuts) wallet.Balance {
-	prevTime := self.Blockchain.Time()
-	b := wallet.NewBalance(0, 0)
-	for _, uxs := range auxs {
-		for _, ux := range uxs {
-			b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
-		}
-	}
-	return b
-}
-*/
-
-/*
-REFACTOR
-*/
-
-/*
-func Spend(self *daemon.Gateway, wrpc WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest cipher.Address) interface{} {
-	self.Requests <- func() interface{} {
-		return Spend2(self.D.Visor, wrpc,
-			walletID, amt, fee, dest)
-	}
-	r := <-self.Responses
-	return r
-}
-*/
-
-/*
 Checks if the wallet has pending, unconfirmed transactions
 - do not allow any transactions if there are pending
 */
@@ -422,11 +339,31 @@ func walletSpendHandlerDEPRECATE(gateway *daemon.Gateway) http.HandlerFunc {
 		log.Printf("id= %s\b", r.FormValue("id"))
 		//log.Printf("id= %s\b", r.FormValue("id"))
 
+		//this is actually an address
 		walletId := wallet.WalletID(r.FormValue("id"))
+
+		/*
+			Wallet id is address in wallet instead of filename
+			Have to look up the wallet with this file name as monkey patch
+		*/
+		addr, err := cipher.DecodeBase58Address(string(walletId))
+
+		if err != nil {
+			log.Printf("wallet spend handler: fail, cannot decode address")
+			Error400(w, "Cannot decode address")
+		}
 
 		for _, wa := range Wg.Wallets {
 			f := wa.Meta["filename"]
 			log.Printf("id= %s \n", f)
+
+			addrSet := wa.GetAddressSet()
+
+			if _, ok := addrSet[addr]; ok {
+				walletId = wa.GetId()
+				break
+			}
+
 		}
 
 		//wallet := wrpc.Wallets.Get(walletID)

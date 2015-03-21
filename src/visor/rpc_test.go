@@ -15,7 +15,7 @@ func TestGetWalletBalance(t *testing.T) {
 	v := setupMasterVisor()
 	b := wallet.Balance{v.Config.GenesisCoinVolume, v.Config.GenesisCoinVolume}
 	spend := wallet.Balance{1e6, 1e6}
-	id := v.Wallets[0].GetID()
+	id := v.Wallets[0].GetFilename()
 
 	// Make a pending transfer of coins, so we can see predicted is correct
 	v2, _ := setupVisor()
@@ -50,8 +50,8 @@ func TestReloadWallets(t *testing.T) {
 	v, _ = setupVisor()
 	assert.Equal(t, len(v.Wallets), 2)
 	for _, w := range v.Wallets {
-		assert.True(t, w.GetID() == wallets[0].GetID() ||
-			w.GetID() == wallets[1].GetID())
+		assert.True(t, w.GetFilename() == wallets[0].GetFilename() ||
+			w.GetFilename() == wallets[1].GetFilename())
 	}
 
 	// Create another wallet through a separate channel
@@ -66,8 +66,8 @@ func TestReloadWallets(t *testing.T) {
 	assert.Nil(t, rpc.ReloadWallets(v))
 	assert.Equal(t, len(v.Wallets), 2)
 	for _, w := range v.Wallets {
-		assert.True(t, w.GetID() == wallets[1].GetID() ||
-			w.GetID() == addw.GetID())
+		assert.True(t, w.GetFilename() == wallets[1].GetFilename() ||
+			w.GetFilename() == addw.GetFilename())
 	}
 
 	assert.Nil(t, rpc.ReloadWallets(nil))
@@ -91,10 +91,10 @@ func TestSaveWallets(t *testing.T) {
 		vw := v.Wallets[i]
 		found := false
 		for _, ww := range w.Wallets {
-			if vw.GetID() != ww.GetID() {
+			if vw.GetFilename() != ww.GetFilename() {
 				continue
 			}
-			assert.Equal(t, vw.GetID(), ww.GetID())
+			assert.Equal(t, vw.GetFilename(), ww.GetFilename())
 			assert.Equal(t, vw.GetEntries(), ww.GetEntries())
 			assert.Equal(t, vw.GetFilename(), ww.GetFilename())
 			assert.Equal(t, vw.GetName(), ww.GetName())
@@ -123,12 +123,12 @@ func TestGetWallet(t *testing.T) {
 	rpc := RPC{}
 	v, _ := setupVisor()
 	w := v.Wallets[0]
-	assert.Equal(t, wallet.NewReadableWallet(w), rpc.GetWallet(v, w.GetID()))
-	w2, err := rpc.GetWallet(v, w.GetID()).ToWallet()
+	assert.Equal(t, wallet.NewReadableWallet(w), rpc.GetWallet(v, w.GetFilename()))
+	w2, err := rpc.GetWallet(v, w.GetFilename()).ToWallet()
 	assert.Nil(t, err)
 	assert.Equal(t, w, w2)
 
-	assert.Nil(t, rpc.GetWallet(nil, w.GetID()))
+	assert.Nil(t, rpc.GetWallet(nil, w.GetFilename()))
 }
 
 func TestGetWallets(t *testing.T) {

@@ -182,13 +182,13 @@ func setupPool() (*Pool, *gnet.Connection) {
 
 func makeValidTxn(mv *visor.Visor) (coin.Transaction, error) {
 	we := wallet.NewWalletEntry()
-	return mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	return mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		we.Address)
 }
 
 func makeValidTxnNoError(t *testing.T, mv *visor.Visor) coin.Transaction {
 	we := wallet.NewWalletEntry()
-	tx, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		we.Address)
 	assert.Nil(t, err)
 	return tx
@@ -197,7 +197,7 @@ func makeValidTxnNoError(t *testing.T, mv *visor.Visor) coin.Transaction {
 func transferCoins(mv *visor.Visor, v *visor.Visor) error {
 	// Give the nonmaster some money to spend
 	addr := v.Wallets[0].GetAddresses()[0]
-	tx, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		addr)
 	if err != nil {
 		return err
@@ -215,7 +215,7 @@ func makeMoreBlocks(mv *visor.Visor, n int,
 	dest := wallet.NewWalletEntry()
 	blocks := make([]visor.SignedBlock, n)
 	for i := 0; i < n; i++ {
-		tx, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0},
+		tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0},
 			0, dest.Address)
 		if err != nil {
 			return nil, err
@@ -276,7 +276,7 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
 	assert.False(t, d.Visor.Config.Disabled)
 	assert.True(t, gc.LastSent.IsZero())
 	dest := wallet.NewWalletEntry()
-	tx, err := d.Visor.Spend(d.Visor.Visor.Wallets[0].GetID(),
+	tx, err := d.Visor.Spend(d.Visor.Visor.Wallets[0].GetFilename(),
 		wallet.Balance{10 * 1e6, 0}, 0, dest.Address, d.Pool)
 	wait()
 	assert.Nil(t, err)
@@ -695,7 +695,7 @@ func TestVisorSpend(t *testing.T) {
 	// Spending but spend fails (no money)
 	vc.Disabled = false
 	v = NewVisor(vc)
-	_, err = v.Spend(v.Visor.Wallets[0].GetID(),
+	_, err = v.Spend(v.Visor.Wallets[0].GetFilename(),
 		wallet.Balance{1000 * 10e6, 0}, 0, mv.Wallets[0].GetAddresses()[0],
 		p)
 	wait()
@@ -710,7 +710,7 @@ func TestVisorSpend(t *testing.T) {
 	gc.Conn = NewDummyConn(addr)
 	v = NewVisor(vc)
 	assert.Nil(t, transferCoins(mv, v.Visor))
-	_, err = v.Spend(v.Visor.Wallets[0].GetID(), wallet.Balance{10e6, 0},
+	_, err = v.Spend(v.Visor.Wallets[0].GetFilename(), wallet.Balance{10e6, 0},
 		0, mv.Wallets[0].GetAddresses()[0], p)
 	wait()
 	assert.Equal(t, len(p.Pool.SendResults), 1)
@@ -746,7 +746,7 @@ func TestVisorResendTransaction(t *testing.T) {
 
 	// give the visor some coins, and make a spend to add a txn
 	assert.Nil(t, transferCoins(mv, v.Visor))
-	tx, err := v.Spend(v.Visor.Wallets[0].GetID(), wallet.Balance{10e6, 0}, 0,
+	tx, err := v.Spend(v.Visor.Wallets[0].GetFilename(), wallet.Balance{10e6, 0}, 0,
 		mv.Wallets[0].GetAddresses()[0], p)
 	assert.Nil(t, err)
 	wait()
@@ -819,7 +819,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	vc.Config = mv.Config
 	v = NewVisor(vc)
 	gc.Conn = NewDummyConn(addr)
-	_, err = v.Spend(v.Visor.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	_, err = v.Spend(v.Visor.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		dest.Address, p)
 	assert.Nil(t, err)
 	wait()
@@ -853,7 +853,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	vc.Config.IsMaster = true
 	vc.Disabled = false
 	v = NewVisor(vc)
-	tx, err := v.Spend(v.Visor.Wallets[0].GetID(),
+	tx, err := v.Spend(v.Visor.Wallets[0].GetFilename(),
 		wallet.Balance{vc.Config.GenesisCoinVolume, 0},
 		vc.Config.GenesisCoinVolume, dest.Address, p)
 	mv.InjectTxn(tx)
@@ -872,7 +872,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	}
 	// No coins to spend, fail
 	assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
-	_, err = v.Spend(v.Visor.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	_, err = v.Spend(v.Visor.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		dest.Address, p)
 	assert.NotNil(t, err)
 	wait()

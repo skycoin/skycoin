@@ -13,7 +13,7 @@ func makeMoreBlocks(t *testing.T, mv *Visor, n int, when uint64) []SignedBlock {
 	dest := wallet.NewWalletEntry()
 	blocks := make([]SignedBlock, 0, n)
 	for i := 0; i < n; i++ {
-		tx, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0},
+		tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0},
 			0, dest.Address)
 		assert.Nil(t, err)
 		if err != nil {

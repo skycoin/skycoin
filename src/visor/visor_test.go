@@ -30,7 +30,7 @@ func writeVisorFilesDirect(t *testing.T, v *Visor) {
 	for _, w := range v.Wallets {
 		assert.NotEqual(t, w.GetFilename(), "")
 	}
-	assert.Nil(t, v.SaveWallet(v.Wallets[0].GetID()))
+	assert.Nil(t, v.SaveWallet(v.Wallets[0].GetFilename()))
 	assert.Nil(t, v.SaveBlockSigs())
 	assert.Nil(t, v.SaveBlockchain())
 	assertDirExists(t, v.Config.WalletDirectory)
@@ -122,7 +122,7 @@ func addValidTxns(t *testing.T, v *Visor, n int) coin.Transactions {
 
 func addSignedBlockAt(t *testing.T, v *Visor, when uint64) SignedBlock {
 	we := wallet.NewWalletEntry()
-	tx, err := v.Spend(v.Wallets[0].GetID(), wallet.Balance{1e6, 0}, 0, we.Address)
+	tx, err := v.Spend(v.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, we.Address)
 	assert.Nil(t, err)
 	err, known := v.InjectTxn(tx)
 	assert.Nil(t, err)
@@ -553,20 +553,20 @@ func TestVisorSpend(t *testing.T) {
 	vc := newMasterVisorConfig(t)
 	assert.Equal(t, vc.CoinHourBurnFactor, uint64(0))
 	v := NewVisor(vc)
-	wid := v.Wallets[0].GetID()
+	wid := v.Wallets[0].GetFilename()
 	ogb := v.WalletBalance(wid).Confirmed
 
 	// Test spend 0 amount
 	v = NewVisor(vc)
 	b = wallet.Balance{0, 0}
-	_, err = v.Spend(v.Wallets[0].GetID(), b, 0, addr)
+	_, err = v.Spend(v.Wallets[0].GetFilename(), b, 0, addr)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Zero spend amount")
 
 	// Test lacking funds
 	v = NewVisor(vc)
 	b = wallet.Balance{10e16, 10e16}
-	_, err = v.Spend(v.Wallets[0].GetID(), b, 10e16, addr)
+	_, err = v.Spend(v.Wallets[0].GetFilename(), b, 10e16, addr)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Not enough coins")
 
@@ -574,13 +574,13 @@ func TestVisorSpend(t *testing.T) {
 	v = NewVisor(vc)
 	v.Config.MaxBlockSize = 0
 	b = wallet.Balance{10e6, 10}
-	assert.Panics(t, func() { v.Spend(v.Wallets[0].GetID(), b, 0, addr) })
+	assert.Panics(t, func() { v.Spend(v.Wallets[0].GetFilename(), b, 0, addr) })
 
 	// Test simple spend (we have only 1 address to spend from, no fee)
 	v = NewVisor(vc)
 	assert.Equal(t, v.Config.CoinHourBurnFactor, uint64(0))
 	b = wallet.Balance{10e6, 10}
-	tx, err := v.Spend(v.Wallets[0].GetID(), b, 0, addr)
+	tx, err := v.Spend(v.Wallets[0].GetFilename(), b, 0, addr)
 	assert.Nil(t, err)
 	assert.Equal(t, len(tx.In), 1)
 	assert.Equal(t, len(tx.Out), 2)
@@ -606,7 +606,7 @@ func TestExecuteSignedBlock(t *testing.T) {
 	we := wallet.NewWalletEntry()
 	vc := newMasterVisorConfig(t)
 	v := NewVisor(vc)
-	wid := v.Wallets[0].GetID()
+	wid := v.Wallets[0].GetFilename()
 	assert.Equal(t, len(v.Unconfirmed.Txns), 0)
 	tx, err := v.Spend(wid, wallet.Balance{1e6, 0}, 0, we.Address)
 	assert.Nil(t, err)
@@ -654,7 +654,7 @@ func TestExecuteSignedBlock(t *testing.T) {
 	v2 := NewVisor(vc2)
 	w := v2.Wallets[0]
 	addr := w.GetAddresses()[0]
-	tx, err = mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{1e6, 0}, 0, addr)
+	tx, err = mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, addr)
 	assert.Nil(t, err)
 	err, known = mv.InjectTxn(tx)
 	assert.Nil(t, err)
@@ -830,7 +830,7 @@ func TestVisorInjectTxn(t *testing.T) {
 	tx, err := makeValidTxn(v)
 	assert.Nil(t, err)
 	we := v.Wallets[0].CreateEntry()
-	tx2, err := v.Spend(v.Wallets[0].GetID(), wallet.Balance{1e6, 0}, 0, we.Address)
+	tx2, err := v.Spend(v.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, we.Address)
 	assert.Nil(t, err)
 
 	// Valid record, did not announce
@@ -866,7 +866,7 @@ func TestGetAddressTransactions(t *testing.T) {
 	// An confirmed txn
 	w := v.Wallets[0]
 	we := w.CreateEntry()
-	tx, err := v.Spend(w.GetID(), wallet.Balance{1e6, 0}, 0, we.Address)
+	tx, err := v.Spend(w.GetFilename(), wallet.Balance{1e6, 0}, 0, we.Address)
 	assert.Nil(t, err)
 	err, known := v.InjectTxn(tx)
 	assert.Nil(t, err)
@@ -885,7 +885,7 @@ func TestGetAddressTransactions(t *testing.T) {
 	assert.Equal(t, len(v.Unconfirmed.Txns), 0)
 	assert.Equal(t, len(v.Unconfirmed.Unspent), 0)
 	we = w.CreateEntry()
-	tx, err = v.Spend(w.GetID(), wallet.Balance{2e6, 0}, 0, we.Address)
+	tx, err = v.Spend(w.GetFilename(), wallet.Balance{2e6, 0}, 0, we.Address)
 	err, known = v.InjectTxn(tx)
 	assert.Nil(t, err)
 	assert.False(t, known)
@@ -977,7 +977,7 @@ func TestBalances(t *testing.T) {
 		transferCoinsAdvanced(mv, v, wallet.Balance{10e6, 10}, 0, we.Address))
 	assert.Nil(t,
 		transferCoinsAdvanced(mv, v, wallet.Balance{5e6, 5}, 0, we2.Address))
-	assert.Equal(t, v.WalletBalance(w.GetID()).Confirmed, wallet.Balance{25e6, 25})
+	assert.Equal(t, v.WalletBalance(w.GetFilename()).Confirmed, wallet.Balance{25e6, 25})
 	assert.Equal(t, v.AddressBalance(we.Address).Confirmed, wallet.Balance{20e6, 20})
 	assert.Equal(t, v.AddressBalance(we2.Address).Confirmed, wallet.Balance{5e6, 5})
 	assert.Equal(t, v.TotalBalance().Confirmed, wallet.Balance{25e6, 25})
@@ -997,7 +997,7 @@ func TestVisorVerifySignedBlock(t *testing.T) {
 	we := w.CreateEntry()
 
 	// Master should verify its own blocks correctly
-	txn, err := v.Spend(w.GetID(), wallet.Balance{1e6, 0}, 0, we.Address)
+	txn, err := v.Spend(w.GetFilename(), wallet.Balance{1e6, 0}, 0, we.Address)
 	assert.Nil(t, err)
 	err, known := v.InjectTxn(txn)
 	assert.Nil(t, err)

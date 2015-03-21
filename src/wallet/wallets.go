@@ -40,7 +40,7 @@ func LoadWallets(dir string) (Wallets, error) {
 			}
 			logger.Info("Loaded wallet from %s", fullpath)
 			/*
-					id := w.GetID()
+					id := w.GetFilename()
 					if kw, ok := have[id]; ok {
 						return nil, fmt.Errorf("Duplicate wallet file detected. "+
 							"%s and %s are the same wallet.", kw.GetFilename(), name)
@@ -60,7 +60,7 @@ func (self *Wallets) Add(w Wallet) {
 
 func (self Wallets) Get(walletID WalletID) *Wallet {
 	for _, w := range self {
-		if w.GetID() == walletID {
+		if WalletID(w.GetFilename()) == walletID {
 			return &w
 		}
 	}
@@ -71,7 +71,7 @@ func (self Wallets) Save(dir string) map[WalletID]error {
 	errs := make(map[WalletID]error)
 	for _, w := range self {
 		if err := w.Save(dir); err != nil {
-			errs[w.GetID()] = err
+			errs[WalletID(w.GetFilename())] = err
 		}
 	}
 	if len(errs) == 0 {

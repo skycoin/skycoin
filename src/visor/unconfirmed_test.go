@@ -66,7 +66,7 @@ func getFee(t *coin.Transaction) (uint64, error) {
 
 func makeValidTxn(mv *Visor) (coin.Transaction, error) {
 	we := wallet.NewWalletEntry()
-	return mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	return mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		we.Address)
 }
 
@@ -75,7 +75,7 @@ func makeValidTxnWithFeeFactor(mv *Visor,
 	we := wallet.NewWalletEntry()
 	tmp := mv.Config.CoinHourBurnFactor
 	mv.Config.CoinHourBurnFactor = factor
-	tx, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 1000},
+	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 1000},
 		extra, we.Address)
 	mv.Config.CoinHourBurnFactor = tmp
 	return tx, err
@@ -86,7 +86,7 @@ func makeValidTxnWithFeeFactorAndExtraChange(mv *Visor,
 	we := wallet.NewWalletEntry()
 	tmp := mv.Config.CoinHourBurnFactor
 	mv.Config.CoinHourBurnFactor = factor
-	tx, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 1002},
+	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 1002},
 		extra, we.Address)
 	mv.Config.CoinHourBurnFactor = tmp
 	return tx, err
@@ -95,12 +95,12 @@ func makeValidTxnWithFeeFactorAndExtraChange(mv *Visor,
 func makeValidTxnNoChange(mv *Visor) (coin.Transaction, error) {
 	we := wallet.NewWalletEntry()
 	b := mv.AddressBalance(mv.Config.MasterKeys.Address)
-	return mv.Spend(mv.Wallets[0].GetID(), b.Confirmed, 0, we.Address)
+	return mv.Spend(mv.Wallets[0].GetFilename(), b.Confirmed, 0, we.Address)
 }
 
 func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
 	we := wallet.NewWalletEntry()
-	txn, err := mv.Spend(mv.Wallets[0].GetID(), wallet.Balance{10 * 1e6, 0}, 0,
+	txn, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		we.Address)
 	if err != nil {
 		return txn, err

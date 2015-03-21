@@ -360,7 +360,8 @@ func walletSpendHandlerDEPRECATE(gateway *daemon.Gateway) http.HandlerFunc {
 			addrSet := wa.GetAddressSet()
 
 			if _, ok := addrSet[addr]; ok {
-				walletId = wa.GetId()
+				walletId = wa.GetID()
+				log.Printf("wallet from address lookup: %s \n", string(walletId))
 				break
 			}
 

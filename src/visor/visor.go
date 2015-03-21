@@ -617,7 +617,7 @@ func (self *Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
 func (self *Visor) TotalBalance() wallet.BalancePair {
 	b := wallet.BalancePair{}
 	for _, w := range self.Wallets {
-		c := self.WalletBalance(w.GetID())
+		c := self.WalletBalance(w.GetFilename())
 		b.Confirmed = b.Confirmed.Add(c.Confirmed)
 		b.Predicted = b.Confirmed.Add(c.Predicted)
 	}

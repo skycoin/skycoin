@@ -102,7 +102,7 @@ module.exports = angular.module('skycoin.controllers', [])
       $scope.historyTable.push({address:spend.address,amount:spend.amount});
       localStorage.setItem('historyTable',JSON.stringify($scope.historyTable));
       console.dir($scope.historyTable);
-      $http({
+$http({
         method: 'POST',
         url: '/wallet/spend',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -118,6 +118,10 @@ module.exports = angular.module('skycoin.controllers', [])
         console.log('wallet spend is ');
         console.dir(response);
         $scope.loadWallets();
+      }).error(function(data, status, headers, config) {
+        console.log('spend error is ');
+        console.dir(data,status,headers,config);
+        alert(data,status,headers,config);
       });
     };
 

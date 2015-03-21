@@ -302,7 +302,7 @@ module.exports = angular.module('skycoin.controllers', [])
       console.dir($scope.historyTable);
       $http({
         method: 'POST',
-        url: '/wallet/spend2',
+        url: '/wallet/spend',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         transformRequest: function(obj) {
           var str = [];

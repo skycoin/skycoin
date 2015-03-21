@@ -140,7 +140,7 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
 }
 
 func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
-	tx, err := v.Spend(v.Wallets[0].GetID(), wallet.Balance{1e6, 0}, 0, addr)
+	tx, err := v.Spend(v.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, addr)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
 
 func transferCoinsAdvanced(mv *Visor, v *Visor, b wallet.Balance, fee uint64,
 	addr cipher.Address) error {
-	tx, err := mv.Spend(mv.Wallets[0].GetID(), b, fee, addr)
+	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), b, fee, addr)
 	if err != nil {
 		return err
 	}

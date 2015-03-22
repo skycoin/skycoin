@@ -3,6 +3,7 @@ package wallet
 import (
 	//"fmt"
 	"io/ioutil"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -54,7 +55,27 @@ func LoadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
+/*
+	This is bad
+	- there needs to be better way of dealing with duplicates
+	- will rename wallet 1 in 16,384 times
+	- this will fail 1 in 250 million times
+	- this can fail
+*/
 func (self *Wallets) Add(w Wallet) {
+	for _, w2 := range *self {
+		if w2.GetFilename() == w.GetFilename() {
+			log.Printf("Wallets.Add, Wallet name would conflict with existing wallet, renaming")
+			w.SetFilename(NewWalletFilename())
+		}
+	}
+
+	for _, w2 := range *self {
+		if w2.GetFilename() == w.GetFilename() {
+			log.Panic("Wallets.Add, Wallet name would conflict with existing wallet, 1 in 250 million probabilistic failure")
+		}
+	}
+
 	*self = append(*self, w)
 }
 
@@ -67,6 +88,8 @@ func (self Wallets) Get(walletID WalletID) *Wallet {
 	return nil
 }
 
+//check for name conflicts!
+//resolve conflicts for saving wallets who have different names
 func (self Wallets) Save(dir string) map[WalletID]error {
 	errs := make(map[WalletID]error)
 	for _, w := range self {

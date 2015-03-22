@@ -269,7 +269,9 @@ func TransactionToJSON(tx coin.Transaction) string {
 	o.Hash = tx.Hash().Hex()
 	o.InnerHash = tx.InnerHash.Hex()
 
-	if tx.InnerHash != 
+	if tx.InnerHash != tx.HashInner {
+		log.Panic("TransactionToJSON called with invalid transaction, inner hash mising")
+	}
 
 	o.Sigs = make([]string, len(tx.Sigs))
 	o.In = make([]string, len(tx.In))

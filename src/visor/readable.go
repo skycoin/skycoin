@@ -266,6 +266,11 @@ func TransactionToJSON(tx coin.Transaction) string {
 		log.Panic("Transaction Invalid: Cannot serialize to JSON")
 	}
 
+	o.Hash = tx.Hash().Hex()
+	o.InnerHash = tx.InnerHash.Hex()
+
+	if tx.InnerHash != 
+
 	o.Sigs = make([]string, len(tx.Sigs))
 	o.In = make([]string, len(tx.In))
 	o.Out = make([]TransactionOutputJSON, len(tx.Out))
@@ -284,6 +289,16 @@ func TransactionToJSON(tx coin.Transaction) string {
 	if err != nil {
 		log.Panic("Cannot serialize transaction as JSON")
 	}
+
+	//test
+	tx2, err := TransactionFromJSON(string(b))
+	if err != nil {
+		log.Panic("Transaction serialization failed 1")
+	}
+	if tx1 != tx2 {
+		log.Panic("transaction serialization failed 2")
+	}
+
 	return string(b)
 }
 

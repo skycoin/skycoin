@@ -90,7 +90,7 @@ func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
 	}
 	tx.SignInputs([]cipher.SecKey{sec})
 	assert.Equal(t, len(tx.Sigs), 1)
-	assert.Nil(t, cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.hashInner(), tx.In[0]), tx.Sigs[0]))
+	assert.Nil(t, cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0]))
 	tx.UpdateHeader()
 	assert.Nil(t, tx.Verify())
 	err := bc.VerifyTransaction(tx)

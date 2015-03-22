@@ -54,7 +54,7 @@ type TransactionOutput struct {
 // or if the inputs have the required coin base
 func (self *Transaction) Verify() error {
 
-	h := self.hashInner()
+	h := self.HashInner()
 	if h != self.InnerHash {
 		return errors.New("Invalid header hash")
 	}
@@ -150,7 +150,7 @@ func (self *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 
 // Signs all inputs in the transaction
 func (self *Transaction) SignInputs(keys []cipher.SecKey) {
-	self.InnerHash = self.hashInner() //update hash
+	self.InnerHash = self.HashInner() //update hash
 
 	if len(self.Sigs) != 0 {
 		log.Panic("Transaction has been signed")
@@ -165,7 +165,7 @@ func (self *Transaction) SignInputs(keys []cipher.SecKey) {
 		log.Panic("No keys")
 	}
 	sigs := make([]cipher.Sig, len(self.In))
-	inner_hash := self.hashInner()
+	inner_hash := self.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(inner_hash, self.In[i]) //hash to sign
 		sigs[i] = cipher.SignHash(h, k)
@@ -194,13 +194,13 @@ func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 func (self *Transaction) UpdateHeader() {
 	self.Length = uint32(self.Size())
 	self.Type = byte(0x00)
-	self.InnerHash = self.hashInner()
+	self.InnerHash = self.HashInner()
 }
 
 // Hashes only the Transaction Inputs & Outputs
 // This is what is signed
 // Client hashes the inner hash with hash of output being spent and signs it with private key
-func (self *Transaction) hashInner() cipher.SHA256 {
+func (self *Transaction) HashInner() cipher.SHA256 {
 	b1 := encoder.Serialize(self.In)
 	b2 := encoder.Serialize(self.Out)
 	b3 := append(b1, b2...)

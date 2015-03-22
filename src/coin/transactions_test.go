@@ -211,10 +211,10 @@ func TestTransactionSignInputs(t *testing.T) {
 	assert.Panics(t, func() { tx.SignInputs([]cipher.SecKey{s}) })
 	assert.Equal(t, len(tx.Sigs), 0)
 	// Valid signing
-	h := tx.hashInner()
+	h := tx.HashInner()
 	assert.NotPanics(t, func() { tx.SignInputs([]cipher.SecKey{s, s2}) })
 	assert.Equal(t, len(tx.Sigs), 2)
-	assert.Equal(t, tx.hashInner(), h)
+	assert.Equal(t, tx.HashInner(), h)
 	p := cipher.PubKeyFromSecKey(s)
 	a := cipher.AddressFromPubKey(p)
 	p = cipher.PubKeyFromSecKey(s2)
@@ -228,7 +228,7 @@ func TestTransactionSignInputs(t *testing.T) {
 func TestTransactionHash(t *testing.T) {
 	tx := makeTransaction(t)
 	assert.NotEqual(t, tx.Hash(), cipher.SHA256{})
-	assert.NotEqual(t, tx.hashInner(), tx.Hash())
+	assert.NotEqual(t, tx.HashInner(), tx.Hash())
 }
 
 func TestTransactionUpdateHeader(t *testing.T) {
@@ -238,13 +238,13 @@ func TestTransactionUpdateHeader(t *testing.T) {
 	tx.UpdateHeader()
 	assert.NotEqual(t, tx.InnerHash, cipher.SHA256{})
 	assert.Equal(t, tx.InnerHash, h)
-	assert.Equal(t, tx.InnerHash, tx.hashInner())
+	assert.Equal(t, tx.InnerHash, tx.HashInner())
 }
 
 func TestTransactionHashInner(t *testing.T) {
 	tx := makeTransaction(t)
 
-	h := tx.hashInner()
+	h := tx.HashInner()
 	assert.NotEqual(t, h, cipher.SHA256{})
 
 	// If tx.In is changed, hash should change
@@ -253,7 +253,7 @@ func TestTransactionHashInner(t *testing.T) {
 	tx2.In[0] = ux.Hash()
 	assert.NotEqual(t, tx, tx2)
 	assert.Equal(t, tx2.In[0], ux.Hash())
-	assert.NotEqual(t, tx.hashInner(), tx2.hashInner())
+	assert.NotEqual(t, tx.HashInner(), tx2.HashInner())
 
 	// If tx.Out is changed, hash should change
 	tx2 = copyTransaction(tx)
@@ -261,12 +261,12 @@ func TestTransactionHashInner(t *testing.T) {
 	tx2.Out[0].Address = a
 	assert.NotEqual(t, tx, tx2)
 	assert.Equal(t, tx2.Out[0].Address, a)
-	assert.NotEqual(t, tx.hashInner(), tx2.hashInner())
+	assert.NotEqual(t, tx.HashInner(), tx2.HashInner())
 
 	// If tx.Head is changed, hash should not change
 	tx2 = copyTransaction(tx)
 	tx.Sigs = append(tx.Sigs, cipher.Sig{})
-	assert.Equal(t, tx.hashInner(), tx2.hashInner())
+	assert.Equal(t, tx.HashInner(), tx2.HashInner())
 }
 
 func TestTransactionSerialization(t *testing.T) {

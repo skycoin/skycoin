@@ -602,7 +602,7 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 		if len(tx.In) != len(tx.Sigs) || len(tx.In) != len(uxIn) {
 			log.Panic("tx.In != tx.Sigs != uxIn")
 		}
-		if tx.InnerHash != tx.hashInner() {
+		if tx.InnerHash != tx.HashInner() {
 			log.Panic("Invalid Tx Header Hash")
 		}
 	}

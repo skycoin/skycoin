@@ -181,13 +181,13 @@ func (self *Transaction) Size() int {
 // Hashes an entire Transaction struct, including the TransactionHeader
 func (self *Transaction) Hash() cipher.SHA256 {
 	b := self.Serialize()
-	return cipher.DoubleSHA256(b)
+	return cipher.SumSHA256((b)
 }
 
 // Returns the encoded size and the hash of it (avoids duplicate encoding)
 func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 	b := self.Serialize()
-	return len(b), cipher.DoubleSHA256(b)
+	return len(b), cipher.SumSHA256((b)
 }
 
 // Saves the txn body hash to TransactionHeader.Hash

@@ -294,13 +294,13 @@ module.exports = angular.module('skycoin.controllers', [])
         coins:spend.amount*1000000,
         fee:1,
         hours:1,
-        address:spend.address
+        dst:spend.address
       };
       console.log('spend xsrf is ' , xsrf);
       $scope.historyTable.push({address:spend.address,amount:spend.amount});
       localStorage.setItem('historyTable',JSON.stringify($scope.historyTable));
       console.dir($scope.historyTable);
-      $http({
+$http({
         method: 'POST',
         url: '/wallet/spend',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -316,6 +316,10 @@ module.exports = angular.module('skycoin.controllers', [])
         console.log('wallet spend is ');
         console.dir(response);
         $scope.loadWallets();
+      }).error(function(data, status, headers, config) {
+        console.log('spend error is ');
+        console.dir(data,status,headers,config);
+        if(data)alert(data,status,headers,config);
       });
     };
 
@@ -753,7 +757,7 @@ module.exports = update;
 
 },{"./controller":34,"./modal.jade":36}],38:[function(require,module,exports){
 /**
- * @license AngularJS v1.3.14
+ * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -7105,7 +7109,7 @@ angular.module("template/typeahead/typeahead-popup.html", []).run(["$templateCac
 
 },{}],40:[function(require,module,exports){
 /**
- * @license AngularJS v1.3.14
+ * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -7505,7 +7509,7 @@ angular.module('monospaced.qrcode', [])
 
 },{}],42:[function(require,module,exports){
 /**
- * @license AngularJS v1.3.14
+ * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -8175,11 +8179,22 @@ angular.module('ngResource', ['ng']).
 
 },{}],43:[function(require,module,exports){
 /**
- * @license AngularJS v1.3.14
+ * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
 (function(window, angular, undefined) {'use strict';
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *     Any commits to this file should be reviewed with security in mind.  *
+ *   Changes to this file can potentially create security vulnerabilities. *
+ *          An approval from 2 Core members with history of modifying      *
+ *                         this file is required.                          *
+ *                                                                         *
+ *  Does the change somehow allow for arbitrary javascript to be executed? *
+ *    Or allows for someone to change the prototype of built-in objects?   *
+ *     Or gives undesired access to variables likes document or window?    *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 var $sanitizeMinErr = angular.$$minErr('$sanitize');
 

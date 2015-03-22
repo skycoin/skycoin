@@ -40,17 +40,18 @@
               <td><div id="overview-wallet-title">Wallet {{wallet.id}}: {{wallet.name}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
             </tr>
             <tr>
-              <td><div id="overview-wallet-balance">Addresses: </div></td>
+              <td><div id="overview-wallet-balance">Address: </div></td>
               <td>
                 <div class="btn-group">
-                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                  <!-- <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
                     {{wallet.entries[0].address}} <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu">
                     <li ng-repeat="entry in wallet.entries" ng-click="spend.address = wallet.meta.filename">{{entry.address}}</li>
                     <li class="divider"></li>
                     <li><a href="#">All</a></li>
-                  </ul>
+                  </ul> -->
+                  <div ng-repeat="entry in wallet.entries">{{entry.address}}</div>
                 </div>
             </tr>
             <tr>

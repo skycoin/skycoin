@@ -96,7 +96,7 @@ module.exports = angular.module('skycoin.controllers', [])
         coins:spend.amount*1000000,
         fee:1,
         hours:1,
-        address:spend.address
+        dst:spend.address
       };
       console.log('spend xsrf is ' , xsrf);
       $scope.historyTable.push({address:spend.address,amount:spend.amount});
@@ -121,7 +121,7 @@ $http({
       }).error(function(data, status, headers, config) {
         console.log('spend error is ');
         console.dir(data,status,headers,config);
-        alert(data,status,headers,config);
+        if(data)alert(data,status,headers,config);
       });
     };
 

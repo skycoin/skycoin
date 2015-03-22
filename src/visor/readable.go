@@ -223,13 +223,27 @@ func NewReadableBlock(b *coin.Block) ReadableBlock {
 */
 
 type TransactionOutputJSON struct {
-	Address string `json:"address"` // Address of receiver
-	Coins   uint64 `json:"coins"`   // Number of coins
-	Hours   uint64 `json:"hours"`   // Coin hours
+	Hash              string `json:"hash"`
+	SourceTransaction string `json:"src_tx"`
+	Address           string `json:"address"` // Address of receiver
+	Coins             uint64 `json:"coins"`   // Number of coins
+	Hours             uint64 `json:"hours"`   // Coin hours
 }
 
-func NewTransactionOutputJSON(ux coin.TransactionOutput) TransactionOutputJSON {
+func NewTransactionOutputJSON(ux coin.TransactionOutput, src_tx cipher.SHA256) TransactionOutputJSON {
+	tmp := coin.UxOut{
+		Body: coin.UxBody{
+			SrcTransaction: src_tx,
+			Address:        ux.Address,
+			Coins:          ux.Coins,
+			Hours:          ux.Hours,
+		},
+	}
+
 	var o TransactionOutputJSON
+	o.Hash = tmp.Hash().Hex()
+	o.SourceTransaction = src_tx.Hex()
+
 	o.Address = ux.Address.String()
 	o.Coins = ux.Coins
 	o.Hours = ux.Hours
@@ -239,13 +253,19 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput) TransactionOutputJSON {
 func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput, error) {
 	var tx coin.TransactionOutput
 
+	//hash, err := cipher.SHA256FromHex(in.Hash)
+	//if err != nil {
+	//	return coin.TransactionOutput{}, errors.New("Invalid hash")
+	//}
 	addr, err := cipher.DecodeBase58Address(in.Address)
 	if err != nil {
 		return coin.TransactionOutput{}, errors.New("Adress decode fail")
 	}
+	//tx.Hash = hash
 	tx.Address = addr
 	tx.Coins = in.Coins
 	tx.Hours = in.Hours
+
 	return tx, nil
 }
 
@@ -284,7 +304,7 @@ func TransactionToJSON(tx coin.Transaction) string {
 		o.In[i] = x.Hex() //hash to hex
 	}
 	for i, y := range tx.Out {
-		o.Out[i] = NewTransactionOutputJSON(y)
+		o.Out[i] = NewTransactionOutputJSON(y, tx.InnerHash)
 	}
 
 	b, err := json.MarshalIndent(o, "", "  ")

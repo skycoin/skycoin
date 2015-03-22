@@ -89,6 +89,7 @@ func (self *BlockSigs) Save(filename string) error {
 // and that all signatures are valid.
 func (self *BlockSigs) Verify(masterPublic cipher.PubKey,
 	bc *coin.Blockchain) error {
+
 	if len(bc.Blocks) != len(self.Sigs) {
 		return errors.New("Missing signatures for blocks or vice versa")
 	}

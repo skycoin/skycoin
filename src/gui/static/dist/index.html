@@ -47,7 +47,7 @@
                     {{wallet.entries[0].address}} <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu">
-                    <li ng-repeat="entry in wallet.entries" ng-click="spend.address = entry.address">{{entry.address}}</li>
+                    <li ng-repeat="entry in wallet.entries" ng-click="spend.address = wallet.meta.filename">{{entry.address}}</li>
                     <li class="divider"></li>
                     <li><a href="#">All</a></li>
                   </ul>
@@ -95,7 +95,7 @@
                     From: <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu">
-                    <li ng-repeat="wallet in wallets"><a href="#" ng-click="spend.id = wallet.entries[0].address">{{wallet.entries[0].address}}</a></li>
+                    <li ng-repeat="wallet in wallets"><a href="#" ng-click="spend.id = wallet.meta.filename">{{wallet.meta.filename}}</a></li>
                   </ul>
                 </div>
                 <div>{{spend.id}}</div>

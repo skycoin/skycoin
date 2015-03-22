@@ -106,7 +106,7 @@ module.exports = angular.module('common', [
   require('./services').name
 ]);
 
-},{"./../../libs/angular-animate/angular-animate.js":38,"./../../libs/angular-bootstrap/ui-bootstrap-tpls.js":39,"./../../libs/angular-cookies/angular-cookies.js":40,"./../../libs/angular-resource/angular-resource.js":42,"./../../libs/angular-sanitize/angular-sanitize.js":43,"./../../libs/angular-ui-router/release/angular-ui-router.js":44,"./../../libs/domready/ready":46,"./../../libs/jquery/dist/jquery.js":47,"./../../libs/lodash/dist/lodash.compat.js":48,"./../../libs/restangular/dist/restangular.js":49,"./components/footer":6,"./components/header":8,"./directives":10,"./resources":12,"./services":14}],5:[function(require,module,exports){
+},{"./../../libs/angular-animate/angular-animate.js":38,"./../../libs/angular-bootstrap/ui-bootstrap-tpls.js":39,"./../../libs/angular-cookies/angular-cookies.js":40,"./../../libs/angular-resource/angular-resource.js":42,"./../../libs/angular-sanitize/angular-sanitize.js":43,"./../../libs/angular-ui-router/release/angular-ui-router.js":44,"./../../libs/domready/ready":46,"./../../libs/jquery/dist/jquery.js":47,"./../../libs/lodash/dist/lodash.compat.js":48,"./../../libs/restangular/dist/restangular.js":49,"./components/footer":6,"./components/header":8,"./directives":10,"./resources":11,"./services":13}],5:[function(require,module,exports){
 module.exports = '<footer class="footer">\n' +
     '\n' +
     '</footer>';
@@ -161,6 +161,12 @@ module.exports = angular.module('common.directives', [])
 },{"./directiveName.js":9}],11:[function(require,module,exports){
 'use strict';
 
+module.exports = angular.module('common.resources', [])
+.factory('ResourceName', require('./resourceName.js'));
+
+},{"./resourceName.js":12}],12:[function(require,module,exports){
+'use strict';
+
 // @ngInject
 var ResourceName = function($resource) {
   return $resource({
@@ -171,13 +177,16 @@ ResourceName.$inject = ["$resource"];
 
 module.exports = ResourceName;
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 'use strict';
 
-module.exports = angular.module('common.resources', [])
-.factory('ResourceName', require('./ResourceName.js'));
+// Services use camelCase for their names like Directives
+// Factories have first letter capitalized like Controllers
 
-},{"./ResourceName.js":11}],13:[function(require,module,exports){
+module.exports = angular.module('common.services', [])
+.factory('ServiceName', require('./serviceName.js'));
+
+},{"./serviceName.js":14}],14:[function(require,module,exports){
 'use strict';
 
 var ServiceName = function() {
@@ -186,16 +195,7 @@ var ServiceName = function() {
 
 module.exports = ServiceName;
 
-},{}],14:[function(require,module,exports){
-'use strict';
-
-// Services use camelCase for their names like Directives
-// Factories have first letter capitalized like Controllers
-
-module.exports = angular.module('common.services', [])
-.factory('ServiceName', require('./ServiceName.js'));
-
-},{"./ServiceName.js":13}],15:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 /* Controllers */

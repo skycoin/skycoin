@@ -1,4 +1,4 @@
 'use strict';
 
 module.exports = angular.module('common.resources', [])
-.factory('ResourceName', require('./ResourceName.js'));
+.factory('ResourceName', require('./resourceName.js'));

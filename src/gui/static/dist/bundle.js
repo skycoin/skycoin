@@ -20729,7 +20729,8 @@ function $HttpProvider() {
      * ```
      *
      * Since the returned value of calling the $http function is a `promise`, you can also use
-     * the `then` method to register callbacks, and these callbacks will receive a single argument ���
+     * the `then` method to register callbacks, and these callbacks will receive a single argument –
+�
      * an object representing the response. See the API signature and type info below for more
      * details.
      *

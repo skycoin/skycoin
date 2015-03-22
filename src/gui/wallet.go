@@ -323,92 +323,6 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// HACK
-// Introduced to get send working with broken API
-// is error, passes id as address and address as ID
-func walletSpendHandlerDEPRECATE(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		log.Printf("Spend2a")
-
-		if r.FormValue("id") == "" {
-			Error400(w, "Missing wallet_id")
-			return
-		}
-
-		log.Printf("id= %s\b", r.FormValue("id"))
-		//log.Printf("id= %s\b", r.FormValue("id"))
-
-		//this is actually an address
-		walletId := wallet.WalletID(r.FormValue("id"))
-
-		/*
-			Wallet id is address in wallet instead of filename
-			Have to look up the wallet with this file name as monkey patch
-		*/
-		addr, err := cipher.DecodeBase58Address(string(walletId))
-
-		if err != nil {
-			log.Printf("wallet spend handler: fail, cannot decode address")
-			Error400(w, "Cannot decode address")
-		}
-
-		for _, wa := range Wg.Wallets {
-			f := wa.Meta["filename"]
-			log.Printf("id= %s \n", f)
-
-			addrSet := wa.GetAddressSet()
-
-			if _, ok := addrSet[addr]; ok {
-				walletId = wa.GetID()
-				log.Printf("wallet from address lookup: %s \n", string(walletId))
-				break
-			}
-
-		}
-
-		//wallet := wrpc.Wallets.Get(walletID)
-
-		if walletId == "" {
-			Error400(w, "Invalid Wallet Id")
-			return
-		}
-		sdst := r.FormValue("dst")
-		if sdst == "" {
-			Error400(w, "Missing destination address \"dst\"")
-			return
-		}
-		dst, err := cipher.DecodeBase58Address(sdst)
-		if err != nil {
-			Error400(w, "Invalid destination address")
-			return
-		}
-		sfee := r.FormValue("fee")
-		fee, err := strconv.ParseUint(sfee, 10, 64)
-		if err != nil {
-			Error400(w, "Invalid \"fee\" value")
-			return
-		}
-		scoins := r.FormValue("coins")
-		shours := r.FormValue("hours")
-		coins, err := strconv.ParseUint(scoins, 10, 64)
-		if err != nil {
-			Error400(w, "Invalid \"coins\" value")
-			return
-		}
-		hours, err := strconv.ParseUint(shours, 10, 64)
-		if err != nil {
-			Error400(w, "Invalid \"hours\" value")
-			return
-		}
-
-		log.Printf("Spend2b")
-
-		SendOr404(w, Spend(gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
-			fee, dst))
-	}
-}
-
 // Create a wallet if no ID provided.  Otherwise update an existing wallet.
 // Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
@@ -537,9 +451,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
 	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
-
-	//DEPRECATE. SPEND function when wallet id is broken
-	mux.HandleFunc("/wallet/spend2", walletSpendHandlerDEPRECATE(gateway))
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))

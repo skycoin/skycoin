@@ -269,7 +269,7 @@ func TransactionToJSON(tx coin.Transaction) string {
 	o.Hash = tx.Hash().Hex()
 	o.InnerHash = tx.InnerHash.Hex()
 
-	if tx.InnerHash != tx.HashInner {
+	if tx.InnerHash != tx.HashInner() {
 		log.Panic("TransactionToJSON called with invalid transaction, inner hash mising")
 	}
 
@@ -290,15 +290,6 @@ func TransactionToJSON(tx coin.Transaction) string {
 	b, err := json.MarshalIndent(o, "", "  ")
 	if err != nil {
 		log.Panic("Cannot serialize transaction as JSON")
-	}
-
-	//test
-	tx2, err := TransactionFromJSON(string(b))
-	if err != nil {
-		log.Panic("Transaction serialization failed 1")
-	}
-	if tx1 != tx2 {
-		log.Panic("transaction serialization failed 2")
 	}
 
 	return string(b)

@@ -118,19 +118,20 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransaction
 	Add a verbose version
 */
 type ReadableOutput struct {
-	Hash string `json:"hash"`
-
-	Address string `json:"address"`
-	Coins   uint64 `json:"coins"`
-	Hours   uint64 `json:"hours"`
+	Hash              string `json:"hash"`
+	SourceTransaction string `json:"src_tx"`
+	Address           string `json:"address"`
+	Coins             uint64 `json:"coins"`
+	Hours             uint64 `json:"hours"`
 }
 
 func NewReadableOutput(t coin.UxOut) ReadableOutput {
 	return ReadableOutput{
-		Hash:    t.Hash().Hex(),
-		Address: t.Body.Address.String(),
-		Coins:   t.Body.Coins,
-		Hours:   t.Body.Hours,
+		Hash:              t.Hash().Hex(),
+		SourceTransaction: t.Body.SrcTransaction.Hex(),
+		Address:           t.Body.Address.String(),
+		Coins:             t.Body.Coins,
+		Hours:             t.Body.Hours,
 	}
 }
 

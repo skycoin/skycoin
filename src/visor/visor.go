@@ -465,6 +465,8 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 // already in the blockchain
 // TODO
 // - rename InjectTransaction
+// Refactor
+// Why do does this return both error and bool
 func (self *Visor) InjectTxn(txn coin.Transaction) (error, bool) {
 	//addrs := self.Wallets.GetAddressSet()
 	return self.Unconfirmed.InjectTxn(self.Blockchain, txn)

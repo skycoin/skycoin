@@ -284,7 +284,7 @@ func TransactionToJSON(tx coin.Transaction) string {
 	var o TransactionJSON
 
 	if err := tx.Verify(); err != nil {
-		log.Panic("Transaction Invalid: Cannot serialize to JSON")
+		log.Panic("Input Transaction Invalid: Cannot serialize to JSON, fails verify")
 	}
 
 	o.Hash = tx.Hash().Hex()

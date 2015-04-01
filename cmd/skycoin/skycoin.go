@@ -457,11 +457,97 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 
-	//dc.Visor.Config.WalletConstructor = wallet.NewDeterministicWallet
-
 	return dc
 }
 
+func Run(args Args) {
+	c := ParseArgs(args)
+	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
+	initLogging(c.LogLevel, c.ColorLog)
+
+	// If the user Ctrl-C's, shutdown properly
+	quit := make(chan int)
+	go catchInterrupt(quit)
+	// Watch for SIGUSR1
+	go catchDebug()
+
+	err := os.MkdirAll(c.WalletDirectory, os.FileMode(0700))
+	if err != nil {
+		logger.Critical("Failed to create wallet directory: %v", err)
+	}
+
+	dconf := configureDaemon(c)
+	d := daemon.NewDaemon(dconf)
+
+	stopDaemon := make(chan int)
+	go d.Start(stopDaemon)
+
+	// Debug only - forces connection on start.  Violates thread safety.
+	if c.ConnectTo != "" {
+		_, err := d.Pool.Pool.Connect(c.ConnectTo)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	if !c.DisableGUI {
+		go gui.LaunchGUI(d)
+	}
+
+	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+
+	if c.WebInterface {
+		if c.WebInterfaceHTTPS {
+			// Verify cert/key parameters, and if neither exist, create them
+			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert,
+				c.WebInterfaceKey)
+			if len(errs) != 0 {
+				for _, err := range errs {
+					logger.Error(err.Error())
+				}
+			} else {
+				go gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
+					c.WebInterfaceCert, c.WebInterfaceKey)
+			}
+		} else {
+			go gui.LaunchWebInterface(host, c.GUIDirectory, d)
+		}
+	}
+
+	/*
+		time.Sleep(5)
+		tx := InitTransaction()
+		_ = tx
+		err, _ = d.Visor.Visor.InjectTxn(tx)
+		if err != nil {
+			log.Panic(err)
+		}
+	*/
+
+	<-quit
+	stopDaemon <- 1
+
+	logger.Info("Shutting down")
+	d.Shutdown()
+	logger.Info("Goodbye")
+}
+
+func main() {
+	/*
+		skycoin.Run(&cli.DaemonArgs)
+	*/
+
+	/*
+	   skycoin.Run(&cli.ClientArgs)
+	   stop := make(chan int)
+	   <-stop
+	*/
+
+	//skycoin.Run(&cli.DevArgs)
+	Run(&DevArgs)
+}
+
+//addresses for storage of coins
 var AddrList []string = []string{
 	"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 	"2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",
@@ -573,11 +659,17 @@ func InitTransaction() coin.Transaction {
 
 	for i := 0; i < 100; i++ {
 		addr := cipher.MustDecodeBase58Address(AddrList[i])
-		tx.PushOutput(addr, 10e12, 1) // 10e6*10e6
+		tx.PushOutput(addr, 1e12, 1) // 10e6*10e6
 	}
+	/*
+		seckeys := make([]cipher.SecKey, 1)
+		seckey := ""
+		seckeys[0] = cipher.MustSecKeyFromHex(seckey)
+		tx.SignInputs(seckeys)
+	*/
 
 	txs := make([]cipher.Sig, 1)
-	sig := "6ad9f0e4a618d13ddf4d4125a25aff25cdca9b6454d00147677ba0efc5bad15b05931c5ddc93c37852defa858236256b09ac939ed466eb300d7c7f7c60a1958a00"
+	sig := "ed9bd7a31fe30b9e2d53b35154233dfdf48aaaceb694a07142f84cdf4f5263d21b723f631817ae1c1f735bea13f0ff2a816e24a53ccb92afae685fdfc06724de01"
 	txs[0] = cipher.MustSigFromHex(sig)
 	tx.Sigs = txs
 
@@ -588,93 +680,7 @@ func InitTransaction() coin.Transaction {
 	if err != nil {
 		log.Panic(err)
 	}
-	//log.Printf("signature= %s", tx.Sigs[0].Hex())
+
+	log.Printf("signature= %s", tx.Sigs[0].Hex())
 	return tx
-}
-
-func Run(args Args) {
-	c := ParseArgs(args)
-	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
-	initLogging(c.LogLevel, c.ColorLog)
-
-	// If the user Ctrl-C's, shutdown properly
-	quit := make(chan int)
-	go catchInterrupt(quit)
-	// Watch for SIGUSR1
-	go catchDebug()
-
-	err := os.MkdirAll(c.WalletDirectory, os.FileMode(0700))
-	if err != nil {
-		logger.Critical("Failed to create wallet directory: %v", err)
-	}
-
-	dconf := configureDaemon(c)
-	d := daemon.NewDaemon(dconf)
-
-	stopDaemon := make(chan int)
-	go d.Start(stopDaemon)
-
-	// Debug only - forces connection on start.  Violates thread safety.
-	if c.ConnectTo != "" {
-		_, err := d.Pool.Pool.Connect(c.ConnectTo)
-		if err != nil {
-			log.Panic(err)
-		}
-	}
-
-	if !c.DisableGUI {
-		go gui.LaunchGUI(d)
-	}
-
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-
-	if c.WebInterface {
-		if c.WebInterfaceHTTPS {
-			// Verify cert/key parameters, and if neither exist, create them
-			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert,
-				c.WebInterfaceKey)
-			if len(errs) != 0 {
-				for _, err := range errs {
-					logger.Error(err.Error())
-				}
-			} else {
-				go gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
-					c.WebInterfaceCert, c.WebInterfaceKey)
-			}
-		} else {
-			go gui.LaunchWebInterface(host, c.GUIDirectory, d)
-		}
-	}
-
-	time.Sleep(5)
-	tx := InitTransaction()
-	_ = tx
-
-	//
-	err, _ = d.Visor.Visor.InjectTxn(tx)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	<-quit
-	stopDaemon <- 1
-
-	logger.Info("Shutting down")
-	d.Shutdown()
-	logger.Info("Goodbye")
-}
-
-func main() {
-	/*
-		skycoin.Run(&cli.DaemonArgs)
-	*/
-
-	/*
-	   skycoin.Run(&cli.ClientArgs)
-	   stop := make(chan int)
-	   <-stop
-	*/
-
-	//skycoin.Run(&cli.DevArgs)
-	Run(&DevArgs)
 }

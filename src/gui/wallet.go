@@ -197,9 +197,16 @@ func Spend(v *daemon.Visor, wrpc *WalletRPC,
 		errString = err.Error()
 		logger.Error("Failed to make a spend: %v", err)
 	}
+
 	b, _ := wrpc.GetWalletBalance(v.Visor, walletID)
 
-	log.Printf("tx= \n %s \n", visor.TransactionToJSON(txn))
+	if err != nil {
+		log.Printf("transaction creation failed: %v", err)
+	} else {
+		log.Printf("Spend: \ntx= \n %s \n", visor.TransactionToJSON(txn))
+	}
+
+	v.Visor.InjectTxn(txn)
 
 	return &SpendResult{
 		Balance:     b,
@@ -297,24 +304,35 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			Error400(w, "Invalid destination address")
 			return
 		}
-		sfee := r.FormValue("fee")
-		fee, err := strconv.ParseUint(sfee, 10, 64)
-		if err != nil {
-			Error400(w, "Invalid \"fee\" value")
-			return
-		}
+
+		//set fee automatically for now
+		/*
+			sfee := r.FormValue("fee")
+			fee, err := strconv.ParseUint(sfee, 10, 64)
+			if err != nil {
+				Error400(w, "Invalid \"fee\" value")
+				return
+			}
+		*/
+		var fee uint64 = 0
+
 		scoins := r.FormValue("coins")
-		shours := r.FormValue("hours")
+		//shours := r.FormValue("hours")
 		coins, err := strconv.ParseUint(scoins, 10, 64)
 		if err != nil {
 			Error400(w, "Invalid \"coins\" value")
 			return
 		}
-		hours, err := strconv.ParseUint(shours, 10, 64)
-		if err != nil {
-			Error400(w, "Invalid \"hours\" value")
-			return
-		}
+
+		var hours uint64 = 0
+
+		/*
+			hours, err := strconv.ParseUint(shours, 10, 64)
+			if err != nil {
+				Error400(w, "Invalid \"hours\" value")
+				return
+			}
+		*/
 
 		//log.Printf("Spend2")
 

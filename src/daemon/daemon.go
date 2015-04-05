@@ -44,12 +44,12 @@ var (
 	// Blacklist a peer when they get disconnected for these
 	// DisconnectReasons
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		DisconnectSelf:                      time.Hour * 24,
-		DisconnectIntroductionTimeout:       time.Hour,
-		DisconnectNoIntroduction:            time.Hour * 8,
-		gnet.DisconnectInvalidMessageLength: time.Hour * 8,
-		gnet.DisconnectMalformedMessage:     time.Hour * 8,
-		gnet.DisconnectUnknownMessage:       time.Hour * 8,
+		DisconnectSelf:                      time.Minute * 1,
+		DisconnectIntroductionTimeout:       time.Minute,
+		DisconnectNoIntroduction:            ttime.Minute * 8,
+		gnet.DisconnectInvalidMessageLength: time.Hour * 1,
+		gnet.DisconnectMalformedMessage:     time.Hour * 1,
+		gnet.DisconnectUnknownMessage:       time.Hour * 1,
 	}
 
 	logger = logging.MustGetLogger("skycoin.daemon")

@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/nictuku/dht"
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/aether/gnet"
+
 	"github.com/skycoin/pex"
 	//"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"

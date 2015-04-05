@@ -6,7 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/aether/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"

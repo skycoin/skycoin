@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/aether/gnet"
 	"github.com/stretchr/testify/assert"
 )
 

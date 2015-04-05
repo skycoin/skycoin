@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/gnet"
 	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 
@@ -49,7 +50,7 @@ var (
 		DisconnectNoIntroduction:            time.Minute * 1,
 		gnet.DisconnectInvalidMessageLength: time.Hour * 1,
 		gnet.DisconnectMalformedMessage:     time.Hour * 1,
-		gnet.DisconnectUnknownMessage:       time.Hour * 1,
+		gnet.DisconnectUnknownMessage:       time.Minute * 1,
 	}
 
 	logger = logging.MustGetLogger("skycoin.daemon")

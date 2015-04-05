@@ -283,6 +283,7 @@ func (self *Daemon) Shutdown() {
 func (self *Daemon) Start(quit chan int) {
 	if !self.Config.DisableIncomingConnections {
 		go self.Pool.Start()
+		go self.Pool.AcceptConnections()
 	}
 	if !self.DHT.Config.Disabled {
 		go self.DHT.Start()
@@ -633,6 +634,7 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 
 // Triggered when an gnet.Connection is connected
 func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
+	logger.Info("OnGnetConnect")
 	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
 }
 

@@ -1,5 +1,6 @@
 package daemon
 
+/*
 import (
 	"crypto/rand"
 	"os"
@@ -8,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -17,6 +18,9 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/assert"
 )
+*/
+
+/*
 
 const (
 	testMasterKeysFile = "testmaster.keys"
@@ -52,7 +56,7 @@ func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
 
 // Returns an appropriate VisorConfig and a master visor
 func setupVisor() (VisorConfig, *visor.Visor) {
-	cipher.SetAddressVersion("test")
+	//cipher.SetAddressVersion("test")
 
 	// Make a new master visor + blockchain
 	// Get the signed genesis block,
@@ -165,21 +169,6 @@ func addUnconfirmedTxn(v *Visor) visor.UnconfirmedTxn {
 	return ut
 }
 
-func setupExistingPool(p *Pool) *gnet.Connection {
-	gc := gnetConnection(addr)
-	p.Pool.Pool[gc.Id] = gc
-	p.Pool.Addresses[gc.Addr()] = gc
-	return gc
-}
-
-func setupPool() (*Pool, *gnet.Connection) {
-	m := NewMessagesConfig()
-	m.Register()
-	p := NewPool(NewPoolConfig())
-	p.Init(nil)
-	return p, setupExistingPool(p)
-}
-
 func makeValidTxn(mv *visor.Visor) (coin.Transaction, error) {
 	we := wallet.NewWalletEntry()
 	return mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
@@ -238,7 +227,7 @@ func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
 	return makeMoreBlocks(mv, n, uint64(util.UnixNow()))
 }
 
-/* Tests for daemon's loop related to visor */
+// Tests for daemon's loop related to visor
 
 func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
 	mv *visor.Visor) {
@@ -374,7 +363,7 @@ func TestBlocksAnnounceTicker(t *testing.T) {
 	assert.False(t, gc.LastSent.IsZero())
 }
 
-/* Tests for daemon.Visor */
+// Tests for daemon.Visor
 
 func TestVisorConfigLoadMasterKeys(t *testing.T) {
 	defer cleanupVisor()
@@ -927,7 +916,7 @@ func TestEstimateBlockchainLength(t *testing.T) {
 	assert.Equal(t, v.EstimateBlockchainLength(), uint64(7))
 }
 
-/* Visor Messages */
+// Visor Messages
 
 func TestGetBlocksMessageHandle(t *testing.T) {
 	d := newDefaultDaemon()
@@ -1370,7 +1359,7 @@ func TestGiveTxnsMessageProcess(t *testing.T) {
 	assert.True(t, ok)
 }
 
-/* Misc */
+// Misc
 
 func assertSendingTxnsMessageInterface(t *testing.T, i interface{},
 	hashes []cipher.SHA256, isSending bool) {
@@ -1421,3 +1410,5 @@ func TestBlockchainLengths(t *testing.T) {
 		assert.Equal(t, b[i], uint64(i))
 	}
 }
+
+*/

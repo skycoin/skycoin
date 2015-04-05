@@ -29,16 +29,16 @@ type PoolConfig struct {
 }
 
 func NewPoolConfig() PoolConfig {
-	defIdleLimit := time.Minute * 90
+	//defIdleLimit := time.Minute
 	return PoolConfig{
 		port:                6677,
 		address:             "",
 		DialTimeout:         time.Second * 30,
-		MessageHandlingRate: time.Millisecond * 30,
-		PingRate:            defIdleLimit / 3,
-		IdleLimit:           defIdleLimit,
-		IdleCheckRate:       time.Minute,
-		ClearStaleRate:      time.Minute,
+		MessageHandlingRate: time.Millisecond * 50,
+		PingRate:            5 * time.Second,
+		IdleLimit:           30 * time.Second,
+		IdleCheckRate:       5 * time.Second,
+		ClearStaleRate:      5 * time.Second,
 		EventChannelSize:    4096,
 	}
 }
@@ -79,10 +79,16 @@ func (self *Pool) Shutdown() {
 }
 
 // Starts listening on the configured Port
+// Run in goroutine
 func (self *Pool) Start() {
 	if err := self.Pool.StartListen(); err != nil {
 		log.Panic(err)
 	}
+}
+
+// Accepts connections, run in goroutine
+func (self *Pool) AcceptConnections() {
+	self.Pool.AcceptConnections()
 }
 
 // Send a ping if our last message sent was over pingRate ago

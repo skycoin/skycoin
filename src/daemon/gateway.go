@@ -163,6 +163,7 @@ func (self *Gateway) CreateWallet(seed string) interface{} {
 }
 */
 /* Blockchain & Transaction status */
+//DEPRECATE
 
 // Returns a *BlockchainProgress
 func (self *Gateway) GetBlockchainProgress() interface{} {

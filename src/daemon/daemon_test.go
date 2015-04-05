@@ -13,9 +13,9 @@ import (
 	"github.com/nictuku/dht"
 	"github.com/skycoin/gnet"
 	"github.com/skycoin/pex"
-	"github.com/skycoin/skycoin/src/coin"
+	//"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/wallet"
+	//"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,12 +30,27 @@ func catchSigusr1() {
 	}
 }
 
+func setupExistingPool(p *Pool) *gnet.Connection {
+	gc := gnetConnection(addr)
+	p.Pool.Pool[gc.Id] = gc
+	p.Pool.Addresses[gc.Addr()] = gc
+	return gc
+}
+
+func setupPool() (*Pool, *gnet.Connection) {
+	m := NewMessagesConfig()
+	m.Register()
+	p := NewPool(NewPoolConfig())
+	p.Init(nil)
+	return p, setupExistingPool(p)
+}
+
 func newDefaultDaemon() *Daemon {
 	cleanupPeers()
 	c := NewConfig()
-	we := wallet.NewWalletEntry()
-	c.Visor.Config.MasterKeys = we
-	c.Visor.Config.GenesisSignature = createGenesisSignature(we)
+	//we := wallet.NewWalletEntry()
+	//c.Visor.Config.MasterKeys = we
+	//c.Visor.Config.GenesisSignature = createGenesisSignature(we)
 	c.Visor.Disabled = true
 	c.DHT.Disabled = true
 	return NewDaemon(c)
@@ -237,8 +252,8 @@ func TestDaemonLoopApiRequest(t *testing.T) {
 	d, quit := setupDaemonLoop()
 	defer closeDaemon(d, quit)
 	go d.Start(quit)
-	d.Gateway.requests <- func() interface{} { return &Connection{Id: 7} }
-	resp := <-d.Gateway.responses
+	d.Gateway.Requests <- func() interface{} { return &Connection{Id: 7} }
+	resp := <-d.Gateway.Responses
 	assert.Equal(t, resp.(*Connection).Id, 7)
 }
 
@@ -275,13 +290,15 @@ func TestDaemonLoopDisconnectQueue(t *testing.T) {
 	assert.Equal(t, len(d.Pool.Pool.Pool), 0)
 }
 
+/*
+//networking loop and response gets moved into visor
 func TestDaemonLoopSendResults(t *testing.T) {
 	d, quit := setupDaemonLoop()
 	defer closeDaemon(d, quit)
 	go d.Start(quit)
 	c := gnetConnection(addr)
 	d.Pool.Pool.Pool[1] = c
-	vc, _ := setupVisor()
+	vc := NewVisorConfig()
 	v := NewVisor(vc)
 	d.Visor = v
 	txn := addUnconfirmedTxn(d.Visor)
@@ -295,6 +312,7 @@ func TestDaemonLoopSendResults(t *testing.T) {
 	ut = d.Visor.Visor.Unconfirmed.Txns[txn.Hash()]
 	assert.False(t, ut.Announced.IsZero())
 }
+*/
 
 type DummyAsyncMessage struct {
 	fn func()
@@ -957,7 +975,9 @@ func TestOnConnect(t *testing.T) {
 	// Test a valid connection, unsolicited
 	e := ConnectEvent{addr, false}
 	p, _ := d.Peers.Peers.AddPeer(addr)
+
 	c := setupExistingPool(d.Pool)
+
 	go d.Pool.Pool.ConnectionWriteLoop(c)
 	d.pendingConnections[addr] = p
 	assert.NotPanics(t, func() { d.onConnect(e) })
@@ -1324,6 +1344,8 @@ func TestGetMirrorPort(t *testing.T) {
 	shutdown(d)
 }
 
+//should not require visor
+/*
 func TestHandleMessageSendResult(t *testing.T) {
 	d := newDefaultDaemon()
 	defer shutdown(d)
@@ -1338,6 +1360,7 @@ func TestHandleMessageSendResult(t *testing.T) {
 	assert.NotPanics(t, func() { d.handleMessageSendResult(sr) })
 
 	// Add a txn for txn announce update testing
+
 	vc, _ := setupVisor()
 	v := NewVisor(vc)
 	tx := addUnconfirmedTxn(v)
@@ -1365,6 +1388,7 @@ func TestHandleMessageSendResult(t *testing.T) {
 	ut = v.Visor.Unconfirmed.Txns[tx.Hash()]
 	assert.False(t, ut.Announced.IsZero())
 }
+*/
 
 func TestIsLocalhost(t *testing.T) {
 	assert.True(t, IsLocalhost("127.0.0.1"))

@@ -127,12 +127,12 @@ func (self *DHT) RequestPeers() {
 
 func PeerAddressExtract(addr string) string {
 
-	ret := strings.SplitAfter(addr, ":")
+	ret := strings.Split(addr, ":")
 	if len(ret) != 2 {
 		return ""
 	}
 
-	log.Printf("PeerAddr: %s, %s", ret[0], ret[1])
+	//log.Printf("PeerAddr: %s, %s", ret[0], ret[1])
 
 	//extract int
 	ix, err := strconv.ParseUint(ret[1], 10, 16)
@@ -146,7 +146,7 @@ func PeerAddressExtract(addr string) string {
 	}
 
 	addr2 := fmt.Sprintf("%s:%d", ret[0], 6000)
-	log.Printf("addr= %s \n", addr2)
+	//log.Printf("addr= %s \n", addr2)
 	return addr2
 }
 
@@ -155,12 +155,12 @@ func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string, peers *pex.Pex) {
 	for _, results := range r {
 		for _, p := range results {
 			peer := dht.DecodePeerAddress(p)
-			logger.Debug("DHT Peer: %s", peer)
 
 			addr := PeerAddressExtract(peer)
+			logger.Debug("DHT Peer: %s, Conn: %s", peer, addr)
 
 			if addr != "" {
-				_, err := peers.AddPeer(peer)
+				_, err := peers.AddPeer(addr)
 				if err != nil {
 					logger.Info("Failed to add DHT peer: %v", err)
 				}

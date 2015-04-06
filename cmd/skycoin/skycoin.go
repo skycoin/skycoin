@@ -51,8 +51,11 @@ type Config struct {
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address string
-	// DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
+	//gnet uses this for TCP incoming and outgoing
 	Port int
+	//DHT uses this port for UDP;
+	DHTPort int
+
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// Wallet Address Version
@@ -210,8 +213,11 @@ var DevArgs = DevConfig{Config{
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address: "",
-	// DHT uses this port for UDP; gnet uses this for TCP incoming and outgoing
+	//gnet uses this for TCP incoming and outgoing
 	Port: 5798,
+	//DHT port, UDP
+	DHTPort: 5799,
+
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	// Wallet Address Version
@@ -444,6 +450,7 @@ func configureDaemon(c *Config) daemon.Config {
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
 
+	dc.DHT.Port = c.DHTPort
 	//dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BlockchainFile = c.BlockchainFile
 	dc.Visor.Config.BlockSigsFile = c.BlockSigsFile

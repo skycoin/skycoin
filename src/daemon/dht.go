@@ -24,15 +24,14 @@ type DHTConfig struct {
 	// How often to request more peers via DHT
 	BootstrapRequestRate time.Duration
 
-	// These should be set by the controlling daemon:
 	// Port for DHT traffic (uses UDP)
-	port int
+	Port int
 }
 
 func NewDHTConfig() DHTConfig {
 	return DHTConfig{
 		Disabled:     false,
-		Info:         "pPvGjkjN1zwLZFWH1iTGDELnZN9MXzR6Co", //use genesis address for now
+		Info:         "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6", //use genesis address for now
 		DesiredPeers: 20,
 		PeerLimit:    100,
 		BootstrapNodes: []string{
@@ -42,7 +41,7 @@ func NewDHTConfig() DHTConfig {
 			"dht.transmissionbt.com:6881",
 		},
 		BootstrapRequestRate: time.Second * 10,
-		port:                 6677,
+		Port:                 6677,
 	}
 }
 
@@ -71,7 +70,7 @@ func (self *DHT) Init() error {
 		return err
 	}
 	cfg := dht.NewConfig()
-	cfg.Port = self.Config.port
+	cfg.Port = self.Config.Port
 	cfg.NumTargetPeers = self.Config.DesiredPeers
 	d, err := dht.New(cfg)
 	if err != nil {
@@ -86,7 +85,7 @@ func (self *DHT) Init() error {
 		// the DHT will not run.
 		logger.Info("DHT is disabled")
 	} else {
-		logger.Info("Init DHT on port %d", self.Config.port)
+		logger.Info("Init DHT on port %d", self.Config.Port)
 	}
 	return nil
 }

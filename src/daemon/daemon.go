@@ -12,8 +12,8 @@ import (
 
 	"github.com/op/go-logging"
 	//"github.com/skycoin/gnet"
+	"github.com/skycoin/gnet"
 	"github.com/skycoin/pex"
-	"github.com/skycoin/skycoin/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 
@@ -100,7 +100,7 @@ func (self *Config) preprocess() Config {
 	}
 	config.Pool.port = config.Daemon.Port
 	config.Pool.address = config.Daemon.Address
-	config.DHT.port = config.Daemon.Port
+
 	if config.Daemon.DisableNetworking {
 		config.Peers.Disabled = true
 		config.DHT.Disabled = true

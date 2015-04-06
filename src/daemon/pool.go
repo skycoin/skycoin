@@ -5,7 +5,7 @@ import (
 	"time"
 
 	//"github.com/skycoin/gnet"
-	"github.com/skycoin/skycoin/aether/gnet"
+	"github.com/skycoin/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 

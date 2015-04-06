@@ -9,7 +9,7 @@ import (
 
 	//"github.com/skycoin/gnet"
 	"github.com/skycoin/pex"
-	"github.com/skycoin/skycoin/aether/gnet"
+	"github.com/skycoin/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 

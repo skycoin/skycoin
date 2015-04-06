@@ -635,7 +635,6 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 
 // Triggered when an gnet.Connection is connected
 func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
-	logger.Info("OnGnetConnect")
 	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
 }
 

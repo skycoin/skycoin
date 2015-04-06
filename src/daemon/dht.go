@@ -3,7 +3,10 @@ package daemon
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nictuku/dht"
@@ -122,16 +125,47 @@ func (self *DHT) RequestPeers() {
 	self.DHT.PeersRequest(ih, true)
 }
 
+func PeerAddressExtract(addr string) string {
+
+	ret := strings.SplitAfter(addr, ":")
+	if len(ret) != 2 {
+		return ""
+	}
+
+	log.Printf("PeerAddr: %s, %s", ret[0], ret[1])
+
+	//extract int
+	ix, err := strconv.ParseUint(ret[1], 10, 16)
+	if err != nil {
+		log.Printf("DHT PeerAddr: Int Parse Error, %s \n", ret[1])
+		return ""
+	}
+
+	if ix != 5999 {
+		return ""
+	}
+
+	addr2 := fmt.Sprintf("%s:%d", ret[0], 6000)
+	log.Printf("addr= %s \n", addr2)
+	return addr2
+}
+
 // Called when the DHT finds a peer
 func (self *DHT) ReceivePeers(r map[dht.InfoHash][]string, peers *pex.Pex) {
 	for _, results := range r {
 		for _, p := range results {
 			peer := dht.DecodePeerAddress(p)
 			logger.Debug("DHT Peer: %s", peer)
-			_, err := peers.AddPeer(peer)
-			if err != nil {
-				logger.Info("Failed to add DHT peer: %v", err)
+
+			addr := PeerAddressExtract(peer)
+
+			if addr != "" {
+				_, err := peers.AddPeer(peer)
+				if err != nil {
+					logger.Info("Failed to add DHT peer: %v", err)
+				}
 			}
+
 		}
 	}
 }

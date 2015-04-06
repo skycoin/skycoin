@@ -213,10 +213,10 @@ var DevArgs = DevConfig{Config{
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address: "",
-	//gnet uses this for TCP incoming and outgoing
-	Port: 5798,
-	//DHT port, UDP
-	DHTPort: 5799,
+	//gnet uses this for TCP incoming and outgoing, must be 6000 to use DHT
+	Port: 6000,
+	//DHT port, UDP, must be 5999
+	DHTPort: 5999,
 
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -638,7 +638,7 @@ func TestVisorBroadcastTransaction(t *testing.T) {
 	v := NewVisor(vc)
 	ut := createUnconfirmedTxn()
 	assert.NotPanics(t, func() {
-		v.broadcastTransaction(ut.Txn, p)
+		v.BroadcastTransaction(ut.Txn, p)
 	})
 	wait()
 	assert.Equal(t, len(p.Pool.SendResults), 0)
@@ -649,7 +649,7 @@ func TestVisorBroadcastTransaction(t *testing.T) {
 	gc.Conn = NewDummyConn(addr)
 	v = NewVisor(vc)
 	assert.NotPanics(t, func() {
-		v.broadcastTransaction(ut.Txn, p)
+		v.BroadcastTransaction(ut.Txn, p)
 	})
 	wait()
 	assert.Equal(t, len(p.Pool.SendResults), 1)

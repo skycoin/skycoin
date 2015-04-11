@@ -187,7 +187,7 @@ type SpendResult struct {
 // -- construct transaction
 // -- sign transaction
 // -- inject transaction
-func Spend(v *daemon.Visor, wrpc *WalletRPC,
+func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
 	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 
@@ -207,6 +207,11 @@ func Spend(v *daemon.Visor, wrpc *WalletRPC,
 	}
 
 	v.Visor.InjectTxn(txn)
+	//could call daemon, inject transaction
+	//func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+	//func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool)
+
+	v.BroadcastTransaction(txn, d.Pool)
 
 	return &SpendResult{
 		Balance:     b,
@@ -336,7 +341,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		//log.Printf("Spend2")
 
-		SendOr404(w, Spend(gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
+		SendOr404(w, Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
 			fee, dst))
 	}
 }

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/aether/encoder"
-	//"github.com/skycoin/gnet"
+	//"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/pex"
-	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/stretchr/testify/assert"
 )

@@ -2,11 +2,12 @@ package visor
 
 import (
 	"errors"
-	"time"
+	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
+	"time"
 )
 
 var BurnFactor uint64 = 2 //half of coinhours must be burnt
@@ -165,6 +166,8 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 // checkPeriod is how often we check the txn against the blockchain.
 func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
 	checkPeriod, maxAge time.Duration) {
+
+	fmt.Printf("REFRESH")
 	now := util.Now()
 	toRemove := make([]cipher.SHA256, 0)
 	for k, t := range self.Txns {

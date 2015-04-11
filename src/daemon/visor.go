@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	//"github.com/skycoin/gnet"
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/skycoin/src/aether/gnet"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -152,7 +152,7 @@ func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
 }
 
 // Broadcasts a single transaction to all peers.
-func (self *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
+func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
@@ -179,12 +179,13 @@ func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
 	}
 	err, _ = self.Visor.InjectTxn(txn)
 	if err == nil {
-		self.broadcastTransaction(txn, pool)
+		self.BroadcastTransaction(txn, pool)
 	}
 	return txn, err
 }
 */
 
+//move into visor
 func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
 
 	//logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
@@ -202,7 +203,7 @@ func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Tra
 
 	err, _ = self.Visor.InjectTxn(txn)
 	if err == nil {
-		self.broadcastTransaction(txn, pool)
+		self.BroadcastTransaction(txn, pool)
 	}
 	return txn, err
 }
@@ -213,7 +214,7 @@ func (self *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
 		return
 	}
 	if ut, ok := self.Visor.Unconfirmed.Txns[h]; ok {
-		self.broadcastTransaction(ut.Txn, pool)
+		self.BroadcastTransaction(ut.Txn, pool)
 	}
 	return
 }

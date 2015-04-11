@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	//"github.com/skycoin/gnet"
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/skycoin/src/aether/gnet"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/pex"
 	"github.com/skycoin/skycoin/src/util"
 )

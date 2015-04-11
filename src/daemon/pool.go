@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	//"github.com/skycoin/gnet"
-	"github.com/skycoin/gnet"
+	//"github.com/skycoin/skycoin/src/aether/gnet"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 

@@ -126,25 +126,20 @@ func (self *DHT) RequestPeers() {
 }
 
 func PeerAddressExtract(addr string) string {
-
 	ret := strings.Split(addr, ":")
 	if len(ret) != 2 {
 		return ""
 	}
-
 	//log.Printf("PeerAddr: %s, %s", ret[0], ret[1])
-
 	//extract int
 	ix, err := strconv.ParseUint(ret[1], 10, 16)
 	if err != nil {
 		log.Printf("DHT PeerAddr: Int Parse Error, %s \n", ret[1])
 		return ""
 	}
-
 	if ix != 5999 {
 		return ""
 	}
-
 	addr2 := fmt.Sprintf("%s:%d", ret[0], 6000)
 	//log.Printf("addr= %s \n", addr2)
 	return addr2

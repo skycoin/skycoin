@@ -7,9 +7,9 @@ import (
 	"math/rand"
 	"net"
 
-	//"github.com/skycoin/gnet"
+	//"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/pex"
-	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 

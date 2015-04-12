@@ -209,8 +209,9 @@ module.exports = angular.module('skycoin.controllers', [])
 
     $scope.tab = {};
 
-    $scope.sendTab = function(){
+    $scope.sendTab = function(wallet){
       $scope.tab.sendActive = true;
+      $scope.spend.id = wallet.meta.filename;
     };
 
     $scope.getProgress = function(){

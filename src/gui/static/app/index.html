@@ -60,7 +60,7 @@
             <tr>
               <td colspan="2">
                 <a href="#" ng-click="openQR(wallet)"><i class="fa fa-qrcode"></i> QR Code</a>
-                <a href="#" ng-click="sendTab()"><i class="fa fa-cloud-upload"></i> Send </a>
+                <a href="#" ng-click="sendTab(wallet)"><i class="fa fa-cloud-upload"></i> Send </a>
                 <a href="#" ng-click="updateWallet(wallet)"><i class="fa fa-pencil"></i> Edit</a>
               </td>
             </tr>
@@ -98,8 +98,8 @@
                   <ul class="dropdown-menu" role="menu">
                     <li ng-repeat="wallet in wallets"><a href="#" ng-click="spend.id = wallet.meta.filename">{{wallet.meta.filename}}</a></li>
                   </ul>
+                  {{spend.id}}
                 </div>
-                <div>{{spend.id}}</div>
             </tr>
             <tr>
               <td class="send-pay-col1"><label for="send_pay_to">Pay to</label></td><td><input ng-disabled="readyDisable" id="send_pay_to" type="text" ng-model="spend.address"  /></td>

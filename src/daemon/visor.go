@@ -330,7 +330,6 @@ func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 }
 
 func (self *GiveBlocksMessage) Process(d *Daemon) {
-	logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 	if d.Visor.Config.Disabled {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return

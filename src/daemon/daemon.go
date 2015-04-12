@@ -283,7 +283,7 @@ func (self *Daemon) Shutdown() {
 // down
 func (self *Daemon) Start(quit chan int) {
 	if !self.Config.DisableIncomingConnections {
-		go self.Pool.StartListen()
+		self.Pool.StartListen() //no goroutine
 		go self.Pool.AcceptConnections()
 	}
 	if !self.DHT.Config.Disabled {

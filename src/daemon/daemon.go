@@ -12,8 +12,8 @@ import (
 
 	"github.com/op/go-logging"
 	//"github.com/skycoin/skycoin/src/aether/gnet"
-	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )
 
@@ -283,7 +283,7 @@ func (self *Daemon) Shutdown() {
 // down
 func (self *Daemon) Start(quit chan int) {
 	if !self.Config.DisableIncomingConnections {
-		go self.Pool.Start()
+		go self.Pool.StartListen()
 		go self.Pool.AcceptConnections()
 	}
 	if !self.DHT.Config.Disabled {

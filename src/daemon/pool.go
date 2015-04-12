@@ -80,8 +80,8 @@ func (self *Pool) Shutdown() {
 }
 
 // Starts listening on the configured Port
-// Run in goroutine
-func (self *Pool) Start() {
+// no goroutine
+func (self *Pool) StartListen() {
 	if err := self.Pool.StartListen(); err != nil {
 		log.Panic(err)
 	}

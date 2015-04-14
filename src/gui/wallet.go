@@ -234,6 +234,7 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
 	}
 	//pull in outputs and do this here
+	//FIX
 	tx, err := visor.CreateSpendingTransaction(*wallet, self.Unconfirmed,
 		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
 		dest)
@@ -245,7 +246,7 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 		log.Panicf("Invalid transaction, %v", err)
 	}
 
-	if err := visor.VerifyTransaction(self.Blockchain, &tx); err != nil {
+	if err := visor.VerifyTransactionFee(self.Blockchain, &tx); err != nil {
 		log.Panicf("Created invalid spending txn: visor fail, %v", err)
 	}
 	if err := self.Blockchain.VerifyTransaction(tx); err != nil {

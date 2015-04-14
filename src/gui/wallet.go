@@ -236,8 +236,7 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 	//pull in outputs and do this here
 	//FIX
 	tx, err := visor.CreateSpendingTransaction(*wallet, self.Unconfirmed,
-		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
-		dest)
+		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, dest)
 	if err != nil {
 		return tx, err
 	}
@@ -320,7 +319,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 		*/
-		var fee uint64 = 0
+		//var fee uint64 = 0
 
 		scoins := r.FormValue("coins")
 		//shours := r.FormValue("hours")
@@ -331,19 +330,11 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		var hours uint64 = 0
+		var fee uint64 = 0 //doesnt work/do anything right now
 
-		/*
-			hours, err := strconv.ParseUint(shours, 10, 64)
-			if err != nil {
-				Error400(w, "Invalid \"hours\" value")
-				return
-			}
-		*/
-
-		//log.Printf("Spend2")
-
-		SendOr404(w, Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
-			fee, dst))
+		//MOVE THIS INTO HERE
+		ret := Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours), fee, dst)
+		SendOr404(w, ret)
 	}
 }
 

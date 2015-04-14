@@ -109,26 +109,23 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 		spending.Hours += au.CoinHours(headTime)
 	}
 
-	// Determine how much change we get back, if any
-	/*
-		_, changeHours, err := calculateBurnAndChange(spending.Hours,
-			amt.Hours, fee)
-		if err != nil {
-			// This should not occur, else createSpends is broken
-			return txn, err
-		}
-	*/
-
 	//keep 1/4th of hours as change
 	//send half to each address
 	var changeHours uint64 = spending.Hours / 4
 
-	change := wallet.NewBalance(spending.Coins-amt.Coins, changeHours)
+	if amt.Coins == spending.Coins {
+		txn.PushOutput(dest, amt.Coins, changeHours/2)
+		txn.SignInputs(toSign)
+		txn.UpdateHeader()
+		return txn, nil
+	}
+
+	change := wallet.NewBalance(spending.Coins-amt.Coins, changeHours/2)
 	// TODO -- send change to a new address
 	changeAddr := spends[0].Body.Address
-	txn.PushOutput(changeAddr, change.Coins, changeHours/2)
 
-	// Finalize the the transaction
+	//create transaction
+	txn.PushOutput(changeAddr, change.Coins, change.Hours)
 	txn.PushOutput(dest, amt.Coins, changeHours/2)
 	txn.SignInputs(toSign)
 	txn.UpdateHeader()

@@ -21,7 +21,11 @@ func VerifyTransactionFee(bc *coin.Blockchain, t *coin.Transaction) error {
 	if err != nil {
 		return err
 	}
-	if BurnFactor != 0 && t.OutputHours()/BurnFactor < fee {
+
+	//calculate total number of coinhours
+	var total uint64 = t.OutputHours() + fee
+	//make sure at least half the coin hours are destroyed
+	if fee < total/BurnFactor {
 		return errors.New("Transaction coinhour fee minimum not met")
 	}
 	return nil

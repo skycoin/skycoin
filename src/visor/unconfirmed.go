@@ -17,7 +17,8 @@ var BurnFactor uint64 = 2 //half of coinhours must be burnt
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
 func VerifyTransactionFee(bc *coin.Blockchain, t *coin.Transaction) error {
-	if fee, err := bc.TransactionFee(t); err != nil {
+	fee, err := bc.TransactionFee(t)
+	if err != nil {
 		return err
 	}
 	if BurnFactor != 0 && t.OutputHours()/BurnFactor < fee {

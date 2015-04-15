@@ -55,7 +55,8 @@ type Config struct {
 	Port int
 	//DHT uses this port for UDP;
 	DHTPort int
-
+	//max connections to maintain
+	MaxConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// Wallet Address Version
@@ -218,6 +219,7 @@ var DevArgs = DevConfig{Config{
 	//DHT port, UDP, must be 5999
 	DHTPort: 5999,
 
+	MaxConnections: 16,
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	// Wallet Address Version
@@ -445,6 +447,8 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.Port = c.Port
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
+	dc.Daemon.OutgoingMax = c.MaxConnections
+
 	if c.OutgoingConnectionsRate == 0 {
 		c.OutgoingConnectionsRate = time.Millisecond
 	}

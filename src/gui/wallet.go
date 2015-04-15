@@ -306,7 +306,8 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
-			Error400(w, "Invalid destination address")
+			//Error400(w, "Invalid destination address: %v", err)
+			Error400(w, "Invalid destination address: %v", err.Error())
 			return
 		}
 

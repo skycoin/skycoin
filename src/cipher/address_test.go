@@ -138,6 +138,7 @@ func TestBitcoinWIPRoundTrio(t *testing.T) {
 	assert.Equal(t, wip1, wip2)
 
 }
+
 func TestBitcoinWIP(t *testing.T) {
 	//wallet input format string
 	var wip []string = []string{
@@ -177,4 +178,19 @@ func TestBitcoinWIP(t *testing.T) {
 		bitcoin_addr := BitcoinAddressFromPubkey(pubkey)
 		assert.Equal(t, bitcoin_str, bitcoin_addr)
 	*/
+}
+
+func TestAddressBulk(t *testing.T) {
+
+	for i := 0; i < 1024; i++ {
+		pub, _ := GenerateDeterministicKeyPair(RandByte(32))
+
+		a := AddressFromPubKey(pub)
+		assert.Nil(t, a.Verify(pub))
+		s := a.String()
+		a2, err := DecodeBase58Address(s)
+		assert.Nil(t, err)
+		assert.Equal(t, a2, a)
+
+	}
 }

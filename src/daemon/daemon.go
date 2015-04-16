@@ -17,6 +17,14 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
+/*
+Todo
+- verify that minimum/maximum connections are working
+- keep max connections
+- maintain minimum number of outgoing connections per server?
+
+
+*/
 var (
 	// DisconnectReasons
 	DisconnectInvalidVersion gnet.DisconnectReason = errors.New(

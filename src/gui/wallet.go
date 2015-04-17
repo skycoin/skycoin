@@ -335,6 +335,10 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		//MOVE THIS INTO HERE
 		ret := Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours), fee, dst)
+
+		if ret.Error != "" {
+			Error400(w, "Spend Failed: %s", ret.Error)
+		}
 		SendOr404(w, ret)
 	}
 }
@@ -427,6 +431,15 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// Returns the outputs for a wallet
+// ERROR: is returning unspent outputs, not transactions
+func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
+		SendOr404(w, ret)
+	}
+}
+
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -482,6 +495,9 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(gateway))
+
+	//get set of pending transaction
+	mux.HandleFunc("/transactions", getTransactionsHandler(gateway))
 
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))

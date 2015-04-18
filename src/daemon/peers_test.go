@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	//"github.com/skycoin/skycoin/src/aether/gnet"
-	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/stretchr/testify/assert"
 )

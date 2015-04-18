@@ -12,7 +12,7 @@ import (
 
 	"github.com/op/go-logging"
 	//"github.com/skycoin/skycoin/src/aether/gnet"
-	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/util"
 )

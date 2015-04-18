@@ -3,7 +3,7 @@ package daemon
 import (
 	"time"
 
-	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 )
 
 type PeersConfig struct {

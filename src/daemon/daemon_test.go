@@ -14,7 +14,7 @@ import (
 	//"github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/aether/gnet"
 
-	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	//"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	//"github.com/skycoin/skycoin/src/wallet"

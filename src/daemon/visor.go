@@ -66,15 +66,6 @@ func (self *Visor) Shutdown() {
 	if self.Config.Disabled {
 		return
 	}
-	// Save the wallet
-	/*
-		errs := self.Visor.SaveWallets()
-		if len(errs) == 0 {
-			logger.Info("Saved wallets")
-		} else {
-			logger.Critical("Failed to save wallets: %v", errs)
-		}
-	*/
 
 	bcFile := self.Config.Config.BlockchainFile
 	err := self.Visor.SaveBlockchain()
@@ -161,29 +152,6 @@ func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 		len(pool.Pool.Pool))
 	pool.Pool.BroadcastMessage(m)
 }
-
-// Creates a spend transaction and broadcasts it to the network
-// Spend is replaced with transaction injection
-
-/*
-func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest cipher.Address, pool *Pool) (coin.Transaction, error) {
-	if self.Config.Disabled {
-		return coin.Transaction{}, errors.New("Visor disabled")
-	}
-	logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
-		amt.Coins, amt.Hours, dest.String(), fee)
-	txn, err := self.Visor.Spend(walletID, amt, fee, dest)
-	if err != nil {
-		return txn, err
-	}
-	err, _ = self.Visor.InjectTxn(txn)
-	if err == nil {
-		self.BroadcastTransaction(txn, pool)
-	}
-	return txn, err
-}
-*/
 
 //move into visor
 func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {

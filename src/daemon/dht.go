@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/nictuku/dht"
-	"github.com/skycoin/pex"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 )
 
 type DHTConfig struct {

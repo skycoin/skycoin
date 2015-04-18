@@ -12,8 +12,8 @@ import (
 
 	"github.com/op/go-logging"
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
 )
 
@@ -53,12 +53,12 @@ var (
 	// Blacklist a peer when they get disconnected for these
 	// DisconnectReasons
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		DisconnectSelf:                      time.Minute * 1,
-		DisconnectIntroductionTimeout:       time.Minute,
-		DisconnectNoIntroduction:            time.Minute * 1,
-		gnet.DisconnectInvalidMessageLength: time.Hour * 1,
-		gnet.DisconnectMalformedMessage:     time.Hour * 1,
-		gnet.DisconnectUnknownMessage:       time.Minute * 1,
+		DisconnectSelf:                      time.Minute * 60,
+		DisconnectIntroductionTimeout:       time.Minute * 60,
+		DisconnectNoIntroduction:            time.Minute * 60,
+		gnet.DisconnectInvalidMessageLength: time.Hour * 60,
+		gnet.DisconnectMalformedMessage:     time.Hour * 60,
+		gnet.DisconnectUnknownMessage:       time.Minute * 60,
 	}
 
 	logger = logging.MustGetLogger("skycoin.daemon")

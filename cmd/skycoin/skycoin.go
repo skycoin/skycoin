@@ -200,7 +200,7 @@ type DevConfig struct {
 var DevArgs = DevConfig{Config{
 	DisableGUI: true,
 	// Disable DHT peer discovery
-	DisableDHT: false,
+	DisableDHT: true,
 	// Disable peer exchange
 	DisablePEX: false,
 	// Don't make any outgoing connections

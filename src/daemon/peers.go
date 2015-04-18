@@ -57,6 +57,10 @@ func NewPeers(c PeersConfig) *Peers {
 	}
 }
 
+var BootStrapPeers = []string{
+	"188.226.245.87:6000 ",
+}
+
 // Configure the pex.PeerList and load local data
 func (self *Peers) Init() {
 	peers := pex.NewPex(self.Config.Max)
@@ -67,6 +71,12 @@ func (self *Peers) Init() {
 	}
 	logger.Debug("Init peers")
 	peers.AllowLocalhost = self.Config.AllowLocalhost
+
+	//Boot strap peers
+	for _, addr := range BootStrapPeers {
+		peers.AddPeer(addr)
+	}
+
 	self.Peers = peers
 }
 

@@ -50,6 +50,8 @@ var (
 	DisconnectOtherError gnet.DisconnectReason = errors.New(
 		"Incomprehensible error")
 
+	ConnectFailed gnet.DisconnectReason = errors.New(
+		"Could Not Connect Error")
 	// Blacklist a peer when they get disconnected for these
 	// DisconnectReasons
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
@@ -59,6 +61,7 @@ var (
 		gnet.DisconnectInvalidMessageLength: time.Hour * 60,
 		gnet.DisconnectMalformedMessage:     time.Hour * 60,
 		gnet.DisconnectUnknownMessage:       time.Minute * 60,
+		ConnectFailed:                       time.Minute * 60,
 	}
 
 	logger = logging.MustGetLogger("skycoin.daemon")
@@ -526,11 +529,17 @@ func (self *Daemon) connectToRandomPeer() {
 }
 
 // We remove a peer from the Pex if we failed to connect
+// Failure to connect
 func (self *Daemon) handleConnectionError(c ConnectionError) {
-	logger.Debug("Removing %s because failed to connect: %v", c.Addr,
+	logger.Debug("Failed to connect to %s with error: %v", c.Addr,
 		c.Error)
 	delete(self.pendingConnections, c.Addr)
 	self.Peers.RemovePeer(c.Addr)
+
+	duration, exists := BlacklistOffenses[ConnectFailed]
+	if exists {
+		self.Peers.Peers.AddBlacklistEntry(c.Addr, duration)
+	}
 }
 
 // Removes unsolicited connections who haven't sent a version

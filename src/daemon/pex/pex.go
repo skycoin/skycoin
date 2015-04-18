@@ -20,6 +20,8 @@ import (
 // - keep track of last time the peer was connected to
 // - last time peer was connected to is more important than "seen"
 // - peer "seen" means something else than use here
+// - save last time connected to, use 0 for never
+// - only transmit peers that have active or recent connections
 
 var (
 	// Filename for disk-cached peers
@@ -449,8 +451,7 @@ func (self *Pex) AddPeers(peers []string) int {
 	for _, p := range peers {
 		_, err := self.AddPeer(p)
 		if err != nil {
-			logger.Warning("Failed to add peer %s", p)
-			logger.Warning("Reason: %v", err)
+			logger.Warning("Failed to add peer %s, Reason: %v", p, err)
 			n--
 		}
 	}

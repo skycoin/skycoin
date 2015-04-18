@@ -202,7 +202,7 @@ var DevArgs = DevConfig{Config{
 	// Disable DHT peer discovery
 	DisableDHT: true,
 	// Disable peer exchange
-	DisablePEX: false,
+	DisablePEX: true,
 	// Don't make any outgoing connections
 	DisableOutgoingConnections: false,
 	// Don't allowing incoming connections

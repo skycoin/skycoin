@@ -43,12 +43,3 @@ Modules
 /src/visor - the top level, client
 /src/gui - the web wallet and json client interface
 /src/wallet - the private key storage library
-
-Tests
------
-
-Skycoin tests can be run with
-
-```
-./test.sh
-```

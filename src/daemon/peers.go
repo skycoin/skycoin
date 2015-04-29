@@ -60,6 +60,7 @@ func NewPeers(c PeersConfig) *Peers {
 var BootStrapPeers = []string{
 	"188.226.245.87:6000",
 	"188.226.147.61:6000",
+	"92.222.5.15:6000",
 }
 
 // Configure the pex.PeerList and load local data

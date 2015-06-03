@@ -550,6 +550,7 @@ func (self *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 		for _, ux := range uxs {
 			coins += ux.Body.Coins
 			hours += ux.CoinHours(prevTime)
+			// FIXME
 			//b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
 		}
 	}

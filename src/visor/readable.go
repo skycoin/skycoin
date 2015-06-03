@@ -2,6 +2,7 @@ package visor
 
 import (
 	"log"
+	"time"
 
 	"encoding/json"
 	"errors"
@@ -144,6 +145,22 @@ type ReadableTransaction struct {
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`
 	Out  []ReadableTransactionOutput `json:"outputs"`
+}
+
+type ReadableUnconfirmedTxn struct {
+	Txn       ReadableTransaction `json:"transaction"`
+	Received  time.Time           `json:"received"`
+	Checked   time.Time           `json:"checked"`
+	Announced time.Time           `json:"announced"`
+}
+
+func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedTxn {
+	return ReadableUnconfirmedTxn{
+		Txn:       NewReadableTransaction(&unconfirmed.Txn),
+		Received:  unconfirmed.Received,
+		Checked:   unconfirmed.Checked,
+		Announced: unconfirmed.Announced,
+	}
 }
 
 func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {

@@ -540,68 +540,6 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	}
 }
 
-/*
-
-// Creates a transaction spending amt with additional fee.  Fee is in addition
-// to the base required fee given amt.Hours.
-func (self *Visor) Spend(walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest cipher.Address) (coin.Transaction, error) {
-
-	wallet := self.Wallets.Get(walletID)
-	if wallet == nil {
-		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
-	}
-	tx, err := CreateSpendingTransaction(wallet, self.Unconfirmed,
-		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
-		dest)
-	if err != nil {
-		return tx, err
-	}
-	if err := VerifyTransaction(self.Blockchain, &tx, self.Config.MaxBlockSize); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
-	}
-	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
-		log.Panicf("Created invalid spending txn: %v", err)
-	}
-	return tx, err
-}
-
-// Returns the confirmed & predicted balance for a single address
-func (self *Visor) AddressBalance(addr cipher.Address) wallet.BalancePair {
-	auxs := self.Blockchain.Unspent.AllForAddress(addr)
-	puxs := self.Unconfirmed.SpendsForAddress(&self.Blockchain.Unspent, addr)
-	confirmed := self.balance(auxs)
-	predicted := self.balance(auxs.Sub(puxs))
-	return wallet.BalancePair{confirmed, predicted}
-}
-
-// Returns the confirmed & predicted balance for a Wallet
-func (self *Visor) WalletBalance(walletID wallet.WalletID) wallet.BalancePair {
-	wlt := self.Wallets.Get(walletID)
-	if wlt == nil {
-		return wallet.BalancePair{}
-	}
-	auxs := self.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-	puxs := self.Unconfirmed.SpendsForAddresses(&self.Blockchain.Unspent,
-		wlt.GetAddressSet())
-	confirmed := self.totalBalance(auxs)
-	predicted := self.totalBalance(auxs.Sub(puxs))
-	return wallet.BalancePair{confirmed, predicted}
-}
-
-// Return the total balance of all loaded wallets
-func (self *Visor) TotalBalance() wallet.BalancePair {
-	b := wallet.BalancePair{}
-	for _, w := range self.Wallets {
-		c := self.WalletBalance(w.GetFilename())
-		b.Confirmed = b.Confirmed.Add(c.Confirmed)
-		b.Predicted = b.Confirmed.Add(c.Predicted)
-	}
-	return b
-}
-
-*/
-
 // Computes the total balance for cipher.Addresses and their coin.UxOuts
 func (self *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 	prevTime := self.Blockchain.Time()
@@ -612,6 +550,7 @@ func (self *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 		for _, ux := range uxs {
 			coins += ux.Body.Coins
 			hours += ux.CoinHours(prevTime)
+			// FIXME
 			//b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
 		}
 	}

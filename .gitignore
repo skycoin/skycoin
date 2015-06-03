@@ -73,6 +73,9 @@ release
 
 *.pem
 
+# Deprecated
+_deprecated/
+
 blockchain.bin
 blockchain.sigs
 master.keys

@@ -234,9 +234,9 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
 	}
 	//pull in outputs and do this here
+	//FIX
 	tx, err := visor.CreateSpendingTransaction(*wallet, self.Unconfirmed,
-		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, fee,
-		dest)
+		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, dest)
 	if err != nil {
 		return tx, err
 	}
@@ -245,7 +245,7 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 		log.Panicf("Invalid transaction, %v", err)
 	}
 
-	if err := visor.VerifyTransaction(self.Blockchain, &tx); err != nil {
+	if err := visor.VerifyTransactionFee(self.Blockchain, &tx); err != nil {
 		log.Panicf("Created invalid spending txn: visor fail, %v", err)
 	}
 	if err := self.Blockchain.VerifyTransaction(tx); err != nil {
@@ -306,7 +306,8 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
-			Error400(w, "Invalid destination address")
+			//Error400(w, "Invalid destination address: %v", err)
+			Error400(w, "Invalid destination address: %v", err.Error())
 			return
 		}
 
@@ -319,7 +320,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 		*/
-		var fee uint64 = 0
+		//var fee uint64 = 0
 
 		scoins := r.FormValue("coins")
 		//shours := r.FormValue("hours")
@@ -330,19 +331,15 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		var hours uint64 = 0
+		var fee uint64 = 0 //doesnt work/do anything right now
 
-		/*
-			hours, err := strconv.ParseUint(shours, 10, 64)
-			if err != nil {
-				Error400(w, "Invalid \"hours\" value")
-				return
-			}
-		*/
+		//MOVE THIS INTO HERE
+		ret := Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours), fee, dst)
 
-		//log.Printf("Spend2")
-
-		SendOr404(w, Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours),
-			fee, dst))
+		if ret.Error != "" {
+			Error400(w, "Spend Failed: %s", ret.Error)
+		}
+		SendOr404(w, ret)
 	}
 }
 
@@ -434,6 +431,20 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// Returns pending transactions
+func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		V := gateway.V
+		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
+
+		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
+			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+			ret = append(ret, &readable)
+		}
+		SendOr404(w, ret)
+	}
+}
+
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -489,6 +500,9 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(gateway))
+
+	//get set of pending transaction
+	mux.HandleFunc("/transactions", getTransactionsHandler(gateway))
 
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))

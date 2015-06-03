@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"github.com/nictuku/dht"
 	"github.com/op/go-logging"
-	//"github.com/skycoin/pex"
+	//"github.com/skycoin/skycoin/src/daemon/pex"
 	"log"
 	"time"
 )

@@ -3,7 +3,7 @@ package visor
 import (
 	"bytes"
 	"errors"
-	"fmt"
+	//"fmt"
 	"log"
 	"sort"
 
@@ -45,29 +45,9 @@ func (self OldestUxOut) Less(i, j int) bool {
 	return a < b
 }
 
-//set burn to 50% of coin hours
-//what is purpose of this
-func calculateBurnAndChange(total uint64, spending uint64, fee uint64) (uint64, uint64, error) {
-
-	var factor uint64 = 2
-	if total < fee {
-		return 0, 0, errors.New("Insufficient total")
-	}
-	burn := uint64(0)
-	if factor > 0 {
-		burn = (total - fee) / (factor + 1)
-	}
-	others := fee + spending + burn
-	if total < others {
-		return 0, 0, errors.New("Insufficient total")
-	}
-	change := total - others
-
-	return burn, change, nil
-}
-
+//delete this function
 func createSpends(headTime uint64, uxa coin.UxArray,
-	amt wallet.Balance, fee uint64) (coin.UxArray, error) {
+	amt wallet.Balance) (coin.UxArray, error) {
 	if amt.Coins == 0 {
 		return nil, errors.New("Zero spend amount")
 	}
@@ -81,24 +61,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	have := wallet.Balance{0, 0}
 	spending := make(coin.UxArray, 0)
 	for i, _ := range uxs {
-
-		//wtf?
-		burn, _, err := calculateBurnAndChange(have.Hours, amt.Hours,
-			fee)
-		if err == nil {
-			trueHours := amt.Hours + fee + burn
-			// Adjust hours as a moving target as outputs change
-			if have.Coins > amt.Coins && have.Hours >= trueHours {
-				break
-			}
-			// If we have the exact amount of both, we don't need any extra coins
-			// for change
-			if have.Coins == amt.Coins && have.Hours == trueHours {
-				break
-			}
-		}
-
-		b := wallet.NewBalanceFromUxOut(headTime, &uxs[i])
+		b := wallet.NewBalanceFromUxOut(headTime, &uxs[i]) //this is bullshit
 		if b.Coins == 0 || b.Coins%1e6 != 0 {
 			logger.Error("UxOut coins are 0 or 1e6, can't spend")
 			continue
@@ -109,20 +72,16 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	if amt.Coins > have.Coins {
 		return nil, errors.New("Not enough coins")
 	}
-	if amt.Hours+fee > have.Hours {
-		return nil, errors.New("Not enough hours")
-	}
-	if _, _, err := calculateBurnAndChange(have.Hours, amt.Hours, fee); err != nil {
-		return nil, errors.New("Not enough hours to burn")
-	}
+
 	return spending, nil
 }
 
+//DEPRECATE
 //deprecate dependency on wallet
 // Creates a Transaction spending coins and hours from our coins
 func CreateSpendingTransaction(wlt wallet.Wallet,
 	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
-	headTime uint64, amt wallet.Balance, fee uint64,
+	headTime uint64, amt wallet.Balance,
 	dest cipher.Address) (coin.Transaction, error) {
 	txn := coin.Transaction{}
 	auxs := unspent.AllForAddresses(wlt.GetAddresses())
@@ -131,7 +90,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 	auxs = auxs.Sub(puxs)
 
 	// Determine which unspents to spend
-	spends, err := createSpends(headTime, auxs.Flatten(), amt, fee)
+	spends, err := createSpends(headTime, auxs.Flatten(), amt)
 	if err != nil {
 		return txn, err
 	}
@@ -150,28 +109,24 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 		spending.Hours += au.CoinHours(headTime)
 	}
 
-	// Determine how much change we get back, if any
-	_, changeHours, err := calculateBurnAndChange(spending.Hours,
-		amt.Hours, fee)
-	if err != nil {
-		// This should not occur, else createSpends is broken
-		return txn, err
-	}
-	change := wallet.NewBalance(spending.Coins-amt.Coins, changeHours)
-	// TODO -- send change to a new address
-	changeAddr := spends[0].Body.Address
-	if change.Coins == 0 {
-		if change.Hours > 0 {
-			msg := ("Have enough coins, but not enough to send coin hours " +
-				"change back. Would spend %d more hours than requested.")
-			return txn, fmt.Errorf(msg, change.Hours)
-		}
-	} else {
-		txn.PushOutput(changeAddr, change.Coins, change.Hours)
+	//keep 1/4th of hours as change
+	//send half to each address
+	var changeHours uint64 = spending.Hours / 4
+
+	if amt.Coins == spending.Coins {
+		txn.PushOutput(dest, amt.Coins, changeHours/2)
+		txn.SignInputs(toSign)
+		txn.UpdateHeader()
+		return txn, nil
 	}
 
-	// Finalize the the transaction
-	txn.PushOutput(dest, amt.Coins, amt.Hours)
+	change := wallet.NewBalance(spending.Coins-amt.Coins, changeHours/2)
+	// TODO -- send change to a new address
+	changeAddr := spends[0].Body.Address
+
+	//create transaction
+	txn.PushOutput(changeAddr, change.Coins, change.Hours)
+	txn.PushOutput(dest, amt.Coins, changeHours/2)
 	txn.SignInputs(toSign)
 	txn.UpdateHeader()
 	return txn, nil

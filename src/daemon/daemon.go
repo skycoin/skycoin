@@ -11,12 +11,20 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
-	//"github.com/skycoin/skycoin/src/aether/gnet"
-	"github.com/skycoin/pex"
-	"github.com/skycoin/skycoin/src/aether/gnet"
+	//"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
 )
 
+/*
+Todo
+- verify that minimum/maximum connections are working
+- keep max connections
+- maintain minimum number of outgoing connections per server?
+
+
+*/
 var (
 	// DisconnectReasons
 	DisconnectInvalidVersion gnet.DisconnectReason = errors.New(
@@ -42,15 +50,21 @@ var (
 	DisconnectOtherError gnet.DisconnectReason = errors.New(
 		"Incomprehensible error")
 
+	//Use exponential backoff for connections
+	//ConnectFailed gnet.DisconnectReason = errors.New(
+	//	"Could Not Connect Error")
+
 	// Blacklist a peer when they get disconnected for these
 	// DisconnectReasons
+
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		DisconnectSelf:                      time.Minute * 1,
-		DisconnectIntroductionTimeout:       time.Minute,
-		DisconnectNoIntroduction:            time.Minute * 1,
-		gnet.DisconnectInvalidMessageLength: time.Hour * 1,
-		gnet.DisconnectMalformedMessage:     time.Hour * 1,
-		gnet.DisconnectUnknownMessage:       time.Minute * 1,
+		DisconnectSelf:                      time.Minute * 60,
+		DisconnectIntroductionTimeout:       time.Minute * 60,
+		DisconnectNoIntroduction:            time.Minute * 60,
+		gnet.DisconnectInvalidMessageLength: time.Hour * 60,
+		gnet.DisconnectMalformedMessage:     time.Hour * 60,
+		gnet.DisconnectUnknownMessage:       time.Minute * 60,
+		//ConnectFailed:                       time.Minute * 60,
 	}
 
 	logger = logging.MustGetLogger("skycoin.daemon")
@@ -160,7 +174,7 @@ func NewDaemonConfig() DaemonConfig {
 		Port:                       6677,
 		OutgoingRate:               time.Second * 5,
 		PrivateRate:                time.Second * 5,
-		OutgoingMax:                8,
+		OutgoingMax:                16,
 		PendingMax:                 16,
 		IntroductionWait:           time.Second * 30,
 		CullInvalidRate:            time.Second * 3,
@@ -518,11 +532,25 @@ func (self *Daemon) connectToRandomPeer() {
 }
 
 // We remove a peer from the Pex if we failed to connect
+// Failure to connect
+// Use exponential backoff, not peer list
 func (self *Daemon) handleConnectionError(c ConnectionError) {
-	logger.Debug("Removing %s because failed to connect: %v", c.Addr,
+	logger.Debug("Failed to connect to %s with error: %v", c.Addr,
 		c.Error)
 	delete(self.pendingConnections, c.Addr)
-	self.Peers.RemovePeer(c.Addr)
+
+	if self.Peers.Config.Disabled != true {
+		self.Peers.RemovePeer(c.Addr)
+	}
+
+	//use exponential backoff
+
+	/*
+		duration, exists := BlacklistOffenses[ConnectFailed]
+		if exists {
+			self.Peers.Peers.AddBlacklistEntry(c.Addr, duration)
+		}
+	*/
 }
 
 // Removes unsolicited connections who haven't sent a version

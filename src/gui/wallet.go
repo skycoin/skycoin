@@ -435,10 +435,10 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		V := gateway.V
-		ret := make([]*visor.ReadableTransaction, 0, len(V.Unconfirmed.Txns))
+		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
 
 		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
-			readable := visor.NewReadableTransaction(&unconfirmedTxn.Txn)
+			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			ret = append(ret, &readable)
 		}
 		SendOr404(w, ret)

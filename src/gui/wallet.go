@@ -431,11 +431,16 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Returns the outputs for a wallet
-// ERROR: is returning unspent outputs, not transactions
+// Returns pending transactions
 func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
+		V := gateway.V
+		ret := make([]*visor.ReadableTransaction, 0, len(V.Unconfirmed.Txns))
+
+		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
+			readable := visor.NewReadableTransaction(&unconfirmedTxn.Txn)
+			ret = append(ret, &readable)
+		}
 		SendOr404(w, ret)
 	}
 }

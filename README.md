@@ -5,7 +5,7 @@ Skycoin is a next-generation cryptocurrency.
 
 Skycoin improves on Bitcoin in too many ways to be addressed here.
 
-Skycoin is part of OP Redecentralize and OP Darknet Plan. Skycoin is part of the next generation internet project.
+Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 Installation
 ------------
@@ -37,9 +37,11 @@ go run ./cmd/skycoin/skycoin.go
 Modules
 -----
 
+```
 /src/cipher - cryptography library
 /src/coin - the blockchain
 /src/daemon - networking and wire protocol
 /src/visor - the top level, client
 /src/gui - the web wallet and json client interface
 /src/wallet - the private key storage library
+```

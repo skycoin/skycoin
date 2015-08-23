@@ -58,9 +58,9 @@ var (
 	// DisconnectReasons
 
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		DisconnectSelf:                      time.Minute * 1,
-		DisconnectIntroductionTimeout:       time.Minute * 1,
-		DisconnectNoIntroduction:            time.Minute * 5,
+		//DisconnectSelf:                      time.Second * 1,
+		//DisconnectIntroductionTimeout:       time.Second * 1,
+		//DisconnectNoIntroduction:            time.Second * 1,
 		gnet.DisconnectInvalidMessageLength: time.Minute * 20,
 		gnet.DisconnectMalformedMessage:     time.Minute * 20,
 		gnet.DisconnectUnknownMessage:       time.Minute * 20,

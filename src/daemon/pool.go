@@ -37,9 +37,9 @@ func NewPoolConfig() PoolConfig {
 		DialTimeout:         time.Second * 30,
 		MessageHandlingRate: time.Millisecond * 50,
 		PingRate:            5 * time.Second,
-		IdleLimit:           30 * time.Second,
-		IdleCheckRate:       5 * time.Second,
-		ClearStaleRate:      5 * time.Second,
+		IdleLimit:           60 * time.Second,
+		IdleCheckRate:       1 * time.Second,
+		ClearStaleRate:      1 * time.Second,
 		EventChannelSize:    4096,
 	}
 }

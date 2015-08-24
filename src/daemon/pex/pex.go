@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util"
 	"io"
 	"math/rand"
 	"net"
@@ -162,6 +163,7 @@ func (self Blacklist) GetAddresses() []string {
 
 // Loads a newline delimited list of addresses from
 // <dir>/<BlacklistedDatabaseFilename> into the Blacklist index
+// deprecate
 func LoadBlacklist(dir string) (Blacklist, error) {
 	lines, err := readLines(filepath.Join(dir, BlacklistedDatabaseFilename))
 	blacklist := make(Blacklist, len(lines))
@@ -296,82 +298,104 @@ func (self Peerlist) RandomAll(count int) []*Peer {
 // Saves known peers to disk as a newline delimited list of addresses to
 // <dir><PeerDatabaseFilename>
 func (self Peerlist) Save(dir string) error {
-	entries := make([]string, 0)
-	for _, p := range self {
-		private := 0
-		if p.Private {
-			private = 1
-		}
-		entry := fmt.Sprintf("%s %d %d", p.Addr, private, p.LastSeen.Unix())
-		entries = append(entries, entry)
-	}
-	s := strings.Join(entries, "\n") + "\n"
+
+	logger.Debug("PEX: SavingPeerList")
 
 	filename := PeerDatabaseFilename
-	fn := filepath.Join(dir, filename+".tmp")
-	f, err := os.Create(fn)
+	fn := filepath.Join(dir, filename)
+	err := util.SaveJSON(fn, self, 0600)
 	if err != nil {
-		return err
+		logger.Notice("SavePeerList Failed: %s", err)
 	}
-	defer f.Close()
-	if _, err := f.WriteString(s); err != nil {
-		return err
-	}
-	return os.Rename(fn, filepath.Join(dir, filename))
+	return err
+	/*
+		entries := make([]string, 0)
+		for _, p := range self {
+			private := 0
+			if p.Private {
+				private = 1
+			}
+			entry := fmt.Sprintf("%s %d %d", p.Addr, private, p.LastSeen.Unix())
+			entries = append(entries, entry)
+		}
+		s := strings.Join(entries, "\n") + "\n"
+
+		filename := PeerDatabaseFilename
+		fn := filepath.Join(dir, filename+".tmp")
+		f, err := os.Create(fn)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		if _, err := f.WriteString(s); err != nil {
+			return err
+		}
+		return os.Rename(fn, filepath.Join(dir, filename))
+	*/
 }
 
 // Loads a newline delimited list of addresses from
 // "<dir>/<PeerDatabaseFilename>"
 func LoadPeerlist(dir string) (Peerlist, error) {
-	entries, err := readLines(filepath.Join(dir, PeerDatabaseFilename))
-	peerlist := make(Peerlist, len(entries))
-	if os.IsNotExist(err) {
-		return peerlist, nil
-	}
+	peerlist := Peerlist{}
+	fn := filepath.Join(dir, PeerDatabaseFilename)
+	err := util.LoadJSON(fn, peerlist)
+
 	if err != nil {
-		return nil, err
+		logger.Notice("LoadPeerList Failed: %s", err)
 	}
-	logInvalid := func(line, msg string) {
-		logger.Warning("Invalid peerlist db entry: \"%s\"", line)
-		logger.Warning("Reason: %s", msg)
-	}
-	for _, entry := range entries {
-		entry = whitespaceFilter.ReplaceAllString(entry, " ")
-		if entry == "" || strings.HasPrefix(entry, "#") {
-			continue
+	return peerlist, err
+	/*
+		entries, err := readLines(filepath.Join(dir, PeerDatabaseFilename))
+		peerlist := make(Peerlist, len(entries))
+		if os.IsNotExist(err) {
+			return peerlist, nil
 		}
-		pts := strings.Split(entry, " ")
-		if len(pts) != 3 {
-			m := "Peerlist entry not of form $ADDR $PRIVATE $SEEN"
-			logInvalid(entry, m)
-			continue
-		}
-		addr := pts[0]
-		if !ValidateAddress(addr, true) {
-			logInvalid(entry, fmt.Sprintf("Invalid IP:Port \"%s\"", addr))
-			continue
-		}
-		private := false
-		if pts[1] == "0" {
-			private = false
-		} else if pts[1] == "1" {
-			private = true
-		} else {
-			logInvalid(entry, fmt.Sprintf("Private field must be 0 or 1"))
-			continue
-		}
-		seen, err := strconv.ParseInt(pts[2], 10, 64)
 		if err != nil {
-			logInvalid(entry, err.Error())
-			continue
+			return nil, err
 		}
-		peerlist[addr] = &Peer{
-			Addr:     addr,
-			LastSeen: time.Unix(seen, 0),
-			Private:  private,
+		logInvalid := func(line, msg string) {
+			logger.Warning("Invalid peerlist db entry: \"%s\"", line)
+			logger.Warning("Reason: %s", msg)
 		}
-	}
-	return peerlist, nil
+		for _, entry := range entries {
+			entry = whitespaceFilter.ReplaceAllString(entry, " ")
+			if entry == "" || strings.HasPrefix(entry, "#") {
+				continue
+			}
+			pts := strings.Split(entry, " ")
+			if len(pts) != 3 {
+				m := "Peerlist entry not of form $ADDR $PRIVATE $SEEN"
+				logInvalid(entry, m)
+				continue
+			}
+			addr := pts[0]
+			if !ValidateAddress(addr, true) {
+				logInvalid(entry, fmt.Sprintf("Invalid IP:Port \"%s\"", addr))
+				continue
+			}
+			private := false
+			if pts[1] == "0" {
+				private = false
+			} else if pts[1] == "1" {
+				private = true
+			} else {
+				logInvalid(entry, fmt.Sprintf("Private field must be 0 or 1"))
+				continue
+			}
+			seen, err := strconv.ParseInt(pts[2], 10, 64)
+			if err != nil {
+				logInvalid(entry, err.Error())
+				continue
+			}
+			peerlist[addr] = &Peer{
+				Addr:     addr,
+				LastSeen: time.Unix(seen, 0),
+				Private:  private,
+			}
+		}
+		return peerlist, nil
+	*/
 }
 
 // Pex manages a set of known peers and controls peer acquisition

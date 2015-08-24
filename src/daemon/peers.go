@@ -88,6 +88,9 @@ func (self *Peers) Shutdown() error {
 	if self.Peers == nil {
 		return nil
 	}
+
+	logger.Debug("Saving Peer List")
+
 	err := self.Peers.Save(self.Config.DataDirectory)
 	if err != nil {
 		logger.Warning("Failed to save peer database")

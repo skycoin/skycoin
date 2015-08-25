@@ -44,6 +44,9 @@ func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
 		return nil
 	}
 	c := d.Pool.Pool.Addresses[addr]
+	if c == nil {
+		return nil
+	}
 	_, expecting := d.ExpectingIntroductions[addr]
 	return &Connection{
 		Id:           c.Id,

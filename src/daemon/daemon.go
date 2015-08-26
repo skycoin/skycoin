@@ -424,6 +424,10 @@ main:
 		case fn := <-self.Gateway.Requests:
 			self.Gateway.Responses <- fn()
 
+		//save blockchain periodically
+		case <-blockchainBackupTicker:
+			self.Visor.SaveBlockchain()
+
 		// TODO -- run these in the Visor
 		// Create blocks, if master chain
 		case <-blockCreationTicker.C:

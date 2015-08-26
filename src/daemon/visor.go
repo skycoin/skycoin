@@ -31,7 +31,7 @@ type VisorConfig struct {
 	// How many blocks to respond with to a GetBlocksMessage
 	BlocksResponseCount uint64
 	//how long between saving copies of the blockchain
-	BlocksBackupRate time.Duration
+	BlockchainBackupRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {

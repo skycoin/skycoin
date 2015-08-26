@@ -62,6 +62,7 @@ var BootStrapPeers = []string{
 	"188.226.147.61:6000",
 	"139.162.14.118:6000",
 	//"92.222.5.15:6000",
+	"139.162.30.98",
 }
 
 // Configure the pex.PeerList and load local data

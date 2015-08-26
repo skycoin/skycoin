@@ -7,9 +7,9 @@ import (
 	"time"
 
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
@@ -30,15 +30,18 @@ type VisorConfig struct {
 	BlocksAnnounceRate time.Duration
 	// How many blocks to respond with to a GetBlocksMessage
 	BlocksResponseCount uint64
+	//how long between saving copies of the blockchain
+	BlocksBackupRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
 	return VisorConfig{
-		Config:              visor.NewVisorConfig(),
-		Disabled:            false,
-		BlocksRequestRate:   time.Minute * 5,
-		BlocksAnnounceRate:  time.Minute * 15,
-		BlocksResponseCount: 20,
+		Config:               visor.NewVisorConfig(),
+		Disabled:             false,
+		BlocksRequestRate:    time.Minute * 5,
+		BlocksAnnounceRate:   time.Minute * 15,
+		BlocksResponseCount:  20,
+		BlockchainBackupRate: time.Second * 30,
 	}
 }
 
@@ -61,11 +64,7 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 }
 
-// Closes the Wallet, saving it to disk
-func (self *Visor) Shutdown() {
-	if self.Config.Disabled {
-		return
-	}
+func (self *Visor) SaveBlockchain() {
 
 	bcFile := self.Config.Config.BlockchainFile
 	err := self.Visor.SaveBlockchain()
@@ -81,6 +80,16 @@ func (self *Visor) Shutdown() {
 	} else {
 		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
 	}
+
+}
+
+// Closes the Wallet, saving it to disk
+func (self *Visor) Shutdown() {
+	if self.Config.Disabled {
+		return
+	}
+
+	self.SaveBlockchain()
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old

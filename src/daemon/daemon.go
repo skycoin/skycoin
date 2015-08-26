@@ -283,7 +283,7 @@ type MessageEvent struct {
 }
 
 // Terminates all subsystems safely.  To stop the Daemon run loop, send a value
-// over the quit channel provided to Init.  The Daemon run lopp must be stopped
+// over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (self *Daemon) Shutdown() {
 	self.DHT.Shutdown()
@@ -306,13 +306,20 @@ func (self *Daemon) Start(quit chan int) {
 
 	// TODO -- run blockchain stuff in its own goroutine
 	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
-	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !self.Visor.Config.Config.IsMaster {
-		blockCreationTicker.Stop()
+
+	//blockCreationTicker := time.NewTicker(time.Second * blockInterval)
+	//if self.Visor.Config.Config.IsMaster {
+	//	blockCreationTicker.Stop()
+	//}
+
+	if self.Visor.Config.Config.IsMaster {
+		blockCreationTicker := time.NewTicker(time.Second * blockInterval)
 	}
+
 	unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
 	blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
+	blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
 
 	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
 	dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)

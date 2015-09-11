@@ -36,8 +36,6 @@ type Args interface {
 
 type Config struct {
 	DisableGUI bool
-	// Disable DHT peer discovery
-	DisableDHT bool
 	// Disable peer exchange
 	DisablePEX bool
 	// Don't make any outgoing connections
@@ -53,8 +51,6 @@ type Config struct {
 	Address string
 	//gnet uses this for TCP incoming and outgoing
 	Port int
-	//DHT uses this port for UDP;
-	DHTPort int
 	//max connections to maintain
 	MaxConnections int
 	// How often to make outgoing connections
@@ -199,8 +195,6 @@ type DevConfig struct {
 
 var DevArgs = DevConfig{Config{
 	DisableGUI: true,
-	// Disable DHT peer discovery
-	DisableDHT: true,
 	// Disable peer exchange
 	DisablePEX: true,
 	// Don't make any outgoing connections
@@ -214,10 +208,8 @@ var DevArgs = DevConfig{Config{
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address: "",
-	//gnet uses this for TCP incoming and outgoing, must be 6000 to use DHT
+	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
-	//DHT port, UDP, must be 5999
-	DHTPort: 5999,
 
 	MaxConnections: 16,
 	// How often to make outgoing connections, in seconds
@@ -274,8 +266,6 @@ var BlockchainPubkeyStr string = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf
 var BlockchainSeckeyStr string = ""
 
 func (self *DevConfig) register() {
-	flag.BoolVar(&self.DisableDHT, "disable-dht", self.DisableDHT,
-		"disable DHT peer discovery")
 	flag.BoolVar(&self.DisablePEX, "disable-pex", self.DisablePEX,
 		"disable PEX peer discovery")
 	flag.BoolVar(&self.DisableOutgoingConnections, "disable-outgoing",
@@ -439,7 +429,6 @@ func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
-	dc.DHT.Disabled = c.DisableDHT
 	dc.Peers.Disabled = c.DisablePEX
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
@@ -454,8 +443,6 @@ func configureDaemon(c *Config) daemon.Config {
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
 
-	dc.DHT.Port = c.DHTPort
-	//dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BlockchainFile = c.BlockchainFile
 	dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
 

@@ -76,18 +76,18 @@ type Config struct {
 	Messages MessagesConfig
 	Pool     PoolConfig
 	Peers    PeersConfig
-	DHT      DHTConfig
-	Gateway  GatewayConfig
-	Visor    VisorConfig
+	//DHT      DHTConfig
+	Gateway GatewayConfig
+	Visor   VisorConfig
 }
 
 // Returns a Config with defaults set
 func NewConfig() Config {
 	return Config{
-		Daemon:   NewDaemonConfig(),
-		Pool:     NewPoolConfig(),
-		Peers:    NewPeersConfig(),
-		DHT:      NewDHTConfig(),
+		Daemon: NewDaemonConfig(),
+		Pool:   NewPoolConfig(),
+		Peers:  NewPeersConfig(),
+		//DHT:      NewDHTConfig(),
 		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
 		Visor:    NewVisorConfig(),
@@ -109,7 +109,7 @@ func (self *Config) preprocess() Config {
 					config.Daemon.Address)
 			}
 		}
-		config.DHT.Disabled = true
+		//config.DHT.Disabled = true
 		config.Peers.AllowLocalhost = true
 	}
 	config.Pool.port = config.Daemon.Port
@@ -117,7 +117,7 @@ func (self *Config) preprocess() Config {
 
 	if config.Daemon.DisableNetworking {
 		config.Peers.Disabled = true
-		config.DHT.Disabled = true
+		//config.DHT.Disabled = true
 		config.Daemon.DisableIncomingConnections = true
 		config.Daemon.DisableOutgoingConnections = true
 	} else {
@@ -138,7 +138,7 @@ type DaemonConfig struct {
 	Version int32
 	// IP Address to serve on. Leave empty for automatic assignment
 	Address string
-	// TCP/UDP port for connections and DHT
+	// TCP/UDP port for connections
 	Port int
 	// Directory where application data is stored
 	DataDirectory string
@@ -195,9 +195,9 @@ type Daemon struct {
 	Messages *Messages
 	Pool     *Pool
 	Peers    *Peers
-	DHT      *DHT
-	Gateway  *Gateway
-	Visor    *Visor
+	//DHT      *DHT
+	Gateway *Gateway
+	Visor   *Visor
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
@@ -236,8 +236,8 @@ func NewDaemon(config Config) *Daemon {
 		Messages: NewMessages(config.Messages),
 		Pool:     NewPool(config.Pool),
 		Peers:    NewPeers(config.Peers),
-		DHT:      NewDHT(config.DHT),
-		Visor:    NewVisor(config.Visor),
+		//DHT:      NewDHT(config.DHT),
+		Visor: NewVisor(config.Visor),
 		ExpectingIntroductions: make(map[string]time.Time),
 		ConnectionMirrors:      make(map[string]uint32),
 		mirrorConnections:      make(map[uint32]map[string]uint16),
@@ -260,7 +260,7 @@ func NewDaemon(config Config) *Daemon {
 	d.Messages.Config.Register()
 	d.Pool.Init(d)
 	d.Peers.Init()
-	d.DHT.Init()
+	//d.DHT.Init()
 	return d
 }
 
@@ -286,7 +286,7 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (self *Daemon) Shutdown() {
-	self.DHT.Shutdown()
+	//self.DHT.Shutdown()
 	self.Pool.Shutdown()
 	self.Peers.Shutdown()
 	self.Visor.Shutdown()
@@ -300,9 +300,9 @@ func (self *Daemon) Start(quit chan int) {
 		self.Pool.StartListen() //no goroutine
 		go self.Pool.AcceptConnections()
 	}
-	if !self.DHT.Config.Disabled {
-		go self.DHT.Start()
-	}
+	//if !self.DHT.Config.Disabled {
+	//	go self.DHT.Start()
+	//}
 
 	// TODO -- run blockchain stuff in its own goroutine
 	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
@@ -317,7 +317,7 @@ func (self *Daemon) Start(quit chan int) {
 	blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
 
 	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
-	dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
+	//dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
 	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
 	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
 	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
@@ -331,11 +331,11 @@ main:
 	for {
 		select {
 		// Continually make requests to the DHT, if we need peers
-		case <-dhtBootstrapTicker:
-			if !self.DHT.Config.Disabled &&
-				len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
-				go self.DHT.RequestPeers()
-			}
+		//case <-dhtBootstrapTicker:
+		//	if !self.DHT.Config.Disabled &&
+		//		len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
+		//		go self.DHT.RequestPeers()
+		//	}
 		// Flush expired blacklisted peers
 		case <-updateBlacklistTicker:
 			if !self.Peers.Config.Disabled {
@@ -396,12 +396,12 @@ main:
 				log.Panic("There should be no connection errors")
 			}
 			self.handleConnectionError(r)
-		// Update Peers when DHT reports a new one
-		case r := <-self.DHT.DHT.PeersRequestResults:
-			if self.DHT.Config.Disabled {
-				log.Panic("There should be no DHT peer results")
-			}
-			self.DHT.ReceivePeers(r, self.Peers.Peers)
+			// Update Peers when DHT reports a new one
+			//case r := <-self.DHT.DHT.PeersRequestResults:
+			//	if self.DHT.Config.Disabled {
+			//		log.Panic("There should be no DHT peer results")
+			//	}
+			//self.DHT.ReceivePeers(r, self.Peers.Peers)
 		// Process disconnections
 		case r := <-self.Pool.Pool.DisconnectQueue:
 			if self.Config.DisableNetworking {

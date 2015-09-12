@@ -38,8 +38,8 @@ func NewVisorConfig() VisorConfig {
 	return VisorConfig{
 		Config:               visor.NewVisorConfig(),
 		Disabled:             false,
-		BlocksRequestRate:    time.Second * 5,
-		BlocksAnnounceRate:   time.Second * 30,
+		BlocksRequestRate:    time.Second * 60, //backup, could be disabled
+		BlocksAnnounceRate:   time.Second * 60, //backup, could be disabled
 		BlocksResponseCount:  20,
 		BlockchainBackupRate: time.Second * 30,
 	}
@@ -218,6 +218,7 @@ func (self *Visor) recordBlockchainLength(addr string, bkLen uint64) {
 }
 
 // Returns the blockchain length estimated from peer reports
+// Deprecate. Should not need. Just report time of last block
 func (self *Visor) EstimateBlockchainLength() uint64 {
 	ourLen := self.Visor.MostRecentBkSeq() + 1
 	if len(self.blockchainLengths) < 2 {

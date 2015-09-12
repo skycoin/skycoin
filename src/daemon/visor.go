@@ -107,7 +107,7 @@ func (self *Visor) RequestBlocks(pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewGetBlocksMessage(self.Visor.HeadBkSeq())
+	m := NewGetBlocksMessage(self.Visor.HeadBkSeq(), self.Config.BlocksResponseCount)
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -125,7 +125,7 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	if self.Config.Disabled {
 		return errors.New("Visor disabled")
 	}
-	m := NewGetBlocksMessage(self.Visor.HeadBkSeq())
+	m := NewGetBlocksMessage(self.Visor.HeadBkSeq(), self.Config.BlocksResponseCount)
 	c := pool.Pool.Addresses[addr]
 	if c == nil {
 		return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
@@ -249,13 +249,15 @@ func (self *Visor) EstimateBlockchainLength() uint64 {
 
 // Sent to request blocks since LastBlock
 type GetBlocksMessage struct {
-	LastBlock uint64
-	c         *gnet.MessageContext `enc:"-"`
+	LastBlock       uint64
+	RequestedBlocks uint64
+	c               *gnet.MessageContext `enc:"-"`
 }
 
-func NewGetBlocksMessage(lastBlock uint64) *GetBlocksMessage {
+func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
 	return &GetBlocksMessage{
-		LastBlock: lastBlock,
+		LastBlock:       lastBlock,
+		RequestedBlocks: requestedBlocks, //count of blocks requested
 	}
 }
 
@@ -265,6 +267,9 @@ func (self *GetBlocksMessage) Handle(mc *gnet.MessageContext,
 	return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
+/*
+	Should send number to be requested, with request
+*/
 func (self *GetBlocksMessage) Process(d *Daemon) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
@@ -275,8 +280,10 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 	// Record this as this peer's highest block
 	d.Visor.recordBlockchainLength(self.c.Conn.Addr(), self.LastBlock)
 	// Fetch and return signed blocks since LastBlock
+	//blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
+	//	d.Visor.Config.BlocksResponseCount)
 	blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
-		d.Visor.Config.BlocksResponseCount)
+		self.RequestedBlocks)
 	logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
 	if len(blocks) == 0 {
 		return
@@ -339,7 +346,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 	m1 := NewAnnounceBlocksMessage(d.Visor.Visor.HeadBkSeq())
 	d.Pool.Pool.BroadcastMessage(m1)
 	//request more blocks.
-	m2 := NewGetBlocksMessage(d.Visor.Visor.HeadBkSeq())
+	m2 := NewGetBlocksMessage(d.Visor.Visor.HeadBkSeq(), d.Visor.Config.BlocksResponseCount)
 	d.Pool.Pool.BroadcastMessage(m2)
 }
 
@@ -366,13 +373,13 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	bkSeq := d.Visor.Visor.HeadBkSeq()
-	if bkSeq >= self.MaxBkSeq {
+	headBkSeq := d.Visor.Visor.HeadBkSeq()
+	if headBkSeq >= self.MaxBkSeq {
 		return
 	}
 	//should this be block get request for current sequence?
 	//if client is not caught up, wont attempt to get block
-	m := NewGetBlocksMessage(bkSeq)
+	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 

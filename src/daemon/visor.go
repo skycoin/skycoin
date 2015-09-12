@@ -38,8 +38,8 @@ func NewVisorConfig() VisorConfig {
 	return VisorConfig{
 		Config:               visor.NewVisorConfig(),
 		Disabled:             false,
-		BlocksRequestRate:    time.Minute * 5,
-		BlocksAnnounceRate:   time.Minute * 15,
+		BlocksRequestRate:    time.Second * 5,
+		BlocksAnnounceRate:   time.Second * 30,
 		BlocksResponseCount:  20,
 		BlockchainBackupRate: time.Second * 30,
 	}
@@ -64,6 +64,8 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 }
 
+//move to visor?
+//DEPRECATE?
 func (self *Visor) SaveBlockchain() {
 
 	bcFile := self.Config.Config.BlockchainFile
@@ -163,14 +165,8 @@ func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 }
 
 //move into visor
+//DEPRECATE
 func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
-
-	//logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
-	//	amt.Coins, amt.Hours, dest.String(), fee)
-	//txn, err := self.Visor.Spend(walletID, amt, fee, dest)
-	//if err != nil {
-	//	return txn, err
-	//}
 
 	err := txn.Verify()
 
@@ -339,8 +335,11 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Announce our new blocks to peers
-	m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-	d.Pool.Pool.BroadcastMessage(m)
+	m1 := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+	d.Pool.Pool.BroadcastMessage(m1)
+	//request more blocks.
+	m2 := NewGetBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+	d.Pool.Pool.BroadcastMessage(m2)
 }
 
 // Tells a peer our highest known BkSeq. The receiving peer can choose
@@ -370,6 +369,8 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
 	if bkSeq >= self.MaxBkSeq {
 		return
 	}
+	//should this be block get request for current sequence?
+	//if client is not caught up, wont attempt to get block
 	m := NewGetBlocksMessage(bkSeq)
 	d.Pool.Pool.SendMessage(self.c.Conn, m)
 }

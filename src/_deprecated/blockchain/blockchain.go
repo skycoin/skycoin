@@ -253,7 +253,7 @@ func (self *Blockchain) InjectBlock(b SignedBlock) error {
 
 // Returns the highest BkSeq we know
 // Replace with GetHead
-func (self *Blockchain) MostRecentBkSeq() uint64 { //alread in meta
+func (self *Blockchain) HeadBkSeq() uint64 { //alread in meta
     h := self.blockchain.Head()
     return h.Head.BkSeq
 }

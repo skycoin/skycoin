@@ -107,7 +107,7 @@ func (self *Visor) RequestBlocks(pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+	m := NewGetBlocksMessage(self.Visor.HeadBkSeq())
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -116,7 +116,7 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
+	m := NewAnnounceBlocksMessage(self.Visor.HeadBkSeq())
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -125,7 +125,7 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	if self.Config.Disabled {
 		return errors.New("Visor disabled")
 	}
-	m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+	m := NewGetBlocksMessage(self.Visor.HeadBkSeq())
 	c := pool.Pool.Addresses[addr]
 	if c == nil {
 		return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
@@ -220,7 +220,7 @@ func (self *Visor) recordBlockchainLength(addr string, bkLen uint64) {
 // Returns the blockchain length estimated from peer reports
 // Deprecate. Should not need. Just report time of last block
 func (self *Visor) EstimateBlockchainLength() uint64 {
-	ourLen := self.Visor.MostRecentBkSeq() + 1
+	ourLen := self.Visor.HeadBkSeq() + 1
 	if len(self.blockchainLengths) < 2 {
 		return ourLen
 	}
@@ -309,7 +309,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	processed := 0
-	maxSeq := d.Visor.Visor.MostRecentBkSeq()
+	maxSeq := d.Visor.Visor.HeadBkSeq()
 	for _, b := range self.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
@@ -336,10 +336,10 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Announce our new blocks to peers
-	m1 := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+	m1 := NewAnnounceBlocksMessage(d.Visor.Visor.HeadBkSeq())
 	d.Pool.Pool.BroadcastMessage(m1)
 	//request more blocks.
-	m2 := NewGetBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
+	m2 := NewGetBlocksMessage(d.Visor.Visor.HeadBkSeq())
 	d.Pool.Pool.BroadcastMessage(m2)
 }
 
@@ -366,7 +366,7 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	bkSeq := d.Visor.Visor.MostRecentBkSeq()
+	bkSeq := d.Visor.Visor.HeadBkSeq()
 	if bkSeq >= self.MaxBkSeq {
 		return
 	}

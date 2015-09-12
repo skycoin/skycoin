@@ -76,7 +76,7 @@ func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 		return nil
 	}
 	return &BlockchainProgress{
-		Current: v.Visor.MostRecentBkSeq(),
+		Current: v.Visor.HeadBkSeq(),
 		Highest: v.EstimateBlockchainLength(),
 	}
 }

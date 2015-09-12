@@ -398,7 +398,7 @@ func (self *Visor) GetGenesisBlock() SignedBlock {
 }
 
 // Returns the highest BkSeq we know
-func (self *Visor) MostRecentBkSeq() uint64 {
+func (self *Visor) HeadBkSeq() uint64 {
 	h := self.Blockchain.Head()
 	return h.Head.BkSeq
 }
@@ -478,7 +478,7 @@ func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	txns := make([]Transaction, 0)
 	// Look in the blockchain
 	uxs := self.Blockchain.Unspent.AllForAddress(a)
-	mxSeq := self.MostRecentBkSeq()
+	mxSeq := self.HeadBkSeq()
 	for _, ux := range uxs {
 		bk := self.Blockchain.Blocks[ux.Head.BkSeq]
 		tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
@@ -526,7 +526,7 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	for _, b := range self.Blockchain.Blocks {
 		tx, ok := b.GetTransaction(txHash)
 		if ok {
-			height := self.MostRecentBkSeq() - b.Head.BkSeq + 1
+			height := self.HeadBkSeq() - b.Head.BkSeq + 1
 			return Transaction{
 				Txn:    tx,
 				Status: NewConfirmedTransactionStatus(height),

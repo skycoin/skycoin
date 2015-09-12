@@ -119,7 +119,7 @@ func addSignedBlocks(t *testing.T, v *Visor, n int) []SignedBlock {
 
 func assertSignedBlocks(t *testing.T, v *Visor, sbs []SignedBlock,
     start, ct uint64) {
-    have := v.MostRecentBkSeq()
+    have := v.HeadBkSeq()
     if have <= start {
         assert.Equal(t, len(sbs), 0)
     } else if have-start < ct {
@@ -741,17 +741,17 @@ func TestGetGenesisBlock(t *testing.T) {
     assert.Equal(t, v.blockchain.Blocks[0], gb.Block)
 }
 
-func TestMostRecentBkSeq(t *testing.T) {
+func TestHeadBkSeq(t *testing.T) {
     defer cleanupVisor()
     vc := newMasterVisorConfig(t)
     v := NewVisor(vc)
-    assert.Equal(t, v.MostRecentBkSeq(), uint64(0))
+    assert.Equal(t, v.HeadBkSeq(), uint64(0))
     addSignedBlocks(t, v, 10)
-    assert.Equal(t, v.MostRecentBkSeq(), uint64(10))
+    assert.Equal(t, v.HeadBkSeq(), uint64(10))
     addSignedBlocks(t, v, 7)
-    assert.Equal(t, v.MostRecentBkSeq(), uint64(17))
+    assert.Equal(t, v.HeadBkSeq(), uint64(17))
     v = NewMinimalVisor(vc)
-    assert.Panics(t, func() { v.MostRecentBkSeq() })
+    assert.Panics(t, func() { v.HeadBkSeq() })
 }
 
 func TestGetBlockchainMetadata(t *testing.T) {

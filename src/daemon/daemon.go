@@ -296,7 +296,7 @@ func (self *Daemon) Start(quit chan int) {
 	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
 	blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if self.Visor.Config.Config.IsMaster {
+	if !self.Visor.Config.Config.IsMaster {
 		blockCreationTicker.Stop()
 	}
 

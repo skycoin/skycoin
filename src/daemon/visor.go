@@ -486,7 +486,11 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 		if err, known := d.Visor.Visor.InjectTxn(txn); err == nil && !known {
 			hashes = append(hashes, txn.Hash())
 		} else {
-			logger.Warning("Failed to record txn: %v", err)
+			if !known {
+				logger.Warning("Failed to record txn: %v", err)
+			} else {
+				logger.Warning("Duplicate Transation: ")
+			}
 		}
 	}
 	// Announce these transactions to peers

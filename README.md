@@ -34,6 +34,17 @@ OR
 go run ./cmd/skycoin/skycoin.go
 ```
 
+
+Local Server API
+----
+
+Run the skycoin client then
+
+http://127.0.0.1:6402/outputs
+http://127.0.0.1:6402/blockchain/blocks?start=0&end=500
+http://127.0.0.1:6402/blockchain
+http://127.0.0.1:6402/connections
+
 Public API
 ----
 

@@ -34,16 +34,28 @@ OR
 go run ./cmd/skycoin/skycoin.go
 ```
 
+Cross Compilation
+---
+
+Install Gox:
+go get https://github.com/mitchellh/gox
+gox -build-toolchain
+
+Compile:
+cd $GOPATH/src/github.com/skycoin/skycoin
+$G = skycoin-0.3
+gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/address_gen" ./address_gen/
+gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/skycoin" ./skycoin/
 
 Local Server API
 ----
 
 Run the skycoin client then
 
-http://127.0.0.1:6402/outputs
-http://127.0.0.1:6402/blockchain/blocks?start=0&end=500
-http://127.0.0.1:6402/blockchain
-http://127.0.0.1:6402/connections
+http://127.0.0.1:6420/outputs
+http://127.0.0.1:6420/blockchain/blocks?start=0&end=500
+http://127.0.0.1:6420/blockchain
+http://127.0.0.1:6420/connections
 
 Public API
 ----

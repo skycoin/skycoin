@@ -34,18 +34,35 @@ OR
 go run ./cmd/skycoin/skycoin.go
 ```
 
+GVM Golang install
+---
+
+```
+sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
+bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+source /root/.gvm/scripts/gvm
+
+gvm install go1.4
+gvm use go1.4
+gvm install go1.5
+```
+
 Cross Compilation
 ---
 
 Install Gox:
+```
 go get https://github.com/mitchellh/gox
 gox -build-toolchain
+```
 
 Compile:
+```
 cd $GOPATH/src/github.com/skycoin/skycoin
-$G = skycoin-0.3
-gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/address_gen" ./address_gen/
-gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/skycoin" ./skycoin/
+G="skycoin-0.3"
+gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/address_gen" ./cmd/address_gen/
+gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/skycoin" ./cmd/skycoin/
+```
 
 Local Server API
 ----

@@ -12,7 +12,7 @@ func main() {
 */
 
 import (
-	"github.com/skycoin/skycoin/src/sync"
+	"github.com/skycoin/skycoin/src/aether/cleanup/services/blob"
 	"time"
 	//"errors"
 	"fmt"

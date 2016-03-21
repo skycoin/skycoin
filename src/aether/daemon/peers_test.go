@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/stretchr/testify/assert"
 	"os"

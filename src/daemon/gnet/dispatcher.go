@@ -3,11 +3,12 @@ package gnet
 import (
 	"errors"
 	"fmt"
-	"github.com/skycoin/encoder"
 	"log"
 	"net"
 	"reflect"
 	"time"
+
+	"github.com/skycoin/encoder"
 )
 
 // Result of a single message send

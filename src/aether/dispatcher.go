@@ -3,8 +3,9 @@ package gnet
 import (
 	"errors"
 	"fmt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"log"
+
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	//"net"
 	"reflect"
 	//"time"

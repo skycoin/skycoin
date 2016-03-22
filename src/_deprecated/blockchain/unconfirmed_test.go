@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/stretchr/testify/assert"

@@ -27,7 +27,7 @@ var _genCoinHours uint64 = 1000 * 1000
 
 
 
-*/
+ */
 
 func tNow() uint64 {
 	return uint64(time.Now().UTC().Unix())

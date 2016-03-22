@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/skycoin/skycoin/src/aether/daemon"
 	gnet "github.com/skycoin/skycoin/src/aether"
+	"github.com/skycoin/skycoin/src/aether/daemon"
 )
 
 //move into daemon

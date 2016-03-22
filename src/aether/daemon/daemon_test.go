@@ -2,14 +2,18 @@ package daemon
 
 import (
 	"errors"
+
 	"github.com/nictuku/dht"
 	gnet "github.com/skycoin/skycoin/src/aether"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	//"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/skycoin/skycoin/src/util"
+	"github.com/stretchr/testify/assert"
 )
 
 func newDefaultDaemon() *Daemon {

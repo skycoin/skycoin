@@ -19,7 +19,6 @@ OSX:
 brew install mercurial bzr
 
 ```
-./setup.sh
 ./run.sh -h
 ```
 
@@ -34,7 +33,7 @@ OR
 go run ./cmd/skycoin/skycoin.go
 ```
 
-GVM Golang install
+Golang environment setup with gvm
 ---
 
 ```
@@ -42,9 +41,16 @@ sudo apt-get install bison curl git mercurial make binutils bison gcc build-esse
 bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
 source /root/.gvm/scripts/gvm
 
-gvm install go1.4
-gvm use go1.4
-gvm install go1.5
+gvm install go1.6
+gvm use go1.6
+```
+
+Dependencies
+---
+
+```
+go get github.com/robfig/glock
+glock sync github.com/skycoin/skycoin
 ```
 
 Cross Compilation
@@ -52,7 +58,7 @@ Cross Compilation
 
 Install Gox:
 ```
-go get https://github.com/mitchellh/gox
+go get github.com/mitchellh/gox
 gox -build-toolchain
 ```
 

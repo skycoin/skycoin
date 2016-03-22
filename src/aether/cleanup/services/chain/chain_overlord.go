@@ -3,11 +3,10 @@ package sync
 import (
 	//"crypto/sha256"
 	//"hash"
-	"errors"
-	"fmt"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
+
 	"log"
-	"time"
+
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
 type ChainPeerState struct {

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-
 	//"bytes"
 	//"math/big"
 )

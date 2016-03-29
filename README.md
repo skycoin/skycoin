@@ -62,8 +62,8 @@ source /root/.gvm/scripts/gvm
 #install golang
 gvm install go1.4
 gvm use go1.4
-gvm install go1.6
-gvm use go1.6 --default
+gvm install go1.5
+gvm use go1.5 --default
 
 #pull skycoin repo into the gopath
 cd $GOPATH/src
@@ -73,6 +73,7 @@ git clone https://github.com/skycoin/skycoin
 ln -s $GOPATH/src/skycoin/skycoin skycoin
 ```
 
+The skycoin repo must be in gopath, under "/src/github.com/skycoin". Otherwise golang programs cannot import the libraries.
 
 
 Cross Compilation

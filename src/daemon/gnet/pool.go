@@ -601,6 +601,17 @@ func (self *ConnectionPool) receiveMessage(c *Connection,
 	}
 	c.LastReceived = Now()
 	return nil, m.Handle(NewMessageContext(c), self.messageState)
+	//return nil, m.
+
+	//deprecate messageState
+
+	/*
+		For message prefix, look up the function
+		- then call reflect.Call(m map[string]interface{}, name string, params ... interface{}) (result []reflect.Value, err error)
+		- then convert the type
+
+	*/
+
 }
 
 // Returns the current UTC time

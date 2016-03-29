@@ -41,7 +41,7 @@ type UxOut struct {
 // Metadata (not hashed)
 type UxHead struct {
 	Time  uint64 //time of block it was created in
-	BkSeq uint64 //block it was created in
+	BkSeq uint64 //block it was created in, used to calculate depth
 	// SpSeq uint64 //block it was spent in
 }
 

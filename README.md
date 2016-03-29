@@ -44,8 +44,36 @@ source /root/.gvm/scripts/gvm
 
 gvm install go1.4
 gvm use go1.4
-gvm install go1.5
+gvm install go1.6
+gvm use go1.6 --default
 ```
+
+Install
+---
+
+In China, use a VPN during golang installation with gvm. The golang repo is on a server blocked by the chinese firewall.
+
+```
+sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev -y
+
+bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+source /root/.gvm/scripts/gvm
+
+#install golang
+gvm install go1.4
+gvm use go1.4
+gvm install go1.6
+gvm use go1.6 --default
+
+#pull skycoin repo into the gopath
+cd $GOPATH/src
+git clone https://github.com/skycoin/skycoin
+
+#create symlink of the repo
+ln -s $GOPATH/src/skycoin/skycoin skycoin
+```
+
+
 
 Cross Compilation
 ---

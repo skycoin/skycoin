@@ -84,7 +84,6 @@ function create_linux_package() {
     mkdir "$DIRTOZIP"
 
     # Copy GUI static resources
-    echo
     mkdir -p "$HTMLDIRDST"
     cp -R "$HTMLDIRSRC" "$HTMLDIRDST"
 
@@ -121,8 +120,9 @@ function create_osx_package() {
     echo "Not fully implemented, aborting"
     exit 1
 
-    CONTENTS=${SCRATCHDIR}/${APPNAME}.app/Contents
-    RESOURCES=${CONTENTS}/Resources
+    CONTENTS="${SCRATCHDIR}/${APPNAME}.app/Contents"
+    RESOURCES="${CONTENTS}/Resources"
+    HTMLDIRDST="${RESOURCES}/src/gui/static/"
 
     # Reset the scratch space
     rm -rf "$SCRATCHDIR"
@@ -132,7 +132,8 @@ function create_osx_package() {
     mkdir -p "$RESOURCES"
 
     # Copy static resources into the .app
-    cp -R "$HTMLDIR" "$RESOURCES"
+    mkdir -p "$HTMLDIRDST"
+    cp -R "$HTMLDIRSRC" "$HTMLDIRDST"
     cp osx/Info.plist "$CONTENTS"
     # TODO -- use our own skycoin.icns file
     #cp osx/skycoin.icns "$RESOURCES"
@@ -170,7 +171,8 @@ function create_windows_package() {
     mkdir "$DIRTOZIP"
 
     # Copy GUI static resources
-    cp -R "$HTMLDIR" "$DIRTOZIP"
+    mkdir -p "$HTMLDIRDST"
+    cp -R "$HTMLDIRSRC" "$HTMLDIRDST"
 
     # Copy client binary
     ls ${BINDIR}

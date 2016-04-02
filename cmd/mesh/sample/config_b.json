@@ -1,0 +1,21 @@
+{
+	"MyPubKey": [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	"TCPConfig": {
+		"Port":                     3632,
+		"MaxConnections":           128,
+		"MaxMessageLength":         262144,
+		"DialTimeout":              60000000000,
+		"ReadTimeout":              60000000000,
+		"WriteTimeout":             60000000000,
+		"EventChannelSize":         4096,
+		"BroadcastResultSize":      16,
+		"ConnectionWriteQueueSize": 32
+	},
+	"TCPConnections": [
+	{
+		"PeerPubKey": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		"Type": "tcp",
+		"Endpoint": "127.0.0.1:3631",
+		"RetryDelay": 1000000000
+	}]
+}

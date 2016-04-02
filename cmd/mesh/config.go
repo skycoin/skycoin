@@ -1,13 +1,17 @@
 package main
 
 import (
+    "time"
+)
+
+import (
     "github.com/skycoin/skycoin/src/daemon/gnet"
     "github.com/skycoin/skycoin/src/cipher")
 
 type Config struct {
     MyPubKey cipher.PubKey
-    Connections []PhysicalConnectionConfig
-    TCPServer* gnet.Config
+    TCPConnections []TCPOutgoingConnectionConfig
+    TCPConfig gnet.Config
     RouteToPipe* RouteConfig
 }
 
@@ -19,12 +23,10 @@ type PhysicalConnectionConfig struct {
 // Type: "tcp"
 type TCPOutgoingConnectionConfig struct {
     PhysicalConnectionConfig
-
-    Address string
-    Port int
+    Endpoint string
+    RetryDelay time.Duration
 }
 
 type RouteConfig struct {
     PeerPubKeys []cipher.PubKey
-    FullDuplex bool
 }

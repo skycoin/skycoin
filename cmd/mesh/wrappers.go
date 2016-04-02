@@ -12,7 +12,7 @@ type SendMessageWrapper struct {
 }
 var SendMessagePrefix = gnet.MessagePrefix{0,0,0,1}
 func (self *SendMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
-    fmt.Println("SendMessage")
+    fmt.Printf("SendMessage %v\n", self.SendMessage)
     return nil
 }
 

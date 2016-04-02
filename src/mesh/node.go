@@ -1,16 +1,11 @@
 package mesh
 
 import (
-    //"github.com/skycoin/skycoin/src/daemon/gnet"
+    "time"
+)
+
+import (
     "github.com/skycoin/skycoin/src/cipher"
- //   "github.com/skycoin/encoder"
-/*
-    "encoding/json"
-    "os"
-    "log"
-    "io/ioutil"
-    "flag"
-    */
 )
 
 type SendMessage struct {
@@ -31,6 +26,7 @@ type OperationReply struct {
 type EstablishRouteMessage struct {
     OperationMessage
     ToPubKey cipher.PubKey
+    DurationHint time.Duration
 }
 
 type EstablishRouteReplyMessage struct {
@@ -47,6 +43,7 @@ type SetRouteRewriteIdMessage struct {
 }
 
 type Node struct {
-//    MessagesIn chan 
+    MessagesOut chan interface{}
+    MessagesIn chan interface{} 
 }
 

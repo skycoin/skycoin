@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/daemon"
-	"gopkg.in/op/go-logging.v1"
 )
 
 var (
@@ -23,7 +22,7 @@ var (
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
-	logger.Warning("Starting web interface on http://%s", host)
+	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -34,19 +33,19 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	//if err := http.ListenAndServe(host, mux); err != nil {
 	//	log.Panic(err)
 	//}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
+	webInterfaceActive := make(chan bool, 1) //do not return until webserver is running
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		log.Panic(err)
 	}
 	go func() {
-		web_interface_active <- true
+		webInterfaceActive <- true
 		err = http.Serve(listener, mux) //blocks
 		if err != nil {
 			log.Panic()
 		}
 	}()
-	value := <-web_interface_active
+	value := <-webInterfaceActive
 	if value == true {
 		log.Printf("webservice should be running: RUN POPUP")
 	}
@@ -60,13 +59,14 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
-	var err error
+
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Panic(err)
 	}
 	appLoc := filepath.Join(dir, staticDir, resourceDir)
 	mux := NewGUIMux(appLoc, daemon)
+
 	//err := http.ListenAndServeTLS(host, certFile, keyFile, mux)
 	//if err != nil {
 	//	log.Panic(err)
@@ -75,22 +75,26 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
 	config.Certificates = make([]tls.Certificate, 1)
 	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		log.Panic()
+		log.Panic(err)
 	}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
+
+	// do not return until webserver is running
+	webInterfaceActive := make(chan bool, 1)
 	listener, err := tls.Listen("tcp", host, config)
 	if err != nil {
 		log.Panic(err)
 	}
+
 	go func() {
-		web_interface_active <- true
+		webInterfaceActive <- true
 		err = http.Serve(listener, mux) //blocks
 		if err != nil {
 			log.Panic()
 		}
 	}()
-	value := <-web_interface_active
-	if value == true {
+
+	value := <-webInterfaceActive
+	if value {
 		log.Printf("webservice should be running: RUN POPUP")
 	}
 	return nil

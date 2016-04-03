@@ -90,7 +90,7 @@ function create_linux_package() {
     # Make executable and copy the client binary and README
     chmod +x "${BINDIR}/${APP}"
     cp "${BINDIR}/${APP}" "${DIRTOZIP}/${BIN}"
-    cp linux/README "$DIRTOZIP"
+    cp linux/* "$DIRTOZIP"
 
     # Zip the target folder. Need to cd to the target directory so that the
     # tarball has the correct folder structure

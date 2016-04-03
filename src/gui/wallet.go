@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
+	"os"
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -36,42 +35,36 @@ type WalletRPC struct {
 }
 
 //use a global for now
-var Wg *WalletRPC = NewWalletRPC()
+var Wg *WalletRPC
 
-func NewWalletRPC() *WalletRPC {
-	rpc := WalletRPC{}
+func InitWalletRPC(walletDir string) {
+	Wg = NewWalletRPC(walletDir)
+}
 
-	//wallet directory
-	//cleanup, pass as parameter during init
+func NewWalletRPC(walletDir string) *WalletRPC {
+	rpc := &WalletRPC{}
 
-	DataDirectory := util.InitDataDir("")
-	rpc.WalletDirectory = filepath.Join(DataDirectory, "wallets/")
-	logger.Debug("Wallet Directory= %v", rpc.WalletDirectory)
-	util.InitDataDir(rpc.WalletDirectory)
+	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
+		log.Panicf("Failed to create wallet directory %s: %v", walletDir, err)
+	}
 
-	rpc.Wallets = wallet.Wallets{}
+	rpc.WalletDirectory = walletDir
 
-	//util.InitDataDir(".skycoin")
-	//util.InitDataDir(".skycoin/wallets")
-
-	//if rpc.WalletDirectory != "" {
 	w, err := wallet.LoadWallets(rpc.WalletDirectory)
 	if err != nil {
 		log.Panicf("Failed to load all wallets: %v", err)
 	}
 	rpc.Wallets = w
-	//}
+
 	if len(rpc.Wallets) == 0 {
 		rpc.Wallets.Add(wallet.NewWallet("")) //deterministic
-		if rpc.WalletDirectory != "" {
-			errs := rpc.Wallets.Save(rpc.WalletDirectory)
-			if len(errs) != 0 {
-				log.Panicf("Failed to save wallets: %v", errs)
-			}
+		errs := rpc.Wallets.Save(rpc.WalletDirectory)
+		if len(errs) != 0 {
+			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
 		}
 	}
 
-	return &rpc
+	return rpc
 }
 
 func (self *WalletRPC) ReloadWallets() error {

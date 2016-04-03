@@ -4,20 +4,21 @@ package util
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
+	"runtime"
 
 	"gopkg.in/op/go-logging.v1"
 )
 
 var (
-	defaultDataDir = ".skycoin/"
+	DefaultDataDir = ".skycoin/"
+
+	logger = logging.MustGetLogger("skycoin.util")
 )
 
-// Disable the logger completely
+// Disables the logger completely
 func DisableLogging() {
 	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
 }
@@ -26,23 +27,36 @@ func DisableLogging() {
 // is created, and the dir used is returned
 func InitDataDir(dir string) string {
 	if dir == "" {
-		home, err := UserHome()
-		if err == nil {
-			dir = filepath.Join(home, defaultDataDir)
+		home := UserHome()
+		if home == "" {
+			logger.Warning("Failed to get home directory")
+			dir = filepath.Join("./", DefaultDataDir)
 		} else {
-			fmt.Printf("Warning, failed to get home directory: %v\n", err)
+			dir = filepath.Join(home, DefaultDataDir)
 		}
 	}
-	os.MkdirAll(dir, os.FileMode(0755))
+	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
+		logger.Error("Failed to create directory %s: %v", dir, err)
+	}
 	return dir
 }
 
-func UserHome() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", err
+func UserHome() string {
+	// os/user relies on cgo which is disabled when cross compiling
+	// use fallbacks for various OSes instead
+	// usr, err := user.Current()
+	// if err == nil {
+	// 	return usr.HomeDir
+	// }
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
 	}
-	return usr.HomeDir, nil
+
+	return os.Getenv("HOME")
 }
 
 func LoadJSON(filename string, thing interface{}) error {

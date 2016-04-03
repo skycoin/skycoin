@@ -12,8 +12,6 @@ import (
 	"runtime/pprof"
 	"syscall"
 	"time"
-
-	"gopkg.in/op/go-logging.v1"
 )
 
 import (
@@ -79,8 +77,13 @@ type Config struct {
 	WebInterfaceCert  string
 	WebInterfaceKey   string
 	WebInterfaceHTTPS bool
-	//Launch System Default Browser after client startup
+
+	// Launch System Default Browser after client startup
 	LaunchBrowser bool
+
+	// If true, print the configured client web interface address and exit
+	PrintWebInterfaceAddress bool
+
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
 	// GUI directory contains assets for the html gui
@@ -93,6 +96,7 @@ type Config struct {
 	logLevel string
 
 	// Wallets
+	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
 	BlockchainFile  string
 	BlockSigsFile   string
@@ -153,8 +157,10 @@ func (c *Config) register() {
 			"If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
 		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.BoolVar(&c.LaunchBrowser, "launch-browser", true,
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", &c.LaunchBrowser,
 		"launch system default webbrowser at client startup")
+	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
+		c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
 		"directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
@@ -344,12 +350,14 @@ var devConfig Config = Config{
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
-	WebInterface:      true,
-	WebInterfacePort:  6420,
-	WebInterfaceAddr:  "127.0.0.1",
-	WebInterfaceCert:  "",
-	WebInterfaceKey:   "",
-	WebInterfaceHTTPS: false,
+	WebInterface:             true,
+	WebInterfacePort:         6420,
+	WebInterfaceAddr:         "127.0.0.1",
+	WebInterfaceCert:         "",
+	WebInterfaceKey:          "",
+	WebInterfaceHTTPS:        false,
+	PrintWebInterfaceAddress: false,
+	LaunchBrowser:            true,
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory: "",
 	// Web GUI static resources
@@ -420,7 +428,17 @@ func configureDaemon(c *Config) daemon.Config {
 }
 
 func Run(c *Config) {
-	devConfig.Parse()
+	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+
+	if c.PrintWebInterfaceAddress {
+		scheme := "http"
+		if c.WebInterfaceHTTPS {
+			scheme = "https"
+		}
+		fmt.Printf("%s://%s\n", scheme, host)
+		return
+	}
+
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 	initLogging(c.LogLevel, c.ColorLog)
 
@@ -430,10 +448,7 @@ func Run(c *Config) {
 	// Watch for SIGUSR1
 	go catchDebug()
 
-	err := os.MkdirAll(c.WalletDirectory, os.FileMode(0700))
-	if err != nil {
-		logger.Critical("Failed to create wallet directory: %v", err)
-	}
+	gui.InitWalletRPC(c.WalletDirectory)
 
 	dconf := configureDaemon(c)
 	d := daemon.NewDaemon(dconf)
@@ -448,8 +463,6 @@ func Run(c *Config) {
 			log.Panic(err)
 		}
 	}
-
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 
 	if c.WebInterface {
 
@@ -507,6 +520,7 @@ func main() {
 	*/
 
 	//skycoin.Run(&cli.DevArgs)
+	devConfig.Parse()
 	Run(&devConfig)
 }
 

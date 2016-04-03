@@ -12,17 +12,18 @@ import (
 	"runtime/pprof"
 	"syscall"
 	"time"
-)
 
-import (
-	//"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
-	//"github.com/skycoin/skycoin/src/wallet"
+	"gopkg.in/op/go-logging.v1"
 )
+
+//"github.com/skycoin/skycoin/src/cli"
+
+//"github.com/skycoin/skycoin/src/wallet"
 
 var (
 	logger     = logging.MustGetLogger("skycoin.main")
@@ -157,7 +158,7 @@ func (c *Config) register() {
 			"If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
 		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.BoolVar(&c.LaunchBrowser, "launch-browser", &c.LaunchBrowser,
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
 		"launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
 		c.PrintWebInterfaceAddress, "print configured web interface address and exit")

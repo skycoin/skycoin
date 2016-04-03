@@ -122,6 +122,7 @@ function create_osx_package() {
 
     CONTENTS="${SCRATCHDIR}/${APPNAME}.app/Contents"
     RESOURCES="${CONTENTS}/Resources"
+    MACOS="${CONTENTS}/MacOS"
     HTMLDIRDST="${RESOURCES}/src/gui/static/"
 
     # Reset the scratch space
@@ -129,7 +130,9 @@ function create_osx_package() {
     mkdir -p "$SCRATCHDIR"
 
     # Setup the target folder
-    mkdir -p "$RESOURCES"
+    mkdir -p "$CONTENTS"
+    mkdir "$RESOURCES"
+    mkdir "$MACOS"
 
     # Copy static resources into the .app
     mkdir -p "$HTMLDIRDST"
@@ -139,7 +142,7 @@ function create_osx_package() {
     #cp osx/skycoin.icns "$RESOURCES"
 
     # TODO -- package the binary properly for use in a .app here
-    # cp $BIN ${APPNAME}.app/${SOMEWHERE}
+    cp "${BINDIR}/${APP}" "${MACOS}/${BIN}"
 
     # zip the .app
     pushd "$SCRATCHDIR" >/dev/null

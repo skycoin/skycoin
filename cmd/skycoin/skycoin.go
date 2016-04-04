@@ -464,7 +464,7 @@ func Run(c *Config) {
 					c.WebInterfaceCert, c.WebInterfaceKey)
 			}
 		} else {
-			gui.LaunchWebInterface(host, c.GUIDirectory, d)
+			_ = gui.LaunchWebInterface(host, c.GUIDirectory, d)
 		}
 
 	}

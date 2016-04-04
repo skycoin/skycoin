@@ -20,7 +20,7 @@ var (
 
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
-func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) {
+func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Warning("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 	appLoc := filepath.Join(staticDir, resourceDir)
@@ -36,7 +36,7 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) {
 	listener, err := net.Listen("tcp", host)
 
 	if err != nil {
-		return
+		log.Panic(err)
 	}
 
 	go func() {
@@ -51,7 +51,7 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) {
 	if value == true {
 		log.Printf("webservice should be running: RUN POPUP")
 	}
-
+	return nil
 	//Listen(net, laddr string) (Listener, error))
 
 	//func (srv *Server) Serve(l net.Listener) error

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -50,16 +51,40 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 // Begins listening on https://$host, for enabling remote web access
 // Uses HTTPS
 func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
-	certFile, keyFile string) {
+	certFile, keyFile string) error {
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
 	appLoc := filepath.Join(staticDir, resourceDir)
 	mux := NewGUIMux(appLoc, daemon)
-	err := http.ListenAndServeTLS(host, certFile, keyFile, mux)
+	//err := http.ListenAndServeTLS(host, certFile, keyFile, mux)
+	//if err != nil {
+	//	log.Panic(err)
+	//}
+	var err error
+	config := new(tls.Config)
+	config.Certificates = make([]tls.Certificate, 1)
+	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		log.Panic()
+	}
+	web_interface_active := make(chan bool, 1) //do not return until webserver is running
+	listener, err := tls.Listen("tcp", host, config)
 	if err != nil {
 		log.Panic(err)
 	}
+	go func() {
+		web_interface_active <- true
+		err = http.Serve(listener, mux) //blocks
+		if err != nil {
+			log.Panic()
+		}
+	}()
+	value := <-web_interface_active
+	if value == true {
+		log.Printf("webservice should be running: RUN POPUP")
+	}
+	return nil
 }
 
 // Creates an http.ServeMux with handlers registered

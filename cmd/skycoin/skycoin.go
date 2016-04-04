@@ -523,7 +523,8 @@ func Run(args Args) {
 		//check that webserver is running
 		value := <-web_interface_active
 		if value == true {
-			log.Printf("webservice should be running")
+			log.Printf("webservice should be running: RUN POPUP")
+
 		}
 
 	}

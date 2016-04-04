@@ -5,9 +5,10 @@ import (
 	//"hash"
 	"errors"
 	"fmt"
-	gnet "github.com/skycoin/skycoin/src/aether"
 	"log"
 	"time"
+
+	gnet "github.com/skycoin/skycoin/src/aether"
 )
 
 //register messages
@@ -102,7 +103,7 @@ func getMessageConfigs() []MessageConfig {
 
 /*
 
-*/
+ */
 
 //data object that is replicated
 type Blob struct {

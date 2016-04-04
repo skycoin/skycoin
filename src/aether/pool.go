@@ -5,11 +5,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"log"
 	"net"
 	"time"
+
+	"github.com/skycoin/skycoin/src/aether/encoder"
+	"gopkg.in/op/go-logging.v1"
 )
 
 /*

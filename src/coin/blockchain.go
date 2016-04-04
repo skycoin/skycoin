@@ -3,10 +3,11 @@ package coin
 import (
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
+	"log"
+
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
-	"log"
+	"gopkg.in/op/go-logging.v1"
 
 	//"time"
 	"bytes"

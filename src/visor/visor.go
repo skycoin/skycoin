@@ -2,12 +2,13 @@ package visor
 
 import (
 	"errors"
+
+	"gopkg.in/op/go-logging.v1"
 	//"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"

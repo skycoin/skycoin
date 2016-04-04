@@ -2,9 +2,10 @@ package wallet
 
 import (
 	//"fmt"
+	"log"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
-	"log"
 )
 
 type ReadableWalletEntry struct {

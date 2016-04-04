@@ -1,0 +1,6 @@
+OS=windows
+ARCH=amd64
+APP=skycoin_windows_x64
+APPD=skycoind_windows_x64
+BIN=skycoin
+ZIPNAME=skycoin_windows_x64

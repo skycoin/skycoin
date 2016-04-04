@@ -6,7 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/op/go-logging"
+	"gopkg.in/op/go-logging.v1"
+
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 

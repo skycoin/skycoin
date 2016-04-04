@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
-	"github.com/skycoin/encoder"
 	"log"
 	"net"
 	"reflect"
 	"time"
+
+	"github.com/skycoin/encoder"
+	"gopkg.in/op/go-logging.v1"
 )
 
 // TODO -- parameterize configuration per pool

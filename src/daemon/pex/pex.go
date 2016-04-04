@@ -4,8 +4,6 @@ package pex
 import (
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/util"
 	"io"
 	"math/rand"
 	"net"
@@ -15,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/skycoin/skycoin/src/util"
+	"gopkg.in/op/go-logging.v1"
 )
 
 //TODO:

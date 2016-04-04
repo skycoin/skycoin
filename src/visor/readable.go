@@ -6,6 +6,7 @@ import (
 
 	"encoding/json"
 	"errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 )

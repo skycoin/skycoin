@@ -3,6 +3,7 @@ package visor
 import (
 	"os"
 	"testing"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/wallet"

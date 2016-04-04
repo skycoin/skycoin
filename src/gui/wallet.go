@@ -4,16 +4,17 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"path/filepath"
+	"strconv"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"log"
-	"net/http"
-	"path/filepath"
-	"strconv"
 )
 
 //var Wallets wallet.Wallets

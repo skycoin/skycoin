@@ -2,13 +2,13 @@ package gui
 
 import (
 	"fmt"
-	"github.com/lonnc/golang-nw"
-	"github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/daemon"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
+
+	"github.com/skycoin/skycoin/src/daemon"
+	"gopkg.in/op/go-logging.v1"
 )
 
 var (
@@ -16,24 +16,6 @@ var (
 	resourceDir = "dist/"
 	indexPage   = "index.html"
 )
-
-// Begins listening on the node-webkit localhost
-func LaunchGUI(daemon *daemon.Daemon) {
-	// Create a link back to node-webkit using the environment variable
-	// populated by golang-nw's node-webkit code
-	nodeWebkit, err := nw.New()
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// Pick a random localhost port, start listening for http requests using
-	// default handler and send a message back to node-webkit to redirect
-	logger.Info("Launching GUI server")
-	mux := NewGUIMux(resourceDir, daemon)
-	if err := nodeWebkit.ListenAndServe(mux); err != nil {
-		log.Panic(err)
-	}
-}
 
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS

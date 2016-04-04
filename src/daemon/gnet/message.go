@@ -80,7 +80,6 @@ type Message interface {
 	// client.  You don't have to return the DisconnectReason but that may
 	// be the most convenient.  If error is not nil, event buffer processing
 	// is aborted.
-
 	Handle(context *MessageContext, state interface{}) error
 }
 

@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
-	"time"
 )
 
 var BurnFactor uint64 = 2 //half of coinhours must be burnt

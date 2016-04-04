@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/op/go-logging"
+	"gopkg.in/op/go-logging.v1"
 )
 
 import (
@@ -26,16 +26,31 @@ import (
 	//"github.com/skycoin/skycoin/src/wallet"
 )
 
+var (
+	logger     = logging.MustGetLogger("skycoin.main")
+	logFormat  = "[%{module}:%{level}] %{message}"
+	logModules = []string{
+		"skycoin.main",
+		"skycoin.daemon",
+		"skycoin.coin",
+		"skycoin.gui",
+		"skycoin.util",
+		"skycoin.visor",
+		"skycoin.wallet",
+		"gnet",
+		"pex",
+	}
+
+	//clear these after loading [????]
+	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
+	GenesisAddressStr   = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
+	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	BlockchainSeckeyStr = ""
+)
+
 // Command line interface arguments
 
-type Args interface {
-	register()
-	postProcess()
-	getConfig() *Config
-}
-
 type Config struct {
-	DisableGUI bool
 	// Disable peer exchange
 	DisablePEX bool
 	// Don't make any outgoing connections
@@ -104,214 +119,57 @@ type Config struct {
 	ConnectTo string
 }
 
-func (self *Config) register() {
-	log.Panic("Config.register must be overridden")
-}
-
-func (self *Config) postProcess() {
-
-	//var GenesisSignatureStr string //only set if passed in command line arg
-	//var GenesisAddressStr string   //only set if passed in command line arg
-	//var BlockchainPubkeyStr string //only set if passed in command line arg
-	//var BlockchainSeckeyStr string //only set if passed in command line arg
-
-	var err error
-	if GenesisSignatureStr != "" {
-		self.GenesisSignature, err = cipher.SigFromHex(GenesisSignatureStr)
-		if err != nil {
-			log.Panic("Invalid Signature")
-		}
-	}
-	if GenesisAddressStr != "" {
-		self.GenesisAddress, err = cipher.DecodeBase58Address(GenesisAddressStr)
-		if err != nil {
-			log.Panic("Invalid Address")
-		}
-	}
-	if BlockchainPubkeyStr != "" {
-		self.BlockchainPubkey, err = cipher.PubKeyFromHex(BlockchainPubkeyStr)
-		if err != nil {
-			log.Panic("Invalid Pubkey")
-		}
-	}
-	if BlockchainSeckeyStr != "" {
-		self.BlockchainSeckey, err = cipher.SecKeyFromHex(BlockchainSeckeyStr)
-		if err != nil {
-			log.Panic("Invalid Seckey")
-		}
-		BlockchainSeckeyStr = ""
-	}
-	if BlockchainSeckeyStr != "" {
-		self.BlockchainSeckey = cipher.SecKey{}
-	}
-
-	self.DataDirectory = util.InitDataDir(self.DataDirectory)
-	if self.WebInterfaceCert == "" {
-		self.WebInterfaceCert = filepath.Join(self.DataDirectory, "cert.pem")
-	}
-	if self.WebInterfaceKey == "" {
-		self.WebInterfaceKey = filepath.Join(self.DataDirectory, "key.pem")
-	}
-
-	if self.BlockchainFile == "" {
-		self.BlockchainFile = filepath.Join(self.DataDirectory, "blockchain.bin")
-	}
-	if self.BlockSigsFile == "" {
-		self.BlockSigsFile = filepath.Join(self.DataDirectory, "blockchain.sigs")
-	}
-	if self.WalletDirectory == "" {
-		self.WalletDirectory = filepath.Join(self.DataDirectory, "wallets/")
-	}
-	ll, err := logging.LogLevel(self.logLevel)
-	if err != nil {
-		log.Panic("Invalid -log-level %s: %v\n", self.logLevel, err)
-	}
-	self.LogLevel = ll
-}
-
-func (self *Config) getConfig() *Config {
-	return self
-}
-
-// Parses arguments defined in a struct that satisfies Config interface
-func ParseArgs(args Args) *Config {
-	log.Printf("L1")
-	args.register()
-	log.Printf("L2")
+func (c *Config) Parse() {
+	c.register()
 	flag.Parse()
-	log.Printf("L3")
-	args.postProcess()
-	log.Printf("L4")
-	return args.getConfig()
+	c.postProcess()
 }
 
-/*
- Dev Args
-*/
-
-type DevConfig struct {
-	Config
-}
-
-var DevArgs = DevConfig{Config{
-	DisableGUI: true,
-	// Disable peer exchange
-	DisablePEX: true,
-	// Don't make any outgoing connections
-	DisableOutgoingConnections: false,
-	// Don't allowing incoming connections
-	DisableIncomingConnections: false,
-	// Disables networking altogether
-	DisableNetworking: false,
-	// Only run on localhost and only connect to others on localhost
-	LocalhostOnly: false,
-	// Which address to serve on. Leave blank to automatically assign to a
-	// public interface
-	Address: "",
-	//gnet uses this for TCP incoming and outgoing
-	Port: 6000,
-
-	MaxConnections: 16,
-	// How often to make outgoing connections, in seconds
-	OutgoingConnectionsRate: time.Second * 5,
-	// Wallet Address Version
-	//AddressVersion: "test",
-	// Remote web interface
-	WebInterface:      true,
-	WebInterfacePort:  6420,
-	WebInterfaceAddr:  "127.0.0.1",
-	WebInterfaceCert:  "",
-	WebInterfaceKey:   "",
-	WebInterfaceHTTPS: false,
-	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: "",
-	// Data directory holds app data -- defaults to ~/.skycoin
-	GUIDirectory: "./src/gui/static/",
-	// Logging
-	LogLevel: logging.DEBUG,
-	ColorLog: true,
-	logLevel: "DEBUG",
-
-	// Wallets
-	WalletDirectory: "",
-	BlockchainFile:  "",
-	BlockSigsFile:   "",
-
-	// Centralized network configuration
-	RunMaster:        false,
-	BlockchainPubkey: cipher.PubKey{},
-	BlockchainSeckey: cipher.SecKey{},
-
-	GenesisAddress:   cipher.Address{},
-	GenesisTimestamp: 1426562704,
-	GenesisSignature: cipher.Sig{},
-
-	/* Developer options */
-
-	// Enable cpu profiling
-	ProfileCPU: false,
-	// Where the file is written to
-	ProfileCPUFile: "skycoin.prof",
-	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-	HTTPProf: false,
-	// Will force it to connect to this ip:port, instead of waiting for it
-	// to show up as a peer
-	ConnectTo: "",
-}}
-
-//clear these after loading
-var GenesisSignatureStr string = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
-var GenesisAddressStr string = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
-var BlockchainPubkeyStr string = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
-var BlockchainSeckeyStr string = ""
-
-func (self *DevConfig) register() {
-	flag.BoolVar(&self.DisablePEX, "disable-pex", self.DisablePEX,
+func (c *Config) register() {
+	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
 		"disable PEX peer discovery")
-	flag.BoolVar(&self.DisableOutgoingConnections, "disable-outgoing",
-		self.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&self.DisableIncomingConnections, "disable-incoming",
-		self.DisableIncomingConnections, "Don't make incoming connections")
-	flag.BoolVar(&self.DisableNetworking, "disable-networking",
-		self.DisableNetworking, "Disable all network activity")
-	flag.StringVar(&self.Address, "address", self.Address,
+	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
+		c.DisableOutgoingConnections, "Don't make outgoing connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
+		c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableNetworking, "disable-networking",
+		c.DisableNetworking, "Disable all network activity")
+	flag.StringVar(&c.Address, "address", c.Address,
 		"IP Address to run application on. Leave empty to default to a public interface")
-	flag.IntVar(&self.Port, "port", self.Port, "Port to run application on")
-	flag.BoolVar(&self.DisableGUI, "disable-gui", self.DisableGUI,
-		"disable the gui")
-	flag.BoolVar(&self.WebInterface, "web-interface", self.WebInterface,
+	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
 		"enable the web interface")
-	flag.IntVar(&self.WebInterfacePort, "web-interface-port",
-		self.WebInterfacePort, "port to serve web interface on")
-	flag.StringVar(&self.WebInterfaceAddr, "web-interface-addr",
-		self.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&self.WebInterfaceCert, "web-interface-cert",
-		self.WebInterfaceCert, "cert.pem file for web interface HTTPS. "+
+	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
+		c.WebInterfacePort, "port to serve web interface on")
+	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr",
+		c.WebInterfaceAddr, "addr to serve web interface on")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert",
+		c.WebInterfaceCert, "cert.pem file for web interface HTTPS. "+
 			"If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&self.WebInterfaceKey, "web-interface-key",
-		self.WebInterfaceKey, "key.pem file for web interface HTTPS. "+
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key",
+		c.WebInterfaceKey, "key.pem file for web interface HTTPS. "+
 			"If not provided, will use key.pem in -data-directory")
-	flag.BoolVar(&self.WebInterfaceHTTPS, "web-interface-https",
-		self.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&self.DataDirectory, "data-dir", self.DataDirectory,
+	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
+		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
 		"directory to store app data (defaults to ~/.skycoin)")
-	flag.StringVar(&self.ConnectTo, "connect-to", self.ConnectTo,
+	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
 		"connect to this ip only")
-	flag.BoolVar(&self.ProfileCPU, "profile-cpu", self.ProfileCPU,
+	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU,
 		"enable cpu profiling")
-	flag.StringVar(&self.ProfileCPUFile, "profile-cpu-file",
-		self.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&self.HTTPProf, "http-prof", self.HTTPProf,
+	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file",
+		c.ProfileCPUFile, "where to write the cpu profile file")
+	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf,
 		"Run the http profiling interface")
-	flag.StringVar(&self.logLevel, "log-level", self.logLevel,
+	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
-	//flag.BoolVar(&self.ColorLog, "color-log", self.ColorLog,
+	//flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 	//	"Add terminal colors to log output")
-	flag.StringVar(&self.GUIDirectory, "gui-dir", self.GUIDirectory,
+	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
 
 	//Key Configuration Data
-	flag.BoolVar(&self.RunMaster, "master", self.RunMaster,
+	flag.BoolVar(&c.RunMaster, "master", c.RunMaster,
 		"run the daemon as blockchain master server")
 
 	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr,
@@ -323,43 +181,76 @@ func (self *DevConfig) register() {
 		"genesis address")
 	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr,
 		"genesis block signature")
-	flag.Uint64Var(&self.GenesisTimestamp, "genesis-timestamp", self.GenesisTimestamp,
+	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp,
 		"genesis block timestamp")
 
-	flag.StringVar(&self.WalletDirectory, "wallet-dir", self.WalletDirectory,
+	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
 
-	flag.StringVar(&self.BlockchainFile, "blockchain-file", self.BlockchainFile,
+	flag.StringVar(&c.BlockchainFile, "blockchain-file", c.BlockchainFile,
 		"location of the blockchain file. Default to ~/.skycoin/blockchain.bin")
-	flag.StringVar(&self.BlockSigsFile, "blocksigs-file", self.BlockSigsFile,
+	flag.StringVar(&c.BlockSigsFile, "blocksigs-file", c.BlockSigsFile,
 		"location of the block signatures file. Default to ~/.skycoin/blockchain.sigs")
 
-	flag.DurationVar(&self.OutgoingConnectionsRate, "connection-rate",
-		self.OutgoingConnectionsRate, "How often to make an outgoing connection")
-	flag.BoolVar(&self.LocalhostOnly, "localhost-only", self.LocalhostOnly,
+	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
+		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
 		"Run on localhost and only connect to localhost peers")
-	//flag.StringVar(&self.AddressVersion, "address-version", self.AddressVersion,
+	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
 }
 
-/*
-End Dev Args
-*/
-var (
-	logger     = logging.MustGetLogger("skycoin.main")
-	logFormat  = "[%{module}:%{level}] %{message}"
-	logModules = []string{
-		"skycoin.main",
-		"skycoin.daemon",
-		"skycoin.coin",
-		"skycoin.gui",
-		"skycoin.util",
-		"skycoin.visor",
-		"skycoin.wallet",
-		"gnet",
-		"pex",
+func (c *Config) postProcess() {
+	var err error
+	if GenesisSignatureStr != "" {
+		c.GenesisSignature, err = cipher.SigFromHex(GenesisSignatureStr)
+		panicIfError(err, "Invalid Signature")
 	}
-)
+	if GenesisAddressStr != "" {
+		c.GenesisAddress, err = cipher.DecodeBase58Address(GenesisAddressStr)
+		panicIfError(err, "Invalid Address")
+	}
+	if BlockchainPubkeyStr != "" {
+		c.BlockchainPubkey, err = cipher.PubKeyFromHex(BlockchainPubkeyStr)
+		panicIfError(err, "Invalid Pubkey")
+	}
+	if BlockchainSeckeyStr != "" {
+		c.BlockchainSeckey, err = cipher.SecKeyFromHex(BlockchainSeckeyStr)
+		panicIfError(err, "Invalid Seckey")
+		BlockchainSeckeyStr = ""
+	}
+	if BlockchainSeckeyStr != "" {
+		c.BlockchainSeckey = cipher.SecKey{}
+	}
+
+	c.DataDirectory = util.InitDataDir(c.DataDirectory)
+	if c.WebInterfaceCert == "" {
+		c.WebInterfaceCert = filepath.Join(c.DataDirectory, "cert.pem")
+	}
+	if c.WebInterfaceKey == "" {
+		c.WebInterfaceKey = filepath.Join(c.DataDirectory, "key.pem")
+	}
+
+	if c.BlockchainFile == "" {
+		c.BlockchainFile = filepath.Join(c.DataDirectory, "blockchain.bin")
+	}
+	if c.BlockSigsFile == "" {
+		c.BlockSigsFile = filepath.Join(c.DataDirectory, "blockchain.sigs")
+	}
+	if c.WalletDirectory == "" {
+		c.WalletDirectory = filepath.Join(c.DataDirectory, "wallets/")
+	}
+
+	ll, err := logging.LogLevel(c.logLevel)
+	panicIfError(err, "Invalid -log-level %s", c.logLevel)
+	c.LogLevel = ll
+}
+
+func panicIfError(err error, msg string, args ...interface{}) {
+	if err != nil {
+		log.Panicf(msg+": %v", append(args, err)...)
+	}
+}
 
 func printProgramStatus() {
 	fn := "goroutine.prof"
@@ -426,6 +317,71 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 	}
 }
 
+var devConfig Config = Config{
+	// Disable peer exchange
+	DisablePEX: true,
+	// Don't make any outgoing connections
+	DisableOutgoingConnections: false,
+	// Don't allowing incoming connections
+	DisableIncomingConnections: false,
+	// Disables networking altogether
+	DisableNetworking: false,
+	// Only run on localhost and only connect to others on localhost
+	LocalhostOnly: false,
+	// Which address to serve on. Leave blank to automatically assign to a
+	// public interface
+	Address: "",
+	//gnet uses this for TCP incoming and outgoing
+	Port: 6000,
+
+	MaxConnections: 16,
+	// How often to make outgoing connections, in seconds
+	OutgoingConnectionsRate: time.Second * 5,
+	// Wallet Address Version
+	//AddressVersion: "test",
+	// Remote web interface
+	WebInterface:      true,
+	WebInterfacePort:  12176,
+	WebInterfaceAddr:  "127.0.0.1",
+	WebInterfaceCert:  "",
+	WebInterfaceKey:   "",
+	WebInterfaceHTTPS: false,
+	// Data directory holds app data -- defaults to ~/.skycoin
+	DataDirectory: "",
+	// Web GUI static resources
+	GUIDirectory: "./src/gui/static/",
+	// Logging
+	LogLevel: logging.DEBUG,
+	ColorLog: true,
+	logLevel: "DEBUG",
+
+	// Wallets
+	WalletDirectory: "",
+	BlockchainFile:  "",
+	BlockSigsFile:   "",
+
+	// Centralized network configuration
+	RunMaster:        false,
+	BlockchainPubkey: cipher.PubKey{},
+	BlockchainSeckey: cipher.SecKey{},
+
+	GenesisAddress:   cipher.Address{},
+	GenesisTimestamp: 1426562704,
+	GenesisSignature: cipher.Sig{},
+
+	/* Developer options */
+
+	// Enable cpu profiling
+	ProfileCPU: false,
+	// Where the file is written to
+	ProfileCPUFile: "skycoin.prof",
+	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
+	HTTPProf: false,
+	// Will force it to connect to this ip:port, instead of waiting for it
+	// to show up as a peer
+	ConnectTo: "",
+}
+
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
@@ -459,8 +415,8 @@ func configureDaemon(c *Config) daemon.Config {
 	return dc
 }
 
-func Run(args Args) {
-	c := ParseArgs(args)
+func Run(c *Config) {
+	devConfig.Parse()
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 	initLogging(c.LogLevel, c.ColorLog)
 
@@ -487,10 +443,6 @@ func Run(args Args) {
 		if err != nil {
 			log.Panic(err)
 		}
-	}
-
-	if !c.DisableGUI {
-		go gui.LaunchGUI(d)
 	}
 
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
@@ -559,7 +511,7 @@ func main() {
 	*/
 
 	//skycoin.Run(&cli.DevArgs)
-	Run(&DevArgs)
+	Run(&devConfig)
 }
 
 //addresses for storage of coins

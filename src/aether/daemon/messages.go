@@ -4,11 +4,13 @@ import (
 	//"encoding/binary"
 	//"errors"
 	"fmt"
+
 	"github.com/skycoin/skycoin/src/aether/daemon/pex"
 	//"github.com/skycoin/skycoin/src/util"
-	gnet "github.com/skycoin/skycoin/src/aether"
 	"log"
 	"math/rand"
+
+	gnet "github.com/skycoin/skycoin/src/aether"
 	//"net"
 )
 

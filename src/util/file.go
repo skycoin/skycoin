@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
+
+	"gopkg.in/op/go-logging.v1"
 )
 
 var (

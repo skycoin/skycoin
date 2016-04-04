@@ -449,7 +449,6 @@ func Run(c *Config) {
 
 	if c.WebInterface {
 
-		web_interface_active := make(chan bool, 1)
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
 			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey)
@@ -459,24 +458,13 @@ func Run(c *Config) {
 					log.Panic("gui.CreateCertIfNotExists")
 				}
 			} else {
-				go func() {
-					web_interface_active <- true
-					//does HTTP.Listen and serve block?
-					gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
-						c.WebInterfaceCert, c.WebInterfaceKey)
-				}()
+				//does HTTP.Listen and serve block? blocks
+				//new implementation does not block
+				gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
+					c.WebInterfaceCert, c.WebInterfaceKey)
 			}
 		} else {
-			go func() {
-				web_interface_active <- true
-				gui.LaunchWebInterface(host, c.GUIDirectory, d)
-			}()
-		}
-		//check that webserver is running
-		value := <-web_interface_active
-		if value == true {
-			log.Printf("webservice should be running: RUN POPUP")
-
+			gui.LaunchWebInterface(host, c.GUIDirectory, d)
 		}
 
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"path/filepath"
 
@@ -24,9 +25,37 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) {
 	logger.Warning("HTTPS not in use!")
 	appLoc := filepath.Join(staticDir, resourceDir)
 	mux := NewGUIMux(appLoc, daemon)
-	if err := http.ListenAndServe(host, mux); err != nil {
-		log.Panic(err)
+	//if err := http.ListenAndServe(host, mux); err != nil {
+	//	log.Panic(err)
+	//}
+
+	//func Serve(l net.Listener, handler Handler) error
+
+	web_interface_active := make(chan bool, 1)
+
+	listener, err := net.Listen("tcp", host)
+
+	if err != nil {
+		return
 	}
+
+	go func() {
+		web_interface_active <- true
+		err = http.Serve(listener, mux) //blocks
+		if err != nil {
+			log.Panic()
+		}
+	}()
+
+	value := <-web_interface_active
+	if value == true {
+		log.Printf("webservice should be running: RUN POPUP")
+	}
+
+	//Listen(net, laddr string) (Listener, error))
+
+	//func (srv *Server) Serve(l net.Listener) error
+
 }
 
 // Begins listening on https://$host, for enabling remote web access

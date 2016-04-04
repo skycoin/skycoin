@@ -460,7 +460,7 @@ func Run(c *Config) {
 			} else {
 				//does HTTP.Listen and serve block? blocks
 				//new implementation does not block
-				gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
+				_ = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
 					c.WebInterfaceCert, c.WebInterfaceKey)
 			}
 		} else {

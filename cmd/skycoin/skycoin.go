@@ -496,21 +496,47 @@ func Run(args Args) {
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 
 	if c.WebInterface {
+
+		web_interface_active := make(chan bool, 1)
+
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
-			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert,
-				c.WebInterfaceKey)
+			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey)
 			if len(errs) != 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())
+					log.Panic("gui.CreateCertIfNotExists")
 				}
 			} else {
-				go gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
-					c.WebInterfaceCert, c.WebInterfaceKey)
+				go func() {
+
+					//does HTTP.Listen and serve block?
+					gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
+						c.WebInterfaceCert, c.WebInterfaceKey)
+
+					web_interface_active <- true
+
+				}()
 			}
 		} else {
-			go gui.LaunchWebInterface(host, c.GUIDirectory, d)
+			go func() {
+				gui.LaunchWebInterface(host, c.GUIDirectory, d)
+				web_interface_active <- true
+			}()
 		}
+		//check that webserver is running
+
+		log.Printf("wait= ")
+		value := <-web_interface_active
+
+		log.Printf("value= %x", value)
+		if value == false {
+			log.Panic()
+		}
+		if value == true {
+			log.Printf("webservice is running")
+		}
+
 	}
 
 	/*

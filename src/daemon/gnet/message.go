@@ -117,9 +117,6 @@ func RegisterMessage(prefix MessagePrefix, msg interface{}) {
 	}
 	MessageIdMap[t] = id
 	MessageIdReverseMap[id] = t
-
-	//MessageHandleFuncMap[]
-
 }
 
 // Calls log.Panic if message registration violates sanity checks

@@ -36,48 +36,32 @@ go run ./cmd/skycoin/skycoin.go
 Golang environment setup with gvm
 ---
 
+In China, use a VPN during golang installation with gvm. The golang repo is on a server blocked by the chinese firewall.
+
 ```
 sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
 bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
 source /root/.gvm/scripts/gvm
 
-<<<<<<< HEAD
 gvm install go1.4
 gvm use go1.4
 gvm install go1.6
 gvm use go1.6 --default
 ```
 
-Install
+Setup
 ---
 
-In China, use a VPN during golang installation with gvm. The golang repo is on a server blocked by the chinese firewall.
+The skycoin repo must be in $GOPATH, under "/src/github.com/skycoin". Otherwise golang programs cannot import the libraries.
 
 ```
-sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev -y
-
-bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
-source /root/.gvm/scripts/gvm
-
-#install golang
-gvm install go1.4
-gvm use go1.4
-gvm install go1.5
-gvm use go1.5 --default
-
 #pull skycoin repo into the gopath
 cd $GOPATH/src
 git clone https://github.com/skycoin/skycoin
 
 #create symlink of the repo
 ln -s $GOPATH/src/skycoin/skycoin skycoin
-=======
-gvm install go1.6
-gvm use go1.6
-
 ```
-
-The skycoin repo must be in gopath, under "/src/github.com/skycoin". Otherwise golang programs cannot import the libraries.
 
 Dependencies
 ---
@@ -87,6 +71,12 @@ go get github.com/robfig/glock
 glock sync github.com/skycoin/skycoin
 
 ```
+
+Running
+---
+
+cd skycoin
+go run ./cmd/skycoin/skycoin.go
 
 Cross Compilation
 ---

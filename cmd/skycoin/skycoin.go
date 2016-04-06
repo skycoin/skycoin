@@ -345,7 +345,7 @@ var devConfig Config = Config{
 	//AddressVersion: "test",
 	// Remote web interface
 	WebInterface:      true,
-	WebInterfacePort:  12176,
+	WebInterfacePort:  6420,
 	WebInterfaceAddr:  "127.0.0.1",
 	WebInterfaceCert:  "",
 	WebInterfaceKey:   "",
@@ -473,7 +473,7 @@ func Run(c *Config) {
 
 		if c.LaunchBrowser == true {
 			fmt.Printf("Launching System Browser")
-			util.OpenBrowser("http://golang.org")
+			util.OpenBrowser("http://127.0.0.1:12176/")
 		}
 	}
 

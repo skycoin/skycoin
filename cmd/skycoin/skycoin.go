@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"gopkg.in/op/go-logging.v1"
-
-	"github.com/toqueteos/webbrowser" //open webbrowser
 )
 
 import (
@@ -475,7 +473,7 @@ func Run(c *Config) {
 
 		if c.LaunchBrowser == true {
 			fmt.Printf("Launching System Browser")
-			webbrowser.Open("http://golang.org")
+			util.OpenBrowser("http://golang.org")
 		}
 	}
 

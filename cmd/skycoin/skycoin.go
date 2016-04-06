@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"gopkg.in/op/go-logging.v1"
+
+	"github.com/toqueteos/webbrowser" //open webbrowser
 )
 
 import (
@@ -79,6 +81,8 @@ type Config struct {
 	WebInterfaceCert  string
 	WebInterfaceKey   string
 	WebInterfaceHTTPS bool
+	//Launch System Default Browser after client startup
+	LaunchBrowser bool
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
 	// GUI directory contains assets for the html gui
@@ -151,6 +155,8 @@ func (c *Config) register() {
 			"If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
 		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", true,
+		"launch system default webbrowser at client startup")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
 		"directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
@@ -467,6 +473,10 @@ func Run(c *Config) {
 			_ = gui.LaunchWebInterface(host, c.GUIDirectory, d)
 		}
 
+		if c.LaunchBrowser == true {
+			fmt.Printf("Launching System Browser")
+			webbrowser.Open("http://golang.org")
+		}
 	}
 
 	/*

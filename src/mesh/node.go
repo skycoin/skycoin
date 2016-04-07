@@ -121,7 +121,7 @@ func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id 
     outgoing := OutgoingMessage{connected, msg}
     self.RetransmitQueue[operation_id] = outgoing
     self.OperationsAwaitingReplyLock.Unlock()
-
+    
     self.MessagesOut <- outgoing
 
     select {
@@ -140,7 +140,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
     }
 
     var new_route = EstablishedRoute{0, route.PeerPubKeys[0]}
-//    var last_secret = ""
+    var last_secret = ""
 
     for peer_idx, _ /*peer_key*/ := range route.PeerPubKeys {
         // For each peer, we establish a route from this one to the next one
@@ -162,30 +162,38 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
                 route.PeerPubKeys[peer_idx + 1],
                 time.Hour,
             }
-        reply := self.sendAndConfirmOperation(new_route.ConnectedPeer,
-                                                establish_id,
-                                                route_message)
-        if reply != nil {
-            route_reply := reply.(EstablishRouteReplyMessage)
+
+        establish_reply := self.sendAndConfirmOperation(new_route.ConnectedPeer,
+                                                        establish_id,
+                                                        route_message)
+        if establish_reply != nil {
+            route_reply := establish_reply.(EstablishRouteReplyMessage)
             if peer_idx == 0 {
-                new_route.SendId = route_reply.SendId;
+                new_route.SendId = route_reply.SendId
+            } else {
+                rewrite_id := uuid.NewV4()
+                rewrite_message := 
+                    RouteRewriteMessage{
+                        OperationMessage {
+                            Message {
+                                new_route.SendId,
+                            },
+                            rewrite_id,
+                        },
+                        last_secret,
+                        route_reply.SendId,
+                    }
+                rewrite_reply := self.sendAndConfirmOperation(new_route.ConnectedPeer,
+                                                                rewrite_id,
+                                                                rewrite_message)
+                if rewrite_reply == nil {
+                    return
+                }
             }
-            logger.Debug("TODO: route reply %v", route_reply)
-        }
-
-/*
-    // Activate the hop established before this one
-    uint32 send_id = 0;
-
-    if peer_idx < (len(route.PeerPubKeys) - 1) {
-        send_id = route_reply.SendId
-    }
-
-    go sendAndConfirmOperation(connected_peer_key,
-                                 RouteRewriteMessage{last_secret,
-                                                      send_id)
             last_secret = route_reply.Secret
-*/
+        } else {
+            return
+        }
     }
 
     self.EstablishedRoutesByIndex[route_idx] = new_route

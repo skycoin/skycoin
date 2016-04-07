@@ -10,11 +10,12 @@ import (
     "github.com/skycoin/skycoin/src/mesh")
 
 type Config struct {
-    Node mesh.Config
+    Node mesh.NodeConfig
     TCPConnections []TCPOutgoingConnectionConfig
     TCPConfig gnet.Config
-    Routes []RouteConfig
-    RouteToPipe int
+    // Index into Routes in NodeConfig
+    StdoutToRoute int
+    IncomingToStdout bool
 }
 
 type PhysicalConnectionConfig struct {
@@ -29,6 +30,3 @@ type TCPOutgoingConnectionConfig struct {
     RetryDelay time.Duration
 }
 
-type RouteConfig struct {
-    PeerPubKeys []cipher.PubKey
-}

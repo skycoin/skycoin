@@ -2,7 +2,9 @@
 	"Node": {
 		"MyPubKey": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"MessagesOutSize":	1024,
-		"MessagesInSize":	1024
+		"MessagesInSize":	1024,
+		"OperationTimeout":		60000000000,
+		"RetransmitInterval":	1000000000
 	},
 	"TCPConfig": {
 		"Port":                     3631,

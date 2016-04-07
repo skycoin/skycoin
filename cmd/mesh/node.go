@@ -47,6 +47,7 @@ func ConnectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
     }
 }
 
+// Does not block, unless the message queue is full
 func doSendMessage(to_send mesh.OutgoingMessage) {
     defer func() {
         // recover from panic if one occured. Set err to nil otherwise.
@@ -69,6 +70,7 @@ func doSendMessage(to_send mesh.OutgoingMessage) {
     if conn == nil {
         l_err.Printf("Warning: Send requested with no connections, dropping message to %v\n", to_send.ConnectedPeerPubKey)
     } else {
+        // Does not block, unless the message queue is full
        tcp_pool.SendMessage(conn, WrapMessage(to_send.Message))
     }
 }
@@ -90,7 +92,12 @@ func main() {
         os.Exit(1)
     }
 
-    node_impl = mesh.NewNode(config.Node)
+    config_node := config.Node
+    config_node.ConnectedPeers = []cipher.PubKey{}
+    for _ , conn_config := range config.TCPConnections {
+        config_node.ConnectedPeers = append(config_node.ConnectedPeers, conn_config.PeerPubKey)
+    }
+    node_impl = mesh.NewNode(config_node)
 
     // Start listening for incoming connections via TCP
     config_cb := config.TCPConfig

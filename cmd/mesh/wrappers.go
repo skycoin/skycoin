@@ -39,13 +39,23 @@ func (self *EstablishRouteReplyMessageWrapper) Handle(context *gnet.MessageConte
 }
 
 
-type SetRouteRewriteIdMessageWrapper struct {
-    mesh.SetRouteRewriteIdMessage
+type RouteRewriteMessageWrapper struct {
+    mesh.RouteRewriteMessage
 }
-var SetRouteRewriteIdMessagePrefix = gnet.MessagePrefix{0,0,0,4}
-func (self *SetRouteRewriteIdMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
+var RouteRewriteMessagePrefix = gnet.MessagePrefix{0,0,0,4}
+func (self *RouteRewriteMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
     var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.SetRouteRewriteIdMessage
+    node_impl.MessagesIn <- self.RouteRewriteMessage
+    return nil
+}
+
+type OperationReplyWrapper struct {
+    mesh.OperationReply
+}
+var OperationReplyPrefix = gnet.MessagePrefix{0,0,0,5}
+func (self *OperationReplyWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
+    var node_impl = (x).(*mesh.Node)
+    node_impl.MessagesIn <- self.OperationReply
     return nil
 }
 
@@ -53,7 +63,8 @@ func RegisterTCPMessages() {
     gnet.RegisterMessage(SendMessagePrefix, SendMessageWrapper{})
     gnet.RegisterMessage(EstablishRouteMessagePrefix, EstablishRouteMessageWrapper{})
     gnet.RegisterMessage(EstablishRouteReplyMessagePrefix, EstablishRouteReplyMessageWrapper{})
-    gnet.RegisterMessage(SetRouteRewriteIdMessagePrefix, SetRouteRewriteIdMessageWrapper{})
+    gnet.RegisterMessage(RouteRewriteMessagePrefix, RouteRewriteMessageWrapper{})
+    gnet.RegisterMessage(OperationReplyPrefix, OperationReplyWrapper{})
 }
 
 func WrapMessage(msg interface{}) gnet.Message {
@@ -67,8 +78,11 @@ func WrapMessage(msg interface{}) gnet.Message {
     } else if msg_type == reflect.TypeOf(mesh.EstablishRouteReplyMessage{}) {
         wrapped := &EstablishRouteReplyMessageWrapper{msg.(mesh.EstablishRouteReplyMessage)}
         return wrapped
-    } else if msg_type == reflect.TypeOf(mesh.SetRouteRewriteIdMessage{}) {
-        wrapped := &SetRouteRewriteIdMessageWrapper{msg.(mesh.SetRouteRewriteIdMessage)}
+    } else if msg_type == reflect.TypeOf(mesh.RouteRewriteMessage{}) {
+        wrapped := &RouteRewriteMessageWrapper{msg.(mesh.RouteRewriteMessage)}
+        return wrapped
+    } else if msg_type == reflect.TypeOf(mesh.OperationReply{}) {
+        wrapped := &OperationReplyWrapper{msg.(mesh.OperationReply)}
         return wrapped
     }
     panic("Unknown message type passed to WrapMessage()")

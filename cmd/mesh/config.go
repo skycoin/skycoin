@@ -6,13 +6,15 @@ import (
 
 import (
     "github.com/skycoin/skycoin/src/daemon/gnet"
-    "github.com/skycoin/skycoin/src/cipher")
+    "github.com/skycoin/skycoin/src/cipher"
+    "github.com/skycoin/skycoin/src/mesh")
 
 type Config struct {
-    MyPubKey cipher.PubKey
+    Node mesh.Config
     TCPConnections []TCPOutgoingConnectionConfig
     TCPConfig gnet.Config
-    RouteToPipe* RouteConfig
+    Routes []RouteConfig
+    RouteToPipe int
 }
 
 type PhysicalConnectionConfig struct {

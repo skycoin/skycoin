@@ -31,7 +31,7 @@ func TestEstablishRoutes(t *testing.T) {
 		1024,
 		[]RouteConfig{test_route},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
 		func(route EstablishedRoute) {
 			established_ch <- route
@@ -44,11 +44,28 @@ func TestEstablishRoutes(t *testing.T) {
 	// Establish 2 -> 3
 	{
 		outgoing := <- node.MessagesOut
-		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
+
 		msg := outgoing.Message
 		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
 		establish_msg := msg.(EstablishRouteMessage)
-		assert.Equal(t, test_key3, establish_msg.ToPubKey)
+		newDuration := establish_msg.DurationHint
+		newMsgId := establish_msg.MsgId
+		assert.Equal(t, 
+					 PhysicalMessage {
+					 	 outgoing.ConnectedPeerPubKey,
+						 EstablishRouteMessage {
+						 	OperationMessage {
+						 		Message {
+						 			0,
+	    							false,
+						 		},
+						 		newMsgId,
+						 	},
+						 	test_key3,
+	    					newDuration,
+						 },
+						},
+					 outgoing)
 
 		// Reply
 		node.MessagesIn <- PhysicalMessage{
@@ -60,11 +77,30 @@ func TestEstablishRoutes(t *testing.T) {
 	// Establish 3 -> 4
 	{
 		outgoing := <- node.MessagesOut
+
 		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
 		msg := outgoing.Message
 		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
 		establish_msg := msg.(EstablishRouteMessage)
-		assert.Equal(t, test_key4, establish_msg.ToPubKey)
+		newDuration := establish_msg.DurationHint
+		newMsgId := establish_msg.MsgId
+
+		assert.Equal(t, 
+					 PhysicalMessage {
+					 	 outgoing.ConnectedPeerPubKey,
+						 EstablishRouteMessage {
+						 	OperationMessage {
+						 		Message {
+						 			55,
+	    							false,
+						 		},
+						 		newMsgId,
+						 	},
+						 	test_key4,
+	    					newDuration,
+						 },
+						},
+					 outgoing)
 
 		// Reply
 		node.MessagesIn <- PhysicalMessage{
@@ -80,18 +116,37 @@ func TestEstablishRoutes(t *testing.T) {
 		msg := outgoing.Message
 		assert.Equal(t, reflect.TypeOf(RouteRewriteMessage{}), reflect.TypeOf(msg))
 		rewrite_msg := msg.(RouteRewriteMessage)
-		assert.Equal(t, "secret_abc", rewrite_msg.Secret)
-		assert.Equal(t, uint32(120), rewrite_msg.RewriteSendId)
+		newMsgId := rewrite_msg.MsgId
+
+		assert.Equal(t, 
+			 PhysicalMessage {
+			 	 outgoing.ConnectedPeerPubKey,
+				 RouteRewriteMessage {
+				 	OperationMessage {
+				 		Message {
+				 			55,
+							false,
+				 		},
+				 		newMsgId,
+				 	},
+				 	"secret_abc",
+				 	120,
+				 },
+				},
+			 outgoing)
 
 		// Reply
 		node.MessagesIn <-  PhysicalMessage{
 			test_key2,
 			OperationReply{OperationMessage{Message{0, true}, rewrite_msg.MsgId}, true, ""}}
 	}
-	route_established := <- established_ch
+	// Check establish callback
+	{
+		route_established := <- established_ch
 
-	assert.Equal(t, uint32(55), route_established.SendId)
-	assert.Equal(t, test_key2, route_established.ConnectedPeer)
+		assert.Equal(t, uint32(55), route_established.SendId)
+		assert.Equal(t, test_key2, route_established.ConnectedPeer)
+	}
 }
 
 func TestReceiveMessage(t *testing.T) {
@@ -102,7 +157,7 @@ func TestReceiveMessage(t *testing.T) {
 		1024,
 		[]RouteConfig{},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
 		nil,
 	}
@@ -122,6 +177,7 @@ func TestReceiveMessage(t *testing.T) {
 
 func TestSendMessageToPeer(t *testing.T) {
 	test_route := RouteConfig{[]cipher.PubKey{test_key2}}
+	route_established := make(chan bool)
 	var test_config = NodeConfig{
 		test_key1,
 		[]cipher.PubKey{test_key2},
@@ -129,22 +185,21 @@ func TestSendMessageToPeer(t *testing.T) {
 		1024,
 		[]RouteConfig{test_route},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
-		nil,
+		func(route EstablishedRoute) {
+			route_established <- true
+		},
 	}
 	node := NewNode(test_config)
 	go node.Run()
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 	
-	// Have to wait for route to be established
-	go func() {
-		for {
-			node.SendMessage(0, sample_data)
-			time.Sleep(time.Second/4)
-		}
-	}()
+	// Have to wait for route to be established first
+	<-route_established
+
+	node.SendMessage(0, sample_data)
 
 	select {
 		case <-node.MeshMessagesIn: {
@@ -158,6 +213,7 @@ func TestSendMessageToPeer(t *testing.T) {
 
 func TestRouteMessage(t *testing.T) {
 	test_route := RouteConfig{[]cipher.PubKey{test_key2, test_key3}}
+	route_established := make(chan bool)
 	var test_config = NodeConfig{
 		test_key1,
 		[]cipher.PubKey{test_key2},
@@ -165,9 +221,11 @@ func TestRouteMessage(t *testing.T) {
 		1024,
 		[]RouteConfig{test_route},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
-		nil,
+		func(route EstablishedRoute) {
+			route_established <- true
+		},
 	}
 	node := NewNode(test_config)
 	go node.Run()
@@ -189,13 +247,9 @@ func TestRouteMessage(t *testing.T) {
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 
-	// Have to wait for route to be established
-	go func() {
-		for {
-			node.SendMessage(0, sample_data)
-			time.Sleep(time.Second/4)
-		}
-	}()
+	<-route_established
+
+	node.SendMessage(0, sample_data)
 
 	select {
 		case <-node.MeshMessagesIn: {
@@ -215,7 +269,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 		1024,
 		[]RouteConfig{},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
 		nil,
 	}
@@ -319,7 +373,7 @@ func TestRewriteUnknownRoute(t *testing.T) {
 		1024,
 		[]RouteConfig{},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
 		nil,
 	}
@@ -354,16 +408,14 @@ func TestRewriteUnknownRoute(t *testing.T) {
 }
 
 func TestRoutesHaveDifferentSendIds(t *testing.T) {
-	test_route1 := RouteConfig{[]cipher.PubKey{test_key2, test_key3}}
-	test_route2 := RouteConfig{[]cipher.PubKey{test_key2, test_key4}}
 	var test_config = NodeConfig{
 		test_key1,
 		[]cipher.PubKey{test_key2},
 		1024,
 		1024,
-		[]RouteConfig{test_route1, test_route2},
+		[]RouteConfig{},
 		time.Hour,
-		time.Hour,
+		0,	// No retransmits
 		// RouteEstablishedCB
 		nil,
 	}
@@ -433,7 +485,59 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 		}
 	}
 }
+/*
+func TestBackwardRoute(t *testing.T) {
+	test_route := RouteConfig{[]cipher.PubKey{test_key2, test_key3}}
+	var test_config = NodeConfig{
+		test_key2,
+		[]cipher.PubKey{test_key1, test_key3},
+		1024,
+		1024,
+		[]RouteConfig{test_route},
+		time.Hour,
+		0,	// No retransmits
+		// RouteEstablishedCB
+		nil,
+	}
+	node := NewNode(test_config)
+	go node.Run()
+
+	// Establish 2 -> 3
+	{
+		outgoing := <- node.MessagesOut
+		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
+		msg := outgoing.Message
+		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
+		establish_msg := msg.(EstablishRouteMessage)
+		assert.Equal(t, test_key3, establish_msg.ToPubKey)
+
+		// Reply
+		node.MessagesIn <- PhysicalMessage{test_key2, EstablishRouteReplyMessage{
+			OperationReply{OperationMessage{Message{0, true}, establish_msg.MsgId}, true, ""}, 
+			11, "secret_abc"}}
+	}
+
+	sample_data := []byte{3, 5, 10, 1, 2, 3}
+
+	// Have to wait for route to be established
+	node.MessageOut <- 
+		PhysicalMessage{
+			test_key2,
+			//...
+		}
+
+	select {
+		case <-node.MeshMessagesIn: {
+			assert.Fail(t, "Node received message with SendId != 0")
+		}
+		case send_message := <-node.MessagesOut: {
+			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{11, false}, sample_data}}, send_message)
+		}
+	}
+}
+*/
+
 // TODO: Send messages thru chain of nodes
-// TODO: Backward send
+
 
 

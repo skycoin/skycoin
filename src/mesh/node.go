@@ -260,7 +260,10 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
         }
     }
 
+    self.Lock.Lock();
     self.EstablishedRoutesByIndex[route_idx] = new_route
+    self.Lock.Unlock();
+
     if(self.Config.RouteEstablishedCB != nil) {
         self.Config.RouteEstablishedCB(new_route)
     }
@@ -408,16 +411,18 @@ func (self *Node) SendMessage(route_idx int, contents []byte) {
 // Blocks
 func (self *Node) Run() {
     // Retransmit loop
-    go func() {
-        for {
-            self.Lock.Lock()
-            for _, outgoing := range self.RetransmitQueue {
-                self.MessagesOut <- outgoing
+    if self.Config.RetransmitInterval > 0 {
+        go func() {
+            for {
+                self.Lock.Lock()
+                for _, outgoing := range self.RetransmitQueue {
+                    self.MessagesOut <- outgoing
+                }
+                self.Lock.Unlock()
+                time.Sleep(self.Config.RetransmitInterval)
             }
-            self.Lock.Unlock()
-            time.Sleep(self.Config.RetransmitInterval)
-        }
-    }()
+        }()
+    }
 
     // Establish routes asynchronously
     for route_idx, route := range self.Config.Routes {

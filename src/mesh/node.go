@@ -287,7 +287,7 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
     self.NextRouteIdx += 1
     self.ForwardPeerIdsBySendId[route_id] = msg.ToPubKey
     self.SendIdsBySecret[new_secret] = route_id
-    // TODO: Duration hint
+    // TODO: Use duration hint
     self.Lock.Unlock()
     
     self.MessagesOut <- 
@@ -452,7 +452,6 @@ func (self *Node) Run() {
                 self.onRewriteRequest(rewrite_message, msg_physical.ConnectedPeerPubKey)
             }
         }
-        // TODO
     }
 }
 

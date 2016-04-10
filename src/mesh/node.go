@@ -331,7 +331,7 @@ func (self *Node) forwardMessage(SendId uint32, SendBack bool, msg rewriteableMe
 
     var rewrite_id uint32 = 0
     var rewrite_peer cipher.PubKey
-fmt.Printf("forwardMessage %v SendBack %v msg %v\n", SendId, SendBack, msg)
+
     if !SendBack {
         // Get routing info
         self.Lock.Lock()
@@ -364,8 +364,6 @@ fmt.Printf("forwardMessage %v SendBack %v msg %v\n", SendId, SendBack, msg)
         if !id_exists {
             panic("Internal inconsistency: BackwardPeerIdsBySendId has key but BackwardSendIdsBySendId doesn't")
         }
-
-fmt.Printf("back_peer %v back_exists %v rewrite_id %v\n", rewrite_peer, back_exists, rewrite_id)
     }
     
     rewritten_msg := msg.(rewriteableMessage) 

@@ -559,7 +559,7 @@ func TestBackwardRoute(t *testing.T) {
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 
 	// Have to wait for route to be established
-	node.MessagesIn <- 
+	node.MessagesIn <-
 		PhysicalMessage{
 			test_key2,
 			SendMessage {

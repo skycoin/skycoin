@@ -4,7 +4,8 @@
 		"MessagesOutSize":	1024,
 		"MessagesInSize":	1024,
 		"OperationTimeout":	60000000000,
-		"RetransmitInterval":	1000000000
+		"RetransmitInterval":	1000000000,
+		"ConfirmOperations":	true
 	},
 	"TCPConfig": {
 		"Port":                     3632,

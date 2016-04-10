@@ -17,6 +17,7 @@ var logger = logging.MustGetLogger("node")
 
 type Message struct {
     SendId uint32
+    SendBack bool
 }
 
 type SendMessage struct {
@@ -43,7 +44,7 @@ type EstablishRouteMessage struct {
 
 type EstablishRouteReplyMessage struct {
     OperationReply
-    SendId uint32
+    NewSendId uint32
     // Secret be sent back in ActivateRouteMessage
     Secret string
 }
@@ -64,7 +65,7 @@ type RouteRewriteMessage struct {
     RewriteSendId uint32
 }
 
-type OutgoingMessage struct {
+type PhysicalMessage struct {
     ConnectedPeerPubKey cipher.PubKey
     Message interface{}
 }
@@ -72,17 +73,6 @@ type OutgoingMessage struct {
 type EstablishedRoute struct {
     SendId          uint32
     ConnectedPeer   cipher.PubKey
-}
-
-type Node struct {
-    Config NodeConfig
-    MessagesOut chan OutgoingMessage
-    MessagesIn chan interface{}
-    EstablishedRoutesByIndex map[int]EstablishedRoute
-    
-    RetransmitQueue map[uuid.UUID]OutgoingMessage
-    OperationsAwaitingReply map[uuid.UUID]chan interface{} 
-    OperationsAwaitingReplyLock *sync.Mutex
 }
 
 type RouteEstablishedCallback func(route EstablishedRoute)
@@ -98,6 +88,62 @@ type NodeConfig struct {
     RouteEstablishedCB RouteEstablishedCallback
 }
 
+type Node struct {
+    // These are the messages contents received from other nodes in the network
+    // The Node fills this channel
+    MeshMessagesIn chan[]byte
+
+    // These are the messages to be sent across physical links
+    // The Node fills this channel
+    MessagesOut chan PhysicalMessage
+
+    // These are the messages received across physical links
+    // The Node empties this channel
+    MessagesIn chan PhysicalMessage
+
+    // TODO: Make private
+    Config NodeConfig
+    EstablishedRoutesByIndex map[int]EstablishedRoute
+    RetransmitQueue map[uuid.UUID]PhysicalMessage
+    OperationsAwaitingReply map[uuid.UUID]chan interface{} 
+
+    // TODO: Randomize route indexes?
+    NextRouteIdx uint32
+    ForwardPeerIdsBySendId map[uint32]cipher.PubKey
+    SendIdsBySecret map[string]uint32
+    ForwardRewriteBySendId map[uint32]uint32
+
+    Lock *sync.Mutex
+}
+
+type rewriteableMessage interface {
+    RewriteSendId(newSendId uint32)
+}
+
+func (msg OperationReply) Rewrite(newSendId uint32) {
+    msg.SendId = newSendId
+}
+
+func (msg EstablishRouteMessage) Rewrite(newSendId uint32) {
+    msg.SendId = newSendId
+}
+
+func (msg EstablishRouteReplyMessage) Rewrite(newSendId uint32) {
+    msg.SendId = newSendId
+}
+
+func (msg QueryConnectedPeersMessage) Rewrite(newSendId uint32) {
+    msg.SendId = newSendId
+}
+
+func (msg QueryConnectedPeersReply) Rewrite(newSendId uint32) {
+    msg.SendId = newSendId
+}
+
+func (msg RouteRewriteMessage) Rewrite(newSendId uint32) {
+    msg.SendId = newSendId
+}
+
 type RouteConfig struct {
     PeerPubKeys []cipher.PubKey
 }
@@ -105,23 +151,28 @@ type RouteConfig struct {
 func NewNode(config NodeConfig) *Node {
     ret := &Node{}
     ret.Config = config
-    ret.MessagesOut = make(chan OutgoingMessage, config.MessagesOutSize)
-    ret.MessagesIn = make(chan interface{}, config.MessagesInSize)
-    ret.OperationsAwaitingReplyLock = &sync.Mutex{}
+    ret.MessagesOut = make(chan PhysicalMessage, config.MessagesOutSize)
+    ret.MessagesIn = make(chan PhysicalMessage, config.MessagesInSize)
+    ret.MeshMessagesIn = make(chan[]byte)
+    ret.Lock = &sync.Mutex{}
     ret.EstablishedRoutesByIndex = make(map[int]EstablishedRoute)
-    ret.RetransmitQueue = make(map[uuid.UUID]OutgoingMessage)
+    ret.RetransmitQueue = make(map[uuid.UUID]PhysicalMessage)
     ret.OperationsAwaitingReply = make(map[uuid.UUID]chan interface{})
+    ret.NextRouteIdx = 1;
+    ret.ForwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
+    ret.SendIdsBySecret = make(map[string]uint32)
+    ret.ForwardRewriteBySendId = make(map[uint32]uint32)
     return ret
 }
 
 func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id uuid.UUID, msg interface{}) interface{} {
     reply_channel := make(chan interface{})
-    self.OperationsAwaitingReplyLock.Lock()
+    self.Lock.Lock()
     self.OperationsAwaitingReply[operation_id] = reply_channel
-    outgoing := OutgoingMessage{connected, msg}
+    outgoing := PhysicalMessage{connected, msg}
     self.RetransmitQueue[operation_id] = outgoing
-    self.OperationsAwaitingReplyLock.Unlock()
-    
+    self.Lock.Unlock()
+
     self.MessagesOut <- outgoing
 
     select {
@@ -142,7 +193,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
     var new_route = EstablishedRoute{0, route.PeerPubKeys[0]}
     var last_secret = ""
 
-    for peer_idx, _ /*peer_key*/ := range route.PeerPubKeys {
+    for peer_idx, _ := range route.PeerPubKeys {
         // For each peer, we establish a route from this one to the next one
         // Nothing needs to be established for the destination
         if(peer_idx == (len(route.PeerPubKeys) - 1)) {
@@ -156,6 +207,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
                 OperationMessage {
                     Message {
                         new_route.SendId,
+                        false,
                     },
                     establish_id,
                 },
@@ -169,7 +221,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
         if establish_reply != nil {
             route_reply := establish_reply.(EstablishRouteReplyMessage)
             if peer_idx == 0 {
-                new_route.SendId = route_reply.SendId
+                new_route.SendId = route_reply.NewSendId
             } else {
                 rewrite_id := uuid.NewV4()
                 rewrite_message := 
@@ -177,11 +229,12 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
                         OperationMessage {
                             Message {
                                 new_route.SendId,
+                                false,
                             },
                             rewrite_id,
                         },
                         last_secret,
-                        route_reply.SendId,
+                        route_reply.NewSendId,
                     }
                 rewrite_reply := self.sendAndConfirmOperation(new_route.ConnectedPeer,
                                                                 rewrite_id,
@@ -203,12 +256,150 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
 }
 
 func (self *Node) onOperationReply(msg interface{}, operation_id uuid.UUID) {
-    self.OperationsAwaitingReplyLock.Lock()
+    self.Lock.Lock()
     ch := self.OperationsAwaitingReply[operation_id]
     delete(self.OperationsAwaitingReply, operation_id)
-    self.OperationsAwaitingReplyLock.Unlock()
+    self.Lock.Unlock()
 
     ch <- msg
+}
+
+func (self *Node) onSendMessage(msg SendMessage) {
+    if msg.SendId == 0 {
+        self.MeshMessagesIn <- msg.Contents
+    } else {
+        // TODO
+    }
+}
+
+func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubKey) {
+    new_secret := fmt.Sprintf("%v", uuid.NewV4())
+
+    self.Lock.Lock()
+    route_id := self.NextRouteIdx
+    self.NextRouteIdx += 1
+    self.ForwardPeerIdsBySendId[route_id] = msg.ToPubKey
+    self.SendIdsBySecret[new_secret] = route_id
+    // TODO: Duration hint
+    self.Lock.Unlock()
+    
+    self.MessagesOut <- 
+        PhysicalMessage {
+            peerFrom,
+            EstablishRouteReplyMessage{
+                OperationReply {
+                    OperationMessage {
+                        Message {
+                            // SendId
+                            msg.SendId,
+                            // SendBack
+                            true,
+                        },
+                        msg.MsgId,
+                    },
+                    // Success
+                    true,
+                    // String
+                    "",
+                },
+                // NewSendId
+                route_id,
+                // Secret
+                new_secret,
+            },
+        }
+}
+
+func (self *Node) forwardMessage(SendId uint32, msg interface{}) bool {
+    if SendId == 0 {
+        return false
+    }
+/*
+    // Get routing info
+    self.Lock.Lock()
+    var rewrite_id uint32 = 0
+    forward_peer, forward_exists := self.ForwardPeerIdsBySendId[SendId]
+    if forward_exists {
+        msg_out := PhysicalMessage {
+            forward_peer,
+            msg,
+        }
+
+        rewrite_id, _ = self.ForwardRewriteBySendId[SendId]
+    }        
+    self.Lock.Unlock()
+
+    // Special routing for RouteRewriteMessage
+    msg_type := reflect.TypeOf(msg)
+    if msg_type == reflect.TypeOf(RouteRewriteMessage{}) && rewrite_id == 0 {
+        // Do not forward: interpret this message on this hop
+        return false
+    }
+    
+    rewritten_msg := msg.(rewriteableMessage{}) 
+
+    rewriteableMessage.Rewrite(rewrite_id)
+    self.MessagesOut <- PhysicalMessage{forward_peer, rewriteableMessage}
+*/
+    return true
+}
+
+func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubKey) {
+    self.Lock.Lock()
+    // Check secret
+    sendId, exists := self.SendIdsBySecret[msg.Secret]
+    if exists {
+        delete(self.SendIdsBySecret, msg.Secret)
+
+        // TODO
+        fmt.Printf("TODO: Rewrite secret %v to %v\n", msg.Secret, sendId)
+
+        self.MessagesOut <- 
+            PhysicalMessage {
+                peerFrom,
+                OperationReply {
+                    OperationMessage {
+                        Message {
+                            // SendId
+                            msg.SendId,
+                            // SendBack
+                            true,
+                        },
+                        msg.MsgId,
+                    },
+                    true,
+                    "",
+                },
+            }
+    } else {
+        self.MessagesOut <- 
+            PhysicalMessage {
+                peerFrom,
+                OperationReply {
+                    OperationMessage {
+                        Message {
+                            // SendId
+                            msg.SendId,
+                            // SendBack
+                            true,
+                        },
+                        msg.MsgId,
+                    },
+                    false,
+                    "Unknown secret",
+                },
+            }
+    }
+    self.Lock.Unlock()
+}
+
+func (self *Node) SendMessage(route_idx int, contents []byte) {
+    route, exists := self.EstablishedRoutesByIndex[route_idx]
+    if !exists {
+        return
+    }
+    self.MessagesOut <- PhysicalMessage{route.ConnectedPeer, 
+                                        SendMessage{Message{route.SendId, false}, contents}}
 }
 
 // Blocks
@@ -216,11 +407,11 @@ func (self *Node) Run() {
     // Retransmit loop
     go func() {
         for {
-            self.OperationsAwaitingReplyLock.Lock()
+            self.Lock.Lock()
             for _, outgoing := range self.RetransmitQueue {
                 self.MessagesOut <- outgoing
             }
-            self.OperationsAwaitingReplyLock.Unlock()
+            self.Lock.Unlock()
             time.Sleep(self.Config.RetransmitInterval)
         }
     }()
@@ -232,7 +423,8 @@ func (self *Node) Run() {
 
     // Incoing messages loop
     for{
-        msg := <- self.MessagesIn
+        msg_physical := <- self.MessagesIn
+        msg := msg_physical.Message
         msg_type := reflect.TypeOf(msg)
 
         if msg_type == reflect.TypeOf(OperationReply{}) {
@@ -241,8 +433,22 @@ func (self *Node) Run() {
             self.onOperationReply(msg, (msg.(EstablishRouteReplyMessage)).OperationReply.OperationMessage.MsgId)
         } else if msg_type == reflect.TypeOf(QueryConnectedPeersReply{}) {
             self.onOperationReply(msg, (msg.(QueryConnectedPeersReply)).OperationReply.OperationMessage.MsgId)
+        } else if msg_type == reflect.TypeOf(SendMessage{}) {
+            send_message := msg.(SendMessage)
+            if !self.forwardMessage(send_message.SendId, msg) {
+                self.onSendMessage(send_message)
+            }
+        } else if msg_type == reflect.TypeOf(EstablishRouteMessage{}) {
+            establish_message := msg.(EstablishRouteMessage)
+            if !self.forwardMessage(establish_message.SendId, msg) {
+                self.onRouteRequest(establish_message, msg_physical.ConnectedPeerPubKey)
+            }
+        } else if msg_type == reflect.TypeOf(RouteRewriteMessage{}) {
+            rewrite_message := msg.(RouteRewriteMessage)
+            if !self.forwardMessage(rewrite_message.SendId, msg) {
+                self.onRewriteRequest(rewrite_message, msg_physical.ConnectedPeerPubKey)
+            }
         }
-
         // TODO
     }
 }

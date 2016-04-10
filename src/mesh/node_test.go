@@ -4,7 +4,7 @@ import(
 	"time"
 	"reflect"
 	"testing"
-	//"fmt"
+//	"fmt"
 	)
 
 import (
@@ -311,8 +311,129 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 	}
 }
 
-// TODO: Rewrite unknown route test
-// TODO: Routes have distinct indices test
+func TestRewriteUnknownRoute(t *testing.T) {
+	var test_config = NodeConfig{
+		test_key1,
+		[]cipher.PubKey{},
+		1024,
+		1024,
+		[]RouteConfig{},
+		time.Hour,
+		time.Hour,
+		// RouteEstablishedCB
+		nil,
+	}
+	node := NewNode(test_config)
+	go node.Run()
+
+	// RouteRewriteMessage
+	{
+		msgId := uuid.NewV4()
+		node.MessagesIn <- 
+			PhysicalMessage{
+				test_key1,
+				RouteRewriteMessage{
+					OperationMessage{Message{0, false}, msgId},
+					"unknown",
+					122,
+				},
+			}
+		select {
+			case rewrite_reply := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(OperationReply{}), reflect.TypeOf(rewrite_reply.Message))
+				reply := rewrite_reply.Message.(OperationReply)
+				assert.Equal(t, 
+					PhysicalMessage{test_key1, 
+									OperationReply{OperationMessage{Message{0, true}, msgId}, false, reply.Error},
+									},
+					rewrite_reply)
+			}
+
+		}
+	}
+}
+
+func TestRoutesHaveDifferentSendIds(t *testing.T) {
+	test_route1 := RouteConfig{[]cipher.PubKey{test_key2, test_key3}}
+	test_route2 := RouteConfig{[]cipher.PubKey{test_key2, test_key4}}
+	var test_config = NodeConfig{
+		test_key1,
+		[]cipher.PubKey{test_key2},
+		1024,
+		1024,
+		[]RouteConfig{test_route1, test_route2},
+		time.Hour,
+		time.Hour,
+		// RouteEstablishedCB
+		nil,
+	}
+	node := NewNode(test_config)
+	go node.Run()
+
+	var got_send_id uint32 = 0
+	{
+		msgId := uuid.NewV4()
+		node.MessagesIn <- 
+			PhysicalMessage{
+				test_key1,
+				EstablishRouteMessage{
+					OperationMessage{Message{0, false}, msgId},
+					test_key3,
+					time.Hour,
+				},
+			}
+		select {
+			case route_reply := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(route_reply.Message))
+				establish_reply := route_reply.Message.(EstablishRouteReplyMessage)
+				newSendId := establish_reply.NewSendId
+				newSecret := establish_reply.Secret
+				assert.NotEqual(t, 0, newSendId)
+				assert.Equal(t, 
+					PhysicalMessage{test_key1, 
+									EstablishRouteReplyMessage{
+										OperationReply{OperationMessage{Message{0, true}, msgId}, true, ""},
+										newSendId,
+										newSecret,
+										}},
+					route_reply)
+				got_send_id = newSendId
+			}
+		}
+	}
+
+	{
+		msgId := uuid.NewV4()
+		node.MessagesIn <- 
+			PhysicalMessage{
+				test_key1,
+				EstablishRouteMessage{
+					OperationMessage{Message{0, false}, msgId},
+					test_key3,
+					time.Hour,
+				},
+			}
+		select {
+			case route_reply := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(route_reply.Message))
+				establish_reply := route_reply.Message.(EstablishRouteReplyMessage)
+				newSendId := establish_reply.NewSendId
+				newSecret := establish_reply.Secret
+				assert.NotEqual(t, 0, newSendId)
+				assert.Equal(t, 
+					PhysicalMessage{test_key1, 
+									EstablishRouteReplyMessage{
+										OperationReply{OperationMessage{Message{0, true}, msgId}, true, ""},
+										newSendId,
+										newSecret,
+										}},
+					route_reply)
+				assert.NotEqual(t, got_send_id, newSendId)
+			}
+		}
+	}
+}
 // TODO: Send messages thru chain of nodes
+// TODO: Backward send
 
 

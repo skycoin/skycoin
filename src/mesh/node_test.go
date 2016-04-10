@@ -231,7 +231,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 				test_key1,
 				EstablishRouteMessage{
 					OperationMessage{Message{0, false}, msgId},
-					test_key2,
+					test_key3,
 					time.Hour,
 				},
 			}
@@ -262,13 +262,13 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 			case physical_msg := <-node.MessagesOut: {
 				assert.Equal(t, reflect.TypeOf(SendMessage{}), reflect.TypeOf(physical_msg.Message))
 				assert.Equal(t, 
-							 PhysicalMessage{test_key2,
+							 PhysicalMessage{test_key3,
 							 	SendMessage{Message{0, false}, test_contents}},
 							 physical_msg)
 			}
 		}
 	}
-
+/*
 	// RouteRewriteMessage
 	{
 		msgId := uuid.NewV4()
@@ -293,7 +293,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 
 		}
 	}
-
+*/
 	// Test message route and rewrite
 	// ...
 }

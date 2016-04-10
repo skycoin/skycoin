@@ -67,7 +67,7 @@ type RouteRewriteMessage struct {
 
 type PhysicalMessage struct {
     ConnectedPeerPubKey cipher.PubKey
-    Message interface{}
+    Message rewriteableMessage
 }
 
 type EstablishedRoute struct {
@@ -105,7 +105,7 @@ type Node struct {
     Config NodeConfig
     EstablishedRoutesByIndex map[int]EstablishedRoute
     RetransmitQueue map[uuid.UUID]PhysicalMessage
-    OperationsAwaitingReply map[uuid.UUID]chan interface{} 
+    OperationsAwaitingReply map[uuid.UUID]chan rewriteableMessage
 
     // TODO: Randomize route indexes?
     NextRouteIdx uint32
@@ -117,31 +117,42 @@ type Node struct {
 }
 
 type rewriteableMessage interface {
-    RewriteSendId(newSendId uint32)
+    Rewrite(newSendId uint32) rewriteableMessage
 }
 
-func (msg OperationReply) Rewrite(newSendId uint32) {
+func (msg SendMessage) Rewrite(newSendId uint32) rewriteableMessage {
     msg.SendId = newSendId
+    return msg
 }
 
-func (msg EstablishRouteMessage) Rewrite(newSendId uint32) {
+func (msg OperationReply) Rewrite(newSendId uint32) rewriteableMessage {
     msg.SendId = newSendId
+    return msg
 }
 
-func (msg EstablishRouteReplyMessage) Rewrite(newSendId uint32) {
+func (msg EstablishRouteMessage) Rewrite(newSendId uint32) rewriteableMessage {
     msg.SendId = newSendId
+    return msg
 }
 
-func (msg QueryConnectedPeersMessage) Rewrite(newSendId uint32) {
+func (msg EstablishRouteReplyMessage) Rewrite(newSendId uint32) rewriteableMessage {
     msg.SendId = newSendId
+    return msg
 }
 
-func (msg QueryConnectedPeersReply) Rewrite(newSendId uint32) {
+func (msg QueryConnectedPeersMessage) Rewrite(newSendId uint32) rewriteableMessage {
     msg.SendId = newSendId
+    return msg
 }
 
-func (msg RouteRewriteMessage) Rewrite(newSendId uint32) {
+func (msg QueryConnectedPeersReply) Rewrite(newSendId uint32) rewriteableMessage {
     msg.SendId = newSendId
+    return msg
+}
+
+func (msg RouteRewriteMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.SendId = newSendId
+    return msg
 }
 
 type RouteConfig struct {
@@ -157,7 +168,7 @@ func NewNode(config NodeConfig) *Node {
     ret.Lock = &sync.Mutex{}
     ret.EstablishedRoutesByIndex = make(map[int]EstablishedRoute)
     ret.RetransmitQueue = make(map[uuid.UUID]PhysicalMessage)
-    ret.OperationsAwaitingReply = make(map[uuid.UUID]chan interface{})
+    ret.OperationsAwaitingReply = make(map[uuid.UUID]chan rewriteableMessage)
     ret.NextRouteIdx = 1;
     ret.ForwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
     ret.SendIdsBySecret = make(map[string]uint32)
@@ -165,8 +176,8 @@ func NewNode(config NodeConfig) *Node {
     return ret
 }
 
-func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id uuid.UUID, msg interface{}) interface{} {
-    reply_channel := make(chan interface{})
+func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id uuid.UUID, msg rewriteableMessage) rewriteableMessage {
+    reply_channel := make(chan rewriteableMessage)
     self.Lock.Lock()
     self.OperationsAwaitingReply[operation_id] = reply_channel
     outgoing := PhysicalMessage{connected, msg}
@@ -255,7 +266,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
     }
 }
 
-func (self *Node) onOperationReply(msg interface{}, operation_id uuid.UUID) {
+func (self *Node) onOperationReply(msg rewriteableMessage, operation_id uuid.UUID) {
     self.Lock.Lock()
     ch := self.OperationsAwaitingReply[operation_id]
     delete(self.OperationsAwaitingReply, operation_id)
@@ -310,23 +321,20 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
         }
 }
 
-func (self *Node) forwardMessage(SendId uint32, msg interface{}) bool {
+func (self *Node) forwardMessage(SendId uint32, msg rewriteableMessage) bool {
     if SendId == 0 {
         return false
     }
-/*
+
     // Get routing info
     self.Lock.Lock()
     var rewrite_id uint32 = 0
     forward_peer, forward_exists := self.ForwardPeerIdsBySendId[SendId]
-    if forward_exists {
-        msg_out := PhysicalMessage {
-            forward_peer,
-            msg,
-        }
-
-        rewrite_id, _ = self.ForwardRewriteBySendId[SendId]
-    }        
+    if !forward_exists {
+        logger.Debug("Asked to forward on unknown route %v", SendId)
+        return false
+    }
+    rewrite_id, _ = self.ForwardRewriteBySendId[SendId]
     self.Lock.Unlock()
 
     // Special routing for RouteRewriteMessage
@@ -336,11 +344,11 @@ func (self *Node) forwardMessage(SendId uint32, msg interface{}) bool {
         return false
     }
     
-    rewritten_msg := msg.(rewriteableMessage{}) 
+    rewritten_msg := msg.(rewriteableMessage) 
 
-    rewriteableMessage.Rewrite(rewrite_id)
-    self.MessagesOut <- PhysicalMessage{forward_peer, rewriteableMessage}
-*/
+    rewritten_msg = rewritten_msg.Rewrite(rewrite_id)
+    self.MessagesOut <- PhysicalMessage{forward_peer, rewritten_msg}
+
     return true
 }
 

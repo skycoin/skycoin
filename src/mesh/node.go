@@ -276,11 +276,7 @@ func (self *Node) onOperationReply(msg rewriteableMessage, operation_id uuid.UUI
 }
 
 func (self *Node) onSendMessage(msg SendMessage) {
-    if msg.SendId == 0 {
-        self.MeshMessagesIn <- msg.Contents
-    } else {
-        // TODO
-    }
+    self.MeshMessagesIn <- msg.Contents
 }
 
 func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubKey) {
@@ -359,8 +355,7 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
     if exists {
         delete(self.SendIdsBySecret, msg.Secret)
 
-        // TODO
-        fmt.Printf("TODO: Rewrite secret %v to %v\n", msg.Secret, sendId)
+        self.ForwardRewriteBySendId[sendId] = msg.RewriteSendId
 
         self.MessagesOut <- 
             PhysicalMessage {

@@ -268,7 +268,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 			}
 		}
 	}
-/*
+
 	// RouteRewriteMessage
 	{
 		msgId := uuid.NewV4()
@@ -293,14 +293,26 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 
 		}
 	}
-*/
+
 	// Test message route and rewrite
-	// ...
+	{
+		test_contents := []byte{10,7,1,128,35}
+		node.MessagesIn <- PhysicalMessage{test_key2,
+							 	SendMessage{Message{establish_reply.NewSendId, false}, test_contents}}
+		select {
+			case physical_msg := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(SendMessage{}), reflect.TypeOf(physical_msg.Message))
+				assert.Equal(t, 
+							 PhysicalMessage{test_key3,
+							 	SendMessage{Message{155, false}, test_contents}},
+							 physical_msg)
+			}
+		}
+	}
 }
 
-// Rewrite unknown route test
-// Routes have distinct indices test
-
-// Send messages thru chain of nodes
+// TODO: Rewrite unknown route test
+// TODO: Routes have distinct indices test
+// TODO: Send messages thru chain of nodes
 
 

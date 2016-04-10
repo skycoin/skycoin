@@ -106,6 +106,8 @@ type Node struct {
     EstablishedRoutesByIndex map[int]EstablishedRoute
     RetransmitQueue map[uuid.UUID]PhysicalMessage
     OperationsAwaitingReply map[uuid.UUID]chan rewriteableMessage
+    BackwardPeerIdsBySendId map[uint32]cipher.PubKey
+    BackwardSendIdsBySendId map[uint32]uint32
 
     // TODO: Randomize route indexes?
     NextRouteIdx uint32
@@ -173,6 +175,8 @@ func NewNode(config NodeConfig) *Node {
     ret.ForwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
     ret.SendIdsBySecret = make(map[string]uint32)
     ret.ForwardRewriteBySendId = make(map[uint32]uint32)
+    ret.BackwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
+    ret.BackwardSendIdsBySendId = make(map[uint32]uint32)
     return ret
 }
 
@@ -320,33 +324,54 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
         }
 }
 
-func (self *Node) forwardMessage(SendId uint32, msg rewriteableMessage) bool {
+func (self *Node) forwardMessage(SendId uint32, SendBack bool, msg rewriteableMessage) bool {
     if SendId == 0 {
         return false
     }
 
-    // Get routing info
-    self.Lock.Lock()
     var rewrite_id uint32 = 0
-    forward_peer, forward_exists := self.ForwardPeerIdsBySendId[SendId]
-    if !forward_exists {
-        logger.Debug("Asked to forward on unknown route %v", SendId)
-        return false
-    }
-    rewrite_id, _ = self.ForwardRewriteBySendId[SendId]
-    self.Lock.Unlock()
+    var rewrite_peer cipher.PubKey
+fmt.Printf("forwardMessage %v SendBack %v msg %v\n", SendId, SendBack, msg)
+    if !SendBack {
+        // Get routing info
+        self.Lock.Lock()
+        var forward_exists bool = false
+        rewrite_peer, forward_exists = self.ForwardPeerIdsBySendId[SendId]
+        if !forward_exists {
+            logger.Debug("Asked to forward on unknown route %v", SendId)
+            return false
+        }
+        rewrite_id, _ = self.ForwardRewriteBySendId[SendId]
+        self.Lock.Unlock()
 
-    // Special routing for RouteRewriteMessage
-    msg_type := reflect.TypeOf(msg)
-    if msg_type == reflect.TypeOf(RouteRewriteMessage{}) && rewrite_id == 0 {
-        // Do not forward: interpret this message on this hop
-        return false
+        // Special routing for RouteRewriteMessage
+        msg_type := reflect.TypeOf(msg)
+        if msg_type == reflect.TypeOf(RouteRewriteMessage{}) && rewrite_id == 0 {
+            // Do not forward: interpret this message on this hop
+            return false
+        }
+    } else {
+        // Which peer does it go to? 
+        var back_exists bool = false
+        rewrite_peer, back_exists = self.BackwardPeerIdsBySendId[SendId]
+        if !back_exists  {
+            logger.Debug("Asked to backward route on unknown rewrite %v", SendId)
+            return false
+        }
+
+        var id_exists bool = false
+        rewrite_id, id_exists = self.BackwardSendIdsBySendId[SendId]
+        if !id_exists {
+            panic("Internal inconsistency: BackwardPeerIdsBySendId has key but BackwardSendIdsBySendId doesn't")
+        }
+
+fmt.Printf("back_peer %v back_exists %v rewrite_id %v\n", rewrite_peer, back_exists, rewrite_id)
     }
     
     rewritten_msg := msg.(rewriteableMessage) 
 
     rewritten_msg = rewritten_msg.Rewrite(rewrite_id)
-    self.MessagesOut <- PhysicalMessage{forward_peer, rewritten_msg}
+    self.MessagesOut <- PhysicalMessage{rewrite_peer, rewritten_msg}
 
     return true
 }
@@ -359,6 +384,8 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
         delete(self.SendIdsBySecret, msg.Secret)
 
         self.ForwardRewriteBySendId[sendId] = msg.RewriteSendId
+        self.BackwardPeerIdsBySendId[msg.RewriteSendId] = peerFrom
+        self.BackwardSendIdsBySendId[msg.RewriteSendId] = msg.SendId
 
         self.MessagesOut <- 
             PhysicalMessage {
@@ -443,17 +470,17 @@ func (self *Node) Run() {
             self.onOperationReply(msg, (msg.(QueryConnectedPeersReply)).OperationReply.OperationMessage.MsgId)
         } else if msg_type == reflect.TypeOf(SendMessage{}) {
             send_message := msg.(SendMessage)
-            if !self.forwardMessage(send_message.SendId, msg) {
+            if !self.forwardMessage(send_message.SendId, send_message.SendBack, msg) {
                 self.onSendMessage(send_message)
             }
         } else if msg_type == reflect.TypeOf(EstablishRouteMessage{}) {
             establish_message := msg.(EstablishRouteMessage)
-            if !self.forwardMessage(establish_message.SendId, msg) {
+            if !self.forwardMessage(establish_message.SendId, establish_message.SendBack, msg) {
                 self.onRouteRequest(establish_message, msg_physical.ConnectedPeerPubKey)
             }
         } else if msg_type == reflect.TypeOf(RouteRewriteMessage{}) {
             rewrite_message := msg.(RouteRewriteMessage)
-            if !self.forwardMessage(rewrite_message.SendId, msg) {
+            if !self.forwardMessage(rewrite_message.SendId, rewrite_message.SendBack, msg) {
                 self.onRewriteRequest(rewrite_message, msg_physical.ConnectedPeerPubKey)
             }
         }

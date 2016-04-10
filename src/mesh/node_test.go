@@ -485,15 +485,66 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 		}
 	}
 }
-/*
+
+func RouteRequestAndRewrite(t *testing.T, node *Node, rewriteId uint32) uint32 {
+	var forwardSendId uint32 = 0
+	var secret string = ""
+
+	// EstablishRouteMessage
+	var establish_reply EstablishRouteReplyMessage
+	{
+		msgId := uuid.NewV4()
+		node.MessagesIn <- 
+			PhysicalMessage{
+				test_key2,
+				EstablishRouteMessage{
+					OperationMessage{Message{0, false}, msgId},
+					test_key3,
+					time.Hour,
+				},
+			}
+		select {
+			case route_reply := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(route_reply.Message))
+				establish_reply = route_reply.Message.(EstablishRouteReplyMessage)
+				forwardSendId = establish_reply.NewSendId
+				secret = establish_reply.Secret
+			}
+		}
+	}
+
+	// RouteRewriteMessage
+	{
+		msgId := uuid.NewV4()
+		node.MessagesIn <- 
+			PhysicalMessage{
+				test_key2,
+				RouteRewriteMessage{
+					OperationMessage{Message{forwardSendId, false}, msgId},
+					secret,
+					rewriteId,
+				},
+			}
+//fmt.Printf("OperationMessage forwardSendId %v\n", forwardSendId)
+		select {
+			case rewrite_reply := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(OperationReply{}), reflect.TypeOf(rewrite_reply.Message))
+			}
+
+		}
+	}
+
+	return forwardSendId
+}
+
 func TestBackwardRoute(t *testing.T) {
-	test_route := RouteConfig{[]cipher.PubKey{test_key2, test_key3}}
+	// key1 <-> key 2 <-> key 3
 	var test_config = NodeConfig{
 		test_key2,
 		[]cipher.PubKey{test_key1, test_key3},
 		1024,
 		1024,
-		[]RouteConfig{test_route},
+		[]RouteConfig{},
 		time.Hour,
 		0,	// No retransmits
 		// RouteEstablishedCB
@@ -502,28 +553,22 @@ func TestBackwardRoute(t *testing.T) {
 	node := NewNode(test_config)
 	go node.Run()
 
-	// Establish 2 -> 3
-	{
-		outgoing := <- node.MessagesOut
-		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
-		msg := outgoing.Message
-		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
-		establish_msg := msg.(EstablishRouteMessage)
-		assert.Equal(t, test_key3, establish_msg.ToPubKey)
-
-		// Reply
-		node.MessagesIn <- PhysicalMessage{test_key2, EstablishRouteReplyMessage{
-			OperationReply{OperationMessage{Message{0, true}, establish_msg.MsgId}, true, ""}, 
-			11, "secret_abc"}}
-	}
+	rewriteId := uint32(330)
+	forwardSendId := RouteRequestAndRewrite(t, node, rewriteId)
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 
 	// Have to wait for route to be established
-	node.MessageOut <- 
+	node.MessagesIn <- 
 		PhysicalMessage{
 			test_key2,
-			//...
+			SendMessage {
+				Message {
+					rewriteId,
+					true,
+				},
+				sample_data,
+			},
 		}
 
 	select {
@@ -531,11 +576,10 @@ func TestBackwardRoute(t *testing.T) {
 			assert.Fail(t, "Node received message with SendId != 0")
 		}
 		case send_message := <-node.MessagesOut: {
-			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{11, false}, sample_data}}, send_message)
+			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{forwardSendId, true}, sample_data}}, send_message)
 		}
 	}
 }
-*/
 
 // TODO: Send messages thru chain of nodes
 

@@ -4,7 +4,7 @@ import(
 	"time"
 	"reflect"
 	"testing"
-//	"fmt"
+	"fmt"
 	)
 
 import (
@@ -17,19 +17,19 @@ var test_key1 = cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 var test_key2 = cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 var test_key3 = cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 var test_key4 = cipher.NewPubKey([]byte{4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+var test_key5 = cipher.NewPubKey([]byte{5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 
 func init() {
 }
 
 func TestEstablishRoutes(t *testing.T) {
-	test_route := RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4}}
 	established_ch := make(chan EstablishedRoute)
 	var test_config = NodeConfig{
 		test_key1,
 		[]cipher.PubKey{test_key2},
 		1024,
 		1024,
-		[]RouteConfig{test_route},
+		[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4}}},
 		time.Hour,
 		0,	// No retransmits
 		// RouteEstablishedCB
@@ -163,15 +163,33 @@ func TestReceiveMessage(t *testing.T) {
 	}
 	node := NewNode(test_config)
 	go node.Run()
+
+	// Default forward
+	{
+		sample_data := []byte{3, 5, 10, 1, 2, 3}
+		to_send := SendMessage{Message{0, false}, sample_data}
+		node.MessagesIn <- PhysicalMessage{test_key1, to_send}
+		
+		select {
+			case contents_recvd := <-node.MeshMessagesIn:
+				assert.Equal(t, sample_data, contents_recvd)
+			case <-node.MessagesOut:
+				assert.Fail(t, "Node tried to route message when it should have received it")
+		}
+	}
+
+	// Default backward
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
-	to_send := SendMessage{Message{0, false}, sample_data}
-	node.MessagesIn <- PhysicalMessage{test_key4, to_send}
-	
-	select {
-		case contents_recvd := <-node.MeshMessagesIn:
-			assert.Equal(t, sample_data, contents_recvd)
-		case <-node.MessagesOut:
-			assert.Fail(t, "Node tried to route message with SendId=0")
+	{
+		to_send := SendMessage{Message{0, true}, sample_data}
+		node.MessagesIn <- PhysicalMessage{test_key1, to_send}
+		
+		select {
+			case contents_recvd := <-node.MeshMessagesIn:
+				assert.Equal(t, sample_data, contents_recvd)
+			case <-node.MessagesOut:
+				assert.Fail(t, "Node tried to route message when it should have received it")
+		}
 	}
 }
 
@@ -196,14 +214,13 @@ func TestSendMessageToPeer(t *testing.T) {
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 	
-	// Have to wait for route to be established first
 	<-route_established
 
 	node.SendMessage(0, sample_data)
 
 	select {
 		case <-node.MeshMessagesIn: {
-			assert.Fail(t, "Node received message with SendId != 0")
+			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
 			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{0, false}, sample_data}}, send_message)
@@ -244,16 +261,15 @@ func TestRouteMessage(t *testing.T) {
 			OperationReply{OperationMessage{Message{0, true}, establish_msg.MsgId}, true, ""}, 
 			11, "secret_abc"}}
 	}
+	<-route_established
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
-
-	<-route_established
 
 	node.SendMessage(0, sample_data)
 
 	select {
 		case <-node.MeshMessagesIn: {
-			assert.Fail(t, "Node received message with SendId != 0")
+			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
 			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{11, false}, sample_data}}, send_message)
@@ -573,7 +589,7 @@ func TestBackwardRoute(t *testing.T) {
 
 	select {
 		case <-node.MeshMessagesIn: {
-			assert.Fail(t, "Node received message with SendId != 0")
+			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
 			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{forwardSendId, true}, sample_data}}, send_message)
@@ -581,7 +597,109 @@ func TestBackwardRoute(t *testing.T) {
 	}
 }
 
-// TODO: Send messages thru chain of nodes
+func TestInternodeCommunication(t *testing.T) {
+	// TODO: Try different numbers of hops
+	do_not_want_route_established := make(chan bool)
+	want_route_established := make(chan bool)
+	do_not_want_cb := func(route EstablishedRoute) {
+		do_not_want_route_established <- true
+	}
+	nodes_by_key := make(map[cipher.PubKey]*Node)
+	nodes := []*Node {
+		NewNode(
+			NodeConfig{
+			test_key1,
+			[]cipher.PubKey{test_key2},
+			1024,
+			1024,
+			[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4, test_key5}}},
+			time.Hour,
+			0,	// No retransmits
+			// RouteEstablishedCB
+			func(route EstablishedRoute) {
+				want_route_established <- true
+			},
+		}),
+		NewNode(
+			NodeConfig{
+			test_key2,
+			[]cipher.PubKey{test_key1,test_key3},
+			1024,
+			1024,
+			[]RouteConfig{},
+			time.Hour,
+			0,	// No retransmits
+			// RouteEstablishedCB
+			do_not_want_cb,
+		}),
+		NewNode(
+			NodeConfig{
+			test_key3,
+			[]cipher.PubKey{test_key2,test_key4},
+			1024,
+			1024,
+			[]RouteConfig{},
+			time.Hour,
+			0,	// No retransmits
+			// RouteEstablishedCB
+			do_not_want_cb,
+		}),
+		NewNode(
+			NodeConfig{
+			test_key4,
+			[]cipher.PubKey{test_key3,test_key5},
+			1024,
+			1024,
+			[]RouteConfig{},
+			time.Hour,
+			0,	// No retransmits
+			// RouteEstablishedCB
+			do_not_want_cb,
+		}),
+		NewNode(
+			NodeConfig{
+			test_key5,
+			[]cipher.PubKey{test_key4},
+			1024,
+			1024,
+			[]RouteConfig{},
+			time.Hour,
+			0,	// No retransmits
+			// RouteEstablishedCB
+			do_not_want_cb,
+		}),
+	}
+
+	for nodeIdx, _ := range nodes {
+		var node *Node = nodes[nodeIdx]
+		nodes_by_key[node.Config.MyPubKey] = node
+	}
+	for nodeIdx, _ := range nodes {
+		var node *Node = nodes[nodeIdx]
+		go func() {
+			for {
+				messageToSend := <- node.MessagesOut
+	fmt.Printf("messageToSend to %v %v: %v\n", messageToSend.ConnectedPeerPubKey[0], reflect.TypeOf(messageToSend.Message).Name(), messageToSend)
+				sendToNode, nodeExists := nodes_by_key[messageToSend.ConnectedPeerPubKey]
+				assert.True(t, nodeExists)
+				sendToNode.MessagesIn <- PhysicalMessage{node.Config.MyPubKey, messageToSend.Message}
+//	fmt.Printf("messageToSend to %v %v: %v\n", messageToSend.ConnectedPeerPubKey[0], reflect.TypeOf(messageToSend.Message).Name(), messageToSend)
+			}
+		}()
+		go node.Run()
+	}
+
+	// Wait for route established
+	<-want_route_established
+	fmt.Printf("Established!\n")
+	assert.Equal(t, 0, do_not_want_route_established)
+	for _, node := range nodes {
+		assert.Equal(t, 0, node.MeshMessagesIn)
+	}
+
+for {time.Sleep(time.Second)}
+	// TODO: Send message
+}
 
 
 

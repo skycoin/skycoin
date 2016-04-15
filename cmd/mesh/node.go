@@ -24,10 +24,22 @@ var tcp_pool *gnet.ConnectionPool
 
 var map_lock = &sync.Mutex{}
 var configs_by_conn = make(map[*gnet.Connection]TCPOutgoingConnectionConfig)
+var pub_keys_by_conn = make(map[*gnet.Connection]cipher.PubKey)
 type ConnectionSet map[*gnet.Connection]bool 
 var conns_by_pubkey = make(map[cipher.PubKey]ConnectionSet)
 
 var node_impl *mesh.Node
+
+type ConnectAnnouncementMessage struct {
+    MyPubKey cipher.PubKey
+}
+var ConnectAnnouncementMessagePrefix = gnet.MessagePrefix{0,0,1,0}
+func (self *ConnectAnnouncementMessage) Handle(context *gnet.MessageContext, x interface{}) error {
+    map_lock.Lock()
+    pub_keys_by_conn[context.Conn] = self.MyPubKey
+    map_lock.Unlock()
+    return nil
+}
 
 func ConnectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
     for {
@@ -43,12 +55,14 @@ func ConnectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
         configs_by_conn[conn] = config
         conns_by_pubkey[config.PeerPubKey][conn] = true
         map_lock.Unlock()
+        // Does not block, unless the message queue is full
+        tcp_pool.SendMessage(conn, &ConnectAnnouncementMessage{node_impl.Config.MyPubKey})
         break
     }
 }
 
 // Does not block, unless the message queue is full
-func doSendMessage(to_send mesh.OutgoingMessage) {
+func doSendMessage(to_send mesh.PhysicalMessage) {
     defer func() {
         // recover from panic if one occured. Set err to nil otherwise.
         err := recover()
@@ -75,8 +89,19 @@ func doSendMessage(to_send mesh.OutgoingMessage) {
     }
 }
 
+func getConnectedPeerKey(Conn *gnet.Connection) cipher.PubKey {
+    map_lock.Lock()
+    key, exists := pub_keys_by_conn[Conn]
+    if !exists {
+        panic("Internal consistency failure: getConnectedPeerKey() called for unknown connection")
+    }
+    map_lock.Unlock()
+    return key
+}
+
 func main() {
     RegisterTCPMessages()
+    gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     flag.Parse()
 
 	file, e := ioutil.ReadFile(*config_path)
@@ -92,12 +117,7 @@ func main() {
         os.Exit(1)
     }
 
-    config_node := config.Node
-    config_node.ConnectedPeers = []cipher.PubKey{}
-    for _ , conn_config := range config.TCPConnections {
-        config_node.ConnectedPeers = append(config_node.ConnectedPeers, conn_config.PeerPubKey)
-    }
-    node_impl = mesh.NewNode(config_node)
+    node_impl = mesh.NewNode(config.Node)
 
     // Start listening for incoming connections via TCP
     config_cb := config.TCPConfig
@@ -113,6 +133,9 @@ func main() {
             time.Sleep(config.RetryDelay)
             ConnectToPeerViaTCP(config)
         }
+    }
+    config_cb.ConnectCallback = func (conn *gnet.Connection, solicited bool) {
+        tcp_pool.SendMessage(conn, &ConnectAnnouncementMessage{node_impl.Config.MyPubKey})
     }
     tcp_pool = gnet.NewConnectionPool(config_cb, node_impl)
 

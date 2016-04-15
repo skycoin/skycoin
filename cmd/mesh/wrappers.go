@@ -13,7 +13,7 @@ type SendMessageWrapper struct {
 var SendMessagePrefix = gnet.MessagePrefix{0,0,0,1}
 func (self *SendMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
     var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.SendMessage
+    node_impl.MessagesIn <- mesh.PhysicalMessage{getConnectedPeerKey(context.Conn), self.SendMessage}
     return nil
 }
 
@@ -23,10 +23,9 @@ type EstablishRouteMessageWrapper struct {
 var EstablishRouteMessagePrefix = gnet.MessagePrefix{0,0,0,2}
 func (self *EstablishRouteMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
     var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.EstablishRouteMessage
+    node_impl.MessagesIn <- mesh.PhysicalMessage{getConnectedPeerKey(context.Conn), self.EstablishRouteMessage}
     return nil
 }
-
 
 type EstablishRouteReplyMessageWrapper struct {
     mesh.EstablishRouteReplyMessage
@@ -34,10 +33,9 @@ type EstablishRouteReplyMessageWrapper struct {
 var EstablishRouteReplyMessagePrefix = gnet.MessagePrefix{0,0,0,3}
 func (self *EstablishRouteReplyMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
     var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.EstablishRouteReplyMessage
+    node_impl.MessagesIn <- mesh.PhysicalMessage{getConnectedPeerKey(context.Conn), self.EstablishRouteReplyMessage}
     return nil
 }
-
 
 type RouteRewriteMessageWrapper struct {
     mesh.RouteRewriteMessage
@@ -45,7 +43,7 @@ type RouteRewriteMessageWrapper struct {
 var RouteRewriteMessagePrefix = gnet.MessagePrefix{0,0,0,4}
 func (self *RouteRewriteMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
     var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.RouteRewriteMessage
+    node_impl.MessagesIn <- mesh.PhysicalMessage{getConnectedPeerKey(context.Conn), self.RouteRewriteMessage}
     return nil
 }
 
@@ -55,17 +53,7 @@ type OperationReplyWrapper struct {
 var OperationReplyPrefix = gnet.MessagePrefix{0,0,0,5}
 func (self *OperationReplyWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
     var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.OperationReply
-    return nil
-}
-
-type QueryConnectedPeersMessageWrapper struct {
-    mesh.QueryConnectedPeersMessage
-}
-var QueryConnectedPeersMessagePrefix = gnet.MessagePrefix{0,0,0,6}
-func (self *QueryConnectedPeersMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
-    var node_impl = (x).(*mesh.Node)
-    node_impl.MessagesIn <- self.QueryConnectedPeersMessage
+    node_impl.MessagesIn <- mesh.PhysicalMessage{getConnectedPeerKey(context.Conn), self.OperationReply}
     return nil
 }
 
@@ -75,7 +63,6 @@ func RegisterTCPMessages() {
     gnet.RegisterMessage(EstablishRouteReplyMessagePrefix, EstablishRouteReplyMessageWrapper{})
     gnet.RegisterMessage(RouteRewriteMessagePrefix, RouteRewriteMessageWrapper{})
     gnet.RegisterMessage(OperationReplyPrefix, OperationReplyWrapper{})
-    gnet.RegisterMessage(QueryConnectedPeersMessagePrefix, QueryConnectedPeersMessageWrapper{})
 }
 
 func WrapMessage(msg interface{}) gnet.Message {

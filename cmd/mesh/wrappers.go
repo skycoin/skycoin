@@ -59,12 +59,23 @@ func (self *OperationReplyWrapper) Handle(context *gnet.MessageContext, x interf
     return nil
 }
 
+type QueryConnectedPeersMessageWrapper struct {
+    mesh.QueryConnectedPeersMessage
+}
+var QueryConnectedPeersMessagePrefix = gnet.MessagePrefix{0,0,0,6}
+func (self *QueryConnectedPeersMessageWrapper) Handle(context *gnet.MessageContext, x interface{}) error {
+    var node_impl = (x).(*mesh.Node)
+    node_impl.MessagesIn <- self.QueryConnectedPeersMessage
+    return nil
+}
+
 func RegisterTCPMessages() {
     gnet.RegisterMessage(SendMessagePrefix, SendMessageWrapper{})
     gnet.RegisterMessage(EstablishRouteMessagePrefix, EstablishRouteMessageWrapper{})
     gnet.RegisterMessage(EstablishRouteReplyMessagePrefix, EstablishRouteReplyMessageWrapper{})
     gnet.RegisterMessage(RouteRewriteMessagePrefix, RouteRewriteMessageWrapper{})
     gnet.RegisterMessage(OperationReplyPrefix, OperationReplyWrapper{})
+    gnet.RegisterMessage(QueryConnectedPeersMessagePrefix, QueryConnectedPeersMessageWrapper{})
 }
 
 func WrapMessage(msg interface{}) gnet.Message {

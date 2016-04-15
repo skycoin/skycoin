@@ -53,15 +53,6 @@ type EstablishRouteReplyMessage struct {
     Secret string
 }
 
-type QueryConnectedPeersMessage struct {
-    OperationMessage
-}
-
-type QueryConnectedPeersReply struct {
-    OperationReply
-    PubKey []cipher.PubKey
-}
-
 type RouteRewriteMessage struct {
     OperationMessage
     // Secret from EstablishRouteReply
@@ -83,7 +74,6 @@ type RouteEstablishedCallback func(route EstablishedRoute)
 
 type NodeConfig struct {
     MyPubKey cipher.PubKey
-    ConnectedPeers []cipher.PubKey
     MessagesOutSize int
     MessagesInSize int
     Routes []RouteConfig
@@ -151,18 +141,6 @@ func (msg EstablishRouteMessage) Rewrite(newSendId uint32) rewriteableMessage {
 }
 
 func (msg EstablishRouteReplyMessage) Rewrite(newSendId uint32) rewriteableMessage {
-    msg.LastSendId = msg.SendId
-    msg.SendId = newSendId
-    return msg
-}
-
-func (msg QueryConnectedPeersMessage) Rewrite(newSendId uint32) rewriteableMessage {
-    msg.LastSendId = msg.SendId
-    msg.SendId = newSendId
-    return msg
-}
-
-func (msg QueryConnectedPeersReply) Rewrite(newSendId uint32) rewriteableMessage {
     msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
@@ -402,8 +380,7 @@ func (self *Node) forwardMessage(SendId uint32, SendBack bool, msg rewriteableMe
         var id_exists bool = false
         rewrite_id, id_exists = self.BackwardSendIdsBySendId[SendId]
         if !id_exists {
-            rewrite_id = 0
-            //panic("Internal inconsistency: BackwardPeerIdsBySendId has key but BackwardSendIdsBySendId doesn't")
+            panic("Internal inconsistency: BackwardPeerIdsBySendId has key but BackwardSendIdsBySendId doesn't")
         }
     }
     
@@ -517,11 +494,6 @@ func (self *Node) Run() {
             reply := msg.(EstablishRouteReplyMessage)
             if !self.forwardMessage(reply.SendId, reply.SendBack, msg) {
                 self.onOperationReply(msg, (msg.(EstablishRouteReplyMessage)).OperationReply.OperationMessage.MsgId)
-            }
-        } else if msg_type == reflect.TypeOf(QueryConnectedPeersReply{}) {
-            reply := msg.(QueryConnectedPeersReply)
-            if !self.forwardMessage(reply.SendId, reply.SendBack, msg) {
-                self.onOperationReply(msg, (msg.(QueryConnectedPeersReply)).OperationReply.OperationMessage.MsgId)
             }
         } else if msg_type == reflect.TypeOf(SendMessage{}) {
             send_message := msg.(SendMessage)

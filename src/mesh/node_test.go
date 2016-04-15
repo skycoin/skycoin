@@ -25,7 +25,6 @@ func TestEstablishRoutes(t *testing.T) {
 	established_ch := make(chan EstablishedRoute)
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{test_key2},
 		1024,
 		1024,
 		[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4}}},
@@ -156,7 +155,6 @@ func TestEstablishRoutes(t *testing.T) {
 func TestReceiveMessage(t *testing.T) {
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{},
 		1024,
 		1024,
 		[]RouteConfig{},
@@ -206,7 +204,6 @@ func TestSendMessageToPeer(t *testing.T) {
 	route_established := make(chan bool)
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{test_key2},
 		1024,
 		1024,
 		[]RouteConfig{test_route},
@@ -241,7 +238,6 @@ func TestRouteMessage(t *testing.T) {
 	route_established := make(chan bool)
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{test_key2},
 		1024,
 		1024,
 		[]RouteConfig{test_route},
@@ -288,7 +284,6 @@ func TestRouteMessage(t *testing.T) {
 func TestRouteAndRewriteMessage(t *testing.T) {
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{},
 		1024,
 		1024,
 		[]RouteConfig{},
@@ -393,7 +388,6 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 func TestRewriteUnknownRoute(t *testing.T) {
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{},
 		1024,
 		1024,
 		[]RouteConfig{},
@@ -435,7 +429,6 @@ func TestRewriteUnknownRoute(t *testing.T) {
 func TestRoutesHaveDifferentSendIds(t *testing.T) {
 	var test_config = NodeConfig{
 		test_key1,
-		[]cipher.PubKey{test_key2},
 		1024,
 		1024,
 		[]RouteConfig{},
@@ -517,7 +510,6 @@ func TestBackwardRoute(t *testing.T) {
 	// key1 <-> key 2 <-> key 3
 	var test_config = NodeConfig{
 		test_key2,
-		[]cipher.PubKey{test_key1, test_key3},
 		1024,
 		1024,
 		[]RouteConfig{},
@@ -591,7 +583,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key1,
-					[]cipher.PubKey{test_key2},
 					1024,
 					1024,
 					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2}}},
@@ -605,7 +596,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key2,
-					[]cipher.PubKey{test_key1},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -619,7 +609,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key1,
-					[]cipher.PubKey{test_key2},
 					1024,
 					1024,
 					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3}}},
@@ -633,7 +622,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key2,
-					[]cipher.PubKey{test_key1,test_key3},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -645,7 +633,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key3,
-					[]cipher.PubKey{test_key2},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -659,7 +646,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key1,
-					[]cipher.PubKey{test_key2},
 					1024,
 					1024,
 					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4}}},
@@ -673,7 +659,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key2,
-					[]cipher.PubKey{test_key1,test_key3},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -685,7 +670,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key3,
-					[]cipher.PubKey{test_key2,test_key4},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -697,7 +681,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key4,
-					[]cipher.PubKey{test_key3},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -711,7 +694,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key1,
-					[]cipher.PubKey{test_key2},
 					1024,
 					1024,
 					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4, test_key5}}},
@@ -725,7 +707,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key2,
-					[]cipher.PubKey{test_key1,test_key3},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -737,7 +718,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key3,
-					[]cipher.PubKey{test_key2,test_key4},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -749,7 +729,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key4,
-					[]cipher.PubKey{test_key3,test_key5},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -761,7 +740,6 @@ func TestInternodeCommunication(t *testing.T) {
 				NewNode(
 					NodeConfig{
 					test_key5,
-					[]cipher.PubKey{test_key4},
 					1024,
 					1024,
 					[]RouteConfig{},
@@ -847,6 +825,4 @@ func TestInternodeCommunication(t *testing.T) {
 		}
 	}
 }
-
-
 

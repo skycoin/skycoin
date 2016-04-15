@@ -6,6 +6,8 @@ import (
     "sync"
     "reflect"
     "gopkg.in/op/go-logging.v1"
+    "math"
+    "math/rand"
 )
 
 import (
@@ -18,6 +20,7 @@ var logger = logging.MustGetLogger("node")
 type Message struct {
     SendId uint32
     SendBack bool
+    LastSendId uint32
 }
 
 type SendMessage struct {
@@ -39,6 +42,7 @@ type OperationReply struct {
 type EstablishRouteMessage struct {
     OperationMessage
     ToPubKey cipher.PubKey
+    BackwardRewriteSendId uint32
     DurationHint time.Duration
 }
 
@@ -88,10 +92,16 @@ type NodeConfig struct {
     RouteEstablishedCB RouteEstablishedCallback
 }
 
+type MeshMessage struct {
+    SendId          uint32
+    ConnectedPeer   cipher.PubKey
+    Contents        []byte
+}
+
 type Node struct {
     // These are the messages contents received from other nodes in the network
     // The Node fills this channel
-    MeshMessagesIn chan[]byte
+    MeshMessagesIn chan MeshMessage
 
     // These are the messages to be sent across physical links
     // The Node fills this channel
@@ -110,7 +120,7 @@ type Node struct {
     BackwardSendIdsBySendId map[uint32]uint32
 
     // TODO: Randomize route indexes?
-    NextRouteIdx uint32
+   // NextRouteIdx uint32
     ForwardPeerIdsBySendId map[uint32]cipher.PubKey
     SendIdsBySecret map[string]uint32
     ForwardRewriteBySendId map[uint32]uint32
@@ -123,36 +133,43 @@ type rewriteableMessage interface {
 }
 
 func (msg SendMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
 
 func (msg OperationReply) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
 
 func (msg EstablishRouteMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
 
 func (msg EstablishRouteReplyMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
 
 func (msg QueryConnectedPeersMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
 
 func (msg QueryConnectedPeersReply) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
 
 func (msg RouteRewriteMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
     msg.SendId = newSendId
     return msg
 }
@@ -166,12 +183,11 @@ func NewNode(config NodeConfig) *Node {
     ret.Config = config
     ret.MessagesOut = make(chan PhysicalMessage, config.MessagesOutSize)
     ret.MessagesIn = make(chan PhysicalMessage, config.MessagesInSize)
-    ret.MeshMessagesIn = make(chan[]byte)
+    ret.MeshMessagesIn = make(chan MeshMessage)
     ret.Lock = &sync.Mutex{}
     ret.EstablishedRoutesByIndex = make(map[int]EstablishedRoute)
     ret.RetransmitQueue = make(map[uuid.UUID]PhysicalMessage)
     ret.OperationsAwaitingReply = make(map[uuid.UUID]chan rewriteableMessage)
-    ret.NextRouteIdx = 1;
     ret.ForwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
     ret.SendIdsBySecret = make(map[string]uint32)
     ret.ForwardRewriteBySendId = make(map[uint32]uint32)
@@ -207,6 +223,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
 
     var new_route = EstablishedRoute{0, route.PeerPubKeys[0]}
     var last_secret = ""
+    var prevSendId uint32 = 0
 
     for peer_idx, _ := range route.PeerPubKeys {
         // For each peer, we establish a route from this one to the next one
@@ -223,10 +240,12 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
                     Message {
                         new_route.SendId,
                         false,
+                        0,
                     },
                     establish_id,
                 },
                 route.PeerPubKeys[peer_idx + 1],
+                prevSendId,
                 time.Hour,
             }
 
@@ -235,6 +254,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
                                                         route_message)
         if establish_reply != nil {
             route_reply := establish_reply.(EstablishRouteReplyMessage)
+            prevSendId = route_reply.NewSendId
             if peer_idx == 0 {
                 new_route.SendId = route_reply.NewSendId
             } else {
@@ -245,6 +265,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
                             Message {
                                 new_route.SendId,
                                 false,
+                                0,
                             },
                             rewrite_id,
                         },
@@ -282,18 +303,35 @@ func (self *Node) onOperationReply(msg rewriteableMessage, operation_id uuid.UUI
     ch <- msg
 }
 
-func (self *Node) onSendMessage(msg SendMessage) {
-    self.MeshMessagesIn <- msg.Contents
+func (self *Node) onSendMessage(msg MeshMessage) {
+    self.MeshMessagesIn <- msg
 }
 
 func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubKey) {
     new_secret := fmt.Sprintf("%v", uuid.NewV4())
 
+    var route_id uint32 = 0
     self.Lock.Lock()
-    route_id := self.NextRouteIdx
-    self.NextRouteIdx += 1
+    if len(self.ForwardPeerIdsBySendId) == (math.MaxUint32 - 2) {
+        panic("Too many routes in table to generate a new ID")
+    }
+    for {
+        route_id = rand.Uint32()
+        if route_id == 0 {
+            continue
+        }
+        _, exists := self.ForwardPeerIdsBySendId[route_id]
+        if !exists {
+            break
+        }
+    }
+
     self.ForwardPeerIdsBySendId[route_id] = msg.ToPubKey
     self.SendIdsBySecret[new_secret] = route_id
+
+    self.BackwardPeerIdsBySendId[route_id] = peerFrom
+    self.BackwardSendIdsBySendId[route_id] = msg.BackwardRewriteSendId
+
     // TODO: Use duration hint
     self.Lock.Unlock()
     
@@ -305,9 +343,11 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
                     OperationMessage {
                         Message {
                             // SendId
-                            msg.SendId,
+                            msg.LastSendId,
                             // SendBack
                             true,
+                            // LastSendId
+                            0,
                         },
                         msg.MsgId,
                     },
@@ -355,14 +395,15 @@ func (self *Node) forwardMessage(SendId uint32, SendBack bool, msg rewriteableMe
         var back_exists bool = false
         rewrite_peer, back_exists = self.BackwardPeerIdsBySendId[SendId]
         if !back_exists  {
-            logger.Debug("Asked to backward route on unknown rewrite %v", SendId)
+            logger.Debug("Asked to backward route on unknown route %v", SendId)
             return false
         }
 
         var id_exists bool = false
         rewrite_id, id_exists = self.BackwardSendIdsBySendId[SendId]
         if !id_exists {
-            panic("Internal inconsistency: BackwardPeerIdsBySendId has key but BackwardSendIdsBySendId doesn't")
+            rewrite_id = 0
+            //panic("Internal inconsistency: BackwardPeerIdsBySendId has key but BackwardSendIdsBySendId doesn't")
         }
     }
     
@@ -382,8 +423,6 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
         delete(self.SendIdsBySecret, msg.Secret)
 
         self.ForwardRewriteBySendId[sendId] = msg.RewriteSendId
-        self.BackwardPeerIdsBySendId[msg.RewriteSendId] = peerFrom
-        self.BackwardSendIdsBySendId[msg.RewriteSendId] = msg.SendId
 
         self.MessagesOut <- 
             PhysicalMessage {
@@ -392,9 +431,11 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
                     OperationMessage {
                         Message {
                             // SendId
-                            msg.SendId,
+                            msg.LastSendId,
                             // SendBack
                             true,
+                            // LastSendId
+                            0,
                         },
                         msg.MsgId,
                     },
@@ -410,9 +451,11 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
                     OperationMessage {
                         Message {
                             // SendId
-                            msg.SendId,
+                            msg.LastSendId,
                             // SendBack
                             true,
+                            // LastSendId
+                            0,
                         },
                         msg.MsgId,
                     },
@@ -430,7 +473,12 @@ func (self *Node) SendMessage(route_idx int, contents []byte) {
         return
     }
     self.MessagesOut <- PhysicalMessage{route.ConnectedPeer, 
-                                        SendMessage{Message{route.SendId, false}, contents}}
+                                        SendMessage{Message{route.SendId, false, 0}, contents}}
+}
+
+func (self *Node) SendReply(to MeshMessage, contents []byte) {
+    self.MessagesOut <- PhysicalMessage{to.ConnectedPeer, 
+                                        SendMessage{Message{to.SendId, true, 0}, contents}}
 }
 
 // Blocks
@@ -461,15 +509,24 @@ func (self *Node) Run() {
         msg_type := reflect.TypeOf(msg)
 
         if msg_type == reflect.TypeOf(OperationReply{}) {
-            self.onOperationReply(msg, (msg.(OperationReply)).OperationMessage.MsgId)
+            reply := msg.(OperationReply)
+            if !self.forwardMessage(reply.SendId, reply.SendBack, msg) {
+                self.onOperationReply(msg, (msg.(OperationReply)).OperationMessage.MsgId)
+            }
         } else if msg_type == reflect.TypeOf(EstablishRouteReplyMessage{}) {
-            self.onOperationReply(msg, (msg.(EstablishRouteReplyMessage)).OperationReply.OperationMessage.MsgId)
+            reply := msg.(EstablishRouteReplyMessage)
+            if !self.forwardMessage(reply.SendId, reply.SendBack, msg) {
+                self.onOperationReply(msg, (msg.(EstablishRouteReplyMessage)).OperationReply.OperationMessage.MsgId)
+            }
         } else if msg_type == reflect.TypeOf(QueryConnectedPeersReply{}) {
-            self.onOperationReply(msg, (msg.(QueryConnectedPeersReply)).OperationReply.OperationMessage.MsgId)
+            reply := msg.(QueryConnectedPeersReply)
+            if !self.forwardMessage(reply.SendId, reply.SendBack, msg) {
+                self.onOperationReply(msg, (msg.(QueryConnectedPeersReply)).OperationReply.OperationMessage.MsgId)
+            }
         } else if msg_type == reflect.TypeOf(SendMessage{}) {
             send_message := msg.(SendMessage)
             if !self.forwardMessage(send_message.SendId, send_message.SendBack, msg) {
-                self.onSendMessage(send_message)
+                self.onSendMessage(MeshMessage{send_message.LastSendId, msg_physical.ConnectedPeerPubKey, send_message.Contents})
             }
         } else if msg_type == reflect.TypeOf(EstablishRouteMessage{}) {
             establish_message := msg.(EstablishRouteMessage)

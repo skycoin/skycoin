@@ -4,7 +4,6 @@ import(
 	"time"
 	"reflect"
 	"testing"
-	"fmt"
 	)
 
 import (
@@ -58,10 +57,12 @@ func TestEstablishRoutes(t *testing.T) {
 						 		Message {
 						 			0,
 	    							false,
+	    							0,
 						 		},
 						 		newMsgId,
 						 	},
 						 	test_key3,
+						 	0,
 	    					newDuration,
 						 },
 						},
@@ -71,7 +72,7 @@ func TestEstablishRoutes(t *testing.T) {
 		node.MessagesIn <- PhysicalMessage{
 			test_key2,
 			EstablishRouteReplyMessage{
-				OperationReply{OperationMessage{Message{0, true}, establish_msg.MsgId}, true, ""}, 
+				OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 				55, "secret_abc"}}
 	}
 	// Establish 3 -> 4
@@ -93,10 +94,12 @@ func TestEstablishRoutes(t *testing.T) {
 						 		Message {
 						 			55,
 	    							false,
+	    							0,
 						 		},
 						 		newMsgId,
 						 	},
 						 	test_key4,
+						 	55,
 	    					newDuration,
 						 },
 						},
@@ -106,7 +109,7 @@ func TestEstablishRoutes(t *testing.T) {
 		node.MessagesIn <- PhysicalMessage{
 			test_key3,
 			EstablishRouteReplyMessage{
-				OperationReply{OperationMessage{Message{55, true}, establish_msg.MsgId}, true, ""}, 
+				OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 				120, "secret_xyz"}}
 	}
 	// Set rewrite 2 -> 3
@@ -126,6 +129,7 @@ func TestEstablishRoutes(t *testing.T) {
 				 		Message {
 				 			55,
 							false,
+	    					0,
 				 		},
 				 		newMsgId,
 				 	},
@@ -138,7 +142,7 @@ func TestEstablishRoutes(t *testing.T) {
 		// Reply
 		node.MessagesIn <-  PhysicalMessage{
 			test_key2,
-			OperationReply{OperationMessage{Message{0, true}, rewrite_msg.MsgId}, true, ""}}
+			OperationReply{OperationMessage{Message{0, true, 0}, rewrite_msg.MsgId}, true, ""}}
 	}
 	// Check establish callback
 	{
@@ -167,12 +171,14 @@ func TestReceiveMessage(t *testing.T) {
 	// Default forward
 	{
 		sample_data := []byte{3, 5, 10, 1, 2, 3}
-		to_send := SendMessage{Message{0, false}, sample_data}
+		to_send := SendMessage{Message{0, false, 11}, sample_data}
 		node.MessagesIn <- PhysicalMessage{test_key1, to_send}
 		
 		select {
 			case contents_recvd := <-node.MeshMessagesIn:
-				assert.Equal(t, sample_data, contents_recvd)
+				assert.Equal(t, test_key1, contents_recvd.ConnectedPeer)
+				assert.NotZero(t, contents_recvd.SendId)
+				assert.Equal(t, sample_data, contents_recvd.Contents)
 			case <-node.MessagesOut:
 				assert.Fail(t, "Node tried to route message when it should have received it")
 		}
@@ -181,12 +187,14 @@ func TestReceiveMessage(t *testing.T) {
 	// Default backward
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 	{
-		to_send := SendMessage{Message{0, true}, sample_data}
+		to_send := SendMessage{Message{0, true, 11}, sample_data}
 		node.MessagesIn <- PhysicalMessage{test_key1, to_send}
 		
 		select {
 			case contents_recvd := <-node.MeshMessagesIn:
-				assert.Equal(t, sample_data, contents_recvd)
+				assert.Equal(t, test_key1, contents_recvd.ConnectedPeer)
+				assert.NotZero(t, contents_recvd.SendId)
+				assert.Equal(t, sample_data, contents_recvd.Contents)
 			case <-node.MessagesOut:
 				assert.Fail(t, "Node tried to route message when it should have received it")
 		}
@@ -223,7 +231,7 @@ func TestSendMessageToPeer(t *testing.T) {
 			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
-			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{0, false}, sample_data}}, send_message)
+			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{0, false, 0}, sample_data}}, send_message)
 		}
 	}
 }
@@ -258,7 +266,7 @@ func TestRouteMessage(t *testing.T) {
 
 		// Reply
 		node.MessagesIn <- PhysicalMessage{test_key2, EstablishRouteReplyMessage{
-			OperationReply{OperationMessage{Message{0, true}, establish_msg.MsgId}, true, ""}, 
+			OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 			11, "secret_abc"}}
 	}
 	<-route_established
@@ -272,7 +280,7 @@ func TestRouteMessage(t *testing.T) {
 			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
-			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{11, false}, sample_data}}, send_message)
+			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{11, false, 0}, sample_data}}, send_message)
 		}
 	}
 }
@@ -300,8 +308,9 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 			PhysicalMessage{
 				test_key1,
 				EstablishRouteMessage{
-					OperationMessage{Message{0, false}, msgId},
+					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
+					0,
 					time.Hour,
 				},
 			}
@@ -314,7 +323,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 				assert.Equal(t, 
 					PhysicalMessage{test_key1, 
 									EstablishRouteReplyMessage{
-										OperationReply{OperationMessage{Message{0, true}, msgId}, true, ""},
+										OperationReply{OperationMessage{Message{0, true, 0}, msgId}, true, ""},
 										newSendId,
 										newSecret,
 										}},
@@ -327,13 +336,13 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 	{
 		test_contents := []byte{3,7,1,2,3}
 		node.MessagesIn <- PhysicalMessage{test_key2,
-							 	SendMessage{Message{establish_reply.NewSendId, false}, test_contents}}
+							 	SendMessage{Message{establish_reply.NewSendId, false, 0}, test_contents}}
 		select {
 			case physical_msg := <-node.MessagesOut: {
 				assert.Equal(t, reflect.TypeOf(SendMessage{}), reflect.TypeOf(physical_msg.Message))
 				assert.Equal(t, 
 							 PhysicalMessage{test_key3,
-							 	SendMessage{Message{0, false}, test_contents}},
+							 	SendMessage{Message{0, false, establish_reply.NewSendId}, test_contents}},
 							 physical_msg)
 			}
 		}
@@ -346,7 +355,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 			PhysicalMessage{
 				test_key1,
 				RouteRewriteMessage{
-					OperationMessage{Message{0, false}, msgId},
+					OperationMessage{Message{0, false, 0}, msgId},
 					establish_reply.Secret,
 					155,
 				},
@@ -356,7 +365,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 				assert.Equal(t, reflect.TypeOf(OperationReply{}), reflect.TypeOf(rewrite_reply.Message))
 				assert.Equal(t, 
 					PhysicalMessage{test_key1, 
-									OperationReply{OperationMessage{Message{0, true}, msgId}, true, ""},
+									OperationReply{OperationMessage{Message{0, true, 0}, msgId}, true, ""},
 									},
 					rewrite_reply)
 			}
@@ -368,13 +377,13 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 	{
 		test_contents := []byte{10,7,1,128,35}
 		node.MessagesIn <- PhysicalMessage{test_key2,
-							 	SendMessage{Message{establish_reply.NewSendId, false}, test_contents}}
+							 	SendMessage{Message{establish_reply.NewSendId, false, 0}, test_contents}}
 		select {
 			case physical_msg := <-node.MessagesOut: {
 				assert.Equal(t, reflect.TypeOf(SendMessage{}), reflect.TypeOf(physical_msg.Message))
 				assert.Equal(t, 
 							 PhysicalMessage{test_key3,
-							 	SendMessage{Message{155, false}, test_contents}},
+							 	SendMessage{Message{155, false, establish_reply.NewSendId}, test_contents}},
 							 physical_msg)
 			}
 		}
@@ -403,7 +412,7 @@ func TestRewriteUnknownRoute(t *testing.T) {
 			PhysicalMessage{
 				test_key1,
 				RouteRewriteMessage{
-					OperationMessage{Message{0, false}, msgId},
+					OperationMessage{Message{0, false, 0}, msgId},
 					"unknown",
 					122,
 				},
@@ -414,7 +423,7 @@ func TestRewriteUnknownRoute(t *testing.T) {
 				reply := rewrite_reply.Message.(OperationReply)
 				assert.Equal(t, 
 					PhysicalMessage{test_key1, 
-									OperationReply{OperationMessage{Message{0, true}, msgId}, false, reply.Error},
+									OperationReply{OperationMessage{Message{0, true, 0}, msgId}, false, reply.Error},
 									},
 					rewrite_reply)
 			}
@@ -445,8 +454,9 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 			PhysicalMessage{
 				test_key1,
 				EstablishRouteMessage{
-					OperationMessage{Message{0, false}, msgId},
+					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
+					0,
 					time.Hour,
 				},
 			}
@@ -460,7 +470,7 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 				assert.Equal(t, 
 					PhysicalMessage{test_key1, 
 									EstablishRouteReplyMessage{
-										OperationReply{OperationMessage{Message{0, true}, msgId}, true, ""},
+										OperationReply{OperationMessage{Message{0, true, 0}, msgId}, true, ""},
 										newSendId,
 										newSecret,
 										}},
@@ -476,8 +486,9 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 			PhysicalMessage{
 				test_key1,
 				EstablishRouteMessage{
-					OperationMessage{Message{0, false}, msgId},
+					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
+					0,
 					time.Hour,
 				},
 			}
@@ -491,7 +502,7 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 				assert.Equal(t, 
 					PhysicalMessage{test_key1, 
 									EstablishRouteReplyMessage{
-										OperationReply{OperationMessage{Message{0, true}, msgId}, true, ""},
+										OperationReply{OperationMessage{Message{0, true, 0}, msgId}, true, ""},
 										newSendId,
 										newSecret,
 										}},
@@ -500,57 +511,6 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 			}
 		}
 	}
-}
-
-func RouteRequestAndRewrite(t *testing.T, node *Node, rewriteId uint32) uint32 {
-	var forwardSendId uint32 = 0
-	var secret string = ""
-
-	// EstablishRouteMessage
-	var establish_reply EstablishRouteReplyMessage
-	{
-		msgId := uuid.NewV4()
-		node.MessagesIn <- 
-			PhysicalMessage{
-				test_key2,
-				EstablishRouteMessage{
-					OperationMessage{Message{0, false}, msgId},
-					test_key3,
-					time.Hour,
-				},
-			}
-		select {
-			case route_reply := <-node.MessagesOut: {
-				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(route_reply.Message))
-				establish_reply = route_reply.Message.(EstablishRouteReplyMessage)
-				forwardSendId = establish_reply.NewSendId
-				secret = establish_reply.Secret
-			}
-		}
-	}
-
-	// RouteRewriteMessage
-	{
-		msgId := uuid.NewV4()
-		node.MessagesIn <- 
-			PhysicalMessage{
-				test_key2,
-				RouteRewriteMessage{
-					OperationMessage{Message{forwardSendId, false}, msgId},
-					secret,
-					rewriteId,
-				},
-			}
-//fmt.Printf("OperationMessage forwardSendId %v\n", forwardSendId)
-		select {
-			case rewrite_reply := <-node.MessagesOut: {
-				assert.Equal(t, reflect.TypeOf(OperationReply{}), reflect.TypeOf(rewrite_reply.Message))
-			}
-
-		}
-	}
-
-	return forwardSendId
 }
 
 func TestBackwardRoute(t *testing.T) {
@@ -569,19 +529,41 @@ func TestBackwardRoute(t *testing.T) {
 	node := NewNode(test_config)
 	go node.Run()
 
-	rewriteId := uint32(330)
-	forwardSendId := RouteRequestAndRewrite(t, node, rewriteId)
+	backwardRewriteId := uint32(1001)
+	var forwardSendId uint32 = 0
+
+	// EstablishRouteMessage
+	{
+		msgId := uuid.NewV4()
+		node.MessagesIn <- 
+			PhysicalMessage{
+				test_key2,
+				EstablishRouteMessage{
+					OperationMessage{Message{0, false, 0}, msgId},
+					test_key3,
+					backwardRewriteId,
+					time.Hour,
+				},
+			}
+		select {
+			case route_reply := <-node.MessagesOut: {
+				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(route_reply.Message))
+				establish_reply := route_reply.Message.(EstablishRouteReplyMessage)
+				forwardSendId = establish_reply.NewSendId
+			}
+		}
+	}
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 
-	// Have to wait for route to be established
 	node.MessagesIn <-
 		PhysicalMessage{
 			test_key2,
 			SendMessage {
 				Message {
-					rewriteId,
+					forwardSendId,
 					true,
+					0,
 				},
 				sample_data,
 			},
@@ -592,13 +574,12 @@ func TestBackwardRoute(t *testing.T) {
 			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
-			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{forwardSendId, true}, sample_data}}, send_message)
+			assert.Equal(t, PhysicalMessage{test_key2, SendMessage{Message{backwardRewriteId, true, forwardSendId}, sample_data}}, send_message)
 		}
 	}
 }
 
 func TestInternodeCommunication(t *testing.T) {
-	// TODO: Try different numbers of hops
 	do_not_want_route_established := make(chan bool)
 	want_route_established := make(chan bool)
 	do_not_want_cb := func(route EstablishedRoute) {
@@ -679,11 +660,9 @@ func TestInternodeCommunication(t *testing.T) {
 		go func() {
 			for {
 				messageToSend := <- node.MessagesOut
-	fmt.Printf("messageToSend to %v %v: %v\n", messageToSend.ConnectedPeerPubKey[0], reflect.TypeOf(messageToSend.Message).Name(), messageToSend)
 				sendToNode, nodeExists := nodes_by_key[messageToSend.ConnectedPeerPubKey]
 				assert.True(t, nodeExists)
 				sendToNode.MessagesIn <- PhysicalMessage{node.Config.MyPubKey, messageToSend.Message}
-//	fmt.Printf("messageToSend to %v %v: %v\n", messageToSend.ConnectedPeerPubKey[0], reflect.TypeOf(messageToSend.Message).Name(), messageToSend)
 			}
 		}()
 		go node.Run()
@@ -691,14 +670,36 @@ func TestInternodeCommunication(t *testing.T) {
 
 	// Wait for route established
 	<-want_route_established
-	fmt.Printf("Established!\n")
-	assert.Equal(t, 0, do_not_want_route_established)
+	assert.Equal(t, 0, len(do_not_want_route_established))
 	for _, node := range nodes {
-		assert.Equal(t, 0, node.MeshMessagesIn)
+		assert.Equal(t, 0, len(node.MeshMessagesIn))
 	}
 
-for {time.Sleep(time.Second)}
-	// TODO: Send message
+	// Send
+	sample_data := []byte{50, 10, 1, 2, 3}
+	nodes[0].SendMessage(0, sample_data)
+
+	var received_mesh_msg MeshMessage
+
+    select {
+        case received_mesh_msg = <- nodes[4].MeshMessagesIn: {
+        	route_id := received_mesh_msg.SendId
+        	assert.NotZero(t, route_id)
+        	assert.Equal(t, MeshMessage{route_id, test_key4, sample_data}, received_mesh_msg)
+        }
+    }
+
+    // Reply
+	sample_reply_data := []byte{5,7,3,2,2}
+    nodes[4].SendReply(received_mesh_msg, sample_reply_data)
+
+    select {
+	    case received_mesh_msg := <- nodes[0].MeshMessagesIn: {
+        	route_id := received_mesh_msg.SendId
+        	assert.NotZero(t, route_id)
+        	assert.Equal(t, MeshMessage{route_id, test_key2, sample_reply_data}, received_mesh_msg)
+	    }
+	}
 }
 
 

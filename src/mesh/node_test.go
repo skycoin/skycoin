@@ -580,125 +580,271 @@ func TestBackwardRoute(t *testing.T) {
 }
 
 func TestInternodeCommunication(t *testing.T) {
-	do_not_want_route_established := make(chan bool)
-	want_route_established := make(chan bool)
-	do_not_want_cb := func(route EstablishedRoute) {
-		do_not_want_route_established <- true
-	}
-	nodes_by_key := make(map[cipher.PubKey]*Node)
-	nodes := []*Node {
-		NewNode(
-			NodeConfig{
-			test_key1,
-			[]cipher.PubKey{test_key2},
-			1024,
-			1024,
-			[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4, test_key5}}},
-			time.Hour,
-			0,	// No retransmits
-			// RouteEstablishedCB
-			func(route EstablishedRoute) {
-				want_route_established <- true
+		do_not_want_route_established := make(chan bool)
+		want_route_established := make(chan bool)
+		do_not_want_cb := func(route EstablishedRoute) {
+			do_not_want_route_established <- true
+		}
+
+		nodes_configs := [][]*Node {
+			[]*Node{
+				NewNode(
+					NodeConfig{
+					test_key1,
+					[]cipher.PubKey{test_key2},
+					1024,
+					1024,
+					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2}}},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					func(route EstablishedRoute) {
+						want_route_established <- true
+					},
+				}),
+				NewNode(
+					NodeConfig{
+					test_key2,
+					[]cipher.PubKey{test_key1},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
 			},
-		}),
-		NewNode(
-			NodeConfig{
-			test_key2,
-			[]cipher.PubKey{test_key1,test_key3},
-			1024,
-			1024,
-			[]RouteConfig{},
-			time.Hour,
-			0,	// No retransmits
-			// RouteEstablishedCB
-			do_not_want_cb,
-		}),
-		NewNode(
-			NodeConfig{
-			test_key3,
-			[]cipher.PubKey{test_key2,test_key4},
-			1024,
-			1024,
-			[]RouteConfig{},
-			time.Hour,
-			0,	// No retransmits
-			// RouteEstablishedCB
-			do_not_want_cb,
-		}),
-		NewNode(
-			NodeConfig{
-			test_key4,
-			[]cipher.PubKey{test_key3,test_key5},
-			1024,
-			1024,
-			[]RouteConfig{},
-			time.Hour,
-			0,	// No retransmits
-			// RouteEstablishedCB
-			do_not_want_cb,
-		}),
-		NewNode(
-			NodeConfig{
-			test_key5,
-			[]cipher.PubKey{test_key4},
-			1024,
-			1024,
-			[]RouteConfig{},
-			time.Hour,
-			0,	// No retransmits
-			// RouteEstablishedCB
-			do_not_want_cb,
-		}),
+			[]*Node{
+				NewNode(
+					NodeConfig{
+					test_key1,
+					[]cipher.PubKey{test_key2},
+					1024,
+					1024,
+					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3}}},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					func(route EstablishedRoute) {
+						want_route_established <- true
+					},
+				}),
+				NewNode(
+					NodeConfig{
+					test_key2,
+					[]cipher.PubKey{test_key1,test_key3},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+				NewNode(
+					NodeConfig{
+					test_key3,
+					[]cipher.PubKey{test_key2},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+			},
+			[]*Node{
+				NewNode(
+					NodeConfig{
+					test_key1,
+					[]cipher.PubKey{test_key2},
+					1024,
+					1024,
+					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4}}},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					func(route EstablishedRoute) {
+						want_route_established <- true
+					},
+				}),
+				NewNode(
+					NodeConfig{
+					test_key2,
+					[]cipher.PubKey{test_key1,test_key3},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+				NewNode(
+					NodeConfig{
+					test_key3,
+					[]cipher.PubKey{test_key2,test_key4},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+				NewNode(
+					NodeConfig{
+					test_key4,
+					[]cipher.PubKey{test_key3},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+			},
+			[]*Node{
+				NewNode(
+					NodeConfig{
+					test_key1,
+					[]cipher.PubKey{test_key2},
+					1024,
+					1024,
+					[]RouteConfig{RouteConfig{[]cipher.PubKey{test_key2, test_key3, test_key4, test_key5}}},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					func(route EstablishedRoute) {
+						want_route_established <- true
+					},
+				}),
+				NewNode(
+					NodeConfig{
+					test_key2,
+					[]cipher.PubKey{test_key1,test_key3},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+				NewNode(
+					NodeConfig{
+					test_key3,
+					[]cipher.PubKey{test_key2,test_key4},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+				NewNode(
+					NodeConfig{
+					test_key4,
+					[]cipher.PubKey{test_key3,test_key5},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+				NewNode(
+					NodeConfig{
+					test_key5,
+					[]cipher.PubKey{test_key4},
+					1024,
+					1024,
+					[]RouteConfig{},
+					time.Hour,
+					0,	// No retransmits
+					// RouteEstablishedCB
+					do_not_want_cb,
+				}),
+			},
 	}
 
-	for nodeIdx, _ := range nodes {
-		var node *Node = nodes[nodeIdx]
-		nodes_by_key[node.Config.MyPubKey] = node
-	}
-	for nodeIdx, _ := range nodes {
-		var node *Node = nodes[nodeIdx]
-		go func() {
-			for {
-				messageToSend := <- node.MessagesOut
-				sendToNode, nodeExists := nodes_by_key[messageToSend.ConnectedPeerPubKey]
-				assert.True(t, nodeExists)
-				sendToNode.MessagesIn <- PhysicalMessage{node.Config.MyPubKey, messageToSend.Message}
+	for _, nodes := range nodes_configs {
+		t.Logf("Testing with %v nodes\n", len(nodes))
+		for {
+			if len(do_not_want_route_established) == 0 {
+				break
 			}
-		}()
-		go node.Run()
-	}
+			<- do_not_want_route_established
+		}
+		for {
+			if len(want_route_established) == 0 {
+				break
+			}
+			<- want_route_established
+		}
+		nodes_by_key := make(map[cipher.PubKey]*Node)
+		for nodeIdx, _ := range nodes {
+			var node *Node = nodes[nodeIdx]
+			nodes_by_key[node.Config.MyPubKey] = node
+		}
+		for nodeIdx, _ := range nodes {
+			var node *Node = nodes[nodeIdx]
+			go func() {
+				for {
+					messageToSend := <- node.MessagesOut
+					sendToNode, nodeExists := nodes_by_key[messageToSend.ConnectedPeerPubKey]
+					assert.True(t, nodeExists)
+					sendToNode.MessagesIn <- PhysicalMessage{node.Config.MyPubKey, messageToSend.Message}
+				}
+			}()
+			go node.Run()
+		}
 
-	// Wait for route established
-	<-want_route_established
-	assert.Equal(t, 0, len(do_not_want_route_established))
-	for _, node := range nodes {
-		assert.Equal(t, 0, len(node.MeshMessagesIn))
-	}
+		// Wait for route established
+		<-want_route_established
+		assert.Equal(t, 0, len(do_not_want_route_established))
+		for _, node := range nodes {
+			assert.Equal(t, 0, len(node.MeshMessagesIn))
+		}
 
-	// Send
-	sample_data := []byte{50, 10, 1, 2, 3}
-	nodes[0].SendMessage(0, sample_data)
+		// Send
+		sample_data := []byte{50, 10, 1, 2, 3}
+		nodes[0].SendMessage(0, sample_data)
 
-	var received_mesh_msg MeshMessage
+		var received_mesh_msg MeshMessage
 
-    select {
-        case received_mesh_msg = <- nodes[4].MeshMessagesIn: {
-        	route_id := received_mesh_msg.SendId
-        	assert.NotZero(t, route_id)
-        	assert.Equal(t, MeshMessage{route_id, test_key4, sample_data}, received_mesh_msg)
-        }
-    }
-
-    // Reply
-	sample_reply_data := []byte{5,7,3,2,2}
-    nodes[4].SendReply(received_mesh_msg, sample_reply_data)
-
-    select {
-	    case received_mesh_msg := <- nodes[0].MeshMessagesIn: {
-        	route_id := received_mesh_msg.SendId
-        	assert.NotZero(t, route_id)
-        	assert.Equal(t, MeshMessage{route_id, test_key2, sample_reply_data}, received_mesh_msg)
+	    select {
+	        case received_mesh_msg = <- nodes[len(nodes)-1].MeshMessagesIn: {
+	        	route_id := received_mesh_msg.SendId
+	        	if len(nodes) > 2 {
+	        		assert.NotZero(t, route_id)
+	        	} else {
+	        		assert.Zero(t, route_id)
+	        	}
+	        	assert.Equal(t, MeshMessage{route_id, nodes[len(nodes)-2].Config.MyPubKey, sample_data}, received_mesh_msg)
+	        }
 	    }
+
+	    // Reply
+		sample_reply_data := []byte{5,7,3,2,2}
+	    nodes[len(nodes)-1].SendReply(received_mesh_msg, sample_reply_data)
+
+	    select {
+		    case received_mesh_msg := <- nodes[0].MeshMessagesIn: {
+	        	route_id := received_mesh_msg.SendId
+	        	if len(nodes) > 2 {
+	        		assert.NotZero(t, route_id)
+	        	} else {
+	        		assert.Zero(t, route_id)
+	        	}
+	        	assert.Equal(t, MeshMessage{route_id, test_key2, sample_reply_data}, received_mesh_msg)
+		    }
+		}
 	}
 }
 

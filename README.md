@@ -121,11 +121,12 @@ Public API
 ----
 
 This is a public server. You can use these urls on local host too, with the skycoin client running.
-
+```
 http://skycoin-chompyz.c9.io/outputs
 http://skycoin-chompyz.c9.io/blockchain/blocks?start=0&end=500
 http://skycoin-chompyz.c9.io/blockchain
 http://skycoin-chompyz.c9.io/connections
+```
 
 Modules
 -----

@@ -462,6 +462,8 @@ func (self *Node) SendReply(to MeshMessage, contents []byte) {
 func (self *Node) Run() {
     // Retransmit loop
     if self.Config.RetransmitInterval > 0 {
+        // TODO: Re-enable retransmits when they are needed, or maybe replace with store and forward
+        panic("Retransmits are disabled for now, having only been partially implemented. ")
         go func() {
             for {
                 self.Lock.Lock()

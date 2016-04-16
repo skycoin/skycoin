@@ -56,10 +56,11 @@ The skycoin repo must be in $GOPATH, under "/src/github.com/skycoin". Otherwise 
 
 ```
 #pull skycoin repo into the gopath
-cd $GOPATH/src
-git clone https://github.com/skycoin/skycoin
+#note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
+go get github.com/skycoin/skycoin
 
 #create symlink of the repo
+cd $HOME
 ln -s $GOPATH/src/skycoin/skycoin skycoin
 ```
 
@@ -109,11 +110,12 @@ Local Server API
 ----
 
 Run the skycoin client then
-
+```
 http://127.0.0.1:6420/outputs
 http://127.0.0.1:6420/blockchain/blocks?start=0&end=500
 http://127.0.0.1:6420/blockchain
 http://127.0.0.1:6420/connections
+```
 
 Public API
 ----

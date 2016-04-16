@@ -138,6 +138,16 @@ func (self *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 	return uint16(len(self.In) - 1)
 }
 
+//compute transaction output id
+func (self TransactionOutput) UxId(TxId cipher.SHA256) cipher.SHA256 {
+	var x UxBody
+	x.Coins = self.Coins
+	x.Hours = self.Hours
+	x.Address = self.Address
+	x.SrcTransaction = TxId
+	return x.Hash()
+}
+
 // Adds a TransactionOutput, sending coins & hours to an Address
 func (self *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 	to := TransactionOutput{

@@ -36,12 +36,12 @@ go run ./cmd/skycoin/skycoin.go
 Golang environment setup with gvm
 ---
 
-In China, use a VPN during golang installation with gvm. The golang repo is on a server blocked by the chinese firewall.
+The chinese firewall may block golang installation with gvm
 
 ```
 sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
 bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
-source /root/.gvm/scripts/gvm
+source $HOME/.gvm/scripts/gvm
 
 gvm install go1.4
 gvm use go1.4
@@ -72,6 +72,19 @@ glock sync github.com/skycoin/skycoin
 
 ```
 
+Todo
+---
+
+Use gvm package set, so repo does not need to be symlinked. Does this have a default option?
+
+```
+gvm pkgset create skycoin
+gvm pkgset use skycoin
+git clone https://github.com/skycoin/skycoin
+cd skycoin
+go install
+```
+
 Running
 ---
 
@@ -89,10 +102,7 @@ gox -build-toolchain
 
 Compile:
 ```
-cd $GOPATH/src/github.com/skycoin/skycoin
-G="skycoin-0.3"
-gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/address_gen" ./cmd/address_gen/
-gox -output="$HOME/builds/$G-{{.OS}}-{{.Arch}}/$G/skycoin" ./cmd/skycoin/
+./compile/build-dist-all.sh
 ```
 
 Local Server API

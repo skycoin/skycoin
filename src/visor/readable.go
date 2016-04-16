@@ -99,13 +99,15 @@ func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransaction
 */
 
 type ReadableTransactionOutput struct {
+	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
 	Coins   uint64 `json:"coins"`
 	Hours   uint64 `json:"hours"`
 }
 
-func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransactionOutput {
+func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) ReadableTransactionOutput {
 	return ReadableTransactionOutput{
+		Hash:    t.UxId(txid).Hex(),
 		Address: t.Address.String(),
 		Coins:   t.Coins,
 		Hours:   t.Hours,
@@ -120,7 +122,7 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransaction
 	Add a verbose version
 */
 type ReadableOutput struct {
-	Hash              string `json:"hash"`
+	Hash              string `json:"txid"` //hash uniquely identifies transaction
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             uint64 `json:"coins"`
@@ -140,7 +142,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 type ReadableTransaction struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
-	Hash      string `json:"hash"`
+	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
 
 	Sigs []string                    `json:"sigs"`
@@ -166,6 +168,7 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedT
 
 func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
 
+	txid := t.Hash()
 	sigs := make([]string, len(t.Sigs))
 	for i, _ := range t.Sigs {
 		sigs[i] = t.Sigs[i].Hex()
@@ -177,7 +180,7 @@ func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
 	}
 	out := make([]ReadableTransactionOutput, len(t.Out))
 	for i, _ := range t.Out {
-		out[i] = NewReadableTransactionOutput(&t.Out[i])
+		out[i] = NewReadableTransactionOutput(&t.Out[i], txid)
 	}
 	return ReadableTransaction{
 		Length:    t.Length,

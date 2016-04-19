@@ -61,7 +61,7 @@ go get github.com/skycoin/skycoin
 
 #create symlink of the repo
 cd $HOME
-ln -s $GOPATH/src/skycoin/skycoin skycoin
+ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
 ```
 
 Dependencies
@@ -70,7 +70,6 @@ Dependencies
 ```
 go get github.com/robfig/glock
 glock sync github.com/skycoin/skycoin
-
 ```
 
 Todo

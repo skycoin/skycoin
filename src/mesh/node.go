@@ -60,12 +60,17 @@ type RouteRewriteMessage struct {
     RewriteSendId uint32
 }
 
+type PingMessage struct {
+    OperationMessage
+}
+
 type PhysicalMessage struct {
     ConnectedPeerPubKey cipher.PubKey
     Contents []byte
 }
 
 type EstablishedRoute struct {
+    RouteIdx        int
     SendId          uint32
     ConnectedPeer   cipher.PubKey
 }
@@ -117,7 +122,7 @@ type Node struct {
 
     Lock *sync.Mutex
 
-    serializer *Serializer
+    Serializer *Serializer
 }
 
 type rewriteableMessage interface {
@@ -154,6 +159,13 @@ func (msg RouteRewriteMessage) Rewrite(newSendId uint32) rewriteableMessage {
     return msg
 }
 
+func (msg PingMessage) Rewrite(newSendId uint32) rewriteableMessage {
+    msg.LastSendId = msg.SendId
+    msg.SendId = newSendId
+    return msg
+}
+
+
 type RouteConfig struct {
     PeerPubKeys []cipher.PubKey
 }
@@ -174,12 +186,13 @@ func NewNode(config NodeConfig) *Node {
     ret.BackwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
     ret.BackwardSendIdsBySendId = make(map[uint32]uint32)
 
-    ret.serializer = NewSerializer()
-    ret.serializer.RegisterMessageForSerialization(messagePrefix{1}, SendMessage{})
-    ret.serializer.RegisterMessageForSerialization(messagePrefix{2}, EstablishRouteMessage{})
-    ret.serializer.RegisterMessageForSerialization(messagePrefix{3}, EstablishRouteReplyMessage{})
-    ret.serializer.RegisterMessageForSerialization(messagePrefix{4}, RouteRewriteMessage{})
-    ret.serializer.RegisterMessageForSerialization(messagePrefix{5}, OperationReply{})
+    ret.Serializer = NewSerializer()
+    ret.Serializer.RegisterMessageForSerialization(MessagePrefix{1}, SendMessage{})
+    ret.Serializer.RegisterMessageForSerialization(MessagePrefix{2}, EstablishRouteMessage{})
+    ret.Serializer.RegisterMessageForSerialization(MessagePrefix{3}, EstablishRouteReplyMessage{})
+    ret.Serializer.RegisterMessageForSerialization(MessagePrefix{4}, RouteRewriteMessage{})
+    ret.Serializer.RegisterMessageForSerialization(MessagePrefix{5}, OperationReply{})
+    ret.Serializer.RegisterMessageForSerialization(MessagePrefix{6}, PingMessage{})
     return ret
 }
 
@@ -190,7 +203,7 @@ func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id 
     reply_channel := make(chan rewriteableMessage)
     self.Lock.Lock()
     self.OperationsAwaitingReply[operation_id] = reply_channel
-    outgoing := PhysicalMessage{connected, self.serializer.SerializeMessage(msg)}
+    outgoing := PhysicalMessage{connected, self.Serializer.SerializeMessage(msg)}
     self.RetransmitQueue[operation_id] = outgoing
     self.Lock.Unlock()
 
@@ -211,7 +224,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
         return
     }
 
-    var new_route = EstablishedRoute{0, route.PeerPubKeys[0]}
+    var new_route = EstablishedRoute{route_idx, 0, route.PeerPubKeys[0]}
     var last_secret = ""
     var prevSendId uint32 = 0
 
@@ -274,7 +287,22 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
             return
         }
     }
-
+    ping_id := uuid.NewV4()
+    ping_reply := self.sendAndConfirmOperation(new_route.ConnectedPeer,
+                                                ping_id,
+                                                PingMessage {
+                                                    OperationMessage {
+                                                        Message {
+                                                            new_route.SendId,
+                                                            false,
+                                                            0,
+                                                        },
+                                                        ping_id,
+                                                    },
+                                                })
+    if ping_reply == nil {
+        return
+    }
     self.Lock.Lock();
     self.EstablishedRoutesByIndex[route_idx] = new_route
     self.Lock.Unlock();
@@ -288,6 +316,7 @@ func (self *Node) onOperationReply(msg rewriteableMessage, operation_id uuid.UUI
     self.Lock.Lock()
     ch := self.OperationsAwaitingReply[operation_id]
     delete(self.OperationsAwaitingReply, operation_id)
+    delete(self.RetransmitQueue, operation_id)
     self.Lock.Unlock()
 
     ch <- msg
@@ -328,7 +357,7 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
     self.MessagesOut <- 
         PhysicalMessage {
             peerFrom,
-            self.serializer.SerializeMessage(EstablishRouteReplyMessage{
+            self.Serializer.SerializeMessage(EstablishRouteReplyMessage{
                 OperationReply {
                     OperationMessage {
                         Message {
@@ -351,6 +380,31 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
                 // Secret
                 new_secret,
             }),
+        }
+}
+
+func (self *Node) onPingMessage(msg PingMessage, peerFrom cipher.PubKey) {
+    self.MessagesOut <- 
+        PhysicalMessage {
+            peerFrom,
+            self.Serializer.SerializeMessage(
+                OperationReply {
+                    OperationMessage {
+                        Message {
+                            // SendId
+                            msg.LastSendId,
+                            // SendBack
+                            true,
+                            // LastSendId
+                            0,
+                        },
+                        msg.MsgId,
+                    },
+                    // Success
+                    true,
+                    // String
+                    "",
+                }),
         }
 }
 
@@ -399,7 +453,7 @@ func (self *Node) forwardMessage(SendId uint32, SendBack bool, msg rewriteableMe
     rewritten_msg := msg.(rewriteableMessage) 
 
     rewritten_msg = rewritten_msg.Rewrite(rewrite_id)
-    self.MessagesOut <- PhysicalMessage{rewrite_peer, self.serializer.SerializeMessage(rewritten_msg)}
+    self.MessagesOut <- PhysicalMessage{rewrite_peer, self.Serializer.SerializeMessage(rewritten_msg)}
 
     return true
 }
@@ -416,7 +470,7 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
         self.MessagesOut <- 
             PhysicalMessage {
                 peerFrom,
-                self.serializer.SerializeMessage(OperationReply {
+                self.Serializer.SerializeMessage(OperationReply {
                     OperationMessage {
                         Message {
                             // SendId
@@ -436,7 +490,7 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
         self.MessagesOut <- 
             PhysicalMessage {
                 peerFrom,
-                self.serializer.SerializeMessage(OperationReply {
+                self.Serializer.SerializeMessage(OperationReply {
                     OperationMessage {
                         Message {
                             // SendId
@@ -462,12 +516,12 @@ func (self *Node) SendMessage(route_idx int, contents []byte) {
         return
     }
     self.MessagesOut <- PhysicalMessage{route.ConnectedPeer, 
-                                        self.serializer.SerializeMessage(SendMessage{Message{route.SendId, false, 0}, contents})}
+                                        self.Serializer.SerializeMessage(SendMessage{Message{route.SendId, false, 0}, contents})}
 }
 
 func (self *Node) SendReply(to MeshMessage, contents []byte) {
     self.MessagesOut <- PhysicalMessage{to.ConnectedPeer, 
-                                        self.serializer.SerializeMessage(SendMessage{Message{to.SendId, true, 0}, contents})}
+                                        self.Serializer.SerializeMessage(SendMessage{Message{to.SendId, true, 0}, contents})}
 }
 
 // Blocks
@@ -475,7 +529,7 @@ func (self *Node) Run() {
     // Retransmit loop
     if self.Config.RetransmitInterval > 0 {
         // TODO: Re-enable retransmits when they are needed, or maybe replace with store and forward
-        panic("Retransmits are disabled for now, having only been partially implemented. ")
+       // panic("Retransmits are disabled for now, having only been partially implemented. ")
         go func() {
             for {
                 self.Lock.Lock()
@@ -496,7 +550,7 @@ func (self *Node) Run() {
     // Incoming messages loop
     for{
         msg_physical := <- self.MessagesIn
-        msg, deserialize_error := self.serializer.UnserializeMessage(msg_physical.Contents)
+        msg, deserialize_error := self.Serializer.UnserializeMessage(msg_physical.Contents)
         if deserialize_error != nil {
             logger.Debug("Deserialization error %v\n", deserialize_error)
             continue
@@ -507,6 +561,11 @@ func (self *Node) Run() {
             reply := msg.(OperationReply)
             if !self.forwardMessage(reply.SendId, reply.SendBack, reply) {
                 self.onOperationReply(reply, (msg.(OperationReply)).OperationMessage.MsgId)
+            }
+        } else if msg_type == reflect.TypeOf(PingMessage{}) {
+            reply := msg.(PingMessage)
+            if !self.forwardMessage(reply.SendId, reply.SendBack, reply) {
+                self.onPingMessage(msg.(PingMessage), msg_physical.ConnectedPeerPubKey)
             }
         } else if msg_type == reflect.TypeOf(EstablishRouteReplyMessage{}) {
             reply := msg.(EstablishRouteReplyMessage)

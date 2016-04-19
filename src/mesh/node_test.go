@@ -120,8 +120,6 @@ func TestEstablishRoutes(t *testing.T) {
 		assert.Equal(t, reflect.TypeOf(RouteRewriteMessage{}), reflect.TypeOf(msg))
 		rewrite_msg := msg.(RouteRewriteMessage)
 		newMsgId := rewrite_msg.MsgId
-		unserialized_contents, error2 := node.serializer.UnserializeMessage(outgoing.Contents)
-		assert.Nil(t, error2)
 
 		assert.Equal(t, 
 			 		 RouteRewriteMessage {
@@ -136,12 +134,26 @@ func TestEstablishRoutes(t *testing.T) {
 					 	"secret_abc",
 					 	120,
 					 },
-			 unserialized_contents)
+			 msg)
 
 		// Reply
 		node.MessagesIn <-  PhysicalMessage{
 			test_key2,
 			node.serializer.SerializeMessage(OperationReply{OperationMessage{Message{0, true, 0}, rewrite_msg.MsgId}, true, ""})}
+	}
+	// Reply to ping
+	{
+		outgoing := <- node.MessagesOut
+		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
+		msg, error1 := node.serializer.UnserializeMessage(outgoing.Contents)
+		assert.Nil(t, error1)
+		assert.Equal(t, reflect.TypeOf(PingMessage{}), reflect.TypeOf(msg))
+		ping_msg := msg.(PingMessage)
+
+		// Reply
+		node.MessagesIn <-  PhysicalMessage{
+			test_key2,
+			node.serializer.SerializeMessage(OperationReply{OperationMessage{Message{0, true, 0}, ping_msg.MsgId}, true, ""})}
 	}
 	// Check establish callback
 	{
@@ -217,6 +229,21 @@ func TestSendMessageToPeer(t *testing.T) {
 	node := NewNode(test_config)
 	go node.Run()
 
+	// Reply to ping
+	{
+		outgoing := <- node.MessagesOut
+		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
+		msg, error1 := node.serializer.UnserializeMessage(outgoing.Contents)
+		assert.Nil(t, error1)
+		assert.Equal(t, reflect.TypeOf(PingMessage{}), reflect.TypeOf(msg))
+		ping_msg := msg.(PingMessage)
+
+		// Reply
+		node.MessagesIn <-  PhysicalMessage{
+			test_key2,
+			node.serializer.SerializeMessage(OperationReply{OperationMessage{Message{0, true, 0}, ping_msg.MsgId}, true, ""})}
+	}
+
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 	
 	<-route_established
@@ -268,6 +295,22 @@ func TestRouteMessage(t *testing.T) {
 			OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 			11, "secret_abc"})}
 	}
+
+	// Reply to ping
+	{
+		outgoing := <- node.MessagesOut
+		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
+		msg, error1 := node.serializer.UnserializeMessage(outgoing.Contents)
+		assert.Nil(t, error1)
+		assert.Equal(t, reflect.TypeOf(PingMessage{}), reflect.TypeOf(msg))
+		ping_msg := msg.(PingMessage)
+
+		// Reply
+		node.MessagesIn <-  PhysicalMessage{
+			test_key2,
+			node.serializer.SerializeMessage(OperationReply{OperationMessage{Message{0, true, 0}, ping_msg.MsgId}, true, ""})}
+	}
+	
 	<-route_established
 
 	sample_data := []byte{3, 5, 10, 1, 2, 3}

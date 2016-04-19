@@ -20,7 +20,7 @@ var serializer *Serializer
 
 func init() {
 	serializer = NewSerializer()
-	serializer.RegisterMessageForSerialization(messagePrefix{44}, TestStruct{})
+	serializer.RegisterMessageForSerialization(MessagePrefix{44}, TestStruct{})
 }
 
 func TestSerializeStruct(t *testing.T) {

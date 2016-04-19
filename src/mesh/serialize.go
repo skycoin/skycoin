@@ -14,24 +14,24 @@ import(
 const messagePrefixLength = 1
 
 // Message prefix identifies a message
-type messagePrefix [messagePrefixLength]byte
+type MessagePrefix [messagePrefixLength]byte
 
 type Serializer struct {
-    messageIdMap map[reflect.Type]messagePrefix
-    messageIdReverseMap map[messagePrefix]reflect.Type
+    messageIdMap map[reflect.Type]MessagePrefix
+    messageIdReverseMap map[MessagePrefix]reflect.Type
 }
 
 func NewSerializer() *Serializer {
     ret := &Serializer{}
-    ret.messageIdMap = make(map[reflect.Type]messagePrefix)
-    ret.messageIdReverseMap = make(map[messagePrefix]reflect.Type)
+    ret.messageIdMap = make(map[reflect.Type]MessagePrefix)
+    ret.messageIdReverseMap = make(map[MessagePrefix]reflect.Type)
     return ret
 }
 
 // Register a message struct for recognition by the message handlers.
-func (self *Serializer) RegisterMessageForSerialization(prefix messagePrefix, msg interface{}) {
+func (self *Serializer) RegisterMessageForSerialization(prefix MessagePrefix, msg interface{}) {
     t := reflect.TypeOf(msg)
-    id := messagePrefix{}
+    id := MessagePrefix{}
     copy(id[:], prefix[:])
     _, exists := self.messageIdReverseMap[id]
     if exists {

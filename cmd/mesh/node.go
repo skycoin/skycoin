@@ -8,12 +8,15 @@ import (
     "flag"
     "time"
     "sync"
+    "reflect"
+    "fmt"
 )
 
 import (
     "github.com/skycoin/skycoin/src/cipher"
     "github.com/skycoin/skycoin/src/daemon/gnet"
     "github.com/skycoin/skycoin/src/mesh"
+    "github.com/skycoin/encoder"
 )
 
 var l_err = log.New(os.Stderr, "", 0)
@@ -21,6 +24,8 @@ var l_err = log.New(os.Stderr, "", 0)
 var config_path = flag.String("config", "./config.json", "Configuration file path.")
 
 var tcp_pool *gnet.ConnectionPool
+
+var stdoutQueue = make(chan interface{})
 
 var map_lock = &sync.Mutex{}
 var configs_by_conn = make(map[*gnet.Connection]TCPOutgoingConnectionConfig)
@@ -115,9 +120,56 @@ func getConnectedPeerKey(Conn *gnet.Connection) cipher.PubKey {
     return key
 }
 
+// Stdio interface
+var stdio_serializer *mesh.Serializer
+
+type Stdin_SendMessage struct {
+    RouteIdx uint32
+    Contents []byte
+}
+type Stdin_SendBack struct {
+    ReplyTo mesh.MeshMessage
+    Contents []byte
+}
+type Stdout_RecvMessage struct {
+    mesh.MeshMessage
+}
+type Stdout_EstablishedRoute struct {
+    RouteIdx uint32
+}
+type Stdout_EstablishedRouteError struct {
+    RouteIdx uint32
+    HopIdx   uint8
+    Error    string
+}
+type Stdout_GeneralError struct {
+    Error    string
+}
+
+func onStdInMessage(msg interface{}) {
+    if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendMessage{}) {
+        msg_cast := msg.(Stdin_SendMessage)
+        node_impl.SendMessage((int)(msg_cast.RouteIdx), msg_cast.Contents)
+    } else if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendBack{}) {
+        msg_cast := msg.(Stdin_SendBack)
+        node_impl.SendReply(msg_cast.ReplyTo, msg_cast.Contents)
+    } else {
+        panic("Unknown message type in onStdInMessage")
+    }
+}
+
 func main() {
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})
+
+    stdio_serializer = mesh.NewSerializer()
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{1}, Stdin_SendMessage{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{2}, Stdin_SendBack{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{3}, Stdout_RecvMessage{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{4}, Stdout_EstablishedRoute{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{5}, Stdout_EstablishedRouteError{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_GeneralError{})
+
     flag.Parse()
 
 	file, e := ioutil.ReadFile(*config_path)
@@ -132,7 +184,9 @@ func main() {
         l_err.Printf("Config parse error: %v\n", e_parse)
         os.Exit(1)
     }
-
+    config.Node.RouteEstablishedCB = func(route mesh.EstablishedRoute) {
+        stdoutQueue <- Stdout_EstablishedRoute{(uint32)(route.RouteIdx)}
+    }
     node_impl = mesh.NewNode(config.Node)
 
     // Start listening for incoming connections via TCP
@@ -188,7 +242,36 @@ func main() {
         }
     }()
 
-    // TODO: Pipe data
+    // Pipe data out
+    go func() {
+        for {
+            stdoutQueue <- Stdout_RecvMessage{<- node_impl.MeshMessagesIn}
+        }
+    }()
+    go func() {
+        for {
+            to_stdout := <- stdoutQueue
+            b := stdio_serializer.SerializeMessage(to_stdout)
+            os.Stdout.Write(b)
+        }
+    }()
+
+    // Pipe data in
+    go func() {
+        for {
+            var bl []byte = make([]byte, 4)
+            os.Stdin.Read(bl)
+            var length uint32
+            encoder.DeserializeAtomic(bl, length)
+            var bb []byte = make([]byte, 4 + length)
+            message, error := node_impl.Serializer.UnserializeMessage(bb)
+            if error == nil {
+                onStdInMessage(message)
+            } else {
+                panic(fmt.Sprintf("Error reading message from stdin: %v",error))
+            }
+        }
+    }()
 
     // Run Node Implementation (blocks)
     node_impl.Run();

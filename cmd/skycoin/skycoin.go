@@ -473,7 +473,7 @@ func Run(c *Config) {
 
 		if c.LaunchBrowser == true {
 			fmt.Printf("Launching System Browser")
-			util.OpenBrowser("http://127.0.0.1:12176/")
+			util.OpenBrowser("http://127.0.0.1:6420")
 		}
 	}
 

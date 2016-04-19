@@ -116,6 +116,8 @@ type Node struct {
     ForwardRewriteBySendId map[uint32]uint32
 
     Lock *sync.Mutex
+
+    serializer *Serializer
 }
 
 type rewriteableMessage interface {
@@ -171,22 +173,24 @@ func NewNode(config NodeConfig) *Node {
     ret.ForwardRewriteBySendId = make(map[uint32]uint32)
     ret.BackwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
     ret.BackwardSendIdsBySendId = make(map[uint32]uint32)
+
+    ret.serializer = NewSerializer()
+    ret.serializer.RegisterMessageForSerialization(messagePrefix{1}, SendMessage{})
+    ret.serializer.RegisterMessageForSerialization(messagePrefix{2}, EstablishRouteMessage{})
+    ret.serializer.RegisterMessageForSerialization(messagePrefix{3}, EstablishRouteReplyMessage{})
+    ret.serializer.RegisterMessageForSerialization(messagePrefix{4}, RouteRewriteMessage{})
+    ret.serializer.RegisterMessageForSerialization(messagePrefix{5}, OperationReply{})
     return ret
 }
 
 func init() {
-    RegisterMessageForSerialization(messagePrefix{1}, SendMessage{})
-    RegisterMessageForSerialization(messagePrefix{2}, EstablishRouteMessage{})
-    RegisterMessageForSerialization(messagePrefix{3}, EstablishRouteReplyMessage{})
-    RegisterMessageForSerialization(messagePrefix{4}, RouteRewriteMessage{})
-    RegisterMessageForSerialization(messagePrefix{5}, OperationReply{})
 }
 
 func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id uuid.UUID, msg rewriteableMessage) rewriteableMessage {
     reply_channel := make(chan rewriteableMessage)
     self.Lock.Lock()
     self.OperationsAwaitingReply[operation_id] = reply_channel
-    outgoing := PhysicalMessage{connected, SerializeMessage(msg)}
+    outgoing := PhysicalMessage{connected, self.serializer.SerializeMessage(msg)}
     self.RetransmitQueue[operation_id] = outgoing
     self.Lock.Unlock()
 
@@ -324,7 +328,7 @@ func (self *Node) onRouteRequest(msg EstablishRouteMessage, peerFrom cipher.PubK
     self.MessagesOut <- 
         PhysicalMessage {
             peerFrom,
-            SerializeMessage(EstablishRouteReplyMessage{
+            self.serializer.SerializeMessage(EstablishRouteReplyMessage{
                 OperationReply {
                     OperationMessage {
                         Message {
@@ -395,7 +399,7 @@ func (self *Node) forwardMessage(SendId uint32, SendBack bool, msg rewriteableMe
     rewritten_msg := msg.(rewriteableMessage) 
 
     rewritten_msg = rewritten_msg.Rewrite(rewrite_id)
-    self.MessagesOut <- PhysicalMessage{rewrite_peer, SerializeMessage(rewritten_msg)}
+    self.MessagesOut <- PhysicalMessage{rewrite_peer, self.serializer.SerializeMessage(rewritten_msg)}
 
     return true
 }
@@ -412,7 +416,7 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
         self.MessagesOut <- 
             PhysicalMessage {
                 peerFrom,
-                SerializeMessage(OperationReply {
+                self.serializer.SerializeMessage(OperationReply {
                     OperationMessage {
                         Message {
                             // SendId
@@ -432,7 +436,7 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
         self.MessagesOut <- 
             PhysicalMessage {
                 peerFrom,
-                SerializeMessage(OperationReply {
+                self.serializer.SerializeMessage(OperationReply {
                     OperationMessage {
                         Message {
                             // SendId
@@ -458,12 +462,12 @@ func (self *Node) SendMessage(route_idx int, contents []byte) {
         return
     }
     self.MessagesOut <- PhysicalMessage{route.ConnectedPeer, 
-                                        SerializeMessage(SendMessage{Message{route.SendId, false, 0}, contents})}
+                                        self.serializer.SerializeMessage(SendMessage{Message{route.SendId, false, 0}, contents})}
 }
 
 func (self *Node) SendReply(to MeshMessage, contents []byte) {
     self.MessagesOut <- PhysicalMessage{to.ConnectedPeer, 
-                                        SerializeMessage(SendMessage{Message{to.SendId, true, 0}, contents})}
+                                        self.serializer.SerializeMessage(SendMessage{Message{to.SendId, true, 0}, contents})}
 }
 
 // Blocks
@@ -492,7 +496,7 @@ func (self *Node) Run() {
     // Incoming messages loop
     for{
         msg_physical := <- self.MessagesIn
-        msg, deserialize_error := UnserializeMessage(msg_physical.Contents)
+        msg, deserialize_error := self.serializer.UnserializeMessage(msg_physical.Contents)
         if deserialize_error != nil {
             logger.Debug("Deserialization error %v\n", deserialize_error)
             continue

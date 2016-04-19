@@ -43,13 +43,13 @@ func TestEstablishRoutes(t *testing.T) {
 	{
 		outgoing := <- node.MessagesOut
 
-		msg, error1 := UnserializeMessage(outgoing.Contents)
+		msg, error1 := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error1)
 		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
 		establish_msg := msg.(EstablishRouteMessage)
 		newDuration := establish_msg.DurationHint
 		newMsgId := establish_msg.MsgId
-		unserialized_contents, error2 := UnserializeMessage(outgoing.Contents)
+		unserialized_contents, error2 := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error2)
 		assert.Equal(t, 
 					 EstablishRouteMessage {
@@ -70,7 +70,7 @@ func TestEstablishRoutes(t *testing.T) {
 		// Reply
 		node.MessagesIn <- PhysicalMessage{
 			test_key2,
-			SerializeMessage(EstablishRouteReplyMessage{
+			node.serializer.SerializeMessage(EstablishRouteReplyMessage{
 				OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 				55, "secret_abc"})}
 	}
@@ -79,13 +79,13 @@ func TestEstablishRoutes(t *testing.T) {
 		outgoing := <- node.MessagesOut
 
 		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
-		msg, error1 := UnserializeMessage(outgoing.Contents)
+		msg, error1 := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error1)
 		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
 		establish_msg := msg.(EstablishRouteMessage)
 		newDuration := establish_msg.DurationHint
 		newMsgId := establish_msg.MsgId
-		unserialized_contents, error2 := UnserializeMessage(outgoing.Contents)
+		unserialized_contents, error2 := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error2)
 
 		assert.Equal(t, 
@@ -107,7 +107,7 @@ func TestEstablishRoutes(t *testing.T) {
 		// Reply
 		node.MessagesIn <- PhysicalMessage{
 			test_key3,
-			SerializeMessage(EstablishRouteReplyMessage{
+			node.serializer.SerializeMessage(EstablishRouteReplyMessage{
 				OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 				120, "secret_xyz"})}
 	}
@@ -115,12 +115,12 @@ func TestEstablishRoutes(t *testing.T) {
 	{
 		outgoing := <- node.MessagesOut
 		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
-		msg, error1 := UnserializeMessage(outgoing.Contents)
+		msg, error1 := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error1)
 		assert.Equal(t, reflect.TypeOf(RouteRewriteMessage{}), reflect.TypeOf(msg))
 		rewrite_msg := msg.(RouteRewriteMessage)
 		newMsgId := rewrite_msg.MsgId
-		unserialized_contents, error2 := UnserializeMessage(outgoing.Contents)
+		unserialized_contents, error2 := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error2)
 
 		assert.Equal(t, 
@@ -141,7 +141,7 @@ func TestEstablishRoutes(t *testing.T) {
 		// Reply
 		node.MessagesIn <-  PhysicalMessage{
 			test_key2,
-			SerializeMessage(OperationReply{OperationMessage{Message{0, true, 0}, rewrite_msg.MsgId}, true, ""})}
+			node.serializer.SerializeMessage(OperationReply{OperationMessage{Message{0, true, 0}, rewrite_msg.MsgId}, true, ""})}
 	}
 	// Check establish callback
 	{
@@ -170,7 +170,7 @@ func TestReceiveMessage(t *testing.T) {
 	{
 		sample_data := []byte{3, 5, 10, 1, 2, 3}
 		to_send := SendMessage{Message{0, false, 11}, sample_data}
-		node.MessagesIn <- PhysicalMessage{test_key1, SerializeMessage(to_send)}
+		node.MessagesIn <- PhysicalMessage{test_key1, node.serializer.SerializeMessage(to_send)}
 		
 		select {
 			case contents_recvd := <-node.MeshMessagesIn:
@@ -186,7 +186,7 @@ func TestReceiveMessage(t *testing.T) {
 	sample_data := []byte{3, 5, 10, 1, 2, 3}
 	{
 		to_send := SendMessage{Message{0, true, 11}, sample_data}
-		node.MessagesIn <- PhysicalMessage{test_key1, SerializeMessage(to_send)}
+		node.MessagesIn <- PhysicalMessage{test_key1, node.serializer.SerializeMessage(to_send)}
 		
 		select {
 			case contents_recvd := <-node.MeshMessagesIn:
@@ -228,7 +228,7 @@ func TestSendMessageToPeer(t *testing.T) {
 			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
-			unserialized_contents, error := UnserializeMessage(send_message.Contents)
+			unserialized_contents, error := node.serializer.UnserializeMessage(send_message.Contents)
 			assert.Nil(t, error)
 			assert.Equal(t, SendMessage{Message{0, false, 0}, sample_data}, unserialized_contents)
 		}
@@ -257,14 +257,14 @@ func TestRouteMessage(t *testing.T) {
 	{
 		outgoing := <- node.MessagesOut
 		assert.Equal(t, test_key2, outgoing.ConnectedPeerPubKey)
-		msg, error := UnserializeMessage(outgoing.Contents)
+		msg, error := node.serializer.UnserializeMessage(outgoing.Contents)
 		assert.Nil(t, error)
 		assert.Equal(t, reflect.TypeOf(EstablishRouteMessage{}), reflect.TypeOf(msg))
 		establish_msg := msg.(EstablishRouteMessage)
 		assert.Equal(t, test_key3, establish_msg.ToPubKey)
 
 		// Reply
-		node.MessagesIn <- PhysicalMessage{test_key2, SerializeMessage(EstablishRouteReplyMessage{
+		node.MessagesIn <- PhysicalMessage{test_key2, node.serializer.SerializeMessage(EstablishRouteReplyMessage{
 			OperationReply{OperationMessage{Message{0, true, 0}, establish_msg.MsgId}, true, ""}, 
 			11, "secret_abc"})}
 	}
@@ -279,7 +279,7 @@ func TestRouteMessage(t *testing.T) {
 			assert.Fail(t, "Node received message when it should have forwarded it")
 		}
 		case send_message := <-node.MessagesOut: {
-			unserialized_contents, error := UnserializeMessage(send_message.Contents)
+			unserialized_contents, error := node.serializer.UnserializeMessage(send_message.Contents)
 			assert.Nil(t, error)
 			assert.Equal(t, test_key2, send_message.ConnectedPeerPubKey)
 			assert.Equal(t, SendMessage{Message{11, false, 0}, sample_data}, unserialized_contents)
@@ -308,7 +308,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 		node.MessagesIn <- 
 			PhysicalMessage{
 				test_key1,
-				SerializeMessage(EstablishRouteMessage{
+				node.serializer.SerializeMessage(EstablishRouteMessage{
 					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
 					0,
@@ -317,7 +317,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 			}
 		select {
 			case route_reply := <-node.MessagesOut: {
-				unserialized_contents, error := UnserializeMessage(route_reply.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(route_reply.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(unserialized_contents))
 				establish_reply = unserialized_contents.(EstablishRouteReplyMessage)
@@ -339,11 +339,11 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 	{
 		test_contents := []byte{3,7,1,2,3}
 		node.MessagesIn <- PhysicalMessage{test_key2,
-							 	SerializeMessage(
+							 	node.serializer.SerializeMessage(
 							 		SendMessage{Message{establish_reply.NewSendId, false, 0}, test_contents})}
 		select {
 			case physical_msg := <-node.MessagesOut: {
-				unserialized_contents, error := UnserializeMessage(physical_msg.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(physical_msg.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(SendMessage{}), reflect.TypeOf(unserialized_contents))
 				assert.Equal(t, 
@@ -359,7 +359,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 		node.MessagesIn <- 
 			PhysicalMessage{
 				test_key1,
-				SerializeMessage(RouteRewriteMessage{
+				node.serializer.SerializeMessage(RouteRewriteMessage{
 					OperationMessage{Message{0, false, 0}, msgId},
 					establish_reply.Secret,
 					155,
@@ -368,7 +368,7 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 		select {
 			case rewrite_reply := <-node.MessagesOut: {
 				assert.Equal(t, test_key1, rewrite_reply.ConnectedPeerPubKey)
-				unserialized_contents, error := UnserializeMessage(rewrite_reply.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(rewrite_reply.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(OperationReply{}), reflect.TypeOf(unserialized_contents))
 				assert.Equal(t, 
@@ -383,11 +383,11 @@ func TestRouteAndRewriteMessage(t *testing.T) {
 	{
 		test_contents := []byte{10,7,1,128,35}
 		node.MessagesIn <- PhysicalMessage{test_key2,
-							 	SerializeMessage(SendMessage{Message{establish_reply.NewSendId, false, 0}, test_contents})}
+							 	node.serializer.SerializeMessage(SendMessage{Message{establish_reply.NewSendId, false, 0}, test_contents})}
 		select {
 			case physical_msg := <-node.MessagesOut: {
 				assert.Equal(t, test_key3, physical_msg.ConnectedPeerPubKey)
-				unserialized_contents, error := UnserializeMessage(physical_msg.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(physical_msg.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(SendMessage{}), reflect.TypeOf(unserialized_contents))
 				assert.Equal(t, 
@@ -418,7 +418,7 @@ func TestRewriteUnknownRoute(t *testing.T) {
 		node.MessagesIn <- 
 			PhysicalMessage{
 				test_key1,
-				SerializeMessage(RouteRewriteMessage{
+				node.serializer.SerializeMessage(RouteRewriteMessage{
 					OperationMessage{Message{0, false, 0}, msgId},
 					"unknown",
 					122,
@@ -427,7 +427,7 @@ func TestRewriteUnknownRoute(t *testing.T) {
 		select {
 			case rewrite_reply := <-node.MessagesOut: {
 				assert.Equal(t, test_key1, rewrite_reply.ConnectedPeerPubKey)
-				unserialized_contents, error := UnserializeMessage(rewrite_reply.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(rewrite_reply.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(OperationReply{}), reflect.TypeOf(unserialized_contents))
 				reply := unserialized_contents.(OperationReply)
@@ -460,7 +460,7 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 		node.MessagesIn <- 
 			PhysicalMessage{
 				test_key1,
-				SerializeMessage(EstablishRouteMessage{
+				node.serializer.SerializeMessage(EstablishRouteMessage{
 					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
 					0,
@@ -470,7 +470,7 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 		select {
 			case route_reply := <-node.MessagesOut: {
 				assert.Equal(t, test_key1, route_reply.ConnectedPeerPubKey)
-				unserialized_contents, error := UnserializeMessage(route_reply.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(route_reply.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(unserialized_contents))
 				establish_reply := unserialized_contents.(EstablishRouteReplyMessage)
@@ -494,7 +494,7 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 		node.MessagesIn <- 
 			PhysicalMessage{
 				test_key1,
-				SerializeMessage(EstablishRouteMessage{
+				node.serializer.SerializeMessage(EstablishRouteMessage{
 					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
 					0,
@@ -504,7 +504,7 @@ func TestRoutesHaveDifferentSendIds(t *testing.T) {
 		select {
 			case route_reply := <-node.MessagesOut: {
 				assert.Equal(t, test_key1, route_reply.ConnectedPeerPubKey)
-				unserialized_contents, error := UnserializeMessage(route_reply.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(route_reply.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(unserialized_contents))
 				establish_reply := unserialized_contents.(EstablishRouteReplyMessage)
@@ -548,7 +548,7 @@ func TestBackwardRoute(t *testing.T) {
 		node.MessagesIn <- 
 			PhysicalMessage{
 				test_key2,
-				SerializeMessage(EstablishRouteMessage{
+				node.serializer.SerializeMessage(EstablishRouteMessage{
 					OperationMessage{Message{0, false, 0}, msgId},
 					test_key3,
 					backwardRewriteId,
@@ -558,7 +558,7 @@ func TestBackwardRoute(t *testing.T) {
 		select {
 			case route_reply := <-node.MessagesOut: {
 				assert.Equal(t, test_key2, route_reply.ConnectedPeerPubKey)
-				unserialized_contents, error := UnserializeMessage(route_reply.Contents)
+				unserialized_contents, error := node.serializer.UnserializeMessage(route_reply.Contents)
 				assert.Nil(t, error)
 				assert.Equal(t, reflect.TypeOf(EstablishRouteReplyMessage{}), reflect.TypeOf(unserialized_contents))
 				establish_reply := unserialized_contents.(EstablishRouteReplyMessage)
@@ -572,7 +572,7 @@ func TestBackwardRoute(t *testing.T) {
 	node.MessagesIn <-
 		PhysicalMessage{
 			test_key2,
-			SerializeMessage(SendMessage {
+			node.serializer.SerializeMessage(SendMessage {
 				Message {
 					forwardSendId,
 					true,
@@ -588,7 +588,7 @@ func TestBackwardRoute(t *testing.T) {
 		}
 		case send_message := <-node.MessagesOut: {
 			assert.Equal(t, test_key2, send_message.ConnectedPeerPubKey)
-			unserialized_contents, error := UnserializeMessage(send_message.Contents)
+			unserialized_contents, error := node.serializer.UnserializeMessage(send_message.Contents)
 			assert.Nil(t, error)
 			assert.Equal(t, 
 						 SendMessage{Message{backwardRewriteId, true, forwardSendId}, sample_data}, 

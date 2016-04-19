@@ -16,31 +16,37 @@ const messagePrefixLength = 1
 // Message prefix identifies a message
 type messagePrefix [messagePrefixLength]byte
 
-// Maps message types to their ids
-var messageIdMap = make(map[reflect.Type]messagePrefix)
+type Serializer struct {
+    messageIdMap map[reflect.Type]messagePrefix
+    messageIdReverseMap map[messagePrefix]reflect.Type
+}
 
-// Maps message ids to their types
-var messageIdReverseMap = make(map[messagePrefix]reflect.Type)
+func NewSerializer() *Serializer {
+    ret := &Serializer{}
+    ret.messageIdMap = make(map[reflect.Type]messagePrefix)
+    ret.messageIdReverseMap = make(map[messagePrefix]reflect.Type)
+    return ret
+}
 
 // Register a message struct for recognition by the message handlers.
-func RegisterMessageForSerialization(prefix messagePrefix, msg interface{}) {
+func (self *Serializer) RegisterMessageForSerialization(prefix messagePrefix, msg interface{}) {
     t := reflect.TypeOf(msg)
     id := messagePrefix{}
     copy(id[:], prefix[:])
-    _, exists := messageIdReverseMap[id]
+    _, exists := self.messageIdReverseMap[id]
     if exists {
         log.Panicf("Attempted to register message prefix %s twice",
             string(id[:]))
     }
-    _, exists = messageIdMap[t]
+    _, exists = self.messageIdMap[t]
     if exists {
         log.Panicf("Attempts to register message type %v twice", t)
     }
-    messageIdMap[t] = id
-    messageIdReverseMap[id] = t
+    self.messageIdMap[t] = id
+    self.messageIdReverseMap[id] = t
 }
 
-func UnserializeMessage(msg []byte) (interface{}, error) {
+func (self *Serializer) UnserializeMessage(msg []byte) (interface{}, error) {
     msgId := [1]byte{}
     if len(msg) < len(msgId) {
         return nil, errors.New("Not enough data to read msg id")
@@ -48,7 +54,7 @@ func UnserializeMessage(msg []byte) (interface{}, error) {
     copy(msgId[:], msg[:len(msgId)])
     msg = msg[len(msgId):]
 
-    t, succ := messageIdReverseMap[msgId]
+    t, succ := self.messageIdReverseMap[msgId]
     if !succ {
         logger.Debug("Unknown message id %s msgId %v", string(msgId[:]))
         return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
@@ -57,7 +63,7 @@ func UnserializeMessage(msg []byte) (interface{}, error) {
     var m interface{}
     var v reflect.Value = reflect.New(t)
     //logger.Debug("Giving %d bytes to the decoder", len(msg))
-    used, err := deserializeMessage(msg, v)
+    used, err := self.deserializeMessage(msg, v)
     if err != nil {
         return nil, err
     }
@@ -76,7 +82,7 @@ func UnserializeMessage(msg []byte) (interface{}, error) {
 }
 
 // Wraps encoder.DeserializeRawToValue and traps panics as an error
-func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
+func (self *Serializer) deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
     defer func() {
         if r := recover(); r != nil {
             logger.Debug("Recovering from deserializer panic: %v", r)
@@ -95,9 +101,9 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 }
 
 // Packgs a interface{} into []byte containing length, id and data
-func SerializeMessage(msg interface{}) []byte {
+func (self *Serializer) SerializeMessage(msg interface{}) []byte {
     t := reflect.TypeOf(msg)
-    msgId, succ := messageIdMap[t]
+    msgId, succ := self.messageIdMap[t]
     if !succ {
         txt := "Attempted to serialize message type not in MessageIdMap: %v"
         log.Panicf(txt, t)

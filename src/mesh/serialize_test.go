@@ -31,7 +31,6 @@ func TestSerializeStruct(t *testing.T) {
 	assert.NotEqual(t, 0, len(data))
 	result, error := UnserializeMessage(data)
 	assert.Nil(t, error)
-	result_ts := result.(*TestStruct)
-	assert.Equal(t, testStruct, *result_ts)
+	assert.Equal(t, testStruct, result)
 }
 

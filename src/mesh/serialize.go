@@ -40,7 +40,6 @@ func RegisterMessageForSerialization(prefix messagePrefix, msg interface{}) {
     messageIdReverseMap[id] = t
 }
 
-// Returns pointer to message
 func UnserializeMessage(msg []byte) (interface{}, error) {
     msgId := [1]byte{}
     if len(msg) < len(msgId) {
@@ -54,7 +53,6 @@ func UnserializeMessage(msg []byte) (interface{}, error) {
         logger.Debug("Unknown message id %s msgId %v", string(msgId[:]))
         return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
     }
-    logger.Debug("Convert, interface{} type %v", t)
 
     var m interface{}
     var v reflect.Value = reflect.New(t)
@@ -66,7 +64,7 @@ func UnserializeMessage(msg []byte) (interface{}, error) {
     if used != len(msg) {
         return nil, errors.New("Data buffer was not completely decoded")
     }
-    m, succ = (v.Interface()).(interface{})
+    m, succ = (v.Elem().Interface()).(interface{})
     if !succ {
         // This occurs only when the user registers an interface that does
         // match the interface{} interface.  They should have known about this

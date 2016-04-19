@@ -33,10 +33,26 @@ var node_impl *mesh.Node
 type ConnectAnnouncementMessage struct {
     MyPubKey cipher.PubKey
 }
-var ConnectAnnouncementMessagePrefix = gnet.MessagePrefix{0,0,1,0}
+var ConnectAnnouncementMessagePrefix = gnet.MessagePrefix{0,0,0,1}
 func (self *ConnectAnnouncementMessage) Handle(context *gnet.MessageContext, x interface{}) error {
     map_lock.Lock()
     pub_keys_by_conn[context.Conn] = self.MyPubKey
+    map_lock.Unlock()
+    return nil
+}
+
+type NodeMessage struct {
+    Contents []byte
+}
+var NodeMessagePrefix = gnet.MessagePrefix{0,0,0,2}
+func (self *NodeMessage) Handle(context *gnet.MessageContext, x interface{}) error {
+    map_lock.Lock()
+    pub_key, exists := pub_keys_by_conn[context.Conn]
+    if exists {
+        node_impl.MessagesIn <- mesh.PhysicalMessage{pub_key, self.Contents}
+    } else {
+        l_err.Printf("Dropping NodeMessage from unknown connection")
+    }
     map_lock.Unlock()
     return nil
 }
@@ -85,7 +101,7 @@ func doSendMessage(to_send mesh.PhysicalMessage) {
         l_err.Printf("Warning: Send requested with no connections, dropping message to %v\n", to_send.ConnectedPeerPubKey)
     } else {
         // Does not block, unless the message queue is full
-       tcp_pool.SendMessage(conn, WrapMessage(to_send.Message))
+       tcp_pool.SendMessage(conn, &NodeMessage{to_send.Contents})
     }
 }
 
@@ -100,8 +116,8 @@ func getConnectedPeerKey(Conn *gnet.Connection) cipher.PubKey {
 }
 
 func main() {
-    RegisterTCPMessages()
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
+    gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})
     flag.Parse()
 
 	file, e := ioutil.ReadFile(*config_path)
@@ -164,8 +180,6 @@ func main() {
         go ConnectToPeerViaTCP(conn_config)
     }
 
-    // TODO: Pipe data
-
     // Send messages from queue
     go func() {
         for {
@@ -173,6 +187,8 @@ func main() {
             doSendMessage(to_send)
         }
     }()
+
+    // TODO: Pipe data
 
     // Run Node Implementation (blocks)
     node_impl.Run();

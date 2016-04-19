@@ -252,6 +252,9 @@ func main() {
         for {
             to_stdout := <- stdoutQueue
             b := stdio_serializer.SerializeMessage(to_stdout)
+            length := (uint32)(len(b))
+            bl := encoder.SerializeAtomic(length)
+            os.Stdout.Write(bl)
             os.Stdout.Write(b)
         }
     }()
@@ -262,9 +265,10 @@ func main() {
             var bl []byte = make([]byte, 4)
             os.Stdin.Read(bl)
             var length uint32
-            encoder.DeserializeAtomic(bl, length)
-            var bb []byte = make([]byte, 4 + length)
-            message, error := node_impl.Serializer.UnserializeMessage(bb)
+            encoder.DecodeInt(bl, &length)
+            var bb []byte = make([]byte, length)
+            os.Stdin.Read(bb)
+            message, error := stdio_serializer.UnserializeMessage(bb)
             if error == nil {
                 onStdInMessage(message)
             } else {

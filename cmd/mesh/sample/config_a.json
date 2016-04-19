@@ -1,5 +1,16 @@
 {
-	"MyPubKey": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	"Node": {
+		"MyPubKey": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		"MessagesOutSize":	1024,
+		"MessagesInSize":	1024,
+		"OperationTimeout":		60000000000,
+		"RetransmitInterval":	1000000000,
+		"ConfirmOperations":	true,
+		"Routes": [
+		{
+			"PeerPubKeys": [[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
+		}]
+	},
 	"TCPConfig": {
 		"Port":                     3631,
 		"MaxConnections":           128,

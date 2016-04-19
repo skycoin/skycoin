@@ -6,13 +6,16 @@ import (
 
 import (
     "github.com/skycoin/skycoin/src/daemon/gnet"
-    "github.com/skycoin/skycoin/src/cipher")
+    "github.com/skycoin/skycoin/src/cipher"
+    "github.com/skycoin/skycoin/src/mesh")
 
 type Config struct {
-    MyPubKey cipher.PubKey
+    Node mesh.NodeConfig
     TCPConnections []TCPOutgoingConnectionConfig
     TCPConfig gnet.Config
-    RouteToPipe* RouteConfig
+    // Index into Routes in NodeConfig
+    StdoutToRoute int
+    IncomingToStdout bool
 }
 
 type PhysicalConnectionConfig struct {
@@ -27,6 +30,3 @@ type TCPOutgoingConnectionConfig struct {
     RetryDelay time.Duration
 }
 
-type RouteConfig struct {
-    PeerPubKeys []cipher.PubKey
-}

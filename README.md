@@ -70,6 +70,18 @@ Dependencies
 ```
 go get github.com/robfig/glock
 glock sync github.com/skycoin/skycoin
+go get ./cmd/skycoin
+```
+
+Running Node
+---
+
+```
+cd skycoin
+screen
+go run ./cmd/skycoin/skycoin.go 
+#then ctrl+A then D to exit screen
+#screen -x to reattach screen
 ```
 
 Todo

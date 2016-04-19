@@ -73,6 +73,11 @@ glock sync github.com/skycoin/skycoin
 go get ./cmd/skycoin
 ```
 
+To update dependencies
+```
+glock save github.com/skycoin/skycoin/cmd/skycoin
+```
+
 Running Node
 ---
 

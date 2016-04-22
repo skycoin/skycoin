@@ -1,11 +1,14 @@
 package visor
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"encoding/json"
 	"errors"
+
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -101,15 +104,39 @@ func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransaction
 type ReadableTransactionOutput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
-	Coins   uint64 `json:"coins"`
+	Coins   string `json:"coins"`
 	Hours   uint64 `json:"hours"`
+}
+
+//convert balance to string
+//each 1,000,000 units is 1 coin
+//skyoin has up to 6 decimal places but no more
+//
+func StrBalance(amt uint64) string {
+	a := amt / 1000000 //whole part
+	b := amt % 1000000 //fractional part
+
+	//func strconv.FormatUint(i int64, base int) string
+
+	as := strconv.FormatUint(a, 10)
+	bs := strconv.FormatUint(b, 10)
+
+	if len(bs) > 6 {
+		log.Panic("StrBalance: impossible condition")
+	}
+
+	if b == 0 { //no fractional part
+		return as
+	}
+
+	return fmt.Sprintf("%s.%s", as, bs)
 }
 
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) ReadableTransactionOutput {
 	return ReadableTransactionOutput{
 		Hash:    t.UxId(txid).Hex(),
-		Address: t.Address.String(),
-		Coins:   t.Coins,
+		Address: t.Address.String(), //Destination Address
+		Coins:   StrBalance(t.Coins),
 		Hours:   t.Hours,
 	}
 }

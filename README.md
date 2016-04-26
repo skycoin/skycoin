@@ -120,7 +120,6 @@ Cross Compilation
 Install Gox:
 ```
 go get github.com/mitchellh/gox
-gox -build-toolchain
 ```
 
 Compile:

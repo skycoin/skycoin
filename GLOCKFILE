@@ -5,5 +5,4 @@ github.com/nictuku/dht 9d85e542fe898ec8347bbe264fac4a3f5d4030cd
 github.com/nictuku/nettools 8867a2107ad3a0998e2d36c67ed2115d9a399df8
 github.com/skycoin/encoder 4971121b99f5bc8d3215af64a2c1acd3929e889b
 github.com/stretchr/testify 6fe211e493929a8aac0469b93f28b1d0688a9a3a
-github.com/youtube/vitess cd6313365eb6088d9c35a9fba33ab82585bc8634
 gopkg.in/op/go-logging.v1 b2cb9fa56473e98db8caba80237377e83fe44db5

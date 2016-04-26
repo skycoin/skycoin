@@ -49,7 +49,13 @@ gvm install go1.6
 gvm use go1.6 --default
 ```
 
-Setup
+If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically
+
+```
+[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
+gvm use go1.6 >/dev/null
+```
+
 ---
 
 The skycoin repo must be in $GOPATH, under "/src/github.com/skycoin". Otherwise golang programs cannot import the libraries.

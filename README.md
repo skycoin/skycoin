@@ -124,7 +124,8 @@ go get github.com/mitchellh/gox
 
 Compile:
 ```
-./compile/build-dist-all.sh
+cd compile
+./build-dist-all.sh
 ```
 
 Local Server API

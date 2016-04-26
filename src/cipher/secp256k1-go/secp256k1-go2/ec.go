@@ -295,7 +295,8 @@ func SeckeyIsValid(seckey []byte) int {
 //returns 1 on success
 func PubkeyIsValid(pubkey []byte) int {
 	if len(pubkey) != 33 {
-		log.Panic()
+		log.Panic() //do not permit invalid length inputs
+		return -2
 	}
 	var pub_test XY
 	err := pub_test.ParsePubkey(pubkey)

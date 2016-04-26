@@ -56,14 +56,25 @@ func TestPubKeyVerify(t *testing.T) {
 		}
 	}
 	assert.True(t, failed)
+}
 
+func TestPubKeyVerifyNil(t *testing.T) {
 	// Empty public key should not be valid
 	p := PubKey{}
 	assert.NotNil(t, p.Verify())
+}
 
+func TestPubKeyVerifyDefault1(t *testing.T) {
 	// Generated pub key should be valid
-	p, _ = GenerateKeyPair()
+	p, _ := GenerateKeyPair()
 	assert.Nil(t, p.Verify())
+}
+
+func TestPubKeyVerifyDefault2(t *testing.T) {
+	for i := 0; i < 1024; i++ {
+		p, _ := GenerateKeyPair()
+		assert.Nil(t, p.Verify())
+	}
 }
 
 func TestPubKeyToAddressHash(t *testing.T) {
@@ -76,6 +87,32 @@ func TestPubKeyToAddressHash(t *testing.T) {
 	rh.Write(x[:])
 	y := rh.Sum(nil)
 	assert.True(t, bytes.Equal(h[:], y))
+}
+
+func TestPubKeyToAddress(t *testing.T) {
+	p, _ := GenerateKeyPair()
+	addr := AddressFromPubKey(p)
+	//func (self Address) Verify(key PubKey) error {
+	err := addr.Verify(p)
+	assert.Nil(t, err)
+	addrStr := addr.String()
+	_, err = DecodeBase58Address(addrStr)
+	//func DecodeBase58Address(addr string) (Address, error) {
+	assert.Nil(t, err)
+}
+
+func TestPubKeyToAddress2(t *testing.T) {
+	for i := 0; i < 1024; i++ {
+		p, _ := GenerateKeyPair()
+		addr := AddressFromPubKey(p)
+		//func (self Address) Verify(key PubKey) error {
+		err := addr.Verify(p)
+		assert.Nil(t, err)
+		addrStr := addr.String()
+		_, err = DecodeBase58Address(addrStr)
+		//func DecodeBase58Address(addr string) (Address, error) {
+		assert.Nil(t, err)
+	}
 }
 
 func TestMustNewSecKey(t *testing.T) {

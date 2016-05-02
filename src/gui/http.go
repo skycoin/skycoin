@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/daemon"
@@ -24,7 +25,11 @@ var (
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Warning("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
-	appLoc := filepath.Join(staticDir, resourceDir)
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Panic(err)
+	}
+	appLoc := filepath.Join(dir, staticDir, resourceDir)
 	mux := NewGUIMux(appLoc, daemon)
 	//if err := http.ListenAndServe(host, mux); err != nil {
 	//	log.Panic(err)
@@ -55,13 +60,17 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
-	appLoc := filepath.Join(staticDir, resourceDir)
+	var err error
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Panic(err)
+	}
+	appLoc := filepath.Join(dir, staticDir, resourceDir)
 	mux := NewGUIMux(appLoc, daemon)
 	//err := http.ListenAndServeTLS(host, certFile, keyFile, mux)
 	//if err != nil {
 	//	log.Panic(err)
 	//}
-	var err error
 	config := new(tls.Config)
 	config.Certificates = make([]tls.Certificate, 1)
 	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)

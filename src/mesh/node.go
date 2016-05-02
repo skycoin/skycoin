@@ -167,6 +167,7 @@ func (msg PingMessage) Rewrite(newSendId uint32) rewriteableMessage {
 
 
 type RouteConfig struct {
+    Name string
     PeerPubKeys []cipher.PubKey
 }
 

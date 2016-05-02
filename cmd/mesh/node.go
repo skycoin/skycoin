@@ -137,6 +137,9 @@ type Stdout_RecvMessage struct {
 type Stdout_EstablishedRoute struct {
     RouteIdx uint32
 }
+type Stdout_RoutesChanged struct {
+    Names    []string
+}
 type Stdout_EstablishedRouteError struct {
     RouteIdx uint32
     HopIdx   uint8
@@ -158,6 +161,14 @@ func onStdInMessage(msg interface{}) {
     }
 }
 
+func sendRoutes() {
+    route_names := make([]string, len(node_impl.Config.Routes))
+    for i, route_config := range node_impl.Config.Routes {
+        route_names[i] = route_config.Name
+    }
+    stdoutQueue <- Stdout_RoutesChanged{route_names}
+}
+
 func main() {
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})
@@ -169,6 +180,7 @@ func main() {
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{4}, Stdout_EstablishedRoute{})
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{5}, Stdout_EstablishedRouteError{})
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_GeneralError{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{7}, Stdout_RoutesChanged{})
 
     flag.Parse()
 
@@ -258,6 +270,9 @@ func main() {
             os.Stdout.Write(b)
         }
     }()
+
+    // Send static routes    
+    sendRoutes();
 
     // Pipe data in
     go func() {

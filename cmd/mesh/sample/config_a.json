@@ -8,6 +8,7 @@
 		"ConfirmOperations":	true,
 		"Routes": [
 		{
+			"Name": "Some Route (A)",
 			"PeerPubKeys": [[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
 		}]
 	},

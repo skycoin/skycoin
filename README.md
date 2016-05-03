@@ -174,3 +174,12 @@ Modules
 /src/gui - the web wallet and json client interface
 /src/wallet - the private key storage library
 ```
+
+Meshnet
+------
+
+```
+go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
+
+go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
+```

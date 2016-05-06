@@ -75,6 +75,7 @@ type EstablishedRoute struct {
     ConnectedPeer   cipher.PubKey
 }
 
+type RouteEstablishmentCallback func(RouteIdx int, HopIdx int)
 type RouteEstablishedCallback func(route EstablishedRoute)
 
 type NodeConfig struct {
@@ -84,6 +85,7 @@ type NodeConfig struct {
     Routes []RouteConfig
     OperationTimeout time.Duration
     RetransmitInterval time.Duration
+    RouteEstablishmentCB RouteEstablishmentCallback
     RouteEstablishedCB RouteEstablishedCallback
 }
 
@@ -287,6 +289,10 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
         } else {
             return
         }
+
+        if self.Config.RouteEstablishmentCB != nil {
+            self.Config.RouteEstablishmentCB(route_idx, peer_idx)
+        }
     }
     ping_id := uuid.NewV4()
     ping_reply := self.sendAndConfirmOperation(new_route.ConnectedPeer,
@@ -308,7 +314,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
     self.EstablishedRoutesByIndex[route_idx] = new_route
     self.Lock.Unlock();
 
-    if(self.Config.RouteEstablishedCB != nil) {
+    if self.Config.RouteEstablishedCB != nil {
         self.Config.RouteEstablishedCB(new_route)
     }
 }

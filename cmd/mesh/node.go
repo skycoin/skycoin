@@ -134,6 +134,10 @@ type Stdin_SendBack struct {
 type Stdout_RecvMessage struct {
     mesh.MeshMessage
 }
+type Stdout_RouteEstablishment struct {
+    RouteIdx uint32
+    HopIdx uint32
+}
 type Stdout_EstablishedRoute struct {
     RouteIdx uint32
 }
@@ -177,10 +181,11 @@ func main() {
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{1}, Stdin_SendMessage{})
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{2}, Stdin_SendBack{})
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{3}, Stdout_RecvMessage{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{4}, Stdout_EstablishedRoute{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{5}, Stdout_EstablishedRouteError{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_GeneralError{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{7}, Stdout_RoutesChanged{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{4}, Stdout_RouteEstablishment{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{5}, Stdout_EstablishedRoute{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_EstablishedRouteError{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{7}, Stdout_GeneralError{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{8}, Stdout_RoutesChanged{})
 
     flag.Parse()
 
@@ -195,6 +200,9 @@ func main() {
     if e_parse != nil {
         l_err.Printf("Config parse error: %v\n", e_parse)
         os.Exit(1)
+    }
+    config.Node.RouteEstablishmentCB = func(RouteIdx int, HopIdx int) {
+        stdoutQueue <- Stdout_RouteEstablishment{(uint32)(RouteIdx), (uint32)(HopIdx)}
     }
     config.Node.RouteEstablishedCB = func(route mesh.EstablishedRoute) {
         stdoutQueue <- Stdout_EstablishedRoute{(uint32)(route.RouteIdx)}

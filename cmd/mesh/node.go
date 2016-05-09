@@ -152,6 +152,9 @@ type Stdout_EstablishedRouteError struct {
 type Stdout_GeneralError struct {
     Error    string
 }
+type Stdout_StaticConfig struct {
+    ConfiguratorURL string
+}
 
 func onStdInMessage(msg interface{}) {
     if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendMessage{}) {
@@ -186,6 +189,7 @@ func main() {
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_EstablishedRouteError{})
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{7}, Stdout_GeneralError{})
     stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{8}, Stdout_RoutesChanged{})
+    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{9}, Stdout_StaticConfig{})
 
     flag.Parse()
 
@@ -279,8 +283,11 @@ func main() {
         }
     }()
 
-    // Send static routes    
+    // Send static routes
     sendRoutes();
+
+    // Send config url
+    stdoutQueue <- Stdout_StaticConfig{"about:test"}
 
     // Pipe data in
     go func() {

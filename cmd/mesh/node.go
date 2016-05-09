@@ -144,6 +144,7 @@ type Stdout_EstablishedRoute struct {
 }
 type Stdout_RoutesChanged struct {
     Names    []string
+    Ids      []uuid.UUID
 }
 type Stdout_EstablishedRouteError struct {
     RouteId uuid.UUID
@@ -171,10 +172,12 @@ func onStdInMessage(msg interface{}) {
 
 func sendRoutes() {
     route_names := make([]string, len(node_impl.Config.Routes))
+    route_ids := make([]uuid.UUID, len(node_impl.Config.Routes))    
     for i, route_config := range node_impl.Config.Routes {
         route_names[i] = route_config.Name
+        route_ids[i] = route_config.Id
     }
-    stdoutQueue <- Stdout_RoutesChanged{route_names}
+    stdoutQueue <- Stdout_RoutesChanged{route_names, route_ids}
 }
 
 func main() {

@@ -148,7 +148,7 @@ type Stdout_RoutesChanged struct {
 }
 type Stdout_EstablishedRouteError struct {
     RouteId uuid.UUID
-    HopIdx   uint8
+    HopIdx   uint32
     Error    string
 }
 type Stdout_GeneralError struct {

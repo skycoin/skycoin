@@ -17,6 +17,7 @@ import (
     "github.com/skycoin/skycoin/src/daemon/gnet"
     "github.com/skycoin/skycoin/src/mesh"
     "github.com/skycoin/encoder"
+    "github.com/satori/go.uuid"
 )
 
 var l_err = log.New(os.Stderr, "", 0)
@@ -124,7 +125,7 @@ func getConnectedPeerKey(Conn *gnet.Connection) cipher.PubKey {
 var stdio_serializer *mesh.Serializer
 
 type Stdin_SendMessage struct {
-    RouteIdx uint32
+    RouteId uuid.UUID
     Contents []byte
 }
 type Stdin_SendBack struct {
@@ -135,17 +136,17 @@ type Stdout_RecvMessage struct {
     mesh.MeshMessage
 }
 type Stdout_RouteEstablishment struct {
-    RouteIdx uint32
+    RouteId uuid.UUID
     HopIdx uint32
 }
 type Stdout_EstablishedRoute struct {
-    RouteIdx uint32
+    RouteId uuid.UUID
 }
 type Stdout_RoutesChanged struct {
     Names    []string
 }
 type Stdout_EstablishedRouteError struct {
-    RouteIdx uint32
+    RouteId uuid.UUID
     HopIdx   uint8
     Error    string
 }
@@ -159,7 +160,7 @@ type Stdout_StaticConfig struct {
 func onStdInMessage(msg interface{}) {
     if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendMessage{}) {
         msg_cast := msg.(Stdin_SendMessage)
-        node_impl.SendMessage((int)(msg_cast.RouteIdx), msg_cast.Contents)
+        node_impl.SendMessage(msg_cast.RouteId, msg_cast.Contents)
     } else if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendBack{}) {
         msg_cast := msg.(Stdin_SendBack)
         node_impl.SendReply(msg_cast.ReplyTo, msg_cast.Contents)
@@ -205,11 +206,11 @@ func main() {
         l_err.Printf("Config parse error: %v\n", e_parse)
         os.Exit(1)
     }
-    config.Node.RouteEstablishmentCB = func(RouteIdx int, HopIdx int) {
-        stdoutQueue <- Stdout_RouteEstablishment{(uint32)(RouteIdx), (uint32)(HopIdx)}
+    config.Node.RouteEstablishmentCB = func(RouteId uuid.UUID, HopIdx int) {
+        stdoutQueue <- Stdout_RouteEstablishment{RouteId, (uint32)(HopIdx)}
     }
     config.Node.RouteEstablishedCB = func(route mesh.EstablishedRoute) {
-        stdoutQueue <- Stdout_EstablishedRoute{(uint32)(route.RouteIdx)}
+        stdoutQueue <- Stdout_EstablishedRoute{route.RouteId}
     }
     node_impl = mesh.NewNode(config.Node)
 

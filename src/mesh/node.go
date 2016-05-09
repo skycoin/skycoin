@@ -70,12 +70,12 @@ type PhysicalMessage struct {
 }
 
 type EstablishedRoute struct {
-    RouteIdx        int
+    RouteId         uuid.UUID
     SendId          uint32
     ConnectedPeer   cipher.PubKey
 }
 
-type RouteEstablishmentCallback func(RouteIdx int, HopIdx int)
+type RouteEstablishmentCallback func(RouteId uuid.UUID, HopIdx int)
 type RouteEstablishedCallback func(route EstablishedRoute)
 
 type NodeConfig struct {
@@ -110,14 +110,12 @@ type Node struct {
 
     // TODO: Make private
     Config NodeConfig
-    EstablishedRoutesByIndex map[int]EstablishedRoute
+    EstablishedRoutesById map[uuid.UUID]EstablishedRoute
     RetransmitQueue map[uuid.UUID]PhysicalMessage
     OperationsAwaitingReply map[uuid.UUID]chan rewriteableMessage
     BackwardPeerIdsBySendId map[uint32]cipher.PubKey
     BackwardSendIdsBySendId map[uint32]uint32
 
-    // TODO: Randomize route indexes?
-   // NextRouteIdx uint32
     ForwardPeerIdsBySendId map[uint32]cipher.PubKey
     SendIdsBySecret map[string]uint32
     ForwardRewriteBySendId map[uint32]uint32
@@ -170,6 +168,7 @@ func (msg PingMessage) Rewrite(newSendId uint32) rewriteableMessage {
 
 type RouteConfig struct {
     Name string
+    Id   uuid.UUID
     PeerPubKeys []cipher.PubKey
 }
 
@@ -180,7 +179,7 @@ func NewNode(config NodeConfig) *Node {
     ret.MessagesIn = make(chan PhysicalMessage, config.MessagesInSize)
     ret.MeshMessagesIn = make(chan MeshMessage)
     ret.Lock = &sync.Mutex{}
-    ret.EstablishedRoutesByIndex = make(map[int]EstablishedRoute)
+    ret.EstablishedRoutesById = make(map[uuid.UUID]EstablishedRoute)
     ret.RetransmitQueue = make(map[uuid.UUID]PhysicalMessage)
     ret.OperationsAwaitingReply = make(map[uuid.UUID]chan rewriteableMessage)
     ret.ForwardPeerIdsBySendId = make(map[uint32]cipher.PubKey)
@@ -221,13 +220,15 @@ func (self *Node) sendAndConfirmOperation(connected cipher.PubKey, operation_id 
     return nil
 }
 
-func (self *Node) establishRoute(route_idx int, route RouteConfig) {
+func (self *Node) establishRoute(route RouteConfig) {
+    route_id := route.Id
+
     if len(route.PeerPubKeys) == 0 {
         logger.Debug("Empty route passed to establishRoute()")
         return
     }
 
-    var new_route = EstablishedRoute{route_idx, 0, route.PeerPubKeys[0]}
+    var new_route = EstablishedRoute{route_id, 0, route.PeerPubKeys[0]}
     var last_secret = ""
     var prevSendId uint32 = 0
 
@@ -291,7 +292,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
         }
 
         if self.Config.RouteEstablishmentCB != nil {
-            self.Config.RouteEstablishmentCB(route_idx, peer_idx)
+            self.Config.RouteEstablishmentCB(route_id, peer_idx)
         }
     }
     ping_id := uuid.NewV4()
@@ -311,7 +312,7 @@ func (self *Node) establishRoute(route_idx int, route RouteConfig) {
         return
     }
     self.Lock.Lock();
-    self.EstablishedRoutesByIndex[route_idx] = new_route
+    self.EstablishedRoutesById[route_id] = new_route
     self.Lock.Unlock();
 
     if self.Config.RouteEstablishedCB != nil {
@@ -517,8 +518,8 @@ func (self *Node) onRewriteRequest(msg RouteRewriteMessage, peerFrom cipher.PubK
     self.Lock.Unlock()
 }
 
-func (self *Node) SendMessage(route_idx int, contents []byte) {
-    route, exists := self.EstablishedRoutesByIndex[route_idx]
+func (self *Node) SendMessage(route_id uuid.UUID, contents []byte) {
+    route, exists := self.EstablishedRoutesById[route_id]
     if !exists {
         return
     }
@@ -550,8 +551,8 @@ func (self *Node) Run() {
     }
 
     // Establish routes asynchronously
-    for route_idx, route := range self.Config.Routes {
-        go self.establishRoute(route_idx, route)
+    for _, route := range self.Config.Routes {
+        go self.establishRoute(route)
     }
 
     // Incoming messages loop

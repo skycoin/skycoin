@@ -9,14 +9,12 @@ import (
     "time"
     "sync"
     "reflect"
-    "fmt"
 )
 
 import (
     "github.com/skycoin/skycoin/src/cipher"
     "github.com/skycoin/skycoin/src/daemon/gnet"
     "github.com/skycoin/skycoin/src/mesh"
-    "github.com/skycoin/encoder"
     "github.com/satori/go.uuid"
 )
 
@@ -26,7 +24,9 @@ var config_path = flag.String("config", "./config.json", "Configuration file pat
 
 var tcp_pool *gnet.ConnectionPool
 
-var stdoutQueue = make(chan interface{})
+const STDIO_CHANLEN = 100
+
+var stdoutQueue = make(chan interface{}, STDIO_CHANLEN)
 
 var map_lock = &sync.Mutex{}
 var configs_by_conn = make(map[*gnet.Connection]TCPOutgoingConnectionConfig)
@@ -63,7 +63,7 @@ func (self *NodeMessage) Handle(context *gnet.MessageContext, x interface{}) err
     return nil
 }
 
-func ConnectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
+func connectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
     for {
         conn, err := tcp_pool.Connect(config.Endpoint)
         if err != nil {
@@ -121,43 +121,6 @@ func getConnectedPeerKey(Conn *gnet.Connection) cipher.PubKey {
     return key
 }
 
-// Stdio interface
-var stdio_serializer *mesh.Serializer
-
-type Stdin_SendMessage struct {
-    RouteId uuid.UUID
-    Contents []byte
-}
-type Stdin_SendBack struct {
-    ReplyTo mesh.MeshMessage
-    Contents []byte
-}
-type Stdout_RecvMessage struct {
-    mesh.MeshMessage
-}
-type Stdout_RouteEstablishment struct {
-    RouteId uuid.UUID
-    HopIdx uint32
-}
-type Stdout_EstablishedRoute struct {
-    RouteId uuid.UUID
-}
-type Stdout_RoutesChanged struct {
-    Names    []string
-    Ids      []uuid.UUID
-}
-type Stdout_EstablishedRouteError struct {
-    RouteId uuid.UUID
-    HopIdx   uint32
-    Error    string
-}
-type Stdout_GeneralError struct {
-    Error    string
-}
-type Stdout_StaticConfig struct {
-    ConfiguratorURL string
-}
-
 func onStdInMessage(msg interface{}) {
     if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendMessage{}) {
         msg_cast := msg.(Stdin_SendMessage)
@@ -184,16 +147,7 @@ func main() {
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})
 
-    stdio_serializer = mesh.NewSerializer()
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{1}, Stdin_SendMessage{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{2}, Stdin_SendBack{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{3}, Stdout_RecvMessage{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{4}, Stdout_RouteEstablishment{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{5}, Stdout_EstablishedRoute{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_EstablishedRouteError{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{7}, Stdout_GeneralError{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{8}, Stdout_RoutesChanged{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{9}, Stdout_StaticConfig{})
+    stdio_serializer := NewStdioSerializer()
 
     flag.Parse()
 
@@ -229,7 +183,7 @@ func main() {
         map_lock.Unlock()
         if exists {
             time.Sleep(config.RetryDelay)
-            ConnectToPeerViaTCP(config)
+            connectToPeerViaTCP(config)
         }
     }
     config_cb.ConnectCallback = func (conn *gnet.Connection, solicited bool) {
@@ -259,7 +213,7 @@ func main() {
         map_lock.Lock()
         conns_by_pubkey[conn_config.PeerPubKey] = make(ConnectionSet)
         map_lock.Unlock()
-        go ConnectToPeerViaTCP(conn_config)
+        go connectToPeerViaTCP(conn_config)
     }
 
     // Send messages from queue
@@ -270,20 +224,10 @@ func main() {
         }
     }()
 
-    // Pipe data out
+    // Output messages received
     go func() {
         for {
             stdoutQueue <- Stdout_RecvMessage{<- node_impl.MeshMessagesIn}
-        }
-    }()
-    go func() {
-        for {
-            to_stdout := <- stdoutQueue
-            b := stdio_serializer.SerializeMessage(to_stdout)
-            length := (uint32)(len(b))
-            bl := encoder.SerializeAtomic(length)
-            os.Stdout.Write(bl)
-            os.Stdout.Write(b)
         }
     }()
 
@@ -293,21 +237,13 @@ func main() {
     // Send config url
     stdoutQueue <- Stdout_StaticConfig{"about:test"}
 
-    // Pipe data in
+    var stdinQueue = make(chan interface{}, STDIO_CHANLEN)
+
+    go RunStdioSerializer(stdio_serializer, stdoutQueue, stdinQueue);
+    
     go func() {
         for {
-            var bl []byte = make([]byte, 4)
-            os.Stdin.Read(bl)
-            var length uint32
-            encoder.DecodeInt(bl, &length)
-            var bb []byte = make([]byte, length)
-            os.Stdin.Read(bb)
-            message, error := stdio_serializer.UnserializeMessage(bb)
-            if error == nil {
-                onStdInMessage(message)
-            } else {
-                panic(fmt.Sprintf("Error reading message from stdin: %v",error))
-            }
+            onStdInMessage(<- stdinQueue)
         }
     }()
 

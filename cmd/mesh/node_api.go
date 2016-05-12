@@ -2,13 +2,18 @@
 package main
 
 import(
+    "io"
 	"fmt"
-    "os")
+    "time"
+    "os"
+    "os/exec")
 
 import(
     "github.com/skycoin/skycoin/src/mesh"
     "github.com/satori/go.uuid"
-    "github.com/skycoin/encoder")
+    "github.com/skycoin/encoder"
+    "github.com/kardianos/osext"
+    )
 
 type Stdin_SendMessage struct {
     RouteId uuid.UUID
@@ -59,36 +64,83 @@ func NewStdioSerializer() (*mesh.Serializer) {
 }
 
 func RunStdioSerializer(stdio_serializer *mesh.Serializer, 
-						stdoutQueue chan interface{}, 
-						stdinQueue chan interface{}) {
+						cmd_stdoutQueue chan interface{}, 
+                        cmd_stdout io.Reader,
+						cmd_stdinQueue chan interface{},
+                        cmd_stdin io.Writer) {
    
+
     go func() {
     	for {
 			// Output
-	        to_stdout := <- stdoutQueue
+	        to_stdout := <- cmd_stdinQueue
 	        b := stdio_serializer.SerializeMessage(to_stdout)
 	        length := (uint32)(len(b))
 	        bl := encoder.SerializeAtomic(length)
-	        os.Stdout.Write(bl)
-	        os.Stdout.Write(b)
+	        cmd_stdin.Write(bl)
+	        cmd_stdin.Write(b)
 	    }
 	}()
     for {
         // Input
         var bl []byte = make([]byte, 4)
-        os.Stdin.Read(bl)
+        n_l, err_l := cmd_stdout.Read(bl)
+        if n_l != 4 {
+            if err_l == io.EOF {
+                break
+            }
+            if err_l != nil {
+                if err_l == io.EOF {}
+                fmt.Fprintf(os.Stderr, "Error reading message length: %v\n", err_l)
+            }
+            continue
+        }
         var length uint32
         encoder.DecodeInt(bl, &length)
         var bb []byte = make([]byte, length)
-        os.Stdin.Read(bb)
+        n_bb, err_bb := cmd_stdout.Read(bb)
+        if uint32(n_bb) != length {
+            if err_l == io.EOF {
+                break
+            }
+            if err_bb != nil {
+                fmt.Fprintf(os.Stderr, "Error reading message length: %v\n", os.Getpid(), err_bb)
+            }
+            continue
+        }
         message, error := stdio_serializer.UnserializeMessage(bb)
         if error == nil {
-            stdinQueue <- message
+            cmd_stdoutQueue <- message
         } else {
-            panic(fmt.Sprintf("Error reading message from stdin: %v",error))
+            panic(fmt.Sprintf("Error unserializing message from stdin: %v\n", error))
         }
+
+        time.Sleep(time.Millisecond)
     }
 }
 
+func SpawnNodeSubprocess(configPath string, 
+                         cmd_stdoutQueue chan interface{}, 
+                         cmd_stdinQueue chan interface{}) {
+	filename, _ := osext.Executable()
+    cmd := exec.Command(filename, "-config=" + configPath, "-standalone=true")
+    cmd.Stderr = os.Stderr
+    cmd_stdout, err1 := cmd.StdoutPipe()
+    if err1 != nil {
+        panic(fmt.Sprintf("Error creating subprocess stdout pipe: %v", err1))
+    }
+    cmd_stdin, err2 := cmd.StdinPipe()
+    if err2 != nil {
+        panic(fmt.Sprintf("Error creating subprocess stdin pipe: %v", err2))
+    }
+    
+    cmd.Start()
 
+    stdio_serializer := NewStdioSerializer()
+    go RunStdioSerializer(stdio_serializer, 
+                            cmd_stdoutQueue, 
+                            cmd_stdout,
+                            cmd_stdinQueue,
+                            cmd_stdin)
+}
 

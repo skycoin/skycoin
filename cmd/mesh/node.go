@@ -9,6 +9,8 @@ import (
     "time"
     "sync"
     "reflect"
+
+    "fmt"
 )
 
 import (
@@ -20,6 +22,7 @@ import (
 
 var l_err = log.New(os.Stderr, "", 0)
 
+var stand_alone = flag.Bool("standalone", true, "Just run the node, with no attached service?")
 var config_path = flag.String("config", "./config.json", "Configuration file path.")
 
 var tcp_pool *gnet.ConnectionPool
@@ -144,12 +147,12 @@ func sendRoutes() {
 }
 
 func main() {
+    flag.Parse()
+
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})
 
     stdio_serializer := NewStdioSerializer()
-
-    flag.Parse()
 
 	file, e := ioutil.ReadFile(*config_path)
     if e != nil {
@@ -239,7 +242,8 @@ func main() {
 
     var stdinQueue = make(chan interface{}, STDIO_CHANLEN)
 
-    go RunStdioSerializer(stdio_serializer, stdoutQueue, stdinQueue);
+    // We are the subprocess
+    go RunStdioSerializer(stdio_serializer, stdinQueue, os.Stdin, stdoutQueue, os.Stdout)
     
     go func() {
         for {

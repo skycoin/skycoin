@@ -9,8 +9,6 @@ import (
     "time"
     "sync"
     "reflect"
-
-    "fmt"
 )
 
 import (
@@ -22,7 +20,6 @@ import (
 
 var l_err = log.New(os.Stderr, "", 0)
 
-var stand_alone = flag.Bool("standalone", true, "Just run the node, with no attached service?")
 var config_path = flag.String("config", "./config.json", "Configuration file path.")
 
 var tcp_pool *gnet.ConnectionPool

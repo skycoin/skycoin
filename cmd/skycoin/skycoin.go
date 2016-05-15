@@ -429,14 +429,15 @@ func configureDaemon(c *Config) daemon.Config {
 }
 
 func Run(c *Config) {
+	scheme := "http"
+	if c.WebInterfaceHTTPS {
+		scheme = "https"
+	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
 
 	if c.PrintWebInterfaceAddress {
-		scheme := "http"
-		if c.WebInterfaceHTTPS {
-			scheme = "https"
-		}
-		fmt.Printf("%s://%s\n", scheme, host)
+		fmt.Println(fullAddress)
 		return
 	}
 
@@ -466,28 +467,34 @@ func Run(c *Config) {
 	}
 
 	if c.WebInterface {
-
+		var err error
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
 			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey)
 			if len(errs) != 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())
-					log.Panic("gui.CreateCertIfNotExists")
 				}
-			} else {
-				//does HTTP.Listen and serve block? blocks
-				//new implementation does not block
-				_ = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
-					c.WebInterfaceCert, c.WebInterfaceKey)
+				logger.Error("gui.CreateCertIfNotExists failure")
+				os.Exit(1)
 			}
+
+			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
 		} else {
-			_ = gui.LaunchWebInterface(host, c.GUIDirectory, d)
+			err = gui.LaunchWebInterface(host, c.GUIDirectory, d)
 		}
 
-		if c.LaunchBrowser == true {
-			fmt.Printf("Launching System Browser")
-			util.OpenBrowser("http://127.0.0.1:6420")
+		if err != nil {
+			logger.Error(err.Error())
+			logger.Error("Failed to start web GUI")
+			os.Exit(1)
+		}
+
+		if c.LaunchBrowser {
+			logger.Info("Launching System Browser with %s", fullAddress)
+			if err := util.OpenBrowser(fullAddress); err != nil {
+				logger.Error(err.Error())
+			}
 		}
 	}
 

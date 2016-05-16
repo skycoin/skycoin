@@ -491,10 +491,15 @@ func Run(c *Config) {
 		}
 
 		if c.LaunchBrowser {
-			logger.Info("Launching System Browser with %s", fullAddress)
-			if err := util.OpenBrowser(fullAddress); err != nil {
-				logger.Error(err.Error())
-			}
+			go func() {
+				// Wait a moment just to make sure the http interface is up
+				time.Sleep(time.Millisecond * 100)
+
+				logger.Info("Launching System Browser with %s", fullAddress)
+				if err := util.OpenBrowser(fullAddress); err != nil {
+					logger.Error(err.Error())
+				}
+			}()
 		}
 	}
 

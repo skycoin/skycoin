@@ -2,6 +2,6 @@ OS=darwin
 ARCH=amd64
 APP=skycoin_darwin_x86_64
 APPD=skycoind_darwin_x86_64
-BIN=skycoin
+BIN=Skycoin
 CGOCC=o32-clang
 ZIPNAME=Skycoin

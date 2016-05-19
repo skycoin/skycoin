@@ -36,6 +36,5 @@ func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	//should read in wallet files and make sure does not exist
 	padding := hex.EncodeToString((cipher.RandByte(2)))
-	fmt.Printf("padding= %s", padding)
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }

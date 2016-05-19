@@ -2,11 +2,11 @@ ENABLE_GOX=${ENABLE_GOX:-1}
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 RAWBIN="skycoin"
 APPNAME="Skycoin"
-BINDIR=".bin/"
-CACHEDIR=".cache/"
-PKGDIR="../"
-RELEASEDIR="release/"
-HTMLDIRSRC="../src/gui/static/dist/"
+BINDIR=".bin"
+CACHEDIR=".cache"
+PKGDIR=".."
+RELEASEDIR="release"
+HTMLDIRSRC="../src/gui/static/dist"
 
 CGOCC="gcc"
 
@@ -90,7 +90,7 @@ function create_linux_package() {
     # Make executable and copy the client binary and README
     chmod +x "${BINDIR}/${APP}"
     cp "${BINDIR}/${APP}" "${DIRTOZIP}/${BIN}"
-    cp linux/README "$DIRTOZIP"
+    cp linux/* "$DIRTOZIP"
 
     # Zip the target folder. Need to cd to the target directory so that the
     # tarball has the correct folder structure
@@ -116,30 +116,27 @@ function create_linux_package() {
 function create_osx_package() {
     echo "Creating OSX release bundle"
 
-    # TODO -- remove once the client binary is copied into the .app properly
-    echo "Not fully implemented, aborting"
-    exit 1
-
     CONTENTS="${SCRATCHDIR}/${APPNAME}.app/Contents"
     RESOURCES="${CONTENTS}/Resources"
-    HTMLDIRDST="${RESOURCES}/src/gui/static/"
+    MACOS="${CONTENTS}/MacOS"
+    HTMLDIRDST="${MACOS}/src/gui/static/"
 
     # Reset the scratch space
     rm -rf "$SCRATCHDIR"
     mkdir -p "$SCRATCHDIR"
 
     # Setup the target folder
-    mkdir -p "$RESOURCES"
+    mkdir -p "$CONTENTS"
+    mkdir "$RESOURCES"
+    mkdir "$MACOS"
 
     # Copy static resources into the .app
     mkdir -p "$HTMLDIRDST"
     cp -R "$HTMLDIRSRC" "$HTMLDIRDST"
     cp osx/Info.plist "$CONTENTS"
-    # TODO -- use our own skycoin.icns file
-    #cp osx/skycoin.icns "$RESOURCES"
+    cp osx/appIcon.icns "$RESOURCES"
 
-    # TODO -- package the binary properly for use in a .app here
-    # cp $BIN ${APPNAME}.app/${SOMEWHERE}
+    cp "${BINDIR}/${APP}" "${MACOS}/${BIN}"
 
     # zip the .app
     pushd "$SCRATCHDIR" >/dev/null

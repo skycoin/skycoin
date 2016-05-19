@@ -76,8 +76,7 @@ func TestInitDataDir(t *testing.T) {
 
 func TestInitDataDirDefault(t *testing.T) {
 	defaultDataDir = ".skycointestXCAWDAWD232232"
-	home, err := UserHome()
-	assert.Nil(t, err)
+	home := UserHome()
 	assertDirNotExists(t, filepath.Join(home, defaultDataDir))
 	dir := InitDataDir("")
 	assert.NotEqual(t, dir, "")
@@ -87,9 +86,8 @@ func TestInitDataDirDefault(t *testing.T) {
 }
 
 func TestUserHome(t *testing.T) {
-	home, err := UserHome()
+	home := UserHome()
 	assert.NotEqual(t, home, "")
-	assert.Nil(t, err)
 }
 
 func TestLoadJSON(t *testing.T) {

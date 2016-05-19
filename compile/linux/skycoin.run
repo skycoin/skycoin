@@ -1,0 +1,9 @@
+#!/bin/sh
+
+SKYCOIN_WEB_URL=${SKYCOIN_WEB_URL:-$(cat skycoin.url)}
+
+# Open the client interface in a browser 1 second later to 
+# give enough time for skycoin client to start
+(sleep 1; xdg-open "$SKYCOIN_WEB_URL") &
+
+./skycoin $@

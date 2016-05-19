@@ -9,13 +9,18 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"gopkg.in/op/go-logging.v1"
 
 	"github.com/skycoin/skycoin/src/daemon"
-	"gopkg.in/op/go-logging.v1"
 )
 
 var (
-	logger      = logging.MustGetLogger("skycoin.gui")
+	logger = logging.MustGetLogger("skycoin.gui")
+)
+
+const (
 	resourceDir = "dist/"
 	indexPage   = "index.html"
 )
@@ -23,77 +28,80 @@ var (
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
-	logger.Warning("Starting web interface on http://%s", host)
+	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+
+	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	appLoc := filepath.Join(dir, staticDir, resourceDir)
-	mux := NewGUIMux(appLoc, daemon)
-	//if err := http.ListenAndServe(host, mux); err != nil {
-	//	log.Panic(err)
-	//}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
+
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	go func() {
-		web_interface_active <- true
-		err = http.Serve(listener, mux) //blocks
-		if err != nil {
-			log.Panic()
-		}
-	}()
-	value := <-web_interface_active
-	if value == true {
-		log.Printf("webservice should be running: RUN POPUP")
-	}
+
+	// Runs http.Serve() in a goroutine
+	serve(listener, NewGUIMux(appLoc, daemon))
+
 	return nil
 }
 
 // Begins listening on https://$host, for enabling remote web access
 // Uses HTTPS
-func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon,
-	certFile, keyFile string) error {
+func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
-	var err error
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+
+	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	appLoc := filepath.Join(dir, staticDir, resourceDir)
-	mux := NewGUIMux(appLoc, daemon)
-	//err := http.ListenAndServeTLS(host, certFile, keyFile, mux)
-	//if err != nil {
-	//	log.Panic(err)
-	//}
-	config := new(tls.Config)
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+
+	certs := make([]tls.Certificate, 1)
+	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {
+		return err
+	}
+
+	listener, err := tls.Listen("tcp", host, &tls.Config{Certificates: certs})
 	if err != nil {
-		log.Panic()
+		return err
 	}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
-	listener, err := tls.Listen("tcp", host, config)
-	if err != nil {
-		log.Panic(err)
-	}
+
+	// Runs http.Serve() in a goroutine
+	serve(listener, NewGUIMux(appLoc, daemon))
+
+	return nil
+}
+
+func serve(listener net.Listener, mux *http.ServeMux) {
+	// http.Serve() blocks
+	// Minimize the chance of http.Serve() not being ready before the
+	// function returns and the browser opens
+	ready := make(chan struct{})
 	go func() {
-		web_interface_active <- true
-		err = http.Serve(listener, mux) //blocks
-		if err != nil {
-			log.Panic()
+		ready <- struct{}{}
+		if err := http.Serve(listener, mux); err != nil {
+			log.Panic(err)
 		}
 	}()
-	value := <-web_interface_active
-	if value == true {
-		log.Printf("webservice should be running: RUN POPUP")
+	<-ready
+}
+
+func determineResourcePath(staticDir string) (string, error) {
+	appLoc := filepath.Join(staticDir, resourceDir)
+	if strings.HasPrefix(appLoc, "/") {
+		return appLoc, nil
 	}
-	return nil
+
+	// Prepend the binary's directory path if appLoc is relative
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, appLoc), nil
 }
 
 // Creates an http.ServeMux with handlers registered
@@ -116,6 +124,7 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	RegisterBlockchainHandlers(mux, daemon.Gateway)
 	// Network stats interface
 	RegisterNetworkHandlers(mux, daemon.Gateway)
+
 	return mux
 }
 

@@ -123,7 +123,7 @@ func SpawnNodeSubprocess(configPath string,
                          cmd_stdoutQueue chan interface{}, 
                          cmd_stdinQueue chan interface{}) {
 	filename, _ := osext.Executable()
-    cmd := exec.Command(filename, "-config=" + configPath, "-standalone=true")
+    cmd := exec.Command(filename, "-config=" + configPath)
     cmd.Stderr = os.Stderr
     cmd_stdout, err1 := cmd.StdoutPipe()
     if err1 != nil {

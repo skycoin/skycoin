@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "os"
     "log"
+    "fmt"
     "io/ioutil"
     "flag"
     "time"
@@ -20,6 +21,7 @@ import (
 
 var l_err = log.New(os.Stderr, "", 0)
 
+var host_service = flag.String("host", "", "Host builtin service, choices: 'proxy', 'tun'")
 var config_path = flag.String("config", "./config.json", "Configuration file path.")
 
 var tcp_pool *gnet.ConnectionPool
@@ -43,6 +45,10 @@ var ConnectAnnouncementMessagePrefix = gnet.MessagePrefix{0,0,0,1}
 func (self *ConnectAnnouncementMessage) Handle(context *gnet.MessageContext, x interface{}) error {
     map_lock.Lock()
     pub_keys_by_conn[context.Conn] = self.MyPubKey
+    if conns_by_pubkey[self.MyPubKey] == nil {
+        conns_by_pubkey[self.MyPubKey] = make(ConnectionSet)
+    }
+    conns_by_pubkey[self.MyPubKey][context.Conn] = true
     map_lock.Unlock()
     return nil
 }
@@ -145,6 +151,19 @@ func sendRoutes() {
 
 func main() {
     flag.Parse()
+
+    switch *host_service {
+        case "":
+            break
+        case "proxy":
+            HostProxy()
+            return
+        case "tun":
+            HostTun()
+            return
+        default:
+            panic(fmt.Sprintf("Unknown service to host: %v", *host_service))
+    }
 
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})

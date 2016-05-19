@@ -31,29 +31,12 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 
-<<<<<<< HEAD
-	appLoc := filepath.Join(staticDir, resourceDir)
-
-	_ = os.Args[0]
-	/*
-		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			log.Panic(err)
-		}
-		appLoc := filepath.Join(dir, staticDir, resourceDir)
-	*/
-	mux := NewGUIMux(appLoc, daemon)
-	//if err := http.ListenAndServe(host, mux); err != nil {
-	//	log.Panic(err)
-	//}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
-=======
+	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
 	}
-
->>>>>>> d1416947960e484e8d9fdf60841ae6fd84ff6564
+	web_interface_active := make(chan bool, 1) //do not return until webserver is running
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
@@ -61,7 +44,6 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 
 	// Runs http.Serve() in a goroutine
 	serve(listener, NewGUIMux(appLoc, daemon))
-
 	return nil
 }
 
@@ -72,39 +54,17 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
 
-<<<<<<< HEAD
-	appLoc := filepath.Join(staticDir, resourceDir)
-	/*
-		var err error
-		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			log.Panic(err)
-		}
-		appLoc := filepath.Join(dir, staticDir, resourceDir)
-	*/
-	mux := NewGUIMux(appLoc, daemon)
-	//err := http.ListenAndServeTLS(host, certFile, keyFile, mux)
-	//if err != nil {
-	//	log.Panic(err)
-	//}
-
-	var err error
-
-	config := new(tls.Config)
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		log.Panic()
-=======
+	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
 	}
 
+	mux := NewGUIMux(appLoc, daemon)
+
 	certs := make([]tls.Certificate, 1)
 	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {
 		return err
->>>>>>> d1416947960e484e8d9fdf60841ae6fd84ff6564
 	}
 
 	listener, err := tls.Listen("tcp", host, &tls.Config{Certificates: certs})

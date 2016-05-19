@@ -1,9 +1,9 @@
 package util
 
 import (
-	"github.com/toqueteos/webbrowser" //open webbrowser
+	"github.com/toqueteos/webbrowser"
 )
 
-func OpenBrowser(url string) {
-	webbrowser.Open(url)
+func OpenBrowser(url string) error {
+	return webbrowser.Open(url)
 }

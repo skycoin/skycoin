@@ -5,13 +5,7 @@
 		"MessagesInSize":	1024,
 		"OperationTimeout":		60000000000,
 		"RetransmitInterval":	1000000000,
-		"ConfirmOperations":	true,
-		"Routes": [
-		{
-			"Name": "Some Route (A)",
-			"Id": "50000000-0000-0000-0000-000000000001",
-			"PeerPubKeys": [[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
-		}]
+		"ConfirmOperations":	true
 	},
 	"TCPConfig": {
 		"Port":                     3631,
@@ -23,12 +17,5 @@
 		"EventChannelSize":         4096,
 		"BroadcastResultSize":      16,
 		"ConnectionWriteQueueSize": 32
-	},
-	"TCPConnections": [
-	{
-		"PeerPubKey": [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-		"Type": "tcp",
-		"Endpoint": "127.0.0.1:3632",
-		"RetryDelay": 1000000000
-	}]
+	}
 }

@@ -4,28 +4,31 @@ import (
     "encoding/json"
     "os"
     "log"
+    "fmt"
     "io/ioutil"
     "flag"
     "time"
     "sync"
     "reflect"
-    "fmt"
 )
 
 import (
     "github.com/skycoin/skycoin/src/cipher"
     "github.com/skycoin/skycoin/src/daemon/gnet"
     "github.com/skycoin/skycoin/src/mesh"
-    "github.com/skycoin/encoder"
+    "github.com/satori/go.uuid"
 )
 
 var l_err = log.New(os.Stderr, "", 0)
 
+var host_service = flag.String("host", "", "Host builtin service, choices: 'proxy', 'tun'")
 var config_path = flag.String("config", "./config.json", "Configuration file path.")
 
 var tcp_pool *gnet.ConnectionPool
 
-var stdoutQueue = make(chan interface{})
+const STDIO_CHANLEN = 100
+
+var stdoutQueue = make(chan interface{}, STDIO_CHANLEN)
 
 var map_lock = &sync.Mutex{}
 var configs_by_conn = make(map[*gnet.Connection]TCPOutgoingConnectionConfig)
@@ -42,6 +45,10 @@ var ConnectAnnouncementMessagePrefix = gnet.MessagePrefix{0,0,0,1}
 func (self *ConnectAnnouncementMessage) Handle(context *gnet.MessageContext, x interface{}) error {
     map_lock.Lock()
     pub_keys_by_conn[context.Conn] = self.MyPubKey
+    if conns_by_pubkey[self.MyPubKey] == nil {
+        conns_by_pubkey[self.MyPubKey] = make(ConnectionSet)
+    }
+    conns_by_pubkey[self.MyPubKey][context.Conn] = true
     map_lock.Unlock()
     return nil
 }
@@ -62,7 +69,7 @@ func (self *NodeMessage) Handle(context *gnet.MessageContext, x interface{}) err
     return nil
 }
 
-func ConnectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
+func connectToPeerViaTCP(config TCPOutgoingConnectionConfig) {
     for {
         conn, err := tcp_pool.Connect(config.Endpoint)
         if err != nil {
@@ -120,43 +127,10 @@ func getConnectedPeerKey(Conn *gnet.Connection) cipher.PubKey {
     return key
 }
 
-// Stdio interface
-var stdio_serializer *mesh.Serializer
-
-type Stdin_SendMessage struct {
-    RouteIdx uint32
-    Contents []byte
-}
-type Stdin_SendBack struct {
-    ReplyTo mesh.MeshMessage
-    Contents []byte
-}
-type Stdout_RecvMessage struct {
-    mesh.MeshMessage
-}
-type Stdout_RouteEstablishment struct {
-    RouteIdx uint32
-    HopIdx uint32
-}
-type Stdout_EstablishedRoute struct {
-    RouteIdx uint32
-}
-type Stdout_RoutesChanged struct {
-    Names    []string
-}
-type Stdout_EstablishedRouteError struct {
-    RouteIdx uint32
-    HopIdx   uint8
-    Error    string
-}
-type Stdout_GeneralError struct {
-    Error    string
-}
-
 func onStdInMessage(msg interface{}) {
     if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendMessage{}) {
         msg_cast := msg.(Stdin_SendMessage)
-        node_impl.SendMessage((int)(msg_cast.RouteIdx), msg_cast.Contents)
+        node_impl.SendMessage(msg_cast.RouteId, msg_cast.Contents)
     } else if reflect.TypeOf(msg) == reflect.TypeOf(Stdin_SendBack{}) {
         msg_cast := msg.(Stdin_SendBack)
         node_impl.SendReply(msg_cast.ReplyTo, msg_cast.Contents)
@@ -167,27 +141,34 @@ func onStdInMessage(msg interface{}) {
 
 func sendRoutes() {
     route_names := make([]string, len(node_impl.Config.Routes))
+    route_ids := make([]uuid.UUID, len(node_impl.Config.Routes))    
     for i, route_config := range node_impl.Config.Routes {
         route_names[i] = route_config.Name
+        route_ids[i] = route_config.Id
     }
-    stdoutQueue <- Stdout_RoutesChanged{route_names}
+    stdoutQueue <- Stdout_RoutesChanged{route_names, route_ids}
 }
 
 func main() {
+    flag.Parse()
+
+    switch *host_service {
+        case "":
+            break
+        case "proxy":
+            HostProxy()
+            return
+        case "tun":
+            HostTun()
+            return
+        default:
+            panic(fmt.Sprintf("Unknown service to host: %v", *host_service))
+    }
+
     gnet.RegisterMessage(ConnectAnnouncementMessagePrefix, ConnectAnnouncementMessage{})
     gnet.RegisterMessage(NodeMessagePrefix, NodeMessage{})
 
-    stdio_serializer = mesh.NewSerializer()
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{1}, Stdin_SendMessage{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{2}, Stdin_SendBack{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{3}, Stdout_RecvMessage{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{4}, Stdout_RouteEstablishment{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{5}, Stdout_EstablishedRoute{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{6}, Stdout_EstablishedRouteError{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{7}, Stdout_GeneralError{})
-    stdio_serializer.RegisterMessageForSerialization(mesh.MessagePrefix{8}, Stdout_RoutesChanged{})
-
-    flag.Parse()
+    stdio_serializer := NewStdioSerializer()
 
 	file, e := ioutil.ReadFile(*config_path)
     if e != nil {
@@ -201,11 +182,11 @@ func main() {
         l_err.Printf("Config parse error: %v\n", e_parse)
         os.Exit(1)
     }
-    config.Node.RouteEstablishmentCB = func(RouteIdx int, HopIdx int) {
-        stdoutQueue <- Stdout_RouteEstablishment{(uint32)(RouteIdx), (uint32)(HopIdx)}
+    config.Node.RouteEstablishmentCB = func(RouteId uuid.UUID, HopIdx int) {
+        stdoutQueue <- Stdout_RouteEstablishment{RouteId, (uint32)(HopIdx)}
     }
     config.Node.RouteEstablishedCB = func(route mesh.EstablishedRoute) {
-        stdoutQueue <- Stdout_EstablishedRoute{(uint32)(route.RouteIdx)}
+        stdoutQueue <- Stdout_EstablishedRoute{route.RouteId}
     }
     node_impl = mesh.NewNode(config.Node)
 
@@ -221,7 +202,7 @@ func main() {
         map_lock.Unlock()
         if exists {
             time.Sleep(config.RetryDelay)
-            ConnectToPeerViaTCP(config)
+            connectToPeerViaTCP(config)
         }
     }
     config_cb.ConnectCallback = func (conn *gnet.Connection, solicited bool) {
@@ -251,7 +232,7 @@ func main() {
         map_lock.Lock()
         conns_by_pubkey[conn_config.PeerPubKey] = make(ConnectionSet)
         map_lock.Unlock()
-        go ConnectToPeerViaTCP(conn_config)
+        go connectToPeerViaTCP(conn_config)
     }
 
     // Send messages from queue
@@ -262,41 +243,27 @@ func main() {
         }
     }()
 
-    // Pipe data out
+    // Output messages received
     go func() {
         for {
             stdoutQueue <- Stdout_RecvMessage{<- node_impl.MeshMessagesIn}
         }
     }()
-    go func() {
-        for {
-            to_stdout := <- stdoutQueue
-            b := stdio_serializer.SerializeMessage(to_stdout)
-            length := (uint32)(len(b))
-            bl := encoder.SerializeAtomic(length)
-            os.Stdout.Write(bl)
-            os.Stdout.Write(b)
-        }
-    }()
 
-    // Send static routes    
+    // Send static routes
     sendRoutes();
 
-    // Pipe data in
+    // Send config url
+    stdoutQueue <- Stdout_StaticConfig{"about:test"}
+
+    var stdinQueue = make(chan interface{}, STDIO_CHANLEN)
+
+    // We are the subprocess
+    go RunStdioSerializer(stdio_serializer, stdinQueue, os.Stdin, stdoutQueue, os.Stdout)
+    
     go func() {
         for {
-            var bl []byte = make([]byte, 4)
-            os.Stdin.Read(bl)
-            var length uint32
-            encoder.DecodeInt(bl, &length)
-            var bb []byte = make([]byte, length)
-            os.Stdin.Read(bb)
-            message, error := stdio_serializer.UnserializeMessage(bb)
-            if error == nil {
-                onStdInMessage(message)
-            } else {
-                panic(fmt.Sprintf("Error reading message from stdin: %v",error))
-            }
+            onStdInMessage(<- stdinQueue)
         }
     }()
 

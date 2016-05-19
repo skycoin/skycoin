@@ -1,0 +1,21 @@
+{
+	"Node": {
+		"MyPubKey": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		"MessagesOutSize":	1024,
+		"MessagesInSize":	1024,
+		"OperationTimeout":		60000000000,
+		"RetransmitInterval":	1000000000,
+		"ConfirmOperations":	true
+	},
+	"TCPConfig": {
+		"Port":                     3631,
+		"MaxConnections":           128,
+		"MaxMessageLength":         262144,
+		"DialTimeout":              60000000000,
+		"ReadTimeout":              60000000000,
+		"WriteTimeout":             60000000000,
+		"EventChannelSize":         4096,
+		"BroadcastResultSize":      16,
+		"ConnectionWriteQueueSize": 32
+	}
+}

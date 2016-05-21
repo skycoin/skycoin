@@ -103,7 +103,7 @@ func (state *ProxyState) doListen(protocol int) {
 	    buf := make([]byte, DATAGRAMSIZE)
 	    nr, from, err := syscall.Recvfrom(raw_sock, buf, 0)
 	    fmt.Fprintf(os.Stderr, "RecvFrom err %v from %v buf %v\n", err, from, buf[:nr])
-		if err != nil {
+		if err == nil {
 			state.messages_received <- buf[:nr]
 		} else {
 			fmt.Fprintf(os.Stderr, "Error on Recvfrom: %v\n", err)

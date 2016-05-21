@@ -133,10 +133,23 @@ Local Server API
 
 Run the skycoin client then
 ```
+http://127.0.0.1:6420/wallets
 http://127.0.0.1:6420/outputs
 http://127.0.0.1:6420/blockchain/blocks?start=0&end=500
 http://127.0.0.1:6420/blockchain
 http://127.0.0.1:6420/connections
+```
+
+```
+Go into http://127.0.0.1:6420/wallets to get your wallet seed. Write this down
+
+Go into http://127.0.0.1:6420/outputs to see outputs (address balances)
+
+Go into http://127.0.0.1:6420/blockchain/blocks?start=0&end=5000 to see all blocks and transactions.
+
+Go into http://127.0.0.1:6420/connections to check network connections
+
+Go into http://127.0.0.1:6420/blockchain to check blockchain head
 ```
 
 Public API
@@ -160,4 +173,13 @@ Modules
 /src/visor - the top level, client
 /src/gui - the web wallet and json client interface
 /src/wallet - the private key storage library
+```
+
+Meshnet
+------
+
+```
+go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
+
+go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
 ```

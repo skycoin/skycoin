@@ -31,11 +31,12 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 
+	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
 	}
-
+	web_interface_active := make(chan bool, 1) //do not return until webserver is running
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
@@ -43,7 +44,6 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 
 	// Runs http.Serve() in a goroutine
 	serve(listener, NewGUIMux(appLoc, daemon))
-
 	return nil
 }
 
@@ -54,10 +54,13 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
 
+	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
 	}
+
+	mux := NewGUIMux(appLoc, daemon)
 
 	certs := make([]tls.Certificate, 1)
 	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {

@@ -53,6 +53,9 @@ func NewProxyState() (*ProxyState) {
     ret.cmd_stdoutQueue = make(chan interface{})
     ret.cmd_stdinQueue = make(chan interface{})
 
+    ret.messages_received = make(chan []byte)
+    ret.messages_to_send = make(chan []byte)
+
     return ret
 }
 

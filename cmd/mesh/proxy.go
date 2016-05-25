@@ -15,6 +15,7 @@ import (
 
 import (
     "github.com/skycoin/skycoin/src/cipher"
+    "github.com/skycoin/skycoin/src/mesh"
     "github.com/songgao/water/waterutil"
 )
 
@@ -263,7 +264,7 @@ func HostProxy() {
     	select {
     		case datagram := <- proxy.messages_received: {
     			local_port := LocalPort{
-    				waterutil.IPv4Destination(datagram),
+    				binary.BigEndian.Uint32(waterutil.IPv4Destination(datagram)),
     				waterutil.IPv4DestinationPort(datagram),
     				// TODO: UDP
     				waterutil.UDP,
@@ -271,7 +272,7 @@ func HostProxy() {
     			fmt.Fprintf(os.Stderr, "Main loop recvd from %v: %v\n", local_port, datagram)
     			if source_port, exists := proxy.source_ports_by_local_ports[local_port]; exists {
     			fmt.Fprintf(os.Stderr, "--- Exists\n")
-	    			cmd_stdinQueue <- Stdin_SendBack{MeshMessage{source_port.SendId, source_port.ConnectedPeer, []byte{}]}, datagram}
+	    			cmd_stdinQueue <- Stdin_SendBack{mesh.MeshMessage{source_port.SendId, source_port.ConnectedPeer, []byte{}}, datagram}
     			}
     		}
     		case msg_out := <- cmd_stdoutQueue: {

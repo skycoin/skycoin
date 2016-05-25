@@ -114,7 +114,7 @@ func (state *ProxyState) doListen(protocol int) {
 	    buf := make([]byte, DATAGRAMSIZE)
 	    nr, from, err := syscall.Recvfrom(raw_sock, buf, 0)
 	    fmt.Fprintf(os.Stderr, "RecvFrom err %v from %v buf %v\n", err, from, buf[:nr])
-		if err != nil {
+		if err == nil {
 			state.messages_received <- buf[:nr]
 		} else {
 			fmt.Fprintf(os.Stderr, "Error on Recvfrom: %v\n", err)
@@ -220,8 +220,8 @@ func HostProxy() {
     }
 
 	// Length byte order
-    cmd_stdoutQueue := make(chan interface{})
-    cmd_stdinQueue := make(chan interface{})
+    cmd_stdoutQueue := make(chan interface{}, 10)
+    cmd_stdinQueue := make(chan interface{}, 10)
     SpawnNodeSubprocess(*config_path, cmd_stdoutQueue, cmd_stdinQueue)
 
     proxy := NewProxyState()
@@ -261,8 +261,18 @@ func HostProxy() {
     // Process messages coming from node
     for {
     	select {
-    		case recvd := <- proxy.messages_received: {
-    			fmt.Fprintf(os.Stderr, "Main loop recvd %v\n", recvd)
+    		case datagram := <- proxy.messages_received: {
+    			local_port := LocalPort{
+    				waterutil.IPv4Destination(datagram),
+    				waterutil.IPv4DestinationPort(datagram),
+    				// TODO: UDP
+    				waterutil.UDP,
+    			}
+    			fmt.Fprintf(os.Stderr, "Main loop recvd from %v: %v\n", local_port, datagram)
+    			if source_port, exists := proxy.source_ports_by_local_ports[local_port]; exists {
+    			fmt.Fprintf(os.Stderr, "--- Exists\n")
+	    			cmd_stdinQueue <- Stdin_SendBack{MeshMessage{source_port.SendId, source_port.ConnectedPeer, []byte{}]}, datagram}
+    			}
     		}
     		case msg_out := <- cmd_stdoutQueue: {
 		        if reflect.TypeOf(msg_out) == reflect.TypeOf(Stdout_RecvMessage{}) {

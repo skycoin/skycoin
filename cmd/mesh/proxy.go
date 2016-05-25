@@ -267,7 +267,7 @@ func HostProxy() {
     				binary.BigEndian.Uint32(waterutil.IPv4Destination(datagram)),
     				waterutil.IPv4DestinationPort(datagram),
     				// TODO: UDP
-    				waterutil.UDP,
+    				waterutil.TCP,
     			}
     			fmt.Fprintf(os.Stderr, "Main loop recvd from %v: %v\n", local_port, datagram)
     			if source_port, exists := proxy.source_ports_by_local_ports[local_port]; exists {

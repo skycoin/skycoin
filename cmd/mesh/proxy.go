@@ -34,8 +34,9 @@ type SourcePort struct {
 }
 
 type LocalPort struct {
-	IP 		uint32
-	Port 	uint16
+	IP 			uint32
+	Port 		uint16
+	Protocol	waterutil.IPProtocol
 }
 
 type ProxyState struct {
@@ -74,7 +75,7 @@ func nameForProtocol(protocol waterutil.IPProtocol) (name string) {
 	panic(fmt.Sprintf("Unsupported protocol: %v\n", protocol))
 }
 
-func localPortFromListener(listener net.Listener) (port LocalPort) {
+func localPortFromListener(listener net.Listener, protocol waterutil.IPProtocol) (port LocalPort) {
 	ip_str, port_str, err := net.SplitHostPort(listener.Addr().String())
 	if err != nil {
 		panic(err)
@@ -84,7 +85,7 @@ func localPortFromListener(listener net.Listener) (port LocalPort) {
 		panic(err)
 	}
 	ip_ret := net.ParseIP(ip_str)
-	return LocalPort{binary.BigEndian.Uint32(ip_ret), (uint16)(port_ret)}
+	return LocalPort{binary.BigEndian.Uint32(ip_ret), (uint16)(port_ret), protocol}
 }
 
 func (state *ProxyState) portForSource(source SourcePort) (port LocalPort) {
@@ -96,9 +97,9 @@ func (state *ProxyState) portForSource(source SourcePort) (port LocalPort) {
 		}
 		existing = new_l
 		state.local_ports_by_source_ports[source] = existing
-		state.source_ports_by_local_ports[localPortFromListener(existing)] = source
+		state.source_ports_by_local_ports[localPortFromListener(existing, source.Protocol)] = source
 	}
-	return localPortFromListener(existing)
+	return localPortFromListener(existing, source.Protocol)
 }
 
 func (state *ProxyState) doListen(protocol int) {
@@ -207,7 +208,6 @@ func HostProxy() {
 
    	// Get interface IP
 	config_interface_ip := config.Proxy.SourceIP
-	fmt.Fprintf(os.Stderr, "config_interface_ip %v\n", config_interface_ip)
 
 	raw_sock, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW)
     if err != nil {

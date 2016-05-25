@@ -7,6 +7,9 @@
 		"RetransmitInterval":	1000000000,
 		"ConfirmOperations":	true
 	},
+	"Proxy": {
+		"SourceIP": "10.0.0.102"
+	},
 	"TCPConfig": {
 		"Port":                     3631,
 		"MaxConnections":           128,

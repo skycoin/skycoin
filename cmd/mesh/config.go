@@ -16,6 +16,7 @@ type Config struct {
     // Index into Routes in NodeConfig
     StdoutToRoute int
     IncomingToStdout bool
+    Proxy ProxyConfig
 }
 
 type PhysicalConnectionConfig struct {

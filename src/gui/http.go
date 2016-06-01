@@ -36,7 +36,7 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	if err != nil {
 		return err
 	}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
+
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
@@ -59,8 +59,6 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	if err != nil {
 		return err
 	}
-
-	mux := NewGUIMux(appLoc, daemon)
 
 	certs := make([]tls.Certificate, 1)
 	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {

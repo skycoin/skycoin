@@ -132,6 +132,15 @@ func StrBalance(amt uint64) string {
 	return fmt.Sprintf("%s.%s", as, bs)
 }
 
+//convert back
+func StrBalance2(amt string) uint64 {
+	b, err := strconv.ParseUint(amt, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) ReadableTransactionOutput {
 	return ReadableTransactionOutput{
 		Hash:    t.UxId(txid).Hex(),
@@ -152,7 +161,7 @@ type ReadableOutput struct {
 	Hash              string `json:"txid"` //hash uniquely identifies transaction
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
-	Coins             uint64 `json:"coins"`
+	Coins             string `json:"coins"`
 	Hours             uint64 `json:"hours"`
 }
 
@@ -161,7 +170,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 		Hash:              t.Hash().Hex(),
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
-		Coins:             t.Body.Coins,
+		Coins:             StrBalance(t.Body.Coins),
 		Hours:             t.Body.Hours,
 	}
 }
@@ -275,7 +284,7 @@ type TransactionOutputJSON struct {
 	Hash              string `json:"hash"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"` // Address of receiver
-	Coins             uint64 `json:"coins"`   // Number of coins
+	Coins             string `json:"coins"`   // Number of coins
 	Hours             uint64 `json:"hours"`   // Coin hours
 }
 
@@ -294,7 +303,7 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, src_tx cipher.SHA256) T
 	o.SourceTransaction = src_tx.Hex()
 
 	o.Address = ux.Address.String()
-	o.Coins = ux.Coins
+	o.Coins = StrBalance(ux.Coins)
 	o.Hours = ux.Hours
 	return o
 }
@@ -312,7 +321,7 @@ func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput
 	}
 	//tx.Hash = hash
 	tx.Address = addr
-	tx.Coins = in.Coins
+	tx.Coins = StrBalance2(in.Coins)
 	tx.Hours = in.Hours
 
 	return tx, nil

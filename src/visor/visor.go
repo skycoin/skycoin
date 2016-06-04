@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
-	//"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -556,4 +556,31 @@ func (self *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 		}
 	}
 	return coins, hours
+}
+
+func (self *Visor) GetWalletTransactions(wallet *wallet.Wallet) []ReadableUnconfirmedTxn {
+
+	ret := make([]ReadableUnconfirmedTxn, 0)
+
+	addresses := wallet.GetAddresses()
+	for _, unconfirmedTxn := range self.Unconfirmed.Txns {		
+		isRelatedTransaction := false
+
+		for _, out := range unconfirmedTxn.Txn.Out {
+			for _, address := range addresses {
+				if out.Address == address {			
+					isRelatedTransaction = true
+				}
+				if isRelatedTransaction {
+					break
+				}
+			}
+		}
+
+		if isRelatedTransaction == true {
+			ret = append(ret, NewReadableUnconfirmedTxn(&unconfirmedTxn))			
+		}		
+	}
+
+	return ret
 }

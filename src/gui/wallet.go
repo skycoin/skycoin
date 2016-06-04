@@ -168,6 +168,9 @@ func (self *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
 
 }
 
+
+
+
 type SpendResult struct {
 	Balance     wallet.BalancePair        `json:"balance"`
 	Transaction visor.ReadableTransaction `json:"txn"`
@@ -384,6 +387,18 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// Returns JSON of pending transactions for user's wallet
+func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {		
+			wallet := Wg.GetWallet(wallet.WalletID(r.FormValue("id")))	
+			ret := gateway.Visor.GetWalletTransactions(gateway.V, wallet)
+
+			SendOr404(w, ret)
+		}
+	}
+}
+
 // Returns all loaded wallets
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -447,6 +462,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+
 func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns wallet info
 	// GET Arguments:
@@ -480,6 +496,12 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
 	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
+
+	// GET Arguments:
+	//		id: Wallet ID
+
+	// Returns all pending transanction for all addresses by selected Wallet
+	mux.HandleFunc("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))

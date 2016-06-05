@@ -26,12 +26,9 @@ brew install mercurial bzr
 
 ```
 ./run.sh
-Goto http://127.0.0.1:6402
-
-OR
-
-go run ./cmd/skycoin/skycoin.go
 ```
+
+Then open http://127.0.0.1:6402 in a browser.
 
 Golang environment setup with gvm
 ---
@@ -84,7 +81,7 @@ To update dependencies
 glock save github.com/skycoin/skycoin/cmd/skycoin
 ```
 
-Running Node
+Running A Skycoin Node
 ---
 
 ```
@@ -108,12 +105,6 @@ cd skycoin
 go install
 ```
 
-Running
----
-
-cd skycoin
-go run ./cmd/skycoin/skycoin.go
-
 Cross Compilation
 ---
 
@@ -124,8 +115,8 @@ go get github.com/mitchellh/gox
 
 Compile:
 ```
-cd compile
-./build-dist-all.sh
+gox --help
+gox [options] cmd/skycoin/
 ```
 
 Local Server API

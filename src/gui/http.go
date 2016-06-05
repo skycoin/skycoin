@@ -30,8 +30,8 @@ const (
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
+	logger.Info("Web resources directory: %s", staticDir)
 
-	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
@@ -53,8 +53,8 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
+	logger.Info("Web resources directory: %s", staticDir)
 
-	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err

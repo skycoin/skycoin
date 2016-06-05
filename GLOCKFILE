@@ -1,3 +1,4 @@
+cmd github.com/mitchellh/gox
 github.com/golang/glog 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 github.com/golang/groupcache 4eab30f13db9d8b25c752e99d1583628ac2fa422
 github.com/jackpal/bencode-go 8b8d9a9b37fcd43f365439810d725081b114af68

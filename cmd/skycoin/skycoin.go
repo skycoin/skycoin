@@ -435,6 +435,7 @@ func Run(c *Config) {
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	logger.Critical("Full address: %s", fullAddress)
 
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)

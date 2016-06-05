@@ -14,13 +14,24 @@
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.7.0</string>
-    <key>LSUIElement</key>
-    <false/>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleIconFile</key>
     <string>appIcon.icns</string>
+    <key>LSUIElement</key>
+    <false/>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLName</key>
+        <string>Skycoin</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>skycoin</string>
+        </array>
+      </dict>
+    </array>
 </dict>
 </plist>

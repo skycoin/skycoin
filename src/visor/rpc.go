@@ -2,7 +2,7 @@ package visor
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/wallet"
+	// "github.com/skycoin/skycoin/src/wallet"
 )
 
 /*
@@ -74,8 +74,8 @@ func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 	return ret
 }
 
-func (self RPC) GetWalletTransactions(v *Visor, wallet *wallet.Wallet) []ReadableUnconfirmedTxn {
-	ret := v.GetWalletTransactions(wallet)
+func (self RPC) GetWalletTransactions(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
+	ret := v.GetWalletTransactions(addresses)
 	return ret
 }
 

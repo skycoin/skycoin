@@ -384,6 +384,19 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// Returns JSON of pending transactions for user's wallet
+func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			wallet := Wg.GetWallet(wallet.WalletID(r.FormValue("id")))
+			addresses := wallet.GetAddresses()
+			ret := gateway.Visor.GetWalletTransactions(gateway.V, addresses)
+
+			SendOr404(w, ret)
+		}
+	}
+}
+
 // Returns all loaded wallets
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -480,6 +493,11 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
 	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
+
+	// GET Arguments:
+	//		id: Wallet ID
+	// Returns all pending transanction for all addresses by selected Wallet
+	mux.HandleFunc("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))

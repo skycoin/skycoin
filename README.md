@@ -141,15 +141,15 @@ http://127.0.0.1:6420/connections
 ```
 
 ```
-Go into http://127.0.0.1:6420/wallets to get your wallet seed. Write this down
+http://127.0.0.1:6420/wallets to get your wallet seed. Write this down
 
-Go into http://127.0.0.1:6420/outputs to see outputs (address balances)
+http://127.0.0.1:6420/outputs to see outputs (address balances)
 
-Go into http://127.0.0.1:6420/blockchain/blocks?start=0&end=5000 to see all blocks and transactions.
+http://127.0.0.1:6420/blockchain/blocks?start=0&end=5000 to see all blocks and transactions.
 
-Go into http://127.0.0.1:6420/connections to check network connections
+http://127.0.0.1:6420/connections to check network connections
 
-Go into http://127.0.0.1:6420/blockchain to check blockchain head
+http://127.0.0.1:6420/blockchain to check blockchain head
 ```
 
 Public API

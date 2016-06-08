@@ -417,7 +417,7 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Returns the outputs for a wallet
+// Returns the outputs for all addresses
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)

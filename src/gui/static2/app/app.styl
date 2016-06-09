@@ -1,0 +1,301 @@
+@import 'nib'
+
+html,body{
+    height: 100%
+}
+
+a, a:hover, a:active {
+  color:#000;
+}
+
+tr{
+  border:1px solid #ddd;
+  background-color:#F2F5F8;
+}
+
+td{
+  padding:5px;
+  padding-left:10px;
+  padding-right:10px;
+  position:relative;
+}
+
+br {
+  display:block;
+  width:100%;
+}
+
+.dark-row{
+    background-color:#F2F5F8;
+}
+
+.green {
+  color:green;
+}
+
+.tab-pane, .nav-tabs>li.active>a, .nav-tabs>li.active>a:hover{
+  background-color:#EAEFF3;
+}
+
+.nav-tabs a{
+  color: #000;
+}
+
+.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
+  color: #000;
+}
+
+.tab-content{
+  /*box-shadow: 0px 37px 57px #E0DEDE;*/
+  border-radius: 10px;
+}
+
+.tab-pane{
+  border-bottom-right-radius:10px;
+  border-bottom-left-radius:10px;
+}
+
+.fa-align-justify {
+  display:inline-block;
+  position:absolute;
+  top: 8px;
+  right: 8px;
+  /*color:#a3b0bb;*/
+  color:#fff;
+}
+
+#sky-header{
+  width: 100%;
+  background: #dbe1e6 url("assets/images/skycoin_logo.png") 14px 12px no-repeat;
+  height:60px;
+  border-bottom:1px solid #ddd;
+  position:relative;
+}
+
+#main-content{
+  max-width:950px;
+}
+
+.wallet-buttons{
+  width:100%;
+  clear:both;
+  padding-top:10px;
+}
+
+#send-table{
+  width:100%;
+  text-align:left;
+}
+
+.send-pay-col1{
+  width:92px;
+}
+
+#send-table td{
+  text-align:left;
+}
+
+#send_pay_to{
+  float:right;
+  width:100%;
+}
+
+#send_label{
+  float:right;
+  width:100%;
+}
+#send_amount{
+  width:20%;
+}
+
+table#overview-wallet{
+  width: 700px;
+  float: left;
+  margin-right: 10px;
+  margin-top:10px;
+}
+
+#overview-wallet, #overview-wallet tr{
+  background-color:#fff;
+}
+
+#overview-wallet tr.dark-row{
+    background-color:#F2F5F8;
+}
+
+#overview-title{
+
+}
+#overview-wallet a{
+  margin-left:10px;
+}
+#overview-wallet a:first-of-type{
+  margin-left:0px;
+}
+
+#transaction-table{
+  width:100%;
+  background-color:#fff;
+}
+
+#transaction-table button, #transaction-table .btn-group{
+  width:100%;
+}
+
+#transaction-table tr{
+  background-color:#fff;
+}
+
+#transaction-table td{
+  text-align:left;
+}
+
+#transaction-table .dark-row{
+  background-color:#F2F5F8;
+  cursor:pointer;
+}
+
+#pending-table{
+  width:100%;
+  background-color:#fff;
+}
+
+#pending-table button, #transaction-table .btn-group{
+  width:100%;
+  }
+
+#pending-table tr{
+  background-color:#fff;
+  }
+
+#pending-table td{
+  text-align:left;
+}
+
+#pending-table .dark-row{
+  background-color:#F2F5F8;
+  cursor:pointer;
+}
+
+label {
+  float:left;
+}
+
+.green{
+  color:#27BD33 !important;
+}
+
+.outline{
+  border: 1px solid #ddd;
+  padding:10px;
+  border-top: 0px;
+  border-bottom-right-radius:10px;
+  border-bottom-left-radius:10px;
+}
+
+.nav, .pagination, .carousel a { cursor: pointer; }
+#sky-center {
+  position:relative;
+  height:78%;
+  padding:15px;
+  overflow:scroll;
+}
+
+#sky-footer{
+  width: 100%;
+  height: 12%;
+  bottom:0;
+  padding:10px 0 0 20px;
+  position:relative;
+  background-color:#dbe1e6;
+  border-top:1px solid #ddd;
+  box-shadow: 0px -5px 5px #dbe1e6;
+}
+#sky-footer .message{
+}
+.progress-striped{
+  width:50%;
+  margin-bottom:0;
+  display:inline-block;
+}
+
+#sky-footer .percent{
+  display:inline-block;
+  position:relative;
+  bottom:5px;
+  left:2px;
+}
+
+#sky-footer .signal{
+  position: absolute;
+  right: 25px;
+  top: 21px;
+  font-size: 24px;
+}
+
+.background-cloud-0{
+  position: absolute;
+  color: #fff;
+  bottom: -7px;
+  right: 5%;
+  font-size: 52px;
+  height: 60px;
+  opacity: 1;
+
+}
+.background-cloud-0 i{
+  position: absolute;
+  left: 11px;
+  font-size: 48px;
+  top: -1px;
+  display:none;
+}
+.background-cloud-1{
+  position:absolute;
+  color:#dbe1e6;
+  bottom:0;
+  right:0;
+  font-size:550px;
+  opacity:.5;
+  -webkit-filter: blur(2px);
+  z-index:-1;
+}
+.background-cloud-2{
+  position:absolute;
+  color:#EAF2F8;
+  bottom: -389px;
+  right: 51px;
+  font-size:500px;
+  opacity:.5;
+  z-index:-1;
+}
+.background-cloud-3{
+  position:absolute;
+  color:#dbe1e6;
+  bottom:-200px;
+  right:30px;
+  font-size:500px;
+  opacity:.3;
+  transform: scaleX(-1);
+  animation-name: floatOne;
+  animation-duration: 40s;
+  animation-timing-function: linear;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-play-state: running;
+}
+
+@keyframes floatOne {
+  0% {
+    bottom:-250px;
+  }
+  50% {
+    bottom:-200px;
+  }
+  100% {
+    bottom:-250px;
+  }
+}
+
+@import 'services/showQR.styl'

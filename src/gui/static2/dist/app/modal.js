@@ -28,34 +28,52 @@ System.register(['angular2/core', 'angular2/http', 'rxjs/add/operator/map', 'rxj
             }],
         execute: function() {
             Dialog = (function () {
+                //Constructor method to load HTTP object
                 function Dialog(http) {
                     this.http = http;
                 }
+                //Show QR code function for view QR popup
                 Dialog.prototype.showQR = function (address) {
                     this.QrAddress = address.entries[0].address;
                     this.QrIsVisible = true;
                 };
+                //Hide QR code function for hide QR popup
                 Dialog.prototype.hideQr = function () {
                     this.QrIsVisible = false;
                 };
+                //Show wallet function for view New wallet popup
                 Dialog.prototype.showWallet = function () {
                     this.NewWalletIsVisible = true;
                 };
+                //Hide wallet function for hide New wallet popup
                 Dialog.prototype.hideWallet = function () {
                     this.NewWalletIsVisible = false;
                 };
+                //Show edit wallet function
+                Dialog.prototype.showEditWallet = function (wallet) {
+                    this.EditWalletIsVisible = true;
+                    this.walletId = wallet.meta.filename;
+                };
+                //Hide edit wallet function
+                Dialog.prototype.hideEditWallet = function () {
+                    this.EditWalletIsVisible = false;
+                };
+                //Add new wallet function for generate new wallet in Skycoin
                 Dialog.prototype.generateWallet = function () {
                     var _this = this;
-                    alert("Oke");
+                    //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    //Post method executed
                     this.http.post('/wallet/create', JSON.stringify({ name: '' }), { headers: headers })
                         .map(function (res) { return res.json(); })
                         .subscribe(function (response) {
                         //Load all wallets after creating new wallet
                         _this.http.post('/wallets', '')
                             .map(function (res) { return res.json(); })
-                            .subscribe(function (data) {
+                            .subscribe(
+                        //Response from API
+                        function (data) {
                             _this.NewWalletIsVisible = false;
                             _this.wallets = data;
                         }, function (err) { return console.error("Error on load wallet: " + err); }, function () { return console.log('Wallet load done'); });

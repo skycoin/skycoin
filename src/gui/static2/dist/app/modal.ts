@@ -14,38 +14,55 @@ import {QRCodeComponent} from './ng2-qrcode.ts'
     templateUrl: 'app/templates/modal.html',
     directives: [QRCodeComponent],
 })
-export class Dialog
-{
-    wallets : Array<any>;
-
+export class Dialog{
+    //Constructor method to load HTTP object
     constructor(private http: Http) { }
 
-    //For QR code dialog
-    private QrAddress: string;
-    public QrIsVisible: boolean;
+    //Declare default varialbes
+    wallets : Array<any>;
+    QrAddress: string;
+    QrIsVisible: boolean;
+    NewWalletIsVisible: boolean;
+    EditWalletIsVisible: boolean;
+    walletname: string;
+    walletId: string;
 
-    //For New Wallet dialog
-    public NewWalletIsVisible: boolean;
-
+    //Show QR code function for view QR popup
     showQR(address: any){
         this.QrAddress = address.entries[0].address;
         this.QrIsVisible = true;
     }
+    //Hide QR code function for hide QR popup
     hideQr(){
         this.QrIsVisible = false;
     }
 
+    //Show wallet function for view New wallet popup
     showWallet(){
         this.NewWalletIsVisible = true;
     }
+    //Hide wallet function for hide New wallet popup
     hideWallet(){
         this.NewWalletIsVisible = false;
     }
 
+    //Show edit wallet function
+    showEditWallet(wallet: any){
+        this.EditWalletIsVisible = true;
+        this.walletId = wallet.meta.filename;
+    }
+    //Hide edit wallet function
+    hideEditWallet(){
+        this.EditWalletIsVisible = false;
+    }
+
+    //Add new wallet function for generate new wallet in Skycoin
     generateWallet(){
-      alert("Oke");
+      //Set http headers
       var headers = new Headers();
       headers.append('Content-Type', 'application/x-www-form-urlencoded');
+
+      //Post method executed
       this.http.post('/wallet/create', JSON.stringify({name: ''}), {headers: headers})
       .map((res:Response) => res.json())
       .subscribe(
@@ -54,6 +71,7 @@ export class Dialog
           this.http.post('/wallets', '')
             .map((res:Response) => res.json())
             .subscribe(
+              //Response from API
               data => {
                 this.NewWalletIsVisible = false;
                 this.wallets = data;

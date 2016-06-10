@@ -38,12 +38,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Init function for load default value
                 loadWalletComponent.prototype.ngOnInit = function () {
+                    var _this = this;
                     this.displayMode = DisplayModeEnum.first;
                     this.loadWallet();
                     this.loadProgress();
                     //Set interval function for load wallet every 15 seconds
                     setInterval(function () {
-                        //this.loadWallet();
+                        _this.loadWallet();
                         console.log("Refreshing balance");
                     }, 15000);
                     //Enable Send tab "textbox" and "Ready" button by default

@@ -51,7 +51,7 @@ export class loadWalletComponent implements OnInit {
 
       //Set interval function for load wallet every 15 seconds
       setInterval(() => {
-        //this.loadWallet();
+        this.loadWallet();
         console.log("Refreshing balance");
       }, 15000);
 

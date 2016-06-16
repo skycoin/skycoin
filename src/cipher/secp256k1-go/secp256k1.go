@@ -465,7 +465,7 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 		recid)
 
 	if ret != 1 {
-		log.Printf("RecoverPubkey: code %s", ret)
+		log.Printf("RecoverPubkey: code %d", ret)
 		return nil
 	}
 	//var pubkey2 []byte = pubkey1.Bytes() //compressed

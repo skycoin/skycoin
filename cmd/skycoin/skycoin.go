@@ -174,8 +174,8 @@ func (c *Config) register() {
 		"Run the http profiling interface")
 	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
-	//flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
-	//	"Add terminal colors to log output")
+	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
+		"Add terminal colors to log output")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
 
@@ -435,6 +435,7 @@ func Run(c *Config) {
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	logger.Critical("Full address: %s", fullAddress)
 
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)

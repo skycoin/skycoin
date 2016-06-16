@@ -1,6 +1,0 @@
-OS=linux
-ARCH=386
-APP=skycoin_linux_386
-APPD=skycoind_linux_386
-BIN=skycoin
-ZIPNAME=skycoin_linux_x86

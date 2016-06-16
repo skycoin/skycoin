@@ -59,7 +59,7 @@ build
 release
 .bin
 
-.skycoin
+.skycoin:w
 
 *.prof
 *.out
@@ -84,3 +84,11 @@ benefactor-wallet.json
 masterdata/
 .genv
 
+node_modules
+
+electron/release
+electron/.cache
+electron/.electron_cache
+electron/node_modules
+electron/.gox_output
+electron/.electron_output

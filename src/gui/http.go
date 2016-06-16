@@ -30,13 +30,13 @@ const (
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
+	logger.Info("Web resources directory: %s", staticDir)
 
-	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
 	}
-	web_interface_active := make(chan bool, 1) //do not return until webserver is running
+
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
@@ -53,14 +53,12 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
+	logger.Info("Web resources directory: %s", staticDir)
 
-	//appLoc := filepath.Join(staticDir, resourceDir)
 	appLoc, err := determineResourcePath(staticDir)
 	if err != nil {
 		return err
 	}
-
-	mux := NewGUIMux(appLoc, daemon)
 
 	certs := make([]tls.Certificate, 1)
 	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {
@@ -127,6 +125,8 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	RegisterBlockchainHandlers(mux, daemon.Gateway)
 	// Network stats interface
 	RegisterNetworkHandlers(mux, daemon.Gateway)
+	// Network API handler
+	RegisterApiHandlers(mux, daemon.Gateway)
 
 	return mux
 }

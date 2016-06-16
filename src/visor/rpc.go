@@ -74,6 +74,11 @@ func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 	return ret
 }
 
+func (self RPC) GetWalletTransactions(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
+	ret := v.GetWalletTransactions(addresses)
+	return ret
+}
+
 func (self RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {
 	b, err := v.GetReadableBlock(seq)
 	if err != nil {

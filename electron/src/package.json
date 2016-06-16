@@ -1,0 +1,6 @@
+{
+  "name": "skycoin",
+  "productName": "Skycoin",
+  "version": "0.1.0",
+  "main": "electron-main.js"
+}

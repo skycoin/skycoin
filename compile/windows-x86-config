@@ -1,6 +1,0 @@
-OS=windows
-ARCH=386
-APP=skycoin_windows_386
-APPD=skycoind_windows_386
-BIN=skycoin
-ZIPNAME=skycoin_windows_x86

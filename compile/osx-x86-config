@@ -1,7 +1,0 @@
-OS=darwin
-ARCH=386
-APP=skycoin_darwin_386
-APPD=skycoind_darwin_386
-BIN=Skycoin
-ZIPNAME=Skycoin
-CGOCC=o32-clang

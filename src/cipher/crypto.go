@@ -1,10 +1,14 @@
 package cipher
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"hash"
 	"log"
 	"time"
+
+	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
 	"gopkg.in/op/go-logging.v1"
 
@@ -425,6 +429,14 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 
 //do not allow program to start if crypto tests fail
 func init() {
+	// init the reuse hash pool.
+	sha256HashChan = make(chan hash.Hash, poolsize)
+	ripemd160HashChan = make(chan hash.Hash, poolsize)
+	for i := 0; i < poolsize; i++ {
+		sha256HashChan <- sha256.New()
+		ripemd160HashChan <- ripemd160.New()
+	}
+
 	_, seckey := GenerateKeyPair()
 	if TestSecKey(seckey) != nil {
 		log.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING " +

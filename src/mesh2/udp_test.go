@@ -7,10 +7,7 @@ import(
 import(
 	"github.com/stretchr/testify/assert")
 
-
-
-func TestBindStaticPorts(t *testing.T) {
-	config := UDPConfig {
+var staticTestConfig UDPConfig = UDPConfig {
 		TransportConfig {
 			8, // SendChannelLength uint32
 			8, // ReceiveChannelLength uint32
@@ -22,11 +19,20 @@ func TestBindStaticPorts(t *testing.T) {
 		10300, // ListenPortMin uint16		// If 0, STUN is used
 		nil, // StunEndpoints []string		// STUN servers to try for NAT traversal
 	}
-	transport, error := NewUDPTransport(config)
+
+func TestBindStaticPorts(t *testing.T) {
+	transport, error := NewUDPTransport(staticTestConfig)
 	assert.Nil(t, error)
 	assert.NotNil(t, transport)
 	defer transport.Close()
-    time.Sleep(1 * time.Second)
+}
+
+func TestClose(t *testing.T) {
+	transport, error := NewUDPTransport(staticTestConfig)
+	assert.Nil(t, error)
+	assert.NotNil(t, transport)
+	defer transport.Close()
+	time.Sleep(3 * time.Second)
 }
 
 func TestBindSTUNPorts(t *testing.T) {
@@ -46,7 +52,5 @@ func TestBindSTUNPorts(t *testing.T) {
 	assert.Nil(t, error)
 	assert.NotNil(t, transport)
 	defer transport.Close()
-    time.Sleep(1 * time.Second)
 }
-
 

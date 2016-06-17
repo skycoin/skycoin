@@ -4,6 +4,7 @@ import(
     "net"
     "fmt"
     "os"
+    "time"
     "sync"
     "errors"
     "strconv"
@@ -90,6 +91,10 @@ func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
 		}
 	}
 
+	// STUN library sets the deadlines
+    udpConn.SetDeadline(time.Time{})
+    udpConn.SetReadDeadline(time.Time{})
+    udpConn.SetWriteDeadline(time.Time{})
 	portChan <- ListenPort{externalHost, udpConn}
 }
 

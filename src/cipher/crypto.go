@@ -363,6 +363,17 @@ func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
 	return keys
 }
 
+//Returns sequence of n private keys from intial seed, and return the new seed
+func GenerateDeterministicKeyPairsSeed(seed []byte, n int) ([]byte, []SecKey) {
+	var keys []SecKey
+	var seckey SecKey
+	for i := 0; i < n; i++ {
+		seed, _, seckey = DeterministicKeyPairIterator(seed)
+		keys = append(keys, seckey)
+	}
+	return seed, keys
+}
+
 func TestSecKey(seckey SecKey) error {
 	hash := SumSHA256([]byte(time.Now().String()))
 	return TestSecKeyHash(seckey, hash)

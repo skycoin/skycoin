@@ -11,7 +11,6 @@ import(
 var staticTestConfig UDPConfig = UDPConfig {
 		TransportConfig {
 			8, // SendChannelLength uint32
-			8, // ReceiveChannelLength uint32
 		},
 		512, // DatagramLength	uint64
 		"", // LocalAddress string 	// "" for default
@@ -41,7 +40,6 @@ func TestBindSTUNPorts(t *testing.T) {
 	config := UDPConfig {
 		TransportConfig {
 			8, // SendChannelLength uint32
-			8, // ReceiveChannelLength uint32
 		},
 		512, // DatagramLength	uint64
 		"", // LocalAddress string 	// "" for default
@@ -103,8 +101,11 @@ func TestSendDatagram(t *testing.T) {
 	assert.Nil(t, transport_a.SendMessage(TransportMessage{key_b, send_bytes_a}))
 	assert.Nil(t, transport_b.SendMessage(TransportMessage{key_a, send_bytes_b}))
 
-	chan_a := transport_a.GetReceiveChannel()
-	chan_b := transport_b.GetReceiveChannel()
+	chan_a := make(chan TransportMessage, 10)
+	chan_b := make(chan TransportMessage, 10)
+
+	transport_a.SetReceiveChannel(chan_a)
+	transport_b.SetReceiveChannel(chan_b)
 
 	got_a := false
 	got_b := false
@@ -155,13 +156,14 @@ func TestCrypto(t *testing.T) {
 
 	send_bytes := []byte{66,44,33,2,123,100,22}
 
-	tc := TestCryptoStruct{}
-	transport_a.SetCrypto(&tc)
-	transport_b.SetCrypto(&tc)
+	tc := &TestCryptoStruct{}
+	transport_a.SetCrypto(tc)
+	transport_b.SetCrypto(tc)
 
 	assert.Nil(t, transport_a.SendMessage(TransportMessage{key_b, send_bytes}))
 
-	chan_b := transport_b.GetReceiveChannel()
+	chan_b := make(chan TransportMessage, 10)
+	transport_b.SetReceiveChannel(chan_b)
 
 	select {
 		case msg_b := <- chan_b: {

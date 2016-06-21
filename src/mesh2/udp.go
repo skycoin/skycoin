@@ -140,7 +140,10 @@ func (self*UDPTransport) receiveMessage(buffer []byte) {
     	return
     }
     msg := m.(TransportMessage)
-    self.messagesReceived <- msg
+    recv_chan := self.messagesReceived
+    if recv_chan != nil {
+    	recv_chan <- msg
+    }
 }
 
 func strongUint() uint32 {
@@ -274,7 +277,7 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 		config,
 		portsArray,
 		make(chan TransportMessage, config.SendChannelLength),
-		make(chan TransportMessage, config.ReceiveChannelLength),
+		nil,	// Receive channel
 		make(chan bool, 10 * len(portsArray)), // closing
 		waitGroup,
 		nil,	// No crypto by default
@@ -292,7 +295,7 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 	return ret, nil
 }
 
-func (self*UDPTransport) Close() {
+func (self*UDPTransport) Close() error {
 	self.closeWait.Add(len(self.listenPorts))
 	for i := 0;i < 10*len(self.listenPorts);i++ {
 		self.closing <- true
@@ -306,6 +309,7 @@ func (self*UDPTransport) Close() {
 	}
 
 	self.closeWait.Wait()
+	return nil
 }
 
 func (self*UDPTransport) GetTransportConnectInfo() string {
@@ -328,22 +332,13 @@ func (self*UDPTransport) GetTransportConnectInfo() string {
 	return string(ret)
 }
 
-func (self*UDPTransport) SetCrypto(crypto interface{}) {
-	self.crypto = crypto.(TransportCrypto)
-}
-
-func (self*UDPTransport) IsReliable() bool {
-	return false
+func (self*UDPTransport) SetCrypto(crypto TransportCrypto) {
+	self.crypto = crypto
 }
 
 func (self*UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	_, found := self.safeGetPeerComm(peer)
 	return found
-}
-
-func (self*UDPTransport) RetransmitIntervalHint(toPeer cipher.PubKey) uint32 {
-	// TODO: Implement latency tracking
-	return 300
 }
 
 func (self*UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) error {
@@ -387,9 +382,6 @@ func (self*UDPTransport) SendMessage(msg TransportMessage) error {
 	return nil
 }
 
-func (self*UDPTransport) GetReceiveChannel() chan TransportMessage {
-	return self.messagesReceived
+func  (self*UDPTransport) SetReceiveChannel(received chan TransportMessage) {
+	self.messagesReceived = received
 }
-
-
-

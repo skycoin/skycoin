@@ -341,6 +341,16 @@ func (self*UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	return found
 }
 
+func (self*UDPTransport) GetConnectedPeers() []cipher.PubKey {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	ret := []cipher.PubKey{}
+	for key, _ := range(self.connectedPeers) {
+		ret = append(ret, key)
+	}
+	return ret
+}
+
 func (self*UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) error {
 	config := UDPCommConfig{}
 	parseError := json.Unmarshal([]byte(connectInfo), &config)

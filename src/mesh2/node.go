@@ -22,10 +22,9 @@ type MeshMessage struct {
     Contents        []byte
 }
 
-type RouteStatusCallback func(routeId uuid.UUID, ready bool, establishedToHopIdx int)
-
 type Node struct {
-	routeStatusCB RouteStatusCallback
+    messagesReceived chan MeshMessage
+
     lock *sync.Mutex
     transports map[Transport]bool
 }
@@ -36,7 +35,7 @@ type Node struct {
 
 func NewNode(config NodeConfig) (*Node, error) {
 	ret := &Node{
-		func(routeId uuid.UUID, ready bool, establishedToHopIdx int) {},
+		nil,			// received
 		&sync.Mutex{},	// Lock
 		make(map[Transport]bool),
 	}
@@ -64,14 +63,34 @@ func (self*Node) RemoveTransport(transport Transport) {
 func (self*Node) GetTransports() ([]Transport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	return nil
+	ret := []Transport{}
+	for transport, _ := range(self.transports) {
+		ret = append(ret, transport)
+	}
+	return ret
 }
 
 func (self*Node) GetConnectedPeers() ([]cipher.PubKey) {
-	return nil
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	ret := []cipher.PubKey{}
+	for transport, _ := range(self.transports) {
+		peers := transport.GetConnectedPeers()
+		ret = append(ret, peers...)
+	}
+	return ret
 }
 
-func (self*Node) AddRoute(id uuid.UUID, peerPubKeys []cipher.PubKey) (error) {
+// toPeer must be the public key of a connected peer
+func (self*Node) AddRoute(id uuid.UUID, toPeer cipher.PubKey) error {
+//Direct, go thru transports
+	return errors.New("todo")
+}
+
+// toPeer must be the public key of a peer connected to the current last node in this route
+// Blocks until the operation is completed
+func (self*Node) ExtendRoute(id uuid.UUID, toPeer cipher.PubKey) error {
+// blocks waiting
 	return errors.New("todo")
 }
 
@@ -79,21 +98,22 @@ func (self*Node) RemoveRoute(id uuid.UUID) (error) {
 	return errors.New("todo")
 }
 
-func (self*Node) SetRouteStatusCallback(cb RouteStatusCallback) {
-	self.routeStatusCB = cb
-}
-
-// Chooses a route automatically
-func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte) (err error, routeId uuid.UUID) {
+// Chooses a route automatically. Sends directly without a route if connected to that peer. 
+func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool) (err error, routeId uuid.UUID) {
 	return errors.New("todo"), uuid.NewV4()
 }
 
-func (self*Node) SendMessageThruRoute(route_id uuid.UUID, contents []byte) (error) {
+func (self*Node) SendMessageThruRoute(route_id uuid.UUID, contents []byte, reliably bool) (error) {
 	return errors.New("todo")
 }
 
-func (self*Node) SendMessageBackThruRoute(replyRoute BackRoute, contents []byte) (error) {
+func (self*Node) SendMessageBackThruRoute(replyRoute BackRoute, contents []byte, reliably bool) (error) {
 	return errors.New("todo")
+}
+
+// Message order is not preserved
+func  (self*Node) SetReceiveChannel(received chan MeshMessage) {
+	self.messagesReceived = received
 }
 
 

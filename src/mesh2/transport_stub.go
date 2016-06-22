@@ -1,6 +1,7 @@
 package mesh
 
 import(
+	"sync"
 	"testing")
 
 import("github.com/skycoin/skycoin/src/cipher"
@@ -11,6 +12,8 @@ type StubTransport struct {
 	maxMessageSize uint
 	messagesSent chan TransportMessage
 	MessagesReceived chan TransportMessage
+	connectedTo map[cipher.PubKey]bool
+    lock *sync.Mutex
 }
 
 func NewStubTransport(testing *testing.T, maxMessageSize uint, sentMessages chan TransportMessage) (*StubTransport) {
@@ -19,6 +22,8 @@ func NewStubTransport(testing *testing.T, maxMessageSize uint, sentMessages chan
 		maxMessageSize,
 		sentMessages, 	// MessagesSent
 		nil,
+		make(map[cipher.PubKey]bool),
+		&sync.Mutex{},
 	}
 	return ret
 }
@@ -34,14 +39,32 @@ func (self*StubTransport) SetReceiveChannel(received chan TransportMessage) {
 }
 func (self*StubTransport) SetCrypto(crypto TransportCrypto) {
 }
+func (self*StubTransport) GetConnectedPeers() []cipher.PubKey {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	ret := []cipher.PubKey{}
+	for key, _ := range(self.connectedTo) {
+		ret = append(ret, key)
+	}
+	return ret
+}
 func (self*StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
-	return true
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	_, exists := self.connectedTo[peer]
+	return exists
 }
 func (self*StubTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
 	assert.Equal(self.testing, "foo", connectInfo)
+	self.connectedTo[peer] = true
 	return nil
 }
 func (self*StubTransport) DisconnectFromPeer(peer cipher.PubKey) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	delete(self.connectedTo, peer)
 }
 func (self*StubTransport) GetTransportConnectInfo() string {
 	return "foo"

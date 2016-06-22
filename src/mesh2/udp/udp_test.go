@@ -1,15 +1,16 @@
-package mesh
+package udp
 
 import(
 	"time"
 	"testing")
 
 import(
+	"github.com/skycoin/skycoin/src/mesh2"
     "github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert")
 
 var staticTestConfig UDPConfig = UDPConfig {
-		TransportConfig {
+		mesh.TransportConfig {
 			8, // SendChannelLength uint32
 		},
 		512, // DatagramLength	uint64
@@ -38,7 +39,7 @@ func TestClose(t *testing.T) {
 
 func TestBindSTUNPorts(t *testing.T) {
 	config := UDPConfig {
-		TransportConfig {
+		mesh.TransportConfig {
 			8, // SendChannelLength uint32
 		},
 		512, // DatagramLength	uint64
@@ -98,11 +99,11 @@ func TestSendDatagram(t *testing.T) {
 	send_bytes_a := []byte{66,44,33,2,123,100,22}
 	send_bytes_b := []byte{23,33,12,88,43,120}
 
-	assert.Nil(t, transport_a.SendMessage(TransportMessage{key_b, send_bytes_a}))
-	assert.Nil(t, transport_b.SendMessage(TransportMessage{key_a, send_bytes_b}))
+	assert.Nil(t, transport_a.SendMessage(mesh.TransportMessage{key_b, send_bytes_a}))
+	assert.Nil(t, transport_b.SendMessage(mesh.TransportMessage{key_a, send_bytes_b}))
 
-	chan_a := make(chan TransportMessage, 10)
-	chan_b := make(chan TransportMessage, 10)
+	chan_a := make(chan mesh.TransportMessage, 10)
+	chan_b := make(chan mesh.TransportMessage, 10)
 
 	transport_a.SetReceiveChannel(chan_a)
 	transport_b.SetReceiveChannel(chan_b)
@@ -160,9 +161,9 @@ func TestCrypto(t *testing.T) {
 	transport_a.SetCrypto(tc)
 	transport_b.SetCrypto(tc)
 
-	assert.Nil(t, transport_a.SendMessage(TransportMessage{key_b, send_bytes}))
+	assert.Nil(t, transport_a.SendMessage(mesh.TransportMessage{key_b, send_bytes}))
 
-	chan_b := make(chan TransportMessage, 10)
+	chan_b := make(chan mesh.TransportMessage, 10)
 	transport_b.SetReceiveChannel(chan_b)
 
 	select {

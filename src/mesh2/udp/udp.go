@@ -166,50 +166,6 @@ func (self*UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bo
 	return &peerComm, true
 }
 
-func (self*UDPTransport) sendMessage(message mesh.TransportMessage) {
-	// Find pubkey
-	peerComm, found := self.safeGetPeerComm(message.DestPeer)
-	if !found {
-		fmt.Fprintf(os.Stderr, "Dropping message that is to an unknown peer: %v\n", message.DestPeer)
-		return
-	}
-
-	// Add pubkey to datagram
-	serialized := encoder.Serialize(message)
-
-	// Check length
-	if len(serialized) > int(peerComm.DatagramLength) {
-		fmt.Fprintf(os.Stderr, "Dropping message that is too large: %v > %v\n", len(serialized), self.config.DatagramLength)
-		return
-	}
-
-	datagramBuffer := make([]byte, self.config.DatagramLength)
-	copy(datagramBuffer[:len(serialized)], serialized)
-
-	// Apply crypto
-	if self.crypto != nil {
-		datagramBuffer = self.crypto.Encrypt(datagramBuffer)
-	}
-
-	// Choose a socket randomly
-	fromSocketIndex := strongUint() % (uint32)(len(self.listenPorts))
-	conn := self.listenPorts[fromSocketIndex].conn
-
-	// Send datagram
-	toAddrIndex := strongUint() % (uint32)(len(peerComm.ExternalHosts))
-	toAddr := peerComm.ExternalHosts[toAddrIndex]
-
-	n, err := conn.WriteToUDP(datagramBuffer, &toAddr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error on WriteToUDP: %v\n", err)
-		return
-	}
-	if n != int(peerComm.DatagramLength) {
-		fmt.Fprintf(os.Stderr, "WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength)
-		return
-	}
-}
-
 func (self*UDPTransport) listenTo(port ListenPort) {
 	self.closeWait.Add(1)
 	defer self.closeWait.Done()
@@ -225,21 +181,6 @@ func (self*UDPTransport) listenTo(port ListenPort) {
 			break
 		}
 		self.receiveMessage(buffer[:n])
-	}
-}
-
-func (self*UDPTransport) sendLoop() {
-	self.closeWait.Add(1)
-	defer self.closeWait.Done()
-
-	for {
-		select {
-			case message := <- self.messagesToSend: {
-				self.sendMessage(message)
-			}
-			case <- self.closing:
-				return
-		}
 	}
 }
 
@@ -291,8 +232,6 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 		go ret.listenTo(port)
 	}
 
-	go ret.sendLoop()
-
 	return ret, nil
 }
 
@@ -313,6 +252,86 @@ func (self*UDPTransport) Close() error {
 	return nil
 }
 
+func (self*UDPTransport) SetCrypto(crypto mesh.TransportCrypto) {
+	self.crypto = crypto
+}
+
+func (self*UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
+	_, found := self.safeGetPeerComm(peer)
+	return found
+}
+
+func (self*UDPTransport) GetConnectedPeers() []cipher.PubKey {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	ret := []cipher.PubKey{}
+	for key, _ := range(self.connectedPeers) {
+		ret = append(ret, key)
+	}
+	return ret
+}
+
+func (self*UDPTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
+	commConfig, found := self.safeGetPeerComm(peer)
+	if !found {
+		fmt.Fprintf(os.Stderr, "Unknown peer passed to GetMaximumMessageSizeToPeer: %v\n", peer)
+		return 0
+	}
+	serialized := encoder.Serialize(mesh.TransportMessage{cipher.PubKey{}, []byte{}})
+	ret := int(commConfig.DatagramLength) - len(serialized)
+	if ret <= 0 {
+		return 0
+	}
+	return (uint)(ret)
+}
+
+// May block
+func (self*UDPTransport) SendMessage(message mesh.TransportMessage) error {
+	// Find pubkey
+	peerComm, found := self.safeGetPeerComm(message.DestPeer)
+	if !found {
+		return errors.New(fmt.Sprintf("Dropping message that is to an unknown peer: %v\n", message.DestPeer))
+	}
+
+	// Add pubkey to datagram
+	serialized := encoder.Serialize(message)
+
+	// Check length
+	if len(serialized) > int(peerComm.DatagramLength) {
+		return errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(serialized), self.config.DatagramLength))
+	}
+
+	datagramBuffer := make([]byte, self.config.DatagramLength)
+	copy(datagramBuffer[:len(serialized)], serialized)
+
+	// Apply crypto
+	if self.crypto != nil {
+		datagramBuffer = self.crypto.Encrypt(datagramBuffer)
+	}
+
+	// Choose a socket randomly
+	fromSocketIndex := strongUint() % (uint32)(len(self.listenPorts))
+	conn := self.listenPorts[fromSocketIndex].conn
+
+	// Send datagram
+	toAddrIndex := strongUint() % (uint32)(len(peerComm.ExternalHosts))
+	toAddr := peerComm.ExternalHosts[toAddrIndex]
+
+	n, err := conn.WriteToUDP(datagramBuffer, &toAddr)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error on WriteToUDP: %v\n", err))
+	}
+	if n != int(peerComm.DatagramLength) {
+		return errors.New(fmt.Sprintf("WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength))
+	}
+	return nil
+}
+
+func  (self*UDPTransport) SetReceiveChannel(received chan mesh.TransportMessage) {
+	self.messagesReceived = received
+}
+
+// UDP Transport only functions
 func (self*UDPTransport) GetTransportConnectInfo() string {
 	hostsArray := make([]net.UDPAddr, 0)
 
@@ -331,25 +350,6 @@ func (self*UDPTransport) GetTransportConnectInfo() string {
 	}
 
 	return string(ret)
-}
-
-func (self*UDPTransport) SetCrypto(crypto mesh.TransportCrypto) {
-	self.crypto = crypto
-}
-
-func (self*UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
-	_, found := self.safeGetPeerComm(peer)
-	return found
-}
-
-func (self*UDPTransport) GetConnectedPeers() []cipher.PubKey {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	ret := []cipher.PubKey{}
-	for key, _ := range(self.connectedPeers) {
-		ret = append(ret, key)
-	}
-	return ret
 }
 
 func (self*UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) error {
@@ -374,25 +374,3 @@ func (self*UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 	delete(self.connectedPeers, peer)
 }
 
-func (self*UDPTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
-	commConfig, found := self.safeGetPeerComm(peer)
-	if !found {
-		fmt.Fprintf(os.Stderr, "Unknown peer passed to GetMaximumMessageSizeToPeer: %v\n", peer)
-		return 0
-	}
-	serialized := encoder.Serialize(mesh.TransportMessage{cipher.PubKey{}, []byte{}})
-	ret := int(commConfig.DatagramLength) - len(serialized)
-	if ret <= 0 {
-		return 0
-	}
-	return (uint)(ret)
-}
-
-func (self*UDPTransport) SendMessage(msg mesh.TransportMessage) error {
-	self.messagesToSend <- msg
-	return nil
-}
-
-func  (self*UDPTransport) SetReceiveChannel(received chan mesh.TransportMessage) {
-	self.messagesReceived = received
-}

@@ -22,12 +22,10 @@ type Transport interface {
 	//Close() error
 	SetCrypto(crypto TransportCrypto)
 	ConnectedToPeer(peer cipher.PubKey) bool
-	ConnectToPeer(peer cipher.PubKey, connectInfo string) error
 	GetConnectedPeers() []cipher.PubKey
-	DisconnectFromPeer(peer cipher.PubKey)
-	GetTransportConnectInfo() string
 	// Does not consider any extra bytes added by crypto
 	GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint
+	// May block
 	SendMessage(msg TransportMessage) error
 	SetReceiveChannel(received chan TransportMessage)
 }

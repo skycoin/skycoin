@@ -1,17 +1,25 @@
 package mesh
 
 import(
-	"testing")
+	"time"
+	"testing"
+	"sort")
 
 import(
     "github.com/skycoin/skycoin/src/cipher"
-    "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert")
 
+func sortPubKeys(pubKeys []cipher.PubKey) ([]cipher.PubKey) {
+	var ret cipher.PubKeySlice = pubKeys
+	sort.Sort(ret)
+	return ret
+}
+
 func TestManageTransports(t *testing.T) {
-	transport_a := NewStubTransport(t, 512, nil)
-	transport_b := NewStubTransport(t, 512, nil)
+	transport_a := NewStubTransport(t, 512)
+	transport_b := NewStubTransport(t, 512)
 	node, error := NewNode(NodeConfig{
+			cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
 		})
 	assert.Nil(t, error)
@@ -27,37 +35,54 @@ func TestManageTransports(t *testing.T) {
 }
 
 func TestConnectedPeers(t *testing.T) {
-	transport_a := NewStubTransport(t, 512, nil)
-	transport_b := NewStubTransport(t, 512, nil)
+	transport_a := NewStubTransport(t, 512)
+	transport_b := NewStubTransport(t, 512)
 	node, error := NewNode(NodeConfig{
+			cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
 		})
 	assert.Nil(t, error)
 	peer_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 	peer_b := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 	peer_c := cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-	assert.Nil(t, transport_a.ConnectToPeer(peer_a, "foo"))
-	assert.Nil(t, transport_a.ConnectToPeer(peer_b, "foo"))
-	assert.Nil(t, transport_b.ConnectToPeer(peer_c, "foo"))
+	transport_a.AddStubbedPeer(peer_a, nil)
+	transport_a.AddStubbedPeer(peer_b, nil)
+	transport_b.AddStubbedPeer(peer_c, nil)
 
-	assert.Equal(t, []cipher.PubKey{}, node.GetConnectedPeers())
+	assert.False(t, node.ConnectedToPeer(peer_a))
+	assert.False(t, node.ConnectedToPeer(peer_b))
+	assert.False(t, node.ConnectedToPeer(peer_c))
+	assert.Equal(t, []cipher.PubKey{}, sortPubKeys(node.GetConnectedPeers()))
 	node.AddTransport(transport_a)
-	assert.Equal(t, []cipher.PubKey{peer_a, peer_b}, node.GetConnectedPeers())
+	assert.Equal(t, []cipher.PubKey{peer_a, peer_b}, sortPubKeys(node.GetConnectedPeers()))
+	assert.True(t, node.ConnectedToPeer(peer_a))
+	assert.True(t, node.ConnectedToPeer(peer_b))
+	assert.False(t, node.ConnectedToPeer(peer_c))
+
 	node.AddTransport(transport_b)
-	assert.Equal(t, []cipher.PubKey{peer_a, peer_b, peer_c}, node.GetConnectedPeers())
+	assert.Equal(t, []cipher.PubKey{peer_a, peer_b, peer_c}, sortPubKeys(node.GetConnectedPeers()))
+	assert.True(t, node.ConnectedToPeer(peer_a))
+	assert.True(t, node.ConnectedToPeer(peer_b))
+	assert.True(t, node.ConnectedToPeer(peer_c))
 	assert.True(t, transport_a.ConnectedToPeer(peer_a))
-	transport_a.DisconnectFromPeer(peer_a)
-	assert.False(t, transport_a.ConnectedToPeer(peer_a))
-	assert.Equal(t, []cipher.PubKey{peer_b, peer_c}, node.GetConnectedPeers())
 	node.RemoveTransport(transport_a)
-	assert.Equal(t, []cipher.PubKey{peer_c}, node.GetConnectedPeers())
+	assert.False(t, node.ConnectedToPeer(peer_a))
+	assert.False(t, node.ConnectedToPeer(peer_b))
+	assert.True(t, node.ConnectedToPeer(peer_c))
+
+	assert.Equal(t, []cipher.PubKey{peer_c}, sortPubKeys(node.GetConnectedPeers()))
 	node.RemoveTransport(transport_b)
-	assert.Equal(t, []cipher.PubKey{}, node.GetConnectedPeers())
+	assert.Equal(t, []cipher.PubKey{}, sortPubKeys(node.GetConnectedPeers()))
+	assert.False(t, node.ConnectedToPeer(peer_a))
+	assert.False(t, node.ConnectedToPeer(peer_b))
+	assert.False(t, node.ConnectedToPeer(peer_c))
 }
 
-func SetupNode(t *testing.T, sentMessages chan TransportMessage) (*Node, *StubTransport) {
-	transport := NewStubTransport(t, 512, sentMessages)
+func SetupNode(t *testing.T) (*Node, *StubTransport) {
+	transport := NewStubTransport(t, 512)
+	newPubKey, _ := cipher.GenerateKeyPair()
 	node, error := NewNode(NodeConfig{
+			newPubKey,
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
 		})
 	assert.Nil(t, error)
@@ -65,32 +90,35 @@ func SetupNode(t *testing.T, sentMessages chan TransportMessage) (*Node, *StubTr
 	return node, transport
 }
 
-func SetupNodes(n uint, t *testing.T) (nodes []*Node, to_close chan TransportMessage) {
+// Nodes each have one transport
+// All nodes receive all other nodes' messages, but stub transport filters
+func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan TransportMessage) {
 	nodes = make([]*Node, n)
 	transports := make([]*StubTransport, n)
 	to_close = make(chan TransportMessage, 20)
 	sentMessages := make(chan TransportMessage, 20)
 	for i := (uint)(0); i < n; i++ {
-		nodes[i], transports[i] = SetupNode(t, sentMessages)
+		nodes[i], transports[i] = SetupNode(t)
 		nodes[i].AddTransport(transports[i])
 	}
-	go func() {
-		for {
-			msg, more := <-sentMessages
-			if more {
-				for i := (uint)(0); i < n; i++ {
-					transports[i].MessagesReceived <- msg
-				}
-			} else {
-				return
+	for i := (uint)(0); i < n; i++ {
+		transport_from := transports[i]
+		for j := (uint)(0); j < n; j++ {
+			transport_to := transports[j]
+			if connections[i][j] != 0 {
+				transport_from.AddStubbedPeer(nodes[j].GetConfig().PubKey, transport_to)
 			}
 		}
-	}()
+	}
 	return nodes, sentMessages
 }
 
 func TestSendDirect(t *testing.T) {
-	nodes, to_close := SetupNodes(3, t)
+	connections  := [][]int{
+		[]int{0,1,},
+		[]int{1,0,},
+	}
+	nodes, to_close := SetupNodes(2, connections, t)
 	defer close(to_close)
 	defer func() {
 		for _, node := range(nodes) {
@@ -98,13 +126,27 @@ func TestSendDirect(t *testing.T) {
 		}
 	}()
 
-	test_key_b := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-	test_key_c := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+	contents := []byte{4,66,7,44,33}
 
-	route := uuid.NewV4()
-	assert.Nil(t, nodes[0].AddRoute(route, test_key_b))
-	assert.Nil(t, nodes[0].ExtendRoute(route, test_key_c))
+	received := make(chan MeshMessage, 10)
+	nodes[1].SetReceiveChannel(received)
+
+	test_key_b := nodes[1].GetConfig().PubKey
+	send_err, route_id := nodes[0].SendMessageToPeer(test_key_b, contents, false, time.Time{})
+	assert.Nil(t, send_err)
+	assert.Zero(t, route_id)
+
+	select {
+		case recvd := <- received: {
+			assert.Zero(t, recvd.RouteId)
+			assert.Equal(t, contents, recvd.Contents)
+		}
+		case <-time.After(5*time.Second):
+			panic("Test timed out")
+	}	
 }
+
+// Deadline test
 
 /*
 func TestEstablishRoute(t *testing.T) {

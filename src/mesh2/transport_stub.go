@@ -2,48 +2,58 @@ package mesh
 
 import(
 	"sync"
+	"errors"
 	"testing")
 
-import("github.com/skycoin/skycoin/src/cipher"
-	   "github.com/stretchr/testify/assert")
+import("github.com/skycoin/skycoin/src/cipher")
 
 type StubTransport struct {
 	testing *testing.T
 	maxMessageSize uint
-	messagesSent chan TransportMessage
-	MessagesReceived chan TransportMessage
-	connectedTo map[cipher.PubKey]bool
+	messagesReceived chan TransportMessage
+	stubbedPeers map[cipher.PubKey]*StubTransport
     lock *sync.Mutex
+    closeWait *sync.WaitGroup
 }
 
-func NewStubTransport(testing *testing.T, maxMessageSize uint, sentMessages chan TransportMessage) (*StubTransport) {
+func NewStubTransport(testing *testing.T, 
+					  maxMessageSize uint) (*StubTransport) {
 	ret := &StubTransport{
 		testing,
 		maxMessageSize,
-		sentMessages, 	// MessagesSent
 		nil,
-		make(map[cipher.PubKey]bool),
+		make(map[cipher.PubKey]*StubTransport),
 		&sync.Mutex{},
+		&sync.WaitGroup{},
 	}
 	return ret
 }
 func (self*StubTransport) Close() error {
 	return nil
 }
+// Call before adding to node
+func (self*StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport) {
+	self.stubbedPeers[key] = peer
+}
 func (self*StubTransport) SendMessage(msg TransportMessage) error {
-	self.messagesSent <- msg
-	return nil
+	peer, exists := self.stubbedPeers[msg.DestPeer]
+	if exists {
+		peer.messagesReceived <- msg
+		return nil
+	}
+	return errors.New("No stubbed transport for this peer")
 }
 func (self*StubTransport) SetReceiveChannel(received chan TransportMessage) {
-	self.MessagesReceived = received
+	self.messagesReceived = received
 }
 func (self*StubTransport) SetCrypto(crypto TransportCrypto) {
+	panic("crypto unsupported")
 }
 func (self*StubTransport) GetConnectedPeers() []cipher.PubKey {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	ret := []cipher.PubKey{}
-	for key, _ := range(self.connectedTo) {
+	for key, _ := range(self.stubbedPeers) {
 		ret = append(ret, key)
 	}
 	return ret
@@ -51,23 +61,8 @@ func (self*StubTransport) GetConnectedPeers() []cipher.PubKey {
 func (self*StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	_, exists := self.connectedTo[peer]
+	_, exists := self.stubbedPeers[peer]
 	return exists
-}
-func (self*StubTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) error {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	assert.Equal(self.testing, "foo", connectInfo)
-	self.connectedTo[peer] = true
-	return nil
-}
-func (self*StubTransport) DisconnectFromPeer(peer cipher.PubKey) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	delete(self.connectedTo, peer)
-}
-func (self*StubTransport) GetTransportConnectInfo() string {
-	return "foo"
 }
 func (self*StubTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
 	return self.maxMessageSize

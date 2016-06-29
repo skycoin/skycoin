@@ -7,6 +7,7 @@ import (
 	"hash"
 	"log"
 	"time"
+	"bytes"
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
@@ -22,6 +23,19 @@ var (
 )
 
 type PubKey [33]byte
+type PubKeySlice []PubKey
+
+func (slice PubKeySlice) Len() int {
+    return len(slice)
+}
+
+func (slice PubKeySlice) Less(i, j int) bool {
+    return bytes.Compare(slice[i][:], slice[j][:]) < 0
+}
+
+func (slice PubKeySlice) Swap(i, j int) {
+    slice[i], slice[j] = slice[j], slice[i]
+}
 
 func RandByte(n int) []byte {
 	return secp256k1.RandByte(n)

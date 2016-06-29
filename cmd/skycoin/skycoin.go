@@ -46,6 +46,12 @@ var (
 	GenesisAddressStr   = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
 	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 	BlockchainSeckeyStr = ""
+
+	DefaultServers = []string{
+		"13.76.90.237:6000",
+		"40.74.142.139:6000",
+		"188.226.245.87:6000",
+	}
 )
 
 // Command line interface arguments
@@ -398,6 +404,7 @@ var devConfig Config = Config{
 
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
+
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
 	dc.Peers.Disabled = c.DisablePEX
@@ -408,6 +415,8 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
 	dc.Daemon.OutgoingMax = c.MaxConnections
+
+	daemon.BootStrapPeers = DefaultServers
 
 	if c.OutgoingConnectionsRate == 0 {
 		c.OutgoingConnectionsRate = time.Millisecond

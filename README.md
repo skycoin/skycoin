@@ -174,3 +174,9 @@ go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
 
 go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
 ```
+
+Rebuilding Wallet HTML
+-----
+
+npm install
+gulp build

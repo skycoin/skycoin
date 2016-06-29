@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	DefaultDataDir = ".skycoin/"
+	DataDir = ".skycoin/"
 
 	logger = logging.MustGetLogger("skycoin.util")
 )
@@ -26,13 +26,14 @@ func DisableLogging() {
 // If dir is "", uses the default directory of ~/.skycoin.  The path to dir
 // is created, and the dir used is returned
 func InitDataDir(dir string) string {
+	DataDir = dir
 	if dir == "" {
 		home := UserHome()
 		if home == "" {
 			logger.Warning("Failed to get home directory")
-			dir = filepath.Join("./", DefaultDataDir)
+			dir = filepath.Join("./", DataDir)
 		} else {
-			dir = filepath.Join(home, DefaultDataDir)
+			dir = filepath.Join(home, DataDir)
 		}
 	}
 	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {

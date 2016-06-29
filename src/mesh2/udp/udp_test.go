@@ -99,11 +99,11 @@ func TestSendDatagram(t *testing.T) {
 	send_bytes_a := []byte{66,44,33,2,123,100,22}
 	send_bytes_b := []byte{23,33,12,88,43,120}
 
-	assert.Nil(t, transport_a.SendMessage(mesh.TransportMessage{key_b, send_bytes_a}))
-	assert.Nil(t, transport_b.SendMessage(mesh.TransportMessage{key_a, send_bytes_b}))
+	assert.Nil(t, transport_a.SendMessage(key_b, send_bytes_a))
+	assert.Nil(t, transport_b.SendMessage(key_a, send_bytes_b))
 
-	chan_a := make(chan mesh.TransportMessage, 10)
-	chan_b := make(chan mesh.TransportMessage, 10)
+	chan_a := make(chan []byte, 10)
+	chan_b := make(chan []byte, 10)
 
 	transport_a.SetReceiveChannel(chan_a)
 	transport_b.SetReceiveChannel(chan_b)
@@ -114,14 +114,12 @@ func TestSendDatagram(t *testing.T) {
 	for !got_a || !got_b {
 		select {
 			case msg_a := <- chan_a: {
-				assert.Equal(t, key_a, msg_a.DestPeer)
-				assert.Equal(t, send_bytes_b, msg_a.Contents)
+				assert.Equal(t, send_bytes_b, msg_a)
 				got_a = true
 				break
 			}
 			case msg_b := <- chan_b: {
-				assert.Equal(t, key_b, msg_b.DestPeer)
-				assert.Equal(t, send_bytes_a, msg_b.Contents)
+				assert.Equal(t, send_bytes_a, msg_b)
 				got_b = true
 				break
 			}
@@ -161,15 +159,14 @@ func TestCrypto(t *testing.T) {
 	transport_a.SetCrypto(tc)
 	transport_b.SetCrypto(tc)
 
-	assert.Nil(t, transport_a.SendMessage(mesh.TransportMessage{key_b, send_bytes}))
+	assert.Nil(t, transport_a.SendMessage(key_b, send_bytes))
 
-	chan_b := make(chan mesh.TransportMessage, 10)
+	chan_b := make(chan []byte, 10)
 	transport_b.SetReceiveChannel(chan_b)
 
 	select {
 		case msg_b := <- chan_b: {
-			assert.Equal(t, key_b, msg_b.DestPeer)
-			assert.Equal(t, send_bytes, msg_b.Contents)
+			assert.Equal(t, send_bytes, msg_b)
 		}
 		case <-time.After(5*time.Second):
 			panic("Test timed out")

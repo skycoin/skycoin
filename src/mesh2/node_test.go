@@ -8,7 +8,10 @@ import(
 import(
     "github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert")
-
+/*
+import("os"
+"fmt")
+*/
 func sortPubKeys(pubKeys []cipher.PubKey) ([]cipher.PubKey) {
 	var ret cipher.PubKeySlice = pubKeys
 	sort.Sort(ret)
@@ -21,6 +24,8 @@ func TestManageTransports(t *testing.T) {
 	node, error := NewNode(NodeConfig{
 			cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
+			time.Second,
+			2*time.Second,
 		})
 	assert.Nil(t, error)
 	assert.Equal(t, []Transport{}, node.GetTransports())
@@ -40,6 +45,8 @@ func TestConnectedPeers(t *testing.T) {
 	node, error := NewNode(NodeConfig{
 			cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
+			time.Second,
+			2*time.Second,
 		})
 	assert.Nil(t, error)
 	peer_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
@@ -84,6 +91,8 @@ func SetupNode(t *testing.T) (*Node, *StubTransport) {
 	node, error := NewNode(NodeConfig{
 			newPubKey,
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
+			time.Second,
+			2*time.Second,
 		})
 	assert.Nil(t, error)
 	node.AddTransport(transport)
@@ -92,11 +101,11 @@ func SetupNode(t *testing.T) (*Node, *StubTransport) {
 
 // Nodes each have one transport
 // All nodes receive all other nodes' messages, but stub transport filters
-func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan TransportMessage) {
+func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte) {
 	nodes = make([]*Node, n)
 	transports := make([]*StubTransport, n)
-	to_close = make(chan TransportMessage, 20)
-	sentMessages := make(chan TransportMessage, 20)
+	to_close = make(chan []byte, 20)
+	sentMessages := make(chan []byte, 20)
 	for i := (uint)(0); i < n; i++ {
 		nodes[i], transports[i] = SetupNode(t)
 		nodes[i].AddTransport(transports[i])
@@ -113,10 +122,10 @@ func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_cl
 	return nodes, sentMessages
 }
 
-func TestSendDirect(t *testing.T) {
+func sendDirect(t *testing.T, reliable bool) {
 	connections  := [][]int{
-		[]int{0,1,},
-		[]int{1,0,},
+		[]int{1,1,},
+		[]int{1,1,},
 	}
 	nodes, to_close := SetupNodes(2, connections, t)
 	defer close(to_close)
@@ -132,7 +141,7 @@ func TestSendDirect(t *testing.T) {
 	nodes[1].SetReceiveChannel(received)
 
 	test_key_b := nodes[1].GetConfig().PubKey
-	send_err, route_id := nodes[0].SendMessageToPeer(test_key_b, contents, false, time.Time{})
+	send_err, route_id := nodes[0].SendMessageToPeer(test_key_b, contents, reliable, time.Second)
 	assert.Nil(t, send_err)
 	assert.Zero(t, route_id)
 
@@ -143,8 +152,17 @@ func TestSendDirect(t *testing.T) {
 		}
 		case <-time.After(5*time.Second):
 			panic("Test timed out")
-	}	
+	}
 }
+
+func TestSendDirectUnreliably(t *testing.T) {
+	sendDirect(t, false)
+}
+
+func TestSendDirectReliably(t *testing.T) {
+	sendDirect(t, true)
+}
+
 
 // Deadline test
 

@@ -10,7 +10,7 @@ import("github.com/skycoin/skycoin/src/cipher")
 type StubTransport struct {
 	testing *testing.T
 	maxMessageSize uint
-	messagesReceived chan TransportMessage
+	messagesReceived chan []byte
 	stubbedPeers map[cipher.PubKey]*StubTransport
     lock *sync.Mutex
     closeWait *sync.WaitGroup
@@ -35,15 +35,15 @@ func (self*StubTransport) Close() error {
 func (self*StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport) {
 	self.stubbedPeers[key] = peer
 }
-func (self*StubTransport) SendMessage(msg TransportMessage) error {
-	peer, exists := self.stubbedPeers[msg.DestPeer]
+func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
+	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
 		peer.messagesReceived <- msg
 		return nil
 	}
 	return errors.New("No stubbed transport for this peer")
 }
-func (self*StubTransport) SetReceiveChannel(received chan TransportMessage) {
+func (self*StubTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 func (self*StubTransport) SetCrypto(crypto TransportCrypto) {

@@ -14,6 +14,7 @@ type StubTransport struct {
 	stubbedPeers map[cipher.PubKey]*StubTransport
     lock *sync.Mutex
     closeWait *sync.WaitGroup
+    ignoreSend bool
 }
 
 func NewStubTransport(testing *testing.T, 
@@ -25,6 +26,7 @@ func NewStubTransport(testing *testing.T,
 		make(map[cipher.PubKey]*StubTransport),
 		&sync.Mutex{},
 		&sync.WaitGroup{},
+		false,
 	}
 	return ret
 }
@@ -38,10 +40,15 @@ func (self*StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport)
 func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
-		peer.messagesReceived <- msg
+		if !self.ignoreSend {
+			peer.messagesReceived <- msg
+		}
 		return nil
 	}
 	return errors.New("No stubbed transport for this peer")
+}
+func (self*StubTransport) SetIgnoreSendStatus(status bool) {
+	self.ignoreSend = status
 }
 func (self*StubTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received

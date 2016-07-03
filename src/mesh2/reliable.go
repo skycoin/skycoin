@@ -263,7 +263,12 @@ func (self*ReliableTransport) GetConnectedPeers() []cipher.PubKey {
 }
 
 func (self*ReliableTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
-	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer)
+	empty := ReliableSend{}
+	emptySerialized := self.serializer.SerializeMessage(empty)
+	if (uint)(len(emptySerialized)) >= self.physicalTransport.GetMaximumMessageSizeToPeer(peer) {
+		return 0
+	}
+	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer) - (uint)(len(emptySerialized))
 }
 
 func (self*ReliableTransport) debug_countMapItems() int {

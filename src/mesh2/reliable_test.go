@@ -58,6 +58,8 @@ func TestSendMessage(t *testing.T) {
 		case <-time.After(5*time.Second):
 			panic("Test timed out")
 	}
+
+	reliableTransport_a.Close()
 }
 
 func TestRetransmit(t *testing.T) {
@@ -121,4 +123,20 @@ func TestExpiry(t *testing.T) {
 	time.Sleep(7 * time.Second)
 	assert.Zero(t, reliableTransport_a.debug_countMapItems())
 	assert.Zero(t, reliableTransport_b.debug_countMapItems())
+}
+
+func TestReliableMessageLength(t *testing.T) {
+	test_key_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+	test_key_b := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+	config_a := ReliableTransportConfig{
+		test_key_a,
+		10,
+		6 * time.Second,
+		6 * time.Second,
+		time.Second,
+	}
+	stubTransport_a := NewStubTransport(t, 512)
+	reliableTransport_a := NewReliableTransport(stubTransport_a, config_a)
+	assert.NotEqual(t, (uint)(512), (uint)(reliableTransport_a.GetMaximumMessageSizeToPeer(test_key_b)))
+	reliableTransport_a.Close()
 }

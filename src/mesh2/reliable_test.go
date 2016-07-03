@@ -16,8 +16,8 @@ func SetupTwoPeers(t *testing.T) (test_key_a, test_key_b cipher.PubKey,
 	config_a := ReliableTransportConfig{
 		test_key_a,
 		10,
-		10 * time.Second,
-		10 * time.Second,
+		6 * time.Second,
+		6 * time.Second,
 		time.Second,
 	}
 	stubTransport_a = NewStubTransport(t, 512)
@@ -28,8 +28,8 @@ func SetupTwoPeers(t *testing.T) (test_key_a, test_key_b cipher.PubKey,
 	config_b := ReliableTransportConfig{
 		test_key_b,
 		10,
-		10 * time.Second,
-		10 * time.Second,
+		6 * time.Second,
+		6 * time.Second,
 		time.Second,
 	}
 	stubTransport_b = NewStubTransport(t, 512)
@@ -108,5 +108,17 @@ func TestNoDoubleReceive(t *testing.T) {
 }
 
 func TestExpiry(t *testing.T) {
-	
+	_, test_key_b, _, _,
+		reliableTransport_a, reliableTransport_b,
+		_, _ := SetupTwoPeers(t)
+
+	testContents := []byte{4,3,22,6,88,99}
+	assert.Nil(t, reliableTransport_a.SendMessage(test_key_b, testContents))
+
+	time.Sleep(time.Second)
+	assert.NotZero(t, reliableTransport_a.debug_countMapItems())
+	assert.NotZero(t, reliableTransport_b.debug_countMapItems())
+	time.Sleep(7 * time.Second)
+	assert.Zero(t, reliableTransport_a.debug_countMapItems())
+	assert.Zero(t, reliableTransport_b.debug_countMapItems())
 }

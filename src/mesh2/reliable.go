@@ -105,7 +105,6 @@ func (self*ReliableTransport) doRetransmits() {
 	defer self.lock.Unlock()
 	for _, state := range(self.messagesSent) {
 		if !state.receivedAck {
-fmt.Fprintf(os.Stderr, "--- Sending a retransmit\n")
 			go self.physicalTransport.SendMessage(state.toPeer, state.serialized)
 		}
 	}
@@ -267,4 +266,9 @@ func (self*ReliableTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) ui
 	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer)
 }
 
+func (self*ReliableTransport) debug_countMapItems() int {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	return len(self.messagesSent) + len(self.messagesReceived)
+}
 

@@ -8,10 +8,7 @@ import(
 import(
     "github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert")
-/*
-import("os"
-"fmt")
-*/
+
 func sortPubKeys(pubKeys []cipher.PubKey) ([]cipher.PubKey) {
 	var ret cipher.PubKeySlice = pubKeys
 	sort.Sort(ret)
@@ -24,8 +21,8 @@ func TestManageTransports(t *testing.T) {
 	node, error := NewNode(NodeConfig{
 			cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
-			time.Second,
-			2*time.Second,
+			time.Minute,
+			10 * time.Second,
 		})
 	assert.Nil(t, error)
 	assert.Equal(t, []Transport{}, node.GetTransports())
@@ -45,8 +42,8 @@ func TestConnectedPeers(t *testing.T) {
 	node, error := NewNode(NodeConfig{
 			cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
-			time.Second,
-			2*time.Second,
+			time.Minute,
+			10 * time.Second,
 		})
 	assert.Nil(t, error)
 	peer_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
@@ -91,8 +88,8 @@ func SetupNode(t *testing.T) (*Node, *StubTransport) {
 	node, error := NewNode(NodeConfig{
 			newPubKey,
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
-			time.Second,
-			2*time.Second,
+			time.Minute,
+			10 * time.Second,
 		})
 	assert.Nil(t, error)
 	node.AddTransport(transport)
@@ -155,46 +152,6 @@ func sendDirect(t *testing.T, reliable bool) {
 	}
 }
 
-func TestSendDirectUnreliably(t *testing.T) {
-	sendDirect(t, false)
-}
-
-func TestSendDirectReliably(t *testing.T) {
-	sendDirect(t, true)
-}
-
-
-// Deadline test
-
-/*
-func TestEstablishRoute(t *testing.T) {
-	nodes, to_close := SetupNodes(3, t)
-	defer close(to_close)
-	defer func() {
-		for _, node := range(nodes) {
-			node.Close()
-		}
-	}()
-
-	test_key_b := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-	test_key_c := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-
-	route := uuid.NewV4()
-	assert.Nil(t, nodes[0].AddRoute(route, test_key_b))
-	assert.Nil(t, nodes[0].ExtendRoute(route, test_key_c))
-}
-*/
-/*
-func TestSendThruRoute(t *testing.T) {
-}
-*/
-
-/*
-func TestSendReply(t *testing.T) {
-
-}
-*/
-
+// Route expiry test
 // Packet loss test
 // Multiple transport test
-// UDP Test

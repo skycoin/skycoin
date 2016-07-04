@@ -115,9 +115,6 @@ func (self*ReliableTransport) doRetransmits() {
 }
 
 func (self*ReliableTransport) retransmitLoop() {
-	self.closeWait.Add(1)
-	defer self.closeWait.Done()
-	
 	for len(self.closing) == 0 {
 		select {
 			case <-time.After(self.config.RetransmitDuration): {
@@ -131,9 +128,6 @@ func (self*ReliableTransport) retransmitLoop() {
 }
 
 func (self*ReliableTransport) expireMessagesLoop() {
-	self.closeWait.Add(1)
-	defer self.closeWait.Done()
-
 	for len(self.closing) == 0 {
 		select {
 			case <-time.After(self.config.ExpireMessagesInterval): {

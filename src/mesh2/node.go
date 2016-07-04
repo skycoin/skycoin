@@ -1,62 +1,128 @@
 package mesh
 
 import(
+"os"
+	"fmt"
 	"time"
     "sync"
-    "errors")
+    "errors"
+//    "reflect"
+    "gopkg.in/op/go-logging.v1")
 
 import(
     "github.com/skycoin/skycoin/src/cipher"
     "github.com/satori/go.uuid")
 
 type NodeConfig struct {
-	PubKey		cipher.PubKey
-	ChaCha20Key	[32]byte
+	PubKey		    			cipher.PubKey
+	ChaCha20Key	    			[32]byte
+	MaximumForwardingDuration	time.Duration
+	RefreshRouteDuration		time.Duration
 }
 
-type RouteId uint32
+type LocalRouteId uuid.UUID
+type RouteId uuid.UUID
+type messageId uuid.UUID
+
+var NilRouteId RouteId = (RouteId)(uuid.Nil)
+
+type rewriteableMessage interface {
+    Rewrite(newSendId RouteId) rewriteableMessage
+}
 
 type MeshMessage struct {
-    RouteId       uint32
+    RouteId       RouteId
     Contents      []byte
 }
 
+type LocalRoute struct {
+	connectedPeer cipher.PubKey
+	routeId       RouteId
+}
+
+type Route struct {
+	forwardToPeer 			cipher.PubKey
+	forwardRewriteSendId 	RouteId
+
+	backwardToPeer 			cipher.PubKey
+	backwardRewriteSendId 	RouteId
+}
+
 type Node struct {
-	config NodeConfig
-    outputMessagesReceived chan MeshMessage
-    transportsMessagesReceived chan TransportMessage
+	config 						NodeConfig
+    outputMessagesReceived 		chan MeshMessage
+    transportsMessagesReceived 	chan []byte
+	serializer *Serializer
 
     lock *sync.Mutex
     closeGroup *sync.WaitGroup
 
-    transports map[Transport]bool
+    transports 						map[Transport]bool
+    //ReliableTransports
+    localRoutesById					map[LocalRouteId]LocalRoute
+    routesById                      map[messageId]Route
 }
 
-// TODO: Reliable / unreliable messages
-// TODO: Store and forward
-// TODO: Congestion control for reliable
+// Fields must be public (capital first letter) for encoder
+type MessageBase struct {
+    SendId RouteId
+    SendBack bool
+}
+
+type UserMessage struct {
+	MessageBase
+	MessageId messageId
+	Index     uint64
+	Count     uint64
+	Contents  []byte
+}
+
+type SetRouteMessage struct {
+	MessageBase
+	SetRouteId     RouteId
+	ForwardToPeer  cipher.PubKey
+	BackwardToPeer cipher.PubKey
+    DurationHint   time.Duration
+}
+
+// Refreshes the route as it passes thru it
+type RefreshRouteMessage struct {
+	MessageBase
+    DurationHint   time.Duration
+}
+
+// Deletes the route as it passes thru it
+type DeleteRouteMessage struct {
+	MessageBase
+}
+
+type TimeoutError struct {
+}
+
+func (self*TimeoutError) Error() string {
+	return "Timeout"
+}
+
+var logger = logging.MustGetLogger("node")
+
 // TODO: Transport crypto test
 
 func NewNode(config NodeConfig) (*Node, error) {
 	ret := &Node{
 		config,
 		nil,			// received
-		make(chan TransportMessage),			// received
+		make(chan []byte),			// received		
+		NewSerializer(),
 		&sync.Mutex{},	// Lock
 		&sync.WaitGroup{},
 		make(map[Transport]bool),
+		make(map[LocalRouteId]LocalRoute),
+		make(map[messageId]Route),
 	}
-	go func() {
-		ret.closeGroup.Add(1)
-		defer ret.closeGroup.Done()
-		for {
-			msg, more := <- ret.transportsMessagesReceived
-			if !more {
-				break
-			}
-			ret.processMessage(msg)
-		}
-	}()
+    ret.serializer.RegisterMessageForSerialization(MessagePrefix{1}, UserMessage{})
+    ret.serializer.RegisterMessageForSerialization(MessagePrefix{2}, SetRouteMessage{})
+    ret.serializer.RegisterMessageForSerialization(MessagePrefix{3}, RefreshRouteMessage{})
+    ret.serializer.RegisterMessageForSerialization(MessagePrefix{4}, DeleteRouteMessage{})
 	return ret, nil
 }
 
@@ -67,9 +133,12 @@ func (self*Node) Close() error {
 	return nil
 }
 
-func (self*Node) processMessage(msg TransportMessage) {
-	// TODO: Reliability etc
-	self.outputMessagesReceived <- MeshMessage{0, msg.Contents}
+func (self*Node) ForwardOrReceive(msg MessageBase, contents []byte) {
+	// TODO: Check routes
+fmt.Fprintf(os.Stderr, "ForwardOrReceive %v\n", msg)
+// TODO: Reliability, only receive if not already received, send ack either way
+	routeId := NilRouteId
+	self.outputMessagesReceived <- MeshMessage{routeId, contents}
 }
 
 func (self*Node) GetConfig() NodeConfig {
@@ -135,44 +204,8 @@ func (self*Node) ConnectedToPeer(peer cipher.PubKey) bool {
 }
 
 // toPeer must be the public key of a connected peer
-func (self*Node) AddRoute(id uuid.UUID, toPeer cipher.PubKey) error {
+func (self*Node) AddRoute(id LocalRouteId, toPeer cipher.PubKey) error {
 //Direct, go thru transports
-	return errors.New("todo")
-}
-
-// toPeer must be the public key of a peer connected to the current last node in this route
-// Blocks until the operation is completed
-func (self*Node) ExtendRoute(id uuid.UUID, toPeer cipher.PubKey) error {
-// blocks waiting
-	return errors.New("todo")
-}
-
-func (self*Node) RemoveRoute(id uuid.UUID) (error) {
-	return errors.New("todo")
-}
-
-// Chooses a route automatically. Sends directly without a route if connected to that peer. 
-// Blocks until message is confirmed received if reliably is true
-	// TODO: reliably, deadline
-func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool, deadline time.Time) (err error, routeId uuid.UUID) {
-	transport_msg := TransportMessage{toPeer, contents}
-	transport := self.safelyGetTransportToPeer(toPeer)
-	// Send directly
-	if transport != nil {
-		// TODO: reliably, deadline
-		transport.SendMessage(transport_msg)
-		return nil, uuid.Nil
-	}
-	return errors.New("todo"), uuid.Nil
-}
-
-// Blocks until message is confirmed received if reliably is true
-func (self*Node) SendMessageThruRoute(route_id uuid.UUID, contents []byte, reliably bool, deadline time.Time) (error) {
-	return errors.New("todo")
-}
-
-// Blocks until message is confirmed received if reliably is true
-func (self*Node) SendMessageBackThruRoute(replyRoute RouteId, contents []byte, reliably bool, deadline time.Time) (error) {
 	return errors.New("todo")
 }
 
@@ -180,5 +213,40 @@ func (self*Node) SendMessageBackThruRoute(replyRoute RouteId, contents []byte, r
 func  (self*Node) SetReceiveChannel(received chan MeshMessage) {
 	self.outputMessagesReceived = received
 }
+
+// toPeer must be the public key of a peer connected to the current last node in this route
+// Blocks until the operation is completed
+func (self*Node) ExtendRoute(id LocalRouteId, toPeer cipher.PubKey) error {
+// blocks waiting
+	return errors.New("todo")
+}
+
+func (self*Node) RemoveRoute(id LocalRouteId) (error) {
+	return errors.New("todo")
+}
+
+func (self*Node) getMaximumContentLength(transport Transport) uint64 {
+	return 0
+}
+
+// Chooses a route automatically. Sends directly without a route if connected to that peer. 
+// Blocks until message is confirmed received if reliably is true
+func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool, timeout time.Duration) (err error, routeId RouteId) {
+//fragmentMessage()
+	return nil, NilRouteId
+}
+
+// Blocks until message is confirmed received if reliably is true
+func (self*Node) SendMessageThruRoute(route_id RouteId, contents []byte, reliably bool, deadline time.Time) (error) {
+//fragmentMessage()
+	return errors.New("todo")
+}
+
+// Blocks until message is confirmed received if reliably is true
+func (self*Node) SendMessageBackThruRoute(replyRoute RouteId, contents []byte, reliably bool, deadline time.Time) (error) {
+//fragmentMessage()
+	return errors.New("todo")
+}
+
 
 

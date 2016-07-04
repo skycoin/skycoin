@@ -7,11 +7,6 @@ type TransportConfig struct {
 	SendChannelLength uint32
 }
 
-type TransportMessage struct {
-    DestPeer cipher.PubKey
-    Contents []byte
-}
-
 type TransportCrypto interface {
 	Encrypt([]byte)[]byte
 	Decrypt([]byte)[]byte
@@ -26,6 +21,6 @@ type Transport interface {
 	// Does not consider any extra bytes added by crypto
 	GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint
 	// May block
-	SendMessage(msg TransportMessage) error
-	SetReceiveChannel(received chan TransportMessage)
+	SendMessage(toPeer cipher.PubKey, contents []byte) error
+	SetReceiveChannel(received chan []byte)
 }

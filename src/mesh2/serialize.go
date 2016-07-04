@@ -58,7 +58,6 @@ func (self *Serializer) UnserializeMessage(msg []byte) (interface{}, error) {
     if !succ {
         return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
     }
-
     var m interface{}
     var v reflect.Value = reflect.New(t)
     //logger.Debug("Giving %d bytes to the decoder", len(msg))

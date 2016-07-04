@@ -15,14 +15,14 @@ import(
 
 import(
 	"github.com/skycoin/encoder"
-	"github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2/transport"
     "github.com/skycoin/skycoin/src/cipher")
 
 import(
     "github.com/ccding/go-stun/stun")
 
 type UDPConfig struct {
-	mesh.TransportConfig
+	transport.TransportConfig
 	DatagramLength	uint16
 	LocalAddress string 	// "" for default
 
@@ -48,7 +48,7 @@ type UDPTransport struct {
 	messagesReceived chan []byte
 	closing chan bool
 	closeWait *sync.WaitGroup
-	crypto mesh.TransportCrypto
+	crypto transport.TransportCrypto
 
 	// Thread protected variables
 	lock *sync.Mutex
@@ -247,7 +247,7 @@ func (self*UDPTransport) Close() error {
 	return nil
 }
 
-func (self*UDPTransport) SetCrypto(crypto mesh.TransportCrypto) {
+func (self*UDPTransport) SetCrypto(crypto transport.TransportCrypto) {
 	self.crypto = crypto
 }
 

@@ -1,5 +1,5 @@
 
-package mesh
+package reliable
 
 import(
 	"os"
@@ -10,7 +10,8 @@ import(
 )
 
 import(
-	"github.com/skycoin/skycoin/src/mesh2"	
+	"github.com/skycoin/skycoin/src/mesh2/transport"
+	"github.com/skycoin/skycoin/src/mesh2/serialize"
 	"github.com/skycoin/skycoin/src/cipher")
 
 import ("github.com/satori/go.uuid")
@@ -48,9 +49,9 @@ type messageSentState struct {
 // Wraps Transport, but adds store-and-forward
 type ReliableTransport struct {
 	config              ReliableTransportConfig
-	physicalTransport 	mesh.Transport
+	physicalTransport 	transport.Transport
 	outputChannel 		chan []byte
-    serializer 			*mesh.Serializer
+    serializer 			*serialize.Serializer
 
 	lock 				*sync.Mutex
 	messagesSent        map[reliableId]messageSentState
@@ -62,12 +63,12 @@ type ReliableTransport struct {
 	closeWait           *sync.WaitGroup
 }
 
-func NewReliableTransport(physicalTransport mesh.Transport, config ReliableTransportConfig) *ReliableTransport {
+func NewReliableTransport(physicalTransport transport.Transport, config ReliableTransportConfig) *ReliableTransport {
 	ret := &ReliableTransport{
 		config,
 		physicalTransport,
 		nil,
-		mesh.NewSerializer(),
+		serialize.NewSerializer(),
 		&sync.Mutex{},
 		make(map[reliableId]messageSentState),
 		make(map[reliableId]time.Time),
@@ -77,8 +78,8 @@ func NewReliableTransport(physicalTransport mesh.Transport, config ReliableTrans
 		&sync.WaitGroup{},
 	}
 
-	ret.serializer.RegisterMessageForSerialization(mesh.MessagePrefix{1}, ReliableSend{})
-	ret.serializer.RegisterMessageForSerialization(mesh.MessagePrefix{2}, ReliableReply{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, ReliableSend{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, ReliableReply{})
 
 	go ret.processReceivedLoop()
 	go ret.expireMessagesLoop()
@@ -253,7 +254,7 @@ func (self*ReliableTransport) Close() error {
 	return self.physicalTransport.Close()
 }
 
-func (self*ReliableTransport) SetCrypto(crypto mesh.TransportCrypto) {
+func (self*ReliableTransport) SetCrypto(crypto transport.TransportCrypto) {
 	self.physicalTransport.SetCrypto(crypto)
 }
 

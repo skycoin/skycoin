@@ -1,4 +1,4 @@
-package mesh
+package transport
 
 import "io"
 import "github.com/skycoin/skycoin/src/cipher"

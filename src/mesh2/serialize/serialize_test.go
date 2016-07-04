@@ -1,5 +1,5 @@
 
-package mesh
+package serialize
 
 import(
 	"testing"

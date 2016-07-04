@@ -7,10 +7,13 @@ import(
 	"time"
 	"sync"
 	"reflect"
-	"sync/atomic"
 )
 
-import "github.com/skycoin/skycoin/src/cipher"
+import(
+	"github.com/skycoin/skycoin/src/mesh2"	
+	"github.com/skycoin/skycoin/src/cipher")
+
+import ("github.com/satori/go.uuid")
 
 type ReliableTransportConfig struct {
 	MyPeerId						cipher.PubKey
@@ -23,7 +26,7 @@ type ReliableTransportConfig struct {
 }
 
 // 0 is not nil
-type reliableId uint32
+type reliableId uuid.UUID
 
 type ReliableSend struct {
 	MsgId    reliableId
@@ -45,9 +48,9 @@ type messageSentState struct {
 // Wraps Transport, but adds store-and-forward
 type ReliableTransport struct {
 	config              ReliableTransportConfig
-	physicalTransport 	Transport
+	physicalTransport 	mesh.Transport
 	outputChannel 		chan []byte
-    serializer 			*Serializer
+    serializer 			*mesh.Serializer
 
 	lock 				*sync.Mutex
 	messagesSent        map[reliableId]messageSentState
@@ -59,12 +62,12 @@ type ReliableTransport struct {
 	closeWait           *sync.WaitGroup
 }
 
-func NewReliableTransport(physicalTransport Transport, config ReliableTransportConfig) *ReliableTransport {
+func NewReliableTransport(physicalTransport mesh.Transport, config ReliableTransportConfig) *ReliableTransport {
 	ret := &ReliableTransport{
 		config,
 		physicalTransport,
 		nil,
-		NewSerializer(),
+		mesh.NewSerializer(),
 		&sync.Mutex{},
 		make(map[reliableId]messageSentState),
 		make(map[reliableId]time.Time),
@@ -74,8 +77,8 @@ func NewReliableTransport(physicalTransport Transport, config ReliableTransportC
 		&sync.WaitGroup{},
 	}
 
-	ret.serializer.RegisterMessageForSerialization(MessagePrefix{1}, ReliableSend{})
-	ret.serializer.RegisterMessageForSerialization(MessagePrefix{2}, ReliableReply{})
+	ret.serializer.RegisterMessageForSerialization(mesh.MessagePrefix{1}, ReliableSend{})
+	ret.serializer.RegisterMessageForSerialization(mesh.MessagePrefix{2}, ReliableReply{})
 
 	go ret.processReceivedLoop()
 	go ret.expireMessagesLoop()
@@ -218,7 +221,7 @@ func (self*ReliableTransport) processPhysicalMessage(physicalMsg []byte) {
 }
 
 func (self*ReliableTransport) newMsgId() reliableId {
-	return (reliableId)(atomic.AddUint32(&self.nextMsgId, 1))
+	return (reliableId)(uuid.NewV4())
 }
 
 func (self*ReliableTransport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
@@ -250,7 +253,7 @@ func (self*ReliableTransport) Close() error {
 	return self.physicalTransport.Close()
 }
 
-func (self*ReliableTransport) SetCrypto(crypto TransportCrypto) {
+func (self*ReliableTransport) SetCrypto(crypto mesh.TransportCrypto) {
 	self.physicalTransport.SetCrypto(crypto)
 }
 

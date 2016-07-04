@@ -4,11 +4,12 @@ import(
 	"time"
 	"testing")
 
-import ("github.com/skycoin/skycoin/src/cipher"
+import ("github.com/skycoin/skycoin/src/mesh2"
+		"github.com/skycoin/skycoin/src/cipher"
 		"github.com/stretchr/testify/assert")
 
 func SetupTwoPeers(t *testing.T) (test_key_a, test_key_b cipher.PubKey, 
-								  stubTransport_a, stubTransport_b *StubTransport,
+								  stubTransport_a, stubTransport_b *mesh.StubTransport,
 								  reliableTransport_a, reliableTransport_b *ReliableTransport,
 								  received_a, received_b chan []byte) {
 	test_key_a = cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
@@ -20,7 +21,7 @@ func SetupTwoPeers(t *testing.T) (test_key_a, test_key_b cipher.PubKey,
 		6 * time.Second,
 		time.Second,
 	}
-	stubTransport_a = NewStubTransport(t, 512)
+	stubTransport_a = mesh.NewStubTransport(t, 512)
 	received_a = make(chan []byte, 10)
 	reliableTransport_a = NewReliableTransport(stubTransport_a, config_a)
 	reliableTransport_a.SetReceiveChannel(received_a)
@@ -32,7 +33,7 @@ func SetupTwoPeers(t *testing.T) (test_key_a, test_key_b cipher.PubKey,
 		6 * time.Second,
 		time.Second,
 	}
-	stubTransport_b = NewStubTransport(t, 512)
+	stubTransport_b = mesh.NewStubTransport(t, 512)
 	received_b = make(chan []byte, 10)
 	reliableTransport_b = NewReliableTransport(stubTransport_b, config_b)
 	reliableTransport_b.SetReceiveChannel(received_b)
@@ -135,7 +136,7 @@ func TestReliableMessageLength(t *testing.T) {
 		6 * time.Second,
 		time.Second,
 	}
-	stubTransport_a := NewStubTransport(t, 512)
+	stubTransport_a := mesh.NewStubTransport(t, 512)
 	reliableTransport_a := NewReliableTransport(stubTransport_a, config_a)
 	assert.NotEqual(t, (uint)(512), (uint)(reliableTransport_a.GetMaximumMessageSizeToPeer(test_key_b)))
 	reliableTransport_a.Close()

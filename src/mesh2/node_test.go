@@ -152,6 +152,10 @@ func sendDirect(t *testing.T, reliable bool) {
 	}
 }
 
+func TestEstablishRoute(t *testing.T) {
+	
+}
+
 // Route expiry test
 // Packet loss test
 // Multiple transport test

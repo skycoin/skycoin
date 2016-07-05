@@ -5,12 +5,12 @@ import(
 	"testing")
 
 import(
-	"github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2/transport"
     "github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert")
 
 var staticTestConfig UDPConfig = UDPConfig {
-		mesh.TransportConfig {
+		transport.TransportConfig {
 			8, // SendChannelLength uint32
 		},
 		512, // DatagramLength	uint64
@@ -39,7 +39,7 @@ func TestClose(t *testing.T) {
 
 func TestBindSTUNPorts(t *testing.T) {
 	config := UDPConfig {
-		mesh.TransportConfig {
+		transport.TransportConfig {
 			8, // SendChannelLength uint32
 		},
 		512, // DatagramLength	uint64

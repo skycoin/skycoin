@@ -195,3 +195,5 @@ func TestSendLongMessage(t *testing.T) {
 // Route expiry test
 // Packet loss test
 // Multiple transport test
+// Threading test
+

@@ -1,6 +1,7 @@
 package transport
 
 import(
+	"fmt"
 	"sync"
 	"errors"
 	"testing")
@@ -38,6 +39,9 @@ func (self*StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport)
 	self.stubbedPeers[key] = peer
 }
 func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
+	if (uint)(len(msg)) > self.maxMessageSize {
+		return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(msg), self.maxMessageSize))
+	}
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
 		if !self.ignoreSend {

@@ -95,8 +95,10 @@ func (self*ReliableTransport) processReceivedLoop() {
 
 	for len(self.closing) == 0 {
 		select {
-			case physicalMsg := <- self.physicalReceived: {
-				self.processPhysicalMessage(physicalMsg)
+			case physicalMsg, ok := <- self.physicalReceived: {
+				if ok {
+					self.processPhysicalMessage(physicalMsg)
+				}
 			}
 			case <-self.closing: {
 				return

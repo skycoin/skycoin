@@ -1,5 +1,10 @@
+
+
+//import {Component, OnInit, ViewChild} from 'app/angular2/core';
+//import {ROUTER_DIRECTIVES, OnActivate} from 'app/angular2/router';
 import {Component, OnInit, ViewChild} from 'angular2/core';
 import {ROUTER_DIRECTIVES, OnActivate} from 'angular2/router';
+
 import {Http, HTTP_BINDINGS, Response} from 'angular2/http';
 import {HTTP_PROVIDERS, Headers} from 'angular2/http';
 import {Observable} from 'rxjs/Observable';

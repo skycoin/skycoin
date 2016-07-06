@@ -1,18 +1,15 @@
 package mesh
 
 import(
-"os"
-"fmt"
-
 	"time"
 	"testing"
 	"sort")
 
 import(
-	"github.com/skycoin/skycoin/src/mesh2/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
     "github.com/skycoin/skycoin/src/cipher"
-	"github.com/stretchr/testify/assert")
+	"github.com/stretchr/testify/assert"
+    "github.com/satori/go.uuid")
 
 func sortPubKeys(pubKeys []cipher.PubKey) ([]cipher.PubKey) {
 	var ret cipher.PubKeySlice = pubKeys
@@ -32,14 +29,7 @@ func TestManageTransports(t *testing.T) {
 			time.Second,
 			time.Second,
 			2*time.Second,
-			10, // Transport message channel length
-			reliable.ReliableTransportConfig{
-				test_key_a,
-				10,
-				6 * time.Second,
-				6 * time.Second,
-				time.Second,
-			},
+			100, // Transport message channel length
 		})
 	assert.Nil(t, error)
 	assert.Equal(t, []transport.Transport{}, node.GetTransports())
@@ -65,14 +55,7 @@ func TestConnectedPeers(t *testing.T) {
 			time.Second,
 			time.Second,
 			2*time.Second,
-			10, // Transport message channel length
-			reliable.ReliableTransportConfig{
-				test_key_a,
-				10,
-				6 * time.Second,
-				6 * time.Second,
-				time.Second,
-			},
+			100, // Transport message channel length
 		})
 	assert.Nil(t, error)
 	peer_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
@@ -122,14 +105,7 @@ func SetupNode(t *testing.T) (*Node, *transport.StubTransport) {
 			time.Second,
 			time.Second,
 			2*time.Second,
-			10, // Transport message channel length
-			reliable.ReliableTransportConfig{
-				newPubKey,
-				10,
-				6 * time.Second,
-				6 * time.Second,
-				time.Second,
-			},
+			100, // Transport message channel length
 		})
 	assert.Nil(t, error)
 	node.AddTransport(transport)
@@ -158,8 +134,7 @@ func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_cl
 	return nodes, sentMessages
 }
 
-
-func TestEstablishRoute(t *testing.T) {
+func TestDeleteRoute(t *testing.T) {
 	// todo
 }
 
@@ -176,19 +151,20 @@ func sendDirect(t *testing.T, reliable bool, contents []byte) {
 		}
 	}()
 
-// establish route
-
 	received := make(chan MeshMessage, 10)
 	nodes[1].SetReceiveChannel(received)
 
 	test_key_b := nodes[1].GetConfig().PubKey
+
+	addedRouteId := (RouteId)(uuid.NewV4())
+	assert.Nil(t, nodes[0].AddRoute(addedRouteId, test_key_b))
+
 	send_err, route_id := nodes[0].SendMessageToPeer(test_key_b, contents, reliable)
 	assert.Nil(t, send_err)
-	assert.Zero(t, route_id)
-
+	assert.Equal(t, addedRouteId, route_id)
 	select {
 		case recvd := <- received: {
-			assert.Zero(t, recvd.RouteId)
+			assert.Equal(t, addedRouteId, recvd.RouteId)
 			assert.Equal(t, contents, recvd.Contents)
 		}
 		case <-time.After(5*time.Second):
@@ -211,10 +187,11 @@ func TestSendLongMessage(t *testing.T) {
 	for i := 0; i < 25670 ; i++ {
 		contents = append(contents, (byte)(i))
 	}
-fmt.Fprintf(os.Stderr, "contents %v\n", contents)
 	sendDirect(t, false, contents)
 }
 
+// Long route test
+// Refragment test
 // Route expiry test
 // Packet loss test
 // Multiple transport test

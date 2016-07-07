@@ -174,3 +174,16 @@ go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
 
 go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
 ```
+
+Meshnet reminders
+- one way latency
+- two way latency (append), latency between packet and ack
+- service handler (ability to append services to meshnet)
+- uploading bandwidth, latency measurements over time
+- end-to-end route instrumentation
+
+Rebuilding Wallet HTML
+-----
+
+npm install
+gulp build

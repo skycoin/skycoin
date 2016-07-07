@@ -277,3 +277,7 @@ func (self*ReliableTransport) debug_countMapItems() int {
 	return len(self.messagesSent) + len(self.messagesReceived)
 }
 
+func (self*ReliableTransport) IsReliable() bool {
+	return true
+}
+

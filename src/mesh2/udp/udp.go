@@ -363,3 +363,7 @@ func (self*UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 	delete(self.connectedPeers, peer)
 }
 
+func (self*UDPTransport) IsReliable() bool {
+	return false
+}
+

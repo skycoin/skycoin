@@ -460,13 +460,14 @@ func  (self*Node) SetReceiveChannel(received chan MeshMessage) {
 }
 
 // toPeer must be the public key of a connected peer
+// Requires reliable transport (for now)
 func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {	
 	_, routeExists := self.safelyGetRoute(id)
 	if routeExists {
 		return errors.New(fmt.Sprintf("Rotue %v already exists\n", id))
 	}
 
-	transport := self.safelyGetTransportToPeer(toPeer)
+	transport := self.safelyGetTransportToPeer(toPeer, true)
 	if transport == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v\n", toPeer))
 	}
@@ -561,20 +562,30 @@ func (self*Node) fragmentMessage(fullContents []byte, toPeer cipher.PubKey, tran
 	return ret
 }
 
-func (self*Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey) transport.Transport {
+func (self*Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
+	// If unreliable, prefer unreliable transport
+	if !reliably {
+		for transport, _ := range(self.transports) {
+			// TODO: Choose transport more intelligently
+			if transport.ConnectedToPeer(peerKey) && !transport.IsReliable() {
+				return transport
+			}
+		}	
+	}
+
 	for transport, _ := range(self.transports) {
 		// TODO: Choose transport more intelligently
-		if transport.ConnectedToPeer(peerKey) {
+		if transport.ConnectedToPeer(peerKey) && ((!reliably) || transport.IsReliable()) {
 			return transport
 		}
 	}
 	return nil
 }
 
-func (self*Node) safelyGetTransportToPeer(peerKey cipher.PubKey) transport.Transport {
+func (self*Node) safelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	return self.unsafelyGetTransportToPeer(peerKey)
+	return self.unsafelyGetTransportToPeer(peerKey, reliably)
 }
 
 func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPeer cipher.PubKey, routeId RouteId, transport transport.Transport, err error) {
@@ -591,7 +602,7 @@ func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPee
 	} else {
 		return cipher.PubKey{}, NilRouteId, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
 	}
-	transport = self.unsafelyGetTransportToPeer(directPeer)
+	transport = self.unsafelyGetTransportToPeer(directPeer, reliably)
 	if transport == nil {
 		return cipher.PubKey{}, NilRouteId, nil, 
 			    errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
@@ -600,6 +611,8 @@ func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPee
 }
 
 // Chooses a route automatically. Sends directly without a route if connected to that peer
+// if reliably is false, unreliable transport is preferred, but reliable is chosen if it's the only option
+// if reliably is true, reliable transport only is used
 func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool) (err error, routeId RouteId) {
 	directPeer, routeId, transport, error := self.findRouteToPeer(toPeer, reliably)
 	if error != nil {

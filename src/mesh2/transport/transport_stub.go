@@ -3,6 +3,7 @@ package transport
 import(
 	"fmt"
 	"sync"
+	"math/rand"
 	"errors"
 	"testing")
 
@@ -16,6 +17,13 @@ type StubTransport struct {
     lock *sync.Mutex
     closeWait *sync.WaitGroup
     ignoreSend bool
+    amReliable bool
+    messageBuffer []QueuedMessage
+}
+
+type QueuedMessage struct {
+	toPeer *StubTransport
+	msg []byte
 }
 
 func NewStubTransport(testing *testing.T, 
@@ -28,6 +36,8 @@ func NewStubTransport(testing *testing.T,
 		&sync.Mutex{},
 		&sync.WaitGroup{},
 		false,
+		false,
+		nil,
 	}
 	return ret
 }
@@ -38,6 +48,11 @@ func (self*StubTransport) Close() error {
 func (self*StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport) {
 	self.stubbedPeers[key] = peer
 }
+func (self*StubTransport) getMessageBuffer() (retMessages []QueuedMessage) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	return self.messageBuffer
+}
 func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 	if (uint)(len(msg)) > self.maxMessageSize {
 		return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(msg), self.maxMessageSize))
@@ -45,7 +60,14 @@ func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
 		if !self.ignoreSend {
-			peer.messagesReceived <- msg
+			messageBuffer := self.getMessageBuffer()
+			if messageBuffer == nil {
+				peer.messagesReceived <- msg
+			} else {
+				self.lock.Lock()
+				defer self.lock.Unlock()
+				self.messageBuffer = append(self.messageBuffer, QueuedMessage{peer, msg})
+			}
 		}
 		return nil
 	}
@@ -53,6 +75,33 @@ func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 }
 func (self*StubTransport) SetIgnoreSendStatus(status bool) {
 	self.ignoreSend = status
+}
+func (self*StubTransport) SetAmReliable(status bool) {
+	self.amReliable = status
+}
+func (self*StubTransport) StartBuffer() {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	self.messageBuffer = make([]QueuedMessage,0)
+}
+func (self*StubTransport) consumeBuffer() (retMessages []QueuedMessage) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	retMessages = self.messageBuffer
+	self.messageBuffer = nil
+	return
+}
+func (self*StubTransport) StopAndConsumeBuffer(reorder bool) {
+	messages := self.consumeBuffer()
+	if reorder {
+		for i := range messages {
+		    j := rand.Intn(i + 1)
+		    messages[i], messages[j] = messages[j], messages[i]
+		}
+	}
+	for _, queued := range(messages) {
+		queued.toPeer.messagesReceived <- queued.msg
+	}
 }
 func (self*StubTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
@@ -78,3 +127,8 @@ func (self*StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 func (self*StubTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
 	return self.maxMessageSize
 }
+
+func (self*StubTransport) IsReliable() bool {
+	return self.amReliable
+}
+

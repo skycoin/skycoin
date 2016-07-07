@@ -94,10 +94,14 @@ func TestConnectedPeers(t *testing.T) {
 	assert.False(t, node.ConnectedToPeer(peer_c))
 }
 
-func SetupNode(t *testing.T) (*Node, *transport.StubTransport) {
-	transport := transport.NewStubTransport(t, 512)
+func SetupNode(t *testing.T) (node *Node, 
+							  unreliableTransport *transport.StubTransport,
+							  reliableTransport *transport.StubTransport) {
+	unreliableTransport = transport.NewStubTransport(t, 512)
+	reliableTransport = transport.NewStubTransport(t, 512)
 	newPubKey, _ := cipher.GenerateKeyPair()
-	node, error := NewNode(NodeConfig{
+	var error error
+	node, error = NewNode(NodeConfig{
 			newPubKey,
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
 			time.Minute,
@@ -108,48 +112,69 @@ func SetupNode(t *testing.T) (*Node, *transport.StubTransport) {
 			100, // Transport message channel length
 		})
 	assert.Nil(t, error)
-	node.AddTransport(transport)
-	return node, transport
+	node.AddTransport(unreliableTransport)
+	node.AddTransport(reliableTransport)
+	return
 }
 
 // Nodes each have one transport
 // All nodes receive all other nodes' messages, but stub transport filters
-func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte) {
+func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte, 
+															unreliableTransports []*transport.StubTransport, 
+															reliableTransports []*transport.StubTransport) {
 	nodes = make([]*Node, n)
-	transports := make([]*transport.StubTransport, n)
+	unreliableTransports = make([]*transport.StubTransport, n)
+	reliableTransports = make([]*transport.StubTransport, n)
 	to_close = make(chan []byte, 20)
 	sentMessages := make(chan []byte, 20)
 	for i := (uint)(0); i < n; i++ {
-		nodes[i], transports[i] = SetupNode(t)
+		nodes[i], unreliableTransports[i], reliableTransports[i] = SetupNode(t)
+		unreliableTransports[i].SetAmReliable(false)
+		reliableTransports[i].SetAmReliable(true)
 	}
 	for i := (uint)(0); i < n; i++ {
-		transport_from := transports[i]
+		transport_from := unreliableTransports[i]
 		for j := (uint)(0); j < n; j++ {
-			transport_to := transports[j]
+			transport_to := unreliableTransports[j]
 			if connections[i][j] != 0 {
 				transport_from.AddStubbedPeer(nodes[j].GetConfig().PubKey, transport_to)
 			}
 		}
 	}
-	return nodes, sentMessages
+	for i := (uint)(0); i < n; i++ {
+		transport_from := reliableTransports[i]
+		for j := (uint)(0); j < n; j++ {
+			transport_to := reliableTransports[j]
+			if connections[i][j] != 0 {
+				transport_from.AddStubbedPeer(nodes[j].GetConfig().PubKey, transport_to)
+			}
+		}
+	}	
+	return nodes, sentMessages, unreliableTransports, reliableTransports
 }
 
 func TestDeleteRoute(t *testing.T) {
 	// todo
 }
 
-func sendDirect(t *testing.T, reliable bool, contents []byte) {
+func sendDirect(t *testing.T, reliable bool, dropFirst bool, reorder bool, contents []byte) {
 	connections  := [][]int{
 		[]int{1,1,},
 		[]int{1,1,},
 	}
-	nodes, to_close := SetupNodes(2, connections, t)
+	nodes, to_close, unreliableTransport, _ := SetupNodes(2, connections, t)
 	defer close(to_close)
 	defer func() {
 		for _, node := range(nodes) {
 			node.Close()
 		}
 	}()
+
+	if dropFirst {
+		for _, unreliableTransport := range(unreliableTransport) {
+			unreliableTransport.SetAmReliable(false)
+		}
+	}
 
 	received := make(chan MeshMessage, 10)
 	nodes[1].SetReceiveChannel(received)
@@ -159,27 +184,60 @@ func sendDirect(t *testing.T, reliable bool, contents []byte) {
 	addedRouteId := (RouteId)(uuid.NewV4())
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, test_key_b))
 
-	send_err, route_id := nodes[0].SendMessageToPeer(test_key_b, contents, reliable)
-	assert.Nil(t, send_err)
-	assert.Equal(t, addedRouteId, route_id)
-	select {
-		case recvd := <- received: {
-			assert.Equal(t, addedRouteId, recvd.RouteId)
-			assert.Equal(t, contents, recvd.Contents)
+	for dropFirstIdx := 0; dropFirstIdx<2; dropFirstIdx++ {
+		shouldReceive := true
+		if dropFirst && dropFirstIdx == 0 {
+			shouldReceive = false
 		}
-		case <-time.After(5*time.Second):
-			panic("Test timed out")
+
+		for _, unreliableTransport := range(unreliableTransport) {
+			unreliableTransport.StartBuffer()
+			unreliableTransport.SetIgnoreSendStatus(!shouldReceive)
+		}
+
+		send_err, route_id := nodes[0].SendMessageToPeer(test_key_b, contents, reliable)
+		assert.Nil(t, send_err)
+		assert.Equal(t, addedRouteId, route_id)
+
+		for _, unreliableTransport := range(unreliableTransport) {
+			unreliableTransport.StopAndConsumeBuffer(reorder)
+		}
+
+		if shouldReceive {
+			select {
+				case recvd := <- received: {
+					assert.Equal(t, addedRouteId, recvd.RouteId)
+					assert.Equal(t, contents, recvd.Contents)
+				}
+				case <-time.After(5*time.Second):
+					panic("Test timed out")
+			}
+		} else {
+			select {
+				case <- received: {
+					panic("Should not receive")
+				}
+				case <-time.After(5*time.Second): {
+					break
+				}
+			}
+		}
 	}
 }
 
 func TestSendDirectUnreliably(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
-	sendDirect(t, false, contents)
+	sendDirect(t, false, false, false, contents)
+}
+
+func TestSendDirectUnreliablyNegative(t *testing.T) {
+	contents := []byte{4,66,7,44,33}
+	sendDirect(t, false, true, false, contents)
 }
 
 func TestSendDirectReliably(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
-	sendDirect(t, true, contents)
+	sendDirect(t, true, false, false, contents)
 }
 
 func TestSendLongMessage(t *testing.T) {
@@ -187,7 +245,15 @@ func TestSendLongMessage(t *testing.T) {
 	for i := 0; i < 25670 ; i++ {
 		contents = append(contents, (byte)(i))
 	}
-	sendDirect(t, false, contents)
+	sendDirect(t, false, false, false, contents)
+}
+
+func TestSendLongMessageWithReorder(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670 ; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	sendDirect(t, false, false, true, contents)
 }
 
 // Long route test

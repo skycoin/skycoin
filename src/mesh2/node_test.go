@@ -361,10 +361,45 @@ func TestSendThruRoute(t *testing.T) {
 	}
 }
 
+// Tests that the ExtendRoute confirmation works
+/*
+func TestReorderWithEstablish(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0,1,0},
+		[]int{1,0,1},
+		[]int{0,1,0},
+	}
+	nodes, to_close, _, _ := SetupNodes((uint)(3), allConnections, t)
+	defer close(to_close)
+	defer func() {
+		for _, node := range(nodes) {
+			node.Close()
+		}
+	}()
+	received := make(chan MeshMessage, 10)
+	nodes[2].SetReceiveChannel(received)
+	contents := []byte{1,44,2,22,11,22}
+	addedRouteId := RouteId{}
+	addedRouteId[0] = 55
+	addedRouteId[1] = 4
+	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
+	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteId, contents, true))
+
+	select {
+		case recvd := <- received: {
+			assert.Equal(t, contents, recvd.Contents)
+		}
+		case <-time.After(5*time.Second):
+			panic("Test timed out")
+	}
+}
+*/
+
+// Tests TODO
+
 // Reorder messages with establish
 // Establish route and send unreliable
-/// TODO! Needs to pass a reliable flag in base?
-
+// Test that reliable/unreliable transport is preserved
 
 
 // Expire old routes, messages test

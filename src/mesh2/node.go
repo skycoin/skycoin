@@ -106,6 +106,7 @@ type MessageBase struct {
     SendBack bool
     // For sending the reply from the last node in a route
     FromPeer cipher.PubKey
+    Reliably bool
 }
 
 type UserMessage struct {
@@ -345,6 +346,7 @@ func (self*Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey,
 			rewriteTo,
 			sendBack,
 			self.config.PubKey,
+			base.Reliably,
 		}
 	return forwardTo, newBase, true
 }
@@ -356,7 +358,7 @@ func (self*Node) forwardMessage(msg interface{}) bool {
 	}
 	// Rewrite
 	rewritten := rewriteMessage(msg, newBase)
-	transport := self.safelyGetTransportToPeer(forwardTo, true)
+	transport := self.safelyGetTransportToPeer(forwardTo, newBase.Reliably)
 	if transport == nil {
         fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.config.PubKey, forwardTo)
         return true
@@ -407,6 +409,7 @@ func (self*Node) sendSetRouteReply(msg SetRouteMessage) {
 			msg.SendId,
 			true,	// SendBack
 			self.config.PubKey,
+			true,	// Reliable
 		},
 		msg.ConfirmId,
 	}
@@ -653,6 +656,7 @@ func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (me
 		route.forwardRewriteSendId,
 		false,
 		self.config.PubKey,
+		true, // Reliable
 	}
 
 	newTermMessage := SetRouteMessage{
@@ -818,6 +822,7 @@ func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliab
 		sendId,
 		false,		// Sending forward
 		self.config.PubKey,
+		reliably,
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
 	for _, message := range(messages) {
@@ -841,6 +846,7 @@ func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably
 		route.forwardRewriteSendId,
 		false,		// Sending forward
 		self.config.PubKey,
+		reliably,
 	}
 	directPeer := route.forwardToPeer
 	transport := self.safelyGetTransportToPeer(directPeer, reliably)
@@ -869,6 +875,7 @@ func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reli
 		replyTo.routeId,
 		true,		// Sending backward
 		self.config.PubKey,
+		reliably,
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
 	for _, message := range(messages) {

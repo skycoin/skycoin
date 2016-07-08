@@ -41,10 +41,18 @@ var (
 	}
 
 	//clear these after loading [????]
+	//TODO: Move time and other genesis block settigns from visor, to here
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
 	GenesisAddressStr   = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
 	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 	BlockchainSeckeyStr = ""
+
+	DefaultServers = []string{
+		"13.76.90.237:6000",
+		"40.74.142.139:6000",
+		"188.226.245.87:6000",
+		"40.74.80.119:6000",
+	}
 )
 
 // Command line interface arguments
@@ -360,7 +368,7 @@ var devConfig Config = Config{
 	PrintWebInterfaceAddress: false,
 	LaunchBrowser:            true,
 	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: "",
+	DataDirectory: ".skycoin",
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
@@ -397,6 +405,7 @@ var devConfig Config = Config{
 
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
+
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
 	dc.Peers.Disabled = c.DisablePEX
@@ -407,6 +416,8 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
 	dc.Daemon.OutgoingMax = c.MaxConnections
+
+	daemon.BootStrapPeers = DefaultServers
 
 	if c.OutgoingConnectionsRate == 0 {
 		c.OutgoingConnectionsRate = time.Millisecond

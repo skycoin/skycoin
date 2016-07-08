@@ -1,11 +1,12 @@
 package secp256k1
 
 import (
-	crand "crypto/rand" //secure, system random number generator
-	"crypto/sha256"
+	crand "crypto/rand"
+	"crypto/sha256" //secure, system random number generator
 	"hash"
 	"io"
 	"log"
+	"sync"
 	//mrand "math/rand"
 	"os"
 	"strconv"
@@ -14,13 +15,17 @@ import (
 )
 
 var (
-	sha256Hash hash.Hash = sha256.New()
+	poolsize       = 10
+	sha256HashChan chan hash.Hash
+	// sha256Hash hash.Hash = sha256.New()
 )
 
 func SumSHA256(b []byte) []byte {
+	sha256Hash := <-sha256HashChan
 	sha256Hash.Reset()
 	sha256Hash.Write(b)
 	sum := sha256Hash.Sum(nil)
+	sha256HashChan <- sha256Hash
 	return sum[:]
 }
 
@@ -37,8 +42,8 @@ Entropy pool needs
 */
 
 type EntropyPool struct {
-	Ent [32]byte //256 bit accumulator
-
+	Ent  [32]byte //256 bit accumulator
+	lock sync.Mutex
 }
 
 //mixes in 256 bits, outputs 256 bits
@@ -47,6 +52,7 @@ func (self *EntropyPool) Mix256(in []byte) (out []byte) {
 	//hash input
 	val1 := SumSHA256(in)
 	//return value
+	self.lock.Lock()
 	val2 := SumSHA256(append(val1, self.Ent[:]...))
 	//next ent value
 	val3 := SumSHA256(append(val1, val2...))
@@ -55,6 +61,7 @@ func (self *EntropyPool) Mix256(in []byte) (out []byte) {
 		self.Ent[i] = val3[i]
 		val3[i] = 0x00
 	}
+	self.lock.Unlock()
 
 	return val2
 }
@@ -108,6 +115,12 @@ func init() {
 	seed4 := make([]byte, 256)
 	io.ReadFull(crand.Reader, seed4) //system secure random number generator
 
+	// init the hash reuse pool
+	sha256HashChan = make(chan hash.Hash, poolsize)
+	for i := 0; i < poolsize; i++ {
+		sha256HashChan <- sha256.New()
+	}
+
 	//mrand.Rand_rand = mrand.New(mrand.NewSource(int64(time.Now().UnixNano()))) //pseudo random
 	//seed entropy pool
 	_ent.Mix256(seed1)
@@ -129,7 +142,6 @@ func RandByte(n int) []byte {
 	}
 
 	//XORing in sequence, cannot reduce security (even if sequence is bad/known/non-random)
-
 	buff2 := _ent.Mix(buff)
 	for i := 0; i < n; i++ {
 		buff[i] ^= buff2[i]

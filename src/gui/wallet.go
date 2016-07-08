@@ -124,7 +124,7 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 
 	wlt := self.Wallets.Get(walletID)
 	if wlt == nil {
-		log.Printf("GetWalletBalance: ID NOT FOUND: id= %s", walletID)
+		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
 		return wallet.BalancePair{}, errors.New("Id not found")
 	}
 	auxs := v.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())

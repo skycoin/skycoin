@@ -11,6 +11,11 @@ var Q = require('q');
 
 var paths = {
     scripts: 'app/**/*.js',
+    systemjs: 'app/systemjs.config.js',
+    nodeModuules: 'app/node_moduules/*',
+    traceur: 'app/traceur/*',    
+    app: 'app/app/*',
+    src: 'app/src/*',
     styles: ['app/app.styl'],
     assets: 'assets/**/*',
     index: 'app/index.html',
@@ -135,6 +140,32 @@ pipes.builtStylesDev = function() {
     .pipe(gulp.dest(paths.distDev));
 };
 
+pipes.builtNode = function() {
+  return gulp.src(paths.nodeModuules)
+    .pipe(gulp.dest(paths.distDev));
+};
+
+pipes.builtApp = function() {
+  return gulp.src(paths.app)
+    .pipe(gulp.dest(paths.distDev));
+};
+
+pipes.traceur = function() {
+  return gulp.src(paths.traceur)
+    .pipe(gulp.dest(paths.distDev));
+};
+
+pipes.builtSystemJs = function() {
+  return gulp.src(paths.systemjs)
+    .pipe(gulp.dest(paths.distDev));
+};
+
+
+pipes.builtSrc = function() {
+  return gulp.src(paths.src)
+    .pipe(gulp.dest(paths.distDev));
+};
+
 pipes.builtStylesProd = function() {
     return gulp.src(paths.styles)
         .pipe(plugins.sourcemaps.init())
@@ -170,12 +201,23 @@ pipes.builtIndexDev = function() {
         .pipe(pipes.orderedAppScripts());
 
     var appStyles = pipes.builtStylesDev();
+    var builtNode = pipes.builtNode();
+    var builtApp = pipes.builtApp();
+    var builtTraceur = pipes.builtTraceur();
+    var builtSystemJs = pipes.builtSystemJs();
+    var builtSrc = pipes.builtSrc();
+
 
     return pipes.validatedIndex()
         .pipe(gulp.dest(paths.distDev)) // write first to get relative path for inject
         .pipe(plugins.inject(orderedVendorScripts, {relative: true, name: 'bower'}))
         .pipe(plugins.inject(orderedAppScripts, {relative: true}))
         .pipe(plugins.inject(appStyles, {relative: true}))
+        .pipe(plugins.inject(builtNode, {relative: true}))
+        .pipe(plugins.inject(builtApp, {relative: true}))
+        .pipe(plugins.inject(builtSystemJs, {relative: true}))
+        .pipe(plugins.inject(builtTraceur, {relative: true}))
+        .pipe(plugins.inject(builtSrc, {relative: true}))
         .pipe(gulp.dest(paths.distDev));
 };
 

@@ -340,3 +340,13 @@ label {
     bottom: -250px;
   }
 }
+
+.qr-container img{
+    display: none !important;
+}
+.qr-container canvas{
+    display: inline-block !important;
+}
+.qr-container .qrAddress{
+  text-align: center;
+}

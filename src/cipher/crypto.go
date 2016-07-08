@@ -1,10 +1,15 @@
 package cipher
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"hash"
 	"log"
 	"time"
+	"bytes"
+
+	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
 	"gopkg.in/op/go-logging.v1"
 
@@ -18,6 +23,19 @@ var (
 )
 
 type PubKey [33]byte
+type PubKeySlice []PubKey
+
+func (slice PubKeySlice) Len() int {
+    return len(slice)
+}
+
+func (slice PubKeySlice) Less(i, j int) bool {
+    return bytes.Compare(slice[i][:], slice[j][:]) < 0
+}
+
+func (slice PubKeySlice) Swap(i, j int) {
+    slice[i], slice[j] = slice[j], slice[i]
+}
 
 func RandByte(n int) []byte {
 	return secp256k1.RandByte(n)
@@ -359,6 +377,17 @@ func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
 	return keys
 }
 
+//Returns sequence of n private keys from intial seed, and return the new seed
+func GenerateDeterministicKeyPairsSeed(seed []byte, n int) ([]byte, []SecKey) {
+	var keys []SecKey
+	var seckey SecKey
+	for i := 0; i < n; i++ {
+		seed, _, seckey = DeterministicKeyPairIterator(seed)
+		keys = append(keys, seckey)
+	}
+	return seed, keys
+}
+
 func TestSecKey(seckey SecKey) error {
 	hash := SumSHA256([]byte(time.Now().String()))
 	return TestSecKeyHash(seckey, hash)
@@ -425,6 +454,14 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 
 //do not allow program to start if crypto tests fail
 func init() {
+	// init the reuse hash pool.
+	sha256HashChan = make(chan hash.Hash, poolsize)
+	ripemd160HashChan = make(chan hash.Hash, poolsize)
+	for i := 0; i < poolsize; i++ {
+		sha256HashChan <- sha256.New()
+		ripemd160HashChan <- ripemd160.New()
+	}
+
 	_, seckey := GenerateKeyPair()
 	if TestSecKey(seckey) != nil {
 		log.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING " +

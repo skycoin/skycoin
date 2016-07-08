@@ -10,9 +10,6 @@ import(
     "github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert")
 
-import("os"
-"fmt")
-
 func sortPubKeys(pubKeys []cipher.PubKey) ([]cipher.PubKey) {
 	var ret cipher.PubKeySlice = pubKeys
 	sort.Sort(ret)
@@ -161,7 +158,7 @@ func TestDeleteRoute(t *testing.T) {
 	// todo
 }
 
-func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder bool, contents []byte) {
+func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder bool, sendBack bool, contents []byte) {
 	if nPeers < 2 {
 		panic("Fewer than 2 peers doesn't make sense")
 	}
@@ -180,7 +177,6 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 		}
 		allConnections = append(allConnections, toConnections)
 	}
-fmt.Fprintf(os.Stderr, "allConnections %v\n", allConnections)
 	nodes, to_close, unreliableTransport, reliableTransport := SetupNodes((uint)(nPeers), allConnections, t)
 	defer close(to_close)
 	defer func() {
@@ -205,8 +201,10 @@ fmt.Fprintf(os.Stderr, "allConnections %v\n", allConnections)
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
 
 	for extendIdx := 2; extendIdx < nPeers; extendIdx++ {
-		assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[extendIdx].GetConfig().PubKey))
+		assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[extendIdx].GetConfig().PubKey, time.Second))
 	}
+
+	var replyTo ReplyTo
 
 	for dropFirstIdx := 0; dropFirstIdx<2; dropFirstIdx++ {
 		shouldReceive := true
@@ -237,7 +235,8 @@ fmt.Fprintf(os.Stderr, "allConnections %v\n", allConnections)
 		if shouldReceive {
 			select {
 				case recvd := <- received: {
-					assert.Equal(t, addedRouteId, recvd.RouteId)
+					replyTo = recvd.ReplyTo
+					assert.Equal(t, addedRouteId, recvd.ReplyTo.routeId)
 					assert.Equal(t, contents, recvd.Contents)
 				}
 				case <-time.After(5*time.Second):
@@ -254,21 +253,35 @@ fmt.Fprintf(os.Stderr, "allConnections %v\n", allConnections)
 			}
 		}
 	}
+
+	if sendBack {
+		back_received := make(chan MeshMessage, 10)
+		nodes[0].SetReceiveChannel(back_received)
+		replyContents := []byte{6,44,2,1,1,1,1,2}
+		assert.Nil(t, nodes[nPeers-1].SendMessageBackThruRoute(replyTo, replyContents, reliable))
+		select {
+			case recvd_back := <- back_received: {
+				assert.Equal(t, replyContents, recvd_back.Contents)
+			}
+			case <-time.After(5*time.Second):
+				panic("Test timed out")
+		}
+	}
 }
 
 func TestSendDirectUnreliably(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
-	sendTest(t, 2, false, false, false, contents)
+	sendTest(t, 2, false, false, false, false, contents)
 }
 
 func TestSendDirectUnreliablyNegative(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
-	sendTest(t, 2, false, true, false, contents)
+	sendTest(t, 2, false, true, false, false, contents)
 }
 
 func TestSendDirectReliably(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
-	sendTest(t, 2, true, false, false, contents)
+	sendTest(t, 2, true, false, false, false, contents)
 }
 
 func TestSendLongMessage(t *testing.T) {
@@ -276,7 +289,7 @@ func TestSendLongMessage(t *testing.T) {
 	for i := 0; i < 25670 ; i++ {
 		contents = append(contents, (byte)(i))
 	}
-	sendTest(t, 2, false, false, false, contents)
+	sendTest(t, 2, false, false, false, false, contents)
 }
 
 func TestSendLongMessageWithReorder(t *testing.T) {
@@ -284,14 +297,30 @@ func TestSendLongMessageWithReorder(t *testing.T) {
 	for i := 0; i < 25670 ; i++ {
 		contents = append(contents, (byte)(i))
 	}
-	sendTest(t, 2, false, false, true, contents)
+	sendTest(t, 2, false, false, true, false, contents)
 }
 
 func TestLongRoute(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
-	sendTest(t, 5, true, false, false, contents)
+	sendTest(t, 5, true, false, false, false, contents)
 }
 
+func TestShortSendBack(t *testing.T) {
+	contents := []byte{1,44,2,22,11,22}
+	sendTest(t, 2, true, false, false, true, contents)
+}
+
+func TestMediumSendBack(t *testing.T) {
+	contents := []byte{1,44,2,22,11,22}
+	sendTest(t, 3, true, false, false, true, contents)
+}
+
+func TestLongSendBack(t *testing.T) {
+	contents := []byte{1,44,2,22,11,22}
+	sendTest(t, 5, true, false, false, true, contents)
+}
+
+// Refragment!
 
 // Reorder messages with establish
 // Establish route and send unreliable

@@ -43,9 +43,14 @@ type rewriteableMessage interface {
     Rewrite(newSendId RouteId) rewriteableMessage
 }
 
+type ReplyTo struct {
+	routeId       RouteId
+    fromPeer	  cipher.PubKey
+}
+
 type MeshMessage struct {
-    RouteId       RouteId
-    Contents      []byte
+    ReplyTo     ReplyTo
+    Contents    []byte
 }
 
 type Route struct {
@@ -70,9 +75,9 @@ type MessageUnderAssembly struct {
 }
 
 type LocalRoute struct {
-	terminatingPeer cipher.PubKey
-	lastHopId       RouteId
-	termSetRoute    SetRouteOp
+	lastForwardingPeer cipher.PubKey
+	terminatingPeer    cipher.PubKey
+	lastHopId          RouteId
 }
 
 type Node struct {
@@ -90,6 +95,7 @@ type Node struct {
     routesById                      map[RouteId]Route
     localRoutesByTerminatingPeer	map[cipher.PubKey]RouteId
     localRoutesById                 map[RouteId]LocalRoute
+    routeExtensionsAwaitingConfirm  map[RouteId]chan bool
 }
 
 // Fields must be public (capital first letter) for encoder
@@ -98,6 +104,8 @@ type MessageBase struct {
 	//  the RouteId can be used to reply back thru the route
     SendId RouteId
     SendBack bool
+    // For sending the reply from the last node in a route
+    FromPeer cipher.PubKey
 }
 
 type UserMessage struct {
@@ -111,11 +119,19 @@ type UserMessage struct {
 type SetRouteMessage struct {
 	MessageBase
 	SetRouteId     			RouteId
+	ConfirmId				RouteId
 	ForwardToPeer 			cipher.PubKey
 	ForwardRewriteSendId 	RouteId
 	BackwardToPeer 			cipher.PubKey
 	BackwardRewriteSendId 	RouteId
     DurationHint   			time.Duration
+}
+
+// This allows ExtendRoute() to block so that messages aren't lost while a route is
+//  not yet established
+type SetRouteReply struct {
+	MessageBase
+	ConfirmId              RouteId
 }
 
 // Refreshes the route as it passes thru it
@@ -154,11 +170,13 @@ func NewNode(config NodeConfig) (*Node, error) {
 		make(map[RouteId]Route),
 		make(map[cipher.PubKey]RouteId),
 		make(map[RouteId]LocalRoute),
+		make(map[RouteId]chan bool),
 	}
     ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, UserMessage{})
     ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, SetRouteMessage{})
     ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, RefreshRouteMessage{})
     ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, DeleteRouteMessage{})
+    ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, SetRouteReply{})
 
     go ret.processIncomingMessagesLoop()
     go ret.expireOldRoutesLoop()
@@ -171,12 +189,6 @@ func NewNode(config NodeConfig) (*Node, error) {
 func (self*Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-
-	_, routeExists := self.routesById[msgIn.SendId]
-	if !routeExists {
-        fmt.Fprintf(os.Stderr, "Message %v is to unknown route id %v, ignoring\n", msgIn.MessageId, msgIn.SendId)
-		return nil
-	}
 
 	_, assembledExists := self.messagesBeingAssembled[msgIn.MessageId]
 	if !assembledExists {
@@ -245,6 +257,8 @@ func getMessageBase(msg interface{}) (base MessageBase) {
 		return (msg.(RefreshRouteMessage)).MessageBase
 	} else if msg_type == reflect.TypeOf(DeleteRouteMessage{}) {
 		return (msg.(DeleteRouteMessage)).MessageBase
+	} else if msg_type == reflect.TypeOf(SetRouteReply{}) {
+		return (msg.(SetRouteReply)).MessageBase
 	}
 	debug.PrintStack()
 	panic(fmt.Sprintf("Internal error: getMessageBase incomplete (%v)", msg_type))
@@ -267,6 +281,10 @@ func rewriteMessage(msg interface{}, newBase MessageBase) (rewritten interface{}
 		return ret
 	} else if msg_type == reflect.TypeOf(DeleteRouteMessage{}) {
 		ret := (msg.(DeleteRouteMessage))
+		ret.MessageBase = newBase
+		return ret
+	} else if msg_type == reflect.TypeOf(SetRouteReply{}) {
+		ret := (msg.(SetRouteReply))
 		ret.MessageBase = newBase
 		return ret
 	}
@@ -326,6 +344,7 @@ func (self*Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey,
 		MessageBase {
 			rewriteTo,
 			sendBack,
+			self.config.PubKey,
 		}
 	return forwardTo, newBase, true
 }
@@ -337,7 +356,6 @@ func (self*Node) forwardMessage(msg interface{}) bool {
 	}
 	// Rewrite
 	rewritten := rewriteMessage(msg, newBase)
-fmt.Fprintf(os.Stderr, "fwd %v base %v -> rewritten %v\n", reflect.TypeOf(msg), getMessageBase(msg), rewritten)
 	transport := self.safelyGetTransportToPeer(forwardTo, true)
 	if transport == nil {
         fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.config.PubKey, forwardTo)
@@ -364,7 +382,6 @@ func (self*Node) processUserMessage(msgIn UserMessage) {
 
 	directPeer, forwardBase, doForward := self.safelyGetRewriteBase(msgIn)
 	if doForward {
-fmt.Fprintf(os.Stderr, "fwd usermsg from %v to %v\n", self.config.PubKey, directPeer)
 		transport := self.safelyGetTransportToPeer(directPeer, true)
 		if transport == nil {
 			fmt.Fprintf(os.Stderr, "No transport to peer %v from %v, dropping\n", directPeer, self.config.PubKey)
@@ -381,12 +398,32 @@ fmt.Fprintf(os.Stderr, "fwd usermsg from %v to %v\n", self.config.PubKey, direct
 				}
 		}
 	} else {
-		self.outputMessagesReceived <- MeshMessage{msgIn.SendId, reassembled}
+		self.outputMessagesReceived <- MeshMessage{ReplyTo{msgIn.SendId, msgIn.FromPeer}, reassembled}
+	}
+}
+
+func (self*Node) sendSetRouteReply(msg SetRouteMessage) {
+	reply := SetRouteReply{
+		MessageBase{
+			msg.SendId,
+			true,	// SendBack
+			self.config.PubKey,
+		},
+		msg.ConfirmId,
+	}
+	transport := self.safelyGetTransportToPeer(msg.FromPeer, true)
+	if transport == nil {
+		fmt.Fprintf(os.Stderr,"No transport to peer %v from %v\n", msg.FromPeer, self.config.PubKey)
+		return
+	}
+	serialized := self.serializer.SerializeMessage(reply)
+	send_error := transport.SendMessage(msg.FromPeer, serialized)
+	if send_error != nil {
+		return
 	}
 }
 
 func (self*Node) processSetRouteMessage(msg SetRouteMessage) {
-fmt.Fprintf(os.Stderr, "peer (%v) processSetRouteMessage: %v\n", self.config.PubKey, msg)
 	if msg.SendBack {
 		fmt.Fprintf(os.Stderr, "Invalid SetRouteMessage received, dropping: %v\n", msg)
 		return
@@ -394,19 +431,30 @@ fmt.Fprintf(os.Stderr, "peer (%v) processSetRouteMessage: %v\n", self.config.Pub
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	
-	op := msg.OnReceive
-	if op.SetRouteId == NilRouteId {
-		fmt.Fprintf(os.Stderr, "Invalid SetRouteOp received, dropping: %v\n", op)
+	if msg.SetRouteId == NilRouteId {
+		fmt.Fprintf(os.Stderr, "Invalid SetRouteMessage received, dropping: %v\n", msg)
 		return
 	}
-	self.routesById[op.SetRouteId] = 
+	self.routesById[msg.SetRouteId] = 
 		Route{
-			op.ForwardToPeer,
-			op.ForwardRewriteSendId,
-			op.BackwardToPeer,
-			op.BackwardRewriteSendId,
+			msg.ForwardToPeer,
+			msg.ForwardRewriteSendId,
+			msg.BackwardToPeer,
+			msg.BackwardRewriteSendId,
 			time.Now(),
 		}
+
+	// Don't block to send reply
+	go self.sendSetRouteReply(msg)
+}
+
+func (self*Node) processSetRouteReplyMessage(msg SetRouteReply) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	confirmChan, foundChan := self.routeExtensionsAwaitingConfirm[msg.ConfirmId]
+	if foundChan {
+		confirmChan <- true
+	}
 }
 
 func (self*Node) processMessage(serialized []byte) {
@@ -417,7 +465,6 @@ func (self*Node) processMessage(serialized []byte) {
     }
 
     msg_type := reflect.TypeOf(msg) 
-fmt.Fprintf(os.Stderr, "peer %v got %v\n", self.config.PubKey, msg_type)
     // User messages have fragmentation to deal with
     if msg_type == reflect.TypeOf(UserMessage{}) {
 		self.processUserMessage(msg.(UserMessage))
@@ -426,7 +473,9 @@ fmt.Fprintf(os.Stderr, "peer %v got %v\n", self.config.PubKey, msg_type)
 			// Receive or forward. Refragment on forward!
 			if msg_type == reflect.TypeOf(SetRouteMessage{}) {
 				self.processSetRouteMessage(msg.(SetRouteMessage))
-			} else {
+			} else if msg_type == reflect.TypeOf(SetRouteReply{}) {
+				self.processSetRouteReplyMessage(msg.(SetRouteReply))
+			}else {
 		        fmt.Fprintf(os.Stderr, "Unknown message type received\n")
 		        return
 			}
@@ -559,35 +608,6 @@ func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {
 	if transport == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v\n", toPeer))
 	}
-fmt.Fprintf(os.Stderr, "AddRoute %v\n", toPeer)
-	// Send message
-	setOp := SetRouteOp{
-					id,
-					// ForwardToPeer
-					cipher.PubKey{},
-					NilRouteId,
-					// BackwardToPeer
-					self.config.PubKey,
-					NilRouteId,
-					// Route lifetime hint
-				    3*self.config.RefreshRouteDuration,
-			    }
-	message :=
-		SetRouteMessage{
-			MessageBase{
-				NilRouteId,
-				false,
-			},
-			setOp,
-			false,
-			SetRouteOp{},
-		}
-
-	serialized := self.serializer.SerializeMessage(message)
-	send_error := transport.SendMessage(toPeer, serialized)
-	if send_error != nil {
-		return send_error
-	}
 
 	// Add locally to routesById for backward termination
 	self.lock.Lock()
@@ -603,19 +623,24 @@ fmt.Fprintf(os.Stderr, "AddRoute %v\n", toPeer)
 		}
 
 	self.localRoutesByTerminatingPeer[toPeer] = id
-	self.localRoutesById[id] = LocalRoute{toPeer, id, setOp}
+	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId}
 	return nil
 }
 
-func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (message SetRouteMessage, directPeer cipher.PubKey, err error) {
+func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (message SetRouteMessage, directPeer cipher.PubKey, waitConfirm chan bool, err error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	newHopId := (RouteId)(uuid.NewV4())
+	_, alreadyExtending := self.routeExtensionsAwaitingConfirm[id]
+	if alreadyExtending {
+		return SetRouteMessage{}, cipher.PubKey{}, nil, errors.New("Cannot extend route more than once at the same time")
+	}
+
+	newHopId := id
 
 	localRoute, localRouteExists := self.localRoutesById[id]
 	if !localRouteExists {
-		return SetRouteMessage{}, cipher.PubKey{}, errors.New(fmt.Sprintf("ExtendRoute called on unknown route: %v", id))
+		return SetRouteMessage{}, cipher.PubKey{}, nil, errors.New(fmt.Sprintf("ExtendRoute called on unknown route: %v", id))
 	}
 
 	route, routeExists := self.routesById[id]
@@ -624,56 +649,45 @@ func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (me
 	}
 
 	directPeer = route.forwardToPeer
-	termMsg := localRoute.termSetRoute
 
 	sendBase := MessageBase{
 		route.forwardRewriteSendId,
 		false,
+		self.config.PubKey,
 	}
 
-	newTermOp := SetRouteOp{
+	newTermMessage := SetRouteMessage{
+		sendBase,
 		// SetRouteId
-		newHopId,
+		id,
+		// Confirm ID
+		id,
 		// ForwardToPeer
-		cipher.PubKey{},
-		NilRouteId,
+		toPeer,
+		id,
 		// BackwardToPeer
-		localRoute.terminatingPeer,
-		termMsg.SetRouteId,
+		localRoute.lastForwardingPeer,
+		localRoute.lastHopId,
 		// Route lifetime hint
 	    3*self.config.RefreshRouteDuration,
 	}
-
-	message = SetRouteMessage {
-		sendBase,
-		SetRouteOp{
-				// SetRouteId
-				localRoute.lastHopId,
-				// ForwardToPeer
-				toPeer,
-				// ForwardRewriteSendId
-				newHopId,
-
-				// Unchanged...
-				termMsg.BackwardToPeer,
-				termMsg.BackwardRewriteSendId,
-			    termMsg.DurationHint,
-		},
-		true,
-		newTermOp,
-	}
-
 	delete(self.localRoutesByTerminatingPeer, localRoute.terminatingPeer)
-	self.localRoutesById[id] = LocalRoute{toPeer, newHopId, newTermOp}
+	self.localRoutesById[id] = LocalRoute{localRoute.terminatingPeer, toPeer, newHopId}
 	self.localRoutesByTerminatingPeer[toPeer] = id
 
-	return message, directPeer, nil
+	updatedRoute := route
+	updatedRoute.forwardRewriteSendId = newHopId
+	self.routesById[id] = updatedRoute
+	confirmChan := make(chan bool, 1)
+	self.routeExtensionsAwaitingConfirm[id] = confirmChan
+
+	return newTermMessage, directPeer, confirmChan, nil
 }
 
 // toPeer must be the public key of a peer connected to the current last node in this route
-// Blocks until the operation is completed
-func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey) error {
-	message, directPeer, extendError := self.extendRouteWithoutSending(id, toPeer)
+// Blocks until the set route reply is received or the timeout is reached
+func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Duration) (err error) {
+	message, directPeer, confirm, extendError := self.extendRouteWithoutSending(id, toPeer)
 	if extendError != nil {
 		return extendError
 	}
@@ -686,8 +700,20 @@ func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey) error {
 	if send_error != nil {
 		return send_error
 	}
-fmt.Fprintf(os.Stderr, "extended directPeer %v, toPeer %v, message %v (directPeer %v)\n", directPeer, toPeer, message, directPeer)
-	return nil
+	select {
+		case <-confirm: {
+			break
+		}
+		case <- time.After(timeout): {
+			// Still need to remove from confirm map
+			err = &TimeoutError{}
+		}
+	}
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	delete(self.routeExtensionsAwaitingConfirm, id)
+	return
 }
 
 func (self*Node) RemoveRoute(id RouteId) (error) {
@@ -758,7 +784,7 @@ func (self*Node) safelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) 
 	return self.unsafelyGetTransportToPeer(peerKey, reliably)
 }
 
-func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPeer cipher.PubKey, routeId RouteId, transport transport.Transport, err error) {
+func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPeer cipher.PubKey, localId RouteId, sendId RouteId, transport transport.Transport, err error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	localRouteId, localRouteExists := self.localRoutesByTerminatingPeer[toPeer]
@@ -768,13 +794,14 @@ func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPee
 			panic("Local route struct does not exists")
 		}
 		directPeer = route.forwardToPeer
-		routeId = route.forwardRewriteSendId
+		localId = localRouteId
+		sendId = route.forwardRewriteSendId
 	} else {
-		return cipher.PubKey{}, NilRouteId, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
+		return cipher.PubKey{}, NilRouteId, NilRouteId, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
 	}
 	transport = self.unsafelyGetTransportToPeer(directPeer, reliably)
 	if transport == nil {
-		return cipher.PubKey{}, NilRouteId, nil, 
+		return cipher.PubKey{}, NilRouteId, NilRouteId, nil, 
 			    errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
 	}
 	return
@@ -784,13 +811,14 @@ func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPee
 // if reliably is false, unreliable transport is preferred, but reliable is chosen if it's the only option
 // if reliably is true, reliable transport only is used
 func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool) (err error, routeId RouteId) {
-	directPeer, routeId, transport, error := self.findRouteToPeer(toPeer, reliably)
+	directPeer, localRouteId, sendId, transport, error := self.findRouteToPeer(toPeer, reliably)
 	if error != nil {
 		return error, NilRouteId
 	}
 	base := MessageBase{
-		routeId,
+		sendId,
 		false,		// Sending forward
+		self.config.PubKey,
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
 	for _, message := range(messages) {
@@ -800,7 +828,7 @@ func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliab
 			return send_error, NilRouteId
 		}
 	}
-	return nil, routeId
+	return nil, localRouteId
 }
 
 // Blocks until message is confirmed received if reliably is true
@@ -810,9 +838,26 @@ func (self*Node) SendMessageThruRoute(route_id RouteId, contents []byte, reliabl
 }
 
 // Blocks until message is confirmed received if reliably is true
-func (self*Node) SendMessageBackThruRoute(route_id RouteId, contents []byte, reliably bool) (error) {
-//fragmentMessage()
-	return errors.New("todo")
+func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reliably bool) (error) {
+	directPeer := replyTo.fromPeer
+	transport := self.safelyGetTransportToPeer(directPeer, reliably)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No route or transport to peer %v\n", directPeer))
+	}
+	base := MessageBase{
+		replyTo.routeId,
+		true,		// Sending backward
+		self.config.PubKey,
+	}
+	messages := self.fragmentMessage(contents, directPeer, transport, base)
+	for _, message := range(messages) {
+		serialized := self.serializer.SerializeMessage(message)
+		send_error := transport.SendMessage(directPeer, serialized)
+		if send_error != nil {
+			return send_error
+		}
+	}
+	return nil
 }
 
 

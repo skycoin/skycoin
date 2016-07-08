@@ -94,11 +94,12 @@ func TestConnectedPeers(t *testing.T) {
 }
 
 func SetupNode(t *testing.T,
+			   maxDatagramLength uint,
 			   newPubKey cipher.PubKey) (node *Node, 
 							  unreliableTransport *transport.StubTransport,
 							  reliableTransport *transport.StubTransport) {
-	unreliableTransport = transport.NewStubTransport(t, 512)
-	reliableTransport = transport.NewStubTransport(t, 512)
+	unreliableTransport = transport.NewStubTransport(t, maxDatagramLength)
+	reliableTransport = transport.NewStubTransport(t, maxDatagramLength)
 	var error error
 	node, error = NewNode(NodeConfig{
 			newPubKey,
@@ -126,10 +127,11 @@ func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_cl
 	reliableTransports = make([]*transport.StubTransport, n)
 	to_close = make(chan []byte, 20)
 	sentMessages := make(chan []byte, 20)
+	maxDatagramLengths := []uint{512,450,1000,150,200}
 	for i := (uint)(0); i < n; i++ {
 		pubKey := cipher.PubKey{}
 		pubKey[0] = (byte)(i + 1)
-		nodes[i], unreliableTransports[i], reliableTransports[i] = SetupNode(t, pubKey)
+		nodes[i], unreliableTransports[i], reliableTransports[i] = SetupNode(t, maxDatagramLengths[i%((uint)(len(maxDatagramLengths)))], pubKey)
 		unreliableTransports[i].SetAmReliable(false)
 		reliableTransports[i].SetAmReliable(true)
 	}
@@ -320,16 +322,20 @@ func TestLongSendBack(t *testing.T) {
 	sendTest(t, 5, true, false, false, true, contents)
 }
 
-// Refragment!
+// Refragmentation test (sendTest varies the datagram length)
+func TestLongSendLongMessage(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670 ; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	sendTest(t, 5, true, false, false, false, contents)
+}
 
 // Reorder messages with establish
 // Establish route and send unreliable
 /// TODO! Needs to pass a reliable flag in base?
 
 
-// Send back test
-// Send back long route
-// Refragment test
 
 // Expire old routes, messages test
 // Route expiry test

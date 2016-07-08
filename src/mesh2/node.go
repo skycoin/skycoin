@@ -379,7 +379,6 @@ func (self*Node) processUserMessage(msgIn UserMessage) {
 	if reassembled == nil {
 		return
 	}
-
 	directPeer, forwardBase, doForward := self.safelyGetRewriteBase(msgIn)
 	if doForward {
 		transport := self.safelyGetTransportToPeer(directPeer, true)

@@ -831,9 +831,31 @@ func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliab
 }
 
 // Blocks until message is confirmed received if reliably is true
-func (self*Node) SendMessageThruRoute(route_id RouteId, contents []byte, reliably bool) (error) {
-//fragmentMessage()
-	return errors.New("todo")
+func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably bool) error {
+	route, routeFound := self.safelyGetRoute(routeId)
+	if !routeFound {
+		return errors.New("Route not found")
+	}
+
+	base := MessageBase{
+		route.forwardRewriteSendId,
+		false,		// Sending forward
+		self.config.PubKey,
+	}
+	directPeer := route.forwardToPeer
+	transport := self.safelyGetTransportToPeer(directPeer, reliably)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeer))
+	}
+	messages := self.fragmentMessage(contents, directPeer, transport, base)
+	for _, message := range(messages) {
+		serialized := self.serializer.SerializeMessage(message)
+		send_error := transport.SendMessage(directPeer, serialized)
+		if send_error != nil {
+			return send_error
+		}
+	}
+	return nil
 }
 
 // Blocks until message is confirmed received if reliably is true

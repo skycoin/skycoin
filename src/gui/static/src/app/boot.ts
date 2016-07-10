@@ -1,4 +1,4 @@
-import {Component, View} from 'angular2/core';
+import {Component} from 'angular2/core';
 import {RouterLink} from 'angular2/router';
 import {bootstrap} from 'angular2/platform/browser';
 import {Http, HTTP_BINDINGS, Response} from 'angular2/http';

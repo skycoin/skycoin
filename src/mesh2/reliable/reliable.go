@@ -149,7 +149,7 @@ func (self*ReliableTransport) expireMessages() {
 	lastSent := self.messagesSent
 	self.messagesSent = make(map[reliableId]messageSentState)
 	for id, state := range(lastSent) {
-		if time.Now().Before(state.expiryTime) {
+		if time_now.Before(state.expiryTime) {
 			self.messagesSent[id] = state
 		}
 	}

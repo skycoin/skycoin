@@ -62,7 +62,7 @@ type Route struct {
 	backwardRewriteSendId 	RouteId
 
 	// time.Unix(0,0) means it lives forever
-	lastRefresh				time.Time
+	expiryTime				time.Time
 }
 
 type MessageUnderAssembly struct {
@@ -71,7 +71,7 @@ type MessageUnderAssembly struct {
 	sendBack                bool
 	count                   uint64
 	dropped                 bool
-	firstFragmentReceived	time.Time
+	expiryTime				time.Time
 }
 
 type LocalRoute struct {
@@ -443,7 +443,7 @@ func (self*Node) processSetRouteMessage(msg SetRouteMessage) {
 			msg.ForwardRewriteSendId,
 			msg.BackwardToPeer,
 			msg.BackwardRewriteSendId,
-			time.Now(),
+			time.Now().Add(self.config.ExpireRoutesInterval),
 		}
 
 	// Don't block to send reply
@@ -486,7 +486,32 @@ func (self*Node) processMessage(serialized []byte) {
 }
 
 func (self*Node) expireOldMessages() {
-	fmt.Fprintf(os.Stderr, "TODO: expireOldMessages\n")
+	time_now := time.Now()
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	lastMessages := self.messagesBeingAssembled
+	self.messagesBeingAssembled = make(map[messageId]*MessageUnderAssembly)
+	for id, msg := range lastMessages {
+		if time_now.Before(msg.expiryTime) {
+			self.messagesBeingAssembled[id] = msg
+		}
+	}
+}
+
+func (self*Node) expireOldRoutes() {
+	time_now := time.Now()
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	lastMessages := self.routesById
+	self.routesById = make(map[RouteId]Route)
+	// Last refresh of time.Unix(0,0) means it lives forever
+	for id, route := range lastMessages {
+		if (route.expiryTime == time.Unix(0,0)) || time_now.Before(route.expiryTime) {
+			self.routesById[id] = route
+		}
+	}
 }
 
 func (self*Node) expireOldMessagesLoop() {
@@ -515,12 +540,6 @@ func (self*Node) processIncomingMessagesLoop() {
 			}
 		}
 	}
-}
-
-func (self*Node) expireOldRoutes() {
-	// Last refresh of time.Unix(0,0) means it lives forever
-	fmt.Fprintf(os.Stderr, "TODO: expireOldRoutes\n")
-
 }
 
 func (self*Node) expireOldRoutesLoop() {
@@ -603,7 +622,7 @@ func  (self*Node) SetReceiveChannel(received chan MeshMessage) {
 func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {	
 	_, routeExists := self.safelyGetRoute(id)
 	if routeExists {
-		return errors.New(fmt.Sprintf("Rotue %v already exists\n", id))
+		return errors.New(fmt.Sprintf("Route %v already exists\n", id))
 	}
 
 	transport := self.safelyGetTransportToPeer(toPeer, true)
@@ -888,4 +907,14 @@ func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reli
 	return nil
 }
 
+func (self*Node) debug_countRoutes() int {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	return len(self.routesById)
+}
 
+func (self*Node) debug_countMessages() int {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	return len(self.messagesBeingAssembled)
+}

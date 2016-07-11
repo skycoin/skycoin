@@ -91,8 +91,9 @@ func (self*StubTransport) consumeBuffer() (retMessages []QueuedMessage) {
 	self.messageBuffer = nil
 	return
 }
-func (self*StubTransport) StopAndConsumeBuffer(reorder bool) {
+func (self*StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 	messages := self.consumeBuffer()
+	messages = messages[dropCount:]
 	if reorder {
 		for i := range messages {
 		    j := rand.Intn(i + 1)

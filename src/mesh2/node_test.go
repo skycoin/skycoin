@@ -421,6 +421,48 @@ func TestMessageExpiry(t *testing.T) {
 	
 }
 
+func TestLongRouteUnreliable(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0,1,0},
+		[]int{1,0,1},
+		[]int{0,1,0},
+	}
+
+	nodes, to_close, unreliableTransports, reliableTransports := SetupNodes((uint)(3), allConnections, t)
+	defer close(to_close)
+	defer func() {
+		for _, node := range(nodes) {
+			node.Close()
+		}
+	}()
+	received := make(chan MeshMessage, 10)
+	nodes[2].SetReceiveChannel(received)
+	addedRouteId := RouteId{}
+	addedRouteId[0] = 77
+	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
+	assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[2].GetConfig().PubKey, time.Second))
+
+	contents := []byte{2,3,44,22,11,3,3,3,3,5}
+
+	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteId, contents, false))
+
+	select {
+		case recvd := <- received: {
+			assert.Equal(t, contents, recvd.Contents)
+		}
+		case <-time.After(5*time.Second):
+			panic("Test timed out")
+	}
+
+	assert.NotZero(t, unreliableTransports[0].CountNumMessagesSent())
+	assert.NotZero(t, reliableTransports[0].CountNumMessagesSent())
+	assert.NotZero(t, unreliableTransports[1].CountNumMessagesSent())
+	assert.NotZero(t, reliableTransports[1].CountNumMessagesSent())
+	assert.Zero(t, unreliableTransports[2].CountNumMessagesSent())
+	// ACKs going back don't count
+	assert.Zero(t, reliableTransports[2].CountNumMessagesSent())
+}
+
 // Tests TODO
 
 // Establish route and send unreliable

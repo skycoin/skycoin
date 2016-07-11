@@ -383,7 +383,7 @@ func (self*Node) processUserMessage(msgIn UserMessage) {
 	}
 	directPeer, forwardBase, doForward := self.safelyGetRewriteBase(msgIn)
 	if doForward {
-		transport := self.safelyGetTransportToPeer(directPeer, true)
+		transport := self.safelyGetTransportToPeer(directPeer, msgIn.Reliably)
 		if transport == nil {
 			fmt.Fprintf(os.Stderr, "No transport to peer %v from %v, dropping\n", directPeer, self.config.PubKey)
 			return

@@ -5,7 +5,8 @@ import(
 	"sync"
 	"math/rand"
 	"errors"
-	"testing")
+	"testing"
+	"sync/atomic")
 
 import("github.com/skycoin/skycoin/src/cipher")
 
@@ -19,6 +20,7 @@ type StubTransport struct {
     ignoreSend bool
     amReliable bool
     messageBuffer []QueuedMessage
+    numMessagesSent int32
 }
 
 type QueuedMessage struct {
@@ -38,6 +40,7 @@ func NewStubTransport(testing *testing.T,
 		false,
 		false,
 		nil,
+		0,
 	}
 	return ret
 }
@@ -63,6 +66,7 @@ func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 			messageBuffer := self.getMessageBuffer()
 			if messageBuffer == nil {
 				peer.messagesReceived <- msg
+				atomic.AddInt32(&self.numMessagesSent, 1)
 			} else {
 				self.lock.Lock()
 				defer self.lock.Unlock()
@@ -102,6 +106,7 @@ func (self*StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 	}
 	for _, queued := range(messages) {
 		queued.toPeer.messagesReceived <- queued.msg
+		atomic.AddInt32(&self.numMessagesSent, 1)
 	}
 }
 func (self*StubTransport) SetReceiveChannel(received chan []byte) {
@@ -133,3 +138,6 @@ func (self*StubTransport) IsReliable() bool {
 	return self.amReliable
 }
 
+func (self*StubTransport) CountNumMessagesSent() int {
+	return (int)(atomic.LoadInt32(&self.numMessagesSent))
+}

@@ -5,6 +5,7 @@ import (
     "fmt"
     "time"
     "flag"
+    "runtime"
     "io/ioutil"
     "encoding/json"
 )
@@ -120,41 +121,45 @@ func main() {
 		}
 	}
 
-	// Waiting time
-	done_waiting := time.Now().Add(5 * time.Second)
-	done_waiting_second := time.Now().Add(10 * time.Second)
-
 	// Receive messages
-	received := make(chan mesh.MeshMessage, len(config.MessagesToReceive))
+	received := make(chan mesh.MeshMessage, 2 * len(config.MessagesToReceive))
 	node.SetReceiveChannel(received)
 
 	// Wait for messages to pass thru
-	time.Sleep(done_waiting.Sub(time.Now()))
-
 	recvMap := make(map[string]mesh.ReplyTo)
-	for len(received) > 0 {
-		msgRecvd := <- received
-		recvMap[fmt.Sprintf("%v", msgRecvd.Contents)] = msgRecvd.ReplyTo
+	for timeEnd := time.Now().Add(5 * time.Second); time.Now().Before(timeEnd); {
+		if len(received) > 0 {
+			msgRecvd := <- received
+			recvMap[fmt.Sprintf("%v", msgRecvd.Contents)] = msgRecvd.ReplyTo
+
+			for _, messageToReceive := range(config.MessagesToReceive) {
+				if fmt.Sprintf("%v", messageToReceive.Contents) == fmt.Sprintf("%v", msgRecvd.Contents) {
+					if len(messageToReceive.Reply) > 0 {
+						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
+						if sendBackErr != nil {
+							panic(sendBackErr)
+						}
+						fmt.Fprintf(os.Stderr, "=== Send back %v\n", time.Now())
+					}
+				}
+			}
+		}
+		runtime.Gosched()
 	}
 
 	success := true
 
 	for _, messageToReceive := range(config.MessagesToReceive) {
-		replyTo, received := recvMap[fmt.Sprintf("%v", messageToReceive.Contents)]
+		_, received := recvMap[fmt.Sprintf("%v", messageToReceive.Contents)]
 		if !received {
 			success = false
 			fmt.Fprintf(os.Stderr, "Didn't receive message contents: %v\n", messageToReceive.Contents)
-		} else if len(messageToReceive.Reply) > 0 {
-			sendBackErr := node.SendMessageBackThruRoute(replyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
-			if sendBackErr != nil {
-				panic(sendBackErr)
-			}
 		}
 	}
 	// Wait for messages to pass back
-	time.Sleep(done_waiting_second.Sub(time.Now()))
+	time.Sleep(5 * time.Second)
 
-	fmt.Fprintf(os.Stderr, "-- Finished test --\n")
+	fmt.Fprintf(os.Stderr, "-- Finished test -- %v\n", time.Now())
 	if success {
 		fmt.Fprintf(os.Stderr, "\t Success!\n")
 	} else {

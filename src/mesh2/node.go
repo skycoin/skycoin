@@ -8,13 +8,15 @@ import(
     "errors"
     "reflect"
     "runtime/debug"
+    "crypto/rand"
     "gopkg.in/op/go-logging.v1")
 
 import(
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
     "github.com/skycoin/skycoin/src/cipher"
-    "github.com/satori/go.uuid")
+    "github.com/satori/go.uuid"
+    "github.com/tang0th/go-chacha20")
 
 type NodeConfig struct {
 	PubKey		    			cipher.PubKey
@@ -85,6 +87,7 @@ type Node struct {
     outputMessagesReceived 		chan MeshMessage
     transportsMessagesReceived 	chan []byte
 	serializer 					*serialize.Serializer
+	myCrypto					transport.TransportCrypto
 
     lock *sync.Mutex
     closeGroup *sync.WaitGroup
@@ -107,6 +110,7 @@ type MessageBase struct {
     // For sending the reply from the last node in a route
     FromPeer cipher.PubKey
     Reliably bool
+    Nonce    [4]byte
 }
 
 type UserMessage struct {
@@ -163,6 +167,7 @@ func NewNode(config NodeConfig) (*Node, error) {
 		nil,			// received
 		make(chan []byte, config.TransportMessageChannelLength),			// received		
 		serialize.NewSerializer(),
+		&ChaChaCrypto{config.ChaCha20Key},
 		&sync.Mutex{},	// Lock
 		&sync.WaitGroup{},
 		make(chan bool, 10),
@@ -248,6 +253,36 @@ func (self*Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 	return nil
 }
 
+type ChaChaCrypto struct {
+	key    [32]byte
+}
+
+func (self*ChaChaCrypto) Encrypt(in[]byte)[]byte {
+	out := make([]byte, len(in))
+	chacha20.XORKeyStream(out, in, []byte("nonce123"), self.key[:])
+	return out
+}
+
+func (self*ChaChaCrypto) Decrypt(in[]byte)[]byte {
+	out := make([]byte, len(in))
+	chacha20.XORKeyStream(out, in, []byte("nonce123"), self.key[:])
+	return out
+}
+
+func generateNonce() [4]byte {
+	ret := make([]byte, 4)
+	n, err := rand.Read(ret)
+	if n != 4 {
+		panic("rand.Read() failed")
+	}
+	if err != nil {
+		panic(err)
+	}
+	ret_b := [4]byte{0,0,0,0}
+	copy(ret_b[:],ret[:])
+	return ret_b
+}
+
 func getMessageBase(msg interface{}) (base MessageBase) {
     msg_type := reflect.TypeOf(msg) 
 
@@ -267,7 +302,8 @@ func getMessageBase(msg interface{}) (base MessageBase) {
 }
 
 func rewriteMessage(msg interface{}, newBase MessageBase) (rewritten interface{}) {
-    msg_type := reflect.TypeOf(msg) 
+    msg_type := reflect.TypeOf(msg)
+    newBase.Nonce = generateNonce()
 
 	if msg_type == reflect.TypeOf(UserMessage{}) {
 		ret := (msg.(UserMessage))
@@ -348,6 +384,7 @@ func (self*Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey,
 			sendBack,
 			self.config.PubKey,
 			base.Reliably,
+			generateNonce(),
 		}
 	return forwardTo, newBase, true
 }
@@ -411,6 +448,7 @@ func (self*Node) sendSetRouteReply(msg SetRouteMessage) {
 			true,	// SendBack
 			self.config.PubKey,
 			true,	// Reliable
+			generateNonce(),
 		},
 		msg.ConfirmId,
 	}
@@ -548,6 +586,7 @@ func (self*Node) refreshRoute(routeId RouteId) {
 		false,		// Sending forward
 		self.config.PubKey,
 		reliably,
+		generateNonce(),
 	}
 	directPeer := route.forwardToPeer
 	transport := self.safelyGetTransportToPeer(directPeer, reliably)
@@ -657,6 +696,7 @@ func (self*Node) GetConfig() NodeConfig {
 func (self*Node) AddTransport(transport transport.Transport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
+	transport.SetCrypto(self.myCrypto)
 	transport.SetReceiveChannel(self.transportsMessagesReceived)
 	self.transports[transport] = true
 }
@@ -763,6 +803,7 @@ func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (me
 		false,
 		self.config.PubKey,
 		true, // Reliable
+		generateNonce(),
 	}
 
 	newTermMessage := SetRouteMessage{
@@ -929,6 +970,7 @@ func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliab
 		false,		// Sending forward
 		self.config.PubKey,
 		reliably,
+		generateNonce(),
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
 	for _, message := range(messages) {
@@ -953,6 +995,7 @@ func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably
 		false,		// Sending forward
 		self.config.PubKey,
 		reliably,
+		generateNonce(),
 	}
 	directPeer := route.forwardToPeer
 	transport := self.safelyGetTransportToPeer(directPeer, reliably)
@@ -982,6 +1025,7 @@ func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reli
 		true,		// Sending backward
 		self.config.PubKey,
 		reliably,
+		generateNonce(),
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
 	for _, message := range(messages) {

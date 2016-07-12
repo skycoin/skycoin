@@ -21,6 +21,7 @@ type StubTransport struct {
     amReliable bool
     messageBuffer []QueuedMessage
     numMessagesSent int32
+    crypto TransportCrypto
 }
 
 type QueuedMessage struct {
@@ -41,6 +42,7 @@ func NewStubTransport(testing *testing.T,
 		false,
 		nil,
 		0,
+		nil,
 	}
 	return ret
 }
@@ -57,9 +59,11 @@ func (self*StubTransport) getMessageBuffer() (retMessages []QueuedMessage) {
 	return self.messageBuffer
 }
 func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
+	msg_encd := self.crypto.Encrypt(msg)
 	if (uint)(len(msg)) > self.maxMessageSize {
 		return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(msg), self.maxMessageSize))
 	}
+	msg = self.crypto.Decrypt(msg_encd)
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
 		if !self.ignoreSend {
@@ -113,7 +117,9 @@ func (self*StubTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 func (self*StubTransport) SetCrypto(crypto TransportCrypto) {
-	panic("crypto unsupported")
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	self.crypto = crypto
 }
 func (self*StubTransport) GetConnectedPeers() []cipher.PubKey {
 	self.lock.Lock()

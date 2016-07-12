@@ -227,11 +227,11 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 		assert.Equal(t, addedRouteId, route_id)
 
 		for _, unreliableTransport := range(unreliableTransport) {
-			unreliableTransport.StopAndConsumeBuffer(reorder)
+			unreliableTransport.StopAndConsumeBuffer(reorder, 0)
 		}
 
 		for _, reliableTransport := range(reliableTransport) {
-			reliableTransport.StopAndConsumeBuffer(reorder)
+			reliableTransport.StopAndConsumeBuffer(reorder, 0)
 		}
 
 		if shouldReceive {
@@ -271,7 +271,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 	}
 }
 
-func TestSendDirectUnreliably(t *testing.T) {
+func TestSendDirectUnreliablyPositive(t *testing.T) {
 	contents := []byte{4,66,7,44,33}
 	sendTest(t, 2, false, false, false, false, contents)
 }
@@ -361,15 +361,74 @@ func TestSendThruRoute(t *testing.T) {
 	}
 }
 
-// Tests that the ExtendRoute confirmation works
-/*
-func TestReorderWithEstablish(t *testing.T) {
+func TestRouteExpiry(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0,1,0},
 		[]int{1,0,1},
 		[]int{0,1,0},
 	}
+
 	nodes, to_close, _, _ := SetupNodes((uint)(3), allConnections, t)
+	defer close(to_close)
+	defer func() {
+		for _, node := range(nodes) {
+			node.Close()
+		}
+	}()
+	addedRouteId := RouteId{}
+	addedRouteId[0] = 55
+	addedRouteId[1] = 4
+	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
+	assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[2].GetConfig().PubKey, time.Second))
+	assert.NotZero(t, nodes[1].debug_countRoutes())
+	time.Sleep(3*time.Second)
+	assert.Zero(t, nodes[1].debug_countRoutes())
+}
+
+func TestMessageExpiry(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0,1},
+		[]int{1,0},
+	}		
+	nodes, to_close, _, reliableTransports := SetupNodes((uint)(2), allConnections, t)
+	defer close(to_close)
+	defer func() {
+		for _, node := range(nodes) {
+			node.Close()
+		}
+	}()
+	addedRouteId := RouteId{}
+	addedRouteId[0] = 66
+
+	contents := []byte{}
+	for i := 0; i < 25670 ; i++ {
+		contents = append(contents, (byte)(i))
+	}
+
+	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
+
+	reliableTransports[0].StartBuffer()
+	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteId, contents, true))
+	// Drop ten, so the message will never be reassembled
+	reliableTransports[0].StopAndConsumeBuffer(true, 10)
+
+	time.Sleep(1*time.Second)
+	assert.NotZero(t, nodes[1].debug_countMessages())
+	time.Sleep(1*time.Second)
+	assert.NotZero(t, nodes[1].debug_countMessages())
+	time.Sleep(10*time.Second)
+	assert.Zero(t, nodes[1].debug_countMessages())
+	
+}
+
+func TestLongRouteUnreliable(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0,1,0},
+		[]int{1,0,1},
+		[]int{0,1,0},
+	}
+
+	nodes, to_close, unreliableTransports, reliableTransports := SetupNodes((uint)(3), allConnections, t)
 	defer close(to_close)
 	defer func() {
 		for _, node := range(nodes) {
@@ -378,12 +437,14 @@ func TestReorderWithEstablish(t *testing.T) {
 	}()
 	received := make(chan MeshMessage, 10)
 	nodes[2].SetReceiveChannel(received)
-	contents := []byte{1,44,2,22,11,22}
 	addedRouteId := RouteId{}
-	addedRouteId[0] = 55
-	addedRouteId[1] = 4
+	addedRouteId[0] = 77
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
-	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteId, contents, true))
+	assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[2].GetConfig().PubKey, time.Second))
+
+	contents := []byte{2,3,44,22,11,3,3,3,3,5}
+
+	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteId, contents, false))
 
 	select {
 		case recvd := <- received: {
@@ -392,18 +453,21 @@ func TestReorderWithEstablish(t *testing.T) {
 		case <-time.After(5*time.Second):
 			panic("Test timed out")
 	}
+
+	assert.NotZero(t, unreliableTransports[0].CountNumMessagesSent())
+	assert.NotZero(t, reliableTransports[0].CountNumMessagesSent())
+	assert.NotZero(t, unreliableTransports[1].CountNumMessagesSent())
+	assert.NotZero(t, reliableTransports[1].CountNumMessagesSent())
+	assert.Zero(t, unreliableTransports[2].CountNumMessagesSent())
+	// ACKs going back don't count
+	assert.Zero(t, reliableTransports[2].CountNumMessagesSent())
 }
-*/
 
 // Tests TODO
 
-// Reorder messages with establish
 // Establish route and send unreliable
 // Test that reliable/unreliable transport is preserved
 
-
-// Expire old routes, messages test
-// Route expiry test
 // Packet loss test
 // Multiple transport test
 // Threading test

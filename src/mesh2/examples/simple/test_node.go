@@ -78,13 +78,11 @@ func main() {
 
     // Connect
     for _, connectTo := range(config.PeersToConnect) {
-//    	fmt.Fprintf(os.Stderr, "connect to %v\n", connectTo.Peer)
     	connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
     	if connectError != nil {
     		panic(connectError)
     	}
     }
-    fmt.Fprintf(os.Stderr, "udp GetConnectedPeers %v\n", udpTransport.GetConnectedPeers())
 
 	// Reliable transport closes UDPTransport
     reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
@@ -96,9 +94,6 @@ func main() {
     }
     defer node.Close()
     node.AddTransport(reliableTransport)
-    fmt.Fprintf(os.Stderr, "reliable GetConnectedPeers %v\n", reliableTransport.GetConnectedPeers())
-    fmt.Fprintf(os.Stderr, "reliable ConnectedToPeer %v\n", 
-    	reliableTransport.ConnectedToPeer(cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})))
 
     // Setup route
     for _, routeConfig := range(config.RoutesToEstablish) {

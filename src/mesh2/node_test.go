@@ -265,7 +265,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 			case recvd_back := <- back_received: {
 				assert.Equal(t, replyContents, recvd_back.Contents)
 			}
-			case <-time.After(5*time.Second):
+			case <-time.After(10*time.Second):
 				panic("Test timed out")
 		}
 	}

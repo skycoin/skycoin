@@ -182,6 +182,7 @@ func NewNode(config NodeConfig) (*Node, error) {
     go ret.processIncomingMessagesLoop()
     go ret.expireOldRoutesLoop()
     go ret.expireOldMessagesLoop()
+    go ret.refreshRoutesLoop()
 
 	return ret, nil
 }
@@ -443,7 +444,7 @@ func (self*Node) processSetRouteMessage(msg SetRouteMessage) {
 			msg.ForwardRewriteSendId,
 			msg.BackwardToPeer,
 			msg.BackwardRewriteSendId,
-			time.Now().Add(self.config.ExpireRoutesInterval),
+			self.clipExpiryTime(time.Now().Add(msg.DurationHint)),
 		}
 
 	// Don't block to send reply
@@ -457,6 +458,26 @@ func (self*Node) processSetRouteReplyMessage(msg SetRouteReply) {
 	if foundChan {
 		confirmChan <- true
 	}
+}
+
+func (self*Node) clipExpiryTime(hint time.Time) time.Time {
+	maxTime := time.Now().Add(self.config.MaximumForwardingDuration)
+	if hint.Unix() > maxTime.Unix() {
+		return maxTime
+	}
+	return hint
+}
+
+func (self*Node) processRefreshRouteMessage(msg RefreshRouteMessage) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	route, exists := self.routesById[msg.SendId]
+	if !exists {
+		fmt.Fprintf(os.Stderr, "Refresh sent for unknown route: %v\n", msg.SendId)
+		return
+	}
+	route.expiryTime = self.clipExpiryTime(time.Now().Add(msg.DurationHint))
+	self.routesById[msg.SendId] = route
 }
 
 func (self*Node) processMessage(serialized []byte) {
@@ -477,11 +498,12 @@ func (self*Node) processMessage(serialized []byte) {
 				self.processSetRouteMessage(msg.(SetRouteMessage))
 			} else if msg_type == reflect.TypeOf(SetRouteReply{}) {
 				self.processSetRouteReplyMessage(msg.(SetRouteReply))
-			}else {
-		        fmt.Fprintf(os.Stderr, "Unknown message type received\n")
-		        return
 			}
-		}
+		} else {
+			if msg_type == reflect.TypeOf(RefreshRouteMessage{}) { 
+				self.processRefreshRouteMessage(msg.(RefreshRouteMessage))
+			}
+		} 
 	}
 }
 
@@ -514,7 +536,50 @@ func (self*Node) expireOldRoutes() {
 	}
 }
 
+func (self*Node) refreshRoute(routeId RouteId) {
+	route, routeFound := self.safelyGetRoute(routeId)
+	if !routeFound {
+		fmt.Fprintf(os.Stderr, "Cannot refresh unknown route: %v\n", routeId)
+		return
+	}
+	reliably := true
+	base := MessageBase{
+		route.forwardRewriteSendId,
+		false,		// Sending forward
+		self.config.PubKey,
+		reliably,
+	}
+	directPeer := route.forwardToPeer
+	transport := self.safelyGetTransportToPeer(directPeer, reliably)
+	if transport == nil {
+		fmt.Fprintf(os.Stderr, "No transport to peer %v\n", directPeer)
+		return
+	}
+	message := RefreshRouteMessage{
+		base,
+		3*self.config.RefreshRouteDuration,
+	}
+	serialized := self.serializer.SerializeMessage(message)
+	send_error := transport.SendMessage(directPeer, serialized)
+	if send_error != nil {
+		fmt.Fprintf(os.Stderr, "Serialization error %v\n", send_error)
+		return
+	}
+}
+
+func (self*Node) refreshRoutes() {
+	self.lock.Lock()
+	localRoutes := self.localRoutesById
+	self.lock.Unlock()
+
+	for id, _ := range localRoutes {
+		self.refreshRoute(id)
+	}
+}
+
 func (self*Node) expireOldMessagesLoop() {
+	self.closeGroup.Add(1)
+	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
 			case <-time.After(self.config.ExpireMessagesInterval): {
@@ -528,6 +593,8 @@ func (self*Node) expireOldMessagesLoop() {
 }
 
 func (self*Node) processIncomingMessagesLoop() {
+	self.closeGroup.Add(1)
+	defer self.closeGroup.Done()
    	for len(self.closing) == 0 {
 		select {
 			case msg, ok := <- self.transportsMessagesReceived: {
@@ -543,6 +610,8 @@ func (self*Node) processIncomingMessagesLoop() {
 }
 
 func (self*Node) expireOldRoutesLoop() {
+	self.closeGroup.Add(1)
+	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
 			case <-time.After(self.config.ExpireRoutesInterval): {
@@ -555,8 +624,26 @@ func (self*Node) expireOldRoutesLoop() {
 	}
 }
 
+func (self*Node) refreshRoutesLoop() {
+	self.closeGroup.Add(1)
+	defer self.closeGroup.Done()
+	for len(self.closing) == 0 {
+		select {
+			case <-time.After(self.config.RefreshRouteDuration): {
+				self.refreshRoutes()
+			}
+			case <-self.closing: {
+				return
+			}
+		}
+	}
+}
+
 // Waits for transports to close
 func (self*Node) Close() error {
+	for i := 0;i < 10;i++ {
+		self.closing <- true
+	}
 	close(self.transportsMessagesReceived)
 	self.closeGroup.Wait()
 	return nil

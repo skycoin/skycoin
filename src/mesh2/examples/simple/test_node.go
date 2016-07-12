@@ -122,7 +122,7 @@ func main() {
 
 	// Waiting time
 	done_waiting := time.Now().Add(5 * time.Second)
-	done_waiting_second := time.Now().Add(5 * time.Second)
+	done_waiting_second := time.Now().Add(10 * time.Second)
 
 	// Receive messages
 	received := make(chan mesh.MeshMessage, len(config.MessagesToReceive))
@@ -137,9 +137,12 @@ func main() {
 		recvMap[fmt.Sprintf("%v", msgRecvd.Contents)] = msgRecvd.ReplyTo
 	}
 
+	success := true
+
 	for _, messageToReceive := range(config.MessagesToReceive) {
 		replyTo, received := recvMap[fmt.Sprintf("%v", messageToReceive.Contents)]
 		if !received {
+			success = false
 			fmt.Fprintf(os.Stderr, "Didn't receive message contents: %v\n", messageToReceive.Contents)
 		} else if len(messageToReceive.Reply) > 0 {
 			sendBackErr := node.SendMessageBackThruRoute(replyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
@@ -152,4 +155,9 @@ func main() {
 	time.Sleep(done_waiting_second.Sub(time.Now()))
 
 	fmt.Fprintf(os.Stderr, "-- Finished test --\n")
+	if success {
+		fmt.Fprintf(os.Stderr, "\t Success!\n")
+	} else {
+		fmt.Fprintf(os.Stderr, "\t Failure. \n")
+	}
 }

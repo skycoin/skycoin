@@ -1,4 +1,9 @@
-go run test_node.go -config node_b.json &> ./node_b.log &
-go run test_node.go -config node_c.json &> ./node_c.log &
+echo Building...
+go build ./test_node.go
 
-go run test_node.go -config node_a.json 
+echo Launching...
+./test_node -config node_b.json &> ./node_b.log &
+./test_node -config node_c.json &> ./node_c.log &
+
+echo Testing...
+./test_node -config node_a.json 

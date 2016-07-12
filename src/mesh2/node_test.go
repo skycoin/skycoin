@@ -105,7 +105,7 @@ func SetupNode(t *testing.T,
 			newPubKey,
 			[32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, },
 			time.Minute,
-			10 * time.Second,
+			time.Second,
 			time.Second,
 			time.Second,
 			2*time.Second,
@@ -154,10 +154,6 @@ func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_cl
 		}
 	}	
 	return nodes, sentMessages, unreliableTransports, reliableTransports
-}
-
-func TestDeleteRoute(t *testing.T) {
-	// todo
 }
 
 func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder bool, sendBack bool, contents []byte) {
@@ -368,7 +364,7 @@ func TestRouteExpiry(t *testing.T) {
 		[]int{0,1,0},
 	}
 
-	nodes, to_close, _, _ := SetupNodes((uint)(3), allConnections, t)
+	nodes, to_close, _, reliableTransports := SetupNodes((uint)(3), allConnections, t)
 	defer close(to_close)
 	defer func() {
 		for _, node := range(nodes) {
@@ -381,7 +377,39 @@ func TestRouteExpiry(t *testing.T) {
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
 	assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[2].GetConfig().PubKey, time.Second))
 	assert.NotZero(t, nodes[1].debug_countRoutes())
-	time.Sleep(3*time.Second)
+	time.Sleep(5*time.Second)
+	assert.NotZero(t, nodes[1].debug_countRoutes())
+	// Don't allow refreshes to get thru
+	reliableTransports[0].SetIgnoreSendStatus(true)
+	time.Sleep(5*time.Second)
+	assert.Zero(t, nodes[1].debug_countRoutes())
+}
+
+func TestDeleteRoute(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0,1,0},
+		[]int{1,0,1},
+		[]int{0,1,0},
+	}
+
+	nodes, to_close, _, _ := SetupNodes((uint)(3), allConnections, t)
+	defer close(to_close)
+	defer func() {
+		for _, node := range(nodes) {
+			node.Close()
+		}
+	}()
+	addedRouteId := RouteId{}
+	addedRouteId[0] = 55
+	addedRouteId[1] = 4
+	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
+	assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[2].GetConfig().PubKey, time.Second))
+	time.Sleep(5*time.Second)
+	assert.NotZero(t, nodes[0].debug_countRoutes())
+	assert.NotZero(t, nodes[1].debug_countRoutes())
+	assert.Nil(t, nodes[0].DeleteRoute(addedRouteId))
+	time.Sleep(1*time.Second)
+	assert.Zero(t, nodes[0].debug_countRoutes())
 	assert.Zero(t, nodes[1].debug_countRoutes())
 }
 
@@ -417,8 +445,7 @@ func TestMessageExpiry(t *testing.T) {
 	time.Sleep(1*time.Second)
 	assert.NotZero(t, nodes[1].debug_countMessages())
 	time.Sleep(10*time.Second)
-	assert.Zero(t, nodes[1].debug_countMessages())
-	
+	assert.Zero(t, nodes[1].debug_countMessages())	
 }
 
 func TestLongRouteUnreliable(t *testing.T) {
@@ -463,10 +490,10 @@ func TestLongRouteUnreliable(t *testing.T) {
 	assert.Zero(t, reliableTransports[2].CountNumMessagesSent())
 }
 
+
 // Tests TODO
 
 // Establish route and send unreliable
-// Test that reliable/unreliable transport is preserved
 
 // Packet loss test
 // Multiple transport test

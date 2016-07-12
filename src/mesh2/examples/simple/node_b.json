@@ -1,0 +1,38 @@
+{
+	"Reliable": {
+		"MyPeerId": [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		"PhysicalReceivedChannelLength": 100,
+		"ExpireMessagesInterval": 5000000000,
+		"RememberMessageReceivedDuration": 10000000000,
+		"RetransmitDuration": 3000000000
+	},
+	"Udp": {
+		"SendChannelLength": 100,
+		"DatagramLength": 512,
+		"LocalAddress": "",
+		"NumListenPorts": 1,
+		"ListenPortMin": 16000,
+		"ExternalAddress": "127.0.0.1",
+		"StunEndpoints": []
+	},
+	"Node": {
+		"PubKey": 		[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		"ChaCha20Key":	[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+		"MaximumForwardingDuration":	10000000000,
+		"RefreshRouteDuration":			5000000000,
+		"ExpireMessagesInterval":       5000000000,
+		"ExpireRoutesInterval":			5000000000,
+		"TimeToAssembleMessage":		10000000000,
+		"TransportMessageChannelLength": 100
+	},
+	"PeersToConnect": [
+		{
+			"Peer": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			"Info": "{\"DatagramLength\":512,\"ExternalHosts\":[{\"IP\":\"127.0.0.1\",\"Port\":15000,\"Zone\":\"\"}]}"
+		},
+		{
+			"Peer": [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			"Info": "{\"DatagramLength\":512,\"ExternalHosts\":[{\"IP\":\"127.0.0.1\",\"Port\":17000,\"Zone\":\"\"}]}"
+		}
+	]
+}

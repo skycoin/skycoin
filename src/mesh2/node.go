@@ -518,6 +518,12 @@ func (self*Node) processRefreshRouteMessage(msg RefreshRouteMessage) {
 	self.routesById[msg.SendId] = route
 }
 
+func (self*Node) processDeleteRouteMessage(msg DeleteRouteMessage) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	delete(self.routesById, msg.SendId)
+}
+
 func (self*Node) processMessage(serialized []byte) {
     msg, deserialize_error := self.serializer.UnserializeMessage(serialized)
     if deserialize_error != nil {
@@ -525,7 +531,7 @@ func (self*Node) processMessage(serialized []byte) {
         return
     }
 
-    msg_type := reflect.TypeOf(msg) 
+    msg_type := reflect.TypeOf(msg)
     // User messages have fragmentation to deal with
     if msg_type == reflect.TypeOf(UserMessage{}) {
 		self.processUserMessage(msg.(UserMessage))
@@ -540,6 +546,8 @@ func (self*Node) processMessage(serialized []byte) {
 		} else {
 			if msg_type == reflect.TypeOf(RefreshRouteMessage{}) { 
 				self.processRefreshRouteMessage(msg.(RefreshRouteMessage))
+			} else if msg_type == reflect.TypeOf(DeleteRouteMessage{}) {
+				self.processDeleteRouteMessage(msg.(DeleteRouteMessage))
 			}
 		} 
 	}
@@ -773,6 +781,54 @@ func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {
 	self.localRoutesByTerminatingPeer[toPeer] = id
 	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId}
 	return nil
+}
+
+func (self*Node) sendDeleteRoute(id RouteId, route Route) error {
+	sendBase := MessageBase{
+		route.forwardRewriteSendId,
+		false,
+		self.config.PubKey,
+		true, // Reliable
+		generateNonce(),
+	}
+	message := DeleteRouteMessage {
+		sendBase,
+	}
+
+	directPeer := route.forwardToPeer
+	transport := self.safelyGetTransportToPeer(directPeer, true)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.config.PubKey))
+	}
+	serialized := self.serializer.SerializeMessage(message)
+	send_error := transport.SendMessage(directPeer, serialized)
+	if send_error != nil {
+		return send_error
+	}
+
+	return nil
+}
+
+func (self*Node) DeleteRoute(id RouteId) (err error) {
+	route, routeExists := self.safelyGetRoute(id)
+	if !routeExists {
+		return errors.New(fmt.Sprintf("Cannot delete route %v, doesn't exist\n", id))
+	}
+
+	err = self.sendDeleteRoute(id, route)
+
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	localRoute, localExists := self.localRoutesById[id]
+
+	delete(self.routesById, id)
+	delete(self.routeExtensionsAwaitingConfirm, id)
+
+	if localExists {
+		delete(self.localRoutesById, id)
+		delete(self.localRoutesByTerminatingPeer, localRoute.terminatingPeer)
+	}
+	return err
 }
 
 func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (message SetRouteMessage, directPeer cipher.PubKey, waitConfirm chan bool, err error) {

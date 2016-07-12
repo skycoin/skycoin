@@ -4,7 +4,7 @@
 		"PhysicalReceivedChannelLength": 100,
 		"ExpireMessagesInterval": 5000000000,
 		"RememberMessageReceivedDuration": 10000000000,
-		"RetransmitDuration": 3000000000
+		"RetransmitDuration": 100000000
 	},
 	"Udp": {
 		"SendChannelLength": 100,

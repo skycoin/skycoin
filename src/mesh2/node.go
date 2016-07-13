@@ -922,13 +922,6 @@ func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Dura
 	return
 }
 
-func (self*Node) RemoveRoute(id RouteId) (error) {
-	// routesById
-	// localRoutesByTerminatingPeer
-	// localRoutesById
-	return errors.New("todo")
-}
-
 func (self*Node) getMaximumContentLength(toPeer cipher.PubKey, transport transport.Transport) uint64 {	
 	transportSize := transport.GetMaximumMessageSizeToPeer(toPeer)
 	empty := UserMessage{}

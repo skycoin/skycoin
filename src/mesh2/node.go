@@ -80,6 +80,7 @@ type LocalRoute struct {
 	lastForwardingPeer cipher.PubKey
 	terminatingPeer    cipher.PubKey
 	lastHopId          RouteId
+	lastConfirmed      time.Time
 }
 
 type Node struct {
@@ -143,6 +144,7 @@ type SetRouteReply struct {
 type RefreshRouteMessage struct {
 	MessageBase
     DurationHint   time.Duration
+	ConfirmId      RouteId
 }
 
 // Deletes the route as it passes thru it
@@ -443,24 +445,24 @@ func (self*Node) processUserMessage(msgIn UserMessage) {
 	}
 }
 
-func (self*Node) sendSetRouteReply(msg SetRouteMessage) {
+func (self*Node) sendSetRouteReply(base MessageBase, confirmId RouteId) {
 	reply := SetRouteReply{
 		MessageBase{
-			msg.SendId,
+			base.SendId,
 			true,	// SendBack
 			self.config.PubKey,
 			true,	// Reliable
 			generateNonce(),
 		},
-		msg.ConfirmId,
+		confirmId,
 	}
-	transport := self.safelyGetTransportToPeer(msg.FromPeer, true)
+	transport := self.safelyGetTransportToPeer(base.FromPeer, true)
 	if transport == nil {
-		fmt.Fprintf(os.Stderr,"No transport to peer %v from %v\n", msg.FromPeer, self.config.PubKey)
+		fmt.Fprintf(os.Stderr,"No transport to peer %v from %v\n", base.FromPeer, self.config.PubKey)
 		return
 	}
 	serialized := self.serializer.SerializeMessage(reply)
-	send_error := transport.SendMessage(msg.FromPeer, serialized)
+	send_error := transport.SendMessage(base.FromPeer, serialized)
 	if send_error != nil {
 		return
 	}
@@ -488,7 +490,7 @@ func (self*Node) processSetRouteMessage(msg SetRouteMessage) {
 		}
 
 	// Don't block to send reply
-	go self.sendSetRouteReply(msg)
+	go self.sendSetRouteReply(msg.MessageBase, msg.ConfirmId)
 }
 
 func (self*Node) processSetRouteReplyMessage(msg SetRouteReply) {
@@ -497,6 +499,11 @@ func (self*Node) processSetRouteReplyMessage(msg SetRouteReply) {
 	confirmChan, foundChan := self.routeExtensionsAwaitingConfirm[msg.ConfirmId]
 	if foundChan {
 		confirmChan <- true
+	}
+	localRoute, foundLocal := self.localRoutesById[msg.ConfirmId]
+	if foundLocal {
+		localRoute.lastConfirmed = time.Now()
+		self.localRoutesById[msg.ConfirmId] = localRoute
 	}
 }
 
@@ -508,16 +515,21 @@ func (self*Node) clipExpiryTime(hint time.Time) time.Time {
 	return hint
 }
 
-func (self*Node) processRefreshRouteMessage(msg RefreshRouteMessage) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	route, exists := self.routesById[msg.SendId]
-	if !exists {
-		fmt.Fprintf(os.Stderr, "Refresh sent for unknown route: %v\n", msg.SendId)
-		return
+func (self*Node) processRefreshRouteMessage(msg RefreshRouteMessage, forwarded bool) {
+	if forwarded {
+		self.lock.Lock()
+		defer self.lock.Unlock()
+		route, exists := self.routesById[msg.SendId]
+		if !exists {
+			fmt.Fprintf(os.Stderr, "Refresh sent for unknown route: %v\n", msg.SendId)
+			return
+		}
+		route.expiryTime = self.clipExpiryTime(time.Now().Add(msg.DurationHint))
+		self.routesById[msg.SendId] = route
+	} else {
+		// Don't block to send reply
+		go self.sendSetRouteReply(msg.MessageBase, msg.ConfirmId)
 	}
-	route.expiryTime = self.clipExpiryTime(time.Now().Add(msg.DurationHint))
-	self.routesById[msg.SendId] = route
 }
 
 func (self*Node) processDeleteRouteMessage(msg DeleteRouteMessage) {
@@ -538,7 +550,8 @@ func (self*Node) processMessage(serialized []byte) {
     if msg_type == reflect.TypeOf(UserMessage{}) {
 		self.processUserMessage(msg.(UserMessage))
     } else {
-	    if !self.forwardMessage(msg) {
+    	forwardedMessage := self.forwardMessage(msg)
+	    if !forwardedMessage {
 			// Receive or forward. Refragment on forward!
 			if msg_type == reflect.TypeOf(SetRouteMessage{}) {
 				self.processSetRouteMessage(msg.(SetRouteMessage))
@@ -546,12 +559,14 @@ func (self*Node) processMessage(serialized []byte) {
 				self.processSetRouteReplyMessage(msg.(SetRouteReply))
 			}
 		} else {
-			if msg_type == reflect.TypeOf(RefreshRouteMessage{}) { 
-				self.processRefreshRouteMessage(msg.(RefreshRouteMessage))
-			} else if msg_type == reflect.TypeOf(DeleteRouteMessage{}) {
+			if msg_type == reflect.TypeOf(DeleteRouteMessage{}) {
 				self.processDeleteRouteMessage(msg.(DeleteRouteMessage))
 			}
 		} 
+
+		if msg_type == reflect.TypeOf(RefreshRouteMessage{}) { 
+			self.processRefreshRouteMessage(msg.(RefreshRouteMessage), forwardedMessage)
+		}
 	}
 }
 
@@ -607,6 +622,7 @@ func (self*Node) refreshRoute(routeId RouteId) {
 	message := RefreshRouteMessage{
 		base,
 		3*self.config.RefreshRouteDuration,
+		routeId,
 	}
 	serialized := self.serializer.SerializeMessage(message)
 	send_error := transport.SendMessage(directPeer, serialized)
@@ -781,7 +797,7 @@ func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {
 		}
 
 	self.localRoutesByTerminatingPeer[toPeer] = id
-	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId}
+	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId, time.Unix(0,0)}
 	return nil
 }
 
@@ -880,7 +896,7 @@ func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (me
 	    3*self.config.RefreshRouteDuration,
 	}
 	delete(self.localRoutesByTerminatingPeer, localRoute.terminatingPeer)
-	self.localRoutesById[id] = LocalRoute{localRoute.terminatingPeer, toPeer, newHopId}
+	self.localRoutesById[id] = LocalRoute{localRoute.terminatingPeer, toPeer, newHopId, localRoute.lastConfirmed}
 	self.localRoutesByTerminatingPeer[toPeer] = id
 
 	updatedRoute := route
@@ -922,6 +938,16 @@ func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Dura
 
 	delete(self.routeExtensionsAwaitingConfirm, id)
 	return
+}
+
+func (self*Node) GetRouteLastConfirmed(id RouteId) (time.Time, error) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	localRoute, found := self.localRoutesById[id]
+	if !found {
+		return time.Unix(0,0), errors.New(fmt.Sprintf("Unknown route id: %v", id))
+	}
+	return localRoute.lastConfirmed, nil
 }
 
 func (self*Node) getMaximumContentLength(toPeer cipher.PubKey, transport transport.Transport) uint64 {	

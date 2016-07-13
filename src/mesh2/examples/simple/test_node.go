@@ -75,8 +75,6 @@ func main() {
     	panic(createUDPError)
     }
 
-    fmt.Fprintf(os.Stderr, "UDP connect info: %v\n", udpTransport.GetTransportConnectInfo())
-
     // Connect
     for _, connectTo := range(config.PeersToConnect) {
     	connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
@@ -95,6 +93,8 @@ func main() {
     }
     defer node.Close()
     node.AddTransport(reliableTransport)
+
+    fmt.Fprintf(os.Stderr, "UDP connect info: %v\n", udpTransport.GetTransportConnectInfo())
 
     // Setup route
     for _, routeConfig := range(config.RoutesToEstablish) {

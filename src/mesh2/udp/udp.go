@@ -10,6 +10,7 @@ import(
     "strconv"
     "reflect"
     "crypto/rand"
+    "encoding/hex"
     "encoding/json"
     "encoding/binary")
 
@@ -39,7 +40,8 @@ type ListenPort struct {
 
 type UDPCommConfig struct {
 	DatagramLength	uint16
-	ExternalHosts []net.UDPAddr
+	ExternalHosts   []net.UDPAddr
+	CryptoKey       []byte
 }
 
 type UDPTransport struct {
@@ -295,7 +297,7 @@ func (self*UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte) erro
 
 	// Apply crypto
 	if self.crypto != nil {
-		datagramBuffer = self.crypto.Encrypt(datagramBuffer)
+		datagramBuffer = self.crypto.Encrypt(datagramBuffer, peerComm.CryptoKey)
 	}
 
 	// Choose a socket randomly
@@ -320,6 +322,12 @@ func  (self*UDPTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 
+func (self*UDPTransport) safeGetCrypto() transport.TransportCrypto {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	return self.crypto
+}
+
 // UDP Transport only functions
 func (self*UDPTransport) GetTransportConnectInfo() string {
 	hostsArray := make([]net.UDPAddr, 0)
@@ -327,10 +335,15 @@ func (self*UDPTransport) GetTransportConnectInfo() string {
 	for _, port := range self.listenPorts {
 		hostsArray = append(hostsArray, port.externalHost)
 	}
-
+	key := []byte{}
+	crypto := self.safeGetCrypto()
+	if crypto != nil {
+		key = crypto.GetKey()
+	}
 	info := UDPCommConfig{
 		self.config.DatagramLength,
 		hostsArray,
+		key,
 	}
 
 	ret, err := json.Marshal(info)
@@ -338,12 +351,16 @@ func (self*UDPTransport) GetTransportConnectInfo() string {
 		panic(err)
 	}
 
-	return string(ret)
+	return hex.EncodeToString(ret)
 }
 
 func (self*UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) error {
 	config := UDPCommConfig{}
-	parseError := json.Unmarshal([]byte(connectInfo), &config)
+	connectInfoRaw, decodeHexError := hex.DecodeString(connectInfo)
+	if decodeHexError != nil {
+		return decodeHexError
+	}
+	parseError := json.Unmarshal(connectInfoRaw, &config)
 	if parseError != nil {
 		return parseError
 	}

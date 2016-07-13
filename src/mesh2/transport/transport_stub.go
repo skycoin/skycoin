@@ -59,18 +59,22 @@ func (self*StubTransport) getMessageBuffer() (retMessages []QueuedMessage) {
 	return self.messageBuffer
 }
 func (self*StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
-	msg_encd := msg
-	if self.crypto != nil {
-		msg_encd = self.crypto.Encrypt(msg)
-	}
-	if (uint)(len(msg)) > self.maxMessageSize {
-		return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(msg), self.maxMessageSize))
-	}
-	if self.crypto != nil {
-		msg = self.crypto.Decrypt(msg_encd)
-	}
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
+		msg_encd := msg
+		if self.crypto != nil {
+			peerKey := []byte{}
+			if peer.crypto != nil {
+				peerKey = peer.crypto.GetKey()
+			}
+			msg_encd = self.crypto.Encrypt(msg, peerKey)
+		}
+		if (uint)(len(msg)) > self.maxMessageSize {
+			return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(msg), self.maxMessageSize))
+		}
+		if self.crypto != nil {
+			msg = self.crypto.Decrypt(msg_encd)
+		}
 		if !self.ignoreSend {
 			messageBuffer := self.getMessageBuffer()
 			if messageBuffer == nil {

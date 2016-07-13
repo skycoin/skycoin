@@ -159,9 +159,8 @@ func (self*TimeoutError) Error() string {
 
 var logger = logging.MustGetLogger("node")
 
-// TODO: Transport crypto test
-
 func NewNode(config NodeConfig) (*Node, error) {
+fmt.Fprintf(os.Stderr, "config.ChaCha20Key %v\n", config.ChaCha20Key)
 	ret := &Node{
 		config,
 		nil,			// received
@@ -257,9 +256,13 @@ type ChaChaCrypto struct {
 	key    [32]byte
 }
 
-func (self*ChaChaCrypto) Encrypt(in[]byte)[]byte {
+func (self*ChaChaCrypto) GetKey()[]byte {
+	return self.key[:]
+}
+
+func (self*ChaChaCrypto) Encrypt(in []byte, peerKey []byte)[]byte {
 	out := make([]byte, len(in))
-	chacha20.XORKeyStream(out, in, []byte("nonce123"), self.key[:])
+	chacha20.XORKeyStream(out, in, []byte("nonce123"), peerKey[:])
 	return out
 }
 

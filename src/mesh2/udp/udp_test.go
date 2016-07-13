@@ -4,6 +4,7 @@ import(
 	"time"
 	"testing")
 
+
 import(
 	"github.com/skycoin/skycoin/src/mesh2/transport"
     "github.com/skycoin/skycoin/src/cipher"
@@ -56,7 +57,7 @@ func TestBindSTUNPorts(t *testing.T) {
 	defer transport.Close()
 }
 
-func SetupAB(t *testing.T) (
+func SetupAB(encrypt bool, t *testing.T) (
 				*UDPTransport, cipher.PubKey,
 				*UDPTransport, cipher.PubKey) {
 	transport_a, error := NewUDPTransport(staticTestConfig)
@@ -69,6 +70,10 @@ func SetupAB(t *testing.T) (
 	transport_b, error := NewUDPTransport(config_b)
 	assert.Nil(t, error)
 	assert.NotNil(t, transport_b)
+
+	tc := &TestCryptoStruct{}
+	transport_a.SetCrypto(tc)
+	transport_b.SetCrypto(tc)
 
 	test_key_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 	test_key_b := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
@@ -84,7 +89,7 @@ func SetupAB(t *testing.T) (
 }
 
 func TestSendDatagram(t *testing.T) {
-	transport_a , key_a, transport_b, key_b := SetupAB(t)
+	transport_a , key_a, transport_b, key_b := SetupAB(false, t)
 	defer transport_a.Close()
 	defer transport_b.Close()
 
@@ -132,7 +137,14 @@ func TestSendDatagram(t *testing.T) {
 type TestCryptoStruct struct {
 }
 
-func (self*TestCryptoStruct) Encrypt(data[]byte)[]byte {
+func (self*TestCryptoStruct) GetKey()[]byte {
+	return []byte{44,23}
+}
+
+func (self*TestCryptoStruct) Encrypt(data []byte, key []byte)[]byte {
+	if len(key) != 2 || key[0] != 44 || key[1] != 23 {
+		panic("Wrong Key")
+	}
 	ret := make([]byte, len(data))
 	for i := 0; i < len(data); i++ {
 		ret[i] = data[i] + 1
@@ -140,7 +152,7 @@ func (self*TestCryptoStruct) Encrypt(data[]byte)[]byte {
 	return ret
 }
 
-func (self*TestCryptoStruct) Decrypt(data[]byte)[]byte {
+func (self*TestCryptoStruct) Decrypt(data []byte)[]byte {
 	ret := make([]byte, len(data))
 	for i := 0; i < len(data); i++ {
 		ret[i] = data[i] - 1
@@ -149,15 +161,11 @@ func (self*TestCryptoStruct) Decrypt(data[]byte)[]byte {
 }
 
 func TestCrypto(t *testing.T) {
-	transport_a, _, transport_b, key_b := SetupAB(t)
+	transport_a, _, transport_b, key_b := SetupAB(true, t)
 	defer transport_a.Close()
 	defer transport_b.Close()
 
 	send_bytes := []byte{66,44,33,2,123,100,22}
-
-	tc := &TestCryptoStruct{}
-	transport_a.SetCrypto(tc)
-	transport_b.SetCrypto(tc)
 
 	assert.Nil(t, transport_a.SendMessage(key_b, send_bytes))
 
@@ -174,7 +182,7 @@ func TestCrypto(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
-	transport_a, _, transport_b, key_b := SetupAB(t)
+	transport_a, _, transport_b, key_b := SetupAB(false, t)
 	defer transport_a.Close()
 	defer transport_b.Close()
 

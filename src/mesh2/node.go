@@ -160,7 +160,6 @@ func (self*TimeoutError) Error() string {
 var logger = logging.MustGetLogger("node")
 
 func NewNode(config NodeConfig) (*Node, error) {
-fmt.Fprintf(os.Stderr, "config.ChaCha20Key %v\n", config.ChaCha20Key)
 	ret := &Node{
 		config,
 		nil,			// received

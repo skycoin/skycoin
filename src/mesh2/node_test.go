@@ -442,8 +442,6 @@ func TestMessageExpiry(t *testing.T) {
 
 	time.Sleep(1*time.Second)
 	assert.NotZero(t, nodes[1].debug_countMessages())
-	time.Sleep(1*time.Second)
-	assert.NotZero(t, nodes[1].debug_countMessages())
 	time.Sleep(10*time.Second)
 	assert.Zero(t, nodes[1].debug_countMessages())	
 }

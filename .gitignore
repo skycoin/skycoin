@@ -84,6 +84,8 @@ benefactor-wallet.json
 masterdata/
 .genv
 
+npm-debug.log
+
 node_modules
 
 electron/release

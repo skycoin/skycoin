@@ -20,6 +20,15 @@ go get github.com/mitchellh/gox
 
 Node and npm installation is system dependent.
 
+Updating NPM
+-----
+
+```
+npm install npm -g
+node -v
+npm -v
+```
+
 Setup
 -----
 

@@ -6,6 +6,16 @@ var exec = require('child_process').exec;
 var packageJson = require('./src/package.json');
 
 gulp.task('electron', () => {
+    var platforms = [
+        'win32-x64',
+        // 'win32-ia32',
+        'darwin-x64',
+        'linux-x64'
+    ];
+    if (process.argv.length > 4) {
+        platforms = [process.argv[4]];
+    }
+    console.log(platforms);
     gulp.src("")
     .pipe(electron({
         src: './src',
@@ -17,12 +27,7 @@ gulp.task('electron', () => {
                             // we need to copy our skycoin binaries in
                             // due to liimitations of electron-gulp
         // token: 'abc123...',  // GITHUB_TOKEN if there is ratelimit issue
-        platforms: [
-            'win32-x64',
-            // 'win32-ia32',
-            'darwin-x64',
-            'linux-x64',
-        ],
+        platforms: platforms,
         platformResources: {
             darwin: {
                 CFBundleDisplayName: packageJson.productName,

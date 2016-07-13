@@ -42,7 +42,7 @@ gox -osarch="$OSARCH" \
     "${CMDDIR}/${CMD}"
 
 if [[ $? -ne 0 ]]; then
-    echo "gox multi compilation of $GOX_OSARCH failed"
+    echo "gox multi compilation of $OSARCH failed"
     exit 1
 fi
 

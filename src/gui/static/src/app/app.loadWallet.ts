@@ -107,7 +107,7 @@ export class loadWalletComponent implements OnInit {
             for(var item in data){
               var address = data[inc].meta.filename;
               //Post method executed
-              this.http.post('/wallet/balance', JSON.stringify({id: address}), {headers: headers})
+              this.http.get('/wallet/balance?id=' + address, {headers: headers})
               .map((res:Response) => res.json())
               .subscribe(
                 //Response from API

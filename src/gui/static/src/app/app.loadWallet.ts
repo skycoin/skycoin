@@ -52,6 +52,7 @@ export class loadWalletComponent implements OnInit {
     ngOnInit() {
         this.displayMode = DisplayModeEnum.first;
         this.loadWallet();
+        this.loadConnections();
         this.loadProgress();
 
         //Set interval function for load wallet every 15 seconds
@@ -125,6 +126,14 @@ export class loadWalletComponent implements OnInit {
                     console.log('load done: ' + inc, response);
                     this.wallets[inc].balance = response.confirmed.coins / 1000000;
                 }, err => console.log("Error on load balance: " + err), () => console.log('Balance load done'))
+    }
+    loadConnections() {
+        this.http.post('/network/connections', '')
+            .map((res) => res.json())
+            .subscribe(data => {
+                console.log("connections", data);
+                this.connections = data.connections;
+            }, err => console.log("Error on load wallet: " + err), () => console.log('Wallet load done'));
     }
     //Load progress function for Skycoin
     loadProgress(){
@@ -309,5 +318,7 @@ export class loadWalletComponent implements OnInit {
 enum DisplayModeEnum {
     first = 0,
     second = 1,
-    third = 2
+    third = 2,
+    fourth = 3,
+    fifth = 4
 }

@@ -2,12 +2,14 @@
 package gui
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -433,8 +435,29 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Returns the outputs for all addresses
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		SendOr404(w, ret)
+		if r.Method == "GET" {
+			uxouts := gateway.Visor.GetUnspentOutputReadables(gateway.V)
+			rawaddrs := r.URL.Query().Get("addrs")
+			if rawaddrs == "" {
+				SendOr404(w, uxouts)
+				return
+			}
+
+			// split the addrs,
+			addrs := strings.Split(rawaddrs, ",")
+			addrMap := make(map[string]bool)
+			for _, addr := range addrs {
+				addrMap[addr] = true
+			}
+
+			ret := []visor.ReadableOutput{}
+			for _, u := range uxouts {
+				if _, ok := addrMap[u.Address]; ok {
+					ret = append(ret, u)
+				}
+			}
+			SendOr404(w, ret)
+		}
 	}
 }
 
@@ -455,8 +478,28 @@ func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// get the rawtransaction
+		v := struct {
+			Rawtx []byte `json:"rawtx"`
+		}{}
+		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+			SendOr404(w, "bad request")
+			return
+		}
+
+		txn := coin.TransactionDeserialize(v.Rawtx)
+		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
+		if err != nil {
+			SendOr404(w, "inject tx failed")
+			return
+		}
+
+		ret := struct {
+			Txid string `json:"txid"`
+		}{t.Hash().Hex()}
+
 		//ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		//SendOr404(w, ret)
+		SendOr404(w, ret)
 	}
 }
 

@@ -488,6 +488,11 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		txn := coin.TransactionDeserialize(v.Rawtx)
+
+		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
+			SendOr404(w, err.Error())
+		}
+
 		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
 		if err != nil {
 			SendOr404(w, "inject tx failed")

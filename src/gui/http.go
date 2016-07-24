@@ -22,6 +22,7 @@ var (
 
 const (
 	resourceDir = "dist/"
+	devDir = "dev/"
 	indexPage   = "index.html"
 )
 
@@ -91,18 +92,37 @@ func serve(listener net.Listener, mux *http.ServeMux) {
 }
 
 func determineResourcePath(staticDir string) (string, error) {
-	appLoc := filepath.Join(staticDir, resourceDir)
-	if strings.HasPrefix(appLoc, "/") {
-		return appLoc, nil
+    //check "dev" directory first
+	appLoc := filepath.Join(staticDir, devDir)
+	if !strings.HasPrefix(appLoc, "/") {
+		// Prepend the binary's directory path if appLoc is relative
+        dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+        if err != nil {
+            return "", err
+        }
+
+        appLoc = filepath.Join(dir, appLoc)
 	}
 
-	// Prepend the binary's directory path if appLoc is relative
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		return "", err
-	}
+	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+		//check dist directory
+    appLoc = filepath.Join(staticDir, resourceDir)
+    if !strings.HasPrefix(appLoc, "/") {
+        // Prepend the binary's directory path if appLoc is relative
+        dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+        if err != nil {
+            return "", err
+        }
 
-	return filepath.Join(dir, appLoc), nil
+        appLoc = filepath.Join(dir, appLoc)
+    }
+
+    if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+        return "", err
+    }
+  }
+
+	return appLoc, nil
 }
 
 // Creates an http.ServeMux with handlers registered

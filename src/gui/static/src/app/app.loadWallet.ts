@@ -44,6 +44,7 @@ export class loadWalletComponent implements OnInit {
     historyTable: Array<any>;
     pendingTable: Array<any>;
     addresses: Array<any>;
+    connections: Array<any>;
 
     //Constructor method for load HTTP object
     constructor(private http: Http) { }

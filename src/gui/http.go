@@ -21,8 +21,9 @@ var (
 )
 
 const (
-	resourceDir = "dist/"
-	indexPage   = "index.html"
+	resourceDir   = "dev/"
+	defaultResDir = "dist/"
+	indexPage     = "index.html"
 )
 
 // Begins listening on http://$host, for enabling remote web access
@@ -32,9 +33,17 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Warning("HTTPS not in use!")
 	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := determineResourcePath(staticDir)
+	appLoc, err := determineResourcePath(staticDir, resourceDir)
 	if err != nil {
 		return err
+	}
+
+	// check if the appLoc is exist.
+	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+		appLoc, err = determineResourcePath(staticDir, defaultResDir)
+		if err != nil {
+			return err
+		}
 	}
 
 	listener, err := net.Listen("tcp", host)
@@ -55,7 +64,7 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	logger.Info("Using %s for the key", keyFile)
 	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := determineResourcePath(staticDir)
+	appLoc, err := determineResourcePath(staticDir, resourceDir)
 	if err != nil {
 		return err
 	}
@@ -90,8 +99,8 @@ func serve(listener net.Listener, mux *http.ServeMux) {
 	<-ready
 }
 
-func determineResourcePath(staticDir string) (string, error) {
-	appLoc := filepath.Join(staticDir, resourceDir)
+func determineResourcePath(staticDir string, resDir string) (string, error) {
+	appLoc := filepath.Join(staticDir, resDir)
 	if strings.HasPrefix(appLoc, "/") {
 		return appLoc, nil
 	}

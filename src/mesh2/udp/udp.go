@@ -15,7 +15,7 @@ import(
     "encoding/binary")
 
 import(
-	"github.com/skycoin/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
     "github.com/skycoin/skycoin/src/cipher")
 

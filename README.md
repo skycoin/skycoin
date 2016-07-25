@@ -132,13 +132,18 @@ http://127.0.0.1:6420/connections
 ```
 
 ```
-http://127.0.0.1:6420/wallets to get your wallet seed. Write this down
+http://127.0.0.1:6420/wallets
+- to get your wallet seed. Write this down
+
+http://127.0.0.1:6420/wallet/balance?id=2016_02_17_9671.wlt
+- to get wallet balance (use wallet filename as id)
+- TODO: allow addresses for balance check
 
 http://127.0.0.1:6420/outputs to see outputs (address balances)
 
 http://127.0.0.1:6420/blockchain/blocks?start=0&end=5000 to see all blocks and transactions.
 
-http://127.0.0.1:6420/connections to check network connections
+http://127.0.0.1:6420/network/connections to check network connections
 
 http://127.0.0.1:6420/blockchain to check blockchain head
 ```

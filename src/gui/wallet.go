@@ -278,6 +278,40 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			addrsParam := r.URL.Query().Get("addrs")
+			addrsStr := strings.Split(addrsParam, ",")
+			addrs := make([]cipher.Address, len(addrsStr))
+			addrSet := make(map[cipher.Address]byte)
+			for i, addr := range addrsStr {
+				addrs[i] = cipher.MustDecodeBase58Address(addr)
+				addrSet[addrs[i]] = byte(1)
+			}
+
+			v := gateway.D.Visor.Visor
+			auxs := v.Blockchain.Unspent.AllForAddresses(addrs)
+			puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent, addrSet)
+
+			coins1, hours1 := v.AddressBalance(auxs)
+			coins2, hours2 := v.AddressBalance(auxs.Sub(puxs))
+
+			confirmed := wallet.Balance{coins1, hours1}
+			predicted := wallet.Balance{coins2, hours2}
+			bal := struct {
+				Confirmed wallet.Balance `json:"confirmed"`
+				Predicted wallet.Balance `json:"predicted"`
+			}{
+				Confirmed: confirmed,
+				Predicted: predicted,
+			}
+
+			SendOr404(w, bal)
+		}
+	}
+}
+
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
@@ -475,6 +509,19 @@ func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func getConfirmTxn(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// V := gateway.V
+		// // get tx hash id
+		// txid := r.URL.Query().Get("txid")
+		// if txid != "" {
+		// 	txn := V.GetTransaction(cipher.MustSHA256FromHex(txid))
+		// 	r := visor.NewReadableTransaction(&txn)
+		// 	SendOr404(w, r)
+		// }
+	}
+}
+
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -482,29 +529,40 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		v := struct {
 			Rawtx []byte `json:"rawtx"`
 		}{}
+
+		rlt := struct {
+			Success bool   `json:"success"`
+			Reason  string `json:"reason"`
+			Txid    string `json:"txid"`
+		}{}
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			SendOr404(w, "bad request")
+			logger.Error("bad request: %v", err)
+			rlt.Reason = "bad request"
+			SendOr404(w, rlt)
 			return
 		}
 
 		txn := coin.TransactionDeserialize(v.Rawtx)
 
 		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
-			SendOr404(w, err.Error())
+			rlt.Reason = err.Error()
+			SendOr404(w, rlt)
+			return
 		}
 
 		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
 		if err != nil {
-			SendOr404(w, "inject tx failed")
+			logger.Error("inject tx failed:%v", err)
+			rlt.Reason = "inject tx failed"
+			SendOr404(w, rlt)
 			return
 		}
 
-		ret := struct {
-			Txid string `json:"txid"`
-		}{t.Hash().Hex()}
+		rlt.Success = true
+		rlt.Txid = t.Hash().Hex()
 
 		//ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		SendOr404(w, ret)
+		SendOr404(w, rlt)
 	}
 }
 
@@ -561,8 +619,14 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(gateway))
 
+	// get balance of addresses
+	mux.HandleFunc("/balance", getBalanceHandler(gateway))
+
 	//get set of pending transaction
 	mux.HandleFunc("/transactions", getTransactionsHandler(gateway))
+
+	// get info of confirmed specific txn.
+	// mux.HandleFunc("/confirmed/transaction", getConfirmTxn(gateway))
 
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))

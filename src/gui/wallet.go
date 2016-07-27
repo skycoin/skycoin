@@ -499,26 +499,90 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		V := gateway.V
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
+		isConfirmed := r.URL.Query().Get("confirm")
+		if isConfirmed == "1" {
+			blks := V.Blockchain.Blocks
+			totalTxns := []coin.Transaction{}
+			for _, b := range blks {
+				totalTxns = append(totalTxns, b.Body.Transactions...)
+			}
 
-		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
-			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-			ret = append(ret, &readable)
+			rdTxns := make([]visor.ReadableTransaction, len(totalTxns))
+			for i, txn := range totalTxns {
+				rdTxns[i] = visor.NewReadableTransaction(&txn)
+			}
+
+			rltTxns := []visor.ReadableTransaction{}
+			// addr := r.URL.Query().Get("addr")
+			input := r.URL.Query().Get("input")
+			output := r.URL.Query().Get("output")
+
+			if input != "" {
+				uxids := getUxidsOfAddr(input, rdTxns)
+				for _, uxid := range uxids {
+					for _, txn := range rdTxns {
+						for _, in := range txn.In {
+							if in == uxid {
+								rltTxns = append(rltTxns, txn)
+								break
+							}
+						}
+					}
+				}
+			}
+
+			if output != "" {
+				outTxns := []visor.ReadableTransaction{}
+				if input != "" {
+					outTxns = rltTxns
+				} else {
+					outTxns = rdTxns
+				}
+
+				txs := []visor.ReadableTransaction{}
+				for _, txn := range outTxns {
+					for _, out := range txn.Out {
+						if out.Address == output {
+							txs = append(txs, txn)
+							break
+						}
+					}
+				}
+				rltTxns = txs
+			}
+			SendOr404(w, rltTxns)
+		} else {
+			ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
+			for _, unconfirmedTxn := range V.Unconfirmed.Txns {
+				readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+				ret = append(ret, &readable)
+			}
+			SendOr404(w, ret)
 		}
-		SendOr404(w, ret)
 	}
 }
 
-func getConfirmTxn(gateway *daemon.Gateway) http.HandlerFunc {
+func getUxidsOfAddr(addr string, rdTxns []visor.ReadableTransaction) []string {
+	uxids := []string{}
+	for _, txn := range rdTxns {
+		for _, out := range txn.Out {
+			if out.Address == addr {
+				uxids = append(uxids, out.Hash)
+			}
+		}
+	}
+	return uxids
+}
+
+func getAddrTxns(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// V := gateway.V
-		// // get tx hash id
-		// txid := r.URL.Query().Get("txid")
-		// if txid != "" {
-		// 	txn := V.GetTransaction(cipher.MustSHA256FromHex(txid))
-		// 	r := visor.NewReadableTransaction(&txn)
-		// 	SendOr404(w, r)
-		// }
+		// get tx hash id
+		addr := r.URL.Query().Get("addr")
+		if addr != "" {
+			rlt := gateway.GetAddressTransactions(cipher.MustDecodeBase58Address(addr))
+			txns := rlt.(*visor.TransactionResults)
+			SendOr404(w, txns)
+		}
 	}
 }
 
@@ -625,8 +689,8 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//get set of pending transaction
 	mux.HandleFunc("/transactions", getTransactionsHandler(gateway))
 
-	// get info of confirmed specific txn.
-	// mux.HandleFunc("/confirmed/transaction", getConfirmTxn(gateway))
+	// // get confirmed txn of address.
+	// mux.HandleFunc("/transactions", getAddrTxns(gateway))
 
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))

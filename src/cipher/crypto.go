@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/codahale/chacha20"
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
 	"gopkg.in/op/go-logging.v1"
@@ -454,14 +453,14 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	return nil
 }
 
-func Chacha20Encrypt(data []byte, pubkey cipher.PubKey, seckey cipher.SecKey, nonce []byte) (d []byte, err error) {
+func Chacha20Encrypt(data []byte, pubkey PubKey, seckey SecKey, nonce []byte) (d []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("encrypt faild")
 		}
 	}()
 
-	key := cipher.ECDH(pubkey, seckey)
+	key := ECDH(pubkey, seckey)
 	e := make([]byte, len(data))
 	c, err := chacha20.New(key, nonce)
 	if err != nil {
@@ -471,14 +470,14 @@ func Chacha20Encrypt(data []byte, pubkey cipher.PubKey, seckey cipher.SecKey, no
 	return e, nil
 }
 
-func Chacha20Decrypt(data []byte, pubkey cipher.PubKey, seckey cipher.SecKey, nonce []byte) (d []byte, err error) {
+func Chacha20Decrypt(data []byte, pubkey PubKey, seckey SecKey, nonce []byte) (d []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("decrypt faild")
 		}
 	}()
 
-	key := cipher.ECDH(pubkey, seckey)
+	key := ECDH(pubkey, seckey)
 	e := make([]byte, len(data))
 	c, err := chacha20.New(key, nonce)
 	if err != nil {

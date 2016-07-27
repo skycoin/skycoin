@@ -1,14 +1,16 @@
 package cipher
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"hash"
 	"log"
 	"time"
-	"bytes"
 
+	"github.com/codahale/chacha20"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
 	"gopkg.in/op/go-logging.v1"
@@ -26,15 +28,15 @@ type PubKey [33]byte
 type PubKeySlice []PubKey
 
 func (slice PubKeySlice) Len() int {
-    return len(slice)
+	return len(slice)
 }
 
 func (slice PubKeySlice) Less(i, j int) bool {
-    return bytes.Compare(slice[i][:], slice[j][:]) < 0
+	return bytes.Compare(slice[i][:], slice[j][:]) < 0
 }
 
 func (slice PubKeySlice) Swap(i, j int) {
-    slice[i], slice[j] = slice[j], slice[i]
+	slice[i], slice[j] = slice[j], slice[i]
 }
 
 func RandByte(n int) []byte {
@@ -450,6 +452,40 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	}
 
 	return nil
+}
+
+func Chacha20Encrypt(data []byte, pubkey cipher.PubKey, seckey cipher.SecKey, nonce []byte) (d []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("encrypt faild")
+		}
+	}()
+
+	key := cipher.ECDH(pubkey, seckey)
+	e := make([]byte, len(data))
+	c, err := chacha20.New(key, nonce)
+	if err != nil {
+		return []byte{}, err
+	}
+	c.XORKeyStream(e, data)
+	return e, nil
+}
+
+func Chacha20Decrypt(data []byte, pubkey cipher.PubKey, seckey cipher.SecKey, nonce []byte) (d []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("decrypt faild")
+		}
+	}()
+
+	key := cipher.ECDH(pubkey, seckey)
+	e := make([]byte, len(data))
+	c, err := chacha20.New(key, nonce)
+	if err != nil {
+		return []byte{}, err
+	}
+	c.XORKeyStream(e, data)
+	return e, nil
 }
 
 //do not allow program to start if crypto tests fail

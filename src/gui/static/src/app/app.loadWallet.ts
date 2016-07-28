@@ -11,7 +11,10 @@ import {Observable} from 'rxjs/Observable';
 import {Observer} from 'rxjs/Observer';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
-import {QRCodeComponent} from './ng2-qrcode.ts'
+import {QRCodeComponent} from './ng2-qrcode.ts';
+
+declare var _: any;
+declare var moment: any;
 
 @Component({
     selector: 'load-wallet',
@@ -30,6 +33,7 @@ export class loadWalletComponent implements OnInit {
     readyDisable: boolean;
     displayMode: DisplayModeEnum;
     displayModeEnum = DisplayModeEnum;
+    selectedMenu: string;
 
     QrAddress: string;
     QrIsVisible: boolean;
@@ -45,6 +49,9 @@ export class loadWalletComponent implements OnInit {
     pendingTable: Array<any>;
     addresses: Array<any>;
     connections: Array<any>;
+    defaultConnections: Array<any>;
+    blockChain: any;
+    outputs: Array<any>;
 
     //Constructor method for load HTTP object
     constructor(private http: Http) { }
@@ -54,18 +61,26 @@ export class loadWalletComponent implements OnInit {
         this.displayMode = DisplayModeEnum.first;
         this.loadWallet();
         this.loadConnections();
+        this.loadBlockChain();
         this.loadProgress();
+        this.loadOutputs();
 
         //Set interval function for load wallet every 15 seconds
         setInterval(() => {
             this.loadWallet();
             console.log("Refreshing balance");
         }, 15000);
+        setInterval(() => {
+            this.loadConnections();
+            this.loadBlockChain();
+            console.log("Refreshing connections");
+        }, 5000);
 
         //Enable Send tab "textbox" and "Ready" button by default
         this.sendDisable = true;
         this.readyDisable = false;
         this.pendingTable = [];
+        this.selectedMenu = "Wallets";
 
         if(localStorage.getItem('historyAddresses') != null){
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
@@ -129,14 +144,38 @@ export class loadWalletComponent implements OnInit {
                 }, err => console.log("Error on load balance: " + err), () => console.log('Balance load done'))
     }
     loadConnections() {
-        this.http.post('/network/connections', '')
-            .map((res) => res.json())
-            .subscribe(data => {
-                console.log("connections", data);
-                this.connections = data.connections;
-            }, err => console.log("Error on load wallet: " + err), () => console.log('Wallet load done'));
+      this.http.post('/network/connections', '')
+        .map((res) => res.json())
+        .subscribe(data => {
+            console.log("connections", data);
+            this.connections = data.connections;
+        }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
+      this.http.post('/network/defaultConnections', '')
+        .map((res) => res.json())
+        .subscribe(data => {
+            console.log("default connections", data);
+            this.defaultConnections = data.connections;
+        }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
     }
-    //Load progress function for Skycoin
+    loadOutputs() {
+      this.http.post('/outputs', '')
+        .map((res) => res.json())
+        .subscribe(data => {
+            this.outputs = _.sortBy(data, function(o){
+              return o.address;
+            });
+        }, err => console.log("Error on load outputs: " + err), () => console.log('Connection load done'));
+    }
+    loadBlockChain() {
+      this.http.post('/blockchain', '')
+        .map((res) => res.json())
+        .subscribe(data => {
+            console.log("blockchain", data);
+            if(data.head) {
+              this.blockChain = data;
+            }
+        }, err => console.log("Error on load blockchain: " + err), () => console.log('blockchain load done'));
+    }    //Load progress function for Skycoin
     loadProgress(){
         //Post method executed
         this.http.post('/blockchain/progress', '')
@@ -160,7 +199,16 @@ export class loadWalletComponent implements OnInit {
             this.spendid = wallet.meta.filename;
         }
     }
-
+    selectMenu(menu, event) {
+      event.preventDefault();
+      this.selectedMenu = menu;
+    }
+    getDateTimeString(ts) {
+      return moment.unix(ts).format("YYYY-MM-DD hh:mm")
+    }
+    getElapsedTime(ts) {
+      return moment().unix() - ts;
+    }
     //Show QR code function for show QR popup
     showQR(wallet){
         this.QrAddress = wallet.entries[0].address;
@@ -299,14 +347,21 @@ export class loadWalletComponent implements OnInit {
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
+                console.log(response);
                     this.pendingTable.push({complete: 'Completed', address: spendaddress, amount: spendamount});
                     //Load wallet for refresh list
                     this.loadWallet();
+                    this.readyDisable = false;
+                    this.sendDisable = true;
                 },
                 err => {
+                    console.log(err);
                     alert(err._body);
                     this.readyDisable = false;
                     this.sendDisable = true;
+                    if(err.body == 'Invalid connection') {
+                      return;
+                    }
                     this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
                 },
                 () => console.log('Spend successfully')

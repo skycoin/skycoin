@@ -182,7 +182,16 @@ func NewDaemonConfig() DaemonConfig {
 		LocalhostOnly:              false,
 	}
 }
+type DefaultConnection struct {
+	Id      int
+	Address string
+	Port    int
+	Status  bool
+}
 
+type DefaultConnections struct {
+	Connections []*DefaultConnection
+}
 // Stateful properties of the daemon
 type Daemon struct {
 	// Daemon configuration
@@ -194,6 +203,7 @@ type Daemon struct {
 	Peers    *Peers
 	Gateway  *Gateway
 	Visor    *Visor
+	DefaultConnections *DefaultConnections
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
@@ -254,6 +264,14 @@ func NewDaemon(config Config) *Daemon {
 	d.Messages.Config.Register()
 	d.Pool.Init(d)
 	d.Peers.Init()
+
+	/*d.DefaultConnections.Connections[0] = DefaultConnection{
+		Id:           1,
+		Address:         "10.10.10.10",
+		Port:     6000,
+		Status: true,
+	}*/
+
 	return d
 }
 

@@ -122,11 +122,16 @@ func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.Wallet {
 func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 	walletID wallet.WalletID) (wallet.BalancePair, error) {
 
+	log.Println("---------------");
+	log.Println(walletID);
+	log.Println("---------------");
+
 	wlt := self.Wallets.Get(walletID)
 	if wlt == nil {
 		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
 		return wallet.BalancePair{}, errors.New("Id not found")
 	}
+
 	auxs := v.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
 	puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent,
 		wlt.GetAddressSet())
@@ -261,7 +266,8 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		//r.ParseForm()
 		//r.ParseMultipartForm()
-		//log.Println(r.Form)
+		log.Printf("ID = %v\n", id)
+		log.Println(wallet.WalletID(id))
 
 		//r.URL.String()
 		r.ParseForm()
@@ -324,6 +330,24 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
+		//check valid connection count
+		connCount := 0
+		for a := range gateway.D.OutgoingConnections {
+			logger.Info("conns=%s", a)
+			// Forget about anyone that already disconnected
+			if gateway.D.Pool.Pool.Addresses[a] != nil {
+				logger.Info("found connection=%s", a)
+				connCount++
+			}
+		}
+
+		logger.Info("connCount=%d", connCount)
+
+		if(connCount == 0) {
+			Error400(w, "Invalid connection")
+			return
+		}
+
 		var hours uint64 = 0
 		var fee uint64 = 0 //doesnt work/do anything right now
 
@@ -332,6 +356,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		if ret.Error != "" {
 			Error400(w, "Spend Failed: %s", ret.Error)
+			return
 		}
 		SendOr404(w, ret)
 	}

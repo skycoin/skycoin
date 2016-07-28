@@ -23,7 +23,14 @@ func connectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func connectionsHandler2(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		SendOr404(w, gateway.GetConnections())
+	}
+}
+
 func RegisterNetworkHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/network/connection", connectionHandler(gateway))
 	mux.HandleFunc("/network/connections", connectionsHandler(gateway))
+	mux.HandleFunc("/network/defaultConnections", connectionsHandler2(gateway))
 }

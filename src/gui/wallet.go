@@ -496,13 +496,30 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns pending transactions
+// TODO: FIX!!! Iterates all blocks since begining
+// Gets list of transactions
+// TODO: this will slow down exponentially as blockchain size increases
 func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		V := gateway.V
 		isConfirmed := r.URL.Query().Get("confirm")
+
+		//default case
+		if isConfirmed != "1" {
+			ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
+			for _, unconfirmedTxn := range V.Unconfirmed.Txns {
+				readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+				ret = append(ret, &readable)
+			}
+			SendOr404(w, ret)
+		}
+
+		//WARNING: TODO: This iterates all blocks and all transactions
+		//TODO: need way to determine if transaction is "confirmed", without iterating all blocks
 		if isConfirmed == "1" {
 			blks := V.Blockchain.Blocks
 			totalTxns := []coin.Transaction{}
+			//WARNING: Iterates all blocks, since start
 			for _, b := range blks {
 				totalTxns = append(totalTxns, b.Body.Transactions...)
 			}
@@ -551,14 +568,8 @@ func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				rltTxns = txs
 			}
 			SendOr404(w, rltTxns)
-		} else {
-			ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
-			for _, unconfirmedTxn := range V.Unconfirmed.Txns {
-				readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-				ret = append(ret, &readable)
-			}
-			SendOr404(w, ret)
 		}
+
 	}
 }
 

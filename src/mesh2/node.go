@@ -1,39 +1,41 @@
 package mesh
 
-import(
-	"os"
+import (
+	"crypto/rand"
+	"errors"
 	"fmt"
+	"gopkg.in/op/go-logging.v1"
+	"os"
+	"reflect"
+	"runtime/debug"
+	"sync"
 	"time"
-    "sync"
-    "errors"
-    "reflect"
-    "runtime/debug"
-    "crypto/rand"
-    "gopkg.in/op/go-logging.v1")
+)
 
-import(
-	"github.com/skycoin/skycoin/src/mesh2/transport"
+import (
+	"github.com/satori/go.uuid"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
-    "github.com/skycoin/skycoin/src/cipher"
-    "github.com/satori/go.uuid"
-    "github.com/tang0th/go-chacha20")
+	"github.com/skycoin/skycoin/src/mesh2/transport"
+	"github.com/tang0th/go-chacha20"
+)
 
 type NodeConfig struct {
-	PubKey		    			cipher.PubKey
-	ChaCha20Key	    			[32]byte
-	MaximumForwardingDuration	time.Duration
-	RefreshRouteDuration		time.Duration
-	ExpireMessagesInterval      time.Duration
-	ExpireRoutesInterval		time.Duration
-	TimeToAssembleMessage		time.Duration
+	PubKey                        cipher.PubKey
+	ChaCha20Key                   [32]byte
+	MaximumForwardingDuration     time.Duration
+	RefreshRouteDuration          time.Duration
+	ExpireMessagesInterval        time.Duration
+	ExpireRoutesInterval          time.Duration
+	TimeToAssembleMessage         time.Duration
 	TransportMessageChannelLength int
 }
 
 func min(a, b uint64) uint64 {
-    if a < b {
-        return a
-    }
-    return b
+	if a < b {
+		return a
+	}
+	return b
 }
 
 type RouteId uuid.UUID
@@ -42,38 +44,38 @@ type messageId uuid.UUID
 var NilRouteId RouteId = (RouteId)(uuid.Nil)
 
 type rewriteableMessage interface {
-    Rewrite(newSendId RouteId) rewriteableMessage
+	Rewrite(newSendId RouteId) rewriteableMessage
 }
 
 type ReplyTo struct {
-	routeId       RouteId
-    fromPeer	  cipher.PubKey
+	routeId  RouteId
+	fromPeer cipher.PubKey
 }
 
 type MeshMessage struct {
-    ReplyTo     ReplyTo
-    Contents    []byte
+	ReplyTo  ReplyTo
+	Contents []byte
 }
 
 type Route struct {
 	// Forward should never be cipher.PubKey{}
-	forwardToPeer 			cipher.PubKey
-	forwardRewriteSendId 	RouteId
+	forwardToPeer        cipher.PubKey
+	forwardRewriteSendId RouteId
 
-	backwardToPeer 			cipher.PubKey
-	backwardRewriteSendId 	RouteId
+	backwardToPeer        cipher.PubKey
+	backwardRewriteSendId RouteId
 
 	// time.Unix(0,0) means it lives forever
-	expiryTime				time.Time
+	expiryTime time.Time
 }
 
 type MessageUnderAssembly struct {
-	fragments 				map[uint64]UserMessage
-	sendId    				RouteId
-	sendBack                bool
-	count                   uint64
-	dropped                 bool
-	expiryTime				time.Time
+	fragments  map[uint64]UserMessage
+	sendId     RouteId
+	sendBack   bool
+	count      uint64
+	dropped    bool
+	expiryTime time.Time
 }
 
 type LocalRoute struct {
@@ -84,34 +86,34 @@ type LocalRoute struct {
 }
 
 type Node struct {
-	config 						NodeConfig
-    outputMessagesReceived 		chan MeshMessage
-    transportsMessagesReceived 	chan []byte
-	serializer 					*serialize.Serializer
-	myCrypto					transport.TransportCrypto
+	config                     NodeConfig
+	outputMessagesReceived     chan MeshMessage
+	transportsMessagesReceived chan []byte
+	serializer                 *serialize.Serializer
+	myCrypto                   transport.TransportCrypto
 
-    lock *sync.Mutex
-    closeGroup *sync.WaitGroup
-	closing 	chan bool
+	lock       *sync.Mutex
+	closeGroup *sync.WaitGroup
+	closing    chan bool
 
-    transports 						map[transport.Transport]bool
-    messagesBeingAssembled          map[messageId]*MessageUnderAssembly
-    routesById                      map[RouteId]Route
-    localRoutesByTerminatingPeer	map[cipher.PubKey]RouteId
-    localRoutesById                 map[RouteId]LocalRoute
-    routeExtensionsAwaitingConfirm  map[RouteId]chan bool
+	transports                     map[transport.Transport]bool
+	messagesBeingAssembled         map[messageId]*MessageUnderAssembly
+	routesById                     map[RouteId]Route
+	localRoutesByTerminatingPeer   map[cipher.PubKey]RouteId
+	localRoutesById                map[RouteId]LocalRoute
+	routeExtensionsAwaitingConfirm map[RouteId]chan bool
 }
 
 // Fields must be public (capital first letter) for encoder
 type MessageBase struct {
 	// If RouteId is unknown, but not cipher.PubKey{}, then the message should be received here
 	//  the RouteId can be used to reply back thru the route
-    SendId RouteId
-    SendBack bool
-    // For sending the reply from the last node in a route
-    FromPeer cipher.PubKey
-    Reliably bool
-    Nonce    [4]byte
+	SendId   RouteId
+	SendBack bool
+	// For sending the reply from the last node in a route
+	FromPeer cipher.PubKey
+	Reliably bool
+	Nonce    [4]byte
 }
 
 type UserMessage struct {
@@ -124,27 +126,27 @@ type UserMessage struct {
 
 type SetRouteMessage struct {
 	MessageBase
-	SetRouteId     			RouteId
-	ConfirmId				RouteId
-	ForwardToPeer 			cipher.PubKey
-	ForwardRewriteSendId 	RouteId
-	BackwardToPeer 			cipher.PubKey
-	BackwardRewriteSendId 	RouteId
-    DurationHint   			time.Duration
+	SetRouteId            RouteId
+	ConfirmId             RouteId
+	ForwardToPeer         cipher.PubKey
+	ForwardRewriteSendId  RouteId
+	BackwardToPeer        cipher.PubKey
+	BackwardRewriteSendId RouteId
+	DurationHint          time.Duration
 }
 
 // This allows ExtendRoute() to block so that messages aren't lost while a route is
 //  not yet established
 type SetRouteReply struct {
 	MessageBase
-	ConfirmId              RouteId
+	ConfirmId RouteId
 }
 
 // Refreshes the route as it passes thru it
 type RefreshRouteMessage struct {
 	MessageBase
-    DurationHint   time.Duration
-	ConfirmId      RouteId
+	DurationHint time.Duration
+	ConfirmId    RouteId
 }
 
 // Deletes the route as it passes thru it
@@ -155,7 +157,7 @@ type DeleteRouteMessage struct {
 type TimeoutError struct {
 }
 
-func (self*TimeoutError) Error() string {
+func (self *TimeoutError) Error() string {
 	return "Timeout"
 }
 
@@ -164,11 +166,11 @@ var logger = logging.MustGetLogger("node")
 func NewNode(config NodeConfig) (*Node, error) {
 	ret := &Node{
 		config,
-		nil,			// received
-		make(chan []byte, config.TransportMessageChannelLength),			// received		
+		nil, // received
+		make(chan []byte, config.TransportMessageChannelLength), // received
 		serialize.NewSerializer(),
 		&ChaChaCrypto{config.ChaCha20Key},
-		&sync.Mutex{},	// Lock
+		&sync.Mutex{}, // Lock
 		&sync.WaitGroup{},
 		make(chan bool, 10),
 		make(map[transport.Transport]bool),
@@ -178,22 +180,22 @@ func NewNode(config NodeConfig) (*Node, error) {
 		make(map[RouteId]LocalRoute),
 		make(map[RouteId]chan bool),
 	}
-    ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, UserMessage{})
-    ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, SetRouteMessage{})
-    ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, RefreshRouteMessage{})
-    ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, DeleteRouteMessage{})
-    ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, SetRouteReply{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, UserMessage{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, SetRouteMessage{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, RefreshRouteMessage{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, DeleteRouteMessage{})
+	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, SetRouteReply{})
 
-    go ret.processIncomingMessagesLoop()
-    go ret.expireOldRoutesLoop()
-    go ret.expireOldMessagesLoop()
-    go ret.refreshRoutesLoop()
+	go ret.processIncomingMessagesLoop()
+	go ret.expireOldRoutesLoop()
+	go ret.expireOldMessagesLoop()
+	go ret.refreshRoutesLoop()
 
 	return ret, nil
 }
 
 // Returns nil if reassembly didn't happen (incomplete message)
-func (self*Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
+func (self *Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -203,8 +205,8 @@ func (self*Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 			make(map[uint64]UserMessage),
 			msgIn.SendId,
 			msgIn.SendBack,
-			msgIn.Count, 
-			false, 
+			msgIn.Count,
+			false,
 			time.Now().Add(self.config.TimeToAssembleMessage),
 		}
 		self.messagesBeingAssembled[msgIn.MessageId] = beingAssembled
@@ -217,26 +219,26 @@ func (self*Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 	}
 
 	if beingAssembled.count != msgIn.Count {
-        fmt.Fprintf(os.Stderr, "Fragments of message %v have different total counts!\n", msgIn.MessageId)
-        beingAssembled.dropped = true
+		fmt.Fprintf(os.Stderr, "Fragments of message %v have different total counts!\n", msgIn.MessageId)
+		beingAssembled.dropped = true
 		return nil
 	}
 
 	if beingAssembled.sendId != msgIn.SendId {
-        fmt.Fprintf(os.Stderr, "Fragments of message %v have different send ids!\n", msgIn.SendId)
-        beingAssembled.dropped = true
+		fmt.Fprintf(os.Stderr, "Fragments of message %v have different send ids!\n", msgIn.SendId)
+		beingAssembled.dropped = true
 		return nil
 	}
 
 	if beingAssembled.sendBack != msgIn.SendBack {
-        fmt.Fprintf(os.Stderr, "Fragments of message %v have different send directions!\n", msgIn.SendId)
-        beingAssembled.dropped = true
+		fmt.Fprintf(os.Stderr, "Fragments of message %v have different send directions!\n", msgIn.SendId)
+		beingAssembled.dropped = true
 		return nil
 	}
 
 	_, messageExists := beingAssembled.fragments[msgIn.Index]
 	if messageExists {
-        fmt.Fprintf(os.Stderr, "Fragment %v of message %v is duplicated, dropping message\n", msgIn.Index, msgIn.MessageId)
+		fmt.Fprintf(os.Stderr, "Fragment %v of message %v is duplicated, dropping message\n", msgIn.Index, msgIn.MessageId)
 		return nil
 	}
 
@@ -253,26 +255,6 @@ func (self*Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 	return nil
 }
 
-type ChaChaCrypto struct {
-	key    [32]byte
-}
-
-func (self*ChaChaCrypto) GetKey()[]byte {
-	return self.key[:]
-}
-
-func (self*ChaChaCrypto) Encrypt(in []byte, peerKey []byte)[]byte {
-	out := make([]byte, len(in))
-	chacha20.XORKeyStream(out, in, []byte("nonce123"), peerKey[:])
-	return out
-}
-
-func (self*ChaChaCrypto) Decrypt(in[]byte)[]byte {
-	out := make([]byte, len(in))
-	chacha20.XORKeyStream(out, in, []byte("nonce123"), self.key[:])
-	return out
-}
-
 func generateNonce() [4]byte {
 	ret := make([]byte, 4)
 	n, err := rand.Read(ret)
@@ -282,13 +264,13 @@ func generateNonce() [4]byte {
 	if err != nil {
 		panic(err)
 	}
-	ret_b := [4]byte{0,0,0,0}
-	copy(ret_b[:],ret[:])
+	ret_b := [4]byte{0, 0, 0, 0}
+	copy(ret_b[:], ret[:])
 	return ret_b
 }
 
 func getMessageBase(msg interface{}) (base MessageBase) {
-    msg_type := reflect.TypeOf(msg) 
+	msg_type := reflect.TypeOf(msg)
 
 	if msg_type == reflect.TypeOf(UserMessage{}) {
 		return (msg.(UserMessage)).MessageBase
@@ -306,8 +288,8 @@ func getMessageBase(msg interface{}) (base MessageBase) {
 }
 
 func rewriteMessage(msg interface{}, newBase MessageBase) (rewritten interface{}) {
-    msg_type := reflect.TypeOf(msg)
-    newBase.Nonce = generateNonce()
+	msg_type := reflect.TypeOf(msg)
+	newBase.Nonce = generateNonce()
 
 	if msg_type == reflect.TypeOf(UserMessage{}) {
 		ret := (msg.(UserMessage))
@@ -333,7 +315,7 @@ func rewriteMessage(msg interface{}, newBase MessageBase) (rewritten interface{}
 	panic("Internal error: rewriteMessage incomplete")
 }
 
-func (self*Node) safelyGetForwarding(msg interface{}) (sendBack bool, route Route, doForward bool) {
+func (self *Node) safelyGetForwarding(msg interface{}) (sendBack bool, route Route, doForward bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -359,7 +341,7 @@ func (self*Node) safelyGetForwarding(msg interface{}) (sendBack bool, route Rout
 	}
 }
 
-func (self*Node) safelyGetRoute(id RouteId) (route Route, exists bool) {
+func (self *Node) safelyGetRoute(id RouteId) (route Route, exists bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -367,7 +349,7 @@ func (self*Node) safelyGetRoute(id RouteId) (route Route, exists bool) {
 	return
 }
 
-func (self*Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey, base MessageBase, doForward bool) {
+func (self *Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey, base MessageBase, doForward bool) {
 	// sendBack
 	sendBack, route, foundRoute := self.safelyGetForwarding(msg)
 	if !foundRoute {
@@ -382,8 +364,8 @@ func (self*Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey,
 	if forwardTo == (cipher.PubKey{}) {
 		return cipher.PubKey{}, MessageBase{}, false
 	}
-	newBase := 
-		MessageBase {
+	newBase :=
+		MessageBase{
 			rewriteTo,
 			sendBack,
 			self.config.PubKey,
@@ -393,7 +375,7 @@ func (self*Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey,
 	return forwardTo, newBase, true
 }
 
-func (self*Node) forwardMessage(msg interface{}) bool {
+func (self *Node) forwardMessage(msg interface{}) bool {
 	forwardTo, newBase, doForward := self.safelyGetRewriteBase(msg)
 	if !doForward {
 		return false
@@ -402,22 +384,22 @@ func (self*Node) forwardMessage(msg interface{}) bool {
 	rewritten := rewriteMessage(msg, newBase)
 	transport := self.safelyGetTransportToPeer(forwardTo, newBase.Reliably)
 	if transport == nil {
-        fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.config.PubKey, forwardTo)
-        return true
-   	}
+		fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.config.PubKey, forwardTo)
+		return true
+	}
 
 	serialized := self.serializer.SerializeMessage(rewritten)
 	send_error := transport.SendMessage(forwardTo, serialized)
 	if send_error != nil {
-        fmt.Fprintf(os.Stderr, "Failed to send forwarded message, dropping\n")
-        return true
+		fmt.Fprintf(os.Stderr, "Failed to send forwarded message, dropping\n")
+		return true
 	}
 
 	// Forward, not receive
 	return true
 }
 
-func (self*Node) processUserMessage(msgIn UserMessage) {
+func (self *Node) processUserMessage(msgIn UserMessage) {
 	reassembled := self.reassembleUserMessage(msgIn)
 	// Not finished reassembling yet
 	if reassembled == nil {
@@ -432,33 +414,33 @@ func (self*Node) processUserMessage(msgIn UserMessage) {
 		}
 		// Forward reassembled message, not individual pieces. This is done because of the need for refragmentation
 		fragments := self.fragmentMessage(reassembled, directPeer, transport, forwardBase)
-		for _, fragment := range(fragments) {
-				serialized := self.serializer.SerializeMessage(fragment)
-				send_error := transport.SendMessage(directPeer, serialized)
-				if send_error != nil {
-			        fmt.Fprintf(os.Stderr, "Failed to send forwarded message, dropping\n")
-			        return
-				}
+		for _, fragment := range fragments {
+			serialized := self.serializer.SerializeMessage(fragment)
+			send_error := transport.SendMessage(directPeer, serialized)
+			if send_error != nil {
+				fmt.Fprintf(os.Stderr, "Failed to send forwarded message, dropping\n")
+				return
+			}
 		}
 	} else {
 		self.outputMessagesReceived <- MeshMessage{ReplyTo{msgIn.SendId, msgIn.FromPeer}, reassembled}
 	}
 }
 
-func (self*Node) sendSetRouteReply(base MessageBase, confirmId RouteId) {
+func (self *Node) sendSetRouteReply(base MessageBase, confirmId RouteId) {
 	reply := SetRouteReply{
 		MessageBase{
 			base.SendId,
-			true,	// SendBack
+			true, // SendBack
 			self.config.PubKey,
-			true,	// Reliable
+			true, // Reliable
 			generateNonce(),
 		},
 		confirmId,
 	}
 	transport := self.safelyGetTransportToPeer(base.FromPeer, true)
 	if transport == nil {
-		fmt.Fprintf(os.Stderr,"No transport to peer %v from %v\n", base.FromPeer, self.config.PubKey)
+		fmt.Fprintf(os.Stderr, "No transport to peer %v from %v\n", base.FromPeer, self.config.PubKey)
 		return
 	}
 	serialized := self.serializer.SerializeMessage(reply)
@@ -468,19 +450,19 @@ func (self*Node) sendSetRouteReply(base MessageBase, confirmId RouteId) {
 	}
 }
 
-func (self*Node) processSetRouteMessage(msg SetRouteMessage) {
+func (self *Node) processSetRouteMessage(msg SetRouteMessage) {
 	if msg.SendBack {
 		fmt.Fprintf(os.Stderr, "Invalid SetRouteMessage received, dropping: %v\n", msg)
 		return
 	}
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	
+
 	if msg.SetRouteId == NilRouteId {
 		fmt.Fprintf(os.Stderr, "Invalid SetRouteMessage received, dropping: %v\n", msg)
 		return
 	}
-	self.routesById[msg.SetRouteId] = 
+	self.routesById[msg.SetRouteId] =
 		Route{
 			msg.ForwardToPeer,
 			msg.ForwardRewriteSendId,
@@ -493,7 +475,7 @@ func (self*Node) processSetRouteMessage(msg SetRouteMessage) {
 	go self.sendSetRouteReply(msg.MessageBase, msg.ConfirmId)
 }
 
-func (self*Node) processSetRouteReplyMessage(msg SetRouteReply) {
+func (self *Node) processSetRouteReplyMessage(msg SetRouteReply) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	confirmChan, foundChan := self.routeExtensionsAwaitingConfirm[msg.ConfirmId]
@@ -507,7 +489,7 @@ func (self*Node) processSetRouteReplyMessage(msg SetRouteReply) {
 	}
 }
 
-func (self*Node) clipExpiryTime(hint time.Time) time.Time {
+func (self *Node) clipExpiryTime(hint time.Time) time.Time {
 	maxTime := time.Now().Add(self.config.MaximumForwardingDuration)
 	if hint.Unix() > maxTime.Unix() {
 		return maxTime
@@ -515,7 +497,7 @@ func (self*Node) clipExpiryTime(hint time.Time) time.Time {
 	return hint
 }
 
-func (self*Node) processRefreshRouteMessage(msg RefreshRouteMessage, forwarded bool) {
+func (self *Node) processRefreshRouteMessage(msg RefreshRouteMessage, forwarded bool) {
 	if forwarded {
 		self.lock.Lock()
 		defer self.lock.Unlock()
@@ -532,26 +514,26 @@ func (self*Node) processRefreshRouteMessage(msg RefreshRouteMessage, forwarded b
 	}
 }
 
-func (self*Node) processDeleteRouteMessage(msg DeleteRouteMessage) {
+func (self *Node) processDeleteRouteMessage(msg DeleteRouteMessage) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	delete(self.routesById, msg.SendId)
 }
 
-func (self*Node) processMessage(serialized []byte) {
-    msg, deserialize_error := self.serializer.UnserializeMessage(serialized)
-    if deserialize_error != nil {
-        fmt.Fprintf(os.Stderr, "Deserialization error %v\n", deserialize_error)
-        return
-    }
+func (self *Node) processMessage(serialized []byte) {
+	msg, deserialize_error := self.serializer.UnserializeMessage(serialized)
+	if deserialize_error != nil {
+		fmt.Fprintf(os.Stderr, "Deserialization error %v\n", deserialize_error)
+		return
+	}
 
-    msg_type := reflect.TypeOf(msg)
-    // User messages have fragmentation to deal with
-    if msg_type == reflect.TypeOf(UserMessage{}) {
+	msg_type := reflect.TypeOf(msg)
+	// User messages have fragmentation to deal with
+	if msg_type == reflect.TypeOf(UserMessage{}) {
 		self.processUserMessage(msg.(UserMessage))
-    } else {
-    	forwardedMessage := self.forwardMessage(msg)
-	    if !forwardedMessage {
+	} else {
+		forwardedMessage := self.forwardMessage(msg)
+		if !forwardedMessage {
 			// Receive or forward. Refragment on forward!
 			if msg_type == reflect.TypeOf(SetRouteMessage{}) {
 				self.processSetRouteMessage(msg.(SetRouteMessage))
@@ -562,15 +544,15 @@ func (self*Node) processMessage(serialized []byte) {
 			if msg_type == reflect.TypeOf(DeleteRouteMessage{}) {
 				self.processDeleteRouteMessage(msg.(DeleteRouteMessage))
 			}
-		} 
+		}
 
-		if msg_type == reflect.TypeOf(RefreshRouteMessage{}) { 
+		if msg_type == reflect.TypeOf(RefreshRouteMessage{}) {
 			self.processRefreshRouteMessage(msg.(RefreshRouteMessage), forwardedMessage)
 		}
 	}
 }
 
-func (self*Node) expireOldMessages() {
+func (self *Node) expireOldMessages() {
 	time_now := time.Now()
 	self.lock.Lock()
 	defer self.lock.Unlock()
@@ -584,7 +566,7 @@ func (self*Node) expireOldMessages() {
 	}
 }
 
-func (self*Node) expireOldRoutes() {
+func (self *Node) expireOldRoutes() {
 	time_now := time.Now()
 	self.lock.Lock()
 	defer self.lock.Unlock()
@@ -593,13 +575,13 @@ func (self*Node) expireOldRoutes() {
 	self.routesById = make(map[RouteId]Route)
 	// Last refresh of time.Unix(0,0) means it lives forever
 	for id, route := range lastMessages {
-		if (route.expiryTime == time.Unix(0,0)) || time_now.Before(route.expiryTime) {
+		if (route.expiryTime == time.Unix(0, 0)) || time_now.Before(route.expiryTime) {
 			self.routesById[id] = route
 		}
 	}
 }
 
-func (self*Node) refreshRoute(routeId RouteId) {
+func (self *Node) refreshRoute(routeId RouteId) {
 	route, routeFound := self.safelyGetRoute(routeId)
 	if !routeFound {
 		fmt.Fprintf(os.Stderr, "Cannot refresh unknown route: %v\n", routeId)
@@ -608,7 +590,7 @@ func (self*Node) refreshRoute(routeId RouteId) {
 	reliably := true
 	base := MessageBase{
 		route.forwardRewriteSendId,
-		false,		// Sending forward
+		false, // Sending forward
 		self.config.PubKey,
 		reliably,
 		generateNonce(),
@@ -621,7 +603,7 @@ func (self*Node) refreshRoute(routeId RouteId) {
 	}
 	message := RefreshRouteMessage{
 		base,
-		3*self.config.RefreshRouteDuration,
+		3 * self.config.RefreshRouteDuration,
 		routeId,
 	}
 	serialized := self.serializer.SerializeMessage(message)
@@ -632,7 +614,7 @@ func (self*Node) refreshRoute(routeId RouteId) {
 	}
 }
 
-func (self*Node) refreshRoutes() {
+func (self *Node) refreshRoutes() {
 	self.lock.Lock()
 	localRoutes := self.localRoutesById
 	self.lock.Unlock()
@@ -642,62 +624,70 @@ func (self*Node) refreshRoutes() {
 	}
 }
 
-func (self*Node) expireOldMessagesLoop() {
+func (self *Node) expireOldMessagesLoop() {
 	self.closeGroup.Add(1)
 	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
-			case <-time.After(self.config.ExpireMessagesInterval): {
+		case <-time.After(self.config.ExpireMessagesInterval):
+			{
 				self.expireOldMessages()
 			}
-			case <-self.closing: {
+		case <-self.closing:
+			{
 				return
 			}
 		}
 	}
 }
 
-func (self*Node) processIncomingMessagesLoop() {
+func (self *Node) processIncomingMessagesLoop() {
 	self.closeGroup.Add(1)
 	defer self.closeGroup.Done()
-   	for len(self.closing) == 0 {
+	for len(self.closing) == 0 {
 		select {
-			case msg, ok := <- self.transportsMessagesReceived: {
+		case msg, ok := <-self.transportsMessagesReceived:
+			{
 				if ok {
 					self.processMessage(msg)
 				}
 			}
-			case <- self.closing: {
+		case <-self.closing:
+			{
 				return
 			}
 		}
 	}
 }
 
-func (self*Node) expireOldRoutesLoop() {
+func (self *Node) expireOldRoutesLoop() {
 	self.closeGroup.Add(1)
 	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
-			case <-time.After(self.config.ExpireRoutesInterval): {
+		case <-time.After(self.config.ExpireRoutesInterval):
+			{
 				self.expireOldRoutes()
 			}
-			case <-self.closing: {
+		case <-self.closing:
+			{
 				return
 			}
 		}
 	}
 }
 
-func (self*Node) refreshRoutesLoop() {
+func (self *Node) refreshRoutesLoop() {
 	self.closeGroup.Add(1)
 	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
-			case <-time.After(self.config.RefreshRouteDuration): {
+		case <-time.After(self.config.RefreshRouteDuration):
+			{
 				self.refreshRoutes()
 			}
-			case <-self.closing: {
+		case <-self.closing:
+			{
 				return
 			}
 		}
@@ -705,8 +695,8 @@ func (self*Node) refreshRoutesLoop() {
 }
 
 // Waits for transports to close
-func (self*Node) Close() error {
-	for i := 0;i < 10;i++ {
+func (self *Node) Close() error {
+	for i := 0; i < 10; i++ {
 		self.closing <- true
 	}
 	close(self.transportsMessagesReceived)
@@ -714,12 +704,12 @@ func (self*Node) Close() error {
 	return nil
 }
 
-func (self*Node) GetConfig() NodeConfig {
+func (self *Node) GetConfig() NodeConfig {
 	return self.config
 }
 
 // Node takes ownership of the transport, and will call Close() when it is closed
-func (self*Node) AddTransport(transport transport.Transport) {
+func (self *Node) AddTransport(transport transport.Transport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	transport.SetCrypto(self.myCrypto)
@@ -727,37 +717,37 @@ func (self*Node) AddTransport(transport transport.Transport) {
 	self.transports[transport] = true
 }
 
-func (self*Node) RemoveTransport(transport transport.Transport) {
+func (self *Node) RemoveTransport(transport transport.Transport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	delete(self.transports, transport)
 }
 
-func (self*Node) GetTransports() ([]transport.Transport) {
+func (self *Node) GetTransports() []transport.Transport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	ret := []transport.Transport{}
-	for transport, _ := range(self.transports) {
+	for transport, _ := range self.transports {
 		ret = append(ret, transport)
 	}
 	return ret
 }
 
-func (self*Node) GetConnectedPeers() ([]cipher.PubKey) {
+func (self *Node) GetConnectedPeers() []cipher.PubKey {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	ret := []cipher.PubKey{}
-	for transport, _ := range(self.transports) {
+	for transport, _ := range self.transports {
 		peers := transport.GetConnectedPeers()
 		ret = append(ret, peers...)
 	}
 	return ret
 }
 
-func (self*Node) ConnectedToPeer(peer cipher.PubKey) bool {
+func (self *Node) ConnectedToPeer(peer cipher.PubKey) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	for transport, _ := range(self.transports) {
+	for transport, _ := range self.transports {
 		if transport.ConnectedToPeer(peer) {
 			return true
 		}
@@ -766,13 +756,13 @@ func (self*Node) ConnectedToPeer(peer cipher.PubKey) bool {
 }
 
 // Message order is not preserved
-func  (self*Node) SetReceiveChannel(received chan MeshMessage) {
+func (self *Node) SetReceiveChannel(received chan MeshMessage) {
 	self.outputMessagesReceived = received
 }
 
 // toPeer must be the public key of a connected peer
 // Requires reliable transport (for now)
-func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {	
+func (self *Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {
 	_, routeExists := self.safelyGetRoute(id)
 	if routeExists {
 		return errors.New(fmt.Sprintf("Route %v already exists\n", id))
@@ -786,22 +776,22 @@ func (self*Node) AddRoute(id RouteId, toPeer cipher.PubKey) error {
 	// Add locally to routesById for backward termination
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	self.routesById[id] = 
+	self.routesById[id] =
 		Route{
 			toPeer,
 			id,
 			cipher.PubKey{},
 			NilRouteId,
 			// Route lifetime: never dies until route is removed
-		    time.Unix(0,0),
+			time.Unix(0, 0),
 		}
 
 	self.localRoutesByTerminatingPeer[toPeer] = id
-	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId, time.Unix(0,0)}
+	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId, time.Unix(0, 0)}
 	return nil
 }
 
-func (self*Node) sendDeleteRoute(id RouteId, route Route) error {
+func (self *Node) sendDeleteRoute(id RouteId, route Route) error {
 	sendBase := MessageBase{
 		route.forwardRewriteSendId,
 		false,
@@ -809,7 +799,7 @@ func (self*Node) sendDeleteRoute(id RouteId, route Route) error {
 		true, // Reliable
 		generateNonce(),
 	}
-	message := DeleteRouteMessage {
+	message := DeleteRouteMessage{
 		sendBase,
 	}
 
@@ -827,7 +817,7 @@ func (self*Node) sendDeleteRoute(id RouteId, route Route) error {
 	return nil
 }
 
-func (self*Node) DeleteRoute(id RouteId) (err error) {
+func (self *Node) DeleteRoute(id RouteId) (err error) {
 	route, routeExists := self.safelyGetRoute(id)
 	if !routeExists {
 		return errors.New(fmt.Sprintf("Cannot delete route %v, doesn't exist\n", id))
@@ -849,7 +839,7 @@ func (self*Node) DeleteRoute(id RouteId) (err error) {
 	return err
 }
 
-func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (message SetRouteMessage, directPeer cipher.PubKey, waitConfirm chan bool, err error) {
+func (self *Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (message SetRouteMessage, directPeer cipher.PubKey, waitConfirm chan bool, err error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -893,7 +883,7 @@ func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (me
 		localRoute.lastForwardingPeer,
 		localRoute.lastHopId,
 		// Route lifetime hint
-	    3*self.config.RefreshRouteDuration,
+		3 * self.config.RefreshRouteDuration,
 	}
 	delete(self.localRoutesByTerminatingPeer, localRoute.terminatingPeer)
 	self.localRoutesById[id] = LocalRoute{localRoute.terminatingPeer, toPeer, newHopId, localRoute.lastConfirmed}
@@ -910,7 +900,7 @@ func (self*Node) extendRouteWithoutSending(id RouteId, toPeer cipher.PubKey) (me
 
 // toPeer must be the public key of a peer connected to the current last node in this route
 // Blocks until the set route reply is received or the timeout is reached
-func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Duration) (err error) {
+func (self *Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Duration) (err error) {
 	message, directPeer, confirm, extendError := self.extendRouteWithoutSending(id, toPeer)
 	if extendError != nil {
 		return extendError
@@ -925,10 +915,12 @@ func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Dura
 		return send_error
 	}
 	select {
-		case <-confirm: {
+	case <-confirm:
+		{
 			break
 		}
-		case <- time.After(timeout): {
+	case <-time.After(timeout):
+		{
 			// Still need to remove from confirm map
 			err = &TimeoutError{}
 		}
@@ -940,17 +932,17 @@ func (self*Node) ExtendRoute(id RouteId, toPeer cipher.PubKey, timeout time.Dura
 	return
 }
 
-func (self*Node) GetRouteLastConfirmed(id RouteId) (time.Time, error) {
+func (self *Node) GetRouteLastConfirmed(id RouteId) (time.Time, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	localRoute, found := self.localRoutesById[id]
 	if !found {
-		return time.Unix(0,0), errors.New(fmt.Sprintf("Unknown route id: %v", id))
+		return time.Unix(0, 0), errors.New(fmt.Sprintf("Unknown route id: %v", id))
 	}
 	return localRoute.lastConfirmed, nil
 }
 
-func (self*Node) getMaximumContentLength(toPeer cipher.PubKey, transport transport.Transport) uint64 {	
+func (self *Node) getMaximumContentLength(toPeer cipher.PubKey, transport transport.Transport) uint64 {
 	transportSize := transport.GetMaximumMessageSizeToPeer(toPeer)
 	empty := UserMessage{}
 	emptySerialized := self.serializer.SerializeMessage(empty)
@@ -960,7 +952,7 @@ func (self*Node) getMaximumContentLength(toPeer cipher.PubKey, transport transpo
 	return (uint64)(transportSize) - (uint64)(len(emptySerialized))
 }
 
-func (self*Node) fragmentMessage(fullContents []byte, toPeer cipher.PubKey, transport transport.Transport, base MessageBase) []UserMessage {
+func (self *Node) fragmentMessage(fullContents []byte, toPeer cipher.PubKey, transport transport.Transport, base MessageBase) []UserMessage {
 	ret_noCount := make([]UserMessage, 0)
 	maxContentLength := self.getMaximumContentLength(toPeer, transport)
 	remainingBytes := fullContents[:]
@@ -969,7 +961,7 @@ func (self*Node) fragmentMessage(fullContents []byte, toPeer cipher.PubKey, tran
 		nBytesThisMessage := min(maxContentLength, (uint64)(len(remainingBytes)))
 		bytesThisMessage := remainingBytes[:nBytesThisMessage]
 		remainingBytes = remainingBytes[nBytesThisMessage:]
-		message := UserMessage {
+		message := UserMessage{
 			base,
 			messageId,
 			(uint64)(len(ret_noCount)),
@@ -979,24 +971,24 @@ func (self*Node) fragmentMessage(fullContents []byte, toPeer cipher.PubKey, tran
 		ret_noCount = append(ret_noCount, message)
 	}
 	ret := make([]UserMessage, 0)
-	for _, message := range(ret_noCount) {
+	for _, message := range ret_noCount {
 		message.Count = (uint64)(len(ret_noCount))
 		ret = append(ret, message)
 	}
 	return ret
 }
 
-func (self*Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
+func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
 	// If unreliable, prefer unreliable transport
 	if !reliably {
-		for transport, _ := range(self.transports) {
+		for transport, _ := range self.transports {
 			// TODO: Choose transport more intelligently
 			if transport.ConnectedToPeer(peerKey) && !transport.IsReliable() {
 				return transport
 			}
-		}	
+		}
 	}
-	for transport, _ := range(self.transports) {
+	for transport, _ := range self.transports {
 		// TODO: Choose transport more intelligently
 		if transport.ConnectedToPeer(peerKey) && ((!reliably) || transport.IsReliable()) {
 			return transport
@@ -1005,13 +997,13 @@ func (self*Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool
 	return nil
 }
 
-func (self*Node) safelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
+func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return self.unsafelyGetTransportToPeer(peerKey, reliably)
 }
 
-func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPeer cipher.PubKey, localId RouteId, sendId RouteId, transport transport.Transport, err error) {
+func (self *Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPeer cipher.PubKey, localId RouteId, sendId RouteId, transport transport.Transport, err error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	localRouteId, localRouteExists := self.localRoutesByTerminatingPeer[toPeer]
@@ -1028,8 +1020,8 @@ func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPee
 	}
 	transport = self.unsafelyGetTransportToPeer(directPeer, reliably)
 	if transport == nil {
-		return cipher.PubKey{}, NilRouteId, NilRouteId, nil, 
-			    errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
+		return cipher.PubKey{}, NilRouteId, NilRouteId, nil,
+			errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
 	}
 	return
 }
@@ -1037,20 +1029,20 @@ func (self*Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPee
 // Chooses a route automatically. Sends directly without a route if connected to that peer
 // if reliably is false, unreliable transport is preferred, but reliable is chosen if it's the only option
 // if reliably is true, reliable transport only is used
-func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool) (err error, routeId RouteId) {
+func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool) (err error, routeId RouteId) {
 	directPeer, localRouteId, sendId, transport, error := self.findRouteToPeer(toPeer, reliably)
 	if error != nil {
 		return error, NilRouteId
 	}
 	base := MessageBase{
 		sendId,
-		false,		// Sending forward
+		false, // Sending forward
 		self.config.PubKey,
 		reliably,
 		generateNonce(),
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
-	for _, message := range(messages) {
+	for _, message := range messages {
 		serialized := self.serializer.SerializeMessage(message)
 		send_error := transport.SendMessage(directPeer, serialized)
 		if send_error != nil {
@@ -1061,7 +1053,7 @@ func (self*Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliab
 }
 
 // Blocks until message is confirmed received if reliably is true
-func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably bool) error {
+func (self *Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably bool) error {
 	route, routeFound := self.safelyGetRoute(routeId)
 	if !routeFound {
 		return errors.New("Route not found")
@@ -1069,7 +1061,7 @@ func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably
 
 	base := MessageBase{
 		route.forwardRewriteSendId,
-		false,		// Sending forward
+		false, // Sending forward
 		self.config.PubKey,
 		reliably,
 		generateNonce(),
@@ -1080,7 +1072,7 @@ func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably
 		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeer))
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
-	for _, message := range(messages) {
+	for _, message := range messages {
 		serialized := self.serializer.SerializeMessage(message)
 		send_error := transport.SendMessage(directPeer, serialized)
 		if send_error != nil {
@@ -1091,7 +1083,7 @@ func (self*Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliably
 }
 
 // Blocks until message is confirmed received if reliably is true
-func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reliably bool) (error) {
+func (self *Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reliably bool) error {
 	directPeer := replyTo.fromPeer
 	transport := self.safelyGetTransportToPeer(directPeer, reliably)
 	if transport == nil {
@@ -1099,13 +1091,13 @@ func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reli
 	}
 	base := MessageBase{
 		replyTo.routeId,
-		true,		// Sending backward
+		true, // Sending backward
 		self.config.PubKey,
 		reliably,
 		generateNonce(),
 	}
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
-	for _, message := range(messages) {
+	for _, message := range messages {
 		serialized := self.serializer.SerializeMessage(message)
 		send_error := transport.SendMessage(directPeer, serialized)
 		if send_error != nil {
@@ -1115,13 +1107,13 @@ func (self*Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reli
 	return nil
 }
 
-func (self*Node) debug_countRoutes() int {
+func (self *Node) debug_countRoutes() int {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return len(self.routesById)
 }
 
-func (self*Node) debug_countMessages() int {
+func (self *Node) debug_countMessages() int {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return len(self.messagesBeingAssembled)

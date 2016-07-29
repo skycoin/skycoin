@@ -9,7 +9,7 @@ import (
 )
 
 import(
-    "github.com/skycoin/encoder")
+    "github.com/skycoin/skycoin/src/cipher/encoder")
 
 const messagePrefixLength = 1
 

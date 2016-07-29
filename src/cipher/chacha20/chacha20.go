@@ -221,7 +221,7 @@ const (
 )
 
 var (
-//bigEndian bool // whether or not we're running on a bigEndian CPU
+	bigEndian bool // whether or not we're running on a bigEndian CPU
 )
 
 // Do some up-front bookkeeping on what sort of CPU we're using. ChaCha20 treats

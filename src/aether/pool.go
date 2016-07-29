@@ -9,7 +9,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"gopkg.in/op/go-logging.v1"
 )
 

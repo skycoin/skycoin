@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"gopkg.in/op/go-logging.v1"
 

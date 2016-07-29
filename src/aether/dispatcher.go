@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	//"net"
 	"reflect"
 	//"time"

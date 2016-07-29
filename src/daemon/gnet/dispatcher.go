@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/skycoin/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 // Result of a single message send

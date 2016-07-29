@@ -24,7 +24,13 @@ Updating NPM
 -----
 
 ```
-npm install npm -g
+sudo apt-get install npm
+sudo apt-get install nodejs-legacy
+sudo npm cache clean -f
+
+sudo npm install -g n
+sudo n stable
+
 node -v
 npm -v
 ```

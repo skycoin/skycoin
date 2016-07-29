@@ -7,8 +7,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 /*
@@ -198,6 +198,17 @@ func (self *Transaction) Hash() cipher.SHA256 {
 func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 	b := self.Serialize()
 	return len(b), cipher.SumSHA256(b)
+}
+
+//returns transaction ID as byte string
+func (self *Transaction) TxId() []byte {
+	hash := self.Hash()
+	return hash[0:32]
+}
+
+//returns transaction ID as hex
+func (self *Transaction) TxIdHex() string {
+	return self.Hash().Hex()
 }
 
 // Saves the txn body hash to TransactionHeader.Hash

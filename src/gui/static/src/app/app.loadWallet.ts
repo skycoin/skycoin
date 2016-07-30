@@ -158,7 +158,9 @@ export class loadWalletComponent implements OnInit {
         }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
     }
     loadOutputs() {
-      this.http.post('/outputs', '')
+        var headers = new Headers();
+        headers.append('Content-Type', 'application/x-www-form-urlencoded');
+      this.http.get('/outputs', { headers: headers })
         .map((res) => res.json())
         .subscribe(data => {
             this.outputs = _.sortBy(data, function(o){

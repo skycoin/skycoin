@@ -64,6 +64,11 @@ br {
   border-bottom: 1px solid #ddd;
   position: relative;
 }
+
+.wallet-menu {
+  padding-top:13px;
+  left:200px;
+}
 #main-content {
   max-width: 950px;
 }

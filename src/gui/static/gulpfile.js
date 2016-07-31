@@ -10,10 +10,14 @@ const tsProject = tsc.createProject("tsconfig.json");
 var replace = require('gulp-replace');
 
 /**
- * Remove build directory.
+ * Remove dist directory.
  */
 gulp.task('clean', (cb) => {
     return del(["dist"], cb);
+});
+
+gulp.task('clean_dev', (cb) => {
+    return del(["dev"], cb);
 });
 
 /**
@@ -23,10 +27,20 @@ gulp.task("compile", () => {
     let tsResult = gulp.src("src/**/*.ts")
         .pipe(sourcemaps.init())
         .pipe(tsc(tsProject));
-    return tsResult.js
-        .pipe(replace('.ts', '.js'))
-        .pipe(sourcemaps.write("."))
-        .pipe(gulp.dest("dist"));
+return tsResult.js
+    .pipe(replace('.ts', '.js'))
+    .pipe(sourcemaps.write("."))
+    .pipe(gulp.dest("dist"));
+});
+
+gulp.task("compile_dev", () => {
+    let tsResult = gulp.src("src/**/*.ts")
+        .pipe(sourcemaps.init())
+        .pipe(tsc(tsProject));
+return tsResult.js
+    .pipe(replace('.ts', '.js'))
+    .pipe(sourcemaps.write("."))
+    .pipe(gulp.dest("dev"));
 });
 
 /**
@@ -37,9 +51,21 @@ gulp.task("resources", () => {
         .pipe(gulp.dest("dist"));
 });
 
+gulp.task("resources_dev", () => {
+    return gulp.src(["src/**/*", "!**/*.ts"])
+        .pipe(gulp.dest("dev"));
+});
+
 /**
  * Build the project.
  */
-gulp.task("build", ['compile', 'resources'], () => {
-    console.log("Building the project ...");
+gulp.task("build", ['compile_dev', 'resources_dev'], () => {
+    console.log("Building the project to dev directory...");
+});
+
+/**
+ * Build the project.
+ */
+gulp.task("dist", ['compile', 'resources'], () => {
+    console.log("Building the project to dist directory...");
 });

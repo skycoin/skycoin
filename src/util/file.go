@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -117,5 +118,26 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	}
 	// Move the temporary to the new file
 	return os.Rename(tmpname, filename)
+}
 
+func GUIDirectory(path string) string {
+	filename := filepath.Base(path)
+	workDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Panic(err)
+	}
+	dirs := []string{
+		filepath.Dir(path),
+		workDir,
+		workDir + "/../.",
+	}
+
+	for _, dir := range dirs {
+		dst := filepath.Join(dir, filename)
+		if _, err := os.Stat(dst); !os.IsNotExist(err) {
+			return dst
+		}
+	}
+	log.Panic("GUI directory not found")
+	return ""
 }

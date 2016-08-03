@@ -52,6 +52,9 @@ export class loadWalletComponent implements OnInit {
     defaultConnections: Array<any>;
     blockChain: any;
     outputs: Array<any>;
+    NewDefaultConnectionIsVisible : boolean;
+    EditDefaultConnectionIsVisible : boolean;
+    oldConnection:string;
 
     //Constructor method for load HTTP object
     constructor(private http: Http) { }
@@ -61,6 +64,7 @@ export class loadWalletComponent implements OnInit {
         this.displayMode = DisplayModeEnum.first;
         this.loadWallet();
         this.loadConnections();
+        this.loadDefaultConnections();
         this.loadBlockChain();
         this.loadProgress();
         this.loadOutputs();
@@ -144,39 +148,41 @@ export class loadWalletComponent implements OnInit {
                 }, err => console.log("Error on load balance: " + err), () => console.log('Balance load done'))
     }
     loadConnections() {
-      this.http.post('/network/connections', '')
-        .map((res) => res.json())
-        .subscribe(data => {
-            console.log("connections", data);
-            this.connections = data.connections;
-        }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
-      this.http.post('/network/defaultConnections', '')
-        .map((res) => res.json())
-        .subscribe(data => {
-            console.log("default connections", data);
-            this.defaultConnections = data.connections;
-        }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
+        this.http.post('/network/connections', '')
+            .map((res) => res.json())
+            .subscribe(data => {
+                console.log("connections", data);
+                this.connections = data.connections;
+            }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
+    }
+    loadDefaultConnections() {
+        this.http.post('/network/defaultConnections', '')
+            .map((res) => res.json())
+            .subscribe(data => {
+                console.log("default connections", data);
+                this.defaultConnections = data;
+            }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
     }
     loadOutputs() {
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-      this.http.get('/outputs', { headers: headers })
-        .map((res) => res.json())
-        .subscribe(data => {
-            this.outputs = _.sortBy(data, function(o){
-              return o.address;
-            });
-        }, err => console.log("Error on load outputs: " + err), () => console.log('Connection load done'));
+        this.http.get('/outputs', { headers: headers })
+            .map((res) => res.json())
+            .subscribe(data => {
+                this.outputs = _.sortBy(data, function(o){
+                    return o.address;
+                });
+            }, err => console.log("Error on load outputs: " + err), () => console.log('Connection load done'));
     }
     loadBlockChain() {
-      this.http.post('/blockchain', '')
-        .map((res) => res.json())
-        .subscribe(data => {
-            console.log("blockchain", data);
-            if(data.head) {
-              this.blockChain = data;
-            }
-        }, err => console.log("Error on load blockchain: " + err), () => console.log('blockchain load done'));
+        this.http.post('/blockchain', '')
+            .map((res) => res.json())
+            .subscribe(data => {
+                console.log("blockchain", data);
+                if(data.head) {
+                    this.blockChain = data;
+                }
+            }, err => console.log("Error on load blockchain: " + err), () => console.log('blockchain load done'));
     }    //Load progress function for Skycoin
     loadProgress(){
         //Post method executed
@@ -202,14 +208,15 @@ export class loadWalletComponent implements OnInit {
         }
     }
     selectMenu(menu, event) {
-      event.preventDefault();
-      this.selectedMenu = menu;
+        this.displayMode = this.displayModeEnum.fourth;
+        event.preventDefault();
+        this.selectedMenu = menu;
     }
     getDateTimeString(ts) {
-      return moment.unix(ts).format("YYYY-MM-DD hh:mm")
+        return moment.unix(ts).format("YYYY-MM-DD hh:mm")
     }
     getElapsedTime(ts) {
-      return moment().unix() - ts;
+        return moment().unix() - ts;
     }
     //Show QR code function for show QR popup
     showQR(wallet){
@@ -229,7 +236,35 @@ export class loadWalletComponent implements OnInit {
     hideWalletPopup(){
         this.NewWalletIsVisible = false;
     }
-
+    showNewDefaultConnectionDialog(){
+        this.NewDefaultConnectionIsVisible = true;
+    }
+    hideNewDefaultConnectionDialog(){
+        this.NewDefaultConnectionIsVisible = false;
+    }
+    showEditDefaultConnectionDialog(item){
+        this.oldConnection = item;
+        this.EditDefaultConnectionIsVisible = true;
+    }
+    hideEditDefaultConnectionDialog(){
+        this.EditDefaultConnectionIsVisible = false;
+    }
+    createDefaultConnection(connectionValue){
+        console.log("new value", connectionValue);
+        this.defaultConnections.push(connectionValue);
+        this.NewDefaultConnectionIsVisible = false;
+    }
+    updateDefaultConnection(connectionValue){
+        console.log("old/new value", this.oldConnection, connectionValue);
+        var idx = this.defaultConnections.indexOf(this.oldConnection);
+        this.defaultConnections.splice(idx, 1);
+        this.defaultConnections.splice(idx, 0, connectionValue);
+        this.EditDefaultConnectionIsVisible = false;
+    }
+    deleteDefaultConnection(item){
+        var idx = this.defaultConnections.indexOf(item);
+        this.defaultConnections.splice(idx, 1);
+    }
     //Add new wallet function for generate new wallet in Skycoin
     createNewWallet(){
         //Set http headers
@@ -349,7 +384,7 @@ export class loadWalletComponent implements OnInit {
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
-                console.log(response);
+                    console.log(response);
                     this.pendingTable.push({complete: 'Completed', address: spendaddress, amount: spendamount});
                     //Load wallet for refresh list
                     this.loadWallet();
@@ -362,7 +397,7 @@ export class loadWalletComponent implements OnInit {
                     this.readyDisable = false;
                     this.sendDisable = true;
                     if(err.body == 'Invalid connection') {
-                      return;
+                        return;
                     }
                     this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
                 },

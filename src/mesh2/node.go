@@ -17,7 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
-	"github.com/tang0th/go-chacha20"
+	//"github.com/tang0th/go-chacha20"
 )
 
 type NodeConfig struct {

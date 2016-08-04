@@ -1,5 +1,9 @@
 package mesh
 
+import (
+	"github.com/tang0th/go-chacha20"
+)
+
 /*
 Move to file
 - Get working

@@ -72,7 +72,7 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
 }
 
 func (self RPC) GetDefaultConnections(d *Daemon) []string {
-		return d.DefaultConnections
+	return d.DefaultConnections
 }
 
 func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {

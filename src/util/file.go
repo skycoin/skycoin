@@ -148,21 +148,11 @@ func ResolveResourceDirectory(path string) string {
 		filepath.Join(rt_directory, "../../../", filepath.Dir(path)),
 	}
 
-	for i, dir := range dirs {
-		fmt.Printf("Dir[%d]= %s \n", i, dir)
-	}
-	//try current directory of executable
-	/*
-		rt_directory =
-
-		dirs := []string{
-			filepath.Dir(path),
-
-		}
-	*/
+	//for i, dir := range dirs {
+	//	fmt.Printf("Dir[%d]= %s \n", i, dir)
+	//}
 
 	for _, dir := range dirs {
-		//dst := filepath.Join(dir, filename)
 		if _, err := os.Stat(dir); !os.IsNotExist(err) {
 			return dir
 		}

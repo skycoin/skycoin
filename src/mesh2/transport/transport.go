@@ -8,9 +8,9 @@ type TransportConfig struct {
 }
 
 type TransportCrypto interface {
-	GetKey()[]byte
-	Decrypt(data []byte)[]byte
-	Encrypt(data []byte, key []byte)[]byte
+	GetKey() []byte
+	Decrypt(data []byte) []byte
+	Encrypt(data []byte, key []byte) []byte
 }
 
 type Transport interface {

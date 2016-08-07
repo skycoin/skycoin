@@ -1,18 +1,17 @@
-
 package mesh
 
-import(
+import (
 	"testing"
-	)
+)
 
-import(
+import (
 	"github.com/stretchr/testify/assert"
-	)
+)
 
 type TestStruct struct {
-	Foo string
-	Bar uint32
-	Gah bool
+	Foo  string
+	Bar  uint32
+	Gah  bool
 	Blah uint32
 }
 
@@ -24,7 +23,7 @@ func init() {
 }
 
 func TestSerializeStruct(t *testing.T) {
-	testStruct := TestStruct {
+	testStruct := TestStruct{
 		"hello",
 		8,
 		false,
@@ -36,4 +35,3 @@ func TestSerializeStruct(t *testing.T) {
 	assert.Nil(t, error)
 	assert.Equal(t, testStruct, result)
 }
-

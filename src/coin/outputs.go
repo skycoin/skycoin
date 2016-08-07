@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 /*

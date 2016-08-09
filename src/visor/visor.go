@@ -96,7 +96,7 @@ func NewVisorConfig() VisorConfig {
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
 		GenesisTimestamp:  0,
-		GenesisCoinVolume: 100e12, //100e6 * 10e6
+		GenesisCoinVolume: 0, //100e12, 100e6 * 10e6
 	}
 
 	return c

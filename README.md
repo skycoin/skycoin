@@ -33,14 +33,14 @@ Then open http://127.0.0.1:6402 in a browser.
 Golang environment setup with gvm
 ---
 
-The chinese firewall may block golang installation with gvm
+In China, use --source=https://github.com/golang/go to bypass firewall when fetching golang source
 
 ```
 sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
 bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
 source $HOME/.gvm/scripts/gvm
 
-gvm install go1.4
+gvm install go1.4 --source=https://github.com/golang/go
 gvm use go1.4
 gvm install go1.6
 gvm use go1.6 --default

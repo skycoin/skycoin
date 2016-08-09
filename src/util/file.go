@@ -142,6 +142,7 @@ func ResolveResourceDirectory(path string) string {
 	//fmt.Printf("Dir1= %s \n", dir1)
 
 	dirs := []string{
+		path, //try direct path first
 		filepath.Join(workDir, filepath.Dir(path)), //default
 		filepath.Join(rt_directory, "../", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../../", filepath.Dir(path)),

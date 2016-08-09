@@ -2,23 +2,27 @@ package mesh
 
 import (
 	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/op/go-logging.v1"
+	"net"
 	"os"
 	"reflect"
 	"runtime/debug"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/mesh2/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
-	//"github.com/tang0th/go-chacha20"
+	"github.com/skycoin/skycoin/src/mesh2/udp"
+	"gopkg.in/op/go-logging.v1"
 )
+
+//"github.com/tang0th/go-chacha20"
 
 type NodeConfig struct {
 	PubKey                        cipher.PubKey
@@ -1117,4 +1121,72 @@ func (self *Node) debug_countMessages() int {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return len(self.messagesBeingAssembled)
+}
+
+// Create public key
+func createPubKey() cipher.PubKey {
+	b := cipher.RandByte(33)
+	return cipher.NewPubKey(b)
+}
+
+// Create ChaCha20Key
+func createChaCha20Key() cipher.SecKey {
+	b := cipher.RandByte(32)
+	return cipher.NewSecKey(b)
+}
+
+// Create new node config
+func NewNodeConfig() NodeConfig {
+	nodeConfig := NodeConfig{}
+	nodeConfig.PubKey = createPubKey()
+	nodeConfig.ChaCha20Key = createChaCha20Key()
+	nodeConfig.MaximumForwardingDuration = 1 * time.Minute
+	nodeConfig.RefreshRouteDuration = 5 * time.Minute
+	nodeConfig.ExpireMessagesInterval = 5 * time.Minute
+	nodeConfig.ExpireRoutesInterval = 5 * time.Minute
+	nodeConfig.TimeToAssembleMessage = 5 * time.Minute
+	nodeConfig.TransportMessageChannelLength = 100
+
+	return nodeConfig
+}
+
+// Create Reliable config to the node.
+func CreateReliable(pubKey cipher.PubKey) reliable.ReliableTransportConfig {
+	reliable := reliable.ReliableTransportConfig{}
+	reliable.MyPeerId = pubKey
+	reliable.PhysicalReceivedChannelLength = 100
+	reliable.ExpireMessagesInterval = 5 * time.Minute
+	reliable.RememberMessageReceivedDuration = 1 * time.Minute
+	reliable.RetransmitDuration = 1 * time.Minute
+
+	return reliable
+}
+
+// Create Udp config
+func CreateUdp(port int, externalA string) udp.UDPConfig {
+	udp := udp.UDPConfig{}
+	udp.SendChannelLength = uint32(100)
+	udp.DatagramLength = uint16(512)
+	udp.LocalAddress = ""
+	udp.NumListenPorts = uint16(1)
+	udp.ListenPortMin = uint16(port)
+	udp.ExternalAddress = externalA
+
+	return udp
+}
+
+// Create info for the peer's connection.
+func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
+	config := udp.UDPCommConfig{}
+	config.DatagramLength = uint16(512)
+	externalHosts := []net.UDPAddr{}
+	address1, _ := net.ResolveUDPAddr("", addr)
+	externalHosts = append(externalHosts, *address1)
+	config.ExternalHosts = externalHosts
+	config.CryptoKey = cryptoKey
+
+	src, _ := json.Marshal(&config)
+	infoPeer := hex.EncodeToString(src)
+
+	return infoPeer
 }

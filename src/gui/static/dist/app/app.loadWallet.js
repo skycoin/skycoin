@@ -41,6 +41,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.displayMode = DisplayModeEnum.first;
                     this.loadWallet();
                     this.loadConnections();
+                    this.loadDefaultConnections();
                     this.loadBlockChain();
                     this.loadProgress();
                     this.loadOutputs();
@@ -120,11 +121,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         console.log("connections", data);
                         this.connections = data.connections;
                     }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
+                }
+                loadDefaultConnections() {
                     this.http.post('/network/defaultConnections', '')
                         .map((res) => res.json())
                         .subscribe(data => {
                         console.log("default connections", data);
-                        this.defaultConnections = data.connections;
+                        this.defaultConnections = data;
                     }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
                 }
                 loadOutputs() {
@@ -167,6 +170,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }
                 }
                 selectMenu(menu, event) {
+                    this.displayMode = this.displayModeEnum.fourth;
                     event.preventDefault();
                     this.selectedMenu = menu;
                 }
@@ -192,6 +196,35 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Hide wallet function for hide New wallet popup
                 hideWalletPopup() {
                     this.NewWalletIsVisible = false;
+                }
+                showNewDefaultConnectionDialog() {
+                    this.NewDefaultConnectionIsVisible = true;
+                }
+                hideNewDefaultConnectionDialog() {
+                    this.NewDefaultConnectionIsVisible = false;
+                }
+                showEditDefaultConnectionDialog(item) {
+                    this.oldConnection = item;
+                    this.EditDefaultConnectionIsVisible = true;
+                }
+                hideEditDefaultConnectionDialog() {
+                    this.EditDefaultConnectionIsVisible = false;
+                }
+                createDefaultConnection(connectionValue) {
+                    console.log("new value", connectionValue);
+                    this.defaultConnections.push(connectionValue);
+                    this.NewDefaultConnectionIsVisible = false;
+                }
+                updateDefaultConnection(connectionValue) {
+                    console.log("old/new value", this.oldConnection, connectionValue);
+                    var idx = this.defaultConnections.indexOf(this.oldConnection);
+                    this.defaultConnections.splice(idx, 1);
+                    this.defaultConnections.splice(idx, 0, connectionValue);
+                    this.EditDefaultConnectionIsVisible = false;
+                }
+                deleteDefaultConnection(item) {
+                    var idx = this.defaultConnections.indexOf(item);
+                    this.defaultConnections.splice(idx, 1);
                 }
                 //Add new wallet function for generate new wallet in Skycoin
                 createNewWallet() {

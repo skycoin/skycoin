@@ -1078,6 +1078,7 @@ func (self *Node) SendMessageThruRoute(routeId RouteId, contents []byte, reliabl
 	messages := self.fragmentMessage(contents, directPeer, transport, base)
 	for _, message := range messages {
 		serialized := self.serializer.SerializeMessage(message)
+		fmt.Fprintln(os.Stdout, "Send Message")
 		send_error := transport.SendMessage(directPeer, serialized)
 		if send_error != nil {
 			return send_error
@@ -1123,6 +1124,92 @@ func (self *Node) debug_countMessages() int {
 	return len(self.messagesBeingAssembled)
 }
 
+type RouteConfig struct {
+	Id    uuid.UUID
+	Peers []cipher.PubKey
+}
+
+type MessageToSend struct {
+	ThruRoute uuid.UUID
+	Contents  []byte
+	Reliably  bool
+}
+
+type MessageToReceive struct {
+	Contents      []byte
+	Reply         []byte
+	ReplyReliably bool
+}
+
+type ToConnect struct {
+	Peer cipher.PubKey
+	Info string
+}
+
+type TestConfig struct {
+	Reliable reliable.ReliableTransportConfig
+	Udp      udp.UDPConfig
+	Node     NodeConfig
+
+	PeersToConnect    []ToConnect
+	RoutesToEstablish []RouteConfig
+	MessagesToSend    []MessageToSend
+	MessagesToReceive []MessageToReceive
+}
+
+// Create TestConfig to the test using the functions created in the meshnet library.
+func CreateTestConfig(port int) *TestConfig {
+	testConfig := &TestConfig{}
+	testConfig.Node = NewNodeConfig()
+	testConfig.Reliable = CreateReliable(testConfig.Node.PubKey)
+	testConfig.Udp = CreateUdp(port, "127.0.0.1")
+
+	return testConfig
+}
+
+func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
+	peerToConnect := ToConnect{}
+	peerToConnect.Peer = config.Node.PubKey
+	peerToConnect.Info = CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
+	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
+}
+
+func (self *TestConfig) AddRouteToEstablish(config *TestConfig) {
+	routeToEstablish := RouteConfig{}
+	routeToEstablish.Id = uuid.NewV4()
+	routeToEstablish.Peers = append(routeToEstablish.Peers, config.Node.PubKey)
+	self.RoutesToEstablish = append(self.RoutesToEstablish, routeToEstablish)
+}
+
+func (self *TestConfig) AddPeerToRoute(indexRoute int, config *TestConfig) {
+	self.RoutesToEstablish[indexRoute].Peers = append(self.RoutesToEstablish[indexRoute].Peers, config.Node.PubKey)
+}
+
+func (self *TestConfig) AddMessageToSend(thruRoute uuid.UUID, message string, reliably bool) {
+	messageToSend := MessageToSend{}
+	messageToSend.ThruRoute = thruRoute
+	messageToSend.Contents = []byte(message)
+	messageToSend.Reliably = reliably
+	self.MessagesToSend = append(self.MessagesToSend, messageToSend)
+}
+
+func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string, replyReliably bool) {
+	messageToReceive := MessageToReceive{}
+	messageToReceive.Contents = []byte(messageReceive)
+	messageToReceive.Reply = []byte(messageReply)
+	messageToReceive.ReplyReliably = replyReliably
+	self.MessagesToReceive = append(self.MessagesToReceive, messageToReceive)
+}
+
+func CreateNode(config TestConfig) *Node {
+	node, createNodeError := NewNode(config.Node)
+	if createNodeError != nil {
+		panic(createNodeError)
+	}
+
+	return node
+}
+
 // Create public key
 func createPubKey() cipher.PubKey {
 	b := cipher.RandByte(33)
@@ -1148,6 +1235,56 @@ func NewNodeConfig() NodeConfig {
 	nodeConfig.TransportMessageChannelLength = 100
 
 	return nodeConfig
+}
+
+// Add transport to Node
+func (self *Node) AddTransportToNode(config TestConfig) {
+	udpTransport := createNewUDPTransport(config.Udp)
+
+	// Connect
+	for _, connectTo := range config.PeersToConnect {
+		connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
+		if connectError != nil {
+			panic(connectError)
+		}
+	}
+
+	// Reliable transport closes UDPTransport
+	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
+	//defer reliableTransport.Close()
+
+	self.AddTransport(reliableTransport)
+
+	udpTransport.GetTransportConnectInfo()
+}
+
+// Add Routes to Node
+func (self *Node) AddRoutesToEstablish(config TestConfig) {
+	// Setup route
+	for _, routeConfig := range config.RoutesToEstablish {
+		if len(routeConfig.Peers) == 0 {
+			continue
+		}
+		addRouteErr := self.AddRoute((RouteId)(routeConfig.Id), routeConfig.Peers[0])
+		if addRouteErr != nil {
+			panic(addRouteErr)
+		}
+		for peer := 1; peer < len(routeConfig.Peers); peer++ {
+			extendErr := self.ExtendRoute((RouteId)(routeConfig.Id), routeConfig.Peers[peer], 5*time.Second)
+			if extendErr != nil {
+				panic(extendErr)
+			}
+		}
+	}
+}
+
+// Create UDPTransport
+func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
+	udpTransport, createUDPError := udp.NewUDPTransport(configUdp)
+	if createUDPError != nil {
+		panic(createUDPError)
+	}
+	return udpTransport
 }
 
 // Create Reliable config to the node.

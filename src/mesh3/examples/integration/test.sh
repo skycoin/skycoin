@@ -1,0 +1,9 @@
+echo Building...
+go build ./test_node.go
+
+echo Launching...
+./test_node -config node_b.json &> ./node_b.log &
+./test_node -config node_c.json &> ./node_c.log &
+
+echo Testing...
+./test_node -config node_a.json 

@@ -16,9 +16,9 @@ import (
 
 import (
 	"github.com/satori/go.uuid"
-	"github.com/skycoin/skycoin/src/mesh2"
-	"github.com/skycoin/skycoin/src/mesh2/reliable"
-	"github.com/skycoin/skycoin/src/mesh2/udp"
+	"github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
+	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 )
 
 var config_path = flag.String("config", "./config.json", "Configuration file path.")

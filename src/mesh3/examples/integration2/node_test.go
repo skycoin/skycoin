@@ -12,7 +12,7 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh3"
+	"github.com/skycoin/skycoin/src/mesh3/node"
 	"github.com/skycoin/skycoin/src/mesh3/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh3/transport/udp"
 	"github.com/stretchr/testify/assert"

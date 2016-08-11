@@ -1,4 +1,4 @@
-n mesh
+package node
 
 import (
 	"crypto/rand"
@@ -15,8 +15,8 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh3/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh3/serialize"
+	"github.com/skycoin/skycoin/src/mesh3/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh3/transport/transport"
 	"github.com/skycoin/skycoin/src/mesh3/transport/udp"
 	"gopkg.in/op/go-logging.v1"

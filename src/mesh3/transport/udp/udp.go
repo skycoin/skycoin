@@ -44,7 +44,7 @@ type ListenPort struct {
 type UDPCommConfig struct {
 	DatagramLength uint16
 	ExternalHosts  []net.UDPAddr
-	CryptoKey      []byte
+	//CryptoKey      []byte
 }
 
 type UDPTransport struct {
@@ -53,7 +53,7 @@ type UDPTransport struct {
 	messagesReceived chan []byte
 	closing          chan bool
 	closeWait        *sync.WaitGroup
-	crypto           transport.TransportCrypto
+	//crypto           transport.TransportCrypto
 
 	// Thread protected variables
 	lock           *sync.Mutex
@@ -129,9 +129,9 @@ func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
 }
 
 func (self *UDPTransport) receiveMessage(buffer []byte) {
-	if self.crypto != nil {
-		buffer = self.crypto.Decrypt(buffer)
-	}
+	//if self.crypto != nil {
+	//	buffer = self.crypto.Decrypt(buffer)
+	//}
 	var v reflect.Value = reflect.New(reflect.TypeOf([]byte{}))
 	_, err := encoder.DeserializeRawToValue(buffer, v)
 	if err != nil {
@@ -252,9 +252,9 @@ func (self *UDPTransport) Close() error {
 	return nil
 }
 
-func (self *UDPTransport) SetCrypto(crypto transport.TransportCrypto) {
-	self.crypto = crypto
-}
+//func (self *UDPTransport) SetCrypto(crypto transport.TransportCrypto) {
+//	self.crypto = crypto
+//}
 
 func (self *UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	_, found := self.safeGetPeerComm(peer)
@@ -299,9 +299,9 @@ func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte) err
 	copy(datagramBuffer, encoderBuffer)
 
 	// Apply crypto
-	if self.crypto != nil {
-		datagramBuffer = self.crypto.Encrypt(datagramBuffer, peerComm.CryptoKey)
-	}
+	//if self.crypto != nil {
+	//	datagramBuffer = self.crypto.Encrypt(datagramBuffer, peerComm.CryptoKey)
+	//}
 
 	// Choose a socket randomly
 	fromSocketIndex := strongUint() % (uint32)(len(self.listenPorts))
@@ -325,11 +325,11 @@ func (self *UDPTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 
-func (self *UDPTransport) safeGetCrypto() transport.TransportCrypto {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	return self.crypto
-}
+//func (self *UDPTransport) safeGetCrypto() transport.TransportCrypto {
+//	self.lock.Lock()
+//	defer self.lock.Unlock()
+//	return self.crypto
+//}
 
 // UDP Transport only functions
 func (self *UDPTransport) GetTransportConnectInfo() string {
@@ -339,10 +339,10 @@ func (self *UDPTransport) GetTransportConnectInfo() string {
 		hostsArray = append(hostsArray, port.externalHost)
 	}
 	key := []byte{}
-	crypto := self.safeGetCrypto()
-	if crypto != nil {
-		key = crypto.GetKey()
-	}
+	//crypto := self.safeGetCrypto()
+	//if crypto != nil {
+	//	key = crypto.GetKey()
+	//}
 	info := UDPCommConfig{
 		self.config.DatagramLength,
 		hostsArray,

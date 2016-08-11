@@ -262,9 +262,9 @@ func (self *ReliableTransport) Close() error {
 	return self.physicalTransport.Close()
 }
 
-func (self *ReliableTransport) SetCrypto(crypto transport.TransportCrypto) {
-	self.physicalTransport.SetCrypto(crypto)
-}
+//func (self *ReliableTransport) SetCrypto(crypto transport.TransportCrypto) {
+//	self.physicalTransport.SetCrypto(crypto)
+//}
 
 func (self *ReliableTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	return self.physicalTransport.ConnectedToPeer(peer)

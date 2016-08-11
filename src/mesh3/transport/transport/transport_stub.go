@@ -45,7 +45,6 @@ func NewStubTransport(testing *testing.T,
 		false,
 		nil,
 		0,
-		nil,
 	}
 	return ret
 }
@@ -68,7 +67,7 @@ func (self *StubTransport) getMessageBuffer() (retMessages []QueuedMessage) {
 func (self *StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
-		msg_encd := msg
+		//msg_encd := msg
 
 		/*
 			if self.crypto != nil {

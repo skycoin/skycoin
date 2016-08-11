@@ -7,16 +7,18 @@ type TransportConfig struct {
 	SendChannelLength uint32
 }
 
+/*
 type TransportCrypto interface {
 	GetKey() []byte
 	Decrypt(data []byte) []byte
 	Encrypt(data []byte, key []byte) []byte
 }
+*/
 
 type Transport interface {
 	io.Closer
 	//Close() error
-	SetCrypto(crypto TransportCrypto)
+	//SetCrypto(crypto TransportCrypto)
 	ConnectedToPeer(peer cipher.PubKey) bool
 	GetConnectedPeers() []cipher.PubKey
 	// Does not consider any extra bytes added by crypto

@@ -24,7 +24,7 @@ type StubTransport struct {
 	amReliable       bool
 	messageBuffer    []QueuedMessage
 	numMessagesSent  int32
-	crypto           TransportCrypto
+	//crypto           TransportCrypto
 }
 
 type QueuedMessage struct {
@@ -69,19 +69,22 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, msg []byte) error {
 	peer, exists := self.stubbedPeers[toPeer]
 	if exists {
 		msg_encd := msg
-		if self.crypto != nil {
-			peerKey := []byte{}
-			if peer.crypto != nil {
-				peerKey = peer.crypto.GetKey()
+
+		/*
+			if self.crypto != nil {
+				peerKey := []byte{}
+				if peer.crypto != nil {
+					peerKey = peer.crypto.GetKey()
+				}
+				msg_encd = self.crypto.Encrypt(msg, peerKey)
 			}
-			msg_encd = self.crypto.Encrypt(msg, peerKey)
-		}
+		*/
 		if (uint)(len(msg)) > self.maxMessageSize {
 			return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(msg), self.maxMessageSize))
 		}
-		if self.crypto != nil {
-			msg = self.crypto.Decrypt(msg_encd)
-		}
+		//if self.crypto != nil {
+		//	msg = self.crypto.Decrypt(msg_encd)
+		//}
 		if !self.ignoreSend {
 			messageBuffer := self.getMessageBuffer()
 			if messageBuffer == nil {
@@ -139,11 +142,13 @@ func (self *StubTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 
+/*
 func (self *StubTransport) SetCrypto(crypto TransportCrypto) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	self.crypto = crypto
 }
+*/
 
 func (self *StubTransport) GetConnectedPeers() []cipher.PubKey {
 	self.lock.Lock()

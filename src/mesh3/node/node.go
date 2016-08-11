@@ -92,7 +92,7 @@ type Node struct {
 	outputMessagesReceived     chan MeshMessage
 	transportsMessagesReceived chan []byte
 	serializer                 *serialize.Serializer
-	myCrypto                   transport.TransportCrypto
+	//myCrypto                   transport.TransportCrypto
 
 	lock       *sync.Mutex
 	closeGroup *sync.WaitGroup
@@ -713,7 +713,7 @@ func (self *Node) GetConfig() NodeConfig {
 func (self *Node) AddTransport(transport transport.Transport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	transport.SetCrypto(self.myCrypto)
+	//transport.SetCrypto(self.myCrypto)
 	transport.SetReceiveChannel(self.transportsMessagesReceived)
 	self.transports[transport] = true
 }
@@ -1166,14 +1166,13 @@ func CreateUdp(port int, externalA string) udp.UDPConfig {
 }
 
 // Create info for the peer's connection.
-func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
+func CreateUDPCommConfig(addr string) string {
 	config := udp.UDPCommConfig{}
 	config.DatagramLength = uint16(512)
 	externalHosts := []net.UDPAddr{}
 	address1, _ := net.ResolveUDPAddr("", addr)
 	externalHosts = append(externalHosts, *address1)
 	config.ExternalHosts = externalHosts
-	config.CryptoKey = cryptoKey
 
 	src, _ := json.Marshal(&config)
 	infoPeer := hex.EncodeToString(src)

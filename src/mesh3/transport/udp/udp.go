@@ -223,7 +223,6 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 		nil, // Receive channel
 		make(chan bool, 10*len(portsArray)), // closing
 		waitGroup,
-		nil, // No crypto by default
 		&sync.Mutex{},
 		make(map[cipher.PubKey]UDPCommConfig),
 	}
@@ -338,7 +337,7 @@ func (self *UDPTransport) GetTransportConnectInfo() string {
 	for _, port := range self.listenPorts {
 		hostsArray = append(hostsArray, port.externalHost)
 	}
-	key := []byte{}
+	//key := []byte{}
 	//crypto := self.safeGetCrypto()
 	//if crypto != nil {
 	//	key = crypto.GetKey()
@@ -346,7 +345,6 @@ func (self *UDPTransport) GetTransportConnectInfo() string {
 	info := UDPCommConfig{
 		self.config.DatagramLength,
 		hostsArray,
-		key,
 	}
 
 	ret, err := json.Marshal(info)

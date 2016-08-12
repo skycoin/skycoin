@@ -2,11 +2,8 @@ package mesh
 
 import (
 	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -15,10 +12,9 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/reliable"
+	"github.com/skycoin/skycoin/src/mesh2/protocol"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
-	"github.com/skycoin/skycoin/src/mesh2/udp"
 	"gopkg.in/op/go-logging.v1"
 )
 
@@ -1147,8 +1143,8 @@ type ToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable reliable.ReliableTransportConfig
-	Udp      udp.UDPConfig
+	Reliable protocol.ReliableTransportConfig
+	Udp      protocol.UDPConfig
 	Node     NodeConfig
 
 	PeersToConnect    []ToConnect
@@ -1161,8 +1157,8 @@ type TestConfig struct {
 func CreateTestConfig(port int) *TestConfig {
 	testConfig := &TestConfig{}
 	testConfig.Node = NewNodeConfig()
-	testConfig.Reliable = CreateReliable(testConfig.Node.PubKey)
-	testConfig.Udp = CreateUdp(port, "127.0.0.1")
+	testConfig.Reliable = protocol.CreateReliable(testConfig.Node.PubKey)
+	testConfig.Udp = protocol.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
 }
@@ -1170,7 +1166,7 @@ func CreateTestConfig(port int) *TestConfig {
 func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 	peerToConnect := ToConnect{}
 	peerToConnect.Peer = config.Node.PubKey
-	peerToConnect.Info = CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
+	peerToConnect.Info = protocol.CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
 	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
 }
 
@@ -1239,7 +1235,7 @@ func NewNodeConfig() NodeConfig {
 
 // Add transport to Node
 func (self *Node) AddTransportToNode(config TestConfig) {
-	udpTransport := createNewUDPTransport(config.Udp)
+	udpTransport := protocol.CreateNewUDPTransport(config.Udp)
 
 	// Connect
 	for _, connectTo := range config.PeersToConnect {
@@ -1250,12 +1246,10 @@ func (self *Node) AddTransportToNode(config TestConfig) {
 	}
 
 	// Reliable transport closes UDPTransport
-	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
+	reliableTransport := protocol.NewReliableTransport(udpTransport, config.Reliable)
 	//defer reliableTransport.Close()
 
 	self.AddTransport(reliableTransport)
-
-	udpTransport.GetTransportConnectInfo()
 }
 
 // Add Routes to Node
@@ -1276,54 +1270,4 @@ func (self *Node) AddRoutesToEstablish(config TestConfig) {
 			}
 		}
 	}
-}
-
-// Create UDPTransport
-func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
-	udpTransport, createUDPError := udp.NewUDPTransport(configUdp)
-	if createUDPError != nil {
-		panic(createUDPError)
-	}
-	return udpTransport
-}
-
-// Create Reliable config to the node.
-func CreateReliable(pubKey cipher.PubKey) reliable.ReliableTransportConfig {
-	reliable := reliable.ReliableTransportConfig{}
-	reliable.MyPeerId = pubKey
-	reliable.PhysicalReceivedChannelLength = 100
-	reliable.ExpireMessagesInterval = 5 * time.Minute
-	reliable.RememberMessageReceivedDuration = 1 * time.Minute
-	reliable.RetransmitDuration = 1 * time.Minute
-
-	return reliable
-}
-
-// Create Udp config
-func CreateUdp(port int, externalA string) udp.UDPConfig {
-	udp := udp.UDPConfig{}
-	udp.SendChannelLength = uint32(100)
-	udp.DatagramLength = uint16(512)
-	udp.LocalAddress = ""
-	udp.NumListenPorts = uint16(1)
-	udp.ListenPortMin = uint16(port)
-	udp.ExternalAddress = externalA
-
-	return udp
-}
-
-// Create info for the peer's connection.
-func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
-	config := udp.UDPCommConfig{}
-	config.DatagramLength = uint16(512)
-	externalHosts := []net.UDPAddr{}
-	address1, _ := net.ResolveUDPAddr("", addr)
-	externalHosts = append(externalHosts, *address1)
-	config.ExternalHosts = externalHosts
-	config.CryptoKey = cryptoKey
-
-	src, _ := json.Marshal(&config)
-	infoPeer := hex.EncodeToString(src)
-
-	return infoPeer
 }

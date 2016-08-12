@@ -13,8 +13,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2"
-	"github.com/skycoin/skycoin/src/mesh2/reliable"
-	"github.com/skycoin/skycoin/src/mesh2/udp"
+	"github.com/skycoin/skycoin/src/mesh2/protocol"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,8 +40,8 @@ type ToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable reliable.ReliableTransportConfig
-	Udp      udp.UDPConfig
+	Reliable protocol.ReliableTransportConfig
+	Udp      protocol.UDPConfig
 	Node     mesh.NodeConfig
 
 	PeersToConnect    []ToConnect
@@ -158,8 +157,8 @@ func createTestConfig(configText string) TestConfig {
 }
 
 // Create UDPTransport
-func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
-	udpTransport, createUDPError := udp.NewUDPTransport(configUdp)
+func createNewUDPTransport(configUdp protocol.UDPConfig) *protocol.UDPTransport {
+	udpTransport, createUDPError := protocol.NewUDPTransport(configUdp)
 	if createUDPError != nil {
 		panic(createUDPError)
 	}
@@ -341,7 +340,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 	}
 
 	// Reliable transport closes UDPTransport
-	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
+	reliableTransport := protocol.NewReliableTransport(udpTransport, config.Reliable)
 	defer reliableTransport.Close()
 
 	node, createNodeError := mesh.NewNode(config.Node)

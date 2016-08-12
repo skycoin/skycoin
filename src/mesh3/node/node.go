@@ -99,7 +99,7 @@ type Node struct {
 	closing    chan bool
 
 	transports                     map[transport.Transport]bool
-	messagesBeingAssembled         map[messageId]*MessageUnderAssembly
+	messagesBeingAssembled         map[messageId]*MessageUnderAssembly //REMOVE, no packet fragmentation in node
 	routesById                     map[RouteId]Route
 	localRoutesByTerminatingPeer   map[cipher.PubKey]RouteId
 	localRoutesById                map[RouteId]LocalRoute
@@ -196,6 +196,7 @@ func NewNode(config NodeConfig) (*Node, error) {
 }
 
 // Returns nil if reassembly didn't happen (incomplete message)
+// REMOVE: no packet fragmentation in node
 func (self *Node) reassembleUserMessage(msgIn UserMessage) (contents []byte) {
 	self.lock.Lock()
 	defer self.lock.Unlock()

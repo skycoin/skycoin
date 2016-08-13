@@ -13,8 +13,8 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh3/node"
-	"github.com/skycoin/skycoin/src/mesh3/transport/reliable"
-	"github.com/skycoin/skycoin/src/mesh3/transport/udp"
+	"github.com/skycoin/skycoin/src/mesh3/transport/reliable_udp"
+//	"github.com/skycoin/skycoin/src/mesh3/transport/udp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +41,7 @@ type ToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable reliable.ReliableTransportConfig
+	Reliable reliable_udp.ReliableTransportConfig
 	Udp      udp.UDPConfig
 	Node     mesh.NodeConfig
 
@@ -51,7 +51,8 @@ type TestConfig struct {
 	MessagesToReceive []MessageToReceive
 }
 
-var configText1 string = `{
+var configText1 string = 
+`{
 	"Reliable": {
 		"MyPeerId": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"PhysicalReceivedChannelLength": 100,
@@ -105,7 +106,8 @@ var configText1 string = `{
 	]
 }`
 
-var configText2 string = `{
+var configText2 string = 
+`{
 	"Reliable": {
 		"MyPeerId": [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"PhysicalReceivedChannelLength": 100,

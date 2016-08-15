@@ -9,7 +9,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/codahale/chacha20"
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
 	"gopkg.in/op/go-logging.v1"

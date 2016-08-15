@@ -1,7 +1,9 @@
 package cipher
 
 import (
-	"github.com/tang0th/go-chacha20"
+	"errors"
+	chacha20_1 "github.com/codahale/chacha20"
+	chacha20_0 "github.com/tang0th/go-chacha20"
 	"log"
 )
 
@@ -13,7 +15,7 @@ func ChaCha20Encrypt(in []byte, Key []byte) []byte {
 	}
 	out := make([]byte, len(in))
 	//TODO, using fixed nonce
-	chacha20.XORKeyStream(out, in, []byte("nonce123"), Key[:])
+	chacha20_0.XORKeyStream(out, in, []byte("nonce123"), Key[:])
 	return out
 }
 
@@ -25,7 +27,7 @@ func ChaCha20Decrypt(in []byte, Key []byte) []byte {
 	}
 	out := make([]byte, len(in))
 	//TODO, using fixed nonce
-	chacha20.XORKeyStream(out, in, []byte("nonce123"), Key)
+	chacha20_0.XORKeyStream(out, in, []byte("nonce123"), Key)
 	return out
 }
 
@@ -42,7 +44,7 @@ func Chacha20Encrypt(data []byte, pubkey PubKey, seckey SecKey, nonce []byte) (d
 
 	key := ECDH(pubkey, seckey)
 	e := make([]byte, len(data))
-	c, err := chacha20.New(key, nonce)
+	c, err := chacha20_1.New(key, nonce)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -59,7 +61,7 @@ func Chacha20Decrypt(data []byte, pubkey PubKey, seckey SecKey, nonce []byte) (d
 
 	key := ECDH(pubkey, seckey)
 	e := make([]byte, len(data))
-	c, err := chacha20.New(key, nonce)
+	c, err := chacha20_1.New(key, nonce)
 	if err != nil {
 		return []byte{}, err
 	}

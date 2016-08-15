@@ -4,6 +4,7 @@ package util
 import (
 	"encoding/json"
 	"errors"
+	//"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -120,22 +121,41 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	return os.Rename(tmpname, filename)
 }
 
-func GUIDirectory(path string) string {
-	filename := filepath.Base(path)
+//searches locations for a research directory and returns absolute path
+func ResolveResourceDirectory(path string) string {
 	workDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Panic(err)
 	}
+
+	_, rt_filename, _, _ := runtime.Caller(1)
+	rt_directory := filepath.Dir(rt_filename)
+
+	//fmt.Printf("Filename, absolute dir= %s \n", filename)
+	//fmt.Printf("Filepath Raw= %s \n", )
+	//fmt.Printf("Filepath Directory= %s \n", filepath.Dir(path))
+	//fmt.Printf("Working Directory= %s \n", workDir)
+	//fmt.Printf("Runtime Filename= %s \n", rt_filename)
+	//fmt.Printf("Runtime Directory= %s \n", rt_directory)
+
+	//dir1 := filepath.Join(workDir, filepath.Dir(path))
+	//fmt.Printf("Dir1= %s \n", dir1)
+
 	dirs := []string{
-		filepath.Dir(path),
-		workDir,
-		workDir + "/../.",
+		path, //try direct path first
+		filepath.Join(workDir, filepath.Dir(path)), //default
+		filepath.Join(rt_directory, "../", filepath.Dir(path)),
+		filepath.Join(rt_directory, "../../", filepath.Dir(path)),
+		filepath.Join(rt_directory, "../../../", filepath.Dir(path)),
 	}
 
+	//for i, dir := range dirs {
+	//	fmt.Printf("Dir[%d]= %s \n", i, dir)
+	//}
+
 	for _, dir := range dirs {
-		dst := filepath.Join(dir, filename)
-		if _, err := os.Stat(dst); !os.IsNotExist(err) {
-			return dst
+		if _, err := os.Stat(dir); !os.IsNotExist(err) {
+			return dir
 		}
 	}
 	log.Panic("GUI directory not found")

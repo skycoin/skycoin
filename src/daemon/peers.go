@@ -59,7 +59,7 @@ func NewPeers(c PeersConfig) *Peers {
 
 //do "default_peers file"
 //read file, write, if does not exist
-var BootStrapPeers = []string{}
+var DefaultConnections = []string{}
 
 // Configure the pex.PeerList and load local data
 func (self *Peers) Init() {
@@ -73,7 +73,7 @@ func (self *Peers) Init() {
 	peers.AllowLocalhost = self.Config.AllowLocalhost
 
 	//Boot strap peers
-	for _, addr := range BootStrapPeers {
+	for _, addr := range DefaultConnections {
 		peers.AddPeer(addr)
 	}
 

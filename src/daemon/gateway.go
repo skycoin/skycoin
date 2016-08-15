@@ -59,6 +59,14 @@ func (self *Gateway) GetConnections() interface{} {
 	return r
 }
 
+func (self *Gateway) GetDefaultConnections() interface{} {
+	self.Requests <- func() interface{} {
+		return self.Daemon.GetDefaultConnections(self.D)
+	}
+	r := <-self.Responses
+	return r
+}
+
 // Returns a *Connection
 func (self *Gateway) GetConnection(addr string) interface{} {
 	self.Requests <- func() interface{} {

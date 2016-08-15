@@ -41,7 +41,7 @@ br {
   color: #000;
 }
 .tab-content {
-/*box-shadow: 0px 37px 57px #E0DEDE;*/
+  /*box-shadow: 0px 37px 57px #E0DEDE;*/
   -webkit-border-radius: 10px;
   border-radius: 10px;
 }
@@ -54,7 +54,7 @@ br {
   position: absolute;
   top: 8px;
   right: 8px;
-/*color:#a3b0bb;*/
+  /*color:#a3b0bb;*/
   color: #fff;
 }
 #sky-header {
@@ -64,8 +64,14 @@ br {
   border-bottom: 1px solid #ddd;
   position: relative;
 }
+
+.wallet-menu {
+  position: absolute;
+  top: 4px;
+}
 #main-content {
   max-width: 950px;
+  position:relative;
 }
 .wallet-buttons {
   width: 100%;
@@ -342,10 +348,10 @@ label {
 }
 
 .qr-container img{
-    display: none !important;
+  display: none !important;
 }
 .qr-container canvas{
-    display: inline-block !important;
+  display: inline-block !important;
 }
 .qr-container .qrAddress{
   text-align: center;

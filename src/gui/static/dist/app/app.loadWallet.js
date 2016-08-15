@@ -41,16 +41,25 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.displayMode = DisplayModeEnum.first;
                     this.loadWallet();
                     this.loadConnections();
+                    this.loadDefaultConnections();
+                    this.loadBlockChain();
                     this.loadProgress();
+                    this.loadOutputs();
                     //Set interval function for load wallet every 15 seconds
                     setInterval(() => {
                         this.loadWallet();
                         console.log("Refreshing balance");
                     }, 15000);
+                    setInterval(() => {
+                        this.loadConnections();
+                        this.loadBlockChain();
+                        console.log("Refreshing connections");
+                    }, 5000);
                     //Enable Send tab "textbox" and "Ready" button by default
                     this.sendDisable = true;
                     this.readyDisable = false;
                     this.pendingTable = [];
+                    this.selectedMenu = "Wallets";
                     if (localStorage.getItem('historyAddresses') != null) {
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
                     }
@@ -111,9 +120,37 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         .subscribe(data => {
                         console.log("connections", data);
                         this.connections = data.connections;
-                    }, err => console.log("Error on load wallet: " + err), () => console.log('Wallet load done'));
+                    }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
                 }
-                //Load progress function for Skycoin
+                loadDefaultConnections() {
+                    this.http.post('/network/defaultConnections', '')
+                        .map((res) => res.json())
+                        .subscribe(data => {
+                        console.log("default connections", data);
+                        this.defaultConnections = data;
+                    }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
+                }
+                loadOutputs() {
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    this.http.get('/outputs', { headers: headers })
+                        .map((res) => res.json())
+                        .subscribe(data => {
+                        this.outputs = _.sortBy(data, function (o) {
+                            return o.address;
+                        });
+                    }, err => console.log("Error on load outputs: " + err), () => console.log('Connection load done'));
+                }
+                loadBlockChain() {
+                    this.http.post('/blockchain', '')
+                        .map((res) => res.json())
+                        .subscribe(data => {
+                        console.log("blockchain", data);
+                        if (data.head) {
+                            this.blockChain = data;
+                        }
+                    }, err => console.log("Error on load blockchain: " + err), () => console.log('blockchain load done'));
+                } //Load progress function for Skycoin
                 loadProgress() {
                     //Post method executed
                     this.http.post('/blockchain/progress', '')
@@ -132,6 +169,17 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.spendid = wallet.meta.filename;
                     }
                 }
+                selectMenu(menu, event) {
+                    this.displayMode = this.displayModeEnum.fourth;
+                    event.preventDefault();
+                    this.selectedMenu = menu;
+                }
+                getDateTimeString(ts) {
+                    return moment.unix(ts).format("YYYY-MM-DD hh:mm");
+                }
+                getElapsedTime(ts) {
+                    return moment().unix() - ts;
+                }
                 //Show QR code function for show QR popup
                 showQR(wallet) {
                     this.QrAddress = wallet.entries[0].address;
@@ -148,6 +196,35 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Hide wallet function for hide New wallet popup
                 hideWalletPopup() {
                     this.NewWalletIsVisible = false;
+                }
+                showNewDefaultConnectionDialog() {
+                    this.NewDefaultConnectionIsVisible = true;
+                }
+                hideNewDefaultConnectionDialog() {
+                    this.NewDefaultConnectionIsVisible = false;
+                }
+                showEditDefaultConnectionDialog(item) {
+                    this.oldConnection = item;
+                    this.EditDefaultConnectionIsVisible = true;
+                }
+                hideEditDefaultConnectionDialog() {
+                    this.EditDefaultConnectionIsVisible = false;
+                }
+                createDefaultConnection(connectionValue) {
+                    console.log("new value", connectionValue);
+                    this.defaultConnections.push(connectionValue);
+                    this.NewDefaultConnectionIsVisible = false;
+                }
+                updateDefaultConnection(connectionValue) {
+                    console.log("old/new value", this.oldConnection, connectionValue);
+                    var idx = this.defaultConnections.indexOf(this.oldConnection);
+                    this.defaultConnections.splice(idx, 1);
+                    this.defaultConnections.splice(idx, 0, connectionValue);
+                    this.EditDefaultConnectionIsVisible = false;
+                }
+                deleteDefaultConnection(item) {
+                    var idx = this.defaultConnections.indexOf(item);
+                    this.defaultConnections.splice(idx, 1);
                 }
                 //Add new wallet function for generate new wallet in Skycoin
                 createNewWallet() {
@@ -246,13 +323,20 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.http.post('/wallet/spend', stringConvert, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(response => {
+                        console.log(response);
                         this.pendingTable.push({ complete: 'Completed', address: spendaddress, amount: spendamount });
                         //Load wallet for refresh list
                         this.loadWallet();
+                        this.readyDisable = false;
+                        this.sendDisable = true;
                     }, err => {
+                        console.log(err);
                         alert(err._body);
                         this.readyDisable = false;
                         this.sendDisable = true;
+                        if (err.body == 'Invalid connection') {
+                            return;
+                        }
                         this.pendingTable.push({ complete: 'Pending', address: spendaddress, amount: spendamount });
                     }, () => console.log('Spend successfully'));
                 }

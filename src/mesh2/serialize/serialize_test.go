@@ -1,23 +1,22 @@
-
 package serialize
 
-import(
+import (
 	"testing"
-	)
+)
 
-import(
+import (
 	"github.com/stretchr/testify/assert"
-	)
+)
 
 type TestStruct struct {
-	Foo string
-	Bar uint32
-	Gah bool
+	Foo  string
+	Bar  uint32
+	Gah  bool
 	Blah uint32
 }
 
 type TestWithBytes struct {
-	Blah uint32
+	Blah  uint32
 	Slice []byte
 }
 
@@ -30,7 +29,7 @@ func init() {
 }
 
 func TestSerializeStruct(t *testing.T) {
-	testStruct := TestStruct {
+	testStruct := TestStruct{
 		"hello",
 		8,
 		false,
@@ -45,11 +44,11 @@ func TestSerializeStruct(t *testing.T) {
 
 func TestSerializeNilBytes(t *testing.T) {
 	testA := TestWithBytes{55, nil}
-	testB := TestWithBytes{55, []byte{44,55,1,2,3}}
+	testB := TestWithBytes{55, []byte{44, 55, 1, 2, 3}}
 	testC := TestWithBytes{55, []byte{}}
 	dataA := serializer.SerializeMessage(testA)
 	dataB := serializer.SerializeMessage(testB)
 	dataC := serializer.SerializeMessage(testC)
-	assert.Equal(t, 5, len(dataB) - len(dataA))
+	assert.Equal(t, 5, len(dataB)-len(dataA))
 	assert.Equal(t, len(dataA), len(dataC))
 }

@@ -1,27 +1,28 @@
 package udp
 
-import(
+import (
+	"testing"
 	"time"
-	"testing")
+)
 
-
-import(
+import (
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
-    "github.com/skycoin/skycoin/src/cipher"
-	"github.com/stretchr/testify/assert")
+	"github.com/stretchr/testify/assert"
+)
 
-var staticTestConfig UDPConfig = UDPConfig {
-		transport.TransportConfig {
-			8, // SendChannelLength uint32
-		},
-		512, // DatagramLength	uint64
-		"", // LocalAddress string 	// "" for default
+var staticTestConfig UDPConfig = UDPConfig{
+	transport.TransportConfig{
+		8, // SendChannelLength uint32
+	},
+	512, // DatagramLength	uint64
+	"",  // LocalAddress string 	// "" for default
 
-		5, // NumListenPorts uint16
-		10300, // ListenPortMin uint16		// If 0, STUN is used
-		"127.0.0.1", // ExternalAddress
-		nil, // StunEndpoints []string		// STUN servers to try for NAT traversal
-	}
+	5,           // NumListenPorts uint16
+	10300,       // ListenPortMin uint16		// If 0, STUN is used
+	"127.0.0.1", // ExternalAddress
+	nil,         // StunEndpoints []string		// STUN servers to try for NAT traversal
+}
 
 func TestBindStaticPorts(t *testing.T) {
 	transport, error := NewUDPTransport(staticTestConfig)
@@ -39,16 +40,16 @@ func TestClose(t *testing.T) {
 }
 
 func TestBindSTUNPorts(t *testing.T) {
-	config := UDPConfig {
-		transport.TransportConfig {
+	config := UDPConfig{
+		transport.TransportConfig{
 			8, // SendChannelLength uint32
 		},
 		512, // DatagramLength	uint64
-		"", // LocalAddress string 	// "" for default
+		"",  // LocalAddress string 	// "" for default
 
-		5, // NumListenPorts uint16
-		0, // ListenPortMin uint16		// If 0, STUN is used
-		"127.0.0.1", // ExternalAddress
+		5,                                       // NumListenPorts uint16
+		0,                                       // ListenPortMin uint16		// If 0, STUN is used
+		"127.0.0.1",                             // ExternalAddress
 		[]string{"stun1.voiceeclipse.net:3478"}, // StunEndpoints []string		// STUN servers to try for NAT traversal
 	}
 	transport, error := NewUDPTransport(config)
@@ -58,8 +59,8 @@ func TestBindSTUNPorts(t *testing.T) {
 }
 
 func SetupAB(encrypt bool, t *testing.T) (
-				*UDPTransport, cipher.PubKey,
-				*UDPTransport, cipher.PubKey) {
+	*UDPTransport, cipher.PubKey,
+	*UDPTransport, cipher.PubKey) {
 	transport_a, error := NewUDPTransport(staticTestConfig)
 	assert.Nil(t, error)
 	assert.NotNil(t, transport_a)
@@ -75,9 +76,9 @@ func SetupAB(encrypt bool, t *testing.T) (
 	transport_a.SetCrypto(tc)
 	transport_b.SetCrypto(tc)
 
-	test_key_a := cipher.NewPubKey([]byte{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-	test_key_b := cipher.NewPubKey([]byte{2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-	test_key_c := cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+	test_key_a := cipher.NewPubKey([]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+	test_key_b := cipher.NewPubKey([]byte{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+	test_key_c := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	assert.Nil(t, transport_a.ConnectToPeer(test_key_b, transport_b.GetTransportConnectInfo()))
 	assert.True(t, transport_a.ConnectedToPeer(test_key_b))
 	assert.False(t, transport_a.ConnectedToPeer(test_key_c))
@@ -89,11 +90,11 @@ func SetupAB(encrypt bool, t *testing.T) (
 }
 
 func TestSendDatagram(t *testing.T) {
-	transport_a , key_a, transport_b, key_b := SetupAB(false, t)
+	transport_a, key_a, transport_b, key_b := SetupAB(false, t)
 	defer transport_a.Close()
 	defer transport_b.Close()
 
-	test_key_c := cipher.NewPubKey([]byte{3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+	test_key_c := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	assert.Zero(t, transport_a.GetMaximumMessageSizeToPeer(key_a))
 	assert.NotZero(t, transport_a.GetMaximumMessageSizeToPeer(key_b))
 	assert.NotZero(t, transport_b.GetMaximumMessageSizeToPeer(key_a))
@@ -101,8 +102,8 @@ func TestSendDatagram(t *testing.T) {
 	assert.Zero(t, transport_a.GetMaximumMessageSizeToPeer(test_key_c))
 	assert.Zero(t, transport_b.GetMaximumMessageSizeToPeer(test_key_c))
 
-	send_bytes_a := []byte{66,44,33,2,123,100,22}
-	send_bytes_b := []byte{23,33,12,88,43,120}
+	send_bytes_a := []byte{66, 44, 33, 2, 123, 100, 22}
+	send_bytes_b := []byte{23, 33, 12, 88, 43, 120}
 
 	assert.Nil(t, transport_a.SendMessage(key_b, send_bytes_a))
 	assert.Nil(t, transport_b.SendMessage(key_a, send_bytes_b))
@@ -118,18 +119,20 @@ func TestSendDatagram(t *testing.T) {
 
 	for !got_a || !got_b {
 		select {
-			case msg_a := <- chan_a: {
+		case msg_a := <-chan_a:
+			{
 				assert.Equal(t, send_bytes_b, msg_a)
 				got_a = true
 				break
 			}
-			case msg_b := <- chan_b: {
+		case msg_b := <-chan_b:
+			{
 				assert.Equal(t, send_bytes_a, msg_b)
 				got_b = true
 				break
 			}
-			case <-time.After(5*time.Second):
-				panic("Test timed out")
+		case <-time.After(5 * time.Second):
+			panic("Test timed out")
 		}
 	}
 }
@@ -137,11 +140,11 @@ func TestSendDatagram(t *testing.T) {
 type TestCryptoStruct struct {
 }
 
-func (self*TestCryptoStruct) GetKey()[]byte {
-	return []byte{44,23}
+func (self *TestCryptoStruct) GetKey() []byte {
+	return []byte{44, 23}
 }
 
-func (self*TestCryptoStruct) Encrypt(data []byte, key []byte)[]byte {
+func (self *TestCryptoStruct) Encrypt(data []byte, key []byte) []byte {
 	if len(key) != 2 || key[0] != 44 || key[1] != 23 {
 		panic("Wrong Key")
 	}
@@ -152,7 +155,7 @@ func (self*TestCryptoStruct) Encrypt(data []byte, key []byte)[]byte {
 	return ret
 }
 
-func (self*TestCryptoStruct) Decrypt(data []byte)[]byte {
+func (self *TestCryptoStruct) Decrypt(data []byte) []byte {
 	ret := make([]byte, len(data))
 	for i := 0; i < len(data); i++ {
 		ret[i] = data[i] - 1
@@ -165,7 +168,7 @@ func TestCrypto(t *testing.T) {
 	defer transport_a.Close()
 	defer transport_b.Close()
 
-	send_bytes := []byte{66,44,33,2,123,100,22}
+	send_bytes := []byte{66, 44, 33, 2, 123, 100, 22}
 
 	assert.Nil(t, transport_a.SendMessage(key_b, send_bytes))
 
@@ -173,11 +176,12 @@ func TestCrypto(t *testing.T) {
 	transport_b.SetReceiveChannel(chan_b)
 
 	select {
-		case msg_b := <- chan_b: {
+	case msg_b := <-chan_b:
+		{
 			assert.Equal(t, send_bytes, msg_b)
 		}
-		case <-time.After(5*time.Second):
-			panic("Test timed out")
+	case <-time.After(5 * time.Second):
+		panic("Test timed out")
 	}
 }
 
@@ -192,4 +196,3 @@ func TestDisconnect(t *testing.T) {
 	assert.Zero(t, transport_a.GetMaximumMessageSizeToPeer(key_b))
 	assert.Equal(t, []cipher.PubKey{}, transport_a.GetConnectedPeers())
 }
-

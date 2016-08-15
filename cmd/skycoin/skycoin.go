@@ -40,14 +40,19 @@ var (
 		"pex",
 	}
 
-	//clear these after loading [????]
 	//TODO: Move time and other genesis block settigns from visor, to here
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
 	GenesisAddressStr   = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
 	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 	BlockchainSeckeyStr = ""
 
-	DefaultServers = []string{
+	GenesisTimestamp  uint64 = 1426562704
+	GenesisCoinVolume uint64 = 100e12
+
+	//GenesisTimestamp: 1426562704,
+	//GenesisCoinVolume: 100e12, //100e6 * 10e6
+
+	DefaultConnections = []string{
 		"13.76.90.237:6000",
 		"40.74.142.139:6000",
 		"188.226.245.87:6000",
@@ -387,7 +392,7 @@ var devConfig Config = Config{
 	BlockchainSeckey: cipher.SecKey{},
 
 	GenesisAddress:   cipher.Address{},
-	GenesisTimestamp: 1426562704,
+	GenesisTimestamp: GenesisTimestamp,
 	GenesisSignature: cipher.Sig{},
 
 	/* Developer options */
@@ -417,7 +422,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
 	dc.Daemon.OutgoingMax = c.MaxConnections
 
-	daemon.BootStrapPeers = DefaultServers
+	daemon.DefaultConnections = DefaultConnections
 
 	if c.OutgoingConnectionsRate == 0 {
 		c.OutgoingConnectionsRate = time.Millisecond
@@ -435,11 +440,14 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisAddress = c.GenesisAddress
 	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
-
+	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
 	return dc
 }
 
 func Run(c *Config) {
+
+	c.GUIDirectory = util.ResolveResourceDirectory(c.GUIDirectory)
+
 	scheme := "http"
 	if c.WebInterfaceHTTPS {
 		scheme = "https"

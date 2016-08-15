@@ -86,6 +86,8 @@ benefactor-wallet.json
 masterdata/
 .genv
 
+src/gui/static/dev
+
 npm-debug.log
 
 node_modules

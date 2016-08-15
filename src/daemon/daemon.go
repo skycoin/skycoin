@@ -195,6 +195,8 @@ type Daemon struct {
 	Gateway  *Gateway
 	Visor    *Visor
 
+	DefaultConnections []string
+
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
 	OutgoingConnections map[string]*gnet.Connection
@@ -231,6 +233,8 @@ func NewDaemon(config Config) *Daemon {
 		Pool:     NewPool(config.Pool),
 		Peers:    NewPeers(config.Peers),
 		Visor:    NewVisor(config.Visor),
+
+		DefaultConnections: DefaultConnections, //from peers.go
 
 		ExpectingIntroductions: make(map[string]time.Time),
 		ConnectionMirrors:      make(map[string]uint32),

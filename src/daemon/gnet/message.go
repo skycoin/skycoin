@@ -71,7 +71,7 @@ funcs["foobar"]()
 /*
 
 
-*/
+ */
 
 type Message interface {
 	// State is user-defined application state that is attached to the

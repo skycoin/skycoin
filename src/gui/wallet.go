@@ -587,6 +587,22 @@ func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func getTransactionHandler(gate *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		txid := r.URL.Query().Get("txid")
+		if txid == "" {
+			return
+		}
+
+		h, err := cipher.SHA256FromHex(txid)
+		if err != nil {
+			return
+		}
+		tx := gate.V.GetTransaction(h)
+		SendOr404(w, visor.NewReadableTransaction(&tx.Txn))
+	}
+}
+
 func getUxidsOfAddr(addr string, rdTxns []visor.ReadableTransaction) []string {
 	uxids := []string{}
 	for _, txn := range rdTxns {
@@ -597,18 +613,6 @@ func getUxidsOfAddr(addr string, rdTxns []visor.ReadableTransaction) []string {
 		}
 	}
 	return uxids
-}
-
-func getAddrTxns(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// get tx hash id
-		addr := r.URL.Query().Get("addr")
-		if addr != "" {
-			rlt := gateway.GetAddressTransactions(cipher.MustDecodeBase58Address(addr))
-			txns := rlt.(*visor.TransactionResults)
-			SendOr404(w, txns)
-		}
-	}
 }
 
 //Implement
@@ -714,8 +718,8 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//get set of pending transaction
 	mux.HandleFunc("/transactions", getTransactionsHandler(gateway))
 
-	// // get confirmed txn of address.
-	// mux.HandleFunc("/transactions", getAddrTxns(gateway))
+	// get txn of address.
+	mux.HandleFunc("/transaction", getTransactionHandler(gateway))
 
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))

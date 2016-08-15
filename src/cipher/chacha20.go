@@ -28,3 +28,41 @@ func ChaCha20Decrypt(in []byte, Key []byte) []byte {
 	chacha20.XORKeyStream(out, in, []byte("nonce123"), Key)
 	return out
 }
+
+/*
+Duplicate
+*/
+
+func Chacha20Encrypt(data []byte, pubkey PubKey, seckey SecKey, nonce []byte) (d []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("encrypt faild")
+		}
+	}()
+
+	key := ECDH(pubkey, seckey)
+	e := make([]byte, len(data))
+	c, err := chacha20.New(key, nonce)
+	if err != nil {
+		return []byte{}, err
+	}
+	c.XORKeyStream(e, data)
+	return e, nil
+}
+
+func Chacha20Decrypt(data []byte, pubkey PubKey, seckey SecKey, nonce []byte) (d []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("decrypt faild")
+		}
+	}()
+
+	key := ECDH(pubkey, seckey)
+	e := make([]byte, len(data))
+	c, err := chacha20.New(key, nonce)
+	if err != nil {
+		return []byte{}, err
+	}
+	c.XORKeyStream(e, data)
+	return e, nil
+}

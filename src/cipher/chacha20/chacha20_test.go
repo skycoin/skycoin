@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/codahale/chacha20"
+	"github.com/skycoin/skycoin/src/cipher/chacha20"
 )
 
 // stolen from https://tools.ietf.org/html/draft-strombergson-chacha-test-vectors-01
@@ -18,7 +18,7 @@ type testVector struct {
 }
 
 var testVectors = []testVector{
-	testVector{
+	{
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"0000000000000000",
 		8,
@@ -27,7 +27,7 @@ var testVectors = []testVector{
 			"d2aefa0deaa5c151bf0adb6c01f2a5adc0fd581259f9a2aadcf20f8fd566a26b" +
 			"5032ec38bbc5da98ee0c6f568b872a65a08abf251deb21bb4b56e5d8821e68aa",
 	},
-	testVector{
+	{
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"0000000000000000",
 		12,
@@ -36,7 +36,7 @@ var testVectors = []testVector{
 			"0bd58841203e74fe86fc71338ce0173dc628ebb719bdcbcc151585214cc089b4" +
 			"42258dcda14cf111c602b8971b8cc843e91e46ca905151c02744a6b017e69316",
 	},
-	testVector{
+	{
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"0000000000000000",
 		20,
@@ -45,7 +45,7 @@ var testVectors = []testVector{
 			"9f07e7be5551387a98ba977c732d080dcb0f29a048e3656912c6533e32ee7aed" +
 			"29b721769ce64e43d57133b074d839d531ed1f28510afb45ace10a1f4b794d6f",
 	},
-	testVector{
+	{
 		"0100000000000000000000000000000000000000000000000000000000000000",
 		"0000000000000000",
 		8,
@@ -54,7 +54,7 @@ var testVectors = []testVector{
 			"b4355a7d93dd8867089ee643558b95754efa2bd1a8a1e2d75bcdb32015542638" +
 			"291941feb49965587c4fdfe219cf0ec132a6cd4dc067392e67982fe53278c0b4",
 	},
-	testVector{
+	{
 		"0100000000000000000000000000000000000000000000000000000000000000",
 		"0000000000000000",
 		12,
@@ -63,7 +63,7 @@ var testVectors = []testVector{
 			"0c7366c5cbc604240e665eb02a69372a7af979b26fbb78092ac7c4b88029a7c8" +
 			"54513bc217bbfc7d90432e308eba15afc65aeb48ef100d5601e6afba257117a9",
 	},
-	testVector{
+	{
 		"0100000000000000000000000000000000000000000000000000000000000000",
 		"0000000000000000",
 		20,
@@ -72,7 +72,7 @@ var testVectors = []testVector{
 			"10f656e6d1fd55053e50c4875c9930a33f6d0263bd14dfd6ab8c70521c19338b" +
 			"2308b95cf8d0bb7d202d2102780ea3528f1cb48560f76b20f382b942500fceac",
 	},
-	testVector{
+	{
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"0100000000000000",
 		8,
@@ -81,7 +81,7 @@ var testVectors = []testVector{
 			"470bdffbc488a8b7c701ebf4061d75c5969186497c95367809afa80bd843b040" +
 			"a79abc6e73a91757f1db73c8eacfa543b38f289d065ab2f3032d377b8c37fe46",
 	},
-	testVector{
+	{
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"0100000000000000",
 		12,
@@ -90,7 +90,7 @@ var testVectors = []testVector{
 			"559db4a7f222c442fe23b9a2596a88285122ee4f1363896ea77ca150912ac723" +
 			"bff04b026a2f807e03b29c02077d7b06fc1ab9827c13c8013a6d83bd3b52a26f",
 	},
-	testVector{
+	{
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"0100000000000000",
 		20,
@@ -99,7 +99,7 @@ var testVectors = []testVector{
 			"5305e5e44aff19b235936144675efbe4409eb7e8e5f1430f5f5836aeb49bb532" +
 			"8b017c4b9dc11f8a03863fa803dc71d5726b2b6b31aa32708afe5af1d6b69058",
 	},
-	testVector{
+	{
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		"ffffffffffffffff",
 		8,
@@ -108,7 +108,7 @@ var testVectors = []testVector{
 			"81d4933f8b322ac0cd762c27235ce2b31534e0244a9a2f1fd5e94498d47ff108" +
 			"790c009cf9e1a348032a7694cb28024cd96d3498361edb1785af752d187ab54b",
 	},
-	testVector{
+	{
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		"ffffffffffffffff",
 		12,
@@ -117,7 +117,7 @@ var testVectors = []testVector{
 			"5c9429b55ca3c1b55354559669a154aca46cd761c41ab8ace385363b95675f06" +
 			"8e18db5a673c11291bd4187892a9a3a33514f3712b26c13026103298ed76bc9a",
 	},
-	testVector{
+	{
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		"ffffffffffffffff",
 		20,
@@ -126,7 +126,7 @@ var testVectors = []testVector{
 			"5bac2acd86a836c5dc98c116c1217ec31d3a63a9451319f097f3b4d6dab07787" +
 			"19477d24d24b403a12241d7cca064f790f1d51ccaff6b1667d4bbca1958c4306",
 	},
-	testVector{
+	{
 		"5555555555555555555555555555555555555555555555555555555555555555",
 		"5555555555555555",
 		8,
@@ -135,7 +135,7 @@ var testVectors = []testVector{
 			"d48ff5a2513e497a5d54802d7484c4f1083944d8d0d14d6482ce09f7e5ebf20b" +
 			"29807d62c31874d02f5d3cc85381a745ecbc60525205e300a76961bfe51ac07c",
 	},
-	testVector{
+	{
 		"5555555555555555555555555555555555555555555555555555555555555555",
 		"5555555555555555",
 		12,
@@ -144,7 +144,7 @@ var testVectors = []testVector{
 			"140eff4aa495ac61289b6bc57de072419d09daa7a7243990daf348a8f2831e59" +
 			"7cf379b3b284f00bda27a4c68085374a8a5c38ded62d1141cae0bb838ddc2232",
 	},
-	testVector{
+	{
 		"5555555555555555555555555555555555555555555555555555555555555555",
 		"5555555555555555",
 		20,
@@ -153,7 +153,7 @@ var testVectors = []testVector{
 			"e0b8f676e644216f4d2a3422d7fa36c6c4931aca950e9da42788e6d0b6d1cd83" +
 			"8ef652e97b145b14871eae6c6804c7004db5ac2fce4c68c726d004b10fcaba86",
 	},
-	testVector{
+	{
 		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		"aaaaaaaaaaaaaaaa",
 		8,
@@ -162,7 +162,7 @@ var testVectors = []testVector{
 			"f8d144f560c8c0ea36880d3b77874c9a9103d147f6ded386284801a4ee158e5e" +
 			"a4f9c093fc55fd344c33349dc5b699e21dc83b4296f92ee3ecabf3d51f95fe3f",
 	},
-	testVector{
+	{
 		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		"aaaaaaaaaaaaaaaa",
 		12,
@@ -171,7 +171,7 @@ var testVectors = []testVector{
 			"6dd6ee9b5e1e2e676b1c9e2b82c2e96c1648437bff2f0126b74e8ce0a9b06d17" +
 			"20ac0b6f09086f28bc201587f0535ed9385270d08b4a9382f18f82dbde18210e",
 	},
-	testVector{
+	{
 		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		"aaaaaaaaaaaaaaaa",
 		20,
@@ -180,7 +180,7 @@ var testVectors = []testVector{
 			"72184489440545d021d97ef6b693dfe5b2c132d47e6f041c9063651f96b623e6" +
 			"2a11999a23b6f7c461b2153026ad5e866a2e597ed07b8401dec63a0934c6b2a9",
 	},
-	testVector{
+	{
 		"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100",
 		"0f1e2d3c4b5a6978",
 		8,
@@ -189,7 +189,7 @@ var testVectors = []testVector{
 			"c5dd30bf55612fab9bdd118920c19816470c7f5dcd42325dbbed8c57a56281c1" +
 			"44cb0f03e81b3004624e0650a1ce5afaf9a7cd8163f6dbd72602257dd96e471e",
 	},
-	testVector{
+	{
 		"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100",
 		"0f1e2d3c4b5a6978",
 		12,
@@ -198,7 +198,7 @@ var testVectors = []testVector{
 			"e32e50c4106f3b3da1ce7ccb1e7140b153493c0f3ad9a9bcff077ec4596f1d0f" +
 			"29bf9cbaa502820f732af5a93c49eee33d1c4f12af3b4297af91fe41ea9e94a2",
 	},
-	testVector{
+	{
 		"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100",
 		"0f1e2d3c4b5a6978",
 		20,
@@ -207,7 +207,7 @@ var testVectors = []testVector{
 			"fbfd29cf7bc1d279eddf25dd316bb8843d6edee0bd1ef121d12fa17cbc2c574c" +
 			"ccab5e275167b08bd686f8a09df87ec3ffb35361b94ebfa13fec0e4889d18da5",
 	},
-	testVector{
+	{
 		"c46ec1b18ce8a878725a37e780dfb7351f68ed2e194c79fbc6aebee1a667975d",
 		"1ada31d5cf688221",
 		8,
@@ -216,7 +216,7 @@ var testVectors = []testVector{
 			"16f2fda170cc18a4b58a2667ed962774af792a6e7f3c77992540711a7a136d7e" +
 			"8a2f8d3f93816709d45a3fa5f8ce72fde15be7b841acba3a2abd557228d9fe4f",
 	},
-	testVector{
+	{
 		"c46ec1b18ce8a878725a37e780dfb7351f68ed2e194c79fbc6aebee1a667975d",
 		"1ada31d5cf688221",
 		12,
@@ -225,7 +225,7 @@ var testVectors = []testVector{
 			"d94b116bc1ebdb329b9e4f620db695544a8e3d9b68473d0c975a46ad966ed631" +
 			"e42aff530ad5eac7d8047adfa1e5113c91f3e3b883f1d189ac1c8fe07ba5a42b",
 	},
-	testVector{
+	{
 		"c46ec1b18ce8a878725a37e780dfb7351f68ed2e194c79fbc6aebee1a667975d",
 		"1ada31d5cf688221",
 		20,

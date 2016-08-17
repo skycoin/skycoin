@@ -12,9 +12,9 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/protocol"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport"
+	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
+	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 	"gopkg.in/op/go-logging.v1"
 )
 
@@ -619,7 +619,7 @@ func (self *Node) refreshRoutes() {
 	localRoutes := self.localRoutesById
 	self.lock.Unlock()
 
-	for id, _ := range localRoutes {
+	for id := range localRoutes {
 		self.refreshRoute(id)
 	}
 }
@@ -727,7 +727,7 @@ func (self *Node) GetTransports() []transport.Transport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	ret := []transport.Transport{}
-	for transport, _ := range self.transports {
+	for transport := range self.transports {
 		ret = append(ret, transport)
 	}
 	return ret
@@ -737,7 +737,7 @@ func (self *Node) GetConnectedPeers() []cipher.PubKey {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	ret := []cipher.PubKey{}
-	for transport, _ := range self.transports {
+	for transport := range self.transports {
 		peers := transport.GetConnectedPeers()
 		ret = append(ret, peers...)
 	}
@@ -747,7 +747,7 @@ func (self *Node) GetConnectedPeers() []cipher.PubKey {
 func (self *Node) ConnectedToPeer(peer cipher.PubKey) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	for transport, _ := range self.transports {
+	for transport := range self.transports {
 		if transport.ConnectedToPeer(peer) {
 			return true
 		}
@@ -981,14 +981,14 @@ func (self *Node) fragmentMessage(fullContents []byte, toPeer cipher.PubKey, tra
 func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
 	// If unreliable, prefer unreliable transport
 	if !reliably {
-		for transport, _ := range self.transports {
+		for transport := range self.transports {
 			// TODO: Choose transport more intelligently
 			if transport.ConnectedToPeer(peerKey) && !transport.IsReliable() {
 				return transport
 			}
 		}
 	}
-	for transport, _ := range self.transports {
+	for transport := range self.transports {
 		// TODO: Choose transport more intelligently
 		if transport.ConnectedToPeer(peerKey) && ((!reliably) || transport.IsReliable()) {
 			return transport

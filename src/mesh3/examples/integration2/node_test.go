@@ -1,4 +1,4 @@
-package integration2
+package main
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh3/node"
-	"github.com/skycoin/skycoin/src/mesh3/transport/reliable_udp"
-//	"github.com/skycoin/skycoin/src/mesh3/transport/udp"
+	"github.com/skycoin/skycoin/src/mesh3/transport/reliable"
+	"github.com/skycoin/skycoin/src/mesh3/transport/udp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +41,7 @@ type ToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable reliable_udp.ReliableTransportConfig
+	Reliable reliable.ReliableTransportConfig
 	Udp      udp.UDPConfig
 	Node     mesh.NodeConfig
 
@@ -51,8 +51,7 @@ type TestConfig struct {
 	MessagesToReceive []MessageToReceive
 }
 
-var configText1 string = 
-`{
+var configText1 string = `{
 	"Reliable": {
 		"MyPeerId": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"PhysicalReceivedChannelLength": 100,
@@ -106,8 +105,7 @@ var configText1 string =
 	]
 }`
 
-var configText2 string = 
-`{
+var configText2 string = `{
 	"Reliable": {
 		"MyPeerId": [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"PhysicalReceivedChannelLength": 100,
@@ -172,8 +170,8 @@ func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
 func createTestConfig2(port int) TestConfig {
 	testConfig := TestConfig{}
 	testConfig.Node = mesh.NewNodeConfig()
-	testConfig.Reliable = mesh.CreateReliable(testConfig.Node.PubKey)
-	testConfig.Udp = mesh.CreateUdp(port, "127.0.0.1")
+	testConfig.Reliable = reliable.CreateReliable(testConfig.Node.PubKey)
+	testConfig.Udp = udp.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
 }
@@ -188,7 +186,8 @@ func TestSendMessage(t *testing.T) {
 	peersToConnect1 := []ToConnect{}
 	peerToConnect1 := ToConnect{}
 	peerToConnect1.Peer = config2.Node.PubKey
-	peerToConnect1.Info = mesh.CreateUDPCommConfig("127.0.0.1:17000")
+	cryptoKey1 := []byte{1, 0, 0, 0, 1, 0, 44, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0}
+	peerToConnect1.Info = udp.CreateUDPCommConfig("127.0.0.1:17000", cryptoKey1[:])
 	peersToConnect1 = append(peersToConnect1, peerToConnect1)
 	config1.PeersToConnect = peersToConnect1
 
@@ -216,7 +215,8 @@ func TestSendMessage(t *testing.T) {
 	peersToConnect2 := []ToConnect{}
 	peerToConnect2 := ToConnect{}
 	peerToConnect2.Peer = config1.Node.PubKey
-	peerToConnect2.Info = mesh.CreateUDPCommConfig("127.0.0.1:15000")
+	cryptoKey2 := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 22, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
+	peerToConnect2.Info = udp.CreateUDPCommConfig("127.0.0.1:15000", cryptoKey2[:])
 	peersToConnect2 = append(peersToConnect2, peerToConnect2)
 	config2.PeersToConnect = peersToConnect2
 
@@ -276,10 +276,10 @@ func TestPubKey(t *testing.T) {
 
 // Validates that info to peer connect is equal.
 func TestUDPCommConfig(t *testing.T) {
-	//cryptoKey := []byte{1, 55, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	enc := mesh.CreateUDPCommConfig("127.0.0.1:16000")
+	cryptoKey := []byte{1, 55, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
+	enc := udp.CreateUDPCommConfig("127.0.0.1:16000", cryptoKey)
 
-	expected := "7b22446174616772616d4c656e677468223a3531322c2245787465726e616c486f737473223a5b7b224950223a223132372e302e302e31222c22506f7274223a31363030302c225a6f6e65223a22227d5d7d"
+	expected := "7b22446174616772616d4c656e677468223a3531322c2245787465726e616c486f737473223a5b7b224950223a223132372e302e302e31222c22506f7274223a31363030302c225a6f6e65223a22227d5d2c2243727970746f4b6579223a22415463414141454141414142414141414151414141414541414141424141414141514141414145414141413d227d"
 	assert.Equal(t, expected, enc, "Error in encoding")
 
 }
@@ -297,14 +297,14 @@ func TestNodeCase1(t *testing.T) {
 
 	// Initialize Node 2
 	config2 := createTestConfig(configText2)
-	//cryptoKey2 := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 22, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	config2.PeersToConnect[0].Info = mesh.CreateUDPCommConfig("127.0.0.1:15000")
+	cryptoKey2 := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 22, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
+	config2.PeersToConnect[0].Info = udp.CreateUDPCommConfig("127.0.0.1:15000", cryptoKey2)
 	go InitializeNode(2, config2, &wg, statusChannel)
 
 	// Initialize Node 1
 	config1 := createTestConfig(configText1)
-	//cryptoKey1 := []byte{1, 0, 0, 0, 1, 0, 44, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0}
-	config1.PeersToConnect[0].Info = mesh.CreateUDPCommConfig("127.0.0.1:17000")
+	cryptoKey1 := []byte{1, 0, 0, 0, 1, 0, 44, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0}
+	config1.PeersToConnect[0].Info = udp.CreateUDPCommConfig("127.0.0.1:17000", cryptoKey1)
 	go InitializeNode(1, config1, &wg, statusChannel)
 
 	timeout := 30 * time.Second

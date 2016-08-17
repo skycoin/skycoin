@@ -2,11 +2,8 @@ package mesh
 
 import (
 	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -1121,16 +1118,109 @@ func (self *Node) debug_countMessages() int {
 	return len(self.messagesBeingAssembled)
 }
 
+type RouteConfig struct {
+	Id    uuid.UUID
+	Peers []cipher.PubKey
+}
+
+type MessageToSend struct {
+	ThruRoute uuid.UUID
+	Contents  []byte
+	Reliably  bool
+}
+
+type MessageToReceive struct {
+	Contents      []byte
+	Reply         []byte
+	ReplyReliably bool
+}
+
+type ToConnect struct {
+	Peer cipher.PubKey
+	Info string
+}
+
+type TestConfig struct {
+	Reliable reliable.ReliableTransportConfig
+	Udp      udp.UDPConfig
+	Node     NodeConfig
+
+	PeersToConnect    []ToConnect
+	RoutesToEstablish []RouteConfig
+	MessagesToSend    []MessageToSend
+	MessagesToReceive []MessageToReceive
+}
+
+// Create TestConfig to the test using the functions created in the meshnet library.
+func CreateTestConfig(port int) *TestConfig {
+	testConfig := &TestConfig{}
+	testConfig.Node = NewNodeConfig()
+	testConfig.Reliable = reliable.CreateReliable(testConfig.Node.PubKey)
+	testConfig.Udp = udp.CreateUdp(port, "127.0.0.1")
+
+	return testConfig
+}
+
+func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig, cryptoKey []byte) {
+	peerToConnect := ToConnect{}
+	peerToConnect.Peer = config.Node.PubKey
+	peerToConnect.Info = udp.CreateUDPCommConfig(addr, cryptoKey)
+	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
+}
+
+func (self *TestConfig) AddRouteToEstablish(config *TestConfig) {
+	routeToEstablish := RouteConfig{}
+	routeToEstablish.Id = uuid.NewV4()
+	routeToEstablish.Peers = append(routeToEstablish.Peers, config.Node.PubKey)
+	self.RoutesToEstablish = append(self.RoutesToEstablish, routeToEstablish)
+}
+
+func (self *TestConfig) AddPeerToRoute(indexRoute int, config *TestConfig) {
+	self.RoutesToEstablish[indexRoute].Peers = append(self.RoutesToEstablish[indexRoute].Peers, config.Node.PubKey)
+}
+
+func (self *TestConfig) AddMessageToSend(thruRoute uuid.UUID, message string, reliably bool) {
+	messageToSend := MessageToSend{}
+	messageToSend.ThruRoute = thruRoute
+	messageToSend.Contents = []byte(message)
+	messageToSend.Reliably = reliably
+	self.MessagesToSend = append(self.MessagesToSend, messageToSend)
+}
+
+func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string, replyReliably bool) {
+	messageToReceive := MessageToReceive{}
+	messageToReceive.Contents = []byte(messageReceive)
+	messageToReceive.Reply = []byte(messageReply)
+	messageToReceive.ReplyReliably = replyReliably
+	self.MessagesToReceive = append(self.MessagesToReceive, messageToReceive)
+}
+
+func CreateNode(config TestConfig) *Node {
+	node, createNodeError := NewNode(config.Node)
+	if createNodeError != nil {
+		panic(createNodeError)
+	}
+
+	return node
+}
+
 // Create public key
 func createPubKey() cipher.PubKey {
 	b := cipher.RandByte(33)
 	return cipher.NewPubKey(b)
 }
 
+// Create ChaCha20Key
+func CreateChaCha20Key() cipher.SecKey {
+	b := cipher.RandByte(32)
+	return cipher.NewSecKey(b)
+}
+
 // Create new node config
 func NewNodeConfig() NodeConfig {
 	nodeConfig := NodeConfig{}
 	nodeConfig.PubKey = createPubKey()
+	//nodeConfig.ChaCha20Key = CreateChaCha20Key()
 	nodeConfig.MaximumForwardingDuration = 1 * time.Minute
 	nodeConfig.RefreshRouteDuration = 5 * time.Minute
 	nodeConfig.ExpireMessagesInterval = 5 * time.Minute
@@ -1141,42 +1231,41 @@ func NewNodeConfig() NodeConfig {
 	return nodeConfig
 }
 
-// Create Reliable config to the node.
-func CreateReliable(pubKey cipher.PubKey) reliable.ReliableTransportConfig {
-	reliable := reliable.ReliableTransportConfig{}
-	reliable.MyPeerId = pubKey
-	reliable.PhysicalReceivedChannelLength = 100
-	reliable.ExpireMessagesInterval = 5 * time.Minute
-	reliable.RememberMessageReceivedDuration = 1 * time.Minute
-	reliable.RetransmitDuration = 1 * time.Minute
+// Add transport to Node
+func (self *Node) AddTransportToNode(config TestConfig) {
+	udpTransport := udp.CreateNewUDPTransport(config.Udp)
 
-	return reliable
+	// Connect
+	for _, connectTo := range config.PeersToConnect {
+		connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
+		if connectError != nil {
+			panic(connectError)
+		}
+	}
+
+	// Reliable transport closes UDPTransport
+	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
+	//defer reliableTransport.Close()
+
+	self.AddTransport(reliableTransport)
 }
 
-// Create Udp config
-func CreateUdp(port int, externalA string) udp.UDPConfig {
-	udp := udp.UDPConfig{}
-	udp.SendChannelLength = uint32(100)
-	udp.DatagramLength = uint16(512)
-	udp.LocalAddress = ""
-	udp.NumListenPorts = uint16(1)
-	udp.ListenPortMin = uint16(port)
-	udp.ExternalAddress = externalA
-
-	return udp
-}
-
-// Create info for the peer's connection.
-func CreateUDPCommConfig(addr string) string {
-	config := udp.UDPCommConfig{}
-	config.DatagramLength = uint16(512)
-	externalHosts := []net.UDPAddr{}
-	address1, _ := net.ResolveUDPAddr("", addr)
-	externalHosts = append(externalHosts, *address1)
-	config.ExternalHosts = externalHosts
-
-	src, _ := json.Marshal(&config)
-	infoPeer := hex.EncodeToString(src)
-
-	return infoPeer
+// Add Routes to Node
+func (self *Node) AddRoutesToEstablish(config TestConfig) {
+	// Setup route
+	for _, routeConfig := range config.RoutesToEstablish {
+		if len(routeConfig.Peers) == 0 {
+			continue
+		}
+		addRouteErr := self.AddRoute((RouteId)(routeConfig.Id), routeConfig.Peers[0])
+		if addRouteErr != nil {
+			panic(addRouteErr)
+		}
+		for peer := 1; peer < len(routeConfig.Peers); peer++ {
+			extendErr := self.ExtendRoute((RouteId)(routeConfig.Id), routeConfig.Peers[peer], 5*time.Second)
+			if extendErr != nil {
+				panic(extendErr)
+			}
+		}
+	}
 }

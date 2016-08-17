@@ -8,7 +8,7 @@ import (
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/transport"
+	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 	"github.com/stretchr/testify/assert"
 )
 

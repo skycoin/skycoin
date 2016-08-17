@@ -1,4 +1,4 @@
-package reliable
+package protocol
 
 import (
 	"fmt"
@@ -6,12 +6,10 @@ import (
 	"reflect"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport"
+	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 )
 
 import (
@@ -291,4 +289,16 @@ func (self *ReliableTransport) debug_countMapItems() int {
 
 func (self *ReliableTransport) IsReliable() bool {
 	return true
+}
+
+// Create Reliable config to the node.
+func CreateReliable(pubKey cipher.PubKey) ReliableTransportConfig {
+	reliable := ReliableTransportConfig{}
+	reliable.MyPeerId = pubKey
+	reliable.PhysicalReceivedChannelLength = 100
+	reliable.ExpireMessagesInterval = 5 * time.Minute
+	reliable.RememberMessageReceivedDuration = 1 * time.Minute
+	reliable.RetransmitDuration = 1 * time.Minute
+
+	return reliable
 }

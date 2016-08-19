@@ -101,7 +101,7 @@ func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
 			stunClient.SetServerAddr(addr)
 
 			_, host, error := stunClient.Discover()
-			if error != nil {
+			if error != nil || host == nil {
 				fmt.Fprintf(os.Stderr, "STUN Error for Endpoint '%v': %v\n", addr, error)
 				continue
 			} else {
@@ -385,4 +385,42 @@ func (self *UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 
 func (self *UDPTransport) IsReliable() bool {
 	return false
+}
+
+// Create UDPTransport
+func CreateNewUDPTransport(configUdp UDPConfig) *UDPTransport {
+	udpTransport, createUDPError := NewUDPTransport(configUdp)
+	if createUDPError != nil {
+		panic(createUDPError)
+	}
+	return udpTransport
+}
+
+// Create Udp config
+func CreateUdp(port int, externalA string) UDPConfig {
+	udp := UDPConfig{}
+	udp.SendChannelLength = uint32(100)
+	udp.DatagramLength = uint16(512)
+	udp.LocalAddress = ""
+	udp.NumListenPorts = uint16(1)
+	udp.ListenPortMin = uint16(port)
+	udp.ExternalAddress = externalA
+
+	return udp
+}
+
+// Create info for the peer's connection.
+func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
+	config := UDPCommConfig{}
+	config.DatagramLength = uint16(512)
+	externalHosts := []net.UDPAddr{}
+	address1, _ := net.ResolveUDPAddr("", addr)
+	externalHosts = append(externalHosts, *address1)
+	config.ExternalHosts = externalHosts
+	config.CryptoKey = cryptoKey
+
+	src, _ := json.Marshal(&config)
+	infoPeer := hex.EncodeToString(src)
+
+	return infoPeer
 }

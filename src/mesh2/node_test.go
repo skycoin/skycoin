@@ -18,16 +18,6 @@ func sortPubKeys(pubKeys []cipher.PubKey) []cipher.PubKey {
 	return ret
 }
 
-/*
-PubKey                        cipher.PubKey
-	ChaCha20Key                   [32]byte
-	MaximumForwardingDuration     time.Duration
-	RefreshRouteDuration          time.Duration
-	ExpireMessagesInterval        time.Duration
-	ExpireRoutesInterval          time.Duration
-	TimeToAssembleMessage         time.Duration
-	TransportMessageChannelLength int
-*/
 func TestManageTransports(t *testing.T) {
 	transport_a := transport.NewStubTransport(t, 512)
 	transport_b := transport.NewStubTransport(t, 512)

@@ -414,7 +414,11 @@ func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
 	config := UDPCommConfig{}
 	config.DatagramLength = uint16(512)
 	externalHosts := []net.UDPAddr{}
-	address1, _ := net.ResolveUDPAddr("", addr)
+	address1, err := net.ResolveUDPAddr("", addr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error in ResolveADPAddr %v", err)
+		return ""
+	}
 	externalHosts = append(externalHosts, *address1)
 	config.ExternalHosts = externalHosts
 	config.CryptoKey = cryptoKey

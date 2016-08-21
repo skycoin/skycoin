@@ -1,4 +1,4 @@
-package mesh
+package transport
 
 import (
 	"github.com/tang0th/go-chacha20"
@@ -13,6 +13,10 @@ Move to file
 //TODO: doesnt need to exist as a struct, only needs function
 type ChaChaCrypto struct {
 	key [32]byte //key is not used
+}
+
+func (self *ChaChaCrypto) SetKey(key [32]byte) {
+	self.key = key
 }
 
 func (self *ChaChaCrypto) GetKey() []byte {

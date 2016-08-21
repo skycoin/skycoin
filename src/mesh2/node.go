@@ -13,12 +13,11 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
+	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 	"gopkg.in/op/go-logging.v1"
 )
-
-//"github.com/tang0th/go-chacha20"
 
 type NodeConfig struct {
 	PubKey                        cipher.PubKey
@@ -90,7 +89,7 @@ type Node struct {
 	outputMessagesReceived     chan MeshMessage
 	transportsMessagesReceived chan []byte
 	serializer                 *serialize.Serializer
-	myCrypto                   transport.TransportCrypto
+	//myCrypto                   transport.TransportCrypto
 
 	lock       *sync.Mutex
 	closeGroup *sync.WaitGroup
@@ -165,20 +164,20 @@ var logger = logging.MustGetLogger("node")
 
 func NewNode(config NodeConfig) (*Node, error) {
 	ret := &Node{
-		config,
-		nil, // received
-		make(chan []byte, config.TransportMessageChannelLength), // received
-		serialize.NewSerializer(),
-		&ChaChaCrypto{config.ChaCha20Key},
-		&sync.Mutex{}, // Lock
-		&sync.WaitGroup{},
-		make(chan bool, 10),
-		make(map[transport.Transport]bool),
-		make(map[messageId]*MessageUnderAssembly),
-		make(map[RouteId]Route),
-		make(map[cipher.PubKey]RouteId),
-		make(map[RouteId]LocalRoute),
-		make(map[RouteId]chan bool),
+		config:                     config,
+		outputMessagesReceived:     nil,                                                     // received
+		transportsMessagesReceived: make(chan []byte, config.TransportMessageChannelLength), // received
+		serializer:                 serialize.NewSerializer(),
+		//myCrypto:                   &ChaChaCrypto{config.ChaCha20Key},
+		lock:                           &sync.Mutex{}, // Lock
+		closeGroup:                     &sync.WaitGroup{},
+		closing:                        make(chan bool, 10),
+		transports:                     make(map[transport.Transport]bool),
+		messagesBeingAssembled:         make(map[messageId]*MessageUnderAssembly),
+		routesById:                     make(map[RouteId]Route),
+		localRoutesByTerminatingPeer:   make(map[cipher.PubKey]RouteId),
+		localRoutesById:                make(map[RouteId]LocalRoute),
+		routeExtensionsAwaitingConfirm: make(map[RouteId]chan bool),
 	}
 	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, UserMessage{})
 	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, SetRouteMessage{})
@@ -709,12 +708,14 @@ func (self *Node) GetConfig() NodeConfig {
 }
 
 // Node takes ownership of the transport, and will call Close() when it is closed
-func (self *Node) AddTransport(transport transport.Transport) {
+func (self *Node) AddTransport(transportNode transport.Transport, chaChaKey [32]byte) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	transport.SetCrypto(self.myCrypto)
-	transport.SetReceiveChannel(self.transportsMessagesReceived)
-	self.transports[transport] = true
+	chaCha20Key := &transport.ChaChaCrypto{}
+	chaCha20Key.SetKey(chaChaKey)
+	transportNode.SetCrypto(chaCha20Key)
+	transportNode.SetReceiveChannel(self.transportsMessagesReceived)
+	self.transports[transportNode] = true
 }
 
 func (self *Node) RemoveTransport(transport transport.Transport) {
@@ -1143,8 +1144,8 @@ type ToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable protocol.ReliableTransportConfig
-	Udp      protocol.UDPConfig
+	Reliable reliable.ReliableTransportConfig
+	Udp      udp.UDPConfig
 	Node     NodeConfig
 
 	PeersToConnect    []ToConnect
@@ -1153,20 +1154,10 @@ type TestConfig struct {
 	MessagesToReceive []MessageToReceive
 }
 
-// Create TestConfig to the test using the functions created in the meshnet library.
-func CreateTestConfig(port int) *TestConfig {
-	testConfig := &TestConfig{}
-	testConfig.Node = NewNodeConfig()
-	testConfig.Reliable = protocol.CreateReliable(testConfig.Node.PubKey)
-	testConfig.Udp = protocol.CreateUdp(port, "127.0.0.1")
-
-	return testConfig
-}
-
 func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 	peerToConnect := ToConnect{}
 	peerToConnect.Peer = config.Node.PubKey
-	peerToConnect.Info = protocol.CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
+	peerToConnect.Info = udp.CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
 	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
 }
 
@@ -1197,45 +1188,9 @@ func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string,
 	self.MessagesToReceive = append(self.MessagesToReceive, messageToReceive)
 }
 
-func CreateNode(config TestConfig) *Node {
-	node, createNodeError := NewNode(config.Node)
-	if createNodeError != nil {
-		panic(createNodeError)
-	}
-
-	return node
-}
-
-// Create public key
-func createPubKey() cipher.PubKey {
-	b := cipher.RandByte(33)
-	return cipher.NewPubKey(b)
-}
-
-// Create ChaCha20Key
-func createChaCha20Key() cipher.SecKey {
-	b := cipher.RandByte(32)
-	return cipher.NewSecKey(b)
-}
-
-// Create new node config
-func NewNodeConfig() NodeConfig {
-	nodeConfig := NodeConfig{}
-	nodeConfig.PubKey = createPubKey()
-	nodeConfig.ChaCha20Key = createChaCha20Key()
-	nodeConfig.MaximumForwardingDuration = 1 * time.Minute
-	nodeConfig.RefreshRouteDuration = 5 * time.Minute
-	nodeConfig.ExpireMessagesInterval = 5 * time.Minute
-	nodeConfig.ExpireRoutesInterval = 5 * time.Minute
-	nodeConfig.TimeToAssembleMessage = 5 * time.Minute
-	nodeConfig.TransportMessageChannelLength = 100
-
-	return nodeConfig
-}
-
 // Add transport to Node
 func (self *Node) AddTransportToNode(config TestConfig) {
-	udpTransport := protocol.CreateNewUDPTransport(config.Udp)
+	udpTransport := udp.CreateNewUDPTransport(config.Udp)
 
 	// Connect
 	for _, connectTo := range config.PeersToConnect {
@@ -1246,10 +1201,10 @@ func (self *Node) AddTransportToNode(config TestConfig) {
 	}
 
 	// Reliable transport closes UDPTransport
-	reliableTransport := protocol.NewReliableTransport(udpTransport, config.Reliable)
+	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
 	//defer reliableTransport.Close()
 
-	self.AddTransport(reliableTransport)
+	self.AddTransport(reliableTransport, config.Node.ChaCha20Key)
 }
 
 // Add Routes to Node

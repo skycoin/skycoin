@@ -10,7 +10,7 @@ import (
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/transport/serialize"
+	"github.com/skycoin/skycoin/src/mesh2/serialize"
 	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 )
 
@@ -67,17 +67,17 @@ type ReliableTransport struct {
 
 func NewReliableTransport(physicalTransport transport.Transport, config ReliableTransportConfig) *ReliableTransport {
 	ret := &ReliableTransport{
-		config,
-		physicalTransport,
-		nil,
-		serialize.NewSerializer(),
-		&sync.Mutex{},
-		make(map[reliableId]messageSentState),
-		make(map[reliableId]time.Time),
-		1000,
-		make(chan []byte, config.PhysicalReceivedChannelLength),
-		make(chan bool, 10),
-		&sync.WaitGroup{},
+		config:            config,
+		physicalTransport: physicalTransport,
+		outputChannel:     nil,
+		serializer:        serialize.NewSerializer(),
+		lock:              &sync.Mutex{},
+		messagesSent:      make(map[reliableId]messageSentState),
+		messagesReceived:  make(map[reliableId]time.Time),
+		nextMsgId:         1000,
+		physicalReceived:  make(chan []byte, config.PhysicalReceivedChannelLength),
+		closing:           make(chan bool, 10),
+		closeWait:         &sync.WaitGroup{},
 	}
 
 	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, ReliableSend{})
@@ -291,4 +291,16 @@ func (self *ReliableTransport) debug_countMapItems() int {
 
 func (self *ReliableTransport) IsReliable() bool {
 	return true
+}
+
+// Create Reliable config to the node.
+func CreateReliable(pubKey cipher.PubKey) ReliableTransportConfig {
+	reliable := ReliableTransportConfig{}
+	reliable.MyPeerId = pubKey
+	reliable.PhysicalReceivedChannelLength = 100
+	reliable.ExpireMessagesInterval = 5 * time.Minute
+	reliable.RememberMessageReceivedDuration = 1 * time.Minute
+	reliable.RetransmitDuration = 1 * time.Minute
+
+	return reliable
 }

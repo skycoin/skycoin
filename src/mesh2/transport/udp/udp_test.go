@@ -7,7 +7,7 @@ import (
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/transport"
+	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,8 +54,9 @@ func TestBindSTUNPorts(t *testing.T) {
 	}
 	transport, error := NewUDPTransport(config)
 	assert.Nil(t, error)
-	assert.NotNil(t, transport)
-	defer transport.Close()
+	if assert.NotNil(t, transport) {
+		defer transport.Close()
+	}
 }
 
 func SetupAB(encrypt bool, t *testing.T) (

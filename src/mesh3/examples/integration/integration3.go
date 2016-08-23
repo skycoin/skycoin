@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	mesh "github.com/skycoin/skycoin/src/mesh3/node"
+	"github.com/skycoin/skycoin/src/mesh2"
 )
 
 func main() {
@@ -21,14 +21,12 @@ func main() {
 	// Setup for Node 2
 	config2 := mesh.CreateTestConfig(17000)
 
-	cryptoKey1 := []byte{1, 0, 0, 0, 1, 0, 44, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0}
-	config1.AddPeerToConnect("127.0.0.1:17000", config2, cryptoKey1)
+	config1.AddPeerToConnect("127.0.0.1:17000", config2)
 	config1.AddRouteToEstablish(config2)
 	config1.AddMessageToSend(config1.RoutesToEstablish[0].Id, "Message 1", true)
 	config1.AddMessageToReceive("Message 2", "", true)
 
-	cryptoKey2 := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 22, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	config2.AddPeerToConnect("127.0.0.1:15000", config1, cryptoKey2)
+	config2.AddPeerToConnect("127.0.0.1:15000", config1)
 	config2.AddMessageToReceive("Message 1", "Message 2", true)
 
 	go sendMessage(2, *config2, &wg, statusChannel)

@@ -14,7 +14,6 @@ github.com/mitchellh/iochan 87b45ffd0e9581375c491fef3d32130bb15c5bd7
 github.com/nictuku/dht 9d85e542fe898ec8347bbe264fac4a3f5d4030cd
 github.com/nictuku/nettools 8867a2107ad3a0998e2d36c67ed2115d9a399df8
 github.com/satori/go.uuid 0aa62d5ddceb50dbcb909d790b5345affd3669b6
-github.com/skycoin/encoder 4971121b99f5bc8d3215af64a2c1acd3929e889b
 github.com/songgao/water f87d2289c2a9fd8877962d632757e87908da6fd0
 github.com/stretchr/testify 6fe211e493929a8aac0469b93f28b1d0688a9a3a
 github.com/tang0th/go-chacha20 06dbc316d77c2f3bb351d78881486a164125f54b

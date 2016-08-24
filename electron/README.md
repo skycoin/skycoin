@@ -35,6 +35,14 @@ node -v
 npm -v
 ```
 
+Install gulp
+-----
+
+```
+npm rm --global gulp
+npm install --global gulp-cli
+```
+
 Setup
 -----
 

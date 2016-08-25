@@ -15,9 +15,23 @@ import (
 )
 
 type NodeManager struct {
-	ConfigList []*mesh.TestConfig
+	ConfigList map[cipher.PubKey]*mesh.TestConfig
 	Port       int
-	NodesList  []*mesh.Node
+	NodesList  map[cipher.PubKey]*mesh.Node
+	PubKeyList []cipher.PubKey
+	Routes     map[RouteKey]Route
+}
+
+type RouteKey struct {
+	SourceNode cipher.PubKey
+	TargetNode cipher.PubKey
+}
+
+type Route struct {
+	SourceNode        cipher.PubKey
+	TargetNode        cipher.PubKey
+	RoutesToEstablish []cipher.PubKey
+	Weight            int
 }
 
 // Create TestConfig to the test using the functions created in the meshnet library.
@@ -68,8 +82,8 @@ func NewNodeConfig() mesh.NodeConfig {
 
 // Create node list
 func (self *NodeManager) CreateNodeConfigList(n int) {
-	self.ConfigList = []*mesh.TestConfig{}
-	self.NodesList = []*mesh.Node{}
+	self.ConfigList = make(map[cipher.PubKey]*mesh.TestConfig)
+	self.NodesList = make(map[cipher.PubKey]*mesh.Node)
 	self.Port = 10000
 	for a := 1; a <= n; a++ {
 		self.AddNode()
@@ -79,14 +93,15 @@ func (self *NodeManager) CreateNodeConfigList(n int) {
 // Add Node to Nodes List
 func (self *NodeManager) AddNode() int {
 	if len(self.ConfigList) == 0 {
-		self.ConfigList = []*mesh.TestConfig{}
-		self.NodesList = []*mesh.Node{}
+		self.ConfigList = make(map[cipher.PubKey]*mesh.TestConfig)
+		self.NodesList = make(map[cipher.PubKey]*mesh.Node)
 	}
 	config := CreateTestConfig(self.Port)
-	self.ConfigList = append(self.ConfigList, config)
+	self.ConfigList[config.Node.PubKey] = config
 	self.Port++
 	node := CreateNode(*config)
-	self.NodesList = append(self.NodesList, node)
+	self.NodesList[config.Node.PubKey] = node
+	self.PubKeyList = append(self.PubKeyList, config.Node.PubKey)
 	index := len(self.NodesList) - 1
 	return index
 }
@@ -98,7 +113,7 @@ func (self *NodeManager) ConnectNodes() {
 	var lenght int = len(self.ConfigList)
 
 	if lenght > 1 {
-		for index1, config1 := range self.ConfigList {
+		for index1, pubKey1 := range self.PubKeyList {
 
 			if index1 == 0 {
 				index2 = 1
@@ -111,14 +126,17 @@ func (self *NodeManager) ConnectNodes() {
 					index3 = index1 + 1
 				}
 			}
-			config2 := self.ConfigList[index2]
+			pubKey2 := self.PubKeyList[index2]
+			config1 := self.ConfigList[pubKey1]
+			config2 := self.ConfigList[pubKey2]
 			ConnectNodeToNode(config1, config2)
 
 			if index3 > 0 {
-				config3 := self.ConfigList[index3]
+				pubKey3 := self.PubKeyList[index3]
+				config3 := self.ConfigList[pubKey3]
 				ConnectNodeToNode(config1, config3)
 			}
-			self.NodesList[index1].AddTransportToNode(*config1)
+			self.NodesList[pubKey1].AddTransportToNode(*config1)
 		}
 	}
 }
@@ -161,12 +179,61 @@ func (self *NodeManager) ConnectNodeRandomly(index1 int) int {
 			break
 		} else if index2 != index1 {
 			fmt.Fprintf(os.Stdout, "Connect node %v to node %v and vice versa.\n", index1, index2)
-			config1 := self.ConfigList[index1]
-			config2 := self.ConfigList[index2]
+			pubKey1 := self.PubKeyList[index1]
+			config1 := self.ConfigList[pubKey1]
+			pubKey2 := self.PubKeyList[index2]
+			config2 := self.ConfigList[pubKey2]
 			ConnectNodeToNode(config1, config2)
 			ConnectNodeToNode(config2, config1)
 			break
 		}
 	}
 	return index2
+}
+
+// Create routes from a node
+func (self *NodeManager) BuildRoutes() {
+	self.Routes = make(map[RouteKey]Route)
+	for _, pubKey := range self.PubKeyList {
+		self.FindRoute(pubKey)
+	}
+}
+
+// Find routes from the connections from a node
+func (self *NodeManager) FindRoute(pubKey1 cipher.PubKey) {
+	config1 := self.ConfigList[pubKey1]
+	for _, v := range config1.PeersToConnect {
+		pubKey2 := v.Peer
+		route := Route{}
+		route.SourceNode = pubKey1
+		route.TargetNode = pubKey2
+		route.Weight = 1
+		route.RoutesToEstablish = append(route.RoutesToEstablish, pubKey2)
+
+		routeKey := RouteKey{SourceNode: pubKey1, TargetNode: pubKey2}
+		self.Routes[routeKey] = route
+		self.FindIndirectRoutes(route)
+	}
+}
+
+// Find indirect routes from a route
+func (self *NodeManager) FindIndirectRoutes(route Route) {
+	config1 := self.ConfigList[route.TargetNode]
+	for _, v := range config1.PeersToConnect {
+		pubKey2 := v.Peer
+		route2 := Route{}
+		route2.SourceNode = route.SourceNode
+		route2.TargetNode = pubKey2
+		route2.RoutesToEstablish = append(route2.RoutesToEstablish, route.RoutesToEstablish...)
+		route2.RoutesToEstablish = append(route2.RoutesToEstablish, pubKey2)
+		route2.Weight = route.Weight + 1
+
+		routeKey := RouteKey{SourceNode: route.SourceNode, TargetNode: pubKey2}
+		if _, ok := self.Routes[routeKey]; !ok {
+
+			self.Routes[routeKey] = route
+			self.Routes[routeKey] = route
+			self.FindIndirectRoutes(route)
+		}
+	}
 }

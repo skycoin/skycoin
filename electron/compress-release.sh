@@ -15,7 +15,7 @@ pushd "$ELN_OUTPUT" >/dev/null
 
 # OS X
 pushd "darwin-x64" >/dev/null
-OSX_ZIP="Skycoin-$SKY_VERSION.zip"
+OSX_ZIP="skycoin-$SKY_VERSION-osx-darwin-x64.zip"
 if [ -e "$OSX_ZIP" ]; then
     echo "Removing old $OSX_ZIP"
     rm "$OSX_ZIP"

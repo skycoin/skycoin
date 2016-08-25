@@ -11,7 +11,7 @@ import(
 import(
     "github.com/skycoin/skycoin/src/mesh"
     "github.com/satori/go.uuid"
-    "github.com/skycoin/encoder"
+    "github.com/skycoin/skycoin/src/cipher/encoder"
     "github.com/kardianos/osext"
     )
 

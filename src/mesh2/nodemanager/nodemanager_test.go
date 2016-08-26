@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	mesh "github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2/domain"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,7 +98,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, node *mesh.Node, wg *sync
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
 		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((mesh.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}

@@ -50,7 +50,7 @@ if [ -e "$LNX64_ZIP" ]; then
 fi
 echo "Zipping $LNX64_ZIP"
 mv "linux-x64" "$LNX64_PRE"
-tar czf "$LNX64_ZIP" "$LNX64_PRE"
+tar czf "$LNX64_ZIP" --owner=0 --group=0 "$LNX64_PRE"
 mv "$LNX64_PRE" "linux-x64"
 
 popd >/dev/null

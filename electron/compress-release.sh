@@ -21,7 +21,9 @@ if [ -e "$OSX_ZIP" ]; then
     rm "$OSX_ZIP"
 fi
 echo "Zipping $OSX_ZIP"
-zip -r --quiet "$OSX_ZIP" "Skycoin.app"
+# -y preserves symlinks,
+# so that the massive .framework library isn't duplicated
+zip -r -y --quiet "$OSX_ZIP" "Skycoin.app"
 mv "$OSX_ZIP" "../$OSX_ZIP"
 popd >/dev/null
 

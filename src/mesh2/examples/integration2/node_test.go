@@ -13,6 +13,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2/domain"
 	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
@@ -359,12 +360,12 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 		if len(routeConfig.Peers) == 0 {
 			continue
 		}
-		addRouteErr := node.AddRoute((mesh.RouteId)(routeConfig.Id), routeConfig.Peers[0])
+		addRouteErr := node.AddRoute((domain.RouteId)(routeConfig.Id), routeConfig.Peers[0])
 		if addRouteErr != nil {
 			panic(addRouteErr)
 		}
 		for peer := 1; peer < len(routeConfig.Peers); peer++ {
-			extendErr := node.ExtendRoute((mesh.RouteId)(routeConfig.Id), routeConfig.Peers[peer], 5*time.Second)
+			extendErr := node.ExtendRoute((domain.RouteId)(routeConfig.Id), routeConfig.Peers[peer], 5*time.Second)
 			if extendErr != nil {
 				panic(extendErr)
 			}
@@ -374,7 +375,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
 		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((mesh.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}

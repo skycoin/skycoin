@@ -4,10 +4,9 @@ import (
 	"sort"
 	"testing"
 	"time"
-)
 
-import (
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/mesh2/domain"
 	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 	"github.com/stretchr/testify/assert"
 )
@@ -199,7 +198,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 
 	terminating_id := nodes[nPeers-1].GetConfig().PubKey
 
-	addedRouteId := RouteId{}
+	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 22
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
 
@@ -351,7 +350,7 @@ func TestSendThruRoute(t *testing.T) {
 	received := make(chan MeshMessage, 10)
 	nodes[1].SetReceiveChannel(received)
 	contents := []byte{1, 44, 2, 22, 11, 22}
-	addedRouteId := RouteId{}
+	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 55
 	addedRouteId[1] = 4
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
@@ -381,7 +380,7 @@ func TestRouteExpiry(t *testing.T) {
 			node.Close()
 		}
 	}()
-	addedRouteId := RouteId{}
+	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 55
 	addedRouteId[1] = 4
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
@@ -436,7 +435,7 @@ func TestDeleteRoute(t *testing.T) {
 			node.Close()
 		}
 	}()
-	addedRouteId := RouteId{}
+	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 55
 	addedRouteId[1] = 4
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
@@ -462,7 +461,7 @@ func TestMessageExpiry(t *testing.T) {
 			node.Close()
 		}
 	}()
-	addedRouteId := RouteId{}
+	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 66
 
 	contents := []byte{}
@@ -499,7 +498,7 @@ func TestLongRouteUnreliable(t *testing.T) {
 	}()
 	received := make(chan MeshMessage, 10)
 	nodes[2].SetReceiveChannel(received)
-	addedRouteId := RouteId{}
+	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 77
 	assert.Nil(t, nodes[0].AddRoute(addedRouteId, nodes[1].GetConfig().PubKey))
 	assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[2].GetConfig().PubKey, time.Second))

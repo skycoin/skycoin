@@ -175,7 +175,7 @@ func TestRandomNumber(t *testing.T) {
 }
 
 // Connect two nodes and send one message between them with success
-func _TestConnectTwoNodesSuccess(t *testing.T) {
+func TestConnectTwoNodesSuccess(t *testing.T) {
 	var index1, index2 int
 
 	nodeManager := &NodeManager{Port: 2100}
@@ -246,7 +246,7 @@ func _TestConnectTwoNodesSuccess(t *testing.T) {
 }
 
 // Connect two nodes and send one message between them with fail
-func _TestConnectTwoNodesFail(t *testing.T) {
+func TestConnectTwoNodesFail(t *testing.T) {
 	var index1, index2 int
 
 	nodeManager := &NodeManager{Port: 3100}
@@ -306,7 +306,7 @@ func _TestConnectTwoNodesFail(t *testing.T) {
 }
 
 // Connect two Nodes (Node A - Node B) through one route with various nodes.
-func TestBuildRouteWithSuccess(t *testing.T) {
+func _TestBuildRouteWithSuccess(t *testing.T) {
 	nodeManager := &NodeManager{Port: 3100}
 	// Connect 200 nodes randomly
 	for a := 1; a <= 20; a++ {
@@ -393,7 +393,7 @@ func FindRoute(config *mesh.TestConfig, pubKey cipher.PubKey, routeList *[]ciphe
 func TestBuildRoutes(t *testing.T) {
 	nodeManager := &NodeManager{Port: 3100}
 	// Connect 200 nodes randomly
-	for a := 1; a <= 200; a++ {
+	for a := 1; a <= 10; a++ {
 		nodeManager.ConnectNodeToNetwork()
 	}
 

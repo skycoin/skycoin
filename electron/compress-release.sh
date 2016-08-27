@@ -15,13 +15,15 @@ pushd "$ELN_OUTPUT" >/dev/null
 
 # OS X
 pushd "darwin-x64" >/dev/null
-OSX_ZIP="Skycoin-$SKY_VERSION.zip"
+OSX_ZIP="skycoin-$SKY_VERSION-osx-darwin-x64.zip"
 if [ -e "$OSX_ZIP" ]; then
     echo "Removing old $OSX_ZIP"
     rm "$OSX_ZIP"
 fi
 echo "Zipping $OSX_ZIP"
-zip -r --quiet "$OSX_ZIP" "Skycoin.app"
+# -y preserves symlinks,
+# so that the massive .framework library isn't duplicated
+zip -r -y --quiet "$OSX_ZIP" "Skycoin.app"
 mv "$OSX_ZIP" "../$OSX_ZIP"
 popd >/dev/null
 
@@ -48,7 +50,7 @@ if [ -e "$LNX64_ZIP" ]; then
 fi
 echo "Zipping $LNX64_ZIP"
 mv "linux-x64" "$LNX64_PRE"
-tar czf "$LNX64_ZIP" "$LNX64_PRE"
+tar czf "$LNX64_ZIP" --owner=0 --group=0 "$LNX64_PRE"
 mv "$LNX64_PRE" "linux-x64"
 
 popd >/dev/null

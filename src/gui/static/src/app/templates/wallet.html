@@ -40,28 +40,30 @@
         </ul>
         <div class="tab-content">
             <div [class.active]="displayMode === displayModeEnum.first"  class="tab-pane ng-scope active">
-                <table id="overview-wallet" class="outline" *ngFor="#wallet of wallets">
-                    <tr class="dark-row">
-                        <td><div id="overview-wallet-title">Wallet: {{wallet.meta.filename}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
-                    </tr>
-                    <tr>
-                        <td><div id="overview-wallet-balance">Address: </div></td>
-                        <td>
-                            <div *ngFor="#entry of wallet.entries">{{entry.address}}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><div id="overview-wallet-address">Balance Confirmed: </div></td>
-                        <td>{{wallet.balance}} SKY</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <a href="#" (click)="showQR(wallet)"><i class="fa fa-qrcode"></i> QR Code</a>
-                            <a (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i> Send </a>
-                            <a href="#" (click)="editWallet(wallet)"><i class="fa fa-pencil"></i> Edit</a>
-                        </td>
-                    </tr>
-                </table>
+                <div style="padding:0 10px">
+                  <table id="overview-wallet" class="outline" *ngFor="#wallet of wallets">
+                      <tr class="dark-row">
+                          <td><div id="overview-wallet-title">Wallet: {{wallet.meta.filename}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
+                      </tr>
+                      <tr>
+                          <td><div id="overview-wallet-balance">Address: </div></td>
+                          <td>
+                              <div *ngFor="#entry of wallet.entries">{{entry.address}}</div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td><div id="overview-wallet-address">Balance Confirmed: </div></td>
+                          <td>{{wallet.balance}} SKY</td>
+                      </tr>
+                      <tr>
+                          <td colspan="2">
+                              <a href="#" (click)="showQR(wallet)"><i class="fa fa-qrcode"></i> QR Code</a>
+                              <a (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i> Send </a>
+                              <a href="#" (click)="editWallet(wallet)"><i class="fa fa-pencil"></i> Edit</a>
+                          </td>
+                      </tr>
+                  </table>
+                </div>
                 <div class="outline ng-scope">
                     <!-- ngRepeat: wallet in wallets -->
                     <div class="wallet-buttons">

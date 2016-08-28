@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/domain"
 	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 )

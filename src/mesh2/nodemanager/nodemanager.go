@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	mesh "github.com/skycoin/skycoin/src/mesh2"
+	mesh "github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 )

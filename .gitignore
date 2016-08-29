@@ -61,7 +61,7 @@ build
 release
 .bin
 
-.skycoin:w
+.skycoin
 
 *.prof
 *.out

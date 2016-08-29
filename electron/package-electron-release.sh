@@ -13,7 +13,7 @@ OSX64="${ELN_OUTPUT}/darwin-x64"
 WIN64="${ELN_OUTPUT}/win32-x64"
 LNX64="${ELN_OUTPUT}/linux-x64"
 
-OSX64_RES="${OSX64}/Skycoin.app/Contents/Resources/app"
+OSX64_RES="${OSX64}/${OSX64_APP}/Contents/Resources/app"
 WIN64_RES="${WIN64}/resources/app"
 LNX64_RES="${LNX64}/resources/app"
 
@@ -21,11 +21,9 @@ OSX64_SRC="${OSX64_RES}/src"
 WIN64_SRC="${WIN64}/src"
 LNX64_SRC="${LNX64}/src"
 
-echo "Capitalizing Skycoin.app"
-
 # Capitalize OS X .app for convention
 if [ -e "${OSX64}/skycoin.app" ]; then
-    mv "${OSX64}/skycoin.app" "${OSX64}/Skycoin.app"
+    mv "${OSX64}/skycoin.app" "${OSX64}/${OSX64_APP}"
 fi
 
 echo "Copying skycoin binaries"
@@ -46,24 +44,4 @@ cp -R "$GUI_DIST_DIR" "$LNX64_RES"
 # tar it with filters, move it, then untar in order to do this
 echo "Copying source snapshot"
 
-SRC_TAR="src-snapshot.tar"
-tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
-    --exclude=.DS_Store --exclude=node_modules --exclude=_deprecated \
-    --exclude=.skycoin --exclude=.gitignore --exclude=.git ../*
-
-function copy_source {
-    mkdir -p "$1"
-    cp "${SRC_TAR}" "$1"
-    pushd "$1"
-    tar xvf "${SRC_TAR}"
-    rm "${SRC_TAR}"
-    popd >/dev/null
-}
-
-copy_source "${OSX64_SRC}"
-copy_source "${WIN64_SRC}"
-copy_source "${LNX64_SRC}"
-
-rm "${SRC_TAR}"
-
-popd >/dev/null
+./package-source.sh "${OSX64_SRC}" "${WIN64_SRC}" "${LNX64_SRC}"

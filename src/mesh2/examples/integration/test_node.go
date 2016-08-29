@@ -16,7 +16,7 @@ import (
 
 import (
 	"github.com/satori/go.uuid"
-	"github.com/skycoin/skycoin/src/mesh2"
+	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 )

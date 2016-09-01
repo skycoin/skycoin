@@ -35,7 +35,7 @@ func main() {
 
 	go sendMessage(1, *config1, &wg, statusChannel)
 
-	timeout := 30 * time.Second
+	timeout := 15 * time.Second
 	for i := 1; i <= 2; i++ {
 		select {
 		case status, ok := <-statusChannel:
@@ -85,7 +85,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 
 	// Wait for messages to pass thru
 	recvMap := make(map[string]mesh.ReplyTo)
-	for timeEnd := time.Now().Add(5 * time.Second); time.Now().Before(timeEnd); {
+	for timeEnd := time.Now().Add(1 * time.Second); time.Now().Before(timeEnd); {
 
 		if len(received) > 0 {
 			fmt.Fprintf(os.Stdout, "Len Receive Channel %v in Node: %v \n", len(received), idConfig)
@@ -117,7 +117,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 		}
 	}
 	// Wait for messages to pass back
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	fmt.Fprintf(os.Stdout, "-- Finished test -- %v\n", time.Now())
 	if success {

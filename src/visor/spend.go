@@ -13,6 +13,7 @@ import (
 )
 
 // Deprecate dependency on wallet
+// DEPRECATED. CAN BE DELETED
 
 /*
 
@@ -79,6 +80,8 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 //DEPRECATE
 //deprecate dependency on wallet
 // Creates a Transaction spending coins and hours from our coins
+//MOVE SOMEWHERE ELSE
+//Move to wallet or move to ???
 func CreateSpendingTransaction(wlt wallet.Wallet,
 	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
 	headTime uint64, amt wallet.Balance,

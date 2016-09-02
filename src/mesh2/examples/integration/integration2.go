@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
-	mesh "github.com/skycoin/skycoin/src/mesh3/node"
+	"github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/domain"
+	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 )
 
 func main() {
@@ -17,25 +19,23 @@ func main() {
 	statusChannel := make(chan bool, 2)
 
 	// Setup for Node 1
-	config1 := mesh.CreateTestConfig(15000)
+	config1 := nodemanager.CreateTestConfig(15000)
 	// Setup for Node 2
-	config2 := mesh.CreateTestConfig(17000)
+	config2 := nodemanager.CreateTestConfig(17000)
 
-	cryptoKey1 := []byte{1, 0, 0, 0, 1, 0, 44, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0}
-	config1.AddPeerToConnect("127.0.0.1:17000", config2, cryptoKey1)
+	config1.AddPeerToConnect("127.0.0.1:17000", config2)
 	config1.AddRouteToEstablish(config2)
 	config1.AddMessageToSend(config1.RoutesToEstablish[0].Id, "Message 1", true)
 	config1.AddMessageToReceive("Message 2", "", true)
 
-	cryptoKey2 := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 22, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	config2.AddPeerToConnect("127.0.0.1:15000", config1, cryptoKey2)
+	config2.AddPeerToConnect("127.0.0.1:15000", config1)
 	config2.AddMessageToReceive("Message 1", "Message 2", true)
 
 	go sendMessage(2, *config2, &wg, statusChannel)
 
 	go sendMessage(1, *config1, &wg, statusChannel)
 
-	timeout := 30 * time.Second
+	timeout := 15 * time.Second
 	for i := 1; i <= 2; i++ {
 		select {
 		case status, ok := <-statusChannel:
@@ -62,7 +62,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
 	defer wg.Done()
 
-	node := mesh.CreateNode(config)
+	node := nodemanager.CreateNode(config)
 	node.AddTransportToNode(config)
 
 	defer node.Close()
@@ -72,7 +72,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
 		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((mesh.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}
@@ -85,7 +85,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 
 	// Wait for messages to pass thru
 	recvMap := make(map[string]mesh.ReplyTo)
-	for timeEnd := time.Now().Add(5 * time.Second); time.Now().Before(timeEnd); {
+	for timeEnd := time.Now().Add(1 * time.Second); time.Now().Before(timeEnd); {
 
 		if len(received) > 0 {
 			fmt.Fprintf(os.Stdout, "Len Receive Channel %v in Node: %v \n", len(received), idConfig)
@@ -117,7 +117,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 		}
 	}
 	// Wait for messages to pass back
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	fmt.Fprintf(os.Stdout, "-- Finished test -- %v\n", time.Now())
 	if success {

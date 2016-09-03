@@ -12,9 +12,9 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/domain"
-	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
+	"github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/nodemanager/lib_nodemanager"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 	"github.com/stretchr/testify/assert"
@@ -171,7 +171,7 @@ func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
 // Create TestConfig to the test using the functions created in the meshnet library.
 func createTestConfig2(port int) TestConfig {
 	testConfig := TestConfig{}
-	testConfig.Node = nodemanager.NewNodeConfig()
+	testConfig.Node = lib_nodemanager.NewNodeConfig()
 	testConfig.Reliable = reliable.CreateReliable(testConfig.Node.PubKey)
 	testConfig.Udp = udp.CreateUdp(port, "127.0.0.1")
 

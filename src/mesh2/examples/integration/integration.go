@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/domain"
-	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
+	"github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/nodemanager/lib_nodemanager"
 )
 
 func main() {
@@ -19,9 +19,9 @@ func main() {
 	statusChannel := make(chan bool, 2)
 
 	// Setup for Node 1
-	config1 := nodemanager.CreateTestConfig(15000)
+	config1 := lib_nodemanager.CreateTestConfig(15000)
 	// Setup for Node 2
-	config2 := nodemanager.CreateTestConfig(17000)
+	config2 := lib_nodemanager.CreateTestConfig(17000)
 
 	config1.AddPeerToConnect("127.0.0.1:17000", config2)
 	config1.AddRouteToEstablish(config2)
@@ -62,7 +62,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
 	defer wg.Done()
 
-	node := nodemanager.CreateNode(config)
+	node := lib_nodemanager.CreateNode(config)
 	node.AddTransportToNode(config)
 
 	defer node.Close()

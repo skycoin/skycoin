@@ -542,6 +542,7 @@ func Run(c *Config) {
 }
 
 func main() {
+
 	/*
 		skycoin.Run(&cli.DaemonArgs)
 	*/

@@ -15,8 +15,8 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/domain"
 	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
-	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
-	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
+	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
+	//"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 	"github.com/stretchr/testify/assert"
 )
 

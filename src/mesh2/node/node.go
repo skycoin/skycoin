@@ -15,9 +15,9 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/domain"
 	"github.com/skycoin/skycoin/src/mesh2/nodemanager/connection"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
+	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
 	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
-	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
+	//"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 	"gopkg.in/op/go-logging.v1"
 )
 
@@ -1028,8 +1028,8 @@ func (self *Node) debug_countMessages() int {
 }
 
 type TestConfig struct {
-	Reliable reliable.ReliableTransportConfig
-	Udp      udp.UDPConfig
+	Reliable protocol.ReliableTransportConfig
+	Udp      protocol.UDPConfig
 	Node     NodeConfig
 
 	PeersToConnect    []domain.ToConnect
@@ -1041,7 +1041,7 @@ type TestConfig struct {
 func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 	peerToConnect := domain.ToConnect{}
 	peerToConnect.Peer = config.Node.PubKey
-	peerToConnect.Info = udp.CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
+	peerToConnect.Info = protocol.CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
 	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
 }
 
@@ -1074,7 +1074,7 @@ func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string,
 
 // Add transport to Node
 func (self *Node) AddTransportToNode(config TestConfig) {
-	udpTransport := udp.CreateNewUDPTransport(config.Udp)
+	udpTransport := protocol.CreateNewUDPTransport(config.Udp)
 
 	// Connect
 	for _, connectTo := range config.PeersToConnect {
@@ -1085,7 +1085,7 @@ func (self *Node) AddTransportToNode(config TestConfig) {
 	}
 
 	// Reliable transport closes UDPTransport
-	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
+	reliableTransport := protocol.NewReliableTransport(udpTransport, config.Reliable)
 	//defer reliableTransport.Close()
 
 	self.AddTransport(reliableTransport, config.Node.ChaCha20Key)

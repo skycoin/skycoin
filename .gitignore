@@ -100,3 +100,5 @@ electron/node_modules
 electron/.gox_output
 electron/.electron_output
 electron/.standalone_output
+
+.vscode/

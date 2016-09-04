@@ -2,7 +2,6 @@
 package gui
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -466,196 +465,69 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Returns the outputs for all addresses
+// getOutputsHandler get utxos base on the filters in url params.
+// mode: GET
+// url: /outputs?addrs=[:addrs]&hashes=[:hashes]
+// if addrs and hashse are not specificed, return all unspent outputs.
+// if both addrs and hashes are specificed, then both those filters are need to be matched.
+// if only specify one filter, then return outputs match the filter.
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			uxouts := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-			rawaddrs := r.URL.Query().Get("addrs")
-			if rawaddrs == "" {
+			rawaddrs := r.FormValue("addrs")
+			hashes := r.FormValue("hashes")
+
+			if rawaddrs == "" && hashes == "" {
 				SendOr404(w, uxouts)
 				return
 			}
 
-			// split the addrs,
-			addrs := strings.Split(rawaddrs, ",")
-			addrMap := make(map[string]bool)
-			for _, addr := range addrs {
-				addrMap[addr] = true
+			addrMatch := []visor.ReadableOutput{}
+			if rawaddrs != "" {
+				addrs := strings.Split(rawaddrs, ",")
+				addrMap := make(map[string]bool)
+				for _, addr := range addrs {
+					addrMap[addr] = true
+				}
+
+				for _, u := range uxouts {
+					if _, ok := addrMap[u.Address]; ok {
+						addrMatch = append(addrMatch, u)
+					}
+				}
+			}
+
+			hsMatch := []visor.ReadableOutput{}
+			hsMatchMap := map[string]bool{}
+			if hashes != "" {
+				hs := strings.Split(hashes, ",")
+				hsMap := make(map[string]bool)
+				for _, h := range hs {
+					hsMap[h] = true
+				}
+
+				for _, u := range uxouts {
+					if _, ok := hsMap[u.Hash]; ok {
+						hsMatch = append(hsMatch, u)
+						hsMatchMap[u.Hash] = true
+					}
+				}
 			}
 
 			ret := []visor.ReadableOutput{}
-			for _, u := range uxouts {
-				if _, ok := addrMap[u.Address]; ok {
-					ret = append(ret, u)
-				}
-			}
-			SendOr404(w, ret)
-		}
-	}
-}
-
-// Returns pending transactions
-// TODO: FIX!!! Iterates all blocks since begining
-// Gets list of transactions
-// TODO: this will slow down exponentially as blockchain size increases
-// TODO: split function for determining if transaction is confirmed, into another function
-// TODO: only iterate, last 50 blocks, to determine if transaction is confirmed
-// TODO: use transaction ID hash, not readable, to confirm transaction
-func getTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		V := gateway.V
-		isConfirmed := r.URL.Query().Get("confirm")
-
-		//default case
-		if isConfirmed != "1" {
-			ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
-			for _, unconfirmedTxn := range V.Unconfirmed.Txns {
-				readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-				ret = append(ret, &readable)
-			}
-			SendOr404(w, ret)
-		}
-
-		//WARNING: TODO: This iterates all blocks and all transactions
-		//TODO: need way to determine if transaction is "confirmed", without iterating all blocks
-		if isConfirmed == "1" {
-			blks := V.Blockchain.Blocks
-
-			//only look at last 50 blocks, for checking if transaction is confirmed
-			const max_history = 50
-			x1 := len(blks)               // start
-			x2 := len(blks) - max_history //stop
-			if x2 < 0 {
-				x2 = 0
-			}
-			blks = blks[x2:x1] //only look at last 50 blocks
-
-			totalTxns := []coin.Transaction{}
-			//WARNING: Iterates all blocks, since start
-			//TODO: use transaction hash, not input/output
-			for _, b := range blks {
-				totalTxns = append(totalTxns, b.Body.Transactions...)
-			}
-
-			rdTxns := make([]visor.ReadableTransaction, len(totalTxns))
-			for i, txn := range totalTxns {
-				rdTxns[i] = visor.NewReadableTransaction(&txn)
-			}
-
-			rltTxns := []visor.ReadableTransaction{}
-			// addr := r.URL.Query().Get("addr")
-			input := r.URL.Query().Get("input")
-			output := r.URL.Query().Get("output")
-
-			if input != "" {
-				uxids := getUxidsOfAddr(input, rdTxns)
-				for _, uxid := range uxids {
-					for _, txn := range rdTxns {
-						for _, in := range txn.In {
-							if in == uxid {
-								rltTxns = append(rltTxns, txn)
-								break
-							}
-						}
+			if rawaddrs != "" && hashes != "" {
+				for _, u := range addrMatch {
+					if _, ok := hsMatchMap[u.Hash]; ok {
+						ret = append(ret, u)
 					}
 				}
+				SendOr404(w, ret)
+				return
 			}
 
-			if output != "" {
-				outTxns := []visor.ReadableTransaction{}
-				if input != "" {
-					outTxns = rltTxns
-				} else {
-					outTxns = rdTxns
-				}
-
-				txs := []visor.ReadableTransaction{}
-				for _, txn := range outTxns {
-					for _, out := range txn.Out {
-						if out.Address == output {
-							txs = append(txs, txn)
-							break
-						}
-					}
-				}
-				rltTxns = txs
-			}
-			SendOr404(w, rltTxns)
+			SendOr404(w, append(addrMatch, hsMatch...))
 		}
-
-	}
-}
-
-func getTransactionHandler(gate *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		txid := r.URL.Query().Get("txid")
-		if txid == "" {
-			return
-		}
-
-		h, err := cipher.SHA256FromHex(txid)
-		if err != nil {
-			return
-		}
-		tx := gate.V.GetTransaction(h)
-		SendOr404(w, visor.NewReadableTransaction(&tx.Txn))
-	}
-}
-
-func getUxidsOfAddr(addr string, rdTxns []visor.ReadableTransaction) []string {
-	uxids := []string{}
-	for _, txn := range rdTxns {
-		for _, out := range txn.Out {
-			if out.Address == addr {
-				uxids = append(uxids, out.Hash)
-			}
-		}
-	}
-	return uxids
-}
-
-//Implement
-func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// get the rawtransaction
-		v := struct {
-			Rawtx []byte `json:"rawtx"`
-		}{}
-
-		rlt := struct {
-			Success bool   `json:"success"`
-			Reason  string `json:"reason"`
-			Txid    string `json:"txid"`
-		}{}
-		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			logger.Error("bad request: %v", err)
-			rlt.Reason = "bad request"
-			SendOr404(w, rlt)
-			return
-		}
-
-		txn := coin.TransactionDeserialize(v.Rawtx)
-
-		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
-			rlt.Reason = err.Error()
-			SendOr404(w, rlt)
-			return
-		}
-
-		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
-		if err != nil {
-			logger.Error("inject tx failed:%v", err)
-			rlt.Reason = "inject tx failed"
-			SendOr404(w, rlt)
-			return
-		}
-
-		rlt.Success = true
-		rlt.Txid = t.Hash().Hex()
-
-		//ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		SendOr404(w, rlt)
 	}
 }
 
@@ -715,12 +587,4 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get balance of addresses
 	mux.HandleFunc("/balance", getBalanceHandler(gateway))
 
-	//get set of pending transaction
-	mux.HandleFunc("/transactions", getTransactionsHandler(gateway))
-
-	// get txn of address.
-	mux.HandleFunc("/transaction", getTransactionHandler(gateway))
-
-	//inject a transaction into network
-	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
 }

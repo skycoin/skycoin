@@ -147,7 +147,8 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	RegisterNetworkHandlers(mux, daemon.Gateway)
 	// Network API handler
 	RegisterApiHandlers(mux, daemon.Gateway)
-
+	// Transaction interface
+	RegisterTxHandlers(mux, daemon.Gateway)
 	return mux
 }
 

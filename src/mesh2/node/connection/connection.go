@@ -22,6 +22,8 @@ func init() {
 	ConnectionManager.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, domain.RefreshRouteMessage{})
 	ConnectionManager.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, domain.DeleteRouteMessage{})
 	ConnectionManager.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, domain.SetRouteReply{})
+
+	ConnectionManager.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{6}, domain.AddNodeMessage{})
 }
 
 var ConnectionManager Connection
@@ -73,4 +75,12 @@ func (self *Connection) FragmentMessage(fullContents []byte, toPeer cipher.PubKe
 	}
 	fmt.Fprintf(os.Stdout, "Message fragmented in %v packets.\n", len(ret))
 	return ret
+}
+
+func (self *Connection) DeserializeMessage(msg []byte) (interface{}, error) {
+	return self.serializer.UnserializeMessage(msg)
+}
+
+func (self *Connection) SerializeMessage(msg interface{}) []byte {
+	return self.serializer.SerializeMessage(msg)
 }

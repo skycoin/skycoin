@@ -13,7 +13,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/domain"
-	"github.com/skycoin/skycoin/src/mesh2/nodemanager/connection"
+	"github.com/skycoin/skycoin/src/mesh2/node/connection"
 	"github.com/skycoin/skycoin/src/mesh2/serialize"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/transport"

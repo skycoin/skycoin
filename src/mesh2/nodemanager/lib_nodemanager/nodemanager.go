@@ -1,4 +1,4 @@
-package nodemanager
+package lib_nodemanager
 
 import (
 	"bytes"
@@ -13,6 +13,20 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 )
+
+func init() {
+	ServerConfig = CreateTestConfig(15101)
+
+	b := []byte{234, 15, 123, 220, 185, 171, 218, 20, 130, 48, 24, 255, 214, 133, 191, 164, 211, 190, 224, 127, 105, 125, 141, 178, 226, 250, 123, 149, 229, 33, 187, 165, 27}
+	p := cipher.PubKey{}
+	copy(p[:], b[:])
+	ServerConfig.Node.PubKey = p
+
+	b2 := [32]byte{48, 126, 177, 168, 139, 146, 205, 8, 191, 110, 195, 254, 184, 22, 168, 118, 237, 126, 87, 224, 171, 243, 239, 87, 106, 152, 251, 217, 120, 239, 88, 138}
+	ServerConfig.Node.ChaCha20Key = b2
+}
+
+var ServerConfig *mesh.TestConfig
 
 type NodeManager struct {
 	ConfigList map[cipher.PubKey]*mesh.TestConfig
@@ -54,7 +68,7 @@ func CreateNode(config mesh.TestConfig) *mesh.Node {
 }
 
 // Create public key
-func createPubKey() cipher.PubKey {
+func CreatePubKey() cipher.PubKey {
 	b := cipher.RandByte(33)
 	return cipher.NewPubKey(b)
 }
@@ -68,7 +82,7 @@ func CreateChaCha20Key() cipher.SecKey {
 // Create new node config
 func NewNodeConfig() mesh.NodeConfig {
 	nodeConfig := mesh.NodeConfig{}
-	nodeConfig.PubKey = createPubKey()
+	nodeConfig.PubKey = CreatePubKey()
 	nodeConfig.ChaCha20Key = CreateChaCha20Key()
 	nodeConfig.MaximumForwardingDuration = 1 * time.Minute
 	nodeConfig.RefreshRouteDuration = 5 * time.Minute
@@ -149,6 +163,11 @@ func ConnectNodeToNode(config1, config2 *mesh.TestConfig) {
 	addr.WriteString(strconv.Itoa(int(config2.Udp.ListenPortMin)))
 	config1.AddPeerToConnect(addr.String(), config2)
 	addr.Reset()
+}
+
+// Add a new transport to node
+func AddTransportsToNode(config mesh.TestConfig, node mesh.Node) {
+	node.AddTransportToNode(config)
 }
 
 // Obtain port for to use in the creating from node

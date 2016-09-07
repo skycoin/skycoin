@@ -60,11 +60,11 @@ func (self *Connection) FragmentMessage(fullContents []byte, toPeer cipher.PubKe
 		bytesThisMessage := remainingBytes[:nBytesThisMessage]
 		remainingBytes = remainingBytes[nBytesThisMessage:]
 		message := domain.UserMessage{
-			base,
-			messageId,
-			(uint64)(len(ret_noCount)),
-			0,
-			bytesThisMessage,
+			MessageBase: base,
+			MessageId:   messageId,
+			Index:       (uint64)(len(ret_noCount)),
+			Count:       0,
+			Contents:    bytesThisMessage,
 		}
 		ret_noCount = append(ret_noCount, message)
 	}

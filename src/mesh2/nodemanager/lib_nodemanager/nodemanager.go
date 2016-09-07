@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
+	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
 )
 
@@ -98,7 +99,9 @@ func NewNodeConfig() mesh.NodeConfig {
 func (self *NodeManager) CreateNodeConfigList(n int) {
 	self.ConfigList = make(map[cipher.PubKey]*mesh.TestConfig)
 	self.NodesList = make(map[cipher.PubKey]*mesh.Node)
-	self.Port = 10000
+	if self.Port == 0 {
+		self.Port = 10000
+	}
 	for a := 1; a <= n; a++ {
 		self.AddNode()
 	}
@@ -166,8 +169,23 @@ func ConnectNodeToNode(config1, config2 *mesh.TestConfig) {
 }
 
 // Add a new transport to node
-func AddTransportsToNode(config mesh.TestConfig, node mesh.Node) {
+func (self *NodeManager) AddTransportsToNode(config mesh.TestConfig, indexNode int) {
+	nodePubKey := self.PubKeyList[indexNode]
+	node := self.NodesList[nodePubKey]
 	node.AddTransportToNode(config)
+}
+
+// Get all transports from one node
+func (self *NodeManager) GetTransportsFromNode(indexNode int) []transport.Transport {
+	nodePubKey := self.PubKeyList[indexNode]
+	node := self.NodesList[nodePubKey]
+	return node.GetTransports()
+}
+
+func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.Transport) {
+	nodePubKey := self.PubKeyList[indexNode]
+	node := self.NodesList[nodePubKey]
+	node.RemoveTransport(transport)
 }
 
 // Obtain port for to use in the creating from node

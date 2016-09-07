@@ -416,3 +416,73 @@ func TestBuildRoutes(t *testing.T) {
 		t.Log("Route:", route.RoutesToEstablish)
 	}
 }
+
+func TestAddTransportsToNode(t *testing.T) {
+	nodeManager := &NodeManager{Port: 5100}
+	nodeManager.CreateNodeConfigList(10)
+	nodeManager.ConnectNodes()
+
+	config := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port++
+
+	pubKey := nodeManager.PubKeyList[1]
+	node := nodeManager.NodesList[pubKey]
+
+	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
+
+	nodeManager.AddTransportsToNode(*config, 1)
+
+	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
+
+	config2 := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port++
+
+	pubKey2 := nodeManager.PubKeyList[3]
+	node2 := nodeManager.NodesList[pubKey2]
+
+	assert.Len(t, node2.GetTransports(), 1, "Error expected 1 transport in the node2")
+
+	nodeManager.AddTransportsToNode(*config2, 3)
+
+	assert.Len(t, node2.GetTransports(), 2, "Error expected 2 transport in the node2")
+}
+
+func TestGetTransportsFromNode(t *testing.T) {
+	nodeManager := &NodeManager{Port: 6100}
+	nodeManager.CreateNodeConfigList(10)
+	nodeManager.ConnectNodes()
+
+	pubKey := nodeManager.PubKeyList[2]
+	node := nodeManager.NodesList[pubKey]
+
+	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
+}
+
+func TestRemoveTransportsFromNode(t *testing.T) {
+	nodeManager := &NodeManager{Port: 7100}
+	nodeManager.CreateNodeConfigList(10)
+	nodeManager.ConnectNodes()
+
+	pubKey := nodeManager.PubKeyList[4]
+	node := nodeManager.NodesList[pubKey]
+
+	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
+
+	config := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port++
+	nodeManager.AddTransportsToNode(*config, 4)
+
+	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
+
+	config2 := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port++
+	nodeManager.AddTransportsToNode(*config2, 4)
+
+	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
+
+	transport := node.GetTransports()[0]
+
+	nodeManager.RemoveTransportsFromNode(4, transport)
+
+	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
+}

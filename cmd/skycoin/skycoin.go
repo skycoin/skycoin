@@ -272,6 +272,8 @@ func (c *Config) postProcess() {
 	ll, err := logging.LogLevel(c.logLevel)
 	panicIfError(err, "Invalid -log-level %s", c.logLevel)
 	c.LogLevel = ll
+
+	blockdb.Disabled = c.DisableBlockdb
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {

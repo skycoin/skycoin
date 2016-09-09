@@ -16,7 +16,9 @@ import (
 )
 
 var db *bolt.DB
-var dbDir string //use src/util to resolve
+
+// Disabled flag used to determine whether using the boltdb.
+var Disabled = false
 
 // Create 3 buckets. One for
 // - blocks
@@ -29,6 +31,9 @@ var bucketUtxos *bucket
 
 // Start the blockdb.
 func Start() {
+	if Disabled {
+		return
+	}
 	// Open the my.db data file in your current directory.
 	// It will be created if it doesn't exist.
 	dbFile := filepath.Join(util.DataDir, "my.db")
@@ -59,6 +64,9 @@ func Start() {
 
 // Stop the blockdb.
 func Stop() {
+	if Disabled {
+		return
+	}
 	db.Close()
 }
 
@@ -67,19 +75,24 @@ type bucket struct {
 }
 
 func newBucket(name []byte) (*bucket, error) {
-	err := db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(name); err != nil {
-			return err
+	if !Disabled {
+		err := db.Update(func(tx *bolt.Tx) error {
+			if _, err := tx.CreateBucketIfNotExists(name); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 	return &bucket{name}, nil
 }
 
 func (b bucket) Get(key []byte) []byte {
+	if Disabled {
+		return nil
+	}
 	var value []byte
 	db.View(func(tx *bolt.Tx) error {
 		value = tx.Bucket(b.Name).Get(key)
@@ -89,6 +102,9 @@ func (b bucket) Get(key []byte) []byte {
 }
 
 func (b bucket) Set(key []byte, value []byte) error {
+	if Disabled {
+		return nil
+	}
 	return db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(b.Name).Put(key, value)
 	})
@@ -102,7 +118,7 @@ func SetBlock(block coin.Block) error {
 	return bucketBlocks.Set(hash[:], bin)
 }
 
-// GetBlock by block hash.
+// GetBlock by block hash, return nil on not found.
 func GetBlock(hash cipher.SHA256) *coin.Block {
 	bin := bucketBlocks.Get(hash[:])
 	block := coin.Block{}
@@ -120,8 +136,8 @@ type BlockSignature struct {
 	BkSeq         uint64        //depth of block in tree
 }
 
-// SetBlockSignature nil on failure
-func SetBlockSignature(hash cipher.SHA256, preHash cipher.SHA256, Sig cipher.Sig, BkSeq uint64) (*BlockSignature, error) {
+// SetBlockSignature save block signature
+func SetBlockSignature(hash cipher.SHA256, preHash cipher.SHA256, Sig cipher.Sig, BkSeq uint64) error {
 	var bs = BlockSignature{
 		hash,
 		preHash,
@@ -130,10 +146,7 @@ func SetBlockSignature(hash cipher.SHA256, preHash cipher.SHA256, Sig cipher.Sig
 	}
 
 	bin := encoder.Serialize(bs) //value
-	if err := bucketBlockSigs.Set(hash[:], bin); err != nil {
-		return nil, err
-	}
-	return &bs, nil
+	return bucketBlockSigs.Set(hash[:], bin)
 }
 
 // GetBlockSignature return nil on not found
@@ -148,9 +161,22 @@ func GetBlockSignature(hash cipher.SHA256) *BlockSignature {
 	return &bs
 }
 
-//unspent output set?
+// SetUnspentOuts save unspent output
+func SetUnspentOuts(hash cipher.SHA256, utxos coin.UxArray) error {
+	bin := encoder.Serialize(utxos)
+	return bucketUtxos.Set(hash[:], bin)
+}
 
-//save unspent out set at start of every N blocks?
+// GetUnspentOuts get unspent outs by hash, return nil on not found.
+func GetUnspentOuts(hash cipher.SHA256) *coin.UxArray {
+	bin := bucketUtxos.Get(hash[:])
+	// deserialize uxout
+	uxs := coin.UxArray{}
+	if err := encoder.DeserializeRaw(bin, &uxs); err != nil {
+		return nil
+	}
+	return &uxs
+}
 
 /*
 write transaction

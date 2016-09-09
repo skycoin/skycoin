@@ -69,3 +69,24 @@ func TestSetAndGetBlocks(t *testing.T) {
 		}
 	}
 }
+
+func TestDisable(t *testing.T) {
+	blockdb.Disabled = true
+
+	_, teardown, err := setup(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer teardown()
+
+	b := coin.Block{}
+	if err = blockdb.SetBlock(b); err != nil {
+		t.Fatal("set block must be nil")
+	}
+
+	nb := blockdb.GetBlock(b.HashHeader())
+	if nb != nil {
+		t.Fatal("get block must be nil")
+	}
+}

@@ -181,6 +181,82 @@ func NewVisor(c VisorConfig) *Visor {
 	return v
 }
 
+// NewVisor2 Creates a normal Visor given a master's public key
+func NewVisor2(c VisorConfig) *Visor {
+	logger.Debug("Creating new visor")
+	// Make sure inputs are correct
+	if c.IsMaster {
+		logger.Debug("Visor is master")
+		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
+			log.Panicf("Cannot run in master: invalid seckey for pubkey")
+		}
+	}
+
+	v := &Visor{
+		Config:      c,
+		Blockchain:  coin.NewBlockchain(),
+		blockSigs:   NewBlockSigs(),
+		Unconfirmed: NewUnconfirmedTxnPool(),
+	}
+
+	v.GenesisPreconditions()
+
+	gb := v.Blockchain.CreateGenesisBlock(c.GenesisAddress, c.GenesisTimestamp, c.GenesisCoinVolume)
+	var sb SignedBlock
+	if c.IsMaster {
+		sb = v.SignBlock(gb)
+	} else {
+		sb = SignedBlock{
+			Block: gb,
+			Sig:   c.GenesisSignature,
+		}
+	}
+	v.blockSigs.record(&sb)
+
+	// check if the genesis block does exist in blockdb.
+	block := blockdb.GetBlock(gb.HashHeader())
+	if block == nil {
+		// record the genesis block into blockdb.
+		if err := blockdb.SetBlock(gb); err != nil {
+			log.Panicf("write block into blockdb failed:%v", err)
+		}
+
+		// record the genesis block signature into blockdb.
+		if err := blockdb.SetBlockSignature(gb.HashHeader(), gb.Head.PrevHash, c.GenesisSignature, gb.Head.BkSeq); err != nil {
+			log.Panicf("write block signature into blockdb failed:%v", err)
+		}
+		return v
+	}
+
+	// // restore blocks from blockdb
+	// var emptyHash cipher.SHA256
+	// nxtHash := block.Head.NextHash
+	// for {
+	// 	if nxtHash == emptyHash {
+	// 		break
+	// 	}
+
+	// 	// get next block.
+	// 	b := blockdb.GetBlock(nxtHash)
+	// 	v.Blockchain.Blocks = append(v.Blockchain.Blocks, *b)
+
+	// 	// get next block signature.
+	// 	bs := blockdb.GetBlockSignature(nxtHash)
+	// 	sb := SignedBlock{
+	// 		Block: *b,
+	// 		Sig:   bs.Sig,
+	// 	}
+	// 	v.blockSigs.record(&sb)
+
+	// 	nxtHash = b.Head.NextHash
+	// }
+
+	if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
+		log.Panicf("Invalid block signatures: %v", err)
+	}
+	return v
+}
+
 // Returns a Visor with minimum initialization necessary for empty blockchain
 // access
 func NewMinimalVisor(c VisorConfig) *Visor {
@@ -352,6 +428,13 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	if err := blockdb.SetBlock(b.Block); err != nil {
 		return err
 	}
+
+	// update the pre block's next hash in blockdb.
+	// preBlock := blockdb.GetBlock(b.Block.Head.PrevHash)
+	// preBlock.Head.NextHash = b.Block.HashHeader()
+	// if err := blockdb.SetBlock(*preBlock); err != nil {
+	// 	return err
+	// }
 
 	// write block signature into blockdb.
 	return blockdb.SetBlockSignature(b.Block.HashHeader(), b.Block.Head.PrevHash, b.Sig, b.Block.Head.BkSeq)

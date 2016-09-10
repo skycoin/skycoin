@@ -42,11 +42,11 @@ func (b bucket) Set(key []byte, value []byte) error {
 	})
 }
 
-// MatchFunc callback function for checking if the value does match.
-type MatchFunc func(value []byte) bool
+func (b bucket) Find(match func(value []byte) bool) []byte {
+	if Disabled {
+		return nil
+	}
 
-// Find the value that matching, return nil on not found.
-func (b bucket) Find(match MatchFunc) []byte {
 	var value []byte
 	db.View(func(tx *bolt.Tx) error {
 		bt := tx.Bucket(b.Name)

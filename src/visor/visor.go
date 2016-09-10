@@ -224,7 +224,7 @@ func NewVisor(c VisorConfig) *Visor {
 
 		// get next block.
 		b := blockdb.GetBlock(nxtHash)
-		v.Blockchain.Blocks = append(v.Blockchain.Blocks, b.Block)
+		v.Blockchain.ExecuteBlock(b.Block)
 
 		// get next block signature.
 		bs := blockdb.GetBlockSignature(nxtHash)

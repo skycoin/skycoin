@@ -116,7 +116,7 @@ type Visor struct {
 }
 
 // Creates a normal Visor given a master's public key
-func NewVisor(c VisorConfig) *Visor {
+func NewVisor2(c VisorConfig) *Visor {
 	logger.Debug("Creating new visor")
 	// Make sure inputs are correct
 	if c.IsMaster {
@@ -138,23 +138,6 @@ func NewVisor(c VisorConfig) *Visor {
 			log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
 		}
 		blockSigs = NewBlockSigs()
-	}
-
-	// write blockchain into blockdb.
-	for _, bc := range blockchain.Blocks {
-		if err := blockdb.SetBlock(bc); err != nil {
-			log.Panicf("write bocks into blockdb failed: %v", err)
-		}
-	}
-
-	// write blocksig into blockdb.
-	for seq, sig := range blockSigs.Sigs {
-		// get block hash in seq
-		hash := blockchain.Blocks[seq].HashHeader()
-		preHash := blockchain.Blocks[seq].Head.PrevHash
-		if err := blockdb.SetBlockSignature(hash, preHash, sig, seq); err != nil {
-			log.Panicf("write block sigs into blockdb failed: %v", err)
-		}
 	}
 
 	v := &Visor{
@@ -181,8 +164,8 @@ func NewVisor(c VisorConfig) *Visor {
 	return v
 }
 
-// NewVisor2 Creates a normal Visor given a master's public key
-func NewVisor2(c VisorConfig) *Visor {
+// NewVisor Creates a normal Visor given a master's public key
+func NewVisor(c VisorConfig) *Visor {
 	logger.Debug("Creating new visor")
 	// Make sure inputs are correct
 	if c.IsMaster {
@@ -217,7 +200,10 @@ func NewVisor2(c VisorConfig) *Visor {
 	block := blockdb.GetBlock(gb.HashHeader())
 	if block == nil {
 		// record the genesis block into blockdb.
-		if err := blockdb.SetBlock(gb); err != nil {
+		dbBlock := blockdb.Block{
+			Block: gb,
+		}
+		if err := blockdb.SetBlock(dbBlock); err != nil {
 			log.Panicf("write block into blockdb failed:%v", err)
 		}
 
@@ -228,28 +214,28 @@ func NewVisor2(c VisorConfig) *Visor {
 		return v
 	}
 
-	// // restore blocks from blockdb
-	// var emptyHash cipher.SHA256
-	// nxtHash := block.Head.NextHash
-	// for {
-	// 	if nxtHash == emptyHash {
-	// 		break
-	// 	}
+	// restore blocks from blockdb
+	var emptyHash cipher.SHA256
+	nxtHash := block.NextHash
+	for {
+		if nxtHash == emptyHash {
+			break
+		}
 
-	// 	// get next block.
-	// 	b := blockdb.GetBlock(nxtHash)
-	// 	v.Blockchain.Blocks = append(v.Blockchain.Blocks, *b)
+		// get next block.
+		b := blockdb.GetBlock(nxtHash)
+		v.Blockchain.Blocks = append(v.Blockchain.Blocks, b.Block)
 
-	// 	// get next block signature.
-	// 	bs := blockdb.GetBlockSignature(nxtHash)
-	// 	sb := SignedBlock{
-	// 		Block: *b,
-	// 		Sig:   bs.Sig,
-	// 	}
-	// 	v.blockSigs.record(&sb)
+		// get next block signature.
+		bs := blockdb.GetBlockSignature(nxtHash)
+		sb := SignedBlock{
+			Block: b.Block,
+			Sig:   bs.Sig,
+		}
+		v.blockSigs.record(&sb)
 
-	// 	nxtHash = b.Head.NextHash
-	// }
+		nxtHash = b.NextHash
+	}
 
 	if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
 		log.Panicf("Invalid block signatures: %v", err)
@@ -303,14 +289,6 @@ func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 	}
 	self.blockSigs.record(&sb)
 
-	if err := blockdb.SetBlock(gb); err != nil {
-		log.Panicf("write genesis block into blockdb failed:%v", err)
-	}
-
-	if err := blockdb.SetBlockSignature(gb.HashHeader(), gb.Head.PrevHash, sb.Sig, gb.Head.BkSeq); err != nil {
-		log.Panicf("write block signature into blockdb failed:%v", err)
-	}
-
 	log.Printf("New Genesis:")
 	log.Printf("genesis_time= %v", sb.Block.Head.Time)
 	log.Printf("genesis_address= %v", self.Config.GenesisAddress.String())
@@ -334,14 +312,6 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 		Sig:   self.Config.GenesisSignature,
 	}
 	self.blockSigs.record(&sb)
-
-	if err := blockdb.SetBlock(b); err != nil {
-		log.Panicf("write genesis block into bockdb failed:%v", err)
-	}
-
-	if err := blockdb.SetBlockSignature(b.HashHeader(), b.Head.PrevHash, self.Config.GenesisSignature, b.Head.BkSeq); err != nil {
-		log.Panicf("write gensis block signature into blockdb failed:%v", err)
-	}
 
 	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
 		self.Blockchain)
@@ -420,24 +390,34 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	// TODO -- check if bitcoin allows blocks to be receiving out of order
 	self.blockSigs.record(&b)
 
-	// Remove the transactions in the Block from the unconfirmed pool
-	self.Unconfirmed.RemoveTransactions(self.Blockchain,
-		b.Block.Body.Transactions)
-
 	// write block into blockdb.
-	if err := blockdb.SetBlock(b.Block); err != nil {
+	dbBlock := blockdb.Block{
+		Block: b.Block,
+	}
+	if err := blockdb.SetBlock(dbBlock); err != nil {
 		return err
 	}
 
 	// update the pre block's next hash in blockdb.
-	// preBlock := blockdb.GetBlock(b.Block.Head.PrevHash)
-	// preBlock.Head.NextHash = b.Block.HashHeader()
-	// if err := blockdb.SetBlock(*preBlock); err != nil {
-	// 	return err
-	// }
+	preBlock := blockdb.GetBlock(b.Block.Head.PrevHash)
+	if preBlock == nil {
+		logger.Critical("may be genesis block: ", b.Block.Head.PrevHash.Hex())
+		return nil
+	}
+	preBlock.NextHash = b.Block.HashHeader()
+	if err := blockdb.SetBlock(*preBlock); err != nil {
+		return err
+	}
 
 	// write block signature into blockdb.
-	return blockdb.SetBlockSignature(b.Block.HashHeader(), b.Block.Head.PrevHash, b.Sig, b.Block.Head.BkSeq)
+	if err := blockdb.SetBlockSignature(b.Block.HashHeader(), b.Block.Head.PrevHash, b.Sig, b.Block.Head.BkSeq); err != nil {
+		return err
+	}
+
+	// Remove the transactions in the Block from the unconfirmed pool
+	self.Unconfirmed.RemoveTransactions(self.Blockchain,
+		b.Block.Body.Transactions)
+	return nil
 }
 
 // Returns an error if the cipher.Sig is not valid for the coin.Block

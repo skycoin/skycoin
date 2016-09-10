@@ -299,7 +299,7 @@ func (self *Daemon) Start(quit chan int) {
 
 	// TODO -- run blockchain stuff in its own goroutine
 	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
-	blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
+	// blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
 	if !self.Visor.Config.Config.IsMaster {
 		blockCreationTicker.Stop()
@@ -405,8 +405,8 @@ main:
 			self.Gateway.Responses <- fn()
 
 		//save blockchain periodically
-		case <-blockchainBackupTicker:
-			self.Visor.SaveBlockchain()
+		// case <-blockchainBackupTicker:
+		// self.Visor.SaveBlockchain()
 
 		// TODO -- run these in the Visor
 		// Create blocks, if master chain

@@ -67,7 +67,6 @@ func NewVisor(c VisorConfig) *Visor {
 //move to visor?
 //DEPRECATE?
 func (self *Visor) SaveBlockchain() {
-
 	bcFile := self.Config.Config.BlockchainFile
 	err := self.Visor.SaveBlockchain()
 	if err == nil {
@@ -91,7 +90,7 @@ func (self *Visor) Shutdown() {
 		return
 	}
 
-	self.SaveBlockchain()
+	// self.SaveBlockchain()
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old

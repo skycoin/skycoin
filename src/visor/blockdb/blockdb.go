@@ -70,8 +70,14 @@ func Stop() {
 	db.Close()
 }
 
+// Block in blockdb, includes NextHash, for forward walk the block chain.
+type Block struct {
+	coin.Block
+	NextHash cipher.SHA256
+}
+
 // SetBlock save coin block.
-func SetBlock(block coin.Block) error {
+func SetBlock(block Block) error {
 	//write to DB
 	hash := block.HashHeader()      //the key
 	bin := encoder.Serialize(block) //the value
@@ -79,9 +85,9 @@ func SetBlock(block coin.Block) error {
 }
 
 // GetBlock by block hash, return nil on not found.
-func GetBlock(hash cipher.SHA256) *coin.Block {
+func GetBlock(hash cipher.SHA256) *Block {
 	bin := bucketBlocks.Get(hash[:])
-	block := coin.Block{}
+	block := Block{}
 	if err := encoder.DeserializeRaw(bin, &block); err != nil {
 		return nil
 	}

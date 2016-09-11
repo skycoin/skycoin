@@ -2,29 +2,28 @@ package blockdb
 
 import "github.com/boltdb/bolt"
 
-type bucket struct {
+// Bucket used for grouping the key values in boltdb.
+// Also wrap some helper functions.
+type Bucket struct {
 	Name []byte
 }
 
-func newBucket(name []byte) (*bucket, error) {
-	if !Disabled {
-		err := db.Update(func(tx *bolt.Tx) error {
-			if _, err := tx.CreateBucketIfNotExists(name); err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, err
+// NewBucket create bucket of specific name.
+func NewBucket(name []byte) (*Bucket, error) {
+	err := db.Update(func(tx *bolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists(name); err != nil {
+			return err
 		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return &bucket{name}, nil
+	return &Bucket{name}, nil
 }
 
-func (b bucket) Get(key []byte) []byte {
-	if Disabled {
-		return nil
-	}
+// Get value of specific key in the bucket.
+func (b Bucket) Get(key []byte) []byte {
 	var value []byte
 	db.View(func(tx *bolt.Tx) error {
 		value = tx.Bucket(b.Name).Get(key)
@@ -33,20 +32,15 @@ func (b bucket) Get(key []byte) []byte {
 	return value
 }
 
-func (b bucket) Set(key []byte, value []byte) error {
-	if Disabled {
-		return nil
-	}
+// Put key value in the bucket.
+func (b Bucket) Put(key []byte, value []byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(b.Name).Put(key, value)
 	})
 }
 
-func (b bucket) Find(match func(value []byte) bool) []byte {
-	if Disabled {
-		return nil
-	}
-
+// Find find value that match the filter in the bucket.
+func (b Bucket) Find(filter func(key, value []byte) bool) []byte {
 	var value []byte
 	db.View(func(tx *bolt.Tx) error {
 		bt := tx.Bucket(b.Name)
@@ -54,7 +48,7 @@ func (b bucket) Find(match func(value []byte) bool) []byte {
 		c := bt.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if match(v) {
+			if filter(k, v) {
 				value = v
 				break
 			}

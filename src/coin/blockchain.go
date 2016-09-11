@@ -95,31 +95,34 @@ func newBlock(prev Block, currentTime uint64, unspent UnspentPool,
 	}
 }
 
-func (self *Block) HashHeader() cipher.SHA256 {
-	return self.Head.Hash()
+// HashHeader return hash of block head.
+func (b Block) HashHeader() cipher.SHA256 {
+	return b.Head.Hash()
 }
 
-func (self *Block) HashBody() cipher.SHA256 {
-	return self.Body.Hash()
+// HashBody return hash of block body.
+func (b Block) HashBody() cipher.SHA256 {
+	return b.Body.Hash()
 }
 
-// Returns the size of the Block's Transactions, in bytes
-func (self *Block) Size() int {
-	return self.Body.Size()
+// Size returns the size of the Block's Transactions, in bytes
+func (b Block) Size() int {
+	return b.Body.Size()
 }
 
-func (self *Block) String() string {
-	return self.Head.String()
+// String return readable string of block.
+func (b Block) String() string {
+	return b.Head.String()
 }
 
-// Looks up a Transaction by its Head.Hash.
+// GetTransaction looks up a Transaction by its Head.Hash.
 // Returns the Transaction and whether it was found or not
 // TODO -- build a private index on the block, or a global blockchain one
 // mapping txns to their block + tx index
 // TODO: Deprecate? Utility Function
-func (self *Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
-	txns := self.Body.Transactions
-	for i, _ := range txns {
+func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
+	txns := b.Body.Transactions
+	for i := range txns {
 		if txns[i].Hash() == txHash {
 			return txns[i], true
 		}
@@ -144,47 +147,53 @@ func newBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 	}
 }
 
-func (self *BlockHeader) Hash() cipher.SHA256 {
-	b1 := encoder.Serialize(*self)
+// Hash return hash of block header
+func (bh BlockHeader) Hash() cipher.SHA256 {
+	b1 := encoder.Serialize(bh)
 	return cipher.SumSHA256(b1)
 }
 
-func (self *BlockHeader) Bytes() []byte {
-	return encoder.Serialize(*self)
+// Bytes serialize the blockheader and return the byte value.
+func (bh BlockHeader) Bytes() []byte {
+	return encoder.Serialize(bh)
 }
 
-func (self *BlockHeader) String() string {
+// String return readable string of block header.
+func (bh BlockHeader) String() string {
 	return fmt.Sprintf("Version: %d\nTime: %d\nBkSeq: %d\nFee: %d\n"+
-		"PrevHash: %s\nBodyHash: %s", self.Version, self.Time, self.BkSeq,
-		self.Fee, self.PrevHash.Hex(), self.BodyHash.Hex())
+		"PrevHash: %s\nBodyHash: %s", bh.Version, bh.Time, bh.BkSeq,
+		bh.Fee, bh.PrevHash.Hex(), bh.BodyHash.Hex())
 }
 
-// Returns the merkle hash of contained transactions
-func (self *BlockBody) Hash() cipher.SHA256 {
+// Hash returns the merkle hash of contained transactions
+func (bb BlockBody) Hash() cipher.SHA256 {
 	hashes := make([]cipher.SHA256, len(self.Transactions))
-	for i, _ := range self.Transactions {
+	for i := range bb.Transactions {
 		hashes[i] = self.Transactions[i].Hash()
 	}
 	// Merkle hash of transactions
 	return cipher.Merkle(hashes)
 }
 
-// Returns the size of Transactions, in bytes
-func (self *BlockBody) Size() int {
+// Size returns the size of Transactions, in bytes
+func (bb BlockBody) Size() int {
 	// We can't use length of self.Bytes() because it has a length prefix
 	// Need only the sum of transaction sizes
-	return self.Transactions.Size()
+	return bb.Transactions.Size()
 }
 
-func (self *BlockBody) Bytes() []byte {
-	return encoder.Serialize(*self)
+// Bytes serialize block body, and return the byte value.
+func (bb BlockBody) Bytes() []byte {
+	return encoder.Serialize(self)
 }
 
+// Blockchain use blockdb to store the blocks, only records the head hash of the blockchain.
 type Blockchain struct {
-	head    cipher.SHA256
+	head    cipher.SHA256 // latest block's head hash.
 	Unspent UnspentPool
 }
 
+// NewBlockchain new blockchain.
 func NewBlockchain() *Blockchain {
 	return &Blockchain{
 		// Blocks:  make([]Block, 0),
@@ -246,50 +255,50 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 
 // CreateGenesisBlock Creates a genesis block and applies it against chain
 // Takes in time as parameter
-func (self *Blockchain) CreateGenesisBlock(genesisAddress cipher.Address,
-	timestamp uint64, genesisCoins uint64) Block {
-	logger.Info("Creating new genesis block with address %s",
-		genesisAddress.String())
-	// Why is there a transaction in the genesis block?
-	// Limits the special casing around genesis blocks:
-	//      -Allows assumption that all UxOuts have a SrcTransaction that
-	//      -can be found in the blockchain, without checking for genesis UxOut
-	txn := Transaction{}
-	txn.PushOutput(genesisAddress, genesisCoins, genesisCoins)
-	body := BlockBody{Transactions{txn}}
-	prevHash := cipher.SHA256{}
-	head := BlockHeader{
-		Time:     timestamp,
-		BodyHash: body.Hash(),
-		PrevHash: prevHash,
-		BkSeq:    0,
-		Version:  0,
-		Fee:      0,
-		UxHash:   getUxHash(self.Unspent),
-	}
-	b := Block{
-		Head: head,
-		Body: body,
-	}
+// func (self *Blockchain) CreateGenesisBlock(genesisAddress cipher.Address,
+// 	timestamp uint64, genesisCoins uint64) Block {
+// 	logger.Info("Creating new genesis block with address %s",
+// 		genesisAddress.String())
+// 	// Why is there a transaction in the genesis block?
+// 	// Limits the special casing around genesis blocks:
+// 	//      -Allows assumption that all UxOuts have a SrcTransaction that
+// 	//      -can be found in the blockchain, without checking for genesis UxOut
+// 	txn := Transaction{}
+// 	txn.PushOutput(genesisAddress, genesisCoins, genesisCoins)
+// 	body := BlockBody{Transactions{txn}}
+// 	prevHash := cipher.SHA256{}
+// 	head := BlockHeader{
+// 		Time:     timestamp,
+// 		BodyHash: body.Hash(),
+// 		PrevHash: prevHash,
+// 		BkSeq:    0,
+// 		Version:  0,
+// 		Fee:      0,
+// 		UxHash:   getUxHash(self.Unspent),
+// 	}
+// 	b := Block{
+// 		Head: head,
+// 		Body: body,
+// 	}
 
-	self.headHash = b.HashHeader()
+// 	self.headHash = b.HashHeader()
 
-	// Genesis output
-	ux := UxOut{
-		Head: UxHead{
-			Time:  b.Head.Time,
-			BkSeq: 0,
-		},
-		Body: UxBody{
-			SrcTransaction: txn.InnerHash, //user inner hash
-			Address:        genesisAddress,
-			Coins:          genesisCoins,
-			Hours:          genesisCoins, // Allocate 1 coin hour per coin
-		},
-	}
-	self.Unspent.Add(ux)
-	return b
-}
+// 	// Genesis output
+// 	ux := UxOut{
+// 		Head: UxHead{
+// 			Time:  b.Head.Time,
+// 			BkSeq: 0,
+// 		},
+// 		Body: UxBody{
+// 			SrcTransaction: txn.InnerHash, //user inner hash
+// 			Address:        genesisAddress,
+// 			Coins:          genesisCoins,
+// 			Hours:          genesisCoins, // Allocate 1 coin hour per coin
+// 		},
+// 	}
+// 	self.Unspent.Add(ux)
+// 	return b
+// }
 
 // Head returns the most recent confirmed block
 func (bc *Blockchain) Head() Block {
@@ -410,7 +419,7 @@ func (bc *Blockchain) verifyUxHash(b Block) error {
 	return nil
 }
 
-// Checks that the inputs to the transaction exist,
+// VerifyTransaction checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
 func (bc *Blockchain) VerifyTransaction(tx Transaction) error {
@@ -704,7 +713,7 @@ func verifyTransactionInputs(tx Transaction, uxIn UxArray) error {
 		if len(tx.In) != len(uxIn) {
 			log.Panic("tx.In does not match uxIn")
 		}
-		for i, _ := range tx.In {
+		for i := range tx.In {
 			if tx.In[i] != uxIn[i].Hash() {
 				log.Panic("impossible error: Ux hash mismatch")
 			}

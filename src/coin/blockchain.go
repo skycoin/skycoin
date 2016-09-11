@@ -41,6 +41,7 @@ var (
 type Block struct {
 	Head BlockHeader
 	Body BlockBody
+	Next cipher.SHA256
 }
 
 type BlockHeader struct {
@@ -98,6 +99,26 @@ func newBlock(prev Block, currentTime uint64, unspent UnspentPool,
 // HashHeader return hash of block head.
 func (b Block) HashHeader() cipher.SHA256 {
 	return b.Head.Hash()
+}
+
+// PreHashHeader return hash of prevous block.
+func (b Block) PreHashHeader() cipher.SHA256 {
+	return b.Head.PrevHash
+}
+
+// NextHashHeader return the bash of next block.
+func (b Block) NextHashHeader() cipher.SHA256 {
+	return b.Next
+}
+
+// Time return the head time of the block.
+func (b Block) Time() uint64 {
+	return b.Head.Time
+}
+
+// Seq return the head seq of the block.
+func (b Block) Seq() uint64 {
+	return b.Head.BkSeq
 }
 
 // HashBody return hash of block body.
@@ -167,9 +188,9 @@ func (bh BlockHeader) String() string {
 
 // Hash returns the merkle hash of contained transactions
 func (bb BlockBody) Hash() cipher.SHA256 {
-	hashes := make([]cipher.SHA256, len(self.Transactions))
+	hashes := make([]cipher.SHA256, len(bb.Transactions))
 	for i := range bb.Transactions {
-		hashes[i] = self.Transactions[i].Hash()
+		hashes[i] = bb.Transactions[i].Hash()
 	}
 	// Merkle hash of transactions
 	return cipher.Merkle(hashes)
@@ -184,19 +205,25 @@ func (bb BlockBody) Size() int {
 
 // Bytes serialize block body, and return the byte value.
 func (bb BlockBody) Bytes() []byte {
-	return encoder.Serialize(self)
+	return encoder.Serialize(bb)
 }
 
 // Blockchain use blockdb to store the blocks, only records the head hash of the blockchain.
 type Blockchain struct {
-	head    cipher.SHA256 // latest block's head hash.
+	head    cipher.SHA256   // latest block's head hash.
+	genesis cipher.SHA256   // hash of genesis block.
+	bucket  *blockdb.Bucket // block storage.
 	Unspent UnspentPool
 }
 
 // NewBlockchain new blockchain.
 func NewBlockchain() *Blockchain {
+	bucket, err := blockdb.NewBucket([]byte("blocks"))
+	if err != nil {
+		panic(err)
+	}
 	return &Blockchain{
-		// Blocks:  make([]Block, 0),
+		bucket:  bucket,
 		Unspent: NewUnspentPool(),
 	}
 }
@@ -213,7 +240,7 @@ func createGenesisBlock(genesisAddr cipher.Address, genesisCoins uint64, timesta
 		BkSeq:    0,
 		Version:  0,
 		Fee:      0,
-		UxHash:   getUxHash(self.Unspent),
+		UxHash:   getUxHash(NewUnspentPool()),
 	}
 	b := Block{
 		Head: head,
@@ -222,16 +249,56 @@ func createGenesisBlock(genesisAddr cipher.Address, genesisCoins uint64, timesta
 	return b
 }
 
+// GetGenesisBlock get genesis block.
+func (bc Blockchain) GetGenesisBlock() *Block {
+	return bc.GetBlock(bc.genesis)
+}
+
+// GetBlock get block of specific hash in the blockchain, return nil on not found.
+func (bc Blockchain) GetBlock(hash cipher.SHA256) *Block {
+	binBlock := bc.bucket.Get(hash[:])
+	if binBlock == nil {
+		return nil
+	}
+
+	block := Block{}
+	if err := encoder.DeserializeRaw(binBlock, &block); err != nil {
+		return nil
+	}
+	return &block
+}
+
+// SetBlock set the block into blockchain db.
+func (bc *Blockchain) SetBlock(b Block) error {
+	bin := encoder.Serialize(b)
+	key := b.HashHeader()
+	return bc.bucket.Put(key[:], bin)
+}
+
+// FindBlock block that match the filter, return nil on not found.
+func (bc Blockchain) FindBlock(filter func(key, value []byte) bool) *Block {
+	bin := bc.bucket.Find(filter)
+	if bin == nil {
+		return nil
+	}
+	b := Block{}
+	if err := encoder.DeserializeRaw(bin, &b); err != nil {
+		return nil
+	}
+	return &b
+}
+
 // Init blockchain update head hash and unspent pool.
 func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, timestamp uint64) {
 	gb := createGenesisBlock(genesisAddr, genesisCoins, timestamp)
+	bc.genesis = gb.HashHeader()
 
-	// check whether genesis block does exist in blockdb.
-	b := blockdb.GetBlock(gb.HashHeader())
+	// check whether genesis block does exist.
+	b := bc.GetBlock(gb.HashHeader())
 	if b == nil {
 		// no blocks in blockdb.
-		// write the genesis block into blockdb.
-		blockdb.SetBlock(blockdb.Block{Block: gb})
+		// write the genesis block into blockchain.
+		bc.SetBlock(gb)
 		bc.head = gb.HashHeader()
 		bc.updateUnspent(gb)
 		return
@@ -239,7 +306,7 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 
 	// walk through the blocks in blockdb, update the head hash and unspent outputs pool.
 	var emptyHash cipher.SHA256
-	nxtHash := gb.NextHash
+	nxtHash := gb.NextHashHeader()
 	for {
 		if nxtHash == emptyHash {
 			break
@@ -247,9 +314,9 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 
 		bc.head = nxtHash
 		// get next block.
-		b := blockdb.GetBlock(nxtHash)
-		bc.updateUnspent(b.Block)
-		nxtHash = b.NextHash
+		b := bc.GetBlock(nxtHash)
+		bc.updateUnspent(*b)
+		nxtHash = b.NextHashHeader()
 	}
 }
 
@@ -302,15 +369,14 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 
 // Head returns the most recent confirmed block
 func (bc *Blockchain) Head() Block {
-	return *(blockdb.GetBlock(self.headHash))
+	return *bc.GetBlock(bc.head)
 }
 
 // Time returns time of last block
 // used as system clock indepedent clock for coin hour calculations
 // TODO: Deprecate
 func (bc *Blockchain) Time() uint64 {
-	b := blockdb.GetBlock(self.headHash)
-	return b.Head.Time
+	return bc.Head().Time()
 }
 
 // NewBlockFromTransactions creates a Block given an array of Transactions.  It does not verify the
@@ -327,7 +393,7 @@ func (bc *Blockchain) NewBlockFromTransactions(txns Transactions,
 	if err != nil {
 		return Block{}, err
 	}
-	b := newBlock(bc.Head(), currentTime, self.Unspent, txns,
+	b := newBlock(bc.Head(), currentTime, bc.Unspent, txns,
 		bc.TransactionFee)
 	//make sure block is valid
 	if DebugLevel2 == true {
@@ -362,16 +428,16 @@ func (bc *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
 	}
 
 	b.Head.PrevHash = bc.head
-	blockdb.SetBlock(blockdb.Block{Block: b})
+	bc.SetBlock(b)
 
 	// update the previous block's NextHash
-	preBlock := blockdb.GetBlock(bc.head)
+	preBlock := bc.GetBlock(bc.head)
 	if preBlock == nil {
-		return nil, errors.New("get block of %v failed", bc.head.Hex())
+		return nil, fmt.Errorf("get block of %v failed", bc.head.Hex())
 	}
 
-	preBlock.NextHash = b.HashHeader()
-	if err := blockdb.SetBlock(preBlock); err != nil {
+	preBlock.Next = b.HashHeader()
+	if err := bc.SetBlock(*preBlock); err != nil {
 		return nil, err
 	}
 	bc.head = b.HashHeader()
@@ -480,11 +546,61 @@ func (bc *Blockchain) VerifyTransaction(tx Transaction) error {
 	return nil
 }
 
+func (bc Blockchain) getBlockBySeq(seq uint64) *Block {
+	if seq > bc.Head().Head.BkSeq {
+		return nil
+	}
+	nxtHash := bc.genesis
+	var b *Block
+	for i := uint64(0); i <= seq; i++ {
+		b = bc.GetBlock(nxtHash)
+		if b == nil {
+			return nil
+		}
+		nxtHash = b.Next
+	}
+
+	return b
+}
+
+// GetBlockBySeq return block whose BkSeq is seq.
+func (bc Blockchain) GetBlockBySeq(seq uint64) *Block {
+	return bc.getBlockBySeq(seq)
+}
+
+// GetBlockRange return blocks whose seq are in the range of start and end.
+func (bc Blockchain) GetBlockRange(start, end uint64) []Block {
+	if start > end {
+		return []Block{}
+	}
+
+	blocks := make([]Block, end-start+1)
+
+	// find the start block
+	block := bc.getBlockBySeq(start)
+	if block == nil {
+		return []Block{}
+	}
+
+	nxtHash := block.Next
+	for i := uint64(0); i < end-start; i++ {
+		// get next block
+		b := bc.GetBlock(nxtHash)
+		if b == nil {
+			break
+		}
+
+		blocks[i] = *b
+		nxtHash = b.Next
+	}
+	return blocks
+}
+
 // CreateUnspents creates the expected outputs for a transaction.
 func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 	h := tx.Hash()
 	uxo := make(UxArray, len(tx.Out))
-	for i = range tx.Out {
+	for i := range tx.Out {
 		uxo[i] = UxOut{
 			Head: UxHead{
 				Time:  bh.Time,

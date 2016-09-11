@@ -6,13 +6,12 @@ import (
 	"gopkg.in/op/go-logging.v1"
 	//"fmt"
 	"log"
-	"os"
 	"time"
 
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	//"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -116,53 +115,53 @@ type Visor struct {
 }
 
 // Creates a normal Visor given a master's public key
-func NewVisor2(c VisorConfig) *Visor {
-	logger.Debug("Creating new visor")
-	// Make sure inputs are correct
-	if c.IsMaster {
-		logger.Debug("Visor is master")
-	}
-	if c.IsMaster {
-		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
-			log.Panicf("Cannot run in master: invalid seckey for pubkey")
-		}
-	}
+// func NewVisor2(c VisorConfig) *Visor {
+// 	logger.Debug("Creating new visor")
+// 	// Make sure inputs are correct
+// 	if c.IsMaster {
+// 		logger.Debug("Visor is master")
+// 	}
+// 	if c.IsMaster {
+// 		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
+// 			log.Panicf("Cannot run in master: invalid seckey for pubkey")
+// 		}
+// 	}
 
-	// Load the blockchain the block signatures
-	blockchain := loadBlockchain(c.BlockchainFile, c.GenesisAddress)
-	blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
-		} else {
-			log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
-		}
-		blockSigs = NewBlockSigs()
-	}
+// 	// Load the blockchain the block signatures
+// 	blockchain := loadBlockchain(c.BlockchainFile, c.GenesisAddress)
+// 	blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
+// 	if err != nil {
+// 		if os.IsNotExist(err) {
+// 			logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
+// 		} else {
+// 			log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
+// 		}
+// 		blockSigs = NewBlockSigs()
+// 	}
 
-	v := &Visor{
-		Config:      c,
-		Blockchain:  blockchain,
-		blockSigs:   blockSigs,
-		Unconfirmed: NewUnconfirmedTxnPool(),
-		//Wallets:     wallets,
-	}
-	// Load the genesis block and sign it, if we need one
-	if len(blockchain.Blocks) == 0 {
-		if (c.BlockchainSeckey == cipher.SecKey{}) || (c.IsMaster == false) {
-			v.CreateGenesisBlock()
-		} else {
-			v.CreateGenesisBlockInit()
-		}
-	}
+// 	v := &Visor{
+// 		Config:      c,
+// 		Blockchain:  blockchain,
+// 		blockSigs:   blockSigs,
+// 		Unconfirmed: NewUnconfirmedTxnPool(),
+// 		//Wallets:     wallets,
+// 	}
+// 	// Load the genesis block and sign it, if we need one
+// 	if len(blockchain.Blocks) == 0 {
+// 		if (c.BlockchainSeckey == cipher.SecKey{}) || (c.IsMaster == false) {
+// 			v.CreateGenesisBlock()
+// 		} else {
+// 			v.CreateGenesisBlockInit()
+// 		}
+// 	}
 
-	err = blockSigs.Verify(c.BlockchainPubkey, blockchain)
-	if err != nil {
-		log.Panicf("Invalid block signatures: %v", err)
-	}
+// 	err = blockSigs.Verify(c.BlockchainPubkey, blockchain)
+// 	if err != nil {
+// 		log.Panicf("Invalid block signatures: %v", err)
+// 	}
 
-	return v
-}
+// 	return v
+// }
 
 // NewVisor Creates a normal Visor given a master's public key
 func NewVisor(c VisorConfig) *Visor {
@@ -183,63 +182,64 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 
 	v.GenesisPreconditions()
+	v.Blockchain.Init(c.GenesisAddress, c.GenesisCoinVolume, c.GenesisTimestamp)
 
-	gb := v.Blockchain.CreateGenesisBlock(c.GenesisAddress, c.GenesisTimestamp, c.GenesisCoinVolume)
-	var sb SignedBlock
-	if c.IsMaster {
-		sb = v.SignBlock(gb)
-	} else {
-		sb = SignedBlock{
-			Block: gb,
-			Sig:   c.GenesisSignature,
-		}
-	}
-	v.blockSigs.record(&sb)
+	// gb := v.Blockchain.CreateGenesisBlock(c.GenesisAddress, c.GenesisTimestamp, c.GenesisCoinVolume)
+	// var sb SignedBlock
+	// if c.IsMaster {
+	// 	sb = v.SignBlock(gb)
+	// } else {
+	// 	sb = SignedBlock{
+	// 		Block: gb,
+	// 		Sig:   c.GenesisSignature,
+	// 	}
+	// }
+	// v.blockSigs.record(&sb)
 
-	// check if the genesis block does exist in blockdb.
-	block := blockdb.GetBlock(gb.HashHeader())
-	if block == nil {
-		// record the genesis block into blockdb.
-		dbBlock := blockdb.Block{
-			Block: gb,
-		}
-		if err := blockdb.SetBlock(dbBlock); err != nil {
-			log.Panicf("write block into blockdb failed:%v", err)
-		}
+	// // check if the genesis block does exist in blockdb.
+	// block := blockdb.GetBlock(gb.HashHeader())
+	// if block == nil {
+	// 	// record the genesis block into blockdb.
+	// 	dbBlock := blockdb.Block{
+	// 		Block: gb,
+	// 	}
+	// 	if err := blockdb.SetBlock(dbBlock); err != nil {
+	// 		log.Panicf("write block into blockdb failed:%v", err)
+	// 	}
 
-		// record the genesis block signature into blockdb.
-		if err := blockdb.SetBlockSignature(gb.HashHeader(), gb.Head.PrevHash, c.GenesisSignature, gb.Head.BkSeq); err != nil {
-			log.Panicf("write block signature into blockdb failed:%v", err)
-		}
-		return v
-	}
+	// 	// record the genesis block signature into blockdb.
+	// 	if err := blockdb.SetBlockSignature(gb.HashHeader(), gb.Head.PrevHash, c.GenesisSignature, gb.Head.BkSeq); err != nil {
+	// 		log.Panicf("write block signature into blockdb failed:%v", err)
+	// 	}
+	// 	return v
+	// }
 
-	// restore blocks from blockdb
-	var emptyHash cipher.SHA256
-	nxtHash := block.NextHash
-	for {
-		if nxtHash == emptyHash {
-			break
-		}
+	// // restore blocks from blockdb
+	// var emptyHash cipher.SHA256
+	// nxtHash := block.NextHash
+	// for {
+	// 	if nxtHash == emptyHash {
+	// 		break
+	// 	}
 
-		// get next block.
-		b := blockdb.GetBlock(nxtHash)
-		v.Blockchain.ExecuteBlock(b.Block)
+	// 	// get next block.
+	// 	b := blockdb.GetBlock(nxtHash)
+	// 	v.Blockchain.ExecuteBlock(b.Block)
 
-		// get next block signature.
-		bs := blockdb.GetBlockSignature(nxtHash)
-		sb := SignedBlock{
-			Block: b.Block,
-			Sig:   bs.Sig,
-		}
-		v.blockSigs.record(&sb)
+	// 	// get next block signature.
+	// 	bs := blockdb.GetBlockSignature(nxtHash)
+	// 	sb := SignedBlock{
+	// 		Block: b.Block,
+	// 		Sig:   bs.Sig,
+	// 	}
+	// 	v.blockSigs.record(&sb)
 
-		nxtHash = b.NextHash
-	}
+	// 	nxtHash = b.NextHash
+	// }
 
-	if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
-		log.Panicf("Invalid block signatures: %v", err)
-	}
+	// if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
+	// 	log.Panicf("Invalid block signatures: %v", err)
+	// }
 	return v
 }
 
@@ -271,55 +271,55 @@ func (self *Visor) GenesisPreconditions() {
 
 }
 
-func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
-	self.GenesisPreconditions()
+// func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
+// 	self.GenesisPreconditions()
 
-	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
-		log.Panic("Blockchain already has genesis")
-	}
-	if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
-		log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
-	}
+// 	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+// 		log.Panic("Blockchain already has genesis")
+// 	}
+// 	if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
+// 		log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
+// 	}
 
-	gb := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
-		self.Config.GenesisTimestamp, self.Config.GenesisCoinVolume)
-	sb := self.SignBlock(gb)
-	if err := self.verifySignedBlock(&sb); err != nil {
-		log.Panicf("Signed a fresh genesis block, but its invalid: %v", err)
-	}
-	self.blockSigs.record(&sb)
+// 	gb := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
+// 		self.Config.GenesisTimestamp, self.Config.GenesisCoinVolume)
+// 	sb := self.SignBlock(gb)
+// 	if err := self.verifySignedBlock(&sb); err != nil {
+// 		log.Panicf("Signed a fresh genesis block, but its invalid: %v", err)
+// 	}
+// 	self.blockSigs.record(&sb)
 
-	log.Printf("New Genesis:")
-	log.Printf("genesis_time= %v", sb.Block.Head.Time)
-	log.Printf("genesis_address= %v", self.Config.GenesisAddress.String())
-	log.Printf("genesis_signature= %v", sb.Sig.Hex())
+// 	log.Printf("New Genesis:")
+// 	log.Printf("genesis_time= %v", sb.Block.Head.Time)
+// 	log.Printf("genesis_address= %v", self.Config.GenesisAddress.String())
+// 	log.Printf("genesis_signature= %v", sb.Sig.Hex())
 
-	return sb, nil
-}
+// 	return sb, nil
+// }
 
 // Creates the genesis block as needed
-func (self *Visor) CreateGenesisBlock() SignedBlock {
-	self.GenesisPreconditions()
+// func (self *Visor) CreateGenesisBlock() SignedBlock {
+// 	self.GenesisPreconditions()
 
-	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
-		log.Panic("Blockchain already has genesis")
-	}
-	//addr := self.Config.GenesisAddress
-	b := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress, self.Config.GenesisTimestamp,
-		self.Config.GenesisCoinVolume)
-	sb := SignedBlock{
-		Block: b,
-		Sig:   self.Config.GenesisSignature,
-	}
-	self.blockSigs.record(&sb)
+// 	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
+// 		log.Panic("Blockchain already has genesis")
+// 	}
+// 	//addr := self.Config.GenesisAddress
+// 	b := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress, self.Config.GenesisTimestamp,
+// 		self.Config.GenesisCoinVolume)
+// 	sb := SignedBlock{
+// 		Block: b,
+// 		Sig:   self.Config.GenesisSignature,
+// 	}
+// 	self.blockSigs.record(&sb)
 
-	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
-		self.Blockchain)
-	if err != nil {
-		log.Panicf("Cannot create genesis block, signature verification failed: %v", err)
-	}
-	return sb
-}
+// 	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
+// 		self.Blockchain)
+// 	if err != nil {
+// 		log.Panicf("Cannot create genesis block, signature verification failed: %v", err)
+// 	}
+// 	return sb
+// }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
@@ -381,8 +381,8 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	if err := self.verifySignedBlock(&b); err != nil {
 		return err
 	}
-	_, err := self.Blockchain.ExecuteBlock(b.Block)
-	if err != nil {
+
+	if _, err := self.Blockchain.ExecuteBlock(b.Block); err != nil {
 		return err
 	}
 	// TODO -- save them even if out of order, and execute later
@@ -390,29 +390,29 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	// TODO -- check if bitcoin allows blocks to be receiving out of order
 	self.blockSigs.record(&b)
 
-	// write block into blockdb.
-	dbBlock := blockdb.Block{
-		Block: b.Block,
-	}
-	if err := blockdb.SetBlock(dbBlock); err != nil {
-		return err
-	}
+	// // write block into blockdb.
+	// dbBlock := blockdb.Block{
+	// 	Block: b.Block,
+	// }
+	// if err := blockdb.SetBlock(dbBlock); err != nil {
+	// 	return err
+	// }
 
-	// update the pre block's next hash in blockdb.
-	preBlock := blockdb.GetBlock(b.Block.Head.PrevHash)
-	if preBlock == nil {
-		logger.Critical("may be genesis block: ", b.Block.Head.PrevHash.Hex())
-		return nil
-	}
-	preBlock.NextHash = b.Block.HashHeader()
-	if err := blockdb.SetBlock(*preBlock); err != nil {
-		return err
-	}
+	// // update the pre block's next hash in blockdb.
+	// preBlock := blockdb.GetBlock(b.Block.Head.PrevHash)
+	// if preBlock == nil {
+	// 	logger.Critical("may be genesis block: ", b.Block.Head.PrevHash.Hex())
+	// 	return nil
+	// }
+	// preBlock.NextHash = b.Block.HashHeader()
+	// if err := blockdb.SetBlock(*preBlock); err != nil {
+	// 	return err
+	// }
 
 	// write block signature into blockdb.
-	if err := blockdb.SetBlockSignature(b.Block.HashHeader(), b.Block.Head.PrevHash, b.Sig, b.Block.Head.BkSeq); err != nil {
-		return err
-	}
+	// if err := blockdb.SetBlockSignature(b.Block.HashHeader(), b.Block.Head.PrevHash, b.Sig, b.Block.Head.BkSeq); err != nil {
+	// 	return err
+	// }
 
 	// Remove the transactions in the Block from the unconfirmed pool
 	self.Unconfirmed.RemoveTransactions(self.Blockchain,
@@ -482,8 +482,9 @@ func (self *Visor) GetSignedBlocksSince(seq, ct uint64) []SignedBlock {
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
 		blocks = append(blocks, SignedBlock{
-			Sig:   self.blockSigs.Sigs[i],
-			Block: self.Blockchain.Blocks[i],
+			Sig: self.blockSigs.Sigs[i],
+			// Block: self.Blockchain.Blocks[i],
+			Block: *(self.Blockchain.GetBlockBySeq(i)),
 		})
 	}
 	return blocks
@@ -495,12 +496,15 @@ func (self *Visor) GetGenesisBlock() SignedBlock {
 	if !ok {
 		log.Panic("No genesis signature")
 	}
-	if len(self.Blockchain.Blocks) == 0 {
+
+	gb := self.Blockchain.GetGenesisBlock()
+	if gb == nil {
 		log.Panic("No genesis block")
 	}
+
 	return SignedBlock{
 		Sig:   gsig,
-		Block: self.Blockchain.Blocks[0],
+		Block: *gb,
 	}
 }
 
@@ -539,28 +543,18 @@ func (self *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
 // Move to blockdb
 func (self *Visor) GetBlock(seq uint64) (coin.Block, error) {
 	var b coin.Block
-	if seq >= uint64(len(self.Blockchain.Blocks)) {
+	if seq > self.Blockchain.Head().Head.BkSeq {
 		return b, errors.New("Block seq out of range")
 	}
-	return self.Blockchain.Blocks[seq], nil
+
+	return *self.Blockchain.GetBlockBySeq(seq), nil
 }
 
 // Returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
 // move to blockdb
 func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
-	if end > uint64(len(self.Blockchain.Blocks)) {
-		end = uint64(len(self.Blockchain.Blocks))
-	}
-	var length uint64 = 0
-	if start < end {
-		length = end - start
-	}
-	blocks := make([]coin.Block, 0, length)
-	for i := start; i < end; i++ {
-		blocks = append(blocks, self.Blockchain.Blocks[i])
-	}
-	return blocks
+	return self.Blockchain.GetBlockRange(start, end)
 }
 
 // Updates an UnconfirmedTxn's Announce field
@@ -587,7 +581,7 @@ func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	uxs := self.Blockchain.Unspent.AllForAddress(a)
 	mxSeq := self.HeadBkSeq()
 	for _, ux := range uxs {
-		bk := self.Blockchain.Blocks[ux.Head.BkSeq]
+		bk := self.Blockchain.GetBlockBySeq(ux.Head.BkSeq)
 		tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
 		if ok {
 			h := mxSeq - bk.Head.BkSeq + 1
@@ -630,14 +624,24 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 	// TODO -- this is extremely slow as it does a full blockchain scan
 	// We need an index from txn hash to block.  At least an index per block
 	// to its contained txns
-	for _, b := range self.Blockchain.Blocks {
-		tx, ok := b.GetTransaction(txHash)
-		if ok {
-			height := self.HeadBkSeq() - b.Head.BkSeq + 1
-			return Transaction{
-				Txn:    tx,
-				Status: NewConfirmedTransactionStatus(height),
-			}
+
+	b := self.Blockchain.FindBlock(func(key, value []byte) bool {
+		var block coin.Block
+		if err := encoder.DeserializeRaw(value, &block); err != nil {
+			return false
+		}
+		if _, ok := block.GetTransaction(txHash); ok {
+			return true
+		}
+		return false
+	})
+
+	if b != nil {
+		tx, _ := b.GetTransaction(txHash)
+		height := self.HeadBkSeq() - b.Head.BkSeq + 1
+		return Transaction{
+			Txn:    tx,
+			Status: NewConfirmedTransactionStatus(height),
 		}
 	}
 

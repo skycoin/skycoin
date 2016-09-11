@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -89,4 +90,46 @@ func TestDisable(t *testing.T) {
 	if nb != nil {
 		t.Fatal("get block must be nil")
 	}
+}
+
+func TestFindBlock(t *testing.T) {
+	_, teardown, err := setup(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer teardown()
+	hashs := make([]cipher.SHA256, 10)
+	for i := uint64(0); i < 10; i++ {
+		b := coin.Block{}
+		b.Head.BkSeq = i
+		hashs[i] = b.HashHeader()
+		if err := blockdb.SetBlock(b); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for i := uint64(0); i < 10; i++ {
+		block := blockdb.FindBlock(func(value []byte) (bool, error) {
+			b := blockdb.Block{}
+			if err := encoder.DeserializeRaw(value, &b); err {
+				return false, err
+			}
+
+			if b.HashHeader() == hashs[i] {
+				return true, nil
+			}
+
+			return false, nil
+		})
+
+		if block == nil {
+			t.Fatal("failed to find block")
+		}
+
+		if block.Head.BkSeq != i {
+			t.Fatal("failed to find block")
+		}
+	}
+
 }

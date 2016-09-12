@@ -1,7 +1,6 @@
 package visor
 
 import (
-	"errors"
 	"io/ioutil"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -87,31 +86,31 @@ func (self *BlockSigs) Save(filename string) error {
 
 // Checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (self *BlockSigs) Verify(masterPublic cipher.PubKey,
-	bc *coin.Blockchain) error {
+// func (self *BlockSigs) Verify(masterPublic cipher.PubKey,
+// 	bc *coin.Blockchain) error {
 
-	if len(bc.Blocks) != len(self.Sigs) {
-		return errors.New("Missing signatures for blocks or vice versa")
-	}
-	blocks := uint64(len(bc.Blocks))
-	// For now, block sigs must all be sequential and continuous
-	if self.MaxSeq+1 != blocks {
-		return errors.New("MaxSeq does not match blockchain size")
-	}
-	for i := uint64(0); i < self.MaxSeq; i++ {
-		if _, ok := self.Sigs[i]; !ok {
-			return errors.New("Blocksigs missing signature")
-		}
-	}
+// 	if len(bc.Blocks) != len(self.Sigs) {
+// 		return errors.New("Missing signatures for blocks or vice versa")
+// 	}
+// 	blocks := uint64(len(bc.Blocks))
+// 	// For now, block sigs must all be sequential and continuous
+// 	if self.MaxSeq+1 != blocks {
+// 		return errors.New("MaxSeq does not match blockchain size")
+// 	}
+// 	for i := uint64(0); i < self.MaxSeq; i++ {
+// 		if _, ok := self.Sigs[i]; !ok {
+// 			return errors.New("Blocksigs missing signature")
+// 		}
+// 	}
 
-	for k, v := range self.Sigs {
-		err := cipher.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// 	for k, v := range self.Sigs {
+// 		err := cipher.VerifySignature(masterPublic, v, bc.Blocks[k].HashHeader())
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 // Adds a SignedBlock
 func (self *BlockSigs) record(sb *SignedBlock) {

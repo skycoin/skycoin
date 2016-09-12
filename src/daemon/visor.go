@@ -66,23 +66,23 @@ func NewVisor(c VisorConfig) *Visor {
 
 //move to visor?
 //DEPRECATE?
-func (self *Visor) SaveBlockchain() {
-	bcFile := self.Config.Config.BlockchainFile
-	err := self.Visor.SaveBlockchain()
-	if err == nil {
-		logger.Info("Saved blockchain to \"%s\"", bcFile)
-	} else {
-		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
-	}
-	bsFile := self.Config.Config.BlockSigsFile
-	err = self.Visor.SaveBlockSigs()
-	if err == nil {
-		logger.Info("Saved block sigs to \"%s\"", bsFile)
-	} else {
-		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
-	}
+// func (self *Visor) SaveBlockchain() {
+// 	bcFile := self.Config.Config.BlockchainFile
+// 	err := self.Visor.SaveBlockchain()
+// 	if err == nil {
+// 		logger.Info("Saved blockchain to \"%s\"", bcFile)
+// 	} else {
+// 		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
+// 	}
+// 	bsFile := self.Config.Config.BlockSigsFile
+// 	err = self.Visor.SaveBlockSigs()
+// 	if err == nil {
+// 		logger.Info("Saved block sigs to \"%s\"", bsFile)
+// 	} else {
+// 		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
+// 	}
 
-}
+// }
 
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {

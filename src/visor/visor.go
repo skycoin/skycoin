@@ -329,13 +329,13 @@ func (self *Visor) RefreshUnconfirmed() {
 }
 
 // Saves the coin.Blockchain to disk
-func (self *Visor) SaveBlockchain() error {
-	if self.Config.BlockchainFile == "" {
-		return errors.New("No BlockchainFile location set")
-	} else {
-		return SaveBlockchain(self.Blockchain, self.Config.BlockchainFile)
-	}
-}
+// func (self *Visor) SaveBlockchain() error {
+// 	if self.Config.BlockchainFile == "" {
+// 		return errors.New("No BlockchainFile location set")
+// 	} else {
+// 		return SaveBlockchain(self.Blockchain, self.Config.BlockchainFile)
+// 	}
+// }
 
 // Saves BlockSigs to disk
 func (self *Visor) SaveBlockSigs() error {

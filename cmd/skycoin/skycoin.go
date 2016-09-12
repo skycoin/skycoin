@@ -138,8 +138,6 @@ type Config struct {
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo string
-
-	DisableBlockdb bool
 }
 
 func (c *Config) Parse() {
@@ -225,7 +223,6 @@ func (c *Config) register() {
 		"Run on localhost and only connect to localhost peers")
 	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
-	flag.BoolVar(&c.DisableBlockdb, "disable-blockdb", false, "disable blockdb")
 }
 
 func (c *Config) postProcess() {
@@ -273,7 +270,6 @@ func (c *Config) postProcess() {
 	panicIfError(err, "Invalid -log-level %s", c.logLevel)
 	c.LogLevel = ll
 
-	blockdb.Disabled = c.DisableBlockdb
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {

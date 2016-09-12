@@ -294,7 +294,7 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 	bc.genesis = gb.HashHeader()
 
 	// check whether genesis block does exist.
-	b := bc.GetBlock(gb.HashHeader())
+	b := bc.GetBlock(bc.genesis)
 	if b == nil {
 		// no blocks in blockdb.
 		// write the genesis block into blockchain.
@@ -319,53 +319,6 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 		nxtHash = b.NextHashHeader()
 	}
 }
-
-// CreateGenesisBlock Creates a genesis block and applies it against chain
-// Takes in time as parameter
-// func (self *Blockchain) CreateGenesisBlock(genesisAddress cipher.Address,
-// 	timestamp uint64, genesisCoins uint64) Block {
-// 	logger.Info("Creating new genesis block with address %s",
-// 		genesisAddress.String())
-// 	// Why is there a transaction in the genesis block?
-// 	// Limits the special casing around genesis blocks:
-// 	//      -Allows assumption that all UxOuts have a SrcTransaction that
-// 	//      -can be found in the blockchain, without checking for genesis UxOut
-// 	txn := Transaction{}
-// 	txn.PushOutput(genesisAddress, genesisCoins, genesisCoins)
-// 	body := BlockBody{Transactions{txn}}
-// 	prevHash := cipher.SHA256{}
-// 	head := BlockHeader{
-// 		Time:     timestamp,
-// 		BodyHash: body.Hash(),
-// 		PrevHash: prevHash,
-// 		BkSeq:    0,
-// 		Version:  0,
-// 		Fee:      0,
-// 		UxHash:   getUxHash(self.Unspent),
-// 	}
-// 	b := Block{
-// 		Head: head,
-// 		Body: body,
-// 	}
-
-// 	self.headHash = b.HashHeader()
-
-// 	// Genesis output
-// 	ux := UxOut{
-// 		Head: UxHead{
-// 			Time:  b.Head.Time,
-// 			BkSeq: 0,
-// 		},
-// 		Body: UxBody{
-// 			SrcTransaction: txn.InnerHash, //user inner hash
-// 			Address:        genesisAddress,
-// 			Coins:          genesisCoins,
-// 			Hours:          genesisCoins, // Allocate 1 coin hour per coin
-// 		},
-// 	}
-// 	self.Unspent.Add(ux)
-// 	return b
-// }
 
 // Head returns the most recent confirmed block
 func (bc *Blockchain) Head() Block {
@@ -405,6 +358,19 @@ func (bc *Blockchain) NewBlockFromTransactions(txns Transactions,
 		}
 	}
 	return b, nil
+}
+
+// GenerateGenesisBlock create genesis block and add to the block chain,
+// update the head and genesis hash.
+func (bc *Blockchain) GenerateGenesisBlock(genesisAddr cipher.Address, genesisCoins uint64, timestamp uint64) *Block {
+	gb := createGenesisBlock(genesisAddr, genesisCoins, timestamp)
+	bc.genesis = gb.HashHeader()
+
+	// write the genesis block into blockchain.
+	bc.SetBlock(gb)
+	bc.head = gb.HashHeader()
+	bc.updateUnspent(gb)
+	return &gb
 }
 
 // ExecuteBlock Attempts to append block to blockchain.  Returns the UxOuts created,
@@ -592,6 +558,26 @@ func (bc Blockchain) GetBlockRange(start, end uint64) []Block {
 
 		blocks[i] = *b
 		nxtHash = b.Next
+	}
+	return blocks
+}
+
+// GetLatestBlocks return the latest N blocks.
+func (bc Blockchain) GetLatestBlocks(num uint64) []Block {
+	var blocks []Block
+	if num == 0 {
+		return blocks
+	}
+
+	ch := bc.Head().HashHeader()
+	var emptyHash cipher.SHA256
+	for i := uint64(0); i < num; i++ {
+		if ch == emptyHash {
+			break
+		}
+		b := bc.GetBlock(ch)
+		blocks = append(blocks, *b)
+		ch = b.PreHashHeader()
 	}
 	return blocks
 }

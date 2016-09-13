@@ -360,19 +360,6 @@ func (bc *Blockchain) NewBlockFromTransactions(txns Transactions,
 	return b, nil
 }
 
-// GenerateGenesisBlock create genesis block and add to the block chain,
-// update the head and genesis hash.
-func (bc *Blockchain) GenerateGenesisBlock(genesisAddr cipher.Address, genesisCoins uint64, timestamp uint64) *Block {
-	gb := createGenesisBlock(genesisAddr, genesisCoins, timestamp)
-	bc.genesis = gb.HashHeader()
-
-	// write the genesis block into blockchain.
-	bc.SetBlock(gb)
-	bc.head = gb.HashHeader()
-	bc.updateUnspent(gb)
-	return &gb
-}
-
 // ExecuteBlock Attempts to append block to blockchain.  Returns the UxOuts created,
 // and an error if the block is invalid.
 func (bc *Blockchain) ExecuteBlock(b Block) (UxArray, error) {

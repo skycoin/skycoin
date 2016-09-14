@@ -289,7 +289,7 @@ func (bc Blockchain) FindBlock(filter func(key, value []byte) bool) *Block {
 }
 
 // Init blockchain update head hash and unspent pool.
-func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, timestamp uint64) {
+func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, timestamp uint64) error {
 	gb := createGenesisBlock(genesisAddr, genesisCoins, timestamp)
 	bc.genesis = gb.HashHeader()
 
@@ -299,9 +299,22 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 		// no blocks in blockdb.
 		// write the genesis block into blockchain.
 		bc.SetBlock(gb)
+
+		ux := UxOut{
+			Head: UxHead{
+				Time:  gb.Head.Time,
+				BkSeq: 0,
+			},
+			Body: UxBody{
+				SrcTransaction: gb.Body.Transactions[0].Hash(), //user inner hash
+				Address:        genesisAddr,
+				Coins:          genesisCoins,
+				Hours:          genesisCoins, // Allocate 1 coin hour per coin
+			},
+		}
+		bc.Unspent.Add(ux)
 		bc.head = gb.HashHeader()
-		bc.updateUnspent(gb)
-		return
+		return nil
 	}
 
 	// walk through the blocks in blockdb, update the head hash and unspent outputs pool.
@@ -315,9 +328,12 @@ func (bc *Blockchain) Init(genesisAddr cipher.Address, genesisCoins uint64, time
 		bc.head = nxtHash
 		// get next block.
 		b := bc.GetBlock(nxtHash)
-		bc.updateUnspent(*b)
+		if err := bc.updateUnspent(*b); err != nil {
+			return err
+		}
 		nxtHash = b.NextHashHeader()
 	}
+	return nil
 }
 
 // Head returns the most recent confirmed block
@@ -337,6 +353,7 @@ func (bc *Blockchain) Time() uint64 {
 func (bc *Blockchain) NewBlockFromTransactions(txns Transactions,
 	currentTime uint64) (Block, error) {
 	if currentTime <= bc.Time() {
+		fmt.Println("currentTime:", currentTime, " bc Time:", bc.Time())
 		log.Panic("Time can only move forward")
 	}
 	if len(txns) == 0 {
@@ -417,8 +434,10 @@ func (bc *Blockchain) updateUnspent(b Block) error {
 
 // VerifyBlock verifies the BlockHeader and BlockBody
 func (bc *Blockchain) VerifyBlock(b Block) error {
-	if err := verifyBlockHeader(bc.Head(), b); err != nil {
-		return err
+	if bc.genesis != b.HashHeader() {
+		if err := verifyBlockHeader(bc.Head(), b); err != nil {
+			return err
+		}
 	}
 	if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
 		return err
@@ -567,6 +586,12 @@ func (bc Blockchain) GetLatestBlocks(num uint64) []Block {
 		ch = b.PreHashHeader()
 	}
 	return blocks
+}
+
+// Count return the totoal block number in the chain,
+// note: this function will traverse the whole chain.
+func (bc Blockchain) Count() uint64 {
+	return bc.bucket.Count()
 }
 
 // CreateUnspents creates the expected outputs for a transaction.

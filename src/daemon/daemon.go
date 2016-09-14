@@ -171,7 +171,7 @@ func NewDaemonConfig() DaemonConfig {
 		Port:                       6677,
 		OutgoingRate:               time.Second * 5,
 		PrivateRate:                time.Second * 5,
-		OutgoingMax:                16,
+		OutgoingMax:                32,
 		PendingMax:                 16,
 		IntroductionWait:           time.Second * 30,
 		CullInvalidRate:            time.Second * 3,
@@ -234,7 +234,7 @@ func NewDaemon(config Config) *Daemon {
 		Peers:    NewPeers(config.Peers),
 		Visor:    NewVisor(config.Visor),
 
-		DefaultConnections: DefaultConnections, //from peers.go
+		DefaultConnections: DefaultConnections, //passed in from top level
 
 		ExpectingIntroductions: make(map[string]time.Time),
 		ConnectionMirrors:      make(map[string]uint32),

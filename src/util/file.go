@@ -4,7 +4,7 @@ package util
 import (
 	"encoding/json"
 	"errors"
-	//"fmt"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -131,12 +131,12 @@ func ResolveResourceDirectory(path string) string {
 	_, rt_filename, _, _ := runtime.Caller(1)
 	rt_directory := filepath.Dir(rt_filename)
 
-	//fmt.Printf("Filename, absolute dir= %s \n", filename)
-	//fmt.Printf("Filepath Raw= %s \n", )
-	//fmt.Printf("Filepath Directory= %s \n", filepath.Dir(path))
-	//fmt.Printf("Working Directory= %s \n", workDir)
-	//fmt.Printf("Runtime Filename= %s \n", rt_filename)
-	//fmt.Printf("Runtime Directory= %s \n", rt_directory)
+	fmt.Printf("runtime.Caller= %s \n", rt_filename)
+	//fmt.Printf("Filepath Raw= %s \n")
+	fmt.Printf("Filepath Directory= %s \n", filepath.Dir(path))
+	fmt.Printf("Working Directory= %s \n", workDir)
+	fmt.Printf("Runtime Filename= %s \n", rt_filename)
+	fmt.Printf("Runtime Directory= %s \n", rt_directory)
 
 	//dir1 := filepath.Join(workDir, filepath.Dir(path))
 	//fmt.Printf("Dir1= %s \n", dir1)
@@ -144,6 +144,7 @@ func ResolveResourceDirectory(path string) string {
 	dirs := []string{
 		path, //try direct path first
 		filepath.Join(workDir, filepath.Dir(path)), //default
+		//filepath.Join(rt_directory, "./", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../../", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../../../", filepath.Dir(path)),

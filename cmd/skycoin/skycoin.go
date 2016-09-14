@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"gopkg.in/op/go-logging.v1"
 )
 
@@ -137,6 +138,8 @@ type Config struct {
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo string
+
+	DisableBlockdb bool
 }
 
 func (c *Config) Parse() {
@@ -222,6 +225,7 @@ func (c *Config) register() {
 		"Run on localhost and only connect to localhost peers")
 	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
+	flag.BoolVar(&c.DisableBlockdb, "disable-blockdb", false, "disable blockdb")
 }
 
 func (c *Config) postProcess() {
@@ -268,6 +272,8 @@ func (c *Config) postProcess() {
 	ll, err := logging.LogLevel(c.logLevel)
 	panicIfError(err, "Invalid -log-level %s", c.logLevel)
 	c.LogLevel = ll
+
+	blockdb.Disabled = c.DisableBlockdb
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {
@@ -463,6 +469,10 @@ func Run(c *Config) {
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 	initLogging(c.LogLevel, c.ColorLog)
+
+	// start the block db.
+	blockdb.Start()
+	defer blockdb.Stop()
 
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan int)

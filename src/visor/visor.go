@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	//"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -139,6 +140,23 @@ func NewVisor(c VisorConfig) *Visor {
 		blockSigs = NewBlockSigs()
 	}
 
+	// write blockchain into blockdb.
+	for _, bc := range blockchain.Blocks {
+		if err := blockdb.SetBlock(bc); err != nil {
+			log.Panicf("write bocks into blockdb failed: %v", err)
+		}
+	}
+
+	// write blocksig into blockdb.
+	for seq, sig := range blockSigs.Sigs {
+		// get block hash in seq
+		hash := blockchain.Blocks[seq].HashHeader()
+		preHash := blockchain.Blocks[seq].Head.PrevHash
+		if err := blockdb.SetBlockSignature(hash, preHash, sig, seq); err != nil {
+			log.Panicf("write block sigs into blockdb failed: %v", err)
+		}
+	}
+
 	v := &Visor{
 		Config:      c,
 		Blockchain:  blockchain,
@@ -205,9 +223,17 @@ func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
 		self.Config.GenesisTimestamp, self.Config.GenesisCoinVolume)
 	sb := self.SignBlock(gb)
 	if err := self.verifySignedBlock(&sb); err != nil {
-		log.Panic("Signed a fresh genesis block, but its invalid: %v", err)
+		log.Panicf("Signed a fresh genesis block, but its invalid: %v", err)
 	}
 	self.blockSigs.record(&sb)
+
+	if err := blockdb.SetBlock(gb); err != nil {
+		log.Panicf("write genesis block into blockdb failed:%v", err)
+	}
+
+	if err := blockdb.SetBlockSignature(gb.HashHeader(), gb.Head.PrevHash, sb.Sig, gb.Head.BkSeq); err != nil {
+		log.Panicf("write block signature into blockdb failed:%v", err)
+	}
 
 	log.Printf("New Genesis:")
 	log.Printf("genesis_time= %v", sb.Block.Head.Time)
@@ -232,6 +258,15 @@ func (self *Visor) CreateGenesisBlock() SignedBlock {
 		Sig:   self.Config.GenesisSignature,
 	}
 	self.blockSigs.record(&sb)
+
+	if err := blockdb.SetBlock(b); err != nil {
+		log.Panicf("write genesis block into bockdb failed:%v", err)
+	}
+
+	if err := blockdb.SetBlockSignature(b.HashHeader(), b.Head.PrevHash, self.Config.GenesisSignature, b.Head.BkSeq); err != nil {
+		log.Panicf("write gensis block signature into blockdb failed:%v", err)
+	}
+
 	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
 		self.Blockchain)
 	if err != nil {
@@ -308,10 +343,18 @@ func (self *Visor) ExecuteSignedBlock(b SignedBlock) error {
 	// But make sure all prechecking as possible is done
 	// TODO -- check if bitcoin allows blocks to be receiving out of order
 	self.blockSigs.record(&b)
+
 	// Remove the transactions in the Block from the unconfirmed pool
 	self.Unconfirmed.RemoveTransactions(self.Blockchain,
 		b.Block.Body.Transactions)
-	return nil
+
+	// write block into blockdb.
+	if err := blockdb.SetBlock(b.Block); err != nil {
+		return err
+	}
+
+	// write block signature into blockdb.
+	return blockdb.SetBlockSignature(b.Block.HashHeader(), b.Block.Head.PrevHash, b.Sig, b.Block.Head.BkSeq)
 }
 
 // Returns an error if the cipher.Sig is not valid for the coin.Block

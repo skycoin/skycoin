@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/nodemanager/lib_nodemanager"
 	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -430,4 +431,95 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 	}
 
 	statusChannel <- success
+}
+
+/*
+type ReadableTransactionOutput struct {
+	Hash    string `json:"uxid"`
+	Address string `json:"dst"`
+	Coins   string `json:"coins"`
+	Hours   uint64 `json:"hours"`
+}
+
+type ReadableTransaction struct {
+	Length    uint32 `json:"length"`
+	Type      uint8  `json:"type"`
+	Hash      string `json:"txid"`
+	InnerHash string `json:"inner_hash"`
+
+	Sigs []string                    `json:"sigs"`
+	In   []string                    `json:"inputs"`
+	Out  []ReadableTransactionOutput `json:"outputs"`
+}
+
+type ReadableUnconfirmedTxn struct {
+	Txn       ReadableTransaction `json:"transaction"`
+	Received  time.Time           `json:"received"`
+	Checked   time.Time           `json:"checked"`
+	Announced time.Time           `json:"announced"`
+}
+*/
+
+func TestMarshalReadableStruc(t *testing.T) {
+
+	readableTransactionOutput := visor.ReadableTransactionOutput{}
+	readableTransactionOutput.Hash = "7b22446174616772616d4c656e677"
+	readableTransactionOutput.Address = "127.0.0.1:5470"
+	readableTransactionOutput.Coins = visor.StrBalance(1000)
+	readableTransactionOutput.Hours = uint64(time.Now().UnixNano())
+
+	readableTransaction := visor.ReadableTransaction{}
+	readableTransaction.Length = uint32(3200)
+	readableTransaction.Type = uint8(47)
+	readableTransaction.Hash = "7b22446174616772616d4c656e677"
+	readableTransaction.InnerHash = "2616d4c656e6777b2244617461677"
+	readableTransaction.Sigs = []string{"a", "b", "c"}
+	readableTransaction.In = []string{"dd", "ee", "ff"}
+	readableTransaction.Out = append(readableTransaction.Out, readableTransactionOutput)
+
+	readableUnconfirmedTxn := visor.ReadableUnconfirmedTxn{}
+	readableUnconfirmedTxn.Txn = readableTransaction
+	readableUnconfirmedTxn.Received, _ = time.Parse("2006-01-02", "2016-09-07")
+	readableUnconfirmedTxn.Checked, _ = time.Parse("2006-01-02", "2016-09-08")
+	readableUnconfirmedTxn.Announced, _ = time.Parse("2006-01-02", "2016-09-09")
+
+	value, _ := json.Marshal(readableUnconfirmedTxn)
+	fmt.Fprintln(os.Stdout, string(value))
+
+	messageJSON := `{
+	"transaction": {
+		"length": 3200,
+		"type": 47,
+		"txid": "7b22446174616772616d4c656e677",
+		"inner_hash": "2616d4c656e6777b2244617461677",
+		"sigs": [
+			"a",
+			"b",
+			"c"
+		],
+		"inputs": [
+			"dd",
+			"ee",
+			"ff"
+		],
+		"outputs": [
+			{
+				"uxid": "7b22446174616772616d4c656e677",
+				"dst": "127.0.0.1:5470",
+				"coins": "0.1000",
+				"hours": 1473390392083830819
+			}
+		]
+	},
+	"received": "2016-09-07T00:00:00Z",
+	"checked": "2016-09-08T00:00:00Z",
+	"announced": "2016-09-09T00:00:00Z"
+}`
+
+	readableUnconfirmedTxn2 := visor.ReadableUnconfirmedTxn{}
+	json.Unmarshal([]byte(messageJSON), &readableUnconfirmedTxn2)
+
+	value2, _ := json.Marshal(readableUnconfirmedTxn2)
+
+	assert.Equal(t, len(value), len(value2), "Error expected equal length between value and value2")
 }

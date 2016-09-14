@@ -57,3 +57,16 @@ func (b Bucket) Find(filter func(key, value []byte) bool) []byte {
 	})
 	return value
 }
+
+// Count return the number of key/value pairs
+func (b Bucket) Count() uint64 {
+	var count uint64
+	db.View(func(tx *bolt.Tx) error {
+		bt := tx.Bucket(b.Name)
+		return bt.ForEach(func(k, v []byte) error {
+			count++
+			return nil
+		})
+	})
+	return count
+}

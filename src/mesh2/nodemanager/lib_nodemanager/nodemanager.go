@@ -10,9 +10,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh2/node"
-	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
 	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
-	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
+	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
 )
 
 func init() {
@@ -53,8 +52,8 @@ type Route struct {
 func CreateTestConfig(port int) *mesh.TestConfig {
 	testConfig := &mesh.TestConfig{}
 	testConfig.Node = NewNodeConfig()
-	testConfig.Reliable = reliable.CreateReliable(testConfig.Node.PubKey)
-	testConfig.Udp = udp.CreateUdp(port, "127.0.0.1")
+	testConfig.Reliable = protocol.CreateReliable(testConfig.Node.PubKey)
+	testConfig.Udp = protocol.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
 }

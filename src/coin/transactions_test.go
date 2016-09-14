@@ -6,8 +6,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -288,11 +288,17 @@ func TestTransactionOutputHours(t *testing.T) {
 }
 
 func TestTransactionFees(t *testing.T) {
+	_, teardown, err := setup(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer teardown()
+
 	bc := NewBlockchain()
-	bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
-	assert.Equal(t, len(bc.Blocks), 1)
+	bc.Init(genAddress, _genCoins, _genTime)
+	assert.Equal(t, bc.Count(), uint64(1))
 	_, ux := addBlockToBlockchain(t, bc)
-	assert.Equal(t, len(bc.Blocks), 3)
+	assert.Equal(t, bc.Count(), uint64(3))
 
 	// Valid txn, 100 hours fee
 	tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
@@ -324,11 +330,17 @@ func TestTransactionFees(t *testing.T) {
 }
 
 func TestNewSortableTransactions(t *testing.T) {
+	_, teardown, err := setup(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer teardown()
 	bc := NewBlockchain()
-	bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+
+	bc.Init(genAddress, _genCoins, _genTime)
 	_, ux := addBlockToBlockchain(t, bc)
 	txns := make(Transactions, 4)
-	for i, _ := range txns {
+	for i := range txns {
 		tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret,
 			100, uint64(i*100))
 		txns[i] = tx
@@ -357,8 +369,14 @@ func TestTransactionsSize(t *testing.T) {
 }
 
 func TestTransactionSorting(t *testing.T) {
+	_, teardown, err := setup(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer teardown()
+
 	bc := NewBlockchain()
-	bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
+	bc.Init(genAddress, _genCoins, _genTime)
 	_, ux := addBlockToBlockchain(t, bc)
 	txns := make(Transactions, 4)
 	for i := 0; i < len(txns); i++ {
@@ -378,7 +396,7 @@ func TestTransactionSorting(t *testing.T) {
 	// Sort(), IsSorted(), Less()
 	isSorted := manualTransactionsIsSorted(t, txns, bc.TransactionFee)
 	sTxns := newSortableTransactions(txns, bc.TransactionFee)
-	for i, _ := range txns {
+	for i := range txns {
 		assert.Equal(t, sTxns.Txns[i], txns[i])
 		assert.Equal(t, sTxns.Hashes[i], txns[i].Hash())
 		fee, err := bc.TransactionFee(&txns[i])
@@ -412,7 +430,7 @@ func TestTransactionSorting(t *testing.T) {
 	sTxns = newSortableTransactions(txns, bc.TransactionFee)
 	sTxns.Sort()
 	hashChecked := false
-	for i, _ := range txns[:len(txns)-1] {
+	for i := range txns[:len(txns)-1] {
 		j := i + 1
 		assert.True(t, sTxns.Fees[i] >= sTxns.Fees[j])
 		if sTxns.Fees[i] == sTxns.Fees[j] {
@@ -501,7 +519,7 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 	assert.Equal(t, txns2.Size(), trunc)
 
 	// Stepping into next boundary has same cutoff, must exceed
-	trunc += 1
+	trunc++
 	txns2 = txns.TruncateBytesTo(trunc)
 	assert.Equal(t, len(txns2), len(txns)/2)
 	assert.Equal(t, txns2.Size(), trunc-1)
@@ -513,7 +531,7 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 	assert.Equal(t, txns2.Size(), trunc-txns[5].Size()+1)
 
 	// Moving to next level
-	trunc += 1
+	trunc++
 	txns2 = txns.TruncateBytesTo(trunc)
 	assert.Equal(t, len(txns2), len(txns)/2+1)
 	assert.Equal(t, txns2.Size(), trunc)
@@ -525,7 +543,7 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 	assert.Equal(t, txns2.Size(), trunc)
 
 	// Truncating over amount
-	trunc += 1
+	trunc++
 	txns2 = txns.TruncateBytesTo(trunc)
 	assert.Equal(t, txns, txns2)
 	assert.Equal(t, txns2.Size(), trunc-1)
@@ -538,10 +556,15 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 }
 
 func TestFullTransaction(t *testing.T) {
+	_, teardown, err := setup(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer teardown()
 	p1, s1 := cipher.GenerateKeyPair()
 	a1 := cipher.AddressFromPubKey(p1)
 	bc := NewBlockchain()
-	bc.CreateGenesisBlock(a1, _genTime, _genCoins)
+	bc.Init(a1, _genCoins, _genTime)
 	tx := Transaction{}
 	ux := bc.Unspent.Array()[0]
 	tx.PushInput(ux.Hash())

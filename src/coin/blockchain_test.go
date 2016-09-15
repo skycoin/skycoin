@@ -466,7 +466,7 @@ func TestNewBlockchain(t *testing.T) {
 	defer teardown()
 
 	b := NewBlockchain()
-	assert.NotNil(t, b.bucket)
+	assert.NotNil(t, b.blocks)
 	assert.NotNil(t, b.Unspent)
 	assert.Equal(t, len(b.Unspent.Pool), 0)
 }

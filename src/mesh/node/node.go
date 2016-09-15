@@ -12,11 +12,11 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/domain"
-	"github.com/skycoin/skycoin/src/mesh2/node/connection"
-	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
-	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/domain"
+	"github.com/skycoin/skycoin/src/mesh/node/connection"
+	"github.com/skycoin/skycoin/src/mesh/serialize"
+	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
+	"github.com/skycoin/skycoin/src/mesh/transport/transport"
 	"gopkg.in/op/go-logging.v1"
 )
 

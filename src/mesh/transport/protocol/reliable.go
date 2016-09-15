@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/serialize"
+	"github.com/skycoin/skycoin/src/mesh/transport/transport"
 )
 
 import (

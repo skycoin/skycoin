@@ -14,7 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/node"
-	"github.com/skycoin/skycoin/src/mesh/nodemanager/lib_nodemanager"
+	"github.com/skycoin/skycoin/cmd/mesh/nodemanager/lib_nodemanager"
 	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/assert"

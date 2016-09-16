@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/node/connection"
-	"github.com/skycoin/skycoin/src/mesh/nodemanager/lib_nodemanager"
+	"github.com/skycoin/skycoin/cmd/mesh/nodemanager/lib_nodemanager"
 )
 
 func _TestFilterMessage(t *testing.T) {

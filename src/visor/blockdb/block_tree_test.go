@@ -1,10 +1,11 @@
-package coin
+package blockdb
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,15 +31,15 @@ func testCase(t *testing.T, cases []blockCase) {
 	defer teardown()
 
 	btree := NewBlockTree()
-	blocks := make([]Block, len(cases))
+	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
 		var preHash cipher.SHA256
 		if d.BInfo.Pre != -1 {
 			preHash = blocks[d.BInfo.Pre].HashHeader()
 		}
 
-		b := Block{
-			Head: BlockHeader{
+		b := coin.Block{
+			Head: coin.BlockHeader{
 				BkSeq:    d.BInfo.Seq,
 				Time:     d.BInfo.Time,
 				Fee:      d.BInfo.Fee,
@@ -167,22 +168,22 @@ func TestGetBlockInDepth(t *testing.T) {
 	defer teardown()
 
 	bc := NewBlockTree()
-	blocks := []Block{
-		Block{
-			Head: BlockHeader{
+	blocks := []coin.Block{
+		coin.Block{
+			Head: coin.BlockHeader{
 				BkSeq: 0,
 				Time:  0,
 				Fee:   0,
 			},
 		},
-		Block{
-			Head: BlockHeader{
+		coin.Block{
+			Head: coin.BlockHeader{
 				BkSeq: 1,
 				Time:  1,
 			},
 		},
-		Block{
-			Head: BlockHeader{
+		coin.Block{
+			Head: coin.BlockHeader{
 				BkSeq: 1,
 				Time:  2,
 			},
@@ -195,11 +196,10 @@ func TestGetBlockInDepth(t *testing.T) {
 	blocks[2].Head.PrevHash = blocks[0].HashHeader()
 	assert.Nil(t, bc.AddBlock(blocks[2]))
 
-	block := bc.GetBlockInDepth(1, func(hps []HashPair) cipher.SHA256 {
+	block := bc.GetBlockInDepth(1, func(hps []coin.HashPair) cipher.SHA256 {
 		for _, hp := range hps {
 			b := bc.GetBlock(hp.Hash)
 			if b.Time() == 2 {
-				fmt.Println(b.Time())
 				return b.HashHeader()
 			}
 		}

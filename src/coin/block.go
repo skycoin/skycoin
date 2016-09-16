@@ -11,7 +11,12 @@ import (
 type Block struct {
 	Head BlockHeader
 	Body BlockBody
-	Next cipher.SHA256
+}
+
+// HashPair including current block hash and previous block hash.
+type HashPair struct {
+	Hash    cipher.SHA256
+	PreHash cipher.SHA256
 }
 
 type BlockHeader struct {
@@ -74,11 +79,6 @@ func (b Block) HashHeader() cipher.SHA256 {
 // PreHashHeader return hash of prevous block.
 func (b Block) PreHashHeader() cipher.SHA256 {
 	return b.Head.PrevHash
-}
-
-// NextHashHeader return the bash of next block.
-func (b Block) NextHashHeader() cipher.SHA256 {
-	return b.Next
 }
 
 // Time return the head time of the block.

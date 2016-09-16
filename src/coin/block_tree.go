@@ -150,19 +150,14 @@ func (bt *BlockTree) GetBlock(hash cipher.SHA256) *Block {
 
 // GetBlockInDepth get block in depth, return nil on not found,
 // the filter is used to choose the appropriate block.
-func (bt *BlockTree) GetBlockInDepth(depth uint64, filter func(ps []HashPair) cipher.SHA256) *Block {
+func (bt *BlockTree) GetBlockInDepth(depth uint64, filter func(hps []HashPair) cipher.SHA256) *Block {
 	hash, err := bt.getHashInDepth(depth, filter)
 	if err != nil {
+		logger.Error(err.Error())
 		return nil
 	}
 
 	return bt.getBlock(hash)
-}
-
-func (bt *BlockTree) setBlock(b Block) error {
-	bin := encoder.Serialize(b)
-	key := b.HashHeader()
-	return bt.blocks.Put(key[:], bin)
 }
 
 func (bt *BlockTree) getBlock(hash cipher.SHA256) *Block {
@@ -215,8 +210,8 @@ func removePairs(HashPairs []HashPair, pair HashPair) []HashPair {
 	return pairs
 }
 
-func getHashPairInDepth(bkt *bolt.Bucket, dep uint64, fn func(hp HashPair) bool) ([]HashPair, error) {
-	v := bkt.Get(itob(dep))
+func getHashPairInDepth(tree *bolt.Bucket, dep uint64, fn func(hp HashPair) bool) ([]HashPair, error) {
+	v := tree.Get(itob(dep))
 	if v == nil {
 		return []HashPair{}, nil
 	}
@@ -238,11 +233,6 @@ func setBlock(bkt *bolt.Bucket, b *Block) error {
 	bin := encoder.Serialize(b)
 	key := b.HashHeader()
 	return bkt.Put(key[:], bin)
-}
-
-func deleteBlock(bkt *bolt.Bucket, b *Block) error {
-	key := b.HashHeader()
-	return bkt.Delete(key[:])
 }
 
 // check if this block has children

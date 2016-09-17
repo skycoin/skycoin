@@ -288,17 +288,11 @@ func TestTransactionOutputHours(t *testing.T) {
 }
 
 func TestTransactionFees(t *testing.T) {
-	_, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer teardown()
-
-	bc := NewBlockchain()
-	bc.Init(genAddress, _genCoins, _genTime)
-	assert.Equal(t, bc.Count(), uint64(1))
+	bc := NewBlockchain(&FakeTree{}, nil)
+	bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
+	assert.Equal(t, bc.Len(), uint64(1))
 	_, ux := addBlockToBlockchain(t, bc)
-	assert.Equal(t, bc.Count(), uint64(3))
+	assert.Equal(t, bc.Len(), uint64(3))
 
 	// Valid txn, 100 hours fee
 	tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
@@ -330,14 +324,9 @@ func TestTransactionFees(t *testing.T) {
 }
 
 func TestNewSortableTransactions(t *testing.T) {
-	_, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer teardown()
-	bc := NewBlockchain()
+	bc := NewBlockchain(&FakeTree{}, nil)
 
-	bc.Init(genAddress, _genCoins, _genTime)
+	bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 	_, ux := addBlockToBlockchain(t, bc)
 	txns := make(Transactions, 4)
 	for i := range txns {
@@ -369,14 +358,8 @@ func TestTransactionsSize(t *testing.T) {
 }
 
 func TestTransactionSorting(t *testing.T) {
-	_, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer teardown()
-
-	bc := NewBlockchain()
-	bc.Init(genAddress, _genCoins, _genTime)
+	bc := NewBlockchain(&FakeTree{}, nil)
+	bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 	_, ux := addBlockToBlockchain(t, bc)
 	txns := make(Transactions, 4)
 	for i := 0; i < len(txns); i++ {
@@ -556,17 +539,12 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 }
 
 func TestFullTransaction(t *testing.T) {
-	_, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer teardown()
 	p1, s1 := cipher.GenerateKeyPair()
 	a1 := cipher.AddressFromPubKey(p1)
-	bc := NewBlockchain()
-	bc.Init(a1, _genCoins, _genTime)
+	bc := NewBlockchain(&FakeTree{}, nil)
+	bc.CreateGenesisBlock(a1, _genCoins, _genTime)
 	tx := Transaction{}
-	ux := bc.Unspent.Array()[0]
+	ux := bc.unspent.Array()[0]
 	tx.PushInput(ux.Hash())
 	p2, s2 := cipher.GenerateKeyPair()
 	a2 := cipher.AddressFromPubKey(p2)
@@ -587,11 +565,11 @@ func TestFullTransaction(t *testing.T) {
 	assert.Equal(t, txo[0].Body.Address, a1)
 	assert.Equal(t, txo[1].Body.Address, a2)
 	assert.Equal(t, txo[2].Body.Address, a2)
-	ux0, ok := bc.Unspent.Get(txo[0].Hash())
+	ux0, ok := bc.unspent.Get(txo[0].Hash())
 	assert.True(t, ok)
-	ux1, ok := bc.Unspent.Get(txo[1].Hash())
+	ux1, ok := bc.unspent.Get(txo[1].Hash())
 	assert.True(t, ok)
-	ux2, ok := bc.Unspent.Get(txo[2].Hash())
+	ux2, ok := bc.unspent.Get(txo[2].Hash())
 	assert.True(t, ok)
 	tx.PushInput(ux0.Hash())
 	tx.PushInput(ux1.Hash())

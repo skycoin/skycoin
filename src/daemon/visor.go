@@ -144,11 +144,11 @@ func (self *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 
 // Sends a signed block to all connections.
 // TODO: deprecate, should only send to clients that request by hash
-func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
+func (self *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -295,11 +295,11 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 
 // Sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-	Blocks []visor.SignedBlock
+	Blocks []coin.SignedBlock
 	c      *gnet.MessageContext `enc:"-"`
 }
 
-func NewGiveBlocksMessage(blocks []visor.SignedBlock) *GiveBlocksMessage {
+func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 	return &GiveBlocksMessage{
 		Blocks: blocks,
 	}

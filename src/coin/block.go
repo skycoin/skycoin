@@ -37,6 +37,11 @@ type BlockBody struct {
 	Transactions Transactions
 }
 
+type SignedBlock struct {
+	Block Block
+	Sig   cipher.Sig
+}
+
 //TODO: merge header/body and cleanup top level interface
 
 /*

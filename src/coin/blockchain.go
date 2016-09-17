@@ -2,7 +2,6 @@ package coin
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -86,8 +85,11 @@ func (bc *Blockchain) walkTree() {
 			}
 		}
 		preBlock = b
+		if err := bc.updateUnspent(*b); err != nil {
+			logger.Panicf("update unspent failed, err: %v", err.Error())
+		}
+
 		bc.head = b.HashHeader()
-		bc.updateUnspent(*b)
 		dep++
 	}
 }
@@ -119,6 +121,7 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Head: head,
 		Body: body,
 	}
+	// b.Body.Transactions[0].UpdateHeader()
 	bc.tree.AddBlock(b)
 	bc.head = b.HashHeader()
 	ux := UxOut{
@@ -213,7 +216,6 @@ func (bc *Blockchain) updateUnspent(b Block) error {
 	if err := bc.VerifyBlock(b); err != nil {
 		return err
 	}
-
 	txns := b.Body.Transactions
 	for _, tx := range txns {
 		// Remove spent outputs
@@ -234,10 +236,12 @@ func (bc Blockchain) VerifyBlock(b Block) error {
 		if err := verifyBlockHeader(*bc.Head(), b); err != nil {
 			return err
 		}
+
+		if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
+			return err
+		}
 	}
-	if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
-		return err
-	}
+
 	if err := bc.verifyUxHash(b); err != nil {
 		return err
 	}
@@ -353,7 +357,11 @@ func (bc Blockchain) GetLastBlocks(num uint64) []Block {
 
 // CreateUnspents creates the expected outputs for a transaction.
 func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
-	h := tx.Hash()
+	var h cipher.SHA256
+	if bh.BkSeq != 0 {
+		// not genesis block
+		h = tx.Hash()
+	}
 	uxo := make(UxArray, len(tx.Out))
 	for i := range tx.Out {
 		uxo[i] = UxOut{
@@ -540,7 +548,6 @@ func (bc Blockchain) TransactionFee(t *Transaction) (uint64, error) {
 	for i := range t.In {
 		in, ok := bc.unspent.Get(t.In[i])
 		if !ok {
-			fmt.Println("hereerere")
 			return 0, errors.New("Unspent output does not exist")
 		}
 		inHours += in.CoinHours(headTime)

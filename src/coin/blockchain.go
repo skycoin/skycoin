@@ -325,7 +325,7 @@ func (bc Blockchain) GetBlocks(start, end uint64) []Block {
 		return []Block{}
 	}
 
-	blocks := make([]Block, end-start+1)
+	blocks := []Block{}
 	for i := start; i <= end; i++ {
 		b := bc.tree.GetBlockInDepth(i, bc.walker)
 		if b == nil {

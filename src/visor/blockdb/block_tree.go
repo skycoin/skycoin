@@ -20,9 +20,8 @@ var (
 
 // BlockTree use the blockdb store all blocks and maintains the block tree struct.
 type BlockTree struct {
-	blocks  *Bucket
-	outputs *Bucket
-	tree    *Bucket
+	blocks *Bucket
+	tree   *Bucket
 }
 
 // NewBlockTree create buckets in blockdb if does not exist.
@@ -32,17 +31,14 @@ func NewBlockTree() *BlockTree {
 		panic(err)
 	}
 
-	outputs, err := NewBucket([]byte("outputs"))
-
 	tree, err := NewBucket([]byte("block_tree"))
 	if err != nil {
 		panic(err)
 	}
 
 	return &BlockTree{
-		blocks:  blocks,
-		outputs: outputs,
-		tree:    tree,
+		blocks: blocks,
+		tree:   tree,
 	}
 }
 

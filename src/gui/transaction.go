@@ -56,7 +56,7 @@ func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 			// if x2 < 0 {
 			// 	x2 = 0
 			// }
-			blks := V.Blockchain.GetLatestBlocks(50)
+			blks := V.Blockchain.GetLastBlocks(50)
 			// blks = blks[x2:x1] //only look at last 50 blocks
 
 			totalTxns := []coin.Transaction{}

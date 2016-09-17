@@ -128,9 +128,9 @@ func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
 		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
 		return wallet.BalancePair{}, errors.New("Id not found")
 	}
-	auxs := v.Blockchain.Unspent.AllForAddresses(wlt.GetAddresses())
-	puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent,
-		wlt.GetAddressSet())
+	auxs := v.Blockchain.GetUnspent().AllForAddresses(wlt.GetAddresses())
+	unspent := v.Blockchain.GetUnspent()
+	puxs := v.Unconfirmed.SpendsForAddresses(&unspent, wlt.GetAddressSet())
 
 	coins1, hours1 := v.AddressBalance(auxs)
 	coins2, hours2 := v.AddressBalance(auxs.Sub(puxs))
@@ -153,9 +153,9 @@ func (self *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
 		log.Panic("Wallet does not exist")
 	}
 
-	auxs := v.Blockchain.Unspent.AllForAddresses(wallet.GetAddresses())
-	puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent,
-		wallet.GetAddressSet())
+	auxs := v.Blockchain.GetUnspent().AllForAddresses(wallet.GetAddresses())
+	unspent := v.Blockchain.GetUnspent()
+	puxs := v.Unconfirmed.SpendsForAddresses(&unspent, wallet.GetAddressSet())
 
 	_ = auxs
 	_ = puxs
@@ -230,8 +230,9 @@ func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wa
 	}
 	//pull in outputs and do this here
 	//FIX
+	unspent := self.Blockchain.GetUnspent()
 	tx, err := visor.CreateSpendingTransaction(*wallet, self.Unconfirmed,
-		&self.Blockchain.Unspent, self.Blockchain.Time(), amt, dest)
+		&unspent, self.Blockchain.Time(), amt, dest)
 	if err != nil {
 		return tx, err
 	}
@@ -290,8 +291,9 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			}
 
 			v := gateway.D.Visor.Visor
-			auxs := v.Blockchain.Unspent.AllForAddresses(addrs)
-			puxs := v.Unconfirmed.SpendsForAddresses(&v.Blockchain.Unspent, addrSet)
+			auxs := v.Blockchain.GetUnspent().AllForAddresses(addrs)
+			unspent := v.Blockchain.GetUnspent()
+			puxs := v.Unconfirmed.SpendsForAddresses(&unspent, addrSet)
 
 			coins1, hours1 := v.AddressBalance(auxs)
 			coins2, hours2 := v.AddressBalance(auxs.Sub(puxs))

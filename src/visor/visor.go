@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
-	//"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/visor/transactiondb"
 )
 
 var (
@@ -107,62 +107,10 @@ type Visor struct {
 	Config VisorConfig
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed *UnconfirmedTxnPool
-	// Wallets holding our keys for spending
-	//Wallets wallet.Wallets
-	// Master & personal keys
-	Blockchain *coin.Blockchain
-	blockSigs  *blockdb.BlockSigs
-	txns       *blockdb.Transactions
+	Blockchain  *coin.Blockchain
+	blockSigs   *blockdb.BlockSigs
+	txns        *transactiondb.Transactions
 }
-
-// Creates a normal Visor given a master's public key
-// func NewVisor2(c VisorConfig) *Visor {
-// 	logger.Debug("Creating new visor")
-// 	// Make sure inputs are correct
-// 	if c.IsMaster {
-// 		logger.Debug("Visor is master")
-// 	}
-// 	if c.IsMaster {
-// 		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
-// 			log.Panicf("Cannot run in master: invalid seckey for pubkey")
-// 		}
-// 	}
-
-// 	// Load the blockchain the block signatures
-// 	blockchain := loadBlockchain(c.BlockchainFile, c.GenesisAddress)
-// 	blockSigs, err := LoadBlockSigs(c.BlockSigsFile)
-// 	if err != nil {
-// 		if os.IsNotExist(err) {
-// 			logger.Info("BlockSigsFile \"%s\" not found", c.BlockSigsFile)
-// 		} else {
-// 			log.Panicf("Failed to load BlockSigsFile \"%s\"", c.BlockSigsFile)
-// 		}
-// 		blockSigs = NewBlockSigs()
-// 	}
-
-// 	v := &Visor{
-// 		Config:      c,
-// 		Blockchain:  blockchain,
-// 		blockSigs:   blockSigs,
-// 		Unconfirmed: NewUnconfirmedTxnPool(),
-// 		//Wallets:     wallets,
-// 	}
-// 	// Load the genesis block and sign it, if we need one
-// 	if len(blockchain.Blocks) == 0 {
-// 		if (c.BlockchainSeckey == cipher.SecKey{}) || (c.IsMaster == false) {
-// 			v.CreateGenesisBlock()
-// 		} else {
-// 			v.CreateGenesisBlockInit()
-// 		}
-// 	}
-
-// 	err = blockSigs.Verify(c.BlockchainPubkey, blockchain)
-// 	if err != nil {
-// 		log.Panicf("Invalid block signatures: %v", err)
-// 	}
-
-// 	return v
-// }
 
 func walker(hps []coin.HashPair) cipher.SHA256 {
 	return hps[0].Hash
@@ -186,7 +134,7 @@ func NewVisor(c VisorConfig) *Visor {
 		Blockchain:  bc,
 		blockSigs:   blockdb.NewBlockSigs(),
 		Unconfirmed: NewUnconfirmedTxnPool(),
-		txns:        blockdb.NewTransactions(),
+		txns:        transactiondb.New(),
 	}
 	gb := bc.GetGenesisBlock()
 	if gb == nil {
@@ -206,72 +154,15 @@ func NewVisor(c VisorConfig) *Visor {
 			})
 		}
 
-		// record transaction
-		v.txns.Add(&blockdb.TransactionBlock{
-			TxHash:    gb.Body.Transactions[0].Hash(),
-			BlockHash: gb.HashHeader(),
-		})
+		// store genesis block transaction
+		if err := v.txns.Add(&gb.Body.Transactions[0], 0); err != nil {
+			logger.Panicf("add genesis block transaction failed: %v", err)
+		}
 	}
 
 	if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
-	// gb := v.Blockchain.CreateGenesisBlock(c.GenesisAddress, c.GenesisTimestamp, c.GenesisCoinVolume)
-	// var sb SignedBlock
-	// if c.IsMaster {
-	// 	sb = v.SignBlock(gb)
-	// } else {
-	// 	sb = SignedBlock{
-	// 		Block: gb,
-	// 		Sig:   c.GenesisSignature,
-	// 	}
-	// }
-	// v.blockSigs.record(&sb)
-
-	// // check if the genesis block does exist in blockdb.
-	// block := blockdb.GetBlock(gb.HashHeader())
-	// if block == nil {
-	// 	// record the genesis block into blockdb.
-	// 	dbBlock := blockdb.Block{
-	// 		Block: gb,
-	// 	}
-	// 	if err := blockdb.SetBlock(dbBlock); err != nil {
-	// 		log.Panicf("write block into blockdb failed:%v", err)
-	// 	}
-
-	// 	// record the genesis block signature into blockdb.
-	// 	if err := blockdb.SetBlockSignature(gb.HashHeader(), gb.Head.PrevHash, c.GenesisSignature, gb.Head.BkSeq); err != nil {
-	// 		log.Panicf("write block signature into blockdb failed:%v", err)
-	// 	}
-	// 	return v
-	// }
-
-	// // restore blocks from blockdb
-	// var emptyHash cipher.SHA256
-	// nxtHash := block.NextHash
-	// for {
-	// 	if nxtHash == emptyHash {
-	// 		break
-	// 	}
-
-	// 	// get next block.
-	// 	b := blockdb.GetBlock(nxtHash)
-	// 	v.Blockchain.ExecuteBlock(b.Block)
-
-	// 	// get next block signature.
-	// 	bs := blockdb.GetBlockSignature(nxtHash)
-	// 	sb := SignedBlock{
-	// 		Block: b.Block,
-	// 		Sig:   bs.Sig,
-	// 	}
-	// 	v.blockSigs.record(&sb)
-
-	// 	nxtHash = b.NextHash
-	// }
-
-	// if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
-	// 	log.Panicf("Invalid block signatures: %v", err)
-	// }
 	return v
 }
 
@@ -288,11 +179,6 @@ func NewMinimalVisor(c VisorConfig) *Visor {
 
 //panics if conditions for genesis block are not met
 func (self *Visor) GenesisPreconditions() {
-
-	//if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
-	//	log.Panic("Blockchain already has genesis")
-	//}
-
 	//if seckey is set
 	if self.Config.BlockchainSeckey != (cipher.SecKey{}) {
 		if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
@@ -302,80 +188,12 @@ func (self *Visor) GenesisPreconditions() {
 
 }
 
-// func (self *Visor) CreateGenesisBlockInit() (SignedBlock, error) {
-// 	self.GenesisPreconditions()
-
-// 	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
-// 		log.Panic("Blockchain already has genesis")
-// 	}
-// 	if self.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(self.Config.BlockchainSeckey) {
-// 		log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
-// 	}
-
-// 	gb := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress,
-// 		self.Config.GenesisTimestamp, self.Config.GenesisCoinVolume)
-// 	sb := self.SignBlock(gb)
-// 	if err := self.verifySignedBlock(&sb); err != nil {
-// 		log.Panicf("Signed a fresh genesis block, but its invalid: %v", err)
-// 	}
-// 	self.blockSigs.record(&sb)
-
-// 	log.Printf("New Genesis:")
-// 	log.Printf("genesis_time= %v", sb.Block.Head.Time)
-// 	log.Printf("genesis_address= %v", self.Config.GenesisAddress.String())
-// 	log.Printf("genesis_signature= %v", sb.Sig.Hex())
-
-// 	return sb, nil
-// }
-
-// Creates the genesis block as needed
-// func (self *Visor) CreateGenesisBlock() SignedBlock {
-// 	self.GenesisPreconditions()
-
-// 	if len(self.Blockchain.Blocks) != 0 || len(self.blockSigs.Sigs) != 0 {
-// 		log.Panic("Blockchain already has genesis")
-// 	}
-// 	//addr := self.Config.GenesisAddress
-// 	b := self.Blockchain.CreateGenesisBlock(self.Config.GenesisAddress, self.Config.GenesisTimestamp,
-// 		self.Config.GenesisCoinVolume)
-// 	sb := SignedBlock{
-// 		Block: b,
-// 		Sig:   self.Config.GenesisSignature,
-// 	}
-// 	self.blockSigs.record(&sb)
-
-// 	err := self.blockSigs.Verify(self.Config.BlockchainPubkey,
-// 		self.Blockchain)
-// 	if err != nil {
-// 		log.Panicf("Cannot create genesis block, signature verification failed: %v", err)
-// 	}
-// 	return sb
-// }
-
 // Checks unconfirmed txns against the blockchain and purges ones too old
 func (self *Visor) RefreshUnconfirmed() {
 	//logger.Debug("Refreshing unconfirmed transactions")
 	self.Unconfirmed.Refresh(self.Blockchain,
 		self.Config.UnconfirmedCheckInterval, self.Config.UnconfirmedMaxAge)
 }
-
-// Saves the coin.Blockchain to disk
-// func (self *Visor) SaveBlockchain() error {
-// 	if self.Config.BlockchainFile == "" {
-// 		return errors.New("No BlockchainFile location set")
-// 	} else {
-// 		return SaveBlockchain(self.Blockchain, self.Config.BlockchainFile)
-// 	}
-// }
-
-// Saves BlockSigs to disk
-// func (self *Visor) SaveBlockSigs() error {
-// 	if self.Config.BlockSigsFile == "" {
-// 		return errors.New("No BlockSigsFile location set")
-// 	} else {
-// 		return self.blockSigs.A(self.Config.BlockSigsFile)
-// 	}
-// }
 
 // Creates a SignedBlock from pending transactions
 func (self *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
@@ -423,10 +241,9 @@ func (self *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 
 	// add transactions in the block to blockdb
 	for _, tx := range b.Block.Body.Transactions {
-		self.txns.Add(&blockdb.TransactionBlock{
-			TxHash:    tx.Hash(),
-			BlockHash: b.Block.HashHeader(),
-		})
+		if err := self.txns.Add(&tx, b.Block.Seq()); err != nil {
+			return err
+		}
 	}
 
 	// Remove the transactions in the Block from the unconfirmed pool
@@ -579,11 +396,6 @@ func (self *Visor) GetBlocks(start, end uint64) []coin.Block {
 	return self.Blockchain.GetBlocks(start, end)
 }
 
-// Updates an UnconfirmedTxn's Announce field
-//func (self *Visor) SetAnnounced(h cipher.SHA256, t time.Time) {
-//	self.Unconfirmed.SetAnnounced(h, t)
-//}
-
 // Records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
 // TODO
@@ -644,48 +456,21 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 
 	for {
 		// Look in the blockchain
-		txBlock := self.txns.Get(txHash)
-		if txBlock == nil {
-			break
-		}
-		// get block
-		b := self.Blockchain.GetBlock(txBlock.BlockHash)
-		if b == nil {
+		tx, dep, err := self.txns.Get(txHash)
+		if err != nil {
+			logger.Error("%v", err)
 			break
 		}
 
-		if txn, ok := b.GetTransaction(txBlock.TxHash); ok {
-			return Transaction{
-				Txn:    txn,
-				Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - b.Seq() + 1),
-			}
+		if tx == nil {
+			break
 		}
-		break
+
+		return Transaction{
+			Txn:    *tx,
+			Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - dep + 1),
+		}
 	}
-
-	// TODO -- this is extremely slow as it does a full blockchain scan
-	// We need an index from txn hash to block.  At least an index per block
-	// to its contained txns
-
-	// b := self.Blockchain.FindBlock(func(key, value []byte) bool {
-	// 	var block coin.Block
-	// 	if err := encoder.DeserializeRaw(value, &block); err != nil {
-	// 		return false
-	// 	}
-	// 	if _, ok := block.GetTransaction(txHash); ok {
-	// 		return true
-	// 	}
-	// 	return false
-	// })
-
-	// if b != nil {
-	// 	tx, _ := b.GetTransaction(txHash)
-	// 	height := self.HeadBkSeq() - b.Head.BkSeq + 1
-	// 	return Transaction{
-	// 		Txn:    tx,
-	// 		Status: NewConfirmedTransactionStatus(height),
-	// 	}
-	// }
 
 	// Otherwise unknown
 	return Transaction{

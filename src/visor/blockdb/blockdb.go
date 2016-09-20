@@ -14,20 +14,11 @@ import (
 
 var db *bolt.DB
 
-// Create 3 buckets. One for
-// - blocks
-// - block signatures
-// - unspent output set
-
-// var bucketBlocks *bucket
-// var bucketBlockSigs *bucket
-// var bucketUtxos *bucket
-
 // Start the blockdb.
 func Start() {
 	// Open the my.db data file in your current directory.
 	// It will be created if it doesn't exist.
-	dbFile := filepath.Join(util.DataDir, "my.db")
+	dbFile := filepath.Join(util.DataDir, "block.db")
 	var err error
 	db, err = bolt.Open(dbFile, 0600, nil)
 	if err != nil {

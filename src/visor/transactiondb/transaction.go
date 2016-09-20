@@ -1,6 +1,7 @@
 package transactiondb
 
 import (
+	"bytes"
 	"encoding/binary"
 	"log"
 	"path/filepath"
@@ -106,11 +107,10 @@ func (td Transactions) Get(hash cipher.SHA256) (*coin.Transaction, uint64, error
 		return nil, 0, err
 	}
 
-	var dp uint64
-	if err := encoder.DeserializeRaw(dpBin, &dp); err != nil {
+	dp, err := btoi(dpBin)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	return &tx, dp, nil
 }
 
@@ -118,4 +118,13 @@ func itob(v uint64) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(v))
 	return b
+}
+
+func btoi(b []byte) (uint64, error) {
+	buf := bytes.NewReader(b)
+	var v uint64
+	if err := binary.Read(buf, binary.BigEndian, &v); err != nil {
+		return 0, err
+	}
+	return v, nil
 }

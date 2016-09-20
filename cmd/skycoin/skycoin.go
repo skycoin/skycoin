@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/transactiondb"
 	"gopkg.in/op/go-logging.v1"
 )
 
@@ -469,6 +470,10 @@ func Run(c *Config) {
 	// start the block db.
 	blockdb.Start()
 	defer blockdb.Stop()
+
+	// start the transaction db.
+	transactiondb.Start()
+	defer transactiondb.Stop()
 
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan int)

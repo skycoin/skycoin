@@ -1,5 +1,3 @@
-
-
 //import {Component, OnInit, ViewChild} from 'app/angular2/core';
 //import {ROUTER_DIRECTIVES, OnActivate} from 'app/angular2/router';
 import {Component, OnInit, ViewChild} from 'angular2/core';
@@ -14,6 +12,7 @@ import 'rxjs/add/operator/catch';
 import {QRCodeComponent} from './ng2-qrcode.ts';
 
 declare var _: any;
+declare var $: any;
 declare var moment: any;
 
 @Component({
@@ -72,12 +71,12 @@ export class loadWalletComponent implements OnInit {
         //Set interval function for load wallet every 15 seconds
         setInterval(() => {
             this.loadWallet();
-            console.log("Refreshing balance");
+            //console.log("Refreshing balance");
         }, 15000);
         setInterval(() => {
             this.loadConnections();
             this.loadBlockChain();
-            console.log("Refreshing connections");
+            //console.log("Refreshing connections");
         }, 5000);
 
         //Enable Send tab "textbox" and "Ready" button by default
@@ -131,7 +130,9 @@ export class loadWalletComponent implements OnInit {
 
                 },
                 err => console.log("Error on load wallet: "+err),
-                () => console.log('Wallet load done')
+                () => {
+                  //console.log('Wallet load done')
+                }
             );
     }
     loadWalletItem(address, inc){
@@ -143,25 +144,31 @@ export class loadWalletComponent implements OnInit {
             .subscribe(
                 //Response from API
                 response => {
-                    console.log('load done: ' + inc, response);
+                    //console.log('load done: ' + inc, response);
                     this.wallets[inc].balance = response.confirmed.coins / 1000000;
-                }, err => console.log("Error on load balance: " + err), () => console.log('Balance load done'))
+                }, err => console.log("Error on load balance: " + err), () => {
+                  //console.log('Balance load done')
+                })
     }
     loadConnections() {
         this.http.post('/network/connections', '')
             .map((res) => res.json())
             .subscribe(data => {
-                console.log("connections", data);
+                //console.log("connections", data);
                 this.connections = data.connections;
-            }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
+            }, err => console.log("Error on load connection: " + err), () => {
+              //console.log('Connection load done')
+            });
     }
     loadDefaultConnections() {
         this.http.post('/network/defaultConnections', '')
             .map((res) => res.json())
             .subscribe(data => {
-                console.log("default connections", data);
+                //console.log("default connections", data);
                 this.defaultConnections = data;
-            }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
+            }, err => console.log("Error on load default connection: " + err), () => {
+              //console.log('Default connections load done')
+            });
     }
     loadOutputs() {
         var headers = new Headers();
@@ -172,17 +179,21 @@ export class loadWalletComponent implements OnInit {
                 this.outputs = _.sortBy(data, function(o){
                     return o.address;
                 });
-            }, err => console.log("Error on load outputs: " + err), () => console.log('Connection load done'));
+            }, err => console.log("Error on load outputs: " + err), () => {
+              //console.log('Connection load done')
+            });
     }
     loadBlockChain() {
         this.http.post('/blockchain', '')
             .map((res) => res.json())
             .subscribe(data => {
-                console.log("blockchain", data);
+                //console.log("blockchain", data);
                 if(data.head) {
                     this.blockChain = data;
                 }
-            }, err => console.log("Error on load blockchain: " + err), () => console.log('blockchain load done'));
+            }, err => console.log("Error on load blockchain: " + err), () => {
+              //console.log('blockchain load done');
+            });
     }    //Load progress function for Skycoin
     loadProgress(){
         //Post method executed
@@ -192,7 +203,9 @@ export class loadWalletComponent implements OnInit {
                 //Response from API
                 response => { this.progress = (parseInt(response.current,10)+1) / parseInt(response.highest,10) * 100 },
                 err => console.log("Error on load progress: "+err),
-                () => console.log('Progress load done:' + this.progress)
+                () => {
+                  //console.log('Progress load done:' + this.progress)
+                }
             );
     }
 
@@ -213,7 +226,7 @@ export class loadWalletComponent implements OnInit {
         this.selectedMenu = menu;
     }
     getDateTimeString(ts) {
-        return moment.unix(ts).format("YYYY-MM-DD hh:mm")
+        return moment.unix(ts).format("YYYY-MM-DD HH:mm")
     }
     getElapsedTime(ts) {
         return moment().unix() - ts;
@@ -250,12 +263,12 @@ export class loadWalletComponent implements OnInit {
         this.EditDefaultConnectionIsVisible = false;
     }
     createDefaultConnection(connectionValue){
-        console.log("new value", connectionValue);
+        //console.log("new value", connectionValue);
         this.defaultConnections.push(connectionValue);
         this.NewDefaultConnectionIsVisible = false;
     }
     updateDefaultConnection(connectionValue){
-        console.log("old/new value", this.oldConnection, connectionValue);
+        //console.log("old/new value", this.oldConnection, connectionValue);
         var idx = this.defaultConnections.indexOf(this.oldConnection);
         this.defaultConnections.splice(idx, 1);
         this.defaultConnections.splice(idx, 0, connectionValue);
@@ -283,7 +296,9 @@ export class loadWalletComponent implements OnInit {
                     this.loadWallet();
                 },
                 err => console.log("Error on create new wallet: "+err),
-                () => console.log('New wallet create done')
+                () => {
+                  //console.log('New wallet create done')
+                }
             );
     }
 
@@ -315,7 +330,9 @@ export class loadWalletComponent implements OnInit {
                     this.loadWallet();
                 },
                 err => console.log("Error on update wallet: "+JSON.stringify(err)),
-                () => console.log('Update wallet done')
+                () => {
+                  //console.log('Update wallet done')
+                }
             );
     }
 
@@ -345,11 +362,18 @@ export class loadWalletComponent implements OnInit {
                     this.loadWallet();
                 },
                 err => console.log("Error on create load wallet seed: "+JSON.stringify(err)),
-                () => console.log('Load wallet seed done')
+                () => {
+                  //console.log('Load wallet seed done')
+                }
             );
     }
 
     spend(spendid, spendaddress, spendamount){
+        var amount = Number(spendamount);
+        if(amount < 1) {
+          alert('Cannot send values less than 1.');
+          return;
+        }
         //Set local storage for history
         if(localStorage.getItem('historyTable') != null){
             this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
@@ -358,7 +382,7 @@ export class loadWalletComponent implements OnInit {
             this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
         }
 
-        this.historyTable.push({address:spendaddress, amount:spendamount});
+        this.historyTable.push({address:spendaddress, amount:spendamount, time:Date.now()/1000});
         localStorage.setItem('historyTable',JSON.stringify(this.historyTable));
 
         //Set local storage for addresses history
@@ -369,9 +393,14 @@ export class loadWalletComponent implements OnInit {
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
         }
 
-        this.addresses.push({address:spendaddress, amount:spendamount});
-        localStorage.setItem('historyAddresses',JSON.stringify(this.addresses));
+        var oldItem = _.find(this.addresses, function(o){
+          return o.address === spendaddress;
+        })
 
+        if(!oldItem) {
+          this.addresses.push({address:spendaddress, amount:spendamount});
+          localStorage.setItem('historyAddresses',JSON.stringify(this.addresses));
+        }
 
         this.readyDisable = true;
         this.sendDisable = true;
@@ -384,7 +413,7 @@ export class loadWalletComponent implements OnInit {
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
-                    console.log(response);
+                    //console.log(response);
                     this.pendingTable.push({complete: 'Completed', address: spendaddress, amount: spendamount});
                     //Load wallet for refresh list
                     this.loadWallet();
@@ -392,16 +421,27 @@ export class loadWalletComponent implements OnInit {
                     this.sendDisable = true;
                 },
                 err => {
-                    console.log(err);
-                    alert(err._body);
                     this.readyDisable = false;
                     this.sendDisable = true;
-                    if(err.body == 'Invalid connection') {
-                        return;
+                    var logBody = err._body;
+                    if(logBody == 'Invalid "coins" value') {
+                      alert('Incorrect amount value.');
+                      return;
+                    } else if (logBody == 'Invalid connection') {
+                      alert(logBody);
+                      return;
+                    } else {
+                      var logContent = JSON.parse(logBody.substring(logBody.indexOf("{")));
+                      alert(logContent.error);
                     }
+
                     this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
                 },
-                () => console.log('Spend successfully')
+                () => {
+                  //console.log('Spend successfully')
+                  $("#send_pay_to").val("");
+                  $("#send_amount").val(0);
+                }
             );
     }
 

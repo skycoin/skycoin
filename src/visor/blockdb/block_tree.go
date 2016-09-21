@@ -8,6 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
 var (
@@ -20,18 +21,18 @@ var (
 
 // BlockTree use the blockdb store all blocks and maintains the block tree struct.
 type BlockTree struct {
-	blocks *Bucket
-	tree   *Bucket
+	blocks *bucket.Bucket
+	tree   *bucket.Bucket
 }
 
 // NewBlockTree create buckets in blockdb if does not exist.
 func NewBlockTree() *BlockTree {
-	blocks, err := NewBucket([]byte("blocks"))
+	blocks, err := bucket.New([]byte("blocks"), db)
 	if err != nil {
 		panic(err)
 	}
 
-	tree, err := NewBucket([]byte("block_tree"))
+	tree, err := bucket.New([]byte("block_tree"), db)
 	if err != nil {
 		panic(err)
 	}

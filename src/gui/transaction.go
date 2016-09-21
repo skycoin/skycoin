@@ -47,16 +47,17 @@ func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 		//WARNING: TODO: This iterates all blocks and all transactions
 		//TODO: need way to determine if transaction is "confirmed", without iterating all blocks
 		if isConfirmed == "1" {
-			blks := V.Blockchain.Blocks
+			// blks := V.Blockchain.Blocks
 
 			//only look at last 50 blocks, for checking if transaction is confirmed
-			const max_history = 50
-			x1 := len(blks)               // start
-			x2 := len(blks) - max_history //stop
-			if x2 < 0 {
-				x2 = 0
-			}
-			blks = blks[x2:x1] //only look at last 50 blocks
+			// const max_history = 50
+			// x1 := len(blks)               // start
+			// x2 := len(blks) - max_history //stop
+			// if x2 < 0 {
+			// 	x2 = 0
+			// }
+			blks := V.Blockchain.GetLastBlocks(50)
+			// blks = blks[x2:x1] //only look at last 50 blocks
 
 			totalTxns := []coin.Transaction{}
 			//WARNING: Iterates all blocks, since start

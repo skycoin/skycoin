@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	mesh "github.com/skycoin/skycoin/src/mesh2/node"
-	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
-	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
+	mesh "github.com/skycoin/skycoin/src/mesh/node"
+	"github.com/skycoin/skycoin/src/mesh/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
 )
 
 func init() {

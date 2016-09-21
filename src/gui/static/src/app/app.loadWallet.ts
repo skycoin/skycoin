@@ -371,8 +371,6 @@ export class loadWalletComponent implements OnInit {
 
         this.addresses.push({address:spendaddress, amount:spendamount});
         localStorage.setItem('historyAddresses',JSON.stringify(this.addresses));
-
-
         this.readyDisable = true;
         this.sendDisable = true;
         //Set http headers
@@ -390,6 +388,9 @@ export class loadWalletComponent implements OnInit {
                     this.loadWallet();
                     this.readyDisable = false;
                     this.sendDisable = true;
+		    
+		    //$('#send_amount').val('');
+                    //$('#send_pay_to').val('');
                 },
                 err => {
                     console.log(err);
@@ -399,7 +400,10 @@ export class loadWalletComponent implements OnInit {
                     if(err.body == 'Invalid connection') {
                         return;
                     }
-                    this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
+			
+		    this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
+		   // $('#send_amount').val('');
+                   // $('#send_pay_to').val('');	
                 },
                 () => console.log('Spend successfully')
             );

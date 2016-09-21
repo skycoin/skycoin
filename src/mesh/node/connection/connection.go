@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/domain"
-	"github.com/skycoin/skycoin/src/mesh2/serialize"
-	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/domain"
+	"github.com/skycoin/skycoin/src/mesh/serialize"
+	"github.com/skycoin/skycoin/src/mesh/transport/transport"
 
 	uuid "github.com/satori/go.uuid"
 )

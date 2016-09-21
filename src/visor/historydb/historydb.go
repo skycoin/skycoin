@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/boltdb/bolt"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 )
@@ -35,6 +36,18 @@ func Stop() {
 	db.Close()
 }
 
+// ProcessBlockchain process the blocks in the chain.
+func ProcessBlockchain(bc *coin.Blockchain) error {
+	depth := bc.Head().Seq()
+	for i := uint64(0); i <= depth; i++ {
+		b := bc.GetBlockInDepth(i)
+		if err := ProcessBlock(b); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ProcessBlock will index the index the transaction, outputs,etc.
 func ProcessBlock(b *coin.Block) error {
 	// index the transactions
@@ -48,4 +61,9 @@ func ProcessBlock(b *coin.Block) error {
 		}
 	}
 	return nil
+}
+
+// GetTransaction get transaction by hash.
+func GetTransaction(hash cipher.SHA256) (*Transaction, error) {
+	return gTxns.Get(hash)
 }

@@ -155,7 +155,11 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 
 		// store genesis block transaction
-		if err := v.txns.Add(&gb.Body.Transactions[0], 0); err != nil {
+		storeTx := transactiondb.Transaction{
+			Tx:       gb.Body.Transactions[0],
+			BlockSeq: 0,
+		}
+		if err := v.txns.Add(&storeTx); err != nil {
 			logger.Panicf("add genesis block transaction failed: %v", err)
 		}
 	}
@@ -241,7 +245,11 @@ func (self *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 
 	// add transactions in the block to blockdb
 	for _, tx := range b.Block.Body.Transactions {
-		if err := self.txns.Add(&tx, b.Block.Seq()); err != nil {
+		storeTx := transactiondb.Transaction{
+			Tx:       tx,
+			BlockSeq: b.Block.Seq(),
+		}
+		if err := self.txns.Add(&storeTx); err != nil {
 			return err
 		}
 	}
@@ -456,7 +464,7 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 
 	for {
 		// Look in the blockchain
-		tx, dep, err := self.txns.Get(txHash)
+		tx, err := self.txns.Get(txHash)
 		if err != nil {
 			logger.Error("%v", err)
 			break
@@ -467,8 +475,8 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 		}
 
 		return Transaction{
-			Txn:    *tx,
-			Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - dep + 1),
+			Txn:    tx.Tx,
+			Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - tx.BlockSeq + 1),
 		}
 	}
 
@@ -519,4 +527,9 @@ func (self *Visor) GetWalletTransactions(addresses []cipher.Address) []ReadableU
 	}
 
 	return ret
+}
+
+// BlockchainExplorer start the blockchain explorer.
+func (vs *Visor) BlockchainExplorer() {
+
 }

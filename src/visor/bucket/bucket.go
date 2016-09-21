@@ -1,4 +1,4 @@
-package blockdb
+package bucket
 
 import "github.com/boltdb/bolt"
 
@@ -6,10 +6,11 @@ import "github.com/boltdb/bolt"
 // Also wrap some helper functions.
 type Bucket struct {
 	Name []byte
+	db   *bolt.DB
 }
 
 // NewBucket create bucket of specific name.
-func NewBucket(name []byte) (*Bucket, error) {
+func New(name []byte, db *bolt.DB) (*Bucket, error) {
 	err := db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(name); err != nil {
 			return err
@@ -19,13 +20,13 @@ func NewBucket(name []byte) (*Bucket, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Bucket{name}, nil
+	return &Bucket{name, db}, nil
 }
 
 // Get value of specific key in the bucket.
 func (b Bucket) Get(key []byte) []byte {
 	var value []byte
-	db.View(func(tx *bolt.Tx) error {
+	b.db.View(func(tx *bolt.Tx) error {
 		value = tx.Bucket(b.Name).Get(key)
 		return nil
 	})
@@ -34,7 +35,7 @@ func (b Bucket) Get(key []byte) []byte {
 
 // Put key value in the bucket.
 func (b Bucket) Put(key []byte, value []byte) error {
-	return db.Update(func(tx *bolt.Tx) error {
+	return b.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(b.Name).Put(key, value)
 	})
 }
@@ -42,7 +43,7 @@ func (b Bucket) Put(key []byte, value []byte) error {
 // Find find value that match the filter in the bucket.
 func (b Bucket) Find(filter func(key, value []byte) bool) []byte {
 	var value []byte
-	db.View(func(tx *bolt.Tx) error {
+	b.db.View(func(tx *bolt.Tx) error {
 		bt := tx.Bucket(b.Name)
 
 		c := bt.Cursor()
@@ -59,14 +60,14 @@ func (b Bucket) Find(filter func(key, value []byte) bool) []byte {
 }
 
 // Count return the number of key/value pairs
-func (b Bucket) Count() uint64 {
-	var count uint64
-	db.View(func(tx *bolt.Tx) error {
-		bt := tx.Bucket(b.Name)
-		return bt.ForEach(func(k, v []byte) error {
-			count++
-			return nil
-		})
-	})
-	return count
-}
+// func (b Bucket) Count() uint64 {
+// 	var count uint64
+// 	b.db.View(func(tx *bolt.Tx) error {
+// 		bt := tx.Bucket(b.Name)
+// 		return bt.ForEach(func(k, v []byte) error {
+// 			count++
+// 			return nil
+// 		})
+// 	})
+// 	return count
+// }

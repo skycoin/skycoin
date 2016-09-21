@@ -329,15 +329,24 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.loadWallet();
                         this.readyDisable = false;
                         this.sendDisable = true;
+			
+			$('#send_amount').val('');
+                        $('#send_pay_to').val('');
+
                     }, err => {
                         console.log(err);
                         alert(err._body);
+		
                         this.readyDisable = false;
                         this.sendDisable = true;
                         if (err.body == 'Invalid connection') {
                             return;
                         }
                         this.pendingTable.push({ complete: 'Pending', address: spendaddress, amount: spendamount });
+			
+			 $('#send_amount').val('');
+			 $('#send_pay_to').val('');
+
                     }, () => console.log('Spend successfully'));
                 }
             };

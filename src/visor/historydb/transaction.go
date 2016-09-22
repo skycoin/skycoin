@@ -1,5 +1,10 @@
 package historydb
 
+// transaction.go mainly provides transaction corresponding buckets and apis,
+// The transactions bucket, tx hash as key, and tx as value, it's the main bucket that stores the
+// transaction value. All other buckets that index different field of transaction will only records the
+// transaction hash, and get the tx value from transactions bucket.
+
 import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/aether/encoder"

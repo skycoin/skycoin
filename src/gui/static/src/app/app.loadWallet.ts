@@ -54,6 +54,7 @@ export class loadWalletComponent implements OnInit {
     NewDefaultConnectionIsVisible : boolean;
     EditDefaultConnectionIsVisible : boolean;
     oldConnection:string;
+    filterAddressVal:string;
 
     sortDir:{};
 
@@ -86,13 +87,22 @@ export class loadWalletComponent implements OnInit {
         this.readyDisable = false;
         this.pendingTable = [];
         this.selectedMenu = "Wallets";
-        this.sortDir = {time:0, amount:0};
+        this.sortDir = {time:0, amount:0, address:0};
+        this.filterAddressVal = '';
 
         if(localStorage.getItem('historyAddresses') != null){
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
         } else {
             localStorage.setItem('historyAddresses',JSON.stringify([]));
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
+        }
+
+        //Set local storage for history
+        if(localStorage.getItem('historyTable') != null){
+            this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
+        } else {
+            localStorage.setItem('historyTable',JSON.stringify([]));
+            this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
         }
     }
 
@@ -372,20 +382,42 @@ export class loadWalletComponent implements OnInit {
     }
 
     sortHistory(key) {
+
       if(this.sortDir[key]==0)
         this.sortDir[key] = 1;
       else
         this.sortDir[key] = this.sortDir[key] * (-1);
 
-      if(key == 'time')
+      if(key == 'time'){
+        this.sortDir['address'] = 0;
         this.sortDir['amount'] = 0;
-      else
+      } else if(key == 'amount') {
         this.sortDir['time'] = 0;
+        this.sortDir['address'] = 0;
+      } else {
+        this.sortDir['time'] = 0;
+        this.sortDir['amount'] = 0;
+      }
 
       var self = this;
-      this.historyTable = _.sortBy(this.historyTable, function(o){
-        return Number(o[key]) * self.sortDir[key];
-      });
+      if(key != 'address') {
+        this.historyTable = _.sortBy(this.historyTable, function(o){
+          return Number(o[key]) * self.sortDir[key];
+        });
+      } else {
+        this.historyTable = _.sortBy(this.historyTable, function(o){
+          return o[key];
+        });
+
+        if(this.sortDir[key] == -1) {
+          this.historyTable = this.historyTable.reverse();
+        }
+      }
+    }
+
+    filterHistory(address) {
+      console.log("filterHistory", address);
+      this.filterAddressVal = address;
     }
 
     spend(spendid, spendaddress, spendamount){
@@ -394,24 +426,9 @@ export class loadWalletComponent implements OnInit {
           alert('Cannot send values less than 1.');
           return;
         }
-        //Set local storage for history
-        if(localStorage.getItem('historyTable') != null){
-            this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
-        } else {
-            localStorage.setItem('historyTable',JSON.stringify([]));
-            this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
-        }
 
         this.historyTable.push({address:spendaddress, amount:spendamount, time:Date.now()/1000});
         localStorage.setItem('historyTable',JSON.stringify(this.historyTable));
-
-        //Set local storage for addresses history
-        if(localStorage.getItem('historyAddresses') != null){
-            this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
-        } else {
-            localStorage.setItem('historyAddresses',JSON.stringify([]));
-            this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
-        }
 
         var oldItem = _.find(this.addresses, function(o){
           return o.address === spendaddress;

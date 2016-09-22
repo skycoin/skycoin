@@ -38,8 +38,8 @@ var (
 
 // BlockTree provide method for access
 type BlockTree interface {
-	AddBlock(b Block) error
-	RemoveBlock(b Block) error
+	AddBlock(b *Block) error
+	RemoveBlock(b *Block) error
 	GetBlock(hash cipher.SHA256) *Block
 	GetBlockInDepth(dep uint64, filter func(hps []HashPair) cipher.SHA256) *Block
 }
@@ -66,8 +66,8 @@ func NewBlockchain(tree BlockTree, walker Walker) *Blockchain {
 	return bc
 }
 
-func (bc Blockchain) GetUnspent() UnspentPool {
-	return bc.unspent
+func (bc *Blockchain) GetUnspent() *UnspentPool {
+	return &bc.unspent
 }
 
 func (bc *Blockchain) walkTree() {
@@ -122,7 +122,7 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Body: body,
 	}
 	// b.Body.Transactions[0].UpdateHeader()
-	bc.tree.AddBlock(b)
+	bc.tree.AddBlock(&b)
 	bc.head = b.HashHeader()
 	ux := UxOut{
 		Head: UxHead{
@@ -205,7 +205,7 @@ func (bc *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
 	}
 
 	b.Head.PrevHash = bc.head
-	bc.tree.AddBlock(b)
+	bc.tree.AddBlock(&b)
 
 	// update the head
 	bc.head = b.HashHeader()

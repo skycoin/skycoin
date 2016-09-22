@@ -12,7 +12,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/visor/transactiondb"
 )
 
 var (
@@ -109,7 +108,6 @@ type Visor struct {
 	Unconfirmed *UnconfirmedTxnPool
 	Blockchain  *coin.Blockchain
 	blockSigs   *blockdb.BlockSigs
-	txns        *transactiondb.Transactions
 }
 
 func walker(hps []coin.HashPair) cipher.SHA256 {
@@ -134,7 +132,6 @@ func NewVisor(c VisorConfig) *Visor {
 		Blockchain:  bc,
 		blockSigs:   blockdb.NewBlockSigs(),
 		Unconfirmed: NewUnconfirmedTxnPool(),
-		txns:        transactiondb.New(),
 	}
 	gb := bc.GetGenesisBlock()
 	if gb == nil {

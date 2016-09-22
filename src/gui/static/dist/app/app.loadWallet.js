@@ -60,6 +60,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.readyDisable = false;
                     this.pendingTable = [];
                     this.selectedMenu = "Wallets";
+                    this.sortDir = { date: 0, amount: 0 };
                     if (localStorage.getItem('historyAddresses') != null) {
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
                     }
@@ -312,6 +313,17 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         //console.log('Load wallet seed done')
                     });
                 }
+                sortHistory(key) {
+                    console.log(key);
+                    if (this.sortDir[key] == 0)
+                        this.sortDir[key] = 1;
+                    else
+                        this.sortDir[key] = this.sortDir[key] * (-1);
+                    var self = this;
+                    this.historyTable = _.sortBy(this.historyTable, function (o) {
+                        return o.time * self.sortDir[key];
+                    });
+                }
                 spend(spendid, spendaddress, spendamount) {
                     var amount = Number(spendamount);
                     if (amount < 1) {
@@ -389,7 +401,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_ts_1.QRCodeComponent],
                     providers: [],
                     templateUrl: 'app/templates/wallet.html'
-                }), 
+                }),
                 __metadata('design:paramtypes', [http_1.Http])
             ], loadWalletComponent);
             exports_1("loadWalletComponent", loadWalletComponent);

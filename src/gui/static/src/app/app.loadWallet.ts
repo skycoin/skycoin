@@ -55,6 +55,8 @@ export class loadWalletComponent implements OnInit {
     EditDefaultConnectionIsVisible : boolean;
     oldConnection:string;
 
+    sortDir:{};
+
     //Constructor method for load HTTP object
     constructor(private http: Http) { }
 
@@ -84,6 +86,7 @@ export class loadWalletComponent implements OnInit {
         this.readyDisable = false;
         this.pendingTable = [];
         this.selectedMenu = "Wallets";
+        this.sortDir = {time:0, amount:0};
 
         if(localStorage.getItem('historyAddresses') != null){
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
@@ -368,6 +371,23 @@ export class loadWalletComponent implements OnInit {
             );
     }
 
+    sortHistory(key) {
+      if(this.sortDir[key]==0)
+        this.sortDir[key] = 1;
+      else
+        this.sortDir[key] = this.sortDir[key] * (-1);
+
+      if(key == 'time')
+        this.sortDir['amount'] = 0;
+      else
+        this.sortDir['time'] = 0;
+
+      var self = this;
+      this.historyTable = _.sortBy(this.historyTable, function(o){
+        return Number(o[key]) * self.sortDir[key];
+      });
+    }
+
     spend(spendid, spendaddress, spendamount){
         var amount = Number(spendamount);
         if(amount < 1) {
@@ -444,7 +464,6 @@ export class loadWalletComponent implements OnInit {
                 }
             );
     }
-
 }
 
 //Set default enum value for tabs

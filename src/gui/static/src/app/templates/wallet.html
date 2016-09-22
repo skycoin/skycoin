@@ -140,9 +140,9 @@
                                     </ul>
                                 </div>
                             </td>
-                            <td>Date</td>
+                            <td><a href="#" (click)="sortHistory('time')">Date <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a></td>
                             <td>Address</td>
-                            <td>Amount</td>
+                            <td><a href="#" (click)="sortHistory('amount')">Amount <i *ngIf="sortDir.amount!=0" class="glyphicon glyphicon-triangle-{{sortDir.amount==1?'top':'bottom'}}"></i></a></td>
                             <td>Label</td>
                         </tr>
                         <tr *ngFor="#transactions of historyTable">

@@ -9,12 +9,14 @@ import (
 )
 
 // Output augment output struct,
-type Output struct {
-	coin.TransactionOutput
-	CreateTxID      cipher.SHA256 // id of tx which spent this output.
-	CreatedBlockSeq uint64        // block seq that created the output.
-	SpentTxID       cipher.SHA256
-	SpentBlockSeq   uint64 // block seq that spent the output.
+type UxOut struct {
+	Out           coin.UxOut
+	SpentTxID     cipher.SHA256 // id of tx which spent this output.
+	SpentBlockSeq uint64        // block seq that spent the output.
+}
+
+func (o UxOut) Hash() cipher.SHA256 {
+	return o.Out.Hash()
 }
 
 // Outputs bucket stores outputs, outID as key and Output as value.
@@ -23,26 +25,26 @@ type Outputs struct {
 }
 
 func newOutputs(db *bolt.DB) (*Outputs, error) {
-	bkt, err := bucket.New([]byte("outputs"), db)
+	bkt, err := bucket.New([]byte("uxouts"), db)
 	if err != nil {
 		return nil, err
 	}
 	return &Outputs{bkt}, nil
 }
 
-func (op *Outputs) Set(out Output) error {
-	key := out.UxId(out.CreateTxID)
+func (op *Outputs) Set(out UxOut) error {
+	key := out.Hash()
 	bin := encoder.Serialize(out)
 	return op.bkt.Put(key[:], bin)
 }
 
-func (op *Outputs) Get(uxID cipher.SHA256) (*Output, error) {
+func (op *Outputs) Get(uxID cipher.SHA256) (*UxOut, error) {
 	bin := op.bkt.Get(uxID[:])
 	if bin == nil {
 		return nil, nil
 	}
 
-	out := Output{}
+	out := UxOut{}
 	if err := encoder.DeserializeRaw(bin, &out); err != nil {
 		return nil, err
 	}

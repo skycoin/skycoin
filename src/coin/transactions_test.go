@@ -557,7 +557,7 @@ func TestFullTransaction(t *testing.T) {
 	assert.Nil(t, bc.VerifyTransaction(tx))
 	b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
 	assert.Nil(t, err)
-	_, err = bc.ExecuteBlock(b)
+	_, err = bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
 
 	txo := CreateUnspents(bc.Head().Head, tx)
@@ -582,6 +582,6 @@ func TestFullTransaction(t *testing.T) {
 	assert.Nil(t, bc.VerifyTransaction(tx))
 	b, err = bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
 	assert.Nil(t, err)
-	_, err = bc.ExecuteBlock(b)
+	_, err = bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
 }

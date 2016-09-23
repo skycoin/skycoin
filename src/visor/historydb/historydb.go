@@ -26,8 +26,8 @@ type HistoryDB struct {
 	db      *bolt.DB      // bolt db instance.
 	txns    *Transactions // transactions bucket instance.
 	outputs *Outputs      // outputs bucket instance.
-	addrIn  *addressIn
-	addrOut *addressOut
+	addrIn  *addressUx
+	addrOut *addressUx
 }
 
 // New create historydb instance and create corresponding buckets if does not exist.
@@ -35,6 +35,12 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 	hd := HistoryDB{db: db}
 	var err error
 	hd.txns, err = newTransactions(db)
+	if err != nil {
+		return nil, err
+	}
+
+	// create the output instance
+	hd.outputs, err = newOutputs(db)
 	if err != nil {
 		return nil, err
 	}
@@ -66,18 +72,21 @@ func (hd *HistoryDB) ProcessBlockchain(bc *coin.Blockchain) error {
 	return nil
 }
 
+func (hd *HistoryDB) GetUxout(hash cipher.SHA256) (*UxOut, error) {
+	return hd.outputs.Get(hash)
+}
+
 // ProcessBlock will index the transaction, outputs,etc.
 func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 	// index the transactions
 	for _, t := range b.Body.Transactions {
 		tx := Transaction{
-			Transaction: t,
-			BlockSeq:    b.Seq(),
+			Tx:       t,
+			BlockSeq: b.Seq(),
 		}
 		if err := hd.txns.Add(&tx); err != nil {
 			return err
 		}
-
 		// handle the tx in, we don't handle the genesis block has no in transaction.
 		if b.Seq() > 0 {
 			for _, in := range t.In {
@@ -85,7 +94,6 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 				if err != nil {
 					return err
 				}
-
 				// update the spent block seq of the output.
 				o.SpentBlockSeq = b.Seq()
 				o.SpentTxID = t.Hash()
@@ -94,26 +102,25 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 				}
 
 				// index the output for address out
-				if err := hd.addrOut.Add(o.Address, o.UxId(o.CreateTxID)); err != nil {
+				if err := hd.addrOut.Add(o.Out.Body.Address, o.Hash()); err != nil {
 					return err
 				}
 			}
 		}
 
 		// handle the tx out
-		for _, o := range t.Out {
-			out := Output{
-				TransactionOutput: o,
-				CreateTxID:        t.Hash(),
-				CreatedBlockSeq:   b.Seq(),
+		uxArray := coin.CreateUnspents(b.Head, t)
+		for _, ux := range uxArray {
+			uxOut := UxOut{
+				Out: ux,
 			}
-			// add output.
-			if err := hd.outputs.Set(out); err != nil {
+			if err := hd.outputs.Set(uxOut); err != nil {
 				return err
 			}
 
-			// index the output for address in.
-			hd.addrIn.Add(o.Address, o.UxId(t.Hash()))
+			if err := hd.addrIn.Add(ux.Body.Address, ux.Hash()); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

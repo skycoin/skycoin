@@ -3,7 +3,6 @@
 package historydb
 
 import (
-	"log"
 	"path/filepath"
 
 	"github.com/boltdb/bolt"
@@ -11,6 +10,16 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 )
+
+// NewDB create the history bolt db file.
+func NewDB() (*bolt.DB, error) {
+	dbFile := filepath.Join(util.DataDir, "history.db")
+	db, err := bolt.Open(dbFile, 0600, nil)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
 
 // HistoryDB provides apis for blockchain explorer.
 type HistoryDB struct {
@@ -21,40 +30,28 @@ type HistoryDB struct {
 	addrOut *addressOut
 }
 
-// Start will open a boltdb named history.db,
-// and create corresponding buckets if does not exist.
-func (hd *HistoryDB) Start() error {
-	dbFile := filepath.Join(util.DataDir, "history.db")
+// New create historydb instance and create corresponding buckets if does not exist.
+func New(db *bolt.DB) (*HistoryDB, error) {
+	hd := HistoryDB{db: db}
 	var err error
-	hd.db, err = bolt.Open(dbFile, 0600, nil)
+	hd.txns, err = newTransactions(db)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	// create the transactions instance.
-	hd.txns, err = newTransactions(hd.db)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create the toAddressTx instance.
-	hd.addrIn, err = newAddressIn(hd.db)
+	hd.addrIn, err = newAddressIn(db)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create the fromAddressTx instance.
-	hd.addrOut, err = newAddressOut(hd.db)
+	hd.addrOut, err = newAddressOut(db)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
-}
-
-// Stop the historydb.
-func (hd *HistoryDB) Stop() {
-	hd.db.Close()
+	return &hd, nil
 }
 
 // ProcessBlockchain process the blocks in the chain.

@@ -154,6 +154,7 @@ func addTransactionToBlock(t *testing.T, b *Block) Transaction {
 	return tx
 }
 
+// addBlockToBlockchain test helper function
 // Adds 2 blocks to the blockchain and return an unspent that has >0 coin hours
 func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	// Split the genesis block into two transactions
@@ -227,7 +228,7 @@ func splitUnspent(t *testing.T, bc *Blockchain, ux UxOut) UxArray {
 	tx.UpdateHeader()
 	b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
 	assert.Nil(t, err)
-	uxs, err := bc.ExecuteBlock(b)
+	uxs, err := bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
 	assert.Equal(t, len(uxs), 2)
 	return uxs
@@ -254,7 +255,7 @@ func assertExecuteBlock(t *testing.T, bc *Blockchain, b Block,
 	tx Transaction) {
 	seq := bc.Head().Head.BkSeq
 	nUxs := len(bc.GetUnspent().Pool)
-	uxs, err := bc.ExecuteBlock(b)
+	uxs, err := bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
 	assert.Equal(t, bc.Head().Head.BkSeq, seq+1)
 	assert.Equal(t, len(uxs), len(tx.Out))
@@ -743,7 +744,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx.UpdateHeader()
 	b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
 	assert.Nil(t, err)
-	uxs, err = bc.ExecuteBlock(b)
+	uxs, err = bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
 	tx = Transaction{}
 	tx.PushInput(uxs[0].Hash())
@@ -1086,7 +1087,7 @@ func TestExecuteBlock(t *testing.T) {
 
 	// Invalid block returns error
 	b := Block{}
-	uxs, err := bc.ExecuteBlock(b)
+	uxs, err := bc.ExecuteBlock(&b)
 	assert.NotNil(t, err)
 	assert.Nil(t, uxs)
 
@@ -1122,7 +1123,7 @@ func TestExecuteBlock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(b.Body.Transactions), 2)
 	assert.Equal(t, b.Body.Transactions, txns)
-	uxs, err = bc.ExecuteBlock(b)
+	uxs, err = bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
 	assert.Equal(t, len(uxs), 5)
 	// Check that all unspents look correct and are in the unspent pool

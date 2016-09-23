@@ -45,7 +45,7 @@ func NewBlockTree() *BlockTree {
 
 // AddBlock write the block into blocks bucket, add the pair of block hash and pre block hash into
 // tree in the block depth.
-func (bt *BlockTree) AddBlock(b coin.Block) error {
+func (bt *BlockTree) AddBlock(b *coin.Block) error {
 	return UpdateTx(func(tx *bolt.Tx) error {
 		blocks := tx.Bucket(bt.blocks.Name)
 
@@ -61,7 +61,7 @@ func (bt *BlockTree) AddBlock(b coin.Block) error {
 		}
 
 		// write block into blocks bucket.
-		if err := setBlock(blocks, &b); err != nil {
+		if err := setBlock(blocks, b); err != nil {
 			return err
 		}
 
@@ -108,7 +108,7 @@ func (bt *BlockTree) AddBlock(b coin.Block) error {
 
 // RemoveBlock remove block from blocks bucket and tree bucket.
 // can't remove block if it has children.
-func (bt *BlockTree) RemoveBlock(b coin.Block) error {
+func (bt *BlockTree) RemoveBlock(b *coin.Block) error {
 	return UpdateTx(func(tx *bolt.Tx) error {
 		// delete block in blocks bucket.
 		blocks := tx.Bucket(bt.blocks.Name)
@@ -121,7 +121,7 @@ func (bt *BlockTree) RemoveBlock(b coin.Block) error {
 		tree := tx.Bucket(bt.tree.Name)
 
 		// check if this block has children
-		has, err := hasChild(tree, b)
+		has, err := hasChild(tree, *b)
 		if err != nil {
 			return err
 		}

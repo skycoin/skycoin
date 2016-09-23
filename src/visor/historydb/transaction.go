@@ -20,8 +20,13 @@ type Transactions struct {
 
 // Transaction contains transaction info and the seq of block which executed this block.
 type Transaction struct {
-	coin.Transaction
+	Tx       coin.Transaction
 	BlockSeq uint64
+}
+
+// Hash return the Tx hash.
+func (tx *Transaction) Hash() cipher.SHA256 {
+	return tx.Tx.Hash()
 }
 
 // New create a transaction db instance.

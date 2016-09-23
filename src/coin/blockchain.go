@@ -186,9 +186,9 @@ func (bc Blockchain) NewBlockFromTransactions(txns Transactions, currentTime uin
 
 // ExecuteBlock Attempts to append block to blockchain.  Returns the UxOuts created,
 // and an error if the block is invalid.
-func (bc *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
+func (bc *Blockchain) ExecuteBlock(b *Block) (UxArray, error) {
 	var uxs UxArray
-	err := bc.VerifyBlock(b)
+	err := bc.VerifyBlock(*b)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (bc *Blockchain) ExecuteBlock(b Block) (UxArray, error) {
 	}
 
 	b.Head.PrevHash = bc.head
-	bc.tree.AddBlock(&b)
+	bc.tree.AddBlock(b)
 
 	// update the head
 	bc.head = b.HashHeader()

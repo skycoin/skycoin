@@ -152,13 +152,13 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 
 		// store genesis block transaction
-		storeTx := transactiondb.Transaction{
-			Tx:       gb.Body.Transactions[0],
-			BlockSeq: 0,
-		}
-		if err := v.txns.Add(&storeTx); err != nil {
-			logger.Panicf("add genesis block transaction failed: %v", err)
-		}
+		// storeTx := transactiondb.Transaction{
+		// 	Tx:       gb.Body.Transactions[0],
+		// 	BlockSeq: 0,
+		// }
+		// if err := v.txns.Add(&storeTx); err != nil {
+		// 	logger.Panicf("add genesis block transaction failed: %v", err)
+		// }
 	}
 
 	if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
@@ -232,7 +232,7 @@ func (self *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
-	if _, err := self.Blockchain.ExecuteBlock(b.Block); err != nil {
+	if _, err := self.Blockchain.ExecuteBlock(&b.Block); err != nil {
 		return err
 	}
 	// TODO -- save them even if out of order, and execute later
@@ -241,15 +241,15 @@ func (self *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	self.blockSigs.Add(&b)
 
 	// add transactions in the block to blockdb
-	for _, tx := range b.Block.Body.Transactions {
-		storeTx := transactiondb.Transaction{
-			Tx:       tx,
-			BlockSeq: b.Block.Seq(),
-		}
-		if err := self.txns.Add(&storeTx); err != nil {
-			return err
-		}
-	}
+	// for _, tx := range b.Block.Body.Transactions {
+	// 	storeTx := transactiondb.Transaction{
+	// 		Tx:       tx,
+	// 		BlockSeq: b.Block.Seq(),
+	// 	}
+	// 	if err := self.txns.Add(&storeTx); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	// Remove the transactions in the Block from the unconfirmed pool
 	self.Unconfirmed.RemoveTransactions(self.Blockchain,
@@ -290,7 +290,7 @@ func (self *Visor) GetUnspentOutputs() []coin.UxOut {
 
 func (self *Visor) GetUnspentOutputsMap() coin.UnspentPool {
 	uxs := self.Blockchain.GetUnspent()
-	return uxs
+	return *uxs
 }
 
 func (self *Visor) GetUnspentOutputReadables() []ReadableOutput {
@@ -459,23 +459,23 @@ func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
 		}
 	}
 
-	for {
-		// Look in the blockchain
-		tx, err := self.txns.Get(txHash)
-		if err != nil {
-			logger.Error("%v", err)
-			break
-		}
+	// for {
+	// 	// Look in the blockchain
+	// 	tx, err := self.txns.Get(txHash)
+	// 	if err != nil {
+	// 		logger.Error("%v", err)
+	// 		break
+	// 	}
 
-		if tx == nil {
-			break
-		}
+	// 	if tx == nil {
+	// 		break
+	// 	}
 
-		return Transaction{
-			Txn:    tx.Tx,
-			Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - tx.BlockSeq + 1),
-		}
-	}
+	// 	return Transaction{
+	// 		Txn:    tx.Tx,
+	// 		Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - tx.BlockSeq + 1),
+	// 	}
+	// }
 
 	// Otherwise unknown
 	return Transaction{

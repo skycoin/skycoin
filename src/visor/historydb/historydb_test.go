@@ -23,6 +23,7 @@ var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
 	testMaxSize          = 1024 * 1024
+	blockBkt             = []byte("blocks")
 	transactionBkt       = []byte("transactions")
 	outputBkt            = []byte("uxouts")
 	addressInBkt         = []byte("address_in")
@@ -295,6 +296,13 @@ func testEngine(t *testing.T, tds []testData, bc *coin.Blockchain, hdb *historyd
 		if err := hdb.ProcessBlock(b); err != nil {
 			t.Fatal(err)
 		}
+		// check if the block does exist in the bucket.
+		bkey := b.HashHeader()
+		var blkInBkt coin.Block
+		if err := getBucketValue(db, blockBkt, bkey[:], &blkInBkt); err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, &blkInBkt, b)
 
 		// check tx
 		txInBkt := historydb.Transaction{}

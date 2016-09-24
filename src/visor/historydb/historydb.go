@@ -24,35 +24,41 @@ func NewDB() (*bolt.DB, error) {
 // HistoryDB provides apis for blockchain explorer.
 type HistoryDB struct {
 	db      *bolt.DB      // bolt db instance.
-	txns    *Transactions // transactions bucket instance.
+	blocks  *blocks       // blocks bucket.
+	txns    *transactions // transactions bucket instance.
 	outputs *Outputs      // outputs bucket instance.
-	addrIn  *addressUx
-	addrOut *addressUx
+	addrIn  *addressUx    // bucket which stores all UxOuts that address recved.
+	addrOut *addressUx    // bucket which stores all UxOuts that address spent.
 }
 
 // New create historydb instance and create corresponding buckets if does not exist.
 func New(db *bolt.DB) (*HistoryDB, error) {
 	hd := HistoryDB{db: db}
 	var err error
-	hd.txns, err = newTransactions(db)
+	hd.blocks, err = newBlockBkt(db)
+	if err != nil {
+		return nil, err
+	}
+
+	hd.txns, err = newTransactionsBkt(db)
 	if err != nil {
 		return nil, err
 	}
 
 	// create the output instance
-	hd.outputs, err = newOutputs(db)
+	hd.outputs, err = newOutputsBkt(db)
 	if err != nil {
 		return nil, err
 	}
 
 	// create the toAddressTx instance.
-	hd.addrIn, err = newAddressIn(db)
+	hd.addrIn, err = newAddressInBkt(db)
 	if err != nil {
 		return nil, err
 	}
 
 	// create the fromAddressTx instance.
-	hd.addrOut, err = newAddressOut(db)
+	hd.addrOut, err = newAddressOutBkt(db)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +78,15 @@ func (hd *HistoryDB) ProcessBlockchain(bc *coin.Blockchain) error {
 	return nil
 }
 
-func (hd *HistoryDB) GetUxout(hash cipher.SHA256) (*UxOut, error) {
-	return hd.outputs.Get(hash)
+// GetUxout get UxOut of specific uxID.
+func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
+	return hd.outputs.Get(uxID)
 }
 
 // ProcessBlock will index the transaction, outputs,etc.
 func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
+	// store the block
+
 	// index the transactions
 	for _, t := range b.Body.Transactions {
 		tx := Transaction{
@@ -127,6 +136,10 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 }
 
 // GetTransaction get transaction by hash.
-func (hd *HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
+func (hd HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
 	return hd.txns.Get(hash)
 }
+
+// GetTxsInBlock get all transactions in specifc block.
+// func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, error) {
+// }

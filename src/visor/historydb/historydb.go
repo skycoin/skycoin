@@ -86,6 +86,9 @@ func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 // ProcessBlock will index the transaction, outputs,etc.
 func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 	// store the block
+	if err := hd.blocks.Add(b); err != nil {
+		return err
+	}
 
 	// index the transactions
 	for _, t := range b.Body.Transactions {

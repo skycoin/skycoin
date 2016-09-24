@@ -12,10 +12,18 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
+<<<<<<< HEAD:src/mesh2/examples/integration/node_test.go
+	"github.com/skycoin/skycoin/src/mesh2/domain"
+	"github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/nodemanager/lib_nodemanager"
+	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
+	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
+=======
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/cmd/mesh/nodemanager/lib_nodemanager"
 	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
+>>>>>>> 500783f364d54ea6dea0056b92b62afcb7b8e077:src/mesh/examples/integration/node_test.go
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/assert"
 )

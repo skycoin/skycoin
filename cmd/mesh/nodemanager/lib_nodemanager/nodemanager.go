@@ -9,9 +9,15 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
+<<<<<<< HEAD:src/mesh2/nodemanager/lib_nodemanager/nodemanager.go
+	mesh "github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh2/transport/protocol"
+=======
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport/transport"
 	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
+>>>>>>> 500783f364d54ea6dea0056b92b62afcb7b8e077:cmd/mesh/nodemanager/lib_nodemanager/nodemanager.go
 )
 
 func init() {

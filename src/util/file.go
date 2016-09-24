@@ -41,7 +41,7 @@ func InitDataDir(dir string) string {
 		DataDir = filepath.Join(home, dir)
 	}
 
-	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
+	if err := os.MkdirAll(DataDir, os.FileMode(0700)); err != nil {
 		logger.Error("Failed to create directory %s: %v", DataDir, err)
 	}
 	return DataDir

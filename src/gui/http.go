@@ -15,6 +15,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util"
+
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 var (
@@ -128,7 +130,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
-			Error404(w)
+			wh.Error404(w)
 		}
 	}
 }

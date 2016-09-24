@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+
 	"github.com/skycoin/skycoin/src/daemon"
 )
 
 func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetBlockchainMetadata())
+		wh.SendOr404(w, gateway.GetBlockchainMetadata())
 	}
 }
 
@@ -20,10 +22,10 @@ func blockchainBlockHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		sseq := r.FormValue("seq")
 		seq, err := strconv.ParseUint(sseq, 10, 64)
 		if err != nil {
-			Error400(w, fmt.Sprintf("Invalid seq value \"%s\"", sseq))
+			wh.Error400(w, fmt.Sprintf("Invalid seq value \"%s\"", sseq))
 			return
 		}
-		SendOr404(w, gateway.GetBlock(seq))
+		wh.SendOr404(w, gateway.GetBlock(seq))
 	}
 }
 
@@ -32,22 +34,22 @@ func blockchainBlocksHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		sstart := r.FormValue("start")
 		start, err := strconv.ParseUint(sstart, 10, 64)
 		if err != nil {
-			Error400(w, fmt.Sprintf("Invalid start value \"%s\"", sstart))
+			wh.Error400(w, fmt.Sprintf("Invalid start value \"%s\"", sstart))
 			return
 		}
 		send := r.FormValue("end")
 		end, err := strconv.ParseUint(send, 10, 64)
 		if err != nil {
-			Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
+			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
 			return
 		}
-		SendOr404(w, gateway.GetBlocks(start, end))
+		wh.SendOr404(w, gateway.GetBlocks(start, end))
 	}
 }
 
 func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetBlockchainProgress())
+		wh.SendOr404(w, gateway.GetBlockchainProgress())
 	}
 }
 

@@ -7,20 +7,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
-// address provides apis for getting all spent outputs from specific address, and
-// getting all inputs of specific address.
-
-// addressInput bucket stores outputs that send to the addresses,
-// address as key, out id as value.
-// type addressIn struct {
-// 	bkt *bucket.Bucket
-// }
-
-// addressOut bucket stores output that address spent.
-// type addressOut struct {
-// 	bkt *bucket.Bucket
-// }
-
 type addressUx struct {
 	bkt *bucket.Bucket
 }
@@ -41,15 +27,6 @@ func newAddressInBkt(db *bolt.DB) (*addressUx, error) {
 func newAddressOutBkt(db *bolt.DB) (*addressUx, error) {
 	return newAddressUx(db, []byte("address_out"))
 }
-
-// func newAddressIn(db *bolt.DB) (*addressIn, error) {
-// 	bkt, err := bucket.New([]byte("address_in"), db)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &addressIn{bkt}, nil
-// }
 
 // Get return nil on not found.
 func (au *addressUx) Get(address cipher.Address) ([]cipher.SHA256, error) {
@@ -86,15 +63,3 @@ func (au *addressUx) Add(address cipher.Address, uxHash cipher.SHA256) error {
 	bin := encoder.Serialize(hashes)
 	return au.bkt.Put(address.Bytes(), bin)
 }
-
-// func newAddressOut(db *bolt.DB) (*addressOut, error) {
-// 	bkt, err := bucket.New([]byte("address_out"), db)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &addressOut{bkt}, nil
-// }
-
-// func (ao *addressOut) Add(address cipher.Address, uxHash cipher.SHA256) error {
-// 	return ao.bkt.Put(address.Bytes(), uxHash[:])
-// }

@@ -21,6 +21,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo "Installing node modules"
+./install-node-modules.sh
+if [ $? -ne 0]; then
+    echo "install-node-modules.sh failed"
+    exit 1
+fi
+
 echo "Building standalone release"
 
 SKIP_COMPILATION=1 ./build-standalone-release.sh "$GOX_OSARCH"

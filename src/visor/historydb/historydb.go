@@ -161,3 +161,20 @@ func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, erro
 	}
 	return atxs, nil
 }
+
+// GetSpentUxOutOfAddr get all spent uxout of specifc address.
+func (hd HistoryDB) GetSpentUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {
+	hashes, err := hd.addrOut.Get(address)
+	if err != nil {
+		return []*UxOut{}, err
+	}
+	uxOuts := make([]*UxOut, len(hashes))
+	for i, hash := range hashes {
+		ux, err := hd.outputs.Get(hash)
+		if err != nil {
+			return []*UxOut{}, err
+		}
+		uxOuts[i] = ux
+	}
+	return uxOuts, nil
+}

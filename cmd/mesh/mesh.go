@@ -9,17 +9,17 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/node/connection"
-	"github.com/skycoin/skycoin/cmd/mesh/nodemanager/lib_nodemanager"
+	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
 func main() {
 	fmt.Fprintln(os.Stdout, "Starting Node Manager Service...")
 
-	config := lib_nodemanager.ServerConfig
+	config := nodemanager.ServerConfig
 	fmt.Fprintln(os.Stdout, "PubKey:", config.Node.PubKey)
 	fmt.Fprintln(os.Stdout, "ChaCha20Key:", config.Node.ChaCha20Key)
 	fmt.Fprintln(os.Stdout, "Port:", config.Udp.ListenPortMin)
-	node := lib_nodemanager.CreateNode(*config)
+	node := nodemanager.CreateNode(*config)
 
 	node.AddTransportToNode(*config)
 

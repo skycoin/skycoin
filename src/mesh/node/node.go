@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/satori/go.uuid"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/node/connection"

@@ -319,13 +319,12 @@ func SortTransactions(txns Transactions,
 // Returns an array of txns that can be sorted by fee.  On creation, fees are
 // calculated, and if any txns have invalid fee, there are removed from
 // consideration
-func newSortableTransactions(txns Transactions,
-	feeCalc FeeCalculator) SortableTransactions {
+func newSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))
 	hashes := make([]cipher.SHA256, len(txns))
 	j := 0
-	for i, _ := range txns {
+	for i := range txns {
 		fee, err := feeCalc(&txns[i])
 		if err == nil {
 			newTxns[j] = txns[i]

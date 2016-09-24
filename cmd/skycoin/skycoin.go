@@ -106,8 +106,7 @@ type Config struct {
 	// Logging
 	LogLevel logging.Level
 	ColorLog bool
-	// This is the value registered with flag, it is converted to LogLevel
-	// after parsing
+	// This is the value registered with flag, it is converted to LogLevel after parsing
 	logLevel string
 
 	// Wallets

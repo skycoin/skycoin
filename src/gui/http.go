@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"crypto/tls"
+	//"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"

@@ -1,19 +1,22 @@
 package gui
 
 import (
-	"crypto/tls"
+	//"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"os"
+	//"os"
 	"path/filepath"
-	"strings"
+	//"strings"
 
 	"gopkg.in/op/go-logging.v1"
 
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
+	"github.com/skycoin/skycoin/src/util"
+
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 var (
@@ -28,7 +31,7 @@ const (
 
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
-func LaunchWebInterface(host, staticDir string, nodemanager *nodemanager.NodeManager) error {
+func LaunchWebInterface(host, staticDir string, nm *nodemanager.NodeManager) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 	logger.Info("Web resources directory: %s", staticDir)
@@ -44,7 +47,7 @@ func LaunchWebInterface(host, staticDir string, nodemanager *nodemanager.NodeMan
 	}
 
 	// Runs http.Serve() in a goroutine
-	serve(listener, NewGUIMux(appLoc, daemon))
+	serve(listener, NewGUIMux(appLoc, nm))
 	return nil
 }
 
@@ -65,7 +68,7 @@ func serve(listener net.Listener, mux *http.ServeMux) {
 //move to util
 
 // Creates an http.ServeMux with handlers registered
-func NewGUIMux(appLoc string, daemon *nodemanager.NodeManager) *http.ServeMux {
+func NewGUIMux(appLoc string, nm *nodemanager.NodeManager) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", newIndexHandler(appLoc))
 
@@ -78,16 +81,14 @@ func NewGUIMux(appLoc string, daemon *nodemanager.NodeManager) *http.ServeMux {
 		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
 	}
 
-	// Wallet interface
-	RegisterWalletHandlers(mux, daemon.Gateway)
-	// Blockchain interface
-	RegisterBlockchainHandlers(mux, daemon.Gateway)
-	// Network stats interface
-	RegisterNetworkHandlers(mux, daemon.Gateway)
-	// Network API handler
-	RegisterApiHandlers(mux, daemon.Gateway)
-	// Transaction interface
-	RegisterTxHandlers(mux, daemon.Gateway)
+	/*
+		// Wallet interface
+		RegisterWalletHandlers(mux, daemon.Gateway)
+	*/
+
+	//register handlers
+	RegisterNodeManagerHandlers(mux, nm)
+
 	return mux
 }
 
@@ -100,7 +101,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
-			Error404(w)
+			wh.Error404(w)
 		}
 	}
 }

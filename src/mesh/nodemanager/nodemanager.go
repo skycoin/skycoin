@@ -37,6 +37,27 @@ type NodeManager struct {
 	Routes     map[RouteKey]Route
 }
 
+//configuration in here
+type NodeManagerConfig struct {
+}
+
+//add config eventually
+func NewNodeManager(config *NodeManagerConfig) *NodeManager {
+	nm := NodeManager{}
+	return &nm
+}
+
+//run node manager, in goroutine
+//write into channel to stop
+func (self *NodeManager) Start(channel chan int) {
+
+}
+
+//called to trigger shutdown
+func (self *NodeManager) Shutdown() {
+
+}
+
 type RouteKey struct {
 	SourceNode cipher.PubKey
 	TargetNode cipher.PubKey

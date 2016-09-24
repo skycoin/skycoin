@@ -66,24 +66,23 @@ func NewVisor(c VisorConfig) *Visor {
 
 //move to visor?
 //DEPRECATE?
-func (self *Visor) SaveBlockchain() {
+// func (self *Visor) SaveBlockchain() {
+// 	bcFile := self.Config.Config.BlockchainFile
+// 	err := self.Visor.SaveBlockchain()
+// 	if err == nil {
+// 		logger.Info("Saved blockchain to \"%s\"", bcFile)
+// 	} else {
+// 		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
+// 	}
+// 	bsFile := self.Config.Config.BlockSigsFile
+// 	err = self.Visor.SaveBlockSigs()
+// 	if err == nil {
+// 		logger.Info("Saved block sigs to \"%s\"", bsFile)
+// 	} else {
+// 		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
+// 	}
 
-	bcFile := self.Config.Config.BlockchainFile
-	err := self.Visor.SaveBlockchain()
-	if err == nil {
-		logger.Info("Saved blockchain to \"%s\"", bcFile)
-	} else {
-		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
-	}
-	bsFile := self.Config.Config.BlockSigsFile
-	err = self.Visor.SaveBlockSigs()
-	if err == nil {
-		logger.Info("Saved block sigs to \"%s\"", bsFile)
-	} else {
-		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
-	}
-
-}
+// }
 
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
@@ -91,7 +90,7 @@ func (self *Visor) Shutdown() {
 		return
 	}
 
-	self.SaveBlockchain()
+	// self.SaveBlockchain()
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
@@ -145,11 +144,11 @@ func (self *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 
 // Sends a signed block to all connections.
 // TODO: deprecate, should only send to clients that request by hash
-func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
+func (self *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -296,11 +295,11 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 
 // Sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-	Blocks []visor.SignedBlock
+	Blocks []coin.SignedBlock
 	c      *gnet.MessageContext `enc:"-"`
 }
 
-func NewGiveBlocksMessage(blocks []visor.SignedBlock) *GiveBlocksMessage {
+func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 	return &GiveBlocksMessage{
 		Blocks: blocks,
 	}

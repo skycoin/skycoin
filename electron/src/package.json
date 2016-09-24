@@ -2,5 +2,8 @@
   "name": "skycoin",
   "productName": "Skycoin",
   "version": "0.8.0",
-  "main": "electron-main.js"
+  "main": "electron-main.js",
+  "dependencies": {
+    "electron-debug": "^1.0.1"
+  }
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
-// NewDB create the history bolt db file.
+// NewDB create the history bolt db if does not exsit.
 func NewDB() (*bolt.DB, error) {
 	dbFile := filepath.Join(util.DataDir, "history.db")
 	db, err := bolt.Open(dbFile, 0600, nil)
@@ -25,8 +25,8 @@ func NewDB() (*bolt.DB, error) {
 type HistoryDB struct {
 	db      *bolt.DB      // bolt db instance.
 	blocks  *blocks       // blocks bucket.
-	txns    *transactions // transactions bucket instance.
-	outputs *Outputs      // outputs bucket instance.
+	txns    *transactions // transactions bucket.
+	outputs *Outputs      // outputs bucket.
 	addrIn  *addressUx    // bucket which stores all UxOuts that address recved.
 	addrOut *addressUx    // bucket which stores all UxOuts that address spent.
 }
@@ -144,5 +144,20 @@ func (hd HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
 }
 
 // GetTxsInBlock get all transactions in specifc block.
-// func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, error) {
-// }
+func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, error) {
+	// get block
+	b, err := hd.blocks.Get(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	// get txs in the block
+	txs := b.Body.Transactions
+	atxs := make([]*Transaction, len(txs))
+	for i, t := range txs {
+		atxs[i] = &Transaction{
+			Tx:       t,
+			BlockSeq: b.Seq(),
+		}
+	}
+	return atxs, nil
+}

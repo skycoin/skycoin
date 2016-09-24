@@ -24,7 +24,7 @@ type Outputs struct {
 	bkt *bucket.Bucket
 }
 
-func newOutputs(db *bolt.DB) (*Outputs, error) {
+func newOutputsBkt(db *bolt.DB) (*Outputs, error) {
 	bkt, err := bucket.New([]byte("uxouts"), db)
 	if err != nil {
 		return nil, err

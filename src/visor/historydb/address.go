@@ -34,11 +34,11 @@ func newAddressUx(db *bolt.DB, name []byte) (*addressUx, error) {
 	return &addressUx{bkt}, nil
 }
 
-func newAddressIn(db *bolt.DB) (*addressUx, error) {
+func newAddressInBkt(db *bolt.DB) (*addressUx, error) {
 	return newAddressUx(db, []byte("address_in"))
 }
 
-func newAddressOut(db *bolt.DB) (*addressUx, error) {
+func newAddressOutBkt(db *bolt.DB) (*addressUx, error) {
 	return newAddressUx(db, []byte("address_out"))
 }
 

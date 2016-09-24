@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/node/connection"
-	"github.com/skycoin/skycoin/cmd/mesh/nodemanager/lib_nodemanager"
+	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
 func _TestFilterMessage(t *testing.T) {
@@ -20,7 +20,7 @@ func _TestFilterMessage(t *testing.T) {
 	addNodeMessage := domain.AddNodeMessage{}
 	addNodeMessage.Reliably = true
 	addNodeMessage.SendBack = false
-	config := lib_nodemanager.CreateTestConfig(15237)
+	config := nodemanager.CreateTestConfig(15237)
 
 	v, _ := json.Marshal(&config)
 	addNodeMessage.Content = v
@@ -33,8 +33,8 @@ func _TestFilterMessage(t *testing.T) {
 }
 
 func TestSendMessageToService(t *testing.T) {
-	configClient := lib_nodemanager.CreateTestConfig(15235)
-	nodeClient := lib_nodemanager.CreateNode(*configClient)
+	configClient := nodemanager.CreateTestConfig(15235)
+	nodeClient := nodemanager.CreateNode(*configClient)
 
 	//message1 := "Message to send from Client Node to Server Node"
 	message1 := "Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node Message to send from Client Node to Server Node"
@@ -42,16 +42,16 @@ func TestSendMessageToService(t *testing.T) {
 	/*addNodeMessage := domain.AddNodeMessage{}
 	addNodeMessage.Reliably = true
 	addNodeMessage.SendBack = false
-	config := lib_nodemanager.CreateTestConfig(15237)
+	config := nodemanager.CreateTestConfig(15237)
 
 	//v, _ := json.Marshal(&configClient)
 	//addNodeMessage.Content = v
 	//message1 := connection.ConnectionManager.SerializeMessage(addNodeMessage)
 	message1 := connection.ConnectionManager.SerializeMessage(addNodeMessage)*/
 
-	configServer := lib_nodemanager.ServerConfig
+	configServer := nodemanager.ServerConfig
 
-	lib_nodemanager.ConnectNodeToNode(configClient, configServer)
+	nodemanager.ConnectNodeToNode(configClient, configServer)
 	nodeClient.AddTransportToNode(*configClient)
 
 	configClient.AddRouteToEstablish(configServer)

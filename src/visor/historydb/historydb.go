@@ -178,3 +178,20 @@ func (hd HistoryDB) GetSpentUxOutOfAddr(address cipher.Address) ([]*UxOut, error
 	}
 	return uxOuts, nil
 }
+
+// GetRecvUxOutOfAddr get all uxout that the address received.
+func (hd HistoryDB) GetRecvUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {
+	hashes, err := hd.addrIn.Get(address)
+	if err != nil {
+		return []*UxOut{}, err
+	}
+	uxOuts := make([]*UxOut, len(hashes))
+	for i, hash := range hashes {
+		ux, err := hd.outputs.Get(hash)
+		if err != nil {
+			return []*UxOut{}, err
+		}
+		uxOuts[i] = ux
+	}
+	return uxOuts, nil
+}

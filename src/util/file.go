@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/op/go-logging.v1"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"gopkg.in/op/go-logging.v1"
+	"strings"
 )
 
 var (
@@ -161,4 +161,40 @@ func ResolveResourceDirectory(path string) string {
 	}
 	log.Panic("GUI directory not found")
 	return ""
+}
+
+//DEPRECATE
+//From src/gui/http.go and src/mesh/gui/http.go
+func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
+	//check "dev" directory first
+	appLoc := filepath.Join(staticDir, devDir)
+	if !strings.HasPrefix(appLoc, "/") {
+		// Prepend the binary's directory path if appLoc is relative
+		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			return "", err
+		}
+
+		appLoc = filepath.Join(dir, appLoc)
+	}
+
+	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+		//check dist directory
+		appLoc = filepath.Join(staticDir, resourceDir)
+		if !strings.HasPrefix(appLoc, "/") {
+			// Prepend the binary's directory path if appLoc is relative
+			dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+			if err != nil {
+				return "", err
+			}
+
+			appLoc = filepath.Join(dir, appLoc)
+		}
+
+		if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+			return "", err
+		}
+	}
+
+	return appLoc, nil
 }

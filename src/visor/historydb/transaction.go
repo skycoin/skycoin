@@ -14,7 +14,7 @@ import (
 )
 
 // Transactions transaction bucket instance.
-type Transactions struct {
+type transactions struct {
 	bkt *bucket.Bucket
 }
 
@@ -30,24 +30,24 @@ func (tx *Transaction) Hash() cipher.SHA256 {
 }
 
 // New create a transaction db instance.
-func newTransactions(db *bolt.DB) (*Transactions, error) {
+func newTransactionsBkt(db *bolt.DB) (*transactions, error) {
 	txBkt, err := bucket.New([]byte("transactions"), db)
 	if err != nil {
 		return nil, nil
 	}
 
-	return &Transactions{txBkt}, nil
+	return &transactions{txBkt}, nil
 }
 
 // Add transaction to the db.
-func (txs *Transactions) Add(t *Transaction) error {
+func (txs *transactions) Add(t *Transaction) error {
 	key := t.Hash()
 	v := encoder.Serialize(t)
 	return txs.bkt.Put(key[:], v)
 }
 
 // Get get transaction by tx hash, return nil on not found.
-func (txs Transactions) Get(hash cipher.SHA256) (*Transaction, error) {
+func (txs transactions) Get(hash cipher.SHA256) (*Transaction, error) {
 	bin := txs.bkt.Get(hash[:])
 	if bin == nil {
 		return nil, nil

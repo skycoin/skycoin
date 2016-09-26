@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 )
+
+var logger = logging.MustGetLogger("skycoin.coin")
 
 type Block struct {
 	Head BlockHeader
@@ -59,7 +62,8 @@ type Block struct {
 }
 */
 
-func newBlock(prev Block, currentTime uint64, unspent UnspentPool,
+// NewBlock creates new block.
+func NewBlock(prev Block, currentTime uint64, unspent UnspentPool,
 	txns Transactions, calc FeeCalculator) Block {
 	if len(txns) == 0 {
 		log.Panic("Refusing to create block with no transactions")
@@ -71,7 +75,7 @@ func newBlock(prev Block, currentTime uint64, unspent UnspentPool,
 	}
 	body := BlockBody{txns}
 	return Block{
-		Head: newBlockHeader(prev.Head, unspent, currentTime, fee, body),
+		Head: NewBlockHeader(prev.Head, unspent, currentTime, fee, body),
 		Body: body,
 	}
 }
@@ -126,7 +130,7 @@ func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
 	return Transaction{}, false
 }
 
-func newBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
+func NewBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 	fee uint64, body BlockBody) BlockHeader {
 	if currentTime <= prev.Time {
 		log.Panic("Time can only move forward")
@@ -139,7 +143,7 @@ func newBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 		Time:     currentTime,
 		BkSeq:    prev.BkSeq + 1,
 		Fee:      fee,
-		UxHash:   getUxHash(unspent),
+		UxHash:   unspent.GetUxHash(),
 	}
 }
 

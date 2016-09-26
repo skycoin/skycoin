@@ -14,7 +14,12 @@ import (
 // Blockchainer interface for isolating the detail of blockchain.
 type Blockchainer interface {
 	Head() *coin.Block
+	GetUnspent() *coin.UnspentPool
 	GetBlockInDepth(dep uint64) *coin.Block
+	ExecuteBlock(b *coin.Block) (coin.UxArray, error)
+	CreateGenesisBlock(genAddress cipher.Address, genCoins, timestamp uint64) coin.Block
+	VerifyTransaction(tx coin.Transaction) error
+	GetBlock(hash cipher.SHA256) *coin.Block
 }
 
 // NewDB create the history bolt db if does not exsit.

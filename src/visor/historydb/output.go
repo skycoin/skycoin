@@ -8,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
-// Output augment output struct,
+// UxOut augment coin.UxOut struct
 type UxOut struct {
 	Out           coin.UxOut
 	SpentTxID     cipher.SHA256 // id of tx which spent this output.
@@ -19,7 +19,7 @@ func (o UxOut) Hash() cipher.SHA256 {
 	return o.Out.Hash()
 }
 
-// Outputs bucket stores outputs, outID as key and Output as value.
+// Outputs bucket stores outputs, UxOut hash as key and Output as value.
 type Outputs struct {
 	bkt *bucket.Bucket
 }

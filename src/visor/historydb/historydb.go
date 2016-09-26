@@ -11,6 +11,12 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
+// Blockchainer interface for isolating the detail of blockchain.
+type Blockchainer interface {
+	Head() *coin.Block
+	GetBlockInDepth(dep uint64) *coin.Block
+}
+
 // NewDB create the history bolt db if does not exsit.
 func NewDB() (*bolt.DB, error) {
 	dbFile := filepath.Join(util.DataDir, "history.db")
@@ -67,7 +73,7 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 }
 
 // ProcessBlockchain process the blocks in the chain.
-func (hd *HistoryDB) ProcessBlockchain(bc *coin.Blockchain) error {
+func (hd *HistoryDB) ProcessBlockchain(bc Blockchainer) error {
 	depth := bc.Head().Seq()
 	for i := uint64(0); i <= depth; i++ {
 		b := bc.GetBlockInDepth(i)

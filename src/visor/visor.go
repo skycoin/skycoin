@@ -106,7 +106,7 @@ type Visor struct {
 	Config VisorConfig
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed *UnconfirmedTxnPool
-	Blockchain  *coin.Blockchain
+	Blockchain  *Blockchain
 	blockSigs   *blockdb.BlockSigs
 }
 
@@ -126,7 +126,7 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 
 	tree := blockdb.NewBlockTree()
-	bc := coin.NewBlockchain(tree, walker)
+	bc := NewBlockchain(tree, walker)
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
@@ -150,18 +150,9 @@ func NewVisor(c VisorConfig) *Visor {
 				Sig:   c.GenesisSignature,
 			})
 		}
-
-		// store genesis block transaction
-		// storeTx := transactiondb.Transaction{
-		// 	Tx:       gb.Body.Transactions[0],
-		// 	BlockSeq: 0,
-		// }
-		// if err := v.txns.Add(&storeTx); err != nil {
-		// 	logger.Panicf("add genesis block transaction failed: %v", err)
-		// }
 	}
 
-	if err := v.blockSigs.Verify(c.BlockchainPubkey, v.Blockchain); err != nil {
+	if err := v.Blockchain.VerifySigs(c.BlockchainPubkey, v.blockSigs); err != nil {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
 	return v
@@ -358,7 +349,7 @@ func (self *Visor) HeadBkSeq() uint64 {
 	return self.Blockchain.Head().Seq()
 }
 
-// Returns descriptive coin.Blockchain information
+// Returns descriptive Blockchain information
 func (self *Visor) GetBlockchainMetadata() BlockchainMetadata {
 	return NewBlockchainMetadata(self)
 }

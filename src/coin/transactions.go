@@ -311,7 +311,7 @@ type FeeCalculator func(*Transaction) (uint64, error)
 // tied.  Transactions that fail in fee computation are excluded.
 func SortTransactions(txns Transactions,
 	feeCalc FeeCalculator) Transactions {
-	sorted := newSortableTransactions(txns, feeCalc)
+	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
 	return sorted.Txns
 }
@@ -319,7 +319,7 @@ func SortTransactions(txns Transactions,
 // Returns an array of txns that can be sorted by fee.  On creation, fees are
 // calculated, and if any txns have invalid fee, there are removed from
 // consideration
-func newSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
+func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))
 	hashes := make([]cipher.SHA256, len(txns))

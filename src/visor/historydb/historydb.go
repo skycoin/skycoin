@@ -11,6 +11,17 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
+// Blockchainer interface for isolating the detail of blockchain.
+type Blockchainer interface {
+	Head() *coin.Block
+	GetUnspent() *coin.UnspentPool
+	GetBlockInDepth(dep uint64) *coin.Block
+	ExecuteBlock(b *coin.Block) (coin.UxArray, error)
+	CreateGenesisBlock(genAddress cipher.Address, genCoins, timestamp uint64) coin.Block
+	VerifyTransaction(tx coin.Transaction) error
+	GetBlock(hash cipher.SHA256) *coin.Block
+}
+
 // NewDB create the history bolt db if does not exsit.
 func NewDB() (*bolt.DB, error) {
 	dbFile := filepath.Join(util.DataDir, "history.db")
@@ -26,7 +37,7 @@ type HistoryDB struct {
 	db      *bolt.DB      // bolt db instance.
 	blocks  *blocks       // blocks bucket.
 	txns    *transactions // transactions bucket.
-	outputs *Outputs      // outputs bucket.
+	outputs *UxOuts       // outputs bucket.
 	addrIn  *addressUx    // bucket which stores all UxOuts that address recved.
 	addrOut *addressUx    // bucket which stores all UxOuts that address spent.
 }
@@ -67,7 +78,7 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 }
 
 // ProcessBlockchain process the blocks in the chain.
-func (hd *HistoryDB) ProcessBlockchain(bc *coin.Blockchain) error {
+func (hd *HistoryDB) ProcessBlockchain(bc Blockchainer) error {
 	depth := bc.Head().Seq()
 	for i := uint64(0); i <= depth; i++ {
 		b := bc.GetBlockInDepth(i)
@@ -99,7 +110,8 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 		if err := hd.txns.Add(&tx); err != nil {
 			return err
 		}
-		// handle the tx in, we don't handle the genesis block has no in transaction.
+
+		// handle tx in, genesis transaction's vin is empty, so should be ignored.
 		if b.Seq() > 0 {
 			for _, in := range t.In {
 				o, err := hd.outputs.Get(in)

@@ -140,3 +140,9 @@ func (self UnspentPool) AllForAddresses(addrs []cipher.Address) AddressUxOuts {
 	}
 	return uxo
 }
+
+// GetUxHash returns unspent output checksum for the Block. Must be called after Block
+// is fully initialized, and before its outputs are added to the unspent pool
+func (self UnspentPool) GetUxHash() cipher.SHA256 {
+	return self.XorHash
+}

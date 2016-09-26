@@ -268,7 +268,7 @@ func assertExecuteBlock(t *testing.T, bc *Blockchain, b coin.Block,
 		assert.True(t, ok)
 		assert.Equal(t, ux, ux2)
 	}
-	uxs2 := CreateUnspents(bc.Head().Head, tx)
+	uxs2 := coin.CreateUnspents(bc.Head().Head, tx)
 	assert.Equal(t, len(uxs2), len(uxs))
 	for i, u := range uxs2 {
 		assert.Equal(t, u.Body, uxs[i].Body)
@@ -515,7 +515,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 	assert.Equal(t, b.Head().Head.PrevHash, cipher.SHA256{})
 	// TODO -- check valid snapshot
 	assert.NotEqual(t, b.Head().Head.UxHash, [4]byte{})
-	expect := CreateUnspents(b.Head().Head, txn)
+	expect := coin.CreateUnspents(b.Head().Head, txn)
 	expect.Sort()
 	have := b.GetUnspent().Array()
 	have.Sort()
@@ -667,7 +667,7 @@ func TestCreateUnspents(t *testing.T) {
 		Time:  tNow(),
 		BkSeq: uint64(1),
 	}
-	uxout := CreateUnspents(bh, tx)
+	uxout := coin.CreateUnspents(bh, tx)
 	assert.Equal(t, len(uxout), 1)
 	assertValidUnspents(t, bh, tx, uxout)
 
@@ -678,13 +678,13 @@ func TestCreateUnspents(t *testing.T) {
 	tx.PushOutput(genAddress, 100, 150)
 	tx.PushOutput(genAddress, 200, 77)
 	bh.BkSeq++
-	uxout = CreateUnspents(bh, tx)
+	uxout = coin.CreateUnspents(bh, tx)
 	assert.Equal(t, len(uxout), 2)
 	assertValidUnspents(t, bh, tx, uxout)
 
 	// No outs
 	tx = coin.Transaction{}
-	uxout = CreateUnspents(bh, tx)
+	uxout = coin.CreateUnspents(bh, tx)
 	assertValidUnspents(t, bh, tx, uxout)
 }
 
@@ -702,7 +702,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx.PushOutput(genAddress, uxs[0].Body.Coins-1e6, 1)
 	uxIn, err := bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut := CreateUnspents(bc.Head().Head, tx)
+	uxOut := coin.CreateUnspents(bc.Head().Head, tx)
 	assertError(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut),
 		"Insufficient coin hours")
 
@@ -714,7 +714,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut = CreateUnspents(bc.Head().Head, tx)
+	uxOut = coin.CreateUnspents(bc.Head().Head, tx)
 	assert.Nil(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut))
 
 	// Destroying coins
@@ -724,7 +724,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx.PushOutput(genAddress, 10e6, 100)
 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut = CreateUnspents(bc.Head().Head, tx)
+	uxOut = coin.CreateUnspents(bc.Head().Head, tx)
 	err = verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(),
@@ -754,7 +754,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx.UpdateHeader()
 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut = CreateUnspents(bc.Head().Head, tx)
+	uxOut = coin.CreateUnspents(bc.Head().Head, tx)
 	assertError(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut),
 		"Insufficient coins")
 }
@@ -802,7 +802,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// Failure, hash collision with unspents
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
-	uxOut := CreateUnspents(bc.Head().Head, tx)
+	uxOut := coin.CreateUnspents(bc.Head().Head, tx)
 	bc.GetUnspent().Add(uxOut[0])
 	assertError(t, bc.VerifyTransaction(tx),
 		"New unspent collides with existing unspent")

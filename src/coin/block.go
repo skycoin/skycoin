@@ -186,3 +186,28 @@ func (bb BlockBody) Size() int {
 func (bb BlockBody) Bytes() []byte {
 	return encoder.Serialize(bb)
 }
+
+// CreateUnspents creates the expected outputs for a transaction.
+func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
+	var h cipher.SHA256
+	if bh.BkSeq != 0 {
+		// not genesis block
+		h = tx.Hash()
+	}
+	uxo := make(UxArray, len(tx.Out))
+	for i := range tx.Out {
+		uxo[i] = UxOut{
+			Head: UxHead{
+				Time:  bh.Time,
+				BkSeq: bh.BkSeq,
+			},
+			Body: UxBody{
+				SrcTransaction: h,
+				Address:        tx.Out[i].Address,
+				Coins:          tx.Out[i].Coins,
+				Hours:          tx.Out[i].Hours,
+			},
+		}
+	}
+	return uxo
+}

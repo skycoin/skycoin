@@ -131,7 +131,7 @@ func (self *UnconfirmedTxnPool) InjectTxn(bc *Blockchain,
 	unspent := bc.GetUnspent()
 	self.Txns[h] = self.createUnconfirmedTxn(unspent, t)
 	// Add predicted unspents
-	self.Unspent[h] = CreateUnspents(bc.Head().Head, t)
+	self.Unspent[h] = coin.CreateUnspents(bc.Head().Head, t)
 
 	return nil, false
 }

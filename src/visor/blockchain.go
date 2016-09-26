@@ -200,7 +200,7 @@ func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 		// Remove spent outputs
 		bc.unspent.DelMultiple(tx.In)
 		// Create new outputs
-		txUxs := CreateUnspents(b.Head, tx)
+		txUxs := coin.CreateUnspents(b.Head, tx)
 		for i := range txUxs {
 			bc.unspent.Add(txUxs[i])
 		}
@@ -224,7 +224,7 @@ func (bc *Blockchain) updateUnspent(b coin.Block) error {
 		// Remove spent outputs
 		bc.unspent.DelMultiple(tx.In)
 		// Create new outputs
-		txUxs := CreateUnspents(b.Head, tx)
+		txUxs := coin.CreateUnspents(b.Head, tx)
 		for i := range txUxs {
 			bc.unspent.Add(txUxs[i])
 		}
@@ -298,7 +298,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 	}
 
 	// Get the UxOuts we expect to have when the block is created.
-	uxOut := CreateUnspents(bc.Head().Head, tx)
+	uxOut := coin.CreateUnspents(bc.Head().Head, tx)
 	// Check that there are any duplicates within this set
 	if uxOut.HasDupes() {
 		return errors.New("Duplicate unspent outputs in transaction")
@@ -356,31 +356,6 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.Block {
 		start = 0
 	}
 	return bc.GetBlocks(start, end)
-}
-
-// CreateUnspents creates the expected outputs for a transaction.
-func CreateUnspents(bh coin.BlockHeader, tx coin.Transaction) coin.UxArray {
-	var h cipher.SHA256
-	if bh.BkSeq != 0 {
-		// not genesis block
-		h = tx.Hash()
-	}
-	uxo := make(coin.UxArray, len(tx.Out))
-	for i := range tx.Out {
-		uxo[i] = coin.UxOut{
-			Head: coin.UxHead{
-				Time:  bh.Time,
-				BkSeq: bh.BkSeq,
-			},
-			Body: coin.UxBody{
-				SrcTransaction: h,
-				Address:        tx.Out[i].Address,
-				Coins:          tx.Out[i].Coins,
-				Hours:          tx.Out[i].Hours,
-			},
-		}
-	}
-	return uxo
 }
 
 /* Private */

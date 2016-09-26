@@ -37,7 +37,7 @@ type HistoryDB struct {
 	db      *bolt.DB      // bolt db instance.
 	blocks  *blocks       // blocks bucket.
 	txns    *transactions // transactions bucket.
-	outputs *Outputs      // outputs bucket.
+	outputs *UxOuts       // outputs bucket.
 	addrIn  *addressUx    // bucket which stores all UxOuts that address recved.
 	addrOut *addressUx    // bucket which stores all UxOuts that address spent.
 }

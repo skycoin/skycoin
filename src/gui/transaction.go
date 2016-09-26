@@ -9,6 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
+
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
@@ -41,7 +43,7 @@ func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 				readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 				ret = append(ret, &readable)
 			}
-			SendOr404(w, ret)
+			wh.SendOr404(w, ret)
 		}
 
 		//WARNING: TODO: This iterates all blocks and all transactions
@@ -109,7 +111,7 @@ func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 				}
 				rltTxns = txs
 			}
-			SendOr404(w, rltTxns)
+			wh.SendOr404(w, rltTxns)
 		}
 
 	}
@@ -143,7 +145,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 			logger.Error("bad request: %v", err)
 			rlt.Reason = "bad request"
-			SendOr404(w, rlt)
+			wh.SendOr404(w, rlt)
 			return
 		}
 
@@ -151,7 +153,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 
 		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
 			rlt.Reason = err.Error()
-			SendOr404(w, rlt)
+			wh.SendOr404(w, rlt)
 			return
 		}
 
@@ -159,7 +161,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		if err != nil {
 			logger.Error("inject tx failed:%v", err)
 			rlt.Reason = "inject tx failed"
-			SendOr404(w, rlt)
+			wh.SendOr404(w, rlt)
 			return
 		}
 
@@ -167,7 +169,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		rlt.Txid = t.Hash().Hex()
 
 		//ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		SendOr404(w, rlt)
+		wh.SendOr404(w, rlt)
 	}
 }
 
@@ -187,7 +189,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			Transaction: visor.NewReadableTransaction(&tx.Txn),
 			Status:      tx.Status,
 		}
-		SendOr404(w, &rlt)
+		wh.SendOr404(w, &rlt)
 	}
 }
 
@@ -210,6 +212,6 @@ func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 			hex.EncodeToString(d),
 		}
 
-		SendOr404(w, res)
+		wh.SendOr404(w, res)
 	}
 }

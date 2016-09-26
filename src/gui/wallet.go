@@ -15,6 +15,8 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 //var Wallets wallet.Wallets
@@ -274,7 +276,7 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			_ = err
 		}
 		//log.Printf("%v, %v, %v \n", r.URL.String(), r.RequestURI, r.Form)
-		SendOr404(w, b)
+		wh.SendOr404(w, b)
 	}
 }
 
@@ -308,7 +310,7 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				Predicted: predicted,
 			}
 
-			SendOr404(w, bal)
+			wh.SendOr404(w, bal)
 		}
 	}
 }
@@ -321,24 +323,24 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		//log.Printf("Spend1")
 
 		if r.FormValue("id") == "" {
-			Error400(w, "Missing wallet_id")
+			wh.Error400(w, "Missing wallet_id")
 			return
 		}
 
 		walletId := wallet.WalletID(r.FormValue("id"))
 		if walletId == "" {
-			Error400(w, "Invalid Wallet Id")
+			wh.Error400(w, "Invalid Wallet Id")
 			return
 		}
 		sdst := r.FormValue("dst")
 		if sdst == "" {
-			Error400(w, "Missing destination address \"dst\"")
+			wh.Error400(w, "Missing destination address \"dst\"")
 			return
 		}
 		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
 			//Error400(w, "Invalid destination address: %v", err)
-			Error400(w, "Invalid destination address: %v", err.Error())
+			wh.Error400(w, "Invalid destination address: %v", err.Error())
 			return
 		}
 
@@ -357,7 +359,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		//shours := r.FormValue("hours")
 		coins, err := strconv.ParseUint(scoins, 10, 64)
 		if err != nil {
-			Error400(w, "Invalid \"coins\" value")
+			wh.Error400(w, "Invalid \"coins\" value")
 			return
 		}
 
@@ -368,9 +370,9 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		ret := Spend(gateway.D, gateway.D.Visor, Wg, walletId, wallet.NewBalance(coins, hours), fee, dst)
 
 		if ret.Error != "" {
-			Error400(w, "Spend Failed: %s", ret.Error)
+			wh.Error400(w, "Spend Failed: %s", ret.Error)
 		}
-		SendOr404(w, ret)
+		wh.SendOr404(w, ret)
 	}
 }
 
@@ -388,7 +390,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 				logger.Critical(m, err)
 			}
 		}
-		SendOr500(w, iw)
+		wh.SendOr500(w, iw)
 	}
 }
 
@@ -407,7 +409,7 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 			}
 		}
 		iw := wallet.NewReadableWallet(*w1)
-		SendOr404(w, iw)
+		wh.SendOr404(w, iw)
 	}
 }
 
@@ -416,7 +418,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			ret := Wg.GetWallet(wallet.WalletID(r.FormValue("id")))
-			SendOr404(w, ret)
+			wh.SendOr404(w, ret)
 		}
 	}
 }
@@ -429,7 +431,7 @@ func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			addresses := wallet.GetAddresses()
 			ret := gateway.Visor.GetWalletTransactions(gateway.V, addresses)
 
-			SendOr404(w, ret)
+			wh.SendOr404(w, ret)
 		}
 	}
 }
@@ -439,7 +441,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//ret := wallet.Wallets.ToPublicReadable()
 		ret := Wg.GetWalletsReadable()
-		SendOr404(w, ret)
+		wh.SendOr404(w, ret)
 	}
 }
 
@@ -452,7 +454,7 @@ func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			for id, e := range errs {
 				err += string(id) + ": " + e.Error()
 			}
-			Error500(w, err)
+			wh.Error500(w, err)
 		}
 	}
 }
@@ -462,7 +464,7 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := Wg.ReloadWallets()
 		if err != nil {
-			Error500(w, err.(error).Error())
+			wh.Error500(w, err.(error).Error())
 		}
 	}
 }
@@ -481,7 +483,7 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			hashes := r.FormValue("hashes")
 
 			if rawaddrs == "" && hashes == "" {
-				SendOr404(w, uxouts)
+				wh.SendOr404(w, uxouts)
 				return
 			}
 
@@ -524,11 +526,11 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 						ret = append(ret, u)
 					}
 				}
-				SendOr404(w, ret)
+				wh.SendOr404(w, ret)
 				return
 			}
 
-			SendOr404(w, append(addrMatch, hsMatch...))
+			wh.SendOr404(w, append(addrMatch, hsMatch...))
 		}
 	}
 }

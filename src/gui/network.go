@@ -5,27 +5,28 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 func connectionHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if addr := r.FormValue("addr"); addr == "" {
-			Error404(w)
+			wh.Error404(w)
 		} else {
-			SendOr404(w, gateway.GetConnection(addr))
+			wh.SendOr404(w, gateway.GetConnection(addr))
 		}
 	}
 }
 
 func connectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetConnections())
+		wh.SendOr404(w, gateway.GetConnections())
 	}
 }
 
 func defaultConnectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetDefaultConnections())
+		wh.SendOr404(w, gateway.GetDefaultConnections())
 	}
 }
 

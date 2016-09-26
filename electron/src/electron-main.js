@@ -5,7 +5,12 @@ global.eval = function() { throw new Error('bad!!'); }
 const path = require('path');
 
 const electron = require('electron');
-// Module to control application life.
+
+// This adds refresh and devtools console keybindings
+// Page can refresh with cmd+r, ctrl+r, F5
+// Devtools can be toggled with cmd+alt+i, ctrl+shift+i, F12
+require('electron-debug')({enabled: true, showDevTools: false});
+
 const {app} = electron;
 
 const defaultURL = 'http://127.0.0.1:6420/';

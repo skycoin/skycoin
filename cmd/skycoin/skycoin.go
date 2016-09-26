@@ -106,8 +106,7 @@ type Config struct {
 	// Logging
 	LogLevel logging.Level
 	ColorLog bool
-	// This is the value registered with flag, it is converted to LogLevel
-	// after parsing
+	// This is the value registered with flag, it is converted to LogLevel after parsing
 	logLevel string
 
 	// Wallets
@@ -500,7 +499,7 @@ func Run(c *Config) {
 		var err error
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
-			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey)
+			errs := util.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
 			if len(errs) != 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())

@@ -48,18 +48,19 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Set interval function for load wallet every 15 seconds
                     setInterval(() => {
                         this.loadWallet();
-                        console.log("Refreshing balance");
+                        //console.log("Refreshing balance");
                     }, 15000);
                     setInterval(() => {
                         this.loadConnections();
                         this.loadBlockChain();
-                        console.log("Refreshing connections");
+                        //console.log("Refreshing connections");
                     }, 5000);
                     //Enable Send tab "textbox" and "Ready" button by default
                     this.sendDisable = true;
                     this.readyDisable = false;
                     this.pendingTable = [];
                     this.selectedMenu = "Wallets";
+                    this.sortDir = { date: 0, amount: 0 };
                     if (localStorage.getItem('historyAddresses') != null) {
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
                     }
@@ -99,7 +100,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                             inc++;
                         }
                         //Load Balance for each wallet end
-                    }, err => console.log("Error on load wallet: " + err), () => console.log('Wallet load done'));
+                    }, err => console.log("Error on load wallet: " + err), () => {
+                        //console.log('Wallet load done')
+                    });
                 }
                 loadWalletItem(address, inc) {
                     //Set http headers
@@ -110,25 +113,31 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         .subscribe(
                     //Response from API
                     response => {
-                        console.log('load done: ' + inc, response);
+                        //console.log('load done: ' + inc, response);
                         this.wallets[inc].balance = response.confirmed.coins / 1000000;
-                    }, err => console.log("Error on load balance: " + err), () => console.log('Balance load done'));
+                    }, err => console.log("Error on load balance: " + err), () => {
+                        //console.log('Balance load done')
+                    });
                 }
                 loadConnections() {
                     this.http.post('/network/connections', '')
                         .map((res) => res.json())
                         .subscribe(data => {
-                        console.log("connections", data);
+                        //console.log("connections", data);
                         this.connections = data.connections;
-                    }, err => console.log("Error on load connection: " + err), () => console.log('Connection load done'));
+                    }, err => console.log("Error on load connection: " + err), () => {
+                        //console.log('Connection load done')
+                    });
                 }
                 loadDefaultConnections() {
                     this.http.post('/network/defaultConnections', '')
                         .map((res) => res.json())
                         .subscribe(data => {
-                        console.log("default connections", data);
+                        //console.log("default connections", data);
                         this.defaultConnections = data;
-                    }, err => console.log("Error on load default connection: " + err), () => console.log('Default connections load done'));
+                    }, err => console.log("Error on load default connection: " + err), () => {
+                        //console.log('Default connections load done')
+                    });
                 }
                 loadOutputs() {
                     var headers = new http_2.Headers();
@@ -139,17 +148,21 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.outputs = _.sortBy(data, function (o) {
                             return o.address;
                         });
-                    }, err => console.log("Error on load outputs: " + err), () => console.log('Connection load done'));
+                    }, err => console.log("Error on load outputs: " + err), () => {
+                        //console.log('Connection load done')
+                    });
                 }
                 loadBlockChain() {
                     this.http.post('/blockchain', '')
                         .map((res) => res.json())
                         .subscribe(data => {
-                        console.log("blockchain", data);
+                        //console.log("blockchain", data);
                         if (data.head) {
                             this.blockChain = data;
                         }
-                    }, err => console.log("Error on load blockchain: " + err), () => console.log('blockchain load done'));
+                    }, err => console.log("Error on load blockchain: " + err), () => {
+                        //console.log('blockchain load done');
+                    });
                 } //Load progress function for Skycoin
                 loadProgress() {
                     //Post method executed
@@ -157,7 +170,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         .map((res) => res.json())
                         .subscribe(
                     //Response from API
-                    response => { this.progress = (parseInt(response.current, 10) + 1) / parseInt(response.highest, 10) * 100; }, err => console.log("Error on load progress: " + err), () => console.log('Progress load done:' + this.progress));
+                    response => { this.progress = (parseInt(response.current, 10) + 1) / parseInt(response.highest, 10) * 100; }, err => console.log("Error on load progress: " + err), () => {
+                        //console.log('Progress load done:' + this.progress)
+                    });
                 }
                 //Switch tab function
                 switchTab(mode, wallet) {
@@ -175,7 +190,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.selectedMenu = menu;
                 }
                 getDateTimeString(ts) {
-                    return moment.unix(ts).format("YYYY-MM-DD hh:mm");
+                    return moment.unix(ts).format("YYYY-MM-DD HH:mm");
                 }
                 getElapsedTime(ts) {
                     return moment().unix() - ts;
@@ -211,12 +226,12 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.EditDefaultConnectionIsVisible = false;
                 }
                 createDefaultConnection(connectionValue) {
-                    console.log("new value", connectionValue);
+                    //console.log("new value", connectionValue);
                     this.defaultConnections.push(connectionValue);
                     this.NewDefaultConnectionIsVisible = false;
                 }
                 updateDefaultConnection(connectionValue) {
-                    console.log("old/new value", this.oldConnection, connectionValue);
+                    //console.log("old/new value", this.oldConnection, connectionValue);
                     var idx = this.defaultConnections.indexOf(this.oldConnection);
                     this.defaultConnections.splice(idx, 1);
                     this.defaultConnections.splice(idx, 0, connectionValue);
@@ -240,7 +255,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         alert("New wallet created successfully");
                         //Load wallet for refresh list
                         this.loadWallet();
-                    }, err => console.log("Error on create new wallet: " + err), () => console.log('New wallet create done'));
+                    }, err => console.log("Error on create new wallet: " + err), () => {
+                        //console.log('New wallet create done')
+                    });
                 }
                 //Edit existing wallet function
                 editWallet(wallet) {
@@ -266,7 +283,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         alert("Wallet updated successfully");
                         //Load wallet for refresh list
                         this.loadWallet();
-                    }, err => console.log("Error on update wallet: " + JSON.stringify(err)), () => console.log('Update wallet done'));
+                    }, err => console.log("Error on update wallet: " + JSON.stringify(err)), () => {
+                        //console.log('Update wallet done')
+                    });
                 }
                 //Load wallet seed function
                 openLoadWallet(walletName, seed) {
@@ -290,9 +309,27 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.loadSeedIsVisible = false;
                         //Load wallet for refresh list
                         this.loadWallet();
-                    }, err => console.log("Error on create load wallet seed: " + JSON.stringify(err)), () => console.log('Load wallet seed done'));
+                    }, err => console.log("Error on create load wallet seed: " + JSON.stringify(err)), () => {
+                        //console.log('Load wallet seed done')
+                    });
+                }
+                sortHistory(key) {
+                    console.log(key);
+                    if (this.sortDir[key] == 0)
+                        this.sortDir[key] = 1;
+                    else
+                        this.sortDir[key] = this.sortDir[key] * (-1);
+                    var self = this;
+                    this.historyTable = _.sortBy(this.historyTable, function (o) {
+                        return o.time * self.sortDir[key];
+                    });
                 }
                 spend(spendid, spendaddress, spendamount) {
+                    var amount = Number(spendamount);
+                    if (amount < 1) {
+                        alert('Cannot send values less than 1.');
+                        return;
+                    }
                     //Set local storage for history
                     if (localStorage.getItem('historyTable') != null) {
                         this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
@@ -301,7 +338,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         localStorage.setItem('historyTable', JSON.stringify([]));
                         this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
                     }
-                    this.historyTable.push({ address: spendaddress, amount: spendamount });
+                    this.historyTable.push({ address: spendaddress, amount: spendamount, time: Date.now() / 1000 });
                     localStorage.setItem('historyTable', JSON.stringify(this.historyTable));
                     //Set local storage for addresses history
                     if (localStorage.getItem('historyAddresses') != null) {
@@ -311,8 +348,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         localStorage.setItem('historyAddresses', JSON.stringify([]));
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
                     }
-                    this.addresses.push({ address: spendaddress, amount: spendamount });
-                    localStorage.setItem('historyAddresses', JSON.stringify(this.addresses));
+                    var oldItem = _.find(this.addresses, function (o) {
+                        return o.address === spendaddress;
+                    });
+                    if (!oldItem) {
+                        this.addresses.push({ address: spendaddress, amount: spendamount });
+                        localStorage.setItem('historyAddresses', JSON.stringify(this.addresses));
+                    }
                     this.readyDisable = true;
                     this.sendDisable = true;
                     //Set http headers
@@ -323,31 +365,34 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.http.post('/wallet/spend', stringConvert, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(response => {
-                        console.log(response);
+                        //console.log(response);
                         this.pendingTable.push({ complete: 'Completed', address: spendaddress, amount: spendamount });
                         //Load wallet for refresh list
                         this.loadWallet();
                         this.readyDisable = false;
                         this.sendDisable = true;
-			
-			$('#send_amount').val('');
-                        $('#send_pay_to').val('');
-
                     }, err => {
-                        console.log(err);
-                        alert(err._body);
-		
                         this.readyDisable = false;
                         this.sendDisable = true;
-                        if (err.body == 'Invalid connection') {
+                        var logBody = err._body;
+                        if (logBody == 'Invalid "coins" value') {
+                            alert('Incorrect amount value.');
                             return;
                         }
+                        else if (logBody == 'Invalid connection') {
+                            alert(logBody);
+                            return;
+                        }
+                        else {
+                            var logContent = JSON.parse(logBody.substring(logBody.indexOf("{")));
+                            alert(logContent.error);
+                        }
                         this.pendingTable.push({ complete: 'Pending', address: spendaddress, amount: spendamount });
-			
-			 $('#send_amount').val('');
-			 $('#send_pay_to').val('');
-
-                    }, () => console.log('Spend successfully'));
+                    }, () => {
+                        //console.log('Spend successfully')
+                        $("#send_pay_to").val("");
+                        $("#send_amount").val(0);
+                    });
                 }
             };
             loadWalletComponent = __decorate([
@@ -356,7 +401,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_ts_1.QRCodeComponent],
                     providers: [],
                     templateUrl: 'app/templates/wallet.html'
-                }), 
+                }),
                 __metadata('design:paramtypes', [http_1.Http])
             ], loadWalletComponent);
             exports_1("loadWalletComponent", loadWalletComponent);

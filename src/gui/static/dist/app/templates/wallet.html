@@ -128,7 +128,6 @@
                     <table id="transaction-table">
                         <tbody>
                         <tr class="dark-row">
-                            <td><i class="fa fa-check"></i></td>
                             <td>
                                 <div class="btn-group">
                                     <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
@@ -141,15 +140,14 @@
                                     </ul>
                                 </div>
                             </td>
-                            <td>Date</td>
+                            <td><a href="#" (click)="sortHistory('date')">Date</a></td>
                             <td>Address</td>
-                            <td>Amount</td>
+                            <td><a href="#" (click)="sortHistory('amount')">Amount</a></td>
                             <td>Label</td>
                         </tr>
                         <tr *ngFor="#transactions of historyTable">
-                            <td><i class="fa fa-check"></i></td>
                             <td></td>
-                            <td></td>
+                            <td>{{getDateTimeString(transactions.time)}}</td>
                             <td>{{transactions.address}}</td>
                             <td>{{transactions.amount}}</td>
                             <td></td>
@@ -310,7 +308,7 @@
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Name:</label>
                         <div class="col-sm-9">
-                            <input maxlength="60" #walletname placeholder="Enter label for this wallet" class="form-control"/>
+                            <input maxlength="60" #walletname placeholder="Enter label for this wallet" class="form-control" required/>
                         </div>
                     </div>
                 </form>
@@ -337,7 +335,7 @@
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Name:</label>
                         <div class="col-sm-9">
-                            <input maxlength="60" #walletname placeholder="Enter label for this wallet" class="form-control"/>
+                            <input maxlength="60" #walletname placeholder="Enter label for this wallet" class="form-control" required/>
                         </div>
                     </div>
                     <div class="form-group">

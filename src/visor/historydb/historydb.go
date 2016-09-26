@@ -105,7 +105,8 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 		if err := hd.txns.Add(&tx); err != nil {
 			return err
 		}
-		// handle the tx in, we don't handle the genesis block has no in transaction.
+
+		// handle tx in, genesis transaction's vin is empty, so should be ignored.
 		if b.Seq() > 0 {
 			for _, in := range t.In {
 				o, err := hd.outputs.Get(in)

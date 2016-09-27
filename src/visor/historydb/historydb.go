@@ -34,8 +34,8 @@ func NewDB() (*bolt.DB, error) {
 
 // HistoryDB provides apis for blockchain explorer.
 type HistoryDB struct {
-	db      *bolt.DB      // bolt db instance.
-	blocks  *blocks       // blocks bucket.
+	db *bolt.DB // bolt db instance.
+	// blocks  *blocks       // blocks bucket.
 	txns    *transactions // transactions bucket.
 	outputs *UxOuts       // outputs bucket.
 	addrIn  *addressUx    // bucket which stores all UxOuts that address recved.
@@ -46,10 +46,10 @@ type HistoryDB struct {
 func New(db *bolt.DB) (*HistoryDB, error) {
 	hd := HistoryDB{db: db}
 	var err error
-	hd.blocks, err = newBlockBkt(db)
-	if err != nil {
-		return nil, err
-	}
+	// hd.blocks, err = newBlockBkt(db)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	hd.txns, err = newTransactionsBkt(db)
 	if err != nil {
@@ -97,9 +97,9 @@ func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 // ProcessBlock will index the transaction, outputs,etc.
 func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 	// store the block
-	if err := hd.blocks.Add(b); err != nil {
-		return err
-	}
+	// if err := hd.blocks.Add(b); err != nil {
+	// 	return err
+	// }
 
 	// index the transactions
 	for _, t := range b.Body.Transactions {
@@ -156,23 +156,23 @@ func (hd HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
 }
 
 // GetTxsInBlock get all transactions in specifc block.
-func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, error) {
-	// get block
-	b, err := hd.blocks.Get(blockHash)
-	if err != nil {
-		return nil, err
-	}
-	// get txs in the block
-	txs := b.Body.Transactions
-	atxs := make([]*Transaction, len(txs))
-	for i, t := range txs {
-		atxs[i] = &Transaction{
-			Tx:       t,
-			BlockSeq: b.Seq(),
-		}
-	}
-	return atxs, nil
-}
+// func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, error) {
+// 	// get block
+// 	b, err := hd.blocks.Get(blockHash)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	// get txs in the block
+// 	txs := b.Body.Transactions
+// 	atxs := make([]*Transaction, len(txs))
+// 	for i, t := range txs {
+// 		atxs[i] = &Transaction{
+// 			Tx:       t,
+// 			BlockSeq: b.Seq(),
+// 		}
+// 	}
+// 	return atxs, nil
+// }
 
 // GetSpentUxOutOfAddr get all spent uxout of specifc address.
 func (hd HistoryDB) GetSpentUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {

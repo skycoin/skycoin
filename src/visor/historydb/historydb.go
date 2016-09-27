@@ -155,25 +155,6 @@ func (hd HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
 	return hd.txns.Get(hash)
 }
 
-// GetTxsInBlock get all transactions in specifc block.
-// func (hd HistoryDB) GetTxsInBlock(blockHash cipher.SHA256) ([]*Transaction, error) {
-// 	// get block
-// 	b, err := hd.blocks.Get(blockHash)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	// get txs in the block
-// 	txs := b.Body.Transactions
-// 	atxs := make([]*Transaction, len(txs))
-// 	for i, t := range txs {
-// 		atxs[i] = &Transaction{
-// 			Tx:       t,
-// 			BlockSeq: b.Seq(),
-// 		}
-// 	}
-// 	return atxs, nil
-// }
-
 // GetSpentUxOutOfAddr get all spent uxout of specifc address.
 func (hd HistoryDB) GetSpentUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {
 	hashes, err := hd.addrOut.Get(address)

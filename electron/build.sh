@@ -23,7 +23,7 @@ fi
 
 echo "Installing node modules"
 ./install-node-modules.sh
-if [ $? -ne 0]; then
+if [ $? -ne 0 ]; then
     echo "install-node-modules.sh failed"
     exit 1
 fi

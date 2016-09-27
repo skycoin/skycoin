@@ -13,9 +13,13 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
+// lastTxNum reprsents the number of transactions that the GetLastTxs function will return.
+const lastTxNum = 20
+
 // Transactions transaction bucket instance.
 type transactions struct {
-	bkt *bucket.Bucket
+	bkt     *bucket.Bucket
+	lastTxs []cipher.SHA256 // records the latest transactions
 }
 
 // Transaction contains transaction info and the seq of block which executed this block.
@@ -36,11 +40,16 @@ func newTransactionsBkt(db *bolt.DB) (*transactions, error) {
 		return nil, nil
 	}
 
-	return &transactions{txBkt}, nil
+	return &transactions{bkt: txBkt}, nil
 }
 
 // Add transaction to the db.
 func (txs *transactions) Add(t *Transaction) error {
+	txs.lastTxs = append(txs.lastTxs, t.Hash())
+	if len(txs.lastTxs) > lastTxNum {
+		txs.lastTxs = txs.lastTxs[1:]
+	}
+
 	key := t.Hash()
 	v := encoder.Serialize(t)
 	return txs.bkt.Put(key[:], v)
@@ -60,4 +69,9 @@ func (txs transactions) Get(hash cipher.SHA256) (*Transaction, error) {
 	}
 
 	return &tx, nil
+}
+
+// GetLastTxs get latest tx hashes.
+func (txs transactions) GetLastTxs() []cipher.SHA256 {
+	return txs.lastTxs
 }

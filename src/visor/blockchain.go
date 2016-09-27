@@ -67,6 +67,7 @@ func NewBlockchain(tree BlockTree, walker Walker) *Blockchain {
 	return bc
 }
 
+// GetUnspent returns the unspent output pool.
 func (bc *Blockchain) GetUnspent() *coin.UnspentPool {
 	return &bc.unspent
 }

@@ -1,4 +1,4 @@
-package coin
+package visor
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,12 +35,12 @@ func tNow() uint64 {
 	return uint64(time.Now().UTC().Unix())
 }
 
-func _feeCalc(t *Transaction) (uint64, error) {
+func _feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func _makeFeeCalc(fee uint64) FeeCalculator {
-	return func(t *Transaction) (uint64, error) {
+func _makeFeeCalc(fee uint64) coin.FeeCalculator {
+	return func(t *coin.Transaction) (uint64, error) {
 		return fee, nil
 	}
 }
@@ -47,19 +48,19 @@ func _makeFeeCalc(fee uint64) FeeCalculator {
 /* Helpers */
 
 type FakeTree struct {
-	blocks []*Block
+	blocks []*coin.Block
 }
 
-func (ft *FakeTree) AddBlock(b *Block) error {
+func (ft *FakeTree) AddBlock(b *coin.Block) error {
 	ft.blocks = append(ft.blocks, b)
 	return nil
 }
 
-func (ft *FakeTree) RemoveBlock(b *Block) error {
+func (ft *FakeTree) RemoveBlock(b *coin.Block) error {
 	return nil
 }
 
-func (ft *FakeTree) GetBlock(hash cipher.SHA256) *Block {
+func (ft *FakeTree) GetBlock(hash cipher.SHA256) *coin.Block {
 	for _, b := range ft.blocks {
 		if b.HashHeader() == hash {
 			return b
@@ -68,7 +69,7 @@ func (ft *FakeTree) GetBlock(hash cipher.SHA256) *Block {
 	return nil
 }
 
-func (ft *FakeTree) GetBlockInDepth(dep uint64, filter func(hps []HashPair) cipher.SHA256) *Block {
+func (ft *FakeTree) GetBlockInDepth(dep uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block {
 	if dep >= uint64(len(ft.blocks)) {
 		return nil
 	}
@@ -80,14 +81,14 @@ func assertError(t *testing.T, err error, msg string) {
 	assert.Equal(t, err.Error(), msg)
 }
 
-func makeNewBlock() Block {
-	unsp := NewUnspentPool()
-	body := BlockBody{
-		Transactions: Transactions{Transaction{}},
+func makeNewBlock() coin.Block {
+	unsp := coin.NewUnspentPool()
+	body := coin.BlockBody{
+		Transactions: coin.Transactions{coin.Transaction{}},
 	}
-	prev := Block{
+	prev := coin.Block{
 		Body: body,
-		Head: BlockHeader{
+		Head: coin.BlockHeader{
 			Version:  0x02,
 			Time:     100,
 			BkSeq:    0,
@@ -95,11 +96,11 @@ func makeNewBlock() Block {
 			PrevHash: cipher.SHA256{},
 			BodyHash: body.Hash(),
 		}}
-	return newBlock(prev, 100+20, unsp, Transactions{Transaction{}}, _feeCalc)
+	return coin.NewBlock(prev, 100+20, unsp, coin.Transactions{coin.Transaction{}}, _feeCalc)
 }
 
 func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
-	ux UxOut, sec cipher.SecKey, hours, fee uint64) (Transaction, cipher.SecKey) {
+	ux coin.UxOut, sec cipher.SecKey, hours, fee uint64) (coin.Transaction, cipher.SecKey) {
 	chrs := ux.CoinHours(bc.Time())
 	if chrs < hours+fee {
 		log.Panicf("CoinHours underflow. Have %d, need at least %d", chrs,
@@ -109,7 +110,7 @@ func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
 	knownUx, exists := bc.GetUnspent().Get(ux.Hash())
 	assert.True(t, exists)
 	assert.Equal(t, knownUx, ux)
-	tx := Transaction{}
+	tx := coin.Transaction{}
 	tx.PushInput(ux.Hash())
 	p, newSec := cipher.GenerateKeyPair()
 	addr := cipher.AddressFromPubKey(p)
@@ -129,8 +130,8 @@ func makeTransactionForChainWithHoursFee(t *testing.T, bc *Blockchain,
 }
 
 func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
-	fee uint64) Transaction {
-	ux := UxOut{}
+	fee uint64) coin.Transaction {
+	ux := coin.UxOut{}
 	hrs := uint64(100)
 	for _, u := range bc.GetUnspent().Array() {
 		if ux.CoinHours(bc.Time()) > hrs {
@@ -144,11 +145,11 @@ func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
 	return tx
 }
 
-func makeTransactionForChain(t *testing.T, bc *Blockchain) Transaction {
+func makeTransactionForChain(t *testing.T, bc *Blockchain) coin.Transaction {
 	return makeTransactionForChainWithFee(t, bc, 100)
 }
 
-func addTransactionToBlock(t *testing.T, b *Block) Transaction {
+func addTransactionToBlock(t *testing.T, b *coin.Block) coin.Transaction {
 	tx := makeTransaction(t)
 	b.Body.Transactions = append(b.Body.Transactions, tx)
 	return tx
@@ -156,7 +157,7 @@ func addTransactionToBlock(t *testing.T, b *Block) Transaction {
 
 // addBlockToBlockchain test helper function
 // Adds 2 blocks to the blockchain and return an unspent that has >0 coin hours
-func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
+func addBlockToBlockchain(t *testing.T, bc *Blockchain) (coin.Block, coin.UxOut) {
 	// Split the genesis block into two transactions
 	assert.Equal(t, len(bc.GetUnspent().Array()), 1)
 	ux := bc.GetUnspent().Array()[0]
@@ -167,14 +168,14 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	assert.Nil(t, cipher.ChkSig(ux.Body.Address, ux.Hash(), sig))
 
 	tx, sec := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 0, 0)
-	b, err := bc.NewBlockFromTransactions(Transactions{tx}, _incTime)
+	b, err := bc.NewBlockFromTransactions(coin.Transactions{tx}, _incTime)
 	assert.Nil(t, err)
 	assertExecuteBlock(t, bc, b, tx)
 	assert.Equal(t, len(bc.GetUnspent().Array()), 2)
 
 	// Spend one of them
 	// The other will have hours now
-	ux = UxOut{}
+	ux = coin.UxOut{}
 	for _, u := range bc.GetUnspent().Pool {
 		if u.Body.Address != genAddress {
 			ux = u
@@ -187,7 +188,7 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	addr := cipher.AddressFromPubKey(pub)
 	assert.Equal(t, ux.Body.Address, addr)
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, sec, 0, 0)
-	b, err = bc.NewBlockFromTransactions(Transactions{tx},
+	b, err = bc.NewBlockFromTransactions(coin.Transactions{tx},
 		bc.Time()+_incTime)
 	assert.Nil(t, err)
 	assertExecuteBlock(t, bc, b, tx)
@@ -208,8 +209,8 @@ func addBlockToBlockchain(t *testing.T, bc *Blockchain) (Block, UxOut) {
 	return b, ux
 }
 
-func splitUnspent(t *testing.T, bc *Blockchain, ux UxOut) UxArray {
-	tx := Transaction{}
+func splitUnspent(t *testing.T, bc *Blockchain, ux coin.UxOut) coin.UxArray {
+	tx := coin.Transaction{}
 	hrs := ux.CoinHours(bc.Time())
 	if hrs < 2 {
 		log.Panic("Not enough hours, would generate duplicate output")
@@ -226,7 +227,7 @@ func splitUnspent(t *testing.T, bc *Blockchain, ux UxOut) UxArray {
 	tx.PushOutput(genAddress, coinsB, hrs/2)
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
-	b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
+	b, err := bc.NewBlockFromTransactions(coin.Transactions{tx}, bc.Time()+_incTime)
 	assert.Nil(t, err)
 	uxs, err := bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
@@ -235,7 +236,7 @@ func splitUnspent(t *testing.T, bc *Blockchain, ux UxOut) UxArray {
 }
 
 func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
-	txn := Transaction{}
+	txn := coin.Transaction{}
 	ux := bc.GetUnspent().Array()[0]
 	txn.PushInput(ux.Hash())
 	txn.PushOutput(genAddress, 1e6, 100)
@@ -245,14 +246,14 @@ func makeMultipleOutputs(t *testing.T, bc *Blockchain) {
 	txn.UpdateHeader()
 	assert.Nil(t, txn.Verify())
 	assert.Nil(t, bc.VerifyTransaction(txn))
-	b, err := bc.NewBlockFromTransactions(Transactions{txn},
+	b, err := bc.NewBlockFromTransactions(coin.Transactions{txn},
 		bc.Time()+_incTime)
 	assert.Nil(t, err)
 	assertExecuteBlock(t, bc, b, txn)
 }
 
-func assertExecuteBlock(t *testing.T, bc *Blockchain, b Block,
-	tx Transaction) {
+func assertExecuteBlock(t *testing.T, bc *Blockchain, b coin.Block,
+	tx coin.Transaction) {
 	seq := bc.Head().Head.BkSeq
 	nUxs := len(bc.GetUnspent().Pool)
 	uxs, err := bc.ExecuteBlock(&b)
@@ -267,15 +268,15 @@ func assertExecuteBlock(t *testing.T, bc *Blockchain, b Block,
 		assert.True(t, ok)
 		assert.Equal(t, ux, ux2)
 	}
-	uxs2 := CreateUnspents(bc.Head().Head, tx)
+	uxs2 := coin.CreateUnspents(bc.Head().Head, tx)
 	assert.Equal(t, len(uxs2), len(uxs))
 	for i, u := range uxs2 {
 		assert.Equal(t, u.Body, uxs[i].Body)
 	}
 }
 
-func assertValidUnspents(t *testing.T, bh BlockHeader, tx Transaction,
-	uxo UxArray) {
+func assertValidUnspents(t *testing.T, bh coin.BlockHeader, tx coin.Transaction,
+	uxo coin.UxArray) {
 	assert.Equal(t, len(tx.Out), len(uxo))
 	for i, ux := range uxo {
 		assert.Equal(t, bh.Time, ux.Head.Time)
@@ -287,7 +288,7 @@ func assertValidUnspents(t *testing.T, bh BlockHeader, tx Transaction,
 	}
 }
 
-func _badFeeCalc(t *Transaction) (uint64, error) {
+func _badFeeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, errors.New("Bad")
 }
 
@@ -295,31 +296,31 @@ func _badFeeCalc(t *Transaction) (uint64, error) {
 
 func TestNewBlock(t *testing.T) {
 	// TODO -- update this test for newBlock changes
-	prev := Block{Head: BlockHeader{Version: 0x02, Time: 100, BkSeq: 98}}
-	unsp := NewUnspentPool()
-	unsp.XorHash = randSHA256(t)
-	txns := Transactions{Transaction{}}
+	prev := coin.Block{Head: coin.BlockHeader{Version: 0x02, Time: 100, BkSeq: 98}}
+	unsp := coin.NewUnspentPool()
+	unsp.XorHash = randSHA256()
+	txns := coin.Transactions{coin.Transaction{}}
 	// invalid txn fees panics
-	assert.Panics(t, func() { newBlock(prev, 133, unsp, txns, _badFeeCalc) })
+	assert.Panics(t, func() { coin.NewBlock(prev, 133, unsp, txns, _badFeeCalc) })
 	// no txns panics
 	assert.Panics(t, func() {
-		newBlock(prev, 133, unsp, nil, _feeCalc)
+		coin.NewBlock(prev, 133, unsp, nil, _feeCalc)
 	})
 	assert.Panics(t, func() {
-		newBlock(prev, 133, unsp, Transactions{}, _feeCalc)
+		coin.NewBlock(prev, 133, unsp, coin.Transactions{}, _feeCalc)
 	})
 	// valid block is fine
 	fee := uint64(121)
 	currentTime := uint64(133)
-	b := newBlock(prev, currentTime, unsp, txns, _makeFeeCalc(fee))
+	b := coin.NewBlock(prev, currentTime, unsp, txns, _makeFeeCalc(fee))
 	assert.Equal(t, b.Body.Transactions, txns)
 	assert.Equal(t, b.Head.Fee, fee*uint64(len(txns)))
-	assert.Equal(t, b.Body, BlockBody{txns})
+	assert.Equal(t, b.Body, coin.BlockBody{txns})
 	assert.Equal(t, b.Head.PrevHash, prev.HashHeader())
 	assert.Equal(t, b.Head.Time, currentTime)
 	assert.Equal(t, b.Head.BkSeq, prev.Head.BkSeq+1)
 	assert.Equal(t, b.Head.UxHash,
-		getUxHash(unsp))
+		unsp.GetUxHash())
 }
 
 func TestBlockHashHeader(t *testing.T) {
@@ -363,18 +364,18 @@ func TestBlockGetTransaction(t *testing.T) {
 
 func TestNewBlockHeaderPanics(t *testing.T) {
 	ct := uint64(100)
-	head := BlockHeader{Time: ct}
+	head := coin.BlockHeader{Time: ct}
 	assert.Panics(t, func() {
-		newBlockHeader(head, NewUnspentPool(), ct, 50, BlockBody{})
+		coin.NewBlockHeader(head, coin.NewUnspentPool(), ct, 50, coin.BlockBody{})
 	})
 	assert.Panics(t, func() {
-		newBlockHeader(head, NewUnspentPool(), ct-1, 50, BlockBody{})
+		coin.NewBlockHeader(head, coin.NewUnspentPool(), ct-1, 50, coin.BlockBody{})
 	})
 	assert.Panics(t, func() {
-		newBlockHeader(head, NewUnspentPool(), ct-ct, 50, BlockBody{})
+		coin.NewBlockHeader(head, coin.NewUnspentPool(), ct-ct, 50, coin.BlockBody{})
 	})
 	assert.NotPanics(t, func() {
-		newBlockHeader(head, NewUnspentPool(), ct+1, 50, BlockBody{})
+		coin.NewBlockHeader(head, coin.NewUnspentPool(), ct+1, 50, coin.BlockBody{})
 	})
 }
 
@@ -382,10 +383,10 @@ func TestNewBlockHeader(t *testing.T) {
 	// TODO -- update this test for newBlockHeader changes
 	b := makeNewBlock()
 	prev := b.Head
-	unsp := NewUnspentPool()
-	unsp.XorHash = randSHA256(t)
+	unsp := coin.NewUnspentPool()
+	unsp.XorHash = randSHA256()
 	fee := uint64(10)
-	bh := newBlockHeader(prev, unsp, prev.Time+22, fee, b.Body)
+	bh := coin.NewBlockHeader(prev, unsp, prev.Time+22, fee, b.Body)
 	assert.Equal(t, bh.PrevHash, prev.Hash())
 	assert.NotEqual(t, bh.PrevHash, prev.PrevHash)
 	assert.Equal(t, bh.Time, uint64(prev.Time+22))
@@ -393,7 +394,7 @@ func TestNewBlockHeader(t *testing.T) {
 	assert.Equal(t, bh.Fee, fee)
 	assert.Equal(t, bh.Version, prev.Version)
 	assert.Equal(t, bh.BodyHash, b.Body.Hash())
-	assert.Equal(t, bh.UxHash, getUxHash(unsp))
+	assert.Equal(t, bh.UxHash, unsp.GetUxHash())
 }
 
 func TestBlockHeaderHash(t *testing.T) {
@@ -514,7 +515,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 	assert.Equal(t, b.Head().Head.PrevHash, cipher.SHA256{})
 	// TODO -- check valid snapshot
 	assert.NotEqual(t, b.Head().Head.UxHash, [4]byte{})
-	expect := CreateUnspents(b.Head().Head, txn)
+	expect := coin.CreateUnspents(b.Head().Head, txn)
 	expect.Sort()
 	have := b.GetUnspent().Array()
 	have.Sort()
@@ -556,7 +557,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
 	assert.Equal(t, bc.Len(), uint64(3))
 
 	// No transactions
-	_, err := bc.NewBlockFromTransactions(Transactions{},
+	_, err := bc.NewBlockFromTransactions(coin.Transactions{},
 		bc.Time()+_incTime)
 	assertError(t, err, "No transactions")
 	assert.Equal(t, bc.Len(), uint64(3))
@@ -565,7 +566,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
 	fee := uint64(100)
 	txn, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
 		fee)
-	txns := Transactions{txn}
+	txns := coin.Transactions{txn}
 	assert.Panics(t, func() {
 		bc.NewBlockFromTransactions(txns, bc.Time())
 	})
@@ -586,7 +587,7 @@ func TestNewBlockFromTransactions(t *testing.T) {
 
 	// Invalid transaction
 	txn.InnerHash = cipher.SHA256{}
-	txns = Transactions{txn}
+	txns = coin.Transactions{txn}
 	_, err = bc.NewBlockFromTransactions(txns, bc.Time()+_incTime)
 	assertError(t, err, "Invalid header hash")
 
@@ -595,28 +596,28 @@ func TestNewBlockFromTransactions(t *testing.T) {
 	uxs := splitUnspent(t, bc, ux)
 
 	// tNow, make two valid txns
-	txn = Transaction{}
+	txn = coin.Transaction{}
 	txn.PushInput(uxs[0].Hash())
 	txn.PushOutput(genAddress, uxs[0].Body.Coins, uxs[0].Body.Hours)
 	txn.SignInputs([]cipher.SecKey{genSecret})
 	txn.UpdateHeader()
-	txn2 := Transaction{}
+	txn2 := coin.Transaction{}
 	txn2.PushInput(uxs[1].Hash())
 	txn2.PushOutput(genAddress, uxs[1].Body.Coins, uxs[1].Body.Hours)
 	txn2.SignInputs([]cipher.SecKey{genSecret})
 	txn2.UpdateHeader()
 
 	// Combine them and sort
-	txns = Transactions{txn, txn2}
-	txns = SortTransactions(txns, bc.TransactionFee)
+	txns = coin.Transactions{txn, txn2}
+	txns = coin.SortTransactions(txns, bc.TransactionFee)
 	b, err = bc.NewBlockFromTransactions(txns, bc.Time()+_incTime)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b.Body.Transactions), 2)
 	assert.Equal(t, b.Body.Transactions, txns)
 
 	// Order should be preserved
-	txns2 := Transactions{txn, txn2}
-	sTxns := newSortableTransactions(txns2, bc.TransactionFee)
+	txns2 := coin.Transactions{txn, txn2}
+	sTxns := coin.NewSortableTransactions(txns2, bc.TransactionFee)
 	if sTxns.IsSorted() {
 		txns2[0], txns2[1] = txns2[1], txns2[0]
 	}
@@ -660,30 +661,30 @@ func TestCreateUnspents(t *testing.T) {
 	bc := NewBlockchain(&ft, nil)
 	bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 	// 1 out
-	tx := Transaction{}
+	tx := coin.Transaction{}
 	tx.PushOutput(genAddress, 11e6, 255)
-	bh := BlockHeader{
+	bh := coin.BlockHeader{
 		Time:  tNow(),
 		BkSeq: uint64(1),
 	}
-	uxout := CreateUnspents(bh, tx)
+	uxout := coin.CreateUnspents(bh, tx)
 	assert.Equal(t, len(uxout), 1)
 	assertValidUnspents(t, bh, tx, uxout)
 
 	// Multiple outs.  Should work regardless of validity
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	ux := makeUxOut(t)
 	tx.PushInput(ux.Hash())
 	tx.PushOutput(genAddress, 100, 150)
 	tx.PushOutput(genAddress, 200, 77)
 	bh.BkSeq++
-	uxout = CreateUnspents(bh, tx)
+	uxout = coin.CreateUnspents(bh, tx)
 	assert.Equal(t, len(uxout), 2)
 	assertValidUnspents(t, bh, tx, uxout)
 
 	// No outs
-	tx = Transaction{}
-	uxout = CreateUnspents(bh, tx)
+	tx = coin.Transaction{}
+	uxout = coin.CreateUnspents(bh, tx)
 	assertValidUnspents(t, bh, tx, uxout)
 }
 
@@ -694,14 +695,14 @@ func TestVerifyTransactionSpending(t *testing.T) {
 
 	// Overspending hours
 
-	tx := Transaction{}
+	tx := coin.Transaction{}
 	uxs := bc.GetUnspent().Array()
 	tx.PushInput(uxs[0].Hash())
 	tx.PushOutput(genAddress, 1e6, uxs[0].Body.Hours)
 	tx.PushOutput(genAddress, uxs[0].Body.Coins-1e6, 1)
 	uxIn, err := bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut := CreateUnspents(bc.Head().Head, tx)
+	uxOut := coin.CreateUnspents(bc.Head().Head, tx)
 	assertError(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut),
 		"Insufficient coin hours")
 
@@ -713,17 +714,17 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut = CreateUnspents(bc.Head().Head, tx)
+	uxOut = coin.CreateUnspents(bc.Head().Head, tx)
 	assert.Nil(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut))
 
 	// Destroying coins
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	tx.PushInput(ux.Hash())
 	tx.PushOutput(genAddress, 1e6, 100)
 	tx.PushOutput(genAddress, 10e6, 100)
 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut = CreateUnspents(bc.Head().Head, tx)
+	uxOut = coin.CreateUnspents(bc.Head().Head, tx)
 	err = verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(),
@@ -732,7 +733,7 @@ func TestVerifyTransactionSpending(t *testing.T) {
 		"Transactions may not create or destroy coins")
 
 	// Insufficient coins
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	tx.PushInput(ux.Hash())
 	p, s := cipher.GenerateKeyPair()
 	a := cipher.AddressFromPubKey(p)
@@ -742,18 +743,18 @@ func TestVerifyTransactionSpending(t *testing.T) {
 	tx.PushOutput(genAddress, coins-1e6, 100)
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
-	b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
+	b, err := bc.NewBlockFromTransactions(coin.Transactions{tx}, bc.Time()+_incTime)
 	assert.Nil(t, err)
 	uxs, err = bc.ExecuteBlock(&b)
 	assert.Nil(t, err)
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	tx.PushInput(uxs[0].Hash())
 	tx.PushOutput(a, 10e6, 1)
 	tx.SignInputs([]cipher.SecKey{s})
 	tx.UpdateHeader()
 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
 	assert.Nil(t, err)
-	uxOut = CreateUnspents(bc.Head().Head, tx)
+	uxOut = coin.CreateUnspents(bc.Head().Head, tx)
 	assertError(t, verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut),
 		"Insufficient coins")
 }
@@ -801,7 +802,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// Failure, hash collision with unspents
 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
-	uxOut := CreateUnspents(bc.Head().Head, tx)
+	uxOut := coin.CreateUnspents(bc.Head().Head, tx)
 	bc.GetUnspent().Add(uxOut[0])
 	assertError(t, bc.VerifyTransaction(tx),
 		"New unspent collides with existing unspent")
@@ -816,7 +817,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// Failure, spending outputs we don't own
 	_, s := cipher.GenerateKeyPair()
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	for _, u := range bc.GetUnspent().Pool {
 		if u.Body.Address != genAddress {
 			ux = u
@@ -832,7 +833,7 @@ func TestVerifyTransaction(t *testing.T) {
 		"Signature not valid for output being spent")
 
 	// Failure, wrong signature for txn hash
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	tx.PushInput(ux.Hash())
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.PushOutput(genAddress, ux.Body.Coins, ux.Body.Hours)
@@ -852,12 +853,12 @@ func TestBlockchainVerifyBlock(t *testing.T) {
 	assert.Equal(t, bc.Len(), uint64(3))
 
 	// Valid block
-	tx := Transaction{}
+	tx := coin.Transaction{}
 	tx.PushInput(ux.Hash())
 	tx.PushOutput(genAddress, ux.Body.Coins, ux.CoinHours(bc.Time()))
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
-	b, err := bc.NewBlockFromTransactions(Transactions{tx}, bc.Time()+_incTime)
+	b, err := bc.NewBlockFromTransactions(coin.Transactions{tx}, bc.Time()+_incTime)
 	assert.Equal(t, len(b.Body.Transactions), 1)
 	assert.Equal(t, len(b.Body.Transactions[0].Out), 1)
 	assert.Nil(t, err)
@@ -878,11 +879,11 @@ func TestBlockchainVerifyBlock(t *testing.T) {
 }
 
 func TestGetUxHash(t *testing.T) {
-	unsp := NewUnspentPool()
-	xor := randSHA256(t)
+	unsp := coin.NewUnspentPool()
+	xor := randSHA256()
 	unsp.XorHash = xor
 	//prev := randSHA256(t)
-	sh := getUxHash(unsp)
+	sh := unsp.GetUxHash()
 	assert.True(t, bytes.Equal(xor[:], sh[:]))
 	assert.NotEqual(t, sh, [4]byte{})
 }
@@ -891,9 +892,9 @@ func TestVerifyUxHash(t *testing.T) {
 	ft := FakeTree{}
 	bc := NewBlockchain(&ft, nil)
 	//gb := bc.CreateGenesisBlock(genAddress, _genTime, _genCoins)
-	b := Block{Body: BlockBody{}, Head: BlockHeader{}}
+	b := coin.Block{Body: coin.BlockBody{}, Head: coin.BlockHeader{}}
 	b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
-	bc.GetUnspent().XorHash = randSHA256(t)
+	bc.GetUnspent().XorHash = randSHA256()
 	uxHash := bc.GetUnspent().XorHash
 	copy(b.Head.UxHash[:], uxHash[:])
 	assert.Nil(t, bc.verifyUxHash(b))
@@ -905,9 +906,9 @@ func TestVerifyBlockHeader(t *testing.T) {
 	ft := FakeTree{}
 	bc := NewBlockchain(&ft, nil)
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
-	b := Block{Body: BlockBody{}}
+	b := coin.Block{Body: coin.BlockBody{}}
 	b.Body.Transactions = append(b.Body.Transactions, makeTransaction(t))
-	h := BlockHeader{}
+	h := coin.BlockHeader{}
 
 	h.BkSeq = 1
 	h.Time = gb.Head.Time + 1
@@ -965,7 +966,7 @@ func TestTransactionFee(t *testing.T) {
 	assert.Equal(t, fee, uint64(100))
 
 	// Txn spending unknown output
-	tx = Transaction{}
+	tx = coin.Transaction{}
 	unknownUx := makeUxOut(t)
 	tx.PushInput(unknownUx.Hash())
 	_, err = bc.TransactionFee(&tx)
@@ -989,11 +990,11 @@ func TestProcessTransactions(t *testing.T) {
 
 	// Invalid, no transactions in block
 	// arbitrating=false
-	txns, err := bc.processTransactions(Transactions{}, false)
+	txns, err := bc.processTransactions(coin.Transactions{}, false)
 	assert.Nil(t, txns)
 	assertError(t, err, "No transactions")
 	// arbitrating=true
-	txns, err = bc.processTransactions(Transactions{}, true)
+	txns, err = bc.processTransactions(coin.Transactions{}, true)
 	assert.Equal(t, len(txns), 0)
 	assert.Nil(t, err)
 
@@ -1001,8 +1002,8 @@ func TestProcessTransactions(t *testing.T) {
 	// TODO -- combine all txn.Verify() failures into one test
 	// method, and call it from here, from ExecuteBlock(), from
 	// Verify(), from VerifyTransaction()
-	txns = Transactions{}
-	txn := Transaction{}
+	txns = coin.Transactions{}
+	txn := coin.Transaction{}
 	txn.PushInput(ux.Hash())
 	txn.PushOutput(genAddress, 777, 100)
 	txn.SignInputs([]cipher.SecKey{genSecret})
@@ -1022,7 +1023,7 @@ func TestProcessTransactions(t *testing.T) {
 	// Invalid, duplicate unspent will be created by these txns
 	txn, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
 		100)
-	txns = Transactions{txn, txn}
+	txns = coin.Transactions{txn, txn}
 	// arbitrating=false
 	txns2, err = bc.processTransactions(txns, false)
 	assertError(t, err, "Duplicate unspent output across transactions")
@@ -1036,14 +1037,14 @@ func TestProcessTransactions(t *testing.T) {
 	// Check that a new output will not collide with the existing pool
 	txn, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
 		100)
-	txns = Transactions{txn}
-	uxb := UxBody{
+	txns = coin.Transactions{txn}
+	uxb := coin.UxBody{
 		SrcTransaction: txn.Hash(),
 		Coins:          txn.Out[0].Coins,
 		Hours:          txn.Out[0].Hours,
 		Address:        txn.Out[0].Address,
 	}
-	bc.GetUnspent().Add(UxOut{Body: uxb})
+	bc.GetUnspent().Add(coin.UxOut{Body: uxb})
 	// arbitrating=false
 	txns2, err = bc.processTransactions(txns, false)
 	assertError(t, err, "New unspent collides with existing unspent")
@@ -1065,7 +1066,7 @@ func TestProcessTransactions(t *testing.T) {
 	txn2.Sigs = nil
 	txn2.SignInputs([]cipher.SecKey{genSecret})
 	txn2.UpdateHeader()
-	txns = SortTransactions(Transactions{txn, txn2}, bc.TransactionFee)
+	txns = coin.SortTransactions(coin.Transactions{txn, txn2}, bc.TransactionFee)
 	// arbitrating=false
 	txns2, err = bc.processTransactions(txns, false)
 	assertError(t, err, "Cannot spend output twice in the same block")
@@ -1086,7 +1087,7 @@ func TestExecuteBlock(t *testing.T) {
 	assert.Equal(t, bc.Len(), uint64(3))
 
 	// Invalid block returns error
-	b := Block{}
+	b := coin.Block{}
 	uxs, err := bc.ExecuteBlock(&b)
 	assert.NotNil(t, err)
 	assert.Nil(t, uxs)
@@ -1096,7 +1097,7 @@ func TestExecuteBlock(t *testing.T) {
 	assert.Equal(t, bc.Len(), uint64(3))
 	assert.Equal(t, len(bc.GetUnspent().Pool), 2)
 	spuxs := splitUnspent(t, bc, ux)
-	tx := Transaction{}
+	tx := coin.Transaction{}
 	tx.PushInput(spuxs[0].Hash())
 	coins := spuxs[0].Body.Coins
 	extra := coins % 4e6
@@ -1107,15 +1108,15 @@ func TestExecuteBlock(t *testing.T) {
 	tx.PushOutput(genAddress, coins, spuxs[0].Body.Hours/8)
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	tx.UpdateHeader()
-	tx2 := Transaction{}
+	tx2 := coin.Transaction{}
 	tx2.PushInput(spuxs[1].Hash())
 	tx2.PushOutput(genAddress, spuxs[1].Body.Coins, spuxs[1].Body.Hours/10)
 	tx2.SignInputs([]cipher.SecKey{genSecret})
 	tx2.UpdateHeader()
-	txns := Transactions{tx, tx2}
-	sTxns := newSortableTransactions(txns, bc.TransactionFee)
+	txns := coin.Transactions{tx, tx2}
+	sTxns := coin.NewSortableTransactions(txns, bc.TransactionFee)
 	unswapped := sTxns.IsSorted()
-	txns = SortTransactions(txns, bc.TransactionFee)
+	txns = coin.SortTransactions(txns, bc.TransactionFee)
 	assert.Nil(t, bc.verifyTransactions(txns))
 	seq := bc.Head().Head.BkSeq
 	b, err = bc.NewBlockFromTransactions(txns, bc.Time()+_incTime)
@@ -1127,7 +1128,7 @@ func TestExecuteBlock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(uxs), 5)
 	// Check that all unspents look correct and are in the unspent pool
-	txOuts := []TransactionOutput{}
+	txOuts := []coin.TransactionOutput{}
 	if unswapped {
 		txOuts = append(txOuts, tx.Out...)
 		txOuts = append(txOuts, tx2.Out...)

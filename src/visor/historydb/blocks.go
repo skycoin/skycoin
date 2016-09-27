@@ -8,6 +8,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
+// blocks storage bucket, when parsing blockchain, the parsed blocks will be stored in this bucket.
+// block header hash as key, block as value.
 type blocks struct {
 	bkt *bucket.Bucket
 }

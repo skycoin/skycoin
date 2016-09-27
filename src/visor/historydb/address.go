@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
+// bucket for storing address with UxOut, key as adress, value as UxOut.
 type addressUx struct {
 	bkt *bucket.Bucket
 }
@@ -20,10 +21,12 @@ func newAddressUx(db *bolt.DB, name []byte) (*addressUx, error) {
 	return &addressUx{bkt}, nil
 }
 
+// create address with received UxOuts bucket.
 func newAddressInBkt(db *bolt.DB) (*addressUx, error) {
 	return newAddressUx(db, []byte("address_in"))
 }
 
+// create address with spent UxOUts bucket.
 func newAddressOutBkt(db *bolt.DB) (*addressUx, error) {
 	return newAddressUx(db, []byte("address_out"))
 }

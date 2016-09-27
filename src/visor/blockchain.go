@@ -125,7 +125,7 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Body: body,
 	}
 	// b.Body.Transactions[0].UpdateHeader()
-	bc.tree.AddBlock(&b)
+	bc.addBlock(&b)
 	bc.head = b.HashHeader()
 	ux := coin.UxOut{
 		Head: coin.UxHead{
@@ -141,6 +141,10 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 	}
 	bc.unspent.Add(ux)
 	return b
+}
+
+func (bc *Blockchain) addBlock(b *coin.Block) error {
+	return bc.tree.AddBlock(b)
 }
 
 // GetBlock get block of specific hash in the blockchain, return nil on not found.
@@ -177,7 +181,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 
 	//make sure block is valid
 	if DebugLevel2 == true {
-		if err := verifyBlockHeader(*bc.Head(), b); err != nil {
+		if err := bc.verifyBlockHeader(b); err != nil {
 			log.Panic("Impossible Error: not allowed to fail")
 		}
 		if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
@@ -191,7 +195,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 // and an error if the block is invalid.
 func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	var uxs coin.UxArray
-	err := bc.VerifyBlock(*b)
+	err := bc.verifyBlock(*b)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +212,7 @@ func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	}
 
 	b.Head.PrevHash = bc.head
-	bc.tree.AddBlock(b)
+	bc.addBlock(b)
 
 	// update the head
 	bc.head = b.HashHeader()
@@ -216,7 +220,7 @@ func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
-	if err := bc.VerifyBlock(b); err != nil {
+	if err := bc.verifyBlock(b); err != nil {
 		return err
 	}
 	txns := b.Body.Transactions
@@ -233,10 +237,10 @@ func (bc *Blockchain) updateUnspent(b coin.Block) error {
 }
 
 // VerifyBlock verifies the BlockHeader and BlockBody
-func (bc Blockchain) VerifyBlock(b coin.Block) error {
+func (bc Blockchain) verifyBlock(b coin.Block) error {
 	gb := bc.GetGenesisBlock()
 	if gb.HashHeader() != b.HashHeader() {
-		if err := verifyBlockHeader(*bc.Head(), b); err != nil {
+		if err := bc.verifyBlockHeader(b); err != nil {
 			return err
 		}
 
@@ -563,9 +567,10 @@ func (bc Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) e
 	return nil
 }
 
-// Returns error if the BlockHeader is not valid
-func verifyBlockHeader(head coin.Block, b coin.Block) error {
+// VerifyBlockHeader Returns error if the BlockHeader is not valid
+func (bc Blockchain) verifyBlockHeader(b coin.Block) error {
 	//check BkSeq
+	head := bc.Head()
 	if b.Head.BkSeq != head.Head.BkSeq+1 {
 		return errors.New("BkSeq invalid")
 	}

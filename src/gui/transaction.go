@@ -15,7 +15,7 @@ import (
 
 func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
-	mux.HandleFunc("/pendingTxs", getPendingTxs(gateway))
+	mux.HandleFunc("/unconfirmedTxs", getPendingTxs(gateway))
 	// get latest confirmed transactions
 	mux.HandleFunc("/lastTxs", getLastTxs(gateway))
 	// get txn by txid.
@@ -38,11 +38,10 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 		var rlt struct {
 			Success bool                            `json:"success"`
-			Txns    []*visor.ReadableUnconfirmedTxn `json:"unconfirm_txs"`
-		} {
-			Success: true,
-			Txns: ret,
+			Txns    []*visor.ReadableUnconfirmedTxn `json:"transactions"`
 		}
+		rlt.Success = true
+		rlt.Txns = ret
 
 		wh.SendOr404(w, &rlt)
 	}
@@ -115,7 +114,6 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -162,23 +160,37 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		txid := r.FormValue("txid")
-		if txid == "" {
-			return
+		var rlt struct {
+			Success bool   `json:"success"`
+			Reason  string `json:"reason, omitempty"`
+			RawTx   string `json:"rawtx, omitempty"`
 		}
 
-		h, err := cipher.SHA256FromHex(txid)
-		if err != nil {
-			return
-		}
-		tx := gate.V.GetTransaction(h)
-		d := tx.Txn.Serialize()
-		res := struct {
-			Rawtx string `json:"rawtx"`
-		}{
-			hex.EncodeToString(d),
+		for {
+			txid := r.FormValue("txid")
+			if txid == "" {
+				rlt.Reason = "txid is empty"
+				break
+			}
+
+			h, err := cipher.SHA256FromHex(txid)
+			if err != nil {
+				rlt.Reason = err.Error()
+				break
+			}
+
+			tx, err := gate.V.GetTransaction(h)
+			if err != nil {
+				rlt.Reason = err.Error()
+				break
+			}
+
+			d := tx.Txn.Serialize()
+			rlt.Success = true
+			rlt.RawTx = hex.EncodeToString(d)
+			break
 		}
 
-		wh.SendOr404(w, res)
+		wh.SendOr404(w, &rlt)
 	}
 }

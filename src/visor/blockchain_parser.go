@@ -64,13 +64,27 @@ func (bcp *BlockchainParser) Stop() {
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
-	for i := uint64(0); i < bcHeight-bcp.parsedHeight; i++ {
-		b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i + 1)
-		if b == nil {
-			return fmt.Errorf("no block exist in depth:%d", bcp.parsedHeight+i+1)
+	if bcp.parsedHeight == 0 {
+		for i := uint64(0); i <= bcHeight-bcp.parsedHeight; i++ {
+			b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i)
+			if b == nil {
+				return fmt.Errorf("no block exist in depth:%d", bcp.parsedHeight+i)
+			}
+
+			if err := bcp.historyDB.ProcessBlock(b); err != nil {
+				return err
+			}
 		}
-		if err := bcp.historyDB.ProcessBlock(b); err != nil {
-			return err
+	} else {
+		for i := uint64(0); i < bcHeight-bcp.parsedHeight; i++ {
+			b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i + 1)
+			if b == nil {
+				return fmt.Errorf("no block exist in depth:%d", bcp.parsedHeight+i+1)
+			}
+
+			if err := bcp.historyDB.ProcessBlock(b); err != nil {
+				return err
+			}
 		}
 	}
 	bcp.parsedHeight = bcHeight

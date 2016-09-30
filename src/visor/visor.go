@@ -553,3 +553,11 @@ func (vs Visor) GetHeadBlock() *coin.Block {
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return vs.history.GetUxout(id)
 }
+
+func (vs Visor) GetRecvUxOutOfAddr(address cipher.Address) ([]*historydb.UxOut, error) {
+	return vs.history.GetRecvUxOutOfAddr(address)
+}
+
+func (vs Visor) GetSpentUxOutOfAddr(address cipher.Address) ([]*historydb.UxOut, error) {
+	return vs.history.GetSpentUxOutOfAddr(address)
+}

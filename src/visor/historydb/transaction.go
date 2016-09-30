@@ -71,7 +71,7 @@ func (txs transactions) Get(hash cipher.SHA256) (*Transaction, error) {
 	return &tx, nil
 }
 
-// GetLastTxs get latest tx hashes.
+// GetLastTxs get latest tx hash set.
 func (txs transactions) GetLastTxs() []cipher.SHA256 {
 	return txs.lastTxs
 }

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e -o pipefail
 
 SRC_TAR="tmp-src-snapshot.tar"
 
@@ -13,20 +14,12 @@ tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
 
 popd >/dev/null
 
-if [ $? -ne 0 ]; then
-    echo "Failed to copy source tree during tar creation"
-    exit 1
-fi
-
 function copy_source {
+    echo "Copying source tree to $1"
     mkdir -p "$1"
     cp "${SRC_TAR}" "$1"
     pushd "$1"
     tar xvf "${SRC_TAR}" >/dev/null
-    if [ $? -ne 0 ]; then
-        echo "Failed to copy source tree during tar extraction"
-        exit 1
-    fi
     rm "${SRC_TAR}"
     popd >/dev/null
 }

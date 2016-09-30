@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	//"strings"
 
+	"crypto/tls"
 	"gopkg.in/op/go-logging.v1"
 
 	"github.com/skycoin/skycoin/src/daemon"

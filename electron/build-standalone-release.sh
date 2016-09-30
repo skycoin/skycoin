@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e -o pipefail
 
 . build-conf.sh
 
@@ -14,22 +15,14 @@ pushd "$SCRIPTDIR" >/dev/null
 
 if [ $SKIP_COMPILATION -ne 1 ]; then
     ./gox.sh "$GOX_OSARCH" "$GOX_OUTPUT"
-    if [ $? -ne 0 ]; then
-        echo "gox build failed"
-        exit 1
-    fi
 fi
 
+echo "----------------------------"
+echo "Packaging standalone release"
 ./package-standalone-release.sh
-if [ $? -ne 0 ]; then
-    echo "package-standalone-release.sh failed"
-    exit 1
-fi
 
+echo "------------------------------"
+echo "Compressing standalone release"
 ./compress-standalone-release.sh
-if [ $? -ne 0 ]; then
-    echo "compress-standalone-release.sh failed"
-    exit 1
-fi
 
 popd >/dev/null

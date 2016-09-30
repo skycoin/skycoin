@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e -o pipefail
 
 # installs the node modules for the skycoin electron app
 # NOT for the electron build process
@@ -9,7 +10,5 @@ pushd "$SCRIPTDIR" >/dev/null
 
 cd src/
 npm install .
-
-exit $?
 
 popd >/dev/null

@@ -446,38 +446,26 @@ func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 }
 
 // Returns a Transaction by hash.
-func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
+func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	// Look in the unconfirmed pool
-	tx, ok := self.Unconfirmed.Txns[txHash]
+	tx, ok := vs.Unconfirmed.Txns[txHash]
 	if ok {
-		return Transaction{
+		return &Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
-		}
+		}, nil
 	}
 
-	// for {
-	// 	// Look in the blockchain
-	// 	tx, err := self.txns.Get(txHash)
-	// 	if err != nil {
-	// 		logger.Error("%v", err)
-	// 		break
-	// 	}
-
-	// 	if tx == nil {
-	// 		break
-	// 	}
-
-	// 	return Transaction{
-	// 		Txn:    tx.Tx,
-	// 		Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - tx.BlockSeq + 1),
-	// 	}
-	// }
-
-	// Otherwise unknown
-	return Transaction{
-		Status: NewUnknownTransactionStatus(),
+	txn, err := vs.history.GetTransaction(txHash)
+	if err != nil {
+		return nil, err
 	}
+
+	confirms := vs.GetHeadBlock().Seq() - txn.BlockSeq + 1
+	return &Transaction{
+		Txn:    txn.Tx,
+		Status: NewConfirmedTransactionStatus(confirms),
+	}, nil
 }
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts
@@ -541,4 +529,12 @@ func (vs *Visor) GetBlockByHash(hash cipher.SHA256) *coin.Block {
 // GetBlockBySeq get block of speicific seq, return nil on not found.
 func (vs *Visor) GetBlockBySeq(seq uint64) *coin.Block {
 	return vs.Blockchain.GetBlockInDepth(seq)
+}
+
+func (vs *Visor) GetLastTxs() ([]*historydb.Transaction, error) {
+	return vs.history.GetLastTxs()
+}
+
+func (vs Visor) GetHeadBlock() *coin.Block {
+	return vs.Blockchain.Head()
 }

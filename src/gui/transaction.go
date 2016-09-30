@@ -3,6 +3,7 @@ package gui
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -15,7 +16,7 @@ import (
 
 func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
-	mux.HandleFunc("/unconfirmedTxs", getPendingTxs(gateway))
+	mux.HandleFunc("/pendingTxs", getPendingTxs(gateway))
 	// get latest confirmed transactions
 	mux.HandleFunc("/lastTxs", getLastTxs(gateway))
 	// get txn by txid.
@@ -36,81 +37,58 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			ret = append(ret, &readable)
 		}
 
-		var rlt struct {
-			Success bool                            `json:"success"`
-			Txns    []*visor.ReadableUnconfirmedTxn `json:"transactions"`
-		}
-		rlt.Success = true
-		rlt.Txns = ret
-
-		wh.SendOr404(w, &rlt)
+		wh.SendOr404(w, &ret)
 	}
 }
 
 // getLastTxs get the last confirmed txs.
 func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var rlt struct {
-			Success bool                      `json:"success"`
-			Reason  string                    `json:"reason, omitempty"`
-			Txs     []visor.TransactionResult `json:"transactions, omitempty"`
+		txs, err := gateway.V.GetLastTxs()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
 		}
-		for {
-			txs, err := gateway.V.GetLastTxs()
-			if err != nil {
-				rlt.Reason = err.Error()
-				break
+
+		resTxs := make([]visor.TransactionResult, len(txs))
+		for i, tx := range txs {
+			head := gateway.V.GetHeadBlock()
+			height := head.Seq() - tx.BlockSeq + 1
+			resTxs[i] = visor.TransactionResult{
+				Transaction: visor.NewReadableTransaction(&tx.Tx),
+				Status:      visor.NewConfirmedTransactionStatus(height),
 			}
-			rlt.Success = true
-			rlt.Txs = make([]visor.TransactionResult, len(txs))
-			for i, tx := range txs {
-				head := gateway.V.GetHeadBlock()
-				height := head.Seq() - tx.BlockSeq + 1
-				rlt.Txs[i] = visor.TransactionResult{
-					Transaction: visor.NewReadableTransaction(&tx.Tx),
-					Status:      visor.NewConfirmedTransactionStatus(height),
-				}
-			}
-			break
 		}
-		wh.SendOr404(w, &rlt)
+
+		wh.SendOr404(w, &resTxs)
 	}
 }
 
 func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var rlt struct {
-			Success bool                    `json:"success"`
-			Reason  string                  `json:"reason,omitempty"`
-			Tx      visor.TransactionResult `json:"transaction, omitempty"`
+		txid := r.FormValue("txid")
+		if txid == "" {
+			wh.Error400(w, "txid is empty")
+			return
 		}
-		for {
-			txid := r.FormValue("txid")
-			if txid == "" {
-				rlt.Reason = "txid is empty"
-				break
-			}
 
-			h, err := cipher.SHA256FromHex(txid)
-			if err != nil {
-				rlt.Reason = err.Error()
-				break
-			}
-
-			tx, err := gate.V.GetTransaction(h)
-			if err != nil {
-				rlt.Reason = err.Error()
-				break
-			}
-
-			rlt.Success = true
-			rlt.Tx = visor.TransactionResult{
-				Transaction: visor.NewReadableTransaction(&tx.Txn),
-				Status:      tx.Status,
-			}
-			break
+		h, err := cipher.SHA256FromHex(txid)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
 		}
-		wh.SendOr404(w, &rlt)
+
+		tx, err := gate.V.GetTransaction(h)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		resTx := visor.TransactionResult{
+			Transaction: visor.NewReadableTransaction(&tx.Txn),
+			Status:      tx.Status,
+		}
+		wh.SendOr404(w, &resTx)
 	}
 }
 
@@ -122,75 +100,50 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 			Rawtx []byte `json:"rawtx"`
 		}{}
 
-		rlt := struct {
-			Success bool   `json:"success"`
-			Reason  string `json:"reason"`
-			Txid    string `json:"txid"`
-		}{}
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 			logger.Error("bad request: %v", err)
-			rlt.Reason = "bad request"
-			wh.SendOr404(w, rlt)
+			wh.Error400(w, err.Error())
 			return
 		}
 
 		txn := coin.TransactionDeserialize(v.Rawtx)
-
 		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
-			rlt.Reason = err.Error()
-			wh.SendOr404(w, rlt)
+			wh.Error400(w, err.Error())
 			return
 		}
 
 		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
 		if err != nil {
-			logger.Error("inject tx failed:%v", err)
-			rlt.Reason = "inject tx failed"
-			wh.SendOr404(w, rlt)
+			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
 			return
 		}
 
-		rlt.Success = true
-		rlt.Txid = t.Hash().Hex()
-
-		//ret := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-		wh.SendOr404(w, rlt)
+		wh.SendOr404(w, t.Hash().Hex())
 	}
 }
 
 func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var rlt struct {
-			Success bool   `json:"success"`
-			Reason  string `json:"reason, omitempty"`
-			RawTx   string `json:"rawtx, omitempty"`
+		txid := r.FormValue("txid")
+		if txid == "" {
+			wh.Error400(w, "txid is empty")
+			return
 		}
 
-		for {
-			txid := r.FormValue("txid")
-			if txid == "" {
-				rlt.Reason = "txid is empty"
-				break
-			}
-
-			h, err := cipher.SHA256FromHex(txid)
-			if err != nil {
-				rlt.Reason = err.Error()
-				break
-			}
-
-			tx, err := gate.V.GetTransaction(h)
-			if err != nil {
-				rlt.Reason = err.Error()
-				break
-			}
-
-			d := tx.Txn.Serialize()
-			rlt.Success = true
-			rlt.RawTx = hex.EncodeToString(d)
-			break
+		h, err := cipher.SHA256FromHex(txid)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
 		}
 
-		wh.SendOr404(w, &rlt)
+		tx, err := gate.V.GetTransaction(h)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		d := tx.Txn.Serialize()
+		wh.SendOr404(w, hex.EncodeToString(d))
+		return
 	}
 }

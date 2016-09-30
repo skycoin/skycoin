@@ -155,6 +155,19 @@ func (hd HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
 	return hd.txns.Get(hash)
 }
 
+func (hd HistoryDB) GetLastTxs() ([]*Transaction, error) {
+	txHashes := hd.txns.GetLastTxs()
+	txs := make([]*Transaction, len(txHashes))
+	for i, h := range txHashes {
+		tx, err := hd.txns.Get(h)
+		if err != nil {
+			return []*Transaction{}, err
+		}
+		txs[i] = tx
+	}
+	return txs, nil
+}
+
 // GetSpentUxOutOfAddr get all spent uxout of specifc address.
 func (hd HistoryDB) GetSpentUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {
 	hashes, err := hd.addrOut.Get(address)

@@ -159,8 +159,19 @@ func NewVisor(c VisorConfig) *Visor {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
 
+	db, err := historydb.NewDB()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	v.history, err = historydb.New(db)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	// init the blockchain parser instance
 	v.bcParser = NewBlockchainParser(v.history, v.Blockchain)
+	v.StartParser()
 	return v
 }
 
@@ -537,4 +548,8 @@ func (vs *Visor) GetLastTxs() ([]*historydb.Transaction, error) {
 
 func (vs Visor) GetHeadBlock() *coin.Block {
 	return vs.Blockchain.Head()
+}
+
+func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
+	return vs.history.GetUxout(id)
 }

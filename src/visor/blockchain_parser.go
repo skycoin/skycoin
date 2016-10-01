@@ -7,7 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-const parseCycle = 1000 // millisecond
+const parseCycle = 10000 // millisecond
 
 // BlockchainParser parses the blockchain and stores the data into historydb.
 type BlockchainParser struct {
@@ -43,7 +43,7 @@ func (bcp *BlockchainParser) Start() {
 
 				if bcp.parsedHeight == bcHeight {
 					logger.Debug("no new block need to parse")
-					time.Sleep(time.Duration(1000) * time.Millisecond)
+					time.Sleep(time.Duration(parseCycle) * time.Millisecond)
 					continue
 				}
 
@@ -64,6 +64,7 @@ func (bcp *BlockchainParser) Stop() {
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
+	logger.Info("historydb parse %d/%d", bcp.parsedHeight, bcHeight)
 	if bcp.parsedHeight == 0 {
 		for i := uint64(0); i <= bcHeight-bcp.parsedHeight; i++ {
 			b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i)
@@ -88,5 +89,6 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 		}
 	}
 	bcp.parsedHeight = bcHeight
+	logger.Info("historydb parse %d/%d", bcHeight, bcHeight)
 	return nil
 }

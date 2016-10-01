@@ -2,6 +2,7 @@ package gui
 
 import (
 	//"crypto/tls"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,7 +12,6 @@ import (
 	"path/filepath"
 	//"strings"
 
-	"crypto/tls"
 	"gopkg.in/op/go-logging.v1"
 
 	"github.com/skycoin/skycoin/src/daemon"
@@ -117,8 +117,10 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	RegisterNetworkHandlers(mux, daemon.Gateway)
 	// Network API handler
 	RegisterApiHandlers(mux, daemon.Gateway)
-	// Transaction interface
+	// Transaction handler
 	RegisterTxHandlers(mux, daemon.Gateway)
+	// UxOUt api handler
+	RegisterUxOutHandlers(mux, daemon.Gateway)
 	return mux
 }
 

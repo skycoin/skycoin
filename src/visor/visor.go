@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 var (
@@ -108,6 +109,8 @@ type Visor struct {
 	Unconfirmed *UnconfirmedTxnPool
 	Blockchain  *Blockchain
 	blockSigs   *blockdb.BlockSigs
+	history     *historydb.HistoryDB
+	bcParser    *BlockchainParser
 }
 
 func walker(hps []coin.HashPair) cipher.SHA256 {
@@ -155,6 +158,20 @@ func NewVisor(c VisorConfig) *Visor {
 	if err := v.Blockchain.VerifySigs(c.BlockchainPubkey, v.blockSigs); err != nil {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
+
+	db, err := historydb.NewDB()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	v.history, err = historydb.New(db)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// init the blockchain parser instance
+	v.bcParser = NewBlockchainParser(v.history, v.Blockchain)
+	v.StartParser()
 	return v
 }
 
@@ -440,38 +457,26 @@ func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 }
 
 // Returns a Transaction by hash.
-func (self *Visor) GetTransaction(txHash cipher.SHA256) Transaction {
+func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	// Look in the unconfirmed pool
-	tx, ok := self.Unconfirmed.Txns[txHash]
+	tx, ok := vs.Unconfirmed.Txns[txHash]
 	if ok {
-		return Transaction{
+		return &Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
-		}
+		}, nil
 	}
 
-	// for {
-	// 	// Look in the blockchain
-	// 	tx, err := self.txns.Get(txHash)
-	// 	if err != nil {
-	// 		logger.Error("%v", err)
-	// 		break
-	// 	}
-
-	// 	if tx == nil {
-	// 		break
-	// 	}
-
-	// 	return Transaction{
-	// 		Txn:    tx.Tx,
-	// 		Status: NewConfirmedTransactionStatus(self.HeadBkSeq() - tx.BlockSeq + 1),
-	// 	}
-	// }
-
-	// Otherwise unknown
-	return Transaction{
-		Status: NewUnknownTransactionStatus(),
+	txn, err := vs.history.GetTransaction(txHash)
+	if err != nil {
+		return nil, err
 	}
+
+	confirms := vs.GetHeadBlock().Seq() - txn.BlockSeq + 1
+	return &Transaction{
+		Txn:    txn.Tx,
+		Status: NewConfirmedTransactionStatus(confirms),
+	}, nil
 }
 
 // Computes the total balance for cipher.Addresses and their coin.UxOuts
@@ -517,7 +522,42 @@ func (self *Visor) GetWalletTransactions(addresses []cipher.Address) []ReadableU
 	return ret
 }
 
-// BlockchainExplorer start the blockchain explorer.
-func (vs *Visor) BlockchainExplorer() {
+// StartParser start the blockchain parser.
+func (vs *Visor) StartParser() {
+	vs.bcParser.Start()
+}
 
+// StopParser stop the blockchain parser.
+func (vs *Visor) StopParser() {
+	vs.bcParser.Stop()
+}
+
+// GetBlockByHash get block of specific hash header, return nil on not found.
+func (vs *Visor) GetBlockByHash(hash cipher.SHA256) *coin.Block {
+	return vs.Blockchain.GetBlock(hash)
+}
+
+// GetBlockBySeq get block of speicific seq, return nil on not found.
+func (vs *Visor) GetBlockBySeq(seq uint64) *coin.Block {
+	return vs.Blockchain.GetBlockInDepth(seq)
+}
+
+func (vs *Visor) GetLastTxs() ([]*historydb.Transaction, error) {
+	return vs.history.GetLastTxs()
+}
+
+func (vs Visor) GetHeadBlock() *coin.Block {
+	return vs.Blockchain.Head()
+}
+
+func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
+	return vs.history.GetUxout(id)
+}
+
+func (vs Visor) GetRecvUxOutOfAddr(address cipher.Address) ([]*historydb.UxOut, error) {
+	return vs.history.GetRecvUxOutOfAddr(address)
+}
+
+func (vs Visor) GetSpentUxOutOfAddr(address cipher.Address) ([]*historydb.UxOut, error) {
+	return vs.history.GetSpentUxOutOfAddr(address)
 }

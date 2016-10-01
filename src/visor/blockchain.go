@@ -67,6 +67,7 @@ func NewBlockchain(tree BlockTree, walker Walker) *Blockchain {
 	return bc
 }
 
+// GetUnspent returns the unspent output pool.
 func (bc *Blockchain) GetUnspent() *coin.UnspentPool {
 	return &bc.unspent
 }
@@ -125,7 +126,7 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Body: body,
 	}
 	// b.Body.Transactions[0].UpdateHeader()
-	bc.tree.AddBlock(&b)
+	bc.addBlock(&b)
 	bc.head = b.HashHeader()
 	ux := coin.UxOut{
 		Head: coin.UxHead{
@@ -141,6 +142,10 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 	}
 	bc.unspent.Add(ux)
 	return b
+}
+
+func (bc *Blockchain) addBlock(b *coin.Block) error {
+	return bc.tree.AddBlock(b)
 }
 
 // GetBlock get block of specific hash in the blockchain, return nil on not found.
@@ -177,7 +182,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 
 	//make sure block is valid
 	if DebugLevel2 == true {
-		if err := verifyBlockHeader(*bc.Head(), b); err != nil {
+		if err := bc.verifyBlockHeader(b); err != nil {
 			log.Panic("Impossible Error: not allowed to fail")
 		}
 		if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
@@ -191,7 +196,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 // and an error if the block is invalid.
 func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	var uxs coin.UxArray
-	err := bc.VerifyBlock(*b)
+	err := bc.verifyBlock(*b)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +213,7 @@ func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	}
 
 	b.Head.PrevHash = bc.head
-	bc.tree.AddBlock(b)
+	bc.addBlock(b)
 
 	// update the head
 	bc.head = b.HashHeader()
@@ -216,7 +221,7 @@ func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
-	if err := bc.VerifyBlock(b); err != nil {
+	if err := bc.verifyBlock(b); err != nil {
 		return err
 	}
 	txns := b.Body.Transactions
@@ -233,10 +238,10 @@ func (bc *Blockchain) updateUnspent(b coin.Block) error {
 }
 
 // VerifyBlock verifies the BlockHeader and BlockBody
-func (bc Blockchain) VerifyBlock(b coin.Block) error {
+func (bc Blockchain) verifyBlock(b coin.Block) error {
 	gb := bc.GetGenesisBlock()
 	if gb.HashHeader() != b.HashHeader() {
-		if err := verifyBlockHeader(*bc.Head(), b); err != nil {
+		if err := bc.verifyBlockHeader(b); err != nil {
 			return err
 		}
 
@@ -293,7 +298,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 	}
 	// Checks whether ux inputs exist,
 	// Check that signatures are allowed to spend inputs
-	if err := verifyTransactionInputs(tx, uxIn); err != nil {
+	if err := tx.VerifyInput(uxIn); err != nil {
 		return err
 	}
 
@@ -314,7 +319,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 	}
 
 	// Check that no coins are lost, and sufficient coins and hours are spent
-	err = verifyTransactionSpending(bc.Time(), tx, uxIn, uxOut)
+	err = coin.VerifyTransactionSpending(bc.Time(), uxIn, uxOut)
 	if err != nil {
 		return err
 	}
@@ -563,74 +568,10 @@ func (bc Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) e
 	return nil
 }
 
-/* Unassigned operators */
-
-// Validates the inputs to a transaction by checking signatures. Assumes txn
-// has valid number of signatures for inputs.
-func verifyTransactionInputs(tx coin.Transaction, uxIn coin.UxArray) error {
-	if DebugLevel2 {
-		if len(tx.In) != len(tx.Sigs) || len(tx.In) != len(uxIn) {
-			log.Panic("tx.In != tx.Sigs != uxIn")
-		}
-		if tx.InnerHash != tx.HashInner() {
-			log.Panic("Invalid Tx Header Hash")
-		}
-	}
-
-	// Check signatures against unspent address
-	for i := range tx.In {
-		hash := cipher.AddSHA256(tx.InnerHash, tx.In[i]) //use inner hash, not outer hash
-		err := cipher.ChkSig(uxIn[i].Body.Address, hash, tx.Sigs[i])
-		if err != nil {
-			return errors.New("Signature not valid for output being spent")
-		}
-	}
-	if DebugLevel2 {
-		// Check that hashes match.
-		// This would imply a bug with UnspentPool.GetMultiple
-		if len(tx.In) != len(uxIn) {
-			log.Panic("tx.In does not match uxIn")
-		}
-		for i := range tx.In {
-			if tx.In[i] != uxIn[i].Hash() {
-				log.Panic("impossible error: Ux hash mismatch")
-			}
-		}
-	}
-	return nil
-}
-
-// Checks that coins will not be destroyed and that enough coins are hours
-// are being spent for the outputs
-func verifyTransactionSpending(headTime uint64, tx coin.Transaction,
-	uxIn coin.UxArray, uxOut coin.UxArray) error {
-	coinsIn := uint64(0)
-	hoursIn := uint64(0)
-	for i := range uxIn {
-		coinsIn += uxIn[i].Body.Coins
-		hoursIn += uxIn[i].CoinHours(headTime)
-	}
-	coinsOut := uint64(0)
-	hoursOut := uint64(0)
-	for i := range uxOut {
-		coinsOut += uxOut[i].Body.Coins
-		hoursOut += uxOut[i].Body.Hours
-	}
-	if coinsIn < coinsOut {
-		return errors.New("Insufficient coins")
-	}
-	if coinsIn > coinsOut {
-		return errors.New("Transactions may not create or destroy coins")
-	}
-	if hoursIn < hoursOut {
-		return errors.New("Insufficient coin hours")
-	}
-	return nil
-}
-
-// Returns error if the BlockHeader is not valid
-func verifyBlockHeader(head coin.Block, b coin.Block) error {
+// VerifyBlockHeader Returns error if the BlockHeader is not valid
+func (bc Blockchain) verifyBlockHeader(b coin.Block) error {
 	//check BkSeq
+	head := bc.Head()
 	if b.Head.BkSeq != head.Head.BkSeq+1 {
 		return errors.New("BkSeq invalid")
 	}

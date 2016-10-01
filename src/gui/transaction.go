@@ -19,7 +19,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/pendingTxs", getPendingTxs(gateway))
 	// get latest confirmed transactions
 	mux.HandleFunc("/lastTxs", getLastTxs(gateway))
-	// get txn by txid.
+	// get txn by txid
 	mux.HandleFunc("/transaction", getTransactionByID(gateway))
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
@@ -30,6 +30,11 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 // Returns pending transactions
 func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+
 		V := gateway.V
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
 		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
@@ -44,6 +49,10 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 // getLastTxs get the last confirmed txs.
 func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
 		txs, err := gateway.V.GetLastTxs()
 		if err != nil {
 			wh.Error500(w, err.Error())
@@ -66,6 +75,10 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")
@@ -95,6 +108,10 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			wh.Error405(w, "")
+			return
+		}
 		// get the rawtransaction
 		v := struct {
 			Rawtx []byte `json:"rawtx"`
@@ -124,6 +141,10 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")

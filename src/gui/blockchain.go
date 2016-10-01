@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor" //http,json helpers
 
@@ -19,10 +20,10 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/blockchain/metadata", blockchainHandler(gateway))
 	mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(gateway))
 
-	// get block by hash
-	mux.HandleFunc("/block/hash", getBlockByHash(gateway))
+	// get block by hash or seq
+	mux.HandleFunc("/block", getBlock(gateway))
 	// get block by seq
-	mux.HandleFunc("/block/seq", getBlockBySeq(gateway))
+	// mux.HandleFunc("/block/seq", getBlockBySeq(gateway))
 	// get blocks in specific range
 	mux.HandleFunc("/blocks", getBlocks(gateway))
 	// get last 10 blocks
@@ -35,8 +36,65 @@ func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		wh.SendOr404(w, gateway.GetBlockchainProgress())
+	}
+}
+
+// get block by hash or seq
+// method: GET
+// url: /block?hash=[:hash]  or /block?seq[:seq]
+// params: hash or seq, should only specify one filter.
+func getBlock(gate *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+		hash := r.FormValue("hash")
+		seq := r.FormValue("seq")
+		var b *coin.Block
+		switch {
+		case hash == "" && seq == "":
+			wh.Error400(w, "should specify one filter, hash or seq")
+			return
+		case hash != "" && seq != "":
+			wh.Error400(w, "should only specify one filter, hash or seq")
+			return
+		case hash != "":
+			h, err := cipher.SHA256FromHex(hash)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+
+			b = gate.V.GetBlockByHash(h)
+		case seq != "":
+			uSeq, err := strconv.ParseUint(seq, 10, 64)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+
+			b = gate.V.GetBlockBySeq(uSeq)
+		}
+
+		if b == nil {
+			wh.SendOr404(w, nil)
+			return
+		}
+		wh.SendOr404(w, visor.NewReadableBlock(b))
+	}
+}
+
+//
 func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
 		sstart := r.FormValue("start")
 		start, err := strconv.ParseUint(sstart, 10, 64)
 		if err != nil {
@@ -54,64 +112,13 @@ func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendOr404(w, gateway.GetBlockchainProgress())
-	}
-}
-
-func getBlockByHash(gate *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		hash := r.FormValue("hash")
-		// Block   *visor.ReadableBlock `json:"block,omitempty"`
-		if hash == "" {
-			wh.Error400(w, "block hash is empty")
-			return
-		}
-
-		h, err := cipher.SHA256FromHex(hash)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		b := gate.V.GetBlockByHash(h)
-		if b == nil {
-			wh.SendOr404(w, nil)
-			return
-		}
-		wh.SendOr404(w, visor.NewReadableBlock(b))
-	}
-}
-
-func getBlockBySeq(gate *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		seq := r.FormValue("seq")
-		if seq == "" {
-			wh.Error400(w, "block seq is empty")
-			return
-		}
-
-		uSeq, err := strconv.ParseUint(seq, 10, 64)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		b := gate.V.GetBlockBySeq(uSeq)
-		if b == nil {
-			wh.Error404(w, fmt.Sprintf("block in seq:%s does not exist", seq))
-			return
-		}
-
-		wh.SendOr404(w, visor.NewReadableBlock(b))
-		return
-	}
-}
-
 // get last 10 blocks
 func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
 		headSeq := gateway.V.HeadBkSeq()
 		var start uint64
 		if (headSeq + 1) > lastBlockNum {

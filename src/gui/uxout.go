@@ -9,7 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-type uxOutJson struct {
+type uxOutJSON struct {
 	Time          uint64 `json:"time"`
 	SrcBkSeq      uint64 `json:"src_block_seq"`
 	SrcTx         string `json:"src_tx"`
@@ -20,8 +20,8 @@ type uxOutJson struct {
 	SpentTxID     string `json:"spent_tx"`        // id of tx which spent this output.
 }
 
-func newUxOutJson(out *historydb.UxOut) *uxOutJson {
-	return &uxOutJson{
+func newUxOutJson(out *historydb.UxOut) *uxOutJSON {
+	return &uxOutJSON{
 		Time:          out.Out.Head.Time,
 		SrcBkSeq:      out.Out.Head.BkSeq,
 		SrcTx:         out.Out.Body.SrcTransaction.Hex(),
@@ -44,6 +44,11 @@ func RegisterUxOutHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+
 		uxid := r.FormValue("uxid")
 		if uxid == "" {
 			wh.Error400(w, "uxid is empty")
@@ -68,6 +73,10 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
 		addr := r.FormValue("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
@@ -86,7 +95,7 @@ func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxOuts := make([]*uxOutJson, len(uxs))
+		uxOuts := make([]*uxOutJSON, len(uxs))
 		for i, ux := range uxs {
 			uxOuts[i] = newUxOutJson(ux)
 		}
@@ -96,6 +105,11 @@ func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getSpentOutUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+
 		addr := r.FormValue("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
@@ -114,7 +128,7 @@ func getSpentOutUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxOuts := make([]*uxOutJson, len(uxs))
+		uxOuts := make([]*uxOutJSON, len(uxs))
 		for i, ux := range uxs {
 			uxOuts[i] = newUxOutJson(ux)
 		}

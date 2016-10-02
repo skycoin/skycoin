@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 
 	"strconv"
-	//	"strings"
+	//"strings"
 	//"github.com/skycoin/skycoin/src/cipher"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
@@ -30,6 +30,11 @@ type TransportWithId struct {
 	Id        int
 	Transport transport.Transport
 }
+
+//struct for nodeGetListNodesHandler
+// type ListNodes struct {
+// 	PubKey []string
+// }
 
 func testHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +90,22 @@ func nodeStopHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 		nm.NodesList[nm.PubKeyList[i]].Close()
 		delete(nm.NodesList, nm.PubKeyList[i])
 		nm.PubKeyList = append(nm.PubKeyList[:i], nm.PubKeyList[i+1:]...)
+
+	}
+}
+
+//Handler for /nodemanager/getlistnodes
+//mode: GET
+//url: /nodemanager/getlistnodes
+//return: array of PubKey
+func nodeGetListNodesHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Get list nodes")
+		// var list ListNodes
+		// for _, PubKey := range nm.PubKeyList {
+		// 	list.PubKey = append(list.PubKey, string(PubKey[:]))
+		// }
+		wh.SendJSON(w, nm.PubKeyList)
 
 	}
 }
@@ -184,5 +205,8 @@ func RegisterNodeManagerHandlers(mux *http.ServeMux, nm *nodemanager.NodeManager
 
 	//Route for remove transport from Node
 	mux.HandleFunc("/nodemanager/removetransport", nodeRemoveTransportHandler(nm))
+
+	//Route for get list Nodes
+	mux.HandleFunc("/nodemanager/getlistnodes", nodeGetListNodesHandler(nm))
 
 }

@@ -6,16 +6,30 @@ import (
 	//"log"
 	"net/http"
 	//"os"
-	//	"encoding/json"
-	"strconv"
-	//"strings"
+	"encoding/json"
 
+	"strconv"
+	//	"strings"
 	//"github.com/skycoin/skycoin/src/cipher"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 
+	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
+	"github.com/skycoin/skycoin/src/mesh/transport/transport"
 )
+
+//struct for nodeAddTransportHandler
+type ConfigWithId struct {
+	Id     int
+	Config mesh.TestConfig
+}
+
+//struct for nodeRemoveTransportHandler
+type TransportWithId struct {
+	Id        int
+	Transport transport.Transport
+}
 
 func testHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -75,10 +89,10 @@ func nodeStopHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	}
 }
 
-//Handler for /nodemanager/gettransport
+//Handler for /nodemanager/gettransports
 //mode: GET
-//url: /nodemanager/gettransport?id=value
-func nodeGetTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
+//url: /nodemanager/gettransports?id=value
+func nodeGetTransportsHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Get transport from Node")
 		id := r.FormValue("id")
@@ -102,6 +116,53 @@ func nodeGetTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	}
 }
 
+//Handler for /nodemanager/addtransport
+//mode: POST
+//url: /nodemanager/addtransport
+func nodeAddTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Add transport to Node")
+
+		var c ConfigWithId
+		err := json.NewDecoder(r.Body).Decode(&c)
+
+		if err != nil {
+			wh.Error400(w, "Error decoding config for transport")
+		}
+		if len(nm.PubKeyList) < c.Id {
+			wh.Error400(w, "Invalid Node id")
+			return
+		}
+
+		nm.AddTransportsToNode(c.Config, c.Id)
+
+	}
+}
+
+//Handler for /nodemanager/removetransport
+//mode: POST
+//url: /nodemanager/removetransport
+func nodeRemoveTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Remove transport from Node")
+
+		var c TransportWithId
+		err := json.NewDecoder(r.Body).Decode(&c)
+
+		if err != nil {
+			wh.Error400(w, "Error decoding config for transport")
+		}
+		if len(nm.PubKeyList) < c.Id {
+			wh.Error400(w, "Invalid Node id")
+			return
+		}
+		logger.Info(strconv.Itoa(c.Id))
+
+		nm.RemoveTransportsFromNode(c.Id, c.Transport)
+
+	}
+}
+
 //RegisterNodeManagerHandlers - create routes for NodeManager
 func RegisterNodeManagerHandlers(mux *http.ServeMux, nm *nodemanager.NodeManager) {
 	//
@@ -115,7 +176,13 @@ func RegisterNodeManagerHandlers(mux *http.ServeMux, nm *nodemanager.NodeManager
 	//Route for stop Node
 	mux.HandleFunc("/nodemanager/stop", nodeStopHandler(nm))
 
-	//Route for get transport from Node
-	mux.HandleFunc("/nodemanager/gettransport", nodeGetTransportHandler(nm))
+	//Route for get transports from Node
+	mux.HandleFunc("/nodemanager/gettransports", nodeGetTransportsHandler(nm))
+
+	//Route for add transport to Node
+	mux.HandleFunc("/nodemanager/addtransport", nodeAddTransportHandler(nm))
+
+	//Route for remove transport from Node
+	mux.HandleFunc("/nodemanager/removetransport", nodeRemoveTransportHandler(nm))
 
 }

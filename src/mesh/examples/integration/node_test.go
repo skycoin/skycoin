@@ -12,18 +12,10 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-<<<<<<< HEAD:src/mesh2/examples/integration/node_test.go
-	"github.com/skycoin/skycoin/src/mesh2/domain"
-	"github.com/skycoin/skycoin/src/mesh2/node"
-	"github.com/skycoin/skycoin/src/mesh2/nodemanager/lib_nodemanager"
-	"github.com/skycoin/skycoin/src/mesh2/transport/reliable"
-	"github.com/skycoin/skycoin/src/mesh2/transport/udp"
-=======
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/node"
-	"github.com/skycoin/skycoin/cmd/mesh/nodemanager/lib_nodemanager"
+	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
->>>>>>> 500783f364d54ea6dea0056b92b62afcb7b8e077:src/mesh/examples/integration/node_test.go
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,8 +43,8 @@ type ToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable reliable.ReliableTransportConfig
-	Udp      udp.UDPConfig
+	Reliable protocol.ReliableTransportConfig
+	Udp      protocol.UDPConfig
 	Node     mesh.NodeConfig
 
 	PeersToConnect    []ToConnect
@@ -168,8 +160,8 @@ func createTestConfig(configText string) TestConfig {
 }
 
 // Create UDPTransport
-func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
-	udpTransport, createUDPError := udp.NewUDPTransport(configUdp)
+func createNewUDPTransport(configUdp protocol.UDPConfig) *protocol.UDPTransport {
+	udpTransport, createUDPError := protocol.NewUDPTransport(configUdp)
 	if createUDPError != nil {
 		panic(createUDPError)
 	}
@@ -179,9 +171,9 @@ func createNewUDPTransport(configUdp udp.UDPConfig) *udp.UDPTransport {
 // Create TestConfig to the test using the functions created in the meshnet library.
 func createTestConfig2(port int) TestConfig {
 	testConfig := TestConfig{}
-	testConfig.Node = lib_nodemanager.NewNodeConfig()
-	testConfig.Reliable = reliable.CreateReliable(testConfig.Node.PubKey)
-	testConfig.Udp = udp.CreateUdp(port, "127.0.0.1")
+	testConfig.Node = nodemanager.NewNodeConfig()
+	testConfig.Reliable = protocol.CreateReliable(testConfig.Node.PubKey)
+	testConfig.Udp = protocol.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
 }
@@ -196,7 +188,7 @@ func TestSendMessage(t *testing.T) {
 	peersToConnect1 := []ToConnect{}
 	peerToConnect1 := ToConnect{}
 	peerToConnect1.Peer = config2.Node.PubKey
-	peerToConnect1.Info = udp.CreateUDPCommConfig("127.0.0.1:17000", config2.Node.ChaCha20Key[:])
+	peerToConnect1.Info = protocol.CreateUDPCommConfig("127.0.0.1:17000", config2.Node.ChaCha20Key[:])
 	peersToConnect1 = append(peersToConnect1, peerToConnect1)
 	config1.PeersToConnect = peersToConnect1
 
@@ -224,7 +216,7 @@ func TestSendMessage(t *testing.T) {
 	peersToConnect2 := []ToConnect{}
 	peerToConnect2 := ToConnect{}
 	peerToConnect2.Peer = config1.Node.PubKey
-	peerToConnect2.Info = udp.CreateUDPCommConfig("127.0.0.1:15000", config1.Node.ChaCha20Key[:])
+	peerToConnect2.Info = protocol.CreateUDPCommConfig("127.0.0.1:15000", config1.Node.ChaCha20Key[:])
 	peersToConnect2 = append(peersToConnect2, peerToConnect2)
 	config2.PeersToConnect = peersToConnect2
 
@@ -285,7 +277,7 @@ func TestPubKey(t *testing.T) {
 // Validates that info to peer connect is equal.
 func TestUDPCommConfig(t *testing.T) {
 	cryptoKey := []byte{1, 55, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	enc := udp.CreateUDPCommConfig("127.0.0.1:16000", cryptoKey)
+	enc := protocol.CreateUDPCommConfig("127.0.0.1:16000", cryptoKey)
 
 	expected := "7b22446174616772616d4c656e677468223a3531322c2245787465726e616c486f737473223a5b7b224950223a223132372e302e302e31222c22506f7274223a31363030302c225a6f6e65223a22227d5d2c2243727970746f4b6579223a22415463414141454141414142414141414151414141414541414141424141414141514141414145414141413d227d"
 	assert.Equal(t, expected, enc, "Error in encoding")
@@ -306,13 +298,13 @@ func TestNodeCase1(t *testing.T) {
 	// Initialize Node 2
 	config2 := createTestConfig(configText2)
 	cryptoKey2 := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 22, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	config2.PeersToConnect[0].Info = udp.CreateUDPCommConfig("127.0.0.1:15000", cryptoKey2)
+	config2.PeersToConnect[0].Info = protocol.CreateUDPCommConfig("127.0.0.1:15000", cryptoKey2)
 	go InitializeNode(2, config2, &wg, statusChannel)
 
 	// Initialize Node 1
 	config1 := createTestConfig(configText1)
 	cryptoKey1 := []byte{1, 0, 0, 0, 1, 0, 44, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0}
-	config1.PeersToConnect[0].Info = udp.CreateUDPCommConfig("127.0.0.1:17000", cryptoKey1)
+	config1.PeersToConnect[0].Info = protocol.CreateUDPCommConfig("127.0.0.1:17000", cryptoKey1)
 	go InitializeNode(1, config1, &wg, statusChannel)
 
 	timeout := 30 * time.Second
@@ -351,7 +343,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 	}
 
 	// Reliable transport closes UDPTransport
-	reliableTransport := reliable.NewReliableTransport(udpTransport, config.Reliable)
+	reliableTransport := protocol.NewReliableTransport(udpTransport, config.Reliable)
 	defer reliableTransport.Close()
 
 	node, createNodeError := mesh.NewNode(config.Node)
@@ -432,9 +424,9 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 
 	fmt.Fprintf(os.Stdout, "-- Finished test -- %v\n", time.Now())
 	if success {
-		fmt.Fprintf(os.Stdout, "\t Success!\n")
+		fmt.Fprint(os.Stdout, "\t Success!\n")
 	} else {
-		fmt.Fprintf(os.Stderr, "\t Failure. \n")
+		fmt.Fprint(os.Stderr, "\t Failure. \n")
 	}
 
 	statusChannel <- success

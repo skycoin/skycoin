@@ -129,7 +129,7 @@ var configText2 string = `{
 		"ChaCha20Key":	[1,0,0,0,1,0,44,22,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,11,0,0],
 		"MaximumForwardingDuration":	10000000000,
 		"RefreshRouteDuration":			5000000000,
-		"ExpireMessagesInterval":       5000000000,
+	"ExpireMessagesInterval":       5000000000,
 		"ExpireRoutesInterval":			5000000000,
 		"TimeToAssembleMessage":		10000000000,
 		"TransportMessageChannelLength": 100

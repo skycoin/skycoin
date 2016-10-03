@@ -21,7 +21,7 @@ func TestManageTransports(t *testing.T) {
 	transport_a := transport.NewStubTransport(t, 512)
 	transport_b := transport.NewStubTransport(t, 512)
 	test_key_a := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-	nodeConfig := NodeConfig{
+	nodeConfig := domain.NodeConfig{
 		PubKey: test_key_a,
 		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
@@ -48,7 +48,7 @@ func TestConnectedPeers(t *testing.T) {
 	transport_a := transport.NewStubTransport(t, 512)
 	transport_b := transport.NewStubTransport(t, 512)
 	test_key_a := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-	nodeConfig := NodeConfig{
+	nodeConfig := domain.NodeConfig{
 		PubKey: test_key_a,
 		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
@@ -58,8 +58,8 @@ func TestConnectedPeers(t *testing.T) {
 		TimeToAssembleMessage:         2 * time.Second,
 		TransportMessageChannelLength: 100, // Transport message channel length
 	}
-	node, error := NewNode(nodeConfig)
-	assert.Nil(t, error)
+	node, err := NewNode(nodeConfig)
+	assert.Nil(t, err)
 	peer_a := cipher.NewPubKey([]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	peer_b := cipher.NewPubKey([]byte{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	peer_c := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
@@ -103,8 +103,8 @@ func SetupNode(t *testing.T,
 	reliableTransport *transport.StubTransport) {
 	unreliableTransport = transport.NewStubTransport(t, maxDatagramLength)
 	reliableTransport = transport.NewStubTransport(t, maxDatagramLength)
-	var error error
-	nodeConfig := NodeConfig{
+	var err error
+	nodeConfig := domain.NodeConfig{
 		PubKey: newPubKey,
 		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
@@ -114,8 +114,8 @@ func SetupNode(t *testing.T,
 		TimeToAssembleMessage:         2 * time.Second,
 		TransportMessageChannelLength: 100, // Transport message channel length
 	}
-	node, error = NewNode(nodeConfig)
-	assert.Nil(t, error)
+	node, err = NewNode(nodeConfig)
+	assert.Nil(t, err)
 	node.AddTransport(unreliableTransport)
 	node.AddTransport(reliableTransport)
 	return

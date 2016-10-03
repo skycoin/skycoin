@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-
+	"github.com/skycoin/skycoin/src/mesh/domain"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport/protocol"
 	"github.com/skycoin/skycoin/src/mesh/transport/transport"
@@ -96,8 +96,8 @@ func CreatePubKey() cipher.PubKey {
 }
 
 // Create new node config
-func NewNodeConfig() mesh.NodeConfig {
-	nodeConfig := mesh.NodeConfig{}
+func NewNodeConfig() domain.NodeConfig {
+	nodeConfig := domain.NodeConfig{}
 	nodeConfig.PubKey = CreatePubKey()
 	//nodeConfig.ChaCha20Key = CreateChaCha20Key()
 	nodeConfig.MaximumForwardingDuration = 1 * time.Minute

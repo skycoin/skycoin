@@ -45,7 +45,7 @@ type ToConnect struct {
 type TestConfig struct {
 	Reliable protocol.ReliableTransportConfig
 	Udp      protocol.UDPConfig
-	Node     mesh.NodeConfig
+	Node     domain.NodeConfig
 
 	PeersToConnect    []ToConnect
 	RoutesToEstablish []RouteConfig

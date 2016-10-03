@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/satori/go.uuid"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/node/connection"
@@ -20,17 +19,6 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/transport/transport"
 	"gopkg.in/op/go-logging.v1"
 )
-
-type NodeConfig struct {
-	PubKey cipher.PubKey
-	//ChaCha20Key                   [32]byte
-	MaximumForwardingDuration     time.Duration
-	RefreshRouteDuration          time.Duration
-	ExpireMessagesInterval        time.Duration
-	ExpireRoutesInterval          time.Duration
-	TimeToAssembleMessage         time.Duration
-	TransportMessageChannelLength int
-}
 
 type MessageUnderAssembly struct {
 	fragments  map[uint64]domain.UserMessage
@@ -80,7 +68,7 @@ type rewriteableMessage interface {
 }
 
 type Node struct {
-	config                     NodeConfig
+	config                     domain.NodeConfig
 	outputMessagesReceived     chan MeshMessage
 	transportsMessagesReceived chan []byte
 	serializer                 *serialize.Serializer
@@ -104,7 +92,7 @@ func (self *TimeoutError) Error() string {
 
 var logger = logging.MustGetLogger("node")
 
-func NewNode(config NodeConfig) (*Node, error) {
+func NewNode(config domain.NodeConfig) (*Node, error) {
 	ret := &Node{
 		config:                     config,
 		outputMessagesReceived:     nil,                                                     // received
@@ -645,7 +633,7 @@ func (self *Node) Close() error {
 	return nil
 }
 
-func (self *Node) GetConfig() NodeConfig {
+func (self *Node) GetConfig() domain.NodeConfig {
 	return self.config
 }
 
@@ -1030,16 +1018,16 @@ func (self *Node) debug_countMessages() int {
 type TestConfig struct {
 	Reliable protocol.ReliableTransportConfig
 	Udp      protocol.UDPConfig
-	Node     NodeConfig
+	Node     domain.NodeConfig
 
-	PeersToConnect    []domain.ToConnect
+	PeersToConnect    []domain.Peer
 	RoutesToEstablish []domain.RouteConfig
 	MessagesToSend    []domain.MessageToSend
 	MessagesToReceive []domain.MessageToReceive
 }
 
 func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
-	peerToConnect := domain.ToConnect{}
+	peerToConnect := domain.Peer{}
 	peerToConnect.Peer = config.Node.PubKey
 	peerToConnect.Info = protocol.CreateUDPCommConfig(addr, nil)
 	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)

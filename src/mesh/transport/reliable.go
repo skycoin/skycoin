@@ -1,4 +1,4 @@
-package protocol
+package transport
 
 import (
 	"fmt"
@@ -7,13 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/serialize"
-	"github.com/skycoin/skycoin/src/mesh/transport/transport"
-)
-
-import (
-	"github.com/satori/go.uuid"
 )
 
 type ReliableTransportConfig struct {
@@ -49,7 +45,7 @@ type messageSentState struct {
 // Wraps Transport, but adds store-and-forward
 type ReliableTransport struct {
 	config            ReliableTransportConfig
-	physicalTransport transport.Transport
+	physicalTransport Transport
 	outputChannel     chan []byte
 	serializer        *serialize.Serializer
 
@@ -63,7 +59,7 @@ type ReliableTransport struct {
 	closeWait        *sync.WaitGroup
 }
 
-func NewReliableTransport(physicalTransport transport.Transport, config ReliableTransportConfig) *ReliableTransport {
+func NewReliableTransport(physicalTransport Transport, config ReliableTransportConfig) *ReliableTransport {
 	ret := &ReliableTransport{
 		config,
 		physicalTransport,
@@ -260,7 +256,7 @@ func (self *ReliableTransport) Close() error {
 	return self.physicalTransport.Close()
 }
 
-func (self *ReliableTransport) SetCrypto(crypto transport.TransportCrypto) {
+func (self *ReliableTransport) SetCrypto(crypto TransportCrypto) {
 	self.physicalTransport.SetCrypto(crypto)
 }
 

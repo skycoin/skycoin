@@ -7,9 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-)
 
-import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 

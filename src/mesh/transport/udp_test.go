@@ -1,18 +1,16 @@
-package protocol
+package transport
 
 import (
 	"testing"
 	"time"
-)
 
-import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/stretchr/testify/assert"
 )
 
 var staticTestConfig UDPConfig = UDPConfig{
-	transport.TransportConfig{
+	domain.TransportConfig{
 		8, // SendChannelLength uint32
 	},
 	512, // DatagramLength	uint64
@@ -41,8 +39,8 @@ func TestClose(t *testing.T) {
 
 func TestBindSTUNPorts(t *testing.T) {
 	config := UDPConfig{
-		transport.TransportConfig{
-			8, // SendChannelLength uint32
+		domain.TransportConfig{
+			SendChannelLength: 8,
 		},
 		512, // DatagramLength	uint64
 		"",  // LocalAddress string 	// "" for default

@@ -22,3 +22,7 @@ type NodeConfig struct {
 	TimeToAssembleMessage         time.Duration
 	TransportMessageChannelLength int
 }
+
+type TransportConfig struct {
+	SendChannelLength uint32
+}

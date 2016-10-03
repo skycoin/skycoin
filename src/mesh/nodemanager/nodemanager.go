@@ -47,9 +47,9 @@ func NewNodeManager(config *NodeManagerConfig) *NodeManager {
 	return &nm
 }
 
-//run node manager, in goroutine
-//write into channel to stop
-func (self *NodeManager) Start(channel chan int) {
+// run node manager, in goroutine;
+// call Shutdown to stop
+func (self *NodeManager) Start() {
 
 }
 

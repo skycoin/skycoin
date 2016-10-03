@@ -24,3 +24,8 @@ type LocalRoute struct {
 	LastHopId          RouteId
 	LastConfirmed      time.Time
 }
+
+type ReplyTo struct {
+	RouteId  RouteId
+	FromPeer cipher.PubKey
+}

@@ -106,3 +106,8 @@ type MessageUnderAssembly struct {
 	Dropped    bool
 	ExpiryTime time.Time
 }
+
+type MeshMessage struct {
+	ReplyTo  ReplyTo
+	Contents []byte
+}

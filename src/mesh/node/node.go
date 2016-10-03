@@ -23,16 +23,6 @@ import (
 type TimeoutError struct {
 }
 
-type ReplyTo struct {
-	routeId  domain.RouteId
-	fromPeer cipher.PubKey
-}
-
-type MeshMessage struct {
-	ReplyTo  ReplyTo
-	Contents []byte
-}
-
 var NilRouteId domain.RouteId = (domain.RouteId)(uuid.Nil)
 
 type rewriteableMessage interface {
@@ -41,7 +31,7 @@ type rewriteableMessage interface {
 
 type Node struct {
 	config                     domain.NodeConfig
-	outputMessagesReceived     chan MeshMessage
+	outputMessagesReceived     chan domain.MeshMessage
 	transportsMessagesReceived chan []byte
 	serializer                 *serialize.Serializer
 	//myCrypto                   transport.TransportCrypto
@@ -324,7 +314,7 @@ func (self *Node) processUserMessage(msgIn domain.UserMessage) {
 			}
 		}
 	} else {
-		self.outputMessagesReceived <- MeshMessage{ReplyTo{msgIn.SendId, msgIn.FromPeer}, reassembled}
+		self.outputMessagesReceived <- domain.MeshMessage{domain.ReplyTo{msgIn.SendId, msgIn.FromPeer}, reassembled}
 	}
 }
 
@@ -659,7 +649,7 @@ func (self *Node) ConnectedToPeer(peer cipher.PubKey) bool {
 }
 
 // Message order is not preserved
-func (self *Node) SetReceiveChannel(received chan MeshMessage) {
+func (self *Node) SetReceiveChannel(received chan domain.MeshMessage) {
 	self.outputMessagesReceived = received
 }
 
@@ -956,14 +946,14 @@ func (self *Node) SendMessageThruRoute(routeId domain.RouteId, contents []byte, 
 }
 
 // Blocks until message is confirmed received if reliably is true
-func (self *Node) SendMessageBackThruRoute(replyTo ReplyTo, contents []byte, reliably bool) error {
-	directPeer := replyTo.fromPeer
+func (self *Node) SendMessageBackThruRoute(replyTo domain.ReplyTo, contents []byte, reliably bool) error {
+	directPeer := replyTo.FromPeer
 	transportToPeer := self.safelyGetTransportToPeer(directPeer, reliably)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No route or transport to peer %v\n", directPeer))
 	}
 	base := domain.MessageBase{
-		SendId:   replyTo.routeId,
+		SendId:   replyTo.RouteId,
 		SendBack: true,
 		FromPeer: self.config.PubKey,
 		Reliably: reliably,

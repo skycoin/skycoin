@@ -193,7 +193,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 		}
 	}
 
-	received := make(chan MeshMessage, 10)
+	received := make(chan domain.MeshMessage, 10)
 	nodes[nPeers-1].SetReceiveChannel(received)
 
 	terminating_id := nodes[nPeers-1].GetConfig().PubKey
@@ -206,7 +206,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 		assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[extendIdx].GetConfig().PubKey, time.Second))
 	}
 
-	var replyTo ReplyTo
+	var replyTo domain.ReplyTo
 
 	for dropFirstIdx := 0; dropFirstIdx < 2; dropFirstIdx++ {
 		shouldReceive := true
@@ -239,7 +239,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 			case recvd := <-received:
 				{
 					replyTo = recvd.ReplyTo
-					assert.Equal(t, addedRouteId, recvd.ReplyTo.routeId)
+					assert.Equal(t, addedRouteId, recvd.ReplyTo.RouteId)
 					assert.Equal(t, contents, recvd.Contents)
 				}
 			case <-time.After(5 * time.Second):
@@ -260,7 +260,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 	}
 
 	if sendBack {
-		back_received := make(chan MeshMessage, 10)
+		back_received := make(chan domain.MeshMessage, 10)
 		nodes[0].SetReceiveChannel(back_received)
 		replyContents := []byte{6, 44, 2, 1, 1, 1, 1, 2}
 		assert.Nil(t, nodes[nPeers-1].SendMessageBackThruRoute(replyTo, replyContents, reliable))
@@ -347,7 +347,7 @@ func TestSendThruRoute(t *testing.T) {
 			node.Close()
 		}
 	}()
-	received := make(chan MeshMessage, 10)
+	received := make(chan domain.MeshMessage, 10)
 	nodes[1].SetReceiveChannel(received)
 	contents := []byte{1, 44, 2, 22, 11, 22}
 	addedRouteId := domain.RouteId{}
@@ -496,7 +496,7 @@ func TestLongRouteUnreliable(t *testing.T) {
 			node.Close()
 		}
 	}()
-	received := make(chan MeshMessage, 10)
+	received := make(chan domain.MeshMessage, 10)
 	nodes[2].SetReceiveChannel(received)
 	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 77

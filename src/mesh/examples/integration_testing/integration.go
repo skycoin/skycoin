@@ -80,11 +80,11 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 	}
 
 	// Receive messages
-	received := make(chan mesh.MeshMessage, 2*len(config.MessagesToReceive))
+	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
 	node.SetReceiveChannel(received)
 
 	// Wait for messages to pass thru
-	recvMap := make(map[string]mesh.ReplyTo)
+	recvMap := make(map[string]domain.ReplyTo)
 	for timeEnd := time.Now().Add(1 * time.Second); time.Now().Before(timeEnd); {
 
 		if len(received) > 0 {

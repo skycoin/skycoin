@@ -382,15 +382,6 @@ func _TestBuildRouteWithSuccess(t *testing.T) {
 	}
 }
 
-func FindRoute(config *mesh.TestConfig, pubKey cipher.PubKey, routeList *[]cipher.PubKey) {
-	for _, p := range config.PeersToConnect {
-		if bytes.Equal(p.Peer[:], pubKey[:]) {
-			*routeList = append(*routeList, pubKey)
-			break
-		}
-	}
-}
-
 func TestBuildRoutes(t *testing.T) {
 	nodeManager := &NodeManager{Port: 3100}
 	// Connect 200 nodes randomly
@@ -485,4 +476,15 @@ func TestRemoveTransportsFromNode(t *testing.T) {
 	nodeManager.RemoveTransportsFromNode(4, transport)
 
 	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
+}
+
+//Network Topology Tests
+
+func FindRoute(config *mesh.TestConfig, pubKey cipher.PubKey, routeList *[]cipher.PubKey) {
+	for _, p := range config.PeersToConnect {
+		if bytes.Equal(p.Peer[:], pubKey[:]) {
+			*routeList = append(*routeList, pubKey)
+			break
+		}
+	}
 }

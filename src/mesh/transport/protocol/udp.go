@@ -417,12 +417,12 @@ func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
 	externalHosts = append(externalHosts, *address1)
 	config.ExternalHosts = externalHosts
 
-	if len(cryptoKey) != 32 {
-		log.Panic("Error: mesh.transport.protocol, CreateUDPCommConfig, crypto key length != 32")
-	}
 	if cryptoKey == nil {
 		var zero = make([]byte, 32, 32)
 		cryptoKey = zero
+	}
+	if len(cryptoKey) != 32 {
+		log.Panic("Error: mesh.transport.protocol, CreateUDPCommConfig, crypto key length != 32")
 	}
 	config.CryptoKey = cryptoKey
 

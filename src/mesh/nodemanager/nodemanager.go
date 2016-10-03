@@ -23,8 +23,8 @@ func init() {
 	copy(p[:], b[:])
 	ServerConfig.Node.PubKey = p
 
-	b2 := [32]byte{48, 126, 177, 168, 139, 146, 205, 8, 191, 110, 195, 254, 184, 22, 168, 118, 237, 126, 87, 224, 171, 243, 239, 87, 106, 152, 251, 217, 120, 239, 88, 138}
-	ServerConfig.Node.ChaCha20Key = b2
+	//b2 := [32]byte{48, 126, 177, 168, 139, 146, 205, 8, 191, 110, 195, 254, 184, 22, 168, 118, 237, 126, 87, 224, 171, 243, 239, 87, 106, 152, 251, 217, 120, 239, 88, 138}
+	//ServerConfig.Node.ChaCha20Key = b2
 }
 
 var ServerConfig *mesh.TestConfig
@@ -90,22 +90,17 @@ func CreateNode(config mesh.TestConfig) *mesh.Node {
 }
 
 // Create public key
+// PUBKEYS ARE NOT RANDOM
 func CreatePubKey() cipher.PubKey {
-	b := cipher.RandByte(33)
-	return cipher.NewPubKey(b)
-}
-
-// Create ChaCha20Key
-func CreateChaCha20Key() cipher.SecKey {
-	b := cipher.RandByte(32)
-	return cipher.NewSecKey(b)
+	pub, _ := cipher.GenerateKeyPair()
+	return pub
 }
 
 // Create new node config
 func NewNodeConfig() mesh.NodeConfig {
 	nodeConfig := mesh.NodeConfig{}
 	nodeConfig.PubKey = CreatePubKey()
-	nodeConfig.ChaCha20Key = CreateChaCha20Key()
+	//nodeConfig.ChaCha20Key = CreateChaCha20Key()
 	nodeConfig.MaximumForwardingDuration = 1 * time.Minute
 	nodeConfig.RefreshRouteDuration = 5 * time.Minute
 	nodeConfig.ExpireMessagesInterval = 5 * time.Minute

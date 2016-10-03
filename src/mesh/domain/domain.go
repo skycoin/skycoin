@@ -67,24 +67,24 @@ type AddNodeMessage struct {
 }
 
 // Get a node from the network
-type GetNodeMessage struct {
-	MessageBase
-}
+//type GetNodeMessage struct {
+//	MessageBase
+//}
 
 // Set up a node from the network
-type SetUpNodeMessage struct {
-	MessageBase
-}
+//type SetUpNodeMessage struct {
+//	MessageBase
+//}
 
 // Delete a node from the network
-type DeleteNodeMessage struct {
-	MessageBase
-}
+//type DeleteNodeMessage struct {
+//	MessageBase
+//}
 
 // Get a route between two nodes from the node manager
-type GetNodeRouteMessage struct {
-	MessageBase
-}
+//type GetNodeRouteMessage struct {
+//	MessageBase
+//}
 
 type RouteConfig struct {
 	Id    uuid.UUID

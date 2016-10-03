@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"reflect"
@@ -415,6 +416,14 @@ func CreateUDPCommConfig(addr string, cryptoKey []byte) string {
 	address1, _ := net.ResolveUDPAddr("", addr)
 	externalHosts = append(externalHosts, *address1)
 	config.ExternalHosts = externalHosts
+
+	if len(cryptoKey) != 32 {
+		log.Panic("Error: mesh.transport.protocol, CreateUDPCommConfig, crypto key length != 32")
+	}
+	if cryptoKey == nil {
+		var zero = make([]byte, 32, 32)
+		cryptoKey = zero
+	}
 	config.CryptoKey = cryptoKey
 
 	src, _ := json.Marshal(&config)

@@ -247,7 +247,7 @@ func main_old() {
 
 	config := nodemanager.ServerConfig
 	fmt.Fprintln(os.Stdout, "PubKey:", config.Node.PubKey)
-	fmt.Fprintln(os.Stdout, "ChaCha20Key:", config.Node.ChaCha20Key)
+	//fmt.Fprintln(os.Stdout, "ChaCha20Key:", config.Node.ChaCha20Key)
 	fmt.Fprintln(os.Stdout, "Port:", config.Udp.ListenPortMin)
 	node := nodemanager.CreateNode(*config)
 

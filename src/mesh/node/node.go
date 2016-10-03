@@ -22,8 +22,8 @@ import (
 )
 
 type NodeConfig struct {
-	PubKey                        cipher.PubKey
-	ChaCha20Key                   [32]byte
+	PubKey cipher.PubKey
+	//ChaCha20Key                   [32]byte
 	MaximumForwardingDuration     time.Duration
 	RefreshRouteDuration          time.Duration
 	ExpireMessagesInterval        time.Duration
@@ -650,12 +650,12 @@ func (self *Node) GetConfig() NodeConfig {
 }
 
 // Node takes ownership of the transport, and will call Close() when it is closed
-func (self *Node) AddTransport(transportNode transport.Transport, chaChaKey [32]byte) {
+func (self *Node) AddTransport(transportNode transport.Transport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	chaCha20Key := &transport.ChaChaCrypto{}
-	chaCha20Key.SetKey(chaChaKey)
-	transportNode.SetCrypto(chaCha20Key)
+	//chaCha20Key := &transport.ChaChaCrypto{}
+	//chaCha20Key.SetKey(chaChaKey)
+	//transportNode.SetCrypto(chaCha20Key)
 	transportNode.SetReceiveChannel(self.transportsMessagesReceived)
 	self.transports[transportNode] = true
 }
@@ -1041,7 +1041,7 @@ type TestConfig struct {
 func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 	peerToConnect := domain.ToConnect{}
 	peerToConnect.Peer = config.Node.PubKey
-	peerToConnect.Info = protocol.CreateUDPCommConfig(addr, config.Node.ChaCha20Key[:])
+	peerToConnect.Info = protocol.CreateUDPCommConfig(addr, nil)
 	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
 }
 
@@ -1088,7 +1088,7 @@ func (self *Node) AddTransportToNode(config TestConfig) {
 	reliableTransport := protocol.NewReliableTransport(udpTransport, config.Reliable)
 	//defer reliableTransport.Close()
 
-	self.AddTransport(reliableTransport, config.Node.ChaCha20Key)
+	self.AddTransport(reliableTransport)
 }
 
 // Add Routes to Node

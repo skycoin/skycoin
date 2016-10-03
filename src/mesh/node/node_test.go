@@ -22,8 +22,8 @@ func TestManageTransports(t *testing.T) {
 	transport_b := transport.NewStubTransport(t, 512)
 	test_key_a := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	nodeConfig := NodeConfig{
-		PubKey:                        test_key_a,
-		ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+		PubKey: test_key_a,
+		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
 		RefreshRouteDuration:          10 * time.Second,
 		ExpireMessagesInterval:        time.Second,
@@ -34,9 +34,9 @@ func TestManageTransports(t *testing.T) {
 	node, error := NewNode(nodeConfig)
 	assert.Nil(t, error)
 	assert.Equal(t, []transport.Transport{}, node.GetTransports())
-	node.AddTransport(transport_a, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_a)
 	assert.Equal(t, []transport.Transport{transport_a}, node.GetTransports())
-	node.AddTransport(transport_b, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_b)
 	assert.Equal(t, []transport.Transport{transport_a, transport_b}, node.GetTransports())
 	node.RemoveTransport(transport_a)
 	assert.Equal(t, []transport.Transport{transport_b}, node.GetTransports())
@@ -49,8 +49,8 @@ func TestConnectedPeers(t *testing.T) {
 	transport_b := transport.NewStubTransport(t, 512)
 	test_key_a := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	nodeConfig := NodeConfig{
-		PubKey:                        test_key_a,
-		ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+		PubKey: test_key_a,
+		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
 		RefreshRouteDuration:          10 * time.Second,
 		ExpireMessagesInterval:        time.Second,
@@ -71,13 +71,13 @@ func TestConnectedPeers(t *testing.T) {
 	assert.False(t, node.ConnectedToPeer(peer_b))
 	assert.False(t, node.ConnectedToPeer(peer_c))
 	assert.Equal(t, []cipher.PubKey{}, sortPubKeys(node.GetConnectedPeers()))
-	node.AddTransport(transport_a, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_a)
 	assert.Equal(t, []cipher.PubKey{peer_a, peer_b}, sortPubKeys(node.GetConnectedPeers()))
 	assert.True(t, node.ConnectedToPeer(peer_a))
 	assert.True(t, node.ConnectedToPeer(peer_b))
 	assert.False(t, node.ConnectedToPeer(peer_c))
 
-	node.AddTransport(transport_b, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_b)
 	assert.Equal(t, []cipher.PubKey{peer_a, peer_b, peer_c}, sortPubKeys(node.GetConnectedPeers()))
 	assert.True(t, node.ConnectedToPeer(peer_a))
 	assert.True(t, node.ConnectedToPeer(peer_b))
@@ -105,8 +105,8 @@ func SetupNode(t *testing.T,
 	reliableTransport = transport.NewStubTransport(t, maxDatagramLength)
 	var error error
 	nodeConfig := NodeConfig{
-		PubKey:                        newPubKey,
-		ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+		PubKey: newPubKey,
+		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
 		RefreshRouteDuration:          time.Second,
 		ExpireMessagesInterval:        time.Second,
@@ -116,8 +116,8 @@ func SetupNode(t *testing.T,
 	}
 	node, error = NewNode(nodeConfig)
 	assert.Nil(t, error)
-	node.AddTransport(unreliableTransport, nodeConfig.ChaCha20Key)
-	node.AddTransport(reliableTransport, nodeConfig.ChaCha20Key)
+	node.AddTransport(unreliableTransport)
+	node.AddTransport(reliableTransport)
 	return
 }
 

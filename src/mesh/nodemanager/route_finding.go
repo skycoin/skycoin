@@ -1,6 +1,8 @@
 package nodemanager
 
-imports()
+import (
+	"github.com/skycoin/skycoin/src/cipher"
+)
 
 /*
 	Service for finding routes

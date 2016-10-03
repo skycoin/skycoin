@@ -136,7 +136,7 @@ func NewNode(config NodeConfig) (*Node, error) {
 }
 
 // Returns nil if reassembly didn't happen (incomplete message)
-func (self *Node) TimeToAssembleMessage(msgIn domain.UserMessage) (contents []byte) {
+func (self *Node) reassembleUserMessage(msgIn domain.UserMessage) (contents []byte) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 

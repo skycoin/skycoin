@@ -17,3 +17,10 @@ type Route struct {
 	// time.Unix(0,0) means it lives forever
 	ExpiryTime time.Time
 }
+
+type LocalRoute struct {
+	LastForwardingPeer cipher.PubKey
+	TerminatingPeer    cipher.PubKey
+	LastHopId          RouteId
+	LastConfirmed      time.Time
+}

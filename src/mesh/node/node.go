@@ -23,13 +23,6 @@ import (
 type TimeoutError struct {
 }
 
-type LocalRoute struct {
-	lastForwardingPeer cipher.PubKey
-	terminatingPeer    cipher.PubKey
-	lastHopId          domain.RouteId
-	lastConfirmed      time.Time
-}
-
 type ReplyTo struct {
 	routeId  domain.RouteId
 	fromPeer cipher.PubKey
@@ -61,7 +54,7 @@ type Node struct {
 	messagesBeingAssembled         map[domain.MessageId]*domain.MessageUnderAssembly
 	routesById                     map[domain.RouteId]domain.Route
 	localRoutesByTerminatingPeer   map[cipher.PubKey]domain.RouteId
-	localRoutesById                map[domain.RouteId]LocalRoute
+	localRoutesById                map[domain.RouteId]domain.LocalRoute
 	routeExtensionsAwaitingConfirm map[domain.RouteId]chan bool
 }
 
@@ -73,11 +66,10 @@ var logger = logging.MustGetLogger("node")
 
 func NewNode(config domain.NodeConfig) (*Node, error) {
 	ret := &Node{
-		config:                     config,
-		outputMessagesReceived:     nil,                                                     // received
-		transportsMessagesReceived: make(chan []byte, config.TransportMessageChannelLength), // received
-		serializer:                 serialize.NewSerializer(),
-		//myCrypto:                   &ChaChaCrypto{config.ChaCha20Key},
+		config:                         config,
+		outputMessagesReceived:         nil,                                                     // received
+		transportsMessagesReceived:     make(chan []byte, config.TransportMessageChannelLength), // received
+		serializer:                     serialize.NewSerializer(),
 		lock:                           &sync.Mutex{}, // Lock
 		closeGroup:                     &sync.WaitGroup{},
 		closing:                        make(chan bool, 10),
@@ -85,8 +77,9 @@ func NewNode(config domain.NodeConfig) (*Node, error) {
 		messagesBeingAssembled:         make(map[domain.MessageId]*domain.MessageUnderAssembly),
 		routesById:                     make(map[domain.RouteId]domain.Route),
 		localRoutesByTerminatingPeer:   make(map[cipher.PubKey]domain.RouteId),
-		localRoutesById:                make(map[domain.RouteId]LocalRoute),
+		localRoutesById:                make(map[domain.RouteId]domain.LocalRoute),
 		routeExtensionsAwaitingConfirm: make(map[domain.RouteId]chan bool),
+		//myCrypto:                   &ChaChaCrypto{config.ChaCha20Key},
 	}
 	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, domain.UserMessage{})
 	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, domain.SetRouteMessage{})
@@ -392,7 +385,7 @@ func (self *Node) processSetRouteReplyMessage(msg domain.SetRouteReply) {
 	}
 	localRoute, foundLocal := self.localRoutesById[msg.ConfirmId]
 	if foundLocal {
-		localRoute.lastConfirmed = time.Now()
+		localRoute.LastConfirmed = time.Now()
 		self.localRoutesById[msg.ConfirmId] = localRoute
 	}
 }
@@ -697,7 +690,12 @@ func (self *Node) AddRoute(id domain.RouteId, toPeer cipher.PubKey) error {
 		}
 
 	self.localRoutesByTerminatingPeer[toPeer] = id
-	self.localRoutesById[id] = LocalRoute{self.config.PubKey, toPeer, NilRouteId, time.Unix(0, 0)}
+	self.localRoutesById[id] = domain.LocalRoute{
+		LastForwardingPeer: self.config.PubKey,
+		TerminatingPeer:    toPeer,
+		LastHopId:          NilRouteId,
+		LastConfirmed:      time.Unix(0, 0),
+	}
 	return nil
 }
 
@@ -744,7 +742,7 @@ func (self *Node) DeleteRoute(id domain.RouteId) (err error) {
 
 	if localExists {
 		delete(self.localRoutesById, id)
-		delete(self.localRoutesByTerminatingPeer, localRoute.terminatingPeer)
+		delete(self.localRoutesByTerminatingPeer, localRoute.TerminatingPeer)
 	}
 	return err
 }
@@ -786,12 +784,17 @@ func (self *Node) extendRouteWithoutSending(id domain.RouteId, toPeer cipher.Pub
 		ConfirmId:             id,
 		ForwardToPeer:         toPeer,
 		ForwardRewriteSendId:  id,
-		BackwardToPeer:        localRoute.lastForwardingPeer,
-		BackwardRewriteSendId: localRoute.lastHopId,
+		BackwardToPeer:        localRoute.LastForwardingPeer,
+		BackwardRewriteSendId: localRoute.LastHopId,
 		DurationHint:          3 * self.config.RefreshRouteDuration,
 	}
-	delete(self.localRoutesByTerminatingPeer, localRoute.terminatingPeer)
-	self.localRoutesById[id] = LocalRoute{localRoute.terminatingPeer, toPeer, newHopId, localRoute.lastConfirmed}
+	delete(self.localRoutesByTerminatingPeer, localRoute.TerminatingPeer)
+	self.localRoutesById[id] = domain.LocalRoute{
+		LastForwardingPeer: localRoute.TerminatingPeer,
+		TerminatingPeer:    toPeer,
+		LastHopId:          newHopId,
+		LastConfirmed:      localRoute.LastConfirmed,
+	}
 	self.localRoutesByTerminatingPeer[toPeer] = id
 
 	updatedRoute := route
@@ -844,7 +847,7 @@ func (self *Node) GetRouteLastConfirmed(id domain.RouteId) (time.Time, error) {
 	if !found {
 		return time.Unix(0, 0), errors.New(fmt.Sprintf("Unknown route id: %v", id))
 	}
-	return localRoute.lastConfirmed, nil
+	return localRoute.LastConfirmed, nil
 }
 
 func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {

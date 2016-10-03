@@ -1,204 +1,227 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"reflect"
 	"time"
 
-	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/gui"
-	mesh "github.com/skycoin/skycoin/src/mesh/node"
-	"github.com/skycoin/skycoin/src/mesh/node/connection"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/util"
+)
 
-	"gopkg.in/op/go-logging.v1"
+const (
+	logModuleName = "skywire.main"
+
+	// logFormat is same as src/util/logging.go#defaultLogFormat
+	// logFormat     = "[%{module}:%{level}] %{message}"
 )
 
 var (
-	logger     = logging.MustGetLogger("skywire.main")
-	logFormat  = "[%{module}:%{level}] %{message}"
-	logModules = []string{
-		"skywire.main",
-	}
+	logger     = util.MustGetLogger(logModuleName)
+	logModules = []string{logModuleName}
 )
 
-type Config struct {
-	// Remote web interface
-	WebInterface      bool
-	WebInterfacePort  int
-	WebInterfaceAddr  string
-	WebInterfaceCert  string
-	WebInterfaceKey   string
-	WebInterfaceHTTPS bool
+// default configurations
+const (
+	webInterfaceEnable = true
+	webInterfacePort   = 6480
+	webInterfaceAddr   = "127.0.0.1"
+	webInterfaceHttps  = false
+	launchBrowser      = true
+	guiDirectory       = "./src/mesh/gui/static/"
+	dataDirectory      = ".skywire"
+)
 
-	// Launch System Default Browser after client startup
+// TODO:
+//    Q: to move WebInterfaceConfig to its related package
+//       (github.com/skycoin/skycoin/src/mesh/gui) ?
+// Remote web interface
+type WebInterfaceConfig struct {
+	Enable bool
+	Port   int
+	Addr   string
+	Cert   string
+	Key    string
+	HTTPS  bool
+	// Launch system default browser after client startup
 	LaunchBrowser bool
+	// static htmls + assets location
+	GUIDirectory string
+}
+
+type Config struct {
+	// WebInterface configs
+	WebInterface WebInterfaceConfig
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
-	// GUI directory contains assets for the html gui
-	GUIDirectory string
+	// logging configs
+	Log *util.LogConfig
+}
 
-	// Logging
-	LogLevel logging.Level
-	ColorLog bool
-	// This is the value registered with flag, it is converted to LogLevel after parsing
-	logLevel string
+// TODO: defaultConfig or may be (developConfig + productConfig) ?
+
+func defaultConfig() *Config {
+	cfg := &Config{
+		WebInterface: WebInterfaceConfig{
+			Enable: webInterfaceEnable,
+			Port:   webInterfacePort,
+			Addr:   webInterfaceAddr,
+			// Cert: "",
+			// Key: "",
+			HTTPS:         webInterfaceHttps,
+			LaunchBrowser: launchBrowser,
+			GUIDirectory:  guiDirectory,
+		},
+		// Data directory holds app data -- defaults to ~/.skycoin
+		DataDirectory: dataDirectory,
+		// TODO: dev/prod vs default?
+		//       see src/util/logging.go 'TODO' note before DevLogConfig()
+		//       for details
+		Log: util.DevLogConfig(logModules),
+	}
+	return cfg
 }
 
 func (c *Config) Parse() {
-	c.register()
-	flag.Parse()
-	c.postProcess()
+	// obtain values from flags
+	c.fromFlags()
+	// post process
+	c.DataDirectory = util.InitDataDir(c.DataDirectory)
+	// if HTTPS is turned off then cerk/key are never used
+	if c.WebInterface.HTTPS == true {
+		if c.WebInterface.Cert == "" {
+			c.WebInterface.Cert = filepath.Join(c.DataDirectory, "cert.pem")
+		}
+		if c.WebInterface.Key == "" {
+			c.WebInterface.Key = filepath.Join(c.DataDirectory, "key.pem")
+		}
+	}
+
+	// initialize logger
+	c.Log.InitLogger()
 }
 
-func (c *Config) register() {
-
-	//flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
-	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
+func (c *Config) fromFlags() {
+	flag.BoolVar(&c.WebInterface.Enable, "web-interface", c.WebInterface.Enable,
 		"enable the web interface")
-	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
-		c.WebInterfacePort, "port to serve web interface on")
-	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr",
-		c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert",
-		c.WebInterfaceCert, "cert.pem file for web interface HTTPS. "+
+	flag.IntVar(&c.WebInterface.Port, "web-interface-port",
+		c.WebInterface.Port, "port to serve web interface on")
+	flag.StringVar(&c.WebInterface.Addr, "web-interface-addr",
+		c.WebInterface.Addr, "addr to serve web interface on")
+	flag.StringVar(&c.WebInterface.Cert, "web-interface-cert",
+		c.WebInterface.Cert, "cert.pem file for web interface HTTPS. "+
 			"If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key",
-		c.WebInterfaceKey, "key.pem file for web interface HTTPS. "+
+	flag.StringVar(&c.WebInterface.Key, "web-interface-key",
+		c.WebInterface.Key, "key.pem file for web interface HTTPS. "+
 			"If not provided, will use key.pem in -data-directory")
-	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
-		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
+	flag.BoolVar(&c.WebInterface.HTTPS, "web-interface-https",
+		c.WebInterface.HTTPS, "enable HTTPS for web interface")
+	flag.BoolVar(&c.WebInterface.LaunchBrowser, "launch-browser",
+		c.WebInterface.LaunchBrowser,
 		"launch system default webbrowser at client startup")
 
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
 		"directory to store app data (defaults to ~/.skycoin)")
 
-	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
+	flag.StringVar(&c.WebInterface.GUIDirectory, "gui-dir",
+		c.WebInterface.GUIDirectory,
 		"static content directory for the html gui")
 
-	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
+	flag.StringVar(&c.Log.Level, "log-level", c.Log.Level,
 		"Choices are: debug, info, notice, warning, error, critical")
-	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
+	flag.BoolVar(&c.Log.Colors, "color-log", c.Log.Colors,
 		"Add terminal colors to log output")
+
+	flag.Parse()
 }
 
-func (c *Config) postProcess() {
-
-	c.DataDirectory = util.InitDataDir(c.DataDirectory)
-	if c.WebInterfaceCert == "" {
-		c.WebInterfaceCert = filepath.Join(c.DataDirectory, "cert.pem")
+// returns "http" ot "https";
+// result depends on c.WebInterface.HTTPS
+func (c *Config) scheme() string {
+	if c.WebInterface.HTTPS == true {
+		return "https"
 	}
-	if c.WebInterfaceKey == "" {
-		c.WebInterfaceKey = filepath.Join(c.DataDirectory, "key.pem")
+	return "http"
+}
+
+// returns c.WebInterfaceAddr:c.WebInterface.Port string
+func (c *Config) host() string {
+	return fmt.Sprintf("%s:%d", c.WebInterface.Addr, c.WebInterface.Port)
+}
+
+// returns full address: scheme://address:port
+func (c *Config) fullAddress() string {
+	return fmt.Sprintf("%s://%s", c.scheme(), c.host())
+}
+
+// launches browser if it's enabled
+func (c *Config) launchBrowser() {
+	if c.WebInterface.LaunchBrowser == true {
+		go func() {
+			// TODO: wait is BS, is it really needed?
+			//
+			// Wait a moment just to make sure the http interface is up
+			time.Sleep(time.Millisecond * 100)
+			//
+
+			logger.Info("Launching System Browser with %s", c.fullAddress())
+			if err := util.OpenBrowser(c.fullAddress()); err != nil {
+				logger.Error(err.Error())
+			}
+		}()
 	}
-
-	ll, err := logging.LogLevel(c.logLevel)
-	panicIfError(err, "Invalid -log-level %s", c.logLevel)
-	c.LogLevel = ll
-
 }
 
-func panicIfError(err error, msg string, args ...interface{}) {
-	if err != nil {
-		log.Panicf(msg+": %v", append(args, err)...)
-	}
-}
-
-var devConfig Config = Config{
-	// Remote web interface
-	WebInterface:      true,
-	WebInterfacePort:  6480,
-	WebInterfaceAddr:  "127.0.0.1",
-	WebInterfaceCert:  "",
-	WebInterfaceKey:   "",
-	WebInterfaceHTTPS: false,
-
-	LaunchBrowser: true,
-
-	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: ".skywire",
-	// Web GUI static resources
-	GUIDirectory: "./src/mesh/gui/static/",
-
-	// Logging
-	LogLevel: logging.DEBUG,
-	ColorLog: true,
-	logLevel: "DEBUG",
-}
-
-//move to util
-func catchInterrupt(quit chan<- int) {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	quit <- 1
-}
-
-//move to util
-func initLogging(level logging.Level, color bool) {
-	format := logging.MustStringFormatter(logFormat)
-	logging.SetFormatter(format)
-	for _, s := range logModules {
-		logging.SetLevel(level, s)
-	}
-	stdout := logging.NewLogBackend(os.Stdout, "", 0)
-	stdout.Color = color
-	logging.SetBackend(stdout)
+// subscribe to SIGINT
+func catchInterrupt() <-chan os.Signal {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+	return sig
 }
 
 func Run(c *Config) {
+	c.WebInterface.GUIDirectory = util.ResolveResourceDirectory(
+		c.WebInterface.GUIDirectory)
 
-	c.GUIDirectory = util.ResolveResourceDirectory(c.GUIDirectory)
+	// print this message regardless of the log level
+	fmt.Printf("Full address: %s\n", c.fullAddress())
 
-	// If the user Ctrl-C's, shutdown properly
-	quit := make(chan int)
-	go catchInterrupt(quit)
+	// start node_manager
+	fmt.Printf("Starting Node Manager Service...\n")
+	// TODO: empty config? what the hell?
+	// *nodemanager.NodeManager
+	nm := nodemanager.NewNodeManager(&nodemanager.NodeManagerConfig{})
 
-	scheme := "http"
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
-
-	initLogging(c.LogLevel, c.ColorLog)
-
-	//state node_manager
-	fmt.Fprintln(os.Stdout, "Starting Node Manager Service...")
-	var nm_config = nodemanager.NodeManagerConfig{}
-	var nm *nodemanager.NodeManager = nodemanager.NewNodeManager(&nm_config)
-
-	if c.WebInterface {
+	if c.WebInterface.Enable == true {
 		var err error
+		if c.WebInterface.HTTPS == true {
+			// TODO
 
-		/*
-			if c.WebInterfaceHTTPS {
-				// Verify cert/key parameters, and if neither exist, create them
-				errs := util.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skywired")
-				if len(errs) != 0 {
-					for _, err := range errs {
-						logger.Error(err.Error())
-					}
-					logger.Error("gui.CreateCertIfNotExists failure")
-					os.Exit(1)
-				}
+			log.Panic("HTTPS support is not implemented yet")
 
-				err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
-			} else {
-				err = gui.LaunchWebInterface(host, c.GUIDirectory, d)
-			}
-		*/
-
-		//pass the node manager instance to the http server
-		//no https
-		err = gui.LaunchWebInterface(host, c.GUIDirectory, nm)
+			//
+			// errs := util.CreateCertIfNotExists(host, c.WebInterfaceCert,
+			//                                   c.WebInterfaceKey, "Skywired")
+			// if len(errs) != 0 {
+			// 	for _, err := range errs {
+			// 		logger.Error(err.Error())
+			// 	}
+			// 	logger.Error("gui.CreateCertIfNotExists failure")
+			// 	os.Exit(1)
+			// }
+			//
+			// err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d,
+			//                           c.WebInterfaceCert, c.WebInterfaceKey)
+			//
+		} else {
+			err = gui.LaunchWebInterface(c.host(), c.WebInterface.GUIDirectory,
+				nm)
+		}
 
 		if err != nil {
 			logger.Error(err.Error())
@@ -206,41 +229,37 @@ func Run(c *Config) {
 			os.Exit(1)
 		}
 
-		if c.LaunchBrowser {
-			go func() {
-				// Wait a moment just to make sure the http interface is up
-				time.Sleep(time.Millisecond * 100)
-
-				logger.Info("Launching System Browser with %s", fullAddress)
-				if err := util.OpenBrowser(fullAddress); err != nil {
-					logger.Error(err.Error())
-				}
-			}()
-		}
-
+		c.launchBrowser()
 	}
 
-	stopDaemon := make(chan int)
-	//start the node manager
-	go nm.Start(stopDaemon)
+	// subscribe to SIGINT (Ctrl+C)
+	sigint := catchInterrupt()
+	// start the node manager
+	//     don't use 'chan int' to stop the node manager;
+	//     there is Shutdown() method
+	go nm.Start()
 
-	<-quit
-	stopDaemon <- 1
+	// waiting for SIGINT (Ctrl+C)
+	logger.Info("Got signal %q, shutting down...", <-sigint)
 
-	logger.Info("Shutting down")
+	// shutdown the node manager
 	nm.Shutdown()
 	logger.Info("Goodbye")
-
 }
 
 func main() {
-	devConfig.Parse()
-	Run(&devConfig)
+	cfg := defaultConfig()
+	cfg.Parse()
+	Run(cfg)
 }
 
 //
-// OLD
+// TODO: what is the stuff below ?
 //
+
+// Q: to omit or not to omit?
+
+/*
 
 func main_old() {
 	fmt.Fprintln(os.Stdout, "Starting Node Manager Service...")
@@ -263,7 +282,9 @@ func main_old() {
 		case msgRecvd, ok := <-received:
 			{
 				if ok {
-					fmt.Fprintf(os.Stdout, "Message received: %v\nReplyTo: %+v\n", string(msgRecvd.Contents), msgRecvd.ReplyTo)
+					fmt.Fprintf(os.Stdout,
+						"Message received: %v\nReplyTo: %+v\n",
+						string(msgRecvd.Contents), msgRecvd.ReplyTo)
 					go filterMessages(msgRecvd)
 				}
 			}
@@ -297,3 +318,5 @@ func filterMessages(msg mesh.MeshMessage) bool {
 	}
 	return false
 }
+
+*/

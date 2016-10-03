@@ -97,3 +97,12 @@ type MessageToReceive struct {
 	Reply         []byte
 	ReplyReliably bool
 }
+
+type MessageUnderAssembly struct {
+	Fragments  map[uint64]UserMessage
+	SendId     RouteId
+	SendBack   bool
+	Count      uint64
+	Dropped    bool
+	ExpiryTime time.Time
+}

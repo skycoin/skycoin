@@ -23,5 +23,4 @@ type Transport interface {
 	// May block
 	SendMessage(toPeer cipher.PubKey, contents []byte) error
 	SetReceiveChannel(received chan []byte)
-	IsReliable() bool
 }

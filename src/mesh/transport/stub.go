@@ -164,10 +164,6 @@ func (self *StubTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint 
 	return self.maxMessageSize
 }
 
-func (self *StubTransport) IsReliable() bool {
-	return self.amReliable
-}
-
 func (self *StubTransport) CountNumMessagesSent() int {
 	return (int)(atomic.LoadInt32(&self.numMessagesSent))
 }

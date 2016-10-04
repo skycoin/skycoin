@@ -1,11 +1,10 @@
 package transport
 
-import "io"
-import "github.com/skycoin/skycoin/src/cipher"
+import (
+	"io"
 
-type TransportConfig struct {
-	SendChannelLength uint32
-}
+	"github.com/skycoin/skycoin/src/cipher"
+)
 
 type TransportCrypto interface {
 	GetKey() []byte

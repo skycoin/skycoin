@@ -86,11 +86,6 @@ type AddNodeMessage struct {
 //	MessageBase
 //}
 
-type RouteConfig struct {
-	Id    uuid.UUID
-	Peers []cipher.PubKey
-}
-
 type MessageToSend struct {
 	ThruRoute uuid.UUID
 	Contents  []byte
@@ -103,7 +98,16 @@ type MessageToReceive struct {
 	ReplyReliably bool
 }
 
-type ToConnect struct {
-	Peer cipher.PubKey
-	Info string
+type MessageUnderAssembly struct {
+	Fragments  map[uint64]UserMessage
+	SendId     RouteId
+	SendBack   bool
+	Count      uint64
+	Dropped    bool
+	ExpiryTime time.Time
+}
+
+type MeshMessage struct {
+	ReplyTo  ReplyTo
+	Contents []byte
 }

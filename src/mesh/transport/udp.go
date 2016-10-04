@@ -1,4 +1,4 @@
-package protocol
+package transport
 
 import (
 	"crypto/rand"
@@ -15,17 +15,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ccding/go-stun/stun"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/mesh/transport/transport"
-)
-
-import (
-	"github.com/ccding/go-stun/stun"
+	"github.com/skycoin/skycoin/src/mesh/domain"
 )
 
 type UDPConfig struct {
-	transport.TransportConfig
+	domain.TransportConfig
 	DatagramLength uint16
 	LocalAddress   string // "" for default
 
@@ -52,7 +49,7 @@ type UDPTransport struct {
 	messagesReceived chan []byte
 	closing          chan bool
 	closeWait        *sync.WaitGroup
-	crypto           transport.TransportCrypto
+	crypto           TransportCrypto
 
 	// Thread protected variables
 	lock           *sync.Mutex
@@ -251,7 +248,7 @@ func (self *UDPTransport) Close() error {
 	return nil
 }
 
-func (self *UDPTransport) SetCrypto(crypto transport.TransportCrypto) {
+func (self *UDPTransport) SetCrypto(crypto TransportCrypto) {
 	self.crypto = crypto
 }
 
@@ -324,7 +321,7 @@ func (self *UDPTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 
-func (self *UDPTransport) safeGetCrypto() transport.TransportCrypto {
+func (self *UDPTransport) safeGetCrypto() TransportCrypto {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return self.crypto

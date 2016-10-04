@@ -845,14 +845,14 @@ func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably boo
 		for transportToPeer := range self.transports {
 			// TODO: Choose transport more intelligently
 			if transportToPeer.ConnectedToPeer(peerKey) {
-				return transport
+				return transportToPeer
 			}
 		}
 	}
 	for transportToPeer := range self.transports {
 		// TODO: Choose transport more intelligently
 		if transportToPeer.ConnectedToPeer(peerKey) {
-			return transport
+			return transportToPeer
 		}
 	}
 	return nil

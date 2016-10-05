@@ -106,8 +106,7 @@ type Config struct {
 	// Logging
 	LogLevel logging.Level
 	ColorLog bool
-	// This is the value registered with flag, it is converted to LogLevel
-	// after parsing
+	// This is the value registered with flag, it is converted to LogLevel after parsing
 	logLevel string
 
 	// Wallets
@@ -138,8 +137,6 @@ type Config struct {
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo string
-
-	DisableBlockdb bool
 }
 
 func (c *Config) Parse() {
@@ -225,7 +222,6 @@ func (c *Config) register() {
 		"Run on localhost and only connect to localhost peers")
 	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
-	flag.BoolVar(&c.DisableBlockdb, "disable-blockdb", false, "disable blockdb")
 }
 
 func (c *Config) postProcess() {
@@ -273,7 +269,6 @@ func (c *Config) postProcess() {
 	panicIfError(err, "Invalid -log-level %s", c.logLevel)
 	c.LogLevel = ll
 
-	blockdb.Disabled = c.DisableBlockdb
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {
@@ -474,6 +469,10 @@ func Run(c *Config) {
 	blockdb.Start()
 	defer blockdb.Stop()
 
+	// start the transaction db.
+	// transactiondb.Start()
+	// defer transactiondb.Stop()
+
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan int)
 	go catchInterrupt(quit)
@@ -500,7 +499,7 @@ func Run(c *Config) {
 		var err error
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
-			errs := gui.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey)
+			errs := util.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
 			if len(errs) != 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e -o pipefail
 
 USAGE="./gox.sh \"osarch\" [output directory]
 
@@ -40,10 +41,5 @@ fi
 gox -osarch="$OSARCH" \
     -output="${OUTPUT}{{.Dir}}_{{.OS}}_{{.Arch}}" \
     "${CMDDIR}/${CMD}"
-
-if [[ $? -ne 0 ]]; then
-    echo "gox multi compilation of $OSARCH failed"
-    exit 1
-fi
 
 popd >/dev/null

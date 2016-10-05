@@ -10,6 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	// "github.com/skycoin/skycoin/src/visor"
 	// "github.com/skycoin/skycoin/src/wallet"
+
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 //@todo remove duplicate struct of src/wallet/deterministic.go Wallet struct
@@ -43,7 +45,7 @@ func apiCreateAddressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		var err error
 
 		if seed == "" {
-			Error400(w, "Empty seed")
+			wh.Error400(w, "Empty seed")
 			return
 		}
 
@@ -84,7 +86,7 @@ func apiCreateAddressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		ret := wallet
 
-		SendOr404(w, ret)
+		wh.SendOr404(w, ret)
 	}
 }
 

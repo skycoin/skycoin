@@ -28,7 +28,7 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	head := v.Blockchain.Head().Head
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
-		Unspents:    uint64(len(v.Blockchain.Unspent.Pool)),
+		Unspents:    uint64(len(v.Blockchain.GetUnspent().Pool)),
 		Unconfirmed: uint64(len(v.Unconfirmed.Txns)),
 	}
 }
@@ -256,7 +256,7 @@ type ReadableBlockBody struct {
 
 func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
 	txns := make([]ReadableTransaction, len(b.Transactions))
-	for i, _ := range b.Transactions {
+	for i := range b.Transactions {
 		txns[i] = NewReadableTransaction(&b.Transactions[i])
 	}
 	return ReadableBlockBody{

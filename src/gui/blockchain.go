@@ -6,54 +6,130 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/visor" //http,json helpers
+
 	"github.com/skycoin/skycoin/src/daemon"
 )
 
+const lastBlockNum = 10
+
+func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+	mux.HandleFunc("/blockchain/metadata", blockchainHandler(gateway))
+	mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(gateway))
+
+	// get block by hash or seq
+	mux.HandleFunc("/block", getBlock(gateway))
+	// get block by seq
+	// mux.HandleFunc("/block/seq", getBlockBySeq(gateway))
+	// get blocks in specific range
+	mux.HandleFunc("/blocks", getBlocks(gateway))
+	// get last 10 blocks
+	mux.HandleFunc("/last_blocks", getLastBlocks(gateway))
+}
+
 func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetBlockchainMetadata())
-	}
-}
-
-func blockchainBlockHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sseq := r.FormValue("seq")
-		seq, err := strconv.ParseUint(sseq, 10, 64)
-		if err != nil {
-			Error400(w, fmt.Sprintf("Invalid seq value \"%s\"", sseq))
-			return
-		}
-		SendOr404(w, gateway.GetBlock(seq))
-	}
-}
-
-func blockchainBlocksHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sstart := r.FormValue("start")
-		start, err := strconv.ParseUint(sstart, 10, 64)
-		if err != nil {
-			Error400(w, fmt.Sprintf("Invalid start value \"%s\"", sstart))
-			return
-		}
-		send := r.FormValue("end")
-		end, err := strconv.ParseUint(send, 10, 64)
-		if err != nil {
-			Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
-			return
-		}
-		SendOr404(w, gateway.GetBlocks(start, end))
+		wh.SendOr404(w, gateway.GetBlockchainMetadata())
 	}
 }
 
 func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.GetBlockchainProgress())
+		wh.SendOr404(w, gateway.GetBlockchainProgress())
 	}
 }
 
-func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	mux.HandleFunc("/blockchain", blockchainHandler(gateway))
-	mux.HandleFunc("/blockchain/block", blockchainBlockHandler(gateway))
-	mux.HandleFunc("/blockchain/blocks", blockchainBlocksHandler(gateway))
-	mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(gateway))
+// get block by hash or seq
+// method: GET
+// url: /block?hash=[:hash]  or /block?seq[:seq]
+// params: hash or seq, should only specify one filter.
+func getBlock(gate *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+		hash := r.FormValue("hash")
+		seq := r.FormValue("seq")
+		var b *coin.Block
+		switch {
+		case hash == "" && seq == "":
+			wh.Error400(w, "should specify one filter, hash or seq")
+			return
+		case hash != "" && seq != "":
+			wh.Error400(w, "should only specify one filter, hash or seq")
+			return
+		case hash != "":
+			h, err := cipher.SHA256FromHex(hash)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+
+			b = gate.V.GetBlockByHash(h)
+		case seq != "":
+			uSeq, err := strconv.ParseUint(seq, 10, 64)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+
+			b = gate.V.GetBlockBySeq(uSeq)
+		}
+
+		if b == nil {
+			wh.SendOr404(w, nil)
+			return
+		}
+		wh.SendOr404(w, visor.NewReadableBlock(b))
+	}
+}
+
+//
+func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+		sstart := r.FormValue("start")
+		start, err := strconv.ParseUint(sstart, 10, 64)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("Invalid start value \"%s\"", sstart))
+			return
+		}
+
+		send := r.FormValue("end")
+		end, err := strconv.ParseUint(send, 10, 64)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
+			return
+		}
+		wh.SendOr404(w, gateway.GetBlocks(start, end))
+	}
+}
+
+// get last 10 blocks
+func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+		headSeq := gateway.V.HeadBkSeq()
+		var start uint64
+		if (headSeq + 1) > lastBlockNum {
+			start = headSeq - lastBlockNum + 1
+		}
+
+		blocks := gateway.V.GetBlocks(start, headSeq)
+		bks := make([]visor.ReadableBlock, len(blocks))
+		for i, b := range blocks {
+			bks[i] = visor.NewReadableBlock(&b)
+		}
+		wh.SendOr404(w, &bks)
+	}
 }

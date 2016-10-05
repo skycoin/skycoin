@@ -37,8 +37,8 @@ func TestSerializeStruct(t *testing.T) {
 	}
 	data := serializer.SerializeMessage(testStruct)
 	assert.NotEqual(t, 0, len(data))
-	result, error := serializer.UnserializeMessage(data)
-	assert.Nil(t, error)
+	result, err := serializer.UnserializeMessage(data)
+	assert.Nil(t, err)
 	assert.Equal(t, testStruct, result)
 }
 

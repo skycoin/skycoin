@@ -7,7 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/transport"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,9 +21,9 @@ func TestManageTransports(t *testing.T) {
 	transport_a := transport.NewStubTransport(t, 512)
 	transport_b := transport.NewStubTransport(t, 512)
 	test_key_a := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-	nodeConfig := NodeConfig{
-		PubKey:                        test_key_a,
-		ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+	nodeConfig := domain.NodeConfig{
+		PubKey: test_key_a,
+		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
 		RefreshRouteDuration:          10 * time.Second,
 		ExpireMessagesInterval:        time.Second,
@@ -34,9 +34,9 @@ func TestManageTransports(t *testing.T) {
 	node, error := NewNode(nodeConfig)
 	assert.Nil(t, error)
 	assert.Equal(t, []transport.Transport{}, node.GetTransports())
-	node.AddTransport(transport_a, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_a)
 	assert.Equal(t, []transport.Transport{transport_a}, node.GetTransports())
-	node.AddTransport(transport_b, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_b)
 	assert.Equal(t, []transport.Transport{transport_a, transport_b}, node.GetTransports())
 	node.RemoveTransport(transport_a)
 	assert.Equal(t, []transport.Transport{transport_b}, node.GetTransports())
@@ -48,9 +48,9 @@ func TestConnectedPeers(t *testing.T) {
 	transport_a := transport.NewStubTransport(t, 512)
 	transport_b := transport.NewStubTransport(t, 512)
 	test_key_a := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-	nodeConfig := NodeConfig{
-		PubKey:                        test_key_a,
-		ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+	nodeConfig := domain.NodeConfig{
+		PubKey: test_key_a,
+		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
 		RefreshRouteDuration:          10 * time.Second,
 		ExpireMessagesInterval:        time.Second,
@@ -58,8 +58,8 @@ func TestConnectedPeers(t *testing.T) {
 		TimeToAssembleMessage:         2 * time.Second,
 		TransportMessageChannelLength: 100, // Transport message channel length
 	}
-	node, error := NewNode(nodeConfig)
-	assert.Nil(t, error)
+	node, err := NewNode(nodeConfig)
+	assert.Nil(t, err)
 	peer_a := cipher.NewPubKey([]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	peer_b := cipher.NewPubKey([]byte{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	peer_c := cipher.NewPubKey([]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
@@ -71,13 +71,13 @@ func TestConnectedPeers(t *testing.T) {
 	assert.False(t, node.ConnectedToPeer(peer_b))
 	assert.False(t, node.ConnectedToPeer(peer_c))
 	assert.Equal(t, []cipher.PubKey{}, sortPubKeys(node.GetConnectedPeers()))
-	node.AddTransport(transport_a, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_a)
 	assert.Equal(t, []cipher.PubKey{peer_a, peer_b}, sortPubKeys(node.GetConnectedPeers()))
 	assert.True(t, node.ConnectedToPeer(peer_a))
 	assert.True(t, node.ConnectedToPeer(peer_b))
 	assert.False(t, node.ConnectedToPeer(peer_c))
 
-	node.AddTransport(transport_b, nodeConfig.ChaCha20Key)
+	node.AddTransport(transport_b)
 	assert.Equal(t, []cipher.PubKey{peer_a, peer_b, peer_c}, sortPubKeys(node.GetConnectedPeers()))
 	assert.True(t, node.ConnectedToPeer(peer_a))
 	assert.True(t, node.ConnectedToPeer(peer_b))
@@ -103,10 +103,10 @@ func SetupNode(t *testing.T,
 	reliableTransport *transport.StubTransport) {
 	unreliableTransport = transport.NewStubTransport(t, maxDatagramLength)
 	reliableTransport = transport.NewStubTransport(t, maxDatagramLength)
-	var error error
-	nodeConfig := NodeConfig{
-		PubKey:                        newPubKey,
-		ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+	var err error
+	nodeConfig := domain.NodeConfig{
+		PubKey: newPubKey,
+		//ChaCha20Key:                   [32]byte{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 		MaximumForwardingDuration:     time.Minute,
 		RefreshRouteDuration:          time.Second,
 		ExpireMessagesInterval:        time.Second,
@@ -114,10 +114,10 @@ func SetupNode(t *testing.T,
 		TimeToAssembleMessage:         2 * time.Second,
 		TransportMessageChannelLength: 100, // Transport message channel length
 	}
-	node, error = NewNode(nodeConfig)
-	assert.Nil(t, error)
-	node.AddTransport(unreliableTransport, nodeConfig.ChaCha20Key)
-	node.AddTransport(reliableTransport, nodeConfig.ChaCha20Key)
+	node, err = NewNode(nodeConfig)
+	assert.Nil(t, err)
+	node.AddTransport(unreliableTransport)
+	node.AddTransport(reliableTransport)
 	return
 }
 
@@ -193,7 +193,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 		}
 	}
 
-	received := make(chan MeshMessage, 10)
+	received := make(chan domain.MeshMessage, 10)
 	nodes[nPeers-1].SetReceiveChannel(received)
 
 	terminating_id := nodes[nPeers-1].GetConfig().PubKey
@@ -206,7 +206,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 		assert.Nil(t, nodes[0].ExtendRoute(addedRouteId, nodes[extendIdx].GetConfig().PubKey, time.Second))
 	}
 
-	var replyTo ReplyTo
+	var replyTo domain.ReplyTo
 
 	for dropFirstIdx := 0; dropFirstIdx < 2; dropFirstIdx++ {
 		shouldReceive := true
@@ -239,7 +239,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 			case recvd := <-received:
 				{
 					replyTo = recvd.ReplyTo
-					assert.Equal(t, addedRouteId, recvd.ReplyTo.routeId)
+					assert.Equal(t, addedRouteId, recvd.ReplyTo.RouteId)
 					assert.Equal(t, contents, recvd.Contents)
 				}
 			case <-time.After(5 * time.Second):
@@ -260,7 +260,7 @@ func sendTest(t *testing.T, nPeers int, reliable bool, dropFirst bool, reorder b
 	}
 
 	if sendBack {
-		back_received := make(chan MeshMessage, 10)
+		back_received := make(chan domain.MeshMessage, 10)
 		nodes[0].SetReceiveChannel(back_received)
 		replyContents := []byte{6, 44, 2, 1, 1, 1, 1, 2}
 		assert.Nil(t, nodes[nPeers-1].SendMessageBackThruRoute(replyTo, replyContents, reliable))
@@ -347,7 +347,7 @@ func TestSendThruRoute(t *testing.T) {
 			node.Close()
 		}
 	}()
-	received := make(chan MeshMessage, 10)
+	received := make(chan domain.MeshMessage, 10)
 	nodes[1].SetReceiveChannel(received)
 	contents := []byte{1, 44, 2, 22, 11, 22}
 	addedRouteId := domain.RouteId{}
@@ -496,7 +496,7 @@ func TestLongRouteUnreliable(t *testing.T) {
 			node.Close()
 		}
 	}()
-	received := make(chan MeshMessage, 10)
+	received := make(chan domain.MeshMessage, 10)
 	nodes[2].SetReceiveChannel(received)
 	addedRouteId := domain.RouteId{}
 	addedRouteId[0] = 77

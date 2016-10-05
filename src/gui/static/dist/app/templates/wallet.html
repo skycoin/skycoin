@@ -126,7 +126,7 @@
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.third" class="tab-pane ng-scope">
                 <div class="outline ng-scope">
                     <table id="transaction-table">
-                        <tbody>
+                        <thead>
                         <tr class="dark-row">
                             <td>
                                 <div class="btn-group">
@@ -134,24 +134,26 @@
                                         Wallet <span class="caret"></span>
                                     </button>
                                     <ul role="menu" class="dropdown-menu">
-                                        <li *ngFor="#address of addresses"><a href="#">{{address.address}}</a></li>
+                                        <li *ngFor="#address of addresses"><a href="#" (click)="filterHistory(address.address)">{{address.address}}</a></li>
                                         <li class="divider"></li>
-                                        <li><a href="#">All</a></li>
+                                        <li><a href="#"  (click)="filterHistory('')">All</a></li>
                                     </ul>
                                 </div>
                             </td>
-                            <td><a href="#" (click)="sortHistory('date')">Date</a></td>
-                            <td>Address</td>
-                            <td><a href="#" (click)="sortHistory('amount')">Amount</a></td>
+                            <td><a href="#" (click)="sortHistory('time')">Date <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a></td>
+                            <td><a href="#" (click)="sortHistory('address')">Address<i *ngIf="sortDir.address!=0" class="glyphicon glyphicon-triangle-{{sortDir.address==1?'top':'bottom'}}"></i></a></td>
+                            <td><a href="#" (click)="sortHistory('amount')">Amount <i *ngIf="sortDir.amount!=0" class="glyphicon glyphicon-triangle-{{sortDir.amount==1?'top':'bottom'}}"></i></a></td>
                             <td>Label</td>
                         </tr>
-                        <tr *ngFor="#transactions of historyTable">
-                            <td></td>
-                            <td>{{getDateTimeString(transactions.time)}}</td>
-                            <td>{{transactions.address}}</td>
-                            <td>{{transactions.amount}}</td>
-                            <td></td>
-                        </tr>
+                      </thead>
+                          <tbody *ngFor="#transactions of historyTable">
+                            <tr *ngIf="filterAddressVal==''||filterAddressVal==transactions.address">
+                              <td></td>
+                              <td>{{getDateTimeString(transactions.time)}}</td>
+                              <td>{{transactions.address}}</td>
+                              <td>{{transactions.amount}}</td>
+                              <td></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

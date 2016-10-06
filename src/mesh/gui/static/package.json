@@ -1,0 +1,31 @@
+{
+  "name": "skycoin-static-gulp",
+  "version": "1.0.0",
+  "description": "Skycoin Static Gulp Project",
+  "scripts": {
+    "clean": "gulp clean",
+    "compile": "gulp compile",
+    "build": "gulp build"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skycoin/skycoin"
+  },
+  "dependencies": {
+    "angular2": "^2.0.0-beta.17",
+    "del": "^2.2.0",
+    "es6-shim": "^0.35.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.0",
+    "gulp-replace": "^0.5.4",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-typescript": "^2.13.6",
+    "gulp-uglify": "^1.5.4",
+    "merge2": "^1.0.2",
+    "reflect-metadata": "0.1.2",
+    "rxjs": "5.0.0-beta.6",
+    "systemjs": "0.19.27",
+    "zone.js": "^0.6.12"
+  }
+}

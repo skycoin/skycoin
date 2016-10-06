@@ -16,7 +16,7 @@ import (
 
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
-	"github.com/skycoin/skycoin/src/mesh/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/transport"
 )
 
 //struct for nodeAddTransportHandler

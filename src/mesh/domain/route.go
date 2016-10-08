@@ -8,11 +8,11 @@ import (
 
 type Route struct {
 	// Forward should never be cipher.PubKey{}
-	ForwardToPeer        cipher.PubKey
-	ForwardRewriteSendId RouteId
+	ForwardToPeer             cipher.PubKey
+	ForwardRewriteSendRouteID RouteID
 
-	BackwardToPeer        cipher.PubKey
-	BackwardRewriteSendId RouteId
+	BackwardToPeer             cipher.PubKey
+	BackwardRewriteSendRouteID RouteID
 
 	// time.Unix(0,0) means it lives forever
 	ExpiryTime time.Time
@@ -21,11 +21,11 @@ type Route struct {
 type LocalRoute struct {
 	LastForwardingPeer cipher.PubKey
 	TerminatingPeer    cipher.PubKey
-	LastHopId          RouteId
+	LastHopRouteID     RouteID
 	LastConfirmed      time.Time
 }
 
 type ReplyTo struct {
-	RouteId  RouteId
+	RouteID  RouteID
 	FromPeer cipher.PubKey
 }

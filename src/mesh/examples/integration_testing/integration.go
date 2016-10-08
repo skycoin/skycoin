@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
@@ -25,7 +24,7 @@ func main() {
 
 	config1.AddPeerToConnect("127.0.0.1:17000", config2)
 	config1.AddRouteToEstablish(config2)
-	config1.AddMessageToSend(config1.RoutesToEstablish[0].Id, "Message 1", true)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, "Message 1", true)
 	config1.AddMessageToReceive("Message 2", "", true)
 
 	config2.AddPeerToConnect("127.0.0.1:15000", config1)
@@ -58,21 +57,21 @@ func main() {
 }
 
 // Initialize the Nodes for communication and sending messages
-func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
+func sendMessage(idConfig int, config nodemanager.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
 	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
 	defer wg.Done()
 
 	node := nodemanager.CreateNode(config)
-	node.AddTransportToNode(config)
+	nodemanager.AddTransportToNode(node, config)
 
 	defer node.Close()
 
-	node.AddRoutesToEstablish(config)
+	nodemanager.AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
 		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((domain.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}

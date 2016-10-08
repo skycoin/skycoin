@@ -14,15 +14,14 @@ import (
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 
-	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
-	"github.com/skycoin/skycoin/src/mesh/transport/transport"
+	"github.com/skycoin/skycoin/src/mesh/transport"
 )
 
 //struct for nodeAddTransportHandler
 type ConfigWithId struct {
 	Id     int
-	Config mesh.TestConfig
+	Config nodemanager.TestConfig
 }
 
 //struct for nodeRemoveTransportHandler

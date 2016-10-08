@@ -54,14 +54,14 @@ func (self *Connection) FragmentMessage(fullContents []byte, toPeer cipher.PubKe
 	maxContentLength := self.GetMaximumContentLength(toPeer, transport)
 	fmt.Fprintf(os.Stdout, "MaxContentLength: %v\n", maxContentLength)
 	remainingBytes := fullContents[:]
-	messageId := (domain.MessageId)(uuid.NewV4())
+	messageId := (domain.MessageID)(uuid.NewV4())
 	for len(remainingBytes) > 0 {
 		nBytesThisMessage := min(maxContentLength, (uint64)(len(remainingBytes)))
 		bytesThisMessage := remainingBytes[:nBytesThisMessage]
 		remainingBytes = remainingBytes[nBytesThisMessage:]
 		message := domain.UserMessage{
 			MessageBase: base,
-			MessageId:   messageId,
+			MessageID:   messageId,
 			Index:       (uint64)(len(ret_noCount)),
 			Count:       0,
 			Contents:    bytesThisMessage,

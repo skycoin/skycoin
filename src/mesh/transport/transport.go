@@ -9,11 +9,12 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/serialize"
 )
 
-type ReliableTransportConfig struct {
-	MyPeerId                        cipher.PubKey
+type TransportConfig struct {
+	MyPeerID                        cipher.PubKey
 	PhysicalReceivedChannelLength   int
 	ExpireMessagesInterval          time.Duration
 	RememberMessageReceivedDuration time.Duration
@@ -22,17 +23,14 @@ type ReliableTransportConfig struct {
 	RetransmitDuration time.Duration
 }
 
-// 0 is not nil
-type reliableId uuid.UUID
-
-type ReliableSend struct {
-	MsgId    reliableId
-	FromPeer cipher.PubKey
-	Contents []byte
+type SendMessage struct {
+	MessageID domain.MessageID
+	FromPeer  cipher.PubKey
+	Contents  []byte
 }
 
-type ReliableReply struct {
-	MsgId reliableId
+type ReplyMessage struct {
+	MessageID domain.MessageID
 }
 
 type messageSentState struct {
@@ -43,15 +41,15 @@ type messageSentState struct {
 }
 
 // Wraps Transport, but adds store-and-forward
-type ReliableTransport struct {
-	config            ReliableTransportConfig
-	physicalTransport Transport
+type Transport struct {
+	config            TransportConfig
+	physicalTransport ITransport
 	outputChannel     chan []byte
 	serializer        *serialize.Serializer
 
 	lock             *sync.Mutex
-	messagesSent     map[reliableId]messageSentState
-	messagesReceived map[reliableId]time.Time
+	messagesSent     map[domain.MessageID]messageSentState
+	messagesReceived map[domain.MessageID]time.Time
 	nextMsgId        uint32
 
 	physicalReceived chan []byte
@@ -59,33 +57,33 @@ type ReliableTransport struct {
 	closeWait        *sync.WaitGroup
 }
 
-func NewReliableTransport(physicalTransport Transport, config ReliableTransportConfig) *ReliableTransport {
-	ret := &ReliableTransport{
+func NewTransport(physicalTransport ITransport, config TransportConfig) *Transport {
+	transport := &Transport{
 		config,
 		physicalTransport,
 		nil,
 		serialize.NewSerializer(),
 		&sync.Mutex{},
-		make(map[reliableId]messageSentState),
-		make(map[reliableId]time.Time),
+		make(map[domain.MessageID]messageSentState),
+		make(map[domain.MessageID]time.Time),
 		1000,
 		make(chan []byte, config.PhysicalReceivedChannelLength),
 		make(chan bool, 10),
 		&sync.WaitGroup{},
 	}
 
-	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, ReliableSend{})
-	ret.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, ReliableReply{})
+	transport.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, SendMessage{})
+	transport.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, ReplyMessage{})
 
-	go ret.processReceivedLoop()
-	go ret.expireMessagesLoop()
-	go ret.retransmitLoop()
+	go transport.processReceivedLoop()
+	go transport.expireMessagesLoop()
+	go transport.retransmitLoop()
 
-	ret.physicalTransport.SetReceiveChannel(ret.physicalReceived)
-	return ret
+	transport.physicalTransport.SetReceiveChannel(transport.physicalReceived)
+	return transport
 }
 
-func (self *ReliableTransport) processReceivedLoop() {
+func (self *Transport) processReceivedLoop() {
 	self.closeWait.Add(1)
 	defer self.closeWait.Done()
 
@@ -104,7 +102,7 @@ func (self *ReliableTransport) processReceivedLoop() {
 		}
 	}
 }
-func (self *ReliableTransport) doRetransmits() {
+func (self *Transport) doRetransmits() {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	for _, state := range self.messagesSent {
@@ -114,7 +112,7 @@ func (self *ReliableTransport) doRetransmits() {
 	}
 }
 
-func (self *ReliableTransport) retransmitLoop() {
+func (self *Transport) retransmitLoop() {
 	self.closeWait.Add(1)
 	defer self.closeWait.Done()
 	for len(self.closing) == 0 {
@@ -131,7 +129,7 @@ func (self *ReliableTransport) retransmitLoop() {
 	}
 }
 
-func (self *ReliableTransport) expireMessagesLoop() {
+func (self *Transport) expireMessagesLoop() {
 	self.closeWait.Add(1)
 	defer self.closeWait.Done()
 	for len(self.closing) == 0 {
@@ -148,107 +146,107 @@ func (self *ReliableTransport) expireMessagesLoop() {
 	}
 }
 
-func (self *ReliableTransport) expireMessages() {
-	time_now := time.Now()
+func (self *Transport) expireMessages() {
+	timeNow := time.Now()
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	lastSent := self.messagesSent
-	self.messagesSent = make(map[reliableId]messageSentState)
-	for id, state := range lastSent {
-		if time_now.Before(state.expiryTime) {
-			self.messagesSent[id] = state
+	lastMessagesSent := self.messagesSent
+	self.messagesSent = make(map[domain.MessageID]messageSentState)
+	for messageID, messageSentState := range lastMessagesSent {
+		if timeNow.Before(messageSentState.expiryTime) {
+			self.messagesSent[messageID] = messageSentState
 		}
 	}
 
 	lastReceived := self.messagesReceived
-	self.messagesReceived = make(map[reliableId]time.Time)
+	self.messagesReceived = make(map[domain.MessageID]time.Time)
 	for id, expiry := range lastReceived {
-		if time_now.Before(expiry) {
+		if timeNow.Before(expiry) {
 			self.messagesReceived[id] = expiry
 		}
 	}
 }
 
-func (self *ReliableTransport) sendAck(msg ReliableSend) {
-	reply := ReliableReply{msg.MsgId}
+func (self *Transport) sendAck(message SendMessage) {
+	reply := ReplyMessage{message.MessageID}
 	serialized := self.serializer.SerializeMessage(reply)
-	go self.physicalTransport.SendMessage(msg.FromPeer, serialized)
+	go self.physicalTransport.SendMessage(message.FromPeer, serialized)
 }
 
-func (self *ReliableTransport) processSend(msg ReliableSend) {
-	self.sendAck(msg)
+func (self *Transport) processSend(message SendMessage) {
+	self.sendAck(message)
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	_, alreadyReceived := self.messagesReceived[msg.MsgId]
+	_, alreadyReceived := self.messagesReceived[message.MessageID]
 	if !alreadyReceived {
-		self.outputChannel <- msg.Contents
-		self.messagesReceived[msg.MsgId] = time.Now().Add(self.config.RememberMessageReceivedDuration)
+		self.outputChannel <- message.Contents
+		self.messagesReceived[message.MessageID] = time.Now().Add(self.config.RememberMessageReceivedDuration)
 	}
 }
 
-func (self *ReliableTransport) processReply(msg ReliableReply) {
+func (self *Transport) processReply(message ReplyMessage) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	state, exists := self.messagesSent[msg.MsgId]
+	state, exists := self.messagesSent[message.MessageID]
 	if !exists {
-		fmt.Fprintf(os.Stderr, "Received ack for unknown sent message %v\n", msg.MsgId)
+		fmt.Fprintf(os.Stderr, "Received ack for unknown sent message %v\n", message.MessageID)
 		return
 	}
 	state.receivedAck = true
-	self.messagesSent[msg.MsgId] = state
+	self.messagesSent[message.MessageID] = state
 
 	// Test
-	if !self.messagesSent[msg.MsgId].receivedAck {
+	if !self.messagesSent[message.MessageID].receivedAck {
 		panic("Test error")
 	}
 }
 
-func (self *ReliableTransport) processPhysicalMessage(physicalMsg []byte) {
-	msg, deserialize_error := self.serializer.UnserializeMessage(physicalMsg)
-	if deserialize_error != nil {
-		fmt.Fprintf(os.Stderr, "Deserialization error %v\n", deserialize_error)
+func (self *Transport) processPhysicalMessage(physicalMessage []byte) {
+	message, err := self.serializer.UnserializeMessage(physicalMessage)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Deserialization error %v\n", err)
 		return
 	}
-	msg_type := reflect.TypeOf(msg)
+	messageType := reflect.TypeOf(message)
 
-	if msg_type == reflect.TypeOf(ReliableSend{}) {
-		send := msg.(ReliableSend)
+	if messageType == reflect.TypeOf(SendMessage{}) {
+		send := message.(SendMessage)
 		self.processSend(send)
-	} else if msg_type == reflect.TypeOf(ReliableReply{}) {
-		reply := msg.(ReliableReply)
+	} else if messageType == reflect.TypeOf(ReplyMessage{}) {
+		reply := message.(ReplyMessage)
 		self.processReply(reply)
 	} else {
 		panic("Internal error: unknown message type")
 	}
 }
 
-func (self *ReliableTransport) newMsgId() reliableId {
-	return (reliableId)(uuid.NewV4())
+func (self *Transport) newMessageID() domain.MessageID {
+	return (domain.MessageID)(uuid.NewV4())
 }
 
-func (self *ReliableTransport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
-	msgId := self.newMsgId()
-	sendMsg := ReliableSend{msgId, self.config.MyPeerId, contents}
-	sendSerialized := self.serializer.SerializeMessage(sendMsg)
+func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
+	messageID := self.newMessageID()
+	sendMessage := SendMessage{messageID, self.config.MyPeerID, contents}
+	sendSerialized := self.serializer.SerializeMessage(sendMessage)
 	state := messageSentState{toPeer,
 		sendSerialized,
 		time.Now().Add(self.config.RetransmitDuration),
 		false}
-	send_error := self.physicalTransport.SendMessage(toPeer, sendSerialized)
-	if send_error == nil {
+	err := self.physicalTransport.SendMessage(toPeer, sendSerialized)
+	if err == nil {
 		self.lock.Lock()
 		defer self.lock.Unlock()
-		self.messagesSent[msgId] = state
+		self.messagesSent[messageID] = state
 	}
-	return send_error
+	return err
 }
 
-func (self *ReliableTransport) SetReceiveChannel(received chan []byte) {
+func (self *Transport) SetReceiveChannel(received chan []byte) {
 	self.outputChannel = received
 }
 
-func (self *ReliableTransport) Close() error {
+func (self *Transport) Close() error {
 	for i := 0; i < 10; i++ {
 		self.closing <- true
 	}
@@ -256,20 +254,20 @@ func (self *ReliableTransport) Close() error {
 	return self.physicalTransport.Close()
 }
 
-func (self *ReliableTransport) SetCrypto(crypto TransportCrypto) {
+func (self *Transport) SetCrypto(crypto ITransportCrypto) {
 	self.physicalTransport.SetCrypto(crypto)
 }
 
-func (self *ReliableTransport) ConnectedToPeer(peer cipher.PubKey) bool {
+func (self *Transport) ConnectedToPeer(peer cipher.PubKey) bool {
 	return self.physicalTransport.ConnectedToPeer(peer)
 }
 
-func (self *ReliableTransport) GetConnectedPeers() []cipher.PubKey {
+func (self *Transport) GetConnectedPeers() []cipher.PubKey {
 	return self.physicalTransport.GetConnectedPeers()
 }
 
-func (self *ReliableTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
-	empty := ReliableSend{}
+func (self *Transport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
+	empty := SendMessage{}
 	emptySerialized := self.serializer.SerializeMessage(empty)
 	if (uint)(len(emptySerialized)) >= self.physicalTransport.GetMaximumMessageSizeToPeer(peer) {
 		return 0
@@ -277,20 +275,20 @@ func (self *ReliableTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) u
 	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer) - (uint)(len(emptySerialized))
 }
 
-func (self *ReliableTransport) debug_countMapItems() int {
+func (self *Transport) debug_countMapItems() int {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return len(self.messagesSent) + len(self.messagesReceived)
 }
 
-// Create Reliable config to the node.
-func CreateReliable(pubKey cipher.PubKey) ReliableTransportConfig {
-	reliable := ReliableTransportConfig{}
-	reliable.MyPeerId = pubKey
-	reliable.PhysicalReceivedChannelLength = 100
-	reliable.ExpireMessagesInterval = 5 * time.Minute
-	reliable.RememberMessageReceivedDuration = 1 * time.Minute
-	reliable.RetransmitDuration = 1 * time.Minute
+// Create TransportConfig to the node.
+func CreateTransportConfig(pubKey cipher.PubKey) TransportConfig {
+	config := TransportConfig{}
+	config.MyPeerID = pubKey
+	config.PhysicalReceivedChannelLength = 100
+	config.ExpireMessagesInterval = 5 * time.Minute
+	config.RememberMessageReceivedDuration = 1 * time.Minute
+	config.RetransmitDuration = 1 * time.Minute
 
-	return reliable
+	return config
 }

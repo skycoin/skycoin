@@ -39,7 +39,7 @@ func min(a, b uint64) uint64 {
 	return b
 }
 
-func (self *Connection) GetMaximumContentLength(toPeer cipher.PubKey, transport transport.Transport) uint64 {
+func (self *Connection) GetMaximumContentLength(toPeer cipher.PubKey, transport transport.ITransport) uint64 {
 	transportSize := transport.GetMaximumMessageSizeToPeer(toPeer)
 	empty := domain.UserMessage{}
 	emptySerialized := self.serializer.SerializeMessage(empty)
@@ -49,7 +49,7 @@ func (self *Connection) GetMaximumContentLength(toPeer cipher.PubKey, transport 
 	return (uint64)(transportSize) - (uint64)(len(emptySerialized))
 }
 
-func (self *Connection) FragmentMessage(fullContents []byte, toPeer cipher.PubKey, transport transport.Transport, base domain.MessageBase) []domain.UserMessage {
+func (self *Connection) FragmentMessage(fullContents []byte, toPeer cipher.PubKey, transport transport.ITransport, base domain.MessageBase) []domain.UserMessage {
 	ret_noCount := make([]domain.UserMessage, 0)
 	maxContentLength := self.GetMaximumContentLength(toPeer, transport)
 	fmt.Fprintf(os.Stdout, "MaxContentLength: %v\n", maxContentLength)

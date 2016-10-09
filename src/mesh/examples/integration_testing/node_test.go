@@ -29,13 +29,11 @@ type RouteConfig struct {
 type MessageToSend struct {
 	ThruRoute uuid.UUID
 	Contents  []byte
-	Reliably  bool
 }
 
 type MessageToReceive struct {
-	Contents      []byte
-	Reply         []byte
-	ReplyReliably bool
+	Contents []byte
+	Reply    []byte
 }
 
 type PeersToConnect struct {
@@ -44,9 +42,9 @@ type PeersToConnect struct {
 }
 
 type TestConfig struct {
-	Reliable   transport.ReliableTransportConfig
-	UDPConfig  physical.UDPConfig
-	NodeConfig domain.NodeConfig
+	TransportConfig transport.TransportConfig
+	UDPConfig       physical.UDPConfig
+	NodeConfig      domain.NodeConfig
 
 	PeersToConnect    []PeersToConnect
 	RoutesToEstablish []RouteConfig
@@ -55,14 +53,14 @@ type TestConfig struct {
 }
 
 var configText1 string = `{
-	"Reliable": {
-		"MyPeerId": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	"TransportConfig": {
+		"MyPeerID": [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"PhysicalReceivedChannelLength": 100,
 		"ExpireMessagesInterval": 5000000000,
 		"RememberMessageReceivedDuration": 10000000000,
 		"RetransmitDuration": 100000000
 	},
-	"Udp": {
+	"UDPConfig": {
 		"SendChannelLength": 100,
 		"DatagramLength": 512,
 		"LocalAddress": "",
@@ -71,7 +69,7 @@ var configText1 string = `{
 		"ExternalAddress": "127.0.0.1",
 		"StunEndpoints": []
 	},
-	"Node": {
+	"NodeConfig": {
 		"PubKey": 		[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"ChaCha20Key":	[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,11,22,0,1,0,0,0,1,0,0,0,1,0,0,0],
 		"MaximumForwardingDuration":	10000000000,
@@ -96,8 +94,7 @@ var configText1 string = `{
 	"MessagesToSend": [
 		{
 			"ThruRoute": "50000000-0000-0000-0000-000000000001",
-			"Contents": [3,4,5,6,7,1,2,3],
-			"Reliably": true
+			"Contents": [3,4,5,6,7,1,2,3]
 		}
 	],
 	"MessagesToReceive": [
@@ -109,14 +106,14 @@ var configText1 string = `{
 }`
 
 var configText2 string = `{
-	"Reliable": {
-		"MyPeerId": [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	"TransportConfig": {
+		"MyPeerID": [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"PhysicalReceivedChannelLength": 100,
 		"ExpireMessagesInterval": 5000000000,
 		"RememberMessageReceivedDuration": 10000000000,
 		"RetransmitDuration": 100000000
 	},
-	"Udp": {
+	"UDPConfig": {
 		"SendChannelLength": 100,
 		"DatagramLength": 512,
 		"LocalAddress": "",
@@ -125,12 +122,12 @@ var configText2 string = `{
 		"ExternalAddress": "127.0.0.1",
 		"StunEndpoints": []
 	},
-	"Node": {
+	"NodeConfig": {
 		"PubKey": 		[3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 		"ChaCha20Key":	[1,0,0,0,1,0,44,22,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,11,0,0],
 		"MaximumForwardingDuration":	10000000000,
 		"RefreshRouteDuration":			5000000000,
-	"ExpireMessagesInterval":       5000000000,
+		"ExpireMessagesInterval":       5000000000,
 		"ExpireRoutesInterval":			5000000000,
 		"TimeToAssembleMessage":		10000000000,
 		"TransportMessageChannelLength": 100
@@ -144,8 +141,7 @@ var configText2 string = `{
 	"MessagesToReceive": [
 		{
 			"Contents": [3,4,5,6,7,1,2,3],
-			"Reply": [5,5,5,6],
-			"ReplyReliably": true
+			"Reply": [5,5,5,6]
 		}
 	]
 }`
@@ -173,7 +169,7 @@ func createNewUDPTransport(configUdp physical.UDPConfig) *physical.UDPTransport 
 func createTestConfig2(port int) TestConfig {
 	testConfig := TestConfig{}
 	testConfig.NodeConfig = nodemanager.NewNodeConfig()
-	testConfig.Reliable = transport.CreateReliable(testConfig.NodeConfig.PubKey)
+	testConfig.TransportConfig = transport.CreateTransportConfig(testConfig.NodeConfig.PubKey)
 	testConfig.UDPConfig = physical.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
@@ -204,7 +200,6 @@ func TestSendMessage(t *testing.T) {
 	messageToSend1 := MessageToSend{}
 	messageToSend1.ThruRoute = routeToEstablish1.ID
 	messageToSend1.Contents = []byte("Message 1")
-	messageToSend1.Reliably = true
 	messagesToSend1 = append(messagesToSend1, messageToSend1)
 	config1.MessagesToSend = messagesToSend1
 
@@ -225,7 +220,6 @@ func TestSendMessage(t *testing.T) {
 	messageToReceive2 := MessageToReceive{}
 	messageToReceive2.Contents = []byte("Message 1")
 	messageToReceive2.Reply = []byte("Message 2")
-	messageToReceive2.ReplyReliably = true
 	messagesToReceive2 = append(messagesToReceive2, messageToReceive2)
 	config2.MessagesToReceive = messagesToReceive2
 
@@ -343,16 +337,16 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 		}
 	}
 
-	// Reliable transport closes UDPTransport
-	reliableTransport := transport.NewReliableTransport(udpTransport, config.Reliable)
-	defer reliableTransport.Close()
+	// Transport closes UDPTransport
+	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
+	defer transportToPeer.Close()
 
 	node, createNodeError := mesh.NewNode(config.NodeConfig)
 	if createNodeError != nil {
 		panic(createNodeError)
 	}
 	defer node.Close()
-	node.AddTransport(reliableTransport)
+	node.AddTransport(transportToPeer)
 
 	fmt.Fprintf(os.Stdout, "UDP connect info: %v\n", udpTransport.GetTransportConnectInfo())
 
@@ -375,8 +369,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
-		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}
@@ -399,7 +392,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 			for _, messageToReceive := range config.MessagesToReceive {
 				if fmt.Sprintf("%v", messageToReceive.Contents) == fmt.Sprintf("%v", msgRecvd.Contents) {
 					if len(messageToReceive.Reply) > 0 {
-						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
+						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply)
 						if sendBackErr != nil {
 							panic(sendBackErr)
 						}

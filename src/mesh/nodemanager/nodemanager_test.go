@@ -97,8 +97,7 @@ func sendMessage(idConfig int, config TestConfig, node *mesh.Node, wg *sync.Wait
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
-		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}
@@ -121,7 +120,7 @@ func sendMessage(idConfig int, config TestConfig, node *mesh.Node, wg *sync.Wait
 			for _, messageToReceive := range config.MessagesToReceive {
 				if fmt.Sprintf("%v", messageToReceive.Contents) == fmt.Sprintf("%v", msgRecvd.Contents) {
 					if len(messageToReceive.Reply) > 0 {
-						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
+						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply)
 						if sendBackErr != nil {
 							panic(sendBackErr)
 						}
@@ -207,10 +206,10 @@ func TestConnectTwoNodesSuccess(t *testing.T) {
 	// Add route from node1 to node2
 	config1.AddRouteToEstablish(config2)
 
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1, true)
-	config1.AddMessageToReceive(message2, "", true)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1)
+	config1.AddMessageToReceive(message2, "")
 
-	config2.AddMessageToReceive(message1, message2, true)
+	config2.AddMessageToReceive(message1, message2)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -271,10 +270,10 @@ func TestConnectTwoNodesFail(t *testing.T) {
 	// Add route from node1 to node2
 	config1.AddRouteToEstablish(config2)
 
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1, true)
-	config1.AddMessageToReceive(message2, "", true)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1)
+	config1.AddMessageToReceive(message2, "")
 
-	config2.AddMessageToReceive(message1, message2, true)
+	config2.AddMessageToReceive(message1, message2)
 
 	var wg sync.WaitGroup
 	wg.Add(2)

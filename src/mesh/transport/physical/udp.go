@@ -29,9 +29,8 @@ type ListenPort struct {
 
 type UDPConfig struct {
 	domain.TransportConfig
-	DatagramLength uint16
-	LocalAddress   string // "" for default
-
+	DatagramLength  uint16
+	LocalAddress    string // "" for default
 	NumListenPorts  uint16
 	ListenPortMin   uint16   // If 0, STUN is used
 	ExternalAddress string   // External address to use if STUN is not
@@ -50,7 +49,7 @@ type UDPTransport struct {
 	messagesReceived chan []byte
 	closing          chan bool
 	closeWait        *sync.WaitGroup
-	crypto           transport.TransportCrypto
+	crypto           transport.ITransportCrypto
 
 	// Thread protected variables
 	lock           *sync.Mutex
@@ -249,7 +248,7 @@ func (self *UDPTransport) Close() error {
 	return nil
 }
 
-func (self *UDPTransport) SetCrypto(crypto transport.TransportCrypto) {
+func (self *UDPTransport) SetCrypto(crypto transport.ITransportCrypto) {
 	self.crypto = crypto
 }
 
@@ -322,7 +321,7 @@ func (self *UDPTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 
-func (self *UDPTransport) safeGetCrypto() transport.TransportCrypto {
+func (self *UDPTransport) safeGetCrypto() transport.ITransportCrypto {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return self.crypto

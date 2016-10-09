@@ -24,8 +24,8 @@ type TimeoutError struct {
 
 var NilRouteID domain.RouteID = (domain.RouteID)(uuid.Nil)
 
-type rewriteableMessage interface {
-	Rewrite(newSendRouteID domain.RouteID) rewriteableMessage
+type rewritableMessage interface {
+	Rewrite(newSendRouteID domain.RouteID) rewritableMessage
 }
 
 type Node struct {
@@ -39,7 +39,7 @@ type Node struct {
 	closeGroup *sync.WaitGroup
 	closing    chan bool
 
-	transports                     map[transport.Transport]bool
+	transports                     map[transport.ITransport]bool
 	routes                         map[domain.RouteID]domain.Route
 	routeExtensionsAwaitingConfirm map[domain.RouteID]chan bool
 	localRoutesByTerminatingPeer   map[cipher.PubKey]domain.RouteID
@@ -62,7 +62,7 @@ func NewNode(config domain.NodeConfig) (*Node, error) {
 		lock:                       &sync.Mutex{}, // Lock
 		closeGroup:                 &sync.WaitGroup{},
 		closing:                    make(chan bool, 10),
-		transports:                 make(map[transport.Transport]bool),
+		transports:                 make(map[transport.ITransport]bool),
 		messagesBeingAssembled:     make(map[domain.MessageID]*domain.MessageUnderAssembly),
 		routes:                     make(map[domain.RouteID]domain.Route),
 		localRoutesByTerminatingPeer:   make(map[cipher.PubKey]domain.RouteID),
@@ -259,7 +259,6 @@ func (self *Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey
 			SendRouteID: rewriteTo,
 			SendBack:    sendBack,
 			FromPeer:    self.config.PubKey,
-			Reliably:    base.Reliably,
 			Nonce:       generateNonce(),
 		}
 	return forwardTo, newBase, true
@@ -272,7 +271,7 @@ func (self *Node) forwardMessage(msg interface{}) bool {
 	}
 	// Rewrite
 	rewritten := rewriteMessage(msg, newBase)
-	transportToPeer := self.safelyGetTransportToPeer(forwardTo, newBase.Reliably)
+	transportToPeer := self.safelyGetTransportToPeer(forwardTo)
 	if transportToPeer == nil {
 		fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.config.PubKey, forwardTo)
 		return true
@@ -297,7 +296,7 @@ func (self *Node) processUserMessage(msgIn domain.UserMessage) {
 	}
 	directPeer, forwardBase, doForward := self.safelyGetRewriteBase(msgIn)
 	if doForward {
-		transportToPeer := self.safelyGetTransportToPeer(directPeer, msgIn.Reliably)
+		transportToPeer := self.safelyGetTransportToPeer(directPeer)
 		if transportToPeer == nil {
 			fmt.Fprintf(os.Stderr, "No transport to peer %v from %v, dropping\n", directPeer, self.config.PubKey)
 			return
@@ -323,12 +322,11 @@ func (self *Node) sendSetRouteReply(base domain.MessageBase, confirmId domain.Ro
 			SendRouteID: base.SendRouteID,
 			SendBack:    true,
 			FromPeer:    self.config.PubKey,
-			Reliably:    true,
 			Nonce:       generateNonce(),
 		},
 		ConfirmRouteID: confirmId,
 	}
-	transportToPeer := self.safelyGetTransportToPeer(base.FromPeer, true)
+	transportToPeer := self.safelyGetTransportToPeer(base.FromPeer)
 	if transportToPeer == nil {
 		fmt.Fprintf(os.Stderr, "No transport to peer %v from %v\n", base.FromPeer, self.config.PubKey)
 		return
@@ -477,16 +475,14 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 		fmt.Fprintf(os.Stderr, "Cannot refresh unknown route: %v\n", routeId)
 		return
 	}
-	reliably := true
 	base := domain.MessageBase{
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
 		FromPeer:    self.config.PubKey,
-		Reliably:    reliably,
 		Nonce:       generateNonce(),
 	}
 	directPeer := route.ForwardToPeer
-	transportToPeer := self.safelyGetTransportToPeer(directPeer, reliably)
+	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
 		fmt.Fprintf(os.Stderr, "No transport to peer %v\n", directPeer)
 		return
@@ -599,7 +595,7 @@ func (self *Node) GetConfig() domain.NodeConfig {
 }
 
 // Node takes ownership of the transport, and will call Close() when it is closed
-func (self *Node) AddTransport(transportNode transport.Transport) {
+func (self *Node) AddTransport(transportNode transport.ITransport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	//chaCha20Key := &transport.ChaChaCrypto{}
@@ -609,16 +605,16 @@ func (self *Node) AddTransport(transportNode transport.Transport) {
 	self.transports[transportNode] = true
 }
 
-func (self *Node) RemoveTransport(transport transport.Transport) {
+func (self *Node) RemoveTransport(transport transport.ITransport) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	delete(self.transports, transport)
 }
 
-func (self *Node) GetTransports() []transport.Transport {
+func (self *Node) GetTransports() []transport.ITransport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	ret := []transport.Transport{}
+	ret := []transport.ITransport{}
 	for nodeTransport := range self.transports {
 		ret = append(ret, nodeTransport)
 	}
@@ -653,14 +649,13 @@ func (self *Node) SetReceiveChannel(received chan domain.MeshMessage) {
 }
 
 // toPeer must be the public key of a connected peer
-// Requires reliable transport (for now)
 func (self *Node) AddRoute(routeID domain.RouteID, toPeer cipher.PubKey) error {
 	_, routeExists := self.safelyGetRoute(routeID)
 	if routeExists {
 		return errors.New(fmt.Sprintf("Route %v already exists\n", routeID))
 	}
 
-	transportToPeer := self.safelyGetTransportToPeer(toPeer, true)
+	transportToPeer := self.safelyGetTransportToPeer(toPeer)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v\n", toPeer))
 	}
@@ -693,7 +688,6 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
 		FromPeer:    self.config.PubKey,
-		Reliably:    true, // Reliable
 		Nonce:       generateNonce(),
 	}
 	message := domain.DeleteRouteMessage{
@@ -701,7 +695,7 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 	}
 
 	directPeer := route.ForwardToPeer
-	transportToPeer := self.safelyGetTransportToPeer(directPeer, true)
+	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.config.PubKey))
 	}
@@ -763,7 +757,6 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
 		FromPeer:    self.config.PubKey,
-		Reliably:    true,
 		Nonce:       generateNonce(),
 	}
 
@@ -802,7 +795,7 @@ func (self *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, time
 	if extendError != nil {
 		return extendError
 	}
-	transportToPeer := self.safelyGetTransportToPeer(directPeer, true)
+	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.config.PubKey))
 	}
@@ -839,16 +832,7 @@ func (self *Node) GetRouteLastConfirmed(routeID domain.RouteID) (time.Time, erro
 	return localRoute.LastConfirmed, nil
 }
 
-func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
-	// If unreliable, prefer unreliable transport
-	if !reliably {
-		for transportToPeer := range self.transports {
-			// TODO: Choose transport more intelligently
-			if transportToPeer.ConnectedToPeer(peerKey) {
-				return transportToPeer
-			}
-		}
-	}
+func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
 	for transportToPeer := range self.transports {
 		// TODO: Choose transport more intelligently
 		if transportToPeer.ConnectedToPeer(peerKey) {
@@ -858,13 +842,13 @@ func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey, reliably boo
 	return nil
 }
 
-func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey, reliably bool) transport.Transport {
+func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	return self.unsafelyGetTransportToPeer(peerKey, reliably)
+	return self.unsafelyGetTransportToPeer(peerKey)
 }
 
-func (self *Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPeer cipher.PubKey, localId, sendId domain.RouteID, transport transport.Transport, err error) {
+func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeer cipher.PubKey, localId, sendId domain.RouteID, transport transport.ITransport, err error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	localRouteId, localRouteExists := self.localRoutesByTerminatingPeer[toPeer]
@@ -879,7 +863,7 @@ func (self *Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPe
 	} else {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
 	}
-	transport = self.unsafelyGetTransportToPeer(directPeer, reliably)
+	transport = self.unsafelyGetTransportToPeer(directPeer)
 	if transport == nil {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil,
 			errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
@@ -888,10 +872,8 @@ func (self *Node) findRouteToPeer(toPeer cipher.PubKey, reliably bool) (directPe
 }
 
 // Chooses a route automatically. Sends directly without a route if connected to that peer
-// if reliably is false, unreliable transport is preferred, but reliable is chosen if it's the only option
-// if reliably is true, reliable transport only is used
-func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, reliably bool) (err error, routeId domain.RouteID) {
-	directPeer, localRouteId, sendId, transportToPeer, err := self.findRouteToPeer(toPeer, reliably)
+func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte) (err error, routeId domain.RouteID) {
+	directPeer, localRouteId, sendId, transportToPeer, err := self.findRouteToPeer(toPeer)
 	if err != nil {
 		return err, NilRouteID
 	}
@@ -899,7 +881,6 @@ func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, relia
 		SendRouteID: sendId,
 		SendBack:    false,
 		FromPeer:    self.config.PubKey,
-		Reliably:    reliably,
 		Nonce:       generateNonce(),
 	}
 	messages := connection.ConnectionManager.FragmentMessage(contents, directPeer, transportToPeer, base)
@@ -913,8 +894,8 @@ func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte, relia
 	return nil, localRouteId
 }
 
-// Blocks until message is confirmed received if reliably is true
-func (self *Node) SendMessageThruRoute(routeId domain.RouteID, contents []byte, reliably bool) error {
+// Blocks until message is confirmed received
+func (self *Node) SendMessageThruRoute(routeId domain.RouteID, contents []byte) error {
 	route, routeFound := self.safelyGetRoute(routeId)
 	if !routeFound {
 		return errors.New("Route not found")
@@ -924,11 +905,10 @@ func (self *Node) SendMessageThruRoute(routeId domain.RouteID, contents []byte, 
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
 		FromPeer:    self.config.PubKey,
-		Reliably:    reliably,
 		Nonce:       generateNonce(),
 	}
 	directPeer := route.ForwardToPeer
-	transportToPeer := self.safelyGetTransportToPeer(directPeer, reliably)
+	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeer))
 	}
@@ -944,10 +924,10 @@ func (self *Node) SendMessageThruRoute(routeId domain.RouteID, contents []byte, 
 	return nil
 }
 
-// Blocks until message is confirmed received if reliably is true
-func (self *Node) SendMessageBackThruRoute(replyTo domain.ReplyTo, contents []byte, reliably bool) error {
+// Blocks until message is confirmed received
+func (self *Node) SendMessageBackThruRoute(replyTo domain.ReplyTo, contents []byte) error {
 	directPeer := replyTo.FromPeer
-	transportToPeer := self.safelyGetTransportToPeer(directPeer, reliably)
+	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No route or transport to peer %v\n", directPeer))
 	}
@@ -955,7 +935,6 @@ func (self *Node) SendMessageBackThruRoute(replyTo domain.ReplyTo, contents []by
 		SendRouteID: replyTo.RouteID,
 		SendBack:    true,
 		FromPeer:    self.config.PubKey,
-		Reliably:    reliably,
 		Nonce:       generateNonce(),
 	}
 	messages := connection.ConnectionManager.FragmentMessage(contents, directPeer, transportToPeer, base)

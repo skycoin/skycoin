@@ -8,9 +8,9 @@ import (
 )
 
 type TestConfig struct {
-	Reliable   transport.ReliableTransportConfig
-	UDPConfig  physical.UDPConfig
-	NodeConfig domain.NodeConfig
+	TransportConfig transport.TransportConfig
+	UDPConfig       physical.UDPConfig
+	NodeConfig      domain.NodeConfig
 
 	PeersToConnect           []domain.Peer
 	RoutesConfigsToEstablish []domain.RouteConfig
@@ -36,18 +36,16 @@ func (self *TestConfig) AddPeerToRoute(indexRoute int, config *TestConfig) {
 	self.RoutesConfigsToEstablish[indexRoute].Peers = append(self.RoutesConfigsToEstablish[indexRoute].Peers, config.NodeConfig.PubKey)
 }
 
-func (self *TestConfig) AddMessageToSend(thruRoute uuid.UUID, message string, reliably bool) {
+func (self *TestConfig) AddMessageToSend(thruRoute uuid.UUID, message string) {
 	messageToSend := domain.MessageToSend{}
 	messageToSend.ThruRoute = thruRoute
 	messageToSend.Contents = []byte(message)
-	messageToSend.Reliably = reliably
 	self.MessagesToSend = append(self.MessagesToSend, messageToSend)
 }
 
-func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string, replyReliably bool) {
+func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string) {
 	messageToReceive := domain.MessageToReceive{}
 	messageToReceive.Contents = []byte(messageReceive)
 	messageToReceive.Reply = []byte(messageReply)
-	messageToReceive.ReplyReliably = replyReliably
 	self.MessagesToReceive = append(self.MessagesToReceive, messageToReceive)
 }

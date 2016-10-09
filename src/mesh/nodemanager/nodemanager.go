@@ -74,7 +74,7 @@ type Route struct {
 func CreateTestConfig(port int) *TestConfig {
 	testConfig := &TestConfig{}
 	testConfig.NodeConfig = NewNodeConfig()
-	testConfig.Reliable = transport.CreateReliable(testConfig.NodeConfig.PubKey)
+	testConfig.TransportConfig = transport.CreateTransportConfig(testConfig.NodeConfig.PubKey)
 	testConfig.UDPConfig = physical.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
@@ -215,11 +215,11 @@ func AddTransportToNode(node *mesh.Node, config TestConfig) {
 		}
 	}
 
-	// Reliable transport closes UDPTransport
-	reliableTransport := transport.NewReliableTransport(udpTransport, config.Reliable)
-	//defer reliableTransport.Close()
+	// Transport closes UDPTransport
+	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
+	//defer transportToPeer.Close()
 
-	node.AddTransport(reliableTransport)
+	node.AddTransport(transportToPeer)
 }
 
 // Returns Node by index
@@ -229,13 +229,13 @@ func (self *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {
 }
 
 // Get all transports from one node
-func (self *NodeManager) GetTransportsFromNode(indexNode int) []transport.Transport {
+func (self *NodeManager) GetTransportsFromNode(indexNode int) []transport.ITransport {
 	nodePubKey := self.PubKeyList[indexNode]
 	node := self.NodesList[nodePubKey]
 	return node.GetTransports()
 }
 
-func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.Transport) {
+func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.ITransport) {
 	nodePubKey := self.PubKeyList[indexNode]
 	node := self.NodesList[nodePubKey]
 	node.RemoveTransport(transport)

@@ -27,7 +27,7 @@ type ConfigWithId struct {
 //struct for nodeRemoveTransportHandler
 type TransportWithId struct {
 	Id        int
-	Transport transport.Transport
+	Transport transport.ITransport
 }
 
 //struct for nodeGetListNodesHandler

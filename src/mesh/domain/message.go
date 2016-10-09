@@ -18,7 +18,6 @@ type MessageBase struct {
 	SendBack    bool
 	// For sending the reply from the last node in a route
 	FromPeer cipher.PubKey
-	Reliably bool
 	Nonce    [4]byte
 }
 
@@ -89,13 +88,11 @@ type AddNodeMessage struct {
 type MessageToSend struct {
 	ThruRoute uuid.UUID
 	Contents  []byte
-	Reliably  bool
 }
 
 type MessageToReceive struct {
-	Contents      []byte
-	Reply         []byte
-	ReplyReliably bool
+	Contents []byte
+	Reply    []byte
 }
 
 type MessageUnderAssembly struct {

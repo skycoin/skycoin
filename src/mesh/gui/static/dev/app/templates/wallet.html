@@ -1,0 +1,406 @@
+<div id="sky-header">
+    <div class="fa fa-cloud background-cloud-0"><i class="fa fa-btc"></i></div>
+</div>
+<div id="sky-center">
+    <div id="main-content" class="ng-isolate-scope">
+        <ul ng-class="{'nav-stacked': vertical, 'nav-justified': justified}" class="nav nav-tabs">
+            <li [class.active]="displayMode === displayModeEnum.first">
+                <a (click)="switchTab(displayModeEnum.first, '')" class="ng-binding">
+                    <tab-heading class="ng-scope">
+                        <i class="fa fa-cloud fa-lg"></i> Wallets
+                    </tab-heading>
+                </a>
+            </li>
+            <li [class.active]="displayMode === displayModeEnum.second">
+                <a (click)="switchTab(displayModeEnum.second,'')" class="ng-binding">
+                    <tab-heading class="ng-scope">
+                        <i class="fa fa-cloud-upload fa-lg"></i> Send
+                    </tab-heading>
+                </a>
+            </li>
+            <li [class.active]="displayMode === displayModeEnum.third">
+                <a (click)="switchTab(displayModeEnum.third,'')" class="ng-binding">
+                    <tab-heading class="ng-scope">
+                        <i class="fa fa-moon-o"></i> History
+                    </tab-heading>
+                </a>
+            </li>
+            <li [class.active]="displayMode === displayModeEnum.fourth">
+                <div class="btn-group wallet-menu">
+                    <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
+                        <i class="fa fa-gear"></i>
+                    </button>
+                    <ul role="menu" class="dropdown-menu pull-right">
+                        <li><a href="#" (click)="selectMenu('Networking', $event)">Networking</a></li>
+                        <li><a href="#" (click)="selectMenu('BlockChain', $event)">BlockChain</a></li>
+                        <li><a href="#" (click)="selectMenu('Outputs', $event)">Outputs</a></li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div [class.active]="displayMode === displayModeEnum.first"  class="tab-pane ng-scope active">
+                <div style="padding:0 10px">
+                  <table id="overview-wallet" class="outline" *ngFor="#wallet of wallets">
+                      <tr class="dark-row">
+                          <td><div id="overview-wallet-title">Wallet: {{wallet.meta.filename}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
+                      </tr>
+                      <tr>
+                          <td><div id="overview-wallet-balance">Address: </div></td>
+                          <td>
+                              <div *ngFor="#entry of wallet.entries">{{entry.address}}</div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td><div id="overview-wallet-address">Balance Confirmed: </div></td>
+                          <td>{{wallet.balance}} SKY</td>
+                      </tr>
+                      <tr>
+                          <td colspan="2">
+                              <a href="#" (click)="showQR(wallet)"><i class="fa fa-qrcode"></i> QR Code</a>
+                              <a (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i> Send </a>
+                              <a href="#" (click)="editWallet(wallet)"><i class="fa fa-pencil"></i> Edit</a>
+                          </td>
+                      </tr>
+                  </table>
+                </div>
+                <div class="outline ng-scope">
+                    <!-- ngRepeat: wallet in wallets -->
+                    <div class="wallet-buttons">
+                        <button class="btn btn-default" type="button" (click)="showNewWalletDialog()"><i class="fa fa-cloud"></i> New Wallet</button>
+                        <button class="btn btn-default" type="button" (click)="openLoadWallet()"><i class="fa fa-cloud"></i> Load Wallet From Seed</button>
+                    </div>
+                </div>
+            </div>
+
+            <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.second" class="tab-pane ng-scope">
+                <div class="outline ng-scope">
+                    <div class="btn-group ng-binding">
+                        <button  data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
+                            From: <span class="caret"></span>
+                        </button>
+                        <ul role="menu" class="dropdown-menu">
+                            <li *ngFor="#wallet of wallets"><a (click)="spendid = wallet.meta.filename" href="#">{{wallet.meta.filename}}</a></li>
+                        </ul>
+                        {{spendid}}
+                    </div>
+                    <table id="send-table">
+                        <tbody>
+                        <tr></tr>
+                        <tr>
+                            <td class="send-pay-col1">
+                                <label for="send_pay_to">Pay to</label>
+                            </td>
+                            <td>
+                                <input type="text" #spendaddress id="send_pay_to" [disabled]="readyDisable" class="ng-pristine ng-valid">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="send-pay-col1">
+                                <label for="send_amount">Amount</label>
+                            </td>
+                            <td>
+                                <input type="text" #spendamount [disabled]="readyDisable" id="send_amount" class="ng-pristine ng-valid">
+                                SKY
+                                <button (click)="ready(spendid, spendaddress.value, spendamount.value)" [disabled]="readyDisable" class="btn btn-default" type="button">Ready</button>
+                                <button (click)="spend(spendid, spendaddress.value, spendamount.value)" class="btn btn-default" type="button" [disabled]="sendDisable">Send</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <table id="pending-table">
+                        <tbody>
+                        <tr class="dark-row">
+                            <td><i class="fa fa-check"></i> Pending</td>
+                            <td>Address</td>
+                            <td>Amount</td>
+                        </tr>
+                        <tr *ngFor="#transaction of pendingTable">
+                            <td>{{transaction.complete}}</td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.third" class="tab-pane ng-scope">
+                <div class="outline ng-scope">
+                    <table id="transaction-table">
+                        <thead>
+                        <tr class="dark-row">
+                            <td>
+                                <div class="btn-group">
+                                    <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
+                                        Wallet <span class="caret"></span>
+                                    </button>
+                                    <ul role="menu" class="dropdown-menu">
+                                        <li *ngFor="#address of addresses"><a href="#" (click)="filterHistory(address.address)">{{address.address}}</a></li>
+                                        <li class="divider"></li>
+                                        <li><a href="#"  (click)="filterHistory('')">All</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td><a href="#" (click)="sortHistory('time')">Date <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a></td>
+                            <td><a href="#" (click)="sortHistory('address')">Address<i *ngIf="sortDir.address!=0" class="glyphicon glyphicon-triangle-{{sortDir.address==1?'top':'bottom'}}"></i></a></td>
+                            <td><a href="#" (click)="sortHistory('amount')">Amount <i *ngIf="sortDir.amount!=0" class="glyphicon glyphicon-triangle-{{sortDir.amount==1?'top':'bottom'}}"></i></a></td>
+                            <td>Label</td>
+                        </tr>
+                      </thead>
+                          <tbody *ngFor="#transactions of historyTable">
+                            <tr *ngIf="filterAddressVal==''||filterAddressVal==transactions.address">
+                              <td></td>
+                              <td>{{getDateTimeString(transactions.time)}}</td>
+                              <td>{{transactions.address}}</td>
+                              <td>{{transactions.amount}}</td>
+                              <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.fourth" class="tab-pane ng-scope">
+                <div class="outline ng-scope">
+                    <div *ngIf="selectedMenu=='Networking'" style="padding-top:10px">
+                        <p>Automatic Peers</p>
+                        <table class="outline" style="width:100%">
+                            <thead>
+                            <tr class="dark-row">
+                                <th class="text-center">ID</th>
+                                <th class="text-center">Address</th>
+                                <th class="text-center">Listen Port</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr *ngFor="#item of connections">
+                                <td class="text-center">{{item.id}}</td>
+                                <td class="text-center">{{item.address}}</td>
+                                <td class="text-center">{{item.listen_port}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <br>
+                        <p style="margin:20px 0 10px">
+                            Default Peers
+                            <!--<button class='btn btn-default pull-right' style="margin-top: -10px;">Refresh</button>-->
+                            <button class='btn btn-default pull-right' style="margin-top: -10px;" (click)="showNewDefaultConnectionDialog()">New</button>
+                        </p>
+                        <table class="outline" style="width:100%">
+                            <thead>
+                            <tr class="dark-row">
+                                <th class="text-center">No</th>
+                                <th class="text-center">Address</th>
+                                <th class="text-center"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr *ngFor="#item of defaultConnections;#i=index">
+                                <td class="text-center">{{i+1}}</td>
+                                <td class="text-center">{{item}}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-default" (click)="showEditDefaultConnectionDialog(item)">Edit</button>
+                                    <button class="btn btn-sm btn-danger" (click)="deleteDefaultConnection(item)">Delete</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div *ngIf="selectedMenu=='BlockChain'" style="padding-top:10px">
+                        <p>BlockChain</p>
+                        <table class="table-bordered" style="width:100%">
+                            <tr style="background:white">
+                                <th class="text-center dark-row">Number of blocks</th>
+                                <td>{{blockChain.head.seq}}</td>
+                            </tr>
+                            <tr style="background:white">
+                                <th class="text-center dark-row">Time since last block</th>
+                                <td>{{getElapsedTime(blockChain.head.timestamp)|number}} sec</td>
+                            </tr>
+                            <tr style="background:white">
+                                <th class="text-center dark-row">Hash of current block</th>
+                                <td>{{blockChain.head.hash}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div *ngIf="selectedMenu=='Outputs'" style="padding-top:10px">
+                        <p>Outputs</p>
+                        <div class="main-content ng-scope">
+                            <table class="table table-bordered" style="width:100%">
+                                <thead>
+                                <tr class="dark-row">
+                                    <th>Address</th>
+                                    <th>Coins</th>
+                                    <th>Hours</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr *ngFor="#item of outputs" style="background:white">
+                                    <td>{{item.address}}</td>
+                                    <td>{{item.coins}}</td>
+                                    <td>{{item.hours}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sky-footer">
+    <div *ngIf="progress>100" class="message">Downloading Blockchain</div>
+    <!--progressbar *ngIf="progress>99" class="progress-striped active" value="progress" type="info"></progressbar-->
+    <div *ngIf="progress>100" class="progress-striped active progress ng-isolate-scope" type="info" value="progress">
+        <div aria-valuetext="80%" aria-valuemax="100" aria-valuemin="0" aria-valuenow="progress" role="progressbar" ng-class="type &amp;&amp; 'progress-bar-' + type" class="progress-bar progress-bar-info" style="width: {{progress}}%;"></div>
+    </div>
+    <div  *ngIf="progress>100" class="percent">{{progress}}%</div>
+</div>
+
+
+<!-- Popup for view QR code -->
+<div *ngIf="QrIsVisible" ng-style="{'z-index': 1040 + (index &amp;&amp; 1 || 0) + index*10}" ng-class="{in: animate}" class="modal-backdrop fade  in" modal-backdrop="" style="z-index: 1040;"></div>
+<div *ngIf="QrIsVisible" class="modal fade show in" id="myModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="qr-container">
+                    <qrcode [size]="300" [level]="'L'" [qrdata]="QrAddress"></qrcode>
+                    <div class="qrAddress">{{QrAddress}}</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" (click)="hideQrPopup()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup for add new wallet -->
+<div *ngIf="NewWalletIsVisible" ng-style="{'z-index': 1040 + (index &amp;&amp; 1 || 0) + index*10}" ng-class="{in: animate}" class="modal-backdrop fade  in" modal-backdrop="" style="z-index: 1040;"></div>
+<div *ngIf="NewWalletIsVisible" class="modal fade show in" id="myModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" (click)="hideWalletPopup()" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Create a new wallet</h4>
+            </div>
+            <div class="modal-body">
+                <h5>Are you sure to create a new wallet?</h5>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" (click)="createNewWallet()">Ok</button>
+                <button type="button" class="btn" (click)="hideWalletPopup()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup for edit wallet -->
+<!--<div *ngIf="EditWalletIsVisible" ng-style="{'z-index': 1040 + (index &amp;&amp; 1 || 0) + index*10}" ng-class="{in: animate}" class="modal-backdrop fade  in" modal-backdrop="" style="z-index: 1040;"></div>-->
+<div *ngIf="EditWalletIsVisible" class="modal fade show in" id="myModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" (click)="hideEditWalletPopup()" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Update wallet - {{walletId}}</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Name:</label>
+                        <div class="col-sm-9">
+                            <input maxlength="60" #walletname placeholder="Enter label for this wallet" class="form-control" required/>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" (click)="updateWallet(walletId, walletname.value)">Ok</button>
+                <button type="button" class="btn" (click)="hideEditWalletPopup()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup for load wallet from seed -->
+<!--<div *ngIf="loadSeedIsVisible" ng-style="{'z-index': 1040 + (index &amp;&amp; 1 || 0) + index*10}" ng-class="{in: animate}" class="modal-backdrop fade  in" modal-backdrop="" style="z-index: 1040;"></div>-->
+<div *ngIf="loadSeedIsVisible" class="modal fade show in" id="myModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" ng-click="cancel()" class="close">&times;</button>
+                <h4 class="modal-title">Load wallet by seed</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Name:</label>
+                        <div class="col-sm-9">
+                            <input maxlength="60" #walletname placeholder="Enter label for this wallet" class="form-control" required/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Seed:</label>
+                        <div class="col-sm-9">
+                            <textarea rows="4" #walletseed cols="46" class="form-control"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" (click)="createWalletSeed(walletname.value, walletseed.value)">Ok</button>
+                <button type="button" class="btn" (click)="hideLoadSeedWalletPopup()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="NewDefaultConnectionIsVisible" class="modal fade show in" id="myModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" (click)="hideNewDefaultConnectionDialog()" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">New Default Connection</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Connection:</label>
+                        <div class="col-sm-9">
+                            <input maxlength="60" #connectionName placeholder="ex)192.168.1.200:1234" class="form-control"/>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" (click)="createDefaultConnection(connectionName.value)">Ok</button>
+                <button type="button" class="btn" (click)="hideNewDefaultConnectionDialog()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div *ngIf="EditDefaultConnectionIsVisible" class="modal fade show in" id="myModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" (click)="hideEditDefaultConnectionDialog()" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Edit Default Connection</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Connection:</label>
+                        <div class="col-sm-9">
+                            <input maxlength="60" #connectionName placeholder="ex)192.168.1.200:1234" class="form-control" value="{{oldConnection}}"/>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" (click)="updateDefaultConnection(connectionName.value)">Ok</button>
+                <button type="button" class="btn" (click)="hideEditDefaultConnectionDialog()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

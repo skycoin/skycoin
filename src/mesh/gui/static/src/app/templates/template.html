@@ -1,0 +1,94 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-sm-12">
+      <h2>Skywire</h2>
+    </div>
+  </div>
+    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active"><a href="#nodes" aria-controls="nodes" role="tab" data-toggle="tab">Nodes</a></li>
+      <li role="presentation"><a href="#routes" aria-controls="routes" role="tab" data-toggle="tab">Routes</a></li>
+      <li role="presentation"><a href="#setting" aria-controls="setting" role="tab" data-toggle="tab">Setting</a></li>
+      <li role="presentation"><a href="#graph" aria-controls="graph" role="tab" data-toggle="tab">Graph</a></li>
+      <li role="presentation"><a href="#network" aria-controls="network" role="tab" data-toggle="tab">Network</a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane fade in active" id="nodes">
+        <div class="container-fluid content">
+            <div class="content-body">
+              <div class="row">
+                <div class="col-sm-4">
+                    <p>
+                      Node List
+                      <button type="button" name="button" class="btn btn-primary pull-right" (click)="addNewNode()">New node</button>
+                    </p>
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Public Key</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="#item of nodes">
+                            <td>{{item}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-sm-8">
+                    <p>
+                      Transport List
+                      <button type="button" name="button" class="btn btn-primary pull-right" (click)="addNewTransport()">New transport</button>
+                    </p>
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Type</th>
+                          <th>In(KB/s)</th>
+                          <th>Out(KB/s)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="#item of transports">
+                          <td>{{item.id}}</td>
+                          <td>{{item.type}}</td>
+                          <td>{{item.in}}</td>
+                          <td>{{item.out}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="routes">
+        <div class="container-fluid content">
+          Routes
+        </div>
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="setting">
+        <div class="container-fluid content">
+            <div class="content-body">
+              Setting
+            </div>
+        </div>
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="graph">
+        <div class="container-fluid content">
+            <div class="content-body">
+                Graph
+            </div>
+        </div>
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="network">
+        <div class="container-fluid content">
+            <div class="content-body">
+                Network
+            </div>
+        </div>
+      </div>
+    </div>
+</div>
+<!-- Nav tabs -->

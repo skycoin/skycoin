@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Skywire</title>
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" type="image/x-icon">
+    <link href="libs/css/bootstrap.css" rel="stylesheet">
+    <link href="libs/css/animate.css" rel="stylesheet">
+    <link href="libs/css/font-awesome.css" rel="stylesheet">
+    <link href="libs/css/bootstrap.icon-large.css" rel="stylesheet">
+    <link href="app.css" rel="stylesheet">
+    <script src="app/angular2/angular2-polyfills.js"></script>
+    <script src="app/angular2/system.js"></script>
+    <script src="app/angular2/typescript.js"></script>
+    <script src="app/angular2/Rx.js"></script>
+    <script src="app/angular2/router.dev.js"></script>
+    <script src="app/angular2/angular2.dev.js"></script>
+    <script src="app/angular2/http.min.js"></script>
+    <script>
+      System.config({
+        transpiler: 'typescript',
+        typescriptOptions: {
+          emitDecoratorMetadata: true
+        },
+      });
+      System.import('app/boot.js');
+    </script>
+  </head>
+  <body>
+    <load-skywire>Loading...</load-skywire>
+    <script src="libs/js/jquery.js"></script>
+    <script src="libs/js/moment.js"></script>
+    <script src="libs/js/underscore.min.js"></script>
+    <script src="libs/js/bootstrap.js"></script>
+  </body>
+</html>

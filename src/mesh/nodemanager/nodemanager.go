@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport"
+	"github.com/skycoin/skycoin/src/mesh/transport/physical"
 )
 
 func init() {
@@ -20,16 +21,16 @@ func init() {
 	b := []byte{234, 15, 123, 220, 185, 171, 218, 20, 130, 48, 24, 255, 214, 133, 191, 164, 211, 190, 224, 127, 105, 125, 141, 178, 226, 250, 123, 149, 229, 33, 187, 165, 27}
 	p := cipher.PubKey{}
 	copy(p[:], b[:])
-	ServerConfig.Node.PubKey = p
+	ServerConfig.NodeConfig.PubKey = p
 
 	//b2 := [32]byte{48, 126, 177, 168, 139, 146, 205, 8, 191, 110, 195, 254, 184, 22, 168, 118, 237, 126, 87, 224, 171, 243, 239, 87, 106, 152, 251, 217, 120, 239, 88, 138}
 	//ServerConfig.Node.ChaCha20Key = b2
 }
 
-var ServerConfig *mesh.TestConfig
+var ServerConfig *TestConfig
 
 type NodeManager struct {
-	ConfigList map[cipher.PubKey]*mesh.TestConfig
+	ConfigList map[cipher.PubKey]*TestConfig
 	Port       int
 	NodesList  map[cipher.PubKey]*mesh.Node
 	PubKeyList []cipher.PubKey
@@ -70,17 +71,17 @@ type Route struct {
 }
 
 // Create TestConfig to the test using the functions created in the meshnet library.
-func CreateTestConfig(port int) *mesh.TestConfig {
-	testConfig := &mesh.TestConfig{}
-	testConfig.Node = NewNodeConfig()
-	testConfig.Reliable = transport.CreateReliable(testConfig.Node.PubKey)
-	testConfig.Udp = transport.CreateUdp(port, "127.0.0.1")
+func CreateTestConfig(port int) *TestConfig {
+	testConfig := &TestConfig{}
+	testConfig.NodeConfig = NewNodeConfig()
+	testConfig.TransportConfig = transport.CreateTransportConfig(testConfig.NodeConfig.PubKey)
+	testConfig.UDPConfig = physical.CreateUdp(port, "127.0.0.1")
 
 	return testConfig
 }
 
-func CreateNode(config mesh.TestConfig) *mesh.Node {
-	node, createNodeError := mesh.NewNode(config.Node)
+func CreateNode(config TestConfig) *mesh.Node {
+	node, createNodeError := mesh.NewNode(config.NodeConfig)
 	if createNodeError != nil {
 		panic(createNodeError)
 	}
@@ -111,7 +112,7 @@ func NewNodeConfig() domain.NodeConfig {
 
 // Create node list
 func (self *NodeManager) CreateNodeConfigList(n int) {
-	self.ConfigList = make(map[cipher.PubKey]*mesh.TestConfig)
+	self.ConfigList = make(map[cipher.PubKey]*TestConfig)
 	self.NodesList = make(map[cipher.PubKey]*mesh.Node)
 	if self.Port == 0 {
 		self.Port = 10000
@@ -124,15 +125,15 @@ func (self *NodeManager) CreateNodeConfigList(n int) {
 // Add Node to Nodes List
 func (self *NodeManager) AddNode() int {
 	if len(self.ConfigList) == 0 {
-		self.ConfigList = make(map[cipher.PubKey]*mesh.TestConfig)
+		self.ConfigList = make(map[cipher.PubKey]*TestConfig)
 		self.NodesList = make(map[cipher.PubKey]*mesh.Node)
 	}
 	config := CreateTestConfig(self.Port)
-	self.ConfigList[config.Node.PubKey] = config
+	self.ConfigList[config.NodeConfig.PubKey] = config
 	self.Port++
 	node := CreateNode(*config)
-	self.NodesList[config.Node.PubKey] = node
-	self.PubKeyList = append(self.PubKeyList, config.Node.PubKey)
+	self.NodesList[config.NodeConfig.PubKey] = node
+	self.PubKeyList = append(self.PubKeyList, config.NodeConfig.PubKey)
 	index := len(self.NodesList) - 1
 	return index
 }
@@ -167,36 +168,74 @@ func (self *NodeManager) ConnectNodes() {
 				config3 := self.ConfigList[pubKey3]
 				ConnectNodeToNode(config1, config3)
 			}
-			self.NodesList[pubKey1].AddTransportToNode(*config1)
+			AddTransportToNode(self.NodesList[pubKey1], *config1)
 		}
 	}
 }
 
 // Connect Node1 (config1) to Node2 (config2)
-func ConnectNodeToNode(config1, config2 *mesh.TestConfig) {
+func ConnectNodeToNode(config1, config2 *TestConfig) {
 	var addr bytes.Buffer
-	addr.WriteString(config2.Udp.ExternalAddress)
+	addr.WriteString(config2.UDPConfig.ExternalAddress)
 	addr.WriteString(":")
-	addr.WriteString(strconv.Itoa(int(config2.Udp.ListenPortMin)))
+	addr.WriteString(strconv.Itoa(int(config2.UDPConfig.ListenPortMin)))
 	config1.AddPeerToConnect(addr.String(), config2)
 	addr.Reset()
 }
 
-// Add a new transport to node
-func (self *NodeManager) AddTransportsToNode(config mesh.TestConfig, indexNode int) {
+// Add Routes to Node
+func AddRoutesToEstablish(node *mesh.Node, routesConfigs []domain.RouteConfig) {
+	// Setup route
+	for _, routeConfig := range routesConfigs {
+		if len(routeConfig.Peers) == 0 {
+			continue
+		}
+		addRouteErr := node.AddRoute((domain.RouteID)(routeConfig.ID), routeConfig.Peers[0])
+		if addRouteErr != nil {
+			panic(addRouteErr)
+		}
+		for peer := 1; peer < len(routeConfig.Peers); peer++ {
+			extendErr := node.ExtendRoute((domain.RouteID)(routeConfig.ID), routeConfig.Peers[peer], 5*time.Second)
+			if extendErr != nil {
+				panic(extendErr)
+			}
+		}
+	}
+}
+
+// Add transport to Node
+func AddTransportToNode(node *mesh.Node, config TestConfig) {
+	udpTransport := physical.CreateNewUDPTransport(config.UDPConfig)
+
+	// Connect
+	for _, connectTo := range config.PeersToConnect {
+		connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
+		if connectError != nil {
+			panic(connectError)
+		}
+	}
+
+	// Transport closes UDPTransport
+	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
+	//defer transportToPeer.Close()
+
+	node.AddTransport(transportToPeer)
+}
+
+// Returns Node by index
+func (self *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {
 	nodePubKey := self.PubKeyList[indexNode]
-	node := self.NodesList[nodePubKey]
-	node.AddTransportToNode(config)
+	return self.NodesList[nodePubKey]
 }
 
 // Get all transports from one node
-func (self *NodeManager) GetTransportsFromNode(indexNode int) []transport.Transport {
+func (self *NodeManager) GetTransportsFromNode(indexNode int) []transport.ITransport {
 	nodePubKey := self.PubKeyList[indexNode]
 	node := self.NodesList[nodePubKey]
 	return node.GetTransports()
 }
 
-func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.Transport) {
+func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.ITransport) {
 	nodePubKey := self.PubKeyList[indexNode]
 	node := self.NodesList[nodePubKey]
 	node.RemoveTransport(transport)

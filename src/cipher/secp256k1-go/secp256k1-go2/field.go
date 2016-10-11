@@ -42,11 +42,13 @@ func (r *Field) SetB32(a []byte) {
 	r.n[7] = 0
 	r.n[8] = 0
 	r.n[9] = 0
+	var v uint32
 	for i := uint(0); i < 32; i++ {
 		for j := uint(0); j < 4; j++ {
 			limb := (8*i + 2*j) / 26
 			shift := (8*i + 2*j) % 26
-			r.n[limb] |= (uint32)((a[31-i]>>(2*j))&0x3) << shift
+			v = (uint32)((a[31-i]>>(2*j))&0x3) << shift
+			r.n[limb] |= v
 		}
 	}
 }

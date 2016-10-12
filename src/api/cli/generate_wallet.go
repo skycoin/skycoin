@@ -1,23 +1,20 @@
 package cli
 
-import (
-	gcli "github.com/urfave/cli"
-)
+import gcli "gopkg.in/urfave/cli.v1"
 
 func init() {
 	cmd := gcli.Command{
-		Name: "generateWallet",
-		Description: `Generate a new wallet from seed. 
-
-                      Use caution when using the “-p” command. If you have 
-                      command history enabled your wallet encryption password 
-                      can be recovered from the history log. If you do not include 
-                      the “-p” option you will be prompted to enter your password after 
-                      you enter your command.
-                       
-                      All results are returned in JSON format. 
+		Name:      "generateWallet",
+		Usage:     "Generate a new wallet from seed.",
+		ArgsUsage: "[options]",
+		Description: `
+		Use caution when using the “-p” command. If you have command history enabled your 
+		wallet encryption password can be recovered from the history log. If you do not 
+		include the “-p” option you will be prompted to enter your password after you enter 
+		your command. 
+		
+		All results are returned in JSON format. 
                       `,
-		Usage: "skycoin generateWallet [options]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "s",

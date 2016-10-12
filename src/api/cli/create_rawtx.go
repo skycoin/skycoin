@@ -1,24 +1,21 @@
 package cli
 
-import (
-	gcli "github.com/urfave/cli"
-)
+import gcli "gopkg.in/urfave/cli.v1"
 
 func init() {
 	cmd := gcli.Command{
-		Name: "createRawTransaction",
-		Description: `Create a raw transaction to be broadcast to the network later or to a remote server via RPC.
-                        
-                      If you are sending from a wallet the coins will be taken recursively 
-                      from all addresses within the wallet starting with the first address until 
-                      the amount of the transaction is met. 
-                      
-                      Use caution when using the “-p” command. If you have command history 
-                      enabled your wallet encryption password can be recovered from the history log. 
-                      If you do not include the “-p” option you will be prompted to enter your password 
-                      after you enter your command. 
-                      `,
-		Usage: "skycoin createRawTransaction  [option] [from wallet or address] [to address]]",
+		Name:      "createRawTransaction",
+		Usage:     "Create a raw transaction to be broadcast to the network later or to a remote server via RPC.",
+		ArgsUsage: "[option] [from wallet or address] [to address]]",
+		Description: `
+        If you are sending from a wallet the coins will be taken recursively 
+        from all addresses within the wallet starting with the first address until 
+        the amount of the transaction is met. 
+        
+        Use caution when using the “-p” command. If you have command history enabled 
+        your wallet encryption password can be recovered from the history log. If you 
+        do not include the “-p” option you will be prompted to enter your password 
+        after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "w",

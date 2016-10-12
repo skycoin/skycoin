@@ -1,14 +1,12 @@
 package cli
 
-import (
-	gcli "github.com/urfave/cli"
-)
+import gcli "gopkg.in/urfave/cli.v1"
 
 func init() {
 	cmd := gcli.Command{
-		Name:        "transaction",
-		Description: "Lists details of specific transaction",
-		Usage:       "skycointransaction  [option] [transaction id]",
+		Name:      "transaction",
+		Usage:     "Lists details of specific transaction",
+		ArgsUsage: "[option] [transaction id]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "j,json",

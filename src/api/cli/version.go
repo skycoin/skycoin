@@ -1,14 +1,12 @@
 package cli
 
-import (
-	gcli "github.com/urfave/cli"
-)
+import gcli "gopkg.in/urfave/cli.v1"
 
 func init() {
 	cmd := gcli.Command{
-		Name:        "version",
-		Description: "List the current version of Skycoin components.",
-		Usage:       "skycoin version [options]",
+		Name:      "version",
+		Usage:     "List the current version of Skycoin components.",
+		ArgsUsage: "[options]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "j,json",

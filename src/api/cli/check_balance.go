@@ -1,12 +1,12 @@
 package cli
 
-import gcli "github.com/urfave/cli"
+import gcli "gopkg.in/urfave/cli.v1"
 
 func init() {
 	cmd := gcli.Command{
-		Name:        "checkBalance",
-		Description: "Check the balance of a wallet or specific address.",
-		Usage:       "skycoin checkBalance  [option] [wallet path or address]",
+		Name:      "checkBalance",
+		Usage:     "Check the balance of a wallet or specific address.",
+		ArgsUsage: "[option] [wallet path or address]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "w",

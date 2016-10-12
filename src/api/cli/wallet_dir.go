@@ -1,14 +1,11 @@
 package cli
 
-import (
-	gcli "github.com/urfave/cli"
-)
+import gcli "gopkg.in/urfave/cli.v1"
 
 func init() {
 	cmd := gcli.Command{
-		Name:        "walletDir",
-		Description: "Displays wallet folder address. ",
-		Usage:       "skycoin walletDir",
+		Name:  "walletDir",
+		Usage: "Displays wallet folder address.",
 		Action: func(c *gcli.Context) error {
 			return nil
 		},

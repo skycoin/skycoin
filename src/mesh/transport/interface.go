@@ -6,16 +6,16 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-type TransportCrypto interface {
+type ITransportCrypto interface {
 	GetKey() []byte
 	Decrypt(data []byte) []byte
 	Encrypt(data []byte, key []byte) []byte
 }
 
-type Transport interface {
+type ITransport interface {
 	io.Closer
 	//Close() error
-	SetCrypto(crypto TransportCrypto)
+	SetCrypto(crypto ITransportCrypto)
 	ConnectedToPeer(peer cipher.PubKey) bool
 	GetConnectedPeers() []cipher.PubKey
 	// Does not consider any extra bytes added by crypto

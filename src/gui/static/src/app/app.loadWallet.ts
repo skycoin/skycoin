@@ -55,6 +55,7 @@ export class loadWalletComponent implements OnInit {
     EditDefaultConnectionIsVisible : boolean;
     oldConnection:string;
     filterAddressVal:string;
+    totalSky:any;
 
     sortDir:{};
 
@@ -64,6 +65,7 @@ export class loadWalletComponent implements OnInit {
     //Init function for load default value
     ngOnInit() {
         this.displayMode = DisplayModeEnum.first;
+        this.totalSky = 0;
         this.loadWallet();
         this.loadConnections();
         this.loadDefaultConnections();
@@ -126,6 +128,7 @@ export class loadWalletComponent implements OnInit {
 
     //Load wallet function
     loadWallet(){
+        this.totalSky = 0;
         this.http.post('/wallets', '')
             .map((res:Response) => res.json())
             .subscribe(
@@ -159,6 +162,7 @@ export class loadWalletComponent implements OnInit {
                 response => {
                     //console.log('load done: ' + inc, response);
                     this.wallets[inc].balance = response.confirmed.coins / 1000000;
+                    this.totalSky += this.wallets[inc].balance;
                 }, err => console.log("Error on load balance: " + err), () => {
                   //console.log('Balance load done')
                 })
@@ -197,7 +201,7 @@ export class loadWalletComponent implements OnInit {
             });
     }
     loadBlockChain() {
-        this.http.post('/blockchain', '')
+        /*this.http.post('/blockchain', '')
             .map((res) => res.json())
             .subscribe(data => {
                 //console.log("blockchain", data);
@@ -206,7 +210,7 @@ export class loadWalletComponent implements OnInit {
                 }
             }, err => console.log("Error on load blockchain: " + err), () => {
               //console.log('blockchain load done');
-            });
+            });*/
     }    //Load progress function for Skycoin
     loadProgress(){
         //Post method executed

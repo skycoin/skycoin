@@ -3,6 +3,9 @@
 </div>
 <div id="sky-center">
     <div id="main-content" class="ng-isolate-scope">
+        <div class="header-for-total-sky">
+          <span class="total-sky-text">Confirmed Balance: {{totalSky|number}} SKY</span>
+        </div>
         <ul ng-class="{'nav-stacked': vertical, 'nav-justified': justified}" class="nav nav-tabs">
             <li [class.active]="displayMode === displayModeEnum.first">
                 <a (click)="switchTab(displayModeEnum.first, '')" class="ng-binding">
@@ -40,7 +43,11 @@
         </ul>
         <div class="tab-content">
             <div [class.active]="displayMode === displayModeEnum.first"  class="tab-pane ng-scope active">
-                <div style="padding:0 10px">
+                <div style="padding:0 10px 20px 10px;display:inline-block;">
+                  <div class="wallet-buttons">
+                      <button class="btn btn-default" type="button" (click)="showNewWalletDialog()"><i class="fa fa-cloud"></i> New Wallet</button>
+                      <button class="btn btn-default" type="button" (click)="openLoadWallet()"><i class="fa fa-cloud"></i> Load Wallet From Seed</button>
+                  </div>
                   <table id="overview-wallet" class="outline" *ngFor="#wallet of wallets">
                       <tr class="dark-row">
                           <td><div id="overview-wallet-title">Wallet: {{wallet.meta.filename}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
@@ -63,13 +70,6 @@
                           </td>
                       </tr>
                   </table>
-                </div>
-                <div class="outline ng-scope">
-                    <!-- ngRepeat: wallet in wallets -->
-                    <div class="wallet-buttons">
-                        <button class="btn btn-default" type="button" (click)="showNewWalletDialog()"><i class="fa fa-cloud"></i> New Wallet</button>
-                        <button class="btn btn-default" type="button" (click)="openLoadWallet()"><i class="fa fa-cloud"></i> Load Wallet From Seed</button>
-                    </div>
                 </div>
             </div>
 

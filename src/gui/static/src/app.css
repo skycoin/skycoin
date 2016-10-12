@@ -355,3 +355,12 @@ label {
 .qr-container .qrAddress{
   text-align: center;
 }
+.header-for-total-sky {
+  background: rgb(234, 239, 243) none repeat scroll 0% 0%;
+  padding: 10px 20px;
+  border: 1px solid rgb(221, 221, 221);
+  margin-bottom:15px;
+}
+.total-sky-text {
+  font-size: 16px;
+}

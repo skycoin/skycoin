@@ -39,6 +39,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Init function for load default value
                 ngOnInit() {
                     this.displayMode = DisplayModeEnum.first;
+                    this.totalSky = 0;
                     this.loadWallet();
                     this.loadConnections();
                     this.loadDefaultConnections();
@@ -97,6 +98,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Load wallet function
                 loadWallet() {
+                    this.totalSky = 0;
                     this.http.post('/wallets', '')
                         .map((res) => res.json())
                         .subscribe(data => {
@@ -124,6 +126,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     response => {
                         //console.log('load done: ' + inc, response);
                         this.wallets[inc].balance = response.confirmed.coins / 1000000;
+                        this.totalSky += this.wallets[inc].balance;
                     }, err => console.log("Error on load balance: " + err), () => {
                         //console.log('Balance load done')
                     });
@@ -162,16 +165,16 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     });
                 }
                 loadBlockChain() {
-                    this.http.post('/blockchain', '')
+                    /*this.http.post('/blockchain', '')
                         .map((res) => res.json())
                         .subscribe(data => {
-                        //console.log("blockchain", data);
-                        if (data.head) {
-                            this.blockChain = data;
-                        }
-                    }, err => console.log("Error on load blockchain: " + err), () => {
-                        //console.log('blockchain load done');
-                    });
+                            //console.log("blockchain", data);
+                            if(data.head) {
+                                this.blockChain = data;
+                            }
+                        }, err => console.log("Error on load blockchain: " + err), () => {
+                          //console.log('blockchain load done');
+                        });*/
                 } //Load progress function for Skycoin
                 loadProgress() {
                     //Post method executed

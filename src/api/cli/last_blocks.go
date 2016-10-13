@@ -14,7 +14,7 @@ func init() {
 		Name:        "lastBlocks",
 		Usage:       "Displays the content of the most recently N generated blocks.",
 		Description: "All results returned in JSON format.",
-		ArgsUsage:   "[option] [numberOfBlocks]",
+		ArgsUsage:   "[numberOfBlocks]",
 		Action:      getLastBlocks,
 	}
 	Commands = append(Commands, cmd)
@@ -30,7 +30,7 @@ func getLastBlocks(c *gcli.Context) error {
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf("%s/last_blocks?num=%d", skycoinNodeAddr, n)
+	url := fmt.Sprintf("%s/last_blocks?num=%d", nodeAddress, n)
 	rsp, err := http.Get(url)
 	if err != nil {
 		return err

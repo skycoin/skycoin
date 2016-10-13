@@ -13,7 +13,7 @@ func init() {
 	cmd := gcli.Command{
 		Name:      "blocks",
 		Usage:     "Lists the content of a single block of a range of blocks. Block results are always in JSON format.",
-		ArgsUsage: "[option] [starting block or single block] [ending block]]",
+		ArgsUsage: "[starting block or single block] [ending block]]",
 		Action:    getBlocks,
 	}
 	Commands = append(Commands, cmd)

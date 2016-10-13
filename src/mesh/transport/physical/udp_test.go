@@ -5,12 +5,11 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/stretchr/testify/assert"
 )
 
 var staticTestConfig UDPConfig = UDPConfig{
-	TransportConfig: domain.TransportConfig{
+	TransportConfig: TransportConfig{
 		SendChannelLength: 8,
 	},
 	DatagramLength:  512,
@@ -38,7 +37,7 @@ func TestClose(t *testing.T) {
 
 func TestBindSTUNPorts(t *testing.T) {
 	config := UDPConfig{
-		TransportConfig: domain.TransportConfig{
+		TransportConfig: TransportConfig{
 			SendChannelLength: 8,
 		},
 		DatagramLength:  512,

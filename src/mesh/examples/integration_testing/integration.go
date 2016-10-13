@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
@@ -25,11 +24,11 @@ func main() {
 
 	config1.AddPeerToConnect("127.0.0.1:17000", config2)
 	config1.AddRouteToEstablish(config2)
-	config1.AddMessageToSend(config1.RoutesToEstablish[0].Id, "Message 1", true)
-	config1.AddMessageToReceive("Message 2", "", true)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, "Message 1")
+	config1.AddMessageToReceive("Message 2", "")
 
 	config2.AddPeerToConnect("127.0.0.1:15000", config1)
-	config2.AddMessageToReceive("Message 1", "Message 2", true)
+	config2.AddMessageToReceive("Message 1", "Message 2")
 
 	go sendMessage(2, *config2, &wg, statusChannel)
 
@@ -58,21 +57,20 @@ func main() {
 }
 
 // Initialize the Nodes for communication and sending messages
-func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
+func sendMessage(idConfig int, config nodemanager.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
 	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
 	defer wg.Done()
 
 	node := nodemanager.CreateNode(config)
-	node.AddTransportToNode(config)
+	nodemanager.AddTransportToNode(node, config)
 
 	defer node.Close()
 
-	node.AddRoutesToEstablish(config)
+	nodemanager.AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
-		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((domain.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}
@@ -95,7 +93,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, wg *sync.WaitGroup, statu
 			for _, messageToReceive := range config.MessagesToReceive {
 				if fmt.Sprintf("%v", messageToReceive.Contents) == fmt.Sprintf("%v", msgRecvd.Contents) {
 					if len(messageToReceive.Reply) > 0 {
-						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
+						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply)
 						if sendBackErr != nil {
 							panic(sendBackErr)
 						}

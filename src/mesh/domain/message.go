@@ -7,24 +7,23 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-type RouteId uuid.UUID
-type MessageId uuid.UUID
+type RouteID uuid.UUID
+type MessageID uuid.UUID
 
 // Fields must be public (capital first letter) for encoder
 type MessageBase struct {
 	// If RouteId is unknown, but not cipher.PubKey{}, then the message should be received here
 	//  the RouteId can be used to reply back thru the route
-	SendId   RouteId
-	SendBack bool
+	SendRouteID RouteID
+	SendBack    bool
 	// For sending the reply from the last node in a route
 	FromPeer cipher.PubKey
-	Reliably bool
 	Nonce    [4]byte
 }
 
 type UserMessage struct {
 	MessageBase
-	MessageId MessageId
+	MessageID MessageID
 	Index     uint64
 	Count     uint64
 	Contents  []byte
@@ -32,27 +31,27 @@ type UserMessage struct {
 
 type SetRouteMessage struct {
 	MessageBase
-	SetRouteId            RouteId
-	ConfirmId             RouteId
-	ForwardToPeer         cipher.PubKey
-	ForwardRewriteSendId  RouteId
-	BackwardToPeer        cipher.PubKey
-	BackwardRewriteSendId RouteId
-	DurationHint          time.Duration
+	SetRouteID                 RouteID
+	ConfirmRouteID             RouteID
+	ForwardToPeer              cipher.PubKey
+	ForwardRewriteSendRouteID  RouteID
+	BackwardToPeer             cipher.PubKey
+	BackwardRewriteSendRouteID RouteID
+	DurationHint               time.Duration
 }
 
 // This allows ExtendRoute() to block so that messages aren't lost while a route is
 //  not yet established
 type SetRouteReply struct {
 	MessageBase
-	ConfirmId RouteId
+	ConfirmRouteID RouteID
 }
 
 // Refreshes the route as it passes thru it
 type RefreshRouteMessage struct {
 	MessageBase
-	DurationHint time.Duration
-	ConfirmId    RouteId
+	DurationHint    time.Duration
+	ConfirmRoutedID RouteID
 }
 
 // Deletes the route as it passes thru it
@@ -89,22 +88,20 @@ type AddNodeMessage struct {
 type MessageToSend struct {
 	ThruRoute uuid.UUID
 	Contents  []byte
-	Reliably  bool
 }
 
 type MessageToReceive struct {
-	Contents      []byte
-	Reply         []byte
-	ReplyReliably bool
+	Contents []byte
+	Reply    []byte
 }
 
 type MessageUnderAssembly struct {
-	Fragments  map[uint64]UserMessage
-	SendId     RouteId
-	SendBack   bool
-	Count      uint64
-	Dropped    bool
-	ExpiryTime time.Time
+	Fragments   map[uint64]UserMessage
+	SendRouteID RouteID
+	SendBack    bool
+	Count       uint64
+	Dropped     bool
+	ExpiryTime  time.Time
 }
 
 type MeshMessage struct {

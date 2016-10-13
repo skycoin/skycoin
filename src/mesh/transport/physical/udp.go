@@ -1,4 +1,4 @@
-package transport
+package physical
 
 import (
 	"crypto/rand"
@@ -19,22 +19,22 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/mesh/domain"
+	"github.com/skycoin/skycoin/src/mesh/transport"
 )
-
-type UDPConfig struct {
-	domain.TransportConfig
-	DatagramLength uint16
-	LocalAddress   string // "" for default
-
-	NumListenPorts  uint16
-	ListenPortMin   uint16   // If 0, STUN is used
-	ExternalAddress string   // External address to use if STUN is not
-	StunEndpoints   []string // STUN servers to try for NAT traversal
-}
 
 type ListenPort struct {
 	externalHost net.UDPAddr
 	conn         *net.UDPConn
+}
+
+type UDPConfig struct {
+	domain.TransportConfig
+	DatagramLength  uint16
+	LocalAddress    string // "" for default
+	NumListenPorts  uint16
+	ListenPortMin   uint16   // If 0, STUN is used
+	ExternalAddress string   // External address to use if STUN is not
+	StunEndpoints   []string // STUN servers to try for NAT traversal
 }
 
 type UDPCommConfig struct {
@@ -49,7 +49,7 @@ type UDPTransport struct {
 	messagesReceived chan []byte
 	closing          chan bool
 	closeWait        *sync.WaitGroup
-	crypto           TransportCrypto
+	crypto           transport.ITransportCrypto
 
 	// Thread protected variables
 	lock           *sync.Mutex
@@ -248,7 +248,7 @@ func (self *UDPTransport) Close() error {
 	return nil
 }
 
-func (self *UDPTransport) SetCrypto(crypto TransportCrypto) {
+func (self *UDPTransport) SetCrypto(crypto transport.ITransportCrypto) {
 	self.crypto = crypto
 }
 
@@ -321,7 +321,7 @@ func (self *UDPTransport) SetReceiveChannel(received chan []byte) {
 	self.messagesReceived = received
 }
 
-func (self *UDPTransport) safeGetCrypto() TransportCrypto {
+func (self *UDPTransport) safeGetCrypto() transport.ITransportCrypto {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return self.crypto

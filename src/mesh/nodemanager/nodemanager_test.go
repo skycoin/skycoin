@@ -84,21 +84,20 @@ func recoverFlowControl(t *testing.T, index1, index2 int) {
 }
 
 // Initialize the Node for communication and sending messages
-func sendMessage(idConfig int, config mesh.TestConfig, node *mesh.Node, wg *sync.WaitGroup, statusChannel chan bool, t *testing.T, index1, index2 int) {
+func sendMessage(idConfig int, config TestConfig, node *mesh.Node, wg *sync.WaitGroup, statusChannel chan bool, t *testing.T, index1, index2 int) {
 	defer recoverFlowControl(t, index1, index2)
 
 	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
 	defer wg.Done()
 
-	node.AddTransportToNode(config)
-	node.AddRoutesToEstablish(config)
+	AddTransportToNode(node, config)
+	AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
 
 	defer node.Close()
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
-		fmt.Fprintf(os.Stdout, "Is Reliably: %v\n", messageToSend.Reliably)
-		sendMsgErr := node.SendMessageThruRoute((domain.RouteId)(messageToSend.ThruRoute), messageToSend.Contents, messageToSend.Reliably)
+		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}
@@ -121,7 +120,7 @@ func sendMessage(idConfig int, config mesh.TestConfig, node *mesh.Node, wg *sync
 			for _, messageToReceive := range config.MessagesToReceive {
 				if fmt.Sprintf("%v", messageToReceive.Contents) == fmt.Sprintf("%v", msgRecvd.Contents) {
 					if len(messageToReceive.Reply) > 0 {
-						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply, messageToReceive.ReplyReliably)
+						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply)
 						if sendBackErr != nil {
 							panic(sendBackErr)
 						}
@@ -207,10 +206,10 @@ func TestConnectTwoNodesSuccess(t *testing.T) {
 	// Add route from node1 to node2
 	config1.AddRouteToEstablish(config2)
 
-	config1.AddMessageToSend(config1.RoutesToEstablish[0].Id, message1, true)
-	config1.AddMessageToReceive(message2, "", true)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1)
+	config1.AddMessageToReceive(message2, "")
 
-	config2.AddMessageToReceive(message1, message2, true)
+	config2.AddMessageToReceive(message1, message2)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -271,10 +270,10 @@ func TestConnectTwoNodesFail(t *testing.T) {
 	// Add route from node1 to node2
 	config1.AddRouteToEstablish(config2)
 
-	config1.AddMessageToSend(config1.RoutesToEstablish[0].Id, message1, true)
-	config1.AddMessageToReceive(message2, "", true)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1)
+	config1.AddMessageToReceive(message2, "")
 
-	config2.AddMessageToReceive(message1, message2, true)
+	config2.AddMessageToReceive(message1, message2)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -333,7 +332,7 @@ func _TestBuildRouteWithSuccess(t *testing.T) {
 		}
 	}
 
-	configList1 := []*mesh.TestConfig{}
+	configList1 := []*TestConfig{}
 	routeList := []cipher.PubKey{}
 
 	if !existConn {
@@ -345,7 +344,7 @@ func _TestBuildRouteWithSuccess(t *testing.T) {
 			}
 		}
 
-		configList2 := []*mesh.TestConfig{}
+		configList2 := []*TestConfig{}
 		for _, v := range config2.PeersToConnect {
 			configN := nodeManager.ConfigList[v.Peer]
 			if len(configN.PeersToConnect) > 1 {
@@ -421,7 +420,7 @@ func TestAddTransportsToNode(t *testing.T) {
 
 	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
 
-	nodeManager.AddTransportsToNode(*config, 1)
+	AddTransportToNode(node, *config)
 
 	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 
@@ -433,7 +432,7 @@ func TestAddTransportsToNode(t *testing.T) {
 
 	assert.Len(t, node2.GetTransports(), 1, "Error expected 1 transport in the node2")
 
-	nodeManager.AddTransportsToNode(*config2, 3)
+	AddTransportToNode(node2, *config2)
 
 	assert.Len(t, node2.GetTransports(), 2, "Error expected 2 transport in the node2")
 }
@@ -461,13 +460,13 @@ func TestRemoveTransportsFromNode(t *testing.T) {
 
 	config := CreateTestConfig(nodeManager.Port)
 	nodeManager.Port++
-	nodeManager.AddTransportsToNode(*config, 4)
+	AddTransportToNode(node, *config)
 
 	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 
 	config2 := CreateTestConfig(nodeManager.Port)
 	nodeManager.Port++
-	nodeManager.AddTransportsToNode(*config2, 4)
+	AddTransportToNode(node, *config2)
 
 	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
 
@@ -480,7 +479,7 @@ func TestRemoveTransportsFromNode(t *testing.T) {
 
 //Network Topology Tests
 
-func FindRoute(config *mesh.TestConfig, pubKey cipher.PubKey, routeList *[]cipher.PubKey) {
+func FindRoute(config *TestConfig, pubKey cipher.PubKey, routeList *[]cipher.PubKey) {
 	for _, p := range config.PeersToConnect {
 		if bytes.Equal(p.Peer[:], pubKey[:]) {
 			*routeList = append(*routeList, pubKey)

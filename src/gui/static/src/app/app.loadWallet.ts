@@ -56,6 +56,7 @@ export class loadWalletComponent implements OnInit {
     oldConnection:string;
     filterAddressVal:string;
     totalSky:any;
+    randomWords:any;
 
     sortDir:{};
 
@@ -134,12 +135,13 @@ export class loadWalletComponent implements OnInit {
             .subscribe(
                 data => {
                     this.wallets = data;
+                    //console.log(this.wallets);
 
                     //Load Balance for each wallet
                     var inc = 0;
                     for(var item in data){
-                        var address = data[inc].meta.filename;
-                        this.loadWalletItem(address, inc);
+                        var filename = data[inc].meta.filename;
+                        this.loadWalletItem(filename, inc);
                         inc++;
                     }
                     //Load Balance for each wallet end
@@ -166,6 +168,19 @@ export class loadWalletComponent implements OnInit {
                 }, err => console.log("Error on load balance: " + err), () => {
                   //console.log('Balance load done')
                 })
+        //get address balances
+        this.wallets[inc].entries.map((entry)=>{
+          this.http.get('/balance?addrs=' + entry.address, { headers: headers })
+              .map((res) => res.json())
+              .subscribe(
+                  //Response from API
+                  response => {
+                      //console.log('balance:' + entry.address, response);
+                      entry.balance = response.confirmed.coins / 1000000;
+                  }, err => console.log("Error on load balance: " + err), () => {
+                    //console.log('Balance load done')
+                  })
+        })
     }
     loadConnections() {
         this.http.post('/network/connections', '')
@@ -201,16 +216,16 @@ export class loadWalletComponent implements OnInit {
             });
     }
     loadBlockChain() {
-        /*this.http.post('/blockchain', '')
+        var headers = new Headers();
+        headers.append('Content-Type', 'application/x-www-form-urlencoded');
+        this.http.get('/blocks?start=1&end=10000', { headers: headers })
             .map((res) => res.json())
             .subscribe(data => {
                 //console.log("blockchain", data);
-                if(data.head) {
-                    this.blockChain = data;
-                }
+                this.blockChain = data.blocks;
             }, err => console.log("Error on load blockchain: " + err), () => {
               //console.log('blockchain load done');
-            });*/
+            });
     }    //Load progress function for Skycoin
     loadProgress(){
         //Post method executed
@@ -238,7 +253,7 @@ export class loadWalletComponent implements OnInit {
         }
     }
     selectMenu(menu, event) {
-        this.displayMode = this.displayModeEnum.fourth;
+        this.displayMode = this.displayModeEnum.fifth;
         event.preventDefault();
         this.selectedMenu = menu;
     }
@@ -261,6 +276,7 @@ export class loadWalletComponent implements OnInit {
     //Show wallet function for view New wallet popup
     showNewWalletDialog(){
         this.NewWalletIsVisible = true;
+        this.randomWords = this.getRandomWords();
     }
     //Hide wallet function for hide New wallet popup
     hideWalletPopup(){
@@ -485,6 +501,37 @@ export class loadWalletComponent implements OnInit {
                 }
             );
     }
+
+    getRandomWords() {
+      var ret = [];
+      for(var i = 0 ; i < 11; i++) {
+        var length = Math.round(Math.random() * 10);
+        length = Math.max(length, 3);
+
+        ret.push(this.createRandomWord(length));
+      }
+
+      return ret.join(" ");
+    }
+
+    createRandomWord(length) {
+    var consonants = 'bcdfghjklmnpqrstvwxyz',
+        vowels = 'aeiou',
+        rand = function(limit) {
+            return Math.floor(Math.random()*limit);
+        },
+        i, word='',
+        consonants2 = consonants.split(''),
+        vowels2 = vowels.split('');
+    for (i=0;i<length/2;i++) {
+        var randConsonant = consonants2[rand(consonants.length)],
+            randVowel = vowels2[rand(vowels.length)];
+        word += (i===0) ? randConsonant.toUpperCase() : randConsonant;
+        word += i*2<length-1 ? randVowel : '';
+    }
+    return word;
+    }
+
 }
 
 //Set default enum value for tabs

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	skycli "github.com/skycoin/skycoin/src/api/cli"
@@ -12,5 +13,7 @@ func main() {
 	app.UsageText = "the skycoin command line interface"
 	app.Version = "0.1"
 	app.Commands = skycli.Commands
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Println(err)
+	}
 }

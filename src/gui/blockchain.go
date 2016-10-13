@@ -119,10 +119,23 @@ func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error405(w, "")
 			return
 		}
+
+		num := r.FormValue("num")
+		if num == "" {
+			wh.Error400(w, "Param: num is empty")
+			return
+		}
+
+		n, err := strconv.ParseUint(num, 10, 64)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
 		headSeq := gateway.V.HeadBkSeq()
 		var start uint64
-		if (headSeq + 1) > lastBlockNum {
-			start = headSeq - lastBlockNum + 1
+		if (headSeq + 1) > n {
+			start = headSeq - n + 1
 		}
 
 		blocks := gateway.V.GetBlocks(start, headSeq)

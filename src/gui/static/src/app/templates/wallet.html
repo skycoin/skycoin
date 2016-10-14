@@ -75,6 +75,7 @@
                           </tr>
                       </tbody>
                   </table>
+                  <!-- historyPager -->
               </div>
             </div>
 
@@ -129,74 +130,113 @@
             </div>
 
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.third" class="tab-pane ng-scope">
-                <div class="outline ng-scope">
+                <div class="outline ng-scope" style="overflow:auto;">
+                  <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)">
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Search:</label>
+                          <div class="col-sm-6">
+                              <input #historySearchKey placeholder="Address or Transaction ID" class="form-control" >
+                          </div>
+                      </div>
+                  </form>
                     <table id="transaction-table">
                         <thead>
                         <tr class="dark-row">
                             <td>
-                                <div class="btn-group">
-                                    <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
-                                        Wallet <span class="caret"></span>
-                                    </button>
-                                    <ul role="menu" class="dropdown-menu">
-                                        <li *ngFor="#address of addresses"><a href="#" (click)="filterHistory(address.address)">{{address.address}}</a></li>
-                                        <li class="divider"></li>
-                                        <li><a href="#"  (click)="filterHistory('')">All</a></li>
-                                    </ul>
-                                </div>
+                              <a href="#" (click)="sortHistory('time')">Time
+                              <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a>
                             </td>
-                            <td><a href="#" (click)="sortHistory('time')">Date <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a></td>
-                            <td><a href="#" (click)="sortHistory('address')">Address<i *ngIf="sortDir.address!=0" class="glyphicon glyphicon-triangle-{{sortDir.address==1?'top':'bottom'}}"></i></a></td>
-                            <td><a href="#" (click)="sortHistory('amount')">Amount <i *ngIf="sortDir.amount!=0" class="glyphicon glyphicon-triangle-{{sortDir.amount==1?'top':'bottom'}}"></i></a></td>
-                            <td>Label</td>
+                            <td>Status</td>
+                            <td>Type</td>
+                            <td>Addresses</td>
+                            <td>Notes</td>
+                            <td>Amount</td>
+                            <td>Transaction ID</td>
                         </tr>
                       </thead>
-                          <tbody *ngFor="#transactions of historyTable">
-                            <tr *ngIf="filterAddressVal==''||filterAddressVal==transactions.address">
-                              <td></td>
-                              <td>{{getDateTimeString(transactions.time)}}</td>
-                              <td>{{transactions.address}}</td>
-                              <td>{{transactions.amount}}</td>
-                              <td></td>
+                          <tbody >
+                            <tr *ngFor="#transaction of historyPagedItems">
+                              <td>{{getDateTimeString(transaction.time)}}</td>
+                              <td>{{transaction.status.confirmed?'Complete':'Pending'}}</td>
+                              <td>{{transaction.txn.type}}</td>
+                              <td>
+                                From : <span *ngFor="#item of transaction.txn.inputs">{{item}},<br></span>
+                                To : <span *ngFor="#item of transaction.txn.outputs">{{item.dst}},<br></span>
+                              </td>
+                              <td>{{transaction.notes}}</td>
+                              <td>{{GetTransactionAmount(transaction)}}</td>
+                              <td>{{transaction.txn.txid}}</td>
                             </tr>
                         </tbody>
                     </table>
+                    <ul *ngIf="historyPager.pages&&historyPager.currentPage&&historyPager.pages.length" class="pagination">
+                        <li [ngClass]="{disabled:historyPager.currentPage === 1}">
+                            <a (click)="setHistoryPage(1)">First</a>
+                        </li>
+                        <li [ngClass]="{disabled:historyPager.currentPage === 1}">
+                            <a (click)="setHistoryPage(historyPager.currentPage - 1)">Previous</a>
+                        </li>
+                        <li *ngFor="#page of historyPager.pages" [ngClass]="{active:historyPager.currentPage === page}">
+                            <a (click)="setHistoryPage(page)">{{page}}</a>
+                        </li>
+                        <li [ngClass]="{disabled:historyPager.currentPage === historyPager.totalPages}">
+                            <a (click)="setHistoryPage(historyPager.currentPage + 1)">Next</a>
+                        </li>
+                        <li [ngClass]="{disabled:historyPager.currentPage === historyPager.totalPages}">
+                            <a (click)="setHistoryPage(historyPager.totalPages)">Last</a>
+                        </li>
+                    </ul>
                 </div>
             </div>
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.fourth" class="tab-pane ng-scope">
-                <div class="outline ng-scope">
-                    <table id="transaction-table">
-                        <thead>
-                        <tr class="dark-row">
-                            <td>
-                                <div class="btn-group">
-                                    <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
-                                        Wallet <span class="caret"></span>
-                                    </button>
-                                    <ul role="menu" class="dropdown-menu">
-                                        <li *ngFor="#address of addresses"><a href="#" (click)="filterHistory(address.address)">{{address.address}}</a></li>
-                                        <li class="divider"></li>
-                                        <li><a href="#"  (click)="filterHistory('')">All</a></li>
-                                    </ul>
-                                </div>
-                            </td>
-                            <td><a href="#" (click)="sortHistory('time')">Date <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a></td>
-                            <td><a href="#" (click)="sortHistory('address')">Address<i *ngIf="sortDir.address!=0" class="glyphicon glyphicon-triangle-{{sortDir.address==1?'top':'bottom'}}"></i></a></td>
-                            <td><a href="#" (click)="sortHistory('amount')">Amount <i *ngIf="sortDir.amount!=0" class="glyphicon glyphicon-triangle-{{sortDir.amount==1?'top':'bottom'}}"></i></a></td>
-                            <td>Label</td>
-                        </tr>
-                      </thead>
-                          <tbody *ngFor="#transactions of historyTable">
-                            <tr *ngIf="filterAddressVal==''||filterAddressVal==transactions.address">
-                              <td></td>
-                              <td>{{getDateTimeString(transactions.time)}}</td>
-                              <td>{{transactions.address}}</td>
-                              <td>{{transactions.amount}}</td>
-                              <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+              <div class="outline ng-scope" style="overflow:auto;">
+                <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Search:</label>
+                        <div class="col-sm-6">
+                            <input #blockSearchKey placeholder="Block Number, Block Hash, Transaction, or Address" class="form-control" >
+                        </div>
+                    </div>
+                </form>
+                <p>Recent Blocks<p>
+                  <table id="transaction-table">
+                      <thead>
+                      <tr class="dark-row">
+                          <td>Time</td>
+                          <td>Height</td>
+                          <td>Transactions</td>
+                          <td>Amount Transferred</td>
+                          <td>Transaction ID</td>
+                      </tr>
+                    </thead>
+                        <tbody >
+                          <tr *ngFor="#block of blockPagedItems">
+                            <td>{{getDateTimeString(block.header.timestamp)}}</td>
+                            <td></td>
+                            <td>{{block.body.txns.length}}</td>
+                            <td>{{GetTransactionAmount2(block.body.txns[0])|number}}</td>
+                            <td>{{block.body.txns[0].txid}}</td>
+                          </tr>
+                      </tbody>
+                  </table>
+                  <ul *ngIf="blockPager.pages" class="pagination">
+                      <li [ngClass]="{disabled:blockPager.currentPage === 1}">
+                          <a (click)="setBlockPage(1)">First</a>
+                      </li>
+                      <li [ngClass]="{disabled:blockPager.currentPage === 1}">
+                          <a (click)="setBlockPage(blockPager.currentPage - 1)">Previous</a>
+                      </li>
+                      <li *ngFor="#page of blockPager.pages" [ngClass]="{active:blockPager.currentPage === page}">
+                          <a (click)="setBlockPage(page)">{{page}}</a>
+                      </li>
+                      <li [ngClass]="{disabled:blockPager.currentPage === blockPager.totalPages}">
+                          <a (click)="setBlockPage(blockPager.currentPage + 1)">Next</a>
+                      </li>
+                      <li [ngClass]="{disabled:blockPager.currentPage === blockPager.totalPages}">
+                          <a (click)="setBlockPage(blockPager.totalPages)">Last</a>
+                      </li>
+                  </ul>
+              </div>
             </div>
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.fifth" class="tab-pane ng-scope">
                 <div class="outline ng-scope">

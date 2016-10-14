@@ -15,10 +15,56 @@ declare var _: any;
 declare var $: any;
 declare var moment: any;
 
+export class PagerService {
+    getPager(totalItems: number, currentPage: number = 1, pageSize: number = 5) {
+        // calculate total pages
+        var totalPages = Math.ceil(totalItems / pageSize);
+
+        var startPage, endPage;
+        if (totalPages <= 10) {
+            // less than 10 total pages so show all
+            startPage = 1;
+            endPage = totalPages;
+        } else {
+            // more than 10 total pages so calculate start and end pages
+            if (currentPage <= 6) {
+                startPage = 1;
+                endPage = 10;
+            } else if (currentPage + 4 >= totalPages) {
+                startPage = totalPages - 9;
+                endPage = totalPages;
+            } else {
+                startPage = currentPage - 5;
+                endPage = currentPage + 4;
+            }
+        }
+
+        // calculate start and end item indexes
+        var startIndex = (currentPage - 1) * pageSize;
+        var endIndex = Math.min(startIndex + pageSize - 1, totalItems - 1);
+
+        // create an array of pages to ng-repeat in the pager control
+        var pages = _.range(startPage, endPage + 1);
+
+        // return object with all pager properties required by the view
+        return {
+            totalItems: totalItems,
+            currentPage: currentPage,
+            pageSize: pageSize,
+            totalPages: totalPages,
+            startPage: startPage,
+            endPage: endPage,
+            startIndex: startIndex,
+            endIndex: endIndex,
+            pages: pages
+        };
+    }
+}
+
 @Component({
     selector: 'load-wallet',
     directives: [ROUTER_DIRECTIVES, QRCodeComponent],
-    providers: [],
+    providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })
 
@@ -57,11 +103,19 @@ export class loadWalletComponent implements OnInit {
     filterAddressVal:string;
     totalSky:any;
     randomWords:any;
+    historySearchKey:string;
 
     sortDir:{};
 
+    // pager object
+    historyPager: any = {};
+    historyPagedItems: any[];
+
+    blockPager: any = {};
+    blockPagedItems: any[];
+
     //Constructor method for load HTTP object
-    constructor(private http: Http) { }
+    constructor(private http: Http, private pagerService: PagerService) { }
 
     //Init function for load default value
     ngOnInit() {
@@ -73,6 +127,7 @@ export class loadWalletComponent implements OnInit {
         this.loadBlockChain();
         this.loadProgress();
         this.loadOutputs();
+        this.loadTransactions();
 
         //Set interval function for load wallet every 15 seconds
         setInterval(() => {
@@ -81,9 +136,9 @@ export class loadWalletComponent implements OnInit {
         }, 15000);
         setInterval(() => {
             this.loadConnections();
-            this.loadBlockChain();
+            //this.loadBlockChain();
             //console.log("Refreshing connections");
-        }, 5000);
+        }, 15000);
 
         //Enable Send tab "textbox" and "Ready" button by default
         this.sendDisable = true;
@@ -92,20 +147,13 @@ export class loadWalletComponent implements OnInit {
         this.selectedMenu = "Wallets";
         this.sortDir = {time:0, amount:0, address:0};
         this.filterAddressVal = '';
+        this.historySearchKey = '';
 
         if(localStorage.getItem('historyAddresses') != null){
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
         } else {
             localStorage.setItem('historyAddresses',JSON.stringify([]));
             this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
-        }
-
-        //Set local storage for history
-        if(localStorage.getItem('historyTable') != null){
-            this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
-        } else {
-            localStorage.setItem('historyTable',JSON.stringify([]));
-            this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
         }
     }
 
@@ -192,6 +240,43 @@ export class loadWalletComponent implements OnInit {
               //console.log('Connection load done')
             });
     }
+    loadTransactions() {
+        this.historyTable = [];
+        this.http.get('/lastTxs', {})
+            .map((res) => res.json())
+            .subscribe(data => {
+                console.log("transactions", data);
+                this.historyTable = this.historyTable.concat(data);
+                this.setHistoryPage(1);
+            }, err => console.log("Error on load transactions: " + err), () => {
+              //console.log('Connection load done')
+            });
+        this.http.get('/pendingTxs', {})
+            .map((res) => res.json())
+            .subscribe(data => {
+                console.log("pending transactions", data);
+                this.historyTable = this.historyTable.concat(data);
+                this.setHistoryPage(1);
+            }, err => console.log("Error on pending transactions: " + err), () => {
+
+            });
+    }
+    GetTransactionAmount(transaction) {
+      var ret = 0;
+      _.each(transaction.txn.outputs, function(o){
+        ret += Number(o.coins);
+      })
+
+      return ret;
+    }
+    GetTransactionAmount2(transaction) {
+      var ret = 0;
+      _.each(transaction.outputs, function(o){
+        ret += Number(o.coins);
+      })
+
+      return ret;
+    }
     loadDefaultConnections() {
         this.http.post('/network/defaultConnections', '')
             .map((res) => res.json())
@@ -218,11 +303,12 @@ export class loadWalletComponent implements OnInit {
     loadBlockChain() {
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        this.http.get('/blocks?start=1&end=10000', { headers: headers })
+        this.http.get('/last_blocks', { headers: headers })
             .map((res) => res.json())
             .subscribe(data => {
-                //console.log("blockchain", data);
-                this.blockChain = data.blocks;
+                console.log("blockchain", data);
+                this.blockChain = data;
+                this.setBlockPage(1);
             }, err => console.log("Error on load blockchain: " + err), () => {
               //console.log('blockchain load done');
             });
@@ -447,8 +533,8 @@ export class loadWalletComponent implements OnInit {
           return;
         }
 
-        this.historyTable.push({address:spendaddress, amount:spendamount, time:Date.now()/1000});
-        localStorage.setItem('historyTable',JSON.stringify(this.historyTable));
+        //this.historyTable.push({address:spendaddress, amount:spendamount, time:Date.now()/1000});
+        //localStorage.setItem('historyTable',JSON.stringify(this.historyTable));
 
         var oldItem = _.find(this.addresses, function(o){
           return o.address === spendaddress;
@@ -502,6 +588,40 @@ export class loadWalletComponent implements OnInit {
             );
     }
 
+    setHistoryPage(page: number) {
+        this.historyPager.totalPages = this.historyTable.length;
+
+        if (page < 1 || page > this.historyPager.totalPages) {
+            return;
+        }
+
+        // get pager object from service
+        this.historyPager = this.pagerService.getPager(this.historyTable.length, page);
+
+        // get current page of items
+        this.historyPagedItems = this.historyTable.slice(this.historyPager.startIndex, this.historyPager.endIndex + 1);
+        //console.log('this.pagedItems', this.historyTable, this.pagedItems);
+    }
+
+    setBlockPage(page: number) {
+        this.blockPager.totalPages = this.blockChain.length;
+
+        if (page < 1 || page > this.blockPager.totalPages) {
+            return;
+        }
+
+        // get pager object from service
+        this.blockPager = this.pagerService.getPager(this.blockChain.length, page);
+
+        // get current page of items
+        this.blockPagedItems = this.blockChain.slice(this.blockPager.startIndex, this.blockPager.endIndex + 1);
+        console.log("this.blockPagedItems", this.blockPagedItems);
+    }
+
+    searchHistory(searchKey){
+      console.log(searchKey);
+    }
+
     getRandomWords() {
       var ret = [];
       for(var i = 0 ; i < 11; i++) {
@@ -515,21 +635,21 @@ export class loadWalletComponent implements OnInit {
     }
 
     createRandomWord(length) {
-    var consonants = 'bcdfghjklmnpqrstvwxyz',
-        vowels = 'aeiou',
-        rand = function(limit) {
-            return Math.floor(Math.random()*limit);
-        },
-        i, word='',
-        consonants2 = consonants.split(''),
-        vowels2 = vowels.split('');
-    for (i=0;i<length/2;i++) {
-        var randConsonant = consonants2[rand(consonants.length)],
-            randVowel = vowels2[rand(vowels.length)];
-        word += (i===0) ? randConsonant.toUpperCase() : randConsonant;
-        word += i*2<length-1 ? randVowel : '';
-    }
-    return word;
+      var consonants = 'bcdfghjklmnpqrstvwxyz',
+          vowels = 'aeiou',
+          rand = function(limit) {
+              return Math.floor(Math.random()*limit);
+          },
+          i, word='',
+          consonants2 = consonants.split(''),
+          vowels2 = vowels.split('');
+      for (i=0;i<length/2;i++) {
+          var randConsonant = consonants2[rand(consonants.length)],
+              randVowel = vowels2[rand(vowels.length)];
+          word += (i===0) ? randConsonant.toUpperCase() : randConsonant;
+          word += i*2<length-1 ? randVowel : '';
+      }
+      return word;
     }
 
 }

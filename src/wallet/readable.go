@@ -95,8 +95,8 @@ func (self *ReadableWallet) ToWallet() (Wallet, error) {
 
 // Saves to filename
 func (self *ReadableWallet) Save(filename string) error {
-	logger.Info("Saving readable wallet to %s with filename %s", filename,
-		self.Meta["filename"])
+	// logger.Info("Saving readable wallet to %s with filename %s", filename,
+	// 	self.Meta["filename"])
 	return util.SaveJSON(filename, self, 0600)
 }
 

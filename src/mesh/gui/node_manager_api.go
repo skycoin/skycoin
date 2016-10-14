@@ -1,32 +1,25 @@
 package gui
 
 import (
-	//"errors"
-	"fmt"
-	//"log"
-	"net/http"
-	//"os"
 	"encoding/json"
-
+	"fmt"
+	"net/http"
 	"strconv"
-	//"strings"
-	//"github.com/skycoin/skycoin/src/cipher"
-
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh/transport"
+	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 //struct for nodeAddTransportHandler
-type ConfigWithId struct {
-	Id     int
+type ConfigWithID struct {
+	NodeID int
 	Config nodemanager.TestConfig
 }
 
 //struct for nodeRemoveTransportHandler
-type TransportWithId struct {
-	Id        int
+type TransportWithID struct {
+	NodeID    int
 	Transport transport.ITransport
 }
 
@@ -38,7 +31,7 @@ type TransportWithId struct {
 func testHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		wh.Error400(w, fmt.Sprintf("Works!"))
+		wh.Error400(w, fmt.Sprint("Works!"))
 
 		if addr := r.FormValue("addr"); addr == "" {
 			wh.Error404(w)
@@ -70,12 +63,12 @@ func nodeStartHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 func nodeStopHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Stoping Node")
-		id := r.FormValue("id")
-		if id == "" {
+		nodeID := r.FormValue("id")
+		if nodeID == "" {
 			wh.Error400(w, "Missing Node id")
 			return
 		}
-		i, err := strconv.Atoi(id)
+		i, err := strconv.Atoi(nodeID)
 		if err != nil {
 			wh.Error400(w, "Node id must be integer")
 			return
@@ -115,12 +108,12 @@ func nodeGetListNodesHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 func nodeGetTransportsHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Get transport from Node")
-		id := r.FormValue("id")
-		if id == "" {
+		nodeID := r.FormValue("id")
+		if nodeID == "" {
 			wh.Error400(w, "Missing Node id")
 			return
 		}
-		i, err := strconv.Atoi(id)
+		i, err := strconv.Atoi(nodeID)
 		if err != nil {
 			wh.Error400(w, "Node id must be integer")
 			return
@@ -143,19 +136,19 @@ func nodeAddTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Add transport to Node")
 
-		var c ConfigWithId
+		var c ConfigWithID
 		err := json.NewDecoder(r.Body).Decode(&c)
 
 		if err != nil {
 			wh.Error400(w, "Error decoding config for transport")
 		}
-		if len(nm.PubKeyList) < c.Id {
+		if len(nm.PubKeyList) < c.NodeID {
 			wh.Error400(w, "Invalid Node id")
 			return
 		}
 
-		nm.AddTransportsToNode(c.Config, c.Id)
-
+		node := nm.GetNodeByIndex(c.NodeID)
+		nodemanager.AddTransportToNode(node, c.Config)
 	}
 }
 
@@ -166,19 +159,19 @@ func nodeRemoveTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Remove transport from Node")
 
-		var c TransportWithId
+		var c TransportWithID
 		err := json.NewDecoder(r.Body).Decode(&c)
 
 		if err != nil {
 			wh.Error400(w, "Error decoding config for transport")
 		}
-		if len(nm.PubKeyList) < c.Id {
+		if len(nm.PubKeyList) < c.NodeID {
 			wh.Error400(w, "Invalid Node id")
 			return
 		}
-		logger.Info(strconv.Itoa(c.Id))
+		logger.Info(strconv.Itoa(c.NodeID))
 
-		nm.RemoveTransportsFromNode(c.Id, c.Transport)
+		nm.RemoveTransportsFromNode(c.NodeID, c.Transport)
 
 	}
 }

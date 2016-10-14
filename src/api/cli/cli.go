@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/util"
 
@@ -12,8 +11,9 @@ import (
 // Commands all cmds that we support
 var Commands []gcli.Command
 var (
-	nodeAddress = os.Getenv("SKYCOIN_NODE_ADDR")
-	walletDir   = os.Getenv("SKYCOIN_WLT_DIR")
+	nodeAddress       = os.Getenv("SKYCOIN_NODE_ADDR")
+	walletDir         = os.Getenv("SKYCOIN_WLT_DIR")
+	defaultWalletName = "skycoin_cli.wlt"
 )
 
 func stringPtr(v string) *string {
@@ -31,6 +31,6 @@ func init() {
 
 	if walletDir == "" {
 		home := util.UserHome()
-		walletDir = filepath.Join(home, ".skycoin-cli/wallet")
+		walletDir = home + "/.skycoin-cli/wallet/"
 	}
 }

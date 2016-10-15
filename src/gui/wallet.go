@@ -60,13 +60,20 @@ func NewWalletRPC(walletDir string) *WalletRPC {
 	rpc.Wallets = w
 
 	if len(rpc.Wallets) == 0 {
-		newWlt := wallet.NewWallet("", wallet.NewWalletFilename()) //deterministic
-		newWlt.GenerateAddresses(1)
-		rpc.Wallets.Add(newWlt)
-		errs := rpc.Wallets.Save(rpc.WalletDirectory)
-		if len(errs) != 0 {
-			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
+		wltName := wallet.NewWalletFilename()
+		rpc.CreateWallet("", wltName, "")
+
+		if err := rpc.SaveWallet(wltName); err != nil {
+			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, err)
 		}
+
+		// newWlt := wallet.NewWallet("", wltName, wltName) //deterministic
+		// newWlt.GenerateAddresses(1)
+		// rpc.Wallets.Add(newWlt)
+		// errs := rpc.Wallets.Save(rpc.WalletDirectory)
+		// if len(errs) != 0 {
+		// 	log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
+		// }
 	}
 
 	return rpc

@@ -60,7 +60,9 @@ func NewWalletRPC(walletDir string) *WalletRPC {
 	rpc.Wallets = w
 
 	if len(rpc.Wallets) == 0 {
-		rpc.Wallets.Add(wallet.NewWallet("", wallet.NewWalletFilename())) //deterministic
+		newWlt := wallet.NewWallet("", wallet.NewWalletFilename()) //deterministic
+		newWlt.GenerateAddresses(1)
+		rpc.Wallets.Add(newWlt)
 		errs := rpc.Wallets.Save(rpc.WalletDirectory)
 		if len(errs) != 0 {
 			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
@@ -79,15 +81,14 @@ func (self *WalletRPC) ReloadWallets() error {
 	return nil
 }
 
-func (self *WalletRPC) SaveWallet(walletID wallet.WalletID) error {
-	w := self.Wallets.Get(walletID)
-	if w == nil {
-		return fmt.Errorf("Unknown wallet %s", walletID)
+func (self *WalletRPC) SaveWallet(walletID string) error {
+	if w, ok := self.Wallets.Get(walletID); ok {
+		return w.Save(self.WalletDirectory)
 	}
-	return w.Save(self.WalletDirectory)
+	return fmt.Errorf("Unknown wallet %s", walletID)
 }
 
-func (self *WalletRPC) SaveWallets() map[wallet.WalletID]error {
+func (self *WalletRPC) SaveWallets() map[string]error {
 	return self.Wallets.Save(self.WalletDirectory)
 }
 
@@ -101,32 +102,28 @@ func (self *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
 	return self.Wallets.ToReadable()
 }
 
-func (self *WalletRPC) GetWalletReadable(walletID wallet.WalletID) *wallet.ReadableWallet {
-	w := self.Wallets.Get(walletID)
-	if w == nil {
-		return nil
-	} else {
-		return wallet.NewReadableWallet(*w)
+func (self *WalletRPC) GetWalletReadable(walletID string) *wallet.ReadableWallet {
+	if w, ok := self.Wallets.Get(walletID); ok {
+		return wallet.NewReadableWallet(w)
 	}
+	return nil
 }
 
-func (self *WalletRPC) GetWallet(walletID wallet.WalletID) *wallet.Wallet {
-	w := self.Wallets.Get(walletID)
-	if w == nil {
-		return nil
-	} else {
-		return w
+func (self *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
+	if w, ok := self.Wallets.Get(walletID); ok {
+		return &w
 	}
+	return nil
 }
 
 //modify to return error
 // NOT WORKING
 // actually uses visor
 func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
-	walletID wallet.WalletID) (wallet.BalancePair, error) {
+	walletID string) (wallet.BalancePair, error) {
 
-	wlt := self.Wallets.Get(walletID)
-	if wlt == nil {
+	wlt, ok := self.Wallets.Get(walletID)
+	if !ok {
 		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
 		return wallet.BalancePair{}, errors.New("Id not found")
 	}
@@ -185,7 +182,7 @@ type SpendResult struct {
 // -- sign transaction
 // -- inject transaction
 func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
-	walletID wallet.WalletID, amt wallet.Balance, fee uint64,
+	walletID string, amt wallet.Balance, fee uint64,
 	dest cipher.Address) *SpendResult {
 
 	txn, err := Spend2(v.Visor, wrpc, walletID, amt, fee, dest)
@@ -223,17 +220,17 @@ func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
 // - pull in outputs from blockchain from wallet
 // - create transaction here
 // - sign transction and return
-func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID wallet.WalletID, amt wallet.Balance,
+func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID string, amt wallet.Balance,
 	fee uint64, dest cipher.Address) (coin.Transaction, error) {
 
-	wallet := wrpc.Wallets.Get(walletID)
-	if wallet == nil {
+	wallet, ok := wrpc.Wallets.Get(walletID)
+	if !ok {
 		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
 	}
 	//pull in outputs and do this here
 	//FIX
 	unspent := self.Blockchain.GetUnspent()
-	tx, err := visor.CreateSpendingTransaction(*wallet, self.Unconfirmed,
+	tx, err := visor.CreateSpendingTransaction(wallet, self.Unconfirmed,
 		unspent, self.Blockchain.Time(), amt, dest)
 	if err != nil {
 		return tx, err
@@ -270,7 +267,7 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		//r.URL.String()
 		r.ParseForm()
 
-		b, err := Wg.GetWalletBalance(gateway.D.Visor.Visor, wallet.WalletID(id))
+		b, err := Wg.GetWalletBalance(gateway.D.Visor.Visor, id)
 
 		if err != nil {
 			_ = err
@@ -327,7 +324,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		walletId := wallet.WalletID(r.FormValue("id"))
+		walletId := r.FormValue("id")
 		if walletId == "" {
 			wh.Error400(w, "Invalid Wallet Id")
 			return
@@ -399,7 +396,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
-		id := wallet.WalletID(r.FormValue("id"))
+		id := r.FormValue("id")
 		//name := r.FormValue("name")
 		w1 := Wg.GetWallet(id)
 		if w1 != nil {
@@ -417,7 +414,7 @@ func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
 func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			ret := Wg.GetWallet(wallet.WalletID(r.FormValue("id")))
+			ret := Wg.GetWallet(r.FormValue("id"))
 			wh.SendOr404(w, ret)
 		}
 	}
@@ -427,7 +424,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			wallet := Wg.GetWallet(wallet.WalletID(r.FormValue("id")))
+			wallet := Wg.GetWallet(r.FormValue("id"))
 			addresses := wallet.GetAddresses()
 			ret := gateway.Visor.GetWalletTransactions(gateway.V, addresses)
 
@@ -448,11 +445,11 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Saves all loaded wallets
 func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errs := Wg.SaveWallets() // (map[wallet.WalletID]error)
+		errs := Wg.SaveWallets() // (map[string]error)
 		if len(errs) != 0 {
 			err := ""
 			for id, e := range errs {
-				err += string(id) + ": " + e.Error()
+				err += id + ": " + e.Error()
 			}
 			wh.Error500(w, err)
 		}

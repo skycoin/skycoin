@@ -568,8 +568,11 @@ export class loadWalletComponent implements OnInit {
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
-                    //console.log(response);
-                    this.pendingTable.push({complete: 'Completed', address: spendaddress, amount: spendamount});
+                    console.log(response);
+                    response.txn.time = Date.now()/1000;
+                    response.txn.address = spendaddress;
+                    response.txn.amount = spendamount;
+                    this.pendingTable.push(response);
                     //Load wallet for refresh list
                     this.loadWallet();
                     this.readyDisable = false;
@@ -590,7 +593,7 @@ export class loadWalletComponent implements OnInit {
                       alert(logContent.error);
                     }
 
-                    this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
+                    //this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
                 },
                 () => {
                   //console.log('Spend successfully')

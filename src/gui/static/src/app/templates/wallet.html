@@ -99,7 +99,7 @@
                       <div class="form-group">
                           <label class="col-sm-2 control-label">Address:</label>
                           <div class="col-sm-6">
-                              <input type="text" #spendaddress class="form-control" value="edcLEqJYunuNofmNBYdFJqwiaBhqWAWYDn">
+                              <input type="text" #spendaddress class="form-control">
                           </div>
                       </div>
                       <div class="form-group">
@@ -121,18 +121,28 @@
                           </div>
                       </div>
                   </form>
-                    <table id="pending-table">
-                        <tbody>
-                        <tr class="dark-row">
-                            <td><i class="fa fa-check"></i> Pending</td>
-                            <td>Address</td>
-                            <td>Amount</td>
-                        </tr>
-                        <tr *ngFor="#transaction of pendingTable">
-                            <td>{{transaction.complete}}</td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                    <div style="width:100%;overflow:auto;">
+                        <table id="pending-table">
+                            <tbody>
+                            <tr class="dark-row">
+                                <td>Time</td>
+                                <td>Status</td>
+                                <td>Address</td>
+                                <td>Notes</td>
+                                <td>Amount</td>
+                                <td>Transaction ID</td>
+                            </tr>
+                            <tr *ngFor="#transaction of pendingTable">
+                                <td>{{getDateTimeString(transaction.txn.time)}}</td>
+                                <td>{{transaction.balance.confirmed.coins?'Completed':'Pending'}}</td>
+                                <td>{{transaction.txn.address}}</td>
+                                <td></td>
+                                <td>{{transaction.txn.amount}}</td>
+                                <td>{{transaction.txn.txid}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -103,6 +104,7 @@ func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
 	for _, w := range wlts {
 		rw = append(rw, f(*w))
 	}
+	sort.Sort(ByTm(rw))
 	return rw
 }
 

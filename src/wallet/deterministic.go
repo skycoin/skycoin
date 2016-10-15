@@ -3,9 +3,11 @@ package wallet
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
@@ -39,6 +41,7 @@ func NewWallet(seed, wltName, label string) Wallet {
 			"label":    label,
 			"seed":     seed,
 			"lastSeed": seed,
+			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     "sky"},
 		Entries: make(map[cipher.Address]WalletEntry),

@@ -65,6 +65,20 @@ type ReadableWallet struct {
 	Entries ReadableWalletEntries `json:"entries"`
 }
 
+type ByTm []*ReadableWallet
+
+func (bt ByTm) Len() int {
+	return len(bt)
+}
+
+func (bt ByTm) Less(i, j int) bool {
+	return bt[i].Meta["tm"] < bt[j].Meta["tm"]
+}
+
+func (bt ByTm) Swap(i, j int) {
+	bt[i], bt[j] = bt[j], bt[i]
+}
+
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
 func NewReadableWallet(w Wallet) *ReadableWallet {

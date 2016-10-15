@@ -121,6 +121,8 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	return os.Rename(tmpname, filename)
 }
 
+//TODO: require file named after application and then hashcode, in static directory
+
 //searches locations for a research directory and returns absolute path
 func ResolveResourceDirectory(path string) string {
 	workDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -131,9 +133,13 @@ func ResolveResourceDirectory(path string) string {
 	_, rt_filename, _, _ := runtime.Caller(1)
 	rt_directory := filepath.Dir(rt_filename)
 
+	path_abs, err := filepath.Abs(path)
+
 	fmt.Printf("runtime.Caller= %s \n", rt_filename)
 	//fmt.Printf("Filepath Raw= %s \n")
 	fmt.Printf("Filepath Directory= %s \n", filepath.Dir(path))
+	fmt.Printf("Filepath Absolute Directory= %s \n", path_abs)
+
 	fmt.Printf("Working Directory= %s \n", workDir)
 	fmt.Printf("Runtime Filename= %s \n", rt_filename)
 	fmt.Printf("Runtime Directory= %s \n", rt_directory)
@@ -142,9 +148,10 @@ func ResolveResourceDirectory(path string) string {
 	//fmt.Printf("Dir1= %s \n", dir1)
 
 	dirs := []string{
-		path, //try direct path first
+		path_abs, //try direct path first
 		filepath.Join(workDir, filepath.Dir(path)), //default
 		//filepath.Join(rt_directory, "./", filepath.Dir(path)),
+		filepath.Join(rt_directory, "./", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../../", filepath.Dir(path)),
 		filepath.Join(rt_directory, "../../../", filepath.Dir(path)),
@@ -154,8 +161,16 @@ func ResolveResourceDirectory(path string) string {
 	//	fmt.Printf("Dir[%d]= %s \n", i, dir)
 	//}
 
+	//must be an absolute path
+	//error and problem and crash if not absolute path
+	for i, _ := range dirs {
+		abs_path, _ := filepath.Abs(dirs[i])
+		dirs[i] = abs_path
+	}
+
 	for _, dir := range dirs {
 		if _, err := os.Stat(dir); !os.IsNotExist(err) {
+			fmt.Printf("ResolveResourceDirectory: static resource dir= %s \n", dir)
 			return dir
 		}
 	}

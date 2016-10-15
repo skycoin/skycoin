@@ -89,6 +89,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 ngOnInit() {
                     this.displayMode = DisplayModeEnum.first;
                     this.totalSky = 0;
+                    this.selectedWallet = {};
                     this.loadWallet();
                     this.loadConnections();
                     this.loadDefaultConnections();
@@ -145,7 +146,12 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.http.post('/wallets', '')
                         .map((res) => res.json())
                         .subscribe(data => {
-                        this.wallets = data;
+                        this.wallets = _.sortBy(data, function (o) {
+                            return o.meta.filename;
+                        });
+                        if (this.wallets.length > 0) {
+                            this.onSelectWallet(this.wallets[0].meta.filename);
+                        }
                         //console.log(this.wallets);
                         //Load Balance for each wallet
                         var inc = 0;
@@ -286,6 +292,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.displayMode = mode;
                     if (wallet) {
                         this.spendid = wallet.meta.filename;
+                        this.selectedWallet = _.find(this.wallets, function (o) {
+                            return o.meta.filename === wallet.meta.filename;
+                        });
                     }
                 }
                 selectMenu(menu, event) {
@@ -552,6 +561,14 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         word += i * 2 < length - 1 ? randVowel : '';
                     }
                     return word;
+                }
+                onSelectWallet(val) {
+                    //console.log("onSelectWallet", val);
+                    //this.selectedWallet = val;
+                    this.spendid = val;
+                    this.selectedWallet = _.find(this.wallets, function (o) {
+                        return o.meta.filename === val;
+                    });
                 }
             };
             loadWalletComponent = __decorate([

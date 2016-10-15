@@ -104,6 +104,7 @@ export class loadWalletComponent implements OnInit {
     totalSky:any;
     randomWords:any;
     historySearchKey:string;
+    selectedWallet:any;
 
     sortDir:{};
 
@@ -121,6 +122,7 @@ export class loadWalletComponent implements OnInit {
     ngOnInit() {
         this.displayMode = DisplayModeEnum.first;
         this.totalSky = 0;
+        this.selectedWallet = {};
         this.loadWallet();
         this.loadConnections();
         this.loadDefaultConnections();
@@ -182,7 +184,14 @@ export class loadWalletComponent implements OnInit {
             .map((res:Response) => res.json())
             .subscribe(
                 data => {
-                    this.wallets = data;
+                    this.wallets = _.sortBy(data, function(o){
+                      return o.meta.filename
+                    });
+
+                    if (this.wallets.length > 0) {
+                      this.onSelectWallet(this.wallets[0].meta.filename);
+                    }
+
                     //console.log(this.wallets);
 
                     //Load Balance for each wallet
@@ -336,6 +345,9 @@ export class loadWalletComponent implements OnInit {
         this.displayMode = mode;
         if(wallet){
             this.spendid = wallet.meta.filename;
+            this.selectedWallet = _.find(this.wallets, function(o){
+              return o.meta.filename === wallet.meta.filename;
+            })
         }
     }
     selectMenu(menu, event) {
@@ -650,6 +662,15 @@ export class loadWalletComponent implements OnInit {
           word += i*2<length-1 ? randVowel : '';
       }
       return word;
+    }
+
+    onSelectWallet(val) {
+      //console.log("onSelectWallet", val);
+      //this.selectedWallet = val;
+      this.spendid = val;
+      this.selectedWallet = _.find(this.wallets, function(o){
+        return o.meta.filename === val;
+      })
     }
 
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -120,7 +121,6 @@ func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
 	var seckeys []cipher.SecKey
 	var sd []byte
 	if len(wlt.Entries) == 0 {
-		logger.Critical("seed:%v", wlt.getLastSeed())
 		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), num)
 	} else {
 		sd, err := hex.DecodeString(wlt.getLastSeed())
@@ -170,6 +170,11 @@ func (wlt *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
 }
 
 func (wlt *Wallet) Save(dir string) error {
+	fp := filepath.Join(dir, wlt.GetFilename())
+	if _, err := os.Stat(fp); !os.IsNotExist(err) {
+		return errors.New("wallet name already exist")
+	}
+
 	r := NewReadableWallet(*wlt)
 	return r.Save(filepath.Join(dir, wlt.GetFilename()))
 }

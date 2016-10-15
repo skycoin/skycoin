@@ -392,21 +392,32 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Create a wallet if no ID provided.  Otherwise update an existing wallet.
-// Name is set by creation date
+// Create a wallet Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("API request made to create a wallet")
 		seed := r.FormValue("seed")
-		w1 := Wg.CreateWallet(seed, wallet.NewWalletFilename()) //use seed!
-		iw := wallet.NewReadableWallet(w1)
-		if iw != nil {
-			if err := Wg.SaveWallet(w1.GetID()); err != nil {
-				m := "Failed to save wallet after renaming: %v"
-				logger.Critical(m, err)
+		label := r.FormValue("label")
+		wltName := wallet.NewWalletFilename()
+		var wlt wallet.Wallet
+		var err error
+		// the wallet name may dup, rename it till no conflict.
+		for {
+			wlt, err = Wg.CreateWallet(seed, wltName, label)
+			if err != nil && strings.Contains(err.Error(), "renaming") {
+				wltName = wallet.NewWalletFilename()
+				continue
 			}
+			break
 		}
-		wh.SendOr500(w, iw)
+
+		if err := Wg.SaveWallet(wlt.GetID()); err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		rlt := wallet.NewReadableWallet(wlt)
+		wh.SendOr500(w, rlt)
 	}
 }
 

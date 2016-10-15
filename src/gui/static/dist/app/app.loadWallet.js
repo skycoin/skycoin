@@ -11,7 +11,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
     var core_1, router_1, http_1, http_2, ng2_qrcode_ts_1;
-    var loadWalletComponent, DisplayModeEnum;
+    var PagerService, loadWalletComponent, DisplayModeEnum;
     return {
         setters:[
             function (core_1_1) {
@@ -30,21 +30,72 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 ng2_qrcode_ts_1 = ng2_qrcode_ts_1_1;
             }],
         execute: function() {
+            class PagerService {
+                getPager(totalItems, currentPage = 1, pageSize = 5) {
+                    // calculate total pages
+                    var totalPages = Math.ceil(totalItems / pageSize);
+                    var startPage, endPage;
+                    if (totalPages <= 10) {
+                        // less than 10 total pages so show all
+                        startPage = 1;
+                        endPage = totalPages;
+                    }
+                    else {
+                        // more than 10 total pages so calculate start and end pages
+                        if (currentPage <= 6) {
+                            startPage = 1;
+                            endPage = 10;
+                        }
+                        else if (currentPage + 4 >= totalPages) {
+                            startPage = totalPages - 9;
+                            endPage = totalPages;
+                        }
+                        else {
+                            startPage = currentPage - 5;
+                            endPage = currentPage + 4;
+                        }
+                    }
+                    // calculate start and end item indexes
+                    var startIndex = (currentPage - 1) * pageSize;
+                    var endIndex = Math.min(startIndex + pageSize - 1, totalItems - 1);
+                    // create an array of pages to ng-repeat in the pager control
+                    var pages = _.range(startPage, endPage + 1);
+                    // return object with all pager properties required by the view
+                    return {
+                        totalItems: totalItems,
+                        currentPage: currentPage,
+                        pageSize: pageSize,
+                        totalPages: totalPages,
+                        startPage: startPage,
+                        endPage: endPage,
+                        startIndex: startIndex,
+                        endIndex: endIndex,
+                        pages: pages
+                    };
+                }
+            }
+            exports_1("PagerService", PagerService);
             let loadWalletComponent = class loadWalletComponent {
                 //Constructor method for load HTTP object
-                constructor(http) {
+                constructor(http, pagerService) {
                     this.http = http;
+                    this.pagerService = pagerService;
                     this.displayModeEnum = DisplayModeEnum;
+                    // pager object
+                    this.historyPager = {};
+                    this.blockPager = {};
                 }
                 //Init function for load default value
                 ngOnInit() {
                     this.displayMode = DisplayModeEnum.first;
+                    this.totalSky = 0;
                     this.loadWallet();
                     this.loadConnections();
                     this.loadDefaultConnections();
                     this.loadBlockChain();
                     this.loadProgress();
                     this.loadOutputs();
+                    this.loadTransactions();
                     //Set interval function for load wallet every 15 seconds
                     setInterval(() => {
                         this.loadWallet();
@@ -52,9 +103,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }, 15000);
                     setInterval(() => {
                         this.loadConnections();
-                        this.loadBlockChain();
+                        //this.loadBlockChain();
                         //console.log("Refreshing connections");
-                    }, 5000);
+                    }, 15000);
                     //Enable Send tab "textbox" and "Ready" button by default
                     this.sendDisable = true;
                     this.readyDisable = false;
@@ -62,20 +113,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.selectedMenu = "Wallets";
                     this.sortDir = { time: 0, amount: 0, address: 0 };
                     this.filterAddressVal = '';
+                    this.historySearchKey = '';
                     if (localStorage.getItem('historyAddresses') != null) {
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
                     }
                     else {
                         localStorage.setItem('historyAddresses', JSON.stringify([]));
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
-                    }
-                    //Set local storage for history
-                    if (localStorage.getItem('historyTable') != null) {
-                        this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
-                    }
-                    else {
-                        localStorage.setItem('historyTable', JSON.stringify([]));
-                        this.historyTable = JSON.parse(localStorage.getItem('historyTable'));
                     }
                 }
                 //Ready button function for disable "textbox" and enable "Send" button for ready to send coin
@@ -97,15 +141,17 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Load wallet function
                 loadWallet() {
+                    this.totalSky = 0;
                     this.http.post('/wallets', '')
                         .map((res) => res.json())
                         .subscribe(data => {
                         this.wallets = data;
+                        //console.log(this.wallets);
                         //Load Balance for each wallet
                         var inc = 0;
                         for (var item in data) {
-                            var address = data[inc].meta.filename;
-                            this.loadWalletItem(address, inc);
+                            var filename = data[inc].meta.filename;
+                            this.loadWalletItem(filename, inc);
                             inc++;
                         }
                         //Load Balance for each wallet end
@@ -124,8 +170,22 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     response => {
                         //console.log('load done: ' + inc, response);
                         this.wallets[inc].balance = response.confirmed.coins / 1000000;
+                        this.totalSky += this.wallets[inc].balance;
                     }, err => console.log("Error on load balance: " + err), () => {
                         //console.log('Balance load done')
+                    });
+                    //get address balances
+                    this.wallets[inc].entries.map((entry) => {
+                        this.http.get('/balance?addrs=' + entry.address, { headers: headers })
+                            .map((res) => res.json())
+                            .subscribe(
+                        //Response from API
+                        response => {
+                            //console.log('balance:' + entry.address, response);
+                            entry.balance = response.confirmed.coins / 1000000;
+                        }, err => console.log("Error on load balance: " + err), () => {
+                            //console.log('Balance load done')
+                        });
                     });
                 }
                 loadConnections() {
@@ -137,6 +197,40 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }, err => console.log("Error on load connection: " + err), () => {
                         //console.log('Connection load done')
                     });
+                }
+                loadTransactions() {
+                    this.historyTable = [];
+                    this.http.get('/lastTxs', {})
+                        .map((res) => res.json())
+                        .subscribe(data => {
+                        console.log("transactions", data);
+                        this.historyTable = this.historyTable.concat(data);
+                        this.setHistoryPage(1);
+                    }, err => console.log("Error on load transactions: " + err), () => {
+                        //console.log('Connection load done')
+                    });
+                    this.http.get('/pendingTxs', {})
+                        .map((res) => res.json())
+                        .subscribe(data => {
+                        console.log("pending transactions", data);
+                        this.historyTable = this.historyTable.concat(data);
+                        this.setHistoryPage(1);
+                    }, err => console.log("Error on pending transactions: " + err), () => {
+                    });
+                }
+                GetTransactionAmount(transaction) {
+                    var ret = 0;
+                    _.each(transaction.txn.outputs, function (o) {
+                        ret += Number(o.coins);
+                    });
+                    return ret;
+                }
+                GetTransactionAmount2(transaction) {
+                    var ret = 0;
+                    _.each(transaction.outputs, function (o) {
+                        ret += Number(o.coins);
+                    });
+                    return ret;
                 }
                 loadDefaultConnections() {
                     this.http.post('/network/defaultConnections', '')
@@ -162,13 +256,14 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     });
                 }
                 loadBlockChain() {
-                    this.http.post('/blockchain', '')
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    this.http.get('/last_blocks', { headers: headers })
                         .map((res) => res.json())
                         .subscribe(data => {
-                        //console.log("blockchain", data);
-                        if (data.head) {
-                            this.blockChain = data;
-                        }
+                        console.log("blockchain", data);
+                        this.blockChain = data;
+                        this.setBlockPage(1);
                     }, err => console.log("Error on load blockchain: " + err), () => {
                         //console.log('blockchain load done');
                     });
@@ -194,7 +289,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }
                 }
                 selectMenu(menu, event) {
-                    this.displayMode = this.displayModeEnum.fourth;
+                    this.displayMode = this.displayModeEnum.fifth;
                     event.preventDefault();
                     this.selectedMenu = menu;
                 }
@@ -216,6 +311,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Show wallet function for view New wallet popup
                 showNewWalletDialog() {
                     this.NewWalletIsVisible = true;
+                    this.randomWords = this.getRandomWords();
                 }
                 //Hide wallet function for hide New wallet popup
                 hideWalletPopup() {
@@ -364,8 +460,8 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         alert('Cannot send values less than 1.');
                         return;
                     }
-                    this.historyTable.push({ address: spendaddress, amount: spendamount, time: Date.now() / 1000 });
-                    localStorage.setItem('historyTable', JSON.stringify(this.historyTable));
+                    //this.historyTable.push({address:spendaddress, amount:spendamount, time:Date.now()/1000});
+                    //localStorage.setItem('historyTable',JSON.stringify(this.historyTable));
                     var oldItem = _.find(this.addresses, function (o) {
                         return o.address === spendaddress;
                     });
@@ -412,15 +508,60 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         $("#send_amount").val(0);
                     });
                 }
+                setHistoryPage(page) {
+                    this.historyPager.totalPages = this.historyTable.length;
+                    if (page < 1 || page > this.historyPager.totalPages) {
+                        return;
+                    }
+                    // get pager object from service
+                    this.historyPager = this.pagerService.getPager(this.historyTable.length, page);
+                    // get current page of items
+                    this.historyPagedItems = this.historyTable.slice(this.historyPager.startIndex, this.historyPager.endIndex + 1);
+                    //console.log('this.pagedItems', this.historyTable, this.pagedItems);
+                }
+                setBlockPage(page) {
+                    this.blockPager.totalPages = this.blockChain.length;
+                    if (page < 1 || page > this.blockPager.totalPages) {
+                        return;
+                    }
+                    // get pager object from service
+                    this.blockPager = this.pagerService.getPager(this.blockChain.length, page);
+                    // get current page of items
+                    this.blockPagedItems = this.blockChain.slice(this.blockPager.startIndex, this.blockPager.endIndex + 1);
+                    console.log("this.blockPagedItems", this.blockPagedItems);
+                }
+                searchHistory(searchKey) {
+                    console.log(searchKey);
+                }
+                getRandomWords() {
+                    var ret = [];
+                    for (var i = 0; i < 11; i++) {
+                        var length = Math.round(Math.random() * 10);
+                        length = Math.max(length, 3);
+                        ret.push(this.createRandomWord(length));
+                    }
+                    return ret.join(" ");
+                }
+                createRandomWord(length) {
+                    var consonants = 'bcdfghjklmnpqrstvwxyz', vowels = 'aeiou', rand = function (limit) {
+                        return Math.floor(Math.random() * limit);
+                    }, i, word = '', consonants2 = consonants.split(''), vowels2 = vowels.split('');
+                    for (i = 0; i < length / 2; i++) {
+                        var randConsonant = consonants2[rand(consonants.length)], randVowel = vowels2[rand(vowels.length)];
+                        word += (i === 0) ? randConsonant.toUpperCase() : randConsonant;
+                        word += i * 2 < length - 1 ? randVowel : '';
+                    }
+                    return word;
+                }
             };
             loadWalletComponent = __decorate([
                 core_1.Component({
                     selector: 'load-wallet',
                     directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_ts_1.QRCodeComponent],
-                    providers: [],
+                    providers: [PagerService],
                     templateUrl: 'app/templates/wallet.html'
                 }), 
-                __metadata('design:paramtypes', [http_1.Http])
+                __metadata('design:paramtypes', [http_1.Http, PagerService])
             ], loadWalletComponent);
             exports_1("loadWalletComponent", loadWalletComponent);
             //Set default enum value for tabs

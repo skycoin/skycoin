@@ -3,6 +3,9 @@
 </div>
 <div id="sky-center">
     <div id="main-content" class="ng-isolate-scope">
+        <div class="header-for-total-sky">
+          <span class="total-sky-text">Confirmed Balance: {{totalSky|number}} SKY</span>
+        </div>
         <ul ng-class="{'nav-stacked': vertical, 'nav-justified': justified}" class="nav nav-tabs">
             <li [class.active]="displayMode === displayModeEnum.first">
                 <a (click)="switchTab(displayModeEnum.first, '')" class="ng-binding">
@@ -21,11 +24,18 @@
             <li [class.active]="displayMode === displayModeEnum.third">
                 <a (click)="switchTab(displayModeEnum.third,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-moon-o"></i> History
+                        <i class="fa fa-book"></i> History
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.fourth">
+                <a (click)="switchTab(displayModeEnum.fourth,'')" class="ng-binding">
+                    <tab-heading class="ng-scope">
+                        <i class="fa fa-link"></i> Blockchain Explorer
+                    </tab-heading>
+                </a>
+            </li>
+            <li [class.active]="displayMode === displayModeEnum.fifth">
                 <div class="btn-group wallet-menu">
                     <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
                         <i class="fa fa-gear"></i>
@@ -40,37 +50,33 @@
         </ul>
         <div class="tab-content">
             <div [class.active]="displayMode === displayModeEnum.first"  class="tab-pane ng-scope active">
-                <div style="padding:0 10px">
-                  <table id="overview-wallet" class="outline" *ngFor="#wallet of wallets">
+              <div style="padding:0 10px 20px 10px;display:inline-block;width:100%">
+                <div class="wallet-buttons">
+                    <button class="btn btn-default" type="button" (click)="showNewWalletDialog()"><i class="fa fa-plus-square"></i> New Wallet</button>
+                    <button class="btn btn-default" type="button" (click)="openLoadWallet()"><i class="fa fa-circle-o"></i> Load Wallet From Seed</button>
+                </div>
+                  <table id="overview-wallet" class="outline" >
+                      <thead>
                       <tr class="dark-row">
-                          <td><div id="overview-wallet-title">Wallet: {{wallet.meta.filename}}</div></td><td><!--<i class="fa fa-align-justify"></i>--></td>
+                        <td>Label</td>
+                        <td>Address</td>
+                        <td>Address Balance</td>
+                        <td>Wallet Balance</td>
+                        <td class="text-right">Addresses</td>
                       </tr>
-                      <tr>
-                          <td><div id="overview-wallet-balance">Address: </div></td>
-                          <td>
-                              <div *ngFor="#entry of wallet.entries">{{entry.address}}</div>
-                          </td>
-                      </tr>
-                      <tr>
-                          <td><div id="overview-wallet-address">Balance Confirmed: </div></td>
-                          <td>{{wallet.balance}} SKY</td>
-                      </tr>
-                      <tr>
-                          <td colspan="2">
-                              <a href="#" (click)="showQR(wallet)"><i class="fa fa-qrcode"></i> QR Code</a>
-                              <a (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i> Send </a>
-                              <a href="#" (click)="editWallet(wallet)"><i class="fa fa-pencil"></i> Edit</a>
-                          </td>
-                      </tr>
+                    </thead>
+                        <tbody *ngFor="#wallet of wallets">
+                          <tr>
+                            <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.filename}}</td>
+                            <td><a href="#" (click)="showQR(wallet)">&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{wallet.entries[0].address}}</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.balance}} SKY</td>
+                            <td class="text-right">{{wallet.entries.length}}&nbsp;<i class="fa fa-plus"></i></td>
+                          </tr>
+                      </tbody>
                   </table>
-                </div>
-                <div class="outline ng-scope">
-                    <!-- ngRepeat: wallet in wallets -->
-                    <div class="wallet-buttons">
-                        <button class="btn btn-default" type="button" (click)="showNewWalletDialog()"><i class="fa fa-cloud"></i> New Wallet</button>
-                        <button class="btn btn-default" type="button" (click)="openLoadWallet()"><i class="fa fa-cloud"></i> Load Wallet From Seed</button>
-                    </div>
-                </div>
+                  <!-- historyPager -->
+              </div>
             </div>
 
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.second" class="tab-pane ng-scope">
@@ -124,41 +130,115 @@
             </div>
 
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.third" class="tab-pane ng-scope">
-                <div class="outline ng-scope">
+                <div class="outline ng-scope" style="overflow:auto;">
+                  <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)">
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Search:</label>
+                          <div class="col-sm-6">
+                              <input #historySearchKey placeholder="Address or Transaction ID" class="form-control" >
+                          </div>
+                      </div>
+                  </form>
                     <table id="transaction-table">
                         <thead>
                         <tr class="dark-row">
                             <td>
-                                <div class="btn-group">
-                                    <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
-                                        Wallet <span class="caret"></span>
-                                    </button>
-                                    <ul role="menu" class="dropdown-menu">
-                                        <li *ngFor="#address of addresses"><a href="#" (click)="filterHistory(address.address)">{{address.address}}</a></li>
-                                        <li class="divider"></li>
-                                        <li><a href="#"  (click)="filterHistory('')">All</a></li>
-                                    </ul>
-                                </div>
+                              <a href="#" (click)="sortHistory('time')">Time
+                              <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a>
                             </td>
-                            <td><a href="#" (click)="sortHistory('time')">Date <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a></td>
-                            <td><a href="#" (click)="sortHistory('address')">Address<i *ngIf="sortDir.address!=0" class="glyphicon glyphicon-triangle-{{sortDir.address==1?'top':'bottom'}}"></i></a></td>
-                            <td><a href="#" (click)="sortHistory('amount')">Amount <i *ngIf="sortDir.amount!=0" class="glyphicon glyphicon-triangle-{{sortDir.amount==1?'top':'bottom'}}"></i></a></td>
-                            <td>Label</td>
+                            <td>Status</td>
+                            <td>Type</td>
+                            <td>Addresses</td>
+                            <td>Notes</td>
+                            <td>Amount</td>
+                            <td>Transaction ID</td>
                         </tr>
                       </thead>
-                          <tbody *ngFor="#transactions of historyTable">
-                            <tr *ngIf="filterAddressVal==''||filterAddressVal==transactions.address">
-                              <td></td>
-                              <td>{{getDateTimeString(transactions.time)}}</td>
-                              <td>{{transactions.address}}</td>
-                              <td>{{transactions.amount}}</td>
-                              <td></td>
+                          <tbody >
+                            <tr *ngFor="#transaction of historyPagedItems">
+                              <td>{{getDateTimeString(transaction.time)}}</td>
+                              <td>{{transaction.status.confirmed?'Complete':'Pending'}}</td>
+                              <td>{{transaction.txn.type}}</td>
+                              <td>
+                                From : <span *ngFor="#item of transaction.txn.inputs">{{item}},<br></span>
+                                To : <span *ngFor="#item of transaction.txn.outputs">{{item.dst}},<br></span>
+                              </td>
+                              <td>{{transaction.notes}}</td>
+                              <td>{{GetTransactionAmount(transaction)}}</td>
+                              <td>{{transaction.txn.txid}}</td>
                             </tr>
                         </tbody>
                     </table>
+                    <ul *ngIf="historyPager.pages&&historyPager.currentPage&&historyPager.pages.length" class="pagination">
+                        <li [ngClass]="{disabled:historyPager.currentPage === 1}">
+                            <a (click)="setHistoryPage(1)">First</a>
+                        </li>
+                        <li [ngClass]="{disabled:historyPager.currentPage === 1}">
+                            <a (click)="setHistoryPage(historyPager.currentPage - 1)">Previous</a>
+                        </li>
+                        <li *ngFor="#page of historyPager.pages" [ngClass]="{active:historyPager.currentPage === page}">
+                            <a (click)="setHistoryPage(page)">{{page}}</a>
+                        </li>
+                        <li [ngClass]="{disabled:historyPager.currentPage === historyPager.totalPages}">
+                            <a (click)="setHistoryPage(historyPager.currentPage + 1)">Next</a>
+                        </li>
+                        <li [ngClass]="{disabled:historyPager.currentPage === historyPager.totalPages}">
+                            <a (click)="setHistoryPage(historyPager.totalPages)">Last</a>
+                        </li>
+                    </ul>
                 </div>
             </div>
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.fourth" class="tab-pane ng-scope">
+              <div class="outline ng-scope" style="overflow:auto;">
+                <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Search:</label>
+                        <div class="col-sm-6">
+                            <input #blockSearchKey placeholder="Block Number, Block Hash, Transaction, or Address" class="form-control" >
+                        </div>
+                    </div>
+                </form>
+                <p>Recent Blocks<p>
+                  <table id="transaction-table">
+                      <thead>
+                      <tr class="dark-row">
+                          <td>Time</td>
+                          <td>Height</td>
+                          <td>Transactions</td>
+                          <td>Amount Transferred</td>
+                          <td>Transaction ID</td>
+                      </tr>
+                    </thead>
+                        <tbody >
+                          <tr *ngFor="#block of blockPagedItems">
+                            <td>{{getDateTimeString(block.header.timestamp)}}</td>
+                            <td></td>
+                            <td>{{block.body.txns.length}}</td>
+                            <td>{{GetTransactionAmount2(block.body.txns[0])|number}}</td>
+                            <td>{{block.body.txns[0].txid}}</td>
+                          </tr>
+                      </tbody>
+                  </table>
+                  <ul *ngIf="blockPager.pages" class="pagination">
+                      <li [ngClass]="{disabled:blockPager.currentPage === 1}">
+                          <a (click)="setBlockPage(1)">First</a>
+                      </li>
+                      <li [ngClass]="{disabled:blockPager.currentPage === 1}">
+                          <a (click)="setBlockPage(blockPager.currentPage - 1)">Previous</a>
+                      </li>
+                      <li *ngFor="#page of blockPager.pages" [ngClass]="{active:blockPager.currentPage === page}">
+                          <a (click)="setBlockPage(page)">{{page}}</a>
+                      </li>
+                      <li [ngClass]="{disabled:blockPager.currentPage === blockPager.totalPages}">
+                          <a (click)="setBlockPage(blockPager.currentPage + 1)">Next</a>
+                      </li>
+                      <li [ngClass]="{disabled:blockPager.currentPage === blockPager.totalPages}">
+                          <a (click)="setBlockPage(blockPager.totalPages)">Last</a>
+                      </li>
+                  </ul>
+              </div>
+            </div>
+            <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.fifth" class="tab-pane ng-scope">
                 <div class="outline ng-scope">
                     <div *ngIf="selectedMenu=='Networking'" style="padding-top:10px">
                         <p>Automatic Peers</p>
@@ -209,15 +289,15 @@
                         <table class="table-bordered" style="width:100%">
                             <tr style="background:white">
                                 <th class="text-center dark-row">Number of blocks</th>
-                                <td>{{blockChain.head.seq}}</td>
+                                <td>{{blockChain.length}}</td>
                             </tr>
                             <tr style="background:white">
                                 <th class="text-center dark-row">Time since last block</th>
-                                <td>{{getElapsedTime(blockChain.head.timestamp)|number}} sec</td>
+                                <td>{{getElapsedTime(blockChain[blockChain.length-1].header.timestamp)|number}} sec</td>
                             </tr>
                             <tr style="background:white">
-                                <th class="text-center dark-row">Hash of current block</th>
-                                <td>{{blockChain.head.hash}}</td>
+                                <th class="text-center dark-row">Hash of last block</th>
+                                <td>{{blockChain[blockChain.length-1].header.hash}}</td>
                             </tr>
                         </table>
                     </div>
@@ -283,10 +363,41 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" (click)="hideWalletPopup()" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Create a new wallet</h4>
+                <h4 class="modal-title">Create New Wallet</h4>
             </div>
             <div class="modal-body">
-                <h5>Are you sure to create a new wallet?</h5>
+              <form class="form-horizontal">
+                  <div class="form-group">
+                      <label class="col-sm-3 control-label">Label:</label>
+                      <div class="col-sm-9">
+                          <input maxlength="60" #walletname placeholder="Name of Wallet" class="form-control" required/>
+                      </div>
+                  </div>
+                  <div class="form-group">
+                      <label class="col-sm-3 control-label">Seed:</label>
+                      <div class="col-sm-9">
+                          <textarea rows="4" #walletseed  placeholder="Name of Wallet" cols="46" class="form-control" value="{{randomWords}}"></textarea>
+                      </div>
+                  </div>
+                  <div class="form-group">
+                      <label class="col-sm-3 control-label">Password:</label>
+                      <div class="col-sm-9">
+                          <input type="password" #password placeholder="Your Password" class="form-control" required/>
+                      </div>
+                  </div>
+                  <div class="form-group">
+                      <label class="col-sm-3 control-label">Confirm:</label>
+                      <div class="col-sm-9">
+                          <input type="password" #confirmPassword placeholder="Confirm Password" class="form-control" required/>
+                      </div>
+                  </div>
+                  <div class="form-group">
+                      <label class="col-sm-3 control-label">Addresses to Create:</label>
+                      <div class="col-sm-9">
+                          <input type="Number" #addressCount class="form-control" value="1" required/>
+                      </div>
+                  </div>
+              </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" (click)="createNewWallet()">Ok</button>

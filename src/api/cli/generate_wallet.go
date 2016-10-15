@@ -1,6 +1,19 @@
 package cli
 
-import gcli "gopkg.in/urfave/cli.v1"
+import (
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"strconv"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	"github.com/skycoin/skycoin/src/wallet"
+
+	gcli "gopkg.in/urfave/cli.v1"
+)
 
 func init() {
 	cmd := gcli.Command{
@@ -32,10 +45,10 @@ func init() {
 				Name:  "m",
 				Usage: "[numberOfAddresses] Number of addresses to generate. By default 1 address is generated.",
 			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "Password used to encrypt the wallet locally.",
-			},
+			// gcli.StringFlag{
+			// 	Name:  "p",
+			// 	Usage: "Password used to encrypt the wallet locally.",
+			// },
 			gcli.StringFlag{
 				Name:  "n",
 				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". If no wallet name is specified a generic name will be selected.`,

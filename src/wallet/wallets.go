@@ -2,17 +2,18 @@ package wallet
 
 import (
 	//"fmt"
+	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-type Wallets []Wallet
+type Wallets map[string]*Wallet
 
-// Loads all wallets contained in wallet dir.  If any regular file in wallet
+// LoadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered
 func LoadWallets(dir string) (Wallets, error) {
@@ -40,61 +41,44 @@ func LoadWallets(dir string) (Wallets, error) {
 				return nil, err
 			}
 			logger.Info("Loaded wallet from %s", fullpath)
-			/*
-					id := w.GetFilename()
-					if kw, ok := have[id]; ok {
-						return nil, fmt.Errorf("Duplicate wallet file detected. "+
-							"%s and %s are the same wallet.", kw.GetFilename(), name)
-					}
-				have[id] = w
-			*/
 			w.SetFilename(name)
-			wallets = append(wallets, w)
+			wallets[name] = &w
 		}
 	}
 	return wallets, nil
 }
 
-/*
-	This is bad
-	- there needs to be better way of dealing with duplicates
-	- will rename wallet 1 in 16,384 times
-	- this will fail 1 in 250 million times
-	- this can fail
-*/
-func (self *Wallets) Add(w Wallet) {
-	for _, w2 := range *self {
-		if w2.GetFilename() == w.GetFilename() {
-			log.Printf("Wallets.Add, Wallet name would conflict with existing wallet, renaming")
-			w.SetFilename(NewWalletFilename())
-		}
+// Add add walet to current wallet
+func (wlts *Wallets) Add(w Wallet) error {
+	if _, dup := (*wlts)[w.GetFilename()]; dup {
+		return errors.New("Wallets.Add, Wallet name would conflict with existing wallet, renaming")
 	}
 
-	for _, w2 := range *self {
-		if w2.GetFilename() == w.GetFilename() {
-			log.Panic("Wallets.Add, Wallet name would conflict with existing wallet, 1 in 250 million probabilistic failure")
-		}
-	}
-
-	*self = append(*self, w)
+	(*wlts)[w.GetFilename()] = &w
+	return nil
 }
 
-func (self Wallets) Get(walletID WalletID) *Wallet {
-	for _, w := range self {
-		if WalletID(w.GetFilename()) == walletID {
-			return &w
-		}
+func (wlts *Wallets) Get(wltID string) (Wallet, bool) {
+	if w, ok := (*wlts)[wltID]; ok {
+		return *w, true
 	}
-	return nil
+	return Wallet{}, false
+}
+
+func (wlts *Wallets) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+	if w, ok := (*wlts)[wltID]; ok {
+		return w.GenerateAddresses(num), nil
+	}
+	return nil, fmt.Errorf("wallet: %v does not exist", wltID)
 }
 
 //check for name conflicts!
 //resolve conflicts for saving wallets who have different names
-func (self Wallets) Save(dir string) map[WalletID]error {
-	errs := make(map[WalletID]error)
-	for _, w := range self {
+func (wlts Wallets) Save(dir string) map[string]error {
+	errs := make(map[string]error)
+	for id, w := range wlts {
 		if err := w.Save(dir); err != nil {
-			errs[WalletID(w.GetFilename())] = err
+			errs[id] = err
 		}
 	}
 	if len(errs) == 0 {
@@ -103,27 +87,25 @@ func (self Wallets) Save(dir string) map[WalletID]error {
 	return errs
 }
 
-//convert to array, why map?
-//example where compiler should be able to swap out
-//an array with fast membership function
-//WTF? set of all addresses for each wallet with no index?
-//Needed for querying the pending incoming transactions across all wallets
-func (self Wallets) GetAddressSet() map[cipher.Address]byte {
-	set := make(AddressSet)
-	for _, w := range self {
-		set.Update(w.GetAddressSet())
+// GetAddressSet get all addresses.
+func (wlts Wallets) GetAddressSet() map[cipher.Address]byte {
+	set := make(map[cipher.Address]byte)
+	for _, w := range wlts {
+		for _, a := range w.GetAddresses() {
+			set[a] = byte(1)
+		}
 	}
 	return set
 }
 
-func (self Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
-	rw := make([]*ReadableWallet, len(self))
-	for i, w := range self {
-		rw[i] = f(w)
+func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
+	var rw []*ReadableWallet
+	for _, w := range wlts {
+		rw = append(rw, f(*w))
 	}
 	return rw
 }
 
-func (self Wallets) ToReadable() []*ReadableWallet {
-	return self.toReadable(NewReadableWallet)
+func (wlts Wallets) ToReadable() []*ReadableWallet {
+	return wlts.toReadable(NewReadableWallet)
 }

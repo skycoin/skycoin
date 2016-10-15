@@ -60,7 +60,7 @@ func NewWalletRPC(walletDir string) *WalletRPC {
 	rpc.Wallets = w
 
 	if len(rpc.Wallets) == 0 {
-		rpc.Wallets.Add(wallet.NewWallet("")) //deterministic
+		rpc.Wallets.Add(wallet.NewWallet("", wallet.NewWalletFilename())) //deterministic
 		errs := rpc.Wallets.Save(rpc.WalletDirectory)
 		if len(errs) != 0 {
 			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
@@ -91,8 +91,8 @@ func (self *WalletRPC) SaveWallets() map[wallet.WalletID]error {
 	return self.Wallets.Save(self.WalletDirectory)
 }
 
-func (self *WalletRPC) CreateWallet(seed string) wallet.Wallet {
-	w := wallet.NewWallet(seed)
+func (self *WalletRPC) CreateWallet(seed, wltName string) wallet.Wallet {
+	w := wallet.NewWallet(seed, wltName)
 	self.Wallets.Add(w)
 	return w
 }
@@ -382,7 +382,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("API request made to create a wallet")
 		seed := r.FormValue("seed")
-		w1 := Wg.CreateWallet(seed) //use seed!
+		w1 := Wg.CreateWallet(seed, wallet.NewWalletFilename()) //use seed!
 		iw := wallet.NewReadableWallet(w1)
 		if iw != nil {
 			if err := Wg.SaveWallet(w1.GetID()); err != nil {

@@ -99,10 +99,16 @@ func (self *WalletRPC) SaveWallets() map[string]error {
 	return self.Wallets.Save(self.WalletDirectory)
 }
 
-func (self *WalletRPC) CreateWallet(seed, wltName string) wallet.Wallet {
-	w := wallet.NewWallet(seed, wltName)
-	self.Wallets.Add(w)
-	return w
+func (self *WalletRPC) CreateWallet(seed, wltName, label string) (wallet.Wallet, error) {
+	w := wallet.NewWallet(seed, wltName, label)
+	// generate a default address
+	w.GenerateAddresses(1)
+
+	if err := self.Wallets.Add(w); err != nil {
+		return wallet.Wallet{}, err
+	}
+
+	return w, nil
 }
 
 // NewAddresses generate address entries in specific wallet,

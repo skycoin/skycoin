@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+//TODO: Move all HTTPS to optional sub-package
+
 // Generate a self-signed X.509 certificate for a TLS server. Outputs to
 // certFile and keyFile and will overwrite existing files.
 func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,

@@ -58,9 +58,97 @@ func init() {
 				Usage: "[label] Label used to idetify your wallet.",
 			},
 		},
-		Action: func(c *gcli.Context) error {
-			return nil
-		},
+		Action: generateWallet,
 	}
 	Commands = append(Commands, cmd)
+}
+
+func generateWallet(c *gcli.Context) error {
+	// create wallet dir if not exist
+	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(walletDir, 0755); err != nil {
+			return err
+		}
+	}
+
+	// get wallet name
+	wltName := c.String("n")
+	if wltName == "" {
+		wltName = defaultWalletName
+	} else if wltName == defaultWalletName {
+		return fmt.Errorf("wallet of %s name already exist, please choose another one", defaultWalletName)
+	}
+
+	// get number of address need to be generated.
+	m := c.String("m")
+	if m == "" || m == "0" {
+		m = "1"
+	}
+
+	addrNum, err := strconv.Atoi(m)
+	if err != nil {
+		return fmt.Errorf("error address number:%v", err)
+	}
+
+	// get label
+	// label := c.String("l")
+
+	// get password
+	// pwd := c.String("p")
+	// if pwd == "" {
+	// 	// TODO: show message of password request
+	// }
+
+	// get seed
+	s := c.String("s")
+	r := c.Bool("r")
+	rd := c.Bool("rd")
+
+	sd, err := makeSeed(s, r, rd)
+	if err != nil {
+		return err
+	}
+	wlt := wallet.NewWallet(sd, wltName)
+	wlt.GenerateAddresses(addrNum)
+
+	// check if the wallet dir does exist.
+	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
+		return err
+	}
+
+	if err := wlt.Save(walletDir); err != nil {
+		return err
+	}
+
+	rwlt := wallet.NewReadableWallet(wlt)
+	d, err := json.MarshalIndent(rwlt, "", "    ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(d))
+
+	return nil
+}
+
+func makeSeed(s string, r, rd bool) (string, error) {
+	if s != "" {
+		if r || rd {
+			return "", errors.New("seed already specified, must not use -r or -rd again")
+		}
+		return s, nil
+	}
+
+	if r && rd {
+		return "", errors.New("for -r and -rd, only one option can be used")
+	}
+
+	if r {
+		seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
+		return hex.EncodeToString(seedRaw[:]), nil
+	}
+
+	if rd {
+		return "", errors.New("not support yet")
+	}
+	return "", errors.New("no seed option found")
 }

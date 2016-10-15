@@ -98,6 +98,12 @@ func (self *WalletRPC) CreateWallet(seed, wltName string) wallet.Wallet {
 	return w
 }
 
+// NewAddresses generate address entries in specific wallet,
+// return nil if wallet does not exist.
+func (rpc *WalletRPC) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+	return rpc.Wallets.NewAddresses(wltID, num)
+}
+
 func (self *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
 	return self.Wallets.ToReadable()
 }
@@ -391,6 +397,40 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			wh.Error405(w, "")
+			return
+		}
+
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, "wallet id not set")
+			return
+		}
+
+		addrs, err := Wg.NewAddresses(wltID, 1)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		if err := Wg.SaveWallet(wltID); err != nil {
+			wh.Error500(w, "")
+			return
+		}
+
+		var rlt = struct {
+			Address string `json:"address"`
+		}{
+			addrs[0].String(),
+		}
+		wh.SendOr404(w, rlt)
+		return
+	}
+}
+
 //all this does is update the wallet name
 // Does Nothing
 func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
@@ -544,6 +584,8 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//		seed [optional]
 	//create new wallet
 	mux.HandleFunc("/wallet/create", walletCreate(gateway))
+
+	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
 
 	//update an existing wallet
 	//does nothing

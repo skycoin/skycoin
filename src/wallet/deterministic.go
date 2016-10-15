@@ -100,8 +100,8 @@ func (wlt *Wallet) SetFilename(fn string) {
 	wlt.Meta["filename"] = fn
 }
 
-func (wlt Wallet) GetID() WalletID {
-	return WalletID(wlt.Meta["filename"])
+func (wlt Wallet) GetID() string {
+	return wlt.Meta["filename"]
 }
 
 func (wlt Wallet) getLastSeed() string {
@@ -117,12 +117,24 @@ func (wlt Wallet) NumEntries() int {
 }
 
 func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
-	seckeys := cipher.GenerateDeterministicKeyPairs([]byte(wlt.getLastSeed()), num)
-	pubkeys := make([]cipher.PubKey, len(seckeys))
+	var seckeys []cipher.SecKey
+	var sd []byte
+	if len(wlt.Entries) == 0 {
+		logger.Critical("seed:%v", wlt.getLastSeed())
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), num)
+	} else {
+		sd, err := hex.DecodeString(wlt.getLastSeed())
+		if err != nil {
+			log.Panicf("decode hex seed faild,%v", err)
+		}
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, num)
+	}
+	wlt.setLastSeed(hex.EncodeToString(sd))
 	addrs := make([]cipher.Address, len(seckeys))
 	for i, s := range seckeys {
 		p := cipher.PubKeyFromSecKey(s)
 		a := cipher.AddressFromPubKey(p)
+		addrs[i] = a
 		wlt.Entries[a] = WalletEntry{
 			Address: a,
 			Secret:  s,
@@ -138,6 +150,14 @@ func (wlt *Wallet) GetAddresses() []cipher.Address {
 		addrs = append(addrs, a)
 	}
 	return addrs
+}
+
+func (wlt *Wallet) GetAddressSet() map[cipher.Address]byte {
+	set := make(map[cipher.Address]byte)
+	for _, e := range wlt.Entries {
+		set[e.Address] = byte(1)
+	}
+	return set
 }
 
 func (wlt *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {

@@ -47,8 +47,8 @@ func (self *ReadableWalletEntry) Save(filename string) error {
 
 type ReadableWalletEntries []ReadableWalletEntry
 
-func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
-	entries := make(WalletEntries, len(self))
+func (self ReadableWalletEntries) ToWalletEntries() map[cipher.Address]WalletEntry {
+	entries := make(map[cipher.Address]WalletEntry)
 	for _, re := range self {
 		we := WalletEntryFromReadable(&re)
 		if err := we.Verify(); err != nil {
@@ -69,10 +69,9 @@ type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
 func NewReadableWallet(w Wallet) *ReadableWallet {
 	//return newReadableWallet(w, NewReadableWalletEntry)
-	entries := w.GetEntries()
-	readable := make(ReadableWalletEntries, len(entries))
+	readable := make(ReadableWalletEntries, len(w.Entries))
 	i := 0
-	for _, e := range entries {
+	for _, e := range w.Entries {
 		readable[i] = NewReadableWalletEntry(&e)
 		i++
 	}

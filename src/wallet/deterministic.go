@@ -21,8 +21,7 @@ type Wallet struct {
 
 //Generate Deterministic Wallet
 //generates a random seed if seed is ""
-func NewWallet(seed string) Wallet {
-
+func NewWallet(seed string, wltName string) Wallet {
 	//if seed is blank, generate a new seed
 	if seed == "" {
 		seed_raw := cipher.SumSHA256(secp256k1.RandByte(64))
@@ -32,7 +31,7 @@ func NewWallet(seed string) Wallet {
 	pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
 	return Wallet{
 		Meta: map[string]string{
-			"filename": NewWalletFilename(),
+			"filename": wltName,
 			"seed":     seed,
 			"type":     "deterministic",
 			"coin":     "sky"},

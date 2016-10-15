@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	bip39 "go-bip39"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
@@ -33,11 +35,11 @@ func init() {
 				Name:  "s",
 				Usage: "Your seed.",
 			},
-			gcli.StringFlag{
+			gcli.BoolFlag{
 				Name:  "r",
 				Usage: "A random alpha numeric seed will be generated for you.",
 			},
-			gcli.StringFlag{
+			gcli.BoolFlag{
 				Name:  "rd",
 				Usage: "A random seed consisting of 12 dictionary words will be generated for you.",
 			},
@@ -79,7 +81,12 @@ func generateWallet(c *gcli.Context) error {
 		return fmt.Errorf("wallet of %s name already exist, please choose another one", defaultWalletName)
 	}
 
-	// get number of address need to be generated.
+	// wallet file should not be a path.
+	if strings.Contains(wltName, "/") {
+		return fmt.Errorf("wallet file name can not be a path")
+	}
+
+	// get number of address that are need to be generated, if m is empty or '0', set to '1'.
 	m := c.String("m")
 	if m == "" || m == "0" {
 		m = "1"
@@ -87,11 +94,11 @@ func generateWallet(c *gcli.Context) error {
 
 	addrNum, err := strconv.Atoi(m)
 	if err != nil {
-		return fmt.Errorf("error address number:%v", err)
+		return fmt.Errorf("invalid address number:%v", err)
 	}
 
 	// get label
-	// label := c.String("l")
+	label := c.String("l")
 
 	// get password
 	// pwd := c.String("p")
@@ -108,7 +115,7 @@ func generateWallet(c *gcli.Context) error {
 	if err != nil {
 		return err
 	}
-	wlt := wallet.NewWallet(sd, wltName)
+	wlt := wallet.NewWallet(sd, wltName, label)
 	wlt.GenerateAddresses(addrNum)
 
 	// check if the wallet dir does exist.
@@ -148,7 +155,10 @@ func makeSeed(s string, r, rd bool) (string, error) {
 	}
 
 	if rd {
-		return "", errors.New("not support yet")
+		// https://github.com/tyler-smith/go-bip39 generate mnemonic.
+		entropy, _ := bip39.NewEntropy(128)
+		mnemonic, _ := bip39.NewMnemonic(entropy)
+		return mnemonic, nil
 	}
 	return "", errors.New("no seed option found")
 }

@@ -100,6 +100,7 @@ func (wlt Wallet) GetFilename() string {
 }
 
 func (wlt *Wallet) SetFilename(fn string) {
+	fmt.Println("filename:", fn)
 	wlt.Meta["filename"] = fn
 }
 
@@ -122,10 +123,11 @@ func (wlt Wallet) NumEntries() int {
 func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
 	var seckeys []cipher.SecKey
 	var sd []byte
+	var err error
 	if len(wlt.Entries) == 0 {
 		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), num)
 	} else {
-		sd, err := hex.DecodeString(wlt.getLastSeed())
+		sd, err = hex.DecodeString(wlt.getLastSeed())
 		if err != nil {
 			log.Panicf("decode hex seed faild,%v", err)
 		}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -21,7 +20,7 @@ import (
 //		Coin - coin type
 type Wallet struct {
 	Meta    map[string]string
-	Entries map[cipher.Address]WalletEntry
+	Entries []WalletEntry
 }
 
 // NewWallet generates Deterministic Wallet
@@ -44,7 +43,6 @@ func NewWallet(seed, wltName, label string) Wallet {
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     "sky"},
-		Entries: make(map[cipher.Address]WalletEntry),
 	}
 }
 
@@ -139,19 +137,19 @@ func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
 		p := cipher.PubKeyFromSecKey(s)
 		a := cipher.AddressFromPubKey(p)
 		addrs[i] = a
-		wlt.Entries[a] = WalletEntry{
+		wlt.Entries = append(wlt.Entries, WalletEntry{
 			Address: a,
 			Secret:  s,
 			Public:  p,
-		}
+		})
 	}
 	return addrs
 }
 
 func (wlt *Wallet) GetAddresses() []cipher.Address {
 	addrs := make([]cipher.Address, len(wlt.Entries))
-	for a := range wlt.Entries {
-		addrs = append(addrs, a)
+	for _, e := range wlt.Entries {
+		addrs = append(addrs, e.Address)
 	}
 	return addrs
 }
@@ -174,10 +172,10 @@ func (wlt *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
 }
 
 func (wlt *Wallet) Save(dir string) error {
-	fp := filepath.Join(dir, wlt.GetFilename())
-	if _, err := os.Stat(fp); !os.IsNotExist(err) {
-		return errors.New("wallet name already exist")
-	}
+	// fp := filepath.Join(dir, wlt.GetFilename())
+	// if _, err := os.Stat(fp); !os.IsNotExist(err) {
+	// 	return errors.New("wallet name already exist")
+	// }
 
 	r := NewReadableWallet(*wlt)
 	return r.Save(filepath.Join(dir, wlt.GetFilename()))

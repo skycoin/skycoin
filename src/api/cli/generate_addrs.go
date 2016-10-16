@@ -34,7 +34,11 @@ func init() {
 				Name:  "w",
 				Usage: "[wallet file or path] In wallet. If no path is specified your default wallet path will be used.",
 			},
-			gcli.StringFlag{
+			// gcli.StringFlag{
+			// 	Name:  "p",
+			// 	Usage: "[password] Password used to encrypt the wallet locally.",
+			// },
+			gcli.BoolFlag{
 				Name:  "j,json",
 				Usage: "Returns the results in JSON format.",
 			},

@@ -43,9 +43,84 @@ func init() {
 				Usage: "Returns the results in JSON format.",
 			},
 		},
-		Action: func(c *gcli.Context) error {
-			return nil
-		},
+		Action: generateAddrs,
 	}
 	Commands = append(Commands, cmd)
+}
+
+func generateAddrs(c *gcli.Context) error {
+	// get number of address that are need to be generated.
+	num := c.Int("m")
+	if num == 0 {
+		num = defaultAddrNum
+	}
+
+	jsonFmt := c.Bool("json")
+
+	w := c.String("w")
+	if w == "" {
+		w = filepath.Join(walletDir, defaultWalletName)
+	}
+
+	// only wallet file name, no path.
+	if filepath.Dir(w) == "." {
+		w = filepath.Join(walletDir, w)
+	}
+
+	// check if the file does exsit
+	if _, err := os.Stat(w); os.IsNotExist(err) {
+		return fmt.Errorf("wallet file: %v does not exist", w)
+	}
+
+	wlt := wallet.Wallet{
+		Meta: make(map[string]string),
+	}
+	wlt.SetFilename(filepath.Base(w))
+	dir, err := filepath.Abs(filepath.Dir(w))
+	if err != nil {
+		return err
+	}
+	if err := wlt.Load(dir); err != nil {
+		return err
+	}
+	addrs := wlt.GenerateAddresses(num)
+	if err := wlt.Save(dir); err != nil {
+		return err
+	}
+	s, err := addrResult(addrs, jsonFmt)
+	if err != nil {
+		return err
+	}
+	fmt.Println(s)
+	return nil
+}
+
+func addrResult(addrs []cipher.Address, jsonFmt bool) (string, error) {
+	if jsonFmt {
+		var rlt struct {
+			Entries []struct {
+				Address string `json:"address"`
+			} `json:"entries"`
+		}
+
+		for _, a := range addrs {
+			e := struct {
+				Address string `json:"address"`
+			}{
+				a.String(),
+			}
+			rlt.Entries = append(rlt.Entries, e)
+		}
+		d, err := json.MarshalIndent(rlt, "", "    ")
+		if err != nil {
+			return "", err
+		}
+		return string(d), nil
+	}
+
+	addrArray := make([]string, len(addrs))
+	for i, a := range addrs {
+		addrArray[i] = a.String()
+	}
+	return strings.Join(addrArray, ","), nil
 }

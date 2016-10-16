@@ -150,8 +150,8 @@ func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
 
 func (wlt *Wallet) GetAddresses() []cipher.Address {
 	addrs := make([]cipher.Address, len(wlt.Entries))
-	for _, e := range wlt.Entries {
-		addrs = append(addrs, e.Address)
+	for i, e := range wlt.Entries {
+		addrs[i] = e.Address
 	}
 	return addrs
 }

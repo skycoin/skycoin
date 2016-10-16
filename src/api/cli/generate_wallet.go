@@ -7,7 +7,6 @@ import (
 	"fmt"
 	bip39 "go-bip39"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -87,14 +86,9 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// get number of address that are need to be generated, if m is empty or '0', set to '1'.
-	m := c.String("m")
-	if m == "" || m == "0" {
-		m = "1"
-	}
-
-	addrNum, err := strconv.Atoi(m)
-	if err != nil {
-		return fmt.Errorf("invalid address number:%v", err)
+	num := c.Int("m")
+	if num == 0 {
+		num = 1
 	}
 
 	// get label
@@ -116,7 +110,7 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 	wlt := wallet.NewWallet(sd, wltName, label)
-	wlt.GenerateAddresses(addrNum)
+	wlt.GenerateAddresses(num)
 
 	// check if the wallet dir does exist.
 	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
@@ -160,5 +154,5 @@ func makeSeed(s string, r, rd bool) (string, error) {
 		mnemonic, _ := bip39.NewMnemonic(entropy)
 		return mnemonic, nil
 	}
-	return "", errors.New("no seed option found")
+	return "", errors.New("no seed option not set")
 }

@@ -1,6 +1,19 @@
 package cli
 
-import gcli "gopkg.in/urfave/cli.v1"
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/wallet"
+
+	gcli "gopkg.in/urfave/cli.v1"
+)
+
+var defaultAddrNum = 1
 
 func init() {
 	cmd := gcli.Command{
@@ -13,7 +26,7 @@ func init() {
         If you do not include the “-p” option you will be prompted to enter your password after 
         you enter your command.`,
 		Flags: []gcli.Flag{
-			gcli.StringFlag{
+			gcli.IntFlag{
 				Name: "m",
 				Usage: "[numberOfAddresses]	Number of addresses to generate. By default 1 address is generated.",
 			},

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	bip39 "go-bip39"
 	"os"
-	"strings"
+	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
@@ -81,8 +81,8 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// wallet file should not be a path.
-	if strings.Contains(wltName, "/") {
-		return fmt.Errorf("wallet file name can not be a path")
+	if filepath.Dir(wltName) != "." {
+		return fmt.Errorf("wallet file name must not contain path")
 	}
 
 	// get number of address that are need to be generated, if m is empty or '0', set to '1'.

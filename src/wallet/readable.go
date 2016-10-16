@@ -47,14 +47,14 @@ func (self *ReadableWalletEntry) Save(filename string) error {
 
 type ReadableWalletEntries []ReadableWalletEntry
 
-func (self ReadableWalletEntries) ToWalletEntries() map[cipher.Address]WalletEntry {
-	entries := make(map[cipher.Address]WalletEntry)
-	for _, re := range self {
+func (self ReadableWalletEntries) ToWalletEntries() []WalletEntry {
+	entries := make([]WalletEntry, len(self))
+	for i, re := range self {
 		we := WalletEntryFromReadable(&re)
 		if err := we.Verify(); err != nil {
 			log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
 		}
-		entries[we.Address] = we
+		entries[i] = we
 	}
 	return entries
 }

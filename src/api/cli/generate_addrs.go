@@ -97,19 +97,14 @@ func generateAddrs(c *gcli.Context) error {
 
 func addrResult(addrs []cipher.Address, jsonFmt bool) (string, error) {
 	if jsonFmt {
-		var rlt struct {
-			Entries []struct {
-				Address string `json:"address"`
-			} `json:"entries"`
+		var rlt = struct {
+			Addresses []string `json:"addresses"`
+		}{
+			make([]string, len(addrs)),
 		}
 
-		for _, a := range addrs {
-			e := struct {
-				Address string `json:"address"`
-			}{
-				a.String(),
-			}
-			rlt.Entries = append(rlt.Entries, e)
+		for i, a := range addrs {
+			rlt.Addresses[i] = a.String()
 		}
 		d, err := json.MarshalIndent(rlt, "", "    ")
 		if err != nil {

@@ -31,8 +31,8 @@ func init() {
 				Usage: "[numberOfAddresses]	Number of addresses to generate. By default 1 address is generated.",
 			},
 			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Password used to encrypt the wallet locally.",
+				Name:  "w",
+				Usage: "[wallet file or path] In wallet. If no path is specified your default wallet path will be used.",
 			},
 			gcli.StringFlag{
 				Name:  "j,json",

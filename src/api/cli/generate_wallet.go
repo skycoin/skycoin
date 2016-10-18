@@ -85,6 +85,11 @@ func generateWallet(c *gcli.Context) error {
 		return fmt.Errorf("wallet file name must not contain path")
 	}
 
+	// check if the wallet file does exist
+	if _, err := os.Stat(filepath.Join(walletDir, wltName)); err == nil {
+		return fmt.Errorf("%v already exist", wltName)
+	}
+
 	// get number of address that are need to be generated, if m is empty or '0', set to '1'.
 	num := c.Int("m")
 	if num == 0 {
@@ -127,7 +132,6 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 	fmt.Println(string(d))
-
 	return nil
 }
 

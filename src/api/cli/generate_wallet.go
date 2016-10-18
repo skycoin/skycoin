@@ -90,7 +90,7 @@ func generateWallet(c *gcli.Context) error {
 		return fmt.Errorf("%v already exist", wltName)
 	}
 
-	// get number of address that are need to be generated, if m is empty or '0', set to '1'.
+	// get number of address that are need to be generated, if m is 0, set to 1.
 	num := c.Int("m")
 	if num == 0 {
 		num = 1

@@ -17,8 +17,8 @@ type MessageBase struct {
 	SendRouteID RouteID
 	SendBack    bool
 	// For sending the reply from the last node in a route
-	FromPeer cipher.PubKey
-	Nonce    [4]byte
+	FromPeerID cipher.PubKey
+	Nonce      [4]byte
 }
 
 type UserMessage struct {
@@ -33,9 +33,9 @@ type SetRouteMessage struct {
 	MessageBase
 	SetRouteID                 RouteID
 	ConfirmRouteID             RouteID
-	ForwardToPeer              cipher.PubKey
+	ForwardToPeerID            cipher.PubKey
 	ForwardRewriteSendRouteID  RouteID
-	BackwardToPeer             cipher.PubKey
+	BackwardToPeerID           cipher.PubKey
 	BackwardRewriteSendRouteID RouteID
 	DurationHint               time.Duration
 }
@@ -63,36 +63,6 @@ type DeleteRouteMessage struct {
 type AddNodeMessage struct {
 	MessageBase
 	Content []byte
-}
-
-// Get a node from the network
-//type GetNodeMessage struct {
-//	MessageBase
-//}
-
-// Set up a node from the network
-//type SetUpNodeMessage struct {
-//	MessageBase
-//}
-
-// Delete a node from the network
-//type DeleteNodeMessage struct {
-//	MessageBase
-//}
-
-// Get a route between two nodes from the node manager
-//type GetNodeRouteMessage struct {
-//	MessageBase
-//}
-
-type MessageToSend struct {
-	ThruRoute uuid.UUID
-	Contents  []byte
-}
-
-type MessageToReceive struct {
-	Contents []byte
-	Reply    []byte
 }
 
 type MessageUnderAssembly struct {

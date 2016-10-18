@@ -18,7 +18,6 @@ import (
 	"github.com/ccding/go-stun/stun"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/transport"
 )
 
@@ -28,13 +27,17 @@ type ListenPort struct {
 }
 
 type UDPConfig struct {
-	domain.TransportConfig
+	TransportConfig
 	DatagramLength  uint16
 	LocalAddress    string // "" for default
 	NumListenPorts  uint16
 	ListenPortMin   uint16   // If 0, STUN is used
 	ExternalAddress string   // External address to use if STUN is not
 	StunEndpoints   []string // STUN servers to try for NAT traversal
+}
+
+type TransportConfig struct {
+	SendChannelLength uint32
 }
 
 type UDPCommConfig struct {

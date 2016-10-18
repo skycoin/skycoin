@@ -184,7 +184,7 @@ func ConnectNodeToNode(config1, config2 *TestConfig) {
 }
 
 // Add Routes to Node
-func AddRoutesToEstablish(node *mesh.Node, routesConfigs []domain.RouteConfig) {
+func AddRoutesToEstablish(node *mesh.Node, routesConfigs []RouteConfig) {
 	// Setup route
 	for _, routeConfig := range routesConfigs {
 		if len(routeConfig.Peers) == 0 {

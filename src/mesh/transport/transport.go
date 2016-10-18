@@ -1,13 +1,9 @@
 package transport
 
 import (
-	"fmt"
-	"os"
-	"reflect"
 	"sync"
 	"time"
 
-	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/serialize"
@@ -24,9 +20,9 @@ type TransportConfig struct {
 }
 
 type SendMessage struct {
-	MessageID domain.MessageID
-	FromPeer  cipher.PubKey
-	Contents  []byte
+	MessageID  domain.MessageID
+	FromPeerID cipher.PubKey
+	Contents   []byte
 }
 
 type ReplyMessage struct {
@@ -83,50 +79,29 @@ func NewTransport(physicalTransport ITransport, config TransportConfig) *Transpo
 	return transport
 }
 
-func (self *Transport) processReceivedLoop() {
-	self.closeWait.Add(1)
-	defer self.closeWait.Done()
-
-	for len(self.closing) == 0 {
-		select {
-		case physicalMsg, ok := <-self.physicalReceived:
-			{
-				if ok {
-					self.processPhysicalMessage(physicalMsg)
-				}
-			}
-		case <-self.closing:
-			{
-				return
-			}
-		}
-	}
-}
-func (self *Transport) doRetransmits() {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	for _, state := range self.messagesSent {
-		if !state.receivedAck {
-			go self.physicalTransport.SendMessage(state.toPeer, state.serialized)
-		}
-	}
+func (self *Transport) ConnectedToPeer(peer cipher.PubKey) bool {
+	return self.physicalTransport.ConnectedToPeer(peer)
 }
 
-func (self *Transport) retransmitLoop() {
-	self.closeWait.Add(1)
-	defer self.closeWait.Done()
-	for len(self.closing) == 0 {
-		select {
-		case <-time.After(self.config.RetransmitDuration):
-			{
-				self.doRetransmits()
-			}
-		case <-self.closing:
-			{
-				return
-			}
-		}
+func (self *Transport) GetConnectedPeers() []cipher.PubKey {
+	return self.physicalTransport.GetConnectedPeers()
+}
+
+func (self *Transport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
+	empty := SendMessage{}
+	emptySerialized := self.serializer.SerializeMessage(empty)
+	if (uint)(len(emptySerialized)) >= self.physicalTransport.GetMaximumMessageSizeToPeer(peer) {
+		return 0
 	}
+	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer) - (uint)(len(emptySerialized))
+}
+
+func (self *Transport) Close() error {
+	for i := 0; i < 10; i++ {
+		self.closing <- true
+	}
+	self.closeWait.Wait()
+	return self.physicalTransport.Close()
 }
 
 func (self *Transport) expireMessagesLoop() {
@@ -165,114 +140,6 @@ func (self *Transport) expireMessages() {
 			self.messagesReceived[id] = expiry
 		}
 	}
-}
-
-func (self *Transport) sendAck(message SendMessage) {
-	reply := ReplyMessage{message.MessageID}
-	serialized := self.serializer.SerializeMessage(reply)
-	go self.physicalTransport.SendMessage(message.FromPeer, serialized)
-}
-
-func (self *Transport) processSend(message SendMessage) {
-	self.sendAck(message)
-
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	_, alreadyReceived := self.messagesReceived[message.MessageID]
-	if !alreadyReceived {
-		self.outputChannel <- message.Contents
-		self.messagesReceived[message.MessageID] = time.Now().Add(self.config.RememberMessageReceivedDuration)
-	}
-}
-
-func (self *Transport) processReply(message ReplyMessage) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	state, exists := self.messagesSent[message.MessageID]
-	if !exists {
-		fmt.Fprintf(os.Stderr, "Received ack for unknown sent message %v\n", message.MessageID)
-		return
-	}
-	state.receivedAck = true
-	self.messagesSent[message.MessageID] = state
-
-	// Test
-	if !self.messagesSent[message.MessageID].receivedAck {
-		panic("Test error")
-	}
-}
-
-func (self *Transport) processPhysicalMessage(physicalMessage []byte) {
-	message, err := self.serializer.UnserializeMessage(physicalMessage)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Deserialization error %v\n", err)
-		return
-	}
-	messageType := reflect.TypeOf(message)
-
-	if messageType == reflect.TypeOf(SendMessage{}) {
-		send := message.(SendMessage)
-		self.processSend(send)
-	} else if messageType == reflect.TypeOf(ReplyMessage{}) {
-		reply := message.(ReplyMessage)
-		self.processReply(reply)
-	} else {
-		panic("Internal error: unknown message type")
-	}
-}
-
-func (self *Transport) newMessageID() domain.MessageID {
-	return (domain.MessageID)(uuid.NewV4())
-}
-
-func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
-	messageID := self.newMessageID()
-	sendMessage := SendMessage{messageID, self.config.MyPeerID, contents}
-	sendSerialized := self.serializer.SerializeMessage(sendMessage)
-	state := messageSentState{toPeer,
-		sendSerialized,
-		time.Now().Add(self.config.RetransmitDuration),
-		false}
-	err := self.physicalTransport.SendMessage(toPeer, sendSerialized)
-	if err == nil {
-		self.lock.Lock()
-		defer self.lock.Unlock()
-		self.messagesSent[messageID] = state
-	}
-	return err
-}
-
-func (self *Transport) SetReceiveChannel(received chan []byte) {
-	self.outputChannel = received
-}
-
-func (self *Transport) Close() error {
-	for i := 0; i < 10; i++ {
-		self.closing <- true
-	}
-	self.closeWait.Wait()
-	return self.physicalTransport.Close()
-}
-
-func (self *Transport) SetCrypto(crypto ITransportCrypto) {
-	self.physicalTransport.SetCrypto(crypto)
-}
-
-func (self *Transport) ConnectedToPeer(peer cipher.PubKey) bool {
-	return self.physicalTransport.ConnectedToPeer(peer)
-}
-
-func (self *Transport) GetConnectedPeers() []cipher.PubKey {
-	return self.physicalTransport.GetConnectedPeers()
-}
-
-func (self *Transport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
-	empty := SendMessage{}
-	emptySerialized := self.serializer.SerializeMessage(empty)
-	if (uint)(len(emptySerialized)) >= self.physicalTransport.GetMaximumMessageSizeToPeer(peer) {
-		return 0
-	}
-	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer) - (uint)(len(emptySerialized))
 }
 
 func (self *Transport) debug_countMapItems() int {

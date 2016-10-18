@@ -81,11 +81,16 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// wallet file should not be a path.
-	if filepath.Dir(wltName) != "." {
+	if filepath.Base(wltName) != wltName {
 		return fmt.Errorf("wallet file name must not contain path")
 	}
 
-	// get number of address that are need to be generated, if m is empty or '0', set to '1'.
+	// check if the wallet file does exist
+	if _, err := os.Stat(filepath.Join(walletDir, wltName)); err == nil {
+		return fmt.Errorf("%v already exist", wltName)
+	}
+
+	// get number of address that are need to be generated, if m is 0, set to 1.
 	num := c.Int("m")
 	if num == 0 {
 		num = 1
@@ -127,7 +132,6 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 	fmt.Println(string(d))
-
 	return nil
 }
 
@@ -154,5 +158,5 @@ func makeSeed(s string, r, rd bool) (string, error) {
 		mnemonic, _ := bip39.NewMnemonic(entropy)
 		return mnemonic, nil
 	}
-	return "", errors.New("no seed option not set")
+	return "", errors.New("need to set seed option")
 }

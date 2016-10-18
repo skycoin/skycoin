@@ -1,6 +1,36 @@
 package cli
 
-import gcli "gopkg.in/urfave/cli.v1"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/skycoin/skycoin/src/wallet"
+
+	gcli "gopkg.in/urfave/cli.v1"
+)
+
+type unspentOut struct {
+	Hash              string `json:"txid"` //hash uniquely identifies transaction
+	SourceTransaction string `json:"src_tx"`
+	Address           string `json:"address"`
+	Coins             string `json:"coins"`
+	Hours             uint64 `json:"hours"`
+}
+
+type balance struct {
+	Address string `json:"address"`
+	Amount  uint64 `json:"amount"`
+}
+
+type balanceResult struct {
+	TotalAmount uint64    `json:"total_amount"`
+	Addresses   []balance `json:"addresses"`
+}
 
 func init() {
 	cmd := gcli.Command{
@@ -16,14 +46,130 @@ func init() {
 				Name:  "a",
 				Usage: "[address] List balance of specific address.",
 			},
-			gcli.StringFlag{
-				Name:  "j,json",
-				Usage: "Returns the results in JSON format.",
-			},
+			// gcli.StringFlag{
+			// 	Name:  "j,json",
+			// 	Usage: "Returns the results in JSON format.",
+			// },
 		},
-		Action: func(c *gcli.Context) error {
-			return nil
-		},
+		Action: checkBalance,
 	}
 	Commands = append(Commands, cmd)
+}
+
+func checkBalance(c *gcli.Context) error {
+	// get w option
+	w := c.String("w")
+
+	// get a option
+	a := c.String("a")
+
+	if w != "" && a != "" {
+		// 1 1
+		return errors.New("specify wallet or address, cannot set both")
+	}
+
+	addrs, err := gatherAddrs(w, a)
+	if err != nil {
+		return err
+	}
+
+	balRlt, err := getUnspent(addrs)
+	if err != nil {
+		return err
+	}
+
+	var d []byte
+	if a != "" {
+		d, err = json.MarshalIndent(balRlt.Addresses[0], "", "    ")
+	} else {
+		d, err = json.MarshalIndent(balRlt, "", "    ")
+	}
+
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(d))
+	return nil
+}
+
+func gatherAddrs(w, a string) ([]string, error) {
+	var addrs []string
+	if a != "" {
+		// 1 0
+		addrs = append(addrs, a)
+	} else {
+		if w == "" {
+			// 0 0
+			w = filepath.Join(walletDir, defaultWalletName)
+		} else {
+			// 0 1
+			if filepath.Base(w) == w {
+				w = filepath.Join(walletDir, w)
+			} else {
+				var err error
+				w, err = filepath.Abs(w)
+				if err != nil {
+					return []string{}, err
+				}
+			}
+		}
+
+		wlt, err := wallet.Load(w)
+		if err != nil {
+			return []string{}, err
+		}
+
+		addresses := wlt.GetAddresses()
+		for _, a := range addresses {
+			addrs = append(addrs, a.String())
+		}
+	}
+	return addrs, nil
+}
+
+func getUnspent(addrs []string) (balanceResult, error) {
+	balRlt := balanceResult{
+		Addresses: make([]balance, len(addrs)),
+	}
+
+	for i, a := range addrs {
+		balRlt.Addresses[i] = balance{
+			Address: a,
+		}
+	}
+
+	url := fmt.Sprintf("%v/outputs?addrs=%s", nodeAddress, strings.Join(addrs, ","))
+	rsp, err := http.Get(url)
+	if err != nil {
+		return balanceResult{}, err
+	}
+	defer rsp.Body.Close()
+	outs := []unspentOut{}
+	if err := json.NewDecoder(rsp.Body).Decode(&outs); err != nil {
+		return balanceResult{}, err
+	}
+
+	find := func(bals []balance, addr string) (int, error) {
+		for i, b := range bals {
+			if b.Address == addr {
+				return i, nil
+			}
+		}
+		return -1, errors.New("not exist")
+	}
+
+	for _, o := range outs {
+		amt, err := strconv.ParseUint(o.Coins, 10, 64)
+		if err != nil {
+			return balanceResult{}, err
+		}
+
+		i, err := find(balRlt.Addresses, o.Address)
+		if err != nil {
+			return balanceResult{}, fmt.Errorf("unspent outs error")
+		}
+		balRlt.Addresses[i].Amount += amt
+		balRlt.TotalAmount += amt
+	}
+	return balRlt, nil
 }

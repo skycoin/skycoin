@@ -63,7 +63,7 @@ func generateAddrs(c *gcli.Context) error {
 	}
 
 	// only wallet file name, no path.
-	if filepath.Dir(w) == "." {
+	if filepath.Base(w) == w {
 		w = filepath.Join(walletDir, w)
 	}
 

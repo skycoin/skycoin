@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -23,6 +24,8 @@ type Wallet struct {
 	Entries []WalletEntry
 }
 
+var version = "0.1"
+
 // NewWallet generates Deterministic Wallet
 // generates a random seed if seed is ""
 func NewWallet(seed, wltName, label string) Wallet {
@@ -37,6 +40,7 @@ func NewWallet(seed, wltName, label string) Wallet {
 	return Wallet{
 		Meta: map[string]string{
 			"filename": wltName,
+			"version":  version,
 			"label":    label,
 			"seed":     seed,
 			"lastSeed": seed,
@@ -44,6 +48,25 @@ func NewWallet(seed, wltName, label string) Wallet {
 			"type":     "deterministic",
 			"coin":     "sky"},
 	}
+}
+
+func Load(wltFile string) (*Wallet, error) {
+	// check file's existence
+	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
+		return nil, err
+	}
+	wlt := Wallet{
+		Meta: make(map[string]string),
+	}
+	wlt.SetFilename(filepath.Base(wltFile))
+	dir, err := filepath.Abs(filepath.Dir(wltFile))
+	if err != nil {
+		return nil, err
+	}
+	if err := wlt.Load(dir); err != nil {
+		return nil, err
+	}
+	return &wlt, nil
 }
 
 func NewWalletFromReadable(r *ReadableWallet) Wallet {
@@ -67,9 +90,9 @@ func (wlt Wallet) Validate() error {
 		return errors.New("seed not set")
 	}
 
-	if _, ok := wlt.Meta["lastSeed"]; !ok {
-		return errors.New("lastSeed not set")
-	}
+	// if _, ok := wlt.Meta["lastSeed"]; !ok {
+	// 	return errors.New("lastSeed not set")
+	// }
 
 	walletType, ok := wlt.Meta["type"]
 	if !ok {
@@ -100,7 +123,6 @@ func (wlt Wallet) GetFilename() string {
 }
 
 func (wlt *Wallet) SetFilename(fn string) {
-	fmt.Println("filename:", fn)
 	wlt.Meta["filename"] = fn
 }
 
@@ -114,6 +136,10 @@ func (wlt Wallet) getLastSeed() string {
 
 func (wlt *Wallet) setLastSeed(lseed string) {
 	wlt.Meta["lastSeed"] = lseed
+}
+
+func (wlt *Wallet) GetVersion() string {
+	return wlt.Meta["version"]
 }
 
 func (wlt Wallet) NumEntries() int {

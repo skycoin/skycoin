@@ -81,51 +81,68 @@
 
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.second" class="tab-pane ng-scope">
                 <div class="outline ng-scope">
-                    <div class="btn-group ng-binding">
-                        <button  data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
-                            From: <span class="caret"></span>
-                        </button>
-                        <ul role="menu" class="dropdown-menu">
-                            <li *ngFor="#wallet of wallets"><a (click)="spendid = wallet.meta.filename" href="#">{{wallet.meta.filename}}</a></li>
-                        </ul>
-                        {{spendid}}
+                  <form class="form-horizontal">
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label"><i class="fa fa-question-circle"></i>&nbsp;Wallet:</label>
+                          <div class="col-sm-6">
+                            <select class="form-control" #selectedWallet2 (change)="onSelectWallet(selectedWallet2.value)">
+                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}">{{wallet.meta.filename}}</option>
+                            </select>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Balance:</label>
+                          <div class="col-sm-6" style="padding-top:5px">
+                            <span>{{selectedWallet.balance}}&nbsp;SKY</span>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Address:</label>
+                          <div class="col-sm-6">
+                              <input type="text" #spendaddress class="form-control">
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Amount:</label>
+                          <div class="col-sm-6">
+                              <input type="number" #spendamount class="form-control" value="0">
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Note:</label>
+                          <div class="col-sm-6">
+                              <input type="text" class="form-control" value="Payment to Jim">
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label"></label>
+                          <div class="col-sm-6">
+                              <button type="button" class="btn btn-default" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
+                          </div>
+                      </div>
+                  </form>
+                    <div style="width:100%;overflow:auto;">
+                        <table id="pending-table">
+                            <tbody>
+                            <tr class="dark-row">
+                                <td>Time</td>
+                                <td>Status</td>
+                                <td>Address</td>
+                                <td>Notes</td>
+                                <td>Amount</td>
+                                <td>Transaction ID</td>
+                            </tr>
+                            <tr *ngFor="#transaction of pendingTable">
+                                <td>{{getDateTimeString(transaction.txn.time)}}</td>
+                                <td>{{transaction.balance.confirmed.coins?'Completed':'Pending'}}</td>
+                                <td>{{transaction.txn.address}}</td>
+                                <td></td>
+                                <td>{{transaction.txn.amount}}</td>
+                                <td>{{transaction.txn.txid}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <table id="send-table">
-                        <tbody>
-                        <tr></tr>
-                        <tr>
-                            <td class="send-pay-col1">
-                                <label for="send_pay_to">Pay to</label>
-                            </td>
-                            <td>
-                                <input type="text" #spendaddress id="send_pay_to" [disabled]="readyDisable" class="ng-pristine ng-valid">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="send-pay-col1">
-                                <label for="send_amount">Amount</label>
-                            </td>
-                            <td>
-                                <input type="text" #spendamount [disabled]="readyDisable" id="send_amount" class="ng-pristine ng-valid">
-                                SKY
-                                <button (click)="ready(spendid, spendaddress.value, spendamount.value)" [disabled]="readyDisable" class="btn btn-default" type="button">Ready</button>
-                                <button (click)="spend(spendid, spendaddress.value, spendamount.value)" class="btn btn-default" type="button" [disabled]="sendDisable">Send</button>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    <table id="pending-table">
-                        <tbody>
-                        <tr class="dark-row">
-                            <td><i class="fa fa-check"></i> Pending</td>
-                            <td>Address</td>
-                            <td>Amount</td>
-                        </tr>
-                        <tr *ngFor="#transaction of pendingTable">
-                            <td>{{transaction.complete}}</td><td>{{transaction.address}}</td><td>{{transaction.amount}}</td>
-                        </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 

@@ -165,6 +165,21 @@ func (bt *BlockTree) GetBlockInDepth(depth uint64, filter func(hps []coin.HashPa
 	return bt.getBlock(hash)
 }
 
+// GetAllBlockHashInDepth returns all block hash of N depth in the tree.
+func (bt *BlockTree) GetAllBlockHashInDepth(depth uint64) ([]cipher.SHA256, error) {
+	key := itob(depth)
+	pairsBin := bt.tree.Get(key)
+	pairs := []coin.HashPair{}
+	if err := encoder.DeserializeRaw(pairsBin, &pairs); err != nil {
+		return []cipher.SHA256{}, err
+	}
+	hashes := make([]cipher.SHA256, len(pairs))
+	for i, hp := range pairs {
+		hashes[i] = hp.Hash
+	}
+	return hashes, nil
+}
+
 func (bt *BlockTree) getBlock(hash cipher.SHA256) *coin.Block {
 	bin := bt.blocks.Get(hash[:])
 	if bin == nil {

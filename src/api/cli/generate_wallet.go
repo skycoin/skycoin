@@ -81,7 +81,7 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// wallet file should not be a path.
-	if filepath.Dir(wltName) != "." {
+	if filepath.Base(wltName) != wltName {
 		return fmt.Errorf("wallet file name must not contain path")
 	}
 
@@ -158,5 +158,5 @@ func makeSeed(s string, r, rd bool) (string, error) {
 		mnemonic, _ := bip39.NewMnemonic(entropy)
 		return mnemonic, nil
 	}
-	return "", errors.New("no seed option not set")
+	return "", errors.New("need to set seed option")
 }

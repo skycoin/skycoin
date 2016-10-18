@@ -50,6 +50,25 @@ func NewWallet(seed, wltName, label string) Wallet {
 	}
 }
 
+func Load(wltFile string) (*Wallet, error) {
+	// check file's existence
+	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
+		return nil, err
+	}
+	wlt := Wallet{
+		Meta: make(map[string]string),
+	}
+	wlt.SetFilename(filepath.Base(wltFile))
+	dir, err := filepath.Abs(filepath.Dir(wltFile))
+	if err != nil {
+		return nil, err
+	}
+	if err := wlt.Load(dir); err != nil {
+		return nil, err
+	}
+	return &wlt, nil
+}
+
 func NewWalletFromReadable(r *ReadableWallet) Wallet {
 	w := Wallet{
 		Meta:    r.Meta,

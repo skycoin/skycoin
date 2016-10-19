@@ -13,6 +13,7 @@ var Commands []gcli.Command
 var (
 	nodeAddress       = os.Getenv("SKYCOIN_NODE_ADDR")
 	walletDir         = os.Getenv("SKYCOIN_WLT_DIR")
+	walletExt         = ".wlt"
 	defaultWalletName = "skycoin_cli.wlt"
 )
 

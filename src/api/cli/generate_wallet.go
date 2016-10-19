@@ -44,6 +44,7 @@ func init() {
 			},
 			gcli.IntFlag{
 				Name:  "m",
+				Value: 1,
 				Usage: "[numberOfAddresses] Number of addresses to generate. By default 1 address is generated.",
 			},
 			// gcli.StringFlag{

@@ -103,6 +103,10 @@ func gatherAddrs(w, a string) ([]string, error) {
 			w = filepath.Join(walletDir, defaultWalletName)
 		} else {
 			// 0 1
+			if !strings.HasSuffix(w, walletExt) {
+				return []string{}, fmt.Errorf("error wallet file name, must has %v extension", walletExt)
+			}
+
 			if filepath.Base(w) == w {
 				w = filepath.Join(walletDir, w)
 			} else {

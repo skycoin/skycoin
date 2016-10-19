@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -27,6 +28,14 @@ func listAddresses(c *gcli.Context) error {
 	w := c.Args().First()
 	if w == "" {
 		w = filepath.Join(walletDir, defaultWalletName)
+	}
+
+	if !strings.HasSuffix(w, walletExt) {
+		return fmt.Errorf("error wallet file name, must has %v extension", walletExt)
+	}
+
+	if filepath.Base(w) == w {
+		w = filepath.Join(walletDir, w)
 	}
 
 	// check if the wallet does exist

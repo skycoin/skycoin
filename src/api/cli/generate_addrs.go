@@ -63,6 +63,10 @@ func generateAddrs(c *gcli.Context) error {
 		w = filepath.Join(walletDir, defaultWalletName)
 	}
 
+	if !strings.HasSuffix(w, walletExt) {
+		return fmt.Errorf("error wallet file name, must has %v extension", walletExt)
+	}
+
 	// only wallet file name, no path.
 	if filepath.Base(w) == w {
 		w = filepath.Join(walletDir, w)

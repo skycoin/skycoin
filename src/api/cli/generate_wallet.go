@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
@@ -79,6 +80,11 @@ func generateWallet(c *gcli.Context) error {
 		wltName = defaultWalletName
 	} else if wltName == defaultWalletName {
 		return fmt.Errorf("wallet of %s name already exist, please choose another one", defaultWalletName)
+	}
+
+	// check if the wallet name has wlt extension.
+	if !strings.HasSuffix(wltName, ".wlt") {
+		return fmt.Errorf("error wallet name, must has .wlt extension")
 	}
 
 	// wallet file should not be a path.

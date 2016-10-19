@@ -27,7 +27,8 @@ func init() {
         you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
-				Name: "m",
+				Name:  "m",
+				Value: 1,
 				Usage: "[numberOfAddresses]	Number of addresses to generate. By default 1 address is generated.",
 			},
 			gcli.StringFlag{

@@ -42,7 +42,7 @@ func getBlocks(c *gcli.Context) error {
 
 	rsp, err := http.Get(url)
 	if err != nil {
-		return err
+		return errConnectNodeFailed
 	}
 	defer rsp.Body.Close()
 	d, _ := ioutil.ReadAll(rsp.Body)

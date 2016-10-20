@@ -145,7 +145,7 @@ func getUnspent(addrs []string) (balanceResult, error) {
 	url := fmt.Sprintf("%v/outputs?addrs=%s", nodeAddress, strings.Join(addrs, ","))
 	rsp, err := http.Get(url)
 	if err != nil {
-		return balanceResult{}, errors.New("connect to skycoin node failed")
+		return balanceResult{}, errConnectNodeFailed
 	}
 	defer rsp.Body.Close()
 	outs := []unspentOut{}

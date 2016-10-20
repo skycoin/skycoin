@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 
 	"github.com/skycoin/skycoin/src/util"
@@ -15,6 +16,10 @@ var (
 	walletDir         = os.Getenv("SKYCOIN_WLT_DIR")
 	walletExt         = ".wlt"
 	defaultWalletName = "skycoin_cli.wlt"
+)
+
+var (
+	errConnectNodeFailed = errors.New("connect to node failed")
 )
 
 func stringPtr(v string) *string {

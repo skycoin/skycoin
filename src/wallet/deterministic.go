@@ -130,6 +130,10 @@ func (wlt Wallet) GetID() string {
 	return wlt.Meta["filename"]
 }
 
+func (wlt Wallet) GetLabel() string {
+	return wlt.Meta["label"]
+}
+
 func (wlt Wallet) getLastSeed() string {
 	return wlt.Meta["lastSeed"]
 }

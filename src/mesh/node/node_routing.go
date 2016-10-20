@@ -43,7 +43,7 @@ func (self *Node) AddRoute(routeID domain.RouteID, toPeer cipher.PubKey) error {
 
 	self.localRoutesByTerminatingPeer[toPeer] = routeID
 	self.localRoutes[routeID] = domain.LocalRoute{
-		LastForwardingPeerID: self.config.PubKey,
+		LastForwardingPeerID: self.Config.PubKey,
 		TerminatingPeerID:    toPeer,
 		LastHopRouteID:       NilRouteID,
 		LastConfirmed:        time.Unix(0, 0),
@@ -82,7 +82,7 @@ func (self *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, time
 	}
 	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.config.PubKey))
+		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
 	}
 	serialized := self.serializer.SerializeMessage(message)
 	err = transportToPeer.SendMessage(directPeer, serialized)
@@ -117,22 +117,22 @@ func (self *Node) GetRouteLastConfirmed(routeID domain.RouteID) (time.Time, erro
 	return localRoute.LastConfirmed, nil
 }
 
-func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeer cipher.PubKey, localId, sendId domain.RouteID, transport transport.ITransport, err error) {
+func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeerID cipher.PubKey, localID, sendID domain.RouteID, transport transport.ITransport, err error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	localRouteId, localRouteExists := self.localRoutesByTerminatingPeer[toPeer]
-	if localRouteExists {
-		route, routeStructExists := self.routes[localRouteId]
-		if !routeStructExists {
+	localRouteID, ok := self.localRoutesByTerminatingPeer[toPeer]
+	if ok {
+		route, ok := self.routes[localRouteID]
+		if !ok {
 			panic("Local route struct does not exists")
 		}
-		directPeer = route.ForwardToPeerID
-		localId = localRouteId
-		sendId = route.ForwardRewriteSendRouteID
+		directPeerID = route.ForwardToPeerID
+		localID = localRouteID
+		sendID = route.ForwardRewriteSendRouteID
 	} else {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
 	}
-	transport = self.unsafelyGetTransportToPeer(directPeer)
+	transport = self.GetTransportToPeer(directPeerID)
 	if transport == nil {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil,
 			errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
@@ -166,8 +166,8 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 	sendBase := domain.MessageBase{
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
-		FromPeerID:  self.config.PubKey,
-		Nonce:       generateNonce(),
+		FromPeerID:  self.Config.PubKey,
+		Nonce:       GenerateNonce(),
 	}
 
 	newTermMessage := domain.SetRouteMessage{
@@ -178,7 +178,7 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 		ForwardRewriteSendRouteID:  routeID,
 		BackwardToPeerID:           localRoute.LastForwardingPeerID,
 		BackwardRewriteSendRouteID: localRoute.LastHopRouteID,
-		DurationHint:               3 * self.config.RefreshRouteDuration,
+		DurationHint:               3 * self.Config.RefreshRouteDuration,
 	}
 	delete(self.localRoutesByTerminatingPeer, localRoute.TerminatingPeerID)
 	self.localRoutes[routeID] = domain.LocalRoute{
@@ -202,8 +202,8 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 	sendBase := domain.MessageBase{
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
-		FromPeerID:  self.config.PubKey,
-		Nonce:       generateNonce(),
+		FromPeerID:  self.Config.PubKey,
+		Nonce:       GenerateNonce(),
 	}
 	message := domain.DeleteRouteMessage{
 		MessageBase: sendBase,
@@ -212,7 +212,7 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 	directPeer := route.ForwardToPeerID
 	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.config.PubKey))
+		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
 	}
 	serialized := self.serializer.SerializeMessage(message)
 	err := transportToPeer.SendMessage(directPeer, serialized)
@@ -228,7 +228,7 @@ func (self *Node) expireOldRoutesLoop() {
 	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
-		case <-time.After(self.config.ExpireRoutesInterval):
+		case <-time.After(self.Config.ExpireRoutesInterval):
 			{
 				self.expireOldRoutes()
 			}
@@ -245,7 +245,7 @@ func (self *Node) refreshRoutesLoop() {
 	defer self.closeGroup.Done()
 	for len(self.closing) == 0 {
 		select {
-		case <-time.After(self.config.RefreshRouteDuration):
+		case <-time.After(self.Config.RefreshRouteDuration):
 			{
 				self.refreshRoutes()
 			}
@@ -315,8 +315,8 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 	base := domain.MessageBase{
 		SendRouteID: route.ForwardRewriteSendRouteID,
 		SendBack:    false,
-		FromPeerID:  self.config.PubKey,
-		Nonce:       generateNonce(),
+		FromPeerID:  self.Config.PubKey,
+		Nonce:       GenerateNonce(),
 	}
 	directPeer := route.ForwardToPeerID
 	transportToPeer := self.safelyGetTransportToPeer(directPeer)
@@ -326,7 +326,7 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 	}
 	message := domain.RefreshRouteMessage{
 		MessageBase:     base,
-		DurationHint:    3 * self.config.RefreshRouteDuration,
+		DurationHint:    3 * self.Config.RefreshRouteDuration,
 		ConfirmRoutedID: routeId,
 	}
 	serialized := self.serializer.SerializeMessage(message)
@@ -348,7 +348,7 @@ func (self *Node) refreshRoutes() {
 }
 
 func (self *Node) clipExpiryTime(hint time.Time) time.Time {
-	maxTime := time.Now().Add(self.config.MaximumForwardingDuration)
+	maxTime := time.Now().Add(self.Config.MaximumForwardingDuration)
 	if hint.Unix() > maxTime.Unix() {
 		return maxTime
 	}

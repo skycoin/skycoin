@@ -8,7 +8,7 @@ import (
 )
 
 func (self *Transport) SetReceiveChannel(received chan []byte) {
-	self.outputChannel = received
+	self.output = received
 }
 
 func (self *Transport) processReceivedLoop() {
@@ -38,7 +38,7 @@ func (self *Transport) processSend(message SendMessage) {
 	defer self.lock.Unlock()
 	_, alreadyReceived := self.messagesReceived[message.MessageID]
 	if !alreadyReceived {
-		self.outputChannel <- message.Contents
+		self.output <- message.Contents
 		self.messagesReceived[message.MessageID] = time.Now().Add(self.config.RememberMessageReceivedDuration)
 	}
 }

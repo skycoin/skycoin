@@ -12,36 +12,35 @@ import (
 )
 
 type StubTransport struct {
-	testing          *testing.T
-	maxMessageSize   uint
-	messagesReceived chan []byte
-	stubbedPeers     map[cipher.PubKey]*StubTransport
-	lock             *sync.Mutex
-	closeWait        *sync.WaitGroup
-	ignoreSend       bool
-	messageBuffer    []QueuedMessage
-	numMessagesSent  int32
-	crypto           ITransportCrypto
+	Testing          *testing.T
+	MaxMessageSize   uint
+	MessagesReceived chan []byte
+	StubbedPeers     map[cipher.PubKey]*StubTransport
+	Lock             *sync.Mutex
+	CloseWait        *sync.WaitGroup
+	IgnoreSend       bool
+	MessageBuffer    []QueuedMessage
+	NumMessagesSent  int32
+	Crypto           ITransportCrypto
 }
 
 type QueuedMessage struct {
-	toPeer  *StubTransport
-	message []byte
+	TransportToPeer *StubTransport
+	messageContent  []byte
 }
 
-func NewStubTransport(testing *testing.T,
-	maxMessageSize uint) *StubTransport {
+func NewStubTransport(testing *testing.T, maxMessageSize uint) *StubTransport {
 	stub := &StubTransport{
-		testing,
-		maxMessageSize,
-		nil,
-		make(map[cipher.PubKey]*StubTransport),
-		&sync.Mutex{},
-		&sync.WaitGroup{},
-		false,
-		nil,
-		0,
-		nil,
+		Testing:          testing,
+		MaxMessageSize:   maxMessageSize,
+		MessagesReceived: nil,
+		StubbedPeers:     make(map[cipher.PubKey]*StubTransport),
+		Lock:             &sync.Mutex{},
+		CloseWait:        &sync.WaitGroup{},
+		IgnoreSend:       false,
+		MessageBuffer:    nil,
+		NumMessagesSent:  0,
+		Crypto:           nil,
 	}
 	return stub
 }
@@ -52,41 +51,41 @@ func (self *StubTransport) Close() error {
 
 // Call before adding to node
 func (self *StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport) {
-	self.stubbedPeers[key] = peer
+	self.StubbedPeers[key] = peer
 }
 
 func (self *StubTransport) getMessageBuffer() []QueuedMessage {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	return self.messageBuffer
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
+	return self.MessageBuffer
 }
 
 func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) error {
-	peer, exists := self.stubbedPeers[toPeer]
+	peer, exists := self.StubbedPeers[toPeer]
 	if exists {
 		messageEncrypted := message
-		if self.crypto != nil {
+		if self.Crypto != nil {
 			peerKey := []byte{}
-			if peer.crypto != nil {
-				peerKey = peer.crypto.GetKey()
+			if peer.Crypto != nil {
+				peerKey = peer.Crypto.GetKey()
 			}
-			messageEncrypted = self.crypto.Encrypt(message, peerKey)
+			messageEncrypted = self.Crypto.Encrypt(message, peerKey)
 		}
-		if (uint)(len(message)) > self.maxMessageSize {
-			return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.maxMessageSize))
+		if (uint)(len(message)) > self.MaxMessageSize {
+			return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
 		}
-		if self.crypto != nil {
-			message = self.crypto.Decrypt(messageEncrypted)
+		if self.Crypto != nil {
+			message = self.Crypto.Decrypt(messageEncrypted)
 		}
-		if !self.ignoreSend {
+		if !self.IgnoreSend {
 			messageBuffer := self.getMessageBuffer()
 			if messageBuffer == nil {
-				peer.messagesReceived <- message
-				atomic.AddInt32(&self.numMessagesSent, 1)
+				peer.MessagesReceived <- message
+				atomic.AddInt32(&self.NumMessagesSent, 1)
 			} else {
-				self.lock.Lock()
-				defer self.lock.Unlock()
-				self.messageBuffer = append(self.messageBuffer, QueuedMessage{peer, message})
+				self.Lock.Lock()
+				defer self.Lock.Unlock()
+				self.MessageBuffer = append(self.MessageBuffer, QueuedMessage{peer, message})
 			}
 		}
 		return nil
@@ -95,20 +94,20 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) err
 }
 
 func (self *StubTransport) SetIgnoreSendStatus(status bool) {
-	self.ignoreSend = status
+	self.IgnoreSend = status
 }
 
 func (self *StubTransport) StartBuffer() {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	self.messageBuffer = make([]QueuedMessage, 0)
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
+	self.MessageBuffer = make([]QueuedMessage, 0)
 }
 
 func (self *StubTransport) consumeBuffer() (retMessages []QueuedMessage) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	retMessages = self.messageBuffer
-	self.messageBuffer = nil
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
+	retMessages = self.MessageBuffer
+	self.MessageBuffer = nil
 	return
 }
 
@@ -122,42 +121,42 @@ func (self *StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 		}
 	}
 	for _, queued := range messages {
-		queued.toPeer.messagesReceived <- queued.message
-		atomic.AddInt32(&self.numMessagesSent, 1)
+		queued.TransportToPeer.MessagesReceived <- queued.messageContent
+		atomic.AddInt32(&self.NumMessagesSent, 1)
 	}
 }
 
 func (self *StubTransport) SetReceiveChannel(received chan []byte) {
-	self.messagesReceived = received
+	self.MessagesReceived = received
 }
 
 func (self *StubTransport) SetCrypto(crypto ITransportCrypto) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	self.crypto = crypto
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
+	self.Crypto = crypto
 }
 
 func (self *StubTransport) GetConnectedPeers() []cipher.PubKey {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
 	ret := []cipher.PubKey{}
-	for key := range self.stubbedPeers {
+	for key := range self.StubbedPeers {
 		ret = append(ret, key)
 	}
 	return ret
 }
 
 func (self *StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	_, exists := self.stubbedPeers[peer]
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
+	_, exists := self.StubbedPeers[peer]
 	return exists
 }
 
 func (self *StubTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
-	return self.maxMessageSize
+	return self.MaxMessageSize
 }
 
 func (self *StubTransport) CountNumMessagesSent() int {
-	return (int)(atomic.LoadInt32(&self.numMessagesSent))
+	return (int)(atomic.LoadInt32(&self.NumMessagesSent))
 }

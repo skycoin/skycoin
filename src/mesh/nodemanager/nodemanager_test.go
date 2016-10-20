@@ -206,7 +206,7 @@ func TestConnectTwoNodesSuccess(t *testing.T) {
 	// Add route from node1 to node2
 	config1.AddRouteToEstablish(config2)
 
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, message1)
 	config1.AddMessageToReceive(message2, "")
 
 	config2.AddMessageToReceive(message1, message2)
@@ -270,7 +270,7 @@ func TestConnectTwoNodesFail(t *testing.T) {
 	// Add route from node1 to node2
 	config1.AddRouteToEstablish(config2)
 
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, message1)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, message1)
 	config1.AddMessageToReceive(message2, "")
 
 	config2.AddMessageToReceive(message1, message2)

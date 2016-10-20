@@ -13,7 +13,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/node"
+	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh/transport"
 	"github.com/skycoin/skycoin/src/mesh/transport/physical"
@@ -44,7 +44,7 @@ type PeersToConnect struct {
 type TestConfig struct {
 	TransportConfig transport.TransportConfig
 	UDPConfig       physical.UDPConfig
-	NodeConfig      domain.NodeConfig
+	NodeConfig      mesh.NodeConfig
 
 	PeersToConnect    []PeersToConnect
 	RoutesToEstablish []RouteConfig

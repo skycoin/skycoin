@@ -1,8 +1,6 @@
 package mesh
 
 import (
-	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -16,7 +14,7 @@ import (
 //var logger = logging.MustGetLogger("node")
 
 type Node struct {
-	config                     domain.NodeConfig
+	Config                     NodeConfig
 	outputMessagesReceived     chan domain.MeshMessage
 	transportsMessagesReceived chan []byte
 	serializer                 *serialize.Serializer
@@ -31,12 +29,20 @@ type Node struct {
 	routeExtensionsAwaitingConfirm map[domain.RouteID]chan bool
 	localRoutesByTerminatingPeer   map[cipher.PubKey]domain.RouteID
 	localRoutes                    map[domain.RouteID]domain.LocalRoute
-	messagesBeingAssembled         map[domain.MessageID]*domain.MessageUnderAssembly
 }
 
-func NewNode(config domain.NodeConfig) (*Node, error) {
+type NodeConfig struct {
+	PubKey                        cipher.PubKey
+	MaximumForwardingDuration     time.Duration
+	RefreshRouteDuration          time.Duration
+	ExpireRoutesInterval          time.Duration
+	TransportMessageChannelLength int
+	//ChaCha20Key                   [32]byte
+}
+
+func NewNode(config NodeConfig) (*Node, error) {
 	node := &Node{
-		config:                     config,
+		Config:                     config,
 		outputMessagesReceived:     nil,                                                     // received
 		transportsMessagesReceived: make(chan []byte, config.TransportMessageChannelLength), // received
 		serializer:                 serialize.NewSerializer(),
@@ -44,7 +50,6 @@ func NewNode(config domain.NodeConfig) (*Node, error) {
 		closeGroup:                 &sync.WaitGroup{},
 		closing:                    make(chan bool, 10),
 		transports:                 make(map[transport.ITransport]bool),
-		messagesBeingAssembled:     make(map[domain.MessageID]*domain.MessageUnderAssembly),
 		routes:                     make(map[domain.RouteID]domain.Route),
 		localRoutesByTerminatingPeer:   make(map[cipher.PubKey]domain.RouteID),
 		localRoutes:                    make(map[domain.RouteID]domain.LocalRoute),
@@ -59,14 +64,13 @@ func NewNode(config domain.NodeConfig) (*Node, error) {
 
 	go node.processIncomingMessagesLoop()
 	go node.expireOldRoutesLoop()
-	go node.expireOldMessagesLoop()
 	go node.refreshRoutesLoop()
 
 	return node, nil
 }
 
-func (self *Node) GetConfig() domain.NodeConfig {
-	return self.config
+func (self *Node) GetConfig() NodeConfig {
+	return self.Config
 }
 
 func (self *Node) GetConnectedPeers() []cipher.PubKey {
@@ -128,7 +132,7 @@ func (self *Node) GetTransports() []transport.ITransport {
 	return ret
 }
 
-func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
+func (self *Node) GetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
 	for transportToPeer := range self.transports {
 		// TODO: Choose transport more intelligently
 		if transportToPeer.ConnectedToPeer(peerKey) {
@@ -141,66 +145,14 @@ func (self *Node) unsafelyGetTransportToPeer(peerKey cipher.PubKey) transport.IT
 func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	return self.unsafelyGetTransportToPeer(peerKey)
+	return self.GetTransportToPeer(peerKey)
 }
 
-// Returns nil if reassembly didn't happen (incomplete message)
-func (self *Node) reassembleUserMessage(msgIn domain.UserMessage) []byte {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
-	_, assembledExists := self.messagesBeingAssembled[msgIn.MessageID]
-	if !assembledExists {
-		beingAssembled := &domain.MessageUnderAssembly{
-			Fragments:   make(map[uint64]domain.UserMessage),
-			SendRouteID: msgIn.SendRouteID,
-			SendBack:    msgIn.SendBack,
-			Count:       msgIn.Count,
-			Dropped:     false,
-			ExpiryTime:  time.Now().Add(self.config.TimeToAssembleMessage),
-		}
-		self.messagesBeingAssembled[msgIn.MessageID] = beingAssembled
+func (self *Node) GetMaximumContentLength(peerID cipher.PubKey, emptySerializedMessage []byte) uint64 {
+	trans := self.GetTransportToPeer(peerID)
+	transportSize := trans.GetMaximumMessageSizeToPeer(peerID)
+	if (uint)(len(emptySerializedMessage)) >= transportSize {
+		return 0
 	}
-
-	beingAssembled, _ := self.messagesBeingAssembled[msgIn.MessageID]
-
-	if beingAssembled.Dropped {
-		return nil
-	}
-
-	if beingAssembled.Count != msgIn.Count {
-		fmt.Fprintf(os.Stderr, "Fragments of message %v have different total counts!\n", msgIn.MessageID)
-		beingAssembled.Dropped = true
-		return nil
-	}
-
-	if beingAssembled.SendRouteID != msgIn.SendRouteID {
-		fmt.Fprintf(os.Stderr, "Fragments of message %v have different send ids!\n", msgIn.SendRouteID)
-		beingAssembled.Dropped = true
-		return nil
-	}
-
-	if beingAssembled.SendBack != msgIn.SendBack {
-		fmt.Fprintf(os.Stderr, "Fragments of message %v have different send directions!\n", msgIn.SendRouteID)
-		beingAssembled.Dropped = true
-		return nil
-	}
-
-	_, messageExists := beingAssembled.Fragments[msgIn.Index]
-	if messageExists {
-		fmt.Fprintf(os.Stderr, "Fragment %v of message %v is duplicated, dropping message\n", msgIn.Index, msgIn.MessageID)
-		return nil
-	}
-
-	beingAssembled.Fragments[msgIn.Index] = msgIn
-	if (uint64)(len(beingAssembled.Fragments)) == beingAssembled.Count {
-		delete(self.messagesBeingAssembled, msgIn.MessageID)
-		reassembled := []byte{}
-		for i := (uint64)(0); i < beingAssembled.Count; i++ {
-			reassembled = append(reassembled, beingAssembled.Fragments[i].Contents...)
-		}
-		return reassembled
-	}
-
-	return nil
+	return (uint64)(transportSize) - (uint64)(len(emptySerializedMessage))
 }

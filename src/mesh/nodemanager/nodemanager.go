@@ -96,15 +96,13 @@ func CreatePubKey() cipher.PubKey {
 }
 
 // Create new node config
-func NewNodeConfig() domain.NodeConfig {
-	nodeConfig := domain.NodeConfig{}
+func NewNodeConfig() mesh.NodeConfig {
+	nodeConfig := mesh.NodeConfig{}
 	nodeConfig.PubKey = CreatePubKey()
 	//nodeConfig.ChaCha20Key = CreateChaCha20Key()
 	nodeConfig.MaximumForwardingDuration = 1 * time.Minute
 	nodeConfig.RefreshRouteDuration = 5 * time.Minute
-	nodeConfig.ExpireMessagesInterval = 5 * time.Minute
 	nodeConfig.ExpireRoutesInterval = 5 * time.Minute
-	nodeConfig.TimeToAssembleMessage = 5 * time.Minute
 	nodeConfig.TransportMessageChannelLength = 100
 
 	return nodeConfig
@@ -190,12 +188,12 @@ func AddRoutesToEstablish(node *mesh.Node, routesConfigs []RouteConfig) {
 		if len(routeConfig.Peers) == 0 {
 			continue
 		}
-		addRouteErr := node.AddRoute((domain.RouteID)(routeConfig.ID), routeConfig.Peers[0])
+		addRouteErr := node.AddRoute((domain.RouteID)(routeConfig.RouteID), routeConfig.Peers[0])
 		if addRouteErr != nil {
 			panic(addRouteErr)
 		}
 		for peer := 1; peer < len(routeConfig.Peers); peer++ {
-			extendErr := node.ExtendRoute((domain.RouteID)(routeConfig.ID), routeConfig.Peers[peer], 5*time.Second)
+			extendErr := node.ExtendRoute((domain.RouteID)(routeConfig.RouteID), routeConfig.Peers[peer], 5*time.Second)
 			if extendErr != nil {
 				panic(extendErr)
 			}

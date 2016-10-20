@@ -3,7 +3,7 @@ package nodemanager
 import (
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/domain"
+	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport"
 	"github.com/skycoin/skycoin/src/mesh/transport/physical"
 )
@@ -11,7 +11,7 @@ import (
 type TestConfig struct {
 	TransportConfig transport.TransportConfig
 	UDPConfig       physical.UDPConfig
-	NodeConfig      domain.NodeConfig
+	NodeConfig      mesh.NodeConfig
 
 	PeersToConnect           []Peer
 	RoutesConfigsToEstablish []RouteConfig
@@ -20,8 +20,8 @@ type TestConfig struct {
 }
 
 type RouteConfig struct {
-	ID    uuid.UUID
-	Peers []cipher.PubKey
+	RouteID uuid.UUID
+	Peers   []cipher.PubKey
 }
 
 type Peer struct {
@@ -48,7 +48,7 @@ func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 
 func (self *TestConfig) AddRouteToEstablish(config *TestConfig) {
 	routeConfigToEstablish := RouteConfig{}
-	routeConfigToEstablish.ID = uuid.NewV4()
+	routeConfigToEstablish.RouteID = uuid.NewV4()
 	routeConfigToEstablish.Peers = append(routeConfigToEstablish.Peers, config.NodeConfig.PubKey)
 	self.RoutesConfigsToEstablish = append(self.RoutesConfigsToEstablish, routeConfigToEstablish)
 }
@@ -57,9 +57,9 @@ func (self *TestConfig) AddPeerToRoute(indexRoute int, config *TestConfig) {
 	self.RoutesConfigsToEstablish[indexRoute].Peers = append(self.RoutesConfigsToEstablish[indexRoute].Peers, config.NodeConfig.PubKey)
 }
 
-func (self *TestConfig) AddMessageToSend(thruRoute uuid.UUID, message string) {
+func (self *TestConfig) AddMessageToSend(thruRouteID uuid.UUID, message string) {
 	messageToSend := MessageToSend{}
-	messageToSend.ThruRoute = thruRoute
+	messageToSend.ThruRoute = thruRouteID
 	messageToSend.Contents = []byte(message)
 	self.MessagesToSend = append(self.MessagesToSend, messageToSend)
 }

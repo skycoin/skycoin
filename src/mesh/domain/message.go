@@ -10,6 +10,16 @@ import (
 type RouteID uuid.UUID
 type MessageID uuid.UUID
 
+type MeshMessage struct {
+	ReplyTo  ReplyTo
+	Contents []byte
+}
+
+type ReplyTo struct {
+	RouteID    RouteID
+	FromPeerID cipher.PubKey
+}
+
 // Fields must be public (capital first letter) for encoder
 type MessageBase struct {
 	// If RouteId is unknown, but not cipher.PubKey{}, then the message should be received here
@@ -72,9 +82,4 @@ type MessageUnderAssembly struct {
 	Count       uint64
 	Dropped     bool
 	ExpiryTime  time.Time
-}
-
-type MeshMessage struct {
-	ReplyTo  ReplyTo
-	Contents []byte
 }

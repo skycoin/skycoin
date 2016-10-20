@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	bip39 "go-bip39"
 	"os"
 	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
+	bip39 "github.com/tyler-smith/go-bip39"
 
 	gcli "gopkg.in/urfave/cli.v1"
 )
@@ -44,6 +44,7 @@ func init() {
 			},
 			gcli.IntFlag{
 				Name:  "m",
+				Value: 1,
 				Usage: "[numberOfAddresses] Number of addresses to generate. By default 1 address is generated.",
 			},
 			// gcli.StringFlag{

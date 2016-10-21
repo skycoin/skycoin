@@ -84,7 +84,7 @@ func generateWallet(c *gcli.Context) error {
 
 	// check if the wallet name has wlt extension.
 	if !strings.HasSuffix(wltName, ".wlt") {
-		return fmt.Errorf("error wallet name, must has %v extension", walletExt)
+		return errWalletName
 	}
 
 	// wallet file should not be a path.

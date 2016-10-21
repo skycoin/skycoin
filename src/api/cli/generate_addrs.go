@@ -64,7 +64,7 @@ func generateAddrs(c *gcli.Context) error {
 	}
 
 	if !strings.HasSuffix(w, walletExt) {
-		return fmt.Errorf("error wallet file name, must has %v extension", walletExt)
+		return errWalletName
 	}
 
 	// only wallet file name, no path.

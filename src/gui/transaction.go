@@ -114,7 +114,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 		// get the rawtransaction
 		v := struct {
-			Rawtx []byte `json:"rawtx"`
+			Rawtx string `json:"rawtx"`
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
@@ -123,7 +123,14 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		txn := coin.TransactionDeserialize(v.Rawtx)
+		b, err := hex.DecodeString(v.Rawtx)
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		txn := coin.TransactionDeserialize(b)
 		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
 			wh.Error400(w, err.Error())
 			return

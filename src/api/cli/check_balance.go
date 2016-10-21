@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -73,7 +72,7 @@ func checkBalance(c *gcli.Context) error {
 		return err
 	}
 
-	balRlt, err := getUnspent(addrs)
+	balRlt, err := getAddrsBalance(addrs)
 	if err != nil {
 		return err
 	}
@@ -131,7 +130,7 @@ func gatherAddrs(w, a string) ([]string, error) {
 	return addrs, nil
 }
 
-func getUnspent(addrs []string) (balanceResult, error) {
+func getAddrsBalance(addrs []string) (balanceResult, error) {
 	balRlt := balanceResult{
 		Addresses: make([]balance, len(addrs)),
 	}
@@ -142,14 +141,8 @@ func getUnspent(addrs []string) (balanceResult, error) {
 		}
 	}
 
-	url := fmt.Sprintf("%v/outputs?addrs=%s", nodeAddress, strings.Join(addrs, ","))
-	rsp, err := http.Get(url)
+	outs, err := getUnspent(addrs)
 	if err != nil {
-		return balanceResult{}, errConnectNodeFailed
-	}
-	defer rsp.Body.Close()
-	outs := []unspentOut{}
-	if err := json.NewDecoder(rsp.Body).Decode(&outs); err != nil {
 		return balanceResult{}, err
 	}
 

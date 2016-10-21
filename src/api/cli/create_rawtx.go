@@ -47,20 +47,40 @@ func init() {
 				Name:  "p",
 				Usage: "[password] Password for address or wallet.",
 			},
-			gcli.StringFlag{
+			gcli.BoolFlag{
 				Name:  "j,json",
 				Usage: "Returns the results in JSON format.",
 			},
 		},
-		Action: createRawTransaction,
+		Action: func(c *gcli.Context) error {
+			rawtx, err := createRawTransaction(c)
+			if err != nil {
+				return err
+			}
+
+			j := c.Bool("json")
+			if !j {
+				fmt.Println(rawtx)
+			} else {
+				var jsn = struct {
+					RawTx string `json:"rawtx"`
+				}{rawtx}
+				d, err := json.MarshalIndent(jsn, "", "    ")
+				if err != nil {
+					return err
+				}
+				fmt.Println(string(d))
+			}
+			return nil
+		},
 	}
 	Commands = append(Commands, cmd)
 }
 
-func createRawTransaction(c *gcli.Context) error {
+func createRawTransaction(c *gcli.Context) (string, error) {
 	w, a, err := fromWalletOrAddress(c)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var chgAddr string
@@ -69,48 +89,25 @@ func createRawTransaction(c *gcli.Context) error {
 	} else {
 		chgAddr, err = getChangeAddress(w, c)
 	}
-
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	toAddr, err := getToAddress(c)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	amt, err := getAmount(c)
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	var rawTx string
 
 	if w != "" {
-		rawTx, err = createRawTxFromWallet(w, chgAddr, toAddr, amt)
+		return createRawTxFromWallet(w, chgAddr, toAddr, amt)
 	}
 
-	if a != "" {
-		rawTx, err = createRawTxFromAddress(a, chgAddr, toAddr, amt)
-	}
-
-	if err != nil {
-		return err
-	}
-	j := c.String("json")
-	if j == "" {
-		fmt.Println(rawTx)
-	} else {
-		var jsn = struct {
-			RawTx string `json:"rawtx"`
-		}{rawTx}
-		d, err := json.MarshalIndent(jsn, "", "    ")
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(d))
-	}
-	return nil
+	return createRawTxFromAddress(a, chgAddr, toAddr, amt)
 }
 
 func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
@@ -306,6 +303,7 @@ func makeChangeOut(outs []unspentOut, amt uint64, chgAddr string, toAddr string)
 	if totalAmt < amt {
 		return nil, errors.New("amount is not sufficient")
 	}
+
 	outAddrs := []coin.TransactionOutput{}
 	chgAmt := totalAmt - amt
 	chgHours := totalHours / 4
@@ -347,22 +345,33 @@ func getKeys(wlt *wallet.Wallet, outs []unspentOut) ([]cipher.SecKey, error) {
 
 func getSufficientUnspents(unspents []unspentOut, amt uint64) ([]unspentOut, error) {
 	var (
-		tmpAmt uint64
-		outs   []unspentOut
+		totalAmt uint64
+		outs     []unspentOut
 	)
 
-	for i, u := range unspents {
-		coins, err := strconv.ParseUint(u.Coins, 10, 64)
-		if err != nil {
-			return nil, err
+	addrOuts := make(map[string][]unspentOut)
+	for _, u := range unspents {
+		addrOuts[u.Address] = append(addrOuts[u.Address], u)
+	}
+
+	for _, us := range addrOuts {
+		var tmpAmt uint64
+		for i, u := range us {
+			coins, err := strconv.ParseUint(u.Coins, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			tmpAmt = (coins * 1e6)
+			us[i].Coins = strconv.FormatUint(tmpAmt, 10)
+			totalAmt += tmpAmt
+			outs = append(outs, us[i])
 		}
-		tmpAmt += (coins * 1e6)
-		unspents[i].Coins = strconv.FormatUint(tmpAmt, 10)
-		outs = append(outs, unspents[i])
-		if tmpAmt >= amt {
+
+		if totalAmt >= amt {
 			return outs, nil
 		}
 	}
+
 	return nil, errors.New("balance in wallet is not sufficient")
 }
 

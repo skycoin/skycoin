@@ -361,6 +361,9 @@ func getSufficientUnspents(unspents []unspentOut, amt uint64) ([]unspentOut, err
 			if err != nil {
 				return nil, err
 			}
+			if coins == 0 {
+				continue
+			}
 			tmpAmt = (coins * 1e6)
 			us[i].Coins = strconv.FormatUint(tmpAmt, 10)
 			totalAmt += tmpAmt

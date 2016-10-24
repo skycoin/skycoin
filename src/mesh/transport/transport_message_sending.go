@@ -12,10 +12,12 @@ func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte) error 
 	messageID := self.newMessageID()
 	sendMessage := SendMessage{messageID, self.config.MyPeerID, contents}
 	sendSerialized := self.serializer.SerializeMessage(sendMessage)
-	state := messageSentState{toPeer,
+	state := messageSentState{
+		toPeer,
 		sendSerialized,
 		time.Now().Add(self.config.RetransmitDuration),
-		false}
+		false,
+	}
 	err := self.physicalTransport.SendMessage(toPeer, sendSerialized)
 	if err == nil {
 		self.lock.Lock()

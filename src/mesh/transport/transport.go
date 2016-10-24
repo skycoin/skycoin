@@ -40,7 +40,7 @@ type messageSentState struct {
 type Transport struct {
 	config            TransportConfig
 	physicalTransport ITransport
-	outputChannel     chan []byte
+	output            chan []byte
 	serializer        *serialize.Serializer
 
 	lock             *sync.Mutex

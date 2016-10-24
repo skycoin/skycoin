@@ -6,134 +6,118 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/node/connection"
 )
 
 // Chooses a route automatically. Sends directly without a route if connected to that peer
 func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte) (error, domain.RouteID) {
-	directPeer, localRouteID, sendRoutID, transportToPeer, err := self.findRouteToPeer(toPeer)
+	directPeerID, localRouteID, sendRoutID, transport, err := self.findRouteToPeer(toPeer)
 	if err != nil {
 		return err, NilRouteID
 	}
-	messageBase := domain.MessageBase{
-		SendRouteID: sendRoutID,
-		SendBack:    false,
-		FromPeerID:  self.config.PubKey,
-		Nonce:       generateNonce(),
+
+	message := domain.UserMessage{
+		MessageBase: domain.MessageBase{
+			SendRouteID: sendRoutID,
+			SendBack:    false,
+			FromPeerID:  self.Config.PubKey,
+			Nonce:       GenerateNonce(),
+		},
+		MessageID: (domain.MessageID)(uuid.NewV4()),
+		Index:     0,
+		Count:     1,
+		Contents:  contents,
 	}
-	messages := connection.ConnectionManager.FragmentMessage(contents, directPeer, transportToPeer, messageBase)
-	for _, message := range messages {
-		serialized := self.serializer.SerializeMessage(message)
-		err := transportToPeer.SendMessage(directPeer, serialized)
-		if err != nil {
-			return err, NilRouteID
-		}
+
+	serialized := self.serializer.SerializeMessage(message)
+	err = transport.SendMessage(directPeerID, serialized)
+	if err != nil {
+		return err, NilRouteID
 	}
 	return nil, localRouteID
 }
 
 // Blocks until message is confirmed received
-func (self *Node) SendMessageThruRoute(routeId domain.RouteID, contents []byte) error {
-	route, routeFound := self.safelyGetRoute(routeId)
-	if !routeFound {
+func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) error {
+	route, ok := self.safelyGetRoute(routeID)
+	if !ok {
 		return errors.New("Route not found")
 	}
 
-	base := domain.MessageBase{
-		SendRouteID: route.ForwardRewriteSendRouteID,
-		SendBack:    false,
-		FromPeerID:  self.config.PubKey,
-		Nonce:       generateNonce(),
+	directPeerID := route.ForwardToPeerID
+	transport := self.safelyGetTransportToPeer(directPeerID)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeerID))
 	}
-	directPeer := route.ForwardToPeerID
-	transportToPeer := self.safelyGetTransportToPeer(directPeer)
-	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeer))
+
+	message := domain.UserMessage{
+		MessageBase: domain.MessageBase{
+			SendRouteID: route.ForwardRewriteSendRouteID,
+			SendBack:    false,
+			FromPeerID:  self.Config.PubKey,
+			Nonce:       GenerateNonce(),
+		},
+		MessageID: (domain.MessageID)(uuid.NewV4()),
+		Index:     0,
+		Count:     1,
+		Contents:  contents,
 	}
-	messages := connection.ConnectionManager.FragmentMessage(contents, directPeer, transportToPeer, base)
-	for _, message := range messages {
-		serialized := self.serializer.SerializeMessage(message)
-		fmt.Fprintln(os.Stdout, "Send Message")
-		err := transportToPeer.SendMessage(directPeer, serialized)
-		if err != nil {
-			return err
-		}
+
+	serialized := self.serializer.SerializeMessage(message)
+	fmt.Fprintln(os.Stdout, "Send Message")
+	err := transport.SendMessage(directPeerID, serialized)
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
 
 // Blocks until message is confirmed received
 func (self *Node) SendMessageBackThruRoute(replyTo domain.ReplyTo, contents []byte) error {
-	directPeer := replyTo.FromPeer
-	transportToPeer := self.safelyGetTransportToPeer(directPeer)
-	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No route or transport to peer %v\n", directPeer))
+	directPeerID := replyTo.FromPeerID
+	transport := self.safelyGetTransportToPeer(directPeerID)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No route or transport to peer %v\n", directPeerID))
 	}
-	base := domain.MessageBase{
-		SendRouteID: replyTo.RouteID,
-		SendBack:    true,
-		FromPeerID:  self.config.PubKey,
-		Nonce:       generateNonce(),
+
+	message := domain.UserMessage{
+		MessageBase: domain.MessageBase{
+			SendRouteID: replyTo.RouteID,
+			SendBack:    true,
+			FromPeerID:  self.Config.PubKey,
+			Nonce:       GenerateNonce(),
+		},
+		MessageID: (domain.MessageID)(uuid.NewV4()),
+		Index:     0,
+		Count:     1,
+		Contents:  contents,
 	}
-	messages := connection.ConnectionManager.FragmentMessage(contents, directPeer, transportToPeer, base)
-	for _, message := range messages {
-		serialized := self.serializer.SerializeMessage(message)
-		err := transportToPeer.SendMessage(directPeer, serialized)
-		if err != nil {
-			return err
-		}
+
+	serialized := self.serializer.SerializeMessage(message)
+	err := transport.SendMessage(directPeerID, serialized)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (self *Node) expireOldMessages() {
-	time_now := time.Now()
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
-	lastMessages := self.messagesBeingAssembled
-	self.messagesBeingAssembled = make(map[domain.MessageID]*domain.MessageUnderAssembly)
-	for id, msg := range lastMessages {
-		if time_now.Before(msg.ExpiryTime) {
-			self.messagesBeingAssembled[id] = msg
-		}
-	}
-}
-
-func (self *Node) expireOldMessagesLoop() {
-	self.closeGroup.Add(1)
-	defer self.closeGroup.Done()
-	for len(self.closing) == 0 {
-		select {
-		case <-time.After(self.config.ExpireMessagesInterval):
-			{
-				self.expireOldMessages()
-			}
-		case <-self.closing:
-			{
-				return
-			}
-		}
-	}
-}
-
-func (self *Node) sendSetRouteReply(base domain.MessageBase, confirmId domain.RouteID) {
+func (self *Node) sendSetRouteReply(base domain.MessageBase, confirmID domain.RouteID) {
 	replyMessage := domain.SetRouteReply{
 		MessageBase: domain.MessageBase{
 			SendRouteID: base.SendRouteID,
 			SendBack:    true,
-			FromPeerID:  self.config.PubKey,
-			Nonce:       generateNonce(),
+			FromPeerID:  self.Config.PubKey,
+			Nonce:       GenerateNonce(),
 		},
-		ConfirmRouteID: confirmId,
+		ConfirmRouteID: confirmID,
 	}
 	transportToPeer := self.safelyGetTransportToPeer(base.FromPeerID)
 	if transportToPeer == nil {
-		fmt.Fprintf(os.Stderr, "No transport to peer %v from %v\n", base.FromPeerID, self.config.PubKey)
+		fmt.Fprintf(os.Stderr, "No transport to peer %v from %v\n", base.FromPeerID, self.Config.PubKey)
 		return
 	}
 	serialized := self.serializer.SerializeMessage(replyMessage)
@@ -152,7 +136,7 @@ func (self *Node) forwardMessage(msg interface{}) bool {
 	rewritten := rewriteMessage(msg, newBase)
 	transportToPeer := self.safelyGetTransportToPeer(forwardTo)
 	if transportToPeer == nil {
-		fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.config.PubKey, forwardTo)
+		fmt.Fprintf(os.Stderr, "No transport found for forwarded message from %v to %v, dropping\n", self.Config.PubKey, forwardTo)
 		return true
 	}
 
@@ -186,15 +170,15 @@ func (self *Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey
 		domain.MessageBase{
 			SendRouteID: rewriteTo,
 			SendBack:    sendBack,
-			FromPeerID:  self.config.PubKey,
-			Nonce:       generateNonce(),
+			FromPeerID:  self.Config.PubKey,
+			Nonce:       GenerateNonce(),
 		}
 	return forwardTo, newBase, true
 }
 
 func rewriteMessage(message interface{}, newBase domain.MessageBase) interface{} {
 	messageType := reflect.TypeOf(message)
-	newBase.Nonce = generateNonce()
+	newBase.Nonce = GenerateNonce()
 
 	switch messageType {
 	case reflect.TypeOf(domain.UserMessage{}):
@@ -226,13 +210,7 @@ func rewriteMessage(message interface{}, newBase domain.MessageBase) interface{}
 	panic("Internal error: rewriteMessage incomplete")
 }
 
-func (self *Node) debug_countMessages() int {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	return len(self.messagesBeingAssembled)
-}
-
-func generateNonce() [4]byte {
+func GenerateNonce() [4]byte {
 	ret := make([]byte, 4)
 	n, err := rand.Read(ret)
 	if n != 4 {

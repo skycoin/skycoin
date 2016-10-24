@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/node/connection"
 )
 
 // Message order is not preserved
@@ -36,8 +36,9 @@ func (self *Node) processIncomingMessagesLoop() {
 
 func (self *Node) processMessage(serialized []byte) {
 	message, err := self.serializer.UnserializeMessage(serialized)
+	fmt.Fprintf(os.Stdout, "Incoming message %v\n", serialized)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Deserialization error %v\n", err)
+		fmt.Fprintf(os.Stderr, "Deserialization error %v %v\n", serialized, err)
 		return
 	}
 
@@ -66,31 +67,38 @@ func (self *Node) processMessage(serialized []byte) {
 	}
 }
 
-func (self *Node) processUserMessage(msgIn domain.UserMessage) {
-	reassembled := self.reassembleUserMessage(msgIn)
-	// Not finished reassembling yet
-	if reassembled == nil {
-		return
-	}
-	directPeer, forwardBase, doForward := self.safelyGetRewriteBase(msgIn)
+func (self *Node) processUserMessage(incomingMessage domain.UserMessage) {
+
+	directPeerID, forwardBase, doForward := self.safelyGetRewriteBase(incomingMessage)
 	if doForward {
-		transportToPeer := self.safelyGetTransportToPeer(directPeer)
+		transportToPeer := self.safelyGetTransportToPeer(directPeerID)
 		if transportToPeer == nil {
-			fmt.Fprintf(os.Stderr, "No transport to peer %v from %v, dropping\n", directPeer, self.config.PubKey)
+			fmt.Fprintf(os.Stderr, "No transport to peer %v from %v, dropping\n", directPeerID, self.Config.PubKey)
 			return
 		}
-		// Forward reassembled message, not individual pieces. This is done because of the need for refragmentation
-		fragments := connection.ConnectionManager.FragmentMessage(reassembled, directPeer, transportToPeer, forwardBase)
-		for _, fragment := range fragments {
-			serialized := self.serializer.SerializeMessage(fragment)
-			err := transportToPeer.SendMessage(directPeer, serialized)
-			if err != nil {
-				fmt.Fprint(os.Stderr, "Failed to send forwarded message, dropping\n")
-				return
-			}
+
+		message := domain.UserMessage{
+			MessageBase: forwardBase,
+			MessageID:   (domain.MessageID)(uuid.NewV4()),
+			Index:       0,
+			Count:       1,
+			Contents:    incomingMessage.Contents,
+		}
+
+		serialized := self.serializer.SerializeMessage(message)
+		err := transportToPeer.SendMessage(directPeerID, serialized)
+		if err != nil {
+			fmt.Fprint(os.Stderr, "Failed to send forwarded message, dropping\n")
+			return
 		}
 	} else {
-		self.outputMessagesReceived <- domain.MeshMessage{domain.ReplyTo{msgIn.SendRouteID, msgIn.FromPeerID}, reassembled}
+		self.outputMessagesReceived <- domain.MeshMessage{
+			ReplyTo: domain.ReplyTo{
+				incomingMessage.SendRouteID,
+				incomingMessage.FromPeerID,
+			},
+			Contents: incomingMessage.Contents,
+		}
 	}
 }
 

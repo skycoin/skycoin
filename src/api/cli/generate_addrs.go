@@ -9,8 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 var defaultAddrNum = 1

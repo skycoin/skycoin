@@ -10,7 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 type unspentOut struct {

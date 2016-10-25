@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {

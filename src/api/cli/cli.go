@@ -10,7 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/util"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support

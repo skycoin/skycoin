@@ -14,7 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 	bip39 "github.com/tyler-smith/go-bip39"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {

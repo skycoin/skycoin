@@ -2,8 +2,8 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -71,26 +71,21 @@ func generateAddrs(c *gcli.Context) error {
 		w = filepath.Join(walletDir, w)
 	}
 
-	// check if the file does exsit
-	if _, err := os.Stat(w); os.IsNotExist(err) {
-		return fmt.Errorf("wallet file: %v does not exist", w)
+	wlt, err := wallet.Load(w)
+	if err != nil {
+		return errLoadWallet
 	}
 
-	wlt := wallet.Wallet{
-		Meta: make(map[string]string),
-	}
-	wlt.SetFilename(filepath.Base(w))
+	addrs := wlt.GenerateAddresses(num)
 	dir, err := filepath.Abs(filepath.Dir(w))
 	if err != nil {
 		return err
 	}
-	if err := wlt.Load(dir); err != nil {
-		return err
-	}
-	addrs := wlt.GenerateAddresses(num)
+
 	if err := wlt.Save(dir); err != nil {
-		return err
+		return errors.New("save wallet failed")
 	}
+
 	s, err := addrResult(addrs, jsonFmt)
 	if err != nil {
 		return err
@@ -112,7 +107,7 @@ func addrResult(addrs []cipher.Address, jsonFmt bool) (string, error) {
 		}
 		d, err := json.MarshalIndent(rlt, "", "    ")
 		if err != nil {
-			return "", err
+			return "", errors.New("json marshal failed")
 		}
 		return string(d), nil
 	}

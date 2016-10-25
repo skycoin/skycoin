@@ -85,7 +85,7 @@ func checkBalance(c *gcli.Context) error {
 	}
 
 	if err != nil {
-		return errJsonMarshal
+		return errJSONMarshal
 	}
 	fmt.Println(string(d))
 	return nil

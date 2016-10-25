@@ -63,7 +63,7 @@ func init() {
 				}
 				d, err := json.MarshalIndent(rlt, "", "    ")
 				if err != nil {
-					return errJsonMarshal
+					return errJSONMarshal
 				}
 				fmt.Println(string(d))
 			} else {

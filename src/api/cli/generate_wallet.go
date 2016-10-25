@@ -138,7 +138,7 @@ func generateWallet(c *gcli.Context) error {
 	rwlt := wallet.NewReadableWallet(wlt)
 	d, err := json.MarshalIndent(rwlt, "", "    ")
 	if err != nil {
-		return errJsonMarshal
+		return errJSONMarshal
 	}
 	fmt.Println(string(d))
 	return nil

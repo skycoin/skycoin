@@ -36,7 +36,7 @@ func init() {
 			if jsonFmt {
 				d, err := json.MarshalIndent(ver, "", "    ")
 				if err != nil {
-					return errJsonMarshal
+					return errJSONMarshal
 				}
 				fmt.Println(string(d))
 				return nil

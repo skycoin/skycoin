@@ -67,7 +67,7 @@ func init() {
 				}{rawtx}
 				d, err := json.MarshalIndent(jsn, "", "    ")
 				if err != nil {
-					return errJsonMarshal
+					return errJSONMarshal
 				}
 				fmt.Println(string(d))
 			}

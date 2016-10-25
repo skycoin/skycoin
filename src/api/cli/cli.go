@@ -28,7 +28,7 @@ var (
 	errLoadWallet        = errors.New("load wallet failed")
 	errAddress           = errors.New("error address")
 	errReadResponse      = errors.New("read response body failed")
-	errJsonMarshal       = errors.New("json marshal failed")
+	errJSONMarshal       = errors.New("json marshal failed")
 )
 
 func stringPtr(v string) *string {

@@ -12,9 +12,9 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:        "lastBlocks",
-		Usage:       "Displays the content of the most recently N generated blocks.",
+		ArgsUsage:   "Displays the content of the most recently N generated blocks.",
+		Usage:       "[numberOfBlocks]",
 		Description: "All results returned in JSON format.",
-		ArgsUsage:   "[numberOfBlocks]",
 		Action:      getLastBlocks,
 	}
 	Commands = append(Commands, cmd)

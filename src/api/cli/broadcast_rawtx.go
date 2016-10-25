@@ -15,8 +15,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "broadcastTransaction",
-		Usage:     "Broadcast a raw transaction to the network.",
-		ArgsUsage: "[transaction]",
+		ArgsUsage: "Broadcast a raw transaction to the network.",
+		Usage:     "[raw transaction]",
 		Action: func(c *gcli.Context) error {
 			rawtx := c.Args().First()
 			if rawtx == "" {

@@ -15,9 +15,9 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:        "listAddresses",
-		Usage:       "Lists all addresses in a given wallet.",
+		ArgsUsage:   "Lists all addresses in a given wallet.",
+		Usage:       "[walletName]",
 		Description: "All results returned in JSON format.",
-		ArgsUsage:   "[walletName]",
 		Action:      listAddresses,
 	}
 	Commands = append(Commands, cmd)

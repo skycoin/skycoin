@@ -11,8 +11,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "version",
-		Usage:     "List the current version of Skycoin components.",
-		ArgsUsage: "[options]",
+		ArgsUsage: "List the current version of Skycoin components.",
+		Usage:     "[options]",
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "j,json",

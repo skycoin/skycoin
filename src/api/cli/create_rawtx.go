@@ -19,8 +19,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "createRawTransaction",
-		Usage:     "Create a raw transaction to be broadcast to the network later or to a remote server via RPC.",
-		ArgsUsage: "[option] [from wallet or address] [to address]]",
+		ArgsUsage: "Create a raw transaction to be broadcast to the network later or to a remote server via RPC.",
+		Usage:     "[option] [from wallet or address] [to address]]",
 		Description: `
         If you are sending from a wallet the coins will be taken recursively 
         from all addresses within the wallet starting with the first address until 

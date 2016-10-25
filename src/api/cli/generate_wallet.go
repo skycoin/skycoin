@@ -20,8 +20,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "generateWallet",
-		Usage:     "Generate a new wallet from seed.",
-		ArgsUsage: "[options]",
+		ArgsUsage: "Generate a new wallet from seed.",
+		Usage:     "[options]",
 		Description: `
 		Use caution when using the “-p” command. If you have command history enabled your 
 		wallet encryption password can be recovered from the history log. If you do not 

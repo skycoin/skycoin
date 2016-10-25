@@ -10,8 +10,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "send",
-		Usage:     "Send Skycoins from a wallet or an address to another address.",
-		ArgsUsage: "[option] [from wallet or address] [to address] [amount]",
+		ArgsUsage: "Send Skycoins from a wallet or an address to another address.",
+		Usage:     "[option] [from wallet or address] [to address] [amount]",
 		Description: `
         If you are sending from a wallet the coins will be taken recursively from all 
         addresses within the wallet starting with the first address until the amount of 

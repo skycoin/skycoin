@@ -17,8 +17,8 @@ var defaultAddrNum = 1
 func init() {
 	cmd := gcli.Command{
 		Name:      "generateAddresses",
-		Usage:     "Generate additional addresses for a wallet.",
-		ArgsUsage: "[options]",
+		ArgsUsage: "Generate additional addresses for a wallet.",
+		Usage:     "[options]",
 		Description: `
         Use caution when using the “-p” command. If you have command 
         history enabled your wallet encryption password can be recovered from the history log. 

@@ -21,8 +21,8 @@ type walletEntry struct {
 func init() {
 	cmd := gcli.Command{
 		Name:        "listWallets",
-		Usage:       "Lists all wallets stored in the default wallet directory [display directory].",
-		ArgsUsage:   "[options]",
+		ArgsUsage:   "Lists all wallets stored in the default wallet directory [display directory].",
+		Usage:       "[options]",
 		Description: "All results returned in JSON format",
 		Action: func(c *gcli.Context) error {
 			var wlts struct {

@@ -34,8 +34,8 @@ type balanceResult struct {
 func init() {
 	cmd := gcli.Command{
 		Name:      "checkBalance",
-		Usage:     "Check the balance of a wallet or specific address.",
-		ArgsUsage: "[option] [wallet path or address]",
+		ArgsUsage: "Check the balance of a wallet or specific address.",
+		Usage:     "[option] [wallet path or address]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "w",

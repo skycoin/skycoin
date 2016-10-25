@@ -10,7 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/util"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support
@@ -25,6 +25,10 @@ var (
 var (
 	errConnectNodeFailed = errors.New("connect to node failed")
 	errWalletName        = fmt.Errorf("error wallet file name, must has %v extension", walletExt)
+	errLoadWallet        = errors.New("load wallet failed")
+	errAddress           = errors.New("error address")
+	errReadResponse      = errors.New("read response body failed")
+	errJSONMarshal       = errors.New("json marshal failed")
 )
 
 func stringPtr(v string) *string {
@@ -55,7 +59,7 @@ func getUnspent(addrs []string) ([]unspentOut, error) {
 	defer rsp.Body.Close()
 	outs := []unspentOut{}
 	if err := json.NewDecoder(rsp.Body).Decode(&outs); err != nil {
-		return []unspentOut{}, err
+		return []unspentOut{}, errors.New("decode json failed")
 	}
 	return outs, nil
 }

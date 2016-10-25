@@ -9,24 +9,24 @@ import (
 	"path/filepath"
 	"strings"
 
+	bip39 "github.com/skycoin/skycoin/src/api/cli/go-bip39"
 	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
-	bip39 "github.com/tyler-smith/go-bip39"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {
 	cmd := gcli.Command{
 		Name:      "generateWallet",
-		Usage:     "Generate a new wallet from seed.",
-		ArgsUsage: "[options]",
+		ArgsUsage: "Generate a new wallet from seed.",
+		Usage:     "[options]",
 		Description: `
-		Use caution when using the “-p” command. If you have command history enabled your 
-		wallet encryption password can be recovered from the history log. If you do not 
-		include the “-p” option you will be prompted to enter your password after you enter 
-		your command. 
+		Use caution when using the “-p” command. If you have command 
+		history enabled your wallet encryption password can be recovered 
+		from the history log. If you do not include the “-p” option you will 
+		be prompted to enter your password after you enter your command. 
 		
 		All results are returned in JSON format. 
                       `,
@@ -46,15 +46,17 @@ func init() {
 			gcli.IntFlag{
 				Name:  "m",
 				Value: 1,
-				Usage: "[numberOfAddresses] Number of addresses to generate. By default 1 address is generated.",
+				Usage: `[numberOfAddresses] Number of addresses to generate. 
+						By default 1 address is generated.`,
 			},
 			// gcli.StringFlag{
 			// 	Name:  "p",
 			// 	Usage: "Password used to encrypt the wallet locally.",
 			// },
 			gcli.StringFlag{
-				Name:  "n",
-				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". If no wallet name is specified a generic name will be selected.`,
+				Name: "n",
+				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". 
+						 If no wallet name is specified a generic name will be selected.`,
 			},
 			gcli.StringFlag{
 				Name:  "l",
@@ -70,7 +72,7 @@ func generateWallet(c *gcli.Context) error {
 	// create wallet dir if not exist
 	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(walletDir, 0755); err != nil {
-			return err
+			return errors.New("create dir failed")
 		}
 	}
 
@@ -136,7 +138,7 @@ func generateWallet(c *gcli.Context) error {
 	rwlt := wallet.NewReadableWallet(wlt)
 	d, err := json.MarshalIndent(rwlt, "", "    ")
 	if err != nil {
-		return err
+		return errJSONMarshal
 	}
 	fmt.Println(string(d))
 	return nil

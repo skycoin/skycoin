@@ -5,7 +5,7 @@ import (
 	"os"
 
 	skycli "github.com/skycoin/skycoin/src/api/cli"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli"
 )
 
 func main() {

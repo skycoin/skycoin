@@ -1,20 +1,21 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {
 	cmd := gcli.Command{
 		Name:        "lastBlocks",
-		Usage:       "Displays the content of the most recently N generated blocks.",
+		ArgsUsage:   "Displays the content of the most recently N generated blocks.",
+		Usage:       "[numberOfBlocks]",
 		Description: "All results returned in JSON format.",
-		ArgsUsage:   "[numberOfBlocks]",
 		Action:      getLastBlocks,
 	}
 	Commands = append(Commands, cmd)
@@ -28,7 +29,7 @@ func getLastBlocks(c *gcli.Context) error {
 
 	n, err := strconv.Atoi(num)
 	if err != nil {
-		return err
+		return errors.New("error block number")
 	}
 	url := fmt.Sprintf("%s/last_blocks?num=%d", nodeAddress, n)
 	rsp, err := http.Get(url)
@@ -38,7 +39,7 @@ func getLastBlocks(c *gcli.Context) error {
 	defer rsp.Body.Close()
 	d, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
-		return err
+		return errReadResponse
 	}
 	fmt.Println(string(d))
 	return nil

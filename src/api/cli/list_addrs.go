@@ -2,22 +2,22 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {
 	cmd := gcli.Command{
 		Name:        "listAddresses",
-		Usage:       "Lists all addresses in a given wallet.",
+		ArgsUsage:   "Lists all addresses in a given wallet.",
+		Usage:       "[walletName]",
 		Description: "All results returned in JSON format.",
-		ArgsUsage:   "[walletName]",
 		Action:      listAddresses,
 	}
 	Commands = append(Commands, cmd)
@@ -38,23 +38,11 @@ func listAddresses(c *gcli.Context) error {
 		w = filepath.Join(walletDir, w)
 	}
 
-	// check if the wallet does exist
-	if _, err := os.Stat(w); os.IsNotExist(err) {
-		return err
+	wlt, err := wallet.Load(w)
+	if err != nil {
+		return errLoadWallet
 	}
 
-	wlt := wallet.Wallet{
-		Meta: map[string]string{
-			"filename": filepath.Base(w),
-		},
-	}
-	fp, err := filepath.Abs(filepath.Dir(w))
-	if err != nil {
-		return err
-	}
-	if err := wlt.Load(fp); err != nil {
-		return err
-	}
 	addrs := wlt.GetAddresses()
 	var rlt = struct {
 		Addresses []string `json:"addresses"`
@@ -68,7 +56,7 @@ func listAddresses(c *gcli.Context) error {
 
 	d, err := json.MarshalIndent(rlt, "", "    ")
 	if err != nil {
-		return err
+		return errors.New("json marshal failed")
 	}
 	fmt.Println(string(d))
 	return nil

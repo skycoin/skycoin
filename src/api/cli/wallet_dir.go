@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {
@@ -27,7 +27,7 @@ func init() {
 				}
 				d, err := json.MarshalIndent(rlt, "", "    ")
 				if err != nil {
-					return err
+					return errJSONMarshal
 				}
 				fmt.Println(string(d))
 				return nil

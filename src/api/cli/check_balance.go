@@ -10,7 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 type unspentOut struct {
@@ -34,8 +34,8 @@ type balanceResult struct {
 func init() {
 	cmd := gcli.Command{
 		Name:      "checkBalance",
-		Usage:     "Check the balance of a wallet or specific address.",
-		ArgsUsage: "[option] [wallet path or address]",
+		ArgsUsage: "Check the balance of a wallet or specific address.",
+		Usage:     "[option] [wallet path or address]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "w",
@@ -85,7 +85,7 @@ func checkBalance(c *gcli.Context) error {
 	}
 
 	if err != nil {
-		return err
+		return errJSONMarshal
 	}
 	fmt.Println(string(d))
 	return nil
@@ -119,7 +119,7 @@ func gatherAddrs(w, a string) ([]string, error) {
 
 		wlt, err := wallet.Load(w)
 		if err != nil {
-			return []string{}, err
+			return []string{}, errLoadWallet
 		}
 
 		addresses := wlt.GetAddresses()
@@ -158,12 +158,12 @@ func getAddrsBalance(addrs []string) (balanceResult, error) {
 	for _, o := range outs {
 		amt, err := strconv.ParseUint(o.Coins, 10, 64)
 		if err != nil {
-			return balanceResult{}, err
+			return balanceResult{}, errors.New("error coins string")
 		}
 
 		i, err := find(balRlt.Addresses, o.Address)
 		if err != nil {
-			return balanceResult{}, fmt.Errorf("unspent outs error")
+			return balanceResult{}, fmt.Errorf("output belongs to no address")
 		}
 		balRlt.Addresses[i].Amount += amt
 		balRlt.TotalAmount += amt

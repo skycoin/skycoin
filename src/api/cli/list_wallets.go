@@ -9,7 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 type walletEntry struct {
@@ -21,8 +21,8 @@ type walletEntry struct {
 func init() {
 	cmd := gcli.Command{
 		Name:        "listWallets",
-		Usage:       "Lists all wallets stored in the default wallet directory [display directory].",
-		ArgsUsage:   "[options]",
+		ArgsUsage:   "Lists all wallets stored in the default wallet directory [display directory].",
+		Usage:       "[options]",
 		Description: "All results returned in JSON format",
 		Action: func(c *gcli.Context) error {
 			var wlts struct {
@@ -44,7 +44,7 @@ func init() {
 					path := filepath.Join(walletDir, name)
 					w, err := wallet.Load(path)
 					if err != nil {
-						return fmt.Errorf("load wallet %v failed", name)
+						return errLoadWallet
 					}
 					wlts.Wallets = append(wlts.Wallets, walletEntry{
 						Name:       name,
@@ -55,7 +55,7 @@ func init() {
 			}
 			d, err := json.MarshalIndent(wlts, "", "    ")
 			if err != nil {
-				return err
+				return errJSONMarshal
 			}
 			fmt.Println(string(d))
 			return nil

@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"reflect"
 
-	gcli "gopkg.in/urfave/cli.v1"
+	gcli "github.com/urfave/cli"
 )
 
 func init() {
 	cmd := gcli.Command{
 		Name:      "version",
-		Usage:     "List the current version of Skycoin components.",
-		ArgsUsage: "[options]",
+		ArgsUsage: "List the current version of Skycoin components.",
+		Usage:     "[options]",
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "j,json",
@@ -36,7 +36,7 @@ func init() {
 			if jsonFmt {
 				d, err := json.MarshalIndent(ver, "", "    ")
 				if err != nil {
-					return err
+					return errJSONMarshal
 				}
 				fmt.Println(string(d))
 				return nil

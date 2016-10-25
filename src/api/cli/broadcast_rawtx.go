@@ -42,7 +42,7 @@ func broadcastTx(rawtx string) (string, error) {
 	}
 	d, err := json.Marshal(tx)
 	if err != nil {
-		return "", err
+		return "", errors.New("error raw transaction")
 	}
 	url := fmt.Sprintf("%s/injectTransaction", nodeAddress)
 	rsp, err := http.Post(url, "application/json", bytes.NewBuffer(d))
@@ -52,7 +52,7 @@ func broadcastTx(rawtx string) (string, error) {
 	defer rsp.Body.Close()
 	v, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
-		return "", err
+		return "", errors.New("read data from server failed")
 	}
 
 	return strings.Trim(string(v), "\""), nil

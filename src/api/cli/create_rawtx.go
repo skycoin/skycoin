@@ -20,7 +20,7 @@ func init() {
 	cmd := gcli.Command{
 		Name:      "createRawTransaction",
 		ArgsUsage: "Create a raw transaction to be broadcast to the network later or to a remote server via RPC.",
-		Usage:     "[option] [from wallet or address] [to address]]",
+		Usage:     "[option] [from wallet or address] [to address] [amount]",
 		Description: `
         If you are sending from a wallet the coins will be taken recursively 
         from all addresses within the wallet starting with the first address until 
@@ -151,14 +151,14 @@ func getChangeAddress(wltFile string, c *gcli.Context) (string, error) {
 		// get the default wallet's coin base address
 		wlt, err := wallet.Load(wltFile)
 		if err != nil {
-			return "", err
+			return "", errLoadWallet
 		}
 		return wlt.Entries[0].Address.String(), nil
 	}
 	// validate the address
 	_, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", err
+		return "", errors.New("error address")
 	}
 
 	return chgAddr, nil
@@ -180,7 +180,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	amount := c.Args().Get(c.NArg() - 1)
 	amt, err := strconv.ParseUint(amount, 10, 64)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("error amount")
 	}
 	if (amt % 1e6) != 0 {
 		return 0, errors.New("skycoin coins must be multiple of 1e6")
@@ -197,13 +197,13 @@ func createRawTxFromWallet(wltPath string, chgAddr string, toAddr string, amt ui
 	// check if the change address is in wallet.
 	wlt, err := wallet.Load(wltPath)
 	if err != nil {
-		return "", err
+		return "", errLoadWallet
 	}
 
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", err
+		return "", errAddress
 	}
 	_, ok := wlt.GetEntry(cAddr)
 	if !ok {
@@ -228,11 +228,11 @@ func createRawTxFromAddress(addr string, chgAddr string, toAddr string, amt uint
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(filepath.Join(walletDir, defaultWalletName))
 	if err != nil {
-		return "", errors.New("load default wallet file failed")
+		return "", errLoadWallet
 	}
 	srcAddr, err := cipher.DecodeBase58Address(addr)
 	if err != nil {
-		return "", err
+		return "", errAddress
 	}
 
 	// validate address
@@ -244,7 +244,7 @@ func createRawTxFromAddress(addr string, chgAddr string, toAddr string, amt uint
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", err
+		return "", errAddress
 	}
 	_, ok = wlt.GetEntry(cAddr)
 	if !ok {
@@ -294,7 +294,7 @@ func makeChangeOut(outs []unspentOut, amt uint64, chgAddr string, toAddr string)
 	for _, o := range outs {
 		c, err := strconv.ParseUint(o.Coins, 10, 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("error coins string")
 		}
 		totalAmt += c
 		totalHours += o.Hours
@@ -331,7 +331,7 @@ func getKeys(wlt *wallet.Wallet, outs []unspentOut) ([]cipher.SecKey, error) {
 	for i, o := range outs {
 		addr, err := cipher.DecodeBase58Address(o.Address)
 		if err != nil {
-			return nil, err
+			return nil, errAddress
 		}
 		entry, ok := wlt.GetEntry(addr)
 		if !ok {
@@ -359,7 +359,7 @@ func getSufficientUnspents(unspents []unspentOut, amt uint64) ([]unspentOut, err
 		for i, u := range us {
 			coins, err := strconv.ParseUint(u.Coins, 10, 64)
 			if err != nil {
-				return nil, err
+				return nil, errors.New("error coins string")
 			}
 			if coins == 0 {
 				continue

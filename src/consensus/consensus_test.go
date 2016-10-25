@@ -1,5 +1,6 @@
 // 20160901 - Initial version by user johnstuartmill,
 // public key 02fb4acf944c84d48341e3c1cb14d707034a68b7f931d6be6d732bec03597d6ff6
+// 20161025 - Code revision by user johnstuartmill.
 package consensus
 
 import (
@@ -33,7 +34,7 @@ func TestBlockchainTail_02(t *testing.T) {
 		x := secp256k1.RandByte(888) // Random data.
 		h := cipher.SumSHA256(x)     // Its hash.
 
-		b := BlockBase{hash: h, seqno: uint64(i)} // OK to leave '.sig' empty
+		b := BlockBase{Hash: h, Seqno: uint64(i)} // OK to leave '.sig' empty
 
 		bq.append_nocheck(&b)
 	}
@@ -56,14 +57,14 @@ func TestBlockchainTail_03(t *testing.T) {
 	bq.Init()
 
 	h1 := cipher.SumSHA256(secp256k1.RandByte(888))
-	b1 := BlockBase{hash: h1, seqno: 1} // OK to leave '.sig' empty
+	b1 := BlockBase{Hash: h1, Seqno: 1} // OK to leave '.sig' empty
 
 	r1 := bq.try_append_to_BlockchainTail(&b1)
 	if r1 != 0 {
 		t.Log("BlockchainTail::try_append_to_BlockchainTail(): initial insert failed.")
 		t.Fail()
 	}
-	if bq.GetNextSeqNo() != b1.seqno+1 {
+	if bq.GetNextSeqNo() != b1.Seqno + 1 {
 		t.Log("BlockchainTail::GetNextSeqNo() failed.")
 		t.Fail()
 	}
@@ -75,20 +76,20 @@ func TestBlockchainTail_03(t *testing.T) {
 	}
 
 	h2 := cipher.SumSHA256(secp256k1.RandByte(888))
-	b2 := BlockBase{hash: h2, seqno: 2} // OK to leave '.sig' empty
+	b2 := BlockBase{Hash: h2, Seqno: 2} // OK to leave '.sig' empty
 
 	r2 := bq.try_append_to_BlockchainTail(&b2)
 	if r2 != 0 {
 		t.Log("BlockchainTail::try_append_to_BlockchainTail(): next insert failed.")
 		t.Fail()
 	}
-	if bq.GetNextSeqNo() != b2.seqno+1 {
+	if bq.GetNextSeqNo() != b2.Seqno + 1 {
 		t.Log("BlockchainTail::GetNextSeqNo() failed.")
 		t.Fail()
 	}
 
 	h3 := cipher.SumSHA256(secp256k1.RandByte(888))
-	b3 := BlockBase{hash: h3, seqno: 0} // OK to leave '.sig' empty
+	b3 := BlockBase{Hash: h3, Seqno: 0} // OK to leave '.sig' empty
 
 	r3 := bq.try_append_to_BlockchainTail(&b3)
 	if r3 != 2 {
@@ -96,7 +97,7 @@ func TestBlockchainTail_03(t *testing.T) {
 		t.Fail()
 	}
 
-	b3.seqno = 4
+	b3.Seqno = 4
 	r4 := bq.try_append_to_BlockchainTail(&b3)
 	if r4 != 3 {
 		t.Log("BlockchainTail::try_append_to_BlockchainTail(): high seqno not detected.")

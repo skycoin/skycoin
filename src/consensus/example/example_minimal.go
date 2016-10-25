@@ -1,7 +1,6 @@
 // 20160901 - Initial version by user johnstuartmill,
 // public key 02fb4acf944c84d48341e3c1cb14d707034a68b7f931d6be6d732bec03597d6ff6
-package consensus
-
+// 20161025 - Code revision by user johnstuartmill.
 package main
 
 import (
@@ -17,45 +16,60 @@ var Cfg_simu_num_node            int = 5
 var Cfg_simu_fanout_per_node     int = 2
 ////////////////////////////////////////////////////////////////////////////////
 //
-// SimpleMeshNetworkSimulator
+//
 //
 ////////////////////////////////////////////////////////////////////////////////
-// This implements 'MeshNetworkInterface'
-type SimpleMeshNetworkSimulator struct {
-	NodePtrList []*consensus.ConsensusParticipant
-	NodePtrMap map[cipher.PubKey] *consensus.ConsensusParticipant
+type MinimalConnectionManager struct {
+	theNodePtr *consensus.ConsensusParticipant
+	//
+	publisher_key_list []*MinimalConnectionManager
+	subscriber_key_list []*MinimalConnectionManager
 }
-////////////////////////////////////////////////////////////////////////////////
-func (self *SimpleMeshNetworkSimulator) AddNode(
-	nodePtr *consensus.ConsensusParticipant) {
-	
-	if _, have := self.NodePtrMap[nodePtr.Pubkey]; !have {
-		self.NodePtrList = append(self.NodePtrList, nodePtr)
-		self.NodePtrMap[nodePtr.Pubkey] = nodePtr
+func (self *MinimalConnectionManager) GetNode() *consensus.ConsensusParticipant {
+	return self.theNodePtr 
+}
+func (self *MinimalConnectionManager) RegisterPublisher(key *MinimalConnectionManager) bool {
+
+	self.publisher_key_list = append(self.publisher_key_list, key)
+	return true
+}
+func (self *MinimalConnectionManager) SendBlockToAllMySubscriber(blockPtr *consensus.BlockBase) {
+	for _, p := range self.subscriber_key_list {
+		p.GetNode().OnBlockHeaderArrived(blockPtr)
 	}
 }
-////////////////////////////////////////////////////////////////////////////////
-// This implements 'MeshNetworkInterface'
-func (self *SimpleMeshNetworkSimulator) Simulate_send_to_PubKey(
-	from_key cipher.PubKey,
-	to_key cipher.PubKey,
-	blockPtr *consensus.BlockBase) {
-
-	if otherPtr, have := self.NodePtrMap[to_key]; have {
-		otherPtr.OnBlockHeaderArrived(from_key, blockPtr)
+func (self *MinimalConnectionManager) RequestConnectionToAllMyPublisher() {
+	for _, p := range self.publisher_key_list {
+		p.OnSubscriberConnectionRequest(self)
 	}
 }
-////////////////////////////////////////////////////////////////////////////////
-// This implements 'MeshNetworkInterface'
-func (self *SimpleMeshNetworkSimulator) Simulate_request_connection_to(
-	to_key   cipher.PubKey,
-	from_key cipher.PubKey) {
+func (self *MinimalConnectionManager) OnSubscriberConnectionRequest(other *MinimalConnectionManager) {
+	self.subscriber_key_list = append(self.subscriber_key_list, other)
+}
+func (self *MinimalConnectionManager) Print() {
+	detail := false
 
-	if to_node, have := self.NodePtrMap[to_key]; have {
-		if from_node, have := self.NodePtrMap[from_key]; have {
-			to_node.OnSubscriberConnectionRequest(from_node.Pubkey)
+	fmt.Printf("ConnectionManager={publisher={n=%d",
+		len(self.publisher_key_list))
+
+	if detail {
+		for _, val := range self.publisher_key_list {
+			fmt.Printf(",%v", val)
 		}
+	} else {
+		fmt.Printf(",...")
 	}
+	fmt.Printf("}")
+
+	fmt.Printf(",subscriber={n=%d", len(self.subscriber_key_list))
+	if detail {
+		for _, val := range self.subscriber_key_list {
+			fmt.Printf(",%v", val)
+		}
+	} else {
+		fmt.Printf(",...")
+	}
+	fmt.Printf("}")
 }
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -64,40 +78,38 @@ func (self *SimpleMeshNetworkSimulator) Simulate_request_connection_to(
 ////////////////////////////////////////////////////////////////////////////////
 func main() {
 
+	var X []*MinimalConnectionManager
 
-	X := &SimpleMeshNetworkSimulator{
-		NodePtrMap : make(map[cipher.PubKey] *consensus.ConsensusParticipant),
-	}
-
-	//
 	// Create nodes
-	//
 	for i := 0; i < Cfg_simu_num_node; i++ {
-		// Pass X so that node know where to sent to and receive from
-		nodePtr := consensus.NewConsensusParticipantPtr(X)
-		X.AddNode(nodePtr)
+		cm := MinimalConnectionManager{}
+		// Reason for mutual registration: (1) when conn man receives
+		// messages, it needs to notify the node; (2) when node has
+		// processed a mesage, it might need to use conn man to send
+		// some data out.
+		nodePtr := consensus.NewConsensusParticipantPtr(&cm)
+		cm.theNodePtr = nodePtr
+		
+		X = append(X, &cm)
 	}
 
-	//
 	// Contemplate connecting nodes into a thick circle:
-	//
-	n := len(X.NodePtrList)
+	n := len(X)
 	for i := 0; i < n; i++ {
 
-		nodePtr := X.NodePtrList[i]
+		cm := X[i]
 
 		c_left := int(Cfg_simu_fanout_per_node/2)
 		c_right := Cfg_simu_fanout_per_node - c_left
 
-
 		for c := 0; c < c_left; c++ {
 			j := (i - 1 - c + n) % n
-			nodePtr.RegisterPublisher(X.NodePtrList[j].Pubkey)
+			cm.RegisterPublisher(X[j])
 		}
 		
 		for c := 0; c < c_right; c++ {
 			j := (i + 1 + c) % n
-			nodePtr.RegisterPublisher(X.NodePtrList[j].Pubkey)
+			cm.RegisterPublisher(X[j])
 		}
 	}
 
@@ -105,41 +117,42 @@ func main() {
 	// Request connections
 	//
 	for i := 0; i < n; i++ {
-		X.NodePtrList[i].RequestConnectionToAllMyPublisher()
+		X[i].RequestConnectionToAllMyPublisher()
 	}
 	
 
-	//
-	// Choose a node to be a block-maker
-	//
-	index := mathrand.Intn(Cfg_simu_num_node)
-	nodePtr := X.NodePtrList[index]
-
-	//
-	// Make a block (actually, only a header)
-	//
-	x := secp256k1.RandByte(888) // Random data.
-	h := cipher.SumSHA256(x)     // Its hash.
-	b := consensus.BlockBase{}
-	b.Init(
-		nodePtr.SignatureOf(h),
-		h,
-		0)
-
-	//
-	// Send it to subscribers. The subscribers are also listeners;
-	// they send (forward, to be exact) the header to thire respective
-	// listeners etc. etc.
-	//
-	nodePtr.OnBlockHeaderArrived(nodePtr.Pubkey, &b)
-
+	{
+		//
+		// Choose a node to be a block-maker
+		//
+		index := mathrand.Intn(Cfg_simu_num_node)
+		nodePtr := X[index].GetNode()
+		
+		//
+		// Make a block (actually, only a header)
+		//
+		x := secp256k1.RandByte(888) // Random data.
+		h := cipher.SumSHA256(x)     // Its hash.
+		b := consensus.BlockBase{}
+		b.Init(
+			nodePtr.SignatureOf(h),
+			h,
+			0)
+		
+		//
+		// Send it to subscribers. The subscribers are also publishers;
+		// they send (forward, to be exact) the header to thire respective
+		// listeners etc.
+		//
+		nodePtr.OnBlockHeaderArrived(&b)
+	}
 	
 	//
 	// Print the state of each node for a review or debugging.
 	// 
-	for i, _ := range X.NodePtrList {
+	for i, _ := range X {
 		fmt.Printf("FILE_FinalState.txt|NODE i=%d ", i)
-		X.NodePtrList[i].Print()
+		X[i].GetNode().Print()
 		fmt.Printf("\n")
 	}
 	

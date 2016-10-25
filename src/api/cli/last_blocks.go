@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,7 +29,7 @@ func getLastBlocks(c *gcli.Context) error {
 
 	n, err := strconv.Atoi(num)
 	if err != nil {
-		return err
+		return errors.New("error block number")
 	}
 	url := fmt.Sprintf("%s/last_blocks?num=%d", nodeAddress, n)
 	rsp, err := http.Get(url)
@@ -38,7 +39,7 @@ func getLastBlocks(c *gcli.Context) error {
 	defer rsp.Body.Close()
 	d, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
-		return err
+		return errReadResponse
 	}
 	fmt.Println(string(d))
 	return nil

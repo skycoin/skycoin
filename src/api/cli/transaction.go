@@ -43,7 +43,7 @@ func init() {
 			defer rsp.Body.Close()
 			d, err := ioutil.ReadAll(rsp.Body)
 			if err != nil {
-				return err
+				return errReadResponse
 			}
 			fmt.Println(string(d))
 			return nil

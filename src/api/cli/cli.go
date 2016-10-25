@@ -27,6 +27,8 @@ var (
 	errWalletName        = fmt.Errorf("error wallet file name, must has %v extension", walletExt)
 	errLoadWallet        = errors.New("load wallet failed")
 	errAddress           = errors.New("error address")
+	errReadResponse      = errors.New("read response body failed")
+	errJsonMarshal       = errors.New("json marshal failed")
 )
 
 func stringPtr(v string) *string {

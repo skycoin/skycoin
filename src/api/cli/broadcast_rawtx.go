@@ -52,7 +52,7 @@ func broadcastTx(rawtx string) (string, error) {
 	defer rsp.Body.Close()
 	v, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
-		return "", errors.New("read data from server failed")
+		return "", errReadResponse
 	}
 
 	return strings.Trim(string(v), "\""), nil

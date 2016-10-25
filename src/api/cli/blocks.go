@@ -46,7 +46,11 @@ func getBlocks(c *gcli.Context) error {
 		return errConnectNodeFailed
 	}
 	defer rsp.Body.Close()
-	d, _ := ioutil.ReadAll(rsp.Body)
+	d, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return errReadResponse
+	}
+
 	fmt.Println(string(d))
 	return nil
 }

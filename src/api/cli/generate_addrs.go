@@ -109,7 +109,7 @@ func addrResult(addrs []cipher.Address, jsonFmt bool) (string, error) {
 		}
 		d, err := json.MarshalIndent(rlt, "", "    ")
 		if err != nil {
-			return "", errors.New("json marshal failed")
+			return "", errJsonMarshal
 		}
 		return string(d), nil
 	}

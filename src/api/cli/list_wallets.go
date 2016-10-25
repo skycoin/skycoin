@@ -44,7 +44,7 @@ func init() {
 					path := filepath.Join(walletDir, name)
 					w, err := wallet.Load(path)
 					if err != nil {
-						return fmt.Errorf("load wallet %v failed", name)
+						return errLoadWallet
 					}
 					wlts.Wallets = append(wlts.Wallets, walletEntry{
 						Name:       name,
@@ -55,7 +55,7 @@ func init() {
 			}
 			d, err := json.MarshalIndent(wlts, "", "    ")
 			if err != nil {
-				return err
+				return errJsonMarshal
 			}
 			fmt.Println(string(d))
 			return nil

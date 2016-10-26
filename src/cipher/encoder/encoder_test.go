@@ -11,6 +11,7 @@ import (
 
 import (
 	"crypto/rand"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
@@ -93,6 +94,11 @@ func Test_Encode_1(T *testing.T) { //test function starts with "Test" and takes 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
+		T.Fatal()
+	}
+
+	b3 := FieldData(t)
+	if b3 != nil {
 		T.Fatal()
 	}
 }

@@ -1,5 +1,6 @@
 // 20160901 - Initial version by user johnstuartmill,
 // public key 02fb4acf944c84d48341e3c1cb14d707034a68b7f931d6be6d732bec03597d6ff6
+// 20161025 - Code revision by user johnstuartmill.
 package main
 //
 // WARNING: WARNING: WARNING: Do NOT use this code for obtaining any
@@ -18,7 +19,6 @@ import (
 	//
 	"github.com/skycoin/skycoin/src/consensus"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
 var Cfg_print_config            bool = true
@@ -39,7 +39,63 @@ var Cfg_simu_fanout_per_node     int =   3
 
 // Will be reset later, based on values of other parameters:
 var Cfg_simu_num_iter            int =   0
+////////////////////////////////////////////////////////////////////////////////
+type MinimalConnectionManager struct {
+	theNodePtr *consensus.ConsensusParticipant
+	//
+	publisher_key_list []*MinimalConnectionManager
+	subscriber_key_list []*MinimalConnectionManager
+}
+func (self *MinimalConnectionManager) GetNode() *consensus.ConsensusParticipant {
+	return self.theNodePtr 
+}
+func (self *MinimalConnectionManager) RegisterPublisher(key *MinimalConnectionManager) bool {
 
+	self.publisher_key_list = append(self.publisher_key_list, key)
+	return true
+}
+func (self *MinimalConnectionManager) SendBlockToAllMySubscriber(blockPtr *consensus.BlockBase) {
+	for _, p := range self.subscriber_key_list {
+		p.GetNode().OnBlockHeaderArrived(blockPtr)
+	}
+}
+func (self *MinimalConnectionManager) RequestConnectionToAllMyPublisher() {
+	for _, p := range self.publisher_key_list {
+		p.OnSubscriberConnectionRequest(self)
+	}
+}
+func (self *MinimalConnectionManager) OnSubscriberConnectionRequest(other *MinimalConnectionManager) {
+	self.subscriber_key_list = append(self.subscriber_key_list, other)
+}
+func (self *MinimalConnectionManager) Print() {
+	detail := false
+
+	fmt.Printf("ConnectionManager={publisher={n=%d",
+		len(self.publisher_key_list))
+
+	if detail {
+		for _, val := range self.publisher_key_list {
+			fmt.Printf(",%v", val)
+		}
+	} else {
+		fmt.Printf(",...")
+	}
+	fmt.Printf("}")
+
+	fmt.Printf(",subscriber={n=%d", len(self.subscriber_key_list))
+	if detail {
+		for _, val := range self.subscriber_key_list {
+			fmt.Printf(",%v", val)
+		}
+	} else {
+		fmt.Printf(",...")
+	}
+	fmt.Printf("}")
+}
+////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 ////////////////////////////////////////////////////////////////////////////////
 func pretty_print_flags(prefix string, detail bool) {
 	if detail {
@@ -69,7 +125,6 @@ func pretty_print_flags(prefix string, detail bool) {
 		
 	}
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 func cmd_line_args_process() {
 
@@ -210,7 +265,8 @@ func cmd_line_args_process() {
 	// number high so it would not interfere with message propagation
 	// by premature exit from the vent loop. Yet we keep it finite to
 	// prevent an infinite run that can be caused by a bug:
-	Cfg_simu_num_iter =  10 *
+
+	Cfg_simu_num_iter =  10 * // '10' is a heuristic
 	    Cfg_simu_num_node * Cfg_simu_num_blockmaker * 
         Cfg_simu_num_block_round * Cfg_simu_fanout_per_node
 
@@ -225,13 +281,9 @@ func cmd_line_args_process() {
 }
 ////////////////////////////////////////////////////////////////////////////////
 //
-// SimpleMeshNetworkSimulator
+//
 //
 ////////////////////////////////////////////////////////////////////////////////
-type SimpleMeshNetworkSimulator struct { // implements MeshNetworkInterface
-	NodePtrList []*consensus.ConsensusParticipant
-	NodePtrMap map[cipher.PubKey] *consensus.ConsensusParticipant
-}
 ////////////////////////////////////////////////////////////////////////////////
 // The body of this function lends itself to something like
 //
@@ -241,7 +293,7 @@ type SimpleMeshNetworkSimulator struct { // implements MeshNetworkInterface
 // transactions, possibly negotiate with others as to who makes blocks
 // etc. FOR NOW, any node can make (and publish) blocks.
 //
-func (self *SimpleMeshNetworkSimulator) propagate_hash_from_node(
+func propagate_hash_from_node(
 	h cipher.SHA256,
 	nodePtr *consensus.ConsensusParticipant,
 	external_use bool,
@@ -256,11 +308,6 @@ func (self *SimpleMeshNetworkSimulator) propagate_hash_from_node(
 	//
 	
 
-	// Ensure the node is registered:
-	if _, have := self.NodePtrMap[nodePtr.Pubkey]; !have {
-		return
-	}
-
 	o := external_seqno // HACK for DEBUGGING
 	if !external_use {
 		o = nodePtr.GetNextBlockSeqNo() // So that blocks are ordered.
@@ -272,84 +319,15 @@ func (self *SimpleMeshNetworkSimulator) propagate_hash_from_node(
 		h,
 		o)
 
-	nodePtr.OnBlockHeaderArrived(nodePtr.Pubkey, &b)
+	nodePtr.OnBlockHeaderArrived(&b)
 }
 ////////////////////////////////////////////////////////////////////////////////
-func (self *SimpleMeshNetworkSimulator) AddNode(
-	nodePtr *consensus.ConsensusParticipant) {
-	
-	if _, have := self.NodePtrMap[nodePtr.Pubkey]; !have {
-		self.NodePtrList = append(self.NodePtrList, nodePtr)
-		self.NodePtrMap[nodePtr.Pubkey] = nodePtr
-	}
-}
-////////////////////////////////////////////////////////////////////////////////
-// This implements 'MeshNetworkInterface'
-func (self *SimpleMeshNetworkSimulator) Simulate_send_to_PubKey(
-	from_key cipher.PubKey,
-	to_key cipher.PubKey,
-	blockPtr *consensus.BlockBase) {
-
-
-	//
-	// WARNING: WARNING: WARNING: Do NOT use this code for obtaining any
-	// research results.  This file is only an illustration. A realistic
-	// simulation would require to have (i) nonzero latencies for event
-	// propagation and (ii) an event queue inside the implementation of
-	// MeshNetworkInterface.
-	//
-
-	// WARNING: The Block reaches the recepients in zero time. This
-	// is only a test of calling sequences.
-	if otherPtr, have := self.NodePtrMap[to_key]; have {
-		otherPtr.OnBlockHeaderArrived(from_key, blockPtr)
-	}
-}
-////////////////////////////////////////////////////////////////////////////////
-// This implements 'MeshNetworkInterface'
-func (self *SimpleMeshNetworkSimulator) Simulate_request_connection_to(
-	to_key   cipher.PubKey,
-	from_key cipher.PubKey) {
-
-	// Connection request
-	if Cfg_debug_connect_request {
-		fmt.Printf("Requesting connection %s -> %s ... ",
-			from_key.Hex()[:8], to_key.Hex()[:8])
-	}
-
-	//
-	// WARNING: WARNING: WARNING: Do NOT use this code for obtaining any
-	// research results.  This file is only an illustration. A realistic
-	// simulation would require to have (i) nonzero latencies for event
-	// propagation and (ii) an event queue inside the implementation of
-	// MeshNetworkInterface.
-	//
-
-	// WARNING: The connection is established in zero time. This is
-	// only a test of calling sequences.
-	ok := false 
-	if to_node, have := self.NodePtrMap[to_key]; have {
-		if from_node, have := self.NodePtrMap[from_key]; have {
-			// Modifed via pointer:
-			to_node.OnSubscriberConnectionRequest(from_node.Pubkey)
-			ok = true
-		}
-	}
-
-	if Cfg_debug_connect_request {
-		if ok {
-			fmt.Printf("ok\n")
-		} else {
-			fmt.Printf("NOT ok\n")
-		}
-	}
-}
-////////////////////////////////////////////////////////////////////////////////
-func (self *SimpleMeshNetworkSimulator) print_stat(iter int) {
+func print_stat(X []*MinimalConnectionManager,
+	iter int) {
 
 	n := 0
-	for i, _ := range self.NodePtrList {
-		n += self.NodePtrList[i].Incoming_block_count
+	for i, _ := range X {
+		n += X[i].GetNode().Incoming_block_count
 	}
 
 	msg_per_node_per_round :=
@@ -384,7 +362,8 @@ func (self *SimpleMeshNetworkSimulator) print_stat(iter int) {
 
 }
 ////////////////////////////////////////////////////////////////////////////////
-func (self *SimpleMeshNetworkSimulator) Simulate_compare_node_StateQueue(
+func Simulate_compare_node_StateQueue(
+	X []*MinimalConnectionManager,
 	global_seqno2h map[uint64] cipher.SHA256,
 	global_seqno2h_alt map[uint64] cipher.SHA256,
 ) {
@@ -396,19 +375,19 @@ func (self *SimpleMeshNetworkSimulator) Simulate_compare_node_StateQueue(
 	xxx := make(QQQ) // Access:       [seqno][hash]=count
 	type ZZZ [] QQQ  // Access: [node][seqno][hash]=count
 
-	ni := len(self.NodePtrList)
+	ni := len(X)
 
 	zzz := make(ZZZ, ni)
 
 	for i := 0; i < ni; i++ { // Nodes
-		nj := self.NodePtrList[i].Get_block_stat_queue_Len()
+		nj := X[i].GetNode().Get_block_stat_queue_Len()
 
 		zzz[i] = make(map[uint64]map[cipher.SHA256]int)
 
 		for j := 0; j < nj; j++ { // Elements in node's BlockStatQueue
 			
 			// 'bs' a pointer:
-			bs := self.NodePtrList[i].Get_block_stat_queue_element_at(j)
+			bs := X[i].GetNode().Get_block_stat_queue_element_at(j)
 			seqno := bs.GetSeqno()
 			hash, _, _ := bs.GetBestHashPubkeySig()
 
@@ -582,20 +561,32 @@ func main() {
 	cipher.DebugLevel1 = false
 	cipher.DebugLevel2 = false
 
+	var X []*MinimalConnectionManager
 
-	X := &SimpleMeshNetworkSimulator{
-		NodePtrMap : make(map[cipher.PubKey] *consensus.ConsensusParticipant),
-	}
 	var hack_global_seqno uint64 = 0
 
 
+	seed := "hdhdhdkjashfy7273"
+	_, SecKeyArray :=
+		cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), Cfg_simu_num_node)
+
+
 	for i := 0; i < Cfg_simu_num_node; i++ {
-		// Pass X so that node know where to sent to and receive from
-		nodePtr := consensus.NewConsensusParticipantPtr(X)
-		X.AddNode(nodePtr)
+		cm := MinimalConnectionManager{}
+		// Reason for mutual registration: (1) when conn man receives
+		// messages, it needs to notify the node; (2) when node has
+		// processed a mesage, it might need to use conn man to send
+		// some data out.
+		nodePtr := consensus.NewConsensusParticipantPtr(&cm)
+		s := SecKeyArray[i]
+		nodePtr.SetPubkeySeckey(cipher.PubKeyFromSecKey(s), s)
+
+		cm.theNodePtr = nodePtr
+		
+		X = append(X, &cm)
 	}
 	if false {
-		fmt.Printf("Got %d nodes\n", len(X.NodePtrList))
+		fmt.Printf("Got %d nodes\n", len(X))
 	}
 
 	if Cfg_simu_topology_is_random {
@@ -604,12 +595,15 @@ func main() {
 			" %d  nearest-neighbors in and approx %d nearest-neighbors out.\n",
 			Cfg_simu_num_node, Cfg_simu_fanout_per_node,
 			Cfg_simu_fanout_per_node)
+
+
 		
-		for i, _ := range X.NodePtrList {
+		for i, _ := range X {
+			cm := X[i]
 			for g := 0; g < Cfg_simu_fanout_per_node; g++ {
 				j := mathrand.Intn(Cfg_simu_num_node)
 				if i != j {
-					X.NodePtrList[i].RegisterPublisher(X.NodePtrList[j].Pubkey)
+					cm.RegisterPublisher(X[j])
 				}
 			}
 		}
@@ -621,32 +615,31 @@ func main() {
 			Cfg_simu_num_node, Cfg_simu_fanout_per_node,
 			Cfg_simu_fanout_per_node)
 
-		n := len(X.NodePtrList)
+		n := len(X)
 		for i := 0; i < n; i++ {
 
-			nodePtr := X.NodePtrList[i]
+			cm := X[i]
 
 			c_left := int(Cfg_simu_fanout_per_node/2)
 			c_right := Cfg_simu_fanout_per_node - c_left
 
 			for c := 0; c < c_left; c++ {
 				j := (i - 1 - c + n) % n
-				nodePtr.RegisterPublisher(X.NodePtrList[j].Pubkey)
+				cm.RegisterPublisher(X[j])
 			}
 		
 			for c := 0; c < c_right; c++ {
 				j := (i + 1 + c) % n
-				nodePtr.RegisterPublisher(X.NodePtrList[j].Pubkey)
+				cm.RegisterPublisher(X[j])
 			}
-
 		}
 	}
 
 	// Connect. PROD: This should request connections. The
 	// connections can be accepted, rejected or never answered. Such
 	// replies are asynchronous. SIMU: we connect synchronously.
-	for i, _ := range X.NodePtrList {
-		X.NodePtrList[i].RequestConnectionToAllMyPublisher()
+	for i, _ := range X {
+		X[i].RequestConnectionToAllMyPublisher()
 	}
 
 
@@ -668,10 +661,14 @@ func main() {
 				// stopped. Again, we make blocks from here for
 				// debugging and testing only.
 
-				x := secp256k1.RandByte(888) // Random data in SIMU.
+				//x := secp256k1.RandByte(888) // Random data in SIMU.
+				x := make([]byte, 888); mathrand.Read(x)
+
+
 				h := cipher.SumSHA256(x)     // Its hash.
 
-				x_alt := secp256k1.RandByte(888) // Random data in SIMU.
+				//x_alt := secp256k1.RandByte(888) // Random data in SIMU.
+				x_alt := make([]byte, 888); mathrand.Read(x)
 				h_alt := cipher.SumSHA256(x_alt) // Its hash.
 
 				global_seqno2h[hack_global_seqno] = h
@@ -695,7 +692,7 @@ func main() {
 					// which the block published by the majority would
 					// dominate the other one.
 					index := indices[i]
-					nodePtr := X.NodePtrList[index]
+					nodePtr := X[index].GetNode()
 
 					malicious := (i < n_forkers)
 					duplicate := (mathrand.Float64() < Cfg_simu_prob_duplicate)
@@ -727,7 +724,7 @@ func main() {
 						// signatures (for a good reason). We do it
 						// here to test if malicious re-publishing is
 						// detected properly.
-						X.propagate_hash_from_node(*ph, nodePtr, true,
+						propagate_hash_from_node(*ph, nodePtr, true,
 							hack_global_seqno)
 					}
 				}
@@ -755,18 +752,18 @@ func main() {
 		zzz, iter, Cfg_simu_num_iter - iter)
 
 
-	X.print_stat(iter)
+	print_stat(X, iter)
 
 	if Cfg_debug_node_final_state {
-		for i, _ := range X.NodePtrList {
+		for i, _ := range X {
 			fmt.Printf("FILE_FinalState.txt|NODE i=%d ", i)
-			X.NodePtrList[i].Print()
+			X[i].GetNode().Print()
 			fmt.Printf("\n")
 		}
 	}
 	
 	if Cfg_debug_node_summary {
-		X.Simulate_compare_node_StateQueue(global_seqno2h, global_seqno2h_alt)
+		Simulate_compare_node_StateQueue(X, global_seqno2h, global_seqno2h_alt)
 	}
 }
 ////////////////////////////////////////////////////////////////////////////////

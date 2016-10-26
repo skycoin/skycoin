@@ -24,7 +24,7 @@ func main() {
 
 	config1.AddPeerToConnect("127.0.0.1:17000", config2)
 	config1.AddRouteToEstablish(config2)
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].ID, "Message 1")
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, "Message 1")
 	config1.AddMessageToReceive("Message 2", "")
 
 	config2.AddPeerToConnect("127.0.0.1:15000", config1)
@@ -57,8 +57,8 @@ func main() {
 }
 
 // Initialize the Nodes for communication and sending messages
-func sendMessage(idConfig int, config nodemanager.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
-	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
+func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
+	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", configID)
 	defer wg.Done()
 
 	node := nodemanager.CreateNode(config)
@@ -74,7 +74,7 @@ func sendMessage(idConfig int, config nodemanager.TestConfig, wg *sync.WaitGroup
 		if sendMsgErr != nil {
 			panic(sendMsgErr)
 		}
-		fmt.Fprintf(os.Stdout, "Send message %v from Node: %v to Node: %v\n", messageToSend.Contents, idConfig, node.GetConnectedPeers()[0].Hex())
+		fmt.Fprintf(os.Stdout, "Send message %v from Node: %v to Node: %v\n", messageToSend.Contents, configID, node.GetConnectedPeers()[0].Hex())
 	}
 
 	// Receive messages
@@ -86,7 +86,7 @@ func sendMessage(idConfig int, config nodemanager.TestConfig, wg *sync.WaitGroup
 	for timeEnd := time.Now().Add(1 * time.Second); time.Now().Before(timeEnd); {
 
 		if len(received) > 0 {
-			fmt.Fprintf(os.Stdout, "Len Receive Channel %v in Node: %v \n", len(received), idConfig)
+			fmt.Fprintf(os.Stdout, "Len Receive Channel %v in Node: %v \n", len(received), configID)
 			msgRecvd := <-received
 			recvMap[fmt.Sprintf("%v", msgRecvd.Contents)] = msgRecvd.ReplyTo
 
@@ -111,7 +111,7 @@ func sendMessage(idConfig int, config nodemanager.TestConfig, wg *sync.WaitGroup
 		_, received := recvMap[fmt.Sprintf("%v", messageToReceive.Contents)]
 		if !received {
 			success = false
-			fmt.Fprintf(os.Stdout, "Didn't receive message contents: %v - Node: %v\n", messageToReceive.Contents, idConfig)
+			fmt.Fprintf(os.Stdout, "Didn't receive message contents: %v - Node: %v\n", messageToReceive.Contents, configID)
 		}
 	}
 	// Wait for messages to pass back

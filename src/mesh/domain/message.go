@@ -10,6 +10,16 @@ import (
 type RouteID uuid.UUID
 type MessageID uuid.UUID
 
+type MeshMessage struct {
+	ReplyTo  ReplyTo
+	Contents []byte
+}
+
+type ReplyTo struct {
+	RouteID    RouteID
+	FromPeerID cipher.PubKey
+}
+
 // Fields must be public (capital first letter) for encoder
 type MessageBase struct {
 	// If RouteId is unknown, but not cipher.PubKey{}, then the message should be received here
@@ -17,8 +27,8 @@ type MessageBase struct {
 	SendRouteID RouteID
 	SendBack    bool
 	// For sending the reply from the last node in a route
-	FromPeer cipher.PubKey
-	Nonce    [4]byte
+	FromPeerID cipher.PubKey
+	Nonce      [4]byte
 }
 
 type UserMessage struct {
@@ -33,9 +43,9 @@ type SetRouteMessage struct {
 	MessageBase
 	SetRouteID                 RouteID
 	ConfirmRouteID             RouteID
-	ForwardToPeer              cipher.PubKey
+	ForwardToPeerID            cipher.PubKey
 	ForwardRewriteSendRouteID  RouteID
-	BackwardToPeer             cipher.PubKey
+	BackwardToPeerID           cipher.PubKey
 	BackwardRewriteSendRouteID RouteID
 	DurationHint               time.Duration
 }
@@ -65,36 +75,6 @@ type AddNodeMessage struct {
 	Content []byte
 }
 
-// Get a node from the network
-//type GetNodeMessage struct {
-//	MessageBase
-//}
-
-// Set up a node from the network
-//type SetUpNodeMessage struct {
-//	MessageBase
-//}
-
-// Delete a node from the network
-//type DeleteNodeMessage struct {
-//	MessageBase
-//}
-
-// Get a route between two nodes from the node manager
-//type GetNodeRouteMessage struct {
-//	MessageBase
-//}
-
-type MessageToSend struct {
-	ThruRoute uuid.UUID
-	Contents  []byte
-}
-
-type MessageToReceive struct {
-	Contents []byte
-	Reply    []byte
-}
-
 type MessageUnderAssembly struct {
 	Fragments   map[uint64]UserMessage
 	SendRouteID RouteID
@@ -102,9 +82,4 @@ type MessageUnderAssembly struct {
 	Count       uint64
 	Dropped     bool
 	ExpiryTime  time.Time
-}
-
-type MeshMessage struct {
-	ReplyTo  ReplyTo
-	Contents []byte
 }

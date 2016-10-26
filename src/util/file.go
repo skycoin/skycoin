@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/op/go-logging.v1"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"gopkg.in/op/go-logging.v1"
 )
 
 var (
@@ -212,4 +214,26 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 	}
 
 	return appLoc, nil
+}
+
+func CopyFile(dst string, src io.Reader) (n int64, err error) {
+	// check the existence of dst file.
+	if _, err := os.Stat(dst); err == nil {
+		return 0, nil
+	}
+	err = nil
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	n, err = io.Copy(out, src)
+	return
 }

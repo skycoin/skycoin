@@ -41,7 +41,7 @@ func httpGet(url string, v interface{}) error {
 
 func init() {
 	if nodeAddress == "" {
-		nodeAddress = "http://localhost:6420"
+		nodeAddress = "localhost:6420"
 	}
 
 	if walletDir == "" {
@@ -51,7 +51,7 @@ func init() {
 }
 
 func getUnspent(addrs []string) ([]unspentOut, error) {
-	url := fmt.Sprintf("%v/outputs?addrs=%s", nodeAddress, strings.Join(addrs, ","))
+	url := fmt.Sprintf("http://%v/outputs?addrs=%s", nodeAddress, strings.Join(addrs, ","))
 	rsp, err := http.Get(url)
 	if err != nil {
 		return []unspentOut{}, errConnectNodeFailed

@@ -44,7 +44,7 @@ func broadcastTx(rawtx string) (string, error) {
 	if err != nil {
 		return "", errors.New("error raw transaction")
 	}
-	url := fmt.Sprintf("%s/injectTransaction", nodeAddress)
+	url := fmt.Sprintf("http://%s/injectTransaction", nodeAddress)
 	rsp, err := http.Post(url, "application/json", bytes.NewBuffer(d))
 	if err != nil {
 		return "", errConnectNodeFailed

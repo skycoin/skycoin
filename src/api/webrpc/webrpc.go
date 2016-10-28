@@ -68,28 +68,22 @@ func makeErrorResponse(id string, err RPCError) Response {
 }
 
 // Start start the webrpc service.
-func Start(addr string, c chan struct{}) {
+func Start(addr string, queueSize int, workerNum int, c chan struct{}) {
+	rpc := makeRPC(queueSize, workerNum, c)
+
 	for {
 		select {
 		case <-c:
 			logger.Info("webrpc quit")
 			return
 		default:
-			mux := http.NewServeMux()
-			mux.HandleFunc("/webrpc", rpcHandler)
-			logger.Fatal(http.ListenAndServe(addr, mux))
+			logger.Fatal(http.ListenAndServe(addr, rpc))
 		}
 	}
 }
 
-// Request rpc request struct
-type Request struct {
-	Jsonrpc string            `json:"jsonrpc"`
-	Method  string            `json:"method"`
-	Params  map[string]string `json:"params"`
-	ID      string            `json:"id"`
-}
-
-func rpcHandler(w http.ResponseWriter, r *http.Request) {
-	// var req Request
+func makeRPC(queueSize int, workerNum int, c chan struct{}) *rpcHandler {
+	rpc := newRPCHandler(queueSize, workerNum, c)
+	rpc.HandlerFunc("get_status", getStatus)
+	return rpc
 }

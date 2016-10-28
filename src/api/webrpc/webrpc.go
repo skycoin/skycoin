@@ -7,12 +7,23 @@ import (
 )
 
 var (
-	errParseError     = -32700 // Parse error	Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.
-	errInvalidRequest = -32600 // Invalid Request	The JSON sent is not a valid Request object.
-	errMethodNotFound = -32601 // Method not found	The method does not exist / is not available.
-	errInvalidParams  = -32602 // Invalid params	Invalid method parameter(s).
-	errInvernalError  = -32603 // Internal error	Internal JSON-RPC error.
-// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
+	errCodeParseError     = -32700 // Parse error	Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.
+	errCodeInvalidRequest = -32600 // Invalid Request	The JSON sent is not a valid Request object.
+	errCodeMethodNotFound = -32601 // Method not found	The method does not exist / is not available.
+	errCodeInvalidParams  = -32602 // Invalid params	Invalid method parameter(s).
+	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
+	errCodeRequirePost    = -31000 // Need post
+
+	errMsgParseError     = "Parse error"
+	errMsgInvalidRequest = "Invalid Request"
+	errMsgMethodNotFound = "Method not found"
+	errMsgInvalidParams  = "Invalid params"
+	errMsgInternalErr    = "Internal error"
+	errMsgRequirePost    = "Need http post"
+
+	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
+
+	jsonRPC = "2.0"
 )
 
 var logger = logging.MustGetLogger("skycoin.webrpc")

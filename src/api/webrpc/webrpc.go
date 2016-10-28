@@ -28,6 +28,45 @@ var (
 
 var logger = logging.MustGetLogger("skycoin.webrpc")
 
+// Request rpc request struct
+type Request struct {
+	Jsonrpc string            `json:"jsonrpc"`
+	Method  string            `json:"method"`
+	Params  map[string]string `json:"params"`
+	ID      string            `json:"id"`
+}
+
+// RPCError response error
+type RPCError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    string `json:"data,omitempty"`
+}
+
+// Response rpc response struct
+type Response struct {
+	Jsonrpc string   `json:"jsonrpc"`
+	Result  string   `json:"result,omitempty"`
+	Error   RPCError `json:"error,omitempty"`
+	ID      string   `json:"id"`
+}
+
+func makeSuccessResponse(id, result string) Response {
+	return Response{
+		ID:      id,
+		Result:  result,
+		Jsonrpc: jsonRPC,
+	}
+}
+
+func makeErrorResponse(id string, err RPCError) Response {
+	return Response{
+		ID:      id,
+		Error:   err,
+		Jsonrpc: jsonRPC,
+	}
+}
+
 // Start start the webrpc service.
 func Start(addr string, c chan struct{}) {
 	for {

@@ -976,3 +976,35 @@ func intDestSize(ptrType interface{}) int {
 	}
 	return 0
 }
+
+func FieldData(data interface{}) error {
+	var err error
+	value := reflect.Indirect(reflect.ValueOf(data))
+
+	fieldType, err := getFieldType(value)
+
+	fmt.Println(fieldType)
+
+	return err
+}
+
+func getFieldType(v reflect.Value) (interface{}, error) {
+	v = reflect.Indirect(v)
+	var err error
+	var result []interface{}
+
+	for i := 1; i < v.NumField(); i++ {
+		f := v.Field(i)
+		fieldType := f.Kind()
+		fmt.Println(f.Type())
+		if f.Kind() == reflect.Struct {
+			fmt.Println("hehe")
+			_, err = getFieldType(f)
+			if err != nil {
+			}
+		}
+		result = append(result, fieldType)
+	}
+
+	return result, err
+}

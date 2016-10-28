@@ -41,7 +41,7 @@ func httpGet(url string, v interface{}) error {
 
 func init() {
 	if nodeAddress == "" {
-		nodeAddress = "localhost:6420"
+		nodeAddress = "127.0.0.1:6420"
 	}
 
 	if walletDir == "" {

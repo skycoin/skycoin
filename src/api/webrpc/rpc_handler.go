@@ -36,6 +36,7 @@ func newRPCHandler(queueSize int, workerNum int, close chan struct{}) *rpcHandle
 		reqChan:   make(chan job, queueSize),
 		close:     close,
 		mux:       http.NewServeMux(),
+		handlers:  make(map[string]jobHandler),
 	}
 
 	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
@@ -106,12 +107,13 @@ func (rh *rpcHandler) dispatch() {
 			for {
 				select {
 				case <-rh.close:
-					logger.Infof("[%d]rpc job handler quit", seq)
+					// logger.Infof("[%d]rpc job handler quit", seq)
 					return
 				case jb := <-rh.reqChan:
 					logger.Debugf("[%d] got job", seq)
 					if handler, ok = rh.handlers[jb.Req.Method]; ok {
 						jb.ResC <- handler(jb.Req)
+						logger.Debugf("[%d] job done", seq)
 						continue
 					}
 
@@ -122,7 +124,7 @@ func (rh *rpcHandler) dispatch() {
 						Message: errMsgMethodNotFound,
 					}
 					jb.ResC <- res
-					logger.Debugf("[%d] job done")
+					logger.Debugf("[%d] job done", seq)
 				}
 			}
 		}(i)

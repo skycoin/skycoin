@@ -70,13 +70,13 @@ func makeErrorResponse(id string, err RPCError) Response {
 // Start start the webrpc service.
 func Start(addr string, queueSize int, workerNum int, c chan struct{}) {
 	rpc := makeRPC(queueSize, workerNum, c)
-
 	for {
 		select {
 		case <-c:
 			logger.Info("webrpc quit")
 			return
 		default:
+			logger.Infof("start webrpc on http://%s", addr)
 			logger.Fatal(http.ListenAndServe(addr, rpc))
 		}
 	}

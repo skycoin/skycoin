@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -469,6 +470,10 @@ func Run(c *Config) {
 	blockdb.Start()
 	defer blockdb.Stop()
 
+	// start the webrpc
+	closingC := make(chan struct{})
+	go webrpc.Start("0.0.0.0:6422", 1000, 1000, closingC)
+
 	// start the transaction db.
 	// transactiondb.Start()
 	// defer transactiondb.Stop()
@@ -544,6 +549,7 @@ func Run(c *Config) {
 
 	<-quit
 	stopDaemon <- 1
+	close(closingC)
 
 	logger.Info("Shutting down")
 	d.Shutdown()

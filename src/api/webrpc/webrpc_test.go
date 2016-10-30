@@ -6,15 +6,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/assert"
 )
 
 type fakeGateway struct {
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) ([]coin.Block, error) {
-	return []coin.Block{}, nil
+func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
+	return nil
 }
 
 func setup() (*rpcHandler, func()) {
@@ -23,7 +23,7 @@ func setup() (*rpcHandler, func()) {
 		close(c)
 	}
 
-	return newRPCHandler(1, 1, &fakeGateway{}, c), f
+	return makeRPC(1, 1, &fakeGateway{}, c), f
 }
 
 func TestHTTPMethod(t *testing.T) {
@@ -43,39 +43,74 @@ func TestHTTPMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, res.Error.Code, errCodeRequirePost)
+	assert.Equal(t, res.Error.Code, errCodeInvalidRequest)
+	assert.Equal(t, res.Error.Message, "only support http POST")
+}
+
+func TestInvalidJsonRpc(t *testing.T) {
+	rpc, teardown := setup()
+	defer teardown()
+
+	d, err := json.Marshal(Request{
+		ID:      "1",
+		Jsonrpc: "1.0",
+		Method:  "get_status",
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest("POST", "/webrpc", bytes.NewBuffer(d))
+	w := httptest.NewRecorder()
+	rpc.Handler(w, r)
+
+	var res Response
+	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, res.Error, &RPCError{
+		Code:    errCodeInvalidParams,
+		Message: errMsgInvalidJsonrpc,
+	})
 }
 
 func TestGetStatus(t *testing.T) {
 	rpc, teardown := setup()
 	defer teardown()
 
-	testDatas := []struct {
-		HTTPMethod    string
-		Req           *Request
-		ExpectErrCode int
+	tests := []struct {
+		Req          Request
+		WantResponse Response
 	}{
-	// {
-	// 	"GET",
-	// 	nil,
-	// 	errCodeRequirePost,
-	// },
+		{
+			Request{
+				ID:      "1",
+				Method:  "get_status",
+				Jsonrpc: jsonRPC,
+			},
+			Response{
+				ID:      "1",
+				Jsonrpc: jsonRPC,
+				Result:  `{"running": true}`,
+			},
+		},
 	}
 
-	res := Response{}
-	for _, data := range testDatas {
-		d, err := json.Marshal(data.Req)
+	for _, tt := range tests {
+		d, err := json.Marshal(tt.Req)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		r := httptest.NewRequest(data.HTTPMethod, "/webrpc", bytes.NewBuffer(d))
+		r := httptest.NewRequest("POST", "/webrpc", bytes.NewBuffer(d))
 		w := httptest.NewRecorder()
 		rpc.Handler(w, r)
+		var res Response
 		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
 			t.Fatal(err)
 		}
-
-		assert.Equal(t, data.ExpectErrCode, res.Error.Code)
+		assert.EqualValues(t, res, tt.WantResponse)
 	}
 }

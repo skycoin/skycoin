@@ -29,6 +29,7 @@ var (
 	errAddress           = errors.New("error address")
 	errReadResponse      = errors.New("read response body failed")
 	errJSONMarshal       = errors.New("json marshal failed")
+	errJSONUnmarshal     = errors.New("json unmarshal failed")
 )
 
 func stringPtr(v string) *string {

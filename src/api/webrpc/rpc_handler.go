@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/skycoin/skycoin/src/coin"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 type job struct {
@@ -22,7 +22,7 @@ func makeJob(req Request) job {
 
 // Gatewayer provides interfaces for getting skycoin related info.
 type Gatewayer interface {
-	GetLastBlocks(num uint64) ([]coin.Block, error)
+	GetLastBlocks(num uint64) *visor.ReadableBlocks
 }
 
 type jobHandler func(req Request, gateway Gatewayer) Response
@@ -74,8 +74,8 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 		// only support post.
 		if r.Method != "POST" {
 			res = makeErrorResponse("", &RPCError{
-				Code:    errCodeRequirePost,
-				Message: errMsgRequirePost,
+				Code:    errCodeInvalidRequest,
+				Message: errMsgNotPost,
 			})
 			break
 		}
@@ -85,6 +85,14 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 			res = makeErrorResponse("", &RPCError{
 				Code:    errCodeParseError,
 				Message: errMsgParseError,
+			})
+			break
+		}
+
+		if req.Jsonrpc != jsonRPC {
+			res = makeErrorResponse("", &RPCError{
+				Code:    errCodeInvalidParams,
+				Message: errMsgInvalidJsonrpc,
 			})
 			break
 		}

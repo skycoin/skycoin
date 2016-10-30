@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/skycoin/skycoin/src/coin"
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
@@ -19,7 +20,12 @@ func makeJob(req Request) job {
 	}
 }
 
-type jobHandler func(req Request) Response
+// Gatewayer provides interfaces for getting skycoin related info.
+type Gatewayer interface {
+	GetLastBlocks(num uint64) ([]coin.Block, error)
+}
+
+type jobHandler func(req Request, gateway Gatewayer) Response
 
 type rpcHandler struct {
 	workerNum int
@@ -27,16 +33,18 @@ type rpcHandler struct {
 	close     chan struct{}
 	mux       *http.ServeMux
 	handlers  map[string]jobHandler
+	gateway   Gatewayer
 }
 
 // create rpc handler instance.
-func newRPCHandler(queueSize int, workerNum int, close chan struct{}) *rpcHandler {
+func newRPCHandler(queueSize int, workerNum int, gateway Gatewayer, close chan struct{}) *rpcHandler {
 	rpc := &rpcHandler{
 		workerNum: workerNum,
 		reqChan:   make(chan job, queueSize),
 		close:     close,
 		mux:       http.NewServeMux(),
 		handlers:  make(map[string]jobHandler),
+		gateway:   gateway,
 	}
 
 	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
@@ -65,7 +73,7 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 	for {
 		// only support post.
 		if r.Method != "POST" {
-			res = makeErrorResponse("", RPCError{
+			res = makeErrorResponse("", &RPCError{
 				Code:    errCodeRequirePost,
 				Message: errMsgRequirePost,
 			})
@@ -74,7 +82,7 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 
 		// deocder request.
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			res = makeErrorResponse("", RPCError{
+			res = makeErrorResponse("", &RPCError{
 				Code:    errCodeParseError,
 				Message: errMsgParseError,
 			})
@@ -112,14 +120,14 @@ func (rh *rpcHandler) dispatch() {
 				case jb := <-rh.reqChan:
 					logger.Debugf("[%d] got job", seq)
 					if handler, ok = rh.handlers[jb.Req.Method]; ok {
-						jb.ResC <- handler(jb.Req)
+						jb.ResC <- handler(jb.Req, rh.gateway)
 						logger.Debugf("[%d] job done", seq)
 						continue
 					}
 
 					res.ID = jb.Req.ID
 					res.Jsonrpc = jsonRPC
-					res.Error = RPCError{
+					res.Error = &RPCError{
 						Code:    errCodeMethodNotFound,
 						Message: errMsgMethodNotFound,
 					}

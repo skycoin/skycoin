@@ -1,5 +1,5 @@
 package webrpc
 
-func getStatus(req Request) Response {
+func getStatus(req Request, _ Gatewayer) Response {
 	return makeSuccessResponse(req.ID, "running")
 }

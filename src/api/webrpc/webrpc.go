@@ -45,10 +45,20 @@ type RPCError struct {
 
 // Response rpc response struct
 type Response struct {
-	Jsonrpc string   `json:"jsonrpc"`
-	Result  string   `json:"result,omitempty"`
-	Error   RPCError `json:"error,omitempty"`
-	ID      string   `json:"id"`
+	Jsonrpc string    `json:"jsonrpc"`
+	Result  string    `json:"result,omitempty"`
+	Error   *RPCError `json:"error,omitempty"`
+	ID      string    `json:"id"`
+}
+
+// NewRequest create new webrpc request.
+func NewRequest(method string, params map[string]string, id string) *Request {
+	return &Request{
+		Jsonrpc: jsonRPC,
+		Method:  method,
+		Params:  params,
+		ID:      id,
+	}
 }
 
 func makeSuccessResponse(id, result string) Response {
@@ -59,7 +69,7 @@ func makeSuccessResponse(id, result string) Response {
 	}
 }
 
-func makeErrorResponse(id string, err RPCError) Response {
+func makeErrorResponse(id string, err *RPCError) Response {
 	return Response{
 		ID:      id,
 		Error:   err,
@@ -68,8 +78,8 @@ func makeErrorResponse(id string, err RPCError) Response {
 }
 
 // Start start the webrpc service.
-func Start(addr string, queueSize int, workerNum int, c chan struct{}) {
-	rpc := makeRPC(queueSize, workerNum, c)
+func Start(addr string, queueSize int, workerNum int, gateway Gatewayer, c chan struct{}) {
+	rpc := makeRPC(queueSize, workerNum, gateway, c)
 	for {
 		select {
 		case <-c:
@@ -82,8 +92,8 @@ func Start(addr string, queueSize int, workerNum int, c chan struct{}) {
 	}
 }
 
-func makeRPC(queueSize int, workerNum int, c chan struct{}) *rpcHandler {
-	rpc := newRPCHandler(queueSize, workerNum, c)
+func makeRPC(queueSize int, workerNum int, gateway Gatewayer, c chan struct{}) *rpcHandler {
+	rpc := newRPCHandler(queueSize, workerNum, gateway, c)
 	rpc.HandlerFunc("get_status", getStatus)
 	return rpc
 }

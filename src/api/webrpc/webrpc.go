@@ -12,14 +12,16 @@ var (
 	errCodeMethodNotFound = -32601 // Method not found	The method does not exist / is not available.
 	errCodeInvalidParams  = -32602 // Invalid params	Invalid method parameter(s).
 	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
-	errCodeRequirePost    = -31000 // Need post
 
 	errMsgParseError     = "Parse error"
 	errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
 	errMsgInternalErr    = "Internal error"
-	errMsgRequirePost    = "Need http post"
+
+	errMsgNotPost = "only support http POST"
+
+	errMsgInvalidJsonrpc = "invalid jsonrpc"
 
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
 
@@ -46,8 +48,8 @@ type RPCError struct {
 // Response rpc response struct
 type Response struct {
 	Jsonrpc string    `json:"jsonrpc"`
-	Result  string    `json:"result,omitempty"`
 	Error   *RPCError `json:"error,omitempty"`
+	Result  string    `json:"result,omitempty"`
 	ID      string    `json:"id"`
 }
 
@@ -94,6 +96,9 @@ func Start(addr string, queueSize int, workerNum int, gateway Gatewayer, c chan 
 
 func makeRPC(queueSize int, workerNum int, gateway Gatewayer, c chan struct{}) *rpcHandler {
 	rpc := newRPCHandler(queueSize, workerNum, gateway, c)
+
+	// register handlers
 	rpc.HandlerFunc("get_status", getStatus)
+	rpc.HandlerFunc("get_lastblocks", getLastBlocks)
 	return rpc
 }

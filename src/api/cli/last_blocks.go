@@ -1,12 +1,13 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strconv"
 
+	"encoding/json"
+	"strings"
+
+	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/visor"
 	gcli "github.com/urfave/cli"
 )
 
@@ -27,20 +28,30 @@ func getLastBlocks(c *gcli.Context) error {
 		num = "1"
 	}
 
-	n, err := strconv.Atoi(num)
-	if err != nil {
-		return errors.New("error block number")
+	params := map[string]string{
+		"num": num,
 	}
-	url := fmt.Sprintf("http://%s/last_blocks?num=%d", rpcAddress, n)
-	rsp, err := http.Get(url)
+
+	req := webrpc.NewRequest("get_lastblocks", params, "1")
+	rsp, err := webrpc.Do(req, rpcAddress)
 	if err != nil {
-		return errConnectNodeFailed
+		return err
 	}
-	defer rsp.Body.Close()
-	d, err := ioutil.ReadAll(rsp.Body)
+
+	if rsp.Error != nil {
+		return fmt.Errorf("rpc error code:%v, message:%v", rsp.Error.Code, rsp.Error.Message)
+	}
+
+	var blocks visor.ReadableBlocks
+	if err := json.NewDecoder(strings.NewReader(rsp.Result)).Decode(&blocks); err != nil {
+		return errJSONMarshal
+	}
+
+	d, err := json.MarshalIndent(blocks, "", "    ")
 	if err != nil {
-		return errReadResponse
+		return errJSONMarshal
 	}
+
 	fmt.Println(string(d))
 	return nil
 }

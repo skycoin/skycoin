@@ -88,7 +88,6 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-//
 func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -112,7 +111,7 @@ func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// get last 10 blocks
+// get last N blocks
 func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -132,17 +131,6 @@ func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		headSeq := gateway.V.HeadBkSeq()
-		var start uint64
-		if (headSeq + 1) > n {
-			start = headSeq - n + 1
-		}
-
-		blocks := gateway.V.GetBlocks(start, headSeq)
-		bks := make([]visor.ReadableBlock, len(blocks))
-		for i, b := range blocks {
-			bks[i] = visor.NewReadableBlock(&b)
-		}
-		wh.SendOr404(w, &bks)
+		wh.SendOr404(w, gateway.GetLastBlocks(n))
 	}
 }

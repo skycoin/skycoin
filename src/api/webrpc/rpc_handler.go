@@ -23,6 +23,7 @@ func makeJob(req Request) job {
 // Gatewayer provides interfaces for getting skycoin related info.
 type Gatewayer interface {
 	GetLastBlocks(num uint64) *visor.ReadableBlocks
+	GetBlocks(start, end uint64) *visor.ReadableBlocks
 }
 
 type jobHandler func(req Request, gateway Gatewayer) Response
@@ -64,7 +65,6 @@ func (rh *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
-
 	var (
 		req Request
 		res Response

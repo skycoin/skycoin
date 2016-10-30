@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"encoding/json"
 
@@ -33,7 +34,7 @@ func init() {
 				return fmt.Errorf("webrpc request failed, code:%d, message:%s", rsp.Error.Code, rsp.Error.Message)
 			}
 
-			if rsp.Result == "running" {
+			if strings.Contains(rsp.Result, "true") {
 				status.Running = true
 			}
 

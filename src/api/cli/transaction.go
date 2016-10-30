@@ -34,7 +34,7 @@ func init() {
 				return errors.New("error txid")
 			}
 
-			url := fmt.Sprintf("http://%v/transaction?txid=%v", nodeAddress, txid)
+			url := fmt.Sprintf("http://%v/transaction?txid=%v", rpcAddress, txid)
 			rsp, err := http.Get(url)
 			if err != nil {
 				return errConnectNodeFailed

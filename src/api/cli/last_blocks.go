@@ -31,7 +31,7 @@ func getLastBlocks(c *gcli.Context) error {
 	if err != nil {
 		return errors.New("error block number")
 	}
-	url := fmt.Sprintf("http://%s/last_blocks?num=%d", nodeAddress, n)
+	url := fmt.Sprintf("http://%s/last_blocks?num=%d", rpcAddress, n)
 	rsp, err := http.Get(url)
 	if err != nil {
 		return errConnectNodeFailed

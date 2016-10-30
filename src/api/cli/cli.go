@@ -16,7 +16,7 @@ import (
 // Commands all cmds that we support
 var Commands []gcli.Command
 var (
-	nodeAddress       = os.Getenv("SKYCOIN_NODE_ADDR")
+	rpcAddress        = os.Getenv("SKYCOIN_RPC_ADDR")
 	walletDir         = os.Getenv("SKYCOIN_WLT_DIR")
 	walletExt         = ".wlt"
 	defaultWalletName = "skycoin_cli.wlt"
@@ -40,8 +40,8 @@ func httpGet(url string, v interface{}) error {
 }
 
 func init() {
-	if nodeAddress == "" {
-		nodeAddress = "127.0.0.1:6420"
+	if rpcAddress == "" {
+		rpcAddress = "127.0.0.1:6422"
 	}
 
 	if walletDir == "" {
@@ -51,7 +51,7 @@ func init() {
 }
 
 func getUnspent(addrs []string) ([]unspentOut, error) {
-	url := fmt.Sprintf("http://%v/outputs?addrs=%s", nodeAddress, strings.Join(addrs, ","))
+	url := fmt.Sprintf("http://%v/outputs?addrs=%s", rpcAddress, strings.Join(addrs, ","))
 	rsp, err := http.Get(url)
 	if err != nil {
 		return []unspentOut{}, errConnectNodeFailed

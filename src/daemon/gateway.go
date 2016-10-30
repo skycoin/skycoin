@@ -120,16 +120,17 @@ func (gw *Gateway) GetBlockchainMetadata() interface{} {
 	return <-rsp
 }
 
-// Returns a *visor.ReadableBlocks
-func (gw *Gateway) GetBlocks(start, end uint64) interface{} {
+// GetBlocks returns a *visor.ReadableBlocks
+func (gw *Gateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
 	rsp := gw.doRequest(func() interface{} {
 		return gw.Visor.GetBlocks(gw.V, start, end)
 	})
-	return <-rsp
+	v := <-rsp
+	return v.(*visor.ReadableBlocks)
 }
 
 // GetLastBlocks get last N blocks
-func (gw *Gateway) GetLastBlocks(num uint64) interface{} {
+func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 	rsp := gw.doRequest(func() interface{} {
 		headSeq := gw.V.HeadBkSeq()
 		var start uint64
@@ -137,10 +138,11 @@ func (gw *Gateway) GetLastBlocks(num uint64) interface{} {
 			start = headSeq - num + 1
 		}
 
-		blocks := gw.V.GetBlocks(start, headSeq)
+		blocks := gw.Visor.GetBlocks(gw.V, start, headSeq)
 		return blocks
 	})
-	return <-rsp
+	v := <-rsp
+	return v.(*visor.ReadableBlocks)
 }
 
 // Returns a *visor.TransactionResult

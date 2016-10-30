@@ -58,9 +58,9 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	}
 }
 
-func (self *Gateway) doRequest(f func() interface{}) chan interface{} {
+func (gw *Gateway) doRequest(f func() interface{}) chan interface{} {
 	req := makeRequest(f)
-	self.Requests <- req
+	gw.Requests <- req
 	return req.Response
 }
 
@@ -69,25 +69,25 @@ func (self *Gateway) doRequest(f func() interface{}) chan interface{} {
 /* Daemon internal status */
 
 // Returns a *Connections
-func (self *Gateway) GetConnections() interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Daemon.GetConnections(self.D)
+func (gw *Gateway) GetConnections() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetConnections(gw.D)
 	})
 
 	return <-rsp
 }
 
-func (self *Gateway) GetDefaultConnections() interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Daemon.GetDefaultConnections(self.D)
+func (gw *Gateway) GetDefaultConnections() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetDefaultConnections(gw.D)
 	})
 	return <-rsp
 }
 
 // Returns a *Connection
-func (self *Gateway) GetConnection(addr string) interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Daemon.GetConnection(self.D, addr)
+func (gw *Gateway) GetConnection(addr string) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetConnection(gw.D, addr)
 	})
 	return <-rsp
 }
@@ -96,65 +96,65 @@ func (self *Gateway) GetConnection(addr string) interface{} {
 //DEPRECATE
 
 // Returns a *BlockchainProgress
-func (self *Gateway) GetBlockchainProgress() interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Daemon.GetBlockchainProgress(self.D.Visor)
+func (gw *Gateway) GetBlockchainProgress() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetBlockchainProgress(gw.D.Visor)
 	})
 	return <-rsp
 }
 
 // Returns a *ResendResult
-func (self *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Daemon.ResendTransaction(self.D.Visor, self.D.Pool, txn)
+func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.ResendTransaction(gw.D.Visor, gw.D.Pool, txn)
 	})
 
 	return <-rsp
 }
 
 // Returns a *visor.BlockchainMetadata
-func (self *Gateway) GetBlockchainMetadata() interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Visor.GetBlockchainMetadata(self.V)
+func (gw *Gateway) GetBlockchainMetadata() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetBlockchainMetadata(gw.V)
 	})
 	return <-rsp
 }
 
 // Returns a *visor.ReadableBlocks
-func (self *Gateway) GetBlocks(start, end uint64) interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Visor.GetBlocks(self.V, start, end)
+func (gw *Gateway) GetBlocks(start, end uint64) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetBlocks(gw.V, start, end)
 	})
 	return <-rsp
 }
 
 // GetLastBlocks get last N blocks
-func (self *Gateway) GetLastBlocks(num uint64) interface{} {
-	rsp := self.doRequest(func() interface{} {
-		headSeq := self.V.HeadBkSeq()
+func (gw *Gateway) GetLastBlocks(num uint64) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		headSeq := gw.V.HeadBkSeq()
 		var start uint64
 		if (headSeq + 1) > num {
 			start = headSeq - num + 1
 		}
 
-		blocks := self.V.GetBlocks(start, headSeq)
+		blocks := gw.V.GetBlocks(start, headSeq)
 		return blocks
 	})
 	return <-rsp
 }
 
 // Returns a *visor.TransactionResult
-func (self *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Visor.GetTransaction(self.V, txn)
+func (gw *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetTransaction(gw.V, txn)
 	})
 	return <-rsp
 }
 
 // Returns a *visor.TransactionResults
-func (self *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
-	rsp := self.doRequest(func() interface{} {
-		return self.Visor.GetAddressTransactions(self.V, a)
+func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetAddressTransactions(gw.V, a)
 	})
 	return <-rsp
 }

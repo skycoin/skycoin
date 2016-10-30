@@ -9,27 +9,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitPool(t *testing.T) {
-	d := newDefaultDaemon()
-	pool := NewPool(NewPoolConfig())
-	assert.Nil(t, pool.Pool)
-	assert.NotPanics(t, func() { pool.Init(d) })
-	assert.Equal(t, pool.Pool.Config.DialTimeout, pool.Config.DialTimeout)
-	assert.NotNil(t, pool.Pool.Config.DisconnectCallback)
-	assert.NotNil(t, pool.Pool.Config.ConnectCallback)
-	wait()
-	go func() {
-		assert.NotPanics(t, pool.Start)
-	}()
-	wait()
-	// A second call to start listen will panic due to the pool already
-	// listening
-	assert.Panics(t, pool.Start)
-	pool.Pool.StopListen()
-	wait()
-	pool.Shutdown()
-	shutdown(d)
-}
+// func TestInitPool(t *testing.T) {
+// 	d := newDefaultDaemon()
+// 	pool := NewPool(NewPoolConfig())
+// 	assert.Nil(t, pool.Pool)
+// 	assert.NotPanics(t, func() { pool.Init(d) })
+// 	assert.Equal(t, pool.Pool.Config.DialTimeout, pool.Config.DialTimeout)
+// 	assert.NotNil(t, pool.Pool.Config.DisconnectCallback)
+// 	assert.NotNil(t, pool.Pool.Config.ConnectCallback)
+// 	wait()
+// 	go func() {
+// 		assert.NotPanics(t, pool.Start)
+// 	}()
+// 	wait()
+// 	// A second call to start listen will panic due to the pool already
+// 	// listening
+// 	assert.Panics(t, pool.Start)
+// 	pool.Pool.StopListen()
+// 	wait()
+// 	pool.Shutdown()
+// 	shutdown(d)
+// }
 
 func TestShutdownPool(t *testing.T) {
 	// Shutting down should flush the DisconnectQueue, among other things

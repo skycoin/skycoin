@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nictuku/dht"
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 
@@ -54,7 +53,7 @@ func newDefaultDaemon() *Daemon {
 	//c.Visor.Config.MasterKeys = we
 	//c.Visor.Config.GenesisSignature = createGenesisSignature(we)
 	c.Visor.Disabled = true
-	c.DHT.Disabled = true
+	// c.DHT.Disabled = true
 	return NewDaemon(c)
 }
 
@@ -62,7 +61,7 @@ func newDHTDaemon() *Daemon {
 	cleanupPeers()
 	c := NewConfig()
 	c.Visor.Disabled = true
-	c.DHT.Disabled = false
+	// c.DHT.Disabled = false
 	return NewDaemon(c)
 }
 
@@ -99,7 +98,7 @@ func TestConfigPreprocess(t *testing.T) {
 	d := c.preprocess()
 	assert.Equal(t, d.Pool.port, p)
 	assert.Equal(t, d.Pool.address, a)
-	assert.Equal(t, d.DHT.port, p)
+	// assert.Equal(t, d.DHT.port, p)
 
 	// Test localhost only with localhost addr
 	c = NewConfig()
@@ -107,7 +106,7 @@ func TestConfigPreprocess(t *testing.T) {
 	c.Daemon.Address = a
 	assert.NotPanics(t, func() { c.preprocess() })
 	d = c.preprocess()
-	assert.True(t, d.DHT.Disabled)
+	// assert.True(t, d.DHT.Disabled)
 	assert.Equal(t, d.Pool.address, a)
 	assert.True(t, d.Peers.AllowLocalhost)
 
@@ -134,7 +133,7 @@ func TestConfigPreprocess(t *testing.T) {
 	assert.True(t, d.Daemon.DisableNetworking)
 	assert.True(t, d.Daemon.DisableOutgoingConnections)
 	assert.True(t, d.Daemon.DisableIncomingConnections)
-	assert.True(t, d.DHT.Disabled)
+	// assert.True(t, d.DHT.Disabled)
 	assert.True(t, d.Peers.Disabled)
 
 	// Test coverage for logging statements
@@ -171,13 +170,13 @@ func TestStart(t *testing.T) {
 	defer closeDaemon(d, quit)
 	assert.NotNil(t, d)
 	assert.NotNil(t, d.Pool)
-	assert.NotNil(t, d.DHT)
+	// assert.NotNil(t, d.DHT)
 	go d.Start(quit)
 	wait()
 	assert.NotEqual(t, len(gnet.MessageIdMap), 0)
 	assert.NotNil(t, d.Pool)
 	assert.NotNil(t, d.Peers)
-	assert.NotNil(t, d.DHT)
+	// assert.NotNil(t, d.DHT)
 	assert.NotNil(t, d.Messages)
 	assert.NotNil(t, d.Gateway)
 }
@@ -193,7 +192,7 @@ func TestShutdown(t *testing.T) {
 	assert.NotPanics(t, func() { d.Shutdown() })
 	confirmPeersShutdown(t)
 	assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 0)
-	assert.Nil(t, d.DHT.DHT)
+	// assert.Nil(t, d.DHT.DHT)
 	cleanupPeers()
 }
 
@@ -217,9 +216,9 @@ func TestDaemonLoopDisabledPanics(t *testing.T) {
 	go panics()
 	<-done
 
-	d.DHT.DHT.PeersRequestResults <- make(map[dht.InfoHash][]string)
-	go panics()
-	<-done
+	// d.DHT.DHT.PeersRequestResults <- make(map[dht.InfoHash][]string)
+	// go panics()
+	// <-done
 
 	d.Pool.Pool.DisconnectQueue <- gnet.DisconnectEvent{}
 	go panics()
@@ -254,8 +253,8 @@ func TestDaemonLoopApiRequest(t *testing.T) {
 	d, quit := setupDaemonLoop()
 	defer closeDaemon(d, quit)
 	go d.Start(quit)
-	d.Gateway.Requests <- func() interface{} { return &Connection{Id: 7} }
-	resp := <-d.Gateway.Responses
+	rsp := d.Gateway.doRequest(func() interface{} { return &Connection{Id: 7} })
+	resp := <-rsp
 	assert.Equal(t, resp.(*Connection).Id, 7)
 }
 
@@ -335,40 +334,40 @@ func TestDaemonLoopMessageEvent(t *testing.T) {
 	assert.True(t, called)
 }
 
-func TestDaemonLoopDHTResults(t *testing.T) {
-	d, quit := setupDaemonLoopDHT()
-	defer closeDaemon(d, quit)
-	assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
-	go d.Start(quit)
-	m := make(map[dht.InfoHash][]string, 1)
-	m[d.DHT.InfoHash] = []string{"abcdef"}
-	d.DHT.DHT.PeersRequestResults <- m
-	wait()
-	assert.Equal(t, len(d.Peers.Peers.Peerlist), 1)
-	assert.NotNil(t, d.Peers.Peers.Peerlist["97.98.99.100:25958"])
-}
+// func TestDaemonLoopDHTResults(t *testing.T) {
+// 	d, quit := setupDaemonLoopDHT()
+// 	defer closeDaemon(d, quit)
+// 	assert.Equal(t, len(d.Peers.Peers.Peerlist), 0)
+// 	go d.Start(quit)
+// 	m := make(map[dht.InfoHash][]string, 1)
+// 	m[d.DHT.InfoHash] = []string{"abcdef"}
+// 	d.DHT.DHT.PeersRequestResults <- m
+// 	wait()
+// 	assert.Equal(t, len(d.Peers.Peers.Peerlist), 1)
+// 	assert.NotNil(t, d.Peers.Peers.Peerlist["97.98.99.100:25958"])
+// }
 
-func testDaemonLoopDHTBootstrapTicker(t *testing.T, d *Daemon, quit chan int) {
-	d.DHT.Config.BootstrapRequestRate = time.Millisecond * 10
-	go d.Start(quit)
-	// Can't really test DHT internals, but we'll know if it crashes or not
-	time.Sleep(time.Millisecond * 15)
-	d.DHT.Config.PeerLimit = 0
-	time.Sleep(time.Millisecond * 15)
-}
+// func testDaemonLoopDHTBootstrapTicker(t *testing.T, d *Daemon, quit chan int) {
+// 	d.DHT.Config.BootstrapRequestRate = time.Millisecond * 10
+// 	go d.Start(quit)
+// 	// Can't really test DHT internals, but we'll know if it crashes or not
+// 	time.Sleep(time.Millisecond * 15)
+// 	d.DHT.Config.PeerLimit = 0
+// 	time.Sleep(time.Millisecond * 15)
+// }
 
-func TestDaemonLoopDHTBootstrapTicker(t *testing.T) {
-	d, quit := setupDaemonLoopDHT()
-	defer closeDaemon(d, quit)
-	testDaemonLoopDHTBootstrapTicker(t, d, quit)
-}
+// func TestDaemonLoopDHTBootstrapTicker(t *testing.T) {
+// 	d, quit := setupDaemonLoopDHT()
+// 	defer closeDaemon(d, quit)
+// 	testDaemonLoopDHTBootstrapTicker(t, d, quit)
+// }
 
-func TestDaemonLoopDHTBootstrapTickerDisabled(t *testing.T) {
-	d, quit := setupDaemonLoopDHT()
-	defer closeDaemon(d, quit)
-	d.DHT.Config.Disabled = true
-	testDaemonLoopDHTBootstrapTicker(t, d, quit)
-}
+// func TestDaemonLoopDHTBootstrapTickerDisabled(t *testing.T) {
+// 	d, quit := setupDaemonLoopDHT()
+// 	defer closeDaemon(d, quit)
+// 	d.DHT.Config.Disabled = true
+// 	testDaemonLoopDHTBootstrapTicker(t, d, quit)
+// }
 
 func testDaemonLoopBlacklistTicker(t *testing.T, d *Daemon, quit chan int,
 	count int) {

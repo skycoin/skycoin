@@ -18,6 +18,18 @@ func NewGatewayConfig() GatewayConfig {
 	}
 }
 
+type Request struct {
+	Handle   func() interface{}
+	Response chan interface{}
+}
+
+func makeRequest(f func() interface{}) Request {
+	return Request{
+		Handle:   f,
+		Response: make(chan interface{}),
+	}
+}
+
 // RPC interface wrapper for daemon state
 type Gateway struct {
 	Config GatewayConfig
@@ -29,21 +41,27 @@ type Gateway struct {
 	// Backref to Visor
 	V *visor.Visor
 	// Requests are queued on this channel
-	Requests chan func() interface{}
+	Requests chan Request
 	// When a request is done processing, it is placed on this channel
-	Responses chan interface{}
+	// Responses chan interface{}
 }
 
 func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
-		Config:    c,
-		Daemon:    RPC{},
-		Visor:     visor.RPC{},
-		D:         D,
-		V:         D.Visor.Visor,
-		Requests:  make(chan func() interface{}, c.BufferSize),
-		Responses: make(chan interface{}, c.BufferSize),
+		Config:   c,
+		Daemon:   RPC{},
+		Visor:    visor.RPC{},
+		D:        D,
+		V:        D.Visor.Visor,
+		Requests: make(chan Request, c.BufferSize),
+		// Responses: make(chan interface{}, c.BufferSize),
 	}
+}
+
+func (self *Gateway) doRequest(f func() interface{}) chan interface{} {
+	req := makeRequest(f)
+	self.Requests <- req
+	return req.Response
 }
 
 /* Daemon RPC wrappers */
@@ -52,28 +70,26 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 
 // Returns a *Connections
 func (self *Gateway) GetConnections() interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Daemon.GetConnections(self.D)
-	}
-	r := <-self.Responses
-	return r
+	})
+
+	return <-rsp
 }
 
 func (self *Gateway) GetDefaultConnections() interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Daemon.GetDefaultConnections(self.D)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
 }
 
 // Returns a *Connection
 func (self *Gateway) GetConnection(addr string) interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Daemon.GetConnection(self.D, addr)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
 }
 
 /* Blockchain & Transaction status */
@@ -81,63 +97,64 @@ func (self *Gateway) GetConnection(addr string) interface{} {
 
 // Returns a *BlockchainProgress
 func (self *Gateway) GetBlockchainProgress() interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Daemon.GetBlockchainProgress(self.D.Visor)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
 }
 
 // Returns a *ResendResult
 func (self *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Daemon.ResendTransaction(self.D.Visor, self.D.Pool, txn)
-	}
-	r := <-self.Responses
-	return r
+	})
+
+	return <-rsp
 }
 
 // Returns a *visor.BlockchainMetadata
 func (self *Gateway) GetBlockchainMetadata() interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Visor.GetBlockchainMetadata(self.V)
-	}
-	r := <-self.Responses
-	return r
-}
-
-// Returns a *visor.ReadableBlock
-func (self *Gateway) GetBlock(seq uint64) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetBlock(self.V, seq)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
 }
 
 // Returns a *visor.ReadableBlocks
 func (self *Gateway) GetBlocks(start, end uint64) interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Visor.GetBlocks(self.V, start, end)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
+}
+
+// GetLastBlocks get last N blocks
+func (self *Gateway) GetLastBlocks(num uint64) interface{} {
+	rsp := self.doRequest(func() interface{} {
+		headSeq := self.V.HeadBkSeq()
+		var start uint64
+		if (headSeq + 1) > num {
+			start = headSeq - num + 1
+		}
+
+		blocks := self.V.GetBlocks(start, headSeq)
+		return blocks
+	})
+	return <-rsp
 }
 
 // Returns a *visor.TransactionResult
 func (self *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Visor.GetTransaction(self.V, txn)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
 }
 
 // Returns a *visor.TransactionResults
 func (self *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
-	self.Requests <- func() interface{} {
+	rsp := self.doRequest(func() interface{} {
 		return self.Visor.GetAddressTransactions(self.V, a)
-	}
-	r := <-self.Responses
-	return r
+	})
+	return <-rsp
 }

@@ -44,7 +44,7 @@ func getLastBlocks(c *gcli.Context) error {
 
 	var blocks visor.ReadableBlocks
 	if err := json.NewDecoder(strings.NewReader(rsp.Result)).Decode(&blocks); err != nil {
-		return errJSONMarshal
+		return errJSONUnmarshal
 	}
 
 	d, err := json.MarshalIndent(blocks, "", "    ")

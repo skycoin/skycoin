@@ -98,7 +98,8 @@ func makeRPC(queueSize int, workerNum int, gateway Gatewayer, c chan struct{}) *
 	rpc := newRPCHandler(queueSize, workerNum, gateway, c)
 
 	// register handlers
-	rpc.HandlerFunc("get_status", getStatus)
-	rpc.HandlerFunc("get_lastblocks", getLastBlocks)
+	rpc.HandlerFunc("get_status", getStatusHandler)
+	rpc.HandlerFunc("get_lastblocks", getLastBlocksHandler)
+	rpc.HandlerFunc("get_blocks", getBlocksHandler)
 	return rpc
 }

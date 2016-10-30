@@ -470,10 +470,6 @@ func Run(c *Config) {
 	blockdb.Start()
 	defer blockdb.Stop()
 
-	// start the webrpc
-	closingC := make(chan struct{})
-	go webrpc.Start("0.0.0.0:6422", 1000, 1000, closingC)
-
 	// start the transaction db.
 	// transactiondb.Start()
 	// defer transactiondb.Stop()
@@ -491,6 +487,10 @@ func Run(c *Config) {
 
 	stopDaemon := make(chan int)
 	go d.Start(stopDaemon)
+
+	// start the webrpc
+	closingC := make(chan struct{})
+	go webrpc.Start("0.0.0.0:6422", 1000, 1000, d.Gateway, closingC)
 
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {

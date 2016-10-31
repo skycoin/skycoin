@@ -55,7 +55,6 @@ func Test_rpcHandler_Handler(t *testing.T) {
 			},
 			Response{
 				Jsonrpc: jsonRPC,
-				ID:      "",
 				Error: &RPCError{
 					Code:    errCodeInvalidRequest,
 					Message: errMsgNotPost,
@@ -72,7 +71,7 @@ func Test_rpcHandler_Handler(t *testing.T) {
 					Method:  "get_status",
 				},
 			},
-			makeErrorResponse("", &RPCError{
+			makeErrorResponse(nil, &RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidJsonrpc,
 			}),

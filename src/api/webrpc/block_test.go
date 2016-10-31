@@ -94,7 +94,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse("1", unIndent(blockString).String()),
+			makeSuccessResponse(ptrString("1"), ptrString(unIndent(blockString).String())),
 		},
 		{
 			"invalid params",
@@ -107,7 +107,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse("", &RPCError{
+			makeErrorResponse(nil, &RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidParams,
 			}),
@@ -146,7 +146,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse("1", unIndent(blockString).String()),
+			makeSuccessResponse(ptrString("1"), ptrString(unIndent(blockString).String())),
 		},
 		{
 			"invalid params:lost start",
@@ -161,7 +161,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse("", &RPCError{
+			makeErrorResponse(nil, &RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidParams,
 			}),
@@ -176,7 +176,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse("", &RPCError{
+			makeErrorResponse(nil, &RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidParams,
 			}),
@@ -195,7 +195,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse("1", `{"blocks":null}`),
+			makeSuccessResponse(ptrString("1"), ptrString(`{"blocks":null}`)),
 		},
 	}
 	for _, tt := range tests {

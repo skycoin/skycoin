@@ -27,9 +27,9 @@ func Test_getStatusHandler(t *testing.T) {
 				in1: &fakeGateway{},
 			},
 			Response{
-				ID:      "1",
+				ID:      ptrString("1"),
 				Jsonrpc: jsonRPC,
-				Result:  `{"running": true}`,
+				Result:  ptrString(`{"running": true}`),
 			},
 		},
 	}

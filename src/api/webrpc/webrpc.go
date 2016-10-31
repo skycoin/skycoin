@@ -49,8 +49,12 @@ type RPCError struct {
 type Response struct {
 	Jsonrpc string    `json:"jsonrpc"`
 	Error   *RPCError `json:"error,omitempty"`
-	Result  string    `json:"result,omitempty"`
-	ID      string    `json:"id"`
+	Result  *string   `json:"result,omitempty"`
+	ID      *string   `json:"id"`
+}
+
+func ptrString(str string) *string {
+	return &str
 }
 
 // NewRequest create new webrpc request.
@@ -63,7 +67,7 @@ func NewRequest(method string, params map[string]string, id string) *Request {
 	}
 }
 
-func makeSuccessResponse(id, result string) Response {
+func makeSuccessResponse(id, result *string) Response {
 	return Response{
 		ID:      id,
 		Result:  result,
@@ -71,7 +75,7 @@ func makeSuccessResponse(id, result string) Response {
 	}
 }
 
-func makeErrorResponse(id string, err *RPCError) Response {
+func makeErrorResponse(id *string, err *RPCError) Response {
 	return Response{
 		ID:      id,
 		Error:   err,

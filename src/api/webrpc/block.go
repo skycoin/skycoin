@@ -22,7 +22,7 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 		logger.Errorf("%v", err)
 		return makeErrorResponse("", &RPCError{
 			Code:    errCodeInternalError,
-			Message: errMsgInternalErr,
+			Message: errMsgInternalError,
 		})
 	}
 
@@ -32,6 +32,13 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 func getBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the params
 	start, end := req.Params["start"], req.Params["end"]
+	if start == "" {
+		return makeErrorResponse("", &RPCError{
+			Code:    errCodeInvalidParams,
+			Message: errMsgInvalidParams,
+		})
+	}
+
 	s, err := strconv.ParseUint(start, 10, 64)
 	if err != nil {
 		return makeErrorResponse("", &RPCError{
@@ -54,9 +61,8 @@ func getBlocksHandler(req Request, gateway Gatewayer) Response {
 		logger.Errorf("%v", err)
 		return makeErrorResponse("", &RPCError{
 			Code:    errCodeInternalError,
-			Message: errMsgInternalErr,
+			Message: errMsgInternalError,
 		})
 	}
-
 	return makeSuccessResponse(req.ID, string(d))
 }

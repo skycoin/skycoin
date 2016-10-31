@@ -29,7 +29,7 @@ type Gatewayer interface {
 type jobHandler func(req Request, gateway Gatewayer) Response
 
 type rpcHandler struct {
-	workerNum int
+	workerNum uint
 	reqChan   chan job // request channel
 	close     chan struct{}
 	mux       *http.ServeMux
@@ -38,7 +38,11 @@ type rpcHandler struct {
 }
 
 // create rpc handler instance.
-func newRPCHandler(queueSize int, workerNum int, gateway Gatewayer, close chan struct{}) *rpcHandler {
+func newRPCHandler(queueSize uint, workerNum uint, gateway Gatewayer, close chan struct{}) *rpcHandler {
+	if workerNum == 0 {
+		panic("worker num must > 0")
+	}
+
 	rpc := &rpcHandler{
 		workerNum: workerNum,
 		reqChan:   make(chan job, queueSize),
@@ -55,7 +59,7 @@ func newRPCHandler(queueSize int, workerNum int, gateway Gatewayer, close chan s
 
 func (rh *rpcHandler) HandlerFunc(method string, jh jobHandler) {
 	if _, ok := rh.handlers[method]; ok {
-		logger.Fatalf("%s method already exist", method)
+		logger.Panicf("%s method already exist", method)
 	}
 	rh.handlers[method] = jh
 }
@@ -112,12 +116,11 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 // dispatch will create numbers of goroutines, each routine will
 //
 func (rh *rpcHandler) dispatch() {
-	for i := 0; i < rh.workerNum; i++ {
-		go func(seq int) {
+	for i := uint(0); i < rh.workerNum; i++ {
+		go func(seq uint) {
 			var (
 				handler jobHandler
 				ok      bool
-				res     Response
 			)
 
 			for {
@@ -133,13 +136,10 @@ func (rh *rpcHandler) dispatch() {
 						continue
 					}
 
-					res.ID = jb.Req.ID
-					res.Jsonrpc = jsonRPC
-					res.Error = &RPCError{
+					jb.ResC <- makeErrorResponse("", &RPCError{
 						Code:    errCodeMethodNotFound,
 						Message: errMsgMethodNotFound,
-					}
-					jb.ResC <- res
+					})
 					logger.Debugf("[%d] job done", seq)
 				}
 			}

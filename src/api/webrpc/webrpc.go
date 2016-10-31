@@ -17,7 +17,7 @@ var (
 	errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
-	errMsgInternalErr    = "Internal error"
+	errMsgInternalError  = "Internal error"
 
 	errMsgNotPost = "only support http POST"
 
@@ -80,7 +80,7 @@ func makeErrorResponse(id string, err *RPCError) Response {
 }
 
 // Start start the webrpc service.
-func Start(addr string, queueSize int, workerNum int, gateway Gatewayer, c chan struct{}) {
+func Start(addr string, queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) {
 	rpc := makeRPC(queueSize, workerNum, gateway, c)
 	for {
 		select {
@@ -94,7 +94,7 @@ func Start(addr string, queueSize int, workerNum int, gateway Gatewayer, c chan 
 	}
 }
 
-func makeRPC(queueSize int, workerNum int, gateway Gatewayer, c chan struct{}) *rpcHandler {
+func makeRPC(queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) *rpcHandler {
 	rpc := newRPCHandler(queueSize, workerNum, gateway, c)
 
 	// register handlers

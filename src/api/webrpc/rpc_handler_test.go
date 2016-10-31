@@ -71,7 +71,7 @@ func Test_rpcHandler_Handler(t *testing.T) {
 					Method:  "get_status",
 				},
 			},
-			makeErrorResponse(nil, &RPCError{
+			makeErrorResponse(&RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidJsonrpc,
 			}),

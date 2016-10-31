@@ -77,7 +77,7 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 	for {
 		// only support post.
 		if r.Method != "POST" {
-			res = makeErrorResponse(nil, &RPCError{
+			res = makeErrorResponse(&RPCError{
 				Code:    errCodeInvalidRequest,
 				Message: errMsgNotPost,
 			})
@@ -86,7 +86,7 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 
 		// deocder request.
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			res = makeErrorResponse(nil, &RPCError{
+			res = makeErrorResponse(&RPCError{
 				Code:    errCodeParseError,
 				Message: errMsgParseError,
 			})
@@ -94,7 +94,7 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if req.Jsonrpc != jsonRPC {
-			res = makeErrorResponse(nil, &RPCError{
+			res = makeErrorResponse(&RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidJsonrpc,
 			})
@@ -136,7 +136,7 @@ func (rh *rpcHandler) dispatch() {
 						continue
 					}
 
-					jb.ResC <- makeErrorResponse(nil, &RPCError{
+					jb.ResC <- makeErrorResponse(&RPCError{
 						Code:    errCodeMethodNotFound,
 						Message: errMsgMethodNotFound,
 					})

@@ -32,10 +32,10 @@ var logger = logging.MustGetLogger("skycoin.webrpc")
 
 // Request rpc request struct
 type Request struct {
+	ID      string            `json:"id"`
 	Jsonrpc string            `json:"jsonrpc"`
 	Method  string            `json:"method"`
 	Params  map[string]string `json:"params"`
-	ID      string            `json:"id"`
 }
 
 // RPCError response error
@@ -47,10 +47,10 @@ type RPCError struct {
 
 // Response rpc response struct
 type Response struct {
-	Jsonrpc string    `json:"jsonrpc"`
-	Error   *RPCError `json:"error,omitempty"`
-	Result  *string   `json:"result,omitempty"`
-	ID      *string   `json:"id"`
+	ID      *string     `json:"id"`
+	Jsonrpc string      `json:"jsonrpc"`
+	Error   *RPCError   `json:"error,omitempty"`
+	Result  interface{} `json:"result,omitempty"`
 }
 
 func ptrString(str string) *string {
@@ -67,7 +67,7 @@ func NewRequest(method string, params map[string]string, id string) *Request {
 	}
 }
 
-func makeSuccessResponse(id, result *string) Response {
+func makeSuccessResponse(id *string, result interface{}) Response {
 	return Response{
 		ID:      id,
 		Result:  result,
@@ -75,9 +75,8 @@ func makeSuccessResponse(id, result *string) Response {
 	}
 }
 
-func makeErrorResponse(id *string, err *RPCError) Response {
+func makeErrorResponse(err *RPCError) Response {
 	return Response{
-		ID:      id,
 		Error:   err,
 		Jsonrpc: jsonRPC,
 	}

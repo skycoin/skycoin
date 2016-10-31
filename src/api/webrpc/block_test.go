@@ -61,15 +61,12 @@ var blockString = `{
     ]
 }`
 
-type unIndent string
-
-func (ui unIndent) String() string {
+func decodeBlock(str string) *visor.ReadableBlocks {
 	var blocks visor.ReadableBlocks
-	if err := json.Unmarshal([]byte(ui), &blocks); err != nil {
+	if err := json.Unmarshal([]byte(str), &blocks); err != nil {
 		panic(err)
 	}
-	d, _ := json.Marshal(blocks)
-	return string(d)
+	return &blocks
 }
 
 func Test_getLastBlocksHandler(t *testing.T) {
@@ -94,7 +91,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse(ptrString("1"), ptrString(unIndent(blockString).String())),
+			makeSuccessResponse(ptrString("1"), decodeBlock(blockString)),
 		},
 		{
 			"invalid params",
@@ -107,7 +104,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(nil, &RPCError{
+			makeErrorResponse(&RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidParams,
 			}),
@@ -146,7 +143,22 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse(ptrString("1"), ptrString(unIndent(blockString).String())),
+			makeSuccessResponse(ptrString("1"), decodeBlock(blockString)),
+		},
+		{
+			"normal",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_blocks",
+					Params: map[string]string{
+						"start": "0",
+					},
+				},
+				gateway: &fakeGateway{},
+			},
+			makeSuccessResponse(ptrString("1"), decodeBlock(blockString)),
 		},
 		{
 			"invalid params:lost start",
@@ -161,7 +173,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(nil, &RPCError{
+			makeErrorResponse(&RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidParams,
 			}),
@@ -176,7 +188,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(nil, &RPCError{
+			makeErrorResponse(&RPCError{
 				Code:    errCodeInvalidParams,
 				Message: errMsgInvalidParams,
 			}),
@@ -195,7 +207,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse(ptrString("1"), ptrString(`{"blocks":null}`)),
+			makeSuccessResponse(ptrString("1"), &visor.ReadableBlocks{}),
 		},
 	}
 	for _, tt := range tests {

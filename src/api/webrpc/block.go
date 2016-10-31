@@ -1,47 +1,39 @@
 package webrpc
 
-import (
-	"encoding/json"
-	"strconv"
-)
+import "strconv"
 
 // get last blocks
 func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the req params
 	n, err := strconv.ParseUint(req.Params["num"], 10, 64)
 	if err != nil {
-		return makeErrorResponse(nil, &RPCError{
+		return makeErrorResponse(&RPCError{
 			Code:    errCodeInvalidParams,
 			Message: errMsgInvalidParams,
 		})
 	}
 
 	blocks := gateway.GetLastBlocks(n)
-	d, err := json.Marshal(blocks)
-	if err != nil {
-		logger.Errorf("%v", err)
-		return makeErrorResponse(nil, &RPCError{
-			Code:    errCodeInternalError,
-			Message: errMsgInternalError,
-		})
-	}
-
-	return makeSuccessResponse(ptrString(req.ID), ptrString(string(d)))
+	return makeSuccessResponse(ptrString(req.ID), blocks)
 }
 
 func getBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the params
 	start, end := req.Params["start"], req.Params["end"]
 	if start == "" {
-		return makeErrorResponse(nil, &RPCError{
+		return makeErrorResponse(&RPCError{
 			Code:    errCodeInvalidParams,
 			Message: errMsgInvalidParams,
 		})
 	}
 
+	if end == "" {
+		end = start
+	}
+
 	s, err := strconv.ParseUint(start, 10, 64)
 	if err != nil {
-		return makeErrorResponse(nil, &RPCError{
+		return makeErrorResponse(&RPCError{
 			Code:    errCodeInvalidParams,
 			Message: errMsgInvalidParams,
 		})
@@ -49,20 +41,12 @@ func getBlocksHandler(req Request, gateway Gatewayer) Response {
 
 	e, err := strconv.ParseUint(end, 10, 64)
 	if err != nil {
-		return makeErrorResponse(nil, &RPCError{
+		return makeErrorResponse(&RPCError{
 			Code:    errCodeInvalidParams,
 			Message: errMsgInvalidParams,
 		})
 	}
 
 	blocks := gateway.GetBlocks(s, e)
-	d, err := json.Marshal(blocks)
-	if err != nil {
-		logger.Errorf("%v", err)
-		return makeErrorResponse(nil, &RPCError{
-			Code:    errCodeInternalError,
-			Message: errMsgInternalError,
-		})
-	}
-	return makeSuccessResponse(ptrString(req.ID), ptrString(string(d)))
+	return makeSuccessResponse(ptrString(req.ID), blocks)
 }

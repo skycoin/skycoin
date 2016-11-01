@@ -3,11 +3,20 @@ package webrpc
 import "strings"
 import "github.com/skycoin/skycoin/src/cipher"
 import "fmt"
+import "github.com/skycoin/skycoin/src/visor"
+
+type OutputsResult struct {
+	Outputs []visor.ReadableOutput `json:"outputs"`
+}
 
 func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	addrs := strings.Split(req.Params["addresses"], ",")
 	if len(addrs) == 0 {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+	}
+
+	for i, a := range addrs {
+		addrs[i] = strings.Trim(a, " ")
 	}
 
 	// validate those addresses
@@ -18,5 +27,5 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	}
 
 	outs := gateway.GetUnspentByAddrs(addrs)
-	return makeSuccessResponse(req.ID, outs)
+	return makeSuccessResponse(req.ID, OutputsResult{outs})
 }

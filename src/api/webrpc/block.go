@@ -2,7 +2,6 @@ package webrpc
 
 import "strconv"
 
-// get last blocks
 func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the req params
 	n, err := strconv.ParseUint(req.Params["num"], 10, 64)

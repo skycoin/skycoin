@@ -39,3 +39,11 @@ func (fg fakeGateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
 
 	return &blocks
 }
+
+func (fg fakeGateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
+	return []visor.ReadableOutput{}
+}
+
+func (fg fakeGateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
+	return []visor.ReadableOutput{}
+}

@@ -53,10 +53,6 @@ type Response struct {
 	Result  interface{} `json:"result,omitempty"`
 }
 
-func ptrString(str string) *string {
-	return &str
-}
-
 // NewRequest create new webrpc request.
 func NewRequest(method string, params map[string]string, id string) *Request {
 	return &Request{
@@ -67,17 +63,17 @@ func NewRequest(method string, params map[string]string, id string) *Request {
 	}
 }
 
-func makeSuccessResponse(id *string, result interface{}) Response {
+func makeSuccessResponse(id string, result interface{}) Response {
 	return Response{
-		ID:      id,
+		ID:      &id,
 		Result:  result,
 		Jsonrpc: jsonRPC,
 	}
 }
 
-func makeErrorResponse(err *RPCError) Response {
+func makeErrorResponse(code int, message string) Response {
 	return Response{
-		Error:   err,
+		Error:   &RPCError{Code: code, Message: message},
 		Jsonrpc: jsonRPC,
 	}
 }
@@ -104,5 +100,7 @@ func makeRPC(queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{})
 	rpc.HandlerFunc("get_status", getStatusHandler)
 	rpc.HandlerFunc("get_lastblocks", getLastBlocksHandler)
 	rpc.HandlerFunc("get_blocks", getBlocksHandler)
+	rpc.HandlerFunc("get_outputs", getOutputsHandler)
+
 	return rpc
 }

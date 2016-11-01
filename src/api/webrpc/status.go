@@ -7,10 +7,7 @@ type StatusResult struct {
 
 func getStatusHandler(req Request, _ Gatewayer) Response {
 	if len(req.Params) > 0 {
-		return makeErrorResponse(&RPCError{
-			Code:    errCodeInvalidParams,
-			Message: errMsgInvalidParams,
-		})
+		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
-	return makeSuccessResponse(ptrString(req.ID), StatusResult{true})
+	return makeSuccessResponse(req.ID, StatusResult{true})
 }

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 type job struct {
@@ -18,12 +17,6 @@ func makeJob(req Request) job {
 		Req:  req,
 		ResC: make(chan Response),
 	}
-}
-
-// Gatewayer provides interfaces for getting skycoin related info.
-type Gatewayer interface {
-	GetLastBlocks(num uint64) *visor.ReadableBlocks
-	GetBlocks(start, end uint64) *visor.ReadableBlocks
 }
 
 type jobHandler func(req Request, gateway Gatewayer) Response
@@ -77,27 +70,18 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 	for {
 		// only support post.
 		if r.Method != "POST" {
-			res = makeErrorResponse(&RPCError{
-				Code:    errCodeInvalidRequest,
-				Message: errMsgNotPost,
-			})
+			res = makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
 			break
 		}
 
 		// deocder request.
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			res = makeErrorResponse(&RPCError{
-				Code:    errCodeParseError,
-				Message: errMsgParseError,
-			})
+			res = makeErrorResponse(errCodeParseError, errMsgParseError)
 			break
 		}
 
 		if req.Jsonrpc != jsonRPC {
-			res = makeErrorResponse(&RPCError{
-				Code:    errCodeInvalidParams,
-				Message: errMsgInvalidJsonrpc,
-			})
+			res = makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
 			break
 		}
 
@@ -136,10 +120,7 @@ func (rh *rpcHandler) dispatch() {
 						continue
 					}
 
-					jb.ResC <- makeErrorResponse(&RPCError{
-						Code:    errCodeMethodNotFound,
-						Message: errMsgMethodNotFound,
-					})
+					jb.ResC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
 					logger.Debugf("[%d] job done", seq)
 				}
 			}

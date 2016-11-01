@@ -43,10 +43,7 @@ func Test_getStatusHandler(t *testing.T) {
 				},
 				in1: &fakeGateway{},
 			},
-			makeErrorResponse(&RPCError{
-				Code:    errCodeInvalidParams,
-				Message: errMsgInvalidParams,
-			}),
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
 		},
 	}
 	for _, tt := range tests {

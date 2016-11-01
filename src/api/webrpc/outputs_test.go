@@ -79,6 +79,17 @@ func Test_getOutputsHandler(t *testing.T) {
 			makeErrorResponse(errCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
 		},
 		{
+			"invalid params: empty addresses",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_outputs",
+				},
+			},
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+		},
+		{
 			"normal, single address",
 			args{
 				req: Request{

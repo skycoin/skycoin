@@ -23,6 +23,11 @@ type Request struct {
 	Response chan interface{}
 }
 
+type Result struct {
+	Value interface{}
+	Error error
+}
+
 func makeRequest(f func() interface{}) Request {
 	return Request{
 		Handle:   f,
@@ -147,46 +152,58 @@ func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 
 // GetUnspentByAddrs gets unspent of specific addresses
 func (gw *Gateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
-	outs := gw.V.GetUnspentOutputReadables()
-	addrMatch := []visor.ReadableOutput{}
-	addrMap := make(map[string]bool)
-	for _, addr := range addrs {
-		addrMap[addr] = true
-	}
-
-	for _, u := range outs {
-		if _, ok := addrMap[u.Address]; ok {
-			addrMatch = append(addrMatch, u)
+	rsp := gw.doRequest(func() interface{} {
+		outs := gw.V.GetUnspentOutputReadables()
+		addrMatch := []visor.ReadableOutput{}
+		addrMap := make(map[string]bool)
+		for _, addr := range addrs {
+			addrMap[addr] = true
 		}
-	}
 
-	return addrMatch
+		for _, u := range outs {
+			if _, ok := addrMap[u.Address]; ok {
+				addrMatch = append(addrMatch, u)
+			}
+		}
+		return addrMatch
+	})
+
+	v := <-rsp
+	return v.([]visor.ReadableOutput)
 }
 
 // GetUnspentByHashes gets unspent of specific unspent hashes.
 func (gw *Gateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
-	outs := gw.V.GetUnspentOutputReadables()
+	rsp := gw.doRequest(func() interface{} {
+		outs := gw.V.GetUnspentOutputReadables()
 
-	hsMatch := []visor.ReadableOutput{}
-	hsMap := make(map[string]bool)
-	for _, h := range hashes {
-		hsMap[h] = true
-	}
-
-	for _, u := range outs {
-		if _, ok := hsMap[u.Hash]; ok {
-			hsMatch = append(hsMatch, u)
+		hsMatch := []visor.ReadableOutput{}
+		hsMap := make(map[string]bool)
+		for _, h := range hashes {
+			hsMap[h] = true
 		}
-	}
-	return hsMatch
+
+		for _, u := range outs {
+			if _, ok := hsMap[u.Hash]; ok {
+				hsMatch = append(hsMatch, u)
+			}
+		}
+		return hsMatch
+	})
+	v := <-rsp
+	return v.([]visor.ReadableOutput)
 }
 
-// Returns a *visor.TransactionResult
-func (gw *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
+// GetTransaction gets transaction by txid.
+func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error) {
 	rsp := gw.doRequest(func() interface{} {
-		return gw.Visor.GetTransaction(gw.V, txn)
+		rlt, err := gw.Visor.GetTransaction(gw.V, txid)
+		return Result{rlt, err}
 	})
-	return <-rsp
+	v := <-rsp
+	rlt := v.(Result)
+
+	return rlt.Value.(*visor.TransactionResult), rlt.Error
 }
 
 // Returns a *visor.TransactionResults

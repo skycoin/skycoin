@@ -115,6 +115,7 @@ func makeRPC(queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{})
 	rpc.HandlerFunc("get_lastblocks", getLastBlocksHandler)
 	rpc.HandlerFunc("get_blocks", getBlocksHandler)
 	rpc.HandlerFunc("get_outputs", getOutputsHandler)
+	rpc.HandlerFunc("get_transaction", getTransactionHandler)
 
 	return rpc
 }

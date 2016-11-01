@@ -3,11 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"encoding/json"
-	"strings"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/visor"
 	gcli "github.com/urfave/cli"
 )
 
@@ -28,30 +26,26 @@ func getLastBlocks(c *gcli.Context) error {
 		num = "1"
 	}
 
-	params := map[string]string{
-		"num": num,
+	n, err := strconv.ParseUint(num, 10, 64)
+	if err != nil {
+		return err
 	}
 
-	req := webrpc.NewRequest("get_lastblocks", params, "1")
+	param := []uint64{n}
+	req, err := webrpc.NewRequest("get_lastblocks", param, "1")
+	if err != nil {
+		return fmt.Errorf("do rpc request failed: %v", err)
+	}
+
 	rsp, err := webrpc.Do(req, rpcAddress)
 	if err != nil {
 		return err
 	}
 
 	if rsp.Error != nil {
-		return fmt.Errorf("rpc error code:%v, message:%v", rsp.Error.Code, rsp.Error.Message)
+		return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
 	}
 
-	var blocks visor.ReadableBlocks
-	if err := json.NewDecoder(strings.NewReader(rsp.Result)).Decode(&blocks); err != nil {
-		return errJSONUnmarshal
-	}
-
-	d, err := json.MarshalIndent(blocks, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-
-	fmt.Println(string(d))
+	fmt.Println(string(rsp.Result))
 	return nil
 }

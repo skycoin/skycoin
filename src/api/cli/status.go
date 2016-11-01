@@ -1,9 +1,8 @@
 package cli
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
-	"strings"
 
 	"encoding/json"
 
@@ -24,19 +23,26 @@ func init() {
 				RPCAddress: rpcAddress,
 			}
 
-			req := webrpc.NewRequest("get_status", nil, "1")
+			req, err := webrpc.NewRequest("get_status", nil, "1")
+			if err != nil {
+				return fmt.Errorf("create rpc request failed: %v", err)
+			}
+
 			rsp, err := webrpc.Do(req, rpcAddress)
 			if err != nil {
-				return errors.New("do request webrpc failed")
+				return fmt.Errorf("do request webrpc failed: %v", err)
 			}
 
 			if rsp.Error != nil {
-				return fmt.Errorf("webrpc request failed, code:%d, message:%s", rsp.Error.Code, rsp.Error.Message)
+				return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
 			}
 
-			if strings.Contains(rsp.Result, "true") {
-				status.Running = true
+			var rlt webrpc.StatusResult
+			if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
+				return errJSONUnmarshal
 			}
+
+			status.Running = rlt.Running
 
 			d, err := json.MarshalIndent(status, "", "    ")
 			if err != nil {

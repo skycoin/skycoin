@@ -10,11 +10,12 @@ type OutputsResult struct {
 }
 
 func getOutputsHandler(req Request, gateway Gatewayer) Response {
-	addrs := strings.Split(req.Params["addresses"], ",")
-	if len(addrs) == 0 {
+	addrStr := req.Params["addresses"]
+	if addrStr == "" {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
+	addrs := strings.Split(addrStr, ",")
 	for i, a := range addrs {
 		addrs[i] = strings.Trim(a, " ")
 	}

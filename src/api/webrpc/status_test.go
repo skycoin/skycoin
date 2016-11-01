@@ -26,11 +26,7 @@ func Test_getStatusHandler(t *testing.T) {
 				},
 				in1: &fakeGateway{},
 			},
-			Response{
-				ID:      ptrString("1"),
-				Jsonrpc: jsonRPC,
-				Result:  StatusResult{true},
-			},
+			makeSuccessResponse("1", StatusResult{true}),
 		},
 		{
 			"invalid params",

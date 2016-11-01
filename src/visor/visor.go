@@ -472,6 +472,10 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 		return nil, err
 	}
 
+	if txn == nil {
+		return nil, nil
+	}
+
 	confirms := vs.GetHeadBlock().Seq() - txn.BlockSeq + 1
 	return &Transaction{
 		Txn:    txn.Tx,

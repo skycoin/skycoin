@@ -41,7 +41,15 @@ func (fg fakeGateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
 }
 
 func (fg fakeGateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
-	return []visor.ReadableOutput{}
+	addrMap := make(map[string]bool)
+	for _, a := range addrs {
+		addrMap[a] = true
+	}
+
+	return filterOut(decodeOutputStr(outputStr), func(out visor.ReadableOutput) bool {
+		_, ok := addrMap[out.Address]
+		return ok
+	})
 }
 
 func (fg fakeGateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {

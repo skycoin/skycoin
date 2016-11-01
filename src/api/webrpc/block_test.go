@@ -94,13 +94,29 @@ func Test_getLastBlocksHandler(t *testing.T) {
 			makeSuccessResponse(ptrString("1"), decodeBlock(blockString)),
 		},
 		{
-			"invalid params",
+			"invalid params: num value",
 			args{
 				req: Request{
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_lastblocks",
-					Params:  map[string]string{"num": "1a"},
+					Params:  map[string]string{"num": "1a"}, // invalid params
+				},
+				gateway: &fakeGateway{},
+			},
+			makeErrorResponse(&RPCError{
+				Code:    errCodeInvalidParams,
+				Message: errMsgInvalidParams,
+			}),
+		},
+		{
+			"invalid params: no num value",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_lastblocks",
+					Params:  map[string]string{"foo": "1"}, // invalid params
 				},
 				gateway: &fakeGateway{},
 			},
@@ -169,6 +185,24 @@ func Test_getBlocksHandler(t *testing.T) {
 					Method:  "get_blocks",
 					Params: map[string]string{
 						"end": "1",
+					},
+				},
+				gateway: &fakeGateway{},
+			},
+			makeErrorResponse(&RPCError{
+				Code:    errCodeInvalidParams,
+				Message: errMsgInvalidParams,
+			}),
+		},
+		{
+			"invalid params: start = a",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_blocks",
+					Params: map[string]string{
+						"start": "a",
 					},
 				},
 				gateway: &fakeGateway{},

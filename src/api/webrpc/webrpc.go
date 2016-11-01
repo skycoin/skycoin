@@ -3,6 +3,10 @@ package webrpc
 import (
 	"net/http"
 
+	"encoding/json"
+
+	"bytes"
+
 	logging "github.com/op/go-logging"
 )
 
@@ -32,10 +36,10 @@ var logger = logging.MustGetLogger("skycoin.webrpc")
 
 // Request rpc request struct
 type Request struct {
-	ID      string            `json:"id"`
-	Jsonrpc string            `json:"jsonrpc"`
-	Method  string            `json:"method"`
-	Params  map[string]string `json:"params"`
+	ID      string          `json:"id"`
+	Jsonrpc string          `json:"jsonrpc"`
+	Method  string          `json:"method"`
+	Params  json.RawMessage `json:"params"`
 }
 
 // RPCError response error
@@ -47,26 +51,36 @@ type RPCError struct {
 
 // Response rpc response struct
 type Response struct {
-	ID      *string     `json:"id"`
-	Jsonrpc string      `json:"jsonrpc"`
-	Error   *RPCError   `json:"error,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
+	ID      *string         `json:"id"`
+	Jsonrpc string          `json:"jsonrpc"`
+	Error   *RPCError       `json:"error,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
 }
 
 // NewRequest create new webrpc request.
-func NewRequest(method string, params map[string]string, id string) *Request {
+func NewRequest(method string, params interface{}, id string) (*Request, error) {
+	d, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
 	return &Request{
 		Jsonrpc: jsonRPC,
 		Method:  method,
-		Params:  params,
+		Params:  d,
 		ID:      id,
-	}
+	}, nil
+}
+
+// DecodeParams decodes request params to specific value.
+func (r *Request) DecodeParams(v interface{}) error {
+	return json.NewDecoder(bytes.NewBuffer(r.Params)).Decode(v)
 }
 
 func makeSuccessResponse(id string, result interface{}) Response {
+	rlt, _ := json.Marshal(result)
 	return Response{
 		ID:      &id,
-		Result:  result,
+		Result:  rlt,
 		Jsonrpc: jsonRPC,
 	}
 }

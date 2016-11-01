@@ -1,39 +1,36 @@
 package webrpc
 
-import "strconv"
-
+// request params: [number]
 func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the req params
-	n, err := strconv.ParseUint(req.Params["num"], 10, 64)
-	if err != nil {
+	var num []uint64
+	if err := req.DecodeParams(&num); err != nil {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	blocks := gateway.GetLastBlocks(n)
+	if len(num) != 1 {
+		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+	}
+
+	blocks := gateway.GetLastBlocks(num[0])
 	return makeSuccessResponse(req.ID, blocks)
 }
 
 func getBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the params
-	start, end := req.Params["start"], req.Params["end"]
-	if start == "" {
+	var param struct {
+		Start *uint64
+		End   *uint64
+	}
+
+	if err := req.DecodeParams(&param); err != nil {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	if end == "" {
-		end = start
-	}
-
-	s, err := strconv.ParseUint(start, 10, 64)
-	if err != nil {
+	if param.Start == nil || param.End == nil {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	e, err := strconv.ParseUint(end, 10, 64)
-	if err != nil {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
-	}
-
-	blocks := gateway.GetBlocks(s, e)
+	blocks := gateway.GetBlocks(*param.Start, *param.End)
 	return makeSuccessResponse(req.ID, blocks)
 }

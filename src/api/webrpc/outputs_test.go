@@ -71,9 +71,7 @@ func Test_getOutputsHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_outputs",
-					Params: map[string]string{
-						"addresses": "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C",
-					},
+					Params:  []byte(`["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"]`),
 				},
 			},
 			makeErrorResponse(errCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
@@ -96,9 +94,7 @@ func Test_getOutputsHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_outputs",
-					Params: map[string]string{
-						"addresses": "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B",
-					},
+					Params:  []byte(`["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B"]`),
 				},
 				gateway: &fakeGateway{},
 			},
@@ -113,9 +109,7 @@ func Test_getOutputsHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_outputs",
-					Params: map[string]string{
-						"addresses": "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B, cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW",
-					},
+					Params:  []byte(`["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B", "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW"]`),
 				},
 				gateway: &fakeGateway{},
 			},

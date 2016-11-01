@@ -87,7 +87,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_lastblocks",
-					Params:  map[string]string{"num": "1"},
+					Params:  []byte("[1]"),
 				},
 				gateway: &fakeGateway{},
 			},
@@ -100,7 +100,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_lastblocks",
-					Params:  map[string]string{"num": "1a"}, // invalid params
+					Params:  []byte(`[1a]`), // invalid params
 				},
 				gateway: &fakeGateway{},
 			},
@@ -113,7 +113,32 @@ func Test_getLastBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_lastblocks",
-					Params:  map[string]string{"foo": "1"}, // invalid params
+					Params:  []byte(`{"foo": 1}`), // invalid params
+				},
+				gateway: &fakeGateway{},
+			},
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+		},
+		{
+			"invalid params: empty params",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_lastblocks",
+				},
+				gateway: &fakeGateway{},
+			},
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+		},
+		{
+			"invalid params: more than one param",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_lastblocks",
+					Params:  []byte("[1,2]"),
 				},
 				gateway: &fakeGateway{},
 			},
@@ -146,29 +171,24 @@ func Test_getBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_blocks",
-					Params: map[string]string{
-						"start": "0",
-						"end":   "1",
-					},
+					Params:  []byte(`{ "start": 0, "end":   1}`),
 				},
 				gateway: &fakeGateway{},
 			},
 			makeSuccessResponse("1", decodeBlock(blockString)),
 		},
 		{
-			"normal",
+			"invalid params: lost end",
 			args{
 				req: Request{
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_blocks",
-					Params: map[string]string{
-						"start": "0",
-					},
+					Params:  []byte(`{ "start": 0}`),
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse("1", decodeBlock(blockString)),
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
 		},
 		{
 			"invalid params:lost start",
@@ -177,9 +197,7 @@ func Test_getBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_blocks",
-					Params: map[string]string{
-						"end": "1",
-					},
+					Params:  []byte(`{ "end": 1}`),
 				},
 				gateway: &fakeGateway{},
 			},
@@ -192,9 +210,7 @@ func Test_getBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_blocks",
-					Params: map[string]string{
-						"start": "a",
-					},
+					Params:  []byte(`{ "start": "abc"}`),
 				},
 				gateway: &fakeGateway{},
 			},
@@ -219,10 +235,7 @@ func Test_getBlocksHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_blocks",
-					Params: map[string]string{
-						"start": "2", // start > end
-						"end":   "1",
-					},
+					Params:  []byte(`{ "start": 2, "end": 1}`),
 				},
 				gateway: &fakeGateway{},
 			},

@@ -35,7 +35,7 @@ func Test_getStatusHandler(t *testing.T) {
 					ID:      "1",
 					Method:  "get_status",
 					Jsonrpc: jsonRPC,
-					Params:  map[string]string{"abc": "123"},
+					Params:  []byte(`{"abc": "123"}`),
 				},
 				in1: &fakeGateway{},
 			},

@@ -1,15 +1,16 @@
 package cli
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/util"
 
+	"encoding/json"
+
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
@@ -52,15 +53,30 @@ func init() {
 }
 
 func getUnspent(addrs []string) ([]unspentOut, error) {
-	url := fmt.Sprintf("http://%v/outputs?addrs=%s", rpcAddress, strings.Join(addrs, ","))
-	rsp, err := http.Get(url)
+	req, err := webrpc.NewRequest("get_outputs", addrs, "1")
 	if err != nil {
-		return []unspentOut{}, errConnectNodeFailed
+		return []unspentOut{}, fmt.Errorf("create webrpc request failed:%v", err)
 	}
-	defer rsp.Body.Close()
-	outs := []unspentOut{}
-	if err := json.NewDecoder(rsp.Body).Decode(&outs); err != nil {
-		return []unspentOut{}, errors.New("decode json failed")
+
+	rsp, err := webrpc.Do(req, rpcAddress)
+	if err != nil {
+		return []unspentOut{}, fmt.Errorf("do rpc request failed:%v", err)
 	}
-	return outs, nil
+	var rlt webrpc.OutputsResult
+	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
+		return nil, errJSONUnmarshal
+	}
+
+	ret := make([]unspentOut, len(rlt.Outputs))
+	for i, o := range rlt.Outputs {
+		ret[i] = unspentOut{
+			Hash:              o.Hash,
+			SourceTransaction: o.SourceTransaction,
+			Address:           o.Address,
+			Coins:             o.Coins,
+			Hours:             o.Hours,
+		}
+	}
+
+	return ret, nil
 }

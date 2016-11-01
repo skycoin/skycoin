@@ -145,6 +145,42 @@ func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 	return v.(*visor.ReadableBlocks)
 }
 
+// GetUnspentByAddrs gets unspent of specific addresses
+func (gw *Gateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
+	outs := gw.V.GetUnspentOutputReadables()
+	addrMatch := []visor.ReadableOutput{}
+	addrMap := make(map[string]bool)
+	for _, addr := range addrs {
+		addrMap[addr] = true
+	}
+
+	for _, u := range outs {
+		if _, ok := addrMap[u.Address]; ok {
+			addrMatch = append(addrMatch, u)
+		}
+	}
+
+	return addrMatch
+}
+
+// GetUnspentByHashes gets unspent of specific unspent hashes.
+func (gw *Gateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
+	outs := gw.V.GetUnspentOutputReadables()
+
+	hsMatch := []visor.ReadableOutput{}
+	hsMap := make(map[string]bool)
+	for _, h := range hashes {
+		hsMap[h] = true
+	}
+
+	for _, u := range outs {
+		if _, ok := hsMap[u.Hash]; ok {
+			hsMatch = append(hsMatch, u)
+		}
+	}
+	return hsMatch
+}
+
 // Returns a *visor.TransactionResult
 func (gw *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
 	rsp := gw.doRequest(func() interface{} {

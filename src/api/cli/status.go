@@ -30,7 +30,7 @@ func init() {
 
 			rsp, err := webrpc.Do(req, rpcAddress)
 			if err != nil {
-				return fmt.Errorf("do request webrpc failed: %v", err)
+				return fmt.Errorf("do rpc request failed: %v", err)
 			}
 
 			if rsp.Error != nil {

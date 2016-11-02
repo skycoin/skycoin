@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
 )
@@ -197,13 +198,24 @@ func (gw *Gateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
 // GetTransaction gets transaction by txid.
 func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error) {
 	rsp := gw.doRequest(func() interface{} {
-		rlt, err := gw.Visor.GetTransaction(gw.V, txid)
-		return Result{rlt, err}
+		t, err := gw.Visor.GetTransaction(gw.V, txid)
+		return Result{t, err}
 	})
 	v := <-rsp
 	rlt := v.(Result)
 
 	return rlt.Value.(*visor.TransactionResult), rlt.Error
+}
+
+// InjectTransaction injects transaction
+func (gw *Gateway) InjectTransaction(txn coin.Transaction) (coin.Transaction, error) {
+	rsp := gw.doRequest(func() interface{} {
+		t, err := gw.D.Visor.InjectTransaction(txn, gw.D.Pool)
+		return Result{t, err}
+	})
+	v := <-rsp
+	rlt := v.(Result)
+	return rlt.Value.(coin.Transaction), rlt.Error
 }
 
 // Returns a *visor.TransactionResults

@@ -167,16 +167,16 @@ func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 //move into visor
 //DEPRECATE
 func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+	if err := visor.VerifyTransactionFee(self.Visor.Blockchain, &txn); err != nil {
+		return txn, err
+	}
 
-	err := txn.Verify()
-
-	if err != nil {
+	if err := txn.Verify(); err != nil {
 		return txn, fmt.Errorf("Transaction Verification Failed, %v", err)
 	}
 
-	err, _ = self.Visor.InjectTxn(txn)
+	err, _ := self.Visor.InjectTxn(txn)
 	if err == nil {
-		logger.Debug("broadcast transaction")
 		self.BroadcastTransaction(txn, pool)
 	}
 	return txn, err

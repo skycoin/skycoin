@@ -10,7 +10,11 @@ import (
 )
 
 type TxnResult struct {
-	Transaction *visor.TransactionResult
+	Transaction *visor.TransactionResult `json:"transaction"`
+}
+
+type InjectResult struct {
+	Txid string `json:"txid"`
 }
 
 func getTransactionHandler(req Request, gateway Gatewayer) Response {
@@ -36,4 +40,29 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 	}
 
 	return makeSuccessResponse(req.ID, TxnResult{txn})
+}
+
+func injectTransactionHandler(req Request, gateway Gatewayer) Response {
+	var rawtx []string
+	if err := req.DecodeParams(&rawtx); err != nil {
+		logger.Criticalf("decode params failed:%v", err)
+		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+	}
+
+	if len(rawtx) != 1 {
+		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+	}
+
+	b, err := hex.DecodeString(rawtx[0])
+	if err != nil {
+		return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("invalid raw transaction:%v", err))
+	}
+
+	txn := coin.TransactionDeserialize(b)
+	t, err := gateway.InjectTransaction(txn)
+	if err != nil {
+		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("inject transaction failed:%v", err))
+	}
+
+	return makeSuccessResponse(req.ID, InjectResult{t.Hash().Hex()})
 }

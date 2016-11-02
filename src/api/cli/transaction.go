@@ -3,11 +3,10 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
@@ -34,18 +33,21 @@ func init() {
 				return errors.New("error txid")
 			}
 
-			url := fmt.Sprintf("http://%v/transaction?txid=%v", rpcAddress, txid)
-			rsp, err := http.Get(url)
+			req, err := webrpc.NewRequest("get_transaction", []string{txid}, "1")
 			if err != nil {
-				return errConnectNodeFailed
+				return fmt.Errorf("create rpc request failed:%v", err)
 			}
 
-			defer rsp.Body.Close()
-			d, err := ioutil.ReadAll(rsp.Body)
+			rsp, err := webrpc.Do(req, rpcAddress)
 			if err != nil {
-				return errReadResponse
+				return fmt.Errorf("do rpc request failed:%v", err)
 			}
-			fmt.Println(string(d))
+
+			if rsp.Error != nil {
+				return fmt.Errorf("do rpc request failed:%+v", rsp.Error)
+			}
+
+			fmt.Println(string(rsp.Result))
 			return nil
 		},
 	}

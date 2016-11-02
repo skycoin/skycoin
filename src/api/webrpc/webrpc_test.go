@@ -3,6 +3,7 @@ package webrpc
 import (
 	"encoding/json"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -16,6 +17,7 @@ func setup() (*rpcHandler, func()) {
 }
 
 type fakeGateway struct {
+	transactions map[string]string
 }
 
 func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
@@ -54,4 +56,12 @@ func (fg fakeGateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
 
 func (fg fakeGateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
 	return []visor.ReadableOutput{}
+}
+
+func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error) {
+	str, ok := fg.transactions[txid.Hex()]
+	if ok {
+		return decodeTransaction(str), nil
+	}
+	return nil, nil
 }

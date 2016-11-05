@@ -17,20 +17,15 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 }
 
 func getBlocksHandler(req Request, gateway Gatewayer) Response {
-	// validate the params
-	var param struct {
-		Start *uint64
-		End   *uint64
-	}
-
-	if err := req.DecodeParams(&param); err != nil {
+	var params []uint64
+	if err := req.DecodeParams(&params); err != nil {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	if param.Start == nil || param.End == nil {
+	if len(params) != 2 {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	blocks := gateway.GetBlocks(*param.Start, *param.End)
+	blocks := gateway.GetBlocks(params[0], params[1])
 	return makeSuccessResponse(req.ID, blocks)
 }

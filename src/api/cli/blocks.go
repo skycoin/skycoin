@@ -37,10 +37,7 @@ func getBlocks(c *gcli.Context) error {
 		return errors.New("error block seq")
 	}
 
-	var param = struct {
-		Start uint64
-		End   uint64
-	}{s, e}
+	param := []uint64{s, e}
 
 	req, err := webrpc.NewRequest("get_blocks", param, "1")
 	if err != nil {

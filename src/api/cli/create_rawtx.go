@@ -205,6 +205,13 @@ func createRawTxFromWallet(wltPath string, chgAddr string, toAddr string, amt ui
 	if err != nil {
 		return "", errAddress
 	}
+
+	// validate to address
+	_, err = cipher.DecodeBase58Address(toAddr)
+	if err != nil {
+		return "", errAddress
+	}
+
 	_, ok := wlt.GetEntry(cAddr)
 	if !ok {
 		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
@@ -235,17 +242,23 @@ func createRawTxFromAddress(addr string, chgAddr string, toAddr string, amt uint
 		return "", errAddress
 	}
 
-	// validate address
 	_, ok := wlt.GetEntry(srcAddr)
 	if !ok {
 		return "", fmt.Errorf("%v address is not in wallet", addr)
 	}
 
-	// check change address
+	// validate change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
 		return "", errAddress
 	}
+
+	// validate to address
+	_, err = cipher.DecodeBase58Address(toAddr)
+	if err != nil {
+		return "", errAddress
+	}
+
 	_, ok = wlt.GetEntry(cAddr)
 	if !ok {
 		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
@@ -310,15 +323,15 @@ func makeChangeOut(outs []unspentOut, amt uint64, chgAddr string, toAddr string)
 	if chgAmt > 0 {
 		// generate a change address
 		outAddrs = append(outAddrs,
-			makeUtxoOutput(toAddr, amt, chgHours/2),
-			makeUtxoOutput(chgAddr, chgAmt, chgHours/2))
+			mustMakeUtxoOutput(toAddr, amt, chgHours/2),
+			mustMakeUtxoOutput(chgAddr, chgAmt, chgHours/2))
 	} else {
-		outAddrs = append(outAddrs, makeUtxoOutput(toAddr, amt, chgHours/2))
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(toAddr, amt, chgHours/2))
 	}
 	return outAddrs, nil
 }
 
-func makeUtxoOutput(addr string, amount uint64, hours uint64) coin.TransactionOutput {
+func mustMakeUtxoOutput(addr string, amount uint64, hours uint64) coin.TransactionOutput {
 	uo := coin.TransactionOutput{}
 	uo.Address = cipher.MustDecodeBase58Address(addr)
 	uo.Coins = amount

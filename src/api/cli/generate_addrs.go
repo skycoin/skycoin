@@ -26,13 +26,13 @@ func init() {
 		enter your password after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
-				Name:  "m",
+				Name:  "n",
 				Value: 1,
 				Usage: `[numberOfAddresses]	Number of addresses to generate. 
 						By default 1 address is generated.`,
 			},
 			gcli.StringFlag{
-				Name: "w",
+				Name: "f",
 				Usage: `[wallet file or path] In wallet. If no path is specified your default 
 					wallet path will be used.`,
 			},
@@ -52,7 +52,7 @@ func init() {
 
 func generateAddrs(c *gcli.Context) error {
 	// get number of address that are need to be generated.
-	num := c.Int("m")
+	num := c.Int("n")
 	if num == 0 {
 		num = defaultAddrNum
 	}

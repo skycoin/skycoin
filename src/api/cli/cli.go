@@ -27,7 +27,7 @@ var (
 	errConnectNodeFailed = errors.New("connect to node failed")
 	errWalletName        = fmt.Errorf("error wallet file name, must has %v extension", walletExt)
 	errLoadWallet        = errors.New("load wallet failed")
-	errAddress           = errors.New("error address")
+	errAddress           = errors.New("invalidate address")
 	errReadResponse      = errors.New("read response body failed")
 	errJSONMarshal       = errors.New("json marshal failed")
 	errJSONUnmarshal     = errors.New("json unmarshal failed")

@@ -3,6 +3,7 @@ package cipher
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher/base58"
@@ -84,7 +85,13 @@ func BitcoinDecodeBase58Address(addr string) (Address, error) {
 }
 
 // Returns an address given an Address.Bytes()
-func addressFromBytes(b []byte) (Address, error) {
+func addressFromBytes(b []byte) (addr Address, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
 	if len(b) != 20+1+4 {
 		return Address{}, errors.New("Invalid address bytes")
 	}

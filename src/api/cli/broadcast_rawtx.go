@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
 
+	"bytes"
+	"encoding/json"
+
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
@@ -22,12 +21,12 @@ func init() {
 			if rawtx == "" {
 				return errors.New("raw transaction is empty")
 			}
-
-			v, err := broadcastTx(rawtx)
+			txid, err := broadcastTx(rawtx)
 			if err != nil {
 				return err
 			}
-			fmt.Println(v)
+
+			fmt.Println(txid)
 			return nil
 		},
 	}
@@ -35,25 +34,25 @@ func init() {
 }
 
 func broadcastTx(rawtx string) (string, error) {
-	var tx = struct {
-		Rawtx string `json:"rawtx"`
-	}{
-		rawtx,
-	}
-	d, err := json.Marshal(tx)
+	params := []string{rawtx}
+	req, err := webrpc.NewRequest("inject_transaction", params, "1")
 	if err != nil {
-		return "", errors.New("error raw transaction")
-	}
-	url := fmt.Sprintf("http://%s/injectTransaction", rpcAddress)
-	rsp, err := http.Post(url, "application/json", bytes.NewBuffer(d))
-	if err != nil {
-		return "", errConnectNodeFailed
-	}
-	defer rsp.Body.Close()
-	v, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return "", errReadResponse
+		return "", fmt.Errorf("create rpc request failed, %v", err)
 	}
 
-	return strings.Trim(string(v), "\""), nil
+	rsp, err := webrpc.Do(req, rpcAddress)
+	if err != nil {
+		return "", fmt.Errorf("do rpc request failed, %v", err)
+	}
+
+	if rsp.Error != nil {
+		return "", fmt.Errorf("rpc request failed, %v", rsp.Error)
+	}
+
+	var rlt webrpc.InjectResult
+	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
+		return "", fmt.Errorf("decode inject result failed")
+	}
+
+	return rlt.Txid, nil
 }

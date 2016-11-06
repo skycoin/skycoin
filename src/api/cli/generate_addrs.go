@@ -59,7 +59,7 @@ func generateAddrs(c *gcli.Context) error {
 
 	jsonFmt := c.Bool("json")
 
-	w := c.String("w")
+	w := c.String("f")
 	if w == "" {
 		w = filepath.Join(walletDir, defaultWalletName)
 	}

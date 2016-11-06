@@ -32,7 +32,7 @@ func init() {
         after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
-				Name:  "w",
+				Name:  "f",
 				Usage: "[wallet file or path], From wallet. If no path is specified your default wallet path will be used.",
 			},
 			gcli.StringFlag{
@@ -111,7 +111,7 @@ func createRawTransaction(c *gcli.Context) (string, error) {
 }
 
 func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
-	w = c.String("w")
+	w = c.String("f")
 	a = c.String("a")
 
 	if a != "" && w != "" {

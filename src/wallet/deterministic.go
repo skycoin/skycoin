@@ -203,6 +203,18 @@ func (wlt *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
 	return WalletEntry{}, false
 }
 
+func (wlt *Wallet) AddEntry(entry WalletEntry) error {
+	// dup check
+	for _, e := range wlt.Entries {
+		if e.Address == entry.Address {
+			return errors.New("duplicate address entry")
+		}
+	}
+
+	wlt.Entries = append(wlt.Entries, entry)
+	return nil
+}
+
 func (wlt *Wallet) Save(dir string) error {
 	r := NewReadableWallet(*wlt)
 	return r.Save(filepath.Join(dir, wlt.GetFilename()))

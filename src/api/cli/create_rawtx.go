@@ -169,7 +169,7 @@ func getToAddress(c *gcli.Context) (string, error) {
 		return "", errors.New("error argument")
 	}
 
-	toAddr := c.Args().Get(c.NArg() - 2)
+	toAddr := c.Args().First()
 	return toAddr, nil
 }
 
@@ -177,7 +177,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	if c.NArg() < 2 {
 		return 0, errors.New("error argument")
 	}
-	amount := c.Args().Get(c.NArg() - 1)
+	amount := c.Args().Get(1)
 	amt, err := strconv.ParseUint(amount, 10, 64)
 	if err != nil {
 		return 0, errors.New("error amount")

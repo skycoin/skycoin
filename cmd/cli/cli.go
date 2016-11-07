@@ -10,7 +10,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.UsageText = "the skycoin command line interface"
+	app.Usage = "the skycoin command line interface"
 	app.Version = "0.1"
 	app.Commands = skycli.Commands
 	if err := app.Run(os.Args); err != nil {

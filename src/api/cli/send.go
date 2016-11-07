@@ -23,7 +23,7 @@ func init() {
         after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
-				Name:  "w",
+				Name:  "f",
 				Usage: "[wallet file or path], From wallet. If no path is specified your default wallet path will be used.",
 			},
 			gcli.StringFlag{

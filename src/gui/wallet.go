@@ -533,7 +533,7 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // getOutputsHandler get utxos base on the filters in url params.
 // mode: GET
 // url: /outputs?addrs=[:addrs]&hashes=[:hashes]
-// if addrs and hashse are not specificed, return all unspent outputs.
+// if addrs and hashes are not specificed, return all unspent outputs.
 // if both addrs and hashes are specificed, then both those filters are need to be matched.
 // if only specify one filter, then return outputs match the filter.
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {

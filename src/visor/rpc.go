@@ -92,17 +92,20 @@ func (self RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 	return &ReadableBlocks{blocks}
 }
 
-func (self RPC) GetTransaction(v *Visor,
-	txHash cipher.SHA256) *TransactionResult {
+func (self RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResult, error) {
 	txn, err := v.GetTransaction(txHash)
 	if err != nil {
-		logger.Error(err.Error())
-		return nil
+		return nil, err
 	}
+
+	if txn == nil {
+		return nil, nil
+	}
+
 	return &TransactionResult{
 		Transaction: NewReadableTransaction(&txn.Txn),
 		Status:      txn.Status,
-	}
+	}, nil
 }
 
 func (self RPC) GetAddressTransactions(v *Visor,

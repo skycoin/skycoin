@@ -3,10 +3,9 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
@@ -28,29 +27,32 @@ func getBlocks(c *gcli.Context) error {
 		end = start
 	}
 
-	s, err := strconv.Atoi(start)
+	s, err := strconv.ParseUint(start, 10, 64)
 	if err != nil {
 		return errors.New("error block seq")
 	}
 
-	e, err := strconv.Atoi(end)
+	e, err := strconv.ParseUint(end, 10, 64)
 	if err != nil {
 		return errors.New("error block seq")
 	}
 
-	url := fmt.Sprintf("http://localhost:6420/blocks?start=%d&end=%d", s, e)
-	// blocks := visor.ReadableBlocks{}
+	param := []uint64{s, e}
 
-	rsp, err := http.Get(url)
+	req, err := webrpc.NewRequest("get_blocks", param, "1")
 	if err != nil {
-		return errConnectNodeFailed
-	}
-	defer rsp.Body.Close()
-	d, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return errReadResponse
+		return fmt.Errorf("create rpc request failed: %v", err)
 	}
 
-	fmt.Println(string(d))
+	rsp, err := webrpc.Do(req, rpcAddress)
+	if err != nil {
+		return fmt.Errorf("do rpc request failed: %v", err)
+	}
+
+	if rsp.Error != nil {
+		return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
+	}
+
+	fmt.Println(string(rsp.Result))
 	return nil
 }

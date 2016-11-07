@@ -1,12 +1,11 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
@@ -27,20 +26,26 @@ func getLastBlocks(c *gcli.Context) error {
 		num = "1"
 	}
 
-	n, err := strconv.Atoi(num)
+	n, err := strconv.ParseUint(num, 10, 64)
 	if err != nil {
-		return errors.New("error block number")
+		return err
 	}
-	url := fmt.Sprintf("%s/last_blocks?num=%d", nodeAddress, n)
-	rsp, err := http.Get(url)
+
+	param := []uint64{n}
+	req, err := webrpc.NewRequest("get_lastblocks", param, "1")
 	if err != nil {
-		return errConnectNodeFailed
+		return fmt.Errorf("do rpc request failed: %v", err)
 	}
-	defer rsp.Body.Close()
-	d, err := ioutil.ReadAll(rsp.Body)
+
+	rsp, err := webrpc.Do(req, rpcAddress)
 	if err != nil {
-		return errReadResponse
+		return err
 	}
-	fmt.Println(string(d))
+
+	if rsp.Error != nil {
+		return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
+	}
+
+	fmt.Println(string(rsp.Result))
 	return nil
 }

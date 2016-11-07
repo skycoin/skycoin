@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -487,6 +488,10 @@ func Run(c *Config) {
 	stopDaemon := make(chan int)
 	go d.Start(stopDaemon)
 
+	// start the webrpc
+	closingC := make(chan struct{})
+	go webrpc.Start("0.0.0.0:6422", 1000, 1000, d.Gateway, closingC)
+
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {
 		_, err := d.Pool.Pool.Connect(c.ConnectTo)
@@ -544,6 +549,7 @@ func Run(c *Config) {
 
 	<-quit
 	stopDaemon <- 1
+	close(closingC)
 
 	logger.Info("Shutting down")
 	d.Shutdown()

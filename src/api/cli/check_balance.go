@@ -38,7 +38,7 @@ func init() {
 		Usage:     "[option] [wallet path or address]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
-				Name:  "w",
+				Name:  "f",
 				Usage: "[wallet file or path], List balance of all addresses in a wallet.",
 			},
 			gcli.StringFlag{
@@ -57,7 +57,7 @@ func init() {
 
 func checkBalance(c *gcli.Context) error {
 	// get w option
-	w := c.String("w")
+	w := c.String("f")
 
 	// get a option
 	a := c.String("a")

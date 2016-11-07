@@ -44,7 +44,7 @@ func init() {
 				Usage: "A random seed consisting of 12 dictionary words will be generated for you.",
 			},
 			gcli.IntFlag{
-				Name:  "m",
+				Name:  "n",
 				Value: 1,
 				Usage: `[numberOfAddresses] Number of addresses to generate. 
 						By default 1 address is generated.`,
@@ -54,7 +54,7 @@ func init() {
 			// 	Usage: "Password used to encrypt the wallet locally.",
 			// },
 			gcli.StringFlag{
-				Name: "n",
+				Name: "f",
 				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". 
 						 If no wallet name is specified a generic name will be selected.`,
 			},
@@ -77,7 +77,7 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// get wallet name
-	wltName := c.String("n")
+	wltName := c.String("f")
 	if wltName == "" {
 		wltName = defaultWalletName
 	} else if wltName == defaultWalletName {
@@ -100,7 +100,7 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// get number of address that are need to be generated, if m is 0, set to 1.
-	num := c.Int("m")
+	num := c.Int("n")
 	if num == 0 {
 		num = 1
 	}

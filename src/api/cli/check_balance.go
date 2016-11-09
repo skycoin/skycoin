@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-
 	gcli "github.com/urfave/cli"
 )
 
@@ -34,21 +34,13 @@ type balanceResult struct {
 func init() {
 	cmd := gcli.Command{
 		Name:      "checkBalance",
-		ArgsUsage: "Check the balance of a wallet or specific address.",
-		Usage:     "[option] [wallet path or address]",
+		Usage:     "Check the balance of a wallet or specific address",
+		ArgsUsage: "[wallet or address]",
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], List balance of all addresses in a wallet.",
+				Usage: "[wallet file or path] List balance of all addresses in a wallet",
 			},
-			gcli.StringFlag{
-				Name:  "a",
-				Usage: "[address] List balance of specific address.",
-			},
-			// gcli.StringFlag{
-			// 	Name:  "j,json",
-			// 	Usage: "Returns the results in JSON format.",
-			// },
 		},
 		Action: checkBalance,
 	}
@@ -56,18 +48,7 @@ func init() {
 }
 
 func checkBalance(c *gcli.Context) error {
-	// get w option
-	w := c.String("f")
-
-	// get a option
-	a := c.String("a")
-
-	if w != "" && a != "" {
-		// 1 1
-		return errors.New("specify wallet or address, cannot set both")
-	}
-
-	addrs, err := gatherAddrs(w, a)
+	addrs, err := gatherAddrs(c)
 	if err != nil {
 		return err
 	}
@@ -78,12 +59,7 @@ func checkBalance(c *gcli.Context) error {
 	}
 
 	var d []byte
-	if a != "" {
-		d, err = json.MarshalIndent(balRlt.Addresses[0], "", "    ")
-	} else {
-		d, err = json.MarshalIndent(balRlt, "", "    ")
-	}
-
+	d, err = json.MarshalIndent(balRlt, "", "    ")
 	if err != nil {
 		return errJSONMarshal
 	}
@@ -91,29 +67,34 @@ func checkBalance(c *gcli.Context) error {
 	return nil
 }
 
-func gatherAddrs(w, a string) ([]string, error) {
-	var addrs []string
-	if a != "" {
-		// 1 0
-		addrs = append(addrs, a)
-	} else {
-		if w == "" {
-			// 0 0
-			w = filepath.Join(walletDir, defaultWalletName)
-		} else {
-			// 0 1
-			if !strings.HasSuffix(w, walletExt) {
-				return []string{}, fmt.Errorf("error wallet file name, must has %v extension", walletExt)
-			}
+func gatherAddrs(c *gcli.Context) ([]string, error) {
+	w := c.String("f")
+	var a string
+	if c.NArg() > 0 {
+		a = c.Args().First()
+		if _, err := cipher.DecodeBase58Address(a); err != nil {
+			return []string{}, err
+		}
+	}
 
-			if filepath.Base(w) == w {
-				w = filepath.Join(walletDir, w)
-			} else {
-				var err error
-				w, err = filepath.Abs(w)
-				if err != nil {
-					return []string{}, err
-				}
+	addrs := []string{}
+	if w == "" && a == "" {
+		// use default wallet
+		w = filepath.Join(walletDir, defaultWalletName)
+	}
+
+	if w != "" {
+		if !strings.HasSuffix(w, walletExt) {
+			return []string{}, fmt.Errorf("error wallet file name, must has %v extension", walletExt)
+		}
+
+		if filepath.Base(w) == w {
+			w = filepath.Join(walletDir, w)
+		} else {
+			var err error
+			w, err = filepath.Abs(w)
+			if err != nil {
+				return []string{}, err
 			}
 		}
 
@@ -127,6 +108,11 @@ func gatherAddrs(w, a string) ([]string, error) {
 			addrs = append(addrs, a.String())
 		}
 	}
+
+	if a != "" {
+		addrs = append(addrs, a)
+	}
+
 	return addrs, nil
 }
 

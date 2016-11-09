@@ -13,14 +13,15 @@ import (
 
 func init() {
 	cmd := gcli.Command{
-		Name: "addPrivateKey",
-		ArgsUsage: `Add one private key to specific wallet, if no wallet was specific, the
-                    default wallet file will be used.`,
-		Usage: "[option] [private key]",
+		Name:      "addPrivateKey",
+		Usage:     "Add a private key to specific wallet",
+		ArgsUsage: "[private key]",
+		Description: `Add a private key to specific wallet, the default
+		wallet file will be used if the wallet file or path is not specified`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], add the private key to this wallet.",
+				Usage: "[wallet file or path] private key will be added to this wallet",
 			},
 		},
 		Action: func(c *gcli.Context) error {

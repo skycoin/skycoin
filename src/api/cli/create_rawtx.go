@@ -33,22 +33,22 @@ func init() {
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], From wallet. If no path is specified your default wallet path will be used.",
+				Usage: "[wallet file or path], From wallet",
 			},
 			gcli.StringFlag{
 				Name:  "a",
-				Usage: "[address] From address.",
+				Usage: "[address] From address",
 			},
 			gcli.StringFlag{
 				Name:  "c",
 				Usage: "[changeAddress] Specify different change address. By default the from address or a wallets coinbase address will be used.",
 			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Password for address or wallet.",
-			},
+			// gcli.StringFlag{
+			// 	Name:  "p",
+			// 	Usage: "[password] Password for address or wallet.",
+			// },
 			gcli.BoolFlag{
-				Name:  "j,json",
+				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",
 			},
 		},

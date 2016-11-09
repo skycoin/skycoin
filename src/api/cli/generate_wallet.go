@@ -19,34 +19,31 @@ import (
 
 func init() {
 	cmd := gcli.Command{
-		Name:      "generateWallet",
-		ArgsUsage: "Generate a new wallet from seed.",
-		Usage:     "[options]",
-		Description: `
-		Use caution when using the “-p” command. If you have command 
+		Name:  "generateWallet",
+		Usage: "Generate a new wallet",
+		Description: `Use caution when using the "-p" command. If you have command 
 		history enabled your wallet encryption password can be recovered 
-		from the history log. If you do not include the “-p” option you will 
+		from the history log. If you do not include the "-p" option you will 
 		be prompted to enter your password after you enter your command. 
 		
-		All results are returned in JSON format. 
-                      `,
+		All results are returned in JSON format.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "s",
-				Usage: "Your seed.",
+				Usage: "Your seed",
 			},
 			gcli.BoolFlag{
 				Name:  "r",
-				Usage: "A random alpha numeric seed will be generated for you.",
+				Usage: "A random alpha numeric seed will be generated for you",
 			},
 			gcli.BoolFlag{
 				Name:  "rd",
-				Usage: "A random seed consisting of 12 dictionary words will be generated for you.",
+				Usage: "A random seed consisting of 12 dictionary words will be generated for you",
 			},
 			gcli.IntFlag{
 				Name:  "n",
 				Value: 1,
-				Usage: `[numberOfAddresses] Number of addresses to generate. 
+				Usage: `[numberOfAddresses] Number of addresses to generate 
 						By default 1 address is generated.`,
 			},
 			// gcli.StringFlag{
@@ -54,7 +51,8 @@ func init() {
 			// 	Usage: "Password used to encrypt the wallet locally.",
 			// },
 			gcli.StringFlag{
-				Name: "f",
+				Name:  "f",
+				Value: defaultWalletName,
 				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". 
 						 If no wallet name is specified a generic name will be selected.`,
 			},
@@ -78,11 +76,6 @@ func generateWallet(c *gcli.Context) error {
 
 	// get wallet name
 	wltName := c.String("f")
-	if wltName == "" {
-		wltName = defaultWalletName
-	} else if wltName == defaultWalletName {
-		return fmt.Errorf("wallet of %s name already exist, please choose another one", defaultWalletName)
-	}
 
 	// check if the wallet name has wlt extension.
 	if !strings.HasSuffix(wltName, ".wlt") {
@@ -107,12 +100,6 @@ func generateWallet(c *gcli.Context) error {
 
 	// get label
 	label := c.String("l")
-
-	// get password
-	// pwd := c.String("p")
-	// if pwd == "" {
-	// 	// TODO: show message of password request
-	// }
 
 	// get seed
 	s := c.String("s")
@@ -146,26 +133,28 @@ func generateWallet(c *gcli.Context) error {
 
 func makeSeed(s string, r, rd bool) (string, error) {
 	if s != "" {
+		// 111, 101, 110
 		if r || rd {
 			return "", errors.New("seed already specified, must not use -r or -rd again")
 		}
+		// 100
 		return s, nil
 	}
 
+	// 011
 	if r && rd {
 		return "", errors.New("for -r and -rd, only one option can be used")
 	}
 
+	// 010
 	if r {
 		seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
 		return hex.EncodeToString(seedRaw[:]), nil
 	}
 
-	if rd {
-		// https://github.com/tyler-smith/go-bip39 generate mnemonic.
-		entropy, _ := bip39.NewEntropy(128)
-		mnemonic, _ := bip39.NewMnemonic(entropy)
-		return mnemonic, nil
-	}
-	return "", errors.New("need to set seed option")
+	// 001, 000
+	// https://github.com/tyler-smith/go-bip39 generate mnemonic.
+	entropy, _ := bip39.NewEntropy(128)
+	mnemonic, _ := bip39.NewMnemonic(entropy)
+	return mnemonic, nil
 }

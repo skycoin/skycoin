@@ -19,8 +19,9 @@ import (
 
 func init() {
 	cmd := gcli.Command{
-		Name:  "generateWallet",
-		Usage: "Generate a new wallet",
+		Name:      "generateWallet",
+		Usage:     "Generate a new wallet",
+		ArgsUsage: " ",
 		Description: `Use caution when using the "-p" command. If you have command 
 		history enabled your wallet encryption password can be recovered 
 		from the history log. If you do not include the "-p" option you will 
@@ -46,10 +47,6 @@ func init() {
 				Usage: `[numberOfAddresses] Number of addresses to generate 
 						By default 1 address is generated.`,
 			},
-			// gcli.StringFlag{
-			// 	Name:  "p",
-			// 	Usage: "Password used to encrypt the wallet locally.",
-			// },
 			gcli.StringFlag{
 				Name:  "f",
 				Value: defaultWalletName,

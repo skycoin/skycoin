@@ -13,14 +13,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "transaction",
-		ArgsUsage: "Lists details of specific transaction",
-		Usage:     "[option] [transaction id]",
-		// Flags:     []gcli.Flag{
-		// gcli.StringFlag{
-		// 	Name:  "j,json",
-		// 	Usage: "Returns the results in JSON format.",
-		// },
-		// },
+		Usage:     "Show detail info of specific transaction",
+		ArgsUsage: "[transaction id]",
 		Action: func(c *gcli.Context) error {
 			txid := c.Args().First()
 			if txid == "" {

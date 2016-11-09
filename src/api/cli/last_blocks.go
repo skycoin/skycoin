@@ -12,7 +12,7 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "lastBlocks",
-		Usage:     "Displays the content of the most recently N generated blocks.",
+		Usage:     "Displays the content of the most recently N generated blocks",
 		ArgsUsage: "[numberOfBlocks]",
 		Action:    getLastBlocks,
 	}

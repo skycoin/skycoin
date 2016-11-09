@@ -40,13 +40,10 @@ func init() {
 				Usage: "[address] From address",
 			},
 			gcli.StringFlag{
-				Name:  "c",
-				Usage: "[changeAddress] Specify different change address. By default the from address or a wallets coinbase address will be used.",
+				Name: "c",
+				Usage: `[changeAddress] Specify different change address. 
+				By default the from address or a wallets coinbase address will be used.`,
 			},
-			// gcli.StringFlag{
-			// 	Name:  "p",
-			// 	Usage: "[password] Password for address or wallet.",
-			// },
 			gcli.BoolFlag{
 				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",

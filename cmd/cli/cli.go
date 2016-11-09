@@ -22,9 +22,13 @@ OPTIONS:
 		{{range .VisibleFlags}}{{.}}
 		{{end}}{{end}}
 	`
-
 	cli.SubcommandHelpTemplate = commandHelpTemplate
 	cli.CommandHelpTemplate = commandHelpTemplate
+
+	cli.HelpFlag = cli.BoolFlag{
+		Name:  "help,h",
+		Usage: "show help, can also be used to show subcommand help",
+	}
 
 	//   cli.NewApp().Run(os.Args)
 	app := cli.NewApp()

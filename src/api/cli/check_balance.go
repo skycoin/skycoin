@@ -39,7 +39,7 @@ func init() {
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], List balance of all addresses in a wallet.",
+				Usage: "[wallet file or path] List balance of all addresses in a wallet",
 			},
 		},
 		Action: checkBalance,

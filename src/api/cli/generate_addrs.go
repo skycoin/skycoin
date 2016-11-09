@@ -35,7 +35,7 @@ func init() {
 			},
 			gcli.BoolFlag{
 				Name:  "json,j",
-				Usage: "Returns the results in JSON format.",
+				Usage: "Returns the results in JSON format",
 			},
 		},
 		Action: generateAddrs,

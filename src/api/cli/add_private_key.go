@@ -21,7 +21,7 @@ func init() {
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], private key will be added to this wallet.",
+				Usage: "[wallet file or path] private key will be added to this wallet",
 			},
 		},
 		Action: func(c *gcli.Context) error {

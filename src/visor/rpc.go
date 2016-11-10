@@ -10,8 +10,8 @@ RPC is balance check and transaction injection
 - seperate wallets out of visor
 */
 type TransactionResult struct {
-	Transaction ReadableTransaction `json:"txn"`
 	Status      TransactionStatus   `json:"status"`
+	Transaction ReadableTransaction `json:"txn"`
 }
 
 // An array of readable blocks.

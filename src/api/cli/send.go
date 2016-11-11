@@ -10,8 +10,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "send",
-		ArgsUsage: "Send Skycoins from a wallet or an address to another address.",
-		Usage:     "[option] [from wallet or address] [to address] [amount]",
+		Usage:     "Send skycoin from a wallet or an address to a recipient address",
+		ArgsUsage: "[to address] [amount]",
 		Description: `
         If you are sending from a wallet the coins will be taken recursively from all 
         addresses within the wallet starting with the first address until the amount of 
@@ -24,22 +24,23 @@ func init() {
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], From wallet. If no path is specified your default wallet path will be used.",
+				Usage: "[wallet file or path] From wallet. If no path is specified your default wallet path will be used.",
 			},
 			gcli.StringFlag{
 				Name:  "a",
-				Usage: "[address] From address.",
+				Usage: "[address] From address",
 			},
 			gcli.StringFlag{
-				Name:  "c",
-				Usage: "[changeAddress] Specify different change address. By default the from address or a wallets coinbase address will be used.",
+				Name: "c",
+				Usage: `[changeAddress] Specify change address, by default the from address or 
+				the wallet's coinbase address will be used`,
 			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Password for address or wallet.",
-			},
+			// gcli.StringFlag{
+			// 	Name:  "p",
+			// 	Usage: "[password] Password for address or wallet.",
+			// },
 			gcli.BoolFlag{
-				Name:  "j,json",
+				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",
 			},
 		},

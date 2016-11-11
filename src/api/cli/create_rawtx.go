@@ -19,8 +19,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "createRawTransaction",
-		ArgsUsage: "Create a raw transaction to be broadcast to the network later or to a remote server via RPC.",
-		Usage:     "[option] [from wallet or address] [to address] [amount]",
+		Usage:     "Create a raw transaction to be broadcast to the network later",
+		ArgsUsage: "[to address] [amount]",
 		Description: `
         If you are sending from a wallet the coins will be taken recursively 
         from all addresses within the wallet starting with the first address until 
@@ -33,22 +33,19 @@ func init() {
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
-				Usage: "[wallet file or path], From wallet. If no path is specified your default wallet path will be used.",
+				Usage: "[wallet file or path], From wallet",
 			},
 			gcli.StringFlag{
 				Name:  "a",
-				Usage: "[address] From address.",
+				Usage: "[address] From address",
 			},
 			gcli.StringFlag{
-				Name:  "c",
-				Usage: "[changeAddress] Specify different change address. By default the from address or a wallets coinbase address will be used.",
-			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Password for address or wallet.",
+				Name: "c",
+				Usage: `[changeAddress] Specify different change address. 
+				By default the from address or a wallets coinbase address will be used.`,
 			},
 			gcli.BoolFlag{
-				Name:  "j,json",
+				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",
 			},
 		},
@@ -84,11 +81,7 @@ func createRawTransaction(c *gcli.Context) (string, error) {
 	}
 
 	var chgAddr string
-	if w == "" {
-		chgAddr, err = getChangeAddress(filepath.Join(walletDir, defaultWalletName), c)
-	} else {
-		chgAddr, err = getChangeAddress(w, c)
-	}
+	chgAddr, err = getChangeAddress(w, a, c)
 	if err != nil {
 		return "", err
 	}
@@ -145,16 +138,30 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 	return
 }
 
-func getChangeAddress(wltFile string, c *gcli.Context) (string, error) {
+func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error) {
 	chgAddr := c.String("c")
-	if chgAddr == "" {
-		// get the default wallet's coin base address
-		wlt, err := wallet.Load(wltFile)
-		if err != nil {
-			return "", errLoadWallet
+	for {
+		if chgAddr == "" {
+			// get the default wallet's coin base address
+			if a != "" {
+				// use the from address as change address
+				chgAddr = a
+				break
+			}
+
+			if wltFile != "" {
+				wlt, err := wallet.Load(wltFile)
+				if err != nil {
+					return "", errLoadWallet
+				}
+				chgAddr = wlt.Entries[0].Address.String()
+				break
+			}
+			return "", errors.New("both wallet file, from address and change address are empty")
 		}
-		return wlt.Entries[0].Address.String(), nil
+		break
 	}
+
 	// validate the address
 	_, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {

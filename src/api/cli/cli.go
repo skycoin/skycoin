@@ -48,7 +48,7 @@ func init() {
 
 	if walletDir == "" {
 		home := util.UserHome()
-		walletDir = home + "/.skycoin-cli/wallet/"
+		walletDir = home + "/.skycoin/wallets/"
 	}
 }
 

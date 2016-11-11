@@ -9,8 +9,9 @@ import (
 
 func init() {
 	cmd := gcli.Command{
-		Name:  "walletDir",
-		Usage: "Displays wallet folder address.",
+		Name:      "walletDir",
+		Usage:     "Displays wallet folder address",
+		ArgsUsage: " ",
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "j,json",

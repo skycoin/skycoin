@@ -41,16 +41,16 @@ type Transaction struct {
 }
 
 type TransactionStatus struct {
+	Confirmed bool `json:"confirmed"`
 	// This txn is in the unconfirmed pool
 	Unconfirmed bool `json:"unconfirmed"`
-	// We can't find anything about this txn.  Be aware that the txn may be
-	// in someone else's unconfirmed pool, and if valid, it may become a
-	// confirmed txn in the future
-	Unknown   bool `json:"unknown"`
-	Confirmed bool `json:"confirmed"`
 	// If confirmed, how many blocks deep in the chain it is. Will be at least
 	// 1 if confirmed.
 	Height uint64 `json:"height"`
+	// We can't find anything about this txn.  Be aware that the txn may be
+	// in someone else's unconfirmed pool, and if valid, it may become a
+	// confirmed txn in the future
+	Unknown bool `json:"unknown"`
 }
 
 func NewUnconfirmedTransactionStatus() TransactionStatus {

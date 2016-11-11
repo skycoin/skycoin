@@ -39,7 +39,7 @@ type Request struct {
 	ID      string          `json:"id"`
 	Jsonrpc string          `json:"jsonrpc"`
 	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params"`
+	Params  json.RawMessage `json:"params,omitempty"`
 }
 
 // RPCError response error
@@ -59,14 +59,19 @@ type Response struct {
 
 // NewRequest create new webrpc request.
 func NewRequest(method string, params interface{}, id string) (*Request, error) {
-	d, err := json.Marshal(params)
-	if err != nil {
-		return nil, err
+	var p json.RawMessage
+	if params != nil {
+		var err error
+		p, err = json.Marshal(params)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return &Request{
 		Jsonrpc: jsonRPC,
 		Method:  method,
-		Params:  d,
+		Params:  p,
 		ID:      id,
 	}, nil
 }

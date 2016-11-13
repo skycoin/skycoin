@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("skycoin.visor")
+	logger = logging.MustGetLogger("wallet")
 )
 
 const WalletExt = "wlt"

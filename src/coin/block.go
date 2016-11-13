@@ -9,7 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-var logger = logging.MustGetLogger("skycoin.coin")
+var logger = logging.MustGetLogger("coin")
 
 type Block struct {
 	Head BlockHeader

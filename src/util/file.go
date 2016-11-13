@@ -19,7 +19,7 @@ import (
 var (
 	DataDir = ""
 
-	logger = logging.MustGetLogger("skycoin.util")
+	logger = logging.MustGetLogger("util")
 )
 
 // Disables the logger completely

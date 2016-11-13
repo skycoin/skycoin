@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	logger      = logging.MustGetLogger("skycoin.coin")
+	logger      = logging.MustGetLogger("crypto")
 	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
 	DebugLevel2 = true //enable checks for impossible conditions
 )

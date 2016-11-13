@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("skycoin.visor")
+	logger = logging.MustGetLogger("visor")
 )
 
 // Configuration parameters for the Visor

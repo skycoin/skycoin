@@ -9,9 +9,8 @@ import (
 	"log"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
-
-	"gopkg.in/op/go-logging.v1"
 
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )

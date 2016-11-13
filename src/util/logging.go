@@ -10,7 +10,7 @@ import (
 	"log"
 	"os"
 
-	logging "gopkg.in/op/go-logging.v1"
+	logging "github.com/op/go-logging"
 )
 
 const (

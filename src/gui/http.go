@@ -1,19 +1,15 @@
 package gui
 
 import (
-	//"crypto/tls"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	//"os"
 	"path/filepath"
-	//"strings"
 
-	"gopkg.in/op/go-logging.v1"
-
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util"
 

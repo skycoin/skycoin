@@ -10,9 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/op/go-logging.v1"
-
-	//"github.com/skycoin/skycoin/src/daemon/gnet"
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"

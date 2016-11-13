@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/op/go-logging.v1"
-
 	"encoding/hex"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
 	//"math/rand"
 )

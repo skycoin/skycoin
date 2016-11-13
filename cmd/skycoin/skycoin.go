@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -20,7 +21,6 @@ import (
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"gopkg.in/op/go-logging.v1"
 )
 
 //"github.com/skycoin/skycoin/src/cli"
@@ -28,18 +28,19 @@ import (
 //"github.com/skycoin/skycoin/src/wallet"
 
 var (
-	logger     = logging.MustGetLogger("skycoin.main")
-	logFormat  = "[%{module}:%{level}] %{message}"
+	logger     = logging.MustGetLogger("main")
+	logFormat  = "[skycion.%{module}:%{level}] %{message}"
 	logModules = []string{
-		"skycoin.main",
-		"skycoin.daemon",
-		"skycoin.coin",
-		"skycoin.gui",
-		"skycoin.util",
-		"skycoin.visor",
-		"skycoin.wallet",
+		"main",
+		"daemon",
+		"coin",
+		"gui",
+		"util",
+		"visor",
+		"wallet",
 		"gnet",
 		"pex",
+		"webrpc",
 	}
 
 	//TODO: Move time and other genesis block settigns from visor, to here

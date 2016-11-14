@@ -7,19 +7,18 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-//should just be array
-type WalletEntries map[cipher.Address]WalletEntry
+// type WalletEntries []WalletEntry
 
 //Deprecate
-func (self WalletEntries) ToArray() []WalletEntry {
-	e := make([]WalletEntry, len(self))
-	i := 0
-	for _, we := range self {
-		e[i] = we
-		i++
-	}
-	return e
-}
+// func (self WalletEntries) ToArray() []WalletEntry {
+// 	e := make([]WalletEntry, len(self))
+// 	i := 0
+// 	for _, we := range self {
+// 		e[i] = we
+// 		i++
+// 	}
+// 	return e
+// }
 
 type WalletEntry struct {
 	Address cipher.Address

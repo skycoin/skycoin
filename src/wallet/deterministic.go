@@ -3,51 +3,76 @@ package wallet
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
+	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
-//Filename
-//Seed
-//Type - wallet type
-//Coin - coin type
+// Wallet contains meta data and address entries.
+// Meta:
+// 		Filename
+// 		Seed
+//		Type - wallet type
+//		Coin - coin type
 type Wallet struct {
-	Meta  map[string]string
-	Entry WalletEntry
+	Meta    map[string]string
+	Entries []WalletEntry
 }
 
-//Generate Deterministic Wallet
-//generates a random seed if seed is ""
-func NewWallet(seed string) Wallet {
+var version = "0.1"
 
+// NewWallet generates Deterministic Wallet
+// generates a random seed if seed is ""
+func NewWallet(seed, wltName, label string) Wallet {
 	//if seed is blank, generate a new seed
 	if seed == "" {
-		seed_raw := cipher.SumSHA256(secp256k1.RandByte(64))
-		seed = hex.EncodeToString(seed_raw[:])
+		seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
+		seed = hex.EncodeToString(seedRaw[:])
 	}
 
-	pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
+	// generate the first address.
+	// pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
 	return Wallet{
 		Meta: map[string]string{
-			"filename": NewWalletFilename(),
+			"filename": wltName,
+			"version":  version,
+			"label":    label,
 			"seed":     seed,
+			"lastSeed": seed,
+			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     "sky"},
-		Entry: NewWalletEntryFromKeypair(pub, sec),
 	}
+}
+
+func Load(wltFile string) (*Wallet, error) {
+	// check file's existence
+	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
+		return nil, err
+	}
+	wlt := Wallet{
+		Meta: make(map[string]string),
+	}
+	wlt.SetFilename(filepath.Base(wltFile))
+	dir, err := filepath.Abs(filepath.Dir(wltFile))
+	if err != nil {
+		return nil, err
+	}
+	if err := wlt.Load(dir); err != nil {
+		return nil, err
+	}
+	return &wlt, nil
 }
 
 func NewWalletFromReadable(r *ReadableWallet) Wallet {
-	if len(r.Entries) != 1 {
-		log.Panic("Deterministic wallets have exactly 1 entry")
-	}
-
 	w := Wallet{
-		Meta:  r.Meta,
-		Entry: r.Entries.ToWalletEntries().ToArray()[0],
+		Meta:    r.Meta,
+		Entries: r.Entries.ToWalletEntries(),
 	}
 
 	err := w.Validate()
@@ -55,30 +80,33 @@ func NewWalletFromReadable(r *ReadableWallet) Wallet {
 		log.Panic("Wallet %s invalid: %v", w.GetFilename, err)
 	}
 	return w
-
 }
 
-func (self *Wallet) Validate() error {
-
-	if _, ok := self.Meta["filename"]; !ok {
+func (wlt Wallet) Validate() error {
+	if _, ok := wlt.Meta["filename"]; !ok {
 		return errors.New("filename not set")
 	}
-	if _, ok := self.Meta["seed"]; !ok {
+	if _, ok := wlt.Meta["seed"]; !ok {
 		return errors.New("seed not set")
 	}
-	wallet_type, ok := self.Meta["type"]
+
+	// if _, ok := wlt.Meta["lastSeed"]; !ok {
+	// 	return errors.New("lastSeed not set")
+	// }
+
+	walletType, ok := wlt.Meta["type"]
 	if !ok {
 		return errors.New("type not set")
 	}
-	if wallet_type != "deterministic" {
+	if walletType != "deterministic" {
 		return errors.New("wallet type invalid")
 	}
 
-	coin_type, ok := self.Meta["coin"]
+	coinType, ok := wlt.Meta["coin"]
 	if !ok {
 		return errors.New("coin field not set")
 	}
-	if coin_type != "sky" {
+	if coinType != "sky" {
 		return errors.New("coin type invalid")
 	}
 
@@ -86,79 +114,117 @@ func (self *Wallet) Validate() error {
 
 }
 
-func (self *Wallet) GetType() string {
-	return self.Meta["type"]
+func (wlt Wallet) GetType() string {
+	return wlt.Meta["type"]
 }
 
-func (self *Wallet) GetFilename() string {
-	return self.Meta["filename"]
+func (wlt Wallet) GetFilename() string {
+	return wlt.Meta["filename"]
 }
 
-func (self *Wallet) SetFilename(fn string) {
-	self.Meta["filename"] = fn
+func (wlt *Wallet) SetFilename(fn string) {
+	wlt.Meta["filename"] = fn
 }
 
-func (self *Wallet) GetID() WalletID {
-	return WalletID(self.Meta["filename"])
+func (wlt Wallet) GetID() string {
+	return wlt.Meta["filename"]
 }
 
-/*
-Refactor
-- should be list of entries
-- should deterministically generate new entries
-*/
-
-func (self *Wallet) NumEntries() int {
-	return 1
+func (wlt Wallet) GetLabel() string {
+	return wlt.Meta["label"]
 }
 
-func (self *Wallet) GetEntries() WalletEntries {
-	m := make(WalletEntries, 1)
-	m[self.Entry.Address] = self.Entry
-	return m
+func (wlt Wallet) getLastSeed() string {
+	return wlt.Meta["lastSeed"]
 }
 
-func (self *Wallet) GetAddressSet() AddressSet {
-	m := make(AddressSet, 1)
-	m[self.Entry.Address] = byte(1)
-	return m
+func (wlt *Wallet) setLastSeed(lseed string) {
+	wlt.Meta["lastSeed"] = lseed
 }
 
-func (self *Wallet) CreateEntry() WalletEntry {
-	log.Panic("Multiple entries not implemented for deterministic wallet")
-	return WalletEntry{}
+func (wlt *Wallet) GetVersion() string {
+	return wlt.Meta["version"]
 }
 
-func (self *Wallet) GetAddresses() []cipher.Address {
-	return []cipher.Address{self.Entry.Address}
+func (wlt Wallet) NumEntries() int {
+	return len(wlt.Entries)
 }
 
-func (self *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
-	if a == self.Entry.Address {
-		return self.Entry, true
+func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
+	var seckeys []cipher.SecKey
+	var sd []byte
+	var err error
+	if len(wlt.Entries) == 0 {
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), num)
 	} else {
-		return WalletEntry{}, false
+		sd, err = hex.DecodeString(wlt.getLastSeed())
+		if err != nil {
+			log.Panicf("decode hex seed faild,%v", err)
+		}
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, num)
 	}
+	wlt.setLastSeed(hex.EncodeToString(sd))
+	addrs := make([]cipher.Address, len(seckeys))
+	for i, s := range seckeys {
+		p := cipher.PubKeyFromSecKey(s)
+		a := cipher.AddressFromPubKey(p)
+		addrs[i] = a
+		wlt.Entries = append(wlt.Entries, WalletEntry{
+			Address: a,
+			Secret:  s,
+			Public:  p,
+		})
+	}
+	return addrs
 }
 
-func (self *Wallet) AddEntry(e WalletEntry) error {
-	return errors.New("Adding entries to deterministic wallet not allowed")
+func (wlt *Wallet) GetAddresses() []cipher.Address {
+	addrs := make([]cipher.Address, len(wlt.Entries))
+	for i, e := range wlt.Entries {
+		addrs[i] = e.Address
+	}
+	return addrs
 }
 
-/*
-	End Refactor
-*/
-
-func (self *Wallet) Save(dir string) error {
-	r := NewReadableWallet(*self)
-	return r.Save(filepath.Join(dir, self.GetFilename()))
+func (wlt *Wallet) GetAddressSet() map[cipher.Address]byte {
+	set := make(map[cipher.Address]byte)
+	for _, e := range wlt.Entries {
+		set[e.Address] = byte(1)
+	}
+	return set
 }
 
-func (self *Wallet) Load(dir string) error {
+func (wlt *Wallet) GetEntry(a cipher.Address) (WalletEntry, bool) {
+	for _, e := range wlt.Entries {
+		if e.Address == a {
+			return e, true
+		}
+	}
+	return WalletEntry{}, false
+}
+
+func (wlt *Wallet) AddEntry(entry WalletEntry) error {
+	// dup check
+	for _, e := range wlt.Entries {
+		if e.Address == entry.Address {
+			return errors.New("duplicate address entry")
+		}
+	}
+
+	wlt.Entries = append(wlt.Entries, entry)
+	return nil
+}
+
+func (wlt *Wallet) Save(dir string) error {
+	r := NewReadableWallet(*wlt)
+	return r.Save(filepath.Join(dir, wlt.GetFilename()))
+}
+
+func (wlt *Wallet) Load(dir string) error {
 	r := &ReadableWallet{}
-	if err := r.Load(filepath.Join(dir, self.GetFilename())); err != nil {
+	if err := r.Load(filepath.Join(dir, wlt.GetFilename())); err != nil {
 		return err
 	}
-	*self = NewWalletFromReadable(r)
+	*wlt = NewWalletFromReadable(r)
 	return nil
 }

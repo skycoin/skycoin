@@ -2,9 +2,10 @@ package wallet
 
 import (
 	//"fmt"
+	"log"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
-	"log"
 )
 
 type ReadableWalletEntry struct {
@@ -46,14 +47,14 @@ func (self *ReadableWalletEntry) Save(filename string) error {
 
 type ReadableWalletEntries []ReadableWalletEntry
 
-func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
-	entries := make(WalletEntries, len(self))
-	for _, re := range self {
+func (self ReadableWalletEntries) ToWalletEntries() []WalletEntry {
+	entries := make([]WalletEntry, len(self))
+	for i, re := range self {
 		we := WalletEntryFromReadable(&re)
 		if err := we.Verify(); err != nil {
 			log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
 		}
-		entries[we.Address] = we
+		entries[i] = we
 	}
 	return entries
 }
@@ -64,14 +65,27 @@ type ReadableWallet struct {
 	Entries ReadableWalletEntries `json:"entries"`
 }
 
+type ByTm []*ReadableWallet
+
+func (bt ByTm) Len() int {
+	return len(bt)
+}
+
+func (bt ByTm) Less(i, j int) bool {
+	return bt[i].Meta["tm"] < bt[j].Meta["tm"]
+}
+
+func (bt ByTm) Swap(i, j int) {
+	bt[i], bt[j] = bt[j], bt[i]
+}
+
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
 func NewReadableWallet(w Wallet) *ReadableWallet {
 	//return newReadableWallet(w, NewReadableWalletEntry)
-	entries := w.GetEntries()
-	readable := make(ReadableWalletEntries, len(entries))
+	readable := make(ReadableWalletEntries, len(w.Entries))
 	i := 0
-	for _, e := range entries {
+	for _, e := range w.Entries {
 		readable[i] = NewReadableWalletEntry(&e)
 		i++
 	}
@@ -94,8 +108,8 @@ func (self *ReadableWallet) ToWallet() (Wallet, error) {
 
 // Saves to filename
 func (self *ReadableWallet) Save(filename string) error {
-	logger.Info("Saving readable wallet to %s with filename %s", filename,
-		self.Meta["filename"])
+	// logger.Info("Saving readable wallet to %s with filename %s", filename,
+	// 	self.Meta["filename"])
 	return util.SaveJSON(filename, self, 0600)
 }
 

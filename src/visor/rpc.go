@@ -10,8 +10,8 @@ RPC is balance check and transaction injection
 - seperate wallets out of visor
 */
 type TransactionResult struct {
-	Transaction ReadableTransaction `json:"txn"`
 	Status      TransactionStatus   `json:"status"`
+	Transaction ReadableTransaction `json:"txn"`
 }
 
 // An array of readable blocks.
@@ -74,6 +74,11 @@ func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 	return ret
 }
 
+func (self RPC) GetWalletTransactions(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
+	ret := v.GetWalletTransactions(addresses)
+	return ret
+}
+
 func (self RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {
 	b, err := v.GetReadableBlock(seq)
 	if err != nil {
@@ -87,13 +92,20 @@ func (self RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 	return &ReadableBlocks{blocks}
 }
 
-func (self RPC) GetTransaction(v *Visor,
-	txHash cipher.SHA256) *TransactionResult {
-	txn := v.GetTransaction(txHash)
+func (self RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResult, error) {
+	txn, err := v.GetTransaction(txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if txn == nil {
+		return nil, nil
+	}
+
 	return &TransactionResult{
 		Transaction: NewReadableTransaction(&txn.Txn),
 		Status:      txn.Status,
-	}
+	}, nil
 }
 
 func (self RPC) GetAddressTransactions(v *Visor,

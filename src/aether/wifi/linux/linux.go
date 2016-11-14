@@ -2,11 +2,12 @@ package linux
 
 import (
 	"errors"
-	"github.com/op/go-logging"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
+
+	"gopkg.in/op/go-logging.v1"
 )
 
 var (

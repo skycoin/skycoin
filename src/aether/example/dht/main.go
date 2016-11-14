@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
 	//"github.com/skycoin/skycoin/src/aether/dht"
 )
 

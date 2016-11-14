@@ -5,13 +5,16 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
-	"github.com/skycoin/encoder"
 	"log"
 	"net"
 	"reflect"
 	"time"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"gopkg.in/op/go-logging.v1"
 )
+
+var DebugPrint bool = true //disable to disable printing
 
 // TODO -- parameterize configuration per pool
 
@@ -568,7 +571,9 @@ func (self *ConnectionPool) HandleMessages() {
 // SendResults channel.
 func (self *ConnectionPool) SendMessage(c *Connection, msg Message) {
 
-	logger.Debug("Send, Msg Type: %s", reflect.TypeOf(msg))
+	if DebugPrint {
+		logger.Debug("Send, Msg Type: %s", reflect.TypeOf(msg))
+	}
 
 	select {
 	case c.WriteQueue <- msg:
@@ -582,8 +587,10 @@ func (self *ConnectionPool) SendMessage(c *Connection, msg Message) {
 
 // Sends a Message to all connections in the Pool.
 func (self *ConnectionPool) BroadcastMessage(msg Message) {
+	if DebugPrint {
+		logger.Debug("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
+	}
 
-	logger.Debug("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
 	for _, c := range self.Pool {
 		self.SendMessage(c, msg)
 	}
@@ -601,6 +608,17 @@ func (self *ConnectionPool) receiveMessage(c *Connection,
 	}
 	c.LastReceived = Now()
 	return nil, m.Handle(NewMessageContext(c), self.messageState)
+	//return nil, m.
+
+	//deprecate messageState
+
+	/*
+		For message prefix, look up the function
+		- then call reflect.Call(m map[string]interface{}, name string, params ... interface{}) (result []reflect.Value, err error)
+		- then convert the type
+
+	*/
+
 }
 
 // Returns the current UTC time

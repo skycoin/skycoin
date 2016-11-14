@@ -7,9 +7,9 @@ import (
 	"time"
 
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
@@ -30,15 +30,18 @@ type VisorConfig struct {
 	BlocksAnnounceRate time.Duration
 	// How many blocks to respond with to a GetBlocksMessage
 	BlocksResponseCount uint64
+	//how long between saving copies of the blockchain
+	BlockchainBackupRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
 	return VisorConfig{
-		Config:              visor.NewVisorConfig(),
-		Disabled:            false,
-		BlocksRequestRate:   time.Minute * 5,
-		BlocksAnnounceRate:  time.Minute * 15,
-		BlocksResponseCount: 20,
+		Config:               visor.NewVisorConfig(),
+		Disabled:             false,
+		BlocksRequestRate:    time.Second * 60, //backup, could be disabled
+		BlocksAnnounceRate:   time.Second * 60, //backup, could be disabled
+		BlocksResponseCount:  20,
+		BlockchainBackupRate: time.Second * 30,
 	}
 }
 
@@ -61,26 +64,33 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 }
 
+//move to visor?
+//DEPRECATE?
+// func (self *Visor) SaveBlockchain() {
+// 	bcFile := self.Config.Config.BlockchainFile
+// 	err := self.Visor.SaveBlockchain()
+// 	if err == nil {
+// 		logger.Info("Saved blockchain to \"%s\"", bcFile)
+// 	} else {
+// 		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
+// 	}
+// 	bsFile := self.Config.Config.BlockSigsFile
+// 	err = self.Visor.SaveBlockSigs()
+// 	if err == nil {
+// 		logger.Info("Saved block sigs to \"%s\"", bsFile)
+// 	} else {
+// 		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
+// 	}
+
+// }
+
 // Closes the Wallet, saving it to disk
 func (self *Visor) Shutdown() {
 	if self.Config.Disabled {
 		return
 	}
 
-	bcFile := self.Config.Config.BlockchainFile
-	err := self.Visor.SaveBlockchain()
-	if err == nil {
-		logger.Info("Saved blockchain to \"%s\"", bcFile)
-	} else {
-		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
-	}
-	bsFile := self.Config.Config.BlockSigsFile
-	err = self.Visor.SaveBlockSigs()
-	if err == nil {
-		logger.Info("Saved block sigs to \"%s\"", bsFile)
-	} else {
-		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
-	}
+	// self.SaveBlockchain()
 }
 
 // Checks unconfirmed txns against the blockchain and purges ones too old
@@ -96,7 +106,7 @@ func (self *Visor) RequestBlocks(pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+	m := NewGetBlocksMessage(self.Visor.HeadBkSeq(), self.Config.BlocksResponseCount)
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -105,7 +115,7 @@ func (self *Visor) AnnounceBlocks(pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
+	m := NewAnnounceBlocksMessage(self.Visor.HeadBkSeq())
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -114,7 +124,7 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	if self.Config.Disabled {
 		return errors.New("Visor disabled")
 	}
-	m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
+	m := NewGetBlocksMessage(self.Visor.HeadBkSeq(), self.Config.BlocksResponseCount)
 	c := pool.Pool.Addresses[addr]
 	if c == nil {
 		return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
@@ -134,17 +144,18 @@ func (self *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 
 // Sends a signed block to all connections.
 // TODO: deprecate, should only send to clients that request by hash
-func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
+func (self *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) {
 	if self.Config.Disabled {
 		return
 	}
-	m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
 	pool.Pool.BroadcastMessage(m)
 }
 
 // Broadcasts a single transaction to all peers.
 func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 	if self.Config.Disabled {
+		logger.Debug("broadcast tx disabled")
 		return
 	}
 	m := NewGiveTxnsMessage(coin.Transactions{t})
@@ -154,22 +165,17 @@ func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 }
 
 //move into visor
+//DEPRECATE
 func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
-
-	//logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
-	//	amt.Coins, amt.Hours, dest.String(), fee)
-	//txn, err := self.Visor.Spend(walletID, amt, fee, dest)
-	//if err != nil {
-	//	return txn, err
-	//}
-
-	err := txn.Verify()
-
-	if err != nil {
-		return txn, errors.New("Transaction Verification Failed")
+	if err := visor.VerifyTransactionFee(self.Visor.Blockchain, &txn); err != nil {
+		return txn, err
 	}
 
-	err, _ = self.Visor.InjectTxn(txn)
+	if err := txn.Verify(); err != nil {
+		return txn, fmt.Errorf("Transaction Verification Failed, %v", err)
+	}
+
+	err, _ := self.Visor.InjectTxn(txn)
 	if err == nil {
 		self.BroadcastTransaction(txn, pool)
 	}
@@ -213,8 +219,9 @@ func (self *Visor) recordBlockchainLength(addr string, bkLen uint64) {
 }
 
 // Returns the blockchain length estimated from peer reports
+// Deprecate. Should not need. Just report time of last block
 func (self *Visor) EstimateBlockchainLength() uint64 {
-	ourLen := self.Visor.MostRecentBkSeq() + 1
+	ourLen := self.Visor.HeadBkSeq() + 1
 	if len(self.blockchainLengths) < 2 {
 		return ourLen
 	}
@@ -243,13 +250,15 @@ func (self *Visor) EstimateBlockchainLength() uint64 {
 
 // Sent to request blocks since LastBlock
 type GetBlocksMessage struct {
-	LastBlock uint64
-	c         *gnet.MessageContext `enc:"-"`
+	LastBlock       uint64
+	RequestedBlocks uint64
+	c               *gnet.MessageContext `enc:"-"`
 }
 
-func NewGetBlocksMessage(lastBlock uint64) *GetBlocksMessage {
+func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
 	return &GetBlocksMessage{
-		LastBlock: lastBlock,
+		LastBlock:       lastBlock,
+		RequestedBlocks: requestedBlocks, //count of blocks requested
 	}
 }
 
@@ -259,6 +268,9 @@ func (self *GetBlocksMessage) Handle(mc *gnet.MessageContext,
 	return daemon.(*Daemon).recordMessageEvent(self, mc)
 }
 
+/*
+	Should send number to be requested, with request
+*/
 func (self *GetBlocksMessage) Process(d *Daemon) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
@@ -269,8 +281,10 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 	// Record this as this peer's highest block
 	d.Visor.recordBlockchainLength(self.c.Conn.Addr(), self.LastBlock)
 	// Fetch and return signed blocks since LastBlock
+	//blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
+	//	d.Visor.Config.BlocksResponseCount)
 	blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
-		d.Visor.Config.BlocksResponseCount)
+		self.RequestedBlocks)
 	logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
 	if len(blocks) == 0 {
 		return
@@ -281,11 +295,11 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 
 // Sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-	Blocks []visor.SignedBlock
+	Blocks []coin.SignedBlock
 	c      *gnet.MessageContext `enc:"-"`
 }
 
-func NewGiveBlocksMessage(blocks []visor.SignedBlock) *GiveBlocksMessage {
+func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 	return &GiveBlocksMessage{
 		Blocks: blocks,
 	}
@@ -303,7 +317,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	processed := 0
-	maxSeq := d.Visor.Visor.MostRecentBkSeq()
+	maxSeq := d.Visor.Visor.HeadBkSeq()
 	for _, b := range self.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
@@ -330,8 +344,11 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Announce our new blocks to peers
-	m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-	d.Pool.Pool.BroadcastMessage(m)
+	m1 := NewAnnounceBlocksMessage(d.Visor.Visor.HeadBkSeq())
+	d.Pool.Pool.BroadcastMessage(m1)
+	//request more blocks.
+	m2 := NewGetBlocksMessage(d.Visor.Visor.HeadBkSeq(), d.Visor.Config.BlocksResponseCount)
+	d.Pool.Pool.BroadcastMessage(m2)
 }
 
 // Tells a peer our highest known BkSeq. The receiving peer can choose
@@ -357,11 +374,13 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	bkSeq := d.Visor.Visor.MostRecentBkSeq()
-	if bkSeq >= self.MaxBkSeq {
+	headBkSeq := d.Visor.Visor.HeadBkSeq()
+	if headBkSeq >= self.MaxBkSeq {
 		return
 	}
-	m := NewGetBlocksMessage(bkSeq)
+	//should this be block get request for current sequence?
+	//if client is not caught up, wont attempt to get block
+	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
 
@@ -468,7 +487,11 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 		if err, known := d.Visor.Visor.InjectTxn(txn); err == nil && !known {
 			hashes = append(hashes, txn.Hash())
 		} else {
-			logger.Warning("Failed to record txn: %v", err)
+			if !known {
+				logger.Warning("Failed to record txn: %v", err)
+			} else {
+				logger.Warning("Duplicate Transation: ")
+			}
 		}
 	}
 	// Announce these transactions to peers

@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
 )
@@ -18,6 +19,23 @@ func NewGatewayConfig() GatewayConfig {
 	}
 }
 
+type Request struct {
+	Handle   func() interface{}
+	Response chan interface{}
+}
+
+type Result struct {
+	Value interface{}
+	Error error
+}
+
+func makeRequest(f func() interface{}) Request {
+	return Request{
+		Handle:   f,
+		Response: make(chan interface{}),
+	}
+}
+
 // RPC interface wrapper for daemon state
 type Gateway struct {
 	Config GatewayConfig
@@ -29,21 +47,27 @@ type Gateway struct {
 	// Backref to Visor
 	V *visor.Visor
 	// Requests are queued on this channel
-	Requests chan func() interface{}
+	Requests chan Request
 	// When a request is done processing, it is placed on this channel
-	Responses chan interface{}
+	// Responses chan interface{}
 }
 
 func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
-		Config:    c,
-		Daemon:    RPC{},
-		Visor:     visor.RPC{},
-		D:         D,
-		V:         D.Visor.Visor,
-		Requests:  make(chan func() interface{}, c.BufferSize),
-		Responses: make(chan interface{}, c.BufferSize),
+		Config:   c,
+		Daemon:   RPC{},
+		Visor:    visor.RPC{},
+		D:        D,
+		V:        D.Visor.Visor,
+		Requests: make(chan Request, c.BufferSize),
+		// Responses: make(chan interface{}, c.BufferSize),
 	}
+}
+
+func (gw *Gateway) doRequest(f func() interface{}) chan interface{} {
+	req := makeRequest(f)
+	gw.Requests <- req
+	return req.Response
 }
 
 /* Daemon RPC wrappers */
@@ -51,179 +75,153 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 /* Daemon internal status */
 
 // Returns a *Connections
-func (self *Gateway) GetConnections() interface{} {
-	self.Requests <- func() interface{} {
-		return self.Daemon.GetConnections(self.D)
-	}
-	r := <-self.Responses
-	return r
+func (gw *Gateway) GetConnections() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetConnections(gw.D)
+	})
+
+	return <-rsp
+}
+
+func (gw *Gateway) GetDefaultConnections() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetDefaultConnections(gw.D)
+	})
+	return <-rsp
 }
 
 // Returns a *Connection
-func (self *Gateway) GetConnection(addr string) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Daemon.GetConnection(self.D, addr)
-	}
-	r := <-self.Responses
-	return r
+func (gw *Gateway) GetConnection(addr string) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetConnection(gw.D, addr)
+	})
+	return <-rsp
 }
 
-/* Wallet API */
-
-// Returns a *Spend
-/*
-func (self *Gateway) Spend(walletID wallet.WalletID, amt wallet.Balance,
-	fee uint64, dest cipher.Address) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Daemon.Spend(self.D.Visor, self.D.Pool, self.Visor,
-			walletID, amt, fee, dest)
-	}
-	r := <-self.Responses
-	return r
-}
-*/
-
-// Returns a *Balance
-/*
-func (self *Gateway) GetWalletBalance(walletID wallet.WalletID) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetWalletBalance(self.V, walletID)
-	}
-	r := <-self.Responses
-	return r
-}
-*/
-
-// Returns map[WalletID]error
-/*
-func (self *Gateway) SaveWallets() interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.SaveWallets(self.V)
-	}
-	r := <-self.Responses
-	return r
-}
-
-// Returns error
-func (self *Gateway) SaveWallet(walletID wallet.WalletID) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.SaveWallet(self.V, walletID)
-	}
-	r := <-self.Responses
-	return r
-}
-
-// Returns an error
-func (self *Gateway) ReloadWallets() interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.ReloadWallets(self.V)
-	}
-	r := <-self.Responses
-	return r
-}
-*/
-
-// Returns a *visor.ReadableWallet
-/*
-func (self *Gateway) GetWallet(walletID wallet.WalletID) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetWallet(self.V, walletID)
-	}
-	r := <-self.Responses
-	return r
-}
-*/
-
-// Returns a *ReadableWallets
-/*
-func (self *Gateway) GetWallets() interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetWallets(self.V)
-	}
-	r := <-self.Responses
-	return r
-}
-*/
-
-// Returns a *ReadableWallet
-// Deprecate
-/*
-func (self *Gateway) CreateWallet(seed string) interface{} {
-
-	//w := v.CreateWallet()
-	return wallet.NewReadableWallet(w)
-
-	//
-		self.Requests <- func() interface{} {
-			return self.Visor.CreateWallet(self.V)
-		}
-		r := <-self.Responses
-		return r
-	//
-}
-*/
 /* Blockchain & Transaction status */
 //DEPRECATE
 
 // Returns a *BlockchainProgress
-func (self *Gateway) GetBlockchainProgress() interface{} {
-	self.Requests <- func() interface{} {
-		return self.Daemon.GetBlockchainProgress(self.D.Visor)
-	}
-	r := <-self.Responses
-	return r
+func (gw *Gateway) GetBlockchainProgress() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.GetBlockchainProgress(gw.D.Visor)
+	})
+	return <-rsp
 }
 
 // Returns a *ResendResult
-func (self *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Daemon.ResendTransaction(self.D.Visor, self.D.Pool, txn)
-	}
-	r := <-self.Responses
-	return r
+func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Daemon.ResendTransaction(gw.D.Visor, gw.D.Pool, txn)
+	})
+
+	return <-rsp
 }
 
 // Returns a *visor.BlockchainMetadata
-func (self *Gateway) GetBlockchainMetadata() interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetBlockchainMetadata(self.V)
-	}
-	r := <-self.Responses
-	return r
+func (gw *Gateway) GetBlockchainMetadata() interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetBlockchainMetadata(gw.V)
+	})
+	return <-rsp
 }
 
-// Returns a *visor.ReadableBlock
-func (self *Gateway) GetBlock(seq uint64) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetBlock(self.V, seq)
-	}
-	r := <-self.Responses
-	return r
+// GetBlocks returns a *visor.ReadableBlocks
+func (gw *Gateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetBlocks(gw.V, start, end)
+	})
+	v := <-rsp
+	return v.(*visor.ReadableBlocks)
 }
 
-// Returns a *visor.ReadableBlocks
-func (self *Gateway) GetBlocks(start, end uint64) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetBlocks(self.V, start, end)
-	}
-	r := <-self.Responses
-	return r
+// GetLastBlocks get last N blocks
+func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
+	rsp := gw.doRequest(func() interface{} {
+		headSeq := gw.V.HeadBkSeq()
+		var start uint64
+		if (headSeq + 1) > num {
+			start = headSeq - num + 1
+		}
+
+		blocks := gw.Visor.GetBlocks(gw.V, start, headSeq)
+		return blocks
+	})
+	v := <-rsp
+	return v.(*visor.ReadableBlocks)
 }
 
-// Returns a *visor.TransactionResult
-func (self *Gateway) GetTransaction(txn cipher.SHA256) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetTransaction(self.V, txn)
-	}
-	r := <-self.Responses
-	return r
+// GetUnspentByAddrs gets unspent of specific addresses
+func (gw *Gateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
+	rsp := gw.doRequest(func() interface{} {
+		outs := gw.V.GetUnspentOutputReadables()
+		addrMatch := []visor.ReadableOutput{}
+		addrMap := make(map[string]bool)
+		for _, addr := range addrs {
+			addrMap[addr] = true
+		}
+
+		for _, u := range outs {
+			if _, ok := addrMap[u.Address]; ok {
+				addrMatch = append(addrMatch, u)
+			}
+		}
+		return addrMatch
+	})
+
+	v := <-rsp
+	return v.([]visor.ReadableOutput)
+}
+
+// GetUnspentByHashes gets unspent of specific unspent hashes.
+func (gw *Gateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
+	rsp := gw.doRequest(func() interface{} {
+		outs := gw.V.GetUnspentOutputReadables()
+
+		hsMatch := []visor.ReadableOutput{}
+		hsMap := make(map[string]bool)
+		for _, h := range hashes {
+			hsMap[h] = true
+		}
+
+		for _, u := range outs {
+			if _, ok := hsMap[u.Hash]; ok {
+				hsMatch = append(hsMatch, u)
+			}
+		}
+		return hsMatch
+	})
+	v := <-rsp
+	return v.([]visor.ReadableOutput)
+}
+
+// GetTransaction gets transaction by txid.
+func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error) {
+	rsp := gw.doRequest(func() interface{} {
+		t, err := gw.Visor.GetTransaction(gw.V, txid)
+		return Result{t, err}
+	})
+	v := <-rsp
+	rlt := v.(Result)
+
+	return rlt.Value.(*visor.TransactionResult), rlt.Error
+}
+
+// InjectTransaction injects transaction
+func (gw *Gateway) InjectTransaction(txn coin.Transaction) (coin.Transaction, error) {
+	rsp := gw.doRequest(func() interface{} {
+		t, err := gw.D.Visor.InjectTransaction(txn, gw.D.Pool)
+		return Result{t, err}
+	})
+	v := <-rsp
+	rlt := v.(Result)
+	return rlt.Value.(coin.Transaction), rlt.Error
 }
 
 // Returns a *visor.TransactionResults
-func (self *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
-	self.Requests <- func() interface{} {
-		return self.Visor.GetAddressTransactions(self.V, a)
-	}
-	r := <-self.Responses
-	return r
+func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
+	rsp := gw.doRequest(func() interface{} {
+		return gw.Visor.GetAddressTransactions(gw.V, a)
+	})
+	return <-rsp
 }

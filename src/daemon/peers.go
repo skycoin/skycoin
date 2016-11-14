@@ -57,11 +57,9 @@ func NewPeers(c PeersConfig) *Peers {
 	}
 }
 
-var BootStrapPeers = []string{
-	"188.226.245.87:6000",
-	"188.226.147.61:6000",
-	"92.222.5.15:6000",
-}
+//do "default_peers file"
+//read file, write, if does not exist
+var DefaultConnections = []string{}
 
 // Configure the pex.PeerList and load local data
 func (self *Peers) Init() {
@@ -75,7 +73,7 @@ func (self *Peers) Init() {
 	peers.AllowLocalhost = self.Config.AllowLocalhost
 
 	//Boot strap peers
-	for _, addr := range BootStrapPeers {
+	for _, addr := range DefaultConnections {
 		peers.AddPeer(addr)
 	}
 
@@ -87,6 +85,9 @@ func (self *Peers) Shutdown() error {
 	if self.Peers == nil {
 		return nil
 	}
+
+	logger.Debug("Saving Peer List")
+
 	err := self.Peers.Save(self.Config.DataDirectory)
 	if err != nil {
 		logger.Warning("Failed to save peer database")

@@ -1,9 +1,0 @@
-OS=linux
-ARCH=amd64
-APP=skycoin_linux_amd64
-APPD=skycoind_linux_amd64
-BIN=skycoin
-NWNAME=node-webkit-${NWVERSION}-linux-x64
-NWEXT=tar.gz
-ZIPNAME=skycoin_linux_x86_64
-LIBUDEV=/lib/x86_64-linux-gnu/libudev.so.1

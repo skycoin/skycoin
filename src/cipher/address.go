@@ -3,6 +3,7 @@ package cipher
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher/base58"
@@ -58,6 +59,14 @@ func MustDecodeBase58Address(addr string) Address {
 	return a
 }
 
+func BitcoinMustDecodeBase58Address(addr string) Address {
+	a, err := BitcoinDecodeBase58Address(addr)
+	if err != nil {
+		log.Panicf("Invalid address %s: %v", addr, err)
+	}
+	return a
+}
+
 // Creates an Address from its base58 encoding
 func DecodeBase58Address(addr string) (Address, error) {
 	b, err := base58.Base582Hex(addr)
@@ -67,8 +76,22 @@ func DecodeBase58Address(addr string) (Address, error) {
 	return addressFromBytes(b)
 }
 
+func BitcoinDecodeBase58Address(addr string) (Address, error) {
+	b, err := base58.Base582Hex(addr)
+	if err != nil {
+		return Address{}, err
+	}
+	return BitcoinAddressFromBytes(b)
+}
+
 // Returns an address given an Address.Bytes()
-func addressFromBytes(b []byte) (Address, error) {
+func addressFromBytes(b []byte) (addr Address, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
 	if len(b) != 20+1+4 {
 		return Address{}, errors.New("Invalid address bytes")
 	}
@@ -100,6 +123,16 @@ func (self *Address) Bytes() []byte {
 	return b
 }
 
+func (self *Address) BitcoinBytes() []byte {
+	b := make([]byte, 20+1+4)
+	b[0] = self.Version
+	copy(b[1:21], self.Key[0:20])
+	// b[20] = self.Version
+	chksum := self.BitcoinChecksum()
+	copy(b[21:25], chksum[0:4])
+	return b
+}
+
 // Checks that the address appears valid for the public key
 func (self Address) Verify(key PubKey) error {
 	if self.Version != 0x00 {
@@ -119,11 +152,24 @@ func (self Address) String() string {
 	return string(base58.Hex2Base58(self.Bytes()))
 }
 
+func (self Address) BitcoinString() string {
+	return string(base58.Hex2Base58(self.BitcoinBytes()))
+}
+
 // Returns Address Checksum which is the first 4 bytes of sha256(key+version)
 func (self *Address) Checksum() Checksum {
 	// Version comes after the address to support vanity addresses
 	r1 := append(self.Key[:], []byte{self.Version}...)
 	r2 := SumSHA256(r1[:])
+	c := Checksum{}
+	copy(c[:], r2[:len(c)])
+	return c
+}
+
+func (self *Address) BitcoinChecksum() Checksum {
+	// Version comes after the address to support vanity addresses
+	r1 := append([]byte{self.Version}, self.Key[:]...)
+	r2 := DoubleSHA256(r1[:])
 	c := Checksum{}
 	copy(c[:], r2[:len(c)])
 	return c
@@ -141,6 +187,10 @@ func BitcoinAddressFromPubkey(pubkey PubKey) string {
 	b4 := DoubleSHA256(b3)
 	b5 := append(b3, b4[0:4]...)
 	return string(base58.Hex2Base58(b5))
+	// return Address{
+	// 	Version: 0,
+	// 	Key:     b2,
+	// }
 }
 
 //exports seckey in wallet import format
@@ -151,6 +201,29 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 	b3 := DoubleSHA256(b2) //checksum
 	b4 := append(b2, b3[0:4]...)
 	return string(base58.Hex2Base58(b4))
+}
+
+// Returns an address given an Address.Bytes()
+func BitcoinAddressFromBytes(b []byte) (Address, error) {
+	if len(b) != 20+1+4 {
+		return Address{}, errors.New("Invalid address bytes")
+	}
+	a := Address{}
+	copy(a.Key[0:20], b[1:21])
+	a.Version = b[0]
+	if a.Version != 0 {
+		return Address{}, errors.New("Invalid Version")
+	}
+
+	chksum := a.BitcoinChecksum()
+	var checksum [4]byte
+	copy(checksum[0:4], b[21:25])
+
+	if checksum != chksum {
+		return Address{}, errors.New("Invalid checksum")
+	}
+
+	return a, nil
 }
 
 func MustSecKeyFromWalletImportFormat(input string) SecKey {

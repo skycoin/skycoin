@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 /*
@@ -41,7 +41,7 @@ type UxOut struct {
 // Metadata (not hashed)
 type UxHead struct {
 	Time  uint64 //time of block it was created in
-	BkSeq uint64 //block it was created in
+	BkSeq uint64 //block it was created in, used to calculate depth
 	// SpSeq uint64 //block it was spent in
 }
 

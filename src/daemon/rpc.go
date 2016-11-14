@@ -44,6 +44,9 @@ func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
 		return nil
 	}
 	c := d.Pool.Pool.Addresses[addr]
+	if c == nil {
+		return nil
+	}
 	_, expecting := d.ExpectingIntroductions[addr]
 	return &Connection{
 		Id:           c.Id,
@@ -68,12 +71,16 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
 	return &Connections{Connections: conns}
 }
 
+func (self RPC) GetDefaultConnections(d *Daemon) []string {
+	return d.DefaultConnections
+}
+
 func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 	if v.Visor == nil {
 		return nil
 	}
 	return &BlockchainProgress{
-		Current: v.Visor.MostRecentBkSeq(),
+		Current: v.Visor.HeadBkSeq(),
 		Highest: v.EstimateBlockchainLength(),
 	}
 }

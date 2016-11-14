@@ -1,9 +1,10 @@
 package dht
 
 import (
+	"testing"
+
 	"github.com/nictuku/dht"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var (

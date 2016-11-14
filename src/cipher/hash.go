@@ -1,18 +1,21 @@
 package cipher
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"hash"
 	"log"
-
-	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 )
 
+// var (
+// 	sha256Hash    hash.Hash = sha256.New()
+// 	ripemd160Hash hash.Hash = ripemd160.New()
+// )
+
 var (
-	sha256Hash    hash.Hash = sha256.New()
-	ripemd160Hash hash.Hash = ripemd160.New()
+	poolsize          int            = 10
+	sha256HashChan    chan hash.Hash // reuse the hash thread safely.
+	ripemd160HashChan chan hash.Hash
 )
 
 // Ripemd160
@@ -27,16 +30,18 @@ func (self *Ripemd160) Set(b []byte) {
 }
 
 func HashRipemd160(data []byte) Ripemd160 {
+	ripemd160Hash := <-ripemd160HashChan
 	ripemd160Hash.Reset()
 	ripemd160Hash.Write(data)
 	sum := ripemd160Hash.Sum(nil)
+	ripemd160HashChan <- ripemd160Hash
+
 	h := Ripemd160{}
 	h.Set(sum)
 	return h
 }
 
 // SHA256
-
 type SHA256 [32]byte
 
 func (g *SHA256) Set(b []byte) {
@@ -51,9 +56,12 @@ func (g SHA256) Hex() string {
 }
 
 func SumSHA256(b []byte) SHA256 {
+	sha256Hash := <-sha256HashChan
 	sha256Hash.Reset()
 	sha256Hash.Write(b)
 	sum := sha256Hash.Sum(nil)
+	sha256HashChan <- sha256Hash
+
 	h := SHA256{}
 	h.Set(sum)
 	return h

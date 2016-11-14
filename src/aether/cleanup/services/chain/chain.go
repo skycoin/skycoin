@@ -5,7 +5,7 @@ import (
 	//"hash"
 	"errors"
 	"fmt"
-	"github.com/skycoin/gnet"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"log"
 	"time"
 )

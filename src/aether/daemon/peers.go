@@ -1,9 +1,10 @@
 package daemon
 
 import (
-	"github.com/skycoin/skycoin/src/aether/daemon/pex"
-	gnet "github.com/skycoin/skycoin/src/aether" //use local gnet
 	"time"
+
+	gnet "github.com/skycoin/skycoin/src/aether" //use local gnet
+	"github.com/skycoin/skycoin/src/aether/daemon/pex"
 )
 
 /*

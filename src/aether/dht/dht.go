@@ -3,8 +3,9 @@ package dht
 import (
 	"crypto/sha1"
 	"encoding/hex"
+
 	"github.com/nictuku/dht"
-	"github.com/op/go-logging"
+	"gopkg.in/op/go-logging.v1"
 	//"github.com/skycoin/skycoin/src/daemon/pex"
 	"log"
 	"time"

@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
-	"time"
 )
 
 var BurnFactor uint64 = 2 //half of coinhours must be burnt
@@ -16,7 +17,7 @@ var BurnFactor uint64 = 2 //half of coinhours must be burnt
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransactionFee(bc *coin.Blockchain, t *coin.Transaction) error {
+func VerifyTransactionFee(bc *Blockchain, t *coin.Transaction) error {
 	fee, err := bc.TransactionFee(t)
 	if err != nil {
 		return err
@@ -101,7 +102,7 @@ func (self *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (self *UnconfirmedTxnPool) InjectTxn(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) InjectTxn(bc *Blockchain,
 	t coin.Transaction) (error, bool) {
 
 	if err := t.Verify(); err != nil {
@@ -127,7 +128,8 @@ func (self *UnconfirmedTxnPool) InjectTxn(bc *coin.Blockchain,
 	}
 
 	// Add txn to index
-	self.Txns[h] = self.createUnconfirmedTxn(&bc.Unspent, t)
+	unspent := bc.GetUnspent()
+	self.Txns[h] = self.createUnconfirmedTxn(unspent, t)
 	// Add predicted unspents
 	self.Unspent[h] = coin.CreateUnspents(bc.Head().Head, t)
 
@@ -146,7 +148,7 @@ func (self *UnconfirmedTxnPool) RawTxns() coin.Transactions {
 }
 
 // Remove a single txn by hash
-func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) removeTxn(bc *Blockchain,
 	txHash cipher.SHA256) {
 	delete(self.Txns, txHash)
 	delete(self.Unspent, txHash)
@@ -154,7 +156,7 @@ func (self *UnconfirmedTxnPool) removeTxn(bc *coin.Blockchain,
 
 // Removes multiple txns at once. Slightly more efficient than a series of
 // single RemoveTxns.  Hashes is an array of Transaction hashes.
-func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) removeTxns(bc *Blockchain,
 	hashes []cipher.SHA256) {
 	for i, _ := range hashes {
 		delete(self.Txns, hashes[i])
@@ -163,7 +165,7 @@ func (self *UnconfirmedTxnPool) removeTxns(bc *coin.Blockchain,
 }
 
 // Removes confirmed txns from the pool
-func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) RemoveTransactions(bc *Blockchain,
 	txns coin.Transactions) {
 	toRemove := make([]cipher.SHA256, len(txns))
 	for i, _ := range txns {
@@ -175,7 +177,7 @@ func (self *UnconfirmedTxnPool) RemoveTransactions(bc *coin.Blockchain,
 // Checks all unconfirmed txns against the blockchain. maxAge is how long
 // we'll hold a txn regardless of whether it has been invalidated.
 // checkPeriod is how often we check the txn against the blockchain.
-func (self *UnconfirmedTxnPool) Refresh(bc *coin.Blockchain,
+func (self *UnconfirmedTxnPool) Refresh(bc *Blockchain,
 	checkPeriod, maxAge time.Duration) {
 
 	fmt.Printf("REFRESH")

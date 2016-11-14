@@ -7,8 +7,15 @@ import (
 	"math"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+)
+
+var (
+	// DebugLevel1 checks for extremely unlikely conditions (10e-40)
+	DebugLevel1 = true
+	// DebugLevel2 enable checks for impossible conditions
+	DebugLevel2 = true
 )
 
 /*
@@ -128,6 +135,39 @@ func (self *Transaction) Verify() error {
 	return nil
 }
 
+func (tx Transaction) VerifyInput(uxIn UxArray) error {
+	if DebugLevel2 {
+		if len(tx.In) != len(tx.Sigs) || len(tx.In) != len(uxIn) {
+			log.Panic("tx.In != tx.Sigs != uxIn")
+		}
+		if tx.InnerHash != tx.HashInner() {
+			log.Panic("Invalid Tx Header Hash")
+		}
+	}
+
+	// Check signatures against unspent address
+	for i := range tx.In {
+		hash := cipher.AddSHA256(tx.InnerHash, tx.In[i]) //use inner hash, not outer hash
+		err := cipher.ChkSig(uxIn[i].Body.Address, hash, tx.Sigs[i])
+		if err != nil {
+			return errors.New("Signature not valid for output being spent")
+		}
+	}
+	if DebugLevel2 {
+		// Check that hashes match.
+		// This would imply a bug with UnspentPool.GetMultiple
+		if len(tx.In) != len(uxIn) {
+			log.Panic("tx.In does not match uxIn")
+		}
+		for i := range tx.In {
+			if tx.In[i] != uxIn[i].Hash() {
+				log.Panic("impossible error: Ux hash mismatch")
+			}
+		}
+	}
+	return nil
+}
+
 // Adds a UxArray to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
 func (self *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
@@ -136,6 +176,16 @@ func (self *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 	}
 	self.In = append(self.In, uxOut)
 	return uint16(len(self.In) - 1)
+}
+
+//compute transaction output id
+func (self TransactionOutput) UxId(TxId cipher.SHA256) cipher.SHA256 {
+	var x UxBody
+	x.Coins = self.Coins
+	x.Hours = self.Hours
+	x.Address = self.Address
+	x.SrcTransaction = TxId
+	return x.Hash()
 }
 
 // Adds a TransactionOutput, sending coins & hours to an Address
@@ -188,6 +238,17 @@ func (self *Transaction) Hash() cipher.SHA256 {
 func (self *Transaction) SizeHash() (int, cipher.SHA256) {
 	b := self.Serialize()
 	return len(b), cipher.SumSHA256(b)
+}
+
+//returns transaction ID as byte string
+func (self *Transaction) TxId() []byte {
+	hash := self.Hash()
+	return hash[0:32]
+}
+
+//returns transaction ID as hex
+func (self *Transaction) TxIdHex() string {
+	return self.Hash().Hex()
 }
 
 // Saves the txn body hash to TransactionHeader.Hash
@@ -290,7 +351,7 @@ type FeeCalculator func(*Transaction) (uint64, error)
 // tied.  Transactions that fail in fee computation are excluded.
 func SortTransactions(txns Transactions,
 	feeCalc FeeCalculator) Transactions {
-	sorted := newSortableTransactions(txns, feeCalc)
+	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
 	return sorted.Txns
 }
@@ -298,13 +359,12 @@ func SortTransactions(txns Transactions,
 // Returns an array of txns that can be sorted by fee.  On creation, fees are
 // calculated, and if any txns have invalid fee, there are removed from
 // consideration
-func newSortableTransactions(txns Transactions,
-	feeCalc FeeCalculator) SortableTransactions {
+func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))
 	hashes := make([]cipher.SHA256, len(txns))
 	j := 0
-	for i, _ := range txns {
+	for i := range txns {
 		fee, err := feeCalc(&txns[i])
 		if err == nil {
 			newTxns[j] = txns[i]
@@ -349,4 +409,31 @@ func (self SortableTransactions) Swap(i, j int) {
 	self.Txns[i], self.Txns[j] = self.Txns[j], self.Txns[i]
 	self.Fees[i], self.Fees[j] = self.Fees[j], self.Fees[i]
 	self.Hashes[i], self.Hashes[j] = self.Hashes[j], self.Hashes[i]
+}
+
+// VerifyTransactionSpending checks that coins will not be destroyed and that enough coins are hours
+// are being spent for the outputs
+func VerifyTransactionSpending(headTime uint64, uxIn UxArray, uxOut UxArray) error {
+	coinsIn := uint64(0)
+	hoursIn := uint64(0)
+	for i := range uxIn {
+		coinsIn += uxIn[i].Body.Coins
+		hoursIn += uxIn[i].CoinHours(headTime)
+	}
+	coinsOut := uint64(0)
+	hoursOut := uint64(0)
+	for i := range uxOut {
+		coinsOut += uxOut[i].Body.Coins
+		hoursOut += uxOut[i].Body.Hours
+	}
+	if coinsIn < coinsOut {
+		return errors.New("Insufficient coins")
+	}
+	if coinsIn > coinsOut {
+		return errors.New("Transactions may not create or destroy coins")
+	}
+	if hoursIn < hoursOut {
+		return errors.New("Insufficient coin hours")
+	}
+	return nil
 }

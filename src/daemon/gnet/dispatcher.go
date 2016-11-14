@@ -3,11 +3,12 @@ package gnet
 import (
 	"errors"
 	"fmt"
-	"github.com/skycoin/encoder"
 	"log"
 	"net"
 	"reflect"
 	"time"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 // Result of a single message send
@@ -46,7 +47,10 @@ func convertToMessage(c *Connection, msg []byte) (Message, error) {
 			c.Id, string(msgId[:]))
 		return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
 	}
-	logger.Debug("Convert, Message type %v", t)
+
+	if DebugPrint {
+		logger.Debug("Convert, Message type %v", t)
+	}
 
 	var m Message
 	var v reflect.Value = reflect.New(t)

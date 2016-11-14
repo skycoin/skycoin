@@ -159,7 +159,7 @@ func TestBitcoinWIP(t *testing.T) {
 		"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",
 	}
 
-	for i, _ := range wip {
+	for i := range wip {
 		seckey, err := SecKeyFromWalletImportFormat(wip[i])
 		assert.Equal(t, nil, err)
 		_ = MustSecKeyFromWalletImportFormat(wip[i])

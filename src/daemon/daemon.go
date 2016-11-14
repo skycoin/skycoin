@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/op/go-logging"
+	"gopkg.in/op/go-logging.v1"
+
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
@@ -58,12 +59,12 @@ var (
 	// DisconnectReasons
 
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		DisconnectSelf:                      time.Minute * 60,
-		DisconnectIntroductionTimeout:       time.Minute * 60,
-		DisconnectNoIntroduction:            time.Minute * 60,
-		gnet.DisconnectInvalidMessageLength: time.Hour * 60,
-		gnet.DisconnectMalformedMessage:     time.Hour * 60,
-		gnet.DisconnectUnknownMessage:       time.Minute * 60,
+		//DisconnectSelf:                      time.Second * 1,
+		//DisconnectIntroductionTimeout:       time.Second * 1,
+		DisconnectNoIntroduction:            time.Minute * 20,
+		gnet.DisconnectInvalidMessageLength: time.Minute * 20,
+		gnet.DisconnectMalformedMessage:     time.Minute * 20,
+		gnet.DisconnectUnknownMessage:       time.Minute * 20,
 		//ConnectFailed:                       time.Minute * 60,
 	}
 
@@ -76,7 +77,6 @@ type Config struct {
 	Messages MessagesConfig
 	Pool     PoolConfig
 	Peers    PeersConfig
-	DHT      DHTConfig
 	Gateway  GatewayConfig
 	Visor    VisorConfig
 }
@@ -87,7 +87,6 @@ func NewConfig() Config {
 		Daemon:   NewDaemonConfig(),
 		Pool:     NewPoolConfig(),
 		Peers:    NewPeersConfig(),
-		DHT:      NewDHTConfig(),
 		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
 		Visor:    NewVisorConfig(),
@@ -109,7 +108,6 @@ func (self *Config) preprocess() Config {
 					config.Daemon.Address)
 			}
 		}
-		config.DHT.Disabled = true
 		config.Peers.AllowLocalhost = true
 	}
 	config.Pool.port = config.Daemon.Port
@@ -117,7 +115,6 @@ func (self *Config) preprocess() Config {
 
 	if config.Daemon.DisableNetworking {
 		config.Peers.Disabled = true
-		config.DHT.Disabled = true
 		config.Daemon.DisableIncomingConnections = true
 		config.Daemon.DisableOutgoingConnections = true
 	} else {
@@ -138,7 +135,7 @@ type DaemonConfig struct {
 	Version int32
 	// IP Address to serve on. Leave empty for automatic assignment
 	Address string
-	// TCP/UDP port for connections and DHT
+	// TCP/UDP port for connections
 	Port int
 	// Directory where application data is stored
 	DataDirectory string
@@ -169,12 +166,12 @@ type DaemonConfig struct {
 
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		Version:                    1,
+		Version:                    2,
 		Address:                    "",
 		Port:                       6677,
 		OutgoingRate:               time.Second * 5,
 		PrivateRate:                time.Second * 5,
-		OutgoingMax:                16,
+		OutgoingMax:                32,
 		PendingMax:                 16,
 		IntroductionWait:           time.Second * 30,
 		CullInvalidRate:            time.Second * 3,
@@ -195,9 +192,10 @@ type Daemon struct {
 	Messages *Messages
 	Pool     *Pool
 	Peers    *Peers
-	DHT      *DHT
 	Gateway  *Gateway
 	Visor    *Visor
+
+	DefaultConnections []string
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
@@ -229,15 +227,15 @@ type Daemon struct {
 // Returns a Daemon with primitives allocated
 func NewDaemon(config Config) *Daemon {
 	config = config.preprocess()
-	// TODO -- dht lib does not allow choosing address, should we add that?
-	// c.DHT.address = c.Daemon.Address
 	d := &Daemon{
 		Config:   config.Daemon,
 		Messages: NewMessages(config.Messages),
 		Pool:     NewPool(config.Pool),
 		Peers:    NewPeers(config.Peers),
-		DHT:      NewDHT(config.DHT),
 		Visor:    NewVisor(config.Visor),
+
+		DefaultConnections: DefaultConnections, //passed in from top level
+
 		ExpectingIntroductions: make(map[string]time.Time),
 		ConnectionMirrors:      make(map[string]uint32),
 		mirrorConnections:      make(map[uint32]map[string]uint16),
@@ -260,7 +258,6 @@ func NewDaemon(config Config) *Daemon {
 	d.Messages.Config.Register()
 	d.Pool.Init(d)
 	d.Peers.Init()
-	d.DHT.Init()
 	return d
 }
 
@@ -283,10 +280,9 @@ type MessageEvent struct {
 }
 
 // Terminates all subsystems safely.  To stop the Daemon run loop, send a value
-// over the quit channel provided to Init.  The Daemon run lopp must be stopped
+// over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (self *Daemon) Shutdown() {
-	self.DHT.Shutdown()
 	self.Pool.Shutdown()
 	self.Peers.Shutdown()
 	self.Visor.Shutdown()
@@ -300,22 +296,20 @@ func (self *Daemon) Start(quit chan int) {
 		self.Pool.StartListen() //no goroutine
 		go self.Pool.AcceptConnections()
 	}
-	if !self.DHT.Config.Disabled {
-		go self.DHT.Start()
-	}
 
 	// TODO -- run blockchain stuff in its own goroutine
 	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
+	// blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
 	if !self.Visor.Config.Config.IsMaster {
 		blockCreationTicker.Stop()
 	}
+
 	unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
 	blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
 
 	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
-	dhtBootstrapTicker := time.Tick(self.DHT.Config.BootstrapRequestRate)
 	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
 	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
 	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
@@ -328,12 +322,6 @@ func (self *Daemon) Start(quit chan int) {
 main:
 	for {
 		select {
-		// Continually make requests to the DHT, if we need peers
-		case <-dhtBootstrapTicker:
-			if !self.DHT.Config.Disabled &&
-				len(self.Peers.Peers.Peerlist) < self.DHT.Config.PeerLimit {
-				go self.DHT.RequestPeers()
-			}
 		// Flush expired blacklisted peers
 		case <-updateBlacklistTicker:
 			if !self.Peers.Config.Disabled {
@@ -394,12 +382,6 @@ main:
 				log.Panic("There should be no connection errors")
 			}
 			self.handleConnectionError(r)
-		// Update Peers when DHT reports a new one
-		case r := <-self.DHT.DHT.PeersRequestResults:
-			if self.DHT.Config.Disabled {
-				log.Panic("There should be no DHT peer results")
-			}
-			self.DHT.ReceivePeers(r, self.Peers.Peers)
 		// Process disconnections
 		case r := <-self.Pool.Pool.DisconnectQueue:
 			if self.Config.DisableNetworking {
@@ -419,8 +401,12 @@ main:
 			}
 			self.processMessageEvent(m)
 		// Process any pending RPC requests
-		case fn := <-self.Gateway.Requests:
-			self.Gateway.Responses <- fn()
+		case req := <-self.Gateway.Requests:
+			req.Response <- req.Handle()
+
+		//save blockchain periodically
+		// case <-blockchainBackupTicker:
+		// self.Visor.SaveBlockchain()
 
 		// TODO -- run these in the Visor
 		// Create blocks, if master chain

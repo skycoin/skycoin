@@ -2,19 +2,27 @@ package wallet
 
 import (
 	//"fmt"
+	"bytes"
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util"
 )
 
-type Wallets []Wallet
+type Wallets map[string]*Wallet
 
-// Loads all wallets contained in wallet dir.  If any regular file in wallet
+// LoadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
-// extension WalletExt are considered
+// extension WalletExt are considered. If encounter old wallet file, then backup
+// the wallet file into dir/backup/
 func LoadWallets(dir string) (Wallets, error) {
 	// TODO -- don't load duplicate wallets.
 	// TODO -- save a last_modified value in wallets to decide which to load
@@ -22,9 +30,20 @@ func LoadWallets(dir string) (Wallets, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// create backup dir if not exist
+	bkpath := dir + "/backup/"
+	if _, err := os.Stat(bkpath); os.IsNotExist(err) {
+		// create the backup dir
+		logger.Critical("create wallet backup dir, %v", bkpath)
+		if err := os.Mkdir(bkpath, 0777); err != nil {
+			return nil, err
+		}
+	}
+
 	//have := make(map[WalletID]Wallet, len(entries))
 	wallets := make(Wallets, 0)
-	for _, e := range entries {
+	for i, e := range entries {
 		if e.Mode().IsRegular() {
 			name := e.Name()
 			if !strings.HasSuffix(name, WalletExt) {
@@ -40,61 +59,97 @@ func LoadWallets(dir string) (Wallets, error) {
 				return nil, err
 			}
 			logger.Info("Loaded wallet from %s", fullpath)
-			/*
-					id := w.GetFilename()
-					if kw, ok := have[id]; ok {
-						return nil, fmt.Errorf("Duplicate wallet file detected. "+
-							"%s and %s are the same wallet.", kw.GetFilename(), name)
-					}
-				have[id] = w
-			*/
 			w.SetFilename(name)
-			wallets = append(wallets, w)
+			// check the wallet version
+			if w.GetVersion() != version {
+				logger.Info("update wallet %v", fullpath)
+				bkFile := filepath.Join(bkpath, w.GetFilename())
+				if err := backupWltFile(fullpath, bkFile); err != nil {
+					return nil, err
+				}
+
+				// update wallet to new version.
+				tm := time.Now().Unix() + int64(i)
+				mustUpdateWallet(&w, dir, tm)
+			}
+			wallets[name] = &w
 		}
 	}
 	return wallets, nil
 }
 
-/*
-	This is bad
-	- there needs to be better way of dealing with duplicates
-	- will rename wallet 1 in 16,384 times
-	- this will fail 1 in 250 million times
-	- this can fail
-*/
-func (self *Wallets) Add(w Wallet) {
-	for _, w2 := range *self {
-		if w2.GetFilename() == w.GetFilename() {
-			log.Printf("Wallets.Add, Wallet name would conflict with existing wallet, renaming")
-			w.SetFilename(NewWalletFilename())
-		}
+func backupWltFile(src, dst string) error {
+	if _, err := os.Stat(dst); err == nil {
+		return fmt.Errorf("%v file already exist", dst)
 	}
 
-	for _, w2 := range *self {
-		if w2.GetFilename() == w.GetFilename() {
-			log.Panic("Wallets.Add, Wallet name would conflict with existing wallet, 1 in 250 million probabilistic failure")
-		}
+	b, err := ioutil.ReadFile(src)
+	if err != nil {
+		return err
 	}
 
-	*self = append(*self, w)
-}
+	n, err := util.CopyFile(dst, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
 
-func (self Wallets) Get(walletID WalletID) *Wallet {
-	for _, w := range self {
-		if WalletID(w.GetFilename()) == walletID {
-			return &w
-		}
+	// check if the content bytes are equal.
+	if n != int64(len(b)) {
+		return errors.New("copy file failed")
 	}
 	return nil
 }
 
+func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
+	// update version meta data.
+	wlt.Meta["version"] = version
+
+	// update lastSeed meta data.
+	lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.Meta["seed"]), 1)
+	if seckeys[0] != wlt.Entries[0].Secret {
+		logger.Panic("update wallet failed, seckey not match")
+	}
+
+	wlt.Meta["lastSeed"] = hex.EncodeToString(lsd)
+
+	// update tm meta data.
+	wlt.Meta["tm"] = fmt.Sprintf("%v", tm)
+	if err := wlt.Save(dir); err != nil {
+		logger.Panic(err)
+	}
+}
+
+// Add add walet to current wallet
+func (wlts *Wallets) Add(w Wallet) error {
+	if _, dup := (*wlts)[w.GetFilename()]; dup {
+		return errors.New("Wallets.Add, Wallet name would conflict with existing wallet, renaming")
+	}
+
+	(*wlts)[w.GetFilename()] = &w
+	return nil
+}
+
+func (wlts *Wallets) Get(wltID string) (Wallet, bool) {
+	if w, ok := (*wlts)[wltID]; ok {
+		return *w, true
+	}
+	return Wallet{}, false
+}
+
+func (wlts *Wallets) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+	if w, ok := (*wlts)[wltID]; ok {
+		return w.GenerateAddresses(num), nil
+	}
+	return nil, fmt.Errorf("wallet: %v does not exist", wltID)
+}
+
 //check for name conflicts!
 //resolve conflicts for saving wallets who have different names
-func (self Wallets) Save(dir string) map[WalletID]error {
-	errs := make(map[WalletID]error)
-	for _, w := range self {
+func (wlts Wallets) Save(dir string) map[string]error {
+	errs := make(map[string]error)
+	for id, w := range wlts {
 		if err := w.Save(dir); err != nil {
-			errs[WalletID(w.GetFilename())] = err
+			errs[id] = err
 		}
 	}
 	if len(errs) == 0 {
@@ -103,27 +158,26 @@ func (self Wallets) Save(dir string) map[WalletID]error {
 	return errs
 }
 
-//convert to array, why map?
-//example where compiler should be able to swap out
-//an array with fast membership function
-//WTF? set of all addresses for each wallet with no index?
-//Needed for querying the pending incoming transactions across all wallets
-func (self Wallets) GetAddressSet() map[cipher.Address]byte {
-	set := make(AddressSet)
-	for _, w := range self {
-		set.Update(w.GetAddressSet())
+// GetAddressSet get all addresses.
+func (wlts Wallets) GetAddressSet() map[cipher.Address]byte {
+	set := make(map[cipher.Address]byte)
+	for _, w := range wlts {
+		for _, a := range w.GetAddresses() {
+			set[a] = byte(1)
+		}
 	}
 	return set
 }
 
-func (self Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
-	rw := make([]*ReadableWallet, len(self))
-	for i, w := range self {
-		rw[i] = f(w)
+func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
+	var rw []*ReadableWallet
+	for _, w := range wlts {
+		rw = append(rw, f(*w))
 	}
+	sort.Sort(ByTm(rw))
 	return rw
 }
 
-func (self Wallets) ToReadable() []*ReadableWallet {
-	return self.toReadable(NewReadableWallet)
+func (wlts Wallets) ToReadable() []*ReadableWallet {
+	return wlts.toReadable(NewReadableWallet)
 }

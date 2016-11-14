@@ -1,11 +1,15 @@
 package visor
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"encoding/json"
 	"errors"
+
+	"strconv"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 )
@@ -24,7 +28,7 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	head := v.Blockchain.Head().Head
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
-		Unspents:    uint64(len(v.Blockchain.Unspent.Pool)),
+		Unspents:    uint64(len(v.Blockchain.GetUnspent().Pool)),
 		Unconfirmed: uint64(len(v.Unconfirmed.Txns)),
 	}
 }
@@ -37,16 +41,16 @@ type Transaction struct {
 }
 
 type TransactionStatus struct {
+	Confirmed bool `json:"confirmed"`
 	// This txn is in the unconfirmed pool
 	Unconfirmed bool `json:"unconfirmed"`
-	// We can't find anything about this txn.  Be aware that the txn may be
-	// in someone else's unconfirmed pool, and if valid, it may become a
-	// confirmed txn in the future
-	Unknown   bool `json:"unknown"`
-	Confirmed bool `json:"confirmed"`
 	// If confirmed, how many blocks deep in the chain it is. Will be at least
 	// 1 if confirmed.
 	Height uint64 `json:"height"`
+	// We can't find anything about this txn.  Be aware that the txn may be
+	// in someone else's unconfirmed pool, and if valid, it may become a
+	// confirmed txn in the future
+	Unknown bool `json:"unknown"`
 }
 
 func NewUnconfirmedTransactionStatus() TransactionStatus {
@@ -98,15 +102,50 @@ func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransaction
 */
 
 type ReadableTransactionOutput struct {
+	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
-	Coins   uint64 `json:"coins"`
+	Coins   string `json:"coins"`
 	Hours   uint64 `json:"hours"`
 }
 
-func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransactionOutput {
+//convert balance to string
+//each 1,000,000 units is 1 coin
+//skyoin has up to 6 decimal places but no more
+//
+func StrBalance(amt uint64) string {
+	a := amt / 1000000 //whole part
+	b := amt % 1000000 //fractional part
+
+	//func strconv.FormatUint(i int64, base int) string
+
+	as := strconv.FormatUint(a, 10)
+	bs := strconv.FormatUint(b, 10)
+
+	if len(bs) > 6 {
+		log.Panic("StrBalance: impossible condition")
+	}
+
+	if b == 0 { //no fractional part
+		return as
+	}
+
+	return fmt.Sprintf("%s.%s", as, bs)
+}
+
+//convert back
+func StrBalance2(amt string) uint64 {
+	b, err := strconv.ParseUint(amt, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) ReadableTransactionOutput {
 	return ReadableTransactionOutput{
-		Address: t.Address.String(),
-		Coins:   t.Coins,
+		Hash:    t.UxId(txid).Hex(),
+		Address: t.Address.String(), //Destination Address
+		Coins:   StrBalance(t.Coins),
 		Hours:   t.Hours,
 	}
 }
@@ -119,10 +158,10 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput) ReadableTransaction
 	Add a verbose version
 */
 type ReadableOutput struct {
-	Hash              string `json:"hash"`
+	Hash              string `json:"txid"` //hash uniquely identifies transaction
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
-	Coins             uint64 `json:"coins"`
+	Coins             string `json:"coins"`
 	Hours             uint64 `json:"hours"`
 }
 
@@ -131,7 +170,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 		Hash:              t.Hash().Hex(),
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
-		Coins:             t.Body.Coins,
+		Coins:             StrBalance(t.Body.Coins),
 		Hours:             t.Body.Hours,
 	}
 }
@@ -139,7 +178,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 type ReadableTransaction struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
-	Hash      string `json:"hash"`
+	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
 
 	Sigs []string                    `json:"sigs"`
@@ -165,6 +204,7 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedT
 
 func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
 
+	txid := t.Hash()
 	sigs := make([]string, len(t.Sigs))
 	for i, _ := range t.Sigs {
 		sigs[i] = t.Sigs[i].Hex()
@@ -176,7 +216,7 @@ func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
 	}
 	out := make([]ReadableTransactionOutput, len(t.Out))
 	for i, _ := range t.Out {
-		out[i] = NewReadableTransactionOutput(&t.Out[i])
+		out[i] = NewReadableTransactionOutput(&t.Out[i], txid)
 	}
 	return ReadableTransaction{
 		Length:    t.Length,
@@ -216,7 +256,7 @@ type ReadableBlockBody struct {
 
 func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
 	txns := make([]ReadableTransaction, len(b.Transactions))
-	for i, _ := range b.Transactions {
+	for i := range b.Transactions {
 		txns[i] = NewReadableTransaction(&b.Transactions[i])
 	}
 	return ReadableBlockBody{
@@ -244,7 +284,7 @@ type TransactionOutputJSON struct {
 	Hash              string `json:"hash"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"` // Address of receiver
-	Coins             uint64 `json:"coins"`   // Number of coins
+	Coins             string `json:"coins"`   // Number of coins
 	Hours             uint64 `json:"hours"`   // Coin hours
 }
 
@@ -263,7 +303,7 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, src_tx cipher.SHA256) T
 	o.SourceTransaction = src_tx.Hex()
 
 	o.Address = ux.Address.String()
-	o.Coins = ux.Coins
+	o.Coins = StrBalance(ux.Coins)
 	o.Hours = ux.Hours
 	return o
 }
@@ -281,7 +321,7 @@ func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput
 	}
 	//tx.Hash = hash
 	tx.Address = addr
-	tx.Coins = in.Coins
+	tx.Coins = StrBalance2(in.Coins)
 	tx.Hours = in.Hours
 
 	return tx, nil

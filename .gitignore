@@ -16,6 +16,8 @@ _obj
 
 main
 
+test_node
+
 *~
 client
 
@@ -70,6 +72,7 @@ release
 /skycoindev
 /blockchain
 /generate_cert
+/address_gen
 
 *.pem
 
@@ -83,3 +86,23 @@ master.keys
 benefactor-wallet.json
 masterdata/
 .genv
+
+src/gui/static/dev
+
+npm-debug.log
+
+node_modules
+
+electron/release
+electron/.cache
+electron/.electron_cache
+electron/node_modules
+electron/.gox_output
+electron/.electron_output
+electron/.standalone_output
+
+.vscode/
+
+src/mesh/examples/integration/integration
+
+.idea/

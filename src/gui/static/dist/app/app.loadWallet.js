@@ -97,11 +97,12 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.loadProgress();
                     this.loadOutputs();
                     this.loadTransactions();
+                    this.isValidAddress = false;
                     //Set interval function for load wallet every 15 seconds
                     setInterval(() => {
                         this.loadWallet();
                         //console.log("Refreshing balance");
-                    }, 15000);
+                    }, 30000);
                     setInterval(() => {
                         this.loadConnections();
                         //this.loadBlockChain();
@@ -146,13 +147,30 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.http.post('/wallets', '')
                         .map((res) => res.json())
                         .subscribe(data => {
-                        this.wallets = _.sortBy(data, function (o) {
-                            return o.meta.filename;
-                        });
-                        if (this.wallets.length > 0) {
-                            this.onSelectWallet(this.wallets[0].meta.filename);
+                        if (this.wallets == null || this.wallets.length == 0) {
+                            _.each(data, (o) => {
+                                o.showChild = false;
+                            });
+                            this.wallets = data;
+                            if (this.wallets.length > 0) {
+                                this.onSelectWallet(this.wallets[0].meta.filename);
+                            }
                         }
-                        //console.log(this.wallets);
+                        else {
+                            data.map((w) => {
+                                var old = _.find(this.wallets, (o) => {
+                                    return o.meta.filename === w.meta.filename;
+                                });
+                                if (old) {
+                                    _.extend(old, w);
+                                }
+                                else {
+                                    w.showChild = false;
+                                    this.wallets.push(w);
+                                }
+                            });
+                        }
+                        //console.log("this.wallets", this.wallets);
                         //Load Balance for each wallet
                         var inc = 0;
                         for (var item in data) {
@@ -164,6 +182,25 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }, err => console.log("Error on load wallet: " + err), () => {
                         //console.log('Wallet load done')
                     });
+                }
+                checkValidAddress(address) {
+                    if (address === "")
+                        this.isValidAddress = false;
+                    else {
+                        var headers = new http_2.Headers();
+                        headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                        this.http.get('/balance?addrs=' + address, { headers: headers })
+                            .map((res) => res.json())
+                            .subscribe(
+                        //Response from API
+                        response => {
+                            this.isValidAddress = true;
+                        }, err => {
+                            //console.log("Error on load balance: " + err)
+                            this.isValidAddress = false;
+                        }, () => {
+                        });
+                    }
                 }
                 loadWalletItem(address, inc) {
                     //Set http headers
@@ -284,6 +321,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         //console.log('Progress load done:' + this.progress)
                     });
                 }
+                toggleShowChild(wallet) {
+                    wallet.showChild = !wallet.showChild;
+                }
                 //Switch tab function
                 switchTab(mode, wallet) {
                     //"Textbox" and "Ready" button enable in Send tab while switching tabs
@@ -356,27 +396,50 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.defaultConnections.splice(idx, 1);
                 }
                 //Add new wallet function for generate new wallet in Skycoin
-                createNewWallet() {
+                createNewWallet(label, seed) {
+                    /*if(addressCount < 1) {
+                      alert("Please input correct address count");
+                      return;
+                    }*/
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
                     //Post method executed
-                    this.http.post('/wallet/create', JSON.stringify({ name: '' }), { headers: headers })
+                    var stringConvert = 'label=' + label + '&seed=' + seed;
+                    this.http.post('/wallet/create', stringConvert, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(response => {
+                        console.log(response);
                         //Hide new wallet popup
                         this.NewWalletIsVisible = false;
                         alert("New wallet created successfully");
                         //Load wallet for refresh list
                         this.loadWallet();
-                    }, err => console.log("Error on create new wallet: " + err), () => {
-                        //console.log('New wallet create done')
-                    });
+                    }, err => {
+                        console.log(err);
+                    }, () => { });
                 }
                 //Edit existing wallet function
                 editWallet(wallet) {
                     this.EditWalletIsVisible = true;
                     this.walletId = wallet.meta.filename;
+                }
+                addNewAddress(wallet) {
+                    //Set http headers
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    //Post method executed
+                    var stringConvert = 'id=' + wallet.meta.filename;
+                    this.http.post('/wallet/newAddress', stringConvert, { headers: headers })
+                        .map((res) => res.json())
+                        .subscribe(response => {
+                        console.log(response);
+                        alert("New address created successfully");
+                        //Load wallet for refresh list
+                        this.loadWallet();
+                    }, err => {
+                        console.log(err);
+                    }, () => { });
                 }
                 //Hide edit wallet function
                 hideEditWalletPopup() {
@@ -566,7 +629,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     return word;
                 }
                 onSelectWallet(val) {
-                    //console.log("onSelectWallet", val);
+                    console.log("onSelectWallet", val);
                     //this.selectedWallet = val;
                     this.spendid = val;
                     this.selectedWallet = _.find(this.wallets, function (o) {

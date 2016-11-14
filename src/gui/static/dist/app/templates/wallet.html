@@ -58,6 +58,7 @@
                   <table id="overview-wallet" class="outline" >
                       <thead>
                       <tr class="dark-row">
+                        <td style="width:30px;"></td>
                         <td>Label</td>
                         <td>Address</td>
                         <td>Address Balance</td>
@@ -67,11 +68,23 @@
                     </thead>
                         <tbody *ngFor="#wallet of wallets">
                           <tr>
-                            <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.filename}}</td>
+                            <td>
+                              <a href="#" (click)="toggleShowChild(wallet)" *ngIf="!wallet.showChild"><i class="fa fa-angle-right"></i></a>
+                              <a href="#" (click)="toggleShowChild(wallet)" *ngIf="wallet.showChild"><i class="fa fa-angle-down"></i></a>
+                            </td>
+                            <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
                             <td><a href="#" (click)="showQR(wallet)">&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{wallet.entries[0].address}}</td>
                             <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
                             <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.balance}} SKY</td>
-                            <td class="text-right">{{wallet.entries.length}}&nbsp;<i class="fa fa-plus"></i></td>
+                            <td class="text-right">{{wallet.entries.length}}&nbsp;<a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus"></i></a></td>
+                          </tr>
+                          <tr *ngFor="#entry of wallet.entries; #idx=index" [hidden]="!wallet.showChild||idx==0">
+                            <td></td>
+                            <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}({{idx}})</td>
+                            <td><a href="#" (click)="showQR(wallet)">&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{entry.address}}</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{entry.balance?entry.balance:0}} SKY</td>
+                            <td></td>
+                            <td class="text-right"></td>
                           </tr>
                       </tbody>
                   </table>
@@ -86,7 +99,7 @@
                           <label class="col-sm-2 control-label"><i class="fa fa-question-circle"></i>&nbsp;Wallet:</label>
                           <div class="col-sm-6">
                             <select class="form-control" #selectedWallet2 (change)="onSelectWallet(selectedWallet2.value)">
-                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}">{{wallet.meta.filename}}</option>
+                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}" value="{{wallet.meta.filename}}">{{wallet.meta.label}}({{wallet.meta.filename}})</option>
                             </select>
                           </div>
                       </div>
@@ -99,7 +112,10 @@
                       <div class="form-group">
                           <label class="col-sm-2 control-label">Address:</label>
                           <div class="col-sm-6">
-                              <input type="text" #spendaddress class="form-control">
+                              <input type="text" #spendaddress class="form-control" (change)="checkValidAddress(spendaddress.value)">
+                          </div>
+                          <div class="col-sm-4">
+                            <div *ngIf="isValidAddress"><i class="fa fa-2x fa-check"></i> Valid Address</div>
                           </div>
                       </div>
                       <div class="form-group">
@@ -111,13 +127,19 @@
                       <div class="form-group">
                           <label class="col-sm-2 control-label">Note:</label>
                           <div class="col-sm-6">
-                              <input type="text" class="form-control" value="Payment to Jim">
+                              <input type="text" #transactionNote class="form-control" placeholder="Short Description of Transaction">
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="col-sm-2 control-label">Password:</label>
+                          <div class="col-sm-6">
+                              <input type="password" #walletPassword class="form-control" placeholder="Wallet Password">
                           </div>
                       </div>
                       <div class="form-group">
                           <label class="col-sm-2 control-label"></label>
                           <div class="col-sm-6">
-                              <button type="button" class="btn btn-default" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
+                              <button type="button" class="btn btn-default" [disabled]="!isValidAddress" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
                           </div>
                       </div>
                   </form>
@@ -387,7 +409,7 @@
                   <div class="form-group">
                       <label class="col-sm-3 control-label">Label:</label>
                       <div class="col-sm-9">
-                          <input maxlength="60" #walletname placeholder="Name of Wallet" class="form-control" required/>
+                          <input maxlength="60" #walletLabel placeholder="Name of Wallet" class="form-control" required/>
                       </div>
                   </div>
                   <div class="form-group">
@@ -396,7 +418,7 @@
                           <textarea rows="4" #walletseed  placeholder="Name of Wallet" cols="46" class="form-control" value="{{randomWords}}"></textarea>
                       </div>
                   </div>
-                  <div class="form-group">
+                  <!--<div class="form-group">
                       <label class="col-sm-3 control-label">Password:</label>
                       <div class="col-sm-9">
                           <input type="password" #password placeholder="Your Password" class="form-control" required/>
@@ -413,12 +435,11 @@
                       <div class="col-sm-9">
                           <input type="Number" #addressCount class="form-control" value="1" required/>
                       </div>
-                  </div>
+                  </div>-->
               </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" (click)="createNewWallet()">Ok</button>
-                <button type="button" class="btn" (click)="hideWalletPopup()">Cancel</button>
+                <button type="button" class="btn btn-default" (click)="createNewWallet(walletLabel.value, walletseed.value)">Create</button>
             </div>
         </div>
     </div>

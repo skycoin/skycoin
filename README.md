@@ -33,8 +33,8 @@ brew install go
 ```
 # bashrc or bash_profile
 
-export GOROOT=/usr/local/go
-export PATH=$PATH:$GOROOT/bin
+export GOPATH=/Users/<username>/go 
+export PATH=$PATH:$GOPATH/bin
 
 ```
 

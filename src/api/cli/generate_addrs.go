@@ -17,32 +17,26 @@ var defaultAddrNum = 1
 func init() {
 	cmd := gcli.Command{
 		Name:      "generateAddresses",
-		ArgsUsage: "Generate additional addresses for a wallet.",
-		Usage:     "[options]",
-		Description: `
-        Use caution when using the “-p” command. If you have command 
-        history enabled your wallet encryption password can be recovered from the 
+		Usage:     "Generate additional addresses for a wallet",
+		ArgsUsage: " ",
+		Description: `Use caution when using the “-p” command. If you have command 
+		history enabled your wallet encryption password can be recovered from the 
 		history log. If you do not include the “-p” option you will be prompted to 
 		enter your password after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
 				Name:  "n",
 				Value: 1,
-				Usage: `[numberOfAddresses]	Number of addresses to generate. 
-						By default 1 address is generated.`,
+				Usage: `[numberOfAddresses]	Number of addresses to generate`,
 			},
 			gcli.StringFlag{
-				Name: "f",
-				Usage: `[wallet file or path] In wallet. If no path is specified your default 
-					wallet path will be used.`,
+				Name:  "f",
+				Value: filepath.Join(walletDir, defaultWalletName),
+				Usage: `[wallet file or path] Generate addresses in the wallet`,
 			},
-			// gcli.StringFlag{
-			// 	Name:  "p",
-			// 	Usage: "[password] Password used to encrypt the wallet locally.",
-			// },
 			gcli.BoolFlag{
-				Name:  "j,json",
-				Usage: "Returns the results in JSON format.",
+				Name:  "json,j",
+				Usage: "Returns the results in JSON format",
 			},
 		},
 		Action: generateAddrs,
@@ -60,10 +54,6 @@ func generateAddrs(c *gcli.Context) error {
 	jsonFmt := c.Bool("json")
 
 	w := c.String("f")
-	if w == "" {
-		w = filepath.Join(walletDir, defaultWalletName)
-	}
-
 	if !strings.HasSuffix(w, walletExt) {
 		return errWalletName
 	}

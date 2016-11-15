@@ -11,12 +11,12 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "version",
-		ArgsUsage: "List the current version of Skycoin components.",
-		Usage:     "[options]",
+		ArgsUsage: "List the current version of Skycoin components",
+		Usage:     " ",
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
-				Name:  "j,json",
-				Usage: "Returns the results in JSON format.",
+				Name:  "json,j",
+				Usage: "Returns the results in JSON format",
 			},
 		},
 		Action: func(c *gcli.Context) error {

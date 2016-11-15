@@ -13,8 +13,8 @@ import (
 func init() {
 	cmd := gcli.Command{
 		Name:      "status",
-		ArgsUsage: "check the status of current skycoin node.",
-		Usage:     "[options]",
+		Usage:     "Check the status of current skycoin node",
+		ArgsUsage: " ",
 		Action: func(c *gcli.Context) error {
 			var status = struct {
 				RPCAddress string `json:"webrpc_address"`

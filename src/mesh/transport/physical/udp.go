@@ -100,7 +100,7 @@ func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
 			stunClient.SetServerAddr(addr)
 
 			_, host, error := stunClient.Discover()
-			if error != nil {
+			if error != nil || host == nil {
 				fmt.Fprintf(os.Stderr, "STUN Error for Endpoint '%v': %v\n", addr, error)
 				continue
 			} else {

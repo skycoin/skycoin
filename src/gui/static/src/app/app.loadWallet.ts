@@ -110,6 +110,12 @@ export class loadWalletComponent implements OnInit {
     sortDir:{};
     isValidAddress: boolean;
 
+    blockViewMode:string;
+    selectedBlock: any = {};
+    selectedBlockTransaction:any = {};
+    selectedBlockAddress:string;
+    selectedBlockAddressBalance:any = 0;
+
     // pager object
     historyPager: any = {};
     historyPagedItems: any[];
@@ -133,6 +139,7 @@ export class loadWalletComponent implements OnInit {
         this.loadOutputs();
         this.loadTransactions();
         this.isValidAddress = false;
+        this.blockViewMode = 'recentBlocks'
 
         //Set interval function for load wallet every 15 seconds
         setInterval(() => {
@@ -326,11 +333,23 @@ export class loadWalletComponent implements OnInit {
     }
     GetBlockAmount(block) {
       var ret = [];
-      _.each(block.body.txns[0].outputs, function(o){
-        ret.push(o.coins);
+      _.each(block.body.txns, function(o){
+        _.each(o.outputs, function(_o){
+          ret.push(_o.coins);
+        })
       })
 
       return ret.join(",");
+    }
+    GetBlockTotalAmount(block) {
+      var ret = 0;
+      _.each(block.body.txns, function(o){
+        _.each(o.outputs, function(_o){
+          ret += Number(_o.coins);
+        })
+      })
+
+      return ret;
     }
     loadDefaultConnections() {
         this.http.post('/network/defaultConnections', '')
@@ -756,6 +775,40 @@ export class loadWalletComponent implements OnInit {
       })
     }
 
+    showBlockDetail(block) {
+      //change viewMode as blockDetail
+      this.blockViewMode = 'blockDetail';
+      this.selectedBlock = block;
+    }
+
+    showRecentBlock() {
+      this.blockViewMode = 'recentBlocks';
+    }
+
+    showBlockTransactionDetail(txns) {
+      this.blockViewMode = 'blockTransactionDetail';
+      this.selectedBlockTransaction = txns;
+    }
+
+    showBlockAddressDetail(address) {
+      this.blockViewMode = 'blockAddressDetail';
+      this.selectedBlockAddress = address;
+
+      var headers = new Headers();
+      headers.append('Content-Type', 'application/x-www-form-urlencoded');
+      this.http.get('/balance?addrs=' + address, { headers: headers })
+          .map((res) => res.json())
+          .subscribe(
+              //Response from API
+              response => {
+                  //console.log(response);
+                  this.selectedBlockAddressBalance = response.confirmed.coins/1000000;
+              }, err => {
+                //console.log("Error on load balance: " + err)
+              }, () => {
+
+              })
+    }
 }
 
 //Set default enum value for tabs

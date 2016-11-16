@@ -81,6 +81,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.http = http;
                     this.pagerService = pagerService;
                     this.displayModeEnum = DisplayModeEnum;
+                    this.selectedBlock = {};
+                    this.selectedBlockTransaction = {};
+                    this.selectedBlockAddressBalance = 0;
                     // pager object
                     this.historyPager = {};
                     this.blockPager = {};
@@ -98,6 +101,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.loadOutputs();
                     this.loadTransactions();
                     this.isValidAddress = false;
+                    this.blockViewMode = 'recentBlocks';
                     //Set interval function for load wallet every 15 seconds
                     setInterval(() => {
                         this.loadWallet();
@@ -277,10 +281,21 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 GetBlockAmount(block) {
                     var ret = [];
-                    _.each(block.body.txns[0].outputs, function (o) {
-                        ret.push(o.coins);
+                    _.each(block.body.txns, function (o) {
+                        _.each(o.outputs, function (_o) {
+                            ret.push(_o.coins);
+                        });
                     });
                     return ret.join(",");
+                }
+                GetBlockTotalAmount(block) {
+                    var ret = 0;
+                    _.each(block.body.txns, function (o) {
+                        _.each(o.outputs, function (_o) {
+                            ret += Number(_o.coins);
+                        });
+                    });
+                    return ret;
                 }
                 loadDefaultConnections() {
                     this.http.post('/network/defaultConnections', '')
@@ -643,6 +658,35 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.spendid = val;
                     this.selectedWallet = _.find(this.wallets, function (o) {
                         return o.meta.filename === val;
+                    });
+                }
+                showBlockDetail(block) {
+                    //change viewMode as blockDetail
+                    this.blockViewMode = 'blockDetail';
+                    this.selectedBlock = block;
+                }
+                showRecentBlock() {
+                    this.blockViewMode = 'recentBlocks';
+                }
+                showBlockTransactionDetail(txns) {
+                    this.blockViewMode = 'blockTransactionDetail';
+                    this.selectedBlockTransaction = txns;
+                }
+                showBlockAddressDetail(address) {
+                    this.blockViewMode = 'blockAddressDetail';
+                    this.selectedBlockAddress = address;
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    this.http.get('/balance?addrs=' + address, { headers: headers })
+                        .map((res) => res.json())
+                        .subscribe(
+                    //Response from API
+                    response => {
+                        //console.log(response);
+                        this.selectedBlockAddressBalance = response.confirmed.coins / 1000000;
+                    }, err => {
+                        //console.log("Error on load balance: " + err)
+                    }, () => {
                     });
                 }
             };

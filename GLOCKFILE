@@ -19,6 +19,5 @@ github.com/stretchr/testify 6fe211e493929a8aac0469b93f28b1d0688a9a3a
 github.com/tang0th/go-chacha20 06dbc316d77c2f3bb351d78881486a164125f54b
 github.com/toqueteos/webbrowser 21fc9f95c83442fd164094666f7cb4f9fdd56cd6
 github.com/youtube/vitess 6254bb7c2965df69c73b0b4a9edc1e339dd8451d
-golang.org/x/sys 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
 github.com/op/go-logging b2cb9fa56473e98db8caba80237377e83fe44db5
 github.com/urfave/cli a14d7d367bc02b1f57d88de97926727f2d936387

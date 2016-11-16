@@ -3,11 +3,11 @@ package webrpc
 import (
 	"net/http"
 
+	logging "github.com/op/go-logging"
+
 	"encoding/json"
 
 	"bytes"
-
-	logging "github.com/op/go-logging"
 )
 
 var (
@@ -32,7 +32,7 @@ var (
 	jsonRPC = "2.0"
 )
 
-var logger = logging.MustGetLogger("skycoin.webrpc")
+var logger = logging.MustGetLogger("webrpc")
 
 // Request rpc request struct
 type Request struct {

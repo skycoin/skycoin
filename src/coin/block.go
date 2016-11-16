@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-    logging "gopkg.in/op/go-logging.v1"
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-var logger = logging.MustGetLogger("skycoin.coin")
+var logger = logging.MustGetLogger("coin")
 
 type Block struct {
 	Head BlockHeader

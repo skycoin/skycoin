@@ -3,11 +3,10 @@ package visor
 import (
 	"errors"
 
-	"gopkg.in/op/go-logging.v1"
-	//"fmt"
 	"log"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -16,7 +15,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("skycoin.visor")
+	logger = logging.MustGetLogger("visor")
 )
 
 // Configuration parameters for the Visor

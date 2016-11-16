@@ -275,6 +275,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     });
                     return ret;
                 }
+                GetBlockAmount(block) {
+                    var ret = [];
+                    _.each(block.body.txns[0].outputs, function (o) {
+                        ret.push(o.coins);
+                    });
+                    return ret.join(",");
+                }
                 loadDefaultConnections() {
                     this.http.post('/network/defaultConnections', '')
                         .map((res) => res.json())
@@ -301,11 +308,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 loadBlockChain() {
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.get('/last_blocks', { headers: headers })
+                    this.http.get('/last_blocks?num=10', { headers: headers })
                         .map((res) => res.json())
                         .subscribe(data => {
                         console.log("blockchain", data);
-                        this.blockChain = data;
+                        this.blockChain = _.sortBy(data.blocks, function (o) {
+                            return o.header.seq * (-1);
+                        });
                         this.setBlockPage(1);
                     }, err => console.log("Error on load blockchain: " + err), () => {
                         //console.log('blockchain load done');
@@ -603,7 +612,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.blockPager = this.pagerService.getPager(this.blockChain.length, page);
                     // get current page of items
                     this.blockPagedItems = this.blockChain.slice(this.blockPager.startIndex, this.blockPager.endIndex + 1);
-                    console.log("this.blockPagedItems", this.blockPagedItems);
+                    //console.log("this.blockPagedItems", this.blockPagedItems);
                 }
                 searchHistory(searchKey) {
                     console.log(searchKey);

@@ -99,14 +99,8 @@
                           <label class="col-sm-2 control-label"><i class="fa fa-question-circle"></i>&nbsp;Wallet:</label>
                           <div class="col-sm-6">
                             <select class="form-control" #selectedWallet2 (change)="onSelectWallet(selectedWallet2.value)">
-                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}" value="{{wallet.meta.filename}}">{{wallet.meta.label}}({{wallet.meta.filename}})</option>
+                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}" value="{{wallet.meta.filename}}">{{wallet.meta.label}}({{wallet.meta.filename}}) - {{wallet.balance}}&nbsp;SKY</option>
                             </select>
-                          </div>
-                      </div>
-                      <div class="form-group">
-                          <label class="col-sm-2 control-label">Balance:</label>
-                          <div class="col-sm-6" style="padding-top:5px">
-                            <span>{{selectedWallet.balance}}&nbsp;SKY</span>
                           </div>
                       </div>
                       <div class="form-group">
@@ -251,9 +245,9 @@
                         <tbody >
                           <tr *ngFor="#block of blockPagedItems">
                             <td>{{getDateTimeString(block.header.timestamp)}}</td>
-                            <td></td>
+                            <td><a href="#" (click)="showBlockDetail(block)">{{block.header.seq}}</a></td>
                             <td>{{block.body.txns.length}}</td>
-                            <td>{{GetTransactionAmount2(block.body.txns[0])|number}}</td>
+                            <td>{{GetBlockAmount(block)}}</td>
                             <td>{{block.body.txns[0].txid}}</td>
                           </tr>
                       </tbody>

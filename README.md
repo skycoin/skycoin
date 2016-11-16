@@ -16,7 +16,54 @@ For linux:
 sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev screen -y
 
 OSX:
+
+1) Install [homebrew](brew.sh), if you don't have it yet
+
+```
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+2) Install the latest version of golang
+
+```
+brew install go
+```
+
+3) Setup $GOPATH variable, add it to ~/.bash_profile (or bashrc). After editing, open a new tab
+
+```
+# bashrc or bash_profile
+
+export GOPATH=/Users/<username>/go 
+export PATH=$PATH:$GOPATH/bin
+
+```
+
+4) Install Mercurial and Bazaar
+
+```
 brew install mercurial bzr
+```
+
+5) Fetch the latest code of skycoin from the github repository
+
+```
+go get github.com/skycoin/skycoin
+```
+
+6) Change your current directory to $GOPATH/src/github.com/skycoin/skycoin
+
+```
+cd $GOPATH/src/github.com/skycoin/skycoin
+```
+
+7) Install glock and sync all the dependencies 
+
+```
+go get github.com/robfig/glock
+glock sync github.com/skycoin/skycoin
+```
+
+8) Run the node ;)
 
 ```
 ./run.sh -h

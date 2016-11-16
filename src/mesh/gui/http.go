@@ -11,8 +11,7 @@ import (
 	"path/filepath"
 	//"strings"
 
-	"gopkg.in/op/go-logging.v1"
-
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/util"
 

@@ -9,8 +9,8 @@ import (
 	"net"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"gopkg.in/op/go-logging.v1"
 )
 
 /*

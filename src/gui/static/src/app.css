@@ -364,3 +364,6 @@ label {
 .total-sky-text {
   font-size: 16px;
 }
+.text-underline {
+  text-decoration: underline;
+}

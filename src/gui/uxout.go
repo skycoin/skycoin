@@ -21,6 +21,10 @@ type uxOutJSON struct {
 }
 
 func newUxOutJson(out *historydb.UxOut) *uxOutJSON {
+	if out == nil {
+		return nil
+	}
+
 	return &uxOutJSON{
 		Time:          out.Out.Head.Time,
 		SrcBkSeq:      out.Out.Head.BkSeq,
@@ -64,6 +68,11 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 		uxout, err := gateway.V.GetUxOutByID(id)
 		if err != nil {
 			wh.Error400(w, err.Error())
+			return
+		}
+
+		if uxout == nil {
+			wh.Error404(w, "not found")
 			return
 		}
 

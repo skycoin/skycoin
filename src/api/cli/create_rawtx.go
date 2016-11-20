@@ -128,7 +128,7 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 		}
 
 		if filepath.Base(w) != w {
-			w, err = filepath.Abs(filepath.Dir(w))
+			w, err = filepath.Abs(w)
 			return
 		}
 		w = filepath.Join(walletDir, w)
@@ -177,6 +177,11 @@ func getToAddress(c *gcli.Context) (string, error) {
 	}
 
 	toAddr := c.Args().First()
+	// validate address
+	if _, err := cipher.DecodeBase58Address(toAddr); err != nil {
+		return "", err
+	}
+
 	return toAddr, nil
 }
 

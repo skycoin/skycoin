@@ -420,11 +420,19 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.defaultConnections.splice(idx, 1);
                 }
                 //Add new wallet function for generate new wallet in Skycoin
-                createNewWallet(label, seed) {
-                    /*if(addressCount < 1) {
-                      alert("Please input correct address count");
-                      return;
-                    }*/
+                createNewWallet(label, seed, addressCount) {
+                    if (addressCount < 1) {
+                        alert("Please input correct address count");
+                        return;
+                    }
+                    //check if label is duplicated
+                    var old = _.find(this.wallets, function (o) {
+                        return (o.meta.label == label);
+                    });
+                    if (old) {
+                        alert("This wallet label is used already");
+                        return;
+                    }
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -434,11 +442,40 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         .map((res) => res.json())
                         .subscribe(response => {
                         console.log(response);
-                        //Hide new wallet popup
-                        this.NewWalletIsVisible = false;
-                        alert("New wallet created successfully");
-                        //Load wallet for refresh list
-                        this.loadWallet();
+                        if (addressCount > 1) {
+                            var repeats = [];
+                            for (var i = 0; i < addressCount - 1; i++) {
+                                repeats.push(i);
+                            }
+                            async.map(repeats, (idx, callback) => {
+                                var stringConvert = 'id=' + response.meta.filename;
+                                this.http.post('/wallet/newAddress', stringConvert, { headers: headers })
+                                    .map((res) => res.json())
+                                    .subscribe(response => {
+                                    console.log(response);
+                                    callback(null, null);
+                                }, err => {
+                                    callback(err, null);
+                                }, () => { });
+                            }, (err, ret) => {
+                                if (err) {
+                                    console.log(err);
+                                    return;
+                                }
+                                //Hide new wallet popup
+                                this.NewWalletIsVisible = false;
+                                alert("New wallet created successfully");
+                                //Load wallet for refresh list
+                                this.loadWallet();
+                            });
+                        }
+                        else {
+                            //Hide new wallet popup
+                            this.NewWalletIsVisible = false;
+                            alert("New wallet created successfully");
+                            //Load wallet for refresh list
+                            this.loadWallet();
+                        }
                     }, err => {
                         console.log(err);
                     }, () => { });
@@ -471,6 +508,15 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Update wallet function for update wallet label
                 updateWallet(walletid, walletName) {
+                    console.log("update wallet", walletid, walletName);
+                    //check if label is duplicated
+                    var old = _.find(this.wallets, function (o) {
+                        return (o.meta.label == walletName);
+                    });
+                    if (old) {
+                        alert("This wallet label is used already");
+                        return;
+                    }
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -630,6 +676,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //console.log("this.blockPagedItems", this.blockPagedItems);
                 }
                 searchHistory(searchKey) {
+                    console.log(searchKey);
+                }
+                searchBlockHistory(searchKey) {
                     console.log(searchKey);
                 }
                 getRandomWords() {

@@ -96,6 +96,10 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			wh.Error400(w, err.Error())
 			return
 		}
+		if tx == nil {
+			wh.Error404(w, "not found")
+			return
+		}
 
 		resTx := visor.TransactionResult{
 			Transaction: visor.NewReadableTransaction(&tx.Txn),

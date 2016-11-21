@@ -8,7 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/serialize"
 	"github.com/skycoin/skycoin/src/mesh/transport"
-	//"gopkg.in/op/go-logging.v1"
 )
 
 //var logger = logging.MustGetLogger("node")

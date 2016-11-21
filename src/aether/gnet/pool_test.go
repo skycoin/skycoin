@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/op/go-logging.v1"
 )
 
 var (

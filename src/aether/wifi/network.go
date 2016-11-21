@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/aether/wifi/linux"
-	"gopkg.in/op/go-logging.v1"
 )
 
 type Address struct {

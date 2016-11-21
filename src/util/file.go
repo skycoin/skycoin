@@ -13,13 +13,13 @@ import (
 	"runtime"
 	"strings"
 
-	"gopkg.in/op/go-logging.v1"
+	logging "github.com/op/go-logging"
 )
 
 var (
 	DataDir = ""
 
-	logger = logging.MustGetLogger("skycoin.util")
+	logger = logging.MustGetLogger("util")
 )
 
 // Disables the logger completely

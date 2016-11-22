@@ -228,7 +228,7 @@ func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
 
 	return &SpendResult{
 		Balance:     b,
-		Transaction: visor.NewReadableTransaction(&txn),
+		Transaction: visor.NewReadableTransaction(&visor.Transaction{Txn: txn}),
 		Error:       errString,
 	}
 }

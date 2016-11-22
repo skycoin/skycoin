@@ -2,6 +2,7 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 
 	"log"
 	"time"
@@ -463,6 +464,7 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 		return &Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
+			Time:   uint64(tx.Received.Unix()),
 		}, nil
 	}
 
@@ -476,9 +478,15 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	}
 
 	confirms := vs.GetHeadBlock().Seq() - txn.BlockSeq + 1
+	b := vs.GetBlockBySeq(txn.BlockSeq)
+	if b == nil {
+		return nil, fmt.Errorf("found no block in seq %v", txn.BlockSeq)
+	}
+
 	return &Transaction{
 		Txn:    txn.Tx,
 		Status: NewConfirmedTransactionStatus(confirms),
+		Time:   b.Time(),
 	}, nil
 }
 

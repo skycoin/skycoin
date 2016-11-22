@@ -36,8 +36,9 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 // Wrapper around coin.Transaction, tagged with its status.  This allows us
 // to include unconfirmed txns
 type Transaction struct {
-	Txn    coin.Transaction  `json:"txn"`
-	Status TransactionStatus `json:"status"`
+	Txn    coin.Transaction  //`json:"txn"`
+	Status TransactionStatus //`json:"status"`
+	Time   uint64            //`json:"time"`
 }
 
 type TransactionStatus struct {
@@ -180,6 +181,7 @@ type ReadableTransaction struct {
 	Type      uint8  `json:"type"`
 	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
+	Time      uint64 `json:"time"`
 
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`
@@ -203,7 +205,6 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedT
 }
 
 func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
-
 	txid := t.Hash()
 	sigs := make([]string, len(t.Sigs))
 	for i, _ := range t.Sigs {

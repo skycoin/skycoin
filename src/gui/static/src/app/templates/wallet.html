@@ -99,7 +99,13 @@
                           <label class="col-sm-2 control-label"><i class="fa fa-question-circle"></i>&nbsp;Wallet:</label>
                           <div class="col-sm-6">
                             <select class="form-control" #selectedWallet2 (change)="onSelectWallet(selectedWallet2.value)">
-                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}" value="{{wallet.meta.filename}}">{{wallet.meta.label}}({{wallet.meta.filename}}) - {{wallet.balance}}&nbsp;SKY</option>
+                              <option><strong>Select Wallet</strong></option>
+                              <option *ngFor="#wallet of wallets" selected="{{wallet.meta.filename==spendid}}" value="{{wallet.meta.filename}}">
+                                <strong>{{wallet.meta.label?wallet.meta.label:'Undefined'}}(All) - {{wallet.balance}}&nbsp;SKY</strong>
+                                <div *ngFor="#entry of wallet.entries; #idx=index">
+                                  - {{wallet.meta.label?wallet.meta.label:'Undefined'}}{{idx>0?'(' + idx + ')':''}}({{entry.address}}) - {{entry.balance?entry.balance:0}}&nbsp;SKY
+                                </div>
+                              </option>
                             </select>
                           </div>
                       </div>
@@ -124,12 +130,12 @@
                               <input type="text" #transactionNote class="form-control" placeholder="Short Description of Transaction">
                           </div>
                       </div>
-                      <div class="form-group">
+                      <!--<div class="form-group">
                           <label class="col-sm-2 control-label">Password:</label>
                           <div class="col-sm-6">
                               <input type="password" #walletPassword class="form-control" placeholder="Wallet Password">
                           </div>
-                      </div>
+                      </div>-->
                       <div class="form-group">
                           <label class="col-sm-2 control-label"></label>
                           <div class="col-sm-6">
@@ -163,15 +169,19 @@
             </div>
 
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.third" class="tab-pane ng-scope">
-                <div class="outline ng-scope" style="overflow:auto;">
-                  <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)">
+                <div class="outline ng-scope">
+                  <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)" (submit)="searchHistory(historySearchKey.value)">
                       <div class="form-group">
                           <label class="col-sm-2 control-label">Search:</label>
                           <div class="col-sm-6">
                               <input #historySearchKey placeholder="Address or Transaction ID" class="form-control" >
                           </div>
+                          <div class="col-sm-4">
+                            <button type="submit" class="btn btn-default">Search</button>
+                          </div>
                       </div>
                   </form>
+                  <div style="width:100%;overflow:auto;">
                     <table id="transaction-table">
                         <thead>
                         <tr class="dark-row">
@@ -202,6 +212,7 @@
                             </tr>
                         </tbody>
                     </table>
+                  </div>
                     <ul *ngIf="historyPager.pages&&historyPager.currentPage&&historyPager.pages.length" class="pagination">
                         <li [ngClass]="{disabled:historyPager.currentPage === 1}">
                             <a (click)="setHistoryPage(1)">First</a>
@@ -223,11 +234,14 @@
             </div>
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.fourth" class="tab-pane ng-scope">
               <div class="outline ng-scope" style="overflow:auto;">
-                <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)">
+                <form class="form-horizontal" (keyup.enter)="searchBlockHistory(blockSearchKey.value)" (submit)="searchBlockHistory(blockSearchKey.value)">
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Search:</label>
                         <div class="col-sm-6">
                             <input #blockSearchKey placeholder="Block Number, Block Hash, Transaction, or Address" class="form-control" >
+                        </div>
+                        <div class="col-sm-4">
+                          <button type="submit" class="btn btn-default">Search</button>
                         </div>
                     </div>
                 </form>
@@ -514,13 +528,13 @@
             <div class="modal-body">
               <form class="form-horizontal">
                   <div class="form-group">
-                      <label class="col-sm-3 control-label">Label:</label>
+                      <label class="col-sm-3 control-label"><i class="fa fa-question-circle"></i>&nbsp;Label:</label>
                       <div class="col-sm-9">
                           <input maxlength="60" #walletLabel placeholder="Name of Wallet" class="form-control" required/>
                       </div>
                   </div>
                   <div class="form-group">
-                      <label class="col-sm-3 control-label">Seed:</label>
+                      <label class="col-sm-3 control-label"><i class="fa fa-question-circle"></i>&nbsp;Seed:</label>
                       <div class="col-sm-9">
                           <textarea rows="4" #walletseed  placeholder="Name of Wallet" cols="46" class="form-control" value="{{randomWords}}"></textarea>
                       </div>
@@ -536,17 +550,17 @@
                       <div class="col-sm-9">
                           <input type="password" #confirmPassword placeholder="Confirm Password" class="form-control" required/>
                       </div>
-                  </div>
+                  </div> -->
                   <div class="form-group">
-                      <label class="col-sm-3 control-label">Addresses to Create:</label>
+                      <label class="col-sm-3 control-label"><i class="fa fa-question-circle"></i>&nbsp;Addresses to Create:</label>
                       <div class="col-sm-9">
                           <input type="Number" #addressCount class="form-control" value="1" required/>
                       </div>
-                  </div>-->
+                  </div>
               </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" (click)="createNewWallet(walletLabel.value, walletseed.value)">Create</button>
+                <button type="button" class="btn btn-default" (click)="createNewWallet(walletLabel.value, walletseed.value, addressCount.value)">Create</button>
             </div>
         </div>
     </div>
@@ -585,7 +599,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" ng-click="cancel()" class="close">&times;</button>
+                <button type="button" (click)="hideLoadSeedWalletPopup()" class="close">&times;</button>
                 <h4 class="modal-title">Load wallet by seed</h4>
             </div>
             <div class="modal-body">

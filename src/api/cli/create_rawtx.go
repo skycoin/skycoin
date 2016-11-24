@@ -22,13 +22,15 @@ func init() {
 		Usage:     "Create a raw transaction to be broadcast to the network later",
 		ArgsUsage: "[to address] [amount]",
 		Description: `
+		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+
         If you are sending from a wallet the coins will be taken recursively 
         from all addresses within the wallet starting with the first address until 
         the amount of the transaction is met. 
         
-        Use caution when using the “-p” command. If you have command history enabled 
+        Use caution when using the "-p" command. If you have command history enabled 
         your wallet encryption password can be recovered from the history log. If you 
-        do not include the “-p” option you will be prompted to enter your password 
+        do not include the "-p" option you will be prompted to enter your password 
         after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
@@ -190,14 +192,17 @@ func getAmount(c *gcli.Context) (uint64, error) {
 		return 0, errors.New("error argument")
 	}
 	amount := c.Args().Get(1)
-	amt, err := strconv.ParseUint(amount, 10, 64)
+	amt, err := strconv.ParseFloat(amount, 64)
 	if err != nil {
 		return 0, errors.New("error amount")
 	}
-	if (amt % 1e6) != 0 {
+
+	v := uint64(amt * 1e6)
+	if (v % 1e6) != 0 {
 		return 0, errors.New("skycoin coins must be multiple of 1e6")
 	}
-	return amt, nil
+
+	return v, nil
 }
 
 func createRawTxFromWallet(wltPath string, chgAddr string, toAddr string, amt uint64) (string, error) {

@@ -13,6 +13,8 @@ func init() {
 		Usage:     "Send skycoin from a wallet or an address to a recipient address",
 		ArgsUsage: "[to address] [amount]",
 		Description: `
+		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+
         If you are sending from a wallet the coins will be taken recursively from all 
         addresses within the wallet starting with the first address until the amount of 
         the transaction is met. 

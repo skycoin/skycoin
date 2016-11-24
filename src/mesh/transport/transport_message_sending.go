@@ -1,6 +1,9 @@
 package transport
 
 import (
+"fmt"
+	"errors"
+	"os"
 	"time"
 
 	"github.com/satori/go.uuid"
@@ -8,24 +11,42 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/domain"
 )
 
-func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
-	self.Status = 
+func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte, _ chan error) error {
+	self.status = SENDING
 	messageID := self.newMessageID()
 	sendMessage := SendMessage{messageID, self.config.MyPeerID, contents}
 	sendSerialized := self.serializer.SerializeMessage(sendMessage)
+	now := time.Now()
 	state := messageSentState{
 		toPeer,
 		sendSerialized,
-		time.Now().Add(self.config.RetransmitDuration),
+		now.Add(self.config.RetransmitDuration),
 		false,
 	}
-	err := self.physicalTransport.SendMessage(toPeer, sendSerialized)
-	if err == nil {
-		self.lock.Lock()
-		defer self.lock.Unlock()
-		self.messagesSent[messageID] = state
+	retChan := make(chan error, 0)
+	var err error
+	go self.physicalTransport.SendMessage(toPeer, sendSerialized, retChan)
+	select {
+	case err = <- retChan:
+		self.status = CONNECTED
+		if err == nil {
+			self.lock.Lock()
+			defer self.lock.Unlock()
+			self.messagesSent[messageID] = state
+			self.packetIsSent = now
+			self.packetsSent++
+			self.packetsCount++
+		}
+	case <-time.After(5 * time.Second):
+		self.status = TIMEOUT
+		err = errors.New("Sending is timed out")
+		fmt.Fprintf(os.Stderr, "Timeout for sending message %s to %s\n", sendSerialized, toPeer)
 	}
 	return err
+}
+
+func (self *Transport) GetStatus() uint32 {
+	return self.status
 }
 
 func (self *Transport) SetCrypto(crypto ITransportCrypto) {
@@ -35,9 +56,17 @@ func (self *Transport) SetCrypto(crypto ITransportCrypto) {
 func (self *Transport) doRetransmits() {
 	self.lock.Lock()
 	defer self.lock.Unlock()
+	retChan := make(chan error, 0)
 	for _, state := range self.messagesSent {
 		if !state.receivedAck {
-			go self.physicalTransport.SendMessage(state.toPeer, state.serialized)
+			go self.physicalTransport.SendMessage(state.toPeer, state.serialized, retChan)
+			select {
+			case <-retChan:
+				self.status = CONNECTED
+				self.packetsRetransmissions++
+			case <-time.After(5 * time.Second):
+				self.status = TIMEOUT
+			}
 		}
 	}
 }
@@ -60,9 +89,11 @@ func (self *Transport) retransmitLoop() {
 }
 
 func (self *Transport) sendAck(message SendMessage) {
+	self.status = REPLYING
 	reply := ReplyMessage{message.MessageID}
 	serialized := self.serializer.SerializeMessage(reply)
-	go self.physicalTransport.SendMessage(message.FromPeerID, serialized)
+	go self.physicalTransport.SendMessage(message.FromPeerID, serialized, nil)
+	self.status = CONNECTED
 }
 
 func (self *Transport) newMessageID() domain.MessageID {

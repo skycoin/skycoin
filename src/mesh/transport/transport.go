@@ -9,7 +9,16 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/serialize"
 )
 
-const DICSONNECTED unit32 = 0, 1 - connected, 2 - sending packets, 3 - receiving packets, 4 - waiting for ACK, 5 - timed out
+// transport statuses
+const (
+	DISCONNECTED uint32 = iota
+	CONNECTED
+	SENDING
+	RECEIVING
+	REPLYING
+	ACKWAITING
+	TIMEOUT
+)
 
 type TransportConfig struct {
 	MyPeerID                        cipher.PubKey
@@ -48,7 +57,7 @@ type Transport struct {
 	serializer        *serialize.Serializer
 	metadata	[]byte
 
-	status		uint32 // 0 - disconnected, 1 - connected, 2 - sending packets, 3 - receiving packets, 4 - waiting for ACK, 5 - timed out
+	status		uint32
 
 	lock             *sync.Mutex
 	messagesSent     map[domain.MessageID]messageSentState
@@ -57,10 +66,10 @@ type Transport struct {
 
 	packetIsSent	time.Time
 	latency		uint64
-	packetCount	uint32
+	packetsCount	uint32
 	packetsSent	uint32
 	packetsReceived	uint32
-	packetRetransmissions	uint32
+	packetsRetransmissions	uint32
 
 	physicalReceived chan []byte
 	closing          chan bool
@@ -77,12 +86,12 @@ func NewTransport(physicalTransport ITransport, config TransportConfig) *Transpo
 		nil,
 		serialize.NewSerializer(),
 		[]byte{},
-		0,
+		DISCONNECTED,
 		&sync.Mutex{},
 		make(map[domain.MessageID]messageSentState),
 		make(map[domain.MessageID]time.Time),
 		1000,
-		nil,
+		time.Time{},
 		0,
 		0,
 		0,
@@ -128,6 +137,7 @@ func (self *Transport) Close() error {
 		self.closing <- true
 	}
 	self.closeWait.Wait()
+	self.status = DISCONNECTED
 	return self.physicalTransport.Close()
 }
 

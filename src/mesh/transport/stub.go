@@ -36,7 +36,6 @@ func NewStubTransport(testing *testing.T, maxMessageSize uint) *StubTransport {
 		Testing:          testing,
 		MaxMessageSize:   maxMessageSize,
 		MessagesReceived: nil,
-//		StubbedPeers:     make(map[cipher.PubKey]*StubTransport),
 		StubbedKey:       &cipher.PubKey{},
 		StubbedPeer:	  &StubTransport{},
 		Lock:             &sync.Mutex{},
@@ -55,7 +54,6 @@ func (self *StubTransport) Close() error {
 
 // Call before adding to node
 func (self *StubTransport) SetStubbedPeer(key cipher.PubKey, peer *StubTransport) {
-//	self.StubbedPeers[key] = peer
 	self.StubbedKey = &key
 	self.StubbedPeer = peer
 }
@@ -66,11 +64,9 @@ func (self *StubTransport) getMessageBuffer() []QueuedMessage {
 	return self.MessageBuffer
 }
 
-func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) error {
-//	peer, exists := self.StubbedPeers[toPeer]
-	fmt.Println("toPeer:",toPeer)
+func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte, retChan chan error) error {
+	var retErr error = nil
 	peer := self.StubbedPeer
-	fmt.Println("peer:",peer)
 	if toPeer == *self.StubbedKey {
 		messageEncrypted := message
 		if self.Crypto != nil {
@@ -81,7 +77,9 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) err
 			messageEncrypted = self.Crypto.Encrypt(message, peerKey)
 		}
 		if (uint)(len(message)) > self.MaxMessageSize {
-			return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
+			retErr = errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
+			if retChan != nil { retChan <- retErr }
+			return retErr
 		}
 		if self.Crypto != nil {
 			message = self.Crypto.Decrypt(messageEncrypted)
@@ -89,22 +87,20 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) err
 		if !self.IgnoreSend {
 			messageBuffer := self.getMessageBuffer()
 			if messageBuffer == nil {
-		fmt.Println(444)
 				peer.MessagesReceived <- message
 				atomic.AddInt32(&self.NumMessagesSent, 1)
-		fmt.Println(4444)
 			} else {
 				self.Lock.Lock()
 				defer self.Lock.Unlock()
-		fmt.Println(55555)
 				self.MessageBuffer = append(self.MessageBuffer, QueuedMessage{peer, message})
-		fmt.Println(55555555555)
 			}
 		}
-		fmt.Println(555)
+		if retChan != nil { retChan <- nil }
 		return nil
 	}
-	return errors.New("No stubbed transport for this peer")
+	retErr = errors.New("No stubbed transport for this peer")
+	if retChan != nil { retChan <- retErr }
+	return retErr
 }
 
 func (self *StubTransport) SetIgnoreSendStatus(status bool) {
@@ -143,7 +139,6 @@ func (self *StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 }
 
 func (self *StubTransport) SetReceiveChannel(received chan []byte) {
-	fmt.Println("Setting receive channel:", received)
 	self.MessagesReceived = received
 }
 

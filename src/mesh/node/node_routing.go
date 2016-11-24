@@ -85,9 +85,7 @@ func (self *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, time
 		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
 	}
 	serialized := self.serializer.SerializeMessage(message)
-fmt.Println(directPeer, transportToPeer, serialized)
-	err = transportToPeer.SendMessage(directPeer, serialized)
-fmt.Println(5)
+	err = transportToPeer.SendMessage(directPeer, serialized, nil)
 	if err != nil {
 		return err
 	}
@@ -218,7 +216,7 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 		return errors.New(fmt.Sprintf("2No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
 	}
 	serialized := self.serializer.SerializeMessage(message)
-	err := transportToPeer.SendMessage(directPeer, serialized)
+	err := transportToPeer.SendMessage(directPeer, serialized, nil)
 	if err != nil {
 		return err
 	}
@@ -333,7 +331,7 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 		ConfirmRoutedID: routeId,
 	}
 	serialized := self.serializer.SerializeMessage(message)
-	err := transportToPeer.SendMessage(directPeer, serialized)
+	err := transportToPeer.SendMessage(directPeer, serialized, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Serialization error %v\n", err)
 		return

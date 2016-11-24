@@ -21,6 +21,6 @@ type ITransport interface {
 	// Does not consider any extra bytes added by crypto
 	GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint
 	// May block
-	SendMessage(toPeer cipher.PubKey, contents []byte) error
+	SendMessage(toPeer cipher.PubKey, contents []byte, retChan chan error) error
 	SetReceiveChannel(received chan []byte)
 }

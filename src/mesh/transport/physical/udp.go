@@ -56,7 +56,6 @@ type UDPTransport struct {
 
 	// Thread protected variables
 	lock           *sync.Mutex
-//	connectedPeers map[cipher.PubKey]UDPCommConfig
 	connectedPeerKey  *cipher.PubKey
 	connectedPeerConf *UDPCommConfig
 }
@@ -285,16 +284,21 @@ func (self *UDPTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
 }
 
 // May block
-func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
+func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte, retChan chan error) error {
+	var retErr error = nil
 	// Find pubkey
 	peerComm, found := self.safeGetPeerComm(toPeer)
 	if !found {
-		return errors.New(fmt.Sprintf("Dropping message that is to an unknown peer: %v\n", toPeer))
+		retErr = errors.New(fmt.Sprintf("Dropping message that is to an unknown peer: %v\n", toPeer))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
 
 	// Check length
 	if len(contents) > int(peerComm.DatagramLength) {
-		return errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), self.config.DatagramLength))
+		retErr = errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), self.config.DatagramLength))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
 
 	// Pad to length
@@ -317,11 +321,16 @@ func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte) err
 
 	n, err := conn.WriteToUDP(datagramBuffer, &toAddr)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error on WriteToUDP: %v\n", err))
+		retErr = errors.New(fmt.Sprintf("Error on WriteToUDP: %v\n", err))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
 	if n != int(peerComm.DatagramLength) {
-		return errors.New(fmt.Sprintf("WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength))
+		retErr = errors.New(fmt.Sprintf("WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
+	if retChan != nil { retChan <- nil }
 	return nil
 }
 

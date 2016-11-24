@@ -10,6 +10,7 @@ import (
 )
 
 type uxOutJSON struct {
+	Uxid          string `json:"uxid"`
 	Time          uint64 `json:"time"`
 	SrcBkSeq      uint64 `json:"src_block_seq"`
 	SrcTx         string `json:"src_tx"`
@@ -26,6 +27,7 @@ func newUxOutJson(out *historydb.UxOut) *uxOutJSON {
 	}
 
 	return &uxOutJSON{
+		Uxid:          out.Hash().Hex(),
 		Time:          out.Out.Head.Time,
 		SrcBkSeq:      out.Out.Head.BkSeq,
 		SrcTx:         out.Out.Body.SrcTransaction.Hex(),
@@ -98,7 +100,7 @@ func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.V.GetRecvUxOutOfAddr(cipherAddr)
+		uxs, err := gateway.GetRecvUxOutOfAddr(cipherAddr)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -131,7 +133,7 @@ func getSpentOutUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.V.GetSpentUxOutOfAddr(cipherAddr)
+		uxs, err := gateway.GetSpentUxOutOfAddr(cipherAddr)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

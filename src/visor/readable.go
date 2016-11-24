@@ -181,7 +181,7 @@ type ReadableTransaction struct {
 	Type      uint8  `json:"type"`
 	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
-	Time      uint64 `json:"time,omitempty"`
+	Timestamp uint64 `json:"timestamp,omitempty"`
 
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`
@@ -224,7 +224,7 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 		Type:      t.Txn.Type,
 		Hash:      t.Txn.Hash().Hex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
-		Time:      t.Time,
+		Timestamp: t.Time,
 
 		Sigs: sigs,
 		In:   in,

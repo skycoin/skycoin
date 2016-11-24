@@ -161,10 +161,6 @@ func strongUint() uint32 {
 func (self *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-//	peerComm, foundPeer := self.connectedPeers[peer]
-//	if !foundPeer {
-//		return nil, false
-//	}
 	if peer != *self.connectedPeerKey { return nil, false }
 	return self.connectedPeerConf, true
 }
@@ -226,7 +222,6 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 		waitGroup,
 		nil, // No crypto by default
 		&sync.Mutex{},
-		//make(map[cipher.PubKey]UDPCommConfig),
 		nil,
 		nil,
 	}
@@ -378,7 +373,6 @@ func (self *UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) 
 	}
 	self.lock.Lock()
 	defer self.lock.Unlock()
-//	_, connected := self.connectedPeers[peer]
 	if self.connectedPeerKey != nil {
 		return errors.New(fmt.Sprintf("Already connected to peer %v", peer))
 	}

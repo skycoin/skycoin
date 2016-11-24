@@ -130,9 +130,7 @@ func (self *StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 		}
 	}
 	for _, queued := range messages {
-		fmt.Println(queued.TransportToPeer)
 		queued.TransportToPeer.MessagesReceived <- queued.messageContent
-		fmt.Println(".fds;ljflsdk")
 		atomic.AddInt32(&self.NumMessagesSent, 1)
 	}
 }

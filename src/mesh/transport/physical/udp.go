@@ -56,7 +56,9 @@ type UDPTransport struct {
 
 	// Thread protected variables
 	lock           *sync.Mutex
-	connectedPeers map[cipher.PubKey]UDPCommConfig
+//	connectedPeers map[cipher.PubKey]UDPCommConfig
+	connectedPeerKey  *cipher.PubKey
+	connectedPeerConf *UDPCommConfig
 }
 
 func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
@@ -160,11 +162,12 @@ func strongUint() uint32 {
 func (self *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	peerComm, foundPeer := self.connectedPeers[peer]
-	if !foundPeer {
-		return nil, false
-	}
-	return &peerComm, true
+//	peerComm, foundPeer := self.connectedPeers[peer]
+//	if !foundPeer {
+//		return nil, false
+//	}
+	if peer != *self.connectedPeerKey { return nil, false }
+	return self.connectedPeerConf, true
 }
 
 func (self *UDPTransport) listenTo(port ListenPort) {
@@ -224,7 +227,9 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 		waitGroup,
 		nil, // No crypto by default
 		&sync.Mutex{},
-		make(map[cipher.PubKey]UDPCommConfig),
+		//make(map[cipher.PubKey]UDPCommConfig),
+		nil,
+		nil,
 	}
 
 	for _, port := range ret.listenPorts {
@@ -260,14 +265,14 @@ func (self *UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	return found
 }
 
-func (self *UDPTransport) GetConnectedPeers() []cipher.PubKey {
+func (self *UDPTransport) GetConnectedPeer() cipher.PubKey {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	ret := []cipher.PubKey{}
+/*	ret := []cipher.PubKey{}
 	for key, _ := range self.connectedPeers {
 		ret = append(ret, key)
-	}
-	return ret
+	}*/
+	return *self.connectedPeerKey
 }
 
 func (self *UDPTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
@@ -368,18 +373,20 @@ func (self *UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) 
 	}
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	_, connected := self.connectedPeers[peer]
-	if connected {
+//	_, connected := self.connectedPeers[peer]
+	if self.connectedPeerKey != nil {
 		return errors.New(fmt.Sprintf("Already connected to peer %v", peer))
 	}
-	self.connectedPeers[peer] = config
+	self.connectedPeerKey = &peer
+	self.connectedPeerConf = &config
 	return nil
 }
 
 func (self *UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	delete(self.connectedPeers, peer)
+	self.connectedPeerKey = nil
+	self.connectedPeerConf = nil
 }
 
 // Create UDPTransport

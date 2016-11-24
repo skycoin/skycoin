@@ -148,7 +148,7 @@ func nodeAddTransportHandler(nm *nodemanager.NodeManager) http.HandlerFunc {
 		}
 
 		node := nm.GetNodeByIndex(c.NodeID)
-		nodemanager.AddTransportToNode(node, c.Config)
+		nodemanager.AddPeersToNode(node, c.Config)
 	}
 }
 

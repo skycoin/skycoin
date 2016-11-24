@@ -1,7 +1,7 @@
 package mesh
 
 import (
-"fmt"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -85,13 +85,13 @@ func TestConnectedPeers(t *testing.T) {
 	assert.True(t, node.ConnectedToPeer(peerA))
 	assert.True(t, node.ConnectedToPeer(peerB))
 	assert.False(t, node.ConnectedToPeer(peerC))
-	assert.True(t, transportA.ConnectedToPeer(peerA))
 
 	node.AddTransport(transportC)
 	assert.Equal(t, []cipher.PubKey{peerA, peerB, peerC}, sortPubKeys(node.GetConnectedPeers()))
 	assert.True(t, node.ConnectedToPeer(peerA))
 	assert.True(t, node.ConnectedToPeer(peerB))
 	assert.True(t, node.ConnectedToPeer(peerC))
+	assert.True(t, transportA.ConnectedToPeer(peerA))
 
 	node.RemoveTransport(transportA)
 	assert.False(t, node.ConnectedToPeer(peerA))
@@ -114,17 +114,18 @@ func TestSendDirect(t *testing.T) {
 
 func TestLongRoute(t *testing.T) {
 	contents := []byte{4, 66, 7, 44, 33}
-	numPeers, dropFirst, reorder, sendBack := 3, false, false, false
+	numPeers, dropFirst, reorder, sendBack := 5, false, false, false
 	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
-	panic(0)
 }
 
 func TestShortSendBack(t *testing.T) {
+	fmt.Println("hello")
+	defer fmt.Println("goodbye")
 	contents := []byte{1, 44, 2, 22, 11, 22}
 	numPeers, dropFirst, reorder, sendBack := 2, false, false, true
 	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
 }
-
+/*
 func TestMediumSendBack(t *testing.T) {
 	contents := []byte{1, 44, 2, 22, 11, 22}
 	numPeers, dropFirst, reorder, sendBack := 3, false, false, true
@@ -167,7 +168,7 @@ func TestSendThruRoute(t *testing.T) {
 		panic("Test timed out")
 	}
 }
-/*
+
 func TestRouteExpiry(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -228,7 +229,7 @@ func TestRouteExpiry(t *testing.T) {
 	assert.NotEqual(t, afterExtendConfirmedTime, afterWaitConfirmedTime)
 	assert.Equal(t, afterWaitConfirmedTime, afterIgnoreConfirmedTime)
 }
-*/
+
 func TestDeleteRoute(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -256,7 +257,7 @@ func TestDeleteRoute(t *testing.T) {
 	assert.Zero(t, nodes[0].debug_countRoutes())
 	assert.Zero(t, nodes[1].debug_countRoutes())
 }
-
+*/
 func SetupNode(t *testing.T, maxDatagramLength uint, newPubKey cipher.PubKey) *Node {
 	var err error
 	nodeConfig := NodeConfig{
@@ -272,10 +273,12 @@ func SetupNode(t *testing.T, maxDatagramLength uint, newPubKey cipher.PubKey) *N
 	return node
 }
 
+// Nodes each have one transport
+// All nodes receive all other nodes' messages, but stub transport filters
 func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte,
-	transports []*transport.StubTransport) {
+	transports [][]*transport.StubTransport) {
 	nodes = make([]*Node, n)
-	transports = []*transport.StubTransport{}
+	transports = [][]*transport.StubTransport{}
 	to_close = make(chan []byte, 20)
 	sentMessages := make(chan []byte, 20)
 	maxDatagramLengths := []uint{512, 450, 1000, 150, 200}
@@ -296,7 +299,7 @@ func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_cl
 				nodes[i].AddTransport(transportFrom)
 			}
 		}
-		transports = append(transports, transportsFrom...)
+		transports = append(transports, transportsFrom)
 	}
 	return nodes, sentMessages, transports
 }
@@ -320,7 +323,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 		}
 		allConnections = append(allConnections, toConnections)
 	}
-//	nodes, toClose, transports := SetupNodes((uint)(nPeers), allConnections, t)
+	//nodes, toClose, transports := SetupNodes((uint)(nPeers), allConnections, t)
 	nodes, toClose, _ := SetupNodes((uint)(nPeers), allConnections, t)
 	defer close(toClose)
 	defer func() {
@@ -340,11 +343,10 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 
 	for extendIdx := 2; extendIdx < nPeers; extendIdx++ {
 		assert.Nil(t, nodes[0].ExtendRoute(addedRouteID, nodes[extendIdx].GetConfig().PubKey, time.Second))
-fmt.Println(3)
 	}
-
 /*
-	//var replyTo domain.ReplyTo
+	var replyTo domain.ReplyTo
+
 	for dropFirstIdx := 0; dropFirstIdx < 2; dropFirstIdx++ {
 		shouldReceive := true
 		if dropFirst && dropFirstIdx == 0 {
@@ -367,7 +369,7 @@ fmt.Println(3)
 			select {
 			case receivedMessage := <-receivedMessages:
 				{
-					//replyTo = receivedMessage.ReplyTo
+					replyTo = receivedMessage.ReplyTo
 					assert.Equal(t, addedRouteID, receivedMessage.ReplyTo.RouteID)
 					assert.Equal(t, contents, receivedMessage.Contents)
 				}
@@ -401,8 +403,7 @@ fmt.Println(3)
 		case <-time.After(10 * time.Second):
 			panic("Test timed out")
 		}
-	}
-	*/
+	}*/
 }
 
 func sortPubKeys(pubKeys []cipher.PubKey) []cipher.PubKey {
@@ -470,7 +471,7 @@ func Deprecated_TestMessageExpiry(t *testing.T) {
 	//time.Sleep(10 * time.Second)
 	//assert.Zero(t, nodes[1].debug_countMessages())
 }
-*/
+
 // Tests TODO
 
 // Establish route and send unreliable
@@ -478,3 +479,4 @@ func Deprecated_TestMessageExpiry(t *testing.T) {
 // Packet loss test
 // Multiple transport test
 // Threading test
+*/

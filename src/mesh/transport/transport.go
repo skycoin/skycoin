@@ -9,6 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/serialize"
 )
 
+const DICSONNECTED unit32 = 0, 1 - connected, 2 - sending packets, 3 - receiving packets, 4 - waiting for ACK, 5 - timed out
+
 type TransportConfig struct {
 	MyPeerID                        cipher.PubKey
 	PhysicalReceivedChannelLength   int
@@ -38,35 +40,60 @@ type messageSentState struct {
 
 // Wraps Transport, but adds store-and-forward
 type Transport struct {
+
+	id		uint32
 	config            TransportConfig
 	physicalTransport ITransport
 	output            chan []byte
 	serializer        *serialize.Serializer
+	metadata	[]byte
+
+	status		uint32 // 0 - disconnected, 1 - connected, 2 - sending packets, 3 - receiving packets, 4 - waiting for ACK, 5 - timed out
 
 	lock             *sync.Mutex
 	messagesSent     map[domain.MessageID]messageSentState
 	messagesReceived map[domain.MessageID]time.Time
 	nextMsgId        uint32
 
+	packetIsSent	time.Time
+	latency		uint64
+	packetCount	uint32
+	packetsSent	uint32
+	packetsReceived	uint32
+	packetRetransmissions	uint32
+
 	physicalReceived chan []byte
 	closing          chan bool
 	closeWait        *sync.WaitGroup
 }
 
+var currentID uint32 = 0
+
 func NewTransport(physicalTransport ITransport, config TransportConfig) *Transport {
 	transport := &Transport{
+		currentID,
 		config,
 		physicalTransport,
 		nil,
 		serialize.NewSerializer(),
+		[]byte{},
+		0,
 		&sync.Mutex{},
 		make(map[domain.MessageID]messageSentState),
 		make(map[domain.MessageID]time.Time),
 		1000,
+		nil,
+		0,
+		0,
+		0,
+		0,
+		0,
 		make(chan []byte, config.PhysicalReceivedChannelLength),
 		make(chan bool, 10),
 		&sync.WaitGroup{},
 	}
+
+	currentID++
 
 	transport.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, SendMessage{})
 	transport.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, ReplyMessage{})
@@ -83,8 +110,8 @@ func (self *Transport) ConnectedToPeer(peer cipher.PubKey) bool {
 	return self.physicalTransport.ConnectedToPeer(peer)
 }
 
-func (self *Transport) GetConnectedPeers() []cipher.PubKey {
-	return self.physicalTransport.GetConnectedPeers()
+func (self *Transport) GetConnectedPeer() cipher.PubKey {
+	return self.physicalTransport.GetConnectedPeer()
 }
 
 func (self *Transport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {

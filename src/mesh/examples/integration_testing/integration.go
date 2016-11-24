@@ -62,7 +62,7 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 	defer wg.Done()
 
 	node := nodemanager.CreateNode(config)
-	nodemanager.AddTransportToNode(node, config)
+	nodemanager.AddPeersToNode(node, config)
 
 	defer node.Close()
 

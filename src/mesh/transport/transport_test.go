@@ -38,8 +38,8 @@ func SetupTwoPeers(t *testing.T) (testKeyA, testKeyB cipher.PubKey,
 	transportB = NewTransport(stubTransportB, configB)
 	transportB.SetReceiveChannel(receivedB)
 
-	stubTransportA.AddStubbedPeer(testKeyB, stubTransportB)
-	stubTransportB.AddStubbedPeer(testKeyA, stubTransportA)
+	stubTransportA.SetStubbedPeer(testKeyB, stubTransportB)
+	stubTransportB.SetStubbedPeer(testKeyA, stubTransportA)
 
 	return
 }

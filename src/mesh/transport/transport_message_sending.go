@@ -9,6 +9,7 @@ import (
 )
 
 func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
+	self.Status = 
 	messageID := self.newMessageID()
 	sendMessage := SendMessage{messageID, self.config.MyPeerID, contents}
 	sendSerialized := self.serializer.SerializeMessage(sendMessage)

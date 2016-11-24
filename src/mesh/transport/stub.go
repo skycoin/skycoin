@@ -15,7 +15,9 @@ type StubTransport struct {
 	Testing          *testing.T
 	MaxMessageSize   uint
 	MessagesReceived chan []byte
-	StubbedPeers     map[cipher.PubKey]*StubTransport
+//	StubbedPeers     map[cipher.PubKey]*StubTransport
+	StubbedKey	 *cipher.PubKey
+	StubbedPeer	 *StubTransport
 	Lock             *sync.Mutex
 	CloseWait        *sync.WaitGroup
 	IgnoreSend       bool
@@ -34,7 +36,9 @@ func NewStubTransport(testing *testing.T, maxMessageSize uint) *StubTransport {
 		Testing:          testing,
 		MaxMessageSize:   maxMessageSize,
 		MessagesReceived: nil,
-		StubbedPeers:     make(map[cipher.PubKey]*StubTransport),
+//		StubbedPeers:     make(map[cipher.PubKey]*StubTransport),
+		StubbedKey:       &cipher.PubKey{},
+		StubbedPeer:	  &StubTransport{},
 		Lock:             &sync.Mutex{},
 		CloseWait:        &sync.WaitGroup{},
 		IgnoreSend:       false,
@@ -50,8 +54,10 @@ func (self *StubTransport) Close() error {
 }
 
 // Call before adding to node
-func (self *StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport) {
-	self.StubbedPeers[key] = peer
+func (self *StubTransport) SetStubbedPeer(key cipher.PubKey, peer *StubTransport) {
+//	self.StubbedPeers[key] = peer
+	self.StubbedKey = &key
+	self.StubbedPeer = peer
 }
 
 func (self *StubTransport) getMessageBuffer() []QueuedMessage {
@@ -61,8 +67,11 @@ func (self *StubTransport) getMessageBuffer() []QueuedMessage {
 }
 
 func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) error {
-	peer, exists := self.StubbedPeers[toPeer]
-	if exists {
+//	peer, exists := self.StubbedPeers[toPeer]
+	fmt.Println("toPeer:",toPeer)
+	peer := self.StubbedPeer
+	fmt.Println("peer:",peer)
+	if toPeer == *self.StubbedKey {
 		messageEncrypted := message
 		if self.Crypto != nil {
 			peerKey := []byte{}
@@ -80,14 +89,19 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) err
 		if !self.IgnoreSend {
 			messageBuffer := self.getMessageBuffer()
 			if messageBuffer == nil {
+		fmt.Println(444)
 				peer.MessagesReceived <- message
 				atomic.AddInt32(&self.NumMessagesSent, 1)
+		fmt.Println(4444)
 			} else {
 				self.Lock.Lock()
 				defer self.Lock.Unlock()
+		fmt.Println(55555)
 				self.MessageBuffer = append(self.MessageBuffer, QueuedMessage{peer, message})
+		fmt.Println(55555555555)
 			}
 		}
+		fmt.Println(555)
 		return nil
 	}
 	return errors.New("No stubbed transport for this peer")
@@ -121,12 +135,15 @@ func (self *StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 		}
 	}
 	for _, queued := range messages {
+		fmt.Println(queued.TransportToPeer)
 		queued.TransportToPeer.MessagesReceived <- queued.messageContent
+		fmt.Println(".fds;ljflsdk")
 		atomic.AddInt32(&self.NumMessagesSent, 1)
 	}
 }
 
 func (self *StubTransport) SetReceiveChannel(received chan []byte) {
+	fmt.Println("Setting receive channel:", received)
 	self.MessagesReceived = received
 }
 
@@ -136,21 +153,23 @@ func (self *StubTransport) SetCrypto(crypto ITransportCrypto) {
 	self.Crypto = crypto
 }
 
-func (self *StubTransport) GetConnectedPeers() []cipher.PubKey {
+func (self *StubTransport) GetConnectedPeer() cipher.PubKey {
 	self.Lock.Lock()
 	defer self.Lock.Unlock()
-	ret := []cipher.PubKey{}
+/*	ret := []cipher.PubKey{}
 	for key := range self.StubbedPeers {
 		ret = append(ret, key)
-	}
-	return ret
+	}*/
+	return *self.StubbedKey
 }
 
 func (self *StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	self.Lock.Lock()
 	defer self.Lock.Unlock()
-	_, exists := self.StubbedPeers[peer]
-	return exists
+/*	_, exists := self.StubbedPeers[peer]
+	return exists*/
+	return peer == *self.StubbedKey
+
 }
 
 func (self *StubTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {

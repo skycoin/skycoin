@@ -37,8 +37,6 @@ func (self *Node) processIncomingMessagesLoop() {
 func (self *Node) processMessage(serialized []byte) {
 	message, err := self.serializer.UnserializeMessage(serialized)
 	fmt.Fprintf(os.Stdout, "Incoming message %v\n", serialized)
-	fmt.Printf("Incoming message %v\n", serialized)
-	fmt.Println("Incoming message %v\n", serialized)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Deserialization error %v %v\n", serialized, err)
 		return

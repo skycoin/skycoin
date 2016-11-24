@@ -267,10 +267,6 @@ func (self *UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 func (self *UDPTransport) GetConnectedPeer() cipher.PubKey {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-/*	ret := []cipher.PubKey{}
-	for key, _ := range self.connectedPeers {
-		ret = append(ret, key)
-	}*/
 	return *self.connectedPeerKey
 }
 

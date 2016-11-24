@@ -15,7 +15,6 @@ type StubTransport struct {
 	Testing          *testing.T
 	MaxMessageSize   uint
 	MessagesReceived chan []byte
-//	StubbedPeers     map[cipher.PubKey]*StubTransport
 	StubbedKey	 *cipher.PubKey
 	StubbedPeer	 *StubTransport
 	Lock             *sync.Mutex
@@ -151,18 +150,12 @@ func (self *StubTransport) SetCrypto(crypto ITransportCrypto) {
 func (self *StubTransport) GetConnectedPeer() cipher.PubKey {
 	self.Lock.Lock()
 	defer self.Lock.Unlock()
-/*	ret := []cipher.PubKey{}
-	for key := range self.StubbedPeers {
-		ret = append(ret, key)
-	}*/
 	return *self.StubbedKey
 }
 
 func (self *StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	self.Lock.Lock()
 	defer self.Lock.Unlock()
-/*	_, exists := self.StubbedPeers[peer]
-	return exists*/
 	return peer == *self.StubbedKey
 
 }

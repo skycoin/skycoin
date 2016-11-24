@@ -103,7 +103,7 @@ func (self RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResu
 	}
 
 	return &TransactionResult{
-		Transaction: NewReadableTransaction(&txn.Txn),
+		Transaction: NewReadableTransaction(txn),
 		Status:      txn.Status,
 	}, nil
 }
@@ -114,7 +114,7 @@ func (self RPC) GetAddressTransactions(v *Visor,
 	txns := make([]TransactionResult, len(addrTxns))
 	for i, tx := range addrTxns {
 		txns[i] = TransactionResult{
-			Transaction: NewReadableTransaction(&tx.Txn),
+			Transaction: NewReadableTransaction(&tx),
 			Status:      tx.Status,
 		}
 	}

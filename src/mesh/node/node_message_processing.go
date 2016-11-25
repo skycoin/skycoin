@@ -86,7 +86,7 @@ func (self *Node) processUserMessage(incomingMessage domain.UserMessage) {
 		}
 
 		serialized := self.serializer.SerializeMessage(message)
-		err := transportToPeer.SendMessage(directPeerID, serialized)
+		err := transportToPeer.SendMessage(directPeerID, serialized, nil)
 		if err != nil {
 			fmt.Fprint(os.Stderr, "Failed to send forwarded message, dropping\n")
 			return

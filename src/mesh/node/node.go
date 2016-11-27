@@ -77,8 +77,8 @@ func (self *Node) GetConnectedPeers() []cipher.PubKey {
 	defer self.lock.Unlock()
 	ret := []cipher.PubKey{}
 	for nodeTransport := range self.transports {
-		peers := nodeTransport.GetConnectedPeers()
-		ret = append(ret, peers...)
+		peer := nodeTransport.GetConnectedPeer()
+		ret = append(ret, peer)
 	}
 	return ret
 }

@@ -33,7 +33,7 @@ func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte) (erro
 	}
 
 	serialized := self.serializer.SerializeMessage(message)
-	err = transport.SendMessage(directPeerID, serialized)
+	err = transport.SendMessage(directPeerID, serialized, nil)
 	if err != nil {
 		return err, NilRouteID
 	}
@@ -68,7 +68,7 @@ func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) 
 
 	serialized := self.serializer.SerializeMessage(message)
 	fmt.Fprintln(os.Stdout, "Send Message")
-	err := transport.SendMessage(directPeerID, serialized)
+	err := transport.SendMessage(directPeerID, serialized, nil)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (self *Node) SendMessageBackThruRoute(replyTo domain.ReplyTo, contents []by
 	}
 
 	serialized := self.serializer.SerializeMessage(message)
-	err := transport.SendMessage(directPeerID, serialized)
+	err := transport.SendMessage(directPeerID, serialized, nil)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (self *Node) sendSetRouteReply(base domain.MessageBase, confirmID domain.Ro
 		return
 	}
 	serialized := self.serializer.SerializeMessage(replyMessage)
-	err := transportToPeer.SendMessage(base.FromPeerID, serialized)
+	err := transportToPeer.SendMessage(base.FromPeerID, serialized, nil)
 	if err != nil {
 		return
 	}
@@ -141,7 +141,7 @@ func (self *Node) forwardMessage(msg interface{}) bool {
 	}
 
 	serialized := self.serializer.SerializeMessage(rewritten)
-	err := transportToPeer.SendMessage(forwardTo, serialized)
+	err := transportToPeer.SendMessage(forwardTo, serialized, nil)
 	if err != nil {
 		fmt.Fprint(os.Stderr, "Failed to send forwarded message, dropping\n")
 		return true

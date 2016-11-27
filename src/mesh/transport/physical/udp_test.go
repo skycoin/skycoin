@@ -185,9 +185,9 @@ func TestDisconnect(t *testing.T) {
 	defer transportA.Close()
 	defer transportB.Close()
 
-	assert.Equal(t, []cipher.PubKey{keyB}, transportA.GetConnectedPeers())
+	assert.Equal(t, keyB, transportA.GetConnectedPeer())
 	transportA.DisconnectFromPeer(keyB)
 	assert.False(t, transportA.ConnectedToPeer(keyB))
 	assert.Zero(t, transportA.GetMaximumMessageSizeToPeer(keyB))
-	assert.Equal(t, []cipher.PubKey{}, transportA.GetConnectedPeers())
+	assert.Equal(t, nil, transportA.GetConnectedPeer())
 }

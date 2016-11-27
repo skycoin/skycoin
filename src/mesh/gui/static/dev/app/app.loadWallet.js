@@ -353,6 +353,8 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                             this.historyTable = this.historyTable.reverse();
                         }
                     }
+
+                    
                 }
                 filterHistory(address) {
                     console.log("filterHistory", address);

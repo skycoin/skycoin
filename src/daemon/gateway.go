@@ -5,6 +5,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // Exposes a read-only api for use by the gui rpc interface
@@ -224,4 +225,35 @@ func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 		return gw.Visor.GetAddressTransactions(gw.V, a)
 	})
 	return <-rsp
+}
+
+func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
+	rsp := gw.doRequest(func() interface{} {
+		ux, err := gw.V.GetUxOutByID(id)
+		return Result{ux, err}
+	})
+	v := <-rsp
+	rlt := v.(Result)
+	return rlt.Value.(*historydb.UxOut), rlt.Error
+}
+
+func (gw *Gateway) GetRecvUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error) {
+	rsp := gw.doRequest(func() interface{} {
+		ux, err := gw.V.GetRecvUxOutOfAddr(addr)
+		return Result{ux, err}
+	})
+	v := <-rsp
+	rlt := v.(Result)
+	return rlt.Value.([]*historydb.UxOut), rlt.Error
+}
+
+func (gw *Gateway) GetSpentUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error) {
+	rsp := gw.doRequest(func() interface{} {
+		ux, err := gw.V.GetSpentUxOutOfAddr(addr)
+		return Result{ux, err}
+	})
+
+	v := <-rsp
+	rlt := v.(Result)
+	return rlt.Value.([]*historydb.UxOut), rlt.Error
 }

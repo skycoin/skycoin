@@ -17,10 +17,10 @@ type ITransport interface {
 	//Close() error
 	SetCrypto(crypto ITransportCrypto)
 	ConnectedToPeer(peer cipher.PubKey) bool
-	GetConnectedPeers() []cipher.PubKey
+	GetConnectedPeer() cipher.PubKey
 	// Does not consider any extra bytes added by crypto
 	GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint
 	// May block
-	SendMessage(toPeer cipher.PubKey, contents []byte) error
+	SendMessage(toPeer cipher.PubKey, contents []byte, retChan chan error) error
 	SetReceiveChannel(received chan []byte)
 }

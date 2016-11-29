@@ -38,8 +38,8 @@ func SetupTwoPeers(t *testing.T) (testKeyA, testKeyB cipher.PubKey,
 	transportB = NewTransport(stubTransportB, configB)
 	transportB.SetReceiveChannel(receivedB)
 
-	stubTransportA.AddStubbedPeer(testKeyB, stubTransportB)
-	stubTransportB.AddStubbedPeer(testKeyA, stubTransportA)
+	stubTransportA.SetStubbedPeer(testKeyB, stubTransportB)
+	stubTransportB.SetStubbedPeer(testKeyA, stubTransportA)
 
 	return
 }
@@ -50,7 +50,7 @@ func TestSendMessage(t *testing.T) {
 		_, receivedB := SetupTwoPeers(t)
 
 	testContents := []byte{4, 3, 22, 6, 88, 99}
-	assert.Nil(t, transportA.SendMessage(testKeyB, testContents))
+	assert.Nil(t, transportA.SendMessage(testKeyB, testContents, nil))
 
 	select {
 	case received := <-receivedB:
@@ -71,7 +71,7 @@ func TestRetransmit(t *testing.T) {
 
 	stubTransportA.SetIgnoreSendStatus(true)
 	testContents := []byte{4, 3, 22, 6, 88, 99}
-	assert.Nil(t, transportA.SendMessage(testKeyB, testContents))
+	assert.Nil(t, transportA.SendMessage(testKeyB, testContents, nil))
 
 	time.Sleep(2 * time.Second)
 	stubTransportA.SetIgnoreSendStatus(false)
@@ -94,7 +94,7 @@ func TestNoDoubleReceive(t *testing.T) {
 	// Stop ACK from beint sent back, so the message will be retransmitted
 	stubTransportB.SetIgnoreSendStatus(true)
 	testContents := []byte{4, 3, 22, 6, 88, 99}
-	assert.Nil(t, transportA.SendMessage(testKeyB, testContents))
+	assert.Nil(t, transportA.SendMessage(testKeyB, testContents, nil))
 
 	receivedTimes := 0
 
@@ -119,7 +119,7 @@ func TestExpiry(t *testing.T) {
 		_, _ := SetupTwoPeers(t)
 
 	testContents := []byte{4, 3, 22, 6, 88, 99}
-	assert.Nil(t, transportA.SendMessage(testKeyB, testContents))
+	assert.Nil(t, transportA.SendMessage(testKeyB, testContents, nil))
 
 	time.Sleep(time.Second)
 	assert.NotZero(t, transportA.debug_countMapItems())

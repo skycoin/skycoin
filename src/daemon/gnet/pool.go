@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"gopkg.in/op/go-logging.v1"
 )
 
 var DebugPrint bool = true //disable to disable printing

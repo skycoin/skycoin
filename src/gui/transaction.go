@@ -61,11 +61,9 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 		resTxs := make([]visor.TransactionResult, len(txs))
 		for i, tx := range txs {
-			head := gateway.V.GetHeadBlock()
-			height := head.Seq() - tx.BlockSeq + 1
 			resTxs[i] = visor.TransactionResult{
-				Transaction: visor.NewReadableTransaction(&tx.Tx),
-				Status:      visor.NewConfirmedTransactionStatus(height),
+				Transaction: visor.NewReadableTransaction(tx),
+				Status:      tx.Status,
 			}
 		}
 
@@ -96,9 +94,13 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			wh.Error400(w, err.Error())
 			return
 		}
+		if tx == nil {
+			wh.Error404(w, "not found")
+			return
+		}
 
 		resTx := visor.TransactionResult{
-			Transaction: visor.NewReadableTransaction(&tx.Txn),
+			Transaction: visor.NewReadableTransaction(tx),
 			Status:      tx.Status,
 		}
 		wh.SendOr404(w, &resTx)

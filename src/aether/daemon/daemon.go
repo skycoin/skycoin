@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/util"
-	"gopkg.in/op/go-logging.v1"
 	//"github.com/skycoin/skycoin/src/aether/daemon/pex"
 	"log"
 	"net"

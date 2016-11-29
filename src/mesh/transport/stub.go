@@ -15,7 +15,8 @@ type StubTransport struct {
 	Testing          *testing.T
 	MaxMessageSize   uint
 	MessagesReceived chan []byte
-	StubbedPeers     map[cipher.PubKey]*StubTransport
+	StubbedKey	 *cipher.PubKey
+	StubbedPeer	 *StubTransport
 	Lock             *sync.Mutex
 	CloseWait        *sync.WaitGroup
 	IgnoreSend       bool
@@ -34,7 +35,8 @@ func NewStubTransport(testing *testing.T, maxMessageSize uint) *StubTransport {
 		Testing:          testing,
 		MaxMessageSize:   maxMessageSize,
 		MessagesReceived: nil,
-		StubbedPeers:     make(map[cipher.PubKey]*StubTransport),
+		StubbedKey:       &cipher.PubKey{},
+		StubbedPeer:	  &StubTransport{},
 		Lock:             &sync.Mutex{},
 		CloseWait:        &sync.WaitGroup{},
 		IgnoreSend:       false,
@@ -50,8 +52,9 @@ func (self *StubTransport) Close() error {
 }
 
 // Call before adding to node
-func (self *StubTransport) AddStubbedPeer(key cipher.PubKey, peer *StubTransport) {
-	self.StubbedPeers[key] = peer
+func (self *StubTransport) SetStubbedPeer(key cipher.PubKey, peer *StubTransport) {
+	self.StubbedKey = &key
+	self.StubbedPeer = peer
 }
 
 func (self *StubTransport) getMessageBuffer() []QueuedMessage {
@@ -60,9 +63,10 @@ func (self *StubTransport) getMessageBuffer() []QueuedMessage {
 	return self.MessageBuffer
 }
 
-func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) error {
-	peer, exists := self.StubbedPeers[toPeer]
-	if exists {
+func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte, retChan chan error) error {
+	var retErr error = nil
+	peer := self.StubbedPeer
+	if toPeer == *self.StubbedKey {
 		messageEncrypted := message
 		if self.Crypto != nil {
 			peerKey := []byte{}
@@ -72,7 +76,9 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) err
 			messageEncrypted = self.Crypto.Encrypt(message, peerKey)
 		}
 		if (uint)(len(message)) > self.MaxMessageSize {
-			return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
+			retErr = errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
+			if retChan != nil { retChan <- retErr }
+			return retErr
 		}
 		if self.Crypto != nil {
 			message = self.Crypto.Decrypt(messageEncrypted)
@@ -88,9 +94,12 @@ func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte) err
 				self.MessageBuffer = append(self.MessageBuffer, QueuedMessage{peer, message})
 			}
 		}
+		if retChan != nil { retChan <- nil }
 		return nil
 	}
-	return errors.New("No stubbed transport for this peer")
+	retErr = errors.New("No stubbed transport for this peer")
+	if retChan != nil { retChan <- retErr }
+	return retErr
 }
 
 func (self *StubTransport) SetIgnoreSendStatus(status bool) {
@@ -136,21 +145,17 @@ func (self *StubTransport) SetCrypto(crypto ITransportCrypto) {
 	self.Crypto = crypto
 }
 
-func (self *StubTransport) GetConnectedPeers() []cipher.PubKey {
+func (self *StubTransport) GetConnectedPeer() cipher.PubKey {
 	self.Lock.Lock()
 	defer self.Lock.Unlock()
-	ret := []cipher.PubKey{}
-	for key := range self.StubbedPeers {
-		ret = append(ret, key)
-	}
-	return ret
+	return *self.StubbedKey
 }
 
 func (self *StubTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	self.Lock.Lock()
 	defer self.Lock.Unlock()
-	_, exists := self.StubbedPeers[peer]
-	return exists
+	return peer == *self.StubbedKey
+
 }
 
 func (self *StubTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {

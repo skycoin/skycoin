@@ -56,7 +56,8 @@ type UDPTransport struct {
 
 	// Thread protected variables
 	lock           *sync.Mutex
-	connectedPeers map[cipher.PubKey]UDPCommConfig
+	connectedPeerKey  *cipher.PubKey
+	connectedPeerConf *UDPCommConfig
 }
 
 func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
@@ -160,11 +161,8 @@ func strongUint() uint32 {
 func (self *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	peerComm, foundPeer := self.connectedPeers[peer]
-	if !foundPeer {
-		return nil, false
-	}
-	return &peerComm, true
+	if peer != *self.connectedPeerKey { return nil, false }
+	return self.connectedPeerConf, true
 }
 
 func (self *UDPTransport) listenTo(port ListenPort) {
@@ -224,7 +222,8 @@ func NewUDPTransport(config UDPConfig) (*UDPTransport, error) {
 		waitGroup,
 		nil, // No crypto by default
 		&sync.Mutex{},
-		make(map[cipher.PubKey]UDPCommConfig),
+		nil,
+		nil,
 	}
 
 	for _, port := range ret.listenPorts {
@@ -260,14 +259,10 @@ func (self *UDPTransport) ConnectedToPeer(peer cipher.PubKey) bool {
 	return found
 }
 
-func (self *UDPTransport) GetConnectedPeers() []cipher.PubKey {
+func (self *UDPTransport) GetConnectedPeer() cipher.PubKey {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	ret := []cipher.PubKey{}
-	for key, _ := range self.connectedPeers {
-		ret = append(ret, key)
-	}
-	return ret
+	return *self.connectedPeerKey
 }
 
 func (self *UDPTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
@@ -280,16 +275,21 @@ func (self *UDPTransport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
 }
 
 // May block
-func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte) error {
+func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte, retChan chan error) error {
+	var retErr error = nil
 	// Find pubkey
 	peerComm, found := self.safeGetPeerComm(toPeer)
 	if !found {
-		return errors.New(fmt.Sprintf("Dropping message that is to an unknown peer: %v\n", toPeer))
+		retErr = errors.New(fmt.Sprintf("Dropping message that is to an unknown peer: %v\n", toPeer))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
 
 	// Check length
 	if len(contents) > int(peerComm.DatagramLength) {
-		return errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), self.config.DatagramLength))
+		retErr = errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), self.config.DatagramLength))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
 
 	// Pad to length
@@ -312,11 +312,16 @@ func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte) err
 
 	n, err := conn.WriteToUDP(datagramBuffer, &toAddr)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error on WriteToUDP: %v\n", err))
+		retErr = errors.New(fmt.Sprintf("Error on WriteToUDP: %v\n", err))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
 	if n != int(peerComm.DatagramLength) {
-		return errors.New(fmt.Sprintf("WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength))
+		retErr = errors.New(fmt.Sprintf("WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength))
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
+	if retChan != nil { retChan <- nil }
 	return nil
 }
 
@@ -368,18 +373,19 @@ func (self *UDPTransport) ConnectToPeer(peer cipher.PubKey, connectInfo string) 
 	}
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	_, connected := self.connectedPeers[peer]
-	if connected {
+	if self.connectedPeerKey != nil {
 		return errors.New(fmt.Sprintf("Already connected to peer %v", peer))
 	}
-	self.connectedPeers[peer] = config
+	self.connectedPeerKey = &peer
+	self.connectedPeerConf = &config
 	return nil
 }
 
 func (self *UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	delete(self.connectedPeers, peer)
+	self.connectedPeerKey = nil
+	self.connectedPeerConf = nil
 }
 
 // Create UDPTransport

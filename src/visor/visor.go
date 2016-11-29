@@ -2,12 +2,12 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 
-	"gopkg.in/op/go-logging.v1"
-	//"fmt"
 	"log"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("skycoin.visor")
+	logger = logging.MustGetLogger("visor")
 )
 
 // Configuration parameters for the Visor
@@ -427,14 +427,19 @@ func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	// Look in the blockchain
 	uxs := self.Blockchain.GetUnspent().AllForAddress(a)
 	mxSeq := self.HeadBkSeq()
+	var bk *coin.Block
 	for _, ux := range uxs {
-		bk := self.Blockchain.GetBlockInDepth(ux.Head.BkSeq)
+		if bk = self.GetBlockBySeq(ux.Head.BkSeq); bk == nil {
+			return txns
+		}
+
 		tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
 		if ok {
 			h := mxSeq - bk.Head.BkSeq + 1
 			txns = append(txns, Transaction{
 				Txn:    tx,
 				Status: NewConfirmedTransactionStatus(h),
+				Time:   bk.Time(),
 			})
 		}
 	}
@@ -450,6 +455,7 @@ func (self *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 		txns = append(txns, Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
+			Time:   uint64(tx.Received.Unix()),
 		})
 	}
 
@@ -464,6 +470,7 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 		return &Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
+			Time:   uint64(tx.Received.Unix()),
 		}, nil
 	}
 
@@ -477,9 +484,15 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	}
 
 	confirms := vs.GetHeadBlock().Seq() - txn.BlockSeq + 1
+	b := vs.GetBlockBySeq(txn.BlockSeq)
+	if b == nil {
+		return nil, fmt.Errorf("found no block in seq %v", txn.BlockSeq)
+	}
+
 	return &Transaction{
 		Txn:    txn.Tx,
 		Status: NewConfirmedTransactionStatus(confirms),
+		Time:   b.Time(),
 	}, nil
 }
 
@@ -546,8 +559,30 @@ func (vs *Visor) GetBlockBySeq(seq uint64) *coin.Block {
 	return vs.Blockchain.GetBlockInDepth(seq)
 }
 
-func (vs *Visor) GetLastTxs() ([]*historydb.Transaction, error) {
-	return vs.history.GetLastTxs()
+// GetLastTxs returns last confirmed transactions, return nil if empty
+func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
+	ltxs, err := vs.history.GetLastTxs()
+	if err != nil {
+		return nil, err
+	}
+
+	txs := make([]*Transaction, len(ltxs))
+	var confirms uint64
+	bh := vs.GetHeadBlock().Seq()
+	var b *coin.Block
+	for i, tx := range ltxs {
+		confirms = bh - tx.BlockSeq + 1
+		if b = vs.GetBlockBySeq(tx.BlockSeq); b == nil {
+			return nil, fmt.Errorf("found no block in seq %v", tx.BlockSeq)
+		}
+
+		txs[i] = &Transaction{
+			Txn:    tx.Tx,
+			Status: NewConfirmedTransactionStatus(confirms),
+			Time:   b.Time(),
+		}
+	}
+	return txs, nil
 }
 
 func (vs Visor) GetHeadBlock() *coin.Block {

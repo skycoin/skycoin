@@ -10,117 +10,157 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 Installation
 ------------
 
-*For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation)*
+* For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation)*
 
-For linux:
-sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev screen -y
+## For linux:
 
-OSX:
-brew install mercurial bzr
-
-```
-./run.sh -h
+```sh
+$ sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev screen -y
 ```
 
-*Running Wallet
+## For OSX:
+
+1) Install [homebrew](brew.sh), if you don't have it yet
+```
+$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+
+2) Install the latest version of golang
+```
+$ brew install go
+```
+
+3) Setup $GOPATH variable, add it to ~/.bash_profile (or bashrc). After editing, open a new tab
+Add to `bashrc` or `bash_profile`
+```sh
+$ export GOPATH=/Users/<username>/go 
+$ export PATH=$PATH:$GOPATH/bin
 
 ```
-./run.sh
+
+4) Install Mercurial and Bazaar
+```
+$ brew install mercurial bzr
 ```
 
-Then open http://127.0.0.1:6402 in a browser.
+5) Fetch the latest code of skycoin from the github repository
+```
+$ go get github.com/skycoin/skycoin
+```
 
-Golang environment setup with gvm
----
+6) Change your current directory to $GOPATH/src/github.com/skycoin/skycoin
+```
+$ cd $GOPATH/src/github.com/skycoin/skycoin
+```
 
-In China, use --source=https://github.com/golang/go to bypass firewall when fetching golang source
+7) Install glock and sync all the dependencies 
+```
+$ go get github.com/robfig/glock
+$ glock sync github.com/skycoin/skycoin
+```
+
+8) Run the node ;)
+```
+$ ./run.sh -h
+```
+
+9) Running Wallet
 
 ```
-sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
-bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
-source $HOME/.gvm/scripts/gvm
+$ ./run.sh
+```
 
-gvm install go1.4 --source=https://github.com/golang/go
-gvm use go1.4
-gvm install go1.6
-gvm use go1.6 --default
+Then open `http://127.0.0.1:6402` in a browser.
+
+## Golang ENV setup with gvm
+
+In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source
+
+```
+$ sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
+$ bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+$ source $HOME/.gvm/scripts/gvm
+
+$ gvm install go1.4 --source=https://github.com/golang/go
+$ gvm use go1.4
+$ gvm install go1.6
+$ gvm use go1.6 --default
 ```
 
 If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically
-
 ```
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-gvm use go1.6 >/dev/null
+$ [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
+$ gvm use go1.6 >/dev/null
 ```
 
----
 
-The skycoin repo must be in $GOPATH, under "/src/github.com/skycoin". Otherwise golang programs cannot import the libraries.
+The skycoin repo must be in $GOPATH, under `src/github.com/skycoin`. Otherwise golang programs cannot import the libraries.
 
 ```
 #pull skycoin repo into the gopath
 #note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
+<<<<<<< HEAD
 go get -v github.com/skycoin/skycoin/...
+=======
+$ go get github.com/skycoin/skycoin
+>>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b
 
 #create symlink of the repo
-cd $HOME
-ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
+$ cd $HOME
+$ ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
 ```
 
 Dependencies
----
+------------
 
 ```
-go get github.com/robfig/glock
-glock sync github.com/skycoin/skycoin
-go get ./cmd/skycoin
+$ go get github.com/robfig/glock
+$ glock sync github.com/skycoin/skycoin
+$ go get ./cmd/skycoin
 ```
 
 To update dependencies
 ```
-glock save github.com/skycoin/skycoin/cmd/skycoin
+$ glock save github.com/skycoin/skycoin/cmd/skycoin
 ```
 
 Running A Skycoin Node
----
+----------------------
 
 ```
-cd skycoin
-screen
-go run ./cmd/skycoin/skycoin.go 
+$ cd skycoin
+$ screen
+$ go run ./cmd/skycoin/skycoin.go 
 #then ctrl+A then D to exit screen
 #screen -x to reattach screen
 ```
 
-Todo
----
+##Todo
 
 Use gvm package set, so repo does not need to be symlinked. Does this have a default option?
-
 ```
-gvm pkgset create skycoin
-gvm pkgset use skycoin
-git clone https://github.com/skycoin/skycoin
-cd skycoin
-go install
+$ gvm pkgset create skycoin
+$ gvm pkgset use skycoin
+$ git clone https://github.com/skycoin/skycoin
+$ cd skycoin
+$ go install
 ```
 
-Cross Compilation
----
+##Cross Compilation
 
 Install Gox:
 ```
-go get github.com/mitchellh/gox
+$ go get github.com/mitchellh/gox
 ```
 
 Compile:
 ```
-gox --help
-gox [options] cmd/skycoin/
+$ gox --help
+$ gox [options] cmd/skycoin/
 ```
 
 Local Server API
-----
+----------------
 
 Run the skycoin client then
 ```
@@ -149,7 +189,7 @@ http://127.0.0.1:6420/blockchain to check blockchain head
 ```
 
 Public API
-----
+----------
 
 This is a public server. You can use these urls on local host too, with the skycoin client running.
 ```
@@ -160,7 +200,7 @@ http://skycoin-chompyz.c9.io/connections
 ```
 
 Modules
------
+-------
 
 ```
 /src/cipher - cryptography library
@@ -172,15 +212,16 @@ Modules
 ```
 
 Meshnet
-------
+-------
 
 ```
-go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
-
-go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
+$ go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
+$ go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
 ```
 
 Meshnet reminders
+-----------------
+
 - one way latency
 - two way latency (append), latency between packet and ack
 - service handler (ability to append services to meshnet)
@@ -188,11 +229,18 @@ Meshnet reminders
 - end-to-end route instrumentation
 
 Rebuilding Wallet HTML
------
+----------------------
 
+<<<<<<< HEAD
 npm install
 gulp build
 
 Release Builds
 ----
 
+=======
+```sh
+$ npm install
+$ gulp build
+```
+>>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b

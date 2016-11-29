@@ -36,8 +36,9 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 // Wrapper around coin.Transaction, tagged with its status.  This allows us
 // to include unconfirmed txns
 type Transaction struct {
-	Txn    coin.Transaction  `json:"txn"`
-	Status TransactionStatus `json:"status"`
+	Txn    coin.Transaction  //`json:"txn"`
+	Status TransactionStatus //`json:"status"`
+	Time   uint64            //`json:"time"`
 }
 
 type TransactionStatus struct {
@@ -180,6 +181,7 @@ type ReadableTransaction struct {
 	Type      uint8  `json:"type"`
 	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
+	Timestamp uint64 `json:"timestamp,omitempty"`
 
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`
@@ -195,34 +197,34 @@ type ReadableUnconfirmedTxn struct {
 
 func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedTxn {
 	return ReadableUnconfirmedTxn{
-		Txn:       NewReadableTransaction(&unconfirmed.Txn),
+		Txn:       NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn}),
 		Received:  unconfirmed.Received,
 		Checked:   unconfirmed.Checked,
 		Announced: unconfirmed.Announced,
 	}
 }
 
-func NewReadableTransaction(t *coin.Transaction) ReadableTransaction {
-
-	txid := t.Hash()
-	sigs := make([]string, len(t.Sigs))
-	for i, _ := range t.Sigs {
-		sigs[i] = t.Sigs[i].Hex()
+func NewReadableTransaction(t *Transaction) ReadableTransaction {
+	txid := t.Txn.Hash()
+	sigs := make([]string, len(t.Txn.Sigs))
+	for i, _ := range t.Txn.Sigs {
+		sigs[i] = t.Txn.Sigs[i].Hex()
 	}
 
-	in := make([]string, len(t.In))
-	for i, _ := range t.In {
-		in[i] = t.In[i].Hex()
+	in := make([]string, len(t.Txn.In))
+	for i, _ := range t.Txn.In {
+		in[i] = t.Txn.In[i].Hex()
 	}
-	out := make([]ReadableTransactionOutput, len(t.Out))
-	for i, _ := range t.Out {
-		out[i] = NewReadableTransactionOutput(&t.Out[i], txid)
+	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
+	for i, _ := range t.Txn.Out {
+		out[i] = NewReadableTransactionOutput(&t.Txn.Out[i], txid)
 	}
 	return ReadableTransaction{
-		Length:    t.Length,
-		Type:      t.Type,
-		Hash:      t.Hash().Hex(),
-		InnerHash: t.InnerHash.Hex(),
+		Length:    t.Txn.Length,
+		Type:      t.Txn.Type,
+		Hash:      t.Txn.Hash().Hex(),
+		InnerHash: t.Txn.InnerHash.Hex(),
+		Timestamp: t.Time,
 
 		Sigs: sigs,
 		In:   in,
@@ -257,7 +259,7 @@ type ReadableBlockBody struct {
 func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
 	txns := make([]ReadableTransaction, len(b.Transactions))
 	for i := range b.Transactions {
-		txns[i] = NewReadableTransaction(&b.Transactions[i])
+		txns[i] = NewReadableTransaction(&Transaction{Txn: b.Transactions[i]})
 	}
 	return ReadableBlockBody{
 		Transactions: txns,

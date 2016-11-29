@@ -159,6 +159,7 @@ func (self *NodeManager) ConnectNodes() {
 			pubKey2 := self.PubKeyList[index2]
 			config1 := self.ConfigList[pubKey1]
 			config2 := self.ConfigList[pubKey2]
+
 			ConnectNodeToNode(config1, config2)
 
 			if index3 > 0 {
@@ -166,7 +167,7 @@ func (self *NodeManager) ConnectNodes() {
 				config3 := self.ConfigList[pubKey3]
 				ConnectNodeToNode(config1, config3)
 			}
-			AddTransportToNode(self.NodesList[pubKey1], *config1)
+			AddPeersToNode(self.NodesList[pubKey1], *config1)
 		}
 	}
 }
@@ -202,22 +203,22 @@ func AddRoutesToEstablish(node *mesh.Node, routesConfigs []RouteConfig) {
 }
 
 // Add transport to Node
-func AddTransportToNode(node *mesh.Node, config TestConfig) {
-	udpTransport := physical.CreateNewUDPTransport(config.UDPConfig)
+func AddPeersToNode(node *mesh.Node, config TestConfig) {
 
 	// Connect
 	for _, connectTo := range config.PeersToConnect {
+		udpTransport := physical.CreateNewUDPTransport(config.UDPConfig)
 		connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
 		if connectError != nil {
 			panic(connectError)
 		}
+		transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
+		node.AddTransport(transportToPeer)
 	}
 
 	// Transport closes UDPTransport
-	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
 	//defer transportToPeer.Close()
 
-	node.AddTransport(transportToPeer)
 }
 
 // Returns Node by index

@@ -132,6 +132,10 @@ func (self *Transport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
 	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer) - (uint)(len(emptySerialized))
 }
 
+func (self *Transport) GetStatus() uint32 {
+	return self.status
+}
+
 func (self *Transport) Close() error {
 	for i := 0; i < 10; i++ {
 		self.closing <- true

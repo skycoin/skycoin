@@ -65,38 +65,43 @@ func (self *StubTransport) getMessageBuffer() []QueuedMessage {
 
 func (self *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte, retChan chan error) error {
 	var retErr error = nil
-	peer := self.StubbedPeer
-	if toPeer == *self.StubbedKey {
-		messageEncrypted := message
-		if self.Crypto != nil {
-			peerKey := []byte{}
-			if peer.Crypto != nil {
-				peerKey = peer.Crypto.GetKey()
-			}
-			messageEncrypted = self.Crypto.Encrypt(message, peerKey)
-		}
-		if (uint)(len(message)) > self.MaxMessageSize {
-			retErr = errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
-			if retChan != nil { retChan <- retErr }
-			return retErr
-		}
-		if self.Crypto != nil {
-			message = self.Crypto.Decrypt(messageEncrypted)
-		}
-		if !self.IgnoreSend {
-			messageBuffer := self.getMessageBuffer()
-			if messageBuffer == nil {
-				peer.MessagesReceived <- message
-				atomic.AddInt32(&self.NumMessagesSent, 1)
-			} else {
-				self.Lock.Lock()
-				defer self.Lock.Unlock()
-				self.MessageBuffer = append(self.MessageBuffer, QueuedMessage{peer, message})
-			}
-		}
-		if retChan != nil { retChan <- nil }
-		return nil
+	if toPeer != *self.StubbedKey {
+		retErr = errors.New("No such peer in stub")
+		if retChan != nil { retChan <- retErr }
+		return retErr
 	}
+	peer := self.StubbedPeer
+
+	messageEncrypted := message
+	if self.Crypto != nil {
+		peerKey := []byte{}
+		if peer.Crypto != nil {
+			peerKey = peer.Crypto.GetKey()
+		}
+		messageEncrypted = self.Crypto.Encrypt(message, peerKey)
+	}
+	if (uint)(len(message)) > self.MaxMessageSize {
+		retErr = errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), self.MaxMessageSize))
+		if retChan != nil { retChan <- retErr }
+		return retErr
+	}
+	if self.Crypto != nil {
+		message = self.Crypto.Decrypt(messageEncrypted)
+	}
+	if !self.IgnoreSend {
+		messageBuffer := self.getMessageBuffer()
+		if messageBuffer == nil {
+			peer.MessagesReceived <- message
+			atomic.AddInt32(&self.NumMessagesSent, 1)
+		} else {
+			self.Lock.Lock()
+			defer self.Lock.Unlock()
+			self.MessageBuffer = append(self.MessageBuffer, QueuedMessage{peer, message})
+		}
+	}
+	if retChan != nil { retChan <- nil }
+	return nil
+
 	retErr = errors.New("No stubbed transport for this peer")
 	if retChan != nil { retChan <- retErr }
 	return retErr

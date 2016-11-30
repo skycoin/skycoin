@@ -30,20 +30,17 @@ type rpcHandler struct {
 	gateway   Gatewayer
 }
 
-// create rpc handler instance.
-func newRPCHandler(queueSize uint, workerNum uint, gateway Gatewayer, close chan struct{}) *rpcHandler {
-	if workerNum == 0 {
-		panic("worker num must > 0")
+// Arg is the argument type for creating webrpc instance.
+type Arg func(*rpcHandler)
+
+func newRPCHandler(args ...Arg) *rpcHandler {
+	rpc := &rpcHandler{}
+	for _, arg := range args {
+		arg(rpc)
 	}
 
-	rpc := &rpcHandler{
-		workerNum: workerNum,
-		reqChan:   make(chan job, queueSize),
-		close:     close,
-		mux:       http.NewServeMux(),
-		handlers:  make(map[string]jobHandler),
-		gateway:   gateway,
-	}
+	rpc.handlers = make(map[string]jobHandler)
+	rpc.mux = http.NewServeMux()
 
 	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
 	rpc.dispatch()
@@ -125,5 +122,36 @@ func (rh *rpcHandler) dispatch() {
 				}
 			}
 		}(i)
+	}
+}
+
+// ChanBuffSize set request channel buffer size
+func ChanBuffSize(n uint) Arg {
+	return func(rpc *rpcHandler) {
+		rpc.reqChan = make(chan job, n)
+	}
+}
+
+// ThreadNum set concurrent request processor number
+func ThreadNum(n uint) Arg {
+	return func(rpc *rpcHandler) {
+		if n == 0 {
+			panic("thread num must > 0")
+		}
+		rpc.workerNum = n
+	}
+}
+
+// Gateway set gateway
+func Gateway(gateway Gatewayer) Arg {
+	return func(rpc *rpcHandler) {
+		rpc.gateway = gateway
+	}
+}
+
+// Quit set closing channel
+func Quit(c chan struct{}) Arg {
+	return func(rpc *rpcHandler) {
+		rpc.close = c
 	}
 }

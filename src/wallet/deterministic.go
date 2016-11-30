@@ -163,7 +163,7 @@ func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
 	} else {
 		sd, err = hex.DecodeString(wlt.getLastSeed())
 		if err != nil {
-			log.Panicf("decode hex seed faild,%v", err)
+			log.Panicf("decode hex seed failed,%v", err)
 		}
 		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, num)
 	}

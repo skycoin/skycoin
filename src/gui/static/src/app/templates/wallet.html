@@ -74,8 +74,8 @@
                             </td>
                             <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
                             <td><a href="#" (click)="showQR(wallet)">&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{wallet.entries[0].address}}</td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa"></i></a>&nbsp;{{wallet.balance}} SKY</td>
                             <td class="text-right">{{wallet.entries.length}}&nbsp;<a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus"></i></a></td>
                           </tr>
                           <tr *ngFor="#entry of wallet.entries; #idx=index" [hidden]="!wallet.showChild||idx==0">

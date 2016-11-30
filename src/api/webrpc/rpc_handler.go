@@ -112,6 +112,7 @@ func (rh *rpcHandler) dispatch() {
 				case jb := <-rh.reqChan:
 					logger.Debugf("[%d] got job", seq)
 					if handler, ok = rh.handlers[jb.Req.Method]; ok {
+						logger.Info("method: %v", jb.Req.Method)
 						jb.ResC <- handler(jb.Req, rh.gateway)
 						logger.Debugf("[%d] job done", seq)
 						continue

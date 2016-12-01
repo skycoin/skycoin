@@ -400,7 +400,7 @@ main:
 			self.processMessageEvent(m)
 		// Process any pending RPC requests
 		case req := <-self.Gateway.Requests:
-			req.Response <- req.Handle()
+			req()
 
 		//save blockchain periodically
 		// case <-blockchainBackupTicker:

@@ -31,7 +31,7 @@ func init() {
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: filepath.Join(walletDir, defaultWalletName),
+				Value: filepath.Join(cfg.WalletDir, cfg.DefaultWalletName),
 				Usage: `[wallet file or path] Generate addresses in the wallet`,
 			},
 			gcli.BoolFlag{
@@ -60,7 +60,7 @@ func generateAddrs(c *gcli.Context) error {
 
 	// only wallet file name, no path.
 	if filepath.Base(w) == w {
-		w = filepath.Join(walletDir, w)
+		w = filepath.Join(cfg.WalletDir, w)
 	}
 
 	wlt, err := wallet.Load(w)

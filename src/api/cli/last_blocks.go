@@ -36,7 +36,7 @@ func getLastBlocks(c *gcli.Context) error {
 		return fmt.Errorf("do rpc request failed: %v", err)
 	}
 
-	rsp, err := webrpc.Do(req, rpcAddress)
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return err
 	}

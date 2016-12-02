@@ -24,7 +24,7 @@ func init() {
 				var rlt = struct {
 					WltDir string `json:"walletDir"`
 				}{
-					walletDir,
+					cfg.WalletDir,
 				}
 				d, err := json.MarshalIndent(rlt, "", "    ")
 				if err != nil {
@@ -34,7 +34,7 @@ func init() {
 				return nil
 			}
 
-			fmt.Println(walletDir)
+			fmt.Println(cfg.WalletDir)
 			return nil
 		},
 	}

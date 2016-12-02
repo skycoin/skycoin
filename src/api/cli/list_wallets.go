@@ -28,7 +28,7 @@ func init() {
 				Wallets []walletEntry `json:"wallets"`
 			}
 
-			entries, err := ioutil.ReadDir(walletDir)
+			entries, err := ioutil.ReadDir(cfg.WalletDir)
 			if err != nil {
 				return err
 			}
@@ -40,7 +40,7 @@ func init() {
 						continue
 					}
 
-					path := filepath.Join(walletDir, name)
+					path := filepath.Join(cfg.WalletDir, name)
 					w, err := wallet.Load(path)
 					if err != nil {
 						return errLoadWallet

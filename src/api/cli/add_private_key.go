@@ -34,7 +34,7 @@ func init() {
 			// get wallet file path
 			w := c.String("f")
 			if w == "" {
-				w = filepath.Join(walletDir, defaultWalletName)
+				w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
 			}
 
 			if !strings.HasSuffix(w, walletExt) {
@@ -43,7 +43,7 @@ func init() {
 
 			// only wallet file name, no path.
 			if filepath.Base(w) == w {
-				w = filepath.Join(walletDir, w)
+				w = filepath.Join(cfg.WalletDir, w)
 			}
 
 			wlt, err := wallet.Load(w)

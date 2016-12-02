@@ -20,7 +20,7 @@ func init() {
 				RPCAddress string `json:"webrpc_address"`
 				Running    bool   `json:"running"`
 			}{
-				RPCAddress: rpcAddress,
+				RPCAddress: cfg.RPCAddress,
 			}
 
 			req, err := webrpc.NewRequest("get_status", nil, "1")
@@ -28,7 +28,7 @@ func init() {
 				return fmt.Errorf("create rpc request failed: %v", err)
 			}
 
-			rsp, err := webrpc.Do(req, rpcAddress)
+			rsp, err := webrpc.Do(req, cfg.RPCAddress)
 			if err != nil {
 				return fmt.Errorf("do rpc request failed: %v", err)
 			}

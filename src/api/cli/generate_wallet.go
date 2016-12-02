@@ -49,7 +49,7 @@ func init() {
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: defaultWalletName,
+				Value: cfg.DefaultWalletName,
 				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". 
 						 If no wallet name is specified a generic name will be selected.`,
 			},
@@ -65,8 +65,8 @@ func init() {
 
 func generateWallet(c *gcli.Context) error {
 	// create wallet dir if not exist
-	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(walletDir, 0755); err != nil {
+	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(cfg.WalletDir, 0755); err != nil {
 			return errors.New("create dir failed")
 		}
 	}
@@ -85,7 +85,7 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// check if the wallet file does exist
-	if _, err := os.Stat(filepath.Join(walletDir, wltName)); err == nil {
+	if _, err := os.Stat(filepath.Join(cfg.WalletDir, wltName)); err == nil {
 		return fmt.Errorf("%v already exist", wltName)
 	}
 
@@ -111,11 +111,11 @@ func generateWallet(c *gcli.Context) error {
 	wlt.GenerateAddresses(num)
 
 	// check if the wallet dir does exist.
-	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
+	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
 		return err
 	}
 
-	if err := wlt.Save(walletDir); err != nil {
+	if err := wlt.Save(cfg.WalletDir); err != nil {
 		return err
 	}
 

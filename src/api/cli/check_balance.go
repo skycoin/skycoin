@@ -80,7 +80,7 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 	addrs := []string{}
 	if w == "" && a == "" {
 		// use default wallet
-		w = filepath.Join(walletDir, defaultWalletName)
+		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
 	}
 
 	if w != "" {
@@ -89,7 +89,7 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 		}
 
 		if filepath.Base(w) == w {
-			w = filepath.Join(walletDir, w)
+			w = filepath.Join(cfg.WalletDir, w)
 		} else {
 			var err error
 			w, err = filepath.Abs(w)

@@ -118,7 +118,7 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 	if a == "" {
 		if w == "" {
 			// 0 0
-			w = filepath.Join(walletDir, defaultWalletName)
+			w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
 			return
 		}
 
@@ -133,7 +133,7 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 			w, err = filepath.Abs(w)
 			return
 		}
-		w = filepath.Join(walletDir, w)
+		w = filepath.Join(cfg.WalletDir, w)
 		return
 	}
 	// 1 0
@@ -250,7 +250,7 @@ func createRawTxFromAddress(addr string, chgAddr string, toAddr string, amt uint
 	}
 
 	// check if the address is in the default wallet.
-	wlt, err := wallet.Load(filepath.Join(walletDir, defaultWalletName))
+	wlt, err := wallet.Load(filepath.Join(cfg.WalletDir, cfg.DefaultWalletName))
 	if err != nil {
 		return "", errLoadWallet
 	}

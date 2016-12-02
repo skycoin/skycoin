@@ -4,23 +4,27 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
-
-	"github.com/skycoin/skycoin/src/util"
 
 	"encoding/json"
 
+	"os"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/util"
 	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support
-var Commands []gcli.Command
+
 var (
-	rpcAddress        = os.Getenv("SKYCOIN_RPC_ADDR")
-	walletDir         = os.Getenv("SKYCOIN_WLT_DIR")
-	walletExt         = ".wlt"
-	defaultWalletName = "skycoin_cli.wlt"
+	Commands  []gcli.Command
+	walletExt = ".wlt"
+	cfg       Config
+
+// 	// RPCAddress
+// 	RPCAddress        = os.Getenv("SKYCOIN_RPC_ADDR")
+// 	WalletDir         = os.Getenv("SKYCOIN_WLT_DIR")
+// 	DefaultWalletName = "skycoin_cli.wlt"
 )
 
 var (
@@ -41,14 +45,52 @@ func httpGet(url string, v interface{}) error {
 	return nil
 }
 
-func init() {
-	if rpcAddress == "" {
-		rpcAddress = "127.0.0.1:6422"
+type Config struct {
+	RPCAddress        string
+	WalletDir         string
+	DefaultWalletName string
+}
+
+type Option func(cfg *Config)
+
+// Init initialize the cli's configuration
+func Init(ops ...Option) {
+	for _, op := range ops {
+		op(&cfg)
 	}
 
-	if walletDir == "" {
+	if cfg.RPCAddress == "" {
+		cfg.RPCAddress = "127.0.0.1:6422"
+	}
+
+	if cfg.WalletDir == "" {
 		home := util.UserHome()
-		walletDir = home + "/.skycoin/wallets/"
+		cfg.WalletDir = home + "/." + os.Args[0] + "/wallets"
+	}
+
+	if cfg.DefaultWalletName == "" {
+		cfg.DefaultWalletName = fmt.Sprintf("%s_cli.wlt", os.Args[0])
+	}
+}
+
+// PRCAddress sets rpc address
+func RPCAddr(addr string) Option {
+	return func(cfg *Config) {
+		cfg.RPCAddress = addr
+	}
+}
+
+// WalletDir sets wallet dir
+func WalletDir(wltDir string) Option {
+	return func(cfg *Config) {
+		cfg.WalletDir = wltDir
+	}
+}
+
+// DefaultWltName sets default wallet name
+func DefaultWltName(wltName string) Option {
+	return func(cfg *Config) {
+		cfg.DefaultWalletName = wltName
 	}
 }
 
@@ -58,7 +100,7 @@ func getUnspent(addrs []string) ([]unspentOut, error) {
 		return []unspentOut{}, fmt.Errorf("create webrpc request failed:%v", err)
 	}
 
-	rsp, err := webrpc.Do(req, rpcAddress)
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return []unspentOut{}, fmt.Errorf("do rpc request failed:%v", err)
 	}

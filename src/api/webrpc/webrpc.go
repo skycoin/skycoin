@@ -98,11 +98,12 @@ func makeErrorResponse(code int, message string) Response {
 }
 
 // Start start the webrpc service.
-func Start(addr string, queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) {
-	rpc := makeRPC(queueSize, workerNum, gateway, c)
+// func Start(addr string, queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) {
+func Start(addr string, args ...Arg) {
+	rpc := makeRPC(args...)
 	for {
 		select {
-		case <-c:
+		case <-rpc.close:
 			logger.Info("webrpc quit")
 			return
 		default:
@@ -112,8 +113,9 @@ func Start(addr string, queueSize uint, workerNum uint, gateway Gatewayer, c cha
 	}
 }
 
-func makeRPC(queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) *rpcHandler {
-	rpc := newRPCHandler(queueSize, workerNum, gateway, c)
+// func makeRPC(queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) *rpcHandler {
+func makeRPC(args ...Arg) *rpcHandler {
+	rpc := newRPCHandler(args...)
 
 	// register handlers
 	rpc.HandlerFunc("get_status", getStatusHandler)

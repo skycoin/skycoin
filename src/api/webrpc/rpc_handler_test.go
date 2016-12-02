@@ -10,13 +10,13 @@ import (
 )
 
 func Test_newRPCHandler(t *testing.T) {
-	rpc1 := newRPCHandler(1, 1, &fakeGateway{}, make(chan struct{}))
+	rpc1 := newRPCHandler(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
 	assert.NotNil(t, rpc1.mux)
 	assert.NotNil(t, rpc1.handlers)
 	assert.NotNil(t, rpc1.gateway)
 
 	assert.Panics(t, func() {
-		newRPCHandler(1, 0, &fakeGateway{}, make(chan struct{}))
+		newRPCHandler(ChanBuffSize(1), ThreadNum(0), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
 	})
 }
 
@@ -26,7 +26,7 @@ func Test_makeJob(t *testing.T) {
 }
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
-	rpc := newRPCHandler(1, 1, &fakeGateway{}, make(chan struct{}))
+	rpc := newRPCHandler(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
 	rpc.HandlerFunc("get_status", getStatusHandler)
 	assert.Panics(t, func() {
 		rpc.HandlerFunc("get_status", getStatusHandler)

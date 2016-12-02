@@ -14,8 +14,11 @@ func setup() (*rpcHandler, func()) {
 	f := func() {
 		close(c)
 	}
-
-	return makeRPC(1, 1, &fakeGateway{}, c), f
+	return makeRPC(
+		ChanBuffSize(1),
+		ThreadNum(1),
+		Gateway(&fakeGateway{}),
+		Quit(c)), f
 }
 
 type fakeGateway struct {

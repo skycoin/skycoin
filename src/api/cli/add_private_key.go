@@ -25,15 +25,14 @@ func init() {
 			},
 		},
 		Action: func(c *gcli.Context) error {
-			// get wallet file path
-			w := c.String("f")
-
 			// get private key
 			skStr := c.Args().First()
 			if skStr == "" {
 				return errors.New("private key value is empty")
 			}
 
+			// get wallet file path
+			w := c.String("f")
 			if w == "" {
 				w = filepath.Join(walletDir, defaultWalletName)
 			}
@@ -54,7 +53,7 @@ func init() {
 
 			sk, err := cipher.SecKeyFromHex(skStr)
 			if err != nil {
-				return fmt.Errorf("invalid private key, %v", err)
+				return fmt.Errorf("%v", err)
 			}
 
 			pk := cipher.PubKeyFromSecKey(sk)

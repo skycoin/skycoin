@@ -7,43 +7,31 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
-type job struct {
-	Req  Request
-	ResC chan Response
-}
-
-func makeJob(req Request) job {
-	return job{
-		Req:  req,
-		ResC: make(chan Response),
-	}
-}
+type operation func(rpc *rpcHandler)
 
 type jobHandler func(req Request, gateway Gatewayer) Response
 
 type rpcHandler struct {
 	workerNum uint
-	reqChan   chan job // request channel
-	close     chan struct{}
-	mux       *http.ServeMux
-	handlers  map[string]jobHandler
-	gateway   Gatewayer
+	ops       chan operation // request channel
+	// reqChan chan
+	close    chan struct{}
+	mux      *http.ServeMux
+	handlers map[string]jobHandler
+	gateway  Gatewayer
 }
 
-// create rpc handler instance.
-func newRPCHandler(queueSize uint, workerNum uint, gateway Gatewayer, close chan struct{}) *rpcHandler {
-	if workerNum == 0 {
-		panic("worker num must > 0")
+// Arg is the argument type for creating webrpc instance.
+type Arg func(*rpcHandler)
+
+func newRPCHandler(args ...Arg) *rpcHandler {
+	rpc := &rpcHandler{}
+	for _, arg := range args {
+		arg(rpc)
 	}
 
-	rpc := &rpcHandler{
-		workerNum: workerNum,
-		reqChan:   make(chan job, queueSize),
-		close:     close,
-		mux:       http.NewServeMux(),
-		handlers:  make(map[string]jobHandler),
-		gateway:   gateway,
-	}
+	rpc.handlers = make(map[string]jobHandler)
+	rpc.mux = http.NewServeMux()
 
 	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
 	rpc.dispatch()
@@ -85,12 +73,16 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// make job
-		jb := makeJob(req)
-		// push job to handler channel.
-		rh.reqChan <- jb
-		// get response from channel.
-		res = <-jb.ResC
+		resC := make(chan Response)
+		rh.ops <- func(rpc *rpcHandler) {
+			if handler, ok := rpc.handlers[req.Method]; ok {
+				logger.Info("method: %v", req.Method)
+				resC <- handler(req, rpc.gateway)
+				return
+			}
+			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
+		}
+		res = <-resC
 		break
 	}
 
@@ -98,32 +90,49 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 }
 
 // dispatch will create numbers of goroutines, each routine will
-//
 func (rh *rpcHandler) dispatch() {
 	for i := uint(0); i < rh.workerNum; i++ {
 		go func(seq uint) {
-			var (
-				handler jobHandler
-				ok      bool
-			)
-
 			for {
 				select {
 				case <-rh.close:
 					// logger.Infof("[%d]rpc job handler quit", seq)
 					return
-				case jb := <-rh.reqChan:
-					logger.Debugf("[%d] got job", seq)
-					if handler, ok = rh.handlers[jb.Req.Method]; ok {
-						jb.ResC <- handler(jb.Req, rh.gateway)
-						logger.Debugf("[%d] job done", seq)
-						continue
-					}
-
-					jb.ResC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
-					logger.Debugf("[%d] job done", seq)
+				case op := <-rh.ops:
+					op(rh)
 				}
 			}
 		}(i)
+	}
+}
+
+// ChanBuffSize set request channel buffer size
+func ChanBuffSize(n uint) Arg {
+	return func(rpc *rpcHandler) {
+		rpc.ops = make(chan operation, n)
+	}
+}
+
+// ThreadNum set concurrent request processor number
+func ThreadNum(n uint) Arg {
+	return func(rpc *rpcHandler) {
+		if n == 0 {
+			panic("thread num must > 0")
+		}
+		rpc.workerNum = n
+	}
+}
+
+// Gateway set gateway
+func Gateway(gateway Gatewayer) Arg {
+	return func(rpc *rpcHandler) {
+		rpc.gateway = gateway
+	}
+}
+
+// Quit set closing channel
+func Quit(c chan struct{}) Arg {
+	return func(rpc *rpcHandler) {
+		rpc.close = c
 	}
 }

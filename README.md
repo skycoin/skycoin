@@ -1,4 +1,4 @@
-skycoin
+skycoin [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin) 
 =======
 
 Skycoin is a next-generation cryptocurrency.

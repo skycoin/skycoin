@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"bytes"
@@ -21,7 +20,8 @@ func init() {
 		Action: func(c *gcli.Context) error {
 			rawtx := c.Args().First()
 			if rawtx == "" {
-				return errors.New("raw transaction is empty")
+				gcli.ShowSubcommandHelp(c)
+				return nil
 			}
 			txid, err := broadcastTx(rawtx)
 			if err != nil {

@@ -18,8 +18,9 @@ import (
 )
 
 func init() {
+	name := "generateWallet"
 	cmd := gcli.Command{
-		Name:      "generateWallet",
+		Name:      name,
 		Usage:     "Generate a new wallet",
 		ArgsUsage: " ",
 		Description: `Use caution when using the "-p" command. If you have command 
@@ -58,7 +59,8 @@ func init() {
 				Usage: "[label] Label used to idetify your wallet.",
 			},
 		},
-		Action: generateWallet,
+		OnUsageError: onCommandUsageError(name),
+		Action:       generateWallet,
 	}
 	Commands = append(Commands, cmd)
 }

@@ -32,10 +32,12 @@ type balanceResult struct {
 }
 
 func init() {
+	name := "checkBalance"
 	cmd := gcli.Command{
-		Name:      "checkBalance",
-		Usage:     "Check the balance of a wallet or specific address",
-		ArgsUsage: "[wallet or address]",
+		Name:         name,
+		Usage:        "Check the balance of a wallet or specific address",
+		ArgsUsage:    "[wallet or address]",
+		OnUsageError: onCommandUsageError(name),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",

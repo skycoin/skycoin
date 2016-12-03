@@ -8,10 +8,12 @@ import (
 )
 
 func init() {
+	name := "walletDir"
 	cmd := gcli.Command{
-		Name:      "walletDir",
-		Usage:     "Displays wallet folder address",
-		ArgsUsage: " ",
+		Name:         name,
+		Usage:        "Displays wallet folder address",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "j,json",

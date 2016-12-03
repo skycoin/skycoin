@@ -17,8 +17,9 @@ import (
 )
 
 func init() {
+	name := "createRawTransaction"
 	cmd := gcli.Command{
-		Name:      "createRawTransaction",
+		Name:      name,
 		Usage:     "Create a raw transaction to be broadcast to the network later",
 		ArgsUsage: "[to address] [amount]",
 		Description: `
@@ -51,6 +52,7 @@ func init() {
 				Usage: "Returns the results in JSON format.",
 			},
 		},
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			rawtx, err := createRawTransaction(c)
 			if err != nil {

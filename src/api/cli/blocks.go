@@ -9,11 +9,13 @@ import (
 )
 
 func init() {
+	name := "blocks"
 	cmd := gcli.Command{
-		Name:      "blocks",
-		Usage:     "Lists the content of a single block or a range of blocks",
-		ArgsUsage: "[starting block or single block seq] [ending block seq]",
-		Action:    getBlocks,
+		Name:         name,
+		Usage:        "Lists the content of a single block or a range of blocks",
+		ArgsUsage:    "[starting block or single block seq] [ending block seq]",
+		Action:       getBlocks,
+		OnUsageError: onCommandUsageError(name),
 	}
 	Commands = append(Commands, cmd)
 }

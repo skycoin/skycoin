@@ -10,11 +10,13 @@ import (
 )
 
 func init() {
+	name := "lastBlocks"
 	cmd := gcli.Command{
-		Name:      "lastBlocks",
-		Usage:     "Displays the content of the most recently N generated blocks",
-		ArgsUsage: "[numberOfBlocks]",
-		Action:    getLastBlocks,
+		Name:         name,
+		Usage:        "Displays the content of the most recently N generated blocks",
+		ArgsUsage:    "[numberOfBlocks]",
+		OnUsageError: onCommandUsageError(name),
+		Action:       getLastBlocks,
 	}
 	Commands = append(Commands, cmd)
 }

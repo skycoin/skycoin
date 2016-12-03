@@ -11,10 +11,12 @@ import (
 )
 
 func init() {
+	name := "transaction"
 	cmd := gcli.Command{
-		Name:      "transaction",
-		Usage:     "Show detail info of specific transaction",
-		ArgsUsage: "[transaction id]",
+		Name:         name,
+		Usage:        "Show detail info of specific transaction",
+		ArgsUsage:    "[transaction id]",
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			txid := c.Args().First()
 			if txid == "" {

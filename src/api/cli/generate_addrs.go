@@ -15,8 +15,9 @@ import (
 var defaultAddrNum = 1
 
 func init() {
+	name := "generateAddresses"
 	cmd := gcli.Command{
-		Name:      "generateAddresses",
+		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",
 		ArgsUsage: " ",
 		Description: `Use caution when using the “-p” command. If you have command 
@@ -39,7 +40,8 @@ func init() {
 				Usage: "Returns the results in JSON format",
 			},
 		},
-		Action: generateAddrs,
+		OnUsageError: onCommandUsageError(name),
+		Action:       generateAddrs,
 	}
 	Commands = append(Commands, cmd)
 }

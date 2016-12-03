@@ -8,8 +8,9 @@ import (
 )
 
 func init() {
+	name := "send"
 	cmd := gcli.Command{
-		Name:      "send",
+		Name:      name,
 		Usage:     "Send skycoin from a wallet or an address to a recipient address",
 		ArgsUsage: "[to address] [amount]",
 		Description: `
@@ -46,6 +47,7 @@ func init() {
 				Usage: "Returns the results in JSON format.",
 			},
 		},
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			rawtx, err := createRawTransaction(c)
 			if err != nil {

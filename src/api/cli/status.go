@@ -11,10 +11,12 @@ import (
 )
 
 func init() {
+	name := "status"
 	cmd := gcli.Command{
-		Name:      "status",
-		Usage:     "Check the status of current skycoin node",
-		ArgsUsage: " ",
+		Name:         name,
+		Usage:        "Check the status of current skycoin node",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			var status = struct {
 				RPCAddress string `json:"webrpc_address"`

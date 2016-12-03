@@ -12,8 +12,9 @@ import (
 )
 
 func init() {
+	name := "addPrivateKey"
 	cmd := gcli.Command{
-		Name:      "addPrivateKey",
+		Name:      name,
 		Usage:     "Add a private key to specific wallet",
 		ArgsUsage: "[private key]",
 		Description: `Add a private key to specific wallet, the default
@@ -24,6 +25,7 @@ func init() {
 				Usage: "[wallet file or path] private key will be added to this wallet",
 			},
 		},
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			// get private key
 			skStr := c.Args().First()

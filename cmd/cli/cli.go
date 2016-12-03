@@ -41,6 +41,7 @@ func main() {
 		wltDir = home + "/.skycoin/wallets"
 	}
 
+	// get wallet name from env
 	wltName := os.Getenv("WALLET_NAME")
 	if wltName == "" {
 		wltName = "skycoin_cli.wlt"
@@ -68,10 +69,16 @@ func main() {
 	app.Version = "0.1"
 	app.Commands = skycli.Commands
 	app.EnableBashCompletion = true
+	app.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
+		fmt.Fprintf(context.App.Writer, "Error: %v\n\n", err)
+		cli.ShowAppHelp(context)
+		return nil
+	}
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
 		cli.HelpPrinter(app.Writer, tmp, app)
 	}
+
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)
 	}

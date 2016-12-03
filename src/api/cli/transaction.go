@@ -40,7 +40,7 @@ func init() {
 			}
 
 			if rsp.Error != nil {
-				return fmt.Errorf("do rpc request failed:%+v", rsp.Error)
+				return fmt.Errorf("do rpc request failed:%+v", *rsp.Error)
 			}
 
 			fmt.Println(string(rsp.Result))

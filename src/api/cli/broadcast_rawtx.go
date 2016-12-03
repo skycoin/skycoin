@@ -48,7 +48,7 @@ func broadcastTx(rawtx string) (string, error) {
 	}
 
 	if rsp.Error != nil {
-		return "", fmt.Errorf("rpc request failed, %v", rsp.Error)
+		return "", fmt.Errorf("rpc request failed, %+v", *rsp.Error)
 	}
 
 	var rlt webrpc.InjectResult

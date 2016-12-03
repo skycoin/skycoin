@@ -33,12 +33,12 @@ func getBlocks(c *gcli.Context) error {
 
 	s, err := strconv.ParseUint(start, 10, 64)
 	if err != nil {
-		return errors.New("error block seq")
+		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", start)
 	}
 
 	e, err := strconv.ParseUint(end, 10, 64)
 	if err != nil {
-		return errors.New("error block seq")
+		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", end)
 	}
 
 	param := []uint64{s, e}
@@ -54,7 +54,7 @@ func getBlocks(c *gcli.Context) error {
 	}
 
 	if rsp.Error != nil {
-		return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
+		return fmt.Errorf("rpc response error: %+v", *rsp.Error)
 	}
 
 	fmt.Println(string(rsp.Result))

@@ -28,7 +28,8 @@ func init() {
 			// get private key
 			skStr := c.Args().First()
 			if skStr == "" {
-				return errors.New("private key value is empty")
+				gcli.ShowSubcommandHelp(c)
+				return nil
 			}
 
 			// get wallet file path

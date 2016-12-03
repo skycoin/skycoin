@@ -103,6 +103,11 @@ func getUnspent(addrs []string) ([]unspentOut, error) {
 	if err != nil {
 		return []unspentOut{}, fmt.Errorf("do rpc request failed:%v", err)
 	}
+
+	if rsp.Error != nil {
+		return []unspentOut{}, fmt.Errorf("rpc request failed, %+v", *rsp.Error)
+	}
+
 	var rlt webrpc.OutputsResult
 	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
 		return nil, errJSONUnmarshal

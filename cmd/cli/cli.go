@@ -67,6 +67,10 @@ func main() {
 	app.Usage = "the skycoin command line interface"
 	app.Version = "0.1"
 	app.Commands = skycli.Commands
+	app.CommandNotFound = func(ctx *cli.Context, command string) {
+		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
+		cli.HelpPrinter(app.Writer, tmp, app)
+	}
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)
 	}

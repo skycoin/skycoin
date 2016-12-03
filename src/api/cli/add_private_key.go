@@ -54,7 +54,7 @@ func init() {
 
 			sk, err := cipher.SecKeyFromHex(skStr)
 			if err != nil {
-				return fmt.Errorf("%v", err)
+				return fmt.Errorf("invalid private key: %s, must be an hex string of length 64", skStr)
 			}
 
 			pk := cipher.PubKeyFromSecKey(sk)

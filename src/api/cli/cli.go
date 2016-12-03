@@ -121,3 +121,11 @@ func getUnspent(addrs []string) ([]unspentOut, error) {
 
 	return ret, nil
 }
+
+func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
+	return func(c *gcli.Context, err error, isSubcommand bool) error {
+		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
+		gcli.ShowCommandHelp(c, command)
+		return nil
+	}
+}

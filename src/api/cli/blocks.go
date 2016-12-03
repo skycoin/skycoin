@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -25,6 +24,11 @@ func getBlocks(c *gcli.Context) error {
 	end := c.Args().Get(1)
 	if end == "" {
 		end = start
+	}
+
+	if start == "" {
+		gcli.ShowSubcommandHelp(c)
+		return nil
 	}
 
 	s, err := strconv.ParseUint(start, 10, 64)

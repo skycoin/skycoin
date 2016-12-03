@@ -2,6 +2,7 @@ package webrpc
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -75,6 +76,12 @@ func (rh *rpcHandler) Handler(w http.ResponseWriter, r *http.Request) {
 
 		resC := make(chan Response)
 		rh.ops <- func(rpc *rpcHandler) {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Critical(fmt.Sprintf("%v", r))
+					resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
+				}
+			}()
 			if handler, ok := rpc.handlers[req.Method]; ok {
 				logger.Info("method: %v", req.Method)
 				resC <- handler(req, rpc.gateway)

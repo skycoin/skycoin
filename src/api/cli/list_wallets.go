@@ -43,7 +43,7 @@ func init() {
 					path := filepath.Join(cfg.WalletDir, name)
 					w, err := wallet.Load(path)
 					if err != nil {
-						return errLoadWallet
+						return err
 					}
 					wlts.Wallets = append(wlts.Wallets, walletEntry{
 						Name:       name,

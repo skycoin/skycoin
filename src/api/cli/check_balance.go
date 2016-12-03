@@ -100,7 +100,7 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 
 		wlt, err := wallet.Load(w)
 		if err != nil {
-			return []string{}, errLoadWallet
+			return []string{}, err
 		}
 
 		addresses := wlt.GetAddresses()

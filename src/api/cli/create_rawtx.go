@@ -154,7 +154,7 @@ func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error)
 			if wltFile != "" {
 				wlt, err := wallet.Load(wltFile)
 				if err != nil {
-					return "", errLoadWallet
+					return "", err
 				}
 				chgAddr = wlt.Entries[0].Address.String()
 				break
@@ -214,7 +214,7 @@ func createRawTxFromWallet(wltPath string, chgAddr string, toAddr string, amt ui
 	// check if the change address is in wallet.
 	wlt, err := wallet.Load(wltPath)
 	if err != nil {
-		return "", errLoadWallet
+		return "", err
 	}
 
 	// check change address
@@ -252,7 +252,7 @@ func createRawTxFromAddress(addr string, chgAddr string, toAddr string, amt uint
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(filepath.Join(cfg.WalletDir, cfg.DefaultWalletName))
 	if err != nil {
-		return "", errLoadWallet
+		return "", err
 	}
 	srcAddr, err := cipher.DecodeBase58Address(addr)
 	if err != nil {

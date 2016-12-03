@@ -53,7 +53,7 @@ func NewWallet(seed, wltName, label string) Wallet {
 func Load(wltFile string) (*Wallet, error) {
 	// check file's existence
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return nil, err
+		return nil, fmt.Errorf("load wallet file failed, %v", err)
 	}
 	wlt := Wallet{
 		Meta: make(map[string]string),
@@ -64,7 +64,7 @@ func Load(wltFile string) (*Wallet, error) {
 		return nil, err
 	}
 	if err := wlt.Load(dir); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load wallet file failed, %v", err)
 	}
 	return &wlt, nil
 }

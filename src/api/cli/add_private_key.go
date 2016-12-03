@@ -48,7 +48,7 @@ func init() {
 
 			wlt, err := wallet.Load(w)
 			if err != nil {
-				return errLoadWallet
+				return err
 			}
 
 			sk, err := cipher.SecKeyFromHex(skStr)

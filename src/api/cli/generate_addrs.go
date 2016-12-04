@@ -20,12 +20,15 @@ func generateAddrsCMD() gcli.Command {
 		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",
 		ArgsUsage: " ",
-		Description: `Use caution when using the “-p” command. If you have command 
+		Description: fmt.Sprintf(`The default wallet(%s/%s) will
+		be used if no wallet and address was specificed.
+		
+		Use caution when using the “-p” command. If you have command 
 		history enabled your wallet encryption password can be recovered from the 
 		history log. If you do not include the “-p” option you will be prompted to 
-		enter your password after you enter your command.`,
+		enter your password after you enter your command.`, cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
-			gcli.IntFlag{
+			gcli.UintFlag{
 				Name:  "n",
 				Value: 1,
 				Usage: `[numberOfAddresses]	Number of addresses to generate`,
@@ -48,10 +51,7 @@ func generateAddrsCMD() gcli.Command {
 
 func generateAddrs(c *gcli.Context) error {
 	// get number of address that are need to be generated.
-	num := c.Int("n")
-	if num == 0 {
-		num = defaultAddrNum
-	}
+	num := c.Uint("n")
 
 	jsonFmt := c.Bool("json")
 
@@ -67,10 +67,11 @@ func generateAddrs(c *gcli.Context) error {
 
 	wlt, err := wallet.Load(w)
 	if err != nil {
-		return err
+		errorWithHelp(c, err)
+		return nil
 	}
 
-	addrs := wlt.GenerateAddresses(num)
+	addrs := wlt.GenerateAddresses(int(num))
 	dir, err := filepath.Abs(filepath.Dir(w))
 	if err != nil {
 		return err

@@ -31,12 +31,16 @@ type balanceResult struct {
 	Addresses   []balance `json:"addresses"`
 }
 
-func init() {
+func checkBalanceCMD() gcli.Command {
 	name := "checkBalance"
-	cmd := gcli.Command{
-		Name:         name,
-		Usage:        "Check the balance of a wallet or specific address",
-		ArgsUsage:    "[wallet or address]",
+	return gcli.Command{
+		Name:      name,
+		Usage:     "Check the balance of a wallet or specific address",
+		ArgsUsage: "[wallet or address]",
+		Description: fmt.Sprintf(`The default wallet: %s/%s will be 
+		used if no wallet and address was specificed, use ENV 'WALLET_NAME' 
+		to update default wallet file name, and 'WALLET_DIR' to update 
+		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
 		OnUsageError: onCommandUsageError(name),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
@@ -46,13 +50,15 @@ func init() {
 		},
 		Action: checkBalance,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func checkBalance(c *gcli.Context) error {
 	addrs, err := gatherAddrs(c)
 	if err != nil {
-		return err
+		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
+		gcli.ShowSubcommandHelp(c)
+		return nil
 	}
 
 	balRlt, err := getAddrsBalance(addrs)
@@ -75,7 +81,7 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 	if c.NArg() > 0 {
 		a = c.Args().First()
 		if _, err := cipher.DecodeBase58Address(a); err != nil {
-			return []string{}, err
+			return []string{}, fmt.Errorf("invalid address: %v", a)
 		}
 	}
 

@@ -12,8 +12,6 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-var defaultAddrNum = 1
-
 func generateAddrsCMD() gcli.Command {
 	name := "generateAddresses"
 	return gcli.Command{

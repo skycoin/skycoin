@@ -37,7 +37,8 @@ func checkBalanceCMD() gcli.Command {
 		Name:      name,
 		Usage:     "Check the balance of a wallet or specific address",
 		ArgsUsage: "[wallet or address]",
-		Description: fmt.Sprintf(`The default wallet: %s/%s will be 
+		Description: fmt.Sprintf(`Check balance of specific wallet or address, the default 
+		wallet(%s/%s) will be 
 		used if no wallet and address was specificed, use ENV 'WALLET_NAME' 
 		to update default wallet file name, and 'WALLET_DIR' to update 
 		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
@@ -56,8 +57,7 @@ func checkBalanceCMD() gcli.Command {
 func checkBalance(c *gcli.Context) error {
 	addrs, err := gatherAddrs(c)
 	if err != nil {
-		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
-		gcli.ShowSubcommandHelp(c)
+		errorWithHelp(c, err)
 		return nil
 	}
 

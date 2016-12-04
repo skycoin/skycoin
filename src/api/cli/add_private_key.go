@@ -17,8 +17,10 @@ func addPrivateKeyCMD() gcli.Command {
 		Name:      name,
 		Usage:     "Add a private key to specific wallet",
 		ArgsUsage: "[private key]",
-		Description: `Add a private key to specific wallet, the default
-		wallet file will be used if the wallet file or path is not specified`,
+		Description: fmt.Sprintf(`Add a private key to specific wallet, the default
+		wallet(%s/%s) will be 
+		used if the wallet file or path is not specified`,
+			cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
@@ -51,7 +53,8 @@ func addPrivateKeyCMD() gcli.Command {
 
 			wlt, err := wallet.Load(w)
 			if err != nil {
-				return err
+				errorWithHelp(c, err)
+				return nil
 			}
 
 			sk, err := cipher.SecKeyFromHex(skStr)

@@ -10,9 +10,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func statusCMD() gcli.Command {
 	name := "status"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Check the status of current skycoin node",
 		ArgsUsage:    " ",
@@ -54,5 +54,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

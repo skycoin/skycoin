@@ -14,9 +14,9 @@ import (
 
 var defaultAddrNum = 1
 
-func init() {
+func generateAddrsCMD() gcli.Command {
 	name := "generateAddresses"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",
 		ArgsUsage: " ",
@@ -43,7 +43,7 @@ func init() {
 		OnUsageError: onCommandUsageError(name),
 		Action:       generateAddrs,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func generateAddrs(c *gcli.Context) error {

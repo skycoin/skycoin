@@ -7,9 +7,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func walletDirCMD() gcli.Command {
 	name := "walletDir"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Displays wallet folder address",
 		ArgsUsage:    " ",
@@ -40,5 +40,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

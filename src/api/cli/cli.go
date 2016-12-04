@@ -17,14 +17,9 @@ import (
 // Commands all cmds that we support
 
 var (
-	Commands  []gcli.Command
+	commands  []gcli.Command
 	walletExt = ".wlt"
 	cfg       Config
-
-// 	// RPCAddress
-// 	RPCAddress        = os.Getenv("SKYCOIN_RPC_ADDR")
-// 	WalletDir         = os.Getenv("SKYCOIN_WLT_DIR")
-// 	DefaultWalletName = "skycoin_cli.wlt"
 )
 
 var (
@@ -44,12 +39,14 @@ func httpGet(url string, v interface{}) error {
 	return nil
 }
 
+// Config cli's configuration struct
 type Config struct {
 	RPCAddress        string
 	WalletDir         string
 	DefaultWalletName string
 }
 
+// Option Init argument type
 type Option func(cfg *Config)
 
 // Init initialize the cli's configuration
@@ -70,9 +67,26 @@ func Init(ops ...Option) {
 	if cfg.DefaultWalletName == "" {
 		cfg.DefaultWalletName = fmt.Sprintf("%s_cli.wlt", os.Args[0])
 	}
+
+	commands = append(commands,
+		addPrivateKeyCMD(),
+		blocksCMD(),
+		broadcastTxCMD(),
+		checkBalanceCMD(),
+		createRawTxCMD(),
+		generateAddrsCMD(),
+		generateWalletCMD(),
+		lastBlocksCMD(),
+		listAddressesCMD(),
+		listWalletsCMD(),
+		sendCMD(),
+		statusCMD(),
+		transactionCMD(),
+		versionCMD(),
+		walletDirCMD())
 }
 
-// PRCAddress sets rpc address
+// RPCAddr sets rpc address
 func RPCAddr(addr string) Option {
 	return func(cfg *Config) {
 		cfg.RPCAddress = addr
@@ -91,6 +105,10 @@ func DefaultWltName(wltName string) Option {
 	return func(cfg *Config) {
 		cfg.DefaultWalletName = wltName
 	}
+}
+
+func Commands() []gcli.Command {
+	return commands
 }
 
 func getUnspent(addrs []string) ([]unspentOut, error) {

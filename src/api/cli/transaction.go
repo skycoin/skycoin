@@ -10,9 +10,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func transactionCMD() gcli.Command {
 	name := "transaction"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Show detail info of specific transaction",
 		ArgsUsage:    "[transaction id]",
@@ -47,5 +47,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

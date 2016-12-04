@@ -9,16 +9,16 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func lastBlocksCMD() gcli.Command {
 	name := "lastBlocks"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Displays the content of the most recently N generated blocks",
 		ArgsUsage:    "[numberOfBlocks]",
 		OnUsageError: onCommandUsageError(name),
 		Action:       getLastBlocks,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func getLastBlocks(c *gcli.Context) error {

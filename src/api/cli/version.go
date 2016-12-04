@@ -8,9 +8,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func versionCMD() gcli.Command {
 	name := "version"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:      name,
 		ArgsUsage: "List the current version of Skycoin components",
 		Usage:     " ",
@@ -53,5 +53,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

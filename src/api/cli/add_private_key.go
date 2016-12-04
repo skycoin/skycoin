@@ -11,9 +11,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func addPrivateKeyCMD() gcli.Command {
 	name := "addPrivateKey"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:      name,
 		Usage:     "Add a private key to specific wallet",
 		ArgsUsage: "[private key]",
@@ -86,5 +86,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

@@ -12,16 +12,16 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func listAddressesCMD() gcli.Command {
 	name := "listAddresses"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Lists all addresses in a given wallet",
 		ArgsUsage:    "[walletName]",
 		OnUsageError: onCommandUsageError(name),
 		Action:       listAddresses,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func listAddresses(c *gcli.Context) error {

@@ -18,9 +18,9 @@ type walletEntry struct {
 	AddressNum int    `json:"address_num"`
 }
 
-func init() {
+func listWalletsCMD() gcli.Command {
 	name := "listWallets"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Lists all wallets stored in the default wallet directory",
 		ArgsUsage:    " ",
@@ -62,5 +62,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

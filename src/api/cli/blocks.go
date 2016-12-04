@@ -8,16 +8,16 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func blocksCMD() gcli.Command {
 	name := "blocks"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Lists the content of a single block or a range of blocks",
 		ArgsUsage:    "[starting block or single block seq] [ending block seq]",
 		Action:       getBlocks,
 		OnUsageError: onCommandUsageError(name),
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func getBlocks(c *gcli.Context) error {

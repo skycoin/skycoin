@@ -17,12 +17,13 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func generateWalletCMD() gcli.Command {
 	name := "generateWallet"
-	cmd := gcli.Command{
-		Name:      name,
-		Usage:     "Generate a new wallet",
-		ArgsUsage: " ",
+	return gcli.Command{
+		Name:         "generateWallet",
+		Usage:        "Generate a new wallet",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
 		Description: `Use caution when using the "-p" command. If you have command 
 		history enabled your wallet encryption password can be recovered 
 		from the history log. If you do not include the "-p" option you will 
@@ -59,10 +60,9 @@ func init() {
 				Usage: "[label] Label used to idetify your wallet.",
 			},
 		},
-		OnUsageError: onCommandUsageError(name),
-		Action:       generateWallet,
+		Action: generateWallet,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func generateWallet(c *gcli.Context) error {

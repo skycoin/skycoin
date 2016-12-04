@@ -7,9 +7,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func sendCMD() gcli.Command {
 	name := "send"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:      name,
 		Usage:     "Send skycoin from a wallet or an address to a recipient address",
 		ArgsUsage: "[to address] [amount]",
@@ -78,5 +78,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

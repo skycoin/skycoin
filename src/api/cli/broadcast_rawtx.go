@@ -10,9 +10,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func broadcastTxCMD() gcli.Command {
 	name := "broadcastTransaction"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:         name,
 		Usage:        "Broadcast a raw transaction to the network",
 		ArgsUsage:    "[raw transaction]",
@@ -32,7 +32,7 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func broadcastTx(rawtx string) (string, error) {

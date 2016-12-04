@@ -16,9 +16,9 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
+func createRawTxCMD() gcli.Command {
 	name := "createRawTransaction"
-	cmd := gcli.Command{
+	return gcli.Command{
 		Name:      name,
 		Usage:     "Create a raw transaction to be broadcast to the network later",
 		ArgsUsage: "[to address] [amount]",
@@ -75,7 +75,7 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func createRawTransaction(c *gcli.Context) (string, error) {

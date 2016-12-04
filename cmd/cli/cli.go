@@ -67,7 +67,7 @@ func main() {
 	app := cli.NewApp()
 	app.Usage = "the skycoin command line interface"
 	app.Version = "0.1"
-	app.Commands = skycli.Commands
+	app.Commands = skycli.Commands()
 	app.EnableBashCompletion = true
 	app.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(context.App.Writer, "Error: %v\n\n", err)

@@ -152,3 +152,8 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 		return nil
 	}
 }
+
+func errorWithHelp(c *gcli.Context, err error) {
+	fmt.Fprintf(c.App.Writer, "ERROR: %v\n\n", err)
+	gcli.ShowSubcommandHelp(c)
+}

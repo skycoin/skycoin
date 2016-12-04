@@ -118,7 +118,7 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 
 	if a != "" && w != "" {
 		// 1 1
-		err = errors.New("use either -w or -a")
+		err = errors.New("use either -f or -a flag")
 		return
 	}
 
@@ -143,7 +143,11 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 		w = filepath.Join(cfg.WalletDir, w)
 		return
 	}
+
 	// 1 0
+	if _, err = cipher.DecodeBase58Address(a); err != nil {
+		err = fmt.Errorf("invalid from address: %s", a)
+	}
 	return
 }
 
@@ -163,8 +167,11 @@ func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error)
 				if err != nil {
 					return "", err
 				}
-				chgAddr = wlt.Entries[0].Address.String()
-				break
+				if len(wlt.Entries) > 0 {
+					chgAddr = wlt.Entries[0].Address.String()
+					break
+				}
+				return "", errors.New("no change address was found")
 			}
 			return "", errors.New("both wallet file, from address and change address are empty")
 		}
@@ -174,7 +181,7 @@ func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error)
 	// validate the address
 	_, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", errors.New("error address")
+		return "", fmt.Errorf("invalid change address: %s", chgAddr)
 	}
 
 	return chgAddr, nil

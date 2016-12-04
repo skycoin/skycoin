@@ -154,6 +154,5 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 }
 
 func errorWithHelp(c *gcli.Context, err error) {
-	fmt.Fprintf(c.App.Writer, "ERROR: %v\n\n", err)
-	gcli.ShowSubcommandHelp(c)
+	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }

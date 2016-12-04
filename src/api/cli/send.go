@@ -51,7 +51,9 @@ func sendCMD() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			rawtx, err := createRawTransaction(c)
 			if err != nil {
-				return err
+				errorWithHelp(c, err)
+				return nil
+				// return err
 			}
 
 			txid, err := broadcastTx(rawtx)

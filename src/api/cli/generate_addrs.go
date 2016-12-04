@@ -21,9 +21,9 @@ func generateAddrsCMD() gcli.Command {
 		Description: fmt.Sprintf(`The default wallet(%s/%s) will
 		be used if no wallet and address was specificed.
 		
-		Use caution when using the “-p” command. If you have command 
+		Use caution when using the "-p" command. If you have command 
 		history enabled your wallet encryption password can be recovered from the 
-		history log. If you do not include the “-p” option you will be prompted to 
+		history log. If you do not include the "-p" option you will be prompted to 
 		enter your password after you enter your command.`, cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
 			gcli.UintFlag{

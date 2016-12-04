@@ -29,7 +29,7 @@ func getLastBlocks(c *gcli.Context) error {
 
 	n, err := strconv.ParseUint(num, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid block number, %s", err)
 	}
 
 	param := []uint64{n}

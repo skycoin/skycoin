@@ -50,6 +50,9 @@ func generateAddrsCMD() gcli.Command {
 func generateAddrs(c *gcli.Context) error {
 	// get number of address that are need to be generated.
 	num := c.Uint("n")
+	if num == 0 {
+		return errors.New("-n must > 0")
+	}
 
 	jsonFmt := c.Bool("json")
 

@@ -97,6 +97,9 @@ func generateWallet(c *gcli.Context) error {
 
 	// get number of address that are need to be generated, if m is 0, set to 1.
 	num := c.Uint("n")
+	if num == 0 {
+		return errors.New("-n must > 0")
+	}
 
 	// get label
 	label := c.String("l")

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 
 	"strconv"
@@ -30,6 +31,10 @@ func getLastBlocks(c *gcli.Context) error {
 	n, err := strconv.ParseUint(num, 10, 64)
 	if err != nil {
 		return fmt.Errorf("invalid block number, %s", err)
+	}
+
+	if n <= 0 {
+		return errors.New("block number must >= 0")
 	}
 
 	param := []uint64{n}

@@ -7,7 +7,8 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "${SCRIPTDIR}"
 
-tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
+# tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
+tar cvf "${SRC_TAR}" --exclude=electron \
     --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
     "../src" "../cmd" "../run.sh" "../test.sh" "../GLOCKFILE" "../README.md" \
     >/dev/null

@@ -54,7 +54,8 @@ if [ -e "$LNX64_ELN_PLT" ]; then
     fi
     echo "Zipping $LNX64_ELN_ZIP"
     mv "$LNX64_ELN_PLT" "$LNX64_ELN"
-    tar czf "$LNX64_ELN_ZIP" --owner=0 --group=0 "$LNX64_ELN"
+    tar czf "$LNX64_ELN_ZIP"  "$LNX64_ELN"
+    # tar czf "$LNX64_ELN_ZIP" --owner=0 --group=0 "$LNX64_ELN"
     mv "$LNX64_ELN" "$LNX64_ELN_PLT"
     FINALS+=("$LNX64_ELN_ZIP")
 fi

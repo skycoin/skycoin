@@ -18,17 +18,19 @@ type walletEntry struct {
 	AddressNum int    `json:"address_num"`
 }
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "listWallets",
-		Usage:     "Lists all wallets stored in the default wallet directory",
-		ArgsUsage: " ",
+func listWalletsCMD() gcli.Command {
+	name := "listWallets"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Lists all wallets stored in the default wallet directory",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			var wlts struct {
 				Wallets []walletEntry `json:"wallets"`
 			}
 
-			entries, err := ioutil.ReadDir(walletDir)
+			entries, err := ioutil.ReadDir(cfg.WalletDir)
 			if err != nil {
 				return err
 			}
@@ -40,10 +42,10 @@ func init() {
 						continue
 					}
 
-					path := filepath.Join(walletDir, name)
+					path := filepath.Join(cfg.WalletDir, name)
 					w, err := wallet.Load(path)
 					if err != nil {
-						return errLoadWallet
+						return err
 					}
 					wlts.Wallets = append(wlts.Wallets, walletEntry{
 						Name:       name,
@@ -60,5 +62,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

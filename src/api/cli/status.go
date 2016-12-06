@@ -10,17 +10,19 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "status",
-		Usage:     "Check the status of current skycoin node",
-		ArgsUsage: " ",
+func statusCMD() gcli.Command {
+	name := "status"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Check the status of current skycoin node",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			var status = struct {
 				RPCAddress string `json:"webrpc_address"`
 				Running    bool   `json:"running"`
 			}{
-				RPCAddress: rpcAddress,
+				RPCAddress: cfg.RPCAddress,
 			}
 
 			req, err := webrpc.NewRequest("get_status", nil, "1")
@@ -28,7 +30,7 @@ func init() {
 				return fmt.Errorf("create rpc request failed: %v", err)
 			}
 
-			rsp, err := webrpc.Do(req, rpcAddress)
+			rsp, err := webrpc.Do(req, cfg.RPCAddress)
 			if err != nil {
 				return fmt.Errorf("do rpc request failed: %v", err)
 			}
@@ -52,5 +54,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

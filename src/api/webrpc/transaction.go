@@ -58,11 +58,25 @@ func injectTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("invalid raw transaction:%v", err))
 	}
 
-	txn := coin.TransactionDeserialize(b)
+	txn, err := deserializeTx(b)
+	if err != nil {
+		return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("%v", err))
+	}
+
 	t, err := gateway.InjectTransaction(txn)
 	if err != nil {
 		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("inject transaction failed:%v", err))
 	}
 
 	return makeSuccessResponse(req.ID, InjectResult{t.Hash().Hex()})
+}
+
+func deserializeTx(b []byte) (tx coin.Transaction, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+	tx = coin.TransactionDeserialize(b)
+	return
 }

@@ -12,26 +12,28 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-var defaultAddrNum = 1
-
-func init() {
-	cmd := gcli.Command{
-		Name:      "generateAddresses",
+func generateAddrsCMD() gcli.Command {
+	name := "generateAddresses"
+	return gcli.Command{
+		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",
 		ArgsUsage: " ",
-		Description: `Use caution when using the “-p” command. If you have command 
+		Description: fmt.Sprintf(`The default wallet(%s/%s) will
+		be used if no wallet and address was specificed.
+		
+		Use caution when using the "-p" command. If you have command 
 		history enabled your wallet encryption password can be recovered from the 
-		history log. If you do not include the “-p” option you will be prompted to 
-		enter your password after you enter your command.`,
+		history log. If you do not include the "-p" option you will be prompted to 
+		enter your password after you enter your command.`, cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
-			gcli.IntFlag{
+			gcli.UintFlag{
 				Name:  "n",
 				Value: 1,
 				Usage: `[numberOfAddresses]	Number of addresses to generate`,
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: filepath.Join(walletDir, defaultWalletName),
+				Value: filepath.Join(cfg.WalletDir, cfg.DefaultWalletName),
 				Usage: `[wallet file or path] Generate addresses in the wallet`,
 			},
 			gcli.BoolFlag{
@@ -39,16 +41,17 @@ func init() {
 				Usage: "Returns the results in JSON format",
 			},
 		},
-		Action: generateAddrs,
+		OnUsageError: onCommandUsageError(name),
+		Action:       generateAddrs,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func generateAddrs(c *gcli.Context) error {
 	// get number of address that are need to be generated.
-	num := c.Int("n")
+	num := c.Uint("n")
 	if num == 0 {
-		num = defaultAddrNum
+		return errors.New("-n must > 0")
 	}
 
 	jsonFmt := c.Bool("json")
@@ -60,15 +63,16 @@ func generateAddrs(c *gcli.Context) error {
 
 	// only wallet file name, no path.
 	if filepath.Base(w) == w {
-		w = filepath.Join(walletDir, w)
+		w = filepath.Join(cfg.WalletDir, w)
 	}
 
 	wlt, err := wallet.Load(w)
 	if err != nil {
-		return errLoadWallet
+		errorWithHelp(c, err)
+		return nil
 	}
 
-	addrs := wlt.GenerateAddresses(num)
+	addrs := wlt.GenerateAddresses(int(num))
 	dir, err := filepath.Abs(filepath.Dir(w))
 	if err != nil {
 		return err

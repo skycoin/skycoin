@@ -7,11 +7,13 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "walletDir",
-		Usage:     "Displays wallet folder address",
-		ArgsUsage: " ",
+func walletDirCMD() gcli.Command {
+	name := "walletDir"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Displays wallet folder address",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "j,json",
@@ -24,7 +26,7 @@ func init() {
 				var rlt = struct {
 					WltDir string `json:"walletDir"`
 				}{
-					walletDir,
+					cfg.WalletDir,
 				}
 				d, err := json.MarshalIndent(rlt, "", "    ")
 				if err != nil {
@@ -34,9 +36,9 @@ func init() {
 				return nil
 			}
 
-			fmt.Println(walletDir)
+			fmt.Println(cfg.WalletDir)
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

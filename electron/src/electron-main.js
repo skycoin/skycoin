@@ -9,9 +9,9 @@ const electron = require('electron');
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
 // Devtools can be toggled with cmd+alt+i, ctrl+shift+i, F12
-require('electron-debug')({enabled: true, showDevTools: false});
+require('electron-debug')({ enabled: true, showDevTools: false });
 
-const {app} = electron;
+const { app } = electron;
 
 const defaultURL = 'http://127.0.0.1:6420/';
 let currentURL;
@@ -19,14 +19,15 @@ let currentURL;
 // Force everything localhost, in case of a leak
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
+app.commandLine.appendSwitch('--no-proxy-server');
 // app.commandLine.appendSwitch('cipher-suite-blacklist', '');
 
 app.setAsDefaultProtocolClient('skycoin');
 
 // Module to create native browser window.
-const {BrowserWindow} = electron;
+const { BrowserWindow } = electron;
 
-const {dialog} = electron;
+const { dialog } = electron;
 
 const childProcess = require('child_process');
 
@@ -80,8 +81,8 @@ function startSkycoin() {
     var args = [
         '-launch-browser=false',
         '-gui-dir=.',
-        '-color-log=false',  // must be disabled or web interface detection
-                             // will break
+        '-color-log=false', // must be disabled or web interface detection
+        // will break
         // broken (automatically generated certs do not work):
         // '-web-interface-https=true',
     ]
@@ -90,16 +91,16 @@ function startSkycoin() {
     var appPath = app.getPath('exe');
     var exe = (() => {
         switch (process.platform) {
-        case 'darwin':
-            return path.join(appPath, '../../Resources/app/skycoin');
-        case 'win32':
-            // Use only the relative path on windows due to short path length
-            // limits
-            return './resources/app/skycoin.exe';
-        case 'linux':
-            return path.join(path.dirname(appPath), './resources/app/skycoin');
-        default:
-            return './resources/app/skycoin';
+            case 'darwin':
+                return path.join(appPath, '../../Resources/app/skycoin');
+            case 'win32':
+                // Use only the relative path on windows due to short path length
+                // limits
+                return './resources/app/skycoin.exe';
+            case 'linux':
+                return path.join(path.dirname(appPath), './resources/app/skycoin');
+            default:
+                return './resources/app/skycoin';
         }
     })()
 
@@ -130,7 +131,7 @@ function startSkycoin() {
         }
         var url = data.slice(i + marker.length, j);
         currentURL = url.toString();
-        app.emit('skycoin-ready', {url: currentURL});
+        app.emit('skycoin-ready', { url: currentURL });
     });
 
     skycoin.stderr.on('data', (data) => {
@@ -234,4 +235,3 @@ app.on('will-quit', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
-

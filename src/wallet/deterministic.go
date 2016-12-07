@@ -77,7 +77,7 @@ func NewWalletFromReadable(r *ReadableWallet) Wallet {
 
 	err := w.Validate()
 	if err != nil {
-		log.Panic("Wallet %s invalid: %v", w.GetFilename, err)
+		log.Panic("Wallet %s invalid: %v", w.GetFilename(), err)
 	}
 	return w
 }

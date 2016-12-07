@@ -515,7 +515,7 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 			if already_in_blockchain {
 				fmt.Print("DEBUG Already in blockchain. Ignoring block.\n")
 				action_skip = true
-			} else if l.seqno - blockPtr.Seqno >
+			} else if l.seqno-blockPtr.Seqno >
 				Cfg_consensus_candidate_max_seqno_gap {
 				fmt.Printf("DEBUG proposed=%d, first=%d, last=%d. Too far"+
 					" behind. Ignoring block.\n",
@@ -623,4 +623,5 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 
 	return status_code
 }
+
 ////////////////////////////////////////////////////////////////////////////////

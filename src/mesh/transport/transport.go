@@ -49,27 +49,26 @@ type messageSentState struct {
 
 // Wraps Transport, but adds store-and-forward
 type Transport struct {
-
-	id		uint32
+	id                uint32
 	config            TransportConfig
 	physicalTransport ITransport
 	output            chan []byte
 	serializer        *serialize.Serializer
-	metadata	[]byte
+	metadata          []byte
 
-	status		uint32
+	status uint32
 
 	lock             *sync.Mutex
 	messagesSent     map[domain.MessageID]messageSentState
 	messagesReceived map[domain.MessageID]time.Time
 	nextMsgId        uint32
 
-	packetIsSent	time.Time
-	latency		uint64
-	packetsCount	uint32
-	packetsSent	uint32
-	packetsReceived	uint32
-	packetsRetransmissions	uint32
+	packetIsSent           time.Time
+	latency                uint64
+	packetsCount           uint32
+	packetsSent            uint32
+	packetsReceived        uint32
+	packetsRetransmissions uint32
 
 	physicalReceived chan []byte
 	closing          chan bool

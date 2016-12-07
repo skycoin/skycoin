@@ -305,7 +305,7 @@ func propagate_hash_from_node(
 	// WARNING: Do NOT use this code for obtaining any research
 	// results.  This file is only an illustration. A realistic
 	// simulation require to have nonzero latencies for event
-	// propagation and to have an event queueu inside the
+	// propagation and to have an event queue inside the
 	// implementation of MeshNetworkInterface.
 	//
 

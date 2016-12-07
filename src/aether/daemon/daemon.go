@@ -26,7 +26,7 @@ import (
 /*
 	Problems:
 	- DHT Does not appear to be used anywhere!?
-	- why isnt DHT being used for peer lookups?
+	- why isn't DHT being used for peer lookups?
 
 */
 

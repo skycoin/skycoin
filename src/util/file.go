@@ -136,6 +136,10 @@ func ResolveResourceDirectory(path string) string {
 	rt_directory := filepath.Dir(rt_filename)
 
 	path_abs, err := filepath.Abs(path)
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Println("abs path:", path_abs)
 
 	fmt.Printf("runtime.Caller= %s \n", rt_filename)
 	//fmt.Printf("Filepath Raw= %s \n")
@@ -194,7 +198,6 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 
 		appLoc = filepath.Join(dir, appLoc)
 	}
-
 	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
 		//check dist directory
 		appLoc = filepath.Join(staticDir, resourceDir)

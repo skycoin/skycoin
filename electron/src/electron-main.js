@@ -1,6 +1,7 @@
 'use strict'
 
 global.eval = function() { throw new Error('bad!!'); }
+var log = require('electron-log');
 
 const path = require('path');
 
@@ -75,24 +76,16 @@ function startSkycoin() {
     }
 
     var reset = () => {
-        skycoin = null;
-    }
-
-    var args = [
-        '-launch-browser=false',
-        '-gui-dir=.',
-        '-color-log=false', // must be disabled or web interface detection
-        // will break
-        // broken (automatically generated certs do not work):
-        // '-web-interface-https=true',
-    ]
-
-    // Resolve skycoin binary location
+            skycoin = null;
+        }
+        // Resolve skycoin binary location
     var appPath = app.getPath('exe');
     var exe = (() => {
         switch (process.platform) {
             case 'darwin':
                 return path.join(appPath, '../../Resources/app/skycoin');
+                // return '../release/Skycoin.app/Contents/Resources/app/skycoin';
+                // return './Resources/app/skycoin';
             case 'win32':
                 // Use only the relative path on windows due to short path length
                 // limits
@@ -103,6 +96,17 @@ function startSkycoin() {
                 return './resources/app/skycoin';
         }
     })()
+    log.info("appPath:", appPath);
+
+    var args = [
+        '-launch-browser=false',
+        '-gui-dir=' + appPath + "../../../Resources/app",
+        '-color-log=false', // must be disabled or web interface detection
+        // will break
+        // broken (automatically generated certs do not work):
+        // '-web-interface-https=true',
+    ]
+
 
     skycoin = childProcess.spawn(exe, args);
 
@@ -112,6 +116,7 @@ function startSkycoin() {
     });
 
     skycoin.stdout.on('data', (data) => {
+        log.info(data.toString());
         console.log(data.toString());
 
         // Scan for the web URL string
@@ -135,15 +140,18 @@ function startSkycoin() {
     });
 
     skycoin.stderr.on('data', (data) => {
+        log.info(data.toString());
         console.log(data.toString());
     });
 
     skycoin.on('close', (code) => {
+        log.info('Skycoin closed');
         console.log('Skycoin closed');
         reset();
     });
 
     skycoin.on('exit', (code) => {
+        log.info('Skycoin exited');
         console.log('Skycoin exited');
         reset();
     });

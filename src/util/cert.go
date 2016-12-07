@@ -84,7 +84,7 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
 	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
 		0600)
 	if err != nil {
-		return fmt.Errorf("Failed to open %s for writing:", keyFile, err)
+		return fmt.Errorf("Failed to open %s for writing: %v", keyFile, err)
 	}
 	defer keyOut.Close()
 	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY",

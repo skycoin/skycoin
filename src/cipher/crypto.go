@@ -365,7 +365,7 @@ func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey) {
 	return hash, NewPubKey(public), NewSecKey(secret)
 }
 
-//Returns sequence of n private keys from intial seed
+//Returns sequence of n private keys from initial seed
 func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
 	var keys []SecKey
 	var seckey SecKey
@@ -376,7 +376,7 @@ func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
 	return keys
 }
 
-//Returns sequence of n private keys from intial seed, and return the new seed
+//Returns sequence of n private keys from initial seed, and return the new seed
 func GenerateDeterministicKeyPairsSeed(seed []byte, n int) ([]byte, []SecKey) {
 	var keys []SecKey
 	var seckey SecKey
@@ -404,7 +404,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	//check pubkey recovery
 	pubkey := PubKeyFromSecKey(seckey)
 	if pubkey == (PubKey{}) {
-		errors.New("impossible error, TestSecKey, nil pubkey recovered")
+		return errors.New("impossible error, TestSecKey, nil pubkey recovered")
 	}
 	//verify recovered pubkey
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
@@ -436,7 +436,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	//verify produced signature
 	err = VerifySignature(pubkey, sig, hash)
 	if err != nil {
-		errors.New("impossible error, TestSecKey, verify signature failed " +
+		return errors.New("impossible error, TestSecKey, verify signature failed " +
 			"for sig")
 	}
 

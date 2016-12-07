@@ -662,7 +662,7 @@ type MinimalConnectionManager struct {
 
 	// MinimalConnectionManager solicit a conn to them; receive data
 	// from them but do not send anything
-	publishers  PoolOwner
+	publishers PoolOwner
 
 	// MinimalConnectionManager accept
 	// connections. MinimalConnectionManager send data to them; does

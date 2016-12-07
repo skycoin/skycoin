@@ -381,7 +381,7 @@ func TransactionFromJSON(str string) (coin.Transaction, error) {
 	err := json.Unmarshal([]byte(str), TxIn)
 
 	if err != nil {
-		errors.New("cannot deserialize")
+		return errors.New("Cannot deserialize")
 	}
 
 	var tx coin.Transaction
@@ -393,7 +393,7 @@ func TransactionFromJSON(str string) (coin.Transaction, error) {
 	for i, _ := range tx.Sigs {
 		sig2, err := cipher.SigFromHex(TxIn.Sigs[i])
 		if err != nil {
-			return coin.Transaction{}, errors.New("invalid signature")
+			return coin.Transaction{}, errors.New("Invalid signature")
 		}
 		tx.Sigs[i] = sig2
 	}

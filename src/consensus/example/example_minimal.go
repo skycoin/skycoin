@@ -7,13 +7,14 @@ import (
 	"fmt"
 	mathrand "math/rand"
 	//
-	"github.com/skycoin/skycoin/src/consensus"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	"github.com/skycoin/skycoin/src/consensus"
 )
 
-var Cfg_simu_num_node            int = 5
-var Cfg_simu_fanout_per_node     int = 2
+var Cfg_simu_num_node int = 5
+var Cfg_simu_fanout_per_node int = 2
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 //
@@ -22,11 +23,12 @@ var Cfg_simu_fanout_per_node     int = 2
 type MinimalConnectionManager struct {
 	theNodePtr *consensus.ConsensusParticipant
 	//
-	publisher_key_list []*MinimalConnectionManager
+	publisher_key_list  []*MinimalConnectionManager
 	subscriber_key_list []*MinimalConnectionManager
 }
+
 func (self *MinimalConnectionManager) GetNode() *consensus.ConsensusParticipant {
-	return self.theNodePtr 
+	return self.theNodePtr
 }
 func (self *MinimalConnectionManager) RegisterPublisher(key *MinimalConnectionManager) bool {
 
@@ -71,6 +73,7 @@ func (self *MinimalConnectionManager) Print() {
 	}
 	fmt.Printf("}")
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // main
@@ -89,7 +92,7 @@ func main() {
 		// some data out.
 		nodePtr := consensus.NewConsensusParticipantPtr(&cm)
 		cm.theNodePtr = nodePtr
-		
+
 		X = append(X, &cm)
 	}
 
@@ -99,14 +102,14 @@ func main() {
 
 		cm := X[i]
 
-		c_left := int(Cfg_simu_fanout_per_node/2)
+		c_left := int(Cfg_simu_fanout_per_node / 2)
 		c_right := Cfg_simu_fanout_per_node - c_left
 
 		for c := 0; c < c_left; c++ {
 			j := (i - 1 - c + n) % n
 			cm.RegisterPublisher(X[j])
 		}
-		
+
 		for c := 0; c < c_right; c++ {
 			j := (i + 1 + c) % n
 			cm.RegisterPublisher(X[j])
@@ -119,7 +122,6 @@ func main() {
 	for i := 0; i < n; i++ {
 		X[i].RequestConnectionToAllMyPublisher()
 	}
-	
 
 	{
 		//
@@ -127,7 +129,7 @@ func main() {
 		//
 		index := mathrand.Intn(Cfg_simu_num_node)
 		nodePtr := X[index].GetNode()
-		
+
 		//
 		// Make a block (actually, only a header)
 		//
@@ -138,7 +140,7 @@ func main() {
 			nodePtr.SignatureOf(h),
 			h,
 			0)
-		
+
 		//
 		// Send it to subscribers. The subscribers are also publishers;
 		// they send (forward, to be exact) the header to thire respective
@@ -146,15 +148,16 @@ func main() {
 		//
 		nodePtr.OnBlockHeaderArrived(&b)
 	}
-	
+
 	//
 	// Print the state of each node for a review or debugging.
-	// 
+	//
 	for i, _ := range X {
 		fmt.Printf("FILE_FinalState.txt|NODE i=%d ", i)
 		X[i].GetNode().Print()
 		fmt.Printf("\n")
 	}
-	
+
 }
+
 ////////////////////////////////////////////////////////////////////////////////

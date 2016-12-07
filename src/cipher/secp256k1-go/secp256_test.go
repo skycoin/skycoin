@@ -583,7 +583,7 @@ func Test_Abnormal_Keys(t *testing.T) {
 			seckey_hex := hex.EncodeToString(seckey1)
 			log.Printf("seed= %s", seed_hex)
 			log.Printf("seckey= %s", seckey_hex)
-			t.Errorf("GenerateKeyPair, generates key that fails validation, run=%i", i)
+			t.Errorf("GenerateKeyPair, generates key that fails validation, run=%d", i)
 		}
 	}
 }

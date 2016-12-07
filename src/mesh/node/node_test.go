@@ -323,7 +323,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 		allConnections = append(allConnections, toConnections)
 	}
 	nodes, toClose, transports := SetupNodes((uint)(nPeers), allConnections, t)
-//	nodes, toClose, _ := SetupNodes((uint)(nPeers), allConnections, t)
+	//	nodes, toClose, _ := SetupNodes((uint)(nPeers), allConnections, t)
 	defer close(toClose)
 	defer func() {
 		for _, node := range nodes {
@@ -409,6 +409,7 @@ func sortPubKeys(pubKeys []cipher.PubKey) []cipher.PubKey {
 	sort.Sort(keys)
 	return keys
 }
+
 /*
 func Deprecated_TestSendLongMessage(t *testing.T) {
 	contents := []byte{}

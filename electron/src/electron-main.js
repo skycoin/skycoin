@@ -1,7 +1,7 @@
 'use strict'
 
 global.eval = function() { throw new Error('bad!!'); }
-var log = require('electron-log');
+    // var log = require('electron-log');
 
 const path = require('path');
 
@@ -34,7 +34,7 @@ const childProcess = require('child_process');
 
 const cwd = require('process').cwd();
 
-console.log('working directory: ' + cwd);
+// console.log('working directory: ' + cwd);
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -84,8 +84,6 @@ function startSkycoin() {
         switch (process.platform) {
             case 'darwin':
                 return path.join(appPath, '../../Resources/app/skycoin');
-                // return '../release/Skycoin.app/Contents/Resources/app/skycoin';
-                // return './Resources/app/skycoin';
             case 'win32':
                 // Use only the relative path on windows due to short path length
                 // limits
@@ -96,8 +94,6 @@ function startSkycoin() {
                 return './resources/app/skycoin';
         }
     })()
-
-    log.info("!!!!!", path.dirname(exe));
 
     var args = [
         '-launch-browser=false',
@@ -117,7 +113,7 @@ function startSkycoin() {
     });
 
     skycoin.stdout.on('data', (data) => {
-        log.info(data.toString());
+        // log.info(data.toString());
         console.log(data.toString());
 
         // Scan for the web URL string
@@ -141,18 +137,18 @@ function startSkycoin() {
     });
 
     skycoin.stderr.on('data', (data) => {
-        log.info(data.toString());
+        // log.info(data.toString());
         console.log(data.toString());
     });
 
     skycoin.on('close', (code) => {
-        log.info('Skycoin closed');
+        // log.info('Skycoin closed');
         console.log('Skycoin closed');
         reset();
     });
 
     skycoin.on('exit', (code) => {
-        log.info('Skycoin exited');
+        // log.info('Skycoin exited');
         console.log('Skycoin exited');
         reset();
     });

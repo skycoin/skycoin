@@ -404,7 +404,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	//check pubkey recovery
 	pubkey := PubKeyFromSecKey(seckey)
 	if pubkey == (PubKey{}) {
-		errors.New("impossible error, TestSecKey, nil pubkey recovered")
+		return errors.New("impossible error, TestSecKey, nil pubkey recovered")
 	}
 	//verify recovered pubkey
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
@@ -436,7 +436,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	//verify produced signature
 	err = VerifySignature(pubkey, sig, hash)
 	if err != nil {
-		errors.New("impossible error, TestSecKey, verify signature failed " +
+		return errors.New("impossible error, TestSecKey, verify signature failed " +
 			"for sig")
 	}
 

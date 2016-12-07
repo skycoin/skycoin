@@ -61,7 +61,7 @@ func (d *Daemon) NewHashChainReplicator(channel uint16, callback HashChainCallba
 		Channel:           channel,
 		HashChainMap:      make(map[SHA256]HashChain),
 		HashChainCallback: callback,
-		RequestManager : requestManager
+		RequestManager : requestManager,
 		d: d,
 	}
 

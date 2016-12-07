@@ -146,7 +146,6 @@ func DeserializeRaw(in []byte, data interface{}) error {
 	case reflect.Ptr:
 		v = v.Elem()
 	case reflect.Slice:
-		v = v
 	case reflect.Struct:
 	default:
 		return fmt.Errorf("Invalid type %s", reflect.TypeOf(v).String())

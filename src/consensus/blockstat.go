@@ -292,6 +292,7 @@ func (self *BlockStat) try_add_hash_and_sig(
 
 	if !(action_update || action_skip || action_insert) {
 		panic("Inconsistent BlockStat::try_add_hash_and_sig()")
+		return -1
 	}
 
 	if action_update || action_insert {
@@ -572,6 +573,7 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 
 	if !(action_update || action_skip || action_insert) {
 		panic("Inconsistent")
+		return -1
 	}
 
 	var status_code int = 1

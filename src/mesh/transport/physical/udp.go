@@ -128,6 +128,38 @@ func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
 	portChan <- ListenPort{*externalHost, udpConn}
 }
 
+func OpenUDPPortNew(port int, config UDPConfig, wg *sync.WaitGroup,
+	errorChan chan error, portChan chan ListenPort) {
+	defer wg.Done()
+
+	udpAddr := net.JoinHostPort(config.LocalAddress, strconv.Itoa((int)(port)))
+	listenAddr, resolvErr := net.ResolveUDPAddr("udp", udpAddr)
+	if resolvErr != nil {
+		errorChan <- resolvErr
+		return
+	}
+
+	udpConn, listenErr := net.ListenUDP("udp", listenAddr)
+	if listenErr != nil {
+		errorChan <- listenErr
+		return
+	}
+
+	externalHostStr := net.JoinHostPort(config.ExternalAddress, strconv.Itoa((int)(port)))
+	externalHost := &net.UDPAddr{}
+	externalHost, resolvErr = net.ResolveUDPAddr("udp", externalHostStr)
+	if resolvErr != nil {
+		errorChan <- resolvErr
+		return
+	}
+
+	// STUN library sets the deadlines
+	udpConn.SetDeadline(time.Time{})
+	udpConn.SetReadDeadline(time.Time{})
+	udpConn.SetWriteDeadline(time.Time{})
+	portChan <- ListenPort{*externalHost, udpConn}
+}
+
 func (self *UDPTransport) receiveMessage(buffer []byte) {
 	if self.crypto != nil {
 		buffer = self.crypto.Decrypt(buffer)
@@ -390,6 +422,7 @@ func (self *UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 
 // Create UDPTransport
 func CreateNewUDPTransport(configUdp UDPConfig) *UDPTransport {
+	fmt.Println("CONFIGUDP IS", configUdp)
 	udpTransport, createUDPError := NewUDPTransport(configUdp)
 	if createUDPError != nil {
 		panic(createUDPError)

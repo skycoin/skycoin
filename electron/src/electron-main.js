@@ -78,15 +78,6 @@ function startSkycoin() {
         skycoin = null;
     }
 
-    var args = [
-        '-launch-browser=false',
-        '-gui-dir=.',
-        '-color-log=false', // must be disabled or web interface detection
-        // will break
-        // broken (automatically generated certs do not work):
-        // '-web-interface-https=true',
-    ]
-
     // Resolve skycoin binary location
     var appPath = app.getPath('exe');
     var exe = (() => {
@@ -103,6 +94,15 @@ function startSkycoin() {
                 return './resources/app/skycoin';
         }
     })()
+    var args = [
+        '-launch-browser=false',
+        '-gui-dir=' + path.dirname(exe),
+        '-color-log=false', // must be disabled or web interface detection
+        // will break
+        // broken (automatically generated certs do not work):
+        // '-web-interface-https=true',
+    ]
+
 
     skycoin = childProcess.spawn(exe, args);
 

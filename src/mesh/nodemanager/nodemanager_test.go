@@ -32,10 +32,10 @@ func TestConnectNodes(t *testing.T) {
 	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
 	nodeManager.ConnectNodes()
 	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 1")
-/*	pubKey1 := nodeManager.PubKeyList[1]
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 2, "Error expected 2 PeersToConnect from Node 2")
-	pubKey4 := nodeManager.PubKeyList[4]
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 5")*/
+	/*	pubKey1 := nodeManager.PubKeyList[1]
+		assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 2, "Error expected 2 PeersToConnect from Node 2")
+		pubKey4 := nodeManager.PubKeyList[4]
+		assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 5")*/
 }
 
 func TestConnectNodeRandomly(t *testing.T) {

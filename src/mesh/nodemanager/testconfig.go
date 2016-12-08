@@ -1,7 +1,7 @@
 package nodemanager
 
 import (
-"fmt"
+	"fmt"
 	"strconv"
 
 	"github.com/satori/go.uuid"
@@ -13,16 +13,16 @@ import (
 
 type TestConfig struct {
 	TransportConfig transport.TransportConfig
-	UDPConfigs       []physical.UDPConfig
+	UDPConfigs      []physical.UDPConfig
 	NodeConfig      mesh.NodeConfig
 
 	PeersToConnect           []Peer
-	PeerToPeers		map[string]*Peer
+	PeerToPeers              map[string]*Peer
 	RoutesConfigsToEstablish []RouteConfig
 	MessagesToSend           []MessageToSend
 	MessagesToReceive        []MessageToReceive
-	ExternalAddress		string
-	Port			int
+	ExternalAddress          string
+	Port                     int
 }
 
 type RouteConfig struct {
@@ -55,7 +55,7 @@ func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 func (self *TestConfig) AddPeersToConnectNew(configData *ConfigData) {
 	ownPubKey := self.NodeConfig.PubKey
 	ownAddress := self.ExternalAddress
-	for _, transportData := range(configData.Transports) {
+	for _, transportData := range configData.Transports {
 		addrIncoming := ownAddress + ":" + strconv.Itoa(transportData.IncomingPort)
 		addrOutgoing := transportData.OutgoingAddress + ":" + strconv.Itoa(transportData.OutgoingPort)
 

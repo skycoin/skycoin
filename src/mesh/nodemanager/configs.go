@@ -10,15 +10,15 @@ import (
 )
 
 type ConfigData struct {
-	PubKey cipher.PubKey `json:"pubkey"`
-	ExternalAddress	string `json:"external_address"`
-	Transports []*TransportData `json:"transports"`
+	PubKey          cipher.PubKey    `json:"pubkey"`
+	ExternalAddress string           `json:"external_address"`
+	Transports      []*TransportData `json:"transports"`
 }
 
 type TransportData struct {
-	IncomingPort int `json:"incoming_port"`
+	IncomingPort    int    `json:"incoming_port"`
 	OutgoingAddress string `json:"outgoing_address"`
-	OutgoingPort int `json:"outgoing_port"`
+	OutgoingPort    int    `json:"outgoing_port"`
 }
 
 func loadConfig(configFileName string) ([]*ConfigData, error) {
@@ -26,23 +26,29 @@ func loadConfig(configFileName string) ([]*ConfigData, error) {
 	configData := []*ConfigData{}
 
 	configFile, err := os.Open(configFileName)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer configFile.Close()
 
 	decoder := json.NewDecoder(configFile)
 	err = decoder.Decode(&configData)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	return configData, nil
 }
 
 func TestConfigsFromFile(configFileName string) []*TestConfig {
 	configDatas, err := loadConfig(configFileName)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 
 	testConfigs := []*TestConfig{}
 
-	for _, configData := range(configDatas) {
+	for _, configData := range configDatas {
 		testConfig := createTestConfigFromData(configData)
 		testConfigs = append(testConfigs, testConfig)
 	}

@@ -319,7 +319,7 @@ func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput
 	//}
 	addr, err := cipher.DecodeBase58Address(in.Address)
 	if err != nil {
-		return coin.TransactionOutput{}, errors.New("Adress decode fail")
+		return coin.TransactionOutput{}, errors.New("Address decode fails")
 	}
 	//tx.Hash = hash
 	tx.Address = addr

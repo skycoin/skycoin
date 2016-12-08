@@ -49,7 +49,7 @@ type BlockStat struct {
 	// [JSM:] We need to put an upper limit to the
 	// ConcensusParticipant's bandwidth requirement in order to
 	// prevent a certain kind of attack on the network.  As an
-	// implementation of that requrement, we stop collecting (hence,
+	// implementation of that requirement, we stop collecting (hence,
 	// stop propagating) the blocks with the same sequence number
 	// after we have observed a sufficient number of builders.
 	//
@@ -343,8 +343,8 @@ func (self *BlockStat) GetBestHashPubkeySig() (
 	// pubkey for this purpose as we do not want, for example, to have
 	// same pubkey sign most of blocks.
 
-	// NOTE 1: We want a deterministic algo here, so that each
-	// ConsensusParticipant across teh network would choose same
+	// NOTE 1: We want a deterministic algorithm here, so that each
+	// ConsensusParticipant across the network would choose same
 	// (hash,sig) to go to blockchain.
 
 	// NOTE 2: A simplified version of consensus can be imagined, in

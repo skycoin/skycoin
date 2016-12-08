@@ -333,7 +333,7 @@ func TestRejectDialBacklogFilled(t *testing.T) {
 }
 
 // Make sure that we can reset AfterFunc timers, so we don't have to create
-// brand new ones everytime they fire. Specifically for the Conn resend timer.
+// brand new ones every time they fire. Specifically for the Conn resend timer.
 func TestResetAfterFuncTimer(t *testing.T) {
 	t.Parallel()
 	fired := make(chan struct{})

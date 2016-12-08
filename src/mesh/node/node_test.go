@@ -210,7 +210,7 @@ func TestRouteExpiry(t *testing.T) {
 		afterWaitConfirmedTime = lastConfirmed
 	}
 
-	// Don't allow refreshes to get thru
+	// Don't allow refreshes to get through
 	transports[0].SetIgnoreSendStatus(true)
 	time.Sleep(5 * time.Second)
 	var afterIgnoreConfirmedTime time.Time

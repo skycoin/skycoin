@@ -474,7 +474,7 @@ func Simulate_compare_node_StateQueue(
 	for i, zzz_i := range zzz {
 		join_count := 0       // How many have selected the most popular hash.
 		other_count := 0      // How many have selected NOT the most popular.
-		prescribed_count := 0 // How many have selected the intented hash.
+		prescribed_count := 0 // How many have selected the intended hash.
 		malicious_count := 0  // How many have selected the malicious hash.
 
 		for seqno, hash2count := range zzz_i {

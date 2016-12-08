@@ -94,7 +94,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 			return nil
 		}
 	}
-	//message reponse from remote for connection
+	//message response from remote connection
 	if self.Originating == 0 {
 		if len(self.ErrorMessage) != 0 {
 			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",

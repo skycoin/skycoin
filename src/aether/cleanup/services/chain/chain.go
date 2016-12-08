@@ -65,7 +65,7 @@ func (d *Daemon) NewHashChainReplicator(channel uint16, callback HashChainCallba
 	}
 
 	br.RequestManager = NewRequestManager(NewRequestManagerConfig())
-	//Todo, check that daemon doesnt have other channels
+	//Todo, check that daemon doesn't have other channels
 	d.HashChainReplicators = append(d.HashChainReplicators, &br)
 	return &br
 }

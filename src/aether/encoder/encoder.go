@@ -208,7 +208,7 @@ func Deserialize(r io.Reader, dsize int, data interface{}) error {
 	return d1.value(v)
 }
 
-//Does a check to see if serialization would be succesful
+//Does a check to see if serialization would be successful
 func CanDeserialize(in []byte, dst reflect.Value) bool {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)

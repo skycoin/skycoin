@@ -256,7 +256,7 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
 	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(start))
 	go d.Start(quit)
 	time.Sleep(time.Second + (time.Millisecond * 50))
-	// Creation should not have occured, because no transaction
+	// Creation should not have occurred, because no transaction
 	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(start))
 	assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
 

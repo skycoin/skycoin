@@ -1311,7 +1311,7 @@ func TestHandleMessageSendResult(t *testing.T) {
 	d := newDefaultDaemon()
 	defer shutdown(d)
 
-	// Nothing happens: Message successfully sent and isnt a SendingTxnsMessage
+	// Nothing happens: Message successfully sent and isn't a SendingTxnsMessage
 	m := NewGetBlocksMessage(6)
 	sr := gnet.SendResult{
 		Message:    m,

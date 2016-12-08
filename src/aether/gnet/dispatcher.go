@@ -23,7 +23,7 @@ func (self *DispatcherManager) OnMessage(c *Connection, channel uint16,
 	d, ok := self.Dispatchers[channel]
 
 	if ok == false {
-		log.Panicf("channel %d doesnt exist", channel) //channel doesnt exist
+		log.Panicf("channel %d doesn't exist", channel) //channel doesn't exist
 		return errors.New("channel does not have dispatcher")
 	}
 

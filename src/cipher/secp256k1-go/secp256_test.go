@@ -43,10 +43,10 @@ func CompactSigTest(sig []byte) {
 		log.Panic()
 	}
 	if ((b >> 7) == 1) != ((b & 0x80) == 0x80) {
-		log.Panic("b= %v b2= %v \n", b, b>>7)
+		log.Panic("b= %d b2= %d \n", b, b>>7)
 	}
 	if (b & 0x80) == 0x80 {
-		log.Panic("b= %v b2= %v \n", b, b&0x80)
+		log.Panic("b= %d b2= %d \n", b, b&0x80)
 	}
 }
 

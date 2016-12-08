@@ -84,7 +84,7 @@ func NewMnemonic(entropy []byte) (string, error) {
 // This does not work for all values in
 // the test vectors.  Namely
 // Vectors 0, 4, and 8.
-// This is not really important because BIP39 doesnt really define a conversion
+// This is not really important because BIP39 doesn't define a conversion
 // from string to bytes.
 func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 	if IsMnemonicValid(mnemonic) == false {

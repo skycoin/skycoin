@@ -46,7 +46,7 @@ func TestEraseMessages(t *testing.T) {
 }
 
 func TestVerifyMessages(t *testing.T) {
-	// VerifyMessages either no-ops or panics. Make sure it doesnt panic
+	// VerifyMessages either no-ops or panics. Make sure it doesn't panic
 	EraseMessages()
 	RegisterMessage(DummyPrefix, DummyMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})

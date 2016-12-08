@@ -1,0 +1,20 @@
+It is basicly GNU.
+
+* free for non-commercial use, open source
+* we wont sue you
+
+Most of the libraries we have written are MIT license. Our crypto stack,
+standards, devops, deployment and infrastructure is generally MIT license.
+
+We have dual license for some parts of the code base to prevent abuse. We do
+not want people forking coins a billion times however without permission (there
+are some abuse edge cases we want to protect against). Some commercial
+applications may require licensing or agreement. To stop destructive use or
+abuse. So similar to Cryptonote and bctd in model.
+
+We do a dual license for some corporate users, who need specialized
+application, branding, extensions and support. For instance, we have corporate
+client in China who wants a dropbox application and they want to use the
+libraries and need extensions and branding. So we retain ownership rights so
+that we can enforce the contract. While maintaining rights to open source parts
+of the infrastructure built for the client (dual licensing).

@@ -1,6 +1,7 @@
 package mesh
 
 import (
+"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -113,8 +114,9 @@ func TestSendDirect(t *testing.T) {
 
 func TestLongRoute(t *testing.T) {
 	contents := []byte{4, 66, 7, 44, 33}
-	numPeers, dropFirst, reorder, sendBack := 5, false, false, false
+	numPeers, dropFirst, reorder, sendBack := 3, false, false, false
 	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
+	panic(0)
 }
 
 func TestShortSendBack(t *testing.T) {
@@ -165,7 +167,7 @@ func TestSendThruRoute(t *testing.T) {
 		panic("Test timed out")
 	}
 }
-
+/*
 func TestRouteExpiry(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -226,7 +228,7 @@ func TestRouteExpiry(t *testing.T) {
 	assert.NotEqual(t, afterExtendConfirmedTime, afterWaitConfirmedTime)
 	assert.Equal(t, afterWaitConfirmedTime, afterIgnoreConfirmedTime)
 }
-
+*/
 func TestDeleteRoute(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -323,7 +325,10 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 		allConnections = append(allConnections, toConnections)
 	}
 	nodes, toClose, transports := SetupNodes((uint)(nPeers), allConnections, t)
+<<<<<<< HEAD
 	//	nodes, toClose, _ := SetupNodes((uint)(nPeers), allConnections, t)
+=======
+>>>>>>> 8610887d96a249bd757a5607123a097493707c5c
 	defer close(toClose)
 	defer func() {
 		for _, node := range nodes {
@@ -334,7 +339,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 	receivedMessages := make(chan domain.MeshMessage, 10)
 	nodes[nPeers-1].SetReceiveChannel(receivedMessages)
 
-	terminatingID := nodes[nPeers-1].GetConfig().PubKey
+	//terminatingID := nodes[nPeers-1].GetConfig().PubKey
 
 	addedRouteID := domain.RouteID{}
 	addedRouteID[0] = 22
@@ -367,7 +372,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 			select {
 			case receivedMessage := <-receivedMessages:
 				{
-					replyTo = receivedMessage.ReplyTo
+					//replyTo = receivedMessage.ReplyTo
 					assert.Equal(t, addedRouteID, receivedMessage.ReplyTo.RouteID)
 					assert.Equal(t, contents, receivedMessage.Contents)
 				}

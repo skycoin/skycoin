@@ -146,13 +146,16 @@ func (self *StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 		}
 	}
 	for _, queued := range messages {
+		fmt.Println(queued.TransportToPeer)
 		queued.TransportToPeer.MessagesReceived <- queued.messageContent
+		fmt.Println(".fds;ljflsdk")
 		atomic.AddInt32(&self.NumMessagesSent, 1)
 	}
 	return
 }
 
 func (self *StubTransport) SetReceiveChannel(received chan []byte) {
+	fmt.Println("Setting receive channel:", received)
 	self.MessagesReceived = received
 	return
 }

@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"encoding/hex"
+	"encoding/json"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
@@ -31,6 +34,7 @@ var ServerConfig *TestConfig
 
 type NodeManager struct {
 	ConfigList map[cipher.PubKey]*TestConfig
+	StartPort  int
 	Port       int
 	NodesList  map[cipher.PubKey]*mesh.Node
 	PubKeyList []cipher.PubKey
@@ -73,9 +77,11 @@ type Route struct {
 // Create TestConfig to the test using the functions created in the meshnet library.
 func CreateTestConfig(port int) *TestConfig {
 	testConfig := &TestConfig{}
+	testConfig.ExternalAddress = "127.0.0.1"
+	testConfig.Port = port
 	testConfig.NodeConfig = NewNodeConfig()
 	testConfig.TransportConfig = transport.CreateTransportConfig(testConfig.NodeConfig.PubKey)
-	testConfig.UDPConfig = physical.CreateUdp(port, "127.0.0.1")
+	testConfig.UDPConfigs = []physical.UDPConfig{}
 
 	return testConfig
 }
@@ -115,6 +121,7 @@ func (self *NodeManager) CreateNodeConfigList(n int) {
 	if self.Port == 0 {
 		self.Port = 10000
 	}
+	self.StartPort = self.Port
 	for a := 1; a <= n; a++ {
 		self.AddNode()
 	}
@@ -128,7 +135,6 @@ func (self *NodeManager) AddNode() int {
 	}
 	config := CreateTestConfig(self.Port)
 	self.ConfigList[config.NodeConfig.PubKey] = config
-	self.Port++
 	node := CreateNode(*config)
 	self.NodesList[config.NodeConfig.PubKey] = node
 	self.PubKeyList = append(self.PubKeyList, config.NodeConfig.PubKey)
@@ -160,12 +166,12 @@ func (self *NodeManager) ConnectNodes() {
 			config1 := self.ConfigList[pubKey1]
 			config2 := self.ConfigList[pubKey2]
 
-			ConnectNodeToNode(config1, config2)
+			ConnectNodeToNode(self, config1, config2)
 
 			if index3 > 0 {
 				pubKey3 := self.PubKeyList[index3]
 				config3 := self.ConfigList[pubKey3]
-				ConnectNodeToNode(config1, config3)
+				ConnectNodeToNode(self, config1, config3)
 			}
 			AddPeersToNode(self.NodesList[pubKey1], *config1)
 		}
@@ -173,13 +179,43 @@ func (self *NodeManager) ConnectNodes() {
 }
 
 // Connect Node1 (config1) to Node2 (config2)
-func ConnectNodeToNode(config1, config2 *TestConfig) {
+func ConnectNodeToNode(nodeManager *NodeManager, config1, config2 *TestConfig) {
+	nodeManager.Port++
+	if config1.Port == nodeManager.StartPort { config1.Port = nodeManager.Port }
+	nodeManager.Port++
+	if config2.Port == nodeManager.StartPort { config2.Port = nodeManager.Port }
 	var addr bytes.Buffer
-	addr.WriteString(config2.UDPConfig.ExternalAddress)
+	addr.WriteString(config2.ExternalAddress)
 	addr.WriteString(":")
-	addr.WriteString(strconv.Itoa(int(config2.UDPConfig.ListenPortMin)))
+	addr.WriteString(strconv.Itoa(int(config2.Port)))
 	config1.AddPeerToConnect(addr.String(), config2)
 	addr.Reset()
+}
+
+func ConnectNodeToNodeNew(config1, config2 *TestConfig) {
+	peerFound := false
+	for ownPeerInfo, peerToConnect := range(config1.PeerToPeers) {
+		suggestedOwnPeer, found := config2.PeerToPeers[peerToConnect.Info]
+		if found {
+			if ownPeerInfo == suggestedOwnPeer.Info {
+				ownPubKey := config1.NodeConfig.PubKey
+				connectedPubKey := config2.NodeConfig.PubKey
+				suggestedOwnPeer.Peer = connectedPubKey
+				peerToConnect.Peer = ownPubKey
+				peerFound = true
+				break
+			}
+		}
+	}
+	if !peerFound {
+		fmt.Fprintf(os.Stderr, "Error Nodes %v and %v aren't connected\n", config1.NodeConfig.PubKey, config2.NodeConfig.PubKey)
+		return
+	}
+	//find in the config1 peer associated with config2
+	//assign config2's pubkey to it
+
+	config1.AddRouteToEstablish(config2)
+	return
 }
 
 // Add Routes to Node
@@ -207,8 +243,36 @@ func AddPeersToNode(node *mesh.Node, config TestConfig) {
 
 	// Connect
 	for _, connectTo := range config.PeersToConnect {
-		udpTransport := physical.CreateNewUDPTransport(config.UDPConfig)
+		udpConfig := physical.CreateUdp(config.Port, config.ExternalAddress)
+		config.UDPConfigs = append(config.UDPConfigs, udpConfig)
+		udpTransport := physical.CreateNewUDPTransport(udpConfig)
 		connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
+		if connectError != nil {
+			panic(connectError)
+		}
+		transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
+		node.AddTransport(transportToPeer)
+		config.Port++
+	}
+
+	// Transport closes UDPTransport
+	//defer transportToPeer.Close()
+}
+
+// Add transport to Node
+func AddPeersToNodeNew(node *mesh.Node, config TestConfig) {
+
+	emptyPK := cipher.PubKey{}
+
+	// Connect
+	for info, peerToPeer := range config.PeerToPeers {
+		if peerToPeer.Peer == emptyPK { continue }
+		addr, port := infoToAddr(info)
+		fmt.Println("EXTERNAL ADDRESS IS", addr)
+		udpConfig := physical.CreateUdp(port, addr)
+		config.UDPConfigs = append(config.UDPConfigs, udpConfig)
+		udpTransport := physical.CreateNewUDPTransport(udpConfig)
+		connectError := udpTransport.ConnectToPeer(peerToPeer.Peer, peerToPeer.Info)
 		if connectError != nil {
 			panic(connectError)
 		}
@@ -218,8 +282,42 @@ func AddPeersToNode(node *mesh.Node, config TestConfig) {
 
 	// Transport closes UDPTransport
 	//defer transportToPeer.Close()
-
 }
+
+func infoToAddr(info string) (string, int) {
+	infoBytes, err := hex.DecodeString(info)
+	if err != nil { panic(err); return "", 0 }
+
+	udp := physical.UDPCommConfig{}
+
+	err = json.Unmarshal(infoBytes, &udp)
+	if err != nil { panic(err); return "", 0 }
+
+	host := udp.ExternalHosts[0]
+	fmt.Println("HOST IP is", host.IP)
+	return host.IP.String(), host.Port
+}
+
+/*
+func AddPeerToNode(node *mesh.Node, config *TestConfig) {
+	udpConfig := physical.CreateUdp(config.Port, config.ExternalAddress)
+	config.UDPConfigs = append(config.UDPConfigs, udpConfig)
+	udpTransport := physical.CreateNewUDPTransport(udpConfig)
+	connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
+	if connectError != nil {
+		panic(connectError)
+	}
+	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
+	node.AddTransport(transportToPeer)
+}
+*/
+
+// PeersToConnect for getting connectTo.Peer, connectTo.Info
+// Port - will be replaced for ConfigData.Port
+// ExternalAddress - will be replaced for ConfigData.Address
+// UDPConfigs
+// TransportConfig
+
 
 // Returns Node by index
 func (self *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {
@@ -243,7 +341,6 @@ func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport trans
 // Obtain port for to use in the creating from node
 func (self *NodeManager) GetPort() int {
 	port := self.Port
-	self.Port++
 	return port
 }
 
@@ -272,8 +369,8 @@ func (self *NodeManager) ConnectNodeRandomly(index1 int) int {
 			config1 := self.ConfigList[pubKey1]
 			pubKey2 := self.PubKeyList[index2]
 			config2 := self.ConfigList[pubKey2]
-			ConnectNodeToNode(config1, config2)
-			ConnectNodeToNode(config2, config1)
+			ConnectNodeToNode(self, config1, config2)
+			ConnectNodeToNode(self, config2, config1)
 			break
 		}
 	}

@@ -213,7 +213,7 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 	directPeer := route.ForwardToPeerID
 	transportToPeer := self.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
+		return errors.New(fmt.Sprintf("2No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
 	}
 	serialized := self.serializer.SerializeMessage(message)
 	err := transportToPeer.SendMessage(directPeer, serialized, nil)

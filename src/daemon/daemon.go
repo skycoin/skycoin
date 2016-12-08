@@ -295,13 +295,15 @@ func (self *Daemon) Start(quit chan int) {
 		go self.Pool.AcceptConnections()
 	}
 
-	// TODO -- run blockchain stuff in its own goroutine
-	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
-	// blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
-	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !self.Visor.Config.Config.IsMaster {
-		blockCreationTicker.Stop()
-	}
+	// run blockchain stuff in its own goroutine
+	go func() {
+		blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
+		// blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
+		blockCreationTicker := time.NewTicker(time.Second * blockInterval)
+		if !self.Visor.Config.Config.IsMaster {
+			blockCreationTicker.Stop
+		}
+	}()
 
 	unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
 	blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)

@@ -1,8 +1,8 @@
 package transport
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -27,7 +27,7 @@ func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte, _ chan
 	var err error
 	go self.physicalTransport.SendMessage(toPeer, sendSerialized, retChan)
 	select {
-	case err = <- retChan:
+	case err = <-retChan:
 		self.status = CONNECTED
 		if err == nil {
 			self.lock.Lock()

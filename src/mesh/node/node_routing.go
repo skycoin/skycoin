@@ -17,15 +17,14 @@ import (
 var NilRouteID domain.RouteID = (domain.RouteID)(uuid.Nil)
 
 // toPeer must be the public key of a connected peer
-func (self *Node) AddRoute(routeID domain.RouteID, toPeer cipher.PubKey) error {
+func (self *Node) AddRoute(routeID domain.RouteID, peerID cipher.PubKey) error {
 	_, routeExists := self.safelyGetRoute(routeID)
 	if routeExists {
 		return errors.New(fmt.Sprintf("Route %v already exists\n", routeID))
 	}
-
-	transportToPeer := self.safelyGetTransportToPeer(toPeer)
+	transportToPeer := self.safelyGetTransportToPeer(peerID)
 	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v\n", toPeer))
+		return errors.New(fmt.Sprintf("No transport to peer %v\n", peerID))
 	}
 
 	// Add locally to routes for backward termination
@@ -33,18 +32,18 @@ func (self *Node) AddRoute(routeID domain.RouteID, toPeer cipher.PubKey) error {
 	defer self.lock.Unlock()
 	self.routes[routeID] =
 		domain.Route{
-			ForwardToPeerID:            toPeer,
-			ForwardRewriteSendRouteID:  routeID,
-			BackwardToPeerID:           cipher.PubKey{},
-			BackwardRewriteSendRouteID: NilRouteID,
+			ForwardToPeerID:   peerID,
+			ForwardToRouteID:  routeID,
+			BackwardToPeerID:  cipher.PubKey{},
+			BackwardToRouteID: NilRouteID,
 			// Route lifetime: never dies until route is removed
 			ExpiryTime: time.Unix(0, 0),
 		}
 
-	self.localRoutesByTerminatingPeer[toPeer] = routeID
+	self.localRoutesByTerminatingPeer[peerID] = routeID
 	self.localRoutes[routeID] = domain.LocalRoute{
 		LastForwardingPeerID: self.Config.PubKey,
-		TerminatingPeerID:    toPeer,
+		TerminatingPeerID:    peerID,
 		LastHopRouteID:       NilRouteID,
 		LastConfirmed:        time.Unix(0, 0),
 	}
@@ -128,7 +127,7 @@ func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeerID cipher.Pub
 		}
 		directPeerID = route.ForwardToPeerID
 		localID = localRouteID
-		sendID = route.ForwardRewriteSendRouteID
+		sendID = route.ForwardToRouteID
 	} else {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
 	}
@@ -164,7 +163,7 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 	directPeer = route.ForwardToPeerID
 
 	sendBase := domain.MessageBase{
-		SendRouteID: route.ForwardRewriteSendRouteID,
+		SendRouteID: route.ForwardToRouteID,
 		SendBack:    false,
 		FromPeerID:  self.Config.PubKey,
 		Nonce:       GenerateNonce(),
@@ -191,7 +190,7 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 	self.localRoutesByTerminatingPeer[toPeer] = routeID
 
 	updatedRoute := route
-	updatedRoute.ForwardRewriteSendRouteID = newHopId
+	updatedRoute.ForwardToRouteID = newHopId
 	self.routes[routeID] = updatedRoute
 	confirmChan := make(chan bool, 1)
 	self.routeExtensionsAwaitingConfirm[routeID] = confirmChan
@@ -201,7 +200,7 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 
 func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) error {
 	sendBase := domain.MessageBase{
-		SendRouteID: route.ForwardRewriteSendRouteID,
+		SendRouteID: route.ForwardToRouteID,
 		SendBack:    false,
 		FromPeerID:  self.Config.PubKey,
 		Nonce:       GenerateNonce(),
@@ -263,6 +262,7 @@ func (self *Node) safelyGetForwarding(msg interface{}) (SendBack bool, route dom
 	defer self.lock.Unlock()
 
 	messageBase := getMessageBase(msg)
+
 	routeFound, foundRoute := self.routes[messageBase.SendRouteID]
 
 	doForward = foundRoute
@@ -284,16 +284,13 @@ func (self *Node) safelyGetForwarding(msg interface{}) (SendBack bool, route dom
 	}
 }
 
-func (self *Node) safelyGetRoute(routeID domain.RouteID) (route domain.Route, exists bool) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
-	route, exists = self.routes[routeID]
-	return
+func (self *Node) safelyGetRoute(routeID domain.RouteID) (route domain.Route, ok bool) {
+	route, ok = self.routes[routeID]
+	return route, ok
 }
 
 func (self *Node) expireOldRoutes() {
-	time_now := time.Now()
+	timeNow := time.Now()
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -301,7 +298,7 @@ func (self *Node) expireOldRoutes() {
 	self.routes = make(map[domain.RouteID]domain.Route)
 	// Last refresh of time.Unix(0,0) means it lives forever
 	for id, route := range lastMessages {
-		if (route.ExpiryTime == time.Unix(0, 0)) || time_now.Before(route.ExpiryTime) {
+		if (route.ExpiryTime == time.Unix(0, 0)) || timeNow.Before(route.ExpiryTime) {
 			self.routes[id] = route
 		}
 	}
@@ -314,7 +311,7 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 		return
 	}
 	base := domain.MessageBase{
-		SendRouteID: route.ForwardRewriteSendRouteID,
+		SendRouteID: route.ForwardToRouteID,
 		SendBack:    false,
 		FromPeerID:  self.Config.PubKey,
 		Nonce:       GenerateNonce(),
@@ -380,7 +377,7 @@ func getMessageBase(msg interface{}) domain.MessageBase {
 	panic(fmt.Sprintf("Internal error: getMessageBase incomplete (%v)", messageType))
 }
 
-func (self *Node) debug_countRoutes() int {
+func (self *Node) DebugCountRoutes() int {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	return len(self.routes)

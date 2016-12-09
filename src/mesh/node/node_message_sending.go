@@ -40,6 +40,61 @@ func (self *Node) SendMessageToPeer(toPeer cipher.PubKey, contents []byte) (erro
 	return nil, localRouteID
 }
 
+func (self *Node) SendSetControlChannelMessage(routeID domain.RouteID) error {
+	route, ok := self.safelyGetRoute(routeID)
+	if !ok {
+		return errors.New("Route not found")
+	}
+
+	directPeerID := route.ForwardToPeerID
+	transport := self.safelyGetTransportToPeer(directPeerID)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeerID))
+	}
+
+	message := domain.SetControlChannelMessage{
+		FromPeerID: self.Config.PubKey,
+	}
+
+	serialized := self.serializer.SerializeMessage(message)
+	fmt.Fprintf(os.Stdout, "Peer %d: Sending 'SetControlChannel' message to peer %d \n", self.Config.PubKey[:3], directPeerID[:3])
+	err := transport.SendMessage(directPeerID, serialized, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *Node) SendSetRouteControlMessage(channelID uuid.UUID, overRouteID domain.RouteID, forwardRouteID domain.RouteID, forwardToPeerID cipher.PubKey) error {
+	route, ok := self.safelyGetRoute(overRouteID)
+	if !ok {
+		return errors.New("Route not found")
+	}
+
+	directPeerID := route.ForwardToPeerID
+	transport := self.safelyGetTransportToPeer(directPeerID)
+	if transport == nil {
+		return errors.New(fmt.Sprintf("No transport to peer %v\n", directPeerID))
+	}
+
+	message := domain.SetRouteControlMessage{
+		ChannelID:      channelID,
+		RequestID:      uuid.NewV4(),
+		ForwardRouteID: forwardRouteID,
+		ForwardPeerID:  forwardToPeerID,
+		FromPeerID:     self.Config.PubKey,
+	}
+
+	serialized := self.serializer.SerializeMessage(message)
+	fmt.Fprintf(os.Stdout, "Peer %d: Sending 'SetRouteMessage' message to peer %d \n", self.Config.PubKey[:3], directPeerID[:3])
+	err := transport.SendMessage(directPeerID, serialized, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Blocks until message is confirmed received
 func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) error {
 	route, ok := self.safelyGetRoute(routeID)
@@ -55,7 +110,7 @@ func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) 
 
 	message := domain.UserMessage{
 		MessageBase: domain.MessageBase{
-			SendRouteID: route.ForwardRewriteSendRouteID,
+			SendRouteID: route.ForwardToRouteID,
 			SendBack:    false,
 			FromPeerID:  self.Config.PubKey,
 			Nonce:       GenerateNonce(),
@@ -67,7 +122,7 @@ func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) 
 	}
 
 	serialized := self.serializer.SerializeMessage(message)
-//	fmt.Fprintln(os.Stdout, "Send Message")
+	fmt.Fprintf(os.Stdout, "Peer %d: Sending 'UserMessage' to peer %d \n", self.Config.PubKey[:3], directPeerID[:3])
 	err := transport.SendMessage(directPeerID, serialized, nil)
 	if err != nil {
 		return err
@@ -158,10 +213,10 @@ func (self *Node) safelyGetRewriteBase(msg interface{}) (forwardTo cipher.PubKey
 		return cipher.PubKey{}, domain.MessageBase{}, false
 	}
 	forwardTo = route.ForwardToPeerID
-	rewriteTo := route.ForwardRewriteSendRouteID
+	rewriteTo := route.ForwardToRouteID
 	if sendBack {
 		forwardTo = route.BackwardToPeerID
-		rewriteTo = route.BackwardRewriteSendRouteID
+		rewriteTo = route.BackwardToRouteID
 	}
 	if forwardTo == (cipher.PubKey{}) {
 		return cipher.PubKey{}, domain.MessageBase{}, false

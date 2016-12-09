@@ -31,11 +31,18 @@ type balanceResult struct {
 	Addresses   []balance `json:"addresses"`
 }
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "checkBalance",
+func checkBalanceCMD() gcli.Command {
+	name := "checkBalance"
+	return gcli.Command{
+		Name:      name,
 		Usage:     "Check the balance of a wallet or specific address",
 		ArgsUsage: "[wallet or address]",
+		Description: fmt.Sprintf(`Check balance of specific wallet or address, the default 
+		wallet(%s/%s) will be 
+		used if no wallet and address was specificed, use ENV 'WALLET_NAME' 
+		to update default wallet file name, and 'WALLET_DIR' to update 
+		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
+		OnUsageError: onCommandUsageError(name),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
@@ -44,13 +51,14 @@ func init() {
 		},
 		Action: checkBalance,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func checkBalance(c *gcli.Context) error {
 	addrs, err := gatherAddrs(c)
 	if err != nil {
-		return err
+		errorWithHelp(c, err)
+		return nil
 	}
 
 	balRlt, err := getAddrsBalance(addrs)
@@ -73,14 +81,14 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 	if c.NArg() > 0 {
 		a = c.Args().First()
 		if _, err := cipher.DecodeBase58Address(a); err != nil {
-			return []string{}, err
+			return []string{}, fmt.Errorf("invalid address: %v", a)
 		}
 	}
 
 	addrs := []string{}
 	if w == "" && a == "" {
 		// use default wallet
-		w = filepath.Join(walletDir, defaultWalletName)
+		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
 	}
 
 	if w != "" {
@@ -89,7 +97,7 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 		}
 
 		if filepath.Base(w) == w {
-			w = filepath.Join(walletDir, w)
+			w = filepath.Join(cfg.WalletDir, w)
 		} else {
 			var err error
 			w, err = filepath.Abs(w)
@@ -100,7 +108,7 @@ func gatherAddrs(c *gcli.Context) ([]string, error) {
 
 		wlt, err := wallet.Load(w)
 		if err != nil {
-			return []string{}, errLoadWallet
+			return []string{}, err
 		}
 
 		addresses := wlt.GetAddresses()

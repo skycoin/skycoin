@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 
 	"strconv"
@@ -9,14 +10,16 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "lastBlocks",
-		Usage:     "Displays the content of the most recently N generated blocks",
-		ArgsUsage: "[numberOfBlocks]",
-		Action:    getLastBlocks,
+func lastBlocksCMD() gcli.Command {
+	name := "lastBlocks"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Displays the content of the most recently N generated blocks",
+		ArgsUsage:    "[numberOfBlocks]",
+		OnUsageError: onCommandUsageError(name),
+		Action:       getLastBlocks,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func getLastBlocks(c *gcli.Context) error {
@@ -27,7 +30,11 @@ func getLastBlocks(c *gcli.Context) error {
 
 	n, err := strconv.ParseUint(num, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid block number, %s", err)
+	}
+
+	if n <= 0 {
+		return errors.New("block number must >= 0")
 	}
 
 	param := []uint64{n}
@@ -36,7 +43,7 @@ func getLastBlocks(c *gcli.Context) error {
 		return fmt.Errorf("do rpc request failed: %v", err)
 	}
 
-	rsp, err := webrpc.Do(req, rpcAddress)
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return err
 	}

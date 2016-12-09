@@ -4,29 +4,27 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
-
-	"github.com/skycoin/skycoin/src/util"
 
 	"encoding/json"
 
+	"os"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/util"
 	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support
-var Commands []gcli.Command
+
 var (
-	rpcAddress        = os.Getenv("SKYCOIN_RPC_ADDR")
-	walletDir         = os.Getenv("SKYCOIN_WLT_DIR")
-	walletExt         = ".wlt"
-	defaultWalletName = "skycoin_cli.wlt"
+	commands  []gcli.Command
+	walletExt = ".wlt"
+	cfg       Config
 )
 
 var (
 	errConnectNodeFailed = errors.New("connect to node failed")
 	errWalletName        = fmt.Errorf("error wallet file name, must has %v extension", walletExt)
-	errLoadWallet        = errors.New("load wallet failed")
 	errAddress           = errors.New("invalidate address")
 	errReadResponse      = errors.New("read response body failed")
 	errJSONMarshal       = errors.New("json marshal failed")
@@ -41,15 +39,76 @@ func httpGet(url string, v interface{}) error {
 	return nil
 }
 
-func init() {
-	if rpcAddress == "" {
-		rpcAddress = "127.0.0.1:6422"
+// Config cli's configuration struct
+type Config struct {
+	RPCAddress        string
+	WalletDir         string
+	DefaultWalletName string
+}
+
+// Option Init argument type
+type Option func(cfg *Config)
+
+// Init initialize the cli's configuration
+func Init(ops ...Option) {
+	for _, op := range ops {
+		op(&cfg)
 	}
 
-	if walletDir == "" {
-		home := util.UserHome()
-		walletDir = home + "/.skycoin/wallets/"
+	if cfg.RPCAddress == "" {
+		cfg.RPCAddress = "127.0.0.1:6422"
 	}
+
+	if cfg.WalletDir == "" {
+		home := util.UserHome()
+		cfg.WalletDir = home + "/." + os.Args[0] + "/wallets"
+	}
+
+	if cfg.DefaultWalletName == "" {
+		cfg.DefaultWalletName = fmt.Sprintf("%s_cli.wlt", os.Args[0])
+	}
+
+	commands = append(commands,
+		addPrivateKeyCMD(),
+		blocksCMD(),
+		broadcastTxCMD(),
+		checkBalanceCMD(),
+		createRawTxCMD(),
+		generateAddrsCMD(),
+		generateWalletCMD(),
+		lastBlocksCMD(),
+		listAddressesCMD(),
+		listWalletsCMD(),
+		sendCMD(),
+		statusCMD(),
+		transactionCMD(),
+		versionCMD(),
+		walletDirCMD())
+}
+
+// RPCAddr sets rpc address
+func RPCAddr(addr string) Option {
+	return func(cfg *Config) {
+		cfg.RPCAddress = addr
+	}
+}
+
+// WalletDir sets wallet dir
+func WalletDir(wltDir string) Option {
+	return func(cfg *Config) {
+		cfg.WalletDir = wltDir
+	}
+}
+
+// DefaultWltName sets default wallet name
+func DefaultWltName(wltName string) Option {
+	return func(cfg *Config) {
+		cfg.DefaultWalletName = wltName
+	}
+}
+
+func Commands() []gcli.Command {
+	return commands
 }
 
 func getUnspent(addrs []string) ([]unspentOut, error) {
@@ -58,10 +117,15 @@ func getUnspent(addrs []string) ([]unspentOut, error) {
 		return []unspentOut{}, fmt.Errorf("create webrpc request failed:%v", err)
 	}
 
-	rsp, err := webrpc.Do(req, rpcAddress)
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return []unspentOut{}, fmt.Errorf("do rpc request failed:%v", err)
 	}
+
+	if rsp.Error != nil {
+		return []unspentOut{}, fmt.Errorf("rpc request failed, %+v", *rsp.Error)
+	}
+
 	var rlt webrpc.OutputsResult
 	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
 		return nil, errJSONUnmarshal
@@ -79,4 +143,16 @@ func getUnspent(addrs []string) ([]unspentOut, error) {
 	}
 
 	return ret, nil
+}
+
+func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
+	return func(c *gcli.Context, err error, isSubcommand bool) error {
+		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
+		gcli.ShowCommandHelp(c, command)
+		return nil
+	}
+}
+
+func errorWithHelp(c *gcli.Context, err error) {
+	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }

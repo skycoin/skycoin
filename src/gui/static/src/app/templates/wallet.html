@@ -10,28 +10,28 @@
             <li [class.active]="displayMode === displayModeEnum.first">
                 <a (click)="switchTab(displayModeEnum.first, '')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-cloud fa-lg"></i> Wallets
+                         Wallets
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.second">
                 <a (click)="switchTab(displayModeEnum.second,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-cloud-upload fa-lg"></i> Send
+                         Send
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.third">
                 <a (click)="switchTab(displayModeEnum.third,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-book"></i> History
+                        <i class="fa"></i> History
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.fourth">
                 <a (click)="switchTab(displayModeEnum.fourth,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-link"></i> Blockchain Explorer
+                        <i class="fa"></i> Blockchain Explorer
                     </tab-heading>
                 </a>
             </li>
@@ -74,8 +74,8 @@
                             </td>
                             <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
                             <td><a href="#" (click)="showQR(wallet)">&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{wallet.entries[0].address}}</td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa"></i></a>&nbsp;{{wallet.balance}} SKY</td>
                             <td class="text-right">{{wallet.entries.length}}&nbsp;<a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus"></i></a></td>
                           </tr>
                           <tr *ngFor="#entry of wallet.entries; #idx=index" [hidden]="!wallet.showChild||idx==0">
@@ -110,7 +110,7 @@
                           </div>
                       </div>
                       <div class="form-group">
-                          <label class="col-sm-2 control-label">Address:</label>
+                          <label class="col-sm-2 control-label">Pay To:</label>
                           <div class="col-sm-6">
                               <input type="text" #spendaddress class="form-control" (change)="checkValidAddress(spendaddress.value)">
                           </div>

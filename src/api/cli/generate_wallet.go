@@ -17,22 +17,23 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "generateWallet",
-		Usage:     "Generate a new wallet",
-		ArgsUsage: " ",
-		Description: `Use caution when using the "-p" command. If you have command 
+func generateWalletCMD() gcli.Command {
+	name := "generateWallet"
+	return gcli.Command{
+		Name:         "generateWallet",
+		Usage:        "Generate a new wallet",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
+		Description: fmt.Sprintf(`The default wallet(%s/%s) will
+		be created if no wallet and address was specificed.
+		
+		Use caution when using the "-p" command. If you have command 
 		history enabled your wallet encryption password can be recovered 
 		from the history log. If you do not include the "-p" option you will 
 		be prompted to enter your password after you enter your command. 
 		
-		All results are returned in JSON format.`,
+		All results are returned in JSON format.`, cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "s",
-				Usage: "Your seed",
-			},
 			gcli.BoolFlag{
 				Name:  "r",
 				Usage: "A random alpha numeric seed will be generated for you",
@@ -41,7 +42,11 @@ func init() {
 				Name:  "rd",
 				Usage: "A random seed consisting of 12 dictionary words will be generated for you",
 			},
-			gcli.IntFlag{
+			gcli.StringFlag{
+				Name:  "s",
+				Usage: "Your seed",
+			},
+			gcli.UintFlag{
 				Name:  "n",
 				Value: 1,
 				Usage: `[numberOfAddresses] Number of addresses to generate 
@@ -49,7 +54,7 @@ func init() {
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: defaultWalletName,
+				Value: cfg.DefaultWalletName,
 				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt". 
 						 If no wallet name is specified a generic name will be selected.`,
 			},
@@ -60,13 +65,13 @@ func init() {
 		},
 		Action: generateWallet,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func generateWallet(c *gcli.Context) error {
 	// create wallet dir if not exist
-	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(walletDir, 0755); err != nil {
+	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(cfg.WalletDir, 0755); err != nil {
 			return errors.New("create dir failed")
 		}
 	}
@@ -85,14 +90,15 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// check if the wallet file does exist
-	if _, err := os.Stat(filepath.Join(walletDir, wltName)); err == nil {
-		return fmt.Errorf("%v already exist", wltName)
+	if _, err := os.Stat(filepath.Join(cfg.WalletDir, wltName)); err == nil {
+		errorWithHelp(c, fmt.Errorf("%v already exist", wltName))
+		return nil
 	}
 
 	// get number of address that are need to be generated, if m is 0, set to 1.
-	num := c.Int("n")
+	num := c.Uint("n")
 	if num == 0 {
-		num = 1
+		return errors.New("-n must > 0")
 	}
 
 	// get label
@@ -108,14 +114,14 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 	wlt := wallet.NewWallet(sd, wltName, label)
-	wlt.GenerateAddresses(num)
+	wlt.GenerateAddresses(int(num))
 
 	// check if the wallet dir does exist.
-	if _, err := os.Stat(walletDir); os.IsNotExist(err) {
+	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
 		return err
 	}
 
-	if err := wlt.Save(walletDir); err != nil {
+	if err := wlt.Save(cfg.WalletDir); err != nil {
 		return err
 	}
 

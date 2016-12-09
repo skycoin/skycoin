@@ -32,10 +32,10 @@ func TestConnectNodes(t *testing.T) {
 	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
 	nodeManager.ConnectNodes()
 	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 1")
-/*	pubKey1 := nodeManager.PubKeyList[1]
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 2, "Error expected 2 PeersToConnect from Node 2")
-	pubKey4 := nodeManager.PubKeyList[4]
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 5")*/
+	/*	pubKey1 := nodeManager.PubKeyList[1]
+		assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 2, "Error expected 2 PeersToConnect from Node 2")
+		pubKey4 := nodeManager.PubKeyList[4]
+		assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 5")*/
 }
 
 func TestConnectNodeRandomly(t *testing.T) {
@@ -46,7 +46,6 @@ func TestConnectNodeRandomly(t *testing.T) {
 	assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
 	nodeManager.ConnectNodeRandomly(index1)
 	assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
-
 	index2 := nodeManager.AddNode()
 	assert.Len(t, nodeManager.NodesList, 2, "Error expected 2 nodes")
 	pubKey2 := nodeManager.PubKeyList[index2]
@@ -413,7 +412,6 @@ func TestAddTransportsToNode(t *testing.T) {
 	nodeManager.ConnectNodes()
 
 	config := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port++
 
 	pubKey := nodeManager.PubKeyList[1]
 	node := nodeManager.NodesList[pubKey]
@@ -425,7 +423,6 @@ func TestAddTransportsToNode(t *testing.T) {
 	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 
 	config2 := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port++
 
 	pubKey2 := nodeManager.PubKeyList[3]
 	node2 := nodeManager.NodesList[pubKey2]
@@ -438,6 +435,7 @@ func TestAddTransportsToNode(t *testing.T) {
 }
 
 func TestGetTransportsFromNode(t *testing.T) {
+	panic("ok")
 	nodeManager := &NodeManager{Port: 6100}
 	nodeManager.CreateNodeConfigList(10)
 	nodeManager.ConnectNodes()
@@ -459,13 +457,11 @@ func TestRemoveTransportsFromNode(t *testing.T) {
 	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
 
 	config := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port++
 	AddPeersToNode(node, *config)
 
 	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 
 	config2 := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port++
 	AddPeersToNode(node, *config2)
 
 	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")

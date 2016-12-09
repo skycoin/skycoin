@@ -1,8 +1,8 @@
 package transport
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -27,7 +27,7 @@ func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte, _ chan
 	var err error
 	go self.physicalTransport.SendMessage(toPeer, sendSerialized, retChan)
 	select {
-	case err = <- retChan:
+	case err = <-retChan:
 		self.status = CONNECTED
 		if err == nil {
 			self.lock.Lock()
@@ -45,10 +45,6 @@ func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte, _ chan
 	return err
 }
 
-func (self *Transport) GetStatus() uint32 {
-	return self.status
-}
-
 func (self *Transport) SetCrypto(crypto ITransportCrypto) {
 	self.physicalTransport.SetCrypto(crypto)
 }
@@ -56,17 +52,10 @@ func (self *Transport) SetCrypto(crypto ITransportCrypto) {
 func (self *Transport) doRetransmits() {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	retChan := make(chan error, 0)
 	for _, state := range self.messagesSent {
 		if !state.receivedAck {
-			go self.physicalTransport.SendMessage(state.toPeer, state.serialized, retChan)
-			select {
-			case <-retChan:
-				self.status = CONNECTED
-				self.packetsRetransmissions++
-			case <-time.After(5 * time.Second):
-				self.status = TIMEOUT
-			}
+			self.packetsRetransmissions++
+			go self.physicalTransport.SendMessage(state.toPeer, state.serialized, nil)
 		}
 	}
 }

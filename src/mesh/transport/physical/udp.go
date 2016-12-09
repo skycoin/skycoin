@@ -55,7 +55,7 @@ type UDPTransport struct {
 	crypto           transport.ITransportCrypto
 
 	// Thread protected variables
-	lock           *sync.Mutex
+	lock              *sync.Mutex
 	connectedPeerKey  *cipher.PubKey
 	connectedPeerConf *UDPCommConfig
 }
@@ -128,6 +128,38 @@ func OpenUDPPort(port_index uint16, config UDPConfig, wg *sync.WaitGroup,
 	portChan <- ListenPort{*externalHost, udpConn}
 }
 
+func OpenUDPPortNew(port int, config UDPConfig, wg *sync.WaitGroup,
+	errorChan chan error, portChan chan ListenPort) {
+	defer wg.Done()
+
+	udpAddr := net.JoinHostPort(config.LocalAddress, strconv.Itoa((int)(port)))
+	listenAddr, resolvErr := net.ResolveUDPAddr("udp", udpAddr)
+	if resolvErr != nil {
+		errorChan <- resolvErr
+		return
+	}
+
+	udpConn, listenErr := net.ListenUDP("udp", listenAddr)
+	if listenErr != nil {
+		errorChan <- listenErr
+		return
+	}
+
+	externalHostStr := net.JoinHostPort(config.ExternalAddress, strconv.Itoa((int)(port)))
+	externalHost := &net.UDPAddr{}
+	externalHost, resolvErr = net.ResolveUDPAddr("udp", externalHostStr)
+	if resolvErr != nil {
+		errorChan <- resolvErr
+		return
+	}
+
+	// STUN library sets the deadlines
+	udpConn.SetDeadline(time.Time{})
+	udpConn.SetReadDeadline(time.Time{})
+	udpConn.SetWriteDeadline(time.Time{})
+	portChan <- ListenPort{*externalHost, udpConn}
+}
+
 func (self *UDPTransport) receiveMessage(buffer []byte) {
 	if self.crypto != nil {
 		buffer = self.crypto.Decrypt(buffer)
@@ -161,7 +193,9 @@ func strongUint() uint32 {
 func (self *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	if peer != *self.connectedPeerKey { return nil, false }
+	if peer != *self.connectedPeerKey {
+		return nil, false
+	}
 	return self.connectedPeerConf, true
 }
 
@@ -281,14 +315,18 @@ func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte, ret
 	peerComm, found := self.safeGetPeerComm(toPeer)
 	if !found {
 		retErr = errors.New(fmt.Sprintf("Dropping message that is to an unknown peer: %v\n", toPeer))
-		if retChan != nil { retChan <- retErr }
+		if retChan != nil {
+			retChan <- retErr
+		}
 		return retErr
 	}
 
 	// Check length
 	if len(contents) > int(peerComm.DatagramLength) {
 		retErr = errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), self.config.DatagramLength))
-		if retChan != nil { retChan <- retErr }
+		if retChan != nil {
+			retChan <- retErr
+		}
 		return retErr
 	}
 
@@ -313,15 +351,21 @@ func (self *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte, ret
 	n, err := conn.WriteToUDP(datagramBuffer, &toAddr)
 	if err != nil {
 		retErr = errors.New(fmt.Sprintf("Error on WriteToUDP: %v\n", err))
-		if retChan != nil { retChan <- retErr }
+		if retChan != nil {
+			retChan <- retErr
+		}
 		return retErr
 	}
 	if n != int(peerComm.DatagramLength) {
 		retErr = errors.New(fmt.Sprintf("WriteToUDP returned %v != %v\n", n, peerComm.DatagramLength))
-		if retChan != nil { retChan <- retErr }
+		if retChan != nil {
+			retChan <- retErr
+		}
 		return retErr
 	}
-	if retChan != nil { retChan <- nil }
+	if retChan != nil {
+		retChan <- nil
+	}
 	return nil
 }
 
@@ -390,6 +434,7 @@ func (self *UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 
 // Create UDPTransport
 func CreateNewUDPTransport(configUdp UDPConfig) *UDPTransport {
+	fmt.Println("CONFIGUDP IS", configUdp)
 	udpTransport, createUDPError := NewUDPTransport(configUdp)
 	if createUDPError != nil {
 		panic(createUDPError)

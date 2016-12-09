@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"bytes"
@@ -11,15 +10,18 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "broadcastTransaction",
-		Usage:     "Broadcast a raw transaction to the network",
-		ArgsUsage: "[raw transaction]",
+func broadcastTxCMD() gcli.Command {
+	name := "broadcastTransaction"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Broadcast a raw transaction to the network",
+		ArgsUsage:    "[raw transaction]",
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			rawtx := c.Args().First()
 			if rawtx == "" {
-				return errors.New("raw transaction is empty")
+				gcli.ShowSubcommandHelp(c)
+				return nil
 			}
 			txid, err := broadcastTx(rawtx)
 			if err != nil {
@@ -30,7 +32,7 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func broadcastTx(rawtx string) (string, error) {
@@ -40,13 +42,13 @@ func broadcastTx(rawtx string) (string, error) {
 		return "", fmt.Errorf("create rpc request failed, %v", err)
 	}
 
-	rsp, err := webrpc.Do(req, rpcAddress)
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return "", fmt.Errorf("do rpc request failed, %v", err)
 	}
 
 	if rsp.Error != nil {
-		return "", fmt.Errorf("rpc request failed, %v", rsp.Error)
+		return "", fmt.Errorf("rpc request failed, %+v", *rsp.Error)
 	}
 
 	var rlt webrpc.InjectResult

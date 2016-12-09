@@ -491,7 +491,11 @@ func Run(c *Config) {
 
 	// start the webrpc
 	closingC := make(chan struct{})
-	go webrpc.Start("0.0.0.0:6422", 1000, 1000, d.Gateway, closingC)
+	go webrpc.Start("0.0.0.0:6422",
+		webrpc.ChanBuffSize(1000),
+		webrpc.ThreadNum(1000),
+		webrpc.Gateway(d.Gateway),
+		webrpc.Quit(closingC))
 
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {

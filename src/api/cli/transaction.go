@@ -10,11 +10,13 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "transaction",
-		Usage:     "Show detail info of specific transaction",
-		ArgsUsage: "[transaction id]",
+func transactionCMD() gcli.Command {
+	name := "transaction"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Show detail info of specific transaction",
+		ArgsUsage:    "[transaction id]",
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			txid := c.Args().First()
 			if txid == "" {
@@ -32,18 +34,18 @@ func init() {
 				return fmt.Errorf("create rpc request failed:%v", err)
 			}
 
-			rsp, err := webrpc.Do(req, rpcAddress)
+			rsp, err := webrpc.Do(req, cfg.RPCAddress)
 			if err != nil {
 				return fmt.Errorf("do rpc request failed:%v", err)
 			}
 
 			if rsp.Error != nil {
-				return fmt.Errorf("do rpc request failed:%+v", rsp.Error)
+				return fmt.Errorf("do rpc request failed:%+v", *rsp.Error)
 			}
 
 			fmt.Println(string(rsp.Result))
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

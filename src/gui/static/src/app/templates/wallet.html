@@ -10,28 +10,28 @@
             <li [class.active]="displayMode === displayModeEnum.first">
                 <a (click)="switchTab(displayModeEnum.first, '')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-cloud fa-lg"></i> Wallets
+                         Wallets
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.second">
                 <a (click)="switchTab(displayModeEnum.second,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-cloud-upload fa-lg"></i> Send
+                         Send
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.third">
                 <a (click)="switchTab(displayModeEnum.third,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-book"></i> History
+                        <i class="fa"></i> History
                     </tab-heading>
                 </a>
             </li>
             <li [class.active]="displayMode === displayModeEnum.fourth">
                 <a (click)="switchTab(displayModeEnum.fourth,'')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                        <i class="fa fa-link"></i> Blockchain Explorer
+                        <i class="fa"></i> Blockchain Explorer
                     </tab-heading>
                 </a>
             </li>
@@ -74,8 +74,8 @@
                             </td>
                             <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
                             <td><a href="#" (click)="showQR(wallet)">&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{wallet.entries[0].address}}</td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{wallet.balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa"></i></a>&nbsp;{{wallet.entries[0].balance}} SKY</td>
+                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa"></i></a>&nbsp;{{wallet.balance}} SKY</td>
                             <td class="text-right">{{wallet.entries.length}}&nbsp;<a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus"></i></a></td>
                           </tr>
                           <tr *ngFor="#entry of wallet.entries; #idx=index" [hidden]="!wallet.showChild||idx==0">
@@ -110,7 +110,7 @@
                           </div>
                       </div>
                       <div class="form-group">
-                          <label class="col-sm-2 control-label">Address:</label>
+                          <label class="col-sm-2 control-label">Pay To:</label>
                           <div class="col-sm-6">
                               <input type="text" #spendaddress class="form-control" (change)="checkValidAddress(spendaddress.value)">
                           </div>
@@ -185,8 +185,8 @@
                     <table id="transaction-table">
                         <thead>
                         <tr class="dark-row">
-                            <td>
-                              <a href="#" (click)="sortHistory('time')">Time
+                            <td style="width:80px">
+                              <a href="#" (click)="sortHistory('time')" class="text-underline">Time
                               <i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a>
                             </td>
                             <td>Status</td>
@@ -199,7 +199,7 @@
                       </thead>
                           <tbody >
                             <tr *ngFor="#transaction of historyPagedItems">
-                              <td>{{getDateTimeString(transaction.time)}}</td>
+                              <td>{{getDateTimeString(transaction.txn.timestamp)}}</td>
                               <td>{{transaction.status.confirmed?'Complete':'Pending'}}</td>
                               <td>{{transaction.txn.type}}</td>
                               <td>
@@ -393,7 +393,26 @@
                     <br/>
                     <h4>Transactions</h4>
                     <table class="table" style="width:100%;font-size:11px;">
-
+                        <tbody *ngFor="#ux of selectedBlackAddressTxList">
+                        <tr style="background:white">
+                            <td colspan="2">{{getDateTimeString(ux.time)}}</td>
+                            <td colspan="2"><span class="pull-right">{{ux.uxid}}</span></td>
+                        </tr>
+                        <tr style="background:white">
+                            <td>
+                                <p><a href="#" (click)="showTransactionDetail(ux.src_tx)" class="text-underline">{{ux.src_tx}}</a></p>
+                            </td>
+                            <td><i class="fa fa-2x fa-arrow-right" style="color:{{ux.type=='in'?'green':'red'}}"></i></td>
+                            <td>
+                                <p><a href="#" (click)="showTransactionDetail(ux.spent_tx)" class="text-underline">{{ux.spent_tx}}</a></p>
+                            </td>
+                            <td>
+                                <div>
+                                    <p>{{ux.coins/1000000|number}} SKY</p>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
                     </table>
                 </div>
               </div>

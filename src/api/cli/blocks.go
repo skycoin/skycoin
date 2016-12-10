@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -9,14 +8,16 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "blocks",
-		Usage:     "Lists the content of a single block or a range of blocks",
-		ArgsUsage: "[starting block or single block seq] [ending block seq]",
-		Action:    getBlocks,
+func blocksCMD() gcli.Command {
+	name := "blocks"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Lists the content of a single block or a range of blocks",
+		ArgsUsage:    "[starting block or single block seq] [ending block seq]",
+		Action:       getBlocks,
+		OnUsageError: onCommandUsageError(name),
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func getBlocks(c *gcli.Context) error {
@@ -27,14 +28,19 @@ func getBlocks(c *gcli.Context) error {
 		end = start
 	}
 
+	if start == "" {
+		gcli.ShowSubcommandHelp(c)
+		return nil
+	}
+
 	s, err := strconv.ParseUint(start, 10, 64)
 	if err != nil {
-		return errors.New("error block seq")
+		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", start)
 	}
 
 	e, err := strconv.ParseUint(end, 10, 64)
 	if err != nil {
-		return errors.New("error block seq")
+		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", end)
 	}
 
 	param := []uint64{s, e}
@@ -44,13 +50,13 @@ func getBlocks(c *gcli.Context) error {
 		return fmt.Errorf("create rpc request failed: %v", err)
 	}
 
-	rsp, err := webrpc.Do(req, rpcAddress)
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return fmt.Errorf("do rpc request failed: %v", err)
 	}
 
 	if rsp.Error != nil {
-		return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
+		return fmt.Errorf("rpc response error: %+v", *rsp.Error)
 	}
 
 	fmt.Println(string(rsp.Result))

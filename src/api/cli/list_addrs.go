@@ -12,21 +12,23 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "listAddresses",
-		Usage:     "Lists all addresses in a given wallet",
-		ArgsUsage: "[walletName]",
-		Action:    listAddresses,
+func listAddressesCMD() gcli.Command {
+	name := "listAddresses"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Lists all addresses in a given wallet",
+		ArgsUsage:    "[walletName]",
+		OnUsageError: onCommandUsageError(name),
+		Action:       listAddresses,
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func listAddresses(c *gcli.Context) error {
 	// get wallet name
 	w := c.Args().First()
 	if w == "" {
-		w = filepath.Join(walletDir, defaultWalletName)
+		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
 	}
 
 	if !strings.HasSuffix(w, walletExt) {
@@ -34,12 +36,12 @@ func listAddresses(c *gcli.Context) error {
 	}
 
 	if filepath.Base(w) == w {
-		w = filepath.Join(walletDir, w)
+		w = filepath.Join(cfg.WalletDir, w)
 	}
 
 	wlt, err := wallet.Load(w)
 	if err != nil {
-		return errLoadWallet
+		return err
 	}
 
 	addrs := wlt.GetAddresses()

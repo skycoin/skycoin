@@ -1,6 +1,9 @@
 package nodemanager
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
@@ -10,13 +13,16 @@ import (
 
 type TestConfig struct {
 	TransportConfig transport.TransportConfig
-	UDPConfig       physical.UDPConfig
+	UDPConfigs      []physical.UDPConfig
 	NodeConfig      mesh.NodeConfig
 
 	PeersToConnect           []Peer
+	PeerToPeers              map[string]*Peer
 	RoutesConfigsToEstablish []RouteConfig
 	MessagesToSend           []MessageToSend
 	MessagesToReceive        []MessageToReceive
+	ExternalAddress          string
+	Port                     int
 }
 
 type RouteConfig struct {
@@ -44,6 +50,29 @@ func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
 	peerToConnect.Peer = config.NodeConfig.PubKey
 	peerToConnect.Info = physical.CreateUDPCommConfig(addr, nil)
 	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
+}
+
+func (self *TestConfig) AddPeersToConnectNew(configData *ConfigData) {
+	ownPubKey := self.NodeConfig.PubKey
+	ownAddress := self.ExternalAddress
+	for _, transportData := range configData.Transports {
+		addrIncoming := ownAddress + ":" + strconv.Itoa(transportData.IncomingPort)
+		addrOutgoing := transportData.OutgoingAddress + ":" + strconv.Itoa(transportData.OutgoingPort)
+
+		fmt.Println(addrIncoming, addrOutgoing)
+
+		peerToConnect := Peer{}
+		peerToConnect.Peer = cipher.PubKey{}
+		peerToConnect.Info = physical.CreateUDPCommConfig(addrOutgoing, nil)
+		self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
+
+		ownPeer := Peer{}
+		ownPeer.Peer = ownPubKey
+		ownPeer.Info = physical.CreateUDPCommConfig(addrIncoming, nil)
+
+		self.PeerToPeers[ownPeer.Info] = &peerToConnect
+		fmt.Printf("Adding %s to %s\n", peerToConnect.Info, ownPeer.Info)
+	}
 }
 
 func (self *TestConfig) AddRouteToEstablish(config *TestConfig) {

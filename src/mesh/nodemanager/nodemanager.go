@@ -181,9 +181,13 @@ func (self *NodeManager) ConnectNodes() {
 // Connect Node1 (config1) to Node2 (config2)
 func ConnectNodeToNode(nodeManager *NodeManager, config1, config2 *TestConfig) {
 	nodeManager.Port++
-	if config1.Port == nodeManager.StartPort { config1.Port = nodeManager.Port }
+	if config1.Port == nodeManager.StartPort {
+		config1.Port = nodeManager.Port
+	}
 	nodeManager.Port++
-	if config2.Port == nodeManager.StartPort { config2.Port = nodeManager.Port }
+	if config2.Port == nodeManager.StartPort {
+		config2.Port = nodeManager.Port
+	}
 	var addr bytes.Buffer
 	addr.WriteString(config2.ExternalAddress)
 	addr.WriteString(":")
@@ -202,7 +206,7 @@ func connectNodeToNodeHelper(config1, config2 *TestConfig) {
 	ownPubKey := config1.NodeConfig.PubKey
 	connectedPubKey := config2.NodeConfig.PubKey
 
-	for ownPeerInfo, peerToConnect := range(config1.PeerToPeers) {
+	for ownPeerInfo, peerToConnect := range config1.PeerToPeers {
 		suggestedOwnPeer, found := config2.PeerToPeers[peerToConnect.Info]
 		if found {
 			if ownPeerInfo == suggestedOwnPeer.Info {
@@ -273,7 +277,9 @@ func AddPeersToNodeNew(node *mesh.Node, config TestConfig) {
 
 	// Connect
 	for info, peerToPeer := range config.PeerToPeers {
-		if peerToPeer.Peer == emptyPK { continue }
+		if peerToPeer.Peer == emptyPK {
+			continue
+		}
 		addr, port := infoToAddr(info)
 		udpConfig := physical.CreateUdp(port, addr)
 		config.UDPConfigs = append(config.UDPConfigs, udpConfig)
@@ -292,12 +298,18 @@ func AddPeersToNodeNew(node *mesh.Node, config TestConfig) {
 
 func infoToAddr(info string) (string, int) {
 	infoBytes, err := hex.DecodeString(info)
-	if err != nil { panic(err); return "", 0 }
+	if err != nil {
+		panic(err)
+		return "", 0
+	}
 
 	udp := physical.UDPCommConfig{}
 
 	err = json.Unmarshal(infoBytes, &udp)
-	if err != nil { panic(err); return "", 0 }
+	if err != nil {
+		panic(err)
+		return "", 0
+	}
 
 	host := udp.ExternalHosts[0]
 	return host.IP.String(), host.Port
@@ -322,7 +334,6 @@ func AddPeerToNode(node *mesh.Node, config *TestConfig) {
 // ExternalAddress - will be replaced for ConfigData.Address
 // UDPConfigs
 // TransportConfig
-
 
 // Returns Node by index
 func (self *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {

@@ -100,8 +100,8 @@ func TestSendDatagram(t *testing.T) {
 	sendBytesA := []byte{66, 44, 33, 2, 123, 100, 22}
 	sendBytesB := []byte{23, 33, 12, 88, 43, 120}
 
-	assert.Nil(t, transportA.SendMessage(keyB, sendBytesA))
-	assert.Nil(t, transportB.SendMessage(keyA, sendBytesB))
+	assert.Nil(t, transportA.SendMessage(keyB, sendBytesA, nil))
+	assert.Nil(t, transportB.SendMessage(keyA, sendBytesB, nil))
 
 	chanA := make(chan []byte, 10)
 	chanB := make(chan []byte, 10)
@@ -165,7 +165,7 @@ func TestCrypto(t *testing.T) {
 
 	send_bytes := []byte{66, 44, 33, 2, 123, 100, 22}
 
-	assert.Nil(t, transportA.SendMessage(keyB, send_bytes))
+	assert.Nil(t, transportA.SendMessage(keyB, send_bytes, nil))
 
 	chanB := make(chan []byte, 10)
 	transportB.SetReceiveChannel(chanB)

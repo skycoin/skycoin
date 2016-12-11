@@ -8,9 +8,10 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "version",
+func versionCMD() gcli.Command {
+	name := "version"
+	return gcli.Command{
+		Name:      name,
 		ArgsUsage: "List the current version of Skycoin components",
 		Usage:     " ",
 		Flags: []gcli.Flag{
@@ -19,6 +20,7 @@ func init() {
 				Usage: "Returns the results in JSON format",
 			},
 		},
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			var ver = struct {
 				Skycoin string `json:"skycoin"`
@@ -51,5 +53,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

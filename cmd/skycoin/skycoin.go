@@ -60,6 +60,7 @@ var (
 		"40.74.142.139:6000",
 		"188.226.245.87:6000",
 		"40.74.80.119:6000",
+		"120.26.247.42",
 	}
 )
 
@@ -491,7 +492,11 @@ func Run(c *Config) {
 
 	// start the webrpc
 	closingC := make(chan struct{})
-	go webrpc.Start("0.0.0.0:6422", 1000, 1000, d.Gateway, closingC)
+	go webrpc.Start("0.0.0.0:6422",
+		webrpc.ChanBuffSize(1000),
+		webrpc.ThreadNum(1000),
+		webrpc.Gateway(d.Gateway),
+		webrpc.Quit(closingC))
 
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {

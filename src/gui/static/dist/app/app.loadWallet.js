@@ -84,6 +84,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.selectedBlock = {};
                     this.selectedBlockTransaction = {};
                     this.selectedBlockAddressBalance = 0;
+                    this.selectedBlackAddressTxList = [];
                     // pager object
                     this.historyPager = {};
                     this.blockPager = {};
@@ -109,7 +110,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }, 30000);
                     setInterval(() => {
                         this.loadConnections();
-                        //this.loadBlockChain();
+                        this.loadBlockChain();
                         //console.log("Refreshing connections");
                     }, 15000);
                     //Enable Send tab "textbox" and "Ready" button by default
@@ -127,6 +128,16 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         localStorage.setItem('historyAddresses', JSON.stringify([]));
                         this.addresses = JSON.parse(localStorage.getItem('historyAddresses'));
                     }
+                    /*$("#walletSelect").select2({
+                        templateResult: function(state) {
+                            return state.text;
+                            /!*if (!state.id) { return state.text; }
+                             var $state = $(
+                             '<span><img src="vendor/images/flags/' + state.element.value.toLowerCase() + '.png" class="img-flag" /> ' + state.text + '</span>'
+                             );
+                             return $state;*!/
+                        }
+                    });*/
                 }
                 //Ready button function for disable "textbox" and enable "Send" button for ready to send coin
                 ready(spendId, spendaddress, spendamount) {
@@ -176,14 +187,28 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         }
                         //console.log("this.wallets", this.wallets);
                         //Load Balance for each wallet
-                        var inc = 0;
-                        for (var item in data) {
-                            var filename = data[inc].meta.filename;
-                            this.loadWalletItem(filename, inc);
-                            inc++;
-                        }
-                        //Load Balance for each wallet end
-                    }, err => console.log("Error on load wallet: " + err), () => {
+                        //var inc = 0;
+                        //console.log("data", data);
+                        _.map(data, (item, idx) => {
+                            var filename = item.meta.filename;
+                            this.loadWalletItem(filename, idx);
+                        });
+                        this.walletsWithAddress = [];
+                        _.map(this.wallets, (o, idx) => {
+                            this.walletsWithAddress.push({
+                                wallet: o,
+                                type: 'wallet'
+                            });
+                            _.map(o.entries, (_o, idx) => {
+                                this.walletsWithAddress.push({
+                                    entry: _o,
+                                    type: 'address',
+                                    wallet: o,
+                                    idx: idx == 0 ? '' : '(' + idx + ')'
+                                });
+                            });
+                        });
+                    }, err => console.log(err), () => {
                         //console.log('Wallet load done')
                     });
                 }
@@ -316,6 +341,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.outputs = _.sortBy(data, function (o) {
                             return o.address;
                         });
+                        this.outputs.length = Math.min(100, this.outputs.length);
                     }, err => console.log("Error on load outputs: " + err), () => {
                         //console.log('Connection load done')
                     });
@@ -326,7 +352,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.http.get('/last_blocks?num=10', { headers: headers })
                         .map((res) => res.json())
                         .subscribe(data => {
-                        console.log("blockchain", data);
+                        //console.log("blockchain", data);
                         this.blockChain = _.sortBy(data.blocks, function (o) {
                             return o.header.seq * (-1);
                         });
@@ -359,6 +385,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.selectedWallet = _.find(this.wallets, function (o) {
                             return o.meta.filename === wallet.meta.filename;
                         });
+                        console.log("selected wallet", this.spendid, this.selectedWallet);
                     }
                 }
                 selectMenu(menu, event) {
@@ -520,7 +547,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    var stringConvert = 'name=' + walletName + '&id=' + walletid;
+                    var stringConvert = 'label=' + walletName + '&id=' + walletid;
                     //Post method executed
                     this.http.post('/wallet/update', stringConvert, { headers: headers })
                         .map((res) => res.json())
@@ -578,19 +605,26 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.sortDir['amount'] = 0;
                     }
                     var self = this;
-                    if (key != 'address') {
+                    if (key == 'time') {
                         this.historyTable = _.sortBy(this.historyTable, function (o) {
-                            return Number(o[key]) * self.sortDir[key];
+                            return o.txn.timestamp;
                         });
                     }
-                    else {
+                    else if (key == 'amount') {
+                        this.historyTable = _.sortBy(this.historyTable, function (o) {
+                            return Number(o[key]);
+                        });
+                    }
+                    else if (key == 'address') {
                         this.historyTable = _.sortBy(this.historyTable, function (o) {
                             return o[key];
                         });
-                        if (this.sortDir[key] == -1) {
-                            this.historyTable = this.historyTable.reverse();
-                        }
                     }
+                    ;
+                    if (this.sortDir[key] == -1) {
+                        this.historyTable = this.historyTable.reverse();
+                    }
+                    this.setHistoryPage(this.historyPager.currentPage);
                 }
                 filterHistory(address) {
                     console.log("filterHistory", address);
@@ -660,6 +694,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }
                     // get pager object from service
                     this.historyPager = this.pagerService.getPager(this.historyTable.length, page);
+                    console.log("this.historyPager", this.historyPager);
                     // get current page of items
                     this.historyPagedItems = this.historyTable.slice(this.historyPager.startIndex, this.historyPager.endIndex + 1);
                     //console.log('this.pagedItems', this.historyTable, this.pagedItems);
@@ -721,21 +756,85 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.blockViewMode = 'blockTransactionDetail';
                     this.selectedBlockTransaction = txns;
                 }
+                showTransactionDetail(txId) {
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    this.http.get('/transaction?txid=' + txId, { headers: headers })
+                        .map((res) => res.json())
+                        .subscribe(
+                    //Response from API
+                    response => {
+                        console.log(response);
+                        this.blockViewMode = 'blockTransactionDetail';
+                        this.selectedBlockTransaction = response.txn;
+                    }, err => {
+                        console.log("Error on load transaction: " + err);
+                    }, () => {
+                    });
+                }
                 showBlockAddressDetail(address) {
                     this.blockViewMode = 'blockAddressDetail';
                     this.selectedBlockAddress = address;
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.get('/balance?addrs=' + address, { headers: headers })
-                        .map((res) => res.json())
-                        .subscribe(
-                    //Response from API
-                    response => {
-                        //console.log(response);
-                        this.selectedBlockAddressBalance = response.confirmed.coins / 1000000;
-                    }, err => {
-                        //console.log("Error on load balance: " + err)
-                    }, () => {
+                    var txList = [];
+                    async.parallel([
+                            (callback) => {
+                            this.http.get('/balance?addrs=' + address, { headers: headers })
+                                .map((res) => res.json())
+                                .subscribe(
+                            //Response from API
+                            response => {
+                                //console.log(response);
+                                this.selectedBlockAddressBalance = response.confirmed.coins / 1000000;
+                                callback(null, null);
+                            }, err => {
+                                callback(err, null);
+                                //console.log("Error on load balance: " + err)
+                            }, () => {
+                            });
+                        },
+                            (callback) => {
+                            this.http.get('/address_in_uxouts?address=' + address, { headers: headers })
+                                .map((res) => res.json())
+                                .subscribe(
+                            //Response from API
+                            response => {
+                                console.log("address_in_uxouts", response);
+                                _.map(response, (o) => {
+                                    o.type = 'in';
+                                    txList.push(o);
+                                });
+                                callback(null, null);
+                            }, err => {
+                                callback(err, null);
+                                //console.log("Error on load balance: " + err)
+                            }, () => {
+                            });
+                        },
+                            (callback) => {
+                            this.http.get('/address_out_uxouts?address=' + address, { headers: headers })
+                                .map((res) => res.json())
+                                .subscribe(
+                            //Response from API
+                            response => {
+                                console.log("address_out_uxouts", response);
+                                _.map(response, (o) => {
+                                    o.type = 'out';
+                                    txList.push(o);
+                                });
+                                callback(null, null);
+                            }, err => {
+                                callback(err, null);
+                                //console.log("Error on load balance: " + err)
+                            }, () => {
+                            });
+                        }
+                    ], (err, rets) => {
+                        console.log(err, rets);
+                        this.selectedBlackAddressTxList = _.sortBy(txList, (o) => {
+                            return o.time;
+                        });
                     });
                 }
             };

@@ -228,7 +228,7 @@ func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
 
 	return &SpendResult{
 		Balance:     b,
-		Transaction: visor.NewReadableTransaction(&txn),
+		Transaction: visor.NewReadableTransaction(&visor.Transaction{Txn: txn}),
 		Error:       errString,
 	}
 }
@@ -455,22 +455,37 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-//all this does is update the wallet name
-// Does Nothing
-func walletUpdate(gateway *daemon.Gateway) http.HandlerFunc {
+// Update wallet label
+func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
 		id := r.FormValue("id")
-		//name := r.FormValue("name")
-		w1 := Wg.GetWallet(id)
-		if w1 != nil {
-			if err := Wg.SaveWallet(w1.GetID()); err != nil {
-				m := "Failed to save wallet after renaming: %v"
-				logger.Critical(m, err)
-			}
+		if id == "" {
+			wh.Error400(w, "wallet id is empty")
+			return
 		}
-		iw := wallet.NewReadableWallet(*w1)
-		wh.SendOr404(w, iw)
+
+		label := r.FormValue("label")
+		if label == "" {
+			wh.Error400(w, "label is empty")
+			return
+		}
+
+		wlt := Wg.GetWallet(id)
+		if wlt == nil {
+			wh.Error404(w, fmt.Sprintf("wallet of id: %v does not exist", id))
+			return
+		}
+
+		wlt.SetLabel(label)
+		if err := Wg.SaveWallet(wlt.GetID()); err != nil {
+			m := "Failed to save wallet: %v"
+			logger.Critical(m, "Failed to update label of wallet %v", id)
+			wh.Error500(w, "Update wallet failed")
+			return
+		}
+
+		wh.SendOr404(w, "success")
 	}
 }
 
@@ -611,10 +626,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
 
-	//update an existing wallet
-	//does nothing
-	mux.HandleFunc("/wallet/update", walletUpdate(gateway))
-
 	// Returns the confirmed and predicted balance for a specific wallet.
 	// The predicted balance is the confirmed balance minus any pending
 	// spent amount.
@@ -636,6 +647,12 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//		id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet
 	mux.HandleFunc("/wallet/transactions", walletTransactionsHandler(gateway))
+
+	// Update wallet label
+	// 		GET Arguments:
+	// 			id: wallet id
+	// 			label: wallet label
+	mux.HandleFunc("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))

@@ -7,12 +7,15 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "send",
+func sendCMD() gcli.Command {
+	name := "send"
+	return gcli.Command{
+		Name:      name,
 		Usage:     "Send skycoin from a wallet or an address to a recipient address",
 		ArgsUsage: "[to address] [amount]",
 		Description: `
+		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+
         If you are sending from a wallet the coins will be taken recursively from all 
         addresses within the wallet starting with the first address until the amount of 
         the transaction is met. 
@@ -44,10 +47,13 @@ func init() {
 				Usage: "Returns the results in JSON format.",
 			},
 		},
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			rawtx, err := createRawTransaction(c)
 			if err != nil {
-				return err
+				errorWithHelp(c, err)
+				return nil
+				// return err
 			}
 
 			txid, err := broadcastTx(rawtx)
@@ -74,5 +80,5 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }

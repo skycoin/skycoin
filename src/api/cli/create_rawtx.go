@@ -16,20 +16,27 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func init() {
-	cmd := gcli.Command{
-		Name:      "createRawTransaction",
+func createRawTxCMD() gcli.Command {
+	name := "createRawTransaction"
+	return gcli.Command{
+		Name:      name,
 		Usage:     "Create a raw transaction to be broadcast to the network later",
 		ArgsUsage: "[to address] [amount]",
-		Description: `
+		Description: fmt.Sprintf(`
+  Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+  		
+		  The default wallet(%s/%s) will be 
+		  used if no wallet and address was specificed. 
+		
+
         If you are sending from a wallet the coins will be taken recursively 
         from all addresses within the wallet starting with the first address until 
         the amount of the transaction is met. 
         
-        Use caution when using the “-p” command. If you have command history enabled 
+        Use caution when using the "-p" command. If you have command history enabled 
         your wallet encryption password can be recovered from the history log. If you 
-        do not include the “-p” option you will be prompted to enter your password 
-        after you enter your command.`,
+        do not include the "-p" option you will be prompted to enter your password 
+        after you enter your command.`, cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
@@ -49,10 +56,12 @@ func init() {
 				Usage: "Returns the results in JSON format.",
 			},
 		},
+		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			rawtx, err := createRawTransaction(c)
 			if err != nil {
-				return err
+				errorWithHelp(c, err)
+				return nil
 			}
 
 			j := c.Bool("json")
@@ -71,7 +80,7 @@ func init() {
 			return nil
 		},
 	}
-	Commands = append(Commands, cmd)
+	// Commands = append(Commands, cmd)
 }
 
 func createRawTransaction(c *gcli.Context) (string, error) {
@@ -109,14 +118,14 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 
 	if a != "" && w != "" {
 		// 1 1
-		err = errors.New("use either -w or -a")
+		err = errors.New("use either -f or -a flag")
 		return
 	}
 
 	if a == "" {
 		if w == "" {
 			// 0 0
-			w = filepath.Join(walletDir, defaultWalletName)
+			w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
 			return
 		}
 
@@ -131,10 +140,14 @@ func fromWalletOrAddress(c *gcli.Context) (w string, a string, err error) {
 			w, err = filepath.Abs(w)
 			return
 		}
-		w = filepath.Join(walletDir, w)
+		w = filepath.Join(cfg.WalletDir, w)
 		return
 	}
+
 	// 1 0
+	if _, err = cipher.DecodeBase58Address(a); err != nil {
+		err = fmt.Errorf("invalid from address: %s", a)
+	}
 	return
 }
 
@@ -152,10 +165,13 @@ func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error)
 			if wltFile != "" {
 				wlt, err := wallet.Load(wltFile)
 				if err != nil {
-					return "", errLoadWallet
+					return "", err
 				}
-				chgAddr = wlt.Entries[0].Address.String()
-				break
+				if len(wlt.Entries) > 0 {
+					chgAddr = wlt.Entries[0].Address.String()
+					break
+				}
+				return "", errors.New("no change address was found")
 			}
 			return "", errors.New("both wallet file, from address and change address are empty")
 		}
@@ -165,7 +181,7 @@ func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error)
 	// validate the address
 	_, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", errors.New("error address")
+		return "", fmt.Errorf("invalid change address: %s", chgAddr)
 	}
 
 	return chgAddr, nil
@@ -173,7 +189,7 @@ func getChangeAddress(wltFile string, a string, c *gcli.Context) (string, error)
 
 func getToAddress(c *gcli.Context) (string, error) {
 	if c.NArg() < 2 {
-		return "", errors.New("error argument")
+		return "", errors.New("invalid argument")
 	}
 
 	toAddr := c.Args().First()
@@ -187,17 +203,20 @@ func getToAddress(c *gcli.Context) (string, error) {
 
 func getAmount(c *gcli.Context) (uint64, error) {
 	if c.NArg() < 2 {
-		return 0, errors.New("error argument")
+		return 0, errors.New("invalid argument")
 	}
 	amount := c.Args().Get(1)
-	amt, err := strconv.ParseUint(amount, 10, 64)
+	amt, err := strconv.ParseFloat(amount, 64)
 	if err != nil {
 		return 0, errors.New("error amount")
 	}
-	if (amt % 1e6) != 0 {
+
+	v := uint64(amt * 1e6)
+	if (v % 1e6) != 0 {
 		return 0, errors.New("skycoin coins must be multiple of 1e6")
 	}
-	return amt, nil
+
+	return v, nil
 }
 
 func createRawTxFromWallet(wltPath string, chgAddr string, toAddr string, amt uint64) (string, error) {
@@ -209,7 +228,7 @@ func createRawTxFromWallet(wltPath string, chgAddr string, toAddr string, amt ui
 	// check if the change address is in wallet.
 	wlt, err := wallet.Load(wltPath)
 	if err != nil {
-		return "", errLoadWallet
+		return "", err
 	}
 
 	// check change address
@@ -245,9 +264,9 @@ func createRawTxFromAddress(addr string, chgAddr string, toAddr string, amt uint
 	}
 
 	// check if the address is in the default wallet.
-	wlt, err := wallet.Load(filepath.Join(walletDir, defaultWalletName))
+	wlt, err := wallet.Load(filepath.Join(cfg.WalletDir, cfg.DefaultWalletName))
 	if err != nil {
-		return "", errLoadWallet
+		return "", err
 	}
 	srcAddr, err := cipher.DecodeBase58Address(addr)
 	if err != nil {

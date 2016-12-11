@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 	"sync"
 	"time"
 
@@ -18,17 +17,17 @@ func main() {
 
 	statusChannel := make(chan bool, 2)
 
-	// Setup for Node 1
-	config1 := nodemanager.CreateTestConfig(15000)
-	// Setup for Node 2
-	config2 := nodemanager.CreateTestConfig(17000)
+	configs := nodemanager.TestConfigsFromFile("config")
 
-	config1.AddPeerToConnect(config2.ExternalAddress + ":" + strconv.Itoa(config2.Port), config2)
-	config1.AddRouteToEstablish(config2)
+	config1 := configs[0]
+	config2 := configs[1]
+
+	nodemanager.ConnectNodeToNodeNew(config1, config2)
+
+	//config1.AddRouteToEstablishNew(config2)
 	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, "Message 1")
 	config1.AddMessageToReceive("Message 2", "")
 
-	config2.AddPeerToConnect(config1.ExternalAddress + ":" + strconv.Itoa(config1.Port), config1)
 	config2.AddMessageToReceive("Message 1", "Message 2")
 
 	go sendMessage(2, *config2, &wg, statusChannel)
@@ -63,11 +62,15 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 	defer wg.Done()
 
 	node := nodemanager.CreateNode(config)
-	nodemanager.AddPeersToNode(node, config)
+	nodemanager.AddPeersToNodeNew(node, config)
 
 	defer node.Close()
 
 	nodemanager.AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
+
+	// Receive messages
+	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
+	node.SetReceiveChannel(received)
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
@@ -77,10 +80,6 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 		}
 		fmt.Fprintf(os.Stdout, "Send message %v from Node: %v to Node: %v\n", messageToSend.Contents, configID, node.GetConnectedPeers()[0].Hex())
 	}
-
-	// Receive messages
-	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
-	node.SetReceiveChannel(received)
 
 	// Wait for messages to pass thru
 	recvMap := make(map[string]domain.ReplyTo)

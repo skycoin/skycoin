@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/domain"
 	"github.com/skycoin/skycoin/src/mesh/serialize"
@@ -29,8 +28,6 @@ type Node struct {
 	routeExtensionsAwaitingConfirm map[domain.RouteID]chan bool
 	localRoutesByTerminatingPeer   map[cipher.PubKey]domain.RouteID
 	localRoutes                    map[domain.RouteID]domain.LocalRoute
-
-	controlChannels map[uuid.UUID]*ControlChannel
 }
 
 type NodeConfig struct {
@@ -57,17 +54,12 @@ func NewNode(config NodeConfig) (*Node, error) {
 		localRoutes:                    make(map[domain.RouteID]domain.LocalRoute),
 		routeExtensionsAwaitingConfirm: make(map[domain.RouteID]chan bool),
 		//myCrypto:                   &ChaChaCrypto{config.ChaCha20Key},
-		controlChannels: make(map[uuid.UUID]*ControlChannel),
 	}
 	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, domain.UserMessage{})
 	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, domain.SetRouteMessage{})
 	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, domain.RefreshRouteMessage{})
 	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, domain.DeleteRouteMessage{})
 	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, domain.SetRouteReply{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{6}, domain.SetControlChannelMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{7}, domain.SetControlChannelResponseMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{8}, domain.SetRouteControlMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{9}, domain.ResponseMessage{})
 
 	go node.processIncomingMessagesLoop()
 	go node.expireOldRoutesLoop()
@@ -150,6 +142,8 @@ func (self *Node) GetTransportToPeer(peerKey cipher.PubKey) transport.ITransport
 }
 
 func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
+	self.lock.Lock()
+	defer self.lock.Unlock()
 	return self.GetTransportToPeer(peerKey)
 }
 

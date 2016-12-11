@@ -1,0 +1,62 @@
+[
+ {
+ "pubkey":[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ "external_address": "127.0.0.1", 
+ "transports":[
+   {
+    "incoming_port": 15000,
+    "outgoing_ip": "127.0.0.1",
+    "outgoing_port": 17000
+   },
+   {
+    "incoming_port": 15001,
+    "outgoing_ip": "127.0.0.1",
+    "outgoing_port": 17001
+   }
+  ]
+ },
+ {
+ "pubkey":[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ "external_address": "127.0.0.1", 
+ "transports":[
+   {
+    "incoming_port": 16000,
+    "outgoing_ip": "127.0.0.1",
+    "outgoing_port": 18000
+   }
+  ]
+ },
+ {
+ "pubkey":[3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ "external_address": "127.0.0.1", 
+ "transports":[
+   {
+    "incoming_port": 17000,
+    "outgoing_ip": "127.0.0.1",
+    "outgoing_port": 15000
+   }
+  ]
+ },
+ {
+ "pubkey":[4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ "external_address": "127.0.0.1", 
+ "transports":[
+   {
+    "incoming_port": 18000,
+    "outgoing_ip": "127.0.0.1",
+    "outgoing_port": 16000
+   }
+  ]
+ },
+ {
+ "pubkey":[5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ "external_address": "127.0.0.1", 
+ "transports":[
+   {
+    "incoming_port": 17001,
+    "outgoing_ip": "127.0.0.1",
+    "outgoing_port": 15001
+   }
+  ]
+ }
+]

@@ -113,8 +113,9 @@ func TestSendDirect(t *testing.T) {
 
 func TestLongRoute(t *testing.T) {
 	contents := []byte{4, 66, 7, 44, 33}
-	numPeers, dropFirst, reorder, sendBack := 5, false, false, false
+	numPeers, dropFirst, reorder, sendBack := 3, false, false, false
 	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
+	panic(0)
 }
 
 func TestShortSendBack(t *testing.T) {
@@ -165,7 +166,7 @@ func TestSendThruRoute(t *testing.T) {
 		panic("Test timed out")
 	}
 }
-
+/*
 func TestRouteExpiry(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -192,7 +193,7 @@ func TestRouteExpiry(t *testing.T) {
 		assert.Zero(t, lastConfirmed.Unix())
 	}
 	assert.Nil(t, nodes[0].ExtendRoute(addedRouteID, nodes[2].GetConfig().PubKey, time.Second))
-	assert.NotZero(t, nodes[1].DebugCountRoutes())
+	assert.NotZero(t, nodes[1].debug_countRoutes())
 
 	var afterExtendConfirmedTime time.Time
 	{
@@ -202,7 +203,7 @@ func TestRouteExpiry(t *testing.T) {
 	}
 
 	time.Sleep(5 * time.Second)
-	assert.NotZero(t, nodes[1].DebugCountRoutes())
+	assert.NotZero(t, nodes[1].debug_countRoutes())
 	var afterWaitConfirmedTime time.Time
 	{
 		lastConfirmed, err := nodes[0].GetRouteLastConfirmed(addedRouteID)
@@ -220,13 +221,13 @@ func TestRouteExpiry(t *testing.T) {
 		afterIgnoreConfirmedTime = lastConfirmed
 	}
 
-	assert.Zero(t, nodes[1].DebugCountRoutes())
+	assert.Zero(t, nodes[1].debug_countRoutes())
 	assert.NotZero(t, afterExtendConfirmedTime)
 	assert.NotZero(t, afterWaitConfirmedTime)
 	assert.NotEqual(t, afterExtendConfirmedTime, afterWaitConfirmedTime)
 	assert.Equal(t, afterWaitConfirmedTime, afterIgnoreConfirmedTime)
 }
-
+*/
 func TestDeleteRoute(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -247,12 +248,12 @@ func TestDeleteRoute(t *testing.T) {
 	assert.Nil(t, nodes[0].AddRoute(addedRouteID, nodes[1].GetConfig().PubKey))
 	assert.Nil(t, nodes[0].ExtendRoute(addedRouteID, nodes[2].GetConfig().PubKey, time.Second))
 	time.Sleep(5 * time.Second)
-	assert.NotZero(t, nodes[0].DebugCountRoutes())
-	assert.NotZero(t, nodes[1].DebugCountRoutes())
+	assert.NotZero(t, nodes[0].debug_countRoutes())
+	assert.NotZero(t, nodes[1].debug_countRoutes())
 	assert.Nil(t, nodes[0].DeleteRoute(addedRouteID))
 	time.Sleep(1 * time.Second)
-	assert.Zero(t, nodes[0].DebugCountRoutes())
-	assert.Zero(t, nodes[1].DebugCountRoutes())
+	assert.Zero(t, nodes[0].debug_countRoutes())
+	assert.Zero(t, nodes[1].debug_countRoutes())
 }
 
 func SetupNode(t *testing.T, maxDatagramLength uint, newPubKey cipher.PubKey) *Node {
@@ -272,7 +273,8 @@ func SetupNode(t *testing.T, maxDatagramLength uint, newPubKey cipher.PubKey) *N
 	return node
 }
 
-func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte, transports []*transport.StubTransport) {
+func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte,
+	transports []*transport.StubTransport) {
 	nodes = make([]*Node, n)
 	transports = []*transport.StubTransport{}
 	to_close = make(chan []byte, 20)
@@ -322,6 +324,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 		allConnections = append(allConnections, toConnections)
 	}
 	nodes, toClose, transports := SetupNodes((uint)(nPeers), allConnections, t)
+//	nodes, toClose, _ := SetupNodes((uint)(nPeers), allConnections, t)
 	defer close(toClose)
 	defer func() {
 		for _, node := range nodes {
@@ -332,7 +335,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 	receivedMessages := make(chan domain.MeshMessage, 10)
 	nodes[nPeers-1].SetReceiveChannel(receivedMessages)
 
-	terminatingID := nodes[nPeers-1].GetConfig().PubKey
+	//terminatingID := nodes[nPeers-1].GetConfig().PubKey
 
 	addedRouteID := domain.RouteID{}
 	addedRouteID[0] = 22
@@ -365,7 +368,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 			select {
 			case receivedMessage := <-receivedMessages:
 				{
-					replyTo = receivedMessage.ReplyTo
+					//replyTo = receivedMessage.ReplyTo
 					assert.Equal(t, addedRouteID, receivedMessage.ReplyTo.RouteID)
 					assert.Equal(t, contents, receivedMessage.Contents)
 				}
@@ -407,3 +410,71 @@ func sortPubKeys(pubKeys []cipher.PubKey) []cipher.PubKey {
 	sort.Sort(keys)
 	return keys
 }
+/*
+func Deprecated_TestSendLongMessage(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	numPeers, dropFirst, reorder, sendBack := 2, false, false, false
+	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
+}
+
+func Deprecated_TestSendLongMessageWithReorder(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	numPeers, dropFirst, reorder, sendBack := 2, false, true, false
+	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
+}
+
+// Refragmentation test (sendTest varies the datagram length)
+func Deprecated_TestLongSendLongMessage(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	sendTest(t, 5, false, false, false, contents)
+}
+
+func Deprecated_TestMessageExpiry(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0, 1},
+		[]int{1, 0},
+	}
+	nodes, toClose, transports := SetupNodes((uint)(2), allConnections, t)
+	defer close(toClose)
+	defer func() {
+		for _, node := range nodes {
+			node.Close()
+		}
+	}()
+	addedRouteID := domain.RouteID{}
+	addedRouteID[0] = 66
+
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+
+	assert.Nil(t, nodes[0].AddRoute(addedRouteID, nodes[1].GetConfig().PubKey))
+
+	transports[0].StartBuffer()
+	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteID, contents))
+	// Drop ten, so the message will never be reassembled
+	transports[0].StopAndConsumeBuffer(true, 10)
+
+	//time.Sleep(1 * time.Second)
+	//assert.NotZero(t, nodes[1].debug_countMessages())
+	//time.Sleep(10 * time.Second)
+	//assert.Zero(t, nodes[1].debug_countMessages())
+}
+*/
+// Tests TODO
+
+// Establish route and send unreliable
+
+// Packet loss test
+// Multiple transport test
+// Threading test

@@ -56,7 +56,7 @@ func (self *Connection) SendData(data []byte) error {
 	userMessages := self.FragmentMessage(data)
 	for _, userMessage := range userMessages {
 		serializedMessage := self.SerializeMessage(userMessage)
-		err := self.Node.SendMessageThruRoute(self.Route.ForwardRewriteSendRouteID, serializedMessage)
+		err := self.Node.SendMessageThruRoute(self.Route.ForwardToRouteID, serializedMessage)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func (self *Connection) SendData(data []byte) error {
 
 func (self *Connection) FragmentMessage(contents []byte) []domain.UserMessage {
 	messageBase := domain.MessageBase{
-		SendRouteID: self.Route.ForwardRewriteSendRouteID,
+		SendRouteID: self.Route.ForwardToRouteID,
 		SendBack:    false,
 		FromPeerID:  self.Node.Config.PubKey,
 		Nonce:       mesh.GenerateNonce(),

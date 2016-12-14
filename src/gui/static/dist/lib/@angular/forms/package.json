@@ -1,0 +1,86 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "@angular/forms@2.2.4",
+        "scope": "@angular",
+        "escapedName": "@angular%2fforms",
+        "name": "@angular/forms",
+        "rawSpec": "2.2.4",
+        "spec": "2.2.4",
+        "type": "version"
+      },
+      "/skycoin/skycoin/src/gui/static"
+    ]
+  ],
+  "_from": "@angular/forms@2.2.4",
+  "_id": "@angular/forms@2.2.4",
+  "_inCache": true,
+  "_location": "/@angular/forms",
+  "_nodeVersion": "6.2.0",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/forms-2.2.4.tgz_1480548308023_0.5244711386039853"
+  },
+  "_npmUser": {
+    "name": "angular",
+    "email": "angular-core+npm@google.com"
+  },
+  "_npmVersion": "3.8.9",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "@angular/forms@2.2.4",
+    "scope": "@angular",
+    "escapedName": "@angular%2fforms",
+    "name": "@angular/forms",
+    "rawSpec": "2.2.4",
+    "spec": "2.2.4",
+    "type": "version"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/@angular/forms/-/forms-2.2.4.tgz",
+  "_shasum": "95f15ca1938879298ccc0ef8a3e9ef5e750e31ef",
+  "_shrinkwrap": null,
+  "_spec": "@angular/forms@2.2.4",
+  "_where": "/skycoin/skycoin/src/gui/static",
+  "author": {
+    "name": "angular"
+  },
+  "bugs": {
+    "url": "https://github.com/angular/angular/issues"
+  },
+  "dependencies": {},
+  "description": "Angular - directives and services for creating forms",
+  "devDependencies": {},
+  "directories": {},
+  "dist": {
+    "shasum": "95f15ca1938879298ccc0ef8a3e9ef5e750e31ef",
+    "tarball": "https://registry.npmjs.org/@angular/forms/-/forms-2.2.4.tgz"
+  },
+  "homepage": "https://github.com/angular/angular#readme",
+  "license": "MIT",
+  "main": "bundles/forms.umd.js",
+  "maintainers": [
+    {
+      "name": "angular",
+      "email": "angular-core+npm@google.com"
+    }
+  ],
+  "module": "index.js",
+  "name": "@angular/forms",
+  "optionalDependencies": {},
+  "peerDependencies": {
+    "@angular/core": "2.2.4",
+    "@angular/common": "2.2.4"
+  },
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/angular/angular.git"
+  },
+  "scripts": {},
+  "typings": "index.d.ts",
+  "version": "2.2.4"
+}

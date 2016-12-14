@@ -1,4 +1,4 @@
-import {Component, Inject, Input, ElementRef, OnInit} from 'angular2/core';
+import {Component, Inject, Input, ElementRef, OnInit} from '@angular/core';
 
 declare var QRCode: any;
 

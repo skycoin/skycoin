@@ -1,38 +1,43 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
+<html>
+<head>
     <title>Skycoin</title>
-    <link rel="shortcut icon" href="/assets/images/favicon.ico" type="image/x-icon">
-    <link href="libs/css/bootstrap.css" rel="stylesheet">
-    <link href="libs/css/animate.css" rel="stylesheet">
-    <link href="libs/css/font-awesome.css" rel="stylesheet">
-    <link href="libs/css/bootstrap.icon-large.css" rel="stylesheet">
-    <link href="app.css" rel="stylesheet">
-    <script src="app/angular2/angular2-polyfills.js"></script>
-    <script src="app/angular2/system.js"></script>
-    <script src="app/angular2/typescript.js"></script>
-    <script src="app/angular2/Rx.js"></script>
-    <script src="app/angular2/router.dev.js"></script>
-    <script src="app/angular2/angular2.dev.js"></script>
-    <script src="app/angular2/http.min.js"></script>
-    <script src="app/angular2/qrcodejs2/qrcode.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/animate.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.icon-large.css">
+    <link rel="stylesheet" href="/assets/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/assets/css/toastr.min.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <script src="/assets/script/jQuery/jQuery-2.1.4.min.js"></script>
+    <script src="/assets/script/bootstrap.min.js"></script>
+    <script src="/assets/script/moment.js"></script>
+    <script src="/assets/script/underscore.min.js"></script>
+    <script src="/assets/script/async.min.js"></script>
+    <script src="/assets/script/toastr.min.js"></script>
+    <script src="/assets/script/qrcode.min.js"></script>
+
+    <!-- 1. Load libraries -->
+    <!-- Polyfill(s) for older browsers -->
+    <script src="lib/es6-shim/es6-shim.min.js"></script>
+
+    <script src="lib/zone.js/dist/zone.js"></script>
+    <script src="lib/reflect-metadata/Reflect.js"></script>
+    <script src="lib/systemjs/dist/system.src.js"></script>
+
+    <!-- 2. Configure SystemJS -->
+    <script src="systemjs.config.js"></script>
     <script>
-      System.config({
-        transpiler: 'typescript',
-        typescriptOptions: {
-          emitDecoratorMetadata: true
-        },
-      });
-      System.import('app/boot.js');
+        System.import('app')
+                .then(null, console.error.bind(console));
     </script>
-  </head>
-  <body>
-    <load-wallet>Loading...</load-wallet>
-    <script src="libs/js/jquery.js"></script>
-    <script src="libs/js/moment.js"></script>
-    <script src="libs/js/underscore.min.js"></script>
-    <script src="libs/js/bootstrap.js"></script>
-    <script src="libs/js/async.min.js"></script>
-  </body>
+
+</head>
+
+<!-- 3. Display the application -->
+<body>
+<load-wallet>Loading...</load-wallet>
+</body>
+
 </html>

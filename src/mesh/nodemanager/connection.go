@@ -41,7 +41,7 @@ func NewConnection(node *mesh.Node, peerID cipher.PubKey) IConnection {
 	}
 
 	connection.Serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, domain.UserMessage{})
-	connection.Serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, domain.SetRouteControlMessage{})
+	connection.Serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, domain.SetRouteMessage{})
 	connection.Serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, domain.RefreshRouteMessage{})
 	connection.Serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, domain.DeleteRouteMessage{})
 	connection.Serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, domain.SetRouteReply{})

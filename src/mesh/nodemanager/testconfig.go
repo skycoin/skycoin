@@ -1,7 +1,6 @@
 package nodemanager
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/satori/go.uuid"
@@ -59,19 +58,15 @@ func (self *TestConfig) AddPeersToConnectNew(configData *ConfigData) {
 		addrIncoming := ownAddress + ":" + strconv.Itoa(transportData.IncomingPort)
 		addrOutgoing := transportData.OutgoingAddress + ":" + strconv.Itoa(transportData.OutgoingPort)
 
-		fmt.Println(addrIncoming, addrOutgoing)
-
 		peerToConnect := Peer{}
 		peerToConnect.Peer = cipher.PubKey{}
 		peerToConnect.Info = physical.CreateUDPCommConfig(addrOutgoing, nil)
-		self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
 
 		ownPeer := Peer{}
 		ownPeer.Peer = ownPubKey
 		ownPeer.Info = physical.CreateUDPCommConfig(addrIncoming, nil)
 
 		self.PeerToPeers[ownPeer.Info] = &peerToConnect
-		fmt.Printf("Adding %s to %s\n", peerToConnect.Info, ownPeer.Info)
 	}
 }
 

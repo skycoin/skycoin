@@ -30,9 +30,9 @@ func main() {
 
 	config2.AddMessageToReceive("Message 1", "Message 2")
 
-	go sendMessage(2, *config1, &wg, statusChannel)
+	go sendMessage(2, *config2, &wg, statusChannel)
 
-	go sendMessage(1, *config2, &wg, statusChannel)
+	go sendMessage(1, *config1, &wg, statusChannel)
 
 	timeout := 15 * time.Second
 	for i := 1; i <= 2; i++ {
@@ -68,6 +68,10 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 
 	nodemanager.AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
 
+	// Receive messages
+	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
+	node.SetReceiveChannel(received)
+
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
 		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
@@ -76,10 +80,6 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 		}
 		fmt.Fprintf(os.Stdout, "Send message %v from Node: %v to Node: %v\n", messageToSend.Contents, configID, node.GetConnectedPeers()[0].Hex())
 	}
-
-	// Receive messages
-	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
-	node.SetReceiveChannel(received)
 
 	// Wait for messages to pass thru
 	recvMap := make(map[string]domain.ReplyTo)

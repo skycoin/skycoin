@@ -63,9 +63,14 @@ func (s *StubTransport) getMessageBuffer() []QueuedMessage {
 	return s.MessageBuffer
 }
 
-func (s *StubTransport) SendMessage(toPeerKey cipher.PubKey, message []byte, retChan chan error) error {
-	if toPeerKey != *s.StubbedKey {
-		return errors.New("No such peer in stub")
+func (s *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte, retChan chan error) error {
+	var retErr error = nil
+	if toPeer != *s.StubbedKey {
+		retErr = errors.New("No such peer in stub")
+		if retChan != nil {
+			retChan <- retErr
+		}
+		return retErr
 	}
 	peer := s.StubbedPeer
 
@@ -78,7 +83,11 @@ func (s *StubTransport) SendMessage(toPeerKey cipher.PubKey, message []byte, ret
 		messageEncrypted = s.Crypto.Encrypt(message, peerKey)
 	}
 	if (uint)(len(message)) > s.MaxMessageSize {
-		return errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), s.MaxMessageSize))
+		retErr = errors.New(fmt.Sprintf("Message too large: %v > %v\n", len(message), s.MaxMessageSize))
+		if retChan != nil {
+			retChan <- retErr
+		}
+		return retErr
 	}
 	if s.Crypto != nil {
 		message = s.Crypto.Decrypt(messageEncrypted)
@@ -94,8 +103,16 @@ func (s *StubTransport) SendMessage(toPeerKey cipher.PubKey, message []byte, ret
 			s.MessageBuffer = append(s.MessageBuffer, QueuedMessage{peer, message})
 		}
 	}
-
+	if retChan != nil {
+		retChan <- nil
+	}
 	return nil
+
+	retErr = errors.New("No stubbed transport for this peer")
+	if retChan != nil {
+		retChan <- retErr
+	}
+	return retErr
 }
 
 func (s *StubTransport) SetIgnoreSendStatus(status bool) {
@@ -126,16 +143,13 @@ func (s *StubTransport) StopAndConsumeBuffer(reorder bool, dropCount int) {
 		}
 	}
 	for _, queued := range messages {
-		fmt.Println(queued.TransportToPeer)
 		queued.TransportToPeer.MessagesReceived <- queued.messageContent
 		atomic.AddInt32(&s.NumMessagesSent, 1)
 	}
 }
 
-func (self *StubTransport) SetReceiveChannel(received chan []byte) {
-	fmt.Println("Setting receive channel:", received)
-	self.MessagesReceived = received
-	return
+func (s *StubTransport) SetReceiveChannel(received chan []byte) {
+	s.MessagesReceived = received
 }
 
 func (s *StubTransport) SetCrypto(crypto ITransportCrypto) {

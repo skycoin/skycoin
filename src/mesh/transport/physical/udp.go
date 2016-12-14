@@ -434,7 +434,6 @@ func (self *UDPTransport) DisconnectFromPeer(peer cipher.PubKey) {
 
 // Create UDPTransport
 func CreateNewUDPTransport(configUdp UDPConfig) *UDPTransport {
-	fmt.Println("CONFIGUDP IS", configUdp)
 	udpTransport, createUDPError := NewUDPTransport(configUdp)
 	if createUDPError != nil {
 		panic(createUDPError)

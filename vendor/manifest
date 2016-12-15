@@ -1,0 +1,293 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/BurntSushi/toml",
+			"repository": "https://github.com/BurntSushi/toml",
+			"vcs": "git",
+			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/RoaringBitmap/roaring",
+			"repository": "https://github.com/RoaringBitmap/roaring",
+			"vcs": "git",
+			"revision": "19377e24df714040cf80d73ca007e3e12ea61cbb",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/anacrolix/envpprof",
+			"repository": "https://github.com/anacrolix/envpprof",
+			"vcs": "git",
+			"revision": "0383bfe017e02efb418ffd595fc54777a35e48b0",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/anacrolix/missinggo",
+			"repository": "https://github.com/anacrolix/missinggo",
+			"vcs": "git",
+			"revision": "a096221b59b0f9284a80fe0be9ee36ddafb8f719",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/anacrolix/sync",
+			"repository": "https://github.com/anacrolix/sync",
+			"vcs": "git",
+			"revision": "d29d95568d362a0008c1ffbaea39a3449ea67509",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/anacrolix/tagflag",
+			"repository": "https://github.com/anacrolix/tagflag",
+			"vcs": "git",
+			"revision": "583eb5480f5aa063e4808d079f0a34522b886fed",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/anacrolix/utp",
+			"repository": "https://github.com/anacrolix/utp",
+			"vcs": "git",
+			"revision": "fa8b6bbd0386e3b98845c5d1f10148b29915d4b9",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/boltdb/bolt",
+			"repository": "https://github.com/boltdb/bolt",
+			"vcs": "git",
+			"revision": "0d9f544bb94aac29c185968483459ef74d6deb5d",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/bradfitz/iter",
+			"repository": "https://github.com/bradfitz/iter",
+			"vcs": "git",
+			"revision": "454541ec3da2a73fc34fd049b19ee5777bf19345",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/ccding/go-stun/stun",
+			"repository": "https://github.com/ccding/go-stun",
+			"vcs": "git",
+			"revision": "dee5672f0c732344747f49b978921885508fd846",
+			"branch": "master",
+			"path": "/stun",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/cznic/b",
+			"repository": "https://github.com/cznic/b",
+			"vcs": "git",
+			"revision": "bcff30a622dbdcb425aba904792de1df606dab7c",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/docopt/docopt-go",
+			"repository": "https://github.com/docopt/docopt-go",
+			"vcs": "git",
+			"revision": "784ddc588536785e7299f7272f39101f7faccc3f",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/dustin/go-humanize",
+			"repository": "https://github.com/dustin/go-humanize",
+			"vcs": "git",
+			"revision": "ef638b6c2e62b857442c6443dace9366a48c0ee2",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/glog",
+			"repository": "https://github.com/golang/glog",
+			"vcs": "git",
+			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/groupcache/lru",
+			"repository": "https://github.com/golang/groupcache",
+			"vcs": "git",
+			"revision": "a6b377e3400b08991b80d6805d627f347f983866",
+			"branch": "master",
+			"path": "/lru",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/google/btree",
+			"repository": "https://github.com/google/btree",
+			"vcs": "git",
+			"revision": "0c3044bc8bada22db67b93f5760fe3f05d6a5c25",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/huandu/xstrings",
+			"repository": "https://github.com/huandu/xstrings",
+			"vcs": "git",
+			"revision": "3959339b333561bf62a38b424fd41517c2c90f40",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jackpal/bencode-go",
+			"repository": "https://github.com/jackpal/bencode-go",
+			"vcs": "git",
+			"revision": "8b8d9a9b37fcd43f365439810d725081b114af68",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/mschoch/smat",
+			"repository": "https://github.com/mschoch/smat",
+			"vcs": "git",
+			"revision": "90eadee771aeab36e8bf796039b8c261bebebe4f",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nictuku/dht",
+			"repository": "https://github.com/nictuku/dht",
+			"vcs": "git",
+			"revision": "53815b4134481ed5317f57b932375b4b044e2501",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nictuku/nettools",
+			"repository": "https://github.com/nictuku/nettools",
+			"vcs": "git",
+			"revision": "8867a2107ad3a0998e2d36c67ed2115d9a399df8",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/op/go-logging",
+			"repository": "https://github.com/op/go-logging",
+			"vcs": "git",
+			"revision": "970db520ece77730c7e4724c61121037378659d9",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/petar/GoLLRB/llrb",
+			"repository": "https://github.com/petar/GoLLRB",
+			"vcs": "git",
+			"revision": "53be0d36a84c2a886ca057d34b6aa4468df9ccb4",
+			"branch": "master",
+			"path": "/llrb",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/ryszard/goskiplist/skiplist",
+			"repository": "https://github.com/ryszard/goskiplist",
+			"vcs": "git",
+			"revision": "2dfbae5fcf46374f166f8969cb07e167f1be6273",
+			"branch": "master",
+			"path": "/skiplist",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/satori/go.uuid",
+			"repository": "https://github.com/satori/go.uuid",
+			"vcs": "git",
+			"revision": "b061729afc07e77a8aa4fad0a2fd840958f1942a",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/skycoin/skycoin",
+			"repository": "https://github.com/skycoin/skycoin",
+			"vcs": "git",
+			"revision": "acede2ef5657d181d9b688911f5f63e75246ca61",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/tang0th/go-chacha20/chacha",
+			"repository": "https://github.com/tang0th/go-chacha20",
+			"vcs": "git",
+			"revision": "3d46990f349dd41d624446d57ed5e46e7b1da024",
+			"branch": "master",
+			"path": "/chacha",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/toqueteos/webbrowser",
+			"repository": "https://github.com/toqueteos/webbrowser",
+			"vcs": "git",
+			"revision": "970743f85c21bbfe01b0b7464aff85669eb0eb46",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/urfave/cli",
+			"repository": "https://github.com/urfave/cli",
+			"vcs": "git",
+			"revision": "0bdeddeeb0f650497d603c4ad7b20cfe685682f6",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/willf/bitset",
+			"repository": "https://github.com/willf/bitset",
+			"vcs": "git",
+			"revision": "5c3c0fce48842b2c0bbaa99b4e61b0175d84b47c",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/youtube/vitess/go/cache",
+			"repository": "https://github.com/youtube/vitess",
+			"vcs": "git",
+			"revision": "831cb644e36bbd0ae4e4c63a85715511887f9715",
+			"branch": "master",
+			"path": "/go/cache",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "cfae461cedfdcab6e261a26eb77db53695623303",
+			"branch": "master",
+			"path": "/context",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sys/unix",
+			"repository": "https://go.googlesource.com/sys",
+			"vcs": "git",
+			"revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
+			"branch": "master",
+			"path": "/unix",
+			"notests": true
+		},
+		{
+			"importpath": "gopkg.in/urfave/cli.v1",
+			"repository": "https://gopkg.in/urfave/cli.v1",
+			"vcs": "git",
+			"revision": "0bdeddeeb0f650497d603c4ad7b20cfe685682f6",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "gopkg.in/yaml.v2",
+			"repository": "https://gopkg.in/yaml.v2",
+			"vcs": "git",
+			"revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
+			"branch": "v2",
+			"notests": true
+		}
+	]
+}

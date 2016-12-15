@@ -231,16 +231,15 @@ Meshnet reminders
 Rebuilding Wallet HTML
 ----------------------
 
-<<<<<<< HEAD
-npm install
-gulp build
-
-Release Builds
-----
-
-=======
 ```sh
 $ npm install
 $ gulp build
 ```
->>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b
+
+Release Builds
+----
+
+```sh
+$ npm install
+$ gulp dist
+```

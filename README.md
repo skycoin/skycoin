@@ -99,11 +99,7 @@ The skycoin repo must be in $GOPATH, under `src/github.com/skycoin`. Otherwise g
 ```
 #pull skycoin repo into the gopath
 #note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
-<<<<<<< HEAD
 go get -v github.com/skycoin/skycoin/...
-=======
-$ go get github.com/skycoin/skycoin
->>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b
 
 #create symlink of the repo
 $ cd $HOME
@@ -231,16 +227,15 @@ Meshnet reminders
 Rebuilding Wallet HTML
 ----------------------
 
-<<<<<<< HEAD
-npm install
-gulp build
-
-Release Builds
-----
-
-=======
 ```sh
 $ npm install
 $ gulp build
 ```
->>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b
+
+Release Builds
+----
+
+```sh
+$ npm install
+$ gulp dist
+```

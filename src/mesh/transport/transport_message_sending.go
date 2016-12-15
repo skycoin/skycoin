@@ -28,8 +28,8 @@ func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte, _ chan
 	go self.physicalTransport.SendMessage(toPeer, sendSerialized, retChan)
 	select {
 	case err = <-retChan:
-		self.status = CONNECTED
 		if err == nil {
+			self.status = ACKWAITING
 			self.lock.Lock()
 			defer self.lock.Unlock()
 			self.messagesSent[messageID] = state
@@ -81,8 +81,15 @@ func (self *Transport) sendAck(message SendMessage) {
 	self.status = REPLYING
 	reply := ReplyMessage{message.MessageID}
 	serialized := self.serializer.SerializeMessage(reply)
-	go self.physicalTransport.SendMessage(message.FromPeerID, serialized, nil)
-	self.status = CONNECTED
+	retChan := make(chan error, 0)
+	go self.physicalTransport.SendMessage(message.FromPeerID, serialized, retChan)
+	select {
+	case <-retChan:
+		self.status = CONNECTED
+	case <-time.After(5 * time.Second):
+		self.status = TIMEOUT
+		fmt.Fprintf(os.Stderr, "Timeout for sending ACK to %s\n", message.FromPeerID)
+	}
 }
 
 func (self *Transport) newMessageID() domain.MessageID {

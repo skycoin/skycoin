@@ -23,12 +23,12 @@ func main() {
 	// Setup for Node 2
 	config2 := nodemanager.CreateTestConfig(17000)
 
-	config1.AddPeerToConnect(config2.ExternalAddress + ":" + strconv.Itoa(config2.Port), config2)
+	config1.AddPeerToConnect(config2.ExternalAddress+":"+strconv.Itoa(config2.Port), config2)
 	config1.AddRouteToEstablish(config2)
 	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, "Message 1")
 	config1.AddMessageToReceive("Message 2", "")
 
-	config2.AddPeerToConnect(config1.ExternalAddress + ":" + strconv.Itoa(config1.Port), config1)
+	config2.AddPeerToConnect(config1.ExternalAddress+":"+strconv.Itoa(config1.Port), config1)
 	config2.AddMessageToReceive("Message 1", "Message 2")
 
 	go sendMessage(2, *config2, &wg, statusChannel)

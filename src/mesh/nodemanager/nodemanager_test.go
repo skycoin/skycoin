@@ -306,6 +306,7 @@ func TestConnectTwoNodesFail(t *testing.T) {
 
 // Connect two Nodes (Node A - Node B) through one route with various nodes.
 func _TestBuildRouteWithSuccess(t *testing.T) {
+//	panic("ok")
 	nodeManager := &NodeManager{Port: 3100}
 	// Connect 200 nodes randomly
 	for a := 1; a <= 20; a++ {
@@ -435,7 +436,6 @@ func TestAddTransportsToNode(t *testing.T) {
 }
 
 func TestGetTransportsFromNode(t *testing.T) {
-	panic("ok")
 	nodeManager := &NodeManager{Port: 6100}
 	nodeManager.CreateNodeConfigList(10)
 	nodeManager.ConnectNodes()

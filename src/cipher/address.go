@@ -99,7 +99,7 @@ func addressFromBytes(b []byte) (addr Address, err error) {
 	copy(a.Key[0:20], b[0:20])
 	a.Version = b[20]
 	if a.Version != 0 {
-		return Address{}, errors.New("Invalid Version")
+		return Address{}, errors.New("Invalid version")
 	}
 
 	chksum := a.Checksum()
@@ -206,13 +206,13 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 // Returns an address given an Address.Bytes()
 func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	if len(b) != 20+1+4 {
-		return Address{}, errors.New("Invalid address bytes")
+		return Address{}, errors.New("Invalid address length")
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[1:21])
 	a.Version = b[0]
 	if a.Version != 0 {
-		return Address{}, errors.New("Invalid Version")
+		return Address{}, errors.New("Invalid version")
 	}
 
 	chksum := a.BitcoinChecksum()

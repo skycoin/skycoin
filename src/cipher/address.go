@@ -93,7 +93,7 @@ func addressFromBytes(b []byte) (addr Address, err error) {
 	}()
 
 	if len(b) != 20+1+4 {
-		return Address{}, errors.New("Invalid address bytes")
+		return Address{}, errors.New("Invalid address length")
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[0:20])

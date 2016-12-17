@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // Gatewayer provides interfaces for getting skycoin related info.
@@ -14,4 +15,6 @@ type Gatewayer interface {
 	GetUnspentByHashes(hashes []string) []visor.ReadableOutput
 	GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error)
 	InjectTransaction(tx coin.Transaction) (coin.Transaction, error)
+	GetRecvUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error)
+	GetSpentUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error)
 }

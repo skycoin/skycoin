@@ -20,10 +20,10 @@ func Test_newRPCHandler(t *testing.T) {
 	})
 }
 
-func Test_makeJob(t *testing.T) {
-	job := makeJob(Request{})
-	assert.NotNil(t, job.ResC)
-}
+// func Test_makeJob(t *testing.T) {
+// 	job := makeJob(Request{})
+// 	assert.NotNil(t, job.ResC)
+// }
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
 	rpc := newRPCHandler(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))

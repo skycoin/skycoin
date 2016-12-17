@@ -9,36 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-type uxOutJSON struct {
-	Uxid          string `json:"uxid"`
-	Time          uint64 `json:"time"`
-	SrcBkSeq      uint64 `json:"src_block_seq"`
-	SrcTx         string `json:"src_tx"`
-	OwnerAddress  string `json:"owner_address"`
-	Coins         uint64 `json:"coins"`
-	Hours         uint64 `json:"hours"`
-	SpentBlockSeq uint64 `json:"spent_block_seq"` // block seq that spent the output.
-	SpentTxID     string `json:"spent_tx"`        // id of tx which spent this output.
-}
-
-func newUxOutJson(out *historydb.UxOut) *uxOutJSON {
-	if out == nil {
-		return nil
-	}
-
-	return &uxOutJSON{
-		Uxid:          out.Hash().Hex(),
-		Time:          out.Out.Head.Time,
-		SrcBkSeq:      out.Out.Head.BkSeq,
-		SrcTx:         out.Out.Body.SrcTransaction.Hex(),
-		OwnerAddress:  out.Out.Body.Address.String(),
-		Coins:         out.Out.Body.Coins,
-		Hours:         out.Out.Body.Hours,
-		SpentBlockSeq: out.SpentBlockSeq,
-		SpentTxID:     out.SpentTxID.Hex(),
-	}
-}
-
 func RegisterUxOutHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get uxout by id.
 	mux.HandleFunc("/uxout", getUxOutByID(gateway))
@@ -78,7 +48,7 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, newUxOutJson(uxout))
+		wh.SendOr404(w, historydb.NewUxOutJSON(uxout))
 	}
 }
 
@@ -106,9 +76,9 @@ func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxOuts := make([]*uxOutJSON, len(uxs))
+		uxOuts := make([]*historydb.UxOutJSON, len(uxs))
 		for i, ux := range uxs {
-			uxOuts[i] = newUxOutJson(ux)
+			uxOuts[i] = historydb.NewUxOutJSON(ux)
 		}
 		wh.SendOr404(w, &uxOuts)
 	}
@@ -139,7 +109,7 @@ func getSpentOutUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxOuts := make([]*uxOutJSON, len(uxs))
+		uxOuts := make([]*historydb.UxOutJSON, len(uxs))
 		for i, ux := range uxs {
 			uxOuts[i] = newUxOutJson(ux)
 		}

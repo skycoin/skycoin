@@ -10,17 +10,19 @@ import (
 
 // Exposes a read-only api for use by the gui rpc interface
 
+// GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
 	BufferSize int
 }
 
+// NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
 		BufferSize: 32,
 	}
 }
 
-// RPC interface wrapper for daemon state
+// Gateway RPC interface wrapper for daemon state
 type Gateway struct {
 	Config GatewayConfig
 	Daemon RPC
@@ -36,6 +38,7 @@ type Gateway struct {
 	// Responses chan interface{}
 }
 
+// NewGateway create and init an Gateway instance.
 func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
@@ -97,7 +100,7 @@ func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
 	return <-result
 }
 
-// Returns a *visor.BlockchainMetadata
+// GetBlockchainMetadata returns a *visor.BlockchainMetadata
 func (gw *Gateway) GetBlockchainMetadata() interface{} {
 	bcm := make(chan interface{})
 	gw.Requests <- func() {
@@ -199,7 +202,7 @@ func (gw *Gateway) InjectTransaction(txn coin.Transaction) (coin.Transaction, er
 	return tx, err
 }
 
-// Returns a *visor.TransactionResults
+// GetAddressTransactions returns a *visor.TransactionResults
 func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 	tx := make(chan interface{})
 	gw.Requests <- func() {
@@ -208,6 +211,7 @@ func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 	return <-tx
 }
 
+// GetUxOutByID gets UxOut by hash id.
 func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	var uxout *historydb.UxOut
 	var err error

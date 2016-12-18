@@ -237,17 +237,3 @@ func (gw *Gateway) GetRecvUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, 
 	<-c
 	return uxouts, err
 }
-
-func (gw *Gateway) GetSpentUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error) {
-	var (
-		outputs []*historydb.UxOut
-		err     error
-	)
-	c := make(chan struct{})
-	gw.Requests <- func() {
-		outputs, err = gw.V.GetSpentUxOutOfAddr(addr)
-		c <- struct{}{}
-	}
-	<-c
-	return outputs, err
-}

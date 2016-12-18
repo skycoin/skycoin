@@ -232,7 +232,7 @@ func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOut, error
 	)
 	c := make(chan struct{})
 	gw.Requests <- func() {
-		uxouts, err = gw.V.GetRecvUxOutOfAddr(addr)
+		uxouts, err = gw.V.GetAddrUxOuts(addr)
 		c <- struct{}{}
 	}
 	<-c

@@ -148,8 +148,8 @@ func (hd HistoryDB) GetLastTxs() ([]*Transaction, error) {
 	return txs, nil
 }
 
-// GetAddrUxOut get all uxout that the address affected.
-func (hd HistoryDB) GetAddrUxOut(address cipher.Address) ([]*UxOut, error) {
+// GetAddrUxOuts get all uxout that the address affected.
+func (hd HistoryDB) GetAddrUxOuts(address cipher.Address) ([]*UxOut, error) {
 	hashes, err := hd.addrUx.Get(address)
 	if err != nil {
 		return []*UxOut{}, err

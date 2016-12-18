@@ -7,6 +7,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
+//go:generate goautomock -template=testify Gatewayer
+
 // Gatewayer provides interfaces for getting skycoin related info.
 type Gatewayer interface {
 	GetLastBlocks(num uint64) *visor.ReadableBlocks

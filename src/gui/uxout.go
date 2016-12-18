@@ -111,7 +111,7 @@ func getSpentOutUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 
 		uxOuts := make([]*historydb.UxOutJSON, len(uxs))
 		for i, ux := range uxs {
-			uxOuts[i] = newUxOutJson(ux)
+			uxOuts[i] = historydb.NewUxOutJSON(ux)
 		}
 		wh.SendOr404(w, &uxOuts)
 	}

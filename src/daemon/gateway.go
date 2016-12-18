@@ -224,7 +224,8 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return uxout, err
 }
 
-func (gw *Gateway) GetRecvUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error) {
+// GetAddrUxOuts gets all the address affected UxOuts.
+func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOut, error) {
 	var (
 		uxouts []*historydb.UxOut
 		err    error

@@ -313,20 +313,6 @@ func infoToAddr(info string) (string, int) {
 	return host.IP.String(), host.Port
 }
 
-/*
-func AddPeerToNode(node *mesh.Node, config *TestConfig) {
-	udpConfig := physical.CreateUdp(config.Port, config.ExternalAddress)
-	config.UDPConfigs = append(config.UDPConfigs, udpConfig)
-	udpTransport := physical.CreateNewUDPTransport(udpConfig)
-	connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
-	if connectError != nil {
-		panic(connectError)
-	}
-	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
-	node.AddTransport(transportToPeer)
-}
-*/
-
 // PeersToConnect for getting connectTo.Peer, connectTo.Info
 // Port - will be replaced for ConfigData.Port
 // ExternalAddress - will be replaced for ConfigData.Address

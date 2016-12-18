@@ -58,7 +58,7 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 	}
 
 	// create the toAddressTx instance.
-	hd.addrUx, err = newAddressInBkt(db)
+	hd.addrUx, err = newAddressUxBkt(db)
 	if err != nil {
 		return nil, err
 	}

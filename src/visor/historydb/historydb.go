@@ -38,8 +38,7 @@ type HistoryDB struct {
 	// blocks  *blocks       // blocks bucket.
 	txns    *transactions // transactions bucket.
 	outputs *UxOuts       // outputs bucket.
-	addrIn  *addressUx    // bucket which stores all UxOuts that address recved.
-	addrOut *addressUx    // bucket which stores all UxOuts that address spent.
+	addrUx  *addressUx    // bucket which stores all UxOuts that address recved.
 }
 
 // New create historydb instance and create corresponding buckets if does not exist.

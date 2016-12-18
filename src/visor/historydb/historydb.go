@@ -121,7 +121,7 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 				return err
 			}
 
-			if err := hd.addrIn.Add(ux.Body.Address, ux.Hash()); err != nil {
+			if err := hd.addrUx.Add(ux.Body.Address, ux.Hash()); err != nil {
 				return err
 			}
 		}
@@ -134,6 +134,7 @@ func (hd HistoryDB) GetTransaction(hash cipher.SHA256) (*Transaction, error) {
 	return hd.txns.Get(hash)
 }
 
+// GetLastTxs gets the latest N transactions.
 func (hd HistoryDB) GetLastTxs() ([]*Transaction, error) {
 	txHashes := hd.txns.GetLastTxs()
 	txs := make([]*Transaction, len(txHashes))

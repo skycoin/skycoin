@@ -58,13 +58,7 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 	}
 
 	// create the toAddressTx instance.
-	hd.addrIn, err = newAddressInBkt(db)
-	if err != nil {
-		return nil, err
-	}
-
-	// create the fromAddressTx instance.
-	hd.addrOut, err = newAddressOutBkt(db)
+	hd.addrUx, err = newAddressInBkt(db)
 	if err != nil {
 		return nil, err
 	}
@@ -108,15 +102,10 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 				if err != nil {
 					return err
 				}
-				// update the spent block seq of the output.
+				// update output's spent block seq and txid.
 				o.SpentBlockSeq = b.Seq()
 				o.SpentTxID = t.Hash()
 				if err := hd.outputs.Set(*o); err != nil {
-					return err
-				}
-
-				// index the output for address out
-				if err := hd.addrOut.Add(o.Out.Body.Address, o.Hash()); err != nil {
 					return err
 				}
 			}

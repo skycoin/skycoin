@@ -45,10 +45,6 @@ type HistoryDB struct {
 func New(db *bolt.DB) (*HistoryDB, error) {
 	hd := HistoryDB{db: db}
 	var err error
-	// hd.blocks, err = newBlockBkt(db)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	hd.txns, err = newTransactionsBkt(db)
 	if err != nil {

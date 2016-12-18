@@ -148,26 +148,9 @@ func (hd HistoryDB) GetLastTxs() ([]*Transaction, error) {
 	return txs, nil
 }
 
-// GetSpentUxOutOfAddr get all spent uxout of specifc address.
-func (hd HistoryDB) GetSpentUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {
-	hashes, err := hd.addrOut.Get(address)
-	if err != nil {
-		return []*UxOut{}, err
-	}
-	uxOuts := make([]*UxOut, len(hashes))
-	for i, hash := range hashes {
-		ux, err := hd.outputs.Get(hash)
-		if err != nil {
-			return []*UxOut{}, err
-		}
-		uxOuts[i] = ux
-	}
-	return uxOuts, nil
-}
-
-// GetRecvUxOutOfAddr get all uxout that the address received.
-func (hd HistoryDB) GetRecvUxOutOfAddr(address cipher.Address) ([]*UxOut, error) {
-	hashes, err := hd.addrIn.Get(address)
+// GetAddrUxOut get all uxout that the address affected.
+func (hd HistoryDB) GetAddrUxOut(address cipher.Address) ([]*UxOut, error) {
+	hashes, err := hd.addrUx.Get(address)
 	if err != nil {
 		return []*UxOut{}, err
 	}

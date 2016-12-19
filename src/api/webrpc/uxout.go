@@ -8,9 +8,8 @@ import (
 )
 
 type addrUxoutResult struct {
-	Address     string                 `json:"address"`
-	RecvUxOuts  []*historydb.UxOutJSON `json:"recv_uxouts"`
-	SpentUxOuts []*historydb.UxOutJSON `json:"spent_uxouts"`
+	Address string                 `json:"address"`
+	UxOuts  []*historydb.UxOutJSON `json:"uxouts"`
 }
 
 func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {

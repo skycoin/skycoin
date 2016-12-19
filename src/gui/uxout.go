@@ -6,7 +6,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // RegisterUxOutHandlers binds uxout entries.
@@ -47,7 +46,7 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, historydb.NewUxOutJSON(uxout))
+		wh.SendOr404(w, uxout)
 	}
 }
 
@@ -75,10 +74,6 @@ func getAddrUxOuts(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxOuts := make([]*historydb.UxOutJSON, len(uxs))
-		for i, ux := range uxs {
-			uxOuts[i] = historydb.NewUxOutJSON(ux)
-		}
-		wh.SendOr404(w, &uxOuts)
+		wh.SendOr404(w, uxs)
 	}
 }

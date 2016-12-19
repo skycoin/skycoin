@@ -18,61 +18,64 @@ import (
 
 func TestCreateNodeList(t *testing.T) {
 	nodeManager := &NodeManager{}
+	defer nodeManager.CloseAll()
 	nodeManager.CreateNodeConfigList(4)
 	assert.Len(t, nodeManager.ConfigList, 4, "Error expected 4 nodes")
 	pubKey0 := nodeManager.PubKeyList[0]
-	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
+	assert.Len(t, nodeManager.ConfigList[pubKey0].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
 }
 
 func TestConnectNodes(t *testing.T) {
-	nodeManager := &NodeManager{}
+	nodeManager := &NodeManager{Port: 10000}
+	defer nodeManager.CloseAll()
 	nodeManager.CreateNodeConfigList(5)
 	assert.Len(t, nodeManager.ConfigList, 5, "Error expected 5 nodes")
 	pubKey0 := nodeManager.PubKeyList[0]
-	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
+	assert.Len(t, nodeManager.ConfigList[pubKey0].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
 	nodeManager.ConnectNodes()
-	assert.Len(t, nodeManager.ConfigList[pubKey0].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 1")
-	/*	pubKey1 := nodeManager.PubKeyList[1]
-		assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 2, "Error expected 2 PeersToConnect from Node 2")
-		pubKey4 := nodeManager.PubKeyList[4]
-		assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 5")*/
+	assert.Len(t, nodeManager.ConfigList[pubKey0].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 1")
+	pubKey1 := nodeManager.PubKeyList[1]
+	assert.Len(t, nodeManager.ConfigList[pubKey1].PeerToPeers, 2, "Error expected 2 PeersToConnect from Node 2")
+	pubKey4 := nodeManager.PubKeyList[4]
+	assert.Len(t, nodeManager.ConfigList[pubKey4].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 5")
 }
 
 func TestConnectNodeRandomly(t *testing.T) {
 	nodeManager := &NodeManager{Port: 1100}
+	defer nodeManager.CloseAll()
 	index1 := nodeManager.AddNode()
 	assert.Len(t, nodeManager.NodesList, 1, "Error expected 1 nodes")
 	pubKey1 := nodeManager.PubKeyList[index1]
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
+	assert.Len(t, nodeManager.ConfigList[pubKey1].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
 	nodeManager.ConnectNodeRandomly(index1)
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 1")
+	assert.Len(t, nodeManager.ConfigList[pubKey1].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
 	index2 := nodeManager.AddNode()
 	assert.Len(t, nodeManager.NodesList, 2, "Error expected 2 nodes")
 	pubKey2 := nodeManager.PubKeyList[index2]
-	assert.Len(t, nodeManager.ConfigList[pubKey2].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 2")
+	assert.Len(t, nodeManager.ConfigList[pubKey2].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 2")
 	nodeManager.ConnectNodeRandomly(index2)
-	assert.Len(t, nodeManager.ConfigList[pubKey2].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 2")
+	assert.Len(t, nodeManager.ConfigList[pubKey2].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 2")
 
 	index3 := nodeManager.AddNode()
 	assert.Len(t, nodeManager.NodesList, 3, "Error expected 3 nodes")
 	pubKey3 := nodeManager.PubKeyList[index3]
-	assert.Len(t, nodeManager.ConfigList[pubKey3].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 3")
+	assert.Len(t, nodeManager.ConfigList[pubKey3].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 3")
 	nodeManager.ConnectNodeRandomly(index3)
-	assert.Len(t, nodeManager.ConfigList[pubKey3].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 3")
+	assert.Len(t, nodeManager.ConfigList[pubKey3].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 3")
 
 	index4 := nodeManager.AddNode()
 	assert.Len(t, nodeManager.NodesList, 4, "Error expected 4 nodes")
 	pubKey4 := nodeManager.PubKeyList[index4]
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 4")
+	assert.Len(t, nodeManager.ConfigList[pubKey4].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 4")
 	nodeManager.ConnectNodeRandomly(index4)
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 4")
+	assert.Len(t, nodeManager.ConfigList[pubKey4].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 4")
 
 	index5 := nodeManager.AddNode()
 	assert.Len(t, nodeManager.NodesList, 5, "Error expected 5 nodes")
 	pubKey5 := nodeManager.PubKeyList[index5]
-	assert.Len(t, nodeManager.ConfigList[pubKey5].PeersToConnect, 0, "Error expected 0 PeersToConnect from Node 4")
+	assert.Len(t, nodeManager.ConfigList[pubKey5].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 4")
 	nodeManager.ConnectNodeRandomly(index5)
-	assert.Len(t, nodeManager.ConfigList[pubKey5].PeersToConnect, 1, "Error expected 1 PeersToConnect from Node 5")
+	assert.Len(t, nodeManager.ConfigList[pubKey5].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 5")
 }
 
 // Recover flow control in the tests
@@ -178,6 +181,7 @@ func TestConnectTwoNodesSuccess(t *testing.T) {
 	var index1, index2 int
 
 	nodeManager := &NodeManager{Port: 2100}
+	defer nodeManager.CloseAll()
 	// Connect 20 nodes randomly
 	for a := 1; a <= 20; a++ {
 		if a <= 10 {
@@ -201,9 +205,6 @@ func TestConnectTwoNodesSuccess(t *testing.T) {
 
 	message1 := "Message to send from Node1 to Node2"
 	message2 := "Message to receive from Node2 to Node1"
-
-	// Add route from node1 to node2
-	config1.AddRouteToEstablish(config2)
 
 	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, message1)
 	config1.AddMessageToReceive(message2, "")
@@ -249,16 +250,23 @@ func TestConnectTwoNodesFail(t *testing.T) {
 	var index1, index2 int
 
 	nodeManager := &NodeManager{Port: 3100}
+	defer nodeManager.CloseAll()
 	// Connect 20 nodes randomly
 	for a := 1; a <= 20; a++ {
 		nodeManager.ConnectNodeToNetwork()
 	}
+
 	rang := len(nodeManager.ConfigList)
+
 	index1 = rand.Intn(rang)
 	pubKey1 := nodeManager.PubKeyList[index1]
 	config1 := nodeManager.ConfigList[pubKey1]
 	node1 := nodeManager.NodesList[pubKey1]
+
 	index2 = rand.Intn(rang)
+	if index1 == index2 {
+		if index2 == 0 { index2 = 1 } else { index2-- }
+	}
 	pubKey2 := nodeManager.PubKeyList[index2]
 	config2 := nodeManager.ConfigList[pubKey2]
 	node2 := nodeManager.NodesList[pubKey2]
@@ -266,10 +274,9 @@ func TestConnectTwoNodesFail(t *testing.T) {
 	message1 := "Message to send from Node1 to Node2"
 	message2 := "Message to receive from Node2 to Node1"
 
-	// Add route from node1 to node2
-	config1.AddRouteToEstablish(config2)
+	ConnectNodeToNode(config1, config2)
 
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, message1)
+	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[len(config1.RoutesConfigsToEstablish) - 1].RouteID, message1)
 	config1.AddMessageToReceive(message2, "")
 
 	config2.AddMessageToReceive(message1, message2)
@@ -307,6 +314,7 @@ func TestConnectTwoNodesFail(t *testing.T) {
 // Connect two Nodes (Node A - Node B) through one route with various nodes.
 func _TestBuildRouteWithSuccess(t *testing.T) {
 	nodeManager := &NodeManager{Port: 3100}
+	defer nodeManager.CloseAll()
 	// Connect 200 nodes randomly
 	for a := 1; a <= 20; a++ {
 		nodeManager.ConnectNodeToNetwork()
@@ -379,9 +387,10 @@ func _TestBuildRouteWithSuccess(t *testing.T) {
 		t.Log(routeList)
 	}
 }
-
+/*
 func TestBuildRoutes(t *testing.T) {
 	nodeManager := &NodeManager{Port: 3100}
+	defer nodeManager.CloseAll()
 	// Connect 200 nodes randomly
 	for a := 1; a <= 10; a++ {
 		nodeManager.ConnectNodeToNetwork()
@@ -405,71 +414,84 @@ func TestBuildRoutes(t *testing.T) {
 		t.Log("Route:", route.RoutesToEstablish)
 	}
 }
-
+*/
 func TestAddTransportsToNode(t *testing.T) {
 	nodeManager := &NodeManager{Port: 5100}
+	defer nodeManager.CloseAll()
 	nodeManager.CreateNodeConfigList(10)
 	nodeManager.ConnectNodes()
 
 	config := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port += 100
 
 	pubKey := nodeManager.PubKeyList[1]
+	configFrom := nodeManager.ConfigList[pubKey]
 	node := nodeManager.NodesList[pubKey]
 
-	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
+	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 
+	ConnectNodeToNode(configFrom, config)
 	AddPeersToNode(node, *config)
 
-	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
+	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
 
 	config2 := CreateTestConfig(nodeManager.Port)
 
 	pubKey2 := nodeManager.PubKeyList[3]
+	configFrom2 := nodeManager.ConfigList[pubKey2]
 	node2 := nodeManager.NodesList[pubKey2]
 
-	assert.Len(t, node2.GetTransports(), 1, "Error expected 1 transport in the node2")
+	assert.Len(t, node2.GetTransports(), 2, "Error expected 2 transport in the node2")
 
+	ConnectNodeToNode(configFrom2, config2)
 	AddPeersToNode(node2, *config2)
 
-	assert.Len(t, node2.GetTransports(), 2, "Error expected 2 transport in the node2")
+	assert.Len(t, node2.GetTransports(), 3, "Error expected 3 transport in the node2")
 }
 
 func TestGetTransportsFromNode(t *testing.T) {
 	nodeManager := &NodeManager{Port: 6100}
+	defer nodeManager.CloseAll()
 	nodeManager.CreateNodeConfigList(10)
 	nodeManager.ConnectNodes()
 
 	pubKey := nodeManager.PubKeyList[2]
 	node := nodeManager.NodesList[pubKey]
 
-	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
+	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 }
 
 func TestRemoveTransportsFromNode(t *testing.T) {
 	nodeManager := &NodeManager{Port: 7100}
+	defer nodeManager.CloseAll()
 	nodeManager.CreateNodeConfigList(10)
 	nodeManager.ConnectNodes()
 
 	pubKey := nodeManager.PubKeyList[4]
+	configFrom := nodeManager.ConfigList[pubKey]
 	node := nodeManager.NodesList[pubKey]
-
-	assert.Len(t, node.GetTransports(), 1, "Error expected 1 transport in the node")
-
-	config := CreateTestConfig(nodeManager.Port)
-	AddPeersToNode(node, *config)
 
 	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
 
-	config2 := CreateTestConfig(nodeManager.Port)
-	AddPeersToNode(node, *config2)
+	config := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port += 100
+	ConnectNodeToNode(configFrom, config)
+	AddPeersToNode(node, *config)
 
 	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
+
+	config2 := CreateTestConfig(nodeManager.Port)
+	nodeManager.Port += 100
+	ConnectNodeToNode(configFrom, config2)
+	AddPeersToNode(node, *config2)
+
+	assert.Len(t, node.GetTransports(), 4, "Error expected 4 transport in the node")
 
 	transport := node.GetTransports()[0]
 
 	nodeManager.RemoveTransportsFromNode(4, transport)
 
-	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
+	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
 }
 
 //Network Topology Tests

@@ -389,3 +389,7 @@ type TimeoutError struct {
 func (self *TimeoutError) Error() string {
 	return "Timeout"
 }
+
+func (s *Node) GetAllRoutes() map[domain.RouteID]domain.Route {
+	return s.routes
+}

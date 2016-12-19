@@ -123,8 +123,8 @@ func makeRPC(args ...Arg) *rpcHandler {
 	rpc.HandlerFunc("get_blocks", getBlocksHandler)
 	rpc.HandlerFunc("get_outputs", getOutputsHandler)
 	rpc.HandlerFunc("get_transaction", getTransactionHandler)
-	rpc.HandlerFunc("get_address_uxouts", getAddrUxOutsHandler)
 	rpc.HandlerFunc("inject_transaction", injectTransactionHandler)
+	rpc.HandlerFunc("get_address_uxouts", getAddrUxOutsHandler)
 
 	return rpc
 }

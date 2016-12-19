@@ -212,7 +212,7 @@ func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 }
 
 // GetUxOutByID gets UxOut by hash id.
-func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
+func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOutJSON, error) {
 	var uxout *historydb.UxOut
 	var err error
 	c := make(chan struct{})
@@ -221,11 +221,11 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 		c <- struct{}{}
 	}
 	<-c
-	return uxout, err
+	return historydb.NewUxOutJSON(uxout), err
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOut, error) {
+func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
 	var (
 		uxouts []*historydb.UxOut
 		err    error
@@ -236,5 +236,9 @@ func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOut, error
 		c <- struct{}{}
 	}
 	<-c
-	return uxouts, err
+	uxs := make([]*historydb.UxOutJSON, len(uxouts))
+	for i, ux := range uxouts {
+		uxs[i] = historydb.NewUxOutJSON(ux)
+	}
+	return uxs, err
 }

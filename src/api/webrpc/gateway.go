@@ -17,5 +17,5 @@ type Gatewayer interface {
 	GetUnspentByHashes(hashes []string) []visor.ReadableOutput
 	GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error)
 	InjectTransaction(tx coin.Transaction) (coin.Transaction, error)
-	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOut, error)
+	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
 }

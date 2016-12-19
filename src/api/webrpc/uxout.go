@@ -35,22 +35,13 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 		}
 		results[i].Address = addr
 
-		recvUxOuts, err := gateway.GetRecvUxOutOfAddr(a)
+		uxouts, err := gateway.GetAddrUxOuts(a)
 		if err != nil {
 			logger.Error("%v", err)
 			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 		}
-		for _, uxout := range recvUxOuts {
-			results[i].RecvUxOuts = append(results[i].RecvUxOuts, historydb.NewUxOutJSON(uxout))
-		}
-
-		spentUxOuts, err := gateway.GetSpentUxOutOfAddr(a)
-		if err != nil {
-			logger.Error("%v", err)
-			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
-		}
-		for _, uxout := range spentUxOuts {
-			results[i].SpentUxOuts = append(results[i].SpentUxOuts, historydb.NewUxOutJSON(uxout))
+		for _, uxout := range uxouts {
+			results[i].UxOuts = append(results[i].UxOuts, historydb.NewUxOutJSON(uxout))
 		}
 	}
 

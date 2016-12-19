@@ -9,13 +9,12 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
+// RegisterUxOutHandlers binds uxout entries.
 func RegisterUxOutHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get uxout by id.
 	mux.HandleFunc("/uxout", getUxOutByID(gateway))
-	// get address in uxouts
-	mux.HandleFunc("/address_in_uxouts", getRecvUxOutOfAddr(gateway))
-	// get address out uxouts
-	mux.HandleFunc("/address_out_uxouts", getSpentOutUxOutOfAddr(gateway))
+	// get all the address affected uxouts.
+	mux.HandleFunc("/address_uxouts", getAddrUxOuts(gateway))
 }
 
 func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
@@ -52,7 +51,7 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
+func getAddrUxOuts(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			wh.Error405(w, "")
@@ -70,40 +69,7 @@ func getRecvUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetRecvUxOutOfAddr(cipherAddr)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		uxOuts := make([]*historydb.UxOutJSON, len(uxs))
-		for i, ux := range uxs {
-			uxOuts[i] = historydb.NewUxOutJSON(ux)
-		}
-		wh.SendOr404(w, &uxOuts)
-	}
-}
-
-func getSpentOutUxOutOfAddr(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
-			return
-		}
-
-		addr := r.FormValue("address")
-		if addr == "" {
-			wh.Error400(w, "address is empty")
-			return
-		}
-
-		cipherAddr, err := cipher.DecodeBase58Address(addr)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		uxs, err := gateway.GetSpentUxOutOfAddr(cipherAddr)
+		uxs, err := gateway.GetAddrUxOuts(cipherAddr)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

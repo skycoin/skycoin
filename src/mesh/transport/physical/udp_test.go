@@ -14,8 +14,7 @@ var staticTestConfig UDPConfig = UDPConfig{
 	},
 	DatagramLength:  512,
 	LocalAddress:    "",
-	NumListenPorts:  5,
-	ListenPortMin:   10300, // If 0, STUN is used
+	ListenPort:      10300, // If 0, STUN is used
 	ExternalAddress: "127.0.0.1",
 	StunEndpoints:   nil, // STUN servers to try for NAT traversal
 }
@@ -42,10 +41,10 @@ func TestBindSTUNPorts(t *testing.T) {
 		},
 		DatagramLength:  512,
 		LocalAddress:    "",
-		NumListenPorts:  5,
-		ListenPortMin:   0, // If 0, STUN is used
+		ListenPort:      0, // If 0, STUN is used
 		ExternalAddress: "127.0.0.1",
-		StunEndpoints:   []string{"stun1.voiceeclipse.net:3478"}, // STUN servers to try for NAT traversal
+		StunEndpoints:   []string{"stun.l.google.com:19302"}, // STUN servers to try for NAT traversal
+		// this	stun is unresponsible at 14 Dec 2016	StunEndpoints:   []string{"stun1.voiceeclipse.net:3478"}, // STUN servers to try for NAT traversal
 	}
 	transport, err := NewUDPTransport(config)
 	assert.Nil(t, err)
@@ -61,7 +60,7 @@ func SetupAB(encrypt bool, t *testing.T) (
 	assert.NotNil(t, transportA)
 
 	configB := staticTestConfig
-	configB.ListenPortMin = 10400
+	configB.ListenPort = 10400
 
 	transportB, err := NewUDPTransport(configB)
 	assert.Nil(t, err)
@@ -189,5 +188,5 @@ func TestDisconnect(t *testing.T) {
 	transportA.DisconnectFromPeer(keyB)
 	assert.False(t, transportA.ConnectedToPeer(keyB))
 	assert.Zero(t, transportA.GetMaximumMessageSizeToPeer(keyB))
-	assert.Equal(t, nil, transportA.GetConnectedPeer())
+	assert.Equal(t, cipher.PubKey{}, transportA.GetConnectedPeer())
 }

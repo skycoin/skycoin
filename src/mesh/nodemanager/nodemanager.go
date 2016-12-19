@@ -222,8 +222,6 @@ func connectNodeToNodeHelper(config1, config2 *TestConfig) {
 		fmt.Fprintf(os.Stderr, "Error Nodes %v and %v aren't connected\n", config1.NodeConfig.PubKey, config2.NodeConfig.PubKey)
 		return
 	}
-	//find in the config1 peer associated with config2
-	//assign config2's pubkey to it
 
 	config1.AddRouteToEstablish(config2)
 	return
@@ -311,23 +309,9 @@ func infoToAddr(info string) (string, int) {
 		return "", 0
 	}
 
-	host := udp.ExternalHosts[0]
+	host := udp.ExternalHost
 	return host.IP.String(), host.Port
 }
-
-/*
-func AddPeerToNode(node *mesh.Node, config *TestConfig) {
-	udpConfig := physical.CreateUdp(config.Port, config.ExternalAddress)
-	config.UDPConfigs = append(config.UDPConfigs, udpConfig)
-	udpTransport := physical.CreateNewUDPTransport(udpConfig)
-	connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
-	if connectError != nil {
-		panic(connectError)
-	}
-	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
-	node.AddTransport(transportToPeer)
-}
-*/
 
 // PeersToConnect for getting connectTo.Peer, connectTo.Info
 // Port - will be replaced for ConfigData.Port

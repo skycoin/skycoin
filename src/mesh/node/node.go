@@ -149,6 +149,12 @@ func (self *Node) GetTransportToPeer(peerKey cipher.PubKey) transport.ITransport
 	return nil
 }
 
+func (self *Node) CloseTransports() {
+	for transportToPeer := range self.transports {
+		transportToPeer.Close()
+	}
+}
+
 func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
 	return self.GetTransportToPeer(peerKey)
 }

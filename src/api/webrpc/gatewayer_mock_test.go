@@ -12,6 +12,7 @@ import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
 	visor "github.com/skycoin/skycoin/src/visor"
+	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // GatewayerMock mock
@@ -21,6 +22,33 @@ type GatewayerMock struct {
 
 func NewGatewayerMock() *GatewayerMock {
 	return &GatewayerMock{}
+}
+
+// GetAddrUxOuts mocked method
+func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
+
+	ret := m.Called(p0)
+
+	var r0 []*historydb.UxOutJSON
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []*historydb.UxOutJSON:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
 }
 
 // GetBlocks mocked method

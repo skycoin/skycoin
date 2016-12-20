@@ -49,3 +49,7 @@ func transactionCMD() gcli.Command {
 	}
 	// Commands = append(Commands, cmd)
 }
+
+func getTransactionByID(txid string) (string, error) {
+
+}

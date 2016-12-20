@@ -69,6 +69,24 @@ func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) *visor.ReadableBlocks {
 
 }
 
+// GetBlocksInDepth mocked method
+func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) *visor.ReadableBlocks {
+
+	ret := m.Called(p0)
+
+	var r0 *visor.ReadableBlocks
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.ReadableBlocks:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
 // GetLastBlocks mocked method
 func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
 

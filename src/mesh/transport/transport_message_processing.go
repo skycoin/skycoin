@@ -34,7 +34,6 @@ func (self *Transport) processReceivedLoop() {
 }
 
 func (self *Transport) processSend(message SendMessage) {
-	self.status = REPLYING
 	self.sendAck(message)
 
 	self.lock.Lock()
@@ -43,12 +42,10 @@ func (self *Transport) processSend(message SendMessage) {
 	if !alreadyReceived {
 		self.output <- message.Contents
 		self.messagesReceived[message.MessageID] = time.Now().Add(self.config.RememberMessageReceivedDuration)
-		self.status = CONNECTED
 	}
 }
 
 func (self *Transport) processReply(message ReplyMessage) {
-	self.status = ACKWAITING
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	state, exists := self.messagesSent[message.MessageID]
@@ -60,7 +57,6 @@ func (self *Transport) processReply(message ReplyMessage) {
 	self.messagesSent[message.MessageID] = state
 	now := time.Now()
 	self.latency = (uint64)(now.Unix() - self.packetIsSent.Unix())
-	self.status = CONNECTED
 
 	// Test
 	if !self.messagesSent[message.MessageID].receivedAck {

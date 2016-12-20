@@ -1,4 +1,4 @@
-skycoin [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin) [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin) 
+skycoin [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin) [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 =======
 
 Skycoin is a next-generation cryptocurrency.
@@ -33,7 +33,7 @@ $ brew install go
 3) Setup $GOPATH variable, add it to ~/.bash_profile (or bashrc). After editing, open a new tab
 Add to `bashrc` or `bash_profile`
 ```sh
-$ export GOPATH=/Users/<username>/go 
+$ export GOPATH=/Users/<username>/go
 $ export PATH=$PATH:$GOPATH/bin
 
 ```
@@ -53,18 +53,12 @@ $ go get github.com/skycoin/skycoin
 $ cd $GOPATH/src/github.com/skycoin/skycoin
 ```
 
-7) Install glock and sync all the dependencies 
-```
-$ go get github.com/robfig/glock
-$ glock sync github.com/skycoin/skycoin
-```
-
-8) Run the node ;)
+7) Run the node ;)
 ```
 $ ./run.sh -h
 ```
 
-9) Running Wallet
+8) Running Wallet
 
 ```
 $ ./run.sh
@@ -99,11 +93,7 @@ The skycoin repo must be in $GOPATH, under `src/github.com/skycoin`. Otherwise g
 ```
 #pull skycoin repo into the gopath
 #note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
-<<<<<<< HEAD
 go get -v github.com/skycoin/skycoin/...
-=======
-$ go get github.com/skycoin/skycoin
->>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b
 
 #create symlink of the repo
 $ cd $HOME
@@ -113,16 +103,18 @@ $ ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
 Dependencies
 ------------
 
+Dependencies are managed with [gvt](https://github.com/FiloSottile/gvt).
+
+To install gvt:
 ```
-$ go get github.com/robfig/glock
-$ glock sync github.com/skycoin/skycoin
-$ go get ./cmd/skycoin
+$ go get -u github.com/FiloSottile/gvt
 ```
 
-To update dependencies
-```
-$ glock save github.com/skycoin/skycoin/cmd/skycoin
-```
+gvt vendors all dependencies into the repo.
+
+If you change the dependencies, you should update them as needed with `gvt fetch`, `gvt update`, `gvt delete`, etc.
+
+Refer to the [gvt documentation](https://github.com/FiloSottile/gvt) or `gvt help` for further instructions.
 
 Running A Skycoin Node
 ----------------------
@@ -130,7 +122,7 @@ Running A Skycoin Node
 ```
 $ cd skycoin
 $ screen
-$ go run ./cmd/skycoin/skycoin.go 
+$ go run ./cmd/skycoin/skycoin.go
 #then ctrl+A then D to exit screen
 #screen -x to reattach screen
 ```
@@ -231,16 +223,15 @@ Meshnet reminders
 Rebuilding Wallet HTML
 ----------------------
 
-<<<<<<< HEAD
-npm install
-gulp build
-
-Release Builds
-----
-
-=======
 ```sh
 $ npm install
 $ gulp build
 ```
->>>>>>> e2106ef15742ef4242d3cca2959e652d874ce58b
+
+Release Builds
+----
+
+```sh
+$ npm install
+$ gulp dist
+```

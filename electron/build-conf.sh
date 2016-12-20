@@ -8,6 +8,7 @@ ELN_OUTPUT_BASE=".electron_output"
 ELN_OUTPUT="${ELN_OUTPUT_BASE}/${ELN_VERSION}"
 
 GOX_OSARCH="linux/amd64 windows/amd64 darwin/amd64"
+# GOX_OSARCH="darwin/amd64"
 GOX_OUTPUT=".gox_output"
 
 STL_OUTPUT=".standalone_output"

@@ -31,12 +31,11 @@ const (
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
-	logger.Info("Web resources directory: %s", staticDir)
-
 	appLoc, err := util.DetermineResourcePath(staticDir, devDir, resourceDir)
 	if err != nil {
 		return err
 	}
+	logger.Info("Web resources directory: %s", appLoc)
 
 	listener, err := net.Listen("tcp", host)
 	if err != nil {

@@ -1,7 +1,6 @@
 package mesh
 
 import (
-"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -114,9 +113,8 @@ func TestSendDirect(t *testing.T) {
 
 func TestLongRoute(t *testing.T) {
 	contents := []byte{4, 66, 7, 44, 33}
-	numPeers, dropFirst, reorder, sendBack := 3, false, false, false
+	numPeers, dropFirst, reorder, sendBack := 5, false, false, false
 	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
-	panic(0)
 }
 
 func TestShortSendBack(t *testing.T) {
@@ -167,7 +165,7 @@ func TestSendThruRoute(t *testing.T) {
 		panic("Test timed out")
 	}
 }
-/*
+
 func TestRouteExpiry(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -194,7 +192,7 @@ func TestRouteExpiry(t *testing.T) {
 		assert.Zero(t, lastConfirmed.Unix())
 	}
 	assert.Nil(t, nodes[0].ExtendRoute(addedRouteID, nodes[2].GetConfig().PubKey, time.Second))
-	assert.NotZero(t, nodes[1].debug_countRoutes())
+	assert.NotZero(t, nodes[1].DebugCountRoutes())
 
 	var afterExtendConfirmedTime time.Time
 	{
@@ -204,7 +202,7 @@ func TestRouteExpiry(t *testing.T) {
 	}
 
 	time.Sleep(5 * time.Second)
-	assert.NotZero(t, nodes[1].debug_countRoutes())
+	assert.NotZero(t, nodes[1].DebugCountRoutes())
 	var afterWaitConfirmedTime time.Time
 	{
 		lastConfirmed, err := nodes[0].GetRouteLastConfirmed(addedRouteID)
@@ -222,13 +220,13 @@ func TestRouteExpiry(t *testing.T) {
 		afterIgnoreConfirmedTime = lastConfirmed
 	}
 
-	assert.Zero(t, nodes[1].debug_countRoutes())
+	assert.Zero(t, nodes[1].DebugCountRoutes())
 	assert.NotZero(t, afterExtendConfirmedTime)
 	assert.NotZero(t, afterWaitConfirmedTime)
 	assert.NotEqual(t, afterExtendConfirmedTime, afterWaitConfirmedTime)
 	assert.Equal(t, afterWaitConfirmedTime, afterIgnoreConfirmedTime)
 }
-*/
+
 func TestDeleteRoute(t *testing.T) {
 	allConnections := [][]int{
 		[]int{0, 1, 0},
@@ -249,12 +247,12 @@ func TestDeleteRoute(t *testing.T) {
 	assert.Nil(t, nodes[0].AddRoute(addedRouteID, nodes[1].GetConfig().PubKey))
 	assert.Nil(t, nodes[0].ExtendRoute(addedRouteID, nodes[2].GetConfig().PubKey, time.Second))
 	time.Sleep(5 * time.Second)
-	assert.NotZero(t, nodes[0].debug_countRoutes())
-	assert.NotZero(t, nodes[1].debug_countRoutes())
+	assert.NotZero(t, nodes[0].DebugCountRoutes())
+	assert.NotZero(t, nodes[1].DebugCountRoutes())
 	assert.Nil(t, nodes[0].DeleteRoute(addedRouteID))
 	time.Sleep(1 * time.Second)
-	assert.Zero(t, nodes[0].debug_countRoutes())
-	assert.Zero(t, nodes[1].debug_countRoutes())
+	assert.Zero(t, nodes[0].DebugCountRoutes())
+	assert.Zero(t, nodes[1].DebugCountRoutes())
 }
 
 func SetupNode(t *testing.T, maxDatagramLength uint, newPubKey cipher.PubKey) *Node {
@@ -274,8 +272,7 @@ func SetupNode(t *testing.T, maxDatagramLength uint, newPubKey cipher.PubKey) *N
 	return node
 }
 
-func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte,
-	transports []*transport.StubTransport) {
+func SetupNodes(n uint, connections [][]int, t *testing.T) (nodes []*Node, to_close chan []byte, transports []*transport.StubTransport) {
 	nodes = make([]*Node, n)
 	transports = []*transport.StubTransport{}
 	to_close = make(chan []byte, 20)
@@ -339,7 +336,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 	receivedMessages := make(chan domain.MeshMessage, 10)
 	nodes[nPeers-1].SetReceiveChannel(receivedMessages)
 
-	//terminatingID := nodes[nPeers-1].GetConfig().PubKey
+	terminatingID := nodes[nPeers-1].GetConfig().PubKey
 
 	addedRouteID := domain.RouteID{}
 	addedRouteID[0] = 22
@@ -372,7 +369,7 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 			select {
 			case receivedMessage := <-receivedMessages:
 				{
-					//replyTo = receivedMessage.ReplyTo
+					replyTo = receivedMessage.ReplyTo
 					assert.Equal(t, addedRouteID, receivedMessage.ReplyTo.RouteID)
 					assert.Equal(t, contents, receivedMessage.Contents)
 				}
@@ -414,6 +411,7 @@ func sortPubKeys(pubKeys []cipher.PubKey) []cipher.PubKey {
 	sort.Sort(keys)
 	return keys
 }
+<<<<<<< HEAD
 
 /*
 func Deprecated_TestSendLongMessage(t *testing.T) {
@@ -483,3 +481,5 @@ func Deprecated_TestMessageExpiry(t *testing.T) {
 // Packet loss test
 // Multiple transport test
 // Threading test
+=======
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9

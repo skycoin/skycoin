@@ -181,9 +181,13 @@ func (self *NodeManager) ConnectNodes() {
 // Connect Node1 (config1) to Node2 (config2)
 func ConnectNodeToNode(nodeManager *NodeManager, config1, config2 *TestConfig) {
 	nodeManager.Port++
-	if config1.Port == nodeManager.StartPort { config1.Port = nodeManager.Port }
+	if config1.Port == nodeManager.StartPort {
+		config1.Port = nodeManager.Port
+	}
 	nodeManager.Port++
-	if config2.Port == nodeManager.StartPort { config2.Port = nodeManager.Port }
+	if config2.Port == nodeManager.StartPort {
+		config2.Port = nodeManager.Port
+	}
 	var addr bytes.Buffer
 	addr.WriteString(config2.ExternalAddress)
 	addr.WriteString(":")
@@ -193,26 +197,31 @@ func ConnectNodeToNode(nodeManager *NodeManager, config1, config2 *TestConfig) {
 }
 
 func ConnectNodeToNodeNew(config1, config2 *TestConfig) {
+	connectNodeToNodeHelper(config1, config2)
+	connectNodeToNodeHelper(config2, config1)
+}
+
+func connectNodeToNodeHelper(config1, config2 *TestConfig) {
 	peerFound := false
-	for ownPeerInfo, peerToConnect := range(config1.PeerToPeers) {
+	ownPubKey := config1.NodeConfig.PubKey
+	connectedPubKey := config2.NodeConfig.PubKey
+
+	for ownPeerInfo, peerToConnect := range config1.PeerToPeers {
 		suggestedOwnPeer, found := config2.PeerToPeers[peerToConnect.Info]
 		if found {
 			if ownPeerInfo == suggestedOwnPeer.Info {
-				ownPubKey := config1.NodeConfig.PubKey
-				connectedPubKey := config2.NodeConfig.PubKey
-				suggestedOwnPeer.Peer = connectedPubKey
-				peerToConnect.Peer = ownPubKey
+				suggestedOwnPeer.Peer = ownPubKey
+				peerToConnect.Peer = connectedPubKey
 				peerFound = true
 				break
 			}
 		}
 	}
+
 	if !peerFound {
 		fmt.Fprintf(os.Stderr, "Error Nodes %v and %v aren't connected\n", config1.NodeConfig.PubKey, config2.NodeConfig.PubKey)
 		return
 	}
-	//find in the config1 peer associated with config2
-	//assign config2's pubkey to it
 
 	config1.AddRouteToEstablish(config2)
 	return
@@ -266,9 +275,10 @@ func AddPeersToNodeNew(node *mesh.Node, config TestConfig) {
 
 	// Connect
 	for info, peerToPeer := range config.PeerToPeers {
-		if peerToPeer.Peer == emptyPK { continue }
+		if peerToPeer.Peer == emptyPK {
+			continue
+		}
 		addr, port := infoToAddr(info)
-		fmt.Println("EXTERNAL ADDRESS IS", addr)
 		udpConfig := physical.CreateUdp(port, addr)
 		config.UDPConfigs = append(config.UDPConfigs, udpConfig)
 		udpTransport := physical.CreateNewUDPTransport(udpConfig)
@@ -286,38 +296,28 @@ func AddPeersToNodeNew(node *mesh.Node, config TestConfig) {
 
 func infoToAddr(info string) (string, int) {
 	infoBytes, err := hex.DecodeString(info)
-	if err != nil { panic(err); return "", 0 }
+	if err != nil {
+		panic(err)
+		return "", 0
+	}
 
 	udp := physical.UDPCommConfig{}
 
 	err = json.Unmarshal(infoBytes, &udp)
-	if err != nil { panic(err); return "", 0 }
+	if err != nil {
+		panic(err)
+		return "", 0
+	}
 
-	host := udp.ExternalHosts[0]
-	fmt.Println("HOST IP is", host.IP)
+	host := udp.ExternalHost
 	return host.IP.String(), host.Port
 }
-
-/*
-func AddPeerToNode(node *mesh.Node, config *TestConfig) {
-	udpConfig := physical.CreateUdp(config.Port, config.ExternalAddress)
-	config.UDPConfigs = append(config.UDPConfigs, udpConfig)
-	udpTransport := physical.CreateNewUDPTransport(udpConfig)
-	connectError := udpTransport.ConnectToPeer(connectTo.Peer, connectTo.Info)
-	if connectError != nil {
-		panic(connectError)
-	}
-	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
-	node.AddTransport(transportToPeer)
-}
-*/
 
 // PeersToConnect for getting connectTo.Peer, connectTo.Info
 // Port - will be replaced for ConfigData.Port
 // ExternalAddress - will be replaced for ConfigData.Address
 // UDPConfigs
 // TransportConfig
-
 
 // Returns Node by index
 func (self *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {

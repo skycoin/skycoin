@@ -64,8 +64,7 @@ var configText1 string = `{
 		"SendChannelLength": 100,
 		"DatagramLength": 512,
 		"LocalAddress": "",
-		"NumListenPorts": 1,
-		"ListenPortMin": 15000,
+		"ListenPort": 15000,
 		"ExternalAddress": "127.0.0.1",
 		"StunEndpoints": []
 	},
@@ -117,8 +116,7 @@ var configText2 string = `{
 		"SendChannelLength": 100,
 		"DatagramLength": 512,
 		"LocalAddress": "",
-		"NumListenPorts": 1,
-		"ListenPortMin": 17000,
+		"ListenPort": 17000,
 		"ExternalAddress": "127.0.0.1",
 		"StunEndpoints": []
 	},
@@ -274,7 +272,7 @@ func TestUDPCommConfig(t *testing.T) {
 	cryptoKey := []byte{1, 55, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
 	enc := physical.CreateUDPCommConfig("127.0.0.1:16000", cryptoKey)
 
-	expected := "7b22446174616772616d4c656e677468223a3531322c2245787465726e616c486f737473223a5b7b224950223a223132372e302e302e31222c22506f7274223a31363030302c225a6f6e65223a22227d5d2c2243727970746f4b6579223a22415463414141454141414142414141414151414141414541414141424141414141514141414145414141413d227d"
+	expected := "7b22446174616772616d4c656e677468223a3531322c2245787465726e616c486f7374223a7b224950223a223132372e302e302e31222c22506f7274223a31363030302c225a6f6e65223a22227d2c2243727970746f4b6579223a22415463414141454141414142414141414151414141414541414141424141414141514141414145414141413d227d"
 	assert.Equal(t, expected, enc, "Error in encoding")
 
 }

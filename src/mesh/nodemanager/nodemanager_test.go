@@ -435,7 +435,6 @@ func TestAddTransportsToNode(t *testing.T) {
 }
 
 func TestGetTransportsFromNode(t *testing.T) {
-	panic("ok")
 	nodeManager := &NodeManager{Port: 6100}
 	nodeManager.CreateNodeConfigList(10)
 	nodeManager.ConnectNodes()

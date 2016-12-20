@@ -118,6 +118,21 @@ func (gw *Gateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
 	return <-blocks
 }
 
+// GetBlocksInDepth returns blocks in different depth
+func (gw *Gateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
+	blocks := make(chan *visor.ReadableBlocks)
+	gw.Requests <- func() {
+		blks := visor.ReadableBlocks{}
+		for _, n := range vs {
+			if b := gw.Visor.GetBlockInDepth(gw.V, n); b != nil {
+				blks.Blocks = append(blks.Blocks, *b)
+			}
+		}
+		blocks <- &blks
+	}
+	return <-blocks
+}
+
 // GetLastBlocks get last N blocks
 func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 	blocks := make(chan *visor.ReadableBlocks)

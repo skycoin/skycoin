@@ -13,7 +13,7 @@ import (
 )
 
 func Test_getAddrUxOutsHandler(t *testing.T) {
-	m, testData := newUxOutMock()
+	m, mockData := newUxOutMock()
 	type args struct {
 		req     Request
 		gateway Gatewayer
@@ -35,9 +35,9 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeSuccessResponse("1", []addrUxoutResult{{
+			makeSuccessResponse("1", []AddrUxoutResult{{
 				Address: "2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT",
-				UxOuts:  testData("2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT")}}),
+				UxOuts:  mockData("2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT")}}),
 		},
 		{
 			"internal server error",

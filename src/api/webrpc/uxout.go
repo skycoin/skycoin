@@ -7,7 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-type addrUxoutResult struct {
+type AddrUxoutResult struct {
 	Address string                 `json:"address"`
 	UxOuts  []*historydb.UxOutJSON `json:"uxouts"`
 }
@@ -24,7 +24,7 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	results := make([]addrUxoutResult, len(addrs))
+	results := make([]AddrUxoutResult, len(addrs))
 
 	for i, addr := range addrs {
 		// decode address

@@ -120,8 +120,8 @@ func makeRPC(args ...Arg) *rpcHandler {
 	// register handlers
 	// get service status
 	rpc.HandlerFunc("get_status", getStatusHandler)
-	// get blocks in depth
-	rpc.HandlerFunc("get_blocks_in_depth", getBlocksInDepthHandler)
+	// get blocks by seq
+	rpc.HandlerFunc("get_blocks_by_seq", getBlocksBySeqHandler)
 	// get last N blocks
 	rpc.HandlerFunc("get_lastblocks", getLastBlocksHandler)
 	// get blocks in specific seq range

@@ -92,6 +92,14 @@ func (self RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 	return &ReadableBlocks{blocks}
 }
 
+func (self RPC) GetBlockInDepth(v *Visor, n uint64) *ReadableBlock {
+	if b := v.GetBlockBySeq(n); b != nil {
+		block := NewReadableBlock(b)
+		return &block
+	}
+	return nil
+}
+
 func (self RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResult, error) {
 	txn, err := v.GetTransaction(txHash)
 	if err != nil {

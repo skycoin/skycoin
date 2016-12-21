@@ -1,23 +1,26 @@
 package nodemanager
 
 import (
+//	"strconv"
+
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport"
-	"github.com/skycoin/skycoin/src/mesh/transport/physical"
+	//"github.com/skycoin/skycoin/src/mesh/transport/physical"
 )
 
 type TestConfig struct {
 	TransportConfig transport.TransportConfig
-	UDPConfigs      []physical.UDPConfig
 	NodeConfig      mesh.NodeConfig
 
 	PeersToConnect           []Peer
+	PeerToPeers              map[string]*Peer
 	RoutesConfigsToEstablish []RouteConfig
 	MessagesToSend           []MessageToSend
 	MessagesToReceive        []MessageToReceive
 	ExternalAddress          string
+	StartPort                int
 	Port                     int
 }
 
@@ -41,11 +44,12 @@ type MessageToReceive struct {
 	Reply    []byte
 }
 
-func (self *TestConfig) AddPeerToConnect(addr string, config *TestConfig) {
-	peerToConnect := Peer{}
-	peerToConnect.Peer = config.NodeConfig.PubKey
-	peerToConnect.Info = physical.CreateUDPCommConfig(addr, nil)
-	self.PeersToConnect = append(self.PeersToConnect, peerToConnect)
+func (self *TestConfig) AddPeerToConnect(config *TestConfig) {
+
+	peerToConnect := makePeer(config.NodeConfig.PubKey, config.ExternalAddress, config.Port)
+	ownPeer := makePeer(self.NodeConfig.PubKey, self.ExternalAddress, self.Port)
+
+	self.PeerToPeers[ownPeer.Info] = peerToConnect
 }
 
 func (self *TestConfig) AddRouteToEstablish(config *TestConfig) {
@@ -59,11 +63,27 @@ func (self *TestConfig) AddPeerToRoute(indexRoute int, config *TestConfig) {
 	self.RoutesConfigsToEstablish[indexRoute].Peers = append(self.RoutesConfigsToEstablish[indexRoute].Peers, config.NodeConfig.PubKey)
 }
 
-func (self *TestConfig) AddMessageToSend(thruRouteID uuid.UUID, message string) {
+func (self *TestConfig) AddMessageToSendThruRoute(thruRouteID uuid.UUID, message string) {
 	messageToSend := MessageToSend{}
 	messageToSend.ThruRoute = thruRouteID
 	messageToSend.Contents = []byte(message)
 	self.MessagesToSend = append(self.MessagesToSend, messageToSend)
+}
+
+func (self *TestConfig) AddMessageToSend(config *TestConfig, message string) {
+	messageToSend := MessageToSend{}
+	pubKey := config.NodeConfig.PubKey
+
+	for _, routeConfig := range(self.RoutesConfigsToEstablish) {
+		thruRouteID := routeConfig.RouteID
+		peers := routeConfig.Peers
+		if peers[len(peers) - 1] == pubKey {
+			messageToSend.ThruRoute = thruRouteID
+			messageToSend.Contents = []byte(message)
+			self.MessagesToSend = append(self.MessagesToSend, messageToSend)
+			break
+		}
+	}
 }
 
 func (self *TestConfig) AddMessageToReceive(messageReceive, messageReply string) {

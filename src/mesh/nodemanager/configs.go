@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	//	"github.com/skycoin/skycoin/src/mesh/transport"
-	//	"github.com/skycoin/skycoin/src/mesh/transport/physical"
 )
 
 type ConfigData struct {
@@ -18,6 +16,35 @@ type ConfigData struct {
 type TransportData struct {
 	PubKey1 cipher.PubKey `json:"pubkey_1"`
 	PubKey2 cipher.PubKey `json:"pubkey_2"`
+}
+
+func (nm *NodeManager) GetFromFile(configIndex string) {
+
+	configDatas, err := loadConfigs(configIndex)
+	if err != nil {
+		panic(err)
+	}
+
+	transportDatas, err := loadTransports(configIndex)
+	if err != nil {
+		panic(err)
+	}
+
+	nm.ConfigList = testConfigsFromData(configDatas)
+	nm.connectConfigs(transportDatas)
+}
+
+func (nm *NodeManager) PutToFile(configIndex string) error {
+
+	configDatas, transportDatas := nodesToConfigData(nm.ConfigList)
+
+	err := saveConfigs(configIndex, configDatas)
+	if err != nil {
+		return err
+	}
+
+	err = saveTransports(configIndex, transportDatas)
+	return err
 }
 
 func loadConfigs(configIndex string) ([]*ConfigData, error) {
@@ -58,19 +85,32 @@ func loadTransports(transportIndex string) ([]*TransportData, error) {
 	return transportData, nil
 }
 
-func (nm *NodeManager) GetFromFile(configIndex string) {
-	configDatas, err := loadConfigs(configIndex)
-	if err != nil {
-		panic(err)
-	}
+func saveConfigs(configIndex string, configData[]*ConfigData) error {
 
-	transportDatas, err := loadTransports(configIndex)
+	configFile, err := os.Create(configIndex + "_nodes.cfg")
 	if err != nil {
-		panic(err)
+		return err
 	}
+	defer configFile.Close()
 
-	nm.ConfigList = testConfigsFromData(configDatas)
-	nm.connectConfigs(transportDatas)
+	encoder := json.NewEncoder(configFile)
+	err = encoder.Encode(configData)
+
+	return err
+}
+
+func saveTransports(transportIndex string, transportData []*TransportData) error {
+
+	transportFile, err := os.Create(transportIndex + "_transports.cfg")
+	if err != nil {
+		return err
+	}
+	defer transportFile.Close()
+
+	encoder := json.NewEncoder(transportFile)
+	err = encoder.Encode(transportData)
+
+	return err
 }
 
 func testConfigsFromData(configDatas []*ConfigData) map[cipher.PubKey]*TestConfig {
@@ -101,4 +141,24 @@ func createTestConfigFromData(configData *ConfigData) *TestConfig {
 	config.NodeConfig.PubKey = configData.PubKey
 
 	return config
+}
+
+func nodesToConfigData(configList map[cipher.PubKey]*TestConfig) ([]*ConfigData, []*TransportData) {
+	configDatas := []*ConfigData{}
+	transportDatas := []*TransportData{}
+
+	for pubKeyFrom, config := range(configList) {
+		configData := &ConfigData{pubKeyFrom, config.ExternalAddress, config.StartPort}
+		configDatas = append(configDatas, configData)
+		for _, peerToPeer := range(config.PeerToPeers) {
+			pubKeyTo := peerToPeer.Peer
+			transportData := &TransportData{pubKeyFrom, pubKeyTo}
+			found := false
+			for _, td := range(transportDatas) {
+				if (td.PubKey1 == pubKeyFrom && td.PubKey2 == pubKeyTo) || (td.PubKey1 == pubKeyTo && td.PubKey2 == pubKeyFrom) { found = true; break }
+			}
+			if !found { transportDatas = append(transportDatas, transportData) }
+		}
+	}
+	return configDatas, transportDatas
 }

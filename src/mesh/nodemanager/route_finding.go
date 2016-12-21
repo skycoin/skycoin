@@ -19,7 +19,7 @@ import (
 // WTF does this do?
 func (self *NodeManager) FindRoute(pubKey1 cipher.PubKey) {
 	config1 := self.ConfigList[pubKey1]
-	for _, v := range config1.PeersToConnect {
+	for _, v := range config1.PeerToPeers {
 		pubKey2 := v.Peer
 		route := Route{}
 		route.SourceNode = pubKey1
@@ -37,7 +37,7 @@ func (self *NodeManager) FindRoute(pubKey1 cipher.PubKey) {
 // WTF does this do?
 func (self *NodeManager) FindIndirectRoutes(route Route) {
 	config1 := self.ConfigList[route.TargetNode]
-	for _, v := range config1.PeersToConnect {
+	for _, v := range config1.PeerToPeers {
 		pubKey2 := v.Peer
 		route2 := Route{}
 		route2.SourceNode = route.SourceNode

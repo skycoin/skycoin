@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/mesh/domain"
-	nodemanager "github.com/skycoin/skycoin/src/mesh/nodemanagernew"
+	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 
 	nm := nodemanager.NodeManager{}
 
-	nm.GetFromFile("0")
+	nm.GetFromFile("3")
 
 	configsMap := nm.ConfigList
 	configs := []*nodemanager.TestConfig{}
@@ -28,10 +28,14 @@ func main() {
 		configs = append(configs, config)
 	}
 
-	config1 := configs[0]
-	config2 := configs[1]
+	config1 := configs[2]
+	config2 := configs[0]
 
-	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, "Message 1")
+	fmt.Println("config1:", config1.NodeConfig.PubKey)
+	fmt.Println("config2:", config2.NodeConfig.PubKey)
+
+//	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, "Message 1")
+	config1.AddMessageToSend(config2, "Message 1")
 	config1.AddMessageToReceive("Message 2", "")
 
 	config2.AddMessageToReceive("Message 1", "Message 2")
@@ -73,6 +77,7 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 	defer node.Close()
 
 	nodemanager.AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
+	fmt.Println("routes:", node.GetAllRoutes())
 
 	// Receive messages
 	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
@@ -80,6 +85,7 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
+		fmt.Println("Route:", (domain.RouteID)(messageToSend.ThruRoute))
 		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
 		if sendMsgErr != nil {
 			panic(sendMsgErr)

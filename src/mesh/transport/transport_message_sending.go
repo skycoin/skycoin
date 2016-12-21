@@ -28,6 +28,10 @@ func (self *Transport) SendMessage(toPeer cipher.PubKey, contents []byte, _ chan
 	go self.physicalTransport.SendMessage(toPeer, sendSerialized, retChan)
 	select {
 	case err = <-retChan:
+<<<<<<< HEAD
+		self.status = CONNECTED
+=======
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9
 		if err == nil {
 			self.status = ACKWAITING
 			self.lock.Lock()

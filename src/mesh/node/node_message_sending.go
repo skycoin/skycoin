@@ -122,7 +122,11 @@ func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) 
 	}
 
 	serialized := self.serializer.SerializeMessage(message)
+<<<<<<< HEAD
+	//	fmt.Fprintln(os.Stdout, "Send Message")
+=======
 	fmt.Fprintf(os.Stdout, "Peer %d: Sending 'UserMessage' to peer %d \n", self.Config.PubKey[:3], directPeerID[:3])
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9
 	err := transport.SendMessage(directPeerID, serialized, nil)
 	if err != nil {
 		return err

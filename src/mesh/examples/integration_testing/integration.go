@@ -82,7 +82,7 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
 	node.SetReceiveChannel(received)
 
-	// Wait for messages to pass thru
+	// Wait for messages to pass through
 	recvMap := make(map[string]domain.ReplyTo)
 	for timeEnd := time.Now().Add(1 * time.Second); time.Now().Before(timeEnd); {
 

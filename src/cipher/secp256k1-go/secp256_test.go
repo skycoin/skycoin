@@ -43,10 +43,10 @@ func CompactSigTest(sig []byte) {
 		log.Panic()
 	}
 	if ((b >> 7) == 1) != ((b & 0x80) == 0x80) {
-		log.Panic("b= %v b2= %v \n", b, b>>7)
+		log.Panic("b= %d b2= %d \n", b, b>>7)
 	}
 	if (b & 0x80) == 0x80 {
-		log.Panic("b= %v b2= %v \n", b, b&0x80)
+		log.Panic("b= %d b2= %d \n", b, b&0x80)
 	}
 }
 
@@ -583,7 +583,7 @@ func Test_Abnormal_Keys(t *testing.T) {
 			seckey_hex := hex.EncodeToString(seckey1)
 			log.Printf("seed= %s", seed_hex)
 			log.Printf("seckey= %s", seckey_hex)
-			t.Errorf("GenerateKeyPair, generates key that fails validation, run=%i", i)
+			t.Errorf("GenerateKeyPair, generates key that fails validation, run=%d", i)
 		}
 	}
 }

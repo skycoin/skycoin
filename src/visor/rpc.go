@@ -7,7 +7,7 @@ import (
 
 /*
 RPC is balance check and transaction injection
-- seperate wallets out of visor
+- separate wallets out of visor
 */
 type TransactionResult struct {
 	Status      TransactionStatus   `json:"status"`

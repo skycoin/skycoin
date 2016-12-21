@@ -210,7 +210,7 @@ func TestRouteExpiry(t *testing.T) {
 		afterWaitConfirmedTime = lastConfirmed
 	}
 
-	// Don't allow refreshes to get thru
+	// Don't allow refreshes to get through
 	transports[0].SetIgnoreSendStatus(true)
 	time.Sleep(5 * time.Second)
 	var afterIgnoreConfirmedTime time.Time
@@ -322,6 +322,10 @@ func sendTest(t *testing.T, nPeers int, dropFirst bool, reorder bool, sendBack b
 		allConnections = append(allConnections, toConnections)
 	}
 	nodes, toClose, transports := SetupNodes((uint)(nPeers), allConnections, t)
+<<<<<<< HEAD
+	//	nodes, toClose, _ := SetupNodes((uint)(nPeers), allConnections, t)
+=======
+>>>>>>> 8610887d96a249bd757a5607123a097493707c5c
 	defer close(toClose)
 	defer func() {
 		for _, node := range nodes {
@@ -407,3 +411,75 @@ func sortPubKeys(pubKeys []cipher.PubKey) []cipher.PubKey {
 	sort.Sort(keys)
 	return keys
 }
+<<<<<<< HEAD
+
+/*
+func Deprecated_TestSendLongMessage(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	numPeers, dropFirst, reorder, sendBack := 2, false, false, false
+	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
+}
+
+func Deprecated_TestSendLongMessageWithReorder(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	numPeers, dropFirst, reorder, sendBack := 2, false, true, false
+	sendTest(t, numPeers, dropFirst, reorder, sendBack, contents)
+}
+
+// Refragmentation test (sendTest varies the datagram length)
+func Deprecated_TestLongSendLongMessage(t *testing.T) {
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+	sendTest(t, 5, false, false, false, contents)
+}
+
+func Deprecated_TestMessageExpiry(t *testing.T) {
+	allConnections := [][]int{
+		[]int{0, 1},
+		[]int{1, 0},
+	}
+	nodes, toClose, transports := SetupNodes((uint)(2), allConnections, t)
+	defer close(toClose)
+	defer func() {
+		for _, node := range nodes {
+			node.Close()
+		}
+	}()
+	addedRouteID := domain.RouteID{}
+	addedRouteID[0] = 66
+
+	contents := []byte{}
+	for i := 0; i < 25670; i++ {
+		contents = append(contents, (byte)(i))
+	}
+
+	assert.Nil(t, nodes[0].AddRoute(addedRouteID, nodes[1].GetConfig().PubKey))
+
+	transports[0].StartBuffer()
+	assert.Nil(t, nodes[0].SendMessageThruRoute(addedRouteID, contents))
+	// Drop ten, so the message will never be reassembled
+	transports[0].StopAndConsumeBuffer(true, 10)
+
+	//time.Sleep(1 * time.Second)
+	//assert.NotZero(t, nodes[1].debug_countMessages())
+	//time.Sleep(10 * time.Second)
+	//assert.Zero(t, nodes[1].debug_countMessages())
+}
+*/
+// Tests TODO
+
+// Establish route and send unreliable
+
+// Packet loss test
+// Multiple transport test
+// Threading test
+=======
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9

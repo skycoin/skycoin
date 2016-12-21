@@ -470,7 +470,7 @@ deal
 debate
 debris
 decade
-december
+December
 decide
 decline
 decorate

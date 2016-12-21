@@ -378,7 +378,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
 	node.SetReceiveChannel(received)
 
-	// Wait for messages to pass thru
+	// Wait for messages to pass through
 	recvMap := make(map[string]domain.ReplyTo)
 	for timeEnd := time.Now().Add(5 * time.Second); time.Now().Before(timeEnd); {
 

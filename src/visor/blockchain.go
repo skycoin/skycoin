@@ -55,7 +55,7 @@ type Blockchain struct {
 	head    cipher.SHA256
 }
 
-// NewBlockchain use the walker go throught the tree and update the head and unspent outputs.
+// NewBlockchain use the walker go thought the tree and update the head and unspent outputs.
 func NewBlockchain(tree BlockTree, walker Walker) *Blockchain {
 	bc := &Blockchain{
 		tree:    tree,

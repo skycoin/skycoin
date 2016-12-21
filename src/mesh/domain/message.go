@@ -23,7 +23,7 @@ type ReplyTo struct {
 // Fields must be public (capital first letter) for encoder
 type MessageBase struct {
 	// If RouteId is unknown, but not cipher.PubKey{}, then the message should be received here
-	//  the RouteId can be used to reply back thru the route
+	//  the RouteId can be used to reply back through the route
 	SendRouteID RouteID
 	SendBack    bool
 	// For sending the reply from the last node in a route
@@ -57,14 +57,14 @@ type SetRouteReply struct {
 	ConfirmRouteID RouteID
 }
 
-// Refreshes the route as it passes thru it
+// Refreshes the route as it passes through it
 type RefreshRouteMessage struct {
 	MessageBase
 	DurationHint    time.Duration
 	ConfirmRoutedID RouteID
 }
 
-// Deletes the route as it passes thru it
+// Deletes the route as it passes through it
 type DeleteRouteMessage struct {
 	MessageBase
 }

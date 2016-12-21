@@ -156,7 +156,7 @@ func (d *Daemon) NewBlobReplicator(channel uint16, callback BlobCallback) *BlobR
 	}
 
 	br.RequestManager = NewRequestManager(NewRequestManagerConfig())
-	//Todo, check that daemon doesnt have other channels
+	//Todo, check that daemon doesn't have other channels
 	d.BlobReplicators = append(d.BlobReplicators, &br)
 	return &br
 }

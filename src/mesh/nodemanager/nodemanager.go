@@ -146,15 +146,15 @@ func (self *NodeManager) AddNode() int {
 func (self *NodeManager) ConnectNodes() {
 
 	var index2, index3 int
-	var lenght int = len(self.ConfigList)
+	var length int = len(self.ConfigList)
 
-	if lenght > 1 {
+	if length > 1 {
 		for index1, pubKey1 := range self.PubKeyList {
 
 			if index1 == 0 {
 				index2 = 1
 			} else {
-				if index1 == lenght-1 {
+				if index1 == length-1 {
 					index2 = index1 - 1
 					index3 = 0
 				} else {

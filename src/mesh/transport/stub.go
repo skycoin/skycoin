@@ -107,7 +107,7 @@ func (s *StubTransport) SendMessage(toPeer cipher.PubKey, message []byte, retCha
 		retChan <- nil
 	}
 	return nil
-
+	
 	retErr = errors.New("No stubbed transport for this peer")
 	if retChan != nil {
 		retChan <- retErr

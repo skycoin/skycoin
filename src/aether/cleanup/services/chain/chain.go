@@ -24,7 +24,6 @@ type HashChain struct {
 	//Data  []byte
 }
 
-
 //gets hash of HashChain
 //func HashChainHash(data []byte) SHA256 {
 //	return SumSHA256(data)
@@ -38,7 +37,7 @@ type HashChainCallbackResponse struct {
 	//Valid    bool //is HashChain data valid
 	//Ignore   bool //put data on ignore list?
 
-	Announce bool //should announce block to peers
+	Announce  bool //should announce block to peers
 	Replicate bool //should be replicated?
 	KickPeer  bool //should peer be kicked?
 }
@@ -61,12 +60,12 @@ func (d *Daemon) NewHashChainReplicator(channel uint16, callback HashChainCallba
 		Channel:           channel,
 		HashChainMap:      make(map[SHA256]HashChain),
 		HashChainCallback: callback,
-		RequestManager : requestManager
-		d: d,
+		RequestManager:    requestManager,
+		d:                 d,
 	}
 
 	br.RequestManager = NewRequestManager(NewRequestManagerConfig())
-	//Todo, check that daemon doesnt have other channels
+	//Todo, check that daemon doesn't have other channels
 	d.HashChainReplicators = append(d.HashChainReplicators, &br)
 	return &br
 }

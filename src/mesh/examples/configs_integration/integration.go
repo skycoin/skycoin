@@ -87,7 +87,15 @@ func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup
 		fmt.Fprintf(os.Stdout, "Send message %v from Node: %v to Node: %v\n", messageToSend.Contents, configID, node.GetConnectedPeers()[0].Hex())
 	}
 
+<<<<<<< HEAD:src/mesh/examples/integration_testing/configs_integration.go
+	// Receive messages
+	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
+	node.SetReceiveChannel(received)
+
+	// Wait for messages to pass through
+=======
 	// Wait for messages to pass thru
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9:src/mesh/examples/configs_integration/integration.go
 	recvMap := make(map[string]domain.ReplyTo)
 	for timeEnd := time.Now().Add(1 * time.Second); time.Now().Before(timeEnd); {
 

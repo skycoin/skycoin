@@ -66,7 +66,6 @@ func (self *Pool) Init(d *Daemon) {
 	cfg.Address = self.Config.address
 	cfg.ConnectCallback = d.onGnetConnect
 	cfg.DisconnectCallback = d.onGnetDisconnect
-	cfg.EventChannelSize = cfg.EventChannelSize
 	pool := gnet.NewConnectionPool(cfg, d)
 	self.Pool = pool
 }

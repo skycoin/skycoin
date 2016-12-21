@@ -159,6 +159,15 @@ func strongUint() uint32 {
 	return binary.LittleEndian.Uint32(socket_i_b)
 }
 
+<<<<<<< HEAD
+func (self *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	if peer != *self.connectedPeerKey {
+		return nil, false
+	}
+	return self.connectedPeerConf, true
+=======
 func (s *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -166,6 +175,7 @@ func (s *UDPTransport) safeGetPeerComm(peer cipher.PubKey) (*UDPCommConfig, bool
 		return nil, false
 	}
 	return s.connectedPeerConf, true
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9
 }
 
 func (s *UDPTransport) listenTo(port ListenPort) {
@@ -282,7 +292,11 @@ func (s *UDPTransport) SendMessage(toPeer cipher.PubKey, contents []byte, retCha
 
 	// Check length
 	if len(contents) > int(peerComm.DatagramLength) {
+<<<<<<< HEAD
+		retErr = errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), self.config.DatagramLength))
+=======
 		retErr = errors.New(fmt.Sprintf("Dropping message that is too large: %v > %v\n", len(contents), s.config.DatagramLength))
+>>>>>>> 662d87062c1592cf12ec5fd885179ac2289a3af9
 		if retChan != nil {
 			retChan <- retErr
 		}

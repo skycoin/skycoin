@@ -127,7 +127,7 @@ func (self *HashChainManager) HashAnnounce(hash SHA256, hashp SHA256, addr strin
 
 	he, ok := self.HashTree[hash]
 
-	//insert if it doesnt exist
+	//insert if it doesn't exist
 	if ok == false {
 		self.HashTree[hash] = HashTreeEntry{
 			Hash:  hash,

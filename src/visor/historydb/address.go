@@ -7,7 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
-// bucket for storing address with UxOut, key as adress, value as UxOut.
+// bucket for storing address with UxOut, key as address, value as UxOut.
 type addressUx struct {
 	bkt *bucket.Bucket
 }

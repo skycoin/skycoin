@@ -188,7 +188,7 @@ TODO:
 */
 
 //create 4096 addresses
-//send addreses randomly between each other over 1024 blocks
+//send addresses randomly between each other over 1024 blocks
 
 /*
 func TestBlockchain1(t *testing.T) {

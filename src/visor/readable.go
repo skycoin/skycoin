@@ -233,23 +233,23 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 }
 
 type ReadableBlockHeader struct {
+	BkSeq             uint64 `json:"seq"`
 	BlockHash         string `json:"block_hash"`
 	PreviousBlockHash string `json:"previos_block_hash"`
-	BkSeq             uint64 `json:"seq"`
-	Version           uint32 `json:"version"`
 	Time              uint64 `json:"timestamp"`
 	Fee               uint64 `json:"fee"`
+	Version           uint32 `json:"version"`
 	BodyHash          string `json:"tx_body_hash"`
 }
 
 func NewReadableBlockHeader(b *coin.BlockHeader) ReadableBlockHeader {
 	return ReadableBlockHeader{
+		BkSeq:             b.BkSeq,
 		BlockHash:         b.Hash().Hex(),
 		PreviousBlockHash: b.PrevHash.Hex(),
-		BkSeq:             b.BkSeq,
-		Version:           b.Version,
 		Time:              b.Time,
 		Fee:               b.Fee,
+		Version:           b.Version,
 		BodyHash:          b.BodyHash.Hex(),
 	}
 }

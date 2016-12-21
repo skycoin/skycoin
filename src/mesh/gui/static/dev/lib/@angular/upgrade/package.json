@@ -1,0 +1,78 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "@angular/upgrade@2.0.0-rc.1",
+        "scope": "@angular",
+        "escapedName": "@angular%2fupgrade",
+        "name": "@angular/upgrade",
+        "rawSpec": "2.0.0-rc.1",
+        "spec": "2.0.0-rc.1",
+        "type": "version"
+      },
+      "/skycoin/skycoin/src/mesh/gui/static"
+    ]
+  ],
+  "_from": "@angular/upgrade@2.0.0-rc.1",
+  "_id": "@angular/upgrade@2.0.0-rc.1",
+  "_inCache": true,
+  "_location": "/@angular/upgrade",
+  "_nodeVersion": "5.4.1",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/upgrade-2.0.0-rc.1.tgz_1462310752334_0.36474818852730095"
+  },
+  "_npmUser": {
+    "name": "angular",
+    "email": "angular-core+npm@google.com"
+  },
+  "_npmVersion": "3.8.7",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "@angular/upgrade@2.0.0-rc.1",
+    "scope": "@angular",
+    "escapedName": "@angular%2fupgrade",
+    "name": "@angular/upgrade",
+    "rawSpec": "2.0.0-rc.1",
+    "spec": "2.0.0-rc.1",
+    "type": "version"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/@angular/upgrade/-/upgrade-2.0.0-rc.1.tgz",
+  "_shasum": "50278e5e605b9629e6130db523005951695149ee",
+  "_shrinkwrap": null,
+  "_spec": "@angular/upgrade@2.0.0-rc.1",
+  "_where": "/skycoin/skycoin/src/mesh/gui/static",
+  "author": {
+    "name": "angular"
+  },
+  "dependencies": {},
+  "description": "",
+  "devDependencies": {},
+  "directories": {},
+  "dist": {
+    "shasum": "50278e5e605b9629e6130db523005951695149ee",
+    "tarball": "https://registry.npmjs.org/@angular/upgrade/-/upgrade-2.0.0-rc.1.tgz"
+  },
+  "jsnext:main": "esm/upgrade.js",
+  "license": "MIT",
+  "main": "upgrade.js",
+  "maintainers": [
+    {
+      "name": "angular",
+      "email": "angular-core+npm@google.com"
+    }
+  ],
+  "name": "@angular/upgrade",
+  "optionalDependencies": {},
+  "peerDependencies": {
+    "@angular/core": "2.0.0-rc.1",
+    "@angular/compiler": "2.0.0-rc.1",
+    "@angular/platform-browser": "2.0.0-rc.1"
+  },
+  "readme": "ERROR: No README data found!",
+  "scripts": {},
+  "version": "2.0.0-rc.1"
+}

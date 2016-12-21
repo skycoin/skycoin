@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "outDir": "build/app",
+    "target": "es5",
     "module": "system",
     "moduleResolution": "node",
     "sourceMap": true,

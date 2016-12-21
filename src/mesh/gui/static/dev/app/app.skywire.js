@@ -1,4 +1,4 @@
-System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/operator/map', 'rxjs/add/operator/catch'], function(exports_1, context_1) {
+System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/operator/map', 'rxjs/add/operator/catch'], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -11,7 +11,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
     var core_1, router_1, http_1, http_2;
-    var loadComponent;
+    var LoadComponent;
     return {
         setters:[
             function (core_1_1) {
@@ -27,44 +27,45 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
             function (_1) {},
             function (_2) {}],
         execute: function() {
-            let loadComponent = class loadComponent {
-                constructor(http) {
+            LoadComponent = (function () {
+                function LoadComponent(http) {
                     this.http = http;
                 }
                 //Init function for load default value
-                ngOnInit() {
+                LoadComponent.prototype.ngOnInit = function () {
                     this.nodes = [];
                     this.transports = [];
                     this.loadNodeList();
-                }
-                loadNodeList() {
+                };
+                LoadComponent.prototype.loadNodeList = function () {
                     var self = this;
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
                     var url = '/nodemanager/getlistnodes';
                     this.http.get(url, { headers: headers })
-                        .map((res) => res.json())
-                        .subscribe(data => {
+                        .map(function (res) { return res.json(); })
+                        .subscribe(function (data) {
                         console.log("get node list", url, data);
-                        if (data.result.success) {
-                            self.nodes = data.orders;
+                        if (data && data.result && data.result.success) {
+                            self.nodes = data.orders || [];
                         }
                         else {
                             return;
                         }
-                    }, err => console.log("Error on load nodes: " + err), () => { });
-                }
-            };
-            loadComponent = __decorate([
-                core_1.Component({
-                    selector: 'load-skywire',
-                    directives: [router_1.ROUTER_DIRECTIVES],
-                    providers: [],
-                    templateUrl: 'app/templates/template.html'
-                }), 
-                __metadata('design:paramtypes', [http_1.Http])
-            ], loadComponent);
-            exports_1("loadComponent", loadComponent);
+                    }, function (err) { return console.log("Error on load nodes: " + err); }, function () { });
+                };
+                LoadComponent = __decorate([
+                    core_1.Component({
+                        selector: 'load-skywire',
+                        directives: [router_1.ROUTER_DIRECTIVES],
+                        providers: [],
+                        templateUrl: 'app/templates/template.html'
+                    }), 
+                    __metadata('design:paramtypes', [http_1.Http])
+                ], LoadComponent);
+                return LoadComponent;
+            }());
+            exports_1("LoadComponent", LoadComponent);
         }
     }
 });

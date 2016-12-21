@@ -29,7 +29,7 @@ import (
 
 var (
 	logger     = logging.MustGetLogger("main")
-	logFormat  = "[skycion.%{module}:%{level}] %{message}"
+	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
 		"main",
 		"daemon",

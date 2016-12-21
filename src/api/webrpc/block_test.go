@@ -253,7 +253,7 @@ func Test_getBlocksHandler(t *testing.T) {
 	}
 }
 
-func Test_getBlocksInDepthHandler(t *testing.T) {
+func Test_getBlocksBySeqHandler(t *testing.T) {
 	m := NewGatewayerMock()
 	m.On("GetBlocksInDepth", []uint64{454}).Return(decodeBlock(blockString), nil)
 	m.On("GetBlocksInDepth", []uint64{1000}).Return(decodeBlock(emptyBlockString), nil)
@@ -322,7 +322,7 @@ func Test_getBlocksInDepthHandler(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		if got := getBlocksInDepthHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
+		if got := getBlocksBySeqHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%q. getBlocksInDepthHandler() = %v, want %v", tt.name, got, tt.want)
 		}
 	}

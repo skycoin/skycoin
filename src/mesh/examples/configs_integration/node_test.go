@@ -337,7 +337,7 @@ func InitializeNode(idConfig int, config TestConfig, wg *sync.WaitGroup, statusC
 
 	// Transport closes UDPTransport
 	transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
-	defer transportToPeer.Close()
+	//	defer transportToPeer.Close()
 
 	node, createNodeError := mesh.NewNode(config.NodeConfig)
 	if createNodeError != nil {

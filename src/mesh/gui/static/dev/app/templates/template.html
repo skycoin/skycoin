@@ -29,7 +29,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr *ngFor="#item of nodes">
+                        <tr *ngFor="let item of nodes">
                             <td>{{item}}</td>
                         </tr>
                         </tbody>
@@ -50,7 +50,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr *ngFor="#item of transports">
+                        <tr *ngFor="let item of transports">
                           <td>{{item.id}}</td>
                           <td>{{item.type}}</td>
                           <td>{{item.in}}</td>

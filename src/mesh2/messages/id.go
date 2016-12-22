@@ -4,14 +4,18 @@ import (
 	"math/rand"
 )
 
-//Node
+//Node: NodeId
+
+type NodeId []byte
+
+//Node: RouteId
 type RouteId uint64
 
 func RandRouteId() TransportId {
 	return (TransportId)(rand.Int63())
 }
 
-//Transport
+//Transport: TransportId
 
 type TransportId uint64
 

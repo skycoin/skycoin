@@ -5,13 +5,19 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
+//This is stub transport
 type Transport struct {
+	Id              messages.TransportId
 	IncomingChannel chan ([]byte)
+
+	AttachedNode *messages.NodeInterface //node the transport is attached to
 }
 
-func (self *Transport) New() {
+//are created by the factories
+func (self *Transport) NewTransportStub() {
 	fmt.Printf("Created Transport:")
 	self.IncomingChannel = make(chan []byte, 1024)
+	self.Id = messages.RandTransportId()
 }
 
 func (self *Transport) Shutdown() {
@@ -39,6 +45,6 @@ func (self *Transport) Tick() {
 }
 
 //inject an incoming message from the transport
-func (self *Transport) InjectNodeMessage([]byte) {
-
+func (self *Transport) InjectNodeMessage(msg []byte) {
+	self.AttachedNode.InjectTransportMessage(self.transportId, msg)
 }

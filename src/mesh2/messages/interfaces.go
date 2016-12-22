@@ -9,3 +9,5 @@ type NodeInterface interface {
 type TransportInterface interface {
 	InjectNodeMessage([]byte)
 }
+
+//later add "transport status" struct

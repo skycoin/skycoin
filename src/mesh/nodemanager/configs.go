@@ -18,20 +18,24 @@ type TransportData struct {
 	PubKey2 cipher.PubKey `json:"pubkey_2"`
 }
 
-func (nm *NodeManager) GetFromFile(configIndex string) {
+func (nm *NodeManager) GetFromFile(configIndex string) error {
 
 	configDatas, err := loadConfigs(configIndex)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	transportDatas, err := loadTransports(configIndex)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	nm.ConfigList = testConfigsFromData(configDatas)
+	for pubKey := range nm.ConfigList {
+		nm.PubKeyList = append(nm.PubKeyList, pubKey)
+	}
 	nm.connectConfigs(transportDatas)
+	return nil
 }
 
 func (nm *NodeManager) PutToFile(configIndex string) error {
@@ -85,7 +89,7 @@ func loadTransports(transportIndex string) ([]*TransportData, error) {
 	return transportData, nil
 }
 
-func saveConfigs(configIndex string, configData[]*ConfigData) error {
+func saveConfigs(configIndex string, configData []*ConfigData) error {
 
 	configFile, err := os.Create(configIndex + "_nodes.cfg")
 	if err != nil {
@@ -147,17 +151,22 @@ func nodesToConfigData(configList map[cipher.PubKey]*TestConfig) ([]*ConfigData,
 	configDatas := []*ConfigData{}
 	transportDatas := []*TransportData{}
 
-	for pubKeyFrom, config := range(configList) {
+	for pubKeyFrom, config := range configList {
 		configData := &ConfigData{pubKeyFrom, config.ExternalAddress, config.StartPort}
 		configDatas = append(configDatas, configData)
-		for _, peerToPeer := range(config.PeerToPeers) {
+		for _, peerToPeer := range config.PeerToPeers {
 			pubKeyTo := peerToPeer.Peer
 			transportData := &TransportData{pubKeyFrom, pubKeyTo}
 			found := false
-			for _, td := range(transportDatas) {
-				if (td.PubKey1 == pubKeyFrom && td.PubKey2 == pubKeyTo) || (td.PubKey1 == pubKeyTo && td.PubKey2 == pubKeyFrom) { found = true; break }
+			for _, td := range transportDatas {
+				if (td.PubKey1 == pubKeyFrom && td.PubKey2 == pubKeyTo) || (td.PubKey1 == pubKeyTo && td.PubKey2 == pubKeyFrom) {
+					found = true
+					break
+				}
 			}
-			if !found { transportDatas = append(transportDatas, transportData) }
+			if !found {
+				transportDatas = append(transportDatas, transportData)
+			}
 		}
 	}
 	return configDatas, transportDatas

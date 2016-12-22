@@ -98,7 +98,6 @@ func (self *Node) SendSetRouteControlMessage(channelID uuid.UUID, overRouteID do
 // Blocks until message is confirmed received
 func (self *Node) SendMessageThruRoute(routeID domain.RouteID, contents []byte) error {
 	route, ok := self.safelyGetRoute(routeID)
-	fmt.Println("ROUTE IS", route)
 	if !ok {
 		return errors.New("Route not found")
 	}

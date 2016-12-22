@@ -95,7 +95,7 @@ func sendMessage(idConfig int, config TestConfig, node *mesh.Node, wg *sync.Wait
 	AddPeersToNode(node, config)
 	AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
 
-	defer node.Close()
+	//	defer node.Close()
 
 	// Send messages
 	for _, messageToSend := range config.MessagesToSend {
@@ -241,8 +241,8 @@ func TestConnectTwoNodesSuccess(t *testing.T) {
 		}
 	}
 	wg.Wait()
+	//	nodeManager.CloseAll()
 	fmt.Println("Done")
-
 }
 
 // Connect two nodes and send one message between them with fail
@@ -265,7 +265,11 @@ func TestConnectTwoNodesFail(t *testing.T) {
 
 	index2 = rand.Intn(rang)
 	if index1 == index2 {
-		if index2 == 0 { index2 = 1 } else { index2-- }
+		if index2 == 0 {
+			index2 = 1
+		} else {
+			index2--
+		}
 	}
 	pubKey2 := nodeManager.PubKeyList[index2]
 	config2 := nodeManager.ConfigList[pubKey2]
@@ -387,16 +391,18 @@ func _TestBuildRouteWithSuccess(t *testing.T) {
 		t.Log(routeList)
 	}
 }
-/*
+
 func TestBuildRoutes(t *testing.T) {
-	nodeManager := &NodeManager{Port: 3100}
+	nodeManager := NewEmptyNodeManager()
 	defer nodeManager.CloseAll()
+	nodeManager.Port = 3100
 	// Connect 200 nodes randomly
 	for a := 1; a <= 10; a++ {
 		nodeManager.ConnectNodeToNetwork()
 	}
 
-	nodeManager.BuildRoutes()
+	nodeManager.RebuildRouteGraph()
+	nodeManager.Start()
 
 	rang := len(nodeManager.ConfigList)
 	index1 := rand.Intn(rang)
@@ -405,16 +411,20 @@ func TestBuildRoutes(t *testing.T) {
 	index2 := rand.Intn(rang)
 	pubKey2 := nodeManager.PubKeyList[index2]
 
+	nodeManager.FindRoutes(pubKey1, pubKey2)
+
 	routeKey := RouteKey{SourceNode: pubKey1, TargetNode: pubKey2}
 
 	t.Logf("Find a route between Node %v and Node %v", index1, index2)
+	fmt.Printf("Find a route between Node %v and Node %v\n", index1, index2)
 	route, ok := nodeManager.Routes[routeKey]
 
 	if assert.True(t, ok, "Error expected find a route") {
-		t.Log("Route:", route.RoutesToEstablish)
+		fmt.Println("Route:", route)
+		t.Log("Route:", route)
 	}
 }
-*/
+
 func TestAddTransportsToNode(t *testing.T) {
 	nodeManager := &NodeManager{Port: 5100}
 	defer nodeManager.CloseAll()
@@ -497,12 +507,14 @@ func TestRemoveTransportsFromNode(t *testing.T) {
 func TestRandomConnectsToFile(t *testing.T) {
 	nodeManager := &NodeManager{Port: 7100}
 	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(4)
+	nodeManager.CreateNodeConfigList(10)
 	rang := len(nodeManager.PubKeyList)
 	for index1 := 0; index1 < rang; index1++ {
 		for i := 0; i < 2; i++ {
 			index2 := rand.Intn(rang)
-			if index1 == index2 { continue }
+			if index1 == index2 {
+				continue
+			}
 			pubKey1 := nodeManager.PubKeyList[index1]
 			config1 := nodeManager.ConfigList[pubKey1]
 			pubKey2 := nodeManager.PubKeyList[index2]
@@ -512,6 +524,11 @@ func TestRandomConnectsToFile(t *testing.T) {
 	}
 	err := nodeManager.PutToFile("test")
 	assert.Nil(t, err)
+
+	nmNew := NewEmptyNodeManager()
+	err = nmNew.GetFromFile("test")
+	assert.Nil(t, err)
+	assert.Len(t, nmNew.ConfigList, 10)
 }
 
 //Network Topology Tests

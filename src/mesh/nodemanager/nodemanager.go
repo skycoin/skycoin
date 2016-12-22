@@ -34,11 +34,13 @@ func init() {
 var ServerConfig *TestConfig
 
 type NodeManager struct {
-	Port       int					// nodemanager port is for testing purposes only, ports are assigned from config files
+	Port       int // nodemanager port is for testing purposes only, ports are assigned from config files
 	ConfigList map[cipher.PubKey]*TestConfig
 	NodesList  map[cipher.PubKey]*mesh.Node
 	PubKeyList []cipher.PubKey
-	Routes     map[RouteKey]Route
+	//	Routes     map[RouteKey]Route
+	Routes     map[RouteKey]*RouteConfig
+	RouteGraph *Graph
 }
 
 //configuration in here
@@ -51,15 +53,38 @@ func NewNodeManager(config *NodeManagerConfig) *NodeManager {
 	return &nm
 }
 
+func NewEmptyNodeManager() *NodeManager {
+	nm := NodeManager{}
+	nm.ConfigList = map[cipher.PubKey]*TestConfig{}
+	nm.NodesList = map[cipher.PubKey]*mesh.Node{}
+	nm.PubKeyList = []cipher.PubKey{}
+	nm.Routes = map[RouteKey]*RouteConfig{}
+	nm.RouteGraph = NewGraph()
+	return &nm
+}
+
 // run node manager, in goroutine;
 // call Shutdown to stop
-func (self *NodeManager) Start() {
-
+func (s *NodeManager) Start() {
+	//	s.RebuildRouteGraph() // maybe it will be better to leave it here; then no need to call it before calling this
+	for _, pubKey := range s.PubKeyList {
+		config, found := s.ConfigList[pubKey]
+		if !found {
+			fmt.Println("No config found with PubKey", pubKey)
+			panic("")
+		}
+		node, found := s.NodesList[pubKey]
+		if !found {
+			node = CreateNode(*config)
+			s.NodesList[pubKey] = node
+		}
+		AddPeersToNode(node, *config)
+	}
 }
 
 //called to trigger shutdown
-func (self *NodeManager) Shutdown() {
-	self.CloseAll()
+func (s *NodeManager) Shutdown() {
+	s.CloseAll()
 }
 
 type RouteKey struct {
@@ -120,31 +145,44 @@ func NewNodeConfig() mesh.NodeConfig {
 }
 
 // Create node list
-func (self *NodeManager) CreateNodeConfigList(n int) {
-	self.ConfigList = make(map[cipher.PubKey]*TestConfig)
-	self.NodesList = make(map[cipher.PubKey]*mesh.Node)
+func (s *NodeManager) CreateNodeConfigList(n int) {
+	s.ConfigList = make(map[cipher.PubKey]*TestConfig)
+	s.NodesList = make(map[cipher.PubKey]*mesh.Node)
 	for a := 1; a <= n; a++ {
-		self.AddNode()
+		s.AddNode()
 	}
 }
 
 // Add Node to Nodes List
-func (self *NodeManager) AddNode() int {
-	if len(self.ConfigList) == 0 {
-		self.ConfigList = make(map[cipher.PubKey]*TestConfig)
-		self.NodesList = make(map[cipher.PubKey]*mesh.Node)
+func (s *NodeManager) AddNode() int {
+	if len(s.ConfigList) == 0 {
+		s.ConfigList = make(map[cipher.PubKey]*TestConfig)
+		s.NodesList = make(map[cipher.PubKey]*mesh.Node)
 	}
-	config := CreateTestConfig(self.Port)
-	self.Port += 100 // to avoid overlaps
-	self.ConfigList[config.NodeConfig.PubKey] = config
+	config := CreateTestConfig(s.Port)
+	s.Port += 100 // to avoid overlaps
+	s.ConfigList[config.NodeConfig.PubKey] = config
 	node := CreateNode(*config)
-	self.NodesList[config.NodeConfig.PubKey] = node
-	self.PubKeyList = append(self.PubKeyList, config.NodeConfig.PubKey)
-	index := len(self.NodesList) - 1
+	s.NodesList[config.NodeConfig.PubKey] = node
+	s.PubKeyList = append(s.PubKeyList, config.NodeConfig.PubKey)
+	index := len(s.NodesList) - 1
 	return index
 }
 
+func connected(config1, config2 *TestConfig) bool {
+	to := config1.NodeConfig.PubKey
+	for _, peerToPeer := range config2.PeerToPeers {
+		if peerToPeer.Peer == to {
+			return true
+		}
+	}
+	return false
+}
+
 func ConnectNodeToNode(config1, config2 *TestConfig) {
+	if connected(config1, config2) && connected(config2, config1) {
+		return
+	}
 	config1.AddPeerToConnect(config2)
 	config1.AddRouteToEstablish(config2)
 	config2.AddPeerToConnect(config1)
@@ -154,38 +192,43 @@ func ConnectNodeToNode(config1, config2 *TestConfig) {
 }
 
 // Connect the node list
-func (self *NodeManager) ConnectNodes() {
+func (s *NodeManager) ConnectNodes() {
 
-	lenght := len(self.ConfigList)
+	lenght := len(s.ConfigList)
 
 	if lenght > 1 {
-		for index := 0; index < lenght - 1; index++ {
-			pubKey1 := self.PubKeyList[index]
-			pubKey2 := self.PubKeyList[index + 1]
-			config1 := self.ConfigList[pubKey1]
-			config2 := self.ConfigList[pubKey2]
+		for index := 0; index < lenght-1; index++ {
+			pubKey1 := s.PubKeyList[index]
+			pubKey2 := s.PubKeyList[index+1]
+			config1 := s.ConfigList[pubKey1]
+			config2 := s.ConfigList[pubKey2]
 			ConnectNodeToNode(config1, config2)
-			AddPeersToNode(self.NodesList[pubKey1], *config1)
+			AddPeersToNode(s.NodesList[pubKey1], *config1)
 		}
 	}
 }
 
 // Add Routes to Node
 func AddRoutesToEstablish(node *mesh.Node, routesConfigs []RouteConfig) {
-	// Setup route
 	for _, routeConfig := range routesConfigs {
-		if len(routeConfig.Peers) == 0 {
-			continue
-		}
-		addRouteErr := node.AddRoute((domain.RouteID)(routeConfig.RouteID), routeConfig.Peers[0])
-		if addRouteErr != nil {
-			panic(addRouteErr)
-		}
-		for peer := 1; peer < len(routeConfig.Peers); peer++ {
-			extendErr := node.ExtendRoute((domain.RouteID)(routeConfig.RouteID), routeConfig.Peers[peer], 5*time.Second)
-			if extendErr != nil {
-				panic(extendErr)
-			}
+		addRouteToEstablish(node, routeConfig)
+	}
+}
+
+func addRouteToEstablish(node *mesh.Node, routeConfig RouteConfig) {
+	if len(routeConfig.Peers) == 0 {
+		return
+	}
+
+	addRouteErr := node.AddRoute((domain.RouteID)(routeConfig.RouteID), routeConfig.Peers[0])
+	if addRouteErr != nil {
+		return
+		panic(addRouteErr)
+	}
+	for peer := 1; peer < len(routeConfig.Peers); peer++ {
+		extendErr := node.ExtendRoute((domain.RouteID)(routeConfig.RouteID), routeConfig.Peers[peer], 5*time.Second)
+		if extendErr != nil {
+			panic(extendErr)
 		}
 	}
 }
@@ -210,9 +253,6 @@ func AddPeersToNode(node *mesh.Node, config TestConfig) {
 		transportToPeer := transport.NewTransport(udpTransport, config.TransportConfig)
 		node.AddTransport(transportToPeer)
 	}
-
-	// Transport closes UDPTransport
-	//defer transportToPeer.Close()
 }
 
 func infoToAddr(info string) (string, int) {
@@ -235,36 +275,36 @@ func infoToAddr(info string) (string, int) {
 }
 
 // Returns Node by index
-func (self *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {
-	nodePubKey := self.PubKeyList[indexNode]
-	return self.NodesList[nodePubKey]
+func (s *NodeManager) GetNodeByIndex(indexNode int) *mesh.Node {
+	nodePubKey := s.PubKeyList[indexNode]
+	return s.NodesList[nodePubKey]
 }
 
 // Get all transports from one node
-func (self *NodeManager) GetTransportsFromNode(indexNode int) []transport.ITransport {
-	nodePubKey := self.PubKeyList[indexNode]
-	node := self.NodesList[nodePubKey]
+func (s *NodeManager) GetTransportsFromNode(indexNode int) []transport.ITransport {
+	nodePubKey := s.PubKeyList[indexNode]
+	node := s.NodesList[nodePubKey]
 	return node.GetTransports()
 }
 
-func (self *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.ITransport) {
-	nodePubKey := self.PubKeyList[indexNode]
-	node := self.NodesList[nodePubKey]
+func (s *NodeManager) RemoveTransportsFromNode(indexNode int, transport transport.ITransport) {
+	nodePubKey := s.PubKeyList[indexNode]
+	node := s.NodesList[nodePubKey]
 	node.RemoveTransport(transport)
 }
 
 // Connect node to netwotk
-func (self *NodeManager) ConnectNodeToNetwork() (int, int) {
+func (s *NodeManager) ConnectNodeToNetwork() (int, int) {
 	// Create new node
-	index1 := self.AddNode()
-	index2 := self.ConnectNodeRandomly(index1)
+	index1 := s.AddNode()
+	index2 := s.ConnectNodeRandomly(index1)
 	return index1, index2
 }
 
 // Connect Node Randomly
-func (self *NodeManager) ConnectNodeRandomly(index1 int) int {
+func (s *NodeManager) ConnectNodeRandomly(index1 int) int {
 	var index2, rang int
-	rang = len(self.ConfigList)
+	rang = len(s.ConfigList)
 	for i := 0; i < 3; i++ {
 		rand.Seed(time.Now().UTC().UnixNano())
 		index2 = rand.Intn(rang)
@@ -274,10 +314,10 @@ func (self *NodeManager) ConnectNodeRandomly(index1 int) int {
 			break
 		} else if index2 != index1 {
 			fmt.Fprintf(os.Stdout, "Connect node %v to node %v and vice versa.\n", index1, index2)
-			pubKey1 := self.PubKeyList[index1]
-			config1 := self.ConfigList[pubKey1]
-			pubKey2 := self.PubKeyList[index2]
-			config2 := self.ConfigList[pubKey2]
+			pubKey1 := s.PubKeyList[index1]
+			config1 := s.ConfigList[pubKey1]
+			pubKey2 := s.PubKeyList[index2]
+			config2 := s.ConfigList[pubKey2]
 			ConnectNodeToNode(config1, config2)
 			break
 		}
@@ -286,16 +326,18 @@ func (self *NodeManager) ConnectNodeRandomly(index1 int) int {
 }
 
 // Create routes from a node
-func (self *NodeManager) BuildRoutes() {
-	self.Routes = make(map[RouteKey]Route)
-	for _, pubKey := range self.PubKeyList {
-		self.FindRoute(pubKey)
+/*
+func (s *NodeManager) BuildRoutes() {
+	s.Routes = make(map[RouteKey]Route)
+	for _, pubKey := range s.PubKeyList {
+		s.FindRoutes(pubKey)
 	}
 }
+*/
 
-func (self *NodeManager) CloseAll() {
-	for _, node := range(self.NodesList) {
-		node.CloseTransports()
+func (s *NodeManager) CloseAll() {
+	for _, node := range s.NodesList {
+		node.Close()
 	}
 }
 

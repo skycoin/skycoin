@@ -53,19 +53,14 @@ func (self *Node) HandleIncomingTransportMessages() {
 	for msg := range self.IncomingChannel {
 		//process our incoming messages
 		//fmt.Println(msg)
-
 		switch messages.GetMessageType(msg) {
-
 		//InRouteMessage is the only message coming in to node from transports
 		case messages.MsgInRouteMessage:
-
 			var m1 messages.InRouteMessage
 			messages.Deserialize(msg, m1)
 			self.HandleInRouteMessage(m1)
 			//case messages.InRouteMessage:
-
 		}
-
 	}
 }
 
@@ -73,35 +68,28 @@ func (self *Node) HandleInRouteMessage(m1 messages.InRouteMessage) {
 	//look in route table
 	routeId := m1.RouteId
 	transportId := m1.TransportId //who is is from
-
 	//check that transport exists
 	if _, ok := self.Transports[transportId]; !ok {
 		log.Printf("Node: Received message From Transport that does not exist")
 	}
-
 	//check if route exists
 	if _, ok := self.RouteForwardingRules[routeId]; !ok {
 		log.Printf("Node: Received route message for route that does not exist")
 	}
-
 	routeRule := self.RouteForwardingRules[routeId]
 	//check that incoming transport is correct
 	if transportId != routeRule.IncomingTransport {
 		log.Panic("Node: incoming route does not match the transport id it should be received from")
 	}
-
 	if routeId != routeRule.IncomingRoute {
 		log.Panic("Node: impossible, incoming route id does not match route rule id")
 	}
-
 	//construct new packet
 	var out messages.OutRouteMessage
 	out.RouteId = routeRule.OutgoingRoute //replace inRoute, with outRoute, using rule
 	out.Datagram = m1.Datagram
-
 	//serialize message, with prefix
 	b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
-
 	self.Transports[transportId].InjectNodeMessage(b1) //inject message to transport
 }
 

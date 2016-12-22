@@ -34,7 +34,7 @@ func (self *TransportFactory) Tick() {
 	//- then force transports to push to a transport factory incoming channel
 	for _, t := range self.TransportList {
 		//check each transport for data?
-		for len(t.PendingOut) > 0 {
+		for len(t.PendingOut) > 0 { //len will expose the number of elements in the channels buffer
 			var b []byte
 			t.PendingOut <- b          //the channel data
 			t.SendMessageToStubPair(b) //the transport now has the data
@@ -43,6 +43,7 @@ func (self *TransportFactory) Tick() {
 }
 
 //implement/fix
+//Implement the nodes the transports are attached to
 func (self *TransportFactory) CreateStubTransportPair() (Transport, Transport) {
 	var a Transport
 	var b Transport

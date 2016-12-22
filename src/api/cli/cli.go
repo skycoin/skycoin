@@ -83,7 +83,8 @@ func Init(ops ...Option) {
 		statusCMD(),
 		transactionCMD(),
 		versionCMD(),
-		walletDirCMD())
+		walletDirCMD(),
+		walletHisCMD())
 }
 
 // RPCAddr sets rpc address

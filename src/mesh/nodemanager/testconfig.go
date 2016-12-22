@@ -1,13 +1,12 @@
 package nodemanager
 
 import (
-//	"strconv"
+	//	"strconv"
 
 	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	mesh "github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport"
-	//"github.com/skycoin/skycoin/src/mesh/transport/physical"
 )
 
 type TestConfig struct {
@@ -74,10 +73,10 @@ func (self *TestConfig) AddMessageToSend(config *TestConfig, message string) {
 	messageToSend := MessageToSend{}
 	pubKey := config.NodeConfig.PubKey
 
-	for _, routeConfig := range(self.RoutesConfigsToEstablish) {
+	for _, routeConfig := range self.RoutesConfigsToEstablish {
 		thruRouteID := routeConfig.RouteID
 		peers := routeConfig.Peers
-		if peers[len(peers) - 1] == pubKey {
+		if peers[len(peers)-1] == pubKey {
 			messageToSend.ThruRoute = thruRouteID
 			messageToSend.Contents = []byte(message)
 			self.MessagesToSend = append(self.MessagesToSend, messageToSend)

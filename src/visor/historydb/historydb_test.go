@@ -218,14 +218,6 @@ func TestProcessGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, output.Out, ux)
-
-	// check address out
-	inID := cipher.SHA256{}
-	empty := cipher.SHA256{}
-	if err := getBucketValue(db, addressOutBkt, genAddress.Bytes(), &inID); err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, inID, empty)
 }
 
 type testData struct {
@@ -368,13 +360,6 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 		if err := hdb.ProcessBlock(b); err != nil {
 			t.Fatal(err)
 		}
-		// check if the block does exist in the bucket.
-		bkey := b.HashHeader()
-		var blkInBkt coin.Block
-		if err := getBucketValue(db, blockBkt, bkey[:], &blkInBkt); err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, &blkInBkt, b)
 
 		// check tx
 		txInBkt := historydb.Transaction{}
@@ -408,14 +393,6 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 			}
 			assert.Equal(t, len(uxHashes), td.AddrInNum[o.ToAddr])
 		}
-
-		// check addr out
-		addr := cipher.MustDecodeBase58Address(td.Vin.Addr)
-		uxHashes := []cipher.SHA256{}
-		if err := getBucketValue(db, addressOutBkt, addr.Bytes(), &uxHashes); err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, len(uxHashes), td.AddrOutNum[td.Vin.Addr])
 	}
 }
 

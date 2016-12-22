@@ -1,5 +1,19 @@
 package webrpc
 
+// request params: [seq1, seq2, seq3...]
+func getBlocksBySeqHandler(req Request, gateway Gatewayer) Response {
+	var seqs []uint64
+	if err := req.DecodeParams(&seqs); err != nil {
+		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+	}
+
+	if len(seqs) == 0 {
+		return makeErrorResponse(errCodeInvalidParams, "empty params")
+	}
+	blocks := gateway.GetBlocksInDepth(seqs)
+	return makeSuccessResponse(req.ID, blocks)
+}
+
 // request params: [number]
 func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the req params

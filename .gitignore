@@ -1,6 +1,5 @@
 # Compiled source #
 ###################
-*.com
 *.class
 *.dll
 *.exe
@@ -104,5 +103,6 @@ electron/.standalone_output
 .vscode/
 
 src/mesh/examples/integration/integration
+src/mesh/gui/static/dev
 
 .idea/

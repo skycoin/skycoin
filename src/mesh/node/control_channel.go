@@ -32,6 +32,7 @@ func (c *ControlChannel) HandleMessage(node *Node, message interface{}) error {
 	return nil
 }
 
+//must return a confirmation message
 func processSetRouteMessage(node *Node, message domain.SetRouteControlMessage) error {
 	return node.AddRoute(message.ForwardRouteID, message.ForwardPeerID)
 }

@@ -61,6 +61,10 @@ var blockString = `{
     ]
 }`
 
+var emptyBlockString = `{ 
+							"blocks":[] 
+						}`
+
 func decodeBlock(str string) *visor.ReadableBlocks {
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(str), &blocks); err != nil {
@@ -245,6 +249,81 @@ func Test_getBlocksHandler(t *testing.T) {
 	for _, tt := range tests {
 		if got := getBlocksHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%q. getBlocksHandler() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func Test_getBlocksBySeqHandler(t *testing.T) {
+	m := NewGatewayerMock()
+	m.On("GetBlocksInDepth", []uint64{454}).Return(decodeBlock(blockString), nil)
+	m.On("GetBlocksInDepth", []uint64{1000}).Return(decodeBlock(emptyBlockString), nil)
+
+	type args struct {
+		req     Request
+		gateway Gatewayer
+	}
+	tests := []struct {
+		name string
+		args args
+		want Response
+	}{
+		// TODO: Add test cases.
+		{
+			"normal",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_blocks_in_depth",
+					Params:  []byte(`[454]`),
+				},
+				gateway: m,
+			},
+			makeSuccessResponse("1", decodeBlock(blockString)),
+		},
+		{
+			"none exist seq",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_blocks_in_depth",
+					Params:  []byte(`[1000]`),
+				},
+				gateway: m,
+			},
+			makeSuccessResponse("1", decodeBlock(emptyBlockString)),
+		},
+		{
+			"invalid request param",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_blocks_in_depth",
+					Params:  []byte(`["454"]`),
+				},
+				gateway: m,
+			},
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+		},
+		{
+			"empty param",
+			args{
+				req: Request{
+					ID:      "1",
+					Jsonrpc: jsonRPC,
+					Method:  "get_blocks_in_depth",
+					Params:  []byte(`[]`),
+				},
+				gateway: m,
+			},
+			makeErrorResponse(errCodeInvalidParams, "empty params"),
+		},
+	}
+	for _, tt := range tests {
+		if got := getBlocksBySeqHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. getBlocksInDepthHandler() = %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }

@@ -31,7 +31,7 @@ func main() {
 	// get rpc address from env
 	rpcAddr := os.Getenv("RPC_ADDR")
 	if rpcAddr == "" {
-		rpcAddr = "127.0.0.1:6422"
+		rpcAddr = "127.0.0.1:6430"
 	}
 
 	// get wallet dir from env

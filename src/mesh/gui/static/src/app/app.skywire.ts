@@ -1,10 +1,8 @@
-//import {Component, OnInit, ViewChild} from 'app/angular2/core';
-//import {ROUTER_DIRECTIVES, OnActivate} from 'app/angular2/router';
-import {Component, OnInit, ViewChild} from 'angular2/core';
-import {ROUTER_DIRECTIVES, OnActivate} from 'angular2/router';
+import {Component, OnInit, ViewChild} from '@angular/core';
+import {ROUTER_DIRECTIVES, OnActivate} from '@angular/router';
 
-import {Http, HTTP_BINDINGS, Response} from 'angular2/http';
-import {HTTP_PROVIDERS, Headers} from 'angular2/http';
+import {Http, HTTP_BINDINGS, Response} from '@angular/http';
+import {HTTP_PROVIDERS, Headers} from '@angular/http';
 import {Observable} from 'rxjs/Observable';
 import {Observer} from 'rxjs/Observer';
 import 'rxjs/add/operator/map';
@@ -21,7 +19,7 @@ declare var moment: any;
     templateUrl: 'app/templates/template.html'
 })
 
-export class loadComponent implements OnInit {
+export class LoadComponent implements OnInit {
     //Declare default varialbes
     nodes: Array<any>;
     transports: Array<any>;
@@ -44,8 +42,8 @@ export class loadComponent implements OnInit {
             .map((res) => res.json())
             .subscribe(data => {
               console.log("get node list", url, data);
-              if (data.result.success) {
-                self.nodes = data.orders;
+              if (data && data.result && data.result.success) {
+                self.nodes = data.orders||[];
               } else {
                 return;
               }

@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	MsgInRouteMessage  = iota // Transport -> Node
-	MsgOutRouteMessage        // Node -> Transport
+	MsgInRouteMessage            = iota // Transport -> Node
+	MsgOutRouteMessage                  // Node -> Transport
+	MsgTransportDatagramTransfer        //Transport -> Transport, simulating sending packet over network
+	MsgTransportDatagramACK             //Transport -> Transport, simulating ACK for packet
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -46,4 +48,18 @@ type InRouteMessage struct {
 type OutRouteMessage struct {
 	RouteId  RouteId //the incoming route
 	Datagram []byte  //length prefixed message
+}
+
+// Transport -> Transport
+
+//simulates one end of a transport, sending data to other end of the pair
+type TransportDatagramTransfer struct {
+	//put seq number for confirmation/ACK
+	Sequence uint32 //sequential sequence number of ACK
+	Datagram []byte
+}
+
+type TransportDatagramACK struct {
+	LowestSequence uint32 //ACK anything below this SEQ number
+	Bitarray       uint32 //ACK packets at LowestSequence + Bit offset, if equal to 1
 }

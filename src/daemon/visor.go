@@ -15,6 +15,13 @@ import (
 	//"github.com/skycoin/skycoin/src/wallet"
 )
 
+//TODO
+//- download block headers
+//- request blocks individually across multiple peers
+
+//TODO
+//- use CXO for blocksync
+
 /*
 Visor should not be duplicated
 - this should be pushed into /src/visor
@@ -479,6 +486,11 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
+
+	if len(self.Txns) > 32 {
+		logger.Warning("More than 32 transactions in pool. Implement breaking transactions transmission into multiple packets")
+	}
+
 	hashes := make([]cipher.SHA256, 0, len(self.Txns))
 	// Update unconfirmed pool with these transactions
 	for _, txn := range self.Txns {

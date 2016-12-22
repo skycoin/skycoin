@@ -74,6 +74,7 @@ func (self *Node) DeleteRoute(routeID domain.RouteID) (err error) {
 
 // toPeer must be the public key of a peer connected to the current last node in this route
 // Blocks until the set route reply is received or the timeout is reached
+// DEPRECATE. Route extention only through control channels
 func (self *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, timeout time.Duration) (err error) {
 	message, directPeer, confirm, extendError := self.extendRouteWithoutSending(routeID, toPeer)
 	if extendError != nil {

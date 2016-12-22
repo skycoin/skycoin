@@ -5,6 +5,7 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 
 	"fmt"
+	"log"
 )
 
 //A Node has a map of route rewriting rules
@@ -30,9 +31,12 @@ type RouteRule struct {
 	OutgoingRoute     messages.RouteId
 }
 
-func (self *Node) New() {
-	self.IncomingChannel = make(chan []byte, 1024)
-	self.RouteForwardingRules = make(map[messages.RouteId]RouteRule)
+func NewNode() *Node {
+	node := new(Node)
+	node.IncomingChannel = make(chan []byte, 1024)
+	node.RouteForwardingRules = make(map[messages.RouteId]RouteRule)
+	fmt.Printf("Created Node")
+	return node
 }
 
 func (self *Node) Shutdown() {
@@ -42,45 +46,66 @@ func (self *Node) Shutdown() {
 //move node forward on tick, process events
 func (self *Node) Tick() {
 	//process incoming messages
+	self.HandleIncomingTransportMessages() //pop them off the channel
+}
+
+func (self *Node) HandleIncomingTransportMessages() {
 	for msg := range self.IncomingChannel {
 		//process our incoming messages
 		//fmt.Println(msg)
 
-		switch messsages.GetMessageType(msg) {
+		switch messages.GetMessageType(msg) {
 
 		//InRouteMessage is the only message coming in to node from transports
-		case messages.InRouteMessage:
+		case messages.MsgInRouteMessage:
 
 			var m1 messages.InRouteMessage
 			messages.Deserialize(msg, m1)
-
-			//look in route table
-			routeId := m1.RouteId
-			transportId := m1.TransportId //who is is from
-
-			//check that transport exists
-			if _, ok := self.Transports[transportId]; !ok {
-				log.Printf("Received message From Transport that does not exist")
-			}
-
-			//check if route exists
-			if _, ok := self.Transports[transportId]; !ok {
-				log.Printf("Received message From Transport that does not exist")
-			}
-
-			//case MessageMouseScroll:
-			//s("MessageMouseScroll", message)
-			//showFloat64("X Offset", message)
-			//showFloat64("Y Offset", message)
-
-			//case MessageMouseButton:
+			self.HandleInRouteMessage(m1)
+			//case messages.InRouteMessage:
 
 		}
 
 	}
 }
 
-//inject an incoming message from the transport
-func (self *Node) InjectTransportMessage([]byte) {
+func (self *Node) HandleInRouteMessage(m1 messages.InRouteMessage) {
+	//look in route table
+	routeId := m1.RouteId
+	transportId := m1.TransportId //who is is from
 
+	//check that transport exists
+	if _, ok := self.Transports[transportId]; !ok {
+		log.Printf("Node: Received message From Transport that does not exist")
+	}
+
+	//check if route exists
+	if _, ok := self.RouteForwardingRules[routeId]; !ok {
+		log.Printf("Node: Received route message for route that does not exist")
+	}
+
+	routeRule := self.RouteForwardingRules[routeId]
+	//check that incoming transport is correct
+	if transportId != routeRule.IncomingTransport {
+		log.Panic("Node: incoming route does not match the transport id it should be received from")
+	}
+
+	if routeId != routeRule.IncomingRoute {
+		log.Panic("Node: impossible, incoming route id does not match route rule id")
+	}
+
+	//construct new packet
+	var out messages.OutRouteMessage
+	out.RouteId = routeRule.OutgoingRoute //replace inRoute, with outRoute, using rule
+	out.Datagram = m1.Datagram
+
+	//serialize message, with prefix
+	b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
+
+	self.Transports[transportId].InjectNodeMessage(b1) //inject message to transport
+}
+
+//inject an incoming message from the transport
+func (self *Node) InjectTransportMessage(transportId messages.TransportId, msg []byte) {
+	self.IncomingChannel <- msg //push message to channel
 }

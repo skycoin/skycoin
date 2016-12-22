@@ -3,7 +3,7 @@ package messages
 import ()
 
 type NodeInterface interface {
-	InjectTransportMessage([]byte)
+	InjectTransportMessage(transportId TransportId, msg []byte)
 }
 
 type TransportInterface interface {

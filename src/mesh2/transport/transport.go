@@ -1,30 +1,34 @@
 package transport
 
-import ()
+import (
+	"fmt"
+	"github.com/skycoin/skycoin/src/mesh2/messages"
+)
 
 type Transport struct {
 	IncomingChannel chan ([]byte)
 }
 
-func (self *Node) New() {
+func (self *Transport) New() {
+	fmt.Printf("Created Transport:")
 	self.IncomingChannel = make(chan []byte, 1024)
 }
 
-func (self *Node) Shutdown() {
+func (self *Transport) Shutdown() {
 	close(self.IncomingChannel)
 }
 
 //move node forward on tick, process events
-func (self *Node) Tick() {
+func (self *Transport) Tick() {
 	//process incoming messages
 	for msg := range self.IncomingChannel {
 		//process our incoming messages
 		//fmt.Println(msg)
 
-		switch messsages.GetMessageType(msg) {
+		switch messages.GetMessageType(msg) {
 
 		//InRouteMessage is the only message coming in to node from transports
-		case messages.OutRouteMessage:
+		case messages.MsgOutRouteMessage:
 
 			var m1 messages.OutRouteMessage
 			messages.Deserialize(msg, m1)
@@ -35,6 +39,6 @@ func (self *Node) Tick() {
 }
 
 //inject an incoming message from the transport
-func (self *Node) InjectNodeMessage([]byte) {
+func (self *Transport) InjectNodeMessage([]byte) {
 
 }

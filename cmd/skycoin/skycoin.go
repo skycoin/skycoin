@@ -29,7 +29,7 @@ import (
 
 var (
 	logger     = logging.MustGetLogger("main")
-	logFormat  = "[skycion.%{module}:%{level}] %{message}"
+	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
 		"main",
 		"daemon",
@@ -95,6 +95,10 @@ type Config struct {
 	WebInterfaceCert  string
 	WebInterfaceKey   string
 	WebInterfaceHTTPS bool
+
+	RPCInterface     bool
+	RPCInterfacePort int
+	RPCInterfaceAddr string
 
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
@@ -168,6 +172,14 @@ func (c *Config) register() {
 			"If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
 		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+
+	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface,
+		"enable the rpc interface")
+	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort,
+		"port to serve rpc interface on")
+	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr,
+		"addr to serve rpc interface on")
+
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
 		"launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
@@ -251,7 +263,12 @@ var devConfig Config = Config{
 	WebInterfaceKey:          "",
 	WebInterfaceHTTPS:        false,
 	PrintWebInterfaceAddress: false,
-	LaunchBrowser:            true,
+
+	RPCInterface:     true,
+	RPCInterfacePort: 6430,
+	RPCInterfaceAddr: "127.0.0.1",
+
+	LaunchBrowser: true,
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory: ".skycoin",
 	// Web GUI static resources
@@ -492,11 +509,14 @@ func Run(c *Config) {
 
 	// start the webrpc
 	closingC := make(chan struct{})
-	go webrpc.Start("0.0.0.0:6422",
-		webrpc.ChanBuffSize(1000),
-		webrpc.ThreadNum(1000),
-		webrpc.Gateway(d.Gateway),
-		webrpc.Quit(closingC))
+	if c.RPCInterface {
+		go webrpc.Start(
+			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
+			webrpc.ChanBuffSize(1000),
+			webrpc.ThreadNum(1000),
+			webrpc.Gateway(d.Gateway),
+			webrpc.Quit(closingC))
+	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {

@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 func setup() (*rpcHandler, func()) {
@@ -22,8 +23,10 @@ func setup() (*rpcHandler, func()) {
 }
 
 type fakeGateway struct {
-	transactions   map[string]string
-	injectRawTxMap map[string]bool // key: transacion hash, value indicates whether the injectTransaction should return error.
+	transactions    map[string]string
+	injectRawTxMap  map[string]bool // key: transacion hash, value indicates whether the injectTransaction should return error.
+	addrRecvUxOuts  []*historydb.UxOut
+	addrSpentUxOUts []*historydb.UxOut
 }
 
 func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
@@ -46,6 +49,10 @@ func (fg fakeGateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
 	}
 
 	return &blocks
+}
+
+func (fg fakeGateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
+	return nil
 }
 
 func (fg fakeGateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
@@ -78,4 +85,8 @@ func (fg fakeGateway) InjectTransaction(txn coin.Transaction) (coin.Transaction,
 	}
 
 	return txn, errors.New("inject transaction failed")
+}
+
+func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
+	return nil, nil
 }

@@ -10,17 +10,19 @@ import (
 
 // Exposes a read-only api for use by the gui rpc interface
 
+// GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
 	BufferSize int
 }
 
+// NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
 		BufferSize: 32,
 	}
 }
 
-// RPC interface wrapper for daemon state
+// Gateway RPC interface wrapper for daemon state
 type Gateway struct {
 	Config GatewayConfig
 	Daemon RPC
@@ -36,6 +38,7 @@ type Gateway struct {
 	// Responses chan interface{}
 }
 
+// NewGateway create and init an Gateway instance.
 func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
@@ -97,7 +100,7 @@ func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
 	return <-result
 }
 
-// Returns a *visor.BlockchainMetadata
+// GetBlockchainMetadata returns a *visor.BlockchainMetadata
 func (gw *Gateway) GetBlockchainMetadata() interface{} {
 	bcm := make(chan interface{})
 	gw.Requests <- func() {
@@ -111,6 +114,21 @@ func (gw *Gateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
 	blocks := make(chan *visor.ReadableBlocks)
 	gw.Requests <- func() {
 		blocks <- gw.Visor.GetBlocks(gw.V, start, end)
+	}
+	return <-blocks
+}
+
+// GetBlocksInDepth returns blocks in different depth
+func (gw *Gateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
+	blocks := make(chan *visor.ReadableBlocks)
+	gw.Requests <- func() {
+		blks := visor.ReadableBlocks{}
+		for _, n := range vs {
+			if b := gw.Visor.GetBlockInDepth(gw.V, n); b != nil {
+				blks.Blocks = append(blks.Blocks, *b)
+			}
+		}
+		blocks <- &blks
 	}
 	return <-blocks
 }
@@ -199,7 +217,7 @@ func (gw *Gateway) InjectTransaction(txn coin.Transaction) (coin.Transaction, er
 	return tx, err
 }
 
-// Returns a *visor.TransactionResults
+// GetAddressTransactions returns a *visor.TransactionResults
 func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 	tx := make(chan interface{})
 	gw.Requests <- func() {
@@ -208,7 +226,8 @@ func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
 	return <-tx
 }
 
-func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
+// GetUxOutByID gets UxOut by hash id.
+func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOutJSON, error) {
 	var uxout *historydb.UxOut
 	var err error
 	c := make(chan struct{})
@@ -217,33 +236,24 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 		c <- struct{}{}
 	}
 	<-c
-	return uxout, err
+	return historydb.NewUxOutJSON(uxout), err
 }
 
-func (gw *Gateway) GetRecvUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error) {
+// GetAddrUxOuts gets all the address affected UxOuts.
+func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
 	var (
 		uxouts []*historydb.UxOut
 		err    error
 	)
 	c := make(chan struct{})
 	gw.Requests <- func() {
-		uxouts, err = gw.V.GetRecvUxOutOfAddr(addr)
+		uxouts, err = gw.V.GetAddrUxOuts(addr)
 		c <- struct{}{}
 	}
 	<-c
-	return uxouts, err
-}
-
-func (gw *Gateway) GetSpentUxOutOfAddr(addr cipher.Address) ([]*historydb.UxOut, error) {
-	var (
-		outputs []*historydb.UxOut
-		err     error
-	)
-	c := make(chan struct{})
-	gw.Requests <- func() {
-		outputs, err = gw.V.GetSpentUxOutOfAddr(addr)
-		c <- struct{}{}
+	uxs := make([]*historydb.UxOutJSON, len(uxouts))
+	for i, ux := range uxouts {
+		uxs[i] = historydb.NewUxOutJSON(ux)
 	}
-	<-c
-	return outputs, err
+	return uxs, err
 }

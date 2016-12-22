@@ -241,8 +241,8 @@
 			"importpath": "github.com/stretchr/testify",
 			"repository": "https://github.com/stretchr/testify",
 			"vcs": "git",
-			"revision": "6fe211e493929a8aac0469b93f28b1d0688a9a3a",
-			"branch": "HEAD",
+			"revision": "2402e8e7a02fc811447d11f881aa9746cdc57983",
+			"branch": "master",
 			"notests": true
 		},
 		{
@@ -266,9 +266,10 @@
 			"importpath": "github.com/urfave/cli",
 			"repository": "https://github.com/urfave/cli",
 			"vcs": "git",
-			"revision": "a14d7d367bc02b1f57d88de97926727f2d936387",
+			"revision": "0bdeddeeb0f650497d603c4ad7b20cfe685682f6",
 			"branch": "master",
-			"notests": true
+			"notests": true,
+			"allfiles": true
 		},
 		{
 			"importpath": "github.com/willf/bitset",

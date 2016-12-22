@@ -585,18 +585,17 @@ func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
 	return txs, nil
 }
 
+// GetHeadBlock gets head block.
 func (vs Visor) GetHeadBlock() *coin.Block {
 	return vs.Blockchain.Head()
 }
 
+// GetUxOutByID gets UxOut by hash id.
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return vs.history.GetUxout(id)
 }
 
-func (vs Visor) GetRecvUxOutOfAddr(address cipher.Address) ([]*historydb.UxOut, error) {
-	return vs.history.GetRecvUxOutOfAddr(address)
-}
-
-func (vs Visor) GetSpentUxOutOfAddr(address cipher.Address) ([]*historydb.UxOut, error) {
-	return vs.history.GetSpentUxOutOfAddr(address)
+// GetAddrUxOuts gets all the address affected UxOuts.
+func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
+	return vs.history.GetAddrUxOuts(address)
 }

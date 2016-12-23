@@ -205,7 +205,7 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedT
 }
 
 func NewGenesisReadableTransaction(t *Transaction) ReadableTransaction {
-	txid := t.Txn.HashInner()
+	txid := cipher.SHA256{}
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i, _ := range t.Txn.Sigs {
 		sigs[i] = t.Txn.Sigs[i].Hex()

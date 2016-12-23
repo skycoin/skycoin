@@ -35,7 +35,7 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxout, err := gateway.V.GetUxOutByID(id)
+		uxout, err := gateway.GetUxOutByID(id)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

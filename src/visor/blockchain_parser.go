@@ -31,6 +31,7 @@ func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain) *Blockchain
 func (bcp *BlockchainParser) Start() {
 	go func() {
 		logger.Debug("start blockchain parser")
+		var isGenParsed bool // is genesis block parsed
 		for {
 			select {
 			case cc := <-bcp.closing:
@@ -41,7 +42,7 @@ func (bcp *BlockchainParser) Start() {
 					logger.Fatal("parsedHeight must be <= blockchain height seq")
 				}
 
-				if bcp.parsedHeight == bcHeight {
+				if bcp.parsedHeight == bcHeight && isGenParsed {
 					logger.Debug("no new block need to parse")
 					time.Sleep(time.Duration(parseCycle) * time.Millisecond)
 					continue
@@ -50,6 +51,7 @@ func (bcp *BlockchainParser) Start() {
 				if err := bcp.parseTo(bcHeight); err != nil {
 					logger.Fatal(err)
 				}
+				isGenParsed = true
 			}
 		}
 	}()

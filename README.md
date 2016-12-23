@@ -12,12 +12,6 @@ Installation
 
 * For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation)*
 
-## For linux:
-
-```sh
-$ sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev screen -y
-```
-
 ## For OSX:
 
 1) Install [homebrew](brew.sh), if you don't have it yet
@@ -53,20 +47,27 @@ $ go get github.com/skycoin/skycoin
 $ cd $GOPATH/src/github.com/skycoin/skycoin
 ```
 
-7) Run the node ;)
-```
-$ ./run.sh -h
-```
-
-8) Running Wallet
+7) Running Wallet
 
 ```
 $ ./run.sh
+OR
+# go run ./cmd/skycoin/skycoin.go
+For Options
+# go run ./cmd/skycoin/skycoin.go --help
 ```
 
-Then open `http://127.0.0.1:6402` in a browser.
+## For linux:
 
-## Golang ENV setup with gvm
+```sh
+$ sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev screen -y
+```
+
+#Setup Golang
+- use gvm
+- else download binary and follow instructions
+
+#Golang ENV setup with gvm
 
 In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source
 
@@ -77,14 +78,14 @@ $ source $HOME/.gvm/scripts/gvm
 
 $ gvm install go1.4 --source=https://github.com/golang/go
 $ gvm use go1.4
-$ gvm install go1.6
-$ gvm use go1.6 --default
+$ gvm install go1.7
+$ gvm use go1.7 --default
 ```
 
 If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically
 ```
 $ [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-$ gvm use go1.6 >/dev/null
+$ gvm use go1.7 >/dev/null
 ```
 
 

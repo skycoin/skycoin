@@ -573,6 +573,22 @@ func Run(c *Config) {
 		}
 	*/
 
+	/*
+		//first transaction
+		if c.RunMaster == true {
+			go func() {
+				for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
+					time.Sleep(5)
+					tx := InitTransaction()
+					err, _ := d.Visor.Visor.InjectTxn(tx)
+					if err != nil {
+						//log.Panic(err)
+					}
+				}
+			}()
+		}
+	*/
+
 	<-quit
 	stopDaemon <- 1
 	close(closingC)

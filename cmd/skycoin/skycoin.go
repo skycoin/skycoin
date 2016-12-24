@@ -28,7 +28,7 @@ import (
 //"github.com/skycoin/skycoin/src/wallet"
 
 var (
-	logger     = logging.MustGetLogger("main")
+	logger     = util.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
 		"main",

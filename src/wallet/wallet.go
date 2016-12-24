@@ -6,13 +6,13 @@ import (
 
 	"encoding/hex"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util"
 	//"math/rand"
 )
 
 var (
-	logger = logging.MustGetLogger("wallet")
+	logger = util.MustGetLogger("wallet")
 )
 
 const WalletExt = "wlt"

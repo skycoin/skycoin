@@ -19,7 +19,7 @@ import (
 var (
 	DataDir = ""
 
-	logger = logging.MustGetLogger("util")
+	logger = MustGetLogger("util")
 )
 
 // Disables the logger completely

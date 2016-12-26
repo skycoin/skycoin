@@ -18,6 +18,7 @@ import (
 // and forwards it to the transport
 
 type Node struct {
+	Id			messages.NodeId
 	IncomingChannel chan ([]byte)
 
 	Transports           map[messages.TransportId]*transport.Transport
@@ -33,9 +34,11 @@ type RouteRule struct {
 
 func NewNode() *Node {
 	node := new(Node)
+	node.Id = messages.RandNodeId()
 	node.IncomingChannel = make(chan []byte, 1024)
+	node.Transports = make(map[messages.TransportId]*transport.Transport)
 	node.RouteForwardingRules = make(map[messages.RouteId]RouteRule)
-	fmt.Printf("Created Node")
+	fmt.Printf("Created Node\n")
 	return node
 }
 
@@ -70,13 +73,13 @@ func (self *Node) HandleInRouteMessage(m1 messages.InRouteMessage) {
 	transportId := m1.TransportId //who is is from
 	//check that transport exists
 	if _, ok := self.Transports[transportId]; !ok {
-		log.Printf("Node: Received message From Transport that does not exist")
+		log.Printf("Node: Received message From Transport that does not exist\n")
 	}
 	//check if route exists
-	if _, ok := self.RouteForwardingRules[routeId]; !ok {
-		log.Printf("Node: Received route message for route that does not exist")
+	routeRule, ok := self.RouteForwardingRules[routeId]
+	if !ok {
+		log.Printf("Node: Received route message for route that does not exist\n")
 	}
-	routeRule := self.RouteForwardingRules[routeId]
 	//check that incoming transport is correct
 	if transportId != routeRule.IncomingTransport {
 		log.Panic("Node: incoming route does not match the transport id it should be received from")

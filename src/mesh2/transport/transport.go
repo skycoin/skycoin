@@ -36,7 +36,7 @@ type Transport struct {
 
 //are created by the factories
 func (self *Transport) NewTransportStub() {
-	fmt.Printf("Created Transport:")
+	fmt.Printf("Created Transport:\n")
 	self.IncomingChannel = make(chan []byte, 1024)
 	//self.PendingOut = make(chan []byte, 1024)
 	self.Id = messages.RandTransportId()

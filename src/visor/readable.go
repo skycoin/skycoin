@@ -204,6 +204,34 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedT
 	}
 }
 
+func NewGenesisReadableTransaction(t *Transaction) ReadableTransaction {
+	txid := cipher.SHA256{}
+	sigs := make([]string, len(t.Txn.Sigs))
+	for i, _ := range t.Txn.Sigs {
+		sigs[i] = t.Txn.Sigs[i].Hex()
+	}
+
+	in := make([]string, len(t.Txn.In))
+	for i, _ := range t.Txn.In {
+		in[i] = t.Txn.In[i].Hex()
+	}
+	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
+	for i, _ := range t.Txn.Out {
+		out[i] = NewReadableTransactionOutput(&t.Txn.Out[i], txid)
+	}
+	return ReadableTransaction{
+		Length:    t.Txn.Length,
+		Type:      t.Txn.Type,
+		Hash:      t.Txn.Hash().Hex(),
+		InnerHash: t.Txn.InnerHash.Hex(),
+		Timestamp: t.Time,
+
+		Sigs: sigs,
+		In:   in,
+		Out:  out,
+	}
+}
+
 func NewReadableTransaction(t *Transaction) ReadableTransaction {
 	txid := t.Txn.Hash()
 	sigs := make([]string, len(t.Txn.Sigs))
@@ -258,10 +286,15 @@ type ReadableBlockBody struct {
 	Transactions []ReadableTransaction `json:"txns"`
 }
 
-func NewReadableBlockBody(b *coin.BlockBody) ReadableBlockBody {
-	txns := make([]ReadableTransaction, len(b.Transactions))
-	for i := range b.Transactions {
-		txns[i] = NewReadableTransaction(&Transaction{Txn: b.Transactions[i]})
+func NewReadableBlockBody(b *coin.Block) ReadableBlockBody {
+	txns := make([]ReadableTransaction, len(b.Body.Transactions))
+	for i := range b.Body.Transactions {
+		if b.Seq() == uint64(0) {
+			// genesis block
+			txns[i] = NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+		} else {
+			txns[i] = NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+		}
 	}
 	return ReadableBlockBody{
 		Transactions: txns,
@@ -276,7 +309,7 @@ type ReadableBlock struct {
 func NewReadableBlock(b *coin.Block) ReadableBlock {
 	return ReadableBlock{
 		Head: NewReadableBlockHeader(&b.Head),
-		Body: NewReadableBlockBody(&b.Body),
+		Body: NewReadableBlockBody(b),
 	}
 }
 

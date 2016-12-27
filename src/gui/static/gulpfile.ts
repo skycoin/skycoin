@@ -23,8 +23,10 @@ gulp.task('clean_dev', (cb) => {
  */
 gulp.task('tslint', () => {
     return gulp.src("src/**/*.ts")
-        .pipe(tslint())
-        .pipe(tslint.report('prose'));
+        .pipe(tslint({
+            formatter: "verbose"
+        }))
+        .pipe(tslint.report());
 });
 
 /**
@@ -109,6 +111,6 @@ gulp.task("dist", ['compile', 'resources', 'libs'], () => {
     console.log("Building the project ...");
 });
 
-gulp.task("build", ['clean_dev', 'compile_dev', 'resources_dev', 'libs_dev'], () => {
+gulp.task("build", ['compile_dev', 'resources_dev', 'libs_dev'], () => {
     console.log("Building the project ...");
 });

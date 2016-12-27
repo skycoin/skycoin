@@ -1,6 +1,8 @@
 package nodemanager
 
 import (
+	"github.com/satori/go.uuid"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
@@ -14,44 +16,35 @@ import (
 //  - keep network topology graph
 //  - find distance between nodes and return multihop routes
 
-// Find routes from the connections from a node
-// One hop direct routes
-// WTF does this do?
-func (self *NodeManager) FindRoute(pubKey1 cipher.PubKey) {
-	config1 := self.ConfigList[pubKey1]
-	for _, v := range config1.PeerToPeers {
-		pubKey2 := v.Peer
-		route := Route{}
-		route.SourceNode = pubKey1
-		route.TargetNode = pubKey2
-		route.Weight = 1
-		route.RoutesToEstablish = append(route.RoutesToEstablish, pubKey2)
-
-		routeKey := RouteKey{SourceNode: pubKey1, TargetNode: pubKey2}
-		self.Routes[routeKey] = route
-		self.FindIndirectRoutes(route)
+func (s *NodeManager) FindRoutes(pubKey1, pubKey2 cipher.PubKey) bool {
+	_, found := s.FindRoute(pubKey1, pubKey2)
+	if found {
+		_, found = s.FindRoute(pubKey2, pubKey1)
 	}
+	return found
 }
 
-// Find indirect routes from a route
-// WTF does this do?
-func (self *NodeManager) FindIndirectRoutes(route Route) {
-	config1 := self.ConfigList[route.TargetNode]
-	for _, v := range config1.PeerToPeers {
-		pubKey2 := v.Peer
-		route2 := Route{}
-		route2.SourceNode = route.SourceNode
-		route2.TargetNode = pubKey2
-		route2.RoutesToEstablish = append(route2.RoutesToEstablish, route.RoutesToEstablish...)
-		route2.RoutesToEstablish = append(route2.RoutesToEstablish, pubKey2)
-		route2.Weight = route.Weight + 1
+func (s *NodeManager) FindRoute(pubKey1, pubKey2 cipher.PubKey) (*RouteConfig, bool) {
+	config1 := s.ConfigList[pubKey1]
+	routeKey := RouteKey{SourceNode: pubKey1, TargetNode: pubKey2}
+	//	if existing, found := s.Routes[routeKey]; found { return existing, true } //??? do we need this cache and should we add expiration conditions?
+	peers, found := s.RouteGraph.FindRoute(pubKey1, pubKey2)
+	if !found {
+		return nil, false
+	}
+	routeConfig := &RouteConfig{Peers: peers}
+	routeConfig.RouteID = uuid.NewV4()
+	config1.RoutesConfigsToEstablish = append(config1.RoutesConfigsToEstablish, *routeConfig)
+	s.Routes[routeKey] = routeConfig
+	return routeConfig, true
+}
 
-		routeKey := RouteKey{SourceNode: route.SourceNode, TargetNode: pubKey2}
-		if _, ok := self.Routes[routeKey]; !ok {
-
-			self.Routes[routeKey] = route
-			self.Routes[routeKey] = route
-			self.FindIndirectRoutes(route)
+func (s *NodeManager) RebuildRouteGraph() {
+	s.RouteGraph.Clear()
+	for _, config := range s.ConfigList {
+		nodeFrom := config.NodeConfig.PubKey
+		for _, peerToPeer := range config.PeerToPeers {
+			s.RouteGraph.AddDirectRoute(nodeFrom, peerToPeer.Peer, 1) // weight is always 1 because so far all routes are equal! Change this if needed
 		}
 	}
 }

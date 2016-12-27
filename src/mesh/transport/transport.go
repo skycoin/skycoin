@@ -136,7 +136,7 @@ func (self *Transport) GetStatus() uint32 {
 }
 
 func (self *Transport) Close() error {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10-len(self.closing); i++ {
 		self.closing <- true
 	}
 	self.closeWait.Wait()

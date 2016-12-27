@@ -17,20 +17,20 @@ import (
 var NilRouteID domain.RouteID = (domain.RouteID)(uuid.Nil)
 
 // toPeer must be the public key of a connected peer
-func (self *Node) AddRoute(routeID domain.RouteID, peerID cipher.PubKey) error {
-	_, routeExists := self.safelyGetRoute(routeID)
+func (s *Node) AddRoute(routeID domain.RouteID, peerID cipher.PubKey) error {
+	_, routeExists := s.safelyGetRoute(routeID)
 	if routeExists {
 		return errors.New(fmt.Sprintf("Route %v already exists\n", routeID))
 	}
-	transportToPeer := self.safelyGetTransportToPeer(peerID)
+	transportToPeer := s.safelyGetTransportToPeer(peerID)
 	if transportToPeer == nil {
 		return errors.New(fmt.Sprintf("No transport to peer %v\n", peerID))
 	}
 
 	// Add locally to routes for backward termination
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	self.routes[routeID] =
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.routes[routeID] =
 		domain.Route{
 			ForwardToPeerID:   peerID,
 			ForwardToRouteID:  routeID,
@@ -40,9 +40,9 @@ func (self *Node) AddRoute(routeID domain.RouteID, peerID cipher.PubKey) error {
 			ExpiryTime: time.Unix(0, 0),
 		}
 
-	self.localRoutesByTerminatingPeer[peerID] = routeID
-	self.localRoutes[routeID] = domain.LocalRoute{
-		LastForwardingPeerID: self.Config.PubKey,
+	s.localRoutesByTerminatingPeer[peerID] = routeID
+	s.localRoutes[routeID] = domain.LocalRoute{
+		LastForwardingPeerID: s.Config.PubKey,
 		TerminatingPeerID:    peerID,
 		LastHopRouteID:       NilRouteID,
 		LastConfirmed:        time.Unix(0, 0),
@@ -50,24 +50,24 @@ func (self *Node) AddRoute(routeID domain.RouteID, peerID cipher.PubKey) error {
 	return nil
 }
 
-func (self *Node) DeleteRoute(routeID domain.RouteID) (err error) {
-	route, routeExists := self.safelyGetRoute(routeID)
+func (s *Node) DeleteRoute(routeID domain.RouteID) (err error) {
+	route, routeExists := s.safelyGetRoute(routeID)
 	if !routeExists {
 		return errors.New(fmt.Sprintf("Cannot delete route %v, doesn't exist\n", routeID))
 	}
 
-	err = self.sendDeleteRoute(routeID, route)
+	err = s.sendDeleteRoute(routeID, route)
 
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	localRoute, localExists := self.localRoutes[routeID]
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	localRoute, localExists := s.localRoutes[routeID]
 
-	delete(self.routes, routeID)
-	delete(self.routeExtensionsAwaitingConfirm, routeID)
+	delete(s.routes, routeID)
+	delete(s.routeExtensionsAwaitingConfirm, routeID)
 
 	if localExists {
-		delete(self.localRoutes, routeID)
-		delete(self.localRoutesByTerminatingPeer, localRoute.TerminatingPeerID)
+		delete(s.localRoutes, routeID)
+		delete(s.localRoutesByTerminatingPeer, localRoute.TerminatingPeerID)
 	}
 	return err
 }
@@ -75,16 +75,16 @@ func (self *Node) DeleteRoute(routeID domain.RouteID) (err error) {
 // toPeer must be the public key of a peer connected to the current last node in this route
 // Blocks until the set route reply is received or the timeout is reached
 // DEPRECATE. Route extention only through control channels
-func (self *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, timeout time.Duration) (err error) {
-	message, directPeer, confirm, extendError := self.extendRouteWithoutSending(routeID, toPeer)
+func (s *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, timeout time.Duration) (err error) {
+	message, directPeer, confirm, extendError := s.extendRouteWithoutSending(routeID, toPeer)
 	if extendError != nil {
 		return extendError
 	}
-	transportToPeer := self.safelyGetTransportToPeer(directPeer)
+	transportToPeer := s.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
+		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, s.Config.PubKey))
 	}
-	serialized := self.serializer.SerializeMessage(message)
+	serialized := s.serializer.SerializeMessage(message)
 	err = transportToPeer.SendMessage(directPeer, serialized, nil)
 	if err != nil {
 		return err
@@ -100,29 +100,49 @@ func (self *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, time
 			err = &TimeoutError{}
 		}
 	}
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	delete(self.routeExtensionsAwaitingConfirm, routeID)
+	delete(s.routeExtensionsAwaitingConfirm, routeID)
 	return
 }
 
-func (self *Node) GetRouteLastConfirmed(routeID domain.RouteID) (time.Time, error) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	localRoute, found := self.localRoutes[routeID]
+func (s *Node) ExtendRouteSimple(routeID domain.RouteID, toPeer cipher.PubKey) error {
+	message, directPeer, _, extendError := s.extendRouteWithoutSending(routeID, toPeer)
+	if extendError != nil {
+		return extendError
+	}
+	transportToPeer := s.safelyGetTransportToPeer(directPeer)
+	if transportToPeer == nil {
+		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, s.Config.PubKey))
+	}
+	serialized := s.serializer.SerializeMessage(message)
+	err := transportToPeer.SendMessage(directPeer, serialized, nil)
+	if err != nil {
+		return err
+	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	delete(s.routeExtensionsAwaitingConfirm, routeID)
+	return extendError
+}
+
+func (s *Node) GetRouteLastConfirmed(routeID domain.RouteID) (time.Time, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	localRoute, found := s.localRoutes[routeID]
 	if !found {
 		return time.Unix(0, 0), errors.New(fmt.Sprintf("Unknown route id: %v", routeID))
 	}
 	return localRoute.LastConfirmed, nil
 }
 
-func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeerID cipher.PubKey, localID, sendID domain.RouteID, transport transport.ITransport, err error) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	localRouteID, ok := self.localRoutesByTerminatingPeer[toPeer]
+func (s *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeerID cipher.PubKey, localID, sendID domain.RouteID, transport transport.ITransport, err error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	localRouteID, ok := s.localRoutesByTerminatingPeer[toPeer]
 	if ok {
-		route, ok := self.routes[localRouteID]
+		route, ok := s.routes[localRouteID]
 		if !ok {
 			panic("Local route struct does not exists")
 		}
@@ -132,7 +152,7 @@ func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeerID cipher.Pub
 	} else {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil, errors.New(fmt.Sprintf("No route to peer: %v", toPeer))
 	}
-	transport = self.GetTransportToPeer(directPeerID)
+	transport = s.GetTransportToPeer(directPeerID)
 	if transport == nil {
 		return cipher.PubKey{}, NilRouteID, NilRouteID, nil,
 			errors.New(fmt.Sprintf("No route or transport to peer %v\n", toPeer))
@@ -140,23 +160,23 @@ func (self *Node) findRouteToPeer(toPeer cipher.PubKey) (directPeerID cipher.Pub
 	return
 }
 
-func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer cipher.PubKey) (message domain.SetRouteMessage, directPeer cipher.PubKey, waitConfirm chan bool, err error) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+func (s *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer cipher.PubKey) (message domain.SetRouteMessage, directPeer cipher.PubKey, waitConfirm chan bool, err error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	_, alreadyExtending := self.routeExtensionsAwaitingConfirm[routeID]
+	_, alreadyExtending := s.routeExtensionsAwaitingConfirm[routeID]
 	if alreadyExtending {
 		return domain.SetRouteMessage{}, cipher.PubKey{}, nil, errors.New("Cannot extend route more than once at the same time")
 	}
 
 	newHopId := routeID
 
-	localRoute, localRouteExists := self.localRoutes[routeID]
+	localRoute, localRouteExists := s.localRoutes[routeID]
 	if !localRouteExists {
 		return domain.SetRouteMessage{}, cipher.PubKey{}, nil, errors.New(fmt.Sprintf("ExtendRoute called on unknown route: %v", routeID))
 	}
 
-	route, routeExists := self.routes[routeID]
+	route, routeExists := s.routes[routeID]
 	if !routeExists {
 		panic("Internal consistency error 8JUL2016544")
 	}
@@ -166,7 +186,7 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 	sendBase := domain.MessageBase{
 		SendRouteID: route.ForwardToRouteID,
 		SendBack:    false,
-		FromPeerID:  self.Config.PubKey,
+		FromPeerID:  s.Config.PubKey,
 		Nonce:       GenerateNonce(),
 	}
 
@@ -178,32 +198,32 @@ func (self *Node) extendRouteWithoutSending(routeID domain.RouteID, toPeer ciphe
 		ForwardRewriteSendRouteID:  routeID,
 		BackwardToPeerID:           localRoute.LastForwardingPeerID,
 		BackwardRewriteSendRouteID: localRoute.LastHopRouteID,
-		DurationHint:               3 * self.Config.RefreshRouteDuration,
+		DurationHint:               3 * s.Config.RefreshRouteDuration,
 	}
 
-	delete(self.localRoutesByTerminatingPeer, localRoute.TerminatingPeerID)
-	self.localRoutes[routeID] = domain.LocalRoute{
+	delete(s.localRoutesByTerminatingPeer, localRoute.TerminatingPeerID)
+	s.localRoutes[routeID] = domain.LocalRoute{
 		LastForwardingPeerID: localRoute.TerminatingPeerID,
 		TerminatingPeerID:    toPeer,
 		LastHopRouteID:       newHopId,
 		LastConfirmed:        localRoute.LastConfirmed,
 	}
-	self.localRoutesByTerminatingPeer[toPeer] = routeID
+	s.localRoutesByTerminatingPeer[toPeer] = routeID
 
 	updatedRoute := route
 	updatedRoute.ForwardToRouteID = newHopId
-	self.routes[routeID] = updatedRoute
+	s.routes[routeID] = updatedRoute
 	confirmChan := make(chan bool, 1)
-	self.routeExtensionsAwaitingConfirm[routeID] = confirmChan
+	s.routeExtensionsAwaitingConfirm[routeID] = confirmChan
 
 	return newTermMessage, directPeer, confirmChan, nil
 }
 
-func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) error {
+func (s *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) error {
 	sendBase := domain.MessageBase{
 		SendRouteID: route.ForwardToRouteID,
 		SendBack:    false,
-		FromPeerID:  self.Config.PubKey,
+		FromPeerID:  s.Config.PubKey,
 		Nonce:       GenerateNonce(),
 	}
 	message := domain.DeleteRouteMessage{
@@ -211,11 +231,11 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 	}
 
 	directPeer := route.ForwardToPeerID
-	transportToPeer := self.safelyGetTransportToPeer(directPeer)
+	transportToPeer := s.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("2No transport to peer %v from %v\n", directPeer, self.Config.PubKey))
+		return errors.New(fmt.Sprintf("2No transport to peer %v from %v\n", directPeer, s.Config.PubKey))
 	}
-	serialized := self.serializer.SerializeMessage(message)
+	serialized := s.serializer.SerializeMessage(message)
 	err := transportToPeer.SendMessage(directPeer, serialized, nil)
 	if err != nil {
 		return err
@@ -224,16 +244,16 @@ func (self *Node) sendDeleteRoute(routeID domain.RouteID, route domain.Route) er
 	return nil
 }
 
-func (self *Node) expireOldRoutesLoop() {
-	self.closeGroup.Add(1)
-	defer self.closeGroup.Done()
-	for len(self.closing) == 0 {
+func (s *Node) expireOldRoutesLoop() {
+	s.closeGroup.Add(1)
+	defer s.closeGroup.Done()
+	for len(s.closing) == 0 {
 		select {
-		case <-time.After(self.Config.ExpireRoutesInterval):
+		case <-time.After(s.Config.ExpireRoutesInterval):
 			{
-				self.expireOldRoutes()
+				s.expireOldRoutes()
 			}
-		case <-self.closing:
+		case <-s.closing:
 			{
 				return
 			}
@@ -241,16 +261,16 @@ func (self *Node) expireOldRoutesLoop() {
 	}
 }
 
-func (self *Node) refreshRoutesLoop() {
-	self.closeGroup.Add(1)
-	defer self.closeGroup.Done()
-	for len(self.closing) == 0 {
+func (s *Node) refreshRoutesLoop() {
+	s.closeGroup.Add(1)
+	defer s.closeGroup.Done()
+	for len(s.closing) == 0 {
 		select {
-		case <-time.After(self.Config.RefreshRouteDuration):
+		case <-time.After(s.Config.RefreshRouteDuration):
 			{
-				self.refreshRoutes()
+				s.refreshRoutes()
 			}
-		case <-self.closing:
+		case <-s.closing:
 			{
 				return
 			}
@@ -258,13 +278,13 @@ func (self *Node) refreshRoutesLoop() {
 	}
 }
 
-func (self *Node) safelyGetForwarding(msg interface{}) (SendBack bool, route domain.Route, doForward bool) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+func (s *Node) safelyGetForwarding(msg interface{}) (SendBack bool, route domain.Route, doForward bool) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	messageBase := getMessageBase(msg)
 
-	routeFound, foundRoute := self.routes[messageBase.SendRouteID]
+	routeFound, foundRoute := s.routes[messageBase.SendRouteID]
 
 	doForward = foundRoute
 
@@ -285,28 +305,28 @@ func (self *Node) safelyGetForwarding(msg interface{}) (SendBack bool, route dom
 	}
 }
 
-func (self *Node) safelyGetRoute(routeID domain.RouteID) (route domain.Route, ok bool) {
-	route, ok = self.routes[routeID]
+func (s *Node) safelyGetRoute(routeID domain.RouteID) (route domain.Route, ok bool) {
+	route, ok = s.routes[routeID]
 	return route, ok
 }
 
-func (self *Node) expireOldRoutes() {
+func (s *Node) expireOldRoutes() {
 	timeNow := time.Now()
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	lastMessages := self.routes
-	self.routes = make(map[domain.RouteID]domain.Route)
+	lastMessages := s.routes
+	s.routes = make(map[domain.RouteID]domain.Route)
 	// Last refresh of time.Unix(0,0) means it lives forever
 	for id, route := range lastMessages {
 		if (route.ExpiryTime == time.Unix(0, 0)) || timeNow.Before(route.ExpiryTime) {
-			self.routes[id] = route
+			s.routes[id] = route
 		}
 	}
 }
 
-func (self *Node) refreshRoute(routeId domain.RouteID) {
-	route, routeFound := self.safelyGetRoute(routeId)
+func (s *Node) refreshRoute(routeId domain.RouteID) {
+	route, routeFound := s.safelyGetRoute(routeId)
 	if !routeFound {
 		fmt.Fprintf(os.Stderr, "Cannot refresh unknown route: %v\n", routeId)
 		return
@@ -314,21 +334,21 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 	base := domain.MessageBase{
 		SendRouteID: route.ForwardToRouteID,
 		SendBack:    false,
-		FromPeerID:  self.Config.PubKey,
+		FromPeerID:  s.Config.PubKey,
 		Nonce:       GenerateNonce(),
 	}
 	directPeer := route.ForwardToPeerID
-	transportToPeer := self.safelyGetTransportToPeer(directPeer)
+	transportToPeer := s.safelyGetTransportToPeer(directPeer)
 	if transportToPeer == nil {
 		fmt.Fprintf(os.Stderr, "No transport to peer %v\n", directPeer)
 		return
 	}
 	message := domain.RefreshRouteMessage{
 		MessageBase:     base,
-		DurationHint:    3 * self.Config.RefreshRouteDuration,
+		DurationHint:    3 * s.Config.RefreshRouteDuration,
 		ConfirmRoutedID: routeId,
 	}
-	serialized := self.serializer.SerializeMessage(message)
+	serialized := s.serializer.SerializeMessage(message)
 	err := transportToPeer.SendMessage(directPeer, serialized, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Serialization error %v\n", err)
@@ -336,18 +356,18 @@ func (self *Node) refreshRoute(routeId domain.RouteID) {
 	}
 }
 
-func (self *Node) refreshRoutes() {
-	self.lock.Lock()
-	localRoutes := self.localRoutes
-	self.lock.Unlock()
+func (s *Node) refreshRoutes() {
+	s.lock.Lock()
+	localRoutes := s.localRoutes
+	s.lock.Unlock()
 
 	for routeID := range localRoutes {
-		self.refreshRoute(routeID)
+		s.refreshRoute(routeID)
 	}
 }
 
-func (self *Node) clipExpiryTime(hint time.Time) time.Time {
-	maxTime := time.Now().Add(self.Config.MaximumForwardingDuration)
+func (s *Node) clipExpiryTime(hint time.Time) time.Time {
+	maxTime := time.Now().Add(s.Config.MaximumForwardingDuration)
 	if hint.Unix() > maxTime.Unix() {
 		return maxTime
 	}
@@ -378,16 +398,16 @@ func getMessageBase(msg interface{}) domain.MessageBase {
 	panic(fmt.Sprintf("Internal error: getMessageBase incomplete (%v)", messageType))
 }
 
-func (self *Node) DebugCountRoutes() int {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	return len(self.routes)
+func (s *Node) DebugCountRoutes() int {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return len(s.routes)
 }
 
 type TimeoutError struct {
 }
 
-func (self *TimeoutError) Error() string {
+func (s *TimeoutError) Error() string {
 	return "Timeout"
 }
 

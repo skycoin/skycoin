@@ -18,9 +18,9 @@ const (
 	//MessageKey
 )
 
-func GetMessageType(message []byte) uint8 {
-	var value uint8
-	rBuf := bytes.NewReader(message[4:5])
+func GetMessageType(message []byte) uint16 {
+	var value uint16
+	rBuf := bytes.NewReader(message[4:6])
 	err := binary.Read(rBuf, binary.LittleEndian, &value)
 	if err != nil {
 		fmt.Println("binary.Read failed: ", err)

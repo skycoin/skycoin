@@ -96,6 +96,7 @@ export class LoadWalletComponent implements OnInit {
     connections: Array<any>;
     defaultConnections: Array<any>;
     blockChain: any;
+    numberOfBlocks: number;
     outputs: Array<any>;
     NewDefaultConnectionIsVisible : boolean;
     EditDefaultConnectionIsVisible : boolean;
@@ -135,6 +136,7 @@ export class LoadWalletComponent implements OnInit {
         this.loadConnections();
         this.loadDefaultConnections();
         this.loadBlockChain();
+        this.loadNumberOfBlocks();
         this.loadProgress();
         this.loadOutputs();
         this.loadTransactions();
@@ -149,6 +151,7 @@ export class LoadWalletComponent implements OnInit {
         setInterval(() => {
             this.loadConnections();
             this.loadBlockChain();
+            this.loadNumberOfBlocks();
             //console.log("Refreshing connections");
         }, 15000);
 
@@ -196,6 +199,17 @@ export class LoadWalletComponent implements OnInit {
         }
         this.readyDisable = true;
         this.sendDisable = false;
+    }
+
+    loadNumberOfBlocks(){
+        this.numberOfBlocks=0;
+        this.http.get('/blockchain/metadata')
+            .map((res:Response)=>res.json())
+            .subscribe(
+                data=>{
+                    this.numberOfBlocks = data.head.seq;
+                }
+            )
     }
 
     //Load wallet function

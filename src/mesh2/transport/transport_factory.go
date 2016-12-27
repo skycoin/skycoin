@@ -11,7 +11,7 @@ type TransportFactory struct {
 
 func NewTransportFactory() *TransportFactory {
 	tf := new(TransportFactory)
-	fmt.Printf("Created Transport Factory")
+	fmt.Printf("Created Transport Factory\n")
 	return tf
 }
 
@@ -44,12 +44,12 @@ func (self *TransportFactory) Tick() {
 
 //implement/fix
 //Implement the nodes the transports are attached to
-func (self *TransportFactory) CreateStubTransportPair() (Transport, Transport) {
+func (self *TransportFactory) CreateStubTransportPair() (*Transport, *Transport) {
 	var a Transport
 	var b Transport
 	a.NewTransportStub()
 	b.NewTransportStub()
 	a.StubPair = &b
 	b.StubPair = &a
-	return a, b
+	return &a, &b
 }

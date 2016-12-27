@@ -56,40 +56,39 @@
                     <button class="btn btn-default" type="button" (click)="openLoadWallet()"><i class="fa fa-circle-o"></i> Load Wallet From Seed</button>
                 </div>
                   <table id="overview-wallet" class="outline" >
-                        <thead>
-                        <tr class="dark-row">
-                            <td style="width:30px;"></td>
-                            <td>Label</td>
-                            <td>Address</td>
-                            <td class="text-center" colspan="2">Balance</td>
-                            <td class="text-center" colspan="2">Addresses</td>
-                        </tr>
-                        </thead>
-                        <tbody *ngFor="let wallet of wallets">
-                        <tr>
-                            <td>
-                                <a href="#" (click)="toggleShowChild(wallet)" *ngIf="!wallet.showChild"><i class="fa fa-angle-right"></i></a>
-                                <a href="#" (click)="toggleShowChild(wallet)" *ngIf="wallet.showChild"><i class="fa fa-angle-down"></i></a>
-                            </td>
-                            <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
-                            <td></td>
-                            <td class="text-right"><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;</td>
-                            <td class="text-left">{{wallet.entries[0].balance}} SKY</td>
-                            <td class="text-right">{{wallet.entries.length}}&nbsp;</td>
-                            <td class="text-right">
-                                <a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus add-address"></i></a></td>
-                        </tr>
-                        <tr *ngFor="let entry of wallet.entries; let idx=index" [hidden]="!wallet.showChild" style="background-color: #f4f5f6">
-                            <td></td>
-                            <td class="text-center">  {{idx+1}}</td>
-                            <td><a href="#" (click)="showQR(wallet)"><i class="fa " aria-hidden="true"></i>&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{entry.address}}</td>
-                            <td></td>
-                            <td><a href="#" (click)="switchTab(displayModeEnum.second, wallet)" ><i class="fa fa-cloud-upload"></i></a>&nbsp;{{entry.balance?entry.balance:0}} SKY</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        </tbody>
-                    </table>
+                      <thead>
+                      <tr class="dark-row">
+                          <td style="width:30px;"></td>
+                          <td>Label</td>
+                          <td>Address</td>
+                          <td class="text-center" colspan="1">Balance</td>
+                          <td class="text-center" colspan="2">Addresses</td>
+                      </tr>
+                      </thead>
+                      <tbody *ngFor="let wallet of wallets">
+                      <tr>
+                          <td>
+                              <a href="#" (click)="toggleShowChild(wallet)" *ngIf="!wallet.showChild"><i class="fa fa-angle-right"></i></a>
+                              <a href="#" (click)="toggleShowChild(wallet)" *ngIf="wallet.showChild"><i class="fa fa-angle-down"></i></a>
+                          </td>
+                          <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
+                          <td></td>
+
+                          <td class="text-center">{{wallet.entries[0].balance}} SKY</td>
+                          <td class="text-right">{{wallet.entries.length}}&nbsp;</td>
+                          <td class="text-right">
+                              <a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus add-address"></i></a></td>
+                      </tr>
+                      <tr *ngFor="let entry of wallet.entries; let idx=index" [hidden]="!wallet.showChild" style="background-color: #f4f5f6">
+                          <td></td>
+                          <td class="text-center">  {{idx+1}}</td>
+                          <td><a href="#" (click)="showQR(wallet)"><i class="fa " aria-hidden="true"></i>&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{entry.address}}</td>
+                          <td class="text-right" >{{entry.balance?entry.balance:0}} SKY</td>
+                          <td></td>
+                          <td></td>
+                      </tr>
+                      </tbody>
+                  </table>
                   <!-- historyPager -->
               </div>
             </div>

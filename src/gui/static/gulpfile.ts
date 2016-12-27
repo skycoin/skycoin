@@ -23,14 +23,16 @@ gulp.task('clean_dev', (cb) => {
  */
 gulp.task('tslint', () => {
     return gulp.src("src/**/*.ts")
-        .pipe(tslint())
-        .pipe(tslint.report('prose'));
+        .pipe(tslint({
+            formatter: 'prose'
+        }))
+        .pipe(tslint.report());
 });
 
 /**
  * Compile TypeScript sources and create sourcemaps in build directory.
  */
-gulp.task("compile", ["tslint"], () => {
+gulp.task("compile", () => {
     let tsResult = gulp.src("src/**/*.ts")
         .pipe(sourcemaps.init())
         .pipe(tsc(tsProject));
@@ -39,12 +41,12 @@ gulp.task("compile", ["tslint"], () => {
         .pipe(gulp.dest("dist"));
 });
 
-gulp.task("compile_dev", ["tslint"], () => {
+gulp.task("compile_dev", () => {
     let tsResult = gulp.src("src/**/*.ts")
         .pipe(sourcemaps.init())
         .pipe(tsc(tsProject));
     return tsResult.js
-        .pipe(sourcemaps.write("."))
+        .pipe(sourcemaps.write("." , {sourceRoot: '/src'}))
         .pipe(gulp.dest("dev"));
 });
 
@@ -109,6 +111,6 @@ gulp.task("dist", ['compile', 'resources', 'libs'], () => {
     console.log("Building the project ...");
 });
 
-gulp.task("build", ['clean_dev', 'compile_dev', 'resources_dev', 'libs_dev'], () => {
+gulp.task("build", ['compile_dev', 'resources_dev', 'libs_dev'], () => {
     console.log("Building the project ...");
 });

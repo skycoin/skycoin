@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	//"strings"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/util"
 
@@ -19,7 +18,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("skywire.gui")
+	logger = util.MustGetLogger("skywire.gui")
 )
 
 const (

@@ -8,6 +8,8 @@ import (
 	"log"
 	"path/filepath"
 
+	"time"
+
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/util"
 )
@@ -18,11 +20,26 @@ var db *bolt.DB
 func Start() {
 	// Open the my.db data file in your current directory.
 	// It will be created if it doesn't exist.
-	dbFile := filepath.Join(util.DataDir, "block.db")
-	var err error
-	db, err = bolt.Open(dbFile, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
+	ec := make(chan error)
+	go func() {
+		dbFile := filepath.Join(util.DataDir, "block.db")
+		var err error
+		db, err = bolt.Open(dbFile, 0600, nil)
+		if err != nil {
+			ec <- err
+			return
+		}
+		ec <- nil
+	}()
+
+	select {
+	case <-time.After(500 * time.Millisecond):
+		log.Panic("open boltdb time out")
+		return
+	case err := <-ec:
+		if err != nil {
+			log.Panic(err)
+		}
 	}
 }
 

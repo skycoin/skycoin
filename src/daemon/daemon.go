@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
@@ -66,7 +65,7 @@ var (
 		//ConnectFailed:                       time.Minute * 60,
 	}
 
-	logger = logging.MustGetLogger("daemon")
+	logger = util.MustGetLogger("daemon")
 )
 
 // Subsystem configurations

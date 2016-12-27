@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/util"
 )
 
 var DebugPrint bool = true //disable to disable printing
@@ -41,7 +41,7 @@ var (
 		"Unexpected error encountered")
 
 	// Logger
-	logger = logging.MustGetLogger("gnet")
+	logger = util.MustGetLogger("gnet")
 )
 
 type Config struct {

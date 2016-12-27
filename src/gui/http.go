@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util"
 
@@ -17,7 +16,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("gui")
+	logger = util.MustGetLogger("gui")
 )
 
 const (

@@ -28,7 +28,7 @@ import (
 //"github.com/skycoin/skycoin/src/wallet"
 
 var (
-	logger     = logging.MustGetLogger("main")
+	logger     = util.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
 		"main",
@@ -61,6 +61,8 @@ var (
 		"188.226.245.87:6000",
 		"40.74.80.119:6000",
 		"120.26.247.42:6000",
+		"121.41.103.148:6000",
+		"120.77.69.188:6000",
 	}
 )
 
@@ -483,7 +485,12 @@ func Run(c *Config) {
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
-	initLogging(c.LogLevel, c.ColorLog)
+
+	logCfg := util.DevLogConfig(logModules)
+	logCfg.Format = logFormat
+	logCfg.InitLogger()
+
+	// initLogging(c.LogLevel, c.ColorLog)
 
 	// start the block db.
 	blockdb.Start()

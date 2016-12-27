@@ -9,14 +9,14 @@ import (
 	"log"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
+	"github.com/skycoin/skycoin/src/util"
 
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
 var (
-	logger      = logging.MustGetLogger("crypto")
+	logger      = util.MustGetLogger("crypto")
 	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
 	DebugLevel2 = true //enable checks for impossible conditions
 )

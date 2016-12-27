@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -16,7 +15,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("visor")
+	logger = util.MustGetLogger("visor")
 )
 
 // Configuration parameters for the Visor

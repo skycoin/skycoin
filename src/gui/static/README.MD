@@ -6,6 +6,30 @@ dev will not be commited to the repo. For development.
 
 dist is the distribution state files
 
+#### 1. Prerequisites
+
+*nodejs* must be installed on your system and the below global node packages must be installed:
+
+- gulp
+
+> npm i -g gulp
+
+- gulp-cli
+
+> npm i -g gulp-cli
+
+- typings
+
+> npm i -g typings@1.3.3
+
+- typescript
+
+> npm i -g typescript@2.0.2
+
+- ts-node
+
+> npm i -g ts-node@1.3.0
+
 Updating NPM
 -----
 
@@ -26,6 +50,7 @@ Setup
 
 ```
 npm install
+npm install --only=dev
 ```
 
 A folder `node_modules/` should now exist.

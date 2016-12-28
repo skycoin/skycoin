@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	bip39 "github.com/tyler-smith/go-bip39"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -611,6 +612,30 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		entropy, err := bip39.NewEntropy(128)
+		if err != nil {
+			wh.Error500(w)
+			return
+		}
+
+		mnemonic, err := bip39.NewMnemonic(entropy)
+		if err != nil {
+			wh.Error500(w)
+			return
+		}
+
+		var rlt = struct {
+			Seed string `json:"seed"`
+		}{
+			mnemonic,
+		}
+
+		wh.SendOr404(w, rlt)
+	}
+}
+
 func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns wallet info
 	// GET Arguments:
@@ -671,4 +696,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get balance of addresses
 	mux.HandleFunc("/balance", getBalanceHandler(gateway))
 
+	// generate wallet seed
+	mux.Handle("/wallet/seed", newWalletSeed(gateway))
 }

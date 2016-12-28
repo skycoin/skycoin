@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	bip39 "github.com/skycoin/skycoin/src/api/cli/go-bip39"
 	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/tyler-smith/go-bip39"
 
 	gcli "github.com/urfave/cli"
 )

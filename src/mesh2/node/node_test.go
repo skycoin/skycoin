@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/satori/go.uuid"
@@ -11,11 +10,10 @@ import (
 )
 
 func TestCreateControlChannel(t *testing.T) {
-	panic("ok")
 	node := NewNode()
 	ccid := uuid.UUID{}
 
 	msg := messages.CreateChannelControlMessage{}
 	node.HandleControlMessage(ccid, msg)
-	assert.Len(t, node.controlChannels, 2, "Should be 2 control channels")
+	assert.Len(t, node.ControlChannels, 2, "Should be 2 control channels")
 }

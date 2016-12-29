@@ -7,6 +7,8 @@ import {Observer} from 'rxjs/Observer';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
 import {QRCodeComponent} from './ng2-qrcode';
+import {SeedComponent} from './components/seed.component';
+import {SeedService} from "./services/seed.service";
 
 declare var _: any;
 declare var $: any;
@@ -62,7 +64,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-wallet',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent],
+    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent],
     providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })
@@ -103,7 +105,6 @@ export class LoadWalletComponent implements OnInit {
     oldConnection:string;
     filterAddressVal:string;
     totalSky:any;
-    randomWords:any;
     historySearchKey:string;
     selectedWallet:any;
 
@@ -487,7 +488,6 @@ export class LoadWalletComponent implements OnInit {
     //Show wallet function for view New wallet popup
     showNewWalletDialog(){
         this.NewWalletIsVisible = true;
-        this.randomWords = this.getRandomWords();
     }
     //Hide wallet function for hide New wallet popup
     hideWalletPopup(){
@@ -847,36 +847,6 @@ export class LoadWalletComponent implements OnInit {
     searchBlockHistory(searchKey){
       console.log(searchKey);
 
-    }
-
-    getRandomWords() {
-      var ret = [];
-      for(var i = 0 ; i < 11; i++) {
-        var length = Math.round(Math.random() * 10);
-        length = Math.max(length, 3);
-
-        ret.push(this.createRandomWord(length));
-      }
-
-      return ret.join(" ");
-    }
-
-    createRandomWord(length) {
-      var consonants = 'bcdfghjklmnpqrstvwxyz',
-          vowels = 'aeiou',
-          rand = function(limit) {
-              return Math.floor(Math.random()*limit);
-          },
-          i, word='',
-          consonants2 = consonants.split(''),
-          vowels2 = vowels.split('');
-      for (i=0;i<length/2;i++) {
-          var randConsonant = consonants2[rand(consonants.length)],
-              randVowel = vowels2[rand(vowels.length)];
-          word += (i===0) ? randConsonant.toUpperCase() : randConsonant;
-          word += i*2<length-1 ? randVowel : '';
-      }
-      return word;
     }
 
     onSelectWallet(val) {

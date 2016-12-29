@@ -697,5 +697,5 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/balance", getBalanceHandler(gateway))
 
 	// generate wallet seed
-	mux.Handle("/wallet/seed", newWalletSeed(gateway))
+	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))
 }

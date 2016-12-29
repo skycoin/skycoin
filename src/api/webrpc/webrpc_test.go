@@ -90,3 +90,7 @@ func (fg fakeGateway) InjectTransaction(txn coin.Transaction) (coin.Transaction,
 func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
 	return nil, nil
 }
+
+func (fg fakeGateway) GetTimeNow() uint64 {
+	return 0
+}

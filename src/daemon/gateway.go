@@ -5,6 +5,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
+	"time"
+
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -256,4 +258,8 @@ func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, e
 		uxs[i] = historydb.NewUxOutJSON(ux)
 	}
 	return uxs, err
+}
+
+func (gw *Gateway) GetTimeNow() uint64 {
+	return uint64(time.Now().Unix())
 }

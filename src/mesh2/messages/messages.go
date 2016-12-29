@@ -9,18 +9,14 @@ import (
 )
 
 const (
-	MsgInRouteMessage              = iota // Transport -> Node
-	MsgOutRouteMessage                    // Node -> Transport
-	MsgTransportDatagramTransfer          //Transport -> Transport, simulating sending packet over network
-	MsgTransportDatagramACK               //Transport -> Transport, simulating ACK for packet
-	MsgCreateChannelControlMessage        //Transport -> Transport, simulating ACK for packet
-	MsgAddRouteControlMessage             //Transport -> Transport, simulating ACK for packet
-	MsgExtendRouteControlMessage          //Transport -> Transport, simulating ACK for packet
-	MsgRemoveRouteControlMessage          //Transport -> Transport, simulating ACK for packet
-	//MessageMouseScroll        // 1
-	//MessageMouseButton        // 2
-	//MessageCharacter
-	//MessageKey
+	MsgInRouteMessage            = iota // Transport -> Node
+	MsgOutRouteMessage                  // Node -> Transport
+	MsgTransportDatagramTransfer        //Transport -> Transport, simulating sending packet over network
+	MsgTransportDatagramACK             //Transport -> Transport, simulating ACK for packet
+//MessageMouseScroll        // 1
+//MessageMouseButton        // 2
+//MessageCharacter
+//MessageKey
 )
 
 func GetMessageType(message []byte) uint8 {

@@ -26,9 +26,12 @@ type Wallet struct {
 
 var version = "0.1"
 
+// Option NewWallet optional arguments type
+type Option func(w *Wallet)
+
 // NewWallet generates Deterministic Wallet
 // generates a random seed if seed is ""
-func NewWallet(seed, wltName, label string) Wallet {
+func NewWallet(seed, wltName, label string, opts ...Option) Wallet {
 	//if seed is blank, generate a new seed
 	if seed == "" {
 		seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
@@ -37,7 +40,7 @@ func NewWallet(seed, wltName, label string) Wallet {
 
 	// generate the first address.
 	// pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
-	return Wallet{
+	w := Wallet{
 		Meta: map[string]string{
 			"filename": wltName,
 			"version":  version,
@@ -47,6 +50,19 @@ func NewWallet(seed, wltName, label string) Wallet {
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     "sky"},
+	}
+
+	for _, opt := range opts {
+		opt(&w)
+	}
+
+	return w
+}
+
+// Coin NewWallet function's optional argument
+func Coin(coin string) Option {
+	return func(w *Wallet) {
+		w.Meta["coin"] = coin
 	}
 }
 

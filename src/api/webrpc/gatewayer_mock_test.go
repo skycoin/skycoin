@@ -105,6 +105,24 @@ func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
 
 }
 
+// GetTimeNow mocked method
+func (m *GatewayerMock) GetTimeNow() uint64 {
+
+	ret := m.Called()
+
+	var r0 uint64
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case uint64:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
 // GetTransaction mocked method
 func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.TransactionResult, error) {
 

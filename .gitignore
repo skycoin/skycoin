@@ -8,6 +8,7 @@
 
 sb
 
+vendor
 data
 pkg
 bin
@@ -87,6 +88,7 @@ masterdata/
 .genv
 
 src/gui/static/dev
+src/mesh/gui/static/dev
 
 npm-debug.log
 

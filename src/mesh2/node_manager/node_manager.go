@@ -3,6 +3,7 @@ package node_manager
 import (
 	"errors"
 	"fmt"
+	"github.com/satori/go.uuid"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
@@ -26,7 +27,7 @@ type NodeListT struct {
 
 func NewNodeManager() *NodeManager {
 	nm := new(NodeManager)
-	nm.NodeList = &NodeListT{nodes: map[cipher.PubKey]*node.Node{}}
+	nm.NodeList = &NodeListT{nodes: make(map[cipher.PubKey]*node.Node)}
 	nm.TransportFactoryList = []*transport.TransportFactory{}
 	return nm
 }

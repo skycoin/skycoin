@@ -27,7 +27,7 @@ type Node struct {
 	Transports           map[messages.TransportId]*transport.Transport
 	RouteForwardingRules map[messages.RouteId]*RouteRule
 
-	controlChannels map[uuid.UUID]*ControlChannel
+	ControlChannels map[uuid.UUID]*ControlChannel
 }
 
 type RouteRule struct {
@@ -43,10 +43,7 @@ func NewNode() *Node {
 	node.IncomingChannel = make(chan []byte, 1024)
 	node.Transports = make(map[messages.TransportId]*transport.Transport)
 	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
-	node.controlChannels = make(map[uuid.UUID]*ControlChannel)
-	controlChannel := NewControlChannel()
-	controlChannel.Id = uuid.UUID{}
-	node.AddControlChannel(controlChannel)
+	node.ControlChannels = make(map[uuid.UUID]*ControlChannel)
 	fmt.Printf("Created Node\n")
 	return node
 }

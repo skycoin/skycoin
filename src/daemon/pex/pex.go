@@ -316,10 +316,9 @@ func LoadPeerlist(dir string) (Peerlist, error) {
 	peerlist := Peerlist{}
 	fn := filepath.Join(dir, PeerDatabaseFilename)
 	err := util.LoadJSON(fn, &peerlist)
-
-	if err != nil {
-		logger.Notice("LoadPeerList Failed: %s", err)
-	}
+	// if err != nil {
+	// 	logger.Notice("LoadPeerList Failed: %s", err)
+	// }
 	return peerlist, err
 
 }
@@ -408,7 +407,7 @@ func (self *Pex) AddPeers(peers []string) int {
 	return n
 }
 
-// Loads both the normal peer and blacklisted peer databases
+// Load loads both the normal peer and blacklisted peer databases
 func (self *Pex) Load(dir string) error {
 	peerlist, err := LoadPeerlist(dir)
 	if err != nil {
@@ -419,7 +418,7 @@ func (self *Pex) Load(dir string) error {
 		return err
 	}
 	// Remove any peers that appear in the blacklist, if not private
-	for addr, _ := range blacklist {
+	for addr := range blacklist {
 		p := peerlist[addr]
 		if p != nil && p.Private {
 			logger.Warning("Peer %s appears in both peerlist and blacklist, "+

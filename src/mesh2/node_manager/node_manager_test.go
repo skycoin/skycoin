@@ -3,8 +3,8 @@ package node_manager
 import (
 	"testing"
 
-//	"github.com/skycoin/skycoin/src/mesh2/node"
-//	"github.com/skycoin/skycoin/src/mesh2/transport"
+	//	"github.com/skycoin/skycoin/src/mesh2/node"
+	//	"github.com/skycoin/skycoin/src/mesh2/transport"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,4 +35,7 @@ func TestConnectTwoNodes(t *testing.T) {
 	assert.Len(t, node2.Transports, 1, "Error expected 1 transport")
 	assert.Equal(t, node1.Transports[tid1].Id, node2.Transports[tid2].StubPair.Id)
 	assert.Equal(t, node2.Transports[tid2].Id, node1.Transports[tid1].StubPair.Id)
+	tr1, err := node1.GetTransportToNode(id2)
+	assert.Nil(t, err)
+	assert.Equal(t, tr1.StubPair.Id, tid2)
 }

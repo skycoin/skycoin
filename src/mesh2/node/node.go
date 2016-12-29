@@ -4,7 +4,10 @@ import (
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 
+	"errors"
 	"fmt"
+	"github.com/satori/go.uuid"
+	"github.com/skycoin/skycoin/src/cipher"
 	"log"
 )
 
@@ -18,11 +21,13 @@ import (
 // and forwards it to the transport
 
 type Node struct {
-	Id			messages.NodeId
+	Id              cipher.PubKey
 	IncomingChannel chan ([]byte)
 
 	Transports           map[messages.TransportId]*transport.Transport
-	RouteForwardingRules map[messages.RouteId]RouteRule
+	RouteForwardingRules map[messages.RouteId]*RouteRule
+
+	controlChannels map[uuid.UUID]*ControlChannel
 }
 
 type RouteRule struct {
@@ -34,12 +39,21 @@ type RouteRule struct {
 
 func NewNode() *Node {
 	node := new(Node)
-	node.Id = messages.RandNodeId()
+	node.Id = CreatePubKey()
 	node.IncomingChannel = make(chan []byte, 1024)
 	node.Transports = make(map[messages.TransportId]*transport.Transport)
-	node.RouteForwardingRules = make(map[messages.RouteId]RouteRule)
+	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
+	node.controlChannels = make(map[uuid.UUID]*ControlChannel)
+	controlChannel := NewControlChannel()
+	controlChannel.Id = uuid.UUID{}
+	node.AddControlChannel(controlChannel)
 	fmt.Printf("Created Node\n")
 	return node
+}
+
+func CreatePubKey() cipher.PubKey {
+	pub, _ := cipher.GenerateKeyPair()
+	return pub
 }
 
 func (self *Node) Shutdown() {
@@ -50,6 +64,16 @@ func (self *Node) Shutdown() {
 func (self *Node) Tick() {
 	//process incoming messages
 	self.HandleIncomingTransportMessages() //pop them off the channel
+	//process incoming control messages
+	self.HandleIncomingControlMessages()
+}
+
+func (self *Node) HandleIncomingControlMessages() {
+	for _, controlChannel := range self.controlChannels {
+		for msg := range controlChannel.IncomingChannel {
+			self.HandleControlMessage(controlChannel.Id, msg)
+		}
+	}
 }
 
 func (self *Node) HandleIncomingTransportMessages() {
@@ -99,4 +123,17 @@ func (self *Node) HandleInRouteMessage(m1 messages.InRouteMessage) {
 //inject an incoming message from the transport
 func (self *Node) InjectTransportMessage(transportId messages.TransportId, msg []byte) {
 	self.IncomingChannel <- msg //push message to channel
+}
+
+func (self *Node) GetId() cipher.PubKey {
+	return self.Id
+}
+
+func (self *Node) GetTransportToNode(nodeId cipher.PubKey) (*transport.Transport, error) {
+	for _, transport := range self.Transports {
+		if nodeId == transport.StubPair.AttachedNode.GetId() {
+			return transport, nil
+		}
+	}
+	return nil, errors.New("No transport to node")
 }

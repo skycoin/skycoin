@@ -4,14 +4,19 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	//"math/rand"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 const (
-	MsgInRouteMessage            = iota // Transport -> Node
-	MsgOutRouteMessage                  // Node -> Transport
-	MsgTransportDatagramTransfer        //Transport -> Transport, simulating sending packet over network
-	MsgTransportDatagramACK             //Transport -> Transport, simulating ACK for packet
+	MsgInRouteMessage              = iota // Transport -> Node
+	MsgOutRouteMessage                    // Node -> Transport
+	MsgTransportDatagramTransfer          //Transport -> Transport, simulating sending packet over network
+	MsgTransportDatagramACK               //Transport -> Transport, simulating ACK for packet
+	MsgCreateChannelControlMessage        //Transport -> Transport, simulating ACK for packet
+	MsgAddRouteControlMessage             //Transport -> Transport, simulating ACK for packet
+	MsgExtendRouteControlMessage          //Transport -> Transport, simulating ACK for packet
+	MsgRemoveRouteControlMessage          //Transport -> Transport, simulating ACK for packet
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -62,4 +67,21 @@ type TransportDatagramTransfer struct {
 type TransportDatagramACK struct {
 	LowestSequence uint32 //ACK anything below this SEQ number
 	Bitarray       uint32 //ACK packets at LowestSequence + Bit offset, if equal to 1
+}
+
+type CreateChannelControlMessage struct {
+}
+
+type AddRouteControlMessage struct {
+	NodeId  cipher.PubKey
+	RouteId RouteId
+}
+
+type ExtendRouteControlMessage struct {
+	NodeId  cipher.PubKey
+	RouteId RouteId
+}
+
+type RemoveRouteControlMessage struct {
+	RouteId RouteId
 }

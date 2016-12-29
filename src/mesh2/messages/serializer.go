@@ -2,22 +2,24 @@ package messages
 
 import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"log"
+	//	"log"
 )
 
-func Deserialize(msg []byte, obj interface{}) {
-	msg = msg[1:] //pop off prefix byte
-	err := encoder.DeserializeRaw(msg, &obj)
-	if err != nil {
-		log.Panic()
-	}
-	return
+func Deserialize(msg []byte, obj interface{}) error {
+	msg = msg[2:] //pop off prefix byte
+	err := encoder.DeserializeRaw(msg, obj)
+	return err
+	/*	if err != nil {
+			log.Panic()
+		}
+		return*/
 }
 
-func Serialize(prefix uint8, obj interface{}) []byte {
+func Serialize(prefix uint16, obj interface{}) []byte {
 	b := encoder.Serialize(obj)
-	var b1 []byte = make([]byte, 1)
-	b[0] = prefix
+	var b1 []byte = make([]byte, 2)
+	b1[0] = (uint8)(prefix & 0x00ff)
+	b1[1] = (uint8)((prefix & 0xff00) >> 8)
 	b2 := append(b1, b...)
 	return b2
 }

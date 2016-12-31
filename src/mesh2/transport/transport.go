@@ -49,18 +49,19 @@ func (self *Transport) Shutdown() {
 //move node forward on tick, process events
 func (self *Transport) Tick() {
 	//process incoming messages
+	fmt.Println("tick")
 	for msg := range self.IncomingChannel {
 		//process our incoming messages
-		//fmt.Println(msg)
+		fmt.Printf("\ntransport with id %d gets message %d\n\n", self.Id, msg)
 
 		switch messages.GetMessageType(msg) {
 
-		//InRouteMessage is the only message coming in to node from transports
+		//OutRouteMessage is the only message coming in to node from transports
 		//Node -> Transport message
 		case messages.MsgOutRouteMessage:
 
 			var m1 messages.OutRouteMessage
-			messages.Deserialize(msg, m1)
+			messages.Deserialize(msg, &m1)
 			//get message and put into the queue to be sent out
 			//prime message for transit between the two transport ends
 			var m1b messages.TransportDatagramTransfer

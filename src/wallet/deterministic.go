@@ -130,13 +130,13 @@ func (wlt Wallet) Validate() error {
 		return errors.New("wallet type invalid")
 	}
 
-	coinType, ok := wlt.Meta["coin"]
-	if !ok {
+	// coinType, ok := wlt.Meta["coin"]
+	if _, ok := wlt.Meta["coin"]; !ok {
 		return errors.New("coin field not set")
 	}
-	if coinType != "sky" {
-		return errors.New("coin type invalid")
-	}
+	// if coinType != "sky" {
+	// 	return errors.New("coin type invalid")
+	// }
 
 	return nil
 

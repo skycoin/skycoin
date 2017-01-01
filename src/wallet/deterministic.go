@@ -31,20 +31,15 @@ type Option func(w *Wallet)
 
 // NewWallet generates Deterministic Wallet
 // generates a random seed if seed is ""
-func NewWallet(seed, wltName, label string, opts ...Option) Wallet {
-	//if seed is blank, generate a new seed
-	if seed == "" {
-		seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
-		seed = hex.EncodeToString(seedRaw[:])
-	}
+func NewWallet(wltName string, opts ...Option) Wallet {
+	seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
+	seed := hex.EncodeToString(seedRaw[:])
 
-	// generate the first address.
-	// pub, sec := cipher.GenerateDeterministicKeyPair([]byte(seed[:]))
 	w := Wallet{
 		Meta: map[string]string{
 			"filename": wltName,
 			"version":  version,
-			"label":    label,
+			"label":    "",
 			"seed":     seed,
 			"lastSeed": seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
@@ -59,10 +54,27 @@ func NewWallet(seed, wltName, label string, opts ...Option) Wallet {
 	return w
 }
 
-// Coin NewWallet function's optional argument
-func Coin(coin string) Option {
+// OptCoin NewWallet function's optional argument
+func OptCoin(coin string) Option {
 	return func(w *Wallet) {
 		w.Meta["coin"] = coin
+	}
+}
+
+// OptLabel NewWallet function's optional argument
+func OptLabel(label string) Option {
+	return func(w *Wallet) {
+		w.Meta["label"] = label
+	}
+}
+
+// OptSeed NewWallet function's optional argument
+func OptSeed(sd string) Option {
+	return func(w *Wallet) {
+		if sd != "" {
+			w.Meta["seed"] = sd
+			w.Meta["lastSeed"] = sd
+		}
 	}
 }
 

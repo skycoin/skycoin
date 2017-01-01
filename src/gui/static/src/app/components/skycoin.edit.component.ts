@@ -1,4 +1,12 @@
-import {Component, Input, EventEmitter, ElementRef} from '@angular/core';
+/**
+ * Created by nakul.pandey@gmail.com on 01/01/17.
+ */
+
+import {Component, Input, EventEmitter, ElementRef, Output, OnInit} from '@angular/core';
+import {Wallet} from '../model/wallet.pojo';
+import {WalletService} from '../services/wallet.service';
+declare var toastr: any;
+declare var _: any;
 
 @Component({
     selector: 'skycoin-edit',
@@ -60,46 +68,49 @@ import {Component, Input, EventEmitter, ElementRef} from '@angular/core';
         }
        `
     ],
-    template: `<span *ngIf="!permission">{{text}}</span><span *ngIf="permission" class='skycoin-edit-comp' [ngClass]="{'skycoin-edit-active':show}">
+    template: `<span class='skycoin-edit-comp' [ngClass]="{'skycoin-edit-active':show}">
 <input *ngIf='show' [ngClass]="{'ng-invalid': invalid}" (ngModelChange)="validate($event)" type='text' [(ngModel)]='text' />
 <div class='err-bubble' *ngIf="invalid">{{error || " must contain " + min + " to -" + max +" chars."}}</div>
-<i id='skycoin-edit-ic' *ngIf='!show'>✎</i>
+<i class="fa fa-edit" (click)='makeEditable()' id='skycoin-edit-ic' *ngIf='!show'></i>
 <span *ngIf='!show' (click)='makeEditable()'>{{text || '-Empty Field-'}}</span>
 </span>
 <div class='skycoin-edit-buttons' *ngIf='show'>
-<button class='btn-x-sm' (click)='callSave()'><i>✔</i></button>
-<button class='btn-x-sm' (click)='cancelEditable()'><i>✖</i></button>
+<button class='btn-x-sm' (click)='callSave()'><i class="fa fa-check"></i></button>
+<button class='btn-x-sm' (click)='cancelEditable()'><i class="fa fa-times"></i></button>
 </div>`,
 
     host: {
         "(document: click)": "compareEvent($event)",
         "(click)": "trackEvent($event)"
     },
-    outputs: ['save : onSave']
+    providers: [WalletService]
 })
 
-export class SkyCoinEditComponent {
-    @Input('placeholder') text;
-    @Input('title') fieldName;
+export class SkyCoinEditComponent implements OnInit {
+
+    @Input('text') text;
+    @Input('wallets') wallets: Wallet[];
+    @Input('walletId') walletId;
+
+    @Output() onWalletChanged = new EventEmitter();
+
     originalText;
     tracker;
     el: ElementRef;
     show = false;
-    save = new EventEmitter;
-    @Input() permission = false;
     m: Number = 3;
-    @Input() min = 0;
-    @Input() max = 100;
-    @Input() error;
-    @Input() regex;
+    min = 0;
+    max = 100;
+    error;
+    regex;
     invalid = false;
 
-    constructor(el: ElementRef) {
+    constructor(el: ElementRef, private _walletService: WalletService) {
         this.el = el;
     }
 
     ngOnInit() {
-        this.originalText = this.text;    //Saves a copy of the original field info.
+        this.originalText = this.text;
     }
 
     validate(text) {
@@ -107,7 +118,6 @@ export class SkyCoinEditComponent {
             var re = new RegExp('' + this.regex, "ig");
             if (re.test(text)) {
                 this.invalid = false;
-                //console.log('valid');
             }
             else {
                 this.invalid = true;
@@ -121,7 +131,6 @@ export class SkyCoinEditComponent {
                 this.invalid = true;
             }
         }
-        //console.log(this.invalid);
     }
 
     makeEditable() {
@@ -147,17 +156,34 @@ export class SkyCoinEditComponent {
     }
 
     callSave() {
-        if (!this.invalid) {
+        if (!this.invalid && !this.isDuplicate(this.text)) {
             var data = {};
-            data["" + this.fieldName] = this.text;
-            var oldText = this.text;
-            setTimeout(() => {
-                this.originalText = oldText;
-                this.text = oldText
-            }, 0);
-            this.save.emit(data);
-            this.show = false;
-        }
+            data["newText"] = this.text;
+            data["walletId"] = this.walletId;
 
+            this._walletService.updateWallet(data).subscribe(response => {
+                    this.onWalletChanged.emit(data);
+                    this.show = false;
+                    toastr.info("Wallet name updated");
+                },
+                err => {
+                    this.cancelEditable();
+                    toastr.error("Unable to update the name. Please try after some time");
+                }
+            );
+        }
+    }
+
+    isDuplicate(text) {
+        var old = _.find(this.wallets, function (o) {
+            return (o.meta.label == text)
+        })
+
+        if (old) {
+            toastr.error("This wallet label is used already");
+            this.cancelEditable();
+            return true;
+        }
+        return false;
     }
 }

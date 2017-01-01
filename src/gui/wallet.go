@@ -36,6 +36,7 @@ This section is redundant
 type WalletRPC struct {
 	Wallets         wallet.Wallets
 	WalletDirectory string
+	Options         []wallet.Option
 }
 
 //use a global for now
@@ -49,12 +50,14 @@ func InitWalletRPC(walletDir string, options ...wallet.Option) {
 // NewWalletRPC new wallet rpc
 func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 	rpc := &WalletRPC{}
-
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
 		log.Panicf("Failed to create wallet directory %s: %v", walletDir, err)
 	}
 
 	rpc.WalletDirectory = walletDir
+	for i := range options {
+		rpc.Options = append(rpc.Options, options[i])
+	}
 
 	w, err := wallet.LoadWallets(rpc.WalletDirectory)
 	if err != nil {
@@ -64,7 +67,7 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 
 	if len(rpc.Wallets) == 0 {
 		wltName := wallet.NewWalletFilename()
-		rpc.CreateWallet("", wltName, "", options...)
+		rpc.CreateWallet(wltName)
 
 		if err := rpc.SaveWallet(wltName); err != nil {
 			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, err)
@@ -102,8 +105,11 @@ func (self *WalletRPC) SaveWallets() map[string]error {
 	return self.Wallets.Save(self.WalletDirectory)
 }
 
-func (self *WalletRPC) CreateWallet(seed, wltName, label string, options ...wallet.Option) (wallet.Wallet, error) {
-	w := wallet.NewWallet(seed, wltName, label, options...)
+func (self *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
+	ops := make([]wallet.Option, 0, len(self.Options)+len(options))
+	ops = append(ops, self.Options...)
+	ops = append(ops, options...)
+	w := wallet.NewWallet(wltName, ops...)
 	// generate a default address
 	w.GenerateAddresses(1)
 
@@ -406,7 +412,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		var err error
 		// the wallet name may dup, rename it till no conflict.
 		for {
-			wlt, err = Wg.CreateWallet(seed, wltName, label)
+			wlt, err = Wg.CreateWallet(wltName, wallet.OptSeed(seed), wallet.OptLabel(label))
 			if err != nil && strings.Contains(err.Error(), "renaming") {
 				wltName = wallet.NewWalletFilename()
 				continue

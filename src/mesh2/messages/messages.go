@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/satori/go.uuid"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
@@ -13,19 +14,22 @@ const (
 	MsgOutRouteMessage                    // Node -> Transport
 	MsgTransportDatagramTransfer          //Transport -> Transport, simulating sending packet over network
 	MsgTransportDatagramACK               //Transport -> Transport, simulating ACK for packet
-	MsgCreateChannelControlMessage        //Transport -> Transport, simulating ACK for packet
-	MsgAddRouteControlMessage             //Transport -> Transport, simulating ACK for packet
-	MsgExtendRouteControlMessage          //Transport -> Transport, simulating ACK for packet
-	MsgRemoveRouteControlMessage          //Transport -> Transport, simulating ACK for packet
+	MsgInControlMessage                   //Transport -> Node, control message
+	MsgOutControlMessage                  //Node -> Transport, control message
+	MsgCreateChannelControlMessage        //Node -> Control channel, create new control channel
+	MsgRemoveChannelControlMessage        //Node -> Control channel, remove control channel
+	MsgAddRouteControlMessage             //Node -> Control channel, add new route
+	MsgExtendRouteControlMessage          //Node -> Control channel, extend route
+	MsgRemoveRouteControlMessage          //Node -> Control channel, remove route
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
 	//MessageKey
 )
 
-func GetMessageType(message []byte) uint8 {
-	var value uint8
-	rBuf := bytes.NewReader(message[4:5])
+func GetMessageType(message []byte) uint16 {
+	var value uint16
+	rBuf := bytes.NewReader(message[0:2])
 	err := binary.Read(rBuf, binary.LittleEndian, &value)
 	if err != nil {
 		fmt.Println("binary.Read failed: ", err)
@@ -67,6 +71,11 @@ type TransportDatagramTransfer struct {
 type TransportDatagramACK struct {
 	LowestSequence uint32 //ACK anything below this SEQ number
 	Bitarray       uint32 //ACK packets at LowestSequence + Bit offset, if equal to 1
+}
+
+type InControlMessage struct {
+	ChannelId      uuid.UUID
+	PayloadMessage []byte
 }
 
 type CreateChannelControlMessage struct {

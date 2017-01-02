@@ -26,7 +26,7 @@ type NodeListT struct {
 
 func NewNodeManager() *NodeManager {
 	nm := new(NodeManager)
-	nm.NodeList = &NodeListT{nodes: map[cipher.PubKey]*node.Node{}}
+	nm.NodeList = &NodeListT{nodes: make(map[cipher.PubKey]*node.Node)}
 	nm.TransportFactoryList = []*transport.TransportFactory{}
 	return nm
 }
@@ -81,5 +81,6 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (messages.Tra
 	tidB := transportB.Id
 	nodeA.Transports[tidA] = transportA
 	nodeB.Transports[tidB] = transportB
+	go tf.Tick()
 	return tidA, tidB
 }

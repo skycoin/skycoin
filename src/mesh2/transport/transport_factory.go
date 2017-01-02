@@ -23,10 +23,12 @@ func (self *TransportFactory) Shutdown() {
 func (self *TransportFactory) Tick() {
 	//call tick on the transport
 	for _, t := range self.TransportList {
+		fmt.Println("ticking transport", t.Id)
 		t.Tick()
 	}
 
 	for _, t := range self.TransportList {
+		fmt.Println("ticking transport", t.Id)
 		t.Tick()
 	}
 
@@ -51,5 +53,7 @@ func (self *TransportFactory) CreateStubTransportPair() (*Transport, *Transport)
 	b.NewTransportStub()
 	a.StubPair = &b
 	b.StubPair = &a
+	self.TransportList = append(self.TransportList, a)
+	self.TransportList = append(self.TransportList, b)
 	return &a, &b
 }

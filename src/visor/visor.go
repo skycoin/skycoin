@@ -244,17 +244,6 @@ func (self *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	// TODO -- check if bitcoin allows blocks to be receiving out of order
 	self.blockSigs.Add(&b)
 
-	// add transactions in the block to blockdb
-	// for _, tx := range b.Block.Body.Transactions {
-	// 	storeTx := transactiondb.Transaction{
-	// 		Tx:       tx,
-	// 		BlockSeq: b.Block.Seq(),
-	// 	}
-	// 	if err := self.txns.Add(&storeTx); err != nil {
-	// 		return err
-	// 	}
-	// }
-
 	// Remove the transactions in the Block from the unconfirmed pool
 	self.Unconfirmed.RemoveTransactions(self.Blockchain,
 		b.Block.Body.Transactions)
@@ -266,7 +255,7 @@ func (vs *Visor) verifySignedBlock(b *coin.SignedBlock) error {
 	return cipher.VerifySignature(vs.Config.BlockchainPubkey, b.Sig, b.Block.HashHeader())
 }
 
-// Signs a block for master.  Will panic if anything is invalid
+// SignBlock signs a block for master.  Will panic if anything is invalid
 func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 	if !vs.Config.IsMaster {
 		log.Panic("Only master chain can sign blocks")
@@ -283,7 +272,7 @@ func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 	Return Data
 */
 
-//Make local copy and update when block header changes
+// GetUnspentOutputs makes local copy and update when block header changes
 // update should lock
 // isolate effect of threading
 // call .Array() to get []UxOut array

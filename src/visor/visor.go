@@ -89,9 +89,6 @@ func NewVisorConfig() VisorConfig {
 		UnconfirmedRefreshRate:   time.Minute * 30,
 		MaxBlockSize:             1024 * 32,
 
-		BlockchainFile: "",
-		BlockSigsFile:  "",
-
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
 		GenesisTimestamp:  0,

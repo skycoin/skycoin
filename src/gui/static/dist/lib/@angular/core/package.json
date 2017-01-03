@@ -1,21 +1,14 @@
 {
   "_args": [
     [
-      {
-        "raw": "@angular/core@2.0.0-rc.1",
-        "scope": "@angular",
-        "escapedName": "@angular%2fcore",
-        "name": "@angular/core",
-        "rawSpec": "2.0.0-rc.1",
-        "spec": "2.0.0-rc.1",
-        "type": "version"
-      },
-      "/skycoin/skycoin/src/gui/static"
+      "@angular/core@2.0.0-rc.1",
+      "/Users/napandey/coding/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/core@2.0.0-rc.1",
   "_id": "@angular/core@2.0.0-rc.1",
   "_inCache": true,
+  "_installable": true,
   "_location": "/@angular/core",
   "_nodeVersion": "5.4.1",
   "_npmOperationalInternal": {
@@ -23,17 +16,16 @@
     "tmp": "tmp/core-2.0.0-rc.1.tgz_1462310703407_0.9186127157881856"
   },
   "_npmUser": {
-    "name": "angular",
-    "email": "angular-core+npm@google.com"
+    "email": "angular-core+npm@google.com",
+    "name": "angular"
   },
   "_npmVersion": "3.8.7",
   "_phantomChildren": {},
   "_requested": {
-    "raw": "@angular/core@2.0.0-rc.1",
-    "scope": "@angular",
-    "escapedName": "@angular%2fcore",
     "name": "@angular/core",
+    "raw": "@angular/core@2.0.0-rc.1",
     "rawSpec": "2.0.0-rc.1",
+    "scope": "@angular",
     "spec": "2.0.0-rc.1",
     "type": "version"
   },
@@ -44,7 +36,7 @@
   "_shasum": "34e381faffb60fc12e8ac9887badb252550907e0",
   "_shrinkwrap": null,
   "_spec": "@angular/core@2.0.0-rc.1",
-  "_where": "/skycoin/skycoin/src/gui/static",
+  "_where": "/Users/napandey/coding/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },
@@ -61,8 +53,8 @@
   "main": "index.js",
   "maintainers": [
     {
-      "name": "angular",
-      "email": "angular-core+npm@google.com"
+      "email": "angular-core+npm@google.com",
+      "name": "angular"
     }
   ],
   "name": "@angular/core",

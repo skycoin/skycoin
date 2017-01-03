@@ -1,21 +1,14 @@
 {
   "_args": [
     [
-      {
-        "raw": "rxjs@5.0.0-beta.6",
-        "scope": null,
-        "escapedName": "rxjs",
-        "name": "rxjs",
-        "rawSpec": "5.0.0-beta.6",
-        "spec": "5.0.0-beta.6",
-        "type": "version"
-      },
-      "/skycoin/skycoin/src/gui/static"
+      "rxjs@5.0.0-beta.6",
+      "/Users/napandey/coding/skycoin/src/gui/static"
     ]
   ],
   "_from": "rxjs@5.0.0-beta.6",
   "_id": "rxjs@5.0.0-beta.6",
   "_inCache": true,
+  "_installable": true,
   "_location": "/rxjs",
   "_nodeVersion": "5.0.0",
   "_npmOperationalInternal": {
@@ -23,17 +16,16 @@
     "tmp": "tmp/rxjs-5.0.0-beta.6.tgz_1460493695519_0.9258141233585775"
   },
   "_npmUser": {
-    "name": "blesh",
-    "email": "ben@benlesh.com"
+    "email": "ben@benlesh.com",
+    "name": "blesh"
   },
   "_npmVersion": "3.7.3",
   "_phantomChildren": {},
   "_requested": {
-    "raw": "rxjs@5.0.0-beta.6",
-    "scope": null,
-    "escapedName": "rxjs",
     "name": "rxjs",
+    "raw": "rxjs@5.0.0-beta.6",
     "rawSpec": "5.0.0-beta.6",
+    "scope": null,
     "spec": "5.0.0-beta.6",
     "type": "version"
   },
@@ -44,10 +36,10 @@
   "_shasum": "cb6dc46d6ddfedfeefc9b15dafd09c34a4370d23",
   "_shrinkwrap": null,
   "_spec": "rxjs@5.0.0-beta.6",
-  "_where": "/skycoin/skycoin/src/gui/static",
+  "_where": "/Users/napandey/coding/skycoin/src/gui/static",
   "author": {
-    "name": "Ben Lesh",
-    "email": "blesh@netflix.com"
+    "email": "blesh@netflix.com",
+    "name": "Ben Lesh"
   },
   "bugs": {
     "url": "https://github.com/ReactiveX/RxJS/issues"
@@ -62,28 +54,28 @@
   },
   "contributors": [
     {
-      "name": "Ben Lesh",
-      "email": "blesh@netflix.com"
+      "email": "blesh@netflix.com",
+      "name": "Ben Lesh"
     },
     {
-      "name": "Paul Taylor",
-      "email": "paul.e.taylor@me.com"
+      "email": "paul.e.taylor@me.com",
+      "name": "Paul Taylor"
     },
     {
-      "name": "Jeff Cross",
-      "email": "crossj@google.com"
+      "email": "crossj@google.com",
+      "name": "Jeff Cross"
     },
     {
-      "name": "Matthew Podwysocki",
-      "email": "matthewp@microsoft.com"
+      "email": "matthewp@microsoft.com",
+      "name": "Matthew Podwysocki"
     },
     {
-      "name": "OJ Kwon",
-      "email": "kwon.ohjoong@gmail.com"
+      "email": "kwon.ohjoong@gmail.com",
+      "name": "OJ Kwon"
     },
     {
-      "name": "Andre Staltz",
-      "email": "andre@staltz.com"
+      "email": "andre@staltz.com",
+      "name": "Andre Staltz"
     }
   ],
   "dependencies": {},
@@ -163,12 +155,12 @@
   "main": "Rx.js",
   "maintainers": [
     {
-      "name": "blesh",
-      "email": "ben@benlesh.com"
+      "email": "ben@benlesh.com",
+      "name": "blesh"
     },
     {
-      "name": "jeffbcross",
-      "email": "middlefloor@gmail.com"
+      "email": "middlefloor@gmail.com",
+      "name": "jeffbcross"
     }
   ],
   "name": "rxjs",
@@ -180,38 +172,38 @@
   },
   "scripts": {},
   "scripts-info": {
-    "info": "List available script",
     "build_all": "Build all packages(ES6, CJS, AMD, Global) and generate packages",
     "build_amd": "Build AMD package with clean up existing build, copy source into dist",
     "build_cjs": "Build CJS package with clean up existing build, copy source into dist",
-    "build_es6": "Build ES6 package with clean up existing build, copy source into dist",
     "build_closure_core": "Minify Global core build using closure compiler",
     "build_closure_kitchensink": "Minify Global kitchenSink build using closure compiler",
-    "build_global": "Build Global package, then minify core & kitchensink build",
-    "build_perf": "Build CJS & Global build, run macro performance test",
-    "build_test": "Build CJS package & test spec, execute mocha test runner",
     "build_cover": "Run lint to current code, build CJS & test spec, execute test coverage",
     "build_docs": "Build ES6 & global package, create documentation using it",
+    "build_es6": "Build ES6 package with clean up existing build, copy source into dist",
+    "build_global": "Build Global package, then minify core & kitchensink build",
+    "build_perf": "Build CJS & Global build, run macro performance test",
     "build_spec": "Build test specs",
+    "build_test": "Build CJS package & test spec, execute mocha test runner",
     "check_circular_dependencies": "Check codebase has circular dependencies",
-    "clean_spec": "Clean up existing test spec build output",
     "clean_dist_amd": "Clean up existing AMD package output",
     "clean_dist_cjs": "Clean up existing CJS package output",
     "clean_dist_es6": "Clean up existing ES6 package output",
+    "clean_spec": "Clean up existing test spec build output",
     "commit": "Run git commit wizard",
     "compile_dist_amd": "Compile codebase into AMD module",
     "compile_dist_cjs": "Compile codebase into CJS module",
     "compile_dist_es6": "Compile codebase into ES6",
     "cover": "Execute test coverage",
+    "info": "List available script",
+    "lint": "Run lint against everything",
     "lint_perf": "Run lint against performance test suite",
     "lint_spec": "Run lint against test spec",
     "lint_src": "Run lint against source",
-    "lint": "Run lint against everything",
     "perf": "Run macro performance benchmark",
     "perf_micro": "Run micro performance benchmark",
-    "test_mocha": "Execute mocha test runner against existing test spec build",
-    "test_browser": "Execute mocha test runner on browser against existing test spec build",
     "test": "Clean up existing test spec build, build test spec and execute mocha test runner",
+    "test_browser": "Execute mocha test runner on browser against existing test spec build",
+    "test_mocha": "Execute mocha test runner against existing test spec build",
     "tests2png": "Generate marble diagram image from test spec",
     "watch": "Watch codebase, trigger compile when source code changes"
   },

@@ -74,8 +74,8 @@ func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 	return ret
 }
 
-func (self RPC) GetWalletTransactions(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
-	ret := v.GetWalletTransactions(addresses)
+func (self RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
+	ret := v.GetUnconfirmedTxns(addresses)
 	return ret
 }
 

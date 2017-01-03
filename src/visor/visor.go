@@ -509,11 +509,12 @@ func (self *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 	return coins, hours
 }
 
-func (self *Visor) GetWalletTransactions(addresses []cipher.Address) []ReadableUnconfirmedTxn {
+// GetUnconfirmedTxns gets all confirmed transactions of specific addresses
+func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []ReadableUnconfirmedTxn {
 
-	ret := make([]ReadableUnconfirmedTxn, 0)
+	ret := []ReadableUnconfirmedTxn{}
 
-	for _, unconfirmedTxn := range self.Unconfirmed.Txns {
+	for _, unconfirmedTxn := range vs.Unconfirmed.Txns {
 		isRelatedTransaction := false
 
 		for _, out := range unconfirmedTxn.Txn.Out {

@@ -508,13 +508,13 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Returns JSON of pending transactions for user's wallet
+// Returns JSON of unconfirmed transactions for user's wallet
 func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			wallet := Wg.GetWallet(r.FormValue("id"))
 			addresses := wallet.GetAddresses()
-			ret := gateway.Visor.GetWalletTransactions(gateway.V, addresses)
+			ret := gateway.Visor.GetUnconfirmedTxns(gateway.V, addresses)
 
 			wh.SendOr404(w, ret)
 		}

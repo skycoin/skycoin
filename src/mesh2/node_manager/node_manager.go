@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 )
@@ -56,21 +55,21 @@ func (self *NodeListT) Tick() {
 	}
 }
 
-func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (messages.TransportId, messages.TransportId) {
+func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
 	if idA == idB {
 		fmt.Println("Cannot connect node to itself")
-		return (messages.TransportId)(0), (messages.TransportId)(0)
+		return &transport.TransportFactory{}
 	}
 	nodes := self.NodeList.nodes
 	nodeA, found := nodes[idA]
 	if !found {
 		fmt.Println("Cannot find node with ID", idA)
-		return (messages.TransportId)(0), (messages.TransportId)(0)
+		return &transport.TransportFactory{}
 	}
 	nodeB, found := nodes[idB]
 	if !found {
 		fmt.Println("Cannot find node with ID", idB)
-		return (messages.TransportId)(0), (messages.TransportId)(0)
+		return &transport.TransportFactory{}
 	}
 
 	tf := transport.NewTransportFactory()
@@ -82,5 +81,5 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (messages.Tra
 	nodeA.Transports[tidA] = transportA
 	nodeB.Transports[tidB] = transportB
 	go tf.Tick()
-	return tidA, tidB
+	return tf
 }

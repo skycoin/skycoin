@@ -61,6 +61,9 @@ func (self *Node) Shutdown() {
 
 //move node forward on tick, process events
 func (self *Node) Tick() {
+	for _, tr := range self.Transports {
+		go tr.Tick()
+	}
 	//process incoming messages
 	go self.HandleIncomingTransportMessages() //pop them off the channel
 	go self.HandleIncomingControlMessages()   //pop them off the channel
@@ -77,7 +80,6 @@ func (self *Node) HandleIncomingTransportMessages() {
 			messages.Deserialize(msg, &m1)
 			fmt.Println("InRouteMessage", m1)
 			self.HandleInRouteMessage(m1)
-			//case messages.InRouteMessage:
 		default:
 			fmt.Println("wrong type", messages.GetMessageType(msg))
 		}
@@ -112,16 +114,17 @@ func (self *Node) HandleInRouteMessage(m1 messages.InRouteMessage) {
 	}
 	//construct new packet
 	var out messages.OutRouteMessage
-	out.RouteId = routeRule.OutgoingRoute //replace inRoute, with outRoute, using rule
+	out.RouteId = routeRule.OutgoingRoute              //replace inRoute, with outRoute, using rule
+	outgoingTransportId := routeRule.OutgoingTransport //find transport to resend datagram
 	out.Datagram = m1.Datagram
 	//serialize message, with prefix
 	b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
-	//	self.Transports[transportId].InjectNodeMessage(b1) //inject message to transport
-	self.Transports[transportId].SendMessageToStubPair(b1) //inject message to transport
+	//self.Transports[transportId].InjectNodeMessage(b1) //inject message to transport
+	self.Transports[outgoingTransportId].IncomingChannel <- b1 //inject message to transport
 }
 
 //inject an incoming message from the transport
-func (self *Node) InjectTransportMessage(transportId messages.TransportId, msg []byte) {
+func (self *Node) InjectTransportMessage(transportID messages.TransportId, msg []byte) {
 	self.IncomingChannel <- msg //push message to channel
 }
 
@@ -131,6 +134,14 @@ func (self *Node) InjectControlMessage(msg messages.InControlMessage) {
 
 func (self *Node) GetId() cipher.PubKey {
 	return self.Id
+}
+
+func (self *Node) GetTransportById(id messages.TransportId) (*transport.Transport, error) {
+	tr, ok := self.Transports[id]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Node %d doesn't contain transport with id %d", self.Id, id))
+	}
+	return tr, nil
 }
 
 func (self *Node) GetTransportToNode(nodeId cipher.PubKey) (*transport.Transport, error) {

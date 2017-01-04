@@ -35,11 +35,9 @@ func TestAddRoute(t *testing.T) {
 	node1.Tick() // run channels consuming
 
 	tf := transport.NewTransportFactory()
-	transport1, transport2 := tf.CreateStubTransportPair()
-	transport1.AttachedNode = node1
-	transport2.AttachedNode = node2
-	tid1 := transport1.Id
-	node1.Transports[tid1] = transport1
+	tf.ConnectNodeToNode(node1, node2)
+	tr1, _ := tf.GetTransports()
+	tid1 := tr1.Id
 
 	routeId := messages.RandRouteId()
 
@@ -65,11 +63,7 @@ func TestRemoveRoute(t *testing.T) {
 	node1.Tick() // run channels consuming
 
 	tf := transport.NewTransportFactory()
-	transport1, transport2 := tf.CreateStubTransportPair()
-	transport1.AttachedNode = node1
-	transport2.AttachedNode = node2
-	tid1 := transport1.Id
-	node1.Transports[tid1] = transport1
+	tf.ConnectNodeToNode(node1, node2)
 
 	routeId := messages.RandRouteId()
 

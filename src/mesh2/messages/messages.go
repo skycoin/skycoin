@@ -64,6 +64,7 @@ type OutRouteMessage struct {
 //simulates one end of a transport, sending data to other end of the pair
 type TransportDatagramTransfer struct {
 	//put seq number for confirmation/ACK
+	RouteId  RouteId
 	Sequence uint32 //sequential sequence number of ACK
 	Datagram []byte
 }

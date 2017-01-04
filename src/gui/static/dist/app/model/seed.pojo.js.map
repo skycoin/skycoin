@@ -1,0 +1,1 @@
+{"version":3,"sources":["app/model/seed.pojo.ts"],"names":[],"mappings":";;;;;;;YAAA;;eAEG;YACH;gBACI,cACW,IAAY;oBAAZ,SAAI,GAAJ,IAAI,CAAQ;gBACrB,CAAC;gBACP,WAAC;YAAD,CAJA,AAIC,IAAA;YAJD,uBAIC,CAAA","file":"seed.pojo.js","sourcesContent":["/**\n * Created by napandey on 12/29/16.\n */\nexport class Seed{\n    constructor(\n        public seed: string\n    ){}\n}\n"]}

@@ -1,1 +1,0 @@
-[{"__symbolic":"module","version":2,"metadata":{},"exports":[{"from":"./upgrade_adapter","export":["UpgradeAdapter","UpgradeAdapterRef"]},{"from":"./version","export":["VERSION"]}]},{"__symbolic":"module","exports":[{"from":"./upgrade_adapter","export":["UpgradeAdapter","UpgradeAdapterRef"]},{"from":"./version","export":["VERSION"]}],"metadata":{},"version":1}]

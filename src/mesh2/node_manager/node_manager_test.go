@@ -1,7 +1,6 @@
 package node_manager
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -32,53 +31,57 @@ func TestConnectTwoNodes(t *testing.T) {
 	assert.Nil(t, err)
 	node2, err := nm.GetNodeById(id2)
 	assert.Nil(t, err)
-	tid1, tid2 := nm.ConnectNodeToNode(id1, id2)
+	tf := nm.ConnectNodeToNode(id1, id2)
+	t1, t2 := tf.GetTransports()
 	assert.Len(t, node1.Transports, 1, "Error expected 1 transport")
 	assert.Len(t, node2.Transports, 1, "Error expected 1 transport")
-	assert.Equal(t, node1.Transports[tid1].Id, node2.Transports[tid2].StubPair.Id)
-	assert.Equal(t, node2.Transports[tid2].Id, node1.Transports[tid1].StubPair.Id)
+	assert.Equal(t, t1.Id, t2.StubPair.Id)
+	assert.Equal(t, t2.Id, t1.StubPair.Id)
 	tr1, err := node1.GetTransportToNode(id2)
 	assert.Nil(t, err)
-	assert.Equal(t, tr1.StubPair.Id, tid2)
+	assert.Equal(t, tr1.StubPair.Id, t2.Id)
 }
 
-func TestSendMessage(t *testing.T) {
+func TestSendMessageClosedCycle(t *testing.T) {
 
 	nm := NewNodeManager()
-	id1 := nm.AddNode()
-	id2 := nm.AddNode()
+
+	id1, id2, id3 := nm.AddNode(), nm.AddNode(), nm.AddNode()
 	node1, err := nm.GetNodeById(id1)
 	assert.Nil(t, err)
 	node2, err := nm.GetNodeById(id2)
 	assert.Nil(t, err)
-	tid1, tid2 := nm.ConnectNodeToNode(id1, id2)
-	routeId1 := messages.RandRouteId()
-	routeId2 := messages.RandRouteId()
-	route1 := node.RouteRule{tid1, tid1, routeId1, routeId2}
-	route2 := node.RouteRule{tid2, tid2, routeId2, routeId1} //endless cycle
-	node1.RouteForwardingRules[routeId1] = &route1
-	node2.RouteForwardingRules[routeId2] = &route2
+	node3, err := nm.GetNodeById(id3)
+	assert.Nil(t, err)
+
+	tf12 := nm.ConnectNodeToNode(id1, id2) // transport pair between nodes 1 and 2
+	t12, t21 := tf12.GetTransports()
+	tid12, tid21 := t12.Id, t21.Id
+
+	tf13 := nm.ConnectNodeToNode(id1, id3) // transport pair between nodes 1 and 3
+	t13, t31 := tf13.GetTransports()
+	tid13, tid31 := t13.Id, t31.Id
+
+	tf23 := nm.ConnectNodeToNode(id2, id3) // transport pair between nodes 2 and 3
+	t23, t32 := tf23.GetTransports()
+	tid23, tid32 := t23.Id, t32.Id
+
+	t13.MaxSimulatedDelay = 1100 // this can lead to timeout
+
+	routeId123, routeId231, routeId312 := messages.RandRouteId(), messages.RandRouteId(), messages.RandRouteId()
+
+	route123 := node.RouteRule{tid21, tid23, routeId123, routeId231} // route from 1 to 3 through 2
+	route231 := node.RouteRule{tid32, tid31, routeId231, routeId312} // route from 2 to 1 through 3
+	route312 := node.RouteRule{tid13, tid12, routeId312, routeId123} // route from 3 to 2 through 1
+
+	node1.RouteForwardingRules[routeId312] = &route312
+	node2.RouteForwardingRules[routeId123] = &route123
+	node3.RouteForwardingRules[routeId231] = &route231
+
 	nm.Tick()
-	time.Sleep(1 * time.Second)
 
-	for tid1 := range node1.Transports {
-		fmt.Println("node1 tr", tid1)
-	}
-
-	for rid1, routeRule1 := range node1.RouteForwardingRules {
-		fmt.Println("node1 rr", rid1, routeRule1)
-	}
-
-	for tid2 := range node2.Transports {
-		fmt.Println("node2 tr", tid2)
-	}
-
-	for rid2, routeRule2 := range node2.RouteForwardingRules {
-		fmt.Println("node2 rr", rid2, routeRule2)
-	}
-
-	inRouteMessage := messages.InRouteMessage{tid1, routeId1, []byte{'t', 'e', 's', 't'}}
+	inRouteMessage := messages.InRouteMessage{tid21, routeId123, []byte{'t', 'e', 's', 't'}}
 	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
-	node1.IncomingChannel <- serialized
-	time.Sleep(1 * time.Second)
+	node2.IncomingChannel <- serialized
+	time.Sleep(10 * time.Second)
 }

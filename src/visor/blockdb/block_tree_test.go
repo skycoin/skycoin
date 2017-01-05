@@ -50,7 +50,7 @@ func testCase(t *testing.T, cases []blockCase) {
 
 		switch d.Action {
 		case "add":
-			err := btree.AddBlock(b)
+			err := btree.AddBlock(&b)
 			if err != d.Err {
 				t.Fatal(fmt.Sprintf("expect err:%v, but get err:%v", d.Err, err))
 			}
@@ -60,7 +60,7 @@ func testCase(t *testing.T, cases []blockCase) {
 				assert.Equal(t, *b1, b)
 			}
 		case "remove":
-			err := btree.RemoveBlock(b)
+			err := btree.RemoveBlock(&b)
 			if err != d.Err {
 				t.Fatal(fmt.Sprintf("expect err:%v, but get err:%v", d.Err, err))
 			}
@@ -190,11 +190,11 @@ func TestGetBlockInDepth(t *testing.T) {
 		},
 	}
 
-	assert.Nil(t, bc.AddBlock(blocks[0]))
+	assert.Nil(t, bc.AddBlock(&blocks[0]))
 	blocks[1].Head.PrevHash = blocks[0].HashHeader()
-	assert.Nil(t, bc.AddBlock(blocks[1]))
+	assert.Nil(t, bc.AddBlock(&blocks[1]))
 	blocks[2].Head.PrevHash = blocks[0].HashHeader()
-	assert.Nil(t, bc.AddBlock(blocks[2]))
+	assert.Nil(t, bc.AddBlock(&blocks[2]))
 
 	block := bc.GetBlockInDepth(1, func(hps []coin.HashPair) cipher.SHA256 {
 		for _, hp := range hps {

@@ -6,7 +6,6 @@ import (
 
 	"errors"
 	"fmt"
-	"github.com/satori/go.uuid"
 	"github.com/skycoin/skycoin/src/cipher"
 	"log"
 )
@@ -28,7 +27,7 @@ type Node struct {
 	Transports           map[messages.TransportId]*transport.Transport
 	RouteForwardingRules map[messages.RouteId]*RouteRule
 
-	controlChannels map[uuid.UUID]*ControlChannel
+	controlChannels map[messages.ChannelId]*ControlChannel
 }
 
 type RouteRule struct {
@@ -45,7 +44,7 @@ func NewNode() *Node {
 	node.IncomingControlChannel = make(chan messages.InControlMessage, 1024)
 	node.Transports = make(map[messages.TransportId]*transport.Transport)
 	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
-	node.controlChannels = make(map[uuid.UUID]*ControlChannel)
+	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
 	fmt.Printf("Created Node %d\n", node.Id)
 	return node
 }

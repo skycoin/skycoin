@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/satori/go.uuid"
+	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
-func (self *Node) AddControlChannel() uuid.UUID {
+func (self *Node) AddControlChannel() messages.ChannelId {
 	//self.lock.Lock()
 	//defer self.lock.Unlock()
 
@@ -17,7 +17,7 @@ func (self *Node) AddControlChannel() uuid.UUID {
 	return channel.Id
 }
 
-func (self *Node) RemoveControlChannel(channelID uuid.UUID) error {
+func (self *Node) CloseControlChannel(channelID messages.ChannelId) error {
 	//self.lock.Lock()
 	//defer self.lock.Unlock()
 
@@ -29,7 +29,7 @@ func (self *Node) RemoveControlChannel(channelID uuid.UUID) error {
 	return nil
 }
 
-func (self *Node) HandleControlMessage(channelID uuid.UUID, message []byte) (interface{}, error) {
+func (self *Node) HandleControlMessage(channelID messages.ChannelId, message []byte) (interface{}, error) {
 
 	channel, ok := self.controlChannels[channelID]
 	if !ok {

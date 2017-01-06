@@ -12,9 +12,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testBlockSize = 1024 * 1024
-)
+// import (
+// 	"crypto/rand"
+// 	"testing"
+// 	"time"
+
+// 	"github.com/skycoin/skycoin/src/cipher"
+// 	"github.com/skycoin/skycoin/src/coin"
+// 	"github.com/skycoin/skycoin/src/util"
+// 	"github.com/skycoin/skycoin/src/wallet"
+// 	"github.com/stretchr/testify/assert"
+// )
+
+// const (
+// 	testBlockSize = 1024 * 1024
+// )
 
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	p, s := cipher.GenerateKeyPair()
@@ -64,47 +76,75 @@ func getFee(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func makeValidTxn(mv *Visor) (coin.Transaction, error) {
-	we := wallet.NewWalletEntry()
-	return mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
-		we.Address)
+func makeValidTxn() (coin.Transaction, error) {
+	w := wallet.NewWallet("test")
+	w.GenerateAddresses(2)
+	uncf := NewUnconfirmedTxnPool()
+	now := tNow()
+	a := makeAddress()
+	uxs := makeUxBalancesForAddresses([]wallet.Balance{
+		wallet.Balance{10e6, 150},
+		wallet.Balance{15e6, 150},
+	}, now, w.GetAddresses()[:2])
+	unsp := coin.NewUnspentPool()
+	addUxArrayToUnspentPool(&unsp, uxs)
+	amt := wallet.Balance{10 * 1e6, 0}
+	return CreateSpendingTransaction(w, uncf, &unsp, now, amt, a)
 }
 
-func makeValidTxnWithFeeFactor(mv *Visor,
-	factor, extra uint64) (coin.Transaction, error) {
-	we := wallet.NewWalletEntry()
-	tmp := mv.Config.CoinHourBurnFactor
-	mv.Config.CoinHourBurnFactor = factor
-	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 1000},
-		extra, we.Address)
-	mv.Config.CoinHourBurnFactor = tmp
-	return tx, err
+// func makeValidTxnWithFeeFactor(mv *Visor,
+// 	factor, extra uint64) (coin.Transaction, error) {
+// 	we := wallet.NewWalletEntry()
+// 	tmp := mv.Config.CoinHourBurnFactor
+// 	mv.Config.CoinHourBurnFactor = factor
+// 	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 1000},
+// 		extra, we.Address)
+// 	mv.Config.CoinHourBurnFactor = tmp
+// 	return tx, err
+// }
+
+// func makeValidTxnWithFeeFactorAndExtraChange(mv *Visor,
+// 	factor, extra, change uint64) (coin.Transaction, error) {
+// 	we := wallet.NewWalletEntry()
+// 	tmp := mv.Config.CoinHourBurnFactor
+// 	mv.Config.CoinHourBurnFactor = factor
+// 	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 1002},
+// 		extra, we.Address)
+// 	mv.Config.CoinHourBurnFactor = tmp
+// 	return tx, err
+// }
+
+func makeValidTxnNoChange() (coin.Transaction, error) {
+	w := wallet.NewWallet("test")
+	w.GenerateAddresses(2)
+	uncf := NewUnconfirmedTxnPool()
+	now := tNow()
+	a := makeAddress()
+	uxs := makeUxBalancesForAddresses([]wallet.Balance{
+		wallet.Balance{10e6, 150},
+		wallet.Balance{15e6, 150},
+	}, now, w.GetAddresses()[:2])
+	unsp := coin.NewUnspentPool()
+	addUxArrayToUnspentPool(&unsp, uxs)
+	amt := wallet.Balance{25 * 1e6, 0}
+	return CreateSpendingTransaction(w, uncf, &unsp, now, amt, a)
 }
 
-func makeValidTxnWithFeeFactorAndExtraChange(mv *Visor,
-	factor, extra, change uint64) (coin.Transaction, error) {
-	we := wallet.NewWalletEntry()
-	tmp := mv.Config.CoinHourBurnFactor
-	mv.Config.CoinHourBurnFactor = factor
-	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 1002},
-		extra, we.Address)
-	mv.Config.CoinHourBurnFactor = tmp
-	return tx, err
-}
-
-func makeValidTxnNoChange(mv *Visor) (coin.Transaction, error) {
-	we := wallet.NewWalletEntry()
-	b := mv.AddressBalance(mv.Config.MasterKeys.Address)
-	return mv.Spend(mv.Wallets[0].GetFilename(), b.Confirmed, 0, we.Address)
-}
-
-func makeInvalidTxn(mv *Visor) (coin.Transaction, error) {
-	we := wallet.NewWalletEntry()
-	txn, err := mv.Spend(mv.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
-		we.Address)
+func makeInvalidTxn() (coin.Transaction, error) {
+	w := wallet.NewWallet("test")
+	w.GenerateAddresses(2)
+	uncf := NewUnconfirmedTxnPool()
+	now := tNow()
+	a := makeAddress()
+	uxs := makeUxBalancesForAddresses([]wallet.Balance{}, now, w.GetAddresses()[:2])
+	unsp := coin.NewUnspentPool()
+	addUxArrayToUnspentPool(&unsp, uxs)
+	amt := wallet.Balance{25 * 1e6, 0}
+	txn, err := CreateSpendingTransaction(w, uncf, &unsp, now, amt, a)
 	if err != nil {
 		return txn, err
 	}
+
 	txn.Out[0].Address = cipher.Address{}
 	return txn, nil
 }
@@ -141,11 +181,12 @@ func assertValidUnconfirmed(t *testing.T, txns map[cipher.SHA256]UnconfirmedTxn,
 	assert.False(t, ut.Checked.IsZero())
 }
 
-func createUnconfirmedTxns(t *testing.T, up *UnconfirmedTxnPool,
-	n int) []UnconfirmedTxn {
+func createUnconfirmedTxns(t *testing.T, up *UnconfirmedTxnPool, n int) []UnconfirmedTxn {
 	uts := make([]UnconfirmedTxn, 4)
+	usp := coin.NewUnspentPool()
 	for i := 0; i < len(uts); i++ {
-		ut := createUnconfirmedTxn()
+		tx, _ := makeValidTxn()
+		ut := up.createUnconfirmedTxn(&usp, tx)
 		uts[i] = ut
 		up.Txns[ut.Hash()] = ut
 	}
@@ -176,11 +217,13 @@ func createUnconfirmedTxns(t *testing.T, up *UnconfirmedTxnPool,
 // 	assert.Nil(t, err)
 // }
 
-func TestUnconfirmedTxnHash(t *testing.T) {
-	utx := createUnconfirmedTxn()
-	assert.Equal(t, utx.Hash(), utx.Txn.Hash())
-	assert.NotEqual(t, utx.Hash(), utx.Txn.Head.Hash)
-}
+// func TestUnconfirmedTxnHash(t *testing.T) {
+// 	up := NewUnconfirmedTxnPool()
+// 	uts := createUnconfirmedTxns(t, up, 1)
+// 	utx := uts[0]
+// 	assert.Equal(t, utx.Hash(), utx.Txn.Hash())
+// 	assert.NotEqual(t, utx.Hash(), utx.Txn.Head.Hash)
+// }
 
 func TestNewUnconfirmedTxnPool(t *testing.T) {
 	ut := NewUnconfirmedTxnPool()
@@ -196,7 +239,7 @@ func TestSetAnnounced(t *testing.T) {
 		ut.SetAnnounced(cipher.SHA256{}, util.Now())
 	})
 	assert.Equal(t, len(ut.Txns), 0)
-	utx := createUnconfirmedTxn()
+	utx := createUnconfirmedTxns(t, ut, 1)[0]
 	assert.True(t, utx.Announced.IsZero())
 	ut.Txns[utx.Hash()] = utx
 	now := util.Now()

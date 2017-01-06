@@ -159,17 +159,37 @@ func (self *Transport) sendFromPending() {
 	for msg := range self.PendingOut {
 		ackChannel := make(chan []byte, 1024)
 		self.ackChannels[string(msg)] = ackChannel
+		result := self.sendPacket(msg, ackChannel)
+		// handle result...
+		if !result {
+			fmt.Printf("transport %d isn't responding\n", self.StubPair.Id)
+			self.Status, self.StubPair.Status = DISCONNECTED, DISCONNECTED
+		}
+		//
+		close(ackChannel)
+		delete(self.ackChannels, string(msg))
+	}
+}
+
+func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
+	retransmits := 0
+	for {
+		if self.Status == DISCONNECTED {
+			return false
+		}
 		self.SendMessageToStubPair(msg)
 		select {
 		case ack := <-ackChannel:
 			self.receiveAck(ack)
+			fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
+			return true
 		case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
-			fmt.Printf("transport %d isn't responding\n", self.StubPair.Id)
-			self.Status, self.StubPair.Status = DISCONNECTED, DISCONNECTED
-			break
+			retransmits++
+			if retransmits >= 4 {
+				return false
+			}
+			fmt.Printf("msg %d will be sent again, attempt %d\n", msg, retransmits+1)
 		}
-		close(ackChannel)
-		delete(self.ackChannels, string(msg))
 	}
 }
 

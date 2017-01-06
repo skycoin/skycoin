@@ -4,23 +4,21 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/satori/go.uuid"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
 const (
-	MsgInRouteMessage              = iota // Transport -> Node
-	MsgOutRouteMessage                    // Node -> Transport
-	MsgTransportDatagramTransfer          //Transport -> Transport, simulating sending packet over network
-	MsgTransportDatagramACK               //Transport -> Transport, simulating ACK for packet
-	MsgInControlMessage                   //Transport -> Node, control message
-	MsgOutControlMessage                  //Node -> Transport, control message
-	MsgCreateChannelControlMessage        //Node -> Control channel, create new control channel
-	MsgRemoveChannelControlMessage        //Node -> Control channel, remove control channel
-	MsgAddRouteControlMessage             //Node -> Control channel, add new route
-	MsgExtendRouteControlMessage          //Node -> Control channel, extend route
-	MsgRemoveRouteControlMessage          //Node -> Control channel, remove route
+	MsgInRouteMessage            = iota // Transport -> Node
+	MsgOutRouteMessage                  // Node -> Transport
+	MsgTransportDatagramTransfer        //Transport -> Transport, simulating sending packet over network
+	MsgTransportDatagramACK             //Transport -> Transport, simulating ACK for packet
+	MsgInControlMessage                 //Transport -> Node, control message
+	MsgOutControlMessage                //Node -> Transport, control message
+	//	MsgCreateChannelControlMessage        //Node -> Control channel, create new control channel
+	MsgCloseChannelControlMessage //Node -> Control channel, close control channel
+	MsgAddRouteControlMessage     //Node -> Control channel, add new route
+	MsgRemoveRouteControlMessage  //Node -> Control channel, remove route
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -75,19 +73,14 @@ type TransportDatagramACK struct {
 }
 
 type InControlMessage struct {
-	ChannelId      uuid.UUID
+	ChannelId      ChannelId
 	PayloadMessage []byte
 }
 
-type CreateChannelControlMessage struct {
-}
+//type CreateChannelControlMessage struct {
+//}
 
 type AddRouteControlMessage struct {
-	NodeId  cipher.PubKey
-	RouteId RouteId
-}
-
-type ExtendRouteControlMessage struct {
 	NodeId  cipher.PubKey
 	RouteId RouteId
 }

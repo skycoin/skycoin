@@ -104,5 +104,6 @@ electron/.standalone_output
 
 src/mesh/examples/integration/integration
 src/mesh2/TODO
+src/gui/static/dist
 
 .idea/

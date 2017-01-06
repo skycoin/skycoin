@@ -2,11 +2,13 @@ package transport
 
 import (
 	"fmt"
+
+	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
 //use to spawn transports
 type TransportFactory struct {
-	TransportList []Transport
+	TransportList []*Transport
 }
 
 func NewTransportFactory() *TransportFactory {
@@ -16,19 +18,15 @@ func NewTransportFactory() *TransportFactory {
 }
 
 func (self *TransportFactory) Shutdown() {
-	//close(self.IncomingChannel)
+	for _, tr := range self.TransportList {
+		tr.Shutdown()
+	}
 }
 
 //move node forward on tick, process events
 func (self *TransportFactory) Tick() {
 	//call tick on the transport
 	for _, t := range self.TransportList {
-		fmt.Println("ticking transport", t.Id)
-		t.Tick()
-	}
-
-	for _, t := range self.TransportList {
-		fmt.Println("ticking transport", t.Id)
 		t.Tick()
 	}
 
@@ -47,13 +45,29 @@ func (self *TransportFactory) Tick() {
 //implement/fix
 //Implement the nodes the transports are attached to
 func (self *TransportFactory) CreateStubTransportPair() (*Transport, *Transport) {
-	var a Transport
-	var b Transport
+	a, b := &Transport{}, &Transport{}
 	a.NewTransportStub()
 	b.NewTransportStub()
-	a.StubPair = &b
-	b.StubPair = &a
-	self.TransportList = append(self.TransportList, a)
-	self.TransportList = append(self.TransportList, b)
-	return &a, &b
+	a.StubPair, b.StubPair = b, a
+	a.Status, b.Status = CONNECTED, CONNECTED
+	self.TransportList = []*Transport{a, b}
+	return a, b
+}
+
+func (self *TransportFactory) ConnectNodeToNode(nodeA, nodeB messages.NodeInterface) {
+	transportA, transportB := self.CreateStubTransportPair()
+	transportA.AttachedNode = nodeA
+	tidA := transportA.Id
+	transportB.AttachedNode = nodeB
+	tidB := transportB.Id
+	nodeA.SetTransport(tidA, transportA)
+	nodeB.SetTransport(tidB, transportB)
+}
+
+func (self *TransportFactory) GetTransports() (*Transport, *Transport) {
+	list := self.TransportList
+	if len(list) < 2 {
+		return nil, nil
+	}
+	return list[0], list[1]
 }

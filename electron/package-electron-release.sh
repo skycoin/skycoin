@@ -43,6 +43,7 @@ function copy_if_exists {
     if [  -f "$BIN" ]; then
         # Copy binary to electron app
         echo "Copying $BIN to $DESTBIN"
+        mkdir -p $DESTBIN
         cp "$BIN" "$DESTBIN"
 
         # Copy static resources to electron app

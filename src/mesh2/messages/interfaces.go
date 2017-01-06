@@ -7,6 +7,7 @@ import (
 type NodeInterface interface {
 	GetId() cipher.PubKey
 	InjectTransportMessage(transportId TransportId, msg []byte)
+	SetTransport(TransportId, TransportInterface)
 }
 
 type TransportInterface interface {

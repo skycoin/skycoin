@@ -124,13 +124,31 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 	}
 
+	db, err := historydb.NewDB()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	history, err := historydb.New(db)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	tree := blockdb.NewBlockTree()
 	bc := NewBlockchain(tree, walker)
+
+	bp := NewBlockchainParser(history, bc)
+	bp.Start()
+
+	bc.BindListener(bp.BlockListener)
+
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
 		blockSigs:   blockdb.NewBlockSigs(),
 		Unconfirmed: NewUnconfirmedTxnPool(),
+		history:     history,
+		bcParser:    bp,
 	}
 	gb := bc.GetGenesisBlock()
 	if gb == nil {
@@ -155,19 +173,19 @@ func NewVisor(c VisorConfig) *Visor {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
 
-	db, err := historydb.NewDB()
-	if err != nil {
-		log.Panic(err)
-	}
+	// db, err := historydb.NewDB()
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
 
-	v.history, err = historydb.New(db)
-	if err != nil {
-		log.Panic(err)
-	}
+	// v.history, err = historydb.New(db)
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
 
 	// init the blockchain parser instance
-	v.bcParser = NewBlockchainParser(v.history, v.Blockchain)
-	v.StartParser()
+	// v.bcParser = NewBlockchainParser(v.history, v.Blockchain)
+	// v.StartParser()
 	return v
 }
 
@@ -526,14 +544,14 @@ func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []ReadableUnconf
 }
 
 // StartParser start the blockchain parser.
-func (vs *Visor) StartParser() {
-	vs.bcParser.Start()
-}
+// func (vs *Visor) StartParser() {
+// 	vs.bcParser.Start()
+// }
 
 // StopParser stop the blockchain parser.
-func (vs *Visor) StopParser() {
-	vs.bcParser.Stop()
-}
+// func (vs *Visor) StopParser() {
+// 	vs.bcParser.Stop()
+// }
 
 // GetBlockByHash get block of specific hash header, return nil on not found.
 func (vs *Visor) GetBlockByHash(hash cipher.SHA256) *coin.Block {

@@ -3,29 +3,28 @@ package node
 import (
 	"errors"
 	"fmt"
-	"github.com/satori/go.uuid"
 
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
 type ControlChannel struct {
-	Id uuid.UUID
+	Id messages.ChannelId
 }
 
 func NewControlChannel() *ControlChannel {
 	c := ControlChannel{
-		Id: uuid.NewV4(),
+		Id: messages.RandChannelId(),
 	}
 	return &c
 }
 
 func (c *ControlChannel) HandleMessage(handledNode *Node, msg []byte) (interface{}, error) {
 	switch messages.GetMessageType(msg) {
-
-	case messages.MsgCreateChannelControlMessage:
-		channelID := handledNode.AddControlChannel()
-		return channelID, nil
-
+	/*
+		case messages.MsgCreateChannelControlMessage:
+			channelID := handledNode.AddControlChannel()
+			return channelID, nil
+	*/
 	case messages.MsgAddRouteControlMessage:
 		fmt.Println("adding route")
 		var m1 messages.AddRouteControlMessage
@@ -33,17 +32,13 @@ func (c *ControlChannel) HandleMessage(handledNode *Node, msg []byte) (interface
 		if err != nil {
 			panic(err)
 		}
-		routeId := m1.RouteId
-		nodeToAdd := m1.NodeId
-		return nil, handledNode.addRoute(nodeToAdd, routeId)
-
-	case messages.MsgExtendRouteControlMessage:
-		//var m1 messages.ExtendRouteControlMessage
-		//messages.Deserialize(msg, &m1)
-		//routeId := m1.RouteId
-		//nodeToExtend := m1.NodeId
-		//return handledNode.extendRoute(nodeToAdd, routeId)
-		return nil, nil
+		routeRule := RouteRule{
+			m1.IncomingTransportId,
+			m1.OutgoingTransportId,
+			m1.IncomingRouteId,
+			m1.OutgoingRouteId,
+		}
+		return nil, handledNode.addRoute(&routeRule)
 
 	case messages.MsgRemoveRouteControlMessage:
 		fmt.Println("removing route")

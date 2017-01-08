@@ -30,5 +30,4 @@ func TestAck(t *testing.T) {
 	}
 	time.Sleep(10 * time.Second)
 	assert.Equal(t, t1.PacketsSent, t1.PacketsConfirmed)
-
 }

@@ -19,8 +19,8 @@ func RandTransportId() TransportId {
 	return (TransportId)(rand.Int63())
 }
 
-type ControlChannelId uint64
+type ChannelId uint64
 
-func RandCCId() ControlChannelId {
-	return (ControlChannelId)(rand.Int63())
+func RandChannelId() ChannelId {
+	return (ChannelId)(rand.Int63())
 }

@@ -121,10 +121,6 @@ type Config struct {
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
-	BlockchainFile  string
-	BlockSigsFile   string
-
-	// Centralized network configuration
 
 	RunMaster bool
 
@@ -222,11 +218,6 @@ func (c *Config) register() {
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
 
-	flag.StringVar(&c.BlockchainFile, "blockchain-file", c.BlockchainFile,
-		"location of the blockchain file. Default to ~/.skycoin/blockchain.bin")
-	flag.StringVar(&c.BlockSigsFile, "blocksigs-file", c.BlockSigsFile,
-		"location of the block signatures file. Default to ~/.skycoin/blockchain.sigs")
-
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
 		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
@@ -282,8 +273,6 @@ var devConfig Config = Config{
 
 	// Wallets
 	WalletDirectory: "",
-	BlockchainFile:  "",
-	BlockSigsFile:   "",
 
 	// Centralized network configuration
 	RunMaster:        false,
@@ -344,12 +333,6 @@ func (c *Config) postProcess() {
 		c.WebInterfaceKey = filepath.Join(c.DataDirectory, "key.pem")
 	}
 
-	if c.BlockchainFile == "" {
-		c.BlockchainFile = filepath.Join(c.DataDirectory, "blockchain.bin")
-	}
-	if c.BlockSigsFile == "" {
-		c.BlockSigsFile = filepath.Join(c.DataDirectory, "blockchain.sigs")
-	}
 	if c.WalletDirectory == "" {
 		c.WalletDirectory = filepath.Join(c.DataDirectory, "wallets/")
 	}
@@ -451,9 +434,6 @@ func configureDaemon(c *Config) daemon.Config {
 		c.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
-
-	dc.Visor.Config.BlockchainFile = c.BlockchainFile
-	dc.Visor.Config.BlockSigsFile = c.BlockSigsFile
 
 	dc.Visor.Config.IsMaster = c.RunMaster
 

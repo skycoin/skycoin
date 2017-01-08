@@ -2,56 +2,68 @@ package visor
 
 import (
 	"fmt"
-	"time"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-const parseCycle = 10000 // millisecond
-
 // BlockchainParser parses the blockchain and stores the data into historydb.
 type BlockchainParser struct {
-	bc           *Blockchain
 	historyDB    *historydb.HistoryDB
 	parsedHeight uint64
+	blkC         chan coin.Block
 	closing      chan chan struct{}
+	bc           *Blockchain
+
+	startC  chan struct{}
+	isStart bool
 }
 
 // NewBlockchainParser create and init the parser instance.
 func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain) *BlockchainParser {
-	return &BlockchainParser{
+	bp := &BlockchainParser{
 		bc:           bc,
 		historyDB:    hisDB,
 		closing:      make(chan chan struct{}),
+		blkC:         make(chan coin.Block, 10),
+		startC:       make(chan struct{}),
 		parsedHeight: 0,
 	}
+
+	bp.run()
+	return bp
 }
 
-// Start start to parse the blockchain.
+// Start the parsing process
 func (bcp *BlockchainParser) Start() {
+	bcp.startC <- struct{}{}
+}
+
+// BlockListener when new block appended to blockchain, this method will b invoked
+func (bcp *BlockchainParser) BlockListener(b coin.Block) {
+	bcp.blkC <- b
+}
+
+// Start starts blockchain parser
+func (bcp *BlockchainParser) run() {
 	go func() {
-		logger.Debug("start blockchain parser")
-		var isGenParsed bool // is genesis block parsed
 		for {
 			select {
 			case cc := <-bcp.closing:
 				cc <- struct{}{}
-			default:
-				bcHeight := bcp.bc.Head().Seq()
-				if bcp.parsedHeight > bcHeight {
-					logger.Fatal("parsedHeight must be <= blockchain height seq")
+				return
+			case <-bcp.startC:
+				bcp.isStart = true
+				b := bcp.bc.Head()
+				if b != nil {
+					bcp.blkC <- *(bcp.bc.Head())
 				}
-
-				if bcp.parsedHeight == bcHeight && isGenParsed {
-					logger.Debug("no new block need to parse")
-					time.Sleep(time.Duration(parseCycle) * time.Millisecond)
-					continue
+			case b := <-bcp.blkC:
+				if bcp.isStart {
+					if err := bcp.parseTo(b.Head.BkSeq); err != nil {
+						logger.Fatal(err)
+					}
 				}
-
-				if err := bcp.parseTo(bcHeight); err != nil {
-					logger.Fatal(err)
-				}
-				isGenParsed = true
 			}
 		}
 	}()
@@ -66,7 +78,6 @@ func (bcp *BlockchainParser) Stop() {
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
-	logger.Info("historydb parse %d/%d", bcp.parsedHeight, bcHeight)
 	if bcp.parsedHeight == 0 {
 		for i := uint64(0); i <= bcHeight-bcp.parsedHeight; i++ {
 			b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i)
@@ -77,6 +88,7 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 			if err := bcp.historyDB.ProcessBlock(b); err != nil {
 				return err
 			}
+			logger.Critical("historydb parse %d/%d", bcp.parsedHeight+i, bcHeight)
 		}
 	} else {
 		for i := uint64(0); i < bcHeight-bcp.parsedHeight; i++ {
@@ -88,9 +100,9 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 			if err := bcp.historyDB.ProcessBlock(b); err != nil {
 				return err
 			}
+			logger.Critical("historydb parse %d/%d", bcp.parsedHeight+i+1, bcHeight)
 		}
 	}
 	bcp.parsedHeight = bcHeight
-	logger.Info("historydb parse %d/%d", bcHeight, bcHeight)
 	return nil
 }

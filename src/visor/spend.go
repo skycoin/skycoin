@@ -61,7 +61,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 
 	have := wallet.Balance{0, 0}
 	spending := make(coin.UxArray, 0)
-	for i, _ := range uxs {
+	for i := range uxs {
 		b := wallet.NewBalanceFromUxOut(headTime, &uxs[i]) //this is bullshit
 		if b.Coins == 0 || b.Coins%1e6 != 0 {
 			logger.Error("UxOut coins are 0 or 1e6, can't spend")
@@ -70,6 +70,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 		have = have.Add(b)
 		spending = append(spending, uxs[i])
 	}
+
 	if amt.Coins > have.Coins {
 		return nil, errors.New("Not enough coins")
 	}

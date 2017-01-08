@@ -47,12 +47,16 @@ type BlockTree interface {
 
 type Walker func(hps []coin.HashPair) cipher.SHA256
 
+// BlockListener notify the register when new block is appended to the chain
+type BlockListener func(b coin.Block)
+
 // Blockchain use blockdb to store the blocks.
 type Blockchain struct {
-	tree    BlockTree
-	walker  Walker
-	unspent coin.UnspentPool
-	head    cipher.SHA256
+	tree        BlockTree
+	walker      Walker
+	unspent     coin.UnspentPool
+	head        cipher.SHA256
+	blkListener []BlockListener
 }
 
 // NewBlockchain use the walker go throught the tree and update the head and unspent outputs.
@@ -141,6 +145,7 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		},
 	}
 	bc.unspent.Add(ux)
+	bc.notify(b)
 	return b
 }
 
@@ -217,6 +222,7 @@ func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 
 	// update the head
 	bc.head = b.HashHeader()
+	bc.notify(*b)
 	return uxs, nil
 }
 
@@ -587,4 +593,16 @@ func (bc Blockchain) verifyBlockHeader(b coin.Block) error {
 		return errors.New("Computed body hash does not match")
 	}
 	return nil
+}
+
+// BindListener register the listener to blockchain, when new block appended, the listener will be invoked.
+func (bc *Blockchain) BindListener(ls BlockListener) {
+	bc.blkListener = append(bc.blkListener, ls)
+}
+
+// notifies the listener the new block.
+func (bc *Blockchain) notify(b coin.Block) {
+	for _, l := range bc.blkListener {
+		l(b)
+	}
 }

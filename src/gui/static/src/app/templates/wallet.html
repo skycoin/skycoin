@@ -153,12 +153,12 @@
                                 <td>Transaction ID</td>
                             </tr>
                             <tr *ngFor="let transaction of pendingTable">
-                                <td>{{getDateTimeString(transaction.txn.time)}}</td>
-                                <td>{{transaction.balance.confirmed.coins?'Completed':'Pending'}}</td>
-                                <td>{{transaction.txn.address}}</td>
+                                <td>{{getDateTimeString(transaction.time)}}</td>
+                                <td>{{transaction.status}}</td>
+                                <td>{{transaction.address}}</td>
                                 <td></td>
-                                <td>{{transaction.txn.amount}}</td>
-                                <td>{{transaction.txn.txid}}</td>
+                                <td>{{transaction.amount}}</td>
+                                <td>{{transaction.txId}}</td>
                             </tr>
                             </tbody>
                         </table>

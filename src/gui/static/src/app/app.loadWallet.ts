@@ -700,6 +700,23 @@ export class LoadWalletComponent implements OnInit {
       this.filterAddressVal = address;
     }
 
+    updateStatusOfTransaction(txid, metaData){
+        var headers = new Headers();
+        headers.append('Content-Type', 'application/x-www-form-urlencoded');
+        this.http.get('/transaction?txid=' + txid, { headers: headers })
+            .map((res) => res.json())
+            .subscribe(
+                //Response from API
+                res => {
+                    this.pendingTable.push({'time':res.txn.timestamp,'status':res.status.confirmed?'Completed':'Unconfirmed','amount':metaData.amount,'txId':txid,'address':metaData.address});
+                    //Load wallet for refresh list
+                    this.loadWallet();
+                }, err => {
+                    console.log("Error on load transaction: " + err)
+                }, () => {
+                });
+    }
+
     spend(spendid, spendaddress, spendamount){
         var amount = Number(spendamount);
         if(amount < 1) {
@@ -731,12 +748,7 @@ export class LoadWalletComponent implements OnInit {
             .subscribe(
                 response => {
                     console.log(response);
-                    response.txn.time = Date.now()/1000;
-                    response.txn.address = spendaddress;
-                    response.txn.amount = spendamount;
-                    this.pendingTable.push(response);
-                    //Load wallet for refresh list
-                    this.loadWallet();
+                    this.updateStatusOfTransaction(response.txn.txid, {address:spendaddress,amount:amount});
                     this.readyDisable = false;
                     this.sendDisable = true;
                 },

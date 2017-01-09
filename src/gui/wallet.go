@@ -563,59 +563,38 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			uxouts := gateway.Visor.GetUnspentOutputReadables(gateway.V)
-			rawaddrs := r.FormValue("addrs")
-			hashes := r.FormValue("hashes")
+			var outs []visor.ReadableOutput
+			var addrs []string
+			var hashes []string
 
-			if rawaddrs == "" && hashes == "" {
-				wh.SendOr404(w, uxouts)
-				return
+			trimSpace := func(vs []string) []string {
+				for i := range vs {
+					vs[i] = strings.TrimSpace(vs[i])
+				}
+				return vs
 			}
 
-			addrMatch := []visor.ReadableOutput{}
-			if rawaddrs != "" {
-				addrs := strings.Split(rawaddrs, ",")
-				addrMap := make(map[string]bool)
-				for _, addr := range addrs {
-					addrMap[addr] = true
-				}
-
-				for _, u := range uxouts {
-					if _, ok := addrMap[u.Address]; ok {
-						addrMatch = append(addrMatch, u)
-					}
-				}
+			addrStr := r.FormValue("addrs")
+			if addrStr != "" {
+				addrs = trimSpace(strings.Split(addrStr, ","))
 			}
 
-			hsMatch := []visor.ReadableOutput{}
-			hsMatchMap := map[string]bool{}
-			if hashes != "" {
-				hs := strings.Split(hashes, ",")
-				hsMap := make(map[string]bool)
-				for _, h := range hs {
-					hsMap[h] = true
-				}
-
-				for _, u := range uxouts {
-					if _, ok := hsMap[u.Hash]; ok {
-						hsMatch = append(hsMatch, u)
-						hsMatchMap[u.Hash] = true
-					}
-				}
+			hashStr := r.FormValue("hashes")
+			if hashStr != "" {
+				hashes = trimSpace(strings.Split(hashStr, ","))
 			}
 
-			ret := []visor.ReadableOutput{}
-			if rawaddrs != "" && hashes != "" {
-				for _, u := range addrMatch {
-					if _, ok := hsMatchMap[u.Hash]; ok {
-						ret = append(ret, u)
-					}
-				}
-				wh.SendOr404(w, ret)
-				return
+			filters := []daemon.OutputsFilter{}
+			if len(addrs) > 0 {
+				filters = append(filters, daemon.FbyAddresses(addrs))
 			}
 
-			wh.SendOr404(w, append(addrMatch, hsMatch...))
+			if len(hashes) > 0 {
+				filters = append(filters, daemon.FbyHashes(hashes))
+			}
+
+			outs = gateway.GetUnspentOutputs(filters...)
+			wh.SendOr404(w, outs)
 		}
 	}
 }

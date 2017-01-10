@@ -305,7 +305,13 @@ func makeTx(inAddrs []string, chgAddr string, toAddr string, amt uint64, wlt *wa
 		return "", err
 	}
 
-	outs, err := getSufficientUnspents(unspents, amt)
+	spdouts := unspents.SpendableOutputs()
+	spendableOuts := make([]unspentOut, len(spdouts))
+	for i := range spdouts {
+		spendableOuts[i] = unspentOut{spdouts[i]}
+	}
+
+	outs, err := getSufficientUnspents(spendableOuts, amt)
 	if err != nil {
 		return "", err
 	}

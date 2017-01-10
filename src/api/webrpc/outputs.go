@@ -10,7 +10,7 @@ import (
 )
 
 type OutputsResult struct {
-	Outputs []visor.ReadableOutput `json:"outputs"`
+	Outputs visor.ReadableOutputSet `json:"outputs"`
 }
 
 func getOutputsHandler(req Request, gateway Gatewayer) Response {

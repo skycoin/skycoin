@@ -15,7 +15,7 @@ type Gatewayer interface {
 	GetLastBlocks(num uint64) *visor.ReadableBlocks
 	GetBlocks(start, end uint64) *visor.ReadableBlocks
 	GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) []visor.ReadableOutput
+	GetUnspentOutputs(filters ...daemon.OutputsFilter) visor.ReadableOutputSet
 	GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error)
 	InjectTransaction(tx coin.Transaction) (coin.Transaction, error)
 	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)

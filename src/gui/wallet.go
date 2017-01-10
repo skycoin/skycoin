@@ -563,7 +563,6 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			var outs []visor.ReadableOutput
 			var addrs []string
 			var hashes []string
 
@@ -593,7 +592,8 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				filters = append(filters, daemon.FbyHashes(hashes))
 			}
 
-			outs = gateway.GetUnspentOutputs(filters...)
+			outs := gateway.GetUnspentOutputs(filters...)
+
 			wh.SendOr404(w, outs)
 		}
 	}

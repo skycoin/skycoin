@@ -312,6 +312,16 @@ func (vs *Visor) GetUnspentOutputReadables() []ReadableOutput {
 	return rxReadables
 }
 
+// AllSpendsOutputs returns all spending outputs in unconfirmed tx pool
+func (vs *Visor) AllSpendsOutputs() []ReadableOutput {
+	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.GetUnspent())
+}
+
+// AllIncommingOutputs returns all predicted outputs that are in pending tx pool
+func (vs *Visor) AllIncommingOutputs() []ReadableOutput {
+	return vs.Unconfirmed.AllIncommingOutputs(vs.Blockchain.Head().Head)
+}
+
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) []coin.SignedBlock {
 	avail := uint64(0)

@@ -166,6 +166,13 @@ type ReadableOutput struct {
 	Hours             uint64 `json:"hours"`
 }
 
+// ReadableOutputSet records unspent outputs in different status.
+type ReadableOutputSet struct {
+	HeadOutputs      []ReadableOutput `json:"head_outputs"`
+	OutgoingOutputs  []ReadableOutput `json:"outgoing_outputs"`
+	IncommingOutputs []ReadableOutput `json:"incoming_outputs"`
+}
+
 func NewReadableOutput(t coin.UxOut) ReadableOutput {
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),

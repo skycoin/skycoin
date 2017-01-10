@@ -155,16 +155,30 @@ type OutputsFilter func(outputs []visor.ReadableOutput) []visor.ReadableOutput
 
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) []visor.ReadableOutput {
-	outputs := make(chan []visor.ReadableOutput)
+func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) visor.ReadableOutputSet {
+	allOutputs := make(chan []visor.ReadableOutput)
+	spendingOutputs := make(chan []visor.ReadableOutput)
+	inOutputs := make(chan []visor.ReadableOutput)
 	gw.Requests <- func() {
-		outputs <- gw.V.GetUnspentOutputReadables()
+		allOutputs <- gw.V.GetUnspentOutputReadables()
+		spendingOutputs <- gw.V.AllSpendsOutputs()
+		inOutputs <- gw.V.AllIncommingOutputs()
 	}
-	outs := <-outputs
+	allOuts := <-allOutputs
+	spendingOuts := <-spendingOutputs
+	inOuts := <-inOutputs
+
 	for _, flt := range filters {
-		outs = flt(outs)
+		allOuts = flt(allOuts)
+		spendingOuts = flt(spendingOuts)
+		inOuts = flt(inOuts)
 	}
-	return outs
+
+	return visor.ReadableOutputSet{
+		HeadOutputs:      allOuts,
+		OutgoingOutputs:  spendingOuts,
+		IncommingOutputs: inOuts,
+	}
 }
 
 // FbyAddresses filters the unspent outputs that owned by the addresses

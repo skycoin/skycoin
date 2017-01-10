@@ -179,12 +179,15 @@ func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
 		return os.HeadOutputs
 	}
 
+	spending := make(map[string]bool)
+	for _, u := range os.OutgoingOutputs {
+		spending[u.Hash] = true
+	}
+
 	var outs []ReadableOutput
 	for i := range os.HeadOutputs {
-		for _, o := range os.OutgoingOutputs {
-			if os.HeadOutputs[i].Hash != o.Hash {
-				outs = append(outs, os.HeadOutputs[i])
-			}
+		if _, ok := spending[os.HeadOutputs[i].Hash]; !ok {
+			outs = append(outs, os.HeadOutputs[i])
 		}
 	}
 	return outs

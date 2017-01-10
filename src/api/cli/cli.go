@@ -112,38 +112,27 @@ func Commands() []gcli.Command {
 	return commands
 }
 
-func getUnspent(addrs []string) ([]unspentOut, error) {
+func getUnspent(addrs []string) (unspentOutSet, error) {
 	req, err := webrpc.NewRequest("get_outputs", addrs, "1")
 	if err != nil {
-		return []unspentOut{}, fmt.Errorf("create webrpc request failed:%v", err)
+		return unspentOutSet{}, fmt.Errorf("create webrpc request failed:%v", err)
 	}
 
 	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
-		return []unspentOut{}, fmt.Errorf("do rpc request failed:%v", err)
+		return unspentOutSet{}, fmt.Errorf("do rpc request failed:%v", err)
 	}
 
 	if rsp.Error != nil {
-		return []unspentOut{}, fmt.Errorf("rpc request failed, %+v", *rsp.Error)
+		return unspentOutSet{}, fmt.Errorf("rpc request failed, %+v", *rsp.Error)
 	}
 
 	var rlt webrpc.OutputsResult
 	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
-		return nil, errJSONUnmarshal
+		return unspentOutSet{}, errJSONUnmarshal
 	}
 
-	ret := make([]unspentOut, len(rlt.Outputs))
-	for i, o := range rlt.Outputs {
-		ret[i] = unspentOut{
-			Hash:              o.Hash,
-			SourceTransaction: o.SourceTransaction,
-			Address:           o.Address,
-			Coins:             o.Coins,
-			Hours:             o.Hours,
-		}
-	}
-
-	return ret, nil
+	return unspentOutSet{rlt.Outputs}, nil
 }
 
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {

@@ -9,16 +9,17 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
 
 type unspentOut struct {
-	Hash              string `json:"txid"` //hash uniquely identifies transaction
-	SourceTransaction string `json:"src_tx"`
-	Address           string `json:"address"`
-	Coins             string `json:"coins"`
-	Hours             uint64 `json:"hours"`
+	visor.ReadableOutput
+}
+
+type unspentOutSet struct {
+	visor.ReadableOutputSet
 }
 
 type balance struct {
@@ -149,7 +150,7 @@ func getAddrsBalance(addrs []string) (balanceResult, error) {
 		return -1, errors.New("not exist")
 	}
 
-	for _, o := range outs {
+	for _, o := range outs.HeadOutputs {
 		amt, err := strconv.ParseUint(o.Coins, 10, 64)
 		if err != nil {
 			return balanceResult{}, errors.New("error coins string")

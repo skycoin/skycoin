@@ -173,6 +173,23 @@ type ReadableOutputSet struct {
 	IncommingOutputs []ReadableOutput `json:"incoming_outputs"`
 }
 
+// SpendableOutputs caculates the spendable unspent outputs
+func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
+	if len(os.OutgoingOutputs) == 0 {
+		return os.HeadOutputs
+	}
+
+	var outs []ReadableOutput
+	for i := range os.HeadOutputs {
+		for _, o := range os.OutgoingOutputs {
+			if os.HeadOutputs[i].Hash != o.Hash {
+				outs = append(outs, os.HeadOutputs[i])
+			}
+		}
+	}
+	return outs
+}
+
 func NewReadableOutput(t coin.UxOut) ReadableOutput {
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),

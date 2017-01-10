@@ -159,7 +159,7 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 	Add a verbose version
 */
 type ReadableOutput struct {
-	Hash              string `json:"txid"` //hash uniquely identifies transaction
+	Hash              string `json:"hash"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`

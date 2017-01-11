@@ -159,11 +159,38 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 	Add a verbose version
 */
 type ReadableOutput struct {
-	Hash              string `json:"txid"` //hash uniquely identifies transaction
+	Hash              string `json:"hash"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
 	Hours             uint64 `json:"hours"`
+}
+
+// ReadableOutputSet records unspent outputs in different status.
+type ReadableOutputSet struct {
+	HeadOutputs      []ReadableOutput `json:"head_outputs"`
+	OutgoingOutputs  []ReadableOutput `json:"outgoing_outputs"`
+	IncommingOutputs []ReadableOutput `json:"incoming_outputs"`
+}
+
+// SpendableOutputs caculates the spendable unspent outputs
+func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
+	if len(os.OutgoingOutputs) == 0 {
+		return os.HeadOutputs
+	}
+
+	spending := make(map[string]bool)
+	for _, u := range os.OutgoingOutputs {
+		spending[u.Hash] = true
+	}
+
+	var outs []ReadableOutput
+	for i := range os.HeadOutputs {
+		if _, ok := spending[os.HeadOutputs[i].Hash]; !ok {
+			outs = append(outs, os.HeadOutputs[i])
+		}
+	}
+	return outs
 }
 
 func NewReadableOutput(t coin.UxOut) ReadableOutput {

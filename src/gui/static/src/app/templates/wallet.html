@@ -74,7 +74,7 @@
                           <td><skycoin-edit [wallets]="wallets" [walletId]="wallet.meta.filename" [text]="wallet.meta.label?wallet.meta.label:'undefined'" (onWalletChanged)="loadWallet()"></skycoin-edit></td>
                           <td></td>
 
-                          <td class="text-center">{{wallet.entries[0].balance}} SKY</td>
+                          <td class="text-center">{{wallet.balance}} SKY</td>
                           <td class="text-right">{{wallet.entries.length}}&nbsp;</td>
                           <td class="text-right">
                               <a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus add-address"></i></a></td>

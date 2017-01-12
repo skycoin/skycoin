@@ -92,14 +92,15 @@ function startSkycoin() {
         if (i === -1) {
             return
         }
-        var j = data.indexOf('\n', i);
+        // var j = data.indexOf('\n', i);
 
-        // dialog.showErrorBox('index of newline: ', j);
-        if (j === -1) {
-            throw new Error('web interface url log line incomplete');
-        }
-        var url = data.slice(i + marker.length, j);
-        currentURL = url.toString();
+        // // dialog.showErrorBox('index of newline: ', j);
+        // if (j === -1) {
+        //     throw new Error('web interface url log line incomplete');
+        // }
+        // var url = data.slice(i + marker.length, j);
+        // currentURL = url.toString();
+        currentURL = defaultURL;
         app.emit('skycoin-ready', { url: currentURL });
     });
 

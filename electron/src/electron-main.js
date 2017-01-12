@@ -72,7 +72,6 @@ function startSkycoin() {
         // '-web-interface-https=true',
     ]
 
-
     skycoin = childProcess.spawn(exe, args);
 
     skycoin.on('error', (e) => {
@@ -100,6 +99,7 @@ function startSkycoin() {
             throw new Error('web interface url log line incomplete');
         }
         var url = data.slice(i + marker.length, j);
+        currentURL = url.toString();
         app.emit('skycoin-ready', { url: currentURL });
     });
 

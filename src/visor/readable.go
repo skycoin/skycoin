@@ -290,7 +290,7 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 type ReadableBlockHeader struct {
 	BkSeq             uint64 `json:"seq"`
 	BlockHash         string `json:"block_hash"`
-	PreviousBlockHash string `json:"previos_block_hash"`
+	PreviousBlockHash string `json:"previous_block_hash"`
 	Time              uint64 `json:"timestamp"`
 	Fee               uint64 `json:"fee"`
 	Version           uint32 `json:"version"`

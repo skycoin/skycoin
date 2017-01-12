@@ -299,10 +299,10 @@
                       Timestamp: {{getDateTimeString(selectedBlock.header.timestamp)}}
                     </p>
                     <p>
-                      Hash: {{selectedBlock.header.hash}}
+                      Hash: {{selectedBlock.header.block_hash}}
                     </p>
                     <p>
-                      Parent Hash: {{selectedBlock.header.prev_hash}}
+                      Parent Hash: {{selectedBlock.header.previous_block_hash}}
                     </p>
                     <p>
                       Transactions: {{selectedBlock.body.txns.length}}

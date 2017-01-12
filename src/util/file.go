@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	logging "github.com/op/go-logging"
 )
@@ -189,27 +188,27 @@ func ResolveResourceDirectory(path string) string {
 func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
 	//check "dev" directory first
 	appLoc := filepath.Join(staticDir, devDir)
-	if !strings.HasPrefix(appLoc, "/") {
-		// Prepend the binary's directory path if appLoc is relative
-		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return "", err
-		}
+	// if !strings.HasPrefix(appLoc, "/") {
+	// 	// Prepend the binary's directory path if appLoc is relative
+	// 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
 
-		appLoc = filepath.Join(dir, appLoc)
-	}
+	// 	appLoc = filepath.Join(dir, appLoc)
+	// }
 	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
 		//check dist directory
 		appLoc = filepath.Join(staticDir, resourceDir)
-		if !strings.HasPrefix(appLoc, "/") {
-			// Prepend the binary's directory path if appLoc is relative
-			dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-			if err != nil {
-				return "", err
-			}
+		// if !strings.HasPrefix(appLoc, "/") {
+		// 	// Prepend the binary's directory path if appLoc is relative
+		// 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		// 	if err != nil {
+		// 		return "", err
+		// 	}
 
-			appLoc = filepath.Join(dir, appLoc)
-		}
+		// 	appLoc = filepath.Join(dir, appLoc)
+		// }
 
 		if _, err := os.Stat(appLoc); os.IsNotExist(err) {
 			return "", err

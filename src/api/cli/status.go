@@ -19,8 +19,8 @@ func statusCMD() gcli.Command {
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			var status = struct {
+				webrpc.StatusResult
 				RPCAddress string `json:"webrpc_address"`
-				Running    bool   `json:"running"`
 			}{
 				RPCAddress: cfg.RPCAddress,
 			}
@@ -44,7 +44,7 @@ func statusCMD() gcli.Command {
 				return errJSONUnmarshal
 			}
 
-			status.Running = rlt.Running
+			status.StatusResult = rlt
 
 			d, err := json.MarshalIndent(status, "", "    ")
 			if err != nil {
@@ -54,5 +54,4 @@ func statusCMD() gcli.Command {
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
 }

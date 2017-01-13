@@ -11,6 +11,7 @@ import (
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
+	daemon "github.com/skycoin/skycoin/src/daemon"
 	visor "github.com/skycoin/skycoin/src/visor"
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -105,6 +106,24 @@ func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
 
 }
 
+// GetTimeNow mocked method
+func (m *GatewayerMock) GetTimeNow() uint64 {
+
+	ret := m.Called()
+
+	var r0 uint64
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case uint64:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
 // GetTransaction mocked method
 func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.TransactionResult, error) {
 
@@ -132,33 +151,15 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.TransactionResu
 
 }
 
-// GetUnspentByAddrs mocked method
-func (m *GatewayerMock) GetUnspentByAddrs(p0 []string) []visor.ReadableOutput {
+// GetUnspentOutputs mocked method
+func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) visor.ReadableOutputSet {
 
 	ret := m.Called(p0)
 
-	var r0 []visor.ReadableOutput
+	var r0 visor.ReadableOutputSet
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case []visor.ReadableOutput:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0
-
-}
-
-// GetUnspentByHashes mocked method
-func (m *GatewayerMock) GetUnspentByHashes(p0 []string) []visor.ReadableOutput {
-
-	ret := m.Called(p0)
-
-	var r0 []visor.ReadableOutput
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case []visor.ReadableOutput:
+	case visor.ReadableOutputSet:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

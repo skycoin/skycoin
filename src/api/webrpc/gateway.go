@@ -3,6 +3,7 @@ package webrpc
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -14,9 +15,9 @@ type Gatewayer interface {
 	GetLastBlocks(num uint64) *visor.ReadableBlocks
 	GetBlocks(start, end uint64) *visor.ReadableBlocks
 	GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks
-	GetUnspentByAddrs(addrs []string) []visor.ReadableOutput
-	GetUnspentByHashes(hashes []string) []visor.ReadableOutput
+	GetUnspentOutputs(filters ...daemon.OutputsFilter) visor.ReadableOutputSet
 	GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error)
 	InjectTransaction(tx coin.Transaction) (coin.Transaction, error)
 	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
+	GetTimeNow() uint64
 }

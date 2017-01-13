@@ -6,6 +6,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -55,21 +56,31 @@ func (fg fakeGateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
 	return nil
 }
 
-func (fg fakeGateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
-	addrMap := make(map[string]bool)
-	for _, a := range addrs {
-		addrMap[a] = true
+func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) visor.ReadableOutputSet {
+	v := decodeOutputStr(outputStr)
+	for _, f := range filters {
+		v.HeadOutputs = f(v.HeadOutputs)
+		v.OutgoingOutputs = f(v.OutgoingOutputs)
+		v.IncommingOutputs = f(v.IncommingOutputs)
 	}
-
-	return filterOut(decodeOutputStr(outputStr), func(out visor.ReadableOutput) bool {
-		_, ok := addrMap[out.Address]
-		return ok
-	})
+	return v
 }
 
-func (fg fakeGateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
-	return []visor.ReadableOutput{}
-}
+// func (fg fakeGateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
+// 	addrMap := make(map[string]bool)
+// 	for _, a := range addrs {
+// 		addrMap[a] = true
+// 	}
+
+// 	return filterOut(decodeOutputStr(outputStr), func(out visor.ReadableOutput) bool {
+// 		_, ok := addrMap[out.Address]
+// 		return ok
+// 	})
+// }
+
+// func (fg fakeGateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
+// 	return []visor.ReadableOutput{}
+// }
 
 func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.TransactionResult, error) {
 	str, ok := fg.transactions[txid.Hex()]
@@ -89,4 +100,8 @@ func (fg fakeGateway) InjectTransaction(txn coin.Transaction) (coin.Transaction,
 
 func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
 	return nil, nil
+}
+
+func (fg fakeGateway) GetTimeNow() uint64 {
+	return 0
 }

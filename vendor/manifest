@@ -263,6 +263,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/tyler-smith/go-bip39",
+			"repository": "https://github.com/tyler-smith/go-bip39",
+			"vcs": "git",
+			"revision": "8e7a99b3e716f36d3b080a9a70f9eb45abe4edcc",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/urfave/cli",
 			"repository": "https://github.com/urfave/cli",
 			"vcs": "git",
@@ -286,6 +294,15 @@
 			"revision": "6254bb7c2965df69c73b0b4a9edc1e339dd8451d",
 			"branch": "master",
 			"path": "/go/cache",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/crypto/pbkdf2",
+			"repository": "https://go.googlesource.com/crypto",
+			"vcs": "git",
+			"revision": "f6b343c37ca80bfa8ea539da67a0b621f84fab1d",
+			"branch": "master",
+			"path": "/pbkdf2",
 			"notests": true
 		},
 		{

@@ -5,6 +5,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
+	"time"
+
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -148,47 +150,71 @@ func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 	return <-blocks
 }
 
-// GetUnspentByAddrs gets unspent of specific addresses
-func (gw *Gateway) GetUnspentByAddrs(addrs []string) []visor.ReadableOutput {
-	outputs := make(chan []visor.ReadableOutput)
+// OutputsFilter used as optional arguments in GetUnspentOutputs method
+type OutputsFilter func(outputs []visor.ReadableOutput) []visor.ReadableOutput
+
+// GetUnspentOutputs gets unspent outputs and returns the filtered results,
+// Note: all filters will be executed as the pending sequence in 'AND' mode.
+func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) visor.ReadableOutputSet {
+	allOutputs := make(chan []visor.ReadableOutput)
+	spendingOutputs := make(chan []visor.ReadableOutput)
+	inOutputs := make(chan []visor.ReadableOutput)
 	gw.Requests <- func() {
-		outs := gw.V.GetUnspentOutputReadables()
+		allOutputs <- gw.V.GetUnspentOutputReadables()
+		spendingOutputs <- gw.V.AllSpendsOutputs()
+		inOutputs <- gw.V.AllIncommingOutputs()
+	}
+	allOuts := <-allOutputs
+	spendingOuts := <-spendingOutputs
+	inOuts := <-inOutputs
+
+	for _, flt := range filters {
+		allOuts = flt(allOuts)
+		spendingOuts = flt(spendingOuts)
+		inOuts = flt(inOuts)
+	}
+
+	return visor.ReadableOutputSet{
+		HeadOutputs:      allOuts,
+		OutgoingOutputs:  spendingOuts,
+		IncommingOutputs: inOuts,
+	}
+}
+
+// FbyAddresses filters the unspent outputs that owned by the addresses
+func FbyAddresses(addrs []string) OutputsFilter {
+	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
 		addrMatch := []visor.ReadableOutput{}
 		addrMap := make(map[string]bool)
 		for _, addr := range addrs {
 			addrMap[addr] = true
 		}
 
-		for _, u := range outs {
+		for _, u := range outputs {
 			if _, ok := addrMap[u.Address]; ok {
 				addrMatch = append(addrMatch, u)
 			}
 		}
-		outputs <- addrMatch
+		return addrMatch
 	}
-	return <-outputs
 }
 
-// GetUnspentByHashes gets unspent of specific unspent hashes.
-func (gw *Gateway) GetUnspentByHashes(hashes []string) []visor.ReadableOutput {
-	outputs := make(chan []visor.ReadableOutput)
-	gw.Requests <- func() {
-		outs := gw.V.GetUnspentOutputReadables()
-
+// FbyHashes filters the unspent outputs that have hashes matched.
+func FbyHashes(hashes []string) OutputsFilter {
+	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
 		hsMatch := []visor.ReadableOutput{}
 		hsMap := make(map[string]bool)
 		for _, h := range hashes {
 			hsMap[h] = true
 		}
 
-		for _, u := range outs {
+		for _, u := range outputs {
 			if _, ok := hsMap[u.Hash]; ok {
 				hsMatch = append(hsMatch, u)
 			}
 		}
-		outputs <- hsMatch
+		return hsMatch
 	}
-	return <-outputs
 }
 
 // GetTransaction gets transaction by txid.
@@ -256,4 +282,9 @@ func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, e
 		uxs[i] = historydb.NewUxOutJSON(ux)
 	}
 	return uxs, err
+}
+
+// GetTimeNow returns the current Unix time
+func (gw *Gateway) GetTimeNow() uint64 {
+	return uint64(time.Now().Unix())
 }

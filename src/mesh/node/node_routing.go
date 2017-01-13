@@ -107,26 +107,6 @@ func (s *Node) ExtendRoute(routeID domain.RouteID, toPeer cipher.PubKey, timeout
 	return
 }
 
-func (s *Node) ExtendRouteSimple(routeID domain.RouteID, toPeer cipher.PubKey) error {
-	message, directPeer, _, extendError := s.extendRouteWithoutSending(routeID, toPeer)
-	if extendError != nil {
-		return extendError
-	}
-	transportToPeer := s.safelyGetTransportToPeer(directPeer)
-	if transportToPeer == nil {
-		return errors.New(fmt.Sprintf("No transport to peer %v from %v\n", directPeer, s.Config.PubKey))
-	}
-	serialized := s.serializer.SerializeMessage(message)
-	err := transportToPeer.SendMessage(directPeer, serialized, nil)
-	if err != nil {
-		return err
-	}
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	delete(s.routeExtensionsAwaitingConfirm, routeID)
-	return extendError
-}
-
 func (s *Node) GetRouteLastConfirmed(routeID domain.RouteID) (time.Time, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()

@@ -71,10 +71,10 @@
                               <a href="#" (click)="toggleShowChild(wallet)" *ngIf="!wallet.showChild"><i class="fa fa-angle-right"></i></a>
                               <a href="#" (click)="toggleShowChild(wallet)" *ngIf="wallet.showChild"><i class="fa fa-angle-down"></i></a>
                           </td>
-                          <td><a href="#" (click)="editWallet(wallet)"><i class="fa fa-edit"></i></a>&nbsp;{{wallet.meta.label?wallet.meta.label:'Undefined'}}</td>
+                          <td><skycoin-edit [wallets]="wallets" [walletId]="wallet.meta.filename" [text]="wallet.meta.label?wallet.meta.label:'undefined'" (onWalletChanged)="loadWallet()"></skycoin-edit></td>
                           <td></td>
 
-                          <td class="text-center">{{wallet.entries[0].balance}} SKY</td>
+                          <td class="text-center">{{wallet.balance}} SKY</td>
                           <td class="text-right">{{wallet.entries.length}}&nbsp;</td>
                           <td class="text-right">
                               <a href="#" (click)="addNewAddress(wallet)"><i class="fa fa-plus add-address"></i></a></td>
@@ -153,12 +153,12 @@
                                 <td>Transaction ID</td>
                             </tr>
                             <tr *ngFor="let transaction of pendingTable">
-                                <td>{{getDateTimeString(transaction.txn.time)}}</td>
-                                <td>{{transaction.balance.confirmed.coins?'Completed':'Pending'}}</td>
-                                <td>{{transaction.txn.address}}</td>
+                                <td>{{getDateTimeString(transaction.time)}}</td>
+                                <td>{{transaction.status}}</td>
+                                <td>{{transaction.address}}</td>
                                 <td></td>
-                                <td>{{transaction.txn.amount}}</td>
-                                <td>{{transaction.txn.txid}}</td>
+                                <td>{{transaction.amount}}</td>
+                                <td>{{transaction.txId}}</td>
                             </tr>
                             </tbody>
                         </table>
@@ -542,7 +542,7 @@
                 <button type="button" class="close" (click)="hideWalletPopup()" data-dismiss="modal">&times;</button>
                 <h4 class="modal-title">Create New Wallet</h4>
             </div>
-            <form #newWalletForm="ngForm" (ngSubmit)="createNewWallet(walletLabel.value, walletseed.value, addressCount.value)" class="form-horizontal">
+            <form #newWalletForm="ngForm" (ngSubmit)="createNewWallet(walletLabel.value, mnemonicseed.value, addressCount.value)" class="form-horizontal">
             <div class="modal-body">
                   <div class="form-group">
                       <label class="col-sm-3 control-label"><i class="fa fa-question-circle"></i>&nbsp;Label:</label>
@@ -553,7 +553,7 @@
                   <div class="form-group">
                       <label class="col-sm-3 control-label"><i class="fa fa-question-circle"></i>&nbsp;Seed:</label>
                       <div class="col-sm-9">
-                          <textarea rows="4" #walletseed  placeholder="Name of Wallet" cols="46" class="form-control" value="{{randomWords}}"></textarea>
+                          <seed-mnemonic #mnemonicseed></seed-mnemonic>
                       </div>
                   </div>
                   <!--<div class="form-group">
@@ -577,33 +577,6 @@
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-default" [disabled]="!newWalletForm.form.valid">Create</button>
-            </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Popup for edit wallet -->
-<!--<div *ngIf="EditWalletIsVisible" ng-style="{'z-index': 1040 + (index &amp;&amp; 1 || 0) + index*10}" ng-class="{in: animate}" class="modal-backdrop fade  in" modal-backdrop="" style="z-index: 1040;"></div>-->
-<div *ngIf="EditWalletIsVisible" class="modal fade show in" id="myModal" role="dialog">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" (click)="hideEditWalletPopup()" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Update wallet - {{walletId}}</h4>
-            </div>
-            <form class="form-horizontal" (ngSubmit)="updateWallet(walletId, walletname.value)">
-            <div class="modal-body">
-                    <div class="form-group">
-                        <label class="col-sm-2 control-label">Name:</label>
-                        <div class="col-sm-9">
-                            <input maxlength="60" #walletname name="walletname" placeholder="Enter label for this wallet" class="form-control" required/>
-                        </div>
-                    </div>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-default">Ok</button>
-                <button type="button" class="btn" (click)="hideEditWalletPopup()">Cancel</button>
             </div>
             </form>
         </div>

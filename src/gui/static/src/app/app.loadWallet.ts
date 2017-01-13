@@ -7,6 +7,10 @@ import {Observer} from 'rxjs/Observer';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
 import {QRCodeComponent} from './ng2-qrcode';
+import {SkyCoinEditComponent} from './components/skycoin.edit.component';
+import {SeedComponent} from './components/seed.component';
+import {SeedService} from "./services/seed.service";
+import {Wallet} from './model/wallet.pojo'
 
 declare var _: any;
 declare var $: any;
@@ -62,7 +66,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-wallet',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent],
+    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent],
     providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })
@@ -84,7 +88,6 @@ export class LoadWalletComponent implements OnInit {
     QrIsVisible: boolean;
 
     NewWalletIsVisible: boolean;
-    EditWalletIsVisible: boolean;
     loadSeedIsVisible: boolean;
 
     walletname: string;
@@ -103,7 +106,6 @@ export class LoadWalletComponent implements OnInit {
     oldConnection:string;
     filterAddressVal:string;
     totalSky:any;
-    randomWords:any;
     historySearchKey:string;
     selectedWallet:any;
 
@@ -487,7 +489,6 @@ export class LoadWalletComponent implements OnInit {
     //Show wallet function for view New wallet popup
     showNewWalletDialog(){
         this.NewWalletIsVisible = true;
-        this.randomWords = this.getRandomWords();
     }
     //Hide wallet function for hide New wallet popup
     hideWalletPopup(){
@@ -600,11 +601,6 @@ export class LoadWalletComponent implements OnInit {
             );
     }
 
-    //Edit existing wallet function
-    editWallet(wallet){
-        this.EditWalletIsVisible = true;
-        this.walletId = wallet.meta.filename;
-    }
     addNewAddress(wallet) {
       //Set http headers
       var headers = new Headers();
@@ -626,45 +622,6 @@ export class LoadWalletComponent implements OnInit {
               },
               () => {}
           );
-    }
-    //Hide edit wallet function
-    hideEditWalletPopup(){
-        this.EditWalletIsVisible = false;
-    }
-
-    //Update wallet function for update wallet label
-    updateWallet(walletid, walletName){
-      console.log("update wallet", walletid, walletName);
-        //check if label is duplicated
-        var old = _.find(this.wallets, function(o){
-          return (o.meta.label == walletName)
-        })
-
-        if(old) {
-            toastr.error("This wallet label is used already");
-          return;
-        }
-
-        //Set http headers
-        var headers = new Headers();
-        headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        var stringConvert = 'label='+walletName+'&id='+walletid;
-        //Post method executed
-        this.http.post('/wallet/update', stringConvert, {headers: headers})
-            .map((res:Response) => res.json())
-            .subscribe(
-                response => {
-                    //Hide new wallet popup
-                    this.EditWalletIsVisible = false;
-                    toastr.info("Wallet updated successfully");
-                    //Load wallet for refresh list
-                    this.loadWallet();
-                },
-                err => console.log("Error on update wallet: "+JSON.stringify(err)),
-                () => {
-                  //console.log('Update wallet done')
-                }
-            );
     }
 
     //Load wallet seed function
@@ -743,6 +700,23 @@ export class LoadWalletComponent implements OnInit {
       this.filterAddressVal = address;
     }
 
+    updateStatusOfTransaction(txid, metaData){
+        var headers = new Headers();
+        headers.append('Content-Type', 'application/x-www-form-urlencoded');
+        this.http.get('/transaction?txid=' + txid, { headers: headers })
+            .map((res) => res.json())
+            .subscribe(
+                //Response from API
+                res => {
+                    this.pendingTable.push({'time':res.txn.timestamp,'status':res.status.confirmed?'Completed':'Unconfirmed','amount':metaData.amount,'txId':txid,'address':metaData.address});
+                    //Load wallet for refresh list
+                    this.loadWallet();
+                }, err => {
+                    console.log("Error on load transaction: " + err)
+                }, () => {
+                });
+    }
+
     spend(spendid, spendaddress, spendamount){
         var amount = Number(spendamount);
         if(amount < 1) {
@@ -774,12 +748,7 @@ export class LoadWalletComponent implements OnInit {
             .subscribe(
                 response => {
                     console.log(response);
-                    response.txn.time = Date.now()/1000;
-                    response.txn.address = spendaddress;
-                    response.txn.amount = spendamount;
-                    this.pendingTable.push(response);
-                    //Load wallet for refresh list
-                    this.loadWallet();
+                    this.updateStatusOfTransaction(response.txn.txid, {address:spendaddress,amount:amount});
                     this.readyDisable = false;
                     this.sendDisable = true;
                 },
@@ -847,36 +816,6 @@ export class LoadWalletComponent implements OnInit {
     searchBlockHistory(searchKey){
       console.log(searchKey);
 
-    }
-
-    getRandomWords() {
-      var ret = [];
-      for(var i = 0 ; i < 11; i++) {
-        var length = Math.round(Math.random() * 10);
-        length = Math.max(length, 3);
-
-        ret.push(this.createRandomWord(length));
-      }
-
-      return ret.join(" ");
-    }
-
-    createRandomWord(length) {
-      var consonants = 'bcdfghjklmnpqrstvwxyz',
-          vowels = 'aeiou',
-          rand = function(limit) {
-              return Math.floor(Math.random()*limit);
-          },
-          i, word='',
-          consonants2 = consonants.split(''),
-          vowels2 = vowels.split('');
-      for (i=0;i<length/2;i++) {
-          var randConsonant = consonants2[rand(consonants.length)],
-              randVowel = vowels2[rand(vowels.length)];
-          word += (i===0) ? randConsonant.toUpperCase() : randConsonant;
-          word += i*2<length-1 ? randVowel : '';
-      }
-      return word;
     }
 
     onSelectWallet(val) {

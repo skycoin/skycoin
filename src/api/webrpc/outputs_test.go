@@ -10,32 +10,44 @@ import (
 )
 
 var outputStr = `{
-       "outputs": [
-            {
-                "txid": "0ccc33d0f771b60c95e660745a1b1a92f9dc29f50bdf28d81755cdd3466caf41",
-                "src_tx": "5d4f0397d0f7278d70a81623cc5e3899e65a8b9063d61e15a908657189855082",
-                "address": "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW",
-                "coins": "6",
-                "hours": 430
-            },
-            {
-                "txid": "574d7e5afaefe4ee7e0adf6ce1971d979f038adc8ebbd35771b2c19b0bad7e3d",
-                "src_tx": "662835cc081e037561e1fe05860fdc4b426f6be562565bfaa8ec91be5675064a",
-                "address": "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW",
-                "coins": "1",
-                "hours": 3455
-            },
-            {
-                "txid": "6d8a9c89177ce5e9d3b4b59fff67c00f0471fdebdfbb368377841b03fc7d688b",
-                "src_tx": "662835cc081e037561e1fe05860fdc4b426f6be562565bfaa8ec91be5675064a",
-                "address": "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B",
-                "coins": "5",
-                "hours": 3455
-            }
-        ]
+       "outputs": 
+			{
+				"head_outputs": [
+					{
+						"hash": "ca02361ef6d658cac5b5aadcb502b4b6046d1403e0f4b1f16b35c06a3f27e3df",
+						"src_tx": "e00196267e879c76215ccb93d046bd248e2bc5accad93d246ba43c71c42ff44a",
+						"address": "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW",
+						"coins": "4",
+						"hours": 0
+					},
+					{
+						"hash": "22f489be1a2f87ed826c183b516bd10f1703c6591643796f48630ba97db3b16c",
+						"src_tx": "fe50714012b29b3ffe5bc2f8e12a95af35004513d61e329e33b9b2a964ae2924",
+						"address": "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW",
+						"coins": "1",
+						"hours": 0
+					},
+					{
+						"hash": "f34f2f08c0a9bab56920b4ef946c0cb3ce31bbd641e44b23c5c1c39a14c86c86",
+						"src_tx": "059197c06b3a236c550bec377e26401c50ee6480b51206b6f3899ece55209b50",
+						"address": "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B",
+						"coins": "53",
+						"hours": 1
+					},
+					{
+						"hash": "86c43aeaa420e17843fee51ec28275726c6422f6bb0f844e70c552d65dd63df8",
+						"src_tx": "bb35c6b277f432c6cf13d4a6b36d64f75cc405bc2b864aad718e53a6cbbd9105",
+						"address": "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW",
+						"coins": "1",
+						"hours": 0
+					}
+				],
+				"outgoing_outputs": [],
+				"incoming_outputs": []
+			}
     }`
 
-func decodeOutputStr(str string) []visor.ReadableOutput {
+func decodeOutputStr(str string) visor.ReadableOutputSet {
 	outs := OutputsResult{}
 	if err := json.NewDecoder(strings.NewReader(outputStr)).Decode(&outs); err != nil {
 		panic(err)
@@ -43,14 +55,34 @@ func decodeOutputStr(str string) []visor.ReadableOutput {
 	return outs.Outputs
 }
 
-func filterOut(outs []visor.ReadableOutput, f func(out visor.ReadableOutput) bool) []visor.ReadableOutput {
-	ret := []visor.ReadableOutput{}
-	for _, o := range outs {
+func filterOut(outs visor.ReadableOutputSet, f func(out visor.ReadableOutput) bool) visor.ReadableOutputSet {
+	headOuts := []visor.ReadableOutput{}
+	outgoingOuts := []visor.ReadableOutput{}
+	incommingOuts := []visor.ReadableOutput{}
+
+	for _, o := range outs.HeadOutputs {
 		if f(o) {
-			ret = append(ret, o)
+			headOuts = append(headOuts, o)
 		}
 	}
-	return ret
+
+	for _, o := range outs.OutgoingOutputs {
+		if f(o) {
+			outgoingOuts = append(outgoingOuts, o)
+		}
+	}
+
+	for _, o := range outs.IncommingOutputs {
+		if f(o) {
+			incommingOuts = append(incommingOuts, o)
+		}
+	}
+
+	return visor.ReadableOutputSet{
+		HeadOutputs:      headOuts,
+		OutgoingOutputs:  outgoingOuts,
+		IncommingOutputs: incommingOuts,
+	}
 }
 
 func Test_getOutputsHandler(t *testing.T) {

@@ -17,32 +17,48 @@ func main() {
 
 	statusChannel := make(chan bool, 2)
 
-	nm := nodemanager.NodeManager{}
+	nm := nodemanager.NewEmptyNodeManager()
 
-	nm.GetFromFile("3")
+	err := nm.GetFromFile("7")
+	if err != nil {
+		panic(err)
+	}
 
 	configsMap := nm.ConfigList
 	configs := []*nodemanager.TestConfig{}
 
-	for _, config := range(configsMap) {
+	for _, config := range configsMap {
 		configs = append(configs, config)
 	}
 
-	config1 := configs[2]
-	config2 := configs[0]
+	config1 := configs[0]
+	config2 := configs[5]
 
-	fmt.Println("config1:", config1.NodeConfig.PubKey)
-	fmt.Println("config2:", config2.NodeConfig.PubKey)
+	nm.RebuildRouteGraph()
 
-//	config1.AddMessageToSend(config1.RoutesConfigsToEstablish[0].RouteID, "Message 1")
+	nm.Start()
+	//	nm.RouteGraph.ToString()
+
+	pubKey1 := config1.NodeConfig.PubKey
+	pubKey2 := config2.NodeConfig.PubKey
+
+	found := nm.FindRoutes(pubKey1, pubKey2)
+	if !found {
+		fmt.Println("No path between nodes", pubKey1, pubKey2)
+		panic("")
+	}
+
+	fmt.Println("config1:", pubKey1)
+	fmt.Println("config2:", pubKey2)
+
 	config1.AddMessageToSend(config2, "Message 1")
 	config1.AddMessageToReceive("Message 2", "")
 
 	config2.AddMessageToReceive("Message 1", "Message 2")
 
-	go sendMessage(2, *config2, &wg, statusChannel)
+	go sendMessage(nm, 2, *config2, &wg, statusChannel)
 
-	go sendMessage(1, *config1, &wg, statusChannel)
+	go sendMessage(nm, 1, *config1, &wg, statusChannel)
 
 	timeout := 15 * time.Second
 	for i := 1; i <= 2; i++ {
@@ -63,21 +79,44 @@ func main() {
 		}
 	}
 	wg.Wait()
+
+	statusChannel = make(chan bool, 2)
+	wg.Add(2)
+	go sendMessage(nm, 2, *config2, &wg, statusChannel)
+
+	go sendMessage(nm, 1, *config1, &wg, statusChannel)
+
+	for i := 1; i <= 2; i++ {
+		select {
+		case status, ok := <-statusChannel:
+			{
+				if ok {
+					if !status {
+						fmt.Fprintln(os.Stderr, "Error expected Status True")
+					}
+				}
+			}
+		case <-time.After(timeout):
+			{
+				fmt.Fprintln(os.Stderr, "Error TimeOut")
+				break
+			}
+		}
+	}
+	wg.Wait()
+
+	nm.Shutdown()
 	fmt.Println("Done")
 }
 
 // Initialize the Nodes for communication and sending messages
-func sendMessage(configID int, config nodemanager.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
+func sendMessage(nm *nodemanager.NodeManager, configID int, config nodemanager.TestConfig, wg *sync.WaitGroup, statusChannel chan bool) {
 	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", configID)
 	defer wg.Done()
 
-	node := nodemanager.CreateNode(config)
-	nodemanager.AddPeersToNode(node, config)
-
-	defer node.Close()
-
+	pubKey := config.NodeConfig.PubKey
+	node := nm.NodesList[pubKey]
 	nodemanager.AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
-	fmt.Println("routes:", node.GetAllRoutes())
 
 	// Receive messages
 	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))

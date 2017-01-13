@@ -7,8 +7,8 @@ import (
 //Node: RouteId
 type RouteId uint64
 
-func RandRouteId() TransportId {
-	return (TransportId)(rand.Int63())
+func RandRouteId() RouteId {
+	return (RouteId)(rand.Int63())
 }
 
 //Transport: TransportId
@@ -19,10 +19,8 @@ func RandTransportId() TransportId {
 	return (TransportId)(rand.Int63())
 }
 
-//Node: NodeId
+type ChannelId uint64
 
-type NodeId uint64
-
-func RandNodeId() NodeId {
-	return (NodeId)(rand.Int63())
+func RandChannelId() ChannelId {
+	return (ChannelId)(rand.Int63())
 }

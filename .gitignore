@@ -104,5 +104,7 @@ electron/.standalone_output
 .vscode/
 
 src/mesh/examples/integration/integration
+src/mesh2/TODO
+src/gui/static/dist
 
 .idea/

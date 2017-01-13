@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/mesh2/messages"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/node"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 )
@@ -15,57 +15,64 @@ import (
 //contains transport_mananger / transport_factory
 //calls ticket methods on the transport factory
 type NodeManager struct {
-	NodeList	     *NodeListT
+	NodeIdList           []cipher.PubKey
+	NodeList             map[cipher.PubKey]*node.Node
 	TransportFactoryList []*transport.TransportFactory
-}
-
-type NodeListT struct {
-	nodes map[messages.NodeId]*node.Node
 }
 
 func NewNodeManager() *NodeManager {
 	nm := new(NodeManager)
-	nm.NodeList = &NodeListT{nodes: map[messages.NodeId]*node.Node{}}
+	nm.NodeList = make(map[cipher.PubKey]*node.Node)
 	nm.TransportFactoryList = []*transport.TransportFactory{}
 	return nm
 }
 
-func (self *NodeManager) GetNodeById(id messages.NodeId) (*node.Node, error) {
-	result, found := self.NodeList.nodes[id]
-	if !found {return &node.Node{}, errors.New("Node not found")}
+func (self *NodeManager) GetNodeById(id cipher.PubKey) (*node.Node, error) {
+	result, found := self.NodeList[id]
+	if !found {
+		return &node.Node{}, errors.New("Node not found")
+	}
 	return result, nil
 }
 
-func (self *NodeManager) AddNode() messages.NodeId {
+func (self *NodeManager) AddNewNode() cipher.PubKey {
 	nodeToAdd := node.NewNode()
+	self.AddNode(nodeToAdd)
+	return nodeToAdd.Id
+}
+
+func (self *NodeManager) AddNode(nodeToAdd *node.Node) {
 	id := nodeToAdd.Id
-	self.NodeList.nodes[id] = nodeToAdd
-	return id
+	self.NodeList[id] = nodeToAdd
+	self.NodeIdList = append(self.NodeIdList, id)
 }
 
 func (self *NodeManager) Tick() {
-	self.NodeList.Tick()
-}
-
-func (self *NodeListT) Tick() {
-	for _, node := range(self.nodes) {
+	for _, node := range self.NodeList {
 		node.Tick()
 	}
 }
 
-func (self *NodeManager) ConnectNodeToNode(idA, idB messages.NodeId) (messages.TransportId, messages.TransportId) {
-	nodes := self.NodeList.nodes
+func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
 	if idA == idB {
 		fmt.Println("Cannot connect node to itself")
-		return (messages.TransportId)(0), (messages.TransportId)(0)
+		return &transport.TransportFactory{}
 	}
-	nodeA := nodes[idA]
-	nodeB := nodes[idB]
+	nodes := self.NodeList
+	nodeA, found := nodes[idA]
+	if !found {
+		fmt.Println("Cannot find node with ID", idA)
+		return &transport.TransportFactory{}
+	}
+	nodeB, found := nodes[idB]
+	if !found {
+		fmt.Println("Cannot find node with ID", idB)
+		return &transport.TransportFactory{}
+	}
+
 	tf := transport.NewTransportFactory()
-	transportA, transportB := tf.CreateStubTransportPair()
-	transportA.AttachedNode = nodeA; tidA := transportA.Id
-	transportB.AttachedNode = nodeB; tidB := transportB.Id
-	nodeA.Transports[tidA] = transportA
-	nodeB.Transports[tidB] = transportB
-	return tidA, tidB
+	tf.ConnectNodeToNode(nodeA, nodeB)
+	self.TransportFactoryList = append(self.TransportFactoryList, tf)
+	go tf.Tick()
+	return tf
 }

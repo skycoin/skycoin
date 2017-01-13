@@ -1,9 +1,13 @@
 package messages
 
-import ()
+import (
+	"github.com/skycoin/skycoin/src/cipher"
+)
 
 type NodeInterface interface {
+	GetId() cipher.PubKey
 	InjectTransportMessage(transportId TransportId, msg []byte)
+	SetTransport(TransportId, TransportInterface)
 }
 
 type TransportInterface interface {

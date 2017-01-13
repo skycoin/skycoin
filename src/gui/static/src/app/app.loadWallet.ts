@@ -9,6 +9,7 @@ import 'rxjs/add/operator/catch';
 import {QRCodeComponent} from './ng2-qrcode';
 import {SkyCoinEditComponent} from './components/skycoin.edit.component';
 import {SeedComponent} from './components/seed.component';
+import {SkyCoinOutputComponent} from './components/outputs.component';
 import {SeedService} from "./services/seed.service";
 import {Wallet} from './model/wallet.pojo'
 
@@ -66,7 +67,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-wallet',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent],
+    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent, SkyCoinOutputComponent],
     providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })
@@ -84,8 +85,14 @@ export class LoadWalletComponent implements OnInit {
     displayModeEnum = DisplayModeEnum;
     selectedMenu: string;
 
+    @ViewChild(SkyCoinOutputComponent)
+    private outputComponent: SkyCoinOutputComponent;
+
     QrAddress: string;
     QrIsVisible: boolean;
+
+    @ViewChild(SeedComponent)
+    private seedComponent: SeedComponent;
 
     NewWalletIsVisible: boolean;
     loadSeedIsVisible: boolean;
@@ -140,7 +147,6 @@ export class LoadWalletComponent implements OnInit {
         this.loadBlockChain();
         this.loadNumberOfBlocks();
         this.loadProgress();
-        this.loadOutputs();
         this.loadTransactions();
         this.isValidAddress = false;
         this.blockViewMode = 'recentBlocks'
@@ -404,20 +410,7 @@ export class LoadWalletComponent implements OnInit {
               //console.log('Default connections load done')
             });
     }
-    loadOutputs() {
-        var headers = new Headers();
-        headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        this.http.get('/outputs', { headers: headers })
-            .map((res) => res.json())
-            .subscribe(data => {
-                this.outputs = _.sortBy(data, function(o){
-                    return o.address;
-                });
-                this.outputs.length = Math.min(100, this.outputs.length);
-            }, err => console.log("Error on load outputs: " + err), () => {
-              //console.log('Connection load done')
-            });
-    }
+
     loadBlockChain() {
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -469,6 +462,11 @@ export class LoadWalletComponent implements OnInit {
         this.displayMode = this.displayModeEnum.fifth;
         event.preventDefault();
         this.selectedMenu = menu;
+        if(menu=='Outputs'){
+            if(this.outputComponent){
+                this.outputComponent.refreshOutputs();
+            }
+        }
     }
     getDateTimeString(ts) {
         return moment.unix(ts).format("YYYY-MM-DD HH:mm")
@@ -545,7 +543,9 @@ export class LoadWalletComponent implements OnInit {
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-
+        if(this.seedComponent){
+            seed=this.seedComponent.getCurrentSeed();
+        }
         //Post method executed
         var stringConvert = 'label='+label+'&seed='+seed;
         this.http.post('/wallet/create', stringConvert, {headers: headers})

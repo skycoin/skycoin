@@ -91,6 +91,9 @@ export class LoadWalletComponent implements OnInit {
     QrAddress: string;
     QrIsVisible: boolean;
 
+    @ViewChild(SeedComponent)
+    private seedComponent: SeedComponent;
+
     NewWalletIsVisible: boolean;
     loadSeedIsVisible: boolean;
 
@@ -540,7 +543,9 @@ export class LoadWalletComponent implements OnInit {
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-
+        if(this.seedComponent){
+            seed=this.seedComponent.getCurrentSeed();
+        }
         //Post method executed
         var stringConvert = 'label='+label+'&seed='+seed;
         this.http.post('/wallet/create', stringConvert, {headers: headers})

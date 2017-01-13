@@ -28,4 +28,8 @@ export class SeedComponent implements OnInit {
            }
        );
     }
+
+    getCurrentSeed():string {
+        return this.currentSeed.seed;
+    }
 }

@@ -413,6 +413,18 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		}
 		return 4 + size, nil
 
+	case reflect.Map:
+		size := 0
+		for _, key := range v.MapKeys() {
+			elem := v.MapIndex(key)
+			s, err := datasizeWrite(elem)
+			if err != nil {
+				return 0, err
+			}
+			size += s
+		}
+		return 4 + size, nil
+
 	case reflect.Struct:
 		sum := 0
 		for i, n := 0, t.NumField(); i < n; i++ {
@@ -844,6 +856,12 @@ func (e *encoder) value(v reflect.Value) {
 		e.uint32(uint32(v.Len()))
 		for i := 0; i < v.Len(); i++ {
 			e.value(v.Index(i))
+		}
+
+	case reflect.Map:
+		e.uint32(uint32(v.Len()))
+		for _, key := range v.MapKeys() {
+			e.value(v.MapIndex(key))
 		}
 
 	case reflect.Struct:

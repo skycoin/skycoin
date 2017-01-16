@@ -54,6 +54,7 @@ npm install
 
 A folder `node_modules/` should now exist.
 
+<<<<<<< HEAD
 Manually download electron release 1.2.2
 -----
 
@@ -68,6 +69,8 @@ Manually download electron release 1.2.2
 
 Copy the downloaded zip files into `electron/.electron_cache` folder.
 
+=======
+>>>>>>> e9692263664a48842e644ca6404e210df1403201
 Building
 --------
 

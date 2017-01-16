@@ -247,7 +247,7 @@ func (utp *UnconfirmedTxnPool) SpendsForAddress(bcUnspent *coin.UnspentPool,
 
 // AllSpendsOutputs returns all spending outputs in unconfirmed tx pool.
 func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *coin.UnspentPool) []ReadableOutput {
-	var outs []ReadableOutput
+	outs := []ReadableOutput{}
 	for _, tx := range utp.Txns {
 		for _, in := range tx.Txn.In {
 			if ux, ok := bcUnspent.Get(in); ok {
@@ -260,7 +260,7 @@ func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *coin.UnspentPool) []R
 
 // AllIncommingOutputs returns all predicted incomming outputs.
 func (utp *UnconfirmedTxnPool) AllIncommingOutputs(bh coin.BlockHeader) []ReadableOutput {
-	var outs []ReadableOutput
+	outs := []ReadableOutput{}
 	for _, tx := range utp.Txns {
 		uxOuts := coin.CreateUnspents(bh, tx.Txn)
 		for _, ux := range uxOuts {

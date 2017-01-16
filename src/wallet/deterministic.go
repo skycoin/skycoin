@@ -257,6 +257,7 @@ func (wlt *Wallet) Load(dir string) error {
 	if err := r.Load(filepath.Join(dir, wlt.GetFilename())); err != nil {
 		return err
 	}
+	r.Meta["filename"] = wlt.GetFilename()
 	*wlt = NewWalletFromReadable(r)
 	return nil
 }

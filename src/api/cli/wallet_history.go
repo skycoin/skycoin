@@ -98,7 +98,7 @@ func walletHistoryAction(c *gcli.Context) error {
 		return err
 	}
 
-	// transmute the uxout to addrHistory, and also sort the items by time in ascend order.
+	// transmute the uxout to addrHistory, and sort the items by time in ascend order.
 	totalAddrHis := []addrHistory{}
 	for _, ux := range uxouts {
 		addrHis, err := makeAddrHisArray(ux)
@@ -158,17 +158,17 @@ func makeAddrHisArray(ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 		spentBlkSeq = append(spentBlkSeq, seq)
 	}
 
-	getBlkTime, err := createBlkTimeFinder(spentBlkSeq)
-	if err != nil {
-		return []addrHistory{}, err
-	}
+	if len(spentBlkSeq) > 0 {
+		getBlkTime, err := createBlkTimeFinder(spentBlkSeq)
+		if err != nil {
+			return []addrHistory{}, err
+		}
 
-	for i, his := range spentHis {
-		spentHis[i].Timestamp = time.Unix(getBlkTime(his.BlockSeq), 0).UTC()
+		for i, his := range spentHis {
+			spentHis[i].Timestamp = time.Unix(getBlkTime(his.BlockSeq), 0).UTC()
+		}
+		addrHis = append(addrHis, spentHis...)
 	}
-	addrHis = append(addrHis, spentHis...)
-
-	// sort.Sort(byTime(addrHis))
 
 	// merge history in the same transaction.
 	hisMap := map[string][]addrHistory{}

@@ -1,8 +1,15 @@
 {
   "_args": [
     [
-      "@angular/compiler@2.0.0-rc.1",
-      "/Users/napandey/coding/skycoin/src/gui/static"
+      {
+        "name": "@angular/compiler",
+        "raw": "@angular/compiler@2.0.0-rc.1",
+        "rawSpec": "2.0.0-rc.1",
+        "scope": "@angular",
+        "spec": "2.0.0-rc.1",
+        "type": "version"
+      },
+      "/home/atomos/.gvm/pkgsets/go1.7/global/src/github.com/skycoin/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/compiler@2.0.0-rc.1",
@@ -36,7 +43,7 @@
   "_shasum": "2f69d866bc7623c80ba05dd4e1339bcfb02d0960",
   "_shrinkwrap": null,
   "_spec": "@angular/compiler@2.0.0-rc.1",
-  "_where": "/Users/napandey/coding/skycoin/src/gui/static",
+  "_where": "/home/atomos/.gvm/pkgsets/go1.7/global/src/github.com/skycoin/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },

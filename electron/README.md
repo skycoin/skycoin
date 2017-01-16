@@ -60,6 +60,8 @@ Manually download electron release 1.2.2
  The gulp-electron now can't download the electron release of version 1.2.2
  automatically. We need to download them manually from the following links:
 
+ shttps://github.com/electron/electron/releases
+
  * [electron-v1.2.2-darwin-x64.zip](https://github.com/electron/electron/releases/download/v1.2.2/electron-v1.2.2-darwin-x64.zip)
  * [electron-v1.2.2-linux-x64.zip](https://github.com/electron/electron/releases/download/v1.2.2/electron-v1.2.2-linux-x64.zip)
  * [electron-v1.2.2-win32-x64.zip](https://github.com/electron/electron/releases/download/v1.2.2/electron-v1.2.2-win32-x64.zip)

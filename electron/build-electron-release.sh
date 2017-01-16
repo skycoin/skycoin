@@ -6,6 +6,7 @@ set -e -o pipefail
 # Implemented architectures:
 #       darwin/amd64
 #       windows/amd64
+#       windows/386
 #       linux/amd64
 #
 # By default builds all architectures.
@@ -22,8 +23,14 @@ if [ -n "$1" ]; then
     "linux/amd64")
         GULP_PLATFORM="linux-x64"
         ;;
+    "linux/arm")
+        GULP_PLATFORM="linux-arm"
+        ;;
     "windows/amd64")
         GULP_PLATFORM="win32-x64"
+        ;;
+    "windows/386")
+        GULP_PLATFORM="win32-ia32"
         ;;
     "darwin/amd64")
         GULP_PLATFORM="darwin-x64"

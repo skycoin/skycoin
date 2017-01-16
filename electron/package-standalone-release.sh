@@ -11,11 +11,17 @@ pushd "$SCRIPTDIR" >/dev/null
 
 OSX64="${STL_OUTPUT}/${OSX64_STL}"
 WIN64="${STL_OUTPUT}/${WIN64_STL}"
+WIN32="${STL_OUTPUT}/${WIN32_STL}"
 LNX64="${STL_OUTPUT}/${LNX64_STL}"
+LNX_ARM="${STL_OUTPUT}/${LNX_ARM_STL}"
 
 OSX64_SRC="${OSX64}/src"
 WIN64_SRC="${WIN64}/src"
+WIN32_SRC="${WIN32}/src"
 LNX64_SRC="${LNX64}/src"
+LNX_ARM_SRC="${LNX_ARM}/src"
+
+
 
 DESTSRCS=()
 
@@ -54,7 +60,9 @@ echo "Copying skycoin binaries"
 # copy binaries
 copy_if_exists "skycoin_darwin_amd64" "$OSX64" "skycoin" "$OSX64_SRC"
 copy_if_exists "skycoin_windows_amd64.exe" "$WIN64" "skycoin.exe" "$WIN64_SRC"
+copy_if_exists "skycoin_windows_386.exe" "$WIN32" "skycoin.exe" "$WIN32_SRC"
 copy_if_exists "skycoin_linux_amd64" "$LNX64" "skycoin" "$LNX64_SRC"
+copy_if_exists "skycoin_linux_arm" "$LNX_ARM" "skycoin" "$LNX_ARM_SRC"
 
 # Copy the source for reference
 # tar it with filters, move it, then untar in order to do this

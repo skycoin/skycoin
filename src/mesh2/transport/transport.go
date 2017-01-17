@@ -26,9 +26,13 @@ import (
 // - or with array on the transport (who is responsible for processing ACKs?)
 
 const (
-	TIMEOUT   uint32 = 1000 // time for ack waiting
-	CONNECTED        = iota
-	DISCONNECTED
+	TIMEOUT          uint32 = 1000 // time for ack waiting
+	RETRANSMIT_LIMIT        = 4
+)
+
+const (
+	DISCONNECTED = iota
+	CONNECTED
 )
 
 //This is stub transport
@@ -67,8 +71,8 @@ func (self *Transport) Shutdown() {
 
 //move node forward on tick, process events
 func (self *Transport) Tick() {
-	//process incoming messages
 	go self.sendFromPending() // for testing purposes
+	//process incoming messages
 	go self.receiveIncoming() // receiving messages
 }
 
@@ -185,7 +189,7 @@ func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
 			return true
 		case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
 			retransmits++
-			if retransmits >= 4 {
+			if retransmits >= RETRANSMIT_LIMIT {
 				return false
 			}
 			fmt.Printf("msg %d will be sent again, attempt %d\n", msg, retransmits+1)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/node"
-	nodemanager "github.com/skycoin/skycoin/src/mesh2/node_manager"
+	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 )
 
 func main() {

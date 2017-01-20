@@ -151,6 +151,11 @@ func (self *Node) GetTransportToNode(nodeId cipher.PubKey) (*transport.Transport
 	return nil, errors.New("No transport to node")
 }
 
+func (self *Node) ConnectedTo(other messages.NodeInterface) bool {
+	_, err := self.GetTransportToNode(other.GetId())
+	return err == nil
+}
+
 func (self *Node) SetTransport(id messages.TransportId, tr messages.TransportInterface) {
 	self.Transports[id] = tr.(*transport.Transport)
 }

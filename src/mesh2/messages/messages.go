@@ -25,11 +25,11 @@ const (
 
 func GetMessageType(message []byte) uint16 {
 	var value uint16
-<<<<<<< HEAD
-	rBuf := bytes.NewReader(message[4:6])
-=======
+	//<<<<<<< HEAD
+	//	rBuf := bytes.NewReader(message[4:6])
+	//=======
 	rBuf := bytes.NewReader(message[0:2])
->>>>>>> 7faf4668e1d30ab1983f14314e599ae03747c7a1
+	//>>>>>>> 7faf4668e1d30ab1983f14314e599ae03747c7a1
 	err := binary.Read(rBuf, binary.LittleEndian, &value)
 	if err != nil {
 		fmt.Println("binary.Read failed: ", err)

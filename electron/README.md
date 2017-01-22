@@ -63,9 +63,13 @@ Manually download electron release 1.2.2
 
  shttps://github.com/electron/electron/releases
 
- * [electron-v1.2.2-darwin-x64.zip](https://github.com/electron/electron/releases/download/v1.2.2/electron-v1.2.2-darwin-x64.zip)
- * [electron-v1.2.2-linux-x64.zip](https://github.com/electron/electron/releases/download/v1.2.2/electron-v1.2.2-linux-x64.zip)
- * [electron-v1.2.2-win32-x64.zip](https://github.com/electron/electron/releases/download/v1.2.2/electron-v1.2.2-win32-x64.zip)
+ * [electron-v1.4.13-darwin-x64.zip](https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-darwin-x64.zip)
+ * [electron-v1.4.13-linux-x64.zip](https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-linux-x64.zip)
+ * [electron-v1.4.13-win32-x64.zip](https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-win32-x64.zip)
+
+wget -c https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-darwin-x64.zip
+wget -c https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-linux-x64.zip
+wget -c https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-win32-x64.zip
 
 Copy the downloaded zip files into `electron/.electron_cache` folder.
 

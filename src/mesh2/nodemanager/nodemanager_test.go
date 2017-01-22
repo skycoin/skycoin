@@ -1,11 +1,13 @@
-package node_manager
+package nodemanager
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/node"
 )
@@ -35,6 +37,8 @@ func TestConnectTwoNodes(t *testing.T) {
 	assert.Len(t, nm.TransportFactoryList, 0, "Should be 0 TransportFactory")
 	tf := nm.ConnectNodeToNode(id1, id2)
 	assert.Len(t, nm.TransportFactoryList, 1, "Should be 1 TransportFactory")
+	assert.True(t, node1.ConnectedTo(node2))
+	assert.True(t, node2.ConnectedTo(node1))
 	t1, t2 := tf.GetTransports()
 	assert.Len(t, node1.Transports, 1, "Error expected 1 transport")
 	assert.Len(t, node2.Transports, 1, "Error expected 1 transport")
@@ -79,4 +83,29 @@ func TestNetwork(t *testing.T) {
 		assert.Equal(t, (uint32)(0), t1.PacketsSent)
 		assert.Equal(t, (uint32)(0), t1.PacketsConfirmed)
 	}
+}
+
+func TestBuildRoute(t *testing.T) {
+	n := 100
+	m := 5
+	nm := NewNodeManager()
+	nm.CreateNodeList(n)
+
+	nodes := []cipher.PubKey{}
+
+	for i := 0; i < m; i++ {
+		nodenum := rand.Intn(n)
+		nodeId := nm.NodeIdList[nodenum]
+		nodes = append(nodes, nodeId)
+	}
+
+	for i := 0; i < m-1; i++ {
+		nm.ConnectNodeToNode(nodes[i], nodes[i+1])
+	}
+
+	nm.Tick()
+
+	routes := nm.BuildRoute(nodes)
+	time.Sleep(100 * time.Millisecond)
+	assert.Len(t, routes, m, fmt.Sprintf("Should be %d routes", m))
 }

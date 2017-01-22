@@ -4,8 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
-
-	"github.com/skycoin/skycoin/src/cipher"
 )
 
 func TestSerialize(t *testing.T) {
@@ -33,12 +31,16 @@ func TestSerialize(t *testing.T) {
 	assert.Equal(t, msg2.Sequence, msg3.Sequence)
 	assert.Equal(t, msg2.Datagram, msg3.Datagram)
 
-	nodeId, _ := cipher.GenerateKeyPair()
-	msg4 := AddRouteControlMessage{nodeId, routeId}
+	route1Id := RandRouteId()
+	transport1Id := RandTransportId()
+
+	msg4 := AddRouteControlMessage{transportId, transport1Id, routeId, route1Id}
 	serialized = Serialize((uint16)(MsgAddRouteControlMessage), msg4)
 	msg5 := AddRouteControlMessage{}
 	err = Deserialize(serialized, &msg5)
 	assert.Nil(t, err)
-	assert.Equal(t, msg4.NodeId, msg5.NodeId)
-	assert.Equal(t, msg4.RouteId, msg5.RouteId)
+	assert.Equal(t, msg4.IncomingTransportId, msg5.IncomingTransportId)
+	assert.Equal(t, msg4.IncomingRouteId, msg5.IncomingRouteId)
+	assert.Equal(t, msg4.OutgoingTransportId, msg5.OutgoingTransportId)
+	assert.Equal(t, msg4.OutgoingRouteId, msg5.OutgoingRouteId)
 }

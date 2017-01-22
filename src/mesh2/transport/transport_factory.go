@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/mesh2/messages"
@@ -54,7 +55,10 @@ func (self *TransportFactory) CreateStubTransportPair() (*Transport, *Transport)
 	return a, b
 }
 
-func (self *TransportFactory) ConnectNodeToNode(nodeA, nodeB messages.NodeInterface) {
+func (self *TransportFactory) ConnectNodeToNode(nodeA, nodeB messages.NodeInterface) error {
+	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
+		return errors.New("Nodes are already connected")
+	}
 	transportA, transportB := self.CreateStubTransportPair()
 	transportA.AttachedNode = nodeA
 	tidA := transportA.Id
@@ -62,6 +66,7 @@ func (self *TransportFactory) ConnectNodeToNode(nodeA, nodeB messages.NodeInterf
 	tidB := transportB.Id
 	nodeA.SetTransport(tidA, transportA)
 	nodeB.SetTransport(tidB, transportB)
+	return nil
 }
 
 func (self *TransportFactory) GetTransports() (*Transport, *Transport) {
@@ -70,4 +75,12 @@ func (self *TransportFactory) GetTransports() (*Transport, *Transport) {
 		return nil, nil
 	}
 	return list[0], list[1]
+}
+
+func (self *TransportFactory) GetTransportIDs() []messages.TransportId {
+	list := self.TransportList
+	if len(list) < 2 {
+		return []messages.TransportId{(messages.TransportId)(0), (messages.TransportId)(0)}
+	}
+	return []messages.TransportId{list[0].Id, list[1].Id}
 }

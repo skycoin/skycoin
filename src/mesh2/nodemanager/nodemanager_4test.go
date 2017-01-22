@@ -1,16 +1,20 @@
-package node_manager
+package nodemanager
 
 //methods for testing purposes only
 
 import (
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/node"
 )
 
-func (self *NodeManager) CreateNodeList(n int) {
+func (self *NodeManager) CreateNodeList(n int) []cipher.PubKey {
+	nodes := []cipher.PubKey{}
 	for i := 0; i < n; i++ {
-		self.AddNewNode()
+		nodeId := self.AddNewNode()
+		nodes = append(nodes, nodeId)
 	}
+	return nodes
 }
 
 func (self *NodeManager) ConnectAll() {

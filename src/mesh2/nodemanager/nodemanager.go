@@ -1,4 +1,4 @@
-package node_manager
+package nodemanager
 
 import (
 	"errors"
@@ -54,6 +54,7 @@ func (self *NodeManager) Tick() {
 }
 
 func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
+
 	if idA == idB {
 		fmt.Println("Cannot connect node to itself")
 		return &transport.TransportFactory{}
@@ -67,6 +68,11 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.Tr
 	nodeB, found := nodes[idB]
 	if !found {
 		fmt.Println("Cannot find node with ID", idB)
+		return &transport.TransportFactory{}
+	}
+
+	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
+		fmt.Println("Nodes already connected")
 		return &transport.TransportFactory{}
 	}
 

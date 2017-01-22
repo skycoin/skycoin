@@ -6,7 +6,7 @@ import (
 
 type NodeInterface interface {
 	GetId() cipher.PubKey
-	InjectTransportMessage(transportId TransportId, msg []byte)
+	InjectTransportMessage(msg []byte)
 	SetTransport(TransportId, TransportInterface)
 	ConnectedTo(NodeInterface) bool
 }
@@ -15,4 +15,6 @@ type TransportInterface interface {
 	InjectNodeMessage([]byte)
 }
 
-//later add "transport status" struct
+type Consumer interface {
+	Consume(uint32, []byte, chan<- []byte) // number of message, what to consume and channel for accepting responses
+}

@@ -39,8 +39,8 @@ const (
 type Transport struct {
 	Id              messages.TransportId
 	IncomingChannel chan ([]byte)
-	PendingOut      chan ([]byte) //messages to send to other end of transport
-	//Note: PendingOut channel may need to be on the transport_factory
+	pendingOut      chan ([]byte) //messages to send to other end of transport
+	//Note: pendingOut channel may need to be on the transport_factory
 	ackChannels map[string]chan ([]byte)
 
 	AttachedNode messages.NodeInterface //node the transport is attached to
@@ -55,9 +55,9 @@ type Transport struct {
 }
 
 //are created by the factories
-func (self *Transport) NewTransportStub() {
+func (self *Transport) newTransportStub() {
 	self.IncomingChannel = make(chan []byte, 1024)
-	self.PendingOut = make(chan []byte, 1024)
+	self.pendingOut = make(chan []byte, 1024)
 	self.ackChannels = make(map[string]chan []byte)
 	self.Id = messages.RandTransportId()
 	self.Status = DISCONNECTED
@@ -125,7 +125,7 @@ func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessa
 	m1b.RouteId = msg.RouteId
 
 	b1 := messages.Serialize(messages.MsgTransportDatagramTransfer, m1b)
-	self.PendingOut <- b1 //push to queue, to be transferred
+	self.pendingOut <- b1 //push to queue, to be transferred
 }
 
 func (self *Transport) sendAck(msg *[]byte, m2 *messages.TransportDatagramTransfer) {
@@ -160,7 +160,7 @@ func (self *Transport) receiveAck(msg []byte) {
 }
 
 func (self *Transport) sendFromPending() {
-	for msg := range self.PendingOut {
+	for msg := range self.pendingOut {
 		ackChannel := make(chan []byte, 1024)
 		self.ackChannels[string(msg)] = ackChannel
 		result := self.sendPacket(msg, ackChannel)
@@ -181,7 +181,7 @@ func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
 		if self.Status == DISCONNECTED {
 			return false
 		}
-		self.SendMessageToStubPair(msg)
+		self.sendMessageToStubPair(msg)
 		select {
 		case ack := <-ackChannel:
 			self.receiveAck(ack)
@@ -200,12 +200,12 @@ func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
 //inject an incoming message from the transport
 func (self *Transport) InjectNodeMessage(msg []byte) {
 	if self.AttachedNode != nil {
-		self.AttachedNode.InjectTransportMessage(self.Id, msg)
+		self.AttachedNode.InjectTransportMessage(msg)
 	}
 }
 
 //message from stub to stub
 //used internally by transport factory
-func (self *Transport) SendMessageToStubPair(msg []byte) {
+func (self *Transport) sendMessageToStubPair(msg []byte) {
 	self.StubPair.IncomingChannel <- msg
 }

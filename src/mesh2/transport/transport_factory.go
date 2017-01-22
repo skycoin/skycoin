@@ -1,9 +1,9 @@
 package transport
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/mesh2/errors"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
@@ -35,10 +35,10 @@ func (self *TransportFactory) Tick() {
 	//- then force transports to push to a transport factory incoming channel
 	for _, t := range self.TransportList {
 		//check each transport for data?
-		for len(t.PendingOut) > 0 { //len will expose the number of elements in the channels buffer
+		for len(t.pendingOut) > 0 { //len will expose the number of elements in the channels buffer
 			var b []byte
-			t.PendingOut <- b          //the channel data
-			t.SendMessageToStubPair(b) //the transport now has the data
+			t.pendingOut <- b          //the channel data
+			t.sendMessageToStubPair(b) //the transport now has the data
 		}
 	}
 }
@@ -47,8 +47,8 @@ func (self *TransportFactory) Tick() {
 //Implement the nodes the transports are attached to
 func (self *TransportFactory) CreateStubTransportPair() (*Transport, *Transport) {
 	a, b := &Transport{}, &Transport{}
-	a.NewTransportStub()
-	b.NewTransportStub()
+	a.newTransportStub()
+	b.newTransportStub()
 	a.StubPair, b.StubPair = b, a
 	a.Status, b.Status = CONNECTED, CONNECTED
 	self.TransportList = []*Transport{a, b}
@@ -57,7 +57,7 @@ func (self *TransportFactory) CreateStubTransportPair() (*Transport, *Transport)
 
 func (self *TransportFactory) ConnectNodeToNode(nodeA, nodeB messages.NodeInterface) error {
 	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
-		return errors.New("Nodes are already connected")
+		return errors.ERR_ALREADY_CONNECTED
 	}
 	transportA, transportB := self.CreateStubTransportPair()
 	transportA.AttachedNode = nodeA
@@ -80,7 +80,7 @@ func (self *TransportFactory) GetTransports() (*Transport, *Transport) {
 func (self *TransportFactory) GetTransportIDs() []messages.TransportId {
 	list := self.TransportList
 	if len(list) < 2 {
-		return []messages.TransportId{(messages.TransportId)(0), (messages.TransportId)(0)}
+		return []messages.TransportId{messages.NIL_TRANSPORT, messages.NIL_TRANSPORT}
 	}
 	return []messages.TransportId{list[0].Id, list[1].Id}
 }

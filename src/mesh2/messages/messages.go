@@ -9,14 +9,16 @@ import (
 const (
 	MsgInRouteMessage            = iota // Transport -> Node
 	MsgOutRouteMessage                  // Node -> Transport
-	MsgTransportDatagramTransfer        //Transport -> Transport, simulating sending packet over network
-	MsgTransportDatagramACK             //Transport -> Transport, simulating ACK for packet
-	MsgInControlMessage                 //Transport -> Node, control message
-	MsgOutControlMessage                //Node -> Transport, control message
-	//	MsgCreateChannelControlMessage        //Node -> Control channel, create new control channel
-	MsgCloseChannelControlMessage //Node -> Control channel, close control channel
-	MsgAddRouteControlMessage     //Node -> Control channel, add new route
-	MsgRemoveRouteControlMessage  //Node -> Control channel, remove route
+	MsgTransportDatagramTransfer        // Transport -> Transport, simulating sending packet over network
+	MsgTransportDatagramACK             // Transport -> Transport, simulating ACK for packet
+	MsgInControlMessage                 // Transport -> Node, control message
+	MsgOutControlMessage                // Node -> Transport, control message
+	//	MsgCreateChannelControlMessage        // Node -> Control channel, create new control channel
+	MsgCloseChannelControlMessage // Node -> Control channel, close control channel
+	MsgAddRouteControlMessage     // Node -> Control channel, add new route
+	MsgRemoveRouteControlMessage  // Node -> Control channel, remove route
+	MsgRequestMessage             // Client -> Server
+	MsgResponseMessage            // Server -> Client
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -87,4 +89,15 @@ type AddRouteControlMessage struct {
 
 type RemoveRouteControlMessage struct {
 	RouteId RouteId
+}
+
+type RequestMessage struct {
+	Sequence  uint32
+	BackRoute RouteId
+	Payload   []byte
+}
+
+type ResponseMessage struct {
+	Sequence uint32
+	Payload  []byte
 }

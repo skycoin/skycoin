@@ -1,10 +1,10 @@
 package node
 
 import (
-	"github.com/skycoin/skycoin/src/mesh2/messages"
-
-	"errors"
 	"fmt"
+
+	"github.com/skycoin/skycoin/src/mesh2/errors"
+	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
 //A Node has a map of route rewriting rules
@@ -21,7 +21,7 @@ func (self *Node) addRoute(routeRule *RouteRule) error {
 	routeId := routeRule.IncomingRoute
 
 	if _, ok := self.RouteForwardingRules[routeId]; ok {
-		err := errors.New("Route already exists")
+		err := errors.ERR_ROUTE_EXISTS
 		fmt.Println(err)
 		return err
 	}
@@ -32,7 +32,7 @@ func (self *Node) addRoute(routeRule *RouteRule) error {
 
 func (self *Node) removeRoute(routeId messages.RouteId) error {
 	if _, ok := self.RouteForwardingRules[routeId]; !ok {
-		err := errors.New("Route doesn't exist")
+		err := errors.ERR_ROUTE_DOESNT_EXIST
 		fmt.Println(err)
 		return err
 	}

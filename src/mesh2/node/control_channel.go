@@ -1,24 +1,24 @@
 package node
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/mesh2/errors"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 )
 
 type ControlChannel struct {
-	Id messages.ChannelId
+	id messages.ChannelId
 }
 
-func NewControlChannel() *ControlChannel {
+func newControlChannel() *ControlChannel {
 	c := ControlChannel{
-		Id: messages.RandChannelId(),
+		id: messages.RandChannelId(),
 	}
 	return &c
 }
 
-func (c *ControlChannel) HandleMessage(handledNode *Node, msg []byte) (interface{}, error) {
+func (c *ControlChannel) handleMessage(handledNode *Node, msg []byte) (interface{}, error) {
 	switch messages.GetMessageType(msg) {
 	/*
 		case messages.MsgCreateChannelControlMessage:
@@ -48,5 +48,5 @@ func (c *ControlChannel) HandleMessage(handledNode *Node, msg []byte) (interface
 		return nil, handledNode.removeRoute(routeId)
 	}
 
-	return nil, errors.New("Unknown message type")
+	return nil, errors.ERR_UNKNOWN_MESSAGE_TYPE
 }

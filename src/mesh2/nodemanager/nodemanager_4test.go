@@ -19,11 +19,11 @@ func (self *NodeManager) CreateNodeList(n int) []cipher.PubKey {
 
 func (self *NodeManager) ConnectAll() {
 
-	n := len(self.NodeIdList)
+	n := len(self.nodeIdList)
 
 	// form transportFactories between the nodes sequentially
 	for i := 0; i < n-1; i++ {
-		id1, id2 := self.NodeIdList[i], self.NodeIdList[i+1]
+		id1, id2 := self.nodeIdList[i], self.nodeIdList[i+1]
 		self.ConnectNodeToNode(id1, id2)
 	}
 
@@ -35,28 +35,28 @@ func (self *NodeManager) ConnectAll() {
 	}
 	for i := 0; i < n; i++ {
 		routeRule := rules[i]
-		nodeId := self.NodeIdList[i]
+		nodeId := self.nodeIdList[i]
 		if i > 0 {
-			prevNodeId := self.NodeIdList[i-1]
-			incomingTransport, err := self.NodeList[prevNodeId].GetTransportToNode(nodeId)
+			prevNodeId := self.nodeIdList[i-1]
+			incomingTransport, err := self.nodeList[prevNodeId].GetTransportToNode(nodeId)
 			if err != nil {
 				panic(err)
 			}
 			routeRule.IncomingTransport = incomingTransport.StubPair.Id
 		} else {
-			routeRule.IncomingTransport = (messages.TransportId)(0)
+			routeRule.IncomingTransport = messages.NIL_TRANSPORT
 		}
 		if i < n-1 {
-			nextNodeId := self.NodeIdList[i+1]
-			outgoingTransport, err := self.NodeList[nodeId].GetTransportToNode(nextNodeId)
+			nextNodeId := self.nodeIdList[i+1]
+			outgoingTransport, err := self.nodeList[nodeId].GetTransportToNode(nextNodeId)
 			if err != nil {
 				panic(err)
 			}
 			routeRule.OutgoingTransport = outgoingTransport.Id
 			routeRule.OutgoingRoute = rules[i+1].IncomingRoute
 		} else {
-			routeRule.OutgoingTransport = (messages.TransportId)(0)
-			routeRule.OutgoingRoute = (messages.RouteId)(0)
+			routeRule.OutgoingTransport = messages.NIL_TRANSPORT
+			routeRule.OutgoingRoute = messages.NIL_ROUTE
 		}
 		addRouteMessage := messages.AddRouteControlMessage{
 			routeRule.IncomingTransport,
@@ -66,7 +66,7 @@ func (self *NodeManager) ConnectAll() {
 		}
 		serialized := messages.Serialize(messages.MsgAddRouteControlMessage, addRouteMessage)
 
-		node0 := self.NodeList[nodeId]
+		node0 := self.nodeList[nodeId]
 
 		ccid := node0.AddControlChannel()
 		controlMessage := messages.InControlMessage{ccid, serialized}

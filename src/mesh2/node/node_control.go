@@ -11,10 +11,10 @@ func (self *Node) AddControlChannel() messages.ChannelId {
 	//self.lock.Lock()
 	//defer self.lock.Unlock()
 
-	channel := NewControlChannel()
+	channel := newControlChannel()
 
-	self.controlChannels[channel.Id] = channel
-	return channel.Id
+	self.controlChannels[channel.id] = channel
+	return channel.id
 }
 
 func (self *Node) CloseControlChannel(channelID messages.ChannelId) error {
@@ -29,12 +29,12 @@ func (self *Node) CloseControlChannel(channelID messages.ChannelId) error {
 	return nil
 }
 
-func (self *Node) HandleControlMessage(channelID messages.ChannelId, message []byte) (interface{}, error) {
+func (self *Node) handleControlMessage(channelID messages.ChannelId, message []byte) (interface{}, error) {
 
 	channel, ok := self.controlChannels[channelID]
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Control channel %s not found", channelID))
 	}
 
-	return channel.HandleMessage(self, message)
+	return channel.handleMessage(self, message)
 }

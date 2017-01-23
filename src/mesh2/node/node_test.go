@@ -43,7 +43,7 @@ func TestAddRoute(t *testing.T) {
 	outgoingRouteId := messages.RandRouteId()
 
 	msg := messages.AddRouteControlMessage{
-		(messages.TransportId)(0),
+		messages.NIL_TRANSPORT,
 		tr1.Id,
 		incomingRouteId,
 		outgoingRouteId,

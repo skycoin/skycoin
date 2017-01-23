@@ -1,20 +1,19 @@
-package meshrpc
+package nodemanager
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/mesh2/errors"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/node"
-	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 )
 
 type RPCReceiver struct {
-	NodeManager *nodemanager.NodeManager
+	NodeManager *NodeManager
 }
 
 func (receiver *RPCReceiver) AddNode(_ []string, result *[]byte) error {
@@ -31,7 +30,7 @@ func (receiver *RPCReceiver) AddNodes(args []string, result *[]byte) error {
 		return err
 	}
 	if n > 100 {
-		e := errors.New("Too many nodes, should be 100 or less")
+		e := errors.ERR_TOO_MANY_NODES
 		fmt.Println(e)
 		return e
 	}
@@ -42,7 +41,7 @@ func (receiver *RPCReceiver) AddNodes(args []string, result *[]byte) error {
 }
 
 func (receiver *RPCReceiver) ListNodes(_ []string, result *[]byte) error {
-	list := receiver.NodeManager.NodeIdList
+	list := receiver.NodeManager.nodeIdList
 	fmt.Println("nodes list:", list)
 	*result = messages.Serialize((uint16)(0), list)
 	return nil
@@ -50,7 +49,7 @@ func (receiver *RPCReceiver) ListNodes(_ []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	if len(args) != 2 {
-		e := errors.New("Wrong number of arguments")
+		e := errors.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -68,25 +67,25 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	}
 
 	nm := receiver.NodeManager
-	nodeList := nm.NodeIdList
-	n := len(nodeList)
+	nodeIdList := nm.nodeIdList
+	n := len(nodeIdList)
 
 	if node0 < 0 || node0 > n || node1 < 0 || node1 > n {
-		e := errors.New("Node number is out of range")
+		e := errors.ERR_NODE_NUM_OUT_OF_RANGE
 		fmt.Println(e)
 		return e
 	}
 	if node0 == node1 {
-		e := errors.New("Node cannot be connected to itself")
+		e := errors.ERR_CONNECTED_TO_ITSELF
 		fmt.Println(e)
 		return e
 	}
 
-	node0Id, node1Id := nm.NodeIdList[node0], nm.NodeIdList[node1]
+	node0Id, node1Id := nm.nodeIdList[node0], nm.nodeIdList[node1]
 	tf := nm.ConnectNodeToNode(node0Id, node1Id)
 	transports := tf.GetTransportIDs()
-	if transports[0] == (messages.TransportId)(0) || transports[1] == (messages.TransportId)(0) {
-		e := errors.New("Error connecting nodes, probably already connected")
+	if transports[0] == messages.NIL_TRANSPORT || transports[1] == messages.NIL_TRANSPORT {
+		e := errors.ERR_ALREADY_CONNECTED
 		fmt.Println(e)
 		return e
 	}
@@ -96,7 +95,7 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) ListTransports(args []string, result *[]byte) error {
 	if len(args) != 1 {
-		e := errors.New("Wrong number of arguments")
+		e := errors.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -109,29 +108,18 @@ func (receiver *RPCReceiver) ListTransports(args []string, result *[]byte) error
 	}
 
 	nm := receiver.NodeManager
-	nodeIdList := nm.NodeIdList
+	nodeIdList := nm.nodeIdList
 	n := len(nodeIdList)
 
 	if nodenum < 0 || nodenum > n {
-		e := errors.New("Node number is out of range")
+		e := errors.ERR_NODE_NUM_OUT_OF_RANGE
 		fmt.Println(e)
 		return e
 	}
 
 	nodeId := nodeIdList[nodenum]
-	/*
-		node0 := nm.NodeList[nodeId]
-		transports := node0.Transports
-		transportInfos := []transport.TransportInfo{}
-		for _, tr := range transports {
-			transportInfos = append(transportInfos, transport.TransportInfo{
-				tr.Id, tr.Status, tr.AttachedNode.GetId(), tr.StubPair.AttachedNode.GetId(),
-			})
-		}
-		*result = messages.Serialize((uint16)(0), transportInfos)
-		return nil
-	*/
-	tflist := receiver.NodeManager.TransportFactoryList
+
+	tflist := receiver.NodeManager.transportFactoryList
 	infoList := []transport.TransportInfo{}
 	for _, tf := range tflist {
 		t0, t1 := tf.GetTransports()
@@ -153,7 +141,7 @@ func (receiver *RPCReceiver) ListTransports(args []string, result *[]byte) error
 }
 
 func (receiver *RPCReceiver) ListAllTransports(_ []string, result *[]byte) error {
-	tflist := receiver.NodeManager.TransportFactoryList
+	tflist := receiver.NodeManager.transportFactoryList
 	infoList := []transport.TransportInfo{}
 	for _, tf := range tflist {
 		t0, t1 := tf.GetTransports()
@@ -174,7 +162,7 @@ func (receiver *RPCReceiver) ListAllTransports(_ []string, result *[]byte) error
 
 func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 	if len(args) < 2 {
-		e := errors.New("Wrong number of arguments")
+		e := errors.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -182,7 +170,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 	nodeIds := []cipher.PubKey{}
 
 	nm := receiver.NodeManager
-	nodeIdList := nm.NodeIdList
+	nodeIdList := nm.nodeIdList
 	n := len(nodeIdList)
 
 	for _, nodenumstr := range args {
@@ -192,7 +180,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 			return err
 		}
 		if nodenum < 0 || nodenum > n {
-			e := errors.New("Node number is out of range")
+			e := errors.ERR_NODE_NUM_OUT_OF_RANGE
 			fmt.Println(e)
 			return e
 		}
@@ -202,7 +190,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 	}
 
 	nm.Tick()
-	routeRules := nm.BuildRoute(nodeIds)
+	routeRules := nm.buildRoute(nodeIds)
 	time.Sleep(100 * time.Millisecond)
 
 	*result = messages.Serialize((uint16)(0), routeRules)
@@ -211,7 +199,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) ListRoutes(args []string, result *[]byte) error {
 	if len(args) != 1 {
-		e := errors.New("Wrong number of arguments")
+		e := errors.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -224,17 +212,21 @@ func (receiver *RPCReceiver) ListRoutes(args []string, result *[]byte) error {
 	}
 
 	nm := receiver.NodeManager
-	nodeIdList := nm.NodeIdList
+	nodeIdList := nm.nodeIdList
 	n := len(nodeIdList)
 
 	if nodenum < 0 || nodenum > n {
-		e := errors.New("Node number is out of range")
+		e := errors.ERR_NODE_NUM_OUT_OF_RANGE
 		fmt.Println(e)
 		return e
 	}
 
 	nodeId := nodeIdList[nodenum]
-	node0 := nm.NodeList[nodeId]
+	node0, err := nm.GetNodeById(nodeId)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	routeRulesPointers := node0.RouteForwardingRules
 	routeRules := []node.RouteRule{}
 	for _, routeRule := range routeRulesPointers {

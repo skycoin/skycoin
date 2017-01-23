@@ -1,4 +1,4 @@
-package meshrpc
+package nodemanager
 
 import (
 	"net/rpc"

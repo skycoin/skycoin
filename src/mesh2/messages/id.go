@@ -24,3 +24,9 @@ type ChannelId uint64
 func RandChannelId() ChannelId {
 	return (ChannelId)(rand.Int63())
 }
+
+type ConnectionId uint64
+
+func RandConnectionId() ConnectionId {
+	return (ConnectionId)(rand.Int63())
+}

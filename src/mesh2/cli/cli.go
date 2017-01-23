@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh2/meshrpc"
 	"github.com/skycoin/skycoin/src/mesh2/messages"
 	"github.com/skycoin/skycoin/src/mesh2/node"
+	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh2/transport"
 )
 
@@ -25,11 +25,11 @@ var status map[uint8]string = map[uint8]string{
 }
 
 func main() {
-	rpcClient := meshrpc.RunClient(":1234")
+	rpcClient := nodemanager.RunClient(":1234")
 	promptCycle(rpcClient)
 }
 
-func promptCycle(rpcClient *meshrpc.RPCClient) {
+func promptCycle(rpcClient *nodemanager.RPCClient) {
 	for {
 		if commandDispatcher(rpcClient) {
 			break
@@ -37,7 +37,7 @@ func promptCycle(rpcClient *meshrpc.RPCClient) {
 	}
 }
 
-func commandDispatcher(rpcClient *meshrpc.RPCClient) bool {
+func commandDispatcher(rpcClient *nodemanager.RPCClient) bool {
 	command, args := cliInput("\nenter the command (help for commands list):\n> ")
 
 	if command == "" {
@@ -112,8 +112,8 @@ func printHelp() {
 	fmt.Println("add_nodes X\t\tcreates X nodes with random ids (max 100 per command).")
 	fmt.Println("list_nodes\t\tlists all existing nodes.")
 	fmt.Println("connect X Y\t\tconnects node X to node Y, where X and Y must be integer number positions of nodes in a node list.")
-	fmt.Println("list_transports X\t\tlist all transports of node X with nodes attached to them.")
-	fmt.Println("list_all_transports\t\tlist all transports for all nodes.")
+	fmt.Println("list_transports X\tlist all transports of node X with nodes attached to them.")
+	fmt.Println("list_all_transports\tlist all transports for all nodes.")
 	fmt.Println("build_route N0 N1 N2\tconsequentially builds route rules from node N0 then to N1 then to N2; there can be any nodes > 1.\n\t\t\tFor example: build_route 1 4 6 9 routes node 1 to node 4, then node 4 to node 6, then node 6 to node 9.\n\t\t\tNodes must be connected by transports already.")
 	fmt.Println("list_routes X\t\tlist all routes of node X.")
 	fmt.Println("exit (or quit)\t\tcloses the terminal.\n")
@@ -123,7 +123,7 @@ func errorOut(err error) {
 	fmt.Println("Erros. Server says:", err)
 }
 
-func addNode(client *meshrpc.RPCClient, args []string) {
+func addNode(client *nodemanager.RPCClient, args []string) {
 
 	response, err := client.SendToRPC("AddNode", args)
 	if err != nil {
@@ -141,7 +141,7 @@ func addNode(client *meshrpc.RPCClient, args []string) {
 	fmt.Println("Added node with ID", nodeId.Hex())
 }
 
-func addNodes(client *meshrpc.RPCClient, args []string) {
+func addNodes(client *nodemanager.RPCClient, args []string) {
 
 	if len(args) == 0 {
 		fmt.Printf("\nPoint the number of nodes, please\n\n")
@@ -172,7 +172,7 @@ func addNodes(client *meshrpc.RPCClient, args []string) {
 	fmt.Println("")
 }
 
-func listNodes(client *meshrpc.RPCClient) {
+func listNodes(client *nodemanager.RPCClient) {
 
 	nodes, err := getNodes(client)
 	if err != nil {
@@ -187,7 +187,7 @@ func listNodes(client *meshrpc.RPCClient) {
 	}
 }
 
-func connectNodes(client *meshrpc.RPCClient, args []string) {
+func connectNodes(client *nodemanager.RPCClient, args []string) {
 	if len(args) != 2 {
 		fmt.Println("There should be 2 nodes to connect")
 		return
@@ -239,7 +239,7 @@ func connectNodes(client *meshrpc.RPCClient, args []string) {
 	fmt.Printf("Transport ID from node %s to %s is %d\n", node1, node0, transports[1])
 }
 
-func listAllTransports(client *meshrpc.RPCClient) {
+func listAllTransports(client *nodemanager.RPCClient) {
 	response, err := client.SendToRPC("ListAllTransports", []string{})
 	if err != nil {
 		errorOut(err)
@@ -265,7 +265,7 @@ func listAllTransports(client *meshrpc.RPCClient) {
 	}
 }
 
-func listTransports(client *meshrpc.RPCClient, args []string) {
+func listTransports(client *nodemanager.RPCClient, args []string) {
 
 	if len(args) != 1 {
 		fmt.Println("\nShould be 1 argument, the node number")
@@ -311,7 +311,7 @@ func listTransports(client *meshrpc.RPCClient, args []string) {
 	fmt.Println("")
 }
 
-func buildRoute(client *meshrpc.RPCClient, args []string) {
+func buildRoute(client *nodemanager.RPCClient, args []string) {
 
 	if len(args) < 2 {
 		fmt.Println("\nRoute must contain 2 or more nodes")
@@ -357,7 +357,7 @@ func buildRoute(client *meshrpc.RPCClient, args []string) {
 	fmt.Println("")
 }
 
-func listRoutes(client *meshrpc.RPCClient, args []string) {
+func listRoutes(client *nodemanager.RPCClient, args []string) {
 
 	if len(args) != 1 {
 		fmt.Println("\nShould be 1 argument, the node number")
@@ -411,7 +411,7 @@ func listRoutes(client *meshrpc.RPCClient, args []string) {
 
 //=============helper functions===========
 
-func getNodes(client *meshrpc.RPCClient) ([]cipher.PubKey, error) {
+func getNodes(client *nodemanager.RPCClient) ([]cipher.PubKey, error) {
 	response, err := client.SendToRPC("ListNodes", []string{})
 	if err != nil {
 		return []cipher.PubKey{}, err

@@ -13,20 +13,18 @@ import (
 )
 
 func TestAddingNodes(t *testing.T) {
-
 	nm := NewNodeManager()
-	assert.Len(t, nm.NodeList, 0, "Error expected 0 nodes")
+	assert.Len(t, nm.nodeList, 0, "Error expected 0 nodes")
 	nm.AddNewNode()
-	assert.Len(t, nm.NodeList, 1, "Error expected 1 nodes")
-	nm.AddNewNode()
-	nm.AddNewNode()
+	assert.Len(t, nm.nodeList, 1, "Error expected 1 nodes")
 	nm.AddNewNode()
 	nm.AddNewNode()
-	assert.Len(t, nm.NodeList, 5, "Error expected 5 nodes")
+	nm.AddNewNode()
+	nm.AddNewNode()
+	assert.Len(t, nm.nodeList, 5, "Error expected 5 nodes")
 }
 
 func TestConnectTwoNodes(t *testing.T) {
-
 	nm := NewNodeManager()
 	id1 := nm.AddNewNode()
 	id2 := nm.AddNewNode()
@@ -34,9 +32,9 @@ func TestConnectTwoNodes(t *testing.T) {
 	assert.Nil(t, err)
 	node2, err := nm.GetNodeById(id2)
 	assert.Nil(t, err)
-	assert.Len(t, nm.TransportFactoryList, 0, "Should be 0 TransportFactory")
+	assert.Len(t, nm.transportFactoryList, 0, "Should be 0 TransportFactory")
 	tf := nm.ConnectNodeToNode(id1, id2)
-	assert.Len(t, nm.TransportFactoryList, 1, "Should be 1 TransportFactory")
+	assert.Len(t, nm.transportFactoryList, 1, "Should be 1 TransportFactory")
 	assert.True(t, node1.ConnectedTo(node2))
 	assert.True(t, node2.ConnectedTo(node1))
 	t1, t2 := tf.GetTransports()
@@ -53,7 +51,7 @@ func TestNetwork(t *testing.T) {
 	n := 20
 	nm := NewNodeManager()
 	nm.CreateNodeList(n)
-	assert.Len(t, nm.NodeIdList, n, fmt.Sprintf("Should be %d nodes", n))
+	assert.Len(t, nm.nodeIdList, n, fmt.Sprintf("Should be %d nodes", n))
 
 	nm.Tick()
 
@@ -61,7 +59,7 @@ func TestNetwork(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	node0, err := nm.GetNodeById(nm.NodeIdList[0])
+	node0, err := nm.GetNodeById(nm.nodeIdList[0])
 	if err != nil {
 		panic(err)
 	}
@@ -71,11 +69,11 @@ func TestNetwork(t *testing.T) {
 		break
 	}
 
-	inRouteMessage := messages.InRouteMessage{(messages.TransportId)(0), initRoute.IncomingRoute, []byte{'t', 'e', 's', 't'}}
+	inRouteMessage := messages.InRouteMessage{messages.NIL_TRANSPORT, initRoute.IncomingRoute, []byte{'t', 'e', 's', 't'}}
 	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
 	node0.IncomingChannel <- serialized
 	time.Sleep(10 * time.Second)
-	for _, tf := range nm.TransportFactoryList {
+	for _, tf := range nm.transportFactoryList {
 		t0 := tf.TransportList[0]
 		t1 := tf.TransportList[1]
 		assert.Equal(t, (uint32)(1), t0.PacketsSent)
@@ -95,7 +93,7 @@ func TestBuildRoute(t *testing.T) {
 
 	for i := 0; i < m; i++ {
 		nodenum := rand.Intn(n)
-		nodeId := nm.NodeIdList[nodenum]
+		nodeId := nm.nodeIdList[nodenum]
 		nodes = append(nodes, nodeId)
 	}
 
@@ -105,7 +103,38 @@ func TestBuildRoute(t *testing.T) {
 
 	nm.Tick()
 
-	routes := nm.BuildRoute(nodes)
+	routes := nm.buildRoute(nodes)
 	time.Sleep(100 * time.Millisecond)
 	assert.Len(t, routes, m, fmt.Sprintf("Should be %d routes", m))
+}
+
+func TestFindRoute(t *testing.T) {
+	nm := NewNodeManager()
+	nodeList := nm.CreateNodeList(10)
+	/*
+		  1-2-3-4   long route
+		 /	 \
+		0---5-----9 short route, which sould be selected
+		 \ /     /
+		  6_7_8_/   medium route
+	*/
+	nm.ConnectNodeToNode(nodeList[0], nodeList[1]) // making long route
+	nm.ConnectNodeToNode(nodeList[1], nodeList[2])
+	nm.ConnectNodeToNode(nodeList[2], nodeList[3])
+	nm.ConnectNodeToNode(nodeList[3], nodeList[4])
+	nm.ConnectNodeToNode(nodeList[4], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[0], nodeList[5]) // making short route
+	nm.ConnectNodeToNode(nodeList[5], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[0], nodeList[6]) // make medium route, then findRoute should select the short one
+	nm.ConnectNodeToNode(nodeList[6], nodeList[7])
+	nm.ConnectNodeToNode(nodeList[7], nodeList[8])
+	nm.ConnectNodeToNode(nodeList[8], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[5], nodeList[6]) // just for
+
+	nm.Tick()
+	time.Sleep(500 * time.Millisecond)
+	nodeFrom, nodeTo := nodeList[0], nodeList[9]
+	nodes, found := nm.routeGraph.findRoute(nodeFrom, nodeTo)
+	assert.True(t, found)
+	assert.Len(t, nodes, 3, "Should be 3 nodes")
 }

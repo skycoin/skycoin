@@ -1,14 +1,11 @@
-package meshrpc
+package nodemanager
 
 import (
-	//	"encoding/gob"
 	"log"
 	"net"
 	"net/http"
 	"net/rpc"
 	"os"
-
-	"github.com/skycoin/skycoin/src/mesh2/nodemanager"
 )
 
 type RPC struct {
@@ -21,8 +18,7 @@ func NewRPC() *RPC {
 
 func (self *RPC) Serve() {
 	port := os.Getenv("MESH_RPC_PORT")
-	nm := nodemanager.NewNodeManager()
-	//registerTypes()
+	nm := NewNodeManager()
 	receiver := new(RPCReceiver)
 	receiver.NodeManager = nm
 	err := rpc.Register(receiver)
@@ -40,9 +36,3 @@ func (self *RPC) Serve() {
 		panic(err)
 	}
 }
-
-/*
-func registerTypes() {
-	gob.Register([]byte{})
-}
-*/

@@ -39,7 +39,8 @@
     "scripts": {
         "pack": "build --dir",
         "dist-win": "build -w --x64 --ia32",
-        "dist-ml": "build -ml --x64"
+        "dist-l": "build -l --x64",
+        "dist-m": "build -m --x64"
     },
     "dependencies": {
         "electron-debug": "^1.0.1",

@@ -1,11 +1,55 @@
 {
-    "devDependencies": {
-        "electron-packager": "^7.0.2",
-        "gulp": "^3.9.1",
-        "gulp-electron": "^0.1.3"
+    "name": "skycoin",
+    "productName": "Skycoin",
+    "build": {
+        "appId": "org.skycoin.skycoin",
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true
+        },
+        "mac": {
+            "category": "public.app-category.productivity",
+            "target": ["dmg", "zip"],
+            "extraFiles": [{
+                "from": ".gox_output/${os}_${arch}",
+                "to": "./Resources/app"
+            }]
+        },
+        "win": {
+            "extraFiles": [{
+                "from": ".gox_output/${os}_${arch}",
+                "to": "./resources/app"
+            }]
+        },
+        "linux": {
+            "extraFiles": [{
+                "from": ".gox_output/${os}_${arch}",
+                "to": "./resources/app"
+            }]
+        },
+        "extraResources": [{
+            "from": "../src/gui/static/dist/",
+            "to": "./app/dist/"
+        }],
+        "directories": {
+            "app": "src",
+            "output": "release"
+        }
+    },
+    "scripts": {
+        "pack": "build --dir",
+        "dist-win": "build -w --x64 --ia32",
+        "dist-ml": "build -ml --x64"
     },
     "dependencies": {
-        "electron-log": "^1.2.2",
+        "electron-debug": "^1.0.1",
+        "electron-log": "^1.2.2"
+    },
+    "devDependencies": {
+        "electron": "^1.4.0",
+        "electron-packager": "^7.7.0",
+        "gulp": "^3.9.1",
+        "gulp-electron": "^0.1.3",
         "electron-prebuilt": "^1.2.0"
     }
 }

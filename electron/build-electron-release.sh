@@ -51,7 +51,12 @@ if [ -e "$ELN_OUTPUT" ]; then
 fi
 
 npm run dist-win
-npm run dist-ml
+npm run dist-l
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    npm run dist-m
+fi
+
 # if [ -n "$GULP_PLATFORM" ]; then
 #     gulp electron --platform "$GULP_PLATFORM"
 # else

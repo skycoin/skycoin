@@ -16,28 +16,6 @@ set -e -o pipefail
 
 SKIP_COMPILATION=${SKIP_COMPILATION:-0}
 
-# GULP_PLATFORM=""
-# if [ -n "$1" ]; then
-#     GOX_OSARCH="$1"
-#     case "$1" in
-#     "linux/amd64")
-#         GULP_PLATFORM="linux-x64"
-#         ;;
-#     "linux/arm")
-#         GULP_PLATFORM="linux-arm"
-#         ;;
-#     "windows/amd64")
-#         GULP_PLATFORM="win32-x64"
-#         ;;
-#     "windows/386")
-#         GULP_PLATFORM="win32-ia32"
-#         ;;
-#     "darwin/amd64")
-#         GULP_PLATFORM="darwin-x64"
-#         ;;
-#     esac
-# fi
-
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$SCRIPTDIR" >/dev/null

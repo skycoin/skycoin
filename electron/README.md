@@ -57,7 +57,6 @@ For macOS
 Use brew to install required packages.
 
 To build app for Windows on macOS:
-=====
 
 ```
 brew install wine --without-x11
@@ -65,11 +64,32 @@ brew install mono
 ```
 
 To build app for Linux on macOS:
-=====
 
 ```
 brew install gnu-tar graphicsmagick xz
 ```
+
+Code signing
+-----
+
+Set the CSC_IDENTITY_AUTO_DISCOVERY environment variable to false if you don't want to do code signing,
+otherwise, you can create a certificate in login.keychain for testing purpose.
+
+Create new certificate:
+```
+Keychain Access -> Certificate Assistant -> Create a Certificate...
+```
+
+Set certificate name and select `Code Signing` as `Certificate Type`.
+
+Once you generated the certificate, you can use it by setting your environment variable:
+
+```
+export CSC_NAME="Certificate Name"
+```
+
+Now, when you run electron-builder, it will choose the name and sign the app with the certificate.
+
 
 For Linux
 -----
@@ -80,7 +100,6 @@ sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-util
 ```
 
 To build app for Windows on Linux:
-=====
 
 * Install Wine (1.8+ is required):
 
@@ -110,8 +129,16 @@ sudo apt-get install --no-install-recommends -y gcc-multilib g++-multilib
 Manually download electron files
 -----
 
+To speed up download speed in China, use Electron Mirror of China:
+
 ```
-./electron_downloader.sh
+export ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
+```
+
+Download:
+
+```
+./electron-downloader.sh
 ```
 
 Setup

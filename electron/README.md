@@ -42,14 +42,14 @@ Install electron-builder
 -----
 
 ```
-npm install --global electron-builder
+sudo npm install --global electron-builder
 ```
 
 Install electron-download
 -----
 
 ```
-npm install --global electron-download
+sudo npm install --global electron-download
 ```
 
 For macOS
@@ -85,6 +85,7 @@ To build app for Windows on Linux:
 * Install Wine (1.8+ is required):
 
 ```
+sudo apt-get install software-properties-common
 sudo add-apt-repository ppa:ubuntu-wine/ppa -y
 sudo apt-get update
 sudo apt-get install --no-install-recommends -y wine1.8

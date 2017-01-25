@@ -37,6 +37,9 @@ System.register(['../services/seed.service', '../model/seed.pojo', "@angular/cor
                         console.log(err);
                     });
                 };
+                SeedComponent.prototype.getCurrentSeed = function () {
+                    return this.currentSeed.seed;
+                };
                 SeedComponent = __decorate([
                     core_1.Component({
                         selector: 'seed-mnemonic',

@@ -1,4 +1,4 @@
-System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/operator/map', 'rxjs/add/operator/catch', './ng2-qrcode', './components/skycoin.edit.component', './components/seed.component'], function(exports_1, context_1) {
+System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/operator/map', 'rxjs/add/operator/catch', './ng2-qrcode', './components/skycoin.edit.component', './components/seed.component', './components/outputs.component'], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10,7 +10,7 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, router_1, http_1, http_2, ng2_qrcode_1, skycoin_edit_component_1, seed_component_1;
+    var core_1, router_1, http_1, http_2, ng2_qrcode_1, skycoin_edit_component_1, seed_component_1, outputs_component_1;
     var PagerService, LoadWalletComponent, DisplayModeEnum;
     return {
         setters:[
@@ -34,6 +34,9 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
             },
             function (seed_component_1_1) {
                 seed_component_1 = seed_component_1_1;
+            },
+            function (outputs_component_1_1) {
+                outputs_component_1 = outputs_component_1_1;
             }],
         execute: function() {
             PagerService = (function () {
@@ -112,7 +115,6 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                     this.loadBlockChain();
                     this.loadNumberOfBlocks();
                     this.loadProgress();
-                    this.loadOutputs();
                     this.loadTransactions();
                     this.isValidAddress = false;
                     this.blockViewMode = 'recentBlocks';
@@ -362,21 +364,6 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                         //console.log('Default connections load done')
                     });
                 };
-                LoadWalletComponent.prototype.loadOutputs = function () {
-                    var _this = this;
-                    var headers = new http_2.Headers();
-                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.get('/outputs', { headers: headers })
-                        .map(function (res) { return res.json(); })
-                        .subscribe(function (data) {
-                        _this.outputs = _.sortBy(data, function (o) {
-                            return o.address;
-                        });
-                        _this.outputs.length = Math.min(100, _this.outputs.length);
-                    }, function (err) { return console.log("Error on load outputs: " + err); }, function () {
-                        //console.log('Connection load done')
-                    });
-                };
                 LoadWalletComponent.prototype.loadBlockChain = function () {
                     var _this = this;
                     var headers = new http_2.Headers();
@@ -425,6 +412,11 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                     this.displayMode = this.displayModeEnum.fifth;
                     event.preventDefault();
                     this.selectedMenu = menu;
+                    if (menu == 'Outputs') {
+                        if (this.outputComponent) {
+                            this.outputComponent.refreshOutputs();
+                        }
+                    }
                 };
                 LoadWalletComponent.prototype.getDateTimeString = function (ts) {
                     return moment.unix(ts).format("YYYY-MM-DD HH:mm");
@@ -498,6 +490,9 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    if (this.seedComponent) {
+                        seed = this.seedComponent.getCurrentSeed();
+                    }
                     //Post method executed
                     var stringConvert = 'label=' + label + '&seed=' + seed;
                     this.http.post('/wallet/create', stringConvert, { headers: headers })
@@ -630,6 +625,23 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                     console.log("filterHistory", address);
                     this.filterAddressVal = address;
                 };
+                LoadWalletComponent.prototype.updateStatusOfTransaction = function (txid, metaData) {
+                    var _this = this;
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    this.http.get('/transaction?txid=' + txid, { headers: headers })
+                        .map(function (res) { return res.json(); })
+                        .subscribe(
+                    //Response from API
+                    function (res) {
+                        _this.pendingTable.push({ 'time': res.txn.timestamp, 'status': res.status.confirmed ? 'Completed' : 'Unconfirmed', 'amount': metaData.amount, 'txId': txid, 'address': metaData.address });
+                        //Load wallet for refresh list
+                        _this.loadWallet();
+                    }, function (err) {
+                        console.log("Error on load transaction: " + err);
+                    }, function () {
+                    });
+                };
                 LoadWalletComponent.prototype.spend = function (spendid, spendaddress, spendamount) {
                     var _this = this;
                     var amount = Number(spendamount);
@@ -657,12 +669,7 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                         .map(function (res) { return res.json(); })
                         .subscribe(function (response) {
                         console.log(response);
-                        response.txn.time = Date.now() / 1000;
-                        response.txn.address = spendaddress;
-                        response.txn.amount = spendamount;
-                        _this.pendingTable.push(response);
-                        //Load wallet for refresh list
-                        _this.loadWallet();
+                        _this.updateStatusOfTransaction(response.txn.txid, { address: spendaddress, amount: amount });
                         _this.readyDisable = false;
                         _this.sendDisable = true;
                     }, function (err) {
@@ -820,10 +827,18 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                         });
                     });
                 };
+                __decorate([
+                    core_1.ViewChild(outputs_component_1.SkyCoinOutputComponent), 
+                    __metadata('design:type', outputs_component_1.SkyCoinOutputComponent)
+                ], LoadWalletComponent.prototype, "outputComponent", void 0);
+                __decorate([
+                    core_1.ViewChild(seed_component_1.SeedComponent), 
+                    __metadata('design:type', seed_component_1.SeedComponent)
+                ], LoadWalletComponent.prototype, "seedComponent", void 0);
                 LoadWalletComponent = __decorate([
                     core_1.Component({
                         selector: 'load-wallet',
-                        directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_1.QRCodeComponent, seed_component_1.SeedComponent, skycoin_edit_component_1.SkyCoinEditComponent],
+                        directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_1.QRCodeComponent, seed_component_1.SeedComponent, skycoin_edit_component_1.SkyCoinEditComponent, outputs_component_1.SkyCoinOutputComponent],
                         providers: [PagerService],
                         templateUrl: 'app/templates/wallet.html'
                     }), 

@@ -29,22 +29,24 @@ if [ -e "$ELN_OUTPUT" ]; then
 fi
 
 npm run dist-win
-npm run dist-l
+npm run dist-linux
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    npm run dist-m
+    npm run dist-mac
+elif [[ "$OSTYPE" == "linux"* ]]; then
+    npm run pack-mac
+else
+    echo "Can run build script in $OSTYPE"
 fi
-
-# if [ -n "$GULP_PLATFORM" ]; then
-#     gulp electron --platform "$GULP_PLATFORM"
-# else
-#     gulp electron
-# fi
 
 pushd "$FINAL_OUTPUT" >/dev/null
 if [ -e "mac" ]; then
     pushd "mac" >/dev/null
-    mv "Skycoin-${SKY_VERSION}.dmg" "../skycoin-${SKY_VERSION}-gui-osx-x64.dmg"
+    if [ -e "Skycoin-${SKY_VERSION}.dmg" ]; then
+        mv "Skycoin-${SKY_VERSION}.dmg" "../skycoin-${SKY_VERSION}-gui-osx-x64.dmg"
+    elif [ -e "Skycoin.app" ]; then
+        tar czf "../skycoin-${SKY_VERSION}-gui-osx-x64.zip" --owner=0 --group=0 "Skycoin.app"
+    fi
     popd >/dev/null
     rm -rf "mac"
 fi

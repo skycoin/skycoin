@@ -475,8 +475,8 @@ export class LoadWalletComponent implements OnInit {
         return moment().unix() - ts;
     }
     //Show QR code function for show QR popup
-    showQR(wallet){
-        this.QrAddress = wallet.entries[0].address;
+    showQR(address){
+        this.QrAddress = address;
         this.QrIsVisible = true;
     }
     //Hide QR code function for hide QR popup

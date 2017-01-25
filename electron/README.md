@@ -35,24 +35,8 @@ node -v
 npm -v
 ```
 
-Install gulp
------
-
-```
-npm rm --global gulp
-npm install --global gulp-cli
-```
-
 Use electron-builder to pack and create app installer
 -----
-
-Don't expect that you can build app for all platforms on one platform.
-
-* If your app has native dependencies, it can be compiled only on the target platform. prebuild is a solution, but most node modules don't provide prebuilt binaries.
-
-* macOS Code Signing works only on macOS. Cannot be fixed.
-
-More details here: [Multiple Platform Build](https://github.com/electron-userland/electron-builder/wiki/Multi-Platform-Build).
 
 Install electron-builder
 -----
@@ -61,7 +45,14 @@ Install electron-builder
 npm install --global electron-builder
 ```
 
-macOS
+Install electron-download
+-----
+
+```
+npm install --global electron-download
+```
+
+For macOS
 -----
 Use brew to install required packages.
 
@@ -80,24 +71,12 @@ To build app for Linux on macOS:
 brew install gnu-tar graphicsmagick xz
 ```
 
-Linux
+For Linux
 -----
 To build app in distributable format for Linux:
 
 ```
 sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils
-```
-
-To build rpm: 
-
-```
-sudo apt-get install --no-install-recommends -y rpm
-```
-
-To build pacman: 
-
-```
-sudo apt-get install --no-install-recommends -y bsdtar
 ```
 
 To build app for Windows on Linux:
@@ -125,6 +104,13 @@ To build app in 32 bit from a machine with 64 bit:
 
 ```
 sudo apt-get install --no-install-recommends -y gcc-multilib g++-multilib
+```
+
+Manually download electron files
+-----
+
+```
+./electron_downloader.sh
 ```
 
 Setup

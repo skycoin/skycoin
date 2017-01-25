@@ -28,15 +28,22 @@ if [ -e "$ELN_OUTPUT" ]; then
     rm -r "$ELN_OUTPUT"
 fi
 
-npm run dist-win
-npm run dist-linux
+if [ ! -z "$WIN64_ELN" ] && [ ! -z "$WIN32_ELN" ]; then
+    npm run dist-win
+fi
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    npm run dist-mac
-elif [[ "$OSTYPE" == "linux"* ]]; then
-    npm run pack-mac
-else
-    echo "Can run build script in $OSTYPE"
+if [ ! -z "$LNX64_ELN" ]; then
+    npm run dist-linux
+fi
+
+if [ ! -z "$OSX64_ELN" ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        npm run dist-mac
+    elif [[ "$OSTYPE" == "linux"* ]]; then
+        npm run pack-mac
+    else
+        echo "Can not run build script in $OSTYPE"
+    fi
 fi
 
 pushd "$FINAL_OUTPUT" >/dev/null
@@ -58,27 +65,13 @@ if [ -e $IMG ]; then
     chmod +x "$DEST_IMG"
 fi
 
-# mv "skycoin-${SKY_VERSION}-x86_64.AppImage" "skycoin-${SKY_VERSION}-gui-linux-x64.AppImage"
-# chmod +x "skycoin-${SKY_VERSION}-gui-linux-x64.AppImage"
 EXE="Skycoin Setup ${SKY_VERSION}.exe"
 if [ -e "$EXE" ]; then
-    mv "$EXE" "skycoin-${SKY_VERSION}-gui-win-installer.exe"
+    mv "$EXE" "skycoin-${SKY_VERSION}-gui-win-setup.exe"
 fi
-
-# mv "Skycoin Setup ${SKY_VERSION}.exe" "skycoin-${SKY_VERSION}-gui-win-insaller.exe"
 
 # clean unpacked folders
 rm -rf *-unpacked
 
 popd >/dev/null
-
-
-# echo "--------------------------"
-# echo "Packaging electron release"
-# ./package-electron-release.sh
-
-# echo "----------------------------"
-# echo "Compressing electron release"
-# ./compress-electron-release.sh
-
 popd >/dev/null

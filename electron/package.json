@@ -37,7 +37,6 @@
         }
     },
     "scripts": {
-        "pack": "build --dir",
         "dist-win": "build -w --x64 --ia32",
         "dist-linux": "build -l --x64",
         "dist-mac": "build -m --x64",

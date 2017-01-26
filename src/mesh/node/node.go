@@ -1,170 +1,258 @@
-package mesh
+package node
 
 import (
-	"sync"
-	"time"
-
-	"github.com/satori/go.uuid"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/serialize"
+	errmsg "github.com/skycoin/skycoin/src/mesh/errors"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 	"github.com/skycoin/skycoin/src/mesh/transport"
+
+	"errors"
+	"fmt"
+	"github.com/skycoin/skycoin/src/cipher"
+	"log"
 )
 
-//var logger = logging.MustGetLogger("node")
+//A Node has a map of route rewriting rules
+//A Node has a control channel for setting and modifying the route rewrite rules
+//A Node has a list of transports
+
+//Route rewriting rules
+//-nodes receive messages on a route
+//-nodes look up the route in a table and if it has a rewrite rule, rewrites the route
+// and forwards it to the transport
 
 type Node struct {
-	Config                     NodeConfig
-	outputMessagesReceived     chan domain.MeshMessage
-	transportsMessagesReceived chan []byte
-	serializer                 *serialize.Serializer
-	//myCrypto                   transport.TransportCrypto
+	Id                     cipher.PubKey
+	IncomingChannel        chan []byte
+	incomingControlChannel chan messages.InControlMessage
 
-	lock       *sync.Mutex
-	closeGroup *sync.WaitGroup
-	closing    chan bool
+	Transports           map[messages.TransportId]*transport.Transport
+	RouteForwardingRules map[messages.RouteId]*RouteRule
+	consumer             messages.Consumer
 
-	transports                     map[transport.ITransport]bool
-	routes                         map[domain.RouteID]domain.Route
-	routeExtensionsAwaitingConfirm map[domain.RouteID]chan bool
-	localRoutesByTerminatingPeer   map[cipher.PubKey]domain.RouteID
-	localRoutes                    map[domain.RouteID]domain.LocalRoute
-
-	controlChannels map[uuid.UUID]*ControlChannel
+	controlChannels map[messages.ChannelId]*ControlChannel
 }
 
-type NodeConfig struct {
-	PubKey                        cipher.PubKey
-	MaximumForwardingDuration     time.Duration
-	RefreshRouteDuration          time.Duration
-	ExpireRoutesInterval          time.Duration
-	TransportMessageChannelLength int
-	//ChaCha20Key                   [32]byte
+type RouteRule struct {
+	IncomingTransport messages.TransportId
+	OutgoingTransport messages.TransportId
+	IncomingRoute     messages.RouteId
+	OutgoingRoute     messages.RouteId
 }
 
-func NewNode(config NodeConfig) (*Node, error) {
-	node := &Node{
-		Config:                     config,
-		outputMessagesReceived:     nil,                                                     // received
-		transportsMessagesReceived: make(chan []byte, config.TransportMessageChannelLength), // received
-		serializer:                 serialize.NewSerializer(),
-		lock:                       &sync.Mutex{}, // Lock
-		closeGroup:                 &sync.WaitGroup{},
-		closing:                    make(chan bool, 10),
-		transports:                 make(map[transport.ITransport]bool),
-		routes:                     make(map[domain.RouteID]domain.Route),
-		localRoutesByTerminatingPeer:   make(map[cipher.PubKey]domain.RouteID),
-		localRoutes:                    make(map[domain.RouteID]domain.LocalRoute),
-		routeExtensionsAwaitingConfirm: make(map[domain.RouteID]chan bool),
-		//myCrypto:                   &ChaChaCrypto{config.ChaCha20Key},
-		controlChannels: make(map[uuid.UUID]*ControlChannel),
-	}
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, domain.UserMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, domain.SetRouteMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{3}, domain.RefreshRouteMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{4}, domain.DeleteRouteMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{5}, domain.SetRouteReply{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{6}, domain.SetControlChannelMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{7}, domain.SetControlChannelResponseMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{8}, domain.SetRouteControlMessage{})
-	node.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{9}, domain.ResponseMessage{})
-
-	go node.processIncomingMessagesLoop()
-	go node.expireOldRoutesLoop()
-	go node.refreshRoutesLoop()
-
-	return node, nil
+func NewNode() *Node {
+	node := new(Node)
+	node.Id = createPubKey()
+	node.IncomingChannel = make(chan []byte, 1024)
+	node.incomingControlChannel = make(chan messages.InControlMessage, 1024)
+	node.Transports = make(map[messages.TransportId]*transport.Transport)
+	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
+	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
+	fmt.Printf("Created Node %s\n", node.Id.Hex())
+	return node
 }
 
-func (self *Node) GetConfig() NodeConfig {
-	return self.Config
+func createPubKey() cipher.PubKey {
+	pub, _ := cipher.GenerateKeyPair()
+	return pub
 }
 
-func (self *Node) GetConnectedPeers() []cipher.PubKey {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	ret := []cipher.PubKey{}
-	for nodeTransport := range self.transports {
-		peer := nodeTransport.GetConnectedPeer()
-		ret = append(ret, peer)
-	}
-	return ret
+func (self *Node) Shutdown() {
+	close(self.IncomingChannel)
 }
 
-func (self *Node) ConnectedToPeer(peer cipher.PubKey) bool {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	for nodeTransport := range self.transports {
-		if nodeTransport.ConnectedToPeer(peer) {
-			return true
+//move node forward on tick, process events
+func (self *Node) Tick() {
+	backChannel := make(chan bool, 1)
+	self.runCycles(backChannel)
+	<-backChannel
+}
+
+//move node forward on tick, process events
+func (self *Node) runCycles(backChannel chan bool) {
+	//process incoming messages
+	go self.handleIncomingTransportMessages() //pop them off the channel
+	go self.handleIncomingControlMessages()   //pop them off the channel
+	backChannel <- true
+}
+
+func (self *Node) handleIncomingTransportMessages() {
+	for msg := range self.IncomingChannel {
+		fmt.Printf("\nnode with id %s accepting a message with type %d\n\n", self.Id.Hex(), messages.GetMessageType(msg))
+		//process our incoming messages
+		switch messages.GetMessageType(msg) {
+		//InRouteMessage is the only message coming in to node from transports
+		case messages.MsgInRouteMessage:
+			var m1 messages.InRouteMessage
+			messages.Deserialize(msg, &m1)
+			fmt.Println("InRouteMessage", m1)
+			self.handleInRouteMessage(m1)
+		default:
+			fmt.Println("wrong type", messages.GetMessageType(msg))
 		}
 	}
-	return false
 }
 
-// Waits for transports to close
-func (self *Node) Close() error {
-	for i := 0; i < 10; i++ {
-		self.closing <- true
+func (self *Node) handleIncomingControlMessages() {
+	for msg := range self.incomingControlChannel {
+		self.handleControlMessage(msg.ChannelId, msg.PayloadMessage)
+		msg.ResponseChannel <- true
 	}
-	close(self.transportsMessagesReceived)
-	self.closeGroup.Wait()
-	self.closeTransports()
-	return nil
 }
 
-// Node takes ownership of the transport, and will call Close() when it is closed
-func (self *Node) AddTransport(transportNode transport.ITransport) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	//chaCha20Key := &transport.ChaChaCrypto{}
-	//chaCha20Key.SetKey(chaChaKey)
-	//transportNode.SetCrypto(chaCha20Key)
-	transportNode.SetReceiveChannel(self.transportsMessagesReceived)
-	self.transports[transportNode] = true
-}
-
-func (self *Node) RemoveTransport(transport transport.ITransport) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	delete(self.transports, transport)
-}
-
-func (self *Node) GetTransports() []transport.ITransport {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	ret := []transport.ITransport{}
-	for nodeTransport := range self.transports {
-		ret = append(ret, nodeTransport)
+func (self *Node) handleInRouteMessage(m1 messages.InRouteMessage) {
+	//look in route table
+	routeId := m1.RouteId
+	transportId := m1.TransportId //who is is from
+	//check that transport exists
+	if _, ok := self.Transports[transportId]; !ok && transportId != messages.NIL_TRANSPORT {
+		log.Printf("Node %s received message From Transport that does not exist\n", self.Id.Hex())
 	}
-	return ret
-}
+	//check if route exists
+	routeRule, ok := self.RouteForwardingRules[routeId]
+	if !ok {
+		log.Printf("Node %s received route message for route that does not exist\n", self.Id.Hex())
+		panic("")
+	}
+	//check that incoming transport is correct
+	if transportId != routeRule.IncomingTransport {
+		log.Panic("Node: incoming route does not match the transport id it should be received from")
+	}
+	if routeId != routeRule.IncomingRoute {
+		log.Panic("Node: impossible, incoming route id does not match route rule id")
+	}
+	//construct new packet
+	outgoingRouteId := routeRule.OutgoingRoute
+	outgoingTransportId := routeRule.OutgoingTransport //find transport to resend datagram
+	datagram := m1.Datagram
 
-func (self *Node) GetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
-	for transportToPeer := range self.transports {
-		// TODO: Choose transport more intelligently
-		if transportToPeer.ConnectedToPeer(peerKey) {
-			return transportToPeer
+	if outgoingRouteId == messages.NIL_ROUTE && outgoingTransportId == messages.NIL_TRANSPORT {
+		self.consume(datagram)
+	} else {
+		var out messages.OutRouteMessage //replace inRoute, with outRoute, using rule
+		out.RouteId = outgoingRouteId
+		out.Datagram = datagram
+		//serialize message, with prefix
+		b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
+
+		if outgoingTransport, found := self.Transports[outgoingTransportId]; found {
+			outgoingTransport.IncomingChannel <- b1 //inject message to transport
 		}
 	}
-	return nil
 }
 
-func (self *Node) closeTransports() {
-	for transportToPeer := range self.transports {
-		transportToPeer.Close()
+//inject an incoming message from the transport
+func (self *Node) InjectTransportMessage(msg []byte) {
+	self.IncomingChannel <- msg //push message to channel
+}
+
+func (self *Node) InjectControlMessage(msg messages.InControlMessage) {
+	msg.ResponseChannel = make(chan bool, 1024)
+	self.incomingControlChannel <- msg
+
+	<-msg.ResponseChannel
+}
+
+func (self *Node) GetId() cipher.PubKey {
+	return self.Id
+}
+
+func (self *Node) GetTransportById(id messages.TransportId) (*transport.Transport, error) {
+	tr, ok := self.Transports[id]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Node %d doesn't contain transport with id %d", self.Id, id))
 	}
+	return tr, nil
 }
 
-func (self *Node) safelyGetTransportToPeer(peerKey cipher.PubKey) transport.ITransport {
-	return self.GetTransportToPeer(peerKey)
-}
-
-func (self *Node) GetMaximumContentLength(peerID cipher.PubKey, emptySerializedMessage []byte) uint64 {
-	trans := self.GetTransportToPeer(peerID)
-	transportSize := trans.GetMaximumMessageSizeToPeer(peerID)
-	if (uint)(len(emptySerializedMessage)) >= transportSize {
-		return 0
+func (self *Node) GetTransportToNode(nodeId cipher.PubKey) (*transport.Transport, error) {
+	for _, transport := range self.Transports {
+		if nodeId == transport.StubPair.AttachedNode.GetId() {
+			return transport, nil
+		}
 	}
-	return (uint64)(transportSize) - (uint64)(len(emptySerializedMessage))
+	return nil, errmsg.ERR_NO_TRANSPORT_TO_NODE
+}
+
+func (self *Node) ConnectedTo(other messages.NodeInterface) bool {
+	_, err := self.GetTransportToNode(other.GetId())
+	return err == nil
+}
+
+func (self *Node) SetTransport(id messages.TransportId, tr messages.TransportInterface) {
+	self.Transports[id] = tr.(*transport.Transport)
+}
+
+func (self *Node) consume(msg []byte) {
+	fmt.Printf("\nNode %s consumed message %d\n\n", self.Id.Hex(), msg)
+
+	go func() {
+		switch messages.GetMessageType(msg) {
+
+		case messages.MsgRequestMessage:
+			requestMessage := &messages.RequestMessage{}
+			err := messages.Deserialize(msg, requestMessage)
+			if err != nil {
+				// send wrong request format
+			} else {
+				self.consumeRequest(requestMessage)
+			}
+
+		case messages.MsgResponseMessage:
+			responseMessage := &messages.ResponseMessage{}
+			err := messages.Deserialize(msg, responseMessage)
+			if err != nil {
+				// send wrong request format
+			} else {
+				self.consumeResponse(responseMessage)
+			}
+
+		default:
+			fmt.Println("Incorrect message type:", messages.GetMessageType(msg))
+		}
+	}()
+}
+
+func (self *Node) consumeRequest(requestMessage *messages.RequestMessage) {
+	if self.consumer == nil {
+		fmt.Printf("\nNo consumer registered at node %s\n\n", self.Id.Hex())
+		return
+	}
+	backRoute := requestMessage.BackRoute
+	sequence := requestMessage.Sequence
+	payload := requestMessage.Payload
+	responseChannel := make(chan []byte)
+	self.consumer.Consume(sequence, payload, responseChannel)
+	responsePayload := <-responseChannel
+	self.sendResponse(backRoute, sequence, responsePayload)
+}
+
+func (self *Node) consumeResponse(responseMessage *messages.ResponseMessage) {
+	if self.consumer == nil {
+		fmt.Printf("\nNo consumer registered at node %s\n\n", self.Id.Hex())
+		return
+	}
+	sequence := responseMessage.Sequence
+	payload := responseMessage.Payload
+	self.consumer.Consume(sequence, payload, nil)
+}
+
+func (self *Node) sendResponse(backRoute messages.RouteId, sequence uint32, responsePayload []byte) {
+	responseMessage := messages.ResponseMessage{sequence, responsePayload}
+	responseSerialized := messages.Serialize(messages.MsgResponseMessage, responseMessage)
+	_, ok := self.RouteForwardingRules[backRoute]
+	if !ok {
+		fmt.Println("Wrong back route ID:", backRoute)
+		return
+	}
+	inRouteMessage := messages.InRouteMessage{
+		TransportId: messages.NIL_TRANSPORT,
+		RouteId:     backRoute,
+		Datagram:    responseSerialized,
+	}
+	inRouteS := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
+	self.InjectTransportMessage(inRouteS)
+}
+
+func (self *Node) AssignConsumer(consumer messages.Consumer) {
+	self.consumer = consumer
 }

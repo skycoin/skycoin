@@ -44,8 +44,8 @@ func sendCMD() gcli.Command {
 			// },
 			gcli.StringFlag{
 				Name: "m",
-				Usage: `[send to many] json string represent to address and coins,
-				format: '[{"addr":"$addr1", "coins": 10}, {"addr":"$addr2", "coins": 20}]'`,
+				Usage: `[send to many] use JSON string to set multiple recive addresses and coins,
+				example: -m '[{"addr":"$addr1", "coins": 10}, {"addr":"$addr2", "coins": 20}]'`,
 			},
 			gcli.BoolFlag{
 				Name:  "json,j",

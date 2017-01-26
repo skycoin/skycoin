@@ -84,7 +84,7 @@
                             <tr *ngFor="let entry of wallet.entries; let idx=index" [hidden]="!wallet.showChild" style="background-color: #f4f5f6">
                                 <td></td>
                                 <td class="text-center"> {{idx+1}}</td>
-                                <td><a href="#" (click)="showQR(wallet)"><i class="fa " aria-hidden="true"></i>&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{entry.address}}</td>
+                                <td><a href="#" (click)="showQR(entry.address)"><i class="fa " aria-hidden="true"></i>&nbsp;<i class="fa fa-qrcode"></i></a>&nbsp;{{entry.address}}</td>
                                 <td class="text-right">{{entry.balance?entry.balance:0}} SKY</td>
                                 <td></td>
                                 <td></td>

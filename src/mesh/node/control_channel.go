@@ -1,38 +1,47 @@
-package mesh
+package node
 
 import (
-	"reflect"
+	"fmt"
 
-	"github.com/satori/go.uuid"
-	"github.com/skycoin/skycoin/src/mesh/domain"
+	"github.com/skycoin/skycoin/src/mesh/errors"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 type ControlChannel struct {
-	ID uuid.UUID
+	id messages.ChannelId
 }
 
-func NewControlChannel() *ControlChannel {
+func newControlChannel() *ControlChannel {
 	c := ControlChannel{
-		ID: uuid.NewV4(),
+		id: messages.RandChannelId(),
 	}
 	return &c
 }
 
-func (c *ControlChannel) HandleMessage(node *Node, message interface{}) error {
-
-	messageType := reflect.TypeOf(message)
-
-	if messageType == reflect.TypeOf(domain.SetRouteControlMessage{}) {
-		err := processSetRouteMessage(node, message.(domain.SetRouteControlMessage))
+func (c *ControlChannel) handleMessage(handledNode *Node, msg []byte) error {
+	switch messages.GetMessageType(msg) {
+	case messages.MsgAddRouteControlMessage:
+		fmt.Println("adding route")
+		var m1 messages.AddRouteControlMessage
+		err := messages.Deserialize(msg, &m1)
 		if err != nil {
-			return err
+			panic(err)
 		}
+		routeRule := RouteRule{
+			m1.IncomingTransportId,
+			m1.OutgoingTransportId,
+			m1.IncomingRouteId,
+			m1.OutgoingRouteId,
+		}
+		return handledNode.addRoute(&routeRule)
+
+	case messages.MsgRemoveRouteControlMessage:
+		fmt.Println("removing route")
+		var m1 messages.RemoveRouteControlMessage
+		messages.Deserialize(msg, &m1)
+		routeId := m1.RouteId
+		return handledNode.removeRoute(routeId)
 	}
 
-	return nil
-}
-
-//must return a confirmation message
-func processSetRouteMessage(node *Node, message domain.SetRouteControlMessage) error {
-	return node.AddRoute(message.ForwardRouteID, message.ForwardPeerID)
+	return errors.ERR_UNKNOWN_MESSAGE_TYPE
 }

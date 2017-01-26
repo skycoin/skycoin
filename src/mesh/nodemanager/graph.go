@@ -7,7 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-type Graph struct {
+type RouteGraph struct {
 	nodes map[cipher.PubKey]map[cipher.PubKey]*DirectRoute
 	paths map[cipher.PubKey]*SP
 }
@@ -18,13 +18,13 @@ type DirectRoute struct {
 	weight int
 }
 
-func NewGraph() *Graph {
-	graph := Graph{}
-	graph.Clear()
+func newGraph() *RouteGraph {
+	graph := RouteGraph{}
+	graph.clear()
 	return &graph
 }
 
-func (s *Graph) ToString() {
+func (s *RouteGraph) toString() {
 	for from, routes := range s.nodes {
 		fmt.Println("\nNODE: ", from)
 		for _, directRoute := range routes {
@@ -34,7 +34,7 @@ func (s *Graph) ToString() {
 	}
 }
 
-func (s *Graph) AddDirectRoute(from, to cipher.PubKey, weight int) {
+func (s *RouteGraph) addDirectRoute(from, to cipher.PubKey, weight int) {
 	if from == to || weight < 1 {
 		return
 	}
@@ -50,14 +50,14 @@ func (s *Graph) AddDirectRoute(from, to cipher.PubKey, weight int) {
 }
 
 /* ---- can be useful in the future, maybe
-func (s *Graph) RebuildRoutes() {
+func (s *RouteGraph) RebuildRoutes() {
 	s.clear()
 	for node := range(nodes) {
 		paths[node] = newSP(s, node)
 	}
 }
 */
-func (s *Graph) FindRoute(from, to cipher.PubKey) ([]cipher.PubKey, bool) {
+func (s *RouteGraph) findRoute(from, to cipher.PubKey) ([]cipher.PubKey, bool) {
 	sp, found := s.paths[from]
 	if !found {
 		sp = newSP(s, from)
@@ -67,7 +67,7 @@ func (s *Graph) FindRoute(from, to cipher.PubKey) ([]cipher.PubKey, bool) {
 	return route, found
 }
 
-func (s *Graph) Clear() {
+func (s *RouteGraph) clear() {
 	s.nodes = map[cipher.PubKey]map[cipher.PubKey]*DirectRoute{}
 	s.paths = map[cipher.PubKey]*SP{}
 }
@@ -79,7 +79,7 @@ type SP struct { //ShortestPath
 	pq     *MinPQ
 }
 
-func newSP(graph *Graph, source cipher.PubKey) *SP {
+func newSP(graph *RouteGraph, source cipher.PubKey) *SP {
 
 	sp := SP{}
 
@@ -113,10 +113,10 @@ func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, bool) { // if the path e
 		if e == nil {
 			return []cipher.PubKey{}, false
 		} // no edge, so path doesn't exist
+		path = append(path, e.from)
 		if e.from == s.source {
 			break
 		} // we are at the source, work is finished
-		path = append(path, e.from)
 		e = s.edgeTo[e.from]
 	}
 

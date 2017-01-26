@@ -1,543 +1,134 @@
 package nodemanager
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/rand"
-	"os"
-	"runtime"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/node"
-	"github.com/stretchr/testify/assert"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
-func TestCreateNodeList(t *testing.T) {
-	nodeManager := &NodeManager{}
-	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(4)
-	assert.Len(t, nodeManager.ConfigList, 4, "Error expected 4 nodes")
-	pubKey0 := nodeManager.PubKeyList[0]
-	assert.Len(t, nodeManager.ConfigList[pubKey0].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
+func TestAddingNodes(t *testing.T) {
+	nm := NewNodeManager()
+	assert.Len(t, nm.nodeList, 0, "Error expected 0 nodes")
+	nm.AddNewNode()
+	assert.Len(t, nm.nodeList, 1, "Error expected 1 nodes")
+	nm.AddNewNode()
+	nm.AddNewNode()
+	nm.AddNewNode()
+	nm.AddNewNode()
+	assert.Len(t, nm.nodeList, 5, "Error expected 5 nodes")
 }
 
-func TestConnectNodes(t *testing.T) {
-	nodeManager := &NodeManager{Port: 10000}
-	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(5)
-	assert.Len(t, nodeManager.ConfigList, 5, "Error expected 5 nodes")
-	pubKey0 := nodeManager.PubKeyList[0]
-	assert.Len(t, nodeManager.ConfigList[pubKey0].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
-	nodeManager.ConnectNodes()
-	assert.Len(t, nodeManager.ConfigList[pubKey0].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 1")
-	pubKey1 := nodeManager.PubKeyList[1]
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeerToPeers, 2, "Error expected 2 PeersToConnect from Node 2")
-	pubKey4 := nodeManager.PubKeyList[4]
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 5")
+func TestConnectTwoNodes(t *testing.T) {
+	nm := NewNodeManager()
+	id1 := nm.AddNewNode()
+	id2 := nm.AddNewNode()
+	node1, err := nm.GetNodeById(id1)
+	assert.Nil(t, err)
+	node2, err := nm.GetNodeById(id2)
+	assert.Nil(t, err)
+	assert.Len(t, nm.transportFactoryList, 0, "Should be 0 TransportFactory")
+	tf := nm.ConnectNodeToNode(id1, id2)
+	assert.Len(t, nm.transportFactoryList, 1, "Should be 1 TransportFactory")
+	assert.True(t, node1.ConnectedTo(node2))
+	assert.True(t, node2.ConnectedTo(node1))
+	t1, t2 := tf.GetTransports()
+	assert.Len(t, node1.Transports, 1, "Error expected 1 transport")
+	assert.Len(t, node2.Transports, 1, "Error expected 1 transport")
+	assert.Equal(t, t1.Id, t2.StubPair.Id)
+	assert.Equal(t, t2.Id, t1.StubPair.Id)
+	tr1, err := node1.GetTransportToNode(id2)
+	assert.Nil(t, err)
+	assert.Equal(t, tr1.StubPair.Id, t2.Id)
 }
 
-func TestConnectNodeRandomly(t *testing.T) {
-	nodeManager := &NodeManager{Port: 1100}
-	defer nodeManager.CloseAll()
-	index1 := nodeManager.AddNode()
-	assert.Len(t, nodeManager.NodesList, 1, "Error expected 1 nodes")
-	pubKey1 := nodeManager.PubKeyList[index1]
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
-	nodeManager.ConnectNodeRandomly(index1)
-	assert.Len(t, nodeManager.ConfigList[pubKey1].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 1")
-	index2 := nodeManager.AddNode()
-	assert.Len(t, nodeManager.NodesList, 2, "Error expected 2 nodes")
-	pubKey2 := nodeManager.PubKeyList[index2]
-	assert.Len(t, nodeManager.ConfigList[pubKey2].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 2")
-	nodeManager.ConnectNodeRandomly(index2)
-	assert.Len(t, nodeManager.ConfigList[pubKey2].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 2")
-
-	index3 := nodeManager.AddNode()
-	assert.Len(t, nodeManager.NodesList, 3, "Error expected 3 nodes")
-	pubKey3 := nodeManager.PubKeyList[index3]
-	assert.Len(t, nodeManager.ConfigList[pubKey3].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 3")
-	nodeManager.ConnectNodeRandomly(index3)
-	assert.Len(t, nodeManager.ConfigList[pubKey3].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 3")
-
-	index4 := nodeManager.AddNode()
-	assert.Len(t, nodeManager.NodesList, 4, "Error expected 4 nodes")
-	pubKey4 := nodeManager.PubKeyList[index4]
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 4")
-	nodeManager.ConnectNodeRandomly(index4)
-	assert.Len(t, nodeManager.ConfigList[pubKey4].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 4")
-
-	index5 := nodeManager.AddNode()
-	assert.Len(t, nodeManager.NodesList, 5, "Error expected 5 nodes")
-	pubKey5 := nodeManager.PubKeyList[index5]
-	assert.Len(t, nodeManager.ConfigList[pubKey5].PeerToPeers, 0, "Error expected 0 PeersToConnect from Node 4")
-	nodeManager.ConnectNodeRandomly(index5)
-	assert.Len(t, nodeManager.ConfigList[pubKey5].PeerToPeers, 1, "Error expected 1 PeersToConnect from Node 5")
-}
-
-// Recover flow control in the tests
-func recoverFlowControl(t *testing.T, index1, index2 int) {
-	if r := recover(); r != nil {
-		fmt.Fprintf(os.Stderr, "Error: Recovered in TestConnectTwoNodes: %v.\nIt can't connect Node %v to Node %v.\n", r, index1, index2)
-	}
-}
-
-// Initialize the Node for communication and sending messages
-func sendMessage(idConfig int, config TestConfig, node *mesh.Node, wg *sync.WaitGroup, statusChannel chan bool, t *testing.T, index1, index2 int) {
-	defer recoverFlowControl(t, index1, index2)
-
-	fmt.Fprintf(os.Stderr, "Starting Config: %v\n", idConfig)
-	defer wg.Done()
-
-	AddPeersToNode(node, config)
-	AddRoutesToEstablish(node, config.RoutesConfigsToEstablish)
-
-	//	defer node.Close()
-
-	// Send messages
-	for _, messageToSend := range config.MessagesToSend {
-		sendMsgErr := node.SendMessageThruRoute((domain.RouteID)(messageToSend.ThruRoute), messageToSend.Contents)
-		if sendMsgErr != nil {
-			panic(sendMsgErr)
-		}
-		fmt.Fprintf(os.Stdout, "Send message %v from Node: %v to Node: %v\n", messageToSend.Contents, idConfig, node.GetConnectedPeers()[0].Hex())
-	}
-
-	// Receive messages
-	received := make(chan domain.MeshMessage, 2*len(config.MessagesToReceive))
-	node.SetReceiveChannel(received)
-
-	// Wait for messages to pass thru
-	recvMap := make(map[string]domain.ReplyTo)
-	for timeEnd := time.Now().Add(5 * time.Second); time.Now().Before(timeEnd); {
-
-		if len(received) > 0 {
-			fmt.Fprintf(os.Stdout, "Len Receive Channel %v in Node: %v \n", len(received), idConfig)
-			msgRecvd := <-received
-			recvMap[fmt.Sprintf("%v", msgRecvd.Contents)] = msgRecvd.ReplyTo
-
-			for _, messageToReceive := range config.MessagesToReceive {
-				if fmt.Sprintf("%v", messageToReceive.Contents) == fmt.Sprintf("%v", msgRecvd.Contents) {
-					if len(messageToReceive.Reply) > 0 {
-						sendBackErr := node.SendMessageBackThruRoute(msgRecvd.ReplyTo, messageToReceive.Reply)
-						if sendBackErr != nil {
-							panic(sendBackErr)
-						}
-						fmt.Fprintf(os.Stdout, "=== Send back %v\n", time.Now())
-					}
-				}
-			}
-		}
-		runtime.Gosched()
-	}
-
-	success := true
-
-	for _, messageToReceive := range config.MessagesToReceive {
-		_, received := recvMap[fmt.Sprintf("%v", messageToReceive.Contents)]
-		if !received {
-			success = false
-			fmt.Fprintf(os.Stdout, "Didn't receive message contents: %v - Node: %v\n", messageToReceive.Contents, idConfig)
-		}
-	}
-	// Wait for messages to pass back
-	time.Sleep(5 * time.Second)
-
-	fmt.Fprintf(os.Stdout, "-- Finished test -- %v\n", time.Now())
-	if success {
-		fmt.Fprintf(os.Stdout, "\t Success!\n")
-	} else {
-		fmt.Fprintf(os.Stderr, "\t Failure. \n")
-	}
-
-	statusChannel <- success
-}
-
-func random(min, max int) int {
-	time.Local = time.UTC
-	rand.Seed(time.Now().UTC().UnixNano())
-	return rand.Intn(max-min) + min
-}
-
-func TestRandomNumber(t *testing.T) {
-	myrand := random(0, 8)
-	fmt.Println(myrand)
-
-	myrand = random(0, 9)
-	fmt.Println(myrand)
-
-	myrand = random(0, 7)
-	fmt.Println(myrand)
-
-	myrand = random(0, 15)
-	fmt.Println(myrand)
-}
-
-// Connect two nodes and send one message between them with success
-func TestConnectTwoNodesSuccess(t *testing.T) {
-	var index1, index2 int
-
-	nodeManager := &NodeManager{Port: 2100}
-	defer nodeManager.CloseAll()
-	// Connect 20 nodes randomly
-	for a := 1; a <= 20; a++ {
-		if a <= 10 {
-			nodeManager.ConnectNodeToNetwork()
-		} else {
-			if index1 != index2 && index2 >= 0 {
-				nodeManager.ConnectNodeToNetwork()
-			} else {
-				index1, index2 = nodeManager.ConnectNodeToNetwork()
-			}
-		}
-	}
-
-	pubKey1 := nodeManager.PubKeyList[index1]
-	config1 := nodeManager.ConfigList[pubKey1]
-	node1 := nodeManager.NodesList[pubKey1]
-
-	pubKey2 := nodeManager.PubKeyList[index2]
-	config2 := nodeManager.ConfigList[pubKey2]
-	node2 := nodeManager.NodesList[pubKey2]
-
-	message1 := "Message to send from Node1 to Node2"
-	message2 := "Message to receive from Node2 to Node1"
-
-	config1.AddMessageToSendThruRoute(config1.RoutesConfigsToEstablish[0].RouteID, message1)
-	config1.AddMessageToReceive(message2, "")
-
-	config2.AddMessageToReceive(message1, message2)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	statusChannel := make(chan bool, 2)
-
-	fmt.Fprintf(os.Stdout, "Send message from node %v to node %v\n", index1, index2)
-
-	go sendMessage(index2, *config2, node2, &wg, statusChannel, t, index1, index2)
-
-	time.Sleep(1 * time.Second)
-
-	go sendMessage(index1, *config1, node1, &wg, statusChannel, t, index1, index2)
-
-	timeout := 30 * time.Second
-	for i := 1; i <= 2; i++ {
-		select {
-		case status, ok := <-statusChannel:
-			{
-				if ok {
-					assert.True(t, status, "Error expected Status True")
-				}
-			}
-		case <-time.After(timeout):
-			{
-				t.Error("Error TimeOut")
-				break
-			}
-		}
-	}
-	wg.Wait()
-	//	nodeManager.CloseAll()
-	fmt.Println("Done")
-}
-
-// Connect two nodes and send one message between them with fail
-func TestConnectTwoNodesFail(t *testing.T) {
-	var index1, index2 int
-
-	nodeManager := &NodeManager{Port: 3100}
-	defer nodeManager.CloseAll()
-	// Connect 20 nodes randomly
-	for a := 1; a <= 20; a++ {
-		nodeManager.ConnectNodeToNetwork()
-	}
-
-	rang := len(nodeManager.ConfigList)
-
-	index1 = rand.Intn(rang)
-	pubKey1 := nodeManager.PubKeyList[index1]
-	config1 := nodeManager.ConfigList[pubKey1]
-	node1 := nodeManager.NodesList[pubKey1]
-
-	index2 = rand.Intn(rang)
-	if index1 == index2 {
-		if index2 == 0 {
-			index2 = 1
-		} else {
-			index2--
-		}
-	}
-	pubKey2 := nodeManager.PubKeyList[index2]
-	config2 := nodeManager.ConfigList[pubKey2]
-	node2 := nodeManager.NodesList[pubKey2]
-
-	message1 := "Message to send from Node1 to Node2"
-	message2 := "Message to receive from Node2 to Node1"
-
-	ConnectNodeToNode(config1, config2)
-
-	config1.AddMessageToSend(config2, message1)
-	config1.AddMessageToReceive(message2, "")
-
-	config2.AddMessageToReceive(message1, message2)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	statusChannel := make(chan bool, 2)
-
-	go sendMessage(index2, *config2, node2, &wg, statusChannel, t, index1, index2)
-
-	go sendMessage(index1, *config1, node1, &wg, statusChannel, t, index1, index2)
-
-	timeout := 30 * time.Second
-	for i := 1; i <= 2; i++ {
-		select {
-		case status, ok := <-statusChannel:
-			{
-				if ok {
-					assert.False(t, status, "Error expected Status False")
-				}
-			}
-		case <-time.After(timeout):
-			{
-				fmt.Fprintln(os.Stderr, "Error TimeOut")
-				break
-			}
-		}
-	}
-	wg.Wait()
-	fmt.Println("Done")
-
-}
-
-// Connect two Nodes (Node A - Node B) through one route with various nodes.
-func _TestBuildRouteWithSuccess(t *testing.T) {
-	nodeManager := &NodeManager{Port: 3100}
-	defer nodeManager.CloseAll()
-	// Connect 200 nodes randomly
-	for a := 1; a <= 20; a++ {
-		nodeManager.ConnectNodeToNetwork()
-	}
-
-	var index1, index2 int
-
-	rang := len(nodeManager.ConfigList)
-	index1 = rand.Intn(rang)
-	pubKey1 := nodeManager.PubKeyList[index1]
-	config1 := nodeManager.ConfigList[pubKey1]
-	index2 = rand.Intn(rang)
-	pubKey2 := nodeManager.PubKeyList[index2]
-	config2 := nodeManager.ConfigList[pubKey2]
-
-	assert.False(t, bytes.Equal(pubKey1[:], pubKey2[:]), "Error expected that pubKey1 and pubKey2 were different")
-
-	existConn := false
-	for _, v := range config1.PeersToConnect {
-		if bytes.Equal(v.Peer[:], pubKey2[:]) {
-			existConn = true
-		}
-	}
-
-	configList1 := []*TestConfig{}
-	routeList := []cipher.PubKey{}
-
-	if !existConn {
-
-		for _, v := range config1.PeersToConnect {
-			configN := nodeManager.ConfigList[v.Peer]
-			if len(configN.PeersToConnect) > 1 {
-				configList1 = append(configList1, configN)
-			}
-		}
-
-		configList2 := []*TestConfig{}
-		for _, v := range config2.PeersToConnect {
-			configN := nodeManager.ConfigList[v.Peer]
-			if len(configN.PeersToConnect) > 1 {
-				configList2 = append(configList2, configN)
-			}
-		}
-
-		for _, c := range configList1 {
-			for _, p := range c.PeersToConnect {
-				if bytes.Equal(p.Peer[:], pubKey2[:]) {
-					existConn = true
-					routeList = append(routeList, p.Peer)
-					routeList = append(routeList, pubKey2)
-					break
-				}
-				for _, v := range configList2 {
-					for _, p2 := range v.PeersToConnect {
-						if bytes.Equal(p2.Peer[:], p.Peer[:]) {
-							existConn = true
-							routeList = append(routeList, p.Peer)
-							routeList = append(routeList, p2.Peer)
-							routeList = append(routeList, pubKey2)
-						}
-					}
-				}
-			}
-			if existConn {
-				break
-			}
-		}
-	}
-	if assert.True(t, existConn, "Error route not found from Node A to Node B") {
-		t.Log(routeList)
-	}
-}
-
-func TestBuildRoutes(t *testing.T) {
-	nodeManager := NewEmptyNodeManager()
-	defer nodeManager.CloseAll()
-	nodeManager.Port = 3100
-	// Connect 200 nodes randomly
-	for a := 1; a <= 10; a++ {
-		nodeManager.ConnectNodeToNetwork()
-	}
-
-	nodeManager.RebuildRouteGraph()
-	nodeManager.Start()
-
-	rang := len(nodeManager.ConfigList)
-	index1 := rand.Intn(rang)
-	pubKey1 := nodeManager.PubKeyList[index1]
-
-	index2 := rand.Intn(rang)
-	pubKey2 := nodeManager.PubKeyList[index2]
-
-	nodeManager.FindRoutes(pubKey1, pubKey2)
-
-	routeKey := RouteKey{SourceNode: pubKey1, TargetNode: pubKey2}
-
-	t.Logf("Find a route between Node %v and Node %v", index1, index2)
-	fmt.Printf("Find a route between Node %v and Node %v\n", index1, index2)
-	route, ok := nodeManager.Routes[routeKey]
-
-	if assert.True(t, ok, "Error expected find a route") {
-		fmt.Println("Route:", route)
-		t.Log("Route:", route)
-	}
-}
-
-func TestAddTransportsToNode(t *testing.T) {
-	nodeManager := &NodeManager{Port: 5100}
-	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(10)
-	nodeManager.ConnectNodes()
-
-	config := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port += 100
-
-	pubKey := nodeManager.PubKeyList[1]
-	configFrom := nodeManager.ConfigList[pubKey]
-	node := nodeManager.NodesList[pubKey]
-
-	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
-
-	ConnectNodeToNode(configFrom, config)
-	AddPeersToNode(node, *config)
-
-	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
-
-	config2 := CreateTestConfig(nodeManager.Port)
-
-	pubKey2 := nodeManager.PubKeyList[3]
-	configFrom2 := nodeManager.ConfigList[pubKey2]
-	node2 := nodeManager.NodesList[pubKey2]
-
-	assert.Len(t, node2.GetTransports(), 2, "Error expected 2 transport in the node2")
-
-	ConnectNodeToNode(configFrom2, config2)
-	AddPeersToNode(node2, *config2)
-
-	assert.Len(t, node2.GetTransports(), 3, "Error expected 3 transport in the node2")
-}
-
-func TestGetTransportsFromNode(t *testing.T) {
-	nodeManager := &NodeManager{Port: 6100}
-	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(10)
-	nodeManager.ConnectNodes()
-
-	pubKey := nodeManager.PubKeyList[2]
-	node := nodeManager.NodesList[pubKey]
-
-	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
-}
-
-func TestRemoveTransportsFromNode(t *testing.T) {
-	nodeManager := &NodeManager{Port: 7100}
-	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(10)
-	nodeManager.ConnectNodes()
-
-	pubKey := nodeManager.PubKeyList[4]
-	configFrom := nodeManager.ConfigList[pubKey]
-	node := nodeManager.NodesList[pubKey]
-
-	assert.Len(t, node.GetTransports(), 2, "Error expected 2 transport in the node")
-
-	config := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port += 100
-	ConnectNodeToNode(configFrom, config)
-	AddPeersToNode(node, *config)
-
-	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
-
-	config2 := CreateTestConfig(nodeManager.Port)
-	nodeManager.Port += 100
-	ConnectNodeToNode(configFrom, config2)
-	AddPeersToNode(node, *config2)
-
-	assert.Len(t, node.GetTransports(), 4, "Error expected 4 transport in the node")
-
-	transport := node.GetTransports()[0]
-
-	nodeManager.RemoveTransportsFromNode(4, transport)
-
-	assert.Len(t, node.GetTransports(), 3, "Error expected 3 transport in the node")
-}
-
-func TestRandomConnectsToFile(t *testing.T) {
-	nodeManager := &NodeManager{Port: 7100}
-	defer nodeManager.CloseAll()
-	nodeManager.CreateNodeConfigList(10)
-	rang := len(nodeManager.PubKeyList)
-	for index1 := 0; index1 < rang; index1++ {
-		for i := 0; i < 2; i++ {
-			index2 := rand.Intn(rang)
-			if index1 == index2 {
-				continue
-			}
-			pubKey1 := nodeManager.PubKeyList[index1]
-			config1 := nodeManager.ConfigList[pubKey1]
-			pubKey2 := nodeManager.PubKeyList[index2]
-			config2 := nodeManager.ConfigList[pubKey2]
-			ConnectNodeToNode(config1, config2)
-		}
-	}
-	err := nodeManager.PutToFile("test")
+func TestNetwork(t *testing.T) {
+	n := 20
+	nm := NewNodeManager()
+	nm.CreateNodeList(n)
+	assert.Len(t, nm.nodeIdList, n, fmt.Sprintf("Should be %d nodes", n))
+
+	nm.Tick()
+	initRoute, err := nm.ConnectAll()
 	assert.Nil(t, err)
 
-	nmNew := NewEmptyNodeManager()
-	err = nmNew.GetFromFile("test")
-	assert.Nil(t, err)
-	assert.Len(t, nmNew.ConfigList, 10)
+	node0, err := nm.GetNodeById(nm.nodeIdList[0])
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(initRoute, node0)
+	inRouteMessage := messages.InRouteMessage{messages.NIL_TRANSPORT, initRoute, []byte{'t', 'e', 's', 't'}}
+	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
+	node0.IncomingChannel <- serialized
+	time.Sleep(10 * time.Second)
+	for _, tf := range nm.transportFactoryList {
+		t0 := tf.TransportList[0]
+		t1 := tf.TransportList[1]
+		assert.Equal(t, (uint32)(1), t0.PacketsSent)
+		assert.Equal(t, (uint32)(1), t0.PacketsConfirmed)
+		assert.Equal(t, (uint32)(0), t1.PacketsSent)
+		assert.Equal(t, (uint32)(0), t1.PacketsConfirmed)
+	}
 }
 
-//Network Topology Tests
+func TestBuildRoute(t *testing.T) {
+	n := 100
+	m := 5
+	nm := NewNodeManager()
+	nm.CreateNodeList(n)
 
-func FindRoute(config *TestConfig, pubKey cipher.PubKey, routeList *[]cipher.PubKey) {
-	for _, p := range config.PeersToConnect {
-		if bytes.Equal(p.Peer[:], pubKey[:]) {
-			*routeList = append(*routeList, pubKey)
-			break
-		}
+	nodes := []cipher.PubKey{}
+
+	for i := 0; i < m; i++ {
+		nodenum := rand.Intn(n)
+		nodeId := nm.nodeIdList[nodenum]
+		nodes = append(nodes, nodeId)
 	}
+
+	for i := 0; i < m-1; i++ {
+		nm.ConnectNodeToNode(nodes[i], nodes[i+1])
+	}
+
+	nm.Tick()
+
+	routes, err := nm.buildRoute(nodes)
+	assert.Nil(t, err)
+	assert.Len(t, routes, m, fmt.Sprintf("Should be %d routes", m))
+}
+
+func TestFindRoute(t *testing.T) {
+	nm := NewNodeManager()
+	nodeList := nm.CreateNodeList(10)
+	/*
+		  1-2-3-4   long route
+		 /	 \
+		0---5-----9 short route, which should be selected
+		 \ /     /
+		  6_7_8_/   medium route
+	*/
+	nm.Tick()
+	nm.ConnectNodeToNode(nodeList[0], nodeList[1]) // making long route
+	nm.ConnectNodeToNode(nodeList[1], nodeList[2])
+	nm.ConnectNodeToNode(nodeList[2], nodeList[3])
+	nm.ConnectNodeToNode(nodeList[3], nodeList[4])
+	nm.ConnectNodeToNode(nodeList[4], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[0], nodeList[5]) // making short route
+	nm.ConnectNodeToNode(nodeList[5], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[0], nodeList[6]) // make medium route, then findRoute should select the short one
+	nm.ConnectNodeToNode(nodeList[6], nodeList[7])
+	nm.ConnectNodeToNode(nodeList[7], nodeList[8])
+	nm.ConnectNodeToNode(nodeList[8], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[5], nodeList[6]) // just for
+
+	nm.RebuildRoutes()
+
+	nodeFrom, nodeTo := nodeList[0], nodeList[9]
+	nodes, found := nm.routeGraph.findRoute(nodeFrom, nodeTo)
+	assert.True(t, found)
+	assert.Len(t, nodes, 3, "Should be 3 nodes")
 }

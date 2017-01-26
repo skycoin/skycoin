@@ -1,201 +1,212 @@
 package transport
 
 import (
-	"sync"
+	"fmt"
+	"math/rand"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/domain"
-	"github.com/skycoin/skycoin/src/mesh/serialize"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
-// transport statuses
+//Stub Transport
+
+//TODO:
+// - implement simulated "delay" for transport +
+// - implement simulated out of order packet delivery
+// - implement simulated packet drop
+// - implement real UDP trasport
+// - implement status "connected/disconnected" +
+// - implement ACKs +
+
+// TODO:
+// pendingOut channel may need to be on the transport factory itself
+// more efficient to push to central location than to pull/poll the transport list
+// TODO:
+// - may be more efficient to replace pending out, with an array on TransportFactory
+// - or with array on the transport (who is responsible for processing ACKs?)
+
 const (
-	DISCONNECTED uint32 = iota
-	CONNECTED
-	SENDING
-	RECEIVING
-	REPLYING
-	ACKWAITING
-	TIMEOUT
+	TIMEOUT          uint32 = 1000 // time for ack waiting
+	RETRANSMIT_LIMIT        = 4
 )
 
-type TransportConfig struct {
-	MyPeerID                        cipher.PubKey
-	PhysicalReceivedChannelLength   int
-	ExpireMessagesInterval          time.Duration
-	RememberMessageReceivedDuration time.Duration
+const (
+	DISCONNECTED = iota
+	CONNECTED
+)
 
-	// If an ACK is not received for this long, the message is dropped
-	RetransmitDuration time.Duration
-}
-
-type SendMessage struct {
-	MessageID  domain.MessageID
-	FromPeerID cipher.PubKey
-	Contents   []byte
-}
-
-type ReplyMessage struct {
-	MessageID domain.MessageID
-}
-
-type messageSentState struct {
-	toPeer      cipher.PubKey
-	serialized  []byte
-	expiryTime  time.Time
-	receivedAck bool
-}
-
-// Wraps Transport, but adds store-and-forward
+//This is stub transport
 type Transport struct {
-	id                uint32
-	config            TransportConfig
-	physicalTransport ITransport
-	output            chan []byte
-	serializer        *serialize.Serializer
-	metadata          []byte
+	Id              messages.TransportId
+	IncomingChannel chan ([]byte)
+	pendingOut      chan (messages.TransportDatagramTransfer) //messages to send to other end of transport
+	//Note: pendingOut channel may need to be on the transport_factory
+	ackChannels map[uint32]chan ([]byte)
 
-	status uint32
+	AttachedNode messages.NodeInterface //node the transport is attached to
 
-	lock             *sync.Mutex
-	messagesSent     map[domain.MessageID]messageSentState
-	messagesReceived map[domain.MessageID]time.Time
-	nextMsgId        uint32
+	StubPair         *Transport //this is the other transport stub pair
+	PacketsSent      uint32
+	PacketsConfirmed uint32 // last confirmed ack
 
-	packetIsSent           time.Time
-	latency                uint64
-	packetsCount           uint32
-	packetsSent            uint32
-	packetsReceived        uint32
-	packetsRetransmissions uint32
+	Status uint8
 
-	physicalReceived chan []byte
-	closing          chan bool
-	closeWait        *sync.WaitGroup
+	MaxSimulatedDelay int // stub for testing
 }
 
-var currentID uint32 = 0
+//are created by the factories
+func (self *Transport) newTransportStub() {
+	self.IncomingChannel = make(chan []byte, 1024)
+	self.pendingOut = make(chan messages.TransportDatagramTransfer, 1024)
+	self.ackChannels = make(map[uint32]chan []byte)
+	self.Id = messages.RandTransportId()
+	self.Status = DISCONNECTED
+	self.MaxSimulatedDelay = 1000
+	fmt.Printf("Created Transport: %d\n", self.Id)
+}
 
-func NewTransport(physicalTransport ITransport, config TransportConfig) *Transport {
-	transport := &Transport{
-		currentID,
-		config,
-		physicalTransport,
-		nil,
-		serialize.NewSerializer(),
-		[]byte{},
-		DISCONNECTED,
-		&sync.Mutex{},
-		make(map[domain.MessageID]messageSentState),
-		make(map[domain.MessageID]time.Time),
-		1000,
-		time.Time{},
-		0,
-		0,
-		0,
-		0,
-		0,
-		make(chan []byte, config.PhysicalReceivedChannelLength),
-		make(chan bool, 10),
-		&sync.WaitGroup{},
+func (self *Transport) Shutdown() {
+	close(self.IncomingChannel)
+}
+
+//move node forward on tick, process events
+func (self *Transport) Tick() {
+	go self.sendFromPending() // for testing purposes
+	//process incoming messages
+	go self.receiveIncoming() // receiving messages
+}
+
+func (self *Transport) receiveIncoming() {
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	for msg := range self.IncomingChannel {
+		if self.Status == DISCONNECTED {
+			break
+		}
+		//process our incoming messages
+		fmt.Printf("\ntransport with id %d gets message %d\n\n", self.Id, msg)
+
+		switch messages.GetMessageType(msg) {
+
+		//OutRouteMessage is the only message coming in to transports from node
+		//Node -> Transport message
+		case messages.MsgOutRouteMessage:
+
+			var m1 messages.OutRouteMessage
+			err := messages.Deserialize(msg, &m1)
+			if err != nil {
+				panic(err)
+			}
+			self.sendTransportDatagramTransfer(&m1)
+
+		//Transport -> Transport messag
+		case messages.MsgTransportDatagramTransfer:
+
+			var m2 messages.TransportDatagramTransfer
+			err := messages.Deserialize(msg, &m2)
+			if err != nil {
+				panic(err)
+			}
+			self.sendAck(&msg, &m2)
+
+		default:
+			fmt.Println("incorrect message type for transport input")
+		}
 	}
-
-	currentID++
-
-	transport.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{1}, SendMessage{})
-	transport.serializer.RegisterMessageForSerialization(serialize.MessagePrefix{2}, ReplyMessage{})
-
-	go transport.processReceivedLoop()
-	go transport.expireMessagesLoop()
-	go transport.retransmitLoop()
-
-	transport.physicalTransport.SetReceiveChannel(transport.physicalReceived)
-	return transport
 }
 
-func (self *Transport) ConnectedToPeer(peer cipher.PubKey) bool {
-	return self.physicalTransport.ConnectedToPeer(peer)
+func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessage) {
+	//get message and put into the queue to be sent out
+	//prime message for transit between the two transport ends
+	self.PacketsSent++
+	var m1b messages.TransportDatagramTransfer
+	m1b.Datagram = msg.Datagram
+	m1b.Sequence = self.PacketsSent
+	m1b.RouteId = msg.RouteId
+
+	self.pendingOut <- m1b //push to queue, to be transferred
 }
 
-func (self *Transport) GetConnectedPeer() cipher.PubKey {
-	return self.physicalTransport.GetConnectedPeer()
+func (self *Transport) sendAck(msg *[]byte, m2 *messages.TransportDatagramTransfer) {
+	routeId := m2.RouteId
+	sequence := m2.Sequence
+	datagram := m2.Datagram
+
+	msgToNode := messages.InRouteMessage{self.Id, routeId, datagram}
+	serialized := messages.Serialize(messages.MsgInRouteMessage, msgToNode)
+	self.InjectNodeMessage(serialized)
+
+	time.Sleep(time.Duration(rand.Intn(self.MaxSimulatedDelay)) * time.Millisecond) // simulating delay, testing purposes!
+
+	ackMsg := messages.TransportDatagramACK{sequence, 0}
+	ackSerialized := messages.Serialize(messages.MsgTransportDatagramACK, ackMsg)
+	ackChannel := self.StubPair.ackChannels[sequence]
+	ackChannel <- ackSerialized
 }
 
-func (self *Transport) GetMaximumMessageSizeToPeer(peer cipher.PubKey) uint {
-	empty := SendMessage{}
-	emptySerialized := self.serializer.SerializeMessage(empty)
-	if (uint)(len(emptySerialized)) >= self.physicalTransport.GetMaximumMessageSizeToPeer(peer) {
-		return 0
+func (self *Transport) receiveAck(msg []byte) {
+	var m3 messages.TransportDatagramACK
+	err := messages.Deserialize(msg, &m3)
+	if err != nil {
+		fmt.Println("incorrect ACK message")
+	} else {
+		lowestSequence := m3.LowestSequence
+		if lowestSequence > self.PacketsConfirmed {
+			self.PacketsConfirmed = lowestSequence
+		}
+		fmt.Printf("transport %d sent %d packets and got %d acks\n", self.Id, self.PacketsSent, self.PacketsConfirmed)
 	}
-	return self.physicalTransport.GetMaximumMessageSizeToPeer(peer) - (uint)(len(emptySerialized))
 }
 
-func (self *Transport) GetStatus() uint32 {
-	return self.status
-}
-
-func (self *Transport) Close() error {
-	for i := 0; i < 10-len(self.closing); i++ {
-		self.closing <- true
+func (self *Transport) sendFromPending() {
+	for msg := range self.pendingOut {
+		b1 := messages.Serialize(messages.MsgTransportDatagramTransfer, msg)
+		sequence := msg.Sequence
+		ackChannel := make(chan []byte, 1024)
+		self.ackChannels[sequence] = ackChannel
+		result := self.sendPacket(b1, ackChannel)
+		// handle result...
+		if !result {
+			fmt.Printf("transport %d isn't responding\n", self.StubPair.Id)
+			self.Status, self.StubPair.Status = DISCONNECTED, DISCONNECTED
+		}
+		//
+		close(ackChannel)
+		delete(self.ackChannels, sequence)
 	}
-	self.closeWait.Wait()
-	self.status = DISCONNECTED
-	return self.physicalTransport.Close()
 }
 
-func (self *Transport) expireMessagesLoop() {
-	self.closeWait.Add(1)
-	defer self.closeWait.Done()
-	for len(self.closing) == 0 {
+func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
+	retransmits := 0
+	for {
+		if self.Status == DISCONNECTED {
+			return false
+		}
+		self.sendMessageToStubPair(msg)
 		select {
-		case <-time.After(self.config.ExpireMessagesInterval):
-			{
-				self.expireMessages()
+		case ack := <-ackChannel:
+			self.receiveAck(ack)
+			fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
+			return true
+		case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
+			retransmits++
+			if retransmits >= RETRANSMIT_LIMIT {
+				return false
 			}
-		case <-self.closing:
-			{
-				return
-			}
+			fmt.Printf("msg %d will be sent again, attempt %d\n", msg, retransmits+1)
 		}
 	}
 }
 
-func (self *Transport) expireMessages() {
-	timeNow := time.Now()
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	lastMessagesSent := self.messagesSent
-	self.messagesSent = make(map[domain.MessageID]messageSentState)
-	for messageID, messageSentState := range lastMessagesSent {
-		if timeNow.Before(messageSentState.expiryTime) {
-			self.messagesSent[messageID] = messageSentState
-		}
-	}
-
-	lastReceived := self.messagesReceived
-	self.messagesReceived = make(map[domain.MessageID]time.Time)
-	for id, expiry := range lastReceived {
-		if timeNow.Before(expiry) {
-			self.messagesReceived[id] = expiry
-		}
+//inject an incoming message from the transport
+func (self *Transport) InjectNodeMessage(msg []byte) {
+	if self.AttachedNode != nil {
+		self.AttachedNode.InjectTransportMessage(msg)
 	}
 }
 
-func (self *Transport) debug_countMapItems() int {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	return len(self.messagesSent) + len(self.messagesReceived)
-}
-
-// Create TransportConfig to the node.
-func CreateTransportConfig(pubKey cipher.PubKey) TransportConfig {
-	config := TransportConfig{}
-	config.MyPeerID = pubKey
-	config.PhysicalReceivedChannelLength = 100
-	config.ExpireMessagesInterval = 5 * time.Minute
-	config.RememberMessageReceivedDuration = 1 * time.Minute
-	config.RetransmitDuration = 1 * time.Minute
-
-	return config
+//message from stub to stub
+//used internally by transport factory
+func (self *Transport) sendMessageToStubPair(msg []byte) {
+	self.StubPair.IncomingChannel <- msg
 }

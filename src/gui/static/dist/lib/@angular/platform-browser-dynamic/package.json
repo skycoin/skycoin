@@ -2,7 +2,7 @@
   "_args": [
     [
       "@angular/platform-browser-dynamic@2.0.0-rc.1",
-      "/Users/napandey/coding/skycoin/src/gui/static"
+      "/Users/heaven/src/github.com/skycoin/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/platform-browser-dynamic@2.0.0-rc.1",
@@ -36,7 +36,7 @@
   "_shasum": "0edb02929dbe479afdfeba6a1a3b67985a8f66ff",
   "_shrinkwrap": null,
   "_spec": "@angular/platform-browser-dynamic@2.0.0-rc.1",
-  "_where": "/Users/napandey/coding/skycoin/src/gui/static",
+  "_where": "/Users/heaven/src/github.com/skycoin/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },

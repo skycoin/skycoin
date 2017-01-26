@@ -42,6 +42,11 @@ func sendCMD() gcli.Command {
 			// 	Name:  "p",
 			// 	Usage: "[password] Password for address or wallet.",
 			// },
+			gcli.StringFlag{
+				Name: "m",
+				Usage: `[send to many] json string represent to address and coins,
+				format: '[{"addr":"$addr1", "coins": 10}, {"addr":"$addr2", "coins": 20}]'`,
+			},
 			gcli.BoolFlag{
 				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",

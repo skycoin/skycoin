@@ -39,12 +39,37 @@ type WalletRPC struct {
 	Options         []wallet.Option
 }
 
+type NotesRPC struct {
+	Notes         wallet.Notes
+	WalletDirectory string
+}
+
 //use a global for now
 var Wg *WalletRPC
+
+var Ng *NotesRPC
 
 // InitWalletRPC init wallet rpc
 func InitWalletRPC(walletDir string, options ...wallet.Option) {
 	Wg = NewWalletRPC(walletDir, options...)
+	Ng = NewNotesRPC(walletDir)
+}
+
+
+// NewWalletRPC new wallet rpc
+func NewNotesRPC(walletDir string) *NotesRPC {
+	rpc := &NotesRPC{}
+	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
+		log.Panicf("Failed to create notes directory %s: %v", walletDir, err)
+	}
+	rpc.WalletDirectory = walletDir
+	w, err := wallet.LoadNotes(rpc.WalletDirectory)
+	if err != nil {
+		log.Panicf("Failed to load all notes: %v", err)
+	}
+	wallet.CreateNoteFileIfNotExist(walletDir)
+	rpc.Notes = w
+	return rpc
 }
 
 // NewWalletRPC new wallet rpc
@@ -130,6 +155,10 @@ func (self *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
 	return self.Wallets.ToReadable()
 }
 
+func (self *NotesRPC) GetNotesReadable() wallet.ReadableNotes {
+	return self.Notes.ToReadable()
+}
+
 func (self *WalletRPC) GetWalletReadable(walletID string) *wallet.ReadableWallet {
 	if w, ok := self.Wallets.Get(walletID); ok {
 		return wallet.NewReadableWallet(w)
@@ -148,7 +177,7 @@ func (self *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
 // NOT WORKING
 // actually uses visor
 func (self *WalletRPC) GetWalletBalance(v *visor.Visor,
-	walletID string) (wallet.BalancePair, error) {
+walletID string) (wallet.BalancePair, error) {
 
 	wlt, ok := self.Wallets.Get(walletID)
 	if !ok {
@@ -174,7 +203,7 @@ Checks if the wallet has pending, unconfirmed transactions
 */
 //Check if any of the outputs are spent
 func (self *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
-	wallet *wallet.Wallet) bool {
+wallet *wallet.Wallet) bool {
 
 	if wallet == nil {
 		log.Panic("Wallet does not exist")
@@ -210,8 +239,8 @@ type SpendResult struct {
 // -- sign transaction
 // -- inject transaction
 func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
-	walletID string, amt wallet.Balance, fee uint64,
-	dest cipher.Address) *SpendResult {
+walletID string, amt wallet.Balance, fee uint64,
+dest cipher.Address) *SpendResult {
 
 	txn, err := Spend2(v.Visor, wrpc, walletID, amt, fee, dest)
 	errString := ""
@@ -249,7 +278,7 @@ func Spend(d *daemon.Daemon, v *daemon.Visor, wrpc *WalletRPC,
 // - create transaction here
 // - sign transction and return
 func Spend2(self *visor.Visor, wrpc *WalletRPC, walletID string, amt wallet.Balance,
-	fee uint64, dest cipher.Address) (coin.Transaction, error) {
+fee uint64, dest cipher.Address) (coin.Transaction, error) {
 
 	wallet, ok := wrpc.Wallets.Get(walletID)
 	if !ok {
@@ -401,6 +430,24 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+
+// Create a wallet Name is set by creation date
+func notesCreate(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("API request made to create a note")
+		note := r.FormValue("note")
+		transactionId := r.FormValue("transaction_id")
+		newNote := wallet.Note{
+			TransactionId:transactionId,
+			Value:note,
+		}
+		Ng.Notes.SaveNote(Ng.WalletDirectory, newNote)
+		rlt := Ng.GetNotesReadable()
+		wh.SendOr500(w, rlt)
+	}
+}
+
+
 // Create a wallet Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -505,6 +552,15 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 			ret := Wg.GetWallet(r.FormValue("id"))
 			wh.SendOr404(w, ret)
 		}
+	}
+}
+
+// Returns a wallet by ID if GET.  Creates or updates a wallet if POST.
+func notesHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//ret := wallet.Wallets.ToPublicReadable()
+		ret := Ng.GetNotesReadable()
+		wh.SendOr404(w, ret)
 	}
 }
 
@@ -685,4 +741,9 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	// generate wallet seed
 	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))
+
+	// generate wallet seed
+	mux.Handle("/notes", notesHandler(gateway))
+
+	mux.Handle("/notes/create",notesCreate(gateway))
 }

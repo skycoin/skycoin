@@ -51,7 +51,7 @@ ehthumbs.db
 Thumbs.db
 
 *.pyx
-build
+#build
 *~
 
 *.orig

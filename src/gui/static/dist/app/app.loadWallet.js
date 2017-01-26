@@ -425,8 +425,8 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/add/
                     return moment().unix() - ts;
                 };
                 //Show QR code function for show QR popup
-                LoadWalletComponent.prototype.showQR = function (wallet) {
-                    this.QrAddress = wallet.entries[0].address;
+                LoadWalletComponent.prototype.showQR = function (address) {
+                    this.QrAddress = address;
                     this.QrIsVisible = true;
                 };
                 //Hide QR code function for hide QR popup

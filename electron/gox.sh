@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
+. build-conf.sh
+
 USAGE="./gox.sh \"osarch\" [output directory]
 
 Builds gox with the osarch string (see 'gox --help' for specifications)
@@ -41,5 +43,49 @@ fi
 gox -osarch="$OSARCH" \
     -output="${OUTPUT}{{.Dir}}_{{.OS}}_{{.Arch}}" \
     "${CMDDIR}/${CMD}"
+
+# move the executable files into ${os}_${arch} folders, electron-builder will pack
+# the file into corresponding packages.
+
+platforms=$(echo $OSARCH | tr ";" "\n")
+
+for plt in $platforms
+do
+    set -- "$plt" 
+    IFS="/"; declare -a s=($*) 
+    case "${s[0]}" in
+    "windows")
+        if [ "${s[1]}" = "386" ]; then
+            OUT="${OUTPUT}${WIN32_OUT}"
+            echo "mkdir $OUT"
+            mkdir -p "$OUT"
+            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}.exe" "${OUT}/skycoin.exe"
+        else
+            OUT="${OUTPUT}${WIN64_OUT}"
+            mkdir -p "${OUT}"
+            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}.exe" "${OUT}/skycoin.exe"
+        fi
+        ;;
+    "darwin")
+        OUT="${OUTPUT}${OSX64_OUT}"
+        echo "mkdir ${OUT}"
+        mkdir -p "${OUT}"
+        mv "${OUTPUT}skycoin_${s[0]}_${s[1]}" "${OUT}/skycoin"
+        ;;
+    "linux")
+        if [ "${s[1]}" = "amd64" ]; then
+            OUT="${OUTPUT}${LNX64_OUT}"
+            echo "mkdir ${OUT}"
+            mkdir -p "${OUT}"
+            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}" "${OUT}/skycoin"
+        elif [ "${s[1]}" = "arm" ]; then
+            OUT="${OUTPUT}${LNX_ARM_OUT}"
+            echo "mkdir ${OUT}"
+            mkdir -p "${OUT}"
+            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}" "${OUT}/skycoin"
+        fi
+        ;;
+    esac
+done
 
 popd >/dev/null

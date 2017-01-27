@@ -48,6 +48,19 @@ func walletBalanceCMD() gcli.Command {
 	}
 }
 
+func addressBalanceCMD() gcli.Command {
+	name := "addressBalance"
+	return gcli.Command{
+		Name:      name,
+		Usage:     "Check the balance of specific addresses",
+		ArgsUsage: "[addresses]",
+		Description: `Check balance of specific addresses, join multiple addresses with space.
+		example: addressBalance "$addr1 $addr2 $addr3"`,
+		OnUsageError: onCommandUsageError(name),
+		Action:       addrBalance,
+	}
+}
+
 func checkWltBalance(c *gcli.Context) error {
 	var w string
 	if c.NArg() == 0 {
@@ -93,19 +106,6 @@ func checkWltBalance(c *gcli.Context) error {
 	}
 	fmt.Println(string(d))
 	return nil
-}
-
-func addressBalanceCMD() gcli.Command {
-	name := "addressBalance"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Check the balance of specific addresses",
-		ArgsUsage: "[addresses]",
-		Description: `Check balance of specific addresses, join multiple addresses with space.
-		example: addressBalance "$addr1 $addr2 $addr3"`,
-		OnUsageError: onCommandUsageError(name),
-		Action:       addrBalance,
-	}
 }
 
 func addrBalance(c *gcli.Context) error {

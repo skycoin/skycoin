@@ -32,34 +32,53 @@ type balanceResult struct {
 	Addresses   []balance `json:"addresses"`
 }
 
-func checkBalanceCMD() gcli.Command {
-	name := "checkBalance"
+func walletBalanceCMD() gcli.Command {
+	name := "walletBalance"
 	return gcli.Command{
 		Name:      name,
-		Usage:     "Check the balance of a wallet or specific address",
-		ArgsUsage: "[wallet or address]",
-		Description: fmt.Sprintf(`Check balance of specific wallet or address, the default 
+		Usage:     "Check the balance of a wallet",
+		ArgsUsage: "[wallet]",
+		Description: fmt.Sprintf(`Check balance of specific wallet, the default 
 		wallet(%s/%s) will be 
-		used if no wallet and address was specificed, use ENV 'WALLET_NAME' 
+		used if no wallet was specificed, use ENV 'WALLET_NAME' 
 		to update default wallet file name, and 'WALLET_DIR' to update 
 		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
 		OnUsageError: onCommandUsageError(name),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "f",
-				Usage: "[wallet file or path] List balance of all addresses in a wallet",
-			},
-		},
-		Action: checkBalance,
+		Action:       checkWltBalance,
 	}
-	// Commands = append(Commands, cmd)
 }
 
-func checkBalance(c *gcli.Context) error {
-	addrs, err := gatherAddrs(c)
+func checkWltBalance(c *gcli.Context) error {
+	var w string
+	if c.NArg() == 0 {
+		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
+	} else {
+		w = c.Args().First()
+		if !strings.HasSuffix(w, walletExt) {
+			return errWalletName
+		}
+
+		var err error
+		if filepath.Base(w) == w {
+			w = filepath.Join(cfg.WalletDir, w)
+		} else {
+			w, err = filepath.Abs(w)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	wlt, err := wallet.Load(w)
 	if err != nil {
-		errorWithHelp(c, err)
-		return nil
+		return err
+	}
+
+	var addrs []string
+	addresses := wlt.GetAddresses()
+	for _, a := range addresses {
+		// validate the address
+		addrs = append(addrs, a.String())
 	}
 
 	balRlt, err := getAddrsBalance(addrs)
@@ -76,53 +95,41 @@ func checkBalance(c *gcli.Context) error {
 	return nil
 }
 
-func gatherAddrs(c *gcli.Context) ([]string, error) {
-	w := c.String("f")
-	var a string
-	if c.NArg() > 0 {
-		a = c.Args().First()
-		if _, err := cipher.DecodeBase58Address(a); err != nil {
-			return []string{}, fmt.Errorf("invalid address: %v", a)
+func addressBalanceCMD() gcli.Command {
+	name := "addressBalance"
+	return gcli.Command{
+		Name:      name,
+		Usage:     "Check the balance of specific addresses",
+		ArgsUsage: "[addresses]",
+		Description: `Check balance of specific addresses, join multiple addresses with space.
+		example: addressBalance "$addr1 $addr2 $addr3"`,
+		OnUsageError: onCommandUsageError(name),
+		Action:       addrBalance,
+	}
+}
+
+func addrBalance(c *gcli.Context) error {
+	addrs := make([]string, c.NArg())
+	var err error
+	for i := 0; i < c.NArg(); i++ {
+		addrs[i] = c.Args().Get(i)
+		if _, err = cipher.DecodeBase58Address(addrs[i]); err != nil {
+			return fmt.Errorf("invalid address: %v, err: %v", addrs[i], err)
 		}
 	}
 
-	addrs := []string{}
-	if w == "" && a == "" {
-		// use default wallet
-		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
+	balRlt, err := getAddrsBalance(addrs)
+	if err != nil {
+		return err
 	}
 
-	if w != "" {
-		if !strings.HasSuffix(w, walletExt) {
-			return []string{}, fmt.Errorf("error wallet file name, must has %v extension", walletExt)
-		}
-
-		if filepath.Base(w) == w {
-			w = filepath.Join(cfg.WalletDir, w)
-		} else {
-			var err error
-			w, err = filepath.Abs(w)
-			if err != nil {
-				return []string{}, err
-			}
-		}
-
-		wlt, err := wallet.Load(w)
-		if err != nil {
-			return []string{}, err
-		}
-
-		addresses := wlt.GetAddresses()
-		for _, a := range addresses {
-			addrs = append(addrs, a.String())
-		}
+	var d []byte
+	d, err = json.MarshalIndent(balRlt, "", "    ")
+	if err != nil {
+		return errJSONMarshal
 	}
-
-	if a != "" {
-		addrs = append(addrs, a)
-	}
-
-	return addrs, nil
+	fmt.Println(string(d))
+	return nil
 }
 
 func getAddrsBalance(addrs []string) (balanceResult, error) {

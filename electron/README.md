@@ -152,27 +152,6 @@ npm install
 
 A folder `node_modules/` should now exist.
 
-<<<<<<< HEAD
-Manually download electron release 1.2.2
------
-
- The gulp-electron now can't download the electron release of version 1.2.2
- automatically. We need to download them manually from the following links:
-
- shttps://github.com/electron/electron/releases
-
- * [electron-v1.4.13-darwin-x64.zip](https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-darwin-x64.zip)
- * [electron-v1.4.13-linux-x64.zip](https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-linux-x64.zip)
- * [electron-v1.4.13-win32-x64.zip](https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-win32-x64.zip)
-
-wget -c https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-darwin-x64.zip
-wget -c https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-linux-x64.zip
-wget -c https://github.com/electron/electron/releases/download/v1.4.13/electron-v1.4.13-win32-x64.zip
-
-Copy the downloaded zip files into `electron/.electron_cache` folder.
-
-=======
->>>>>>> e9692263664a48842e644ca6404e210df1403201
 Building
 --------
 

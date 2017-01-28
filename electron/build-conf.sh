@@ -2,7 +2,10 @@
 set -e -o pipefail
 
 # These values are also in gulpfile.js and package.json and must be equal
-SKY_VERSION="11.0"
+
+# Get skycoin build version from package.json
+SKY_VERSION=`grep version package.json | sed  's/[,\", ]//g'| awk '{split($0,a,":");print a[2]}'`
+
 ELN_VERSION="v1.4.13"
 ELN_OUTPUT_BASE=".electron_output"
 ELN_OUTPUT="${ELN_OUTPUT_BASE}/${ELN_VERSION}"

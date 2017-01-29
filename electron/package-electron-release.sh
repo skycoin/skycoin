@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-# Copies gox-compiled skycoin binaries and compiled GUI assets
+# Copies gox-compiled binaries and compiled GUI assets
 # into an electron package
 
 . build-conf.sh
@@ -26,8 +26,8 @@ WIN32_SRC="${WIN32}/src"
 LNX64_SRC="${LNX64}/src"
 
 # Capitalize OS X .app for convention
-if [ -e "${OSX64}/skycoin.app" ]; then
-    mv "${OSX64}/skycoin.app" "${OSX64}/${OSX64_APP}"
+if [ -e "${OSX64}/${PKG_NAME}.app" ]; then
+    mv "${OSX64}/${PKG_NAME}.app" "${OSX64}/${OSX64_APP}"
 fi
 
 DESTSRCS=()
@@ -57,12 +57,12 @@ function copy_if_exists {
     fi
 }
 
-echo "Copying skycoin binaries"
+echo "Copying ${PKG_NAME} binaries"
 
-copy_if_exists "skycoin_darwin_amd64" "$OSX64_RES" "skycoin" "$OSX64_SRC"
-copy_if_exists "skycoin_windows_amd64.exe" "$WIN64_RES" "skycoin.exe" "$WIN64_SRC"
-copy_if_exists "skycoin_windows_386.exe" "$WIN32_RES" "skycoin.exe" "$WIN32_SRC"
-copy_if_exists "skycoin_linux_amd64" "$LNX64_RES" "skycoin" "$LNX64_SRC"
+copy_if_exists "${PKG_NAME}_darwin_amd64" "$OSX64_RES" "${PKG_NAME}" "$OSX64_SRC"
+copy_if_exists "${PKG_NAME}_windows_amd64.exe" "$WIN64_RES" "${PKG_NAME}.exe" "$WIN64_SRC"
+copy_if_exists "${PKG_NAME}_windows_386.exe" "$WIN32_RES" "${PKG_NAME}.exe" "$WIN32_SRC"
+copy_if_exists "${PKG_NAME}_linux_amd64" "$LNX64_RES" "${PKG_NAME}" "$LNX64_SRC"
 
 # Copy the source for reference
 # tar it with filters, move it, then untar in order to do this

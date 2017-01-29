@@ -1,7 +1,10 @@
 {
     "name": "skycoin",
     "productName": "Skycoin",
+    "author": "skycoin",
+    "main": "src/electron-main.js",
     "version": "0.12.0",
+    "description": "skycoin wallet",
     "build": {
         "appId": "org.skycoin.skycoin",
         "nsis": {
@@ -32,7 +35,6 @@
             "to": "./app/dist/"
         }],
         "directories": {
-            "app": "src",
             "output": "release"
         }
     },
@@ -41,10 +43,6 @@
         "dist-linux": "build -l --x64",
         "dist-mac": "build -m --x64",
         "pack-mac": "build --dir -m"
-    },
-    "dependencies": {
-        "electron-debug": "^1.0.1",
-        "electron-log": "^1.2.2"
     },
     "devDependencies": {
         "electron": "1.4.13"

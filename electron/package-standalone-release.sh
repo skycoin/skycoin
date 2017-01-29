@@ -54,14 +54,14 @@ function copy_if_exists {
     fi
 }
 
-echo "Copying skycoin binaries"
+echo "Copying ${PKG_NAME} binaries"
 
 # copy binaries
-copy_if_exists "${OSX64_OUT}/skycoin" "$OSX64" "$OSX64_SRC"
-copy_if_exists "${WIN64_OUT}/skycoin.exe" "$WIN64" "$WIN64_SRC"
-copy_if_exists "${WIN32_OUT}/skycoin.exe" "$WIN32" "$WIN32_SRC"
-copy_if_exists "${LNX64_OUT}/skycoin" "$LNX64" "$LNX64_SRC"
-copy_if_exists "${LNX_ARM_OUT}/skycoin" "$LNX_ARM" "$LNX_ARM_SRC"
+copy_if_exists "${OSX64_OUT}/${PKG_NAME}" "$OSX64" "$OSX64_SRC"
+copy_if_exists "${WIN64_OUT}/${PKG_NAME}.exe" "$WIN64" "$WIN64_SRC"
+copy_if_exists "${WIN32_OUT}/${PKG_NAME}.exe" "$WIN32" "$WIN32_SRC"
+copy_if_exists "${LNX64_OUT}/${PKG_NAME}" "$LNX64" "$LNX64_SRC"
+copy_if_exists "${LNX_ARM_OUT}/${PKG_NAME}" "$LNX_ARM" "$LNX_ARM_SRC"
 
 # Copy the source for reference
 # tar it with filters, move it, then untar in order to do this

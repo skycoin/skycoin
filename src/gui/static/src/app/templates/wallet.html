@@ -198,17 +198,22 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr *ngFor="let transaction of historyPagedItems">
-                                    <td>{{getDateTimeString(transaction.txn.timestamp)}}</td>
-                                    <td>{{transaction.status.confirmed?'Complete':'Pending'}}</td>
-                                    <td>{{transaction.txn.type}}</td>
-                                    <td>
-                                        From : <span *ngFor="let item of transaction.txn.inputs">{{item}},<br></span> To : <span *ngFor="let item of transaction.txn.outputs">{{item.dst}},<br></span>
-                                    </td>
-                                    <td>{{transaction.notes}}</td>
-                                    <td>{{GetTransactionAmount(transaction)}}</td>
-                                    <td>{{transaction.txn.txid}}</td>
-                                </tr>
+
+                                    <tr *ngFor="let trnsObj of userTransactions">
+                                        <td *ngIf="trnsObj.type == 'confirmed'">{{getDateTimeString(trnsObj.actualTransaction.timestamp)}}</td>
+                                        <td *ngIf="trnsObj.type == 'pending'" >NA</td>
+
+                                        <td *ngIf="trnsObj.type == 'confirmed'">Confirmed</td>
+                                        <td *ngIf="trnsObj.type == 'pending'" >Pending</td>
+                                        <td>{{trnsObj.actualTransaction.type}}</td>
+                                        <td>
+                                            From : <p *ngFor="let item of trnsObj.transactionInputs">{{item}},<br></p> To : <span *ngFor="let item of trnsObj.transactionOutputs">{{item.dst}},<br></span>
+                                        </td>
+                                        <td></td>
+                                        <td>{{GetTransactionAmount(trnsObj.actualTransaction)}}</td>
+                                        <td>{{trnsObj.actualTransaction.txId}}</td>
+                                    </tr>
+
                             </tbody>
                         </table>
                     </div>

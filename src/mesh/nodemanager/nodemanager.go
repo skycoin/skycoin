@@ -22,7 +22,30 @@ type NodeManager struct {
 	routeGraph           *RouteGraph
 }
 
-func NewNodeManager() *NodeManager {
+func NewNetwork() *NodeManager {
+	nm := newNodeManager()
+	return nm
+}
+
+func (self *NodeManager) AddNewNode() cipher.PubKey {
+	nodeToAdd := node.NewNode()
+	self.addNode(nodeToAdd)
+	return nodeToAdd.Id
+}
+
+func (self *NodeManager) Register(address cipher.PubKey, consumer messages.Consumer) error {
+	node0, err := self.getNodeById(address)
+	if err != nil {
+		return err
+	}
+	node0.AssignConsumer(consumer)
+	return nil
+}
+
+func (self *NodeManager) Tick() {
+}
+
+func newNodeManager() *NodeManager {
 	nm := new(NodeManager)
 	nm.nodeList = make(map[cipher.PubKey]*node.Node)
 	nm.transportFactoryList = []*transport.TransportFactory{}
@@ -30,7 +53,7 @@ func NewNodeManager() *NodeManager {
 	return nm
 }
 
-func (self *NodeManager) GetNodeById(id cipher.PubKey) (*node.Node, error) {
+func (self *NodeManager) getNodeById(id cipher.PubKey) (*node.Node, error) {
 	result, found := self.nodeList[id]
 	if !found {
 		return &node.Node{}, errors.ERR_NODE_NOT_FOUND
@@ -38,25 +61,13 @@ func (self *NodeManager) GetNodeById(id cipher.PubKey) (*node.Node, error) {
 	return result, nil
 }
 
-func (self *NodeManager) AddNewNode() cipher.PubKey {
-	nodeToAdd := node.NewNode()
-	self.AddNode(nodeToAdd)
-	return nodeToAdd.Id
-}
-
-func (self *NodeManager) AddNode(nodeToAdd *node.Node) {
+func (self *NodeManager) addNode(nodeToAdd *node.Node) {
 	id := nodeToAdd.Id
 	self.nodeList[id] = nodeToAdd
 	self.nodeIdList = append(self.nodeIdList, id)
 }
 
-func (self *NodeManager) Tick() {
-	for _, node := range self.nodeList {
-		node.Tick()
-	}
-}
-
-func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
+func (self *NodeManager) connectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
 
 	if idA == idB {
 		fmt.Println("Cannot connect node to itself")
@@ -84,13 +95,4 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.Tr
 	self.transportFactoryList = append(self.transportFactoryList, tf)
 	go tf.Tick()
 	return tf
-}
-
-func (self *NodeManager) AssignConsumer(address cipher.PubKey, consumer messages.Consumer) error {
-	node0, err := self.GetNodeById(address)
-	if err != nil {
-		return err
-	}
-	node0.AssignConsumer(consumer)
-	return nil
 }

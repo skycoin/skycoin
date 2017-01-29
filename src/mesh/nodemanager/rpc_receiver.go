@@ -33,7 +33,7 @@ func (receiver *RPCReceiver) AddNodes(args []string, result *[]byte) error {
 		fmt.Println(e)
 		return e
 	}
-	nodes := receiver.NodeManager.CreateNodeList(n)
+	nodes := receiver.NodeManager.createNodeList(n)
 	fmt.Println("added nodes:", nodes)
 	*result = messages.Serialize((uint16)(0), nodes)
 	return nil
@@ -81,7 +81,7 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	}
 
 	node0Id, node1Id := nm.nodeIdList[node0], nm.nodeIdList[node1]
-	tf := nm.ConnectNodeToNode(node0Id, node1Id)
+	tf := nm.connectNodeToNode(node0Id, node1Id)
 	transports := tf.GetTransportIDs()
 	if transports[0] == messages.NIL_TRANSPORT || transports[1] == messages.NIL_TRANSPORT {
 		e := errors.ERR_ALREADY_CONNECTED
@@ -188,8 +188,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 		nodeIds = append(nodeIds, nodeId)
 	}
 
-	nm.Tick()
-	routeRules, err := nm.buildRoute(nodeIds)
+	routeRules, err := nm.buildRouteOneSide(nodeIds)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -224,7 +223,7 @@ func (receiver *RPCReceiver) ListRoutes(args []string, result *[]byte) error {
 	}
 
 	nodeId := nodeIdList[nodenum]
-	node0, err := nm.GetNodeById(nodeId)
+	node0, err := nm.getNodeById(nodeId)
 	if err != nil {
 		fmt.Println(err)
 		return err

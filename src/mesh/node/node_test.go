@@ -31,7 +31,6 @@ func TestAddRoute(t *testing.T) {
 	assert.Len(t, node1.RouteForwardingRules, 0, "Should be 0 routes")
 
 	ccid := node1.AddControlChannel()
-	node1.Tick() // run channels consuming
 
 	tf := transport.NewTransportFactory()
 	tf.ConnectNodeToNode(node1, node2)
@@ -65,7 +64,6 @@ func TestRemoveRoute(t *testing.T) {
 	node1, node2 := NewNode(), NewNode()
 
 	ccid := node1.AddControlChannel()
-	node1.Tick() // run channels consuming
 
 	tf := transport.NewTransportFactory()
 	tf.ConnectNodeToNode(node1, node2)

@@ -1,4 +1,4 @@
-package connection
+package nodemanager
 
 import (
 	"fmt"
@@ -6,14 +6,13 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
-	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
 type Connection struct {
 	id messages.ConnectionId
 	//	consumer        *Application
-	nm              *nodemanager.NodeManager
-	Status          uint8
+	nm              *NodeManager
+	status          uint8
 	nodeAttached    cipher.PubKey
 	routeId         messages.RouteId
 	backRouteId     messages.RouteId
@@ -27,40 +26,42 @@ const (
 	CONNECTED
 )
 
-func NewConnectionWithRoutes(nm *nodemanager.NodeManager, nodeAttached cipher.PubKey, routeId, backRouteId messages.RouteId) (*Connection, error) {
+func (nm *NodeManager) NewConnectionWithRoutes(nodeAttached cipher.PubKey, routeId, backRouteId messages.RouteId) (messages.Connection, error) {
 	conn, err := newConnection(nm, nodeAttached)
 	if err != nil {
 		return nil, err
 	}
 	conn.routeId = routeId
 	conn.backRouteId = backRouteId
+	conn.status = CONNECTED
 	return conn, nil
 }
 
-func NewConnection(nm *nodemanager.NodeManager, nodeAttached, nodeTo cipher.PubKey) (*Connection, error) {
+func (nm *NodeManager) NewConnection(nodeAttached, nodeTo cipher.PubKey) (messages.Connection, error) {
 	conn, err := newConnection(nm, nodeAttached)
 	if err != nil {
 		return nil, err
 	}
-	routeId, backRouteId, err := nm.FindRoute(nodeAttached, nodeTo)
+	routeId, backRouteId, err := nm.findRoute(nodeAttached, nodeTo)
 	if err != nil {
 		return nil, err
 	}
 	conn.routeId = routeId
 	conn.backRouteId = backRouteId
+	conn.status = CONNECTED
 	return conn, nil
 }
 
-func newConnection(nm *nodemanager.NodeManager, nodeAttached cipher.PubKey) (*Connection, error) {
+func newConnection(nm *NodeManager, nodeAttached cipher.PubKey) (*Connection, error) {
 	id := messages.RandConnectionId()
-	_, err := nm.GetNodeById(nodeAttached)
+	_, err := nm.getNodeById(nodeAttached)
 	if err != nil {
 		return nil, err
 	}
 	conn := &Connection{
 		id:           id,
 		nm:           nm,
-		Status:       DISCONNECTED,
+		status:       DISCONNECTED,
 		nodeAttached: nodeAttached,
 	}
 	conn.incomingChannel = make(chan []byte, 1024)
@@ -69,7 +70,7 @@ func newConnection(nm *nodemanager.NodeManager, nodeAttached cipher.PubKey) (*Co
 }
 
 func (self *Connection) Send(msg []byte) (uint32, error) {
-	if self.Status != CONNECTED {
+	if self.status != CONNECTED {
 		return 0, errors.ERR_DISCONNECTED
 	}
 	requestMessage := messages.RequestMessage{
@@ -84,7 +85,7 @@ func (self *Connection) Send(msg []byte) (uint32, error) {
 		requestSerialized,
 	}
 	msgSerialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
-	node, err := self.nm.GetNodeById(self.nodeAttached)
+	node, err := self.nm.getNodeById(self.nodeAttached)
 	if err != nil {
 		return 0, err
 	}
@@ -94,7 +95,7 @@ func (self *Connection) Send(msg []byte) (uint32, error) {
 }
 
 func (self *Connection) receivingLoop() error {
-	for self.Status == CONNECTED {
+	for self.status == CONNECTED {
 		select {
 		case data := <-self.incomingChannel: // accept from meshnet(node)
 			fmt.Println("Data received", string(data)) // pass to server/client
@@ -106,17 +107,17 @@ func (self *Connection) receivingLoop() error {
 	return errors.ERR_DISCONNECTED
 }
 
-func (self *Connection) Tick() {
-	self.Status = CONNECTED
-}
-
 func (self *Connection) consume(msg []byte) error {
 	self.incomingChannel <- msg
 	return nil
 }
 
+func (self *Connection) GetStatus() uint8 {
+	return self.status
+}
+
 func (self *Connection) Close() {
 	close(self.incomingChannel)
 	close(self.closingChannel)
-	self.Status = DISCONNECTED
+	self.status = DISCONNECTED
 }

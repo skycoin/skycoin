@@ -48,6 +48,7 @@ func NewNode() *Node {
 	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
 	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
 	fmt.Printf("Created Node %s\n", node.Id.Hex())
+	node.Tick()
 	return node
 }
 

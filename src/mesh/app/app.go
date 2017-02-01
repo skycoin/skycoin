@@ -2,20 +2,15 @@ package app
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/nodemanager"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 type app struct {
 	Address cipher.PubKey
-	Meshnet *nodemanager.NodeManager
+	Network messages.Network
 }
 
-func (app *app) RegisterWithNewAddress(nm *nodemanager.NodeManager) {
-	address := nm.AddNewNode()
-	app.Register(nm, address)
-}
-
-func (app *app) Register(nm *nodemanager.NodeManager, address cipher.PubKey) {
-	app.Meshnet = nm
+func (app *app) register(meshnet messages.Network, address cipher.PubKey) {
+	app.Network = meshnet
 	app.Address = address
 }

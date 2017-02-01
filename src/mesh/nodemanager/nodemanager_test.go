@@ -12,7 +12,7 @@ import (
 )
 
 func TestAddingNodes(t *testing.T) {
-	nm := NewNodeManager()
+	nm := newNodeManager()
 	assert.Len(t, nm.nodeList, 0, "Error expected 0 nodes")
 	nm.AddNewNode()
 	assert.Len(t, nm.nodeList, 1, "Error expected 1 nodes")
@@ -24,12 +24,12 @@ func TestAddingNodes(t *testing.T) {
 }
 
 func TestConnectTwoNodes(t *testing.T) {
-	nm := NewNodeManager()
+	nm := newNodeManager()
 	id1 := nm.AddNewNode()
 	id2 := nm.AddNewNode()
-	node1, err := nm.GetNodeById(id1)
+	node1, err := nm.getNodeById(id1)
 	assert.Nil(t, err)
-	node2, err := nm.GetNodeById(id2)
+	node2, err := nm.getNodeById(id2)
 	assert.Nil(t, err)
 	assert.Len(t, nm.transportFactoryList, 0, "Should be 0 TransportFactory")
 	tf := nm.ConnectNodeToNode(id1, id2)
@@ -48,20 +48,18 @@ func TestConnectTwoNodes(t *testing.T) {
 
 func TestNetwork(t *testing.T) {
 	n := 20
-	nm := NewNodeManager()
-	nm.CreateNodeList(n)
+	nm := newNodeManager()
+	nm.createNodeList(n)
 	assert.Len(t, nm.nodeIdList, n, fmt.Sprintf("Should be %d nodes", n))
 
-	nm.Tick()
-	initRoute, err := nm.ConnectAll()
+	initRoute, err := nm.connectAllAndBuildRoute()
 	assert.Nil(t, err)
 
-	node0, err := nm.GetNodeById(nm.nodeIdList[0])
+	node0, err := nm.getNodeById(nm.nodeIdList[0])
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(initRoute, node0)
 	inRouteMessage := messages.InRouteMessage{messages.NIL_TRANSPORT, initRoute, []byte{'t', 'e', 's', 't'}}
 	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
 	node0.IncomingChannel <- serialized
@@ -79,8 +77,8 @@ func TestNetwork(t *testing.T) {
 func TestBuildRoute(t *testing.T) {
 	n := 100
 	m := 5
-	nm := NewNodeManager()
-	nm.CreateNodeList(n)
+	nm := newNodeManager()
+	nm.createNodeList(n)
 
 	nodes := []cipher.PubKey{}
 
@@ -94,16 +92,14 @@ func TestBuildRoute(t *testing.T) {
 		nm.ConnectNodeToNode(nodes[i], nodes[i+1])
 	}
 
-	nm.Tick()
-
-	routes, err := nm.buildRoute(nodes)
+	routes, err := nm.buildRouteOneSide(nodes)
 	assert.Nil(t, err)
 	assert.Len(t, routes, m, fmt.Sprintf("Should be %d routes", m))
 }
 
 func TestFindRoute(t *testing.T) {
-	nm := NewNodeManager()
-	nodeList := nm.CreateNodeList(10)
+	nm := newNodeManager()
+	nodeList := nm.createNodeList(10)
 	/*
 		  1-2-3-4   long route
 		 /	 \
@@ -111,7 +107,6 @@ func TestFindRoute(t *testing.T) {
 		 \ /     /
 		  6_7_8_/   medium route
 	*/
-	nm.Tick()
 	nm.ConnectNodeToNode(nodeList[0], nodeList[1]) // making long route
 	nm.ConnectNodeToNode(nodeList[1], nodeList[2])
 	nm.ConnectNodeToNode(nodeList[2], nodeList[3])
@@ -125,10 +120,35 @@ func TestFindRoute(t *testing.T) {
 	nm.ConnectNodeToNode(nodeList[8], nodeList[9])
 	nm.ConnectNodeToNode(nodeList[5], nodeList[6]) // just for
 
-	nm.RebuildRoutes()
+	nm.rebuildRoutes()
 
 	nodeFrom, nodeTo := nodeList[0], nodeList[9]
 	nodes, found := nm.routeGraph.findRoute(nodeFrom, nodeTo)
 	assert.True(t, found)
 	assert.Len(t, nodes, 3, "Should be 3 nodes")
+}
+
+func TestConnection(t *testing.T) {
+	n := 4
+	nm := newNodeManager()
+
+	nodes := nm.createNodeList(n)
+	nm.connectAll()
+
+	node0 := nodes[0]
+	route, backRoute, err := nm.buildRoute(nodes)
+	assert.Nil(t, err)
+	conn0, err := nm.NewConnectionWithRoutes(node0, route, backRoute)
+	assert.Nil(t, err)
+	payload := []byte{'t', 'e', 's', 't'}
+	msg := messages.RequestMessage{
+		0,
+		backRoute,
+		payload,
+	}
+	msgS := messages.Serialize(messages.MsgRequestMessage, msg)
+	sequence, err := conn0.Send(msgS)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(0), sequence)
+	time.Sleep(time.Duration(n) * time.Second)
 }

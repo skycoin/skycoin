@@ -24,7 +24,7 @@ func (self *RPC) Serve() {
 		log.Println("No MESH_RPC_PORT environmental variable is found, assigning default port value:", DEFAULT_PORT)
 		port = DEFAULT_PORT
 	}
-	nm := NewNodeManager()
+	nm := newNodeManager()
 	receiver := new(RPCReceiver)
 	receiver.NodeManager = nm
 	err := rpc.Register(receiver)

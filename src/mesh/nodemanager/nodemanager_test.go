@@ -32,7 +32,7 @@ func TestConnectTwoNodes(t *testing.T) {
 	node2, err := nm.getNodeById(id2)
 	assert.Nil(t, err)
 	assert.Len(t, nm.transportFactoryList, 0, "Should be 0 TransportFactory")
-	tf := nm.connectNodeToNode(id1, id2)
+	tf := nm.ConnectNodeToNode(id1, id2)
 	assert.Len(t, nm.transportFactoryList, 1, "Should be 1 TransportFactory")
 	assert.True(t, node1.ConnectedTo(node2))
 	assert.True(t, node2.ConnectedTo(node1))
@@ -89,7 +89,7 @@ func TestBuildRoute(t *testing.T) {
 	}
 
 	for i := 0; i < m-1; i++ {
-		nm.connectNodeToNode(nodes[i], nodes[i+1])
+		nm.ConnectNodeToNode(nodes[i], nodes[i+1])
 	}
 
 	routes, err := nm.buildRouteOneSide(nodes)
@@ -107,18 +107,18 @@ func TestFindRoute(t *testing.T) {
 		 \ /     /
 		  6_7_8_/   medium route
 	*/
-	nm.connectNodeToNode(nodeList[0], nodeList[1]) // making long route
-	nm.connectNodeToNode(nodeList[1], nodeList[2])
-	nm.connectNodeToNode(nodeList[2], nodeList[3])
-	nm.connectNodeToNode(nodeList[3], nodeList[4])
-	nm.connectNodeToNode(nodeList[4], nodeList[9])
-	nm.connectNodeToNode(nodeList[0], nodeList[5]) // making short route
-	nm.connectNodeToNode(nodeList[5], nodeList[9])
-	nm.connectNodeToNode(nodeList[0], nodeList[6]) // make medium route, then findRoute should select the short one
-	nm.connectNodeToNode(nodeList[6], nodeList[7])
-	nm.connectNodeToNode(nodeList[7], nodeList[8])
-	nm.connectNodeToNode(nodeList[8], nodeList[9])
-	nm.connectNodeToNode(nodeList[5], nodeList[6]) // just for
+	nm.ConnectNodeToNode(nodeList[0], nodeList[1]) // making long route
+	nm.ConnectNodeToNode(nodeList[1], nodeList[2])
+	nm.ConnectNodeToNode(nodeList[2], nodeList[3])
+	nm.ConnectNodeToNode(nodeList[3], nodeList[4])
+	nm.ConnectNodeToNode(nodeList[4], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[0], nodeList[5]) // making short route
+	nm.ConnectNodeToNode(nodeList[5], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[0], nodeList[6]) // make medium route, then findRoute should select the short one
+	nm.ConnectNodeToNode(nodeList[6], nodeList[7])
+	nm.ConnectNodeToNode(nodeList[7], nodeList[8])
+	nm.ConnectNodeToNode(nodeList[8], nodeList[9])
+	nm.ConnectNodeToNode(nodeList[5], nodeList[6]) // just for
 
 	nm.rebuildRoutes()
 

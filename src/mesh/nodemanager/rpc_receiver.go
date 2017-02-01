@@ -81,7 +81,7 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	}
 
 	node0Id, node1Id := nm.nodeIdList[node0], nm.nodeIdList[node1]
-	tf := nm.connectNodeToNode(node0Id, node1Id)
+	tf := nm.ConnectNodeToNode(node0Id, node1Id)
 	transports := tf.GetTransportIDs()
 	if transports[0] == messages.NIL_TRANSPORT || transports[1] == messages.NIL_TRANSPORT {
 		e := errors.ERR_ALREADY_CONNECTED

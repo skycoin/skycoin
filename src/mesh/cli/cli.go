@@ -25,7 +25,7 @@ var status map[uint8]string = map[uint8]string{
 }
 
 func main() {
-	var port = "1234"
+	port := "1234"
 	if len(os.Args) >= 2 {
 		port = os.Args[1]
 	}

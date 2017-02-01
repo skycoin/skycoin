@@ -67,7 +67,7 @@ func (self *NodeManager) addNode(nodeToAdd *node.Node) {
 	self.nodeIdList = append(self.nodeIdList, id)
 }
 
-func (self *NodeManager) connectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
+func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) *transport.TransportFactory {
 
 	if idA == idB {
 		fmt.Println("Cannot connect node to itself")

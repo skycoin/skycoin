@@ -33,7 +33,7 @@ func (receiver *RPCReceiver) AddNodes(args []string, result *[]byte) error {
 		fmt.Println(e)
 		return e
 	}
-	nodes := receiver.NodeManager.CreateNodeList(n)
+	nodes := receiver.NodeManager.createNodeList(n)
 	fmt.Println("added nodes:", nodes)
 	*result = messages.Serialize((uint16)(0), nodes)
 	return nil
@@ -188,8 +188,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 		nodeIds = append(nodeIds, nodeId)
 	}
 
-	nm.Tick()
-	routeRules, err := nm.buildRoute(nodeIds)
+	routeRules, err := nm.buildRouteOneSide(nodeIds)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -224,7 +223,7 @@ func (receiver *RPCReceiver) ListRoutes(args []string, result *[]byte) error {
 	}
 
 	nodeId := nodeIdList[nodenum]
-	node0, err := nm.GetNodeById(nodeId)
+	node0, err := nm.getNodeById(nodeId)
 	if err != nil {
 		fmt.Println(err)
 		return err

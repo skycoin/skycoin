@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/nodemanager"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 type Server struct {
@@ -10,11 +10,11 @@ type Server struct {
 	Handle func([]byte) []byte
 }
 
-func NewServer(meshnet *nodemanager.NodeManager, address cipher.PubKey, handle func([]byte) []byte) (*Server, error) {
+func NewServer(network messages.Network, address cipher.PubKey, handle func([]byte) []byte) (*Server, error) {
 	server := &Server{}
-	server.Register(meshnet, address)
+	server.register(network, address)
 	server.Handle = handle
-	err := meshnet.AssignConsumer(address, server)
+	err := network.Register(address, server)
 	if err != nil {
 		return nil, err
 	}

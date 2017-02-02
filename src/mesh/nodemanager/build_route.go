@@ -7,7 +7,16 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/node"
 )
 
-func (self *NodeManager) BuildRoute(nodes []cipher.PubKey) (route, backRoute messages.RouteId, err error) {
+func (self *NodeManager) findRoute(nodeFrom, nodeTo cipher.PubKey) (routeId, backRouteId messages.RouteId, err error) {
+	nodes, found := self.routeGraph.findRoute(nodeFrom, nodeTo)
+	if !found {
+		return messages.NIL_ROUTE, messages.NIL_ROUTE, errors.ERR_NOROUTE
+	}
+	routeId, backRouteId, err = self.buildRoute(nodes)
+	return
+}
+
+func (self *NodeManager) buildRoute(nodes []cipher.PubKey) (route, backRoute messages.RouteId, err error) {
 	route, err = self.getFirstRoute(nodes)
 	if err == nil {
 		for i, j := 0, len(nodes)-1; i < j; i, j = i+1, j-1 { //side effect but nodes aren't used after this anyway
@@ -18,17 +27,8 @@ func (self *NodeManager) BuildRoute(nodes []cipher.PubKey) (route, backRoute mes
 	return
 }
 
-func (self *NodeManager) FindRoute(nodeFrom, nodeTo cipher.PubKey) (routeId, backRouteId messages.RouteId, err error) {
-	nodes, found := self.routeGraph.findRoute(nodeFrom, nodeTo)
-	if !found {
-		return messages.NIL_ROUTE, messages.NIL_ROUTE, errors.ERR_NOROUTE
-	}
-	routeId, backRouteId, err = self.BuildRoute(nodes)
-	return
-}
-
 func (self *NodeManager) getFirstRoute(nodes []cipher.PubKey) (messages.RouteId, error) {
-	routes, err := self.buildRoute(nodes)
+	routes, err := self.buildRouteOneSide(nodes)
 	if err != nil {
 		return messages.NIL_ROUTE, err
 	}
@@ -38,7 +38,7 @@ func (self *NodeManager) getFirstRoute(nodes []cipher.PubKey) (messages.RouteId,
 	return routes[0], nil
 }
 
-func (self *NodeManager) buildRoute(nodes []cipher.PubKey) ([]messages.RouteId, error) {
+func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey) ([]messages.RouteId, error) {
 
 	n := len(nodes)
 
@@ -50,7 +50,7 @@ func (self *NodeManager) buildRoute(nodes []cipher.PubKey) ([]messages.RouteId, 
 
 	for i, currentNodeId := range nodes {
 
-		currentNode, err := self.GetNodeById(currentNodeId)
+		currentNode, err := self.getNodeById(currentNodeId)
 		if err != nil {
 			return []messages.RouteId{}, err
 		}
@@ -67,7 +67,7 @@ func (self *NodeManager) buildRoute(nodes []cipher.PubKey) ([]messages.RouteId, 
 			incomingTransport = messages.NIL_TRANSPORT
 		} else {
 			prevNodeId = nodes[i-1]
-			prevNode, _ = self.GetNodeById(prevNodeId)
+			prevNode, _ = self.getNodeById(prevNodeId)
 			incomingTransportObj, err := prevNode.GetTransportToNode(currentNodeId)
 			if err != nil {
 				return []messages.RouteId{}, err
@@ -95,6 +95,7 @@ func (self *NodeManager) buildRoute(nodes []cipher.PubKey) ([]messages.RouteId, 
 			incomingRoute,
 			outgoingRoute,
 		}
+
 		msgS := messages.Serialize(messages.MsgAddRouteControlMessage, msg)
 
 		ccid := currentNode.AddControlChannel()
@@ -106,7 +107,7 @@ func (self *NodeManager) buildRoute(nodes []cipher.PubKey) ([]messages.RouteId, 
 	return routeIds, nil
 }
 
-func (self *NodeManager) RebuildRoutes() {
+func (self *NodeManager) rebuildRoutes() {
 	self.routeGraph.clear()
 	for _, nodeFrom := range self.nodeList {
 		nodeFromId := nodeFrom.GetId()

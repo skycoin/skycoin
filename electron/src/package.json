@@ -1,10 +1,4 @@
 {
-    "name": "skycoin",
-    "author": "skycoin",
-    "productName": "Skycoin",
-    "version": "0.8.1",
-    "description": "skycoin wallet",
-    "main": "electron-main.js",
     "dependencies": {
         "electron-debug": "^1.0.1",
         "electron-log": "^1.2.2"

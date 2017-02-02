@@ -14,7 +14,7 @@ if it does not exist.  Defaults to the working directory.
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 CMDDIR="../cmd"  # relative to compile/electron/
-CMD="skycoin"
+CMD="${PKG_NAME}"
 
 OSARCH="$1"
 OUTPUT="$2"
@@ -59,30 +59,30 @@ do
             OUT="${OUTPUT}${WIN32_OUT}"
             echo "mkdir $OUT"
             mkdir -p "$OUT"
-            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}.exe" "${OUT}/skycoin.exe"
+            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}.exe" "${OUT}/${PKG_NAME}.exe"
         else
             OUT="${OUTPUT}${WIN64_OUT}"
             mkdir -p "${OUT}"
-            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}.exe" "${OUT}/skycoin.exe"
+            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}.exe" "${OUT}/${PKG_NAME}.exe"
         fi
         ;;
     "darwin")
         OUT="${OUTPUT}${OSX64_OUT}"
         echo "mkdir ${OUT}"
         mkdir -p "${OUT}"
-        mv "${OUTPUT}skycoin_${s[0]}_${s[1]}" "${OUT}/skycoin"
+        mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}" "${OUT}/${PKG_NAME}"
         ;;
     "linux")
         if [ "${s[1]}" = "amd64" ]; then
             OUT="${OUTPUT}${LNX64_OUT}"
             echo "mkdir ${OUT}"
             mkdir -p "${OUT}"
-            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}" "${OUT}/skycoin"
+            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}" "${OUT}/${PKG_NAME}"
         elif [ "${s[1]}" = "arm" ]; then
             OUT="${OUTPUT}${LNX_ARM_OUT}"
             echo "mkdir ${OUT}"
             mkdir -p "${OUT}"
-            mv "${OUTPUT}skycoin_${s[0]}_${s[1]}" "${OUT}/skycoin"
+            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}" "${OUT}/${PKG_NAME}"
         fi
         ;;
     esac

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-# Builds an entire skycoin + electron-based GUI for release
+# Builds an entire electron-based GUI for release
 
 # Implemented architectures:
 #       darwin/amd64
@@ -49,25 +49,25 @@ fi
 pushd "$FINAL_OUTPUT" >/dev/null
 if [ -e "mac" ]; then
     pushd "mac" >/dev/null
-    if [ -e "Skycoin-${SKY_VERSION}.dmg" ]; then
-        mv "Skycoin-${SKY_VERSION}.dmg" "../skycoin-${SKY_VERSION}-gui-osx-x64.dmg"
-    elif [ -e "Skycoin.app" ]; then
-        tar czf "../skycoin-${SKY_VERSION}-gui-osx-x64.zip" --owner=0 --group=0 "Skycoin.app"
+    if [ -e "${PDT_NAME}-${APP_VERSION}.dmg" ]; then
+        mv "${PDT_NAME}-${APP_VERSION}.dmg" "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.dmg"
+    elif [ -e "${PDT_NAME}.app" ]; then
+        tar czf "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.zip" --owner=0 --group=0 "${PDT_NAME}.app"
     fi
     popd >/dev/null
     rm -rf "mac"
 fi
 
-IMG="skycoin-${SKY_VERSION}-x86_64.AppImage"
-DEST_IMG="skycoin-${SKY_VERSION}-gui-linux-x64.AppImage"
+IMG="${PKG_NAME}-${APP_VERSION}-x86_64.AppImage"
+DEST_IMG="${PKG_NAME}-${APP_VERSION}-gui-linux-x64.AppImage"
 if [ -e $IMG ]; then
     mv "$IMG" "$DEST_IMG"
     chmod +x "$DEST_IMG"
 fi
 
-EXE="Skycoin Setup ${SKY_VERSION}.exe"
+EXE="${PDT_NAME} Setup ${APP_VERSION}.exe"
 if [ -e "$EXE" ]; then
-    mv "$EXE" "skycoin-${SKY_VERSION}-gui-win-setup.exe"
+    mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
 fi
 
 # clean unpacked folders

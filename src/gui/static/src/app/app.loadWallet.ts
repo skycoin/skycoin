@@ -90,6 +90,15 @@ export class LoadWalletComponent implements OnInit {
     @ViewChild(SkyCoinOutputComponent)
     private outputComponent: SkyCoinOutputComponent;
 
+    @ViewChild('spendaddress')
+    private spendAddress:any;
+
+    @ViewChild('spendamount')
+    private spendAmount:any;
+
+    @ViewChild('transactionNote')
+        private transactionNote:any;
+
     QrAddress: string;
     QrIsVisible: boolean;
 
@@ -811,6 +820,7 @@ export class LoadWalletComponent implements OnInit {
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
         var stringConvert = 'id='+spendid+'&coins='+spendamount*1000000+"&fee=1&hours=1&dst="+spendaddress;
         //Post method executed
+        var self = this;
         this.http.post('/wallet/spend', stringConvert, {headers: headers})
             .map((res:Response) => res.json())
             .subscribe(
@@ -819,8 +829,15 @@ export class LoadWalletComponent implements OnInit {
                     this.updateStatusOfTransaction(response.txn.txid, {address:spendaddress,amount:amount});
                     this.readyDisable = false;
                     this.sendDisable = true;
+                    self.spendAddress.nativeElement.value = '';
+                    self.spendAmount.nativeElement.value =0;
+                    self.transactionNote.nativeElement.value = '';
+                    self.isValidAddress=false;
                 },
                 err => {
+
+
+
                     this.readyDisable = false;
                     this.sendDisable = true;
                     var logBody = err._body;
@@ -838,7 +855,10 @@ export class LoadWalletComponent implements OnInit {
                     //this.pendingTable.push({complete: 'Pending', address: spendaddress, amount: spendamount});
                 },
                 () => {
-                  //console.log('Spend successfully')
+                    self.spendAddress.nativeElement.value = '';
+                    self.spendAmount.nativeElement.value =0;
+                    self.transactionNote.nativeElement.value = '';
+                    self.isValidAddress=false;
                   $("#send_pay_to").val("");
                   $("#send_amount").val(0);
                 }

@@ -468,6 +468,7 @@ func Run(c *Config) {
 
 	logCfg := util.DevLogConfig(logModules)
 	logCfg.Format = logFormat
+	logCfg.Colors = c.ColorLog
 	logCfg.InitLogger()
 
 	// initLogging(c.LogLevel, c.ColorLog)

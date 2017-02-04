@@ -32,8 +32,17 @@
         },
         "extraResources": [{
             "from": "../src/gui/static/dist/",
-            "to": "./app/dist/"
-        }],
+            "to": "./app/dist/",
+            "filter":[
+                "**/*",
+                "!current-skycoin.json"
+               ]
+        },
+            {
+                "from": "./skycoin",
+                "to": "./app/dist/"
+            }
+        ],
         "directories": {
             "output": "release"
         }

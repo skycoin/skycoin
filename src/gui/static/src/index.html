@@ -33,6 +33,8 @@
     <script src="lib/reflect-metadata/Reflect.js"></script>
     <script src="lib/systemjs/dist/system.src.js"></script>
 
+    <script src="current-skycoin.json"></script>
+
     <!-- 2. Configure SystemJS -->
     <script src="systemjs.config.js"></script>
     <script>
@@ -40,12 +42,26 @@
             .then(null, console.error.bind(console));
     </script>
 
+
+
+
 </head>
 
 <!-- 3. Display the application -->
 
 <body>
+    <div id="sky-header">
+        <p id="versionNumber"></p>
+        <div class="fa fa-cloud background-cloud-0"><i class="fa fa-btc"></i></div>
+    </div>
     <load-wallet>Loading...</load-wallet>
+    <script>
+        function load() {
+            var data = JSON.parse(versionData);
+            document.getElementById("versionNumber").innerHTML = data.version;
+        }
+        load();
+    </script>
 </body>
 
 </html>

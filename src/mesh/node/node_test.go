@@ -10,6 +10,7 @@ import (
 )
 
 func TestCreateControlChannel(t *testing.T) {
+	messages.SetDebugLogLevel()
 	node := NewNode()
 	assert.Len(t, node.controlChannels, 0, "Should be 0 control channels")
 	node.AddControlChannel()
@@ -18,6 +19,7 @@ func TestCreateControlChannel(t *testing.T) {
 }
 
 func TestRemoveControlChannel(t *testing.T) {
+	messages.SetDebugLogLevel()
 	node := NewNode()
 	ccid := node.AddControlChannel()
 	assert.Len(t, node.controlChannels, 1, "Should be 1 control channels")
@@ -27,6 +29,7 @@ func TestRemoveControlChannel(t *testing.T) {
 }
 
 func TestAddRoute(t *testing.T) {
+	messages.SetDebugLogLevel()
 	node1, node2 := NewNode(), NewNode()
 	assert.Len(t, node1.RouteForwardingRules, 0, "Should be 0 routes")
 
@@ -61,6 +64,7 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestRemoveRoute(t *testing.T) {
+	messages.SetDebugLogLevel()
 	node1, node2 := NewNode(), NewNode()
 
 	ccid := node1.AddControlChannel()

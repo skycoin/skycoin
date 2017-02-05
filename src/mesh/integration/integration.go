@@ -4,10 +4,12 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/mesh/app"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
 
 func main() {
+	messages.SetDebugLogLevel()
 	testSendAndReceive(20)
 }
 

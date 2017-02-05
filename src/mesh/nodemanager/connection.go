@@ -1,8 +1,6 @@
 package nodemanager
 
 import (
-	"fmt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
@@ -94,11 +92,11 @@ func (self *Connection) Send(msg []byte) (uint32, error) {
 	return self.sequence - 1, nil
 }
 
+/*
 func (self *Connection) receivingLoop() error {
 	for self.status == CONNECTED {
 		select {
-		case data := <-self.incomingChannel: // accept from meshnet(node)
-			fmt.Println("Data received", string(data)) // pass to server/client
+		case <-self.incomingChannel: // accept from meshnet(node)
 		case <-self.closingChannel:
 			self.Close()
 			break
@@ -106,7 +104,7 @@ func (self *Connection) receivingLoop() error {
 	}
 	return errors.ERR_DISCONNECTED
 }
-
+*/
 func (self *Connection) consume(msg []byte) error {
 	self.incomingChannel <- msg
 	return nil

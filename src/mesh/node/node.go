@@ -47,7 +47,9 @@ func NewNode() *Node {
 	node.Transports = make(map[messages.TransportId]*transport.Transport)
 	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
 	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
-	fmt.Printf("Created Node %s\n", node.Id.Hex())
+	if messages.IsDebug() {
+		fmt.Printf("Created Node %s\n", node.Id.Hex())
+	}
 	node.Tick()
 	return node
 }
@@ -78,14 +80,18 @@ func (self *Node) runCycles(backChannel chan bool) {
 
 func (self *Node) handleIncomingTransportMessages() {
 	for msg := range self.IncomingChannel {
-		fmt.Printf("\nnode with id %s accepting a message with type %d\n\n", self.Id.Hex(), messages.GetMessageType(msg))
+		if messages.IsDebug() {
+			fmt.Printf("\nnode with id %s accepting a message with type %d\n\n", self.Id.Hex(), messages.GetMessageType(msg))
+		}
 		//process our incoming messages
 		switch messages.GetMessageType(msg) {
 		//InRouteMessage is the only message coming in to node from transports
 		case messages.MsgInRouteMessage:
 			var m1 messages.InRouteMessage
 			messages.Deserialize(msg, &m1)
-			fmt.Println("InRouteMessage", m1)
+			if messages.IsDebug() {
+				fmt.Println("InRouteMessage", m1)
+			}
 			self.handleInRouteMessage(m1)
 		default:
 			fmt.Println("wrong type", messages.GetMessageType(msg))
@@ -184,7 +190,9 @@ func (self *Node) SetTransport(id messages.TransportId, tr messages.TransportInt
 }
 
 func (self *Node) consume(msg []byte) {
-	fmt.Printf("\nNode %s consumed message %d\n\n", self.Id.Hex(), msg)
+	if messages.IsDebug() {
+		fmt.Printf("\nNode %s consumed message %d\n\n", self.Id.Hex(), msg)
+	}
 
 	go func() {
 		switch messages.GetMessageType(msg) {

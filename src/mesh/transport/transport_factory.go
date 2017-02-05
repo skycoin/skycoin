@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"fmt"
+	//"fmt"
 
 	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
@@ -14,7 +14,7 @@ type TransportFactory struct {
 
 func NewTransportFactory() *TransportFactory {
 	tf := new(TransportFactory)
-	fmt.Printf("Created Transport Factory\n")
+	//fmt.Printf("Created Transport Factory\n")
 	return tf
 }
 

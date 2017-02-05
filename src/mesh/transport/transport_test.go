@@ -10,6 +10,7 @@ import (
 )
 
 func TestCreateStubPair(t *testing.T) {
+	messages.SetDebugLogLevel()
 	tf := NewTransportFactory()
 	assert.Len(t, tf.TransportList, 0, "Should be 0 transports")
 	t1, t2 := tf.CreateStubTransportPair()
@@ -20,6 +21,7 @@ func TestCreateStubPair(t *testing.T) {
 }
 
 func TestAck(t *testing.T) {
+	messages.SetDebugLogLevel()
 	tf := NewTransportFactory()
 	t1, _ := tf.CreateStubTransportPair()
 	tf.Tick()

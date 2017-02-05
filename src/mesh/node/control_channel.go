@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
@@ -21,7 +19,6 @@ func newControlChannel() *ControlChannel {
 func (c *ControlChannel) handleMessage(handledNode *Node, msg []byte) error {
 	switch messages.GetMessageType(msg) {
 	case messages.MsgAddRouteControlMessage:
-		fmt.Println("adding route")
 		var m1 messages.AddRouteControlMessage
 		err := messages.Deserialize(msg, &m1)
 		if err != nil {
@@ -36,7 +33,6 @@ func (c *ControlChannel) handleMessage(handledNode *Node, msg []byte) error {
 		return handledNode.addRoute(&routeRule)
 
 	case messages.MsgRemoveRouteControlMessage:
-		fmt.Println("removing route")
 		var m1 messages.RemoveRouteControlMessage
 		messages.Deserialize(msg, &m1)
 		routeId := m1.RouteId

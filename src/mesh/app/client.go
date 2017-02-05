@@ -67,10 +67,9 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 	self.responseChannels[sequence] = responseChannel
 	select {
 	case response := <-responseChannel:
-		fmt.Println("RESPONSE HAS COME:", response)
 		return response, nil
 	case <-time.After(time.Duration(self.Timeout) * time.Millisecond):
-		fmt.Println("TIMEOUT")
+		fmt.Println("Sending timeout")
 		conn.Close()
 		return nil, errors.ERR_TIMEOUT
 	}

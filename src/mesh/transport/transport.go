@@ -25,10 +25,19 @@ import (
 // - may be more efficient to replace pending out, with an array on TransportFactory
 // - or with array on the transport (who is responsible for processing ACKs?)
 
-const (
-	TIMEOUT          uint32 = 1000 // time for ack waiting
-	RETRANSMIT_LIMIT        = 4
+var (
+	config              *messages.ConfigStruct
+	MAX_SIMULATED_DELAY int
+	TIMEOUT             uint32
+	RETRANSMIT_LIMIT    int
 )
+
+func init() {
+	config = messages.GetConfig()
+	MAX_SIMULATED_DELAY = config.MaxSimulatedDelay
+	TIMEOUT = config.TransportTimeout // time for ack waiting
+	RETRANSMIT_LIMIT = config.RetransmitLimit
+}
 
 const (
 	DISCONNECTED = iota
@@ -61,8 +70,10 @@ func (self *Transport) newTransportStub() {
 	self.ackChannels = make(map[uint32]chan []byte)
 	self.Id = messages.RandTransportId()
 	self.Status = DISCONNECTED
-	self.MaxSimulatedDelay = 1000
-	fmt.Printf("Created Transport: %d\n", self.Id)
+	self.MaxSimulatedDelay = MAX_SIMULATED_DELAY
+	if messages.IsDebug() {
+		fmt.Printf("Created Transport: %d\n", self.Id)
+	}
 }
 
 func (self *Transport) Shutdown() {
@@ -84,7 +95,9 @@ func (self *Transport) receiveIncoming() {
 			break
 		}
 		//process our incoming messages
-		fmt.Printf("\ntransport with id %d gets message %d\n\n", self.Id, msg)
+		if messages.IsDebug() {
+			fmt.Printf("\ntransport with id %d gets message %d\n\n", self.Id, msg)
+		}
 
 		switch messages.GetMessageType(msg) {
 
@@ -154,7 +167,9 @@ func (self *Transport) receiveAck(msg []byte) {
 		if lowestSequence > self.PacketsConfirmed {
 			self.PacketsConfirmed = lowestSequence
 		}
-		fmt.Printf("transport %d sent %d packets and got %d acks\n", self.Id, self.PacketsSent, self.PacketsConfirmed)
+		if messages.IsDebug() {
+			fmt.Printf("transport %d sent %d packets and got %d acks\n", self.Id, self.PacketsSent, self.PacketsConfirmed)
+		}
 	}
 }
 
@@ -186,7 +201,9 @@ func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
 		select {
 		case ack := <-ackChannel:
 			self.receiveAck(ack)
-			fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
+			if messages.IsDebug() {
+				fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
+			}
 			return true
 		case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
 			retransmits++

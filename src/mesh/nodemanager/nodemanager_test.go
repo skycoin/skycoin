@@ -12,6 +12,7 @@ import (
 )
 
 func TestAddingNodes(t *testing.T) {
+	messages.SetDebugLogLevel()
 	nm := newNodeManager()
 	assert.Len(t, nm.nodeList, 0, "Error expected 0 nodes")
 	nm.AddNewNode()
@@ -24,6 +25,7 @@ func TestAddingNodes(t *testing.T) {
 }
 
 func TestConnectTwoNodes(t *testing.T) {
+	messages.SetDebugLogLevel()
 	nm := newNodeManager()
 	id1 := nm.AddNewNode()
 	id2 := nm.AddNewNode()
@@ -47,6 +49,7 @@ func TestConnectTwoNodes(t *testing.T) {
 }
 
 func TestNetwork(t *testing.T) {
+	messages.SetDebugLogLevel()
 	n := 20
 	nm := newNodeManager()
 	nm.createNodeList(n)
@@ -75,6 +78,7 @@ func TestNetwork(t *testing.T) {
 }
 
 func TestBuildRoute(t *testing.T) {
+	messages.SetInfoLogLevel()
 	n := 100
 	m := 5
 	nm := newNodeManager()
@@ -98,6 +102,7 @@ func TestBuildRoute(t *testing.T) {
 }
 
 func TestFindRoute(t *testing.T) {
+	messages.SetDebugLogLevel()
 	nm := newNodeManager()
 	nodeList := nm.createNodeList(10)
 	/*
@@ -129,6 +134,7 @@ func TestFindRoute(t *testing.T) {
 }
 
 func TestConnection(t *testing.T) {
+	messages.SetDebugLogLevel()
 	n := 4
 	nm := newNodeManager()
 
@@ -151,4 +157,47 @@ func TestConnection(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, uint32(0), sequence)
 	time.Sleep(time.Duration(n) * time.Second)
+}
+
+func TestAddAndConnect2Nodes(t *testing.T) {
+	messages.SetDebugLogLevel()
+	nm := newNodeManager()
+
+	pubkey0 := nm.AddAndConnect()
+	pubkey1 := nm.AddAndConnect()
+
+	assert.Len(t, nm.nodeIdList, 2)
+	assert.True(t, nm.connected(pubkey0, pubkey1))
+}
+
+func TestRandomNetwork100Nodes(t *testing.T) {
+	messages.SetInfoLogLevel()
+	n := 100
+	nm := newNodeManager()
+
+	nodes := nm.CreateRandomNetwork(n)
+
+	assert.Len(t, nm.nodeIdList, n)
+	assert.Equal(t, nm.nodeIdList, nodes)
+	assert.True(t, nm.routeExists(nodes[0], nodes[n-1]))
+}
+
+func TestSendThroughRandomNetworks(t *testing.T) {
+	messages.SetDebugLogLevel()
+	nm := newNodeManager()
+	lens := []int{2, 5, 10} // sizes of different networks which will be tested
+
+	for _, n := range lens {
+		nodes := nm.CreateRandomNetwork(n)
+
+		node0 := nodes[0]
+		node1 := nodes[len(nodes)-1]
+		conn0, err := nm.NewConnection(node0, node1)
+		assert.Nil(t, err)
+		msg := []byte{'t', 'e', 's', 't'}
+		sequence, err := conn0.Send(msg)
+		assert.Nil(t, err)
+		assert.Equal(t, uint32(0), sequence)
+		time.Sleep(time.Duration(n) * time.Second)
+	}
 }

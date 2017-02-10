@@ -5,7 +5,7 @@ set -e -o pipefail
 
 echo "$VERSION_FILE ---- version file"
 
-APP_VERSION=`grep version package.json | sed  's/[,]//g'`
+versionData=`grep version package.json | sed  's/[,]//g'`
 # versionData='{ "version":"0.12.1" }';
 
-echo "versionData='{ $APP_VERSION }';" > skycoin/current-skycoin.json
+echo "versionData='{ $versionData }';" > skycoin/current-skycoin.json

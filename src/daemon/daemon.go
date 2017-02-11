@@ -354,8 +354,9 @@ main:
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
+			trustPeerNum := len(self.Peers.Peers.Peerlist.GetAllTrustedPeers())
 			if !self.Config.DisableOutgoingConnections &&
-				len(self.OutgoingConnections) < self.Config.OutgoingMax &&
+				len(self.OutgoingConnections) < (self.Config.OutgoingMax+trustPeerNum) &&
 				len(self.pendingConnections) < self.Config.PendingMax {
 				self.connectToRandomPeer()
 			}

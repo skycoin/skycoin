@@ -316,6 +316,11 @@ func (self *Daemon) Start(quit chan int) {
 	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
 
+	// connecto to trusted peers
+	if !self.Config.DisableOutgoingConnections {
+		self.connectToTrustPeer()
+	}
+
 main:
 	for {
 		select {
@@ -496,6 +501,21 @@ func (self *Daemon) makePrivateConnections() {
 			if err := self.connectToPeer(p); err != nil {
 				logger.Debug("Did not connect to private peer: %v", err)
 			}
+		}
+	}
+}
+
+func (self *Daemon) connectToTrustPeer() {
+	if self.Config.DisableIncomingConnections {
+		return
+	}
+
+	logger.Info("connect to trusted peers")
+	// make connections to all trusted peers
+	peers := self.Peers.Peers.Peerlist.GetPublicTrustPeers()
+	for _, p := range peers {
+		if self.connectToPeer(p) == nil {
+			break
 		}
 	}
 }

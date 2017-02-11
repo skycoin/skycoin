@@ -83,7 +83,6 @@ type Peer struct {
 // Returns a *Peer initialised by an address string of the form ip:port
 func NewPeer(address string) *Peer {
 	p := &Peer{Addr: address, Private: false, Trusted: false}
-	logger.Critical(fmt.Sprintf("New peer:%+v", p))
 	p.Seen()
 	return p
 }

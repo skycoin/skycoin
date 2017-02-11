@@ -282,7 +282,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	}
 	// Add the remote peer with their chosen listening port
 	a := self.c.Conn.Addr()
-	_, pt, err := SplitAddr(a)
+	ip, pt, err := SplitAddr(a)
 	if err != nil {
 		// This should never happen, but the program should still work if it
 		// does.
@@ -306,13 +306,12 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 		if err := d.Peers.Peers.SetPeerHasInPort(a, true); err != nil {
 			logger.Error("Failed to set peer hasInPort statue, %v", err)
 		}
+	} else {
+		_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
+		if err != nil {
+			logger.Error("Failed to add peer: %v", err)
+		}
 	}
-	// else {
-	// 	_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
-	// 	if err != nil {
-	// 		logger.Error("Failed to add peer: %v", err)
-	// 	}
-	// }
 
 	// Request blocks immediately after they're confirmed
 	err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Conn.Addr())

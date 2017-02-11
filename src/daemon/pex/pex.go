@@ -82,7 +82,8 @@ type Peer struct {
 
 // Returns a *Peer initialised by an address string of the form ip:port
 func NewPeer(address string) *Peer {
-	p := &Peer{Addr: address, Private: false}
+	p := &Peer{Addr: address, Private: false, Trusted: false}
+	logger.Critical(fmt.Sprintf("New peer:%+v", p))
 	p.Seen()
 	return p
 }
@@ -478,6 +479,23 @@ func (self *Pex) AddPeer(addr string) (*Peer, error) {
 		self.Peerlist[peer.Addr] = peer
 		return peer, nil
 	}
+}
+
+// SetTrustState updates the peer's Trusted statue
+func (self *Pex) SetTrustState(addr string, trusted bool) error {
+	if !ValidateAddress(addr, self.AllowLocalhost) {
+		return InvalidAddressError
+	}
+	if self.IsBlacklisted(addr) {
+		return BlacklistedAddressError
+	}
+
+	if p, ok := self.Peerlist[addr]; ok {
+		p.Trusted = trusted
+		return nil
+	}
+
+	return fmt.Errorf("%s does not exist in peel list", addr)
 }
 
 // SetPeerHasInPort update whether the peer has incomming port.

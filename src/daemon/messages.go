@@ -146,11 +146,15 @@ func (self *GetPeersMessage) Process(d *Daemon) {
 	if d.Peers.Config.Disabled {
 		return
 	}
-	peers := d.Peers.Peers.Peerlist.RandomPublic(d.Peers.Config.ReplyCount)
+
+	peers := d.Peers.Peers.Peerlist.RandomExchgPublic(d.Peers.Config.ReplyCount)
 	if len(peers) == 0 {
 		logger.Debug("We have no peers to send in reply")
 		return
 	}
+
+	logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
+
 	m := NewGivePeersMessage(peers)
 	d.Pool.Pool.SendMessage(self.c.Conn, m)
 }
@@ -278,7 +282,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	}
 	// Add the remote peer with their chosen listening port
 	a := self.c.Conn.Addr()
-	ip, _, err := SplitAddr(a)
+	ip, pt, err := SplitAddr(a)
 	if err != nil {
 		// This should never happen, but the program should still work if it
 		// does.
@@ -295,9 +299,18 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 		d.Pool.Pool.Disconnect(self.c.Conn, DisconnectOtherError)
 		return
 	}
-	_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
-	if err != nil {
-		logger.Error("Failed to add peer: %v", err)
+
+	// only solicited connection can be added to exchange peer list, cause accepted
+	// connection may not have incomming  port.
+	if pt == self.Port {
+		if err := d.Peers.Peers.SetPeerHasInPort(a, true); err != nil {
+			logger.Error("Failed to set peer hasInPort statue, %v", err)
+		}
+	} else {
+		_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
+		if err != nil {
+			logger.Error("Failed to add peer: %v", err)
+		}
 	}
 
 	// Request blocks immediately after they're confirmed

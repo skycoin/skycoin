@@ -78,7 +78,9 @@ func (self *Peers) Init() {
 
 	//Boot strap peers
 	for _, addr := range DefaultConnections {
+		// default peers will mark as trusted peers.
 		peers.AddPeer(addr)
+		peers.SetTrustState(addr, true)
 	}
 
 	self.Peers = peers

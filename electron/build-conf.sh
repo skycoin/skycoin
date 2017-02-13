@@ -6,6 +6,7 @@ set -e -o pipefail
 # Get skycoin build version from package.json
 APP_VERSION=`grep version package.json | sed  's/[,\", ]//g'| awk '{split($0,a,":");print a[2]}'`
 
+
 # package name
 PKG_NAME=`grep name package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print s[2]}'`
 

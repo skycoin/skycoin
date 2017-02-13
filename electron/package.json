@@ -29,20 +29,23 @@
                 "from": ".gox_output/${os}_${arch}",
                 "to": "./resources/app"
             }]
-        },
+        }, 
+         "files": [
+            "!**/*",
+            "src/**/*"
+        ],
         "extraResources": [{
             "from": "../src/gui/static/dist/",
             "to": "./app/dist/",
-            "filter":[
+             "filter": [
                 "**/*",
                 "!current-skycoin.json"
-               ]
+            ]
         },
-            {
-                "from": "./skycoin",
-                "to": "./app/dist/"
-            }
-        ],
+          {
+            "from": "./skycoin/",
+            "to": "./app/dist/"
+        }],
         "directories": {
             "output": "release"
         }

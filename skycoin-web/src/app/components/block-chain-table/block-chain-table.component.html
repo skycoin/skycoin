@@ -1,0 +1,27 @@
+<h2>Blocks</h2>
+<table>
+  <thead>
+  <tr>
+    <th data-field="id">Time</th>
+    <th data-field="name">Block Number</th>
+    <th data-field="price">Transactions</th>
+    <th data-field="id">Amount Transferred</th>
+    <th data-field="price">block hash</th>
+
+  </tr>
+  </thead>
+
+  <tbody>
+  <tr *ngFor="let block of blocks" >
+    <td>{{getTime(block.header.timestamp)}}</td>
+    <td (click)="showDetails(block)">{{ block.header.seq }}</td>
+    <td>{{ block.body.txns.length }}</td>
+    <td>{{ GetBlockAmount(block.body.txns) }}</td>
+    <td>{{ block.header.block_hash }}</td>
+  </tr>
+
+
+  </tbody>
+</table>
+
+<app-skycoin-pagination (onChangePage)="handlePageChange($event)"></app-skycoin-pagination>

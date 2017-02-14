@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/tyler-smith/go-bip39"
 
 	gcli "github.com/urfave/cli"
 )
@@ -156,7 +156,6 @@ func makeSeed(s string, r, rd bool) (string, error) {
 	}
 
 	// 001, 000
-	// https://github.com/tyler-smith/go-bip39 generate mnemonic.
 	entropy, _ := bip39.NewEntropy(128)
 	mnemonic, _ := bip39.NewMnemonic(entropy)
 	return mnemonic, nil

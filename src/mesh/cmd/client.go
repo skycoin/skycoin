@@ -18,6 +18,7 @@ func main() {
 
 func pingPong(size, pings int) {
 	meshnet := network.NewNetwork()
+	defer meshnet.Shutdown()
 	nodes := meshnet.CreateRandomNetwork(size)
 	var clientIndex, serverIndex int
 	clientIndex = rand.Intn(size)
@@ -47,7 +48,7 @@ func pingPong(size, pings int) {
 	pingsSum, pongsSum, totalSum := int64(0), int64(0), int64(0)
 	receivedPackets, lostPackets := 0, 0
 
-	fmt.Printf("Pinging %s from %s\n\n", serverAddr.Hex(), clientAddr.Hex())
+	fmt.Printf("\nPinging %s from %s\n\n", serverAddr.Hex(), clientAddr.Hex())
 	for i := 0; i < pings; i++ {
 		sendTime := time.Now().UnixNano()
 		response, err := client.Send([]byte{}) //send a message to the server and wait for a response

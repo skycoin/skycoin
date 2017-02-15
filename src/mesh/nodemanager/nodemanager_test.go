@@ -12,29 +12,38 @@ import (
 )
 
 func TestAddingNodes(t *testing.T) {
+	fmt.Println("TestAddingNodes")
 	messages.SetDebugLogLevel()
+
 	nm := newNodeManager()
+	defer nm.Shutdown()
+
 	assert.Len(t, nm.nodeList, 0, "Error expected 0 nodes")
-	nm.AddNewNode()
+	nm.AddNewNodeStub()
 	assert.Len(t, nm.nodeList, 1, "Error expected 1 nodes")
-	nm.AddNewNode()
-	nm.AddNewNode()
-	nm.AddNewNode()
-	nm.AddNewNode()
+	nm.AddNewNodeStub()
+	nm.AddNewNodeStub()
+	nm.AddNewNodeStub()
+	nm.AddNewNodeStub()
 	assert.Len(t, nm.nodeList, 5, "Error expected 5 nodes")
 }
 
 func TestConnectTwoNodes(t *testing.T) {
+	fmt.Println("TestConnectTwoNodes")
 	messages.SetDebugLogLevel()
+
 	nm := newNodeManager()
-	id1 := nm.AddNewNode()
-	id2 := nm.AddNewNode()
+	defer nm.Shutdown()
+
+	id1 := nm.AddNewNodeStub()
+	id2 := nm.AddNewNodeStub()
 	node1, err := nm.getNodeById(id1)
 	assert.Nil(t, err)
 	node2, err := nm.getNodeById(id2)
 	assert.Nil(t, err)
 	assert.Len(t, nm.transportFactoryList, 0, "Should be 0 TransportFactory")
-	tf := nm.ConnectNodeToNode(id1, id2)
+	tf, err := nm.ConnectNodeToNode(id1, id2)
+	assert.Nil(t, err)
 	assert.Len(t, nm.transportFactoryList, 1, "Should be 1 TransportFactory")
 	assert.True(t, node1.ConnectedTo(node2))
 	assert.True(t, node2.ConnectedTo(node1))
@@ -49,9 +58,14 @@ func TestConnectTwoNodes(t *testing.T) {
 }
 
 func TestNetwork(t *testing.T) {
+	fmt.Println("TestNetwork")
 	messages.SetDebugLogLevel()
-	n := 20
+
 	nm := newNodeManager()
+	defer nm.Shutdown()
+
+	n := 20
+
 	nm.createNodeList(n)
 	assert.Len(t, nm.nodeIdList, n, fmt.Sprintf("Should be %d nodes", n))
 
@@ -78,10 +92,15 @@ func TestNetwork(t *testing.T) {
 }
 
 func TestBuildRoute(t *testing.T) {
+	fmt.Println("TestBuildRoute")
 	messages.SetInfoLogLevel()
+
+	nm := newNodeManager()
+	defer nm.Shutdown()
+
 	n := 100
 	m := 5
-	nm := newNodeManager()
+
 	nm.createNodeList(n)
 
 	nodes := []cipher.PubKey{}
@@ -93,17 +112,22 @@ func TestBuildRoute(t *testing.T) {
 	}
 
 	for i := 0; i < m-1; i++ {
-		nm.ConnectNodeToNode(nodes[i], nodes[i+1])
+		_, err := nm.ConnectNodeToNode(nodes[i], nodes[i+1])
+		assert.Nil(t, err)
 	}
 
-	routes, err := nm.buildRouteOneSide(nodes)
+	routes, err := nm.buildRouteForward(nodes)
 	assert.Nil(t, err)
 	assert.Len(t, routes, m, fmt.Sprintf("Should be %d routes", m))
 }
 
 func TestFindRoute(t *testing.T) {
+	fmt.Println("TestFindRoute")
 	messages.SetDebugLogLevel()
+
 	nm := newNodeManager()
+	defer nm.Shutdown()
+
 	nodeList := nm.createNodeList(10)
 	/*
 		  1-2-3-4   long route
@@ -134,14 +158,19 @@ func TestFindRoute(t *testing.T) {
 }
 
 func TestConnection(t *testing.T) {
+	fmt.Println("TestConnection")
 	messages.SetDebugLogLevel()
-	n := 4
+
 	nm := newNodeManager()
+	defer nm.Shutdown()
+
+	n := 4
 
 	nodes := nm.createNodeList(n)
 	nm.connectAll()
 
 	node0 := nodes[0]
+	time.Sleep(2 * time.Second)
 	route, backRoute, err := nm.buildRoute(nodes)
 	assert.Nil(t, err)
 	conn0, err := nm.NewConnectionWithRoutes(node0, route, backRoute)
@@ -160,20 +189,27 @@ func TestConnection(t *testing.T) {
 }
 
 func TestAddAndConnect2Nodes(t *testing.T) {
+	fmt.Println("TestAddAndConnect")
 	messages.SetDebugLogLevel()
-	nm := newNodeManager()
 
-	pubkey0 := nm.AddAndConnect()
-	pubkey1 := nm.AddAndConnect()
+	nm := newNodeManager()
+	defer nm.Shutdown()
+
+	pubkey0 := nm.AddAndConnectStub()
+	pubkey1 := nm.AddAndConnectStub()
 
 	assert.Len(t, nm.nodeIdList, 2)
 	assert.True(t, nm.connected(pubkey0, pubkey1))
 }
 
 func TestRandomNetwork100Nodes(t *testing.T) {
+	fmt.Println("TestRandomNetwork100Nodes")
 	messages.SetInfoLogLevel()
-	n := 100
+
 	nm := newNodeManager()
+	defer nm.Shutdown()
+
+	n := 100
 
 	nodes := nm.CreateRandomNetwork(n)
 
@@ -183,8 +219,12 @@ func TestRandomNetwork100Nodes(t *testing.T) {
 }
 
 func TestSendThroughRandomNetworks(t *testing.T) {
+	fmt.Println("TestSendThroughRandomNetworks")
 	messages.SetDebugLogLevel()
+
 	nm := newNodeManager()
+	defer nm.Shutdown()
+
 	lens := []int{2, 5, 10} // sizes of different networks which will be tested
 
 	for _, n := range lens {

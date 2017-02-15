@@ -6,6 +6,7 @@ import (
 
 type NodeInterface interface {
 	GetId() cipher.PubKey
+	GetPeer() *Peer
 	InjectTransportMessage(msg []byte)
 	SetTransport(TransportId, TransportInterface)
 	ConnectedTo(NodeInterface) bool

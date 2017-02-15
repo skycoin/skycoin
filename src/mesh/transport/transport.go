@@ -3,8 +3,10 @@ package transport
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
+	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -14,7 +16,7 @@ import (
 // - implement simulated "delay" for transport +
 // - implement simulated out of order packet delivery
 // - implement simulated packet drop
-// - implement real UDP trasport
+// - implement real UDP trasport +
 // - implement status "connected/disconnected" +
 // - implement ACKs +
 
@@ -24,6 +26,32 @@ import (
 // TODO:
 // - may be more efficient to replace pending out, with an array on TransportFactory
 // - or with array on the transport (who is responsible for processing ACKs?)
+
+//This is stub transport
+type Transport struct {
+	Id              messages.TransportId
+	incomingChannel chan ([]byte)
+	pendingOut      chan (messages.TransportDatagramTransfer) //messages to send to other end of transport
+	//Note: pendingOut channel may need to be on the transport_factory
+	ackChannels map[uint32]chan bool
+
+	AttachedNode messages.NodeInterface //node the transport is attached to
+
+	StubPair         *Transport //this is the other transport stub pair
+	PacketsSent      uint32
+	PacketsConfirmed uint32 // last confirmed ack
+
+	Status uint8
+
+	MaxSimulatedDelay int // stub for testing
+
+	udp *UDPConfig
+}
+
+const (
+	DISCONNECTED = iota
+	CONNECTED
+)
 
 var (
 	config              *messages.ConfigStruct
@@ -39,45 +67,34 @@ func init() {
 	RETRANSMIT_LIMIT = config.RetransmitLimit
 }
 
-const (
-	DISCONNECTED = iota
-	CONNECTED
-)
-
-//This is stub transport
-type Transport struct {
-	Id              messages.TransportId
-	IncomingChannel chan ([]byte)
-	pendingOut      chan (messages.TransportDatagramTransfer) //messages to send to other end of transport
-	//Note: pendingOut channel may need to be on the transport_factory
-	ackChannels map[uint32]chan ([]byte)
-
-	AttachedNode messages.NodeInterface //node the transport is attached to
-
-	StubPair         *Transport //this is the other transport stub pair
-	PacketsSent      uint32
-	PacketsConfirmed uint32 // last confirmed ack
-
-	Status uint8
-
-	MaxSimulatedDelay int // stub for testing
-}
-
 //are created by the factories
-func (self *Transport) newTransportStub() {
-	self.IncomingChannel = make(chan []byte, 1024)
-	self.pendingOut = make(chan messages.TransportDatagramTransfer, 1024)
-	self.ackChannels = make(map[uint32]chan []byte)
-	self.Id = messages.RandTransportId()
-	self.Status = DISCONNECTED
-	self.MaxSimulatedDelay = MAX_SIMULATED_DELAY
+func newTransportStub() *Transport {
+	tr := &Transport{}
+	tr.incomingChannel = make(chan []byte, 1024)
+	tr.pendingOut = make(chan messages.TransportDatagramTransfer, 1024)
+	tr.ackChannels = make(map[uint32]chan bool)
+	tr.Id = messages.RandTransportId()
+	tr.Status = DISCONNECTED
+	tr.MaxSimulatedDelay = int(MAX_SIMULATED_DELAY)
 	if messages.IsDebug() {
-		fmt.Printf("Created Transport: %d\n", self.Id)
+		fmt.Printf("Created Transport: %d\n", tr.Id)
 	}
+	return tr
 }
 
-func (self *Transport) Shutdown() {
-	close(self.IncomingChannel)
+func (self *Transport) Shutdown(wg *sync.WaitGroup) {
+	close(self.incomingChannel)
+	self.udp.closeConn()
+	wg.Done()
+}
+
+func (self *Transport) openConn(peer, pair *messages.Peer) error {
+	udp, err := openConn(self, peer, pair)
+	if err != nil {
+		return err
+	}
+	self.udp = udp
+	return nil
 }
 
 //move node forward on tick, process events
@@ -85,12 +102,13 @@ func (self *Transport) Tick() {
 	go self.sendFromPending() // for testing purposes
 	//process incoming messages
 	go self.receiveIncoming() // receiving messages
+	self.udp.Tick()           // run udp listen
 }
 
 func (self *Transport) receiveIncoming() {
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
-	for msg := range self.IncomingChannel {
+	for msg := range self.incomingChannel {
 		if self.Status == DISCONNECTED {
 			break
 		}
@@ -108,7 +126,7 @@ func (self *Transport) receiveIncoming() {
 			var m1 messages.OutRouteMessage
 			err := messages.Deserialize(msg, &m1)
 			if err != nil {
-				panic(err)
+				fmt.Printf("Cannot deserialize outroute message: %s\n", err.Error())
 			}
 			self.sendTransportDatagramTransfer(&m1)
 
@@ -118,9 +136,19 @@ func (self *Transport) receiveIncoming() {
 			var m2 messages.TransportDatagramTransfer
 			err := messages.Deserialize(msg, &m2)
 			if err != nil {
-				panic(err)
+				fmt.Printf("Cannot deserialize transport datagram: %s\n", err.Error())
 			}
-			self.sendAck(&msg, &m2)
+			err = self.acceptAndSendAck(&msg, &m2)
+			if err != nil {
+				fmt.Printf("transport %d isn't responding, error:%s\n", self.StubPair.Id, err.Error())
+				self.Status, self.StubPair.Status = DISCONNECTED, DISCONNECTED
+			}
+
+		case messages.MsgTransportDatagramACK:
+			err := self.receiveAck(msg)
+			if err != nil {
+				fmt.Printf("Incorrect ack message: %s\n", err.Error())
+			}
 
 		default:
 			fmt.Println("incorrect message type for transport input")
@@ -140,7 +168,7 @@ func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessa
 	self.pendingOut <- m1b //push to queue, to be transferred
 }
 
-func (self *Transport) sendAck(msg *[]byte, m2 *messages.TransportDatagramTransfer) {
+func (self *Transport) acceptAndSendAck(msg *[]byte, m2 *messages.TransportDatagramTransfer) error {
 	routeId := m2.RouteId
 	sequence := m2.Sequence
 	datagram := m2.Datagram
@@ -153,17 +181,19 @@ func (self *Transport) sendAck(msg *[]byte, m2 *messages.TransportDatagramTransf
 
 	ackMsg := messages.TransportDatagramACK{sequence, 0}
 	ackSerialized := messages.Serialize(messages.MsgTransportDatagramACK, ackMsg)
-	ackChannel := self.StubPair.ackChannels[sequence]
-	ackChannel <- ackSerialized
+	err := self.udp.send(ackSerialized)
+	return err
 }
 
-func (self *Transport) receiveAck(msg []byte) {
+func (self *Transport) receiveAck(msg []byte) error {
 	var m3 messages.TransportDatagramACK
 	err := messages.Deserialize(msg, &m3)
 	if err != nil {
-		fmt.Println("incorrect ACK message")
+		return err
 	} else {
 		lowestSequence := m3.LowestSequence
+		ackChannel := self.ackChannels[lowestSequence]
+		ackChannel <- true
 		if lowestSequence > self.PacketsConfirmed {
 			self.PacketsConfirmed = lowestSequence
 		}
@@ -171,44 +201,45 @@ func (self *Transport) receiveAck(msg []byte) {
 			fmt.Printf("transport %d sent %d packets and got %d acks\n", self.Id, self.PacketsSent, self.PacketsConfirmed)
 		}
 	}
+	return nil
 }
 
 func (self *Transport) sendFromPending() {
 	for msg := range self.pendingOut {
 		b1 := messages.Serialize(messages.MsgTransportDatagramTransfer, msg)
 		sequence := msg.Sequence
-		ackChannel := make(chan []byte, 1024)
+		ackChannel := make(chan bool, 1024)
 		self.ackChannels[sequence] = ackChannel
-		result := self.sendPacket(b1, ackChannel)
-		// handle result...
-		if !result {
-			fmt.Printf("transport %d isn't responding\n", self.StubPair.Id)
+		err := self.sendPacket(b1, ackChannel)
+		if err != nil {
+			fmt.Printf("transport %d isn't responding, error:%s\n", self.StubPair.Id, err.Error())
 			self.Status, self.StubPair.Status = DISCONNECTED, DISCONNECTED
 		}
-		//
 		close(ackChannel)
 		delete(self.ackChannels, sequence)
 	}
 }
 
-func (self *Transport) sendPacket(msg []byte, ackChannel chan []byte) bool {
+func (self *Transport) sendPacket(msg []byte, ackChannel chan bool) error {
 	retransmits := 0
 	for {
 		if self.Status == DISCONNECTED {
-			return false
+			return errors.ERR_DISCONNECTED
 		}
-		self.sendMessageToStubPair(msg)
+		err := self.sendMessageToStubPair(msg)
+		if err != nil {
+			return err
+		}
 		select {
-		case ack := <-ackChannel:
-			self.receiveAck(ack)
+		case <-ackChannel:
 			if messages.IsDebug() {
 				fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
 			}
-			return true
+			return nil
 		case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
 			retransmits++
 			if retransmits >= RETRANSMIT_LIMIT {
-				return false
+				return errors.ERR_TIMEOUT
 			}
 			fmt.Printf("msg %d will be sent again, attempt %d\n", msg, retransmits+1)
 		}
@@ -222,8 +253,18 @@ func (self *Transport) InjectNodeMessage(msg []byte) {
 	}
 }
 
+func (self *Transport) GetFromNode(msg []byte) {
+	self.incomingChannel <- msg
+}
+
 //message from stub to stub
 //used internally by transport factory
+/*
 func (self *Transport) sendMessageToStubPair(msg []byte) {
-	self.StubPair.IncomingChannel <- msg
+	self.StubPair.incomingChannel <- msg
+}
+*/
+
+func (self *Transport) sendMessageToStubPair(msg []byte) error {
+	return self.udp.send(msg)
 }

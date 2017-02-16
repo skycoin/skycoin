@@ -35,6 +35,22 @@ node -v
 npm -v
 ```
 
+Use gulp-electron to build app
+-----
+
+Install gulp-cli tool:
+
+```
+sudo npm install --global gulp-cli
+```
+
+Build
+-----
+
+```
+./build-without-builder.sh
+```
+
 Use electron-builder to pack and create app installer
 -----
 

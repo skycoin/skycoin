@@ -30,6 +30,9 @@ type Node struct {
 	consumer             messages.Consumer
 
 	controlChannels map[messages.ChannelId]*ControlChannel
+
+	Host string
+	Port uint32
 }
 
 type RouteRule struct {
@@ -142,7 +145,7 @@ func (self *Node) handleInRouteMessage(m1 messages.InRouteMessage) {
 		b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
 
 		if outgoingTransport, found := self.Transports[outgoingTransportId]; found {
-			outgoingTransport.IncomingChannel <- b1 //inject message to transport
+			outgoingTransport.GetFromNode(b1) //inject message to transport
 		}
 	}
 }
@@ -161,6 +164,11 @@ func (self *Node) InjectControlMessage(msg messages.InControlMessage) {
 
 func (self *Node) GetId() cipher.PubKey {
 	return self.Id
+}
+
+func (self *Node) GetPeer() *messages.Peer {
+	peer := &messages.Peer{self.Host, self.Port}
+	return peer
 }
 
 func (self *Node) GetTransportById(id messages.TransportId) (*transport.Transport, error) {

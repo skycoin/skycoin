@@ -10,7 +10,8 @@ import (
 
 func TestCreateServer(t *testing.T) {
 	meshnet := network.NewNetwork()
-	serverAddr := meshnet.AddNewNode()
+	defer meshnet.Shutdown()
+	serverAddr := meshnet.AddNewNodeStub()
 	handle := func(in []byte) []byte {
 		return in
 	}
@@ -22,7 +23,8 @@ func TestCreateServer(t *testing.T) {
 
 func TestCreateClient(t *testing.T) {
 	meshnet := network.NewNetwork()
-	clientAddr := meshnet.AddNewNode()
+	defer meshnet.Shutdown()
+	clientAddr := meshnet.AddNewNodeStub()
 
 	client, err := NewClient(meshnet, clientAddr)
 	assert.Nil(t, err)
@@ -31,7 +33,8 @@ func TestCreateClient(t *testing.T) {
 
 func TestSend(t *testing.T) {
 	meshnet := network.NewNetwork()
-	clientAddr, serverAddr, route, backRoute := meshnet.CreateSequenceOfNodesAndBuildRoutes(10)
+	defer meshnet.Shutdown()
+	clientAddr, serverAddr, route, backRoute := meshnet.CreateSequenceOfNodesAndBuildRoutes(2)
 
 	_, err := NewServer(meshnet, serverAddr, func(in []byte) []byte {
 		return append(in, '!')
@@ -54,6 +57,7 @@ func TestSend(t *testing.T) {
 func TestSendWithFindRoute(t *testing.T) {
 
 	meshnet := network.NewNetwork()
+	defer meshnet.Shutdown()
 
 	clientAddr, serverAddr := meshnet.CreateThreeRoutes()
 

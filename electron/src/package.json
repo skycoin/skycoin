@@ -1,4 +1,5 @@
 {
+  "main": "electron-main.js",
   "dependencies": {
     "electron-debug": "^1.0.1",
     "electron-log": "^1.2.2"

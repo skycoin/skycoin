@@ -75,6 +75,25 @@ func (self RPC) GetDefaultConnections(d *Daemon) []string {
 	return d.DefaultConnections
 }
 
+func (self RPC) GetTrustConnections(d *Daemon) []string {
+	peers := d.Peers.Peers.Peerlist.GetAllTrustedPeers()
+	addrs := make([]string, len(peers))
+	for i, p := range peers {
+		addrs[i] = p.Addr
+	}
+	return addrs
+}
+
+// GetAllExchgConnections return all exchangeable connections
+func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
+	peers := d.Peers.Peers.Peerlist.RandomExchgAll(0)
+	addrs := make([]string, len(peers))
+	for i, p := range peers {
+		addrs[i] = p.Addr
+	}
+	return addrs
+}
+
 func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 	if v.Visor == nil {
 		return nil

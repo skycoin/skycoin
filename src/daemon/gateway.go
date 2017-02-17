@@ -80,6 +80,26 @@ func (gw *Gateway) GetConnection(addr string) interface{} {
 	return <-conn
 }
 
+// GetTrustConnections returns all trusted connections,
+// including private and public
+func (gw *Gateway) GetTrustConnections() interface{} {
+	conn := make(chan interface{})
+	gw.Requests <- func() {
+		conn <- gw.Daemon.GetTrustConnections(gw.D)
+	}
+	return <-conn
+}
+
+// GetExchgConnection returns all exchangeable connections,
+// including private and public
+func (gw *Gateway) GetExchgConnection() interface{} {
+	conn := make(chan interface{})
+	gw.Requests <- func() {
+		conn <- gw.Daemon.GetAllExchgConnections(gw.D)
+	}
+	return <-conn
+}
+
 /* Blockchain & Transaction status */
 //DEPRECATE
 

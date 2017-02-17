@@ -54,6 +54,8 @@ function copy_if_exists {
         cp -R "$GUI_DIST_DIR" "$DESTDIR"
 
         DESTSRCS+=("$DESTSRC")
+    else
+        echo "$BIN does not exist"
     fi
 }
 

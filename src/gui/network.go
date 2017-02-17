@@ -30,8 +30,22 @@ func defaultConnectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+func trustConnectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		wh.SendOr404(w, gateway.GetTrustConnections())
+	}
+}
+
+func exchgConnectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		wh.SendOr404(w, gateway.GetExchgConnection())
+	}
+}
+
 func RegisterNetworkHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/network/connection", connectionHandler(gateway))
 	mux.HandleFunc("/network/connections", connectionsHandler(gateway))
 	mux.HandleFunc("/network/defaultConnections", defaultConnectionsHandler(gateway))
+	mux.HandleFunc("/network/connections/trust", trustConnectionsHandler(gateway))
+	mux.HandleFunc("/network/connections/exchange", exchgConnectionsHandler(gateway))
 }

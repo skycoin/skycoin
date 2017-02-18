@@ -32,7 +32,7 @@ type Option func(w *Wallet)
 // NewWallet generates Deterministic Wallet
 // generates a random seed if seed is ""
 func NewWallet(wltName string, opts ...Option) Wallet {
-
+	//old seed generation
 	//seedRaw := cipher.SumSHA256(secp256k1.RandByte(64))
 	//seed := hex.EncodeToString(seedRaw[:])
 

@@ -8,11 +8,20 @@ import (
 )
 
 func (self *NodeManager) findRoute(nodeFrom, nodeTo cipher.PubKey) (routeId, backRouteId messages.RouteId, err error) {
-	nodes, found := self.routeGraph.findRoute(nodeFrom, nodeTo)
-	if !found {
-		return messages.NIL_ROUTE, messages.NIL_ROUTE, errors.ERR_NOROUTE
+	nodes, err := self.routeGraph.findRoute(nodeFrom, nodeTo)
+	if err != nil {
+		return messages.NIL_ROUTE, messages.NIL_ROUTE, err
 	}
 	routeId, backRouteId, err = self.buildRoute(nodes)
+	return
+}
+
+func (self *NodeManager) findRouteForward(nodeFrom, nodeTo cipher.PubKey) (routes []messages.RouteId, err error) {
+	nodes, err := self.routeGraph.findRoute(nodeFrom, nodeTo)
+	if err != nil {
+		return nil, err
+	}
+	routes, err = self.buildRouteForward(nodes)
 	return
 }
 
@@ -39,7 +48,7 @@ func (self *NodeManager) getFirstRoute(nodes []cipher.PubKey, forward bool) (mes
 		return messages.NIL_ROUTE, err
 	}
 	if len(routes) < 1 {
-		return messages.NIL_ROUTE, errors.ERR_NOROUTE
+		return messages.NIL_ROUTE, errors.ERR_NO_ROUTE
 	}
 	return routes[0], nil
 }

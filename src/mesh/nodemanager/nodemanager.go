@@ -49,15 +49,6 @@ func (self *NodeManager) AddAndConnect(host string) cipher.PubKey {
 	return id
 }
 
-func (self *NodeManager) newNode(host string) *node.Node {
-	newNode := node.NewNode()
-
-	newNode.Host = host
-
-	self.addNode(newNode)
-	return newNode
-}
-
 func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*transport.TransportFactory, error) {
 
 	if idA == idB {
@@ -109,23 +100,6 @@ func (self *NodeManager) Shutdown() {
 	}
 }
 
-func (self *NodeManager) connectRandomly(node0 cipher.PubKey) {
-	var node1 cipher.PubKey
-	for {
-		node1 = self.getRandomNode()
-		if node0 != node1 {
-			break
-		}
-	}
-	self.ConnectNodeToNode(node0, node1)
-
-}
-
-func (self *NodeManager) routeExists(pubkey0, pubkey1 cipher.PubKey) bool {
-	_, exists := self.routeGraph.findRoute(pubkey0, pubkey1)
-	return exists
-}
-
 func newNodeManager() *NodeManager {
 	nm := new(NodeManager)
 	nm.nodeList = make(map[cipher.PubKey]*node.Node)
@@ -135,18 +109,27 @@ func newNodeManager() *NodeManager {
 	return nm
 }
 
-func (self *NodeManager) getNodeById(id cipher.PubKey) (*node.Node, error) {
-	result, found := self.nodeList[id]
-	if !found {
-		return &node.Node{}, errors.ERR_NODE_NOT_FOUND
-	}
-	return result, nil
+func (self *NodeManager) newNode(host string) *node.Node {
+	newNode := node.NewNode()
+
+	newNode.Host = host
+
+	self.addNode(newNode)
+	return newNode
 }
 
 func (self *NodeManager) addNode(nodeToAdd *node.Node) {
 	id := nodeToAdd.Id
 	self.nodeList[id] = nodeToAdd
 	self.nodeIdList = append(self.nodeIdList, id)
+}
+
+func (self *NodeManager) getNodeById(id cipher.PubKey) (*node.Node, error) {
+	result, found := self.nodeList[id]
+	if !found {
+		return &node.Node{}, errors.ERR_NODE_NOT_FOUND
+	}
+	return result, nil
 }
 
 func (self *NodeManager) getRandomNode() cipher.PubKey {
@@ -168,4 +151,21 @@ func (self *NodeManager) connected(pubkey0, pubkey1 cipher.PubKey) bool {
 	}
 
 	return node0.ConnectedTo(node1) && node1.ConnectedTo(node0)
+}
+
+func (self *NodeManager) connectRandomly(node0 cipher.PubKey) {
+	var node1 cipher.PubKey
+	for {
+		node1 = self.getRandomNode()
+		if node0 != node1 {
+			break
+		}
+	}
+	self.ConnectNodeToNode(node0, node1)
+
+}
+
+func (self *NodeManager) routeExists(pubkey0, pubkey1 cipher.PubKey) bool {
+	_, err := self.routeGraph.findRoute(pubkey0, pubkey1)
+	return err == nil
 }

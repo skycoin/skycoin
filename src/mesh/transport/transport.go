@@ -43,7 +43,8 @@ type Transport struct {
 
 	Status uint8
 
-	MaxSimulatedDelay int // stub for testing
+	SimulateDelay     bool //
+	MaxSimulatedDelay int  // stub for testing
 
 	udp *UDPConfig
 }
@@ -55,6 +56,7 @@ const (
 
 var (
 	config              *messages.ConfigStruct
+	SIMULATE_DELAY      bool
 	MAX_SIMULATED_DELAY int
 	TIMEOUT             uint32
 	RETRANSMIT_LIMIT    int
@@ -62,6 +64,7 @@ var (
 
 func init() {
 	config = messages.GetConfig()
+	SIMULATE_DELAY = config.SimulateDelay
 	MAX_SIMULATED_DELAY = config.MaxSimulatedDelay
 	TIMEOUT = config.TransportTimeout // time for ack waiting
 	RETRANSMIT_LIMIT = config.RetransmitLimit
@@ -75,7 +78,10 @@ func newTransportStub() *Transport {
 	tr.ackChannels = make(map[uint32]chan bool)
 	tr.Id = messages.RandTransportId()
 	tr.Status = DISCONNECTED
-	tr.MaxSimulatedDelay = int(MAX_SIMULATED_DELAY)
+	tr.SimulateDelay = SIMULATE_DELAY
+	if SIMULATE_DELAY {
+		tr.MaxSimulatedDelay = int(MAX_SIMULATED_DELAY)
+	}
 	if messages.IsDebug() {
 		fmt.Printf("Created Transport: %d\n", tr.Id)
 	}
@@ -83,7 +89,6 @@ func newTransportStub() *Transport {
 }
 
 func (self *Transport) Shutdown(wg *sync.WaitGroup) {
-	close(self.incomingChannel)
 	self.udp.closeConn()
 	wg.Done()
 }
@@ -177,7 +182,9 @@ func (self *Transport) acceptAndSendAck(msg *[]byte, m2 *messages.TransportDatag
 	serialized := messages.Serialize(messages.MsgInRouteMessage, msgToNode)
 	self.InjectNodeMessage(serialized)
 
-	time.Sleep(time.Duration(rand.Intn(self.MaxSimulatedDelay)) * time.Millisecond) // simulating delay, testing purposes!
+	if self.SimulateDelay {
+		time.Sleep(time.Duration(rand.Intn(self.MaxSimulatedDelay)) * time.Millisecond)
+	} // simulating delay, testing purposes!
 
 	ackMsg := messages.TransportDatagramACK{sequence, 0}
 	ackSerialized := messages.Serialize(messages.MsgTransportDatagramACK, ackMsg)
@@ -259,11 +266,6 @@ func (self *Transport) GetFromNode(msg []byte) {
 
 //message from stub to stub
 //used internally by transport factory
-/*
-func (self *Transport) sendMessageToStubPair(msg []byte) {
-	self.StubPair.incomingChannel <- msg
-}
-*/
 
 func (self *Transport) sendMessageToStubPair(msg []byte) error {
 	return self.udp.send(msg)

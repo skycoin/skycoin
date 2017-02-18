@@ -16,7 +16,7 @@ type RPCReceiver struct {
 }
 
 func (receiver *RPCReceiver) AddNode(_ []string, result *[]byte) error {
-	nodeId := receiver.NodeManager.AddNewNode()
+	nodeId := receiver.NodeManager.AddNewNodeStub()
 	fmt.Println("added node:", nodeId)
 	*result = messages.Serialize((uint16)(0), nodeId)
 	return nil
@@ -81,7 +81,11 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	}
 
 	node0Id, node1Id := nm.nodeIdList[node0], nm.nodeIdList[node1]
-	tf := nm.ConnectNodeToNode(node0Id, node1Id)
+	tf, err := nm.ConnectNodeToNode(node0Id, node1Id)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	transports := tf.GetTransportIDs()
 	if transports[0] == messages.NIL_TRANSPORT || transports[1] == messages.NIL_TRANSPORT {
 		e := errors.ERR_ALREADY_CONNECTED
@@ -188,7 +192,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 		nodeIds = append(nodeIds, nodeId)
 	}
 
-	routeRules, err := nm.buildRouteOneSide(nodeIds)
+	routeRules, err := nm.buildRouteOneSide(nodeIds, true)
 	if err != nil {
 		fmt.Println(err)
 		return err

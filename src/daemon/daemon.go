@@ -168,7 +168,7 @@ func NewDaemonConfig() DaemonConfig {
 		Port:                       6677,
 		OutgoingRate:               time.Second * 5,
 		PrivateRate:                time.Second * 5,
-		OutgoingMax:                32,
+		OutgoingMax:                16,
 		PendingMax:                 16,
 		IntroductionWait:           time.Second * 30,
 		CullInvalidRate:            time.Second * 3,
@@ -316,6 +316,11 @@ func (self *Daemon) Start(quit chan int) {
 	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
 
+	// connecto to trusted peers
+	if !self.Config.DisableOutgoingConnections {
+		self.connectToTrustPeer()
+	}
+
 main:
 	for {
 		select {
@@ -349,8 +354,9 @@ main:
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
+			trustPeerNum := len(self.Peers.Peers.Peerlist.GetAllTrustedPeers())
 			if !self.Config.DisableOutgoingConnections &&
-				len(self.OutgoingConnections) < self.Config.OutgoingMax &&
+				len(self.OutgoingConnections) < (self.Config.OutgoingMax+trustPeerNum) &&
 				len(self.pendingConnections) < self.Config.PendingMax {
 				self.connectToRandomPeer()
 			}
@@ -496,6 +502,21 @@ func (self *Daemon) makePrivateConnections() {
 			if err := self.connectToPeer(p); err != nil {
 				logger.Debug("Did not connect to private peer: %v", err)
 			}
+		}
+	}
+}
+
+func (self *Daemon) connectToTrustPeer() {
+	if self.Config.DisableIncomingConnections {
+		return
+	}
+
+	logger.Info("connect to trusted peers")
+	// make connections to all trusted peers
+	peers := self.Peers.Peers.Peerlist.GetPublicTrustPeers()
+	for _, p := range peers {
+		if self.connectToPeer(p) == nil {
+			break
 		}
 	}
 }

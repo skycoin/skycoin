@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/tyler-smith/go-bip39"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 )
 
 // Wallet contains meta data and address entries.

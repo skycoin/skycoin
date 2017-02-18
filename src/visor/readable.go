@@ -48,6 +48,8 @@ type TransactionStatus struct {
 	// If confirmed, how many blocks deep in the chain it is. Will be at least
 	// 1 if confirmed.
 	Height uint64 `json:"height"`
+	// Execute block seq
+	BlockSeq uint64 `json:"block_seq"`
 	// We can't find anything about this txn.  Be aware that the txn may be
 	// in someone else's unconfirmed pool, and if valid, it may become a
 	// confirmed txn in the future
@@ -69,10 +71,11 @@ func NewUnknownTransactionStatus() TransactionStatus {
 		Unknown:     true,
 		Confirmed:   false,
 		Height:      0,
+		BlockSeq:    0,
 	}
 }
 
-func NewConfirmedTransactionStatus(height uint64) TransactionStatus {
+func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionStatus {
 	if height == 0 {
 		log.Panic("Invalid confirmed transaction height")
 	}
@@ -81,6 +84,7 @@ func NewConfirmedTransactionStatus(height uint64) TransactionStatus {
 		Unknown:     false,
 		Confirmed:   true,
 		Height:      height,
+		BlockSeq:    blockSeq,
 	}
 }
 

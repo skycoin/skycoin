@@ -263,14 +263,6 @@
 			"notests": true
 		},
 		{
-			"importpath": "github.com/tyler-smith/go-bip39",
-			"repository": "https://github.com/tyler-smith/go-bip39",
-			"vcs": "git",
-			"revision": "8e7a99b3e716f36d3b080a9a70f9eb45abe4edcc",
-			"branch": "master",
-			"notests": true
-		},
-		{
 			"importpath": "github.com/urfave/cli",
 			"repository": "https://github.com/urfave/cli",
 			"vcs": "git",

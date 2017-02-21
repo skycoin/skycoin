@@ -115,6 +115,8 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	RegisterTxHandlers(mux, daemon.Gateway)
 	// UxOUt api handler
 	RegisterUxOutHandlers(mux, daemon.Gateway)
+	// expplorer handler
+	RegisterExploerHandlers(mux, daemon.Gateway)
 	return mux
 }
 

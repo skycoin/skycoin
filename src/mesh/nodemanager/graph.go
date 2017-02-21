@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/mesh/errors"
 )
 
 type RouteGraph struct {
@@ -57,14 +58,14 @@ func (s *RouteGraph) RebuildRoutes() {
 	}
 }
 */
-func (s *RouteGraph) findRoute(from, to cipher.PubKey) ([]cipher.PubKey, bool) {
+func (s *RouteGraph) findRoute(from, to cipher.PubKey) ([]cipher.PubKey, error) {
 	sp, found := s.paths[from]
 	if !found {
 		sp = newSP(s, from)
 		s.paths[from] = sp
 	}
-	route, found := sp.pathTo(to)
-	return route, found
+	route, err := sp.pathTo(to)
+	return route, err
 }
 
 func (s *RouteGraph) clear() {
@@ -104,14 +105,14 @@ func newSP(graph *RouteGraph, source cipher.PubKey) *SP {
 	return &sp
 }
 
-func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, bool) { // if the path exists return a path and true, otherwise empty path and false
+func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, error) { // if the path exists return a path and true, otherwise empty path and false
 
 	path := []cipher.PubKey{to}
 	e := s.edgeTo[to]
 
 	for {
 		if e == nil {
-			return []cipher.PubKey{}, false
+			return []cipher.PubKey{}, errors.ERR_NO_ROUTE
 		} // no edge, so path doesn't exist
 		path = append(path, e.from)
 		if e.from == s.source {
@@ -124,7 +125,7 @@ func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, bool) { // if the path e
 		path[i], path[j] = path[j], path[i]
 	}
 
-	return path, true
+	return path, nil
 }
 
 func (s *SP) relax(edge *DirectRoute) {
@@ -148,13 +149,15 @@ type NodeDist struct {
 }
 
 type MinPQ struct {
-	keys []*NodeDist
+	keys      []*NodeDist
+	positions map[cipher.PubKey]int
 }
 
 func newPQ() *MinPQ {
 	pq := MinPQ{}
 	zeroND := &NodeDist{}
 	pq.keys = []*NodeDist{zeroND}
+	pq.positions = map[cipher.PubKey]int{}
 	return &pq
 }
 
@@ -162,13 +165,9 @@ func (pq *MinPQ) isEmpty() bool {
 	return len(pq.keys) == 1
 }
 
-func (pq *MinPQ) contains(node cipher.PubKey) bool { //needs optimization, it's not effective
-	for _, nodeDist := range pq.keys {
-		if nodeDist.node == node {
-			return true
-		}
-	}
-	return false
+func (pq *MinPQ) contains(node cipher.PubKey) bool {
+	_, exists := pq.positions[node]
+	return exists
 }
 
 func (pq *MinPQ) delMin() cipher.PubKey {
@@ -180,6 +179,7 @@ func (pq *MinPQ) delMin() cipher.PubKey {
 	n--
 	pq.exch(1, n)
 	pq.keys = pq.keys[0:n]
+	delete(pq.positions, min)
 
 	return min
 }
@@ -187,15 +187,16 @@ func (pq *MinPQ) delMin() cipher.PubKey {
 func (pq *MinPQ) insert(node cipher.PubKey, dist int) {
 	nodeDist := &NodeDist{node, dist}
 	pq.keys = append(pq.keys, nodeDist)
-	pq.swim(len(pq.keys) - 1)
+	position := len(pq.keys) - 1
+	pq.positions[node] = position
+	pq.swim(position)
 }
 
-func (pq *MinPQ) decreaseKey(node cipher.PubKey, dist int) { // needs optimizaion, it's not effective
-	for _, key := range pq.keys {
-		if key.node == node {
-			key.dist = dist
-			break
-		}
+func (pq *MinPQ) decreaseKey(node cipher.PubKey, dist int) {
+	position, found := pq.positions[node]
+	if found {
+		key := pq.keys[position]
+		key.dist = dist
 	}
 }
 
@@ -225,5 +226,6 @@ func (pq *MinPQ) less(i, j int) bool {
 }
 
 func (pq *MinPQ) exch(i, j int) {
+	pq.positions[pq.keys[i].node], pq.positions[pq.keys[j].node] = j, i
 	pq.keys[i], pq.keys[j] = pq.keys[j], pq.keys[i]
 }

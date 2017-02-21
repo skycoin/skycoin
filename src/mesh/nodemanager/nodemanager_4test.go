@@ -62,6 +62,8 @@ func (self *NodeManager) CreateThreeRoutes() (cipher.PubKey, cipher.PubKey) {
 	return clientNode, serverNode
 }
 
+/* This function creates a network of n nodes randomly connected to each other */
+
 func (self *NodeManager) CreateRandomNetwork(n int) []cipher.PubKey {
 	nodes := []cipher.PubKey{}
 	for i := 0; i < n; i++ {

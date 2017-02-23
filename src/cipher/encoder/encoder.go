@@ -388,7 +388,9 @@ func Size(v interface{}) int {
 func datasizeWrite(v reflect.Value) (int, error) {
 	t := v.Type()
 	switch t.Kind() {
-
+	case reflect.Interface:
+		//fmt.Println(v.Elem())
+		return datasizeWrite(v.Elem())
 	case reflect.Array:
 		size := 0
 		for i := 0; i < v.Len(); i++ {
@@ -845,6 +847,8 @@ func (d *decoder) dchk(v reflect.Value) int {
 func (e *encoder) value(v reflect.Value) {
 
 	switch v.Kind() {
+	case reflect.Interface:
+		e.value(v.Elem())
 
 	case reflect.Array: //fixed size
 		//e.uint32(uint32(v.Len()))

@@ -192,7 +192,48 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 		nodeIds = append(nodeIds, nodeId)
 	}
 
-	routeRules, err := nm.buildRouteOneSide(nodeIds, true)
+	routeRules, err := nm.buildRouteForward(nodeIds)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	*result = messages.Serialize((uint16)(0), routeRules)
+	return nil
+}
+
+func (receiver *RPCReceiver) FindRoute(args []string, result *[]byte) error {
+	if len(args) != 2 {
+		e := errors.ERR_WRONG_NUMBER_ARGS
+		fmt.Println(e)
+		return e
+	}
+
+	nodeIds := []cipher.PubKey{}
+
+	nm := receiver.NodeManager
+	nm.rebuildRoutes()
+
+	nodeIdList := nm.nodeIdList
+	n := len(nodeIdList)
+
+	for _, nodenumstr := range args {
+		nodenum, err := strconv.Atoi(nodenumstr)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		if nodenum < 0 || nodenum > n {
+			e := errors.ERR_NODE_NUM_OUT_OF_RANGE
+			fmt.Println(e)
+			return e
+		}
+
+		nodeId := nodeIdList[nodenum]
+		nodeIds = append(nodeIds, nodeId)
+	}
+
+	routeRules, err := nm.findRouteForward(nodeIds[0], nodeIds[1])
 	if err != nil {
 		fmt.Println(err)
 		return err

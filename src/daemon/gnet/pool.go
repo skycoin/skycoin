@@ -266,6 +266,16 @@ func (self *ConnectionPool) AcceptConnections() {
 	}
 }
 
+// ListeningAddress returns address, on which the ConnectionPool
+// listening on. It returns nil, and error if the ConnectionPool
+// is not listening
+func (self *ConnectionPool) ListeningAddress() (net.Addr, error) {
+	if self.listener == nil {
+		return nil, errors.New("Not listening, call StartListen first")
+	}
+	return self.listener.Addr(), nil
+}
+
 // Begin listening on the port the ConnectionPool is configured for.
 // Calling StartListen() twice with no intermediate StopListen() will panic.
 func (self *ConnectionPool) StartListen() error {

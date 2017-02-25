@@ -79,7 +79,7 @@ func TestNetwork(t *testing.T) {
 
 	inRouteMessage := messages.InRouteMessage{messages.NIL_TRANSPORT, initRoute, []byte{'t', 'e', 's', 't'}}
 	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
-	node0.IncomingChannel <- serialized
+	node0.InjectTransportMessage(serialized)
 	time.Sleep(10 * time.Second)
 	for _, tf := range nm.transportFactoryList {
 		t0 := tf.TransportList[0]
@@ -152,9 +152,9 @@ func TestFindRoute(t *testing.T) {
 	nm.rebuildRoutes()
 
 	nodeFrom, nodeTo := nodeList[0], nodeList[9]
-	nodes, found := nm.routeGraph.findRoute(nodeFrom, nodeTo)
-	assert.True(t, found)
-	assert.Len(t, nodes, 3, "Should be 3 nodes")
+	routes, err := nm.findRouteForward(nodeFrom, nodeTo)
+	assert.Nil(t, err)
+	assert.Len(t, routes, 3, "Should be 3 routes")
 }
 
 func TestConnection(t *testing.T) {

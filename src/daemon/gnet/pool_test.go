@@ -184,6 +184,31 @@ func TestAcceptConnections(t *testing.T) {
 	assert.True(t, called)
 }
 
+func TestListeningAddress(t *testing.T) {
+	t.Run("not listening", func(t *testing.T) {
+		cleanupNet()
+		cfg := NewConfig()
+		p := NewConnectionPool(cfg, nil)
+		addr, err := p.ListeningAddress()
+		assert.Nil(t, addr)
+		assert.NotNil(t, err)
+	})
+	t.Run("listening", func(t *testing.T) {
+		cleanupNet()
+		cfg := NewConfig()
+		cfg.Address = ""
+		cfg.Port = 0
+		p := NewConnectionPool(cfg, nil)
+		defer p.StopListen()
+		assert.Nil(t, p.StartListen())
+		wait()
+		addr, err := p.ListeningAddress()
+		assert.Nil(t, err)
+		assert.NotNil(t, addr)
+		t.Log("ListeningAddress: ", addr)
+	})
+}
+
 func TestStartListen(t *testing.T) {
 	cleanupNet()
 	cfg := NewConfig()

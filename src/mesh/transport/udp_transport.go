@@ -16,7 +16,6 @@ type UDPConfig struct {
 }
 
 // create
-
 func openConn(tr *Transport, peer, pairPeer *messages.Peer) (*UDPConfig, error) {
 	maxPacketSize := messages.GetConfig().MaxPacketSize
 	host, pairHost := net.ParseIP(peer.Host), net.ParseIP(pairPeer.Host)
@@ -36,9 +35,7 @@ func openConn(tr *Transport, peer, pairPeer *messages.Peer) (*UDPConfig, error) 
 }
 
 func (self *UDPConfig) Tick() {
-	backChan := make(chan bool)
-	go self.receiveLoop(backChan)
-	<-backChan
+	go self.receiveLoop()
 }
 
 // close
@@ -49,8 +46,6 @@ func (self *UDPConfig) closeConn() {
 // send - serialize and send to peer
 
 func (self *UDPConfig) send(msg []byte) error {
-	// send to addr:port
-
 	_, err := self.conn.WriteTo(msg, self.pairAddr)
 	return err
 }
@@ -58,13 +53,12 @@ func (self *UDPConfig) send(msg []byte) error {
 // receive - listen to port and send to incoming channel
 //udp listens to []byte then passes it to incomingChannel, maybe decrypts it first
 
-func (self *UDPConfig) receiveLoop(backChan chan bool) {
+func (self *UDPConfig) receiveLoop() {
 	go_on := true
 	incomingChannel := self.relatedTransport.incomingChannel
 	go func() {
 		for {
 			buffer := make([]byte, self.maxPacketSize)
-			//n, _, err := self.conn.ReadFromUDP(buffer)
 			n, addr, err := self.conn.ReadFrom(buffer)
 			if err != nil {
 				if !go_on && n == 0 {
@@ -79,7 +73,6 @@ func (self *UDPConfig) receiveLoop(backChan chan bool) {
 			}
 		}
 	}()
-	backChan <- true
 	<-self.closeChannel
 	go_on = false
 	self.conn.Close()

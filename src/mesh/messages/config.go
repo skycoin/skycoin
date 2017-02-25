@@ -7,6 +7,7 @@ const (
 
 type ConfigStruct struct {
 	StartPort         uint32
+	SimulateDelay     bool
 	MaxSimulatedDelay int
 	MaxPacketSize     int
 	ConnectionTimeout uint32
@@ -17,6 +18,7 @@ type ConfigStruct struct {
 
 var config = &ConfigStruct{
 	StartPort:         6000,
+	SimulateDelay:     true,
 	MaxSimulatedDelay: 500,
 	MaxPacketSize:     256,
 	ConnectionTimeout: 10000,

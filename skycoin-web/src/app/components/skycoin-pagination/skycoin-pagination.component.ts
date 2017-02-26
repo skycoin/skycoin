@@ -8,7 +8,7 @@ import {SkycoinBlockchainPaginationService} from "./skycoin-blockchain-paginatio
 })
 export class SkycoinPaginationComponent implements OnInit {
 
-  @Output() onChangePage = new EventEmitter<number>();
+  @Output() onChangePage = new EventEmitter<any>();
 
   private numberOfBlocks:number;
 
@@ -35,6 +35,7 @@ export class SkycoinPaginationComponent implements OnInit {
   ngOnInit() {
     this.paginationService.fetchNumberOfBlocks().subscribe((numberOfBlocks)=>{
       this.numberOfBlocks = numberOfBlocks;
+      this.onChangePage.emit([1,  this.numberOfBlocks]);
       this.pagesToShowAtATime = this.pagesToShowAtATime<numberOfBlocks?this.pagesToShowAtATime:this.numberOfBlocks;
 
       this.currentPages = [];
@@ -52,14 +53,14 @@ export class SkycoinPaginationComponent implements OnInit {
   }
 
   changePage(pageNumber:any){
-    this.onChangePage.emit(pageNumber);
+    this.onChangePage.emit([pageNumber, this.numberOfBlocks]);
     this.currentPage = pageNumber;
     return false;
   }
 
   loadUpcoming():boolean{
 
-    this.onChangePage.emit(this.currentPages[0]+this.pagesToShowAtATime);
+    this.onChangePage.emit([this.currentPages[0]+this.pagesToShowAtATime,  this.numberOfBlocks]);
     this.currentPage = this.currentPages[0]+this.pagesToShowAtATime;
 
     this.currentPages = [];
@@ -80,7 +81,7 @@ export class SkycoinPaginationComponent implements OnInit {
     if(this.currentPages[0]<=1){
       return false;
     }
-    this.onChangePage.emit(this.currentPages[0]-this.pagesToShowAtATime);
+    this.onChangePage.emit([this.currentPages[0]-this.pagesToShowAtATime, this.numberOfBlocks]);
     this.currentPage = this.currentPages[0]-this.pagesToShowAtATime;
 
     this.currentPages = [];

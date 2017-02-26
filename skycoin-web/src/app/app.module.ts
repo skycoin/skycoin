@@ -17,6 +17,12 @@ import {SkycoinBlockchainPaginationService} from "./components/skycoin-paginatio
 import {CommonModule} from "@angular/common";
 import {MomentModule} from "angular2-moment";
 import { BlockDetailsComponent } from './components/block-details/block-details.component';
+import { AddressDetailComponent } from './components/address-detail/address-detail.component';
+import {UxOutputsService} from "./components/address-detail/UxOutputs.service";
+import {QRCodeModule} from "angular2-qrcode";
+import { TransactionDetailComponent } from './components/transaction-detail/transaction-detail.component';
+import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
+import {QRCodeComponent} from "ng2-qrcode";
 
 
 const ROUTES = [
@@ -32,6 +38,15 @@ const ROUTES = [
   {
     path: 'block/:id',
     component: BlockDetailsComponent
+  },
+  {
+    path:'address/:address',
+    component: AddressDetailComponent
+  }
+  ,
+  {
+    path:'transaction/:txid',
+    component: TransactionDetailComponent
   }
 ];
 
@@ -44,7 +59,10 @@ const ROUTES = [
     SkycoinSearchBarComponent,
     FooterComponent,
     NumPagesPipe,
-    BlockDetailsComponent
+    BlockDetailsComponent,
+    QRCodeComponent,
+    AddressDetailComponent,
+    TransactionDetailComponent
   ],
   imports: [
     CommonModule,
@@ -52,9 +70,10 @@ const ROUTES = [
     FormsModule,
     HttpModule,
     MomentModule,
+    QRCodeModule,
     RouterModule.forRoot(ROUTES)
   ],
-  providers: [BlockChainService,SkycoinBlockchainPaginationService],
+  providers: [BlockChainService,SkycoinBlockchainPaginationService,UxOutputsService, TransactionDetailService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -19,10 +19,9 @@ import {MomentModule} from "angular2-moment";
 import { BlockDetailsComponent } from './components/block-details/block-details.component';
 import { AddressDetailComponent } from './components/address-detail/address-detail.component';
 import {UxOutputsService} from "./components/address-detail/UxOutputs.service";
-import {QRCodeModule} from "angular2-qrcode";
 import { TransactionDetailComponent } from './components/transaction-detail/transaction-detail.component';
 import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
-import {QRCodeComponent} from "ng2-qrcode";
+import {QRCodeModule} from "../js/angular2-qrcode";
 
 
 const ROUTES = [
@@ -60,7 +59,6 @@ const ROUTES = [
     FooterComponent,
     NumPagesPipe,
     BlockDetailsComponent,
-    QRCodeComponent,
     AddressDetailComponent,
     TransactionDetailComponent
   ],

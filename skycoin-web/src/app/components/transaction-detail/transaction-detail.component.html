@@ -1,5 +1,5 @@
 <div class="row" *ngIf="transaction!=null">
-  <h2>Transaction details</h2>
+  <h2>Transaction Details</h2>
   <div class="card" *ngIf="block">
     <div class="card-content" >
       <table>
@@ -26,7 +26,7 @@
     <div class="card-title">Transaction id : {{transaction.txn.txid}}</div>
     <div class="col s4">
       <ul class="collection">
-        <li class="collection-item"><h5>inputs</h5></li>
+        <li class="collection-item"><h5>Inputs</h5></li>
         <li class="collection-item" *ngFor="let input of transaction.txn.inputs">{{input}}</li>
 
       </ul>
@@ -37,13 +37,13 @@
 
     <div class="col s5">
       <ul class="collection">
-        <li class="collection-item"><h5>outputs</h5></li>
+        <li class="collection-item"><h5>Outputs</h5></li>
         <li class="collection-item" *ngFor="let output of transaction.txn.outputs"><a href="/address/{{output.dst}}">{{output.dst}}</a></li>
       </ul>
     </div>
     <div class="col s2">
       <ul class="collection">
-        <li class="collection-item"><h5>coins</h5></li>
+        <li class="collection-item"><h5>Coins</h5></li>
         <li class="collection-item" *ngFor="let output of transaction.txn.outputs">{{output.coins}}</li>
       </ul>
     </div>

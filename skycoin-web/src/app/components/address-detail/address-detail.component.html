@@ -3,16 +3,15 @@
     <div class="card-content" *ngIf="transactions.length>0">
       <ul class="collection">
         <li class="collection-item"><h5>Address</h5><span>{{currentAddress}}</span></li>
-        <li class="collection-item">Number of tranasctions: {{transactions.length}} </li>
+        <li class="collection-item">Number of transactions: {{transactions.length}} </li>
         <li class="collection-item">Current value: {{getCurrentBalance()}} skycoins</li>
       </ul>
     </div>
   </div>
 
   <div class="card col s4">
-    <!--<qrcode *ngIf="currentAddress!=null" [qrdata]="currentAddress" [size]="256" [level]="'M'"></qrcode>-->
     <qr-code *ngIf="currentAddress!=null" [value]="currentAddress" [size]="300"></qr-code>
-    <p>{{currentAddress}}</p>
+    <p class="address-qr">{{currentAddress}}</p>
   </div>
 
 

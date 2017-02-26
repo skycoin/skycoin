@@ -7,16 +7,14 @@ import (
 )
 
 type Connection struct {
-	id messages.ConnectionId
-	//	consumer        *Application
-	nm              *NodeManager
-	status          uint8
-	nodeAttached    cipher.PubKey
-	routeId         messages.RouteId
-	backRouteId     messages.RouteId
-	incomingChannel chan []byte
-	closingChannel  chan bool
-	sequence        uint32
+	id             messages.ConnectionId
+	nm             *NodeManager
+	status         uint8
+	nodeAttached   cipher.PubKey
+	routeId        messages.RouteId
+	backRouteId    messages.RouteId
+	closingChannel chan bool
+	sequence       uint32
 }
 
 const (
@@ -62,7 +60,6 @@ func newConnection(nm *NodeManager, nodeAttached cipher.PubKey) (*Connection, er
 		status:       DISCONNECTED,
 		nodeAttached: nodeAttached,
 	}
-	conn.incomingChannel = make(chan []byte, 1024)
 	conn.closingChannel = make(chan bool, 1024)
 	return conn, nil
 }
@@ -92,30 +89,11 @@ func (self *Connection) Send(msg []byte) (uint32, error) {
 	return self.sequence - 1, nil
 }
 
-/*
-func (self *Connection) receivingLoop() error {
-	for self.status == CONNECTED {
-		select {
-		case <-self.incomingChannel: // accept from meshnet(node)
-		case <-self.closingChannel:
-			self.Close()
-			break
-		}
-	}
-	return errors.ERR_DISCONNECTED
-}
-*/
-func (self *Connection) consume(msg []byte) error {
-	self.incomingChannel <- msg
-	return nil
-}
-
 func (self *Connection) GetStatus() uint8 {
 	return self.status
 }
 
 func (self *Connection) Close() {
-	close(self.incomingChannel)
 	close(self.closingChannel)
 	self.status = DISCONNECTED
 }

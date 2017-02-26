@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
 	"encoding/json"
 	"errors"
 
@@ -113,6 +112,10 @@ type ReadableTransactionOutput struct {
 	Hours   uint64 `json:"hours"`
 }
 
+type ReadableTransactionInput struct {
+	Hash    string `json:"uxid"`
+	Address string `json:"owner"`
+}
 //convert balance to string
 //each 1,000,000 units is 1 coin
 //skyoin has up to 6 decimal places but no more
@@ -152,6 +155,13 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 		Address: t.Address.String(), //Destination Address
 		Coins:   StrBalance(t.Coins),
 		Hours:   t.Hours,
+	}
+}
+
+func NewReadableTransactionInput(uxId string, ownerAddress string) ReadableTransactionInput {
+	return ReadableTransactionInput{
+		Hash:    uxId,
+		Address: ownerAddress, //Destination Address
 	}
 }
 
@@ -216,6 +226,18 @@ type ReadableTransaction struct {
 
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`
+	Out  []ReadableTransactionOutput `json:"outputs"`
+}
+
+type ReadableAddressTransaction struct {
+	Length    uint32 `json:"length"`
+	Type      uint8  `json:"type"`
+	Hash      string `json:"txid"`
+	InnerHash string `json:"inner_hash"`
+	Timestamp uint64 `json:"timestamp,omitempty"`
+
+	Sigs []string                    `json:"sigs"`
+	In   []ReadableTransactionInput   `json:"inputs"`
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
@@ -287,6 +309,30 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 
 		Sigs: sigs,
 		In:   in,
+		Out:  out,
+	}
+}
+
+func NewReadableAddressTransaction(t *Transaction, inputs []ReadableTransactionInput) ReadableAddressTransaction {
+	txid := t.Txn.Hash()
+	sigs := make([]string, len(t.Txn.Sigs))
+	for i, _ := range t.Txn.Sigs {
+		sigs[i] = t.Txn.Sigs[i].Hex()
+	}
+	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
+
+	for i, _ := range t.Txn.Out {
+		out[i] = NewReadableTransactionOutput(&t.Txn.Out[i], txid)
+	}
+	return ReadableAddressTransaction{
+		Length:    t.Txn.Length,
+		Type:      t.Txn.Type,
+		Hash:      t.Txn.Hash().Hex(),
+		InnerHash: t.Txn.InnerHash.Hex(),
+		Timestamp: t.Time,
+
+		Sigs: sigs,
+		In:   inputs,
 		Out:  out,
 	}
 }

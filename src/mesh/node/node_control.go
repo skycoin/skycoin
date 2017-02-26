@@ -8,8 +8,6 @@ import (
 )
 
 func (self *Node) AddControlChannel() messages.ChannelId {
-	//self.lock.Lock()
-	//defer self.lock.Unlock()
 
 	channel := newControlChannel()
 
@@ -18,8 +16,6 @@ func (self *Node) AddControlChannel() messages.ChannelId {
 }
 
 func (self *Node) CloseControlChannel(channelID messages.ChannelId) error {
-	//self.lock.Lock()
-	//defer self.lock.Unlock()
 
 	if _, ok := self.controlChannels[channelID]; !ok {
 		return errors.New(fmt.Sprintf("Control channel %s not found", channelID))

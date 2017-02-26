@@ -79,6 +79,9 @@ func commandDispatcher(rpcClient *nodemanager.RPCClient) bool {
 	case "build_route":
 		buildRoute(rpcClient, args)
 
+	case "find_route":
+		findRoute(rpcClient, args)
+
 	case "list_routes":
 		listRoutes(rpcClient, args)
 
@@ -119,6 +122,7 @@ func printHelp() {
 	fmt.Println("list_transports X\tlist all transports of node X with nodes attached to them.")
 	fmt.Println("list_all_transports\tlist all transports for all nodes.")
 	fmt.Println("build_route N0 N1 N2\tconsequentially builds route rules from node N0 then to N1 then to N2; there can be any nodes > 1.\n\t\t\tFor example: build_route 1 4 6 9 routes node 1 to node 4, then node 4 to node 6, then node 6 to node 9.\n\t\t\tNodes must be connected by transports already.")
+	fmt.Println("find_route N0 N1\tfinds the shortest route (if any exists) from node N0 to N1; there should be 2 nodes.\n\t\t\tFor example: find_route 1 9 routes node 1 to node 9 through all nodes between them.\n\t\t\tNodes must be connected by transports already.")
 	fmt.Println("list_routes X\t\tlist all routes of node X.")
 	fmt.Println("exit (or quit)\t\tcloses the terminal.\n")
 }
@@ -341,6 +345,52 @@ func buildRoute(client *nodemanager.RPCClient, args []string) {
 	}
 
 	response, err := client.SendToRPC("BuildRoute", args)
+	if err != nil {
+		errorOut(err)
+		return
+	}
+
+	var routes []messages.RouteId
+	err = messages.Deserialize(response, &routes)
+	if err != nil {
+		errorOut(err)
+		return
+	}
+
+	fmt.Printf("\nROUTES (%d total):\n\n", len(routes))
+	fmt.Println("Num\tID\n\n")
+	for i, routeRuleId := range routes {
+		fmt.Printf("%d\t%d\n", i, routeRuleId)
+	}
+	fmt.Println("")
+}
+
+func findRoute(client *nodemanager.RPCClient, args []string) {
+
+	if len(args) != 2 {
+		fmt.Println("\nRoute should be built between 2 nodes")
+		return
+	}
+
+	nodes, err := getNodes(client)
+	if err != nil {
+		errorOut(err)
+		return
+	}
+
+	n := len(nodes)
+	if n < 2 {
+		fmt.Printf("Need at least 2 nodes to build a route, have %d\n\n", n)
+		return
+	}
+
+	for _, nodenumstr := range args {
+		if !testNodes(nodenumstr, n) {
+			return
+		}
+	}
+
+	response, err := client.SendToRPC("FindRoute", args)
 	if err != nil {
 		errorOut(err)
 		return

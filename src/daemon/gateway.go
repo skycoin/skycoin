@@ -304,6 +304,21 @@ func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, e
 	return uxs, err
 }
 
+// GetAddrUxOuts gets all the address affected UxOuts.
+func (gw *Gateway) GetAddressUxOuts(addr cipher.Address) ([]*historydb.UxOut, error) {
+	var (
+		uxouts []*historydb.UxOut
+		err    error
+	)
+	c := make(chan struct{})
+	gw.Requests <- func() {
+		uxouts, err = gw.V.GetAddrUxOuts(addr)
+		c <- struct{}{}
+	}
+	<-c
+	return uxouts, err
+}
+
 // GetTimeNow returns the current Unix time
 func (gw *Gateway) GetTimeNow() uint64 {
 	return uint64(time.Now().Unix())

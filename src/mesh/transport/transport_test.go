@@ -13,17 +13,27 @@ func TestCreateStubPair(t *testing.T) {
 	messages.SetDebugLogLevel()
 	tf := NewTransportFactory()
 	assert.Len(t, tf.TransportList, 0, "Should be 0 transports")
-	t1, t2 := tf.CreateStubTransportPair()
+	t1, t2 := tf.createStubTransportPair()
 	assert.Len(t, tf.TransportList, 2, "Should be 2 transports")
 	assert.Equal(t, t1.Id, t2.StubPair.Id)
 	assert.Equal(t, t2.Id, t1.StubPair.Id)
 	fmt.Println("====\n")
 }
 
-func TestAck(t *testing.T) {
+func TestStubAck(t *testing.T) {
 	messages.SetDebugLogLevel()
 	tf := NewTransportFactory()
-	t1, _ := tf.CreateStubTransportPair()
+	defer tf.Shutdown()
+	peerA := &messages.Peer{
+		"127.0.0.1",
+		6000,
+	}
+	peerB := &messages.Peer{
+		"127.0.0.1",
+		6002,
+	}
+	t1, _, err := tf.connectPeers(peerA, peerB)
+	assert.Nil(t, err)
 	tf.Tick()
 	for i := 0; i < 10; i++ {
 		tdt := messages.OutRouteMessage{messages.RandRouteId(), []byte{'t', 'e', 's', 't'}}

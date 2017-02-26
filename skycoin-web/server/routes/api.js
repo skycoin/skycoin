@@ -10,7 +10,6 @@ router.get('/', (req, res) => {
 
 // Get all blocks
 router.get('/blocks', (req, res) => {
-
   axios.get(`${API}/blocks?start=`+req.query.start+`&end=`+req.query.end)
     .then(blocks => {
       res.status(200).json(blocks.data);
@@ -30,6 +29,41 @@ router.get('/blockchain/metadata', (req, res) => {
   res.status(500).send(error)
 });
 });
+
+// address uxouts!
+router.get('/address', (req, res) => {
+  axios.get(`${API}/explorer/address?address=`+req.query.address)
+  .then(blocks => {
+  res.status(200).json(blocks.data);
+})
+.catch(error => {
+  res.status(500).send(error)
+});
+});
+
+// address uxouts!
+router.get('/uxout', (req, res) => {
+  axios.get(`${API}/uxout?uxid=`+req.query.uxid)
+  .then(blocks => {
+  res.status(200).json(blocks.data);
+})
+.catch(error => {
+  res.status(500).send(error)
+});
+});
+
+
+// address uxouts!
+router.get('/transaction', (req, res) => {
+  axios.get(`${API}/transaction?txid=`+req.query.txid)
+  .then(blocks => {
+  res.status(200).json(blocks.data);
+})
+.catch(error => {
+  res.status(500).send(error)
+});
+});
+
 
 // Get the block details
 router.get('/block', (req, res) => {

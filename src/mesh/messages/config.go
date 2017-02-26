@@ -6,7 +6,10 @@ const (
 )
 
 type ConfigStruct struct {
+	StartPort         uint32
+	SimulateDelay     bool
 	MaxSimulatedDelay int
+	MaxPacketSize     int
 	ConnectionTimeout uint32
 	TransportTimeout  uint32
 	RetransmitLimit   int
@@ -14,7 +17,10 @@ type ConfigStruct struct {
 }
 
 var config = &ConfigStruct{
+	StartPort:         6000,
+	SimulateDelay:     true,
 	MaxSimulatedDelay: 500,
+	MaxPacketSize:     256,
 	ConnectionTimeout: 10000,
 	TransportTimeout:  1000,
 	RetransmitLimit:   10,

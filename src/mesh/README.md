@@ -10,6 +10,11 @@ Run client:
 It will run rpc client which will send message to port 1234. If you want another port to send messages, point it as an argument like this:
 	go run cli.go 2222 // will send requests to port 2222
 
-To run client in a browser interface run cli/cli.sh which will open web interface on port 9999, so you can use it in your browser like http://the-url-which-the-client-is-situated-at:9999
+To run client in a browser interface run cli/cli.sh which will open web interface on port 9999, so you can use it in your browser like http://the-url-which-the-client-is-situated-at:9999. This way needs gotty (https://github.com/yudai/gotty) to be installed.
 
+Linux:
+go get github.com/yudai/gotty
 
+Mac:
+brew tap yudai/gotty
+brew install gotty

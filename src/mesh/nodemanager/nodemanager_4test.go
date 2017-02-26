@@ -31,7 +31,7 @@ func (self *NodeManager) CreateSequenceOfNodesAndBuildRoutes(n int) (cipher.PubK
 	if err != nil {
 		panic(err)
 	}
-	serverNode, clientNode := nodeList[0], nodeList[len(nodeList)-1]
+	clientNode, serverNode := nodeList[0], nodeList[len(nodeList)-1]
 	return clientNode, serverNode, route, backRoute
 }
 
@@ -62,30 +62,48 @@ func (self *NodeManager) CreateThreeRoutes() (cipher.PubKey, cipher.PubKey) {
 	return clientNode, serverNode
 }
 
+/* This function creates a network of n nodes randomly connected to each other */
+
+func (self *NodeManager) CreateRandomNetwork(n int) []cipher.PubKey {
+	nodes := []cipher.PubKey{}
+	for i := 0; i < n; i++ {
+		nodes = append(nodes, self.AddAndConnectStub())
+	}
+	self.rebuildRoutes()
+	return nodes
+}
+
 func (self *NodeManager) createNodeList(n int) []cipher.PubKey {
 	nodes := []cipher.PubKey{}
 	for i := 0; i < n; i++ {
-		nodeId := self.AddNewNode()
+		nodeId := self.AddNewNodeStub()
 		nodes = append(nodes, nodeId)
 	}
 	return nodes
 }
 
-func (self *NodeManager) connectAll() {
+func (self *NodeManager) connectAll() error {
 
 	n := len(self.nodeIdList)
 
 	for i := 0; i < n-1; i++ {
 		id1, id2 := self.nodeIdList[i], self.nodeIdList[i+1]
-		self.ConnectNodeToNode(id1, id2)
+		_, err := self.ConnectNodeToNode(id1, id2)
+		if err != nil {
+			panic(err)
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 func (self *NodeManager) connectAllAndBuildRoute() (messages.RouteId, error) {
 
-	self.connectAll()
+	err := self.connectAll()
+	if err != nil {
+		return messages.NIL_ROUTE, err
+	}
 
-	initRoute, err := self.getFirstRoute(self.nodeIdList)
+	initRoute, err := self.getFirstRouteForward(self.nodeIdList)
 	return initRoute, err
 }

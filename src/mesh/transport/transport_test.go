@@ -35,8 +35,8 @@ func TestStubAck(t *testing.T) {
 	t1, _, err := tf.connectPeers(peerA, peerB)
 	assert.Nil(t, err)
 	tf.Tick()
+	tdt := messages.OutRouteMessage{messages.RandRouteId(), []byte{'t', 'e', 's', 't'}}
 	for i := 0; i < 10; i++ {
-		tdt := messages.OutRouteMessage{messages.RandRouteId(), []byte{'t', 'e', 's', 't'}}
 		t1.sendTransportDatagramTransfer(&tdt)
 	}
 	time.Sleep(10 * time.Second)

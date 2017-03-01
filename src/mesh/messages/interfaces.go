@@ -7,13 +7,13 @@ import (
 type NodeInterface interface {
 	GetId() cipher.PubKey
 	GetPeer() *Peer
-	InjectTransportMessage(msg []byte)
+	InjectTransportMessage(*InRouteMessage)
 	SetTransport(TransportId, TransportInterface)
 	ConnectedTo(NodeInterface) bool
 }
 
 type TransportInterface interface {
-	InjectNodeMessage([]byte)
+	InjectNodeMessage(*InRouteMessage)
 }
 
 type Consumer interface {

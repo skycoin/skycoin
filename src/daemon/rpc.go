@@ -47,6 +47,11 @@ func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
 	if c == nil {
 		return nil
 	}
+
+	if _, exist := d.ConnectionMirrors[addr]; !exist {
+		return nil
+	}
+
 	_, expecting := d.ExpectingIntroductions[addr]
 	return &Connection{
 		Id:           c.Id,
@@ -64,9 +69,12 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
 	if d.Pool.Pool == nil {
 		return nil
 	}
-	conns := make([]*Connection, len(d.Pool.Pool.Pool))
-	for i, c := range d.Pool.Pool.GetConnections() {
-		conns[i] = self.GetConnection(d, c.Addr())
+	conns := make([]*Connection, 0, len(d.Pool.Pool.Pool))
+	for _, c := range d.Pool.Pool.GetConnections() {
+		conn := self.GetConnection(d, c.Addr())
+		if conn != nil {
+			conns = append(conns, conn)
+		}
 	}
 	return &Connections{Connections: conns}
 }

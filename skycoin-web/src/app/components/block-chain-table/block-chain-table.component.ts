@@ -15,6 +15,7 @@ import {Router} from "@angular/router";
 export class BlockChainTableComponent implements OnInit {
 
   private blocks:Block[];
+  private totalBlocks:number;
 
   constructor(private blockService:BlockChainService,private router: Router) {
     this.blocks=[];
@@ -41,22 +42,23 @@ export class BlockChainTableComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.blockService.getBlocks(1,10).subscribe(
-      (data)=>{
-        this.blocks= data;
-      }
-    );
   }
 
   showDetails(block: Block) {
     this.router.navigate(['/block', block.header.seq]);
   }
 
-  handlePageChange(currentPage:number){
-    this.blockService.getBlocks((currentPage-1)*10+1,(currentPage-1)*10+10).subscribe(
+  handlePageChange(pagesData:number[]){
+    this.totalBlocks= pagesData[1];
+    let currentPage =pagesData[0];
+    let blockStart = this.totalBlocks - currentPage*10 +1;
+    let blockEnd = blockStart +9;
+
+    this.blockService.getBlocks(blockStart,blockEnd).subscribe(
       (data)=>{
         console.log(data);
-        this.blocks= data;
+        let newData= _.sortBy(data, function (block) {return block.header.seq}).reverse();
+        this.blocks= newData;
       }
     );
   }

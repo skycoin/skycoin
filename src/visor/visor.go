@@ -136,11 +136,11 @@ func NewVisor(c VisorConfig) *Visor {
 
 	tree := blockdb.NewBlockTree()
 	bc := NewBlockchain(tree, walker)
-
 	bp := NewBlockchainParser(history, bc)
-	bp.Start()
 
 	bc.BindListener(bp.BlockListener)
+
+	bp.Start()
 
 	v := &Visor{
 		Config:      c,

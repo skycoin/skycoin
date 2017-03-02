@@ -3,8 +3,8 @@ package gnet
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"testing"
 	"time"
@@ -30,99 +30,40 @@ func init() {
 	}
 }
 
-func newNetConn() net.Conn {
-	if conn != nil {
-		stopConn()
-	}
-	var err error
-	conn, err = net.Dial("tcp", addr)
-	if err != nil {
-		log.Panic(err)
-	}
-	return conn
-}
-
-func listen() {
-	if listener != nil {
-		stopListen()
-	}
-	var err error
-	listener, err = net.Listen("tcp", addr)
-	if err != nil {
-		log.Panic(err)
-	}
-}
-
-func stopListen() {
-	if listener != nil {
-		if err := listener.Close(); err != nil {
-			log.Panic(err)
-		}
-	}
-	listener = nil
-}
-
-func stopConn() {
-	if conn != nil {
-		if err := conn.Close(); err != nil {
-			log.Panic(err)
-		}
-	}
-	conn = nil
-}
-
-func cleanupNet() {
-	stopListen()
-	stopConn()
-}
-
-func TestConnectionAddr(t *testing.T) {
-	cleanupNet()
-	listen()
-	c := &Connection{Conn: newNetConn()}
-	assert.Equal(t, c.Addr(), addr)
-	assert.Equal(t, c.String(), addr)
-}
-
 func TestNewConnectionPool(t *testing.T) {
-	cleanupNet()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	cfg.MaxConnections = 108
-	cfg.EventChannelSize = 101
 	cfg.DialTimeout = time.Duration(777)
 	p := NewConnectionPool(cfg, nil)
 	assert.Equal(t, p.Config, cfg)
 	assert.Equal(t, p.Config.Port, uint16(cfg.Port))
 	assert.Equal(t, p.Config.Address, cfg.Address)
-	assert.NotNil(t, p.Pool)
-	assert.Equal(t, len(p.Pool), 0)
-	assert.NotNil(t, p.Addresses)
-	assert.Equal(t, len(p.Addresses), 0)
-	assert.NotNil(t, p.eventChannel)
-	assert.Equal(t, cap(p.eventChannel), 101)
-	assert.NotNil(t, p.DisconnectQueue)
-	assert.Equal(t, cap(p.DisconnectQueue), 108)
-	assert.NotNil(t, p.connectionQueue)
-	assert.Equal(t, cap(p.connectionQueue), 0)
+	assert.NotNil(t, p.pool)
+	assert.Equal(t, len(p.pool), 0)
+	assert.NotNil(t, p.addresses)
+	assert.Equal(t, len(p.addresses), 0)
 	assert.Equal(t, p.connId, 0)
-	cleanupNet()
 }
 
 func TestNewConnection(t *testing.T) {
-	cleanupNet()
-	listen()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	cfg.ConnectionWriteQueueSize = 101
 	p := NewConnectionPool(cfg, nil)
-	c := newPoolConnection(p)
-	assert.Equal(t, p.Addresses[addr], c)
-	assert.Equal(t, p.Pool[p.connId], c)
+	defer p.Shutdown()
+	p.Run()
+	wait()
+	conn, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	wait()
+	c := p.addresses[conn.LocalAddr().String()]
+	assert.Equal(t, p.pool[p.connId], c)
 	assert.Equal(t, p.connId, 1)
-	assert.Equal(t, c.Addr(), addr)
+	assert.Equal(t, c.Addr(), conn.LocalAddr().String())
 	assert.Equal(t, cap(c.WriteQueue), cfg.ConnectionWriteQueueSize)
 	assert.NotNil(t, c.Buffer)
 	assert.Equal(t, c.Buffer.Len(), 0)
@@ -132,38 +73,45 @@ func TestNewConnection(t *testing.T) {
 }
 
 func TestNewConnectionAlreadyConnected(t *testing.T) {
-	cleanupNet()
-	listen()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
-	c := newPoolConnection(p)
-	assert.Panics(t, func() { p.NewConnection(c.Conn) })
+	defer p.Shutdown()
+	p.Run()
+	wait()
+	conn, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	wait()
+	c := p.addresses[conn.LocalAddr().String()]
+	assert.NotNil(t, c)
+	_, err = p.NewConnection(c.Conn)
+	assert.NotNil(t, err)
 }
 
 func TestAcceptConnections(t *testing.T) {
-	cleanupNet()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	called := false
-	cfg.ConnectCallback = func(c *Connection, solicited bool) {
+	cfg.ConnectCallback = func(addr string, solicited bool) {
 		assert.False(t, solicited)
-		assert.NotNil(t, c)
+		// assert.NotNil(t, c)
 		called = true
 	}
 	p := NewConnectionPool(cfg, nil)
-	defer p.StopListen()
-	go func() {
-		assert.Nil(t, p.StartListen())
-		assert.NotNil(t, p.listener)
-	}()
-	go handleXConnections(p, 1)
-	go p.AcceptConnections()
+	defer p.Shutdown()
+	// go func() {
+	p.Run()
+	assert.NotNil(t, p.listener)
+	// }()
+	// go handleXConnections(p, 1)
+	// go p.AcceptConnections()
 	// Make a successful connection
 	wait()
-	assert.NotNil(t, p.listener)
+	// assert.NotNil(t, p.listener)
 	c, err := net.Dial("tcp", addr)
 	assert.Nil(t, err)
 	defer c.Close()
@@ -171,267 +119,247 @@ func TestAcceptConnections(t *testing.T) {
 		t.Fatalf("Dialing pool failed: %v", err)
 	}
 	wait()
-	assert.NotNil(t, p.listener)
-	assert.Equal(t, len(p.Addresses), 1)
-	assert.Equal(t, len(p.Pool), 1)
-	if len(p.Pool) == 0 {
+	// assert.NotNil(t, p.listener)
+	assert.Equal(t, len(p.addresses), 1)
+	assert.Equal(t, len(p.pool), 1)
+	if len(p.pool) == 0 {
 		t.Fatalf("Pool empty, would crash")
 	}
 	assert.Equal(t, c.RemoteAddr().String(),
-		p.Pool[1].Conn.LocalAddr().String())
+		p.pool[1].Conn.LocalAddr().String())
 	assert.Equal(t, c.LocalAddr().String(),
-		p.Pool[1].Conn.RemoteAddr().String())
+		p.pool[1].Conn.RemoteAddr().String())
 	assert.True(t, called)
 }
 
 func TestListeningAddress(t *testing.T) {
-	t.Run("not listening", func(t *testing.T) {
-		cleanupNet()
-		cfg := NewConfig()
-		p := NewConnectionPool(cfg, nil)
-		addr, err := p.ListeningAddress()
-		assert.Nil(t, addr)
-		assert.NotNil(t, err)
-	})
+	wait()
 	t.Run("listening", func(t *testing.T) {
-		cleanupNet()
+		// cleanupNet()
 		cfg := NewConfig()
 		cfg.Address = ""
 		cfg.Port = 0
 		p := NewConnectionPool(cfg, nil)
-		defer p.StopListen()
-		assert.Nil(t, p.StartListen())
+		defer p.Shutdown()
+		// assert.Nil(t, p.StartListen())
+		p.Run()
 		wait()
-		addr, err := p.ListeningAddress()
-		assert.Nil(t, err)
-		assert.NotNil(t, addr)
+		// addr, err := p.ListeningAddress()
+		// assert.Nil(t, err)
+		// assert.NotNil(t, addr)
 		t.Log("ListeningAddress: ", addr)
 	})
 }
 
 func TestStartListen(t *testing.T) {
-	cleanupNet()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	called := false
-	cfg.ConnectCallback = func(c *Connection, solicited bool) {
+	cfg.ConnectCallback = func(addr string, solicited bool) {
 		assert.False(t, solicited)
-		assert.NotNil(t, c)
+		// assert.NotNil(t, c)
 		called = true
 	}
 	p := NewConnectionPool(cfg, nil)
-	assert.Nil(t, p.listener)
-	assert.Nil(t, p.StartListen())
-	p.StopListen()
+	defer p.Shutdown()
+	p.Run()
+	wait()
+	_, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	wait()
+	assert.True(t, called)
+	assert.NotNil(t, p.listener)
+	// assert.Nil(t, p.StartListen())
+	// p.StopListen()
 }
 
 func TestStartListenTwice(t *testing.T) {
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
-	go func() {
-		assert.Nil(t, p.StartListen())
-	}()
+	defer p.Shutdown()
+	p.Run()
 	wait()
-	// Listening twice will fail
-	assert.Panics(t, func() { assert.Nil(t, p.StartListen()) })
-	p.StopListen()
+	assert.Panics(t, func() { p.Run() })
 }
 
 func TestStartListenFailed(t *testing.T) {
-	cleanupNet()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
-	q := NewConnectionPool(cfg, nil)
-	go func() {
-		assert.Nil(t, p.StartListen())
-	}()
+	p.Run()
+	defer p.Shutdown()
 	wait()
-	// Can't listen on the same port
-	assert.NotNil(t, q.StartListen())
-	p.StopListen()
+	q := NewConnectionPool(cfg, nil)
+	// // // Can't listen on the same port
+	assert.Panics(t, func() { q.Run() })
 }
 
 func TestStopListen(t *testing.T) {
-	cleanupNet()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
-	go func() {
-		assert.Nil(t, p.StartListen())
-	}()
-	go handleXConnections(p, 1)
-	go p.AcceptConnections()
+	p.Run()
 	wait()
 	assert.NotNil(t, p.listener)
 	conn, err := net.Dial("tcp", addr)
 	assert.Nil(t, err)
 	defer conn.Close()
 	wait()
-	assert.Equal(t, len(p.Pool), 1)
-	p.StopListen()
+	assert.Equal(t, len(p.pool), 1)
+	p.Shutdown()
 	wait()
 	assert.Nil(t, p.listener)
-	assert.Equal(t, len(p.Pool), 0)
-	assert.Equal(t, len(p.Addresses), 0)
+	assert.Equal(t, len(p.pool), 0)
+	assert.Equal(t, len(p.addresses), 0)
 	// Listening again should have no error
-	assert.NotPanics(t, func() {
-		assert.Nil(t, p.StartListen())
-	})
-	p.StopListen()
+	p.Run()
+	wait()
+	p.Shutdown()
 	wait()
 	assert.Nil(t, p.listener)
-	assert.Equal(t, len(p.Pool), 0)
+	assert.Equal(t, len(p.pool), 0)
 }
 
 func TestHandleConnection(t *testing.T) {
-	cleanupNet()
-	listen()
-	conn := newNetConn()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 
 	// Unsolicited
 	called := false
-	cfg.ConnectCallback = func(c *Connection, s bool) {
+	cfg.ConnectCallback = func(address string, s bool) {
 		assert.False(t, s)
-		assert.Equal(t, c.Conn.RemoteAddr().String(), addr)
+		// assert.Equal(t, address, addr)
 		called = true
 	}
 	p := NewConnectionPool(cfg, nil)
-	go handleXConnections(p, 2)
-	var c *Connection
-	go func() {
-		assert.NotNil(t, conn)
-		c = p.handleConnection(conn, false)
-	}()
+	p.Run()
+	defer p.Shutdown()
+	wait()
+	conn, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
 	wait()
 	assert.True(t, called)
-	assert.Equal(t, c.Addr(), conn.RemoteAddr().String())
+	assert.True(t, p.IsConnExist(conn.LocalAddr().String()))
 	called = false
-	delete(p.Addresses, c.Addr())
-	delete(p.Pool, 1)
+	delete(p.addresses, conn.LocalAddr().String())
+	delete(p.pool, 1)
 
 	// Solicited
-	p.Config.ConnectCallback = func(c *Connection, s bool) {
+	p.Config.ConnectCallback = func(address string, s bool) {
 		assert.True(t, s)
-		assert.Equal(t, c.Conn.RemoteAddr().String(), addr)
+		assert.Equal(t, address, addr)
 		called = true
 	}
-	go func() {
-		c = p.handleConnection(conn, true)
-	}()
+
+	go p.handleConnection(conn, true)
 	wait()
-	assert.Equal(t, c.Addr(), conn.RemoteAddr().String())
+	assert.True(t, p.IsConnExist(conn.RemoteAddr().String()))
 	assert.True(t, called)
 	called = false
-	assert.Equal(t, len(p.Addresses), 1)
-	assert.Equal(t, len(p.Pool), 1)
-
-	// Already known panics
-	assert.Panics(t, func() { p.handleConnection(conn, false) })
-	stopConn()
+	assert.Equal(t, len(p.addresses), 1)
+	assert.Equal(t, len(p.pool), 1)
 }
 
 func TestConnect(t *testing.T) {
-	cleanupNet()
-	listen()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
-	cfg.Port += 1
+	// cfg.Port
 	p := NewConnectionPool(cfg, nil)
-	go handleXConnections(p, 1)
-	c, err := p.Connect(addr)
+	p.Run()
+	wait()
+	err := p.Connect(addr)
 	wait()
 	assert.Nil(t, err)
-	assert.NotNil(t, c)
-	if c == nil {
-		t.Fatalf("No connection made")
-	}
 
 	// If already connected, should return same connection
-	newC, err := p.Connect(addr)
+	err = p.Connect(addr)
 	wait()
 	assert.Nil(t, err)
-	assert.Equal(t, c, newC)
-	c.Conn.Close()
-	delete(p.Addresses, addr)
 
-	// Failed dial should return error
-	stopListen()
-	c, err = p.Connect(addr)
-	assert.Nil(t, c)
-	assert.NotNil(t, err)
+	delete(p.addresses, addr)
+
+	p.Shutdown()
+	wait()
+	wc := make(chan struct{})
+	go func() {
+		p.Connect(addr)
+		wc <- struct{}{}
+	}()
+
+	select {
+	case <-wc:
+		t.Fatal("Should not connection to a shutdown connection pool")
+		return
+	default:
+		return
+	}
 }
 
 func TestConnectNoTimeout(t *testing.T) {
-	cleanupNet()
-	listen()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	cfg.DialTimeout = 0
 	cfg.Port += 1
 	p := NewConnectionPool(cfg, nil)
-	go handleXConnections(p, 1)
-	c, err := p.Connect(addr)
+	p.Run()
+	defer p.Shutdown()
+	err := p.Connect(addr)
 	wait()
-	assert.Nil(t, err)
-	assert.NotNil(t, c)
+	assert.NotNil(t, err)
 }
 
 func TestDisconnect(t *testing.T) {
-	cleanupNet()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
-	assert.Nil(t, p.StartListen())
-	go handleXConnections(p, 1)
-	go p.AcceptConnections()
+	p.Run()
+	defer p.Shutdown()
 	wait()
-	conn, err := net.Dial("tcp", addr)
+	_, err := net.Dial("tcp", addr)
 	assert.Nil(t, err)
 	wait()
-	c := p.Pool[1]
+	c := p.pool[1]
 	assert.NotNil(t, c)
-	p.Disconnect(c, DisconnectMalformedMessage)
-	de := <-p.DisconnectQueue
-	assert.Equal(t, de.ConnId, 1)
-	assert.Equal(t, de.Reason, DisconnectMalformedMessage)
-	conn.Close()
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		assert.Equal(t, addr, c.Addr())
+	}
+
+	p.Disconnect(c.Addr(), DisconnectMalformedMessage)
 
 	// Disconnecting a connection that isn't known has no effect
-	c = &Connection{Id: 88}
-	p.Disconnect(c, nil)
-	assert.Equal(t, len(p.DisconnectQueue), 0)
+	// c = &Connection{Id: 88}
 
-	// Disconnecting a nil connection has no effect
-	p.Disconnect(nil, nil)
-	assert.Equal(t, len(p.DisconnectQueue), 0)
-	p.StopListen()
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		t.Fatal("disconnect unknow connection should not see this")
+	}
+	p.Disconnect("", nil)
 }
 
 func TestConnectionClose(t *testing.T) {
-	c := &Connection{
-		Conn:          NewDummyConn(addr),
-		Buffer:        &bytes.Buffer{},
-		WriteQueue:    make(chan Message),
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
-	}
-	c.readLoopDone <- false
-	c.writeLoopDone <- false
-	p := NewConnectionPool(NewConfig(), nil)
-	go p.ConnectionWriteLoop(c)
 	wait()
+	c := &Connection{
+		Conn:       NewDummyConn(addr),
+		Buffer:     &bytes.Buffer{},
+		WriteQueue: make(chan Message),
+	}
+
 	c.Buffer.WriteByte(7)
 	assert.Equal(t, c.Buffer.Len(), 1)
 	c.Close()
@@ -440,293 +368,96 @@ func TestConnectionClose(t *testing.T) {
 	assert.Equal(t, c.Buffer.Len(), 0)
 }
 
-func TestHandleDisconnectionEvent(t *testing.T) {
-	cleanupNet()
-	listen()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
-	cfg.Port += 1
-	called := false
-	expectReason := DisconnectReadFailed
-	cfg.DisconnectCallback = func(c *Connection, r DisconnectReason) {
-		called = true
-		assert.Equal(t, r, expectReason)
-		assert.Equal(t, c.Id, 1)
-	}
-	p := NewConnectionPool(cfg, nil)
-	go handleXConnections(p, 1)
-	wait()
-	c, err := p.Connect(addr)
-	wait()
-	assert.Nil(t, err)
-	assert.NotNil(t, c)
-	assert.Equal(t, len(p.Pool), 1)
-	assert.Equal(t, len(p.Addresses), 1)
-
-	p.Disconnect(c, expectReason)
-	assert.Equal(t, len(p.DisconnectQueue), 1)
-	if len(p.DisconnectQueue) != 1 {
-		t.Fatal("There is nothing in the DisconnectQueue")
-	}
-	de := <-p.DisconnectQueue
-	assert.Equal(t, de.ConnId, 1)
-	assert.Equal(t, de.Reason, expectReason)
-
-	p.HandleDisconnectEvent(de)
-	assert.Equal(t, len(p.Pool), 0)
-	assert.Equal(t, len(p.Addresses), 0)
-	assert.True(t, called)
-	called = false
-
-	// Handling event with unknown ConnId is ignored
-	p.HandleDisconnectEvent(DisconnectEvent{ConnId: 88})
-	assert.False(t, called)
-}
-
 func TestGetConnections(t *testing.T) {
-	cleanupNet()
+	wait()
 	p := NewConnectionPool(NewConfig(), nil)
 	c := &Connection{Id: 1}
 	d := &Connection{Id: 2}
 	e := &Connection{Id: 3}
-	p.Pool[c.Id] = c
-	p.Pool[d.Id] = d
-	p.Pool[e.Id] = e
-
+	p.pool[c.Id] = c
+	p.pool[d.Id] = d
+	p.pool[e.Id] = e
+	p.Run()
+	defer p.Shutdown()
 	conns := p.GetConnections()
 	assert.Equal(t, len(conns), 3)
 	m := make(map[int]*Connection, 3)
-	for _, c := range conns {
-		m[c.Id] = c
+	for i, c := range conns {
+		m[c.Id] = &conns[i]
 	}
 	assert.Equal(t, len(m), 3)
 	for i := 1; i <= 3; i++ {
-		assert.Equal(t, m[i], p.Pool[i])
+		assert.Equal(t, m[i], p.pool[i])
 	}
-}
-
-func TestGetRawConnections(t *testing.T) {
-	cleanupNet()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
-	p := NewConnectionPool(cfg, nil)
-	assert.Nil(t, p.StartListen())
-	go handleXConnections(p, 2)
-	go p.AcceptConnections()
-	wait()
-	conns := p.GetRawConnections()
-	assert.Equal(t, len(conns), 0)
-
-	c, err := net.Dial("tcp", addr)
-	assert.Nil(t, err)
-	assert.NotNil(t, c)
-	wait()
-
-	conns = p.GetRawConnections()
-	assert.Equal(t, len(conns), 1)
-	assert.Equal(t, conns[0].RemoteAddr().String(), c.LocalAddr().String())
-
-	d, err := net.Dial("tcp", addr)
-	assert.Nil(t, err)
-	assert.NotNil(t, d)
-	wait()
-
-	conns = p.GetRawConnections()
-	assert.Equal(t, len(conns), 2)
-	if conns[0].RemoteAddr().String() == c.LocalAddr().String() {
-		assert.Equal(t, conns[0].RemoteAddr().String(), c.LocalAddr().String())
-		assert.Equal(t, conns[1].RemoteAddr().String(), d.LocalAddr().String())
-	} else {
-		assert.Equal(t, conns[0].RemoteAddr().String(), d.LocalAddr().String())
-		assert.Equal(t, conns[1].RemoteAddr().String(), c.LocalAddr().String())
-	}
-
-	p.StopListen()
-	c.Close()
-	d.Close()
 }
 
 func TestConnectionReadLoop(t *testing.T) {
-	cleanupNet()
+	wait()
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
+	p.Run()
+	defer p.Shutdown()
 	wait()
+
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		// assert.Equal(t, connID, 1)
+		assert.Equal(t, reason, DisconnectReadFailed)
+	}
 
 	// 1:
 	// Use a mock net.Conn that captures SetReadDeadline
 	// and throws an error on Read
 	reconn := NewReadErrorConn()
-	c := &Connection{
-		Id:            1,
-		Conn:          reconn,
-		Buffer:        &bytes.Buffer{},
-		WriteQueue:    make(chan Message),
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
-	}
-	c.writeLoopDone <- false
-	c.readLoopDone <- false
-	p.Pool[1] = c
-	go p.connectionReadLoop(c)
+	go p.handleConnection(reconn, false)
 	wait()
 	assert.True(t, reconn.(*ReadErrorConn).ReadDeadlineSet != time.Time{})
-	assert.Equal(t, len(c.readLoopDone), 1)
-	assert.Equal(t, len(p.DisconnectQueue), 1)
-	if len(p.DisconnectQueue) == 0 {
-		t.Fatalf("There is nothing in the DisconnectQueue")
-	}
-	de := <-p.DisconnectQueue
-	assert.Equal(t, de.ConnId, 1)
-	assert.Equal(t, de.Reason, DisconnectReadFailed)
-	p.HandleDisconnectEvent(de)
 	reconn.Close()
 
 	// 2:
 	// Use a mock net.Conn that fails on SetReadDeadline
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		// assert.Equal(t, connID, 2)
+		assert.Equal(t, reason, DisconnectSetReadDeadlineFailed)
+	}
+
 	rdfconn := &ReadDeadlineFailedConn{}
-	c = &Connection{
-		Id:            2,
-		Conn:          rdfconn,
-		Buffer:        &bytes.Buffer{},
-		WriteQueue:    make(chan Message),
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
-	}
-	c.writeLoopDone <- false
-	c.readLoopDone <- false
-	p.Pool[2] = c
-	go p.connectionReadLoop(c)
+	go p.handleConnection(rdfconn, false)
 	wait()
-	assert.Equal(t, len(c.readLoopDone), 1)
-	assert.Equal(t, len(p.DisconnectQueue), 1)
-	if len(p.DisconnectQueue) != 1 {
-		t.Fatalf("There is nothing in the DisconnectQueue")
-	}
-	de = <-p.DisconnectQueue
-	assert.Equal(t, de.ConnId, 2)
-	assert.Equal(t, de.Reason, DisconnectSetReadDeadlineFailed)
-	p.HandleDisconnectEvent(de)
 	rdfconn.Close()
 
 	// 3:
 	// Use a mock net.Conn that returns some bytes on Read
 	// Look for these bytes copied into the eventChannel
-	raconn := &ReadAlwaysConn{}
-	c = &Connection{
-		Id:            3,
-		Conn:          raconn,
-		Buffer:        &bytes.Buffer{},
-		WriteQueue:    make(chan Message),
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		// assert.Equal(t, connID, 3)
+		assert.Equal(t, reason, DisconnectInvalidMessageLength)
 	}
-	c.writeLoopDone <- false
-	c.readLoopDone <- false
-	p.Pool[3] = c
-	go p.connectionReadLoop(c)
+	raconn := &ReadAlwaysConn{}
+	go p.handleConnection(raconn, false)
 	wait()
 	raconn.stop()
 	wait()
-	assert.Equal(t, len(c.readLoopDone), 1)
-	if len(p.DisconnectQueue) == 0 {
-		t.Fatalf("There is nothing in the DisconnectQueue")
-	}
-	de = <-p.DisconnectQueue
-	assert.Equal(t, de.ConnId, 3)
-	assert.Equal(t, de.Reason, DisconnectReadFailed)
-	p.HandleDisconnectEvent(de)
-	assert.True(t, len(p.eventChannel) > 0)
-	for len(p.eventChannel) > 0 {
-		e := <-p.eventChannel
-		assert.Equal(t, e.ConnId, 3)
-		assert.Equal(t, len(e.Data), 1)
-		assert.Equal(t, e.Data[0], byte(88))
-	}
 	raconn.Close()
-	assert.Equal(t, len(p.eventChannel), 0)
 
 	// 4: Use a mock net.Conn that successfully returns 0 bytes when read
 	rnconn := &ReadNothingConn{}
-	c = &Connection{
-		Id:            4,
-		Conn:          rnconn,
-		Buffer:        &bytes.Buffer{},
-		WriteQueue:    make(chan Message),
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		// assert.Equal(t, connID, 4)
+		assert.Equal(t, reason, DisconnectReadFailed)
 	}
-	c.writeLoopDone <- false
-	c.readLoopDone <- false
-	p.Pool[4] = c
-	go p.connectionReadLoop(c)
+	go p.handleConnection(rnconn, false)
 	wait()
 	rnconn.stop()
 	wait()
-	assert.Equal(t, len(c.readLoopDone), 1)
-	if len(p.DisconnectQueue) == 0 {
-		t.Fatalf("There is nothing in the DisconnectQueue")
-	}
-	de = <-p.DisconnectQueue
-	assert.Equal(t, de.ConnId, 4)
-	assert.Equal(t, de.Reason, DisconnectReadFailed)
-	p.HandleDisconnectEvent(de)
-	assert.Equal(t, len(p.eventChannel), 0)
 	rnconn.Close()
-
-	p.StopListen()
-}
-
-func TestHandleConnectionQueue(t *testing.T) {
-	cleanupNet()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
-	p := NewConnectionPool(cfg, nil)
-	c := &Connection{Id: 1, Conn: &ReadAlwaysConn{}}
-	go func() {
-		p.connectionQueue <- c
-	}()
-	wait()
-	d := p.handleConnectionQueue()
-	assert.Equal(t, c, d)
-	assert.Equal(t, len(p.Pool), 1)
-	assert.Equal(t, len(p.Addresses), 1)
-	assert.NotNil(t, p.Pool[1])
-	assert.NotNil(t, p.Addresses[c.Addr()])
-
-	d = p.handleConnectionQueue()
-	assert.Nil(t, d)
-}
-
-func TestProcessEvents(t *testing.T) {
-	cleanupNet()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
-	p := NewConnectionPool(cfg, nil)
-	c := &Connection{
-		Id:     1,
-		Buffer: &bytes.Buffer{},
-		Conn:   &ReadAlwaysConn{},
-	}
-	p.Pool[1] = c
-	p.eventChannel <- dataEvent{ConnId: 1, Data: []byte{1}}
-	p.eventChannel <- dataEvent{ConnId: 1, Data: []byte{2}}
-	p.eventChannel <- dataEvent{ConnId: 1, Data: []byte{3}}
-	// Intentionally unknown ConnId
-	p.eventChannel <- dataEvent{ConnId: 2, Data: []byte{3, 0, 0, 0}}
-
-	p.processEvents()
-	assert.Equal(t, len(p.eventChannel), 0)
-	assert.True(t, bytes.Equal(c.Buffer.Bytes(), []byte{1, 2, 3}))
 }
 
 func TestProcessConnectionBuffers(t *testing.T) {
-	cleanupNet()
+	wait()
+	resetHandler()
+	EraseMessages()
 	RegisterMessage(DummyPrefix, DummyMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
@@ -734,226 +465,228 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	p := NewConnectionPool(cfg, nil)
-	var checkDisconnect = func(reason DisconnectReason) bool {
-		if len(p.DisconnectQueue) > 0 {
-			de := <-p.DisconnectQueue
-			assert.Equal(t, reason, de.Reason)
-			assert.Equal(t, de.ConnId, 1)
-			logger.Critical("handle disc event")
-			p.HandleDisconnectEvent(de)
-			return true
-		}
-		return false
+	p.Run()
+	defer p.Shutdown()
+
+	conn, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	wait()
+	c := p.pool[1]
+
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		fmt.Println(reason)
+		t.Fatal("should not see this")
 	}
 
-	// No connections, so nothing should happen
-	assert.NotPanics(t, p.processConnectionBuffers)
-
-	c := &Connection{
-		Id:            1,
-		Buffer:        &bytes.Buffer{},
-		Conn:          &ReadAlwaysConn{},
-		LastReceived:  time.Time{},
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
-	}
-	c.readLoopDone <- false
-	c.writeLoopDone <- false
-	p.Pool[1] = c
-	// No data in buffer
-	assert.NotPanics(t, p.processConnectionBuffers)
-	assert.False(t, checkDisconnect(nil))
-
-	c.Buffer.Write([]byte{0})
-	// Not enough data in buffer to read length
-	assert.NotPanics(t, p.processConnectionBuffers)
-	assert.False(t, checkDisconnect(nil))
-
-	c.Buffer.Reset()
-	c.Buffer.Write([]byte{4, 0, 0, 0})
-	// Enough data for length, but no content data
-	assert.NotPanics(t, p.processConnectionBuffers)
-	assert.False(t, checkDisconnect(nil))
+	conn.Write([]byte{4, 0, 0, 0})
 
 	// A DummyMessage should have been processed
-	c.Buffer.Write([]byte{'D', 'U', 'M', 'Y'})
-	assert.NotPanics(t, p.processConnectionBuffers)
+	conn.Write([]byte{'D', 'U', 'M', 'Y'})
+	wait()
 	assert.NotEqual(t, c.LastReceived, time.Time{})
 	assert.Equal(t, c.Buffer.Len(), 0)
-	assert.False(t, checkDisconnect(nil))
-
-	// Enough data for length but not enough to process the length
-	c.Buffer.Reset()
-	c.Buffer.Write([]byte{5, 0, 0, 0, 0})
-	assert.NotPanics(t, p.processConnectionBuffers)
+	conn.Write([]byte{5, 0, 0, 0, 0})
+	wait()
 	assert.Equal(t, c.Buffer.Len(), 5)
-	assert.False(t, checkDisconnect(nil))
 
 	// Push multiple messages, the first causing an error, and confirm that
 	// the remaining messages were unprocessed.
-	t.Logf("Pushing multiple messages, first one causing an error")
+	// t.Logf("Pushing multiple messages, first one causing an error")
 	c.Buffer.Reset()
-	c.Buffer.Write([]byte{4, 0, 0, 0, 'E', 'R', 'R', 0x00})
-	c.Buffer.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'})
-	assert.NotPanics(t, p.processConnectionBuffers)
-	assert.Equal(t, c.Buffer.Len(), 8)
-	expect := []byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'}
-	assert.True(t, bytes.Equal(c.Buffer.Bytes(), expect))
-	assert.False(t, checkDisconnect(nil))
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		assert.Equal(t, reason, errors.New("Bad"))
+	}
 
+	conn.Write([]byte{4, 0, 0, 0, 'E', 'R', 'R', 0x00})
+	wait()
+	assert.Equal(t, c.Buffer.Len(), 0)
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		t.Fatal("should not see this")
+	}
+	conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'})
+	wait()
+	assert.Equal(t, c.Buffer.Len(), 0)
+
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		assert.Equal(t, c.Addr(), addr)
+		assert.Equal(t, reason, DisconnectInvalidMessageLength)
+		assert.Nil(t, p.pool[1])
+	}
 	// Sending a length of < messagePrefixLength should cause a disconnect
 	t.Logf("Pushing message with too small length")
 	logger.Critical("666b")
 	c.Buffer.Reset()
 	logger.Critical("666c")
-	c.Buffer.Write([]byte{messagePrefixLength - 1, 0, 0, 0, 'B', 'Y', 'T', 'E'})
-	logger.Critical("666d")
-	assert.NotPanics(t, p.processConnectionBuffers)
-	logger.Critical("666e")
-	assert.True(t, checkDisconnect(DisconnectInvalidMessageLength))
-	logger.Critical("666f")
-	assert.Nil(t, p.Pool[1])
+	conn.Write([]byte{messagePrefixLength - 1, 0, 0, 0, 'B', 'Y', 'T', 'E'})
+	wait()
 
 	// Sending a length > MaxMessageLength should cause a disconnect
-	c.readLoopDone <- false
-	c.writeLoopDone <- false
+	conn, err = net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	c = p.pool[2]
 	t.Logf("Pushing message with too large length")
 	max := p.Config.MaxMessageLength
 	p.Config.MaxMessageLength = 4
-	p.Pool[1] = c
-	c.Buffer.Reset()
-	c.Buffer.Write([]byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E'})
-	assert.NotPanics(t, p.processConnectionBuffers)
-	assert.True(t, checkDisconnect(DisconnectInvalidMessageLength))
-	assert.Nil(t, p.Pool[1])
+	p.Config.DisconnectCallback = func(addr string, r DisconnectReason) {
+		assert.Equal(t, DisconnectInvalidMessageLength, r)
+		assert.Nil(t, p.pool[2])
+	}
+	// p.pool[1] = c
+	// c.Buffer.Reset()
+	conn.Write([]byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E'})
+	wait()
 	p.Config.MaxMessageLength = max
 
 	// Send a malformed message, where ConvertToMessage fails
 	// This is an unknown Message ID
-	c.readLoopDone <- false
-	c.writeLoopDone <- false
 	t.Logf("Pushing message with unknown ID")
-	p.Pool[1] = c
-	c.Buffer.Reset()
-	c.Buffer.Write([]byte{4, 0, 0, 0, 'Y', 'Y', 'Y', 'Z'})
-	assert.NotPanics(t, p.processConnectionBuffers)
-	assert.True(t, checkDisconnect(DisconnectMalformedMessage))
-	assert.Nil(t, p.Pool[1])
-
-	p.StopListen()
+	p.Config.ConnectCallback = func(addr string, solicited bool) {
+		c = p.addresses[addr]
+		c.Buffer.Reset()
+		conn.Write([]byte{4, 0, 0, 0, 'Y', 'Y', 'Y', 'Z'})
+	}
+	conn, err = net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		// assert.Equal(t, connID, 3)
+		assert.Equal(t, reason, DisconnectMalformedMessage)
+		assert.Nil(t, p.pool[3])
+	}
+	wait()
 }
 
 func TestConnectionWriteLoop(t *testing.T) {
-	resetHandler()
-	sendByteMessage = noopSendByteMessage
-	encodeMessage = noopEncodeMessage
-	p, b, c := setupTwoConnections()
-	go p.ConnectionWriteLoop(b)
-	go p.ConnectionWriteLoop(c)
 	wait()
+	resetHandler()
+	EraseMessages()
+	RegisterMessage(BytePrefix, ByteMessage{})
+	VerifyMessages()
+
+	cfg := NewConfig()
+	cfg.Port = uint16(port)
+	cfg.Address = address
+	p := NewConnectionPool(cfg, nil)
+	p.Run()
+	defer p.Shutdown()
+	wait()
+	_, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	wait()
+	c := p.pool[1]
 
 	m := NewByteMessage(88)
 	// Send a successful message to b
-	p.SendMessage(b, m)
+	p.SendMessage(c.Addr(), m)
 	wait()
 	if len(p.SendResults) == 0 {
 		t.Fatalf("No send results, would block")
 	}
 	sr := <-p.SendResults
 	assert.Equal(t, sr.Message, m)
-	assert.Equal(t, sr.Connection, b)
+	assert.Equal(t, sr.Addr, c.Addr())
 	assert.Nil(t, sr.Error)
-	assert.False(t, b.LastSent.IsZero())
+	assert.False(t, c.LastSent.IsZero())
+	c.LastSent = time.Time{}
 	// Send a failed message to c
 	sendByteMessage = failingSendByteMessage
-	p.SendMessage(c, m)
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		assert.Equal(t, reason, DisconnectWriteFailed)
+	}
+	p.SendMessage(c.Addr(), m)
 	wait()
 	if len(p.SendResults) == 0 {
 		t.Fatalf("No send results, would block")
 	}
 	sr = <-p.SendResults
 	assert.Equal(t, sr.Message, m)
-	assert.Equal(t, sr.Connection, c)
+	assert.Equal(t, sr.Addr, c.Addr())
 	assert.NotNil(t, sr.Error)
 	assert.True(t, c.LastSent.IsZero())
-	if len(p.DisconnectQueue) == 0 {
-		t.Fatalf("DisconnectQueue empty, would block")
-	}
-	de := <-p.DisconnectQueue
-	assert.Equal(t, de.Reason, DisconnectWriteFailed)
-	assert.Equal(t, de.ConnId, c.Id)
-}
-
-func TestHandleMessages(t *testing.T) {
-	cleanupNet()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
-	p := NewConnectionPool(cfg, nil)
-	assert.NotPanics(t, p.HandleMessages)
 }
 
 func TestPoolSendMessage(t *testing.T) {
+	wait()
 	resetHandler()
-	c := &Connection{LastSent: time.Time{}, WriteQueue: make(chan Message, 1)}
+	EraseMessages()
+	RegisterMessage(BytePrefix, ByteMessage{})
+	VerifyMessages()
 	cfg := NewConfig()
+	cfg.Address = address
+	cfg.Port = uint16(port)
 	cfg.WriteTimeout = time.Second
+	// cfg.ConnectionWriteQueueSize = 1
 	p := NewConnectionPool(cfg, nil)
+	p.Run()
+	defer p.Shutdown()
+	wait()
 	assert.NotEqual(t, p.Config.ConnectionWriteQueueSize, 0)
-	sendByteMessage = noopSendByteMessage
-	encodeMessage = noopEncodeMessage
-	m := NewByteMessage(88)
-	p.SendMessage(c, m)
-	assert.Equal(t, len(c.WriteQueue), 1)
-	if len(c.WriteQueue) == 0 {
-		t.Fatal("c.WriteQueue empty, would block")
+	cc := make(chan *Connection)
+	p.Config.ConnectCallback = func(addr string, solicited bool) {
+		cc <- p.pool[1]
 	}
-	m2 := <-c.WriteQueue
-	assert.Equal(t, m, m2)
+
+	_, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	wait()
+
+	c := <-cc
+	m := NewByteMessage(88)
+	p.SendMessage(c.Addr(), m)
 
 	// queue full
 	for i := 0; i < cap(c.WriteQueue); i++ {
 		c.WriteQueue <- m
 	}
-	p.Pool[c.Id] = c
-	p.SendMessage(c, m)
-	assert.Equal(t, len(p.DisconnectQueue), 1)
-	if len(p.DisconnectQueue) == 0 {
-		t.Fatal("DisconnectQueue empty, would block")
-	}
-	de := <-p.DisconnectQueue
-	assert.Equal(t, de.Reason, DisconnectWriteQueueFull)
-	assert.Equal(t, de.ConnId, c.Id)
+
+	err = p.SendMessage(c.Addr(), m)
+	assert.Equal(t, DisconnectWriteQueueFull, err)
 }
 
 func TestPoolBroadcastMessage(t *testing.T) {
+	wait()
 	resetHandler()
-	p, b, c := setupTwoConnections()
-	sendByteMessage = noopSendByteMessage
-	encodeMessage = noopEncodeMessage
+	EraseMessages()
+	RegisterMessage(BytePrefix, ByteMessage{})
+	VerifyMessages()
+	cfg := NewConfig()
+	cfg.Address = address
+	cfg.Port = uint16(port)
+	p := NewConnectionPool(cfg, nil)
+	p.Run()
+	defer p.Shutdown()
+	wait()
+
+	ready := make(chan struct{})
+	var i int
+	p.Config.ConnectCallback = func(addr string, solicited bool) {
+		i++
+		if i == 2 {
+			ready <- struct{}{}
+		}
+	}
+
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		assert.Nil(t, reason)
+	}
+	_, err := net.Dial("tcp", addr)
+	assert.Nil(t, err)
+	_, err = net.Dial("tcp", addr)
+	assert.Nil(t, err)
+
+	<-ready
+
 	m := NewByteMessage(88)
 	p.BroadcastMessage(m)
 	wait()
-	assert.Equal(t, len(b.WriteQueue), 1)
-	assert.Equal(t, len(c.WriteQueue), 1)
-	if len(b.WriteQueue) == 0 {
-		t.Fatal("b.WriteQueue empty, would block")
-	}
-	if len(c.WriteQueue) == 0 {
-		t.Fatal("c.WriteQueue empty, would block")
-	}
-	m2 := <-b.WriteQueue
-	assert.Equal(t, m, m2)
-	m2 = <-c.WriteQueue
-	assert.Equal(t, m, m2)
 }
 
 func TestPoolReceiveMessage(t *testing.T) {
-	EraseMessages()
 	resetHandler()
+	EraseMessages()
 	RegisterMessage(BytePrefix, ByteMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
+
 	c := &Connection{}
 	assert.True(t, c.LastReceived.IsZero())
 	p := NewConnectionPool(NewConfig(), nil)
@@ -962,59 +695,30 @@ func TestPoolReceiveMessage(t *testing.T) {
 	b := make([]byte, 0)
 	b = append(b, BytePrefix[:]...)
 	b = append(b, byte(7))
-	err, reason := p.receiveMessage(c, b)
+	reason, err := p.receiveMessage(c, b)
 	assert.Nil(t, err)
 	assert.False(t, c.LastReceived.IsZero())
 	assert.Nil(t, reason)
 
 	// Invalid byte message received
 	b = []byte{1}
-	err, reason = p.receiveMessage(c, b)
+	reason, err = p.receiveMessage(c, b)
 	assert.NotNil(t, err)
 	assert.Nil(t, reason)
 
 	// Valid message, but handler returns a DisconnectReason
 	b = make([]byte, 0)
 	b = append(b, ErrorPrefix[:]...)
-	err, reason = p.receiveMessage(c, b)
+	reason, err = p.receiveMessage(c, b)
 	assert.Nil(t, err)
 	assert.NotNil(t, reason)
 	assert.Equal(t, reason.Error(), "Bad")
 }
 
-/* Helpers */
+// /* Helpers */
 
 func wait() {
 	time.Sleep(time.Millisecond * 50)
-}
-
-func newPoolConnection(p *ConnectionPool) (c *Connection) {
-	go p.NewConnection(newNetConn())
-	for {
-		c = p.handleConnectionQueue()
-		if c != nil {
-			break
-		} else {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	return
-}
-
-func handleXConnections(p *ConnectionPool, x int) {
-	n := 0
-	for {
-		if p.handleConnectionQueue() != nil {
-			n++
-			logger.Critical("Got a connection off queue")
-		}
-		if n >= x {
-			break
-		} else {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	logger.Critical("Got %d queue connections", n)
 }
 
 type DummyAddr struct {
@@ -1175,31 +879,4 @@ func (self *ReadNothingConn) Close() error {
 
 func (self *ReadNothingConn) stop() {
 	self.stopReading = true
-}
-
-func makeConnection(id int, addr string) *Connection {
-	c := &Connection{
-		Id:            id,
-		Conn:          NewDummyConn(addr),
-		LastSent:      time.Time{},
-		LastReceived:  time.Time{},
-		Buffer:        &bytes.Buffer{},
-		WriteQueue:    make(chan Message, 10),
-		readLoopDone:  make(chan bool, 1),
-		writeLoopDone: make(chan bool, 1),
-	}
-	c.readLoopDone <- false
-	c.writeLoopDone <- false
-	return c
-}
-
-func setupTwoConnections() (*ConnectionPool, *Connection, *Connection) {
-	b := makeConnection(1, addr)
-	c := makeConnection(2, addrb)
-	p := NewConnectionPool(NewConfig(), nil)
-	p.Pool[b.Id] = b
-	p.Pool[c.Id] = c
-	p.Addresses[b.Conn.RemoteAddr().String()] = b
-	p.Addresses[c.Conn.RemoteAddr().String()] = c
-	return p, b, c
 }

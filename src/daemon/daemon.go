@@ -196,7 +196,8 @@ type Daemon struct {
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
-	OutgoingConnections map[string]*gnet.Connection
+	OutgoingConnections map[string]bool
+	// OutgoingConnections map[string]*gnet.Connection
 	// Number of connections waiting to be formed or timeout
 	pendingConnections map[string]*pex.Peer
 	// Keep track of unsolicited clients who should notify us of their version
@@ -244,7 +245,7 @@ func NewDaemon(config Config) *Daemon {
 			config.Daemon.OutgoingMax),
 		connectionErrors: make(chan ConnectionError,
 			config.Daemon.OutgoingMax),
-		OutgoingConnections: make(map[string]*gnet.Connection,
+		OutgoingConnections: make(map[string]bool,
 			config.Daemon.OutgoingMax),
 		pendingConnections: make(map[string]*pex.Peer,
 			config.Daemon.PendingMax),
@@ -290,8 +291,7 @@ func (self *Daemon) Shutdown() {
 // down
 func (self *Daemon) Start(quit chan int) {
 	if !self.Config.DisableIncomingConnections {
-		self.Pool.StartListen() //no goroutine
-		go self.Pool.AcceptConnections()
+		self.Pool.StartListen()
 	}
 
 	// TODO -- run blockchain stuff in its own goroutine
@@ -312,7 +312,7 @@ func (self *Daemon) Start(quit chan int) {
 	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
 	requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
 	updateBlacklistTicker := time.Tick(self.Peers.Config.UpdateBlacklistRate)
-	messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
+	// messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
 	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
 
@@ -366,11 +366,6 @@ main:
 			if !self.Config.DisableOutgoingConnections {
 				self.makePrivateConnections()
 			}
-		// Process the connection queue
-		case <-messageHandlingTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.Pool.HandleMessages()
-			}
 		// Process callbacks for when a client connects. No disconnect chan
 		// is needed because the callback is triggered by HandleDisconnectEvent
 		// which is already select{}ed here
@@ -385,12 +380,6 @@ main:
 				log.Panic("There should be no connection errors")
 			}
 			self.handleConnectionError(r)
-		// Process disconnections
-		case r := <-self.Pool.Pool.DisconnectQueue:
-			if self.Config.DisableNetworking {
-				log.Panic("There should be nothing in the DisconnectQueue")
-			}
-			self.Pool.Pool.HandleDisconnectEvent(r)
 		// Process message sending results
 		case r := <-self.Pool.Pool.SendResults:
 			if self.Config.DisableNetworking {
@@ -406,10 +395,6 @@ main:
 		// Process any pending RPC requests
 		case req := <-self.Gateway.Requests:
 			req()
-
-		//save blockchain periodically
-		// case <-blockchainBackupTicker:
-		// self.Visor.SaveBlockchain()
 
 		// TODO -- run these in the Visor
 		// Create blocks, if master chain
@@ -471,7 +456,10 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 	if self.Config.LocalhostOnly && !IsLocalhost(a) {
 		return errors.New("Not localhost")
 	}
-	if self.Pool.Pool.Addresses[p.Addr] != nil {
+
+	if self.Pool.Pool.IsConnExist(p.Addr) {
+		// }
+		// if self.Pool.Pool.Addresses[p.Addr] != nil {
 		return errors.New("Already connected")
 	}
 	if self.pendingConnections[p.Addr] != nil {
@@ -483,8 +471,7 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 	logger.Debug("Trying to connect to %s", p.Addr)
 	self.pendingConnections[p.Addr] = p
 	go func() {
-		_, err := self.Pool.Pool.Connect(p.Addr)
-		if err != nil {
+		if err := self.Pool.Pool.Connect(p.Addr); err != nil {
 			self.connectionErrors <- ConnectionError{p.Addr, err}
 		}
 	}()
@@ -564,7 +551,7 @@ func (self *Daemon) cullInvalidConnections() {
 	now := util.Now()
 	for a, t := range self.ExpectingIntroductions {
 		// Forget about anyone that already disconnected
-		if self.Pool.Pool.Addresses[a] == nil {
+		if !self.Pool.Pool.IsConnExist(a) {
 			delete(self.ExpectingIntroductions, a)
 			continue
 		}
@@ -572,8 +559,7 @@ func (self *Daemon) cullInvalidConnections() {
 		if t.Add(self.Config.IntroductionWait).Before(now) {
 			logger.Info("Removing %s for not sending a version", a)
 			delete(self.ExpectingIntroductions, a)
-			self.Pool.Pool.Disconnect(self.Pool.Pool.Addresses[a],
-				DisconnectIntroductionTimeout)
+			self.Pool.Pool.Disconnect(a, DisconnectIntroductionTimeout)
 			self.Peers.RemovePeer(a)
 		}
 	}
@@ -593,11 +579,11 @@ func (self *Daemon) processMessageEvent(e MessageEvent) {
 	// We have to check at process time and not record time because
 	// Introduction message does not update ExpectingIntroductions until its
 	// Process() is called
-	_, needsIntro := self.ExpectingIntroductions[e.Context.Conn.Addr()]
+	_, needsIntro := self.ExpectingIntroductions[e.Context.Addr]
 	if needsIntro {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
-			self.Pool.Pool.Disconnect(e.Context.Conn, DisconnectNoIntroduction)
+			self.Pool.Pool.Disconnect(e.Context.Addr, DisconnectNoIntroduction)
 		}
 	}
 	e.Message.Process(self)
@@ -615,8 +601,9 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 
 	delete(self.pendingConnections, a)
 
-	c := self.Pool.Pool.Addresses[a]
-	if c == nil {
+	// c := self.Pool.Pool.Addresses[a]
+	// if c == nil {
+	if !self.Pool.Pool.IsConnExist(a) {
 		logger.Warning("While processing an onConnect event, no pool " +
 			"connection was found")
 		return
@@ -625,49 +612,48 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 	blacklisted := self.Peers.Peers.IsBlacklisted(a)
 	if blacklisted {
 		logger.Info("%s is blacklisted, disconnecting", a)
-		self.Pool.Pool.Disconnect(c, DisconnectIsBlacklisted)
+		self.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
 		return
 	}
 
 	if self.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)
-		self.Pool.Pool.Disconnect(c, DisconnectIPLimitReached)
+		self.Pool.Pool.Disconnect(a, DisconnectIPLimitReached)
 		return
 	}
 
 	self.recordIPCount(a)
 
 	if e.Solicited {
-		self.OutgoingConnections[a] = c
+		self.OutgoingConnections[a] = true
 	}
 	self.ExpectingIntroductions[a] = util.Now()
 	logger.Debug("Sending introduction message to %s", a)
 	m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
 		self.Pool.Pool.Config.Port)
-	self.Pool.Pool.SendMessage(c, m)
+	self.Pool.Pool.SendMessage(a, m)
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not
 // pushed to a separate channel, because disconnects are already processed
 // by a queue in the daemon.Run() select{}.
-func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
-	reason gnet.DisconnectReason) {
-	a := c.Addr()
-	logger.Info("%s disconnected because: %v", a, reason)
+func (self *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
+	// a := c.Addr()
+	logger.Info("%s disconnected because: %v", addr, reason)
 	duration, exists := BlacklistOffenses[reason]
 	if exists {
-		self.Peers.Peers.AddBlacklistEntry(a, duration)
+		self.Peers.Peers.AddBlacklistEntry(addr, duration)
 	}
-	delete(self.OutgoingConnections, a)
-	delete(self.ExpectingIntroductions, a)
-	self.Visor.RemoveConnection(a)
-	self.removeIPCount(a)
-	self.removeConnectionMirror(a)
+	delete(self.OutgoingConnections, addr)
+	delete(self.ExpectingIntroductions, addr)
+	self.Visor.RemoveConnection(addr)
+	self.removeIPCount(addr)
+	self.removeConnectionMirror(addr)
 }
 
 // Triggered when an gnet.Connection is connected
-func (self *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
-	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
+func (self *Daemon) onGnetConnect(addr string, solicited bool) {
+	self.onConnectEvent <- ConnectEvent{Addr: addr, Solicited: solicited}
 }
 
 // Returns whether the ipCount maximum has been reached
@@ -766,7 +752,7 @@ func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
 		logger.Warning("Failed to send %s to %s: %v",
-			reflect.TypeOf(r.Message).Name(), r.Connection.Addr(), r.Error)
+			reflect.TypeOf(r.Message).Name(), r.Addr, r.Error)
 		return
 	}
 	switch r.Message.(type) {

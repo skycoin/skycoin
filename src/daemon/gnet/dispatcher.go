@@ -13,16 +13,16 @@ import (
 
 // Result of a single message send
 type SendResult struct {
-	Connection *Connection
-	Message    Message
-	Error      error
+	Addr    string
+	Message Message
+	Error   error
 }
 
-func newSendResult(c *Connection, m Message, err error) SendResult {
+func newSendResult(addr string, m Message, err error) SendResult {
 	return SendResult{
-		Connection: c,
-		Message:    m,
-		Error:      err,
+		Addr:    addr,
+		Message: m,
+		Error:   err,
 	}
 }
 
@@ -33,18 +33,17 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 }
 
 // Event handler that is called after a Connection sends a complete message
-func convertToMessage(c *Connection, msg []byte) (Message, error) {
+func convertToMessage(id int, msg []byte) (Message, error) {
 	msgId := [4]byte{}
 	if len(msg) < len(msgId) {
 		return nil, errors.New("Not enough data to read msg id")
 	}
 	copy(msgId[:], msg[:len(msgId)])
 	msg = msg[len(msgId):]
-
 	t, succ := MessageIdReverseMap[msgId]
 	if !succ {
 		logger.Debug("Connection %d sent unknown message id %s",
-			c.Id, string(msgId[:]))
+			id, string(msgId[:]))
 		return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
 	}
 
@@ -53,7 +52,7 @@ func convertToMessage(c *Connection, msg []byte) (Message, error) {
 	}
 
 	var m Message
-	var v reflect.Value = reflect.New(t)
+	v := reflect.New(t)
 	//logger.Debug("Giving %d bytes to the decoder", len(msg))
 	used, err := deserializeMessage(msg, v)
 	if err != nil {

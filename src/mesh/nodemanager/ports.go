@@ -6,11 +6,11 @@ import (
 
 type PortDelivery struct {
 	content        map[string]uint32
-	requestChannel chan Request
+	requestChannel chan PortRequest
 	startPort      uint32
 }
 
-type Request struct {
+type PortRequest struct {
 	host            string
 	responseChannel chan uint32
 }
@@ -18,7 +18,7 @@ type Request struct {
 func newPortDelivery() *PortDelivery {
 	portDelivery := &PortDelivery{}
 	portDelivery.content = map[string]uint32{}
-	portDelivery.requestChannel = make(chan Request, 1024)
+	portDelivery.requestChannel = make(chan PortRequest, 1024)
 	portDelivery.startPort = messages.GetConfig().StartPort
 	go portDelivery.deliver()
 	return portDelivery
@@ -26,7 +26,7 @@ func newPortDelivery() *PortDelivery {
 
 func (self *PortDelivery) Get(host string) uint32 {
 	responseChannel := make(chan uint32, 1024)
-	request := Request{host, responseChannel}
+	request := PortRequest{host, responseChannel}
 	self.requestChannel <- request
 	response := <-responseChannel
 	return response

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/app"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"
@@ -51,7 +52,9 @@ func pingPong(size, pings int) {
 	fmt.Printf("\nPinging %s from %s\n\n", serverAddr.Hex(), clientAddr.Hex())
 	for i := 0; i < pings; i++ {
 		sendTime := time.Now().UnixNano()
-		response, err := client.Send([]byte{}) //send a message to the server and wait for a response
+		retChan := client.Send([]byte{}) //send a message to the server and wait for a response
+		resp := <-retChan
+		response, err := resp.Response, resp.Err
 		if err != nil {
 			fmt.Println("No response")
 			lostPackets++
@@ -94,4 +97,14 @@ func pingPong(size, pings int) {
 	fmt.Printf("Average total time: %d ns\n", totalAvg)
 	fmt.Println("")
 
+}
+
+func pongServer(meshnet *network.NodeManager, serverAddr cipher.PubKey) (*app.Server, error) {
+
+	srv, err := app.NewServer(meshnet, serverAddr, func(_ []byte) []byte {
+		serverTime := time.Now().UnixNano()
+		out := strconv.FormatInt(serverTime, 10)
+		return []byte(out)
+	})
+	return srv, err
 }

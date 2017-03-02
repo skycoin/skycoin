@@ -15,6 +15,7 @@ func main() {
 
 func testSendAndReceive(n int) {
 	meshnet := network.NewNetwork()
+	defer meshnet.Shutdown()
 	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(n) // create sequence and get addresses of the first and the last node in it
 
 	_, err := app.NewServer(meshnet, serverAddr, func(in []byte) []byte { // register server on last node in meshnet nm
@@ -34,7 +35,9 @@ func testSendAndReceive(n int) {
 		panic(err)
 	}
 
-	response, err := client.Send([]byte("Integration test")) //send a message to the server and wait for a response
+	retChan := client.Send([]byte("Integration test")) //send a message to the server and wait for a response
+	resp := <-retChan
+	response, err := resp.Response, resp.Err
 	if err != nil {
 		panic(err)
 	}

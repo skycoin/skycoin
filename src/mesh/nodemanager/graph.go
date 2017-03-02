@@ -3,6 +3,7 @@ package nodemanager
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/errors"
@@ -11,6 +12,7 @@ import (
 type RouteGraph struct {
 	nodes map[cipher.PubKey]map[cipher.PubKey]*DirectRoute
 	paths map[cipher.PubKey]*SP
+	lock  *sync.Mutex
 }
 
 type DirectRoute struct {
@@ -21,12 +23,15 @@ type DirectRoute struct {
 
 func newGraph() *RouteGraph {
 	graph := RouteGraph{}
+	graph.lock = &sync.Mutex{}
 	graph.clear()
 	return &graph
 }
 
-func (s *RouteGraph) toString() {
-	for from, routes := range s.nodes {
+func (self *RouteGraph) toString() {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	for from, routes := range self.nodes {
 		fmt.Println("\nNODE: ", from)
 		for _, directRoute := range routes {
 			fmt.Println("\tRoute: ", directRoute)
@@ -35,42 +40,75 @@ func (s *RouteGraph) toString() {
 	}
 }
 
-func (s *RouteGraph) addDirectRoute(from, to cipher.PubKey, weight int) {
+func (self *RouteGraph) addDirectRoute(from, to cipher.PubKey, weight int) {
 	if from == to || weight < 1 {
 		return
 	}
-	if _, ok := s.nodes[from]; !ok {
-		s.nodes[from] = map[cipher.PubKey]*DirectRoute{}
+
+	_, ok := self.getDirectRoutes(from)
+
+	if !ok {
+		self.setDirectRoutes(from, map[cipher.PubKey]*DirectRoute{})
 	} else {
-		if _, ok = s.nodes[from][to]; ok {
+		if _, ok = self.getDirectRoute(from, to); ok {
 			return
 		}
 	}
 	newDirectRoute := &DirectRoute{from, to, weight}
-	s.nodes[from][to] = newDirectRoute
+	self.setDirectRoute(from, to, newDirectRoute)
 }
 
 /* ---- can be useful in the future, maybe
-func (s *RouteGraph) RebuildRoutes() {
+func (self *RouteGraph) RebuildRoutes() {
 	s.clear()
 	for node := range(nodes) {
 		paths[node] = newSP(s, node)
 	}
 }
 */
-func (s *RouteGraph) findRoute(from, to cipher.PubKey) ([]cipher.PubKey, error) {
-	sp, found := s.paths[from]
+func (self *RouteGraph) findRoute(from, to cipher.PubKey) ([]cipher.PubKey, error) {
+	sp, found := self.paths[from]
 	if !found {
-		sp = newSP(s, from)
-		s.paths[from] = sp
+		sp = newSP(self, from)
+		self.paths[from] = sp
 	}
 	route, err := sp.pathTo(to)
 	return route, err
 }
 
-func (s *RouteGraph) clear() {
-	s.nodes = map[cipher.PubKey]map[cipher.PubKey]*DirectRoute{}
-	s.paths = map[cipher.PubKey]*SP{}
+func (self *RouteGraph) clear() {
+	self.nodes = map[cipher.PubKey]map[cipher.PubKey]*DirectRoute{}
+	self.paths = map[cipher.PubKey]*SP{}
+}
+
+func (self *RouteGraph) getDirectRoutes(nodeId cipher.PubKey) (map[cipher.PubKey]*DirectRoute, bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	nodes, ok := self.nodes[nodeId]
+	return nodes, ok
+}
+
+func (self *RouteGraph) getDirectRoute(nodeFrom, nodeTo cipher.PubKey) (*DirectRoute, bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	directRoute, ok := self.nodes[nodeFrom][nodeTo]
+	return directRoute, ok
+}
+
+func (self *RouteGraph) setDirectRoutes(nodeId cipher.PubKey, nodes map[cipher.PubKey]*DirectRoute) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	self.nodes[nodeId] = nodes
+}
+
+func (self *RouteGraph) setDirectRoute(nodeFrom, nodeTo cipher.PubKey, directRoute *DirectRoute) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	self.nodes[nodeFrom][nodeTo] = directRoute
 }
 
 type SP struct { //ShortestPath
@@ -78,11 +116,16 @@ type SP struct { //ShortestPath
 	distTo map[cipher.PubKey]int
 	edgeTo map[cipher.PubKey]*DirectRoute
 	pq     *MinPQ
+	lock   *sync.Mutex
 }
 
 func newSP(graph *RouteGraph, source cipher.PubKey) *SP {
 
+	graph.lock.Lock()
+	defer graph.lock.Unlock()
+
 	sp := SP{}
+	sp.lock = &sync.Mutex{}
 
 	sp.source = source
 	sp.distTo = map[cipher.PubKey]int{}
@@ -106,6 +149,9 @@ func newSP(graph *RouteGraph, source cipher.PubKey) *SP {
 }
 
 func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, error) { // if the path exists return a path and true, otherwise empty path and false
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	path := []cipher.PubKey{to}
 	e := s.edgeTo[to]
@@ -131,6 +177,10 @@ func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, error) { // if the path 
 func (s *SP) relax(edge *DirectRoute) {
 	from := edge.from
 	to := edge.to
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	newDist := s.distTo[from] + edge.weight
 	if s.distTo[to] > newDist {
 		s.distTo[to] = newDist
@@ -151,6 +201,7 @@ type NodeDist struct {
 type MinPQ struct {
 	keys      []*NodeDist
 	positions map[cipher.PubKey]int
+	lock      *sync.Mutex
 }
 
 func newPQ() *MinPQ {
@@ -158,6 +209,7 @@ func newPQ() *MinPQ {
 	zeroND := &NodeDist{}
 	pq.keys = []*NodeDist{zeroND}
 	pq.positions = map[cipher.PubKey]int{}
+	pq.lock = &sync.Mutex{}
 	return &pq
 }
 
@@ -166,6 +218,8 @@ func (pq *MinPQ) isEmpty() bool {
 }
 
 func (pq *MinPQ) contains(node cipher.PubKey) bool {
+	pq.lock.Lock()
+	defer pq.lock.Unlock()
 	_, exists := pq.positions[node]
 	return exists
 }
@@ -179,7 +233,9 @@ func (pq *MinPQ) delMin() cipher.PubKey {
 	n--
 	pq.exch(1, n)
 	pq.keys = pq.keys[0:n]
+	pq.lock.Lock()
 	delete(pq.positions, min)
+	pq.lock.Unlock()
 
 	return min
 }
@@ -188,12 +244,16 @@ func (pq *MinPQ) insert(node cipher.PubKey, dist int) {
 	nodeDist := &NodeDist{node, dist}
 	pq.keys = append(pq.keys, nodeDist)
 	position := len(pq.keys) - 1
+	pq.lock.Lock()
 	pq.positions[node] = position
+	pq.lock.Unlock()
 	pq.swim(position)
 }
 
 func (pq *MinPQ) decreaseKey(node cipher.PubKey, dist int) {
+	pq.lock.Lock()
 	position, found := pq.positions[node]
+	pq.lock.Unlock()
 	if found {
 		key := pq.keys[position]
 		key.dist = dist
@@ -226,6 +286,8 @@ func (pq *MinPQ) less(i, j int) bool {
 }
 
 func (pq *MinPQ) exch(i, j int) {
+	pq.lock.Lock()
 	pq.positions[pq.keys[i].node], pq.positions[pq.keys[j].node] = j, i
 	pq.keys[i], pq.keys[j] = pq.keys[j], pq.keys[i]
+	pq.lock.Unlock()
 }

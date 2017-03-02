@@ -79,7 +79,9 @@ func TestSend(t *testing.T) {
 	err = client.DialWithRoutes(route, backRoute)
 	assert.Nil(t, err)
 
-	response, err := client.Send([]byte("test"))
+	retChan := client.Send([]byte("test"))
+	resp := <-retChan
+	response, err := resp.Response, resp.Err
 
 	assert.Nil(t, err)
 	assert.Equal(t, "test!", string(response))
@@ -105,7 +107,9 @@ func TestSendWithFindRoute(t *testing.T) {
 	err = client.Dial(serverAddr)
 	assert.Nil(t, err)
 
-	response, err := client.Send([]byte("test"))
+	retChan := client.Send([]byte("test"))
+	resp := <-retChan
+	response, err := resp.Response, resp.Err
 
 	assert.Nil(t, err)
 	assert.Equal(t, "test!!!", string(response))

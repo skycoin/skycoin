@@ -60,12 +60,18 @@ func newConnection(nm *NodeManager, nodeAttached cipher.PubKey) (*Connection, er
 		status:       DISCONNECTED,
 		nodeAttached: nodeAttached,
 	}
-	conn.closingChannel = make(chan bool, 1024)
+	conn.closingChannel = make(chan bool)
 	return conn, nil
 }
 
 func (self *Connection) Send(msg []byte) (uint32, error) {
+
+	//	messages.RegisterEvent("Conn.Send start")
+
 	if self.status != CONNECTED {
+
+		//		messages.RegisterEvent("Conn.Send return (DISCONNECT)")
+
 		return 0, errors.ERR_DISCONNECTED
 	}
 	requestMessage := messages.RequestMessage{
@@ -73,19 +79,32 @@ func (self *Connection) Send(msg []byte) (uint32, error) {
 		Sequence:  self.sequence,
 		Payload:   msg,
 	}
+
+	//	messages.RegisterEvent("conn.Send serializing")
+
 	requestSerialized := messages.Serialize(messages.MsgRequestMessage, requestMessage)
+
+	//	messages.RegisterEvent("conn.Send serialized")
+
 	inRouteMessage := messages.InRouteMessage{
 		messages.NIL_TRANSPORT,
 		self.routeId,
 		requestSerialized,
 	}
-	msgSerialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
+	//	msgSerialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
 	node, err := self.nm.getNodeById(self.nodeAttached)
 	if err != nil {
+
+		//		messages.RegisterEvent("Conn.Send return (No Node By ID)")
+
 		return 0, err
 	}
-	node.InjectTransportMessage(msgSerialized)
+	//	messages.RegisterEvent("Conn.Send passes to InjectTransportMesage")
+	node.InjectTransportMessage(&inRouteMessage)
 	self.sequence++
+
+	//	messages.RegisterEvent("Conn.Send return (SUCCESS)")
+
 	return self.sequence - 1, nil
 }
 
@@ -94,6 +113,6 @@ func (self *Connection) GetStatus() uint8 {
 }
 
 func (self *Connection) Close() {
-	close(self.closingChannel)
+	//close(self.closingChannel)
 	self.status = DISCONNECTED
 }

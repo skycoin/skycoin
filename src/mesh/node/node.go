@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"log"
+	"sync"
 )
 
 //A Node has a map of route rewriting rules
@@ -22,12 +23,18 @@ import (
 
 type Node struct {
 	Id                     cipher.PubKey
-	IncomingChannel        chan []byte
+	IncomingChannel        chan *messages.InRouteMessage
 	incomingControlChannel chan messages.InControlMessage
 
-	Transports           map[messages.TransportId]*transport.Transport
+	Transports map[messages.TransportId]*transport.Transport
+	//	transportChannel chan *TransportRequest
+
 	RouteForwardingRules map[messages.RouteId]*RouteRule
-	consumer             messages.Consumer
+	//routeChannel         chan *RouteRequest
+
+	lock *sync.Mutex
+
+	consumer messages.Consumer
 
 	controlChannels map[messages.ChannelId]*ControlChannel
 
@@ -45,11 +52,14 @@ type RouteRule struct {
 func NewNode() *Node {
 	node := new(Node)
 	node.Id = createPubKey()
-	node.IncomingChannel = make(chan []byte, 1024)
-	node.incomingControlChannel = make(chan messages.InControlMessage, 1024)
+	node.IncomingChannel = make(chan *messages.InRouteMessage, 1024)
+	node.incomingControlChannel = make(chan messages.InControlMessage, 256)
 	node.Transports = make(map[messages.TransportId]*transport.Transport)
 	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
 	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
+	//node.routeChannel = make(chan *RouteRequest)
+	//	node.transportChannel = make(chan *TransportRequest)
+	node.lock = &sync.Mutex{}
 	if messages.IsDebug() {
 		fmt.Printf("Created Node %s\n", node.Id.Hex())
 	}
@@ -63,11 +73,13 @@ func createPubKey() cipher.PubKey {
 }
 
 func (self *Node) Shutdown() {
-	close(self.IncomingChannel)
+	//close(self.IncomingChannel)
 }
 
 //move node forward on tick, process events
 func (self *Node) Tick() {
+	//go self.serveTransports()
+	//go self.serveRoutes()
 	backChannel := make(chan bool, 1)
 	self.runCycles(backChannel)
 	<-backChannel
@@ -83,22 +95,16 @@ func (self *Node) runCycles(backChannel chan bool) {
 
 func (self *Node) handleIncomingTransportMessages() {
 	for msg := range self.IncomingChannel {
+		//		messages.RegisterEvent("Node accepted message through incoming channel")
 		if messages.IsDebug() {
-			fmt.Printf("\nnode with id %s accepting a message with type %d\n\n", self.Id.Hex(), messages.GetMessageType(msg))
+			fmt.Printf("\nnode with id %s accepting a message\n\n", self.Id.Hex())
 		}
 		//process our incoming messages
-		switch messages.GetMessageType(msg) {
 		//InRouteMessage is the only message coming in to node from transports
-		case messages.MsgInRouteMessage:
-			var m1 messages.InRouteMessage
-			messages.Deserialize(msg, &m1)
-			if messages.IsDebug() {
-				fmt.Println("InRouteMessage", m1)
-			}
-			self.handleInRouteMessage(m1)
-		default:
-			fmt.Println("wrong type", messages.GetMessageType(msg))
+		if messages.IsDebug() {
+			fmt.Println("InRouteMessage", msg)
 		}
+		self.handleInRouteMessage(msg)
 	}
 }
 
@@ -109,25 +115,36 @@ func (self *Node) handleIncomingControlMessages() {
 	}
 }
 
-func (self *Node) handleInRouteMessage(m1 messages.InRouteMessage) {
+func (self *Node) handleInRouteMessage(m1 *messages.InRouteMessage) {
 	//look in route table
+
+	//	messages.RegisterEvent("handleInRouteMessage start")
+
 	routeId := m1.RouteId
 	transportId := m1.TransportId //who is is from
 	//check that transport exists
-	if _, ok := self.Transports[transportId]; !ok && transportId != messages.NIL_TRANSPORT {
+	if _, err := self.getTransport(transportId); err != nil && transportId != messages.NIL_TRANSPORT {
 		log.Printf("Node %s received message From Transport that does not exist\n", self.Id.Hex())
 	}
 	//check if route exists
-	routeRule, ok := self.RouteForwardingRules[routeId]
-	if !ok {
-		log.Printf("Node %s received route message for route that does not exist\n", self.Id.Hex())
-		panic("")
+	routeRule, err := self.getRoute(routeId)
+	if err != nil {
+
+		//		messages.RegisterEvent("handleInRouteMessage error (route doesn't exist)")
+
+		log.Fatalf("Node %s received route message for route that does not exist\n", self.Id.Hex())
 	}
 	//check that incoming transport is correct
 	if transportId != routeRule.IncomingTransport {
+
+		//		messages.RegisterEvent("handleInRouteMessage error (route doesn't match transport)")
+
 		log.Panic("Node: incoming route does not match the transport id it should be received from")
 	}
 	if routeId != routeRule.IncomingRoute {
+
+		//		messages.RegisterEvent("handleInRouteMessage error (route doesn't match route rule)")
+
 		log.Panic("Node: impossible, incoming route id does not match route rule id")
 	}
 	//construct new packet
@@ -136,27 +153,43 @@ func (self *Node) handleInRouteMessage(m1 messages.InRouteMessage) {
 	datagram := m1.Datagram
 
 	if outgoingRouteId == messages.NIL_ROUTE && outgoingTransportId == messages.NIL_TRANSPORT {
+
+		//		messages.RegisterEvent("handleInRouteMessage passes to consume")
+
 		self.consume(datagram)
+
+		//		messages.RegisterEvent("handleInRouteMessage ends consume")
+
 	} else {
+
+		//		messages.RegisterEvent("handleInRouteMessage starts creating OutRouteMessage")
+
 		var out messages.OutRouteMessage //replace inRoute, with outRoute, using rule
 		out.RouteId = outgoingRouteId
 		out.Datagram = datagram
 		//serialize message, with prefix
-		b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
+		//		b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
 
-		if outgoingTransport, found := self.Transports[outgoingTransportId]; found {
-			outgoingTransport.GetFromNode(b1) //inject message to transport
+		if outgoingTransport, err := self.getTransport(outgoingTransportId); err == nil {
+
+			//			messages.RegisterEvent("handleInRouteMessage passes OutRouteMessage to node")
+
+			outgoingTransport.GetFromNode(out) //inject message to transport
+
+			//			messages.RegisterEvent("handleInRouteMessage passed OutRouteMessage to node")
+
 		}
 	}
 }
 
 //inject an incoming message from the transport
-func (self *Node) InjectTransportMessage(msg []byte) {
+func (self *Node) InjectTransportMessage(msg *messages.InRouteMessage) {
+	//	messages.RegisterEvent("InjectTransportMessage")
 	self.IncomingChannel <- msg //push message to channel
 }
 
 func (self *Node) InjectControlMessage(msg messages.InControlMessage) {
-	msg.ResponseChannel = make(chan bool, 1024)
+	msg.ResponseChannel = make(chan bool)
 	self.incomingControlChannel <- msg
 
 	<-msg.ResponseChannel
@@ -172,8 +205,8 @@ func (self *Node) GetPeer() *messages.Peer {
 }
 
 func (self *Node) GetTransportById(id messages.TransportId) (*transport.Transport, error) {
-	tr, ok := self.Transports[id]
-	if !ok {
+	tr, err := self.getTransport(id)
+	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Node %d doesn't contain transport with id %d", self.Id, id))
 	}
 	return tr, nil
@@ -194,7 +227,7 @@ func (self *Node) ConnectedTo(other messages.NodeInterface) bool {
 }
 
 func (self *Node) SetTransport(id messages.TransportId, tr messages.TransportInterface) {
-	self.Transports[id] = tr.(*transport.Transport)
+	self.setTransport(id, tr.(*transport.Transport))
 }
 
 func (self *Node) consume(msg []byte) {
@@ -202,25 +235,39 @@ func (self *Node) consume(msg []byte) {
 		fmt.Printf("\nNode %s consumed message %d\n\n", self.Id.Hex(), msg)
 	}
 
+	//	messages.RegisterEvent("starting consume")
+
 	go func() {
 		switch messages.GetMessageType(msg) {
 
 		case messages.MsgRequestMessage:
+
+			//			messages.RegisterEvent("recognized consume request: deserializing")
+
 			requestMessage := &messages.RequestMessage{}
 			err := messages.Deserialize(msg, requestMessage)
 			if err != nil {
 				// send wrong request format
 			} else {
-				self.consumeRequest(requestMessage)
+
+				//				messages.RegisterEvent("passing to consumeRequest")
+
+				go self.consumeRequest(requestMessage)
 			}
 
 		case messages.MsgResponseMessage:
+
+			//			messages.RegisterEvent("recognized consume response: deserializing")
+
 			responseMessage := &messages.ResponseMessage{}
 			err := messages.Deserialize(msg, responseMessage)
 			if err != nil {
 				// send wrong request format
 			} else {
-				self.consumeResponse(responseMessage)
+
+				//				messages.RegisterEvent("passing to consumeResponse")
+
+				go self.consumeResponse(responseMessage)
 			}
 
 		default:
@@ -230,6 +277,9 @@ func (self *Node) consume(msg []byte) {
 }
 
 func (self *Node) consumeRequest(requestMessage *messages.RequestMessage) {
+
+	//	messages.RegisterEvent("consumeRequest start")
+
 	if self.consumer == nil {
 		fmt.Printf("\nNo consumer registered at node %s\n\n", self.Id.Hex())
 		return
@@ -238,26 +288,56 @@ func (self *Node) consumeRequest(requestMessage *messages.RequestMessage) {
 	sequence := requestMessage.Sequence
 	payload := requestMessage.Payload
 	responseChannel := make(chan []byte)
-	self.consumer.Consume(sequence, payload, responseChannel)
+
+	//	messages.RegisterEvent("consumeRequest passing to consumer.Consume")
+
+	go self.consumer.Consume(sequence, payload, responseChannel)
+
+	//	messages.RegisterEvent("consumeRequest passed to consumer.Consume")
+
 	responsePayload := <-responseChannel
-	self.sendResponse(backRoute, sequence, responsePayload)
+
+	//	messages.RegisterEvent("consumeRequest got response from consumer.Consume: sending response")
+
+	go self.sendResponse(backRoute, sequence, responsePayload)
+
+	//	messages.RegisterEvent("consumeRequest finish")
+
 }
 
 func (self *Node) consumeResponse(responseMessage *messages.ResponseMessage) {
+
+	//	messages.RegisterEvent("consumeResponse start")
+
 	if self.consumer == nil {
 		fmt.Printf("\nNo consumer registered at node %s\n\n", self.Id.Hex())
 		return
 	}
 	sequence := responseMessage.Sequence
 	payload := responseMessage.Payload
+
+	//	messages.RegisterEvent("consumeResponse passed to consumer.Consume")
+
 	self.consumer.Consume(sequence, payload, nil)
+
+	//	messages.RegisterEvent("consumeResponse finish")
+
 }
 
 func (self *Node) sendResponse(backRoute messages.RouteId, sequence uint32, responsePayload []byte) {
+
+	//	messages.RegisterEvent("sendResponse start")
+
 	responseMessage := messages.ResponseMessage{sequence, responsePayload}
+
+	//	messages.RegisterEvent("sendResponse serializing")
+
 	responseSerialized := messages.Serialize(messages.MsgResponseMessage, responseMessage)
-	_, ok := self.RouteForwardingRules[backRoute]
-	if !ok {
+
+	//	messages.RegisterEvent("sendResponse finished serializing")
+
+	_, err := self.getRoute(backRoute)
+	if err != nil {
 		fmt.Println("Wrong back route ID:", backRoute)
 		return
 	}
@@ -266,8 +346,14 @@ func (self *Node) sendResponse(backRoute messages.RouteId, sequence uint32, resp
 		RouteId:     backRoute,
 		Datagram:    responseSerialized,
 	}
-	inRouteS := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
-	self.InjectTransportMessage(inRouteS)
+	//	inRouteS := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
+
+	//	messages.RegisterEvent("sendResponse passes to InjectTransportMessage")
+
+	go self.InjectTransportMessage(&inRouteMessage)
+
+	//	messages.RegisterEvent("sendResponse finish")
+
 }
 
 func (self *Node) AssignConsumer(consumer messages.Consumer) {

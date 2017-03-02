@@ -5,7 +5,6 @@ import { HttpModule } from '@angular/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
-
 import { SkycoinHeaderComponent } from './components/skycoin-header/skycoin-header.component';
 import { BlockChainTableComponent } from './components/block-chain-table/block-chain-table.component';
 import { SkycoinPaginationComponent } from './components/skycoin-pagination/skycoin-pagination.component';
@@ -21,8 +20,10 @@ import { AddressDetailComponent } from './components/address-detail/address-deta
 import {UxOutputsService} from "./components/address-detail/UxOutputs.service";
 import { TransactionDetailComponent } from './components/transaction-detail/transaction-detail.component';
 import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
-import {QRCodeModule} from "../js/angular2-qrcode";
-
+import {QRCodeModule} from "angular2-qrcode";
+import { LoadingComponent } from './components/loading/loading.component';
+// import {QRCodeModule} from "../js/angular2-qrcode";
+// import {QRCodeModule} from "angular2-qrcode";
 
 const ROUTES = [
   {
@@ -60,15 +61,16 @@ const ROUTES = [
     NumPagesPipe,
     BlockDetailsComponent,
     AddressDetailComponent,
-    TransactionDetailComponent
+    TransactionDetailComponent,
+    LoadingComponent
   ],
   imports: [
     CommonModule,
+    QRCodeModule,
     BrowserModule,
     FormsModule,
     HttpModule,
     MomentModule,
-    QRCodeModule,
     RouterModule.forRoot(ROUTES)
   ],
   providers: [BlockChainService,SkycoinBlockchainPaginationService,UxOutputsService, TransactionDetailService],

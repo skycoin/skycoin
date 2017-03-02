@@ -23,6 +23,8 @@ export class SkycoinPaginationComponent implements OnInit {
   private currentPages:number[];
   private pageEndPointer:number;
 
+  private noUpcoming:boolean;
+
   constructor(private paginationService:SkycoinBlockchainPaginationService) {
     this.numberOfBlocks =0;
     this.currentPage = 1;
@@ -30,6 +32,7 @@ export class SkycoinPaginationComponent implements OnInit {
     this.pagesToShowAtATime=5;
     this.pageStartPointer = this.currentPage;
     this.pageEndPointer = this.currentPage;
+    this.noUpcoming = false;
   }
 
   ngOnInit() {
@@ -39,18 +42,13 @@ export class SkycoinPaginationComponent implements OnInit {
       this.pagesToShowAtATime = this.pagesToShowAtATime<numberOfBlocks?this.pagesToShowAtATime:this.numberOfBlocks;
 
       this.currentPages = [];
-      for (var i = this.currentPage; i <= this.currentPage+4; i++) {
+      for (var i = this.currentPage; i < this.currentPage+this.pagesToShowAtATime; i++) {
         this.currentPages.push(i);
       }
 
     })
   }
 
-  setPage(currentPage:any){
-    if(!(currentPage in this.pages)){
-
-    }
-  }
 
   changePage(pageNumber:any){
     this.onChangePage.emit([pageNumber, this.numberOfBlocks]);
@@ -59,18 +57,22 @@ export class SkycoinPaginationComponent implements OnInit {
   }
 
   loadUpcoming():boolean{
-
+    if(this.currentPages[0]*10+this.pagesToShowAtATime*10>=this.numberOfBlocks){
+      this.noUpcoming = true;
+      return false;
+    }
     this.onChangePage.emit([this.currentPages[0]+this.pagesToShowAtATime,  this.numberOfBlocks]);
     this.currentPage = this.currentPages[0]+this.pagesToShowAtATime;
 
     this.currentPages = [];
-    for (var i = this.currentPage; i <= this.currentPage+4; i++) {
-      if(this.numberOfBlocks-i*10>=0){
+    for (var i = this.currentPage; i < this.currentPage+this.pagesToShowAtATime && i<=this.numberOfBlocks; i++) {
+      if(i*10-this.numberOfBlocks< 10){
         this.currentPages.push(i);
       }
-      else if(this.numberOfBlocks-i*10>=-10){
-        this.currentPages.push(i);
+      else{
+        this.noUpcoming = true;
       }
+
     }
 
 
@@ -78,19 +80,34 @@ export class SkycoinPaginationComponent implements OnInit {
   }
 
   loadPrevious():boolean{
+    this.noUpcoming = false;
     if(this.currentPages[0]<=1){
       return false;
     }
-    this.onChangePage.emit([this.currentPages[0]-this.pagesToShowAtATime, this.numberOfBlocks]);
-    this.currentPage = this.currentPages[0]-this.pagesToShowAtATime;
 
-    this.currentPages = [];
-    for (var i = this.currentPage; i <= this.currentPage+4; i++) {
-      if(i*10<=this.numberOfBlocks){
+    if(this.currentPages[0]-this.pagesToShowAtATime<=0){
+      this.currentPages = [];
+      this.currentPage = 1;
+      this.onChangePage.emit([1, this.numberOfBlocks]);
+      for (var i = this.currentPage; i < this.currentPage+this.pagesToShowAtATime; i++) {
         this.currentPages.push(i);
       }
 
     }
+    else{
+
+      this.onChangePage.emit([this.currentPages[0]-this.pagesToShowAtATime, this.numberOfBlocks]);
+      this.currentPage = this.currentPages[0]-this.pagesToShowAtATime;
+
+      this.currentPages = [];
+      for (var i = this.currentPage; i <this.currentPage+this.pagesToShowAtATime; i++) {
+        if(i*10<=this.numberOfBlocks){
+          this.currentPages.push(i);
+        }
+
+      }
+    }
+
 
     return false;
   }

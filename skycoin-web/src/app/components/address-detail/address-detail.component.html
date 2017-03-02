@@ -22,7 +22,7 @@
           <li class="collection-item"><h5>inputs</h5></li>
           <li class="collection-item" *ngFor="let input of transaction.inputs">
             <!--<a href="/address/{{input.uxid}}">uxid</a>-->
-            <a href="/address/{{input.owner}}">{{input.owner}}</a></li>
+            <a class="tooltipped" data-position="bottom" data-delay="250" attr.data-tooltip="UxId: {{input.uxid}}" href="/address/{{input.owner}}">Address: {{input.owner}}</a></li>
         </ul>
       </div>
       <div class="accent-1 col s1 right-arrow center">

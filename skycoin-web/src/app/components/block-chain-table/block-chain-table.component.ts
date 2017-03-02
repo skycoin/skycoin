@@ -16,8 +16,9 @@ export class BlockChainTableComponent implements OnInit {
 
   private blocks:Block[];
   private totalBlocks:number;
-
+  private loading:boolean;
   constructor(private blockService:BlockChainService,private router: Router) {
+    this.loading = false;
     this.blocks=[];
   }
 
@@ -51,14 +52,26 @@ export class BlockChainTableComponent implements OnInit {
   handlePageChange(pagesData:number[]){
     this.totalBlocks= pagesData[1];
     let currentPage =pagesData[0];
+
     let blockStart = this.totalBlocks - currentPage*10 +1;
     let blockEnd = blockStart +9;
 
+    if(blockEnd>=this.totalBlocks){
+      blockEnd = this.totalBlocks;
+    }
+
+    if(blockStart <=1 ){
+      blockStart = 1;
+    }
+    this.loading = true;
+
     this.blockService.getBlocks(blockStart,blockEnd).subscribe(
       (data)=>{
-        console.log(data);
         let newData= _.sortBy(data, function (block) {return block.header.seq}).reverse();
         this.blocks= newData;
+        this.loading = false;
+      },(err)=>{
+        this.loading = false;
       }
     );
   }

@@ -2,19 +2,11 @@ package gnet
 
 import (
 	"errors"
-	"io/ioutil"
 	"reflect"
 	"testing"
 
-	logging "github.com/op/go-logging"
 	"github.com/stretchr/testify/assert"
 )
-
-func init() {
-	if silenceLogger {
-		logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
-	}
-}
 
 func TestNewMessageContext(t *testing.T) {
 	c := &Connection{}

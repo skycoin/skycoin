@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -117,6 +118,10 @@ type Connection struct {
 	// Synchronizers for read/write loop termination
 	writeLoopDone chan bool
 	readLoopDone  chan bool
+	// acquire and release to use raw incoming connection
+	acquire chan struct{}
+	// close acquire once
+	acquireClose *sync.Once
 }
 
 // Creates a new Connection tied to a ConnectionPool
@@ -132,10 +137,56 @@ func NewConnection(pool *ConnectionPool, id int, conn net.Conn,
 		WriteQueue:     make(chan Message, writeQueueSize),
 		writeLoopDone:  make(chan bool, 1),
 		readLoopDone:   make(chan bool, 1),
+		acquire:        make(chan struct{}),
+		acquireClose:   new(sync.Once),
 	}
+	c.Release() // make it released
 	c.writeLoopDone <- false
 	c.readLoopDone <- false
 	return c
+}
+
+// Acquire can be used only from inside (*ConnectionPool).ConnectCallback.
+// The role of the Acquire is to get raw incoming connection to perform some
+// work (like raw handskae). You must to call Release when done. When you
+// acquire a connection, the read-write loop of the connetion can't start
+// before you relase it
+func (self *Connection) Acquire() {
+	// If you want to perform some work on an incoming connection but
+	// if you do it inside ConnectCallback it will block execution flow.
+	// The Accquire and Release method are used to prevent starting read- and
+	// write-loops untill we release the connection. This way we can do the wrok
+	// in separate goroutine, that doesn't block main execution flow
+
+	// when acquire was blocked for reading,
+	// the connection is acquired
+	self.acquire = make(chan struct{})
+	// close it once
+	self.acquireClose = new(sync.Once)
+}
+
+// Release used after Acquire when you done. It's unsafe to call Release if you
+// don't call Acquire. It's safe to call it many times. The design is following
+//
+//     myPoolConfig.ConnectCallback = func(gc *Connection, outgoing bool) {
+//         if !outgoing { // if the connection is incoming
+//             gc.Acquire()
+//             go func() {
+//                 defer gc.Release()
+//                 performRawHandshake(gc)
+//             } ()
+//             return
+//         }
+//     }
+//
+// It's possible to use Acquire/Release for outgoing connections too. A
+// connection you use will be closed when you call StopListen. If you call
+// Acquire on some connection and then StopListen the connection will be
+// released and closed
+func (self *Connection) Release() {
+	self.acquireClose.Do(func() {
+		close(self.acquire)
+	})
 }
 
 func (self *Connection) Addr() string {
@@ -148,6 +199,7 @@ func (self *Connection) String() string {
 
 func (self *Connection) Close() {
 	self.Conn.Close()
+	self.Release() // release possible acquired connections
 	if self.WriteQueue != nil {
 		close(self.WriteQueue)
 	}
@@ -416,6 +468,7 @@ func (self *ConnectionPool) GetRawConnections() []net.Conn {
 // This is only public because its very helpful for testing applications
 // that use this module.  Don't call it from non-test code.
 func (self *ConnectionPool) ConnectionWriteLoop(c *Connection) {
+	<-c.acquire
 	<-c.writeLoopDone
 	for {
 		m, ok := <-c.WriteQueue
@@ -436,6 +489,7 @@ func (self *ConnectionPool) ConnectionWriteLoop(c *Connection) {
 
 // Reads data from socket into channel in a goroutine for each connection
 func (self *ConnectionPool) connectionReadLoop(conn *Connection) {
+	<-conn.acquire
 	<-conn.readLoopDone
 	reason := DisconnectUnexpectedError
 	defer func() {

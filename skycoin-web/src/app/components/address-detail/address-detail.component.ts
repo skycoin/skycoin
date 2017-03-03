@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import {UxOutputsService} from "./UxOutputs.service";
 import {Router, ActivatedRoute, Params} from "@angular/router";
 import {Observable} from "rxjs";
-import {QRCodeComponent} from "ng2-qrcode";
 
 @Component({
   selector: 'app-address-detail',

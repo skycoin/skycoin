@@ -22,8 +22,6 @@ import { TransactionDetailComponent } from './components/transaction-detail/tran
 import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
 import {QRCodeModule} from "angular2-qrcode";
 import { LoadingComponent } from './components/loading/loading.component';
-// import {QRCodeModule} from "../js/angular2-qrcode";
-// import {QRCodeModule} from "angular2-qrcode";
 
 const ROUTES = [
   {

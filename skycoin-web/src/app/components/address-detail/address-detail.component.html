@@ -4,13 +4,14 @@
       <ul class="collection">
         <li class="collection-item"><h5>Address</h5><span>{{currentAddress}}</span></li>
         <li class="collection-item">Number of transactions: {{transactions.length}} </li>
-        <li class="collection-item">Current value: {{getCurrentBalance()}} skycoins</li>
+        <li class="collection-item">Current value: <i class="material-icons">ic_account_balance</i> {{getCurrentBalance()}} skycoins</li>
       </ul>
     </div>
   </div>
 
   <div class="card col s4">
-    <qr-code *ngIf="currentAddress!=null" [value]="currentAddress" [size]="300"></qr-code>
+    <!--<qr-code *ngIf="currentAddress!=null" [value]="currentAddress" [size]="300"></qr-code>-->
+    <div id="qr-code"></div>
     <p class="address-qr">{{currentAddress}}</p>
   </div>
 
@@ -22,7 +23,19 @@
           <li class="collection-item"><h5>inputs</h5></li>
           <li class="collection-item" *ngFor="let input of transaction.inputs">
             <!--<a href="/address/{{input.uxid}}">uxid</a>-->
-            <a class="tooltipped" data-position="bottom" data-delay="250" attr.data-tooltip="UxId: {{input.uxid}}" href="/address/{{input.owner}}">Address: {{input.owner}}</a></li>
+            <a class="tooltipped" data-position="bottom" data-delay="250" attr.data-tooltip="UxId: {{input.uxid}}" href="/address/{{input.owner}}">{{input.owner}}</a>
+            <i (click)="showUxId()" class="material-icons">ic_info_outline</i>
+            <div class="modal bottom-sheet" [ngClass]="{modalShow:showUxID}">
+              <div class="modal-content">
+                <h4>UxId</h4>
+                {{input.uxid}}
+              </div>
+              <div class="modal-footer">
+                <a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat" (click)="hideUxId()">Close</a>
+              </div>
+            </div>
+          </li>
+
         </ul>
       </div>
       <div class="accent-1 col s1 right-arrow center">
@@ -42,11 +55,6 @@
         </ul>
       </div>
   </div>
-
-
-
-
-
-
-
 </div>
+
+

@@ -21,7 +21,8 @@
         "styles.css"
       ],
       "scripts": [
-        "js/materialize.js"
+        "js/materialize.js",
+        "js/qrcode.min.js"
       ],
       "environments": {
         "source": "environments/environment.ts",

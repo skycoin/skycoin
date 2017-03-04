@@ -48,19 +48,20 @@ func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
 	if c == nil {
 		return nil
 	}
-	if _, exist := d.ConnectionMirrors[addr]; !exist {
+
+	mirror, exist := d.connectionMirrors.Get(addr)
+	if !exist {
 		return nil
 	}
 
-	_, expecting := d.ExpectingIntroductions[addr]
 	return &Connection{
 		Id:           c.Id,
 		Addr:         addr,
 		LastSent:     c.LastSent.Unix(),
 		LastReceived: c.LastReceived.Unix(),
-		Outgoing:     !d.OutgoingConnections[addr],
-		Introduced:   !expecting,
-		Mirror:       d.ConnectionMirrors[addr],
+		Outgoing:     !d.outgoingConnections.Get(addr),
+		Introduced:   !d.needsIntro(addr),
+		Mirror:       mirror,
 		ListenPort:   d.GetListenPort(addr),
 	}
 }

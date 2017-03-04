@@ -79,7 +79,7 @@ func (self *Pool) Shutdown() {
 
 // Starts listening on the configured Port
 // no goroutine
-func (self *Pool) StartListen() {
+func (self *Pool) Start() {
 	self.Pool.Run()
 }
 

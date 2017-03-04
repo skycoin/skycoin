@@ -42,8 +42,6 @@ func convertToMessage(id int, msg []byte) (Message, error) {
 	msg = msg[len(msgId):]
 	t, succ := MessageIdReverseMap[msgId]
 	if !succ {
-		logger.Debug("Connection %d sent unknown message id %s",
-			id, string(msgId[:]))
 		return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
 	}
 

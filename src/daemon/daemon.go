@@ -196,30 +196,31 @@ type Daemon struct {
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
-	OutgoingConnections map[string]bool
-	// OutgoingConnections map[string]*gnet.Connection
+	outgoingConnections *OutgoingConnections
 	// Number of connections waiting to be formed or timeout
-	pendingConnections map[string]*pex.Peer
+	pendingConnections *PendingConnections
 	// Keep track of unsolicited clients who should notify us of their version
-	ExpectingIntroductions map[string]time.Time
+	expectingIntroductions *ExpectIntroductions
 	// Keep track of a connection's mirror value, to avoid double
 	// connections (one to their listener, and one to our listener)
 	// Maps from addr to mirror value
-	ConnectionMirrors map[string]uint32
+	connectionMirrors *ConnectionMirrors
 	// Maps from mirror value to a map of ip (no port)
 	// We use a map of ip as value because multiple peers can have the same
 	// mirror (to avoid attacks enabled by our use of mirrors),
 	// but only one per base ip
-	mirrorConnections map[uint32]map[string]uint16
+	mirrorConnections *MirrorConnections
 	// Client connection/disconnection callbacks
 	onConnectEvent chan ConnectEvent
 	// Connection failure events
 	connectionErrors chan ConnectionError
 	// Tracking connections from the same base IP.  Multiple connections
 	// from the same base IP are allowed but limited.
-	ipCounts map[string]int
+	ipCounts *IPCount
 	// Message handling queue
 	messageEvents chan MessageEvent
+	// channel for reading and writing member variable thread safly.
+	memChannel chan func()
 }
 
 // Returns a Daemon with primitives allocated
@@ -234,10 +235,10 @@ func NewDaemon(config Config) *Daemon {
 
 		DefaultConnections: DefaultConnections, //passed in from top level
 
-		ExpectingIntroductions: make(map[string]time.Time),
-		ConnectionMirrors:      make(map[string]uint32),
-		mirrorConnections:      make(map[uint32]map[string]uint16),
-		ipCounts:               make(map[string]int),
+		expectingIntroductions: NewExpectIntroductions(),
+		connectionMirrors:      NewConnectionMirrors(),
+		mirrorConnections:      NewMirrorConnections(),
+		ipCounts:               NewIPCount(),
 		// TODO -- if there are performance problems from blocking chans,
 		// Its because we are connecting to more things than OutgoingMax
 		// if we have private peers
@@ -245,12 +246,11 @@ func NewDaemon(config Config) *Daemon {
 			config.Daemon.OutgoingMax),
 		connectionErrors: make(chan ConnectionError,
 			config.Daemon.OutgoingMax),
-		OutgoingConnections: make(map[string]bool,
-			config.Daemon.OutgoingMax),
-		pendingConnections: make(map[string]*pex.Peer,
-			config.Daemon.PendingMax),
+		outgoingConnections: NewOutgoingConnections(config.Daemon.OutgoingMax),
+		pendingConnections:  NewPendingConnections(config.Daemon.PendingMax),
 		messageEvents: make(chan MessageEvent,
 			config.Pool.EventChannelSize),
+		memChannel: make(chan func()),
 	}
 	d.Gateway = NewGateway(config.Gateway, d)
 	d.Messages.Config.Register()
@@ -277,48 +277,47 @@ type MessageEvent struct {
 	Context *gnet.MessageContext
 }
 
-// Terminates all subsystems safely.  To stop the Daemon run loop, send a value
+// Shutdown Terminates all subsystems safely.  To stop the Daemon run loop, send a value
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
-func (self *Daemon) Shutdown() {
-	self.Pool.Shutdown()
-	self.Peers.Shutdown()
-	self.Visor.Shutdown()
+func (dm *Daemon) Shutdown() {
+	dm.Pool.Shutdown()
+	dm.Peers.Shutdown()
+	dm.Visor.Shutdown()
 	gnet.EraseMessages()
 }
 
-// Main loop for peer/connection management. Send anything to quit to shut it
+// Start main loop for peer/connection management. Send anything to quit to shut it
 // down
-func (self *Daemon) Start(quit chan int) {
-	if !self.Config.DisableIncomingConnections {
-		self.Pool.StartListen()
+func (dm *Daemon) Start(quit chan int) {
+	if !dm.Config.DisableIncomingConnections {
+		dm.Pool.Start()
 	}
 
 	// TODO -- run blockchain stuff in its own goroutine
-	blockInterval := time.Duration(self.Visor.Config.Config.BlockCreationInterval)
+	blockInterval := time.Duration(dm.Visor.Config.Config.BlockCreationInterval)
 	// blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !self.Visor.Config.Config.IsMaster {
+	if !dm.Visor.Config.Config.IsMaster {
 		blockCreationTicker.Stop()
 	}
 
-	unconfirmedRefreshTicker := time.Tick(self.Visor.Config.Config.UnconfirmedRefreshRate)
-	blocksRequestTicker := time.Tick(self.Visor.Config.BlocksRequestRate)
-	blocksAnnounceTicker := time.Tick(self.Visor.Config.BlocksAnnounceRate)
+	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
+	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
+	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
 
-	privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
-	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
-	outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
-	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
-	requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
-	updateBlacklistTicker := time.Tick(self.Peers.Config.UpdateBlacklistRate)
-	// messageHandlingTicker := time.Tick(self.Pool.Config.MessageHandlingRate)
-	clearStaleConnectionsTicker := time.Tick(self.Pool.Config.ClearStaleRate)
-	idleCheckTicker := time.Tick(self.Pool.Config.IdleCheckRate)
+	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
+	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
+	outgoingConnectionsTicker := time.Tick(dm.Config.OutgoingRate)
+	clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
+	requestPeersTicker := time.Tick(dm.Peers.Config.RequestRate)
+	updateBlacklistTicker := time.Tick(dm.Peers.Config.UpdateBlacklistRate)
+	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
+	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
 	// connecto to trusted peers
-	if !self.Config.DisableOutgoingConnections {
-		self.connectToTrustPeer()
+	if !dm.Config.DisableOutgoingConnections {
+		go dm.connectToTrustPeer()
 	}
 
 main:
@@ -326,81 +325,81 @@ main:
 		select {
 		// Flush expired blacklisted peers
 		case <-updateBlacklistTicker:
-			if !self.Peers.Config.Disabled {
-				self.Peers.Peers.Blacklist.Refresh()
+			if !dm.Peers.Config.Disabled {
+				dm.Peers.Peers.Blacklist.Refresh()
 			}
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
-			if !self.Config.DisableNetworking {
-				self.cullInvalidConnections()
+			if !dm.Config.DisableNetworking {
+				dm.cullInvalidConnections()
 			}
 		// Request peers via PEX
 		case <-requestPeersTicker:
-			self.Peers.requestPeers(self.Pool)
+			dm.Peers.requestPeers(dm.Pool)
 		// Remove peers we haven't seen in a while
 		case <-clearOldPeersTicker:
-			if !self.Peers.Config.Disabled {
-				self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
+			if !dm.Peers.Config.Disabled {
+				dm.Peers.Peers.Peerlist.ClearOld(dm.Peers.Config.Expiration)
 			}
 		// Remove connections that haven't said anything in a while
 		case <-clearStaleConnectionsTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.clearStaleConnections()
+			if !dm.Config.DisableNetworking {
+				dm.Pool.clearStaleConnections()
 			}
 		// Sends pings as needed
 		case <-idleCheckTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.sendPings()
+			if !dm.Config.DisableNetworking {
+				dm.Pool.sendPings()
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
-			trustPeerNum := len(self.Peers.Peers.Peerlist.GetAllTrustedPeers())
-			if !self.Config.DisableOutgoingConnections &&
-				len(self.OutgoingConnections) < (self.Config.OutgoingMax+trustPeerNum) &&
-				len(self.pendingConnections) < self.Config.PendingMax {
-				self.connectToRandomPeer()
+			trustPeerNum := len(dm.Peers.Peers.Peerlist.GetAllTrustedPeers())
+			if !dm.Config.DisableOutgoingConnections &&
+				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
+				dm.pendingConnections.Len() < dm.Config.PendingMax {
+				dm.connectToRandomPeer()
 			}
 		// Always try to stay connected to our private peers
 		// TODO (also, connect to all of them on start)
 		case <-privateConnectionsTicker:
-			if !self.Config.DisableOutgoingConnections {
-				self.makePrivateConnections()
+			if !dm.Config.DisableOutgoingConnections {
+				dm.makePrivateConnections()
 			}
 		// Process callbacks for when a client connects. No disconnect chan
 		// is needed because the callback is triggered by HandleDisconnectEvent
 		// which is already select{}ed here
-		case r := <-self.onConnectEvent:
-			if self.Config.DisableNetworking {
+		case r := <-dm.onConnectEvent:
+			if dm.Config.DisableNetworking {
 				log.Panic("There should be no connect events")
 			}
-			self.onConnect(r)
+			dm.onConnect(r)
 		// Handle connection errors
-		case r := <-self.connectionErrors:
-			if self.Config.DisableNetworking {
+		case r := <-dm.connectionErrors:
+			if dm.Config.DisableNetworking {
 				log.Panic("There should be no connection errors")
 			}
-			self.handleConnectionError(r)
+			dm.handleConnectionError(r)
 		// Process message sending results
-		case r := <-self.Pool.Pool.SendResults:
-			if self.Config.DisableNetworking {
+		case r := <-dm.Pool.Pool.SendResults:
+			if dm.Config.DisableNetworking {
 				log.Panic("There should be nothing in SendResults")
 			}
-			self.handleMessageSendResult(r)
+			dm.handleMessageSendResult(r)
 		// Message handlers
-		case m := <-self.messageEvents:
-			if self.Config.DisableNetworking {
+		case m := <-dm.messageEvents:
+			if dm.Config.DisableNetworking {
 				log.Panic("There should be no message events")
 			}
-			self.processMessageEvent(m)
+			dm.processMessageEvent(m)
 		// Process any pending RPC requests
-		case req := <-self.Gateway.Requests:
+		case req := <-dm.Gateway.Requests:
 			req()
 
 		// TODO -- run these in the Visor
 		// Create blocks, if master chain
 		case <-blockCreationTicker.C:
-			if self.Visor.Config.Config.IsMaster {
-				err := self.Visor.CreateAndPublishBlock(self.Pool)
+			if dm.Visor.Config.Config.IsMaster {
+				err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
 					logger.Error("Failed to create block: %v", err)
 				} else {
@@ -409,43 +408,45 @@ main:
 				}
 			}
 		case <-unconfirmedRefreshTicker:
-			self.Visor.RefreshUnconfirmed()
+			dm.Visor.RefreshUnconfirmed()
 		case <-blocksRequestTicker:
-			self.Visor.RequestBlocks(self.Pool)
+			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:
-			self.Visor.AnnounceBlocks(self.Pool)
-
+			dm.Visor.AnnounceBlocks(dm.Pool)
+		case f := <-dm.memChannel:
+			f()
 		case <-quit:
 			break main
 		}
 	}
 }
 
-// Returns the ListenPort for a given address.  If no port is found, 0 is
+// GetListenPort returns the ListenPort for a given address.  If no port is found, 0 is
 // returned
-func (self *Daemon) GetListenPort(addr string) uint16 {
-	m, ok := self.ConnectionMirrors[addr]
+func (dm *Daemon) GetListenPort(addr string) uint16 {
+	m, ok := dm.connectionMirrors.Get(addr)
 	if !ok {
 		return 0
 	}
-	mc := self.mirrorConnections[m]
-	if mc == nil {
-		log.Panic("mirrorConnections map does not exist, but mirror does")
-	}
-	a, _, err := SplitAddr(addr)
+
+	ip, _, err := SplitAddr(addr)
 	if err != nil {
 		logger.Error("GetListenPort received invalid addr: %v", err)
 		return 0
-	} else {
-		return mc[a]
 	}
+
+	p, ok := dm.mirrorConnections.Get(m, ip)
+	if !ok {
+		return 0
+	}
+	return p
 }
 
 // Connects to a given peer.  Returns an error if no connection attempt was
 // made.  If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
-func (self *Daemon) connectToPeer(p *pex.Peer) error {
-	if self.Config.DisableOutgoingConnections {
+func (dm *Daemon) connectToPeer(p *pex.Peer) error {
+	if dm.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
 	a, _, err := SplitAddr(p.Addr)
@@ -453,70 +454,70 @@ func (self *Daemon) connectToPeer(p *pex.Peer) error {
 		logger.Warning("PEX gave us an invalid peer: %v", err)
 		return errors.New("Invalid peer")
 	}
-	if self.Config.LocalhostOnly && !IsLocalhost(a) {
+	if dm.Config.LocalhostOnly && !IsLocalhost(a) {
 		return errors.New("Not localhost")
 	}
 
-	if self.Pool.Pool.IsConnExist(p.Addr) {
-		// }
-		// if self.Pool.Pool.Addresses[p.Addr] != nil {
+	if dm.Pool.Pool.IsConnExist(p.Addr) {
 		return errors.New("Already connected")
 	}
-	if self.pendingConnections[p.Addr] != nil {
+
+	if _, ok := dm.pendingConnections.Get(p.Addr); ok {
 		return errors.New("Connection is pending")
 	}
-	if !self.Config.LocalhostOnly && self.ipCounts[a] != 0 {
+	cnt, ok := dm.ipCounts.Get(a)
+	if !dm.Config.LocalhostOnly && ok && cnt != 0 {
 		return errors.New("Already connected to a peer with this base IP")
 	}
 	logger.Debug("Trying to connect to %s", p.Addr)
-	self.pendingConnections[p.Addr] = p
+	dm.pendingConnections.Add(p.Addr, p)
 	go func() {
-		if err := self.Pool.Pool.Connect(p.Addr); err != nil {
-			self.connectionErrors <- ConnectionError{p.Addr, err}
+		if err := dm.Pool.Pool.Connect(p.Addr); err != nil {
+			dm.connectionErrors <- ConnectionError{p.Addr, err}
 		}
 	}()
 	return nil
 }
 
 // Connects to all private peers
-func (self *Daemon) makePrivateConnections() {
-	if self.Config.DisableOutgoingConnections {
+func (dm *Daemon) makePrivateConnections() {
+	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	for _, p := range self.Peers.Peers.Peerlist {
+	for _, p := range dm.Peers.Peers.Peerlist {
 		if p.Private {
 			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := self.connectToPeer(p); err != nil {
+			if err := dm.connectToPeer(p); err != nil {
 				logger.Debug("Did not connect to private peer: %v", err)
 			}
 		}
 	}
 }
 
-func (self *Daemon) connectToTrustPeer() {
-	if self.Config.DisableIncomingConnections {
+func (dm *Daemon) connectToTrustPeer() {
+	if dm.Config.DisableIncomingConnections {
 		return
 	}
 
 	logger.Info("connect to trusted peers")
 	// make connections to all trusted peers
-	peers := self.Peers.Peers.Peerlist.GetPublicTrustPeers()
+	peers := dm.Peers.Peers.Peerlist.GetPublicTrustPeers()
 	for _, p := range peers {
-		if self.connectToPeer(p) == nil {
+		if dm.connectToPeer(p) == nil {
 			break
 		}
 	}
 }
 
 // Attempts to connect to a random peer. If it fails, the peer is removed
-func (self *Daemon) connectToRandomPeer() {
-	if self.Config.DisableOutgoingConnections {
+func (dm *Daemon) connectToRandomPeer() {
+	if dm.Config.DisableOutgoingConnections {
 		return
 	}
 	// Make a connection to a random (public) peer
-	peers := self.Peers.Peers.Peerlist.RandomPublic(0)
+	peers := dm.Peers.Peers.Peerlist.RandomPublic(0)
 	for _, p := range peers {
-		if self.connectToPeer(p) == nil {
+		if dm.connectToPeer(p) == nil {
 			break
 		}
 	}
@@ -525,13 +526,13 @@ func (self *Daemon) connectToRandomPeer() {
 // We remove a peer from the Pex if we failed to connect
 // Failure to connect
 // Use exponential backoff, not peer list
-func (self *Daemon) handleConnectionError(c ConnectionError) {
-	logger.Debug("Failed to connect to %s with error: %v", c.Addr,
-		c.Error)
-	delete(self.pendingConnections, c.Addr)
+func (dm *Daemon) handleConnectionError(c ConnectionError) {
+	logger.Debug("Failed to connect to %s with error: %v", c.Addr, c.Error)
 
-	if self.Peers.Config.Disabled != true {
-		self.Peers.RemovePeer(c.Addr)
+	dm.pendingConnections.Remove(c.Addr)
+
+	if dm.Peers.Config.Disabled != true {
+		dm.Peers.RemovePeer(c.Addr)
 	}
 
 	//use exponential backoff
@@ -545,52 +546,63 @@ func (self *Daemon) handleConnectionError(c ConnectionError) {
 }
 
 // Removes unsolicited connections who haven't sent a version
-func (self *Daemon) cullInvalidConnections() {
+func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
 	now := util.Now()
-	for a, t := range self.ExpectingIntroductions {
-		// Forget about anyone that already disconnected
-		if !self.Pool.Pool.IsConnExist(a) {
-			delete(self.ExpectingIntroductions, a)
-			continue
+	addrs := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) bool {
+		if !dm.Pool.Pool.IsConnExist(addr) {
+			return true
 		}
-		// Remove anyone that fails to send a version within introductionWait time
-		if t.Add(self.Config.IntroductionWait).Before(now) {
+
+		if t.Add(dm.Config.IntroductionWait).Before(now) {
+			return true
+		}
+		return false
+	})
+
+	for _, a := range addrs {
+		if dm.Pool.Pool.IsConnExist(a) {
 			logger.Info("Removing %s for not sending a version", a)
-			delete(self.ExpectingIntroductions, a)
-			self.Pool.Pool.Disconnect(a, DisconnectIntroductionTimeout)
-			self.Peers.RemovePeer(a)
+			dm.Pool.Pool.Disconnect(a, DisconnectIntroductionTimeout)
+			dm.Peers.RemovePeer(a)
 		}
 	}
 }
 
 // Records an AsyncMessage to the messageEvent chan.  Do not access
 // messageEvent directly.
-func (self *Daemon) recordMessageEvent(m AsyncMessage,
+func (dm *Daemon) recordMessageEvent(m AsyncMessage,
 	c *gnet.MessageContext) error {
-	self.messageEvents <- MessageEvent{m, c}
+	dm.messageEvents <- MessageEvent{m, c}
 	return nil
 }
 
+// check if the connection needs introduction message
+func (dm *Daemon) needsIntro(addr string) bool {
+	_, exist := dm.expectingIntroductions.Get(addr)
+	return exist
+}
+
 // Processes a queued AsyncMessage.
-func (self *Daemon) processMessageEvent(e MessageEvent) {
+func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	// The first message received must be an Introduction
 	// We have to check at process time and not record time because
 	// Introduction message does not update ExpectingIntroductions until its
 	// Process() is called
-	_, needsIntro := self.ExpectingIntroductions[e.Context.Addr]
-	if needsIntro {
+	// _, needsIntro := self.expectingIntroductions[e.Context.Addr]
+	// if needsIntro {
+	if dm.needsIntro(e.Context.Addr) {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
-			self.Pool.Pool.Disconnect(e.Context.Addr, DisconnectNoIntroduction)
+			dm.Pool.Pool.Disconnect(e.Context.Addr, DisconnectNoIntroduction)
 		}
 	}
-	e.Message.Process(self)
+	e.Message.Process(dm)
 }
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel
-func (self *Daemon) onConnect(e ConnectEvent) {
+func (dm *Daemon) onConnect(e ConnectEvent) {
 	a := e.Addr
 
 	if e.Solicited {
@@ -599,122 +611,112 @@ func (self *Daemon) onConnect(e ConnectEvent) {
 		logger.Info("Received unsolicited connection to %s", a)
 	}
 
-	delete(self.pendingConnections, a)
+	dm.pendingConnections.Remove(a)
 
-	// c := self.Pool.Pool.Addresses[a]
-	// if c == nil {
-	if !self.Pool.Pool.IsConnExist(a) {
+	if !dm.Pool.Pool.IsConnExist(a) {
 		logger.Warning("While processing an onConnect event, no pool " +
 			"connection was found")
 		return
 	}
 
-	blacklisted := self.Peers.Peers.IsBlacklisted(a)
+	blacklisted := dm.Peers.Peers.IsBlacklisted(a)
 	if blacklisted {
 		logger.Info("%s is blacklisted, disconnecting", a)
-		self.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
+		dm.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
 		return
 	}
 
-	if self.ipCountMaxed(a) {
+	if dm.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)
-		self.Pool.Pool.Disconnect(a, DisconnectIPLimitReached)
+		dm.Pool.Pool.Disconnect(a, DisconnectIPLimitReached)
 		return
 	}
 
-	self.recordIPCount(a)
+	dm.recordIPCount(a)
 
 	if e.Solicited {
-		self.OutgoingConnections[a] = true
+		dm.outgoingConnections.Add(a)
 	}
-	self.ExpectingIntroductions[a] = util.Now()
+
+	dm.expectingIntroductions.Add(a, util.Now())
 	logger.Debug("Sending introduction message to %s", a)
-	m := NewIntroductionMessage(self.Messages.Mirror, self.Config.Version,
-		self.Pool.Pool.Config.Port)
-	self.Pool.Pool.SendMessage(a, m)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version,
+		dm.Pool.Pool.Config.Port)
+	dm.Pool.Pool.SendMessage(a, m)
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not
 // pushed to a separate channel, because disconnects are already processed
 // by a queue in the daemon.Run() select{}.
-func (self *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
+func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 	// a := c.Addr()
 	logger.Info("%s disconnected because: %v", addr, reason)
 	duration, exists := BlacklistOffenses[reason]
 	if exists {
-		self.Peers.Peers.AddBlacklistEntry(addr, duration)
+		dm.Peers.Peers.AddBlacklistEntry(addr, duration)
 	}
-	delete(self.OutgoingConnections, addr)
-	delete(self.ExpectingIntroductions, addr)
-	self.Visor.RemoveConnection(addr)
-	self.removeIPCount(addr)
-	self.removeConnectionMirror(addr)
+	dm.outgoingConnections.Remove(addr)
+	dm.expectingIntroductions.Remove(addr)
+	dm.Visor.RemoveConnection(addr)
+	dm.removeIPCount(addr)
+	dm.removeConnectionMirror(addr)
 }
 
 // Triggered when an gnet.Connection is connected
-func (self *Daemon) onGnetConnect(addr string, solicited bool) {
-	self.onConnectEvent <- ConnectEvent{Addr: addr, Solicited: solicited}
+func (dm *Daemon) onGnetConnect(addr string, solicited bool) {
+	dm.onConnectEvent <- ConnectEvent{Addr: addr, Solicited: solicited}
 }
 
 // Returns whether the ipCount maximum has been reached
-func (self *Daemon) ipCountMaxed(addr string) bool {
+func (dm *Daemon) ipCountMaxed(addr string) bool {
 	ip, _, err := SplitAddr(addr)
 	if err != nil {
 		logger.Warning("ipCountMaxed called with invalid addr: %v", err)
 		return true
 	}
-	return self.ipCounts[ip] >= self.Config.IPCountsMax
+
+	if cnt, ok := dm.ipCounts.Get(ip); ok {
+		return cnt >= dm.Config.IPCountsMax
+	}
+	return false
 }
 
 // Adds base IP to ipCount or returns error if max is reached
-func (self *Daemon) recordIPCount(addr string) {
+func (dm *Daemon) recordIPCount(addr string) {
 	ip, _, err := SplitAddr(addr)
 	if err != nil {
 		logger.Warning("recordIPCount called with invalid addr: %v", err)
 		return
 	}
-	_, hasCount := self.ipCounts[ip]
-	if !hasCount {
-		self.ipCounts[ip] = 0
-	}
-	self.ipCounts[ip] += 1
+	dm.ipCounts.Increase(ip)
 }
 
 // Removes base IP from ipCount
-func (self *Daemon) removeIPCount(addr string) {
+func (dm *Daemon) removeIPCount(addr string) {
 	ip, _, err := SplitAddr(addr)
 	if err != nil {
 		logger.Warning("removeIPCount called with invalid addr: %v", err)
 		return
 	}
-	if self.ipCounts[ip] <= 1 {
-		delete(self.ipCounts, ip)
-	} else {
-		self.ipCounts[ip] -= 1
-	}
+	dm.ipCounts.Decrease(ip)
 }
 
 // Adds addr + mirror to the connectionMirror mappings
-func (self *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
+func (dm *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
 	ip, port, err := SplitAddr(addr)
 	if err != nil {
 		logger.Warning("recordConnectionMirror called with invalid addr: %v",
 			err)
 		return err
 	}
-	self.ConnectionMirrors[addr] = mirror
-	m := self.mirrorConnections[mirror]
-	if m == nil {
-		m = make(map[string]uint16, 1)
-	}
-	m[ip] = port
-	self.mirrorConnections[mirror] = m
+	dm.connectionMirrors.Add(addr, mirror)
+	dm.mirrorConnections.Add(mirror, ip, port)
 	return nil
 }
 
 // Removes an addr from the connectionMirror mappings
-func (self *Daemon) removeConnectionMirror(addr string) {
-	mirror, ok := self.ConnectionMirrors[addr]
+func (dm *Daemon) removeConnectionMirror(addr string) {
+	mirror, ok := dm.connectionMirrors.Get(addr)
 	if !ok {
 		return
 	}
@@ -724,32 +726,25 @@ func (self *Daemon) removeConnectionMirror(addr string) {
 			err)
 		return
 	}
-	m := self.mirrorConnections[mirror]
-	if len(m) <= 1 {
-		delete(self.mirrorConnections, mirror)
-	} else {
-		delete(m, ip)
-	}
-	delete(self.ConnectionMirrors, addr)
+
+	// remove ip from specific mirror
+	dm.mirrorConnections.Remove(mirror, ip)
+
+	dm.connectionMirrors.Remove(addr)
 }
 
 // Returns whether an addr+mirror's port and whether the port exists
-func (self *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
-	ips := self.mirrorConnections[mirror]
-	if ips == nil {
-		return 0, false
-	}
+func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 	ip, _, err := SplitAddr(addr)
 	if err != nil {
 		logger.Warning("getMirrorPort called with invalid addr: %v", err)
 		return 0, false
 	}
-	port, exists := ips[ip]
-	return port, exists
+	return dm.mirrorConnections.Get(mirror, ip)
 }
 
 // When an async message send finishes, its result is handled by this
-func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
+func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
 		logger.Warning("Failed to send %s to %s: %v",
 			reflect.TypeOf(r.Message).Name(), r.Addr, r.Error)
@@ -757,7 +752,7 @@ func (self *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 	switch r.Message.(type) {
 	case SendingTxnsMessage:
-		self.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
+		dm.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
 	default:
 	}
 }

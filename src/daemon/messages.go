@@ -279,7 +279,7 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext,
 
 // Processes an event queued by Handle()
 func (self *IntroductionMessage) Process(d *Daemon) {
-	delete(d.ExpectingIntroductions, self.c.Addr)
+	d.expectingIntroductions.Remove(self.c.Addr)
 	if !self.valid {
 		return
 	}

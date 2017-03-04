@@ -2,6 +2,7 @@ package nodemanager
 
 import (
 	"math/rand"
+	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/errors"
@@ -21,6 +22,7 @@ type NodeManager struct {
 	transportFactoryList []*transport.TransportFactory
 	routeGraph           *RouteGraph
 	portDelivery         *PortDelivery
+	lock                 *sync.Mutex
 }
 
 func NewNetwork() *NodeManager {
@@ -54,14 +56,14 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*transport.T
 	if idA == idB {
 		return nil, errors.ERR_CONNECTED_TO_ITSELF
 	}
-	nodes := self.nodeList
-	nodeA, found := nodes[idA]
-	if !found {
-		return nil, errors.ERR_NODE_NOT_FOUND
+
+	nodeA, err := self.getNodeById(idA)
+	if err != nil {
+		return nil, err
 	}
-	nodeB, found := nodes[idB]
-	if !found {
-		return nil, errors.ERR_NODE_NOT_FOUND
+	nodeB, err := self.getNodeById(idB)
+	if err != nil {
+		return nil, err
 	}
 
 	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
@@ -72,7 +74,7 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*transport.T
 	nodeB.Port = self.portDelivery.Get(nodeB.Host)
 
 	tf := transport.NewTransportFactory()
-	err := tf.ConnectNodeToNode(nodeA, nodeB)
+	err = tf.ConnectNodeToNode(nodeA, nodeB)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +108,7 @@ func newNodeManager() *NodeManager {
 	nm.transportFactoryList = []*transport.TransportFactory{}
 	nm.routeGraph = newGraph()
 	nm.portDelivery = newPortDelivery()
+	nm.lock = &sync.Mutex{}
 	return nm
 }
 
@@ -120,12 +123,17 @@ func (self *NodeManager) newNode(host string) *node.Node {
 
 func (self *NodeManager) addNode(nodeToAdd *node.Node) {
 	id := nodeToAdd.Id
+	self.lock.Lock()
 	self.nodeList[id] = nodeToAdd
 	self.nodeIdList = append(self.nodeIdList, id)
+	self.lock.Unlock()
 }
 
 func (self *NodeManager) getNodeById(id cipher.PubKey) (*node.Node, error) {
+	self.lock.Lock()
 	result, found := self.nodeList[id]
+	self.lock.Unlock()
+
 	if !found {
 		return &node.Node{}, errors.ERR_NODE_NOT_FOUND
 	}

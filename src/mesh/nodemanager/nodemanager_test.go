@@ -78,8 +78,8 @@ func TestNetwork(t *testing.T) {
 	}
 
 	inRouteMessage := messages.InRouteMessage{messages.NIL_TRANSPORT, initRoute, []byte{'t', 'e', 's', 't'}}
-	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
-	node0.InjectTransportMessage(serialized)
+	//	serialized := messages.Serialize(messages.MsgInRouteMessage, inRouteMessage)
+	node0.InjectTransportMessage(&inRouteMessage)
 	time.Sleep(10 * time.Second)
 	for _, tf := range nm.transportFactoryList {
 		t0 := tf.TransportList[0]

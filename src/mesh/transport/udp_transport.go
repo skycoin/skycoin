@@ -46,8 +46,24 @@ func (self *UDPConfig) closeConn() {
 // send - serialize and send to peer
 
 func (self *UDPConfig) send(msg []byte) error {
+	//	_, err := self.conn.WriteTo(msg, self.pairAddr)
+
+	//	messages.RegisterEvent("udp.send start")
+	/*
+		retChan := make(chan error)
+		go self.sendGo(msg, retChan)
+		err := <-retChan
+	*/
 	_, err := self.conn.WriteTo(msg, self.pairAddr)
+
+	//	messages.RegisterEvent("udp.send finish")
+
 	return err
+}
+
+func (self *UDPConfig) sendGo(msg []byte, retChan chan error) {
+	_, err := self.conn.WriteTo(msg, self.pairAddr)
+	retChan <- err
 }
 
 // receive - listen to port and send to incoming channel
@@ -57,19 +73,32 @@ func (self *UDPConfig) receiveLoop() {
 	go_on := true
 	incomingChannel := self.relatedTransport.incomingChannel
 	go func() {
-		for {
+		for go_on {
+
+			//			messages.RegisterEvent("udp.receiveLoop - making buffer")
+
 			buffer := make([]byte, self.maxPacketSize)
-			n, addr, err := self.conn.ReadFrom(buffer)
+
+			//			messages.RegisterEvent("udp.receiveLoop - reading from buffer")
+
+			n, _, err := self.conn.ReadFrom(buffer)
+
+			//			messages.RegisterEvent("udp.receiveLoop - read from buffer")
+
 			if err != nil {
 				if !go_on && n == 0 {
 					break
+				} else {
+					panic(err)
 				}
-				panic(err)
 			} else {
-				if addr.String() != self.pairAddr.String() {
+				/*	if addr.String() != self.pairAddr.String() {
 					panic("wrong address")
-				}
-				incomingChannel <- buffer[:n]
+				}*/
+				go func() { incomingChannel <- buffer[:n] }()
+
+				//				messages.RegisterEvent("udp.receiveLoop - sent to transport.incomingChannel")
+
 			}
 		}
 	}()

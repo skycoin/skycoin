@@ -32,6 +32,7 @@ func GetMessageType(message []byte) uint16 {
 	if err != nil {
 		fmt.Println("binary.Read failed: ", err)
 	}
+	//	value = (uint16)(message[0])
 	return value
 }
 

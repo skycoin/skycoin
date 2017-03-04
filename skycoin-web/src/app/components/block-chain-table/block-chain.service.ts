@@ -15,7 +15,6 @@ export class BlockChainService {
     var stringConvert = 'start='+startNumber+'&end='+endNumber;
     return this._http.get('/api/blocks?'+stringConvert)
       .map((res:Response) => {
-      console.log(res);
       return res.json()})
       .map((res:BlockResponse)=>res.blocks)
       .catch((error:any) => {

@@ -1,19 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, AfterViewInit} from '@angular/core';
 import {UxOutputsService} from "./UxOutputs.service";
 import {Router, ActivatedRoute, Params} from "@angular/router";
 import {Observable} from "rxjs";
-import {QRCodeComponent} from "ng2-qrcode";
+
+declare var QRCode:any;
 
 @Component({
   selector: 'app-address-detail',
   templateUrl: './address-detail.component.html',
   styleUrls: ['./address-detail.component.css'],
 })
-export class AddressDetailComponent implements OnInit {
+export class AddressDetailComponent implements OnInit,  AfterViewInit{
 
   private UxOutputs:Observable<any>;
 
-  private transactions:any[];
+  private showUxID:boolean;
+
+  private transactions:any[];//
 
   private currentAddress:string;
 
@@ -23,13 +26,21 @@ export class AddressDetailComponent implements OnInit {
     this.UxOutputs=null;
     this.transactions =[];
     this.currentAddress = null;
+    this.showUxID = false;
   }
 
   ngOnInit() {
+
+  }
+
+  ngAfterViewInit(){
+
     this.UxOutputs= this.route.params
       .switchMap((params: Params) => {
         let address = params['address'];
         this.currentAddress = address;
+        let qrcode = new QRCode("qr-code");
+        qrcode.makeCode(this.currentAddress);
         return this.service.getUxOutputsForAddress(address);
       });
 
@@ -37,6 +48,7 @@ export class AddressDetailComponent implements OnInit {
       this.transactions = uxoutputs;
       console.log(uxoutputs);
     })
+
   }
 
   getCurrentBalance():string{
@@ -51,6 +63,16 @@ export class AddressDetailComponent implements OnInit {
     }
 
     return "0";
+  }
+
+  showUxId(){
+    this.showUxID = true;
+    return false;
+  }
+
+  hideUxId(){
+    this.showUxID = false;
+    return false;
   }
 
 }

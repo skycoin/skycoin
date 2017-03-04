@@ -9,6 +9,7 @@
       "outDir": "dist",
       "assets": [
         "assets",
+        "fonts",
         "skycoin.ico"
       ],
       "index": "index.html",

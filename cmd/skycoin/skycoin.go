@@ -575,9 +575,11 @@ func Run(c *Config) {
 
 	<-quit
 	stopDaemon <- 1
-	close(closingC)
 
 	logger.Info("Shutting down")
+	gui.Shutdown()
+	close(closingC)
+
 	d.Shutdown()
 	logger.Info("Goodbye")
 }

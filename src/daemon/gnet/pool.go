@@ -249,8 +249,8 @@ func (pool *ConnectionPool) Shutdown() {
 func (pool *ConnectionPool) strand(f func()) {
 	q := make(chan struct{})
 	pool.memChannel <- func() {
+		defer close(q)
 		f()
-		q <- struct{}{}
 	}
 	<-q
 }

@@ -147,5 +147,5 @@ func main() {
   http.HandleFunc("/api/uxout", getUxID)
   http.HandleFunc("/api/transaction", getTransaction)
   http.HandleFunc("/api/block", getBlock)
-  http.ListenAndServe(":80", nil)
+  http.ListenAndServe(":8001", nil)
 }

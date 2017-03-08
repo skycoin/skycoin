@@ -7,5 +7,5 @@
     <a  (click)="changePage(page)" href="#!">{{page}}</a>
 
   </li>
-  <li [ngClass]="{disabled:currentPage === numberOfBlocks/10}"><a href="#!" (click)="loadUpcoming()"><i class="material-icons">chevron_right</i></a></li>
+  <li [ngClass]="{disabled:noUpcoming}"><a href="#!" (click)="loadUpcoming()"><i class="material-icons">chevron_right</i></a></li>
 </ul>

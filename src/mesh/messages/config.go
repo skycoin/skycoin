@@ -18,11 +18,11 @@ type ConfigStruct struct {
 
 var config = &ConfigStruct{
 	StartPort:         6000,
-	SimulateDelay:     true,
+	SimulateDelay:     false,
 	MaxSimulatedDelay: 500,
-	MaxPacketSize:     256,
-	ConnectionTimeout: 10000,
-	TransportTimeout:  1000,
+	MaxPacketSize:     512,
+	ConnectionTimeout: 100000,
+	TransportTimeout:  10000,
 	RetransmitLimit:   10,
 	LogLevel:          DEBUG,
 }

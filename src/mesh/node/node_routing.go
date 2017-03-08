@@ -5,32 +5,36 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
-//A Node has a map of route rewriting rules
-//A Node has a control channel for setting and modifying the route rewrite rules
-//A Node has a list of transports
+func (self *Node) getRoute(routeId messages.RouteId) (*RouteRule, error) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
 
-//Route rewriting rules
-//-nodes receive messages on a route
-//-nodes look up the route in a table and if it has a rewrite rule, rewrites the route
-// and forwards it to the transport
+	routeRule, ok := self.RouteForwardingRules[routeId]
+	if !ok {
+		return nil, errors.ERR_ROUTE_DOESNT_EXIST
+	}
+	return routeRule, nil
+}
 
 func (self *Node) addRoute(routeRule *RouteRule) error {
-
 	routeId := routeRule.IncomingRoute
 
-	if _, ok := self.RouteForwardingRules[routeId]; ok {
-		err := errors.ERR_ROUTE_EXISTS
-		return err
-	}
+	self.lock.Lock()
+	defer self.lock.Unlock()
 
+	if _, ok := self.RouteForwardingRules[routeId]; ok {
+		return errors.ERR_ROUTE_EXISTS
+	}
 	self.RouteForwardingRules[routeId] = routeRule
 	return nil
 }
 
 func (self *Node) removeRoute(routeId messages.RouteId) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	if _, ok := self.RouteForwardingRules[routeId]; !ok {
-		err := errors.ERR_ROUTE_DOESNT_EXIST
-		return err
+		return errors.ERR_ROUTE_DOESNT_EXIST
 	}
 
 	delete(self.RouteForwardingRules, routeId)

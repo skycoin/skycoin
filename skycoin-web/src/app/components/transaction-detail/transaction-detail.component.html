@@ -14,7 +14,7 @@
           <td>Timestamp</td><td>{{getTime(block.header.timestamp)}}</td>
         </tr>
         <tr>
-          <td>Block </td><td><a href="block/{{ transaction.status.block_seq }}">{{ transaction.status.block_seq }}</a></td>
+          <td>Block </td><td><a [routerLink]="['/block', transaction.status.block_seq ]">{{ transaction.status.block_seq }}</a></td>
         </tr>
         </tbody>
       </table>
@@ -38,7 +38,7 @@
     <div class="col s5">
       <ul class="collection">
         <li class="collection-item"><h5>Outputs</h5></li>
-        <li class="collection-item" *ngFor="let output of transaction.txn.outputs"><a href="/address/{{output.dst}}">{{output.dst}}</a></li>
+        <li class="collection-item" *ngFor="let output of transaction.txn.outputs"><a [routerLink]="['/address', output.dst ]">{{output.dst}}</a></li>
       </ul>
     </div>
     <div class="col s2">

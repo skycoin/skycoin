@@ -43,9 +43,9 @@
     <div  class="col s12" *ngFor="let transaction of block.body.txns;let i = index">
 
       <div class="col s1">{{i+1}}</div>
-      <div class="col s2 wrap"><a href="/transaction/{{transaction.txid}}">{{transaction.txid}}</a></div>
+      <div class="col s2 wrap"><a [routerLink]="['/transaction', transaction.txid ]" >{{transaction.txid}}</a></div>
       <div class="col s3 wrap"><p *ngFor="let input of transaction.inputs;" class="input">{{input}}</p></div>
-      <div class="col s6 wrap"><p *ngFor="let output of transaction.outputs;" class="input"><a href="/address/{{output.dst}}">{{output.dst}}</a>  - {{output.coins}}</p></div>
+      <div class="col s6 wrap"><p *ngFor="let output of transaction.outputs;" class="input"><a [routerLink]="['/address', output.dst ]" >{{output.dst}}</a>  - {{output.coins}}</p></div>
     </div>
   </div>
 

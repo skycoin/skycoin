@@ -1,6 +1,6 @@
 {
   "project": {
-    "version": "1.0.0-beta.28.3",
+    "version": "1.0.0",
     "name": "skycoin-web"
   },
   "apps": [
@@ -9,6 +9,7 @@
       "outDir": "dist",
       "assets": [
         "assets",
+        "fonts",
         "skycoin.ico"
       ],
       "index": "index.html",
@@ -18,13 +19,13 @@
       "prefix": "app",
       "mobile": false,
       "styles": [
-        "styles.css"
       ],
       "scripts": [
-        "js/materialize.js"
+        "js/materialize.js",
+        "js/qrcode.min.js"
       ],
+      "environmentSource": "environments/environment.ts",
       "environments": {
-        "source": "environments/environment.ts",
         "dev": "environments/environment.ts",
         "prod": "environments/environment.prod.ts"
       }
@@ -32,16 +33,7 @@
   ],
   "addons": [],
   "packages": [],
-  "e2e": {
-    "protractor": {
-      "config": "./protractor.conf.js"
-    }
-  },
-  "test": {
-    "karma": {
-      "config": "./karma.conf.js"
-    }
-  },
+
   "defaults": {
     "styleExt": "css",
     "prefixInterfaces": false,

@@ -84,11 +84,16 @@ type Message interface {
 }
 
 type MessageContext struct {
-	Conn *Connection // connection message was received from
+	// Conn *Connection // connection message was received from
+	ConnID int // connection message was received from
+	Addr   string
 }
 
 func NewMessageContext(conn *Connection) *MessageContext {
-	return &MessageContext{Conn: conn}
+	if conn.Conn != nil {
+		return &MessageContext{ConnID: conn.Id, Addr: conn.Addr()}
+	}
+	return &MessageContext{ConnID: conn.Id}
 }
 
 // Maps message types to their ids

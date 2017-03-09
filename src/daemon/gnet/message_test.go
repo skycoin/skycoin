@@ -19,7 +19,7 @@ func init() {
 func TestNewMessageContext(t *testing.T) {
 	c := &Connection{}
 	mc := NewMessageContext(c)
-	assert.Equal(t, mc.Conn, c)
+	assert.Equal(t, mc.ConnID, c.Id)
 }
 
 func TestRegisterMessage(t *testing.T) {

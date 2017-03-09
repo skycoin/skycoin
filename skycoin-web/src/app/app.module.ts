@@ -20,10 +20,7 @@ import { AddressDetailComponent } from './components/address-detail/address-deta
 import {UxOutputsService} from "./components/address-detail/UxOutputs.service";
 import { TransactionDetailComponent } from './components/transaction-detail/transaction-detail.component';
 import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
-import {QRCodeModule} from "angular2-qrcode";
 import { LoadingComponent } from './components/loading/loading.component';
-// import {QRCodeModule} from "../js/angular2-qrcode";
-// import {QRCodeModule} from "angular2-qrcode";
 
 const ROUTES = [
   {
@@ -66,7 +63,6 @@ const ROUTES = [
   ],
   imports: [
     CommonModule,
-    QRCodeModule,
     BrowserModule,
     FormsModule,
     HttpModule,

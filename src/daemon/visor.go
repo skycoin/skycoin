@@ -132,12 +132,13 @@ func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 		return errors.New("Visor disabled")
 	}
 	m := NewGetBlocksMessage(self.Visor.HeadBkSeq(), self.Config.BlocksResponseCount)
-	c := pool.Pool.Addresses[addr]
-	if c == nil {
+	// c := pool.Pool.Addresses[addr]
+	// if c == nil {
+	if !pool.Pool.IsConnExist(addr) {
 		return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
 			"not connected", addr)
 	}
-	pool.Pool.SendMessage(c, m)
+	pool.Pool.SendMessage(addr, m)
 	return nil
 }
 
@@ -166,8 +167,7 @@ func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 		return
 	}
 	m := NewGiveTxnsMessage(coin.Transactions{t})
-	logger.Debug("Broadcasting GiveTxnsMessage to %d conns",
-		len(pool.Pool.Pool))
+	logger.Debug("Broadcasting GiveTxnsMessage to %d conns", pool.Pool.Size())
 	pool.Pool.BroadcastMessage(m)
 }
 
@@ -286,7 +286,7 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Record this as this peer's highest block
-	d.Visor.recordBlockchainLength(self.c.Conn.Addr(), self.LastBlock)
+	d.Visor.recordBlockchainLength(self.c.Addr, self.LastBlock)
 	// Fetch and return signed blocks since LastBlock
 	//blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
 	//	d.Visor.Config.BlocksResponseCount)
@@ -297,7 +297,7 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	m := NewGiveBlocksMessage(blocks)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(self.c.Addr, m)
 }
 
 // Sent in response to GetBlocksMessage, or unsolicited
@@ -388,7 +388,7 @@ func (self *AnnounceBlocksMessage) Process(d *Daemon) {
 	//should this be block get request for current sequence?
 	//if client is not caught up, wont attempt to get block
 	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(self.c.Addr, m)
 }
 
 type SendingTxnsMessage interface {
@@ -426,7 +426,7 @@ func (self *AnnounceTxnsMessage) Process(d *Daemon) {
 		return
 	}
 	m := NewGetTxnsMessage(unknown)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(self.c.Addr, m)
 }
 
 type GetTxnsMessage struct {
@@ -458,7 +458,7 @@ func (self *GetTxnsMessage) Process(d *Daemon) {
 	}
 	logger.Debug("%d/%d txns known", len(known), len(self.Txns))
 	m := NewGiveTxnsMessage(known)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(self.c.Addr, m)
 }
 
 type GiveTxnsMessage struct {

@@ -505,8 +505,7 @@ func Run(c *Config) {
 
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {
-		_, err := d.Pool.Pool.Connect(c.ConnectTo)
-		if err != nil {
+		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
 			log.Panic(err)
 		}
 	}
@@ -576,9 +575,11 @@ func Run(c *Config) {
 
 	<-quit
 	stopDaemon <- 1
-	close(closingC)
 
 	logger.Info("Shutting down")
+	gui.Shutdown()
+	close(closingC)
+
 	d.Shutdown()
 	logger.Info("Goodbye")
 }

@@ -14,6 +14,11 @@ type ReadableWalletEntry struct {
 	Secret  string `json:"secret_key"`
 }
 
+type CoinSupply struct {
+	CurrentSupply int `json:"coinSupply"`
+	CoinCap  int `json:"coinCap"`
+}
+
 type ReadableWalletEntryCtor func(w *WalletEntry) ReadableWalletEntry
 
 func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {

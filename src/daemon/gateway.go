@@ -201,6 +201,25 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) visor.ReadableOut
 	}
 }
 
+// FbyAddresses filters the unspent outputs that are not owned by the addresses
+func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
+	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
+		addrMatch := []visor.ReadableOutput{}
+		addrMap := make(map[string]bool)
+		for _, addr := range addrs {
+			addrMap[addr] = false
+		}
+
+		for _, u := range outputs {
+			_, ok := addrMap[u.Address]
+			if !ok{
+				addrMatch = append(addrMatch, u)
+			}
+		}
+		return addrMatch
+	}
+}
+
 // FbyAddresses filters the unspent outputs that owned by the addresses
 func FbyAddresses(addrs []string) OutputsFilter {
 	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {

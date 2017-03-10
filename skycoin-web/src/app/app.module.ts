@@ -22,6 +22,11 @@ import { TransactionDetailComponent } from './components/transaction-detail/tran
 import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
 import { LoadingComponent } from './components/loading/loading.component';
 
+import { BlockChainCoinSupplyComponent } from './components/block-chain-coin-supply/block-chain-coin-supply.component';
+// import {QRCodeModule} from "../js/angular2-qrcode";
+// import {QRCodeModule} from "angular2-qrcode";
+
+
 const ROUTES = [
   {
     path: '',
@@ -59,7 +64,8 @@ const ROUTES = [
     BlockDetailsComponent,
     AddressDetailComponent,
     TransactionDetailComponent,
-    LoadingComponent
+    LoadingComponent,
+    BlockChainCoinSupplyComponent
   ],
   imports: [
     CommonModule,

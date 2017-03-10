@@ -30,6 +30,17 @@ func getBlocks(w http.ResponseWriter, r *http.Request) {
   w.Write(body)
 }
 
+func getSupply(w http.ResponseWriter, r *http.Request) {
+  resp, err := http.Get("http://127.0.0.1:6420/explorer/getEffectiveOutputs")
+  if err != nil {
+    wh.Error500(w,"Unable to respond back")
+  }
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+  w.Write(body)
+}
+
+
 func getBlockChainMetaData(w http.ResponseWriter, r *http.Request) {
   resp, err := http.Get("http://127.0.0.1:6420/blockchain/metadata")
   if err != nil {
@@ -147,5 +158,6 @@ func main() {
   http.HandleFunc("/api/uxout", getUxID)
   http.HandleFunc("/api/transaction", getTransaction)
   http.HandleFunc("/api/block", getBlock)
+  http.HandleFunc("/api/coinSupply", getSupply)
   http.ListenAndServe(":8001", nil)
 }

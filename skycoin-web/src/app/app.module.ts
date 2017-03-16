@@ -22,6 +22,12 @@ import { TransactionDetailComponent } from './components/transaction-detail/tran
 import {TransactionDetailService} from "./components/transaction-detail/transaction-detail.service";
 import { LoadingComponent } from './components/loading/loading.component';
 
+import { BlockChainCoinSupplyComponent } from './components/block-chain-coin-supply/block-chain-coin-supply.component';
+import {CoinSupplyService} from "./components/block-chain-coin-supply/coin-supply.service";
+// import {QRCodeModule} from "../js/angular2-qrcode";
+// import {QRCodeModule} from "angular2-qrcode";
+
+
 const ROUTES = [
   {
     path: '',
@@ -59,7 +65,8 @@ const ROUTES = [
     BlockDetailsComponent,
     AddressDetailComponent,
     TransactionDetailComponent,
-    LoadingComponent
+    LoadingComponent,
+    BlockChainCoinSupplyComponent
   ],
   imports: [
     CommonModule,
@@ -69,7 +76,7 @@ const ROUTES = [
     MomentModule,
     RouterModule.forRoot(ROUTES)
   ],
-  providers: [BlockChainService,SkycoinBlockchainPaginationService,UxOutputsService, TransactionDetailService],
+  providers: [BlockChainService,SkycoinBlockchainPaginationService,UxOutputsService, TransactionDetailService, CoinSupplyService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -80,6 +80,15 @@ export class Transaction {
   }
 }
 
+export class CoinSupply {
+  constructor(public coinSupply:number,
+              public coinCap:number,
+  ){
+
+  }
+}
+
+
 export class BlockResponse{
   constructor(public blocks:Block[]){
 

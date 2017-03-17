@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -62,11 +61,11 @@ func (self *TransportFactory) createStubTransportPair() (*Transport, *Transport)
 func (self *TransportFactory) connectPeers(peerA, peerB *messages.Peer) (*Transport, *Transport, error) {
 	transportA, transportB := self.createStubTransportPair()
 
-	err := transportA.openConn(peerA, peerB)
+	err := transportA.openUDPConn(peerA, peerB)
 	if err != nil {
 		return nil, nil, err
 	}
-	err = transportB.openConn(peerB, peerA)
+	err = transportB.openUDPConn(peerB, peerA)
 	if err != nil {
 		panic(err)
 		return nil, nil, err
@@ -77,7 +76,7 @@ func (self *TransportFactory) connectPeers(peerA, peerB *messages.Peer) (*Transp
 
 func (self *TransportFactory) ConnectNodeToNode(nodeA, nodeB messages.NodeInterface) error {
 	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
-		return errors.ERR_ALREADY_CONNECTED
+		return messages.ERR_ALREADY_CONNECTED
 	}
 
 	peerA := nodeA.GetPeer()

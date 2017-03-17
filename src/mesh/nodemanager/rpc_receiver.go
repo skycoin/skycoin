@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	"github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/transport"
@@ -29,7 +28,7 @@ func (receiver *RPCReceiver) AddNodes(args []string, result *[]byte) error {
 		return err
 	}
 	if n > 100 {
-		e := errors.ERR_TOO_MANY_NODES
+		e := messages.ERR_TOO_MANY_NODES
 		fmt.Println(e)
 		return e
 	}
@@ -48,7 +47,7 @@ func (receiver *RPCReceiver) ListNodes(_ []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	if len(args) != 2 {
-		e := errors.ERR_WRONG_NUMBER_ARGS
+		e := messages.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -70,12 +69,12 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	n := len(nodeIdList)
 
 	if node0 < 0 || node0 > n || node1 < 0 || node1 > n {
-		e := errors.ERR_NODE_NUM_OUT_OF_RANGE
+		e := messages.ERR_NODE_NUM_OUT_OF_RANGE
 		fmt.Println(e)
 		return e
 	}
 	if node0 == node1 {
-		e := errors.ERR_CONNECTED_TO_ITSELF
+		e := messages.ERR_CONNECTED_TO_ITSELF
 		fmt.Println(e)
 		return e
 	}
@@ -88,7 +87,7 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	}
 	transports := tf.GetTransportIDs()
 	if transports[0] == messages.NIL_TRANSPORT || transports[1] == messages.NIL_TRANSPORT {
-		e := errors.ERR_ALREADY_CONNECTED
+		e := messages.ERR_ALREADY_CONNECTED
 		fmt.Println(e)
 		return e
 	}
@@ -98,7 +97,7 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) ListTransports(args []string, result *[]byte) error {
 	if len(args) != 1 {
-		e := errors.ERR_WRONG_NUMBER_ARGS
+		e := messages.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -115,7 +114,7 @@ func (receiver *RPCReceiver) ListTransports(args []string, result *[]byte) error
 	n := len(nodeIdList)
 
 	if nodenum < 0 || nodenum > n {
-		e := errors.ERR_NODE_NUM_OUT_OF_RANGE
+		e := messages.ERR_NODE_NUM_OUT_OF_RANGE
 		fmt.Println(e)
 		return e
 	}
@@ -165,7 +164,7 @@ func (receiver *RPCReceiver) ListAllTransports(_ []string, result *[]byte) error
 
 func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 	if len(args) < 2 {
-		e := errors.ERR_WRONG_NUMBER_ARGS
+		e := messages.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -183,7 +182,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 			return err
 		}
 		if nodenum < 0 || nodenum > n {
-			e := errors.ERR_NODE_NUM_OUT_OF_RANGE
+			e := messages.ERR_NODE_NUM_OUT_OF_RANGE
 			fmt.Println(e)
 			return e
 		}
@@ -204,7 +203,7 @@ func (receiver *RPCReceiver) BuildRoute(args []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) FindRoute(args []string, result *[]byte) error {
 	if len(args) != 2 {
-		e := errors.ERR_WRONG_NUMBER_ARGS
+		e := messages.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -224,7 +223,7 @@ func (receiver *RPCReceiver) FindRoute(args []string, result *[]byte) error {
 			return err
 		}
 		if nodenum < 0 || nodenum > n {
-			e := errors.ERR_NODE_NUM_OUT_OF_RANGE
+			e := messages.ERR_NODE_NUM_OUT_OF_RANGE
 			fmt.Println(e)
 			return e
 		}
@@ -245,7 +244,7 @@ func (receiver *RPCReceiver) FindRoute(args []string, result *[]byte) error {
 
 func (receiver *RPCReceiver) ListRoutes(args []string, result *[]byte) error {
 	if len(args) != 1 {
-		e := errors.ERR_WRONG_NUMBER_ARGS
+		e := messages.ERR_WRONG_NUMBER_ARGS
 		fmt.Println(e)
 		return e
 	}
@@ -262,7 +261,7 @@ func (receiver *RPCReceiver) ListRoutes(args []string, result *[]byte) error {
 	n := len(nodeIdList)
 
 	if nodenum < 0 || nodenum > n {
-		e := errors.ERR_NODE_NUM_OUT_OF_RANGE
+		e := messages.ERR_NODE_NUM_OUT_OF_RANGE
 		fmt.Println(e)
 		return e
 	}

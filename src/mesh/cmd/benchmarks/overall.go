@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
+	//	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -13,6 +14,8 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"
 )
+
+var config = messages.GetConfig()
 
 func main() {
 
@@ -24,7 +27,25 @@ func main() {
 		err  error
 	)
 
-	sizeStr := strings.ToLower(os.Args[1])
+	args := os.Args
+	if len(args) < 2 {
+		printHelp()
+		return
+	}
+
+	hopsStr := os.Args[1]
+	hops, err := strconv.Atoi(hopsStr)
+	if err != nil {
+		fmt.Println("\nThe first argument should be a number of hops\n")
+		return
+	}
+
+	if hops < 1 {
+		fmt.Println("\nThe number of hops should be a positive number > 0\n")
+		return
+	}
+
+	sizeStr := strings.ToLower(os.Args[2])
 
 	kb := 1024
 	mb := kb * kb
@@ -34,39 +55,48 @@ func main() {
 		sizemb := strings.TrimSuffix(sizeStr, "mb")
 		size, err = strconv.Atoi(sizemb)
 		if err != nil {
-			panic(err)
+			fmt.Println("Incorrect number of megabytes:", sizemb)
+			return
 		}
 		size *= mb
 	} else if strings.HasSuffix(sizeStr, "gb") {
 		sizegb := strings.TrimSuffix(sizeStr, "gb")
 		size, err = strconv.Atoi(sizegb)
 		if err != nil {
-			panic(err)
+			fmt.Println("Incorrect number of gigabytes:", sizegb)
+			return
 		}
 		size *= gb
 	} else if strings.HasSuffix(sizeStr, "kb") {
 		sizekb := strings.TrimSuffix(sizeStr, "kb")
 		size, err = strconv.Atoi(sizekb)
 		if err != nil {
-			panic(err)
+			fmt.Println("Incorrect number of kilobytes:", sizekb)
+			return
 		}
 		size *= kb
+	} else if strings.HasSuffix(sizeStr, "b") {
+		sizeb := strings.TrimSuffix(sizeStr, "b")
+		size, err = strconv.Atoi(sizeb)
+		if err != nil {
+			fmt.Println("Incorrect number of bytes:", sizeb)
+			return
+		}
 	} else {
 		size, err = strconv.Atoi(sizeStr)
 		if err != nil {
-			panic(err)
+			fmt.Println("Incorrect number of bytes:", size)
+			return
 		}
 		sizeStr += "b"
 	}
 
-	networkSize := 3
-
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(networkSize)
+	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(hops + 1)
 
-	_, err = echoServer(meshnet, serverAddr)
+	server, err := echoServer(meshnet, serverAddr)
 	if err != nil {
 		panic(err)
 	}
@@ -81,39 +111,33 @@ func main() {
 		panic(err)
 	}
 
-	duration := benchmark(client, size)
+	duration := benchmark(client, server, size)
+
+	fmt.Println("server:", serverAddr.Hex())
+	fmt.Println("client:", clientAddr.Hex())
 	log.Println(sizeStr+" duration:", duration)
+	log.Println("Ticks:", meshnet.GetTicks())
 }
 
-func benchmark(client *app.Client, msgSize int) time.Duration {
+func benchmark(client *app.Client, server *app.Server, msgSize int) time.Duration {
 
 	if msgSize < 1 {
 		panic("message should be at least 1 byte")
 	}
-	packetSize := messages.GetConfig().MaxPacketSize / 2
-	packets := (msgSize-1)/packetSize + 1
 
-	msg := make([]byte, packetSize)
-
-	wg := &sync.WaitGroup{}
-	wg.Add(packets)
+	msg := make([]byte, msgSize)
 
 	start := time.Now()
-	for p := 0; p < packets; p++ {
-		go func() {
-			//retChan := make(chan *app.ConnResponse, 1024)
-			retChan := client.Send(msg)
-			response := <-retChan
-			wg.Done()
-			if response.Err != nil {
-				panic(response.Err)
-			}
-		}()
+
+	_, err := client.Send(msg)
+
+	if err != nil {
+		panic(err)
 	}
 
-	wg.Wait()
-
 	duration := time.Now().Sub(start)
+
+	//time.Sleep(120 * time.Second)
 
 	return duration
 }
@@ -124,4 +148,16 @@ func echoServer(meshnet *network.NodeManager, serverAddr cipher.PubKey) (*app.Se
 		return in
 	})
 	return srv, err
+}
+
+func printHelp() {
+	fmt.Println("")
+	fmt.Println("Usage: go run overall.go hops_number data_size\n")
+	fmt.Println("Usage example:")
+	fmt.Println("go run overall.go 40 100\t- 40 hops 100 bytes")
+	fmt.Println("go run overall.go 200 100b\t- 200 hops 100 bytes")
+	fmt.Println("go run overall.go 2 10kb\t- 2 hops 10 kilobytes")
+	fmt.Println("go run overall.go 10 10mb\t- 10 hops 10 megabytes")
+	fmt.Println("go run overall.go 50 1gb\t- 50 hops 1 gigabyte")
+	fmt.Println("")
 }

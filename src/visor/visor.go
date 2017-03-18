@@ -161,6 +161,7 @@ func NewVisor(c VisorConfig) *Visor {
 		if c.IsMaster {
 			sb := v.SignBlock(*gb)
 			v.blockSigs.Add(&sb)
+			logger.Info("genesis block signature=%s", sb.Sig.Hex())
 		} else {
 			v.blockSigs.Add(&coin.SignedBlock{
 				Block: *gb,

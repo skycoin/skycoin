@@ -26,6 +26,7 @@ func TestAddingNodes(t *testing.T) {
 	nm.AddNewNodeStub()
 	nm.AddNewNodeStub()
 	assert.Len(t, nm.nodeList, 5, "Error expected 5 nodes")
+	fmt.Println("TestAddingNodes end")
 }
 
 func TestConnectTwoNodes(t *testing.T) {
@@ -55,6 +56,7 @@ func TestConnectTwoNodes(t *testing.T) {
 	tr1, err := node1.GetTransportToNode(id2)
 	assert.Nil(t, err)
 	assert.Equal(t, tr1.StubPair.Id, t2.Id)
+	fmt.Println("TestConnectTwoNodes end")
 }
 
 func TestNetwork(t *testing.T) {
@@ -89,6 +91,7 @@ func TestNetwork(t *testing.T) {
 		assert.Equal(t, (uint32)(0), t1.PacketsSent)
 		assert.Equal(t, (uint32)(0), t1.PacketsConfirmed)
 	}
+	fmt.Println("TestNetwork end")
 }
 
 func TestBuildRoute(t *testing.T) {
@@ -119,6 +122,7 @@ func TestBuildRoute(t *testing.T) {
 	routes, err := nm.buildRouteForward(nodes)
 	assert.Nil(t, err)
 	assert.Len(t, routes, m, fmt.Sprintf("Should be %d routes", m))
+	fmt.Println("TestBuildRoute end")
 }
 
 func TestFindRoute(t *testing.T) {
@@ -155,8 +159,10 @@ func TestFindRoute(t *testing.T) {
 	routes, err := nm.findRouteForward(nodeFrom, nodeTo)
 	assert.Nil(t, err)
 	assert.Len(t, routes, 3, "Should be 3 routes")
+	fmt.Println("TestFindRoute end")
 }
 
+/*
 func TestConnection(t *testing.T) {
 	fmt.Println("TestConnection")
 	messages.SetDebugLogLevel()
@@ -186,8 +192,9 @@ func TestConnection(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, uint32(0), sequence)
 	time.Sleep(time.Duration(n) * time.Second)
+	fmt.Println("TestConnection end")
 }
-
+*/
 func TestAddAndConnect2Nodes(t *testing.T) {
 	fmt.Println("TestAddAndConnect")
 	messages.SetDebugLogLevel()
@@ -200,6 +207,7 @@ func TestAddAndConnect2Nodes(t *testing.T) {
 
 	assert.Len(t, nm.nodeIdList, 2)
 	assert.True(t, nm.connected(pubkey0, pubkey1))
+	fmt.Println("TestAddAndConnect end")
 }
 
 func TestRandomNetwork100Nodes(t *testing.T) {
@@ -216,8 +224,10 @@ func TestRandomNetwork100Nodes(t *testing.T) {
 	assert.Len(t, nm.nodeIdList, n)
 	assert.Equal(t, nm.nodeIdList, nodes)
 	assert.True(t, nm.routeExists(nodes[0], nodes[n-1]))
+	fmt.Println("TestRandomNetwork100Nodes end")
 }
 
+/*
 func TestSendThroughRandomNetworks(t *testing.T) {
 	fmt.Println("TestSendThroughRandomNetworks")
 	messages.SetDebugLogLevel()
@@ -240,4 +250,6 @@ func TestSendThroughRandomNetworks(t *testing.T) {
 		assert.Equal(t, uint32(0), sequence)
 		time.Sleep(time.Duration(n) * time.Second)
 	}
+	fmt.Println("TestSendThroughRandomNetworks end")
 }
+*/

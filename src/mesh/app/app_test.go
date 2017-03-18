@@ -2,9 +2,9 @@ package app
 
 import (
 	"github.com/stretchr/testify/assert"
-	"syscall"
+	//	"syscall"
 	"testing"
-	"time"
+	//	"time"
 
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"
@@ -35,6 +35,7 @@ func TestCreateClient(t *testing.T) {
 	assert.Equal(t, client.Address, clientAddr)
 }
 
+/*
 func TestSend(t *testing.T) {
 	messages.SetInfoLogLevel()
 	meshnet := network.NewNetwork()
@@ -79,14 +80,13 @@ func TestSend(t *testing.T) {
 	err = client.DialWithRoutes(route, backRoute)
 	assert.Nil(t, err)
 
-	retChan := client.Send([]byte("test"))
-	resp := <-retChan
-	response, err := resp.Response, resp.Err
+	response, err := client.Send([]byte("test"))
 
 	assert.Nil(t, err)
 	assert.Equal(t, "test!", string(response))
 	time.Sleep(1 * time.Second)
 }
+*/
 
 func TestSendWithFindRoute(t *testing.T) {
 	messages.SetDebugLogLevel()
@@ -107,10 +107,51 @@ func TestSendWithFindRoute(t *testing.T) {
 	err = client.Dial(serverAddr)
 	assert.Nil(t, err)
 
-	retChan := client.Send([]byte("test"))
-	resp := <-retChan
-	response, err := resp.Response, resp.Err
+	response, err := client.Send([]byte("test"))
 
 	assert.Nil(t, err)
 	assert.Equal(t, "test!!!", string(response))
+}
+
+func TestHandle(t *testing.T) {
+	messages.SetInfoLogLevel()
+
+	meshnet := network.NewNetwork()
+	defer meshnet.Shutdown()
+
+	clientAddr, serverAddr := meshnet.CreateThreeRoutes()
+
+	_, err := NewServer(meshnet, serverAddr, func(in []byte) []byte {
+		size := len(in)
+		result := make([]byte, size)
+		for i := 0; i < size; i++ {
+			result[i] = byte(i)
+		}
+		return result
+	})
+	assert.Nil(t, err)
+
+	client, err := NewClient(meshnet, clientAddr)
+	assert.Nil(t, err)
+
+	err = client.Dial(serverAddr)
+	assert.Nil(t, err)
+
+	size := 100000
+
+	request := make([]byte, size)
+
+	response, err := client.Send(request)
+
+	assert.Nil(t, err)
+	assert.Len(t, response, size)
+
+	correct := true
+	for i := 0; i < size; i++ {
+		if byte(i) != response[i] {
+			correct = false
+			break
+		}
+	}
+	assert.True(t, correct)
 }

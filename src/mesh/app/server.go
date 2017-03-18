@@ -1,27 +1,35 @@
 package app
 
 import (
+	"sync"
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 type Server struct {
 	app
-	Handle func([]byte) []byte
+	Accepted int // remove, testing purposes
 }
 
-func NewServer(network messages.Network, address cipher.PubKey, handle func([]byte) []byte) (*Server, error) {
+func NewServer(meshnet messages.Network, address cipher.PubKey, handle func([]byte) []byte) (*Server, error) {
 	server := &Server{}
-	server.register(network, address)
-	server.Handle = handle
-	err := network.Register(address, server)
+	server.lock = &sync.Mutex{}
+	server.register(meshnet, address)
+	server.lock = &sync.Mutex{}
+	server.timeout = time.Duration(messages.GetConfig().AppTimeout)
+	server.handle = handle
+
+	conn, err := meshnet.NewConnection(address)
+	if err != nil {
+		return nil, err
+	}
+	server.connection = conn
+
+	err = meshnet.Register(address, server)
 	if err != nil {
 		return nil, err
 	}
 	return server, nil
-}
-
-func (self *Server) Consume(_ uint32, request []byte, responseChannel chan<- []byte) {
-	response := self.Handle(request) // user defined
-	go func() { responseChannel <- response }()
 }

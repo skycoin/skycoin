@@ -34,15 +34,13 @@ func (self *PortDelivery) Get(host string) uint32 {
 
 func (self *PortDelivery) deliver() uint32 {
 	for {
-		select {
-		case request := <-self.requestChannel:
-			host := request.host
-			port := self.content[host]
-			if port == 0 {
-				port = self.startPort
-			}
-			self.content[host] = port + 1
-			request.responseChannel <- port
+		request := <-self.requestChannel
+		host := request.host
+		port := self.content[host]
+		if port == 0 {
+			port = self.startPort
 		}
+		self.content[host] = port + 1
+		request.responseChannel <- port
 	}
 }

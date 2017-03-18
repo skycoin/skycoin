@@ -1,8 +1,10 @@
-package errors
+package messages
 
 import "errors"
 
-var ERR_TIMEOUT = errors.New("Timeout")
+var ERR_APP_TIMEOUT = errors.New("Application timeout")
+var ERR_CONN_TIMEOUT = errors.New("Connection timeout")
+var ERR_TRANSPORT_TIMEOUT = errors.New("Transport timeout")
 var ERR_DISCONNECTED = errors.New("Connection if off")
 var ERR_ROUTE_EXISTS = errors.New("Route already exists")
 var ERR_ROUTE_DOESNT_EXIST = errors.New("Route doesn't exists")

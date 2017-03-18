@@ -35,9 +35,7 @@ func testSendAndReceive(n int) {
 		panic(err)
 	}
 
-	retChan := client.Send([]byte("Integration test")) //send a message to the server and wait for a response
-	resp := <-retChan
-	response, err := resp.Response, resp.Err
+	response, err := client.Send([]byte("Integration test")) //send a message to the server and wait for a response
 	if err != nil {
 		panic(err)
 	}

@@ -2,7 +2,6 @@ package nodemanager
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	"github.com/skycoin/skycoin/src/mesh/node"
 )
@@ -48,7 +47,7 @@ func (self *NodeManager) getFirstRoute(nodes []cipher.PubKey, forward bool) (mes
 		return messages.NIL_ROUTE, err
 	}
 	if len(routes) < 1 {
-		return messages.NIL_ROUTE, errors.ERR_NO_ROUTE
+		return messages.NIL_ROUTE, messages.ERR_NO_ROUTE
 	}
 	return routes[0], nil
 }

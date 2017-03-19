@@ -49,12 +49,12 @@ func pingPong(size, pings int) {
 	pingsSum, pongsSum, totalSum := int64(0), int64(0), int64(0)
 	receivedPackets, lostPackets := 0, 0
 
+	packet := make([]byte, 0)
+
 	fmt.Printf("\nPinging %s from %s\n\n", serverAddr.Hex(), clientAddr.Hex())
 	for i := 0; i < pings; i++ {
 		sendTime := time.Now().UnixNano()
-		retChan := client.Send([]byte{}) //send a message to the server and wait for a response
-		resp := <-retChan
-		response, err := resp.Response, resp.Err
+		response, err := client.Send(packet) //send a message to the server and wait for a response
 		if err != nil {
 			fmt.Println("No response")
 			lostPackets++

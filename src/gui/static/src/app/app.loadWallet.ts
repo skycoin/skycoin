@@ -233,66 +233,26 @@ export class LoadWalletComponent implements OnInit {
 
     loadTransactionsForWallet(){
         let addresses=[];
+
+        this.userTransactions=[];
+
         _.each(this.wallets,(wallet)=>{
             _.each(wallet.entries,(entry)=>{
                 addresses.push(entry.address);
             });
         });
 
-        this.userTransactions=[];
-
-        var transactionData=[];
-
-        var self = this;
-
-        this.http.get('/lastTxs', {})
-        .map((res) => res.json())
-        .subscribe(transactions => {
-            _.each(transactions,(transaction)=>{
-                //with each transaction that we have grab all the outputs and check if the outputs is pointing
-                // to any of the current addresses.If yes then hold it.
-                _.each(transaction.txn.outputs,(output)=>{
-                    if(addresses.indexOf(output.dst)>0){
-                        transactionData.push({'type':'confirmed','transactionInputs':transaction.txn.inputs,'transactionOutputs':transaction.txn.outputs
-                            ,'actualTransaction':transaction.txn
-                        });
-                    }
-                });
-
-
-            });
-
-            this.userTransactions = _.uniq(transactionData,'actualTransaction.txId');
-        }, err => console.log("Error on load transactions: " + err), () => {
-
-        });
-
-
-        this.http.get('/pendingTxs', {})
-        .map((res) => res.json())
-        .subscribe(transactions => {
-
-            _.each(transactions,(transaction)=>{
-                //with each transaction that we have grab all the outputs and check if the outputs is pointing
-                // to any of the current addresses.If yes then hold it.
-
-                _.each(transaction.transaction.outputs,(output)=>{
-                    if(addresses.indexOf(output.dst)>0){
-
-                        transactionData.push({'type':'pending','transactionInputs':transaction.transaction.inputs,'transactionOutputs':transaction.transaction.outputs
-                            ,'actualTransaction':transaction.transaction
-                        });
-
-                    }
+        _.each(addresses,(address)=>{
+            this.http.get('/explorer/address?address='+address, {})
+            .map((res) => res.json())
+            .subscribe(transactions => {
+                _.each(transactions,(transaction)=>{
+                    this.userTransactions.push({'type':'confirmed','transactionInputs':transaction.inputs,'transactionOutputs':transaction.outputs
+                        ,'actualTransaction':transaction
+                    });
                 });
             });
-            this.userTransactions = _.uniq(transactionData,'actualTransaction.txId');
-        }, err => console.log("Error on pending transactions: " + err), () => {
-
         });
-
-
-
 
     }
 

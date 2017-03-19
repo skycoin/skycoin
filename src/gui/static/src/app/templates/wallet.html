@@ -204,11 +204,11 @@
                                         <td *ngIf="trnsObj.type == 'pending'" >Pending</td>
                                         <td>{{trnsObj.actualTransaction.type}}</td>
                                         <td>
-                                            From : <p *ngFor="let item of trnsObj.transactionInputs">{{item}},<br></p> To : <span *ngFor="let item of trnsObj.transactionOutputs">{{item.dst}},<br></span>
+                                            From : <p *ngFor="let item of trnsObj.transactionInputs">{{item.owner}},<br></p> To : <span *ngFor="let item of trnsObj.transactionOutputs">{{item.dst}},<br></span>
                                         </td>
                                         <td></td>
                                         <td>{{GetTransactionAmount(trnsObj.actualTransaction)}}</td>
-                                        <td>{{trnsObj.actualTransaction.txId}}</td>
+                                        <td>{{trnsObj.actualTransaction.txid}}</td>
                                     </tr>
 
                             </tbody>

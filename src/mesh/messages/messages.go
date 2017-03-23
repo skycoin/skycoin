@@ -53,9 +53,9 @@ type InRouteMessage struct {
 
 //message node, writes to the channel of the transport
 type OutRouteMessage struct {
-	RouteId    RouteId //the incoming route
-	Datagram   []byte  //length prefixed message
-	IsResponse bool
+	RouteId          RouteId //the incoming route
+	Datagram         []byte  //length prefixed message
+	ResponseRequired bool
 }
 
 type CongestionPacket struct {
@@ -68,10 +68,10 @@ type CongestionPacket struct {
 //simulates one end of a transport, sending data to other end of the pair
 type TransportDatagramTransfer struct {
 	//put seq number for confirmation/ACK
-	RouteId    RouteId
-	Sequence   uint32 //sequential sequence number of ACK
-	Datagram   []byte
-	IsResponse bool
+	RouteId          RouteId
+	Sequence         uint32 //sequential sequence number of ACK
+	Datagram         []byte
+	ResponseRequired bool
 }
 
 type TransportDatagramACK struct {
@@ -111,9 +111,9 @@ type ConnectionAck struct {
 }
 
 type AppMessage struct {
-	Sequence   uint32
-	IsResponse bool
-	Payload    []byte
+	Sequence         uint32
+	ResponseRequired bool
+	Payload          []byte
 }
 
 type AppResponse struct {

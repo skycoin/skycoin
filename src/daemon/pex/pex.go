@@ -82,7 +82,7 @@ type Peer struct {
 	Private       bool      // Whether it should omitted from public requests
 	Trusted       bool      // Whether this peer is trusted
 	HasIncomePort bool      // Wheter this peer has incomming port
-	RetryTimes    int       `json:"-"` // records the retry times
+	RetryTimes    int       // records the retry times
 }
 
 // Returns a *Peer initialised by an address string of the form ip:port

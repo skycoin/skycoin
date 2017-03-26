@@ -273,6 +273,9 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext,
 	self.c = mc
 	if err == nil {
 		err = d.recordMessageEvent(self, mc)
+		d.Peers.Peers.Peerlist.ResetRetryTimes(mc.Addr)
+	} else {
+		d.Peers.Peers.Peerlist.IncreaseRetryTimes(mc.Addr)
 	}
 	return
 }

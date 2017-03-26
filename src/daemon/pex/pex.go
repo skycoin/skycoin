@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"math"
+
 	"github.com/skycoin/skycoin/src/util"
 )
 
@@ -78,6 +80,7 @@ type Peer struct {
 	Private       bool      // Whether it should omitted from public requests
 	Trusted       bool      // Whether this peer is trusted
 	HasIncomePort bool      // Wheter this peer has incomming port
+	RetryTimes    int       // records the retry times
 }
 
 // Returns a *Peer initialised by an address string of the form ip:port
@@ -90,6 +93,34 @@ func NewPeer(address string) *Peer {
 // Mark the peer as seen
 func (self *Peer) Seen() {
 	self.LastSeen = Now()
+}
+
+func (self *Peer) IncreaseRetryTimes() {
+	self.RetryTimes++
+	logger.Info("Increase retry times of %v to %v", self.Addr, self.RetryTimes)
+}
+
+func (self *Peer) ResetRetryTimes() {
+	self.RetryTimes = 0
+	logger.Info("Reset retry times of %v", self.Addr)
+}
+
+// CanTry returns whether this peer tryable base on the exponential backoff algorithm
+func (self *Peer) CanTry() (rlt bool) {
+	// defer func() {
+	// 	logger.Info("check if %v can connect, result:%v", self.Addr, rlt)
+	// }()
+	now := Now()
+	mod := (math.Exp2(float64(self.RetryTimes)) - 1) * 5
+	if mod == 0 {
+		rlt = true
+		return
+	}
+
+	t := rnum.Int63n(int64(mod))
+	timePass := now.Sub(self.LastSeen).Seconds()
+	rlt = int64(timePass) > t
+	return
 }
 
 func (self *Peer) String() string {
@@ -267,10 +298,12 @@ func (self Peerlist) getTrustAddresses(private bool) []string {
 	keys := []string{}
 	for key, p := range self {
 		if p.Trusted {
-			if private && p.Private {
-				keys = append(keys, key)
-			} else if !private && !p.Private {
-				keys = append(keys, key)
+			if p.CanTry() {
+				if private && p.Private {
+					keys = append(keys, key)
+				} else if !private && !p.Private {
+					keys = append(keys, key)
+				}
 			}
 		}
 	}
@@ -310,10 +343,12 @@ func (self Peerlist) ClearOld(timeAgo time.Duration) {
 func (self Peerlist) getAddresses(private bool) []string {
 	keys := make([]string, 0, len(self))
 	for key, p := range self {
-		if private && p.Private {
-			keys = append(keys, key)
-		} else if !private && !p.Private {
-			keys = append(keys, key)
+		if p.CanTry() {
+			if private && p.Private {
+				keys = append(keys, key)
+			} else if !private && !p.Private {
+				keys = append(keys, key)
+			}
 		}
 	}
 
@@ -423,6 +458,22 @@ func (self Peerlist) Save(dir string) error {
 		logger.Notice("SavePeerList Failed: %s", err)
 	}
 	return err
+}
+
+func (self *Peerlist) IncreaseRetryTimes(addr string) {
+	if _, ok := (*self)[addr]; ok {
+		(*self)[addr].IncreaseRetryTimes()
+		(*self)[addr].Seen()
+	} else {
+		logger.Info("%IncreaseRetryTimes failed,v is not exist in Peerlist", addr)
+	}
+}
+
+func (self *Peerlist) ResetRetryTimes(addr string) {
+	if _, ok := (*self)[addr]; ok {
+		(*self)[addr].ResetRetryTimes()
+		(*self)[addr].Seen()
+	}
 }
 
 // Loads a newline delimited list of addresses from

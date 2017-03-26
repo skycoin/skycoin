@@ -503,9 +503,10 @@ func (dm *Daemon) connectToTrustPeer() {
 	// make connections to all trusted peers
 	peers := dm.Peers.Peers.Peerlist.GetPublicTrustPeers()
 	for _, p := range peers {
-		if dm.connectToPeer(p) == nil {
-			break
-		}
+		dm.connectToPeer(p)
+		// if dm.connectToPeer(p) == nil {
+		// 	break
+		// }
 	}
 }
 
@@ -517,9 +518,10 @@ func (dm *Daemon) connectToRandomPeer() {
 	// Make a connection to a random (public) peer
 	peers := dm.Peers.Peers.Peerlist.RandomPublic(0)
 	for _, p := range peers {
-		if dm.connectToPeer(p) == nil {
-			break
-		}
+		dm.connectToPeer(p)
+		// if dm.connectToPeer(p) == nil {
+		// 	break
+		// }
 	}
 }
 
@@ -535,6 +537,7 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 		dm.Peers.RemovePeer(c.Addr)
 	}
 
+	dm.Peers.Peers.Peerlist.IncreaseRetryTimes(c.Addr)
 	//use exponential backoff
 
 	/*
@@ -655,6 +658,7 @@ func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 	if exists {
 		dm.Peers.Peers.AddBlacklistEntry(addr, duration)
 	}
+
 	dm.outgoingConnections.Remove(addr)
 	dm.expectingIntroductions.Remove(addr)
 	dm.Visor.RemoveConnection(addr)

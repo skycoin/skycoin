@@ -413,9 +413,9 @@ func (self *Peerlist) getAddresses(private bool) []string {
 func (self *Peerlist) random(count int, includePrivate bool) []*Peer {
 	keys := []string(nil)
 	if includePrivate {
-		keys = self.GetAllAddresses()
+		keys = append(self.getAddresses(true), self.getAddresses(false)...)
 	} else {
-		keys = self.GetPublicAddresses()
+		keys = self.getAddresses(false)
 	}
 	if len(keys) == 0 {
 		return make([]*Peer, 0)

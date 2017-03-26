@@ -110,10 +110,7 @@ func (self *Peers) Shutdown() error {
 
 // Removes a peer, if not private
 func (self *Peers) RemovePeer(a string) {
-	p := self.Peers.Peerlist[a]
-	if p != nil && !p.Private {
-		delete(self.Peers.Peerlist, a)
-	}
+	self.Peers.RemovePeer(a)
 }
 
 // Requests peers from our connections

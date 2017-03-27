@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/mesh/errors"
+	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 type RouteGraph struct {
@@ -158,7 +158,7 @@ func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, error) { // if the path 
 
 	for {
 		if e == nil {
-			return []cipher.PubKey{}, errors.ERR_NO_ROUTE
+			return []cipher.PubKey{}, messages.ERR_NO_ROUTE
 		} // no edge, so path doesn't exist
 		path = append(path, e.from)
 		if e.from == s.source {

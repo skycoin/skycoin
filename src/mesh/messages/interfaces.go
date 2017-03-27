@@ -8,6 +8,8 @@ type NodeInterface interface {
 	GetId() cipher.PubKey
 	GetPeer() *Peer
 	InjectTransportMessage(*InRouteMessage)
+	InjectConnectionMessage(*InRouteMessage)
+	InjectCongestionPacket(*CongestionPacket)
 	SetTransport(TransportId, TransportInterface)
 	ConnectedTo(NodeInterface) bool
 }
@@ -17,17 +19,20 @@ type TransportInterface interface {
 }
 
 type Consumer interface {
-	Consume(uint32, []byte, chan<- []byte) // number of message, what to consume and channel for accepting responses
+	Consume([]byte)
+}
+
+type User interface {
+	Use([]byte)
 }
 
 type Network interface {
+	NewConnection(cipher.PubKey) (Connection, error)
+	Connect(cipher.PubKey, cipher.PubKey) error
 	Register(cipher.PubKey, Consumer) error
-	NewConnectionWithRoutes(cipher.PubKey, RouteId, RouteId) (Connection, error)
-	NewConnection(cipher.PubKey, cipher.PubKey) (Connection, error)
 }
 
 type Connection interface {
-	Send([]byte) (uint32, error)
-	GetStatus() uint8
-	Close()
+	Send([]byte)
+	Use([]byte)
 }

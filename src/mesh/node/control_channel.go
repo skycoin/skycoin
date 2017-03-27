@@ -1,7 +1,6 @@
 package node
 
 import (
-	"github.com/skycoin/skycoin/src/mesh/errors"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -41,5 +40,5 @@ func (c *ControlChannel) handleMessage(handledNode *Node, msg []byte) error {
 		return err
 	}
 
-	return errors.ERR_UNKNOWN_MESSAGE_TYPE
+	return messages.ERR_UNKNOWN_MESSAGE_TYPE
 }

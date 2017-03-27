@@ -216,8 +216,6 @@ func (pool *ConnectionPool) Run() {
 			logger.Info("Listening for connections...")
 			conn, err := ln.Accept()
 			if err != nil {
-				// logger.Error("%v", err)
-
 				// When Accept() returns with a non-nill error, we check the quit
 				// channel to see if we should continue or quit. If quit, then we quit.
 				// Otherwise we continue

@@ -314,7 +314,6 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	msgChan := make(chan []byte, 10)
 	errChan := make(chan error)
 	go readLoop(c, pool.Config.ReadTimeout, pool.Config.MaxMessageLength, msgChan, errChan)
-
 	for {
 		select {
 		case m := <-c.WriteQueue:
@@ -355,20 +354,21 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 	}()
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
+	var rerr error
 	for {
 		deadline := time.Time{}
 		if timeout != 0 {
 			deadline = time.Now().Add(timeout)
 		}
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
-			errChan <- DisconnectSetReadDeadlineFailed
-			return
+			rerr = DisconnectSetReadDeadlineFailed
+			break
 		}
 
 		data, err := readData(reader, buf)
 		if err != nil {
-			errChan <- err
-			return
+			rerr = err
+			break
 		}
 
 		if data == nil {
@@ -381,12 +381,25 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 		// decode data
 		datas, err := decodeData(conn.Buffer, maxMsgLen)
 		if err != nil {
-			errChan <- err
-			return
+			rerr = err
+			break
 		}
 
 		for _, d := range datas {
-			msgChan <- d
+			// use select to avoid the goroutine leak, cause if msgChan has no receiver, this goroutine
+			// will leak
+			select {
+			case msgChan <- d:
+			default:
+				return
+			}
+		}
+	}
+
+	if rerr != nil {
+		select {
+		case errChan <- rerr:
+		default:
 		}
 	}
 }

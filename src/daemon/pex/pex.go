@@ -534,8 +534,6 @@ func (self *Peerlist) IncreaseRetryTimes(addr string) {
 		if _, ok := self.peers[addr]; ok {
 			self.peers[addr].IncreaseRetryTimes()
 			self.peers[addr].Seen()
-		} else {
-			logger.Info("%IncreaseRetryTimes failed,v is not exist in Peerlist", addr)
 		}
 	}, "IncreaseRetryTimes")
 }

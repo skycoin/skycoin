@@ -150,7 +150,7 @@ func (self *GetPeersMessage) Process(d *Daemon) {
 		return
 	}
 
-	peers := d.Peers.Peers.Peerlist.RandomExchgPublic(d.Peers.Config.ReplyCount)
+	peers := d.Peers.Peers.RandomExchgPublic(d.Peers.Config.ReplyCount)
 	if len(peers) == 0 {
 		logger.Debug("We have no peers to send in reply")
 		return
@@ -273,9 +273,9 @@ func (self *IntroductionMessage) Handle(mc *gnet.MessageContext,
 	self.c = mc
 	if err == nil {
 		err = d.recordMessageEvent(self, mc)
-		d.Peers.Peers.Peerlist.ResetRetryTimes(mc.Addr)
+		d.Peers.Peers.ResetRetryTimes(mc.Addr)
 	} else {
-		d.Peers.Peers.Peerlist.IncreaseRetryTimes(mc.Addr)
+		d.Peers.Peers.IncreaseRetryTimes(mc.Addr)
 	}
 	return
 }

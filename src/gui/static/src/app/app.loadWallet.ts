@@ -242,6 +242,7 @@ export class LoadWalletComponent implements OnInit {
             });
         });
 
+
         _.each(addresses,(address)=>{
             this.http.get('/explorer/address?address='+address, {})
             .map((res) => res.json())
@@ -253,7 +254,6 @@ export class LoadWalletComponent implements OnInit {
                 });
             });
         });
-
     }
 
     //Load wallet function
@@ -295,14 +295,12 @@ export class LoadWalletComponent implements OnInit {
                     var filename = item.meta.filename;
                     this.loadWalletItem(filename, idx);
                 })
-
                 this.walletsWithAddress = [];
                 _.map(this.wallets, (o, idx) => {
                     this.walletsWithAddress.push({
                         wallet:o,
                         type:'wallet'
                     });
-
                     _.map(o.entries, (_o, idx) => {
                         this.walletsWithAddress.push({
                             entry:_o,
@@ -312,7 +310,6 @@ export class LoadWalletComponent implements OnInit {
                         });
                     });
                 });
-
                 this.loadTransactionsForWallet();
 
             },

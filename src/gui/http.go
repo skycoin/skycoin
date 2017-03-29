@@ -94,10 +94,12 @@ func serve(listener net.Listener, mux *http.ServeMux, q chan struct{}) {
 
 // Shutdown close http service
 func Shutdown() {
-	// must close quit first
-	close(quit)
-	listener.Close()
-	listener = nil
+	if quit != nil {
+		// must close quit first
+		close(quit)
+		listener.Close()
+		listener = nil
+	}
 }
 
 // Creates an http.ServeMux with handlers registered

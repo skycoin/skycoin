@@ -85,7 +85,7 @@ func (self RPC) GetDefaultConnections(d *Daemon) []string {
 }
 
 func (self RPC) GetTrustConnections(d *Daemon) []string {
-	peers := d.Peers.Peers.Peerlist.GetAllTrustedPeers()
+	peers := d.Peers.Peers.GetAllTrustedPeers()
 	addrs := make([]string, len(peers))
 	for i, p := range peers {
 		addrs[i] = p.Addr
@@ -95,7 +95,7 @@ func (self RPC) GetTrustConnections(d *Daemon) []string {
 
 // GetAllExchgConnections return all exchangeable connections
 func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
-	peers := d.Peers.Peers.Peerlist.RandomExchgAll(0)
+	peers := d.Peers.Peers.RandomExchgAll(0)
 	addrs := make([]string, len(peers))
 	for i, p := range peers {
 		addrs[i] = p.Addr

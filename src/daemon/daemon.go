@@ -311,7 +311,7 @@ func (dm *Daemon) Start(quit chan int) {
 	outgoingConnectionsTicker := time.Tick(dm.Config.OutgoingRate)
 	clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
 	requestPeersTicker := time.Tick(dm.Peers.Config.RequestRate)
-	updateBlacklistTicker := time.Tick(dm.Peers.Config.UpdateBlacklistRate)
+	// updateBlacklistTicker := time.Tick(dm.Peers.Config.UpdateBlacklistRate)
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
@@ -324,10 +324,10 @@ main:
 	for {
 		select {
 		// Flush expired blacklisted peers
-		case <-updateBlacklistTicker:
-			if !dm.Peers.Config.Disabled {
-				dm.Peers.Peers.Blacklist.Refresh()
-			}
+		// case <-updateBlacklistTicker:
+		// 	if !dm.Peers.Config.Disabled {
+		// 		dm.Peers.Peers.Blacklist.Refresh()
+		// 	}
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
 			if !dm.Config.DisableNetworking {
@@ -339,7 +339,7 @@ main:
 		// Remove peers we haven't seen in a while
 		case <-clearOldPeersTicker:
 			if !dm.Peers.Config.Disabled {
-				dm.Peers.Peers.Peerlist.ClearOld(dm.Peers.Config.Expiration)
+				dm.Peers.Peers.ClearOld(dm.Peers.Config.Expiration)
 			}
 		// Remove connections that haven't said anything in a while
 		case <-clearStaleConnectionsTicker:
@@ -353,7 +353,7 @@ main:
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
-			trustPeerNum := len(dm.Peers.Peers.Peerlist.GetAllTrustedPeers())
+			trustPeerNum := len(dm.Peers.Peers.GetAllTrustedPeers())
 			if !dm.Config.DisableOutgoingConnections &&
 				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
 				dm.pendingConnections.Len() < dm.Config.PendingMax {
@@ -484,10 +484,12 @@ func (dm *Daemon) makePrivateConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	for _, p := range dm.Peers.Peers.Peerlist {
-		if p.Private {
+	addrs := dm.Peers.Peers.GetPrivateAddresses()
+	for _, addr := range addrs {
+		p, exist := dm.Peers.Peers.GetPeerByAddr(addr)
+		if exist {
 			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := dm.connectToPeer(p); err != nil {
+			if err := dm.connectToPeer(&p); err != nil {
 				logger.Debug("Did not connect to private peer: %v", err)
 			}
 		}
@@ -501,11 +503,12 @@ func (dm *Daemon) connectToTrustPeer() {
 
 	logger.Info("connect to trusted peers")
 	// make connections to all trusted peers
-	peers := dm.Peers.Peers.Peerlist.GetPublicTrustPeers()
+	peers := dm.Peers.Peers.GetPublicTrustPeers()
 	for _, p := range peers {
-		if dm.connectToPeer(p) == nil {
-			break
-		}
+		dm.connectToPeer(p)
+		// if dm.connectToPeer(p) == nil {
+		// 	break
+		// }
 	}
 }
 
@@ -515,11 +518,12 @@ func (dm *Daemon) connectToRandomPeer() {
 		return
 	}
 	// Make a connection to a random (public) peer
-	peers := dm.Peers.Peers.Peerlist.RandomPublic(0)
+	peers := dm.Peers.Peers.RandomPublic(0)
 	for _, p := range peers {
-		if dm.connectToPeer(p) == nil {
-			break
-		}
+		dm.connectToPeer(p)
+		// if dm.connectToPeer(p) == nil {
+		// 	break
+		// }
 	}
 }
 
@@ -535,6 +539,7 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 		dm.Peers.RemovePeer(c.Addr)
 	}
 
+	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
 	//use exponential backoff
 
 	/*
@@ -619,12 +624,12 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 		return
 	}
 
-	blacklisted := dm.Peers.Peers.IsBlacklisted(a)
-	if blacklisted {
-		logger.Info("%s is blacklisted, disconnecting", a)
-		dm.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
-		return
-	}
+	// blacklisted := dm.Peers.Peers.IsBlacklisted(a)
+	// if blacklisted {
+	// 	logger.Info("%s is blacklisted, disconnecting", a)
+	// 	dm.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
+	// 	return
+	// }
 
 	if dm.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)
@@ -651,10 +656,11 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 	// a := c.Addr()
 	logger.Info("%s disconnected because: %v", addr, reason)
-	duration, exists := BlacklistOffenses[reason]
-	if exists {
-		dm.Peers.Peers.AddBlacklistEntry(addr, duration)
-	}
+	// duration, exists := BlacklistOffenses[reason]
+	// if exists {
+	// 	dm.Peers.Peers.AddBlacklistEntry(addr, duration)
+	// }
+
 	dm.outgoingConnections.Remove(addr)
 	dm.expectingIntroductions.Remove(addr)
 	dm.Visor.RemoveConnection(addr)

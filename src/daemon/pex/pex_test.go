@@ -1,13 +1,10 @@
 package pex
 
 import (
-	"bufio"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
@@ -105,63 +102,63 @@ func TestBlacklistEntryExpiresAt(t *testing.T) {
 
 /* Blacklist tests */
 
-func TestBlacklistSaveLoad(t *testing.T) {
-	// Create and save a blacklist
-	os.Remove("./" + BlacklistedDatabaseFilename)
-	b := make(Blacklist)
-	be := NewBlacklistEntry(time.Minute)
-	b[address] = be
-	b[""] = be
-	b.Save(".")
+// func TestBlacklistSaveLoad(t *testing.T) {
+// 	// Create and save a blacklist
+// 	os.Remove("./" + BlacklistedDatabaseFilename)
+// 	b := make(Blacklist)
+// 	be := NewBlacklistEntry(time.Minute)
+// 	b[address] = be
+// 	b[""] = be
+// 	b.Save(".")
 
-	// Check that the file appears correct
-	f, err := os.Open("./" + BlacklistedDatabaseFilename)
-	assert.Nil(t, err)
-	buf := make([]byte, 1024)
-	reader := bufio.NewReader(f)
-	n, err := reader.Read(buf)
-	assert.Nil(t, err)
-	buf = buf[:n]
-	assert.Equal(t, string(buf[:len(address)]), address)
-	assert.Equal(t, int8(buf[len(buf)-1]), '\n')
-	f.Close()
+// 	// Check that the file appears correct
+// 	f, err := os.Open("./" + BlacklistedDatabaseFilename)
+// 	assert.Nil(t, err)
+// 	buf := make([]byte, 1024)
+// 	reader := bufio.NewReader(f)
+// 	n, err := reader.Read(buf)
+// 	assert.Nil(t, err)
+// 	buf = buf[:n]
+// 	assert.Equal(t, string(buf[:len(address)]), address)
+// 	assert.Equal(t, int8(buf[len(buf)-1]), '\n')
+// 	f.Close()
 
-	// Load the saved blacklist, check the contents match
-	bb, err := LoadBlacklist(".")
-	assert.Nil(t, err)
-	assert.Equal(t, len(bb), len(b)-1)
-	for k, v := range bb {
-		assert.Equal(t, v.Start.Unix(), b[k].Start.Unix())
-		assert.Equal(t, v.Duration, b[k].Duration)
-	}
+// 	// Load the saved blacklist, check the contents match
+// 	bb, err := LoadBlacklist(".")
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, len(bb), len(b)-1)
+// 	for k, v := range bb {
+// 		assert.Equal(t, v.Start.Unix(), b[k].Start.Unix())
+// 		assert.Equal(t, v.Duration, b[k].Duration)
+// 	}
 
-	// Write a file with bad data
-	f, err = os.Create("./" + BlacklistedDatabaseFilename)
-	assert.Nil(t, err)
-	garbage := []string{
-		"", // empty line
-		"#" + address + " 1000 1000", // commented line
-		"notaddress 1000 1000",       // bad address
-		address + " xxx 1000",        // bad start time
-		address + " 1000 xxx",        // bad duration
-		address + " 1000",            // not enough info
-		// this one is good, but has extra spaces
-		address + "  9999999999\t\t1000",
-	}
-	w := bufio.NewWriter(f)
-	data := strings.Join(garbage, "\n") + "\n"
-	n, err = w.Write([]byte(data))
-	assert.Nil(t, err)
-	w.Flush()
-	f.Close()
+// 	// Write a file with bad data
+// 	f, err = os.Create("./" + BlacklistedDatabaseFilename)
+// 	assert.Nil(t, err)
+// 	garbage := []string{
+// 		"", // empty line
+// 		"#" + address + " 1000 1000", // commented line
+// 		"notaddress 1000 1000",       // bad address
+// 		address + " xxx 1000",        // bad start time
+// 		address + " 1000 xxx",        // bad duration
+// 		address + " 1000",            // not enough info
+// 		// this one is good, but has extra spaces
+// 		address + "  9999999999\t\t1000",
+// 	}
+// 	w := bufio.NewWriter(f)
+// 	data := strings.Join(garbage, "\n") + "\n"
+// 	n, err = w.Write([]byte(data))
+// 	assert.Nil(t, err)
+// 	w.Flush()
+// 	f.Close()
 
-	// Load the file with bad data and confirm they did not make it
-	bb, err = LoadBlacklist(".")
-	assert.Nil(t, err)
-	assert.Equal(t, len(bb), 1)
-	assert.NotNil(t, bb[address])
-	assert.Equal(t, bb[address].Duration, time.Duration(1000)*time.Second)
-}
+// 	// Load the file with bad data and confirm they did not make it
+// 	bb, err = LoadBlacklist(".")
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, len(bb), 1)
+// 	assert.NotNil(t, bb[address])
+// 	assert.Equal(t, bb[address].Duration, time.Duration(1000)*time.Second)
+// }
 
 func TestBlacklistRefresh(t *testing.T) {
 	b := make(Blacklist)
@@ -567,52 +564,74 @@ func TestLoadBlacklistDoesNotExist(t *testing.T) {
 	assert.NotNil(t, b)
 }
 
-func TestLoadPeerlistFailureHandling(t *testing.T) {
-	defer os.Remove("./" + PeerDatabaseFilename)
+// func TestLoadPeerlistFailureHandling(t *testing.T) {
+// 	defer os.Remove("./" + PeerDatabaseFilename)
 
-	// File does not exist, returns empty Peerlist
-	os.Remove("./" + PeerDatabaseFilename)
-	p, err := LoadPeerlist("./")
-	assert.Nil(t, err)
-	assert.Equal(t, len(p), 0)
-	assert.NotNil(t, p)
+// 	// File does not exist, returns empty Peerlist
+// 	os.Remove("./" + PeerDatabaseFilename)
+// 	p, err := LoadPeerlist("./")
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, len(p), 0)
+// 	assert.NotNil(t, p)
 
-	// Bad peerlist file:
+// 	// Bad peerlist file:
 
-	goodAddr := "123.45.54.11:9999"
-	now := Now().Unix()
-	lines := []string{
-		// Has a line with 4 entries
-		fmt.Sprintf("%s 0 %d 0", address, now),
-		// Has a line with 2 entries
-		fmt.Sprintf("%s 0", address),
-		// Empty line
-		"",
-		// Has an invalid address
-		fmt.Sprintf("54.3:9090 1 %d", now),
-		// Has an invalid value for private
-		fmt.Sprintf("%s 7 %d", address, now),
-		// Starts with a comment
-		fmt.Sprintf("#%s 0 %d", address, now),
-		// Has an invalid seen timestamp
-		fmt.Sprintf("%s 0 dog", address),
-		// Has a valid line, but extra whitespace,
-		// this should be the only one included
-		fmt.Sprintf("%s 0 %d", goodAddr, now),
+// 	goodAddr := "123.45.54.11:9999"
+// 	now := Now().Unix()
+// 	lines := []string{
+// 		// Has a line with 4 entries
+// 		fmt.Sprintf("%s 0 %d 0", address, now),
+// 		// Has a line with 2 entries
+// 		fmt.Sprintf("%s 0", address),
+// 		// Empty line
+// 		"",
+// 		// Has an invalid address
+// 		fmt.Sprintf("54.3:9090 1 %d", now),
+// 		// Has an invalid value for private
+// 		fmt.Sprintf("%s 7 %d", address, now),
+// 		// Starts with a comment
+// 		fmt.Sprintf("#%s 0 %d", address, now),
+// 		// Has an invalid seen timestamp
+// 		fmt.Sprintf("%s 0 dog", address),
+// 		// Has a valid line, but extra whitespace,
+// 		// this should be the only one included
+// 		fmt.Sprintf("%s 0 %d", goodAddr, now),
+// 	}
+
+// 	f, err := os.Create("./" + PeerDatabaseFilename)
+// 	assert.Nil(t, err)
+// 	for _, line := range lines {
+// 		_, err = f.Write([]byte(line + "\n"))
+// 		assert.Nil(t, err)
+// 	}
+// 	f.Close()
+
+// 	p, err = LoadPeerlist("./")
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, len(p), 1)
+// 	assert.NotNil(t, p[goodAddr])
+// }
+
+func TestPeerCanTry(t *testing.T) {
+	testData := []struct {
+		LastSeen   time.Time
+		RetryTimes int
+		CanTry     bool
+	}{
+		{
+			Now().Add(time.Duration(100) * time.Second * -1),
+			1,
+			true,
+		},
 	}
 
-	f, err := os.Create("./" + PeerDatabaseFilename)
-	assert.Nil(t, err)
-	for _, line := range lines {
-		_, err = f.Write([]byte(line + "\n"))
-		assert.Nil(t, err)
+	for _, d := range testData {
+		p := Peer{
+			LastSeen:   d.LastSeen,
+			RetryTimes: d.RetryTimes,
+		}
+		assert.Equal(t, d.CanTry, p.CanTry())
 	}
-	f.Close()
-
-	p, err = LoadPeerlist("./")
-	assert.Nil(t, err)
-	assert.Equal(t, len(p), 1)
-	assert.NotNil(t, p[goodAddr])
 }
 
 func TestNow(t *testing.T) {

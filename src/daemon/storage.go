@@ -43,7 +43,7 @@ func (s *store) remove(k interface{}) {
 
 func (s *store) len() int {
 	s.lk.Lock()
-	s.lk.Unlock()
+	defer s.lk.Unlock()
 	return len(s.value)
 }
 

@@ -63,7 +63,6 @@ var config = messages.GetConfig()
 func NewNode() *Node {
 	node := new(Node)
 	node.Id = createPubKey()
-	//node.incomingFromTransport = make(chan []byte, 1024)
 	node.incomingFromTransport = make(chan *messages.InRouteMessage, config.MaxBuffer)
 	node.incomingFromConnection = make(chan *messages.InRouteMessage, config.MaxBuffer*2)
 	node.incomingControlChannel = make(chan messages.InControlMessage, 256)
@@ -85,7 +84,6 @@ func createPubKey() cipher.PubKey {
 }
 
 func (self *Node) Shutdown() {
-	//close(self.incomingFromTransport)
 }
 
 //move node forward on tick, process events
@@ -134,11 +132,6 @@ func (self *Node) AssignUser(user messages.User) {
 	self.user = user
 }
 
-/*
-func (self *Node) AssignConsumer(consumer messages.Consumer) {
-	self.consumer = consumer
-}
-*/
 //inject an incoming message from the connection
 func (self *Node) InjectConnectionMessage(msg *messages.InRouteMessage) {
 	c := cap(self.incomingFromConnection)
@@ -164,7 +157,6 @@ func (self *Node) InjectConnectionMessage(msg *messages.InRouteMessage) {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	//	go self.handleInRouteMessage(msg)
 }
 
 //inject an incoming message from the transport
@@ -186,8 +178,7 @@ func (self *Node) InjectCongestionPacket(msg *messages.CongestionPacket) {
 //move node forward on tick, process events
 func (self *Node) runCycles(backChannel chan bool) {
 	//process incoming messages
-	go self.handleCongestionMessages() //pop them off the channel
-	//go self.handleIncomingTransportMessages() //pop them off the channel
+	go self.handleCongestionMessages()         //pop them off the channel
 	go self.handleIncomingConnectionMessages() //pop them off the channel
 	go self.handleIncomingControlMessages()    //pop them off the channel
 	backChannel <- true
@@ -226,13 +217,11 @@ func (self *Node) handleIncomingControlMessages() {
 
 func (self *Node) handleCongestionMessages() {
 	for msg := range self.congestionChannel {
-		//		fmt.Println("congestion packet detected", msg)
 		if msg.Congestion {
 			self.throttle = messages.Increase(self.throttle)
 			fmt.Println("node throttle increased")
 		} else {
 			self.throttle = messages.Decrease(self.throttle)
-			//			fmt.Println("node throttle decreased")
 		}
 	}
 }
@@ -277,7 +266,6 @@ func (self *Node) handleInRouteMessage(m1 *messages.InRouteMessage) {
 		out.RouteId = outgoingRouteId
 		out.Datagram = datagram
 		//serialize message, with prefix
-		//		b1 := messages.Serialize(messages.MsgOutRouteMessage, out)
 
 		if outgoingTransport, err := self.getTransport(outgoingTransportId); err == nil {
 

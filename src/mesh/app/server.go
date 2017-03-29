@@ -10,7 +10,6 @@ import (
 
 type Server struct {
 	app
-	Accepted int // remove, testing purposes
 }
 
 func NewServer(meshnet messages.Network, address cipher.PubKey, handle func([]byte) []byte) (*Server, error) {

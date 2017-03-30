@@ -12,7 +12,6 @@ import (
 )
 
 func TestCreateServer(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
@@ -27,7 +26,6 @@ func TestCreateServer(t *testing.T) {
 }
 
 func TestCreateClient(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
@@ -92,7 +90,6 @@ func TestSend(t *testing.T) {
 */
 
 func TestSendWithFindRoute(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 
 	meshnet := network.NewNetwork()
@@ -120,7 +117,6 @@ func TestSendWithFindRoute(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	return
 	messages.SetInfoLogLevel()
 
 	meshnet := network.NewNetwork()
@@ -201,6 +197,4 @@ func TestSocks(t *testing.T) {
 
 	err = client.Dial(serverAddr)
 	assert.Nil(t, err)
-
-	time.Sleep(3000 * time.Second)
 }

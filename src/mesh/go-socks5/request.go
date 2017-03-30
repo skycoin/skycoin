@@ -88,7 +88,6 @@ func NewRequest(bufConn io.Reader) (*Request, error) {
 	if _, err := io.ReadAtLeast(bufConn, header, 3); err != nil {
 		return nil, fmt.Errorf("Failed to get command version: %v", err)
 	}
-	//	fmt.Println("Header:", header)
 
 	// Ensure we are compatible
 	if header[0] != socks5Version {
@@ -100,7 +99,6 @@ func NewRequest(bufConn io.Reader) (*Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	//	fmt.Println("dest is", dest)
 
 	request := &Request{
 		Version:  socks5Version,
@@ -340,8 +338,6 @@ func sendReply(w net.Conn, resp uint8, addr *AddrSpec) error {
 	copy(msg[4:], addrBody)
 	msg[4+len(addrBody)] = byte(addrPort >> 8)
 	msg[4+len(addrBody)+1] = byte(addrPort & 0xff)
-
-	//	fmt.Printf("sending %d back to %s\n", msg, w.RemoteAddr().String())
 
 	// Send the message
 	_, err := w.Write(msg)

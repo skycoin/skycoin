@@ -17,9 +17,8 @@ import (
 type SocksServer struct {
 	app
 	socksAddress string
-	//Socks        *socks5.Server
-	dialer      proxy.Dialer
-	connections map[string]net.Conn
+	dialer       proxy.Dialer
+	connections  map[string]net.Conn
 }
 
 func NewSocksServer(meshnet messages.Network, address cipher.PubKey, socksAddress string) (*SocksServer, error) {
@@ -93,7 +92,6 @@ func (self *SocksServer) Serve() {
 			panic(err)
 		}
 
-		//self.Socks = server
 		if err := server.ListenAndServe("tcp", self.socksAddress); err != nil {
 			panic(err)
 		}
@@ -126,12 +124,11 @@ func (self *SocksServer) getFromSocks(conn net.Conn, remoteAddr string) {
 		}
 		socksMessageS := messages.Serialize(messages.MsgSocksMessage, socksMessage)
 		response := &messages.AppMessage{
-			self.sequence,
+			0,
 			false,
 			socksMessageS,
 		}
 		responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
 		self.send(responseSerialized)
-		self.sequence++
 	}
 }

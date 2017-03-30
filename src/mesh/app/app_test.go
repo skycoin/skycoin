@@ -202,7 +202,5 @@ func TestSocks(t *testing.T) {
 	err = client.Dial(serverAddr)
 	assert.Nil(t, err)
 
-	server.Serve()
-
 	time.Sleep(3000 * time.Second)
 }

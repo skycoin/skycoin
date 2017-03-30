@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	//	"io"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -13,7 +13,7 @@ import (
 
 type SocksClient struct {
 	app
-	socksConn net.Conn
+	connections map[string]*net.Conn
 }
 
 func NewSocksClient(meshnet messages.Network, address cipher.PubKey, proxyAddress string) (*SocksClient, error) {
@@ -33,8 +33,10 @@ func NewSocksClient(meshnet messages.Network, address cipher.PubKey, proxyAddres
 	if err != nil {
 		return nil, err
 	}
+
+	socksClient.connections = map[string]*net.Conn{}
+
 	socksClient.socksAddress = proxyAddress
-	go socksClient.socksClient(proxyAddress)
 
 	return socksClient, nil
 }
@@ -48,34 +50,51 @@ func (self *SocksClient) Send(msg []byte) {
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
 	self.send(requestSerialized)
-	//	fmt.Println("sent", requestSerialized, string(msg))
 }
 
-func (self *SocksClient) socksClient(proxyAddress string) {
+func (self *SocksClient) Listen() {
+	setLimit(16384)
+	proxyAddress := self.socksAddress
 	l, err := net.Listen("tcp", proxyAddress)
 	if err != nil {
 		panic(err)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-	self.socksConn = conn
-
 	for {
-		message := make([]byte, config.SocksPacketSize)
-		fmt.Println("ready for the next packet from USER")
-		n, err := conn.Read(message)
+		conn, err := l.Accept()
 		if err != nil {
-			//			if err != io.EOF {
-			panic(err)
-			//			}
+			fmt.Println("Cannot accept client's connection")
+			return
 		}
-		fmt.Println("got from USER:", n)
+		defer conn.Close()
 
-		self.Send(message[:n])
+		remoteAddr := conn.RemoteAddr().String()
+		self.connections[remoteAddr] = &conn
+
+		go func() {
+			for {
+				message := make([]byte, config.SocksPacketSize)
+
+				n, err := conn.Read(message)
+				if err != nil {
+					return
+					if err == io.EOF {
+						continue
+					} else {
+						break
+					}
+				}
+
+				socksMessage := messages.SocksMessage{
+					message[:n],
+					remoteAddr,
+				}
+
+				socksMessageS := messages.Serialize(messages.MsgSocksMessage, socksMessage)
+
+				self.Send(socksMessageS)
+			}
+		}()
 	}
 }
 
@@ -83,14 +102,27 @@ func (self *SocksClient) Consume(msg []byte) {
 	appMsg := messages.AppMessage{}
 	err := messages.Deserialize(msg, &appMsg)
 	if err != nil {
-		fmt.Printf("Cannot consume a message: %s\n", err.Error())
+		fmt.Printf("Cannot deserialize application message: %s\n", err.Error())
 		return
 	}
-	conn := self.socksConn
-	response := appMsg.Payload
-	n, err := conn.Write(response)
+
+	socksMessageS := appMsg.Payload
+	socksMessage := messages.SocksMessage{}
+	err = messages.Deserialize(socksMessageS, &socksMessage)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Cannot deserialize socks message: %s\n", err.Error())
+		return
 	}
-	fmt.Printf("\nresponse %d is written to USER (local %s, remote %s), n = %d\n\n", response, conn.LocalAddr(), conn.RemoteAddr(), n)
+	connPointer, ok := self.connections[socksMessage.RemoteAddr]
+	if !ok {
+		fmt.Printf("Cannot fint the connection with remote address %s\n", socksMessage.RemoteAddr)
+		return
+	}
+	conn := *connPointer
+	data := socksMessage.Data
+	_, err = conn.Write(data)
+	if err != nil {
+		fmt.Printf("Cannot write to connection with remote address %s, error is %s\n", socksMessage.RemoteAddr, err.Error())
+		return
+	}
 }

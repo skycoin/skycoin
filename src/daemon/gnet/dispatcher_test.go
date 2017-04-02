@@ -38,7 +38,7 @@ func TestConvertToMessage(t *testing.T) {
 	b := make([]byte, 0)
 	b = append(b, BytePrefix[:]...)
 	b = append(b, byte(7))
-	m, err := convertToMessage(c.Id, b)
+	m, err := convertToMessage(c.Id, b, testing.Verbose())
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 	if m == nil {
@@ -53,7 +53,7 @@ func TestConvertToMessageNoMessageId(t *testing.T) {
 	resetHandler()
 	c := &Connection{}
 	b := []byte{}
-	m, err := convertToMessage(c.Id, b)
+	m, err := convertToMessage(c.Id, b, testing.Verbose())
 	assert.Nil(t, m)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Not enough data to read msg id")
@@ -64,7 +64,7 @@ func TestConvertToMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	c := &Connection{}
 	b := MessagePrefix{'C', 'C', 'C', 'C'}
-	m, err := convertToMessage(c.Id, b[:])
+	m, err := convertToMessage(c.Id, b[:], testing.Verbose())
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Unknown message CCCC received")
 	assert.Nil(t, m)
@@ -79,14 +79,14 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 	c := &Connection{}
 	// Test with too many bytes
 	b := append(DummyPrefix[:], []byte{0, 1, 1, 1}...)
-	m, err := convertToMessage(c.Id, b)
+	m, err := convertToMessage(c.Id, b, testing.Verbose())
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Data buffer was not completely decoded")
 	assert.Nil(t, m)
 
 	// Test with not enough bytes
 	b = append([]byte{}, BytePrefix[:]...)
-	m, err = convertToMessage(c.Id, b)
+	m, err = convertToMessage(c.Id, b, testing.Verbose())
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Deserialization failed")
 	assert.Nil(t, m)
@@ -98,7 +98,9 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	RegisterMessage(NothingPrefix, Nothing{})
 	// don't verify messages
 	c := &Connection{}
-	assert.Panics(t, func() { convertToMessage(c.Id, NothingPrefix[:]) })
+	assert.Panics(t, func() {
+		convertToMessage(c.Id, NothingPrefix[:], testing.Verbose())
+	})
 }
 
 func TestDeserializeMessageTrapsPanic(t *testing.T) {

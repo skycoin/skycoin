@@ -45,6 +45,29 @@ func (nm *NodeManager) ConnectWithRoutes(nodeAttached cipher.PubKey, routeId, ba
 }
 */
 
+func (nm *NodeManager) NewConnection(nodeAttached cipher.PubKey) (messages.Connection, error) {
+	id := messages.RandConnectionId()
+	_, err := nm.getNodeById(nodeAttached)
+	if err != nil {
+		return nil, err
+	}
+	conn := &Connection{
+		id:               id,
+		nm:               nm,
+		status:           DISCONNECTED,
+		nodeAttached:     nodeAttached,
+		lock:             &sync.Mutex{},
+		ackChannels:      make(map[uint32]chan bool),
+		errChan:          make(chan error, 1024),
+		incomingMessages: make(map[uint32]map[uint32][]byte),
+		incomingCounter:  make(map[uint32]uint32),
+	}
+
+	go conn.receiveErrors()
+	nm.connectionList[nodeAttached] = conn
+	return conn, nil
+}
+
 func (nm *NodeManager) Connect(nodeAttached, nodeTo cipher.PubKey) error {
 
 	clientConn, ok := nm.connectionList[nodeAttached]
@@ -66,32 +89,6 @@ func (nm *NodeManager) Connect(nodeAttached, nodeTo cipher.PubKey) error {
 	return nil
 }
 
-func (nm *NodeManager) NewConnection(nodeAttached cipher.PubKey) (messages.Connection, error) {
-	id := messages.RandConnectionId()
-	_, err := nm.getNodeById(nodeAttached)
-	if err != nil {
-		return nil, err
-	}
-	conn := &Connection{
-		id:               id,
-		nm:               nm,
-		status:           DISCONNECTED,
-		nodeAttached:     nodeAttached,
-		lock:             &sync.Mutex{},
-		ackChannels:      make(map[uint32]chan bool),
-		errChan:          make(chan error, 1024),
-		incomingMessages: make(map[uint32]map[uint32][]byte),
-		incomingCounter:  make(map[uint32]uint32),
-	}
-	go conn.receiveErrors()
-	nm.connectionList[nodeAttached] = conn
-	return conn, nil
-}
-
-func (self *Connection) AssignConsumer(consumer messages.Consumer) {
-	self.consumer = consumer
-}
-
 func (self *Connection) Send(msg []byte) {
 	packets := self.split(msg)
 	total := len(packets)
@@ -101,7 +98,7 @@ func (self *Connection) Send(msg []byte) {
 
 	for order, packet := range packets {
 		time.Sleep(config.SendInterval)
-		go self.sendPacket(packet, sequence, uint32(order), uint32(total))
+		self.sendPacket(packet, sequence, uint32(order), uint32(total))
 	}
 
 	select {
@@ -110,6 +107,44 @@ func (self *Connection) Send(msg []byte) {
 	case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
 		self.errChan <- messages.ERR_CONN_TIMEOUT
 	}
+}
+
+func (self *Connection) Use(msg []byte) {
+
+	switch messages.GetMessageType(msg) {
+
+	case messages.MsgConnectionMessage:
+		connMsg := messages.ConnectionMessage{}
+		err := messages.Deserialize(msg, &connMsg)
+		if err != nil {
+			fmt.Println("wrong connection message", msg)
+			return
+		}
+
+		go self.handleConnectionMessage(&connMsg)
+
+	case messages.MsgConnectionAck:
+		connAck := messages.ConnectionAck{}
+		err := messages.Deserialize(msg, &connAck)
+		if err != nil {
+			fmt.Println("wrong connection Ack", msg)
+			return
+		}
+
+		go self.receiveAck(connAck.Sequence)
+	}
+}
+
+func (self *Connection) AssignConsumer(consumer messages.Consumer) {
+	self.consumer = consumer
+}
+
+func (self *Connection) GetStatus() uint8 {
+	return self.status
+}
+
+func (self *Connection) Close() {
+	self.status = DISCONNECTED
 }
 
 func (self *Connection) split(msg []byte) [][]byte {
@@ -145,7 +180,6 @@ func (self *Connection) sendPacket(msg []byte, sequence, order, total uint32) {
 	}
 
 	connMessageSerialized := messages.Serialize(messages.MsgConnectionMessage, connMessage)
-
 	inRouteMessage := messages.InRouteMessage{
 		messages.NIL_TRANSPORT,
 		self.routeId,
@@ -178,32 +212,6 @@ func (self *Connection) receiveErrors() {
 		if err != nil {
 			self.status = DISCONNECTED
 		}
-	}
-}
-
-func (self *Connection) Use(msg []byte) {
-
-	switch messages.GetMessageType(msg) {
-
-	case messages.MsgConnectionMessage:
-		connMsg := messages.ConnectionMessage{}
-		err := messages.Deserialize(msg, &connMsg)
-		if err != nil {
-			fmt.Println("wrong connection message", msg)
-			return
-		}
-
-		go self.handleConnectionMessage(&connMsg)
-
-	case messages.MsgConnectionAck:
-		connAck := messages.ConnectionAck{}
-		err := messages.Deserialize(msg, &connAck)
-		if err != nil {
-			fmt.Println("wrong connection Ack", msg)
-			return
-		}
-
-		go self.receiveAck(connAck.Sequence)
 	}
 }
 
@@ -263,14 +271,6 @@ func (self *Connection) receiveAck(sequence uint32) {
 		return
 	}
 	ackChannel <- true
-}
-
-func (self *Connection) GetStatus() uint8 {
-	return self.status
-}
-
-func (self *Connection) Close() {
-	self.status = DISCONNECTED
 }
 
 func (self *Connection) getAckChannel(sequence uint32) (chan bool, error) {

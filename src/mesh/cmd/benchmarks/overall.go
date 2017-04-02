@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	//	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -34,6 +33,12 @@ func main() {
 	}
 
 	hopsStr := os.Args[1]
+
+	if hopsStr == "--help" {
+		printHelp()
+		return
+	}
+
 	hops, err := strconv.Atoi(hopsStr)
 	if err != nil {
 		fmt.Println("\nThe first argument should be a number of hops\n")
@@ -136,8 +141,6 @@ func benchmark(client *app.Client, server *app.Server, msgSize int) time.Duratio
 	}
 
 	duration := time.Now().Sub(start)
-
-	//time.Sleep(120 * time.Second)
 
 	return duration
 }

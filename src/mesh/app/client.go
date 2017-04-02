@@ -10,11 +10,6 @@ import (
 
 type Client struct {
 	app
-	ResponsesReceived uint32
-	ResponsesErrors   uint32
-	ResponsesSent     uint32
-	Consumed          uint32
-	ConsumedSent      uint32
 }
 
 func NewClient(meshnet messages.Network, address cipher.PubKey) (*Client, error) {
@@ -38,11 +33,6 @@ func NewClient(meshnet messages.Network, address cipher.PubKey) (*Client, error)
 	return client, nil
 }
 
-func (self *Client) Dial(address cipher.PubKey) error {
-	err := self.Network.Connect(self.Address, address)
-	return err
-}
-
 /*
 func (self *Client) DialWithRoutes(route, backRoute messages.RouteId) error {
 	conn, err := self.Network.NewConnectionWithRoutes(self.Address, route, backRoute)
@@ -61,7 +51,7 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 
 	request := &messages.AppMessage{
 		sequence,
-		false,
+		true,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
@@ -74,9 +64,3 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 		return nil, messages.ERR_APP_TIMEOUT
 	}
 }
-
-/*
-func (self *Client) GetConnection() messages.Connection {
-	return self.connection
-}
-*/

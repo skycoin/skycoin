@@ -104,18 +104,17 @@ func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
 }
 
 func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
-	if v.Visor == nil {
+	if v.v == nil {
 		return nil
 	}
 	return &BlockchainProgress{
-		Current: v.Visor.HeadBkSeq(),
+		Current: v.HeadBkSeq(),
 		Highest: v.EstimateBlockchainLength(),
 	}
 }
 
-func (self RPC) ResendTransaction(v *Visor, p *Pool,
-	txHash cipher.SHA256) *ResendResult {
-	if v.Visor == nil {
+func (self RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *ResendResult {
+	if v.v == nil {
 		return nil
 	}
 	v.ResendTransaction(txHash, p)

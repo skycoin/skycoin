@@ -35,9 +35,9 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		V := gateway.V
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
-		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
+		txns := gateway.GetAllUnconfirmedTxns()
+		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
+		for _, unconfirmedTxn := range txns {
 			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			ret = append(ret, &readable)
 		}
@@ -53,7 +53,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error405(w, "")
 			return
 		}
-		txs, err := gateway.V.GetLastTxs()
+		txs, err := gateway.GetLastTxs()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
@@ -89,7 +89,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.V.GetTransaction(h)
+		tx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -133,12 +133,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		txn := coin.TransactionDeserialize(b)
-		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
+		t, err := gateway.InjectTransaction(txn)
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
 			return
@@ -166,7 +161,7 @@ func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.V.GetTransaction(h)
+		tx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

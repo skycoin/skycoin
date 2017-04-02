@@ -1,17 +1,15 @@
 package gui
 
-
 import (
 	"net/http"
+	"strconv"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"strconv"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
-
 
 func RegisterExploerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
@@ -132,7 +130,7 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 			outs := gateway.GetUnspentOutputs(filters...)
 			totalSupply := 0
 			for _, u := range outs.HeadOutputs {
-				coin,err := strconv.Atoi(u.Coins)
+				coin, err := strconv.Atoi(u.Coins)
 				if err == nil {
 					totalSupply = totalSupply + coin
 				}
@@ -141,13 +139,12 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 
 			wh.SendOr404(w, wallet.CoinSupply{
 				CurrentSupply: totalSupply,
-				CoinCap:100000000,
+				CoinCap:       100000000,
 			})
 		}
 	}
 
 }
-
 
 func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -176,33 +173,25 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 		resTxs := make([]visor.ReadableAddressTransaction, len(uxs))
 
 		for i, ux := range uxs {
-			sourceTxnNumber,err := cipher.SHA256FromHex(ux.Out.Body.SrcTransaction.Hex())
-			if err!=nil{
+			sourceTxnNumber, err := cipher.SHA256FromHex(ux.Out.Body.SrcTransaction.Hex())
+			if err != nil {
 				wh.Error400(w, "Transaction id is not good")
 				return
 			}
-			sourceTransaction, err := gateway.V.GetTransaction(sourceTxnNumber)
+			sourceTransaction, err := gateway.GetTransaction(sourceTxnNumber)
 			in := make([]visor.ReadableTransactionInput, len(sourceTransaction.Txn.In))
-			for i, _ := range sourceTransaction.Txn.In {
-				var uxout *historydb.UxOut
-				var err error
-				c := make(chan struct{})
+			for i := range sourceTransaction.Txn.In {
 				id, err := cipher.SHA256FromHex(sourceTransaction.Txn.In[i].Hex())
 				if err != nil {
 					wh.Error400(w, err.Error())
 					return
 				}
-				gateway.Requests <- func() {
-					uxout, err = gateway.V.GetUxOutByID(id)
-					c <- struct{}{}
-				}
-				<-c
+				uxout, err := gateway.GetUxOutByID(id)
 				in[i] = visor.NewReadableTransactionInput(sourceTransaction.Txn.In[i].Hex(), uxout.Out.Body.Address.String())
 			}
 
-			resTxs[i] = visor.NewReadableAddressTransaction(sourceTransaction, in);
+			resTxs[i] = visor.NewReadableAddressTransaction(sourceTransaction, in)
 		}
 		wh.SendOr404(w, &resTxs)
 	}
 }
-

@@ -528,9 +528,9 @@ func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []ReadableUnconfirmedTxn {
+func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []UnconfirmedTxn {
 
-	ret := []ReadableUnconfirmedTxn{}
+	ret := []UnconfirmedTxn{}
 
 	for _, unconfirmedTxn := range vs.Unconfirmed.Txns {
 		isRelatedTransaction := false
@@ -547,11 +547,20 @@ func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []ReadableUnconf
 		}
 
 		if isRelatedTransaction == true {
-			ret = append(ret, NewReadableUnconfirmedTxn(&unconfirmedTxn))
+			ret = append(ret, unconfirmedTxn)
 		}
 	}
 
 	return ret
+}
+
+func (vs *Visor) GetAllUnconfirmedTxns() []UnconfirmedTxn {
+	txns := make([]UnconfirmedTxn, 0, len(vs.Unconfirmed.Txns))
+	for _, tx := range vs.Unconfirmed.Txns {
+		txns = append(txns, tx)
+
+	}
+	return txns
 }
 
 // StartParser start the blockchain parser.

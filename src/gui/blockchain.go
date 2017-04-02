@@ -54,7 +54,8 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 		}
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b *coin.Block
+		var b coin.Block
+		var exist bool
 		switch {
 		case hash == "" && seq == "":
 			wh.Error400(w, "should specify one filter, hash or seq")
@@ -69,7 +70,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			b = gate.V.GetBlockByHash(h)
+			b, exist = gate.GetBlockByHash(h)
 		case seq != "":
 			uSeq, err := strconv.ParseUint(seq, 10, 64)
 			if err != nil {
@@ -77,14 +78,14 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			b = gate.V.GetBlockBySeq(uSeq)
+			b, exist = gate.GetBlockBySeq(uSeq)
 		}
 
-		if b == nil {
+		if !exist {
 			wh.SendOr404(w, nil)
 			return
 		}
-		wh.SendOr404(w, visor.NewReadableBlock(b))
+		wh.SendOr404(w, visor.NewReadableBlock(&b))
 	}
 }
 

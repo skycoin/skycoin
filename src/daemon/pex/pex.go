@@ -145,129 +145,11 @@ func NewBlacklistEntry(duration time.Duration) BlacklistEntry {
 	return BlacklistEntry{Start: Now(), Duration: duration}
 }
 
-// // Blacklist is a map of addresses to BlacklistEntries
-// type Blacklist map[string]BlacklistEntry
-
-// // Saves blacklisted peers to disk as a newline delimited list of addresses to
-// // <dir><PeerDatabaseFilename>
-// func (self Blacklist) Save(dir string) error {
-// 	filename := BlacklistedDatabaseFilename
-// 	fn := filepath.Join(dir, filename+".tmp")
-// 	f, err := os.Create(fn)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer f.Close()
-// 	entries := make([]string, 0, len(self))
-// 	for addr, entry := range self {
-// 		// Skip empty addresses
-// 		addr = whitespaceFilter.ReplaceAllString(addr, "")
-// 		if addr == "" {
-// 			continue
-// 		}
-// 		duration := entry.Duration.Nanoseconds() / 1e9
-// 		line := fmt.Sprintf("%s %d %d", addr, entry.Start.Unix(), duration)
-// 		entries = append(entries, line)
-// 	}
-// 	s := strings.Join(entries, "\n") + "\n"
-// 	_, err = f.WriteString(s)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return os.Rename(fn, filepath.Join(dir, filename))
-// }
-
-// // Removes expired peers from the blacklist.
-// func (self Blacklist) Refresh() {
-// 	now := Now()
-// 	for p, b := range self {
-// 		if b.ExpiresAt().Before(now) {
-// 			delete(self, p)
-// 		}
-// 	}
-// }
-
-// // Returns the string addresses of all blacklisted peers
-// func (self Blacklist) GetAddresses() []string {
-// 	keys := make([]string, 0, len(self))
-// 	for key, _ := range self {
-// 		keys = append(keys, key)
-// 	}
-// 	return keys
-// }
-
-// // Loads a newline delimited list of addresses from
-// // <dir>/<BlacklistedDatabaseFilename> into the Blacklist index
-// // deprecate
-// func LoadBlacklist(dir string) (Blacklist, error) {
-// 	lines, err := readLines(filepath.Join(dir, BlacklistedDatabaseFilename))
-// 	blacklist := make(Blacklist, len(lines))
-// 	if os.IsNotExist(err) {
-// 		return blacklist, nil
-// 	}
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	logInvalid := func(line, msg string) {
-// 		logger.Warning("Invalid blacklist db entry: \"%s\"", line)
-// 		logger.Warning("Reason: %s", msg)
-// 	}
-// 	for _, line := range lines {
-// 		line = whitespaceFilter.ReplaceAllString(line, " ")
-// 		if line == "" || strings.HasPrefix(line, "#") {
-// 			continue
-// 		}
-// 		pts := make([]string, 0, 3)
-// 		for _, p := range strings.Split(line, " ") {
-// 			if p != "" {
-// 				pts = append(pts, p)
-// 			}
-// 		}
-// 		if len(pts) != 3 {
-// 			logInvalid(line, "Not of form $ADDR $BANSTART $BANDURATION")
-// 			continue
-// 		}
-// 		addr := whitespaceFilter.ReplaceAllString(pts[0], "")
-// 		if !ValidateAddress(addr, true) {
-// 			logInvalid(line, fmt.Sprintf("Invalid IP:Port %s", addr))
-// 			continue
-// 		}
-// 		start, err := strconv.ParseInt(pts[1], 10, 64)
-// 		if err != nil {
-// 			logInvalid(line, fmt.Sprintf("Invalid start time: %v", err))
-// 			continue
-// 		}
-// 		duration, err := strconv.ParseInt(pts[2], 10, 64)
-// 		if err != nil {
-// 			logInvalid(line, fmt.Sprintf("Invalid duration: %v", err))
-// 			continue
-// 		}
-// 		blacklist[addr] = BlacklistEntry{
-// 			Start:    time.Unix(start, 0).UTC(),
-// 			Duration: time.Duration(duration) * time.Second,
-// 		}
-// 	}
-// 	blacklist.Refresh()
-// 	return blacklist, nil
-// }
-
 // Peerlist is a map of addresses to *PeerStates
 type Peerlist struct {
 	lock  sync.Mutex
 	peers map[string]*Peer
 }
-
-// Peerlist records the peers
-// type Peerlist struct {
-// 	// where to get the random peers for exchanging
-// 	Exchange map[string]*Peer
-// }
-
-// func makePeerList(maxPeers int) Peerlist {
-// 	return Peerlist{
-// 		Exchange: make(map[string]*Peer, maxPeers),
-// 	}
-// }
 
 func (pl *Peerlist) strand(f func(), arg ...interface{}) {
 	pl.lock.Lock()
@@ -521,7 +403,14 @@ func (self *Peerlist) Save(dir string) (err error) {
 	filename := PeerDatabaseFilename
 	fn := filepath.Join(dir, filename)
 	self.strand(func() {
-		err = util.SaveJSON(fn, self.peers, 0600)
+		// filter the peers that has retrytime > 10
+		peers := make(map[string]*Peer)
+		for k, p := range self.peers {
+			if p.RetryTimes <= 10 {
+				peers[k] = p
+			}
+		}
+		err = util.SaveJSON(fn, peers, 0600)
 		if err != nil {
 			logger.Notice("SavePeerList Failed: %s", err)
 		}
@@ -656,28 +545,6 @@ func (self *Pex) SetPeerHasInPort(addr string, v bool) error {
 	return err
 }
 
-// Add a peer address to the blacklist.  Will not blacklist private peers.
-// func (self *Pex) AddBlacklistEntry(addr string, duration time.Duration) {
-// 	if !ValidateAddress(addr, self.AllowLocalhost) {
-// 		logger.Warning("Attempted to blacklist invalid IP:Port %s", addr)
-// 		return
-// 	}
-// 	p := self.Peerlist.peers[addr]
-// 	if p != nil && p.Private {
-// 		logger.Warning("Attempted to blacklist private peer %s", addr)
-// 		return
-// 	}
-// 	delete(self.Peerlist.peers, addr)
-// 	self.Blacklist[addr] = NewBlacklistEntry(duration)
-// 	logger.Debug("Blacklisting peer %s for %s", addr, duration.String())
-// }
-
-// Returns whether an address is blacklisted
-// func (self *Pex) IsBlacklisted(addr string) bool {
-// 	_, is := self.Blacklist[addr]
-// 	return is
-// }
-
 // Returns true if no more peers can be added
 func (self *Pex) Full() bool {
 	var full bool
@@ -712,34 +579,9 @@ func (self *Pex) Load(dir string) error {
 	if err != nil {
 		return err
 	}
-	// blacklist, err := LoadBlacklist(dir)
-	// if err != nil {
-	// 	return err
-	// }
-	// Remove any peers that appear in the blacklist, if not private
-	// for addr := range blacklist {
-	// 	p := peerlist.peers[addr]
-	// 	if p != nil && p.Private {
-	// 		logger.Warning("Peer %s appears in both peerlist and blacklist, "+
-	// 			"but is private.", addr)
-	// 		delete(blacklist, addr)
-	// 		continue
-	// 	}
-	// 	delete(peerlist.peers, addr)
-	// }
 	self.Peerlist = *peerlist
-	// self.Blacklist = blacklist
 	return nil
 }
-
-// Saves both the normal peer and blacklisted peer databases to dir
-// func (self *Pex) Save(dir string) error {
-// return self.Peerlist.Save(dir)
-// if err == nil {
-// 	err = self.Blacklist.Save(dir)
-// }
-// return err
-// }
 
 /* Common utilities */
 

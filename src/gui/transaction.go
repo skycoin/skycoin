@@ -23,6 +23,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/transaction", getTransactionByID(gateway))
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
+	mux.HandleFunc("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
 	mux.HandleFunc("/rawtx", getRawTx(gateway))
 }
@@ -140,6 +141,21 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, t.Hash().Hex())
+	}
+}
+
+func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+
+		rlt := gate.ResendUnconfirmedTxns()
+		v, _ := json.MarshalIndent(rlt, "", "    ")
+		fmt.Println(v)
+		wh.SendOr404(w, rlt)
+		return
 	}
 }
 

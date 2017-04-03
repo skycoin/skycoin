@@ -130,6 +130,14 @@ func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
 	return result
 }
 
+// ResendUnconfirmedTxns resents all unconfirmed transactions
+func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
+	gw.strand(func() {
+		rlt = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
+	})
+	return
+}
+
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
 func (gw *Gateway) GetBlockchainMetadata() interface{} {
 	var bcm interface{}

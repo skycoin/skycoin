@@ -239,6 +239,31 @@ func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
 	return
 }
 
+// ResendUnconfirmedTxns resents all unconfirmed transactions
+func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
+	var txids []cipher.SHA256
+	if vs.Config.Disabled {
+		return txids
+	}
+	vs.strand(func() {
+		var txns []visor.UnconfirmedTxn
+		for _, unconfirmTxn := range vs.v.Unconfirmed.Txns {
+			txns = append(txns, unconfirmTxn)
+		}
+
+		// sort the txns by receive time
+		sort.Slice(txns, func(i, j int) bool {
+			return txns[i].Received.Nanosecond() < txns[j].Received.Nanosecond()
+		})
+
+		for i := range txns {
+			vs.BroadcastTransaction(txns[i].Txn, pool)
+			txids = append(txids, txns[i].Txn.Hash())
+		}
+	})
+	return txids
+}
+
 // CreateAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a master chain.  Returns creation error and
 // whether it was published or not

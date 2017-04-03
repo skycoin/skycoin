@@ -35,6 +35,7 @@ type BlockchainProgress struct {
 }
 
 type ResendResult struct {
+	Txids []string `json:"txids"` // transaction id
 }
 
 type RPC struct{}
@@ -119,4 +120,16 @@ func (self RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *Rese
 	}
 	v.ResendTransaction(txHash, p)
 	return &ResendResult{}
+}
+
+func (self RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) *ResendResult {
+	if v.v == nil {
+		return nil
+	}
+	txids := v.ResendUnconfirmedTxns(p)
+	var rlt ResendResult
+	for _, txid := range txids {
+		rlt.Txids = append(rlt.Txids, txid.Hex())
+	}
+	return &rlt
 }

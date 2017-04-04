@@ -12,7 +12,6 @@ import (
 )
 
 func TestCreateServer(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
@@ -27,7 +26,6 @@ func TestCreateServer(t *testing.T) {
 }
 
 func TestCreateClient(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
@@ -92,7 +90,6 @@ func TestSend(t *testing.T) {
 */
 
 func TestSendWithFindRoute(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 
 	meshnet := network.NewNetwork()
@@ -120,7 +117,6 @@ func TestSendWithFindRoute(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	return
 	messages.SetInfoLogLevel()
 
 	meshnet := network.NewNetwork()
@@ -165,25 +161,6 @@ func TestHandle(t *testing.T) {
 	time.Sleep(2 * time.Second)
 }
 
-/*
-func TestVPN(t *testing.T) {
-	//messages.SetInfoLogLevel()
-
-	meshnet := network.NewNetwork()
-	defer meshnet.Shutdown()
-
-	clientAddr, serverAddr := meshnet.CreateThreeRoutes()
-
-	server, err := NewVPNServer(meshnet, serverAddr, "192.168.9.10")
-	assert.Nil(t, err)
-	assert.Equal(t, server.vpnAddress, "192.168.9.10")
-
-	client, err := NewVPNClient(meshnet, clientAddr, "192.168.9.11")
-	assert.Nil(t, err)
-	assert.Equal(t, client.vpnAddress, "192.168.9.11")
-}
-*/
-
 func TestSocks(t *testing.T) {
 	messages.SetInfoLogLevel()
 
@@ -201,8 +178,4 @@ func TestSocks(t *testing.T) {
 
 	err = client.Dial(serverAddr)
 	assert.Nil(t, err)
-
-	server.Serve()
-
-	time.Sleep(3000 * time.Second)
 }

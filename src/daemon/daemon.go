@@ -210,8 +210,10 @@ type Daemon struct {
 	// mirror (to avoid attacks enabled by our use of mirrors),
 	// but only one per base ip
 	mirrorConnections *MirrorConnections
-	// Client connection/disconnection callbacks
+	// Client connection callbacks
 	onConnectEvent chan ConnectEvent
+	// Client disconnection callbacks
+	onDisconnectEvent chan DisconnectEvent
 	// Connection failure events
 	connectionErrors chan ConnectionError
 	// Tracking connections from the same base IP.  Multiple connections
@@ -242,10 +244,9 @@ func NewDaemon(config Config) *Daemon {
 		// TODO -- if there are performance problems from blocking chans,
 		// Its because we are connecting to more things than OutgoingMax
 		// if we have private peers
-		onConnectEvent: make(chan ConnectEvent,
-			config.Daemon.OutgoingMax),
-		connectionErrors: make(chan ConnectionError,
-			config.Daemon.OutgoingMax),
+		onConnectEvent:      make(chan ConnectEvent, config.Daemon.OutgoingMax),
+		onDisconnectEvent:   make(chan DisconnectEvent, config.Daemon.OutgoingMax),
+		connectionErrors:    make(chan ConnectionError, config.Daemon.OutgoingMax),
 		outgoingConnections: NewOutgoingConnections(config.Daemon.OutgoingMax),
 		pendingConnections:  NewPendingConnections(config.Daemon.PendingMax),
 		messageEvents: make(chan MessageEvent,
@@ -263,6 +264,12 @@ func NewDaemon(config Config) *Daemon {
 type ConnectEvent struct {
 	Addr      string
 	Solicited bool
+}
+
+// DisconnectEvent generated when a connection terminated
+type DisconnectEvent struct {
+	Addr   string
+	Reason gnet.DisconnectReason
 }
 
 // Represent a failure to connect/dial a connection, with context
@@ -373,6 +380,11 @@ main:
 				log.Panic("There should be no connect events")
 			}
 			dm.onConnect(r)
+		case de := <-dm.onDisconnectEvent:
+			if dm.Config.DisableNetworking {
+				log.Panic("There should be no disconnect events")
+			}
+			dm.onDisconnect(de)
 		// Handle connection errors
 		case r := <-dm.connectionErrors:
 			if dm.Config.DisableNetworking {
@@ -392,7 +404,7 @@ main:
 			}
 			dm.processMessageEvent(m)
 		// Process any pending RPC requests
-		case req := <-dm.Gateway.Requests:
+		case req := <-dm.Gateway.requests:
 			req()
 
 		// TODO -- run these in the Visor
@@ -540,14 +552,6 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	}
 
 	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
-	//use exponential backoff
-
-	/*
-		duration, exists := BlacklistOffenses[ConnectFailed]
-		if exists {
-			self.Peers.Peers.AddBlacklistEntry(c.Addr, duration)
-		}
-	*/
 }
 
 // Removes unsolicited connections who haven't sent a version
@@ -650,22 +654,27 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	dm.Pool.Pool.SendMessage(a, m)
 }
 
-// Triggered when an gnet.Connection terminates. Disconnect events are not
-// pushed to a separate channel, because disconnects are already processed
-// by a queue in the daemon.Run() select{}.
-func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
-	// a := c.Addr()
-	logger.Info("%s disconnected because: %v", addr, reason)
-	// duration, exists := BlacklistOffenses[reason]
-	// if exists {
-	// 	dm.Peers.Peers.AddBlacklistEntry(addr, duration)
-	// }
+func (dm *Daemon) onDisconnect(e DisconnectEvent) {
+	logger.Info("%s disconnected because: %v", e.Addr, e.Reason)
 
-	dm.outgoingConnections.Remove(addr)
-	dm.expectingIntroductions.Remove(addr)
-	dm.Visor.RemoveConnection(addr)
-	dm.removeIPCount(addr)
-	dm.removeConnectionMirror(addr)
+	dm.outgoingConnections.Remove(e.Addr)
+	dm.expectingIntroductions.Remove(e.Addr)
+	dm.Visor.RemoveConnection(e.Addr)
+	dm.removeIPCount(e.Addr)
+	dm.removeConnectionMirror(e.Addr)
+}
+
+// Triggered when an gnet.Connection terminates
+func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
+	e := DisconnectEvent{
+		Addr:   addr,
+		Reason: reason,
+	}
+	select {
+	case dm.onDisconnectEvent <- e:
+	default:
+		logger.Info("onDisconnectEvent channel is full")
+	}
 }
 
 // Triggered when an gnet.Connection is connected

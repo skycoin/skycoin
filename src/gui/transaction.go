@@ -23,6 +23,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/transaction", getTransactionByID(gateway))
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
+	mux.HandleFunc("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
 	mux.HandleFunc("/rawtx", getRawTx(gateway))
 }
@@ -35,9 +36,9 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		V := gateway.V
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(V.Unconfirmed.Txns))
-		for _, unconfirmedTxn := range V.Unconfirmed.Txns {
+		txns := gateway.GetAllUnconfirmedTxns()
+		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
+		for _, unconfirmedTxn := range txns {
 			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			ret = append(ret, &readable)
 		}
@@ -53,7 +54,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error405(w, "")
 			return
 		}
-		txs, err := gateway.V.GetLastTxs()
+		txs, err := gateway.GetLastTxs()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
@@ -89,7 +90,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.V.GetTransaction(h)
+		tx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -133,18 +134,28 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		txn := coin.TransactionDeserialize(b)
-		if err := visor.VerifyTransactionFee(gateway.D.Visor.Visor.Blockchain, &txn); err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		t, err := gateway.D.Visor.InjectTransaction(txn, gateway.D.Pool)
+		t, err := gateway.InjectTransaction(txn)
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
 			return
 		}
 
 		wh.SendOr404(w, t.Hash().Hex())
+	}
+}
+
+func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			wh.Error405(w, "")
+			return
+		}
+
+		rlt := gate.ResendUnconfirmedTxns()
+		v, _ := json.MarshalIndent(rlt, "", "    ")
+		fmt.Println(v)
+		wh.SendOr404(w, rlt)
+		return
 	}
 }
 
@@ -166,7 +177,7 @@ func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.V.GetTransaction(h)
+		tx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

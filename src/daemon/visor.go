@@ -252,9 +252,7 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 		}
 
 		// sort the txns by receive time
-		sort.Slice(txns, func(i, j int) bool {
-			return txns[i].Received.Nanosecond() < txns[j].Received.Nanosecond()
-		})
+		sort.Sort(byTxnRecvTime(txns))
 
 		for i := range txns {
 			vs.BroadcastTransaction(txns[i].Txn, pool)
@@ -651,4 +649,18 @@ func (self BlockchainLengths) Swap(i, j int) {
 
 func (self BlockchainLengths) Less(i, j int) bool {
 	return self[i] < self[j]
+}
+
+type byTxnRecvTime []visor.UnconfirmedTxn
+
+func (txs byTxnRecvTime) Len() int {
+	return len(txs)
+}
+
+func (txs byTxnRecvTime) Swap(i, j int) {
+	txs[i], txs[j] = txs[j], txs[i]
+}
+
+func (txs byTxnRecvTime) Less(i, j int) bool {
+	return txs[i].Received.Nanosecond() < txs[j].Received.Nanosecond()
 }

@@ -41,6 +41,7 @@
                         <li><a href="#" (click)="selectMenu('Networking', $event)">Networking</a></li>
                         <li><a href="#" (click)="selectMenu('BlockChain', $event)">BlockChain</a></li>
                         <li><a href="#" (click)="selectMenu('Outputs', $event)">Outputs</a></li>
+                        <li><a href="#" (click)="selectMenu('PendingTxns', $event)">Pending Transactions</a></li>
                     </ul>
                 </div>
             </li>
@@ -485,6 +486,14 @@
                     <div *ngIf="selectedMenu=='Outputs'" style="padding-top:10px">
                         <p>Outputs</p>
                         <skycoin-outputs [wallets]="wallets"></skycoin-outputs>
+                    </div>
+                    <div *ngIf="selectedMenu=='PendingTxns'" style="padding-top:10px">
+                    <p style="
+                    display: inline-block;
+                    margin-right: 20px;
+                    margin-bottom: 20px;
+                    ">Pending Transactions</p>
+                        <pending-transactions></pending-transactions>
                     </div>
                 </div>
             </div>

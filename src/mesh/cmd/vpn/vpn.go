@@ -48,12 +48,12 @@ func main() {
 
 	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(hops + 1)
 
-	_, err = app.NewSocksServer(meshnet, serverAddr, "0.0.0.0:8001")
+	_, err = app.NewVPNServer(meshnet, serverAddr)
 	if err != nil {
 		panic(err)
 	}
 
-	client, err := app.NewSocksClient(meshnet, clientAddr, "0.0.0.0:8000")
+	client, err := app.NewVPNClient(meshnet, clientAddr, "0.0.0.0:4321")
 	if err != nil {
 		panic(err)
 	}

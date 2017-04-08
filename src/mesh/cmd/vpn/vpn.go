@@ -68,8 +68,8 @@ func main() {
 }
 
 func printHelp() {
-	fmt.Println("\nFORMAT: go run socks.go n , where n is a number of hops")
+	fmt.Println("\nFORMAT: go run vpn.go n , where n is a number of hops")
 	fmt.Println("\nUsage example for 10 meshnet hops:")
-	fmt.Println("\ngo run socks.go 10")
+	fmt.Println("\ngo run vpn.go 10")
 	fmt.Println("\nNumber of hops should be more than 0\n")
 }

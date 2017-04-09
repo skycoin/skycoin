@@ -12,7 +12,6 @@ import (
 )
 
 func TestCreateServer(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
@@ -27,7 +26,6 @@ func TestCreateServer(t *testing.T) {
 }
 
 func TestCreateClient(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
@@ -92,7 +90,6 @@ func TestSend(t *testing.T) {
 */
 
 func TestSendWithFindRoute(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 
 	meshnet := network.NewNetwork()
@@ -120,7 +117,6 @@ func TestSendWithFindRoute(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	return
 	messages.SetInfoLogLevel()
 
 	meshnet := network.NewNetwork()
@@ -165,44 +161,42 @@ func TestHandle(t *testing.T) {
 	time.Sleep(2 * time.Second)
 }
 
-/*
-func TestVPN(t *testing.T) {
-	//messages.SetInfoLogLevel()
-
-	meshnet := network.NewNetwork()
-	defer meshnet.Shutdown()
-
-	clientAddr, serverAddr := meshnet.CreateThreeRoutes()
-
-	server, err := NewVPNServer(meshnet, serverAddr, "192.168.9.10")
-	assert.Nil(t, err)
-	assert.Equal(t, server.vpnAddress, "192.168.9.10")
-
-	client, err := NewVPNClient(meshnet, clientAddr, "192.168.9.11")
-	assert.Nil(t, err)
-	assert.Equal(t, client.vpnAddress, "192.168.9.11")
-}
-*/
-
 func TestSocks(t *testing.T) {
 	messages.SetInfoLogLevel()
 
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(2)
+	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(20)
 
 	client, err := NewSocksClient(meshnet, clientAddr, "0.0.0.0:8000")
 	assert.Nil(t, err)
+	assert.Equal(t, client.ProxyAddress, "0.0.0.0:8000")
 
 	server, err := NewSocksServer(meshnet, serverAddr, "127.0.0.1:8001")
 	assert.Nil(t, err)
-	assert.Equal(t, server.socksAddress, "127.0.0.1:8001")
+	assert.Equal(t, server.ProxyAddress, "127.0.0.1:8001")
+
+	err = client.Dial(serverAddr)
+	assert.Nil(t, err)
+}
+
+func TestVPN(t *testing.T) {
+	messages.SetInfoLogLevel()
+
+	meshnet := network.NewNetwork()
+	defer meshnet.Shutdown()
+
+	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(20)
+
+	client, err := NewVPNClient(meshnet, clientAddr, "0.0.0.0:4321")
+	assert.Nil(t, err)
+	assert.Equal(t, client.ProxyAddress, "0.0.0.0:4321")
+
+	_, err = NewVPNServer(meshnet, serverAddr)
+	assert.Nil(t, err)
 
 	err = client.Dial(serverAddr)
 	assert.Nil(t, err)
 
-	server.Serve()
-
-	time.Sleep(3000 * time.Second)
 }

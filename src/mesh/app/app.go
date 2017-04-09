@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	//	"github.com/songgao/water"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
@@ -14,15 +12,13 @@ import (
 type app struct {
 	Address          cipher.PubKey
 	Network          messages.Network
+	ProxyAddress     string
 	handle           func([]byte) []byte
 	timeout          time.Duration
 	sequence         uint32
 	connection       messages.Connection
 	responseChannels map[uint32]chan messages.AppResponse
-	//	vpn              *water.Interface
-	//	vpnAddress       string
-	socksAddress string
-	lock         *sync.Mutex
+	lock             *sync.Mutex
 }
 
 var config = messages.GetConfig()

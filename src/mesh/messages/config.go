@@ -19,7 +19,8 @@ type ConfigStruct struct {
 	SimulateDelay     bool
 	MaxSimulatedDelay int
 	MaxPacketSize     int
-	SocksPacketSize   int
+	ProxyPacketSize   int
+	ProxyTimeout      time.Duration
 	AppTimeout        uint32
 	ConnectionTimeout uint32
 	TransportTimeout  uint32
@@ -30,11 +31,10 @@ type ConfigStruct struct {
 
 type ConfigFromFile struct {
 	General struct {
-		LogLevel        string
-		StartPort       uint32
-		AppTimeout      uint32
-		VPNSubnet       string
-		SocksPacketSize int
+		LogLevel   string
+		StartPort  uint32
+		AppTimeout uint32
+		VPNSubnet  string
 	}
 	Transport struct {
 		TransportTimeout  uint32
@@ -51,6 +51,10 @@ type ConfigFromFile struct {
 		SendInterval int
 		TimeUnit     int
 	}
+	Proxy struct {
+		ProxyPacketSize int
+		ProxyTimeout    time.Duration
+	}
 }
 
 var config = &ConfigStruct{ // default values
@@ -58,7 +62,8 @@ var config = &ConfigStruct{ // default values
 	StartPort:         6000,
 	AppTimeout:        1000000,
 	VPNSubnet:         "192.168.11.",
-	SocksPacketSize:   16384,
+	ProxyPacketSize:   16384,
+	ProxyTimeout:      300000 * time.Millisecond,
 	TransportTimeout:  100000,
 	RetransmitLimit:   10,
 	SimulateDelay:     false,
@@ -99,6 +104,9 @@ func init() {
 	config.MaxBuffer = cfgFromFile.Congestion.MaxBuffer
 	config.SendInterval = time.Duration(cfgFromFile.Congestion.SendInterval) * time.Microsecond
 	config.TimeUnit = time.Duration(cfgFromFile.Congestion.TimeUnit) * time.Microsecond
+
+	config.ProxyPacketSize = cfgFromFile.Proxy.ProxyPacketSize
+	config.ProxyTimeout = time.Duration(cfgFromFile.Proxy.ProxyTimeout) * time.Millisecond
 }
 
 func GetConfig() *ConfigStruct {

@@ -367,3 +367,10 @@ label {
 .text-underline {
     text-decoration: underline;
 }
+
+#versionNumber{
+    position: absolute;
+    top: 25px;
+    left: 190px;
+    color: rgb(156, 163, 175);
+}

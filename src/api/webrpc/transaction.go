@@ -39,7 +39,11 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
 
-	return makeSuccessResponse(req.ID, TxnResult{txn})
+	tx := &visor.TransactionResult{
+		Transaction: visor.NewReadableTransaction(txn),
+		Status:      txn.Status,
+	}
+	return makeSuccessResponse(req.ID, TxnResult{tx})
 }
 
 func injectTransactionHandler(req Request, gateway Gatewayer) Response {

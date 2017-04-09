@@ -1,8 +1,11 @@
 package visor
 
 import (
+	"log"
+
 	"github.com/skycoin/skycoin/src/cipher"
-	//"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 /*
@@ -30,6 +33,37 @@ func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 	return &bm
 }
 
+func (self RPC) GetUnspent(v *Visor) coin.UnspentPool {
+	return v.Blockchain.GetUnspent().Clone()
+}
+
+func (self RPC) GetUnconfirmedSpends(v *Visor, addrs map[cipher.Address]byte) coin.AddressUxOuts {
+	unspent := self.GetUnspent(v)
+	return v.Unconfirmed.SpendsForAddresses(&unspent, addrs)
+}
+
+func (self RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (tx coin.Transaction, err error) {
+	unspent := self.GetUnspent(v)
+	tm := v.Blockchain.Time()
+	tx, err = CreateSpendingTransaction(wlt, v.Unconfirmed, &unspent, tm, amt, dest)
+	if err != nil {
+		return
+	}
+
+	if err := tx.Verify(); err != nil {
+		log.Panicf("Invalid transaction, %v", err)
+	}
+
+	if err := VerifyTransactionFee(v.Blockchain, &tx); err != nil {
+		log.Panicf("Created invalid spending txn: visor fail, %v", err)
+	}
+
+	if err := v.Blockchain.VerifyTransaction(tx); err != nil {
+		log.Panicf("Created invalid spending txn: blockchain fail, %v", err)
+	}
+	return
+}
+
 func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 	ret := v.GetUnspentOutputReadables()
 	return ret
@@ -37,7 +71,11 @@ func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 
 func (self RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
 	ret := v.GetUnconfirmedTxns(addresses)
-	return ret
+	rut := make([]ReadableUnconfirmedTxn, len(ret))
+	for i := range ret {
+		rut[i] = NewReadableUnconfirmedTxn(&ret[i])
+	}
+	return rut
 }
 
 func (self RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {

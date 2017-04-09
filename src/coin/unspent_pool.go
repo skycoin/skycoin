@@ -146,3 +146,15 @@ func (self UnspentPool) AllForAddresses(addrs []cipher.Address) AddressUxOuts {
 func (self UnspentPool) GetUxHash() cipher.SHA256 {
 	return self.XorHash
 }
+
+func (self *UnspentPool) Clone() UnspentPool {
+	up := UnspentPool{
+		Pool:    make(map[cipher.SHA256]UxOut),
+		XorHash: self.XorHash,
+	}
+
+	for k, v := range self.Pool {
+		up.Pool[k] = v
+	}
+	return up
+}

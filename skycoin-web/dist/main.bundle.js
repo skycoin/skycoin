@@ -1,9 +1,9 @@
 webpackJsonp([0,3],{
 
-/***/ 1127:
+/***/ 1137:
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(553);
+module.exports = __webpack_require__(561);
 
 
 /***/ }),
@@ -16,9 +16,9 @@ module.exports = __webpack_require__(553);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_http__ = __webpack_require__(91);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_rxjs_Observable__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_rxjs_Observable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_rxjs_Observable__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_add_operator_map__ = __webpack_require__(525);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_add_operator_map__ = __webpack_require__(534);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_add_operator_map___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_rxjs_add_operator_map__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_catch__ = __webpack_require__(524);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_catch__ = __webpack_require__(533);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_catch___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_catch__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return BlockChainService; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -71,7 +71,7 @@ var BlockChainService = (function () {
     return BlockChainService;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/block-chain.service.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/block-chain.service.js.map
 
 /***/ }),
 
@@ -80,7 +80,7 @@ var BlockChainService = (function () {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_router__ = __webpack_require__(78);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -124,15 +124,15 @@ var AppComponent = (function () {
     AppComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-root',
-            template: __webpack_require__(852),
-            styles: [__webpack_require__(837)]
+            template: __webpack_require__(862),
+            styles: [__webpack_require__(846)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_router__["b" /* Router */]) === 'function' && _a) || Object])
     ], AppComponent);
     return AppComponent;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/app.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/app.component.js.map
 
 /***/ }),
 
@@ -171,6 +171,16 @@ var UxOutputsService = (function () {
             return __WEBPACK_IMPORTED_MODULE_2_rxjs__["Observable"].throw(error || 'Server error');
         });
     };
+    UxOutputsService.prototype.getCurrentBalanceOfAddress = function (address) {
+        return this._http.get('/api/currentBalance?address=' + address)
+            .map(function (res) {
+            return res.json();
+        })
+            .catch(function (error) {
+            console.log(error);
+            return __WEBPACK_IMPORTED_MODULE_2_rxjs__["Observable"].throw(error || 'Server error');
+        });
+    };
     UxOutputsService.prototype.getAddressFromUxId = function (uxid) {
         return this._http.get('/api/uxout?uxid=' + uxid)
             .map(function (res) {
@@ -201,7 +211,7 @@ var UxOutputsService = (function () {
     return UxOutputsService;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/UxOutputs.service.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/UxOutputs.service.js.map
 
 /***/ }),
 
@@ -247,7 +257,7 @@ var CoinSupplyService = (function () {
     return CoinSupplyService;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/coin-supply.service.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/coin-supply.service.js.map
 
 /***/ }),
 
@@ -259,8 +269,6 @@ var CoinSupplyService = (function () {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_http__ = __webpack_require__(91);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_rxjs__ = __webpack_require__(185);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_rxjs___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_rxjs__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_underscore__ = __webpack_require__(279);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_underscore___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_underscore__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return SkycoinBlockchainPaginationService; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -271,7 +279,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-
 
 
 
@@ -320,7 +327,7 @@ var SkycoinBlockchainPaginationService = (function () {
         var startIndex = (currentPage - 1) * pageSize;
         var endIndex = Math.min(startIndex + pageSize - 1, totalItems - 1);
         // create an array of pages to ng-repeat in the pager control
-        var pages = __WEBPACK_IMPORTED_MODULE_3_underscore__["range"](startPage, endPage + 1);
+        var pages = _.range(startPage, endPage + 1);
         // return object with all pager properties required by the view
         return {
             totalItems: totalItems,
@@ -341,7 +348,7 @@ var SkycoinBlockchainPaginationService = (function () {
     return SkycoinBlockchainPaginationService;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/skycoin-blockchain-pagination.service.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/skycoin-blockchain-pagination.service.js.map
 
 /***/ }),
 
@@ -387,11 +394,11 @@ var TransactionDetailService = (function () {
     return TransactionDetailService;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/transaction-detail.service.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/transaction-detail.service.js.map
 
 /***/ }),
 
-/***/ 552:
+/***/ 560:
 /***/ (function(module, exports) {
 
 function webpackEmptyContext(req) {
@@ -400,21 +407,21 @@ function webpackEmptyContext(req) {
 webpackEmptyContext.keys = function() { return []; };
 webpackEmptyContext.resolve = webpackEmptyContext;
 module.exports = webpackEmptyContext;
-webpackEmptyContext.id = 552;
+webpackEmptyContext.id = 560;
 
 
 /***/ }),
 
-/***/ 553:
+/***/ 561:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__polyfills_ts__ = __webpack_require__(684);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser_dynamic__ = __webpack_require__(640);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__polyfills_ts__ = __webpack_require__(693);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser_dynamic__ = __webpack_require__(649);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_core__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__environments_environment__ = __webpack_require__(683);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__app___ = __webpack_require__(682);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__environments_environment__ = __webpack_require__(692);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__app___ = __webpack_require__(691);
 
 
 
@@ -424,38 +431,38 @@ if (__WEBPACK_IMPORTED_MODULE_3__environments_environment__["a" /* environment *
     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2__angular_core__["enableProdMode"])();
 }
 __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1__angular_platform_browser_dynamic__["a" /* platformBrowserDynamic */])().bootstrapModule(__WEBPACK_IMPORTED_MODULE_4__app___["a" /* AppModule */]);
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/main.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/main.js.map
 
 /***/ }),
 
-/***/ 670:
+/***/ 679:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser__ = __webpack_require__(171);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_core__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_forms__ = __webpack_require__(631);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_forms__ = __webpack_require__(640);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_http__ = __webpack_require__(91);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_router__ = __webpack_require__(78);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__app_component__ = __webpack_require__(365);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__components_skycoin_header_skycoin_header_component__ = __webpack_require__(677);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__components_block_chain_table_block_chain_table_component__ = __webpack_require__(673);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__components_skycoin_pagination_skycoin_pagination_component__ = __webpack_require__(679);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__components_skycoin_search_bar_skycoin_search_bar_component__ = __webpack_require__(680);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__components_skycoin_header_skycoin_header_component__ = __webpack_require__(686);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__components_block_chain_table_block_chain_table_component__ = __webpack_require__(682);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__components_skycoin_pagination_skycoin_pagination_component__ = __webpack_require__(688);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__components_skycoin_search_bar_skycoin_search_bar_component__ = __webpack_require__(689);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__components_block_chain_table_block_chain_service__ = __webpack_require__(174);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__components_footer_footer_component__ = __webpack_require__(675);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12__components_skycoin_pagination_num_pages_pipe__ = __webpack_require__(678);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__components_footer_footer_component__ = __webpack_require__(684);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12__components_skycoin_pagination_num_pages_pipe__ = __webpack_require__(687);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_13__components_skycoin_pagination_skycoin_blockchain_pagination_service__ = __webpack_require__(368);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_14__angular_common__ = __webpack_require__(101);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_angular2_moment__ = __webpack_require__(685);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_angular2_moment__ = __webpack_require__(694);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_angular2_moment___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_15_angular2_moment__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_16__components_block_details_block_details_component__ = __webpack_require__(674);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17__components_address_detail_address_detail_component__ = __webpack_require__(671);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_16__components_block_details_block_details_component__ = __webpack_require__(683);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17__components_address_detail_address_detail_component__ = __webpack_require__(680);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_18__components_address_detail_UxOutputs_service__ = __webpack_require__(366);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19__components_transaction_detail_transaction_detail_component__ = __webpack_require__(681);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19__components_transaction_detail_transaction_detail_component__ = __webpack_require__(690);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_20__components_transaction_detail_transaction_detail_service__ = __webpack_require__(369);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_21__components_loading_loading_component__ = __webpack_require__(676);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_22__components_block_chain_coin_supply_block_chain_coin_supply_component__ = __webpack_require__(672);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_21__components_loading_loading_component__ = __webpack_require__(685);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_22__components_block_chain_coin_supply_block_chain_coin_supply_component__ = __webpack_require__(681);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_23__components_block_chain_coin_supply_coin_supply_service__ = __webpack_require__(367);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppModule; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -550,17 +557,17 @@ var AppModule = (function () {
     ], AppModule);
     return AppModule;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/app.module.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/app.module.js.map
 
 /***/ }),
 
-/***/ 671:
+/***/ 680:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__UxOutputs_service__ = __webpack_require__(366);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_router__ = __webpack_require__(78);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AddressDetailComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -580,6 +587,7 @@ var AddressDetailComponent = (function () {
         this.route = route;
         this.router = router;
         this.UxOutputs = null;
+        this.currentBalance = "0";
         this.transactions = [];
         this.currentAddress = null;
         this.showUxID = false;
@@ -600,18 +608,15 @@ var AddressDetailComponent = (function () {
             _this.transactions = uxoutputs;
             console.log(uxoutputs);
         });
-    };
-    AddressDetailComponent.prototype.getCurrentBalance = function () {
-        var outputs = this.transactions[this.transactions.length - 1].outputs;
-        if (this.currentAddress) {
-            for (var i = 0; i < outputs.length; i++) {
-                var currentAddress = outputs[i].dst;
-                if (currentAddress == this.currentAddress) {
-                    return outputs[i].coins;
-                }
+        this.route.params
+            .switchMap(function (params) {
+            var address = params['address'];
+            return _this.service.getCurrentBalanceOfAddress(address);
+        }).subscribe(function (addressDetails) {
+            if (addressDetails.head_outputs.length > 0) {
+                _this.currentBalance = addressDetails.head_outputs[0].coins;
             }
-        }
-        return "0";
+        });
     };
     AddressDetailComponent.prototype.showUxId = function () {
         this.showUxID = true;
@@ -624,19 +629,19 @@ var AddressDetailComponent = (function () {
     AddressDetailComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-address-detail',
-            template: __webpack_require__(853),
-            styles: [__webpack_require__(838)],
+            template: __webpack_require__(863),
+            styles: [__webpack_require__(847)],
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__UxOutputs_service__["a" /* UxOutputsService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__UxOutputs_service__["a" /* UxOutputsService */]) === 'function' && _a) || Object, (typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_router__["g" /* ActivatedRoute */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_2__angular_router__["g" /* ActivatedRoute */]) === 'function' && _b) || Object, (typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_2__angular_router__["b" /* Router */]) === 'function' && _c) || Object])
     ], AddressDetailComponent);
     return AddressDetailComponent;
     var _a, _b, _c;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/address-detail.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/address-detail.component.js.map
 
 /***/ }),
 
-/***/ 672:
+/***/ 681:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -669,19 +674,19 @@ var BlockChainCoinSupplyComponent = (function () {
     BlockChainCoinSupplyComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-block-chain-coin-supply',
-            template: __webpack_require__(854),
-            styles: [__webpack_require__(839)]
+            template: __webpack_require__(864),
+            styles: [__webpack_require__(848)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__coin_supply_service__["a" /* CoinSupplyService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__coin_supply_service__["a" /* CoinSupplyService */]) === 'function' && _a) || Object])
     ], BlockChainCoinSupplyComponent);
     return BlockChainCoinSupplyComponent;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/block-chain-coin-supply.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/block-chain-coin-supply.component.js.map
 
 /***/ }),
 
-/***/ 673:
+/***/ 682:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -689,9 +694,7 @@ var BlockChainCoinSupplyComponent = (function () {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__block_chain_service__ = __webpack_require__(174);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_moment__ = __webpack_require__(2);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_moment___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_moment__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_underscore__ = __webpack_require__(279);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_underscore___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_underscore__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_router__ = __webpack_require__(78);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return BlockChainTableComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -706,7 +709,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
-
 var BlockChainTableComponent = (function () {
     function BlockChainTableComponent(blockService, router) {
         this.blockService = blockService;
@@ -716,9 +718,9 @@ var BlockChainTableComponent = (function () {
     }
     BlockChainTableComponent.prototype.GetBlockAmount = function (txns) {
         var ret = [];
-        __WEBPACK_IMPORTED_MODULE_3_underscore__["each"](txns, function (o) {
+        _.each(txns, function (o) {
             if (o.outputs) {
-                __WEBPACK_IMPORTED_MODULE_3_underscore__["each"](o.outputs, function (_o) {
+                _.each(o.outputs, function (_o) {
                     ret.push(_o.coins);
                 });
             }
@@ -750,7 +752,7 @@ var BlockChainTableComponent = (function () {
         }
         this.loading = true;
         this.blockService.getBlocks(blockStart, blockEnd).subscribe(function (data) {
-            var newData = __WEBPACK_IMPORTED_MODULE_3_underscore__["sortBy"](data, function (block) { return block.header.seq; }).reverse();
+            var newData = _.sortBy(data, function (block) { return block.header.seq; }).reverse();
             _this.blocks = newData;
             _this.loading = false;
         }, function (err) {
@@ -760,29 +762,27 @@ var BlockChainTableComponent = (function () {
     BlockChainTableComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-block-chain-table',
-            template: __webpack_require__(855),
-            styles: [__webpack_require__(840)]
+            template: __webpack_require__(865),
+            styles: [__webpack_require__(849)]
         }), 
-        __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__block_chain_service__["a" /* BlockChainService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__block_chain_service__["a" /* BlockChainService */]) === 'function' && _a) || Object, (typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_4__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_4__angular_router__["b" /* Router */]) === 'function' && _b) || Object])
+        __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__block_chain_service__["a" /* BlockChainService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__block_chain_service__["a" /* BlockChainService */]) === 'function' && _a) || Object, (typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_3__angular_router__["b" /* Router */]) === 'function' && _b) || Object])
     ], BlockChainTableComponent);
     return BlockChainTableComponent;
     var _a, _b;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/block-chain-table.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/block-chain-table.component.js.map
 
 /***/ }),
 
-/***/ 674:
+/***/ 683:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_router__ = __webpack_require__(78);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__block_chain_table_block_chain_service__ = __webpack_require__(174);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_underscore__ = __webpack_require__(279);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_underscore___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_underscore__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_moment__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_moment___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_moment__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_moment__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_moment___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_moment__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return BlockDetailsComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -793,7 +793,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-
 
 
 
@@ -817,14 +816,14 @@ var BlockDetailsComponent = (function () {
         });
     };
     BlockDetailsComponent.prototype.getTime = function (time) {
-        return __WEBPACK_IMPORTED_MODULE_4_moment__["unix"](time).format();
+        return __WEBPACK_IMPORTED_MODULE_3_moment__["unix"](time).format();
     };
     BlockDetailsComponent.prototype.getAmount = function (block) {
         var ret = [];
         var txns = block.body.txns;
-        __WEBPACK_IMPORTED_MODULE_3_underscore__["each"](txns, function (o) {
+        _.each(txns, function (o) {
             if (o.outputs) {
-                __WEBPACK_IMPORTED_MODULE_3_underscore__["each"](o.outputs, function (_o) {
+                _.each(o.outputs, function (_o) {
                     ret.push(_o.coins);
                 });
             }
@@ -837,19 +836,19 @@ var BlockDetailsComponent = (function () {
     BlockDetailsComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-block-details',
-            template: __webpack_require__(856),
-            styles: [__webpack_require__(841)]
+            template: __webpack_require__(866),
+            styles: [__webpack_require__(850)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__block_chain_table_block_chain_service__["a" /* BlockChainService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_2__block_chain_table_block_chain_service__["a" /* BlockChainService */]) === 'function' && _a) || Object, (typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_router__["g" /* ActivatedRoute */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_router__["g" /* ActivatedRoute */]) === 'function' && _b) || Object, (typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_1__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_router__["b" /* Router */]) === 'function' && _c) || Object])
     ], BlockDetailsComponent);
     return BlockDetailsComponent;
     var _a, _b, _c;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/block-details.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/block-details.component.js.map
 
 /***/ }),
 
-/***/ 675:
+/***/ 684:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -873,18 +872,18 @@ var FooterComponent = (function () {
     FooterComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-footer',
-            template: __webpack_require__(857),
-            styles: [__webpack_require__(842)]
+            template: __webpack_require__(867),
+            styles: [__webpack_require__(851)]
         }), 
         __metadata('design:paramtypes', [])
     ], FooterComponent);
     return FooterComponent;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/footer.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/footer.component.js.map
 
 /***/ }),
 
-/***/ 676:
+/***/ 685:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -913,18 +912,18 @@ var LoadingComponent = (function () {
     LoadingComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-loading',
-            template: __webpack_require__(858),
-            styles: [__webpack_require__(843)]
+            template: __webpack_require__(868),
+            styles: [__webpack_require__(852)]
         }), 
         __metadata('design:paramtypes', [])
     ], LoadingComponent);
     return LoadingComponent;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/loading.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/loading.component.js.map
 
 /***/ }),
 
-/***/ 677:
+/***/ 686:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -948,18 +947,18 @@ var SkycoinHeaderComponent = (function () {
     SkycoinHeaderComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-skycoin-header',
-            template: __webpack_require__(859),
-            styles: [__webpack_require__(844)]
+            template: __webpack_require__(869),
+            styles: [__webpack_require__(853)]
         }), 
         __metadata('design:paramtypes', [])
     ], SkycoinHeaderComponent);
     return SkycoinHeaderComponent;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/skycoin-header.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/skycoin-header.component.js.map
 
 /***/ }),
 
-/***/ 678:
+/***/ 687:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -993,11 +992,11 @@ var NumPagesPipe = (function () {
     ], NumPagesPipe);
     return NumPagesPipe;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/num-pages.pipe.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/num-pages.pipe.js.map
 
 /***/ }),
 
-/***/ 679:
+/***/ 688:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1094,25 +1093,25 @@ var SkycoinPaginationComponent = (function () {
     SkycoinPaginationComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-skycoin-pagination',
-            template: __webpack_require__(860),
-            styles: [__webpack_require__(845)]
+            template: __webpack_require__(870),
+            styles: [__webpack_require__(854)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__skycoin_blockchain_pagination_service__["a" /* SkycoinBlockchainPaginationService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__skycoin_blockchain_pagination_service__["a" /* SkycoinBlockchainPaginationService */]) === 'function' && _a) || Object])
     ], SkycoinPaginationComponent);
     return SkycoinPaginationComponent;
     var _a;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/skycoin-pagination.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/skycoin-pagination.component.js.map
 
 /***/ }),
 
-/***/ 680:
+/***/ 689:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__block_chain_table_block_chain_service__ = __webpack_require__(174);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_router__ = __webpack_require__(78);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return SkycoinSearchBarComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -1153,24 +1152,24 @@ var SkycoinSearchBarComponent = (function () {
     SkycoinSearchBarComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-skycoin-search-bar',
-            template: __webpack_require__(861),
-            styles: [__webpack_require__(846)]
+            template: __webpack_require__(871),
+            styles: [__webpack_require__(855)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__block_chain_table_block_chain_service__["a" /* BlockChainService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__block_chain_table_block_chain_service__["a" /* BlockChainService */]) === 'function' && _a) || Object, (typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_2__angular_router__["b" /* Router */]) === 'function' && _b) || Object])
     ], SkycoinSearchBarComponent);
     return SkycoinSearchBarComponent;
     var _a, _b;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/skycoin-search-bar.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/skycoin-search-bar.component.js.map
 
 /***/ }),
 
-/***/ 681:
+/***/ 690:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_router__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_router__ = __webpack_require__(78);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__transaction_detail_service__ = __webpack_require__(369);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return TransactionDetailComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -1208,33 +1207,33 @@ var TransactionDetailComponent = (function () {
     TransactionDetailComponent = __decorate([
         __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
             selector: 'app-transaction-detail',
-            template: __webpack_require__(862),
-            styles: [__webpack_require__(847)]
+            template: __webpack_require__(872),
+            styles: [__webpack_require__(856)]
         }), 
         __metadata('design:paramtypes', [(typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__transaction_detail_service__["a" /* TransactionDetailService */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_2__transaction_detail_service__["a" /* TransactionDetailService */]) === 'function' && _a) || Object, (typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_router__["g" /* ActivatedRoute */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_router__["g" /* ActivatedRoute */]) === 'function' && _b) || Object, (typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_1__angular_router__["b" /* Router */] !== 'undefined' && __WEBPACK_IMPORTED_MODULE_1__angular_router__["b" /* Router */]) === 'function' && _c) || Object])
     ], TransactionDetailComponent);
     return TransactionDetailComponent;
     var _a, _b, _c;
 }());
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/transaction-detail.component.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/transaction-detail.component.js.map
 
 /***/ }),
 
-/***/ 682:
+/***/ 691:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__app_component__ = __webpack_require__(365);
 /* unused harmony namespace reexport */
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__app_module__ = __webpack_require__(670);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__app_module__ = __webpack_require__(679);
 /* harmony namespace reexport (by used) */ __webpack_require__.d(__webpack_exports__, "a", function() { return __WEBPACK_IMPORTED_MODULE_1__app_module__["a"]; });
 
 
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/index.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/index.js.map
 
 /***/ }),
 
-/***/ 683:
+/***/ 692:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1246,45 +1245,45 @@ var TransactionDetailComponent = (function () {
 var environment = {
     production: false
 };
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/environment.js.map
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/environment.js.map
 
 /***/ }),
 
-/***/ 684:
+/***/ 693:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_core_js_es6_symbol__ = __webpack_require__(700);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_core_js_es6_symbol__ = __webpack_require__(709);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_core_js_es6_symbol___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_core_js_es6_symbol__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_core_js_es6_object__ = __webpack_require__(693);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_core_js_es6_object__ = __webpack_require__(702);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_core_js_es6_object___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_core_js_es6_object__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_core_js_es6_function__ = __webpack_require__(689);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_core_js_es6_function__ = __webpack_require__(698);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_core_js_es6_function___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_core_js_es6_function__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_core_js_es6_parse_int__ = __webpack_require__(695);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_core_js_es6_parse_int__ = __webpack_require__(704);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_core_js_es6_parse_int___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_core_js_es6_parse_int__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_core_js_es6_parse_float__ = __webpack_require__(694);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_core_js_es6_parse_float__ = __webpack_require__(703);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_core_js_es6_parse_float___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_core_js_es6_parse_float__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_core_js_es6_number__ = __webpack_require__(692);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_core_js_es6_number__ = __webpack_require__(701);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_core_js_es6_number___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_core_js_es6_number__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_core_js_es6_math__ = __webpack_require__(691);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_core_js_es6_math__ = __webpack_require__(700);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_core_js_es6_math___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_core_js_es6_math__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_core_js_es6_string__ = __webpack_require__(699);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_core_js_es6_string__ = __webpack_require__(708);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_core_js_es6_string___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_core_js_es6_string__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_core_js_es6_date__ = __webpack_require__(688);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_core_js_es6_date__ = __webpack_require__(697);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_core_js_es6_date___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_core_js_es6_date__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_core_js_es6_array__ = __webpack_require__(687);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_core_js_es6_array__ = __webpack_require__(696);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_core_js_es6_array___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_9_core_js_es6_array__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_core_js_es6_regexp__ = __webpack_require__(697);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_core_js_es6_regexp__ = __webpack_require__(706);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_core_js_es6_regexp___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_10_core_js_es6_regexp__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11_core_js_es6_map__ = __webpack_require__(690);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11_core_js_es6_map__ = __webpack_require__(699);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_11_core_js_es6_map___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_11_core_js_es6_map__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12_core_js_es6_set__ = __webpack_require__(698);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12_core_js_es6_set__ = __webpack_require__(707);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_12_core_js_es6_set___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_12_core_js_es6_set__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13_core_js_es6_reflect__ = __webpack_require__(696);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13_core_js_es6_reflect__ = __webpack_require__(705);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_13_core_js_es6_reflect___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_13_core_js_es6_reflect__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14_core_js_es7_reflect__ = __webpack_require__(701);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14_core_js_es7_reflect__ = __webpack_require__(710);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_14_core_js_es7_reflect___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_14_core_js_es7_reflect__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_zone_js_dist_zone__ = __webpack_require__(1126);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_zone_js_dist_zone__ = __webpack_require__(1136);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_zone_js_dist_zone___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_15_zone_js_dist_zone__);
 
 
@@ -1302,169 +1301,7 @@ var environment = {
 
 
 
-//# sourceMappingURL=/Users/napandey/coding/skycoin/skycoin-web/src/polyfills.js.map
-
-/***/ }),
-
-/***/ 837:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, "", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 838:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, ".collection{\n  border: none;\n}\na{\n  word-wrap: break-word;\n}\n.collection-item{\n  border: none;\n}\n\n.card-title{\n  font-size: 16px;\n}\n.right-arrow{\n  margin-top: 50px;\n}\n\n.address-qr{\n  padding-top: 20px;\n}\n\n.modalShow{\n  z-index: 1003;\n  display: block;\n  opacity: 1;\n  max-width: 80%;\n  margin: 0 auto;\n  max-height: 25%;\n  -webkit-transform: scaleX(1);\n          transform: scaleX(1);\n  top: 10%;\n}\n", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 839:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, "", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 840:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, "tr:hover{\n  cursor: pointer;\n}\n\n.wrap{\n  word-break: break-all;\n}\n\n\n\n", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 841:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, ".card{\n  background-color: #29b6f6;\n  color:white;\n}\n", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 842:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, "footer{\n  background-color: #29b6f6;\n}\n", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 843:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, ".modalShow{\n  z-index: 1003;\n  display: block;\n  opacity: 1;\n  max-width: 80%;\n  margin: 0 auto;\n  -webkit-transform: scaleX(1);\n          transform: scaleX(1);\n  top: 10%;\n}\n", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 844:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, "", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ 845:
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(40)();
-// imports
-
-
-// module
-exports.push([module.i, ".pagination li.active{\n  background-color: #29b6f6;\n  color:white;\n}\n\n.lower-panel{\n  color:black;\n}\n", ""]);
-
-// exports
-
-
-/*** EXPORTS FROM exports-loader ***/
-module.exports = module.exports.toString();
+//# sourceMappingURL=/Users/napandey/go/src/github.com/skycoin/skycoin/skycoin-web/src/polyfills.js.map
 
 /***/ }),
 
@@ -1494,7 +1331,7 @@ exports = module.exports = __webpack_require__(40)();
 
 
 // module
-exports.push([module.i, ".collection{\n  border: none;\n}\n.collection-item{\n  border: none;\n}\n\n.card-title{\n  font-size: 16px;\n}\n.right-arrow{\n  margin-top: 50px;\n}\n", ""]);
+exports.push([module.i, ".collection{\n  border: none;\n}\na{\n  word-wrap: break-word;\n}\n.collection-item{\n  border: none;\n}\n\n.card-title{\n  font-size: 16px;\n}\n.right-arrow{\n  margin-top: 50px;\n}\n\n.address-qr{\n  padding-top: 20px;\n}\n\n.modalShow{\n  z-index: 1003;\n  display: block;\n  opacity: 1;\n  max-width: 80%;\n  margin: 0 auto;\n  max-height: 25%;\n  -webkit-transform: scaleX(1);\n          transform: scaleX(1);\n  top: 10%;\n}\n", ""]);
 
 // exports
 
@@ -1507,223 +1344,399 @@ module.exports = module.exports.toString();
 /***/ 848:
 /***/ (function(module, exports, __webpack_require__) {
 
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, "", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 849:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, "tr:hover{\n  cursor: pointer;\n}\n\n.wrap{\n  word-break: break-all;\n}\n\n\n\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 850:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, ".card{\n  background-color: #29b6f6;\n  color:white;\n}\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 851:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, "footer{\n  background-color: #29b6f6;\n}\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 852:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, ".modalShow{\n  z-index: 1003;\n  display: block;\n  opacity: 1;\n  max-width: 80%;\n  margin: 0 auto;\n  -webkit-transform: scaleX(1);\n          transform: scaleX(1);\n  top: 10%;\n}\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 853:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, "", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 854:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, ".pagination li.active{\n  background-color: #29b6f6;\n  color:white;\n}\n\n.lower-panel{\n  color:black;\n}\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 855:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, "", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 856:
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(40)();
+// imports
+
+
+// module
+exports.push([module.i, ".collection{\n  border: none;\n}\n.collection-item{\n  border: none;\n}\n\n.card-title{\n  font-size: 16px;\n}\n.right-arrow{\n  margin-top: 50px;\n}\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ 857:
+/***/ (function(module, exports, __webpack_require__) {
+
 var map = {
-	"./af": 414,
-	"./af.js": 414,
-	"./ar": 420,
-	"./ar-dz": 415,
-	"./ar-dz.js": 415,
-	"./ar-ly": 416,
-	"./ar-ly.js": 416,
-	"./ar-ma": 417,
-	"./ar-ma.js": 417,
-	"./ar-sa": 418,
-	"./ar-sa.js": 418,
-	"./ar-tn": 419,
-	"./ar-tn.js": 419,
-	"./ar.js": 420,
-	"./az": 421,
-	"./az.js": 421,
-	"./be": 422,
-	"./be.js": 422,
-	"./bg": 423,
-	"./bg.js": 423,
-	"./bn": 424,
-	"./bn.js": 424,
-	"./bo": 425,
-	"./bo.js": 425,
-	"./br": 426,
-	"./br.js": 426,
-	"./bs": 427,
-	"./bs.js": 427,
-	"./ca": 428,
-	"./ca.js": 428,
-	"./cs": 429,
-	"./cs.js": 429,
-	"./cv": 430,
-	"./cv.js": 430,
-	"./cy": 431,
-	"./cy.js": 431,
-	"./da": 432,
-	"./da.js": 432,
-	"./de": 434,
-	"./de-at": 433,
-	"./de-at.js": 433,
-	"./de.js": 434,
-	"./dv": 435,
-	"./dv.js": 435,
-	"./el": 436,
-	"./el.js": 436,
-	"./en-au": 437,
-	"./en-au.js": 437,
-	"./en-ca": 438,
-	"./en-ca.js": 438,
-	"./en-gb": 439,
-	"./en-gb.js": 439,
-	"./en-ie": 440,
-	"./en-ie.js": 440,
-	"./en-nz": 441,
-	"./en-nz.js": 441,
-	"./eo": 442,
-	"./eo.js": 442,
-	"./es": 444,
-	"./es-do": 443,
-	"./es-do.js": 443,
-	"./es.js": 444,
-	"./et": 445,
-	"./et.js": 445,
-	"./eu": 446,
-	"./eu.js": 446,
-	"./fa": 447,
-	"./fa.js": 447,
-	"./fi": 448,
-	"./fi.js": 448,
-	"./fo": 449,
-	"./fo.js": 449,
-	"./fr": 452,
-	"./fr-ca": 450,
-	"./fr-ca.js": 450,
-	"./fr-ch": 451,
-	"./fr-ch.js": 451,
-	"./fr.js": 452,
-	"./fy": 453,
-	"./fy.js": 453,
-	"./gd": 454,
-	"./gd.js": 454,
-	"./gl": 455,
-	"./gl.js": 455,
-	"./he": 456,
-	"./he.js": 456,
-	"./hi": 457,
-	"./hi.js": 457,
-	"./hr": 458,
-	"./hr.js": 458,
-	"./hu": 459,
-	"./hu.js": 459,
-	"./hy-am": 460,
-	"./hy-am.js": 460,
-	"./id": 461,
-	"./id.js": 461,
-	"./is": 462,
-	"./is.js": 462,
-	"./it": 463,
-	"./it.js": 463,
-	"./ja": 464,
-	"./ja.js": 464,
-	"./jv": 465,
-	"./jv.js": 465,
-	"./ka": 466,
-	"./ka.js": 466,
-	"./kk": 467,
-	"./kk.js": 467,
-	"./km": 468,
-	"./km.js": 468,
-	"./ko": 469,
-	"./ko.js": 469,
-	"./ky": 470,
-	"./ky.js": 470,
-	"./lb": 471,
-	"./lb.js": 471,
-	"./lo": 472,
-	"./lo.js": 472,
-	"./lt": 473,
-	"./lt.js": 473,
-	"./lv": 474,
-	"./lv.js": 474,
-	"./me": 475,
-	"./me.js": 475,
-	"./mi": 476,
-	"./mi.js": 476,
-	"./mk": 477,
-	"./mk.js": 477,
-	"./ml": 478,
-	"./ml.js": 478,
-	"./mr": 479,
-	"./mr.js": 479,
-	"./ms": 481,
-	"./ms-my": 480,
-	"./ms-my.js": 480,
-	"./ms.js": 481,
-	"./my": 482,
-	"./my.js": 482,
-	"./nb": 483,
-	"./nb.js": 483,
-	"./ne": 484,
-	"./ne.js": 484,
-	"./nl": 486,
-	"./nl-be": 485,
-	"./nl-be.js": 485,
-	"./nl.js": 486,
-	"./nn": 487,
-	"./nn.js": 487,
-	"./pa-in": 488,
-	"./pa-in.js": 488,
-	"./pl": 489,
-	"./pl.js": 489,
-	"./pt": 491,
-	"./pt-br": 490,
-	"./pt-br.js": 490,
-	"./pt.js": 491,
-	"./ro": 492,
-	"./ro.js": 492,
-	"./ru": 493,
-	"./ru.js": 493,
-	"./se": 494,
-	"./se.js": 494,
-	"./si": 495,
-	"./si.js": 495,
-	"./sk": 496,
-	"./sk.js": 496,
-	"./sl": 497,
-	"./sl.js": 497,
-	"./sq": 498,
-	"./sq.js": 498,
-	"./sr": 500,
-	"./sr-cyrl": 499,
-	"./sr-cyrl.js": 499,
-	"./sr.js": 500,
-	"./ss": 501,
-	"./ss.js": 501,
-	"./sv": 502,
-	"./sv.js": 502,
-	"./sw": 503,
-	"./sw.js": 503,
-	"./ta": 504,
-	"./ta.js": 504,
-	"./te": 505,
-	"./te.js": 505,
-	"./tet": 506,
-	"./tet.js": 506,
-	"./th": 507,
-	"./th.js": 507,
-	"./tl-ph": 508,
-	"./tl-ph.js": 508,
-	"./tlh": 509,
-	"./tlh.js": 509,
-	"./tr": 510,
-	"./tr.js": 510,
-	"./tzl": 511,
-	"./tzl.js": 511,
-	"./tzm": 513,
-	"./tzm-latn": 512,
-	"./tzm-latn.js": 512,
-	"./tzm.js": 513,
-	"./uk": 514,
-	"./uk.js": 514,
-	"./uz": 515,
-	"./uz.js": 515,
-	"./vi": 516,
-	"./vi.js": 516,
-	"./x-pseudo": 517,
-	"./x-pseudo.js": 517,
-	"./yo": 518,
-	"./yo.js": 518,
-	"./zh-cn": 519,
-	"./zh-cn.js": 519,
-	"./zh-hk": 520,
-	"./zh-hk.js": 520,
-	"./zh-tw": 521,
-	"./zh-tw.js": 521
+	"./af": 416,
+	"./af.js": 416,
+	"./ar": 423,
+	"./ar-dz": 417,
+	"./ar-dz.js": 417,
+	"./ar-kw": 418,
+	"./ar-kw.js": 418,
+	"./ar-ly": 419,
+	"./ar-ly.js": 419,
+	"./ar-ma": 420,
+	"./ar-ma.js": 420,
+	"./ar-sa": 421,
+	"./ar-sa.js": 421,
+	"./ar-tn": 422,
+	"./ar-tn.js": 422,
+	"./ar.js": 423,
+	"./az": 424,
+	"./az.js": 424,
+	"./be": 425,
+	"./be.js": 425,
+	"./bg": 426,
+	"./bg.js": 426,
+	"./bn": 427,
+	"./bn.js": 427,
+	"./bo": 428,
+	"./bo.js": 428,
+	"./br": 429,
+	"./br.js": 429,
+	"./bs": 430,
+	"./bs.js": 430,
+	"./ca": 431,
+	"./ca.js": 431,
+	"./cs": 432,
+	"./cs.js": 432,
+	"./cv": 433,
+	"./cv.js": 433,
+	"./cy": 434,
+	"./cy.js": 434,
+	"./da": 435,
+	"./da.js": 435,
+	"./de": 438,
+	"./de-at": 436,
+	"./de-at.js": 436,
+	"./de-ch": 437,
+	"./de-ch.js": 437,
+	"./de.js": 438,
+	"./dv": 439,
+	"./dv.js": 439,
+	"./el": 440,
+	"./el.js": 440,
+	"./en-au": 441,
+	"./en-au.js": 441,
+	"./en-ca": 442,
+	"./en-ca.js": 442,
+	"./en-gb": 443,
+	"./en-gb.js": 443,
+	"./en-ie": 444,
+	"./en-ie.js": 444,
+	"./en-nz": 445,
+	"./en-nz.js": 445,
+	"./eo": 446,
+	"./eo.js": 446,
+	"./es": 448,
+	"./es-do": 447,
+	"./es-do.js": 447,
+	"./es.js": 448,
+	"./et": 449,
+	"./et.js": 449,
+	"./eu": 450,
+	"./eu.js": 450,
+	"./fa": 451,
+	"./fa.js": 451,
+	"./fi": 452,
+	"./fi.js": 452,
+	"./fo": 453,
+	"./fo.js": 453,
+	"./fr": 456,
+	"./fr-ca": 454,
+	"./fr-ca.js": 454,
+	"./fr-ch": 455,
+	"./fr-ch.js": 455,
+	"./fr.js": 456,
+	"./fy": 457,
+	"./fy.js": 457,
+	"./gd": 458,
+	"./gd.js": 458,
+	"./gl": 459,
+	"./gl.js": 459,
+	"./gom-latn": 460,
+	"./gom-latn.js": 460,
+	"./he": 461,
+	"./he.js": 461,
+	"./hi": 462,
+	"./hi.js": 462,
+	"./hr": 463,
+	"./hr.js": 463,
+	"./hu": 464,
+	"./hu.js": 464,
+	"./hy-am": 465,
+	"./hy-am.js": 465,
+	"./id": 466,
+	"./id.js": 466,
+	"./is": 467,
+	"./is.js": 467,
+	"./it": 468,
+	"./it.js": 468,
+	"./ja": 469,
+	"./ja.js": 469,
+	"./jv": 470,
+	"./jv.js": 470,
+	"./ka": 471,
+	"./ka.js": 471,
+	"./kk": 472,
+	"./kk.js": 472,
+	"./km": 473,
+	"./km.js": 473,
+	"./kn": 474,
+	"./kn.js": 474,
+	"./ko": 475,
+	"./ko.js": 475,
+	"./ky": 476,
+	"./ky.js": 476,
+	"./lb": 477,
+	"./lb.js": 477,
+	"./lo": 478,
+	"./lo.js": 478,
+	"./lt": 479,
+	"./lt.js": 479,
+	"./lv": 480,
+	"./lv.js": 480,
+	"./me": 481,
+	"./me.js": 481,
+	"./mi": 482,
+	"./mi.js": 482,
+	"./mk": 483,
+	"./mk.js": 483,
+	"./ml": 484,
+	"./ml.js": 484,
+	"./mr": 485,
+	"./mr.js": 485,
+	"./ms": 487,
+	"./ms-my": 486,
+	"./ms-my.js": 486,
+	"./ms.js": 487,
+	"./my": 488,
+	"./my.js": 488,
+	"./nb": 489,
+	"./nb.js": 489,
+	"./ne": 490,
+	"./ne.js": 490,
+	"./nl": 492,
+	"./nl-be": 491,
+	"./nl-be.js": 491,
+	"./nl.js": 492,
+	"./nn": 493,
+	"./nn.js": 493,
+	"./pa-in": 494,
+	"./pa-in.js": 494,
+	"./pl": 495,
+	"./pl.js": 495,
+	"./pt": 497,
+	"./pt-br": 496,
+	"./pt-br.js": 496,
+	"./pt.js": 497,
+	"./ro": 498,
+	"./ro.js": 498,
+	"./ru": 499,
+	"./ru.js": 499,
+	"./sd": 500,
+	"./sd.js": 500,
+	"./se": 501,
+	"./se.js": 501,
+	"./si": 502,
+	"./si.js": 502,
+	"./sk": 503,
+	"./sk.js": 503,
+	"./sl": 504,
+	"./sl.js": 504,
+	"./sq": 505,
+	"./sq.js": 505,
+	"./sr": 507,
+	"./sr-cyrl": 506,
+	"./sr-cyrl.js": 506,
+	"./sr.js": 507,
+	"./ss": 508,
+	"./ss.js": 508,
+	"./sv": 509,
+	"./sv.js": 509,
+	"./sw": 510,
+	"./sw.js": 510,
+	"./ta": 511,
+	"./ta.js": 511,
+	"./te": 512,
+	"./te.js": 512,
+	"./tet": 513,
+	"./tet.js": 513,
+	"./th": 514,
+	"./th.js": 514,
+	"./tl-ph": 515,
+	"./tl-ph.js": 515,
+	"./tlh": 516,
+	"./tlh.js": 516,
+	"./tr": 517,
+	"./tr.js": 517,
+	"./tzl": 518,
+	"./tzl.js": 518,
+	"./tzm": 520,
+	"./tzm-latn": 519,
+	"./tzm-latn.js": 519,
+	"./tzm.js": 520,
+	"./uk": 521,
+	"./uk.js": 521,
+	"./ur": 522,
+	"./ur.js": 522,
+	"./uz": 524,
+	"./uz-latn": 523,
+	"./uz-latn.js": 523,
+	"./uz.js": 524,
+	"./vi": 525,
+	"./vi.js": 525,
+	"./x-pseudo": 526,
+	"./x-pseudo.js": 526,
+	"./yo": 527,
+	"./yo.js": 527,
+	"./zh-cn": 528,
+	"./zh-cn.js": 528,
+	"./zh-hk": 529,
+	"./zh-hk.js": 529,
+	"./zh-tw": 530,
+	"./zh-tw.js": 530
 };
 function webpackContext(req) {
 	return __webpack_require__(webpackContextResolve(req));
@@ -1739,87 +1752,87 @@ webpackContext.keys = function webpackContextKeys() {
 };
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
-webpackContext.id = 848;
+webpackContext.id = 857;
 
-
-/***/ }),
-
-/***/ 852:
-/***/ (function(module, exports) {
-
-module.exports = "<app-skycoin-header></app-skycoin-header>\n<div class=\"container\">\n  <div class=\"row center\">\n    <app-skycoin-search-bar></app-skycoin-search-bar>\n    <router-outlet></router-outlet>\n  </div>\n</div>\n<app-loading [loading]=\"loading\"></app-loading>\n<app-footer></app-footer>\n\n\n\n\n"
-
-/***/ }),
-
-/***/ 853:
-/***/ (function(module, exports) {
-
-module.exports = "<div class=\"row\" *ngIf=\"transactions\">\n  <div class=\"col s8\" >\n    <div class=\"card-content\" *ngIf=\"transactions.length>0\">\n      <ul class=\"collection\">\n        <li class=\"collection-item\"><h5>Address</h5><span>{{currentAddress}}</span></li>\n        <li class=\"collection-item\">Number of transactions: {{transactions.length}} </li>\n        <li class=\"collection-item\">Current value: <i class=\"material-icons\">ic_account_balance</i> {{getCurrentBalance()}} skycoins</li>\n      </ul>\n    </div>\n  </div>\n\n  <div class=\"card col s4\">\n    <!--<qr-code *ngIf=\"currentAddress!=null\" [value]=\"currentAddress\" [size]=\"300\"></qr-code>-->\n    <div id=\"qr-code\"></div>\n    <p class=\"address-qr\">{{currentAddress}}</p>\n  </div>\n\n\n  <div class=\" card col s12\" *ngFor=\"let transaction of transactions\">\n    <div class=\"card-title\">Transaction id : <a href=\"/transaction/{{transaction.txid}}\">{{transaction.txid}}</a></div>\n      <div class=\"col s4\">\n        <ul class=\"collection\">\n          <li class=\"collection-item\"><h5>inputs</h5></li>\n          <li class=\"collection-item\" *ngFor=\"let input of transaction.inputs\">\n            <!--<a href=\"/address/{{input.uxid}}\">uxid</a>-->\n            <a class=\"tooltipped\" data-position=\"bottom\" data-delay=\"250\" attr.data-tooltip=\"UxId: {{input.uxid}}\" href=\"/address/{{input.owner}}\">{{input.owner}}</a>\n            <i (click)=\"showUxId()\" class=\"material-icons\">ic_info_outline</i>\n            <div class=\"modal bottom-sheet\" [ngClass]=\"{modalShow:showUxID}\">\n              <div class=\"modal-content\">\n                <h4>UxId</h4>\n                {{input.uxid}}\n              </div>\n              <div class=\"modal-footer\">\n                <a href=\"#!\" class=\" modal-action modal-close waves-effect waves-green btn-flat\" (click)=\"hideUxId()\">Close</a>\n              </div>\n            </div>\n          </li>\n\n        </ul>\n      </div>\n      <div class=\"accent-1 col s1 right-arrow center\">\n        <i class=\"material-icons\">trending_flat</i>\n      </div>\n\n      <div class=\"col s5\">\n        <ul class=\"collection\">\n          <li class=\"collection-item\"><h5>outputs</h5></li>\n          <li class=\"collection-item\" *ngFor=\"let output of transaction.outputs\"><a href=\"/address/{{output.dst}}\">{{output.dst}}</a></li>\n        </ul>\n      </div>\n      <div class=\"col s2\">\n        <ul class=\"collection\">\n          <li class=\"collection-item\"><h5>coins</h5></li>\n          <li class=\"collection-item\" *ngFor=\"let output of transaction.outputs\">{{output.coins}}</li>\n        </ul>\n      </div>\n  </div>\n</div>\n\n\n"
-
-/***/ }),
-
-/***/ 854:
-/***/ (function(module, exports) {
-
-module.exports = "<h6>Coin supply : {{coinSupply}} and Coin Cap is : {{ coinCap}}</h6>\n"
-
-/***/ }),
-
-/***/ 855:
-/***/ (function(module, exports) {
-
-module.exports = "\n\n\n<div class=\"row\">\n  <div class=\"col s12 s12\">\n    <div class=\"card blue lighten-1\">\n      <div class=\"card-content white-text\">\n        <span class=\"card-title\">Blockchain</span>\n        <app-block-chain-coin-supply></app-block-chain-coin-supply>\n        <h5>{{totalBlocks}} blocks</h5>\n      </div>\n    </div>\n  </div>\n</div>\n\n\n\n\n\n<table class=\"bordered striped centered responsive-table\">\n  <thead >\n  <tr>\n    <th data-field=\"id\">Time</th>\n    <th data-field=\"name\">Block Number</th>\n    <th data-field=\"price\">Transactions</th>\n    <th data-field=\"id\">Amount Transferred</th>\n    <th data-field=\"price\">Blockhash</th>\n\n  </tr>\n  </thead>\n\n  <tbody>\n  <tr *ngFor=\"let block of blocks\" (click)=\"showDetails(block)\">\n    <td>{{getTime(block.header.timestamp)}}</td>\n    <td >{{ block.header.seq }}</td>\n    <td>{{ block.body.txns.length }}</td>\n    <td>{{ GetBlockAmount(block.body.txns) }}</td>\n    <td>{{ block.header.block_hash }}</td>\n  </tr>\n\n\n  </tbody>\n</table>\n<app-loading [loading]=\"loading\"></app-loading>\n\n\n<app-skycoin-pagination (onChangePage)=\"handlePageChange($event)\"></app-skycoin-pagination>\n"
-
-/***/ }),
-
-/***/ 856:
-/***/ (function(module, exports) {
-
-module.exports = "<div class=\"row\">\n  <h2>Block Details</h2>\n  <div class=\"card\" *ngIf=\"block\">\n    <div class=\"card-content\" >\n      <table>\n        <tbody >\n\n        <tr>\n\n          <td>Height</td><td>{{ block.header.seq }}</td>\n\n        </tr>\n        <tr>\n          <td>Timestamp</td><td>{{getTime(block.header.timestamp)}}</td>\n        </tr>\n        <tr>\n          <td>Hash</td><td>{{ block.header.block_hash }}</td>\n        </tr>\n\n        <tr>\n          <td>Parent Hash</td><td>{{ block.header.previous_block_hash }}</td>\n        </tr>\n\n        <tr>\n          <td>Total Amount</td><td>{{ getAmount(block) }} coins</td>\n        </tr>\n\n        </tbody>\n      </table>\n    </div>\n  </div>\n\n\n    <div class=\"col s12\">Transactions</div>\n    <div class=\"col s12\">\n      <div class=\"col s1\">S.no</div>\n      <div class=\"col s2\">Transaction Id</div>\n      <div class=\"col s3\">Inputs</div>\n      <div class=\"col s4\">Outputs</div>\n      <div class=\"col s2\">Amount</div>\n    </div>\n  <div *ngIf=\"block\">\n    <div  class=\"col s12\" *ngFor=\"let transaction of block.body.txns;let i = index\">\n\n      <div class=\"col s1\">{{i+1}}</div>\n      <div class=\"col s2 wrap\"><a [routerLink]=\"['/transaction', transaction.txid ]\" >{{transaction.txid}}</a></div>\n      <div class=\"col s3 wrap\"><p *ngFor=\"let input of transaction.inputs;\" class=\"input\">{{input}}</p></div>\n      <div class=\"col s6 wrap\"><p *ngFor=\"let output of transaction.outputs;\" class=\"input\"><a [routerLink]=\"['/address', output.dst ]\" >{{output.dst}}</a>  - {{output.coins}}</p></div>\n    </div>\n  </div>\n\n\n\n\n</div>\n"
-
-/***/ }),
-
-/***/ 857:
-/***/ (function(module, exports) {
-
-module.exports = "<footer class=\"page-footer\">\n  <div class=\"container\">\n    <div class=\"row\">\n      <div class=\"col l6 s12\">\n        <p class=\"grey-text text-lighten-4\">Next generation of digital money.</p>\n      </div>\n      <div class=\"col l4 offset-l2 s12\">\n        <h5 class=\"white-text\">Links</h5>\n        <ul>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/infographics.html\">How it works?</a></li>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/downloads.html\">Download wallet</a></li>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/whitepapers.html\">White papers</a></li>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/faq.html\">FAQs</a></li>\n        </ul>\n      </div>\n    </div>\n  </div>\n  <div class=\"footer-copyright\">\n    <div class=\"container\">\n      © 2017 Skycoin\n    </div>\n  </div>\n</footer>\n"
-
-/***/ }),
-
-/***/ 858:
-/***/ (function(module, exports) {
-
-module.exports = "<div id=\"loadingModal\" class=\"modal bottom-sheet\" [ngClass]=\"{modalShow:loading}\">\n  <div class=\"modal-content\">\n    <h4>Loading please wait...</h4>\n    <div class=\"preloader-wrapper big active\">\n      <div class=\"spinner-layer spinner-blue-only\">\n        <div class=\"circle-clipper left\">\n          <div class=\"circle\"></div>\n        </div><div class=\"gap-patch\">\n        <div class=\"circle\"></div>\n      </div><div class=\"circle-clipper right\">\n        <div class=\"circle\"></div>\n      </div>\n      </div>\n    </div>\n  </div>\n</div>\n"
-
-/***/ }),
-
-/***/ 859:
-/***/ (function(module, exports) {
-
-module.exports = "<nav class=\"light-blue lighten-1\" role=\"navigation\">\n  <div class=\"nav-wrapper container\"><a id=\"logo-container\" href=\"#\" class=\"brand-logo\">Skycoin</a>\n    <ul class=\"right hide-on-med-and-down\">\n      <li><a href=\"http://skycoin.net/infographics.html\">How it works?</a></li>\n      <li><a href=\"http://skycoin.net/downloads.html\">Download wallet</a></li>\n      <li><a href=\"http://skycoin.net/faq.html\">FAQs</a></li>\n      <li><a href=\"http://skycoin.net/whitepapers.html\">White papers</a></li>\n    </ul>\n\n    <ul id=\"nav-mobile\" class=\"side-nav\">\n      <li><a href=\"http://skycoin.net/infographics.html\">How it works?</a></li>\n      <li><a href=\"http://skycoin.net/downloads.html\">Download wallet</a></li>\n      <li><a href=\"http://skycoin.net/faq.html\">FAQs</a></li>\n      <li><a href=\"http://skycoin.net/whitepapers.html\">White papers</a></li>\n    </ul>\n    <a href=\"#\" data-activates=\"nav-mobile\" class=\"button-collapse\"><i class=\"material-icons\">menu</i></a>\n  </div>\n</nav>\n"
-
-/***/ }),
-
-/***/ 860:
-/***/ (function(module, exports) {
-
-module.exports = "<ul class=\"pagination\">\n\n  <li [ngClass]=\"{disabled:currentPage <= 5}\"><a href=\"#!\" (click)=\"loadPrevious()\"><i class=\"material-icons\">chevron_left</i></a></li>\n\n  <li *ngFor='let page of currentPages' [ngClass]=\"{active:currentPage == page}\" class=\"active\">\n\n    <a  (click)=\"changePage(page)\" href=\"#!\">{{page}}</a>\n\n  </li>\n  <li [ngClass]=\"{disabled:noUpcoming}\"><a href=\"#!\" (click)=\"loadUpcoming()\"><i class=\"material-icons\">chevron_right</i></a></li>\n</ul>\n"
-
-/***/ }),
-
-/***/ 861:
-/***/ (function(module, exports) {
-
-module.exports = "<div class=\"nav-wrapper\">\n  <form (submit)=\"searchBlockHistory(blockSearchKey.value)\">\n    <div class=\"input-field\">\n      <input #blockSearchKey id=\"search\" type=\"search\" required placeholder=\"blockhash, address, block-number, transaction id\">\n      <label class=\"label-icon\" for=\"search\"><i class=\"material-icons\">search</i></label>\n      <i class=\"material-icons\">close</i>\n    </div>\n  </form>\n</div>\n"
 
 /***/ }),
 
 /***/ 862:
 /***/ (function(module, exports) {
 
+module.exports = "<app-skycoin-header></app-skycoin-header>\n<div class=\"container\">\n  <div class=\"row center\">\n    <app-skycoin-search-bar></app-skycoin-search-bar>\n    <router-outlet></router-outlet>\n  </div>\n</div>\n<app-loading [loading]=\"loading\"></app-loading>\n<app-footer></app-footer>\n\n\n\n\n"
+
+/***/ }),
+
+/***/ 863:
+/***/ (function(module, exports) {
+
+module.exports = "<div class=\"row\" *ngIf=\"transactions\">\n  <div class=\"col s8\" >\n    <div class=\"card-content\" *ngIf=\"transactions.length>0\">\n      <ul class=\"collection\">\n        <li class=\"collection-item\"><h5>Address</h5><span>{{currentAddress}}</span></li>\n        <li class=\"collection-item\">Number of transactions: {{transactions.length}} </li>\n        <li class=\"collection-item\">Current value: <i class=\"material-icons\">ic_account_balance</i> {{currentBalance}} skycoins</li>\n      </ul>\n    </div>\n  </div>\n\n  <div class=\"card col s4\">\n    <!--<qr-code *ngIf=\"currentAddress!=null\" [value]=\"currentAddress\" [size]=\"300\"></qr-code>-->\n    <div id=\"qr-code\"></div>\n    <p class=\"address-qr\">{{currentAddress}}</p>\n  </div>\n\n\n  <div class=\" card col s12\" *ngFor=\"let transaction of transactions\">\n    <div class=\"card-title\">Transaction id : <a href=\"/transaction/{{transaction.txid}}\">{{transaction.txid}}</a></div>\n      <div class=\"col s4\">\n        <ul class=\"collection\">\n          <li class=\"collection-item\"><h5>inputs</h5></li>\n          <li class=\"collection-item\" *ngFor=\"let input of transaction.inputs\">\n            <!--<a href=\"/address/{{input.uxid}}\">uxid</a>-->\n            <a class=\"tooltipped\" data-position=\"bottom\" data-delay=\"250\" attr.data-tooltip=\"UxId: {{input.uxid}}\" href=\"/address/{{input.owner}}\">{{input.owner}}</a>\n            <i (click)=\"showUxId()\" class=\"material-icons\">ic_info_outline</i>\n            <div class=\"modal bottom-sheet\" [ngClass]=\"{modalShow:showUxID}\">\n              <div class=\"modal-content\">\n                <h4>UxId</h4>\n                {{input.uxid}}\n              </div>\n              <div class=\"modal-footer\">\n                <a href=\"#!\" class=\" modal-action modal-close waves-effect waves-green btn-flat\" (click)=\"hideUxId()\">Close</a>\n              </div>\n            </div>\n          </li>\n\n        </ul>\n      </div>\n      <div class=\"accent-1 col s1 right-arrow center\">\n        <i class=\"material-icons\">trending_flat</i>\n      </div>\n\n      <div class=\"col s5\">\n        <ul class=\"collection\">\n          <li class=\"collection-item\"><h5>outputs</h5></li>\n          <li class=\"collection-item\" *ngFor=\"let output of transaction.outputs\"><a href=\"/address/{{output.dst}}\">{{output.dst}}</a></li>\n        </ul>\n      </div>\n      <div class=\"col s2\">\n        <ul class=\"collection\">\n          <li class=\"collection-item\"><h5>coins</h5></li>\n          <li class=\"collection-item\" *ngFor=\"let output of transaction.outputs\">{{output.coins}}</li>\n        </ul>\n      </div>\n  </div>\n</div>\n\n\n"
+
+/***/ }),
+
+/***/ 864:
+/***/ (function(module, exports) {
+
+module.exports = "<h6>Coin supply : {{coinSupply}} and Coin Cap is : {{ coinCap}}</h6>\n"
+
+/***/ }),
+
+/***/ 865:
+/***/ (function(module, exports) {
+
+module.exports = "\n\n\n<div class=\"row\">\n  <div class=\"col s12 s12\">\n    <div class=\"card blue lighten-1\">\n      <div class=\"card-content white-text\">\n        <span class=\"card-title\">Blockchain</span>\n        <app-block-chain-coin-supply></app-block-chain-coin-supply>\n        <h5>{{totalBlocks}} blocks</h5>\n      </div>\n    </div>\n  </div>\n</div>\n\n\n\n\n\n<table class=\"bordered striped centered responsive-table\">\n  <thead >\n  <tr>\n    <th data-field=\"id\">Time</th>\n    <th data-field=\"name\">Block Number</th>\n    <th data-field=\"price\">Transactions</th>\n    <th data-field=\"id\">Amount Transferred</th>\n    <th data-field=\"price\">Blockhash</th>\n\n  </tr>\n  </thead>\n\n  <tbody>\n  <tr *ngFor=\"let block of blocks\" (click)=\"showDetails(block)\">\n    <td>{{getTime(block.header.timestamp)}}</td>\n    <td >{{ block.header.seq }}</td>\n    <td>{{ block.body.txns.length }}</td>\n    <td>{{ GetBlockAmount(block.body.txns) }}</td>\n    <td>{{ block.header.block_hash }}</td>\n  </tr>\n\n\n  </tbody>\n</table>\n<app-loading [loading]=\"loading\"></app-loading>\n\n\n<app-skycoin-pagination (onChangePage)=\"handlePageChange($event)\"></app-skycoin-pagination>\n"
+
+/***/ }),
+
+/***/ 866:
+/***/ (function(module, exports) {
+
+module.exports = "<div class=\"row\">\n  <h2>Block Details</h2>\n  <div class=\"card\" *ngIf=\"block\">\n    <div class=\"card-content\" >\n      <table>\n        <tbody >\n\n        <tr>\n\n          <td>Height</td><td>{{ block.header.seq }}</td>\n\n        </tr>\n        <tr>\n          <td>Timestamp</td><td>{{getTime(block.header.timestamp)}}</td>\n        </tr>\n        <tr>\n          <td>Hash</td><td>{{ block.header.block_hash }}</td>\n        </tr>\n\n        <tr>\n          <td>Parent Hash</td><td>{{ block.header.previous_block_hash }}</td>\n        </tr>\n\n        <tr>\n          <td>Total Amount</td><td>{{ getAmount(block) }} coins</td>\n        </tr>\n\n        </tbody>\n      </table>\n    </div>\n  </div>\n\n\n    <div class=\"col s12\">Transactions</div>\n    <div class=\"col s12\">\n      <div class=\"col s1\">S.no</div>\n      <div class=\"col s2\">Transaction Id</div>\n      <div class=\"col s3\">Inputs</div>\n      <div class=\"col s4\">Outputs</div>\n      <div class=\"col s2\">Amount</div>\n    </div>\n  <div *ngIf=\"block\">\n    <div  class=\"col s12\" *ngFor=\"let transaction of block.body.txns;let i = index\">\n\n      <div class=\"col s1\">{{i+1}}</div>\n      <div class=\"col s2 wrap\"><a [routerLink]=\"['/transaction', transaction.txid ]\" >{{transaction.txid}}</a></div>\n      <div class=\"col s3 wrap\"><p *ngFor=\"let input of transaction.inputs;\" class=\"input\">{{input}}</p></div>\n      <div class=\"col s6 wrap\"><p *ngFor=\"let output of transaction.outputs;\" class=\"input\"><a [routerLink]=\"['/address', output.dst ]\" >{{output.dst}}</a>  - {{output.coins}}</p></div>\n    </div>\n  </div>\n\n\n\n\n</div>\n"
+
+/***/ }),
+
+/***/ 867:
+/***/ (function(module, exports) {
+
+module.exports = "<footer class=\"page-footer\">\n  <div class=\"container\">\n    <div class=\"row\">\n      <div class=\"col l6 s12\">\n        <p class=\"grey-text text-lighten-4\">Next generation of digital money.</p>\n      </div>\n      <div class=\"col l4 offset-l2 s12\">\n        <h5 class=\"white-text\">Links</h5>\n        <ul>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/infographics.html\">How it works?</a></li>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/downloads.html\">Download wallet</a></li>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/whitepapers.html\">White papers</a></li>\n          <li><a class=\"grey-text text-lighten-3\" href=\"http://skycoin.net/faq.html\">FAQs</a></li>\n        </ul>\n      </div>\n    </div>\n  </div>\n  <div class=\"footer-copyright\">\n    <div class=\"container\">\n      © 2017 Skycoin\n    </div>\n  </div>\n</footer>\n"
+
+/***/ }),
+
+/***/ 868:
+/***/ (function(module, exports) {
+
+module.exports = "<div id=\"loadingModal\" class=\"modal bottom-sheet\" [ngClass]=\"{modalShow:loading}\">\n  <div class=\"modal-content\">\n    <h4>Loading please wait...</h4>\n    <div class=\"preloader-wrapper big active\">\n      <div class=\"spinner-layer spinner-blue-only\">\n        <div class=\"circle-clipper left\">\n          <div class=\"circle\"></div>\n        </div><div class=\"gap-patch\">\n        <div class=\"circle\"></div>\n      </div><div class=\"circle-clipper right\">\n        <div class=\"circle\"></div>\n      </div>\n      </div>\n    </div>\n  </div>\n</div>\n"
+
+/***/ }),
+
+/***/ 869:
+/***/ (function(module, exports) {
+
+module.exports = "<nav class=\"light-blue lighten-1\" role=\"navigation\">\n  <div class=\"nav-wrapper container\"><a id=\"logo-container\" href=\"#\" class=\"brand-logo\">Skycoin</a>\n    <ul class=\"right hide-on-med-and-down\">\n      <li><a href=\"http://skycoin.net/infographics.html\">How it works?</a></li>\n      <li><a href=\"http://skycoin.net/downloads.html\">Download wallet</a></li>\n      <li><a href=\"http://skycoin.net/faq.html\">FAQs</a></li>\n      <li><a href=\"http://skycoin.net/whitepapers.html\">White papers</a></li>\n    </ul>\n\n    <ul id=\"nav-mobile\" class=\"side-nav\">\n      <li><a href=\"http://skycoin.net/infographics.html\">How it works?</a></li>\n      <li><a href=\"http://skycoin.net/downloads.html\">Download wallet</a></li>\n      <li><a href=\"http://skycoin.net/faq.html\">FAQs</a></li>\n      <li><a href=\"http://skycoin.net/whitepapers.html\">White papers</a></li>\n    </ul>\n    <a href=\"#\" data-activates=\"nav-mobile\" class=\"button-collapse\"><i class=\"material-icons\">menu</i></a>\n  </div>\n</nav>\n"
+
+/***/ }),
+
+/***/ 870:
+/***/ (function(module, exports) {
+
+module.exports = "<ul class=\"pagination\">\n\n  <li [ngClass]=\"{disabled:currentPage <= 5}\"><a href=\"#!\" (click)=\"loadPrevious()\"><i class=\"material-icons\">chevron_left</i></a></li>\n\n  <li *ngFor='let page of currentPages' [ngClass]=\"{active:currentPage == page}\" class=\"active\">\n\n    <a  (click)=\"changePage(page)\" href=\"#!\">{{page}}</a>\n\n  </li>\n  <li [ngClass]=\"{disabled:noUpcoming}\"><a href=\"#!\" (click)=\"loadUpcoming()\"><i class=\"material-icons\">chevron_right</i></a></li>\n</ul>\n"
+
+/***/ }),
+
+/***/ 871:
+/***/ (function(module, exports) {
+
+module.exports = "<div class=\"nav-wrapper\">\n  <form (submit)=\"searchBlockHistory(blockSearchKey.value)\">\n    <div class=\"input-field\">\n      <input #blockSearchKey id=\"search\" type=\"search\" required placeholder=\"blockhash, address, block-number, transaction id\">\n      <label class=\"label-icon\" for=\"search\"><i class=\"material-icons\">search</i></label>\n      <i class=\"material-icons\">close</i>\n    </div>\n  </form>\n</div>\n"
+
+/***/ }),
+
+/***/ 872:
+/***/ (function(module, exports) {
+
 module.exports = "<div class=\"row\" *ngIf=\"transaction!=null\">\n  <h2>Transaction Details</h2>\n  <div class=\"card\" *ngIf=\"block\">\n    <div class=\"card-content\" >\n      <table>\n        <tbody >\n\n        <tr>\n\n          <td>Status</td><td>{{ transaction.status?\"confirmed\":\"unconfirmed\" }}</td>\n\n        </tr>\n        <tr>\n          <td>Timestamp</td><td>{{getTime(block.header.timestamp)}}</td>\n        </tr>\n        <tr>\n          <td>Block </td><td><a [routerLink]=\"['/block', transaction.status.block_seq ]\">{{ transaction.status.block_seq }}</a></td>\n        </tr>\n        </tbody>\n      </table>\n    </div>\n  </div>\n\n\n  <div class=\" card col s12\">\n    <div class=\"card-title\">Transaction id : {{transaction.txn.txid}}</div>\n    <div class=\"col s4\">\n      <ul class=\"collection\">\n        <li class=\"collection-item\"><h5>Inputs</h5></li>\n        <li class=\"collection-item\" *ngFor=\"let input of transaction.txn.inputs\">{{input}}</li>\n\n      </ul>\n    </div>\n    <div class=\"accent-1 col s1 right-arrow center\">\n      <i class=\"material-icons\">trending_flat</i>\n    </div>\n\n    <div class=\"col s5\">\n      <ul class=\"collection\">\n        <li class=\"collection-item\"><h5>Outputs</h5></li>\n        <li class=\"collection-item\" *ngFor=\"let output of transaction.txn.outputs\"><a [routerLink]=\"['/address', output.dst ]\">{{output.dst}}</a></li>\n      </ul>\n    </div>\n    <div class=\"col s2\">\n      <ul class=\"collection\">\n        <li class=\"collection-item\"><h5>Coins</h5></li>\n        <li class=\"collection-item\" *ngFor=\"let output of transaction.txn.outputs\">{{output.coins}}</li>\n      </ul>\n    </div>\n  </div>\n</div>\n\n"
 
 /***/ })
 
-},[1127]);
+},[1137]);
 //# sourceMappingURL=main.bundle.js.map

@@ -20,10 +20,13 @@ export class AddressDetailComponent implements OnInit,  AfterViewInit{
 
   private currentAddress:string;
 
+  private currentBalance:string;
+
   constructor(   private service:UxOutputsService,
                  private route: ActivatedRoute,
                  private router: Router) {
     this.UxOutputs=null;
+    this.currentBalance="0";
     this.transactions =[];
     this.currentAddress = null;
     this.showUxID = false;
@@ -34,7 +37,6 @@ export class AddressDetailComponent implements OnInit,  AfterViewInit{
   }
 
   ngAfterViewInit(){
-
     this.UxOutputs= this.route.params
       .switchMap((params: Params) => {
         let address = params['address'];
@@ -47,22 +49,17 @@ export class AddressDetailComponent implements OnInit,  AfterViewInit{
     this.UxOutputs.subscribe((uxoutputs)=>{
       this.transactions = uxoutputs;
       console.log(uxoutputs);
-    })
+    });
 
-  }
-
-  getCurrentBalance():string{
-    let outputs = this.transactions[this.transactions.length-1].outputs;
-    if(this.currentAddress){
-      for(var i=0;i<outputs.length;i++){
-        let currentAddress = outputs[i].dst;
-        if(currentAddress == this.currentAddress){
-          return outputs[i].coins;
+    this.route.params
+    .switchMap((params: Params) => {
+      let address = params['address'];
+      return this.service.getCurrentBalanceOfAddress(address);
+    }).subscribe((addressDetails)=>{
+        if(addressDetails.head_outputs.length>0){
+          this.currentBalance = addressDetails.head_outputs[0].coins;
         }
-      }
-    }
-
-    return "0";
+    });
   }
 
   showUxId(){

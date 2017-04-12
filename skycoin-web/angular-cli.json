@@ -22,7 +22,8 @@
       ],
       "scripts": [
         "js/materialize.js",
-        "js/qrcode.min.js"
+        "js/qrcode.min.js",
+        "js/underscore.js"
       ],
       "environmentSource": "environments/environment.ts",
       "environments": {

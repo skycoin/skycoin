@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import {Http, Response} from "@angular/http";
 import {Observable} from "rxjs";
-import {UnspentOutput} from "./UnspentOutput";
+import {UnspentOutput,AddressBalanceResponse} from "./UnspentOutput";
 import {Block, Transaction} from "../block-chain-table/block";
 
 @Injectable()
@@ -19,6 +19,16 @@ export class UxOutputsService {
         console.log(error);
         return Observable.throw(error || 'Server error');
       });
+  }
+
+  getCurrentBalanceOfAddress(address:number): Observable<AddressBalanceResponse> {
+    return this._http.get('/api/currentBalance?address='+address)
+    .map((res:Response) => {
+      return res.json()})
+    .catch((error:any) => {
+      console.log(error);
+      return Observable.throw(error || 'Server error');
+    });
   }
 
 

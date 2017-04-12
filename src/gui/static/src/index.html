@@ -60,7 +60,13 @@
             var data = JSON.parse(versionData);
             document.getElementById("versionNumber").innerHTML = data.version;
         }
-        load();
+        try{
+          load();
+        }
+        catch(e){
+          console.log("Error in setting up the version ");
+        }
+
     </script>
 </body>
 

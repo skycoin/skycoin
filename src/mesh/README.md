@@ -1,10 +1,8 @@
 All the configuration is kept in /etc/meshnet.cfg (example in meshnet-example.cfg)
 
-runt socks test:
+to run socks server with, for example, 2 hops in meshnet run 'cmd/socks/go run socks.go 2'
 
-mesh/cmd/socks/go run socks.go 1
-
-where 1 is nomber of hops
+to run vpn proxy server with, for example, 2 hops in meshnet run 'cmd/vpn/go run vpn.go 2'
 
 
 Run cli interface:

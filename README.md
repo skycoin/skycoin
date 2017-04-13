@@ -78,14 +78,14 @@ $ source $HOME/.gvm/scripts/gvm
 
 $ gvm install go1.4 --source=https://github.com/golang/go
 $ gvm use go1.4
-$ gvm install go1.7
-$ gvm use go1.7 --default
+$ gvm install go1.8
+$ gvm use go1.8 --default
 ```
 
 If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically
 ```
 $ [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-$ gvm use go1.7 >/dev/null
+$ gvm use go1.8 >/dev/null
 ```
 
 

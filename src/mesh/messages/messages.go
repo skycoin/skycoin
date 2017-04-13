@@ -18,6 +18,7 @@ const (
 	MsgRemoveRouteControlMessage         // Node -> Control channel, remove route
 	MsgConnectionMessage                 // Connection -> Connection
 	MsgConnectionAck                     // Connection -> Connection
+	MsgProxyMessage                      // Application -> Application
 	MsgAppMessage                        // Application -> Application
 	MsgCongestionPacket                  // Transport -> Transport
 	//MessageMouseScroll        // 1
@@ -119,4 +120,10 @@ type AppMessage struct {
 type AppResponse struct {
 	Response []byte
 	Err      error
+}
+
+type ProxyMessage struct {
+	Data       []byte
+	RemoteAddr string
+	NeedClose  bool
 }

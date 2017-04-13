@@ -13,6 +13,7 @@ import {SeedComponent} from './components/seed.component';
 import {SkyCoinOutputComponent} from './components/outputs.component';
 import {SeedService} from "./services/seed.service";
 import {Wallet} from './model/wallet.pojo'
+import {PendingTxnsComponent} from "./components/pending.transactions.component";
 
 declare var _: any;
 declare var $: any;
@@ -68,7 +69,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-wallet',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent, SkyCoinOutputComponent],
+    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent, SkyCoinOutputComponent, PendingTxnsComponent],
     providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })
@@ -90,6 +91,9 @@ export class LoadWalletComponent implements OnInit {
 
     @ViewChild(SkyCoinOutputComponent)
     private outputComponent: SkyCoinOutputComponent;
+
+    @ViewChild(PendingTxnsComponent)
+    private pendingTxnComponent: PendingTxnsComponent;
 
     @ViewChild('spendaddress')
     private spendAddress:any;
@@ -500,6 +504,11 @@ export class LoadWalletComponent implements OnInit {
         if(menu=='Outputs'){
             if(this.outputComponent){
                 this.outputComponent.refreshOutputs();
+            }
+        }
+        if(menu == 'PendingTxns'){
+            if(this.pendingTxnComponent){
+                this.pendingTxnComponent.refreshPendingTxns();
             }
         }
     }

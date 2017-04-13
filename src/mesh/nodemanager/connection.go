@@ -221,7 +221,7 @@ func (self *Connection) handleConnectionMessage(connMsg *messages.ConnectionMess
 	total := connMsg.Total
 	payload := connMsg.Payload
 
-	if _, ok := self.incomingMessages[sequence]; !ok {
+	if _, err := self.getIncomingMessages(sequence); err != nil {
 		self.createIncomingMessages(sequence)
 	}
 

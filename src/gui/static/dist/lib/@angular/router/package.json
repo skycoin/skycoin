@@ -2,20 +2,20 @@
   "_args": [
     [
       {
-        "raw": "@angular/router@2.0.0-rc.1",
-        "scope": "@angular",
-        "escapedName": "@angular%2frouter",
         "name": "@angular/router",
+        "raw": "@angular/router@2.0.0-rc.1",
         "rawSpec": "2.0.0-rc.1",
+        "scope": "@angular",
         "spec": "2.0.0-rc.1",
         "type": "version"
       },
-      "/Users/napandey/go/src/github.com/skycoin/skycoin/src/gui/static"
+      "/home/atomos/.gvm/pkgsets/go1.7/global/src/github.com/skycoin/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/router@2.0.0-rc.1",
   "_id": "@angular/router@2.0.0-rc.1",
   "_inCache": true,
+  "_installable": true,
   "_location": "/@angular/router",
   "_nodeVersion": "5.4.1",
   "_npmOperationalInternal": {
@@ -23,17 +23,16 @@
     "tmp": "tmp/router-2.0.0-rc.1.tgz_1462310744425_0.4073680811561644"
   },
   "_npmUser": {
-    "name": "angular",
-    "email": "angular-core+npm@google.com"
+    "email": "angular-core+npm@google.com",
+    "name": "angular"
   },
   "_npmVersion": "3.8.7",
   "_phantomChildren": {},
   "_requested": {
-    "raw": "@angular/router@2.0.0-rc.1",
-    "scope": "@angular",
-    "escapedName": "@angular%2frouter",
     "name": "@angular/router",
+    "raw": "@angular/router@2.0.0-rc.1",
     "rawSpec": "2.0.0-rc.1",
+    "scope": "@angular",
     "spec": "2.0.0-rc.1",
     "type": "version"
   },
@@ -44,7 +43,7 @@
   "_shasum": "96f3868884e151fe8bac07ac7e1b4ec0ad07db77",
   "_shrinkwrap": null,
   "_spec": "@angular/router@2.0.0-rc.1",
-  "_where": "/Users/napandey/go/src/github.com/skycoin/skycoin/src/gui/static",
+  "_where": "/home/atomos/.gvm/pkgsets/go1.7/global/src/github.com/skycoin/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },
@@ -61,15 +60,15 @@
   "main": "index.js",
   "maintainers": [
     {
-      "name": "angular",
-      "email": "angular-core+npm@google.com"
+      "email": "angular-core+npm@google.com",
+      "name": "angular"
     }
   ],
   "name": "@angular/router",
   "optionalDependencies": {},
   "peerDependencies": {
-    "@angular/core": "2.0.0-rc.1",
     "@angular/common": "2.0.0-rc.1",
+    "@angular/core": "2.0.0-rc.1",
     "@angular/platform-browser": "2.0.0-rc.1"
   },
   "readme": "ERROR: No README data found!",

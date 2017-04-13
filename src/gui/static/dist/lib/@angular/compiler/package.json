@@ -2,20 +2,20 @@
   "_args": [
     [
       {
-        "raw": "@angular/compiler@2.0.0-rc.1",
-        "scope": "@angular",
-        "escapedName": "@angular%2fcompiler",
         "name": "@angular/compiler",
+        "raw": "@angular/compiler@2.0.0-rc.1",
         "rawSpec": "2.0.0-rc.1",
+        "scope": "@angular",
         "spec": "2.0.0-rc.1",
         "type": "version"
       },
-      "/Users/napandey/go/src/github.com/skycoin/skycoin/src/gui/static"
+      "/home/atomos/.gvm/pkgsets/go1.7/global/src/github.com/skycoin/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/compiler@2.0.0-rc.1",
   "_id": "@angular/compiler@2.0.0-rc.1",
   "_inCache": true,
+  "_installable": true,
   "_location": "/@angular/compiler",
   "_nodeVersion": "5.4.1",
   "_npmOperationalInternal": {
@@ -23,17 +23,16 @@
     "tmp": "tmp/compiler-2.0.0-rc.1.tgz_1462310709468_0.36669089435599744"
   },
   "_npmUser": {
-    "name": "angular",
-    "email": "angular-core+npm@google.com"
+    "email": "angular-core+npm@google.com",
+    "name": "angular"
   },
   "_npmVersion": "3.8.7",
   "_phantomChildren": {},
   "_requested": {
-    "raw": "@angular/compiler@2.0.0-rc.1",
-    "scope": "@angular",
-    "escapedName": "@angular%2fcompiler",
     "name": "@angular/compiler",
+    "raw": "@angular/compiler@2.0.0-rc.1",
     "rawSpec": "2.0.0-rc.1",
+    "scope": "@angular",
     "spec": "2.0.0-rc.1",
     "type": "version"
   },
@@ -44,7 +43,7 @@
   "_shasum": "2f69d866bc7623c80ba05dd4e1339bcfb02d0960",
   "_shrinkwrap": null,
   "_spec": "@angular/compiler@2.0.0-rc.1",
-  "_where": "/Users/napandey/go/src/github.com/skycoin/skycoin/src/gui/static",
+  "_where": "/home/atomos/.gvm/pkgsets/go1.7/global/src/github.com/skycoin/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },
@@ -61,8 +60,8 @@
   "main": "index.js",
   "maintainers": [
     {
-      "name": "angular",
-      "email": "angular-core+npm@google.com"
+      "email": "angular-core+npm@google.com",
+      "name": "angular"
     }
   ],
   "name": "@angular/compiler",

@@ -26,7 +26,7 @@ you `~/.bashrc` or `~/.zshrc` file.
 
 The CLI uses environment variable to manage the configurations.
 
-## RPC_ADDR
+### RPC_ADDR
 
 CLI will connect to skycoin node rpc address:`127.0.0.1:6430` by default,
 you can change the address by setting the `RPC_ADDR` env variable
@@ -36,7 +36,7 @@ with the following command:
 $ export RPC_ADDR=127.0.0.1:6430
 ```
 
-## WALLET_DIR
+### WALLET_DIR
 
 The default CLI wallet dir is located in `$HOME/.skycoin/wallets/`, change it by setting the
 `WALLET_DIR` environment variable.
@@ -45,7 +45,7 @@ The default CLI wallet dir is located in `$HOME/.skycoin/wallets/`, change it by
 $ export WALLET_DIR=$HOME/YOUR_WALLET_DIR
 ```
 
-## WALLET_NAME
+### WALLET_NAME
 
 The default CLI wallet file name is `skycoin_cli.wlt`, change it by setting the `WALLET_NAME` env.
 The wallet file name must have `.wlt` extension.

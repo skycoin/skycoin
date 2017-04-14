@@ -131,7 +131,7 @@ $ skycoin_cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
 ### Get transaction
 
 ```bash
-$ skycoin_cli transaction
+$ skycoin_cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748da6d77d135
 {
     "transaction": {
         "status": {
@@ -175,22 +175,20 @@ $ skycoin_cli transaction
 ## Note
 
 The `[option]` in subcommand must be set before the rest values, otherwise the `option` won't 
-not be parsed by the skycoin_cli, example:
+be parsed, example:
 
-If we want to specify a `change address` in `send` command, we can use `-c` option to accomplete
-it, the righ script should look like this:
-
-```bash
-$ skycoin_cli send -c $change_address $recipient_address $amount
-```
-
-If you switch the `option` order like this:
+If we want to specify a `change address` in `send` command, we can use `-c` option, if you run
+the command in the following way:
 
 ```bash
 $ skycoin_cli send $recipient_address $amount -c $change_address
 ```
 
-The change coins won't go to the `change_address` as you wish, it will go to 
-the  `change address`.
+The change coins won't go to the `change_address` as you wish, it will go to the
+default `change address`.
 
+The righ script should look like this:
 
+```bash
+$ skycoin_cli send -c $change_address $recipient_address $amount
+```

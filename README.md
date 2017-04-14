@@ -224,3 +224,14 @@ Release Builds
 $ npm install
 $ gulp dist
 ```
+
+CLI
+----
+
+See the doc of command line interface [here](cmd/cli/README.md).
+
+
+WebRPC
+------
+
+See the doc of webrpc [here](src/api/webrpc/README.md).

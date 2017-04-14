@@ -156,13 +156,6 @@ Local Server API
 ----------------
 
 Run the skycoin client then
-```
-http://127.0.0.1:6420/wallets
-http://127.0.0.1:6420/outputs
-http://127.0.0.1:6420/blockchain/blocks?start=0&end=500
-http://127.0.0.1:6420/blockchain
-http://127.0.0.1:6420/connections
-```
 
 ```
 http://127.0.0.1:6420/wallets
@@ -174,22 +167,17 @@ http://127.0.0.1:6420/wallet/balance?id=2016_02_17_9671.wlt
 
 http://127.0.0.1:6420/outputs to see outputs (address balances)
 
-http://127.0.0.1:6420/blockchain/blocks?start=0&end=5000 to see all blocks and transactions.
+http://127.0.0.1:6420/blocks?start=0&end=5000 to see all blocks and transactions.
 
 http://127.0.0.1:6420/network/connections to check network connections
 
-http://127.0.0.1:6420/blockchain to check blockchain head
+http://127.0.0.1:6420/blockchain/metadata to check blockchain head
 ```
 
-Public API
+Skycoin explorer
 ----------
-
-This is a public server. You can use these urls on local host too, with the skycoin client running.
 ```
-http://skycoin-chompyz.c9.io/outputs
-http://skycoin-chompyz.c9.io/blockchain/blocks?start=0&end=500
-http://skycoin-chompyz.c9.io/blockchain
-http://skycoin-chompyz.c9.io/connections
+http://explorer.skycoin.net
 ```
 
 Modules
@@ -236,3 +224,14 @@ Release Builds
 $ npm install
 $ gulp dist
 ```
+
+CLI
+----
+
+See the doc of command line interface [here](cmd/cli/README.md).
+
+
+WebRPC
+------
+
+See the doc of webrpc [here](src/api/webrpc/README.md).

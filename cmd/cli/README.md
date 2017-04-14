@@ -29,7 +29,7 @@ The CLI uses environment variable to manage the configurations.
 ## RPC_ADDR
 
 CLI will connect to skycoin node rpc address:`127.0.0.1:6430` by default,
-you can change the address by setting the `RPC_ADDRESS` env variable
+you can change the address by setting the `RPC_ADDR` env variable
 with the following command:
 
 ```bash

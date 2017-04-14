@@ -1,6 +1,6 @@
 # CLI
 
-## Installing
+## Install
 
 ```bash
 $ cd cmd/cli

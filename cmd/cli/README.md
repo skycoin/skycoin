@@ -184,10 +184,11 @@ the command in the following way:
 $ skycoin_cli send $recipient_address $amount -c $change_address
 ```
 
-The change coins won't go to the `change_address` as you wish, it will go to the
-default `change address`.
+The change coins won't go to the address as you wish, it will go to the
+default `change address`, which can be by `from` address or the wallet's 
+coinbase address.
 
-The righ script should look like this:
+The right script should look like this:
 
 ```bash
 $ skycoin_cli send -c $change_address $recipient_address $amount

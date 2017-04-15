@@ -587,7 +587,7 @@ var AddressDetailComponent = (function () {
         this.route = route;
         this.router = router;
         this.UxOutputs = null;
-        this.currentBalance = "0";
+        this.currentBalance = 0;
         this.transactions = [];
         this.currentAddress = null;
         this.showUxID = false;
@@ -614,7 +614,9 @@ var AddressDetailComponent = (function () {
             return _this.service.getCurrentBalanceOfAddress(address);
         }).subscribe(function (addressDetails) {
             if (addressDetails.head_outputs.length > 0) {
-                _this.currentBalance = addressDetails.head_outputs[0].coins;
+                for (var i = 0; i < addressDetails.head_outputs.length; i++) {
+                    _this.currentBalance = _this.currentBalance + parseInt(addressDetails.head_outputs[i].coins);
+                }
             }
         });
     };

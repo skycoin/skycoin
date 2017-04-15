@@ -20,13 +20,13 @@ export class AddressDetailComponent implements OnInit,  AfterViewInit{
 
   private currentAddress:string;
 
-  private currentBalance:string;
+  private currentBalance:number;
 
   constructor(   private service:UxOutputsService,
                  private route: ActivatedRoute,
                  private router: Router) {
     this.UxOutputs=null;
-    this.currentBalance="0";
+    this.currentBalance=0;
     this.transactions =[];
     this.currentAddress = null;
     this.showUxID = false;
@@ -57,7 +57,9 @@ export class AddressDetailComponent implements OnInit,  AfterViewInit{
       return this.service.getCurrentBalanceOfAddress(address);
     }).subscribe((addressDetails)=>{
         if(addressDetails.head_outputs.length>0){
-          this.currentBalance = addressDetails.head_outputs[0].coins;
+          for(var i=0;i<addressDetails.head_outputs.length;i++){
+            this.currentBalance = this.currentBalance+ parseInt(addressDetails.head_outputs[i].coins);
+          }
         }
     });
   }

@@ -443,10 +443,10 @@ func getSufficientUnspents(unspents []unspentOut, amt uint64) ([]unspentOut, err
 			us[i].Coins = strconv.FormatUint(tmpAmt, 10)
 			totalAmt += coins
 			outs = append(outs, us[i])
-		}
 
-		if totalAmt >= amt {
-			return outs, nil
+			if totalAmt >= amt {
+				return outs, nil
+			}
 		}
 	}
 

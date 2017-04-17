@@ -14,7 +14,7 @@ $ ./install.sh
 If you are in `bash`, run the following command:
 
 ```bash
-$ PROG=skycoin_cli source $GOPATH/src/github.com/skycoin/skycoin/cmd/cli/autocomplete/bash_autocomplete
+$ PROG=skycoin-cli source $GOPATH/src/github.com/skycoin/skycoin/cmd/cli/autocomplete/bash_autocomplete
 ```
 
 If you are in `zsh`, please replace the `bash_autocomplete` with `zsh_autocomplete` in the previous command.
@@ -56,17 +56,17 @@ $ export WALLET_NAME=YOUR_WALLET_NAME
 
 ## Usage
 
-After the installation, you can run `skycoin_cli` to see the usage:
+After the installation, you can run `skycoin-cli` to see the usage:
 
 ```bash
 
-$ skycoin_cli
+$ skycoin-cli
 
 NAME:
-   skycoin_cli - the skycoin command line interface
+   skycoin-cli - the skycoin command line interface
 
 USAGE:
-   skycoin_cli [global options] command [command options] [arguments...]
+   skycoin-cli [global options] command [command options] [arguments...]
 
 VERSION:
    0.1
@@ -101,22 +101,22 @@ GLOBAL OPTIONS:
 ### Send coin
 
 ```bash
-$ skycoin_cli send $recipient_address $amount
+$ skycoin-cli send $recipient_address $amount
 ```
 
 The above `send` command will send coins from your node's default wallet: `$HOME/.skycoin/wallets/skycoin_cli.wlt`. You can also send from the wallet
 as you want, just use the `-f` option flag, example:
 
 ```bash
-$ skycoin_cli send -f $WALLET_PATH $recipient_address $amount
+$ skycoin-cli send -f $WALLET_PATH $recipient_address $amount
 ```
 
-Use `skycoin_cli send -h` to see the subcommand usage.
+Use `skycoin-cli send -h` to see the subcommand usage.
 
 ### Check address balance
 
 ```bash
-$ skycoin_cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
+$ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
 {
     "total_amount": 1,
     "addresses": [
@@ -131,7 +131,7 @@ $ skycoin_cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
 ### Get transaction
 
 ```bash
-$ skycoin_cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748da6d77d135
+$ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748da6d77d135
 {
     "transaction": {
         "status": {
@@ -181,7 +181,7 @@ If we want to specify a `change address` in `send` command, we can use `-c` opti
 the command in the following way:
 
 ```bash
-$ skycoin_cli send $recipient_address $amount -c $change_address
+$ skycoin-cli send $recipient_address $amount -c $change_address
 ```
 
 The change coins won't go to the address as you wish, it will go to the
@@ -191,5 +191,5 @@ coinbase address.
 The right script should look like this:
 
 ```bash
-$ skycoin_cli send -c $change_address $recipient_address $amount
+$ skycoin-cli send -c $change_address $recipient_address $amount
 ```

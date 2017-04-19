@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -63,6 +64,7 @@ type VisorConfig struct {
 	//WalletConstructor wallet.WalletConstructor
 	// Default type of wallet to create
 	//WalletTypeDefault wallet.WalletType
+	DB *bolt.DB
 }
 
 // NewVisorConfig, Note, put cap on block size, not on transactions/block
@@ -124,17 +126,17 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 	}
 
-	db, err := historydb.NewDB()
+	// db, err := historydb.NewDB()
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
+
+	history, err := historydb.New(c.DB)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	history, err := historydb.New(db)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	tree := blockdb.NewBlockTree()
+	tree := blockdb.NewBlockTree(c.DB)
 	bc := NewBlockchain(tree, walker)
 	bp := NewBlockchainParser(history, bc)
 
@@ -145,8 +147,8 @@ func NewVisor(c VisorConfig) *Visor {
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
-		blockSigs:   blockdb.NewBlockSigs(),
-		Unconfirmed: NewUnconfirmedTxnPool(),
+		blockSigs:   blockdb.NewBlockSigs(c.DB),
+		Unconfirmed: NewUnconfirmedTxnPool(c.DB),
 		history:     history,
 		bcParser:    bp,
 	}
@@ -195,8 +197,8 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
 	return &Visor{
 		Config:      c,
-		blockSigs:   blockdb.NewBlockSigs(),
-		Unconfirmed: NewUnconfirmedTxnPool(),
+		blockSigs:   blockdb.NewBlockSigs(c.DB),
+		Unconfirmed: NewUnconfirmedTxnPool(c.DB),
 		//Wallets:     nil,
 	}
 }

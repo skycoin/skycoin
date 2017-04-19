@@ -3,6 +3,7 @@ package blockdb
 import (
 	"fmt"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -23,7 +24,7 @@ type BlockSigs struct {
 	Sigs *bucket.Bucket
 }
 
-func NewBlockSigs() *BlockSigs {
+func NewBlockSigs(db *bolt.DB) *BlockSigs {
 	sigs, err := bucket.New([]byte("block_sigs"), db)
 	if err != nil {
 		panic(err)

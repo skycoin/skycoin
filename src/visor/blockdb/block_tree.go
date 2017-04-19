@@ -21,12 +21,13 @@ var (
 
 // BlockTree use the blockdb store all blocks and maintains the block tree struct.
 type BlockTree struct {
+	db     *bolt.DB
 	blocks *bucket.Bucket
 	tree   *bucket.Bucket
 }
 
 // NewBlockTree create buckets in blockdb if does not exist.
-func NewBlockTree() *BlockTree {
+func NewBlockTree(db *bolt.DB) *BlockTree {
 	blocks, err := bucket.New([]byte("blocks"), db)
 	if err != nil {
 		panic(err)
@@ -40,13 +41,14 @@ func NewBlockTree() *BlockTree {
 	return &BlockTree{
 		blocks: blocks,
 		tree:   tree,
+		db:     db,
 	}
 }
 
 // AddBlock write the block into blocks bucket, add the pair of block hash and pre block hash into
 // tree in the block depth.
 func (bt *BlockTree) AddBlock(b *coin.Block) error {
-	return UpdateTx(func(tx *bolt.Tx) error {
+	return bt.db.Update(func(tx *bolt.Tx) error {
 		blocks := tx.Bucket(bt.blocks.Name)
 
 		// can't store block if it's not genesis block and has no parent.
@@ -109,7 +111,7 @@ func (bt *BlockTree) AddBlock(b *coin.Block) error {
 // RemoveBlock remove block from blocks bucket and tree bucket.
 // can't remove block if it has children.
 func (bt *BlockTree) RemoveBlock(b *coin.Block) error {
-	return UpdateTx(func(tx *bolt.Tx) error {
+	return bt.db.Update(func(tx *bolt.Tx) error {
 		// delete block in blocks bucket.
 		blocks := tx.Bucket(bt.blocks.Name)
 		hash := b.HashHeader()

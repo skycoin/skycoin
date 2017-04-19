@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/boltdb/bolt"
 	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -139,6 +140,8 @@ type Config struct {
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo string
+
+	DB *bolt.DB
 }
 
 func (c *Config) register() {
@@ -441,6 +444,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
+	dc.Visor.Config.DB = c.DB
 	return dc
 }
 
@@ -471,8 +475,10 @@ func Run(c *Config) {
 	// initLogging(c.LogLevel, c.ColorLog)
 
 	// start the block db.
-	blockdb.Start()
-	defer blockdb.Stop()
+	db, stop := blockdb.Open()
+	defer stop()
+
+	c.DB = db
 
 	// start the transaction db.
 	// transactiondb.Start()

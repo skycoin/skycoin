@@ -232,7 +232,7 @@ func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
 		return
 	}
 	vs.strand(func() {
-		if ut, ok := vs.v.Unconfirmed.Txns[h]; ok {
+		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
 			vs.BroadcastTransaction(ut.Txn, pool)
 		}
 	})
@@ -246,10 +246,13 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 		return txids
 	}
 	vs.strand(func() {
-		var txns []visor.UnconfirmedTxn
-		for _, unconfirmTxn := range vs.v.Unconfirmed.Txns {
-			txns = append(txns, unconfirmTxn)
-		}
+		// var txns []visor.UnconfirmedTxn
+
+		// for _, unconfirmTxn := range vs.v.Unconfirmed.Txns {
+		// 	txns = append(txns, unconfirmTxn)
+		// }
+
+		txns := vs.v.Unconfirmed.GetAllUnconfirmedTxns()
 
 		// sort the txns by receive time
 		sort.Sort(byTxnRecvTime(txns))
@@ -662,5 +665,5 @@ func (txs byTxnRecvTime) Swap(i, j int) {
 }
 
 func (txs byTxnRecvTime) Less(i, j int) bool {
-	return txs[i].Received.Nanosecond() < txs[j].Received.Nanosecond()
+	return txs[i].Received < txs[j].Received
 }

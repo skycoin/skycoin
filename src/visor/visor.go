@@ -225,7 +225,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsMaster {
 		log.Panic("Only master chain can create blocks")
 	}
-	if len(vs.Unconfirmed.Txns) == 0 {
+	if vs.Unconfirmed.Txns.len() == 0 {
 		return sb, errors.New("No transactions")
 	}
 	txns := vs.Unconfirmed.RawTxns()
@@ -463,7 +463,7 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	// Look in the unconfirmed pool
 	uxs = vs.Unconfirmed.Unspent.AllForAddress(a)
 	for _, ux := range uxs {
-		tx, ok := vs.Unconfirmed.Txns[ux.Body.SrcTransaction]
+		tx, ok := vs.Unconfirmed.Txns.get(ux.Body.SrcTransaction)
 		if !ok {
 			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
 			continue
@@ -471,7 +471,7 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 		txns = append(txns, Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(tx.Received.Unix()),
+			Time:   uint64(nanoToTime(tx.Received).Unix()),
 		})
 	}
 
@@ -481,12 +481,12 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 // GetTransaction returns a Transaction by hash.
 func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	// Look in the unconfirmed pool
-	tx, ok := vs.Unconfirmed.Txns[txHash]
+	tx, ok := vs.Unconfirmed.Txns.get(txHash)
 	if ok {
 		return &Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(tx.Received.Unix()),
+			Time:   uint64(nanoToTime(tx.Received).Unix()),
 		}, nil
 	}
 
@@ -533,11 +533,10 @@ func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []UnconfirmedTxn {
 
 	ret := []UnconfirmedTxn{}
-
-	for _, unconfirmedTxn := range vs.Unconfirmed.Txns {
+	vs.Unconfirmed.Txns.forEach(func(key cipher.SHA256, tx *UnconfirmedTxn) error {
 		isRelatedTransaction := false
 
-		for _, out := range unconfirmedTxn.Txn.Out {
+		for _, out := range tx.Txn.Out {
 			for _, address := range addresses {
 				if out.Address == address {
 					isRelatedTransaction = true
@@ -549,18 +548,42 @@ func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []UnconfirmedTxn
 		}
 
 		if isRelatedTransaction == true {
-			ret = append(ret, unconfirmedTxn)
+			ret = append(ret, *tx)
 		}
-	}
+		return nil
+	})
+
+	// for _, unconfirmedTxn := range vs.Unconfirmed.Txns {
+	// 	isRelatedTransaction := false
+
+	// 	for _, out := range unconfirmedTxn.Txn.Out {
+	// 		for _, address := range addresses {
+	// 			if out.Address == address {
+	// 				isRelatedTransaction = true
+	// 			}
+	// 			if isRelatedTransaction {
+	// 				break
+	// 			}
+	// 		}
+	// 	}
+
+	// 	if isRelatedTransaction == true {
+	// 		ret = append(ret, unconfirmedTxn)
+	// 	}
+	// }
 
 	return ret
 }
 
 func (vs *Visor) GetAllUnconfirmedTxns() []UnconfirmedTxn {
-	txns := make([]UnconfirmedTxn, 0, len(vs.Unconfirmed.Txns))
-	for _, tx := range vs.Unconfirmed.Txns {
-		txns = append(txns, tx)
+	txnsMap, err := vs.Unconfirmed.Txns.getAll()
+	if err != nil {
+		return []UnconfirmedTxn{}
+	}
 
+	txns := make([]UnconfirmedTxn, 0, len(txnsMap))
+	for _, tx := range txnsMap {
+		txns = append(txns, tx)
 	}
 	return txns
 }

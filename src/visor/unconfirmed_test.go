@@ -176,9 +176,9 @@ func assertValidUnconfirmed(t *testing.T, txns map[cipher.SHA256]UnconfirmedTxn,
 	ut, ok := txns[txn.Hash()]
 	assert.True(t, ok)
 	assert.Equal(t, ut.Txn, txn)
-	assert.True(t, ut.Announced.IsZero())
-	assert.False(t, ut.Received.IsZero())
-	assert.False(t, ut.Checked.IsZero())
+	assert.True(t, nanoToTime(ut.Announced).IsZero())
+	assert.False(t, nanoToTime(ut.Received).IsZero())
+	assert.False(t, nanoToTime(ut.Checked).IsZero())
 }
 
 func createUnconfirmedTxns(t *testing.T, up *UnconfirmedTxnPool, n int) []UnconfirmedTxn {
@@ -240,7 +240,7 @@ func TestSetAnnounced(t *testing.T) {
 	})
 	assert.Equal(t, len(ut.Txns), 0)
 	utx := createUnconfirmedTxns(t, ut, 1)[0]
-	assert.True(t, utx.Announced.IsZero())
+	assert.True(t, nanoToTime(utx.Announced).IsZero())
 	ut.Txns[utx.Hash()] = utx
 	now := util.Now()
 	ut.SetAnnounced(utx.Hash(), now)

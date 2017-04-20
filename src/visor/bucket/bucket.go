@@ -1,6 +1,10 @@
 package bucket
 
-import "github.com/boltdb/bolt"
+import (
+	"errors"
+
+	"github.com/boltdb/bolt"
+)
 
 // Bucket used for grouping the key values in boltdb.
 // Also wrap some helper functions.
@@ -63,14 +67,15 @@ func (b *Bucket) Update(key []byte, f func([]byte) ([]byte, error)) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		// get the value of given key
 		bkt := tx.Bucket(b.Name)
-		v := bkt.Get(key)
-		var err error
-		v, err = f(v)
-		if err != nil {
-			return err
+		if v := bkt.Get(key); v != nil {
+			var err error
+			v, err = f(v)
+			if err != nil {
+				return err
+			}
+			return bkt.Put(key, v)
 		}
-
-		return bkt.Put(key, v)
+		return errors.New("not exist in bucket")
 	})
 }
 

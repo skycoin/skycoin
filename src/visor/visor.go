@@ -126,11 +126,6 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 	}
 
-	// db, err := historydb.NewDB()
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-
 	history, err := historydb.New(c.DB)
 	if err != nil {
 		log.Panic(err)
@@ -176,19 +171,6 @@ func NewVisor(c VisorConfig) *Visor {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
 
-	// db, err := historydb.NewDB()
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-
-	// v.history, err = historydb.New(db)
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-
-	// init the blockchain parser instance
-	// v.bcParser = NewBlockchainParser(v.history, v.Blockchain)
-	// v.StartParser()
 	return v
 }
 
@@ -461,7 +443,7 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	}
 
 	// Look in the unconfirmed pool
-	uxs = vs.Unconfirmed.Unspent.AllForAddress(a)
+	uxs = vs.Unconfirmed.Unspent.getAllForAddress(a)
 	for _, ux := range uxs {
 		tx, ok := vs.Unconfirmed.Txns.get(ux.Body.SrcTransaction)
 		if !ok {

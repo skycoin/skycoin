@@ -246,12 +246,6 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 		return txids
 	}
 	vs.strand(func() {
-		// var txns []visor.UnconfirmedTxn
-
-		// for _, unconfirmTxn := range vs.v.Unconfirmed.Txns {
-		// 	txns = append(txns, unconfirmTxn)
-		// }
-
 		txns := vs.v.Unconfirmed.GetAllUnconfirmedTxns()
 
 		// sort the txns by receive time

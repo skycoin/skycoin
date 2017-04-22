@@ -37,6 +37,37 @@ func (b Bucket) Get(key []byte) []byte {
 	return value
 }
 
+// GetAll returns all values
+func (b *Bucket) GetAll() map[interface{}][]byte {
+	values := map[interface{}][]byte{}
+	b.db.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(b.Name)
+		c := bkt.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			values[string(k)] = v
+		}
+		return nil
+	})
+	return values
+}
+
+// GetSlice returns values by key slice
+func (b *Bucket) GetSlice(keys [][]byte) [][]byte {
+	var values [][]byte
+	b.db.View(func(tx *bolt.Tx) error {
+		for _, k := range keys {
+			v := tx.Bucket(b.Name).Get(k)
+			if v != nil {
+				values = append(values, v)
+			}
+		}
+		return nil
+	})
+
+	return values
+}
+
 // Put key value in the bucket.
 func (b Bucket) Put(key []byte, value []byte) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
@@ -84,21 +115,6 @@ func (b *Bucket) Delete(key []byte) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(b.Name).Delete(key)
 	})
-}
-
-// GetAll returns all values
-func (b *Bucket) GetAll() map[interface{}][]byte {
-	values := map[interface{}][]byte{}
-	b.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(b.Name)
-		c := bkt.Cursor()
-
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			values[string(k)] = v
-		}
-		return nil
-	})
-	return values
 }
 
 // RangeUpdate updates range of the values

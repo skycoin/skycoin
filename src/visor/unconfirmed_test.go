@@ -289,7 +289,11 @@ func TestInjectTxn(t *testing.T) {
 	assertValidUnspent(t, bc, ut.Unspent, txn)
 	allUncfmTxs, err := ut.Txns.getAll()
 	assert.Nil(t, err)
-	assertValidUnconfirmed(t, allUncfmTxs, txn)
+	uncfmMap := make(map[cipher.SHA256]UnconfirmedTxn, len(allUncfmTxs))
+	for _, txn := range allUncfmTxs {
+		uncfmMap[txn.Hash()] = txn
+	}
+	assertValidUnconfirmed(t, uncfmMap, txn)
 
 	// Test where we are receiver of ux outputs
 	// mv = setupMasterVisor()
@@ -361,7 +365,11 @@ func TestInjectTxn(t *testing.T) {
 	assert.True(t, nanoToTime(utx2.Checked).After(nanoToTime(utx.Checked)))
 	all, err := ut.Txns.getAll()
 	assert.Nil(t, err)
-	assertValidUnconfirmed(t, all, txn)
+	allMap := make(map[cipher.SHA256]UnconfirmedTxn, len(all))
+	for _, tx := range all {
+		allMap[tx.Hash()] = tx
+	}
+	assertValidUnconfirmed(t, allMap, txn)
 	assert.Equal(t, ut.Txns.len(), 1)
 	assert.Equal(t, ut.Unspent.len(), 1)
 	ut.Unspent.forEach(func(_ cipher.SHA256, uxa coin.UxArray) {
@@ -457,6 +465,7 @@ func TestRemoveTxn(t *testing.T) {
 	assert.Nil(t, err)
 	assert.False(t, known)
 	assert.Equal(t, ut.Txns.len(), 1)
+	assert.Equal(t, 1, ut.Txns.indexLen())
 	assert.Equal(t, ut.Unspent.len(), 1)
 	ut.Unspent.forEach(func(_ cipher.SHA256, uxa coin.UxArray) {
 		assert.Equal(t, len(uxa), 2)
@@ -472,6 +481,7 @@ func TestRemoveTxn(t *testing.T) {
 	})
 	ut.removeTxn(bc, badh)
 	assert.Equal(t, ut.Txns.len(), 1)
+	assert.Equal(t, 1, ut.Txns.indexLen())
 	assert.Equal(t, ut.Unspent.len(), 1)
 	ut.Unspent.forEach(func(_ cipher.SHA256, uxs coin.UxArray) {
 		assert.Equal(t, len(uxs), 2)
@@ -491,17 +501,17 @@ func TestRemoveTxn(t *testing.T) {
 	})
 	ut.removeTxn(bc, utx.Hash())
 	assert.Equal(t, ut.Txns.len(), 1)
+	assert.Equal(t, 1, ut.Txns.indexLen())
 	assert.Equal(t, ut.Unspent.len(), 1)
 	ut.Unspent.forEach(func(_ cipher.SHA256, uxs coin.UxArray) {
 		assert.Equal(t, len(uxs), 2)
 	})
-
-	ut.removeTxn(bc, utx.Hash())
-	assert.Equal(t, ut.Len(), 1)
-	assert.Equal(t, ut.Unspent.len(), 1)
-	ut.Unspent.forEach(func(_ cipher.SHA256, uxs coin.UxArray) {
-		assert.Equal(t, len(uxs), 2)
-	})
+	// ut.removeTxn(bc, utx.Hash())
+	// assert.Equal(t, ut.Len(), 1)
+	// assert.Equal(t, ut.Unspent.len(), 1)
+	// ut.Unspent.forEach(func(_ cipher.SHA256, uxs coin.UxArray) {
+	// 	assert.Equal(t, len(uxs), 2)
+	// })
 	ut.removeTxn(bc, utx2.Hash())
 	assert.Equal(t, ut.Len(), 0)
 	assert.Equal(t, ut.Unspent.len(), 0)
@@ -1075,18 +1085,77 @@ func TestUnconfirmedBktGetAll(t *testing.T) {
 
 	vm, err := bkt.getAll()
 	assert.Nil(t, err)
+	assert.Equal(t, uctxs, vm)
+	// for _, u := range uctxs {
+	// 	vu, ok := vm[u.Hash()]
+	// 	assert.True(t, ok)
+	// 	assert.Equal(t, u, vu)
+	// }
+}
+
+func TestUnconfirmedBktGetSlice(t *testing.T) {
+	uctxs := []UnconfirmedTxn{
+		createUnconfirmedTxn(),
+		createUnconfirmedTxn(),
+		createUnconfirmedTxn(),
+	}
+
+	db, close := prepareDB(t)
+	defer close()
+	bkt := newUncfmTxBkt(db)
 	for _, u := range uctxs {
-		vu, ok := vm[u.Hash()]
-		assert.True(t, ok)
-		assert.Equal(t, u, vu)
+		err := bkt.put(&u)
+		assert.Nil(t, err)
+	}
+
+	testCases := []struct {
+		n     int
+		index []int
+		Txns  []UnconfirmedTxn
+	}{
+		{
+			0,
+			[]int{},
+			[]UnconfirmedTxn{},
+		},
+		{
+			1,
+			[]int{1},
+			[]UnconfirmedTxn{uctxs[1]},
+		},
+		{
+			2,
+			[]int{0, 1},
+			[]UnconfirmedTxn{uctxs[0], uctxs[1]},
+		},
+		{
+			2,
+			[]int{0, 2},
+			[]UnconfirmedTxn{uctxs[0], uctxs[2]},
+		},
+		{
+			3,
+			[]int{0, 1, 2},
+			[]UnconfirmedTxn{uctxs[0], uctxs[1], uctxs[2]},
+		},
+	}
+
+	for _, tc := range testCases {
+		keys := make([]cipher.SHA256, 0, tc.n)
+		for _, i := range tc.index {
+			keys = append(keys, uctxs[i].Hash())
+		}
+		uxs, err := bkt.getSlice(keys)
+		assert.Nil(t, err)
+		assert.Equal(t, tc.Txns, uxs)
 	}
 }
 
 func TestUnconfirmedTxRangeUpdate(t *testing.T) {
 	uctxs := []UnconfirmedTxn{
 		createUnconfirmedTxn(),
-		createUnconfirmedTxn(),
-		createUnconfirmedTxn(),
+		// createUnconfirmedTxn(),
+		// createUnconfirmedTxn(),
 	}
 
 	testCases := []struct {
@@ -1112,13 +1181,14 @@ func TestUnconfirmedTxRangeUpdate(t *testing.T) {
 				assert.Nil(t, bkt.put(&u))
 			}
 
-			bkt.rangeUpdate(func(key cipher.SHA256, ux *UnconfirmedTxn) {
+			err := bkt.rangeUpdate(func(key cipher.SHA256, ux *UnconfirmedTxn) {
 				if key == uctxs[tc.index].Hash() {
 					ux.Announced = tc.time
 					ux.Checked = tc.time
 					ux.Received = tc.time
 				}
 			})
+			assert.Nil(t, err)
 
 			uctxs[tc.index].Announced = tc.time
 			uctxs[tc.index].Checked = tc.time

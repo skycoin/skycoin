@@ -5,6 +5,10 @@ import (
 
 	"time"
 
+	"encoding/json"
+
+	"fmt"
+
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -69,7 +73,8 @@ func (ut *UnconfirmedTxn) Hash() cipher.SHA256 {
 
 // unconfirmed transactions bucket
 type uncfmTxnBkt struct {
-	bkt *bucket.Bucket
+	bkt       *bucket.Bucket
+	indexName []byte
 }
 
 func newUncfmTxBkt(db *bolt.DB) *uncfmTxnBkt {
@@ -77,7 +82,17 @@ func newUncfmTxBkt(db *bolt.DB) *uncfmTxnBkt {
 	if err != nil {
 		panic(err)
 	}
-	return &uncfmTxnBkt{bkt: bkt}
+	indexName := []byte("index")
+	indexValue := []string{}
+	v, err := json.Marshal(indexValue)
+	if err != nil {
+		panic(err)
+	}
+	if err := bkt.Put(indexName, v); err != nil {
+		panic(err)
+	}
+
+	return &uncfmTxnBkt{bkt: bkt, indexName: indexName}
 }
 
 func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
@@ -95,7 +110,24 @@ func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 	key := []byte(v.Hash().Hex())
 	d := encoder.Serialize(v)
-	return utb.bkt.Put(key, d)
+	// check if exist
+	exist := utb.bkt.IsExist(key)
+	if err := utb.bkt.Put(key, d); err != nil {
+		return err
+	}
+
+	// update indexs
+	if !exist {
+		utb.bkt.Update(utb.indexName, func(idx []byte) ([]byte, error) {
+			var indexes []string
+			if err := json.Unmarshal(idx, &indexes); err != nil {
+				return nil, err
+			}
+			indexes = append(indexes, v.Hash().Hex())
+			return json.Marshal(indexes)
+		})
+	}
+	return nil
 }
 
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
@@ -113,29 +145,78 @@ func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) err
 }
 
 func (utb *uncfmTxnBkt) delete(key cipher.SHA256) error {
-	return utb.bkt.Delete([]byte(key.Hex()))
+	if err := utb.bkt.Delete([]byte(key.Hex())); err != nil {
+		return err
+	}
+
+	// remove the index
+	return utb.bkt.Update(utb.indexName, func(idx []byte) ([]byte, error) {
+		var indexes []string
+		if err := json.Unmarshal(idx, &indexes); err != nil {
+			return nil, err
+		}
+		for i := range indexes {
+			if indexes[i] == key.Hex() {
+				indexes = append(indexes[:i], indexes[i+1:]...)
+				break
+			}
+		}
+		return json.Marshal(indexes)
+	})
 }
 
-func (utb *uncfmTxnBkt) getAll() (map[cipher.SHA256]UnconfirmedTxn, error) {
+func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
 	vs := utb.bkt.GetAll()
-	txns := make(map[cipher.SHA256]UnconfirmedTxn, len(vs))
-	for k, v := range vs {
-		key, err := cipher.SHA256FromHex(k.(string))
-		if err != nil {
-			return nil, err
+	idx := utb.bkt.Get(utb.indexName)
+	var indexes []string
+	if err := json.Unmarshal(idx, &indexes); err != nil {
+		return nil, err
+	}
+
+	if len(indexes) != len(vs)-1 {
+		return nil, fmt.Errorf("index size not match transaction size, index:%d, txn:%d", len(indexes), len(vs))
+	}
+
+	txns := make([]UnconfirmedTxn, 0, len(vs))
+	for _, ix := range indexes {
+		v, ok := vs[ix]
+		if !ok {
+			return nil, fmt.Errorf("There's no tx with hash:%s", ix)
 		}
 
 		var tx UnconfirmedTxn
 		if err := encoder.DeserializeRaw(v, &tx); err != nil {
 			return nil, err
 		}
-		txns[key] = tx
+		txns = append(txns, tx)
+	}
+
+	return txns, nil
+}
+
+func (utb *uncfmTxnBkt) getSlice(keys []cipher.SHA256) ([]UnconfirmedTxn, error) {
+	ks := make([][]byte, len(keys))
+	for i := range keys {
+		ks[i] = []byte(keys[i].Hex())
+	}
+	vs := utb.bkt.GetSlice(ks)
+	txns := make([]UnconfirmedTxn, len(vs))
+	for i := range vs {
+		var txn UnconfirmedTxn
+		if err := encoder.DeserializeRaw(vs[i], &txn); err != nil {
+			return []UnconfirmedTxn{}, err
+		}
+		txns[i] = txn
 	}
 	return txns, nil
 }
 
 func (utb *uncfmTxnBkt) rangeUpdate(f func(key cipher.SHA256, tx *UnconfirmedTxn)) error {
 	return utb.bkt.RangeUpdate(func(k, v []byte) ([]byte, error) {
+		if string(k) == string(utb.indexName) {
+			return v, nil
+		}
+
 		key, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
 			return nil, err
@@ -145,10 +226,8 @@ func (utb *uncfmTxnBkt) rangeUpdate(f func(key cipher.SHA256, tx *UnconfirmedTxn
 		if err := encoder.DeserializeRaw(v, &tx); err != nil {
 			return nil, err
 		}
-
 		f(key, &tx)
-
-		// encoder the tx
+		// encode the tx
 		d := encoder.Serialize(tx)
 		return d, nil
 	})
@@ -160,6 +239,10 @@ func (utb *uncfmTxnBkt) isExist(key cipher.SHA256) bool {
 
 func (utb *uncfmTxnBkt) forEach(f func(key cipher.SHA256, tx *UnconfirmedTxn) error) error {
 	return utb.bkt.ForEach(func(k, v []byte) error {
+		if string(k) == string(utb.indexName) {
+			return nil
+		}
+
 		key, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
 			return err
@@ -174,7 +257,17 @@ func (utb *uncfmTxnBkt) forEach(f func(key cipher.SHA256, tx *UnconfirmedTxn) er
 }
 
 func (utb *uncfmTxnBkt) len() int {
-	return utb.bkt.Len()
+	// exclude the index
+	return utb.bkt.Len() - 1
+}
+
+func (utb *uncfmTxnBkt) indexLen() int {
+	v := utb.bkt.Get(utb.indexName)
+	var idx []string
+	if err := json.Unmarshal(v, &idx); err != nil {
+		panic(err)
+	}
+	return len(idx)
 }
 
 type txUnspents struct {

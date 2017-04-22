@@ -62,6 +62,18 @@ func getAddress(w http.ResponseWriter, r *http.Request) {
   w.Write(body)
 }
 
+func getCurrentBalance(w http.ResponseWriter, r *http.Request) {
+  address := r.URL.Query().Get("address")
+  resp, err := http.Get("http://127.0.0.1:6420/outputs?addrs="+address)
+  if err != nil {
+    wh.Error500(w,"Unable to respond back")
+  }
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+  w.Write(body)
+}
+
+
 func getUxID(w http.ResponseWriter, r *http.Request) {
   uxid := r.URL.Query().Get("uxid")
   resp, err := http.Get("http://127.0.0.1:6420/uxout?uxid="+uxid)
@@ -155,6 +167,7 @@ func main() {
   http.HandleFunc("/api/blocks", getBlocks)
   http.HandleFunc("/api/blockchain/metadata", getBlockChainMetaData)
   http.HandleFunc("/api/address", getAddress)
+  http.HandleFunc("/api/currentBalance",getCurrentBalance)
   http.HandleFunc("/api/uxout", getUxID)
   http.HandleFunc("/api/transaction", getTransaction)
   http.HandleFunc("/api/block", getBlock)

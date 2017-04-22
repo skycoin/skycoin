@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import {Http, Response} from "@angular/http";
 import {Observable} from "rxjs";
-import * as _ from 'underscore';
+declare var _: any;
 
 @Injectable()
 export class SkycoinBlockchainPaginationService {

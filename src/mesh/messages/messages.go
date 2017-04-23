@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 const (
@@ -11,16 +13,28 @@ const (
 	MsgOutRouteMessage                   // Node -> Transport
 	MsgTransportDatagramTransfer         // Transport -> Transport, simulating sending packet over network
 	MsgTransportDatagramACK              // Transport -> Transport, simulating ACK for packet
-	MsgInControlMessage                  // Transport -> Node, control message
-	MsgOutControlMessage                 // Node -> Transport, control message
-	MsgCloseChannelControlMessage        // Node -> Control channel, close control channel
-	MsgAddRouteControlMessage            // Node -> Control channel, add new route
-	MsgRemoveRouteControlMessage         // Node -> Control channel, remove route
 	MsgConnectionMessage                 // Connection -> Connection
 	MsgConnectionAck                     // Connection -> Connection
 	MsgProxyMessage                      // Application -> Application
 	MsgAppMessage                        // Application -> Application
 	MsgCongestionPacket                  // Transport -> Transport
+	MsgInControlMessage                  // Transport -> Node, control message
+	MsgOutControlMessage                 // Node -> Transport, control message
+	MsgCloseChannelControlMessage        // Node -> Control channel, close control channel
+	MsgAddRouteCM                        // Node -> Control channel, add new route
+	MsgRemoveRouteCM                     // Node -> Control channel, remove route
+	MsgRegisterNodeCM                    // Node -> NodeManager
+	MsgRegisterNodeCMAck                 // NodeManager -> Node
+	MsgAssignPortCM                      // NodeManager -> Node
+	MsgTransportCreateCM                 // NodeManager -> Node
+	MsgTransportTickCM                   // NodeManager -> Node
+	MsgTransportShutdownCM               // NodeManager -> Node
+	MsgOpenUDPCM                         // NodeManager -> Node
+	MsgCommonCMAck                       // Node -> NodeManager, NodeManager -> Node
+	MsgConnectCM                         // Node -> NodeManager
+	MsgAssignRouteCM                     // NodeManager -> Node
+	MsgConnectionOnCM                    // NodeManager -> Node
+	MsgShutdownCM                        // NodeManager -> Node
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -81,22 +95,19 @@ type TransportDatagramACK struct {
 }
 
 type InControlMessage struct {
-	ChannelId       ChannelId
-	PayloadMessage  []byte
-	ResponseChannel chan bool
+	ChannelId      ChannelId
+	Sequence       uint32
+	PayloadMessage []byte
 }
 
-//type CreateChannelControlMessage struct {
-//}
-
-type AddRouteControlMessage struct {
+type AddRouteCM struct {
 	IncomingTransportId TransportId
 	OutgoingTransportId TransportId
 	IncomingRouteId     RouteId
 	OutgoingRouteId     RouteId
 }
 
-type RemoveRouteControlMessage struct {
+type RemoveRouteCM struct {
 	RouteId RouteId
 }
 
@@ -126,4 +137,72 @@ type ProxyMessage struct {
 	Data       []byte
 	RemoteAddr string
 	NeedClose  bool
+}
+
+// ==================== control messages ========================
+
+type RegisterNodeCM struct {
+	Host    string
+	Connect bool
+}
+
+type RegisterNodeCMAck struct {
+	Ok                bool
+	NodeId            cipher.PubKey
+	MaxBuffer         uint64
+	MaxPacketSize     uint32
+	TimeUnit          uint32
+	SendInterval      uint32
+	ConnectionTimeout uint32
+}
+
+type AssignPortCM struct {
+	Port uint32
+}
+
+type TransportCreateCM struct {
+	Id                TransportId
+	PairId            TransportId
+	PairedNodeId      cipher.PubKey
+	MaxBuffer         uint64
+	TimeUnit          uint32
+	TransportTimeout  uint32
+	SimulateDelay     bool
+	MaxSimulatedDelay uint32
+	RetransmitLimit   uint32
+}
+
+type TransportTickCM struct {
+	Id TransportId
+}
+
+type TransportShutdownCM struct {
+	Id TransportId
+}
+
+type OpenUDPCM struct {
+	Id    TransportId
+	PeerA Peer
+	PeerB Peer
+}
+
+type CommonCMAck struct {
+	Ok bool
+}
+
+type ConnectCM struct {
+	From cipher.PubKey
+	To   cipher.PubKey
+}
+
+type AssignRouteCM struct {
+	RouteId RouteId
+}
+
+type ConnectionOnCM struct {
+	NodeId cipher.PubKey
+}
+
+type ShutdownCM struct {
+	NodeId cipher.PubKey
 }

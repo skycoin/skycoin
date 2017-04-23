@@ -1,0 +1,9 @@
+talks with nodes only
+every node has one port to talk with the mesaging server
+message goes to node and then injected through the control channel. some messages need response.
+nodes also can send messages to the node manager and get responses
+nodes should manage their transports and connections
+nodemanager keeps brief info of nodes, connections and transports which it needs for work
+
+messaging server has one connection for accepting requests from new nodes. it makes cipher.Pubkeys for them and establish a connection with them (through the same port I think, nodes will identify themselves by ids)
+after node registering messaging server will run a goroutine for accepting messages from the node, node will run similar goroutine for accepting messages from nm

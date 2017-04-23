@@ -6,33 +6,32 @@ import (
 
 type NodeInterface interface {
 	GetId() cipher.PubKey
-	GetPeer() *Peer
 	InjectTransportMessage(*InRouteMessage)
-	InjectConnectionMessage(*InRouteMessage)
 	InjectCongestionPacket(*CongestionPacket)
-	SetTransport(TransportId, TransportInterface)
-	ConnectedTo(NodeInterface) bool
+	GetTransportToNode(cipher.PubKey) (TransportInterface, error)
+	GetConnection() Connection
+	Shutdown()
 }
 
 type TransportInterface interface {
-	InjectNodeMessage(*InRouteMessage)
+	GetId() TransportId
+	GetPacketsSent() uint32
+	GetPacketsConfirmed() uint32
 }
 
 type Consumer interface {
 	Consume([]byte)
 }
 
-type User interface {
-	Use([]byte)
-}
-
 type Network interface {
-	NewConnection(cipher.PubKey) (Connection, error)
-	Connect(cipher.PubKey, cipher.PubKey) error
-	Register(cipher.PubKey, Consumer) error
+	Shutdown()
 }
 
 type Connection interface {
-	Send([]byte)
-	Use([]byte)
+	Address() cipher.PubKey
+	Send([]byte) error
+	Dial(cipher.PubKey) error
+	AssignConsumer(Consumer)
+	Shutdown()
+	GetStatus() uint8
 }

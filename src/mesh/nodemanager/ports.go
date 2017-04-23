@@ -1,46 +1,30 @@
 package nodemanager
 
 import (
-	"github.com/skycoin/skycoin/src/mesh/messages"
+	"sync"
 )
 
 type PortDelivery struct {
-	content        map[string]uint32
-	requestChannel chan PortRequest
-	startPort      uint32
-}
-
-type PortRequest struct {
-	host            string
-	responseChannel chan uint32
+	port      map[string]uint32
+	lock      *sync.Mutex
+	startPort uint32
 }
 
 func newPortDelivery() *PortDelivery {
 	portDelivery := &PortDelivery{}
-	portDelivery.content = map[string]uint32{}
-	portDelivery.requestChannel = make(chan PortRequest, 1024)
-	portDelivery.startPort = messages.GetConfig().StartPort
-	go portDelivery.deliver()
+	portDelivery.port = map[string]uint32{}
+	portDelivery.startPort = config.StartPort
+	portDelivery.lock = &sync.Mutex{}
 	return portDelivery
 }
 
 func (self *PortDelivery) Get(host string) uint32 {
-	responseChannel := make(chan uint32, 1024)
-	request := PortRequest{host, responseChannel}
-	self.requestChannel <- request
-	response := <-responseChannel
-	return response
-}
-
-func (self *PortDelivery) deliver() uint32 {
-	for {
-		request := <-self.requestChannel
-		host := request.host
-		port := self.content[host]
-		if port == 0 {
-			port = self.startPort
-		}
-		self.content[host] = port + 1
-		request.responseChannel <- port
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	port := self.port[host]
+	if port == 0 {
+		port = self.startPort
 	}
+	self.port[host] = port + 1
+	return port
 }

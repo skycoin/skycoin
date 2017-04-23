@@ -35,8 +35,8 @@ func (w *Worker) Start() {
 			w.workerPool <- w.jobChannel
 			select {
 			case job := <-w.jobChannel:
-				w.transport.PacketsSent++
-				job.msg.Sequence = w.transport.PacketsSent
+				w.transport.packetsSent++
+				job.msg.Sequence = w.transport.packetsSent
 				w.transport.sendPacket(job.msg)
 			case <-w.quit:
 				return

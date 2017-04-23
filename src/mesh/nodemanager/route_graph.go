@@ -153,24 +153,28 @@ func (s *SP) pathTo(to cipher.PubKey) ([]cipher.PubKey, error) { // if the path 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	path := []cipher.PubKey{to}
+	pathStack := newStack()
+	pathStack.push(to)
 	e := s.edgeTo[to]
 
 	for {
 		if e == nil {
 			return []cipher.PubKey{}, messages.ERR_NO_ROUTE
 		} // no edge, so path doesn't exist
-		path = append(path, e.from)
+
+		pathStack.push(e.from)
 		if e.from == s.source {
 			break
 		} // we are at the source, work is finished
 		e = s.edgeTo[e.from]
 	}
 
-	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 { // reverse an slice, in the future should apply stack instead of it
-		path[i], path[j] = path[j], path[i]
-	}
+	size := pathStack.size
+	path := make([]cipher.PubKey, 0, size)
 
+	for i := 0; i < int(size); i++ {
+		path = append(path, pathStack.pop())
+	}
 	return path, nil
 }
 
@@ -191,6 +195,42 @@ func (s *SP) relax(edge *DirectRoute) {
 			s.pq.insert(to, s.distTo[to])
 		}
 	}
+}
+
+type NodeStack struct {
+	first *StackNode
+	size  uint32
+}
+
+type StackNode struct {
+	item cipher.PubKey
+	next *StackNode
+}
+
+func newStack() *NodeStack {
+	self := &NodeStack{}
+	self.first = nil
+	self.size = 0
+	return self
+}
+
+func (self *NodeStack) push(item cipher.PubKey) {
+	oldfirst := self.first
+	self.first = &StackNode{
+		item: item,
+		next: oldfirst,
+	}
+	self.size++
+}
+
+func (self *NodeStack) pop() cipher.PubKey {
+	if self.size == 0 {
+		return cipher.PubKey{}
+	}
+	item := self.first.item
+	self.first = self.first.next
+	self.size--
+	return item
 }
 
 type NodeDist struct {

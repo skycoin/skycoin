@@ -10,8 +10,7 @@ import (
 )
 
 type app struct {
-	Address          cipher.PubKey
-	Network          messages.Network
+	//	Address          cipher.PubKey
 	ProxyAddress     string
 	handle           func([]byte) []byte
 	timeout          time.Duration
@@ -21,16 +20,10 @@ type app struct {
 	lock             *sync.Mutex
 }
 
-var config = messages.GetConfig()
-
-func (app *app) register(meshnet messages.Network, address cipher.PubKey) {
-	app.Network = meshnet
-	app.Address = address
-}
+var APP_TIMEOUT = 100000 * time.Duration(time.Millisecond)
 
 func (self *app) Dial(address cipher.PubKey) error {
-	err := self.Network.Connect(self.Address, address)
-	return err
+	return self.connection.Dial(address)
 }
 
 func (self *app) Consume(msg []byte) {
@@ -51,7 +44,6 @@ func (self *app) Consume(msg []byte) {
 				responsePayload,
 			}
 			responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
-			fmt.Println("response:", responseSerialized)
 			self.send(responseSerialized)
 		}()
 	} else {
@@ -60,9 +52,14 @@ func (self *app) Consume(msg []byte) {
 			fmt.Println("error:", err)
 			responseChannel <- messages.AppResponse{nil, err}
 		} else {
-			fmt.Println("response:", appMsg.Payload)
 			responseChannel <- messages.AppResponse{appMsg.Payload, nil}
 		}
+	}
+}
+
+func (self *app) Shutdown() {
+	if self.connection != nil {
+		self.connection.Shutdown()
 	}
 }
 

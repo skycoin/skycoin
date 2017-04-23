@@ -11,7 +11,6 @@ import (
 
 	"github.com/songgao/water"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -24,24 +23,14 @@ const (
 	MTU        = "1300"
 )
 
-func NewVPNClient(meshnet messages.Network, address cipher.PubKey, proxyAddress string) (*VPNClient, error) {
+func NewVPNClient(conn messages.Connection, proxyAddress string) (*VPNClient, error) {
 	setLimit(16384) // set limit of simultaneously opened files to 16384
 	vpnClient := &VPNClient{}
-	vpnClient.register(meshnet, address)
 	vpnClient.lock = &sync.Mutex{}
 	vpnClient.timeout = time.Duration(messages.GetConfig().AppTimeout)
 
-	conn, err := meshnet.NewConnection(address)
-	if err != nil {
-		return nil, err
-	}
-
 	vpnClient.connection = conn
-
-	err = meshnet.Register(address, vpnClient)
-	if err != nil {
-		return nil, err
-	}
+	conn.AssignConsumer(vpnClient)
 
 	vpnClient.connections = map[string]*net.Conn{}
 

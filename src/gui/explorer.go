@@ -136,10 +136,22 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 				}
 
 			}
+			filtersDevAddresses := []daemon.OutputsFilter{}
+			filtersDevAddresses = append(filtersDevAddresses, daemon.FbyAddresses(AddrList))
+			devAddresses := gateway.GetUnspentOutputs(filtersDevAddresses...)
+			totalDevBalance := 0
+			for _, u := range devAddresses.HeadOutputs {
+				coin, err := strconv.Atoi(u.Coins)
+				if err == nil {
+					totalDevBalance = totalDevBalance + coin
+				}
 
+			}
 			wh.SendOr404(w, wallet.CoinSupply{
 				CurrentSupply: totalSupply,
 				CoinCap:       100000000,
+				UndistributedLockedCoinHoldingAddresses: AddrList,
+				UndistributedLockedCoinBalance: totalDevBalance,
 			})
 		}
 	}

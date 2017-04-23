@@ -9,7 +9,7 @@ export class TransactionDetailService {
 
   constructor(private _http: Http) { }
 
-  getTransaction(txid:string): Observable<Transaction[]> {
+  getTransaction(txid:string): Observable<any> {
     return this._http.get('/api/transaction?txid='+txid)
       .map((res:Response) => {
         return res.json()})
@@ -17,6 +17,16 @@ export class TransactionDetailService {
         console.log(error);
         return Observable.throw(error || 'Server error');
       });
+  }
+
+  getInputAddress(uxid:string): any{
+    return this._http.get('/api/uxout?uxid='+uxid)
+    .map((res:Response) => {
+      return res.json()})
+    .catch((error:any) => {
+      console.log(error);
+      return Observable.throw(error || 'Server error');
+    });
   }
 
 

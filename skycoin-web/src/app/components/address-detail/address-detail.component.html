@@ -3,8 +3,8 @@
     <div class="card-content" *ngIf="transactions.length>0">
       <ul class="collection">
         <li class="collection-item"><h5>Address</h5><span>{{currentAddress}}</span></li>
-        <li class="collection-item">Number of transactions: {{transactions.length}} </li>
-        <li class="collection-item">Current value: <i class="material-icons">ic_account_balance</i> {{currentBalance}} skycoins</li>
+        <li class="collection-item">Number of transactions: {{transactions.length| number : '1.0-0'}} </li>
+        <li class="collection-item">Current value: <i class="material-icons">ic_account_balance</i> {{currentBalance| number : '1.0-0'}} skycoins</li>
       </ul>
     </div>
   </div>
@@ -51,7 +51,7 @@
       <div class="col s2">
         <ul class="collection">
           <li class="collection-item"><h5>coins</h5></li>
-          <li class="collection-item" *ngFor="let output of transaction.outputs">{{output.coins}}</li>
+          <li class="collection-item" *ngFor="let output of transaction.outputs">{{output.coins| number : '1.0-0'}}</li>
         </ul>
       </div>
   </div>

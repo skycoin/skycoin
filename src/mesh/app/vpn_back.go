@@ -44,8 +44,7 @@ func NewVPNServer(conn messages.Connection) *VPNServer {
 	vpnServer.meshConns = map[string]*Pipe{}
 	vpnServer.targetConns = map[string]net.Conn{}
 
-	vpnServer.connection = conn
-	conn.AssignConsumer(vpnServer)
+	vpnServer.register(conn)
 
 	log.Println("ready to accept requests")
 

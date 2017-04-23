@@ -10,6 +10,7 @@ type NodeInterface interface {
 	InjectCongestionPacket(*CongestionPacket)
 	GetTransportToNode(cipher.PubKey) (TransportInterface, error)
 	GetConnection() Connection
+	ConnectedTo(cipher.PubKey) bool
 	Shutdown()
 }
 

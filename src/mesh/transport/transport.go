@@ -9,30 +9,18 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
-//Stub Transport
+// Transport
 
 //TODO:
-// - implement simulated "delay" for transport +
 // - implement simulated out of order packet delivery
 // - implement simulated packet drop
-// - implement real UDP trasport +
-// - implement status "connected/disconnected" +
-// - implement ACKs +
 
-// TODO:
-// pendingOut channel may need to be on the transport factory itself
-// more efficient to push to central location than to pull/poll the transport list
-// TODO:
-// - may be more efficient to replace pending out, with an array on TransportFactory
-// - or with array on the transport (who is responsible for processing ACKs?)
-
-//This is stub transport
 type Transport struct {
 	Id messages.TransportId
 
 	AttachedNode messages.NodeInterface //node the transport is attached to
 
-	pair             messages.TransportId //this is the other transport stub pair
+	pair             messages.TransportId //this is the other transport pair
 	packetsSent      uint32
 	packetsConfirmed uint32 // last confirmed ack
 
@@ -47,7 +35,7 @@ type Transport struct {
 	ackChannels      map[uint32]chan bool
 	errChan          chan error
 
-	throttle        uint32 // delay to send to stub pair
+	throttle        uint32 // delay to send to pair
 	pendingThrottle uint32
 
 	dispatcher *Dispatcher
@@ -70,8 +58,6 @@ const (
 	DISCONNECTED = iota
 	CONNECTED
 )
-
-var ()
 
 func init() {
 	seed := time.Now().UnixNano()
@@ -185,7 +171,6 @@ func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessa
 	}
 }
 
-//message from stub to stub
 //used internally by transport factory
 
 func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
@@ -202,7 +187,7 @@ func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
 			return
 		}
 
-		self.sendMessageToStubPair(msgS)
+		self.sendMessageToPair(msgS)
 
 		select {
 		case <-ackChannel:
@@ -221,7 +206,7 @@ func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
 	}
 }
 
-func (self *Transport) sendMessageToStubPair(msg []byte) {
+func (self *Transport) sendMessageToPair(msg []byte) {
 
 	if self.throttle > 0 {
 		fmt.Printf("transport is throttling %d milliseconds\n", self.throttle)
@@ -340,7 +325,7 @@ func (self *Transport) acceptAndSendAck(msg *[]byte, m2 *messages.TransportDatag
 
 		ackSerialized := messages.Serialize(messages.MsgTransportDatagramACK, ackMsg)
 
-		self.sendMessageToStubPair(ackSerialized)
+		self.sendMessageToPair(ackSerialized)
 	}()
 }
 

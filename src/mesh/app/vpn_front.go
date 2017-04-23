@@ -29,8 +29,7 @@ func NewVPNClient(conn messages.Connection, proxyAddress string) (*VPNClient, er
 	vpnClient.lock = &sync.Mutex{}
 	vpnClient.timeout = time.Duration(messages.GetConfig().AppTimeout)
 
-	vpnClient.connection = conn
-	conn.AssignConsumer(vpnClient)
+	vpnClient.register(conn)
 
 	vpnClient.connections = map[string]*net.Conn{}
 

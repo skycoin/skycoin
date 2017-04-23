@@ -18,8 +18,7 @@ func NewSocksClient(conn messages.Connection, proxyAddress string) *SocksClient 
 	socksClient.lock = &sync.Mutex{}
 	socksClient.timeout = time.Duration(messages.GetConfig().AppTimeout)
 
-	socksClient.connection = conn
-	conn.AssignConsumer(socksClient)
+	socksClient.register(conn)
 
 	socksClient.connections = map[string]*net.Conn{}
 

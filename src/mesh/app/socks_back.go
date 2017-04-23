@@ -24,8 +24,7 @@ func NewSocksServer(conn messages.Connection, proxyAddress string) *SocksServer 
 	socksServer.ProxyAddress = proxyAddress
 	socksServer.targetConns = map[string]net.Conn{}
 
-	socksServer.connection = conn
-	conn.AssignConsumer(socksServer)
+	socksServer.register(conn)
 
 	go socksServer.serveSocks()
 	log.Println("ready to accept requests")

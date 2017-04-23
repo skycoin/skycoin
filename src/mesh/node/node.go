@@ -233,16 +233,6 @@ func (self *Node) injectControlMessage(msg *messages.InControlMessage) {
 	<-respChan
 }
 
-/*
-func (self *Node) GetTicks() int {
-	ticks := 0
-	for _, tr := range self.transports {
-		ticks += tr.Ticks
-	}
-	ticks += self.ticks
-	return ticks
-}
-*/
 //move node forward on tick, process events
 func (self *Node) runCycles(backChannel chan bool) {
 	//process incoming messages
@@ -277,7 +267,6 @@ func (self *Node) handleIncomingConnectionMessages() {
 
 func (self *Node) handleIncomingControlMessages() {
 	for cm := range self.incomingControlChannel {
-		//self.handleControlMessage(msg.ChannelId, msg)
 		msg := cm.msg
 		respChan := cm.respChan
 		self.handleControlMessage(messages.ChannelId(0), msg)

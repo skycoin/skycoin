@@ -9,7 +9,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
-	//	"github.com/skycoin/skycoin/src/mesh/transport"
 )
 
 func TestCreateNode(t *testing.T) {
@@ -21,26 +20,24 @@ func TestCreateNode(t *testing.T) {
 	assert.NotNil(t, node.lock)
 }
 
-/*
 func TestCreateControlChannel(t *testing.T) {
 	messages.SetDebugLogLevel()
-	node := NewNode()
-	assert.Len(t, node.controlChannels, 0, "Should be 0 control channels")
-	node.AddControlChannel()
+	node := newLocalNode()
 	assert.Len(t, node.controlChannels, 1, "Should be 1 control channels")
+	node.addControlChannel()
+	assert.Len(t, node.controlChannels, 2, "Should be 2 control channels")
 	fmt.Println("--------------------\n")
 }
 
 func TestRemoveControlChannel(t *testing.T) {
 	messages.SetDebugLogLevel()
-	node := NewNode()
-	ccid := node.AddControlChannel()
+	node := newLocalNode()
+	ccid := node.addControlChannel()
+	assert.Len(t, node.controlChannels, 2, "Should be 2 control channels")
+	node.closeControlChannel(ccid)
 	assert.Len(t, node.controlChannels, 1, "Should be 1 control channels")
-	node.CloseControlChannel(ccid)
-	assert.Len(t, node.controlChannels, 0, "Should be 0 control channels")
 	fmt.Println("--------------------\n")
 }
-*/
 
 func TestAddRoute(t *testing.T) {
 	messages.SetDebugLogLevel()

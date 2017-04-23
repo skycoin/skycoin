@@ -10,7 +10,6 @@ import (
 )
 
 type app struct {
-	//	Address          cipher.PubKey
 	ProxyAddress     string
 	handle           func([]byte) []byte
 	timeout          time.Duration
@@ -61,6 +60,11 @@ func (self *app) Shutdown() {
 	if self.connection != nil {
 		self.connection.Shutdown()
 	}
+}
+
+func (self *app) register(conn messages.Connection) {
+	self.connection = conn
+	conn.AssignConsumer(self)
 }
 
 func (self *app) send(msg []byte) {

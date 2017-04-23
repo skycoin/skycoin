@@ -18,7 +18,6 @@ type NodeRecord struct {
 	transports map[messages.TransportId]*TransportRecord
 
 	transportsByNodes map[cipher.PubKey]*TransportRecord
-	//	nodesByTransports map[messages.TransportId]*NodeRecord
 
 	host string
 	port uint32
@@ -37,7 +36,6 @@ func (self *NodeManager) newNode(host string) (*NodeRecord, error) {
 	node.nm = self
 	node.transports = make(map[messages.TransportId]*TransportRecord)
 	node.transportsByNodes = make(map[cipher.PubKey]*TransportRecord)
-	//	node.nodesByTransports = make(map[messages.TransportId]*NodeRecord)
 	node.routeForwardingRules = make(map[messages.RouteId]*messages.RouteRule)
 	node.lock = &sync.Mutex{}
 
@@ -110,7 +108,6 @@ func (self *NodeRecord) setTransport(id, pairId messages.TransportId, tr *Transp
 	self.transports[id] = tr
 	self.transportsByNodes[pairedNodeId] = tr
 	self.lock.Unlock()
-	//	self.nodesByTransports[id] = tr.pair.attachedNode
 
 	createCM := messages.TransportCreateCM{
 		Id:                id,

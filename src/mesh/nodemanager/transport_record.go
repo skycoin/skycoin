@@ -8,7 +8,7 @@ import (
 
 type TransportRecord struct {
 	id           messages.TransportId
-	pair         *TransportRecord //this is the other transport stub pair
+	pair         *TransportRecord //this is the other transport pair
 	ticks        int
 	attachedNode *NodeRecord //node the transport is attached to
 	status       uint8

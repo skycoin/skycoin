@@ -19,8 +19,7 @@ func BrandNewServer(host, meshnet string, handle func([]byte) []byte) (*Server, 
 	if err != nil {
 		return nil, err
 	}
-	server.connection = conn
-	conn.AssignConsumer(server)
+	server.register(conn)
 
 	return server, nil
 }
@@ -29,8 +28,7 @@ func NewServer(conn messages.Connection, handle func([]byte) []byte) *Server {
 
 	server := newServer(handle)
 
-	server.connection = conn
-	conn.AssignConsumer(server)
+	server.register(conn)
 
 	return server
 }

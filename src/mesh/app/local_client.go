@@ -20,8 +20,7 @@ func BrandNewClient(host, meshnet string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.connection = conn
-	conn.AssignConsumer(client)
+	client.register(conn)
 
 	return client, nil
 }
@@ -30,8 +29,7 @@ func NewClient(conn messages.Connection) *Client {
 
 	client := newClient()
 
-	client.connection = conn
-	conn.AssignConsumer(client)
+	client.register(conn)
 
 	return client
 }

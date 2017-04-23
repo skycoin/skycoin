@@ -10,7 +10,7 @@ func CreateNodeList(n int) []messages.NodeInterface {
 	nodes := []messages.NodeInterface{}
 
 	for i := 0; i < n; i++ {
-		node, err := CreateNode(messages.LOCALHOST+":"+strconv.Itoa(5000+i), messages.LOCALHOST+":5999")
+		node, err := CreateNode(messages.LOCALHOST+":"+strconv.Itoa(15000+i), messages.LOCALHOST+":5999")
 		if err != nil {
 			panic(err)
 		}

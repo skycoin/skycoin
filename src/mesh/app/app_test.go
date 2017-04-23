@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-	//	"time"
 
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"

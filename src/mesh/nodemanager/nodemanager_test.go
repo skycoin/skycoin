@@ -64,10 +64,10 @@ func TestConnectNodes(t *testing.T) {
 
 	_, err = nm.ConnectNodeToNode(n0.GetId(), n1.GetId())
 	assert.Nil(t, err)
-	/*
-		assert.True(t, n0.ConnectedTo(n1.Id))
-		assert.True(t, n1.ConnectedTo(n0.Id))
-	*/
+
+	assert.True(t, n0.ConnectedTo(n1.GetId()))
+	assert.True(t, n1.ConnectedTo(n0.GetId()))
+
 	tf := nm.transportFactoryList[0]
 	t0, t1 := tf.getTransports()
 	assert.Equal(t, t0.id, t1.pair.id)

@@ -2,14 +2,12 @@ package nodemanager
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 //use to spawn transports
 type TransportFactory struct {
-	//	network       messages.Network
 	transportList []*TransportRecord
 }
 
@@ -21,7 +19,6 @@ const (
 //func NewTransportFactory(network messages.Network) *TransportFactory {
 func newTransportFactory() *TransportFactory {
 	tf := new(TransportFactory)
-	//	tf.network = network
 	if messages.IsDebug() {
 		fmt.Printf("Created Transport Factory\n")
 	}
@@ -30,16 +27,12 @@ func newTransportFactory() *TransportFactory {
 
 func (self *TransportFactory) shutdown() {
 	transports := self.transportList
-	var wg sync.WaitGroup
-	wg.Add(len(transports))
 	for _, tr := range transports {
-		//		go tr.Shutdown(&wg) //**** send shutdown command to transport owner
 		id := tr.id
 		shutdownCM := messages.TransportShutdownCM{id}
 		shutdownCMS := messages.Serialize(messages.MsgTransportShutdownCM, shutdownCM)
 		tr.attachedNode.sendToNode(shutdownCMS)
 	}
-	//	wg.Wait() - add waiting for ACKs!
 }
 
 //move node forward on tick, process events
@@ -51,10 +44,9 @@ func (self *TransportFactory) tick() {
 		tickCMS := messages.Serialize(messages.MsgTransportTickCM, tickCM)
 		tr.attachedNode.sendToNode(tickCMS)
 	}
-	// add waiting for ACKs!
 }
 
-func (self *TransportFactory) createStubTransportPair() (*TransportRecord, *TransportRecord) {
+func (self *TransportFactory) createTransportPair() (*TransportRecord, *TransportRecord) {
 	a, b := newTransportRecord(), newTransportRecord()
 	a.pair, b.pair = b, a
 	self.transportList = []*TransportRecord{a, b}
@@ -64,12 +56,12 @@ func (self *TransportFactory) createStubTransportPair() (*TransportRecord, *Tran
 func (self *TransportFactory) connectNodeToNode(nodeA, nodeB *NodeRecord) error {
 	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
 		return messages.ERR_ALREADY_CONNECTED
-	} //**** we need only to check for paired nodes
+	}
 
 	peerA := nodeA.GetPeer()
 	peerB := nodeB.GetPeer()
 
-	transportA, transportB := self.createStubTransportPair()
+	transportA, transportB := self.createTransportPair()
 
 	tidA := transportA.id
 	tidB := transportB.id
@@ -87,12 +79,12 @@ func (self *TransportFactory) connectNodeToNode(nodeA, nodeB *NodeRecord) error 
 		return err
 	}
 
-	err = transportA.openUDPConn(peerA, peerB) //**** send command to open udp connection and wait for an answer
+	err = transportA.openUDPConn(peerA, peerB)
 	if err != nil {
 		return err
 	}
 
-	err = transportB.openUDPConn(peerB, peerA) //**** send command to open udp connection and wait for an answer
+	err = transportB.openUDPConn(peerB, peerA)
 	if err != nil {
 		return err
 	}

@@ -328,7 +328,7 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	}
 
 	// Anounce unconfirmed know txns
-	d.Visor.AnnounceTxns(d.Pool)
+	d.Visor.AnnounceAllTxns(d.Pool)
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

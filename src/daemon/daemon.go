@@ -310,10 +310,10 @@ func (dm *Daemon) Start(quit chan int) {
 	}
 
 	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
-	resendUnconfirmedTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedResendPeriod)
+	// resendUnconfirmedTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedResendPeriod)
 	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
-	txnsAnnounceTicker := time.Tick(dm.Visor.Config.TxnsAnnounceRate)
+	// txnsAnnounceTicker := time.Tick(dm.Visor.Config.TxnsAnnounceRate)
 
 	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
@@ -422,15 +422,18 @@ main:
 				}
 			}
 		case <-unconfirmedRefreshTicker:
-			dm.Visor.RefreshUnconfirmed()
-		case <-resendUnconfirmedTicker:
-			// dm.Visor.ResendUnconfirmedTxns(dm.Pool)
+			// get the transactions that turn to valid
+			validTxns := dm.Visor.RefreshUnconfirmed()
+			// announce this transactions
+			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
+		// case <-resendUnconfirmedTicker:
+		// dm.Visor.ResendUnconfirmedTxns(dm.Pool)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:
 			dm.Visor.AnnounceBlocks(dm.Pool)
-		case <-txnsAnnounceTicker:
-			dm.Visor.AnnounceTxns(dm.Pool)
+		// case <-txnsAnnounceTicker:
+		// dm.Visor.AnnounceTxns(dm.Pool)
 		case f := <-dm.memChannel:
 			f()
 		case <-quit:

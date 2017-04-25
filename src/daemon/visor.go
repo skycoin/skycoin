@@ -127,13 +127,14 @@ func (vs *Visor) Shutdown() {
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
-func (vs *Visor) RefreshUnconfirmed() {
+func (vs *Visor) RefreshUnconfirmed() (hashes []cipher.SHA256) {
 	if vs.Config.Disabled {
 		return
 	}
 	vs.strand(func() {
-		vs.v.RefreshUnconfirmed()
+		hashes = vs.v.RefreshUnconfirmed()
 	})
+	return
 }
 
 // RequestBlocks Sends a GetBlocksMessage to all connections
@@ -158,8 +159,8 @@ func (vs *Visor) AnnounceBlocks(pool *Pool) {
 	})
 }
 
-// AnnounceTxns announces local unconfirmed transactions
-func (vs *Visor) AnnounceTxns(pool *Pool) {
+// AnnounceAllTxns announces local unconfirmed transactions
+func (vs *Visor) AnnounceAllTxns(pool *Pool) {
 	if vs.Config.Disabled {
 		return
 	}
@@ -170,11 +171,23 @@ func (vs *Visor) AnnounceTxns(pool *Pool) {
 		for _, hs := range hashesSet {
 			m := NewAnnounceTxnsMessage(hs)
 			if err := pool.Pool.BroadcastMessage(m); err != nil {
-				logger.Debug("Broadcast AnnounceTxnsMessage failed, err:", err)
+				logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
 				return
 			}
 		}
 	})
+}
+
+// AnnounceTxns announce given transaction hashes.
+func (vs *Visor) AnnounceTxns(pool *Pool, txns []cipher.SHA256) {
+	if vs.Config.Disabled {
+		return
+	}
+	if len(txns) > 0 {
+		if err := pool.Pool.BroadcastMessage(NewAnnounceTxnsMessage(txns)); err != nil {
+			logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		}
+	}
 }
 
 func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
@@ -672,6 +685,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 	}
 	// Announce these transactions to peers
 	if len(hashes) != 0 {
+		logger.Debugf("Announce %d transactions", len(hashes))
 		m := NewAnnounceTxnsMessage(hashes)
 		d.Pool.Pool.BroadcastMessage(m)
 	}

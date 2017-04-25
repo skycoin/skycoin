@@ -62,6 +62,8 @@ type UnconfirmedTxn struct {
 	Checked int64
 	// Last time we announced this txn
 	Announced int64
+	// If this txn is valid
+	IsValid bool
 }
 
 // Hash returns the coin.Transaction's hash
@@ -385,16 +387,21 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (error, bool) {
+	var valid bool
+	for {
+		if err := VerifyTransactionFee(bc, &t); err != nil {
+			if err == ErrUnspentNotExist {
+				break
+			}
+			return err, false
+		}
 
-	if err := t.Verify(); err != nil {
-		return err, false
-	}
+		if err := bc.VerifyTransaction(t); err != nil {
+			return err, false
+		}
 
-	if err := VerifyTransactionFee(bc, &t); err != nil {
-		return err, false
-	}
-	if err := bc.VerifyTransaction(t); err != nil {
-		return err, false
+		valid = true
+		break
 	}
 
 	// Update if we already have this txn
@@ -406,6 +413,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (er
 		now := util.Now()
 		tx.Received = now.UnixNano()
 		tx.Checked = now.UnixNano()
+		tx.IsValid = valid
 	})
 
 	if exist {
@@ -415,9 +423,8 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (er
 	// Add txn to index
 	unspent := bc.GetUnspent()
 	utx := utp.createUnconfirmedTxn(unspent, t)
+	utx.IsValid = valid
 	utp.Txns.put(&utx)
-	// utp.Txns[h] = utp.createUnconfirmedTxn(unspent, t)
-	// Add predicted unspents
 	utp.Unspent.put(h, coin.CreateUnspents(bc.Head().Head, t))
 
 	return nil, false
@@ -470,27 +477,21 @@ func (utp *UnconfirmedTxnPool) MustFirstN(n int) []UnconfirmedTxn {
 	return utp.Txns.mustFirstN(n)
 }
 
-// Refresh checks all unconfirmed txns against the blockchain. maxAge is how long
-// we'll hold a txn regardless of whether it has been invalidated.
-// checkPeriod is how often we check the txn against the blockchain.
-func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain,
-	checkPeriod, maxAge time.Duration) {
-
+// Refresh checks all unconfirmed txns against the blockchain.
+// verify the transaction and returns all those txns that turn to valid.
+func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) {
 	now := util.Now()
-	var toRemove []cipher.SHA256
 	utp.Txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
-		if now.Sub(nanoToTime(tx.Received)) >= maxAge {
-			toRemove = append(toRemove, key)
-		} else if now.Sub(nanoToTime(tx.Checked)) >= checkPeriod {
+		tx.Checked = now.UnixNano()
+		if !tx.IsValid {
 			if bc.VerifyTransaction(tx.Txn) == nil {
-				tx.Checked = now.UnixNano()
-			} else {
-				toRemove = append(toRemove, key)
+				tx.IsValid = true
+				hashes = append(hashes, tx.Hash())
 			}
 		}
 	})
 
-	utp.removeTxns(bc, toRemove)
+	return
 }
 
 // FilterKnown returns txn hashes with known ones removed

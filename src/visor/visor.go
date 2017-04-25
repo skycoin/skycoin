@@ -90,9 +90,10 @@ func NewVisorConfig() VisorConfig {
 
 		UnconfirmedCheckInterval: time.Hour * 2,
 		UnconfirmedMaxAge:        time.Hour * 48,
-		UnconfirmedRefreshRate:   time.Minute * 30,
-		UnconfirmedResendPeriod:  time.Minute,
-		MaxBlockSize:             1024 * 32,
+		UnconfirmedRefreshRate:   time.Minute,
+		// UnconfirmedRefreshRate:   time.Minute * 30,
+		UnconfirmedResendPeriod: time.Minute,
+		MaxBlockSize:            1024 * 32,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -198,10 +199,10 @@ func (vs *Visor) GenesisPreconditions() {
 	}
 }
 
-// RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
-func (vs *Visor) RefreshUnconfirmed() {
-	vs.Unconfirmed.Refresh(vs.Blockchain,
-		vs.Config.UnconfirmedCheckInterval, vs.Config.UnconfirmedMaxAge)
+// RefreshUnconfirmed checks unconfirmed txns against the blockchain and returns
+// all transaction that turn to valid.
+func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
+	return vs.Unconfirmed.Refresh(vs.Blockchain)
 }
 
 // CreateBlock creates a SignedBlock from pending transactions

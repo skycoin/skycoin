@@ -1,7 +1,6 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -1033,7 +1032,7 @@ func TestUnconfirmTxBktUpdate(t *testing.T) {
 			uctxs[:2],
 			2,
 			time.Now().UnixNano(),
-			errors.New("not exist in bucket"),
+			fmt.Errorf("%s not exist in bucket unconfirmed_txns", uctxs[2].Hash().Hex()),
 		},
 	}
 
@@ -1075,8 +1074,11 @@ func TestUnconfirmedBktGetAll(t *testing.T) {
 		createUnconfirmedTxn(),
 	}
 
-	db, close := prepareDB(t)
-	defer close()
+	f := fmt.Sprintf("test%d.db", rand.Intn(1024))
+	db, err := bolt.Open(f, 0700, nil)
+	assert.Nil(t, err)
+	defer os.Remove(f)
+
 	bkt := newUncfmTxBkt(db)
 	for _, u := range uctxs {
 		err := bkt.put(&u)
@@ -1086,11 +1088,17 @@ func TestUnconfirmedBktGetAll(t *testing.T) {
 	vm, err := bkt.getAll()
 	assert.Nil(t, err)
 	assert.Equal(t, uctxs, vm)
-	// for _, u := range uctxs {
-	// 	vu, ok := vm[u.Hash()]
-	// 	assert.True(t, ok)
-	// 	assert.Equal(t, u, vu)
-	// }
+
+	db.Close()
+
+	db, err = bolt.Open(f, 0700, nil)
+	assert.Nil(t, err)
+	defer db.Close()
+	bkt = newUncfmTxBkt(db)
+
+	vm, err = bkt.getAll()
+	assert.Nil(t, err)
+	assert.Equal(t, uctxs, vm)
 }
 
 func TestUnconfirmedBktGetSlice(t *testing.T) {
@@ -1296,5 +1304,27 @@ func TestUnconfirmedTxLen(t *testing.T) {
 	for i := 0; i < len(uctxs); i++ {
 		assert.Nil(t, bkt.delete(uctxs[i].Hash()))
 		assert.Equal(t, bkt.len(), len(uctxs)-1-i)
+	}
+}
+
+func TestMustFirstN(t *testing.T) {
+	uctxs := []UnconfirmedTxn{
+		createUnconfirmedTxn(),
+		createUnconfirmedTxn(),
+		createUnconfirmedTxn(),
+	}
+	db, close := prepareDB(t)
+	defer close()
+	bkt := newUncfmTxBkt(db)
+	for _, u := range uctxs {
+		err := bkt.put(&u)
+		assert.Nil(t, err)
+	}
+
+	testCases := []int{0, 1, 2, 3}
+
+	for _, n := range testCases {
+		txns := bkt.mustFirstN(n)
+		assert.Equal(t, uctxs[:n], txns)
 	}
 }

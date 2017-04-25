@@ -310,6 +310,7 @@ func (dm *Daemon) Start(quit chan int) {
 	}
 
 	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
+	resendUnconfirmedTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedResendPeriod)
 	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
 
@@ -421,6 +422,8 @@ main:
 			}
 		case <-unconfirmedRefreshTicker:
 			dm.Visor.RefreshUnconfirmed()
+		case <-resendUnconfirmedTicker:
+			dm.Visor.ResendUnconfirmedTxns(dm.Pool)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:

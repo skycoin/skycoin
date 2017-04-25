@@ -79,7 +79,7 @@ func (bcp *BlockchainParser) Stop() {
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 	if bcp.parsedHeight == 0 {
-		logger.Critical("historydb parse %d/%d", bcp.parsedHeight, bcHeight)
+		// logger.Critical("historydb parse %d/%d", bcp.parsedHeight, bcHeight)
 		for i := uint64(0); i <= bcHeight-bcp.parsedHeight; i++ {
 			b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i)
 			if b == nil {
@@ -90,9 +90,9 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 				return err
 			}
 		}
-		logger.Critical("historydb parse %d/%d", bcHeight, bcHeight)
+		// logger.Critical("historydb parse %d/%d", bcHeight, bcHeight)
 	} else {
-		logger.Critical("historydb parse %d/%d", bcp.parsedHeight, bcHeight)
+		// logger.Critical("historydb parse %d/%d", bcp.parsedHeight, bcHeight)
 		for i := uint64(0); i < bcHeight-bcp.parsedHeight; i++ {
 			b := bcp.bc.GetBlockInDepth(bcp.parsedHeight + i + 1)
 			if b == nil {
@@ -103,7 +103,7 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 				return err
 			}
 		}
-		logger.Critical("historydb parse %d/%d", bcHeight, bcHeight)
+		// logger.Critical("historydb parse %d/%d", bcHeight, bcHeight)
 	}
 	bcp.parsedHeight = bcHeight
 	return nil

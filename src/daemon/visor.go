@@ -42,6 +42,8 @@ type VisorConfig struct {
 	BlockchainBackupRate time.Duration
 	// Max announce txns hash number
 	MaxTxnAnnounceNum int
+	// How often to announce our unconfirmed txns to peers
+	TxnsAnnounceRate time.Duration
 }
 
 func NewVisorConfig() VisorConfig {
@@ -53,6 +55,7 @@ func NewVisorConfig() VisorConfig {
 		BlocksResponseCount:  20,
 		BlockchainBackupRate: time.Second * 30,
 		MaxTxnAnnounceNum:    16,
+		TxnsAnnounceRate:     time.Minute,
 	}
 }
 
@@ -500,7 +503,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		}
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
+			// logger.Critical("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
 			logger.Critical("Failed to execute received block: %v", err)
@@ -509,7 +512,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 			break
 		}
 	}
-	logger.Critical("Processed %d/%d blocks", processed, len(self.Blocks))
+	logger.Critical("Processed %d/%d blocks", int(maxSeq)+processed, int(maxSeq)+len(self.Blocks))
 	if processed == 0 {
 		return
 	}
@@ -649,7 +652,6 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-
 	if len(self.Txns) > 32 {
 		logger.Warning("More than 32 transactions in pool. Implement breaking transactions transmission into multiple packets")
 	}

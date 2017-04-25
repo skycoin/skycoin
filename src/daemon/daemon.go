@@ -313,6 +313,7 @@ func (dm *Daemon) Start(quit chan int) {
 	resendUnconfirmedTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedResendPeriod)
 	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
+	txnsAnnounceTicker := time.Tick(dm.Visor.Config.TxnsAnnounceRate)
 
 	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
@@ -428,6 +429,8 @@ main:
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:
 			dm.Visor.AnnounceBlocks(dm.Pool)
+		case <-txnsAnnounceTicker:
+			dm.Visor.AnnounceTxns(dm.Pool)
 		case f := <-dm.memChannel:
 			f()
 		case <-quit:

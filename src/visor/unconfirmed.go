@@ -309,7 +309,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (er
 	// update the time if exist
 	var exist bool
 	utp.Txns.update(h, func(tx *UnconfirmedTxn) {
-		exist = true
+		know = true
 		now := util.Now()
 		tx.Received = now.UnixNano()
 		tx.Checked = now.UnixNano()
@@ -317,7 +317,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (er
 	})
 
 	if exist {
-		return nil, true
+		return
 	}
 
 	// Add txn to index
@@ -326,8 +326,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (er
 	utx.IsValid = valid
 	utp.Txns.put(&utx)
 	utp.Unspent.put(h, coin.CreateUnspents(bc.Head().Head, t))
-
-	return nil, false
+	return
 }
 
 // RawTxns returns underlying coin.Transactions

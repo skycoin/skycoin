@@ -5,8 +5,6 @@ import (
 
 	"time"
 
-	"fmt"
-
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -73,9 +71,9 @@ func (ut *UnconfirmedTxn) Hash() cipher.SHA256 {
 
 // unconfirmed transactions bucket
 type uncfmTxnBkt struct {
-	txns      *bucket.Bucket
-	idx       *bucket.Bucket
-	indexName []byte
+	txns *bucket.Bucket
+	// idx       *bucket.Bucket
+	// indexName []byte
 }
 
 func newUncfmTxBkt(db *bolt.DB) *uncfmTxnBkt {
@@ -84,13 +82,7 @@ func newUncfmTxBkt(db *bolt.DB) *uncfmTxnBkt {
 		panic(err)
 	}
 
-	idx, err := bucket.New([]byte("unconfirmed_index"), db)
-	if err != nil {
-		panic(err)
-	}
-
-	indexName := []byte("index")
-	return &uncfmTxnBkt{txns: bkt, idx: idx, indexName: indexName}
+	return &uncfmTxnBkt{txns: bkt}
 }
 
 func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
@@ -108,19 +100,7 @@ func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 	key := []byte(v.Hash().Hex())
 	d := encoder.Serialize(v)
-	// check if exist
-	exist := utb.txns.IsExist(key)
-	if err := utb.txns.Put(key, d); err != nil {
-		return err
-	}
-
-	if exist {
-		return nil
-	}
-
-	indexes := utb.mustGetTxHashes()
-	indexes = append(indexes, v.Hash())
-	return utb.idx.Put(utb.indexName, encoder.Serialize(indexes))
+	return utb.txns.Put(key, d)
 }
 
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
@@ -138,79 +118,20 @@ func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) err
 }
 
 func (utb *uncfmTxnBkt) delete(key cipher.SHA256) error {
-	if err := utb.txns.Delete([]byte(key.Hex())); err != nil {
-		return err
-	}
-
-	// remove the index
-	return utb.idx.Update(utb.indexName, func(idx []byte) ([]byte, error) {
-		var indexes []cipher.SHA256
-		if err := encoder.DeserializeRaw(idx, &indexes); err != nil {
-			return nil, err
-		}
-
-		for i := range indexes {
-			if indexes[i] == key {
-				indexes = append(indexes[:i], indexes[i+1:]...)
-				break
-			}
-		}
-		return encoder.Serialize(indexes), nil
-	})
+	return utb.txns.Delete([]byte(key.Hex()))
 }
 
 func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
 	vs := utb.txns.GetAll()
-	indexes := utb.mustGetTxHashes()
-
-	if len(indexes) != len(vs) {
-		return nil, fmt.Errorf("index size not match transaction size, index:%d, txn:%d", len(indexes), len(vs))
-	}
-
-	txns := make([]UnconfirmedTxn, 0, len(indexes))
-	for _, ix := range indexes {
-		v, ok := vs[ix.Hex()]
-		if !ok {
-			return nil, fmt.Errorf("There's no tx with hash:%s", ix.Hex())
-		}
-
+	txns := make([]UnconfirmedTxn, 0, len(vs))
+	for _, u := range vs {
 		var tx UnconfirmedTxn
-		if err := encoder.DeserializeRaw(v, &tx); err != nil {
+		if err := encoder.DeserializeRaw(u, &tx); err != nil {
 			return nil, err
 		}
 		txns = append(txns, tx)
 	}
 
-	return txns, nil
-}
-
-func (utb *uncfmTxnBkt) mustGetTxHashes() []cipher.SHA256 {
-	idx := utb.idx.Get(utb.indexName)
-	if idx == nil {
-		return []cipher.SHA256{}
-	}
-	var indexes []cipher.SHA256
-	if err := encoder.DeserializeRaw(idx, &indexes); err != nil {
-		panic(err)
-	}
-
-	return indexes
-}
-
-func (utb *uncfmTxnBkt) getSlice(keys []cipher.SHA256) ([]UnconfirmedTxn, error) {
-	ks := make([][]byte, len(keys))
-	for i := range keys {
-		ks[i] = []byte(keys[i].Hex())
-	}
-	vs := utb.txns.GetSlice(ks)
-	txns := make([]UnconfirmedTxn, len(vs))
-	for i := range vs {
-		var txn UnconfirmedTxn
-		if err := encoder.DeserializeRaw(vs[i], &txn); err != nil {
-			return []UnconfirmedTxn{}, err
-		}
-		txns[i] = txn
-	}
 	return txns, nil
 }
 
@@ -254,27 +175,6 @@ func (utb *uncfmTxnBkt) forEach(f func(key cipher.SHA256, tx *UnconfirmedTxn) er
 func (utb *uncfmTxnBkt) len() int {
 	// exclude the index
 	return utb.txns.Len()
-}
-
-func (utb *uncfmTxnBkt) indexLen() int {
-	idx := utb.mustGetTxHashes()
-	return len(idx)
-}
-
-// returns the first N transactions in the pool
-func (utb *uncfmTxnBkt) mustFirstN(n int) []UnconfirmedTxn {
-	// get the indexes
-	indexes := utb.mustGetTxHashes()
-	idxs := indexes[:n]
-	txns := make([]UnconfirmedTxn, len(idxs))
-	for i, hash := range idxs {
-		tx, ok := utb.get(hash)
-		if !ok {
-			panic(fmt.Errorf("hash %s not exist in unconfirmed txns bucket, while it's exist in indexes", hash.Hex()))
-		}
-		txns[i] = *tx
-	}
-	return txns
 }
 
 type txUnspents struct {
@@ -386,10 +286,10 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // InjectTxn adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (error, bool) {
+func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (err error, know bool) {
 	var valid int8
 	for {
-		if err := VerifyTransactionFee(bc, &t); err != nil {
+		if err = VerifyTransactionFee(bc, &t); err != nil {
 			if err == ErrUnspentNotExist {
 				break
 			}
@@ -470,11 +370,6 @@ func (utp *UnconfirmedTxnPool) RemoveTransactions(bc *Blockchain,
 		toRemove[i] = txns[i].Hash()
 	}
 	utp.removeTxns(bc, toRemove)
-}
-
-// MustFirstN returns the first N unconfirmed transaction in the pool
-func (utp *UnconfirmedTxnPool) MustFirstN(n int) []UnconfirmedTxn {
-	return utp.Txns.mustFirstN(n)
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.

@@ -247,6 +247,7 @@ type ReadableUnconfirmedTxn struct {
 	Received  time.Time           `json:"received"`
 	Checked   time.Time           `json:"checked"`
 	Announced time.Time           `json:"announced"`
+	IsValid   bool                `json:"is_valid"`
 }
 
 func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedTxn {
@@ -255,6 +256,7 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedT
 		Received:  nanoToTime(unconfirmed.Received),
 		Checked:   nanoToTime(unconfirmed.Checked),
 		Announced: nanoToTime(unconfirmed.Announced),
+		IsValid:   unconfirmed.IsValid == 1,
 	}
 }
 

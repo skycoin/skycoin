@@ -522,7 +522,7 @@ func (utp *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions 
 func (utp *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
 	a map[cipher.Address]byte) coin.AddressUxOuts {
 	auxs := make(coin.AddressUxOuts, len(a))
-	utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		for _, h := range tx.Txn.In {
 			if ux, ok := bcUnspent.Get(h); ok {
 				if _, ok := a[ux.Body.Address]; ok {
@@ -531,7 +531,9 @@ func (utp *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		logger.Debug("SpendsForAddresses error:%v", err)
+	}
 	return auxs
 }
 
@@ -545,27 +547,31 @@ func (utp *UnconfirmedTxnPool) SpendsForAddress(bcUnspent *coin.UnspentPool,
 // AllSpendsOutputs returns all spending outputs in unconfirmed tx pool.
 func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *coin.UnspentPool) []ReadableOutput {
 	outs := []ReadableOutput{}
-	utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		for _, in := range tx.Txn.In {
 			if ux, ok := bcUnspent.Get(in); ok {
 				outs = append(outs, NewReadableOutput(ux))
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		logger.Debug("AllSpendsOutputs error:%v", err)
+	}
 	return outs
 }
 
 // AllIncommingOutputs returns all predicted incomming outputs.
 func (utp *UnconfirmedTxnPool) AllIncommingOutputs(bh coin.BlockHeader) []ReadableOutput {
 	outs := []ReadableOutput{}
-	utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		uxOuts := coin.CreateUnspents(bh, tx.Txn)
 		for _, ux := range uxOuts {
 			outs = append(outs, NewReadableOutput(ux))
 		}
 		return nil
-	})
+	}); err != nil {
+		logger.Debug("AllIncommingOutputs error:%v", err)
+	}
 	return outs
 }
 
@@ -576,23 +582,27 @@ func (utp *UnconfirmedTxnPool) Get(key cipher.SHA256) (*UnconfirmedTxn, bool) {
 
 // GetTxns returns all transactions that can pass the filter
 func (utp *UnconfirmedTxnPool) GetTxns(filter func(tx UnconfirmedTxn) bool) (txns []UnconfirmedTxn) {
-	utp.Txns.forEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
+	if err := utp.Txns.forEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
 		if filter(*tx) {
 			txns = append(txns, *tx)
 		}
 		return nil
-	})
+	}); err != nil {
+		logger.Debug("GetTxns error:%v", err)
+	}
 	return
 }
 
 // GetTxHashes returns transaction hashes that can pass the filter
 func (utp *UnconfirmedTxnPool) GetTxHashes(filter func(tx UnconfirmedTxn) bool) (hashes []cipher.SHA256) {
-	utp.Txns.forEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
+	if err := utp.Txns.forEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
 		if filter(*tx) {
 			hashes = append(hashes, hash)
 		}
 		return nil
-	})
+	}); err != nil {
+		logger.Debug("GetTxHashes error:%v", err)
+	}
 	return
 }
 

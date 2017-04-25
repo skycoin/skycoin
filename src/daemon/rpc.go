@@ -73,9 +73,11 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
 	}
 	conns := make([]*Connection, 0, d.Pool.Pool.Size())
 	for _, c := range d.Pool.Pool.GetConnections() {
-		conn := self.GetConnection(d, c.Addr())
-		if conn != nil {
-			conns = append(conns, conn)
+		if c.Solicited {
+			conn := self.GetConnection(d, c.Addr())
+			if conn != nil {
+				conns = append(conns, conn)
+			}
 		}
 	}
 	return &Connections{Connections: conns}

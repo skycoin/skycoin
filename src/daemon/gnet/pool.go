@@ -113,10 +113,11 @@ type Connection struct {
 	LastSent time.Time
 	// Message send queue.
 	WriteQueue chan Message
+	Solicited  bool
 }
 
 // NewConnection creates a new Connection tied to a ConnectionPool
-func NewConnection(pool *ConnectionPool, id int, conn net.Conn, writeQueueSize int) *Connection {
+func NewConnection(pool *ConnectionPool, id int, conn net.Conn, writeQueueSize int, solicited bool) *Connection {
 	return &Connection{
 		Id:             id,
 		Conn:           conn,
@@ -125,6 +126,7 @@ func NewConnection(pool *ConnectionPool, id int, conn net.Conn, writeQueueSize i
 		LastReceived:   Now(),
 		LastSent:       Now(),
 		WriteQueue:     make(chan Message, writeQueueSize),
+		Solicited:      solicited,
 	}
 }
 
@@ -254,7 +256,7 @@ func (pool *ConnectionPool) strand(f func()) {
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
 // to an address that is already connected will panic.
-func (pool *ConnectionPool) NewConnection(conn net.Conn) (*Connection, error) {
+func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Connection, error) {
 	a := conn.RemoteAddr().String()
 	var nc *Connection
 	var err error
@@ -265,7 +267,7 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn) (*Connection, error) {
 		}
 		pool.connId++
 		nc = NewConnection(pool, pool.connId, conn,
-			pool.Config.ConnectionWriteQueueSize)
+			pool.Config.ConnectionWriteQueueSize, solicited)
 
 		pool.pool[nc.Id] = nc
 		pool.addresses[a] = nc
@@ -301,7 +303,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 		}
 	}()
 
-	c, err := pool.NewConnection(conn)
+	c, err := pool.NewConnection(conn, solicited)
 	if err != nil {
 		log.Panic(err)
 	}

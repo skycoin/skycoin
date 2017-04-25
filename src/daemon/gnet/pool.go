@@ -578,24 +578,34 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 }
 
 // BroadcastMessage sends a Message to all connections in the Pool.
-func (pool *ConnectionPool) BroadcastMessage(msg Message) {
+func (pool *ConnectionPool) BroadcastMessage(msg Message) (err error) {
 	if pool.Config.DebugPrint {
 		logger.Debug("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
 	}
+
 	fullWriteQueue := []string{}
 	pool.strand(func() {
+		if len(pool.pool) == 0 {
+			err = errors.New("Connection pool is empty")
+			return
+		}
+
 		for _, conn := range pool.pool {
 			select {
 			case conn.WriteQueue <- msg:
-			default:
+			case <-time.After(5 * time.Second):
 				fullWriteQueue = append(fullWriteQueue, conn.Addr())
 			}
+		}
+		if len(fullWriteQueue) == len(pool.pool) {
+			err = errors.New("There's no avaliable connection in pool")
 		}
 	})
 
 	for _, addr := range fullWriteQueue {
 		pool.Disconnect(addr, DisconnectWriteQueueFull)
 	}
+	return
 }
 
 // Unpacks incoming bytes to a Message and calls the message handler.  If

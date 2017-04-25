@@ -486,10 +486,10 @@ func (dm *Daemon) connectToPeer(p *pex.Peer) error {
 	if _, ok := dm.pendingConnections.Get(p.Addr); ok {
 		return errors.New("Connection is pending")
 	}
-	// cnt, ok := dm.ipCounts.Get(a)
-	// if !dm.Config.LocalhostOnly && ok && cnt != 0 {
-	// 	return errors.New("Already connected to a peer with this base IP")
-	// }
+	cnt, ok := dm.ipCounts.Get(a)
+	if !dm.Config.LocalhostOnly && ok && cnt != 0 {
+		return errors.New("Already connected to a peer with this base IP")
+	}
 	logger.Debug("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
 	go func() {

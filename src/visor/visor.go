@@ -40,6 +40,8 @@ type VisorConfig struct {
 	UnconfirmedMaxAge time.Duration
 	// How often to refresh the unconfirmed pool
 	UnconfirmedRefreshRate time.Duration
+	// How often to rebroadcast unconfirmed transactions
+	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
 	// Divisor of coin hours required as fee. E.g. with hours=100 and factor=4,
@@ -89,6 +91,7 @@ func NewVisorConfig() VisorConfig {
 		UnconfirmedCheckInterval: time.Hour * 2,
 		UnconfirmedMaxAge:        time.Hour * 48,
 		UnconfirmedRefreshRate:   time.Minute * 30,
+		UnconfirmedResendPeriod:  time.Minute,
 		MaxBlockSize:             1024 * 32,
 
 		GenesisAddress:    cipher.Address{},
@@ -535,50 +538,22 @@ func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []UnconfirmedTxn
 		return nil
 	})
 
-	// for _, unconfirmedTxn := range vs.Unconfirmed.Txns {
-	// 	isRelatedTransaction := false
-
-	// 	for _, out := range unconfirmedTxn.Txn.Out {
-	// 		for _, address := range addresses {
-	// 			if out.Address == address {
-	// 				isRelatedTransaction = true
-	// 			}
-	// 			if isRelatedTransaction {
-	// 				break
-	// 			}
-	// 		}
-	// 	}
-
-	// 	if isRelatedTransaction == true {
-	// 		ret = append(ret, unconfirmedTxn)
-	// 	}
-	// }
-
 	return ret
 }
 
+// GetAllUnconfirmedTxns returns all unconfirmed transactions
 func (vs *Visor) GetAllUnconfirmedTxns() []UnconfirmedTxn {
-	txnsMap, err := vs.Unconfirmed.Txns.getAll()
+	txns, err := vs.Unconfirmed.Txns.getAll()
 	if err != nil {
 		return []UnconfirmedTxn{}
-	}
-
-	txns := make([]UnconfirmedTxn, 0, len(txnsMap))
-	for _, tx := range txnsMap {
-		txns = append(txns, tx)
 	}
 	return txns
 }
 
-// StartParser start the blockchain parser.
-// func (vs *Visor) StartParser() {
-// 	vs.bcParser.Start()
-// }
-
-// StopParser stop the blockchain parser.
-// func (vs *Visor) StopParser() {
-// 	vs.bcParser.Stop()
-// }
+// GetAllUnconfirmedHashes returns all hashes of unconfirmed transactions
+func (vs *Visor) GetAllUnconfirmedHashes() []cipher.SHA256 {
+	return vs.Unconfirmed.GetAllTxnHashes()
+}
 
 // GetBlockByHash get block of specific hash header, return nil on not found.
 func (vs *Visor) GetBlockByHash(hash cipher.SHA256) *coin.Block {

@@ -165,8 +165,9 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) {
 		return
 	}
 	vs.strand(func() {
-		// get local unconfired transaction hashes.
-		hashes := vs.v.GetAllUnconfirmedHashes()
+		// get local unconfirmed transaction hashes.
+		hashes := vs.v.GetAllValidUnconfirmedTxHashes()
+		// filter all thoses invalid txns
 		hashesSet := divideHashes(hashes, vs.Config.MaxTxnAnnounceNum)
 		for _, hs := range hashesSet {
 			m := NewAnnounceTxnsMessage(hs)
@@ -306,7 +307,7 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 		return txids
 	}
 	vs.strand(func() {
-		txns := vs.v.Unconfirmed.GetAllUnconfirmedTxns()
+		txns := vs.v.GetAllUnconfirmedTxns()
 
 		for i := range txns {
 			logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())

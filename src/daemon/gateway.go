@@ -384,7 +384,7 @@ func (gw *Gateway) GetAllUnconfirmedTxns() (txns []visor.UnconfirmedTxn) {
 // GetUnconfirmedTxns returns addresses related unconfirmed transactions
 func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) (txns []visor.UnconfirmedTxn) {
 	gw.strand(func() {
-		txns = gw.v.GetUnconfirmedTxns(addrs)
+		txns = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
 	return
 }

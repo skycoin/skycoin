@@ -574,19 +574,36 @@ func (utp *UnconfirmedTxnPool) Get(key cipher.SHA256) (*UnconfirmedTxn, bool) {
 	return utp.Txns.get(key)
 }
 
-// GetAllUnconfirmedTxns returns all unconfirmed transactions array
-func (utp *UnconfirmedTxnPool) GetAllUnconfirmedTxns() []UnconfirmedTxn {
-	txns, err := utp.Txns.getAll()
-	if err != nil {
-		return []UnconfirmedTxn{}
-	}
-
-	return txns
+// GetTxns returns all transactions that can pass the filter
+func (utp *UnconfirmedTxnPool) GetTxns(filter func(tx UnconfirmedTxn) bool) (txns []UnconfirmedTxn) {
+	utp.Txns.forEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
+		if filter(*tx) {
+			txns = append(txns, *tx)
+		}
+		return nil
+	})
+	return
 }
 
-// GetAllTxnHashes returns all unconfirmed txns hashes
-func (utp *UnconfirmedTxnPool) GetAllTxnHashes() []cipher.SHA256 {
-	return utp.Txns.mustGetTxHashes()
+// GetTxHashes returns transaction hashes that can pass the filter
+func (utp *UnconfirmedTxnPool) GetTxHashes(filter func(tx UnconfirmedTxn) bool) (hashes []cipher.SHA256) {
+	utp.Txns.forEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
+		if filter(*tx) {
+			hashes = append(hashes, hash)
+		}
+		return nil
+	})
+	return
+}
+
+// IsValid can be used as filter function
+func IsValid(tx UnconfirmedTxn) bool {
+	return tx.IsValid == 1
+}
+
+// All use as return all filter
+func All(tx UnconfirmedTxn) bool {
+	return true
 }
 
 // Len returns the number of unconfirmed transactions

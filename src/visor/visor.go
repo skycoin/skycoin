@@ -516,44 +516,33 @@ func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []UnconfirmedTxn {
+func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) []UnconfirmedTxn {
+	return vs.Unconfirmed.GetTxns(filter)
+}
 
-	ret := []UnconfirmedTxn{}
-	vs.Unconfirmed.Txns.forEach(func(key cipher.SHA256, tx *UnconfirmedTxn) error {
-		isRelatedTransaction := false
-
+// ToAddresses represents a filter that check if tx has output to the given addresses
+func ToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
+	return func(tx UnconfirmedTxn) (isRelated bool) {
 		for _, out := range tx.Txn.Out {
 			for _, address := range addresses {
 				if out.Address == address {
-					isRelatedTransaction = true
-				}
-				if isRelatedTransaction {
-					break
+					isRelated = true
+					return
 				}
 			}
 		}
-
-		if isRelatedTransaction == true {
-			ret = append(ret, *tx)
-		}
-		return nil
-	})
-
-	return ret
+		return
+	}
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
 func (vs *Visor) GetAllUnconfirmedTxns() []UnconfirmedTxn {
-	txns, err := vs.Unconfirmed.Txns.getAll()
-	if err != nil {
-		return []UnconfirmedTxn{}
-	}
-	return txns
+	return vs.Unconfirmed.GetTxns(All)
 }
 
-// GetAllUnconfirmedHashes returns all hashes of unconfirmed transactions
-func (vs *Visor) GetAllUnconfirmedHashes() []cipher.SHA256 {
-	return vs.Unconfirmed.GetAllTxnHashes()
+// GetAllValidUnconfirmedTxHashes returns all valid unconfirmed transaction hashes
+func (vs *Visor) GetAllValidUnconfirmedTxHashes() []cipher.SHA256 {
+	return vs.Unconfirmed.GetTxHashes(IsValid)
 }
 
 // GetBlockByHash get block of specific hash header, return nil on not found.

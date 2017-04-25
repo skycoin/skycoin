@@ -486,10 +486,10 @@ func (dm *Daemon) connectToPeer(p *pex.Peer) error {
 	if _, ok := dm.pendingConnections.Get(p.Addr); ok {
 		return errors.New("Connection is pending")
 	}
-	cnt, ok := dm.ipCounts.Get(a)
-	if !dm.Config.LocalhostOnly && ok && cnt != 0 {
-		return errors.New("Already connected to a peer with this base IP")
-	}
+	// cnt, ok := dm.ipCounts.Get(a)
+	// if !dm.Config.LocalhostOnly && ok && cnt != 0 {
+	// 	return errors.New("Already connected to a peer with this base IP")
+	// }
 	logger.Debug("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
 	go func() {
@@ -626,7 +626,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	if e.Solicited {
 		logger.Info("Connected to %s as we requested", a)
 	} else {
-		logger.Info("Received unsolicited connection to %s", a)
+		logger.Info("Received unsolicited connection from %s", a)
 	}
 
 	dm.pendingConnections.Remove(a)
@@ -657,7 +657,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	dm.expectingIntroductions.Add(a, util.Now())
-	logger.Debug("Sending introduction message to %s", a)
+	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version,
 		dm.Pool.Pool.Config.Port)
 	dm.Pool.Pool.SendMessage(a, m)

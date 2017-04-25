@@ -326,6 +326,9 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	} else {
 		logger.Warning("%v", err)
 	}
+
+	// Anounce unconfirmed know txns
+	d.Visor.AnnounceTxns(d.Pool)
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

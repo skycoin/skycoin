@@ -112,21 +112,13 @@ func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 		return err
 	}
 
-	// update indexs
-	// check if index does exist
-	if idx := utb.idx.Get(utb.indexName); idx != nil {
-		if exist {
-			return nil
-		}
-		var indexes []cipher.SHA256
-		if err := encoder.DeserializeRaw(idx, &indexes); err != nil {
-			return err
-		}
-
-		indexes = append(indexes, v.Hash())
-		return utb.idx.Put(utb.indexName, encoder.Serialize(indexes))
+	if exist {
+		return nil
 	}
-	return utb.idx.Put(utb.indexName, encoder.Serialize([]cipher.SHA256{v.Hash()}))
+
+	indexes := utb.mustGetTxHashes()
+	indexes = append(indexes, v.Hash())
+	return utb.idx.Put(utb.indexName, encoder.Serialize(indexes))
 }
 
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
@@ -167,11 +159,7 @@ func (utb *uncfmTxnBkt) delete(key cipher.SHA256) error {
 
 func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
 	vs := utb.txns.GetAll()
-	idx := utb.idx.Get(utb.indexName)
-	var indexes []cipher.SHA256
-	if err := encoder.DeserializeRaw(idx, &indexes); err != nil {
-		return nil, err
-	}
+	indexes := utb.mustGetTxHashes()
 
 	if len(indexes) != len(vs) {
 		return nil, fmt.Errorf("index size not match transaction size, index:%d, txn:%d", len(indexes), len(vs))
@@ -194,8 +182,11 @@ func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
 	return txns, nil
 }
 
-func (utb *uncfmTxnBkt) mustGetAllTxHashes() []cipher.SHA256 {
+func (utb *uncfmTxnBkt) mustGetTxHashes() []cipher.SHA256 {
 	idx := utb.idx.Get(utb.indexName)
+	if idx == nil {
+		return []cipher.SHA256{}
+	}
 	var indexes []cipher.SHA256
 	if err := encoder.DeserializeRaw(idx, &indexes); err != nil {
 		panic(err)
@@ -264,23 +255,14 @@ func (utb *uncfmTxnBkt) len() int {
 }
 
 func (utb *uncfmTxnBkt) indexLen() int {
-	v := utb.idx.Get(utb.indexName)
-	var idx []cipher.SHA256
-	if err := encoder.DeserializeRaw(v, &idx); err != nil {
-		panic(err)
-	}
+	idx := utb.mustGetTxHashes()
 	return len(idx)
 }
 
 // returns the first N transactions in the pool
 func (utb *uncfmTxnBkt) mustFirstN(n int) []UnconfirmedTxn {
-	var indexes []cipher.SHA256
 	// get the indexes
-	v := utb.idx.Get(utb.indexName)
-	if err := encoder.DeserializeRaw(v, &indexes); err != nil {
-		panic(err)
-	}
-
+	indexes := utb.mustGetTxHashes()
 	idxs := indexes[:n]
 	txns := make([]UnconfirmedTxn, len(idxs))
 	for i, hash := range idxs {
@@ -603,7 +585,7 @@ func (utp *UnconfirmedTxnPool) GetAllUnconfirmedTxns() []UnconfirmedTxn {
 
 // GetAllTxnHashes returns all unconfirmed txns hashes
 func (utp *UnconfirmedTxnPool) GetAllTxnHashes() []cipher.SHA256 {
-	return utp.Txns.mustGetAllTxHashes()
+	return utp.Txns.mustGetTxHashes()
 }
 
 // Len returns the number of unconfirmed transactions

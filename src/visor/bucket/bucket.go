@@ -1,7 +1,7 @@
 package bucket
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/boltdb/bolt"
 )
@@ -42,11 +42,10 @@ func (b *Bucket) GetAll() map[interface{}][]byte {
 	values := map[interface{}][]byte{}
 	b.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(b.Name)
-		c := bkt.Cursor()
-
-		for k, v := c.First(); k != nil; k, v = c.Next() {
+		bkt.ForEach(func(k, v []byte) error {
 			values[string(k)] = v
-		}
+			return nil
+		})
 		return nil
 	})
 	return values
@@ -106,7 +105,7 @@ func (b *Bucket) Update(key []byte, f func([]byte) ([]byte, error)) error {
 			}
 			return bkt.Put(key, v)
 		}
-		return errors.New("not exist in bucket")
+		return fmt.Errorf("%s not exist in bucket %s", string(key), string(b.Name))
 	})
 }
 

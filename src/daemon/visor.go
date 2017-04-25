@@ -40,6 +40,8 @@ type VisorConfig struct {
 	BlocksResponseCount uint64
 	//how long between saving copies of the blockchain
 	BlockchainBackupRate time.Duration
+	// Max announce txns hash number
+	MaxTxnAnnounceNum int
 }
 
 func NewVisorConfig() VisorConfig {
@@ -50,6 +52,7 @@ func NewVisorConfig() VisorConfig {
 		BlocksAnnounceRate:   time.Second * 60, //backup, could be disabled
 		BlocksResponseCount:  20,
 		BlockchainBackupRate: time.Second * 30,
+		MaxTxnAnnounceNum:    16,
 	}
 }
 
@@ -152,6 +155,47 @@ func (vs *Visor) AnnounceBlocks(pool *Pool) {
 	})
 }
 
+// AnnounceTxns announces local unconfirmed transactions
+func (vs *Visor) AnnounceTxns(pool *Pool) {
+	if vs.Config.Disabled {
+		return
+	}
+	vs.strand(func() {
+		// get local unconfired transaction hashes.
+		hashes := vs.v.GetAllUnconfirmedHashes()
+		hashesSet := divideHashes(hashes, vs.Config.MaxTxnAnnounceNum)
+		for _, hs := range hashesSet {
+			m := NewAnnounceTxnsMessage(hs)
+			if err := pool.Pool.BroadcastMessage(m); err != nil {
+				logger.Debug("Broadcast AnnounceTxnsMessage failed, err:", err)
+				return
+			}
+		}
+	})
+}
+
+func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
+	if len(hashes) == 0 {
+		return [][]cipher.SHA256{}
+	}
+	var j int
+	var hashesArray [][]cipher.SHA256
+	if len(hashes) > n {
+		for i := range hashes {
+			if len(hashes[j:i]) == n {
+				hs := make([]cipher.SHA256, n)
+				copy(hs, hashes[j:i])
+				hashesArray = append(hashesArray, hs)
+				j = i
+			}
+		}
+	}
+	hs := make([]cipher.SHA256, len(hashes)-j)
+	copy(hs, hashes[j:])
+	hashesArray = append(hashesArray, hs)
+	return hashesArray
+}
+
 // RequestBlocksFromAddr sends a GetBlocksMessage to one connected address
 func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	if vs.Config.Disabled {
@@ -248,10 +292,8 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 	vs.strand(func() {
 		txns := vs.v.Unconfirmed.GetAllUnconfirmedTxns()
 
-		// sort the txns by receive time
-		sort.Sort(byTxnRecvTime(txns))
-
 		for i := range txns {
+			logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())
 			vs.BroadcastTransaction(txns[i].Txn, pool)
 			txids = append(txids, txns[i].Txn.Hash())
 		}
@@ -623,7 +665,7 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 			if !known {
 				logger.Warning("Failed to record txn: %v", err)
 			} else {
-				logger.Warning("Duplicate Transation: ")
+				logger.Warning("Duplicate Transation: %v", txn.Hash())
 			}
 		}
 	}

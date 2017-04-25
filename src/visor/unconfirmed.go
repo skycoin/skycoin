@@ -63,7 +63,7 @@ type UnconfirmedTxn struct {
 	// Last time we announced this txn
 	Announced int64
 	// If this txn is valid
-	IsValid bool
+	IsValid int8
 }
 
 // Hash returns the coin.Transaction's hash
@@ -387,7 +387,7 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (error, bool) {
-	var valid bool
+	var valid int8
 	for {
 		if err := VerifyTransactionFee(bc, &t); err != nil {
 			if err == ErrUnspentNotExist {
@@ -400,7 +400,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (er
 			return err, false
 		}
 
-		valid = true
+		valid = 1
 		break
 	}
 
@@ -483,9 +483,9 @@ func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) 
 	now := util.Now()
 	utp.Txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
 		tx.Checked = now.UnixNano()
-		if !tx.IsValid {
+		if tx.IsValid == 0 {
 			if bc.VerifyTransaction(tx.Txn) == nil {
-				tx.IsValid = true
+				tx.IsValid = 1
 				hashes = append(hashes, tx.Hash())
 			}
 		}

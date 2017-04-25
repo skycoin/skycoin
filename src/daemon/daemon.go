@@ -423,7 +423,7 @@ main:
 		case <-unconfirmedRefreshTicker:
 			dm.Visor.RefreshUnconfirmed()
 		case <-resendUnconfirmedTicker:
-			dm.Visor.ResendUnconfirmedTxns(dm.Pool)
+			// dm.Visor.ResendUnconfirmedTxns(dm.Pool)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:

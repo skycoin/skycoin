@@ -27,6 +27,7 @@ func (self *RPC) Serve() {
 	nm := newNodeManager()
 	receiver := new(RPCReceiver)
 	receiver.NodeManager = nm
+	receiver.cmPort = 5000
 	err := rpc.Register(receiver)
 	if err != nil {
 		panic(err)

@@ -14,6 +14,8 @@ type proxyServer struct {
 	targetConns map[string]net.Conn
 }
 
+const PROXY_PACKET_SIZE uint32 = 16384
+
 func getProxyMessage(msg []byte) *messages.ProxyMessage {
 	appMsg := messages.AppMessage{}
 	err := messages.Deserialize(msg, &appMsg)
@@ -80,7 +82,7 @@ func (self *proxyServer) getFromConn(conn net.Conn, remoteAddr string) { // perm
 }
 
 func getPacketFromConn(conn io.Reader) ([]byte, error) {
-	buffer := make([]byte, config.ProxyPacketSize)
+	buffer := make([]byte, PROXY_PACKET_SIZE)
 	n, err := conn.Read(buffer)
 	if err != nil {
 		return nil, err

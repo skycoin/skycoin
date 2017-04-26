@@ -1,4 +1,4 @@
-package nodemanager
+package node
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 )
 
 type Connection struct {
+	address          cipher.PubKey
 	id               messages.ConnectionId
-	nm               *NodeManager
 	status           uint8
-	nodeAttached     cipher.PubKey
+	nodeAttached     *Node
 	routeId          messages.RouteId
 	sequence         uint32
 	ackChannels      map[uint32]chan bool
@@ -23,73 +23,47 @@ type Connection struct {
 	throttle         uint32
 	consumer         messages.Consumer
 	errChan          chan error
+
+	packetSize   int
+	sendInterval time.Duration
+	timeout      time.Duration
 }
 
 const (
-	DISCONNECTED = iota
-	CONNECTED
+	DISCONNECTED uint8 = 0
+	CONNECTED    uint8 = 1
 )
 
-var (
-	config     = messages.GetConfig()
-	TIMEOUT    = config.ConnectionTimeout
-	packetSize = config.MaxPacketSize / 2
-)
-
-/*
-func (nm *NodeManager) ConnectWithRoutes(nodeAttached cipher.PubKey, routeId, backRouteId messages.RouteId) (messages.Connection, error) {
-	conn.routeId = routeId
-	conn.backRouteId = backRouteId
-	conn.status = CONNECTED
-	return conn, nil
-}
-*/
-
-func (nm *NodeManager) NewConnection(nodeAttached cipher.PubKey) (messages.Connection, error) {
+func (node *Node) newConnection() *Connection {
 	id := messages.RandConnectionId()
-	_, err := nm.getNodeById(nodeAttached)
-	if err != nil {
-		return nil, err
-	}
+
 	conn := &Connection{
 		id:               id,
-		nm:               nm,
 		status:           DISCONNECTED,
-		nodeAttached:     nodeAttached,
+		nodeAttached:     node,
 		lock:             &sync.Mutex{},
 		ackChannels:      make(map[uint32]chan bool),
-		errChan:          make(chan error, 1024),
+		errChan:          make(chan error),
 		incomingMessages: make(map[uint32]map[uint32][]byte),
 		incomingCounter:  make(map[uint32]uint32),
 	}
 
+	conn.packetSize = int(node.maxPacketSize / 2)
+
 	go conn.receiveErrors()
-	nm.connectionList[nodeAttached] = conn
-	return conn, nil
+	node.connection = conn
+	return conn
 }
 
-func (nm *NodeManager) Connect(nodeAttached, nodeTo cipher.PubKey) error {
-
-	clientConn, ok := nm.connectionList[nodeAttached]
-	if !ok {
-		panic("can't find connection")
-	}
-
-	serverConn, ok := nm.connectionList[nodeTo]
-	if !ok {
-		panic("can't find connection")
-	}
-
-	routeId, backRouteId, err := nm.findRoute(nodeAttached, nodeTo)
-	if err != nil {
-		return err
-	}
-	clientConn.routeId, serverConn.routeId = routeId, backRouteId
-	clientConn.status, serverConn.status = CONNECTED, CONNECTED
-	return nil
+func (self *Connection) Address() cipher.PubKey {
+	return self.address
 }
 
-func (self *Connection) Send(msg []byte) {
+func (self *Connection) Shutdown() {
+	self.nodeAttached.Shutdown()
+}
+
+func (self *Connection) Send(msg []byte) error {
 	packets := self.split(msg)
 	total := len(packets)
 
@@ -97,19 +71,40 @@ func (self *Connection) Send(msg []byte) {
 	sequence := self.setAckChannel(ackChannel)
 
 	for order, packet := range packets {
-		time.Sleep(config.SendInterval)
+		time.Sleep(self.sendInterval)
 		self.sendPacket(packet, sequence, uint32(order), uint32(total))
 	}
 
 	select {
 	case <-ackChannel:
-		return
-	case <-time.After(time.Duration(TIMEOUT) * time.Millisecond):
+		return nil
+	case <-time.After(time.Duration(self.timeout) * time.Millisecond):
 		self.errChan <- messages.ERR_CONN_TIMEOUT
+		return messages.ERR_CONN_TIMEOUT
 	}
 }
 
-func (self *Connection) Use(msg []byte) {
+func (self *Connection) Dial(address cipher.PubKey) error {
+	if self.nodeAttached != nil {
+		return self.nodeAttached.sendConnectToServer(address)
+	} else {
+		return nil
+	}
+}
+
+func (self *Connection) AssignConsumer(consumer messages.Consumer) {
+	self.consumer = consumer
+}
+
+func (self *Connection) GetStatus() uint8 {
+	return self.status
+}
+
+func (self *Connection) Close() {
+	self.status = DISCONNECTED
+}
+
+func (self *Connection) use(msg []byte) {
 
 	switch messages.GetMessageType(msg) {
 
@@ -135,19 +130,8 @@ func (self *Connection) Use(msg []byte) {
 	}
 }
 
-func (self *Connection) AssignConsumer(consumer messages.Consumer) {
-	self.consumer = consumer
-}
-
-func (self *Connection) GetStatus() uint8 {
-	return self.status
-}
-
-func (self *Connection) Close() {
-	self.status = DISCONNECTED
-}
-
 func (self *Connection) split(msg []byte) [][]byte {
+	packetSize := self.packetSize
 	msgSize := len(msg)
 	packets := [][]byte{}
 	num := (msgSize-1)/packetSize + 1
@@ -191,25 +175,21 @@ func (self *Connection) sendPacket(msg []byte, sequence, order, total uint32) {
 
 func (self *Connection) sendToNode(inRouteMessage *messages.InRouteMessage) {
 
-	errChan := self.errChan
+	node := self.nodeAttached //**** should connection know it's node, not id? yes!
 
-	node, err := self.nm.getNodeById(self.nodeAttached)
-	if err != nil {
-		errChan <- err
-	}
-
-	if node.Congested {
+	if node.congested {
 		self.throttle = messages.Increase(self.throttle)
-		time.Sleep(time.Duration(self.throttle) * config.TimeUnit)
+		time.Sleep(time.Duration(self.throttle) * self.nodeAttached.timeUnit)
 	} else {
 		self.throttle = messages.Decrease(self.throttle)
 	}
-	node.InjectConnectionMessage(inRouteMessage)
+	node.injectConnectionMessage(inRouteMessage)
 }
 
 func (self *Connection) receiveErrors() {
 	for err := range self.errChan {
 		if err != nil {
+			fmt.Printf("Disconnect connection %d because of error %s\n", self.id, err.Error())
 			self.status = DISCONNECTED
 		}
 	}

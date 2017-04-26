@@ -69,9 +69,6 @@ func (self *UDPConfig) receiveLoop() {
 					panic(err)
 				}
 			} else {
-				/*	if addr.String() != self.pairAddr.String() {
-					panic("wrong address")
-				}*/
 				go self.relatedTransport.getFromUDP(buffer[:n])
 			}
 		}

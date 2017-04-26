@@ -46,19 +46,18 @@ func main() {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(hops + 1)
+	clientConn, serverConn := meshnet.CreateSequenceOfNodes(hops + 1)
 
-	_, err = app.NewVPNServer(meshnet, serverAddr)
+	server := app.NewVPNServer(serverConn)
+	defer server.Shutdown()
+
+	client, err := app.NewVPNClient(clientConn, "0.0.0.0:4321")
 	if err != nil {
 		panic(err)
 	}
+	defer server.Shutdown()
 
-	client, err := app.NewVPNClient(meshnet, clientAddr, "0.0.0.0:4321")
-	if err != nil {
-		panic(err)
-	}
-
-	err = client.Dial(serverAddr)
+	err = client.Dial(serverConn.Address())
 	if err != nil {
 		panic(err)
 	}

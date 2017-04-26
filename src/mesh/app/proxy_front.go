@@ -48,7 +48,7 @@ func (self *proxyClient) Listen() {
 
 		go func() { // run listening the connection for data and sending it through the meshnet to the server
 			for {
-				message := make([]byte, config.ProxyPacketSize)
+				message := make([]byte, PROXY_PACKET_SIZE)
 
 				n, err := userConn.Read(message)
 				if err != nil {

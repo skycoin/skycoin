@@ -8,7 +8,6 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	"github.com/skycoin/skycoin/src/mesh/proxy/go-socks5"
 )
@@ -18,30 +17,19 @@ type SocksServer struct {
 	dialer proxy.Dialer
 }
 
-func NewSocksServer(meshnet messages.Network, address cipher.PubKey, proxyAddress string) (*SocksServer, error) {
+func NewSocksServer(conn messages.Connection, proxyAddress string) *SocksServer {
 	socksServer := &SocksServer{}
-	socksServer.register(meshnet, address)
 	socksServer.lock = &sync.Mutex{}
 	socksServer.timeout = time.Duration(messages.GetConfig().AppTimeout)
 	socksServer.ProxyAddress = proxyAddress
 	socksServer.targetConns = map[string]net.Conn{}
 
-	conn, err := meshnet.NewConnection(address)
-	if err != nil {
-		return nil, err
-	}
-
-	socksServer.connection = conn
-
-	err = meshnet.Register(address, socksServer)
-	if err != nil {
-		return nil, err
-	}
+	socksServer.register(conn)
 
 	go socksServer.serveSocks()
 	log.Println("ready to accept requests")
 
-	return socksServer, nil
+	return socksServer
 }
 
 func (self *SocksServer) Consume(msg []byte) {

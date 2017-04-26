@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/app"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"
@@ -99,17 +98,12 @@ func main() {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(hops + 1)
+	clientConn, serverConn := meshnet.CreateSequenceOfNodes(hops + 1)
+	clientAddr, serverAddr := clientConn.Address(), serverConn.Address()
 
-	server, err := echoServer(meshnet, serverAddr)
-	if err != nil {
-		panic(err)
-	}
+	server := echoServer(serverConn)
 
-	client, err := app.NewClient(meshnet, clientAddr) // register client on the first node
-	if err != nil {
-		panic(err)
-	}
+	client := app.NewClient(clientConn) // register client on the first node
 
 	err = client.Dial(serverAddr) // client dials to server
 	if err != nil {
@@ -145,12 +139,12 @@ func benchmark(client *app.Client, server *app.Server, msgSize int) time.Duratio
 	return duration
 }
 
-func echoServer(meshnet *network.NodeManager, serverAddr cipher.PubKey) (*app.Server, error) {
+func echoServer(serverConn messages.Connection) *app.Server {
 
-	srv, err := app.NewServer(meshnet, serverAddr, func(in []byte) []byte {
+	srv := app.NewServer(serverConn, func(in []byte) []byte {
 		return in
 	})
-	return srv, err
+	return srv
 }
 
 func printHelp() {

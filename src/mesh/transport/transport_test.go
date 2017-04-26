@@ -9,36 +9,79 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
-func TestCreateStubPair(t *testing.T) {
+func TestCreateTransport(t *testing.T) {
+	fmt.Println("Starting transport tests")
 	messages.SetDebugLogLevel()
-	tf := NewTransportFactory()
-	assert.Len(t, tf.TransportList, 0, "Should be 0 transports")
-	t1, t2 := tf.createStubTransportPair()
-	assert.Len(t, tf.TransportList, 2, "Should be 2 transports")
-	assert.Equal(t, t1.Id, t2.StubPair.Id)
-	assert.Equal(t, t2.Id, t1.StubPair.Id)
-	fmt.Println("====\n")
+	id := messages.TransportId(1)
+	maxBuffer := uint64(512)
+	timeUnit := 10
+	timeout := uint32(1000)
+	retransmitLimit := 10
+	createMsg := messages.TransportCreateCM{
+		Id:               id,
+		MaxBuffer:        maxBuffer,
+		TimeUnit:         uint32(timeUnit),
+		TransportTimeout: timeout,
+		RetransmitLimit:  uint32(retransmitLimit),
+	}
+	tr := CreateTransportFromMessage(&createMsg)
+	assert.Equal(t, maxBuffer*2, uint64(cap(tr.pendingOut)))
+	assert.Equal(t, maxBuffer*2, uint64(cap(tr.incomingFromPair)))
+	assert.Equal(t, maxBuffer*2, uint64(cap(tr.incomingFromNode)))
+	assert.Equal(t, retransmitLimit, tr.retransmitLimit)
+	assert.Equal(t, timeout, tr.timeout)
+	assert.Equal(t, time.Duration(timeUnit)*time.Duration(time.Microsecond), tr.timeUnit)
 }
 
-func TestStubAck(t *testing.T) {
+func TestCreatePair(t *testing.T) {
 	messages.SetDebugLogLevel()
-	tf := NewTransportFactory()
-	defer tf.Shutdown()
-	peerA := &messages.Peer{
-		"127.0.0.1",
-		6000,
+
+	id, pairId := messages.TransportId(1), messages.TransportId(2)
+	maxBuffer := uint64(512)
+	timeUnit := 10
+	timeout := uint32(1000)
+	retransmitLimit := 10
+
+	createMsg := messages.TransportCreateCM{
+		Id:               id,
+		PairId:           pairId,
+		MaxBuffer:        maxBuffer,
+		TimeUnit:         uint32(timeUnit),
+		TransportTimeout: timeout,
+		RetransmitLimit:  uint32(retransmitLimit),
 	}
-	peerB := &messages.Peer{
-		"127.0.0.1",
-		6002,
+	createPairMsg := messages.TransportCreateCM{
+		Id:               pairId,
+		PairId:           id,
+		MaxBuffer:        maxBuffer,
+		TimeUnit:         uint32(timeUnit),
+		TransportTimeout: timeout,
+		RetransmitLimit:  uint32(retransmitLimit),
 	}
-	t1, _, err := tf.connectPeers(peerA, peerB)
+
+	tr0 := CreateTransportFromMessage(&createMsg)
+	tr1 := CreateTransportFromMessage(&createPairMsg)
+
+	defer func() {
+		tr0.Shutdown()
+		tr1.Shutdown()
+	}()
+
+	peer0 := &messages.Peer{messages.LOCALHOST, 6000}
+	peer1 := &messages.Peer{messages.LOCALHOST, 6001}
+
+	err := tr0.OpenUDPConn(peer0, peer1)
 	assert.Nil(t, err)
-	tf.Tick()
+	err = tr1.OpenUDPConn(peer1, peer0)
+	assert.Nil(t, err)
+
+	tr0.Tick()
+	tr1.Tick()
+
 	tdt := messages.OutRouteMessage{messages.RandRouteId(), []byte{'t', 'e', 's', 't'}, false}
 	for i := 0; i < 10; i++ {
-		t1.sendTransportDatagramTransfer(&tdt)
+		tr0.sendTransportDatagramTransfer(&tdt)
 	}
 	time.Sleep(10 * time.Second)
-	assert.Equal(t, t1.PacketsSent, t1.PacketsConfirmed)
+	assert.Equal(t, tr0.packetsSent, tr0.packetsConfirmed)
 }

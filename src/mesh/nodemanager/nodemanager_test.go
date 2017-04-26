@@ -42,7 +42,7 @@ func TestRegisterNode(t *testing.T) {
 	defer n.Shutdown()
 
 	assert.Len(t, nm.nodeList, 1)
-	assert.Equal(t, n.GetId(), nm.nodeIdList[0])
+	assert.Equal(t, n.Id(), nm.nodeIdList[0])
 }
 
 func TestConnectNodes(t *testing.T) {
@@ -62,11 +62,11 @@ func TestConnectNodes(t *testing.T) {
 
 	assert.Len(t, nm.nodeList, 2)
 
-	_, err = nm.ConnectNodeToNode(n0.GetId(), n1.GetId())
+	_, err = nm.ConnectNodeToNode(n0.Id(), n1.Id())
 	assert.Nil(t, err)
 
-	assert.True(t, n0.ConnectedTo(n1.GetId()))
-	assert.True(t, n1.ConnectedTo(n0.GetId()))
+	assert.True(t, n0.ConnectedTo(n1.Id()))
+	assert.True(t, n1.ConnectedTo(n0.Id()))
 
 	tf := nm.transportFactoryList[0]
 	t0, t1 := tf.getTransports()
@@ -97,14 +97,14 @@ func TestNetwork(t *testing.T) {
 	for i := 0; i < q-1; i++ {
 		n0 := nodes[i]
 		n1 := nodes[i+1]
-		t0, err := n0.GetTransportToNode(n1.GetId())
+		t0, err := n0.GetTransportToNode(n1.Id())
 		assert.Nil(t, err)
-		t1, err := n1.GetTransportToNode(n0.GetId())
+		t1, err := n1.GetTransportToNode(n0.Id())
 		assert.Nil(t, err)
-		assert.Equal(t, uint32(1), t0.GetPacketsSent())
-		assert.Equal(t, uint32(1), t0.GetPacketsConfirmed())
-		assert.Equal(t, uint32(0), t1.GetPacketsSent())
-		assert.Equal(t, uint32(0), t1.GetPacketsConfirmed())
+		assert.Equal(t, uint32(1), t0.PacketsSent())
+		assert.Equal(t, uint32(1), t0.PacketsConfirmed())
+		assert.Equal(t, uint32(0), t1.PacketsSent())
+		assert.Equal(t, uint32(0), t1.PacketsConfirmed())
 	}
 
 	node.ShutdownAll(nodes)
@@ -129,7 +129,7 @@ func TestBuildRoute(t *testing.T) {
 	for i := 0; i < m; i++ {
 		nodenum := rand.Intn(n)
 		node := allNodes[nodenum]
-		nodes = append(nodes, node.GetId())
+		nodes = append(nodes, node.Id())
 	}
 
 	for i := 0; i < m-1; i++ {
@@ -156,7 +156,7 @@ func TestFindRoute(t *testing.T) {
 
 	nodeList := []cipher.PubKey{}
 	for _, n := range nodes {
-		nodeList = append(nodeList, n.GetId())
+		nodeList = append(nodeList, n.Id())
 	}
 
 	/*
@@ -206,7 +206,7 @@ func TestAddAndConnect2Nodes(t *testing.T) {
 	defer n1.Shutdown()
 
 	assert.Len(t, nm.nodeIdList, 2)
-	assert.True(t, nm.connected(n0.GetId(), n1.GetId()))
+	assert.True(t, nm.connected(n0.Id(), n1.Id()))
 
 	fmt.Println("TestAddAndConnect end")
 }
@@ -225,7 +225,7 @@ func TestRandomNetwork100Nodes(t *testing.T) {
 	nodeIds := []cipher.PubKey{}
 
 	for _, node := range nodes {
-		nodeIds = append(nodeIds, node.GetId())
+		nodeIds = append(nodeIds, node.Id())
 	}
 
 	assert.Len(t, nm.nodeIdList, n)
@@ -250,14 +250,15 @@ func TestSendThroughRandomNetworks(t *testing.T) {
 
 		n0 := nodes[0]
 		n1 := nodes[len(nodes)-1]
-		conn0 := n0.GetConnection()
-		conn1 := n1.GetConnection()
-		err := conn0.Dial(n1.GetId())
+		conn0, err := n0.Dial(n1.Id(), messages.AppId([]byte{}), messages.AppId([]byte{}))
+		connId := conn0.Id()
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, conn0.GetStatus(), CONNECTED)
-		assert.Equal(t, conn1.GetStatus(), CONNECTED)
+		conn1 := n1.GetConnection(connId)
+		assert.Equal(t, conn0.Status(), CONNECTED)
+		assert.Equal(t, conn1.Status(), CONNECTED)
+		fmt.Println(conn0.Id(), conn1.Id())
 		msg := []byte{'t', 'e', 's', 't'}
 		err = conn0.Send(msg)
 		assert.Nil(t, err)

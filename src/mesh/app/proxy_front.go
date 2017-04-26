@@ -17,7 +17,6 @@ func (self *proxyClient) Send(msg []byte) {
 
 	request := &messages.AppMessage{
 		0,
-		false,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
@@ -74,17 +73,20 @@ func (self *proxyClient) Listen() {
 	}
 }
 
-func (self *proxyClient) Consume(msg []byte) {
-	appMsg := messages.AppMessage{}
-	err := messages.Deserialize(msg, &appMsg)
+func (self *proxyClient) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
 	if err != nil {
-		log.Printf("Cannot deserialize application message: %s\n", err.Error())
-		return
+		return err
 	}
+	self.node = node
+	return nil
+}
+
+func (self *proxyClient) Consume(appMsg *messages.AppMessage) {
 
 	proxyMessageS := appMsg.Payload
 	proxyMessage := messages.ProxyMessage{}
-	err = messages.Deserialize(proxyMessageS, &proxyMessage)
+	err := messages.Deserialize(proxyMessageS, &proxyMessage)
 	if err != nil {
 		log.Printf("Cannot deserialize proxy message: %s\n", err.Error())
 		return

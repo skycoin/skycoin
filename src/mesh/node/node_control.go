@@ -87,11 +87,29 @@ func (self *Node) sendRegisterNodeToServer(host string, connect bool) error {
 	return err
 }
 
-func (self *Node) sendConnectToServer(nodeToId cipher.PubKey) error {
-	msg := messages.ConnectCM{self.Id, nodeToId}
+func (self *Node) sendConnectToServer(nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
+	responseChannel := make(chan messages.ConnectionId)
+
+	self.lock.Lock()
+	connSequence := self.connectionResponseSequence
+	self.connectionResponseSequence++
+	self.connectionResponseChannels[connSequence] = responseChannel
+	self.lock.Unlock()
+
+	msg := messages.ConnectCM{connSequence, appIdFrom, appIdTo, self.id, nodeToId}
 	msgS := messages.Serialize(messages.MsgConnectCM, msg)
+
 	err := self.sendMessageToServer(msgS)
-	return err
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	select {
+	case connId := <-responseChannel:
+		return connId, nil
+	case <-time.After(CONTROL_TIMEOUT):
+		return messages.ConnectionId(0), messages.ERR_MSG_SRV_TIMEOUT
+	}
 }
 
 func (self *Node) sendMessageToServer(msg []byte) error {

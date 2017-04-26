@@ -12,26 +12,33 @@ type Client struct {
 	app
 }
 
-func BrandNewClient(host, meshnet string) (*Client, error) {
+func BrandNewClient(appId messages.AppId, host, meshnet string) (*Client, error) {
 
-	client := newClient()
+	client := newClient(appId)
 
-	conn, err := node.ConnectToMeshnet(host, meshnet)
+	node, err := node.CreateAndConnectNode(host, meshnet)
 	if err != nil {
 		return nil, err
 	}
-	client.register(conn)
+
+	err = client.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
 
-func NewClient(conn messages.Connection) *Client {
+func NewClient(appId messages.AppId, node messages.NodeInterface) (*Client, error) {
 
-	client := newClient()
+	client := newClient(appId)
 
-	client.register(conn)
+	err := client.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
-	return client
+	return client, nil
 }
 
 func (self *Client) Send(msg []byte) ([]byte, error) {
@@ -41,7 +48,6 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 
 	request := &messages.AppMessage{
 		sequence,
-		true,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
@@ -55,8 +61,9 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 	}
 }
 
-func newClient() *Client {
+func newClient(appId messages.AppId) *Client {
 	client := &Client{}
+	client.id = appId
 	client.lock = &sync.Mutex{}
 	client.timeout = APP_TIMEOUT
 	client.responseChannels = make(map[uint32]chan messages.AppResponse)

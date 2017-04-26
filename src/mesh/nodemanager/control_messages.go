@@ -10,6 +10,7 @@ import (
 func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 	sequence := cm.Sequence
 	msg := cm.PayloadMessage
+
 	switch messages.GetMessageType(msg) {
 	case messages.MsgConnectCM:
 		m1 := messages.ConnectCM{}
@@ -20,13 +21,16 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 		}
 		from := m1.From
 		to := m1.To
-		err = self.connect(from, to)
+		connSequence := m1.Sequence
+		appIdFrom := m1.AppIdFrom
+		appIdTo := m1.AppIdTo
+		connId, err := self.connect(from, to, appIdFrom, appIdTo)
 		if err != nil {
 			log.Println(err)
-			self.sendFalseCommonAck(sequence, from)
+			self.sendConnectAck(from, sequence, connSequence, false, messages.ConnectionId(0))
 			return
 		}
-		self.sendTrueCommonAck(sequence, from)
+		self.sendConnectAck(from, sequence, connSequence, true, connId)
 
 	case messages.MsgRegisterNodeCM:
 		m1 := messages.RegisterNodeCM{}
@@ -77,6 +81,16 @@ func (self *NodeManager) sendRegisterAck(sequence uint32, nodeId cipher.PubKey) 
 		ConnectionTimeout: config.ConnectionTimeout,
 	}
 	ackS := messages.Serialize(messages.MsgRegisterNodeCMAck, ack)
+	self.msgServer.sendAck(sequence, nodeId, ackS)
+}
+
+func (self *NodeManager) sendConnectAck(nodeId cipher.PubKey, sequence, connSequence uint32, ok bool, connectionId messages.ConnectionId) {
+	ack := messages.ConnectCMAck{
+		Sequence:     connSequence,
+		Ok:           ok,
+		ConnectionId: connectionId,
+	}
+	ackS := messages.Serialize(messages.MsgConnectCMAck, ack)
 	self.msgServer.sendAck(sequence, nodeId, ackS)
 }
 

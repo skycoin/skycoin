@@ -11,30 +11,61 @@ type Server struct {
 	app
 }
 
-func BrandNewServer(host, meshnet string, handle func([]byte) []byte) (*Server, error) {
+func BrandNewServer(appId messages.AppId, host, meshnet string, handle func([]byte) []byte) (*Server, error) {
 
-	server := newServer(handle)
+	server := newServer(appId, handle)
 
-	conn, err := node.ConnectToMeshnet(host, meshnet)
+	node, err := node.CreateAndConnectNode(host, meshnet)
 	if err != nil {
 		return nil, err
 	}
-	server.register(conn)
+
+	err = server.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
 	return server, nil
 }
 
-func NewServer(conn messages.Connection, handle func([]byte) []byte) *Server {
+func NewServer(appId messages.AppId, node messages.NodeInterface, handle func([]byte) []byte) (*Server, error) {
 
-	server := newServer(handle)
+	server := newServer(appId, handle)
 
-	server.register(conn)
+	err := server.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
-	return server
+	return server, nil
 }
 
-func newServer(handle func([]byte) []byte) *Server {
+func (self *Server) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *Server) Consume(appMsg *messages.AppMessage) {
+
+	sequence := appMsg.Sequence
+	go func() {
+		responsePayload := self.handle(appMsg.Payload)
+		response := &messages.AppMessage{
+			sequence,
+			responsePayload,
+		}
+		responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
+		self.send(responseSerialized)
+	}()
+}
+
+func newServer(appId messages.AppId, handle func([]byte) []byte) *Server {
 	server := &Server{}
+	server.id = appId
 	server.lock = &sync.Mutex{}
 	server.timeout = APP_TIMEOUT
 	server.handle = handle

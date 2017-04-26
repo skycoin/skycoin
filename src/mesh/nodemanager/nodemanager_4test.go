@@ -11,6 +11,9 @@ import (
 )
 
 func (self *NodeManager) CreateRandomNetwork(n int) []messages.NodeInterface {
+
+	/* This function creates a network of n nodes randomly connected to each other */
+
 	nodes := []messages.NodeInterface{}
 
 	for i := 0; i < n; i++ {
@@ -24,16 +27,16 @@ func (self *NodeManager) CreateRandomNetwork(n int) []messages.NodeInterface {
 	return nodes
 }
 
-func (self *NodeManager) CreateSequenceOfNodes(n int) (messages.Connection, messages.Connection) {
+func (self *NodeManager) CreateSequenceOfNodes(n int) (messages.NodeInterface, messages.NodeInterface) {
 	/*
-		This function creates a network with sequentially chained n nodes like 0-1-2-3-4-5-6-7-8-9 and returns the addresses of the first and last node
+		This function creates a network with sequentially chained n nodes like 0-1-2-3-4-5-6-7-8-9 and returns the first and last node
 	*/
 
 	nodeList := node.CreateNodeList(n)
 	self.connectAll()
 	self.rebuildRoutes()
 	firstNode, lastNode := nodeList[0], nodeList[len(nodeList)-1]
-	return firstNode.GetConnection(), lastNode.GetConnection()
+	return firstNode, lastNode
 }
 
 func (self *NodeManager) CreateSequenceOfNodesAndBuildRoutes(n int) (cipher.PubKey, cipher.PubKey, messages.RouteId, messages.RouteId) {
@@ -54,7 +57,7 @@ func (self *NodeManager) CreateSequenceOfNodesAndBuildRoutes(n int) (cipher.PubK
 	return clientNode, serverNode, route, backRoute
 }
 
-func (self *NodeManager) CreateThreeRoutes() (messages.Connection, messages.Connection) {
+func (self *NodeManager) CreateThreeRoutes() (messages.NodeInterface, messages.NodeInterface) {
 	nodes := node.CreateNodeList(10)
 	nodeList := self.nodeIdList
 	/*
@@ -79,10 +82,8 @@ func (self *NodeManager) CreateThreeRoutes() (messages.Connection, messages.Conn
 	self.rebuildRoutes()
 
 	clientNode, serverNode := nodes[0], nodes[9]
-	return clientNode.GetConnection(), serverNode.GetConnection()
+	return clientNode, serverNode
 }
-
-/* This function creates a network of n nodes randomly connected to each other */
 
 func (self *NodeManager) connectAll() error {
 

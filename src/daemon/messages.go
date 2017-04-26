@@ -156,7 +156,7 @@ func (self *GetPeersMessage) Process(d *Daemon) {
 		return
 	}
 
-	logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
+	// logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
 
 	m := NewGivePeersMessage(peers)
 	d.Pool.Pool.SendMessage(self.addr, m)

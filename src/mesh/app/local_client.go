@@ -48,7 +48,6 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 
 	request := &messages.AppMessage{
 		sequence,
-		true,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)

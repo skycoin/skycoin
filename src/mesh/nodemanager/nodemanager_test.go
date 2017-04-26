@@ -14,7 +14,6 @@ import (
 )
 
 func TestMessagingServer(t *testing.T) {
-	return
 	messages.SetDebugLogLevel()
 
 	nm := newNodeManager()
@@ -32,7 +31,6 @@ func TestMessagingServer(t *testing.T) {
 }
 
 func TestRegisterNode(t *testing.T) {
-	return
 
 	nm := newNodeManager()
 	defer nm.Shutdown()
@@ -48,7 +46,6 @@ func TestRegisterNode(t *testing.T) {
 }
 
 func TestConnectNodes(t *testing.T) {
-	return
 	fmt.Println("")
 	messages.SetDebugLogLevel()
 
@@ -78,7 +75,6 @@ func TestConnectNodes(t *testing.T) {
 }
 
 func TestNetwork(t *testing.T) {
-	return
 	fmt.Println("TestNetwork")
 	messages.SetDebugLogLevel()
 
@@ -117,7 +113,6 @@ func TestNetwork(t *testing.T) {
 }
 
 func TestBuildRoute(t *testing.T) {
-	return
 	fmt.Println("TestBuildRoute")
 	messages.SetInfoLogLevel()
 
@@ -151,7 +146,6 @@ func TestBuildRoute(t *testing.T) {
 }
 
 func TestFindRoute(t *testing.T) {
-	return
 	fmt.Println("TestFindRoute")
 	messages.SetDebugLogLevel()
 
@@ -197,7 +191,6 @@ func TestFindRoute(t *testing.T) {
 }
 
 func TestAddAndConnect2Nodes(t *testing.T) {
-	return
 	fmt.Println("TestAddAndConnect")
 	messages.SetDebugLogLevel()
 
@@ -219,7 +212,6 @@ func TestAddAndConnect2Nodes(t *testing.T) {
 }
 
 func TestRandomNetwork100Nodes(t *testing.T) {
-	return
 	fmt.Println("TestRandomNetwork100Nodes")
 	messages.SetInfoLogLevel()
 

@@ -140,9 +140,6 @@ func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessa
 	var m1b messages.TransportDatagramTransfer
 	m1b.Datagram = msg.Datagram
 	m1b.RouteId = msg.RouteId
-	//	m1b.ResponseRequired = msg.ResponseRequired
-
-	//	self.pendingOut <- &Job{&m1b}
 
 	c := cap(self.pendingOut)
 	for {

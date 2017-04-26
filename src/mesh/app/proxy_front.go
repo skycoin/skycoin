@@ -17,7 +17,6 @@ func (self *proxyClient) Send(msg []byte) {
 
 	request := &messages.AppMessage{
 		0,
-		false,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)

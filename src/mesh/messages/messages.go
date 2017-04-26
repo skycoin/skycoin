@@ -86,7 +86,6 @@ type TransportDatagramTransfer struct {
 	RouteId  RouteId
 	Sequence uint32 //sequential sequence number of ACK
 	Datagram []byte
-	//	ResponseRequired bool
 }
 
 type TransportDatagramACK struct {
@@ -125,10 +124,8 @@ type ConnectionAck struct {
 }
 
 type AppMessage struct {
-	//AppTo            AppId
-	Sequence         uint32
-	ResponseRequired bool
-	Payload          []byte
+	Sequence uint32
+	Payload  []byte
 }
 
 type AppResponse struct {

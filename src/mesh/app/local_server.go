@@ -56,7 +56,6 @@ func (self *Server) Consume(appMsg *messages.AppMessage) {
 		responsePayload := self.handle(appMsg.Payload)
 		response := &messages.AppMessage{
 			sequence,
-			false,
 			responsePayload,
 		}
 		responseSerialized := messages.Serialize(messages.MsgAppMessage, response)

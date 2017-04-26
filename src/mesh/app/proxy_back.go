@@ -87,7 +87,6 @@ func getPacketFromConn(conn io.Reader) ([]byte, error) {
 func (self *proxyServer) Send(data []byte) {
 	message := &messages.AppMessage{
 		0,
-		false,
 		data,
 	}
 	messageS := messages.Serialize(messages.MsgAppMessage, message)

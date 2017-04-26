@@ -1,11 +1,11 @@
 package visor
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
-	"encoding/json"
-	"errors"
 
 	"strconv"
 
@@ -28,7 +28,7 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
 		Unspents:    uint64(len(v.Blockchain.GetUnspent().Pool)),
-		Unconfirmed: uint64(len(v.Unconfirmed.Txns)),
+		Unconfirmed: uint64(v.Unconfirmed.Txns.len()),
 	}
 }
 
@@ -116,6 +116,7 @@ type ReadableTransactionInput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"owner"`
 }
+
 //convert balance to string
 //each 1,000,000 units is 1 coin
 //skyoin has up to 6 decimal places but no more
@@ -237,7 +238,7 @@ type ReadableAddressTransaction struct {
 	Timestamp uint64 `json:"timestamp,omitempty"`
 
 	Sigs []string                    `json:"sigs"`
-	In   []ReadableTransactionInput   `json:"inputs"`
+	In   []ReadableTransactionInput  `json:"inputs"`
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
@@ -246,14 +247,16 @@ type ReadableUnconfirmedTxn struct {
 	Received  time.Time           `json:"received"`
 	Checked   time.Time           `json:"checked"`
 	Announced time.Time           `json:"announced"`
+	IsValid   bool                `json:"is_valid"`
 }
 
 func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedTxn {
 	return ReadableUnconfirmedTxn{
 		Txn:       NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn}),
-		Received:  unconfirmed.Received,
-		Checked:   unconfirmed.Checked,
-		Announced: unconfirmed.Announced,
+		Received:  nanoToTime(unconfirmed.Received),
+		Checked:   nanoToTime(unconfirmed.Checked),
+		Announced: nanoToTime(unconfirmed.Announced),
+		IsValid:   unconfirmed.IsValid == 1,
 	}
 }
 

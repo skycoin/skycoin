@@ -3,6 +3,7 @@
 package historydb
 
 import (
+	"errors"
 	"path/filepath"
 
 	"github.com/boltdb/bolt"
@@ -85,6 +86,10 @@ func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 
 // ProcessBlock will index the transaction, outputs,etc.
 func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
+	if b == nil {
+		return errors.New("process nil block")
+	}
+
 	// index the transactions
 	for _, t := range b.Body.Transactions {
 		tx := Transaction{

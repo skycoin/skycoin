@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util"
 )
 
 const (
@@ -108,27 +110,28 @@ func randSHA256() cipher.SHA256 {
 	return cipher.SumSHA256(b)
 }
 
-// func createUnconfirmedTxn() UnconfirmedTxn {
-// 	ut := UnconfirmedTxn{}
-// 	ut.Txn = coin.Transaction{}
-// 	ut.Txn.Head.Hash = randSHA256()
-// 	ut.Received = util.Now()
-// 	ut.Checked = ut.Received
-// 	ut.Announced = util.ZeroTime()
-// 	return ut
-// }
+func createUnconfirmedTxn() UnconfirmedTxn {
+	ut := UnconfirmedTxn{}
+	ut.Txn = coin.Transaction{}
+	ut.Txn.InnerHash = randSHA256()
+	ut.Received = util.Now().UnixNano()
+	ut.Checked = ut.Received
+	ut.Announced = util.ZeroTime().UnixNano()
+	return ut
+}
 
-// func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
-// 	ut := createUnconfirmedTxn()
-// 	v.Unconfirmed.Txns[ut.Hash()] = ut
-// 	return ut
-// }
+func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
+	ut := createUnconfirmedTxn()
+	ut.Hash()
+	v.Unconfirmed.Txns.put(&ut)
+	return ut
+}
 
-// func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
-// 	ut := createUnconfirmedTxn()
-// 	utp.Txns[ut.Hash()] = ut
-// 	return ut
-// }
+func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
+	ut := createUnconfirmedTxn()
+	utp.Txns.put(&ut)
+	return ut
+}
 
 // func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
 // 	tx, err := v.Spend(v.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, addr)

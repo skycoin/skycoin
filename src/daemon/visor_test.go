@@ -1,5 +1,12 @@
 package daemon
 
+import (
+	"testing"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/stretchr/testify/assert"
+)
+
 /*
 import (
 	"crypto/rand"
@@ -16,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/assert"
 )
 */
@@ -1412,3 +1420,99 @@ func TestBlockchainLengths(t *testing.T) {
 }
 
 */
+
+func TestSplitHashes(t *testing.T) {
+	hashes := make([]cipher.SHA256, 10)
+	for i := 0; i < 10; i++ {
+		hashes[i] = cipher.SumSHA256(cipher.RandByte(512))
+	}
+
+	testCasts := []struct {
+		name  string
+		init  []cipher.SHA256
+		n     int
+		array [][]cipher.SHA256
+	}{
+		{
+			"has one odd",
+			hashes[:],
+			3,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+					hashes[1],
+					hashes[2],
+				},
+				[]cipher.SHA256{
+					hashes[3],
+					hashes[4],
+					hashes[5],
+				},
+				[]cipher.SHA256{
+					hashes[6],
+					hashes[7],
+					hashes[8],
+				},
+				[]cipher.SHA256{
+					hashes[9],
+				},
+			},
+		},
+		{
+			"only one value",
+			hashes[:1],
+			1,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+				},
+			},
+		},
+		{
+			"empty value",
+			hashes[:0],
+			0,
+			[][]cipher.SHA256{},
+		},
+		{
+			"with 3 value",
+			hashes[:3],
+			3,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+					hashes[1],
+					hashes[2],
+				},
+			},
+		},
+		{
+			"with 8 value",
+			hashes[:8],
+			3,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+					hashes[1],
+					hashes[2],
+				},
+				[]cipher.SHA256{
+					hashes[3],
+					hashes[4],
+					hashes[5],
+				},
+				[]cipher.SHA256{
+					hashes[6],
+					hashes[7],
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCasts {
+		t.Run(tc.name, func(t *testing.T) {
+			rlt := divideHashes(tc.init, tc.n)
+			assert.Equal(t, tc.array, rlt)
+		})
+	}
+}

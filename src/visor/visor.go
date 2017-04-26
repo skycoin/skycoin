@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
@@ -39,6 +40,8 @@ type VisorConfig struct {
 	UnconfirmedMaxAge time.Duration
 	// How often to refresh the unconfirmed pool
 	UnconfirmedRefreshRate time.Duration
+	// How often to rebroadcast unconfirmed transactions
+	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
 	// Divisor of coin hours required as fee. E.g. with hours=100 and factor=4,
@@ -63,6 +66,7 @@ type VisorConfig struct {
 	//WalletConstructor wallet.WalletConstructor
 	// Default type of wallet to create
 	//WalletTypeDefault wallet.WalletType
+	DB *bolt.DB
 }
 
 // NewVisorConfig, Note, put cap on block size, not on transactions/block
@@ -86,8 +90,10 @@ func NewVisorConfig() VisorConfig {
 
 		UnconfirmedCheckInterval: time.Hour * 2,
 		UnconfirmedMaxAge:        time.Hour * 48,
-		UnconfirmedRefreshRate:   time.Minute * 30,
-		MaxBlockSize:             1024 * 32,
+		UnconfirmedRefreshRate:   time.Minute,
+		// UnconfirmedRefreshRate:   time.Minute * 30,
+		UnconfirmedResendPeriod: time.Minute,
+		MaxBlockSize:            1024 * 32,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -124,17 +130,12 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 	}
 
-	db, err := historydb.NewDB()
+	history, err := historydb.New(c.DB)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	history, err := historydb.New(db)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	tree := blockdb.NewBlockTree()
+	tree := blockdb.NewBlockTree(c.DB)
 	bc := NewBlockchain(tree, walker)
 	bp := NewBlockchainParser(history, bc)
 
@@ -145,8 +146,8 @@ func NewVisor(c VisorConfig) *Visor {
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
-		blockSigs:   blockdb.NewBlockSigs(),
-		Unconfirmed: NewUnconfirmedTxnPool(),
+		blockSigs:   blockdb.NewBlockSigs(c.DB),
+		Unconfirmed: NewUnconfirmedTxnPool(c.DB),
 		history:     history,
 		bcParser:    bp,
 	}
@@ -174,19 +175,6 @@ func NewVisor(c VisorConfig) *Visor {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
 
-	// db, err := historydb.NewDB()
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-
-	// v.history, err = historydb.New(db)
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-
-	// init the blockchain parser instance
-	// v.bcParser = NewBlockchainParser(v.history, v.Blockchain)
-	// v.StartParser()
 	return v
 }
 
@@ -195,8 +183,8 @@ func NewVisor(c VisorConfig) *Visor {
 func NewMinimalVisor(c VisorConfig) *Visor {
 	return &Visor{
 		Config:      c,
-		blockSigs:   blockdb.NewBlockSigs(),
-		Unconfirmed: NewUnconfirmedTxnPool(),
+		blockSigs:   blockdb.NewBlockSigs(c.DB),
+		Unconfirmed: NewUnconfirmedTxnPool(c.DB),
 		//Wallets:     nil,
 	}
 }
@@ -211,10 +199,10 @@ func (vs *Visor) GenesisPreconditions() {
 	}
 }
 
-// RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
-func (vs *Visor) RefreshUnconfirmed() {
-	vs.Unconfirmed.Refresh(vs.Blockchain,
-		vs.Config.UnconfirmedCheckInterval, vs.Config.UnconfirmedMaxAge)
+// RefreshUnconfirmed checks unconfirmed txns against the blockchain and returns
+// all transaction that turn to valid.
+func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
+	return vs.Unconfirmed.Refresh(vs.Blockchain)
 }
 
 // CreateBlock creates a SignedBlock from pending transactions
@@ -223,7 +211,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsMaster {
 		log.Panic("Only master chain can create blocks")
 	}
-	if len(vs.Unconfirmed.Txns) == 0 {
+	if vs.Unconfirmed.Txns.len() == 0 {
 		return sb, errors.New("No transactions")
 	}
 	txns := vs.Unconfirmed.RawTxns()
@@ -459,9 +447,9 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 	}
 
 	// Look in the unconfirmed pool
-	uxs = vs.Unconfirmed.Unspent.AllForAddress(a)
+	uxs = vs.Unconfirmed.Unspent.getAllForAddress(a)
 	for _, ux := range uxs {
-		tx, ok := vs.Unconfirmed.Txns[ux.Body.SrcTransaction]
+		tx, ok := vs.Unconfirmed.Txns.get(ux.Body.SrcTransaction)
 		if !ok {
 			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
 			continue
@@ -469,7 +457,7 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 		txns = append(txns, Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(tx.Received.Unix()),
+			Time:   uint64(nanoToTime(tx.Received).Unix()),
 		})
 	}
 
@@ -479,12 +467,12 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 // GetTransaction returns a Transaction by hash.
 func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	// Look in the unconfirmed pool
-	tx, ok := vs.Unconfirmed.Txns[txHash]
+	tx, ok := vs.Unconfirmed.Txns.get(txHash)
 	if ok {
 		return &Transaction{
 			Txn:    tx.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(tx.Received.Unix()),
+			Time:   uint64(nanoToTime(tx.Received).Unix()),
 		}, nil
 	}
 
@@ -528,50 +516,34 @@ func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxns(addresses []cipher.Address) []UnconfirmedTxn {
+func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) []UnconfirmedTxn {
+	return vs.Unconfirmed.GetTxns(filter)
+}
 
-	ret := []UnconfirmedTxn{}
-
-	for _, unconfirmedTxn := range vs.Unconfirmed.Txns {
-		isRelatedTransaction := false
-
-		for _, out := range unconfirmedTxn.Txn.Out {
+// ToAddresses represents a filter that check if tx has output to the given addresses
+func ToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
+	return func(tx UnconfirmedTxn) (isRelated bool) {
+		for _, out := range tx.Txn.Out {
 			for _, address := range addresses {
 				if out.Address == address {
-					isRelatedTransaction = true
-				}
-				if isRelatedTransaction {
-					break
+					isRelated = true
+					return
 				}
 			}
 		}
-
-		if isRelatedTransaction == true {
-			ret = append(ret, unconfirmedTxn)
-		}
+		return
 	}
-
-	return ret
 }
 
+// GetAllUnconfirmedTxns returns all unconfirmed transactions
 func (vs *Visor) GetAllUnconfirmedTxns() []UnconfirmedTxn {
-	txns := make([]UnconfirmedTxn, 0, len(vs.Unconfirmed.Txns))
-	for _, tx := range vs.Unconfirmed.Txns {
-		txns = append(txns, tx)
-
-	}
-	return txns
+	return vs.Unconfirmed.GetTxns(All)
 }
 
-// StartParser start the blockchain parser.
-// func (vs *Visor) StartParser() {
-// 	vs.bcParser.Start()
-// }
-
-// StopParser stop the blockchain parser.
-// func (vs *Visor) StopParser() {
-// 	vs.bcParser.Stop()
-// }
+// GetAllValidUnconfirmedTxHashes returns all valid unconfirmed transaction hashes
+func (vs *Visor) GetAllValidUnconfirmedTxHashes() []cipher.SHA256 {
+	return vs.Unconfirmed.GetTxHashes(IsValid)
+}
 
 // GetBlockByHash get block of specific hash header, return nil on not found.
 func (vs *Visor) GetBlockByHash(hash cipher.SHA256) *coin.Block {

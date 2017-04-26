@@ -156,7 +156,7 @@ func (self *GetPeersMessage) Process(d *Daemon) {
 		return
 	}
 
-	logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
+	// logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
 
 	m := NewGivePeersMessage(peers)
 	d.Pool.Pool.SendMessage(self.addr, m)
@@ -326,6 +326,9 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	} else {
 		logger.Warning("%v", err)
 	}
+
+	// Anounce unconfirmed know txns
+	d.Visor.AnnounceAllTxns(d.Pool)
 }
 
 // Sent to keep a connection alive. A PongMessage is sent in reply.

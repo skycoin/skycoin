@@ -310,8 +310,10 @@ func (dm *Daemon) Start(quit chan int) {
 	}
 
 	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
+	// resendUnconfirmedTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedResendPeriod)
 	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
+	// txnsAnnounceTicker := time.Tick(dm.Visor.Config.TxnsAnnounceRate)
 
 	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
@@ -420,11 +422,18 @@ main:
 				}
 			}
 		case <-unconfirmedRefreshTicker:
-			dm.Visor.RefreshUnconfirmed()
+			// get the transactions that turn to valid
+			validTxns := dm.Visor.RefreshUnconfirmed()
+			// announce this transactions
+			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
+		// case <-resendUnconfirmedTicker:
+		// dm.Visor.ResendUnconfirmedTxns(dm.Pool)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:
 			dm.Visor.AnnounceBlocks(dm.Pool)
+		// case <-txnsAnnounceTicker:
+		// dm.Visor.AnnounceTxns(dm.Pool)
 		case f := <-dm.memChannel:
 			f()
 		case <-quit:
@@ -617,7 +626,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	if e.Solicited {
 		logger.Info("Connected to %s as we requested", a)
 	} else {
-		logger.Info("Received unsolicited connection to %s", a)
+		logger.Info("Received unsolicited connection from %s", a)
 	}
 
 	dm.pendingConnections.Remove(a)
@@ -648,7 +657,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	dm.expectingIntroductions.Add(a, util.Now())
-	logger.Debug("Sending introduction message to %s", a)
+	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version,
 		dm.Pool.Pool.Config.Port)
 	dm.Pool.Pool.SendMessage(a, m)

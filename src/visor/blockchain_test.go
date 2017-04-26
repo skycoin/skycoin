@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,12 +25,6 @@ var _incTime uint64 = 3600 * 1000
 var _genCoins uint64 = 1000e6
 var _genCoinHours uint64 = 1000 * 1000
 
-/*
-
-
-
- */
-
 func tNow() uint64 {
 	return uint64(time.Now().UTC().Unix())
 }
@@ -45,7 +39,7 @@ func _makeFeeCalc(fee uint64) coin.FeeCalculator {
 	}
 }
 
-/* Helpers */
+// /* Helpers */
 
 type FakeTree struct {
 	blocks []*coin.Block
@@ -134,7 +128,7 @@ func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
 	ux := coin.UxOut{}
 	hrs := uint64(100)
 	for _, u := range bc.GetUnspent().Array() {
-		if ux.CoinHours(bc.Time()) > hrs {
+		if u.CoinHours(bc.Time()) > hrs {
 			ux = u
 			break
 		}
@@ -146,7 +140,7 @@ func makeTransactionForChainWithFee(t *testing.T, bc *Blockchain,
 }
 
 func makeTransactionForChain(t *testing.T, bc *Blockchain) coin.Transaction {
-	return makeTransactionForChainWithFee(t, bc, 100)
+	return makeTransactionForChainWithFee(t, bc, 500000001)
 }
 
 func addTransactionToBlock(t *testing.T, b *coin.Block) coin.Transaction {

@@ -197,11 +197,12 @@ func TestCreateSpends(t *testing.T) {
 
 func TestCreateSpendingTransaction(t *testing.T) {
 	// Setup
-
+	db, close := prepareDB(t)
+	defer close()
 	w := wallet.NewWallet("fortest.wlt")
 
 	w.GenerateAddresses(4)
-	uncf := NewUnconfirmedTxnPool()
+	uncf := NewUnconfirmedTxnPool(db)
 	now := tNow()
 	a := makeAddress()
 
@@ -271,7 +272,8 @@ func TestCreateSpendingTransaction(t *testing.T) {
 	tx, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, a)
 	assert.Nil(t, err)
 	// Add it to the unconfirmed pool (bypass InjectTxn to avoid blockchain)
-	uncf.Txns[tx.Hash()] = uncf.createUnconfirmedTxn(&unsp, tx)
+	ux := uncf.createUnconfirmedTxn(&unsp, tx)
+	uncf.Txns.put(&ux)
 	// Make a spend that must not reuse previous addresses
 	_, err = CreateSpendingTransaction(w, uncf, &unsp, now, amt, a)
 	assertError(t, err, "Not enough coins")

@@ -17,6 +17,9 @@ var (
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
 	DebugLevel2 = true
+
+	// ErrUnspentNotExist represents the error of unspent output in a tx does not exist
+	ErrUnspentNotExist = errors.New("Unspent output does not exist")
 )
 
 //Warning: 10e6 is 10 million, 1e6 is 1 million
@@ -537,7 +540,7 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 	for i := range t.In {
 		in, ok := bc.unspent.Get(t.In[i])
 		if !ok {
-			return 0, errors.New("Unspent output does not exist")
+			return 0, ErrUnspentNotExist
 		}
 		inHours += in.CoinHours(headTime)
 	}

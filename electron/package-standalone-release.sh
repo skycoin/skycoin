@@ -49,8 +49,9 @@ function copy_if_exists_with_builder {
         cp "$BIN" "$DESTDIR"
 
         # Copy static resources to electron app
-        echo "Copying $GUI_DIST_DIR to $DESTDIR"
-        cp -R "$GUI_DIST_DIR" "$DESTDIR"
+        echo "Copying $GUI_DIST_DIR to ${DESTDIR}/src/gui/static"
+        mkdir -p "${DESTDIR}/src/gui/static"
+        cp -R "$GUI_DIST_DIR" "${DESTDIR}/src/gui/static"
 
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")
@@ -81,8 +82,10 @@ function copy_if_exists {
         cp "$BIN" "$DESTBIN"
 
         # Copy static resources to electron app
-        echo "Copying $GUI_DIST_DIR to $DESTDIR"
-        cp -R "$GUI_DIST_DIR" "$DESTDIR"
+        echo "Copying $GUI_DIST_DIR to ${DESTDIR}/src/gui/static"
+
+        mkdir -p "${DESTDIR}/src/gui/static"
+        cp -R "$GUI_DIST_DIR" "${DESTDIR}/src/gui/static"
 
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")

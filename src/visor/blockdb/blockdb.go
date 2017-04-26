@@ -5,49 +5,32 @@ package blockdb
 //https://github.com/asdine/storm
 
 import (
-	"log"
 	"path/filepath"
 
 	"time"
+
+	"fmt"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/util"
 )
 
-var db *bolt.DB
+// var db *bolt.DB
 
-// Start the blockdb.
-func Start() {
-	// Open the my.db data file in your current directory.
-	// It will be created if it doesn't exist.
-	ec := make(chan error)
-	go func() {
-		dbFile := filepath.Join(util.DataDir, "block.db")
-		var err error
-		db, err = bolt.Open(dbFile, 0600, nil)
-		if err != nil {
-			ec <- err
-			return
-		}
-		ec <- nil
-	}()
-
-	select {
-	case <-time.After(500 * time.Millisecond):
-		log.Panic("open boltdb time out")
-		return
-	case err := <-ec:
-		if err != nil {
-			log.Panic(err)
-		}
+// Open the blockdb.
+func Open() (*bolt.DB, func()) {
+	dbFile := filepath.Join(util.DataDir, "data.db")
+	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
+		Timeout: 500 * time.Millisecond,
+	})
+	if err != nil {
+		panic(fmt.Errorf("Open boltdb failed, err:%v", err))
+	}
+	return db, func() {
+		db.Close()
 	}
 }
 
-// Stop the blockdb.
-func Stop() {
-	db.Close()
-}
-
-func UpdateTx(fn func(tx *bolt.Tx) error) error {
-	return db.Update(fn)
-}
+// func UpdateTx(fn func(tx *bolt.Tx) error) error {
+// 	return db.Update(fn)
+// }

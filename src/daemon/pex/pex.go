@@ -154,6 +154,7 @@ type Peerlist struct {
 func (pl *Peerlist) strand(f func(), arg ...interface{}) {
 	pl.lock.Lock()
 	defer pl.lock.Unlock()
+	// logger.Critical("%v", arg)
 	f()
 }
 
@@ -317,7 +318,7 @@ func (self *Peerlist) random(count int, includePrivate bool) []*Peer {
 func (self *Peerlist) getExchgAddr(private bool) []string {
 	keys := []string{}
 	for a, p := range self.peers {
-		if p.HasIncomePort && p.Private {
+		if p.HasIncomePort && p.Private == private {
 			keys = append(keys, a)
 		}
 	}

@@ -70,7 +70,7 @@ func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 }
 
 func (self RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
-	ret := v.GetUnconfirmedTxns(addresses)
+	ret := v.GetUnconfirmedTxns(ToAddresses(addresses))
 	rut := make([]ReadableUnconfirmedTxn, len(ret))
 	for i := range ret {
 		rut[i] = NewReadableUnconfirmedTxn(&ret[i])

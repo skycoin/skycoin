@@ -17,9 +17,10 @@ func TestCreateServer(t *testing.T) {
 		return in
 	}
 
-	server, err := BrandNewServer(messages.LOCALHOST+":5000", messages.LOCALHOST+":5999", handle)
-	defer server.Shutdown()
+	server, err := BrandNewServer(messages.MakeAppId("server1"), messages.LOCALHOST+":5000", messages.LOCALHOST+":5999", handle)
 	assert.Nil(t, err)
+	assert.Equal(t, messages.AppId([]byte("server1")), server.id)
+	defer server.Shutdown()
 }
 
 func TestCreateClient(t *testing.T) {
@@ -27,9 +28,13 @@ func TestCreateClient(t *testing.T) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	client, err := BrandNewClient(messages.LOCALHOST+":5000", messages.LOCALHOST+":5999")
-	defer client.Shutdown()
+	client, err := BrandNewClient(messages.MakeAppId("client1"), messages.LOCALHOST+":5000", messages.LOCALHOST+":5999")
+	if err != nil {
+		panic(err)
+	}
 	assert.Nil(t, err)
+	assert.Equal(t, messages.AppId([]byte("client1")), client.id)
+	defer client.Shutdown()
 }
 
 func TestSendWithFindRoute(t *testing.T) {
@@ -38,17 +43,19 @@ func TestSendWithFindRoute(t *testing.T) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientConn, serverConn := meshnet.CreateThreeRoutes()
+	clientNode, serverNode := meshnet.CreateThreeRoutes()
 
-	server := NewServer(serverConn, func(in []byte) []byte {
+	server, err := NewServer(messages.MakeAppId("server19"), serverNode, func(in []byte) []byte {
 		return append(in, []byte("!!!")...)
 	})
+	assert.Nil(t, err)
 	defer server.Shutdown()
 
-	client := NewClient(clientConn)
+	client, err := NewClient(messages.MakeAppId("client19"), clientNode)
+	assert.Nil(t, err)
 	defer client.Shutdown()
 
-	err := client.Dial(serverConn.Address())
+	err = client.Connect(server.Id(), serverNode.Id())
 	assert.Nil(t, err)
 
 	response, err := client.Send([]byte("test"))
@@ -63,9 +70,9 @@ func TestHandle(t *testing.T) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientConn, serverConn := meshnet.CreateThreeRoutes()
+	clientNode, serverNode := meshnet.CreateThreeRoutes()
 
-	server := NewServer(serverConn, func(in []byte) []byte {
+	server, err := NewServer(messages.MakeAppId("increasingServer"), serverNode, func(in []byte) []byte {
 		size := len(in)
 		result := make([]byte, size)
 		for i := 0; i < size; i++ {
@@ -73,12 +80,14 @@ func TestHandle(t *testing.T) {
 		}
 		return result
 	})
+	assert.Nil(t, err)
 	defer server.Shutdown()
 
-	client := NewClient(clientConn)
+	client, err := NewClient(messages.MakeAppId("Client of increasing server"), clientNode)
+	assert.Nil(t, err)
 	defer client.Shutdown()
 
-	err := client.Dial(serverConn.Address())
+	err = client.Connect(server.Id(), serverNode.Id())
 	assert.Nil(t, err)
 
 	size := 100000
@@ -106,19 +115,21 @@ func TestSocks(t *testing.T) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientConn, serverConn := meshnet.CreateSequenceOfNodes(20)
+	clientNode, serverNode := meshnet.CreateSequenceOfNodes(20)
 
-	client := NewSocksClient(clientConn, "0.0.0.0:8000")
+	client, err := NewSocksClient(messages.MakeAppId("socks client 0"), clientNode, "0.0.0.0:8000")
+	assert.Nil(t, err)
 	defer client.Shutdown()
 
 	assert.Equal(t, client.ProxyAddress, "0.0.0.0:8000")
 
-	server := NewSocksServer(serverConn, "127.0.0.1:8001")
+	server, err := NewSocksServer(messages.MakeAppId("socks server 0"), serverNode, "127.0.0.1:8001")
+	assert.Nil(t, err)
 	defer server.Shutdown()
 
 	assert.Equal(t, server.ProxyAddress, "127.0.0.1:8001")
 
-	err := client.Dial(serverConn.Address())
+	err = client.Connect(server.Id(), serverNode.Id())
 	assert.Nil(t, err)
 }
 
@@ -128,16 +139,17 @@ func TestVPN(t *testing.T) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientConn, serverConn := meshnet.CreateSequenceOfNodes(20)
+	clientNode, serverNode := meshnet.CreateSequenceOfNodes(20)
 
-	client, err := NewVPNClient(clientConn, "0.0.0.0:4321")
+	client, err := NewVPNClient(messages.MakeAppId("vpn_client"), clientNode, "0.0.0.0:4321")
 	assert.Nil(t, err)
 	defer client.Shutdown()
 	assert.Equal(t, client.ProxyAddress, "0.0.0.0:4321")
 
-	server := NewVPNServer(serverConn)
+	server, err := NewVPNServer(messages.MakeAppId("vpn_server"), serverNode)
+	assert.Nil(t, err)
 	defer server.Shutdown()
 
-	err = client.Dial(serverConn.Address())
+	err = client.Connect(server.Id(), serverNode.Id())
 	assert.Nil(t, err)
 }

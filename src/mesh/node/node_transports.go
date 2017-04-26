@@ -23,6 +23,6 @@ func (self *Node) setTransportFromMessage(msg *messages.TransportCreateCM) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	self.transports[tr.Id] = tr
+	self.transports[tr.Id()] = tr
 	self.transportsByNodes[msg.PairedNodeId] = tr
 }

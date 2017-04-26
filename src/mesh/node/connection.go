@@ -5,12 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
 type Connection struct {
-	address          cipher.PubKey
 	id               messages.ConnectionId
 	status           uint8
 	nodeAttached     *Node
@@ -32,14 +30,15 @@ type Connection struct {
 const (
 	DISCONNECTED uint8 = 0
 	CONNECTED    uint8 = 1
+	CONNECTING   uint8 = 2
 )
 
-func (node *Node) newConnection() *Connection {
-	id := messages.RandConnectionId()
+func (node *Node) newConnection(connId messages.ConnectionId, routeId messages.RouteId, appId messages.AppId) (*Connection, error) {
 
 	conn := &Connection{
-		id:               id,
-		status:           DISCONNECTED,
+		id:               connId,
+		routeId:          routeId,
+		status:           CONNECTING,
 		nodeAttached:     node,
 		lock:             &sync.Mutex{},
 		ackChannels:      make(map[uint32]chan bool),
@@ -48,19 +47,26 @@ func (node *Node) newConnection() *Connection {
 		incomingCounter:  make(map[uint32]uint32),
 	}
 
+	node.lock.Lock()
+	appIdStr := string(appId)
+	if appIdStr != "" {
+		app, ok := node.apps[appIdStr]
+		if ok {
+			conn.consumer = app
+			app.AssignConnection(conn)
+		} else {
+			return nil, messages.ERR_APP_DOESNT_EXIST
+		}
+	}
+	node.connections[connId] = conn
+	node.lock.Unlock()
+
 	conn.packetSize = int(node.maxPacketSize / 2)
 
 	go conn.receiveErrors()
-	node.connection = conn
-	return conn
-}
-
-func (self *Connection) Address() cipher.PubKey {
-	return self.address
-}
-
-func (self *Connection) Shutdown() {
-	self.nodeAttached.Shutdown()
+	conn.sendInterval = node.sendInterval
+	conn.timeout = node.connectionTimeout
+	return conn, nil
 }
 
 func (self *Connection) Send(msg []byte) error {
@@ -84,50 +90,16 @@ func (self *Connection) Send(msg []byte) error {
 	}
 }
 
-func (self *Connection) Dial(address cipher.PubKey) error {
-	if self.nodeAttached != nil {
-		return self.nodeAttached.sendConnectToServer(address)
-	} else {
-		return nil
-	}
+func (self *Connection) Id() messages.ConnectionId {
+	return self.id
 }
 
-func (self *Connection) AssignConsumer(consumer messages.Consumer) {
-	self.consumer = consumer
-}
-
-func (self *Connection) GetStatus() uint8 {
+func (self *Connection) Status() uint8 {
 	return self.status
 }
 
 func (self *Connection) Close() {
 	self.status = DISCONNECTED
-}
-
-func (self *Connection) use(msg []byte) {
-
-	switch messages.GetMessageType(msg) {
-
-	case messages.MsgConnectionMessage:
-		connMsg := messages.ConnectionMessage{}
-		err := messages.Deserialize(msg, &connMsg)
-		if err != nil {
-			fmt.Println("wrong connection message", msg)
-			return
-		}
-
-		go self.handleConnectionMessage(&connMsg)
-
-	case messages.MsgConnectionAck:
-		connAck := messages.ConnectionAck{}
-		err := messages.Deserialize(msg, &connAck)
-		if err != nil {
-			fmt.Println("wrong connection Ack", msg)
-			return
-		}
-
-		go self.receiveAck(connAck.Sequence)
-	}
 }
 
 func (self *Connection) split(msg []byte) [][]byte {
@@ -157,10 +129,11 @@ func (self *Connection) sendPacket(msg []byte, sequence, order, total uint32) {
 	}
 
 	connMessage := messages.ConnectionMessage{
-		Sequence: sequence,
-		Order:    order,
-		Total:    total,
-		Payload:  msg,
+		Sequence:     sequence,
+		ConnectionId: self.id,
+		Order:        order,
+		Total:        total,
+		Payload:      msg,
 	}
 
 	connMessageSerialized := messages.Serialize(messages.MsgConnectionMessage, connMessage)
@@ -175,7 +148,7 @@ func (self *Connection) sendPacket(msg []byte, sequence, order, total uint32) {
 
 func (self *Connection) sendToNode(inRouteMessage *messages.InRouteMessage) {
 
-	node := self.nodeAttached //**** should connection know it's node, not id? yes!
+	node := self.nodeAttached
 
 	if node.congested {
 		self.throttle = messages.Increase(self.throttle)
@@ -224,14 +197,19 @@ func (self *Connection) assemble(sequence uint32, total int) []byte {
 }
 
 func (self *Connection) sendToConsumer(msg []byte) {
-	if self.consumer != nil {
-		self.consumer.Consume(msg)
+	appMsg := messages.AppMessage{}
+	err := messages.Deserialize(msg, &appMsg)
+	if err == nil {
+		if self.consumer != nil {
+			self.consumer.Consume(&appMsg)
+		}
 	}
 }
 
 func (self *Connection) sendAck(sequence uint32) {
 	connAck := messages.ConnectionAck{
-		Sequence: sequence,
+		Sequence:     sequence,
+		ConnectionId: self.id,
 	}
 
 	connAckSerialized := messages.Serialize(messages.MsgConnectionAck, connAck)

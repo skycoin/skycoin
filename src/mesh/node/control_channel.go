@@ -120,8 +120,6 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 		trId := m1.Id
 		tr, err := handledNode.getTransport(trId)
 		if err != nil {
-			log.Println(trId)
-			panic("")
 			handledNode.sendFalseAckToServer(sequence)
 			return err
 		}
@@ -133,8 +131,8 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 		}
 		return err
 
-	case messages.MsgAssignRouteCM:
-		var m1 messages.AssignRouteCM
+	case messages.MsgAssignConnectionCM:
+		var m1 messages.AssignConnectionCM
 		err := messages.Deserialize(msg, &m1)
 		if err != nil {
 			handledNode.sendFalseAckToServer(sequence)
@@ -142,8 +140,10 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 		}
 		handledNode.sendTrueAckToServer(sequence)
 		routeId := m1.RouteId
-		handledNode.connection.routeId = routeId
-		return nil
+		connId := m1.ConnectionId
+		appId := m1.AppId
+		_, err = handledNode.newConnection(connId, routeId, appId)
+		return err
 
 	case messages.MsgConnectionOnCM:
 		var m1 messages.ConnectionOnCM
@@ -154,13 +154,14 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 			return err
 		}
 		nodeId := m1.NodeId
-		if nodeId != handledNode.Id {
+		if nodeId != handledNode.id {
 			log.Println("wrong id")
 			handledNode.sendFalseAckToServer(sequence)
 			return err
 		}
+		connId := m1.ConnectionId
 		handledNode.sendTrueAckToServer(sequence)
-		handledNode.connection.status = CONNECTED
+		handledNode.setConnectionOn(connId)
 		return nil
 
 	case messages.MsgRegisterNodeCMAck:
@@ -177,6 +178,23 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 		}
 		return nil
 
+	case messages.MsgConnectCMAck:
+		var ack messages.ConnectCMAck
+		err := messages.Deserialize(msg, &ack)
+		if err != nil {
+			return err
+		}
+
+		responseChannel, ok := handledNode.getResponseChannel(sequence)
+		if ok {
+			responseChannel <- ack.Ok
+			connectionResponseChannel, ok0 := handledNode.connectionResponseChannels[ack.Sequence]
+			if ok0 {
+				connectionResponseChannel <- ack.ConnectionId
+			}
+		}
+		return nil
+
 	case messages.MsgShutdownCM:
 		var m1 messages.ShutdownCM
 		err := messages.Deserialize(msg, &m1)
@@ -184,7 +202,7 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 			return err
 		}
 
-		if m1.NodeId == handledNode.Id {
+		if m1.NodeId == handledNode.id {
 			handledNode.Shutdown()
 		}
 

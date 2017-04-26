@@ -5,23 +5,27 @@ import (
 )
 
 type NodeInterface interface {
-	GetId() cipher.PubKey
+	Dial(cipher.PubKey, AppId, AppId) (Connection, error)
+	Id() cipher.PubKey
 	InjectTransportMessage(*InRouteMessage)
 	InjectCongestionPacket(*CongestionPacket)
 	GetTransportToNode(cipher.PubKey) (TransportInterface, error)
-	GetConnection() Connection
+	GetConnection(ConnectionId) Connection
 	ConnectedTo(cipher.PubKey) bool
+	RegisterApp(Consumer) error
 	Shutdown()
 }
 
 type TransportInterface interface {
-	GetId() TransportId
-	GetPacketsSent() uint32
-	GetPacketsConfirmed() uint32
+	Id() TransportId
+	PacketsSent() uint32
+	PacketsConfirmed() uint32
 }
 
 type Consumer interface {
-	Consume([]byte)
+	Id() AppId
+	Consume(*AppMessage)
+	AssignConnection(Connection)
 }
 
 type Network interface {
@@ -29,10 +33,7 @@ type Network interface {
 }
 
 type Connection interface {
-	Address() cipher.PubKey
 	Send([]byte) error
-	Dial(cipher.PubKey) error
-	AssignConsumer(Consumer)
-	Shutdown()
-	GetStatus() uint8
+	Status() uint8
+	Id() ConnectionId
 }

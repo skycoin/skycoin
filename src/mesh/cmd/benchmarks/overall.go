@@ -98,14 +98,17 @@ func main() {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	clientConn, serverConn := meshnet.CreateSequenceOfNodes(hops + 1)
-	clientAddr, serverAddr := clientConn.Address(), serverConn.Address()
+	clientNode, serverNode := meshnet.CreateSequenceOfNodes(hops + 1)
+	clientAddr, serverAddr := clientNode.Id(), serverNode.Id()
 
-	server := echoServer(serverConn)
+	server := echoServer(serverNode)
 
-	client := app.NewClient(clientConn) // register client on the first node
+	client, err := app.NewClient(messages.MakeAppId("echoClient"), clientNode) // register client on the first node
+	if err != nil {
+		panic(err)
+	}
 
-	err = client.Dial(serverAddr) // client dials to server
+	err = client.Connect(messages.MakeAppId("echoServer"), serverAddr) // client dials to server
 	if err != nil {
 		panic(err)
 	}
@@ -139,11 +142,14 @@ func benchmark(client *app.Client, server *app.Server, msgSize int) time.Duratio
 	return duration
 }
 
-func echoServer(serverConn messages.Connection) *app.Server {
+func echoServer(serverNode messages.NodeInterface) *app.Server {
 
-	srv := app.NewServer(serverConn, func(in []byte) []byte {
+	srv, err := app.NewServer(messages.MakeAppId("echoServer"), serverNode, func(in []byte) []byte {
 		return in
 	})
+	if err != nil {
+		panic(err)
+	}
 	return srv
 }
 

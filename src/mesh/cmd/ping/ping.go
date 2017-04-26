@@ -30,15 +30,18 @@ func pingPong(size, pings int) {
 		}
 	}
 	clientNode, serverNode := nodes[clientIndex], nodes[serverIndex]
-	clientAddr, serverAddr := clientNode.GetId(), serverNode.GetId()
+	clientAddr, serverAddr := clientNode.Id(), serverNode.Id()
 
-	server := pongServer(serverNode.GetConnection())
+	server := pongServer(serverNode)
 	defer server.Shutdown()
 
-	client := app.NewClient(clientNode.GetConnection()) // register client on the first node
+	client, err := app.NewClient(messages.MakeAppId("ping"), clientNode) // register client on the first node
+	if err != nil {
+		panic(err)
+	}
 	defer client.Shutdown()
 
-	err := client.Dial(serverAddr) // client dials to server
+	err = client.Connect(messages.MakeAppId("pong"), serverAddr) // client dials to server
 	if err != nil {
 		panic(err)
 	}
@@ -96,12 +99,15 @@ func pingPong(size, pings int) {
 
 }
 
-func pongServer(serverConn messages.Connection) *app.Server {
+func pongServer(serverNode messages.NodeInterface) *app.Server {
 
-	srv := app.NewServer(serverConn, func(_ []byte) []byte {
+	srv, err := app.NewServer(messages.MakeAppId("pong"), serverNode, func(_ []byte) []byte {
 		serverTime := time.Now().UnixNano()
 		out := strconv.FormatInt(serverTime, 10)
 		return []byte(out)
 	})
+	if err != nil {
+		panic(err)
+	}
 	return srv
 }

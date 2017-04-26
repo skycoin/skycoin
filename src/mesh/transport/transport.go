@@ -16,7 +16,7 @@ import (
 // - implement simulated packet drop
 
 type Transport struct {
-	Id messages.TransportId
+	id messages.TransportId
 
 	AttachedNode messages.NodeInterface //node the transport is attached to
 
@@ -67,7 +67,7 @@ func init() {
 //are created by the factories
 func CreateTransportFromMessage(msg *messages.TransportCreateCM) *Transport {
 	tr := Transport{}
-	tr.Id = msg.Id
+	tr.id = msg.Id
 	tr.pair = msg.PairId
 	maxBuffer := msg.MaxBuffer
 	tr.incomingFromPair = make(chan []byte, maxBuffer*2)
@@ -84,21 +84,21 @@ func CreateTransportFromMessage(msg *messages.TransportCreateCM) *Transport {
 	tr.timeUnit = time.Duration(msg.TimeUnit) * time.Microsecond
 	tr.lock = &sync.Mutex{}
 	if messages.IsDebug() {
-		fmt.Printf("Created Transport: %d\n", tr.Id)
+		fmt.Printf("Created Transport: %d\n", tr.id)
 	}
 	tr.dispatcher = NewDispatcher(&tr, maxWorkers)
 	return &tr
 }
 
-func (self *Transport) GetId() messages.TransportId {
-	return self.Id
+func (self *Transport) Id() messages.TransportId {
+	return self.id
 }
 
-func (self *Transport) GetPacketsSent() uint32 {
+func (self *Transport) PacketsSent() uint32 {
 	return self.packetsSent
 }
 
-func (self *Transport) GetPacketsConfirmed() uint32 {
+func (self *Transport) PacketsConfirmed() uint32 {
 	return self.packetsConfirmed
 }
 
@@ -140,7 +140,7 @@ func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessa
 	var m1b messages.TransportDatagramTransfer
 	m1b.Datagram = msg.Datagram
 	m1b.RouteId = msg.RouteId
-	m1b.ResponseRequired = msg.ResponseRequired
+	//	m1b.ResponseRequired = msg.ResponseRequired
 
 	//	self.pendingOut <- &Job{&m1b}
 
@@ -237,7 +237,7 @@ func (self *Transport) getFromUDP(msg []byte) {
 			break
 		} else {
 			self.transportCongestion = true
-			fmt.Println("incomingFromPair is overloaded:", len(self.incomingFromPair), c, self.Id)
+			fmt.Println("incomingFromPair is overloaded:", len(self.incomingFromPair), c, self.id)
 			time.Sleep(100 * self.timeUnit)
 		}
 	}
@@ -264,7 +264,7 @@ func (self *Transport) handleReceived(msg []byte) {
 
 	//process our incoming messages
 	if messages.IsDebug() {
-		fmt.Printf("\ntransport with id %d gets message %d\n\n", self.Id, msg)
+		fmt.Printf("\ntransport with id %d gets message %d\n\n", self.id, msg)
 	}
 
 	switch messages.GetMessageType(msg) {
@@ -312,7 +312,7 @@ func (self *Transport) acceptAndSendAck(msg *[]byte, m2 *messages.TransportDatag
 	datagram := m2.Datagram
 
 	go func() {
-		msgToNode := messages.InRouteMessage{self.Id, routeId, datagram}
+		msgToNode := messages.InRouteMessage{self.id, routeId, datagram}
 		self.injectNodeMessage(&msgToNode)
 	}()
 
@@ -344,7 +344,7 @@ func (self *Transport) receiveAck(m3 *messages.TransportDatagramACK) {
 	}
 
 	if messages.IsDebug() {
-		fmt.Printf("transport %d sent %d packets and got %d acks\n", self.Id, self.packetsSent, self.packetsConfirmed)
+		fmt.Printf("transport %d sent %d packets and got %d acks\n", self.id, self.packetsSent, self.packetsConfirmed)
 	}
 }
 

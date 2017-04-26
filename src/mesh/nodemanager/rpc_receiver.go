@@ -21,7 +21,7 @@ func (receiver *RPCReceiver) addNode() cipher.PubKey {
 		panic(err)
 	}
 	receiver.cmPort++
-	return n.GetId()
+	return n.Id()
 }
 
 func (receiver *RPCReceiver) AddNode(_ []string, result *[]byte) error {

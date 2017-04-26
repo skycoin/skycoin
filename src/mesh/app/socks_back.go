@@ -17,22 +17,35 @@ type SocksServer struct {
 	dialer proxy.Dialer
 }
 
-func NewSocksServer(conn messages.Connection, proxyAddress string) *SocksServer {
+func NewSocksServer(appId messages.AppId, node messages.NodeInterface, proxyAddress string) (*SocksServer, error) {
 	socksServer := &SocksServer{}
+	socksServer.id = appId
 	socksServer.lock = &sync.Mutex{}
 	socksServer.timeout = time.Duration(messages.GetConfig().AppTimeout)
 	socksServer.ProxyAddress = proxyAddress
 	socksServer.targetConns = map[string]net.Conn{}
 
-	socksServer.register(conn)
+	err := socksServer.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
 	go socksServer.serveSocks()
 	log.Println("ready to accept requests")
 
-	return socksServer
+	return socksServer, nil
 }
 
-func (self *SocksServer) Consume(msg []byte) {
+func (self *SocksServer) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *SocksServer) Consume(msg *messages.AppMessage) {
 
 	proxyMessage := getProxyMessage(msg)
 	if proxyMessage == nil {

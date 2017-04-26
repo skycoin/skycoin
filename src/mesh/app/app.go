@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -11,6 +10,8 @@ import (
 
 type app struct {
 	ProxyAddress     string
+	id               messages.AppId
+	node             messages.NodeInterface
 	handle           func([]byte) []byte
 	timeout          time.Duration
 	sequence         uint32
@@ -21,56 +22,51 @@ type app struct {
 
 var APP_TIMEOUT = 100000 * time.Duration(time.Millisecond)
 
-func (self *app) Dial(address cipher.PubKey) error {
-	return self.connection.Dial(address)
+func (self *app) Id() messages.AppId {
+	return self.id
 }
 
-func (self *app) Consume(msg []byte) {
-	appMsg := messages.AppMessage{}
-	err := messages.Deserialize(msg, &appMsg)
+func (self *app) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
 	if err != nil {
-		fmt.Printf("Cannot consume a message: %s\n", err.Error())
-		return
+		return err
 	}
+	self.node = node
+	return nil
+}
+
+func (self *app) Connect(appId messages.AppId, address cipher.PubKey) error {
+	_, err := self.node.Dial(address, self.id, appId)
+	return err
+}
+
+func (self *app) Consume(appMsg *messages.AppMessage) {
 
 	sequence := appMsg.Sequence
-	if appMsg.ResponseRequired {
-		go func() {
-			responsePayload := self.handle(appMsg.Payload)
-			response := &messages.AppMessage{
-				sequence,
-				false,
-				responsePayload,
-			}
-			responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
-			self.send(responseSerialized)
-		}()
+	responseChannel, err := self.getResponseChannel(sequence)
+	if err != nil {
+		responseChannel <- messages.AppResponse{nil, err}
 	} else {
-		responseChannel, err := self.getResponseChannel(sequence)
-		if err != nil {
-			fmt.Println("error:", err)
-			responseChannel <- messages.AppResponse{nil, err}
-		} else {
-			responseChannel <- messages.AppResponse{appMsg.Payload, nil}
-		}
+		responseChannel <- messages.AppResponse{appMsg.Payload, nil}
 	}
+}
+
+func (self *app) AssignConnection(conn messages.Connection) {
+	self.connection = conn
 }
 
 func (self *app) Shutdown() {
-	if self.connection != nil {
-		self.connection.Shutdown()
+	if self.node != nil {
+		self.node.Shutdown()
 	}
-}
-
-func (self *app) register(conn messages.Connection) {
-	self.connection = conn
-	conn.AssignConsumer(self)
 }
 
 func (self *app) send(msg []byte) {
 
 	conn := self.connection
-	conn.Send(msg)
+	if conn != nil {
+		conn.Send(msg)
+	}
 }
 
 func (self *app) getResponseChannel(sequence uint32) (chan messages.AppResponse, error) {

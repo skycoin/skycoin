@@ -37,21 +37,34 @@ var (
 	}
 )
 
-func NewVPNServer(conn messages.Connection) *VPNServer {
+func NewVPNServer(appId messages.AppId, node messages.NodeInterface) (*VPNServer, error) {
 	vpnServer := &VPNServer{}
+	vpnServer.id = appId
 	vpnServer.lock = &sync.Mutex{}
 	vpnServer.timeout = time.Duration(messages.GetConfig().AppTimeout)
 	vpnServer.meshConns = map[string]*Pipe{}
 	vpnServer.targetConns = map[string]net.Conn{}
 
-	vpnServer.register(conn)
+	err := vpnServer.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Println("ready to accept requests")
 
-	return vpnServer
+	return vpnServer, nil
 }
 
-func (self *VPNServer) Consume(msg []byte) {
+func (self *VPNServer) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *VPNServer) Consume(msg *messages.AppMessage) {
 
 	proxyMessage := getProxyMessage(msg)
 	if proxyMessage == nil {

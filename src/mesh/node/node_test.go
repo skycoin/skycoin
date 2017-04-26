@@ -117,13 +117,10 @@ func TestRegisterAckAccept(t *testing.T) {
 		ConnectionTimeout: 10000,
 	}
 	node.register(registerAck)
-	assert.Equal(t, node.Id, pubKey)
+	assert.Equal(t, node.id, pubKey)
 	assert.Equal(t, node.timeUnit, 1000*time.Microsecond)
 	assert.Equal(t, node.maxPacketSize, uint32(1024))
 	assert.Equal(t, node.maxBuffer, uint64(512))
-	assert.NotNil(t, node.connection)
-	assert.Equal(t, node.connection.timeout, 10000*time.Millisecond)
-	assert.Equal(t, node.connection.sendInterval, 10*time.Microsecond)
 }
 
 func TestConnectionCreate(t *testing.T) {
@@ -131,20 +128,30 @@ func TestConnectionCreate(t *testing.T) {
 
 	node := newLocalNode()
 	pubKey, _ := cipher.GenerateKeyPair()
-	node.Id = pubKey
+	node.id = pubKey
 
-	assert.Nil(t, node.connection)
+	registerAck := &messages.RegisterNodeCMAck{
+		NodeId:            pubKey,
+		SendInterval:      10,
+		ConnectionTimeout: 10000,
+	}
+	node.register(registerAck)
 
-	conn := node.newConnection()
-	assert.NotNil(t, node.connection)
+	assert.Len(t, node.connections, 0)
 
-	assert.Equal(t, pubKey, conn.nodeAttached.Id)
-	assert.Equal(t, DISCONNECTED, conn.status)
+	conn, err := node.newConnection(messages.RandConnectionId(), messages.RandRouteId(), messages.AppId([]byte{}))
+	assert.Nil(t, err)
+	assert.Len(t, node.connections, 1)
+
+	assert.Equal(t, pubKey, conn.nodeAttached.id)
+	assert.Equal(t, CONNECTING, conn.status)
 	assert.NotNil(t, conn.lock)
 	assert.NotNil(t, conn.errChan)
 	assert.Len(t, conn.ackChannels, 0)
 	assert.Len(t, conn.incomingMessages, 0)
 	assert.Len(t, conn.incomingCounter, 0)
+	assert.Equal(t, conn.timeout, 10000*time.Millisecond)
+	assert.Equal(t, conn.sendInterval, 10*time.Microsecond)
 }
 
 func TestConnectionMessage(t *testing.T) {
@@ -157,8 +164,12 @@ func TestConnectionMessage(t *testing.T) {
 		ConnectionTimeout: 10000,
 	}
 	node.register(registerAck)
+
+	conn, err := node.newConnection(messages.RandConnectionId(), messages.RandRouteId(), messages.AppId([]byte{}))
+	assert.Nil(t, err)
+
 	inRouteMessage := messages.InRouteMessage{}
-	node.connection.sendToNode(&inRouteMessage)
+	conn.sendToNode(&inRouteMessage)
 	time.Sleep(10 * time.Millisecond)
 	assert.Equal(t, 1, node.ticks)
 }
@@ -170,7 +181,7 @@ func TestTransportCreate(t *testing.T) {
 	assert.Len(t, node.transports, 0)
 
 	pubKey, _ := cipher.GenerateKeyPair()
-	node.Id = pubKey
+	node.id = pubKey
 
 	trId := messages.RandTransportId()
 	transportCreateMessage := &messages.TransportCreateCM{
@@ -178,6 +189,6 @@ func TestTransportCreate(t *testing.T) {
 	}
 	node.setTransportFromMessage(transportCreateMessage)
 	assert.Len(t, node.transports, 1)
-	assert.Equal(t, trId, node.transports[trId].Id)
-	assert.Equal(t, pubKey, node.transports[trId].AttachedNode.GetId())
+	assert.Equal(t, trId, node.transports[trId].Id())
+	assert.Equal(t, pubKey, node.transports[trId].AttachedNode.Id())
 }

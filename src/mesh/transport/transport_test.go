@@ -78,7 +78,7 @@ func TestCreatePair(t *testing.T) {
 	tr0.Tick()
 	tr1.Tick()
 
-	tdt := messages.OutRouteMessage{messages.RandRouteId(), []byte{'t', 'e', 's', 't'}, false}
+	tdt := messages.OutRouteMessage{messages.RandRouteId(), []byte{'t', 'e', 's', 't'}}
 	for i := 0; i < 10; i++ {
 		tr0.sendTransportDatagramTransfer(&tdt)
 	}

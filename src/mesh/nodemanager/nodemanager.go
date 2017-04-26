@@ -102,60 +102,74 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*TransportFa
 	return tf, nil
 }
 
-func (self *NodeManager) connect(nodeFromId, nodeToId cipher.PubKey) error {
+func (self *NodeManager) connect(nodeFromId, nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
+
+	connectionId := messages.RandConnectionId()
 
 	routeId, backRouteId, err := self.findRoute(nodeFromId, nodeToId)
 	if err != nil {
-		return err
+		return messages.ConnectionId(0), err
 	}
 
-	assignRouteFrom := messages.AssignRouteCM{
+	assignConnectionFrom := messages.AssignConnectionCM{
+		connectionId,
 		routeId,
+		appIdFrom,
 	}
-	assignRouteFromS := messages.Serialize(messages.MsgAssignRouteCM, assignRouteFrom)
+	assignConnectionFromS := messages.Serialize(messages.MsgAssignConnectionCM, assignConnectionFrom)
 
-	assignRouteTo := messages.AssignRouteCM{
+	assignConnectionTo := messages.AssignConnectionCM{
+		connectionId,
 		backRouteId,
+		appIdTo,
 	}
-	assignRouteToS := messages.Serialize(messages.MsgAssignRouteCM, assignRouteTo)
+	assignConnectionToS := messages.Serialize(messages.MsgAssignConnectionCM, assignConnectionTo)
 
 	nodeFrom, err := self.getNodeById(nodeFromId)
 	if err != nil {
-		return err
+		return messages.ConnectionId(0), err
 	}
 
 	nodeTo, err := self.getNodeById(nodeToId)
 	if err != nil {
-		return err
+		return messages.ConnectionId(0), err
 	}
 
-	err = nodeFrom.sendToNode(assignRouteFromS)
+	err = nodeFrom.sendToNode(assignConnectionFromS)
 	if err != nil {
-		return err
+		return messages.ConnectionId(0), err
 	}
 
-	err = nodeTo.sendToNode(assignRouteToS)
+	err = nodeTo.sendToNode(assignConnectionToS)
 	if err != nil {
-		return err
+		return messages.ConnectionId(0), err
 	}
 
 	connectionFrom := messages.ConnectionOnCM{
 		nodeFrom.id,
+		connectionId,
 	}
 
 	connectionFromS := messages.Serialize(messages.MsgConnectionOnCM, connectionFrom)
 	err = nodeFrom.sendToNode(connectionFromS)
 
-	if err == nil {
-		connectionTo := messages.ConnectionOnCM{
-			nodeTo.id,
-		}
-
-		connectionToS := messages.Serialize(messages.MsgConnectionOnCM, connectionTo)
-		err = nodeTo.sendToNode(connectionToS)
+	if err != nil {
+		return messages.ConnectionId(0), err
 	}
 
-	return err
+	connectionTo := messages.ConnectionOnCM{
+		nodeTo.id,
+		connectionId,
+	}
+
+	connectionToS := messages.Serialize(messages.MsgConnectionOnCM, connectionTo)
+
+	err = nodeTo.sendToNode(connectionToS)
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	return connectionId, nil
 }
 
 func (self *NodeManager) Tick() {

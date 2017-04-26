@@ -48,33 +48,55 @@ func main() {
 
 	clientNode, serverNode := meshnet.CreateSequenceOfNodes(hops + 1)
 
-	serverId := messages.MakeAppId("vpn_server")
-	clientId := messages.MakeAppId("vpn_client")
+	socksServerId := messages.MakeAppId("socksServer0")
+	socksClientId := messages.MakeAppId("socksClient0")
 
-	server, err := app.NewVPNServer(serverId, serverNode)
+	socksServer, err := app.NewSocksServer(socksServerId, serverNode, "0.0.0.0:8001")
 	if err != nil {
 		panic(err)
 	}
-	defer server.Shutdown()
+	defer socksServer.Shutdown()
 
-	client, err := app.NewVPNClient(clientId, clientNode, "0.0.0.0:4321")
+	socksClient, err := app.NewSocksClient(socksClientId, clientNode, "0.0.0.0:8000")
 	if err != nil {
 		panic(err)
 	}
-	defer client.Shutdown()
+	defer socksClient.Shutdown()
 
-	err = client.Connect(serverId, serverNode.Id())
+	err = socksClient.Connect(socksServerId, serverNode.Id())
 	if err != nil {
 		panic(err)
 	}
 
-	client.Listen()
+	go socksClient.Listen()
+
+	vpnServerId := messages.MakeAppId("vpn_server")
+	vpnClientId := messages.MakeAppId("vpn_client")
+
+	vpnServer, err := app.NewVPNServer(vpnServerId, serverNode)
+	if err != nil {
+		panic(err)
+	}
+	defer vpnServer.Shutdown()
+
+	vpnClient, err := app.NewVPNClient(vpnClientId, clientNode, "0.0.0.0:4321")
+	if err != nil {
+		panic(err)
+	}
+	defer vpnClient.Shutdown()
+
+	err = vpnClient.Connect(vpnServerId, serverNode.Id())
+	if err != nil {
+		panic(err)
+	}
+
+	vpnClient.Listen()
 
 }
 
 func printHelp() {
-	fmt.Println("\nFORMAT: go run vpn.go n , where n is a number of hops")
+	fmt.Println("\nFORMAT: go run socks-vpn.go n , where n is a number of hops")
 	fmt.Println("\nUsage example for 10 meshnet hops:")
-	fmt.Println("\ngo run vpn.go 10")
+	fmt.Println("\ngo run socks-vpn.go 10")
 	fmt.Println("\nNumber of hops should be more than 0\n")
 }

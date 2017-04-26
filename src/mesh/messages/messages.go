@@ -32,7 +32,8 @@ const (
 	MsgOpenUDPCM                         // NodeManager -> Node
 	MsgCommonCMAck                       // Node -> NodeManager, NodeManager -> Node
 	MsgConnectCM                         // Node -> NodeManager
-	MsgAssignRouteCM                     // NodeManager -> Node
+	MsgConnectCMAck                      // NodeManager -> Node
+	MsgAssignConnectionCM                // NodeManager -> Node
 	MsgConnectionOnCM                    // NodeManager -> Node
 	MsgShutdownCM                        // NodeManager -> Node
 	//MessageMouseScroll        // 1
@@ -68,9 +69,8 @@ type InRouteMessage struct {
 
 //message node, writes to the channel of the transport
 type OutRouteMessage struct {
-	RouteId          RouteId //the incoming route
-	Datagram         []byte  //length prefixed message
-	ResponseRequired bool
+	RouteId  RouteId //the incoming route
+	Datagram []byte  //length prefixed message
 }
 
 type CongestionPacket struct {
@@ -83,10 +83,10 @@ type CongestionPacket struct {
 //simulates one end of a transport, sending data to other end of the pair
 type TransportDatagramTransfer struct {
 	//put seq number for confirmation/ACK
-	RouteId          RouteId
-	Sequence         uint32 //sequential sequence number of ACK
-	Datagram         []byte
-	ResponseRequired bool
+	RouteId  RouteId
+	Sequence uint32 //sequential sequence number of ACK
+	Datagram []byte
+	//	ResponseRequired bool
 }
 
 type TransportDatagramACK struct {
@@ -112,17 +112,20 @@ type RemoveRouteCM struct {
 }
 
 type ConnectionMessage struct {
-	Sequence uint32
-	Order    uint32
-	Total    uint32
-	Payload  []byte
+	Sequence     uint32
+	ConnectionId ConnectionId
+	Order        uint32
+	Total        uint32
+	Payload      []byte
 }
 
 type ConnectionAck struct {
-	Sequence uint32
+	Sequence     uint32
+	ConnectionId ConnectionId
 }
 
 type AppMessage struct {
+	//AppTo            AppId
 	Sequence         uint32
 	ResponseRequired bool
 	Payload          []byte
@@ -191,16 +194,28 @@ type CommonCMAck struct {
 }
 
 type ConnectCM struct {
-	From cipher.PubKey
-	To   cipher.PubKey
+	Sequence  uint32
+	AppIdFrom AppId
+	AppIdTo   AppId
+	From      cipher.PubKey
+	To        cipher.PubKey
 }
 
-type AssignRouteCM struct {
-	RouteId RouteId
+type ConnectCMAck struct {
+	Sequence     uint32
+	Ok           bool
+	ConnectionId ConnectionId
+}
+
+type AssignConnectionCM struct {
+	ConnectionId ConnectionId
+	RouteId      RouteId
+	AppId        AppId
 }
 
 type ConnectionOnCM struct {
-	NodeId cipher.PubKey
+	NodeId       cipher.PubKey
+	ConnectionId ConnectionId
 }
 
 type ShutdownCM struct {

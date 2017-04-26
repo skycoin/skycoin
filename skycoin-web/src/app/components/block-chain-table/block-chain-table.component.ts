@@ -3,9 +3,8 @@ import {BlockChainService} from "./block-chain.service";
 import {Observable} from "rxjs";
 import {Block, Transaction} from "./block";
 import * as moment from 'moment';
-
-import * as _ from 'underscore';
 import {Router} from "@angular/router";
+declare var _: any;
 
 @Component({
   selector: 'app-block-chain-table',

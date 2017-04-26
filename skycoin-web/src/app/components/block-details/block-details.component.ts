@@ -3,7 +3,7 @@ import {Router, ActivatedRoute, Params} from "@angular/router";
 import {Block, Transaction} from "../block-chain-table/block";
 import {Observable} from "rxjs";
 import {BlockChainService} from "../block-chain-table/block-chain.service";
-import * as _ from 'underscore';
+declare var _: any;
 
 import * as moment from 'moment';
 

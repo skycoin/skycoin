@@ -13,3 +13,25 @@ export class UnspentOutput {
 
   }
 }
+
+export class AddressBalanceResponse {
+  constructor(
+    public head_outputs:HeadOutput[],
+    public outgoing_outputs:any[],
+    public incoming_outputs:any[],
+  ){
+
+  }
+}
+
+export class HeadOutput {
+  constructor(
+    public hash:string,
+    public src_tx:string,
+    public address:string,
+    public coins:string,
+    public hours:number,
+  ){
+  }
+}
+

@@ -79,4 +79,42 @@ router.get('/block', (req, res) => {
 
 });
 
+// Get the block details
+router.get('/currentBalance', (req, res) => {
+  if(req.query.address){
+  axios.get(`${API}/outputs?addrs=`+req.query.address)
+  .then(blocks => {
+    res.status(200).json(blocks.data);
+})
+.catch(error => {
+    res.status(500).send(error)
+});
+}
+
+});
+
+// Get the block details
+router.get('/coinSupply', (req, res) => {
+  axios.get("http://127.0.0.1:6420/explorer/getEffectiveOutputs")
+  .then(blocks => {
+    res.status(200).json(blocks.data);
+})
+.catch(error => {
+    res.status(500).send(error)
+});
+});
+
+
+
+/*
+ http.HandleFunc("/api/blocks", getBlocks)
+ http.HandleFunc("/api/blockchain/metadata", getBlockChainMetaData)
+ http.HandleFunc("/api/address", getAddress)
+ http.HandleFunc("/api/currentBalance",getCurrentBalance)
+ http.HandleFunc("/api/uxout", getUxID)
+ http.HandleFunc("/api/transaction", getTransaction)
+ http.HandleFunc("/api/block", getBlock)
+ http.HandleFunc("/api/coinSupply", getSupply)
+ */
+
 module.exports = router;

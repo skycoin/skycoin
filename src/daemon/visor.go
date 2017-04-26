@@ -519,7 +519,6 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		if err == nil {
 			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
 			processed++
-			logger.Critical("Processed %d blocks", int(maxSeq)+processed)
 		} else {
 			logger.Critical("Failed to execute received block: %v", err)
 			// Blocks must be received in order, so if one fails its assumed

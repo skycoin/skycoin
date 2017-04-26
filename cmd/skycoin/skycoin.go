@@ -228,7 +228,7 @@ func (c *Config) register() {
 
 var devConfig Config = Config{
 	// Disable peer exchange
-	DisablePEX: false,
+	DisablePEX: true,
 	// Don't make any outgoing connections
 	DisableOutgoingConnections: false,
 	// Don't allowing incoming connections

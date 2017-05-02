@@ -63,6 +63,9 @@ type Node struct {
 	maxPacketSize uint32
 	timeUnit      time.Duration
 
+	connectResponseSequence uint32
+	connectResponseChannels map[uint32]chan bool
+
 	connectionResponseSequence uint32
 	connectionResponseChannels map[uint32]chan messages.ConnectionId
 
@@ -108,7 +111,7 @@ func (self *Node) RegisterApp(app messages.Consumer) error {
 }
 
 func (self *Node) Dial(address cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.Connection, error) {
-	connId, err := self.sendConnectToServer(address, appIdFrom, appIdTo)
+	connId, err := self.sendConnectWithRouteToServer(address, appIdFrom, appIdTo)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +125,10 @@ func (self *Node) Dial(address cipher.PubKey, appIdFrom, appIdTo messages.AppId)
 	}
 
 	return conn, nil
+}
+
+func (self *Node) ConnectDirectly(address cipher.PubKey) error {
+	return self.sendConnectDirectlyToServer(address)
 }
 
 func (self *Node) GetConnection(id messages.ConnectionId) messages.Connection {
@@ -174,6 +181,7 @@ func newNode(host string) *Node {
 	node.routeForwardingRules = make(map[messages.RouteId]*messages.RouteRule)
 	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
 	node.connections = make(map[messages.ConnectionId]*Connection)
+	node.connectResponseChannels = make(map[uint32]chan bool)
 	node.connectionResponseChannels = make(map[uint32]chan messages.ConnectionId)
 	node.addZeroControlChannel()
 	node.host = host

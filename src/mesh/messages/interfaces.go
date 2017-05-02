@@ -5,8 +5,9 @@ import (
 )
 
 type NodeInterface interface {
-	Dial(cipher.PubKey, AppId, AppId) (Connection, error)
 	Id() cipher.PubKey
+	ConnectDirectly(cipher.PubKey) error
+	Dial(cipher.PubKey, AppId, AppId) (Connection, error)
 	InjectTransportMessage(*InRouteMessage)
 	InjectCongestionPacket(*CongestionPacket)
 	GetTransportToNode(cipher.PubKey) (TransportInterface, error)
@@ -14,6 +15,7 @@ type NodeInterface interface {
 	ConnectedTo(cipher.PubKey) bool
 	RegisterApp(Consumer) error
 	Shutdown()
+	TalkToViscript(uint32, uint32)
 }
 
 type TransportInterface interface {
@@ -29,6 +31,7 @@ type Consumer interface {
 }
 
 type Network interface {
+	TalkToViscript(uint32, uint32)
 	Shutdown()
 }
 

@@ -67,17 +67,17 @@ func (self *NodeManager) CreateThreeRoutes() (messages.NodeInterface, messages.N
 		 \	 /
 		  6_7_8_/
 	*/
-	self.ConnectNodeToNode(nodeList[0], nodeList[1])
-	self.ConnectNodeToNode(nodeList[1], nodeList[2])
-	self.ConnectNodeToNode(nodeList[2], nodeList[3])
-	self.ConnectNodeToNode(nodeList[3], nodeList[4])
-	self.ConnectNodeToNode(nodeList[4], nodeList[9])
-	self.ConnectNodeToNode(nodeList[0], nodeList[5])
-	self.ConnectNodeToNode(nodeList[5], nodeList[9])
-	self.ConnectNodeToNode(nodeList[0], nodeList[6])
-	self.ConnectNodeToNode(nodeList[6], nodeList[7])
-	self.ConnectNodeToNode(nodeList[7], nodeList[8])
-	self.ConnectNodeToNode(nodeList[8], nodeList[9])
+	self.connectNodeToNode(nodeList[0], nodeList[1])
+	self.connectNodeToNode(nodeList[1], nodeList[2])
+	self.connectNodeToNode(nodeList[2], nodeList[3])
+	self.connectNodeToNode(nodeList[3], nodeList[4])
+	self.connectNodeToNode(nodeList[4], nodeList[9])
+	self.connectNodeToNode(nodeList[0], nodeList[5])
+	self.connectNodeToNode(nodeList[5], nodeList[9])
+	self.connectNodeToNode(nodeList[0], nodeList[6])
+	self.connectNodeToNode(nodeList[6], nodeList[7])
+	self.connectNodeToNode(nodeList[7], nodeList[8])
+	self.connectNodeToNode(nodeList[8], nodeList[9])
 
 	self.rebuildRoutes()
 
@@ -91,7 +91,7 @@ func (self *NodeManager) connectAll() error {
 
 	for i := 0; i < n-1; i++ {
 		id1, id2 := self.nodeIdList[i], self.nodeIdList[i+1]
-		_, err := self.ConnectNodeToNode(id1, id2)
+		_, err := self.connectNodeToNode(id1, id2)
 		if err != nil {
 			panic(err)
 			return err

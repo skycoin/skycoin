@@ -178,8 +178,25 @@ func (c *ControlChannel) handleMessage(handledNode *Node, sequence uint32, msg [
 		}
 		return nil
 
-	case messages.MsgConnectCMAck:
-		var ack messages.ConnectCMAck
+	case messages.MsgConnectDirectlyCMAck:
+		var ack messages.ConnectDirectlyCMAck
+		err := messages.Deserialize(msg, &ack)
+		if err != nil {
+			return err
+		}
+
+		responseChannel, ok := handledNode.getResponseChannel(sequence)
+		if ok {
+			responseChannel <- ack.Ok
+			connectResponseChannel, ok0 := handledNode.connectResponseChannels[ack.Sequence]
+			if ok0 {
+				connectResponseChannel <- true
+			}
+		}
+		return nil
+
+	case messages.MsgConnectWithRouteCMAck:
+		var ack messages.ConnectWithRouteCMAck
 		err := messages.Deserialize(msg, &ack)
 		if err != nil {
 			return err

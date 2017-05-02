@@ -12,7 +12,6 @@ import (
 
 type MsgServer struct {
 	nm               *NodeManager
-	addr             *net.UDPAddr
 	conn             *net.UDPConn
 	maxPacketSize    int
 	closeChannel     chan bool
@@ -33,9 +32,9 @@ func newMsgServer(nm *NodeManager) (*MsgServer, error) {
 	msgSrv.timeout = time.Duration(config.MsgSrvTimeout) * time.Millisecond
 	host := net.ParseIP(config.MsgSrvHost)
 	port := int(config.MsgSrvPort)
-	msgSrv.addr = &net.UDPAddr{IP: host, Port: port}
+	addr := &net.UDPAddr{IP: host, Port: port}
 
-	conn, err := net.ListenUDP("udp", msgSrv.addr)
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		return nil, err
 	}

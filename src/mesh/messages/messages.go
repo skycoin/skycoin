@@ -31,11 +31,22 @@ const (
 	MsgTransportShutdownCM               // NodeManager -> Node
 	MsgOpenUDPCM                         // NodeManager -> Node
 	MsgCommonCMAck                       // Node -> NodeManager, NodeManager -> Node
-	MsgConnectCM                         // Node -> NodeManager
-	MsgConnectCMAck                      // NodeManager -> Node
+	MsgConnectDirectlyCM                 // Node -> NodeManager
+	MsgConnectDirectlyCMAck              // NodeManager -> Node
+	MsgConnectWithRouteCM                // Node -> NodeManager
+	MsgConnectWithRouteCMAck             // NodeManager -> Node
 	MsgAssignConnectionCM                // NodeManager -> Node
 	MsgConnectionOnCM                    // NodeManager -> Node
 	MsgShutdownCM                        // NodeManager -> Node
+	MsgUserCommand                       // Viscript -> Meshnet
+	MsgUserCommandAck                    // Meshnet -> Viscript
+	MsgPing                              // Viscript -> Meshnet
+	MsgPingAck                           // Meshnet -> Viscript
+	MsgCreateAck                         // Meshnet -> Viscript
+	MsgResourceUsage                     // Viscript -> Meshnet
+	MsgResourceUsageAck                  // Meshnet -> Viscript
+	MsgUserShutdown                      // Viscript -> Meshnet
+	MsgUserShutdownAck                   // Meshnet -> Viscript
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -190,7 +201,18 @@ type CommonCMAck struct {
 	Ok bool
 }
 
-type ConnectCM struct {
+type ConnectDirectlyCM struct {
+	Sequence uint32
+	From     cipher.PubKey
+	To       cipher.PubKey
+}
+
+type ConnectDirectlyCMAck struct {
+	Sequence uint32
+	Ok       bool
+}
+
+type ConnectWithRouteCM struct {
 	Sequence  uint32
 	AppIdFrom AppId
 	AppIdTo   AppId
@@ -198,7 +220,7 @@ type ConnectCM struct {
 	To        cipher.PubKey
 }
 
-type ConnectCMAck struct {
+type ConnectWithRouteCMAck struct {
 	Sequence     uint32
 	Ok           bool
 	ConnectionId ConnectionId
@@ -218,3 +240,32 @@ type ConnectionOnCM struct {
 type ShutdownCM struct {
 	NodeId cipher.PubKey
 }
+
+type UserCommand struct {
+	Sequence uint32
+	AppId    uint32
+	Payload  []byte
+}
+
+type UserCommandAck struct {
+	Sequence uint32
+	AppId    uint32
+	Payload  []byte
+}
+
+type CreateAck struct{}
+
+type ResourceUsage struct{}
+
+type ResourceUsageAck struct {
+	CPU    float64
+	Memory uint64
+}
+
+type UserShutdown struct{}
+
+type UserShutdownAck struct{}
+
+type Ping struct{}
+
+type PingAck struct{}

@@ -53,7 +53,7 @@ func (self *NodeManager) addAndConnect(host string) (cipher.PubKey, error) { //*
 	return id, nil
 }
 
-func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*TransportFactory, error) {
+func (self *NodeManager) connectNodeToNode(idA, idB cipher.PubKey) (*TransportFactory, error) {
 
 	if idA == idB {
 		return nil, messages.ERR_CONNECTED_TO_ITSELF
@@ -102,7 +102,7 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*TransportFa
 	return tf, nil
 }
 
-func (self *NodeManager) connect(nodeFromId, nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
+func (self *NodeManager) connectWithRoute(nodeFromId, nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
 
 	connectionId := messages.RandConnectionId()
 
@@ -245,7 +245,7 @@ func (self *NodeManager) connectRandomly(node0 cipher.PubKey) {
 			break
 		}
 	}
-	self.ConnectNodeToNode(node0, node1)
+	self.connectNodeToNode(node0, node1)
 
 }
 

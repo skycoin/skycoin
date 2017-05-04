@@ -26,8 +26,8 @@ func TestMessagingServer(t *testing.T) {
 
 	host := net.ParseIP(config.MsgSrvHost)
 	port := int(config.MsgSrvPort)
-	msgSrvAddr := &net.UDPAddr{IP: host, Port: port}
-	assert.Equal(t, *msgSrvAddr, *msgSrv.addr)
+	msgSrvAddr := net.UDPAddr{IP: host, Port: port}
+	assert.Equal(t, msgSrvAddr.String(), msgSrv.conn.LocalAddr().String())
 }
 
 func TestRegisterNode(t *testing.T) {
@@ -62,7 +62,7 @@ func TestConnectNodes(t *testing.T) {
 
 	assert.Len(t, nm.nodeList, 2)
 
-	_, err = nm.ConnectNodeToNode(n0.Id(), n1.Id())
+	err = n0.ConnectDirectly(n1.Id())
 	assert.Nil(t, err)
 
 	assert.True(t, n0.ConnectedTo(n1.Id()))
@@ -133,7 +133,7 @@ func TestBuildRoute(t *testing.T) {
 	}
 
 	for i := 0; i < m-1; i++ {
-		_, err := nm.ConnectNodeToNode(nodes[i], nodes[i+1])
+		_, err := nm.connectNodeToNode(nodes[i], nodes[i+1])
 		assert.Nil(t, err)
 	}
 
@@ -166,18 +166,18 @@ func TestFindRoute(t *testing.T) {
 		 \ /     /
 		  6_7_8_/   medium route
 	*/
-	nm.ConnectNodeToNode(nodeList[0], nodeList[1]) // making long route
-	nm.ConnectNodeToNode(nodeList[1], nodeList[2])
-	nm.ConnectNodeToNode(nodeList[2], nodeList[3])
-	nm.ConnectNodeToNode(nodeList[3], nodeList[4])
-	nm.ConnectNodeToNode(nodeList[4], nodeList[9])
-	nm.ConnectNodeToNode(nodeList[0], nodeList[5]) // making short route
-	nm.ConnectNodeToNode(nodeList[5], nodeList[9])
-	nm.ConnectNodeToNode(nodeList[0], nodeList[6]) // make medium route, then findRoute should select the short one
-	nm.ConnectNodeToNode(nodeList[6], nodeList[7])
-	nm.ConnectNodeToNode(nodeList[7], nodeList[8])
-	nm.ConnectNodeToNode(nodeList[8], nodeList[9])
-	nm.ConnectNodeToNode(nodeList[5], nodeList[6]) // just for
+	nodes[0].ConnectDirectly(nodeList[1]) // making long route
+	nodes[1].ConnectDirectly(nodeList[2])
+	nodes[2].ConnectDirectly(nodeList[3])
+	nodes[3].ConnectDirectly(nodeList[4])
+	nodes[4].ConnectDirectly(nodeList[9])
+	nodes[0].ConnectDirectly(nodeList[5]) // making short route
+	nodes[5].ConnectDirectly(nodeList[9])
+	nodes[0].ConnectDirectly(nodeList[6]) // make medium route, then findRoute should select the short one
+	nodes[6].ConnectDirectly(nodeList[7])
+	nodes[7].ConnectDirectly(nodeList[8])
+	nodes[8].ConnectDirectly(nodeList[9])
+	nodes[5].ConnectDirectly(nodeList[6])
 
 	nm.rebuildRoutes()
 

@@ -118,8 +118,6 @@ func (self *proxyClient) Consume(appMsg *messages.AppMessage) {
 
 	data := proxyMessage.Data // otherwise send data to the user app
 
-	//	log.Printf("\nClient accepted %d bytes to %s\n\n", len(data), remoteAddr)
-
 	_, err = userConn.Write(data)
 	if err != nil { // if the write is unsuccessful, close the connection and send closing command to close the corresponding connection on the server
 		log.Printf("Cannot write to connection with remote address %s, error is %s\n", proxyMessage.RemoteAddr, err.Error())

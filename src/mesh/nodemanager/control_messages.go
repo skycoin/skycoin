@@ -12,8 +12,26 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 	msg := cm.PayloadMessage
 
 	switch messages.GetMessageType(msg) {
-	case messages.MsgConnectCM:
-		m1 := messages.ConnectCM{}
+	case messages.MsgConnectDirectlyCM:
+		m1 := messages.ConnectDirectlyCM{}
+		err := messages.Deserialize(msg, &m1)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		from := m1.From
+		to := m1.To
+		connectSequence := m1.Sequence
+		_, err = self.connectNodeToNode(from, to)
+		if err != nil {
+			log.Println(err)
+			self.sendConnectDirectlyAck(from, sequence, connectSequence, false)
+			return
+		}
+		self.sendConnectDirectlyAck(from, sequence, connectSequence, true)
+
+	case messages.MsgConnectWithRouteCM:
+		m1 := messages.ConnectWithRouteCM{}
 		err := messages.Deserialize(msg, &m1)
 		if err != nil {
 			log.Println(err)
@@ -24,13 +42,13 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 		connSequence := m1.Sequence
 		appIdFrom := m1.AppIdFrom
 		appIdTo := m1.AppIdTo
-		connId, err := self.connect(from, to, appIdFrom, appIdTo)
+		connId, err := self.connectWithRoute(from, to, appIdFrom, appIdTo)
 		if err != nil {
 			log.Println(err)
-			self.sendConnectAck(from, sequence, connSequence, false, messages.ConnectionId(0))
+			self.sendConnectWithRouteAck(from, sequence, connSequence, false, messages.ConnectionId(0))
 			return
 		}
-		self.sendConnectAck(from, sequence, connSequence, true, connId)
+		self.sendConnectWithRouteAck(from, sequence, connSequence, true, connId)
 
 	case messages.MsgRegisterNodeCM:
 		m1 := messages.RegisterNodeCM{}
@@ -84,13 +102,22 @@ func (self *NodeManager) sendRegisterAck(sequence uint32, nodeId cipher.PubKey) 
 	self.msgServer.sendAck(sequence, nodeId, ackS)
 }
 
-func (self *NodeManager) sendConnectAck(nodeId cipher.PubKey, sequence, connSequence uint32, ok bool, connectionId messages.ConnectionId) {
-	ack := messages.ConnectCMAck{
+func (self *NodeManager) sendConnectDirectlyAck(nodeId cipher.PubKey, sequence, connSequence uint32, ok bool) {
+	ack := messages.ConnectDirectlyCMAck{
+		Sequence: connSequence,
+		Ok:       ok,
+	}
+	ackS := messages.Serialize(messages.MsgConnectDirectlyCMAck, ack)
+	self.msgServer.sendAck(sequence, nodeId, ackS)
+}
+
+func (self *NodeManager) sendConnectWithRouteAck(nodeId cipher.PubKey, sequence, connSequence uint32, ok bool, connectionId messages.ConnectionId) {
+	ack := messages.ConnectWithRouteCMAck{
 		Sequence:     connSequence,
 		Ok:           ok,
 		ConnectionId: connectionId,
 	}
-	ackS := messages.Serialize(messages.MsgConnectCMAck, ack)
+	ackS := messages.Serialize(messages.MsgConnectWithRouteCMAck, ack)
 	self.msgServer.sendAck(sequence, nodeId, ackS)
 }
 

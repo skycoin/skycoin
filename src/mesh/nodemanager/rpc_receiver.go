@@ -94,7 +94,7 @@ func (receiver *RPCReceiver) ConnectNodes(args []string, result *[]byte) error {
 	}
 
 	node0Id, node1Id := nm.nodeIdList[node0], nm.nodeIdList[node1]
-	tf, err := nm.ConnectNodeToNode(node0Id, node1Id)
+	tf, err := nm.connectNodeToNode(node0Id, node1Id)
 	if err != nil {
 		fmt.Println(err)
 		return err

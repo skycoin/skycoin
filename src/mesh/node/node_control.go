@@ -87,7 +87,32 @@ func (self *Node) sendRegisterNodeToServer(host string, connect bool) error {
 	return err
 }
 
-func (self *Node) sendConnectToServer(nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
+func (self *Node) sendConnectDirectlyToServer(nodeToId cipher.PubKey) error {
+	responseChannel := make(chan bool)
+
+	self.lock.Lock()
+	connectSequence := self.connectResponseSequence
+	self.connectResponseSequence++
+	self.connectResponseChannels[connectSequence] = responseChannel
+	self.lock.Unlock()
+
+	msg := messages.ConnectDirectlyCM{connectSequence, self.id, nodeToId}
+	msgS := messages.Serialize(messages.MsgConnectDirectlyCM, msg)
+
+	err := self.sendMessageToServer(msgS)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-responseChannel:
+		return nil
+	case <-time.After(CONTROL_TIMEOUT):
+		return messages.ERR_MSG_SRV_TIMEOUT
+	}
+}
+
+func (self *Node) sendConnectWithRouteToServer(nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
 	responseChannel := make(chan messages.ConnectionId)
 
 	self.lock.Lock()
@@ -96,8 +121,8 @@ func (self *Node) sendConnectToServer(nodeToId cipher.PubKey, appIdFrom, appIdTo
 	self.connectionResponseChannels[connSequence] = responseChannel
 	self.lock.Unlock()
 
-	msg := messages.ConnectCM{connSequence, appIdFrom, appIdTo, self.id, nodeToId}
-	msgS := messages.Serialize(messages.MsgConnectCM, msg)
+	msg := messages.ConnectWithRouteCM{connSequence, appIdFrom, appIdTo, self.id, nodeToId}
+	msgS := messages.Serialize(messages.MsgConnectWithRouteCM, msg)
 
 	err := self.sendMessageToServer(msgS)
 	if err != nil {

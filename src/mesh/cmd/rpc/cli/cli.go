@@ -40,7 +40,7 @@ func promptCycle(rpcClient *nodemanager.RPCClient) {
 	}
 }
 
-func commandDispatcher(rpcClient *nodemanager.RPCClient) bool {
+func commandDispatcher(rpcClient *nodemanager.RPCClient) bool { // if true interrupt work
 	command, args := cliInput("\nenter the command (help for commands list):\n> ")
 
 	if command == "" {

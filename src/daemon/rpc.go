@@ -35,7 +35,7 @@ type BlockchainProgress struct {
 	Peers   []struct {
 		Address string `json:"address"`
 		Height  uint64 `json:"height"`
-	}
+	} `json:"peers"`
 }
 
 type ResendResult struct {

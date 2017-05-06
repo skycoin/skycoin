@@ -32,6 +32,10 @@ type BlockchainProgress struct {
 	Current uint64 `json:"current"`
 	// Our best guess at true blockchain length
 	Highest uint64 `json:"highest"`
+	Peers   []struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}
 }
 
 type ResendResult struct {
@@ -110,10 +114,24 @@ func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 	if v.v == nil {
 		return nil
 	}
-	return &BlockchainProgress{
+
+	bp := &BlockchainProgress{
 		Current: v.HeadBkSeq(),
 		Highest: v.EstimateBlockchainLength(),
 	}
+	v.strand(func() {
+		for addr, height := range v.blockchainLengths {
+			bp.Peers = append(bp.Peers, struct {
+				Address string `json:"address"`
+				Height  uint64 `json:"height"`
+			}{
+				addr,
+				height,
+			})
+		}
+	})
+
+	return bp
 }
 
 func (self RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *ResendResult {

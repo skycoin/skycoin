@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/app"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	network "github.com/skycoin/skycoin/src/mesh/nodemanager"
@@ -20,6 +19,7 @@ func main() {
 func pingPong(size, pings int) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
+
 	nodes := meshnet.CreateRandomNetwork(size)
 	var clientIndex, serverIndex int
 	clientIndex = rand.Intn(size)
@@ -29,19 +29,19 @@ func pingPong(size, pings int) {
 			break
 		}
 	}
-	clientAddr, serverAddr := nodes[clientIndex], nodes[serverIndex]
+	clientNode, serverNode := nodes[clientIndex], nodes[serverIndex]
+	clientAddr, serverAddr := clientNode.Id(), serverNode.Id()
 
-	_, err := pongServer(meshnet, serverAddr)
+	server := pongServer(serverNode)
+	defer server.Shutdown()
+
+	client, err := app.NewClient(messages.MakeAppId("ping"), clientNode) // register client on the first node
 	if err != nil {
 		panic(err)
 	}
+	defer client.Shutdown()
 
-	client, err := app.NewClient(meshnet, clientAddr) // register client on the first node
-	if err != nil {
-		panic(err)
-	}
-
-	err = client.Dial(serverAddr) // client dials to server
+	err = client.Connect(messages.MakeAppId("pong"), serverAddr) // client dials to server
 	if err != nil {
 		panic(err)
 	}
@@ -99,12 +99,15 @@ func pingPong(size, pings int) {
 
 }
 
-func pongServer(meshnet *network.NodeManager, serverAddr cipher.PubKey) (*app.Server, error) {
+func pongServer(serverNode messages.NodeInterface) *app.Server {
 
-	srv, err := app.NewServer(meshnet, serverAddr, func(_ []byte) []byte {
+	srv, err := app.NewServer(messages.MakeAppId("pong"), serverNode, func(_ []byte) []byte {
 		serverTime := time.Now().UnixNano()
 		out := strconv.FormatInt(serverTime, 10)
 		return []byte(out)
 	})
-	return srv, err
+	if err != nil {
+		panic(err)
+	}
+	return srv
 }

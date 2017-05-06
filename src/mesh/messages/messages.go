@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 const (
@@ -11,16 +13,40 @@ const (
 	MsgOutRouteMessage                   // Node -> Transport
 	MsgTransportDatagramTransfer         // Transport -> Transport, simulating sending packet over network
 	MsgTransportDatagramACK              // Transport -> Transport, simulating ACK for packet
-	MsgInControlMessage                  // Transport -> Node, control message
-	MsgOutControlMessage                 // Node -> Transport, control message
-	MsgCloseChannelControlMessage        // Node -> Control channel, close control channel
-	MsgAddRouteControlMessage            // Node -> Control channel, add new route
-	MsgRemoveRouteControlMessage         // Node -> Control channel, remove route
 	MsgConnectionMessage                 // Connection -> Connection
 	MsgConnectionAck                     // Connection -> Connection
 	MsgProxyMessage                      // Application -> Application
 	MsgAppMessage                        // Application -> Application
 	MsgCongestionPacket                  // Transport -> Transport
+	MsgInControlMessage                  // Transport -> Node, control message
+	MsgOutControlMessage                 // Node -> Transport, control message
+	MsgCloseChannelControlMessage        // Node -> Control channel, close control channel
+	MsgAddRouteCM                        // Node -> Control channel, add new route
+	MsgRemoveRouteCM                     // Node -> Control channel, remove route
+	MsgRegisterNodeCM                    // Node -> NodeManager
+	MsgRegisterNodeCMAck                 // NodeManager -> Node
+	MsgAssignPortCM                      // NodeManager -> Node
+	MsgTransportCreateCM                 // NodeManager -> Node
+	MsgTransportTickCM                   // NodeManager -> Node
+	MsgTransportShutdownCM               // NodeManager -> Node
+	MsgOpenUDPCM                         // NodeManager -> Node
+	MsgCommonCMAck                       // Node -> NodeManager, NodeManager -> Node
+	MsgConnectDirectlyCM                 // Node -> NodeManager
+	MsgConnectDirectlyCMAck              // NodeManager -> Node
+	MsgConnectWithRouteCM                // Node -> NodeManager
+	MsgConnectWithRouteCMAck             // NodeManager -> Node
+	MsgAssignConnectionCM                // NodeManager -> Node
+	MsgConnectionOnCM                    // NodeManager -> Node
+	MsgShutdownCM                        // NodeManager -> Node
+	MsgUserCommand                       // Viscript -> Meshnet
+	MsgUserCommandAck                    // Meshnet -> Viscript
+	MsgPing                              // Viscript -> Meshnet
+	MsgPingAck                           // Meshnet -> Viscript
+	MsgCreateAck                         // Meshnet -> Viscript
+	MsgResourceUsage                     // Viscript -> Meshnet
+	MsgResourceUsageAck                  // Meshnet -> Viscript
+	MsgUserShutdown                      // Viscript -> Meshnet
+	MsgUserShutdownAck                   // Meshnet -> Viscript
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -54,9 +80,8 @@ type InRouteMessage struct {
 
 //message node, writes to the channel of the transport
 type OutRouteMessage struct {
-	RouteId          RouteId //the incoming route
-	Datagram         []byte  //length prefixed message
-	ResponseRequired bool
+	RouteId  RouteId //the incoming route
+	Datagram []byte  //length prefixed message
 }
 
 type CongestionPacket struct {
@@ -69,10 +94,9 @@ type CongestionPacket struct {
 //simulates one end of a transport, sending data to other end of the pair
 type TransportDatagramTransfer struct {
 	//put seq number for confirmation/ACK
-	RouteId          RouteId
-	Sequence         uint32 //sequential sequence number of ACK
-	Datagram         []byte
-	ResponseRequired bool
+	RouteId  RouteId
+	Sequence uint32 //sequential sequence number of ACK
+	Datagram []byte
 }
 
 type TransportDatagramACK struct {
@@ -81,40 +105,38 @@ type TransportDatagramACK struct {
 }
 
 type InControlMessage struct {
-	ChannelId       ChannelId
-	PayloadMessage  []byte
-	ResponseChannel chan bool
+	ChannelId      ChannelId
+	Sequence       uint32
+	PayloadMessage []byte
 }
 
-//type CreateChannelControlMessage struct {
-//}
-
-type AddRouteControlMessage struct {
+type AddRouteCM struct {
 	IncomingTransportId TransportId
 	OutgoingTransportId TransportId
 	IncomingRouteId     RouteId
 	OutgoingRouteId     RouteId
 }
 
-type RemoveRouteControlMessage struct {
+type RemoveRouteCM struct {
 	RouteId RouteId
 }
 
 type ConnectionMessage struct {
-	Sequence uint32
-	Order    uint32
-	Total    uint32
-	Payload  []byte
+	Sequence     uint32
+	ConnectionId ConnectionId
+	Order        uint32
+	Total        uint32
+	Payload      []byte
 }
 
 type ConnectionAck struct {
-	Sequence uint32
+	Sequence     uint32
+	ConnectionId ConnectionId
 }
 
 type AppMessage struct {
-	Sequence         uint32
-	ResponseRequired bool
-	Payload          []byte
+	Sequence uint32
+	Payload  []byte
 }
 
 type AppResponse struct {
@@ -127,3 +149,123 @@ type ProxyMessage struct {
 	RemoteAddr string
 	NeedClose  bool
 }
+
+// ==================== control messages ========================
+
+type RegisterNodeCM struct {
+	Host    string
+	Connect bool
+}
+
+type RegisterNodeCMAck struct {
+	Ok                bool
+	NodeId            cipher.PubKey
+	MaxBuffer         uint64
+	MaxPacketSize     uint32
+	TimeUnit          uint32
+	SendInterval      uint32
+	ConnectionTimeout uint32
+}
+
+type AssignPortCM struct {
+	Port uint32
+}
+
+type TransportCreateCM struct {
+	Id                TransportId
+	PairId            TransportId
+	PairedNodeId      cipher.PubKey
+	MaxBuffer         uint64
+	TimeUnit          uint32
+	TransportTimeout  uint32
+	SimulateDelay     bool
+	MaxSimulatedDelay uint32
+	RetransmitLimit   uint32
+}
+
+type TransportTickCM struct {
+	Id TransportId
+}
+
+type TransportShutdownCM struct {
+	Id TransportId
+}
+
+type OpenUDPCM struct {
+	Id    TransportId
+	PeerA Peer
+	PeerB Peer
+}
+
+type CommonCMAck struct {
+	Ok bool
+}
+
+type ConnectDirectlyCM struct {
+	Sequence uint32
+	From     cipher.PubKey
+	To       cipher.PubKey
+}
+
+type ConnectDirectlyCMAck struct {
+	Sequence uint32
+	Ok       bool
+}
+
+type ConnectWithRouteCM struct {
+	Sequence  uint32
+	AppIdFrom AppId
+	AppIdTo   AppId
+	From      cipher.PubKey
+	To        cipher.PubKey
+}
+
+type ConnectWithRouteCMAck struct {
+	Sequence     uint32
+	Ok           bool
+	ConnectionId ConnectionId
+}
+
+type AssignConnectionCM struct {
+	ConnectionId ConnectionId
+	RouteId      RouteId
+	AppId        AppId
+}
+
+type ConnectionOnCM struct {
+	NodeId       cipher.PubKey
+	ConnectionId ConnectionId
+}
+
+type ShutdownCM struct {
+	NodeId cipher.PubKey
+}
+
+type UserCommand struct {
+	Sequence uint32
+	AppId    uint32
+	Payload  []byte
+}
+
+type UserCommandAck struct {
+	Sequence uint32
+	AppId    uint32
+	Payload  []byte
+}
+
+type CreateAck struct{}
+
+type ResourceUsage struct{}
+
+type ResourceUsageAck struct {
+	CPU    float64
+	Memory uint64
+}
+
+type UserShutdown struct{}
+
+type UserShutdownAck struct{}
+
+type Ping struct{}
+
+type PingAck struct{}

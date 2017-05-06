@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -10,9 +9,9 @@ import (
 )
 
 type app struct {
-	Address          cipher.PubKey
-	Network          messages.Network
 	ProxyAddress     string
+	id               messages.AppId
+	node             messages.NodeInterface
 	handle           func([]byte) []byte
 	timeout          time.Duration
 	sequence         uint32
@@ -21,55 +20,53 @@ type app struct {
 	lock             *sync.Mutex
 }
 
-var config = messages.GetConfig()
+var APP_TIMEOUT = 100000 * time.Duration(time.Millisecond)
 
-func (app *app) register(meshnet messages.Network, address cipher.PubKey) {
-	app.Network = meshnet
-	app.Address = address
+func (self *app) Id() messages.AppId {
+	return self.id
 }
 
-func (self *app) Dial(address cipher.PubKey) error {
-	err := self.Network.Connect(self.Address, address)
+func (self *app) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *app) Connect(appId messages.AppId, address cipher.PubKey) error {
+	_, err := self.node.Dial(address, self.id, appId)
 	return err
 }
 
-func (self *app) Consume(msg []byte) {
-	appMsg := messages.AppMessage{}
-	err := messages.Deserialize(msg, &appMsg)
-	if err != nil {
-		fmt.Printf("Cannot consume a message: %s\n", err.Error())
-		return
-	}
+func (self *app) Consume(appMsg *messages.AppMessage) {
 
 	sequence := appMsg.Sequence
-	if appMsg.ResponseRequired {
-		go func() {
-			responsePayload := self.handle(appMsg.Payload)
-			response := &messages.AppMessage{
-				sequence,
-				false,
-				responsePayload,
-			}
-			responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
-			fmt.Println("response:", responseSerialized)
-			self.send(responseSerialized)
-		}()
+	responseChannel, err := self.getResponseChannel(sequence)
+	if err != nil {
+		responseChannel <- messages.AppResponse{nil, err}
 	} else {
-		responseChannel, err := self.getResponseChannel(sequence)
-		if err != nil {
-			fmt.Println("error:", err)
-			responseChannel <- messages.AppResponse{nil, err}
-		} else {
-			fmt.Println("response:", appMsg.Payload)
-			responseChannel <- messages.AppResponse{appMsg.Payload, nil}
-		}
+		responseChannel <- messages.AppResponse{appMsg.Payload, nil}
+	}
+}
+
+func (self *app) AssignConnection(conn messages.Connection) {
+	self.connection = conn
+}
+
+func (self *app) Shutdown() {
+	if self.node != nil {
+		self.node.Shutdown()
 	}
 }
 
 func (self *app) send(msg []byte) {
 
 	conn := self.connection
-	conn.Send(msg)
+	if conn != nil {
+		conn.Send(msg)
+	}
 }
 
 func (self *app) getResponseChannel(sequence uint32) (chan messages.AppResponse, error) {

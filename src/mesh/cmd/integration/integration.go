@@ -16,21 +16,26 @@ func main() {
 func testSendAndReceive(n int) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
-	clientAddr, serverAddr := meshnet.CreateSequenceOfNodes(n) // create sequence and get addresses of the first and the last node in it
 
-	_, err := app.NewServer(meshnet, serverAddr, func(in []byte) []byte { // register server on last node in meshnet nm
+	clientNode, serverNode := meshnet.CreateSequenceOfNodes(n) // create sequence and get addresses of the first and the last node in it
+
+	serverId := messages.MakeAppId("1")
+
+	server, err := app.NewServer(serverId, serverNode, func(in []byte) []byte { // register server on last node in meshnet nm
 		return append(in, []byte(" OK.")...) // assign callback function which handles incoming messages
 	})
 	if err != nil {
 		panic(err)
 	}
+	defer server.Shutdown()
 
-	client, err := app.NewClient(meshnet, clientAddr) // register client on the first node
+	client, err := app.NewClient(messages.MakeAppId("2"), clientNode) // register client on the first node
 	if err != nil {
 		panic(err)
 	}
+	defer client.Shutdown()
 
-	err = client.Dial(serverAddr) // client dials to server
+	err = client.Connect(serverId, serverNode.Id()) // client dials to server
 	if err != nil {
 		panic(err)
 	}

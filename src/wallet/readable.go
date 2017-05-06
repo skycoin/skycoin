@@ -17,6 +17,8 @@ type ReadableWalletEntry struct {
 type CoinSupply struct {
 	CurrentSupply int `json:"coinSupply"`
 	CoinCap  int `json:"coinCap"`
+	UndistributedLockedCoinBalance int `json:"UndistributedLockedCoinBalance"`
+	UndistributedLockedCoinHoldingAddresses []string `json:"UndistributedLockedCoinHoldingAddresses"`
 }
 
 type ReadableWalletEntryCtor func(w *WalletEntry) ReadableWalletEntry

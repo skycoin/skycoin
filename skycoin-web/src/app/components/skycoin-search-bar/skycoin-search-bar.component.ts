@@ -20,7 +20,7 @@ export class SkycoinSearchBarComponent implements OnInit {
   }
 
   searchBlockHistory(hashVal:string){
-    if(hashVal.length ==34){
+    if(hashVal.length ==34 || hashVal.length ==35 ){
       this.router.navigate(['/address', hashVal]);
       return;
     }

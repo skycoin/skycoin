@@ -17,7 +17,6 @@ func (self *proxyClient) Send(msg []byte) {
 
 	request := &messages.AppMessage{
 		0,
-		false,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
@@ -48,7 +47,7 @@ func (self *proxyClient) Listen() {
 
 		go func() { // run listening the connection for data and sending it through the meshnet to the server
 			for {
-				message := make([]byte, config.ProxyPacketSize)
+				message := make([]byte, PROXY_PACKET_SIZE)
 
 				n, err := userConn.Read(message)
 				if err != nil {
@@ -74,17 +73,20 @@ func (self *proxyClient) Listen() {
 	}
 }
 
-func (self *proxyClient) Consume(msg []byte) {
-	appMsg := messages.AppMessage{}
-	err := messages.Deserialize(msg, &appMsg)
+func (self *proxyClient) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
 	if err != nil {
-		log.Printf("Cannot deserialize application message: %s\n", err.Error())
-		return
+		return err
 	}
+	self.node = node
+	return nil
+}
+
+func (self *proxyClient) Consume(appMsg *messages.AppMessage) {
 
 	proxyMessageS := appMsg.Payload
 	proxyMessage := messages.ProxyMessage{}
-	err = messages.Deserialize(proxyMessageS, &proxyMessage)
+	err := messages.Deserialize(proxyMessageS, &proxyMessage)
 	if err != nil {
 		log.Printf("Cannot deserialize proxy message: %s\n", err.Error())
 		return
@@ -115,8 +117,6 @@ func (self *proxyClient) Consume(msg []byte) {
 	}
 
 	data := proxyMessage.Data // otherwise send data to the user app
-
-	//	log.Printf("\nClient accepted %d bytes to %s\n\n", len(data), remoteAddr)
 
 	_, err = userConn.Write(data)
 	if err != nil { // if the write is unsuccessful, close the connection and send closing command to close the corresponding connection on the server

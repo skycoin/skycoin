@@ -1,13 +1,14 @@
 package nodemanager
 
+// make nodemanager an app?
+
 import (
 	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
-	"github.com/skycoin/skycoin/src/mesh/node"
-	"github.com/skycoin/skycoin/src/mesh/transport"
 )
 
 //contains a list of nodes
@@ -16,42 +17,43 @@ import (
 //contains transport_mananger / transport_factory
 //calls ticket methods on the transport factory
 type NodeManager struct {
-	connectionList       map[cipher.PubKey]*Connection
 	nodeIdList           []cipher.PubKey
-	nodeList             map[cipher.PubKey]*node.Node
-	transportFactoryList []*transport.TransportFactory
+	nodeList             map[cipher.PubKey]*NodeRecord
+	transportFactoryList []*TransportFactory
+	nodesByTransport     map[messages.TransportId]cipher.PubKey
 	routeGraph           *RouteGraph
 	portDelivery         *PortDelivery
+	msgServer            *MsgServer
 	lock                 *sync.Mutex
 }
+
+var config = messages.GetConfig()
 
 func NewNetwork() *NodeManager {
 	nm := newNodeManager()
 	return nm
 }
 
-func (self *NodeManager) AddNewNodeStub() cipher.PubKey {
-	return self.AddNewNode(messages.LOCALHOST)
+func (self *NodeManager) addNewNode(host string) (cipher.PubKey, error) { //**** will be called by messaging server, response will be the reply
+	nodeToAdd, err := self.newNode(host)
+	if err != nil {
+		return cipher.PubKey{}, err
+	}
+	return nodeToAdd.id, nil
 }
 
-func (self *NodeManager) AddAndConnectStub() cipher.PubKey {
-	return self.AddAndConnect(messages.LOCALHOST)
-}
-
-func (self *NodeManager) AddNewNode(host string) cipher.PubKey {
-	nodeToAdd := self.newNode(host)
-	return nodeToAdd.Id
-}
-
-func (self *NodeManager) AddAndConnect(host string) cipher.PubKey {
-	id := self.AddNewNode(host)
+func (self *NodeManager) addAndConnect(host string) (cipher.PubKey, error) { //**** will be called by messaging server, response will be the reply
+	id, err := self.addNewNode(host)
+	if err != nil {
+		return cipher.PubKey{}, err
+	}
 	if len(self.nodeIdList) >= 2 {
 		self.connectRandomly(id)
 	}
-	return id
+	return id, nil
 }
 
-func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*transport.TransportFactory, error) {
+func (self *NodeManager) connectNodeToNode(idA, idB cipher.PubKey) (*TransportFactory, error) {
 
 	if idA == idB {
 		return nil, messages.ERR_CONNECTED_TO_ITSELF
@@ -70,84 +72,146 @@ func (self *NodeManager) ConnectNodeToNode(idA, idB cipher.PubKey) (*transport.T
 		return nil, messages.ERR_ALREADY_CONNECTED
 	}
 
-	nodeA.Port = self.portDelivery.Get(nodeA.Host)
-	nodeB.Port = self.portDelivery.Get(nodeB.Host)
+	nodeA.port = self.portDelivery.Get(nodeA.host)
+	portACM := messages.AssignPortCM{nodeA.port}
+	portACMS := messages.Serialize(messages.MsgAssignPortCM, portACM)
 
-	tf := transport.NewTransportFactory()
-	err = tf.ConnectNodeToNode(nodeA, nodeB)
+	nodeB.port = self.portDelivery.Get(nodeB.host)
+	portBCM := messages.AssignPortCM{nodeB.port}
+	portBCMS := messages.Serialize(messages.MsgAssignPortCM, portBCM)
+
+	err = nodeA.sendToNode(portACMS)
 	if err != nil {
 		return nil, err
 	}
 
+	err = nodeB.sendToNode(portBCMS)
+	if err != nil {
+		return nil, err
+	}
+
+	tf := newTransportFactory()
+	err = tf.connectNodeToNode(nodeA, nodeB)
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+
 	self.transportFactoryList = append(self.transportFactoryList, tf)
-	tf.Tick()
+	tf.tick()
 	return tf, nil
 }
 
-func (self *NodeManager) Register(address cipher.PubKey, consumer messages.Consumer) error {
-	node0, err := self.getNodeById(address)
+func (self *NodeManager) connectWithRoute(nodeFromId, nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
+
+	connectionId := messages.RandConnectionId()
+
+	routeId, backRouteId, err := self.findRoute(nodeFromId, nodeToId)
 	if err != nil {
-		return err
+		return messages.ConnectionId(0), err
 	}
-	conn := self.connectionList[address]
-	conn.AssignConsumer(consumer)
-	node0.AssignUser(conn)
-	return nil
+
+	assignConnectionFrom := messages.AssignConnectionCM{
+		connectionId,
+		routeId,
+		appIdFrom,
+	}
+	assignConnectionFromS := messages.Serialize(messages.MsgAssignConnectionCM, assignConnectionFrom)
+
+	assignConnectionTo := messages.AssignConnectionCM{
+		connectionId,
+		backRouteId,
+		appIdTo,
+	}
+	assignConnectionToS := messages.Serialize(messages.MsgAssignConnectionCM, assignConnectionTo)
+
+	nodeFrom, err := self.getNodeById(nodeFromId)
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	nodeTo, err := self.getNodeById(nodeToId)
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	err = nodeFrom.sendToNode(assignConnectionFromS)
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	err = nodeTo.sendToNode(assignConnectionToS)
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	connectionFrom := messages.ConnectionOnCM{
+		nodeFrom.id,
+		connectionId,
+	}
+
+	connectionFromS := messages.Serialize(messages.MsgConnectionOnCM, connectionFrom)
+	err = nodeFrom.sendToNode(connectionFromS)
+
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	connectionTo := messages.ConnectionOnCM{
+		nodeTo.id,
+		connectionId,
+	}
+
+	connectionToS := messages.Serialize(messages.MsgConnectionOnCM, connectionTo)
+
+	err = nodeTo.sendToNode(connectionToS)
+	if err != nil {
+		return messages.ConnectionId(0), err
+	}
+
+	return connectionId, nil
 }
 
 func (self *NodeManager) Tick() {
 }
 
 func (self *NodeManager) Shutdown() {
-	for _, tf := range self.transportFactoryList {
-		tf.Shutdown()
+	for _, n := range self.nodeList {
+		n.shutdown()
 	}
+	self.msgServer.shutdown()
+	time.Sleep(1 * time.Millisecond)
 }
 
 func newNodeManager() *NodeManager {
 	nm := new(NodeManager)
-	nm.nodeList = make(map[cipher.PubKey]*node.Node)
-	nm.transportFactoryList = []*transport.TransportFactory{}
+	nm.nodeList = make(map[cipher.PubKey]*NodeRecord)
+	nm.transportFactoryList = []*TransportFactory{}
 	nm.routeGraph = newGraph()
 	nm.portDelivery = newPortDelivery()
-	nm.connectionList = make(map[cipher.PubKey]*Connection)
+	msgServer, err := newMsgServer(nm)
+	if err != nil {
+		panic(err)
+	}
+	nm.msgServer = msgServer
 	nm.lock = &sync.Mutex{}
 	return nm
 }
 
-func (self *NodeManager) newNode(host string) *node.Node {
-	newNode := node.NewNode()
-
-	newNode.Host = host
-
-	self.addNode(newNode)
-	return newNode
-}
-
-func (self *NodeManager) addNode(nodeToAdd *node.Node) {
-	id := nodeToAdd.Id
-	self.lock.Lock()
-	self.nodeList[id] = nodeToAdd
-	self.nodeIdList = append(self.nodeIdList, id)
-	self.lock.Unlock()
-}
-
-func (self *NodeManager) getNodeById(id cipher.PubKey) (*node.Node, error) {
-	self.lock.Lock()
+func (self *NodeManager) getNodeById(id cipher.PubKey) (*NodeRecord, error) { // resolve it
 	result, found := self.nodeList[id]
-	self.lock.Unlock()
 
 	if !found {
-		return &node.Node{}, messages.ERR_NODE_NOT_FOUND
+		return &NodeRecord{}, messages.ERR_NODE_NOT_FOUND
 	}
 	return result, nil
 }
 
-func (self *NodeManager) GetAllNodes() map[cipher.PubKey]*node.Node {
+func (self *NodeManager) GetAllNodes() map[cipher.PubKey]*NodeRecord {
 	return self.nodeList
 }
 
-func (self *NodeManager) GetNodeById(id cipher.PubKey) (*node.Node, error) {
+func (self *NodeManager) GetNodeById(id cipher.PubKey) (*NodeRecord, error) {
 	n, err := self.getNodeById(id)
 	return n, err
 }
@@ -181,7 +245,7 @@ func (self *NodeManager) connectRandomly(node0 cipher.PubKey) {
 			break
 		}
 	}
-	self.ConnectNodeToNode(node0, node1)
+	self.connectNodeToNode(node0, node1)
 
 }
 

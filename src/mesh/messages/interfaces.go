@@ -5,34 +5,38 @@ import (
 )
 
 type NodeInterface interface {
-	GetId() cipher.PubKey
-	GetPeer() *Peer
+	Id() cipher.PubKey
+	ConnectDirectly(cipher.PubKey) error
+	Dial(cipher.PubKey, AppId, AppId) (Connection, error)
 	InjectTransportMessage(*InRouteMessage)
-	InjectConnectionMessage(*InRouteMessage)
 	InjectCongestionPacket(*CongestionPacket)
-	SetTransport(TransportId, TransportInterface)
-	ConnectedTo(NodeInterface) bool
+	GetTransportToNode(cipher.PubKey) (TransportInterface, error)
+	GetConnection(ConnectionId) Connection
+	ConnectedTo(cipher.PubKey) bool
+	RegisterApp(Consumer) error
+	Shutdown()
+	TalkToViscript(uint32, uint32)
 }
 
 type TransportInterface interface {
-	InjectNodeMessage(*InRouteMessage)
+	Id() TransportId
+	PacketsSent() uint32
+	PacketsConfirmed() uint32
 }
 
 type Consumer interface {
-	Consume([]byte)
-}
-
-type User interface {
-	Use([]byte)
+	Id() AppId
+	Consume(*AppMessage)
+	AssignConnection(Connection)
 }
 
 type Network interface {
-	NewConnection(cipher.PubKey) (Connection, error)
-	Connect(cipher.PubKey, cipher.PubKey) error
-	Register(cipher.PubKey, Consumer) error
+	TalkToViscript(uint32, uint32)
+	Shutdown()
 }
 
 type Connection interface {
-	Send([]byte)
-	Use([]byte)
+	Send([]byte) error
+	Status() uint8
+	Id() ConnectionId
 }

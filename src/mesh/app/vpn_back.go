@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -38,22 +37,15 @@ var (
 	}
 )
 
-func NewVPNServer(meshnet messages.Network, address cipher.PubKey) (*VPNServer, error) {
+func NewVPNServer(appId messages.AppId, node messages.NodeInterface) (*VPNServer, error) {
 	vpnServer := &VPNServer{}
-	vpnServer.register(meshnet, address)
+	vpnServer.id = appId
 	vpnServer.lock = &sync.Mutex{}
 	vpnServer.timeout = time.Duration(messages.GetConfig().AppTimeout)
 	vpnServer.meshConns = map[string]*Pipe{}
 	vpnServer.targetConns = map[string]net.Conn{}
 
-	conn, err := meshnet.NewConnection(address)
-	if err != nil {
-		return nil, err
-	}
-
-	vpnServer.connection = conn
-
-	err = meshnet.Register(address, vpnServer)
+	err := vpnServer.RegisterAtNode(node)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +55,16 @@ func NewVPNServer(meshnet messages.Network, address cipher.PubKey) (*VPNServer, 
 	return vpnServer, nil
 }
 
-func (self *VPNServer) Consume(msg []byte) {
+func (self *VPNServer) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *VPNServer) Consume(msg *messages.AppMessage) {
 
 	proxyMessage := getProxyMessage(msg)
 	if proxyMessage == nil {
@@ -134,7 +135,12 @@ func (self *VPNServer) serveConn(meshConn io.Reader, remoteAddr string, ready ch
 	reqData := request[typeIndex+1:]
 
 	urlIndex := bytes.IndexByte(reqData, 32)
-	url := string(reqData[:urlIndex])
+	var url string
+	if urlIndex == -1 {
+		url = string(reqData)
+	} else {
+		url = string(reqData[:urlIndex])
+	}
 
 	urlData := strings.Split(url, "://")
 	if len(urlData) > 1 {

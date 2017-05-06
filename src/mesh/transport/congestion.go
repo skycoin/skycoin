@@ -17,7 +17,7 @@ func (self *Transport) broadcastCongestion() {
 func (self *Transport) sendCongestion() {
 	if self.AttachedNode != nil {
 		packetToNode := messages.CongestionPacket{
-			self.Id,
+			self.id,
 			self.nodeCongestion,
 		}
 

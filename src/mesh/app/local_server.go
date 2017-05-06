@@ -2,33 +2,72 @@ package app
 
 import (
 	"sync"
-	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
+	"github.com/skycoin/skycoin/src/mesh/node"
 )
 
 type Server struct {
 	app
 }
 
-func NewServer(meshnet messages.Network, address cipher.PubKey, handle func([]byte) []byte) (*Server, error) {
-	server := &Server{}
-	server.lock = &sync.Mutex{}
-	server.register(meshnet, address)
-	server.lock = &sync.Mutex{}
-	server.timeout = time.Duration(messages.GetConfig().AppTimeout)
-	server.handle = handle
+func BrandNewServer(appId messages.AppId, host, meshnet string, handle func([]byte) []byte) (*Server, error) {
 
-	conn, err := meshnet.NewConnection(address)
+	server := newServer(appId, handle)
+
+	node, err := node.CreateAndConnectNode(host, meshnet)
 	if err != nil {
 		return nil, err
 	}
-	server.connection = conn
 
-	err = meshnet.Register(address, server)
+	err = server.RegisterAtNode(node)
 	if err != nil {
 		return nil, err
 	}
+
 	return server, nil
+}
+
+func NewServer(appId messages.AppId, node messages.NodeInterface, handle func([]byte) []byte) (*Server, error) {
+
+	server := newServer(appId, handle)
+
+	err := server.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
+
+	return server, nil
+}
+
+func (self *Server) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *Server) Consume(appMsg *messages.AppMessage) {
+
+	sequence := appMsg.Sequence
+	go func() {
+		responsePayload := self.handle(appMsg.Payload)
+		response := &messages.AppMessage{
+			sequence,
+			responsePayload,
+		}
+		responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
+		self.send(responseSerialized)
+	}()
+}
+
+func newServer(appId messages.AppId, handle func([]byte) []byte) *Server {
+	server := &Server{}
+	server.id = appId
+	server.lock = &sync.Mutex{}
+	server.timeout = APP_TIMEOUT
+	server.handle = handle
+	return server
 }

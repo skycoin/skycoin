@@ -3,7 +3,6 @@ package nodemanager
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
-	"github.com/skycoin/skycoin/src/mesh/node"
 )
 
 func (self *NodeManager) findRoute(nodeFrom, nodeTo cipher.PubKey) (routeId, backRouteId messages.RouteId, err error) {
@@ -101,7 +100,7 @@ func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey, forward bool) 
 		incomingRoute := routeIds[routeIndex]
 
 		var prevNodeId, nextNodeId cipher.PubKey
-		var prevNode *node.Node
+		var prevNode *NodeRecord
 		var incomingTransport, outgoingTransport messages.TransportId
 		var outgoingRoute messages.RouteId
 
@@ -111,11 +110,11 @@ func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey, forward bool) 
 		} else {
 			prevNodeId = nodes[i-next]
 			prevNode, _ = self.getNodeById(prevNodeId)
-			incomingTransportObj, err := prevNode.GetTransportToNode(currentNodeId)
+			incomingTransportObj, err := prevNode.GetTransportToNode(currentNodeId) //**** request this info through control message or request from node struct in nodemanager
 			if err != nil {
 				return []messages.RouteId{}, err
 			}
-			incomingTransport = incomingTransportObj.StubPair.Id
+			incomingTransport = incomingTransportObj.pair.id
 		}
 
 		// if it is the last node in the route, there is no outgoing transport and outgoing route
@@ -125,26 +124,37 @@ func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey, forward bool) 
 		} else {
 			outgoingRoute = routeIds[routeIndex+1]
 			nextNodeId = nodes[i+next]
-			outgoingTransportObj, err := currentNode.GetTransportToNode(nextNodeId)
+			outgoingTransportObj, err := currentNode.GetTransportToNode(nextNodeId) //**** request this info through control message or again request it from the node struct
 			if err != nil {
 				return []messages.RouteId{}, err
 			}
-			outgoingTransport = outgoingTransportObj.Id
+			outgoingTransport = outgoingTransportObj.id
 		}
 
-		msg := messages.AddRouteControlMessage{
+		msg := messages.AddRouteCM{
 			incomingTransport,
 			outgoingTransport,
 			incomingRoute,
 			outgoingRoute,
 		}
 
-		msgS := messages.Serialize(messages.MsgAddRouteControlMessage, msg)
+		routeRule := messages.RouteRule{
+			incomingTransport,
+			outgoingTransport,
+			incomingRoute,
+			outgoingRoute,
+		}
 
-		ccid := currentNode.AddControlChannel()
-		controlMessage := messages.InControlMessage{ccid, msgS, nil}
+		msgS := messages.Serialize(messages.MsgAddRouteCM, msg)
 
-		currentNode.InjectControlMessage(controlMessage)
+		err = currentNode.sendToNode(msgS)
+		if err != nil {
+			return []messages.RouteId{}, err
+		}
+
+		currentNode.lock.Lock()
+		currentNode.routeForwardingRules[incomingRoute] = &routeRule
+		currentNode.lock.Unlock()
 	}
 
 	return routeIds, nil
@@ -153,9 +163,8 @@ func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey, forward bool) 
 func (self *NodeManager) rebuildRoutes() {
 	self.routeGraph.clear()
 	for _, nodeFrom := range self.nodeList {
-		nodeFromId := nodeFrom.GetId()
-		for _, transport := range nodeFrom.Transports {
-			nodeToId := transport.StubPair.AttachedNode.GetId()
+		nodeFromId := nodeFrom.id
+		for nodeToId := range nodeFrom.transportsByNodes {
 			self.routeGraph.addDirectRoute(nodeFromId, nodeToId, 1) // weight is always 1 because so far all routes are equal! Change this if needed
 		}
 	}

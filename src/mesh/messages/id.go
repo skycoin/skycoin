@@ -27,3 +27,18 @@ type ConnectionId uint64
 func RandConnectionId() ConnectionId {
 	return (ConnectionId)(rand.Int63())
 }
+
+type AppId []byte
+
+func RandAppId() AppId {
+	appId := make([]byte, 64, 64)
+	for i := range appId {
+		b := byte(rand.Intn(256))
+		appId[i] = b
+	}
+	return (AppId)(appId)
+}
+
+func MakeAppId(idStr string) AppId {
+	return AppId([]byte(idStr))
+}

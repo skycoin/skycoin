@@ -1,13 +1,14 @@
 package node
 
 import (
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	"github.com/skycoin/skycoin/src/mesh/transport"
 
-	"errors"
-	"fmt"
-	"github.com/skycoin/skycoin/src/cipher"
 	"log"
+	"net"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -22,68 +23,176 @@ import (
 // and forwards it to the transport
 
 type Node struct {
-	Id                     cipher.PubKey
-	incomingControlChannel chan messages.InControlMessage
-	incomingFromTransport  chan *messages.InRouteMessage
-	incomingFromConnection chan *messages.InRouteMessage
-	congestionChannel      chan *messages.CongestionPacket
+	id                      cipher.PubKey
+	incomingControlChannel  chan *CM
+	incomingFromTransport   chan *messages.InRouteMessage
+	incomingFromConnections chan *messages.InRouteMessage
+	congestionChannel       chan *messages.CongestionPacket
 
-	Transports map[messages.TransportId]*transport.Transport
+	responseChannels map[uint32]chan bool
 
-	RouteForwardingRules map[messages.RouteId]*RouteRule
+	transports        map[messages.TransportId]*transport.Transport
+	transportsByNodes map[cipher.PubKey]*transport.Transport
+
+	routeForwardingRules map[messages.RouteId]*messages.RouteRule
 
 	lock *sync.Mutex
 
-	user messages.User
+	connections       map[messages.ConnectionId]*Connection
+	sendInterval      time.Duration
+	connectionTimeout time.Duration
 
-	controlChannels map[messages.ChannelId]*ControlChannel
+	controlChannels             map[messages.ChannelId]*ControlChannel
+	closeControlMessagesChannel chan bool
 
-	Host string
-	Port uint32
+	host string
+	port uint32
 
-	Congested          bool
+	controlConn *net.UDPConn
+	nmAddr      net.Addr
+
+	congested          bool
 	connectionThrottle uint32
 	throttle           uint32
 
-	Sent      uint32
-	Responses uint32
+	sequence uint32
 
-	Ticks int
+	ticks int
+
+	maxBuffer     uint64
+	maxPacketSize uint32
+	timeUnit      time.Duration
+
+	connectResponseSequence uint32
+	connectResponseChannels map[uint32]chan bool
+
+	connectionResponseSequence uint32
+	connectionResponseChannels map[uint32]chan messages.ConnectionId
+
+	apps map[string]messages.Consumer
 }
 
-type RouteRule struct {
-	IncomingTransport messages.TransportId
-	OutgoingTransport messages.TransportId
-	IncomingRoute     messages.RouteId
-	OutgoingRoute     messages.RouteId
+type CM struct {
+	msg      *messages.InControlMessage
+	respChan chan bool
 }
 
-var config = messages.GetConfig()
+var (
+	CONTROL_TIMEOUT = 10000 * time.Millisecond
+)
 
-func NewNode() *Node {
-	node := new(Node)
-	node.Id = createPubKey()
-	node.incomingFromTransport = make(chan *messages.InRouteMessage, config.MaxBuffer)
-	node.incomingFromConnection = make(chan *messages.InRouteMessage, config.MaxBuffer*2)
-	node.incomingControlChannel = make(chan messages.InControlMessage, 256)
-	node.congestionChannel = make(chan *messages.CongestionPacket, 1024)
-	node.Transports = make(map[messages.TransportId]*transport.Transport)
-	node.RouteForwardingRules = make(map[messages.RouteId]*RouteRule)
-	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
-	node.lock = &sync.Mutex{}
-	if messages.IsDebug() {
-		fmt.Printf("Created Node %s\n", node.Id.Hex())
+func CreateNode(host, nmAddr string) (messages.NodeInterface, error) { // public for test reasons
+	node, err := createAndRegisterNode(host, nmAddr, false)
+	return node, err
+}
+
+func CreateAndConnectNode(host, nmAddr string) (messages.NodeInterface, error) { // public for test reasons
+	node, err := createAndRegisterNode(host, nmAddr, true)
+	return node, err
+}
+
+func (self *Node) Shutdown() {
+	self.controlConn.Close()
+	self.closeControlMessagesChannel <- true
+	for _, tr := range self.transports {
+		tr.Shutdown()
 	}
+}
+
+func (self *Node) RegisterApp(app messages.Consumer) error {
+	id := string(app.Id())
+	self.lock.Lock()
+	if _, ok := self.apps[id]; ok {
+		return messages.ERR_APP_ID_EXISTS
+	}
+	self.lock.Unlock()
+	self.apps[id] = app
+	return nil
+}
+
+func (self *Node) Dial(address cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.Connection, error) {
+	connId, err := self.sendConnectWithRouteToServer(address, appIdFrom, appIdTo)
+	if err != nil {
+		return nil, err
+	}
+
+	self.lock.Lock()
+
+	conn, ok := self.connections[connId]
+	self.lock.Unlock()
+	if !ok {
+		return nil, messages.ERR_CONNECTION_DOESNT_EXIST
+	}
+
+	return conn, nil
+}
+
+func (self *Node) ConnectDirectly(address cipher.PubKey) error {
+	return self.sendConnectDirectlyToServer(address)
+}
+
+func (self *Node) GetConnection(id messages.ConnectionId) messages.Connection {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	return self.connections[id]
+}
+
+func createAndRegisterNode(fullhost, nmAddr string, connect bool) (messages.NodeInterface, error) {
+
+	hostData := strings.Split(fullhost, ":")
+	if len(hostData) != 2 {
+		return nil, messages.ERR_INCORRECT_HOST
+	}
+
+	host, portStr := hostData[0], hostData[1]
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return nil, err
+	}
+
+	node := newNode(host)
+
+	controlConn, err := node.openUDPforCM(port, nmAddr)
+	if err != nil {
+		return nil, err
+	}
+	node.controlConn = controlConn
+	go node.receiveControlMessages()
+
+	err = node.sendRegisterNodeToServer(fullhost, connect) //**** send registration request to nm
+	if err != nil {
+		return nil, err
+	}
+	if messages.IsDebug() {
+		log.Printf("Created Node %s\n", node.id.Hex())
+	}
+	return node, nil
+}
+
+func newNode(host string) *Node {
+	node := new(Node)
+	node.lock = &sync.Mutex{}
+	node.incomingControlChannel = make(chan *CM, 256)
+	node.congestionChannel = make(chan *messages.CongestionPacket, 1024)
+	node.responseChannels = make(map[uint32]chan bool)
+	node.transports = make(map[messages.TransportId]*transport.Transport)
+	node.transportsByNodes = make(map[cipher.PubKey]*transport.Transport)
+	node.routeForwardingRules = make(map[messages.RouteId]*messages.RouteRule)
+	node.controlChannels = make(map[messages.ChannelId]*ControlChannel)
+	node.connections = make(map[messages.ConnectionId]*Connection)
+	node.connectResponseChannels = make(map[uint32]chan bool)
+	node.connectionResponseChannels = make(map[uint32]chan messages.ConnectionId)
+	node.addZeroControlChannel()
+	node.host = host
+	node.closeControlMessagesChannel = make(chan bool)
+	node.apps = make(map[string]messages.Consumer)
 	node.Tick()
 	return node
 }
 
-func createPubKey() cipher.PubKey {
-	pub, _ := cipher.GenerateKeyPair()
-	return pub
-}
-
-func (self *Node) Shutdown() {
+func newLocalNode() *Node { // for tests
+	return newNode(messages.LOCALHOST)
 }
 
 //move node forward on tick, process events
@@ -93,70 +202,28 @@ func (self *Node) Tick() {
 	<-backChannel
 }
 
-func (self *Node) GetId() cipher.PubKey {
-	return self.Id
+func (self *Node) Id() cipher.PubKey {
+	return self.id
 }
 
-func (self *Node) GetPeer() *messages.Peer {
-	peer := &messages.Peer{self.Host, self.Port}
-	return peer
-}
+func (self *Node) GetTransportToNode(nodeId cipher.PubKey) (messages.TransportInterface, error) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
 
-func (self *Node) GetTransportById(id messages.TransportId) (*transport.Transport, error) {
-	tr, err := self.getTransport(id)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Node %d doesn't contain transport with id %d", self.Id, id))
+	tr, ok := self.transportsByNodes[nodeId]
+	if !ok {
+		return nil, messages.ERR_NO_TRANSPORT_TO_NODE
 	}
 	return tr, nil
 }
 
-func (self *Node) GetTransportToNode(nodeId cipher.PubKey) (*transport.Transport, error) {
-	for _, transport := range self.Transports {
-		if nodeId == transport.StubPair.AttachedNode.GetId() {
-			return transport, nil
-		}
-	}
-	return nil, messages.ERR_NO_TRANSPORT_TO_NODE
-}
-
-func (self *Node) ConnectedTo(other messages.NodeInterface) bool {
-	_, err := self.GetTransportToNode(other.GetId())
+func (self *Node) ConnectedTo(nodeId cipher.PubKey) bool {
+	_, err := self.GetTransportToNode(nodeId)
 	return err == nil
 }
 
-func (self *Node) SetTransport(id messages.TransportId, tr messages.TransportInterface) {
-	self.setTransport(id, tr.(*transport.Transport))
-}
-
-func (self *Node) AssignUser(user messages.User) {
-	self.user = user
-}
-
-//inject an incoming message from the connection
-func (self *Node) InjectConnectionMessage(msg *messages.InRouteMessage) {
-	c := cap(self.incomingFromConnection)
-	for {
-		if len(self.incomingFromConnection) < c {
-			for {
-				if len(self.incomingFromConnection) > c/2 {
-					self.connectionThrottle = messages.Increase(self.connectionThrottle)
-					time.Sleep(time.Duration(self.connectionThrottle) * config.TimeUnit)
-					self.Congested = true
-				} else {
-					if len(self.incomingFromConnection) < c/4 {
-						self.Congested = false
-						self.connectionThrottle = messages.Decrease(self.connectionThrottle)
-					}
-					self.incomingFromConnection <- msg
-					break
-				}
-			}
-			break
-		} else {
-			fmt.Println("node is congested by connection packets")
-			time.Sleep(100 * time.Millisecond)
-		}
-	}
+func (self *Node) InjectCongestionPacket(msg *messages.CongestionPacket) {
+	self.congestionChannel <- msg
 }
 
 //inject an incoming message from the transport
@@ -164,23 +231,48 @@ func (self *Node) InjectTransportMessage(msg *messages.InRouteMessage) {
 	go self.handleInRouteMessage(msg)
 }
 
-func (self *Node) InjectControlMessage(msg messages.InControlMessage) {
-	msg.ResponseChannel = make(chan bool, 32)
-	self.incomingControlChannel <- msg
-
-	<-msg.ResponseChannel
+//inject an incoming message from the connection
+func (self *Node) injectConnectionMessage(msg *messages.InRouteMessage) {
+	c := cap(self.incomingFromConnections)
+	for {
+		if len(self.incomingFromConnections) < c {
+			for {
+				if len(self.incomingFromConnections) > c/2 {
+					self.connectionThrottle = messages.Increase(self.connectionThrottle)
+					time.Sleep(time.Duration(self.connectionThrottle) * self.timeUnit)
+					self.congested = true
+				} else {
+					if len(self.incomingFromConnections) < c/4 {
+						self.congested = false
+						self.connectionThrottle = messages.Decrease(self.connectionThrottle)
+					}
+					self.incomingFromConnections <- msg
+					break
+				}
+			}
+			break
+		} else {
+			log.Println("node is congested by connection packets")
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 }
 
-func (self *Node) InjectCongestionPacket(msg *messages.CongestionPacket) {
-	self.congestionChannel <- msg
+func (self *Node) injectControlMessage(msg *messages.InControlMessage) {
+	respChan := make(chan bool)
+	cm := &CM{
+		msg,
+		respChan,
+	}
+	self.incomingControlChannel <- cm
+	<-respChan
 }
 
 //move node forward on tick, process events
 func (self *Node) runCycles(backChannel chan bool) {
 	//process incoming messages
-	go self.handleCongestionMessages()         //pop them off the channel
-	go self.handleIncomingConnectionMessages() //pop them off the channel
-	go self.handleIncomingControlMessages()    //pop them off the channel
+	go self.handleCongestionMessages()      //pop them off the channel
+	go self.handleIncomingControlMessages() //pop them off the channel
 	backChannel <- true
 }
 
@@ -188,8 +280,8 @@ func (self *Node) handleIncomingTransportMessages() {
 	for msg := range self.incomingFromTransport {
 
 		if messages.IsDebug() {
-			fmt.Printf("\nnode with id %s accepting a message\n\n", self.Id.Hex())
-			fmt.Println("InRouteMessage", msg)
+			log.Printf("\nnode with id %s accepting a message\n\n", self.id.Hex())
+			log.Println("InRouteMessage", msg)
 		}
 
 		go self.handleInRouteMessage(msg)
@@ -197,11 +289,11 @@ func (self *Node) handleIncomingTransportMessages() {
 }
 
 func (self *Node) handleIncomingConnectionMessages() {
-	for msg := range self.incomingFromConnection {
+	for msg := range self.incomingFromConnections {
 
 		if messages.IsDebug() {
-			fmt.Printf("\nnode with id %s accepting a message\n\n", self.Id.Hex())
-			fmt.Println("InRouteMessage", msg)
+			log.Printf("\nnode with id %s accepting a message\n\n", self.id.Hex())
+			log.Println("InRouteMessage", msg)
 		}
 
 		go self.handleInRouteMessage(msg)
@@ -209,9 +301,14 @@ func (self *Node) handleIncomingConnectionMessages() {
 }
 
 func (self *Node) handleIncomingControlMessages() {
-	for msg := range self.incomingControlChannel {
-		self.handleControlMessage(msg.ChannelId, msg.PayloadMessage)
-		msg.ResponseChannel <- true
+	for cm := range self.incomingControlChannel {
+		msg := cm.msg
+		respChan := cm.respChan
+		err := self.handleControlMessage(messages.ChannelId(0), msg)
+		if err != nil {
+			log.Println(err)
+		}
+		respChan <- true
 	}
 }
 
@@ -219,7 +316,7 @@ func (self *Node) handleCongestionMessages() {
 	for msg := range self.congestionChannel {
 		if msg.Congestion {
 			self.throttle = messages.Increase(self.throttle)
-			fmt.Println("node throttle increased")
+			log.Println("node throttle increased")
 		} else {
 			self.throttle = messages.Decrease(self.throttle)
 		}
@@ -227,20 +324,21 @@ func (self *Node) handleCongestionMessages() {
 }
 
 func (self *Node) handleInRouteMessage(m1 *messages.InRouteMessage) {
-	self.Ticks++
+	self.ticks++
 	//look in route table
 
 	routeId := m1.RouteId
 	transportId := m1.TransportId //who is is from
 	//check that transport exists
 	if _, err := self.getTransport(transportId); err != nil && transportId != messages.NIL_TRANSPORT {
-		log.Printf("Node %s received message From Transport that does not exist\n", self.Id.Hex())
+		log.Printf("Node %s received message From Transport that does not exist\n", self.id.Hex())
 	}
 	//check if route exists
 	routeRule, err := self.getRoute(routeId)
 	if err != nil {
 
-		log.Fatalf("Node %s received route message for route that does not exist\n", self.Id.Hex())
+		log.Printf("Node %s received route message for route that does not exist\n", self.id.Hex())
+		return
 	}
 	//check that incoming transport is correct
 	if transportId != routeRule.IncomingTransport {
@@ -270,7 +368,7 @@ func (self *Node) handleInRouteMessage(m1 *messages.InRouteMessage) {
 		if outgoingTransport, err := self.getTransport(outgoingTransportId); err == nil {
 
 			if self.throttle > 0 {
-				time.Sleep(time.Duration(self.throttle) * config.TimeUnit)
+				time.Sleep(time.Duration(self.throttle) * self.timeUnit)
 			}
 			outgoingTransport.GetFromNode(out) //inject message to transport
 
@@ -279,16 +377,77 @@ func (self *Node) handleInRouteMessage(m1 *messages.InRouteMessage) {
 }
 
 func (self *Node) out(msg []byte) {
-	if self.user != nil {
-		self.user.Use(msg)
+
+	switch messages.GetMessageType(msg) {
+
+	case messages.MsgConnectionMessage:
+		connMsg := messages.ConnectionMessage{}
+		err := messages.Deserialize(msg, &connMsg)
+		if err != nil {
+			log.Println("wrong connection message", msg)
+			return
+		}
+
+		self.lock.Lock()
+		conn, ok := self.connections[connMsg.ConnectionId]
+		self.lock.Unlock()
+
+		if ok {
+			go conn.handleConnectionMessage(&connMsg)
+		} else {
+			log.Println("no connection with id", connMsg.ConnectionId)
+		}
+
+	case messages.MsgConnectionAck:
+		connAck := messages.ConnectionAck{}
+		err := messages.Deserialize(msg, &connAck)
+		if err != nil {
+			log.Println("wrong connection Ack", msg)
+			return
+		}
+
+		self.lock.Lock()
+		conn, ok := self.connections[connAck.ConnectionId]
+		self.lock.Unlock()
+
+		if ok {
+			go conn.receiveAck(connAck.Sequence)
+		}
+
+	default:
+		log.Println("wrong connection message", msg)
 	}
 }
 
-func (self *Node) GetTicks() int {
-	ticks := 0
-	for _, tr := range self.Transports {
-		ticks += tr.Ticks
+func (self *Node) register(ack *messages.RegisterNodeCMAck) {
+	self.id = ack.NodeId
+	self.timeUnit = time.Duration(ack.TimeUnit) * time.Microsecond
+	self.maxBuffer = ack.MaxBuffer
+	self.incomingFromTransport = make(chan *messages.InRouteMessage, self.maxBuffer)
+	self.incomingFromConnections = make(chan *messages.InRouteMessage, self.maxBuffer*2)
+	self.maxPacketSize = ack.MaxPacketSize
+	self.sendInterval = time.Duration(ack.SendInterval) * time.Microsecond
+	self.connectionTimeout = time.Duration(ack.ConnectionTimeout) * time.Millisecond
+	go self.handleIncomingConnectionMessages() //pop them off the channel
+}
+
+func (self *Node) getResponseChannel(sequence uint32) (chan bool, bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	responseChannel, ok := self.responseChannels[sequence]
+	return responseChannel, ok
+}
+
+func (self *Node) setResponseChannel(sequence uint32, responseChannel chan bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	self.responseChannels[sequence] = responseChannel
+}
+
+func (self *Node) setConnectionOn(connId messages.ConnectionId) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	if conn, ok := self.connections[connId]; ok {
+		conn.status = CONNECTED
 	}
-	ticks += self.Ticks
-	return ticks
 }

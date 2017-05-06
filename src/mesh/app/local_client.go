@@ -4,45 +4,42 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
+	"github.com/skycoin/skycoin/src/mesh/node"
 )
 
 type Client struct {
 	app
 }
 
-func NewClient(meshnet messages.Network, address cipher.PubKey) (*Client, error) {
-	client := &Client{}
-	client.register(meshnet, address)
-	client.lock = &sync.Mutex{}
-	client.timeout = time.Duration(messages.GetConfig().AppTimeout)
-	client.responseChannels = make(map[uint32]chan messages.AppResponse)
+func BrandNewClient(appId messages.AppId, host, meshnet string) (*Client, error) {
 
-	conn, err := meshnet.NewConnection(address)
+	client := newClient(appId)
+
+	node, err := node.CreateAndConnectNode(host, meshnet)
 	if err != nil {
 		return nil, err
 	}
 
-	client.connection = conn
-
-	err = meshnet.Register(address, client)
+	err = client.RegisterAtNode(node)
 	if err != nil {
 		return nil, err
 	}
+
 	return client, nil
 }
 
-/*
-func (self *Client) DialWithRoutes(route, backRoute messages.RouteId) error {
-	conn, err := self.Network.NewConnectionWithRoutes(self.Address, route, backRoute)
+func NewClient(appId messages.AppId, node messages.NodeInterface) (*Client, error) {
+
+	client := newClient(appId)
+
+	err := client.RegisterAtNode(node)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	self.connection = conn
-	return nil
+
+	return client, nil
 }
-*/
 
 func (self *Client) Send(msg []byte) ([]byte, error) {
 
@@ -51,7 +48,6 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 
 	request := &messages.AppMessage{
 		sequence,
-		true,
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
@@ -63,4 +59,13 @@ func (self *Client) Send(msg []byte) ([]byte, error) {
 	case <-time.After(self.timeout * time.Millisecond):
 		return nil, messages.ERR_APP_TIMEOUT
 	}
+}
+
+func newClient(appId messages.AppId) *Client {
+	client := &Client{}
+	client.id = appId
+	client.lock = &sync.Mutex{}
+	client.timeout = APP_TIMEOUT
+	client.responseChannels = make(map[uint32]chan messages.AppResponse)
+	return client
 }

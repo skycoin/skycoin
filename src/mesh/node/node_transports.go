@@ -9,28 +9,20 @@ func (self *Node) getTransport(transportId messages.TransportId) (*transport.Tra
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	tr, ok := self.Transports[transportId]
+	tr, ok := self.transports[transportId]
 	if !ok {
 		return nil, messages.ERR_TRANSPORT_DOESNT_EXIST
 	}
 	return tr, nil
 }
 
-func (self *Node) setTransport(transportId messages.TransportId, tr *transport.Transport) {
+func (self *Node) setTransportFromMessage(msg *messages.TransportCreateCM) {
+	tr := transport.CreateTransportFromMessage(msg)
+	tr.AttachedNode = self
+
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	self.Transports[transportId] = tr
-}
-
-func (self *Node) removeTransport(transportId messages.TransportId) error {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
-	if _, ok := self.Transports[transportId]; !ok {
-		return messages.ERR_TRANSPORT_DOESNT_EXIST
-	}
-
-	delete(self.Transports, transportId)
-	return nil
+	self.transports[tr.Id()] = tr
+	self.transportsByNodes[msg.PairedNodeId] = tr
 }

@@ -9,7 +9,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
-	"github.com/skycoin/skycoin/src/mesh/node"
 	"github.com/skycoin/skycoin/src/mesh/nodemanager"
 	"github.com/skycoin/skycoin/src/mesh/transport"
 )
@@ -41,7 +40,7 @@ func promptCycle(rpcClient *nodemanager.RPCClient) {
 	}
 }
 
-func commandDispatcher(rpcClient *nodemanager.RPCClient) bool {
+func commandDispatcher(rpcClient *nodemanager.RPCClient) bool { // if true interrupt work
 	command, args := cliInput("\nenter the command (help for commands list):\n> ")
 
 	if command == "" {
@@ -442,7 +441,7 @@ func listRoutes(client *nodemanager.RPCClient, args []string) {
 		return
 	}
 
-	var routes []node.RouteRule
+	var routes []messages.RouteRule
 	err = messages.Deserialize(response, &routes)
 	if err != nil {
 		errorOut(err)

@@ -2,13 +2,10 @@
 
 
 <div class="row">
-  <div class="col s12 s12">
-    <div class="card blue lighten-1">
-      <div class="card-content white-text">
-        <span class="card-title">Blockchain</span>
-        <app-block-chain-coin-supply></app-block-chain-coin-supply>
-        <h5>{{totalBlocks}} blocks</h5>
-      </div>
+  <div class="col s12 s12 card light-blue lighten-1 white-text">
+    <div class="card-content">
+      <span class="col s6">Block Height:</span><span class="col s6">{{ totalBlocks| number : '1.0-0'}}</span>
+      <app-block-chain-coin-supply></app-block-chain-coin-supply>
     </div>
   </div>
 </div>
@@ -32,9 +29,9 @@
   <tbody>
   <tr *ngFor="let block of blocks" (click)="showDetails(block)">
     <td>{{getTime(block.header.timestamp)}}</td>
-    <td >{{ block.header.seq }}</td>
+    <td >{{ block.header.seq | number : '1.0-0'}}</td>
     <td>{{ block.body.txns.length }}</td>
-    <td>{{ GetBlockAmount(block.body.txns) }}</td>
+    <td>{{ GetBlockAmount(block.body.txns) | number : '1.0-0'}}</td>
     <td>{{ block.header.block_hash }}</td>
   </tr>
 

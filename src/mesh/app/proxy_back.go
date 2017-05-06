@@ -14,18 +14,14 @@ type proxyServer struct {
 	targetConns map[string]net.Conn
 }
 
-func getProxyMessage(msg []byte) *messages.ProxyMessage {
-	appMsg := messages.AppMessage{}
-	err := messages.Deserialize(msg, &appMsg)
-	if err != nil {
-		log.Printf("Cannot deserialize application message: %s\n", err.Error())
-		return nil
-	}
+const PROXY_PACKET_SIZE uint32 = 16384
+
+func getProxyMessage(appMsg *messages.AppMessage) *messages.ProxyMessage {
 
 	proxyMessageS := appMsg.Payload
 	proxyMessage := messages.ProxyMessage{}
 
-	err = messages.Deserialize(proxyMessageS, &proxyMessage)
+	err := messages.Deserialize(proxyMessageS, &proxyMessage)
 	if err != nil {
 		log.Printf("Cannot deserialize proxy message: %s\n", err.Error())
 		return nil
@@ -80,7 +76,7 @@ func (self *proxyServer) getFromConn(conn net.Conn, remoteAddr string) { // perm
 }
 
 func getPacketFromConn(conn io.Reader) ([]byte, error) {
-	buffer := make([]byte, config.ProxyPacketSize)
+	buffer := make([]byte, PROXY_PACKET_SIZE)
 	n, err := conn.Read(buffer)
 	if err != nil {
 		return nil, err
@@ -91,7 +87,6 @@ func getPacketFromConn(conn io.Reader) ([]byte, error) {
 func (self *proxyServer) Send(data []byte) {
 	message := &messages.AppMessage{
 		0,
-		false,
 		data,
 	}
 	messageS := messages.Serialize(messages.MsgAppMessage, message)

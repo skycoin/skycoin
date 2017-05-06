@@ -8,7 +8,6 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 	"github.com/skycoin/skycoin/src/mesh/proxy/go-socks5"
 )
@@ -18,22 +17,15 @@ type SocksServer struct {
 	dialer proxy.Dialer
 }
 
-func NewSocksServer(meshnet messages.Network, address cipher.PubKey, proxyAddress string) (*SocksServer, error) {
+func NewSocksServer(appId messages.AppId, node messages.NodeInterface, proxyAddress string) (*SocksServer, error) {
 	socksServer := &SocksServer{}
-	socksServer.register(meshnet, address)
+	socksServer.id = appId
 	socksServer.lock = &sync.Mutex{}
 	socksServer.timeout = time.Duration(messages.GetConfig().AppTimeout)
 	socksServer.ProxyAddress = proxyAddress
 	socksServer.targetConns = map[string]net.Conn{}
 
-	conn, err := meshnet.NewConnection(address)
-	if err != nil {
-		return nil, err
-	}
-
-	socksServer.connection = conn
-
-	err = meshnet.Register(address, socksServer)
+	err := socksServer.RegisterAtNode(node)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +36,16 @@ func NewSocksServer(meshnet messages.Network, address cipher.PubKey, proxyAddres
 	return socksServer, nil
 }
 
-func (self *SocksServer) Consume(msg []byte) {
+func (self *SocksServer) RegisterAtNode(node messages.NodeInterface) error {
+	err := node.RegisterApp(self)
+	if err != nil {
+		return err
+	}
+	self.node = node
+	return nil
+}
+
+func (self *SocksServer) Consume(msg *messages.AppMessage) {
 
 	proxyMessage := getProxyMessage(msg)
 	if proxyMessage == nil {

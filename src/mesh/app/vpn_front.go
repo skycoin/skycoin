@@ -11,7 +11,6 @@ import (
 
 	"github.com/songgao/water"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -24,24 +23,12 @@ const (
 	MTU        = "1300"
 )
 
-func NewVPNClient(meshnet messages.Network, address cipher.PubKey, proxyAddress string) (*VPNClient, error) {
+func NewVPNClient(appId messages.AppId, node messages.NodeInterface, proxyAddress string) (*VPNClient, error) {
 	setLimit(16384) // set limit of simultaneously opened files to 16384
 	vpnClient := &VPNClient{}
-	vpnClient.register(meshnet, address)
+	vpnClient.id = appId
 	vpnClient.lock = &sync.Mutex{}
 	vpnClient.timeout = time.Duration(messages.GetConfig().AppTimeout)
-
-	conn, err := meshnet.NewConnection(address)
-	if err != nil {
-		return nil, err
-	}
-
-	vpnClient.connection = conn
-
-	err = meshnet.Register(address, vpnClient)
-	if err != nil {
-		return nil, err
-	}
 
 	vpnClient.connections = map[string]*net.Conn{}
 
@@ -58,6 +45,11 @@ func NewVPNClient(meshnet messages.Network, address cipher.PubKey, proxyAddress 
 	runIP("link", "set", "dev", iface.Name(), "mtu", MTU)
 	runIP("addr", "add", proxyIP, "dev", iface.Name())
 	runIP("link", "set", "dev", iface.Name(), "up")
+
+	err = vpnClient.RegisterAtNode(node)
+	if err != nil {
+		return nil, err
+	}
 
 	return vpnClient, nil
 }

@@ -90,7 +90,7 @@ func (self *proxyServer) Send(data []byte) {
 		data,
 	}
 	messageS := messages.Serialize(messages.MsgAppMessage, message)
-	self.send(messageS)
+	self.sendToMeshnet(messageS)
 }
 
 func (self *proxyServer) closeConns(remoteAddr string) {

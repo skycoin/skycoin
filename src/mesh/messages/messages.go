@@ -9,44 +9,57 @@ import (
 )
 
 const (
-	MsgInRouteMessage             = iota // Transport -> Node
-	MsgOutRouteMessage                   // Node -> Transport
-	MsgTransportDatagramTransfer         // Transport -> Transport, simulating sending packet over network
-	MsgTransportDatagramACK              // Transport -> Transport, simulating ACK for packet
-	MsgConnectionMessage                 // Connection -> Connection
-	MsgConnectionAck                     // Connection -> Connection
-	MsgProxyMessage                      // Application -> Application
-	MsgAppMessage                        // Application -> Application
-	MsgCongestionPacket                  // Transport -> Transport
-	MsgInControlMessage                  // Transport -> Node, control message
-	MsgOutControlMessage                 // Node -> Transport, control message
-	MsgCloseChannelControlMessage        // Node -> Control channel, close control channel
-	MsgAddRouteCM                        // Node -> Control channel, add new route
-	MsgRemoveRouteCM                     // Node -> Control channel, remove route
-	MsgRegisterNodeCM                    // Node -> NodeManager
-	MsgRegisterNodeCMAck                 // NodeManager -> Node
-	MsgAssignPortCM                      // NodeManager -> Node
-	MsgTransportCreateCM                 // NodeManager -> Node
-	MsgTransportTickCM                   // NodeManager -> Node
-	MsgTransportShutdownCM               // NodeManager -> Node
-	MsgOpenUDPCM                         // NodeManager -> Node
-	MsgCommonCMAck                       // Node -> NodeManager, NodeManager -> Node
-	MsgConnectDirectlyCM                 // Node -> NodeManager
-	MsgConnectDirectlyCMAck              // NodeManager -> Node
-	MsgConnectWithRouteCM                // Node -> NodeManager
-	MsgConnectWithRouteCMAck             // NodeManager -> Node
-	MsgAssignConnectionCM                // NodeManager -> Node
-	MsgConnectionOnCM                    // NodeManager -> Node
-	MsgShutdownCM                        // NodeManager -> Node
-	MsgUserCommand                       // Viscript -> Meshnet
-	MsgUserCommandAck                    // Meshnet -> Viscript
-	MsgPing                              // Viscript -> Meshnet
-	MsgPingAck                           // Meshnet -> Viscript
-	MsgCreateAck                         // Meshnet -> Viscript
-	MsgResourceUsage                     // Viscript -> Meshnet
-	MsgResourceUsageAck                  // Meshnet -> Viscript
-	MsgUserShutdown                      // Viscript -> Meshnet
-	MsgUserShutdownAck                   // Meshnet -> Viscript
+	MsgInRouteMessage            = iota // Transport -> Node
+	MsgOutRouteMessage                  // Node -> Transport
+	MsgTransportDatagramTransfer        // Transport -> Transport, simulating sending packet over network
+	MsgTransportDatagramACK             // Transport -> Transport, simulating ACK for packet
+	MsgCongestionPacket                 // Transport -> Transport
+
+	MsgConnectionMessage // Connection -> Connection
+	MsgConnectionAck     // Connection -> Connection
+
+	MsgProxyMessage // Application -> Application
+	MsgAppMessage   // Application -> Application
+
+	MsgInControlMessage           // Transport -> Node, control message
+	MsgOutControlMessage          // Node -> Transport, control message
+	MsgCloseChannelControlMessage // Node -> Control channel, close control channel
+	MsgAddRouteCM                 // Node -> Control channel, add new route
+	MsgRemoveRouteCM              // Node -> Control channel, remove route
+	MsgRegisterNodeCM             // Node -> NodeManager
+	MsgRegisterNodeCMAck          // NodeManager -> Node
+	MsgAssignPortCM               // NodeManager -> Node
+	MsgTransportCreateCM          // NodeManager -> Node
+	MsgTransportTickCM            // NodeManager -> Node
+	MsgTransportShutdownCM        // NodeManager -> Node
+	MsgOpenUDPCM                  // NodeManager -> Node
+	MsgCommonCMAck                // Node -> NodeManager, NodeManager -> Node
+	MsgConnectDirectlyCM          // Node -> NodeManager
+	MsgConnectDirectlyCMAck       // NodeManager -> Node
+	MsgConnectWithRouteCM         // Node -> NodeManager
+	MsgConnectWithRouteCMAck      // NodeManager -> Node
+	MsgAssignConnectionCM         // NodeManager -> Node
+	MsgConnectionOnCM             // NodeManager -> Node
+	MsgShutdownCM                 // NodeManager -> Node
+
+	MsgUserCommand      // Viscript -> Meshnet
+	MsgUserCommandAck   // Meshnet -> Viscript
+	MsgPing             // Viscript -> Meshnet
+	MsgPingAck          // Meshnet -> Viscript
+	MsgCreateAck        // Meshnet -> Viscript
+	MsgResourceUsage    // Viscript -> Meshnet
+	MsgResourceUsageAck // Meshnet -> Viscript
+	MsgUserShutdown     // Viscript -> Meshnet
+	MsgUserShutdownAck  // Meshnet -> Viscript
+
+	MsgNodeAppMessage  // Application -> Node
+	MsgNodeAppResponse // Node -> Application
+	//	MsgAppDataMessage      // Node -> Application
+	MsgSendFromAppMessage  // Application -> Node
+	MsgRegisterAppMessage  // Application -> Node
+	MsgConnectToAppMessage // Application -> Node
+	MsgAssignConnectionNAM // Node -> Application
+
 	//MessageMouseScroll        // 1
 	//MessageMouseButton        // 2
 	//MessageCharacter
@@ -269,3 +282,37 @@ type UserShutdownAck struct{}
 type Ping struct{}
 
 type PingAck struct{}
+
+type NodeAppMessage struct {
+	Sequence uint32
+	AppId    AppId
+	Payload  []byte
+}
+
+type NodeAppResponse struct {
+	Sequence uint32
+}
+
+type SendFromAppMessage struct {
+	ConnectionId ConnectionId
+	Payload      []byte
+}
+
+type RegisterAppMessage struct {
+}
+
+type AssignConnectionNAM struct {
+	ConnectionId ConnectionId
+}
+
+type ConnectToAppMessage struct {
+	Address cipher.PubKey
+	AppFrom AppId
+	AppTo   AppId
+}
+
+/*
+type AppDataMessage struct {
+	Data []byte
+}
+*/

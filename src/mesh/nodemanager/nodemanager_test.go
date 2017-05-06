@@ -37,7 +37,7 @@ func TestRegisterNode(t *testing.T) {
 
 	assert.Len(t, nm.nodeList, 0)
 
-	n, err := node.CreateNode(messages.LOCALHOST+":5992", messages.LOCALHOST+":5999")
+	n, err := node.CreateNode(&node.NodeConfig{"127.0.0.1:5992", []string{"127.0.0.1:5999"}, "127.0.0.1:4999"})
 	assert.Nil(t, err)
 	defer n.Shutdown()
 
@@ -52,11 +52,11 @@ func TestConnectNodes(t *testing.T) {
 	nm := newNodeManager()
 	defer nm.Shutdown()
 
-	n0, err := node.CreateNode(messages.LOCALHOST+":5992", messages.LOCALHOST+":5999")
+	n0, err := node.CreateNode(&node.NodeConfig{"127.0.0.1:5992", []string{"127.0.0.1:5999"}, "127.0.0.1:4990"})
 	assert.Nil(t, err)
 	defer n0.Shutdown()
 
-	n1, err := node.CreateNode(messages.LOCALHOST+":5993", messages.LOCALHOST+":5999")
+	n1, err := node.CreateNode(&node.NodeConfig{"127.0.0.1:5993", []string{"127.0.0.1:5999"}, "127.0.0.1:4991"})
 	assert.Nil(t, err)
 	defer n1.Shutdown()
 
@@ -83,7 +83,7 @@ func TestNetwork(t *testing.T) {
 
 	q := 20
 
-	nodes := node.CreateNodeList(q)
+	nodes := node.CreateNodeList(q, 14000)
 	assert.Len(t, nodes, q, fmt.Sprintf("Should be %d nodes", q))
 	assert.Len(t, nm.nodeIdList, q, fmt.Sprintf("Should be %d nodes", q))
 	initRoute, err := nm.connectAllAndBuildRoute()
@@ -122,7 +122,7 @@ func TestBuildRoute(t *testing.T) {
 	n := 100
 	m := 5
 
-	allNodes := node.CreateNodeList(n)
+	allNodes := node.CreateNodeList(n, 15000)
 
 	nodes := []cipher.PubKey{}
 
@@ -152,7 +152,7 @@ func TestFindRoute(t *testing.T) {
 	nm := newNodeManager()
 	defer nm.Shutdown()
 
-	nodes := node.CreateNodeList(10)
+	nodes := node.CreateNodeList(10, 16000)
 
 	nodeList := []cipher.PubKey{}
 	for _, n := range nodes {
@@ -197,11 +197,11 @@ func TestAddAndConnect2Nodes(t *testing.T) {
 	nm := newNodeManager()
 	defer nm.Shutdown()
 
-	n0, err := node.CreateAndConnectNode(messages.LOCALHOST+":5992", messages.LOCALHOST+":5999")
+	n0, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:5992", []string{"127.0.0.1:5999"}, "127.0.0.1:3990"})
 	assert.Nil(t, err)
 	defer n0.Shutdown()
 
-	n1, err := node.CreateAndConnectNode(messages.LOCALHOST+":5993", messages.LOCALHOST+":5999")
+	n1, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:5993", []string{"127.0.0.1:5999"}, "127.0.0.1:3991"})
 	assert.Nil(t, err)
 	defer n1.Shutdown()
 
@@ -220,7 +220,7 @@ func TestRandomNetwork100Nodes(t *testing.T) {
 
 	n := 100
 
-	nodes := nm.CreateRandomNetwork(n)
+	nodes := nm.CreateRandomNetwork(n, 17000)
 
 	nodeIds := []cipher.PubKey{}
 
@@ -246,7 +246,7 @@ func TestSendThroughRandomNetworks(t *testing.T) {
 
 		nm := newNodeManager()
 
-		nodes := nm.CreateRandomNetwork(n)
+		nodes := nm.CreateRandomNetwork(n, 18000)
 
 		n0 := nodes[0]
 		n1 := nodes[len(nodes)-1]

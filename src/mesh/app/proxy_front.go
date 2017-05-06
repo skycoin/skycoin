@@ -20,7 +20,7 @@ func (self *proxyClient) Send(msg []byte) {
 		msg,
 	}
 	requestSerialized := messages.Serialize(messages.MsgAppMessage, request)
-	self.send(requestSerialized)
+	self.sendToMeshnet(requestSerialized)
 }
 
 func (self *proxyClient) Listen() {
@@ -73,16 +73,7 @@ func (self *proxyClient) Listen() {
 	}
 }
 
-func (self *proxyClient) RegisterAtNode(node messages.NodeInterface) error {
-	err := node.RegisterApp(self)
-	if err != nil {
-		return err
-	}
-	self.node = node
-	return nil
-}
-
-func (self *proxyClient) Consume(appMsg *messages.AppMessage) {
+func (self *proxyClient) consume(appMsg *messages.AppMessage) {
 
 	proxyMessageS := appMsg.Payload
 	proxyMessage := messages.ProxyMessage{}
@@ -129,5 +120,84 @@ func (self *proxyClient) Consume(appMsg *messages.AppMessage) {
 		closingMessageS := messages.Serialize(messages.MsgProxyMessage, closingMessage)
 		self.Send(closingMessageS)
 		userConn.Close()
+	}
+}
+
+func (self *proxyClient) RegisterAtNode(nodeAddr string) error {
+
+	nodeConn, err := net.Dial("tcp", nodeAddr)
+	if err != nil {
+		panic(err)
+		return err
+	}
+
+	self.nodeConn = nodeConn
+
+	go self.listenFromNode()
+
+	registerMessage := messages.RegisterAppMessage{}
+
+	rmS := messages.Serialize(messages.MsgRegisterAppMessage, registerMessage)
+
+	err = self.sendToNode(rmS)
+	return err
+}
+
+func (self *proxyClient) listenFromNode() {
+	conn := self.nodeConn
+	for {
+		message, err := getFullMessage(conn)
+		if err != nil {
+			if err == io.EOF {
+				continue
+			} else {
+				break
+			}
+		} else {
+			go self.handleIncomingFromNode(message)
+		}
+	}
+}
+
+func (self *proxyClient) handleIncomingFromNode(msg []byte) error {
+	switch messages.GetMessageType(msg) {
+
+	case messages.MsgAssignConnectionNAM:
+		m1 := &messages.AssignConnectionNAM{}
+		err := messages.Deserialize(msg, m1)
+		if err != nil {
+			return err
+		}
+		self.meshConnId = m1.ConnectionId
+		return nil
+
+	case messages.MsgAppMessage:
+		appMsg := &messages.AppMessage{}
+		err := messages.Deserialize(msg, appMsg)
+		if err != nil {
+			return err
+		}
+		go self.consume(appMsg)
+		return nil
+
+	case messages.MsgNodeAppResponse:
+		nar := &messages.NodeAppResponse{}
+		err := messages.Deserialize(msg, nar)
+		if err != nil {
+			return err
+		}
+
+		sequence := nar.Sequence
+		respChan, err := self.getResponseNodeAppChannel(sequence)
+		if err != nil {
+			panic(err)
+			return err
+		} else {
+			respChan <- true
+			return nil
+		}
+
+	default:
+		return messages.ERR_INCORRECT_MESSAGE_TYPE
 	}
 }

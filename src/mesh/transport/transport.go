@@ -189,7 +189,7 @@ func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
 		select {
 		case <-ackChannel:
 			if messages.IsDebug() {
-				fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
+				fmt.Printf("message %d is successfully sent, attempt %d\n", msg, retransmits+1)
 			}
 			return
 
@@ -198,7 +198,7 @@ func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
 			if retransmits >= self.retransmitLimit {
 				self.errChan <- messages.ERR_TRANSPORT_TIMEOUT
 			}
-			fmt.Printf("msg %d will be sent again, attempt %d\n", msg, retransmits+1)
+			fmt.Printf("message %d will be sent again, attempt %d\n", msg, retransmits+1)
 		}
 	}
 }

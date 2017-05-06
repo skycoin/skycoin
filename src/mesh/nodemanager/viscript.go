@@ -14,6 +14,7 @@ type NMViscriptServer struct {
 
 func (self *NodeManager) TalkToViscript(sequence, appId uint32) {
 	vs := &NMViscriptServer{nm: self}
+	self.viscriptServer = vs
 	vs.Init(sequence, appId)
 }
 

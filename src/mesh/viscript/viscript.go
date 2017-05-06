@@ -26,6 +26,10 @@ func (self *ViscriptServer) Init(sequence, appId uint32) {
 	self.serve()
 }
 
+func (self *ViscriptServer) Shutdown() {
+	self.conn.Close()
+}
+
 func (self *ViscriptServer) serve() {
 	go_on := true
 	go func() {

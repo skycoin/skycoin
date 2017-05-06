@@ -162,7 +162,7 @@ func (self *Node) sendMessageToServer(msg []byte) error {
 }
 
 func (self *Node) sendToServer(sequence uint32, msg []byte) error {
-	if self.nmAddr == nil {
+	if len(self.serverAddrs) == 0 {
 		return nil
 	}
 
@@ -172,11 +172,11 @@ func (self *Node) sendToServer(sequence uint32, msg []byte) error {
 		msg,
 	}
 	inControlS := messages.Serialize(messages.MsgInControlMessage, inControl)
-	_, err := self.controlConn.WriteTo(inControlS, self.nmAddr)
+	_, err := self.controlConn.WriteTo(inControlS, self.serverAddrs[0])
 	return err
 }
 
-func (self *Node) openUDPforCM(port int, nmAddrStr string) (*net.UDPConn, error) {
+func (self *Node) openUDPforCM(port int) (*net.UDPConn, error) {
 	host := net.ParseIP(messages.LOCALHOST)
 	connAddr := &net.UDPAddr{IP: host, Port: port}
 
@@ -185,7 +185,12 @@ func (self *Node) openUDPforCM(port int, nmAddrStr string) (*net.UDPConn, error)
 		return nil, err
 	}
 
-	nmData := strings.Split(nmAddrStr, ":")
+	return conn, nil
+}
+
+func (self *Node) addServer(serverAddrStr string) {
+
+	nmData := strings.Split(serverAddrStr, ":")
 	nmHostStr := nmData[0]
 	nmPort := 5999
 	if len(nmData) > 1 {
@@ -195,10 +200,8 @@ func (self *Node) openUDPforCM(port int, nmAddrStr string) (*net.UDPConn, error)
 		}
 	}
 	nmHost := net.ParseIP(nmHostStr)
-	nmAddr := &net.UDPAddr{IP: nmHost, Port: nmPort}
-	self.nmAddr = nmAddr
-
-	return conn, nil
+	serverAddr := &net.UDPAddr{IP: nmHost, Port: nmPort}
+	self.serverAddrs = append(self.serverAddrs, serverAddr)
 }
 
 func (self *Node) receiveControlMessages() {

@@ -10,14 +10,14 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/node"
 )
 
-func (self *NodeManager) CreateRandomNetwork(n int) []messages.NodeInterface {
+func (self *NodeManager) CreateRandomNetwork(n, startPort int) []messages.NodeInterface {
 
 	/* This function creates a network of n nodes randomly connected to each other */
 
 	nodes := []messages.NodeInterface{}
 
 	for i := 0; i < n; i++ {
-		node, err := node.CreateAndConnectNode(messages.LOCALHOST+":"+strconv.Itoa(5000+i), messages.LOCALHOST+":5999")
+		node, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:" + strconv.Itoa(startPort+i), []string{"127.0.0.1:5999"}, "127.0.0.1:" + strconv.Itoa(startPort+n+i)})
 		if err != nil {
 			panic(err)
 		}
@@ -27,24 +27,24 @@ func (self *NodeManager) CreateRandomNetwork(n int) []messages.NodeInterface {
 	return nodes
 }
 
-func (self *NodeManager) CreateSequenceOfNodes(n int) (messages.NodeInterface, messages.NodeInterface) {
+func (self *NodeManager) CreateSequenceOfNodes(n, startPort int) (messages.NodeInterface, messages.NodeInterface) {
 	/*
 		This function creates a network with sequentially chained n nodes like 0-1-2-3-4-5-6-7-8-9 and returns the first and last node
 	*/
 
-	nodeList := node.CreateNodeList(n)
+	nodeList := node.CreateNodeList(n, startPort)
 	self.connectAll()
 	self.rebuildRoutes()
 	firstNode, lastNode := nodeList[0], nodeList[len(nodeList)-1]
 	return firstNode, lastNode
 }
 
-func (self *NodeManager) CreateSequenceOfNodesAndBuildRoutes(n int) (cipher.PubKey, cipher.PubKey, messages.RouteId, messages.RouteId) {
+func (self *NodeManager) CreateSequenceOfNodesAndBuildRoutes(n, startPort int) (cipher.PubKey, cipher.PubKey, messages.RouteId, messages.RouteId) {
 	/*
 		This function creates a network with sequentially chained n nodes like 0-1-2-3-4-5-6-7-8-9, builds route between the first and the last nodes in a chainand returns the addresses of them, a route from the first to the last one and a back route from the last to the first one
 	*/
 
-	node.CreateNodeList(n)
+	node.CreateNodeList(n, startPort)
 	self.connectAll()
 
 	nodeList := self.nodeIdList
@@ -57,8 +57,8 @@ func (self *NodeManager) CreateSequenceOfNodesAndBuildRoutes(n int) (cipher.PubK
 	return clientNode, serverNode, route, backRoute
 }
 
-func (self *NodeManager) CreateThreeRoutes() (messages.NodeInterface, messages.NodeInterface) {
-	nodes := node.CreateNodeList(10)
+func (self *NodeManager) CreateThreeRoutes(startPort int) (messages.NodeInterface, messages.NodeInterface) {
+	nodes := node.CreateNodeList(10, startPort)
 	nodeList := self.nodeIdList
 	/*
 		  1-2-3-4

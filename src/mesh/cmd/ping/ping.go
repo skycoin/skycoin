@@ -20,7 +20,7 @@ func pingPong(size, pings int) {
 	meshnet := network.NewNetwork()
 	defer meshnet.Shutdown()
 
-	nodes := meshnet.CreateRandomNetwork(size)
+	nodes := meshnet.CreateRandomNetwork(size, 10000)
 	var clientIndex, serverIndex int
 	clientIndex = rand.Intn(size)
 	for {
@@ -35,7 +35,7 @@ func pingPong(size, pings int) {
 	server := pongServer(serverNode)
 	defer server.Shutdown()
 
-	client, err := app.NewClient(messages.MakeAppId("ping"), clientNode) // register client on the first node
+	client, err := app.NewClient(messages.MakeAppId("ping"), clientNode.AppTalkAddr()) // register client on the first node
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +101,7 @@ func pingPong(size, pings int) {
 
 func pongServer(serverNode messages.NodeInterface) *app.Server {
 
-	srv, err := app.NewServer(messages.MakeAppId("pong"), serverNode, func(_ []byte) []byte {
+	srv, err := app.NewServer(messages.MakeAppId("pong"), serverNode.AppTalkAddr(), func(_ []byte) []byte {
 		serverTime := time.Now().UnixNano()
 		out := strconv.FormatInt(serverTime, 10)
 		return []byte(out)

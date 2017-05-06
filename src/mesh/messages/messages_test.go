@@ -22,7 +22,7 @@ func TestSerialize(t *testing.T) {
 	assert.Equal(t, msg.Datagram, msg1.Datagram)
 
 	sequence := (uint32)(rand.Intn(65536))
-	msg2 := TransportDatagramTransfer{RandRouteId(), sequence, datagram, false}
+	msg2 := TransportDatagramTransfer{RandRouteId(), sequence, datagram}
 	serialized = Serialize((uint16)(MsgTransportDatagramTransfer), msg2)
 	msg3 := TransportDatagramTransfer{}
 	err = Deserialize(serialized, &msg3)

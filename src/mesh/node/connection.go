@@ -1,7 +1,8 @@
 package node
 
 import (
-	"fmt"
+	"log"
+	"net"
 	"sync"
 	"time"
 
@@ -19,7 +20,7 @@ type Connection struct {
 	incomingCounter  map[uint32]uint32
 	lock             *sync.Mutex
 	throttle         uint32
-	consumer         messages.Consumer
+	consumer         net.Conn
 	errChan          chan error
 
 	packetSize   int
@@ -50,10 +51,15 @@ func (node *Node) newConnection(connId messages.ConnectionId, routeId messages.R
 	node.lock.Lock()
 	appIdStr := string(appId)
 	if appIdStr != "" {
-		app, ok := node.apps[appIdStr]
+		appConn, ok := node.appConns[appIdStr]
 		if ok {
-			conn.consumer = app
-			app.AssignConnection(conn)
+			conn.consumer = appConn
+			msg := messages.AssignConnectionNAM{connId}
+			msgS := messages.Serialize(messages.MsgAssignConnectionNAM, msg)
+			err := sendToAppConn(appConn, msgS)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			return nil, messages.ERR_APP_DOESNT_EXIST
 		}
@@ -162,7 +168,7 @@ func (self *Connection) sendToNode(inRouteMessage *messages.InRouteMessage) {
 func (self *Connection) receiveErrors() {
 	for err := range self.errChan {
 		if err != nil {
-			fmt.Printf("Disconnect connection %d because of error %s\n", self.id, err.Error())
+			log.Printf("Disconnect connection %d because of error %s\n", self.id, err.Error())
 			self.status = DISCONNECTED
 		}
 	}
@@ -183,7 +189,10 @@ func (self *Connection) handleConnectionMessage(connMsg *messages.ConnectionMess
 	if self.getIncomingCounter(sequence) >= total {
 		go self.sendAck(sequence)
 		fullMessage := self.assemble(sequence, int(total))
-		self.sendToConsumer(fullMessage)
+		err := self.sendToConsumer(fullMessage)
+		if err != nil {
+			log.Println("sending message to consumer is failed:", err)
+		}
 	}
 }
 
@@ -196,13 +205,12 @@ func (self *Connection) assemble(sequence uint32, total int) []byte {
 	return result
 }
 
-func (self *Connection) sendToConsumer(msg []byte) {
-	appMsg := messages.AppMessage{}
-	err := messages.Deserialize(msg, &appMsg)
-	if err == nil {
-		if self.consumer != nil {
-			self.consumer.Consume(&appMsg)
-		}
+func (self *Connection) sendToConsumer(msg []byte) error {
+	if self.consumer != nil {
+		err := sendToAppConn(self.consumer, msg)
+		return err
+	} else {
+		return nil
 	}
 }
 
@@ -225,7 +233,7 @@ func (self *Connection) sendAck(sequence uint32) {
 func (self *Connection) receiveAck(sequence uint32) {
 	ackChannel, err := self.getAckChannel(sequence)
 	if err != nil {
-		fmt.Printf("no response channel with id %d is found\n", sequence)
+		log.Printf("no response channel with id %d is found\n", sequence)
 		return
 	}
 	ackChannel <- true

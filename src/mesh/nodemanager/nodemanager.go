@@ -25,6 +25,7 @@ type NodeManager struct {
 	portDelivery         *PortDelivery
 	msgServer            *MsgServer
 	lock                 *sync.Mutex
+	viscriptServer       *NMViscriptServer
 }
 
 var config = messages.GetConfig()
@@ -179,7 +180,13 @@ func (self *NodeManager) Shutdown() {
 	for _, n := range self.nodeList {
 		n.shutdown()
 	}
+
 	self.msgServer.shutdown()
+
+	if self.viscriptServer != nil {
+		self.viscriptServer.Shutdown()
+	}
+
 	time.Sleep(1 * time.Millisecond)
 }
 

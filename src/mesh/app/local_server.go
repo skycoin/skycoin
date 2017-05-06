@@ -1,26 +1,22 @@
 package app
 
 import (
+	"io"
+	"net"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/mesh/messages"
-	"github.com/skycoin/skycoin/src/mesh/node"
 )
 
 type Server struct {
 	app
 }
 
-func BrandNewServer(appId messages.AppId, host, meshnet string, handle func([]byte) []byte) (*Server, error) {
+func NewServer(appId messages.AppId, nodeAddr string, handle func([]byte) []byte) (*Server, error) {
 
 	server := newServer(appId, handle)
 
-	node, err := node.CreateAndConnectNode(host, meshnet)
-	if err != nil {
-		return nil, err
-	}
-
-	err = server.RegisterAtNode(node)
+	err := server.RegisterAtNode(nodeAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -28,28 +24,7 @@ func BrandNewServer(appId messages.AppId, host, meshnet string, handle func([]by
 	return server, nil
 }
 
-func NewServer(appId messages.AppId, node messages.NodeInterface, handle func([]byte) []byte) (*Server, error) {
-
-	server := newServer(appId, handle)
-
-	err := server.RegisterAtNode(node)
-	if err != nil {
-		return nil, err
-	}
-
-	return server, nil
-}
-
-func (self *Server) RegisterAtNode(node messages.NodeInterface) error {
-	err := node.RegisterApp(self)
-	if err != nil {
-		return err
-	}
-	self.node = node
-	return nil
-}
-
-func (self *Server) Consume(appMsg *messages.AppMessage) {
+func (self *Server) consume(appMsg *messages.AppMessage) {
 
 	sequence := appMsg.Sequence
 	go func() {
@@ -59,7 +34,7 @@ func (self *Server) Consume(appMsg *messages.AppMessage) {
 			responsePayload,
 		}
 		responseSerialized := messages.Serialize(messages.MsgAppMessage, response)
-		self.send(responseSerialized)
+		self.sendToMeshnet(responseSerialized)
 	}()
 }
 
@@ -69,5 +44,85 @@ func newServer(appId messages.AppId, handle func([]byte) []byte) *Server {
 	server.lock = &sync.Mutex{}
 	server.timeout = APP_TIMEOUT
 	server.handle = handle
+	server.responseNodeAppChannels = make(map[uint32]chan bool)
 	return server
+}
+
+func (self *Server) RegisterAtNode(nodeAddr string) error {
+
+	nodeConn, err := net.Dial("tcp", nodeAddr)
+	if err != nil {
+		panic(err)
+		return err
+	}
+
+	self.nodeConn = nodeConn
+
+	go self.listenFromNode()
+
+	registerMessage := messages.RegisterAppMessage{}
+
+	rmS := messages.Serialize(messages.MsgRegisterAppMessage, registerMessage)
+
+	err = self.sendToNode(rmS)
+	return err
+}
+
+func (self *Server) listenFromNode() {
+	conn := self.nodeConn
+	for {
+		message, err := getFullMessage(conn)
+		if err != nil {
+			if err == io.EOF {
+				continue
+			} else {
+				break
+			}
+		} else {
+			go self.handleIncomingFromNode(message)
+		}
+	}
+}
+
+func (self *Server) handleIncomingFromNode(msg []byte) error {
+	switch messages.GetMessageType(msg) {
+
+	case messages.MsgAssignConnectionNAM:
+		m1 := &messages.AssignConnectionNAM{}
+		err := messages.Deserialize(msg, m1)
+		if err != nil {
+			return err
+		}
+		self.meshConnId = m1.ConnectionId
+		return nil
+
+	case messages.MsgAppMessage:
+		appMsg := &messages.AppMessage{}
+		err := messages.Deserialize(msg, appMsg)
+		if err != nil {
+			return err
+		}
+		go self.consume(appMsg)
+		return nil
+
+	case messages.MsgNodeAppResponse:
+		nar := &messages.NodeAppResponse{}
+		err := messages.Deserialize(msg, nar)
+		if err != nil {
+			return err
+		}
+
+		sequence := nar.Sequence
+		respChan, err := self.getResponseNodeAppChannel(sequence)
+		if err != nil {
+			panic(err)
+			return err
+		} else {
+			respChan <- true
+			return nil
+		}
+
+	default:
+		return messages.ERR_INCORRECT_MESSAGE_TYPE
+	}
 }

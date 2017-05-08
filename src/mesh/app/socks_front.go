@@ -12,14 +12,15 @@ type SocksClient struct {
 	proxyClient
 }
 
-func NewSocksClient(appId messages.AppId, node messages.NodeInterface, proxyAddress string) (*SocksClient, error) {
+func NewSocksClient(appId messages.AppId, nodeAddr string, proxyAddress string) (*SocksClient, error) {
 	setLimit(16384) // set limit of simultaneously opened files to 16384
 	socksClient := &SocksClient{}
 	socksClient.id = appId
 	socksClient.lock = &sync.Mutex{}
 	socksClient.timeout = time.Duration(messages.GetConfig().AppTimeout)
+	socksClient.responseNodeAppChannels = make(map[uint32]chan bool)
 
-	err := socksClient.RegisterAtNode(node)
+	err := socksClient.RegisterAtNode(nodeAddr)
 	if err != nil {
 		return nil, err
 	}

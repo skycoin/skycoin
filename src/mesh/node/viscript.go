@@ -14,6 +14,7 @@ type NodeViscriptServer struct {
 
 func (self *Node) TalkToViscript(sequence, appId uint32) {
 	vs := &NodeViscriptServer{node: self}
+	self.viscriptServer = vs
 	vs.Init(sequence, appId)
 }
 

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"io"
 	"log"
 	"net"
 	"sync"
@@ -17,15 +18,16 @@ type SocksServer struct {
 	dialer proxy.Dialer
 }
 
-func NewSocksServer(appId messages.AppId, node messages.NodeInterface, proxyAddress string) (*SocksServer, error) {
+func NewSocksServer(appId messages.AppId, nodeAddr string, proxyAddress string) (*SocksServer, error) {
 	socksServer := &SocksServer{}
 	socksServer.id = appId
 	socksServer.lock = &sync.Mutex{}
 	socksServer.timeout = time.Duration(messages.GetConfig().AppTimeout)
+	socksServer.responseNodeAppChannels = make(map[uint32]chan bool)
 	socksServer.ProxyAddress = proxyAddress
 	socksServer.targetConns = map[string]net.Conn{}
 
-	err := socksServer.RegisterAtNode(node)
+	err := socksServer.RegisterAtNode(nodeAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -36,16 +38,7 @@ func NewSocksServer(appId messages.AppId, node messages.NodeInterface, proxyAddr
 	return socksServer, nil
 }
 
-func (self *SocksServer) RegisterAtNode(node messages.NodeInterface) error {
-	err := node.RegisterApp(self)
-	if err != nil {
-		return err
-	}
-	self.node = node
-	return nil
-}
-
-func (self *SocksServer) Consume(msg *messages.AppMessage) {
+func (self *SocksServer) consume(msg *messages.AppMessage) {
 
 	proxyMessage := getProxyMessage(msg)
 	if proxyMessage == nil {
@@ -110,4 +103,83 @@ func (self *SocksServer) serveSocks() { //run socks server and get dialer
 		panic(err)
 	}
 	self.dialer = dialer
+}
+
+func (self *SocksServer) RegisterAtNode(nodeAddr string) error {
+
+	nodeConn, err := net.Dial("tcp", nodeAddr)
+	if err != nil {
+		panic(err)
+		return err
+	}
+
+	self.nodeConn = nodeConn
+
+	go self.listenFromNode()
+
+	registerMessage := messages.RegisterAppMessage{}
+
+	rmS := messages.Serialize(messages.MsgRegisterAppMessage, registerMessage)
+
+	err = self.sendToNode(rmS)
+	return err
+}
+
+func (self *SocksServer) listenFromNode() {
+	conn := self.nodeConn
+	for {
+		message, err := getFullMessage(conn)
+		if err != nil {
+			if err == io.EOF {
+				continue
+			} else {
+				break
+			}
+		} else {
+			go self.handleIncomingFromNode(message)
+		}
+	}
+}
+
+func (self *SocksServer) handleIncomingFromNode(msg []byte) error {
+	switch messages.GetMessageType(msg) {
+
+	case messages.MsgAssignConnectionNAM:
+		m1 := &messages.AssignConnectionNAM{}
+		err := messages.Deserialize(msg, m1)
+		if err != nil {
+			return err
+		}
+		self.meshConnId = m1.ConnectionId
+		return nil
+
+	case messages.MsgAppMessage:
+		appMsg := &messages.AppMessage{}
+		err := messages.Deserialize(msg, appMsg)
+		if err != nil {
+			return err
+		}
+		go self.consume(appMsg)
+		return nil
+
+	case messages.MsgNodeAppResponse:
+		nar := &messages.NodeAppResponse{}
+		err := messages.Deserialize(msg, nar)
+		if err != nil {
+			return err
+		}
+
+		sequence := nar.Sequence
+		respChan, err := self.getResponseNodeAppChannel(sequence)
+		if err != nil {
+			panic(err)
+			return err
+		} else {
+			respChan <- true
+			return nil
+		}
+
+	default:
+		return messages.ERR_INCORRECT_MESSAGE_TYPE
+	}
 }

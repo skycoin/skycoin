@@ -16,28 +16,26 @@ import (
 func TestMessagingServer(t *testing.T) {
 	messages.SetDebugLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
 	msgSrv := nm.msgServer
 	assert.NotNil(t, msgSrv)
 
-	config := messages.GetConfig()
-
-	host := net.ParseIP(config.MsgSrvHost)
-	port := int(config.MsgSrvPort)
+	host := net.ParseIP("127.0.0.1")
+	port := 5999
 	msgSrvAddr := net.UDPAddr{IP: host, Port: port}
 	assert.Equal(t, msgSrvAddr.String(), msgSrv.conn.LocalAddr().String())
 }
 
 func TestRegisterNode(t *testing.T) {
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
 	assert.Len(t, nm.nodeList, 0)
 
-	n, err := node.CreateNode(messages.LOCALHOST+":5992", messages.LOCALHOST+":5999")
+	n, err := node.CreateNode(&node.NodeConfig{"127.0.0.1:5992", []string{"127.0.0.1:5999"}, 4999})
 	assert.Nil(t, err)
 	defer n.Shutdown()
 
@@ -49,14 +47,14 @@ func TestConnectNodes(t *testing.T) {
 	fmt.Println("")
 	messages.SetDebugLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
-	n0, err := node.CreateNode(messages.LOCALHOST+":5992", messages.LOCALHOST+":5999")
+	n0, err := node.CreateNode(&node.NodeConfig{"127.0.0.1:5992", []string{"127.0.0.1:5999"}, 4990})
 	assert.Nil(t, err)
 	defer n0.Shutdown()
 
-	n1, err := node.CreateNode(messages.LOCALHOST+":5993", messages.LOCALHOST+":5999")
+	n1, err := node.CreateNode(&node.NodeConfig{"127.0.0.1:5993", []string{"127.0.0.1:5999"}, 4991})
 	assert.Nil(t, err)
 	defer n1.Shutdown()
 
@@ -65,8 +63,8 @@ func TestConnectNodes(t *testing.T) {
 	err = n0.ConnectDirectly(n1.Id())
 	assert.Nil(t, err)
 
-	assert.True(t, n0.ConnectedTo(n1.Id()))
-	assert.True(t, n1.ConnectedTo(n0.Id()))
+	assert.True(t, n0.(*node.Node).ConnectedTo(n1.Id()))
+	assert.True(t, n1.(*node.Node).ConnectedTo(n0.Id()))
 
 	tf := nm.transportFactoryList[0]
 	t0, t1 := tf.getTransports()
@@ -78,18 +76,18 @@ func TestNetwork(t *testing.T) {
 	fmt.Println("TestNetwork")
 	messages.SetDebugLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
 	q := 20
 
-	nodes := node.CreateNodeList(q)
+	nodes := node.CreateNodeList(q, 14000)
 	assert.Len(t, nodes, q, fmt.Sprintf("Should be %d nodes", q))
 	assert.Len(t, nm.nodeIdList, q, fmt.Sprintf("Should be %d nodes", q))
 	initRoute, err := nm.connectAllAndBuildRoute()
 	assert.Nil(t, err)
 
-	node0 := nodes[0]
+	node0 := nodes[0].(*node.Node)
 
 	inRouteMessage := messages.InRouteMessage{messages.NIL_TRANSPORT, initRoute, []byte{'t', 'e', 's', 't'}}
 	node0.InjectTransportMessage(&inRouteMessage)
@@ -97,9 +95,9 @@ func TestNetwork(t *testing.T) {
 	for i := 0; i < q-1; i++ {
 		n0 := nodes[i]
 		n1 := nodes[i+1]
-		t0, err := n0.GetTransportToNode(n1.Id())
+		t0, err := n0.(*node.Node).GetTransportToNode(n1.Id())
 		assert.Nil(t, err)
-		t1, err := n1.GetTransportToNode(n0.Id())
+		t1, err := n1.(*node.Node).GetTransportToNode(n0.Id())
 		assert.Nil(t, err)
 		assert.Equal(t, uint32(1), t0.PacketsSent())
 		assert.Equal(t, uint32(1), t0.PacketsConfirmed())
@@ -116,13 +114,13 @@ func TestBuildRoute(t *testing.T) {
 	fmt.Println("TestBuildRoute")
 	messages.SetInfoLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
 	n := 100
 	m := 5
 
-	allNodes := node.CreateNodeList(n)
+	allNodes := node.CreateNodeList(n, 15000)
 
 	nodes := []cipher.PubKey{}
 
@@ -149,10 +147,10 @@ func TestFindRoute(t *testing.T) {
 	fmt.Println("TestFindRoute")
 	messages.SetDebugLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
-	nodes := node.CreateNodeList(10)
+	nodes := node.CreateNodeList(10, 16000)
 
 	nodeList := []cipher.PubKey{}
 	for _, n := range nodes {
@@ -194,14 +192,14 @@ func TestAddAndConnect2Nodes(t *testing.T) {
 	fmt.Println("TestAddAndConnect")
 	messages.SetDebugLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
-	n0, err := node.CreateAndConnectNode(messages.LOCALHOST+":5992", messages.LOCALHOST+":5999")
+	n0, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:5992", []string{"127.0.0.1:5999"}, 3990})
 	assert.Nil(t, err)
 	defer n0.Shutdown()
 
-	n1, err := node.CreateAndConnectNode(messages.LOCALHOST+":5993", messages.LOCALHOST+":5999")
+	n1, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:5993", []string{"127.0.0.1:5999"}, 3991})
 	assert.Nil(t, err)
 	defer n1.Shutdown()
 
@@ -215,12 +213,12 @@ func TestRandomNetwork100Nodes(t *testing.T) {
 	fmt.Println("TestRandomNetwork100Nodes")
 	messages.SetInfoLogLevel()
 
-	nm := newNodeManager()
+	nm := newNodeManager("127.0.0.1:5999")
 	defer nm.Shutdown()
 
 	n := 100
 
-	nodes := nm.CreateRandomNetwork(n)
+	nodes := nm.CreateRandomNetwork(n, 17000)
 
 	nodeIds := []cipher.PubKey{}
 
@@ -244,12 +242,12 @@ func TestSendThroughRandomNetworks(t *testing.T) {
 
 	for _, n := range lens {
 
-		nm := newNodeManager()
+		nm := newNodeManager("127.0.0.1:5999")
 
-		nodes := nm.CreateRandomNetwork(n)
+		nodes := nm.CreateRandomNetwork(n, 18000)
 
-		n0 := nodes[0]
-		n1 := nodes[len(nodes)-1]
+		n0 := nodes[0].(*node.Node)
+		n1 := nodes[len(nodes)-1].(*node.Node)
 		conn0, err := n0.Dial(n1.Id(), messages.AppId([]byte{}), messages.AppId([]byte{}))
 		connId := conn0.Id()
 		if err != nil {

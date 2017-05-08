@@ -3,6 +3,8 @@ package nodemanager
 import (
 	"log"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,8 +32,20 @@ func newMsgServer(nm *NodeManager) (*MsgServer, error) {
 
 	msgSrv.maxPacketSize = config.MaxPacketSize
 	msgSrv.timeout = time.Duration(config.MsgSrvTimeout) * time.Millisecond
-	host := net.ParseIP(config.MsgSrvHost)
-	port := int(config.MsgSrvPort)
+
+	fullhost := nm.ctrlAddr
+
+	hostdata := strings.Split(fullhost, ":")
+	if len(hostdata) != 2 {
+		return nil, messages.ERR_INCORRECT_HOST
+	}
+
+	host := net.ParseIP(hostdata[0])
+	port, err := strconv.Atoi(hostdata[1])
+	if err != nil {
+		return nil, messages.ERR_INCORRECT_HOST
+	}
+
 	addr := &net.UDPAddr{IP: host, Port: port}
 
 	conn, err := net.ListenUDP("udp", addr)

@@ -54,12 +54,12 @@ func (self *TransportFactory) createTransportPair() (*TransportRecord, *Transpor
 }
 
 func (self *TransportFactory) connectNodeToNode(nodeA, nodeB *NodeRecord) error {
-	if nodeA.ConnectedTo(nodeB) || nodeB.ConnectedTo(nodeA) {
+	if nodeA.connectedTo(nodeB) || nodeB.connectedTo(nodeA) {
 		return messages.ERR_ALREADY_CONNECTED
 	}
 
-	peerA := nodeA.GetPeer()
-	peerB := nodeB.GetPeer()
+	peerA := nodeA.getPeer()
+	peerB := nodeB.getPeer()
 
 	transportA, transportB := self.createTransportPair()
 

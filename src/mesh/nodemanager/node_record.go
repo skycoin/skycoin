@@ -69,7 +69,7 @@ func (self *NodeManager) newNode(host string) (*NodeRecord, error) {
 	return node, nil
 }
 
-func (self *NodeRecord) GetTransportToNode(nodeId cipher.PubKey) (*TransportRecord, error) {
+func (self *NodeRecord) getTransportToNode(nodeId cipher.PubKey) (*TransportRecord, error) {
 	self.lock.Lock()
 	transport, ok := self.transportsByNodes[nodeId]
 	self.lock.Unlock()
@@ -79,18 +79,14 @@ func (self *NodeRecord) GetTransportToNode(nodeId cipher.PubKey) (*TransportReco
 	return transport, nil
 }
 
-func (self *NodeRecord) ConnectedTo(other *NodeRecord) bool {
-	_, err := self.GetTransportToNode(other.id)
+func (self *NodeRecord) connectedTo(other *NodeRecord) bool {
+	_, err := self.getTransportToNode(other.id)
 	return err == nil
 }
 
-func (self *NodeRecord) GetPeer() *messages.Peer {
+func (self *NodeRecord) getPeer() *messages.Peer {
 	peer := &messages.Peer{self.host, self.port}
 	return peer
-}
-
-func (self *NodeRecord) AddControlChannel() messages.ChannelId {
-	return messages.ChannelId(0)
 }
 
 func (self *NodeRecord) shutdown() {
@@ -126,7 +122,7 @@ func (self *NodeRecord) setTransport(id, pairId messages.TransportId, tr *Transp
 	return err
 }
 
-func (self *NodeRecord) GetTicks() int {
+func (self *NodeRecord) getTicks() int {
 	ticks := 0
 	for _, tr := range self.transports {
 		ticks += tr.ticks

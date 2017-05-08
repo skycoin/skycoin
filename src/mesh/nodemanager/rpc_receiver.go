@@ -16,7 +16,12 @@ type RPCReceiver struct {
 }
 
 func (receiver *RPCReceiver) addNode() cipher.PubKey {
-	n, err := node.CreateNode(messages.LOCALHOST+":"+strconv.Itoa(receiver.cmPort), messages.LOCALHOST+":5999")
+	nodeConfig := &node.NodeConfig{
+		"127.0.0.1:" + strconv.Itoa(receiver.cmPort),
+		[]string{"127.0.0.1:5999"},
+		receiver.cmPort + 2000,
+	}
+	n, err := node.CreateNode(nodeConfig)
 	if err != nil {
 		panic(err)
 	}

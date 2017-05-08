@@ -16,6 +16,22 @@ type proxyServer struct {
 
 const PROXY_PACKET_SIZE uint32 = 16384
 
+func (self *proxyServer) Send(data []byte) {
+	message := &messages.AppMessage{
+		0,
+		data,
+	}
+	messageS := messages.Serialize(messages.MsgAppMessage, message)
+	self.sendToMeshnet(messageS)
+}
+
+func (self *proxyServer) Shutdown() {
+	for _, c := range self.targetConns {
+		c.Close()
+	}
+	self.app.Shutdown()
+}
+
 func getProxyMessage(appMsg *messages.AppMessage) *messages.ProxyMessage {
 
 	proxyMessageS := appMsg.Payload
@@ -82,15 +98,6 @@ func getPacketFromConn(conn io.Reader) ([]byte, error) {
 		return nil, err
 	}
 	return buffer[:n], nil
-}
-
-func (self *proxyServer) Send(data []byte) {
-	message := &messages.AppMessage{
-		0,
-		data,
-	}
-	messageS := messages.Serialize(messages.MsgAppMessage, message)
-	self.send(messageS)
 }
 
 func (self *proxyServer) closeConns(remoteAddr string) {

@@ -1,4 +1,4 @@
-package nodemanager
+package app
 
 import (
 	"log"
@@ -7,18 +7,18 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/viscript"
 )
 
-type NMViscriptServer struct {
+type AppViscriptServer struct {
 	viscript.ViscriptServer
-	nm *NodeManager
+	app *app
 }
 
-func (self *NodeManager) TalkToViscript(sequence, appId uint32) {
-	vs := &NMViscriptServer{nm: self}
+func (self *app) TalkToViscript(sequence, appId uint32) {
+	vs := &AppViscriptServer{app: self}
 	self.viscriptServer = vs
 	vs.Init(sequence, appId)
 }
 
-func (self *NMViscriptServer) handleUserCommand(uc *messages.UserCommand) {
+func (self *AppViscriptServer) handleUserCommand(uc *messages.UserCommand) {
 	log.Println("command received:", uc)
 	sequence := uc.Sequence
 	appId := uc.AppId
@@ -43,7 +43,7 @@ func (self *NMViscriptServer) handleUserCommand(uc *messages.UserCommand) {
 		}
 
 	case messages.MsgUserShutdown:
-		self.nm.Shutdown()
+		self.app.Shutdown()
 		ack := &messages.UserShutdownAck{}
 		ackS := messages.Serialize(messages.MsgUserShutdownAck, ack)
 		self.SendAck(ackS, sequence, appId)

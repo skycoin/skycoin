@@ -6,11 +6,11 @@ import (
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
-func CreateNodeList(n int) []messages.NodeInterface {
+func CreateNodeList(n, startPort int) []messages.NodeInterface {
 	nodes := []messages.NodeInterface{}
 
 	for i := 0; i < n; i++ {
-		node, err := CreateNode(messages.LOCALHOST+":"+strconv.Itoa(15000+i), messages.LOCALHOST+":5999")
+		node, err := CreateNode(&NodeConfig{"127.0.0.1:" + strconv.Itoa(startPort+i), []string{"127.0.0.1:5999"}, startPort + n + i})
 		if err != nil {
 			panic(err)
 		}

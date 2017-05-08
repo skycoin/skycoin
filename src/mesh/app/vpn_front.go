@@ -23,12 +23,13 @@ const (
 	MTU        = "1300"
 )
 
-func NewVPNClient(appId messages.AppId, node messages.NodeInterface, proxyAddress string) (*VPNClient, error) {
+func NewVPNClient(appId messages.AppId, nodeAddr string, proxyAddress string) (*VPNClient, error) {
 	setLimit(16384) // set limit of simultaneously opened files to 16384
 	vpnClient := &VPNClient{}
 	vpnClient.id = appId
 	vpnClient.lock = &sync.Mutex{}
 	vpnClient.timeout = time.Duration(messages.GetConfig().AppTimeout)
+	vpnClient.responseNodeAppChannels = make(map[uint32]chan bool)
 
 	vpnClient.connections = map[string]*net.Conn{}
 
@@ -46,7 +47,7 @@ func NewVPNClient(appId messages.AppId, node messages.NodeInterface, proxyAddres
 	runIP("addr", "add", proxyIP, "dev", iface.Name())
 	runIP("link", "set", "dev", iface.Name(), "up")
 
-	err = vpnClient.RegisterAtNode(node)
+	err = vpnClient.RegisterAtNode(nodeAddr)
 	if err != nil {
 		return nil, err
 	}

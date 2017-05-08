@@ -110,7 +110,7 @@ func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey, forward bool) 
 		} else {
 			prevNodeId = nodes[i-next]
 			prevNode, _ = self.getNodeById(prevNodeId)
-			incomingTransportObj, err := prevNode.GetTransportToNode(currentNodeId) //**** request this info through control message or request from node struct in nodemanager
+			incomingTransportObj, err := prevNode.getTransportToNode(currentNodeId)
 			if err != nil {
 				return []messages.RouteId{}, err
 			}
@@ -124,7 +124,7 @@ func (self *NodeManager) buildRouteOneSide(nodes []cipher.PubKey, forward bool) 
 		} else {
 			outgoingRoute = routeIds[routeIndex+1]
 			nextNodeId = nodes[i+next]
-			outgoingTransportObj, err := currentNode.GetTransportToNode(nextNodeId) //**** request this info through control message or again request it from the node struct
+			outgoingTransportObj, err := currentNode.getTransportToNode(nextNodeId)
 			if err != nil {
 				return []messages.RouteId{}, err
 			}

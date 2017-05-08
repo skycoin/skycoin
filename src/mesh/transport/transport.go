@@ -18,7 +18,7 @@ import (
 type Transport struct {
 	id messages.TransportId
 
-	AttachedNode messages.NodeInterface //node the transport is attached to
+	AttachedNode messages.NodeInTransport //node the transport is attached to
 
 	pair             messages.TransportId //this is the other transport pair
 	packetsSent      uint32
@@ -51,7 +51,7 @@ type Transport struct {
 
 	lock *sync.Mutex
 
-	Ticks int
+	ticks uint32
 }
 
 const (
@@ -117,20 +117,20 @@ func (self *Transport) Tick() {
 	self.udp.Tick() // run udp listen
 }
 
+func (self *Transport) GetFromNode(msg messages.OutRouteMessage) {
+	self.ticks++
+	go self.sendTransportDatagramTransfer(&msg)
+}
+
+func (self *Transport) GetTicks() uint32 {
+	return self.ticks
+}
+
 //inject an incoming message from the transport
 func (self *Transport) injectNodeMessage(msg *messages.InRouteMessage) {
 	if self.AttachedNode != nil {
 		go self.AttachedNode.InjectTransportMessage(msg)
 	}
-}
-
-func (self *Transport) GetFromNode(msg messages.OutRouteMessage) {
-	self.Ticks++
-	go self.sendTransportDatagramTransfer(&msg)
-}
-
-func (self *Transport) GetTicks() int {
-	return self.Ticks
 }
 
 func (self *Transport) sendTransportDatagramTransfer(msg *messages.OutRouteMessage) {
@@ -189,7 +189,7 @@ func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
 		select {
 		case <-ackChannel:
 			if messages.IsDebug() {
-				fmt.Printf("msg %d is successfully sent, attempt %d\n", msg, retransmits+1)
+				fmt.Printf("message %d is successfully sent, attempt %d\n", msg, retransmits+1)
 			}
 			return
 
@@ -198,7 +198,7 @@ func (self *Transport) sendPacket(msg *messages.TransportDatagramTransfer) {
 			if retransmits >= self.retransmitLimit {
 				self.errChan <- messages.ERR_TRANSPORT_TIMEOUT
 			}
-			fmt.Printf("msg %d will be sent again, attempt %d\n", msg, retransmits+1)
+			fmt.Printf("message %d will be sent again, attempt %d\n", msg, retransmits+1)
 		}
 	}
 }
@@ -238,13 +238,12 @@ func (self *Transport) getFromUDP(msg []byte) {
 			time.Sleep(100 * self.timeUnit)
 		}
 	}
-	//go self.handleReceived(msg)
 	//	go self.checkTransportCongestion()
 }
 
 func (self *Transport) receiveFromPair() {
 	for m0 := range self.incomingFromPair {
-		self.Ticks++
+		self.ticks++
 
 		if self.status == DISCONNECTED {
 			break

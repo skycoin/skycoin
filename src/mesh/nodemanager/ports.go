@@ -18,7 +18,7 @@ func newPortDelivery() *PortDelivery {
 	return portDelivery
 }
 
-func (self *PortDelivery) Get(host string) uint32 {
+func (self *PortDelivery) get(host string) uint32 {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	port := self.port[host]

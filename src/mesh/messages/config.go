@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-const (
-	DEBUG = iota
-	INFO
-)
-
 type ConfigStruct struct {
 	SendInterval      time.Duration
 	SendIntervalNum   uint32
@@ -30,9 +25,6 @@ type ConfigStruct struct {
 	LogLevel          uint8
 	MaxBuffer         uint64
 	MsgSrvTimeout     uint32
-	MsgSrvHost        string
-	MsgSrvPort        int
-	MsgNodePort       int
 }
 
 type ConfigFromFile struct {
@@ -63,9 +55,6 @@ type ConfigFromFile struct {
 	}
 	MsgSrv struct {
 		MsgSrvTimeout uint32
-		MsgSrvHost    string
-		MsgSrvPort    int
-		MsgNodePort   int
 	}
 }
 
@@ -88,9 +77,6 @@ var config = &ConfigStruct{ // default values
 	TimeUnit:          10 * time.Microsecond,
 	TimeUnitNum:       10,
 	MsgSrvTimeout:     1000,
-	MsgSrvHost:        "127.0.0.1",
-	MsgSrvPort:        5999,
-	MsgNodePort:       5998,
 }
 
 func init() {
@@ -129,29 +115,8 @@ func init() {
 	config.ProxyTimeout = time.Duration(cfgFromFile.Proxy.ProxyTimeout) * time.Millisecond
 
 	config.MsgSrvTimeout = cfgFromFile.MsgSrv.MsgSrvTimeout
-	config.MsgSrvHost = cfgFromFile.MsgSrv.MsgSrvHost
-	config.MsgSrvPort = cfgFromFile.MsgSrv.MsgSrvPort
-	config.MsgNodePort = cfgFromFile.MsgSrv.MsgNodePort
 }
 
 func GetConfig() *ConfigStruct {
 	return config
-}
-
-func SetLogLevel(loglevel uint8) {
-	if loglevel == DEBUG || loglevel == INFO {
-		config.LogLevel = loglevel
-	}
-}
-
-func SetDebugLogLevel() {
-	SetLogLevel(DEBUG)
-}
-
-func SetInfoLogLevel() {
-	SetLogLevel(INFO)
-}
-
-func IsDebug() bool {
-	return config.LogLevel == DEBUG
 }

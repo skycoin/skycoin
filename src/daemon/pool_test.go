@@ -1,12 +1,8 @@
 package daemon
 
 import (
-	"testing"
 	"time"
-
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/stretchr/testify/assert"
 )
 
 // func TestInitPool(t *testing.T) {
@@ -31,46 +27,46 @@ import (
 // 	shutdown(d)
 // }
 
-func TestShutdownPool(t *testing.T) {
-	// Shutting down should flush the DisconnectQueue, among other things
-	d := newDefaultDaemon()
-	pool := d.Pool
-	assert.Equal(t, len(pool.Pool.DisconnectQueue), 0)
-	pool.Pool.DisconnectQueue <- gnet.DisconnectEvent{
-		ConnId: 1,
-		Reason: DisconnectOtherError,
-	}
-	assert.NotPanics(t, d.Pool.Shutdown)
-	wait()
-	// pool.Shutdown() should call Pool.StopListen() which closes and resets
-	// the DisconnectQueue channel
-	assert.Equal(t, len(pool.Pool.DisconnectQueue), 0)
-	shutdown(d)
-}
+// func TestShutdownPool(t *testing.T) {
+// 	// Shutting down should flush the DisconnectQueue, among other things
+// 	d := newDefaultDaemon()
+// 	pool := d.Pool
+// 	assert.Equal(t, len(pool.Pool.DisconnectQueue), 0)
+// 	pool.Pool.DisconnectQueue <- gnet.DisconnectEvent{
+// 		ConnId: 1,
+// 		Reason: DisconnectOtherError,
+// 	}
+// 	assert.NotPanics(t, d.Pool.Shutdown)
+// 	wait()
+// 	// pool.Shutdown() should call Pool.StopListen() which closes and resets
+// 	// the DisconnectQueue channel
+// 	assert.Equal(t, len(pool.Pool.DisconnectQueue), 0)
+// 	shutdown(d)
+// }
 
-func testOnGnetConnectSolicitation(t *testing.T, d *Daemon,
-	c *gnet.Connection, addr string, sol bool) {
-	d.onGnetConnect(c, sol)
-	assert.Equal(t, len(d.onConnectEvent), 1)
-	if len(d.onConnectEvent) == 0 {
-		t.Fatalf("onConnectEvent is not empty, would block")
-	}
-	ce := <-d.onConnectEvent
-	assert.Equal(t, ce.Addr, addr)
-	assert.Equal(t, ce.Solicited, sol)
-}
+// func testOnGnetConnectSolicitation(t *testing.T, d *Daemon,
+// 	c *gnet.Connection, addr string, sol bool) {
+// 	d.onGnetConnect(c, sol)
+// 	assert.Equal(t, len(d.onConnectEvent), 1)
+// 	if len(d.onConnectEvent) == 0 {
+// 		t.Fatalf("onConnectEvent is not empty, would block")
+// 	}
+// 	ce := <-d.onConnectEvent
+// 	assert.Equal(t, ce.Addr, addr)
+// 	assert.Equal(t, ce.Solicited, sol)
+// }
 
-func TestOnGnetConnect(t *testing.T) {
-	d := newDefaultDaemon()
-	addr := "11.22.33.44:5555"
-	c := gnetConnection(addr)
-	assert.Equal(t, len(d.onConnectEvent), 0)
-	testOnGnetConnectSolicitation(t, d, c, addr, false)
-	assert.Equal(t, len(d.onConnectEvent), 0)
-	testOnGnetConnectSolicitation(t, d, c, addr, true)
-	assert.Equal(t, len(d.onConnectEvent), 0)
-	shutdown(d)
-}
+// func TestOnGnetConnect(t *testing.T) {
+// 	d := newDefaultDaemon()
+// 	addr := "11.22.33.44:5555"
+// 	c := gnetConnection(addr)
+// 	assert.Equal(t, len(d.onConnectEvent), 0)
+// 	testOnGnetConnectSolicitation(t, d, c, addr, false)
+// 	assert.Equal(t, len(d.onConnectEvent), 0)
+// 	testOnGnetConnectSolicitation(t, d, c, addr, true)
+// 	assert.Equal(t, len(d.onConnectEvent), 0)
+// 	shutdown(d)
+// }
 
 /* Helpers */
 

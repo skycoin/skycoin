@@ -527,9 +527,6 @@ func (dm *Daemon) connectToTrustPeer() {
 	peers := dm.Peers.Peers.GetPublicTrustPeers()
 	for _, p := range peers {
 		dm.connectToPeer(p)
-		// if dm.connectToPeer(p) == nil {
-		// 	break
-		// }
 	}
 }
 
@@ -636,13 +633,6 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 			"connection was found")
 		return
 	}
-
-	// blacklisted := dm.Peers.Peers.IsBlacklisted(a)
-	// if blacklisted {
-	// 	logger.Info("%s is blacklisted, disconnecting", a)
-	// 	dm.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
-	// 	return
-	// }
 
 	if dm.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)

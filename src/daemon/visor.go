@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -354,33 +353,20 @@ func (vs *Visor) RecordBlockchainLength(addr string, bkLen uint64) {
 // EstimateBlockchainLength returns the blockchain length estimated from peer reports
 // Deprecate. Should not need. Just report time of last block
 func (vs *Visor) EstimateBlockchainLength() uint64 {
-	var l uint64
+	var maxLen uint64
 	vs.strand(func() {
 		ourLen := vs.v.HeadBkSeq() + 1
 		if len(vs.blockchainLengths) < 2 {
-			l = ourLen
+			maxLen = ourLen
 			return
 		}
-		lengths := make(BlockchainLengths, len(vs.blockchainLengths))
-		i := 0
 		for _, seq := range vs.blockchainLengths {
-			lengths[i] = seq
-			i++
-		}
-		sort.Sort(lengths)
-		median := len(lengths) / 2
-		var val uint64
-		if len(lengths)%2 == 0 {
-			val = (lengths[median] + lengths[median-1]) / 2
-		} else {
-			val = lengths[median]
-		}
-
-		if val >= l {
-			l = val
+			if maxLen < seq {
+				maxLen = seq
+			}
 		}
 	})
-	return l
+	return maxLen
 }
 
 // HeadBkSeq returns the head sequence
@@ -468,10 +454,7 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 	// Record this as this peer's highest block
 	d.Visor.RecordBlockchainLength(self.c.Addr, self.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	//blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
-	//	d.Visor.Config.BlocksResponseCount)
-	blocks := d.Visor.GetSignedBlocksSince(self.LastBlock,
-		self.RequestedBlocks)
+	blocks := d.Visor.GetSignedBlocksSince(self.LastBlock, self.RequestedBlocks)
 	logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
 	if len(blocks) == 0 {
 		return

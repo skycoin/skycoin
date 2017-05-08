@@ -540,7 +540,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	for _, p := range peers {
 		// check if the peer has public port
 		if p.HasIncomePort {
-			// check if the ip:mirror has already exsted, will try to connect tot he
+			// try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
 				dm.connectToPeer(p)
 				continue

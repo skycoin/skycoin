@@ -472,28 +472,25 @@ func NewPex(maxPeers int) *Pex {
 	}
 }
 
-// Adds a peer to the peer list, given an address. If the peer list is
+// AddPeer adds a peer to the peer list, given an address. If the peer list is
 // full, PeerlistFullError is returned */
-func (self *Pex) AddPeer(addr string) (*Peer, error) {
-	if !ValidateAddress(addr, self.AllowLocalhost) {
+func (px *Pex) AddPeer(ip string) (*Peer, error) {
+	if !ValidateAddress(ip, px.AllowLocalhost) {
 		return nil, InvalidAddressError
 	}
-	// if self.IsBlacklisted(addr) {
-	// 	return nil, BlacklistedAddressError
-	// }
 	var p Peer
 	var err error
-	self.Peerlist.strand(func() {
-		peer := self.peers[addr]
+	px.Peerlist.strand(func() {
+		peer := px.peers[ip]
 		if peer != nil {
 			peer.Seen()
 			p = *peer
 			return
-		} else if self.full() {
+		} else if px.full() {
 			err = PeerlistFullError
 		} else {
-			peer := NewPeer(addr)
-			self.peers[addr] = peer
+			peer := NewPeer(ip)
+			px.peers[ip] = peer
 			p = *peer
 		}
 	}, "AddPeer")
@@ -501,17 +498,14 @@ func (self *Pex) AddPeer(addr string) (*Peer, error) {
 }
 
 // SetTrustState updates the peer's Trusted statue
-func (self *Pex) SetTrustState(addr string, trusted bool) error {
-	if !ValidateAddress(addr, self.AllowLocalhost) {
+func (px *Pex) SetTrustState(addr string, trusted bool) error {
+	if !ValidateAddress(addr, px.AllowLocalhost) {
 		return InvalidAddressError
 	}
-	// if self.IsBlacklisted(addr) {
-	// 	return BlacklistedAddressError
-	// }
 
 	var err error
-	self.strand(func() {
-		if p, ok := self.peers[addr]; ok {
+	px.strand(func() {
+		if p, ok := px.peers[addr]; ok {
 			p.Trusted = trusted
 		} else {
 			err = fmt.Errorf("%s does not exist in peel list", addr)
@@ -523,18 +517,14 @@ func (self *Pex) SetTrustState(addr string, trusted bool) error {
 }
 
 // SetPeerHasInPort update whether the peer has incomming port.
-func (self *Pex) SetPeerHasInPort(addr string, v bool) error {
-	if !ValidateAddress(addr, self.AllowLocalhost) {
+func (px *Pex) SetPeerHasInPort(addr string, v bool) error {
+	if !ValidateAddress(addr, px.AllowLocalhost) {
 		return InvalidAddressError
 	}
 
-	// if self.IsBlacklisted(addr) {
-	// 	return BlacklistedAddressError
-	// }
-
 	var err error
-	self.strand(func() {
-		if p, ok := self.peers[addr]; ok {
+	px.strand(func() {
+		if p, ok := px.peers[addr]; ok {
 			p.HasIncomePort = v
 			p.Seen()
 		} else {
@@ -546,26 +536,26 @@ func (self *Pex) SetPeerHasInPort(addr string, v bool) error {
 	return err
 }
 
-// Returns true if no more peers can be added
-func (self *Pex) Full() bool {
+// Full returns true if no more peers can be added
+func (px *Pex) Full() bool {
 	var full bool
-	self.strand(func() {
-		full = self.full()
+	px.strand(func() {
+		full = px.full()
 	}, "Full")
 	return full
 }
 
-func (self *Pex) full() bool {
-	return self.maxPeers > 0 && len(self.peers) >= self.maxPeers
+func (px *Pex) full() bool {
+	return px.maxPeers > 0 && len(px.peers) >= px.maxPeers
 }
 
-// Add multiple peers at once. Any errors will be logged, but not returned
+// AddPeers add multiple peers at once. Any errors will be logged, but not returned
 // Returns the number of peers that were added without error.  Note that
 // adding a duplicate peer will not cause an error.
-func (self *Pex) AddPeers(peers []string) int {
+func (px *Pex) AddPeers(peers []string) int {
 	n := len(peers)
 	for _, p := range peers {
-		_, err := self.AddPeer(p)
+		_, err := px.AddPeer(p)
 		if err != nil {
 			logger.Warning("Failed to add peer %s, Reason: %v", p, err)
 			n--
@@ -575,12 +565,12 @@ func (self *Pex) AddPeers(peers []string) int {
 }
 
 // Load loads both the normal peer and blacklisted peer databases
-func (self *Pex) Load(dir string) error {
+func (px *Pex) Load(dir string) error {
 	peerlist, err := LoadPeerlist(dir)
 	if err != nil {
 		return err
 	}
-	self.Peerlist = *peerlist
+	px.Peerlist = *peerlist
 	return nil
 }
 

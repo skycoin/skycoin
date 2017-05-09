@@ -380,7 +380,8 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		ret := Spend(gateway, Wg, walletId, wallet.NewBalance(coins, hours), fee, dst)
 
 		if ret.Error != "" {
-			wh.Error400(w, "Spend Failed: %s", ret.Error)
+			wh.Error400(w, fmt.Sprintf("Spend Failed: %s", ret.Error))
+			return
 		}
 		wh.SendOr404(w, ret)
 	}

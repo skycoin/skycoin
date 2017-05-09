@@ -238,6 +238,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/songgao/water",
+			"repository": "https://github.com/songgao/water",
+			"vcs": "git",
+			"revision": "66c5b2f72cb8d40d16f342324f2bb58e11d4b93c",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/stretchr/testify",
 			"repository": "https://github.com/stretchr/testify",
 			"vcs": "git",
@@ -307,12 +315,30 @@
 			"notests": true
 		},
 		{
+			"importpath": "golang.org/x/net/proxy",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "feeb485667d1fdabe727840fe00adc22431bc86e",
+			"branch": "master",
+			"path": "/proxy",
+			"notests": true
+		},
+		{
 			"importpath": "golang.org/x/sys/unix",
 			"repository": "https://go.googlesource.com/sys",
 			"vcs": "git",
 			"revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
 			"branch": "master",
 			"path": "/unix",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sys/windows",
+			"repository": "https://go.googlesource.com/sys",
+			"vcs": "git",
+			"revision": "9ccfe848b9db8435a24c424abbc07a921adf1df5",
+			"branch": "master",
+			"path": "windows",
 			"notests": true
 		},
 		{

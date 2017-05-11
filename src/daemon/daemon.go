@@ -527,9 +527,6 @@ func (dm *Daemon) connectToTrustPeer() {
 	peers := dm.Peers.Peers.GetPublicTrustPeers()
 	for _, p := range peers {
 		dm.connectToPeer(p)
-		// if dm.connectToPeer(p) == nil {
-		// 	break
-		// }
 	}
 }
 
@@ -541,10 +538,22 @@ func (dm *Daemon) connectToRandomPeer() {
 	// Make a connection to a random (public) peer
 	peers := dm.Peers.Peers.RandomPublic(0)
 	for _, p := range peers {
-		dm.connectToPeer(p)
-		// if dm.connectToPeer(p) == nil {
-		// 	break
-		// }
+		// check if the peer has public port
+		if p.HasIncomePort {
+			// try to connect the peer if it's ip:mirror does not exist
+			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
+				dm.connectToPeer(p)
+				continue
+			}
+		} else {
+			// try to connect to the peer if we don't know whether the peer have public port
+			dm.connectToPeer(p)
+		}
+	}
+
+	if len(peers) == 0 {
+		// reset the retry times of all peers
+		dm.Peers.Peers.ResetAllRetryTimes()
 	}
 }
 
@@ -636,13 +645,6 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 			"connection was found")
 		return
 	}
-
-	// blacklisted := dm.Peers.Peers.IsBlacklisted(a)
-	// if blacklisted {
-	// 	logger.Info("%s is blacklisted, disconnecting", a)
-	// 	dm.Pool.Pool.Disconnect(a, DisconnectIsBlacklisted)
-	// 	return
-	// }
 
 	if dm.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)

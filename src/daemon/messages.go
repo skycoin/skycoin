@@ -230,6 +230,7 @@ type IntroductionMessage struct {
 	valid bool `enc:"-"` // skip it during encoding
 }
 
+// NewIntroductionMessage creates introduction message
 func NewIntroductionMessage(mirror uint32, version int32,
 	port uint16) *IntroductionMessage {
 	return &IntroductionMessage{
@@ -239,90 +240,94 @@ func NewIntroductionMessage(mirror uint32, version int32,
 	}
 }
 
-// Responds to an gnet.Pool event. We implement Handle() here because we
+// Handle Responds to an gnet.Pool event. We implement Handle() here because we
 // need to control the DisconnectReason sent back to gnet.  We still implement
 // Process(), where we do modifications that are not threadsafe
-func (self *IntroductionMessage) Handle(mc *gnet.MessageContext,
+func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) (err error) {
 	d := daemon.(*Daemon)
 	addr := mc.Addr
 	// Disconnect if this is a self connection (we have the same mirror value)
-	if self.Mirror == d.Messages.Mirror {
-		logger.Info("Remote mirror value %v matches ours", self.Mirror)
+	if intro.Mirror == d.Messages.Mirror {
+		logger.Info("Remote mirror value %v matches ours", intro.Mirror)
 		d.Pool.Pool.Disconnect(mc.Addr, DisconnectSelf)
 		err = DisconnectSelf
 	}
 	// Disconnect if not running the same version
-	if self.Version != d.Config.Version {
+	if intro.Version != d.Config.Version {
 		logger.Info("%s has different version %d. Disconnecting.",
-			addr, self.Version)
+			addr, intro.Version)
 		d.Pool.Pool.Disconnect(mc.Addr, DisconnectInvalidVersion)
 		err = DisconnectInvalidVersion
 	} else {
-		logger.Info("%s verified for version %d", addr, self.Version)
+		logger.Info("%s verified for version %d", addr, intro.Version)
 	}
+
+	// only solicited connection can be added to exchange peer list, cause accepted
+	// connection may not have incomming  port.
+	ip, port, err := SplitAddr(mc.Addr)
+	if err != nil {
+		// This should never happen, but the program should still work if it
+		// does.
+		logger.Error("Invalid Addr() for connection: %s", mc.Addr)
+		d.Pool.Pool.Disconnect(intro.c.Addr, DisconnectOtherError)
+		err = DisconnectOtherError
+	}
+
+	if port == intro.Port {
+		if err := d.Peers.Peers.SetPeerHasInPort(mc.Addr, true); err != nil {
+			logger.Error("Failed to set peer hasInPort statue, %v", err)
+		}
+	} else {
+		_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port))
+		if err != nil {
+			logger.Error("Failed to add peer: %v", err)
+		}
+	}
+
 	// Disconnect if connected twice to the same peer (judging by ip:mirror)
-	knownPort, exists := d.getMirrorPort(addr, self.Mirror)
+	knownPort, exists := d.getMirrorPort(addr, intro.Mirror)
 	if exists {
 		logger.Info("%s is already connected on port %d", addr, knownPort)
 		d.Pool.Pool.Disconnect(mc.Addr, DisconnectConnectedTwice)
 		err = DisconnectConnectedTwice
 	}
 
-	self.valid = (err == nil)
-	self.c = mc
+	intro.valid = (err == nil)
+	intro.c = mc
 	if err == nil {
-		err = d.recordMessageEvent(self, mc)
+		err = d.recordMessageEvent(intro, mc)
 		d.Peers.Peers.ResetRetryTimes(mc.Addr)
 	} else {
 		d.Peers.Peers.IncreaseRetryTimes(mc.Addr)
+		d.expectingIntroductions.Remove(mc.Addr)
 	}
 	return
 }
 
-// Processes an event queued by Handle()
-func (self *IntroductionMessage) Process(d *Daemon) {
-	d.expectingIntroductions.Remove(self.c.Addr)
-	if !self.valid {
+// Process an event queued by Handle()
+func (intro *IntroductionMessage) Process(d *Daemon) {
+	d.expectingIntroductions.Remove(intro.c.Addr)
+	if !intro.valid {
 		return
 	}
 	// Add the remote peer with their chosen listening port
-	a := self.c.Addr
-	ip, pt, err := SplitAddr(a)
-	if err != nil {
-		// This should never happen, but the program should still work if it
-		// does.
-		logger.Error("Invalid Addr() for connection: %s", a)
-		d.Pool.Pool.Disconnect(self.c.Addr, DisconnectOtherError)
-		return
-	}
+	a := intro.c.Addr
+
 	// Record their listener, to avoid double connections
-	err = d.recordConnectionMirror(a, self.Mirror)
+	err := d.recordConnectionMirror(a, intro.Mirror)
 	if err != nil {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
 		logger.Error("Invalid port for connection %s", a)
-		d.Pool.Pool.Disconnect(self.c.Addr, DisconnectOtherError)
+		d.Pool.Pool.Disconnect(intro.c.Addr, DisconnectOtherError)
 		return
 	}
 
-	// only solicited connection can be added to exchange peer list, cause accepted
-	// connection may not have incomming  port.
-	if pt == self.Port {
-		if err := d.Peers.Peers.SetPeerHasInPort(a, true); err != nil {
-			logger.Error("Failed to set peer hasInPort statue, %v", err)
-		}
-	} else {
-		_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, self.Port))
-		if err != nil {
-			logger.Error("Failed to add peer: %v", err)
-		}
-	}
-
 	// Request blocks immediately after they're confirmed
-	err = d.Visor.RequestBlocksFromAddr(d.Pool, self.c.Addr)
+	err = d.Visor.RequestBlocksFromAddr(d.Pool, intro.c.Addr)
 	if err == nil {
-		logger.Debug("Successfully requested blocks from %s", self.c.Addr)
+		logger.Debug("Successfully requested blocks from %s", intro.c.Addr)
 	} else {
 		logger.Warning("%v", err)
 	}
@@ -331,28 +336,29 @@ func (self *IntroductionMessage) Process(d *Daemon) {
 	d.Visor.AnnounceAllTxns(d.Pool)
 }
 
-// Sent to keep a connection alive. A PongMessage is sent in reply.
+// PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
 type PingMessage struct {
 	c *gnet.MessageContext `enc:"-"`
 }
 
-func (self *PingMessage) Handle(mc *gnet.MessageContext,
+// Handle implements the Messager interface
+func (ping *PingMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	ping.c = mc
+	return daemon.(*Daemon).recordMessageEvent(ping, mc)
 }
 
-// Sends a PongMessage to the sender of PingMessage
-func (self *PingMessage) Process(d *Daemon) {
-	logger.Debug("Reply to ping from %s", self.c.Addr)
-	d.Pool.Pool.SendMessage(self.c.Addr, &PongMessage{})
+// Process Sends a PongMessage to the sender of PingMessage
+func (ping *PingMessage) Process(d *Daemon) {
+	logger.Debug("Reply to ping from %s", ping.c.Addr)
+	d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{})
 }
 
-// Sent in reply to a PingMessage.  No action is taken when this is received.
+// PongMessage Sent in reply to a PingMessage.  No action is taken when this is received.
 type PongMessage struct {
 }
 
-func (self *PongMessage) Handle(mc *gnet.MessageContext,
+func (pong *PongMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received

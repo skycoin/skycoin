@@ -437,6 +437,15 @@ func (self *Peerlist) ResetRetryTimes(addr string) {
 	}, "ResetRetryTimes")
 }
 
+// ResetAllRetryTimes reset all peers' retry times
+func (self *Peerlist) ResetAllRetryTimes() {
+	self.strand(func() {
+		for _, p := range self.peers {
+			p.ResetRetryTimes()
+		}
+	})
+}
+
 // Loads a newline delimited list of addresses from
 // "<dir>/<PeerDatabaseFilename>"
 func LoadPeerlist(dir string) (*Peerlist, error) {

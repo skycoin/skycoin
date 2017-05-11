@@ -550,6 +550,11 @@ func (dm *Daemon) connectToRandomPeer() {
 			dm.connectToPeer(p)
 		}
 	}
+
+	if len(peers) == 0 {
+		// reset the retry times of all peers
+		dm.Peers.Peers.ResetAllRetryTimes()
+	}
 }
 
 // We remove a peer from the Pex if we failed to connect

@@ -29,5 +29,11 @@ export class WalletService {
             .map((res:Response) => res.json())
             .catch((error:any) => Observable.throw(error.json().error || 'Server error'));
     }
+
+    getWalletFolder(): Observable<any> {
+        return this._http.get('/wallets/folderName')
+        .map((res:Response) => res.json())
+        .catch((error:any) => Observable.throw(error.json().error || 'Server error'));
+    }
 }
 

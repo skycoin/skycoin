@@ -1,4 +1,4 @@
-System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/Rx', 'rxjs/add/operator/map', 'rxjs/add/operator/catch', './ng2-qrcode', './components/skycoin.edit.component', './components/seed.component', './components/outputs.component', "./components/pending.transactions.component"], function(exports_1, context_1) {
+System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/Rx', 'rxjs/add/operator/map', 'rxjs/add/operator/catch', './ng2-qrcode', './components/skycoin.edit.component', './components/seed.component', './components/outputs.component', "./components/pending.transactions.component", "./components/wallet.backup.page.component"], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10,7 +10,7 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/Rx',
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, router_1, http_1, http_2, Rx_1, ng2_qrcode_1, skycoin_edit_component_1, seed_component_1, outputs_component_1, pending_transactions_component_1;
+    var core_1, router_1, http_1, http_2, Rx_1, ng2_qrcode_1, skycoin_edit_component_1, seed_component_1, outputs_component_1, pending_transactions_component_1, wallet_backup_page_component_1;
     var PagerService, LoadWalletComponent, DisplayModeEnum;
     return {
         setters:[
@@ -43,6 +43,9 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/Rx',
             },
             function (pending_transactions_component_1_1) {
                 pending_transactions_component_1 = pending_transactions_component_1_1;
+            },
+            function (wallet_backup_page_component_1_1) {
+                wallet_backup_page_component_1 = wallet_backup_page_component_1_1;
             }],
         execute: function() {
             PagerService = (function () {
@@ -903,7 +906,7 @@ System.register(['@angular/core', '@angular/router', '@angular/http', 'rxjs/Rx',
                 LoadWalletComponent = __decorate([
                     core_1.Component({
                         selector: 'load-wallet',
-                        directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_1.QRCodeComponent, seed_component_1.SeedComponent, skycoin_edit_component_1.SkyCoinEditComponent, outputs_component_1.SkyCoinOutputComponent, pending_transactions_component_1.PendingTxnsComponent],
+                        directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_1.QRCodeComponent, seed_component_1.SeedComponent, skycoin_edit_component_1.SkyCoinEditComponent, outputs_component_1.SkyCoinOutputComponent, pending_transactions_component_1.PendingTxnsComponent, wallet_backup_page_component_1.WalletBackupPageComponent],
                         providers: [PagerService],
                         templateUrl: 'app/templates/wallet.html'
                     }), 

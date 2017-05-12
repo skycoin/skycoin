@@ -66,7 +66,8 @@ const ROUTES = [
     AddressDetailComponent,
     TransactionDetailComponent,
     LoadingComponent,
-    BlockChainCoinSupplyComponent
+    BlockChainCoinSupplyComponent,
+
   ],
   imports: [
     CommonModule,

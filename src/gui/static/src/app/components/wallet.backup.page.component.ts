@@ -6,9 +6,9 @@ declare var moment: any;
   selector: 'backup-wallets',
   template: `
 <h2>Wallet Backup</h2>
-<p> Your wallets are safely stored at : <b>{{walletFolder}}</b> </p>
+<p> Wallet Directory: <b>{{walletFolder}}</b> </p>
 <p>
-    Store the wallet seed in a safe place. With this we can get back your wallet balance.
+    <b>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE.</b> As long as you have your seed, you can recover your coins.
 </p>
 <div class="table-responsive">
                   <table id="wallet-table" class="table">

@@ -16,7 +16,7 @@ func TestCreateNode(t *testing.T) {
 	assert.Len(t, node.controlChannels, 1)
 	assert.Equal(t, cap(node.incomingControlChannel), 256)
 	assert.Equal(t, cap(node.congestionChannel), 1024)
-	//	assert.Equal(t, node.host, messages.LOCALHOST)
+	assert.Equal(t, node.host, messages.LOCALHOST)
 	assert.NotNil(t, node.lock)
 }
 

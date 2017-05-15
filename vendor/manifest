@@ -342,10 +342,26 @@
 			"notests": true
 		},
 		{
+			"importpath": "gopkg.in/gcfg.v1",
+			"repository": "https://gopkg.in/gcfg.v1",
+			"vcs": "git",
+			"revision": "27e4946190b4a327b539185f2b5b1f7c84730728",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "gopkg.in/urfave/cli.v1",
 			"repository": "https://gopkg.in/urfave/cli.v1",
 			"vcs": "git",
 			"revision": "0bdeddeeb0f650497d603c4ad7b20cfe685682f6",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "gopkg.in/warnings.v0",
+			"repository": "https://gopkg.in/warnings.v0",
+			"vcs": "git",
+			"revision": "8a331561fe74dadba6edfc59f3be66c22c3b065d",
 			"branch": "master",
 			"notests": true
 		},

@@ -84,8 +84,7 @@ func init() {
 	err := gcfg.ReadFileInto(cfgFromFile, "/etc/meshnet.cfg")
 	if err != nil {
 		fmt.Println("Cannot read settings from file, applying defaults. Error:", err)
-		panic(err)
-		//return
+		return
 	}
 
 	if cfgFromFile.General.LogLevel == "DEBUG" {

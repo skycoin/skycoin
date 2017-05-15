@@ -141,7 +141,8 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
-	DB *bolt.DB
+	DB          *bolt.DB
+	Arbitrating bool
 }
 
 func (c *Config) register() {
@@ -222,6 +223,7 @@ func (c *Config) register() {
 		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
 		"Run on localhost and only connect to localhost peers")
+	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
 }
@@ -445,6 +447,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
 	dc.Visor.Config.DB = c.DB
+	dc.Visor.Config.Arbitrating = c.Arbitrating
 	return dc
 }
 

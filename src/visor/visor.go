@@ -66,7 +66,8 @@ type VisorConfig struct {
 	//WalletConstructor wallet.WalletConstructor
 	// Default type of wallet to create
 	//WalletTypeDefault wallet.WalletType
-	DB *bolt.DB
+	DB          *bolt.DB
+	Arbitrating bool // enable arbitrating
 }
 
 // NewVisorConfig, Note, put cap on block size, not on transactions/block
@@ -136,7 +137,7 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 
 	tree := blockdb.NewBlockTree(c.DB)
-	bc := NewBlockchain(tree, walker)
+	bc := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
 	bp := NewBlockchainParser(history, bc)
 
 	bc.BindListener(bp.BlockListener)

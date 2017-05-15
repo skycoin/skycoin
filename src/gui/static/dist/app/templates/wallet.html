@@ -42,6 +42,7 @@
                         <li><a href="#" (click)="selectMenu('BlockChain', $event)">BlockChain</a></li>
                         <li><a href="#" (click)="selectMenu('Outputs', $event)">Outputs</a></li>
                         <li><a href="#" (click)="selectMenu('PendingTxns', $event)">Pending Transactions</a></li>
+                        <li><a href="#" (click)="selectMenu('BackupWallet', $event)">Backup Wallet</a></li>
                     </ul>
                 </div>
             </li>
@@ -494,6 +495,12 @@
                     margin-bottom: 20px;
                     ">Pending Transactions</p>
                         <pending-transactions></pending-transactions>
+                    </div>
+                    <div *ngIf="selectedMenu=='BackupWallet'">
+                        <div *ngIf="wallets.length>0">
+                            <backup-wallets [wallets]="wallets"></backup-wallets>
+                        </div>
+
                     </div>
                 </div>
             </div>

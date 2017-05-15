@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	"github.com/skycoin/skycoin/src/util"
 )
 
 //var Wallets wallet.Wallets
@@ -564,6 +565,18 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 	}
 }
+type WalletFolder struct {
+	Address string `json:"address"`
+}
+// Loads/unloads wallets from the wallet directory
+func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ret := WalletFolder{
+			Address: util.UserHome() + "/.skycoin/wallets",
+		}
+		wh.SendOr404(w,ret)
+	}
+}
 
 // getOutputsHandler get utxos base on the filters in url params.
 // mode: GET
@@ -687,6 +700,8 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// files are present. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
 	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
+
+	mux.HandleFunc("/wallets/folderName",getWalletFolder(gateway))
 
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(gateway))

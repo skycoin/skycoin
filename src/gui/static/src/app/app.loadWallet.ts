@@ -14,6 +14,7 @@ import {SkyCoinOutputComponent} from './components/outputs.component';
 import {SeedService} from "./services/seed.service";
 import {Wallet} from './model/wallet.pojo'
 import {PendingTxnsComponent} from "./components/pending.transactions.component";
+import {WalletBackupPageComponent} from "./components/wallet.backup.page.component";
 
 declare var _: any;
 declare var $: any;
@@ -69,7 +70,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-wallet',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent, SkyCoinOutputComponent, PendingTxnsComponent],
+    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent, SkyCoinOutputComponent, PendingTxnsComponent, WalletBackupPageComponent],
     providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })

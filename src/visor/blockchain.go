@@ -197,7 +197,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 	if len(txns) == 0 {
 		return coin.Block{}, errors.New("No transactions")
 	}
-	err := bc.verifyTransactions(txns)
+	txns, err := bc.verifyTransactions(txns)
 	if err != nil {
 		return coin.Block{}, err
 	}
@@ -208,9 +208,11 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 		if err := bc.verifyBlockHeader(b); err != nil {
 			log.Panic("Impossible Error: not allowed to fail")
 		}
-		if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
+		txns, err := bc.verifyTransactions(b.Body.Transactions)
+		if err != nil {
 			log.Panic("Impossible Error: not allowed to fail")
 		}
+		b.Body.Transactions = txns
 	}
 	return b, nil
 }
@@ -269,9 +271,11 @@ func (bc Blockchain) verifyBlock(b coin.Block) error {
 			return err
 		}
 
-		if err := bc.verifyTransactions(b.Body.Transactions); err != nil {
+		txns, err := bc.verifyTransactions(b.Body.Transactions)
+		if err != nil {
 			return err
 		}
+		b.Body.Transactions = txns
 	}
 
 	if err := bc.verifyUxHash(b); err != nil {
@@ -402,7 +406,6 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.Block {
 func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating bool) (coin.Transactions, error) {
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if arbitrating {
-		logger.Debug("In arbitrating mode")
 		txns = coin.SortTransactions(txns, bc.TransactionFee)
 	}
 	//TODO: audit
@@ -532,9 +535,8 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 }
 
 // verifyTransactions returns an error if any Transaction in txns is invalid
-func (bc Blockchain) verifyTransactions(txns coin.Transactions) error {
-	_, err := bc.processTransactions(txns, bc.arbitrating)
-	return err
+func (bc Blockchain) verifyTransactions(txns coin.Transactions) (coin.Transactions, error) {
+	return bc.processTransactions(txns, bc.arbitrating)
 }
 
 // ArbitrateTransactions returns an array of Transactions with invalid ones removed from txns.

@@ -60,18 +60,33 @@ type Blockchain struct {
 	unspent     coin.UnspentPool
 	head        cipher.SHA256
 	blkListener []BlockListener
+	arbitrating bool
 }
 
+// Option represents the option when creating the blockchain
+type Option func(*Blockchain)
+
 // NewBlockchain use the walker go throught the tree and update the head and unspent outputs.
-func NewBlockchain(tree BlockTree, walker Walker) *Blockchain {
+func NewBlockchain(tree BlockTree, walker Walker, ops ...Option) *Blockchain {
 	bc := &Blockchain{
 		tree:    tree,
 		walker:  walker,
 		unspent: coin.NewUnspentPool(),
 	}
 
+	for _, op := range ops {
+		op(bc)
+	}
+
 	bc.walkTree()
 	return bc
+}
+
+// Arbitrating option to change the mode
+func Arbitrating(enable bool) Option {
+	return func(bc *Blockchain) {
+		bc.arbitrating = enable
+	}
 }
 
 // GetUnspent returns the unspent output pool.
@@ -387,6 +402,7 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.Block {
 func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating bool) (coin.Transactions, error) {
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if arbitrating {
+		logger.Debug("In arbitrating mode")
 		txns = coin.SortTransactions(txns, bc.TransactionFee)
 	}
 	//TODO: audit
@@ -517,7 +533,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 
 // verifyTransactions returns an error if any Transaction in txns is invalid
 func (bc Blockchain) verifyTransactions(txns coin.Transactions) error {
-	_, err := bc.processTransactions(txns, false)
+	_, err := bc.processTransactions(txns, bc.arbitrating)
 	return err
 }
 

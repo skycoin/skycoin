@@ -2,9 +2,10 @@ package transport
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )

@@ -12,7 +12,6 @@ import (
 
 func main() {
 
-	//messages.SetDebugLogLevel()
 	messages.SetInfoLogLevel()
 
 	var (
@@ -43,7 +42,7 @@ func main() {
 		return
 	}
 
-	meshnet := network.NewNetwork("127.0.0.1:5999")
+	meshnet, _ := network.NewNetwork("mesh.network", "127.0.0.1:5999")
 	defer meshnet.Shutdown()
 
 	clientNode, serverNode := meshnet.CreateSequenceOfNodes(hops+1, 15000)
@@ -63,7 +62,7 @@ func main() {
 	}
 	defer client.Shutdown()
 
-	err = client.Connect(serverId, serverNode.Id())
+	err = client.Connect(serverId, serverNode.Id().Hex())
 	if err != nil {
 		panic(err)
 	}

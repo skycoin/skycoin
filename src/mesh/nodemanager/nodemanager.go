@@ -27,29 +27,41 @@ type NodeManager struct {
 	msgServer            *MsgServer
 	lock                 *sync.Mutex
 	viscriptServer       *NMViscriptServer
+	dnsServer            *DNSServer
 }
 
 var config = messages.GetConfig()
 
-func NewNetwork(ctrlAddr string) *NodeManager {
-	nm := newNodeManager(ctrlAddr)
-	return nm
+func NewNetwork(domain, ctrlAddr string) (*NodeManager, error) {
+	nm, err := newNodeManager(domain, ctrlAddr)
+	return nm, err
 }
 
-func newNodeManager(ctrlAddr string) *NodeManager {
+func newNodeManager(domain, ctrlAddr string) (*NodeManager, error) {
 	nm := new(NodeManager)
+
+	dnsServer, err := newDNSServer(domain)
+	if err != nil {
+		return nil, err
+	}
+	nm.dnsServer = dnsServer
+
 	nm.ctrlAddr = ctrlAddr
 	nm.nodeList = make(map[cipher.PubKey]*NodeRecord)
 	nm.transportFactoryList = []*TransportFactory{}
 	nm.routeGraph = newGraph()
 	nm.portDelivery = newPortDelivery()
+
 	msgServer, err := newMsgServer(nm)
 	if err != nil {
 		panic(err)
+		return nil, err
 	}
 	nm.msgServer = msgServer
+
 	nm.lock = &sync.Mutex{}
-	return nm
+
+	return nm, nil
 }
 
 func (self *NodeManager) Tick() {
@@ -69,16 +81,16 @@ func (self *NodeManager) Shutdown() {
 	time.Sleep(1 * time.Millisecond)
 }
 
-func (self *NodeManager) addNewNode(host string) (cipher.PubKey, error) { //**** will be called by messaging server, response will be the reply
-	nodeToAdd, err := self.newNode(host)
+func (self *NodeManager) addNewNode(host, hostname string) (cipher.PubKey, error) { //**** will be called by messaging server, response will be the reply
+	nodeToAdd, err := self.newNode(host, hostname)
 	if err != nil {
 		return cipher.PubKey{}, err
 	}
 	return nodeToAdd.id, nil
 }
 
-func (self *NodeManager) addAndConnect(host string) (cipher.PubKey, error) { //**** will be called by messaging server, response will be the reply
-	id, err := self.addNewNode(host)
+func (self *NodeManager) addAndConnect(host, hostname string) (cipher.PubKey, error) { //**** will be called by messaging server, response will be the reply
+	id, err := self.addNewNode(host, hostname)
 	if err != nil {
 		return cipher.PubKey{}, err
 	}

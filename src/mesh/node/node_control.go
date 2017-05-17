@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -80,14 +79,14 @@ func (self *Node) sendAckToServer(sequence uint32, ack *messages.CommonCMAck) er
 	return self.sendToServer(sequence, ackS)
 }
 
-func (self *Node) sendRegisterNodeToServer(host string, connect bool) error {
-	msg := messages.RegisterNodeCM{host, connect}
+func (self *Node) sendRegisterNodeToServer(hostname, host string, connect bool) error {
+	msg := messages.RegisterNodeCM{hostname, host, connect}
 	msgS := messages.Serialize(messages.MsgRegisterNodeCM, msg)
 	err := self.sendMessageToServer(msgS)
 	return err
 }
 
-func (self *Node) sendConnectDirectlyToServer(nodeToId cipher.PubKey) error {
+func (self *Node) sendConnectDirectlyToServer(nodeToId string) error {
 	responseChannel := make(chan bool)
 
 	self.lock.Lock()
@@ -112,7 +111,7 @@ func (self *Node) sendConnectDirectlyToServer(nodeToId cipher.PubKey) error {
 	}
 }
 
-func (self *Node) sendConnectWithRouteToServer(nodeToId cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
+func (self *Node) sendConnectWithRouteToServer(nodeToId string, appIdFrom, appIdTo messages.AppId) (messages.ConnectionId, error) {
 	responseChannel := make(chan messages.ConnectionId)
 
 	self.lock.Lock()

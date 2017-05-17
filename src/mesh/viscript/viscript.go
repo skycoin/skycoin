@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/skycoin/skycoin/src/mesh/messages"
+	vsmsg "github.com/corpusc/viscript/msg"
 )
 
 type ViscriptServer struct {
@@ -48,8 +48,8 @@ func (self *ViscriptServer) serve() {
 			} else {
 				if n > 0 {
 					log.Printf("connection at %s received %d bytes\n", self.conn.LocalAddr().String(), n)
-					uc := messages.UserCommand{}
-					err := messages.Deserialize(buffer[:n], &uc)
+					uc := vsmsg.MessageUserCommand{}
+					err := vsmsg.Deserialize(buffer[:n], &uc)
 					if err != nil {
 						log.Println("Incorrect UserCommand:", buffer[:n])
 						continue
@@ -64,17 +64,17 @@ func (self *ViscriptServer) serve() {
 	self.conn.Close()
 }
 
-func (self *ViscriptServer) handleUserCommand(uc *messages.UserCommand) {
+func (self *ViscriptServer) handleUserCommand(uc *vsmsg.MessageUserCommand) {
 	log.Println("command received:", uc)
 }
 
 func (self *ViscriptServer) SendAck(ackS []byte, sequence, appId uint32) {
-	ucAck := &messages.UserCommand{
+	ucAck := &vsmsg.MessageUserCommandAck{
 		sequence,
 		appId,
 		ackS,
 	}
-	ucAckS := messages.Serialize(messages.MsgUserCommand, ucAck)
+	ucAckS := vsmsg.Serialize(vsmsg.TypeUserCommandAck, ucAck)
 	self.send(ucAckS)
 }
 
@@ -86,7 +86,7 @@ func (self *ViscriptServer) send(data []byte) {
 }
 
 func (self *ViscriptServer) sendFirstAck(sequence, appId uint32) {
-	ack := messages.CreateAck{}
-	ackS := messages.Serialize(messages.MsgCreateAck, ack)
+	ack := vsmsg.MessageCreateAck{}
+	ackS := vsmsg.Serialize(vsmsg.TypeCreateAck, ack)
 	self.SendAck(ackS, sequence, appId)
 }

@@ -24,10 +24,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
-//"github.com/skycoin/skycoin/src/cli"
-
-//"github.com/skycoin/skycoin/src/wallet"
-
 var (
 	logger     = util.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"

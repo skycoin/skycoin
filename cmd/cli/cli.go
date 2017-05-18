@@ -6,9 +6,8 @@ import (
 
 	"strings"
 
-	skycli "github.com/skycoin/skycoin/src/api/cli"
+	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/urfave/cli"
 )
 
 var (
@@ -53,32 +52,9 @@ func main() {
 	}
 
 	// init the skycli
-	skycli.Init(skycli.RPCAddr(rpcAddr),
-		skycli.WalletDir(wltDir),
-		skycli.DefaultWltName(wltName))
-
-	cli.SubcommandHelpTemplate = commandHelpTemplate
-	cli.CommandHelpTemplate = commandHelpTemplate
-	cli.HelpFlag = cli.BoolFlag{
-		Name:  "help,h",
-		Usage: "show help, can also be used to show subcommand help",
-	}
-
-	app := cli.NewApp()
-	app.Usage = "the skycoin command line interface"
-	app.Version = "0.1"
-	app.Commands = skycli.Commands()
-	app.EnableBashCompletion = true
-	app.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
-		fmt.Fprintf(context.App.Writer, "Error: %v\n\n", err)
-		cli.ShowAppHelp(context)
-		return nil
-	}
-	app.CommandNotFound = func(ctx *cli.Context, command string) {
-		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
-		cli.HelpPrinter(app.Writer, tmp, app)
-	}
-
+	app := cli.NewApp(cli.RPCAddr(rpcAddr),
+		cli.WalletDir(wltDir),
+		cli.DefaultWltName(wltName))
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)
 	}

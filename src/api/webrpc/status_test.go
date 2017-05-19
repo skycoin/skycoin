@@ -14,7 +14,7 @@ var lastBlockStr = `
                 "header": {
                     "seq": 571,
                     "block_hash": "8b677839c52d04f3d33373d2c39ac8f2c9ec2cbaf15cbd5d12e5d9557c9705bf",
-                    "previos_block_hash": "e2074ed9e090a8770dc3c53f27262762ce006e0ddec3c81f823b6b2790aa256e",
+                    "previous_block_hash": "e2074ed9e090a8770dc3c53f27262762ce006e0ddec3c81f823b6b2790aa256e",
                     "timestamp": 1482970140,
                     "fee": 13004,
                     "version": 0,

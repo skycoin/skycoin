@@ -177,7 +177,7 @@ func Int2Base58(val int) Base58 {
 func Hex2Base58(val []byte) Base58 {
 	tmp := Big2Base58(Hex2Big(val)) //encoding of the number without zeroes in front
 
-	//looking for zeros at the beggining
+	//looking for zeros at the beginning
 	i := 0
 	for i = 0; val[i] == 0 && i < len(val); i++ {
 	}
@@ -202,7 +202,7 @@ func Hex2Base58Str(val []byte) string {
 func StringHex2Base58(val string) Base58 {
 	tmp := Big2Base58(Hex2Big(String2Hex(val))) //encoding of the number without zeroes in front
 
-	//looking for zeros at the beggining
+	//looking for zeros at the beginning
 	i := 0
 	for i = 0; val[i:i+2] == string("00") && i < len(val)-2; i += 2 {
 	}

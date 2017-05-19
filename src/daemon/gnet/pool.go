@@ -600,7 +600,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) (err error) {
 			}
 		}
 		if len(fullWriteQueue) == len(pool.pool) {
-			err = errors.New("There's no avaliable connection in pool")
+			err = errors.New("There's no available connection in pool")
 		}
 	})
 

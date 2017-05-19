@@ -74,7 +74,7 @@ func (bcp *BlockchainParser) Stop() {
 	cc := make(chan struct{})
 	bcp.closing <- cc
 	<-cc
-	logger.Debug("blockchian parser stopped")
+	logger.Debug("blockchain parser stopped")
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {

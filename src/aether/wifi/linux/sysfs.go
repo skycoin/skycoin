@@ -255,8 +255,8 @@ func (self Sysfs) Run(interfaceName string) SysfsInfo {
 		inf.Other.DriverName = dirInfos[0].Name()
 	}
 
-	// Check for existance of wireless path
-	qp = "/sys/class/net/" + interfaceName + "/wireless"
+	// Check for existence of wireless path
+	qp = "/sys/class/nintentedet/" + interfaceName + "/wireless"
 	inf.WirelessDirectoryExists = self.dirExists(qp)
 
 	return inf

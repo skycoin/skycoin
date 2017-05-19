@@ -33,7 +33,7 @@ Sigs is the array of signatures
 - the Nth signature is the authorization to spend the Nth output consumed in transaction
 - the hash signed is SHA256sum of transaction inner hash and the hash of output being spent
 
-The inner hash is SHA256 hash of the serialization of Input and Ouput array
+The inner hash is SHA256 hash of the serialization of Input and Output array
 The outer hash is the hash of the whole transaction serialization
 */
 

@@ -49,7 +49,7 @@ type BlockStat struct {
 	// [JSM:] We need to put an upper limit to the
 	// ConcensusParticipant's bandwidth requirement in order to
 	// prevent a certain kind of attack on the network.  As an
-	// implementation of that requrement, we stop collecting (hence,
+	// implementation of that requirement, we stop collecting (hence,
 	// stop propagating) the blocks with the same sequence number
 	// after we have observed a sufficient number of builders.
 	//
@@ -196,7 +196,7 @@ func (self *BlockStat) try_add_hash_and_sig(
 	// reason is to prevent an attack in which the attacker launches a
 	// large number of nodes each of which make valid blocks, thus
 	// causing large traffic that can potentially degrade the network
-	// performace. Example: when we receive, say 63
+	// performance. Example: when we receive, say 63
 	// (signer_pubkey,hash) pairs for a given seqno, we stop listening
 	// for the updates. Say, the breakdown is: hash H1 from 50
 	// signers, hash H2 from 10, hash H3 from 2 and hash H4 from 1.
@@ -345,7 +345,7 @@ func (self *BlockStat) GetBestHashPubkeySig() (
 	// same pubkey sign most of blocks.
 
 	// NOTE 1: We want a deterministic algo here, so that each
-	// ConsensusParticipant across teh network would choose same
+	// ConsensusParticipant across the network would choose same
 	// (hash,sig) to go to blockchain.
 
 	// NOTE 2: A simplified version of consensus can be imagined, in
@@ -515,7 +515,7 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 			if already_in_blockchain {
 				fmt.Print("DEBUG Already in blockchain. Ignoring block.\n")
 				action_skip = true
-			} else if l.seqno - blockPtr.Seqno >
+			} else if l.seqno-blockPtr.Seqno >
 				Cfg_consensus_candidate_max_seqno_gap {
 				fmt.Printf("DEBUG proposed=%d, first=%d, last=%d. Too far"+
 					" behind. Ignoring block.\n",
@@ -527,7 +527,7 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 
 		} else if blockPtr.Seqno > l.seqno {
 			// TODO: Accept, unless 'blockPtr.seqno > l.seqno' is
-			// large, e.g.  the preceived block is way ahead of the
+			// large, e.g.  the perceived block is way ahead of the
 			// last block in the queue.  FOR NOW, accept unless queue
 			// length would be too large.
 			if blockPtr.Seqno-f.seqno >
@@ -543,12 +543,12 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 			// The 'blockPtr.seqno' is in between, so we need to insert
 			// a new or find the element with same seqno and update it.
 
-			// PREFORMANCE TODO: Avoid linear search by using a
+			// PERFORMANCE TODO: Avoid linear search by using a
 			// lookup, or using other properties of Heap object. If
 			// n/a, use Binary Search.
 			S := blockPtr.Seqno
 			found := false
-			for i, _ := range self.queue {
+			for i := range self.queue {
 				s := self.queue[i].seqno
 				if s < S {
 					// keep searching
@@ -623,4 +623,5 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 
 	return status_code
 }
+
 ////////////////////////////////////////////////////////////////////////////////

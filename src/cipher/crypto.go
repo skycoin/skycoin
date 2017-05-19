@@ -365,7 +365,7 @@ func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey) {
 	return hash, NewPubKey(public), NewSecKey(secret)
 }
 
-//Returns sequence of n private keys from intial seed
+//Returns sequence of n private keys from initial seed
 func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
 	var keys []SecKey
 	var seckey SecKey
@@ -376,7 +376,7 @@ func GenerateDeterministicKeyPairs(seed []byte, n int) []SecKey {
 	return keys
 }
 
-//Returns sequence of n private keys from intial seed, and return the new seed
+//Returns sequence of n private keys from initial seed, and return the new seed
 func GenerateDeterministicKeyPairsSeed(seed []byte, n int) ([]byte, []SecKey) {
 	var keys []SecKey
 	var seckey SecKey

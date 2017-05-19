@@ -81,7 +81,7 @@ type Peer struct {
 	LastSeen      time.Time // Unix timestamp when this peer was last seen
 	Private       bool      // Whether it should omitted from public requests
 	Trusted       bool      // Whether this peer is trusted
-	HasIncomePort bool      // Wheter this peer has incomming port
+	HasIncomePort bool      // Whether this peer has incomming port
 	RetryTimes    int       `json:"-"` // records the retry times
 }
 

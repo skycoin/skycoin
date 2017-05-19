@@ -473,7 +473,7 @@ func (self *WifiInterface) unblock() error {
 }
 
 func prerequisites() bool {
-	logger.Debug("Wifi: Checking software prerequisties")
+	logger.Debug("Wifi: Checking software prerequisites")
 
 	failed := false
 

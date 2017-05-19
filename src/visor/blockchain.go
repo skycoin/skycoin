@@ -66,7 +66,7 @@ type Blockchain struct {
 // Option represents the option when creating the blockchain
 type Option func(*Blockchain)
 
-// NewBlockchain use the walker go throught the tree and update the head and unspent outputs.
+// NewBlockchain use the walker go through the tree and update the head and unspent outputs.
 func NewBlockchain(tree BlockTree, walker Walker, ops ...Option) *Blockchain {
 	bc := &Blockchain{
 		tree:    tree,

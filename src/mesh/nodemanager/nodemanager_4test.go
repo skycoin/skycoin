@@ -17,7 +17,7 @@ func (self *NodeManager) CreateRandomNetwork(n, startPort int) []messages.NodeIn
 	nodes := []messages.NodeInterface{}
 
 	for i := 0; i < n; i++ {
-		node, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:" + strconv.Itoa(startPort+i), []string{"127.0.0.1:5999"}, startPort + n + i})
+		node, err := node.CreateAndConnectNode(&node.NodeConfig{"127.0.0.1:" + strconv.Itoa(startPort+i), []string{"127.0.0.1:5999"}, startPort + n + i, ""})
 		if err != nil {
 			panic(err)
 		}

@@ -95,7 +95,7 @@ func main() {
 		sizeStr += "b"
 	}
 
-	meshnet := network.NewNetwork("127.0.0.1:5999")
+	meshnet, _ := network.NewNetwork("test.network", "127.0.0.1:5999")
 	defer meshnet.Shutdown()
 
 	clientNode, serverNode := meshnet.CreateSequenceOfNodes(hops+1, 14000)
@@ -108,7 +108,7 @@ func main() {
 		panic(err)
 	}
 
-	err = client.Connect(messages.MakeAppId("echoServer"), serverAddr) // client dials to server
+	err = client.Connect(messages.MakeAppId("echoServer"), serverAddr.Hex()) // client dials to server
 	if err != nil {
 		panic(err)
 	}

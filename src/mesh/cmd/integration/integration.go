@@ -14,7 +14,7 @@ func main() {
 }
 
 func testSendAndReceive(n int) {
-	meshnet := network.NewNetwork("127.0.0.1:5999")
+	meshnet, _ := network.NewNetwork("test.network", "127.0.0.1:5999")
 	defer meshnet.Shutdown()
 
 	clientNode, serverNode := meshnet.CreateSequenceOfNodes(n, 14000) // create sequence and get addresses of the first and the last node in it
@@ -35,7 +35,7 @@ func testSendAndReceive(n int) {
 	}
 	defer client.Shutdown()
 
-	err = client.Connect(serverId, serverNode.Id()) // client dials to server
+	err = client.Connect(serverId, serverNode.Id().Hex()) // client dials to server
 	if err != nil {
 		panic(err)
 	}

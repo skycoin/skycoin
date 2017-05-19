@@ -3,7 +3,8 @@ package node
 import (
 	"log"
 
-	"github.com/skycoin/skycoin/src/mesh/messages"
+	vsmsg "github.com/corpusc/viscript/msg"
+
 	"github.com/skycoin/skycoin/src/mesh/viscript"
 )
 
@@ -18,34 +19,47 @@ func (self *Node) TalkToViscript(sequence, appId uint32) {
 	vs.Init(sequence, appId)
 }
 
-func (self *NodeViscriptServer) handleUserCommand(uc *messages.UserCommand) {
+func (self *NodeViscriptServer) handleUserCommand(uc *vsmsg.MessageUserCommand) {
 	log.Println("command received:", uc)
 	sequence := uc.Sequence
 	appId := uc.AppId
 	message := uc.Payload
 
-	switch messages.GetMessageType(message) {
+	switch vsmsg.GetType(message) {
 
-	case messages.MsgPing:
-		ack := &messages.PingAck{}
-		ackS := messages.Serialize(messages.MsgPingAck, ack)
+	case vsmsg.TypePing:
+		ack := &vsmsg.MessagePingAck{}
+		ackS := vsmsg.Serialize(vsmsg.TypePingAck, ack)
 		self.SendAck(ackS, sequence, appId)
 
-	case messages.MsgResourceUsage:
+	case vsmsg.TypeResourceUsage:
 		cpu, memory, err := self.GetResources()
 		if err == nil {
-			ack := &messages.ResourceUsageAck{
+			ack := &vsmsg.MessageResourceUsageAck{
 				cpu,
 				memory,
 			}
-			ackS := messages.Serialize(messages.MsgResourceUsageAck, ack)
+			ackS := vsmsg.Serialize(vsmsg.TypeResourceUsageAck, ack)
 			self.SendAck(ackS, sequence, appId)
 		}
 
-	case messages.MsgUserShutdown:
+	case vsmsg.TypeConnectDirectly:
+		ucd := &vsmsg.MessageConnectDirectly{}
+		err := vsmsg.Deserialize(message, ucd)
+		if err == nil {
+			address := ucd.Address
+			err = self.node.ConnectDirectly(address)
+			if err != nil {
+				ack := &vsmsg.MessageConnectDirectlyAck{}
+				ackS := vsmsg.Serialize(vsmsg.TypeConnectDirectlyAck, ack)
+				self.SendAck(ackS, sequence, appId)
+			}
+		}
+
+	case vsmsg.TypeShutdown:
 		self.node.Shutdown()
-		ack := &messages.UserShutdownAck{}
-		ackS := messages.Serialize(messages.MsgUserShutdownAck, ack)
+		ack := &vsmsg.MessageShutdownAck{}
+		ackS := vsmsg.Serialize(vsmsg.TypeShutdownAck, ack)
 		self.SendAck(ackS, sequence, appId)
 		panic("goodbye")
 

@@ -17,7 +17,7 @@ func main() {
 }
 
 func pingPong(size, pings int) {
-	meshnet := network.NewNetwork("127.0.0.1:5999")
+	meshnet, _ := network.NewNetwork("test.network", "127.0.0.1:5999")
 	defer meshnet.Shutdown()
 
 	nodes := meshnet.CreateRandomNetwork(size, 10000)
@@ -41,7 +41,7 @@ func pingPong(size, pings int) {
 	}
 	defer client.Shutdown()
 
-	err = client.Connect(messages.MakeAppId("pong"), serverAddr) // client dials to server
+	err = client.Connect(messages.MakeAppId("pong"), serverAddr.Hex()) // client dials to server
 	if err != nil {
 		panic(err)
 	}

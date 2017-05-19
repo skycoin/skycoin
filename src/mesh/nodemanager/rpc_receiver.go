@@ -20,6 +20,7 @@ func (receiver *RPCReceiver) addNode() cipher.PubKey {
 		"127.0.0.1:" + strconv.Itoa(receiver.cmPort),
 		[]string{"127.0.0.1:5999"},
 		receiver.cmPort + 2000,
+		"",
 	}
 	n, err := node.CreateNode(nodeConfig)
 	if err != nil {

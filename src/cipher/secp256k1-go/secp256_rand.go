@@ -6,11 +6,10 @@ import (
 	"hash"
 	"io"
 	"log"
-	"sync"
-	//mrand "math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,6 +19,7 @@ var (
 	// sha256Hash hash.Hash = sha256.New()
 )
 
+// SumSHA256 sum sha256
 func SumSHA256(b []byte) []byte {
 	sha256Hash := <-sha256HashChan
 	sha256Hash.Reset()
@@ -41,41 +41,42 @@ Entropy pool needs
 
 */
 
+// EntropyPool entropy pool
 type EntropyPool struct {
 	Ent  [32]byte //256 bit accumulator
 	lock sync.Mutex
 }
 
-//mixes in 256 bits, outputs 256 bits
-func (self *EntropyPool) Mix256(in []byte) (out []byte) {
+// Mix256 mixes in 256 bits, outputs 256 bits
+func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
 
 	//hash input
 	val1 := SumSHA256(in)
 	//return value
-	self.lock.Lock()
-	val2 := SumSHA256(append(val1, self.Ent[:]...))
+	ep.lock.Lock()
+	val2 := SumSHA256(append(val1, ep.Ent[:]...))
 	//next ent value
 	val3 := SumSHA256(append(val1, val2...))
 
 	for i := 0; i < 32; i++ {
-		self.Ent[i] = val3[i]
+		ep.Ent[i] = val3[i]
 		val3[i] = 0x00
 	}
-	self.lock.Unlock()
+	ep.lock.Unlock()
 
 	return val2
 }
 
-//take in N bytes, salts, return N
-func (self *EntropyPool) Mix(in []byte) []byte {
-	var length int = len(in) - len(in)%32 + 32
-	var buff []byte = make([]byte, length, length)
+//Mix take in N bytes, salts, return N
+func (ep *EntropyPool) Mix(in []byte) []byte {
+	length := len(in) - len(in)%32 + 32
+	buff := make([]byte, length, length)
 	for i := 0; i < len(in); i++ {
 		buff[i] = in[i]
 	}
-	var iterations int = (len(in) / 32) + 1
+	iterations := (len(in) / 32) + 1
 	for i := 0; i < iterations; i++ {
-		tmp := self.Mix256(buff[32*i : 32+32*i]) //32 byte slice
+		tmp := ep.Mix256(buff[32*i : 32+32*i]) //32 byte slice
 		for j := 0; j < 32; j++ {
 			buff[i*32+j] = tmp[j]
 		}
@@ -108,9 +109,9 @@ var _ent EntropyPool
 // hash of system environmental variables
 // hash of process id
 func init() {
-	var seed1 []byte = []byte(strconv.FormatUint(uint64(time.Now().UnixNano()), 16))
-	var seed2 []byte = []byte(strings.Join(os.Environ(), ""))
-	var seed3 []byte = []byte(strconv.FormatUint(uint64(os.Getpid()), 16))
+	seed1 := []byte(strconv.FormatUint(uint64(time.Now().UnixNano()), 16))
+	seed2 := []byte(strings.Join(os.Environ(), ""))
+	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16))
 
 	seed4 := make([]byte, 256)
 	io.ReadFull(crand.Reader, seed4) //system secure random number generator
@@ -129,11 +130,11 @@ func init() {
 	_ent.Mix256(seed4)
 }
 
-//Secure Random number generator for forwards security
-//On Unix-like systems, Reader reads from /dev/urandom.
-//On Windows systems, Reader uses the CryptGenRandom API.
-//Pseudo-random sequence, seeded from program start time, environmental variables,
-//and process id is mixed in for forward security. Future version should use entropy pool
+// RandByte Secure Random number generator for forwards security
+// On Unix-like systems, Reader reads from /dev/urandom.
+// On Windows systems, Reader uses the CryptGenRandom API.
+// Pseudo-random sequence, seeded from program start time, environmental variables,
+// and process id is mixed in for forward security. Future version should use entropy pool
 func RandByte(n int) []byte {
 	buff := make([]byte, n)
 	ret, err := io.ReadFull(crand.Reader, buff) //system secure random number generator

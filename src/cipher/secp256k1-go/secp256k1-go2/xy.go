@@ -1,22 +1,24 @@
-package secp256k1_go
+package secp256k1go
 
 import (
 	"fmt"
 	"log"
 )
 
+// XY TODO...
 type XY struct {
 	X, Y     Field
 	Infinity bool
 }
 
-func (ge *XY) Print(lab string) {
-	if ge.Infinity {
+// Print prints the xy
+func (xy *XY) Print(lab string) {
+	if xy.Infinity {
 		fmt.Println(lab + " - Infinity")
 		return
 	}
-	fmt.Println(lab+".X:", ge.X.String())
-	fmt.Println(lab+".Y:", ge.Y.String())
+	fmt.Println(lab+".X:", xy.X.String())
+	fmt.Println(lab+".Y:", xy.Y.String())
 }
 
 //edited
@@ -39,16 +41,16 @@ func (ge *XY) Print(lab string) {
 //All compact keys appear to be valid by construction, but may fail
 //is valid check
 
-//WARNING: for compact signatures, will succeed unconditionally
+// ParsePubkey WARNING: for compact signatures, will succeed unconditionally
 //however, elem.IsValid will fail
-func (elem *XY) ParsePubkey(pub []byte) bool {
+func (xy *XY) ParsePubkey(pub []byte) bool {
 	if len(pub) != 33 {
 		log.Panic() //do not permit invalid length inputs
 		return false
 	}
 	if len(pub) == 33 && (pub[0] == 0x02 || pub[0] == 0x03) {
-		elem.X.SetB32(pub[1:33])
-		elem.SetXO(&elem.X, pub[0] == 0x03)
+		xy.X.SetB32(pub[1:33])
+		xy.SetXO(&xy.X, pub[0] == 0x03)
 	} else {
 		return false
 	}
@@ -70,39 +72,40 @@ func (elem *XY) ParsePubkey(pub []byte) bool {
 	return true
 }
 
-// Returns serialized key in in compressed format: "<02> <X>",
+// Bytes Returns serialized key in in compressed format: "<02> <X>",
 // eventually "<03> <X>"
 //33 bytes
-func (pub XY) Bytes() []byte {
-	pub.X.Normalize() // See GitHub issue #15
+func (xy XY) Bytes() []byte {
+	xy.X.Normalize() // See GitHub issue #15
 
-	var raw []byte = make([]byte, 33)
-	if pub.Y.IsOdd() {
+	raw := make([]byte, 33)
+	if xy.Y.IsOdd() {
 		raw[0] = 0x03
 	} else {
 		raw[0] = 0x02
 	}
-	pub.X.GetB32(raw[1:])
+	xy.X.GetB32(raw[1:])
 	return raw
 }
 
-// Returns serialized key in uncompressed format "<04> <X> <Y>"
+// BytesUncompressed returns serialized key in uncompressed format "<04> <X> <Y>"
 //65 bytes
-func (pub *XY) BytesUncompressed() (raw []byte) {
-	pub.X.Normalize() // See GitHub issue #15
-	pub.Y.Normalize() // See GitHub issue #15
+func (xy *XY) BytesUncompressed() (raw []byte) {
+	xy.X.Normalize() // See GitHub issue #15
+	xy.Y.Normalize() // See GitHub issue #15
 
 	raw = make([]byte, 65)
 	raw[0] = 0x04
-	pub.X.GetB32(raw[1:33])
-	pub.Y.GetB32(raw[33:65])
+	xy.X.GetB32(raw[1:33])
+	xy.Y.GetB32(raw[33:65])
 	return
 }
 
-func (r *XY) SetXY(X, Y *Field) {
-	r.Infinity = false
-	r.X = *X
-	r.Y = *Y
+// SetXY sets x y fields
+func (xy *XY) SetXY(X, Y *Field) {
+	xy.Infinity = false
+	xy.X = *X
+	xy.Y = *Y
 }
 
 /*
@@ -130,14 +133,15 @@ int static secp256k1_ecdsa_pubkey_parse(secp256k1_ge_t *elem, const unsigned cha
 //        secp256k1_fe_set_b32(&x, pub+1);
 //        return secp256k1_ge_set_xo(elem, &x, pub[0] == 0x03);
 
-func (a *XY) IsValid() bool {
-	if a.Infinity {
+// IsValid checks if valid
+func (xy *XY) IsValid() bool {
+	if xy.Infinity {
 		return false
 	}
 	var y2, x3, c Field
-	a.Y.Sqr(&y2)
-	a.X.Sqr(&x3)
-	x3.Mul(&x3, &a.X)
+	xy.Y.Sqr(&y2)
+	xy.X.Sqr(&x3)
+	x3.Mul(&x3, &xy.X)
 	c.SetInt(7)
 	x3.SetAdd(&c)
 	y2.Normalize()
@@ -145,7 +149,8 @@ func (a *XY) IsValid() bool {
 	return y2.Equals(&x3)
 }
 
-func (r *XY) SetXYZ(a *XYZ) {
+// SetXYZ sets X Y Z fields
+func (xy *XY) SetXYZ(a *XYZ) {
 	var z2, z3 Field
 	a.Z.InvVar(&a.Z)
 	a.Z.Sqr(&z2)
@@ -153,16 +158,16 @@ func (r *XY) SetXYZ(a *XYZ) {
 	a.X.Mul(&a.X, &z2)
 	a.Y.Mul(&a.Y, &z3)
 	a.Z.SetInt(1)
-	r.Infinity = a.Infinity
-	r.X = a.X
-	r.Y = a.Y
+	xy.Infinity = a.Infinity
+	xy.X = a.X
+	xy.Y = a.Y
 }
 
-func (a *XY) precomp(w int) (pre []XY) {
+func (xy *XY) precomp(w int) (pre []XY) {
 	pre = make([]XY, (1 << (uint(w) - 2)))
-	pre[0] = *a
+	pre[0] = *xy
 	var X, d, tmp XYZ
-	X.SetXY(a)
+	X.SetXY(xy)
 	X.Double(&d)
 	for i := 1; i < len(pre); i++ {
 		d.AddXY(&tmp, &pre[i-1])
@@ -171,10 +176,11 @@ func (a *XY) precomp(w int) (pre []XY) {
 	return
 }
 
-func (a *XY) Neg(r *XY) {
-	r.Infinity = a.Infinity
-	r.X = a.X
-	r.Y = a.Y
+// Neg caculates negate
+func (xy *XY) Neg(r *XY) {
+	r.Infinity = xy.Infinity
+	r.X = xy.X
+	r.Y = xy.Y
 	r.Y.Normalize()
 	r.Y.Negate(&r.Y, 1)
 }
@@ -196,28 +202,30 @@ int static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int o
 }
 */
 
-func (r *XY) SetXO(X *Field, odd bool) {
+// SetXO sets
+func (xy *XY) SetXO(X *Field, odd bool) {
 	var c, x2, x3 Field
-	r.X = *X
+	xy.X = *X
 	X.Sqr(&x2)
 	X.Mul(&x3, &x2)
-	r.Infinity = false
+	xy.Infinity = false
 	c.SetInt(7)
 	c.SetAdd(&x3)
-	c.Sqrt(&r.Y) //does not return, can fail
-	if r.Y.IsOdd() != odd {
-		r.Y.Negate(&r.Y, 1)
+	c.Sqrt(&xy.Y) //does not return, can fail
+	if xy.Y.IsOdd() != odd {
+		xy.Y.Negate(&xy.Y, 1)
 	}
 
 	//r.X.Normalize() // See GitHub issue #15
-	r.Y.Normalize()
+	xy.Y.Normalize()
 }
 
-func (pk *XY) AddXY(a *XY) {
+// AddXY adds xy
+func (xy *XY) AddXY(a *XY) {
 	var xyz XYZ
-	xyz.SetXY(pk)
+	xyz.SetXY(xy)
 	xyz.AddXY(&xyz, a)
-	pk.SetXYZ(&xyz)
+	xy.SetXYZ(&xyz)
 }
 
 /*
@@ -238,12 +246,12 @@ func (pk *XY) GetPublicKey() []byte {
 }
 */
 
-//use compact format
+// GetPublicKey use compact format
 //returns only 33 bytes
 //same as bytes()
 //TODO: deprecate, replace with .Bytes()
-func (pk *XY) GetPublicKey() []byte {
-	return pk.Bytes()
+func (xy *XY) GetPublicKey() []byte {
+	return xy.Bytes()
 	/*
 		var out []byte = make([]byte, 33, 33)
 		pk.X.GetB32(out[1:33])

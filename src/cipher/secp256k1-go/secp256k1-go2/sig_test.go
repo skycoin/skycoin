@@ -1,4 +1,4 @@
-package secp256k1_go
+package secp256k1go
 
 import (
 	"encoding/hex"
@@ -38,7 +38,7 @@ func TestSigRecover(t *testing.T) {
 		exp.X.SetHex(vs[i][4])
 		exp.Y.SetHex(vs[i][5])
 
-		if sig.recover(&pubkey, &msg, int(rid)) {
+		if sig.Recover(&pubkey, &msg, int(rid)) {
 			if !exp.X.Equals(&pubkey.X) {
 				t.Error("X mismatch at vector", i)
 			}
@@ -95,7 +95,7 @@ func TestSigSign(t *testing.T) {
 	if res != 1 {
 		t.Error("res failed", res)
 	}
-	if FORCE_LOW_S {
+	if forceLowS {
 		if recid != 0 {
 			t.Error("recid failed", recid)
 		}
@@ -108,7 +108,7 @@ func TestSigSign(t *testing.T) {
 	if sig.R.Cmp(&non.Int) != 0 {
 		t.Error("R failed", sig.R.String())
 	}
-	if FORCE_LOW_S {
+	if forceLowS {
 		non.SetHex("1ca662aaefd6cc958ba4604fea999db133a75bf34c13334dabac7124ff0cfcc1")
 	} else {
 		non.SetHex("E3599D551029336A745B9FB01566624D870780F363356CEE1425ED67D1294480")

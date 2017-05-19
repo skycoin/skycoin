@@ -38,18 +38,21 @@ var (
 		"webrpc",
 	}
 
-	//TODO: Move time and other genesis block settings from visor, to here
+	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
-	GenesisAddressStr   = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
+	// GenesisAddressStr genesis address string
+	GenesisAddressStr = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
+	// BlockchainPubkeyStr pubic key string
 	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	// BlockchainSeckeyStr empty private key string
 	BlockchainSeckeyStr = ""
 
-	GenesisTimestamp  uint64 = 1426562704
+	// GenesisTimestamp genesis block create unix time
+	GenesisTimestamp uint64 = 1426562704
+	// GenesisCoinVolume represents the coin capacity
 	GenesisCoinVolume uint64 = 100e12
 
-	//GenesisTimestamp: 1426562704,
-	//GenesisCoinVolume: 100e12, //100e6 * 10e6
-
+	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
@@ -60,6 +63,7 @@ var (
 
 // Command line interface arguments
 
+// Config records the node's configuration
 type Config struct {
 	// Disable peer exchange
 	DisablePEX bool
@@ -222,7 +226,7 @@ func (c *Config) register() {
 	//	"Wallet address version. Options are 'test' and 'main'")
 }
 
-var devConfig Config = Config{
+var devConfig = Config{
 	// Disable peer exchange
 	DisablePEX: false,
 	// Don't make any outgoing connections
@@ -585,8 +589,8 @@ func main() {
 	Run(&devConfig)
 }
 
-//addresses for storage of coins
-var AddrList []string = []string{
+// AddrList for storage of coins
+var AddrList = []string{
 	"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 	"2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",
 	"25aGyzypSA3T9K6rgPUv1ouR13efNPtWP5m",
@@ -689,6 +693,7 @@ var AddrList []string = []string{
 	"ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
 }
 
+// InitTransaction creates the initialize transaction
 func InitTransaction() coin.Transaction {
 	var tx coin.Transaction
 

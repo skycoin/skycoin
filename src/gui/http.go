@@ -26,7 +26,7 @@ const (
 	indexPage   = "index.html"
 )
 
-// Begins listening on http://$host, for enabling remote web access
+// LaunchWebInterface begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
 func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	quit = make(chan struct{})
@@ -102,7 +102,7 @@ func Shutdown() {
 	}
 }
 
-// Creates an http.ServeMux with handlers registered
+// NewGUIMux creates an http.ServeMux with handlers registered
 func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", newIndexHandler(appLoc))

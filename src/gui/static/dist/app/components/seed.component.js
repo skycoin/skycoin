@@ -27,23 +27,25 @@ System.register(['../services/seed.service', '../model/seed.pojo', "@angular/cor
             SeedComponent = (function () {
                 function SeedComponent(_seedService) {
                     this._seedService = _seedService;
+                    this.seedValue = '';
                     this.currentSeed = new seed_pojo_1.Seed('');
                 }
                 SeedComponent.prototype.ngOnInit = function () {
                     var _this = this;
                     this._seedService.getMnemonicSeed().subscribe(function (seedReceived) {
                         _this.currentSeed = seedReceived;
+                        _this.seedValue = seedReceived.seed;
                     }, function (err) {
                         console.log(err);
                     });
                 };
                 SeedComponent.prototype.getCurrentSeed = function () {
-                    return this.currentSeed.seed;
+                    return this.seedValue;
                 };
                 SeedComponent = __decorate([
                     core_1.Component({
                         selector: 'seed-mnemonic',
-                        template: "\n                 <textarea rows=\"4\"  placeholder=\"Wallet Seed\" cols=\"46\" class=\"form-control\" value=\"{{currentSeed.seed}}\"></textarea>\n              ",
+                        template: "\n                 <textarea rows=\"4\"  placeholder=\"Wallet Seed\" cols=\"46\" class=\"form-control\" [(ngModel)]=\"seedValue\"></textarea>\n              ",
                         providers: [seed_service_1.SeedService]
                     }), 
                     __metadata('design:paramtypes', [seed_service_1.SeedService])

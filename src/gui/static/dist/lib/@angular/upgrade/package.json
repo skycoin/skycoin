@@ -1,21 +1,14 @@
 {
   "_args": [
     [
-      {
-        "raw": "@angular/upgrade@2.0.0-rc.1",
-        "scope": "@angular",
-        "escapedName": "@angular%2fupgrade",
-        "name": "@angular/upgrade",
-        "rawSpec": "2.0.0-rc.1",
-        "spec": "2.0.0-rc.1",
-        "type": "version"
-      },
-      "/usr/local/Cellar/go/1.6/libexec/src/github.com/skycoin/skycoin/src/gui/static"
+      "@angular/upgrade@2.0.0-rc.1",
+      "/Users/heaven/src/github.com/skycoin/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/upgrade@2.0.0-rc.1",
   "_id": "@angular/upgrade@2.0.0-rc.1",
   "_inCache": true,
+  "_installable": true,
   "_location": "/@angular/upgrade",
   "_nodeVersion": "5.4.1",
   "_npmOperationalInternal": {
@@ -23,17 +16,16 @@
     "tmp": "tmp/upgrade-2.0.0-rc.1.tgz_1462310752334_0.36474818852730095"
   },
   "_npmUser": {
-    "name": "angular",
-    "email": "angular-core+npm@google.com"
+    "email": "angular-core+npm@google.com",
+    "name": "angular"
   },
   "_npmVersion": "3.8.7",
   "_phantomChildren": {},
   "_requested": {
-    "raw": "@angular/upgrade@2.0.0-rc.1",
-    "scope": "@angular",
-    "escapedName": "@angular%2fupgrade",
     "name": "@angular/upgrade",
+    "raw": "@angular/upgrade@2.0.0-rc.1",
     "rawSpec": "2.0.0-rc.1",
+    "scope": "@angular",
     "spec": "2.0.0-rc.1",
     "type": "version"
   },
@@ -44,7 +36,7 @@
   "_shasum": "50278e5e605b9629e6130db523005951695149ee",
   "_shrinkwrap": null,
   "_spec": "@angular/upgrade@2.0.0-rc.1",
-  "_where": "/usr/local/Cellar/go/1.6/libexec/src/github.com/skycoin/skycoin/src/gui/static",
+  "_where": "/Users/heaven/src/github.com/skycoin/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },
@@ -61,15 +53,15 @@
   "main": "upgrade.js",
   "maintainers": [
     {
-      "name": "angular",
-      "email": "angular-core+npm@google.com"
+      "email": "angular-core+npm@google.com",
+      "name": "angular"
     }
   ],
   "name": "@angular/upgrade",
   "optionalDependencies": {},
   "peerDependencies": {
-    "@angular/core": "2.0.0-rc.1",
     "@angular/compiler": "2.0.0-rc.1",
+    "@angular/core": "2.0.0-rc.1",
     "@angular/platform-browser": "2.0.0-rc.1"
   },
   "readme": "ERROR: No README data found!",

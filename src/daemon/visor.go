@@ -27,6 +27,7 @@ Visor should not be duplicated
 - this should be pushed into /src/visor
 */
 
+// VisorConfig represents the configuration of visor
 type VisorConfig struct {
 	Config visor.VisorConfig
 	// Disabled the visor completely
@@ -45,6 +46,7 @@ type VisorConfig struct {
 	TxnsAnnounceRate time.Duration
 }
 
+// NewVisorConfig creates default visor config
 func NewVisorConfig() VisorConfig {
 	return VisorConfig{
 		Config:               visor.NewVisorConfig(),
@@ -71,11 +73,16 @@ type reqFunc func(context.Context)
 
 // NewVisor creates visor instance
 func NewVisor(c VisorConfig) *Visor {
-	var v *visor.Visor
-	if !c.Disabled {
-		v = visor.NewVisor(c.Config)
+	if c.Disabled {
+		return &Visor{
+			Config:            c,
+			blockchainLengths: make(map[string]uint64),
+			reqC:              make(chan reqFunc, 100),
+		}
 	}
 
+	var v *visor.Visor
+	v, closeVs := visor.NewVisor(c.Config)
 	vs := &Visor{
 		Config:            c,
 		v:                 v,
@@ -84,7 +91,13 @@ func NewVisor(c VisorConfig) *Visor {
 	}
 
 	cxt, cancel := context.WithCancel(context.Background())
-	vs.cancel = cancel
+	vs.cancel = func() {
+		// cancel the cxt
+		cancel()
+		// close the visor
+		closeVs()
+	}
+
 	go vs.run(cxt)
 	return vs
 }

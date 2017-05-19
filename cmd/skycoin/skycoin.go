@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/boltdb/bolt"
 	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -21,7 +20,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 var (
@@ -137,7 +135,7 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
-	DB          *bolt.DB
+	DBPath      string
 	Arbitrating bool
 }
 
@@ -294,6 +292,7 @@ var devConfig Config = Config{
 	ConnectTo: "",
 }
 
+// Parse prepare the config
 func (c *Config) Parse() {
 	c.register()
 	flag.Parse()
@@ -339,6 +338,9 @@ func (c *Config) postProcess() {
 	panicIfError(err, "Invalid -log-level %s", c.logLevel)
 	c.LogLevel = ll
 
+	if c.DBPath == "" {
+		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {
@@ -442,11 +444,12 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
-	dc.Visor.Config.DB = c.DB
+	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.Arbitrating = c.Arbitrating
 	return dc
 }
 
+// Run starts the skycoin node
 func Run(c *Config) {
 
 	c.GUIDirectory = util.ResolveResourceDirectory(c.GUIDirectory)
@@ -470,18 +473,6 @@ func Run(c *Config) {
 	logCfg.Format = logFormat
 	logCfg.Colors = c.ColorLog
 	logCfg.InitLogger()
-
-	// initLogging(c.LogLevel, c.ColorLog)
-
-	// start the block db.
-	db, stop := blockdb.Open()
-	defer stop()
-
-	c.DB = db
-
-	// start the transaction db.
-	// transactiondb.Start()
-	// defer transactiondb.Stop()
 
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan int)
@@ -590,18 +581,6 @@ func Run(c *Config) {
 }
 
 func main() {
-
-	/*
-		skycoin.Run(&cli.DaemonArgs)
-	*/
-
-	/*
-	   skycoin.Run(&cli.ClientArgs)
-	   stop := make(chan int)
-	   <-stop
-	*/
-
-	//skycoin.Run(&cli.DevArgs)
 	devConfig.Parse()
 	Run(&devConfig)
 }

@@ -66,7 +66,7 @@ type VisorConfig struct {
 	//WalletConstructor wallet.WalletConstructor
 	// Default type of wallet to create
 	//WalletTypeDefault wallet.WalletType
-	DB          *bolt.DB
+	DBPath      string
 	Arbitrating bool // enable arbitrating
 }
 
@@ -120,8 +120,25 @@ func walker(hps []coin.HashPair) cipher.SHA256 {
 	return hps[0].Hash
 }
 
+// open the blockdb.
+func openDB(dbFile string) (*bolt.DB, func()) {
+	// dbFile := filepath.Join(util.DataDir, dbpath)
+	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
+		Timeout: 500 * time.Millisecond,
+	})
+	if err != nil {
+		panic(fmt.Errorf("Open boltdb failed, err:%v", err))
+	}
+	return db, func() {
+		db.Close()
+	}
+}
+
+// VsClose visor close function
+type VsClose func()
+
 // NewVisor Creates a normal Visor given a master's public key
-func NewVisor(c VisorConfig) *Visor {
+func NewVisor(c VisorConfig) (*Visor, VsClose) {
 	logger.Debug("Creating new visor")
 	// Make sure inputs are correct
 	if c.IsMaster {
@@ -131,12 +148,13 @@ func NewVisor(c VisorConfig) *Visor {
 		}
 	}
 
-	history, err := historydb.New(c.DB)
+	db, closeDB := openDB(c.DBPath)
+	history, err := historydb.New(db)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	tree := blockdb.NewBlockTree(c.DB)
+	tree := blockdb.NewBlockTree(db)
 	bc := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
 	bp := NewBlockchainParser(history, bc)
 
@@ -147,8 +165,8 @@ func NewVisor(c VisorConfig) *Visor {
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
-		blockSigs:   blockdb.NewBlockSigs(c.DB),
-		Unconfirmed: NewUnconfirmedTxnPool(c.DB),
+		blockSigs:   blockdb.NewBlockSigs(db),
+		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
 	}
@@ -176,19 +194,22 @@ func NewVisor(c VisorConfig) *Visor {
 		log.Panicf("Invalid block signatures: %v", err)
 	}
 
-	return v
+	return v, func() {
+		closeDB()
+	}
 }
 
 // NewMinimalVisor returns a Visor with minimum initialization necessary for empty blockchain
 // access
-func NewMinimalVisor(c VisorConfig) *Visor {
-	return &Visor{
-		Config:      c,
-		blockSigs:   blockdb.NewBlockSigs(c.DB),
-		Unconfirmed: NewUnconfirmedTxnPool(c.DB),
-		//Wallets:     nil,
-	}
-}
+// func NewMinimalVisor(c VisorConfig) (*Visor {
+// 	db, _ := openDB(c.DBPath)
+// 	return &Visor{
+// 		Config:      c,
+// 		blockSigs:   blockdb.NewBlockSigs(db),
+// 		Unconfirmed: NewUnconfirmedTxnPool(db),
+// 		//Wallets:     nil,
+// 	}
+// }
 
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {

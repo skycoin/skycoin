@@ -37,6 +37,7 @@ The inner hash is SHA256 hash of the serialization of Input and Output array
 The outer hash is the hash of the whole transaction serialization
 */
 
+// Transaction transaction struct
 type Transaction struct {
 	Length    uint32        //length prefix
 	Type      uint8         //transaction type
@@ -47,7 +48,7 @@ type Transaction struct {
 	Out  []TransactionOutput //ouputs being created
 }
 
-//hash output/name is function of Hash
+// TransactionOutput hash output/name is function of Hash
 type TransactionOutput struct {
 	Address cipher.Address //address to send to
 	Coins   uint64         //amount to be sent in coins
@@ -59,62 +60,62 @@ type TransactionOutput struct {
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
-func (self *Transaction) Verify() error {
+func (txn *Transaction) Verify() error {
 
-	h := self.HashInner()
-	if h != self.InnerHash {
+	h := txn.HashInner()
+	if h != txn.InnerHash {
 		return errors.New("Invalid header hash")
 	}
 
-	if len(self.In) == 0 {
+	if len(txn.In) == 0 {
 		return errors.New("No inputs")
 	}
-	if len(self.Out) == 0 {
+	if len(txn.Out) == 0 {
 		return errors.New("No outputs")
 	}
 
 	// Check signature index fields
-	if len(self.Sigs) != len(self.In) {
+	if len(txn.Sigs) != len(txn.In) {
 		return errors.New("Invalid number of signatures")
 	}
-	if len(self.Sigs) >= math.MaxUint16 {
+	if len(txn.Sigs) >= math.MaxUint16 {
 		return errors.New("Too many signatures and inputs")
 	}
 
 	// Check duplicate inputs
-	uxOuts := make(map[cipher.SHA256]int, len(self.In))
-	for i, _ := range self.In {
-		uxOuts[self.In[i]] = 1
+	uxOuts := make(map[cipher.SHA256]int, len(txn.In))
+	for i := range txn.In {
+		uxOuts[txn.In[i]] = 1
 	}
-	if len(uxOuts) != len(self.In) {
+	if len(uxOuts) != len(txn.In) {
 		return errors.New("Duplicate spend")
 	}
 
-	if self.Type != 0 {
+	if txn.Type != 0 {
 		return errors.New("transaction type invalid")
 	}
-	if self.Length != uint32(self.Size()) {
+	if txn.Length != uint32(txn.Size()) {
 		return errors.New("transaction size prefix invalid")
 	}
 
 	// Check for duplicate potential outputs
-	outputs := make(map[cipher.SHA256]int, len(self.Out))
+	outputs := make(map[cipher.SHA256]int, len(txn.Out))
 	uxb := UxBody{
-		SrcTransaction: self.Hash(),
+		SrcTransaction: txn.Hash(),
 	}
-	for _, to := range self.Out {
+	for _, to := range txn.Out {
 		uxb.Coins = to.Coins
 		uxb.Hours = to.Hours
 		uxb.Address = to.Address
 		outputs[uxb.Hash()] = 1
 	}
-	if len(outputs) != len(self.Out) {
+	if len(outputs) != len(txn.Out) {
 		return errors.New("Duplicate output in transaction")
 	}
 
 	// Validate signature
-	for i, sig := range self.Sigs {
-		hash := cipher.AddSHA256(self.InnerHash, self.In[i])
+	for i, sig := range txn.Sigs {
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
 		if err := cipher.VerifySignedHash(sig, hash); err != nil {
 			return err
 		}
@@ -122,7 +123,7 @@ func (self *Transaction) Verify() error {
 
 	// Artificial restriction to prevent spam
 	// Must spend only multiples of 1e6
-	for _, txo := range self.Out {
+	for _, txo := range txn.Out {
 		if txo.Coins == 0 {
 			return errors.New("Zero coin output")
 		}
@@ -135,20 +136,21 @@ func (self *Transaction) Verify() error {
 	return nil
 }
 
-func (tx Transaction) VerifyInput(uxIn UxArray) error {
+// VerifyInput verifies the input
+func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	if DebugLevel2 {
-		if len(tx.In) != len(tx.Sigs) || len(tx.In) != len(uxIn) {
+		if len(txn.In) != len(txn.Sigs) || len(txn.In) != len(uxIn) {
 			log.Panic("tx.In != tx.Sigs != uxIn")
 		}
-		if tx.InnerHash != tx.HashInner() {
+		if txn.InnerHash != txn.HashInner() {
 			log.Panic("Invalid Tx Header Hash")
 		}
 	}
 
 	// Check signatures against unspent address
-	for i := range tx.In {
-		hash := cipher.AddSHA256(tx.InnerHash, tx.In[i]) //use inner hash, not outer hash
-		err := cipher.ChkSig(uxIn[i].Body.Address, hash, tx.Sigs[i])
+	for i := range txn.In {
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) //use inner hash, not outer hash
+		err := cipher.ChkSig(uxIn[i].Body.Address, hash, txn.Sigs[i])
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}
@@ -156,11 +158,11 @@ func (tx Transaction) VerifyInput(uxIn UxArray) error {
 	if DebugLevel2 {
 		// Check that hashes match.
 		// This would imply a bug with UnspentPool.GetMultiple
-		if len(tx.In) != len(uxIn) {
+		if len(txn.In) != len(uxIn) {
 			log.Panic("tx.In does not match uxIn")
 		}
-		for i := range tx.In {
-			if tx.In[i] != uxIn[i].Hash() {
+		for i := range txn.In {
+			if txn.In[i] != uxIn[i].Hash() {
 				log.Panic("impossible error: Ux hash mismatch")
 			}
 		}
@@ -168,44 +170,44 @@ func (tx Transaction) VerifyInput(uxIn UxArray) error {
 	return nil
 }
 
-// Adds a UxArray to the Transaction given the hash of a UxOut.
+// PushInput adds a UxArray to the Transaction given the hash of a UxOut.
 // Returns the signature index for later signing
-func (self *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
-	if len(self.In) >= math.MaxUint16 {
+func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
+	if len(txn.In) >= math.MaxUint16 {
 		log.Panic("Max transaction inputs reached")
 	}
-	self.In = append(self.In, uxOut)
-	return uint16(len(self.In) - 1)
+	txn.In = append(txn.In, uxOut)
+	return uint16(len(txn.In) - 1)
 }
 
-//compute transaction output id
-func (self TransactionOutput) UxId(TxId cipher.SHA256) cipher.SHA256 {
+// UxID compute transaction output id
+func (txOut TransactionOutput) UxID(TxID cipher.SHA256) cipher.SHA256 {
 	var x UxBody
-	x.Coins = self.Coins
-	x.Hours = self.Hours
-	x.Address = self.Address
-	x.SrcTransaction = TxId
+	x.Coins = txOut.Coins
+	x.Hours = txOut.Hours
+	x.Address = txOut.Address
+	x.SrcTransaction = TxID
 	return x.Hash()
 }
 
-// Adds a TransactionOutput, sending coins & hours to an Address
-func (self *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
+// PushOutput Adds a TransactionOutput, sending coins & hours to an Address
+func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 	to := TransactionOutput{
 		Address: dst,
 		Coins:   coins,
 		Hours:   hours,
 	}
-	self.Out = append(self.Out, to)
+	txn.Out = append(txn.Out, to)
 }
 
-// Signs all inputs in the transaction
-func (self *Transaction) SignInputs(keys []cipher.SecKey) {
-	self.InnerHash = self.HashInner() //update hash
+// SignInputs signs all inputs in the transaction
+func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
+	txn.InnerHash = txn.HashInner() //update hash
 
-	if len(self.Sigs) != 0 {
+	if len(txn.Sigs) != 0 {
 		log.Panic("Transaction has been signed")
 	}
-	if len(keys) != len(self.In) {
+	if len(keys) != len(txn.In) {
 		log.Panic("Invalid number of keys")
 	}
 	if len(keys) > math.MaxUint16 {
@@ -214,64 +216,66 @@ func (self *Transaction) SignInputs(keys []cipher.SecKey) {
 	if len(keys) == 0 {
 		log.Panic("No keys")
 	}
-	sigs := make([]cipher.Sig, len(self.In))
-	inner_hash := self.HashInner()
+	sigs := make([]cipher.Sig, len(txn.In))
+	innerHash := txn.HashInner()
 	for i, k := range keys {
-		h := cipher.AddSHA256(inner_hash, self.In[i]) //hash to sign
+		h := cipher.AddSHA256(innerHash, txn.In[i]) //hash to sign
 		sigs[i] = cipher.SignHash(h, k)
 	}
-	self.Sigs = sigs
+	txn.Sigs = sigs
 }
 
-// Returns the encoded byte size of the transaction
-func (self *Transaction) Size() int {
-	return len(self.Serialize())
+// Size returns the encoded byte size of the transaction
+func (txn *Transaction) Size() int {
+	return len(txn.Serialize())
 }
 
-// Hashes an entire Transaction struct, including the TransactionHeader
-func (self *Transaction) Hash() cipher.SHA256 {
-	b := self.Serialize()
+// Hash an entire Transaction struct, including the TransactionHeader
+func (txn *Transaction) Hash() cipher.SHA256 {
+	b := txn.Serialize()
 	return cipher.SumSHA256(b)
 }
 
-// Returns the encoded size and the hash of it (avoids duplicate encoding)
-func (self *Transaction) SizeHash() (int, cipher.SHA256) {
-	b := self.Serialize()
+// SizeHash returns the encoded size and the hash of it (avoids duplicate encoding)
+func (txn *Transaction) SizeHash() (int, cipher.SHA256) {
+	b := txn.Serialize()
 	return len(b), cipher.SumSHA256(b)
 }
 
-//returns transaction ID as byte string
-func (self *Transaction) TxId() []byte {
-	hash := self.Hash()
+// TxID returns transaction ID as byte string
+func (txn *Transaction) TxID() []byte {
+	hash := txn.Hash()
 	return hash[0:32]
 }
 
-//returns transaction ID as hex
-func (self *Transaction) TxIdHex() string {
-	return self.Hash().Hex()
+// TxIDHex returns transaction ID as hex
+func (txn *Transaction) TxIDHex() string {
+	return txn.Hash().Hex()
 }
 
-// Saves the txn body hash to TransactionHeader.Hash
-func (self *Transaction) UpdateHeader() {
-	self.Length = uint32(self.Size())
-	self.Type = byte(0x00)
-	self.InnerHash = self.HashInner()
+// UpdateHeader saves the txn body hash to TransactionHeader.Hash
+func (txn *Transaction) UpdateHeader() {
+	txn.Length = uint32(txn.Size())
+	txn.Type = byte(0x00)
+	txn.InnerHash = txn.HashInner()
 }
 
-// Hashes only the Transaction Inputs & Outputs
+// HashInner hashes only the Transaction Inputs & Outputs
 // This is what is signed
 // Client hashes the inner hash with hash of output being spent and signs it with private key
-func (self *Transaction) HashInner() cipher.SHA256 {
-	b1 := encoder.Serialize(self.In)
-	b2 := encoder.Serialize(self.Out)
+func (txn *Transaction) HashInner() cipher.SHA256 {
+	b1 := encoder.Serialize(txn.In)
+	b2 := encoder.Serialize(txn.Out)
 	b3 := append(b1, b2...)
 	return cipher.SumSHA256(b3)
 }
 
-func (self *Transaction) Serialize() []byte {
-	return encoder.Serialize(*self)
+// Serialize serialize the transaction
+func (txn *Transaction) Serialize() []byte {
+	return encoder.Serialize(*txn)
 }
 
+// TransactionDeserialize deserialize transaction
 func TransactionDeserialize(b []byte) Transaction {
 	t := Transaction{}
 	if err := encoder.DeserializeRaw(b, &t); err != nil {
@@ -280,22 +284,23 @@ func TransactionDeserialize(b []byte) Transaction {
 	return t
 }
 
-// Returns the coin hours sent as outputs. This does not include the fee.
-func (self *Transaction) OutputHours() uint64 {
+// OutputHours returns the coin hours sent as outputs. This does not include the fee.
+func (txn *Transaction) OutputHours() uint64 {
 	hours := uint64(0)
-	for i, _ := range self.Out {
-		hours += self.Out[i].Hours
+	for i := range txn.Out {
+		hours += txn.Out[i].Hours
 	}
 	return hours
 }
 
+// Transactions transaction slice
 type Transactions []Transaction
 
-// Calculates all the fees in Transactions
-func (self Transactions) Fees(calc FeeCalculator) (uint64, error) {
+// Fees calculates all the fees in Transactions
+func (txns Transactions) Fees(calc FeeCalculator) (uint64, error) {
 	total := uint64(0)
-	for i, _ := range self {
-		fee, err := calc(&self[i])
+	for i := range txns {
+		fee, err := calc(&txns[i])
 		if err != nil {
 			return 0, err
 		}
@@ -304,50 +309,51 @@ func (self Transactions) Fees(calc FeeCalculator) (uint64, error) {
 	return total, nil
 }
 
-func (self Transactions) Hashes() []cipher.SHA256 {
-	hashes := make([]cipher.SHA256, len(self))
-	for i, _ := range self {
-		hashes[i] = self[i].Hash()
+// Hashes caculate transactions hashes
+func (txns Transactions) Hashes() []cipher.SHA256 {
+	hashes := make([]cipher.SHA256, len(txns))
+	for i := range txns {
+		hashes[i] = txns[i].Hash()
 	}
 	return hashes
 }
 
-// Returns the sum of contained Transactions' sizes.  It is not the size if
+// Size returns the sum of contained Transactions' sizes.  It is not the size if
 // serialized, since that would have a length prefix.
-func (self Transactions) Size() int {
+func (txns Transactions) Size() int {
 	size := 0
-	for i, _ := range self {
-		size += self[i].Size()
+	for i := range txns {
+		size += txns[i].Size()
 	}
 	return size
 }
 
-// Returns the first n transactions whose total size is less than or equal to
+// TruncateBytesTo returns the first n transactions whose total size is less than or equal to
 // size.
-func (self Transactions) TruncateBytesTo(size int) Transactions {
+func (txns Transactions) TruncateBytesTo(size int) Transactions {
 	total := 0
-	for i, _ := range self {
-		pending := self[i].Size()
+	for i := range txns {
+		pending := txns[i].Size()
 		if total+pending > size {
-			return self[:i]
+			return txns[:i]
 		}
 		total += pending
 	}
-	return self
+	return txns
 }
 
-// Allows sorting transactions by fee & hash
+// SortableTransactions allows sorting transactions by fee & hash
 type SortableTransactions struct {
 	Txns   Transactions
 	Fees   []uint64
 	Hashes []cipher.SHA256
 }
 
-// Given a transaction, return its fee or an error if the fee cannot be
+// FeeCalculator given a transaction, return its fee or an error if the fee cannot be
 // calculated
 type FeeCalculator func(*Transaction) (uint64, error)
 
-// Returns transactions sorted by fee per kB, and sorted by lowest hash if
+// SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if
 // tied.  Transactions that fail in fee computation are excluded.
 func SortTransactions(txns Transactions,
 	feeCalc FeeCalculator) Transactions {
@@ -356,7 +362,7 @@ func SortTransactions(txns Transactions,
 	return sorted.Txns
 }
 
-// Returns an array of txns that can be sorted by fee.  On creation, fees are
+// NewSortableTransactions returns an array of txns that can be sorted by fee.  On creation, fees are
 // calculated, and if any txns have invalid fee, there are removed from
 // consideration
 func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
@@ -382,33 +388,36 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 	}
 }
 
-// Sorts by tx fee, and then by hash if fee equal
-func (self SortableTransactions) Sort() {
-	sort.Sort(self)
+// Sort sorts by tx fee, and then by hash if fee equal
+func (txns SortableTransactions) Sort() {
+	sort.Sort(txns)
 }
 
-func (self SortableTransactions) IsSorted() bool {
-	return sort.IsSorted(self)
+// IsSorted checks if transactions are sorted
+func (txns SortableTransactions) IsSorted() bool {
+	return sort.IsSorted(txns)
 }
 
-func (self SortableTransactions) Len() int {
-	return len(self.Txns)
+// Len returns length of transactions
+func (txns SortableTransactions) Len() int {
+	return len(txns.Txns)
 }
 
-// Default sorting is fees descending, hash ascending if fees equal
-func (self SortableTransactions) Less(i, j int) bool {
-	if self.Fees[i] == self.Fees[j] {
+// Less default sorting is fees descending, hash ascending if fees equal
+func (txns SortableTransactions) Less(i, j int) bool {
+	if txns.Fees[i] == txns.Fees[j] {
 		// If fees match, hashes are sorted ascending
-		return bytes.Compare(self.Hashes[i][:], self.Hashes[j][:]) < 0
+		return bytes.Compare(txns.Hashes[i][:], txns.Hashes[j][:]) < 0
 	}
 	// Fees are sorted descending
-	return self.Fees[i] > self.Fees[j]
+	return txns.Fees[i] > txns.Fees[j]
 }
 
-func (self SortableTransactions) Swap(i, j int) {
-	self.Txns[i], self.Txns[j] = self.Txns[j], self.Txns[i]
-	self.Fees[i], self.Fees[j] = self.Fees[j], self.Fees[i]
-	self.Hashes[i], self.Hashes[j] = self.Hashes[j], self.Hashes[i]
+// Swap swaps txns
+func (txns SortableTransactions) Swap(i, j int) {
+	txns.Txns[i], txns.Txns[j] = txns.Txns[j], txns.Txns[i]
+	txns.Fees[i], txns.Fees[j] = txns.Fees[j], txns.Fees[i]
+	txns.Hashes[i], txns.Hashes[j] = txns.Hashes[j], txns.Hashes[i]
 }
 
 // VerifyTransactionSpending checks that coins will not be destroyed and that enough coins are hours

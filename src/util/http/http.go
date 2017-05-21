@@ -1,4 +1,4 @@
-package util_http
+package httphelper
 
 /*
 import (

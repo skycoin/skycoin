@@ -7,7 +7,7 @@ import (
 )
 
 func TestWifiInterfacesList(t *testing.T) {
-	ifaces, err := WifiInterfaces()
+	ifaces, err := NewWifiInterfaces()
 	if err != nil {
 		t.Fatal(err)
 	}

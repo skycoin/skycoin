@@ -132,7 +132,7 @@ type connKey struct {
 	connID     uint16
 }
 
-// A Socket wraps a net.PacketConn, diverting uTP packets to its child uTP
+// Socket a Socket wraps a net.PacketConn, diverting uTP packets to its child uTP
 // Conns.
 type Socket struct {
 	mu      sync.RWMutex

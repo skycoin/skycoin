@@ -24,51 +24,32 @@ Todo
 
 */
 var (
-	// DisconnectReasons
-	DisconnectInvalidVersion gnet.DisconnectReason = errors.New(
-		"Invalid version")
-	DisconnectIntroductionTimeout gnet.DisconnectReason = errors.New(
-		"Version timeout")
-	DisconnectVersionSendFailed gnet.DisconnectReason = errors.New(
-		"Version send failed")
-	DisconnectIsBlacklisted gnet.DisconnectReason = errors.New(
-		"Blacklisted")
-	DisconnectSelf gnet.DisconnectReason = errors.New(
-		"Self connect")
-	DisconnectConnectedTwice gnet.DisconnectReason = errors.New(
-		"Already connected")
-	DisconnectIdle gnet.DisconnectReason = errors.New(
-		"Idle")
-	DisconnectNoIntroduction gnet.DisconnectReason = errors.New(
-		"First message was not an Introduction")
-	DisconnectIPLimitReached gnet.DisconnectReason = errors.New(
-		"Maximum number of connections for this IP was reached")
-	// This is returned when a seemingly impossible error is encountered
+	// ErrDisconnectReasons invalid version
+	ErrDisconnectInvalidVersion gnet.DisconnectReason = errors.New("Invalid version")
+	// ErrDisconnectIntroductionTimeout timeout
+	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
+	// ErrDisconnectVersionSendFailed version send failed
+	ErrDisconnectVersionSendFailed gnet.DisconnectReason = errors.New("Version send failed")
+	// ErrDisconnectIsBlacklisted is blacklisted
+	ErrDisconnectIsBlacklisted gnet.DisconnectReason = errors.New("Blacklisted")
+	// ErrDisconnectSelf self connnect
+	ErrDisconnectSelf gnet.DisconnectReason = errors.New("Self connect")
+	// ErrDisconnectConnectedTwice connect twice
+	ErrDisconnectConnectedTwice gnet.DisconnectReason = errors.New("Already connected")
+	// ErrDisconnectIdle idle
+	ErrDisconnectIdle gnet.DisconnectReason = errors.New("Idle")
+	// ErrDisconnectNoIntroduction no introduction
+	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
+	// ErrDisconnectIPLimitReached ip limit reached
+	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
+	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
-	DisconnectOtherError gnet.DisconnectReason = errors.New(
-		"Incomprehensible error")
-
-	//Use exponential backoff for connections
-	//ConnectFailed gnet.DisconnectReason = errors.New(
-	//	"Could Not Connect Error")
-
-	// Blacklist a peer when they get disconnected for these
-	// DisconnectReasons
-
-	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		//DisconnectSelf:                      time.Second * 1,
-		//DisconnectIntroductionTimeout:       time.Second * 1,
-		DisconnectNoIntroduction:            time.Minute * 20,
-		gnet.DisconnectInvalidMessageLength: time.Minute * 20,
-		gnet.DisconnectMalformedMessage:     time.Minute * 20,
-		gnet.DisconnectUnknownMessage:       time.Minute * 20,
-		//ConnectFailed:                       time.Minute * 60,
-	}
+	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
 
 	logger = util.MustGetLogger("daemon")
 )
 
-// Subsystem configurations
+// Config subsystem configurations
 type Config struct {
 	Daemon   DaemonConfig
 	Messages MessagesConfig
@@ -78,7 +59,7 @@ type Config struct {
 	Visor    VisorConfig
 }
 
-// Returns a Config with defaults set
+// NewConfig returns a Config with defaults set
 func NewConfig() Config {
 	return Config{
 		Daemon:   NewDaemonConfig(),
@@ -90,8 +71,9 @@ func NewConfig() Config {
 	}
 }
 
-func (self *Config) preprocess() Config {
-	config := *self
+// preprocess preprocess for config
+func (cfg *Config) preprocess() Config {
+	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		if config.Daemon.Address == "" {
 			local, err := LocalhostIP()
@@ -126,7 +108,7 @@ func (self *Config) preprocess() Config {
 	return config
 }
 
-// Configuration for the Daemon
+// DaemonConfig configuration for the Daemon
 type DaemonConfig struct {
 	// Application version. TODO -- manage version better
 	Version int32
@@ -161,6 +143,7 @@ type DaemonConfig struct {
 	LocalhostOnly bool
 }
 
+// NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
 		Version:                    2,
@@ -180,7 +163,7 @@ func NewDaemonConfig() DaemonConfig {
 	}
 }
 
-// Stateful properties of the daemon
+// Daemon stateful properties of the daemon
 type Daemon struct {
 	// Daemon configuration
 	Config DaemonConfig
@@ -225,7 +208,7 @@ type Daemon struct {
 	memChannel chan func()
 }
 
-// Returns a Daemon with primitives allocated
+// NewDaemon returns a Daemon with primitives allocated
 func NewDaemon(config Config) *Daemon {
 	config = config.preprocess()
 	d := &Daemon{
@@ -260,7 +243,7 @@ func NewDaemon(config Config) *Daemon {
 	return d
 }
 
-// Generated when a client connects
+// ConnectEvent generated when a client connects
 type ConnectEvent struct {
 	Addr      string
 	Solicited bool
@@ -272,13 +255,13 @@ type DisconnectEvent struct {
 	Reason gnet.DisconnectReason
 }
 
-// Represent a failure to connect/dial a connection, with context
+// ConnectionError represent a failure to connect/dial a connection, with context
 type ConnectionError struct {
 	Addr  string
 	Error error
 }
 
-// Encapsulates a deserialized message from the network
+// MessageEvent encapsulates a deserialized message from the network
 type MessageEvent struct {
 	Message AsyncMessage
 	Context *gnet.MessageContext
@@ -591,7 +574,7 @@ func (dm *Daemon) cullInvalidConnections() {
 	for _, a := range addrs {
 		if dm.Pool.Pool.IsConnExist(a) {
 			logger.Info("Removing %s for not sending a version", a)
-			dm.Pool.Pool.Disconnect(a, DisconnectIntroductionTimeout)
+			dm.Pool.Pool.Disconnect(a, ErrDisconnectIntroductionTimeout)
 			dm.Peers.RemovePeer(a)
 		}
 	}
@@ -622,7 +605,7 @@ func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	if dm.needsIntro(e.Context.Addr) {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
-			dm.Pool.Pool.Disconnect(e.Context.Addr, DisconnectNoIntroduction)
+			dm.Pool.Pool.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction)
 		}
 	}
 	e.Message.Process(dm)
@@ -648,7 +631,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	if dm.ipCountMaxed(a) {
 		logger.Info("Max connections for %s reached, disconnecting", a)
-		dm.Pool.Pool.Disconnect(a, DisconnectIPLimitReached)
+		dm.Pool.Pool.Disconnect(a, ErrDisconnectIPLimitReached)
 		return
 	}
 
@@ -783,7 +766,7 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 }
 
-// Returns the address for localhost on the machine
+// LocalhostIP returns the address for localhost on the machine
 func LocalhostIP() (string, error) {
 	tt, err := net.Interfaces()
 	if err != nil {
@@ -803,12 +786,12 @@ func LocalhostIP() (string, error) {
 	return "", errors.New("No local IP found")
 }
 
-// Returns true if addr is a localhost address
+// IsLocalhost returns true if addr is a localhost address
 func IsLocalhost(addr string) bool {
 	return net.ParseIP(addr).IsLoopback()
 }
 
-// Splits an ip:port string to ip, port
+// SplitAddr splits an ip:port string to ip, port
 func SplitAddr(addr string) (string, uint16, error) {
 	pts := strings.Split(addr, ":")
 	if len(pts) != 2 {

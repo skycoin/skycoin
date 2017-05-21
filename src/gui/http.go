@@ -48,7 +48,7 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	return nil
 }
 
-// Begins listening on https://$host, for enabling remote web access
+// LaunchWebInterfaceHTTPS begins listening on https://$host, for enabling remote web access
 // Uses HTTPS
 func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
 	quit = make(chan struct{})
@@ -123,13 +123,13 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	// Network stats interface
 	RegisterNetworkHandlers(mux, daemon.Gateway)
 	// Network API handler
-	RegisterApiHandlers(mux, daemon.Gateway)
+	RegisterAPIHandlers(mux, daemon.Gateway)
 	// Transaction handler
 	RegisterTxHandlers(mux, daemon.Gateway)
 	// UxOUt api handler
 	RegisterUxOutHandlers(mux, daemon.Gateway)
 	// expplorer handler
-	RegisterExploerHandlers(mux, daemon.Gateway)
+	RegisterExplorerHandlers(mux, daemon.Gateway)
 	return mux
 }
 

@@ -1,22 +1,11 @@
 package main
 
-/*
 import (
- "github.com/skycoin/skycoin/src/blockchain"
-)
-
-func main() {
-	blockchain_server := blockchain.NewServer(blockchain.ServerConfig{})
-	blockchain_server.Start()
-}
-*/
-
-import (
-	"github.com/skycoin/skycoin/src/aether/cleanup/services/blob"
-	"time"
-	//"errors"
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/skycoin/skycoin/src/aether/cleanup/services/blob"
 )
 
 func blobVerify(data []byte) sync.BlobCallbackResponse {

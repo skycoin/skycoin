@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package binary implements translation between numbers and byte sequences
+// Package encoder binary implements translation between numbers and byte sequences
 // and encoding and decoding of varints.
 //
 // Numbers are translated by reading and writing fixed-size values.
@@ -32,6 +32,7 @@ Todo:
 
 // TODO: constant length byte arrays must not be prefixed
 
+// EncodeInt encodes int
 func EncodeInt(b []byte, data interface{}) {
 	//var b [8]byte
 	var bs []byte
@@ -45,27 +46,28 @@ func EncodeInt(b []byte, data interface{}) {
 		b[0] = byte(v)
 	case int16:
 		bs = b[:2]
-		le_PutUint16(bs, uint16(v))
+		lePutUint16(bs, uint16(v))
 	case uint16:
 		bs = b[:2]
-		le_PutUint16(bs, v)
+		lePutUint16(bs, v)
 	case int32:
 		bs = b[:4]
-		le_PutUint32(bs, uint32(v))
+		lePutUint32(bs, uint32(v))
 	case uint32:
 		bs = b[:4]
-		le_PutUint32(bs, v)
+		lePutUint32(bs, v)
 	case int64:
 		bs = b[:8]
-		le_PutUint64(bs, uint64(v))
+		lePutUint64(bs, uint64(v))
 	case uint64:
 		bs = b[:8]
-		le_PutUint64(bs, v)
+		lePutUint64(bs, v)
 	default:
 		log.Panic("PushAtomic, case not handled")
 	}
 }
 
+// DecodeInt decodes int
 func DecodeInt(in []byte, data interface{}) {
 
 	n := intDestSize(data)
@@ -83,17 +85,17 @@ func DecodeInt(in []byte, data interface{}) {
 		case *uint8:
 			*v = b[0]
 		case *int16:
-			*v = int16(le_Uint16(bs))
+			*v = int16(leUint16(bs))
 		case *uint16:
-			*v = le_Uint16(bs)
+			*v = leUint16(bs)
 		case *int32:
-			*v = int32(le_Uint32(bs))
+			*v = int32(leUint32(bs))
 		case *uint32:
-			*v = le_Uint32(bs)
+			*v = leUint32(bs)
 		case *int64:
-			*v = int64(le_Uint64(bs))
+			*v = int64(leUint64(bs))
 		case *uint64:
-			*v = le_Uint64(bs)
+			*v = leUint64(bs)
 		default:
 			//FIX: this does not get triggered on invalid type in
 			// pass in struct on unit test
@@ -104,7 +106,7 @@ func DecodeInt(in []byte, data interface{}) {
 	}
 }
 
-// Fast path for atomic types.
+// DeserializeAtomic Fast path for atomic types.
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
@@ -121,17 +123,17 @@ func DeserializeAtomic(in []byte, data interface{}) {
 		case *uint8:
 			*v = b[0]
 		case *int16:
-			*v = int16(le_Uint16(bs))
+			*v = int16(leUint16(bs))
 		case *uint16:
-			*v = le_Uint16(bs)
+			*v = leUint16(bs)
 		case *int32:
-			*v = int32(le_Uint32(bs))
+			*v = int32(leUint32(bs))
 		case *uint32:
-			*v = le_Uint32(bs)
+			*v = leUint32(bs)
 		case *int64:
-			*v = int64(le_Uint64(bs))
+			*v = int64(leUint64(bs))
 		case *uint64:
-			*v = le_Uint64(bs)
+			*v = leUint64(bs)
 		default:
 			//FIX: this does not get triggered on invalid type in
 			// pass in struct on unit test
@@ -140,6 +142,7 @@ func DeserializeAtomic(in []byte, data interface{}) {
 	}
 }
 
+// DeserializeRaw deserialize raw
 func DeserializeRaw(in []byte, data interface{}) error {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
@@ -165,7 +168,7 @@ func DeserializeRaw(in []byte, data interface{}) error {
 	return d1.value(v)
 }
 
-//takes reader and number of bytes to read
+// Deserialize takes reader and number of bytes to read
 func Deserialize(r io.Reader, dsize int, data interface{}) error {
 	// Fallback to reflect-based decoding.
 	//fmt.Printf("A1 v is type %s \n", reflect.TypeOf(data).String() )
@@ -209,7 +212,7 @@ func Deserialize(r io.Reader, dsize int, data interface{}) error {
 	return d1.value(v)
 }
 
-//Does a check to see if serialization would be successful
+// CanDeserialize Does a check to see if serialization would be successful
 func CanDeserialize(in []byte, dst reflect.Value) bool {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
@@ -219,7 +222,7 @@ func CanDeserialize(in []byte, dst reflect.Value) bool {
 	return true
 }
 
-// Returns number of bytes used and an error if deserialization failed
+// DeserializeRawToValue returns number of bytes used and an error if deserialization failed
 func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 	var v reflect.Value
 	switch dst.Kind() {
@@ -247,6 +250,7 @@ func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 	return inlen - len(d1.buf), err
 }
 
+// DeserializeToValue deserialize to value
 func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
 
 	//fmt.Printf("*A1 v is type %s \n", data.Type().String() )		//this is the type of the value
@@ -273,7 +277,7 @@ func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
 	return d1.value(v)
 }
 
-//serialize int or other atomic
+// SerializeAtomic serialize int or other atomic
 func SerializeAtomic(data interface{}) []byte {
 	var b [8]byte
 	var bs []byte
@@ -292,47 +296,47 @@ func SerializeAtomic(data interface{}) []byte {
 		b[0] = byte(v)
 	case *int16:
 		bs = b[:2]
-		le_PutUint16(bs, uint16(*v))
+		lePutUint16(bs, uint16(*v))
 	case int16:
 		bs = b[:2]
-		le_PutUint16(bs, uint16(v))
+		lePutUint16(bs, uint16(v))
 	case *uint16:
 		bs = b[:2]
-		le_PutUint16(bs, *v)
+		lePutUint16(bs, *v)
 	case uint16:
 		bs = b[:2]
-		le_PutUint16(bs, v)
+		lePutUint16(bs, v)
 	case *int32:
 		bs = b[:4]
-		le_PutUint32(bs, uint32(*v))
+		lePutUint32(bs, uint32(*v))
 	case int32:
 		bs = b[:4]
-		le_PutUint32(bs, uint32(v))
+		lePutUint32(bs, uint32(v))
 	case *uint32:
 		bs = b[:4]
-		le_PutUint32(bs, *v)
+		lePutUint32(bs, *v)
 	case uint32:
 		bs = b[:4]
-		le_PutUint32(bs, v)
+		lePutUint32(bs, v)
 	case *int64:
 		bs = b[:8]
-		le_PutUint64(bs, uint64(*v))
+		lePutUint64(bs, uint64(*v))
 	case int64:
 		bs = b[:8]
-		le_PutUint64(bs, uint64(v))
+		lePutUint64(bs, uint64(v))
 	case *uint64:
 		bs = b[:8]
-		le_PutUint64(bs, *v)
+		lePutUint64(bs, *v)
 	case uint64:
 		bs = b[:8]
-		le_PutUint64(bs, v)
+		lePutUint64(bs, v)
 	default:
 		log.Panic("type not atomic")
 	}
 	return bs
 }
 
-//serialize struct
+// Serialize serialize struct
 func Serialize(data interface{}) []byte {
 	// Fast path for basic types.
 	// Fallback to reflect-based encoding.
@@ -421,30 +425,30 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	Internals
 */
 
-func le_Uint16(b []byte) uint16 { return uint16(b[0]) | uint16(b[1])<<8 }
+func leUint16(b []byte) uint16 { return uint16(b[0]) | uint16(b[1])<<8 }
 
-func le_PutUint16(b []byte, v uint16) {
+func lePutUint16(b []byte, v uint16) {
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
 }
 
-func le_Uint32(b []byte) uint32 {
+func leUint32(b []byte) uint32 {
 	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
 }
 
-func le_PutUint32(b []byte, v uint32) {
+func lePutUint32(b []byte, v uint32) {
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
 	b[2] = byte(v >> 16)
 	b[3] = byte(v >> 24)
 }
 
-func le_Uint64(b []byte) uint64 {
+func leUint64(b []byte) uint64 {
 	return uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
 		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
 }
 
-func le_PutUint64(b []byte, v uint64) {
+func lePutUint64(b []byte, v uint64) {
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
 	b[2] = byte(v >> 16)
@@ -474,35 +478,35 @@ func (e *encoder) uint8(x uint8) {
 }
 
 func (d *decoder) uint16() uint16 {
-	x := le_Uint16(d.buf[0:2])
+	x := leUint16(d.buf[0:2])
 	d.buf = d.buf[2:]
 	return x
 }
 
 func (e *encoder) uint16(x uint16) {
-	le_PutUint16(e.buf[0:2], x)
+	lePutUint16(e.buf[0:2], x)
 	e.buf = e.buf[2:]
 }
 
 func (d *decoder) uint32() uint32 {
-	x := le_Uint32(d.buf[0:4])
+	x := leUint32(d.buf[0:4])
 	d.buf = d.buf[4:]
 	return x
 }
 
 func (e *encoder) uint32(x uint32) {
-	le_PutUint32(e.buf[0:4], x)
+	lePutUint32(e.buf[0:4], x)
 	e.buf = e.buf[4:]
 }
 
 func (d *decoder) uint64() uint64 {
-	x := le_Uint64(d.buf[0:8])
+	x := leUint64(d.buf[0:8])
 	d.buf = d.buf[8:]
 	return x
 }
 
 func (e *encoder) uint64(x uint64) {
-	le_PutUint64(e.buf[0:8], x)
+	lePutUint64(e.buf[0:8], x)
 	e.buf = e.buf[8:]
 }
 
@@ -647,10 +651,10 @@ func (d *decoder) adv(n int) int {
 		n = len(d.buf)
 		d.buf = d.buf[n:]
 		return -1
-	} else {
-		d.buf = d.buf[n:]
-		return 0
 	}
+
+	d.buf = d.buf[n:]
+	return 0
 }
 
 //recursive size
@@ -672,7 +676,7 @@ func (d *decoder) dchk(v reflect.Value) int {
 			return -1 //error
 		}
 
-		length := int(le_Uint32(d.buf[0:4]))
+		length := int(leUint32(d.buf[0:4]))
 		d.adv(4) //must succeed
 
 		if length < 0 || length > len(d.buf) {
@@ -682,23 +686,22 @@ func (d *decoder) dchk(v reflect.Value) int {
 		elem := v.Type().Elem()
 		if elem.Kind() == reflect.Uint8 {
 			return d.cmp(0, d.adv(length)) //already advanced 4
-		} else {
-
-			c := 0
-			for i := 0; i < length; i++ {
-				elemv := reflect.Indirect(reflect.New(elem))
-
-				c = d.cmp(c, d.dchk(elemv))
-				//c += d.adv(d.dchk(elemv))
-
-				//t := d.dchk(elemv)
-				//d.buf = d.buf[t:]
-				//c += t
-
-				//v.Set(reflect.Append(v, elemv))
-			}
-			return c
 		}
+
+		c := 0
+		for i := 0; i < length; i++ {
+			elemv := reflect.Indirect(reflect.New(elem))
+
+			c = d.cmp(c, d.dchk(elemv))
+			//c += d.adv(d.dchk(elemv))
+
+			//t := d.dchk(elemv)
+			//d.buf = d.buf[t:]
+			//c += t
+
+			//v.Set(reflect.Append(v, elemv))
+		}
+		return c
 
 	case reflect.Struct:
 		t := v.Type()

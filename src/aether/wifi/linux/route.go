@@ -4,18 +4,19 @@ import (
 	"os/exec"
 )
 
-// Wrapper for linux utility: route
+// Route Wrapper for linux utility: route
 //
 // To verify, can type "route -n" to see all current routes
 //
 type Route struct{}
 
+// NewRoute create route instance
 func NewRoute() Route {
 	return Route{}
 }
 
-// Checks if the program route exists using PATH environment variable
-func (self Route) IsInstalled() bool {
+// IsInstalled checks if the program route exists using PATH environment variable
+func (rt Route) IsInstalled() bool {
 	_, err := exec.LookPath("route")
 	if err != nil {
 		return false
@@ -23,8 +24,8 @@ func (self Route) IsInstalled() bool {
 	return true
 }
 
-// Sets the system to add default gateway. Typically the IP of the Access Point
-func (self Route) AddDefaultGateway(ipAddress string) error {
+// AddDefaultGateway sets the system to add default gateway. Typically the IP of the Access Point
+func (rt Route) AddDefaultGateway(ipAddress string) error {
 	logger.Debug("Route: Adding default gateway")
 
 	cmd := exec.Command("route", "add", "default", "gw", ipAddress)

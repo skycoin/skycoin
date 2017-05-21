@@ -28,7 +28,7 @@ func makeTransaction(t *testing.T) Transaction {
 
 func makeTransactions(t *testing.T, n int) Transactions {
 	txns := make(Transactions, n)
-	for i, _ := range txns {
+	for i := range txns {
 		txns[i] = makeTransaction(t)
 	}
 	return txns

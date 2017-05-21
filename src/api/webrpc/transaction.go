@@ -9,11 +9,13 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+// TxnResult wraps the visor.TransactionResult
 type TxnResult struct {
 	Transaction *visor.TransactionResult `json:"transaction"`
 }
 
-type InjectResult struct {
+// TxIDJson wraps txid with json tags
+type TxIDJson struct {
 	Txid string `json:"txid"`
 }
 
@@ -37,6 +39,10 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 	if err != nil {
 		logger.Debugf("%v", err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+	}
+
+	if txn == nil {
+		return makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist")
 	}
 
 	tx := &visor.TransactionResult{
@@ -72,7 +78,7 @@ func injectTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("inject transaction failed:%v", err))
 	}
 
-	return makeSuccessResponse(req.ID, InjectResult{t.Hash().Hex()})
+	return makeSuccessResponse(req.ID, TxIDJson{t.Hash().Hex()})
 }
 
 func deserializeTx(b []byte) (tx coin.Transaction, err error) {

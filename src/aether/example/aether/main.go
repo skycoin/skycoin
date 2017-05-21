@@ -1,13 +1,9 @@
 package main
 
 import (
-	//"fmt"
 	"github.com/skycoin/skycoin/src/aether/aether"
 	"github.com/skycoin/skycoin/src/aether/daemon"
 	"github.com/skycoin/skycoin/src/cipher"
-	//gnet "github.com/skycoin/skycoin/src/aether"
-	//"log"
-	//"time"
 )
 
 func main() {

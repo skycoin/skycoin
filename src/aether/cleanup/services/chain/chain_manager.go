@@ -1,13 +1,7 @@
 package sync
 
 import (
-	//"crypto/sha256"
-	//"hash"
-	//"errors"
-	//"fmt"
-	//"github.com/skycoin/gnet"
 	"log"
-	//"time"
 )
 
 type HashChainRequest struct {

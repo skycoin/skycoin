@@ -7,9 +7,10 @@ import (
 
 const messagePrefixLength = 4
 
-// Message prefix identifies a message
+// MessagePrefix message prefix identifies a message
 type MessagePrefix [messagePrefixLength]byte
 
+// MessagePrefixFromString creates MessagePrefix from string
 func MessagePrefixFromString(prefix string) MessagePrefix {
 	if len(prefix) == 0 || len(prefix) > 4 {
 		log.Panicf("Invalid prefix %s", prefix)
@@ -68,11 +69,7 @@ funcs["foobar"]()
 
 */
 
-/*
-
-
- */
-
+// Message message interface
 type Message interface {
 	// State is user-defined application state that is attached to the
 	// Dispatcher.
@@ -83,49 +80,48 @@ type Message interface {
 	Handle(context *MessageContext, state interface{}) error
 }
 
+// MessageContext message context
 type MessageContext struct {
 	// Conn *Connection // connection message was received from
 	ConnID int // connection message was received from
 	Addr   string
 }
 
+// NewMessageContext creates MessageContext
 func NewMessageContext(conn *Connection) *MessageContext {
 	if conn.Conn != nil {
-		return &MessageContext{ConnID: conn.Id, Addr: conn.Addr()}
+		return &MessageContext{ConnID: conn.ID, Addr: conn.Addr()}
 	}
-	return &MessageContext{ConnID: conn.Id}
+	return &MessageContext{ConnID: conn.ID}
 }
 
-// Maps message types to their ids
-var MessageIdMap = make(map[reflect.Type]MessagePrefix)
+// MessageIDMap maps message types to their ids
+var MessageIDMap = make(map[reflect.Type]MessagePrefix)
 
-// Maps message ids to their types
-var MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
+// MessageIDReverseMap maps message ids to their types
+var MessageIDReverseMap = make(map[MessagePrefix]reflect.Type)
 
-//interface{} can store a struct, or can store an abstract method
-//var MessageHandleFuncMap = make(map[MessagePrefix]interface{})
-
-// Register a message struct for recognition by the message handlers.
+// RegisterMessage registers a message struct for recognition by the message handlers.
 func RegisterMessage(prefix MessagePrefix, msg interface{}) {
 	t := reflect.TypeOf(msg)
 	id := MessagePrefix{}
 	copy(id[:], prefix[:])
-	_, exists := MessageIdReverseMap[id]
+	_, exists := MessageIDReverseMap[id]
 	if exists {
 		log.Panicf("Attempted to register message prefix %s twice",
 			string(id[:]))
 	}
-	_, exists = MessageIdMap[t]
+	_, exists = MessageIDMap[t]
 	if exists {
 		log.Panicf("Attempts to register message type %v twice", t)
 	}
-	MessageIdMap[t] = id
-	MessageIdReverseMap[id] = t
+	MessageIDMap[t] = id
+	MessageIDReverseMap[id] = t
 }
 
-// Calls log.Panic if message registration violates sanity checks
+// VerifyMessages calls log.Panic if message registration violates sanity checks
 func VerifyMessages() {
-	for t, k := range MessageIdMap {
+	for t, k := range MessageIDMap {
 		// No empty prefixes allowed
 		if k[0] == 0x00 {
 			log.Panic("No empty message prefixes allowed")
@@ -157,15 +153,15 @@ func VerifyMessages() {
 			log.Panicf("Invalid message at id %d: %s", k, m)
 		}
 	}
-	if len(MessageIdMap) != len(MessageIdReverseMap) {
+	if len(MessageIDMap) != len(MessageIDReverseMap) {
 		log.Panic("MessageIdMap mismatch")
 	}
 	// No empty prefixes
 	// All prefixes must be 0 padded
 }
 
-// Wipes all recorded message types
+// EraseMessages wipes all recorded message types
 func EraseMessages() {
-	MessageIdMap = make(map[reflect.Type]MessagePrefix)
-	MessageIdReverseMap = make(map[MessagePrefix]reflect.Type)
+	MessageIDMap = make(map[reflect.Type]MessagePrefix)
+	MessageIDReverseMap = make(map[MessagePrefix]reflect.Type)
 }

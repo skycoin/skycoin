@@ -2,8 +2,8 @@ package historydb
 
 import (
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
@@ -47,6 +47,7 @@ func NewUxOutJSON(out *UxOut) *UxOutJSON {
 	}
 }
 
+// Hash returns outhash
 func (o UxOut) Hash() cipher.SHA256 {
 	return o.Out.Hash()
 }
@@ -64,12 +65,14 @@ func newOutputsBkt(db *bolt.DB) (*UxOuts, error) {
 	return &UxOuts{bkt}, nil
 }
 
+// Set sets out value
 func (op *UxOuts) Set(out UxOut) error {
 	key := out.Hash()
 	bin := encoder.Serialize(out)
 	return op.bkt.Put(key[:], bin)
 }
 
+// Get gets UxOut of given id
 func (op *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
 	bin := op.bkt.Get(uxID[:])
 	if bin == nil {

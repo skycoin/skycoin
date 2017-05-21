@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Wrapper for linux utility: resolvconf
+// ResolvConf Wrapper for linux utility: resolvconf
 // This modifies /etc/resolv.conf because any manual changes
 // not using resolvconf will be removed the next time something
 // uses this tool. So we must use it too. Other tools that
@@ -25,12 +25,13 @@ import (
 //
 type ResolvConf struct{}
 
+// NewResolvConf creates ResolvConf instance
 func NewResolvConf() ResolvConf {
 	return ResolvConf{}
 }
 
-// Checks if the program route exists using PATH environment variable
-func (self ResolvConf) IsInstalled() bool {
+// IsInstalled checks if the program route exists using PATH environment variable
+func (rc ResolvConf) IsInstalled() bool {
 	_, err := exec.LookPath("resolvconf")
 	if err != nil {
 		return false
@@ -38,8 +39,8 @@ func (self ResolvConf) IsInstalled() bool {
 	return true
 }
 
-// Add or Overwrite the interface records using a file as input
-func (self ResolvConf) SetFromFile(interfaceName string, programName string,
+// SetFromFile add or Overwrite the interface records using a file as input
+func (rc ResolvConf) SetFromFile(interfaceName string, programName string,
 	fileName string) error {
 	logger.Debug("ResolveConf: Setting records from file")
 
@@ -59,8 +60,8 @@ func (self ResolvConf) SetFromFile(interfaceName string, programName string,
 	return nil
 }
 
-// Add or Overwrite the interface records using array of nameserver IPs
-func (self ResolvConf) Set(interfaceName string, programName string,
+// Set add or Overwrite the interface records using array of nameserver IPs
+func (rc ResolvConf) Set(interfaceName string, programName string,
 	nameserversList []net.IP) error {
 	logger.Debug("ResolveConf: Setting records from list")
 
@@ -84,7 +85,7 @@ func (self ResolvConf) Set(interfaceName string, programName string,
 }
 
 // Delete the interface records
-func (self ResolvConf) Delete(interfaceName string, programName string) error {
+func (rc ResolvConf) Delete(interfaceName string, programName string) error {
 	logger.Debug("ResolveConf: Deleting records")
 
 	// resolvconf -d [interface].[programname]
@@ -100,8 +101,8 @@ func (self ResolvConf) Delete(interfaceName string, programName string) error {
 	return nil
 }
 
-// Refresh (Update) the interface records
-func (self ResolvConf) Update() error {
+// Update refresh (Update) the interface records
+func (rc ResolvConf) Update() error {
 	logger.Debug("ResolveConf: Updating records")
 
 	// resolvconf -u

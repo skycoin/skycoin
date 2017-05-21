@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	// ErrAuthRequired authentication required error
 	ErrAuthRequired = errors.New("sudo authentication required")
 	logger          = logging.MustGetLogger("darknet.network")
 )

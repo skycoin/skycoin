@@ -260,8 +260,8 @@ func Test_Encode_5(T *testing.T) {
 
 	b1 := Serialize(ts)
 
-	var t reflect.Type = reflect.TypeOf(ts)
-	var v reflect.Value = reflect.New(t) //pointer to type t
+	var t = reflect.TypeOf(ts)
+	var v = reflect.New(t) //pointer to type t
 
 	//New returns a Value representing a pointer to a new zero value for the specified type.
 	//That is, the returned Value's Type is PtrTo(t).
@@ -337,18 +337,18 @@ type Container struct {
 func TestEncodeNestedSlice(t *testing.T) {
 	size := 0
 	elems := make([]Contained, 4)
-	for i, _ := range elems {
+	for i := range elems {
 		elems[i].X = uint32(i)
 		size += 4
 		elems[i].Y = uint64(i)
 		size += 8
 		elems[i].Bytes = make([]uint8, i)
-		for j, _ := range elems[i].Bytes {
+		for j := range elems[i].Bytes {
 			elems[i].Bytes[j] = uint8(j)
 		}
 		size += 4 + i*1
 		elems[i].Ints = make([]uint16, i)
-		for j, _ := range elems[i].Ints {
+		for j := range elems[i].Ints {
 			elems[i].Ints[j] = uint16(j)
 		}
 		size += 4 + i*2

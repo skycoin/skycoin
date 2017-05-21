@@ -11,16 +11,19 @@ Do not show balances or outputs that have not cleared yet
 - should only allow spends against outputs that are on head
 */
 
+// BalancePair records the confirmed and predicted balance
 type BalancePair struct {
 	Confirmed Balance `json:"confirmed"`
 	Predicted Balance `json:"predicted"` //do "pending"
 }
 
+// Balance is consisted of Coins and Hours
 type Balance struct {
 	Coins uint64 `json:"coins"`
 	Hours uint64 `json:"hours"`
 }
 
+// NewBalance creates balance
 func NewBalance(coins, hours uint64) Balance {
 	return Balance{
 		Coins: coins,
@@ -28,6 +31,7 @@ func NewBalance(coins, hours uint64) Balance {
 	}
 }
 
+// NewBalanceFromUxOut creates Balance from UxOut
 func NewBalanceFromUxOut(headTime uint64, ux *coin.UxOut) Balance {
 	return Balance{
 		Coins: ux.Body.Coins,
@@ -35,33 +39,33 @@ func NewBalanceFromUxOut(headTime uint64, ux *coin.UxOut) Balance {
 	}
 }
 
-// Deprecate
-func (self Balance) Add(other Balance) Balance {
+// Add Deprecate
+func (bal Balance) Add(other Balance) Balance {
 	return Balance{
-		Coins: self.Coins + other.Coins,
-		Hours: self.Hours + other.Hours,
+		Coins: bal.Coins + other.Coins,
+		Hours: bal.Hours + other.Hours,
 	}
 }
 
-// Subtracts other from self and returns the new Balance.  Will panic if
+// Sub subtracts other from self and returns the new Balance.  Will panic if
 // other is greater than balance, because Coins and Hours are unsigned.
 // Deprecate
-func (self Balance) Sub(other Balance) Balance {
-	if other.Coins > self.Coins || other.Hours > self.Hours {
+func (bal Balance) Sub(other Balance) Balance {
+	if other.Coins > bal.Coins || other.Hours > bal.Hours {
 		log.Panic("Cannot subtract balances, second balance is too large")
 	}
 	return Balance{
-		Coins: self.Coins - other.Coins,
-		Hours: self.Hours - other.Hours,
+		Coins: bal.Coins - other.Coins,
+		Hours: bal.Hours - other.Hours,
 	}
 }
 
-// Deprecate
-func (self Balance) Equals(other Balance) bool {
-	return self.Coins == other.Coins && self.Hours == other.Hours
+// Equals Deprecate
+func (bal Balance) Equals(other Balance) bool {
+	return bal.Coins == other.Coins && bal.Hours == other.Hours
 }
 
-// Deprecate
-func (self Balance) IsZero() bool {
-	return self.Coins == 0 && self.Hours == 0
+// IsZero Deprecate
+func (bal Balance) IsZero() bool {
+	return bal.Coins == 0 && bal.Hours == 0
 }

@@ -75,7 +75,7 @@ func TestInitDataDir(t *testing.T) {
 }
 
 func TestInitDataDirDefault(t *testing.T) {
-	defaultDataDir = ".skycointestXCAWDAWD232232"
+	defaultDataDir := ".skycointestXCAWDAWD232232"
 	home := UserHome()
 	assertDirNotExists(t, filepath.Join(home, defaultDataDir))
 	dir := InitDataDir("")

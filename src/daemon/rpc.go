@@ -2,13 +2,11 @@ package daemon
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	//"github.com/skycoin/skycoin/src/visor"
-	//"github.com/skycoin/skycoin/src/wallet"
 )
 
-// A connection's state within the daemon
+// Connection a connection's state within the daemon
 type Connection struct {
-	Id           int    `json:"id"`
+	ID           int    `json:"id"`
 	Addr         string `json:"address"`
 	LastSent     int64  `json:"last_sent"`
 	LastReceived int64  `json:"last_received"`
@@ -21,12 +19,13 @@ type Connection struct {
 	ListenPort uint16 `json:"listen_port"`
 }
 
-// An array of connections
+// Connections an array of connections
 // Arrays must be wrapped in structs to avoid certain javascript exploits
 type Connections struct {
 	Connections []*Connection `json:"connections"`
 }
 
+// BlockchainProgress current sync blockchain status
 type BlockchainProgress struct {
 	// Our current blockchain length
 	Current uint64 `json:"current"`
@@ -38,13 +37,16 @@ type BlockchainProgress struct {
 	} `json:"peers"`
 }
 
+// ResendResult rebroadcast tx result
 type ResendResult struct {
 	Txids []string `json:"txids"` // transaction id
 }
 
+// RPC rpc
 type RPC struct{}
 
-func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
+// GetConnection gets connection of given address
+func (rpc RPC) GetConnection(d *Daemon, addr string) *Connection {
 	if d.Pool.Pool == nil {
 		return nil
 	}
@@ -60,7 +62,7 @@ func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
 	}
 
 	return &Connection{
-		Id:           c.Id,
+		ID:           c.ID,
 		Addr:         addr,
 		LastSent:     c.LastSent.Unix(),
 		LastReceived: c.LastReceived.Unix(),
@@ -71,14 +73,15 @@ func (self RPC) GetConnection(d *Daemon, addr string) *Connection {
 	}
 }
 
-func (self RPC) GetConnections(d *Daemon) *Connections {
+// GetConnections gets all connections
+func (rpc RPC) GetConnections(d *Daemon) *Connections {
 	if d.Pool.Pool == nil {
 		return nil
 	}
 	conns := make([]*Connection, 0, d.Pool.Pool.Size())
 	for _, c := range d.Pool.Pool.GetConnections() {
 		if c.Solicited {
-			conn := self.GetConnection(d, c.Addr())
+			conn := rpc.GetConnection(d, c.Addr())
 			if conn != nil {
 				conns = append(conns, conn)
 			}
@@ -87,11 +90,13 @@ func (self RPC) GetConnections(d *Daemon) *Connections {
 	return &Connections{Connections: conns}
 }
 
-func (self RPC) GetDefaultConnections(d *Daemon) []string {
+// GetDefaultConnections gets default connections
+func (rpc RPC) GetDefaultConnections(d *Daemon) []string {
 	return d.DefaultConnections
 }
 
-func (self RPC) GetTrustConnections(d *Daemon) []string {
+// GetTrustConnections get all trusted transaction
+func (rpc RPC) GetTrustConnections(d *Daemon) []string {
 	peers := d.Peers.Peers.GetAllTrustedPeers()
 	addrs := make([]string, len(peers))
 	for i, p := range peers {
@@ -110,7 +115,8 @@ func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
 	return addrs
 }
 
-func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
+// GetBlockchainProgress gets the blockchain progress
+func (rpc RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 	if v.v == nil {
 		return nil
 	}
@@ -134,7 +140,8 @@ func (self RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 	return bp
 }
 
-func (self RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *ResendResult {
+// ResendTransaction rebroadcast transaction
+func (rpc RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *ResendResult {
 	if v.v == nil {
 		return nil
 	}
@@ -142,7 +149,8 @@ func (self RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *Rese
 	return &ResendResult{}
 }
 
-func (self RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) *ResendResult {
+// ResendUnconfirmedTxns rebroadcast unconfirmed transactions
+func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) *ResendResult {
 	if v.v == nil {
 		return nil
 	}

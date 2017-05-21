@@ -1,24 +1,26 @@
-// Utilities for sending JSON
-package util_http
+package httphelper
+
+//  Utilities for sending JSON
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
+// JSONMessage json message
 type JSONMessage interface{}
 
-// Simple JSON response wrapper
+// JSONResponse simple JSON response wrapper
 type JSONResponse struct {
 	Message string
 }
 
-// Returns a JSONResponse conforming to JSONMessage
+// NewJSONResponse returns a JSONResponse conforming to JSONMessage
 func NewJSONResponse(message string) JSONMessage {
 	return &JSONResponse{Message: message}
 }
 
-// Emits JSON to an http response
+// SendJSON emits JSON to an http response
 func SendJSON(w http.ResponseWriter, message JSONMessage) error {
 	out, err := json.MarshalIndent(message, "", "    ")
 	if err == nil {
@@ -30,7 +32,7 @@ func SendJSON(w http.ResponseWriter, message JSONMessage) error {
 	return err
 }
 
-// Sends an interface as JSON if its not nil (404) or fails (500)
+// SendOr404 sends an interface as JSON if its not nil (404) or fails (500)
 func SendOr404(w http.ResponseWriter, m interface{}) {
 	if m == nil {
 		Error404(w)
@@ -39,7 +41,7 @@ func SendOr404(w http.ResponseWriter, m interface{}) {
 	}
 }
 
-// Sends an interface as JSON if its not nil (500) or fails (500)
+// SendOr500 sends an interface as JSON if its not nil (500) or fails (500)
 func SendOr500(w http.ResponseWriter, m interface{}) {
 	if m == nil {
 		Error500(w)

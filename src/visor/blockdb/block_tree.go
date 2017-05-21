@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
@@ -84,7 +84,7 @@ func (bt *BlockTree) AddBlock(b *coin.Block) error {
 			}
 		}
 
-		hp := coin.HashPair{hash, b.Head.PrevHash}
+		hp := coin.HashPair{Hash: hash, PreHash: b.Head.PrevHash}
 
 		// get block pairs in the depth
 		hashPairs, err := getHashPairInDepth(tree, b.Seq(), allPairs)
@@ -140,7 +140,7 @@ func (bt *BlockTree) RemoveBlock(b *coin.Block) error {
 		}
 
 		// remove block hash pair in tree.
-		ps := removePairs(hashPairs, coin.HashPair{hash, b.PreHashHeader()})
+		ps := removePairs(hashPairs, coin.HashPair{Hash: hash, PreHash: b.PreHashHeader()})
 		if len(ps) == 0 {
 			tree.Delete(itob(b.Seq()))
 			return nil

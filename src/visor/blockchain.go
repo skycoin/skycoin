@@ -48,6 +48,7 @@ type BlockTree interface {
 	GetBlockInDepth(dep uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block
 }
 
+// Walker function for go through blockchain
 type Walker func(hps []coin.HashPair) cipher.SHA256
 
 // BlockListener notify the register when new block is appended to the chain
@@ -132,7 +133,7 @@ func (bc Blockchain) GetGenesisBlock() *coin.Block {
 func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) coin.Block {
 	txn := coin.Transaction{}
 	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
-	body := coin.BlockBody{coin.Transactions{txn}}
+	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
 	prevHash := cipher.SHA256{}
 	head := coin.BlockHeader{
 		Time:     timestamp,
@@ -354,12 +355,12 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 	return nil
 }
 
-// GetBlockBySeq return block whose BkSeq is seq.
+// GetBlockInDepth return block whose BkSeq is seq.
 func (bc Blockchain) GetBlockInDepth(dep uint64) *coin.Block {
 	return bc.tree.GetBlockInDepth(dep, bc.walker)
 }
 
-// GetBlockRange return blocks whose seq are in the range of start and end.
+// GetBlocks return blocks whose seq are in the range of start and end.
 func (bc Blockchain) GetBlocks(start, end uint64) []coin.Block {
 	if start > end {
 		return []coin.Block{}

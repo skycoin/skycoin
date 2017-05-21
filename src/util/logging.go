@@ -17,13 +17,13 @@ const (
 	defaultLogFormat = "[%{module}:%{level}] %{message}"
 )
 
-// Wrapper for logging.MustGetLogger to avoid import
+// MustGetLogger wrapper for logging.MustGetLogger to avoid import
 func MustGetLogger(moduleName string) *logging.Logger {
 	// may be some stuff here (or may be not)
 	return logging.MustGetLogger(moduleName)
 }
 
-// logger configurations
+// LogConfig logger configurations
 type LogConfig struct {
 	// for internal usage
 	level logging.Level
@@ -40,7 +40,7 @@ type LogConfig struct {
 // TODO:
 // DefaultLogConfig vs (DevLogConfig + ProdLogConfig) ?
 
-// Default development config for logging
+// DevLogConfig default development config for logging
 func DevLogConfig(modules []string) *LogConfig {
 	return &LogConfig{
 		level:   logging.DEBUG, // int
@@ -51,7 +51,7 @@ func DevLogConfig(modules []string) *LogConfig {
 	}
 }
 
-// Default production config for logging
+// ProdLogConfig Default production config for logging
 func ProdLogConfig(modules []string) *LogConfig {
 	return &LogConfig{
 		level:   logging.ERROR,
@@ -72,7 +72,7 @@ func (l *LogConfig) initLevel() {
 	l.level = level
 }
 
-// initialize logging using this LogConfig;
+// InitLogger initialize logging using this LogConfig;
 // it panics if l.Format is invalid or l.Level is invalid
 func (l *LogConfig) InitLogger() {
 	l.initLevel()

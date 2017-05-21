@@ -11,7 +11,8 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func RegisterExploerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+// RegisterExplorerHandlers register explorer handlers
+func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
 	mux.HandleFunc("/explorer/address", getTransactionsForAddress(gateway))
 
@@ -21,7 +22,7 @@ func RegisterExploerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			var AddrList []string = []string{
+			var AddrList = []string{
 				"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 				"2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",
 				"25aGyzypSA3T9K6rgPUv1ouR13efNPtWP5m",
@@ -151,7 +152,7 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 				CurrentSupply: totalSupply,
 				CoinCap:       100000000,
 				UndistributedLockedCoinHoldingAddresses: AddrList,
-				UndistributedLockedCoinBalance: totalDevBalance,
+				UndistributedLockedCoinBalance:          totalDevBalance,
 			})
 		}
 	}

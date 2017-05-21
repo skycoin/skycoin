@@ -60,6 +60,7 @@ func NewVisorConfig() VisorConfig {
 	}
 }
 
+// Visor struct
 type Visor struct {
 	Config VisorConfig
 	v      *visor.Visor
@@ -274,8 +275,7 @@ func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 	pool.Pool.BroadcastMessage(m)
 }
 
-//move into visor
-//DEPRECATE
+// InjectTransaction injects transaction
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
 	var err error
 	vs.strand(func() {
@@ -290,7 +290,7 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Trans
 			return
 		}
 
-		err, _ := vs.v.InjectTxn(txn)
+		_, err := vs.v.InjectTxn(txn)
 		if err != nil {
 			return
 		}
@@ -409,6 +409,7 @@ func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) []coin.SignedBlock
 	return sbs
 }
 
+// UnConfirmFilterKnown returns all unknow transaction hashes
 func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 	var ts []cipher.SHA256
 	vs.strand(func() {
@@ -417,6 +418,7 @@ func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 	return ts
 }
 
+// UnConfirmKnow returns all know tansactions
 func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) (txns coin.Transactions) {
 	vs.strand(func() {
 		txns = vs.v.Unconfirmed.GetKnown(hashes)
@@ -425,22 +427,23 @@ func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) (txns coin.Transactions) 
 }
 
 // InjectTxn only try to append transaction into local blockchain, don't broadcast it.
-func (vs *Visor) InjectTxn(tx coin.Transaction) (err error, know bool) {
+func (vs *Visor) InjectTxn(tx coin.Transaction) (know bool, err error) {
 	vs.strand(func() {
-		err, know = vs.v.InjectTxn(tx)
+		know, err = vs.v.InjectTxn(tx)
 	})
 	return
 }
 
 // Communication layer for the coin pkg
 
-// Sent to request blocks since LastBlock
+// GetBlocksMessage sent to request blocks since LastBlock
 type GetBlocksMessage struct {
 	LastBlock       uint64
 	RequestedBlocks uint64
 	c               *gnet.MessageContext `enc:"-"`
 }
 
+// NewGetBlocksMessage creates GetBlocksMessage
 func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
 	return &GetBlocksMessage{
 		LastBlock:       lastBlock,
@@ -448,16 +451,15 @@ func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMes
 	}
 }
 
-func (self *GetBlocksMessage) Handle(mc *gnet.MessageContext,
+// Handle handles message
+func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gbm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
 }
 
-/*
-	Should send number to be requested, with request
-*/
-func (self *GetBlocksMessage) Process(d *Daemon) {
+// Process should send number to be requested, with request
+func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
 	// TODO -- move 20 to either Messages.Config or Visor.Config
@@ -465,43 +467,46 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Record this as this peer's highest block
-	d.Visor.RecordBlockchainLength(self.c.Addr, self.LastBlock)
+	d.Visor.RecordBlockchainLength(gbm.c.Addr, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	blocks := d.Visor.GetSignedBlocksSince(self.LastBlock, self.RequestedBlocks)
-	logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
+	blocks := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 	if len(blocks) == 0 {
 		return
 	}
 	m := NewGiveBlocksMessage(blocks)
-	d.Pool.Pool.SendMessage(self.c.Addr, m)
+	d.Pool.Pool.SendMessage(gbm.c.Addr, m)
 }
 
-// Sent in response to GetBlocksMessage, or unsolicited
+// GiveBlocksMessage sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
 	Blocks []coin.SignedBlock
 	c      *gnet.MessageContext `enc:"-"`
 }
 
+// NewGiveBlocksMessage creates GiveBlocksMessage
 func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 	return &GiveBlocksMessage{
 		Blocks: blocks,
 	}
 }
 
-func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gbm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
 }
 
-func (self *GiveBlocksMessage) Process(d *Daemon) {
+// Process process message
+func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 	processed := 0
 	maxSeq := d.Visor.HeadBkSeq()
-	for _, b := range self.Blocks {
+	for _, b := range gbm.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
 		// E.g. if we request 20 blocks since 0 from 2 peers, and one peer
@@ -533,144 +538,161 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 	d.Pool.Pool.BroadcastMessage(m2)
 }
 
-// Tells a peer our highest known BkSeq. The receiving peer can choose
+// AnnounceBlocksMessage tells a peer our highest known BkSeq. The receiving peer can choose
 // to send GetBlocksMessage in response
 type AnnounceBlocksMessage struct {
 	MaxBkSeq uint64
 	c        *gnet.MessageContext `enc:"-"`
 }
 
+// NewAnnounceBlocksMessage creates message
 func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 	return &AnnounceBlocksMessage{
 		MaxBkSeq: seq,
 	}
 }
 
-func (self *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
+// Handle handles message
+func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	abm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(abm, mc)
 }
 
-func (self *AnnounceBlocksMessage) Process(d *Daemon) {
+// Process process message
+func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
 	headBkSeq := d.Visor.HeadBkSeq()
-	if headBkSeq >= self.MaxBkSeq {
+	if headBkSeq >= abm.MaxBkSeq {
 		return
 	}
 	//should this be block get request for current sequence?
 	//if client is not caught up, wont attempt to get block
 	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
-	d.Pool.Pool.SendMessage(self.c.Addr, m)
+	d.Pool.Pool.SendMessage(abm.c.Addr, m)
 }
 
+// SendingTxnsMessage send transaction message interface
 type SendingTxnsMessage interface {
 	GetTxns() []cipher.SHA256
 }
 
-// Tells a peer that we have these transactions
+// AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
 	Txns []cipher.SHA256
 	c    *gnet.MessageContext `enc:"-"`
 }
 
+// NewAnnounceTxnsMessage creates announce txns message
 func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	return &AnnounceTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
-	return self.Txns
+// GetTxns returns txns
+func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
+	return atm.Txns
 }
 
-func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	atm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(atm, mc)
 }
 
-func (self *AnnounceTxnsMessage) Process(d *Daemon) {
+// Process process message
+func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	unknown := d.Visor.UnConfirmFilterKnown(self.Txns)
+	unknown := d.Visor.UnConfirmFilterKnown(atm.Txns)
 	if len(unknown) == 0 {
 		return
 	}
 	m := NewGetTxnsMessage(unknown)
-	d.Pool.Pool.SendMessage(self.c.Addr, m)
+	d.Pool.Pool.SendMessage(atm.c.Addr, m)
 }
 
+// GetTxnsMessage request transactions of given hash
 type GetTxnsMessage struct {
 	Txns []cipher.SHA256
 	c    *gnet.MessageContext `enc:"-"`
 }
 
+// NewGetTxnsMessage creates GetTxnsMessage
 func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 	return &GetTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gtm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
 }
 
-func (self *GetTxnsMessage) Process(d *Daemon) {
+// Process process message
+func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
 	// Locate all txns from the unconfirmed pool
 	// reply to sender with GiveTxnsMessage
-	known := d.Visor.UnConfirmKnow(self.Txns)
+	known := d.Visor.UnConfirmKnow(gtm.Txns)
 	if len(known) == 0 {
 		return
 	}
-	logger.Debug("%d/%d txns known", len(known), len(self.Txns))
+	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
-	d.Pool.Pool.SendMessage(self.c.Addr, m)
+	d.Pool.Pool.SendMessage(gtm.c.Addr, m)
 }
 
+// GiveTxnsMessage tells the transaction of given hashes
 type GiveTxnsMessage struct {
 	Txns coin.Transactions
 	c    *gnet.MessageContext `enc:"-"`
 }
 
+// NewGiveTxnsMessage creates GiveTxnsMessage
 func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
-	return self.Txns.Hashes()
+// GetTxns returns transactions hashes
+func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
+	return gtm.Txns.Hashes()
 }
 
-func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gtm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
 }
 
-func (self *GiveTxnsMessage) Process(d *Daemon) {
+// Process process message
+func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	if len(self.Txns) > 32 {
+	if len(gtm.Txns) > 32 {
 		logger.Warning("More than 32 transactions in pool. Implement breaking transactions transmission into multiple packets")
 	}
 
-	hashes := make([]cipher.SHA256, 0, len(self.Txns))
+	hashes := make([]cipher.SHA256, 0, len(gtm.Txns))
 	// Update unconfirmed pool with these transactions
-	for _, txn := range self.Txns {
+	for _, txn := range gtm.Txns {
 		// Only announce transactions that are new to us, so that peers can't
 		// spam relays
-		if err, known := d.Visor.InjectTxn(txn); err == nil && !known {
+		if known, err := d.Visor.InjectTxn(txn); err == nil && !known {
 			hashes = append(hashes, txn.Hash())
 		} else {
 			if !known {
@@ -688,18 +710,22 @@ func (self *GiveTxnsMessage) Process(d *Daemon) {
 	}
 }
 
+// BlockchainLengths an array of uint64
 type BlockchainLengths []uint64
 
-func (self BlockchainLengths) Len() int {
-	return len(self)
+// Len for sorting
+func (bcl BlockchainLengths) Len() int {
+	return len(bcl)
 }
 
-func (self BlockchainLengths) Swap(i, j int) {
-	self[i], self[j] = self[j], self[i]
+// Swap for sorting
+func (bcl BlockchainLengths) Swap(i, j int) {
+	bcl[i], bcl[j] = bcl[j], bcl[i]
 }
 
-func (self BlockchainLengths) Less(i, j int) bool {
-	return self[i] < self[j]
+// Less for sorting
+func (bcl BlockchainLengths) Less(i, j int) bool {
+	return bcl[i] < bcl[j]
 }
 
 type byTxnRecvTime []visor.UnconfirmedTxn

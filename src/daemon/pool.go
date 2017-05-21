@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
+// PoolConfig pool config
 type PoolConfig struct {
 	// Timeout when trying to connect to new peers through the pool
 	DialTimeout time.Duration
@@ -27,6 +28,7 @@ type PoolConfig struct {
 	port    int
 }
 
+// NewPoolConfig creates pool config
 func NewPoolConfig() PoolConfig {
 	//defIdleLimit := time.Minute
 	return PoolConfig{
@@ -42,11 +44,13 @@ func NewPoolConfig() PoolConfig {
 	}
 }
 
+// Pool maintains config and pool
 type Pool struct {
 	Config PoolConfig
 	Pool   *gnet.ConnectionPool
 }
 
+// NewPool creates pool
 func NewPool(c PoolConfig) *Pool {
 	return &Pool{
 		Config: c,
@@ -54,33 +58,33 @@ func NewPool(c PoolConfig) *Pool {
 	}
 }
 
-// Begins listening on port for connections and periodically scanning for
+// Init begins listening on port for connections and periodically scanning for
 // messages on read_interval
-func (self *Pool) Init(d *Daemon) {
-	logger.Info("InitPool on port %d", self.Config.port)
+func (pool *Pool) Init(d *Daemon) {
+	logger.Info("InitPool on port %d", pool.Config.port)
 	cfg := gnet.NewConfig()
-	cfg.DialTimeout = self.Config.DialTimeout
-	cfg.Port = uint16(self.Config.port)
-	cfg.Address = self.Config.address
+	cfg.DialTimeout = pool.Config.DialTimeout
+	cfg.Port = uint16(pool.Config.port)
+	cfg.Address = pool.Config.address
 	cfg.ConnectCallback = d.onGnetConnect
 	cfg.DisconnectCallback = d.onGnetDisconnect
 	// cfg.EventChannelSize = cfg.EventChannelSize
-	pool := gnet.NewConnectionPool(cfg, d)
-	self.Pool = pool
+	cpl := gnet.NewConnectionPool(cfg, d)
+	pool.Pool = cpl
 }
 
-// Closes all connections and stops listening
-func (self *Pool) Shutdown() {
-	if self.Pool != nil {
-		self.Pool.Shutdown()
+// Shutdown closes all connections and stops listening
+func (pool *Pool) Shutdown() {
+	if pool.Pool != nil {
+		pool.Pool.Shutdown()
 		logger.Info("Shutdown pool")
 	}
 }
 
-// Starts listening on the configured Port
+// Start Starts listening on the configured Port
 // no goroutine
-func (self *Pool) Start() {
-	self.Pool.Run()
+func (pool *Pool) Start() {
+	pool.Pool.Run()
 }
 
 // Accepts connections, run in goroutine
@@ -94,6 +98,6 @@ func (pool *Pool) sendPings() {
 }
 
 // Removes connections that have not sent a message in too long
-func (self *Pool) clearStaleConnections() {
-	self.Pool.ClearStaleConnections(self.Config.IdleLimit, DisconnectIdle)
+func (pool *Pool) clearStaleConnections() {
+	pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle)
 }

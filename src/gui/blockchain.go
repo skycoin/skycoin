@@ -1,5 +1,6 @@
-// Blockchain related information for the GUI
 package gui
+
+// Blockchain related information for the GUI
 
 import (
 	"fmt"
@@ -16,6 +17,7 @@ import (
 
 const lastBlockNum = 10
 
+// RegisterBlockchainHandlers registers blockchain handlers
 func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/blockchain/metadata", blockchainHandler(gateway))
 	mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(gateway))

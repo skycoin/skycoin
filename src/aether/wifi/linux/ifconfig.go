@@ -5,9 +5,10 @@ import (
 	"os/exec"
 )
 
-// Wrapper for linux utility: ifconfig
+// IFConfig Wrapper for linux utility: ifconfig
 type IFConfig struct{}
 
+// NewIFConfig create ifconfig
 func NewIFConfig() IFConfig {
 	return IFConfig{}
 }
@@ -182,8 +183,8 @@ func (self IFConfig) parse(content string) ([]IFConfigInfo, error) {
 }
 */
 
-// Checks if the program ifconfig exists using PATH environment variable
-func (self IFConfig) IsInstalled() bool {
+// IsInstalled checks if the program ifconfig exists using PATH environment variable
+func (ifc IFConfig) IsInstalled() bool {
 	_, err := exec.LookPath("ifconfig")
 	if err != nil {
 		return false
@@ -191,8 +192,8 @@ func (self IFConfig) IsInstalled() bool {
 	return true
 }
 
-// Brings the interface Up. Superuser authentication is required.
-func (self IFConfig) Up(interfaceName string) error {
+// Up brings the interface Up. Superuser authentication is required.
+func (ifc IFConfig) Up(interfaceName string) error {
 	logger.Debug("IFConfig: Bringing interface up")
 
 	if !authorized() {
@@ -211,8 +212,8 @@ func (self IFConfig) Up(interfaceName string) error {
 	return nil
 }
 
-// Brings the interface Down. Superuser authentication is required.
-func (self IFConfig) Down(interfaceName string) error {
+// Down brings the interface Down. Superuser authentication is required.
+func (ifc IFConfig) Down(interfaceName string) error {
 	logger.Debug("IFConfig: Bringing interface down")
 
 	if !authorized() {
@@ -231,8 +232,8 @@ func (self IFConfig) Down(interfaceName string) error {
 	return nil
 }
 
-// Sets the IP for the interface. Superuser authentication is required.
-func (self IFConfig) SetIP(interfaceName string,
+// SetIP sets the IP for the interface. Superuser authentication is required.
+func (ifc IFConfig) SetIP(interfaceName string,
 	ipAddress net.IP, netMask net.IPMask) error {
 	logger.Debug("IFConfig: Setting the IP and Netmask")
 

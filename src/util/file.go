@@ -1,4 +1,4 @@
-// File and Filesystem related utilities
+// Package util File and Filesystem related utilities
 package util
 
 import (
@@ -16,17 +16,18 @@ import (
 )
 
 var (
+	// DataDir app folder
 	DataDir = ""
 
 	logger = MustGetLogger("util")
 )
 
-// Disables the logger completely
+// DisableLogging disables the logger completely
 func DisableLogging() {
 	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
 }
 
-// If dir is "", uses the default directory of ~/.skycoin.  The path to dir
+// InitDataDir if dir is "", uses the default directory of ~/.skycoin.  The path to dir
 // is created, and the dir used is returned
 func InitDataDir(dir string) string {
 	//DataDir = dir
@@ -48,6 +49,7 @@ func InitDataDir(dir string) string {
 	return DataDir
 }
 
+// UserHome returns the current user home path
 func UserHome() string {
 	// os/user relies on cgo which is disabled when cross compiling
 	// use fallbacks for various OSes instead
@@ -66,6 +68,7 @@ func UserHome() string {
 	return os.Getenv("HOME")
 }
 
+// LoadJSON load json file
 func LoadJSON(filename string, thing interface{}) error {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -74,6 +77,7 @@ func LoadJSON(filename string, thing interface{}) error {
 	return json.Unmarshal(file, thing)
 }
 
+// SaveJSON write value into json file
 func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
 	data, err := json.MarshalIndent(thing, "", "    ")
 	if err != nil {
@@ -83,7 +87,7 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
 	return err
 }
 
-// Saves json to disk, but refuses if file already exists
+// SaveJSONSafe saves json to disk, but refuses if file already exists
 func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 	b, err := json.MarshalIndent(thing, "", "    ")
 	if err != nil {
@@ -105,6 +109,7 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 	return err
 }
 
+// SaveBinary persists data into given file in binary
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	tmpname := filename + ".tmp"
@@ -124,42 +129,42 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 
 //TODO: require file named after application and then hashcode, in static directory
 
-//searches locations for a research directory and returns absolute path
+// ResolveResourceDirectory searches locations for a research directory and returns absolute path
 func ResolveResourceDirectory(path string) string {
 	workDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Panic(err)
 	}
 
-	_, rt_filename, _, _ := runtime.Caller(1)
-	rt_directory := filepath.Dir(rt_filename)
+	_, rtFilename, _, _ := runtime.Caller(1)
+	rtDirectory := filepath.Dir(rtFilename)
 
-	path_abs, err := filepath.Abs(path)
+	pathAbs, err := filepath.Abs(path)
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Println("abs path:", path_abs)
+	fmt.Println("abs path:", pathAbs)
 
-	fmt.Printf("runtime.Caller= %s \n", rt_filename)
+	fmt.Printf("runtime.Caller= %s \n", rtFilename)
 	//fmt.Printf("Filepath Raw= %s \n")
 	fmt.Printf("Filepath Directory= %s \n", filepath.Dir(path))
-	fmt.Printf("Filepath Absolute Directory= %s \n", path_abs)
+	fmt.Printf("Filepath Absolute Directory= %s \n", pathAbs)
 
 	fmt.Printf("Working Directory= %s \n", workDir)
-	fmt.Printf("Runtime Filename= %s \n", rt_filename)
-	fmt.Printf("Runtime Directory= %s \n", rt_directory)
+	fmt.Printf("Runtime Filename= %s \n", rtFilename)
+	fmt.Printf("Runtime Directory= %s \n", rtDirectory)
 
 	//dir1 := filepath.Join(workDir, filepath.Dir(path))
 	//fmt.Printf("Dir1= %s \n", dir1)
 
 	dirs := []string{
-		path_abs, //try direct path first
+		pathAbs, //try direct path first
 		filepath.Join(workDir, filepath.Dir(path)), //default
 		//filepath.Join(rt_directory, "./", filepath.Dir(path)),
-		filepath.Join(rt_directory, "./", filepath.Dir(path)),
-		filepath.Join(rt_directory, "../", filepath.Dir(path)),
-		filepath.Join(rt_directory, "../../", filepath.Dir(path)),
-		filepath.Join(rt_directory, "../../../", filepath.Dir(path)),
+		filepath.Join(rtDirectory, "./", filepath.Dir(path)),
+		filepath.Join(rtDirectory, "../", filepath.Dir(path)),
+		filepath.Join(rtDirectory, "../../", filepath.Dir(path)),
+		filepath.Join(rtDirectory, "../../../", filepath.Dir(path)),
 	}
 
 	//for i, dir := range dirs {
@@ -168,9 +173,9 @@ func ResolveResourceDirectory(path string) string {
 
 	//must be an absolute path
 	//error and problem and crash if not absolute path
-	for i, _ := range dirs {
-		abs_path, _ := filepath.Abs(dirs[i])
-		dirs[i] = abs_path
+	for i := range dirs {
+		absPath, _ := filepath.Abs(dirs[i])
+		dirs[i] = absPath
 	}
 
 	for _, dir := range dirs {
@@ -183,8 +188,8 @@ func ResolveResourceDirectory(path string) string {
 	return ""
 }
 
-//DEPRECATE
-//From src/gui/http.go and src/mesh/gui/http.go
+// DetermineResourcePath DEPRECATE
+// From src/gui/http.go and src/mesh/gui/http.go
 func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
 	//check "dev" directory first
 	appLoc := filepath.Join(staticDir, devDir)
@@ -218,6 +223,7 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 	return appLoc, nil
 }
 
+// CopyFile copy file
 func CopyFile(dst string, src io.Reader) (n int64, err error) {
 	// check the existence of dst file.
 	if _, err := os.Stat(dst); err == nil {

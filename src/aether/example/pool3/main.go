@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	gnet "github.com/skycoin/skycoin/src/aether"
+	gnet "github.com/skycoin/skycoin/src/aether/gnet"
 )
 
 /*

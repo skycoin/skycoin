@@ -19,8 +19,8 @@ var (
 	logger = util.MustGetLogger("visor")
 )
 
-// VisorConfig configuration parameters for the Visor
-type VisorConfig struct {
+// Config configuration parameters for the Visor
+type Config struct {
 	// Is this the master blockchain
 	IsMaster bool
 
@@ -70,11 +70,11 @@ type VisorConfig struct {
 	Arbitrating bool // enable arbitrating
 }
 
-// NewVisorConfig, Note, put cap on block size, not on transactions/block
+// NewVisorConfig put cap on block size, not on transactions/block
 //Skycoin transactions are smaller than Bitcoin transactions so skycoin has
 //a higher transactions per second for the same block size
-func NewVisorConfig() VisorConfig {
-	c := VisorConfig{
+func NewVisorConfig() Config {
+	c := Config{
 		IsMaster: false,
 
 		//move wallet management out
@@ -107,7 +107,7 @@ func NewVisorConfig() VisorConfig {
 
 // Visor manages the Blockchain as both a Master and a Normal
 type Visor struct {
-	Config VisorConfig
+	Config Config
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed *UnconfirmedTxnPool
 	Blockchain  *Blockchain
@@ -138,7 +138,7 @@ func openDB(dbFile string) (*bolt.DB, func()) {
 type VsClose func()
 
 // NewVisor Creates a normal Visor given a master's public key
-func NewVisor(c VisorConfig) (*Visor, VsClose) {
+func NewVisor(c Config) (*Visor, VsClose) {
 	logger.Debug("Creating new visor")
 	// Make sure inputs are correct
 	if c.IsMaster {
@@ -439,7 +439,7 @@ func (vs *Visor) GetBlocks(start, end uint64) []coin.Block {
 // - rename InjectTransaction
 // Refactor
 // Why do does this return both error and bool
-func (vs *Visor) InjectTxn(txn coin.Transaction) (error, bool) {
+func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
 	//addrs := self.Wallets.GetAddressSet()
 	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
 }

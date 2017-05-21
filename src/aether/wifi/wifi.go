@@ -152,9 +152,9 @@ func NewWifiInterface(ifaceNet net.Interface) WifiInterface {
 	if udevadm.IsInstalled() {
 		// Use udevadm if installed
 		udevInfo, _ := udevadm.Run(iface.Name)
-		iface.Model = udevInfo.IdModel
-		iface.Driver = udevInfo.IdUSBDriver
-		iface.Vendor = udevInfo.IdVendor
+		iface.Model = udevInfo.IDModel
+		iface.Driver = udevInfo.IDUSBDriver
+		iface.Vendor = udevInfo.IDVendor
 	} else {
 		// Use sysfs as backup, vendor will sometimes return blank
 		sysfsInfo := sysfs.Run(iface.Name)

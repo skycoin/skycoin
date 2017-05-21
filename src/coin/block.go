@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util"
 )
 
 var logger = util.MustGetLogger("coin")
 
+// Block represents the block struct
 type Block struct {
 	Head BlockHeader
 	Body BlockBody
@@ -22,6 +23,7 @@ type HashPair struct {
 	PreHash cipher.SHA256
 }
 
+// BlockHeader records the block header
 type BlockHeader struct {
 	Version uint32
 
@@ -36,10 +38,12 @@ type BlockHeader struct {
 
 }
 
+// BlockBody represents the block body
 type BlockBody struct {
 	Transactions Transactions
 }
 
+// SignedBlock signed block
 type SignedBlock struct {
 	Block Block
 	Sig   cipher.Sig
@@ -130,6 +134,7 @@ func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
 	return Transaction{}, false
 }
 
+// NewBlockHeader creates block header
 func NewBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 	fee uint64, body BlockBody) BlockHeader {
 	if currentTime <= prev.Time {

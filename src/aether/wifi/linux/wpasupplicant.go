@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Wrapper for linux utility: wpa_supplicant
+// WPASupplicant Wrapper for linux utility: wpa_supplicant
 //
 // Areas for wpa_supplicant:
 //	/etc/wpa_supplicant/wpa_supplicant.conf
@@ -25,12 +25,13 @@ import (
 //
 type WPASupplicant struct{}
 
+// NewWPASupplicant creates instance
 func NewWPASupplicant() WPASupplicant {
 	return WPASupplicant{}
 }
 
-// Checks if the program wpa_supplicant exists using PATH environment variable
-func (self WPASupplicant) IsInstalled() bool {
+// IsInstalled checks if the program wpa_supplicant exists using PATH environment variable
+func (ws WPASupplicant) IsInstalled() bool {
 	_, err := exec.LookPath("wpa_supplicant")
 	if err != nil {
 		return false
@@ -38,13 +39,15 @@ func (self WPASupplicant) IsInstalled() bool {
 	return true
 }
 
-func (self WPASupplicant) ConfigName() string {
+// ConfigName returns the config file name
+func (ws WPASupplicant) ConfigName() string {
 	return os.TempDir() + "/" + "darknet_wpa_supplicant.conf"
 }
 
-func (self WPASupplicant) ConfigWrite(interfaceName string, ssid string,
+// ConfigWrite config write
+func (ws WPASupplicant) ConfigWrite(interfaceName string, ssid string,
 	password string) error {
-	logger.Debug("WPASupplicant: Writing config file %v", self.ConfigName())
+	logger.Debug("WPASupplicant: Writing config file %v", ws.ConfigName())
 
 	if !authorized() {
 		return ErrAuthRequired
@@ -58,7 +61,7 @@ func (self WPASupplicant) ConfigWrite(interfaceName string, ssid string,
 	text += "fast_reauth=1" + "\n"
 	text += "" + "\n"
 
-	authKey, errA := self.ConfigGenerateAuth(ssid, password)
+	authKey, errA := ws.ConfigGenerateAuth(ssid, password)
 	if errA == nil {
 		text += "network={" + "\n"
 		text += "     ssid=\"" + ssid + "\"" + "\n"
@@ -71,7 +74,7 @@ func (self WPASupplicant) ConfigWrite(interfaceName string, ssid string,
 		text += "}" + "\n"
 	}
 
-	err := ioutil.WriteFile(self.ConfigName(), []byte(text), 0644)
+	err := ioutil.WriteFile(ws.ConfigName(), []byte(text), 0644)
 	if err != nil {
 		logger.Error("WPASupplicant: Writing config file failed.")
 		return err
@@ -80,12 +83,14 @@ func (self WPASupplicant) ConfigWrite(interfaceName string, ssid string,
 	return nil
 }
 
-func (self WPASupplicant) ConfigRemove() {
-	logger.Debug("WPASupplicant: Removing config file %v", self.ConfigName())
-	os.Remove(self.ConfigName())
+// ConfigRemove removes config
+func (ws WPASupplicant) ConfigRemove() {
+	logger.Debug("WPASupplicant: Removing config file %v", ws.ConfigName())
+	os.Remove(ws.ConfigName())
 }
 
-func (self WPASupplicant) ConfigGenerateAuth(ssid string,
+// ConfigGenerateAuth generate auth
+func (ws WPASupplicant) ConfigGenerateAuth(ssid string,
 	password string) (string, error) {
 	logger.Debug("WPASupplicant: Config Generate Auth")
 
@@ -114,17 +119,18 @@ func (self WPASupplicant) ConfigGenerateAuth(ssid string,
 	return "", errors.New("generate auth key failed")
 }
 
-func (self WPASupplicant) DaemonStartup(interfaceName string) error {
+// DaemonStartup start service
+func (ws WPASupplicant) DaemonStartup(interfaceName string) error {
 	logger.Debug("WPASupplicant: Service starting")
 
 	if !authorized() {
 		return ErrAuthRequired
 	}
 
-	running, runerr := self.DaemonIsRunning()
+	running, runerr := ws.DaemonIsRunning()
 	if running && runerr == nil {
 		logger.Debug("WPASupplicant: Service already started")
-		self.DaemonConfigReload()
+		ws.DaemonConfigReload()
 		return nil
 	}
 
@@ -136,7 +142,7 @@ func (self WPASupplicant) DaemonStartup(interfaceName string) error {
 	pDriver := "-D" + "wext"
 	//pDriver := "-D" + "nl80211"
 
-	pConfigPath := "-c" + self.ConfigName()
+	pConfigPath := "-c" + ws.ConfigName()
 
 	cmd := exec.Command("sudo", "wpa_supplicant", "-B", "-d",
 		pInterface, pDriver, pConfigPath)
@@ -150,7 +156,8 @@ func (self WPASupplicant) DaemonStartup(interfaceName string) error {
 	return nil
 }
 
-func (self WPASupplicant) DaemonShutdown() error {
+// DaemonShutdown shutdowns the service
+func (ws WPASupplicant) DaemonShutdown() error {
 	logger.Debug("WPASupplicant: Daemon Shutdown")
 
 	if !authorized() {
@@ -169,7 +176,8 @@ func (self WPASupplicant) DaemonShutdown() error {
 	return nil
 }
 
-func (self WPASupplicant) DaemonConfigReload() error {
+// DaemonConfigReload reload daemon config
+func (ws WPASupplicant) DaemonConfigReload() error {
 	logger.Debug("WPASupplicant: Daemon Config Reload")
 
 	if !authorized() {
@@ -188,7 +196,8 @@ func (self WPASupplicant) DaemonConfigReload() error {
 	return nil
 }
 
-func (self WPASupplicant) DaemonIsRunning() (bool, error) {
+// DaemonIsRunning check if running
+func (ws WPASupplicant) DaemonIsRunning() (bool, error) {
 	logger.Debug("WPASupplicant: Checking if running")
 
 	if !authorized() {
@@ -207,7 +216,8 @@ func (self WPASupplicant) DaemonIsRunning() (bool, error) {
 	return true, nil
 }
 
-func (self WPASupplicant) Authenticate(interfaceName string,
+// Authenticate authenticates
+func (ws WPASupplicant) Authenticate(interfaceName string,
 	ssid string, password string) error {
 	logger.Debug("WPASupplicant: Authenticate")
 

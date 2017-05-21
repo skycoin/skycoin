@@ -51,7 +51,7 @@ func broadcastTx(rawtx string) (string, error) {
 		return "", fmt.Errorf("rpc request failed, %+v", *rsp.Error)
 	}
 
-	var rlt webrpc.InjectResult
+	var rlt webrpc.TxIDJson
 	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
 		return "", fmt.Errorf("decode inject result failed")
 	}

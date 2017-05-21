@@ -26,17 +26,18 @@ In base 58 format the address is 20+1+4 bytes
 
 */
 
+// Checksum 4 bytes
 type Checksum [4]byte
 
-//version is after Key to enable better vanity address generation
-//Address stuct is a 25 byte with a 20 byte publickey hash, 1 byte address
-//type and 4 byte checksum.
+// Address version is after Key to enable better vanity address generation
+// Address stuct is a 25 byte with a 20 byte publickey hash, 1 byte address
+// type and 4 byte checksum.
 type Address struct {
 	Version byte      //1 byte
 	Key     Ripemd160 //20 byte pubkey hash
 }
 
-// Creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
+// AddressFromPubKey creates Address from PubKey as ripemd160(sha256(sha256(pubkey)))
 func AddressFromPubKey(pubKey PubKey) Address {
 	addr := Address{
 		Version: 0,
@@ -45,11 +46,21 @@ func AddressFromPubKey(pubKey PubKey) Address {
 	return addr
 }
 
+// AddressFromSecKey generates address from secret key
 func AddressFromSecKey(secKey SecKey) Address {
 	return AddressFromPubKey(PubKeyFromSecKey(secKey))
 }
 
-// Creates an Address from its base58 encoding.  Will panic if the addr is
+// DecodeBase58Address creates an Address from its base58 encoding
+func DecodeBase58Address(addr string) (Address, error) {
+	b, err := base58.Base582Hex(addr)
+	if err != nil {
+		return Address{}, err
+	}
+	return addressFromBytes(b)
+}
+
+// MustDecodeBase58Address creates an Address from its base58 encoding.  Will panic if the addr is
 // invalid
 func MustDecodeBase58Address(addr string) Address {
 	a, err := DecodeBase58Address(addr)
@@ -59,29 +70,22 @@ func MustDecodeBase58Address(addr string) Address {
 	return a
 }
 
-func BitcoinMustDecodeBase58Address(addr string) Address {
-	a, err := BitcoinDecodeBase58Address(addr)
-	if err != nil {
-		log.Panicf("Invalid address %s: %v", addr, err)
-	}
-	return a
-}
-
-// Creates an Address from its base58 encoding
-func DecodeBase58Address(addr string) (Address, error) {
-	b, err := base58.Base582Hex(addr)
-	if err != nil {
-		return Address{}, err
-	}
-	return addressFromBytes(b)
-}
-
+// BitcoinDecodeBase58Address decode bitcoin address from string
 func BitcoinDecodeBase58Address(addr string) (Address, error) {
 	b, err := base58.Base582Hex(addr)
 	if err != nil {
 		return Address{}, err
 	}
 	return BitcoinAddressFromBytes(b)
+}
+
+// BitcoinMustDecodeBase58Address must decodes bitcoin address from string
+func BitcoinMustDecodeBase58Address(addr string) Address {
+	a, err := BitcoinDecodeBase58Address(addr)
+	if err != nil {
+		log.Panicf("Invalid address %s: %v", addr, err)
+	}
+	return a
 }
 
 // Returns an address given an Address.Bytes()
@@ -113,62 +117,65 @@ func addressFromBytes(b []byte) (addr Address, err error) {
 	return a, nil
 }
 
-//return address as a byte slice
-func (self *Address) Bytes() []byte {
+// Bytes return address as a byte slice
+func (addr *Address) Bytes() []byte {
 	b := make([]byte, 20+1+4)
-	copy(b[0:20], self.Key[0:20])
-	b[20] = self.Version
-	chksum := self.Checksum()
+	copy(b[0:20], addr.Key[0:20])
+	b[20] = addr.Version
+	chksum := addr.Checksum()
 	copy(b[21:25], chksum[0:4])
 	return b
 }
 
-func (self *Address) BitcoinBytes() []byte {
+// BitcoinBytes returns bitcoin address as byte slice
+func (addr *Address) BitcoinBytes() []byte {
 	b := make([]byte, 20+1+4)
-	b[0] = self.Version
-	copy(b[1:21], self.Key[0:20])
+	b[0] = addr.Version
+	copy(b[1:21], addr.Key[0:20])
 	// b[20] = self.Version
-	chksum := self.BitcoinChecksum()
+	chksum := addr.BitcoinChecksum()
 	copy(b[21:25], chksum[0:4])
 	return b
 }
 
-// Checks that the address appears valid for the public key
-func (self Address) Verify(key PubKey) error {
-	if self.Version != 0x00 {
+// Verify checks that the address appears valid for the public key
+func (addr Address) Verify(key PubKey) error {
+	if addr.Version != 0x00 {
 		return errors.New("Address version invalid")
 	}
-	if self.Key != key.ToAddressHash() {
+	if addr.Key != key.ToAddressHash() {
 		return errors.New("Public key invalid for address")
 	}
 	return nil
 }
 
-// Address as Base58 encoded string
+// String address as Base58 encoded string
 // Returns address as printable
 // version is first byte in binary format
 // in printed address its key, version, checksum
-func (self Address) String() string {
-	return string(base58.Hex2Base58(self.Bytes()))
+func (addr Address) String() string {
+	return string(base58.Hex2Base58(addr.Bytes()))
 }
 
-func (self Address) BitcoinString() string {
-	return string(base58.Hex2Base58(self.BitcoinBytes()))
+// BitcoinString convert bitcoin address to hex string
+func (addr Address) BitcoinString() string {
+	return string(base58.Hex2Base58(addr.BitcoinBytes()))
 }
 
-// Returns Address Checksum which is the first 4 bytes of sha256(key+version)
-func (self *Address) Checksum() Checksum {
+// Checksum returns Address Checksum which is the first 4 bytes of sha256(key+version)
+func (addr *Address) Checksum() Checksum {
 	// Version comes after the address to support vanity addresses
-	r1 := append(self.Key[:], []byte{self.Version}...)
+	r1 := append(addr.Key[:], []byte{addr.Version}...)
 	r2 := SumSHA256(r1[:])
 	c := Checksum{}
 	copy(c[:], r2[:len(c)])
 	return c
 }
 
-func (self *Address) BitcoinChecksum() Checksum {
+// BitcoinChecksum bitcoin checksum
+func (addr *Address) BitcoinChecksum() Checksum {
 	// Version comes after the address to support vanity addresses
-	r1 := append([]byte{self.Version}, self.Key[:]...)
+	r1 := append([]byte{addr.Version}, addr.Key[:]...)
 	r2 := DoubleSHA256(r1[:])
 	c := Checksum{}
 	copy(c[:], r2[:len(c)])
@@ -179,7 +186,7 @@ func (self *Address) BitcoinChecksum() Checksum {
 Bitcoin Functions
 */
 
-//prints the bitcoin address for a seckey
+// BitcoinAddressFromPubkey prints the bitcoin address for a seckey
 func BitcoinAddressFromPubkey(pubkey PubKey) string {
 	b1 := SumSHA256(pubkey[:])
 	b2 := HashRipemd160(b1[:])
@@ -193,8 +200,8 @@ func BitcoinAddressFromPubkey(pubkey PubKey) string {
 	// }
 }
 
-//exports seckey in wallet import format
-//key must be compressed
+// BitcoinWalletImportFormatFromSeckey exports seckey in wallet import format
+// key must be compressed
 func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 	b1 := append([]byte{byte(0x80)}, seckey[:]...)
 	b2 := append(b1[:], []byte{0x01}...)
@@ -203,7 +210,7 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 	return string(base58.Hex2Base58(b4))
 }
 
-// Returns an address given an Address.Bytes()
+// BitcoinAddressFromBytes Returns an address given an Address.Bytes()
 func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	if len(b) != 20+1+4 {
 		return Address{}, errors.New("Invalid address length")
@@ -226,15 +233,7 @@ func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	return a, nil
 }
 
-func MustSecKeyFromWalletImportFormat(input string) SecKey {
-	seckey, err := SecKeyFromWalletImportFormat(input)
-	if err != nil {
-		log.Panicf("MustSecKeyFromWalletImportFormat, invalid seckey, %v", err)
-	}
-	return seckey
-}
-
-//extracts a seckey from wallet import format
+// SecKeyFromWalletImportFormat extracts a seckey from wallet import format
 func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 	b, err := base58.Base582Hex(input)
 	if err != nil {
@@ -266,4 +265,13 @@ func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 		log.Panic("...")
 	}
 	return NewSecKey(b[1:33]), nil
+}
+
+// MustSecKeyFromWalletImportFormat SecKeyFromWalletImportFormat or panic
+func MustSecKeyFromWalletImportFormat(input string) SecKey {
+	seckey, err := SecKeyFromWalletImportFormat(input)
+	if err != nil {
+		log.Panicf("MustSecKeyFromWalletImportFormat, invalid seckey, %v", err)
+	}
+	return seckey
 }

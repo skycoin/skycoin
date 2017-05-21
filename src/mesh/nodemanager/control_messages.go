@@ -19,8 +19,15 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 			log.Println(err)
 			return
 		}
+
 		from := m1.From
-		to := m1.To
+
+		to, err := self.resolveName(m1.To)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		connectSequence := m1.Sequence
 		_, err = self.connectNodeToNode(from, to)
 		if err != nil {
@@ -28,6 +35,7 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 			self.sendConnectDirectlyAck(from, sequence, connectSequence, false)
 			return
 		}
+
 		self.sendConnectDirectlyAck(from, sequence, connectSequence, true)
 
 	case messages.MsgConnectWithRouteCM:
@@ -38,7 +46,11 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 			return
 		}
 		from := m1.From
-		to := m1.To
+		to, err := self.resolveName(m1.To)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		connSequence := m1.Sequence
 		appIdFrom := m1.AppIdFrom
 		appIdTo := m1.AppIdTo
@@ -58,17 +70,18 @@ func (self *NodeManager) handleControlMessage(cm *messages.InControlMessage) {
 			return
 		}
 		host := m1.Host
+		hostname := m1.Hostname
 		connect := m1.Connect
 		var nodeId cipher.PubKey
 		if !connect {
-			id, err := self.addNewNode(host)
+			id, err := self.addNewNode(host, hostname)
 			if err == nil {
 				nodeId = id
 			} else {
 				return
 			}
 		} else {
-			id, err := self.addAndConnect(host)
+			id, err := self.addAndConnect(host, hostname)
 			if err == nil {
 				nodeId = id
 			} else {

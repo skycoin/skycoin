@@ -29,7 +29,7 @@ type NodeRecord struct {
 	lock *sync.Mutex
 }
 
-func (self *NodeManager) newNode(host string) (*NodeRecord, error) {
+func (self *NodeManager) newNode(host, hostname string) (*NodeRecord, error) {
 	node := new(NodeRecord)
 	id := createPubKey()
 	node.id = id
@@ -55,6 +55,13 @@ func (self *NodeManager) newNode(host string) (*NodeRecord, error) {
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		return nil, err
+	}
+
+	if hostname != "" {
+		err = self.dnsServer.register(id, hostname)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	nodeAddr := &net.UDPAddr{IP: ip, Port: port}

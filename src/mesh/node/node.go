@@ -23,7 +23,9 @@ import (
 // and forwards it to the transport
 
 type Node struct {
-	id                      cipher.PubKey
+	id       cipher.PubKey
+	hostname string
+
 	incomingControlChannel  chan *CM
 	incomingFromTransport   chan *messages.InRouteMessage
 	incomingFromConnections chan *messages.InRouteMessage
@@ -100,6 +102,7 @@ func createAndRegisterNode(nodeConfig *NodeConfig, connect bool) (messages.NodeI
 	fullhost := nodeConfig.ClientAddr
 	serverAddrs := nodeConfig.ServerAddrs
 	appTalkPort := strconv.Itoa(nodeConfig.AppTalkPort)
+	hostname := nodeConfig.Hostname
 
 	hostData := strings.Split(fullhost, ":")
 	if len(hostData) != 2 {
@@ -116,6 +119,7 @@ func createAndRegisterNode(nodeConfig *NodeConfig, connect bool) (messages.NodeI
 	node := newNode(host)
 
 	node.appTalkPort = appTalkPort
+	node.hostname = hostname
 
 	for _, serverAddr := range serverAddrs {
 		node.addServer(serverAddr)
@@ -132,7 +136,7 @@ func createAndRegisterNode(nodeConfig *NodeConfig, connect bool) (messages.NodeI
 
 	go node.listenForApps()
 
-	err = node.sendRegisterNodeToServer(fullhost, connect) //**** send registration request to nm
+	err = node.sendRegisterNodeToServer(hostname, fullhost, connect)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +189,7 @@ func (self *Node) Shutdown() {
 	self.closeControlMessagesChannel <- true
 }
 
-func (self *Node) Dial(address cipher.PubKey, appIdFrom, appIdTo messages.AppId) (messages.Connection, error) {
+func (self *Node) Dial(address string, appIdFrom, appIdTo messages.AppId) (messages.Connection, error) {
 	connId, err := self.sendConnectWithRouteToServer(address, appIdFrom, appIdTo)
 	if err != nil {
 		return nil, err
@@ -202,7 +206,7 @@ func (self *Node) Dial(address cipher.PubKey, appIdFrom, appIdTo messages.AppId)
 	return conn, nil
 }
 
-func (self *Node) ConnectDirectly(address cipher.PubKey) error {
+func (self *Node) ConnectDirectly(address string) error {
 	return self.sendConnectDirectlyToServer(address)
 }
 

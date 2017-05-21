@@ -30,3 +30,8 @@ var ERR_INCORRECT_HOST = errors.New("Incorrect host passed")
 var ERR_CONNECTION_DOESNT_EXIST = errors.New("Connection doesn't exist")
 var ERR_APP_ID_EXISTS = errors.New("App ID already exists")
 var ERR_APP_DOESNT_EXIST = errors.New("App isn't registered at node")
+
+var ERR_INVALID_DOMAIN_NAME = errors.New("Wrong domain name format")
+var ERR_INVALID_HOST = errors.New("Wrong host format")
+var ERR_HOST_DOESNT_EXIST = errors.New("Host doesn't exist")
+var ERR_HOST_EXISTS = errors.New("Host alredy exists")

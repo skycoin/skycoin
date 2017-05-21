@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/mesh/messages"
 )
 
@@ -25,13 +24,13 @@ type app struct {
 
 const PACKET_SIZE = 1024
 
-var APP_TIMEOUT = 100000 * time.Duration(time.Millisecond)
+var APP_TIMEOUT = 10000 * time.Duration(time.Millisecond)
 
 func (self *app) Id() messages.AppId {
 	return self.id
 }
 
-func (self *app) Connect(appId messages.AppId, address cipher.PubKey) error {
+func (self *app) Connect(appId messages.AppId, address string) error {
 
 	msg := messages.ConnectToAppMessage{
 		address,

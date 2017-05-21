@@ -4,32 +4,35 @@ import {OnInit, Component} from "@angular/core";
 
 
 @Component({
-    selector: 'seed-mnemonic',
-    template: `
-                 <textarea rows="4"  placeholder="Wallet Seed" cols="46" class="form-control" value="{{currentSeed.seed}}"></textarea>
+  selector: 'seed-mnemonic',
+  template: `
+                 <textarea rows="4"  placeholder="Wallet Seed" cols="46" class="form-control" [(ngModel)]="seedValue"></textarea>
               `
-    ,
-    providers:[SeedService]
+  ,
+  providers:[SeedService]
 })
 
 export class SeedComponent implements OnInit {
 
-    constructor(private _seedService:SeedService){}
+  constructor(private _seedService:SeedService){}
 
-    currentSeed:Seed = new Seed('');
+  seedValue: string = ''
 
-    ngOnInit(): any {
-       this._seedService.getMnemonicSeed().subscribe(seedReceived=>
-       {
-           this.currentSeed=seedReceived;
-       },
+  currentSeed:Seed = new Seed('');
+
+  ngOnInit(): any {
+    this._seedService.getMnemonicSeed().subscribe(seedReceived=>
+        {
+          this.currentSeed=seedReceived;
+          this.seedValue = seedReceived.seed;
+        },
         err => {
-            console.log(err);
-           }
-       );
-    }
+          console.log(err);
+        }
+    );
+  }
 
-    getCurrentSeed():string {
-        return this.currentSeed.seed;
-    }
+  getCurrentSeed():string {
+    return this.seedValue;
+  }
 }

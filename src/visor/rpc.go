@@ -25,7 +25,7 @@ type TransactionResults struct {
 }
 
 // RPC is balance check and transaction injection
-// seperate wallets out of visor
+// separate wallets out of visor
 type RPC struct{}
 
 // GetBlockchainMetadata get blockchain meta data

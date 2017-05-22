@@ -186,7 +186,7 @@ func (fd *Field) Normalize() {
 	fd.n[9] = t9
 }
 
-// GetB32 get B32, TODO: need further explaination
+// GetB32 get B32, TODO: need further explanation
 func (fd *Field) GetB32(r []byte) {
 	var i, j, c, limb, shift uint32
 	for i = 0; i < 32; i++ {

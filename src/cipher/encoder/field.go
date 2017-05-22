@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
+// StructField field struct
 type StructField struct {
 	Name string `json:"name"`
 	Kind uint32 `json:"kind"`
@@ -24,12 +25,12 @@ func (s *StructField) String() string {
 func getFieldSize(in []byte, d *decoder, fieldType reflect.Kind, s int) (int, error) {
 	switch fieldType {
 	case reflect.Slice, reflect.String:
-		length := int(le_Uint32(d.buf[s : s+4]))
+		length := int(leUint32(d.buf[s : s+4]))
 		s += 4 + length
 	case reflect.Struct, reflect.Array:
 		s += 32
 	case reflect.Bool, reflect.Int8, reflect.Uint8:
-		s += 1
+		s++
 	case reflect.Int16, reflect.Uint16:
 		s += 2
 	case reflect.Int32, reflect.Uint32:
@@ -49,7 +50,7 @@ func getFieldValue(in []byte, d *decoder, fieldType reflect.Kind, s int) string 
 	copy(fd.buf, d.buf[s:])
 	switch fieldType {
 	case reflect.Slice, reflect.String:
-		length := int(le_Uint32(fd.buf[0:4]))
+		length := int(leUint32(fd.buf[0:4]))
 		return string(fd.buf[4 : 4+length])
 	case reflect.Struct, reflect.Array:
 		s := cipher.SHA256{}
@@ -79,6 +80,7 @@ func getFieldValue(in []byte, d *decoder, fieldType reflect.Kind, s int) string 
 	return ""
 }
 
+// DeserializeField deserialize field
 func DeserializeField(in []byte, fields []StructField, fieldName string, field interface{}) error {
 
 	d := &decoder{buf: make([]byte, len(in))}
@@ -101,6 +103,7 @@ func DeserializeField(in []byte, fields []StructField, fieldName string, field i
 	return nil
 }
 
+// ParseFields parse fields
 func ParseFields(in []byte, fields []StructField) map[string]string {
 	result := map[string]string{}
 	d := &decoder{buf: make([]byte, len(in))}

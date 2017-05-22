@@ -29,7 +29,7 @@ Visor should not be duplicated
 
 // VisorConfig represents the configuration of visor
 type VisorConfig struct {
-	Config visor.VisorConfig
+	Config visor.Config
 	// Disabled the visor completely
 	Disabled bool
 	// How often to request blocks from peers

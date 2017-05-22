@@ -6,13 +6,15 @@ import (
 	"strings"
 )
 
-// Wrapper for linux utility: iwlist
+// IWList Wrapper for linux utility: iwlist
 type IWList struct{}
 
+// NewIWList creates iwlist
 func NewIWList() IWList {
 	return IWList{}
 }
 
+// IWListNetwork records the iwlist network info
 type IWListNetwork struct {
 	Address             string
 	ESSID               string
@@ -27,6 +29,7 @@ type IWListNetwork struct {
 	NoiseLevel          int
 }
 
+// IWListNetworkIE records iwlist networkie
 type IWListNetworkIE struct {
 	Protocol        string
 	GroupCipher     string
@@ -35,8 +38,8 @@ type IWListNetworkIE struct {
 	Extra           string
 }
 
-// Checks if the program iwlist exists using PATH environment variable
-func (self IWList) IsInstalled() bool {
+// IsInstalled checks if the program iwlist exists using PATH environment variable
+func (iwl IWList) IsInstalled() bool {
 	_, err := exec.LookPath("iwlist")
 	if err != nil {
 		return false
@@ -44,9 +47,9 @@ func (self IWList) IsInstalled() bool {
 	return true
 }
 
-// Returns a cached list of wireless networks found with an interface.
+// ScanCached returns a cached list of wireless networks found with an interface.
 // No Superuser authentication is required.
-func (self IWList) ScanCached(interfaceName string) ([]IWListNetwork, error) {
+func (iwl IWList) ScanCached(interfaceName string) ([]IWListNetwork, error) {
 	logger.Debug("IWList: Scanning for wifi networks (cached)")
 
 	cmd := exec.Command("iwlist", interfaceName, "scan")
@@ -57,14 +60,14 @@ func (self IWList) ScanCached(interfaceName string) ([]IWListNetwork, error) {
 		return nil, err
 	}
 	logger.Debug("Command Return: %v", limitText(out))
-	WifiNetworks := self.parse(string(out))
+	WifiNetworks := iwl.parse(string(out))
 
 	return WifiNetworks, nil
 }
 
-// Return a fresh list of wireless networks found with an interface.
+// Scan returns a fresh list of wireless networks found with an interface.
 // Superuser authentication is required.
-func (self IWList) Scan(interfaceName string) ([]IWListNetwork, error) {
+func (iwl IWList) Scan(interfaceName string) ([]IWListNetwork, error) {
 	logger.Debug("IWList: Scanning for wifi networks (live)")
 
 	if !authorized() {
@@ -79,12 +82,12 @@ func (self IWList) Scan(interfaceName string) ([]IWListNetwork, error) {
 		return nil, err
 	}
 	logger.Debug("Command Return: %v", limitText(out))
-	WifiNetworks := self.parse(string(out))
+	WifiNetworks := iwl.parse(string(out))
 
 	return WifiNetworks, err
 }
 
-func (self IWList) parse(content string) []IWListNetwork {
+func (iwl IWList) parse(content string) []IWListNetwork {
 	wfns := []IWListNetwork{}
 	wfn := IWListNetwork{}
 

@@ -2,8 +2,13 @@ package blockdb
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
@@ -22,15 +27,47 @@ type blockCase struct {
 	Action string
 }
 
+// set rand seed.
+var _ = func() int64 {
+	t := time.Now().Unix()
+	rand.Seed(t)
+	return t
+}()
+
+func setup(t *testing.T) (*bolt.DB, func(), error) {
+	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
+	close := func() {}
+	tmpDir := os.TempDir()
+	dbPath := filepath.Join(tmpDir, dbName)
+	if err := os.MkdirAll(tmpDir, 0777); err != nil {
+		return nil, close, err
+	}
+
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+		Timeout: 500 * time.Millisecond,
+	})
+	if err != nil {
+		return nil, close, err
+	}
+
+	close = func() {
+		db.Close()
+		if err := os.RemoveAll(dbPath); err != nil {
+			panic(err)
+		}
+	}
+	return db, close, nil
+}
+
 func testCase(t *testing.T, cases []blockCase) {
-	_, teardown, err := setup(t)
+	db, close, err := setup(t)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer teardown()
+	defer close()
 
-	btree := NewBlockTree()
+	btree := NewBlockTree(db)
 	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
 		var preHash cipher.SHA256
@@ -161,13 +198,13 @@ func TestRemoveBlock(t *testing.T) {
 }
 
 func TestGetBlockInDepth(t *testing.T) {
-	_, teardown, err := setup(t)
+	db, teardown, err := setup(t)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer teardown()
 
-	bc := NewBlockTree()
+	bc := NewBlockTree(db)
 	blocks := []coin.Block{
 		coin.Block{
 			Head: coin.BlockHeader{

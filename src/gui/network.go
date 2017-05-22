@@ -1,6 +1,6 @@
-// Network-related information for the GUI
 package gui
 
+// Network-related information for the GUI
 import (
 	"net/http"
 
@@ -42,6 +42,7 @@ func exchgConnectionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// RegisterNetworkHandlers registers network handlers
 func RegisterNetworkHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/network/connection", connectionHandler(gateway))
 	mux.HandleFunc("/network/connections", connectionsHandler(gateway))

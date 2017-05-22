@@ -32,19 +32,21 @@ import (
 	- order spent (for rollbacks)
 */
 
+// UxOut represents uxout
 type UxOut struct {
 	Head UxHead
 	Body UxBody //hashed part
 	//Meta UxMeta
 }
 
-// Metadata (not hashed)
+// UxHead metadata (not hashed)
 type UxHead struct {
 	Time  uint64 //time of block it was created in
 	BkSeq uint64 //block it was created in, used to calculate depth
 	// SpSeq uint64 //block it was spent in
 }
 
+// UxBody uxbody
 type UxBody struct {
 	SrcTransaction cipher.SHA256  // Inner Hash of Transaction
 	Address        cipher.Address // Address of receiver
@@ -52,21 +54,22 @@ type UxBody struct {
 	Hours          uint64         // Coin hours
 }
 
-// Returns the hash of UxBody
-func (self *UxOut) Hash() cipher.SHA256 {
-	return self.Body.Hash()
+// Hash returns the hash of UxBody
+func (uo *UxOut) Hash() cipher.SHA256 {
+	return uo.Body.Hash()
 }
 
-// Returns hash of UxBody + UxHead
-func (self *UxOut) SnapshotHash() cipher.SHA256 {
-	b1 := encoder.Serialize(self.Body) //body
-	b2 := encoder.Serialize(self.Head) //time, bkseq
+// SnapshotHash returns hash of UxBody + UxHead
+func (uo *UxOut) SnapshotHash() cipher.SHA256 {
+	b1 := encoder.Serialize(uo.Body) //body
+	b2 := encoder.Serialize(uo.Head) //time, bkseq
 	b3 := append(b1, b2...)
 	return cipher.SumSHA256(b3)
 }
 
-func (self *UxBody) Hash() cipher.SHA256 {
-	return cipher.SumSHA256(encoder.Serialize(self))
+// Hash returns hash of uxbody
+func (ub *UxBody) Hash() cipher.SHA256 {
+	return cipher.SumSHA256(encoder.Serialize(ub))
 }
 
 /*
@@ -75,86 +78,91 @@ func (self *UxBody) Hash() cipher.SHA256 {
 	Creation time of transaction cant be hashed
 */
 
-// Calculate coinhour balance of output. t is the current unix utc time
-func (self *UxOut) CoinHours(t uint64) uint64 {
-	if t < self.Head.Time {
+// CoinHours Calculate coinhour balance of output. t is the current unix utc time
+func (uo *UxOut) CoinHours(t uint64) uint64 {
+	if t < uo.Head.Time {
 		logger.Warning("Calculating coin hours with t < head time")
-		return self.Body.Hours
+		return uo.Body.Hours
 	}
 
-	seconds := (t - self.Head.Time)                  //number of seconds
-	coinSeconds := (seconds * self.Body.Coins) / 1e6 //coin seconds
-	coinHours := coinSeconds / 3600                  //coin hours
-	return self.Body.Hours + coinHours               //starting+earned
+	seconds := (t - uo.Head.Time)                  //number of seconds
+	coinSeconds := (seconds * uo.Body.Coins) / 1e6 //coin seconds
+	coinHours := coinSeconds / 3600                //coin hours
+	return uo.Body.Hours + coinHours               //starting+earned
 }
 
-// Set mapping from UxHash to a placeholder value. Ignore the byte value,
+// UxHashSet set mapping from UxHash to a placeholder value. Ignore the byte value,
 // only check for existence
 type UxHashSet map[cipher.SHA256]byte
 
-// Array of Outputs
+// UxArray Array of Outputs
 // Used by unspent output pool, spent tests
 type UxArray []UxOut
 
-// Returns Array of hashes for the Ux in the UxArray.
-func (self UxArray) Hashes() []cipher.SHA256 {
-	hashes := make([]cipher.SHA256, len(self))
-	for i, ux := range self {
+// Hashes returns Array of hashes for the Ux in the UxArray.
+func (ua UxArray) Hashes() []cipher.SHA256 {
+	hashes := make([]cipher.SHA256, len(ua))
+	for i, ux := range ua {
 		hashes[i] = ux.Hash()
 	}
 	return hashes
 }
 
-// Checks the UxArray for outputs which have the same hash
-func (self UxArray) HasDupes() bool {
-	m := make(UxHashSet, len(self))
-	for i, _ := range self {
-		h := self[i].Hash()
+// HasDupes checks the UxArray for outputs which have the same hash
+func (ua UxArray) HasDupes() bool {
+	m := make(UxHashSet, len(ua))
+	for i := range ua {
+		h := ua[i].Hash()
 		if _, ok := m[h]; ok {
 			return true
-		} else {
-			m[h] = byte(1)
 		}
+		m[h] = byte(1)
 	}
 	return false
 }
 
-// Returns the UxArray as a hash to byte map to be used as a set.  The byte's
+// Set returns the UxArray as a hash to byte map to be used as a set.  The byte's
 // value should be ignored, although it will be 1.  Should only be used for
 // membership detection.
-func (self UxArray) Set() UxHashSet {
-	m := make(UxHashSet, len(self))
-	for i, _ := range self {
-		m[self[i].Hash()] = byte(1)
+func (ua UxArray) Set() UxHashSet {
+	m := make(UxHashSet, len(ua))
+	for i := range ua {
+		m[ua[i].Hash()] = byte(1)
 	}
 	return m
 }
 
-func (self UxArray) Sort() {
-	sort.Sort(self)
+// Sort sorts ux array
+func (ua UxArray) Sort() {
+	sort.Sort(ua)
 }
 
-func (self UxArray) IsSorted() bool {
-	return sort.IsSorted(self)
+// IsSorted checks if uxouts are sorted
+func (ua UxArray) IsSorted() bool {
+	return sort.IsSorted(ua)
 }
 
-func (self UxArray) Len() int {
-	return len(self)
+// Len returns length of uxarray
+func (ua UxArray) Len() int {
+	return len(ua)
 }
 
-func (self UxArray) Less(i, j int) bool {
-	hash1 := self[i].Hash()
-	hash2 := self[j].Hash()
+// Less checks if UxArray[i] < UxArray[j]
+func (ua UxArray) Less(i, j int) bool {
+	hash1 := ua[i].Hash()
+	hash2 := ua[j].Hash()
 	return bytes.Compare(hash1[:], hash2[:]) < 0
 }
 
-func (self UxArray) Swap(i, j int) {
-	self[i], self[j] = self[j], self[i]
+// Swap swaps value of UxArray[i] and UxArray[j]
+func (ua UxArray) Swap(i, j int) {
+	ua[i], ua[j] = ua[j], ua[i]
 }
 
+// AddressUxOuts maps address with uxarray
 type AddressUxOuts map[cipher.Address]UxArray
 
-//used once in /src/Visor
+// NewAddressUxOuts creates address uxouts map
 func NewAddressUxOuts(uxs UxArray) AddressUxOuts {
 	uxo := make(AddressUxOuts)
 	for _, ux := range uxs {
@@ -163,34 +171,34 @@ func NewAddressUxOuts(uxs UxArray) AddressUxOuts {
 	return uxo
 }
 
-// Returns the Address keys
-func (self AddressUxOuts) Keys() []cipher.Address {
-	addrs := make([]cipher.Address, len(self))
+// Keys returns the Address keys
+func (auo AddressUxOuts) Keys() []cipher.Address {
+	addrs := make([]cipher.Address, len(auo))
 	i := 0
-	for k, _ := range self {
+	for k := range auo {
 		addrs[i] = k
 		i++
 	}
 	return addrs
 }
 
-// Converts an AddressUxOuts map to a UxArray
-func (self AddressUxOuts) Flatten() UxArray {
-	oxs := make(UxArray, 0, len(self))
-	for _, uxs := range self {
-		for i, _ := range uxs {
+// Flatten converts an AddressUxOuts map to a UxArray
+func (auo AddressUxOuts) Flatten() UxArray {
+	oxs := make(UxArray, 0, len(auo))
+	for _, uxs := range auo {
+		for i := range uxs {
 			oxs = append(oxs, uxs[i])
 		}
 	}
 	return oxs
 }
 
-// Returns a new set of unspents, with unspents found in other removed.
+// Sub returns a new set of unspents, with unspents found in other removed.
 // No address's unspent set will be empty
 // Depreciate this: only visor uses it
-func (self AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
-	ox := make(AddressUxOuts, len(self))
-	for a, uxs := range self {
+func (auo AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
+	ox := make(AddressUxOuts, len(auo))
+	for a, uxs := range auo {
 		if suxs, ok := other[a]; ok {
 			ouxs := uxs.Sub(suxs)
 			if len(ouxs) > 0 {
@@ -203,14 +211,14 @@ func (self AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
 	return ox
 }
 
-// Returns a new UxArray with elements in other removed from self
+// Sub returns a new UxArray with elements in other removed from self
 // Deprecate
-func (self UxArray) Sub(other UxArray) UxArray {
+func (ua UxArray) Sub(other UxArray) UxArray {
 	uxa := make(UxArray, 0)
 	m := other.Set()
-	for i, _ := range self {
-		if _, ok := m[self[i].Hash()]; !ok {
-			uxa = append(uxa, self[i])
+	for i := range ua {
+		if _, ok := m[ua[i].Hash()]; !ok {
+			uxa = append(uxa, ua[i])
 		}
 	}
 	return uxa

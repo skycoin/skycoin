@@ -82,6 +82,7 @@ func (gw *Gateway) GetDefaultConnections() interface{} {
 
 // GetConnection returns a *Connection of specific address
 func (gw *Gateway) GetConnection(addr string) interface{} {
+	logger.Critical("here")
 	var conn interface{}
 	gw.strand(func() {
 		conn = gw.drpc.GetConnection(gw.d, addr)
@@ -240,7 +241,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) visor.ReadableOut
 	}
 }
 
-// FbyAddresses filters the unspent outputs that are not owned by the addresses
+// FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
 func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
 		addrMatch := []visor.ReadableOutput{}
@@ -431,6 +432,7 @@ func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair)
 	return
 }
 
+// AddressesBalance gets balance of given addresses
 func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.BalancePair) {
 	addrMap := make(map[cipher.Address]byte)
 	gw.strand(func() {

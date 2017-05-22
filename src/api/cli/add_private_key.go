@@ -65,7 +65,7 @@ func addPrivateKeyCMD() gcli.Command {
 			pk := cipher.PubKeyFromSecKey(sk)
 			addr := cipher.AddressFromPubKey(pk)
 
-			entry := wallet.WalletEntry{
+			entry := wallet.Entry{
 				Address: addr,
 				Public:  pk,
 				Secret:  sk,

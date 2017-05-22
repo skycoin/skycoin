@@ -44,7 +44,7 @@ func TestNewConnectionPool(t *testing.T) {
 	assert.Equal(t, len(p.pool), 0)
 	assert.NotNil(t, p.addresses)
 	assert.Equal(t, len(p.addresses), 0)
-	assert.Equal(t, p.connId, 0)
+	assert.Equal(t, p.connID, 0)
 }
 
 func TestNewConnection(t *testing.T) {
@@ -61,8 +61,8 @@ func TestNewConnection(t *testing.T) {
 	assert.Nil(t, err)
 	wait()
 	c := p.addresses[conn.LocalAddr().String()]
-	assert.Equal(t, p.pool[p.connId], c)
-	assert.Equal(t, p.connId, 1)
+	assert.Equal(t, p.pool[p.connID], c)
+	assert.Equal(t, p.connID, 1)
 	assert.Equal(t, c.Addr(), conn.LocalAddr().String())
 	assert.Equal(t, cap(c.WriteQueue), cfg.ConnectionWriteQueueSize)
 	assert.NotNil(t, c.Buffer)
@@ -86,7 +86,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 	wait()
 	c := p.addresses[conn.LocalAddr().String()]
 	assert.NotNil(t, c)
-	_, err = p.NewConnection(c.Conn)
+	_, err = p.NewConnection(c.Conn, true)
 	assert.NotNil(t, err)
 }
 
@@ -314,7 +314,7 @@ func TestConnectNoTimeout(t *testing.T) {
 	cfg.Port = uint16(port)
 	cfg.Address = address
 	cfg.DialTimeout = 0
-	cfg.Port += 1
+	cfg.Port++
 	p := NewConnectionPool(cfg, nil)
 	p.Run()
 	defer p.Shutdown()
@@ -341,7 +341,7 @@ func TestDisconnect(t *testing.T) {
 		assert.Equal(t, addr, c.Addr())
 	}
 
-	p.Disconnect(c.Addr(), DisconnectMalformedMessage)
+	p.Disconnect(c.Addr(), ErrDisconnectMalformedMessage)
 
 	// Disconnecting a connection that isn't known has no effect
 	// c = &Connection{Id: 88}
@@ -371,19 +371,19 @@ func TestConnectionClose(t *testing.T) {
 func TestGetConnections(t *testing.T) {
 	wait()
 	p := NewConnectionPool(NewConfig(), nil)
-	c := &Connection{Id: 1}
-	d := &Connection{Id: 2}
-	e := &Connection{Id: 3}
-	p.pool[c.Id] = c
-	p.pool[d.Id] = d
-	p.pool[e.Id] = e
+	c := &Connection{ID: 1}
+	d := &Connection{ID: 2}
+	e := &Connection{ID: 3}
+	p.pool[c.ID] = c
+	p.pool[d.ID] = d
+	p.pool[e.ID] = e
 	p.Run()
 	defer p.Shutdown()
 	conns := p.GetConnections()
 	assert.Equal(t, len(conns), 3)
 	m := make(map[int]*Connection, 3)
 	for i, c := range conns {
-		m[c.Id] = &conns[i]
+		m[c.ID] = &conns[i]
 	}
 	assert.Equal(t, len(m), 3)
 	for i := 1; i <= 3; i++ {
@@ -403,7 +403,7 @@ func TestConnectionReadLoop(t *testing.T) {
 
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
 		// assert.Equal(t, connID, 1)
-		assert.Equal(t, reason, DisconnectReadFailed)
+		assert.Equal(t, reason, ErrDisconnectReadFailed)
 	}
 
 	// 1:
@@ -419,7 +419,7 @@ func TestConnectionReadLoop(t *testing.T) {
 	// Use a mock net.Conn that fails on SetReadDeadline
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
 		// assert.Equal(t, connID, 2)
-		assert.Equal(t, reason, DisconnectSetReadDeadlineFailed)
+		assert.Equal(t, reason, ErrDisconnectSetReadDeadlineFailed)
 	}
 
 	rdfconn := &ReadDeadlineFailedConn{}
@@ -432,7 +432,7 @@ func TestConnectionReadLoop(t *testing.T) {
 	// Look for these bytes copied into the eventChannel
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
 		// assert.Equal(t, connID, 3)
-		assert.Equal(t, reason, DisconnectInvalidMessageLength)
+		assert.Equal(t, reason, ErrDisconnectInvalidMessageLength)
 	}
 	raconn := &ReadAlwaysConn{}
 	go p.handleConnection(raconn, false)
@@ -445,7 +445,7 @@ func TestConnectionReadLoop(t *testing.T) {
 	rnconn := &ReadNothingConn{}
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
 		// assert.Equal(t, connID, 4)
-		assert.Equal(t, reason, DisconnectReadFailed)
+		assert.Equal(t, reason, ErrDisconnectReadFailed)
 	}
 	go p.handleConnection(rnconn, false)
 	wait()
@@ -509,7 +509,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
 		assert.Equal(t, c.Addr(), addr)
-		assert.Equal(t, reason, DisconnectInvalidMessageLength)
+		assert.Equal(t, reason, ErrDisconnectInvalidMessageLength)
 		assert.Nil(t, p.pool[1])
 	}
 	// Sending a length of < messagePrefixLength should cause a disconnect
@@ -528,7 +528,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	max := p.Config.MaxMessageLength
 	p.Config.MaxMessageLength = 4
 	p.Config.DisconnectCallback = func(addr string, r DisconnectReason) {
-		assert.Equal(t, DisconnectInvalidMessageLength, r)
+		assert.Equal(t, ErrDisconnectInvalidMessageLength, r)
 		assert.Nil(t, p.pool[2])
 	}
 	// p.pool[1] = c
@@ -549,7 +549,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	assert.Nil(t, err)
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
 		// assert.Equal(t, connID, 3)
-		assert.Equal(t, reason, DisconnectMalformedMessage)
+		assert.Equal(t, reason, ErrDisconnectMalformedMessage)
 		assert.Nil(t, p.pool[3])
 	}
 	wait()
@@ -590,7 +590,7 @@ func TestConnectionWriteLoop(t *testing.T) {
 	// Send a failed message to c
 	sendByteMessage = failingSendByteMessage
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
-		assert.Equal(t, reason, DisconnectWriteFailed)
+		assert.Equal(t, reason, ErrDisconnectWriteFailed)
 	}
 	p.SendMessage(c.Addr(), m)
 	wait()
@@ -639,7 +639,7 @@ func TestPoolSendMessage(t *testing.T) {
 	}
 
 	err = p.SendMessage(c.Addr(), m)
-	assert.Equal(t, DisconnectWriteQueueFull, err)
+	assert.Equal(t, ErrDisconnectWriteQueueFull, err)
 }
 
 func TestPoolBroadcastMessage(t *testing.T) {
@@ -731,12 +731,12 @@ func NewDummyAddr(addr string) *DummyAddr {
 	}
 }
 
-func (self *DummyAddr) Network() string {
-	return self.addr
+func (da *DummyAddr) Network() string {
+	return da.addr
 }
 
-func (self *DummyAddr) String() string {
-	return self.Network()
+func (da *DummyAddr) String() string {
+	return da.Network()
 }
 
 type DummyConn struct {
@@ -748,27 +748,27 @@ func NewDummyConn(addr string) net.Conn {
 	return &DummyConn{addr: addr}
 }
 
-func (self *DummyConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(self.addr)
+func (dc *DummyConn) RemoteAddr() net.Addr {
+	return NewDummyAddr(dc.addr)
 }
 
-func (self *DummyConn) LocalAddr() net.Addr {
-	return self.RemoteAddr()
+func (dc *DummyConn) LocalAddr() net.Addr {
+	return dc.RemoteAddr()
 }
 
-func (self *DummyConn) Close() error {
+func (dc *DummyConn) Close() error {
 	return nil
 }
 
-func (self *DummyConn) Read(b []byte) (int, error) {
+func (dc *DummyConn) Read(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (self *DummyConn) SetWriteDeadline(t time.Time) error {
+func (dc *DummyConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (self *DummyConn) Write(b []byte) (int, error) {
+func (dc *DummyConn) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
@@ -781,20 +781,20 @@ func NewReadErrorConn() net.Conn {
 	return &ReadErrorConn{nil, time.Time{}}
 }
 
-func (self *ReadErrorConn) RemoteAddr() net.Addr {
+func (rec *ReadErrorConn) RemoteAddr() net.Addr {
 	return NewDummyAddr(addr)
 }
 
-func (self *ReadErrorConn) SetReadDeadline(t time.Time) error {
-	self.ReadDeadlineSet = t
+func (rec *ReadErrorConn) SetReadDeadline(t time.Time) error {
+	rec.ReadDeadlineSet = t
 	return nil
 }
 
-func (self *ReadErrorConn) Read(b []byte) (int, error) {
+func (rec *ReadErrorConn) Read(b []byte) (int, error) {
 	return 0, errors.New("failed")
 }
 
-func (self *ReadErrorConn) Close() error {
+func (rec *ReadErrorConn) Close() error {
 	return nil
 }
 
@@ -802,19 +802,19 @@ type ReadDeadlineFailedConn struct {
 	net.Conn
 }
 
-func (self *ReadDeadlineFailedConn) Read(b []byte) (int, error) {
+func (c *ReadDeadlineFailedConn) Read(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (self *ReadDeadlineFailedConn) SetReadDeadline(t time.Time) error {
+func (c *ReadDeadlineFailedConn) SetReadDeadline(t time.Time) error {
 	return errors.New("Failed")
 }
 
-func (self *ReadDeadlineFailedConn) RemoteAddr() net.Addr {
+func (c *ReadDeadlineFailedConn) RemoteAddr() net.Addr {
 	return NewDummyAddr(addr)
 }
 
-func (self *ReadDeadlineFailedConn) Close() error {
+func (c *ReadDeadlineFailedConn) Close() error {
 	return nil
 }
 
@@ -823,16 +823,16 @@ type ReadAlwaysConn struct {
 	stopReading bool
 }
 
-func (self *ReadAlwaysConn) RemoteAddr() net.Addr {
+func (c *ReadAlwaysConn) RemoteAddr() net.Addr {
 	return NewDummyAddr(addr)
 }
 
-func (self *ReadAlwaysConn) Close() error {
+func (c *ReadAlwaysConn) Close() error {
 	return nil
 }
 
-func (self *ReadAlwaysConn) Read(b []byte) (int, error) {
-	if self.stopReading {
+func (c *ReadAlwaysConn) Read(b []byte) (int, error) {
+	if c.stopReading {
 		return 0, errors.New("done")
 	}
 	if len(b) == 0 {
@@ -843,12 +843,12 @@ func (self *ReadAlwaysConn) Read(b []byte) (int, error) {
 	return 1, nil
 }
 
-func (self *ReadAlwaysConn) SetReadDeadline(t time.Time) error {
+func (c *ReadAlwaysConn) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-func (self *ReadAlwaysConn) stop() {
-	self.stopReading = true
+func (c *ReadAlwaysConn) stop() {
+	c.stopReading = true
 }
 
 type ReadNothingConn struct {
@@ -856,27 +856,26 @@ type ReadNothingConn struct {
 	stopReading bool
 }
 
-func (self *ReadNothingConn) Read(b []byte) (int, error) {
-	if self.stopReading {
+func (c *ReadNothingConn) Read(b []byte) (int, error) {
+	if c.stopReading {
 		return 0, errors.New("done")
-	} else {
-		time.Sleep(time.Millisecond * 2)
-		return 0, nil
 	}
+	time.Sleep(time.Millisecond * 2)
+	return 0, nil
 }
 
-func (self *ReadNothingConn) SetReadDeadline(t time.Time) error {
+func (c *ReadNothingConn) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-func (self *ReadNothingConn) RemoteAddr() net.Addr {
+func (c *ReadNothingConn) RemoteAddr() net.Addr {
 	return NewDummyAddr(addr)
 }
 
-func (self *ReadNothingConn) Close() error {
+func (c *ReadNothingConn) Close() error {
 	return nil
 }
 
-func (self *ReadNothingConn) stop() {
-	self.stopReading = true
+func (c *ReadNothingConn) stop() {
+	c.stopReading = true
 }

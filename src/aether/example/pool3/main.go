@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	gnet "github.com/skycoin/skycoin/src/aether"
+	gnet "github.com/skycoin/skycoin/src/aether/gnet"
 )
 
 /*
@@ -94,7 +94,7 @@ func (self *ServiceConnectMessage) Handle(context *gnet.MessageContext,
 			return nil
 		}
 	}
-	//message reponse from remote for connection
+	//message response from remote for connection
 	if self.Originating == 0 {
 		if len(self.ErrorMessage) != 0 {
 			log.Printf("Service Connection Failed: addr= %s, LocalChannel= %d, Remotechannel= %d \n",

@@ -2,12 +2,12 @@ package historydb
 
 import (
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
-// bucket for storing address with UxOut, key as adress, value as UxOut.
+// bucket for storing address with UxOut, key as address, value as UxOut.
 type addressUx struct {
 	bkt *bucket.Bucket
 }

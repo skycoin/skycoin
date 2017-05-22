@@ -139,7 +139,7 @@ func (self *DHT) Start() {
 
 }
 
-//run in seperate goroutine for constantly flushing
+//run in separate goroutine for constantly flushing
 func (self *DHT) Listen() {
 
 	if self.Config.Disabled {

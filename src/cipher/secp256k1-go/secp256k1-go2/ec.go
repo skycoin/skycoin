@@ -1,4 +1,4 @@
-package secp256k1_go
+package secp256k1go
 
 import (
 	//"encoding/hex"
@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func ecdsa_verify(pubkey, sig, msg []byte) int {
+func ecdsaVerify(pubkey, sig, msg []byte) int {
 	var m Number
 	var s Signature
 	m.SetBytes(msg)
@@ -32,10 +32,12 @@ func ecdsa_verify(pubkey, sig, msg []byte) int {
 	return 1
 }
 
+// Verify verifies ecdsa
 func Verify(k, s, m []byte) bool {
-	return ecdsa_verify(k, s, m) == 1
+	return ecdsaVerify(k, s, m) == 1
 }
 
+// DecompressPoint decompresses point
 func DecompressPoint(X []byte, off bool, Y []byte) {
 	var rx, ry, c, x2, x3 Field
 	rx.SetB32(X)
@@ -103,18 +105,18 @@ func RecoverPublicKey(r, s, h []byte, recid int, pubkey *XY) bool {
 }
 */
 
-//nil on error
-//returns error code
-func RecoverPublicKey(sig_byte []byte, h []byte, recid int) ([]byte, int) {
+// RecoverPublicKey nil on error
+// returns error code
+func RecoverPublicKey(sigByte []byte, h []byte, recid int) ([]byte, int) {
 
 	var pubkey XY
 
-	if len(sig_byte) != 64 {
+	if len(sigByte) != 64 {
 		log.Panic("must pass in 64 byte pubkey")
 	}
 
 	var sig Signature
-	sig.ParseBytes(sig_byte[0:64])
+	sig.ParseBytes(sigByte[0:64])
 
 	//var sig Signature
 	var msg Number
@@ -143,7 +145,7 @@ func RecoverPublicKey(sig_byte []byte, h []byte, recid int) ([]byte, int) {
 	return pubkey.Bytes(), 1
 }
 
-// Standard EC multiplacation k(xy)
+// Multiply standard EC multiplacation k(xy)
 // xy - is the standarized public key format (33 or 65 bytes long)
 // out - should be the buffer for 33 bytes (1st byte will be set to either 02 or 03)
 // TODO: change out to return type
@@ -187,7 +189,7 @@ func BaseMultiply2(k []byte) []byte {
 */
 
 //test assumptions
-func _pubkey_test(pk XY) {
+func _pubkeyTest(pk XY) {
 
 	if pk.IsValid() == false {
 		log.Panic("IMPOSSIBLE3: pubkey invalid")
@@ -205,6 +207,7 @@ func _pubkey_test(pk XY) {
 	}
 }
 
+// BaseMultiply base multiply
 func BaseMultiply(k []byte) []byte {
 	var r XYZ
 	var n Number
@@ -216,12 +219,12 @@ func BaseMultiply(k []byte) []byte {
 		log.Panic() //should not occur
 	}
 
-	_pubkey_test(pk)
+	_pubkeyTest(pk)
 
 	return pk.Bytes()
 }
 
-// out = G*k + xy
+// BaseMultiplyAdd out = G*k + xy
 // TODO: switch to returning output as []byte
 // nil on error
 // 33 byte out
@@ -237,11 +240,11 @@ func BaseMultiplyAdd(xy, k []byte) []byte {
 	r.AddXY(&r, &pk)
 	pk.SetXYZ(&r)
 
-	_pubkey_test(pk)
+	_pubkeyTest(pk)
 	return pk.Bytes()
 }
 
-//returns nil on failure
+// GeneratePublicKey returns nil on failure
 //crash rather than fail
 func GeneratePublicKey(k []byte) []byte {
 
@@ -266,14 +269,14 @@ func GeneratePublicKey(k []byte) []byte {
 	if pk.IsValid() == false {
 		log.Panic() //should not occur
 	}
-	_pubkey_test(pk)
+	_pubkeyTest(pk)
 	return pk.Bytes()
 }
 
-//1 on success
-//must not be zero
+// SeckeyIsValid 1 on success
+// must not be zero
 // must not be negative
-//must be less than order of curve
+// must be less than order of curve
 func SeckeyIsValid(seckey []byte) int {
 	if len(seckey) != 32 {
 		log.Panic()
@@ -292,19 +295,19 @@ func SeckeyIsValid(seckey []byte) int {
 	return 1
 }
 
-//returns 1 on success
+// PubkeyIsValid returns 1 on success
 func PubkeyIsValid(pubkey []byte) int {
 	if len(pubkey) != 33 {
 		log.Panic() //do not permit invalid length inputs
 		return -2
 	}
-	var pub_test XY
-	err := pub_test.ParsePubkey(pubkey)
+	var pubTest XY
+	err := pubTest.ParsePubkey(pubkey)
 	if err == false {
 		//log.Panic("PubkeyIsValid, ERROR: pubkey parse fail, bad pubkey from private key")
 		return -1
 	}
-	if bytes.Equal(pub_test.Bytes(), pubkey) == false {
+	if bytes.Equal(pubTest.Bytes(), pubkey) == false {
 		log.Panic("pubkey parses but serialize/deserialize roundtrip fails")
 	}
 	//this fails

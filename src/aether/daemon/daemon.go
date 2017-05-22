@@ -4,18 +4,17 @@ import (
 	"errors"
 	"fmt"
 
-	logging "github.com/op/go-logging"
-	"github.com/skycoin/skycoin/src/util"
-	//"github.com/skycoin/skycoin/src/aether/daemon/pex"
 	"log"
 	"net"
-	//"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	gnet "github.com/skycoin/skycoin/src/aether" //use local gnet
-	"github.com/skycoin/skycoin/src/aether/dht"  //dht library
+	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util"
+
+	"github.com/skycoin/skycoin/src/aether/dht"       //dht library
+	gnet "github.com/skycoin/skycoin/src/aether/gnet" //use local gnet
 )
 
 /*
@@ -56,28 +55,25 @@ import (
 	- have DHT query and callback for peer exchange
 	- make connection to service in introduction message
 */
-
 var (
-	// DisconnectReasons
-	DisconnectInvalidVersion gnet.DisconnectReason = errors.New(
-		"Invalid version")
-	DisconnectIntroductionTimeout gnet.DisconnectReason = errors.New(
-		"Version timeout")
-	DisconnectIsBlacklisted gnet.DisconnectReason = errors.New(
-		"Blacklisted")
-	DisconnectSelf gnet.DisconnectReason = errors.New(
-		"Self connect")
-	DisconnectConnectedTwice gnet.DisconnectReason = errors.New(
-		"Already connected")
+	// ErrDisconneInvalidVersion invalid version error
+	ErrDisconnectInvalidVersion gnet.DisconnectReason = errors.New("Invalid version")
+	// ErrDisconnectIntroductionTimeout version time out
+	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
+	// ErrDisconnectIsBlacklisted connection is blacklisted
+	ErrDisconnectIsBlacklisted gnet.DisconnectReason = errors.New("Blacklisted")
+	// ErrDisconnectSelf self connection
+	ErrDisconnectSelf gnet.DisconnectReason = errors.New("Self connect")
+	// ErrDisconnectConnectedTwice connect twice
+	ErrDisconnectConnectedTwice gnet.DisconnectReason = errors.New("Already connected")
 
-	DisconnectOtherError gnet.DisconnectReason = errors.New(
-		"Incomprehensible error")
+	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
 
-	// Blacklist a peer when they get disconnected for these
+	// BlacklistOffenses a peer when they get disconnected for these
 	// DisconnectReasons
 	BlacklistOffenses = map[gnet.DisconnectReason]time.Duration{
-		DisconnectSelf:                      time.Hour * 24,
-		DisconnectIntroductionTimeout:       time.Hour,
+		ErrDisconnectSelf:                   time.Hour * 24,
+		ErrDisconnectIntroductionTimeout:    time.Hour,
 		gnet.DisconnectInvalidMessageLength: time.Hour * 8,
 		gnet.DisconnectMalformedMessage:     time.Hour * 8,
 		gnet.DisconnectUnknownMessage:       time.Hour * 8,
@@ -86,14 +82,14 @@ var (
 	logger = logging.MustGetLogger("skycoin.daemon")
 )
 
-// Subsystem configurations
+// Config Subsystem configurations
 type Config struct {
 	Daemon DaemonConfig
 	Peers  PeersConfig
 	DHT    dht.DHTConfig //useless after config!
 }
 
-// Returns a Config with defaults set
+// NewConfig Returns a Config with defaults set
 func NewConfig() Config {
 	return Config{
 		Daemon: NewDaemonConfig(),
@@ -102,8 +98,8 @@ func NewConfig() Config {
 	}
 }
 
-func (self *Config) preprocess() Config {
-	config := *self
+func (cfg *Config) preprocess() Config {
+	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		config.Daemon.Address = LocalhostIP()
 		config.DHT.Disabled = true
@@ -127,7 +123,7 @@ func (self *Config) preprocess() Config {
 	return config
 }
 
-// Configuration for the Daemon
+// DaemonConfig Configuration for the Daemon
 type DaemonConfig struct {
 	// Application version. TODO -- manage version better
 	Version int32
@@ -160,6 +156,7 @@ type DaemonConfig struct {
 	LocalhostOnly bool
 }
 
+// NewDaemonConfig create DaemonConfig
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
 		Version:                    3,
@@ -178,7 +175,7 @@ func NewDaemonConfig() DaemonConfig {
 	}
 }
 
-// Stateful properties of the daemon
+// Daemon Stateful properties of the daemon
 type Daemon struct {
 	// Daemon configuration
 	Config DaemonConfig
@@ -201,7 +198,7 @@ type Daemon struct {
 	connectionErrors chan ConnectionError
 }
 
-// Returns a Daemon with primitives allocated
+// NewDaemon returns a Daemon with primitives allocated
 func NewDaemon(config Config) *Daemon {
 	config = config.preprocess()
 	// c.DHT.address = c.Daemon.Address
@@ -229,10 +226,10 @@ func NewDaemon(config Config) *Daemon {
 	}
 
 	//gnet set connection pool
-	gnet_config := gnet.NewConfig()
-	gnet_config.Port = uint16(d.Config.Port) //set listening port
-	gnet_config.Address = d.Config.Address
-	d.Pool = gnet.NewConnectionPool(gnet_config)
+	gnetConfig := gnet.NewConfig()
+	gnetConfig.Port = uint16(d.Config.Port) //set listening port
+	gnetConfig.Address = d.Config.Address
+	d.Pool = gnet.NewConnectionPool(gnetConfig)
 
 	//service manager
 	d.ServiceManager = gnet.NewServiceManager(d.Pool)
@@ -242,32 +239,32 @@ func NewDaemon(config Config) *Daemon {
 	return d
 }
 
-// Generated when a client connects
+// ConnectEvent generated when a client connects
 type ConnectEvent struct {
 	Addr      string
 	Solicited bool
 }
 
-// Represent a failure to connect/dial a connection, with context
+// ConnectionError represent a failure to connect/dial a connection, with context
 type ConnectionError struct {
 	Addr  string
 	Error error
 }
 
-// Terminates all subsystems safely.  To stop the Daemon run loop, send a value
+// Shutdown terminates all subsystems safely.  To stop the Daemon run loop, send a value
 // over the quit channel provided to Init.  The Daemon run lopp must be stopped
 // before calling this function.
-func (self *Daemon) Shutdown() {
-	if self.DHT != nil {
-		self.DHT.Shutdown()
+func (dm *Daemon) Shutdown() {
+	if dm.DHT != nil {
+		dm.DHT.Shutdown()
 	}
 
-	self.Peers.Shutdown()
-	self.Pool.Shutdown() //send disconnect message first
+	dm.Peers.Shutdown()
+	dm.Pool.Shutdown() //send disconnect message first
 
-	self.Pool = nil
-	self.DHT = nil
-	self.Peers = nil
+	dm.Pool = nil
+	dm.DHT = nil
+	dm.Peers = nil
 }
 
 // Runs initialization that must complete before the Start goroutine
@@ -282,29 +279,29 @@ func (self *Daemon) Shutdown() {
 //	}
 //}
 
-// Main loop for peer/connection management. Send anything to quit to shut it
+// Start Main loop for peer/connection management. Send anything to quit to shut it
 // down
-func (self *Daemon) Start(quit chan int) {
-	if !self.Config.DisableIncomingConnections {
+func (dm *Daemon) Start(quit chan int) {
+	if !dm.Config.DisableIncomingConnections {
 		//listen for incoming
-		if err := self.Pool.StartListen(); err != nil {
+		if err := dm.Pool.StartListen(); err != nil {
 			log.Panic(err)
 		}
 		//goroutine for accepting incoming
-		go self.Pool.AcceptConnections() //listen for connections
+		go dm.Pool.AcceptConnections() //listen for connections
 	}
 
 	//fix this, should poll without delay
 	messageHandlingTicker := time.Tick(time.Millisecond * 10)
 
 	//peer exchange tickers
-	clearOldPeersTicker := time.Tick(self.Peers.Config.CullRate)
+	clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
 	//requestPeersTicker := time.Tick(self.Peers.Config.RequestRate)
-	updateBlacklistTicker := time.Tick(self.Peers.Config.UpdateBlacklistRate)
+	updateBlacklistTicker := time.Tick(dm.Peers.Config.UpdateBlacklistRate)
 
 	//daemon tickers
 	//privateConnectionsTicker := time.Tick(self.Config.PrivateRate)
-	cullInvalidTicker := time.Tick(self.Config.CullInvalidRate)
+	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
 	//outgoingConnectionsTicker := time.Tick(self.Config.OutgoingRate)
 
 main:
@@ -317,8 +314,8 @@ main:
 
 		// Flush expired blacklisted peers
 		case <-updateBlacklistTicker:
-			if !self.Peers.Config.Disabled {
-				self.Peers.Peers.Blacklist.Refresh()
+			if !dm.Peers.Config.Disabled {
+				dm.Peers.Peers.Blacklist.Refresh()
 			}
 		// Request peers via PEX
 		//case <-requestPeersTicker:
@@ -326,37 +323,37 @@ main:
 
 		// Remove peers we haven't seen in a while
 		case <-clearOldPeersTicker:
-			if !self.Peers.Config.Disabled {
-				self.Peers.Peers.Peerlist.ClearOld(self.Peers.Config.Expiration)
+			if !dm.Peers.Config.Disabled {
+				dm.Peers.Peers.Peerlist.ClearOld(dm.Peers.Config.Expiration)
 			}
 
 		// Module: Pool
 
 		//process incoming messages
 		case <-messageHandlingTicker:
-			if !self.Config.DisableNetworking {
-				self.Pool.HandleMessages()
+			if !dm.Config.DisableNetworking {
+				dm.Pool.HandleMessages()
 			}
 		// Process disconnections
-		case r := <-self.Pool.DisconnectQueue:
-			if self.Config.DisableNetworking {
+		case r := <-dm.Pool.DisconnectQueue:
+			if dm.Config.DisableNetworking {
 				log.Panic("There should be nothing in the DisconnectQueue")
 			}
-			self.Pool.HandleDisconnectEvent(r)
+			dm.Pool.HandleDisconnectEvent(r)
 
 		//Module: Daemon
 
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
-			if !self.Config.DisableNetworking {
-				self.cullInvalidConnections()
+			if !dm.Config.DisableNetworking {
+				dm.cullInvalidConnections()
 			}
 
-		case r := <-self.connectionErrors:
-			if self.Config.DisableNetworking {
+		case r := <-dm.connectionErrors:
+			if dm.Config.DisableNetworking {
 				log.Panic("There should be no connection errors")
 			}
-			self.handleConnectionError(r)
+			dm.handleConnectionError(r)
 
 		case <-quit:
 			logger.Info("Breaking From Daemon Main")
@@ -365,10 +362,10 @@ main:
 	}
 }
 
-// Returns the ListenPort for a given address.  If no port is found, 0 is
+// GetListenPort returns the ListenPort for a given address.  If no port is found, 0 is
 // returned
 //this might be broken now
-func (self *Daemon) GetListenPort(addr string) uint16 {
+func (dm *Daemon) GetListenPort(addr string) uint16 {
 	_, p, err := SplitAddr(addr)
 	if err != nil {
 		logger.Error("GetListenPort received invalid addr: %v", err)
@@ -377,32 +374,32 @@ func (self *Daemon) GetListenPort(addr string) uint16 {
 	return p
 }
 
-//connects to a particular service on daemon
-func (d *Daemon) ConnectToAddr(addr string, service *gnet.Service) error {
+// ConnectToAddr connects to a particular service on daemon
+func (dm *Daemon) ConnectToAddr(addr string, service *gnet.Service) error {
 
 	//addr should be ip:port and ip/port must be valid
 	//if its not, the connect attempt will just fail
 
 	//connected to daemon, connect to service
-	if d.Pool.Addresses[addr] != nil {
-		c := d.Pool.Addresses[addr]
-		d.ConnectToService(c, service)
+	if dm.Pool.Addresses[addr] != nil {
+		c := dm.Pool.Addresses[addr]
+		dm.ConnectToService(c, service)
 		return nil
 	}
 	//not connected
-	if d.Pool.Addresses[addr] == nil {
+	if dm.Pool.Addresses[addr] == nil {
 		//only the first service connection triggers connection attempt
-		if d.pendingConnections[addr] == nil {
-			d.pendingConnections[addr] = make([]*gnet.Service, 0)
+		if dm.pendingConnections[addr] == nil {
+			dm.pendingConnections[addr] = make([]*gnet.Service, 0)
 			go func() {
-				_, err := d.Pool.Connect(addr)
+				_, err := dm.Pool.Connect(addr)
 				if err != nil {
-					d.connectionErrors <- ConnectionError{addr, err}
+					dm.connectionErrors <- ConnectionError{addr, err}
 				}
 			}()
 		}
 		if service != nil {
-			d.pendingConnections[addr] = append(d.pendingConnections[addr], service)
+			dm.pendingConnections[addr] = append(dm.pendingConnections[addr], service)
 		}
 		return nil
 	}
@@ -410,38 +407,38 @@ func (d *Daemon) ConnectToAddr(addr string, service *gnet.Service) error {
 }
 
 // We remove a peer from the Pex if we failed to connect
-func (self *Daemon) handleConnectionError(c ConnectionError) {
+func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	logger.Debug("Removing %s because failed to connect: %v", c.Addr,
 		c.Error)
-	delete(self.pendingConnections, c.Addr)
-	self.Peers.RemovePeer(c.Addr)
+	delete(dm.pendingConnections, c.Addr)
+	dm.Peers.RemovePeer(c.Addr)
 }
 
 // Removes unsolicited connections who haven't sent a version
 
-func (self *Daemon) cullInvalidConnections() {
+func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
 	now := util.Now()
-	for a, t := range self.ExpectingIntroductions {
+	for a, t := range dm.ExpectingIntroductions {
 		// Forget about anyone that already disconnected
-		if self.Pool.Addresses[a] == nil {
-			delete(self.ExpectingIntroductions, a)
+		if dm.Pool.Addresses[a] == nil {
+			delete(dm.ExpectingIntroductions, a)
 			continue
 		}
 		// Remove anyone that fails to send a version within introductionWait time
-		if t.Add(self.Config.IntroductionWait).Before(now) {
+		if t.Add(dm.Config.IntroductionWait).Before(now) {
 			logger.Info("Removing %s for not sending introduction", a)
-			delete(self.ExpectingIntroductions, a)
-			self.Pool.Disconnect(self.Pool.Addresses[a],
-				DisconnectIntroductionTimeout)
-			self.Peers.RemovePeer(a)
+			delete(dm.ExpectingIntroductions, a)
+			dm.Pool.Disconnect(dm.Pool.Addresses[a],
+				ErrDisconnectIntroductionTimeout)
+			dm.Peers.RemovePeer(a)
 		}
 	}
 }
 
 // Called when a ConnectEvent is processed off the onConnectEvent channel
-func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
+func (dm *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 	a := c.Addr()
 
 	if solicited {
@@ -450,51 +447,51 @@ func (self *Daemon) onConnect(c *gnet.Connection, solicited bool) {
 		logger.Info("Received unsolicited connection to %s", a)
 	}
 
-	serviceConList := self.pendingConnections[a] //list of services to connect to
-	delete(self.pendingConnections, a)
+	serviceConList := dm.pendingConnections[a] //list of services to connect to
+	delete(dm.pendingConnections, a)
 
-	blacklisted := self.Peers.Peers.IsBlacklisted(a)
+	blacklisted := dm.Peers.Peers.IsBlacklisted(a)
 	if blacklisted {
 		logger.Info("%s is blacklisted, disconnecting", a)
-		self.Pool.Disconnect(c, DisconnectIsBlacklisted)
+		dm.Pool.Disconnect(c, ErrDisconnectIsBlacklisted)
 		return
 	}
 
-	if self.Pool.Addresses[a] != nil {
+	if dm.Pool.Addresses[a] != nil {
 		logger.Info("Already connected to %s, disconnecting", a)
-		self.Pool.Disconnect(c, DisconnectConnectedTwice)
+		dm.Pool.Disconnect(c, ErrDisconnectConnectedTwice)
 	}
 
 	if solicited {
-		self.OutgoingConnections[a] = c
+		dm.OutgoingConnections[a] = c
 	}
-	self.ExpectingIntroductions[a] = util.Now()
+	dm.ExpectingIntroductions[a] = util.Now()
 	logger.Debug("Sending introduction message to %s", a)
 
-	m := NewIntroductionMessage(MirrorConstant, self.Config.Version,
-		self.Pool.Config.Port)
-	self.Service.Send(c, m)
+	m := NewIntroductionMessage(MirrorConstant, dm.Config.Version,
+		dm.Pool.Config.Port)
+	dm.Service.Send(c, m)
 
 	//send connection message to each service in list
 	for _, service := range serviceConList {
-		self.ConnectToService(c, service)
+		dm.ConnectToService(c, service)
 	}
 }
 
 // Triggered when an gnet.Connection terminates. Disconnect events are not
 // pushed to a separate channel, because disconnects are already processed
 // by a queue in the daemon.Run() select{}.
-func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
+func (dm *Daemon) onGnetDisconnect(c *gnet.Connection,
 	reason gnet.DisconnectReason) {
 
 	a := c.Addr()
 	logger.Info("%s disconnected because: %v", a, reason)
 	duration, exists := BlacklistOffenses[reason]
 	if exists {
-		self.Peers.Peers.AddBlacklistEntry(a, duration)
+		dm.Peers.Peers.AddBlacklistEntry(a, duration)
 	}
-	delete(self.OutgoingConnections, a)
-	delete(self.ExpectingIntroductions, a)
+	delete(dm.OutgoingConnections, a)
+	delete(dm.ExpectingIntroductions, a)
 }
 
 // Triggered when an gnet.Connection is connected
@@ -502,7 +499,7 @@ func (self *Daemon) onGnetDisconnect(c *gnet.Connection,
 //	self.onConnectEvent <- ConnectEvent{Addr: c.Addr(), Solicited: solicited}
 //}
 
-// Returns the address for localhost on the machine
+// LocalhostIP returns the address for localhost on the machine
 func LocalhostIP() string {
 	tt, err := net.Interfaces()
 	if err != nil {
@@ -530,7 +527,7 @@ func LocalhostIP() string {
 //	return net.ParseIP(addr).IsLoopback()
 //}
 
-// Splits an ip:port string to ip, port
+// SplitAddr splits an ip:port string to ip, port
 func SplitAddr(addr string) (string, uint16, error) {
 	pts := strings.Split(addr, ":")
 	if len(pts) != 2 {

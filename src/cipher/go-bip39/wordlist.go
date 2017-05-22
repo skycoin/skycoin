@@ -4,10 +4,11 @@ import (
 	"strings"
 )
 
-// The wordlist to use
+// WordList The wordlist to use
 var WordList = EnglishWordList
 
-var ReverseWordMap map[string]int = map[string]int{}
+// ReverseWordMap reverse word map
+var ReverseWordMap = map[string]int{}
 
 func init() {
 	for i, v := range WordList {
@@ -15,7 +16,7 @@ func init() {
 	}
 }
 
-// Language-specific wordlists
+// EnglishWordList Language-specific wordlists
 var EnglishWordList = strings.Split(englishWordList, "\n")
 var englishWordList = `abandon
 ability

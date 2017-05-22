@@ -8,6 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 )
 
+// PeersConfig config for peers
 type PeersConfig struct {
 	// Folder where peers database should be saved
 	DataDirectory string
@@ -29,6 +30,7 @@ type PeersConfig struct {
 	Disabled bool
 }
 
+// NewPeersConfig creates peers config
 func NewPeersConfig() PeersConfig {
 	return PeersConfig{
 		DataDirectory:       "./",
@@ -43,12 +45,14 @@ func NewPeersConfig() PeersConfig {
 	}
 }
 
+// Peers maintains the config and peers instance
 type Peers struct {
 	Config PeersConfig
 	// Peer list
 	Peers *pex.Pex
 }
 
+// NewPeers creates peers
 func NewPeers(c PeersConfig) *Peers {
 	if c.Disabled {
 		logger.Info("PEX is disabled")
@@ -59,14 +63,14 @@ func NewPeers(c PeersConfig) *Peers {
 	}
 }
 
-//do "default_peers file"
-//read file, write, if does not exist
+// DefaultConnections do "default_peers file"
+// read file, write, if does not exist
 var DefaultConnections = []string{}
 
 // Init configures the pex.PeerList and load local data
-func (self *Peers) Init() {
-	peers := pex.NewPex(self.Config.Max)
-	err := peers.Load(self.Config.DataDirectory)
+func (ps *Peers) Init() {
+	peers := pex.NewPex(ps.Config.Max)
+	err := peers.Load(ps.Config.DataDirectory)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			logger.Notice("Failed to load peer database")
@@ -74,7 +78,7 @@ func (self *Peers) Init() {
 		}
 	}
 	logger.Debug("Init peers")
-	peers.AllowLocalhost = self.Config.AllowLocalhost
+	peers.AllowLocalhost = ps.Config.AllowLocalhost
 
 	//Boot strap peers
 	for _, addr := range DefaultConnections {
@@ -86,19 +90,19 @@ func (self *Peers) Init() {
 		peers.SetTrustState(addr, true)
 	}
 
-	self.Peers = peers
-	self.Peers.Save(self.Config.DataDirectory)
+	ps.Peers = peers
+	ps.Peers.Save(ps.Config.DataDirectory)
 }
 
 // Shutdown the PeerList
-func (self *Peers) Shutdown() error {
-	if self.Peers == nil {
+func (ps *Peers) Shutdown() error {
+	if ps.Peers == nil {
 		return nil
 	}
 
 	logger.Debug("Saving Peer List")
 
-	err := self.Peers.Save(self.Config.DataDirectory)
+	err := ps.Peers.Save(ps.Config.DataDirectory)
 	if err != nil {
 		logger.Warning("Failed to save peer database")
 		logger.Warning("Reason: %v", err)
@@ -108,17 +112,17 @@ func (self *Peers) Shutdown() error {
 	return nil
 }
 
-// Removes a peer, if not private
-func (self *Peers) RemovePeer(a string) {
-	self.Peers.RemovePeer(a)
+// RemovePeer removes a peer, if not private
+func (ps *Peers) RemovePeer(a string) {
+	ps.Peers.RemovePeer(a)
 }
 
 // Requests peers from our connections
-func (self *Peers) requestPeers(pool *Pool) {
-	if self.Config.Disabled {
+func (ps *Peers) requestPeers(pool *Pool) {
+	if ps.Config.Disabled {
 		return
 	}
-	if self.Peers.Full() {
+	if ps.Peers.Full() {
 		return
 	}
 	m := NewGetPeersMessage()

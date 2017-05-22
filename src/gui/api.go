@@ -1,4 +1,4 @@
-// Api-related information for the GUI
+// Package gui Api-related information for the GUI
 package gui
 
 import (
@@ -14,13 +14,14 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-//@todo remove duplicate struct of src/wallet/deterministic.go Wallet struct
+// Wallet @todo remove duplicate struct of src/wallet/deterministic.go Wallet struct
 // when that will be adopted to have many entries
 type Wallet struct {
 	Meta    map[string]string `json:"meta"`
 	Entries []KeyEntry        `json:"entries"`
 }
 
+// KeyEntry wallet entry
 type KeyEntry struct {
 	Address string `json:"address"`
 	Public  string `json:"public_key"`
@@ -41,7 +42,7 @@ var (
 func apiCreateAddressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var seed string = r.FormValue("seed")
+		var seed = r.FormValue("seed")
 		var err error
 
 		if seed == "" {
@@ -120,7 +121,8 @@ func getKeyEntry(pub cipher.PubKey, sec cipher.SecKey) KeyEntry {
 	return e
 }
 
-func RegisterApiHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+// RegisterAPIHandlers registers api handlers
+func RegisterAPIHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  Generates wallet bitcoin/skycoin addresses and seckey,pubkey
 	// GET/POST
 	// 	bc - bool - is bitcoin type (optional) - default: true

@@ -19,30 +19,30 @@ func init() {
 func TestNewMessageContext(t *testing.T) {
 	c := &Connection{}
 	mc := NewMessageContext(c)
-	assert.Equal(t, mc.ConnID, c.Id)
+	assert.Equal(t, mc.ConnID, c.ID)
 }
 
 func TestRegisterMessage(t *testing.T) {
 	EraseMessages()
 	RegisterMessage(DummyPrefix, DummyMessage{})
-	assert.Equal(t, len(MessageIdMap), 1)
-	assert.Equal(t, len(MessageIdReverseMap), 1)
-	assert.NotNil(t, MessageIdReverseMap[DummyPrefix])
+	assert.Equal(t, len(MessageIDMap), 1)
+	assert.Equal(t, len(MessageIDReverseMap), 1)
+	assert.NotNil(t, MessageIDReverseMap[DummyPrefix])
 
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
-	assert.Equal(t, len(MessageIdMap), 2)
-	assert.Equal(t, len(MessageIdReverseMap), 2)
-	assert.NotNil(t, MessageIdReverseMap[ErrorPrefix])
+	assert.Equal(t, len(MessageIDMap), 2)
+	assert.Equal(t, len(MessageIDReverseMap), 2)
+	assert.NotNil(t, MessageIDReverseMap[ErrorPrefix])
 }
 
 func TestEraseMessages(t *testing.T) {
 	EraseMessages()
 	RegisterMessage(DummyPrefix, DummyMessage{})
-	assert.Equal(t, len(MessageIdMap), 1)
-	assert.Equal(t, len(MessageIdReverseMap), 1)
+	assert.Equal(t, len(MessageIDMap), 1)
+	assert.Equal(t, len(MessageIDReverseMap), 1)
 	EraseMessages()
-	assert.Equal(t, len(MessageIdMap), 0)
-	assert.Equal(t, len(MessageIdReverseMap), 0)
+	assert.Equal(t, len(MessageIDMap), 0)
+	assert.Equal(t, len(MessageIDReverseMap), 0)
 }
 
 func TestVerifyMessages(t *testing.T) {
@@ -115,14 +115,14 @@ func TestVerifyMessagesCorruptMap(t *testing.T) {
 	// MessageIdMap circumvented
 	EraseMessages()
 	mtype := reflect.TypeOf(DummyMessage{})
-	MessageIdMap[mtype] = DummyPrefix
+	MessageIDMap[mtype] = DummyPrefix
 	assert.Panics(t, VerifyMessages)
-	delete(MessageIdMap, mtype)
+	delete(MessageIDMap, mtype)
 	// MessageIdReverseMap circumvented
 	EraseMessages()
-	MessageIdReverseMap[DummyPrefix] = mtype
+	MessageIDReverseMap[DummyPrefix] = mtype
 	assert.Panics(t, VerifyMessages)
-	delete(MessageIdReverseMap, DummyPrefix)
+	delete(MessageIDReverseMap, DummyPrefix)
 }
 
 func TestMessagePrefixFromString(t *testing.T) {
@@ -149,7 +149,7 @@ type DummyMessage struct{}
 
 var DummyPrefix = MessagePrefix{'D', 'U', 'M', 'Y'}
 
-func (self *DummyMessage) Handle(context *MessageContext, x interface{}) error {
+func (dm *DummyMessage) Handle(context *MessageContext, x interface{}) error {
 	return nil
 }
 
@@ -161,7 +161,7 @@ type ErrorMessage struct{}
 
 var ErrorPrefix = MessagePrefix{'E', 'R', 'R', 0x00}
 
-func (self *ErrorMessage) Handle(context *MessageContext, x interface{}) error {
+func (em *ErrorMessage) Handle(context *MessageContext, x interface{}) error {
 	return errors.New("Bad")
 }
 
@@ -175,7 +175,7 @@ type ByteMessage struct {
 
 var BytePrefix = MessagePrefix{'B', 'Y', 'T', 'E'}
 
-func (self *ByteMessage) Handle(c *MessageContext, x interface{}) error {
+func (bm *ByteMessage) Handle(c *MessageContext, x interface{}) error {
 	return nil
 }
 

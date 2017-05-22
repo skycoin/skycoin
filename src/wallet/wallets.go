@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
+// Wallets wallets map
 type Wallets map[string]*Wallet
 
 // LoadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
@@ -129,6 +130,7 @@ func (wlts *Wallets) Add(w Wallet) error {
 	return nil
 }
 
+// Get returns wallet by wallet id
 func (wlts *Wallets) Get(wltID string) (Wallet, bool) {
 	if w, ok := (*wlts)[wltID]; ok {
 		return *w, true
@@ -136,6 +138,7 @@ func (wlts *Wallets) Get(wltID string) (Wallet, bool) {
 	return Wallet{}, false
 }
 
+// NewAddresses creates num addresses in given wallet
 func (wlts *Wallets) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
 	if w, ok := (*wlts)[wltID]; ok {
 		return w.GenerateAddresses(num), nil
@@ -143,8 +146,8 @@ func (wlts *Wallets) NewAddresses(wltID string, num int) ([]cipher.Address, erro
 	return nil, fmt.Errorf("wallet: %v does not exist", wltID)
 }
 
-//check for name conflicts!
-//resolve conflicts for saving wallets who have different names
+// Save check for name conflicts!
+// resolve conflicts for saving wallets who have different names
 func (wlts Wallets) Save(dir string) map[string]error {
 	errs := make(map[string]error)
 	for id, w := range wlts {
@@ -178,6 +181,7 @@ func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
 	return rw
 }
 
+// ToReadable converts Wallets to *ReadableWallet array
 func (wlts Wallets) ToReadable() []*ReadableWallet {
 	return wlts.toReadable(NewReadableWallet)
 }

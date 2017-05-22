@@ -20,28 +20,28 @@ import (
 type DisconnectReason error
 
 var (
-	// DisconnectReadFailed also includes a remote closed socket
-	DisconnectReadFailed DisconnectReason = errors.New(
-		"Read failed")
-	DisconnectWriteFailed DisconnectReason = errors.New(
-		"Write failed")
-	DisconnectSetReadDeadlineFailed = errors.New(
-		"SetReadDeadline failed")
-	DisconnectInvalidMessageLength DisconnectReason = errors.New(
-		"Invalid message length")
-	DisconnectMalformedMessage DisconnectReason = errors.New(
-		"Malformed message body")
-	DisconnectUnknownMessage DisconnectReason = errors.New(
-		"Unknown message ID")
-	DisconnectWriteQueueFull DisconnectReason = errors.New(
-		"Write queue full")
-	DisconnectUnexpectedError DisconnectReason = errors.New(
-		"Unexpected error encountered")
+	// ErrDisconnectReadFailed also includes a remote closed socket
+	ErrDisconnectReadFailed DisconnectReason = errors.New("Read failed")
+	// ErrDisconnectWriteFailed write faile
+	ErrDisconnectWriteFailed DisconnectReason = errors.New("Write failed")
+	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
+	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
+	// ErrDisconnectInvalidMessageLength invalid message length
+	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
+	// ErrDisconnectMalformedMessage malformed message
+	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
+	// ErrDisconnectUnknownMessage unknow message
+	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
+	// ErrDisconnectWriteQueueFull write queue is full
+	ErrDisconnectWriteQueueFull DisconnectReason = errors.New("Write queue full")
+	// ErrDisconnectUnexpectedError  unexpected error
+	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
 
 	// Logger
 	logger = util.MustGetLogger("gnet")
 )
 
+// Config gnet config
 type Config struct {
 	// Address to listen on. Leave empty for arbitrary assignment
 	Address string
@@ -100,7 +100,7 @@ const (
 // Connection is stored by the ConnectionPool
 type Connection struct {
 	// Key in ConnectionPool.Pool
-	Id int
+	ID int
 	// TCP connection
 	Conn net.Conn
 	// Message buffer
@@ -119,7 +119,7 @@ type Connection struct {
 // NewConnection creates a new Connection tied to a ConnectionPool
 func NewConnection(pool *ConnectionPool, id int, conn net.Conn, writeQueueSize int, solicited bool) *Connection {
 	return &Connection{
-		Id:             id,
+		ID:             id,
 		Conn:           conn,
 		Buffer:         &bytes.Buffer{},
 		ConnectionPool: pool,
@@ -145,12 +145,13 @@ func (conn *Connection) Close() {
 	conn.Conn.Close()
 }
 
-// Triggered on client disconnect
+// DisconnectCallback triggered on client disconnect
 type DisconnectCallback func(addr string, reason DisconnectReason)
 
-// Triggered on client connect
+// ConnectCallback triggered on client connect
 type ConnectCallback func(addr string, solicited bool)
 
+// ConnectionPool connection pool
 type ConnectionPool struct {
 	// Configuration parameters
 	Config Config
@@ -163,7 +164,7 @@ type ConnectionPool struct {
 	// User-defined state to be passed into message handlers
 	messageState interface{}
 	// Connection ID counter
-	connId int
+	connID int
 	// Listening connection
 	listener net.Listener
 	// member variables access channel
@@ -265,11 +266,11 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Conne
 			err = fmt.Errorf("Already connected to %s", a)
 			return
 		}
-		pool.connId++
-		nc = NewConnection(pool, pool.connId, conn,
+		pool.connID++
+		nc = NewConnection(pool, pool.connID, conn,
 			pool.Config.ConnectionWriteQueueSize, solicited)
 
-		pool.pool[nc.Id] = nc
+		pool.pool[nc.ID] = nc
 		pool.addresses[a] = nc
 	})
 
@@ -294,7 +295,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	}
 
 	var c *Connection
-	reason := DisconnectUnexpectedError
+	reason := ErrDisconnectUnexpectedError
 	defer func() {
 		logger.Debug("End connection handler of %s", conn.RemoteAddr())
 		// notify to exist the receive message loop
@@ -325,14 +326,14 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 			sr := newSendResult(c.Addr(), m, err)
 			pool.SendResults <- sr
 			if err != nil {
-				reason = DisconnectWriteFailed
+				reason = ErrDisconnectWriteFailed
 				return
 			}
 			pool.updateLastSent(c.Addr(), Now())
 		case msg := <-msgChan:
 			dc, err := pool.receiveMessage(c, msg)
 			if err != nil {
-				reason = DisconnectMalformedMessage
+				reason = ErrDisconnectMalformedMessage
 				return
 			}
 			if dc != nil {
@@ -362,7 +363,7 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 			deadline = time.Now().Add(timeout)
 		}
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
-			rerr = DisconnectSetReadDeadlineFailed
+			rerr = ErrDisconnectSetReadDeadlineFailed
 			break
 		}
 
@@ -408,7 +409,7 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	c, err := reader.Read(buf)
 	if err != nil {
-		return nil, DisconnectReadFailed
+		return nil, ErrDisconnectReadFailed
 	}
 	if c == 0 {
 		return nil, nil
@@ -437,7 +438,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		// Disconnect if we received an invalid length.
 		if length < messagePrefixLength ||
 			length > maxMsgLength {
-			return [][]byte{}, DisconnectInvalidMessageLength
+			return [][]byte{}, ErrDisconnectInvalidMessageLength
 		}
 
 		if buf.Len()-messageLengthSize < length {
@@ -524,7 +525,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) {
 	pool.strand(func() {
 		if conn, ok := pool.addresses[addr]; ok {
 			exist = true
-			delete(pool.pool, conn.Id)
+			delete(pool.pool, conn.ID)
 			delete(pool.addresses, addr)
 			conn.Close()
 		}
@@ -573,7 +574,7 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	})
 
 	if msgQueueFull {
-		return DisconnectWriteQueueFull
+		return ErrDisconnectWriteQueueFull
 	}
 
 	return nil
@@ -600,12 +601,12 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) (err error) {
 			}
 		}
 		if len(fullWriteQueue) == len(pool.pool) {
-			err = errors.New("There's no avaliable connection in pool")
+			err = errors.New("There's no available connection in pool")
 		}
 	})
 
 	for _, addr := range fullWriteQueue {
-		pool.Disconnect(addr, DisconnectWriteQueueFull)
+		pool.Disconnect(addr, ErrDisconnectWriteQueueFull)
 	}
 	return
 }
@@ -615,7 +616,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) (err error) {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) (DisconnectReason, error) {
-	m, err := convertToMessage(c.Id, msg, pool.Config.DebugPrint)
+	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
 	if err != nil {
 		return nil, err
 	}

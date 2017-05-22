@@ -14,6 +14,7 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
+// RegisterTxHandlers registers transaction handlers
 func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
 	mux.HandleFunc("/pendingTxs", getPendingTxs(gateway))

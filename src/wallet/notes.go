@@ -1,36 +1,40 @@
 package wallet
 
 import (
+	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
-	"encoding/hex"
 	"path/filepath"
 	"strings"
-	"fmt"
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
 )
 
+// NotesExtension file extension of notes
 const NotesExtension = "nts"
 
+// Notes array of notes
 type Notes []Note
 
+// Note note struct
 type Note struct {
-	TransactionId string
+	TxID  string
 	Value string
 }
 
+// ReadableNotes readable notes
 type ReadableNotes []ReadableNote
 
-
+// ReadableNote readable note struct
 type ReadableNote struct {
-	TransactionId string `json:"transaction_id"`
-	ActualNote string `json:"note_val"`
+	TransactionID string `json:"transaction_id"`
+	ActualNote    string `json:"note_val"`
 }
 
-
-//check for collisions and retry if failure
+// NewNotesFilename check for collisions and retry if failure
 func NewNotesFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	//should read in wallet files and make sure does not exist
@@ -38,6 +42,7 @@ func NewNotesFilename() string {
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, NotesExtension)
 }
 
+// LoadNotes loads notes from given dir
 func LoadNotes(dir string) (Notes, error) {
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -69,41 +74,50 @@ func LoadNotes(dir string) (Notes, error) {
 			if err != nil {
 				return nil, err
 			}
-			return w,nil
+			return w, nil
 		}
 	}
 	return wallets, nil
 }
 
+// LoadReadableNotes loads readable notes from given file
 func LoadReadableNotes(filename string) (*ReadableNotes, error) {
 	w := &ReadableNotes{}
 	err := w.Load(filename)
 	return w, err
 }
 
-func (self *ReadableNotes) Load(filename string) error {
-	return util.LoadJSON(filename, self)
+// Load loads readable notes from given file
+func (rns *ReadableNotes) Load(filename string) error {
+	return util.LoadJSON(filename, rns)
 }
 
-// Loads from filename
-func (self ReadableNotes) ToNotes() ([]Note, error)  {
-	notes := make([]Note, len(self))
-	for i, e := range self {
-		notes[i] = Note {
-			TransactionId:e.TransactionId,
-			Value:e.ActualNote,
+// ToNotes converts from readable notes to Notes
+func (rns ReadableNotes) ToNotes() ([]Note, error) {
+	notes := make([]Note, len(rns))
+	for i, e := range rns {
+		notes[i] = Note{
+			TxID:  e.TransactionID,
+			Value: e.ActualNote,
 		}
 	}
-	return notes,nil
+	return notes, nil
 }
 
-func NewReadableNote(note Note) ReadableNote{
+// Save persists readable notes to disk
+func (rns *ReadableNotes) Save(filename string) error {
+	return util.SaveJSON(filename, rns, 0600)
+}
+
+// NewReadableNote creates readable note
+func NewReadableNote(note Note) ReadableNote {
 	return ReadableNote{
-		TransactionId:note.TransactionId,
-		ActualNote:note.Value,
+		TransactionID: note.TxID,
+		ActualNote:    note.Value,
 	}
 }
 
+// NewReadableNotesFromNotes creates readable notes from notes
 func NewReadableNotesFromNotes(w Notes) ReadableNotes {
 	readable := make(ReadableNotes, len(w))
 	i := 0
@@ -114,16 +128,16 @@ func NewReadableNotesFromNotes(w Notes) ReadableNotes {
 	return readable
 }
 
+// Save persists notes to disk
 func (notes *Notes) Save(dir string, fileName string) error {
 	r := notes.ToReadable()
 	return r.Save(filepath.Join(dir, fileName))
 }
 
-
-
+// SaveNote save new note
 func (notes *Notes) SaveNote(dir string, note Note) error {
-	newNotes :=make([]Note,len(*notes)+1)
-	for i,e :=range *notes{
+	newNotes := make([]Note, len(*notes)+1)
+	for i, e := range *notes {
 		newNotes[i] = e
 		i++
 	}
@@ -131,16 +145,16 @@ func (notes *Notes) SaveNote(dir string, note Note) error {
 
 	*notes = newNotes
 
-	readableNotesToBeSaved:=NewReadableNotesFromNotes(newNotes)
+	readableNotesToBeSaved := NewReadableNotesFromNotes(newNotes)
 	fileName, error := getNoteFileName(dir)
-	if error !=nil{
+	if error != nil {
 		return error
 	}
 	readableNotesToBeSaved.Save(fileName)
 	return nil
 }
 
-func getNoteFileName(dir string) (string, error){
+func getNoteFileName(dir string) (string, error) {
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return "", err
@@ -151,22 +165,19 @@ func getNoteFileName(dir string) (string, error){
 			if !strings.HasSuffix(name, NotesExtension) {
 				continue
 			}
-			fullPath :=filepath.Join(dir, name)
-			return fullPath,nil
+			fullPath := filepath.Join(dir, name)
+			return fullPath, nil
 		}
 	}
-	return "",nil
+	return "", nil
 }
 
+// ToReadable converts Notes to readable notes
 func (notes Notes) ToReadable() ReadableNotes {
 	return NewReadableNotesFromNotes(notes)
 }
 
-// Saves to filename
-func (self *ReadableNotes) Save(filename string) error {
-	return util.SaveJSON(filename, self, 0600)
-}
-
+// NotesFileExist checks if there're notes exist
 func NotesFileExist(dir string) (bool, error) {
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -178,12 +189,13 @@ func NotesFileExist(dir string) (bool, error) {
 			if !strings.HasSuffix(name, NotesExtension) {
 				continue
 			}
-			return true,nil
+			return true, nil
 		}
 	}
-	return false,nil
+	return false, nil
 }
 
+// CreateNoteFileIfNotExist creates note file if not exist
 func CreateNoteFileIfNotExist(dir string) {
 	exist, err := NotesFileExist(dir)
 	if err != nil {

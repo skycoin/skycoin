@@ -7,14 +7,16 @@ import (
 	"strings"
 )
 
-// Wrapper for linux virtual system filesystem.
+// Sysfs wrapper for linux virtual system filesystem.
 // Contains driver, device and kernal info.
 type Sysfs struct{}
 
+// NewSysfs creates sysfs instance
 func NewSysfs() Sysfs {
 	return Sysfs{}
 }
 
+// SysfsInfo records the sysfs info
 type SysfsInfo struct {
 	Main            SysfsInfoMain
 	Statistics      SysfsInfoStatistics
@@ -26,7 +28,7 @@ type SysfsInfo struct {
 	WirelessDirectoryExists bool
 }
 
-// Information from /sys/class/net/{interface}/
+// SysfsInfoMain Information from /sys/class/net/{interface}/
 type SysfsInfoMain struct {
 	// If Hardware (MAC) Address assigned randomly value=1, else 0
 	AddrAssignType string
@@ -41,7 +43,7 @@ type SysfsInfoMain struct {
 	// went down. If operstate="down", value="Invalid argument"
 	Carrier string
 	// Device id setting used for interrupt handlers
-	DevId string
+	DevID string
 	// If operstate="down", value="Invalid argument"
 	Dormant     string
 	Flags       string
@@ -61,7 +63,7 @@ type SysfsInfoMain struct {
 	Uevent string
 }
 
-// Information from /sys/class/net/{interface}/statistics/
+// SysfsInfoStatistics Information from /sys/class/net/{interface}/statistics/
 type SysfsInfoStatistics struct {
 	Collisions int
 	Multicast  int
@@ -97,7 +99,7 @@ type SysfsInfoStatistics struct {
 	TxWindowErrors int
 }
 
-// Information from /sys/class/net/{interface}/device/
+// SysfsInfoDevice Information from /sys/class/net/{interface}/device/
 type SysfsInfoDevice struct {
 	// Description of the interface, ex: 802.11g WLAN Adapter
 	Interface string
@@ -116,7 +118,7 @@ type SysfsInfoDevice struct {
 	Vendor string
 }
 
-// Information from /sys/class/net/{interface}/power/
+// SysfsInfoPower Information from /sys/class/net/{interface}/power/
 type SysfsInfoPower struct {
 	// allows async operation of interface's suspend and resume
 	// callbacks during system power states (hibernation, suspend)
@@ -132,25 +134,25 @@ type SysfsInfoPower struct {
 	RuntimeUsage         string
 }
 
-// Information from /proc/net/wireless/
+// SysfsInfoProcNetWireless Information from /proc/net/wireless/
 type SysfsInfoProcNetWireless struct {
 	LinkQuality int
 	SignalLevel int
 	NoiseLevel  int
 }
 
-// Information from things that don't fit anywhere else
+// SysfsInfoOther Information from things that don't fit anywhere else
 type SysfsInfoOther struct {
 	// Driver name for the interface
 	DriverName string
 }
 
-// Returns wireless information from the file system
-func (self Sysfs) Run(interfaceName string) SysfsInfo {
+// Run returns wireless information from the file system
+func (sfs Sysfs) Run(interfaceName string) SysfsInfo {
 	logger.Debug("Sysfs: Querying virtual filesystem for %v", interfaceName)
 
 	inf := SysfsInfo{}
-	fq := self.sysfsQuery
+	fq := sfs.sysfsQuery
 	qp := ""
 
 	qp = "/sys/class/net/" + interfaceName
@@ -159,7 +161,7 @@ func (self Sysfs) Run(interfaceName string) SysfsInfo {
 	inf.Main.AddrLen = fq(qp + "/addr_len")
 	inf.Main.Broadcast = fq(qp + "/broadcast")
 	inf.Main.Carrier = fq(qp + "/carrier")
-	inf.Main.DevId = fq(qp + "/dev_id")
+	inf.Main.DevID = fq(qp + "/dev_id")
 	inf.Main.Dormant = fq(qp + "/dormant")
 	inf.Main.Flags = fq(qp + "/flags")
 	inf.Main.IfAlias = fq(qp + "/ifalias")
@@ -255,21 +257,21 @@ func (self Sysfs) Run(interfaceName string) SysfsInfo {
 		inf.Other.DriverName = dirInfos[0].Name()
 	}
 
-	// Check for existance of wireless path
-	qp = "/sys/class/net/" + interfaceName + "/wireless"
-	inf.WirelessDirectoryExists = self.dirExists(qp)
+	// Check for existence of wireless path
+	qp = "/sys/class/nintentedet/" + interfaceName + "/wireless"
+	inf.WirelessDirectoryExists = sfs.dirExists(qp)
 
 	return inf
 }
 
-func (self Sysfs) sysfsQuery(queryFile string) string {
+func (sfs Sysfs) sysfsQuery(queryFile string) string {
 	out, _ := ioutil.ReadFile(queryFile)
 	outs := string(out)
 	outs = strings.TrimSpace(outs)
 	return outs
 }
 
-func (self Sysfs) dirExists(dirPath string) bool {
+func (sfs Sysfs) dirExists(dirPath string) bool {
 	if _, err := os.Stat(dirPath); err != nil {
 		if os.IsNotExist(err) {
 			return false

@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
-// Manages known BlockSigs as received.
+// BlockSigs manages known BlockSigs as received.
 // TODO -- support out of order blocks.  This requires a change to the
 // message protocol to support ranges similar to bitcoin's locator hashes.
 // We also need to keep track of whether a block has been executed so that
@@ -24,6 +24,7 @@ type BlockSigs struct {
 	Sigs *bucket.Bucket
 }
 
+// NewBlockSigs create block signature buckets
 func NewBlockSigs(db *bolt.DB) *BlockSigs {
 	sigs, err := bucket.New([]byte("block_sigs"), db)
 	if err != nil {

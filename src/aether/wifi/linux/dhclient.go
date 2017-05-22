@@ -4,15 +4,16 @@ import (
 	"os/exec"
 )
 
-// Wrapper for linux utility: dhclient
+// DHClient Wrapper for linux utility: dhclient
 type DHClient struct{}
 
+// NewDHClient creates dhclient
 func NewDHClient() DHClient {
 	return DHClient{}
 }
 
-// Checks if the program dhclient exists using PATH environment variable
-func (self DHClient) IsInstalled() bool {
+// IsInstalled checks if the program dhclient exists using PATH environment variable
+func (dhc DHClient) IsInstalled() bool {
 	_, err := exec.LookPath("dhclient")
 	if err != nil {
 		return false
@@ -20,9 +21,9 @@ func (self DHClient) IsInstalled() bool {
 	return true
 }
 
-// Start DHCP client and get settings for IP, subnetmask, DNS server, and
+// Startup starts DHCP client and get settings for IP, subnetmask, DNS server, and
 // default gateway from the connected Access Point or Router
-func (self DHClient) Startup(interfaceName string) error {
+func (dhc DHClient) Startup(interfaceName string) error {
 	logger.Debug("DHClient: Starting DHCP client and retreiving settings")
 
 	if !authorized() {
@@ -42,10 +43,10 @@ func (self DHClient) Startup(interfaceName string) error {
 	return nil
 }
 
-// Start DHCP client and get settings for IP, subnetmask, DNS server, and
+// StartupFast start DHCP client and get settings for IP, subnetmask, DNS server, and
 // default gateway from the connected Access Point or Router
 // and immediately return
-func (self DHClient) StartupFast(interfaceName string) error {
+func (dhc DHClient) StartupFast(interfaceName string) error {
 	logger.Debug("DHClient: Starting DHCP client (fast) and retreiving settings")
 
 	if !authorized() {
@@ -65,8 +66,8 @@ func (self DHClient) StartupFast(interfaceName string) error {
 	return nil
 }
 
-// Stop DHCP client and release the current lease
-func (self DHClient) Shutdown(interfaceName string) error {
+// Shutdown stop DHCP client and release the current lease
+func (dhc DHClient) Shutdown(interfaceName string) error {
 	logger.Debug("DHClient: Stopping DHCP client and releasing lease")
 
 	if !authorized() {
@@ -86,8 +87,8 @@ func (self DHClient) Shutdown(interfaceName string) error {
 	return nil
 }
 
-// Stop DHCP client and don't bother releasing the current lease
-func (self DHClient) ShutdownFast(interfaceName string) error {
+// ShutdownFast stop DHCP client and don't bother releasing the current lease
+func (dhc DHClient) ShutdownFast(interfaceName string) error {
 	logger.Debug("DHClient: Stopping DHCP client and releasing lease")
 
 	if !authorized() {

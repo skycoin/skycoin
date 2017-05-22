@@ -3,11 +3,9 @@ package aether
 import (
 	"fmt"
 
-	gnet "github.com/skycoin/skycoin/src/aether"
 	"github.com/skycoin/skycoin/src/aether/daemon"
+	gnet "github.com/skycoin/skycoin/src/aether/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
-	//"log"
-	//"time"
 )
 
 /*

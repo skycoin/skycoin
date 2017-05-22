@@ -1,35 +1,36 @@
-package secp256k1_go
+package secp256k1go
 
 import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
 	"log"
-	//"bytes"
-	//"math/big"
 )
 
+// Signature represents the signature
 type Signature struct {
 	R, S Number
 }
 
-func (s *Signature) Print(lab string) {
-	fmt.Println(lab+".R:", hex.EncodeToString(s.R.Bytes()))
-	fmt.Println(lab+".S:", hex.EncodeToString(s.S.Bytes()))
+// Print prints the signature
+func (sig *Signature) Print(lab string) {
+	fmt.Println(lab+".R:", hex.EncodeToString(sig.R.Bytes()))
+	fmt.Println(lab+".S:", hex.EncodeToString(sig.S.Bytes()))
 }
 
-func (r *Signature) Verify(pubkey *XY, message *Number) (ret bool) {
+// Verify verify the signature
+func (sig *Signature) Verify(pubkey *XY, message *Number) (ret bool) {
 	var r2 Number
-	ret = r.recompute(&r2, pubkey, message) && r.R.Cmp(&r2.Int) == 0
+	ret = sig.recompute(&r2, pubkey, message) && sig.R.Cmp(&r2.Int) == 0
 	return
 }
 
 func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) (ret bool) {
 	var sn, u1, u2 Number
 
-	sn.mod_inv(&sig.S, &TheCurve.Order)
-	u1.mod_mul(&sn, message, &TheCurve.Order)
-	u2.mod_mul(&sn, &sig.R, &TheCurve.Order)
+	sn.modInv(&sig.S, &TheCurve.Order)
+	u1.modMul(&sn, message, &TheCurve.Order)
+	u2.modMul(&sn, &sig.R, &TheCurve.Order)
 
 	var pr, pubkeyj XYZ
 	pubkeyj.SetXY(pubkey)
@@ -37,7 +38,7 @@ func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) (ret bo
 	pubkeyj.ECmult(&pr, &u2, &u1)
 	if !pr.IsInfinity() {
 		var xr Field
-		pr.get_x(&xr)
+		pr.getX(&xr)
 		xr.Normalize()
 		var xrb [32]byte
 		xr.GetB32(xrb[:])
@@ -49,7 +50,7 @@ func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) (ret bo
 	return
 }
 
-//TODO: return type, or nil on failure
+// Recover TODO: return type, or nil on failure
 func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 	var rx, rn, u1, u2 Number
 	var fx Field
@@ -64,7 +65,7 @@ func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 		}
 	}
 
-	fx.SetB32(rx.get_bin(32))
+	fx.SetB32(rx.getBin(32))
 
 	X.SetXO(&fx, (recid&1) != 0)
 	if !X.IsValid() {
@@ -72,16 +73,17 @@ func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 	}
 
 	xj.SetXY(&X)
-	rn.mod_inv(&sig.R, &TheCurve.Order)
-	u1.mod_mul(&rn, m, &TheCurve.Order)
+	rn.modInv(&sig.R, &TheCurve.Order)
+	u1.modMul(&rn, m, &TheCurve.Order)
 	u1.Sub(&TheCurve.Order.Int, &u1.Int)
-	u2.mod_mul(&rn, &sig.S, &TheCurve.Order)
+	u2.modMul(&rn, &sig.S, &TheCurve.Order)
 	xj.ECmult(&qj, &u2, &u1)
 	pubkey.SetXYZ(&qj)
 
 	return true
 }
 
+// Sign signs the signature
 func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	var r XY
 	var rp XYZ
@@ -104,11 +106,11 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 		}
 	}
 	sig.R.mod(&TheCurve.Order)
-	n.mod_mul(&sig.R, seckey, &TheCurve.Order)
+	n.modMul(&sig.R, seckey, &TheCurve.Order)
 	n.Add(&n.Int, &message.Int)
 	n.mod(&TheCurve.Order)
-	sig.S.mod_inv(nonce, &TheCurve.Order)
-	sig.S.mod_mul(&sig.S, &n, &TheCurve.Order)
+	sig.S.modInv(nonce, &TheCurve.Order)
+	sig.S.modMul(&sig.S, &n, &TheCurve.Order)
 	if sig.S.Sign() == 0 {
 		return 0
 	}
@@ -119,7 +121,7 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 		}
 	}
 
-	if FORCE_LOW_S && sig.S.Cmp(&TheCurve.half_order.Int) == 1 {
+	if forceLowS && sig.S.Cmp(&TheCurve.halfOrder.Int) == 1 {
 		sig.S.Sub(&TheCurve.Order.Int, &sig.S.Int)
 		if recid != nil {
 			*recid ^= 1
@@ -176,19 +178,19 @@ func (sig *Signature) Bytes() []byte {
 }
 */
 
-//compressed signature parsing
-func (r *Signature) ParseBytes(sig []byte) {
-	if len(sig) != 64 {
+// ParseBytes compressed signature parsing
+func (sig *Signature) ParseBytes(v []byte) {
+	if len(v) != 64 {
 		log.Panic()
 	}
-	r.R.SetBytes(sig[0:32])
-	r.S.SetBytes(sig[32:64])
+	sig.R.SetBytes(v[0:32])
+	sig.S.SetBytes(v[32:64])
 }
 
 //secp256k1_num_get_bin(sig64, 32, &sig.r);
 //secp256k1_num_get_bin(sig64 + 32, 32, &sig.s);
 
-//compressed signature parsing
+// Bytes compressed signature parsing
 func (sig *Signature) Bytes() []byte {
 	r := sig.R.Bytes() //endianess
 	s := sig.S.Bytes() //endianess
@@ -201,7 +203,7 @@ func (sig *Signature) Bytes() []byte {
 	}
 
 	if len(r) != 32 || len(s) != 32 {
-		log.Panic("signature size invalid: %s, %s", len(r), len(s))
+		log.Panicf("signature size invalid: %s, %s", len(r), len(s))
 	}
 
 	res := new(bytes.Buffer)

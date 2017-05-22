@@ -1,6 +1,6 @@
-// Wallet-related information for the GUI
 package gui
 
+// Wallet-related information for the GUI
 import (
 	"errors"
 	"fmt"
@@ -17,8 +17,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/util"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 //var Wallets wallet.Wallets
@@ -34,20 +34,23 @@ This section is redundant
 */
 //type WalletRPC struct{}
 
+// WalletRPC wallet rpc
 type WalletRPC struct {
 	Wallets         wallet.Wallets
 	WalletDirectory string
 	Options         []wallet.Option
 }
 
+// NotesRPC note rpc
 type NotesRPC struct {
 	Notes           wallet.Notes
 	WalletDirectory string
 }
 
-//use a global for now
+// Wg use a global for now
 var Wg *WalletRPC
 
+// Ng global note
 var Ng *NotesRPC
 
 // InitWalletRPC init wallet rpc
@@ -56,7 +59,7 @@ func InitWalletRPC(walletDir string, options ...wallet.Option) {
 	Ng = NewNotesRPC(walletDir)
 }
 
-// NewWalletRPC new wallet rpc
+// NewNotesRPC new notes rpc
 func NewNotesRPC(walletDir string) *NotesRPC {
 	rpc := &NotesRPC{}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
@@ -110,35 +113,39 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 	return rpc
 }
 
-func (self *WalletRPC) ReloadWallets() error {
-	wallets, err := wallet.LoadWallets(self.WalletDirectory)
+// ReloadWallets reload wallets
+func (wlt *WalletRPC) ReloadWallets() error {
+	wallets, err := wallet.LoadWallets(wlt.WalletDirectory)
 	if err != nil {
 		return err
 	}
-	self.Wallets = wallets
+	wlt.Wallets = wallets
 	return nil
 }
 
-func (self *WalletRPC) SaveWallet(walletID string) error {
-	if w, ok := self.Wallets.Get(walletID); ok {
-		return w.Save(self.WalletDirectory)
+// SaveWallet saves a wallet
+func (wlt *WalletRPC) SaveWallet(walletID string) error {
+	if w, ok := wlt.Wallets.Get(walletID); ok {
+		return w.Save(wlt.WalletDirectory)
 	}
 	return fmt.Errorf("Unknown wallet %s", walletID)
 }
 
-func (self *WalletRPC) SaveWallets() map[string]error {
-	return self.Wallets.Save(self.WalletDirectory)
+// SaveWallets saves wallets
+func (wlt *WalletRPC) SaveWallets() map[string]error {
+	return wlt.Wallets.Save(wlt.WalletDirectory)
 }
 
-func (self *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
-	ops := make([]wallet.Option, 0, len(self.Options)+len(options))
-	ops = append(ops, self.Options...)
+// CreateWallet creates wallet
+func (wlt *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
+	ops := make([]wallet.Option, 0, len(wlt.Options)+len(options))
+	ops = append(ops, wlt.Options...)
 	ops = append(ops, options...)
 	w := wallet.NewWallet(wltName, ops...)
 	// generate a default address
 	w.GenerateAddresses(1)
 
-	if err := self.Wallets.Add(w); err != nil {
+	if err := wlt.Wallets.Add(w); err != nil {
 		return wallet.Wallet{}, err
 	}
 
@@ -147,65 +154,64 @@ func (self *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (w
 
 // NewAddresses generate address entries in specific wallet,
 // return nil if wallet does not exist.
-func (rpc *WalletRPC) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
-	return rpc.Wallets.NewAddresses(wltID, num)
+func (wlt *WalletRPC) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+	return wlt.Wallets.NewAddresses(wltID, num)
 }
 
-func (self *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
-	return self.Wallets.ToReadable()
-}
-
-func (self *NotesRPC) GetNotesReadable() wallet.ReadableNotes {
-	return self.Notes.ToReadable()
-}
-
-func (self *WalletRPC) GetWalletReadable(walletID string) *wallet.ReadableWallet {
-	if w, ok := self.Wallets.Get(walletID); ok {
+// GetWalletReadable returns a readable wallet
+func (wlt *WalletRPC) GetWalletReadable(walletID string) *wallet.ReadableWallet {
+	if w, ok := wlt.Wallets.Get(walletID); ok {
 		return wallet.NewReadableWallet(w)
 	}
 	return nil
 }
 
-func (self *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
-	if w, ok := self.Wallets.Get(walletID); ok {
+// GetWalletsReadable returns readable wallets
+func (wlt *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
+	return wlt.Wallets.ToReadable()
+}
+
+// GetNotesReadable returns readable notes
+func (nt *NotesRPC) GetNotesReadable() wallet.ReadableNotes {
+	return nt.Notes.ToReadable()
+}
+
+// GetWallet returns wallet of give id
+func (wlt *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
+	if w, ok := wlt.Wallets.Get(walletID); ok {
 		return &w
 	}
 	return nil
 }
 
-//modify to return error
+// GetWalletBalance modify to return error
 // NOT WORKING
 // actually uses visor
-func (self *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
+func (wlt *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
 	walletID string) (wallet.BalancePair, error) {
 
-	wlt, ok := self.Wallets.Get(walletID)
+	w, ok := wlt.Wallets.Get(walletID)
 	if !ok {
 		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
 		return wallet.BalancePair{}, errors.New("Id not found")
 	}
 
-	return gateway.WalletBalance(wlt), nil
+	return gateway.WalletBalance(w), nil
 }
 
-/*
-Checks if the wallet has pending, unconfirmed transactions
-- do not allow any transactions if there are pending
-*/
+// HasUnconfirmedTransactions checks if the wallet has pending, unconfirmed transactions
+// - do not allow any transactions if there are pending
 //Check if any of the outputs are spent
-func (self *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
+func (wlt *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
 	wallet *wallet.Wallet) bool {
 
 	if wallet == nil {
 		log.Panic("Wallet does not exist")
 	}
 
-	auxs := v.Blockchain.GetUnspent().AllForAddresses(wallet.GetAddresses())
+	// auxs := v.Blockchain.GetUnspent().AllForAddresses(wallet.GetAddresses())
 	unspent := v.Blockchain.GetUnspent()
 	puxs := v.Unconfirmed.SpendsForAddresses(unspent, wallet.GetAddressSet())
-
-	_ = auxs
-	_ = puxs
 
 	//no transactions
 	if len(puxs) == 0 {
@@ -213,16 +219,16 @@ func (self *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
 	}
 
 	return false
-
 }
 
+// SpendResult represents the result of spending
 type SpendResult struct {
 	Balance     wallet.BalancePair        `json:"balance"`
 	Transaction visor.ReadableTransaction `json:"txn"`
 	Error       string                    `json:"error"`
 }
 
-// TODO
+// Spend TODO
 // - split send into
 // -- get addresses
 // -- get unspent outputs
@@ -272,7 +278,7 @@ func Spend(gateway *daemon.Gateway,
 	}
 }
 
-// Creates a transaction spending amt with additional fee.  Fee is in addition
+// Spend2 Creates a transaction spending amt with additional fee.  Fee is in addition
 // to the base required fee given amt.Hours.
 // TODO
 // - pull in outputs from blockchain from wallet
@@ -338,8 +344,8 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		walletId := r.FormValue("id")
-		if walletId == "" {
+		walletID := r.FormValue("id")
+		if walletID == "" {
 			wh.Error400(w, "Invalid Wallet Id")
 			return
 		}
@@ -374,11 +380,11 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		var hours uint64 = 0
-		var fee uint64 = 0 //doesnt work/do anything right now
+		var hours uint64
+		var fee uint64 //doesnt work/do anything right now
 
 		//MOVE THIS INTO HERE
-		ret := Spend(gateway, Wg, walletId, wallet.NewBalance(coins, hours), fee, dst)
+		ret := Spend(gateway, Wg, walletID, wallet.NewBalance(coins, hours), fee, dst)
 
 		if ret.Error != "" {
 			wh.Error400(w, fmt.Sprintf("Spend Failed: %s", ret.Error))
@@ -393,10 +399,10 @@ func notesCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("API request made to create a note")
 		note := r.FormValue("note")
-		transactionId := r.FormValue("transaction_id")
+		transactionID := r.FormValue("transaction_id")
 		newNote := wallet.Note{
-			TransactionId: transactionId,
-			Value:         note,
+			TxID:  transactionID,
+			Value: note,
 		}
 		Ng.Notes.SaveNote(Ng.WalletDirectory, newNote)
 		rlt := Ng.GetNotesReadable()
@@ -565,16 +571,19 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 	}
 }
+
+// WalletFolder struct
 type WalletFolder struct {
 	Address string `json:"address"`
 }
+
 // Loads/unloads wallets from the wallet directory
 func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
 			Address: util.UserHome() + "/.skycoin/wallets",
 		}
-		wh.SendOr404(w,ret)
+		wh.SendOr404(w, ret)
 	}
 }
 
@@ -647,6 +656,7 @@ func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// RegisterWalletHandlers registers wallet handlers
 func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns wallet info
 	// GET Arguments:
@@ -701,7 +711,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// 500 status with error message.
 	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
 
-	mux.HandleFunc("/wallets/folderName",getWalletFolder(gateway))
+	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
 
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(gateway))

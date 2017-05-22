@@ -1,10 +1,6 @@
 package sync
 
 import (
-	//"crypto/sha256"
-	//"hash"
-	//"errors"
-	//"fmt"
 	"log"
 	"time"
 )

@@ -1,9 +1,6 @@
 package sync
 
 import (
-	//"crypto/sha256"
-	//"hash"
-
 	"log"
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -114,9 +111,9 @@ func (self *ChainOverlord) BroadcastMessage(rootHash SHA256, m interface{}) {
 
 */
 
-func (self *ChainOverlord) broadcastChainChannel(rootHash SHA256, channel int) {
+// func (self *ChainOverlord) broadcastChainChannel(rootHash SHA256, channel int) {
 
-}
+// }
 
 //associate a channel with a hash chain root
 type ChainChannelAnnounceMessage struct {

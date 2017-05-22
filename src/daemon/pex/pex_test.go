@@ -93,11 +93,11 @@ func TestPeerString(t *testing.T) {
 
 /* BlacklistEntry tests */
 
-func TestBlacklistEntryExpiresAt(t *testing.T) {
-	now := time.Now().UTC()
-	b := BlacklistEntry{Start: now, Duration: time.Second}
-	assert.Equal(t, now.Add(time.Second), b.ExpiresAt())
-}
+// func TestBlacklistEntryExpiresAt(t *testing.T) {
+// 	now := time.Now().UTC()
+// 	b := BlacklistEntry{Start: now, Duration: time.Second}
+// 	assert.Equal(t, now.Add(time.Second), b.ExpiresAt())
+// }
 
 /* Blacklist tests */
 
@@ -642,47 +642,47 @@ func TestNow(t *testing.T) {
 /* Addendum: dummies & mocks */
 
 // Fake addr that satisfies net.Addr interface
-type DummyAddr struct{}
+type dummyAddr struct{}
 
-func (self *DummyAddr) Network() string {
-	return self.String()
+func (da *dummyAddr) Network() string {
+	return da.String()
 }
 
-func (self *DummyAddr) String() string {
+func (da *dummyAddr) String() string {
 	return "none"
 }
 
 // Fake connection that satisfies net.Conn interface
-type DummyConnection struct{}
+type dummyConnection struct{}
 
-func (self *DummyConnection) Read(b []byte) (int, error) {
+func (dc *dummyConnection) Read(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (self *DummyConnection) Write(b []byte) (int, error) {
+func (dc *dummyConnection) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (self *DummyConnection) Close() error {
+func (dc *dummyConnection) Close() error {
 	return nil
 }
 
-func (self *DummyConnection) LocalAddr() net.Addr {
-	return &DummyAddr{}
+func (dc *dummyConnection) LocalAddr() net.Addr {
+	return &dummyAddr{}
 }
 
-func (self *DummyConnection) RemoteAddr() net.Addr {
-	return &DummyAddr{}
+func (dc *dummyConnection) RemoteAddr() net.Addr {
+	return &dummyAddr{}
 }
 
-func (self *DummyConnection) SetDeadline(t time.Time) error {
+func (dc *dummyConnection) SetDeadline(t time.Time) error {
 	return nil
 }
 
-func (self *DummyConnection) SetReadDeadline(t time.Time) error {
+func (dc *dummyConnection) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-func (self *DummyConnection) SetWriteDeadline(t time.Time) error {
+func (dc *dummyConnection) SetWriteDeadline(t time.Time) error {
 	return nil
 }

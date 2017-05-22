@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/bucket"
@@ -52,6 +52,7 @@ func (tus TxnUnspents) AllForAddress(a cipher.Address) coin.UxArray {
 	return uxo
 }
 
+// UnconfirmedTxn unconfirmed transaction
 type UnconfirmedTxn struct {
 	Txn coin.Transaction
 	// Time the txn was last received
@@ -286,18 +287,18 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(bcUnsp *coin.UnspentPool,
 // InjectTxn adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (err error, know bool) {
+func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (know bool, err error) {
 	var valid int8
 	for {
 		if err = VerifyTransactionFee(bc, &t); err != nil {
 			if err == ErrUnspentNotExist {
 				break
 			}
-			return err, false
+			return false, err
 		}
 
 		if err := bc.VerifyTransaction(t); err != nil {
-			return err, false
+			return false, err
 		}
 
 		valid = 1
@@ -431,6 +432,7 @@ func (utp *UnconfirmedTxnPool) SpendsForAddresses(bcUnspent *coin.UnspentPool,
 	return auxs
 }
 
+// SpendsForAddress spends for address
 func (utp *UnconfirmedTxnPool) SpendsForAddress(bcUnspent *coin.UnspentPool,
 	a cipher.Address) coin.UxArray {
 	ma := map[cipher.Address]byte{a: 1}

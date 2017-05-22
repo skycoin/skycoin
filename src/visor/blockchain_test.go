@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
 )
@@ -309,7 +309,7 @@ func TestNewBlock(t *testing.T) {
 	b := coin.NewBlock(prev, currentTime, unsp, txns, _makeFeeCalc(fee))
 	assert.Equal(t, b.Body.Transactions, txns)
 	assert.Equal(t, b.Head.Fee, fee*uint64(len(txns)))
-	assert.Equal(t, b.Body, coin.BlockBody{txns})
+	assert.Equal(t, b.Body, coin.BlockBody{Transactions: txns})
 	assert.Equal(t, b.Head.PrevHash, prev.HashHeader())
 	assert.Equal(t, b.Head.Time, currentTime)
 	assert.Equal(t, b.Head.BkSeq, prev.Head.BkSeq+1)
@@ -1111,7 +1111,8 @@ func TestExecuteBlock(t *testing.T) {
 	sTxns := coin.NewSortableTransactions(txns, bc.TransactionFee)
 	unswapped := sTxns.IsSorted()
 	txns = coin.SortTransactions(txns, bc.TransactionFee)
-	assert.Nil(t, bc.verifyTransactions(txns))
+	txns, err = bc.verifyTransactions(txns)
+	assert.Nil(t, err)
 	seq := bc.Head().Head.BkSeq
 	b, err = bc.NewBlockFromTransactions(txns, bc.Time()+_incTime)
 	assert.Equal(t, b.Head.BkSeq, seq+1)

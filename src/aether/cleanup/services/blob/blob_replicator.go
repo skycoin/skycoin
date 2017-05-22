@@ -1,14 +1,12 @@
 package sync
 
 import (
-	//"crypto/sha256"
-	//"hash"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 
-	gnet "github.com/skycoin/skycoin/src/aether"
+	gnet "github.com/skycoin/skycoin/src/aether/gnet"
 )
 
 //register messages

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Wrapper for linux utility: nmcli (network-manager)
+// NetworkManager Wrapper for linux utility: nmcli (network-manager)
 // If networkmanager is installed and running, it blocks iwconfig
 // and possibly more, so in those cases use networkmanager.
 //
@@ -29,12 +29,13 @@ import (
 //
 type NetworkManager struct{}
 
+// NewNetworkManager creates network manager
 func NewNetworkManager() NetworkManager {
 	return NetworkManager{}
 }
 
-// Checks if the program nmcli exists using PATH environment variable
-func (self NetworkManager) IsInstalled() bool {
+// IsInstalled checks if the program nmcli exists using PATH environment variable
+func (nm NetworkManager) IsInstalled() bool {
 	_, err := exec.LookPath("nmcli")
 	if err != nil {
 		return false
@@ -42,29 +43,30 @@ func (self NetworkManager) IsInstalled() bool {
 	return true
 }
 
-func (self NetworkManager) NetworkManagerID(interfaceName string) string {
+// NetworkManagerID returns network manager id
+func (nm NetworkManager) NetworkManagerID(interfaceName string) string {
 	return "darknet_" + interfaceName
 }
 
 // Connect to an access point
 // only certain versions of NetworkManager support this...
-func (self NetworkManager) Connect(interfaceName string, ssid string,
+func (nm NetworkManager) Connect(interfaceName string, ssid string,
 	secProtocol string, secKey string) error {
 	logger.Debug("NetworkManager: Connecting to an access point")
 
-	result, errp := self.ProfileExistsById(interfaceName)
+	result, errp := nm.ProfileExistsByID(interfaceName)
 	if result == true && errp == nil {
-		self.DeleteById(interfaceName)
+		nm.DeleteByID(interfaceName)
 	}
 
 	var cmd *exec.Cmd
 	if secProtocol == "none" {
 		cmd = exec.Command("nmcli", "dev", "wifi", "con", ssid,
-			"name", self.NetworkManagerID(interfaceName),
+			"name", nm.NetworkManagerID(interfaceName),
 			"iface", interfaceName)
 	} else {
 		cmd = exec.Command("nmcli", "dev", "wifi", "con", ssid,
-			"name", self.NetworkManagerID(interfaceName),
+			"name", nm.NetworkManagerID(interfaceName),
 			"password", secKey, "iface", interfaceName)
 	}
 	logger.Debug("Command Start: %v", cmd.Args)
@@ -78,11 +80,11 @@ func (self NetworkManager) Connect(interfaceName string, ssid string,
 	return nil
 }
 
-// Delete a connection profile by NetworkManager id
-func (self NetworkManager) ProfileExistsById(interfaceName string) (bool, error) {
+// ProfileExistsByID Delete a connection profile by NetworkManager id
+func (nm NetworkManager) ProfileExistsByID(interfaceName string) (bool, error) {
 	logger.Debug("NetworkManager: Check profile exists by nm id")
 
-	networkmanagerID := self.NetworkManagerID(interfaceName)
+	networkmanagerID := nm.NetworkManagerID(interfaceName)
 
 	// nmcli dev disconnect iface wlan0
 	cmd := exec.Command("nmcli", "-m", "multiline", "con", "list")
@@ -94,7 +96,7 @@ func (self NetworkManager) ProfileExistsById(interfaceName string) (bool, error)
 	}
 	logger.Debug("Command Return: %v", limitText(out))
 
-	nmID, _ := self.parseProfiles(string(out))
+	nmID, _ := nm.parseProfiles(string(out))
 	if networkmanagerID == nmID {
 		return true, nil
 	}
@@ -102,7 +104,7 @@ func (self NetworkManager) ProfileExistsById(interfaceName string) (bool, error)
 	return false, nil
 }
 
-func (self NetworkManager) parseProfiles(text string) (string, string) {
+func (nm NetworkManager) parseProfiles(text string) (string, string) {
 	nmID := ""
 	nmUUID := ""
 	for _, line := range strings.Split(text, "\n") {
@@ -122,11 +124,11 @@ func (self NetworkManager) parseProfiles(text string) (string, string) {
 	return nmID, nmUUID
 }
 
-// Delete a connection profile by NetworkManager id
-func (self NetworkManager) DeleteById(interfaceName string) {
+// DeleteByID delete a connection profile by NetworkManager id
+func (nm NetworkManager) DeleteByID(interfaceName string) {
 	logger.Debug("NetworkManager: Delete a connection profile by nm id")
 
-	networkmanagerID := self.NetworkManagerID(interfaceName)
+	networkmanagerID := nm.NetworkManagerID(interfaceName)
 
 	// nmcli dev disconnect iface wlan0
 	cmd := exec.Command("nmcli", "con", "delete", "id", networkmanagerID)
@@ -138,11 +140,11 @@ func (self NetworkManager) DeleteById(interfaceName string) {
 	logger.Debug("Command Return: %v", limitText(out))
 }
 
-// Deactivate a connection on an interface by NetworkManager id
-func (self NetworkManager) DeactivateById(interfaceName string) error {
+// DeactivateByID deactivates a connection on an interface by NetworkManager id
+func (nm NetworkManager) DeactivateByID(interfaceName string) error {
 	logger.Debug("NetworkManager: Deactivating an interface by nm id")
 
-	networkmanagerID := self.NetworkManagerID(interfaceName)
+	networkmanagerID := nm.NetworkManagerID(interfaceName)
 
 	// nmcli dev disconnect iface wlan0
 	cmd := exec.Command("nmcli", "con", "down", "id", networkmanagerID)
@@ -157,8 +159,8 @@ func (self NetworkManager) DeactivateById(interfaceName string) error {
 	return nil
 }
 
-// Disconnect all connections on an interface
-func (self NetworkManager) DisconnectAll(interfaceName string) error {
+// DisconnectAll disconnect all connections on an interface
+func (nm NetworkManager) DisconnectAll(interfaceName string) error {
 	logger.Debug("NetworkManager: Disconnecting all connections on an interface")
 
 	// nmcli dev disconnect iface wlan0
@@ -174,11 +176,11 @@ func (self NetworkManager) DisconnectAll(interfaceName string) error {
 	return nil
 }
 
-// Checks if network-manager service is running
-func (self NetworkManager) ServiceIsRunning() (bool, error) {
+// ServiceIsRunning checks if network-manager service is running
+func (nm NetworkManager) ServiceIsRunning() (bool, error) {
 	logger.Debug("NetworkManager: Checking if service running")
 
-	if !self.IsInstalled() {
+	if !nm.IsInstalled() {
 		return false, errors.New("service not installed")
 	}
 
@@ -202,11 +204,11 @@ func (self NetworkManager) ServiceIsRunning() (bool, error) {
 	return false, nil
 }
 
-// Stop the network-manager service. Superuser authentication is required.
-func (self NetworkManager) ServiceStop() error {
+// ServiceStop stop the network-manager service. Superuser authentication is required.
+func (nm NetworkManager) ServiceStop() error {
 	logger.Debug("NetworkManager: Service stopping")
 
-	if result, _ := self.ServiceIsRunning(); result == false {
+	if result, _ := nm.ServiceIsRunning(); result == false {
 		logger.Debug("NetworkManager: Service already stopped")
 		return nil
 	}
@@ -225,21 +227,21 @@ func (self NetworkManager) ServiceStop() error {
 	}
 	logger.Debug("Command Return: %v", limitText(out))
 
-	if result, _ := self.ServiceIsRunning(); result == true {
+	if result, _ := nm.ServiceIsRunning(); result == true {
 		logger.Debug("NetworkManager: Service failed to stop")
 		return errors.New("service failed to stop")
-	} else {
-		logger.Debug("NetworkManager: Service stopped successfully")
 	}
+
+	logger.Debug("NetworkManager: Service stopped successfully")
 
 	return nil
 }
 
-// Start the network-manager service. Superuser authentication is required.
-func (self NetworkManager) ServiceStart() error {
+// ServiceStart start the network-manager service. Superuser authentication is required.
+func (nm NetworkManager) ServiceStart() error {
 	logger.Debug("NetworkManager: Service starting")
 
-	if result, _ := self.ServiceIsRunning(); result == true {
+	if result, _ := nm.ServiceIsRunning(); result == true {
 		logger.Debug("NetworkManager: Service already started")
 		return nil
 	}
@@ -260,12 +262,11 @@ func (self NetworkManager) ServiceStart() error {
 	// Wait a few seconds for it to really load
 	time.Sleep(3 * time.Second)
 
-	if result, _ := self.ServiceIsRunning(); result == false {
+	if result, _ := nm.ServiceIsRunning(); result == false {
 		logger.Debug("NetworkManager: Service failed to start")
 		return errors.New("service failed to start")
-	} else {
-		logger.Debug("NetworkManager: Service started successfully")
 	}
+	logger.Debug("NetworkManager: Service started successfully")
 
 	return nil
 }

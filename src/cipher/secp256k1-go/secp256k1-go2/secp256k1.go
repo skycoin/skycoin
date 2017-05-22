@@ -1,23 +1,24 @@
-package secp256k1_go
+package secp256k1go
 
-const WINDOW_A = 5
-const WINDOW_G = 14
-const FORCE_LOW_S = true // At the output of the Sign() function
+const winA = 5
+const winG = 14
+const forceLowS = true // At the output of the Sign() function
 
+// TheCurve represents curve
 var TheCurve struct {
-	Order, half_order    Number
+	Order, halfOrder     Number
 	G                    XY
 	beta                 Field
 	lambda, a1b2, b1, a2 Number
 	p                    Number
 }
 
-func init_contants() {
+func initContants() {
 	TheCurve.Order.SetBytes([]byte{
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
 		0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41})
 
-	TheCurve.half_order.SetBytes([]byte{
+	TheCurve.halfOrder.SetBytes([]byte{
 		0X7F, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF,
 		0X5D, 0X57, 0X6E, 0X73, 0X57, 0XA4, 0X50, 0X1D, 0XDF, 0XE9, 0X2F, 0X46, 0X68, 0X1B, 0X20, 0XA0})
 
@@ -52,5 +53,5 @@ func init_contants() {
 }
 
 func init() {
-	init_contants()
+	initContants()
 }

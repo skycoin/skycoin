@@ -19,10 +19,10 @@ import (
 // -let people add the key from the command line
 
 var (
-	HideSeckey     = false
+	// HideSeckey whether need hide secret key
+	HideSeckey = false
+	// BitcoinAddress represents if need to generate bitcoin address
 	BitcoinAddress = false
-	//labelStdout  = false
-	//outFile      = ""
 
 	seed     = ""
 	genCount = 1
@@ -55,11 +55,13 @@ func parseFlags() {
 	flag.Parse()
 }
 
+// Wallet represents the wallet
 type Wallet struct {
 	Meta    map[string]string `json:"meta"`
 	Entries []KeyEntry        `json:"entries"`
 }
 
+// KeyEntry represents the key entry in wallet
 type KeyEntry struct {
 	Address string `json:"address"`
 	Public  string `json:"public_key"`

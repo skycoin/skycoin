@@ -3,17 +3,11 @@ package daemon
 import (
 	"time"
 
-	gnet "github.com/skycoin/skycoin/src/aether" //use local gnet
 	"github.com/skycoin/skycoin/src/aether/daemon/pex"
+	gnet "github.com/skycoin/skycoin/src/aether/gnet" //use local gnet
 )
 
-/*
-	Service Peer Discovery
-	- a service wants to find peers
-	-
-
-
-*/
+// PeersConfig peers config
 type PeersConfig struct {
 	// Folder where peers database should be saved
 	DataDirectory string
@@ -35,6 +29,7 @@ type PeersConfig struct {
 	Ephemerial bool
 }
 
+// NewPeersConfig creates peer config
 func NewPeersConfig() PeersConfig {
 	return PeersConfig{
 		DataDirectory:       "./",
@@ -49,12 +44,14 @@ func NewPeersConfig() PeersConfig {
 	}
 }
 
+// Peers daemon peers
 type Peers struct {
 	Config PeersConfig
 	// Peer list
 	Peers *pex.Pex
 }
 
+// NewPeers create peers
 func NewPeers(c PeersConfig) *Peers {
 	if c.Disabled {
 		logger.Info("PEX is disabled")
@@ -65,11 +62,11 @@ func NewPeers(c PeersConfig) *Peers {
 	}
 }
 
-// Configure the pex.PeerList and load local data
-func (self *Peers) Init() {
-	peers := pex.NewPex(self.Config.Max)
-	if self.Config.Ephemerial == false {
-		err := peers.Load(self.Config.DataDirectory)
+// Init configure the pex.PeerList and load local data
+func (p *Peers) Init() {
+	peers := pex.NewPex(p.Config.Max)
+	if p.Config.Ephemerial == false {
+		err := peers.Load(p.Config.DataDirectory)
 		if err != nil {
 			logger.Notice("Failed to load peer database")
 			logger.Notice("Reason: %v", err)
@@ -77,16 +74,16 @@ func (self *Peers) Init() {
 	}
 
 	logger.Debug("Init peers")
-	self.Peers = peers
+	p.Peers = peers
 }
 
 // Shutdown the PeerList
-func (self *Peers) Shutdown() error {
-	if self.Peers == nil {
+func (p *Peers) Shutdown() error {
+	if p.Peers == nil {
 		return nil
 	}
-	if self.Config.Ephemerial == false {
-		err := self.Peers.Save(self.Config.DataDirectory)
+	if p.Config.Ephemerial == false {
+		err := p.Peers.Save(p.Config.DataDirectory)
 		if err != nil {
 			logger.Warning("Failed to save peer database")
 			logger.Warning("Reason: %v", err)
@@ -97,11 +94,11 @@ func (self *Peers) Shutdown() error {
 	return nil
 }
 
-// Removes a peer, if not private
-func (self *Peers) RemovePeer(a string) {
-	p := self.Peers.Peerlist[a]
-	if p != nil && !p.Private {
-		delete(self.Peers.Peerlist, a)
+// RemovePeer removes a peer, if not private
+func (p *Peers) RemovePeer(a string) {
+	peer := p.Peers.Peerlist[a]
+	if peer != nil && !peer.Private {
+		delete(p.Peers.Peerlist, a)
 	}
 }
 

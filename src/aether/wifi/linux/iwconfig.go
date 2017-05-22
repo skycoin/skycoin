@@ -7,13 +7,15 @@ import (
 	"strings"
 )
 
-// Wrapper for linux utility: iwconfig
+// IWConfig Wrapper for linux utility: iwconfig
 type IWConfig struct{}
 
+// NewIWConfig creates iwconfig
 func NewIWConfig() IWConfig {
 	return IWConfig{}
 }
 
+// IWConfigInfo records iwconfig info
 type IWConfigInfo struct {
 	// wlan0
 	InterfaceName string
@@ -61,8 +63,8 @@ type IWConfigInfo struct {
 	MissedBeacon int
 }
 
-// Checks if the program iwconfig exists using PATH environment variable
-func (self IWConfig) IsInstalled() bool {
+// IsInstalled checks if the program iwconfig exists using PATH environment variable
+func (iwc IWConfig) IsInstalled() bool {
 	_, err := exec.LookPath("iwconfig")
 	if err != nil {
 		return false
@@ -70,9 +72,9 @@ func (self IWConfig) IsInstalled() bool {
 	return true
 }
 
-// Returns information on a wireless interface
-func (self IWConfig) Info(interfaceName string) (IWConfigInfo, error) {
-	results, err := self.InfoList()
+// Info returns information on a wireless interface
+func (iwc IWConfig) Info(interfaceName string) (IWConfigInfo, error) {
+	results, err := iwc.InfoList()
 
 	for _, result := range results {
 		if result.InterfaceName == interfaceName {
@@ -83,8 +85,8 @@ func (self IWConfig) Info(interfaceName string) (IWConfigInfo, error) {
 	return IWConfigInfo{}, err
 }
 
-// Returns information on all wireless interfaces
-func (self IWConfig) InfoList() ([]IWConfigInfo, error) {
+// InfoList returns information on all wireless interfaces
+func (iwc IWConfig) InfoList() ([]IWConfigInfo, error) {
 	logger.Debug("IWConfig: Getting wifi information")
 
 	cmd := exec.Command("iwconfig")
@@ -94,13 +96,13 @@ func (self IWConfig) InfoList() ([]IWConfigInfo, error) {
 		logger.Error("Command Error: %v : %v", err, limitText(out))
 		return nil, err
 	}
-	results, err := self.parseInfo(string(out))
+	results, err := iwc.parseInfo(string(out))
 
 	return results, err
 }
 
-// Set the interface operating mode. Superuser authentication is required.
-func (self IWConfig) Mode(interfaceName string, interfaceMode string) error {
+// Mode sets the interface operating mode. Superuser authentication is required.
+func (iwc IWConfig) Mode(interfaceName string, interfaceMode string) error {
 	logger.Debug("IWConfig: Setting mode")
 
 	if !authorized() {
@@ -119,8 +121,8 @@ func (self IWConfig) Mode(interfaceName string, interfaceMode string) error {
 	return nil
 }
 
-// Set the interface operating frequency. Superuser authentication is required.
-func (self IWConfig) Frequency(interfaceName string, interfaceFrequency string) error {
+// Frequency sets the interface operating frequency. Superuser authentication is required.
+func (iwc IWConfig) Frequency(interfaceName string, interfaceFrequency string) error {
 	logger.Debug("IWConfig: Setting frequency")
 
 	if !authorized() {
@@ -139,8 +141,8 @@ func (self IWConfig) Frequency(interfaceName string, interfaceFrequency string) 
 	return nil
 }
 
-// Set the interface operating channel. Superuser authentication is required.
-func (self IWConfig) Channel(interfaceName string, channel string) error {
+// Channel sets the interface operating channel. Superuser authentication is required.
+func (iwc IWConfig) Channel(interfaceName string, channel string) error {
 	logger.Debug("IWConfig: Setting channel")
 
 	if !authorized() {
@@ -159,8 +161,8 @@ func (self IWConfig) Channel(interfaceName string, channel string) error {
 	return nil
 }
 
-// Set the WEP key used for an access point.
-func (self IWConfig) Key(interfaceName string, key string) error {
+// Key sets the WEP key used for an access point.
+func (iwc IWConfig) Key(interfaceName string, key string) error {
 	logger.Debug("IWConfig: Setting Key")
 
 	if !authorized() {
@@ -179,8 +181,8 @@ func (self IWConfig) Key(interfaceName string, key string) error {
 	return nil
 }
 
-// Set the ESSID of the access point to connect to. Superuser authentication is required.
-func (self IWConfig) ESSID(interfaceName string, essid string) error {
+// ESSID Sets the ESSID of the access point to connect to. Superuser authentication is required.
+func (iwc IWConfig) ESSID(interfaceName string, essid string) error {
 	logger.Debug("IWConfig: Setting ESSID")
 
 	if !authorized() {
@@ -200,7 +202,7 @@ func (self IWConfig) ESSID(interfaceName string, essid string) error {
 }
 
 // Parse iwconfig information
-func (self IWConfig) parseInfo(content string) ([]IWConfigInfo, error) {
+func (iwc IWConfig) parseInfo(content string) ([]IWConfigInfo, error) {
 	iwrs := []IWConfigInfo{}
 	iwr := IWConfigInfo{}
 

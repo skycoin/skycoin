@@ -1,4 +1,4 @@
-package secp256k1_go
+package secp256k1go
 
 /*
 import (

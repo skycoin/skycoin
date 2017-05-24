@@ -563,9 +563,14 @@ func (px *Pex) AddPeers(peers []string) int {
 }
 
 // Load loads peers
-func (px *Pex) Load(dir string) (err error) {
-	px.Peerlist, err = LoadPeerlist(dir)
-	return
+func (px *Pex) Load(dir string) error {
+	pl, err := LoadPeerlist(dir)
+	if err != nil {
+		return err
+	}
+
+	px.Peerlist = pl
+	return nil
 }
 
 /* Common utilities */

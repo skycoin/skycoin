@@ -139,8 +139,9 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
-	DBPath      string
-	Arbitrating bool
+	DBPath       string
+	Arbitrating  bool
+	RPCThreadNum uint // rpc number
 }
 
 func (c *Config) register() {
@@ -224,6 +225,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
+	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 }
 
 var devConfig = Config{
@@ -260,6 +262,7 @@ var devConfig = Config{
 	RPCInterface:     true,
 	RPCInterfacePort: 6430,
 	RPCInterfaceAddr: "127.0.0.1",
+	RPCThreadNum:     5,
 
 	LaunchBrowser: true,
 	// Data directory holds app data -- defaults to ~/.skycoin
@@ -498,7 +501,7 @@ func Run(c *Config) {
 		go webrpc.Start(
 			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
 			webrpc.ChanBuffSize(1000),
-			webrpc.ThreadNum(1000),
+			webrpc.ThreadNum(c.RPCThreadNum),
 			webrpc.Gateway(d.Gateway),
 			webrpc.Quit(closingC))
 	}

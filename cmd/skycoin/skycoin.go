@@ -24,6 +24,8 @@ import (
 )
 
 var (
+	// Version node version which will be set when build wallet by LDFLAGS
+	Version    = "0.0.0"
 	logger     = util.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
@@ -143,7 +145,7 @@ type Config struct {
 	DBPath       string
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
-	Logfile      string
+	Logtofile    bool
 }
 
 func (c *Config) register() {
@@ -199,7 +201,7 @@ func (c *Config) register() {
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
-	flag.StringVar(&c.Logfile, "logfile", "log.txt", "log file")
+	flag.BoolVar(&c.Logtofile, "logtofile", false, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
 
@@ -482,11 +484,13 @@ func Run(c *Config) {
 	logCfg := util.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = c.ColorLog
+	var logfile string
 
-	if c.Logfile != "" {
+	if c.Logtofile {
 		// open log file
-		logPath := filepath.Join(c.DataDirectory, c.Logfile)
-		fd, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+		// logfile in ~/.skycoin/$time-$version.log
+		logfile = filepath.Join(c.DataDirectory, fmt.Sprintf("%s-v%s.log", time.Now().Format("2006-01-02-03:04:05"), Version))
+		fd, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			panic(err)
 		}

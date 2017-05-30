@@ -24,8 +24,6 @@ else
     GOX_OSARCH="linux/amd64 linux/arm windows/amd64 windows/386 darwin/amd64"
 fi
 
-echo "!!!! $GOX_OSARCH"
-
 # GOX_OSARCH="linux/amd64 darwin/amd64"
 # GOX_OSARCH="linux/amd64 linux/arm windows/amd64 windows/386 darwin/amd64"
 # GOX_OSARCH="linux/amd64"
@@ -73,7 +71,6 @@ if [[ $GOX_OSARCH == *"linux/amd64"* ]]; then
 fi
 
 if [[ $GOX_OSARCH == *"windows/amd64"* ]]; then
-    echo "Heeee"
     WIN64_ELN="${PKG_NAME}-${APP_VERSION}-gui-win-x64"
     WIN64_ELN_PLT="win32-x64"
     WIN64_ELN_ZIP="${WIN64_ELN}.zip"

@@ -3,7 +3,7 @@ set -e -o pipefail
 
 # Builds both the electron and standalone releases
 
-. build-conf.sh
+. build-conf.sh "$1"
 
 if [ -n "$1" ]; then
     GOX_OSARCH="$1"

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-. build-conf.sh
-
-SKIP_COMPILATION=${SKIP_COMPILATION:-0}
-
-if [ -n "$1" ]; then
+ if [ -n "$1" ]; then
     GOX_OSARCH="$1"
 fi
+
+. build-conf.sh "$GOX_OSARCH"
+
+SKIP_COMPILATION=${SKIP_COMPILATION:-0}
 
 WITH_BUILDER=$2
 WITH_BUILDER=${WITH_BUILDER:-1}
@@ -27,7 +27,7 @@ echo "Stamping the release with proper version"
 
 echo "----------------------------"
 echo "Packaging standalone release"
-./package-standalone-release.sh "$WITH_BUILDER"
+./package-standalone-release.sh "$WITH_BUILDER" $GOX_OSARCH
 
 echo "------------------------------"
 echo "Compressing standalone release"

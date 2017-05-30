@@ -12,7 +12,11 @@ set -e -o pipefail
 # By default builds all architectures.
 # A single arch can be built by specifying it using gox's arch names
 
-. build-conf.sh
+if [ -n "$1" ]; then
+    GOX_OSARCH="$1"
+fi
+
+. build-conf.sh "$GOX_OSARCH"
 
 SKIP_COMPILATION=${SKIP_COMPILATION:-0}
 
@@ -34,6 +38,10 @@ fi
 if [ "$WITH_BUILDER" = "1" ]; then
     if [ ! -z "$WIN64_ELN" ] && [ ! -z "$WIN32_ELN" ]; then
         npm run dist-win
+    elif [ ! -z "$WIN64_ELN" ]; then
+        npm run dist-win64
+    elif [ ! -z "$WIN32_ELN" ]; then
+        npm run dist-win32
     fi
 
     if [ ! -z "$LNX64_ELN" ]; then
@@ -53,10 +61,15 @@ if [ "$WITH_BUILDER" = "1" ]; then
     pushd "$FINAL_OUTPUT" >/dev/null
     if [ -e "mac" ]; then
         pushd "mac" >/dev/null
+        ls
         if [ -e "${PDT_NAME}-${APP_VERSION}.dmg" ]; then
             mv "${PDT_NAME}-${APP_VERSION}.dmg" "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.dmg"
         elif [ -e "${PDT_NAME}.app" ]; then
-            tar czf "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.zip" --owner=0 --group=0 "${PDT_NAME}.app"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                tar czf "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.zip" "${PDT_NAME}.app"
+            elif [[ "$OSTYPE" == "linux"* ]]; then 
+                tar czf "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.zip" --owner=0 --group=0 "${PDT_NAME}.app"
+            fi
         fi
         popd >/dev/null
         rm -rf "mac"
@@ -82,7 +95,6 @@ if [ "$WITH_BUILDER" = "1" ]; then
 else
     GULP_PLATFORM=""
     if [ -n "$1" ]; then
-        GOX_OSARCH="$1"
         case "$1" in
         "linux/amd64")
             GULP_PLATFORM="linux-x64"
@@ -110,11 +122,11 @@ else
 
     echo "--------------------------"
     echo "Packaging electron release"
-    ./package-electron-release.sh
+    ./package-electron-release.sh $GOX_OSARCH
 
     echo "----------------------------"
     echo "Compressing electron release"
-    ./compress-electron-release.sh
+    ./compress-electron-release.sh $GOX_OSARCH
 fi
 
 popd >/dev/null

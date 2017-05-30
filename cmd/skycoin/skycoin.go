@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -142,6 +143,7 @@ type Config struct {
 	DBPath       string
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
+	Logfile      string
 }
 
 func (c *Config) register() {
@@ -177,6 +179,7 @@ func (c *Config) register() {
 		"port to serve rpc interface on")
 	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr,
 		"addr to serve rpc interface on")
+	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
 		"launch system default webbrowser at client startup")
@@ -196,6 +199,7 @@ func (c *Config) register() {
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
+	flag.StringVar(&c.Logfile, "logfile", "log.txt", "log file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
 
@@ -225,7 +229,6 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
 	//	"Wallet address version. Options are 'test' and 'main'")
-	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 }
 
 var devConfig = Config{
@@ -479,6 +482,19 @@ func Run(c *Config) {
 	logCfg := util.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = c.ColorLog
+
+	if c.Logfile != "" {
+		// open log file
+		logPath := filepath.Join(c.DataDirectory, c.Logfile)
+		fd, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+		if err != nil {
+			panic(err)
+		}
+		defer fd.Close()
+		out := io.MultiWriter(os.Stdout, fd)
+		logCfg.Output = out
+	}
+
 	logCfg.InitLogger()
 
 	// If the user Ctrl-C's, shutdown properly

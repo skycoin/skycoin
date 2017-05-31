@@ -3,5 +3,6 @@ language: go
 go:
  - master
 
-script:
- - go run helloWorld.go
+env:
+  global:
+- PATH=$HOME/gopath/bin:$PATH

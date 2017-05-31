@@ -214,8 +214,8 @@ func (pool *ConnectionPool) Run() {
 	pool.listener = ln
 
 	go func() {
+		logger.Info("Listening for connections...")
 		for {
-			logger.Info("Listening for connections...")
 			conn, err := ln.Accept()
 			if err != nil {
 				// When Accept() returns with a non-nill error, we check the quit

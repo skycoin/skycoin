@@ -5,4 +5,4 @@ go:
 
 env:
   global:
-- PATH=$HOME/gopath/bin:$PATH
+ - PATH=$HOME/gopath/bin:$PATH

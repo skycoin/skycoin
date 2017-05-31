@@ -3,7 +3,7 @@ set -e -o pipefail
 
 # Builds both the electron and standalone releases
 
-. build-conf.sh
+. build-conf.sh "$1"
 
 if [ -n "$1" ]; then
     GOX_OSARCH="$1"
@@ -14,7 +14,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 echo "Compiling with gox"
-
+pwd
 # Build with gox here and make the other scripts skip it
 ./gox.sh "$GOX_OSARCH" "$GOX_OUTPUT"
 

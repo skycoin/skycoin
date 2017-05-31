@@ -4,7 +4,11 @@ set -e -o pipefail
 # Compresses packaged standalone release after
 # ./package-standalone-release.sh is done
 
-. build-conf.sh
+if [ -n "$2" ]; then
+    GOX_OSARCH="$1"
+fi
+
+. build-conf.sh "$GOX_OSARCH"
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

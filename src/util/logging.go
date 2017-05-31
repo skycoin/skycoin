@@ -10,6 +10,8 @@ import (
 	"log"
 	"os"
 
+	"io"
+
 	logging "github.com/op/go-logging"
 )
 
@@ -35,6 +37,8 @@ type LogConfig struct {
 	Format string
 	// enable colors
 	Colors bool
+	// output
+	Output io.Writer
 }
 
 // TODO:
@@ -48,6 +52,7 @@ func DevLogConfig(modules []string) *LogConfig {
 		Modules: modules,
 		Format:  defaultLogFormat,
 		Colors:  true,
+		Output:  os.Stdout,
 	}
 }
 
@@ -59,6 +64,7 @@ func ProdLogConfig(modules []string) *LogConfig {
 		Modules: modules,
 		Format:  defaultLogFormat,
 		Colors:  false,
+		Output:  os.Stdout,
 	}
 }
 
@@ -82,7 +88,7 @@ func (l *LogConfig) InitLogger() {
 	for _, s := range l.Modules {
 		logging.SetLevel(l.level, s)
 	}
-	stdout := logging.NewLogBackend(os.Stdout, "", 0)
+	stdout := logging.NewLogBackend(l.Output, "", 0)
 	stdout.Color = l.Colors
 	logging.SetBackend(stdout)
 }

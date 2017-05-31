@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -23,6 +24,8 @@ import (
 )
 
 var (
+	// Version node version which will be set when build wallet by LDFLAGS
+	Version    = "0.0.0"
 	logger     = util.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
@@ -139,8 +142,10 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
-	DBPath      string
-	Arbitrating bool
+	DBPath       string
+	Arbitrating  bool
+	RPCThreadNum uint // rpc number
+	Logtofile    bool
 }
 
 func (c *Config) register() {
@@ -176,6 +181,7 @@ func (c *Config) register() {
 		"port to serve rpc interface on")
 	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr,
 		"addr to serve rpc interface on")
+	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
 		"launch system default webbrowser at client startup")
@@ -195,6 +201,7 @@ func (c *Config) register() {
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
+	flag.BoolVar(&c.Logtofile, "logtofile", false, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
 
@@ -260,6 +267,7 @@ var devConfig = Config{
 	RPCInterface:     true,
 	RPCInterfacePort: 6430,
 	RPCInterfaceAddr: "127.0.0.1",
+	RPCThreadNum:     5,
 
 	LaunchBrowser: true,
 	// Data directory holds app data -- defaults to ~/.skycoin
@@ -476,6 +484,21 @@ func Run(c *Config) {
 	logCfg := util.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = c.ColorLog
+	var logfile string
+
+	if c.Logtofile {
+		// open log file
+		// logfile in ~/.skycoin/$time-$version.log
+		logfile = filepath.Join(c.DataDirectory, fmt.Sprintf("%s-v%s.log", time.Now().Format("2006-01-02-03:04:05"), Version))
+		fd, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			panic(err)
+		}
+		defer fd.Close()
+		out := io.MultiWriter(os.Stdout, fd)
+		logCfg.Output = out
+	}
+
 	logCfg.InitLogger()
 
 	// If the user Ctrl-C's, shutdown properly
@@ -498,7 +521,7 @@ func Run(c *Config) {
 		go webrpc.Start(
 			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
 			webrpc.ChanBuffSize(1000),
-			webrpc.ThreadNum(1000),
+			webrpc.ThreadNum(c.RPCThreadNum),
 			webrpc.Gateway(d.Gateway),
 			webrpc.Quit(closingC))
 	}

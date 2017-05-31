@@ -4,7 +4,11 @@ set -e -o pipefail
 # Copies gox-compiled binaries and compiled GUI assets
 # into an electron package
 
-. build-conf.sh
+if [ -n "$1" ]; then
+    GOX_OSARCH="$1"
+fi
+
+. build-conf.sh "$GOX_OSARCH"
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

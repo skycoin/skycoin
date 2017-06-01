@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher/base58"
 )
@@ -65,7 +64,7 @@ func DecodeBase58Address(addr string) (Address, error) {
 func MustDecodeBase58Address(addr string) Address {
 	a, err := DecodeBase58Address(addr)
 	if err != nil {
-		log.Panicf("Invalid address %s: %v", addr, err)
+		logger.Panicf("Invalid address %s: %v", addr, err)
 	}
 	return a
 }
@@ -83,7 +82,7 @@ func BitcoinDecodeBase58Address(addr string) (Address, error) {
 func BitcoinMustDecodeBase58Address(addr string) Address {
 	a, err := BitcoinDecodeBase58Address(addr)
 	if err != nil {
-		log.Panicf("Invalid address %s: %v", addr, err)
+		logger.Panicf("Invalid address %s: %v", addr, err)
 	}
 	return a
 }
@@ -262,7 +261,7 @@ func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 
 	seckey := b[1:33]
 	if len(seckey) != 32 {
-		log.Panic("...")
+		logger.Panic("...")
 	}
 	return NewSecKey(b[1:33]), nil
 }
@@ -271,7 +270,7 @@ func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 func MustSecKeyFromWalletImportFormat(input string) SecKey {
 	seckey, err := SecKeyFromWalletImportFormat(input)
 	if err != nil {
-		log.Panicf("MustSecKeyFromWalletImportFormat, invalid seckey, %v", err)
+		logger.Panicf("MustSecKeyFromWalletImportFormat, invalid seckey, %v", err)
 	}
 	return seckey
 }

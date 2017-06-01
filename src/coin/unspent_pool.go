@@ -2,7 +2,6 @@ package coin
 
 import (
 	"errors"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
@@ -34,7 +33,7 @@ func (up *UnspentPool) Rebuild(uxs UxArray) {
 	}
 	up.XorHash = xh
 	if len(up.Pool) != len(uxs) {
-		log.Panic("Corrupt UnspentPool array: contains duplicate UxOut")
+		logger.Panic("Corrupt UnspentPool array: contains duplicate UxOut")
 	}
 }
 
@@ -53,7 +52,7 @@ func (up *UnspentPool) Array() UxArray {
 func (up *UnspentPool) Add(ux UxOut) {
 	h := ux.Hash()
 	if up.Has(h) {
-		log.Panic("Attempt to insert UxOut twice")
+		logger.Panic("Attempt to insert UxOut twice")
 	}
 	up.Pool[h] = ux
 	up.XorHash = up.XorHash.Xor(ux.SnapshotHash())

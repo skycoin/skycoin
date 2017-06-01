@@ -2,7 +2,6 @@ package wallet
 
 import (
 	//"fmt"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
@@ -64,7 +63,7 @@ func (res ReadableEntries) ToWalletEntries() []Entry {
 	for i, re := range res {
 		we := NewEntryFromReadable(&re)
 		if err := we.Verify(); err != nil {
-			log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
+			logger.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
 		}
 		entries[i] = we
 	}

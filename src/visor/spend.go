@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	//"fmt"
-	"log"
+
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -39,7 +39,7 @@ func (ouo OldestUxOut) Less(i, j int) bool {
 		jh := ouo[j].Hash()
 		cmp := bytes.Compare(ih[:], jh[:])
 		if cmp == 0 {
-			log.Panic("Duplicate UxOut when sorting")
+			logger.Panic("Duplicate UxOut when sorting")
 		}
 		return cmp < 0
 	}
@@ -105,7 +105,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 	for i, au := range spends {
 		entry, exists := wlt.GetEntry(au.Body.Address)
 		if !exists {
-			log.Panic("On second thought, the wallet entry does not exist")
+			logger.Panic("On second thought, the wallet entry does not exist")
 		}
 		txn.PushInput(au.Hash())
 		toSign[i] = entry.Secret

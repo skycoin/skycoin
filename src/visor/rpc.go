@@ -1,8 +1,6 @@
 package visor
 
 import (
-	"log"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -55,15 +53,15 @@ func (rpc RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet, amt wallet
 	}
 
 	if err := tx.Verify(); err != nil {
-		log.Panicf("Invalid transaction, %v", err)
+		logger.Panicf("Invalid transaction, %v", err)
 	}
 
 	if err := VerifyTransactionFee(v.Blockchain, &tx); err != nil {
-		log.Panicf("Created invalid spending txn: visor fail, %v", err)
+		logger.Panicf("Created invalid spending txn: visor fail, %v", err)
 	}
 
 	if err := v.Blockchain.VerifyTransaction(tx); err != nil {
-		log.Panicf("Created invalid spending txn: blockchain fail, %v", err)
+		logger.Panicf("Created invalid spending txn: blockchain fail, %v", err)
 	}
 	return
 }

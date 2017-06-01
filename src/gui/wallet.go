@@ -63,12 +63,12 @@ func InitWalletRPC(walletDir string, options ...wallet.Option) {
 func NewNotesRPC(walletDir string) *NotesRPC {
 	rpc := &NotesRPC{}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
-		log.Panicf("Failed to create notes directory %s: %v", walletDir, err)
+		logger.Panicf("Failed to create notes directory %s: %v", walletDir, err)
 	}
 	rpc.WalletDirectory = walletDir
 	w, err := wallet.LoadNotes(rpc.WalletDirectory)
 	if err != nil {
-		log.Panicf("Failed to load all notes: %v", err)
+		logger.Panicf("Failed to load all notes: %v", err)
 	}
 	wallet.CreateNoteFileIfNotExist(walletDir)
 	rpc.Notes = w
@@ -79,7 +79,7 @@ func NewNotesRPC(walletDir string) *NotesRPC {
 func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 	rpc := &WalletRPC{}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
-		log.Panicf("Failed to create wallet directory %s: %v", walletDir, err)
+		logger.Panicf("Failed to create wallet directory %s: %v", walletDir, err)
 	}
 
 	rpc.WalletDirectory = walletDir
@@ -89,7 +89,7 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 
 	w, err := wallet.LoadWallets(rpc.WalletDirectory)
 	if err != nil {
-		log.Panicf("Failed to load all wallets: %v", err)
+		logger.Panicf("Failed to load all wallets: %v", err)
 	}
 	rpc.Wallets = w
 
@@ -98,7 +98,7 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 		rpc.CreateWallet(wltName)
 
 		if err := rpc.SaveWallet(wltName); err != nil {
-			log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, err)
+			logger.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, err)
 		}
 
 		// newWlt := wallet.NewWallet("", wltName, wltName) //deterministic
@@ -106,7 +106,7 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 		// rpc.Wallets.Add(newWlt)
 		// errs := rpc.Wallets.Save(rpc.WalletDirectory)
 		// if len(errs) != 0 {
-		// 	log.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
+		// 	logger.Panicf("Failed to save wallets to %s: %v", rpc.WalletDirectory, errs)
 		// }
 	}
 
@@ -206,7 +206,7 @@ func (wlt *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
 	wallet *wallet.Wallet) bool {
 
 	if wallet == nil {
-		log.Panic("Wallet does not exist")
+		logger.Panic("Wallet does not exist")
 	}
 
 	// auxs := v.Blockchain.GetUnspent().AllForAddresses(wallet.GetAddresses())

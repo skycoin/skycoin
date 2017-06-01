@@ -2,7 +2,6 @@ package coin
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -70,12 +69,12 @@ type Block struct {
 func NewBlock(prev Block, currentTime uint64, unspent UnspentPool,
 	txns Transactions, calc FeeCalculator) Block {
 	if len(txns) == 0 {
-		log.Panic("Refusing to create block with no transactions")
+		logger.Panic("Refusing to create block with no transactions")
 	}
 	fee, err := txns.Fees(calc)
 	if err != nil {
 		// This should have been caught earlier
-		log.Panicf("Invalid transaction fees: %v", err)
+		logger.Panicf("Invalid transaction fees: %v", err)
 	}
 	body := BlockBody{txns}
 	return Block{
@@ -138,7 +137,7 @@ func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
 func NewBlockHeader(prev BlockHeader, unspent UnspentPool, currentTime,
 	fee uint64, body BlockBody) BlockHeader {
 	if currentTime <= prev.Time {
-		log.Panic("Time can only move forward")
+		logger.Panic("Time can only move forward")
 	}
 	prevHash := prev.Hash()
 	return BlockHeader{

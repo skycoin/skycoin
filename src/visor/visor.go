@@ -3,6 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"time"
 
@@ -153,9 +154,24 @@ func NewVisor(c Config) (*Visor, VsClose) {
 		logger.Panic(err)
 	}
 
+	// creates block signature bucket
+	sigs := blockdb.NewBlockSigs(db)
+
 	tree := blockdb.NewBlockTree(db)
 	bc := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
 	bp := NewBlockchainParser(history, bc)
+	//
+	var verifyOnce sync.Once
+	bp.BindParsedNotifier(func(height uint64) {
+		if height == bc.Head().Head.BkSeq {
+			verifyOnce.Do(func() {
+				// only do verification once when loading and parsing from local blocks
+				if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
+					logger.Panicf("Invalid block signatures: %v", err)
+				}
+			})
+		}
+	})
 
 	bc.BindListener(bp.BlockListener)
 
@@ -164,7 +180,7 @@ func NewVisor(c Config) (*Visor, VsClose) {
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
-		blockSigs:   blockdb.NewBlockSigs(db),
+		blockSigs:   sigs,
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
@@ -187,10 +203,6 @@ func NewVisor(c Config) (*Visor, VsClose) {
 				Sig:   c.GenesisSignature,
 			})
 		}
-	}
-
-	if err := v.Blockchain.VerifySigs(c.BlockchainPubkey, v.blockSigs); err != nil {
-		logger.Panicf("Invalid block signatures: %v", err)
 	}
 
 	return v, func() {

@@ -11,6 +11,7 @@ import (
 type BlockchainParser struct {
 	historyDB    *historydb.HistoryDB
 	parsedHeight uint64
+	parsedFunc   func(height uint64) // notify caller the parse process
 	blkC         chan coin.Block
 	closing      chan chan struct{}
 	bc           *Blockchain
@@ -32,6 +33,11 @@ func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain) *Blockchain
 
 	bp.run()
 	return bp
+}
+
+// BindParsedNotifier sets the parsedFunc
+func (bcp *BlockchainParser) BindParsedNotifier(f func(height uint64)) {
+	bcp.parsedFunc = f
 }
 
 // Start the parsing process

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"reflect"
 	"time"
@@ -208,14 +207,14 @@ func (pool *ConnectionPool) Run() {
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Panic(err)
+		logger.Panic(err)
 	}
 
 	pool.listener = ln
 
 	go func() {
+		logger.Info("Listening for connections...")
 		for {
-			logger.Info("Listening for connections...")
 			conn, err := ln.Accept()
 			if err != nil {
 				// When Accept() returns with a non-nill error, we check the quit
@@ -291,7 +290,7 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	a := conn.RemoteAddr().String()
 	if pool.IsConnExist(a) {
-		log.Panicf("Connection %s already exists", a)
+		logger.Panicf("Connection %s already exists", a)
 	}
 
 	var c *Connection
@@ -306,7 +305,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 	c, err := pool.NewConnection(conn, solicited)
 	if err != nil {
-		log.Panic(err)
+		logger.Panic(err)
 	}
 
 	if pool.Config.ConnectCallback != nil {
@@ -419,7 +418,7 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	n := copy(data, buf)
 	if n != c {
 		// I don't believe this can ever occur
-		log.Panic("Failed to copy all the bytes")
+		logger.Panic("Failed to copy all the bytes")
 	}
 	return data, nil
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -40,12 +39,12 @@ func NewWallet(wltName string, opts ...Option) Wallet {
 	// generaten bip39 as default seed
 	entropy, err := bip39.NewEntropy(128)
 	if err != nil {
-		log.Panicf("generate bip39 entropy failed, err:%v", err)
+		logger.Panicf("generate bip39 entropy failed, err:%v", err)
 	}
 
 	seed, err := bip39.NewMnemonic(entropy)
 	if err != nil {
-		log.Panicf("generate bip39 seed failed, err:%v", err)
+		logger.Panicf("generate bip39 seed failed, err:%v", err)
 	}
 
 	w := Wallet{
@@ -121,7 +120,7 @@ func NewWalletFromReadable(r *ReadableWallet) Wallet {
 
 	err := w.Validate()
 	if err != nil {
-		log.Panicf("Wallet %s invalid: %v", w.GetFilename(), err)
+		logger.Panicf("Wallet %s invalid: %v", w.GetFilename(), err)
 	}
 	return w
 }
@@ -217,7 +216,7 @@ func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
 	} else {
 		sd, err = hex.DecodeString(wlt.getLastSeed())
 		if err != nil {
-			log.Panicf("decode hex seed failed,%v", err)
+			logger.Panicf("decode hex seed failed,%v", err)
 		}
 		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, num)
 	}

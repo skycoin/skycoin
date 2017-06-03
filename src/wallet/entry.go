@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"errors"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
@@ -37,7 +36,7 @@ func NewEntryFromReadable(w *ReadableEntry) Entry {
 	// return error, so we can detect a broken wallet.
 
 	if w.Address == "" {
-		//log.Panic("ReadableWalletEntry has no Address")
+		//logger.Panic("ReadableWalletEntry has no Address")
 	}
 	var s cipher.SecKey
 	if w.Secret != "" {
@@ -80,10 +79,10 @@ func LoadEntry(filename string) (Entry, error) {
 func MustLoadEntry(filename string) Entry {
 	keys, err := LoadEntry(filename)
 	if err != nil {
-		log.Panicf("Failed to load wallet entry: %v", err)
+		logger.Panicf("Failed to load wallet entry: %v", err)
 	}
 	if err := keys.Verify(); err != nil {
-		log.Panicf("Invalid wallet entry: %v", err)
+		logger.Panicf("Invalid wallet entry: %v", err)
 	}
 	return keys
 }

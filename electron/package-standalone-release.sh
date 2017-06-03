@@ -7,6 +7,8 @@ if [ -n "$1" ]; then
     GOX_OSARCH="$2"
 fi
 
+echo "In package standalone release: $GOX_OSARCH"
+
 . build-conf.sh "$GOX_OSARCH"
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

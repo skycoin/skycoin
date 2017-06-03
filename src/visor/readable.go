@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"strconv"
@@ -81,7 +80,7 @@ func NewUnknownTransactionStatus() TransactionStatus {
 // NewConfirmedTransactionStatus creates confirmed transaction status
 func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionStatus {
 	if height == 0 {
-		log.Panic("Invalid confirmed transaction height")
+		logger.Panic("Invalid confirmed transaction height")
 	}
 	return TransactionStatus{
 		Unconfirmed: false,
@@ -137,7 +136,7 @@ func StrBalance(amt uint64) string {
 	bs := strconv.FormatUint(b, 10)
 
 	if len(bs) > 6 {
-		log.Panic("StrBalance: impossible condition")
+		logger.Panic("StrBalance: impossible condition")
 	}
 
 	if b == 0 { //no fractional part
@@ -479,14 +478,14 @@ func TransactionToJSON(tx coin.Transaction) string {
 	var o TransactionJSON
 
 	if err := tx.Verify(); err != nil {
-		log.Panic("Input Transaction Invalid: Cannot serialize to JSON, fails verify")
+		logger.Panic("Input Transaction Invalid: Cannot serialize to JSON, fails verify")
 	}
 
 	o.Hash = tx.Hash().Hex()
 	o.InnerHash = tx.InnerHash.Hex()
 
 	if tx.InnerHash != tx.HashInner() {
-		log.Panic("TransactionToJSON called with invalid transaction, inner hash mising")
+		logger.Panic("TransactionToJSON called with invalid transaction, inner hash mising")
 	}
 
 	o.Sigs = make([]string, len(tx.Sigs))
@@ -505,7 +504,7 @@ func TransactionToJSON(tx coin.Transaction) string {
 
 	b, err := json.MarshalIndent(o, "", "  ")
 	if err != nil {
-		log.Panic("Cannot serialize transaction as JSON")
+		logger.Panic("Cannot serialize transaction as JSON")
 	}
 
 	return string(b)

@@ -27,10 +27,10 @@ echo "Stamping the release with proper version"
 
 echo "----------------------------"
 echo "Packaging standalone release"
-./package-standalone-release.sh "$WITH_BUILDER" $GOX_OSARCH
+./package-standalone-release.sh "$WITH_BUILDER" "$GOX_OSARCH"
 
 echo "------------------------------"
 echo "Compressing standalone release"
-./compress-standalone-release.sh
+./compress-standalone-release.sh "$GOX_OSARCH"
 
 popd >/dev/null

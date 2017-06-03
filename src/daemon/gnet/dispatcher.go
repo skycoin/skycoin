@@ -3,7 +3,6 @@ package gnet
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"reflect"
 	"time"
@@ -65,7 +64,7 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 		// This occurs only when the user registers an interface that does
 		// match the Message interface.  They should have known about this
 		// earlier via a call to VerifyMessages
-		log.Panic("Message obtained from map does not match Message interface")
+		logger.Panic("Message obtained from map does not match Message interface")
 		return nil, errors.New("MessageIdMaps contain non-Message")
 	}
 	return m, nil
@@ -96,7 +95,7 @@ var encodeMessage = func(msg Message) []byte {
 	msgID, succ := MessageIDMap[t]
 	if !succ {
 		txt := "Attempted to serialize message struct not in MessageIdMap: %v"
-		log.Panicf(txt, msg)
+		logger.Panicf(txt, msg)
 	}
 	bMsg := encoder.Serialize(msg)
 

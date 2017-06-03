@@ -55,7 +55,7 @@ func serve(listener net.Listener, mux *http.ServeMux) {
 	go func() {
 		ready <- struct{}{}
 		if err := http.Serve(listener, mux); err != nil {
-			log.Panic(err)
+			logger.Panic(err)
 		}
 	}()
 	<-ready

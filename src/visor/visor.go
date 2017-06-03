@@ -3,8 +3,8 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"sync"
 
-	"log"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -144,19 +144,34 @@ func NewVisor(c Config) (*Visor, VsClose) {
 	if c.IsMaster {
 		logger.Debug("Visor is master")
 		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
-			log.Panicf("Cannot run in master: invalid seckey for pubkey")
+			logger.Panicf("Cannot run in master: invalid seckey for pubkey")
 		}
 	}
 
 	db, closeDB := openDB(c.DBPath)
 	history, err := historydb.New(db)
 	if err != nil {
-		log.Panic(err)
+		logger.Panic(err)
 	}
+
+	// creates block signature bucket
+	sigs := blockdb.NewBlockSigs(db)
 
 	tree := blockdb.NewBlockTree(db)
 	bc := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
 	bp := NewBlockchainParser(history, bc)
+	//
+	var verifyOnce sync.Once
+	bp.BindParsedNotifier(func(height uint64) {
+		if height == bc.Head().Head.BkSeq {
+			verifyOnce.Do(func() {
+				// only do verification once when loading and parsing from local blocks
+				if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
+					logger.Panicf("Invalid block signatures: %v", err)
+				}
+			})
+		}
+	})
 
 	bc.BindListener(bp.BlockListener)
 
@@ -165,7 +180,7 @@ func NewVisor(c Config) (*Visor, VsClose) {
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
-		blockSigs:   blockdb.NewBlockSigs(db),
+		blockSigs:   sigs,
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
@@ -190,10 +205,6 @@ func NewVisor(c Config) (*Visor, VsClose) {
 		}
 	}
 
-	if err := v.Blockchain.VerifySigs(c.BlockchainPubkey, v.blockSigs); err != nil {
-		log.Panicf("Invalid block signatures: %v", err)
-	}
-
 	return v, func() {
 		closeDB()
 	}
@@ -216,7 +227,7 @@ func (vs *Visor) GenesisPreconditions() {
 	//if seckey is set
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
 		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
-			log.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
+			logger.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
 		}
 	}
 }
@@ -231,7 +242,7 @@ func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
 func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	var sb coin.SignedBlock
 	if !vs.Config.IsMaster {
-		log.Panic("Only master chain can create blocks")
+		logger.Panic("Only master chain can create blocks")
 	}
 	if vs.Unconfirmed.Txns.len() == 0 {
 		return sb, errors.New("No transactions")
@@ -284,7 +295,7 @@ func (vs *Visor) verifySignedBlock(b *coin.SignedBlock) error {
 // SignBlock signs a block for master.  Will panic if anything is invalid
 func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 	if !vs.Config.IsMaster {
-		log.Panic("Only master chain can sign blocks")
+		logger.Panic("Only master chain can sign blocks")
 	}
 	sig := cipher.SignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
 	sb := coin.SignedBlock{
@@ -370,12 +381,12 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) []coin.SignedBlock {
 func (vs *Visor) GetGenesisBlock() coin.SignedBlock {
 	b := vs.Blockchain.GetGenesisBlock()
 	if b == nil {
-		log.Panic("No genesis signature")
+		logger.Panic("No genesis signature")
 	}
 
 	sig, err := vs.blockSigs.Get(b.HashHeader())
 	if err != nil {
-		log.Panic(err)
+		logger.Panic(err)
 	}
 
 	return coin.SignedBlock{

@@ -3,7 +3,6 @@ package daemon
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"reflect"
 	"strconv"
@@ -78,12 +77,12 @@ func (cfg *Config) preprocess() Config {
 		if config.Daemon.Address == "" {
 			local, err := LocalhostIP()
 			if err != nil {
-				log.Panicf("Failed to obtain localhost IP: %v", err)
+				logger.Panicf("Failed to obtain localhost IP: %v", err)
 			}
 			config.Daemon.Address = local
 		} else {
 			if !IsLocalhost(config.Daemon.Address) {
-				log.Panicf("Invalid address for localhost-only: %s",
+				logger.Panicf("Invalid address for localhost-only: %s",
 					config.Daemon.Address)
 			}
 		}
@@ -362,30 +361,30 @@ main:
 		// which is already select{}ed here
 		case r := <-dm.onConnectEvent:
 			if dm.Config.DisableNetworking {
-				log.Panic("There should be no connect events")
+				logger.Panic("There should be no connect events")
 			}
 			dm.onConnect(r)
 		case de := <-dm.onDisconnectEvent:
 			if dm.Config.DisableNetworking {
-				log.Panic("There should be no disconnect events")
+				logger.Panic("There should be no disconnect events")
 			}
 			dm.onDisconnect(de)
 		// Handle connection errors
 		case r := <-dm.connectionErrors:
 			if dm.Config.DisableNetworking {
-				log.Panic("There should be no connection errors")
+				logger.Panic("There should be no connection errors")
 			}
 			dm.handleConnectionError(r)
 		// Process message sending results
 		case r := <-dm.Pool.Pool.SendResults:
 			if dm.Config.DisableNetworking {
-				log.Panic("There should be nothing in SendResults")
+				logger.Panic("There should be nothing in SendResults")
 			}
 			dm.handleMessageSendResult(r)
 		// Message handlers
 		case m := <-dm.messageEvents:
 			if dm.Config.DisableNetworking {
-				log.Panic("There should be no message events")
+				logger.Panic("There should be no message events")
 			}
 			dm.processMessageEvent(m)
 		// Process any pending RPC requests

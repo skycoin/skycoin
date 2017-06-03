@@ -3,7 +3,6 @@ package visor
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -193,7 +192,7 @@ func (bc *Blockchain) Time() uint64 {
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
 func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTime uint64) (coin.Block, error) {
 	if currentTime <= bc.Time() {
-		log.Panic("Time can only move forward")
+		logger.Panic("Time can only move forward")
 	}
 	if len(txns) == 0 {
 		return coin.Block{}, errors.New("No transactions")
@@ -207,11 +206,11 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 	//make sure block is valid
 	if DebugLevel2 == true {
 		if err := bc.verifyBlockHeader(b); err != nil {
-			log.Panic("Impossible Error: not allowed to fail")
+			logger.Panic("Impossible Error: not allowed to fail")
 		}
 		txns, err := bc.verifyTransactions(b.Body.Transactions)
 		if err != nil {
-			log.Panic("Impossible Error: not allowed to fail")
+			logger.Panic("Impossible Error: not allowed to fail")
 		}
 		b.Body.Transactions = txns
 	}
@@ -546,7 +545,7 @@ func (bc Blockchain) verifyTransactions(txns coin.Transactions) (coin.Transactio
 func (bc Blockchain) ArbitrateTransactions(txns coin.Transactions) coin.Transactions {
 	newtxns, err := bc.processTransactions(txns, true)
 	if err != nil {
-		log.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
+		logger.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
 	}
 	return newtxns
 }

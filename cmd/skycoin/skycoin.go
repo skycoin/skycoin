@@ -489,7 +489,8 @@ func Run(c *Config) {
 	if c.Logtofile {
 		// open log file
 		// logfile in ~/.skycoin/$time-$version.log
-		logfile = filepath.Join(c.DataDirectory, fmt.Sprintf("%s-v%s.log", time.Now().Format("2006-01-02-03:04:05"), Version))
+		var logfmt = "2006-01-02-030405"
+		logfile = filepath.Join(c.DataDirectory, fmt.Sprintf("%s-v%s.log", time.Now().Format(logfmt), Version))
 		fd, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			panic(err)

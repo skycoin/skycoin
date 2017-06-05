@@ -4,5 +4,5 @@ go:
  - master
 
 env:
-  global:
+ global:
  - PATH=$HOME/gopath/bin:$PATH

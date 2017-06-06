@@ -3,7 +3,7 @@ language: go
 go:
  - master
 before_install:
- - apt-get install bison curl git mercurial make binutils bison gcc build-essential
+ - sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
 env:
  global:
  - PATH=$HOME/gopath/bin:$PATH

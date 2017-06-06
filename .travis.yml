@@ -3,7 +3,7 @@ language: go
 go:
  - master
 before_install:
- - echo "machine github.com login $GITHUB_AUTH_TOKEN" > ~/.netrc
+ - apt-get install bison curl git mercurial make binutils bison gcc build-essential
 env:
  global:
  - PATH=$HOME/gopath/bin:$PATH

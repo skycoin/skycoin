@@ -1,26 +1,35 @@
 package webrpc
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http/httptest"
+	"testing"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/stretchr/testify/assert"
 )
 
-func setup() (*rpcHandler, func()) {
+func setup() (*WebRPC, func()) {
 	c := make(chan struct{})
 	f := func() {
 		close(c)
 	}
-	return makeRPC(
+	rpc, err := New(
 		ChanBuffSize(1),
 		ThreadNum(1),
 		Gateway(&fakeGateway{}),
-		Quit(c)), f
+		Quit(c))
+	if err != nil {
+		panic(err)
+	}
+
+	return rpc, f
 }
 
 type fakeGateway struct {
@@ -88,4 +97,80 @@ func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON
 
 func (fg fakeGateway) GetTimeNow() uint64 {
 	return 0
+}
+
+func TestNewWebRPC(t *testing.T) {
+	rpc1, err := New(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
+	assert.Nil(t, err)
+	assert.NotNil(t, rpc1.mux)
+	assert.NotNil(t, rpc1.handlers)
+	assert.NotNil(t, rpc1.gateway)
+}
+
+func Test_rpcHandler_HandlerFunc(t *testing.T) {
+	rpc, err := New(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
+	assert.Nil(t, err)
+	rpc.HandleFunc("get_status", getStatusHandler)
+	err = rpc.HandleFunc("get_status", getStatusHandler)
+	assert.NotNil(t, err)
+}
+
+func Test_rpcHandler_Handler(t *testing.T) {
+	rpc, teardown := setup()
+	defer teardown()
+
+	type args struct {
+		httpMethod string
+		req        Request
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want Response
+	}{
+		{
+			"http GET",
+			args{
+				httpMethod: "GET",
+				req:        Request{},
+			},
+			Response{
+				Jsonrpc: jsonRPC,
+				Error: &RPCError{
+					Code:    errCodeInvalidRequest,
+					Message: errMsgNotPost,
+				},
+			},
+		},
+		{
+			"invalid jsonrpc",
+			args{
+				httpMethod: "POST",
+				req: Request{
+					ID:      "1",
+					Jsonrpc: "1.0",
+					Method:  "get_status",
+				},
+			},
+			makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc),
+		},
+	}
+
+	for _, tt := range tests {
+		d, err := json.Marshal(tt.args.req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		r := httptest.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
+		w := httptest.NewRecorder()
+		rpc.Handler(w, r)
+		var res Response
+		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, res, tt.want)
+	}
+
 }

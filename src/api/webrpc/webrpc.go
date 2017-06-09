@@ -1,11 +1,14 @@
 package webrpc
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 
-	"github.com/skycoin/skycoin/src/util"
-
 	"encoding/json"
+
+	"github.com/skycoin/skycoin/src/util"
+	wh "github.com/skycoin/skycoin/src/util/http"
 
 	"bytes"
 )
@@ -97,43 +100,212 @@ func makeErrorResponse(code int, message string) Response {
 	}
 }
 
-// Start start the webrpc service.
-// func Start(addr string, queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) {
-func Start(addr string, args ...Arg) {
-	rpc := makeRPC(args...)
-	for {
-		select {
-		case <-rpc.close:
-			logger.Info("webrpc quit")
-			return
-		default:
-			logger.Infof("start webrpc on http://%s", addr)
-			logger.Fatal(http.ListenAndServe(addr, rpc))
+type operation func(rpc *WebRPC)
+
+// HandlerFunc represents the function type for processing the request
+type HandlerFunc func(req Request, gateway Gatewayer) Response
+
+// WebRPC manage the web rpc state and handles
+type WebRPC struct {
+	addr      string // service address
+	workerNum uint
+	ops       chan operation // request channel
+	close     chan struct{}
+	mux       *http.ServeMux
+	handlers  map[string]HandlerFunc
+	gateway   Gatewayer
+}
+
+// Option is the argument type for creating webrpc instance.
+type Option func(*WebRPC)
+
+// New creates webrpc instance
+func New(ops ...Option) (*WebRPC, error) {
+	rpc := &WebRPC{}
+	for _, opt := range ops {
+		opt(rpc)
+	}
+
+	rpc.handlers = make(map[string]HandlerFunc)
+	rpc.mux = http.NewServeMux()
+
+	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
+
+	if err := rpc.initHandlers(); err != nil {
+		return nil, err
+	}
+
+	return rpc, nil
+}
+
+// initHandlers initialize webrpc handlers
+func (rpc *WebRPC) initHandlers() error {
+	handles := map[string]HandlerFunc{
+		// get service status
+		"get_status": getStatusHandler,
+		// get blocks by seq
+		"get_blocks_by_seq": getBlocksBySeqHandler,
+		// get last N blocks
+		"get_lastblocks": getLastBlocksHandler,
+		// get blocks in specific seq range
+		"get_blocks": getBlocksHandler,
+		// get unspent outputs of address
+		"get_outputs": getOutputsHandler,
+		// get transaction by txid
+		"get_transaction": getTransactionHandler,
+		// broadcast transaction
+		"inject_transaction": injectTransactionHandler,
+		// get address affected uxouts
+		"get_address_uxouts": getAddrUxOutsHandler,
+	}
+
+	// register handlers
+	for path, handle := range handles {
+		if err := rpc.HandleFunc(path, handle); err != nil {
+			return err
 		}
+	}
+
+	return nil
+}
+
+// Run starts the webrpc service.
+func (rpc *WebRPC) Run() (err error) {
+	logger.Infof("start webrpc on http://%s", rpc.addr)
+
+	l, err := net.Listen("tcp", rpc.addr)
+	if err != nil {
+		return err
+	}
+
+	c := make(chan struct{})
+	q := make(chan struct{}, 1)
+	go func() {
+		if err = http.Serve(l, rpc); err != nil {
+			select {
+			case <-c:
+				return
+			default:
+				// the webrpc service failed unexpectly, notify the
+				q <- struct{}{}
+			}
+		}
+	}()
+
+	select {
+	case <-rpc.close:
+		close(c)
+		l.Close()
+	case <-q:
+	}
+	logger.Info("webrpc quit")
+	return
+}
+
+// HandleFunc registers handler function
+func (rpc *WebRPC) HandleFunc(method string, h HandlerFunc) error {
+	if _, ok := rpc.handlers[method]; ok {
+		return fmt.Errorf("%s method already exist", method)
+	}
+
+	rpc.handlers[method] = h
+	return nil
+}
+
+// ServHTTP implements the interface of http.Handler
+func (rpc *WebRPC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rpc.dispatch()
+	rpc.mux.ServeHTTP(w, r)
+}
+
+// Handler processes the http request
+func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
+	var (
+		req Request
+		res Response
+	)
+
+	for {
+		// only support post.
+		if r.Method != "POST" {
+			res = makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
+			break
+		}
+
+		// deocder request.
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			res = makeErrorResponse(errCodeParseError, errMsgParseError)
+			break
+		}
+
+		if req.Jsonrpc != jsonRPC {
+			res = makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
+			break
+		}
+
+		resC := make(chan Response)
+		rpc.ops <- func(rpc *WebRPC) {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Critical(fmt.Sprintf("%v", r))
+					resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
+				}
+			}()
+			if handler, ok := rpc.handlers[req.Method]; ok {
+				logger.Info("method: %v", req.Method)
+				resC <- handler(req, rpc.gateway)
+				return
+			}
+			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
+		}
+		res = <-resC
+		break
+	}
+
+	wh.SendOr404(w, &res)
+}
+
+// dispatch will create numbers of goroutines, each routine will
+func (rpc *WebRPC) dispatch() {
+	for i := uint(0); i < rpc.workerNum; i++ {
+		go func(seq uint) {
+			for {
+				select {
+				case <-rpc.close:
+					// logger.Infof("[%d]rpc job handler quit", seq)
+					return
+				case op := <-rpc.ops:
+					op(rpc)
+				}
+			}
+		}(i)
 	}
 }
 
-// func makeRPC(queueSize uint, workerNum uint, gateway Gatewayer, c chan struct{}) *rpcHandler {
-func makeRPC(args ...Arg) *rpcHandler {
-	rpc := newRPCHandler(args...)
+// ChanBuffSize set request channel buffer size
+func ChanBuffSize(n uint) Option {
+	return func(rpc *WebRPC) {
+		rpc.ops = make(chan operation, n)
+	}
+}
 
-	// register handlers
-	// get service status
-	rpc.HandlerFunc("get_status", getStatusHandler)
-	// get blocks by seq
-	rpc.HandlerFunc("get_blocks_by_seq", getBlocksBySeqHandler)
-	// get last N blocks
-	rpc.HandlerFunc("get_lastblocks", getLastBlocksHandler)
-	// get blocks in specific seq range
-	rpc.HandlerFunc("get_blocks", getBlocksHandler)
-	// get unspent outputs of address
-	rpc.HandlerFunc("get_outputs", getOutputsHandler)
-	// get transaction by txid
-	rpc.HandlerFunc("get_transaction", getTransactionHandler)
-	// broadcast transaction
-	rpc.HandlerFunc("inject_transaction", injectTransactionHandler)
-	// get address affected uxouts
-	rpc.HandlerFunc("get_address_uxouts", getAddrUxOutsHandler)
+// ThreadNum set concurrent request processor number
+func ThreadNum(n uint) Option {
+	return func(rpc *WebRPC) {
+		rpc.workerNum = n
+	}
+}
 
-	return rpc
+// Gateway set gateway
+func Gateway(gateway Gatewayer) Option {
+	return func(rpc *WebRPC) {
+		rpc.gateway = gateway
+	}
+}
+
+// Quit set closing channel
+func Quit(c chan struct{}) Option {
+	return func(rpc *WebRPC) {
+		rpc.close = c
+	}
 }

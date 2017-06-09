@@ -378,12 +378,12 @@ func printProgramStatus() {
 	}
 }
 
-func catchInterrupt(quit chan<- int) {
+func catchInterrupt(quit chan<- struct{}) {
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, os.Interrupt)
 	<-sigchan
 	signal.Stop(sigchan)
-	quit <- 1
+	close(quit)
 }
 
 // Catches SIGUSR1 and prints internal program state
@@ -399,15 +399,38 @@ func catchDebug() {
 	}
 }
 
-func initLogging(level logging.Level, color bool) {
-	format := logging.MustStringFormatter(logFormat)
-	logging.SetFormatter(format)
-	for _, s := range logModules {
-		logging.SetLevel(level, s)
+// init logging settings
+func initLogging(dataDir string, level logging.Level, color, logtofile bool) (func(), error) {
+	logCfg := util.DevLogConfig(logModules)
+	logCfg.Format = logFormat
+	logCfg.Colors = color
+
+	var fd *os.File
+	if logtofile {
+		logDir := filepath.Join(dataDir, "logs")
+		if err := createDirIfNotExist(logDir); err != nil {
+			log.Println("initial logs folder failed", err)
+			return nil, fmt.Errorf("init log folder fail, %v", err)
+		}
+
+		// open log file
+		tf := "2006-01-02-030405"
+		logfile := filepath.Join(logDir,
+			fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), Version))
+		var err error
+		fd, err = os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			return nil, err
+		}
+		out := io.MultiWriter(os.Stdout, fd)
+		logCfg.Output = out
 	}
-	stdout := logging.NewLogBackend(os.Stdout, "", 0)
-	stdout.Color = color
-	logging.SetBackend(stdout)
+
+	logCfg.InitLogger()
+
+	return func() {
+		fd.Close()
+	}, nil
 }
 
 func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
@@ -463,6 +486,12 @@ func configureDaemon(c *Config) daemon.Config {
 
 // Run starts the skycoin node
 func Run(c *Config) {
+	defer func() {
+		// try catch panic in main thread
+		if r := recover(); r != nil {
+			logger.Error("recover: %v", r)
+		}
+	}()
 
 	c.GUIDirectory = util.ResolveResourceDirectory(c.GUIDirectory)
 
@@ -481,29 +510,16 @@ func Run(c *Config) {
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 
-	logCfg := util.DevLogConfig(logModules)
-	logCfg.Format = logFormat
-	logCfg.Colors = c.ColorLog
-	var logfile string
-
-	if c.Logtofile {
-		// open log file
-		// logfile in ~/.skycoin/$time-$version.log
-		var logfmt = "2006-01-02-030405"
-		logfile = filepath.Join(c.DataDirectory, fmt.Sprintf("%s-v%s.log", time.Now().Format(logfmt), Version))
-		fd, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			panic(err)
-		}
-		defer fd.Close()
-		out := io.MultiWriter(os.Stdout, fd)
-		logCfg.Output = out
+	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-
-	logCfg.InitLogger()
+	defer closelog()
 
 	// If the user Ctrl-C's, shutdown properly
-	quit := make(chan int)
+	quit := make(chan struct{})
+
 	go catchInterrupt(quit)
 	// Watch for SIGUSR1
 	go catchDebug()
@@ -525,19 +541,13 @@ func Run(c *Config) {
 			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
 			webrpc.ChanBuffSize(1000),
 			webrpc.ThreadNum(c.RPCThreadNum),
-			webrpc.Gateway(d.Gateway),
-			webrpc.Quit(quit))
+			webrpc.Gateway(d.Gateway))
 		if err != nil {
 			logger.Error("%v", err)
 			return
 		}
 
-		go func() {
-			if err := rpc.Run(); err != nil {
-				logger.Error("%v", err)
-				return
-			}
-		}()
+		go rpc.Run(quit)
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
@@ -558,7 +568,7 @@ func Run(c *Config) {
 					logger.Error(err.Error())
 				}
 				logger.Error("gui.CreateCertIfNotExists failure")
-				os.Exit(1)
+				return
 			}
 
 			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
@@ -569,7 +579,7 @@ func Run(c *Config) {
 		if err != nil {
 			logger.Error(err.Error())
 			logger.Error("Failed to start web GUI")
-			os.Exit(1)
+			return
 		}
 
 		if c.LaunchBrowser {
@@ -580,6 +590,7 @@ func Run(c *Config) {
 				logger.Info("Launching System Browser with %s", fullAddress)
 				if err := util.OpenBrowser(fullAddress); err != nil {
 					logger.Error(err.Error())
+					return
 				}
 			}()
 		}
@@ -612,12 +623,9 @@ func Run(c *Config) {
 	*/
 
 	<-quit
-	stopDaemon <- 1
 
 	logger.Info("Shutting down")
 	gui.Shutdown()
-	close(closingC)
-
 	d.Shutdown()
 	logger.Info("Goodbye")
 }
@@ -764,4 +772,12 @@ func InitTransaction() coin.Transaction {
 
 	log.Printf("signature= %s", tx.Sigs[0].Hex())
 	return tx
+}
+
+func createDirIfNotExist(dir string) error {
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		return nil
+	}
+
+	return os.Mkdir(dir, 0777)
 }

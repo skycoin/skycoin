@@ -173,33 +173,37 @@ func (rpc *WebRPC) initHandlers() error {
 }
 
 // Run starts the webrpc service.
-func (rpc *WebRPC) Run() (err error) {
+func (rpc *WebRPC) Run(quit chan struct{}) {
 	logger.Infof("start webrpc on http://%s", rpc.addr)
 
 	l, err := net.Listen("tcp", rpc.addr)
 	if err != nil {
-		return err
+		logger.Error("%v", err)
+		close(quit)
+		return
 	}
 
 	c := make(chan struct{})
 	q := make(chan struct{}, 1)
 	go func() {
-		if err = http.Serve(l, rpc); err != nil {
+		if err := http.Serve(l, rpc); err != nil {
 			select {
 			case <-c:
 				return
 			default:
 				// the webrpc service failed unexpectly, notify the
+				logger.Error("%v", err)
 				q <- struct{}{}
 			}
 		}
 	}()
 
 	select {
-	case <-rpc.close:
+	case <-quit:
 		close(c)
 		l.Close()
 	case <-q:
+		close(quit)
 	}
 	logger.Info("webrpc quit")
 	return

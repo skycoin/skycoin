@@ -100,13 +100,13 @@ func (peer *Peer) Seen() {
 // IncreaseRetryTimes adds the retry times
 func (peer *Peer) IncreaseRetryTimes() {
 	peer.RetryTimes++
-	logger.Info("Increase retry times of %v to %v", peer.Addr, peer.RetryTimes)
+	logger.Debug("Increase retry times of %v to %v", peer.Addr, peer.RetryTimes)
 }
 
 // ResetRetryTimes resets the retry time
 func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
-	logger.Info("Reset retry times of %v", peer.Addr)
+	logger.Debug("Reset retry times of %v", peer.Addr)
 }
 
 // CanTry returns whether this peer tryable base on the exponential backoff algorithm
@@ -386,7 +386,6 @@ func (pl *Peerlist) RandomAll(count int) []*Peer {
 // Save saves known peers to disk as a newline delimited list of addresses to
 // <dir><PeerDatabaseFilename>
 func (pl *Peerlist) Save(dir string) (err error) {
-	logger.Debug("PEX: SavingPeerList")
 	filename := PeerDatabaseFilename
 	fn := filepath.Join(dir, filename)
 	pl.strand(func() {

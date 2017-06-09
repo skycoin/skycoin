@@ -67,20 +67,21 @@ type Block struct {
 
 // NewBlock creates new block.
 func NewBlock(prev Block, currentTime uint64, unspent UnspentPool,
-	txns Transactions, calc FeeCalculator) Block {
+	txns Transactions, calc FeeCalculator) (*Block, error) {
 	if len(txns) == 0 {
-		logger.Panic("Refusing to create block with no transactions")
+		return nil, fmt.Errorf("Refusing to create block with no transactions")
 	}
 	fee, err := txns.Fees(calc)
 	if err != nil {
 		// This should have been caught earlier
-		logger.Panicf("Invalid transaction fees: %v", err)
+		return nil, fmt.Errorf("Invalid transaction fees: %v", err)
 	}
+
 	body := BlockBody{txns}
-	return Block{
+	return &Block{
 		Head: NewBlockHeader(prev.Head, unspent, currentTime, fee, body),
 		Body: body,
-	}
+	}, nil
 }
 
 // HashHeader return hash of block head.

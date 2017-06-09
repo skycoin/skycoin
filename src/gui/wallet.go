@@ -250,7 +250,8 @@ func Spend(gateway *daemon.Gateway,
 			logger.Error("Transaction creation failed: %v", err)
 			break
 		}
-		log.Printf("Spend: \ntx= \n %s \n", visor.TransactionToJSON(txn))
+
+		logger.Info("Spend: \ntx= \n %s \n", visor.TransactionToJSON(txn))
 
 		b, err = wrpc.GetWalletBalance(gateway, walletID)
 		if err != nil {

@@ -53,22 +53,15 @@ type Peers struct {
 }
 
 // NewPeers creates peers
-func NewPeers(c PeersConfig) *Peers {
+func NewPeers(c PeersConfig) (*Peers, error) {
 	if c.Disabled {
 		logger.Info("PEX is disabled")
 	}
-	return &Peers{
+
+	ps := &Peers{
 		Config: c,
-		Peers:  nil,
 	}
-}
 
-// DefaultConnections do "default_peers file"
-// read file, write, if does not exist
-var DefaultConnections = []string{}
-
-// Init configures the pex.PeerList and load local data
-func (ps *Peers) Init() {
 	peers := pex.NewPex(ps.Config.Max)
 	err := peers.Load(ps.Config.DataDirectory)
 	if err != nil {
@@ -91,8 +84,16 @@ func (ps *Peers) Init() {
 	}
 
 	ps.Peers = peers
-	ps.Peers.Save(ps.Config.DataDirectory)
+	if err := ps.Peers.Save(ps.Config.DataDirectory); err != nil {
+		return nil, err
+	}
+
+	return ps, nil
 }
+
+// DefaultConnections do "default_peers file"
+// read file, write, if does not exist
+var DefaultConnections = []string{}
 
 // Shutdown the PeerList
 func (ps *Peers) Shutdown() error {
@@ -100,7 +101,7 @@ func (ps *Peers) Shutdown() error {
 		return nil
 	}
 
-	logger.Debug("Saving Peer List")
+	logger.Info("Saving Peer List")
 
 	err := ps.Peers.Save(ps.Config.DataDirectory)
 	if err != nil {
@@ -108,7 +109,7 @@ func (ps *Peers) Shutdown() error {
 		logger.Warning("Reason: %v", err)
 		return err
 	}
-	logger.Debug("Shutdown peers")
+	logger.Info("Shutdown peers")
 	return nil
 }
 

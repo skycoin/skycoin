@@ -51,26 +51,23 @@ type Pool struct {
 }
 
 // NewPool creates pool
-func NewPool(c PoolConfig) *Pool {
-	return &Pool{
+func NewPool(c PoolConfig, d *Daemon) *Pool {
+	pool := &Pool{
 		Config: c,
 		Pool:   nil,
 	}
-}
 
-// Init begins listening on port for connections and periodically scanning for
-// messages on read_interval
-func (pool *Pool) Init(d *Daemon) {
-	logger.Info("InitPool on port %d", pool.Config.port)
+	logger.Info("NewPool on port %d", pool.Config.port)
 	cfg := gnet.NewConfig()
 	cfg.DialTimeout = pool.Config.DialTimeout
 	cfg.Port = uint16(pool.Config.port)
 	cfg.Address = pool.Config.address
 	cfg.ConnectCallback = d.onGnetConnect
 	cfg.DisconnectCallback = d.onGnetDisconnect
-	// cfg.EventChannelSize = cfg.EventChannelSize
-	cpl := gnet.NewConnectionPool(cfg, d)
-	pool.Pool = cpl
+
+	pool.Pool = gnet.NewConnectionPool(cfg, d)
+
+	return pool
 }
 
 // Shutdown closes all connections and stops listening
@@ -86,11 +83,6 @@ func (pool *Pool) Shutdown() {
 func (pool *Pool) Start() {
 	pool.Pool.Run()
 }
-
-// Accepts connections, run in goroutine
-// func (self *Pool) AcceptConnections() {
-// 	self.Pool.AcceptConnections()
-// }
 
 // Send a ping if our last message sent was over pingRate ago
 func (pool *Pool) sendPings() {

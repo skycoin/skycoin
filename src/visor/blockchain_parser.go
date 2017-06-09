@@ -7,6 +7,9 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
+// ParserOption option type which will be used when creating parser instance
+type ParserOption func(*BlockchainParser)
+
 // BlockchainParser parses the blockchain and stores the data into historydb.
 type BlockchainParser struct {
 	historyDB    *historydb.HistoryDB
@@ -21,7 +24,7 @@ type BlockchainParser struct {
 }
 
 // NewBlockchainParser create and init the parser instance.
-func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain) *BlockchainParser {
+func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain, ops ...ParserOption) *BlockchainParser {
 	bp := &BlockchainParser{
 		bc:           bc,
 		historyDB:    hisDB,
@@ -31,14 +34,17 @@ func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain) *Blockchain
 		parsedHeight: 0,
 	}
 
-	bp.run()
+	for _, op := range ops {
+		op(bp)
+	}
+
 	return bp
 }
 
-// BindParsedNotifier sets the parsedFunc
-func (bcp *BlockchainParser) BindParsedNotifier(f func(height uint64)) {
-	bcp.parsedFunc = f
-}
+// // BindParsedNotifier sets the parsedFunc
+// func (bcp *BlockchainParser) BindParsedNotifier(f func(height uint64)) {
+// 	bcp.parsedFunc = f
+// }
 
 // Start the parsing process
 func (bcp *BlockchainParser) Start() {
@@ -50,29 +56,32 @@ func (bcp *BlockchainParser) BlockListener(b coin.Block) {
 	bcp.blkC <- b
 }
 
-// Start starts blockchain parser
-func (bcp *BlockchainParser) run() {
-	go func() {
-		for {
-			select {
-			case cc := <-bcp.closing:
-				cc <- struct{}{}
+// Run starts blockchain parser, the q channel will be
+// closed to notify the invoker that the running process
+// is going to shutdown.
+func (bcp *BlockchainParser) Run(q chan struct{}) {
+	logger.Info("Blockchain parser start")
+	// parse to the blockchain head
+	headSeq := bcp.bc.Head().Head.BkSeq
+	if err := bcp.parseTo(headSeq); err != nil {
+		logger.Error("%v", err)
+		close(q)
+		return
+	}
+
+	for {
+		select {
+		case cc := <-bcp.closing:
+			cc <- struct{}{}
+			return
+		case b := <-bcp.blkC:
+			if err := bcp.parseTo(b.Head.BkSeq); err != nil {
+				logger.Error("%v", err)
+				close(q)
 				return
-			case <-bcp.startC:
-				bcp.isStart = true
-				b := bcp.bc.Head()
-				if b != nil {
-					bcp.blkC <- *(bcp.bc.Head())
-				}
-			case b := <-bcp.blkC:
-				if bcp.isStart {
-					if err := bcp.parseTo(b.Head.BkSeq); err != nil {
-						logger.Fatal(err)
-					}
-				}
 			}
 		}
-	}()
+	}
 }
 
 // Stop close the block parsing process.
@@ -80,7 +89,7 @@ func (bcp *BlockchainParser) Stop() {
 	cc := make(chan struct{})
 	bcp.closing <- cc
 	<-cc
-	logger.Debug("blockchain parser stopped")
+	logger.Info("blockchain parser stopped")
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
@@ -113,4 +122,12 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 	}
 	bcp.parsedHeight = bcHeight
 	return nil
+}
+
+// ParseNotifier sets the callback function that will be invoked
+// when block is parsed.
+func ParseNotifier(f func(height uint64)) ParserOption {
+	return func(p *BlockchainParser) {
+		p.parsedFunc = f
+	}
 }

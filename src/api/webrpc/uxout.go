@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
+// AddrUxoutResult the address uxout json format
 type AddrUxoutResult struct {
 	Address string                 `json:"address"`
 	UxOuts  []*historydb.UxOutJSON `json:"uxouts"`

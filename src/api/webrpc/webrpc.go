@@ -120,8 +120,11 @@ type WebRPC struct {
 type Option func(*WebRPC)
 
 // New creates webrpc instance
-func New(ops ...Option) (*WebRPC, error) {
-	rpc := &WebRPC{}
+func New(addr string, ops ...Option) (*WebRPC, error) {
+	rpc := &WebRPC{
+		addr: addr,
+	}
+
 	for _, opt := range ops {
 		opt(rpc)
 	}
@@ -275,7 +278,15 @@ func (rpc *WebRPC) dispatch() {
 					// logger.Infof("[%d]rpc job handler quit", seq)
 					return
 				case op := <-rpc.ops:
-					op(rpc)
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								logger.Error("recover: %v", r)
+							}
+						}()
+
+						op(rpc)
+					}()
 				}
 			}
 		}(i)

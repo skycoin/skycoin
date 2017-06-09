@@ -511,26 +511,40 @@ func Run(c *Config) {
 	gui.InitWalletRPC(c.WalletDirectory)
 
 	dconf := configureDaemon(c)
-	d := daemon.NewDaemon(dconf)
+	d, err := daemon.NewDaemon(dconf)
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
 
-	stopDaemon := make(chan int)
-	go d.Start(stopDaemon)
+	go d.Run(quit)
 
 	// start the webrpc
-	closingC := make(chan struct{})
 	if c.RPCInterface {
-		go webrpc.Start(
+		rpc, err := webrpc.New(
 			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
 			webrpc.ChanBuffSize(1000),
 			webrpc.ThreadNum(c.RPCThreadNum),
 			webrpc.Gateway(d.Gateway),
-			webrpc.Quit(closingC))
+			webrpc.Quit(quit))
+		if err != nil {
+			logger.Error("%v", err)
+			return
+		}
+
+		go func() {
+			if err := rpc.Run(); err != nil {
+				logger.Error("%v", err)
+				return
+			}
+		}()
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Panic(err)
+			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
+			return
 		}
 	}
 

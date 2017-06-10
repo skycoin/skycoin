@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"runtime/pprof"
 	"syscall"
 	"time"
@@ -489,7 +490,7 @@ func Run(c *Config) {
 	defer func() {
 		// try catch panic in main thread
 		if r := recover(); r != nil {
-			logger.Error("recover: %v", r)
+			logger.Error("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
 

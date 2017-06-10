@@ -290,7 +290,8 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	a := conn.RemoteAddr().String()
 	if pool.IsConnExist(a) {
-		logger.Panicf("Connection %s already exists", a)
+		logger.Error("Connection %s already exists", a)
+		return
 	}
 
 	var c *Connection
@@ -305,7 +306,8 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 	c, err := pool.NewConnection(conn, solicited)
 	if err != nil {
-		logger.Panic(err)
+		logger.Error("%v", err)
+		return
 	}
 
 	if pool.Config.ConnectCallback != nil {
@@ -418,7 +420,7 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	n := copy(data, buf)
 	if n != c {
 		// I don't believe this can ever occur
-		logger.Panic("Failed to copy all the bytes")
+		return nil, errors.New("Failed to copy all the bytes")
 	}
 	return data, nil
 }

@@ -287,21 +287,24 @@ func (dm *Daemon) Shutdown() {
 // Run main loop for peer/connection management. Send anything to quit to shut it
 // down
 func (dm *Daemon) Run(quit chan struct{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("recover:%v\n stack:%v", r, string(debug.Stack()))
+		}
+
+		// close quit to notify the caller this daemon running loop is stopped
+		if quit != nil {
+			close(quit)
+		}
+	}()
+
 	c := make(chan struct{})
+
 	// start visor
 	go dm.Visor.Run(c)
 
-	defer func() {
-		if r := recover(); r != nil {
-			// add stack info in error
-			logger.Error("recover:%v", r)
-			logger.Error("stack: %v", string(debug.Stack()))
-		}
-		close(quit)
-	}()
-
 	if !dm.Config.DisableIncomingConnections {
-		dm.Pool.Start()
+		go dm.Pool.Run(c)
 	}
 
 	// TODO -- run blockchain stuff in its own goroutine

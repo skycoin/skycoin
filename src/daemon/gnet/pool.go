@@ -169,7 +169,7 @@ type ConnectionPool struct {
 	// member variables access channel
 	memChannel chan func()
 	// quit channel
-	Quit chan struct{}
+	quit chan struct{}
 }
 
 // NewConnectionPool creates a new ConnectionPool that will listen on Config.Port upon
@@ -189,15 +189,15 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 }
 
 // Run starts the connection pool
-func (pool *ConnectionPool) Run() {
-	pool.Quit = make(chan struct{})
+func (pool *ConnectionPool) Run(q chan struct{}) {
+	pool.quit = make(chan struct{})
 	go func() {
 		for {
 			select {
 			case memActionFunc := <-pool.memChannel:
 				// this goroutine will handle all member variable's writing and reading actions.
 				memActionFunc()
-			case <-pool.Quit:
+			case <-pool.quit:
 				return
 			}
 		}
@@ -207,37 +207,37 @@ func (pool *ConnectionPool) Run() {
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		logger.Panic(err)
+		logger.Error("%v", err)
+		return
 	}
 
 	pool.listener = ln
 
-	go func() {
-		logger.Info("Listening for connections...")
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				// When Accept() returns with a non-nill error, we check the quit
-				// channel to see if we should continue or quit. If quit, then we quit.
-				// Otherwise we continue
-				select {
-				case <-pool.Quit:
-					return
-				default:
-					// without the default case the select will block.
-				}
-
-				continue
+	logger.Info("Listening for connections...")
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			// When Accept() returns with a non-nill error, we check the quit
+			// channel to see if we should continue or quit. If quit, then we quit.
+			// Otherwise we continue
+			select {
+			case <-pool.quit:
+				return
+			default:
+				// without the default case the select will block.
+				logger.Error("%v", err)
+				close(q)
+				return
 			}
-
-			go pool.handleConnection(conn, false)
 		}
-	}()
+
+		go pool.handleConnection(conn, false)
+	}
 }
 
 // Shutdown gracefully shutdown the connection pool
 func (pool *ConnectionPool) Shutdown() {
-	close(pool.Quit)
+	close(pool.quit)
 	pool.listener.Close()
 	pool.listener = nil
 	pool.pool = make(map[int]*Connection)

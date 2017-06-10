@@ -78,10 +78,10 @@ func (pool *Pool) Shutdown() {
 	}
 }
 
-// Start Starts listening on the configured Port
+// Run starts listening on the configured Port
 // no goroutine
-func (pool *Pool) Start() {
-	pool.Pool.Run()
+func (pool *Pool) Run(quit chan struct{}) {
+	pool.Pool.Run(quit)
 }
 
 // Send a ping if our last message sent was over pingRate ago

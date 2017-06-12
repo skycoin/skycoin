@@ -1,20 +1,16 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
-import {ROUTER_DIRECTIVES, OnActivate} from '@angular/router';
-import {Http, HTTP_BINDINGS, Response} from '@angular/http';
-import {HTTP_PROVIDERS, Headers} from '@angular/http';
-import {Observable} from 'rxjs/Observable';
-import { Observable as ObservableRx, Subscription } from 'rxjs/Rx';
-import {Observer} from 'rxjs/Observer';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
-import {QRCodeComponent} from './ng2-qrcode';
-import {SkyCoinEditComponent} from './components/skycoin.edit.component';
-import {SeedComponent} from './components/seed.component';
-import {SkyCoinOutputComponent} from './components/outputs.component';
-import {SeedService} from "./services/seed.service";
-import {Wallet} from './model/wallet.pojo'
+import {Component, OnInit, ViewChild} from "@angular/core";
+import {ROUTER_DIRECTIVES} from "@angular/router";
+import {Http, Response, Headers} from "@angular/http";
+import {Observable as ObservableRx} from "rxjs/Rx";
+import "rxjs/add/operator/map";
+import "rxjs/add/operator/catch";
+import {QRCodeComponent} from "./ng2-qrcode";
+import {SkyCoinEditComponent} from "./components/skycoin.edit.component";
+import {SeedComponent} from "./components/seed.component";
+import {SkyCoinOutputComponent} from "./components/outputs.component";
 import {PendingTxnsComponent} from "./components/pending.transactions.component";
 import {WalletBackupPageComponent} from "./components/wallet.backup.page.component";
+import {SkycoinSyncWalletBlock} from "./components/progress.bannner.component";
 
 declare var _: any;
 declare var $: any;
@@ -70,7 +66,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-wallet',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkyCoinEditComponent, SkyCoinOutputComponent, PendingTxnsComponent, WalletBackupPageComponent],
+    directives: [ROUTER_DIRECTIVES, QRCodeComponent, SeedComponent, SkycoinSyncWalletBlock, SkyCoinEditComponent, SkyCoinOutputComponent, PendingTxnsComponent, WalletBackupPageComponent],
     providers: [PagerService],
     templateUrl: 'app/templates/wallet.html'
 })

@@ -1,7 +1,8 @@
 <div id="sky-center">
     <div id="main-content" class="ng-isolate-scope">
         <div class="header-for-total-sky">
-            <span class="total-sky-text">Confirmed Balance: {{totalSky|number}} SKY</span>
+            <span class="total-sky-text" *ngIf="totalSky>0">Confirmed Balance: {{totalSky|number}} SKY</span>
+            <skycoin-block-sync></skycoin-block-sync>
         </div>
         <ul ng-class="{'nav-stacked': vertical, 'nav-justified': justified}" class="nav nav-tabs">
             <li [class.active]="displayMode === displayModeEnum.first">

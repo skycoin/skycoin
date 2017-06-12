@@ -1,14 +1,21 @@
 {
   "_args": [
     [
-      "@angular/platform-browser-dynamic@2.0.0-rc.1",
-      "/Users/heaven/src/github.com/skycoin/skycoin/src/gui/static"
+      {
+        "raw": "@angular/platform-browser-dynamic@2.0.0-rc.1",
+        "scope": "@angular",
+        "escapedName": "@angular%2fplatform-browser-dynamic",
+        "name": "@angular/platform-browser-dynamic",
+        "rawSpec": "2.0.0-rc.1",
+        "spec": "2.0.0-rc.1",
+        "type": "version"
+      },
+      "/usr/local/Cellar/go/1.6/libexec/src/github.com/skycoin/skycoin/src/gui/static"
     ]
   ],
   "_from": "@angular/platform-browser-dynamic@2.0.0-rc.1",
   "_id": "@angular/platform-browser-dynamic@2.0.0-rc.1",
   "_inCache": true,
-  "_installable": true,
   "_location": "/@angular/platform-browser-dynamic",
   "_nodeVersion": "5.4.1",
   "_npmOperationalInternal": {
@@ -16,16 +23,17 @@
     "tmp": "tmp/platform-browser-dynamic-2.0.0-rc.1.tgz_1462310733287_0.5319103891961277"
   },
   "_npmUser": {
-    "email": "angular-core+npm@google.com",
-    "name": "angular"
+    "name": "angular",
+    "email": "angular-core+npm@google.com"
   },
   "_npmVersion": "3.8.7",
   "_phantomChildren": {},
   "_requested": {
-    "name": "@angular/platform-browser-dynamic",
     "raw": "@angular/platform-browser-dynamic@2.0.0-rc.1",
-    "rawSpec": "2.0.0-rc.1",
     "scope": "@angular",
+    "escapedName": "@angular%2fplatform-browser-dynamic",
+    "name": "@angular/platform-browser-dynamic",
+    "rawSpec": "2.0.0-rc.1",
     "spec": "2.0.0-rc.1",
     "type": "version"
   },
@@ -36,7 +44,7 @@
   "_shasum": "0edb02929dbe479afdfeba6a1a3b67985a8f66ff",
   "_shrinkwrap": null,
   "_spec": "@angular/platform-browser-dynamic@2.0.0-rc.1",
-  "_where": "/Users/heaven/src/github.com/skycoin/skycoin/src/gui/static",
+  "_where": "/usr/local/Cellar/go/1.6/libexec/src/github.com/skycoin/skycoin/src/gui/static",
   "author": {
     "name": "angular"
   },
@@ -53,16 +61,16 @@
   "main": "index.js",
   "maintainers": [
     {
-      "email": "angular-core+npm@google.com",
-      "name": "angular"
+      "name": "angular",
+      "email": "angular-core+npm@google.com"
     }
   ],
   "name": "@angular/platform-browser-dynamic",
   "optionalDependencies": {},
   "peerDependencies": {
+    "@angular/core": "2.0.0-rc.1",
     "@angular/common": "2.0.0-rc.1",
     "@angular/compiler": "2.0.0-rc.1",
-    "@angular/core": "2.0.0-rc.1",
     "@angular/platform-browser": "2.0.0-rc.1"
   },
   "readme": "ERROR: No README data found!",

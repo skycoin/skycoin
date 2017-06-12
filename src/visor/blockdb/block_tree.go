@@ -27,22 +27,22 @@ type BlockTree struct {
 }
 
 // NewBlockTree create buckets in blockdb if does not exist.
-func NewBlockTree(db *bolt.DB) *BlockTree {
+func NewBlockTree(db *bolt.DB) (*BlockTree, error) {
 	blocks, err := bucket.New([]byte("blocks"), db)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	tree, err := bucket.New([]byte("block_tree"), db)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &BlockTree{
 		blocks: blocks,
 		tree:   tree,
 		db:     db,
-	}
+	}, nil
 }
 
 // AddBlock write the block into blocks bucket, add the pair of block hash and pre block hash into

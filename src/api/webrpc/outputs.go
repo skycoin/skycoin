@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+// OutputsResult the output json format
 type OutputsResult struct {
 	Outputs visor.ReadableOutputSet `json:"outputs"`
 }

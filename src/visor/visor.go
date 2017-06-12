@@ -121,61 +121,79 @@ func walker(hps []coin.HashPair) cipher.SHA256 {
 }
 
 // open the blockdb.
-func openDB(dbFile string) (*bolt.DB, func()) {
+func openDB(dbFile string) (*bolt.DB, func(), error) {
 	// dbFile := filepath.Join(util.DataDir, dbpath)
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
 	if err != nil {
-		panic(fmt.Errorf("Open boltdb failed, err:%v", err))
+		return nil, nil, fmt.Errorf("Open boltdb failed, %v", err)
 	}
+
 	return db, func() {
+		logger.Info("close db")
 		db.Close()
-	}
+	}, nil
 }
 
 // VsClose visor close function
 type VsClose func()
 
 // NewVisor Creates a normal Visor given a master's public key
-func NewVisor(c Config) (*Visor, VsClose) {
+func NewVisor(c Config) (*Visor, VsClose, error) {
 	logger.Debug("Creating new visor")
 	// Make sure inputs are correct
 	if c.IsMaster {
 		logger.Debug("Visor is master")
 		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
-			logger.Panicf("Cannot run in master: invalid seckey for pubkey")
+			// logger.Panicf("Cannot run in master: invalid seckey for pubkey")
+			return nil, nil, errors.New("Cannot run in master: invalid seckey for pubkey")
 		}
 	}
 
-	db, closeDB := openDB(c.DBPath)
+	db, closeDB, err := openDB(c.DBPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	history, err := historydb.New(db)
 	if err != nil {
-		logger.Panic(err)
+		return nil, nil, err
 	}
 
 	// creates block signature bucket
-	sigs := blockdb.NewBlockSigs(db)
+	sigs, err := blockdb.NewBlockSigs(db)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	tree := blockdb.NewBlockTree(db)
-	bc := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
-	bp := NewBlockchainParser(history, bc)
-	//
+	// creates blockchain tree
+	tree, err := blockdb.NewBlockTree(db)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// creates blockchain instance
+	bc, err := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// creates blockchain parser instance
 	var verifyOnce sync.Once
-	bp.BindParsedNotifier(func(height uint64) {
-		if height == bc.Head().Head.BkSeq {
-			verifyOnce.Do(func() {
-				// only do verification once when loading and parsing from local blocks
-				if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
-					logger.Panicf("Invalid block signatures: %v", err)
-				}
-			})
-		}
-	})
+	bp := NewBlockchainParser(history, bc,
+		ParseNotifier(func(height uint64) {
+			if height == bc.Head().Head.BkSeq {
+				verifyOnce.Do(func() {
+					// only do verification once when loading and parsing from local blocks
+					if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
+						logger.Panicf("Invalid block signatures: %v", err)
+					}
+				})
+			}
+		}))
 
 	bc.BindListener(bp.BlockListener)
-
-	bp.Start()
 
 	v := &Visor{
 		Config:      c,
@@ -185,29 +203,37 @@ func NewVisor(c Config) (*Visor, VsClose) {
 		history:     history,
 		bcParser:    bp,
 	}
-	gb := bc.GetGenesisBlock()
-	if gb == nil {
-		v.GenesisPreconditions()
-		b := v.Blockchain.CreateGenesisBlock(c.GenesisAddress, c.GenesisCoinVolume, c.GenesisTimestamp)
-		gb = &b
+
+	return v, func() {
+		closeDB()
+		v.bcParser.Stop()
+	}, nil
+}
+
+// Run starts the visor process
+func (vs *Visor) Run(q chan struct{}) {
+	if vs.Blockchain.GetGenesisBlock() == nil {
+		vs.GenesisPreconditions()
+		b := vs.Blockchain.CreateGenesisBlock(
+			vs.Config.GenesisAddress,
+			vs.Config.GenesisCoinVolume,
+			vs.Config.GenesisTimestamp)
 		logger.Debug("create genesis block")
 
 		// record the signature of genesis block
-		if c.IsMaster {
-			sb := v.SignBlock(*gb)
-			v.blockSigs.Add(&sb)
+		if vs.Config.IsMaster {
+			sb := vs.SignBlock(b)
+			vs.blockSigs.Add(&sb)
 			logger.Info("genesis block signature=%s", sb.Sig.Hex())
 		} else {
-			v.blockSigs.Add(&coin.SignedBlock{
-				Block: *gb,
-				Sig:   c.GenesisSignature,
+			vs.blockSigs.Add(&coin.SignedBlock{
+				Block: b,
+				Sig:   vs.Config.GenesisSignature,
 			})
 		}
 	}
 
-	return v, func() {
-		closeDB()
-	}
+	vs.bcParser.Run(q)
 }
 
 // NewMinimalVisor returns a Visor with minimum initialization necessary for empty blockchain
@@ -254,7 +280,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	if err != nil {
 		return sb, err
 	}
-	return vs.SignBlock(b), nil
+	return vs.SignBlock(*b), nil
 }
 
 // CreateAndExecuteBlock creates a SignedBlock from pending transactions and executes it

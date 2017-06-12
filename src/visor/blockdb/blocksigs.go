@@ -25,15 +25,15 @@ type BlockSigs struct {
 }
 
 // NewBlockSigs create block signature buckets
-func NewBlockSigs(db *bolt.DB) *BlockSigs {
+func NewBlockSigs(db *bolt.DB) (*BlockSigs, error) {
 	sigs, err := bucket.New([]byte("block_sigs"), db)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &BlockSigs{
 		Sigs: sigs,
-	}
+	}, nil
 }
 
 // Verify Checks that BlockSigs state correspond with coin.Blockchain state

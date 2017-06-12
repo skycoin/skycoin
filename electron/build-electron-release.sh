@@ -61,7 +61,6 @@ if [ "$WITH_BUILDER" = "1" ]; then
     pushd "$FINAL_OUTPUT" >/dev/null
     if [ -e "mac" ]; then
         pushd "mac" >/dev/null
-        ls
         if [ -e "${PDT_NAME}-${APP_VERSION}.dmg" ]; then
             mv "${PDT_NAME}-${APP_VERSION}.dmg" "../${PKG_NAME}-${APP_VERSION}-gui-osx-x64.dmg"
         elif [ -e "${PDT_NAME}.app" ]; then

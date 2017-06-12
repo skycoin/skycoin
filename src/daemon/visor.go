@@ -67,23 +67,28 @@ type Visor struct {
 	// Peer-reported blockchain length.  Use to estimate download progress
 	blockchainLengths map[string]uint64
 	reqC              chan reqFunc // all request will go through this channel, to keep writing and reading member variable thread safe.
-	cancel            context.CancelFunc
+	cxt               context.Context
+	Shutdown          context.CancelFunc
 }
 
 type reqFunc func(context.Context)
 
 // NewVisor creates visor instance
-func NewVisor(c VisorConfig) *Visor {
+func NewVisor(c VisorConfig) (*Visor, error) {
 	if c.Disabled {
 		return &Visor{
 			Config:            c,
 			blockchainLengths: make(map[string]uint64),
 			reqC:              make(chan reqFunc, 100),
-		}
+		}, nil
 	}
 
 	var v *visor.Visor
-	v, closeVs := visor.NewVisor(c.Config)
+	v, closeVs, err := visor.NewVisor(c.Config)
+	if err != nil {
+		return nil, err
+	}
+
 	vs := &Visor{
 		Config:            c,
 		v:                 v,
@@ -91,25 +96,32 @@ func NewVisor(c VisorConfig) *Visor {
 		reqC:              make(chan reqFunc, 100),
 	}
 
-	cxt, cancel := context.WithCancel(context.Background())
-	vs.cancel = func() {
-		// cancel the cxt
-		cancel()
+	var cancel func()
+	vs.cxt, cancel = context.WithCancel(context.Background())
+	vs.Shutdown = func() {
 		// close the visor
 		closeVs()
+
+		// cancel the cxt
+		cancel()
 	}
 
-	go vs.run(cxt)
-	return vs
+	return vs, nil
 }
 
-func (vs *Visor) run(cxt context.Context) {
+// Run starts the visor
+func (vs *Visor) Run(quit chan struct{}) {
+	q := make(chan struct{})
+	go vs.v.Run(q)
+
 	for {
 		select {
-		case <-cxt.Done():
+		case <-q:
+			close(quit)
+		case <-vs.cxt.Done():
 			return
 		case req := <-vs.reqC:
-			req(cxt)
+			req(vs.cxt)
 		}
 	}
 }
@@ -132,11 +144,6 @@ func (vs *Visor) strand(f func()) {
 		}
 	}
 	<-done
-}
-
-// Shutdown closes the visor
-func (vs *Visor) Shutdown() {
-	vs.cancel()
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old

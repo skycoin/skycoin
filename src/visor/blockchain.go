@@ -67,7 +67,7 @@ type Blockchain struct {
 type Option func(*Blockchain)
 
 // NewBlockchain use the walker go through the tree and update the head and unspent outputs.
-func NewBlockchain(tree BlockTree, walker Walker, ops ...Option) *Blockchain {
+func NewBlockchain(tree BlockTree, walker Walker, ops ...Option) (*Blockchain, error) {
 	bc := &Blockchain{
 		tree:    tree,
 		walker:  walker,
@@ -78,8 +78,10 @@ func NewBlockchain(tree BlockTree, walker Walker, ops ...Option) *Blockchain {
 		op(bc)
 	}
 
-	bc.walkTree()
-	return bc
+	if err := bc.walkTree(); err != nil {
+		return nil, err
+	}
+	return bc, nil
 }
 
 // Arbitrating option to change the mode
@@ -94,7 +96,7 @@ func (bc *Blockchain) GetUnspent() *coin.UnspentPool {
 	return &bc.unspent
 }
 
-func (bc *Blockchain) walkTree() {
+func (bc *Blockchain) walkTree() error {
 	var dep uint64
 	var preBlock *coin.Block
 
@@ -105,17 +107,18 @@ func (bc *Blockchain) walkTree() {
 		}
 		if dep > 0 {
 			if b.PreHashHeader() != preBlock.HashHeader() {
-				logger.Panicf("walk tree failed, pre hash header not match")
+				return errors.New("walk tree failed, pre hash header not match")
 			}
 		}
 		preBlock = b
 		if err := bc.updateUnspent(*b); err != nil {
-			logger.Panicf("update unspent failed, err: %v", err.Error())
+			return fmt.Errorf("update unspent failed, err: %v", err.Error())
 		}
 
 		bc.head = b.HashHeader()
 		dep++
 	}
+	return nil
 }
 
 // Len returns the length of current blockchain.
@@ -190,23 +193,27 @@ func (bc *Blockchain) Time() uint64 {
 
 // NewBlockFromTransactions creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
-func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTime uint64) (coin.Block, error) {
+func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
+	currentTime uint64) (*coin.Block, error) {
 	if currentTime <= bc.Time() {
 		logger.Panic("Time can only move forward")
 	}
 	if len(txns) == 0 {
-		return coin.Block{}, errors.New("No transactions")
+		return nil, errors.New("No transactions")
 	}
 	txns, err := bc.verifyTransactions(txns)
 	if err != nil {
-		return coin.Block{}, err
+		return nil, err
 	}
-	b := coin.NewBlock(*bc.Head(), currentTime, bc.unspent, txns, bc.TransactionFee)
+	b, err := coin.NewBlock(*bc.Head(), currentTime, bc.unspent, txns, bc.TransactionFee)
+	if err != nil {
+		return nil, err
+	}
 
 	//make sure block is valid
 	if DebugLevel2 == true {
-		if err := bc.verifyBlockHeader(b); err != nil {
-			logger.Panic("Impossible Error: not allowed to fail")
+		if err := bc.verifyBlockHeader(*b); err != nil {
+			return nil, err
 		}
 		txns, err := bc.verifyTransactions(b.Body.Transactions)
 		if err != nil {

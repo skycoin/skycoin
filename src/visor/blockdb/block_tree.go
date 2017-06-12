@@ -212,6 +212,10 @@ func itob(v uint64) []byte {
 	return b
 }
 
+func btoi(v []byte) uint64 {
+	return binary.BigEndian.Uint64(v)
+}
+
 func containHash(hashPairs []coin.HashPair, pair coin.HashPair) bool {
 	for _, p := range hashPairs {
 		if p.Hash == pair.Hash {

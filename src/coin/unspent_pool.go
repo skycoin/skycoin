@@ -23,19 +23,19 @@ func NewUnspentPool() UnspentPool {
 }
 
 // Rebuild reconstructs the indices from the underlying Array
-func (up *UnspentPool) Rebuild(uxs UxArray) {
-	up.Pool = make(map[cipher.SHA256]UxOut, len(uxs))
-	xh := cipher.SHA256{}
-	for i := range uxs {
-		h := uxs[i].Hash()
-		up.Pool[h] = uxs[i]
-		xh = xh.Xor(uxs[i].SnapshotHash())
-	}
-	up.XorHash = xh
-	if len(up.Pool) != len(uxs) {
-		logger.Panic("Corrupt UnspentPool array: contains duplicate UxOut")
-	}
-}
+// func (up *UnspentPool) Rebuild(uxs UxArray) {
+// 	up.Pool = make(map[cipher.SHA256]UxOut, len(uxs))
+// 	xh := cipher.SHA256{}
+// 	for i := range uxs {
+// 		h := uxs[i].Hash()
+// 		up.Pool[h] = uxs[i]
+// 		xh = xh.Xor(uxs[i].SnapshotHash())
+// 	}
+// 	up.XorHash = xh
+// 	if len(up.Pool) != len(uxs) {
+// 		logger.Panic("Corrupt UnspentPool array: contains duplicate UxOut")
+// 	}
+// }
 
 // Array returns Pool as an array. Note: they are not in any particular order.
 func (up *UnspentPool) Array() UxArray {

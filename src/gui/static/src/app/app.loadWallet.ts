@@ -95,6 +95,12 @@ export class LoadWalletComponent implements OnInit {
     @ViewChild('spendaddress')
     private spendAddress:any;
 
+    @ViewChild('walletname')
+    private walletNameInLoadWallet:any;
+
+    @ViewChild('walletseed')
+    private walletSeedInLoadWallet:any;
+
     @ViewChild('spendamount')
     private spendAmount:any;
 
@@ -679,7 +685,7 @@ export class LoadWalletComponent implements OnInit {
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        var stringConvert = 'name='+walletName+'&seed='+seed;
+        var stringConvert = 'label='+walletName+'&seed='+seed;
         //Post method executed
         this.http.post('/wallet/create', stringConvert, {headers: headers})
         .map((res:Response) => res.json())

@@ -34,6 +34,8 @@ var _ = func() int64 {
 	return t
 }()
 
+// setup will create a random boltdb file in temp folder,
+// and return teardown function for later clean
 func setup(t *testing.T) (*bolt.DB, func(), error) {
 	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
 	close := func() {}
@@ -67,7 +69,8 @@ func testCase(t *testing.T, cases []blockCase) {
 
 	defer close()
 
-	btree := NewBlockTree(db)
+	btree, err := NewBlockTree(db)
+	assert.Nil(t, err)
 	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
 		var preHash cipher.SHA256
@@ -204,7 +207,8 @@ func TestGetBlockInDepth(t *testing.T) {
 	}
 	defer teardown()
 
-	bc := NewBlockTree(db)
+	bc, err := NewBlockTree(db)
+	assert.Nil(t, err)
 	blocks := []coin.Block{
 		coin.Block{
 			Head: coin.BlockHeader{

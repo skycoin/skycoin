@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/examples/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
@@ -39,7 +39,7 @@ func NewUnspentPool(db *bolt.DB) (*UnspentPool, error) {
 	}
 
 	// initialize xorhash with empty SHA256
-	meta.Put(xorhashKey, encoder.Serialize(cipher.SHA256{}))
+	meta.Put(xorhashKey, []byte(cipher.SHA256{}.Hex()))
 
 	up.meta = meta
 
@@ -53,29 +53,25 @@ func (up *UnspentPool) Add(ux coin.UxOut) error {
 		return fmt.Errorf("attemps to insert uxout:%v twice into the unspent pool", h.Hex())
 	}
 	v := encoder.Serialize(ux)
+	xorhash, err := up.getXorHash()
+	if err != nil {
+		return err
+	}
+
+	xorhash = xorhash.Xor(ux.SnapshotHash())
+	if err := up.setXorHash(xorhash); err != nil {
+		return err
+	}
 
 	return up.pool.Put([]byte(h.Hex()), v)
 }
 
-// getByHash returns the uxout value of give hash
-func (up *UnspentPool) getByHash(h cipher.SHA256) (coin.UxOut, bool, error) {
-	if v := up.pool.Get([]byte(h.Hex())); v != nil {
-		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
-			return coin.UxOut{}, false, fmt.Errorf("get uxout from pool failed: %v", err)
-		}
-		return ux, true, nil
-	}
-
-	return coin.UxOut{}, false, nil
-}
-
-// Get returns UxOut by given hash array, will return error when
+// GetArray returns UxOut by given hash array, will return error when
 // if any of the hashes is not exist.
-func (up *UnspentPool) Get(hashes []cipher.SHA256) (coin.UxArray, error) {
+func (up *UnspentPool) GetArray(hashes []cipher.SHA256) (coin.UxArray, error) {
 	uxs := make(coin.UxArray, 0, len(hashes))
 	for i := range hashes {
-		ux, ok, err := up.getByHash(hashes[i])
+		ux, ok, err := up.Get(hashes[i])
 		if err != nil {
 			return nil, err
 		}
@@ -87,6 +83,19 @@ func (up *UnspentPool) Get(hashes []cipher.SHA256) (coin.UxArray, error) {
 		uxs = append(uxs, ux)
 	}
 	return uxs, nil
+}
+
+// Get returns the uxout value of give hash
+func (up *UnspentPool) Get(h cipher.SHA256) (coin.UxOut, bool, error) {
+	if v := up.pool.Get([]byte(h.Hex())); v != nil {
+		var ux coin.UxOut
+		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+			return coin.UxOut{}, false, fmt.Errorf("get uxout from pool failed: %v", err)
+		}
+		return ux, true, nil
+	}
+
+	return coin.UxOut{}, false, nil
 }
 
 // GetAll returns Pool as an array. Note: they are not in any particular order.
@@ -144,6 +153,21 @@ func (up *UnspentPool) Delete(hashes []cipher.SHA256) error {
 	return nil
 }
 
+// Len returns the pool size
+func (up *UnspentPool) Len() uint64 {
+	return uint64(up.pool.Len())
+}
+
+// Collides checks for hash collisions with existing hashes
+func (up *UnspentPool) Collides(hashes []cipher.SHA256) bool {
+	for i := range hashes {
+		if up.Contains(hashes[i]) {
+			return true
+		}
+	}
+	return false
+}
+
 // Contains check if the hash of uxout does exist in the pool
 func (up *UnspentPool) Contains(h cipher.SHA256) bool {
 	v := up.pool.Get([]byte(h.Hex()))
@@ -179,7 +203,7 @@ func (up *UnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressU
 		addrm[a] = byte(1)
 	}
 
-	var addrUxs coin.AddressUxOuts
+	addrUxs := coin.AddressUxOuts{}
 	if err := up.pool.ForEach(func(k, v []byte) error {
 		var ux coin.UxOut
 		if err := encoder.DeserializeRaw(v, &ux); err != nil {

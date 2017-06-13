@@ -1,4 +1,4 @@
-package historydb_test
+package historydb
 
 import (
 	"errors"
@@ -11,11 +11,9 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,27 +50,31 @@ var _ = func() int64 {
 	return t
 }()
 
+// setup will create a random boltdb file in temp folder,
+// and return teardown function for later clean
 func setup(t *testing.T) (*bolt.DB, func(), error) {
-	dbName := fmt.Sprintf("%ddb", rand.Int31n(10000))
-	teardown := func() {}
-	tmpDir := filepath.Join(os.TempDir(), dbName)
+	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
+	close := func() {}
+	tmpDir := os.TempDir()
+	dbPath := filepath.Join(tmpDir, dbName)
 	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, teardown, err
+		return nil, close, err
 	}
 
-	util.DataDir = tmpDir
-	db, err := historydb.NewDB()
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+		Timeout: 500 * time.Millisecond,
+	})
 	if err != nil {
-		t.Fatal(err)
+		return nil, close, err
 	}
 
-	teardown = func() {
+	close = func() {
 		db.Close()
-		if err := os.RemoveAll(tmpDir); err != nil {
+		if err := os.RemoveAll(dbPath); err != nil {
 			panic(err)
 		}
 	}
-	return db, teardown, nil
+	return db, close, nil
 }
 
 type fakeBlockchain struct {
@@ -80,7 +82,7 @@ type fakeBlockchain struct {
 	unspent coin.UnspentPool
 }
 
-func newBlockchain() historydb.Blockchainer {
+func newBlockchain() Blockchainer {
 	return &fakeBlockchain{
 		unspent: coin.NewUnspentPool(),
 	}
@@ -186,7 +188,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	// bc := coin.NewBlockchain(&ft, nil)
 	bc := newBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
-	hisDB, err := historydb.New(db)
+	hisDB, err := New(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +198,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	}
 
 	// check transactions bucket.
-	var tx historydb.Transaction
+	var tx Transaction
 	txHash := gb.Body.Transactions[0].Hash()
 	if err := getBucketValue(db, transactionBkt, txHash[:], &tx); err != nil {
 		t.Fatal(err)
@@ -213,7 +215,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	assert.Equal(t, outID[0], ux.Hash())
 
 	// check outputs
-	output := historydb.UxOut{}
+	output := UxOut{}
 	if err := getBucketValue(db, outputBkt, outID[0][:], &output); err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +243,7 @@ type txOut struct {
 	Hours  uint64
 }
 
-func getUx(bc historydb.Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.UxOut, error) {
+func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.UxOut, error) {
 	b := bc.GetBlockInDepth(seq)
 	if b == nil {
 		return nil, fmt.Errorf("no block in depth:%v", seq)
@@ -268,8 +270,8 @@ func TestProcessBlock(t *testing.T) {
 	bc := newBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 
-	// create historydb
-	hisDB, err := historydb.New(db)
+	// create
+	hisDB, err := New(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +346,7 @@ func TestProcessBlock(t *testing.T) {
 	testEngine(t, testData, bc, hisDB, db)
 }
 
-func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *historydb.HistoryDB, db *bolt.DB) {
+func testEngine(t *testing.T, tds []testData, bc Blockchainer, hdb *HistoryDB, db *bolt.DB) {
 	for i, td := range tds {
 		b, tx, err := addBlock(bc, td, _incTime*(uint64(i)+1))
 		if err != nil {
@@ -362,7 +364,7 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 		}
 
 		// check tx
-		txInBkt := historydb.Transaction{}
+		txInBkt := Transaction{}
 		k := tx.Hash()
 		if err := getBucketValue(db, transactionBkt, k[:], &txInBkt); err != nil {
 			t.Fatal(err)
@@ -376,7 +378,7 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 				t.Fatal(err)
 			}
 
-			uxInDB := historydb.UxOut{}
+			uxInDB := UxOut{}
 			uxKey := ux.Hash()
 			if err = getBucketValue(db, outputBkt, uxKey[:], &uxInDB); err != nil {
 				t.Fatal(err)
@@ -396,7 +398,7 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 	}
 }
 
-func addBlock(bc historydb.Blockchainer, td testData, tm uint64) (*coin.Block, *coin.Transaction, error) {
+func addBlock(bc Blockchainer, td testData, tm uint64) (*coin.Block, *coin.Transaction, error) {
 	tx := coin.Transaction{}
 	// get unspent output
 	ux, err := getUx(bc, td.Vin.BlockSeq, td.Vin.TxID, td.Vin.Addr)

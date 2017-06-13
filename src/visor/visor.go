@@ -167,14 +167,8 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		return nil, nil, err
 	}
 
-	// creates blockchain tree
-	tree, err := blockdb.NewBlockTree(db)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// creates blockchain instance
-	bc, err := NewBlockchain(tree, walker, Arbitrating(c.Arbitrating))
+	bc, err := NewBlockchain(db, walker, Arbitrating(c.Arbitrating))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -214,10 +208,16 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 func (vs *Visor) Run(q chan struct{}) {
 	if vs.Blockchain.GetGenesisBlock() == nil {
 		vs.GenesisPreconditions()
-		b := vs.Blockchain.CreateGenesisBlock(
+		b, err := vs.Blockchain.CreateGenesisBlock(
 			vs.Config.GenesisAddress,
 			vs.Config.GenesisCoinVolume,
 			vs.Config.GenesisTimestamp)
+		if err != nil {
+			logger.Error("%v", err)
+			close(q)
+			return
+		}
+
 		logger.Debug("create genesis block")
 
 		// record the signature of genesis block
@@ -235,18 +235,6 @@ func (vs *Visor) Run(q chan struct{}) {
 
 	vs.bcParser.Run(q)
 }
-
-// NewMinimalVisor returns a Visor with minimum initialization necessary for empty blockchain
-// access
-// func NewMinimalVisor(c VisorConfig) (*Visor {
-// 	db, _ := openDB(c.DBPath)
-// 	return &Visor{
-// 		Config:      c,
-// 		blockSigs:   blockdb.NewBlockSigs(db),
-// 		Unconfirmed: NewUnconfirmedTxnPool(db),
-// 		//Wallets:     nil,
-// 	}
-// }
 
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {
@@ -339,34 +327,32 @@ func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 // update should lock
 // isolate effect of threading
 // call .Array() to get []UxOut array
-func (vs *Visor) GetUnspentOutputs() []coin.UxOut {
-	uxs := vs.Blockchain.GetUnspent()
-	return uxs.Array()
-}
-
-// GetUnspentOutputsMap return unspent output map
-func (vs *Visor) GetUnspentOutputsMap() coin.UnspentPool {
-	uxs := vs.Blockchain.GetUnspent()
-	return *uxs
+func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
+	return vs.Blockchain.Unspent.GetAll()
 }
 
 // GetUnspentOutputReadables returns readable unspent outputs
-func (vs *Visor) GetUnspentOutputReadables() []ReadableOutput {
-	uxs := vs.GetUnspentOutputs()
+func (vs *Visor) GetUnspentOutputReadables() ([]ReadableOutput, error) {
+	uxs, err := vs.GetUnspentOutputs()
+	if err != nil {
+		return []ReadableOutput{}, err
+	}
+
 	rxReadables := make([]ReadableOutput, len(uxs))
 	for i, ux := range uxs {
 		rxReadables[i] = NewReadableOutput(ux)
 	}
-	return rxReadables
+
+	return rxReadables, nil
 }
 
 // AllSpendsOutputs returns all spending outputs in unconfirmed tx pool
-func (vs *Visor) AllSpendsOutputs() []ReadableOutput {
-	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.GetUnspent())
+func (vs *Visor) AllSpendsOutputs() ([]ReadableOutput, error) {
+	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.Unspent)
 }
 
 // AllIncommingOutputs returns all predicted outputs that are in pending tx pool
-func (vs *Visor) AllIncommingOutputs() []ReadableOutput {
+func (vs *Visor) AllIncommingOutputs() ([]ReadableOutput, error) {
 	return vs.Unconfirmed.AllIncommingOutputs(vs.Blockchain.Head().Head)
 }
 
@@ -483,15 +469,19 @@ func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
 
 // GetAddressTransactions returns the Transactions whose unspents give coins to a cipher.Address.
 // This includes unconfirmed txns' predicted unspents.
-func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
+func (vs *Visor) GetAddressTransactions(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
 	// Look in the blockchain
-	uxs := vs.Blockchain.GetUnspent().AllForAddress(a)
+	uxs, err := vs.Blockchain.Unspent.GetUnspentsOfAddr(a)
+	if err != nil {
+		return []Transaction{}, err
+	}
+
 	mxSeq := vs.HeadBkSeq()
 	var bk *coin.Block
 	for _, ux := range uxs {
 		if bk = vs.GetBlockBySeq(ux.Head.BkSeq); bk == nil {
-			return txns
+			return txns, nil
 		}
 
 		tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
@@ -520,7 +510,7 @@ func (vs *Visor) GetAddressTransactions(a cipher.Address) []Transaction {
 		})
 	}
 
-	return txns
+	return txns, nil
 }
 
 // GetTransaction returns a Transaction by hash.

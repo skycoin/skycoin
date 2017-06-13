@@ -4,12 +4,10 @@ package historydb
 
 import (
 	"errors"
-	"path/filepath"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
 )
 
 // Blockchainer interface for isolating the detail of blockchain.
@@ -23,23 +21,13 @@ type Blockchainer interface {
 	GetBlock(hash cipher.SHA256) *coin.Block
 }
 
-// NewDB create the history bolt db if does not exsit.
-func NewDB() (*bolt.DB, error) {
-	dbFile := filepath.Join(util.DataDir, "history.db")
-	db, err := bolt.Open(dbFile, 0600, nil)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
 // HistoryDB provides apis for blockchain explorer.
 type HistoryDB struct {
-	db *bolt.DB // bolt db instance.
-	// blocks  *blocks       // blocks bucket.
-	txns    *transactions // transactions bucket.
-	outputs *UxOuts       // outputs bucket.
-	addrUx  *addressUx    // bucket which stores all UxOuts that address recved.
+	db           *bolt.DB      // bolt db instance.
+	txns         *transactions // transactions bucket.
+	outputs      *UxOuts       // outputs bucket.
+	addrUx       *addressUx    // bucket which stores all UxOuts that address recved.
+	*historyMeta               // stores history meta info
 }
 
 // New create historydb instance and create corresponding buckets if does not exist.
@@ -60,6 +48,11 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 
 	// create the toAddressTx instance.
 	hd.addrUx, err = newAddressUxBkt(db)
+	if err != nil {
+		return nil, err
+	}
+
+	hd.historyMeta, err = newHistoryMeta(db)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +124,7 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 			}
 		}
 	}
+
 	return nil
 }
 

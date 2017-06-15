@@ -21,24 +21,12 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-//var Wallets wallet.Wallets
-
-/*
-REFACTOR
-*/
-
-/*
-This section is redundant
-- after moving the wallets out of visor and daemon, wallet should be in the wallet module
-- there is no need for multiple wallets in the same application
-*/
-//type WalletRPC struct{}
-
 // WalletRPC wallet rpc
 type WalletRPC struct {
 	Wallets         wallet.Wallets
 	WalletDirectory string
 	Options         []wallet.Option
+	firstAddrIDMap  map[string]string // key: first address in wallet, value: wallet id
 }
 
 // NotesRPC note rpc
@@ -77,7 +65,9 @@ func NewNotesRPC(walletDir string) *NotesRPC {
 
 // NewWalletRPC new wallet rpc
 func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
-	rpc := &WalletRPC{}
+	rpc := &WalletRPC{
+		firstAddrIDMap: make(map[string]string),
+	}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
 		log.Panicf("Failed to create wallet directory %s: %v", walletDir, err)
 	}
@@ -91,7 +81,8 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 	if err != nil {
 		log.Panicf("Failed to load all wallets: %v", err)
 	}
-	rpc.Wallets = w
+
+	rpc.Wallets = rpc.removeDup(w)
 
 	if len(rpc.Wallets) == 0 {
 		wltName := wallet.NewWalletFilename()
@@ -113,62 +104,105 @@ func NewWalletRPC(walletDir string, options ...wallet.Option) *WalletRPC {
 	return rpc
 }
 
+func (wrpc *WalletRPC) removeDup(wlts wallet.Wallets) wallet.Wallets {
+	var dupWltIDS []string
+	// remove dup wallets
+	for wltID, wlt := range wlts {
+		addr := wlt.Entries[0].Address.String()
+		id, ok := wrpc.firstAddrIDMap[addr]
+		if ok {
+			// check whose entries number is bigger
+			pw, _ := wlts.Get(id)
+			if len(pw.Entries) >= len(wlt.Entries) {
+				dupWltIDS = append(dupWltIDS, wltID)
+				continue
+			}
+
+			// replace the old wallet with the new one
+			// records the wallet id that need to remove
+			dupWltIDS = append(dupWltIDS, id)
+			// update wallet id
+			wrpc.firstAddrIDMap[addr] = wltID
+			continue
+		}
+
+		wrpc.firstAddrIDMap[addr] = wltID
+	}
+
+	// remove the duplicate wallet
+	for _, id := range dupWltIDS {
+		wlts.Remove(id)
+	}
+
+	return wlts
+}
+
 // ReloadWallets reload wallets
-func (wlt *WalletRPC) ReloadWallets() error {
-	wallets, err := wallet.LoadWallets(wlt.WalletDirectory)
+func (wrpc *WalletRPC) ReloadWallets() error {
+	wrpc.firstAddrIDMap = make(map[string]string)
+	wallets, err := wallet.LoadWallets(wrpc.WalletDirectory)
 	if err != nil {
 		return err
 	}
-	wlt.Wallets = wallets
+	wrpc.Wallets = wrpc.removeDup(wallets)
 	return nil
 }
 
 // SaveWallet saves a wallet
-func (wlt *WalletRPC) SaveWallet(walletID string) error {
-	if w, ok := wlt.Wallets.Get(walletID); ok {
-		return w.Save(wlt.WalletDirectory)
+func (wrpc *WalletRPC) SaveWallet(walletID string) error {
+	if w, ok := wrpc.Wallets.Get(walletID); ok {
+		return w.Save(wrpc.WalletDirectory)
 	}
 	return fmt.Errorf("Unknown wallet %s", walletID)
 }
 
 // SaveWallets saves wallets
-func (wlt *WalletRPC) SaveWallets() map[string]error {
-	return wlt.Wallets.Save(wlt.WalletDirectory)
+func (wrpc *WalletRPC) SaveWallets() map[string]error {
+	return wrpc.Wallets.Save(wrpc.WalletDirectory)
 }
 
 // CreateWallet creates wallet
-func (wlt *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
-	ops := make([]wallet.Option, 0, len(wlt.Options)+len(options))
-	ops = append(ops, wlt.Options...)
+func (wrpc *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
+	ops := make([]wallet.Option, 0, len(wrpc.Options)+len(options))
+	ops = append(ops, wrpc.Options...)
 	ops = append(ops, options...)
-	w := wallet.NewWallet(wltName, ops...)
-	// generate a default address
-	w.GenerateAddresses(1)
-
-	if err := wlt.Wallets.Add(w); err != nil {
+	w, err := wallet.NewWallet(wltName, ops...)
+	if err != nil {
 		return wallet.Wallet{}, err
 	}
 
-	return w, nil
+	// generate a default address
+	w.GenerateAddresses(1)
+
+	// check dup
+	if id, ok := wrpc.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
+		return wallet.Wallet{}, fmt.Errorf("duplicate wallet with %v", id)
+	}
+
+	if err := wrpc.Wallets.Add(*w); err != nil {
+		return wallet.Wallet{}, err
+	}
+
+	return *w, nil
 }
 
 // NewAddresses generate address entries in specific wallet,
 // return nil if wallet does not exist.
-func (wlt *WalletRPC) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
-	return wlt.Wallets.NewAddresses(wltID, num)
+func (wrpc *WalletRPC) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+	return wrpc.Wallets.NewAddresses(wltID, num)
 }
 
 // GetWalletReadable returns a readable wallet
-func (wlt *WalletRPC) GetWalletReadable(walletID string) *wallet.ReadableWallet {
-	if w, ok := wlt.Wallets.Get(walletID); ok {
+func (wrpc *WalletRPC) GetWalletReadable(walletID string) *wallet.ReadableWallet {
+	if w, ok := wrpc.Wallets.Get(walletID); ok {
 		return wallet.NewReadableWallet(w)
 	}
 	return nil
 }
 
 // GetWalletsReadable returns readable wallets
-func (wlt *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
-	return wlt.Wallets.ToReadable()
+func (wrpc *WalletRPC) GetWalletsReadable() []*wallet.ReadableWallet {
+	return wrpc.Wallets.ToReadable()
 }
 
 // GetNotesReadable returns readable notes
@@ -177,8 +211,8 @@ func (nt *NotesRPC) GetNotesReadable() wallet.ReadableNotes {
 }
 
 // GetWallet returns wallet of give id
-func (wlt *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
-	if w, ok := wlt.Wallets.Get(walletID); ok {
+func (wrpc *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
+	if w, ok := wrpc.Wallets.Get(walletID); ok {
 		return &w
 	}
 	return nil
@@ -187,10 +221,10 @@ func (wlt *WalletRPC) GetWallet(walletID string) *wallet.Wallet {
 // GetWalletBalance modify to return error
 // NOT WORKING
 // actually uses visor
-func (wlt *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
+func (wrpc *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
 	walletID string) (wallet.BalancePair, error) {
 
-	w, ok := wlt.Wallets.Get(walletID)
+	w, ok := wrpc.Wallets.Get(walletID)
 	if !ok {
 		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
 		return wallet.BalancePair{}, errors.New("Id not found")
@@ -202,7 +236,7 @@ func (wlt *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
 // HasUnconfirmedTransactions checks if the wallet has pending, unconfirmed transactions
 // - do not allow any transactions if there are pending
 //Check if any of the outputs are spent
-func (wlt *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
+func (wrpc *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
 	wallet *wallet.Wallet) bool {
 
 	if wallet == nil {
@@ -422,9 +456,14 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		// the wallet name may dup, rename it till no conflict.
 		for {
 			wlt, err = Wg.CreateWallet(wltName, wallet.OptSeed(seed), wallet.OptLabel(label))
-			if err != nil && strings.Contains(err.Error(), "renaming") {
-				wltName = wallet.NewWalletFilename()
-				continue
+			if err != nil {
+				if strings.Contains(err.Error(), "renaming") {
+					wltName = wallet.NewWalletFilename()
+					continue
+				}
+
+				wh.Error400(w, err.Error())
+				return
 			}
 			break
 		}

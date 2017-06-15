@@ -4,7 +4,6 @@ package pex
 import (
 	"errors"
 	"fmt"
-	"github.com/op/go-logging"
 	"io"
 	"math/rand"
 	"net"
@@ -14,6 +13,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"math"
+
+	"sync"
+
+	"github.com/skycoin/skycoin/src/util"
 )
 
 //TODO:
@@ -24,28 +29,28 @@ import (
 // - only transmit peers that have active or recent connections
 
 var (
-	// Filename for disk-cached peers
+	// PeerDatabaseFilename filename for disk-cached peers
 	PeerDatabaseFilename = "peers.txt"
-	// Filename for disk-cached blacklisted peers
+	// BlacklistedDatabaseFilename  filename for disk-cached blacklisted peers
 	BlacklistedDatabaseFilename = "blacklisted_peers.txt"
-	// Returned when the Pex is at a maximum
-	PeerlistFullError = errors.New("Peer list full")
-	// Returned when an address appears malformed
-	InvalidAddressError = errors.New("Invalid address")
-	// Returned when attempting to add a blacklisted peer
-	BlacklistedAddressError = errors.New("Blacklisted address")
-	// How often to updated expired entries in the blacklist
+	// ErrPeerlistFull returned when the Pex is at a maximum
+	ErrPeerlistFull = errors.New("Peer list full")
+	// ErrInvalidAddress Returned when an address appears malformed
+	ErrInvalidAddress = errors.New("Invalid address")
+	// ErrBlacklistedAddress returned when attempting to add a blacklisted peer
+	ErrBlacklistedAddress = errors.New("Blacklisted address")
+	// RefreshBlacklistRate How often to updated expired entries in the blacklist
 	RefreshBlacklistRate = time.Second * 30
 	// Logging. See http://godoc.org/github.com/op/go-logging for
 	// instructions on how to include this log's output
-	logger = logging.MustGetLogger("pex")
+	logger = util.MustGetLogger("pex")
 	// Default rng
 	rnum = rand.New(rand.NewSource(time.Now().Unix()))
 	// For removing inadvertent whitespace from addresses
 	whitespaceFilter = regexp.MustCompile("\\s")
 )
 
-// Returns true if ipPort is a valid ip:host string
+// ValidateAddress returns true if ipPort is a valid ip:host string
 func ValidateAddress(ipPort string, allowLocalhost bool) bool {
 	ipPort = whitespaceFilter.ReplaceAllString(ipPort, "")
 	pts := strings.Split(ipPort, ":")
@@ -72,197 +77,214 @@ func ValidateAddress(ipPort string, allowLocalhost bool) bool {
 
 // Peer represents a known peer
 type Peer struct {
-	Addr     string    // An address of the form ip:port
-	LastSeen time.Time // Unix timestamp when this peer was last seen
-	Private  bool      // Whether it should omitted from public requests
+	Addr          string    // An address of the form ip:port
+	LastSeen      time.Time // Unix timestamp when this peer was last seen
+	Private       bool      // Whether it should omitted from public requests
+	Trusted       bool      // Whether this peer is trusted
+	HasIncomePort bool      // Whether this peer has incomming port
+	RetryTimes    int       `json:"-"` // records the retry times
 }
 
-// Returns a *Peer initialised by an address string of the form ip:port
+// NewPeer returns a *Peer initialised by an address string of the form ip:port
 func NewPeer(address string) *Peer {
-	p := &Peer{Addr: address, Private: false}
+	p := &Peer{Addr: address, Private: false, Trusted: false}
 	p.Seen()
 	return p
 }
 
-// Mark the peer as seen
-func (self *Peer) Seen() {
-	self.LastSeen = Now()
+// Seen marks the peer as seen
+func (peer *Peer) Seen() {
+	peer.LastSeen = Now()
 }
 
-func (self *Peer) String() string {
-	return self.Addr
+// IncreaseRetryTimes adds the retry times
+func (peer *Peer) IncreaseRetryTimes() {
+	peer.RetryTimes++
+	logger.Debug("Increase retry times of %v to %v", peer.Addr, peer.RetryTimes)
 }
 
-// BlacklistEntry records when an address was blacklisted and how long
-// it should be blacklisted for. A duration of 0 is permanent.
-type BlacklistEntry struct {
-	Start    time.Time
-	Duration time.Duration
+// ResetRetryTimes resets the retry time
+func (peer *Peer) ResetRetryTimes() {
+	peer.RetryTimes = 0
+	logger.Debug("Reset retry times of %v", peer.Addr)
 }
 
-// Returns the time.Time the BlacklistEntry expires
-func (b BlacklistEntry) ExpiresAt() time.Time {
-	return b.Start.Add(b.Duration)
-}
-
-func NewBlacklistEntry(duration time.Duration) BlacklistEntry {
-	return BlacklistEntry{Start: Now(), Duration: duration}
-}
-
-// Blacklist is a map of addresses to BlacklistEntries
-type Blacklist map[string]BlacklistEntry
-
-// Saves blacklisted peers to disk as a newline delimited list of addresses to
-// <dir><PeerDatabaseFilename>
-func (self Blacklist) Save(dir string) error {
-	filename := BlacklistedDatabaseFilename
-	fn := filepath.Join(dir, filename+".tmp")
-	f, err := os.Create(fn)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	entries := make([]string, 0, len(self))
-	for addr, entry := range self {
-		// Skip empty addresses
-		addr = whitespaceFilter.ReplaceAllString(addr, "")
-		if addr == "" {
-			continue
-		}
-		duration := entry.Duration.Nanoseconds() / 1e9
-		line := fmt.Sprintf("%s %d %d", addr, entry.Start.Unix(), duration)
-		entries = append(entries, line)
-	}
-	s := strings.Join(entries, "\n") + "\n"
-	_, err = f.WriteString(s)
-	if err != nil {
-		return err
-	}
-	return os.Rename(fn, filepath.Join(dir, filename))
-}
-
-// Removes expired peers from the blacklist.
-func (self Blacklist) Refresh() {
+// CanTry returns whether this peer tryable base on the exponential backoff algorithm
+func (peer *Peer) CanTry() (rlt bool) {
 	now := Now()
-	for p, b := range self {
-		if b.ExpiresAt().Before(now) {
-			delete(self, p)
-		}
+	mod := (math.Exp2(float64(peer.RetryTimes)) - 1) * 5
+	if mod == 0 {
+		rlt = true
+		return
 	}
+
+	t := rnum.Int63n(int64(mod))
+	timePass := now.Sub(peer.LastSeen).Seconds()
+	rlt = int64(timePass) > t
+	return
 }
 
-// Returns the string addresses of all blacklisted peers
-func (self Blacklist) GetAddresses() []string {
-	keys := make([]string, 0, len(self))
-	for key, _ := range self {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-// Loads a newline delimited list of addresses from
-// <dir>/<BlacklistedDatabaseFilename> into the Blacklist index
-func LoadBlacklist(dir string) (Blacklist, error) {
-	lines, err := readLines(filepath.Join(dir, BlacklistedDatabaseFilename))
-	blacklist := make(Blacklist, len(lines))
-	if os.IsNotExist(err) {
-		return blacklist, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	logInvalid := func(line, msg string) {
-		logger.Warning("Invalid blacklist db entry: \"%s\"", line)
-		logger.Warning("Reason: %s", msg)
-	}
-	for _, line := range lines {
-		line = whitespaceFilter.ReplaceAllString(line, " ")
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		pts := make([]string, 0, 3)
-		for _, p := range strings.Split(line, " ") {
-			if p != "" {
-				pts = append(pts, p)
-			}
-		}
-		if len(pts) != 3 {
-			logInvalid(line, "Not of form $ADDR $BANSTART $BANDURATION")
-			continue
-		}
-		addr := whitespaceFilter.ReplaceAllString(pts[0], "")
-		if !ValidateAddress(addr, true) {
-			logInvalid(line, fmt.Sprintf("Invalid IP:Port %s", addr))
-			continue
-		}
-		start, err := strconv.ParseInt(pts[1], 10, 64)
-		if err != nil {
-			logInvalid(line, fmt.Sprintf("Invalid start time: %v", err))
-			continue
-		}
-		duration, err := strconv.ParseInt(pts[2], 10, 64)
-		if err != nil {
-			logInvalid(line, fmt.Sprintf("Invalid duration: %v", err))
-			continue
-		}
-		blacklist[addr] = BlacklistEntry{
-			Start:    time.Unix(start, 0).UTC(),
-			Duration: time.Duration(duration) * time.Second,
-		}
-	}
-	blacklist.Refresh()
-	return blacklist, nil
+// String returns the peer address
+func (peer *Peer) String() string {
+	return peer.Addr
 }
 
 // Peerlist is a map of addresses to *PeerStates
-type Peerlist map[string]*Peer
+type Peerlist struct {
+	lock  sync.Mutex
+	peers map[string]*Peer
+}
 
-// Returns the string addresses of all public peers
-func (self Peerlist) getAddresses(private bool) []string {
-	keys := make([]string, 0, len(self))
-	for key, p := range self {
-		if private && p.Private {
-			keys = append(keys, key)
-		} else if !private && !p.Private {
-			keys = append(keys, key)
+func (pl *Peerlist) strand(f func(), arg ...interface{}) {
+	pl.lock.Lock()
+	defer pl.lock.Unlock()
+	// logger.Critical("%v", arg)
+	f()
+}
+
+// GetPublicTrustPeers returns all trusted public peers
+func (pl *Peerlist) GetPublicTrustPeers() []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		keys := pl.getTrustAddresses(false)
+		peers = make([]*Peer, len(keys))
+		for i, key := range keys {
+			peers[i] = pl.peers[key]
+		}
+	}, "GetPublickTrustPeers")
+	return peers
+}
+
+// GetPrivateTrustPeers returns all trusted private peers
+func (pl *Peerlist) GetPrivateTrustPeers() []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		keys := pl.getTrustAddresses(true)
+		peers = make([]*Peer, len(keys))
+		for i, key := range keys {
+			peers[i] = pl.peers[key]
+		}
+	}, "GetPrivateTrustPeers")
+	return peers
+}
+
+// GetAllTrustedPeers returns all trusted peers, including private and public peers.
+func (pl *Peerlist) GetAllTrustedPeers() []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		keys := pl.getAllTrustPeers()
+		peers = make([]*Peer, len(keys))
+		for i, key := range keys {
+			peers[i] = pl.peers[key]
+		}
+	}, "GetAllTrustedPeers")
+	return peers
+}
+
+func (pl *Peerlist) getTrustAddresses(private bool) []string {
+	keys := []string{}
+	for key, p := range pl.peers {
+		if p.Trusted {
+			if p.CanTry() {
+				if private && p.Private {
+					keys = append(keys, key)
+				} else if !private && !p.Private {
+					keys = append(keys, key)
+				}
+			}
 		}
 	}
 	return keys
 }
 
-// Returns the string addresses of all public peers
-func (self Peerlist) GetPublicAddresses() []string {
-	return self.getAddresses(false)
+func (pl *Peerlist) getAllTrustPeers() []string {
+	return append(pl.getTrustAddresses(false), pl.getTrustAddresses(true)...)
 }
 
-// Returns the string addresses of all private peers
-func (self Peerlist) GetPrivateAddresses() []string {
-	return self.getAddresses(true)
+// GetPublicAddresses returns the string addresses of all public peers
+func (pl *Peerlist) GetPublicAddresses() []string {
+	var addrs []string
+	pl.strand(func() {
+		addrs = pl.getAddresses(false)
+	}, "GetPublicAddresses")
+	return addrs
 }
 
-// Returns the string addresses of all peers, public or private
-func (self Peerlist) GetAllAddresses() []string {
-	return append(self.getAddresses(false), self.getAddresses(true)...)
+// GetPrivateAddresses returns the string addresses of all private peers
+func (pl *Peerlist) GetPrivateAddresses() []string {
+	var addrs []string
+	pl.strand(func() {
+		addrs = pl.getAddresses(true)
+	}, "GetPrivateAddresses")
+	return addrs
 }
 
-// Removes public peers that haven't been seen in timeAgo seconds
-func (self Peerlist) ClearOld(timeAgo time.Duration) {
+// RemovePeer removes peer
+func (pl *Peerlist) RemovePeer(a string) {
+	pl.strand(func() {
+		delete(pl.peers, a)
+	}, "RemovePeer")
+}
+
+// GetAllAddresses returns the string addresses of all peers, public or private
+func (pl *Peerlist) GetAllAddresses() []string {
+	var addrs []string
+	pl.strand(func() {
+		addrs = append(pl.getAddresses(false), pl.getAddresses(true)...)
+	}, "GetAllAddreses")
+	return addrs
+}
+
+// GetPeerByAddr returns peer of given address
+func (pl *Peerlist) GetPeerByAddr(a string) (Peer, bool) {
+	var peer Peer
+	var exist bool
+	pl.strand(func() {
+		if p, ok := pl.peers[a]; ok {
+			peer = *p
+			exist = true
+			return
+		}
+	}, "GetPeerByAddr")
+	return peer, exist
+}
+
+// ClearOld removes public peers that haven't been seen in timeAgo seconds
+func (pl *Peerlist) ClearOld(timeAgo time.Duration) {
 	t := Now()
-	for addr, peer := range self {
-		if !peer.Private && t.Sub(peer.LastSeen) > timeAgo {
-			delete(self, addr)
+	pl.strand(func() {
+		for addr, peer := range pl.peers {
+			if !peer.Private && t.Sub(peer.LastSeen) > timeAgo {
+				delete(pl.peers, addr)
+			}
+		}
+	}, "ClearOld")
+}
+
+// Returns the string addresses of all public peers
+func (pl *Peerlist) getAddresses(private bool) []string {
+	keys := make([]string, 0, len(pl.peers))
+	for key, p := range pl.peers {
+		if p.CanTry() {
+			if private && p.Private {
+				keys = append(keys, key)
+			} else if !private && !p.Private {
+				keys = append(keys, key)
+			}
 		}
 	}
+
+	return keys
 }
 
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
-func (self Peerlist) random(count int, includePrivate bool) []*Peer {
+func (pl *Peerlist) random(count int, includePrivate bool) []*Peer {
 	keys := []string(nil)
 	if includePrivate {
-		keys = self.GetAllAddresses()
+		keys = append(pl.getAddresses(true), pl.getAddresses(false)...)
 	} else {
-		keys = self.GetPublicAddresses()
+		keys = pl.getAddresses(false)
 	}
 	if len(keys) == 0 {
 		return make([]*Peer, 0)
@@ -274,182 +296,263 @@ func (self Peerlist) random(count int, includePrivate bool) []*Peer {
 	peers := make([]*Peer, 0, max)
 	perm := rand.Perm(len(keys))
 	for _, i := range perm[:max] {
-		peers = append(peers, self[keys[i]])
+		peers = append(peers, pl.peers[keys[i]])
 	}
 	return peers
 }
 
-// Returns n random peers, or all of the peers, whichever is lower.
+func (pl *Peerlist) getExchgAddr(private bool) []string {
+	keys := []string{}
+	for a, p := range pl.peers {
+		if p.HasIncomePort && p.Private == private {
+			keys = append(keys, a)
+		}
+	}
+	return keys
+}
+
+// returns all exchangeable addresses
+func (pl *Peerlist) getAllExchgAddr() []string {
+	return append(pl.getExchgAddr(true), pl.getExchgAddr(false)...)
+}
+
+// returns n random exchangeable peers, return all if count is 0.
+func (pl *Peerlist) randomExchg(count int, includePrivate bool) []*Peer {
+	keys := []string{}
+	if includePrivate {
+		keys = pl.getAllExchgAddr()
+	} else {
+		keys = pl.getExchgAddr(false)
+	}
+
+	if len(keys) == 0 {
+		return make([]*Peer, 0)
+	}
+
+	max := count
+	if count == 0 || count > len(keys) {
+		max = len(keys)
+	}
+	peers := make([]*Peer, 0, max)
+	perm := rand.Perm(len(keys))
+	for _, i := range perm[:max] {
+		peers = append(peers, pl.peers[keys[i]])
+	}
+	return peers
+}
+
+// RandomExchgPublic returns n random exchangeable public peers
+// return all exchangeable public peers if count is 0.
+func (pl *Peerlist) RandomExchgPublic(count int) []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		peers = pl.randomExchg(count, false)
+	}, "RandomExchgPublic")
+	return peers
+}
+
+// RandomExchgAll returns n random exchangeable peers, including private peers.
+// return all exchangeable peers if count is 0.
+func (pl *Peerlist) RandomExchgAll(count int) []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		peers = pl.randomExchg(count, true)
+	}, "RandomExchgAll")
+	return peers
+}
+
+// RandomPublic returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.  Will not include
 // private peers.
-func (self Peerlist) RandomPublic(count int) []*Peer {
-	return self.random(count, false)
+func (pl *Peerlist) RandomPublic(count int) []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		peers = pl.random(count, false)
+	}, "RandomPublic")
+	return peers
 }
 
-// Returns n random peers, or all of the peers, whichever is lower.
+// RandomAll returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.  Includes private
 // peers.
-func (self Peerlist) RandomAll(count int) []*Peer {
-	return self.random(count, true)
+func (pl *Peerlist) RandomAll(count int) []*Peer {
+	var peers []*Peer
+	pl.strand(func() {
+		peers = pl.random(count, true)
+	}, "RandomAll")
+	return peers
 }
 
-// Saves known peers to disk as a newline delimited list of addresses to
+// Save saves known peers to disk as a newline delimited list of addresses to
 // <dir><PeerDatabaseFilename>
-func (self Peerlist) Save(dir string) error {
-	entries := make([]string, 0)
-	for _, p := range self {
-		private := 0
-		if p.Private {
-			private = 1
-		}
-		entry := fmt.Sprintf("%s %d %d", p.Addr, private, p.LastSeen.Unix())
-		entries = append(entries, entry)
-	}
-	s := strings.Join(entries, "\n") + "\n"
-
+func (pl *Peerlist) Save(dir string) (err error) {
 	filename := PeerDatabaseFilename
-	fn := filepath.Join(dir, filename+".tmp")
-	f, err := os.Create(fn)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if _, err := f.WriteString(s); err != nil {
-		return err
-	}
-	return os.Rename(fn, filepath.Join(dir, filename))
+	fn := filepath.Join(dir, filename)
+	pl.strand(func() {
+		// filter the peers that has retrytime > 10
+		peers := make(map[string]*Peer)
+		for k, p := range pl.peers {
+			if p.RetryTimes <= 10 {
+				peers[k] = p
+			}
+		}
+		err = util.SaveJSON(fn, peers, 0600)
+		if err != nil {
+			logger.Notice("SavePeerList Failed: %s", err)
+		}
+	}, "Save")
+	return
 }
 
-// Loads a newline delimited list of addresses from
+// IncreaseRetryTimes increases retry times
+func (pl *Peerlist) IncreaseRetryTimes(addr string) {
+	pl.strand(func() {
+		if _, ok := pl.peers[addr]; ok {
+			pl.peers[addr].IncreaseRetryTimes()
+			pl.peers[addr].Seen()
+		}
+	}, "IncreaseRetryTimes")
+}
+
+// ResetRetryTimes reset retry times
+func (pl *Peerlist) ResetRetryTimes(addr string) {
+	pl.strand(func() {
+		if _, ok := pl.peers[addr]; ok {
+			pl.peers[addr].ResetRetryTimes()
+			pl.peers[addr].Seen()
+		}
+	}, "ResetRetryTimes")
+}
+
+// ResetAllRetryTimes reset all peers' retry times
+func (pl *Peerlist) ResetAllRetryTimes() {
+	pl.strand(func() {
+		for _, p := range pl.peers {
+			p.ResetRetryTimes()
+		}
+	})
+}
+
+// LoadPeerlist loads a newline delimited list of addresses from
 // "<dir>/<PeerDatabaseFilename>"
-func LoadPeerlist(dir string) (Peerlist, error) {
-	entries, err := readLines(filepath.Join(dir, PeerDatabaseFilename))
-	peerlist := make(Peerlist, len(entries))
-	if os.IsNotExist(err) {
-		return peerlist, nil
-	}
-	if err != nil {
+func LoadPeerlist(dir string) (*Peerlist, error) {
+	peerlist := Peerlist{peers: make(map[string]*Peer)}
+	fn := filepath.Join(dir, PeerDatabaseFilename)
+	if err := util.LoadJSON(fn, &peerlist.peers); err != nil {
 		return nil, err
 	}
-	logInvalid := func(line, msg string) {
-		logger.Warning("Invalid peerlist db entry: \"%s\"", line)
-		logger.Warning("Reason: %s", msg)
-	}
-	for _, entry := range entries {
-		entry = whitespaceFilter.ReplaceAllString(entry, " ")
-		if entry == "" || strings.HasPrefix(entry, "#") {
-			continue
-		}
-		pts := strings.Split(entry, " ")
-		if len(pts) != 3 {
-			m := "Peerlist entry not of form $ADDR $PRIVATE $SEEN"
-			logInvalid(entry, m)
-			continue
-		}
-		addr := pts[0]
-		if !ValidateAddress(addr, true) {
-			logInvalid(entry, fmt.Sprintf("Invalid IP:Port \"%s\"", addr))
-			continue
-		}
-		private := false
-		if pts[1] == "0" {
-			private = false
-		} else if pts[1] == "1" {
-			private = true
-		} else {
-			logInvalid(entry, fmt.Sprintf("Private field must be 0 or 1"))
-			continue
-		}
-		seen, err := strconv.ParseInt(pts[2], 10, 64)
-		if err != nil {
-			logInvalid(entry, err.Error())
-			continue
-		}
-		peerlist[addr] = &Peer{
-			Addr:     addr,
-			LastSeen: time.Unix(seen, 0),
-			Private:  private,
-		}
-	}
-	return peerlist, nil
+	// if err != nil {
+	// 	logger.Notice("LoadPeerList Failed: %s", err)
+	// }
+	return &peerlist, nil
+
 }
 
 // Pex manages a set of known peers and controls peer acquisition
 type Pex struct {
 	// All known peers
-	Peerlist Peerlist
+	*Peerlist
 	// Ignored peers
-	Blacklist Blacklist
+	// Blacklist Blacklist
 	// If false, localhost peers will be rejected from the peerlist
 	AllowLocalhost bool
 	maxPeers       int
 }
 
+// NewPex creates pex
 func NewPex(maxPeers int) *Pex {
 	return &Pex{
-		Peerlist:       make(Peerlist, maxPeers),
-		Blacklist:      make(Blacklist, 0),
+		Peerlist: &Peerlist{peers: make(map[string]*Peer, maxPeers)},
+		// Blacklist:      make(Blacklist, 0),
 		maxPeers:       maxPeers,
 		AllowLocalhost: false,
 	}
 }
 
-// Adds a peer to the peer list, given an address. If the peer list is
+// AddPeer adds a peer to the peer list, given an address. If the peer list is
 // full, PeerlistFullError is returned */
-func (self *Pex) AddPeer(addr string) (*Peer, error) {
-	if !ValidateAddress(addr, self.AllowLocalhost) {
-		return nil, InvalidAddressError
+func (px *Pex) AddPeer(ip string) (*Peer, error) {
+	if !ValidateAddress(ip, px.AllowLocalhost) {
+		return nil, ErrInvalidAddress
 	}
-	if self.IsBlacklisted(addr) {
-		return nil, BlacklistedAddressError
-	}
-	peer := self.Peerlist[addr]
-	if peer != nil {
-		peer.Seen()
-		return peer, nil
-	} else if self.Full() {
-		return nil, PeerlistFullError
-	} else {
-		peer = NewPeer(addr)
-		self.Peerlist[peer.Addr] = peer
-		return peer, nil
-	}
+	var p Peer
+	var err error
+	px.Peerlist.strand(func() {
+		peer := px.peers[ip]
+		if peer != nil {
+			peer.Seen()
+			p = *peer
+			return
+		} else if px.full() {
+			err = ErrPeerlistFull
+		} else {
+			peer := NewPeer(ip)
+			px.peers[ip] = peer
+			p = *peer
+		}
+	}, "AddPeer")
+	return &p, err
 }
 
-// Add a peer address to the blacklist.  Will not blacklist private peers.
-func (self *Pex) AddBlacklistEntry(addr string, duration time.Duration) {
-	if !ValidateAddress(addr, self.AllowLocalhost) {
-		logger.Warning("Attempted to blacklist invalid IP:Port %s", addr)
-		return
+// SetTrustState updates the peer's Trusted statue
+func (px *Pex) SetTrustState(addr string, trusted bool) error {
+	if !ValidateAddress(addr, px.AllowLocalhost) {
+		return ErrInvalidAddress
 	}
-	p := self.Peerlist[addr]
-	if p != nil && p.Private {
-		logger.Warning("Attempted to blacklist private peer %s", addr)
-		return
+
+	var err error
+	px.strand(func() {
+		if p, ok := px.peers[addr]; ok {
+			p.Trusted = trusted
+		} else {
+			err = fmt.Errorf("%s does not exist in peel list", addr)
+		}
+
+	}, "SetTrustState")
+
+	return err
+}
+
+// SetPeerHasInPort update whether the peer has incomming port.
+func (px *Pex) SetPeerHasInPort(addr string, v bool) error {
+	if !ValidateAddress(addr, px.AllowLocalhost) {
+		return ErrInvalidAddress
 	}
-	delete(self.Peerlist, addr)
-	self.Blacklist[addr] = NewBlacklistEntry(duration)
-	logger.Debug("Blacklisting peer %s for %s", addr, duration.String())
+
+	var err error
+	px.strand(func() {
+		if p, ok := px.peers[addr]; ok {
+			p.HasIncomePort = v
+			p.Seen()
+		} else {
+			err = fmt.Errorf("peer %s is not in exchange peer list", addr)
+		}
+
+	}, "SetPeerHasInPort")
+
+	return err
 }
 
-// Returns whether an address is blacklisted
-func (self *Pex) IsBlacklisted(addr string) bool {
-	_, is := self.Blacklist[addr]
-	return is
+// Full returns true if no more peers can be added
+func (px *Pex) Full() bool {
+	var full bool
+	px.strand(func() {
+		full = px.full()
+	}, "Full")
+	return full
 }
 
-// Returns true if no more peers can be added
-func (self *Pex) Full() bool {
-	return self.maxPeers > 0 && len(self.Peerlist) >= self.maxPeers
+func (px *Pex) full() bool {
+	return px.maxPeers > 0 && len(px.peers) >= px.maxPeers
 }
 
-// Add multiple peers at once. Any errors will be logged, but not returned
+// AddPeers add multiple peers at once. Any errors will be logged, but not returned
 // Returns the number of peers that were added without error.  Note that
 // adding a duplicate peer will not cause an error.
-func (self *Pex) AddPeers(peers []string) int {
+func (px *Pex) AddPeers(peers []string) int {
 	n := len(peers)
 	for _, p := range peers {
-		_, err := self.AddPeer(p)
+		_, err := px.AddPeer(p)
 		if err != nil {
 			logger.Warning("Failed to add peer %s, Reason: %v", p, err)
 			n--
@@ -458,39 +561,15 @@ func (self *Pex) AddPeers(peers []string) int {
 	return n
 }
 
-// Loads both the normal peer and blacklisted peer databases
-func (self *Pex) Load(dir string) error {
-	peerlist, err := LoadPeerlist(dir)
+// Load loads peers
+func (px *Pex) Load(dir string) error {
+	pl, err := LoadPeerlist(dir)
 	if err != nil {
 		return err
 	}
-	blacklist, err := LoadBlacklist(dir)
-	if err != nil {
-		return err
-	}
-	// Remove any peers that appear in the blacklist, if not private
-	for addr, _ := range blacklist {
-		p := peerlist[addr]
-		if p != nil && p.Private {
-			logger.Warning("Peer %s appears in both peerlist and blacklist, "+
-				"but is private.", addr)
-			delete(blacklist, addr)
-			continue
-		}
-		delete(peerlist, addr)
-	}
-	self.Peerlist = peerlist
-	self.Blacklist = blacklist
-	return nil
-}
 
-// Saves both the normal peer and blacklisted peer databases to dir
-func (self *Pex) Save(dir string) error {
-	err := self.Peerlist.Save(dir)
-	if err == nil {
-		err = self.Blacklist.Save(dir)
-	}
-	return err
+	px.Peerlist = pl
+	return nil
 }
 
 /* Common utilities */
@@ -514,6 +593,7 @@ func readLines(filename string) ([]string, error) {
 	return strings.Split(string(data), "\n"), nil
 }
 
+// Now returns UTC time
 func Now() time.Time {
 	return time.Now().UTC()
 }

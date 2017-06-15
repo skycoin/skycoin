@@ -1,6 +1,0 @@
-
-- delete daemon
-- change gnet to rpc interface
-- deprecate visor in main repo
-- switch main repository to new gnet
-- deprecate gnet for new library

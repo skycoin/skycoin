@@ -1,0 +1,79 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "@angular/platform-browser@2.0.0-rc.1",
+        "scope": "@angular",
+        "escapedName": "@angular%2fplatform-browser",
+        "name": "@angular/platform-browser",
+        "rawSpec": "2.0.0-rc.1",
+        "spec": "2.0.0-rc.1",
+        "type": "version"
+      },
+      "/usr/local/Cellar/go/1.6/libexec/src/github.com/skycoin/skycoin/src/gui/static"
+    ]
+  ],
+  "_from": "@angular/platform-browser@2.0.0-rc.1",
+  "_id": "@angular/platform-browser@2.0.0-rc.1",
+  "_inCache": true,
+  "_location": "/@angular/platform-browser",
+  "_nodeVersion": "5.4.1",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/platform-browser-2.0.0-rc.1.tgz_1462310727721_0.6210263969842345"
+  },
+  "_npmUser": {
+    "name": "angular",
+    "email": "angular-core+npm@google.com"
+  },
+  "_npmVersion": "3.8.7",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "@angular/platform-browser@2.0.0-rc.1",
+    "scope": "@angular",
+    "escapedName": "@angular%2fplatform-browser",
+    "name": "@angular/platform-browser",
+    "rawSpec": "2.0.0-rc.1",
+    "spec": "2.0.0-rc.1",
+    "type": "version"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/@angular/platform-browser/-/platform-browser-2.0.0-rc.1.tgz",
+  "_shasum": "df97549f72f042d1c1180ebd451eb676416e40f8",
+  "_shrinkwrap": null,
+  "_spec": "@angular/platform-browser@2.0.0-rc.1",
+  "_where": "/usr/local/Cellar/go/1.6/libexec/src/github.com/skycoin/skycoin/src/gui/static",
+  "author": {
+    "name": "angular"
+  },
+  "dependencies": {},
+  "description": "",
+  "devDependencies": {},
+  "directories": {},
+  "dist": {
+    "shasum": "df97549f72f042d1c1180ebd451eb676416e40f8",
+    "tarball": "https://registry.npmjs.org/@angular/platform-browser/-/platform-browser-2.0.0-rc.1.tgz"
+  },
+  "jsnext:main": "esm/index.js",
+  "license": "MIT",
+  "main": "index.js",
+  "maintainers": [
+    {
+      "name": "angular",
+      "email": "angular-core+npm@google.com"
+    }
+  ],
+  "name": "@angular/platform-browser",
+  "optionalDependencies": {},
+  "peerDependencies": {
+    "@angular/core": "2.0.0-rc.1",
+    "@angular/common": "2.0.0-rc.1",
+    "@angular/compiler": "2.0.0-rc.1"
+  },
+  "readme": "ERROR: No README data found!",
+  "scripts": {},
+  "typings": "index.d.ts",
+  "version": "2.0.0-rc.1"
+}

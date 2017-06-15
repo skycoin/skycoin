@@ -1,7 +1,0 @@
-# To install the first time
-
-./install.sh
-
-# To update the dependencies, if a package is not found
-
-./get-dependencies.sh

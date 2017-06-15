@@ -402,13 +402,13 @@ func TestNewAddressUxOuts(t *testing.T) {
 
 // Returns a copy of self with duplicates removed
 // Is this needed?
-func (self UxArray) removeDupes() UxArray {
-	m := make(UxHashSet, len(self))
-	deduped := make(UxArray, 0, len(self))
-	for i, _ := range self {
-		h := self[i].Hash()
+func (ua UxArray) removeDupes() UxArray {
+	m := make(UxHashSet, len(ua))
+	deduped := make(UxArray, 0, len(ua))
+	for i := range ua {
+		h := ua[i].Hash()
 		if _, ok := m[h]; !ok {
-			deduped = append(deduped, self[i])
+			deduped = append(deduped, ua[i])
 			m[h] = byte(1)
 		}
 	}
@@ -417,11 +417,11 @@ func (self UxArray) removeDupes() UxArray {
 
 // Combines two AddressUxOuts where they overlap with keys
 // Remove?
-func (self AddressUxOuts) Merge(other AddressUxOuts,
+func (auo AddressUxOuts) Merge(other AddressUxOuts,
 	keys []cipher.Address) AddressUxOuts {
 	final := make(AddressUxOuts, len(keys))
 	for _, a := range keys {
-		row := append(self[a], other[a]...)
+		row := append(auo[a], other[a]...)
 		final[a] = row.removeDupes()
 	}
 	return final

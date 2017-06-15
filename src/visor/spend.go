@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	//"fmt"
-	"log"
+
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -13,6 +13,7 @@ import (
 )
 
 // Deprecate dependency on wallet
+// DEPRECATED. CAN BE DELETED
 
 /*
 
@@ -24,21 +25,21 @@ also exceed coins by at least 1e6
 
 */
 
-// Sorts a UxArray oldest to newest.
+// OldestUxOut sorts a UxArray oldest to newest.
 type OldestUxOut coin.UxArray
 
-func (self OldestUxOut) Len() int      { return len(self) }
-func (self OldestUxOut) Swap(i, j int) { self[i], self[j] = self[j], self[i] }
-func (self OldestUxOut) Less(i, j int) bool {
-	a := self[i].Head.BkSeq
-	b := self[j].Head.BkSeq
+func (ouo OldestUxOut) Len() int      { return len(ouo) }
+func (ouo OldestUxOut) Swap(i, j int) { ouo[i], ouo[j] = ouo[j], ouo[i] }
+func (ouo OldestUxOut) Less(i, j int) bool {
+	a := ouo[i].Head.BkSeq
+	b := ouo[j].Head.BkSeq
 	// Use hash to break ties
 	if a == b {
-		ih := self[i].Hash()
-		jh := self[j].Hash()
+		ih := ouo[i].Hash()
+		jh := ouo[j].Hash()
 		cmp := bytes.Compare(ih[:], jh[:])
 		if cmp == 0 {
-			log.Panic("Duplicate UxOut when sorting")
+			logger.Panic("Duplicate UxOut when sorting")
 		}
 		return cmp < 0
 	}
@@ -58,9 +59,9 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	uxs := OldestUxOut(uxa)
 	sort.Sort(uxs)
 
-	have := wallet.Balance{0, 0}
+	have := wallet.Balance{Coins: 0, Hours: 0}
 	spending := make(coin.UxArray, 0)
-	for i, _ := range uxs {
+	for i := range uxs {
 		b := wallet.NewBalanceFromUxOut(headTime, &uxs[i]) //this is bullshit
 		if b.Coins == 0 || b.Coins%1e6 != 0 {
 			logger.Error("UxOut coins are 0 or 1e6, can't spend")
@@ -69,6 +70,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 		have = have.Add(b)
 		spending = append(spending, uxs[i])
 	}
+
 	if amt.Coins > have.Coins {
 		return nil, errors.New("Not enough coins")
 	}
@@ -76,9 +78,11 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	return spending, nil
 }
 
-//DEPRECATE
-//deprecate dependency on wallet
+// CreateSpendingTransaction DEPRECATE
+// deprecate dependency on wallet
 // Creates a Transaction spending coins and hours from our coins
+// MOVE SOMEWHERE ELSE
+// Move to wallet or move to ???
 func CreateSpendingTransaction(wlt wallet.Wallet,
 	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
 	headTime uint64, amt wallet.Balance,
@@ -97,11 +101,11 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 
 	// Add these unspents as tx inputs
 	toSign := make([]cipher.SecKey, len(spends))
-	spending := wallet.Balance{0, 0}
+	spending := wallet.Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
 		entry, exists := wlt.GetEntry(au.Body.Address)
 		if !exists {
-			log.Panic("On second thought, the wallet entry does not exist")
+			logger.Panic("On second thought, the wallet entry does not exist")
 		}
 		txn.PushInput(au.Hash())
 		toSign[i] = entry.Secret
@@ -111,7 +115,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 
 	//keep 1/4th of hours as change
 	//send half to each address
-	var changeHours uint64 = spending.Hours / 4
+	var changeHours = uint64(spending.Hours / 4)
 
 	if amt.Coins == spending.Coins {
 		txn.PushOutput(dest, amt.Coins, changeHours/2)

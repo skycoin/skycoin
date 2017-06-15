@@ -1,5 +1,12 @@
 package daemon
 
+import (
+	"testing"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/stretchr/testify/assert"
+)
+
 /*
 import (
 	"crypto/rand"
@@ -10,12 +17,13 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/aether/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/assert"
 )
 */
@@ -253,11 +261,11 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
 	if !master {
 		start = 1
 	}
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(start))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(start))
 	go d.Start(quit)
 	time.Sleep(time.Second + (time.Millisecond * 50))
-	// Creation should not have occured, because no transaction
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(start))
+	// Creation should not have occurred, because no transaction
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(start))
 	assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
 
 	// Creation should occur with a transaction, if not a master
@@ -296,7 +304,7 @@ func testBlockCreationTicker(t *testing.T, vcfg VisorConfig, master bool,
 	} else {
 		assert.Equal(t, gc.LastSent, ls)
 	}
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(final))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(final))
 	assert.False(t, gc.LastSent.IsZero())
 }
 
@@ -800,7 +808,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	wait()
 	assert.Equal(t, err.Error(), "Visor disabled")
 	assert.Equal(t, len(p.Pool.SendResults), 0)
-	assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(0))
+	assert.Equal(t, v.Visor.HeadBkSeq(), uint64(0))
 
 	// Created and sent
 	vc.Disabled = false
@@ -830,7 +838,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	assert.Equal(t, sr.Connection, gc)
 	_, ok := sr.Message.(*GiveBlocksMessage)
 	assert.True(t, ok)
-	assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
+	assert.Equal(t, v.Visor.HeadBkSeq(), uint64(1))
 
 	// Can't create, don't have coins
 	// First, spend all of our coins
@@ -860,7 +868,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 		<-p.Pool.SendResults
 	}
 	// No coins to spend, fail
-	assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
+	assert.Equal(t, v.Visor.HeadBkSeq(), uint64(1))
 	_, err = v.Spend(v.Visor.Wallets[0].GetFilename(), wallet.Balance{10 * 1e6, 0}, 0,
 		dest.Address, p)
 	assert.NotNil(t, err)
@@ -870,7 +878,7 @@ func TestCreateAndPublishBlock(t *testing.T) {
 	assert.NotNil(t, err)
 	wait()
 	assert.Equal(t, len(p.Pool.SendResults), 0)
-	assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
+	assert.Equal(t, v.Visor.HeadBkSeq(), uint64(1))
 }
 
 func TestRecordBlockchainLength(t *testing.T) {
@@ -889,7 +897,7 @@ func TestEstimateBlockchainLength(t *testing.T) {
 	vc, mv := setupVisor()
 	v := NewVisor(vc)
 	assert.Nil(t, transferCoins(mv, v.Visor))
-	assert.Equal(t, v.Visor.MostRecentBkSeq(), uint64(1))
+	assert.Equal(t, v.Visor.HeadBkSeq(), uint64(1))
 	// With no peers reporting, returns our own blockchain length
 	assert.Equal(t, v.EstimateBlockchainLength(), uint64(2))
 
@@ -941,7 +949,7 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 	p := d.Pool.Pool
 	go p.ConnectionWriteLoop(gc)
 	assert.Nil(t, transferCoins(mv, d.Visor.Visor))
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(1))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(1))
 	m := NewGetBlocksMessage(uint64(7))
 	m.c = messageContext(addr)
 	go p.ConnectionWriteLoop(m.c.Conn)
@@ -1023,7 +1031,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
 	m.Process(d)
 	wait()
 	assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(0))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(0))
 	assert.True(t, gc.LastSent.IsZero())
 
 	// Not disabled and blocks were reannounced
@@ -1044,7 +1052,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
 	assert.Equal(t, sr.Connection, gc)
 	_, ok := sr.Message.(*AnnounceBlocksMessage)
 	assert.True(t, ok)
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(2))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(2))
 	assert.False(t, gc.LastSent.IsZero())
 
 	// Send blocks we have and some we dont, as long as they are in order
@@ -1067,7 +1075,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
 	assert.Equal(t, sr.Connection, gc)
 	_, ok = sr.Message.(*AnnounceBlocksMessage)
 	assert.True(t, ok)
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(4))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(4))
 	assert.False(t, gc.LastSent.IsZero())
 
 	// Send invalid blocks
@@ -1081,7 +1089,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
 	m.c = messageContext(addr)
 	m.Process(d)
 	assert.Equal(t, len(d.Pool.Pool.SendResults), 0)
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(4))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(4))
 	assert.True(t, gc.LastSent.IsZero())
 }
 
@@ -1109,7 +1117,7 @@ func TestAnnounceBlocksMessageProcess(t *testing.T) {
 	go p.Pool.ConnectionWriteLoop(gc)
 	defer gc.Close()
 	assert.Nil(t, transferCoins(mv, d.Visor.Visor))
-	assert.Equal(t, d.Visor.Visor.MostRecentBkSeq(), uint64(1))
+	assert.Equal(t, d.Visor.Visor.HeadBkSeq(), uint64(1))
 
 	// Disabled, nothing should happen
 	d.Visor.Config.Disabled = true
@@ -1134,7 +1142,7 @@ func TestAnnounceBlocksMessageProcess(t *testing.T) {
 
 	// We send a GetBlocksMessage in response to a higher MaxBkSeq
 	m.MaxBkSeq = uint64(7)
-	assert.False(t, d.Visor.Visor.MostRecentBkSeq() >= m.MaxBkSeq)
+	assert.False(t, d.Visor.Visor.HeadBkSeq() >= m.MaxBkSeq)
 	assert.NotPanics(t, func() { m.Process(d) })
 	wait()
 	assert.Equal(t, len(p.Pool.SendResults), 1)
@@ -1412,3 +1420,99 @@ func TestBlockchainLengths(t *testing.T) {
 }
 
 */
+
+func TestSplitHashes(t *testing.T) {
+	hashes := make([]cipher.SHA256, 10)
+	for i := 0; i < 10; i++ {
+		hashes[i] = cipher.SumSHA256(cipher.RandByte(512))
+	}
+
+	testCasts := []struct {
+		name  string
+		init  []cipher.SHA256
+		n     int
+		array [][]cipher.SHA256
+	}{
+		{
+			"has one odd",
+			hashes[:],
+			3,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+					hashes[1],
+					hashes[2],
+				},
+				[]cipher.SHA256{
+					hashes[3],
+					hashes[4],
+					hashes[5],
+				},
+				[]cipher.SHA256{
+					hashes[6],
+					hashes[7],
+					hashes[8],
+				},
+				[]cipher.SHA256{
+					hashes[9],
+				},
+			},
+		},
+		{
+			"only one value",
+			hashes[:1],
+			1,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+				},
+			},
+		},
+		{
+			"empty value",
+			hashes[:0],
+			0,
+			[][]cipher.SHA256{},
+		},
+		{
+			"with 3 value",
+			hashes[:3],
+			3,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+					hashes[1],
+					hashes[2],
+				},
+			},
+		},
+		{
+			"with 8 value",
+			hashes[:8],
+			3,
+			[][]cipher.SHA256{
+				[]cipher.SHA256{
+					hashes[0],
+					hashes[1],
+					hashes[2],
+				},
+				[]cipher.SHA256{
+					hashes[3],
+					hashes[4],
+					hashes[5],
+				},
+				[]cipher.SHA256{
+					hashes[6],
+					hashes[7],
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCasts {
+		t.Run(tc.name, func(t *testing.T) {
+			rlt := divideHashes(tc.init, tc.n)
+			assert.Equal(t, tc.array, rlt)
+		})
+	}
+}

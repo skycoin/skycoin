@@ -1,14 +1,13 @@
 package daemon
 
 import (
-	"log"
 	"time"
 
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/util"
 )
 
+// PoolConfig pool config
 type PoolConfig struct {
 	// Timeout when trying to connect to new peers through the pool
 	DialTimeout time.Duration
@@ -29,6 +28,7 @@ type PoolConfig struct {
 	port    int
 }
 
+// NewPoolConfig creates pool config
 func NewPoolConfig() PoolConfig {
 	//defIdleLimit := time.Minute
 	return PoolConfig{
@@ -37,77 +37,59 @@ func NewPoolConfig() PoolConfig {
 		DialTimeout:         time.Second * 30,
 		MessageHandlingRate: time.Millisecond * 50,
 		PingRate:            5 * time.Second,
-		IdleLimit:           30 * time.Second,
-		IdleCheckRate:       5 * time.Second,
-		ClearStaleRate:      5 * time.Second,
+		IdleLimit:           60 * time.Second,
+		IdleCheckRate:       1 * time.Second,
+		ClearStaleRate:      1 * time.Second,
 		EventChannelSize:    4096,
 	}
 }
 
+// Pool maintains config and pool
 type Pool struct {
 	Config PoolConfig
 	Pool   *gnet.ConnectionPool
 }
 
-func NewPool(c PoolConfig) *Pool {
-	return &Pool{
+// NewPool creates pool
+func NewPool(c PoolConfig, d *Daemon) *Pool {
+	pool := &Pool{
 		Config: c,
 		Pool:   nil,
 	}
-}
 
-// Begins listening on port for connections and periodically scanning for
-// messages on read_interval
-func (self *Pool) Init(d *Daemon) {
-	logger.Info("InitPool on port %d", self.Config.port)
+	logger.Info("NewPool on port %d", pool.Config.port)
 	cfg := gnet.NewConfig()
-	cfg.DialTimeout = self.Config.DialTimeout
-	cfg.Port = uint16(self.Config.port)
-	cfg.Address = self.Config.address
+	cfg.DialTimeout = pool.Config.DialTimeout
+	cfg.Port = uint16(pool.Config.port)
+	cfg.Address = pool.Config.address
 	cfg.ConnectCallback = d.onGnetConnect
 	cfg.DisconnectCallback = d.onGnetDisconnect
-	cfg.EventChannelSize = cfg.EventChannelSize
-	pool := gnet.NewConnectionPool(cfg, d)
-	self.Pool = pool
+
+	pool.Pool = gnet.NewConnectionPool(cfg, d)
+
+	return pool
 }
 
-// Closes all connections and stops listening
-func (self *Pool) Shutdown() {
-	if self.Pool != nil {
-		self.Pool.StopListen()
+// Shutdown closes all connections and stops listening
+func (pool *Pool) Shutdown() {
+	if pool.Pool != nil {
+		pool.Pool.Shutdown()
 		logger.Info("Shutdown pool")
 	}
 }
 
-// Starts listening on the configured Port
+// Run starts listening on the configured Port
 // no goroutine
-func (self *Pool) StartListen() {
-	if err := self.Pool.StartListen(); err != nil {
-		log.Panic(err)
-	}
-}
-
-// Accepts connections, run in goroutine
-func (self *Pool) AcceptConnections() {
-	self.Pool.AcceptConnections()
+func (pool *Pool) Run(quit chan struct{}) {
+	pool.Pool.Run(quit)
 }
 
 // Send a ping if our last message sent was over pingRate ago
-func (self *Pool) sendPings() {
-	now := util.Now()
-	for _, c := range self.Pool.Pool {
-		if c.LastSent.Add(self.Config.PingRate).Before(now) {
-			self.Pool.SendMessage(c, &PingMessage{})
-		}
-	}
+func (pool *Pool) sendPings() {
+	pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{})
 }
 
 // Removes connections that have not sent a message in too long
-func (self *Pool) clearStaleConnections() {
-	now := util.Now()
-	for _, c := range self.Pool.Pool {
-		if c.LastReceived.Add(self.Config.IdleLimit).Before(now) {
-			self.Pool.Disconnect(c, DisconnectIdle)
-		}
-	}
+func (pool *Pool) clearStaleConnections() {
+	pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle)
 }

@@ -2,79 +2,88 @@ package visor
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	//"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
-/*
-RPC is balance check and transaction injection
-- seperate wallets out of visor
-*/
+// TransactionResult represents transaction result
 type TransactionResult struct {
-	Transaction ReadableTransaction `json:"txn"`
 	Status      TransactionStatus   `json:"status"`
+	Transaction ReadableTransaction `json:"txn"`
 }
 
-// An array of readable blocks.
+// ReadableBlocks an array of readable blocks.
 type ReadableBlocks struct {
 	Blocks []ReadableBlock `json:"blocks"`
 }
 
+// TransactionResults array of transaction results
 type TransactionResults struct {
 	Txns []TransactionResult `json:"txns"`
 }
 
+// RPC is balance check and transaction injection
+// separate wallets out of visor
 type RPC struct{}
 
-/*
-func (self RPC) GetWalletBalance(v *Visor,
-	walletID wallet.WalletID) *wallet.BalancePair {
-	bp := v.WalletBalance(walletID)
-	return &bp
-}
-
-func (self RPC) ReloadWallets(v *Visor) error {
-	return v.ReloadWallets()
-}
-
-func (self RPC) SaveWallet(v *Visor, walletID wallet.WalletID) error {
-	return v.SaveWallet(walletID)
-}
-
-func (self RPC) SaveWallets(v *Visor) map[wallet.WalletID]error {
-	return v.SaveWallets()
-}
-
-func (self RPC) CreateWallet(v *Visor, seed string) *wallet.ReadableWallet {
-	w := v.CreateWallet()
-	return wallet.NewReadableWallet(w)
-}
-
-func (self RPC) GetWallet(v *Visor,
-	walletID wallet.WalletID) *wallet.ReadableWallet {
-	w := v.Wallets.Get(walletID)
-	if w == nil {
-		return nil
-	} else {
-		return wallet.NewReadableWallet(w)
-	}
-}
-
-func (self RPC) GetWallets(v *Visor) []*wallet.ReadableWallet {
-	return v.Wallets.ToPublicReadable()
-}
-*/
-
-func (self RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
+// GetBlockchainMetadata get blockchain meta data
+func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 	bm := v.GetBlockchainMetadata()
 	return &bm
 }
 
-func (self RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
+// GetUnspent gets unspent
+func (rpc RPC) GetUnspent(v *Visor) coin.UnspentPool {
+	return v.Blockchain.GetUnspent().Clone()
+}
+
+// GetUnconfirmedSpends get unconfirmed spents
+func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs map[cipher.Address]byte) coin.AddressUxOuts {
+	unspent := rpc.GetUnspent(v)
+	return v.Unconfirmed.SpendsForAddresses(&unspent, addrs)
+}
+
+// CreateSpendingTransaction creates spending transaction
+func (rpc RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (tx coin.Transaction, err error) {
+	unspent := rpc.GetUnspent(v)
+	tm := v.Blockchain.Time()
+	tx, err = CreateSpendingTransaction(wlt, v.Unconfirmed, &unspent, tm, amt, dest)
+	if err != nil {
+		return
+	}
+
+	if err := tx.Verify(); err != nil {
+		logger.Panicf("Invalid transaction, %v", err)
+	}
+
+	if err := VerifyTransactionFee(v.Blockchain, &tx); err != nil {
+		logger.Panicf("Created invalid spending txn: visor fail, %v", err)
+	}
+
+	if err := v.Blockchain.VerifyTransaction(tx); err != nil {
+		logger.Panicf("Created invalid spending txn: blockchain fail, %v", err)
+	}
+	return
+}
+
+// GetUnspentOutputReadables gets unspent output readables
+func (rpc RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
 	ret := v.GetUnspentOutputReadables()
 	return ret
 }
 
-func (self RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {
+// GetUnconfirmedTxns gets unconfirmed transactions
+func (rpc RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []ReadableUnconfirmedTxn {
+	ret := v.GetUnconfirmedTxns(ToAddresses(addresses))
+	rut := make([]ReadableUnconfirmedTxn, len(ret))
+	for i := range ret {
+		rut[i] = NewReadableUnconfirmedTxn(&ret[i])
+	}
+	return rut
+}
+
+// GetBlock gets block
+func (rpc RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {
 	b, err := v.GetReadableBlock(seq)
 	if err != nil {
 		return nil
@@ -82,27 +91,45 @@ func (self RPC) GetBlock(v *Visor, seq uint64) *ReadableBlock {
 	return &b
 }
 
-func (self RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
+// GetBlocks gets blocks
+func (rpc RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 	blocks := v.GetReadableBlocks(start, end)
 	return &ReadableBlocks{blocks}
 }
 
-func (self RPC) GetTransaction(v *Visor,
-	txHash cipher.SHA256) *TransactionResult {
-	txn := v.GetTransaction(txHash)
-	return &TransactionResult{
-		Transaction: NewReadableTransaction(&txn.Txn),
-		Status:      txn.Status,
+// GetBlockInDepth get block in depth
+func (rpc RPC) GetBlockInDepth(v *Visor, n uint64) *ReadableBlock {
+	if b := v.GetBlockBySeq(n); b != nil {
+		block := NewReadableBlock(b)
+		return &block
 	}
+	return nil
 }
 
-func (self RPC) GetAddressTransactions(v *Visor,
+// GetTransaction gets transaction
+func (rpc RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResult, error) {
+	txn, err := v.GetTransaction(txHash)
+	if err != nil {
+		return nil, err
+	}
+	if txn == nil {
+		return nil, nil
+	}
+
+	return &TransactionResult{
+		Transaction: NewReadableTransaction(txn),
+		Status:      txn.Status,
+	}, nil
+}
+
+// GetAddressTransactions get address transactions
+func (rpc RPC) GetAddressTransactions(v *Visor,
 	addr cipher.Address) *TransactionResults {
 	addrTxns := v.GetAddressTransactions(addr)
 	txns := make([]TransactionResult, len(addrTxns))
 	for i, tx := range addrTxns {
 		txns[i] = TransactionResult{
-			Transaction: NewReadableTransaction(&tx.Txn),
+			Transaction: NewReadableTransaction(&tx),
 			Status:      tx.Status,
 		}
 	}

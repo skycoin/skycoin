@@ -2,77 +2,105 @@ package wallet
 
 import (
 	//"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util"
-	"log"
 )
 
-type ReadableWalletEntry struct {
+// ReadableEntry wallet entry with json tags
+type ReadableEntry struct {
 	Address string `json:"address"`
 	Public  string `json:"public_key"`
 	Secret  string `json:"secret_key"`
 }
 
-type ReadableWalletEntryCtor func(w *WalletEntry) ReadableWalletEntry
+// CoinSupply records the coin supply info
+type CoinSupply struct {
+	CurrentSupply                           int      `json:"coinSupply"`
+	CoinCap                                 int      `json:"coinCap"`
+	UndistributedLockedCoinBalance          int      `json:"UndistributedLockedCoinBalance"`
+	UndistributedLockedCoinHoldingAddresses []string `json:"UndistributedLockedCoinHoldingAddresses"`
+}
 
-func NewReadableWalletEntry(w *WalletEntry) ReadableWalletEntry {
-	return ReadableWalletEntry{
+// NewReadableEntry creates readable wallet entry
+func NewReadableEntry(w *Entry) ReadableEntry {
+	return ReadableEntry{
 		Address: w.Address.String(),
 		Public:  w.Public.Hex(),
 		Secret:  w.Secret.Hex(),
 	}
 }
 
-func LoadReadableWalletEntry(filename string) (ReadableWalletEntry, error) {
-	w := ReadableWalletEntry{}
+// LoadReadableEntry load readable wallet entry from given file
+func LoadReadableEntry(filename string) (ReadableEntry, error) {
+	w := ReadableEntry{}
 	err := util.LoadJSON(filename, &w)
 	return w, err
 }
 
-// Creates a ReadableWalletEntry given a pubkey hex string.  The Secret field
-// is left empty.
-func ReadableWalletEntryFromPubkey(pub string) ReadableWalletEntry {
+// NewReadableEntryFromPubkey creates a ReadableWalletEntry given a pubkey hex string.
+// The Secret field is left empty.
+func NewReadableEntryFromPubkey(pub string) ReadableEntry {
 	pubkey := cipher.MustPubKeyFromHex(pub)
 	addr := cipher.AddressFromPubKey(pubkey)
-	return ReadableWalletEntry{
+	return ReadableEntry{
 		Address: addr.String(),
 		Public:  pub,
 	}
 }
 
-func (self *ReadableWalletEntry) Save(filename string) error {
-	return util.SaveJSONSafe(filename, self, 0600)
+// Save persists to disk
+func (re *ReadableEntry) Save(filename string) error {
+	return util.SaveJSONSafe(filename, re, 0600)
 }
 
-type ReadableWalletEntries []ReadableWalletEntry
+// ReadableEntries array of ReadableEntry
+type ReadableEntries []ReadableEntry
 
-func (self ReadableWalletEntries) ToWalletEntries() WalletEntries {
-	entries := make(WalletEntries, len(self))
-	for _, re := range self {
-		we := WalletEntryFromReadable(&re)
+// ToWalletEntries convert readable entries to entries
+func (res ReadableEntries) ToWalletEntries() []Entry {
+	entries := make([]Entry, len(res))
+	for i, re := range res {
+		we := NewEntryFromReadable(&re)
 		if err := we.Verify(); err != nil {
-			log.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
+			logger.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
 		}
-		entries[we.Address] = we
+		entries[i] = we
 	}
 	return entries
 }
 
-// Used for [de]serialization of a Wallet
+// ReadableWallet used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	Meta    map[string]string     `json:"meta"`
-	Entries ReadableWalletEntries `json:"entries"`
+	Meta    map[string]string `json:"meta"`
+	Entries ReadableEntries   `json:"entries"`
 }
 
+// ByTm for sort ReadableWallets
+type ByTm []*ReadableWallet
+
+func (bt ByTm) Len() int {
+	return len(bt)
+}
+
+func (bt ByTm) Less(i, j int) bool {
+	return bt[i].Meta["tm"] < bt[j].Meta["tm"]
+}
+
+func (bt ByTm) Swap(i, j int) {
+	bt[i], bt[j] = bt[j], bt[i]
+}
+
+// ReadableWalletCtor readable wallet creator
 type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
+// NewReadableWallet creates readable wallet
 func NewReadableWallet(w Wallet) *ReadableWallet {
 	//return newReadableWallet(w, NewReadableWalletEntry)
-	entries := w.GetEntries()
-	readable := make(ReadableWalletEntries, len(entries))
+	readable := make(ReadableEntries, len(w.Entries))
 	i := 0
-	for _, e := range entries {
-		readable[i] = NewReadableWalletEntry(&e)
+	for _, e := range w.Entries {
+		readable[i] = NewReadableEntry(&e)
 		i++
 	}
 	return &ReadableWallet{
@@ -81,30 +109,31 @@ func NewReadableWallet(w Wallet) *ReadableWallet {
 	}
 }
 
-// Loads a ReadableWallet from disk
+// LoadReadableWallet loads a ReadableWallet from disk
 func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 	w := &ReadableWallet{}
 	err := w.Load(filename)
 	return w, err
 }
 
-func (self *ReadableWallet) ToWallet() (Wallet, error) {
-	return NewWalletFromReadable(self), nil
+// ToWallet convert readable wallet to Wallet
+func (rw *ReadableWallet) ToWallet() (Wallet, error) {
+	return NewWalletFromReadable(rw), nil
 }
 
-// Saves to filename
-func (self *ReadableWallet) Save(filename string) error {
-	logger.Info("Saving readable wallet to %s with filename %s", filename,
-		self.Meta["filename"])
-	return util.SaveJSON(filename, self, 0600)
+// Save saves to filename
+func (rw *ReadableWallet) Save(filename string) error {
+	// logger.Info("Saving readable wallet to %s with filename %s", filename,
+	// 	self.Meta["filename"])
+	return util.SaveJSON(filename, rw, 0600)
 }
 
-// Saves to filename, but won't overwrite existing
-func (self *ReadableWallet) SaveSafe(filename string) error {
-	return util.SaveJSONSafe(filename, self, 0600)
+// SaveSafe saves to filename, but won't overwrite existing
+func (rw *ReadableWallet) SaveSafe(filename string) error {
+	return util.SaveJSONSafe(filename, rw, 0600)
 }
 
-// Loads from filename
-func (self *ReadableWallet) Load(filename string) error {
-	return util.LoadJSON(filename, self)
+// Load loads from filename
+func (rw *ReadableWallet) Load(filename string) error {
+	return util.LoadJSON(filename, rw)
 }

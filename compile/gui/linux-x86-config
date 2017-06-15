@@ -1,9 +1,0 @@
-OS=linux
-ARCH=386
-APP=skycoin_linux_386
-APPD=skycoind_linux_386
-BIN=skycoin
-NWNAME=node-webkit-${NWVERSION}-linux-ia32
-NWEXT=tar.gz
-ZIPNAME=skycoin_linux_x86
-LIBUDEV=/lib/i386-linux-gnu/libudev.so.1

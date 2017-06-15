@@ -1,27 +1,35 @@
 package daemon
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
 )
+
+//TODO
+//- download block headers
+//- request blocks individually across multiple peers
+
+//TODO
+//- use CXO for blocksync
 
 /*
 Visor should not be duplicated
 - this should be pushed into /src/visor
 */
 
+// VisorConfig represents the configuration of visor
 type VisorConfig struct {
-	Config visor.VisorConfig
+	Config visor.Config
 	// Disabled the visor completely
 	Disabled bool
 	// How often to request blocks from peers
@@ -30,236 +38,435 @@ type VisorConfig struct {
 	BlocksAnnounceRate time.Duration
 	// How many blocks to respond with to a GetBlocksMessage
 	BlocksResponseCount uint64
+	//how long between saving copies of the blockchain
+	BlockchainBackupRate time.Duration
+	// Max announce txns hash number
+	MaxTxnAnnounceNum int
+	// How often to announce our unconfirmed txns to peers
+	TxnsAnnounceRate time.Duration
 }
 
+// NewVisorConfig creates default visor config
 func NewVisorConfig() VisorConfig {
 	return VisorConfig{
-		Config:              visor.NewVisorConfig(),
-		Disabled:            false,
-		BlocksRequestRate:   time.Minute * 5,
-		BlocksAnnounceRate:  time.Minute * 15,
-		BlocksResponseCount: 20,
+		Config:               visor.NewVisorConfig(),
+		Disabled:             false,
+		BlocksRequestRate:    time.Second * 60, //backup, could be disabled
+		BlocksAnnounceRate:   time.Second * 60, //backup, could be disabled
+		BlocksResponseCount:  20,
+		BlockchainBackupRate: time.Second * 30,
+		MaxTxnAnnounceNum:    16,
+		TxnsAnnounceRate:     time.Minute,
 	}
 }
 
+// Visor struct
 type Visor struct {
 	Config VisorConfig
-	Visor  *visor.Visor
+	v      *visor.Visor
 	// Peer-reported blockchain length.  Use to estimate download progress
 	blockchainLengths map[string]uint64
+	reqC              chan reqFunc // all request will go through this channel, to keep writing and reading member variable thread safe.
+	cxt               context.Context
+	Shutdown          context.CancelFunc
 }
 
-func NewVisor(c VisorConfig) *Visor {
-	var v *visor.Visor = nil
-	if !c.Disabled {
-		v = visor.NewVisor(c.Config)
+type reqFunc func(context.Context)
+
+// NewVisor creates visor instance
+func NewVisor(c VisorConfig) (*Visor, error) {
+	if c.Disabled {
+		return &Visor{
+			Config:            c,
+			blockchainLengths: make(map[string]uint64),
+			reqC:              make(chan reqFunc, 100),
+		}, nil
 	}
-	return &Visor{
+
+	var v *visor.Visor
+	v, closeVs, err := visor.NewVisor(c.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	vs := &Visor{
 		Config:            c,
-		Visor:             v,
+		v:                 v,
 		blockchainLengths: make(map[string]uint64),
+		reqC:              make(chan reqFunc, 100),
+	}
+
+	var cancel func()
+	vs.cxt, cancel = context.WithCancel(context.Background())
+	vs.Shutdown = func() {
+		// close the visor
+		closeVs()
+
+		// cancel the cxt
+		cancel()
+	}
+
+	return vs, nil
+}
+
+// Run starts the visor
+func (vs *Visor) Run(quit chan struct{}) {
+	q := make(chan struct{})
+	go vs.v.Run(q)
+
+	for {
+		select {
+		case <-q:
+			close(quit)
+		case <-vs.cxt.Done():
+			return
+		case req := <-vs.reqC:
+			req(vs.cxt)
+		}
 	}
 }
 
-// Closes the Wallet, saving it to disk
-func (self *Visor) Shutdown() {
-	if self.Config.Disabled {
+// the callback function must not be blocked.
+func (vs *Visor) strand(f func()) {
+	done := make(chan struct{})
+	vs.reqC <- func(cxt context.Context) {
+		defer close(done)
+		c := make(chan struct{})
+		go func() {
+			defer close(c)
+			f()
+		}()
+		select {
+		case <-cxt.Done():
+			return
+		case <-c:
+			return
+		}
+	}
+	<-done
+}
+
+// RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
+func (vs *Visor) RefreshUnconfirmed() (hashes []cipher.SHA256) {
+	if vs.Config.Disabled {
 		return
 	}
-
-	bcFile := self.Config.Config.BlockchainFile
-	err := self.Visor.SaveBlockchain()
-	if err == nil {
-		logger.Info("Saved blockchain to \"%s\"", bcFile)
-	} else {
-		logger.Critical("Failed to save blockchain to \"%s\"", bcFile)
-	}
-	bsFile := self.Config.Config.BlockSigsFile
-	err = self.Visor.SaveBlockSigs()
-	if err == nil {
-		logger.Info("Saved block sigs to \"%s\"", bsFile)
-	} else {
-		logger.Critical("Failed to save block sigs to \"%s\"", bsFile)
-	}
+	vs.strand(func() {
+		hashes = vs.v.RefreshUnconfirmed()
+	})
+	return
 }
 
-// Checks unconfirmed txns against the blockchain and purges ones too old
-func (self *Visor) RefreshUnconfirmed() {
-	if self.Config.Disabled {
+// RequestBlocks Sends a GetBlocksMessage to all connections
+func (vs *Visor) RequestBlocks(pool *Pool) {
+	if vs.Config.Disabled {
 		return
 	}
-	self.Visor.RefreshUnconfirmed()
+	vs.strand(func() {
+		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
+		pool.Pool.BroadcastMessage(m)
+	})
 }
 
-// Sends a GetBlocksMessage to all connections
-func (self *Visor) RequestBlocks(pool *Pool) {
-	if self.Config.Disabled {
+// AnnounceBlocks sends an AnnounceBlocksMessage to all connections
+func (vs *Visor) AnnounceBlocks(pool *Pool) {
+	if vs.Config.Disabled {
 		return
 	}
-	m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
-	pool.Pool.BroadcastMessage(m)
+	vs.strand(func() {
+		m := NewAnnounceBlocksMessage(vs.v.HeadBkSeq())
+		pool.Pool.BroadcastMessage(m)
+	})
 }
 
-// Sends an AnnounceBlocksMessage to all connections
-func (self *Visor) AnnounceBlocks(pool *Pool) {
-	if self.Config.Disabled {
+// AnnounceAllTxns announces local unconfirmed transactions
+func (vs *Visor) AnnounceAllTxns(pool *Pool) {
+	if vs.Config.Disabled {
 		return
 	}
-	m := NewAnnounceBlocksMessage(self.Visor.MostRecentBkSeq())
-	pool.Pool.BroadcastMessage(m)
+	vs.strand(func() {
+		// get local unconfirmed transaction hashes.
+		hashes := vs.v.GetAllValidUnconfirmedTxHashes()
+		// filter all thoses invalid txns
+		hashesSet := divideHashes(hashes, vs.Config.MaxTxnAnnounceNum)
+		for _, hs := range hashesSet {
+			m := NewAnnounceTxnsMessage(hs)
+			if err := pool.Pool.BroadcastMessage(m); err != nil {
+				logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+				return
+			}
+		}
+	})
 }
 
-// Sends a GetBlocksMessage to one connected address
-func (self *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
-	if self.Config.Disabled {
+// AnnounceTxns announce given transaction hashes.
+func (vs *Visor) AnnounceTxns(pool *Pool, txns []cipher.SHA256) {
+	if vs.Config.Disabled {
+		return
+	}
+	if len(txns) > 0 {
+		if err := pool.Pool.BroadcastMessage(NewAnnounceTxnsMessage(txns)); err != nil {
+			logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		}
+	}
+}
+
+func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
+	if len(hashes) == 0 {
+		return [][]cipher.SHA256{}
+	}
+	var j int
+	var hashesArray [][]cipher.SHA256
+	if len(hashes) > n {
+		for i := range hashes {
+			if len(hashes[j:i]) == n {
+				hs := make([]cipher.SHA256, n)
+				copy(hs, hashes[j:i])
+				hashesArray = append(hashesArray, hs)
+				j = i
+			}
+		}
+	}
+	hs := make([]cipher.SHA256, len(hashes)-j)
+	copy(hs, hashes[j:])
+	hashesArray = append(hashesArray, hs)
+	return hashesArray
+}
+
+// RequestBlocksFromAddr sends a GetBlocksMessage to one connected address
+func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
+	if vs.Config.Disabled {
 		return errors.New("Visor disabled")
 	}
-	m := NewGetBlocksMessage(self.Visor.MostRecentBkSeq())
-	c := pool.Pool.Addresses[addr]
-	if c == nil {
-		return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
-			"not connected", addr)
-	}
-	pool.Pool.SendMessage(c, m)
-	return nil
+	var err error
+	vs.strand(func() {
+		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
+		if !pool.Pool.IsConnExist(addr) {
+			err = fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
+				"not connected", addr)
+			return
+		}
+		pool.Pool.SendMessage(addr, m)
+	})
+	return err
 }
 
-// Sets all txns as announced
-func (self *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
-	now := util.Now()
-	for _, h := range txns {
-		self.Visor.Unconfirmed.SetAnnounced(h, now)
-	}
+// SetTxnsAnnounced sets all txns as announced
+func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
+	vs.strand(func() {
+		now := util.Now()
+		for _, h := range txns {
+			vs.v.Unconfirmed.SetAnnounced(h, now)
+		}
+	})
 }
 
 // Sends a signed block to all connections.
 // TODO: deprecate, should only send to clients that request by hash
-func (self *Visor) broadcastBlock(sb visor.SignedBlock, pool *Pool) {
-	if self.Config.Disabled {
+func (vs *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) {
+	if vs.Config.Disabled {
 		return
 	}
-	m := NewGiveBlocksMessage([]visor.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
 	pool.Pool.BroadcastMessage(m)
 }
 
-// Broadcasts a single transaction to all peers.
-func (self *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
-	if self.Config.Disabled {
+// BroadcastTransaction broadcasts a single transaction to all peers.
+func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
+	if vs.Config.Disabled {
+		logger.Debug("broadcast tx disabled")
 		return
 	}
 	m := NewGiveTxnsMessage(coin.Transactions{t})
-	logger.Debug("Broadcasting GiveTxnsMessage to %d conns",
-		len(pool.Pool.Pool))
+	logger.Debug("Broadcasting GiveTxnsMessage to %d conns", pool.Pool.Size())
 	pool.Pool.BroadcastMessage(m)
 }
 
-//move into visor
-func (self *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+// InjectTransaction injects transaction
+func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+	var err error
+	vs.strand(func() {
+		err = visor.VerifyTransactionFee(vs.v.Blockchain, &txn)
+		if err != nil {
+			return
+		}
 
-	//logger.Info("Attempting to send %d coins, %d hours to %s with %d fee",
-	//	amt.Coins, amt.Hours, dest.String(), fee)
-	//txn, err := self.Visor.Spend(walletID, amt, fee, dest)
-	//if err != nil {
-	//	return txn, err
-	//}
+		err = txn.Verify()
+		if err != nil {
+			err = fmt.Errorf("Transaction Verification Failed, %v", err)
+			return
+		}
 
-	err := txn.Verify()
-
-	if err != nil {
-		return txn, errors.New("Transaction Verification Failed")
-	}
-
-	err, _ = self.Visor.InjectTxn(txn)
-	if err == nil {
-		self.BroadcastTransaction(txn, pool)
-	}
+		_, err := vs.v.InjectTxn(txn)
+		if err != nil {
+			return
+		}
+		vs.BroadcastTransaction(txn, pool)
+	})
 	return txn, err
 }
 
-// Resends a known UnconfirmedTxn.
-func (self *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
-	if self.Config.Disabled {
+// ResendTransaction resends a known UnconfirmedTxn.
+func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
+	if vs.Config.Disabled {
 		return
 	}
-	if ut, ok := self.Visor.Unconfirmed.Txns[h]; ok {
-		self.BroadcastTransaction(ut.Txn, pool)
-	}
+	vs.strand(func() {
+		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
+			vs.BroadcastTransaction(ut.Txn, pool)
+		}
+	})
 	return
 }
 
-// Creates a block from unconfirmed transactions and sends it to the network.
+// ResendUnconfirmedTxns resents all unconfirmed transactions
+func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
+	var txids []cipher.SHA256
+	if vs.Config.Disabled {
+		return txids
+	}
+	vs.strand(func() {
+		txns := vs.v.GetAllUnconfirmedTxns()
+
+		for i := range txns {
+			logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())
+			vs.BroadcastTransaction(txns[i].Txn, pool)
+			txids = append(txids, txns[i].Txn.Hash())
+		}
+	})
+	return txids
+}
+
+// CreateAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a master chain.  Returns creation error and
 // whether it was published or not
-func (self *Visor) CreateAndPublishBlock(pool *Pool) error {
-	if self.Config.Disabled {
+func (vs *Visor) CreateAndPublishBlock(pool *Pool) error {
+	if vs.Config.Disabled {
 		return errors.New("Visor disabled")
 	}
-	sb, err := self.Visor.CreateAndExecuteBlock()
-	if err != nil {
-		return err
-	}
-	self.broadcastBlock(sb, pool)
-	return nil
+	var err error
+	vs.strand(func() {
+		var sb coin.SignedBlock
+		sb, err = vs.v.CreateAndExecuteBlock()
+		if err != nil {
+			return
+		}
+		vs.broadcastBlock(sb, pool)
+	})
+	return err
 }
 
-// Updates internal state when a connection disconnects
-func (self *Visor) RemoveConnection(addr string) {
-	delete(self.blockchainLengths, addr)
+// RemoveConnection updates internal state when a connection disconnects
+func (vs *Visor) RemoveConnection(addr string) {
+	vs.strand(func() {
+		delete(vs.blockchainLengths, addr)
+	})
 }
 
-// Saves a peer-reported blockchain length
-func (self *Visor) recordBlockchainLength(addr string, bkLen uint64) {
-	self.blockchainLengths[addr] = bkLen
+// RecordBlockchainLength saves a peer-reported blockchain length
+func (vs *Visor) RecordBlockchainLength(addr string, bkLen uint64) {
+	vs.strand(func() {
+		vs.blockchainLengths[addr] = bkLen
+	})
 }
 
-// Returns the blockchain length estimated from peer reports
-func (self *Visor) EstimateBlockchainLength() uint64 {
-	ourLen := self.Visor.MostRecentBkSeq() + 1
-	if len(self.blockchainLengths) < 2 {
-		return ourLen
-	}
-	lengths := make(BlockchainLengths, len(self.blockchainLengths))
-	i := 0
-	for _, seq := range self.blockchainLengths {
-		lengths[i] = seq
-		i++
-	}
-	sort.Sort(lengths)
-	median := len(lengths) / 2
-	var val uint64 = 0
-	if len(lengths)%2 == 0 {
-		val = (lengths[median] + lengths[median-1]) / 2
-	} else {
-		val = lengths[median]
-	}
-	if val < ourLen {
-		return ourLen
-	} else {
-		return val
-	}
+// EstimateBlockchainLength returns the blockchain length estimated from peer reports
+// Deprecate. Should not need. Just report time of last block
+func (vs *Visor) EstimateBlockchainLength() uint64 {
+	var maxLen uint64
+	vs.strand(func() {
+		ourLen := vs.v.HeadBkSeq() + 1
+		if len(vs.blockchainLengths) < 2 {
+			maxLen = ourLen
+			return
+		}
+		for _, seq := range vs.blockchainLengths {
+			if maxLen < seq {
+				maxLen = seq
+			}
+		}
+	})
+	return maxLen
+}
+
+// HeadBkSeq returns the head sequence
+func (vs *Visor) HeadBkSeq() uint64 {
+	var seq uint64
+	vs.strand(func() {
+		seq = vs.v.HeadBkSeq()
+	})
+	return seq
+}
+
+// ExecuteSignedBlock executes signed block
+func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
+	var err error
+	vs.strand(func() {
+		err = vs.v.ExecuteSignedBlock(b)
+	})
+	return err
+}
+
+// GetSignedBlocksSince returns numbers of signed blocks since seq.
+func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) []coin.SignedBlock {
+	var sbs []coin.SignedBlock
+	vs.strand(func() {
+		sbs = vs.v.GetSignedBlocksSince(seq, num)
+	})
+	return sbs
+}
+
+// UnConfirmFilterKnown returns all unknow transaction hashes
+func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
+	var ts []cipher.SHA256
+	vs.strand(func() {
+		ts = vs.v.Unconfirmed.FilterKnown(txns)
+	})
+	return ts
+}
+
+// UnConfirmKnow returns all know tansactions
+func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) (txns coin.Transactions) {
+	vs.strand(func() {
+		txns = vs.v.Unconfirmed.GetKnown(hashes)
+	})
+	return
+}
+
+// InjectTxn only try to append transaction into local blockchain, don't broadcast it.
+func (vs *Visor) InjectTxn(tx coin.Transaction) (know bool, err error) {
+	vs.strand(func() {
+		know, err = vs.v.InjectTxn(tx)
+	})
+	return
 }
 
 // Communication layer for the coin pkg
 
-// Sent to request blocks since LastBlock
+// GetBlocksMessage sent to request blocks since LastBlock
 type GetBlocksMessage struct {
-	LastBlock uint64
-	c         *gnet.MessageContext `enc:"-"`
+	LastBlock       uint64
+	RequestedBlocks uint64
+	c               *gnet.MessageContext `enc:"-"`
 }
 
-func NewGetBlocksMessage(lastBlock uint64) *GetBlocksMessage {
+// NewGetBlocksMessage creates GetBlocksMessage
+func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
 	return &GetBlocksMessage{
-		LastBlock: lastBlock,
+		LastBlock:       lastBlock,
+		RequestedBlocks: requestedBlocks, //count of blocks requested
 	}
 }
 
-func (self *GetBlocksMessage) Handle(mc *gnet.MessageContext,
+// Handle handles message
+func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gbm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
 }
 
-func (self *GetBlocksMessage) Process(d *Daemon) {
+// Process should send number to be requested, with request
+func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
 	// TODO -- move 20 to either Messages.Config or Visor.Config
@@ -267,44 +474,46 @@ func (self *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Record this as this peer's highest block
-	d.Visor.recordBlockchainLength(self.c.Conn.Addr(), self.LastBlock)
+	d.Visor.RecordBlockchainLength(gbm.c.Addr, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	blocks := d.Visor.Visor.GetSignedBlocksSince(self.LastBlock,
-		d.Visor.Config.BlocksResponseCount)
-	logger.Debug("Got %d blocks since %d", len(blocks), self.LastBlock)
+	blocks := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 	if len(blocks) == 0 {
 		return
 	}
 	m := NewGiveBlocksMessage(blocks)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(gbm.c.Addr, m)
 }
 
-// Sent in response to GetBlocksMessage, or unsolicited
+// GiveBlocksMessage sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-	Blocks []visor.SignedBlock
+	Blocks []coin.SignedBlock
 	c      *gnet.MessageContext `enc:"-"`
 }
 
-func NewGiveBlocksMessage(blocks []visor.SignedBlock) *GiveBlocksMessage {
+// NewGiveBlocksMessage creates GiveBlocksMessage
+func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 	return &GiveBlocksMessage{
 		Blocks: blocks,
 	}
 }
 
-func (self *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gbm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
 }
 
-func (self *GiveBlocksMessage) Process(d *Daemon) {
+// Process process message
+func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 	processed := 0
-	maxSeq := d.Visor.Visor.MostRecentBkSeq()
-	for _, b := range self.Blocks {
+	maxSeq := d.Visor.HeadBkSeq()
+	for _, b := range gbm.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
 		// E.g. if we request 20 blocks since 0 from 2 peers, and one peer
@@ -314,7 +523,7 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 		if b.Block.Head.BkSeq <= maxSeq {
 			continue
 		}
-		err := d.Visor.Visor.ExecuteSignedBlock(b)
+		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
 			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
 			processed++
@@ -325,169 +534,217 @@ func (self *GiveBlocksMessage) Process(d *Daemon) {
 			break
 		}
 	}
-	logger.Critical("Processed %d/%d blocks", processed, len(self.Blocks))
 	if processed == 0 {
 		return
 	}
 	// Announce our new blocks to peers
-	m := NewAnnounceBlocksMessage(d.Visor.Visor.MostRecentBkSeq())
-	d.Pool.Pool.BroadcastMessage(m)
+	m1 := NewAnnounceBlocksMessage(d.Visor.HeadBkSeq())
+	d.Pool.Pool.BroadcastMessage(m1)
+	//request more blocks.
+	m2 := NewGetBlocksMessage(d.Visor.HeadBkSeq(), d.Visor.Config.BlocksResponseCount)
+	d.Pool.Pool.BroadcastMessage(m2)
 }
 
-// Tells a peer our highest known BkSeq. The receiving peer can choose
+// AnnounceBlocksMessage tells a peer our highest known BkSeq. The receiving peer can choose
 // to send GetBlocksMessage in response
 type AnnounceBlocksMessage struct {
 	MaxBkSeq uint64
 	c        *gnet.MessageContext `enc:"-"`
 }
 
+// NewAnnounceBlocksMessage creates message
 func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 	return &AnnounceBlocksMessage{
 		MaxBkSeq: seq,
 	}
 }
 
-func (self *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
+// Handle handles message
+func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	abm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(abm, mc)
 }
 
-func (self *AnnounceBlocksMessage) Process(d *Daemon) {
+// Process process message
+func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	bkSeq := d.Visor.Visor.MostRecentBkSeq()
-	if bkSeq >= self.MaxBkSeq {
+	headBkSeq := d.Visor.HeadBkSeq()
+	if headBkSeq >= abm.MaxBkSeq {
 		return
 	}
-	m := NewGetBlocksMessage(bkSeq)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	//should this be block get request for current sequence?
+	//if client is not caught up, wont attempt to get block
+	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
+	d.Pool.Pool.SendMessage(abm.c.Addr, m)
 }
 
+// SendingTxnsMessage send transaction message interface
 type SendingTxnsMessage interface {
 	GetTxns() []cipher.SHA256
 }
 
-// Tells a peer that we have these transactions
+// AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
 	Txns []cipher.SHA256
 	c    *gnet.MessageContext `enc:"-"`
 }
 
+// NewAnnounceTxnsMessage creates announce txns message
 func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	return &AnnounceTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
-	return self.Txns
+// GetTxns returns txns
+func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
+	return atm.Txns
 }
 
-func (self *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	atm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(atm, mc)
 }
 
-func (self *AnnounceTxnsMessage) Process(d *Daemon) {
+// Process process message
+func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	unknown := d.Visor.Visor.Unconfirmed.FilterKnown(self.Txns)
+	unknown := d.Visor.UnConfirmFilterKnown(atm.Txns)
 	if len(unknown) == 0 {
 		return
 	}
 	m := NewGetTxnsMessage(unknown)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(atm.c.Addr, m)
 }
 
+// GetTxnsMessage request transactions of given hash
 type GetTxnsMessage struct {
 	Txns []cipher.SHA256
 	c    *gnet.MessageContext `enc:"-"`
 }
 
+// NewGetTxnsMessage creates GetTxnsMessage
 func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 	return &GetTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *GetTxnsMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gtm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
 }
 
-func (self *GetTxnsMessage) Process(d *Daemon) {
+// Process process message
+func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
 	// Locate all txns from the unconfirmed pool
 	// reply to sender with GiveTxnsMessage
-	known := d.Visor.Visor.Unconfirmed.GetKnown(self.Txns)
+	known := d.Visor.UnConfirmKnow(gtm.Txns)
 	if len(known) == 0 {
 		return
 	}
-	logger.Debug("%d/%d txns known", len(known), len(self.Txns))
+	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
-	d.Pool.Pool.SendMessage(self.c.Conn, m)
+	d.Pool.Pool.SendMessage(gtm.c.Addr, m)
 }
 
+// GiveTxnsMessage tells the transaction of given hashes
 type GiveTxnsMessage struct {
 	Txns coin.Transactions
 	c    *gnet.MessageContext `enc:"-"`
 }
 
+// NewGiveTxnsMessage creates GiveTxnsMessage
 func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
 		Txns: txns,
 	}
 }
 
-func (self *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
-	return self.Txns.Hashes()
+// GetTxns returns transactions hashes
+func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
+	return gtm.Txns.Hashes()
 }
 
-func (self *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
+// Handle handle message
+func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
-	self.c = mc
-	return daemon.(*Daemon).recordMessageEvent(self, mc)
+	gtm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
 }
 
-func (self *GiveTxnsMessage) Process(d *Daemon) {
+// Process process message
+func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 	if d.Visor.Config.Disabled {
 		return
 	}
-	hashes := make([]cipher.SHA256, 0, len(self.Txns))
+	if len(gtm.Txns) > 32 {
+		logger.Warning("More than 32 transactions in pool. Implement breaking transactions transmission into multiple packets")
+	}
+
+	hashes := make([]cipher.SHA256, 0, len(gtm.Txns))
 	// Update unconfirmed pool with these transactions
-	for _, txn := range self.Txns {
+	for _, txn := range gtm.Txns {
 		// Only announce transactions that are new to us, so that peers can't
 		// spam relays
-		if err, known := d.Visor.Visor.InjectTxn(txn); err == nil && !known {
+		if known, err := d.Visor.InjectTxn(txn); err == nil && !known {
 			hashes = append(hashes, txn.Hash())
 		} else {
-			logger.Warning("Failed to record txn: %v", err)
+			if !known {
+				logger.Warning("Failed to record txn: %v", err)
+			} else {
+				logger.Warning("Duplicate Transaction: %v", txn.Hash())
+			}
 		}
 	}
 	// Announce these transactions to peers
 	if len(hashes) != 0 {
+		logger.Debugf("Announce %d transactions", len(hashes))
 		m := NewAnnounceTxnsMessage(hashes)
 		d.Pool.Pool.BroadcastMessage(m)
 	}
 }
 
+// BlockchainLengths an array of uint64
 type BlockchainLengths []uint64
 
-func (self BlockchainLengths) Len() int {
-	return len(self)
+// Len for sorting
+func (bcl BlockchainLengths) Len() int {
+	return len(bcl)
 }
 
-func (self BlockchainLengths) Swap(i, j int) {
-	self[i], self[j] = self[j], self[i]
+// Swap for sorting
+func (bcl BlockchainLengths) Swap(i, j int) {
+	bcl[i], bcl[j] = bcl[j], bcl[i]
 }
 
-func (self BlockchainLengths) Less(i, j int) bool {
-	return self[i] < self[j]
+// Less for sorting
+func (bcl BlockchainLengths) Less(i, j int) bool {
+	return bcl[i] < bcl[j]
+}
+
+type byTxnRecvTime []visor.UnconfirmedTxn
+
+func (txs byTxnRecvTime) Len() int {
+	return len(txs)
+}
+
+func (txs byTxnRecvTime) Swap(i, j int) {
+	txs[i], txs[j] = txs[j], txs[i]
+}
+
+func (txs byTxnRecvTime) Less(i, j int) bool {
+	return txs[i].Received < txs[j].Received
 }

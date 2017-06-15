@@ -3,25 +3,25 @@ package gnet
 import (
 	"errors"
 	"fmt"
-	"github.com/skycoin/encoder"
-	"log"
 	"net"
 	"reflect"
 	"time"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// Result of a single message send
+// SendResult result of a single message send
 type SendResult struct {
-	Connection *Connection
-	Message    Message
-	Error      error
+	Addr    string
+	Message Message
+	Error   error
 }
 
-func newSendResult(c *Connection, m Message, err error) SendResult {
+func newSendResult(addr string, m Message, err error) SendResult {
 	return SendResult{
-		Connection: c,
-		Message:    m,
-		Error:      err,
+		Addr:    addr,
+		Message: m,
+		Error:   err,
 	}
 }
 
@@ -32,24 +32,24 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 }
 
 // Event handler that is called after a Connection sends a complete message
-func convertToMessage(c *Connection, msg []byte) (Message, error) {
-	msgId := [4]byte{}
-	if len(msg) < len(msgId) {
+func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
+	msgID := [4]byte{}
+	if len(msg) < len(msgID) {
 		return nil, errors.New("Not enough data to read msg id")
 	}
-	copy(msgId[:], msg[:len(msgId)])
-	msg = msg[len(msgId):]
-
-	t, succ := MessageIdReverseMap[msgId]
+	copy(msgID[:], msg[:len(msgID)])
+	msg = msg[len(msgID):]
+	t, succ := MessageIDReverseMap[msgID]
 	if !succ {
-		logger.Debug("Connection %d sent unknown message id %s",
-			c.Id, string(msgId[:]))
-		return nil, fmt.Errorf("Unknown message %s received", string(msgId[:]))
+		return nil, fmt.Errorf("Unknown message %s received", string(msgID[:]))
 	}
-	logger.Debug("Convert, Message type %v", t)
+
+	if debugPrint {
+		logger.Debug("Convert, Message type %v", t)
+	}
 
 	var m Message
-	var v reflect.Value = reflect.New(t)
+	v := reflect.New(t)
 	//logger.Debug("Giving %d bytes to the decoder", len(msg))
 	used, err := deserializeMessage(msg, v)
 	if err != nil {
@@ -64,7 +64,7 @@ func convertToMessage(c *Connection, msg []byte) (Message, error) {
 		// This occurs only when the user registers an interface that does
 		// match the Message interface.  They should have known about this
 		// earlier via a call to VerifyMessages
-		log.Panic("Message obtained from map does not match Message interface")
+		logger.Panic("Message obtained from map does not match Message interface")
 		return nil, errors.New("MessageIdMaps contain non-Message")
 	}
 	return m, nil
@@ -92,18 +92,18 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 // Packgs a Message into []byte containing length, id and data
 var encodeMessage = func(msg Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
-	msgId, succ := MessageIdMap[t]
+	msgID, succ := MessageIDMap[t]
 	if !succ {
 		txt := "Attempted to serialize message struct not in MessageIdMap: %v"
-		log.Panicf(txt, msg)
+		logger.Panicf(txt, msg)
 	}
 	bMsg := encoder.Serialize(msg)
 
 	// message length
-	bLen := encoder.SerializeAtomic(uint32(len(bMsg) + len(msgId)))
+	bLen := encoder.SerializeAtomic(uint32(len(bMsg) + len(msgID)))
 	m := make([]byte, 0)
 	m = append(m, bLen...)     // length prefix
-	m = append(m, msgId[:]...) // message id
+	m = append(m, msgID[:]...) // message id
 	m = append(m, bMsg...)     // message bytes
 	return m
 }

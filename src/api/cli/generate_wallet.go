@@ -113,7 +113,11 @@ func generateWallet(c *gcli.Context) error {
 	if err != nil {
 		return err
 	}
-	wlt := wallet.NewWallet(wltName, wallet.OptLabel(label), wallet.OptSeed(sd))
+	wlt, err := wallet.NewWallet(wltName, wallet.OptLabel(label), wallet.OptSeed(sd))
+	if err != nil {
+		return err
+	}
+
 	wlt.GenerateAddresses(int(num))
 
 	// check if the wallet dir does exist.
@@ -125,7 +129,7 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 
-	rwlt := wallet.NewReadableWallet(wlt)
+	rwlt := wallet.NewReadableWallet(*wlt)
 	d, err := json.MarshalIndent(rwlt, "", "    ")
 	if err != nil {
 		return errJSONMarshal

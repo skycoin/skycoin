@@ -1,8 +1,8 @@
-# Skycoin client
+# Skycoin
+
+[![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin) [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
 Skycoin is a next-generation cryptocurrency.
-
-skycoin [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin) [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
 Skycoin improves on Bitcoin in too many ways to be addressed here.
 
@@ -10,23 +10,23 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-* For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation)*
+For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation).
 
 ## For OSX
 
-1 Install [homebrew](brew.sh), if you don't have it yet
+Install [homebrew](brew.sh), if you don't have it yet.
 
 ```sh
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-2 Install the latest version of golang
+Install the latest version of golang
 
 ```sh
 brew install go
 ```
 
-3 Setup $GOPATH variable, add it to ~/.bash_profile (or bashrc). After editing, open a new tab
+Setup $GOPATH variable, add it to ~/.bash_profile (or bashrc). After editing, open a new tab
 Add to `bashrc` or `bash_profile`
 
 ```sh
@@ -35,25 +35,25 @@ export PATH=$PATH:$GOPATH/bin
 
 ```
 
-4 Install Mercurial and Bazaar
+Install Mercurial and Bazaar
 
 ```sh
 brew install mercurial bzr
 ```
 
-5 Fetch the latest code of skycoin from the github repository
+Fetch the latest code of skycoin from the github repository
 
 ```sh
 go get github.com/skycoin/skycoin
 ```
 
-6 Change your current directory to $GOPATH/src/github.com/skycoin/skycoin
+Change your current directory to $GOPATH/src/github.com/skycoin/skycoin
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
 ```
 
-7 Running Wallet
+Run Wallet
 
 ```sh
 ./run.sh
@@ -73,12 +73,11 @@ sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev 
 
 ## Setup Golang
 
-* use gvm
-* else download binary and follow instructions
+use gvm or download binary and follow instructions.
 
 ### Golang ENV setup with gvm
 
-In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source
+In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.
 
 ```sh
 sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
@@ -91,7 +90,7 @@ gvm install go1.8
 gvm use go1.8 --default
 ```
 
-If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically
+If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically.
 
 ```sh
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
@@ -100,15 +99,14 @@ gvm use go1.8 >/dev/null
 
 The skycoin repo must be in $GOPATH, under `src/github.com/skycoin`. Otherwise golang programs cannot import the libraries.
 
-pull skycoin repo into the gopath
-note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
+Pull skycoin repo into the gopath, note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
 
 ```sh
 go get -v github.com/skycoin/skycoin/...
 
-#create symlink of the repo
-$ cd $HOME
-$ ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
+# create symlink of the repo
+cd $HOME
+ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
 ```
 
 ## Dependencies
@@ -127,7 +125,7 @@ If you change the dependencies, you should update them as needed with `gvt fetch
 
 Refer to the [gvt documentation](https://github.com/FiloSottile/gvt) or `gvt help` for further instructions.
 
-## Running A Skycoin Node
+## Run A Skycoin Node
 
 ```sh
 cd skycoin
@@ -167,7 +165,7 @@ gox [options] cmd/skycoin/
 
 ## Local Server API
 
-See the api details [here](src/gui/READEME.md)
+See the api details [here](src/gui/READEME.md).
 
 ## Skycoin explorer
 
@@ -222,3 +220,9 @@ See the doc of command line interface [here](cmd/cli/README.md).
 ## WebRPC
 
 See the doc of webrpc [here](src/api/webrpc/README.md).
+
+## Development
+
+We mainly has two branches: master and develop. The develop is the default branch as you can see, all latest code will be updated here.
+
+The master branch will always be in run ready state and will only be updated when we need to release a new version.

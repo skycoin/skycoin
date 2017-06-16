@@ -38,9 +38,6 @@ func NewUnspentPool(db *bolt.DB) (*UnspentPool, error) {
 		return nil, err
 	}
 
-	// initialize xorhash with empty SHA256
-	meta.Put(xorhashKey, []byte(cipher.SHA256{}.Hex()))
-
 	up.meta = meta
 
 	return up, nil
@@ -231,13 +228,15 @@ func (up *UnspentPool) GetUxHash() (cipher.SHA256, error) {
 
 // getXorHash returns XorHash
 func (up *UnspentPool) getXorHash() (cipher.SHA256, error) {
-	v := up.meta.Get(xorhashKey)
-	hash, err := cipher.SHA256FromHex(string(v))
-	if err != nil {
-		return cipher.SHA256{}, fmt.Errorf("parse xorhash failed: %v", err)
+	if v := up.meta.Get(xorhashKey); v != nil {
+		hash, err := cipher.SHA256FromHex(string(v))
+		if err != nil {
+			return cipher.SHA256{}, fmt.Errorf("parse xorhash failed: %v", err)
+		}
+		return hash, nil
 	}
 
-	return hash, nil
+	return cipher.SHA256{}, nil
 }
 
 // setXorHash updates hash

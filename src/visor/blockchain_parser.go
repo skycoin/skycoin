@@ -96,7 +96,7 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 	}
 
 	if parsedHeight < int64(bcHeight) {
-		logger.Critical("parse block from %d to %d", parsedHeight+1, bcHeight)
+		logger.Info("parse block from %d to %d", parsedHeight+1, bcHeight)
 	}
 
 	return bcp.historyDB.SetParsedHeight(bcHeight)

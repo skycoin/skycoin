@@ -1,12 +1,12 @@
 package daemon
 
 import (
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	//"github.com/skycoin/skycoin/src/wallet"
-	"time"
 
 	"fmt"
 

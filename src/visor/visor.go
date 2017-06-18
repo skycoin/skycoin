@@ -347,9 +347,9 @@ func (vs *Visor) AllSpendsOutputs() ([]ReadableOutput, error) {
 	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.Unspent)
 }
 
-// AllIncommingOutputs returns all predicted outputs that are in pending tx pool
-func (vs *Visor) AllIncommingOutputs() ([]ReadableOutput, error) {
-	return vs.Unconfirmed.AllIncommingOutputs(vs.Blockchain.Head().Head)
+// AllIncomingOutputs returns all predicted outputs that are in pending tx pool
+func (vs *Visor) AllIncomingOutputs() ([]ReadableOutput, error) {
+	return vs.Unconfirmed.AllIncomingOutputs(vs.Blockchain.Head().Head)
 }
 
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.

@@ -181,7 +181,7 @@ func (up *UnspentPool) Get(h cipher.SHA256) (coin.UxOut, bool, error) {
 }
 
 // GetAll returns Pool as an array. Note: they are not in any particular order.
-func (up *UnspentPool) GetAll() (ua coin.UxArray, err error) {
+func (up *UnspentPool) GetAll() (coin.UxArray, error) {
 	arr := make(coin.UxArray, 0, up.pool.Len())
 	if err := up.pool.ForEach(func(k, v []byte) error {
 		var uxout coin.UxOut
@@ -198,7 +198,7 @@ func (up *UnspentPool) GetAll() (ua coin.UxArray, err error) {
 	return arr, nil
 }
 
-// delete removes an unsepnt from the pool by hash
+// delete removes an unspent from the pool by hash
 func (up *UnspentPool) del(tx *bolt.Tx, h cipher.SHA256) error {
 	if v := up.pool.Get([]byte(h.Hex())); v != nil {
 		var ux coin.UxOut
@@ -275,7 +275,7 @@ func (up *UnspentPool) GetUnspentsOfAddr(addr cipher.Address) (coin.UxArray, err
 		}
 		return nil
 	}); err != nil {
-		return coin.UxArray{}, fmt.Errorf("get unsepnts of address %v failed: %v",
+		return coin.UxArray{}, fmt.Errorf("get unspents of address %v failed: %v",
 			addr.String(), err)
 	}
 
@@ -285,9 +285,9 @@ func (up *UnspentPool) GetUnspentsOfAddr(addr cipher.Address) (coin.UxArray, err
 // GetUnspentsOfAddrs returns unspent outputs map of given addresses,
 // the address as return map key, unspent outputs as value.
 func (up *UnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	addrm := make(map[cipher.Address]byte, len(addrs))
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
-		addrm[a] = byte(1)
+		addrm[a] = struct{}{}
 	}
 
 	addrUxs := coin.AddressUxOuts{}
@@ -303,7 +303,7 @@ func (up *UnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressU
 		return nil
 	}); err != nil {
 		return coin.AddressUxOuts{},
-			fmt.Errorf("get unsepnts of address array failed: %v", err)
+			fmt.Errorf("get unspents of address array failed: %v", err)
 	}
 
 	return addrUxs, nil

@@ -234,11 +234,11 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 		}
 		spendingOutputs, err = gw.v.AllSpendsOutputs()
 		if err != nil {
-			err = fmt.Errorf("get all spents outputs failed: %v", err)
+			err = fmt.Errorf("get all spends outputs failed: %v", err)
 			return
 		}
 
-		inOutputs, err = gw.v.AllIncommingOutputs()
+		inOutputs, err = gw.v.AllIncomingOutputs()
 		if err != nil {
 			err = fmt.Errorf("get all incomming outputs failed: %v", err)
 			return

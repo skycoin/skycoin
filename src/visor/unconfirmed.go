@@ -432,7 +432,7 @@ func (utp *UnconfirmedTxnPool) SpendsForAddresses(unspent *blockdb.UnspentPool,
 
 			if !ok {
 				// unconfirm transaction's IN is not in the unspent pool, this should not happen
-				continue
+				return fmt.Errorf("Unconfirmed transaction's IN: %s is not in unspent pool", h.Hex())
 			}
 
 			if _, ok := addrm[ux.Body.Address]; ok {

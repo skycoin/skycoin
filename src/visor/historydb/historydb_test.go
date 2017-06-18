@@ -55,27 +55,27 @@ var _ = func() int64 {
 // and return teardown function for later clean
 func setup(t *testing.T) (*bolt.DB, func(), error) {
 	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
-	close := func() {}
+	cancel := func() {}
 	tmpDir := os.TempDir()
 	dbPath := filepath.Join(tmpDir, dbName)
 	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, close, err
+		return nil, cancel, err
 	}
 
 	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
 	if err != nil {
-		return nil, close, err
+		return nil, cancel, err
 	}
 
-	close = func() {
+	cancel = func() {
 		db.Close()
 		if err := os.RemoveAll(dbPath); err != nil {
 			panic(err)
 		}
 	}
-	return db, close, nil
+	return db, cancel, nil
 }
 
 type fakeBlockchain struct {

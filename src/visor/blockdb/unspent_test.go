@@ -68,10 +68,7 @@ func TestNewUnspentPool(t *testing.T) {
 
 	assert.Equal(t, 0, up.pool.Len())
 	v := up.meta.Get(xorhashKey)
-	assert.NotNil(t, v)
-	hash, err := cipher.SHA256FromHex(string(v))
-	assert.Nil(t, err)
-	assert.Equal(t, cipher.SHA256{}, hash)
+	assert.Nil(t, v)
 }
 
 func TestUnspentPoolAdd(t *testing.T) {
@@ -85,8 +82,7 @@ func TestUnspentPoolAdd(t *testing.T) {
 	assert.Nil(t, err)
 
 	ux := makeUxOut(t)
-	err = up.Add(ux)
-	assert.Nil(t, err)
+	assert.Nil(t, up.Add(ux))
 	assert.Equal(t, uint64(1), up.Len())
 
 	v := up.pool.Get([]byte(ux.Hash().Hex()))
@@ -96,7 +92,7 @@ func TestUnspentPoolAdd(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, ux, uxc)
 
-	xorhash, err := up.getXorHash()
+	xorhash, err := up.GetUxHash()
 	assert.Nil(t, err)
 
 	assert.NotEqual(t, cipher.SHA256{}, xorhash)
@@ -119,7 +115,7 @@ func TestUnspentPoolAdd(t *testing.T) {
 
 	h := ux.SnapshotHash()
 	h = h.Xor(ux2.SnapshotHash())
-	uph, err := up.getXorHash()
+	uph, err := up.GetUxHash()
 	assert.Nil(t, err)
 	assert.Equal(t, h, uph)
 }
@@ -377,7 +373,7 @@ func TestUnspentPoolDelete(t *testing.T) {
 				return
 			}
 
-			xh, err := up.getXorHash()
+			xh, err := up.GetUxHash()
 			assert.Nil(t, err)
 			assert.Equal(t, tc.xorhash, xh)
 

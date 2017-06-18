@@ -28,6 +28,18 @@ func New(name []byte, db *bolt.DB) (*Bucket, error) {
 	return &Bucket{name, db}, nil
 }
 
+// Reset resets the bucket
+func (b *Bucket) Reset() error {
+	return b.db.Update(func(tx *bolt.Tx) error {
+		if err := tx.DeleteBucket(b.Name); err != nil {
+			return err
+		}
+
+		_, err := tx.CreateBucketIfNotExists(b.Name)
+		return err
+	})
+}
+
 // Get value of specific key in the bucket.
 func (b Bucket) Get(key []byte) []byte {
 	var value []byte

@@ -50,3 +50,8 @@ func (cm *ChainMeta) Head() cipher.SHA256 {
 func (cm *ChainMeta) UpdateHead(head cipher.SHA256) error {
 	return cm.v.Put(blockHeadKey, []byte(head.Hex()))
 }
+
+// Reset resets buckets
+func (cm *ChainMeta) Reset() error {
+	return cm.v.Reset()
+}

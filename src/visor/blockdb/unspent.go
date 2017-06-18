@@ -1,6 +1,7 @@
 package blockdb
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/boltdb/bolt"
@@ -18,14 +19,12 @@ var (
 type UnspentPool struct {
 	db   *bolt.DB
 	pool *bucket.Bucket
-	meta *bucket.Bucket // mainly for store xorhash and parsed height
+	meta *bucket.Bucket
 }
 
 // NewUnspentPool creates new unspent pool instance
 func NewUnspentPool(db *bolt.DB) (*UnspentPool, error) {
-	up := &UnspentPool{
-		db: db,
-	}
+	up := &UnspentPool{db: db}
 
 	pool, err := bucket.New([]byte("unspent_pool"), db)
 	if err != nil {
@@ -33,14 +32,34 @@ func NewUnspentPool(db *bolt.DB) (*UnspentPool, error) {
 	}
 	up.pool = pool
 
-	meta, err := bucket.New([]byte("unspent_pool_meta"), db)
+	meta, err := bucket.New([]byte("unspent_meta"), db)
 	if err != nil {
 		return nil, err
 	}
-
 	up.meta = meta
 
 	return up, nil
+}
+
+// Reset resets the unspent pool buckets
+func (up *UnspentPool) Reset() error {
+	return up.db.Update(func(tx *bolt.Tx) error {
+		if err := tx.DeleteBucket(up.pool.Name); err != nil {
+			return err
+		}
+
+		_, err := tx.CreateBucket(up.pool.Name)
+		if err != nil {
+			return err
+		}
+
+		if err := tx.DeleteBucket(up.meta.Name); err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucket(up.meta.Name)
+		return err
+	})
 }
 
 // Add adds a UxOut to pool
@@ -49,18 +68,46 @@ func (up *UnspentPool) Add(ux coin.UxOut) error {
 	if up.Contains(h) {
 		return fmt.Errorf("attemps to insert uxout:%v twice into the unspent pool", h.Hex())
 	}
-	v := encoder.Serialize(ux)
-	xorhash, err := up.getXorHash()
+	xorhash, err := up.GetUxHash()
 	if err != nil {
 		return err
 	}
 
 	xorhash = xorhash.Xor(ux.SnapshotHash())
-	if err := up.setXorHash(xorhash); err != nil {
-		return err
-	}
 
-	return up.pool.Put([]byte(h.Hex()), v)
+	// all updates will rollback if return is not nil
+	return up.db.Update(func(tx *bolt.Tx) (err error) {
+		// in case of unexpected panic, we must catch it and return error
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("unspent pool add uxout failed: %v", err)
+			}
+		}()
+
+		mb := tx.Bucket(up.meta.Name)
+		if mb == nil {
+			return errors.New("unspent_meta bucket does not exist")
+		}
+
+		if err = setXorHash(mb, xorhash); err != nil {
+			return err
+		}
+
+		pb := tx.Bucket(up.pool.Name)
+		if pb == nil {
+			return errors.New("unspent_pool bucket does not exist")
+		}
+		return setUxOut(pb, h, ux)
+	})
+}
+
+func setUxOut(bkt *bolt.Bucket, hash cipher.SHA256, ux coin.UxOut) error {
+	v := encoder.Serialize(ux)
+	return bkt.Put([]byte(hash.Hex()), v)
+}
+
+func setXorHash(bkt *bolt.Bucket, hash cipher.SHA256) error {
+	return bkt.Put(xorhashKey, []byte(hash.Hex()))
 }
 
 // GetArray returns UxOut by given hash array, will return error when
@@ -121,23 +168,46 @@ func (up *UnspentPool) delete(h cipher.SHA256) error {
 			return err
 		}
 
-		hash, err := up.getXorHash()
+		hash, err := up.GetUxHash()
 		if err != nil {
 			return err
 		}
 
 		hash = hash.Xor(ux.SnapshotHash())
-		if err := up.setXorHash(hash); err != nil {
-			return err
-		}
 
-		// delete unspent hash from pool
-		if err := up.pool.Delete([]byte(h.Hex())); err != nil {
-			return err
-		}
+		return up.db.Update(func(tx *bolt.Tx) (err error) {
+			// in case of unexpected panic, we must catch and return error
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("delete uxout from unspent pool failed: %v", err)
+				}
+			}()
+
+			mb := tx.Bucket(up.meta.Name)
+			if mb == nil {
+				return errors.New("unspent_meta bucket does not exist")
+			}
+
+			// update uxhash
+			if err = setXorHash(mb, hash); err != nil {
+				return err
+			}
+
+			pb := tx.Bucket(up.pool.Name)
+			if pb == nil {
+				return errors.New("unspent_pool bucket does not exist")
+			}
+
+			// delete uxout
+			return deleteUxOut(pb, h)
+		})
 	}
 
 	return nil
+}
+
+func deleteUxOut(bkt *bolt.Bucket, hash cipher.SHA256) error {
+	return bkt.Delete([]byte(hash.Hex()))
 }
 
 // Delete delete unspent of given hashes
@@ -150,7 +220,7 @@ func (up *UnspentPool) Delete(hashes []cipher.SHA256) error {
 	return nil
 }
 
-// Len returns the pool size
+// Len returns the unspent outputs num
 func (up *UnspentPool) Len() uint64 {
 	return uint64(up.pool.Len())
 }
@@ -223,11 +293,6 @@ func (up *UnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressU
 // Must be called after Block is fully initialized,
 // and before its outputs are added to the unspent pool
 func (up *UnspentPool) GetUxHash() (cipher.SHA256, error) {
-	return up.getXorHash()
-}
-
-// getXorHash returns XorHash
-func (up *UnspentPool) getXorHash() (cipher.SHA256, error) {
 	if v := up.meta.Get(xorhashKey); v != nil {
 		hash, err := cipher.SHA256FromHex(string(v))
 		if err != nil {
@@ -237,12 +302,4 @@ func (up *UnspentPool) getXorHash() (cipher.SHA256, error) {
 	}
 
 	return cipher.SHA256{}, nil
-}
-
-// setXorHash updates hash
-func (up *UnspentPool) setXorHash(hash cipher.SHA256) error {
-	if err := up.meta.Put(xorhashKey, []byte(hash.Hex())); err != nil {
-		return fmt.Errorf("set xorhash failed: %v", err)
-	}
-	return nil
 }

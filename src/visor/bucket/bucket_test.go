@@ -87,6 +87,34 @@ func TestBktUpdate(t *testing.T) {
 	}
 }
 
+func TestReset(t *testing.T) {
+	db, cancel := prepareDB(t)
+	defer cancel()
+
+	bkt, err := New([]byte("tete"), db)
+	assert.Nil(t, err)
+
+	assert.Nil(t, bkt.Put([]byte("k1"), []byte("v1")))
+
+	assert.Nil(t, bkt.Put([]byte("k2"), []byte("v2")))
+
+	assert.Equal(t, []byte("v1"), bkt.Get([]byte("k1")))
+	assert.Equal(t, []byte("v2"), bkt.Get([]byte("k2")))
+
+	assert.Nil(t, bkt.Reset())
+
+	v1 := bkt.Get([]byte("k1"))
+	if v1 != nil {
+		t.Fatal("bucket reset failed")
+	}
+
+	v2 := bkt.Get([]byte("k2"))
+	if v2 != nil {
+		t.Fatal("bucket reset failed")
+	}
+
+}
+
 func TestDelete(t *testing.T) {
 	testCases := []struct {
 		Name string

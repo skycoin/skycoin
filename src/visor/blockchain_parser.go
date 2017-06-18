@@ -12,13 +12,11 @@ type ParserOption func(*BlockchainParser)
 
 // BlockchainParser parses the blockchain and stores the data into historydb.
 type BlockchainParser struct {
-	historyDB  *historydb.HistoryDB
-	parsedFunc func(height uint64) // notify caller the parse process
-	blkC       chan coin.Block
-	closing    chan chan struct{}
-	bc         *Blockchain
+	historyDB *historydb.HistoryDB
+	blkC      chan coin.Block
+	closing   chan chan struct{}
+	bc        *Blockchain
 
-	startC  chan struct{}
 	isStart bool
 }
 
@@ -29,7 +27,6 @@ func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain, ops ...Pars
 		historyDB: hisDB,
 		closing:   make(chan chan struct{}),
 		blkC:      make(chan coin.Block, 10),
-		startC:    make(chan struct{}),
 	}
 
 	for _, op := range ops {
@@ -51,7 +48,7 @@ func (bcp *BlockchainParser) Run(q chan struct{}) {
 	logger.Info("Blockchain parser start")
 
 	// parse to the blockchain head
-	headSeq := bcp.bc.Head().Head.BkSeq
+	headSeq := bcp.bc.Head().Seq()
 	if err := bcp.parseTo(headSeq); err != nil {
 		logger.Error("%v", err)
 		close(q)
@@ -97,15 +94,8 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 
 	if parsedHeight < int64(bcHeight) {
 		logger.Info("parse block from %d to %d", parsedHeight+1, bcHeight)
+		return bcp.historyDB.SetParsedHeight(uint64(bcHeight))
 	}
 
-	return bcp.historyDB.SetParsedHeight(bcHeight)
-}
-
-// ParseNotifier sets the callback function that will be invoked
-// when block is parsed.
-func ParseNotifier(f func(height uint64)) ParserOption {
-	return func(p *BlockchainParser) {
-		p.parsedFunc = f
-	}
+	return nil
 }

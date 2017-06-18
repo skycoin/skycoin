@@ -3,7 +3,6 @@ package visor
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"time"
 
@@ -173,19 +172,16 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		return nil, nil, err
 	}
 
+	logger.Info("Verify signature...")
+	// TODO: verify signature in goroutine, if error detected, notify
+	// to regenerate signatures.
+	if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
+		return nil, nil, fmt.Errorf("Invalid block signatures: %v", err)
+	}
+
 	// creates blockchain parser instance
-	var verifyOnce sync.Once
-	bp := NewBlockchainParser(history, bc,
-		ParseNotifier(func(height uint64) {
-			if height == bc.Head().Head.BkSeq {
-				verifyOnce.Do(func() {
-					// only do verification once when loading and parsing from local blocks
-					if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
-						logger.Panicf("Invalid block signatures: %v", err)
-					}
-				})
-			}
-		}))
+	// var verifyOnce sync.Once
+	bp := NewBlockchainParser(history, bc)
 
 	bc.BindListener(bp.BlockListener)
 
@@ -288,7 +284,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
-	if _, err := vs.Blockchain.ExecuteBlock(&b.Block); err != nil {
+	if err := vs.Blockchain.ExecuteBlock(&b.Block); err != nil {
 		return err
 	}
 	// TODO -- save them even if out of order, and execute later

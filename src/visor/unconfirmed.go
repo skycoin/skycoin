@@ -417,9 +417,9 @@ func (utp *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions 
 // blockchain's unspent pool, and returns as coin.AddressUxOuts
 func (utp *UnconfirmedTxnPool) SpendsForAddresses(unspent *blockdb.UnspentPool,
 	addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	addrm := make(map[cipher.Address]byte, len(addrs))
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, addr := range addrs {
-		addrm[addr] = byte(1)
+		addrm[addr] = struct{}{}
 	}
 
 	auxs := make(coin.AddressUxOuts, len(addrs))
@@ -478,8 +478,8 @@ func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *blockdb.UnspentPool) 
 	return outs, nil
 }
 
-// AllIncommingOutputs returns all predicted incomming outputs.
-func (utp *UnconfirmedTxnPool) AllIncommingOutputs(bh coin.BlockHeader) ([]ReadableOutput, error) {
+// AllIncomingOutputs returns all predicted incomming outputs.
+func (utp *UnconfirmedTxnPool) AllIncomingOutputs(bh coin.BlockHeader) ([]ReadableOutput, error) {
 	outs := []ReadableOutput{}
 	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		uxOuts := coin.CreateUnspents(bh, tx.Txn)

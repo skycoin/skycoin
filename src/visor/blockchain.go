@@ -639,7 +639,6 @@ func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) 
 	}
 
 	for i := bc.verifiedSigSeq(); i <= head.Seq(); i++ {
-		logger.Info("verifiy signature of block in dep:%v", i)
 		b := bc.GetBlockInDepth(i)
 		if b == nil {
 			return fmt.Errorf("no block in depth %v", i)

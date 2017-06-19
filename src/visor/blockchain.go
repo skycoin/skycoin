@@ -64,8 +64,8 @@ type Blockchain struct {
 	// the invalid transaction will be skipped and continue the next; otherwise,
 	// node will throw the error and return.
 	arbitrating bool
-
-	Unspent *blockdb.UnspentPool // unspent outputs pool stored in db
+	chain       *blockdb.Blockchain
+	// Unspent *blockdb.UnspentPool // unspent outputs pool stored in db
 }
 
 // Option represents the option when creating the blockchain
@@ -79,15 +79,15 @@ func NewBlockchain(db *bolt.DB, walker Walker, ops ...Option) (*Blockchain, erro
 		return nil, err
 	}
 
-	unspent, err := blockdb.NewUnspentPool(db)
+	chainstore, err := blockdb.NewBlockchain(db)
 	if err != nil {
 		return nil, err
 	}
 
 	bc := &Blockchain{
-		tree:    tree,
-		walker:  walker,
-		Unspent: unspent,
+		tree:   tree,
+		walker: walker,
+		chain:  chainstore,
 	}
 
 	for _, op := range ops {
@@ -137,6 +137,19 @@ func (bc *Blockchain) walkTree() error {
 	return nil
 }
 
+func (bc *Blockchain) headSeq() int64 {
+	return bc.chain.HeadSeq()
+}
+
+func (bc *Blockchain) processBlock(b *coin.Block) error {
+	return bc.chain.ProcessBlock(b)
+}
+
+// Unspent returns the unspent outputs pool
+func (bc *Blockchain) Unspent() *blockdb.UnspentPool {
+	return bc.chain.Unspent
+}
+
 // Len returns the length of current blockchain.
 func (bc Blockchain) Len() uint64 {
 	head := bc.Head()
@@ -172,21 +185,24 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 	}
 	bc.addBlock(&b)
 
-	ux := coin.UxOut{
-		Head: coin.UxHead{
-			Time:  timestamp,
-			BkSeq: 0,
-		},
-		Body: coin.UxBody{
-			SrcTransaction: txn.InnerHash, //user inner hash
-			Address:        genesisAddr,
-			Coins:          genesisCoins,
-			Hours:          genesisCoins, // Allocate 1 coin hour per coin
-		},
-	}
+	// ux := coin.UxOut{
+	// 	Head: coin.UxHead{
+	// 		Time:  timestamp,
+	// 		BkSeq: 0,
+	// 	},
+	// 	Body: coin.UxBody{
+	// 		SrcTransaction: txn.InnerHash, //user inner hash
+	// 		Address:        genesisAddr,
+	// 		Coins:          genesisCoins,
+	// 		Hours:          genesisCoins, // Allocate 1 coin hour per coin
+	// 	},
+	// }
 
-	if err := bc.Unspent.Add(ux); err != nil {
-		return coin.Block{}, fmt.Errorf("create genesis block failed: %v", err)
+	// if err := bc.Unspent.Add(ux); err != nil {
+	// 	return coin.Block{}, fmt.Errorf("create genesis block failed: %v", err)
+	// }
+	if err := bc.processBlock(&b); err != nil {
+		return coin.Block{}, err
 	}
 
 	bc.notify(b)
@@ -204,7 +220,7 @@ func (bc Blockchain) GetBlock(hash cipher.SHA256) *coin.Block {
 
 // Head returns the most recent confirmed block
 func (bc Blockchain) Head() *coin.Block {
-	headSeq := bc.Unspent.HeadSeq()
+	headSeq := bc.headSeq()
 	if headSeq < 0 {
 		return nil
 	}
@@ -233,7 +249,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	if err != nil {
 		return nil, err
 	}
-	uxHash, err := bc.Unspent.GetUxHash()
+	uxHash, err := bc.Unspent().GetUxHash()
 	if err != nil {
 		return nil, err
 	}
@@ -259,23 +275,22 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 
 // ExecuteBlock Attempts to append block to blockchain.
 func (bc *Blockchain) ExecuteBlock(b *coin.Block) error {
-	err := bc.verifyBlock(*b)
-	if err != nil {
+	if err := bc.verifyBlock(*b); err != nil {
 		return err
 	}
 
-	if head := bc.Head(); head != nil {
-		b.Head.PrevHash = bc.Head().HashHeader()
-		bc.addBlock(b)
-		if err := bc.Unspent.ProcessBlock(b); err != nil {
-			return err
-		}
+	b.Head.PrevHash = bc.Head().HashHeader()
 
-		bc.notify(*b)
-		return nil
+	if err := bc.addBlock(b); err != nil {
+		return err
 	}
 
-	return errors.New("Execute block failed, blockchain is empty")
+	if err := bc.processBlock(b); err != nil {
+		return err
+	}
+
+	bc.notify(*b)
+	return nil
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
@@ -283,7 +298,7 @@ func (bc *Blockchain) updateUnspent(b coin.Block) error {
 		return err
 	}
 
-	return bc.Unspent.ProcessBlock(&b)
+	return bc.processBlock(&b)
 }
 
 // VerifyBlock verifies the BlockHeader and BlockBody
@@ -309,7 +324,7 @@ func (bc Blockchain) verifyBlock(b coin.Block) error {
 // Compares the state of the current UxHash hash to state of unspent
 // output pool.
 func (bc Blockchain) verifyUxHash(b coin.Block) error {
-	uxHash, err := bc.Unspent.GetUxHash()
+	uxHash, err := bc.Unspent().GetUxHash()
 	if err != nil {
 		return err
 	}
@@ -347,7 +362,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 		return err
 	}
 
-	uxIn, err := bc.Unspent.GetArray(tx.In)
+	uxIn, err := bc.Unspent().GetArray(tx.In)
 	if err != nil {
 		return err
 	}
@@ -367,7 +382,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 		// Check that new unspents don't collide with existing.  This should
 		// also be checked in verifyTransactions
 		for i := range uxOut {
-			if bc.Unspent.Contains(uxOut[i].Hash()) {
+			if bc.Unspent().Contains(uxOut[i].Hash()) {
 				return errors.New("New unspent collides with existing unspent")
 			}
 		}
@@ -480,7 +495,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 			if DebugLevel1 {
 				// Check that the expected unspent is not already in the pool.
 				// This should never happen because its a hash collision
-				if bc.Unspent.Contains(h) {
+				if bc.Unspent().Contains(h) {
 					if arbitrating {
 						skip[i] = byte(1)
 						continue
@@ -581,7 +596,7 @@ func (bc Blockchain) ArbitrateTransactions(txns coin.Transactions) coin.Transact
 func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 	headTime := bc.Time()
 	inHours := uint64(0)
-	inUxs, err := bc.Unspent.GetArray(t.In)
+	inUxs, err := bc.Unspent().GetArray(t.In)
 	if err != nil {
 		return 0, err
 	}
@@ -604,7 +619,7 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 
 // VerifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (bc Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) error {
+func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) error {
 	if bc.Head() == nil {
 		return nil
 	}

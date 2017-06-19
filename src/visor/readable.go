@@ -27,7 +27,7 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	head := v.Blockchain.Head().Head
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
-		Unspents:    v.Blockchain.Unspent.Len(),
+		Unspents:    v.Blockchain.Unspent().Len(),
 		Unconfirmed: uint64(v.Unconfirmed.Txns.len()),
 	}
 }

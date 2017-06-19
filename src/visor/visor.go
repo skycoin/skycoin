@@ -327,7 +327,7 @@ func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 // isolate effect of threading
 // call .Array() to get []UxOut array
 func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
-	return vs.Blockchain.Unspent.GetAll()
+	return vs.Blockchain.Unspent().GetAll()
 }
 
 // GetUnspentOutputReadables returns readable unspent outputs
@@ -347,7 +347,7 @@ func (vs *Visor) GetUnspentOutputReadables() ([]ReadableOutput, error) {
 
 // AllSpendsOutputs returns all spending outputs in unconfirmed tx pool
 func (vs *Visor) AllSpendsOutputs() ([]ReadableOutput, error) {
-	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.Unspent)
+	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.Unspent())
 }
 
 // AllIncomingOutputs returns all predicted outputs that are in pending tx pool
@@ -471,7 +471,7 @@ func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
 func (vs *Visor) GetAddressTransactions(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
 	// Look in the blockchain
-	uxs, err := vs.Blockchain.Unspent.GetUnspentsOfAddr(a)
+	uxs, err := vs.Blockchain.Unspent().GetUnspentsOfAddr(a)
 	if err != nil {
 		return []Transaction{}, err
 	}

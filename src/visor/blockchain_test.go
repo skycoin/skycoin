@@ -80,6 +80,7 @@ func makeNewBlock() coin.Block {
 	body := coin.BlockBody{
 		Transactions: coin.Transactions{coin.Transaction{}},
 	}
+
 	prev := coin.Block{
 		Body: body,
 		Head: coin.BlockHeader{

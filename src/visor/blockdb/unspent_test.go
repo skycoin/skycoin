@@ -2,15 +2,14 @@ package blockdb
 
 import (
 	"crypto/rand"
-	"testing"
-
 	"strings"
+	"testing"
 
 	"fmt"
 
 	"github.com/boltdb/bolt"
+	"github.com/skycoin/examples/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,6 +56,7 @@ func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 		Body: body,
 	}, sec
 }
+
 func TestNewUnspentPool(t *testing.T) {
 	db, teardown, err := setup(t)
 	if err != nil {
@@ -72,6 +72,12 @@ func TestNewUnspentPool(t *testing.T) {
 	assert.Nil(t, v)
 }
 
+func addUxOut(up *UnspentPool, ux coin.UxOut) error {
+	return up.db.Update(func(tx *bolt.Tx) error {
+		return up.addWithTx(tx, ux)
+	})
+}
+
 func TestUnspentPoolAdd(t *testing.T) {
 	db, teardown, err := setup(t)
 	if err != nil {
@@ -83,10 +89,12 @@ func TestUnspentPoolAdd(t *testing.T) {
 	assert.Nil(t, err)
 
 	ux := makeUxOut(t)
-	assert.Nil(t, up.Add(ux))
+
+	assert.Nil(t, addUxOut(up, ux))
 	assert.Equal(t, uint64(1), up.Len())
 
-	v := up.pool.Get([]byte(ux.Hash().Hex()))
+	hash := ux.Hash()
+	v := up.pool.Get(hash[:])
 	assert.NotNil(t, v)
 	var uxc coin.UxOut
 	err = encoder.DeserializeRaw(v, &uxc)
@@ -100,16 +108,17 @@ func TestUnspentPoolAdd(t *testing.T) {
 	assert.Equal(t, ux.SnapshotHash(), xorhash)
 
 	// Duplicate add, return err
-	err = up.Add(ux)
+	err = addUxOut(up, ux)
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "twice into the unspent pool"))
 
 	// Add second, must be ok
 	ux2 := makeUxOut(t)
-	assert.Nil(t, up.Add(ux2))
+	assert.Nil(t, addUxOut(up, ux2))
 	assert.Equal(t, uint64(2), up.Len())
 	var ux2c coin.UxOut
-	v2 := up.pool.Get([]byte(ux2.Hash().Hex()))
+	ux2Hash := ux2.Hash()
+	v2 := up.pool.Get(ux2Hash[:])
 	assert.NotNil(t, v2)
 	assert.Nil(t, encoder.DeserializeRaw(v2, &ux2c))
 	assert.Equal(t, ux2, ux2c)
@@ -162,7 +171,7 @@ func TestUnspentPoolGet(t *testing.T) {
 			up, err := NewUnspentPool(db)
 			assert.Nil(t, err)
 			for _, ux := range tc.unspents {
-				assert.Nil(t, up.Add(ux))
+				assert.Nil(t, addUxOut(up, ux))
 			}
 
 			ux, ok, err := up.Get(tc.hash)
@@ -189,7 +198,7 @@ func TestUnspentPoolGetArray(t *testing.T) {
 	var uxs coin.UxArray
 	for i := 0; i < 5; i++ {
 		ux := makeUxOut(t)
-		err = up.Add(ux)
+		err = addUxOut(up, ux)
 		assert.Nil(t, err)
 		uxs = append(uxs, ux)
 	}
@@ -280,7 +289,7 @@ func TestUnspentPoolGetAll(t *testing.T) {
 			up, err := NewUnspentPool(db)
 			assert.Nil(t, err)
 			for _, ux := range tc.unspents {
-				assert.Nil(t, up.Add(ux))
+				assert.Nil(t, addUxOut(up, ux))
 			}
 
 			unspents, err := up.GetAll()
@@ -366,11 +375,11 @@ func TestUnspentPoolDelete(t *testing.T) {
 			up, err := NewUnspentPool(db)
 			assert.Nil(t, err)
 			for _, ux := range tc.unspents {
-				assert.Nil(t, up.Add(ux))
+				assert.Nil(t, addUxOut(up, ux))
 			}
 
 			err = up.db.Update(func(tx *bolt.Tx) error {
-				return up.delete(tx, tc.deleteHashes)
+				return up.deleteWithTx(tx, tc.deleteHashes)
 			})
 			assert.Equal(t, tc.error, err)
 
@@ -434,7 +443,7 @@ func TestGetUnspentOfAddr(t *testing.T) {
 			up, err := NewUnspentPool(db)
 			assert.Nil(t, err)
 			for _, ux := range tc.unspents {
-				assert.Nil(t, up.Add(ux))
+				assert.Nil(t, addUxOut(up, ux))
 			}
 
 			unspents, err := up.GetUnspentsOfAddr(tc.addr)
@@ -516,7 +525,7 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 			up, err := NewUnspentPool(db)
 			assert.Nil(t, err)
 			for _, ux := range tc.unspents {
-				assert.Nil(t, up.Add(ux))
+				assert.Nil(t, addUxOut(up, ux))
 			}
 
 			unspents, err := up.GetUnspentsOfAddrs(tc.addrs)
@@ -582,7 +591,7 @@ func TestCollides(t *testing.T) {
 			up, err := NewUnspentPool(db)
 			assert.Nil(t, err)
 			for _, ux := range tc.unspents {
-				assert.Nil(t, up.Add(ux))
+				assert.Nil(t, addUxOut(up, ux))
 			}
 
 			assert.Equal(t, tc.isCollides, up.Collides(tc.hashes))

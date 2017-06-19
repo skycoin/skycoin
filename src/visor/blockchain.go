@@ -107,14 +107,6 @@ func Arbitrating(enable bool) Option {
 	}
 }
 
-func (bc *Blockchain) preHeadBlock() *coin.Block {
-	return bc.tree.GetBlock(bc.Head().PreHashHeader())
-}
-
-func (bc *Blockchain) resetChain() error {
-	return bc.Unspent.Reset()
-}
-
 func (bc *Blockchain) walkTree() error {
 	var dep uint64
 	var preBlock *coin.Block
@@ -174,9 +166,8 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Head: head,
 		Body: body,
 	}
-	// b.Body.Transactions[0].UpdateHeader()
 	bc.addBlock(&b)
-	// bc.meta.UpdateHead(b.HashHeader())
+
 	ux := coin.UxOut{
 		Head: coin.UxHead{
 			Time:  timestamp,
@@ -609,8 +600,6 @@ func (bc Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) e
 	if bc.Head() == nil {
 		return nil
 	}
-
-	logger.Info("chain head:%v", bc.Head().Seq())
 
 	for i := uint64(0); i <= bc.Head().Seq(); i++ {
 		b := bc.GetBlockInDepth(i)

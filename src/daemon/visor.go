@@ -537,6 +537,7 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if processed == 0 {
 		return
 	}
+
 	// Announce our new blocks to peers
 	m1 := NewAnnounceBlocksMessage(d.Visor.HeadBkSeq())
 	d.Pool.Pool.BroadcastMessage(m1)

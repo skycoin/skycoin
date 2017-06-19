@@ -145,6 +145,14 @@ func (bc *Blockchain) processBlock(b *coin.Block) error {
 	return bc.chain.ProcessBlock(b)
 }
 
+func (bc *Blockchain) verifiedSigSeq() uint64 {
+	return bc.chain.VerifiedSigSeq()
+}
+
+func (bc *Blockchain) updateVerifiedSigSeq(seq uint64) error {
+	return bc.chain.SetVerifiedSigSeq(seq)
+}
+
 // Unspent returns the unspent outputs pool
 func (bc *Blockchain) Unspent() *blockdb.UnspentPool {
 	return bc.chain.Unspent
@@ -620,15 +628,23 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 // VerifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
 func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) error {
-	if bc.Head() == nil {
+	head := bc.Head()
+	if head == nil {
 		return nil
 	}
 
-	for i := uint64(0); i <= bc.Head().Seq(); i++ {
+	verifiedSeq := bc.verifiedSigSeq()
+	if verifiedSeq == head.Seq() {
+		return nil
+	}
+
+	for i := bc.verifiedSigSeq(); i <= head.Seq(); i++ {
+		logger.Info("verifiy signature of block in dep:%v", i)
 		b := bc.GetBlockInDepth(i)
 		if b == nil {
 			return fmt.Errorf("no block in depth %v", i)
 		}
+
 		// get sig
 		sig, err := sigs.Get(b.HashHeader())
 		if err != nil {
@@ -637,6 +653,10 @@ func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) 
 		}
 
 		if err := cipher.VerifySignature(pubKey, sig, b.HashHeader()); err != nil {
+			return err
+		}
+
+		if err := bc.updateVerifiedSigSeq(i); err != nil {
 			return err
 		}
 	}

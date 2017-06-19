@@ -7,7 +7,10 @@ import (
 )
 
 var (
+	// blockchain head sequence number
 	headSeqKey = []byte("head_seq")
+	// verified signature block sequence number
+	verifiedSeqKey = []byte("verified_seq")
 )
 
 type chainMeta struct {
@@ -104,4 +107,17 @@ func (bc *Blockchain) HeadSeq() int64 {
 	}
 
 	return -1
+}
+
+// VerifiedSigSeq returns the signature veirfied block seq
+func (bc *Blockchain) VerifiedSigSeq() uint64 {
+	if v := bc.meta.Get(verifiedSeqKey); v != nil {
+		return bucket.Btoi(v)
+	}
+	return 0
+}
+
+// SetVerifiedSigSeq updates verified signature block seq
+func (bc *Blockchain) SetVerifiedSigSeq(seq uint64) error {
+	return bc.meta.Put(verifiedSeqKey, bucket.Itob(seq))
 }

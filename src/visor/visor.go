@@ -284,16 +284,19 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
-	if err := vs.Blockchain.ExecuteBlock(&b.Block); err != nil {
-		return err
-	}
 	// TODO -- save them even if out of order, and execute later
 	// But make sure all prechecking as possible is done
 	// TODO -- check if bitcoin allows blocks to be receiving out of order
-	vs.blockSigs.Add(&b)
+	if err := vs.blockSigs.Add(&b); err != nil {
+		return err
+	}
+
+	if err := vs.Blockchain.ExecuteBlock(&b.Block); err != nil {
+		return err
+	}
 
 	// Remove the transactions in the Block from the unconfirmed pool
-	vs.Unconfirmed.RemoveTransactions(vs.Blockchain, b.Block.Body.Transactions)
+	vs.Unconfirmed.RemoveTransactions(b.Block.Body.Transactions)
 	return nil
 }
 

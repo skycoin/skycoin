@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	xorhashKey      = []byte("xorhash")
-	parsedHeightKey = []byte("parsed_height")
+	xorhashKey = []byte("xorhash")
+	headSeqKey = []byte("headseq")
 )
 
 // UnspentPool unspent outputs pool
@@ -145,7 +145,7 @@ func setXorHash(bkt *bolt.Bucket, hash cipher.SHA256) error {
 }
 
 func setHeadSeq(bkt *bolt.Bucket, seq uint64) error {
-	return bkt.Put(parsedHeightKey, bucket.Itob(seq))
+	return bkt.Put(headSeqKey, bucket.Itob(seq))
 }
 
 // GetArray returns UxOut by given hash array, will return error when
@@ -198,46 +198,39 @@ func (up *UnspentPool) GetAll() (coin.UxArray, error) {
 	return arr, nil
 }
 
-// delete removes an unspent from the pool by hash
-func (up *UnspentPool) del(tx *bolt.Tx, h cipher.SHA256) error {
-	if v := up.pool.Get([]byte(h.Hex())); v != nil {
-		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
-			return err
+// delete delete unspent of given hashes
+func (up *UnspentPool) delete(tx *bolt.Tx, hashes []cipher.SHA256) error {
+	pb := tx.Bucket(up.pool.Name)
+	mb := tx.Bucket(up.meta.Name)
+	for _, hash := range hashes {
+		if v := pb.Get([]byte(hash.Hex())); v != nil {
+			var ux coin.UxOut
+			if err := encoder.DeserializeRaw(v, &ux); err != nil {
+				return err
+			}
+
+			uxHash, err := getXorHash(mb)
+			if err != nil {
+				return err
+			}
+
+			uxHash = uxHash.Xor(ux.SnapshotHash())
+
+			// update uxhash
+			if err = setXorHash(mb, uxHash); err != nil {
+				return err
+			}
+
+			if err := deleteUxOut(pb, hash); err != nil {
+				return err
+			}
 		}
-
-		mb := tx.Bucket(up.meta.Name)
-		hash, err := getXorHash(mb)
-		if err != nil {
-			return err
-		}
-
-		hash = hash.Xor(ux.SnapshotHash())
-
-		// update uxhash
-		if err = setXorHash(mb, hash); err != nil {
-			return err
-		}
-
-		pb := tx.Bucket(up.pool.Name)
-		return deleteUxOut(pb, h)
 	}
-
 	return nil
 }
 
 func deleteUxOut(bkt *bolt.Bucket, hash cipher.SHA256) error {
 	return bkt.Delete([]byte(hash.Hex()))
-}
-
-// delete delete unspent of given hashes
-func (up *UnspentPool) delete(tx *bolt.Tx, hashes []cipher.SHA256) error {
-	for _, hash := range hashes {
-		if err := up.del(tx, hash); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Len returns the unspent outputs num
@@ -326,7 +319,7 @@ func (up *UnspentPool) GetUxHash() (cipher.SHA256, error) {
 
 // HeadSeq returns head block seq
 func (up *UnspentPool) HeadSeq() int64 {
-	if v := up.meta.Get(parsedHeightKey); v != nil {
+	if v := up.meta.Get(headSeqKey); v != nil {
 		return int64(bucket.Btoi(v))
 	}
 

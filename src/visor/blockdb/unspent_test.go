@@ -8,6 +8,7 @@ import (
 
 	"fmt"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -368,7 +369,11 @@ func TestUnspentPoolDelete(t *testing.T) {
 				assert.Nil(t, up.Add(ux))
 			}
 
-			assert.Equal(t, tc.error, up.Delete(tc.deleteHashes))
+			err = up.db.Update(func(tx *bolt.Tx) error {
+				return up.delete(tx, tc.deleteHashes)
+			})
+			assert.Equal(t, tc.error, err)
+
 			if err != nil {
 				return
 			}

@@ -354,23 +354,20 @@ func (utp *UnconfirmedTxnPool) removeTxn(bc *Blockchain, txHash cipher.SHA256) {
 
 // Removes multiple txns at once. Slightly more efficient than a series of
 // single RemoveTxns.  Hashes is an array of Transaction hashes.
-func (utp *UnconfirmedTxnPool) removeTxns(bc *Blockchain,
-	hashes []cipher.SHA256) {
+func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
 	for i := range hashes {
-		// delete(utp.Txns, hashes[i])
 		utp.Txns.delete(hashes[i])
 		utp.Unspent.delete(hashes[i])
 	}
 }
 
 // RemoveTransactions removes confirmed txns from the pool
-func (utp *UnconfirmedTxnPool) RemoveTransactions(bc *Blockchain,
-	txns coin.Transactions) {
+func (utp *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
 	toRemove := make([]cipher.SHA256, len(txns))
 	for i := range txns {
 		toRemove[i] = txns[i].Hash()
 	}
-	utp.removeTxns(bc, toRemove)
+	utp.removeTxns(toRemove)
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.

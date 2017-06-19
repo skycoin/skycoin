@@ -139,7 +139,11 @@ func (bc *Blockchain) walkTree() error {
 
 // Len returns the length of current blockchain.
 func (bc Blockchain) Len() uint64 {
-	return bc.Head().Seq() + 1
+	head := bc.Head()
+	if head != nil {
+		return head.Seq() + 1
+	}
+	return 0
 }
 
 // GetGenesisBlock get genesis block.
@@ -253,21 +257,25 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	return b, nil
 }
 
-// ExecuteBlock Attempts to append block to blockchain.  Returns the UxOuts created,
-// and an error if the block is invalid.
+// ExecuteBlock Attempts to append block to blockchain.
 func (bc *Blockchain) ExecuteBlock(b *coin.Block) error {
 	err := bc.verifyBlock(*b)
 	if err != nil {
 		return err
 	}
-	b.Head.PrevHash = bc.Head().HashHeader()
-	bc.addBlock(b)
-	if err := bc.Unspent.ProcessBlock(b); err != nil {
-		return err
+
+	if head := bc.Head(); head != nil {
+		b.Head.PrevHash = bc.Head().HashHeader()
+		bc.addBlock(b)
+		if err := bc.Unspent.ProcessBlock(b); err != nil {
+			return err
+		}
+
+		bc.notify(*b)
+		return nil
 	}
 
-	bc.notify(*b)
-	return nil
+	return errors.New("Execute block failed, blockchain is empty")
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {

@@ -92,9 +92,5 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 		}
 	}
 
-	if parsedHeight < int64(bcHeight) {
-		return bcp.historyDB.SetParsedHeight(uint64(bcHeight))
-	}
-
 	return nil
 }

@@ -59,18 +59,6 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 	return &hd, nil
 }
 
-// ProcessBlockchain process the blocks in the chain.
-func (hd *HistoryDB) ProcessBlockchain(bc Blockchainer) error {
-	depth := bc.Head().Seq()
-	for i := uint64(0); i <= depth; i++ {
-		b := bc.GetBlockInDepth(i)
-		if err := hd.ProcessBlock(b); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // GetUxout get UxOut of specific uxID.
 func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 	return hd.outputs.Get(uxID)
@@ -140,7 +128,7 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 		hd.txns.updateLastTxs(t.Hash())
 	}
 
-	return nil
+	return hd.setParsedHeight(b.Seq())
 }
 
 // GetTransaction get transaction by hash.

@@ -15,6 +15,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/util"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -652,12 +654,14 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				filters = append(filters, daemon.FbyHashes(hashes))
 			}
 
+			st := time.Now()
 			outs, err := gateway.GetUnspentOutputs(filters...)
 			if err != nil {
 				logger.Error("get unspent outputs failed: %v", err)
 				wh.Error500(w)
 				return
 			}
+			logger.Info("/outputs takes %v", time.Since(st))
 
 			wh.SendOr404(w, outs)
 		}

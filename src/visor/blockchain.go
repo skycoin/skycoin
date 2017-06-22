@@ -54,7 +54,7 @@ type Walker func(hps []coin.HashPair) cipher.SHA256
 // BlockListener notify the register when new block is appended to the chain
 type BlockListener func(b coin.Block)
 
-// Blockchain use blockdb to store the blocks.
+// Blockchain maintains blockchain and provides apis for accessing the chain.
 type Blockchain struct {
 	tree        BlockTree
 	walker      Walker
@@ -65,7 +65,6 @@ type Blockchain struct {
 	// node will throw the error and return.
 	arbitrating bool
 	chain       *blockdb.Blockchain
-	// Unspent *blockdb.UnspentPool // unspent outputs pool stored in db
 }
 
 // Option represents the option when creating the blockchain
@@ -193,22 +192,6 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 	}
 	bc.addBlock(&b)
 
-	// ux := coin.UxOut{
-	// 	Head: coin.UxHead{
-	// 		Time:  timestamp,
-	// 		BkSeq: 0,
-	// 	},
-	// 	Body: coin.UxBody{
-	// 		SrcTransaction: txn.InnerHash, //user inner hash
-	// 		Address:        genesisAddr,
-	// 		Coins:          genesisCoins,
-	// 		Hours:          genesisCoins, // Allocate 1 coin hour per coin
-	// 	},
-	// }
-
-	// if err := bc.Unspent.Add(ux); err != nil {
-	// 	return coin.Block{}, fmt.Errorf("create genesis block failed: %v", err)
-	// }
 	if err := bc.processBlock(&b); err != nil {
 		return coin.Block{}, err
 	}
@@ -257,10 +240,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	if err != nil {
 		return nil, err
 	}
-	uxHash, err := bc.Unspent().GetUxHash()
-	if err != nil {
-		return nil, err
-	}
+	uxHash := bc.Unspent().GetUxHash()
 
 	b, err := coin.NewBlock(*bc.Head(), currentTime, uxHash, txns, bc.TransactionFee)
 	if err != nil {
@@ -332,10 +312,7 @@ func (bc Blockchain) verifyBlock(b coin.Block) error {
 // Compares the state of the current UxHash hash to state of unspent
 // output pool.
 func (bc Blockchain) verifyUxHash(b coin.Block) error {
-	uxHash, err := bc.Unspent().GetUxHash()
-	if err != nil {
-		return err
-	}
+	uxHash := bc.Unspent().GetUxHash()
 
 	if !bytes.Equal(b.Head.UxHash[:], uxHash[:]) {
 		return errors.New("UxHash does not match")

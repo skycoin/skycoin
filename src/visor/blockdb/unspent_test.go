@@ -2,13 +2,13 @@ package blockdb
 
 import (
 	"crypto/rand"
-	"strings"
 	"testing"
 
 	"fmt"
 
+	"time"
+
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/examples/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +58,7 @@ func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 }
 
 func TestNewUnspentPool(t *testing.T) {
-	db, teardown, err := setup(t)
+	db, teardown, err := setup()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,61 +73,14 @@ func TestNewUnspentPool(t *testing.T) {
 }
 
 func addUxOut(up *UnspentPool, ux coin.UxOut) error {
-	return up.db.Update(func(tx *bolt.Tx) error {
-		return up.addWithTx(tx, ux)
-	})
-}
-
-func TestUnspentPoolAdd(t *testing.T) {
-	db, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
+	if err := up.db.Update(func(tx *bolt.Tx) error {
+		_, err := up.addWithTx(tx, ux)
+		return err
+	}); err != nil {
+		return err
 	}
-	defer teardown()
-
-	up, err := NewUnspentPool(db)
-	assert.Nil(t, err)
-
-	ux := makeUxOut(t)
-
-	assert.Nil(t, addUxOut(up, ux))
-	assert.Equal(t, uint64(1), up.Len())
-
-	hash := ux.Hash()
-	v := up.pool.Get(hash[:])
-	assert.NotNil(t, v)
-	var uxc coin.UxOut
-	err = encoder.DeserializeRaw(v, &uxc)
-	assert.Nil(t, err)
-	assert.Equal(t, ux, uxc)
-
-	xorhash, err := up.GetUxHash()
-	assert.Nil(t, err)
-
-	assert.NotEqual(t, cipher.SHA256{}, xorhash)
-	assert.Equal(t, ux.SnapshotHash(), xorhash)
-
-	// Duplicate add, return err
-	err = addUxOut(up, ux)
-	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "twice into the unspent pool"))
-
-	// Add second, must be ok
-	ux2 := makeUxOut(t)
-	assert.Nil(t, addUxOut(up, ux2))
-	assert.Equal(t, uint64(2), up.Len())
-	var ux2c coin.UxOut
-	ux2Hash := ux2.Hash()
-	v2 := up.pool.Get(ux2Hash[:])
-	assert.NotNil(t, v2)
-	assert.Nil(t, encoder.DeserializeRaw(v2, &ux2c))
-	assert.Equal(t, ux2, ux2c)
-
-	h := ux.SnapshotHash()
-	h = h.Xor(ux2.SnapshotHash())
-	uph, err := up.GetUxHash()
-	assert.Nil(t, err)
-	assert.Equal(t, h, uph)
+	up.addUxToCache([]coin.UxOut{ux})
+	return nil
 }
 
 func TestUnspentPoolGet(t *testing.T) {
@@ -162,7 +115,7 @@ func TestUnspentPoolGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup(t)
+			db, teardown, err := setup()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -174,7 +127,7 @@ func TestUnspentPoolGet(t *testing.T) {
 				assert.Nil(t, addUxOut(up, ux))
 			}
 
-			ux, ok, err := up.Get(tc.hash)
+			ux, ok := up.Get(tc.hash)
 			assert.Nil(t, err)
 			if err != nil {
 				return
@@ -186,7 +139,7 @@ func TestUnspentPoolGet(t *testing.T) {
 }
 
 func TestUnspentPoolGetArray(t *testing.T) {
-	db, teardown, err := setup(t)
+	db, teardown, err := setup()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +233,7 @@ func TestUnspentPoolGetAll(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup(t)
+			db, teardown, err := setup()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -307,7 +260,37 @@ func TestUnspentPoolGetAll(t *testing.T) {
 	}
 }
 
-func TestUnspentPoolDelete(t *testing.T) {
+func BenchmarkUnspentPoolGetAll(b *testing.B) {
+	var t testing.T
+	db, teardown, err := setup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer teardown()
+
+	up, err := NewUnspentPool(db)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < 1000; i++ {
+		ux := makeUxOut(&t)
+		if err := addUxOut(up, ux); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	start := time.Now()
+	for i := 0; i < b.N; i++ {
+		_, err = up.GetAll()
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	fmt.Println(time.Since(start))
+}
+
+func TestUnspentPoolDeleteWithTx(t *testing.T) {
 	var uxs coin.UxArray
 	for i := 0; i < 5; i++ {
 		ux := makeUxOut(t)
@@ -366,7 +349,7 @@ func TestUnspentPoolDelete(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup(t)
+			db, teardown, err := setup()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -379,23 +362,26 @@ func TestUnspentPoolDelete(t *testing.T) {
 			}
 
 			err = up.db.Update(func(tx *bolt.Tx) error {
-				return up.deleteWithTx(tx, tc.deleteHashes)
+				if _, err := up.deleteWithTx(tx, tc.deleteHashes); err != nil {
+					return err
+				}
+
+				meta := unspentMeta{tx.Bucket(up.meta.Name)}
+				xorhash, err := meta.getXorHash()
+				assert.Nil(t, err)
+
+				assert.Equal(t, tc.xorhash, xorhash)
+
+				uxOut := uxOuts{tx.Bucket(up.pool.Name)}
+
+				for _, hash := range tc.deleteHashes {
+					_, ok, err := uxOut.get(hash)
+					assert.Nil(t, err)
+					assert.False(t, ok)
+				}
+				return nil
 			})
 			assert.Equal(t, tc.error, err)
-
-			if err != nil {
-				return
-			}
-
-			xh, err := up.GetUxHash()
-			assert.Nil(t, err)
-			assert.Equal(t, tc.xorhash, xh)
-
-			for _, hash := range tc.deleteHashes {
-				_, ok, err := up.Get(hash)
-				assert.Nil(t, err)
-				assert.False(t, ok)
-			}
 		})
 	}
 }
@@ -434,7 +420,7 @@ func TestGetUnspentOfAddr(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup(t)
+			db, teardown, err := setup()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -446,7 +432,7 @@ func TestGetUnspentOfAddr(t *testing.T) {
 				assert.Nil(t, addUxOut(up, ux))
 			}
 
-			unspents, err := up.GetUnspentsOfAddr(tc.addr)
+			unspents := up.GetUnspentsOfAddr(tc.addr)
 			assert.Nil(t, err)
 			uxm := make(map[cipher.SHA256]byte, len(unspents))
 			for _, ux := range unspents {
@@ -516,7 +502,7 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup(t)
+			db, teardown, err := setup()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -528,7 +514,7 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 				assert.Nil(t, addUxOut(up, ux))
 			}
 
-			unspents, err := up.GetUnspentsOfAddrs(tc.addrs)
+			unspents := up.GetUnspentsOfAddrs(tc.addrs)
 			assert.Nil(t, err)
 			uxm := make(map[cipher.SHA256]byte, len(unspents))
 			for _, uxs := range unspents {
@@ -582,7 +568,7 @@ func TestCollides(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup(t)
+			db, teardown, err := setup()
 			if err != nil {
 				t.Fatal(err)
 			}

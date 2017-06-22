@@ -13,7 +13,7 @@ func _feeCalc(t *coin.Transaction) (uint64, error) {
 }
 
 func TestNewBlockchain(t *testing.T) {
-	db, td, err := setup(t)
+	db, td, err := setup()
 	if err != nil {
 		t.Fatal(err)
 	}

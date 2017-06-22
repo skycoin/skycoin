@@ -422,11 +422,7 @@ func (utp *UnconfirmedTxnPool) SpendsForAddresses(unspent *blockdb.UnspentPool,
 	auxs := make(coin.AddressUxOuts, len(addrs))
 	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		for _, h := range tx.Txn.In {
-			ux, ok, err := unspent.Get(h)
-			if err != nil {
-				return err
-			}
-
+			ux, ok := unspent.Get(h)
 			if !ok {
 				// unconfirm transaction's IN is not in the unspent pool, this should not happen
 				return fmt.Errorf("Unconfirmed transaction's IN: %s is not in unspent pool", h.Hex())
@@ -459,10 +455,7 @@ func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *blockdb.UnspentPool) 
 	outs := []ReadableOutput{}
 	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		for _, in := range tx.Txn.In {
-			ux, ok, err := bcUnspent.Get(in)
-			if err != nil {
-				return err
-			}
+			ux, ok := bcUnspent.Get(in)
 
 			if ok {
 				outs = append(outs, NewReadableOutput(ux))

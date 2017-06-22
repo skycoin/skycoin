@@ -90,10 +90,7 @@ func CreateSpendingTransaction(wlt wallet.Wallet,
 	dest cipher.Address) (coin.Transaction, error) {
 
 	txn := coin.Transaction{}
-	auxs, err := unspent.GetUnspentsOfAddrs(wlt.GetAddresses())
-	if err != nil {
-		return coin.Transaction{}, err
-	}
+	auxs := unspent.GetUnspentsOfAddrs(wlt.GetAddresses())
 
 	// Subtract pending spends from available
 	puxs, err := unconfirmed.SpendsForAddresses(unspent, wlt.GetAddresses())

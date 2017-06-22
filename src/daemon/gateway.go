@@ -440,11 +440,7 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
 
-		auxs, err := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(wlt.GetAddresses())
-		if err != nil {
-			err = fmt.Errorf("get unspent outputs failed when checking wallet balance: %v", err)
-			return
-		}
+		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(wlt.GetAddresses())
 
 		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, wlt.GetAddresses())
 		if err != nil {
@@ -465,11 +461,7 @@ func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair,
 // AddressesBalance gets balance of given addresses
 func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
-		auxs, err := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
-		if err != nil {
-			err = fmt.Errorf("get unspent outputs failed when checking addresses balance: %v", err)
-			return
-		}
+		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
 
 		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
 		if err != nil {

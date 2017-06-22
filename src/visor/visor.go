@@ -471,10 +471,7 @@ func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
 func (vs *Visor) GetAddressTransactions(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
 	// Look in the blockchain
-	uxs, err := vs.Blockchain.Unspent().GetUnspentsOfAddr(a)
-	if err != nil {
-		return []Transaction{}, err
-	}
+	uxs := vs.Blockchain.Unspent().GetUnspentsOfAddr(a)
 
 	mxSeq := vs.HeadBkSeq()
 	var bk *coin.Block

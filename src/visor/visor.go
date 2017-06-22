@@ -195,12 +195,13 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 // Run starts the visor process
 func (vs *Visor) Run(q chan struct{}) {
-	logger.Info("Verify signature...")
 	go func() {
+		logger.Info("Verify signature...")
 		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
 			logger.Error("Invalid block signatures: %v", err)
 			close(q)
 		}
+		logger.Info("Signature verify success")
 	}()
 
 	if vs.Blockchain.GetGenesisBlock() == nil {

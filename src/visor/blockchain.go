@@ -144,14 +144,6 @@ func (bc *Blockchain) processBlock(b *coin.Block) error {
 	return bc.chain.ProcessBlock(b)
 }
 
-func (bc *Blockchain) verifiedSigSeq() uint64 {
-	return bc.chain.VerifiedSigSeq()
-}
-
-func (bc *Blockchain) updateVerifiedSigSeq(seq uint64) error {
-	return bc.chain.SetVerifiedSigSeq(seq)
-}
-
 // Unspent returns the unspent outputs pool
 func (bc *Blockchain) Unspent() *blockdb.UnspentPool {
 	return bc.chain.Unspent
@@ -610,12 +602,7 @@ func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) 
 		return nil
 	}
 
-	verifiedSeq := bc.verifiedSigSeq()
-	if verifiedSeq == head.Seq() {
-		return nil
-	}
-
-	for i := bc.verifiedSigSeq(); i <= head.Seq(); i++ {
+	for i := uint64(0); i <= head.Seq(); i++ {
 		b := bc.GetBlockInDepth(i)
 		if b == nil {
 			return fmt.Errorf("no block in depth %v", i)
@@ -629,10 +616,6 @@ func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) 
 		}
 
 		if err := cipher.VerifySignature(pubKey, sig, b.HashHeader()); err != nil {
-			return err
-		}
-
-		if err := bc.updateVerifiedSigSeq(i); err != nil {
 			return err
 		}
 	}

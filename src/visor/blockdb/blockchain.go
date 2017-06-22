@@ -11,8 +11,6 @@ import (
 var (
 	// blockchain head sequence number
 	headSeqKey = []byte("head_seq")
-	// verified signature block sequence number
-	verifiedSeqKey = []byte("verified_seq")
 )
 
 type chainMeta struct {
@@ -68,7 +66,6 @@ func (bc *Blockchain) syncCache() {
 	// update head seq cache
 	bc.Lock()
 	bc.cache.headSeq = bc.getHeadSeqFromDB()
-	bc.cache.verifiedSigSeq = bc.getVerifiedSigSeqFromDB()
 	bc.Unlock()
 }
 
@@ -77,13 +74,6 @@ func (bc *Blockchain) getHeadSeqFromDB() int64 {
 		return int64(bucket.Btoi(v))
 	}
 	return -1
-}
-
-func (bc *Blockchain) getVerifiedSigSeqFromDB() uint64 {
-	if v := bc.meta.Get(verifiedSeqKey); v != nil {
-		return bucket.Btoi(v)
-	}
-	return 0
 }
 
 // ProcessBlock processes block
@@ -144,23 +134,4 @@ func (bc *Blockchain) HeadSeq() int64 {
 	bc.Lock()
 	defer bc.Unlock()
 	return bc.cache.headSeq
-}
-
-// VerifiedSigSeq returns the signature veirfied block seq
-func (bc *Blockchain) VerifiedSigSeq() uint64 {
-	bc.Lock()
-	bc.Unlock()
-	return bc.cache.verifiedSigSeq
-}
-
-// SetVerifiedSigSeq updates verified signature block seq
-func (bc *Blockchain) SetVerifiedSigSeq(seq uint64) error {
-	if err := bc.meta.Put(verifiedSeqKey, bucket.Itob(seq)); err != nil {
-		return err
-	}
-
-	bc.Lock()
-	bc.cache.verifiedSigSeq = seq
-	bc.Unlock()
-	return nil
 }

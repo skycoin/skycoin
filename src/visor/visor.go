@@ -172,13 +172,6 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		return nil, nil, err
 	}
 
-	logger.Info("Verify signature...")
-	// TODO: verify signature in goroutine, if error detected, notify
-	// to regenerate signatures.
-	if err := bc.VerifySigs(c.BlockchainPubkey, sigs); err != nil {
-		return nil, nil, fmt.Errorf("Invalid block signatures: %v", err)
-	}
-
 	// creates blockchain parser instance
 	// var verifyOnce sync.Once
 	bp := NewBlockchainParser(history, bc)
@@ -202,6 +195,14 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 // Run starts the visor process
 func (vs *Visor) Run(q chan struct{}) {
+	logger.Info("Verify signature...")
+	go func() {
+		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
+			logger.Error("Invalid block signatures: %v", err)
+			close(q)
+		}
+	}()
+
 	if vs.Blockchain.GetGenesisBlock() == nil {
 		vs.GenesisPreconditions()
 		b, err := vs.Blockchain.CreateGenesisBlock(

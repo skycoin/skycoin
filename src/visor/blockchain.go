@@ -228,7 +228,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	if len(txns) == 0 {
 		return nil, errors.New("No transactions")
 	}
-	txns, err := bc.verifyTransactions(txns)
+	txns, err := bc.processTransactions(txns)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 		if err := bc.verifyBlockHeader(*b); err != nil {
 			return nil, err
 		}
-		txns, err := bc.verifyTransactions(b.Body.Transactions)
+		txns, err := bc.processTransactions(b.Body.Transactions)
 		if err != nil {
 			logger.Panic("Impossible Error: not allowed to fail")
 		}
@@ -288,7 +288,7 @@ func (bc Blockchain) verifyBlock(b coin.Block) error {
 		if err := bc.verifyBlockHeader(b); err != nil {
 			return err
 		}
-		txns, err := bc.verifyTransactions(b.Body.Transactions)
+		txns, err := bc.processTransactions(b.Body.Transactions)
 		if err != nil {
 			return err
 		}
@@ -422,14 +422,14 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.Block {
 // TODO:
 //  - move arbitration to visor
 //  - blockchain should have strict checking
-func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating bool) (coin.Transactions, error) {
+func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transactions, error) {
 	// Transactions need to be sorted by fee and hash before arbitrating
-	if arbitrating {
+	if bc.arbitrating {
 		txns = coin.SortTransactions(txns, bc.TransactionFee)
 	}
 	//TODO: audit
 	if len(txns) == 0 {
-		if arbitrating {
+		if bc.arbitrating {
 			return txns, nil
 		}
 		// If there are no transactions, a block should not be made
@@ -443,7 +443,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 		// signature indices and duplicate spends within itself
 		err := bc.VerifyTransaction(tx)
 		if err != nil {
-			if arbitrating {
+			if bc.arbitrating {
 				skip[i] = byte(1)
 				continue
 			} else {
@@ -461,7 +461,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 			h := uxb.Hash()
 			_, exists := uxHashes[h]
 			if exists {
-				if arbitrating {
+				if bc.arbitrating {
 					skip[i] = byte(1)
 					continue
 				} else {
@@ -473,7 +473,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 				// Check that the expected unspent is not already in the pool.
 				// This should never happen because its a hash collision
 				if bc.Unspent().Contains(h) {
-					if arbitrating {
+					if bc.arbitrating {
 						skip[i] = byte(1)
 						continue
 					} else {
@@ -521,7 +521,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 			for a := range s.In {
 				for b := range t.In {
 					if s.In[a] == t.In[b] {
-						if arbitrating {
+						if bc.arbitrating {
 							// The txn with the highest fee and lowest hash
 							// is chosen when attempting a double spend.
 							// Since the txns are sorted, we skip the 2nd
@@ -551,22 +551,6 @@ func (bc Blockchain) processTransactions(txns coin.Transactions, arbitrating boo
 	}
 
 	return txns, nil
-}
-
-// verifyTransactions returns an error if any Transaction in txns is invalid
-func (bc Blockchain) verifyTransactions(txns coin.Transactions) (coin.Transactions, error) {
-	return bc.processTransactions(txns, bc.arbitrating)
-}
-
-// ArbitrateTransactions returns an array of Transactions with invalid ones removed from txns.
-// The Transaction hash is used to arbitrate between double spends.
-// txns must be sorted by hash.
-func (bc Blockchain) ArbitrateTransactions(txns coin.Transactions) coin.Transactions {
-	newtxns, err := bc.processTransactions(txns, true)
-	if err != nil {
-		logger.Panicf("arbitrateTransactions failed unexpectedly: %v", err)
-	}
-	return newtxns
 }
 
 // TransactionFee calculates the current transaction fee in coinhours of a Transaction

@@ -561,10 +561,6 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 
 	dm.pendingConnections.Remove(c.Addr)
 
-	if dm.Peers.Config.Disabled != true {
-		dm.Peers.RemovePeer(c.Addr)
-	}
-
 	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
 }
 

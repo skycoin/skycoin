@@ -109,7 +109,7 @@ func (peer *Peer) ResetRetryTimes() {
 	logger.Debug("Reset retry times of %v", peer.Addr)
 }
 
-// CanTry returns whether this peer tryable base on the exponential backoff algorithm
+// CanTry returns whether this peer is tryable base on the exponential backoff algorithm
 func (peer *Peer) CanTry() (rlt bool) {
 	now := Now()
 	mod := (math.Exp2(float64(peer.RetryTimes)) - 1) * 5
@@ -280,7 +280,7 @@ func (pl *Peerlist) getAddresses(private bool) []string {
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
 func (pl *Peerlist) random(count int, includePrivate bool) []*Peer {
-	keys := []string(nil)
+	keys := []string{}
 	if includePrivate {
 		keys = append(pl.getAddresses(true), pl.getAddresses(false)...)
 	} else {
@@ -426,6 +426,7 @@ func (pl *Peerlist) ResetRetryTimes(addr string) {
 
 // ResetAllRetryTimes reset all peers' retry times
 func (pl *Peerlist) ResetAllRetryTimes() {
+	logger.Info("Reset all peer's retry times")
 	pl.strand(func() {
 		for _, p := range pl.peers {
 			p.ResetRetryTimes()

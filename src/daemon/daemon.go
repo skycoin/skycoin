@@ -419,7 +419,7 @@ func (dm *Daemon) Run(quit chan struct{}) {
 				err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
 					logger.Error("Failed to create block: %v", err)
-					return
+					continue
 				}
 
 				// Not a critical error, but we want it visible in logs
@@ -560,10 +560,6 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	logger.Debug("Failed to connect to %s with error: %v", c.Addr, c.Error)
 
 	dm.pendingConnections.Remove(c.Addr)
-
-	if dm.Peers.Config.Disabled != true {
-		dm.Peers.RemovePeer(c.Addr)
-	}
 
 	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
 }

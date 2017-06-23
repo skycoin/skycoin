@@ -419,7 +419,7 @@ func (dm *Daemon) Run(quit chan struct{}) {
 				err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
 					logger.Error("Failed to create block: %v", err)
-					return
+					continue
 				}
 
 				// Not a critical error, but we want it visible in logs

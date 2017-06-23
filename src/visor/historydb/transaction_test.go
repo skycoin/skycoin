@@ -1,17 +1,12 @@
 package historydb
 
 import (
-	"fmt"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,29 +16,6 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
-
-func setup(t *testing.T) (*bolt.DB, func(), error) {
-	dbName := fmt.Sprintf("%ddb", rand.Int31n(10000))
-	teardown := func() {}
-	tmpDir := filepath.Join(os.TempDir(), dbName)
-	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, teardown, err
-	}
-
-	util.DataDir = tmpDir
-	db, err := NewDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	teardown = func() {
-		db.Close()
-		if err := os.RemoveAll(tmpDir); err != nil {
-			panic(err)
-		}
-	}
-	return db, teardown, nil
-}
 
 func TestGetLastTxs(t *testing.T) {
 	testData := []uint64{0, 3, lastTxNum, lastTxNum + 10}

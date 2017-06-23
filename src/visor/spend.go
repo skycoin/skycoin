@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -84,13 +85,19 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 // MOVE SOMEWHERE ELSE
 // Move to wallet or move to ???
 func CreateSpendingTransaction(wlt wallet.Wallet,
-	unconfirmed *UnconfirmedTxnPool, unspent *coin.UnspentPool,
+	unconfirmed *UnconfirmedTxnPool, unspent *blockdb.UnspentPool,
 	headTime uint64, amt wallet.Balance,
 	dest cipher.Address) (coin.Transaction, error) {
+
 	txn := coin.Transaction{}
-	auxs := unspent.AllForAddresses(wlt.GetAddresses())
+	auxs := unspent.GetUnspentsOfAddrs(wlt.GetAddresses())
+
 	// Subtract pending spends from available
-	puxs := unconfirmed.SpendsForAddresses(unspent, wlt.GetAddressSet())
+	puxs, err := unconfirmed.SpendsForAddresses(unspent, wlt.GetAddresses())
+	if err != nil {
+		return coin.Transaction{}, err
+	}
+
 	auxs = auxs.Sub(puxs)
 
 	// Determine which unspents to spend

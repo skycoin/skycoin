@@ -86,3 +86,21 @@ func (op *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
 
 	return &out, nil
 }
+
+func getOutput(bkt *bolt.Bucket, hash cipher.SHA256) (*UxOut, error) {
+	bin := bkt.Get(hash[:])
+	if bin != nil {
+		var out UxOut
+		if err := encoder.DeserializeRaw(bin, &out); err != nil {
+			return nil, err
+		}
+		return &out, nil
+	}
+
+	return nil, nil
+}
+
+func setOutput(bkt *bolt.Bucket, ux UxOut) error {
+	hash := ux.Hash()
+	return bkt.Put(hash[:], encoder.Serialize(ux))
+}

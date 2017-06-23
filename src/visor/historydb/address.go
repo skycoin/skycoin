@@ -61,3 +61,25 @@ func (au *addressUx) Add(address cipher.Address, uxHash cipher.SHA256) error {
 	bin := encoder.Serialize(hashes)
 	return au.bkt.Put(address.Bytes(), bin)
 }
+
+func setAddressUx(bkt *bolt.Bucket, addr cipher.Address, uxHash cipher.SHA256) error {
+	bin := bkt.Get(addr.Bytes())
+	if bin == nil {
+		return bkt.Put(addr.Bytes(), encoder.Serialize([]cipher.SHA256{uxHash}))
+	}
+
+	uxHashes := []cipher.SHA256{}
+	if err := encoder.DeserializeRaw(bin, &uxHashes); err != nil {
+		return err
+	}
+
+	// check dup
+	for _, u := range uxHashes {
+		if u == uxHash {
+			return nil
+		}
+	}
+
+	uxHashes = append(uxHashes, uxHash)
+	return bkt.Put(addr.Bytes(), encoder.Serialize(uxHashes))
+}

@@ -1,6 +1,7 @@
 package bucket
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/boltdb/bolt"
@@ -25,6 +26,18 @@ func New(name []byte, db *bolt.DB) (*Bucket, error) {
 		return nil, err
 	}
 	return &Bucket{name, db}, nil
+}
+
+// Reset resets the bucket
+func (b *Bucket) Reset() error {
+	return b.db.Update(func(tx *bolt.Tx) error {
+		if err := tx.DeleteBucket(b.Name); err != nil {
+			return err
+		}
+
+		_, err := tx.CreateBucketIfNotExists(b.Name)
+		return err
+	})
 }
 
 // Get value of specific key in the bucket.
@@ -166,3 +179,21 @@ func (b *Bucket) Len() (len int) {
 	})
 	return
 }
+
+// Itob converts uint64 to bytes
+func Itob(v uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
+	return b
+}
+
+// Btoi converts bytes to uint64
+func Btoi(v []byte) uint64 {
+	return binary.BigEndian.Uint64(v)
+}
+
+// Rollback callback function type
+type Rollback func()
+
+// TxHandler function type for processing bolt transaction
+type TxHandler func(tx *bolt.Tx) (Rollback, error)

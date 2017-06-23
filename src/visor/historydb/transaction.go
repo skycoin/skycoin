@@ -43,6 +43,11 @@ func newTransactionsBkt(db *bolt.DB) (*transactions, error) {
 	return &transactions{bkt: txBkt}, nil
 }
 
+func addTrandaction(b *bolt.Bucket, tx *Transaction) error {
+	hash := tx.Hash()
+	return b.Put(hash[:], encoder.Serialize(tx))
+}
+
 // Add transaction to the db.
 func (txs *transactions) Add(t *Transaction) error {
 	txs.lastTxs = append(txs.lastTxs, t.Hash())
@@ -74,4 +79,11 @@ func (txs transactions) Get(hash cipher.SHA256) (*Transaction, error) {
 // GetLastTxs get latest tx hash set.
 func (txs transactions) GetLastTxs() []cipher.SHA256 {
 	return txs.lastTxs
+}
+
+func (txs *transactions) updateLastTxs(hash cipher.SHA256) {
+	txs.lastTxs = append(txs.lastTxs, hash)
+	if len(txs.lastTxs) > lastTxNum {
+		txs.lastTxs = txs.lastTxs[1:]
+	}
 }

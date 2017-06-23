@@ -36,28 +36,6 @@ func NewBlockSigs(db *bolt.DB) (*BlockSigs, error) {
 	}, nil
 }
 
-// Verify Checks that BlockSigs state correspond with coin.Blockchain state
-// and that all signatures are valid.
-// func (self *BlockSigs) Verify(masterPublic cipher.PubKey, bc *visor.Blockchain) error {
-// 	for i := uint64(0); i <= bc.Head().Seq(); i++ {
-// 		b := bc.GetBlockInDepth(i)
-// 		if b == nil {
-// 			return fmt.Errorf("no block in depth %v", i)
-// 		}
-// 		// get sig
-// 		sig, err := self.Get(b.HashHeader())
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		if err := cipher.VerifySignature(masterPublic, sig, bc.GetBlockInDepth(i).HashHeader()); err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 // Get returns signature of specific block
 func (bs BlockSigs) Get(hash cipher.SHA256) (cipher.Sig, error) {
 	bin := bs.Sigs.Get(hash[:])
@@ -74,5 +52,6 @@ func (bs BlockSigs) Get(hash cipher.SHA256) (cipher.Sig, error) {
 // Add stores the signed block into db.
 func (bs *BlockSigs) Add(sb *coin.SignedBlock) error {
 	hash := sb.Block.HashHeader()
+
 	return bs.Sigs.Put(hash[:], encoder.Serialize(sb.Sig))
 }

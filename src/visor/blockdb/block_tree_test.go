@@ -34,40 +34,43 @@ var _ = func() int64 {
 	return t
 }()
 
-func setup(t *testing.T) (*bolt.DB, func(), error) {
+// setup will create a random boltdb file in temp folder,
+// and return teardown function for later clean
+func setup() (*bolt.DB, func(), error) {
 	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
-	close := func() {}
+	cancel := func() {}
 	tmpDir := os.TempDir()
 	dbPath := filepath.Join(tmpDir, dbName)
 	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, close, err
+		return nil, cancel, err
 	}
 
 	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
 	if err != nil {
-		return nil, close, err
+		return nil, cancel, err
 	}
 
-	close = func() {
+	cancel = func() {
 		db.Close()
 		if err := os.RemoveAll(dbPath); err != nil {
 			panic(err)
 		}
 	}
-	return db, close, nil
+	return db, cancel, nil
 }
 
 func testCase(t *testing.T, cases []blockCase) {
-	db, close, err := setup(t)
+	db, close, err := setup()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defer close()
 
-	btree := NewBlockTree(db)
+	btree, err := NewBlockTree(db)
+	assert.Nil(t, err)
 	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
 		var preHash cipher.SHA256
@@ -107,7 +110,6 @@ func testCase(t *testing.T, cases []blockCase) {
 			}
 		}
 	}
-
 }
 
 func TestAddBlock(t *testing.T) {
@@ -198,13 +200,14 @@ func TestRemoveBlock(t *testing.T) {
 }
 
 func TestGetBlockInDepth(t *testing.T) {
-	db, teardown, err := setup(t)
+	db, teardown, err := setup()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer teardown()
 
-	bc := NewBlockTree(db)
+	bc, err := NewBlockTree(db)
+	assert.Nil(t, err)
 	blocks := []coin.Block{
 		coin.Block{
 			Head: coin.BlockHeader{

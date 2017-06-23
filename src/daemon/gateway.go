@@ -1,13 +1,16 @@
 package daemon
 
 import (
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	//"github.com/skycoin/skycoin/src/wallet"
-	"time"
 
+	"fmt"
+
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -218,15 +221,33 @@ type OutputsFilter func(outputs []visor.ReadableOutput) []visor.ReadableOutput
 
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) visor.ReadableOutputSet {
+func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOutputSet, error) {
 	var allOutputs []visor.ReadableOutput
 	var spendingOutputs []visor.ReadableOutput
 	var inOutputs []visor.ReadableOutput
+	var err error
 	gw.strand(func() {
-		allOutputs = gw.v.GetUnspentOutputReadables()
-		spendingOutputs = gw.v.AllSpendsOutputs()
-		inOutputs = gw.v.AllIncommingOutputs()
+		allOutputs, err = gw.v.GetUnspentOutputReadables()
+		if err != nil {
+			err = fmt.Errorf("get unspent output readables failed: %v", err)
+			return
+		}
+		spendingOutputs, err = gw.v.AllSpendsOutputs()
+		if err != nil {
+			err = fmt.Errorf("get all spends outputs failed: %v", err)
+			return
+		}
+
+		inOutputs, err = gw.v.AllIncomingOutputs()
+		if err != nil {
+			err = fmt.Errorf("get all incomming outputs failed: %v", err)
+			return
+		}
 	})
+
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
 
 	for _, flt := range filters {
 		allOutputs = flt(allOutputs)
@@ -238,7 +259,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) visor.ReadableOut
 		HeadOutputs:      allOutputs,
 		OutgoingOutputs:  spendingOutputs,
 		IncommingOutputs: inOutputs,
-	}
+	}, nil
 }
 
 // FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
@@ -323,12 +344,11 @@ func (gw *Gateway) InjectTransaction(txn coin.Transaction) (tx coin.Transaction,
 }
 
 // GetAddressTransactions returns a *visor.TransactionResults
-func (gw *Gateway) GetAddressTransactions(a cipher.Address) interface{} {
-	var tx interface{}
+func (gw *Gateway) GetAddressTransactions(a cipher.Address) (tx *visor.TransactionResults, err error) {
 	gw.strand(func() {
-		tx = gw.vrpc.GetAddressTransactions(gw.v, a)
+		tx, err = gw.vrpc.GetAddressTransactions(gw.v, a)
 	})
-	return tx
+	return
 }
 
 // GetUxOutByID gets UxOut by hash id.
@@ -399,7 +419,7 @@ func (gw *Gateway) GetLastTxs() (txns []*visor.Transaction, err error) {
 }
 
 // GetUnspent returns the unspent pool
-func (gw *Gateway) GetUnspent() (unspent coin.UnspentPool) {
+func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
 	gw.strand(func() {
 		unspent = gw.vrpc.GetUnspent(gw.v)
 	})
@@ -417,10 +437,16 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 }
 
 // WalletBalance returns balance pair of specific wallet
-func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair) {
+func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
-		auxs := gw.vrpc.GetUnspent(gw.v).AllForAddresses(wlt.GetAddresses())
-		puxs := gw.vrpc.GetUnconfirmedSpends(gw.v, wlt.GetAddressSet())
+
+		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(wlt.GetAddresses())
+
+		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, wlt.GetAddresses())
+		if err != nil {
+			err = fmt.Errorf("get unconfimed spends failed when checking wallet balance: %v", err)
+			return
+		}
 
 		coins1, hours1 := gw.v.AddressBalance(auxs)
 		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(puxs))
@@ -433,15 +459,15 @@ func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair)
 }
 
 // AddressesBalance gets balance of given addresses
-func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.BalancePair) {
-	addrMap := make(map[cipher.Address]byte)
+func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
-		for _, a := range addrs {
-			addrMap[a] = byte(1)
-		}
+		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
 
-		auxs := gw.vrpc.GetUnspent(gw.v).AllForAddresses(addrs)
-		puxs := gw.vrpc.GetUnconfirmedSpends(gw.v, addrMap)
+		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
+		if err != nil {
+			err = fmt.Errorf("get unconfirmed spends failed when checking addresses balance: %v", err)
+			return
+		}
 
 		coins1, hours1 := gw.v.AddressBalance(auxs)
 		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(puxs))

@@ -11,6 +11,7 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http"
 
 	"bytes"
+	"strings"
 )
 
 var (
@@ -93,9 +94,10 @@ func makeSuccessResponse(id string, result interface{}) Response {
 	}
 }
 
-func makeErrorResponse(code int, message string) Response {
+func makeErrorResponse(code int, msgs ...string) Response {
+	msg := strings.Join(msgs[:], "\n")
 	return Response{
-		Error:   &RPCError{Code: code, Message: message},
+		Error:   &RPCError{Code: code, Message: msg},
 		Jsonrpc: jsonRPC,
 	}
 }

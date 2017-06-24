@@ -642,6 +642,9 @@ export class LoadWalletComponent implements OnInit {
                 }
             },
             err => {
+                if(err._body.indexOf("duplicate wallet ") !=-1){
+                    alert("Your are tying to load a wallet that has the same seed! ");
+                }
                 console.log(err);
             },
             () => {}
@@ -696,7 +699,12 @@ export class LoadWalletComponent implements OnInit {
                 //Load wallet for refresh list
                 this.loadWallet();
             },
-            err => console.log("Error on create load wallet seed: "+JSON.stringify(err)),
+            err => {
+                if(err._body.indexOf("duplicate wallet ") !=-1){
+                    alert("Your are tying to load a wallet that has the same seed! ");
+                }
+                console.log("Error on create load wallet seed: "+JSON.stringify(err))
+            },
             () => {
                 //console.log('Load wallet seed done')
             }

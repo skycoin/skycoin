@@ -19,6 +19,8 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util"
+
+	logging "github.com/op/go-logging"
 )
 
 //TODO:
@@ -43,7 +45,7 @@ var (
 	RefreshBlacklistRate = time.Second * 30
 	// Logging. See http://godoc.org/github.com/op/go-logging for
 	// instructions on how to include this log's output
-	logger = util.MustGetLogger("pex")
+	logger = logging.MustGetLogger("pex")
 	// Default rng
 	rnum = rand.New(rand.NewSource(time.Now().Unix()))
 	// For removing inadvertent whitespace from addresses

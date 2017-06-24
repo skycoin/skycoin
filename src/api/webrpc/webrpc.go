@@ -7,8 +7,9 @@ import (
 
 	"encoding/json"
 
-	"github.com/skycoin/skycoin/src/util"
 	wh "github.com/skycoin/skycoin/src/util/http"
+
+	logging "github.com/op/go-logging"
 
 	"bytes"
 	"strings"
@@ -36,7 +37,7 @@ var (
 	jsonRPC = "2.0"
 )
 
-var logger = util.MustGetLogger("webrpc")
+var logger = logging.MustGetLogger("webrpc")
 
 // Request rpc request struct
 type Request struct {

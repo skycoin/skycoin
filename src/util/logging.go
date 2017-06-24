@@ -7,10 +7,10 @@
 package util
 
 import (
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
-
-	"io"
 
 	logging "github.com/op/go-logging"
 )
@@ -18,12 +18,6 @@ import (
 const (
 	defaultLogFormat = "[%{module}:%{level}] %{message}"
 )
-
-// MustGetLogger wrapper for logging.MustGetLogger to avoid import
-func MustGetLogger(moduleName string) *logging.Logger {
-	// may be some stuff here (or may be not)
-	return logging.MustGetLogger(moduleName)
-}
 
 // LogConfig logger configurations
 type LogConfig struct {
@@ -91,4 +85,9 @@ func (l *LogConfig) InitLogger() {
 	stdout := logging.NewLogBackend(l.Output, "", 0)
 	stdout.Color = l.Colors
 	logging.SetBackend(stdout)
+}
+
+// DisableLogging disables the logger completely
+func DisableLogging() {
+	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
 }

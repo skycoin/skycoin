@@ -18,13 +18,8 @@ var (
 	// DataDir app folder
 	DataDir = ""
 
-	logger = MustGetLogger("util")
+	logger = logging.MustGetLogger("util")
 )
-
-// DisableLogging disables the logger completely
-func DisableLogging() {
-	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
-}
 
 // InitDataDir if dir is "", uses the default directory of ~/.skycoin.  The path to dir
 // is created, and the dir used is returned

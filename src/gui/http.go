@@ -12,10 +12,12 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+
+	logging "github.com/op/go-logging"
 )
 
 var (
-	logger   = util.MustGetLogger("gui")
+	logger   = logging.MustGetLogger("gui")
 	listener net.Listener
 	quit     chan struct{}
 )

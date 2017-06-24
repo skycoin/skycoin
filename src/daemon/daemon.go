@@ -13,6 +13,8 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
+
+	logging "github.com/op/go-logging"
 )
 
 /*
@@ -46,7 +48,7 @@ var (
 	// e.g. net.Conn.Addr() returns an invalid ip:port
 	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
 
-	logger = util.MustGetLogger("daemon")
+	logger = logging.MustGetLogger("daemon")
 )
 
 // Config subsystem configurations

@@ -13,6 +13,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util"
+
+	logging "github.com/op/go-logging"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -37,7 +39,7 @@ var (
 	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
 
 	// Logger
-	logger = util.MustGetLogger("gnet")
+	logger = logging.MustGetLogger("gnet")
 )
 
 // Config gnet config

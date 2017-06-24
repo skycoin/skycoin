@@ -5,10 +5,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/util"
+
+	logging "github.com/op/go-logging"
 )
 
-var logger = util.MustGetLogger("coin")
+var logger = logging.MustGetLogger("coin")
 
 // Block represents the block struct
 type Block struct {

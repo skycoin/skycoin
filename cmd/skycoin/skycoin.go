@@ -27,7 +27,7 @@ import (
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
 	Version    = "0.0.0"
-	logger     = util.MustGetLogger("main")
+	logger     = logging.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
 		"main",

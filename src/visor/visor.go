@@ -12,10 +12,12 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+
+	logging "github.com/op/go-logging"
 )
 
 var (
-	logger = util.MustGetLogger("visor")
+	logger = logging.MustGetLogger("visor")
 )
 
 // Config configuration parameters for the Visor

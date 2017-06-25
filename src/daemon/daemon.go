@@ -283,7 +283,6 @@ func (dm *Daemon) Shutdown() {
 	dm.Pool.Shutdown()
 	dm.Peers.Shutdown()
 	dm.Visor.Shutdown()
-	gnet.EraseMessages()
 }
 
 // Run main loop for peer/connection management. Send anything to quit to shut it

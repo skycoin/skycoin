@@ -184,6 +184,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		addresses:    make(map[string]*Connection),
 		SendResults:  make(chan SendResult, c.BroadcastResultSize),
 		messageState: state,
+		quit:         make(chan struct{}),
 		memChannel:   make(chan func()),
 	}
 
@@ -192,7 +193,6 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 // Run starts the connection pool
 func (pool *ConnectionPool) Run(q chan struct{}) {
-	pool.quit = make(chan struct{})
 	go func() {
 		for {
 			select {

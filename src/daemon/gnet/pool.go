@@ -242,8 +242,6 @@ func (pool *ConnectionPool) Shutdown() {
 	close(pool.quit)
 	pool.listener.Close()
 	pool.listener = nil
-	pool.pool = make(map[int]*Connection)
-	pool.addresses = make(map[string]*Connection)
 }
 
 // strand ensures all read and write action of pool's member variable are in one thread.

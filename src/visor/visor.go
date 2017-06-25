@@ -202,6 +202,7 @@ func (vs *Visor) Run(q chan struct{}) {
 		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
 			logger.Error("Invalid block signatures: %v", err)
 			close(q)
+			return
 		}
 		logger.Info("Signature verify success")
 	}()

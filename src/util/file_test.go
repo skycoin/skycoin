@@ -67,9 +67,8 @@ func TestInitDataDir(t *testing.T) {
 	d := "./.test/test"
 	assertDirNotExists(t, d)
 	dir := InitDataDir(d)
-	assert.Equal(t, dir, d)
 	assertDirExists(t, dir)
-	_, err := os.Stat(d)
+	_, err := os.Stat(dir)
 	assert.Nil(t, err)
 	os.RemoveAll(dir)
 }
@@ -78,11 +77,12 @@ func TestInitDataDirDefault(t *testing.T) {
 	defaultDataDir := ".skycointestXCAWDAWD232232"
 	home := UserHome()
 	assertDirNotExists(t, filepath.Join(home, defaultDataDir))
-	dir := InitDataDir("")
+	dir := InitDataDir(defaultDataDir)
 	assert.NotEqual(t, dir, "")
 	assert.True(t, strings.HasSuffix(dir, defaultDataDir))
 	assertDirExists(t, dir)
 	os.RemoveAll(dir)
+
 }
 
 func TestUserHome(t *testing.T) {

@@ -181,6 +181,8 @@ func (wrpc *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (w
 		return wallet.Wallet{}, err
 	}
 
+	wrpc.firstAddrIDMap[w.Entries[0].Address.String()] = w.GetID()
+
 	return *w, nil
 }
 

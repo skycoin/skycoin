@@ -223,8 +223,9 @@ func (bc *Blockchain) Time() uint64 {
 func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	currentTime uint64) (*coin.Block, error) {
 	if currentTime <= bc.Time() {
-		logger.Panic("Time can only move forward")
+		return nil, errors.New("Time can only move forward")
 	}
+
 	if len(txns) == 0 {
 		return nil, errors.New("No transactions")
 	}

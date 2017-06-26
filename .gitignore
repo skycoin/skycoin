@@ -107,3 +107,5 @@ src/mesh/TODO
 src/gui/static/dist
 
 .idea/
+
+*.iml

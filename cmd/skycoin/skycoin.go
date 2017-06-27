@@ -534,11 +534,16 @@ func Run(c *Config) {
 		return
 	}
 
-	go d.Run(quit)
+	errC := make(chan error, 1)
 
+	go func() {
+		errC <- d.Run()
+	}()
+
+	var rpc *webrpc.WebRPC
 	// start the webrpc
 	if c.RPCInterface {
-		rpc, err := webrpc.New(
+		rpc, err = webrpc.New(
 			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
 			webrpc.ChanBuffSize(1000),
 			webrpc.ThreadNum(c.RPCThreadNum),
@@ -548,7 +553,9 @@ func Run(c *Config) {
 			return
 		}
 
-		go rpc.Run(quit)
+		go func() {
+			errC <- rpc.Run()
+		}()
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
@@ -623,9 +630,18 @@ func Run(c *Config) {
 		}
 	*/
 
-	<-quit
+	select {
+	case <-quit:
+	case err := <-errC:
+		logger.Error("%v", err)
+	}
 
-	logger.Info("Shutting down")
+	logger.Info("Shutting down...")
+
+	if rpc != nil {
+		rpc.Shutdown()
+	}
+
 	gui.Shutdown()
 	d.Shutdown()
 	logger.Info("Goodbye")

@@ -590,14 +590,13 @@ func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) 
 	for i := uint64(0); i <= head.Seq(); i++ {
 		b := bc.GetBlockInDepth(i)
 		if b == nil {
-			return fmt.Errorf("no block in depth %v", i)
+			return fmt.Errorf("No block in depth %v", i)
 		}
 
 		// get sig
 		sig, err := sigs.Get(b.HashHeader())
 		if err != nil {
-			logger.Info("block sig:%v", i)
-			return err
+			return fmt.Errorf("Verify signature of block in depth: %d failed: %v", i, err)
 		}
 
 		if err := cipher.VerifySignature(pubKey, sig, b.HashHeader()); err != nil {

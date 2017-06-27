@@ -152,7 +152,7 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 }
 
 // GetUnspentOutputs mocked method
-func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) visor.ReadableOutputSet {
+func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
 
 	ret := m.Called(p0)
 
@@ -165,7 +165,16 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) visor.Read
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 

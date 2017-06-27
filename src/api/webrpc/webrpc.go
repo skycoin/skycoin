@@ -117,6 +117,8 @@ type WebRPC struct {
 	mux       *http.ServeMux
 	handlers  map[string]HandlerFunc
 	gateway   Gatewayer
+	listener  net.Listener
+	quit      chan struct{}
 }
 
 // Option is the argument type for creating webrpc instance.
@@ -126,6 +128,7 @@ type Option func(*WebRPC)
 func New(addr string, ops ...Option) (*WebRPC, error) {
 	rpc := &WebRPC{
 		addr: addr,
+		quit: make(chan struct{}),
 	}
 
 	for _, opt := range ops {
@@ -176,40 +179,37 @@ func (rpc *WebRPC) initHandlers() error {
 }
 
 // Run starts the webrpc service.
-func (rpc *WebRPC) Run(quit chan struct{}) {
+func (rpc *WebRPC) Run() error {
 	logger.Infof("start webrpc on http://%s", rpc.addr)
+	defer logger.Info("webrpc service closed")
 
 	l, err := net.Listen("tcp", rpc.addr)
 	if err != nil {
-		logger.Error("%v", err)
-		close(quit)
-		return
+		return err
 	}
 
-	c := make(chan struct{})
-	q := make(chan struct{}, 1)
+	rpc.listener = l
+
+	errC := make(chan error, 1)
 	go func() {
 		if err := http.Serve(l, rpc); err != nil {
 			select {
-			case <-c:
+			case <-rpc.quit:
 				return
 			default:
 				// the webrpc service failed unexpectly, notify the
-				logger.Error("%v", err)
-				q <- struct{}{}
+				errC <- err
 			}
 		}
 	}()
 
-	select {
-	case <-quit:
-		close(c)
-		l.Close()
-	case <-q:
-		close(quit)
-	}
-	logger.Info("webrpc quit")
-	return
+	return <-errC
+}
+
+// Shutdown close the webrpc service
+func (rpc *WebRPC) Shutdown() {
+	close(rpc.quit)
+	rpc.listener.Close()
 }
 
 // HandleFunc registers handler function

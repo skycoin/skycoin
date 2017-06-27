@@ -444,9 +444,6 @@ func LoadPeerlist(dir string) (*Peerlist, error) {
 	if err := util.LoadJSON(fn, &peerlist.peers); err != nil {
 		return nil, err
 	}
-	// if err != nil {
-	// 	logger.Notice("LoadPeerList Failed: %s", err)
-	// }
 	return &peerlist, nil
 
 }
@@ -455,8 +452,6 @@ func LoadPeerlist(dir string) (*Peerlist, error) {
 type Pex struct {
 	// All known peers
 	*Peerlist
-	// Ignored peers
-	// Blacklist Blacklist
 	// If false, localhost peers will be rejected from the peerlist
 	AllowLocalhost bool
 	maxPeers       int
@@ -465,8 +460,7 @@ type Pex struct {
 // NewPex creates pex
 func NewPex(maxPeers int) *Pex {
 	return &Pex{
-		Peerlist: &Peerlist{peers: make(map[string]*Peer, maxPeers)},
-		// Blacklist:      make(Blacklist, 0),
+		Peerlist:       &Peerlist{peers: make(map[string]*Peer, maxPeers)},
 		maxPeers:       maxPeers,
 		AllowLocalhost: false,
 	}

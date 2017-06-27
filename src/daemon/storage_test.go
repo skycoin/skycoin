@@ -124,12 +124,14 @@ func TestCullInvalidConnections(t *testing.T) {
 	vc := make(chan string, 3)
 	wg.Add(2)
 	go func(w *sync.WaitGroup) {
-		as := ei.CullInvalidConns(func(addr string, tm time.Time) bool {
+		as, err := ei.CullInvalidConns(func(addr string, tm time.Time) (bool, error) {
 			if addr == "a" || addr == "b" {
-				return true
+				return true, nil
 			}
-			return false
+			return false, nil
 		})
+		assert.Nil(t, err)
+
 		for _, s := range as {
 			vc <- s
 		}
@@ -138,12 +140,14 @@ func TestCullInvalidConnections(t *testing.T) {
 
 	go func(w *sync.WaitGroup) {
 		// w.Add(1)
-		as := ei.CullInvalidConns(func(addr string, tm time.Time) bool {
+		as, err := ei.CullInvalidConns(func(addr string, tm time.Time) (bool, error) {
 			if addr == "c" {
-				return true
+				return true, nil
 			}
-			return false
+			return false, nil
 		})
+
+		assert.Nil(t, err)
 
 		for _, s := range as {
 			vc <- s

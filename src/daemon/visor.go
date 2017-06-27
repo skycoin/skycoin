@@ -67,7 +67,6 @@ type Visor struct {
 	// Peer-reported blockchain length.  Use to estimate download progress
 	blockchainLengths map[string]uint64
 	reqC              chan reqFunc // all request will go through this channel, to keep writing and reading member variable thread safe.
-	cxt               context.Context
 	Shutdown          context.CancelFunc
 }
 
@@ -96,32 +95,33 @@ func NewVisor(c VisorConfig) (*Visor, error) {
 		reqC:              make(chan reqFunc, 100),
 	}
 
-	var cancel func()
-	vs.cxt, cancel = context.WithCancel(context.Background())
 	vs.Shutdown = func() {
 		// close the visor
 		closeVs()
-
-		// cancel the cxt
-		cancel()
 	}
 
 	return vs, nil
 }
 
 // Run starts the visor
-func (vs *Visor) Run(quit chan struct{}) {
-	q := make(chan struct{})
-	go vs.v.Run(q)
+func (vs *Visor) Run() error {
+	defer logger.Info("Visor closed")
+	errC := make(chan error, 1)
+	go func() {
+		// vs.Shutdown will notify the vs.v.Run to return.
+		errC <- vs.v.Run()
+	}()
 
 	for {
 		select {
-		case <-q:
-			close(quit)
-		case <-vs.cxt.Done():
-			return
+		case err := <-errC:
+			return err
 		case req := <-vs.reqC:
-			req(vs.cxt)
+			func() {
+				cxt, cancel := context.WithDeadline(context.Background(), time.Now().Add(3*time.Second))
+				defer cancel()
+				req(cxt)
+			}()
 		}
 	}
 }
@@ -241,7 +241,14 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	var err error
 	vs.strand(func() {
 		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
-		if !pool.Pool.IsConnExist(addr) {
+
+		exist, er := pool.Pool.IsConnExist(addr)
+		if er != nil {
+			err = er
+			return
+		}
+
+		if !exist {
 			err = fmt.Errorf("Tried to send GetBlocksMessage to %s, but we're "+
 				"not connected", addr)
 			return
@@ -278,7 +285,13 @@ func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 		return
 	}
 	m := NewGiveTxnsMessage(coin.Transactions{t})
-	logger.Debug("Broadcasting GiveTxnsMessage to %d conns", pool.Pool.Size())
+	l, err := pool.Pool.Size()
+	if err != nil {
+		logger.Error("Broadcast GivenTxnsMessage failed: %v", err)
+		return
+	}
+
+	logger.Debug("Broadcasting GiveTxnsMessage to %d conns", l)
 	pool.Pool.BroadcastMessage(m)
 }
 

@@ -12,7 +12,7 @@ import (
 	"runtime"
 	"strings"
 
-	logging "github.com/op/go-logging"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
 var (

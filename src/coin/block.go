@@ -6,7 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 
-	logging "github.com/op/go-logging"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
 var logger = logging.MustGetLogger("coin")

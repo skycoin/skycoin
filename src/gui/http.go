@@ -13,7 +13,7 @@ import (
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 
-	logging "github.com/op/go-logging"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
 var (

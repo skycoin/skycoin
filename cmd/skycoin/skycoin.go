@@ -15,13 +15,13 @@ import (
 	"syscall"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
 var (
@@ -112,11 +112,11 @@ type Config struct {
 	DataDirectory string
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
+
 	// Logging
-	LogLevel logging.Level
 	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
-	logLevel string
+	LogLevel string
 
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
@@ -198,7 +198,7 @@ func (c *Config) register() {
 		c.ProfileCPUFile, "where to write the cpu profile file")
 	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf,
 		"Run the http profiling interface")
-	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
@@ -276,9 +276,8 @@ var devConfig = Config{
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
-	LogLevel: logging.DEBUG,
 	ColorLog: true,
-	logLevel: "DEBUG",
+	LogLevel: "DEBUG",
 
 	// Wallets
 	WalletDirectory: "",
@@ -349,10 +348,6 @@ func (c *Config) postProcess() {
 		c.WalletDirectory = filepath.Join(c.DataDirectory, "wallets/")
 	}
 
-	ll, err := logging.LogLevel(c.logLevel)
-	panicIfError(err, "Invalid -log-level %s", c.logLevel)
-	c.LogLevel = ll
-
 	if c.DBPath == "" {
 		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
 	}
@@ -403,10 +398,11 @@ func catchDebug() {
 }
 
 // init logging settings
-func initLogging(dataDir string, level logging.Level, color, logtofile bool) (func(), error) {
-	logCfg := util.DevLogConfig(logModules)
+func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
+	logCfg := logging.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = color
+	logCfg.Level = level
 
 	var fd *os.File
 	if logtofile {
@@ -425,14 +421,17 @@ func initLogging(dataDir string, level logging.Level, color, logtofile bool) (fu
 		if err != nil {
 			return nil, err
 		}
-		out := io.MultiWriter(os.Stdout, fd)
-		logCfg.Output = out
+
+		logCfg.Output = io.MultiWriter(os.Stdout, fd)
 	}
 
 	logCfg.InitLogger()
 
 	return func() {
-		fd.Close()
+		logger.Info("Log file closed")
+		if fd != nil {
+			fd.Close()
+		}
 	}, nil
 }
 
@@ -518,7 +517,6 @@ func Run(c *Config) {
 		fmt.Println(err)
 		return
 	}
-	defer closelog()
 
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
@@ -646,6 +644,7 @@ func Run(c *Config) {
 
 	gui.Shutdown()
 	d.Shutdown()
+	closelog()
 	logger.Info("Goodbye")
 }
 

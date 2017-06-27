@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	logging "github.com/op/go-logging"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 	"github.com/stretchr/testify/assert"
 )
 

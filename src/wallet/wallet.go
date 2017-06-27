@@ -9,7 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	//"math/rand"
 
-	logging "github.com/op/go-logging"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
 var (

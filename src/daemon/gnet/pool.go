@@ -12,9 +12,8 @@ import (
 	"io"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/util"
 
-	logging "github.com/op/go-logging"
+	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback

@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func assertError(t *testing.T, err error, msg string) {
 }
 
 func tNow() uint64 {
-	return uint64(time.Now().UTC().Unix())
+	return uint64(utc.UnixNow())
 }
 
 func _feeCalc(t *Transaction) (uint64, error) {

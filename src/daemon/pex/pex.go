@@ -21,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 
 	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 //TODO:
@@ -592,5 +593,5 @@ func readLines(filename string) ([]string, error) {
 
 // Now returns UTC time
 func Now() time.Time {
-	return time.Now().UTC()
+	return utc.Now()
 }

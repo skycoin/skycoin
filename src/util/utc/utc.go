@@ -1,4 +1,5 @@
-package util
+// Package utc provides helper function to get UTC time
+package utc
 
 import (
 	"time"

@@ -121,7 +121,7 @@ package daemon
 // 	assert.False(t, m.c.Conn.LastSent.IsZero())
 
 // 	// If no peers, nothing should happen
-// 	m.c.Conn.LastSent = util.ZeroTime()
+// 	m.c.Conn.LastSent = time.Time{}
 // 	delete(d.Peers.Peers.Peerlist, addr)
 // 	assert.NotPanics(t, func() { m.Process(d) })
 // 	wait()
@@ -335,8 +335,8 @@ package daemon
 
 // func gnetConnection(addr string) *gnet.Connection {
 // 	c := gnet.NewConnection(nil, 1, NewDummyConn(addr), 16)
-// 	c.LastSent = util.ZeroTime()
-// 	c.LastReceived = util.ZeroTime()
+// 	c.LastSent = time.Time{}
+// 	c.LastReceived = time.Time{}
 // 	return c
 // }
 

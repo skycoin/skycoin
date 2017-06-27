@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 
 	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -667,7 +668,7 @@ func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
 
 // SendPings sends a ping if our last message sent was over pingRate ago
 func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
-	now := util.Now()
+	now := utc.Now()
 	var addrs []string
 	if err := pool.strand(func() error {
 		for _, conn := range pool.pool {
@@ -712,5 +713,5 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 
 // Now returns the current UTC time
 func Now() time.Time {
-	return time.Now().UTC()
+	return utc.Now()
 }

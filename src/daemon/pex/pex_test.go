@@ -8,6 +8,7 @@ import (
 	"time"
 
 	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -94,7 +95,7 @@ func TestPeerString(t *testing.T) {
 /* BlacklistEntry tests */
 
 // func TestBlacklistEntryExpiresAt(t *testing.T) {
-// 	now := time.Now().UTC()
+// 	now := utc.Now()
 // 	b := BlacklistEntry{Start: now, Duration: time.Second}
 // 	assert.Equal(t, now.Add(time.Second), b.ExpiresAt())
 // }
@@ -635,7 +636,7 @@ func TestPeerCanTry(t *testing.T) {
 
 func TestNow(t *testing.T) {
 	now := Now().Unix()
-	now2 := time.Now().UTC().Unix()
+	now2 := utc.UnixNow()
 	assert.True(t, now == now2 || now2-1 == now)
 }
 

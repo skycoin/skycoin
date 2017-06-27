@@ -136,12 +136,12 @@ package visor
 // }
 
 // func addSignedBlock(t *testing.T, v *Visor) coin.SignedBlock {
-// 	return addSignedBlockAt(t, v, uint64(util.UnixNow()))
+// 	return addSignedBlockAt(t, v, uint64(utc.UnixNow()))
 // }
 
 // func addSignedBlocks(t *testing.T, v *Visor, n int) []coin.SignedBlock {
 // 	sbs := make([]SignedBlock, n)
-// 	now := uint64(util.UnixNow())
+// 	now := uint64(utc.UnixNow())
 // 	for i := 0; i < n; i++ {
 // 		sbs[i] = addSignedBlockAt(t, v, now+1+uint64(i))
 // 	}
@@ -613,7 +613,7 @@ package visor
 // 	assert.False(t, known)
 // 	assert.Equal(t, len(v.Unconfirmed.Txns), 1)
 // 	assert.Equal(t, len(v.blockSigs.Sigs), 1)
-// 	now := uint64(util.UnixNow())
+// 	now := uint64(utc.UnixNow())
 
 // 	// Invalid signed block
 // 	sb, err := v.CreateBlock(now)
@@ -809,7 +809,7 @@ package visor
 // 	vc := newMasterVisorConfig(t)
 // 	v := NewVisor(vc)
 
-// 	now := util.Now()
+// 	now := utc.Now()
 // 	utx := addUnconfirmedTxn(v)
 // 	assert.True(t, utx.Announced.IsZero())
 // 	assert.True(t, v.Unconfirmed.Txns[utx.Hash()].Announced.IsZero())
@@ -1000,7 +1000,7 @@ package visor
 // 	err, known := v.InjectTxn(txn)
 // 	assert.Nil(t, err)
 // 	assert.False(t, known)
-// 	b, err := v.CreateBlock(uint64(util.UnixNow()))
+// 	b, err := v.CreateBlock(uint64(utc.UnixNow()))
 // 	assert.Nil(t, err)
 // 	assert.Nil(t, v.verifySignedBlock(&b))
 // 	badb := b

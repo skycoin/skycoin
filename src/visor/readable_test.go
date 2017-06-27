@@ -2,10 +2,11 @@ package visor
 
 import (
 	"crypto/rand"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 const (
@@ -114,9 +115,9 @@ func createUnconfirmedTxn() UnconfirmedTxn {
 	ut := UnconfirmedTxn{}
 	ut.Txn = coin.Transaction{}
 	ut.Txn.InnerHash = randSHA256()
-	ut.Received = util.Now().UnixNano()
+	ut.Received = utc.Now().UnixNano()
 	ut.Checked = ut.Received
-	ut.Announced = util.ZeroTime().UnixNano()
+	ut.Announced = time.Time{}.UnixNano()
 	return ut
 }
 
@@ -150,7 +151,7 @@ func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
 // 		return err
 // 	}
 // 	mv.InjectTxn(tx)
-// 	now := uint64(util.UnixNow())
+// 	now := uint64(utc.UnixNow())
 // 	if len(mv.blockchain.Blocks) > 0 {
 // 		now = mv.blockchain.Time() + 1
 // 	}

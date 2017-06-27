@@ -21,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/cert"
 	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
@@ -570,7 +571,7 @@ func Run(c *Config) {
 		var err error
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
-			errs := util.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
+			errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
 			if len(errs) != 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())

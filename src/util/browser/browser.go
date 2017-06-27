@@ -1,10 +1,10 @@
-package util
+package browser
 
 import (
 	"github.com/toqueteos/webbrowser"
 )
 
-// OpenBrowser opens browser
-func OpenBrowser(url string) error {
+// Open opens browser
+func Open(url string) error {
 	return webbrowser.Open(url)
 }

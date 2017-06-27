@@ -21,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	logging "github.com/skycoin/skycoin/src/util/logger"
 )
@@ -597,7 +598,7 @@ func Run(c *Config) {
 				time.Sleep(time.Millisecond * 100)
 
 				logger.Info("Launching System Browser with %s", fullAddress)
-				if err := util.OpenBrowser(fullAddress); err != nil {
+				if err := browser.Open(fullAddress); err != nil {
 					logger.Error(err.Error())
 					return
 				}

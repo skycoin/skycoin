@@ -7,10 +7,19 @@ declare var _: any;
 @Component({
   selector: 'skycoin-block-sync',
   template: `
-             <div *ngIf="syncDone == false">
-               <h2>Syncing wallet, please wait .... </h2>
-               <span *ngIf="currentWalletNumber >0">Current : {{currentWalletNumber}} out of {{highestWalletNumber}}</span>
-</div>
+
+        
+             <div class="sync-div-container">
+             
+             <ul class="fa-ul">
+  <li><i class="fa-li fa fa-spinner fa-spin" *ngIf="syncDone == false"></i>
+  <span *ngIf="currentWalletNumber>0">{{currentWalletNumber}} of {{highestWalletNumber}} blocks syncned</span>
+  <span *ngIf="currentWalletNumber==0">Syncing wallet</span>
+  </li>
+</ul>
+                
+               
+              </div>
             
               `
   ,

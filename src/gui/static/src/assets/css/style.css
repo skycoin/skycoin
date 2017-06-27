@@ -374,3 +374,8 @@ label {
     left: 190px;
     color: rgb(156, 163, 175);
 }
+
+.sync-div-container{
+    display: inline-block;
+    float: right;
+}

@@ -129,9 +129,11 @@ export class LoadWalletComponent implements OnInit {
     outputs: Array<any>;
     NewDefaultConnectionIsVisible : boolean;
     EditDefaultConnectionIsVisible : boolean;
+    noConnections:boolean;
     oldConnection:string;
     filterAddressVal:string;
     totalSky:any;
+    totalWalletBalance:any;
     historySearchKey:string;
     selectedWallet:any;
 
@@ -159,6 +161,7 @@ export class LoadWalletComponent implements OnInit {
     ngOnInit() {
         this.displayMode = DisplayModeEnum.first;
         this.totalSky = 0;
+        this.totalWalletBalance =0;
         this.selectedWallet = {};
         this.userTransactions=[];
         this.loadWallet();
@@ -265,7 +268,7 @@ export class LoadWalletComponent implements OnInit {
 
     //Load wallet function
     loadWallet(){
-        this.totalSky = 0;
+        this.totalWalletBalance = 0;
         this.http.post('/wallets', '')
         .map((res:Response) => res.json())
         .subscribe(
@@ -300,7 +303,7 @@ export class LoadWalletComponent implements OnInit {
                 //console.log("data", data);
                 _.map(data, (item, idx) => {
                     var filename = item.meta.filename;
-                    this.loadWalletItem(filename, idx);
+                    this.loadWalletItem(filename, idx,idx ==  data.length-1);
                 })
                 this.walletsWithAddress = [];
                 _.map(this.wallets, (o, idx) => {
@@ -318,7 +321,6 @@ export class LoadWalletComponent implements OnInit {
                     });
                 });
                 this.loadTransactionsForWallet();
-
             },
             err => console.log(err),
             () => {
@@ -346,7 +348,7 @@ export class LoadWalletComponent implements OnInit {
                 })
         }
     }
-    loadWalletItem(address, inc){
+    loadWalletItem(address, inc, endReached){
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -357,7 +359,16 @@ export class LoadWalletComponent implements OnInit {
             response => {
                 //console.log('load done: ' + inc, response);
                 this.wallets[inc].balance = response.confirmed.coins / 1000000;
-                this.totalSky += this.wallets[inc].balance;
+                this.totalWalletBalance += this.wallets[inc].balance;
+                if(endReached){
+                   if(this.totalSky != this.totalWalletBalance) {
+                       this.totalSky = this.totalWalletBalance;
+                       console.log("Updating the wallet balance!");
+                   }
+                   else{
+                       console.log("Not updating the wallet balance as it is the same!");
+                   }
+                }
             }, err => console.log("Error on load balance: " + err), () => {
                 //console.log('Balance load done')
             })

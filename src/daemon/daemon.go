@@ -299,6 +299,8 @@ func (dm *Daemon) Run() (err error) {
 		if r := recover(); r != nil {
 			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))
 		}
+
+		logger.Info("Daemon closed")
 	}()
 
 	errC := make(chan error)
@@ -345,7 +347,6 @@ func (dm *Daemon) Run() (err error) {
 			return
 		case qc := <-dm.quitC:
 			qc <- struct{}{}
-			logger.Info("Daemon closed")
 			return
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:

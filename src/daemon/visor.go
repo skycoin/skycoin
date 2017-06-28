@@ -241,10 +241,9 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	var err error
 	vs.strand(func() {
 		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
-
-		exist, er := pool.Pool.IsConnExist(addr)
-		if er != nil {
-			err = er
+		var exist bool
+		exist, err = pool.Pool.IsConnExist(addr)
+		if err != nil {
 			return
 		}
 
@@ -253,7 +252,7 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 				"not connected", addr)
 			return
 		}
-		pool.Pool.SendMessage(addr, m)
+		err = pool.Pool.SendMessage(addr, m)
 	})
 	return err
 }

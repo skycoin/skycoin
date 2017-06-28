@@ -16,9 +16,6 @@ import (
 )
 
 var (
-	// DataDir app folder. A shared global value. Initialize it with InitDataDir.
-	DataDir = ""
-
 	EmptyDirectoryNameError = errors.New("data directory must not be empty")
 	DotDirectoryNameError   = errors.New("data directory must not be equivalent to .")
 
@@ -28,22 +25,19 @@ var (
 // Joins dir with the user's $HOME directory.
 // If $HOME cannot be determined, uses the current working directory.
 // dir must not be the empty string
-func InitDataDir(dir string) error {
+func InitDataDir(dir string) (string, error) {
 	dir, err := buildDataDir(dir)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	DataDir = dir
-	logger.Info("Set data directory to %s", DataDir)
-
-	if err := os.MkdirAll(DataDir, os.FileMode(0700)); err != nil {
-		logger.Error("Failed to create directory %s: %v", DataDir, err)
-		return err
+	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
+		logger.Error("Failed to create directory %s: %v", dir, err)
+		return "", err
 	}
 
-	logger.Info("Created data directory %s", DataDir)
-	return nil
+	logger.Info("Created data directory %s", dir)
+	return dir, nil
 }
 
 // Construct the full data directory by adding to $HOME or ./
@@ -66,7 +60,7 @@ func buildDataDir(dir string) (string, error) {
 
 	// The joined directory must not be equal to $HOME or a parent path of $HOME
 	if strings.HasPrefix(home, fullDir) {
-		logger.Error("join(%[0]s, %[1]s) == %[0]s", home, dir)
+		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
 		return "", DotDirectoryNameError
 	}
 

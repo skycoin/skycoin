@@ -50,14 +50,7 @@ func cleanup(fn string) {
 	os.Remove(fn + ".bak")
 }
 
-func resetDataDir() {
-	DataDir = ""
-}
-
 func TestBuildDataDir(t *testing.T) {
-	require.Empty(t, DataDir)
-	defer resetDataDir()
-
 	dir := "./.test-skycoin/test"
 	builtDir, err := buildDataDir(dir)
 	require.NoError(t, err)
@@ -75,27 +68,17 @@ func TestBuildDataDir(t *testing.T) {
 }
 
 func TestBuildDataDirEmptyError(t *testing.T) {
-	require.Empty(t, DataDir)
-	defer resetDataDir()
-
-	require.Empty(t, DataDir)
 	dir, err := buildDataDir("")
 	require.Empty(t, dir)
-	require.Empty(t, DataDir)
 	require.Error(t, err)
 	require.Equal(t, EmptyDirectoryNameError, err)
 }
 
 func TestBuildDataDirDotError(t *testing.T) {
-	require.Empty(t, DataDir)
-	defer resetDataDir()
-
-	require.Empty(t, DataDir)
 	bad := []string{".", "./", "./.", "././", "./../"}
 	for _, b := range bad {
 		dir, err := buildDataDir(b)
 		require.Empty(t, dir)
-		require.Empty(t, DataDir)
 		require.Error(t, err)
 		require.Equal(t, DotDirectoryNameError, err)
 	}

@@ -335,7 +335,10 @@ func (c *Config) postProcess() {
 		c.BlockchainSeckey = cipher.SecKey{}
 	}
 
-	c.DataDirectory = util.InitDataDir(c.DataDirectory)
+	err = util.InitDataDir(c.DataDirectory)
+	panicIfError(err, "Invalid DataDirectory")
+	c.DataDirectory = util.DataDir
+
 	if c.WebInterfaceCert == "" {
 		c.WebInterfaceCert = filepath.Join(c.DataDirectory, "cert.pem")
 	}

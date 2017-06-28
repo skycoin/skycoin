@@ -74,14 +74,13 @@ func NewPool(c PoolConfig, d *Daemon) *Pool {
 func (pool *Pool) Shutdown() {
 	if pool.Pool != nil {
 		pool.Pool.Shutdown()
-		logger.Info("Shutdown pool")
 	}
 }
 
 // Run starts listening on the configured Port
 // no goroutine
-func (pool *Pool) Run(quit chan struct{}) {
-	pool.Pool.Run(quit)
+func (pool *Pool) Run() error {
+	return pool.Pool.Run()
 }
 
 // Send a ping if our last message sent was over pingRate ago

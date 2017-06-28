@@ -206,6 +206,8 @@ type Daemon struct {
 	ipCounts *IPCount
 	// Message handling queue
 	messageEvents chan MessageEvent
+	// quit channel
+	quitC chan chan struct{}
 }
 
 // NewDaemon returns a Daemon with primitives allocated
@@ -241,8 +243,8 @@ func NewDaemon(config Config) (*Daemon, error) {
 		connectionErrors:    make(chan ConnectionError, config.Daemon.OutgoingMax),
 		outgoingConnections: NewOutgoingConnections(config.Daemon.OutgoingMax),
 		pendingConnections:  NewPendingConnections(config.Daemon.PendingMax),
-		messageEvents: make(chan MessageEvent,
-			config.Pool.EventChannelSize),
+		messageEvents:       make(chan MessageEvent, config.Pool.EventChannelSize),
+		quitC:               make(chan chan struct{}),
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
@@ -280,33 +282,36 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (dm *Daemon) Shutdown() {
+	// close the daemon loop first
+	q := make(chan struct{}, 1)
+	dm.quitC <- q
+	<-q
+
 	dm.Pool.Shutdown()
 	dm.Peers.Shutdown()
 	dm.Visor.Shutdown()
-	gnet.EraseMessages()
 }
 
 // Run main loop for peer/connection management. Send anything to quit to shut it
 // down
-func (dm *Daemon) Run(quit chan struct{}) {
+func (dm *Daemon) Run() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("recover:%v\n stack:%v", r, string(debug.Stack()))
-		}
-
-		// close quit to notify the caller this daemon running loop is stopped
-		if quit != nil {
-			close(quit)
+			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))
 		}
 	}()
 
-	c := make(chan struct{})
+	errC := make(chan error)
 
 	// start visor
-	go dm.Visor.Run(c)
+	go func() {
+		errC <- dm.Visor.Run()
+	}()
 
 	if !dm.Config.DisableIncomingConnections {
-		go dm.Pool.Run(c)
+		go func() {
+			errC <- dm.Pool.Run()
+		}()
 	}
 
 	// TODO -- run blockchain stuff in its own goroutine
@@ -336,7 +341,11 @@ func (dm *Daemon) Run(quit chan struct{}) {
 
 	for {
 		select {
-		case <-c:
+		case err = <-errC:
+			return
+		case qc := <-dm.quitC:
+			qc <- struct{}{}
+			logger.Info("Daemon closed")
 			return
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
@@ -477,7 +486,12 @@ func (dm *Daemon) connectToPeer(p *pex.Peer) error {
 		return errors.New("Not localhost")
 	}
 
-	if dm.Pool.Pool.IsConnExist(p.Addr) {
+	conned, err := dm.Pool.Pool.IsConnExist(p.Addr)
+	if err != nil {
+		return err
+	}
+
+	if conned {
 		return errors.New("Already connected")
 	}
 
@@ -571,21 +585,40 @@ func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
 	now := util.Now()
-	addrs := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) bool {
-		if !dm.Pool.Pool.IsConnExist(addr) {
-			return true
+	addrs, err := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) (bool, error) {
+		conned, err := dm.Pool.Pool.IsConnExist(addr)
+		if err != nil {
+			return false, err
+		}
+
+		if !conned {
+			return true, nil
 		}
 
 		if t.Add(dm.Config.IntroductionWait).Before(now) {
-			return true
+			return true, nil
 		}
-		return false
+		return false, nil
 	})
 
+	if err != nil {
+		logger.Error("expectingIntroduction cull invalid connections failed: %v", err)
+		return
+	}
+
 	for _, a := range addrs {
-		if dm.Pool.Pool.IsConnExist(a) {
+		exist, err := dm.Pool.Pool.IsConnExist(a)
+		if err != nil {
+			logger.Error("%v", err)
+			return
+		}
+
+		if exist {
 			logger.Info("Removing %s for not sending a version", a)
-			dm.Pool.Pool.Disconnect(a, ErrDisconnectIntroductionTimeout)
+			if err := dm.Pool.Pool.Disconnect(a, ErrDisconnectIntroductionTimeout); err != nil {
+				logger.Error("%v", err)
+				return
+			}
 			dm.Peers.RemovePeer(a)
 		}
 	}
@@ -634,7 +667,13 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.pendingConnections.Remove(a)
 
-	if !dm.Pool.Pool.IsConnExist(a) {
+	exist, err := dm.Pool.Pool.IsConnExist(a)
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+
+	if !exist {
 		logger.Warning("While processing an onConnect event, no pool " +
 			"connection was found")
 		return

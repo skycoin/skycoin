@@ -132,8 +132,8 @@ func openDB(dbFile string) (*bolt.DB, func(), error) {
 	}
 
 	return db, func() {
-		logger.Info("close db")
 		db.Close()
+		logger.Info("DB closed")
 	}, nil
 }
 
@@ -190,18 +190,20 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 	}
 
 	return v, func() {
-		closeDB()
 		v.bcParser.Stop()
+		closeDB()
 	}, nil
 }
 
 // Run starts the visor process
-func (vs *Visor) Run(q chan struct{}) {
+func (vs *Visor) Run() error {
+	errC := make(chan error, 1)
+
 	go func() {
 		logger.Info("Verify signature...")
 		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
-			logger.Error("Invalid block signatures: %v", err)
-			close(q)
+			errC <- fmt.Errorf("Invalid block signatures: %v", err)
+			return
 		}
 		logger.Info("Signature verify success")
 	}()
@@ -213,27 +215,34 @@ func (vs *Visor) Run(q chan struct{}) {
 			vs.Config.GenesisCoinVolume,
 			vs.Config.GenesisTimestamp)
 		if err != nil {
-			logger.Error("%v", err)
-			close(q)
-			return
+			return err
 		}
 
-		logger.Debug("create genesis block")
+		logger.Debug("Create genesis block")
 
 		// record the signature of genesis block
 		if vs.Config.IsMaster {
 			sb := vs.SignBlock(b)
-			vs.blockSigs.Add(&sb)
-			logger.Info("genesis block signature=%s", sb.Sig.Hex())
+			if err := vs.blockSigs.Add(&sb); err != nil {
+				return err
+			}
+
+			logger.Info("Genesis block signature=%s", sb.Sig.Hex())
 		} else {
-			vs.blockSigs.Add(&coin.SignedBlock{
+			if err := vs.blockSigs.Add(&coin.SignedBlock{
 				Block: b,
 				Sig:   vs.Config.GenesisSignature,
-			})
+			}); err != nil {
+				return err
+			}
 		}
 	}
 
-	vs.bcParser.Run(q)
+	go func() {
+		errC <- vs.bcParser.Run()
+	}()
+
+	return <-errC
 }
 
 // GenesisPreconditions panics if conditions for genesis block are not met

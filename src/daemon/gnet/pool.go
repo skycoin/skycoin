@@ -229,6 +229,7 @@ func (pool *ConnectionPool) Run() error {
 				return nil
 			default:
 				// without the default case the select will block.
+				logger.Error("%v", err)
 				continue
 			}
 		}

@@ -8,52 +8,40 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func assertFileMode(t *testing.T, filename string, mode os.FileMode) {
+func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
 	stat, err := os.Stat(filename)
-	assert.Nil(t, err)
-	assert.Equal(t, stat.Mode(), mode)
+	require.Nil(t, err)
+	require.Equal(t, stat.Mode(), mode)
 }
 
-func assertFileContentsBinary(t *testing.T, filename string, contents []byte) {
+func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
 	f, err := os.Open(filename)
 	defer f.Close()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	b := make([]byte, len(contents)*16)
 	n, err := f.Read(b)
-	assert.Nil(t, err)
-	assert.Equal(t, n, len(contents))
-	assert.True(t, bytes.Equal(b[:n], contents))
+	require.Nil(t, err)
+	require.Equal(t, n, len(contents))
+	require.True(t, bytes.Equal(b[:n], contents))
 }
 
-func assertFileContents(t *testing.T, filename, contents string) {
-	assertFileContentsBinary(t, filename, []byte(contents))
+func requireFileContents(t *testing.T, filename, contents string) {
+	requireFileContentsBinary(t, filename, []byte(contents))
 }
 
-func assertFileExists(t *testing.T, filename string) {
+func requireFileExists(t *testing.T, filename string) {
 	stat, err := os.Stat(filename)
-	assert.Nil(t, err)
-	assert.True(t, stat.Mode().IsRegular())
+	require.Nil(t, err)
+	require.True(t, stat.Mode().IsRegular())
 }
 
-func assertFileNotExists(t *testing.T, filename string) {
+func requireFileNotExists(t *testing.T, filename string) {
 	_, err := os.Stat(filename)
-	assert.NotNil(t, err)
-	assert.True(t, os.IsNotExist(err))
-}
-
-func assertDirExists(t *testing.T, dirname string) {
-	stat, err := os.Stat(dirname)
-	assert.Nil(t, err)
-	assert.True(t, stat.IsDir())
-}
-
-func assertDirNotExists(t *testing.T, dirname string) {
-	_, err := os.Stat(dirname)
-	assert.NotNil(t, err)
-	assert.True(t, os.IsNotExist(err))
+	require.NotNil(t, err)
+	require.True(t, os.IsNotExist(err))
 }
 
 func cleanup(fn string) {
@@ -62,32 +50,43 @@ func cleanup(fn string) {
 	os.Remove(fn + ".bak")
 }
 
-func TestInitDataDir(t *testing.T) {
-	defer os.RemoveAll("./.test")
-	d := "./.test/test"
-	assertDirNotExists(t, d)
-	dir := InitDataDir(d)
-	assertDirExists(t, dir)
-	_, err := os.Stat(dir)
-	assert.Nil(t, err)
-	os.RemoveAll(dir)
+func TestBuildDataDir(t *testing.T) {
+	dir := "./.test-skycoin/test"
+	builtDir, err := buildDataDir(dir)
+	require.NoError(t, err)
+
+	cleanDir := filepath.Clean(dir)
+	require.True(t, strings.HasSuffix(builtDir, cleanDir))
+
+	home := filepath.Clean(UserHome())
+	if home == "" {
+		require.Equal(t, cleanDir, builtDir)
+	} else {
+		require.True(t, strings.HasPrefix(builtDir, home))
+		require.NotEqual(t, builtDir, filepath.Clean(home))
+	}
 }
 
-func TestInitDataDirDefault(t *testing.T) {
-	defaultDataDir := ".skycointestXCAWDAWD232232"
-	home := UserHome()
-	assertDirNotExists(t, filepath.Join(home, defaultDataDir))
-	dir := InitDataDir(defaultDataDir)
-	assert.NotEqual(t, dir, "")
-	assert.True(t, strings.HasSuffix(dir, defaultDataDir))
-	assertDirExists(t, dir)
-	os.RemoveAll(dir)
+func TestBuildDataDirEmptyError(t *testing.T) {
+	dir, err := buildDataDir("")
+	require.Empty(t, dir)
+	require.Error(t, err)
+	require.Equal(t, EmptyDirectoryNameError, err)
+}
 
+func TestBuildDataDirDotError(t *testing.T) {
+	bad := []string{".", "./", "./.", "././", "./../"}
+	for _, b := range bad {
+		dir, err := buildDataDir(b)
+		require.Empty(t, dir)
+		require.Error(t, err)
+		require.Equal(t, DotDirectoryNameError, err)
+	}
 }
 
 func TestUserHome(t *testing.T) {
 	home := UserHome()
-	assert.NotEqual(t, home, "")
+	require.NotEqual(t, home, "")
 }
 
 func TestLoadJSON(t *testing.T) {
@@ -96,20 +95,20 @@ func TestLoadJSON(t *testing.T) {
 	defer cleanup(fn)
 
 	// Loading nonexistant file
-	assertFileNotExists(t, fn)
+	requireFileNotExists(t, fn)
 	err := LoadJSON(fn, &obj)
-	assert.NotNil(t, err)
-	assert.True(t, os.IsNotExist(err))
+	require.NotNil(t, err)
+	require.True(t, os.IsNotExist(err))
 
 	f, err := os.Create(fn)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = f.WriteString("{\"key\":\"value\"}")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	f.Close()
 
 	err = LoadJSON(fn, &obj)
-	assert.Nil(t, err)
-	assert.Equal(t, obj.Key, "value")
+	require.Nil(t, err)
+	require.Equal(t, obj.Key, "value")
 }
 
 func TestSaveJSON(t *testing.T) {
@@ -119,22 +118,22 @@ func TestSaveJSON(t *testing.T) {
 		Key string `json:"key"`
 	}{Key: "value"}
 	err := SaveJSON(fn, obj, 0644)
-	assert.Nil(t, err)
-	assertFileExists(t, fn)
-	assertFileNotExists(t, fn+".bak")
-	assertFileMode(t, fn, 0644)
-	assertFileContents(t, fn, "{\"key\":\"value\"}")
+	require.Nil(t, err)
+	requireFileExists(t, fn)
+	requireFileNotExists(t, fn+".bak")
+	requireFileMode(t, fn, 0644)
+	requireFileContents(t, fn, "{\"key\":\"value\"}")
 
 	// Saving again should result in a .bak file same as original
 	obj.Key = "value2"
 	err = SaveJSON(fn, obj, 0644)
-	assert.Nil(t, err)
-	assertFileMode(t, fn, 0644)
-	assertFileExists(t, fn)
-	assertFileExists(t, fn+".bak")
-	assertFileContents(t, fn, "{\"key\":\"value2\"}")
-	assertFileContents(t, fn+".bak", "{\"key\":\"value\"}")
-	assertFileNotExists(t, fn+".tmp")
+	require.Nil(t, err)
+	requireFileMode(t, fn, 0644)
+	requireFileExists(t, fn)
+	requireFileExists(t, fn+".bak")
+	requireFileContents(t, fn, "{\"key\":\"value2\"}")
+	requireFileContents(t, fn+".bak", "{\"key\":\"value\"}")
+	requireFileNotExists(t, fn+".tmp")
 }
 
 func TestSaveJSONSafe(t *testing.T) {
@@ -144,19 +143,19 @@ func TestSaveJSONSafe(t *testing.T) {
 		Key string `json:"key"`
 	}{Key: "value"}
 	err := SaveJSONSafe(fn, obj, 0600)
-	assert.Nil(t, err)
-	assertFileExists(t, fn)
-	assertFileMode(t, fn, 0600)
-	assertFileContents(t, fn, "{\"key\":\"value\"}")
+	require.Nil(t, err)
+	requireFileExists(t, fn)
+	requireFileMode(t, fn, 0600)
+	requireFileContents(t, fn, "{\"key\":\"value\"}")
 
 	// Saving again should result in error, and original file not changed
 	obj.Key = "value2"
 	err = SaveJSONSafe(fn, obj, 0600)
-	assert.NotNil(t, err)
-	assertFileExists(t, fn)
-	assertFileContents(t, fn, "{\"key\":\"value\"}")
-	assertFileNotExists(t, fn+".bak")
-	assertFileNotExists(t, fn+".tmp")
+	require.NotNil(t, err)
+	requireFileExists(t, fn)
+	requireFileContents(t, fn, "{\"key\":\"value\"}")
+	requireFileNotExists(t, fn+".bak")
+	requireFileNotExists(t, fn+".tmp")
 }
 
 func TestSaveBinary(t *testing.T) {
@@ -165,23 +164,23 @@ func TestSaveBinary(t *testing.T) {
 	b := make([]byte, 128)
 	rand.Read(b)
 	err := SaveBinary(fn, b, 0644)
-	assert.Nil(t, err)
-	assertFileNotExists(t, fn+".tmp")
-	assertFileNotExists(t, fn+".bak")
-	assertFileExists(t, fn)
-	assertFileContentsBinary(t, fn, b)
-	assertFileMode(t, fn, 0644)
+	require.Nil(t, err)
+	requireFileNotExists(t, fn+".tmp")
+	requireFileNotExists(t, fn+".bak")
+	requireFileExists(t, fn)
+	requireFileContentsBinary(t, fn, b)
+	requireFileMode(t, fn, 0644)
 
 	b2 := make([]byte, 128)
 	rand.Read(b2)
-	assert.False(t, bytes.Equal(b, b2))
+	require.False(t, bytes.Equal(b, b2))
 
 	err = SaveBinary(fn, b2, 0644)
-	assertFileExists(t, fn)
-	assertFileExists(t, fn+".bak")
-	assertFileNotExists(t, fn+".tmp")
-	assertFileContentsBinary(t, fn, b2)
-	assertFileContentsBinary(t, fn+".bak", b)
-	assertFileMode(t, fn, 0644)
-	assertFileMode(t, fn+".bak", 0644)
+	requireFileExists(t, fn)
+	requireFileExists(t, fn+".bak")
+	requireFileNotExists(t, fn+".tmp")
+	requireFileContentsBinary(t, fn, b2)
+	requireFileContentsBinary(t, fn+".bak", b)
+	requireFileMode(t, fn, 0644)
+	requireFileMode(t, fn+".bak", 0644)
 }

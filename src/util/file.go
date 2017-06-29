@@ -10,37 +10,61 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	logging "github.com/op/go-logging"
 )
 
 var (
-	// DataDir app folder
-	DataDir = ""
+	EmptyDirectoryNameError = errors.New("data directory must not be empty")
+	DotDirectoryNameError   = errors.New("data directory must not be equivalent to .")
 
 	logger = logging.MustGetLogger("util")
 )
 
-// InitDataDir if dir is "", uses the default directory of ~/.skycoin.  The path to dir
-// is created, and the dir used is returned
-func InitDataDir(dir string) string {
-	//DataDir = dir
+// Joins dir with the user's $HOME directory.
+// If $HOME cannot be determined, uses the current working directory.
+// dir must not be the empty string
+func InitDataDir(dir string) (string, error) {
+	dir, err := buildDataDir(dir)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
+		logger.Error("Failed to create directory %s: %v", dir, err)
+		return "", err
+	}
+
+	logger.Info("Created data directory %s", dir)
+	return dir, nil
+}
+
+// Construct the full data directory by adding to $HOME or ./
+func buildDataDir(dir string) (string, error) {
 	if dir == "" {
-		logger.Error("data directory is nil")
+		logger.Error("data directory is empty")
+		return "", EmptyDirectoryNameError
 	}
 
 	home := UserHome()
 	if home == "" {
-		logger.Warning("Failed to get home directory")
-		DataDir = filepath.Join("./", dir)
+		logger.Warning("Failed to get home directory, using ./")
+		home = "./"
 	} else {
-		DataDir = filepath.Join(home, dir)
+		home = filepath.Clean(home)
 	}
 
-	if err := os.MkdirAll(DataDir, os.FileMode(0700)); err != nil {
-		logger.Error("Failed to create directory %s: %v", DataDir, err)
+	fullDir := filepath.Join(home, dir)
+	fullDir = filepath.Clean(fullDir)
+
+	// The joined directory must not be equal to $HOME or a parent path of $HOME
+	if strings.HasPrefix(home, fullDir) {
+		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
+		return "", DotDirectoryNameError
 	}
-	return DataDir
+
+	return fullDir, nil
 }
 
 // UserHome returns the current user home path

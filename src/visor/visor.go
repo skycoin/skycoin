@@ -123,7 +123,6 @@ func walker(hps []coin.HashPair) cipher.SHA256 {
 
 // open the blockdb.
 func openDB(dbFile string) (*bolt.DB, func(), error) {
-	// dbFile := filepath.Join(util.DataDir, dbpath)
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})

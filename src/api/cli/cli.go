@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 	gcli "github.com/urfave/cli"
 )
 
@@ -83,7 +83,7 @@ type Option func(app *App)
 
 // NewApp creates an app instance
 func NewApp(ops ...Option) *App {
-	home := util.UserHome()
+	home := file.UserHome()
 	app := &App{
 		App: *gcli.NewApp(),
 		cfg: Config{

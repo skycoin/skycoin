@@ -18,8 +18,7 @@ import (
 
 	"sync"
 
-	"github.com/skycoin/skycoin/src/util"
-
+	"github.com/skycoin/skycoin/src/util/file"
 	logging "github.com/skycoin/skycoin/src/util/logger"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
@@ -399,7 +398,7 @@ func (pl *Peerlist) Save(dir string) (err error) {
 				peers[k] = p
 			}
 		}
-		err = util.SaveJSON(fn, peers, 0600)
+		err = file.SaveJSON(fn, peers, 0600)
 		if err != nil {
 			logger.Notice("SavePeerList Failed: %s", err)
 		}
@@ -442,7 +441,7 @@ func (pl *Peerlist) ResetAllRetryTimes() {
 func LoadPeerlist(dir string) (*Peerlist, error) {
 	peerlist := Peerlist{peers: make(map[string]*Peer)}
 	fn := filepath.Join(dir, PeerDatabaseFilename)
-	if err := util.LoadJSON(fn, &peerlist.peers); err != nil {
+	if err := file.LoadJSON(fn, &peerlist.peers); err != nil {
 		return nil, err
 	}
 	return &peerlist, nil

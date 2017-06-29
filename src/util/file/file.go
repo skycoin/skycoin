@@ -1,5 +1,5 @@
-// Package util File and Filesystem related utilities
-package util
+// Package file Filesystem related utilities
+package file
 
 import (
 	"encoding/json"

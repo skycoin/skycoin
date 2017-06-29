@@ -10,7 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // Wallet contains meta data and address entries.
@@ -48,7 +48,7 @@ func NewWallet(wltName string, opts ...Option) (*Wallet, error) {
 			"filename":     wltName,
 			"version":      version,
 			"label":        "",
-			"walletFolder": util.UserHome() + "/.skycoin/wallets",
+			"walletFolder": file.UserHome() + "/.skycoin/wallets",
 			"seed":         seed,
 			"lastSeed":     seed,
 			"tm":           fmt.Sprintf("%v", time.Now().Unix()),

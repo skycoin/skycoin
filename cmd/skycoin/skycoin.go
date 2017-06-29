@@ -20,9 +20,9 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
-	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
+	"github.com/skycoin/skycoin/src/util/file"
 	logging "github.com/skycoin/skycoin/src/util/logger"
 )
 
@@ -36,7 +36,7 @@ var (
 		"daemon",
 		"coin",
 		"gui",
-		"util",
+		"file",
 		"visor",
 		"wallet",
 		"gnet",
@@ -336,7 +336,7 @@ func (c *Config) postProcess() {
 		c.BlockchainSeckey = cipher.SecKey{}
 	}
 
-	c.DataDirectory, err = util.InitDataDir(c.DataDirectory)
+	c.DataDirectory, err = file.InitDataDir(c.DataDirectory)
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.WebInterfaceCert == "" {
@@ -497,7 +497,7 @@ func Run(c *Config) {
 		}
 	}()
 
-	c.GUIDirectory = util.ResolveResourceDirectory(c.GUIDirectory)
+	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {

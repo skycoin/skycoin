@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
@@ -610,7 +610,7 @@ type WalletFolder struct {
 func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
-			Address: util.UserHome() + "/.skycoin/wallets",
+			Address: file.UserHome() + "/.skycoin/wallets",
 		}
 		wh.SendOr404(w, ret)
 	}

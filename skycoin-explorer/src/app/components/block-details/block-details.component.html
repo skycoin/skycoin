@@ -1,0 +1,55 @@
+<div class="row">
+  <h2>Block Details</h2>
+  <div class="card" *ngIf="block">
+    <div class="card-content" >
+      <table>
+        <tbody >
+
+        <tr>
+
+          <td>Height</td><td>{{ block.header.seq }}</td>
+
+        </tr>
+        <tr>
+          <td>Timestamp</td><td>{{getTime(block.header.timestamp)}}</td>
+        </tr>
+        <tr>
+          <td>Hash</td><td>{{ block.header.block_hash }}</td>
+        </tr>
+
+        <tr>
+          <td>Parent Hash</td><td>{{ block.header.previous_block_hash }}</td>
+        </tr>
+
+        <tr>
+          <td>Total Amount</td><td>{{ getAmount(block) }} coins</td>
+        </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+    <div class="col s12">Transactions</div>
+    <div class="col s12">
+      <div class="col s1">S.no</div>
+      <div class="col s2">Transaction Id</div>
+      <div class="col s3">Inputs</div>
+      <div class="col s4">Outputs</div>
+      <div class="col s2">Amount</div>
+    </div>
+  <div *ngIf="block">
+    <div  class="col s12" *ngFor="let transaction of block.body.txns;let i = index">
+
+      <div class="col s1">{{i+1}}</div>
+      <div class="col s2 wrap"><a [routerLink]="['/transaction', transaction.txid ]" >{{transaction.txid}}</a></div>
+      <div class="col s3 wrap"><p *ngFor="let input of transaction.inputs;" class="input">{{input}}</p></div>
+      <div class="col s6 wrap"><p *ngFor="let output of transaction.outputs;" class="input"><a [routerLink]="['/address', output.dst ]" >{{output.dst}}</a>  - {{output.coins}}</p></div>
+    </div>
+  </div>
+
+
+
+
+</div>

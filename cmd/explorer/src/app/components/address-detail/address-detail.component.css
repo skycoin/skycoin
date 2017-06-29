@@ -1,0 +1,31 @@
+.collection{
+  border: none;
+}
+a{
+  word-wrap: break-word;
+}
+.collection-item{
+  border: none;
+}
+
+.card-title{
+  font-size: 16px;
+}
+.right-arrow{
+  margin-top: 50px;
+}
+
+.address-qr{
+  padding-top: 20px;
+}
+
+.modalShow{
+  z-index: 1003;
+  display: block;
+  opacity: 1;
+  max-width: 80%;
+  margin: 0 auto;
+  max-height: 25%;
+  transform: scaleX(1);
+  top: 10%;
+}

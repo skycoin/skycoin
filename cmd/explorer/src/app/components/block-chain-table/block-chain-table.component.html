@@ -1,0 +1,44 @@
+
+
+
+<div class="row">
+  <div class="col s12 s12 card light-blue lighten-1 white-text">
+    <div class="card-content">
+      <span class="col s6">Block Height:</span><span class="col s6">{{ totalBlocks| number : '1.0-0'}}</span>
+      <app-block-chain-coin-supply></app-block-chain-coin-supply>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<table class="bordered striped centered responsive-table">
+  <thead >
+  <tr>
+    <th data-field="id">Time</th>
+    <th data-field="name">Block Number</th>
+    <th data-field="price">Transactions</th>
+    <th data-field="id">Amount Transferred</th>
+    <th data-field="price">Blockhash</th>
+
+  </tr>
+  </thead>
+
+  <tbody>
+  <tr *ngFor="let block of blocks" (click)="showDetails(block)">
+    <td>{{getTime(block.header.timestamp)}}</td>
+    <td >{{ block.header.seq | number : '1.0-0'}}</td>
+    <td>{{ block.body.txns.length }}</td>
+    <td>{{ GetBlockAmount(block.body.txns) | number : '1.0-0'}}</td>
+    <td>{{ block.header.block_hash }}</td>
+  </tr>
+
+
+  </tbody>
+</table>
+<app-loading [loading]="loading"></app-loading>
+
+
+<app-skycoin-pagination (onChangePage)="handlePageChange($event)"></app-skycoin-pagination>

@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/util"
 
+	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 
-	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
@@ -34,7 +34,7 @@ func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	quit = make(chan struct{})
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
-	appLoc, err := util.DetermineResourcePath(staticDir, resourceDir, devDir)
+	appLoc, err := file.DetermineResourcePath(staticDir, resourceDir, devDir)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 	logger.Info("Using %s for the key", keyFile)
 	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := util.DetermineResourcePath(staticDir, devDir, resourceDir)
+	appLoc, err := file.DetermineResourcePath(staticDir, devDir, resourceDir)
 	if err != nil {
 		return err
 	}

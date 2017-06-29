@@ -1,5 +1,5 @@
-// Package util File and Filesystem related utilities
-package util
+// Package file Filesystem related utilities
+package file
 
 import (
 	"encoding/json"
@@ -12,17 +12,21 @@ import (
 	"runtime"
 	"strings"
 
-	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
-	EmptyDirectoryNameError = errors.New("data directory must not be empty")
-	DotDirectoryNameError   = errors.New("data directory must not be equivalent to .")
+	// ErrEmptyDirectoryName is returned by constructing the full path
+	// of data directory if the passed argument is empty
+	ErrEmptyDirectoryName = errors.New("data directory must not be empty")
+	// ErrDotDirectoryName is returned by constructing the full path of
+	// data directory if the passed argument is "."
+	ErrDotDirectoryName = errors.New("data directory must not be equivalent to .")
 
-	logger = logging.MustGetLogger("util")
+	logger = logging.MustGetLogger("file")
 )
 
-// Joins dir with the user's $HOME directory.
+// InitDataDir Joins dir with the user's $HOME directory.
 // If $HOME cannot be determined, uses the current working directory.
 // dir must not be the empty string
 func InitDataDir(dir string) (string, error) {
@@ -44,7 +48,7 @@ func InitDataDir(dir string) (string, error) {
 func buildDataDir(dir string) (string, error) {
 	if dir == "" {
 		logger.Error("data directory is empty")
-		return "", EmptyDirectoryNameError
+		return "", ErrEmptyDirectoryName
 	}
 
 	home := UserHome()
@@ -61,7 +65,7 @@ func buildDataDir(dir string) (string, error) {
 	// The joined directory must not be equal to $HOME or a parent path of $HOME
 	if strings.HasPrefix(home, fullDir) {
 		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
-		return "", DotDirectoryNameError
+		return "", ErrDotDirectoryName
 	}
 
 	return fullDir, nil

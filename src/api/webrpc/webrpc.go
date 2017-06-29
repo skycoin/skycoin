@@ -9,7 +9,7 @@ import (
 
 	wh "github.com/skycoin/skycoin/src/util/http"
 
-	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util/logging"
 
 	"bytes"
 	"strings"

@@ -158,7 +158,7 @@ func assertFileNotExists(t *testing.T, filename string) {
 }
 
 func createUnconfirmedTxn() visor.UnconfirmedTxn {
-	now := util.Now()
+	now := utc.Now()
 	return visor.UnconfirmedTxn{
 		Txn: coin.Transaction{
 			Head: coin.TransactionHeader{
@@ -167,7 +167,7 @@ func createUnconfirmedTxn() visor.UnconfirmedTxn {
 		},
 		Received:  now,
 		Checked:   now,
-		Announced: util.ZeroTime(),
+		Announced: time.Time{},
 	}
 }
 
@@ -232,7 +232,7 @@ func makeMoreBlocks(mv *visor.Visor, n int,
 }
 
 func makeBlocks(mv *visor.Visor, n int) ([]visor.SignedBlock, error) {
-	return makeMoreBlocks(mv, n, uint64(util.UnixNow()))
+	return makeMoreBlocks(mv, n, uint64(utc.UnixNow()))
 }
 
 // Tests for daemon's loop related to visor
@@ -588,7 +588,7 @@ func TestVisorRequestBlocksFromAddr(t *testing.T) {
 	assert.False(t, gc.LastSent.IsZero())
 
 	// No connection found for addr
-	gc.LastSent = util.ZeroTime()
+	gc.LastSent = time.Time{}
 	gc.Conn = NewDummyConn(addr)
 	delete(p.Pool.Pool, gc.Id)
 	delete(p.Pool.Addresses, gc.Addr())
@@ -755,11 +755,11 @@ func TestVisorResendTransaction(t *testing.T) {
 	assert.Equal(t, len(v.Visor.Unconfirmed.Txns), 1)
 	h := tx.Hash()
 	ut := v.Visor.Unconfirmed.Txns[h]
-	ut.Announced = util.ZeroTime()
+	ut.Announced = time.Time{}
 	v.Visor.Unconfirmed.Txns[h] = ut
 	assert.True(t, v.Visor.Unconfirmed.Txns[h].Announced.IsZero())
 	// Reset the sent timer since we made a successful spend
-	gc.LastSent = util.ZeroTime()
+	gc.LastSent = time.Time{}
 
 	// Nothing should send if disabled
 	v.Config.Disabled = true
@@ -1057,7 +1057,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
 
 	// Send blocks we have and some we dont, as long as they are in order
 	// we can use the ones at the end
-	gc.LastSent = util.ZeroTime()
+	gc.LastSent = time.Time{}
 	moreBlocks, err := makeMoreBlocks(mv, 2,
 		blocks[len(blocks)-1].Block.Head.Time)
 	assert.Nil(t, err)
@@ -1079,7 +1079,7 @@ func TestGiveBlocksMessageProcess(t *testing.T) {
 	assert.False(t, gc.LastSent.IsZero())
 
 	// Send invalid blocks
-	gc.LastSent = util.ZeroTime()
+	gc.LastSent = time.Time{}
 	bb := visor.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
@@ -1222,7 +1222,7 @@ func TestAnnounceTxnsMessageProcess(t *testing.T) {
 	// We know all the reported txns, nothing should be sent
 	d.Visor.Visor.Unconfirmed.Txns[tx.Txn.Hash()] = tx
 	m.c.Conn.Conn = NewDummyConn(addr)
-	m.c.Conn.LastSent = util.ZeroTime()
+	m.c.Conn.LastSent = time.Time{}
 	assert.NotPanics(t, func() { m.Process(d) })
 	wait()
 	assert.Equal(t, len(d.Pool.Pool.SendResults), 0)

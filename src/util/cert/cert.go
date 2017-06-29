@@ -4,7 +4,7 @@
 
 // Modifications Copyright 2014 Skycoin authors.
 
-package util
+package cert
 
 import (
 	"crypto/rand"
@@ -18,9 +18,12 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
-//TODO: Move all HTTPS to optional sub-package
+var logger = logging.MustGetLogger("util")
 
 // GenerateCert generates a self-signed X.509 certificate for a TLS server. Outputs to
 // certFile and keyFile and will overwrite existing files.
@@ -134,7 +137,7 @@ func CreateCertIfNotExists(host, certFile, keyFile string, appName string) []err
 		logger.Info("Creating certificate %s", certFile)
 		logger.Info("Creating key %s", keyFile)
 		err := GenerateCert(certFile, keyFile, host, appName, 2048,
-			false, Now(), 365*24*time.Hour)
+			false, utc.Now(), 365*24*time.Hour)
 		if err == nil {
 			logger.Info("Created certificate %s for host %s", certFile, host)
 			logger.Info("Created key %s for host %s", keyFile, host)

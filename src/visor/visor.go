@@ -9,11 +9,11 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 
-	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
@@ -281,7 +281,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 
 // CreateAndExecuteBlock creates a SignedBlock from pending transactions and executes it
 func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
-	sb, err := vs.CreateBlock(uint64(util.UnixNow()))
+	sb, err := vs.CreateBlock(uint64(utc.UnixNow()))
 	if err == nil {
 		return sb, vs.ExecuteSignedBlock(sb)
 	}

@@ -13,7 +13,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 
-	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/api/cli"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 var (
@@ -36,7 +36,7 @@ func main() {
 	// get wallet dir from env
 	wltDir := os.Getenv("WALLET_DIR")
 	if wltDir == "" {
-		home := util.UserHome()
+		home := file.UserHome()
 		wltDir = home + "/.skycoin/wallets"
 	}
 

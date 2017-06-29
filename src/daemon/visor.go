@@ -10,7 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/wallet"
 )
@@ -260,7 +260,7 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 // SetTxnsAnnounced sets all txns as announced
 func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 	vs.strand(func() {
-		now := util.Now()
+		now := utc.Now()
 		for _, h := range txns {
 			vs.v.Unconfirmed.SetAnnounced(h, now)
 		}

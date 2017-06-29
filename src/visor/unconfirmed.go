@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
@@ -277,12 +277,12 @@ func (utp *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) {
 
 // Creates an unconfirmed transaction
 func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) UnconfirmedTxn {
-	now := util.Now()
+	now := utc.Now()
 	return UnconfirmedTxn{
 		Txn:       t,
 		Received:  now.UnixNano(),
 		Checked:   now.UnixNano(),
-		Announced: util.ZeroTime().UnixNano(),
+		Announced: time.Time{}.UnixNano(),
 	}
 }
 
@@ -313,7 +313,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (kn
 	var exist bool
 	utp.Txns.update(h, func(tx *UnconfirmedTxn) {
 		know = true
-		now := util.Now()
+		now := utc.Now()
 		tx.Received = now.UnixNano()
 		tx.Checked = now.UnixNano()
 		tx.IsValid = valid
@@ -373,7 +373,7 @@ func (utp *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
 // Refresh checks all unconfirmed txns against the blockchain.
 // verify the transaction and returns all those txns that turn to valid.
 func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) {
-	now := util.Now()
+	now := utc.Now()
 	utp.Txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
 		tx.Checked = now.UnixNano()
 		if tx.IsValid == 0 {

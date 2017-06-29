@@ -12,9 +12,9 @@ import (
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util"
 
-	logging "github.com/op/go-logging"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 /*
@@ -299,6 +299,8 @@ func (dm *Daemon) Run() (err error) {
 		if r := recover(); r != nil {
 			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))
 		}
+
+		logger.Info("Daemon closed")
 	}()
 
 	errC := make(chan error)
@@ -345,7 +347,6 @@ func (dm *Daemon) Run() (err error) {
 			return
 		case qc := <-dm.quitC:
 			qc <- struct{}{}
-			logger.Info("Daemon closed")
 			return
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
@@ -584,7 +585,7 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
-	now := util.Now()
+	now := utc.Now()
 	addrs, err := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) (bool, error) {
 		conned, err := dm.Pool.Pool.IsConnExist(addr)
 		if err != nil {
@@ -691,7 +692,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 		dm.outgoingConnections.Add(a)
 	}
 
-	dm.expectingIntroductions.Add(a, util.Now())
+	dm.expectingIntroductions.Add(a, utc.Now())
 	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version,
 		dm.Pool.Pool.Config.Port)

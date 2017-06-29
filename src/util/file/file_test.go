@@ -71,7 +71,7 @@ func TestBuildDataDirEmptyError(t *testing.T) {
 	dir, err := buildDataDir("")
 	require.Empty(t, dir)
 	require.Error(t, err)
-	require.Equal(t, EmptyDirectoryNameError, err)
+	require.Equal(t, ErrEmptyDirectoryName, err)
 }
 
 func TestBuildDataDirDotError(t *testing.T) {
@@ -80,7 +80,7 @@ func TestBuildDataDirDotError(t *testing.T) {
 		dir, err := buildDataDir(b)
 		require.Empty(t, dir)
 		require.Error(t, err)
-		require.Equal(t, DotDirectoryNameError, err)
+		require.Equal(t, ErrDotDirectoryName, err)
 	}
 }
 

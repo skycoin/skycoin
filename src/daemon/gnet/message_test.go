@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/stretchr/testify/assert"
 )
 

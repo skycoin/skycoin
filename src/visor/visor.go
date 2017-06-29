@@ -13,7 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 
-	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (

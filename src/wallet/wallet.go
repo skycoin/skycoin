@@ -7,9 +7,8 @@ import (
 	"encoding/hex"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	//"math/rand"
 
-	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (

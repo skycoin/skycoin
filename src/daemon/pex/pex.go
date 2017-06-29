@@ -19,7 +19,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	logging "github.com/skycoin/skycoin/src/util/logger"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
 

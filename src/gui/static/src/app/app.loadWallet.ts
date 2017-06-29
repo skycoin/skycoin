@@ -695,7 +695,12 @@ export class LoadWalletComponent implements OnInit {
     }
 
     //Load wallet seed function for create new wallet with name and seed
-    createWalletSeed(walletName, seed){
+    createWalletSeed(walletName, seed, addressCount){
+        if(addressCount < 1) {
+            toastr.error('Please correct address count');
+            return;
+        }
+
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -705,19 +710,46 @@ export class LoadWalletComponent implements OnInit {
         .map((res:Response) => res.json())
         .subscribe(
             response => {
-                //Hide load wallet seed popup
-                this.loadSeedIsVisible = false;
-                //Load wallet for refresh list
-                this.loadWallet();
-            },
-            err => {
-                if(err._body.indexOf("duplicate wallet ") !=-1){
-                    alert("Your are tying to load a wallet that has the same seed! ");
+                if(addressCount > 1) {
+                    var repeats = [];
+                    for(var i = 0; i < addressCount - 1 ; i++) {
+                        repeats.push(i)
+                    }
+                    async.map(repeats, (idx, callback) => {
+                        var stringConvert = 'id='+response.meta.filename;
+                        this.http.post('/wallet/newAddress', stringConvert, {headers: headers})
+                        .map((res:Response) => res.json())
+                        .subscribe(
+                            response => {
+                                console.log(response)
+                                callback(null, null)
+                            },
+                            err => {
+                                callback(err, null)
+                            },
+                            () => {}
+                        );
+                    }, (err, ret) => {
+                        if(err) {
+                            console.log(err);
+                            return;
+                        }
+                        //Hide new wallet popup
+                        this.loadSeedIsVisible = false;
+                        toastr.info("Wallet loaded successfully");
+                        //Load wallet for refresh list
+                        this.loadWallet();
+                    })
+                } else {
+                    //Hide new wallet popup
+                    this.loadSeedIsVisible = false;
+                    toastr.info("Wallet loaded successfully");
+                    //Load wallet for refresh list
+                    this.loadWallet();
                 }
-                console.log("Error on create load wallet seed: "+JSON.stringify(err))
             },
+            err => console.log("Error on create load wallet seed: "+JSON.stringify(err)),
             () => {
-                //console.log('Load wallet seed done')
             }
         );
     }

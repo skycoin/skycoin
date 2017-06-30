@@ -13,7 +13,7 @@ declare var _: any;
              
              <ul class="fa-ul">
   <li><i class="fa-li fa fa-spinner fa-spin" *ngIf="syncDone == false"></i>
-  <span *ngIf="currentWalletNumber>0">{{currentWalletNumber}} of {{highestWalletNumber}} blocks syncned</span>
+  <span *ngIf="currentWalletNumber>0">{{currentWalletNumber}} of {{highestWalletNumber}} blocks synced</span>
   <span *ngIf="currentWalletNumber==0">Syncing wallet</span>
   </li>
 </ul>

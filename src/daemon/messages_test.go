@@ -11,7 +11,7 @@ package daemon
 // 	//"github.com/skycoin/skycoin/src/daemon/gnet"
 // 	"github.com/skycoin/skycoin/src/daemon/gnet"
 // 	"github.com/skycoin/skycoin/src/daemon/pex"
-// 	"github.com/skycoin/skycoin/src/util"
+// 	"github.com/skycoin/skycoin/src/util/logging"
 // 	"github.com/stretchr/testify/assert"
 // )
 
@@ -34,7 +34,7 @@ package daemon
 
 // func init() {
 // 	if silenceLogger {
-// 		util.DisableLogging()
+// 		logging.Disable()
 // 	}
 // }
 

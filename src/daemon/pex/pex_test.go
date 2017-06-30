@@ -1,7 +1,6 @@
 package pex
 
 import (
-	"io/ioutil"
 	"net"
 	"sort"
 	"testing"
@@ -24,7 +23,7 @@ var (
 func init() {
 	// silence the logger
 	if silenceLogger {
-		logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+		logging.Disable()
 	}
 }
 

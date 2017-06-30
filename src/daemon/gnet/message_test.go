@@ -2,7 +2,6 @@ package gnet
 
 import (
 	"errors"
-	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 
 func init() {
 	if silenceLogger {
-		logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+		logging.Disable()
 	}
 }
 

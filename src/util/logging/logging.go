@@ -114,6 +114,6 @@ func MustGetLogger(module string) *logging.Logger {
 }
 
 // DisableLogging disables the logger completely
-func DisableLogging() {
+func Disable() {
 	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
 }

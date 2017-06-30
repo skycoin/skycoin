@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"testing"
 	"time"
@@ -26,7 +25,7 @@ var (
 
 func init() {
 	if silenceLogger {
-		logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+		logging.Disable()
 	}
 }
 

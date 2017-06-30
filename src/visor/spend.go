@@ -73,7 +73,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	}
 
 	if amt.Coins > have.Coins {
-		return nil, errors.New("Not enough coins")
+		return nil, errors.New("Not enough confirmed coins")
 	}
 
 	return spending, nil

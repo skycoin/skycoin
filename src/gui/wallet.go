@@ -382,17 +382,6 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		//set fee automatically for now
-		/*
-			sfee := r.FormValue("fee")
-			fee, err := strconv.ParseUint(sfee, 10, 64)
-			if err != nil {
-				Error400(w, "Invalid \"fee\" value")
-				return
-			}
-		*/
-		//var fee uint64 = 0
-
 		scoins := r.FormValue("coins")
 		//shours := r.FormValue("hours")
 		coins, err := strconv.ParseUint(scoins, 10, 64)

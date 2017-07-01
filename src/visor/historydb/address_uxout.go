@@ -12,18 +12,17 @@ type addressUx struct {
 	bkt *bucket.Bucket
 }
 
-func newAddressUx(db *bolt.DB, name []byte) (*addressUx, error) {
-	bkt, err := bucket.New(name, db)
+// func newAddressUx(db *bolt.DB, name []byte) (*addressUx, error) {
+// }
+
+// create address affected UxOuts bucket.
+func newAddressUxBkt(db *bolt.DB) (*addressUx, error) {
+	bkt, err := bucket.New([]byte("address_in"), db)
 	if err != nil {
 		return nil, err
 	}
 
 	return &addressUx{bkt}, nil
-}
-
-// create address affected UxOuts bucket.
-func newAddressUxBkt(db *bolt.DB) (*addressUx, error) {
-	return newAddressUx(db, []byte("address_in"))
 }
 
 // Get return nil on not found.

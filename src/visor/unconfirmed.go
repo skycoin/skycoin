@@ -314,7 +314,6 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (kn
 	// Update if we already have this txn
 	h := t.Hash()
 	// update the time if exist
-	var exist bool
 	utp.Txns.update(h, func(tx *UnconfirmedTxn) {
 		know = true
 		now := utc.Now()
@@ -323,7 +322,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (kn
 		tx.IsValid = valid
 	})
 
-	if exist {
+	if know {
 		return
 	}
 

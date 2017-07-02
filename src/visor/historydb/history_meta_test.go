@@ -1,6 +1,3 @@
-// +build ignore
-// These tests need to be rewritten to conform with blockdb changes
-
 package historydb
 
 import (
@@ -57,10 +54,10 @@ func TestHistoryMetaSetParsedHeight(t *testing.T) {
 
 	hm, err := newHistoryMeta(db)
 	assert.Nil(t, err)
-	assert.Nil(t, hm.SetParsedHeight(0))
+	assert.Nil(t, hm.setParsedHeight(0))
 	assert.Equal(t, uint64(0), bucket.Btoi(hm.v.Get(parsedHeightKey)))
 
 	// set 10
-	hm.SetParsedHeight(10)
+	hm.setParsedHeight(10)
 	assert.Equal(t, uint64(10), bucket.Btoi(hm.v.Get(parsedHeightKey)))
 }

@@ -109,6 +109,10 @@ func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
 	updateFun := func(v []byte) ([]byte, error) {
+		if v == nil {
+			return nil, fmt.Errorf("%s is not exist in bucket %s", key.Hex(), utb.txns.Name)
+		}
+
 		var tx UnconfirmedTxn
 		if err := encoder.DeserializeRaw(v, &tx); err != nil {
 			return nil, err

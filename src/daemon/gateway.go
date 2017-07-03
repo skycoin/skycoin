@@ -343,10 +343,10 @@ func (gw *Gateway) InjectTransaction(txn coin.Transaction) (tx coin.Transaction,
 	return
 }
 
-// GetAddressTransactions returns a *visor.TransactionResults
-func (gw *Gateway) GetAddressTransactions(a cipher.Address) (tx *visor.TransactionResults, err error) {
+// GetAddressTxns returns a *visor.TransactionResults
+func (gw *Gateway) GetAddressTxns(a cipher.Address) (tx *visor.TransactionResults, err error) {
 	gw.strand(func() {
-		tx, err = gw.vrpc.GetAddressTransactions(gw.v, a)
+		tx, err = gw.vrpc.GetAddressTxns(gw.v, a)
 	})
 	return
 }

@@ -110,7 +110,7 @@ func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
 	updateFun := func(v []byte) ([]byte, error) {
 		if v == nil {
-			return nil, fmt.Errorf("%s is not exist in bucket %s", key.Hex(), utb.txns.Name)
+			return nil, fmt.Errorf("%s does not exist in bucket %s", key.Hex(), utb.txns.Name)
 		}
 
 		var tx UnconfirmedTxn

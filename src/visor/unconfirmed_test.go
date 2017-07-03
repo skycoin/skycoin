@@ -1032,7 +1032,7 @@ func TestUnconfirmTxBktUpdate(t *testing.T) {
 			uctxs[:2],
 			2,
 			time.Now().UnixNano(),
-			fmt.Errorf("%s is not exist in bucket unconfirmed_txns", uctxs[2].Hash().Hex()),
+			fmt.Errorf("%s does not exist in bucket unconfirmed_txns", uctxs[2].Hash().Hex()),
 		},
 	}
 

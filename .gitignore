@@ -109,3 +109,4 @@ src/gui/static/dist
 .idea/
 
 *.iml
+*.test

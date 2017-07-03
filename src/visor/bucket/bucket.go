@@ -156,6 +156,21 @@ func (b *Bucket) IsExist(k []byte) bool {
 	return exist
 }
 
+// IsEmpty check if the bucket is empty
+func (b *Bucket) IsEmpty() bool {
+	var notEmpty bool
+	b.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket(b.Name).Cursor()
+		k, _ := c.First()
+		if k != nil {
+			notEmpty = true
+		}
+
+		return nil
+	})
+	return !notEmpty
+}
+
 // ForEach iterate the whole bucket
 func (b *Bucket) ForEach(f func(k, v []byte) error) error {
 	return b.db.View(func(tx *bolt.Tx) error {

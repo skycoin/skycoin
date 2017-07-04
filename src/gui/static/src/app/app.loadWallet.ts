@@ -254,12 +254,13 @@ export class LoadWalletComponent implements OnInit {
 
 
         _.each(addresses,(address)=>{
-            this.http.get('/explorer/address?address='+address, {})
+            this.http.get('/explorer/transactions?address='+address, {})
             .map((res) => res.json())
             .subscribe(transactions => {
                 _.each(transactions,(transaction)=>{
+                    let confirmed = transaction.status.confirmed? 'Confirmed': 'UnConfirmed'
                     this.userTransactions.push({'type':'confirmed','transactionInputs':transaction.inputs,'transactionOutputs':transaction.outputs
-                        ,'actualTransaction':transaction
+                        ,'actualTransaction':transaction, 'confirmed': confirmed
                     });
                 });
             });

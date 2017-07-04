@@ -202,8 +202,7 @@
                             <tr *ngFor="let trnsObj of userTransactions">
                                 <td *ngIf="trnsObj.type == 'confirmed'">{{getDateTimeString(trnsObj.actualTransaction.timestamp)}}</td>
                                 <td *ngIf="trnsObj.type == 'pending'" >NA</td>
-
-                                <td *ngIf="trnsObj.type == 'confirmed'">Confirmed</td>
+                                <td>{{trnsObj.confirmed}}</td>
                                 <td *ngIf="trnsObj.type == 'pending'" >Pending</td>
                                 <td>{{trnsObj.actualTransaction.type}}</td>
                                 <td>

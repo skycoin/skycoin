@@ -454,6 +454,11 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// method: POST
+// url: /wallet/newAddress
+// params:
+// 		id: wallet id
+// 	   num: number of address need to create, if not set the default value is 1
 func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
@@ -467,7 +472,19 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		addrs, err := Wg.NewAddresses(wltID, 1)
+		// the number of address that need to create, default is 1
+		n := 1
+		var err error
+		num := r.FormValue("num")
+		if num != "" {
+			n, err = strconv.Atoi(num)
+			if err != nil {
+				wh.Error400(w, "invalid num value")
+				return
+			}
+		}
+
+		addrs, err := Wg.NewAddresses(wltID, n)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

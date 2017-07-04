@@ -588,6 +588,9 @@ export class LoadWalletComponent implements OnInit {
             return;
         }
 
+        // new wallet will have a default address
+        addressCount--;
+
         //check if label is duplicated
         var old = _.find(this.wallets, function(o){
             return (o.meta.label == label)
@@ -611,53 +614,43 @@ export class LoadWalletComponent implements OnInit {
         .map((res:Response) => res.json())
         .subscribe(
             response => {
-                console.log(response)
-
-                if(addressCount > 1) {
-                    var repeats = [];
-                    for(var i = 0; i < addressCount - 1 ; i++) {
-                        repeats.push(i)
-                    }
-
-                    async.map(repeats, (idx, callback) => {
-                        var stringConvert = 'id='+response.meta.filename;
-                        this.http.post('/wallet/newAddress', stringConvert, {headers: headers})
-                        .map((res:Response) => res.json())
-                        .subscribe(
-                            response => {
-                                console.log(response)
-                                callback(null, null)
-                            },
-                            err => {
-                                callback(err, null)
-                            },
-                            () => {}
-                        );
-                    }, (err, ret) => {
-                        if(err) {
+                console.log('response:', response);
+                if (addressCount > 0) {
+                    let url = 'id='+response.meta.filename+'&num='+addressCount
+                    this.http.post('/wallet/newAddress', url, {headers: headers})
+                    .map((res:Response) => res.json())
+                    .subscribe(
+                        response => {
+                            //Hide new wallet popup
+                            this.NewWalletIsVisible = false;
+                            toastr.info("New wallet created successfully");
+                            //Load wallet for refresh list
+                            this.loadWallet();
+                        },
+                        err => {
                             console.log(err);
-                            return;
                         }
-
-                        //Hide new wallet popup
-                        this.NewWalletIsVisible = false;
-                        toastr.info("New wallet created successfully");
-                        //Load wallet for refresh list
-                        this.loadWallet();
-                    })
-                } else {
-                    //Hide new wallet popup
-                    this.NewWalletIsVisible = false;
-                    toastr.info("New wallet created successfully");
-                    //Load wallet for refresh list
-                    this.loadWallet();
+                    );
+                    return
                 }
+
+                //Hide new wallet popup
+                this.NewWalletIsVisible = false;
+                toastr.info("New wallet created successfully");
+                //Load wallet for refresh list
+                this.loadWallet();
             },
             err => {
-                if(err._body.indexOf("duplicate wallet ") !=-1){
-                    toastr.info("Can't load same wallet twice!");
+                // when node is down, the response header status is 200
+                if (err.status == 200) {
+                    return
                 }
-                console.log(err);
+
+                if (err.status == 400) {
+                    if(err._body.indexOf("duplicate wallet ") !=-1){
+                        toastr.info("Can't load same wallet twice!");
+                    }
+                }
             },
             () => {}
         );
@@ -702,6 +695,8 @@ export class LoadWalletComponent implements OnInit {
             return;
         }
 
+        addressCount--;
+
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -711,47 +706,42 @@ export class LoadWalletComponent implements OnInit {
         .map((res:Response) => res.json())
         .subscribe(
             response => {
-                if(addressCount > 1) {
-                    var repeats = [];
-                    for(var i = 0; i < addressCount - 1 ; i++) {
-                        repeats.push(i)
-                    }
-                    async.map(repeats, (idx, callback) => {
-                        var stringConvert = 'id='+response.meta.filename;
-                        this.http.post('/wallet/newAddress', stringConvert, {headers: headers})
-                        .map((res:Response) => res.json())
-                        .subscribe(
-                            response => {
-                                console.log(response)
-                                callback(null, null)
-                            },
-                            err => {
-                                callback(err, null)
-                            },
-                            () => {}
-                        );
-                    }, (err, ret) => {
-                        if(err) {
+                if(addressCount > 0) {
+                    let params='id=' + response.meta.filename + '&num=' + addressCount;
+                    this.http.post('/wallet/newAddress', params, {headers: headers})
+                    .map((res:Response) => res.json())
+                    .subscribe(
+                        response => {
+                            //Hide new wallet popup
+                            this.loadSeedIsVisible = false;
+                            toastr.info("Wallet loaded successfully");
+                            //Load wallet for refresh list
+                            this.loadWallet();
+                        },
+                        err => {
                             console.log(err);
-                            return;
-                        }
-                        //Hide new wallet popup
-                        this.loadSeedIsVisible = false;
-                        toastr.info("Wallet loaded successfully");
-                        //Load wallet for refresh list
-                        this.loadWallet();
-                    })
-                } else {
-                    //Hide new wallet popup
-                    this.loadSeedIsVisible = false;
-                    toastr.info("Wallet loaded successfully");
-                    //Load wallet for refresh list
-                    this.loadWallet();
-                }
+                        },
+                        () => {}
+                    );
+                    return
+                } 
+
+                //Hide new wallet popup
+                this.loadSeedIsVisible = false;
+                toastr.info("Wallet loaded successfully");
+                //Load wallet for refresh list
+                this.loadWallet();
             },
             err => {
-                if(err._body.indexOf("duplicate wallet ") !=-1){
-                    toastr.info("Can't load same wallet twice!");
+                // when node is down, the response header status is 200
+                if (err.status == 200) {
+                    return
+                }
+
+                if (err.status == 400) {
+                    if(err._body.indexOf("duplicate wallet ") !=-1){
+                        toastr.info("Can't load same wallet twice!");
+                    }
                 }
             },
             () => {

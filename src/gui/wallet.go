@@ -497,10 +497,13 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		var rlt = struct {
-			Address string `json:"address"`
-		}{
-			addrs[0].String(),
+			Address []string `json:"addresses"`
+		}{}
+
+		for _, a := range addrs {
+			rlt.Address = append(rlt.Address, a.String())
 		}
+
 		wh.SendOr404(w, rlt)
 		return
 	}

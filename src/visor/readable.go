@@ -114,7 +114,7 @@ type ReadableTransactionOutput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
 	Coins   string `json:"coins"`
-	Hours   uint64 `json:"hours"`
+	Hours   string `json:"hours"`
 }
 
 // ReadableTransactionInput readable transaction input
@@ -161,7 +161,7 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 		Hash:    t.UxID(txid).Hex(),
 		Address: t.Address.String(), //Destination Address
 		Coins:   StrBalance(t.Coins),
-		Hours:   t.Hours,
+		Hours:   strconv.FormatUint(t.Hours, 10),
 	}
 }
 
@@ -179,7 +179,7 @@ type ReadableOutput struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
-	Hours             uint64 `json:"hours"`
+	Hours             string `json:"hours"`
 }
 
 // ReadableOutputSet records unspent outputs in different status.
@@ -216,7 +216,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             StrBalance(t.Body.Coins),
-		Hours:             t.Body.Hours,
+		Hours:             strconv.FormatUint(t.Body.Hours, 10),
 	}
 }
 
@@ -380,7 +380,7 @@ type TransactionOutputJSON struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"` // Address of receiver
 	Coins             string `json:"coins"`   // Number of coins
-	Hours             uint64 `json:"hours"`   // Coin hours
+	Hours             string `json:"hours"`   // Coin hours
 }
 
 // NewTransactionOutputJSON creates transaction output json
@@ -400,7 +400,7 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) Tr
 
 	o.Address = ux.Address.String()
 	o.Coins = StrBalance(ux.Coins)
-	o.Hours = ux.Hours
+	o.Hours = strconv.FormatUint(ux.Hours, 10)
 	return o
 }
 
@@ -408,18 +408,17 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) Tr
 func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput, error) {
 	var tx coin.TransactionOutput
 
-	//hash, err := cipher.SHA256FromHex(in.Hash)
-	//if err != nil {
-	//	return coin.TransactionOutput{}, errors.New("Invalid hash")
-	//}
 	addr, err := cipher.DecodeBase58Address(in.Address)
 	if err != nil {
 		return coin.TransactionOutput{}, errors.New("Address decode fail")
 	}
-	//tx.Hash = hash
+
 	tx.Address = addr
 	tx.Coins = StrBalance2(in.Coins)
-	tx.Hours = in.Hours
+	tx.Hours, err = strconv.ParseUint(in.Hours, 10, 64)
+	if err != nil {
+		return coin.TransactionOutput{}, err
+	}
 
 	return tx, nil
 }

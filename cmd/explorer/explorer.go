@@ -54,7 +54,7 @@ func getBlockChainMetaData(w http.ResponseWriter, r *http.Request) {
 
 func getAddress(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
-	resp, err := http.Get("http://127.0.0.1:6420/explorer/address?address=" + address)
+	resp, err := http.Get("http://127.0.0.1:6420/explorer/transactions?address=" + address)
 	if err != nil {
 		wh.Error500(w, "Unable to respond back")
 	}

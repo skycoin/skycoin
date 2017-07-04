@@ -32,7 +32,7 @@ router.get('/blockchain/metadata', (req, res) => {
 
 // address uxouts!
 router.get('/address', (req, res) => {
-  axios.get(`${API}/explorer/address?address=`+req.query.address)
+  axios.get(`${API}/explorer/transactions?address=`+req.query.address)
   .then(blocks => {
   res.status(200).json(blocks.data);
 })

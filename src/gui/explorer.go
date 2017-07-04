@@ -16,7 +16,7 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
 	mux.HandleFunc("/explorer/transactions", getTransactionsForAddress(gateway))
 
-	mux.HandleFunc("/explorer/coinsupply", getCoinSupply(gateway))
+	mux.HandleFunc("/explorer/coinSupply", getCoinSupply(gateway))
 }
 
 var addrList = []string{

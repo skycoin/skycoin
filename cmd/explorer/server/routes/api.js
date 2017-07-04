@@ -95,7 +95,7 @@ router.get('/currentBalance', (req, res) => {
 
 // Get the block details
 router.get('/coinSupply', (req, res) => {
-  axios.get("http://127.0.0.1:6420/explorer/getEffectiveOutputs")
+  axios.get("http://127.0.0.1:6420/explorer/coinSupply")
   .then(blocks => {
     res.status(200).json(blocks.data);
 })

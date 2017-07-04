@@ -33,7 +33,7 @@ func getBlocks(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSupply(w http.ResponseWriter, r *http.Request) {
-	resp, err := http.Get("http://127.0.0.1:6420/explorer/getEffectiveOutputs")
+	resp, err := http.Get("http://127.0.0.1:6420/explorer/coinSupply")
 	if err != nil {
 		wh.Error500(w, "Unable to respond back")
 	}

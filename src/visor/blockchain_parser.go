@@ -41,12 +41,14 @@ func (bcp *BlockchainParser) BlockListener(b coin.Block) {
 	bcp.blkC <- b
 }
 
-// Run starts blockchain parser, the q channel will be
-// closed to notify the invoker that the running process
-// is going to shutdown.
+// Run starts blockchain parser
 func (bcp *BlockchainParser) Run() error {
 	logger.Info("Blockchain parser start")
 	defer logger.Info("Blockchain parser closed")
+
+	if err := bcp.historyDB.ResetIfNeed(); err != nil {
+		return err
+	}
 
 	// parse to the blockchain head
 	headSeq := bcp.bc.Head().Seq()

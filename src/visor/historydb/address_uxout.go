@@ -12,9 +12,6 @@ type addressUx struct {
 	bkt *bucket.Bucket
 }
 
-// func newAddressUx(db *bolt.DB, name []byte) (*addressUx, error) {
-// }
-
 // create address affected UxOuts bucket.
 func newAddressUxBkt(db *bolt.DB) (*addressUx, error) {
 	bkt, err := bucket.New([]byte("address_in"), db)
@@ -59,6 +56,16 @@ func (au *addressUx) Add(address cipher.Address, uxHash cipher.SHA256) error {
 	hashes = append(hashes, uxHash)
 	bin := encoder.Serialize(hashes)
 	return au.bkt.Put(address.Bytes(), bin)
+}
+
+// IsEmpty checks if the addressUx bucket is empty
+func (au *addressUx) IsEmpty() bool {
+	return au.bkt.IsEmpty()
+}
+
+// Reset resets the bucket
+func (au *addressUx) Reset() error {
+	return au.bkt.Reset()
 }
 
 func setAddressUx(bkt *bolt.Bucket, addr cipher.Address, uxHash cipher.SHA256) error {

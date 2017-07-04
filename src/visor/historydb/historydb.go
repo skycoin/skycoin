@@ -8,7 +8,10 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
+
+var logger = logging.MustGetLogger("historydb")
 
 // Blockchainer interface for isolating the detail of blockchain.
 type Blockchainer interface {
@@ -57,7 +60,77 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 		return nil, err
 	}
 
+	hd.addrTxns, err = newAddressTxnsBkt(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return &hd, nil
+}
+
+// ResetIfNeed checks if need to reset the parsed block history,
+// If we have a new added bucket, we need to reset to parse
+// blockchain again to get the new bucket filled.
+func (hd *HistoryDB) ResetIfNeed() error {
+	if hd.historyMeta.ParsedHeight() == 0 {
+		return nil
+	}
+
+	// if any of the following buckets are empty, need to reset
+	var reset bool
+	for {
+		if hd.addrTxns.IsEmpty() {
+			reset = true
+			break
+		}
+
+		if hd.addrUx.IsEmpty() {
+			reset = true
+			break
+		}
+
+		if hd.txns.IsEmpty() {
+			reset = true
+			break
+		}
+
+		if hd.outputs.IsEmpty() {
+			reset = true
+			break
+		}
+
+		break
+	}
+
+	if reset {
+		return hd.reset()
+	}
+
+	return nil
+}
+
+func (hd *HistoryDB) reset() error {
+	logger.Info("History db reset")
+	if err := hd.addrTxns.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.addrUx.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.outputs.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.historyMeta.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.txns.Reset(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetUxout get UxOut of specific uxID.

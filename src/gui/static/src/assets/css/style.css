@@ -379,3 +379,19 @@ label {
     display: inline-block;
     float: right;
 }
+
+.flex-center-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.custom-link {
+    text-decoration: none;
+}
+.custom-link:hover,
+.custom-link:focus {
+    text-decoration: none;
+}
+.custom-link:hover {
+    color: blue;
+}

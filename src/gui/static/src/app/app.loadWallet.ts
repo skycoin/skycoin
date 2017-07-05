@@ -83,7 +83,7 @@ export class LoadWalletComponent implements OnInit {
     displayMode: DisplayModeEnum;
     displayModeEnum = DisplayModeEnum;
     selectedMenu: string;
-
+    historyTimeBy:string = 'desc';
     userTransactions:Array<any>;
 
     @ViewChild(SkyCoinOutputComponent)
@@ -262,9 +262,43 @@ export class LoadWalletComponent implements OnInit {
                     this.userTransactions.push({'type':'confirmed','transactionInputs':transaction.inputs,'transactionOutputs':transaction.outputs
                         ,'actualTransaction':transaction, 'confirmed': confirmed
                     });
+                    this.sortTransactions();
                 });
             });
         });
+    }
+    sortHistoryByTime(ev:Event) {
+        this.historyTimeBy = this.historyTimeBy === 'desc' ? 'asc' : 'desc';
+        this.sortTransactions()
+    }
+    sortTransactions() {
+        if(this.userTransactions.length <= 0) {
+            return;
+        }
+        switch (this.historyTimeBy) {
+            case 'asc':
+                this.userTransactions.sort((a, b) => {
+                    if (a.actualTransaction.timestamp > b.actualTransaction.timestamp) {
+                        return 1;
+                    }
+                    if (a.actualTransaction.timestamp < b.actualTransaction.timestamp) {
+                        return -1;
+                    }
+                    return 0;
+                });
+                break;
+            case 'desc':
+                 this.userTransactions.sort((a, b) => {
+                    if (a.actualTransaction.timestamp > b.actualTransaction.timestamp) {
+                        return -1;
+                    }
+                    if (a.actualTransaction.timestamp < b.actualTransaction.timestamp) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                break;
+        }
     }
 
     //Load wallet function
@@ -747,45 +781,6 @@ export class LoadWalletComponent implements OnInit {
             () => {
             }
         );
-    }
-
-    sortHistory(key) {
-        if(this.sortDir[key]==0)
-            this.sortDir[key] = 1;
-        else
-            this.sortDir[key] = this.sortDir[key] * (-1);
-
-        if(key == 'time'){
-            this.sortDir['address'] = 0;
-            this.sortDir['amount'] = 0;
-        } else if(key == 'amount') {
-            this.sortDir['time'] = 0;
-            this.sortDir['address'] = 0;
-        } else {
-            this.sortDir['time'] = 0;
-            this.sortDir['amount'] = 0;
-        }
-
-        var self = this;
-        if(key == 'time') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return o.txn.timestamp;
-            });
-        } else if(key == 'amount') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return Number(o[key]);
-            });
-        } else if(key == 'address') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return o[key];
-            })
-        };
-
-        if(this.sortDir[key] == -1) {
-            this.historyTable = this.historyTable.reverse();
-        }
-
-        this.setHistoryPage(this.historyPager.currentPage);
     }
 
     filterHistory(address) {

@@ -158,17 +158,17 @@ func (b *Bucket) IsExist(k []byte) bool {
 
 // IsEmpty check if the bucket is empty
 func (b *Bucket) IsEmpty() bool {
-	var notEmpty bool
+	var empty = true
 	b.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(b.Name).Cursor()
 		k, _ := c.First()
 		if k != nil {
-			notEmpty = true
+			empty = false
 		}
 
 		return nil
 	})
-	return !notEmpty
+	return empty
 }
 
 // ForEach iterate the whole bucket

@@ -77,32 +77,10 @@ func (hd *HistoryDB) ResetIfNeed() error {
 	}
 
 	// if any of the following buckets are empty, need to reset
-	var reset bool
-	for {
-		if hd.addrTxns.IsEmpty() {
-			reset = true
-			break
-		}
-
-		if hd.addrUx.IsEmpty() {
-			reset = true
-			break
-		}
-
-		if hd.txns.IsEmpty() {
-			reset = true
-			break
-		}
-
-		if hd.outputs.IsEmpty() {
-			reset = true
-			break
-		}
-
-		break
-	}
-
-	if reset {
+	if hd.addrTxns.IsEmpty() ||
+		hd.addrUx.IsEmpty() ||
+		hd.txns.IsEmpty() ||
+		hd.outputs.IsEmpty() {
 		return hd.reset()
 	}
 

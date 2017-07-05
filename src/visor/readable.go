@@ -380,7 +380,7 @@ type TransactionOutputJSON struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"` // Address of receiver
 	Coins             string `json:"coins"`   // Number of coins
-	Hours             string `json:"hours"`   // Coin hours
+	Hours             uint64 `json:"hours"`   // Coin hours
 }
 
 // NewTransactionOutputJSON creates transaction output json
@@ -400,7 +400,7 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) Tr
 
 	o.Address = ux.Address.String()
 	o.Coins = StrBalance(ux.Coins)
-	o.Hours = strconv.FormatUint(ux.Hours, 10)
+	o.Hours = ux.Hours
 	return o
 }
 
@@ -415,7 +415,7 @@ func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput
 
 	tx.Address = addr
 	tx.Coins = StrBalance2(in.Coins)
-	tx.Hours, err = strconv.ParseUint(in.Hours, 10, 64)
+	tx.Hours = in.Hours
 	if err != nil {
 		return coin.TransactionOutput{}, err
 	}

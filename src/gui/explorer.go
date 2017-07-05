@@ -170,7 +170,7 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // method: GET
-// url: /explorer/transactions?address=${address}
+// url: /explorer/address?address=${address}
 func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {

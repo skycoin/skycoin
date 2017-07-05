@@ -616,8 +616,8 @@ export class LoadWalletComponent implements OnInit {
             response => {
                 console.log('response:', response);
                 if (addressCount > 0) {
-                    let url = 'id='+response.meta.filename+'&num='+addressCount
-                    this.http.post('/wallet/newAddress', url, {headers: headers})
+                    let param = 'id='+response.meta.filename+'&num='+addressCount
+                    this.http.post('/wallet/newAddress', param, {headers: headers})
                     .map((res:Response) => res.json())
                     .subscribe(
                         response => {

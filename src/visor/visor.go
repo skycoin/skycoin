@@ -196,17 +196,6 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 // Run starts the visor process
 func (vs *Visor) Run() error {
-	errC := make(chan error, 1)
-
-	go func() {
-		logger.Info("Verify signature...")
-		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
-			errC <- fmt.Errorf("Invalid block signatures: %v", err)
-			return
-		}
-		logger.Info("Signature verify success")
-	}()
-
 	if vs.Blockchain.GetGenesisBlock() == nil {
 		vs.GenesisPreconditions()
 		b, err := vs.Blockchain.CreateGenesisBlock(
@@ -236,6 +225,16 @@ func (vs *Visor) Run() error {
 			}
 		}
 	}
+
+	errC := make(chan error, 1)
+	go func() {
+		logger.Info("Verify signature...")
+		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
+			errC <- fmt.Errorf("Invalid block signatures: %v", err)
+			return
+		}
+		logger.Info("Signature verify success")
+	}()
 
 	go func() {
 		errC <- vs.bcParser.Run()

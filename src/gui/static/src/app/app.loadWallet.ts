@@ -254,7 +254,7 @@ export class LoadWalletComponent implements OnInit {
 
 
         _.each(addresses,(address)=>{
-            this.http.get('/explorer/transactions?address='+address, {})
+            this.http.get('/explorer/address?address='+address, {})
             .map((res) => res.json())
             .subscribe(transactions => {
                 _.each(transactions,(transaction)=>{

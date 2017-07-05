@@ -718,7 +718,7 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 			if !known {
 				logger.Warning("Failed to record txn: %v", err)
 			} else {
-				logger.Warning("Duplicate Transaction: %v", txn.Hash())
+				logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
 			}
 		}
 	}

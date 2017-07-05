@@ -1,6 +1,3 @@
-// +build ignore
-// These tests need to be rewritten to conform with blockdb changes
-
 package historydb
 
 import (
@@ -17,8 +14,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -83,16 +80,13 @@ func setup(t *testing.T) (*bolt.DB, func(), error) {
 
 type fakeBlockchain struct {
 	blocks  []coin.Block
-	unspent *blockdb.UnspentPool
+	unspent map[string]coin.UxOut
+	uxhash  cipher.SHA256
 }
 
 func newBlockchain(db *bolt.DB) *fakeBlockchain {
-	up, err := blockdb.NewUnspentPool(db)
-	if err != nil {
-		panic(err)
-	}
 	return &fakeBlockchain{
-		unspent: up,
+		unspent: make(map[string]coin.UxOut),
 	}
 }
 
@@ -113,16 +107,35 @@ func (fbc fakeBlockchain) Head() *coin.Block {
 	return &fbc.blocks[l-1]
 }
 
+func (fbc *fakeBlockchain) deleteUxOut(uxids []cipher.SHA256) {
+	for _, id := range uxids {
+		ux := fbc.unspent[id.Hex()]
+		fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
+		delete(fbc.unspent, id.Hex())
+	}
+}
+
+func (fbc *fakeBlockchain) addUxOut(ux coin.UxOut) {
+	fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
+	fbc.unspent[ux.Hash().Hex()] = ux
+}
+
 func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	var uxs coin.UxArray
 	txns := b.Body.Transactions
 	for _, tx := range txns {
 		// Remove spent outputs
-		fbc.unspent.Delete(tx.In)
+		for _, id := range tx.In {
+			ux := fbc.unspent[id.Hex()]
+			fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
+			delete(fbc.unspent, id.Hex())
+
+		}
+		fbc.deleteUxOut(tx.In)
 		// Create new outputs
 		txUxs := coin.CreateUnspents(b.Head, tx)
 		for i := range txUxs {
-			fbc.unspent.Add(txUxs[i])
+			fbc.addUxOut(txUxs[i])
 		}
 		uxs = append(uxs, txUxs...)
 	}
@@ -165,7 +178,7 @@ func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesi
 			Hours:          genesisCoins, // Allocate 1 coin hour per coin
 		},
 	}
-	fbc.unspent.Add(ux)
+	fbc.addUxOut(ux)
 	return b
 }
 
@@ -214,15 +227,15 @@ func TestProcessGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ary, err := bc.unspent.GetAll()
-	ux := ary[0]
-	assert.Equal(t, outID[0], ux.Hash())
+	ux, ok := bc.unspent[outID[0].Hex()]
+	require.True(t, ok)
+	require.Equal(t, outID[0], ux.Hash())
 
 	// check outputs
 	output := UxOut{}
-	if err := getBucketValue(db, outputBkt, outID[0][:], &output); err != nil {
-		t.Fatal(err)
-	}
+	err = getBucketValue(db, outputBkt, outID[0][:], &output)
+	require.Nil(t, err)
+
 	assert.Equal(t, output.Out, ux)
 }
 
@@ -429,7 +442,7 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 		return nil, nil, err
 	}
 	preBlock := bc.GetBlock(td.PreBlockHash)
-	b := newBlock(*preBlock, tm, bc.unspent, coin.Transactions{tx}, _feeCalc)
+	b := newBlock(*preBlock, tm, bc.uxhash, coin.Transactions{tx}, _feeCalc)
 
 	// uxs, err := bc.ExecuteBlock(&b)
 	_, err = bc.ExecuteBlock(&b)
@@ -451,7 +464,7 @@ func getBucketValue(db *bolt.DB, name []byte, key []byte, value interface{}) err
 	})
 }
 
-func newBlock(prev coin.Block, currentTime uint64, unspent *blockdb.UnspentPool,
+func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
 	txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
 	if len(txns) == 0 {
 		log.Panic("Refusing to create block with no transactions")
@@ -463,12 +476,12 @@ func newBlock(prev coin.Block, currentTime uint64, unspent *blockdb.UnspentPool,
 	}
 	body := coin.BlockBody{Transactions: txns}
 	return coin.Block{
-		Head: newBlockHeader(prev.Head, unspent, currentTime, fee, body),
+		Head: newBlockHeader(prev.Head, uxHash, currentTime, fee, body),
 		Body: body,
 	}
 }
 
-func newBlockHeader(prev coin.BlockHeader, unspent *blockdb.UnspentPool, currentTime,
+func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime,
 	fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
 	return coin.BlockHeader{
@@ -478,14 +491,6 @@ func newBlockHeader(prev coin.BlockHeader, unspent *blockdb.UnspentPool, current
 		Time:     currentTime,
 		BkSeq:    prev.BkSeq + 1,
 		Fee:      fee,
-		UxHash:   getUxHash(unspent),
+		UxHash:   uxHash,
 	}
-}
-
-func getUxHash(unspent *blockdb.UnspentPool) cipher.SHA256 {
-	hash, err := unspent.GetUxHash()
-	if err != nil {
-		panic(err)
-	}
-	return hash
 }

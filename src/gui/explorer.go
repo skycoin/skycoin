@@ -124,57 +124,60 @@ var addrList = []string{
 
 func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-
-			filters := []daemon.OutputsFilter{}
-			filters = append(filters, daemon.FbyAddressesNotIncluded(addrList))
-			outs, err := gateway.GetUnspentOutputs(filters...)
-			if err != nil {
-				wh.Error500(w)
-				return
-			}
-
-			totalSupply := 0
-			for _, u := range outs.HeadOutputs {
-				coin, err := strconv.Atoi(u.Coins)
-				if err == nil {
-					totalSupply = totalSupply + coin
-				}
-
-			}
-			filtersDevAddresses := []daemon.OutputsFilter{}
-			filtersDevAddresses = append(filtersDevAddresses, daemon.FbyAddresses(addrList))
-			devAddresses, err := gateway.GetUnspentOutputs(filtersDevAddresses...)
-			if err != nil {
-				wh.Error500(w)
-				return
-			}
-			totalDevBalance := 0
-			for _, u := range devAddresses.HeadOutputs {
-				coin, err := strconv.Atoi(u.Coins)
-				if err == nil {
-					totalDevBalance = totalDevBalance + coin
-				}
-
-			}
-			wh.SendOr404(w, wallet.CoinSupply{
-				CurrentSupply: totalSupply,
-				CoinCap:       100000000,
-				UndistributedLockedCoinHoldingAddresses: addrList,
-				UndistributedLockedCoinBalance:          totalDevBalance,
-			})
+		if r.Method != "GET" {
+			wh.Error405(w)
+			return
 		}
-	}
 
+		filters := []daemon.OutputsFilter{}
+		filters = append(filters, daemon.FbyAddressesNotIncluded(addrList))
+		outs, err := gateway.GetUnspentOutputs(filters...)
+		if err != nil {
+			wh.Error500(w)
+			return
+		}
+
+		totalSupply := 0
+		for _, u := range outs.HeadOutputs {
+			coin, err := strconv.Atoi(u.Coins)
+			if err == nil {
+				totalSupply = totalSupply + coin
+			}
+
+		}
+		filtersDevAddresses := []daemon.OutputsFilter{}
+		filtersDevAddresses = append(filtersDevAddresses, daemon.FbyAddresses(addrList))
+		devAddresses, err := gateway.GetUnspentOutputs(filtersDevAddresses...)
+		if err != nil {
+			wh.Error500(w)
+			return
+		}
+		totalDevBalance := 0
+		for _, u := range devAddresses.HeadOutputs {
+			coin, err := strconv.Atoi(u.Coins)
+			if err == nil {
+				totalDevBalance = totalDevBalance + coin
+			}
+
+		}
+		wh.SendOr404(w, wallet.CoinSupply{
+			CurrentSupply: totalSupply,
+			CoinCap:       100000000,
+			UndistributedLockedCoinHoldingAddresses: addrList,
+			UndistributedLockedCoinBalance:          totalDevBalance,
+		})
+	}
 }
 
+// method: GET
+// url: /explorer/address?address=${address}
 func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
-			wh.Error405(w, "")
+			wh.Error405(w)
 			return
 		}
-		addr := r.FormValue("address")
+		addr := r.URL.Query().Get("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
 			return
@@ -186,34 +189,68 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetAddressUxOuts(cipherAddr)
+		txns, err := gateway.GetAddressTxns(cipherAddr)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			wh.Error500(w)
+			logger.Error("Get address transactions failed: %v", err)
 			return
 		}
 
-		resTxs := make([]visor.ReadableAddressTransaction, len(uxs))
+		resTxs := make([]ReadableTransaction, 0, len(txns.Txns))
 
-		for i, ux := range uxs {
-			sourceTxnNumber, err := cipher.SHA256FromHex(ux.Out.Body.SrcTransaction.Hex())
-			if err != nil {
-				wh.Error400(w, "Transaction id is not good")
-				return
-			}
-			sourceTransaction, err := gateway.GetTransaction(sourceTxnNumber)
-			in := make([]visor.ReadableTransactionInput, len(sourceTransaction.Txn.In))
-			for i := range sourceTransaction.Txn.In {
-				id, err := cipher.SHA256FromHex(sourceTransaction.Txn.In[i].Hex())
+		for _, tx := range txns.Txns {
+			in := make([]visor.ReadableTransactionInput, len(tx.Transaction.In))
+			for i := range tx.Transaction.In {
+				id, err := cipher.SHA256FromHex(tx.Transaction.In[i])
 				if err != nil {
-					wh.Error400(w, err.Error())
+					wh.Error500(w)
+					logger.Error("%v", err)
 					return
 				}
+
 				uxout, err := gateway.GetUxOutByID(id)
-				in[i] = visor.NewReadableTransactionInput(sourceTransaction.Txn.In[i].Hex(), uxout.Out.Body.Address.String())
+				if err != nil {
+					wh.Error500(w)
+					logger.Error("%v", err)
+					return
+				}
+
+				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String())
 			}
 
-			resTxs[i] = visor.NewReadableAddressTransaction(sourceTransaction, in)
+			resTxs = append(resTxs, NewReadableTransaction(tx, in))
 		}
+
 		wh.SendOr404(w, &resTxs)
+	}
+}
+
+// ReadableTransaction represents readable address transaction
+type ReadableTransaction struct {
+	Status    visor.TransactionStatus `json:"status"`
+	Length    uint32                  `json:"length"`
+	Type      uint8                   `json:"type"`
+	Hash      string                  `json:"txid"`
+	InnerHash string                  `json:"inner_hash"`
+	Timestamp uint64                  `json:"timestamp,omitempty"`
+
+	Sigs []string                          `json:"sigs"`
+	In   []visor.ReadableTransactionInput  `json:"inputs"`
+	Out  []visor.ReadableTransactionOutput `json:"outputs"`
+}
+
+// NewReadableTransaction creates readable address transaction
+func NewReadableTransaction(t visor.TransactionResult, inputs []visor.ReadableTransactionInput) ReadableTransaction {
+	return ReadableTransaction{
+		Status:    t.Status,
+		Length:    t.Transaction.Length,
+		Type:      t.Transaction.Type,
+		Hash:      t.Transaction.Hash,
+		InnerHash: t.Transaction.InnerHash,
+		Timestamp: t.Time,
+
+		Sigs: t.Transaction.Sigs,
+		In:   inputs,
+		Out:  t.Transaction.Out,
 	}
 }

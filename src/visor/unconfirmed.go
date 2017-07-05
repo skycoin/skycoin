@@ -109,6 +109,10 @@ func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
 	updateFun := func(v []byte) ([]byte, error) {
+		if v == nil {
+			return nil, fmt.Errorf("%s does not exist in bucket %s", key.Hex(), utb.txns.Name)
+		}
+
 		var tx UnconfirmedTxn
 		if err := encoder.DeserializeRaw(v, &tx); err != nil {
 			return nil, err
@@ -310,7 +314,6 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (kn
 	// Update if we already have this txn
 	h := t.Hash()
 	// update the time if exist
-	var exist bool
 	utp.Txns.update(h, func(tx *UnconfirmedTxn) {
 		know = true
 		now := utc.Now()
@@ -319,7 +322,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (kn
 		tx.IsValid = valid
 	})
 
-	if exist {
+	if know {
 		return
 	}
 

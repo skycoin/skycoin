@@ -196,17 +196,6 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 // Run starts the visor process
 func (vs *Visor) Run() error {
-	errC := make(chan error, 1)
-
-	go func() {
-		logger.Info("Verify signature...")
-		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
-			errC <- fmt.Errorf("Invalid block signatures: %v", err)
-			return
-		}
-		logger.Info("Signature verify success")
-	}()
-
 	if vs.Blockchain.GetGenesisBlock() == nil {
 		vs.GenesisPreconditions()
 		b, err := vs.Blockchain.CreateGenesisBlock(
@@ -236,6 +225,16 @@ func (vs *Visor) Run() error {
 			}
 		}
 	}
+
+	errC := make(chan error, 1)
+	go func() {
+		logger.Info("Verify signature...")
+		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
+			errC <- fmt.Errorf("Invalid block signatures: %v", err)
+			return
+		}
+		logger.Info("Signature verify success")
+	}()
 
 	go func() {
 		errC <- vs.bcParser.Run()
@@ -478,33 +477,34 @@ func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
 	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
 }
 
-// GetAddressTransactions returns the Transactions whose unspents give coins to a cipher.Address.
+// GetAddressTxns returns the Transactions whose unspents give coins to a cipher.Address.
 // This includes unconfirmed txns' predicted unspents.
-func (vs *Visor) GetAddressTransactions(a cipher.Address) ([]Transaction, error) {
+func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
-	// Look in the blockchain
-	uxs := vs.Blockchain.Unspent().GetUnspentsOfAddr(a)
 
 	mxSeq := vs.HeadBkSeq()
-	var bk *coin.Block
-	for _, ux := range uxs {
-		if bk = vs.GetBlockBySeq(ux.Head.BkSeq); bk == nil {
-			return txns, nil
+	txs, err := vs.history.GetAddrTxns(a)
+	if err != nil {
+		return []Transaction{}, err
+	}
+
+	for _, tx := range txs {
+		h := mxSeq - tx.BlockSeq + 1
+
+		bk := vs.GetBlockBySeq(tx.BlockSeq)
+		if bk == nil {
+			return []Transaction{}, fmt.Errorf("No block exsit in depth:%d", tx.BlockSeq)
 		}
 
-		tx, ok := bk.GetTransaction(ux.Body.SrcTransaction)
-		if ok {
-			h := mxSeq - bk.Head.BkSeq + 1
-			txns = append(txns, Transaction{
-				Txn:    tx,
-				Status: NewConfirmedTransactionStatus(h, bk.Head.BkSeq),
-				Time:   bk.Time(),
-			})
-		}
+		txns = append(txns, Transaction{
+			Txn:    tx.Tx,
+			Status: NewConfirmedTransactionStatus(h, tx.BlockSeq),
+			Time:   bk.Time(),
+		})
 	}
 
 	// Look in the unconfirmed pool
-	uxs = vs.Unconfirmed.Unspent.getAllForAddress(a)
+	uxs := vs.Unconfirmed.Unspent.getAllForAddress(a)
 	for _, ux := range uxs {
 		tx, ok := vs.Unconfirmed.Txns.get(ux.Body.SrcTransaction)
 		if !ok {

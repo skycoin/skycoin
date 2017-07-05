@@ -1,6 +1,3 @@
-// +build ignore
-// These tests need to be rewritten to conform with blockdb changes
-
 package historydb
 
 import (
@@ -11,6 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // set rand seed.
@@ -48,6 +46,120 @@ func TestGetLastTxs(t *testing.T) {
 			lastTxHash := txIns.GetLastTxs()
 			assert.Equal(t, txs, lastTxHash)
 		}(uint64(i))
+	}
+}
+
+func TestTransactionGet(t *testing.T) {
+	txs := make([]Transaction, 0, 3)
+	for i := 0; i < 3; i++ {
+		txs = append(txs, makeTransaction())
+	}
+
+	testCases := []struct {
+		name   string
+		hash   cipher.SHA256
+		expect *Transaction
+	}{
+		{
+			"get first",
+			txs[0].Hash(),
+			&txs[0],
+		},
+		{
+			"get second",
+			txs[1].Hash(),
+			&txs[1],
+		},
+		{
+			"not exist",
+			txs[2].Hash(),
+			nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, td, err := setup(t)
+			require.Nil(t, err)
+			defer td()
+			txsBkt, err := newTransactionsBkt(db)
+			require.Nil(t, err)
+
+			// init the bkt
+			for _, tx := range txs[:2] {
+				require.Nil(t, txsBkt.Add(&tx))
+			}
+
+			// get slice
+			ts, err := txsBkt.Get(tc.hash)
+			require.Nil(t, err)
+			require.Equal(t, tc.expect, ts)
+		})
+	}
+}
+
+func TestTransactionGetSlice(t *testing.T) {
+	txs := make([]Transaction, 0, 4)
+	for i := 0; i < 4; i++ {
+		txs = append(txs, makeTransaction())
+	}
+
+	testCases := []struct {
+		name   string
+		hashes []cipher.SHA256
+		expect []Transaction
+	}{
+		{
+			"get one",
+			[]cipher.SHA256{
+				txs[0].Hash(),
+			},
+			txs[:1],
+		},
+		{
+			"get two",
+			[]cipher.SHA256{
+				txs[0].Hash(),
+				txs[1].Hash(),
+			},
+			txs[:2],
+		},
+		{
+			"get all",
+			[]cipher.SHA256{
+				txs[0].Hash(),
+				txs[1].Hash(),
+				txs[2].Hash(),
+			},
+			txs[:3],
+		},
+		{
+			"not exist",
+			[]cipher.SHA256{
+				txs[3].Hash(),
+			},
+			[]Transaction{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, td, err := setup(t)
+			require.Nil(t, err)
+			defer td()
+			txsBkt, err := newTransactionsBkt(db)
+			require.Nil(t, err)
+
+			// init the bkt
+			for _, tx := range txs[:3] {
+				require.Nil(t, txsBkt.Add(&tx))
+			}
+
+			// get slice
+			ts, err := txsBkt.GetSlice(tc.hashes)
+			require.Nil(t, err)
+			require.Equal(t, tc.expect, ts)
+		})
 	}
 }
 

@@ -114,7 +114,7 @@ type ReadableTransactionOutput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
 	Coins   string `json:"coins"`
-	Hours   string `json:"hours"`
+	Hours   uint64 `json:"hours"`
 }
 
 // ReadableTransactionInput readable transaction input
@@ -161,7 +161,7 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 		Hash:    t.UxID(txid).Hex(),
 		Address: t.Address.String(), //Destination Address
 		Coins:   StrBalance(t.Coins),
-		Hours:   strconv.FormatUint(t.Hours, 10),
+		Hours:   t.Hours,
 	}
 }
 
@@ -179,7 +179,7 @@ type ReadableOutput struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
-	Hours             string `json:"hours"`
+	Hours             uint64 `json:"hours"`
 }
 
 // ReadableOutputSet records unspent outputs in different status.
@@ -216,7 +216,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             StrBalance(t.Body.Coins),
-		Hours:             strconv.FormatUint(t.Body.Hours, 10),
+		Hours:             t.Body.Hours,
 	}
 }
 

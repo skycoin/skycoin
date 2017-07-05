@@ -101,7 +101,7 @@ func (txs *transactions) IsEmpty() bool {
 	return txs.bkt.IsEmpty()
 }
 
-// Reset resets the bucekt
+// Reset resets the bucket
 func (txs *transactions) Reset() error {
 	return txs.bkt.Reset()
 }

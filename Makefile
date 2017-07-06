@@ -8,7 +8,6 @@ ELECTRON_DIR = electron
 
 # build electron apps, the builds are located in electron/release folder.
 build: 
-	@echo build wallet...
 	cd $(STATIC_DIR) && gulp dist
 	cd $(ELECTRON_DIR) && ./build.sh
 	@echo release files are in the folder of electron/release

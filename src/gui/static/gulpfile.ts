@@ -94,14 +94,6 @@ gulp.task("libs_dev", () => {
 });
 
 /**
- * Remove unnecessary NPM absolute paths 
- * https://github.com/npm/npm/issues/10393
- */
-gulp.task("rmNPMAbsPaths", () => {
-    return removeNPMAbsolutePaths(".", {force: true});
-});
-
-/**
  * Watch for changes in TypeScript, HTML and CSS files.
  */
 gulp.task('watch', function () {

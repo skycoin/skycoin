@@ -6,6 +6,7 @@ const tsc = require("gulp-typescript");
 const sourcemaps = require('gulp-sourcemaps');
 const tsProject = tsc.createProject("tsconfig.json");
 const tslint = require('gulp-tslint');
+const removeNPMAbsolutePaths = require('removeNPMAbsolutePaths');
 
 /**
  * Remove build directory.
@@ -93,6 +94,14 @@ gulp.task("libs_dev", () => {
 });
 
 /**
+ * Remove unnecessary NPM absolute paths 
+ * https://github.com/npm/npm/issues/10393
+ */
+gulp.task("rmNPMAbsPaths", () => {
+    return removeNPMAbsolutePaths(".", {force: true});
+});
+
+/**
  * Watch for changes in TypeScript, HTML and CSS files.
  */
 gulp.task('watch', function () {
@@ -108,6 +117,8 @@ gulp.task('watch', function () {
  * Build the project.
  */
 gulp.task("dist", ['compile', 'resources', 'libs'], () => {
+    console.log("Remove unnecessary npm absolute paths...")
+    removeNPMAbsolutePaths('.', {force: true});
     console.log("Building the project ...");
 });
 

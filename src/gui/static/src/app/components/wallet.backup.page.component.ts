@@ -30,13 +30,21 @@ declare var moment: any;
                                 <td>{{wallet.meta.filename}}</td>
 
                                 <td><a id="{{wallet.meta.seed}}" class="btn btn-success"  href="" download="{{getJsonObject(wallet)}}">{{wallet.meta.filename}}</a></td>
-                                 <td id="seed-{{wallet.meta.seed}}"><a class="btn btn-default"  (click)="showSeed(wallet.meta.seed)">Show Seed</a></td>
+                                 <td id="seed-{{wallet.meta.seed}}">
+                                  <a class="btn btn-default" *ngIf="!wallet?.showSeed"  (click)="showOrHideSeed(wallet)">Show Seed</a>
+                                  <p *ngIf="wallet?.showSeed">{{wallet.meta.seed}}<a class="btn btn-default btn-margin" (click)="showOrHideSeed(wallet)">Hide Seed</a></p>
+                                 </td>
                             </tr>
                             </tbody>
                         </table>
                         </div>
               `
   ,
+  styles: [`
+    .btn-margin {
+      margin: 0 1rem;
+    }
+  `],
   providers:[WalletService]
 })
 
@@ -72,8 +80,7 @@ export class WalletBackupPageComponent implements AfterViewInit {
     return  wallet.meta.filename+'.json';
   }
 
-  showSeed(seed){
-    var seedEl = document.getElementById("seed-"+seed);
-    seedEl.innerHTML = seed;
+  showOrHideSeed(wallet){
+    wallet.showSeed = !wallet.showSeed;
   }
 }

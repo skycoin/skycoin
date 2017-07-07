@@ -507,9 +507,6 @@ System.register(["@angular/core", "@angular/router", "@angular/http", "rxjs/Rx",
                 LoadWalletComponent.prototype.getDateTimeString = function (ts) {
                     return moment.unix(ts).format("YYYY-MM-DD HH:mm");
                 };
-                LoadWalletComponent.prototype.getElapsedTime = function () {
-                    return moment().unix() - this.blockChain[0].header.timestamp;
-                };
                 //Show QR code function for show QR popup
                 LoadWalletComponent.prototype.showQR = function (address) {
                     this.QrAddress = address;

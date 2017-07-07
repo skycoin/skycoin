@@ -570,9 +570,6 @@ export class LoadWalletComponent implements OnInit {
     getDateTimeString(ts) {
         return moment.unix(ts).format("YYYY-MM-DD HH:mm")
     }
-    getElapsedTime() {
-        return moment().unix() - this.blockChain[0].header.timestamp;
-    }
     //Show QR code function for show QR popup
     showQR(address){
         this.QrAddress = address;

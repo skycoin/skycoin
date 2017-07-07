@@ -477,6 +477,7 @@ System.register(["@angular/core", "@angular/router", "@angular/http", "rxjs/Rx",
                 };
                 //Switch tab function
                 LoadWalletComponent.prototype.switchTab = function (mode, wallet) {
+                    this.selectedMenu = '';
                     //"Textbox" and "Ready" button enable in Send tab while switching tabs
                     this.sendDisable = true;
                     this.readyDisable = false;

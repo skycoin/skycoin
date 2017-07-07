@@ -215,6 +215,12 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 					return
 				}
 
+				if uxout == nil {
+					wh.Error500(w)
+					logger.Error("uxout of %d does not exist in history db")
+					return
+				}
+
 				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String())
 			}
 

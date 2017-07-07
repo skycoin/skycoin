@@ -1,38 +1,4 @@
 {
-  "_args": [
-    [
-      "qrcodejs2@^0.0.2",
-      "/Users/macbook/Documents/pgProject/pg3/ns/angularJs2_ts/node_modules/ng2-qrcode"
-    ]
-  ],
-  "_from": "qrcodejs2@>=0.0.2 <0.0.3",
-  "_id": "qrcodejs2@0.0.2",
-  "_inCache": true,
-  "_installable": true,
-  "_location": "/qrcodejs2",
-  "_nodeVersion": "4.1.2",
-  "_npmUser": {
-    "email": "contact@garyyeap.com",
-    "name": "garyyeap"
-  },
-  "_npmVersion": "2.14.4",
-  "_phantomChildren": {},
-  "_requested": {
-    "name": "qrcodejs2",
-    "raw": "qrcodejs2@^0.0.2",
-    "rawSpec": "^0.0.2",
-    "scope": null,
-    "spec": ">=0.0.2 <0.0.3",
-    "type": "range"
-  },
-  "_requiredBy": [
-    "/ng2-qrcode"
-  ],
-  "_resolved": "https://registry.npmjs.org/qrcodejs2/-/qrcodejs2-0.0.2.tgz",
-  "_shasum": "465afe5e39f19facecb932c11f7a186109146ae1",
-  "_shrinkwrap": null,
-  "_spec": "qrcodejs2@^0.0.2",
-  "_where": "/Users/macbook/Documents/pgProject/pg3/ns/angularJs2_ts/node_modules/ng2-qrcode",
   "author": {
     "email": "ssm0123@gmail.com",
     "name": "davidshimjs"

@@ -453,6 +453,9 @@ System.register(["@angular/core", "@angular/router", "@angular/http", "rxjs/Rx",
                         _this.blockChain = _.sortBy(data.blocks, function (o) {
                             return o.header.seq * (-1);
                         });
+                        if (_this.blockChain.length != 0) {
+                            _this.elapsedTime = moment().unix() - _this.blockChain[0].header.timestamp;
+                        }
                         _this.setBlockPage(1);
                     }, function (err) { return console.log("Error on load blockchain: " + err); }, function () {
                         //console.log('blockchain load done');
@@ -504,8 +507,8 @@ System.register(["@angular/core", "@angular/router", "@angular/http", "rxjs/Rx",
                 LoadWalletComponent.prototype.getDateTimeString = function (ts) {
                     return moment.unix(ts).format("YYYY-MM-DD HH:mm");
                 };
-                LoadWalletComponent.prototype.getElapsedTime = function (ts) {
-                    return moment().unix() - ts;
+                LoadWalletComponent.prototype.getElapsedTime = function () {
+                    return moment().unix() - this.blockChain[0].header.timestamp;
                 };
                 //Show QR code function for show QR popup
                 LoadWalletComponent.prototype.showQR = function (address) {

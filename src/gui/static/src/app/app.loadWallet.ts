@@ -533,6 +533,7 @@ export class LoadWalletComponent implements OnInit {
 
     //Switch tab function
     switchTab(mode: DisplayModeEnum, wallet) {
+        this.selectedMenu = '';
         //"Textbox" and "Ready" button enable in Send tab while switching tabs
         this.sendDisable = true;
         this.readyDisable = false;

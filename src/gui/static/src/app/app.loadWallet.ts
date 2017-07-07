@@ -125,6 +125,7 @@ export class LoadWalletComponent implements OnInit {
     connections: Array<any>;
     defaultConnections: Array<any>;
     blockChain: any;
+    elapsedTime: number;
     numberOfBlocks: number;
     outputs: Array<any>;
     NewDefaultConnectionIsVisible : boolean;
@@ -509,6 +510,11 @@ export class LoadWalletComponent implements OnInit {
             this.blockChain = _.sortBy(data.blocks, function(o){
                 return o.header.seq * (-1);
             });
+
+            if (this.blockChain.length != 0) {
+                this.elapsedTime = moment().unix() - this.blockChain[0].header.timestamp;
+            }
+
             this.setBlockPage(1);
         }, err => console.log("Error on load blockchain: " + err), () => {
             //console.log('blockchain load done');
@@ -564,8 +570,8 @@ export class LoadWalletComponent implements OnInit {
     getDateTimeString(ts) {
         return moment.unix(ts).format("YYYY-MM-DD HH:mm")
     }
-    getElapsedTime(ts) {
-        return moment().unix() - ts;
+    getElapsedTime() {
+        return moment().unix() - this.blockChain[0].header.timestamp;
     }
     //Show QR code function for show QR popup
     showQR(address){

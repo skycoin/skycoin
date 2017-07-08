@@ -13,7 +13,7 @@ type store struct {
 	lk    sync.Mutex
 }
 
-type storeFunc func(*store)
+type storeFunc func(*store) error
 type matchFunc func(k interface{}, v interface{}) bool
 
 func (s *store) setValue(k interface{}, v interface{}) {
@@ -29,10 +29,10 @@ func (s *store) getValue(k interface{}) (interface{}, bool) {
 	return v, ok
 }
 
-func (s *store) do(sf storeFunc) {
+func (s *store) do(sf storeFunc) error {
 	s.lk.Lock()
 	defer s.lk.Unlock()
-	sf(s)
+	return sf(s)
 }
 
 func (s *store) remove(k interface{}) {
@@ -53,7 +53,7 @@ type ExpectIntroductions struct {
 }
 
 // CullMatchFunc function for checking if the connection need to be culled
-type CullMatchFunc func(addr string, t time.Time) bool
+type CullMatchFunc func(addr string, t time.Time) (bool, error)
 
 // NewExpectIntroductions creates a ExpectIntroduction instance
 func NewExpectIntroductions() *ExpectIntroductions {
@@ -75,19 +75,28 @@ func (ei *ExpectIntroductions) Remove(addr string) {
 }
 
 // CullInvalidConns cull connections that match the matchFunc
-func (ei *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) []string {
+func (ei *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error) {
 	var addrs []string
-	ei.do(func(s *store) {
+	if err := ei.do(func(s *store) error {
 		for k, v := range s.value {
 			addr := k.(string)
 			t := v.(time.Time)
-			if f(addr, t) {
+			ok, err := f(addr, t)
+			if err != nil {
+				return err
+			}
+
+			if ok {
 				addrs = append(addrs, addr)
 				delete(s.value, k)
 			}
 		}
-	})
-	return addrs
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return addrs, nil
 }
 
 // Get returns the time of speicific address
@@ -220,15 +229,16 @@ func NewMirrorConnections() *MirrorConnections {
 
 // Add adds mirror connection
 func (mc *MirrorConnections) Add(mirror uint32, ip string, port uint16) {
-	mc.do(func(s *store) {
+	mc.do(func(s *store) error {
 		if m, ok := s.value[mirror]; ok {
 			m.(map[string]uint16)[ip] = port
-			return
+			return nil
 		}
 
 		m := make(map[string]uint16)
 		m[ip] = port
 		s.value[mirror] = m
+		return nil
 	})
 }
 
@@ -236,21 +246,22 @@ func (mc *MirrorConnections) Add(mirror uint32, ip string, port uint16) {
 func (mc *MirrorConnections) Get(mirror uint32, ip string) (uint16, bool) {
 	var port uint16
 	var exist bool
-	mc.do(func(s *store) {
+	mc.do(func(s *store) error {
 		if m, ok := s.value[mirror]; ok {
 			port, exist = m.(map[string]uint16)[ip]
-			return
 		}
+		return nil
 	})
 	return port, exist
 }
 
 // Remove removes port of ip for specific mirror
 func (mc *MirrorConnections) Remove(mirror uint32, ip string) {
-	mc.do(func(s *store) {
+	mc.do(func(s *store) error {
 		if m, ok := s.value[mirror]; ok {
 			delete(m.(map[string]uint16), ip)
 		}
+		return nil
 	})
 }
 
@@ -275,30 +286,32 @@ func NewIPCount() *IPCount {
 
 // Increase increases one for specific ip
 func (ic *IPCount) Increase(ip string) {
-	ic.do(func(s *store) {
+	ic.do(func(s *store) error {
 		if v, ok := s.value[ip]; ok {
 			c := v.(int)
 			c++
 			s.value[ip] = c
-			return
+			return nil
 		}
 
 		s.value[ip] = 1
+		return nil
 	})
 }
 
 // Decrease decreases one for specific ip
 func (ic *IPCount) Decrease(ip string) {
-	ic.do(func(s *store) {
+	ic.do(func(s *store) error {
 		if v, ok := s.value[ip]; ok {
 			c := v.(int)
 			if c <= 1 {
 				delete(s.value, ip)
-				return
+				return nil
 			}
 			c--
 			s.value[ip] = c
 		}
+		return nil
 	})
 }
 

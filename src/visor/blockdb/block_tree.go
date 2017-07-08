@@ -1,7 +1,6 @@
 package blockdb
 
 import (
-	"encoding/binary"
 	"errors"
 
 	"github.com/boltdb/bolt"
@@ -142,7 +141,7 @@ func (bt *BlockTree) RemoveBlock(b *coin.Block) error {
 		// remove block hash pair in tree.
 		ps := removePairs(hashPairs, coin.HashPair{Hash: hash, PreHash: b.PreHashHeader()})
 		if len(ps) == 0 {
-			tree.Delete(itob(b.Seq()))
+			tree.Delete(bucket.Itob(b.Seq()))
 			return nil
 		}
 
@@ -169,7 +168,7 @@ func (bt *BlockTree) GetBlockInDepth(depth uint64, filter func(hps []coin.HashPa
 
 // GetAllBlockHashInDepth returns all block hash of N depth in the tree.
 func (bt *BlockTree) GetAllBlockHashInDepth(depth uint64) ([]cipher.SHA256, error) {
-	key := itob(depth)
+	key := bucket.Itob(depth)
 	pairsBin := bt.tree.Get(key)
 	pairs := []coin.HashPair{}
 	if err := encoder.DeserializeRaw(pairsBin, &pairs); err != nil {
@@ -195,7 +194,7 @@ func (bt *BlockTree) getBlock(hash cipher.SHA256) *coin.Block {
 }
 
 func (bt *BlockTree) getHashInDepth(depth uint64, filter func(ps []coin.HashPair) cipher.SHA256) (cipher.SHA256, error) {
-	key := itob(depth)
+	key := bucket.Itob(depth)
 	pairsBin := bt.tree.Get(key)
 	pairs := []coin.HashPair{}
 	if err := encoder.DeserializeRaw(pairsBin, &pairs); err != nil {
@@ -204,12 +203,6 @@ func (bt *BlockTree) getHashInDepth(depth uint64, filter func(ps []coin.HashPair
 
 	hash := filter(pairs)
 	return hash, nil
-}
-
-func itob(v uint64) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(v))
-	return b
 }
 
 func containHash(hashPairs []coin.HashPair, pair coin.HashPair) bool {
@@ -233,7 +226,7 @@ func removePairs(hps []coin.HashPair, pair coin.HashPair) []coin.HashPair {
 }
 
 func getHashPairInDepth(tree *bolt.Bucket, dep uint64, fn func(hp coin.HashPair) bool) ([]coin.HashPair, error) {
-	v := tree.Get(itob(dep))
+	v := tree.Get(bucket.Itob(dep))
 	if v == nil {
 		return []coin.HashPair{}, nil
 	}
@@ -273,7 +266,7 @@ func hasChild(bkt *bolt.Bucket, b coin.Block) (bool, error) {
 
 func setHashPairInDepth(bkt *bolt.Bucket, dep uint64, hps []coin.HashPair) error {
 	hpsBin := encoder.Serialize(hps)
-	key := itob(dep)
+	key := bucket.Itob(dep)
 	return bkt.Put(key, hpsBin)
 }
 

@@ -1,0 +1,8 @@
+language: go
+
+go:
+  - 1.1
+  - 1.2
+  - tip
+  
+script: go get github.com/tang0th/go-chacha20 && go test github.com/tang0th/go-chacha20

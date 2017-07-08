@@ -4,7 +4,7 @@ import (
 	//"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // ReadableEntry wallet entry with json tags
@@ -34,7 +34,7 @@ func NewReadableEntry(w *Entry) ReadableEntry {
 // LoadReadableEntry load readable wallet entry from given file
 func LoadReadableEntry(filename string) (ReadableEntry, error) {
 	w := ReadableEntry{}
-	err := util.LoadJSON(filename, &w)
+	err := file.LoadJSON(filename, &w)
 	return w, err
 }
 
@@ -51,7 +51,7 @@ func NewReadableEntryFromPubkey(pub string) ReadableEntry {
 
 // Save persists to disk
 func (re *ReadableEntry) Save(filename string) error {
-	return util.SaveJSONSafe(filename, re, 0600)
+	return file.SaveJSONSafe(filename, re, 0600)
 }
 
 // ReadableEntries array of ReadableEntry
@@ -125,15 +125,15 @@ func (rw *ReadableWallet) ToWallet() (Wallet, error) {
 func (rw *ReadableWallet) Save(filename string) error {
 	// logger.Info("Saving readable wallet to %s with filename %s", filename,
 	// 	self.Meta["filename"])
-	return util.SaveJSON(filename, rw, 0600)
+	return file.SaveJSON(filename, rw, 0600)
 }
 
 // SaveSafe saves to filename, but won't overwrite existing
 func (rw *ReadableWallet) SaveSafe(filename string) error {
-	return util.SaveJSONSafe(filename, rw, 0600)
+	return file.SaveJSONSafe(filename, rw, 0600)
 }
 
 // Load loads from filename
 func (rw *ReadableWallet) Load(filename string) error {
-	return util.LoadJSON(filename, rw)
+	return file.LoadJSON(filename, rw)
 }

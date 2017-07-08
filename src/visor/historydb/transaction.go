@@ -43,6 +43,11 @@ func newTransactionsBkt(db *bolt.DB) (*transactions, error) {
 	return &transactions{bkt: txBkt}, nil
 }
 
+func addTrandaction(b *bolt.Bucket, tx *Transaction) error {
+	hash := tx.Hash()
+	return b.Put(hash[:], encoder.Serialize(tx))
+}
+
 // Add transaction to the db.
 func (txs *transactions) Add(t *Transaction) error {
 	txs.lastTxs = append(txs.lastTxs, t.Hash())
@@ -56,7 +61,7 @@ func (txs *transactions) Add(t *Transaction) error {
 }
 
 // Get get transaction by tx hash, return nil on not found.
-func (txs transactions) Get(hash cipher.SHA256) (*Transaction, error) {
+func (txs *transactions) Get(hash cipher.SHA256) (*Transaction, error) {
 	bin := txs.bkt.Get(hash[:])
 	if bin == nil {
 		return nil, nil
@@ -71,7 +76,44 @@ func (txs transactions) Get(hash cipher.SHA256) (*Transaction, error) {
 	return &tx, nil
 }
 
+// GetSlice returns transactions slice of given hashes
+func (txs *transactions) GetSlice(hashes []cipher.SHA256) ([]Transaction, error) {
+	keys := [][]byte{}
+	for i := range hashes {
+		keys = append(keys, hashes[i][:])
+	}
+
+	vs := txs.bkt.GetSlice(keys)
+	txns := make([]Transaction, 0, len(vs))
+	for i := range vs {
+		var tx Transaction
+		if err := encoder.DeserializeRaw(vs[i], &tx); err != nil {
+			return []Transaction{}, err
+		}
+		txns = append(txns, tx)
+	}
+
+	return txns, nil
+}
+
+// IsEmpty checks if transaction bucket is empty
+func (txs *transactions) IsEmpty() bool {
+	return txs.bkt.IsEmpty()
+}
+
+// Reset resets the bucket
+func (txs *transactions) Reset() error {
+	return txs.bkt.Reset()
+}
+
 // GetLastTxs get latest tx hash set.
-func (txs transactions) GetLastTxs() []cipher.SHA256 {
+func (txs *transactions) GetLastTxs() []cipher.SHA256 {
 	return txs.lastTxs
+}
+
+func (txs *transactions) updateLastTxs(hash cipher.SHA256) {
+	txs.lastTxs = append(txs.lastTxs, hash)
+	if len(txs.lastTxs) > lastTxNum {
+		txs.lastTxs = txs.lastTxs[1:]
+	}
 }

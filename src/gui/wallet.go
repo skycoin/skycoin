@@ -2,9 +2,7 @@ package gui
 
 // Wallet-related information for the GUI
 import (
-	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,7 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
@@ -183,6 +181,8 @@ func (wrpc *WalletRPC) CreateWallet(wltName string, options ...wallet.Option) (w
 		return wallet.Wallet{}, err
 	}
 
+	wrpc.firstAddrIDMap[w.Entries[0].Address.String()] = w.GetID()
+
 	return *w, nil
 }
 
@@ -226,33 +226,10 @@ func (wrpc *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
 
 	w, ok := wrpc.Wallets.Get(walletID)
 	if !ok {
-		log.Printf("GetWalletBalance: ID NOT FOUND: id= '%s'", walletID)
-		return wallet.BalancePair{}, errors.New("Id not found")
+		return wallet.BalancePair{}, fmt.Errorf("wallet id %s does not exist", walletID)
 	}
 
-	return gateway.WalletBalance(w), nil
-}
-
-// HasUnconfirmedTransactions checks if the wallet has pending, unconfirmed transactions
-// - do not allow any transactions if there are pending
-//Check if any of the outputs are spent
-func (wrpc *WalletRPC) HasUnconfirmedTransactions(v *visor.Visor,
-	wallet *wallet.Wallet) bool {
-
-	if wallet == nil {
-		logger.Panic("Wallet does not exist")
-	}
-
-	// auxs := v.Blockchain.GetUnspent().AllForAddresses(wallet.GetAddresses())
-	unspent := v.Blockchain.GetUnspent()
-	puxs := v.Unconfirmed.SpendsForAddresses(unspent, wallet.GetAddressSet())
-
-	//no transactions
-	if len(puxs) == 0 {
-		return true
-	}
-
-	return false
+	return gateway.WalletBalance(w)
 }
 
 // SpendResult represents the result of spending
@@ -345,7 +322,6 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		if err != nil {
 			_ = err
 		}
-		//log.Printf("%v, %v, %v \n", r.URL.String(), r.RequestURI, r.Form)
 		wh.SendOr404(w, b)
 	}
 }
@@ -355,12 +331,22 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		if r.Method == "GET" {
 			addrsParam := r.URL.Query().Get("addrs")
 			addrsStr := strings.Split(addrsParam, ",")
-			addrs := make([]cipher.Address, len(addrsStr))
-			for i, addr := range addrsStr {
-				addrs[i] = cipher.MustDecodeBase58Address(addr)
+			addrs := make([]cipher.Address, 0, len(addrsStr))
+			for _, addr := range addrsStr {
+				a, err := cipher.DecodeBase58Address(addr)
+				if err != nil {
+					wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
+					return
+				}
+				addrs = append(addrs, a)
 			}
 
-			bal := gateway.AddressesBalance(addrs)
+			bal, err := gateway.AddressesBalance(addrs)
+			if err != nil {
+				logger.Error("getBalanceHandler failed: %v", err)
+				wh.Error500(w)
+				return
+			}
 
 			wh.SendOr404(w, bal)
 		}
@@ -395,17 +381,6 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error400(w, "Invalid destination address: %v", err.Error())
 			return
 		}
-
-		//set fee automatically for now
-		/*
-			sfee := r.FormValue("fee")
-			fee, err := strconv.ParseUint(sfee, 10, 64)
-			if err != nil {
-				Error400(w, "Invalid \"fee\" value")
-				return
-			}
-		*/
-		//var fee uint64 = 0
 
 		scoins := r.FormValue("coins")
 		//shours := r.FormValue("hours")
@@ -479,6 +454,11 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// method: POST
+// url: /wallet/newAddress
+// params:
+// 		id: wallet id
+// 	   num: number of address need to create, if not set the default value is 1
 func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
@@ -492,22 +472,38 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		addrs, err := Wg.NewAddresses(wltID, 1)
+		// the number of address that need to create, default is 1
+		n := 1
+		var err error
+		num := r.FormValue("num")
+		if num != "" {
+			n, err = strconv.Atoi(num)
+			if err != nil {
+				wh.Error400(w, "invalid num value")
+				return
+			}
+		}
+
+		addrs, err := Wg.NewAddresses(wltID, n)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		if err := Wg.SaveWallet(wltID); err != nil {
-			wh.Error500(w, "")
+			logger.Error("save wallet failed when generate new addresses: %v", err)
+			wh.Error500(w)
 			return
 		}
 
 		var rlt = struct {
-			Address string `json:"address"`
-		}{
-			addrs[0].String(),
+			Address []string `json:"addresses"`
+		}{}
+
+		for _, a := range addrs {
+			rlt.Address = append(rlt.Address, a.String())
 		}
+
 		wh.SendOr404(w, rlt)
 		return
 	}
@@ -538,8 +534,8 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		wlt.SetLabel(label)
 		if err := Wg.SaveWallet(wlt.GetID()); err != nil {
 			m := "Failed to save wallet: %v"
-			logger.Critical(m, "Failed to update label of wallet %v", id)
-			wh.Error500(w, "Update wallet failed")
+			logger.Error(m, "Failed to update label of wallet %v", id)
+			wh.Error500(w)
 			return
 		}
 
@@ -597,7 +593,8 @@ func walletsSaveHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			for id, e := range errs {
 				err += id + ": " + e.Error()
 			}
-			wh.Error500(w, err)
+			logger.Error("save wallet failed: %v", err)
+			wh.Error500(w)
 		}
 	}
 }
@@ -607,7 +604,8 @@ func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := Wg.ReloadWallets()
 		if err != nil {
-			wh.Error500(w, err.(error).Error())
+			logger.Error("reloads wallet failed: %v", err)
+			wh.Error500(w)
 		}
 	}
 }
@@ -621,7 +619,7 @@ type WalletFolder struct {
 func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
-			Address: util.UserHome() + "/.skycoin/wallets",
+			Address: file.UserHome() + "/.skycoin/wallets",
 		}
 		wh.SendOr404(w, ret)
 	}
@@ -665,7 +663,12 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 				filters = append(filters, daemon.FbyHashes(hashes))
 			}
 
-			outs := gateway.GetUnspentOutputs(filters...)
+			outs, err := gateway.GetUnspentOutputs(filters...)
+			if err != nil {
+				logger.Error("get unspent outputs failed: %v", err)
+				wh.Error500(w)
+				return
+			}
 
 			wh.SendOr404(w, outs)
 		}
@@ -676,12 +679,14 @@ func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		entropy, err := bip39.NewEntropy(128)
 		if err != nil {
+			logger.Error("new entropy failed when new wallet seed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
+			logger.Error("new mnemonic failed when new wallet seed: %v", err)
 			wh.Error500(w)
 			return
 		}

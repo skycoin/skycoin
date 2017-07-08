@@ -10,7 +10,7 @@ import (
 	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // Message represent a packet to be serialized over the network by
@@ -87,7 +87,7 @@ type Messages struct {
 func NewMessages(c MessagesConfig) *Messages {
 	return &Messages{
 		Config: c,
-		Mirror: rand.New(rand.NewSource(util.Now().UnixNano())).Uint32(),
+		Mirror: rand.New(rand.NewSource(utc.Now().UnixNano())).Uint32(),
 	}
 }
 

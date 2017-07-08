@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,14 +82,14 @@ func TestNewExpectIntroduction(t *testing.T) {
 
 func TestExpectIntroAdd(t *testing.T) {
 	ei := NewExpectIntroductions()
-	now := time.Now().UTC()
+	now := utc.Now()
 	ei.Add("a", now)
 	assert.Equal(t, 1, len(ei.store.value))
 }
 
 func TestExpectIntroGet(t *testing.T) {
 	ei := NewExpectIntroductions()
-	now := time.Now().UTC()
+	now := utc.Now()
 	ei.Add("a", now)
 	tm, ok := ei.Get("a")
 	assert.True(t, ok)
@@ -97,7 +98,7 @@ func TestExpectIntroGet(t *testing.T) {
 
 func TestExpectIntroRemove(t *testing.T) {
 	ei := NewExpectIntroductions()
-	now := time.Now().UTC()
+	now := utc.Now()
 	ei.Add("a", now)
 	ei.Add("b", now.Add(1))
 	ei.Add("c", now.Add(2))
@@ -116,7 +117,7 @@ func TestExpectIntroRemove(t *testing.T) {
 
 func TestCullInvalidConnections(t *testing.T) {
 	ei := NewExpectIntroductions()
-	now := time.Now().UTC()
+	now := utc.Now()
 	ei.Add("a", now)
 	ei.Add("b", now.Add(1))
 	ei.Add("c", now.Add(2))
@@ -124,12 +125,14 @@ func TestCullInvalidConnections(t *testing.T) {
 	vc := make(chan string, 3)
 	wg.Add(2)
 	go func(w *sync.WaitGroup) {
-		as := ei.CullInvalidConns(func(addr string, tm time.Time) bool {
+		as, err := ei.CullInvalidConns(func(addr string, tm time.Time) (bool, error) {
 			if addr == "a" || addr == "b" {
-				return true
+				return true, nil
 			}
-			return false
+			return false, nil
 		})
+		assert.Nil(t, err)
+
 		for _, s := range as {
 			vc <- s
 		}
@@ -138,12 +141,14 @@ func TestCullInvalidConnections(t *testing.T) {
 
 	go func(w *sync.WaitGroup) {
 		// w.Add(1)
-		as := ei.CullInvalidConns(func(addr string, tm time.Time) bool {
+		as, err := ei.CullInvalidConns(func(addr string, tm time.Time) (bool, error) {
 			if addr == "c" {
-				return true
+				return true, nil
 			}
-			return false
+			return false, nil
 		})
+
+		assert.Nil(t, err)
 
 		for _, s := range as {
 			vc <- s

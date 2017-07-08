@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
-	"github.com/skycoin/skycoin/src/util"
 
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
-	logger = util.MustGetLogger("crypto")
+	logger = logging.MustGetLogger("crypto")
 	// DebugLevel1 debug level one
 	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
 	// DebugLevel2 debug level two

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // Wallets wallets map
@@ -90,7 +90,7 @@ func backupWltFile(src, dst string) error {
 		return err
 	}
 
-	n, err := util.CopyFile(dst, bytes.NewBuffer(b))
+	n, err := file.CopyFile(dst, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}

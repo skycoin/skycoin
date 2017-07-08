@@ -199,13 +199,13 @@ gox [options] cmd/skycoin/
 
 ## Local Server API
 
-See the api details [here](src/gui/READEME.md).
+See the api details [here](src/gui/README.md).
 
 ## Skycoin explorer
 
-```link
 http://explorer.skycoin.net
-```
+
+https://github.com/skycoin/skycoin-explorer
 
 ## Modules
 

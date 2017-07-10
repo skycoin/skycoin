@@ -3,12 +3,14 @@ package visor
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // TransactionResult represents transaction result
 type TransactionResult struct {
 	Status      TransactionStatus   `json:"status"`
+	Time        uint64              `json:"time"`
 	Transaction ReadableTransaction `json:"txn"`
 }
 
@@ -33,21 +35,23 @@ func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 }
 
 // GetUnspent gets unspent
-func (rpc RPC) GetUnspent(v *Visor) coin.UnspentPool {
-	return v.Blockchain.GetUnspent().Clone()
+func (rpc RPC) GetUnspent(v *Visor) *blockdb.UnspentPool {
+	return v.Blockchain.Unspent()
 }
 
 // GetUnconfirmedSpends get unconfirmed spents
-func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs map[cipher.Address]byte) coin.AddressUxOuts {
+func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	unspent := rpc.GetUnspent(v)
-	return v.Unconfirmed.SpendsForAddresses(&unspent, addrs)
+	return v.Unconfirmed.SpendsForAddresses(unspent, addrs)
 }
 
 // CreateSpendingTransaction creates spending transaction
-func (rpc RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (tx coin.Transaction, err error) {
+func (rpc RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet,
+	amt wallet.Balance, dest cipher.Address) (tx coin.Transaction, err error) {
+
 	unspent := rpc.GetUnspent(v)
 	tm := v.Blockchain.Time()
-	tx, err = CreateSpendingTransaction(wlt, v.Unconfirmed, &unspent, tm, amt, dest)
+	tx, err = CreateSpendingTransaction(wlt, v.Unconfirmed, unspent, tm, amt, dest)
 	if err != nil {
 		return
 	}
@@ -67,9 +71,8 @@ func (rpc RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet, amt wallet
 }
 
 // GetUnspentOutputReadables gets unspent output readables
-func (rpc RPC) GetUnspentOutputReadables(v *Visor) []ReadableOutput {
-	ret := v.GetUnspentOutputReadables()
-	return ret
+func (rpc RPC) GetUnspentOutputReadables(v *Visor) ([]ReadableOutput, error) {
+	return v.GetUnspentOutputReadables()
 }
 
 // GetUnconfirmedTxns gets unconfirmed transactions
@@ -119,21 +122,27 @@ func (rpc RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResul
 	return &TransactionResult{
 		Transaction: NewReadableTransaction(txn),
 		Status:      txn.Status,
+		Time:        txn.Time,
 	}, nil
 }
 
-// GetAddressTransactions get address transactions
-func (rpc RPC) GetAddressTransactions(v *Visor,
-	addr cipher.Address) *TransactionResults {
-	addrTxns := v.GetAddressTransactions(addr)
+// GetAddressTxns get address transactions
+func (rpc RPC) GetAddressTxns(v *Visor,
+	addr cipher.Address) (*TransactionResults, error) {
+	addrTxns, err := v.GetAddressTxns(addr)
+	if err != nil {
+		return nil, err
+	}
+
 	txns := make([]TransactionResult, len(addrTxns))
 	for i, tx := range addrTxns {
 		txns[i] = TransactionResult{
 			Transaction: NewReadableTransaction(&tx),
 			Status:      tx.Status,
+			Time:        tx.Time,
 		}
 	}
 	return &TransactionResults{
 		Txns: txns,
-	}
+	}, nil
 }

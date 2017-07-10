@@ -66,15 +66,15 @@ func newOutputsBkt(db *bolt.DB) (*UxOuts, error) {
 }
 
 // Set sets out value
-func (op *UxOuts) Set(out UxOut) error {
+func (ux *UxOuts) Set(out UxOut) error {
 	key := out.Hash()
 	bin := encoder.Serialize(out)
-	return op.bkt.Put(key[:], bin)
+	return ux.bkt.Put(key[:], bin)
 }
 
 // Get gets UxOut of given id
-func (op *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
-	bin := op.bkt.Get(uxID[:])
+func (ux *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
+	bin := ux.bkt.Get(uxID[:])
 	if bin == nil {
 		return nil, nil
 	}
@@ -85,4 +85,32 @@ func (op *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
 	}
 
 	return &out, nil
+}
+
+// IsEmpty checks if the uxout bucekt is empty
+func (ux *UxOuts) IsEmpty() bool {
+	return ux.bkt.IsEmpty()
+}
+
+// Reset resets the bucket
+func (ux *UxOuts) Reset() error {
+	return ux.bkt.Reset()
+}
+
+func getOutput(bkt *bolt.Bucket, hash cipher.SHA256) (*UxOut, error) {
+	bin := bkt.Get(hash[:])
+	if bin != nil {
+		var out UxOut
+		if err := encoder.DeserializeRaw(bin, &out); err != nil {
+			return nil, err
+		}
+		return &out, nil
+	}
+
+	return nil, nil
+}
+
+func setOutput(bkt *bolt.Bucket, ux UxOut) error {
+	hash := ux.Hash()
+	return bkt.Put(hash[:], encoder.Serialize(ux))
 }

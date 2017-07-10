@@ -7,12 +7,12 @@ import (
 	"encoding/hex"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util"
-	//"math/rand"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
-	logger = util.MustGetLogger("wallet")
+	logger = logging.MustGetLogger("wallet")
 )
 
 // WalletExt  wallet file extension

@@ -15,26 +15,28 @@ import (
 	"syscall"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/browser"
+	"github.com/skycoin/skycoin/src/util/cert"
+	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
 	Version    = "0.0.0"
-	logger     = util.MustGetLogger("main")
+	logger     = logging.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
 		"main",
 		"daemon",
 		"coin",
 		"gui",
-		"util",
+		"file",
 		"visor",
 		"wallet",
 		"gnet",
@@ -112,11 +114,11 @@ type Config struct {
 	DataDirectory string
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
+
 	// Logging
-	LogLevel logging.Level
 	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
-	logLevel string
+	LogLevel string
 
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
@@ -198,7 +200,7 @@ func (c *Config) register() {
 		c.ProfileCPUFile, "where to write the cpu profile file")
 	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf,
 		"Run the http profiling interface")
-	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
@@ -276,9 +278,8 @@ var devConfig = Config{
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
-	LogLevel: logging.DEBUG,
 	ColorLog: true,
-	logLevel: "DEBUG",
+	LogLevel: "DEBUG",
 
 	// Wallets
 	WalletDirectory: "",
@@ -335,7 +336,9 @@ func (c *Config) postProcess() {
 		c.BlockchainSeckey = cipher.SecKey{}
 	}
 
-	c.DataDirectory = util.InitDataDir(c.DataDirectory)
+	c.DataDirectory, err = file.InitDataDir(c.DataDirectory)
+	panicIfError(err, "Invalid DataDirectory")
+
 	if c.WebInterfaceCert == "" {
 		c.WebInterfaceCert = filepath.Join(c.DataDirectory, "cert.pem")
 	}
@@ -346,10 +349,6 @@ func (c *Config) postProcess() {
 	if c.WalletDirectory == "" {
 		c.WalletDirectory = filepath.Join(c.DataDirectory, "wallets/")
 	}
-
-	ll, err := logging.LogLevel(c.logLevel)
-	panicIfError(err, "Invalid -log-level %s", c.logLevel)
-	c.LogLevel = ll
 
 	if c.DBPath == "" {
 		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
@@ -401,10 +400,11 @@ func catchDebug() {
 }
 
 // init logging settings
-func initLogging(dataDir string, level logging.Level, color, logtofile bool) (func(), error) {
-	logCfg := util.DevLogConfig(logModules)
+func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
+	logCfg := logging.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = color
+	logCfg.Level = level
 
 	var fd *os.File
 	if logtofile {
@@ -423,14 +423,17 @@ func initLogging(dataDir string, level logging.Level, color, logtofile bool) (fu
 		if err != nil {
 			return nil, err
 		}
-		out := io.MultiWriter(os.Stdout, fd)
-		logCfg.Output = out
+
+		logCfg.Output = io.MultiWriter(os.Stdout, fd)
 	}
 
 	logCfg.InitLogger()
 
 	return func() {
-		fd.Close()
+		logger.Info("Log file closed")
+		if fd != nil {
+			fd.Close()
+		}
 	}, nil
 }
 
@@ -494,7 +497,7 @@ func Run(c *Config) {
 		}
 	}()
 
-	c.GUIDirectory = util.ResolveResourceDirectory(c.GUIDirectory)
+	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {
@@ -516,7 +519,6 @@ func Run(c *Config) {
 		fmt.Println(err)
 		return
 	}
-	defer closelog()
 
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
@@ -534,11 +536,16 @@ func Run(c *Config) {
 		return
 	}
 
-	go d.Run(quit)
+	errC := make(chan error, 1)
 
+	go func() {
+		errC <- d.Run()
+	}()
+
+	var rpc *webrpc.WebRPC
 	// start the webrpc
 	if c.RPCInterface {
-		rpc, err := webrpc.New(
+		rpc, err = webrpc.New(
 			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
 			webrpc.ChanBuffSize(1000),
 			webrpc.ThreadNum(c.RPCThreadNum),
@@ -548,7 +555,9 @@ func Run(c *Config) {
 			return
 		}
 
-		go rpc.Run(quit)
+		go func() {
+			errC <- rpc.Run()
+		}()
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
@@ -563,7 +572,7 @@ func Run(c *Config) {
 		var err error
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
-			errs := util.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
+			errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
 			if len(errs) != 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())
@@ -589,7 +598,7 @@ func Run(c *Config) {
 				time.Sleep(time.Millisecond * 100)
 
 				logger.Info("Launching System Browser with %s", fullAddress)
-				if err := util.OpenBrowser(fullAddress); err != nil {
+				if err := browser.Open(fullAddress); err != nil {
 					logger.Error(err.Error())
 					return
 				}
@@ -623,11 +632,21 @@ func Run(c *Config) {
 		}
 	*/
 
-	<-quit
+	select {
+	case <-quit:
+	case err := <-errC:
+		logger.Error("%v", err)
+	}
 
-	logger.Info("Shutting down")
+	logger.Info("Shutting down...")
+
+	if rpc != nil {
+		rpc.Shutdown()
+	}
+
 	gui.Shutdown()
 	d.Shutdown()
+	closelog()
 	logger.Info("Goodbye")
 }
 

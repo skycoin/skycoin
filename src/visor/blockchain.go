@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -53,25 +54,39 @@ type Walker func(hps []coin.HashPair) cipher.SHA256
 // BlockListener notify the register when new block is appended to the chain
 type BlockListener func(b coin.Block)
 
-// Blockchain use blockdb to store the blocks.
+// Blockchain maintains blockchain and provides apis for accessing the chain.
 type Blockchain struct {
 	tree        BlockTree
 	walker      Walker
-	unspent     coin.UnspentPool
-	head        cipher.SHA256
 	blkListener []BlockListener
+
+	// arbitrating mode, if in arbitrating mode, when master node execute blocks,
+	// the invalid transaction will be skipped and continue the next; otherwise,
+	// node will throw the error and return.
 	arbitrating bool
+	chain       *blockdb.Blockchain
 }
 
 // Option represents the option when creating the blockchain
 type Option func(*Blockchain)
 
 // NewBlockchain use the walker go through the tree and update the head and unspent outputs.
-func NewBlockchain(tree BlockTree, walker Walker, ops ...Option) (*Blockchain, error) {
+func NewBlockchain(db *bolt.DB, walker Walker, ops ...Option) (*Blockchain, error) {
+	// creates blockchain tree
+	tree, err := blockdb.NewBlockTree(db)
+	if err != nil {
+		return nil, err
+	}
+
+	chainstore, err := blockdb.NewBlockchain(db)
+	if err != nil {
+		return nil, err
+	}
+
 	bc := &Blockchain{
-		tree:    tree,
-		walker:  walker,
-		unspent: coin.NewUnspentPool(),
+		tree:   tree,
+		walker: walker,
+		chain:  chainstore,
 	}
 
 	for _, op := range ops {
@@ -91,14 +106,15 @@ func Arbitrating(enable bool) Option {
 	}
 }
 
-// GetUnspent returns the unspent output pool.
-func (bc *Blockchain) GetUnspent() *coin.UnspentPool {
-	return &bc.unspent
-}
-
 func (bc *Blockchain) walkTree() error {
 	var dep uint64
 	var preBlock *coin.Block
+	head := bc.Head()
+	if head != nil {
+		dep = head.Seq() + 1
+	}
+
+	preBlock = head
 
 	for {
 		b := bc.tree.GetBlockInDepth(dep, bc.walker)
@@ -115,15 +131,31 @@ func (bc *Blockchain) walkTree() error {
 			return fmt.Errorf("update unspent failed, err: %v", err.Error())
 		}
 
-		bc.head = b.HashHeader()
 		dep++
 	}
 	return nil
 }
 
+func (bc *Blockchain) headSeq() int64 {
+	return bc.chain.HeadSeq()
+}
+
+func (bc *Blockchain) processBlock(b *coin.Block) error {
+	return bc.chain.ProcessBlock(b)
+}
+
+// Unspent returns the unspent outputs pool
+func (bc *Blockchain) Unspent() *blockdb.UnspentPool {
+	return bc.chain.Unspent
+}
+
 // Len returns the length of current blockchain.
 func (bc Blockchain) Len() uint64 {
-	return bc.Head().Seq() + 1
+	head := bc.Head()
+	if head != nil {
+		return head.Seq() + 1
+	}
+	return 0
 }
 
 // GetGenesisBlock get genesis block.
@@ -132,7 +164,7 @@ func (bc Blockchain) GetGenesisBlock() *coin.Block {
 }
 
 // CreateGenesisBlock creates genesis block in blockchain.
-func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) coin.Block {
+func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) (coin.Block, error) {
 	txn := coin.Transaction{}
 	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
 	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
@@ -144,30 +176,20 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		BkSeq:    0,
 		Version:  0,
 		Fee:      0,
-		UxHash:   coin.NewUnspentPool().GetUxHash(),
+		UxHash:   cipher.SHA256{},
 	}
 	b := coin.Block{
 		Head: head,
 		Body: body,
 	}
-	// b.Body.Transactions[0].UpdateHeader()
 	bc.addBlock(&b)
-	bc.head = b.HashHeader()
-	ux := coin.UxOut{
-		Head: coin.UxHead{
-			Time:  timestamp,
-			BkSeq: 0,
-		},
-		Body: coin.UxBody{
-			SrcTransaction: txn.InnerHash, //user inner hash
-			Address:        genesisAddr,
-			Coins:          genesisCoins,
-			Hours:          genesisCoins, // Allocate 1 coin hour per coin
-		},
+
+	if err := bc.processBlock(&b); err != nil {
+		return coin.Block{}, err
 	}
-	bc.unspent.Add(ux)
+
 	bc.notify(b)
-	return b
+	return b, nil
 }
 
 func (bc *Blockchain) addBlock(b *coin.Block) error {
@@ -181,7 +203,12 @@ func (bc Blockchain) GetBlock(hash cipher.SHA256) *coin.Block {
 
 // Head returns the most recent confirmed block
 func (bc Blockchain) Head() *coin.Block {
-	return bc.GetBlock(bc.head)
+	headSeq := bc.headSeq()
+	if headSeq < 0 {
+		return nil
+	}
+
+	return bc.GetBlockInDepth(uint64(headSeq))
 }
 
 // Time returns time of last block
@@ -196,8 +223,9 @@ func (bc *Blockchain) Time() uint64 {
 func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	currentTime uint64) (*coin.Block, error) {
 	if currentTime <= bc.Time() {
-		logger.Panic("Time can only move forward")
+		return nil, errors.New("Time can only move forward")
 	}
+
 	if len(txns) == 0 {
 		return nil, errors.New("No transactions")
 	}
@@ -205,7 +233,9 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	if err != nil {
 		return nil, err
 	}
-	b, err := coin.NewBlock(*bc.Head(), currentTime, bc.unspent, txns, bc.TransactionFee)
+	uxHash := bc.Unspent().GetUxHash()
+
+	b, err := coin.NewBlock(*bc.Head(), currentTime, uxHash, txns, bc.TransactionFee)
 	if err != nil {
 		return nil, err
 	}
@@ -224,50 +254,32 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
 	return b, nil
 }
 
-// ExecuteBlock Attempts to append block to blockchain.  Returns the UxOuts created,
-// and an error if the block is invalid.
-func (bc *Blockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
-	var uxs coin.UxArray
-	err := bc.verifyBlock(*b)
-	if err != nil {
-		return nil, err
-	}
-	txns := b.Body.Transactions
-	for _, tx := range txns {
-		// Remove spent outputs
-		bc.unspent.DelMultiple(tx.In)
-		// Create new outputs
-		txUxs := coin.CreateUnspents(b.Head, tx)
-		for i := range txUxs {
-			bc.unspent.Add(txUxs[i])
-		}
-		uxs = append(uxs, txUxs...)
+// ExecuteBlock Attempts to append block to blockchain.
+func (bc *Blockchain) ExecuteBlock(b *coin.Block) error {
+	if err := bc.verifyBlock(*b); err != nil {
+		return err
 	}
 
-	b.Head.PrevHash = bc.head
-	bc.addBlock(b)
+	b.Head.PrevHash = bc.Head().HashHeader()
 
-	// update the head
-	bc.head = b.HashHeader()
+	if err := bc.addBlock(b); err != nil {
+		return err
+	}
+
+	if err := bc.processBlock(b); err != nil {
+		return err
+	}
+
 	bc.notify(*b)
-	return uxs, nil
+	return nil
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
 	if err := bc.verifyBlock(b); err != nil {
 		return err
 	}
-	txns := b.Body.Transactions
-	for _, tx := range txns {
-		// Remove spent outputs
-		bc.unspent.DelMultiple(tx.In)
-		// Create new outputs
-		txUxs := coin.CreateUnspents(b.Head, tx)
-		for i := range txUxs {
-			bc.unspent.Add(txUxs[i])
-		}
-	}
-	return nil
+
+	return bc.processBlock(&b)
 }
 
 // VerifyBlock verifies the BlockHeader and BlockBody
@@ -293,7 +305,9 @@ func (bc Blockchain) verifyBlock(b coin.Block) error {
 // Compares the state of the current UxHash hash to state of unspent
 // output pool.
 func (bc Blockchain) verifyUxHash(b coin.Block) error {
-	if !bytes.Equal(b.Head.UxHash[:], bc.unspent.XorHash[:]) {
+	uxHash := bc.Unspent().GetUxHash()
+
+	if !bytes.Equal(b.Head.UxHash[:], uxHash[:]) {
 		return errors.New("UxHash does not match")
 	}
 	return nil
@@ -326,7 +340,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 		return err
 	}
 
-	uxIn, err := bc.unspent.GetMultiple(tx.In)
+	uxIn, err := bc.Unspent().GetArray(tx.In)
 	if err != nil {
 		return err
 	}
@@ -346,7 +360,7 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 		// Check that new unspents don't collide with existing.  This should
 		// also be checked in verifyTransactions
 		for i := range uxOut {
-			if bc.unspent.Has(uxOut[i].Hash()) {
+			if bc.Unspent().Contains(uxOut[i].Hash()) {
 				return errors.New("New unspent collides with existing unspent")
 			}
 		}
@@ -459,7 +473,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 			if DebugLevel1 {
 				// Check that the expected unspent is not already in the pool.
 				// This should never happen because its a hash collision
-				if bc.unspent.Has(h) {
+				if bc.Unspent().Contains(h) {
 					if bc.arbitrating {
 						skip[i] = byte(1)
 						continue
@@ -544,14 +558,16 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 	headTime := bc.Time()
 	inHours := uint64(0)
-	// Compute input hours
-	for i := range t.In {
-		in, ok := bc.unspent.Get(t.In[i])
-		if !ok {
-			return 0, ErrUnspentNotExist
-		}
-		inHours += in.CoinHours(headTime)
+	inUxs, err := bc.Unspent().GetArray(t.In)
+	if err != nil {
+		return 0, err
 	}
+
+	// Compute input hours
+	for _, ux := range inUxs {
+		inHours += ux.CoinHours(headTime)
+	}
+
 	// Compute output hours
 	outHours := uint64(0)
 	for i := range t.Out {
@@ -565,16 +581,22 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 
 // VerifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (bc Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) error {
-	for i := uint64(0); i <= bc.Head().Seq(); i++ {
+func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) error {
+	head := bc.Head()
+	if head == nil {
+		return nil
+	}
+
+	for i := uint64(0); i <= head.Seq(); i++ {
 		b := bc.GetBlockInDepth(i)
 		if b == nil {
-			return fmt.Errorf("no block in depth %v", i)
+			return fmt.Errorf("No block in depth %v", i)
 		}
+
 		// get sig
 		sig, err := sigs.Get(b.HashHeader())
 		if err != nil {
-			return err
+			return fmt.Errorf("Verify signature of block in depth: %d failed: %v", i, err)
 		}
 
 		if err := cipher.VerifySignature(pubKey, sig, b.HashHeader()); err != nil {

@@ -1,4 +1,4 @@
-package historydb_test
+package historydb
 
 import (
 	"errors"
@@ -11,12 +11,11 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/aether/encoder"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -52,37 +51,42 @@ var _ = func() int64 {
 	return t
 }()
 
+// setup will create a random boltdb file in temp folder,
+// and return teardown function for later clean
 func setup(t *testing.T) (*bolt.DB, func(), error) {
-	dbName := fmt.Sprintf("%ddb", rand.Int31n(10000))
-	teardown := func() {}
-	tmpDir := filepath.Join(os.TempDir(), dbName)
+	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
+	cancel := func() {}
+	tmpDir := os.TempDir()
+	dbPath := filepath.Join(tmpDir, dbName)
 	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, teardown, err
+		return nil, cancel, err
 	}
 
-	util.DataDir = tmpDir
-	db, err := historydb.NewDB()
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+		Timeout: 500 * time.Millisecond,
+	})
 	if err != nil {
-		t.Fatal(err)
+		return nil, cancel, err
 	}
 
-	teardown = func() {
+	cancel = func() {
 		db.Close()
-		if err := os.RemoveAll(tmpDir); err != nil {
+		if err := os.RemoveAll(dbPath); err != nil {
 			panic(err)
 		}
 	}
-	return db, teardown, nil
+	return db, cancel, nil
 }
 
 type fakeBlockchain struct {
 	blocks  []coin.Block
-	unspent coin.UnspentPool
+	unspent map[string]coin.UxOut
+	uxhash  cipher.SHA256
 }
 
-func newBlockchain() historydb.Blockchainer {
+func newBlockchain(db *bolt.DB) *fakeBlockchain {
 	return &fakeBlockchain{
-		unspent: coin.NewUnspentPool(),
+		unspent: make(map[string]coin.UxOut),
 	}
 }
 
@@ -103,16 +107,35 @@ func (fbc fakeBlockchain) Head() *coin.Block {
 	return &fbc.blocks[l-1]
 }
 
+func (fbc *fakeBlockchain) deleteUxOut(uxids []cipher.SHA256) {
+	for _, id := range uxids {
+		ux := fbc.unspent[id.Hex()]
+		fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
+		delete(fbc.unspent, id.Hex())
+	}
+}
+
+func (fbc *fakeBlockchain) addUxOut(ux coin.UxOut) {
+	fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
+	fbc.unspent[ux.Hash().Hex()] = ux
+}
+
 func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	var uxs coin.UxArray
 	txns := b.Body.Transactions
 	for _, tx := range txns {
 		// Remove spent outputs
-		fbc.unspent.DelMultiple(tx.In)
+		for _, id := range tx.In {
+			ux := fbc.unspent[id.Hex()]
+			fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
+			delete(fbc.unspent, id.Hex())
+
+		}
+		fbc.deleteUxOut(tx.In)
 		// Create new outputs
 		txUxs := coin.CreateUnspents(b.Head, tx)
 		for i := range txUxs {
-			fbc.unspent.Add(txUxs[i])
+			fbc.addUxOut(txUxs[i])
 		}
 		uxs = append(uxs, txUxs...)
 	}
@@ -126,7 +149,7 @@ func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) coin.Block {
 	txn := coin.Transaction{}
 	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
-	body := coin.BlockBody{coin.Transactions{txn}}
+	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
 	prevHash := cipher.SHA256{}
 	head := coin.BlockHeader{
 		Time:     timestamp,
@@ -135,7 +158,7 @@ func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesi
 		BkSeq:    0,
 		Version:  0,
 		Fee:      0,
-		UxHash:   coin.NewUnspentPool().GetUxHash(),
+		UxHash:   cipher.SHA256{},
 	}
 	b := coin.Block{
 		Head: head,
@@ -155,12 +178,8 @@ func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesi
 			Hours:          genesisCoins, // Allocate 1 coin hour per coin
 		},
 	}
-	fbc.unspent.Add(ux)
+	fbc.addUxOut(ux)
 	return b
-}
-
-func (fbc fakeBlockchain) GetUnspent() *coin.UnspentPool {
-	return &fbc.unspent
 }
 
 func (fbc fakeBlockchain) VerifyTransaction(tx coin.Transaction) error {
@@ -183,10 +202,9 @@ func TestProcessGenesisBlock(t *testing.T) {
 	}
 	defer teardown()
 
-	// bc := coin.NewBlockchain(&ft, nil)
-	bc := newBlockchain()
+	bc := newBlockchain(db)
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
-	hisDB, err := historydb.New(db)
+	hisDB, err := New(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +214,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	}
 
 	// check transactions bucket.
-	var tx historydb.Transaction
+	var tx Transaction
 	txHash := gb.Body.Transactions[0].Hash()
 	if err := getBucketValue(db, transactionBkt, txHash[:], &tx); err != nil {
 		t.Fatal(err)
@@ -209,14 +227,15 @@ func TestProcessGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ux := bc.GetUnspent().Array()[0]
-	assert.Equal(t, outID[0], ux.Hash())
+	ux, ok := bc.unspent[outID[0].Hex()]
+	require.True(t, ok)
+	require.Equal(t, outID[0], ux.Hash())
 
 	// check outputs
-	output := historydb.UxOut{}
-	if err := getBucketValue(db, outputBkt, outID[0][:], &output); err != nil {
-		t.Fatal(err)
-	}
+	output := UxOut{}
+	err = getBucketValue(db, outputBkt, outID[0][:], &output)
+	require.Nil(t, err)
+
 	assert.Equal(t, output.Out, ux)
 }
 
@@ -241,7 +260,7 @@ type txOut struct {
 	Hours  uint64
 }
 
-func getUx(bc historydb.Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.UxOut, error) {
+func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.UxOut, error) {
 	b := bc.GetBlockInDepth(seq)
 	if b == nil {
 		return nil, fmt.Errorf("no block in depth:%v", seq)
@@ -265,11 +284,11 @@ func TestProcessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer teardown()
-	bc := newBlockchain()
+	bc := newBlockchain(db)
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 
-	// create historydb
-	hisDB, err := historydb.New(db)
+	// create
+	hisDB, err := New(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +363,7 @@ func TestProcessBlock(t *testing.T) {
 	testEngine(t, testData, bc, hisDB, db)
 }
 
-func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *historydb.HistoryDB, db *bolt.DB) {
+func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB, db *bolt.DB) {
 	for i, td := range tds {
 		b, tx, err := addBlock(bc, td, _incTime*(uint64(i)+1))
 		if err != nil {
@@ -362,7 +381,7 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 		}
 
 		// check tx
-		txInBkt := historydb.Transaction{}
+		txInBkt := Transaction{}
 		k := tx.Hash()
 		if err := getBucketValue(db, transactionBkt, k[:], &txInBkt); err != nil {
 			t.Fatal(err)
@@ -376,7 +395,7 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 				t.Fatal(err)
 			}
 
-			uxInDB := historydb.UxOut{}
+			uxInDB := UxOut{}
 			uxKey := ux.Hash()
 			if err = getBucketValue(db, outputBkt, uxKey[:], &uxInDB); err != nil {
 				t.Fatal(err)
@@ -396,7 +415,7 @@ func testEngine(t *testing.T, tds []testData, bc historydb.Blockchainer, hdb *hi
 	}
 }
 
-func addBlock(bc historydb.Blockchainer, td testData, tm uint64) (*coin.Block, *coin.Transaction, error) {
+func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Transaction, error) {
 	tx := coin.Transaction{}
 	// get unspent output
 	ux, err := getUx(bc, td.Vin.BlockSeq, td.Vin.TxID, td.Vin.Addr)
@@ -423,7 +442,7 @@ func addBlock(bc historydb.Blockchainer, td testData, tm uint64) (*coin.Block, *
 		return nil, nil, err
 	}
 	preBlock := bc.GetBlock(td.PreBlockHash)
-	b := newBlock(*preBlock, tm, *bc.GetUnspent(), coin.Transactions{tx}, _feeCalc)
+	b := newBlock(*preBlock, tm, bc.uxhash, coin.Transactions{tx}, _feeCalc)
 
 	// uxs, err := bc.ExecuteBlock(&b)
 	_, err = bc.ExecuteBlock(&b)
@@ -445,7 +464,7 @@ func getBucketValue(db *bolt.DB, name []byte, key []byte, value interface{}) err
 	})
 }
 
-func newBlock(prev coin.Block, currentTime uint64, unspent coin.UnspentPool,
+func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
 	txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
 	if len(txns) == 0 {
 		log.Panic("Refusing to create block with no transactions")
@@ -455,14 +474,14 @@ func newBlock(prev coin.Block, currentTime uint64, unspent coin.UnspentPool,
 		// This should have been caught earlier
 		log.Panicf("Invalid transaction fees: %v", err)
 	}
-	body := coin.BlockBody{txns}
+	body := coin.BlockBody{Transactions: txns}
 	return coin.Block{
-		Head: newBlockHeader(prev.Head, unspent, currentTime, fee, body),
+		Head: newBlockHeader(prev.Head, uxHash, currentTime, fee, body),
 		Body: body,
 	}
 }
 
-func newBlockHeader(prev coin.BlockHeader, unspent coin.UnspentPool, currentTime,
+func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime,
 	fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
 	return coin.BlockHeader{
@@ -472,10 +491,6 @@ func newBlockHeader(prev coin.BlockHeader, unspent coin.UnspentPool, currentTime
 		Time:     currentTime,
 		BkSeq:    prev.BkSeq + 1,
 		Fee:      fee,
-		UxHash:   getUxHash(unspent),
+		UxHash:   uxHash,
 	}
-}
-
-func getUxHash(unspent coin.UnspentPool) cipher.SHA256 {
-	return unspent.XorHash
 }

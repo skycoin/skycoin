@@ -83,7 +83,7 @@ export class LoadWalletComponent implements OnInit {
     displayMode: DisplayModeEnum;
     displayModeEnum = DisplayModeEnum;
     selectedMenu: string;
-
+    historyTimeBy:string = 'desc';
     userTransactions:Array<any>;
 
     @ViewChild(SkyCoinOutputComponent)
@@ -125,13 +125,16 @@ export class LoadWalletComponent implements OnInit {
     connections: Array<any>;
     defaultConnections: Array<any>;
     blockChain: any;
+    elapsedTime: number;
     numberOfBlocks: number;
     outputs: Array<any>;
     NewDefaultConnectionIsVisible : boolean;
     EditDefaultConnectionIsVisible : boolean;
+    noConnections:boolean;
     oldConnection:string;
     filterAddressVal:string;
     totalSky:any;
+    totalWalletBalance:any;
     historySearchKey:string;
     selectedWallet:any;
 
@@ -159,6 +162,7 @@ export class LoadWalletComponent implements OnInit {
     ngOnInit() {
         this.displayMode = DisplayModeEnum.first;
         this.totalSky = 0;
+        this.totalWalletBalance =0;
         this.selectedWallet = {};
         this.userTransactions=[];
         this.loadWallet();
@@ -255,17 +259,52 @@ export class LoadWalletComponent implements OnInit {
             .map((res) => res.json())
             .subscribe(transactions => {
                 _.each(transactions,(transaction)=>{
+                    let confirmed = transaction.status.confirmed? 'Confirmed': 'UnConfirmed'
                     this.userTransactions.push({'type':'confirmed','transactionInputs':transaction.inputs,'transactionOutputs':transaction.outputs
-                        ,'actualTransaction':transaction
+                        ,'actualTransaction':transaction, 'confirmed': confirmed
                     });
+                    this.sortTransactions();
                 });
             });
         });
     }
+    sortHistoryByTime(ev:Event) {
+        this.historyTimeBy = this.historyTimeBy === 'desc' ? 'asc' : 'desc';
+        this.sortTransactions()
+    }
+    sortTransactions() {
+        if(this.userTransactions.length <= 0) {
+            return;
+        }
+        switch (this.historyTimeBy) {
+            case 'asc':
+                this.userTransactions.sort((a, b) => {
+                    if (a.actualTransaction.timestamp > b.actualTransaction.timestamp) {
+                        return 1;
+                    }
+                    if (a.actualTransaction.timestamp < b.actualTransaction.timestamp) {
+                        return -1;
+                    }
+                    return 0;
+                });
+                break;
+            case 'desc':
+                 this.userTransactions.sort((a, b) => {
+                    if (a.actualTransaction.timestamp > b.actualTransaction.timestamp) {
+                        return -1;
+                    }
+                    if (a.actualTransaction.timestamp < b.actualTransaction.timestamp) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                break;
+        }
+    }
 
     //Load wallet function
     loadWallet(){
-        this.totalSky = 0;
+        this.totalWalletBalance = 0;
         this.http.post('/wallets', '')
         .map((res:Response) => res.json())
         .subscribe(
@@ -300,7 +339,7 @@ export class LoadWalletComponent implements OnInit {
                 //console.log("data", data);
                 _.map(data, (item, idx) => {
                     var filename = item.meta.filename;
-                    this.loadWalletItem(filename, idx);
+                    this.loadWalletItem(filename, idx,idx ==  data.length-1);
                 })
                 this.walletsWithAddress = [];
                 _.map(this.wallets, (o, idx) => {
@@ -318,7 +357,6 @@ export class LoadWalletComponent implements OnInit {
                     });
                 });
                 this.loadTransactionsForWallet();
-
             },
             err => console.log(err),
             () => {
@@ -346,7 +384,7 @@ export class LoadWalletComponent implements OnInit {
                 })
         }
     }
-    loadWalletItem(address, inc){
+    loadWalletItem(address, inc, endReached){
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -357,7 +395,16 @@ export class LoadWalletComponent implements OnInit {
             response => {
                 //console.log('load done: ' + inc, response);
                 this.wallets[inc].balance = response.confirmed.coins / 1000000;
-                this.totalSky += this.wallets[inc].balance;
+                this.totalWalletBalance += this.wallets[inc].balance;
+                if(endReached){
+                   if(this.totalSky != this.totalWalletBalance) {
+                       this.totalSky = this.totalWalletBalance;
+                       console.log("Updating the wallet balance!");
+                   }
+                   else{
+                       console.log("Not updating the wallet balance as it is the same!");
+                   }
+                }
             }, err => console.log("Error on load balance: " + err), () => {
                 //console.log('Balance load done')
             })
@@ -463,6 +510,11 @@ export class LoadWalletComponent implements OnInit {
             this.blockChain = _.sortBy(data.blocks, function(o){
                 return o.header.seq * (-1);
             });
+
+            if (this.blockChain.length != 0) {
+                this.elapsedTime = moment().unix() - this.blockChain[0].header.timestamp;
+            }
+
             this.setBlockPage(1);
         }, err => console.log("Error on load blockchain: " + err), () => {
             //console.log('blockchain load done');
@@ -487,6 +539,7 @@ export class LoadWalletComponent implements OnInit {
 
     //Switch tab function
     switchTab(mode: DisplayModeEnum, wallet) {
+        this.selectedMenu = '';
         //"Textbox" and "Ready" button enable in Send tab while switching tabs
         this.sendDisable = true;
         this.readyDisable = false;
@@ -517,9 +570,6 @@ export class LoadWalletComponent implements OnInit {
     }
     getDateTimeString(ts) {
         return moment.unix(ts).format("YYYY-MM-DD HH:mm")
-    }
-    getElapsedTime(ts) {
-        return moment().unix() - ts;
     }
     //Show QR code function for show QR popup
     showQR(address){
@@ -576,6 +626,9 @@ export class LoadWalletComponent implements OnInit {
             return;
         }
 
+        // new wallet will have a default address
+        addressCount--;
+
         //check if label is duplicated
         var old = _.find(this.wallets, function(o){
             return (o.meta.label == label)
@@ -599,50 +652,43 @@ export class LoadWalletComponent implements OnInit {
         .map((res:Response) => res.json())
         .subscribe(
             response => {
-                console.log(response)
-
-                if(addressCount > 1) {
-                    var repeats = [];
-                    for(var i = 0; i < addressCount - 1 ; i++) {
-                        repeats.push(i)
-                    }
-
-                    async.map(repeats, (idx, callback) => {
-                        var stringConvert = 'id='+response.meta.filename;
-                        this.http.post('/wallet/newAddress', stringConvert, {headers: headers})
-                        .map((res:Response) => res.json())
-                        .subscribe(
-                            response => {
-                                console.log(response)
-                                callback(null, null)
-                            },
-                            err => {
-                                callback(err, null)
-                            },
-                            () => {}
-                        );
-                    }, (err, ret) => {
-                        if(err) {
+                console.log('response:', response);
+                if (addressCount > 0) {
+                    let param = 'id='+response.meta.filename+'&num='+addressCount
+                    this.http.post('/wallet/newAddress', param, {headers: headers})
+                    .map((res:Response) => res.json())
+                    .subscribe(
+                        response => {
+                            //Hide new wallet popup
+                            this.NewWalletIsVisible = false;
+                            toastr.info("New wallet created successfully");
+                            //Load wallet for refresh list
+                            this.loadWallet();
+                        },
+                        err => {
                             console.log(err);
-                            return;
                         }
-
-                        //Hide new wallet popup
-                        this.NewWalletIsVisible = false;
-                        toastr.info("New wallet created successfully");
-                        //Load wallet for refresh list
-                        this.loadWallet();
-                    })
-                } else {
-                    //Hide new wallet popup
-                    this.NewWalletIsVisible = false;
-                    toastr.info("New wallet created successfully");
-                    //Load wallet for refresh list
-                    this.loadWallet();
+                    );
+                    return
                 }
+
+                //Hide new wallet popup
+                this.NewWalletIsVisible = false;
+                toastr.info("New wallet created successfully");
+                //Load wallet for refresh list
+                this.loadWallet();
             },
             err => {
-                console.log(err);
+                // when node is down, the response header status is 200
+                if (err.status == 200) {
+                    return
+                }
+
+                if (err.status == 400) {
+                    if(err._body.indexOf("duplicate wallet ") !=-1){
+                        toastr.info("Can't load same wallet twice!");
+                    }
+                }
             },
             () => {}
         );
@@ -681,7 +727,14 @@ export class LoadWalletComponent implements OnInit {
     }
 
     //Load wallet seed function for create new wallet with name and seed
-    createWalletSeed(walletName, seed){
+    createWalletSeed(walletName, seed, addressCount){
+        if(addressCount < 1) {
+            toastr.error('Please correct address count');
+            return;
+        }
+
+        addressCount--;
+
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -691,55 +744,47 @@ export class LoadWalletComponent implements OnInit {
         .map((res:Response) => res.json())
         .subscribe(
             response => {
-                //Hide load wallet seed popup
+                if(addressCount > 0) {
+                    let params='id=' + response.meta.filename + '&num=' + addressCount;
+                    this.http.post('/wallet/newAddress', params, {headers: headers})
+                    .map((res:Response) => res.json())
+                    .subscribe(
+                        response => {
+                            //Hide new wallet popup
+                            this.loadSeedIsVisible = false;
+                            toastr.info("Wallet loaded successfully");
+                            //Load wallet for refresh list
+                            this.loadWallet();
+                        },
+                        err => {
+                            console.log(err);
+                        },
+                        () => {}
+                    );
+                    return
+                } 
+
+                //Hide new wallet popup
                 this.loadSeedIsVisible = false;
+                toastr.info("Wallet loaded successfully");
                 //Load wallet for refresh list
                 this.loadWallet();
             },
-            err => console.log("Error on create load wallet seed: "+JSON.stringify(err)),
+            err => {
+                // when node is down, the response header status is 200
+                if (err.status == 200) {
+                    return
+                }
+
+                if (err.status == 400) {
+                    if(err._body.indexOf("duplicate wallet ") !=-1){
+                        toastr.info("Can't load same wallet twice!");
+                    }
+                }
+            },
             () => {
-                //console.log('Load wallet seed done')
             }
         );
-    }
-
-    sortHistory(key) {
-        if(this.sortDir[key]==0)
-            this.sortDir[key] = 1;
-        else
-            this.sortDir[key] = this.sortDir[key] * (-1);
-
-        if(key == 'time'){
-            this.sortDir['address'] = 0;
-            this.sortDir['amount'] = 0;
-        } else if(key == 'amount') {
-            this.sortDir['time'] = 0;
-            this.sortDir['address'] = 0;
-        } else {
-            this.sortDir['time'] = 0;
-            this.sortDir['amount'] = 0;
-        }
-
-        var self = this;
-        if(key == 'time') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return o.txn.timestamp;
-            });
-        } else if(key == 'amount') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return Number(o[key]);
-            });
-        } else if(key == 'address') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return o[key];
-            })
-        };
-
-        if(this.sortDir[key] == -1) {
-            this.historyTable = this.historyTable.reverse();
-        }
-
-        this.setHistoryPage(this.historyPager.currentPage);
     }
 
     filterHistory(address) {

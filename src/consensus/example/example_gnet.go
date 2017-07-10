@@ -22,7 +22,7 @@ import (
 	"sort"
 	"time"
 
-	gnet "github.com/skycoin/skycoin/src/aether"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	//
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/consensus"

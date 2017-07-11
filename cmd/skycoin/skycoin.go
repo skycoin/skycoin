@@ -455,7 +455,6 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
-
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
 	dc.Peers.Disabled = c.DisablePEX
@@ -466,6 +465,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
 	dc.Daemon.OutgoingMax = c.MaxConnections
+	dc.Daemon.DataDirectory = c.DataDirectory
 
 	daemon.DefaultConnections = DefaultConnections
 

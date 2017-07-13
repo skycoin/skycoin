@@ -661,9 +661,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	a := e.Addr
 
 	if e.Solicited {
-		logger.Info("Connected to %s as we requested", a)
+		logger.Info("Connected to peer: %s (outgoing)", a)
 	} else {
-		logger.Info("Received unsolicited connection from %s", a)
+		logger.Info("Connected to peer: %s (incoming)", a)
 	}
 
 	dm.pendingConnections.Remove(a)

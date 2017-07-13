@@ -716,7 +716,7 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 			hashes = append(hashes, txn.Hash())
 		} else {
 			if !known {
-				logger.Warning("Failed to record txn: %v", err)
+				logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
 			} else {
 				logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
 			}

@@ -473,7 +473,6 @@ func (vs *Visor) GetBlocks(start, end uint64) []coin.Block {
 // Refactor
 // Why do does this return both error and bool
 func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
-	//addrs := self.Wallets.GetAddressSet()
 	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
 }
 

@@ -4,7 +4,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // TransactionResult represents transaction result
@@ -45,29 +44,9 @@ func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.Addr
 	return v.Unconfirmed.SpendsForAddresses(unspent, addrs)
 }
 
-// CreateSpendingTransaction creates spending transaction
-func (rpc RPC) CreateSpendingTransaction(v *Visor, wlt wallet.Wallet,
-	amt wallet.Balance, dest cipher.Address) (tx coin.Transaction, err error) {
-
-	unspent := rpc.GetUnspent(v)
-	tm := v.Blockchain.Time()
-	tx, err = CreateSpendingTransaction(wlt, v.Unconfirmed, unspent, tm, amt, dest)
-	if err != nil {
-		return
-	}
-
-	if err := tx.Verify(); err != nil {
-		logger.Panicf("Invalid transaction, %v", err)
-	}
-
-	if err := VerifyTransactionFee(v.Blockchain, &tx); err != nil {
-		logger.Panicf("Created invalid spending txn: visor fail, %v", err)
-	}
-
-	if err := v.Blockchain.VerifyTransaction(tx); err != nil {
-		logger.Panicf("Created invalid spending txn: blockchain fail, %v", err)
-	}
-	return
+// GetUnconfirmedReceiving returns unconfirmed
+func (rpc RPC) GetUnconfirmedReceiving(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	return v.Unconfirmed.RecvOfAddresses(v.Blockchain.Head().Head, addrs)
 }
 
 // GetUnspentOutputReadables gets unspent output readables

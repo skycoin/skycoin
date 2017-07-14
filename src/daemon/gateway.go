@@ -428,12 +428,44 @@ func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
 	return
 }
 
+// Spend spends coins from given wallet and broadcast it,
+// return transaction hash or error.
+func (gw *Gateway) Spend(wlt wallet.Wallet,
+	amt wallet.Balance,
+	dest cipher.Address) (coin.Transaction, error) {
+	var err error
+	var tx coin.Transaction
+	gw.strand(func() {
+		// create and sign transaction
+		tx, err = wlt.CreateAndSignTransaction(gw.v.Unconfirmed,
+			gw.v.Blockchain.Unspent(),
+			gw.v.Blockchain.Head().Seq(),
+			amt,
+			dest)
+		if err != nil {
+			err = fmt.Errorf("Create transaction failed: %v", err)
+			return
+		}
+
+		// inject transaction
+		if err = gw.d.Visor.InjectTransaction(tx, gw.d.Pool); err != nil {
+			err = fmt.Errorf("Inject transaction failed: %v", err)
+		}
+	})
+
+	return tx, err
+}
+
 // CreateSpendingTransaction creates spending transactions
 func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 	amt wallet.Balance,
 	dest cipher.Address) (tx coin.Transaction, err error) {
 	gw.strand(func() {
-		tx, err = gw.vrpc.CreateSpendingTransaction(gw.v, wlt, amt, dest)
+		tx, err = wlt.CreateAndSignTransaction(gw.v.Unconfirmed,
+			gw.v.Blockchain.Unspent(),
+			gw.v.Blockchain.Head().Seq(),
+			amt,
+			dest)
 	})
 	return
 }

@@ -1,16 +1,21 @@
 package wallet
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"encoding/hex"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -288,4 +293,123 @@ func (wlt *Wallet) Load(dir string) error {
 	r.Meta["filename"] = wlt.GetFilename()
 	*wlt = NewWalletFromReadable(r)
 	return nil
+}
+
+// CreateAndSignTransaction Creates a Transaction
+// spending coins and hours from wallet
+func (wlt *Wallet) CreateAndSignTransaction(
+	unconfirmed *visor.UnconfirmedTxnPool,
+	unspent *blockdb.UnspentPool,
+	headTime uint64,
+	amt Balance,
+	dest cipher.Address) (coin.Transaction, error) {
+
+	txn := coin.Transaction{}
+	auxs := unspent.GetUnspentsOfAddrs(wlt.GetAddresses())
+
+	// Subtract pending spends from available
+	puxs, err := unconfirmed.SpendsOfAddresses(unspent, wlt.GetAddresses())
+	if err != nil {
+		return coin.Transaction{}, err
+	}
+
+	auxs = auxs.Sub(puxs)
+
+	// Determine which unspents to spend
+	spends, err := createSpends(headTime, auxs.Flatten(), amt)
+	if err != nil {
+		return txn, err
+	}
+
+	// Add these unspents as tx inputs
+	toSign := make([]cipher.SecKey, len(spends))
+	spending := Balance{Coins: 0, Hours: 0}
+	for i, au := range spends {
+		entry, exists := wlt.GetEntry(au.Body.Address)
+		if !exists {
+			return txn, fmt.Errorf("Address:%v does not exist in wallet:%v", au.Body.Address, wlt.GetID())
+		}
+
+		txn.PushInput(au.Hash())
+		toSign[i] = entry.Secret
+		spending.Coins += au.Body.Coins
+		spending.Hours += au.CoinHours(headTime)
+	}
+
+	//keep 1/4th of hours as change
+	//send half to each address
+	var changeHours = uint64(spending.Hours / 4)
+
+	if amt.Coins == spending.Coins {
+		txn.PushOutput(dest, amt.Coins, changeHours/2)
+		txn.SignInputs(toSign)
+		txn.UpdateHeader()
+		return txn, nil
+	}
+
+	change := NewBalance(spending.Coins-amt.Coins, changeHours/2)
+	// TODO -- send change to a new address
+	changeAddr := spends[0].Body.Address
+
+	//create transaction
+	txn.PushOutput(changeAddr, change.Coins, change.Hours)
+	txn.PushOutput(dest, amt.Coins, changeHours/2)
+	txn.SignInputs(toSign)
+	txn.UpdateHeader()
+	return txn, nil
+}
+
+func createSpends(headTime uint64, uxa coin.UxArray,
+	amt Balance) (coin.UxArray, error) {
+	if amt.Coins == 0 {
+		return nil, errors.New("Zero spend amount")
+	}
+	if amt.Coins%1e6 != 0 {
+		return nil, errors.New("Coins must be multiple of 1e6")
+	}
+
+	sort.Sort(uxOutByTimeDesc(uxa))
+
+	have := Balance{Coins: 0, Hours: 0}
+	spending := make(coin.UxArray, 0)
+	for i := range uxa {
+		b := Balance{
+			Coins: uxa[i].Body.Coins,
+			Hours: uxa[i].CoinHours(headTime),
+		}
+
+		if b.Coins == 0 || b.Coins%1e6 != 0 {
+			logger.Error("UxOut coins are 0 or not multiple of 1e6, can't spend")
+			continue
+		}
+		have = have.Add(b)
+		spending = append(spending, uxa[i])
+	}
+
+	if amt.Coins > have.Coins {
+		return nil, errors.New("Not enough confirmed coins")
+	}
+
+	return spending, nil
+}
+
+// OldestUxOut sorts a UxArray oldest to newest.
+type uxOutByTimeDesc coin.UxArray
+
+func (ouo uxOutByTimeDesc) Len() int      { return len(ouo) }
+func (ouo uxOutByTimeDesc) Swap(i, j int) { ouo[i], ouo[j] = ouo[j], ouo[i] }
+func (ouo uxOutByTimeDesc) Less(i, j int) bool {
+	a := ouo[i].Head.BkSeq
+	b := ouo[j].Head.BkSeq
+	// Use hash to break ties
+	if a == b {
+		ih := ouo[i].Hash()
+		jh := ouo[j].Hash()
+		cmp := bytes.Compare(ih[:], jh[:])
+		if cmp == 0 {
+			logger.Panic("Duplicate UxOut when sorting")
+		}
+		return cmp < 0
+	}
+	return a < b
 }

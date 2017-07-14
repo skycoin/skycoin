@@ -233,9 +233,9 @@ func (wrpc *WalletRPC) GetWalletBalance(gateway *daemon.Gateway,
 
 // SpendResult represents the result of spending
 type SpendResult struct {
-	Balance     wallet.BalancePair        `json:"balance"`
-	Transaction visor.ReadableTransaction `json:"txn"`
-	Error       string                    `json:"error"`
+	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
+	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
+	Error       string                     `json:"error,omitempty"`
 }
 
 // Spend TODO
@@ -249,31 +249,30 @@ func Spend(gateway *daemon.Gateway,
 	wrpc *WalletRPC,
 	walletID string,
 	amt wallet.Balance,
-	fee uint64,
 	dest cipher.Address) *SpendResult {
-	var txn coin.Transaction
+	var tx coin.Transaction
 	var b wallet.BalancePair
 	var err error
 	for {
-		txn, err = Spend2(gateway, wrpc, walletID, amt, fee, dest)
-		if err != nil {
-			logger.Error("Transaction creation failed: %v", err)
+		wallet, ok := wrpc.Wallets.Get(walletID)
+		if !ok {
+			err = fmt.Errorf("Unknown wallet %v", walletID)
 			break
 		}
 
-		logger.Info("Spend: \ntx= \n %s \n", visor.TransactionToJSON(txn))
+		tx, err = gateway.Spend(wallet, amt, dest)
+		if err != nil {
+			break
+		}
+
+		logger.Info("Spend: \ntx= \n %s \n", visor.TransactionToJSON(tx))
 
 		b, err = wrpc.GetWalletBalance(gateway, walletID)
 		if err != nil {
-			logger.Error("Get wallet balance failed: %v", err)
+			err = fmt.Errorf("Get wallet balance failed: %v", err)
 			break
 		}
 
-		txn, err = gateway.InjectTransaction(txn)
-		if err != nil {
-			logger.Error("Inject transaction failed: %v", err)
-			break
-		}
 		break
 	}
 
@@ -283,27 +282,12 @@ func Spend(gateway *daemon.Gateway,
 		}
 	}
 
+	rdtx := visor.NewReadableTransaction(&visor.Transaction{Txn: tx})
+
 	return &SpendResult{
-		Balance:     b,
-		Transaction: visor.NewReadableTransaction(&visor.Transaction{Txn: txn}),
+		Balance:     &b,
+		Transaction: &rdtx,
 	}
-}
-
-// Spend2 Creates a transaction spending amt with additional fee.  Fee is in addition
-// to the base required fee given amt.Hours.
-// TODO
-// - pull in outputs from blockchain from wallet
-// - create transaction here
-// - sign transction and return
-func Spend2(gateway *daemon.Gateway, wrpc *WalletRPC, walletID string, amt wallet.Balance,
-	fee uint64, dest cipher.Address) (coin.Transaction, error) {
-
-	wallet, ok := wrpc.Wallets.Get(walletID)
-	if !ok {
-		return coin.Transaction{}, fmt.Errorf("Unknown wallet %v", walletID)
-	}
-
-	return gateway.CreateSpendingTransaction(wallet, amt, dest)
 }
 
 /*
@@ -356,9 +340,6 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		//log.Printf("Spend1")
-
 		if r.FormValue("id") == "" {
 			wh.Error400(w, "Missing wallet_id")
 			return
@@ -376,13 +357,11 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
-			//Error400(w, "Invalid destination address: %v", err)
 			wh.Error400(w, "Invalid destination address: %v", err.Error())
 			return
 		}
 
 		scoins := r.FormValue("coins")
-		//shours := r.FormValue("hours")
 		coins, err := strconv.ParseUint(scoins, 10, 64)
 		if err != nil {
 			wh.Error400(w, "Invalid \"coins\" value")
@@ -390,15 +369,12 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		var hours uint64
-		var fee uint64 //doesnt work/do anything right now
-
 		//MOVE THIS INTO HERE
-		ret := Spend(gateway, Wg, walletID, wallet.NewBalance(coins, hours), fee, dst)
-
+		ret := Spend(gateway, Wg, walletID, wallet.NewBalance(coins, hours), dst)
 		if ret.Error != "" {
-			wh.Error400(w, fmt.Sprintf("Spend Failed: %s", ret.Error))
-			return
+			logger.Error(ret.Error)
 		}
+
 		wh.SendOr404(w, ret)
 	}
 }

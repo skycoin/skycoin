@@ -435,7 +435,6 @@ type TransactionJSON struct {
 
 // TransactionToJSON convert transaction to json string
 func TransactionToJSON(tx coin.Transaction) string {
-
 	var o TransactionJSON
 
 	if err := tx.Verify(); err != nil {

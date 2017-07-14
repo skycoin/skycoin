@@ -473,17 +473,23 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 // WalletBalance returns balance pair of specific wallet
 func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
+		addrs := wlt.GetAddresses()
+		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
 
-		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(wlt.GetAddresses())
-
-		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, wlt.GetAddresses())
+		spendUxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
 		if err != nil {
-			err = fmt.Errorf("get unconfimed spends failed when checking wallet balance: %v", err)
+			err = fmt.Errorf("get unconfimed spending failed when checking wallet balance: %v", err)
+			return
+		}
+
+		recvUxs, err := gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
+		if err != nil {
+			err = fmt.Errorf("get unconfirmed receiving failed when when checking wallet balance: %v", err)
 			return
 		}
 
 		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(puxs))
+		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
@@ -496,15 +502,22 @@ func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair,
 func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
 		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
-
-		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
+		spendUxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
 		if err != nil {
-			err = fmt.Errorf("get unconfirmed spends failed when checking addresses balance: %v", err)
+			err = fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
 			return
 		}
 
+		recvUxs, err := gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
+		if err != nil {
+			err = fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
+			return
+		}
+
+		uxs := auxs.Sub(spendUxs)
+		uxs = uxs.Add(recvUxs)
 		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(puxs))
+		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},

@@ -412,10 +412,37 @@ func (utp *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) coin.Transactions 
 	return known
 }
 
-// SpendsForAddresses returns all unconfirmed coin.UxOut spends for addresses
+// RecvOfAddresses returns unconfirmed receiving uxouts of addresses
+func (utp *UnconfirmedTxnPool) RecvOfAddresses(bh coin.BlockHeader,
+	addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, addr := range addrs {
+		addrm[addr] = struct{}{}
+	}
+	auxs := make(coin.AddressUxOuts, len(addrs))
+	if err := utp.Txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+		for i, o := range tx.Txn.Out {
+			if _, ok := addrm[o.Address]; ok {
+				uxout, err := coin.CreateUnspent(bh, tx.Txn, i)
+				if err != nil {
+					return err
+				}
+
+				auxs[o.Address] = append(auxs[o.Address], uxout)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return auxs, nil
+}
+
+// SpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
 // Looks at all inputs for unconfirmed txns, gets their source UxOut from the
 // blockchain's unspent pool, and returns as coin.AddressUxOuts
-func (utp *UnconfirmedTxnPool) SpendsForAddresses(unspent *blockdb.UnspentPool,
+func (utp *UnconfirmedTxnPool) SpendsOfAddresses(unspent *blockdb.UnspentPool,
 	addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, addr := range addrs {
@@ -442,10 +469,10 @@ func (utp *UnconfirmedTxnPool) SpendsForAddresses(unspent *blockdb.UnspentPool,
 	return auxs, nil
 }
 
-// SpendsForAddress spends for address
-func (utp *UnconfirmedTxnPool) SpendsForAddress(unspent *blockdb.UnspentPool,
+// SpendsOfAddress spends of address in unconfirmed transaction pool
+func (utp *UnconfirmedTxnPool) SpendsOfAddress(unspent *blockdb.UnspentPool,
 	a cipher.Address) (coin.UxArray, error) {
-	auxs, err := utp.SpendsForAddresses(unspent, []cipher.Address{a})
+	auxs, err := utp.SpendsOfAddresses(unspent, []cipher.Address{a})
 	if err != nil {
 		return coin.UxArray{}, err
 	}

@@ -338,9 +338,9 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 }
 
 // InjectTransaction injects transaction
-func (gw *Gateway) InjectTransaction(txn coin.Transaction) (tx coin.Transaction, err error) {
+func (gw *Gateway) InjectTransaction(txn coin.Transaction) (err error) {
 	gw.strand(func() {
-		tx, err = gw.d.Visor.InjectTransaction(txn, gw.d.Pool)
+		err = gw.d.Visor.InjectTransaction(txn, gw.d.Pool)
 	})
 	return
 }

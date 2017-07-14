@@ -295,7 +295,7 @@ func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 }
 
 // InjectTransaction injects transaction
-func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error
 	vs.strand(func() {
 		err = visor.VerifyTransactionFee(vs.v.Blockchain, &txn)
@@ -315,7 +315,7 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Trans
 		}
 		vs.BroadcastTransaction(txn, pool)
 	})
-	return txn, err
+	return err
 }
 
 // ResendTransaction resends a known UnconfirmedTxn.

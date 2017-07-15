@@ -387,7 +387,7 @@ func (vs *Visor) RecordBlockchainLength(addr string, bkLen uint64) {
 func (vs *Visor) EstimateBlockchainLength() uint64 {
 	var maxLen uint64
 	vs.strand(func() {
-		ourLen := vs.v.HeadBkSeq() + 1
+		ourLen := vs.v.HeadBkSeq()
 		if len(vs.blockchainLengths) < 2 {
 			maxLen = ourLen
 			return

@@ -250,7 +250,7 @@ func Spend(gateway *daemon.Gateway,
 	walletID string,
 	amt wallet.Balance,
 	dest cipher.Address) *SpendResult {
-	var tx coin.Transaction
+	var tx *coin.Transaction
 	var b wallet.BalancePair
 	var err error
 	for {
@@ -265,7 +265,7 @@ func Spend(gateway *daemon.Gateway,
 			break
 		}
 
-		logger.Info("Spend: \ntx= \n %s \n", visor.TransactionToJSON(tx))
+		logger.Info("Spend: \ntx= \n %s \n", visor.TransactionToJSON(*tx))
 
 		b, err = wrpc.GetWalletBalance(gateway, walletID)
 		if err != nil {
@@ -282,7 +282,7 @@ func Spend(gateway *daemon.Gateway,
 		}
 	}
 
-	rdtx := visor.NewReadableTransaction(&visor.Transaction{Txn: tx})
+	rdtx := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 
 	return &SpendResult{
 		Balance:     &b,
@@ -298,8 +298,17 @@ REFACTOR
 // balance is the confirmed balance minus the pending spends.
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.FormValue("id")
-		r.ParseForm()
+		if r.Method != "GET" {
+			wh.Error405(w)
+			return
+		}
+
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			wh.Error400(w, "id is required")
+			return
+		}
+
 		b, err := Wg.GetWalletBalance(gateway, id)
 
 		if err != nil {

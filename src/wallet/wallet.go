@@ -14,7 +14,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -295,30 +294,38 @@ func (wlt *Wallet) Load(dir string) error {
 	return nil
 }
 
+// Validator validate if the wallet be able to create spending transaction
+type Validator interface {
+	// checks if any of the given addresses has unconfirmed spending transactions
+	HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error)
+}
+
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
 func (wlt *Wallet) CreateAndSignTransaction(
-	unconfirmed *visor.UnconfirmedTxnPool,
-	unspent *blockdb.UnspentPool,
+	vld Validator,
+	unspent blockdb.UnspentGetter,
 	headTime uint64,
 	amt Balance,
-	dest cipher.Address) (coin.Transaction, error) {
+	dest cipher.Address) (*coin.Transaction, error) {
+
+	addrs := wlt.GetAddresses()
+	ok, err := vld.HasUnconfirmedSpendTx(addrs)
+	if err != nil {
+		return nil, fmt.Errorf("Checking unconfirmed spending failed: %v", err)
+	}
+
+	if ok {
+		return nil, errors.New("Please spend after your pending transaction is confirmed")
+	}
 
 	txn := coin.Transaction{}
 	auxs := unspent.GetUnspentsOfAddrs(wlt.GetAddresses())
 
-	// Subtract pending spends from available
-	puxs, err := unconfirmed.SpendsOfAddresses(unspent, wlt.GetAddresses())
-	if err != nil {
-		return coin.Transaction{}, err
-	}
-
-	auxs = auxs.Sub(puxs)
-
 	// Determine which unspents to spend
 	spends, err := createSpends(headTime, auxs.Flatten(), amt)
 	if err != nil {
-		return txn, err
+		return nil, err
 	}
 
 	// Add these unspents as tx inputs
@@ -327,7 +334,7 @@ func (wlt *Wallet) CreateAndSignTransaction(
 	for i, au := range spends {
 		entry, exists := wlt.GetEntry(au.Body.Address)
 		if !exists {
-			return txn, fmt.Errorf("Address:%v does not exist in wallet:%v", au.Body.Address, wlt.GetID())
+			return nil, fmt.Errorf("Address:%v does not exist in wallet:%v", au.Body.Address, wlt.GetID())
 		}
 
 		txn.PushInput(au.Hash())
@@ -344,7 +351,7 @@ func (wlt *Wallet) CreateAndSignTransaction(
 		txn.PushOutput(dest, amt.Coins, changeHours/2)
 		txn.SignInputs(toSign)
 		txn.UpdateHeader()
-		return txn, nil
+		return &txn, nil
 	}
 
 	change := NewBalance(spending.Coins-amt.Coins, changeHours/2)
@@ -356,7 +363,7 @@ func (wlt *Wallet) CreateAndSignTransaction(
 	txn.PushOutput(dest, amt.Coins, changeHours/2)
 	txn.SignInputs(toSign)
 	txn.UpdateHeader()
-	return txn, nil
+	return &txn, nil
 }
 
 func createSpends(headTime uint64, uxa coin.UxArray,

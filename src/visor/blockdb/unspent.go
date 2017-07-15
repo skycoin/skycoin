@@ -15,6 +15,14 @@ var (
 	xorhashKey = []byte("xorhash")
 )
 
+// UnspentGetter provides unspend pool related
+// querying methods
+type UnspentGetter interface {
+	// GetUnspentsOfAddrs returns all unspent outputs of given addresses
+	GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts
+	Get(cipher.SHA256) (coin.UxOut, bool)
+}
+
 // UnspentPool unspent outputs pool
 type UnspentPool struct {
 	db    *bolt.DB

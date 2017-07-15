@@ -423,23 +423,48 @@ func (gw *Gateway) GetLastTxs() (txns []*visor.Transaction, err error) {
 // GetUnspent returns the unspent pool
 func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
 	gw.strand(func() {
-		unspent = gw.vrpc.GetUnspent(gw.v)
+		unspent = gw.v.Blockchain.Unspent()
 	})
 	return
 }
 
+// impelemts the wallet.Validator interface
+type spendValidator struct {
+	uncfm   *visor.UnconfirmedTxnPool
+	unspent *blockdb.UnspentPool
+}
+
+func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent *blockdb.UnspentPool) *spendValidator {
+	return &spendValidator{
+		uncfm:   uncfm,
+		unspent: unspent,
+	}
+}
+
+func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
+	aux, err := sv.uncfm.SpendsOfAddresses(addr, sv.unspent)
+	if err != nil {
+		return false, err
+	}
+
+	return len(aux) > 0, nil
+}
+
 // Spend spends coins from given wallet and broadcast it,
-// return transaction hash or error.
+// return transaction or error.
 func (gw *Gateway) Spend(wlt wallet.Wallet,
 	amt wallet.Balance,
-	dest cipher.Address) (coin.Transaction, error) {
+	dest cipher.Address) (*coin.Transaction, error) {
 	var err error
-	var tx coin.Transaction
+	var tx *coin.Transaction
 	gw.strand(func() {
+		// create spend validator
+		unspent := gw.v.Blockchain.Unspent()
+		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = wlt.CreateAndSignTransaction(gw.v.Unconfirmed,
-			gw.v.Blockchain.Unspent(),
-			gw.v.Blockchain.Head().Seq(),
+		tx, err = wlt.CreateAndSignTransaction(sv,
+			unspent,
+			gw.v.Blockchain.Head().Time(),
 			amt,
 			dest)
 		if err != nil {
@@ -448,7 +473,7 @@ func (gw *Gateway) Spend(wlt wallet.Wallet,
 		}
 
 		// inject transaction
-		if err = gw.d.Visor.InjectTransaction(tx, gw.d.Pool); err != nil {
+		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
 			err = fmt.Errorf("Inject transaction failed: %v", err)
 		}
 	})
@@ -459,11 +484,16 @@ func (gw *Gateway) Spend(wlt wallet.Wallet,
 // CreateSpendingTransaction creates spending transactions
 func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 	amt wallet.Balance,
-	dest cipher.Address) (tx coin.Transaction, err error) {
+	dest cipher.Address) (tx *coin.Transaction, err error) {
 	gw.strand(func() {
-		tx, err = wlt.CreateAndSignTransaction(gw.v.Unconfirmed,
-			gw.v.Blockchain.Unspent(),
-			gw.v.Blockchain.Head().Seq(),
+		// generate spend validator
+		unspent := gw.v.Blockchain.Unspent()
+		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+
+		// create and sign transaction
+		tx, err = wlt.CreateAndSignTransaction(sv,
+			unspent,
+			gw.v.Blockchain.Head().Time(),
 			amt,
 			dest)
 	})

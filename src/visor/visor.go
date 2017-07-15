@@ -265,7 +265,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can create blocks")
 	}
-	if vs.Unconfirmed.Txns.len() == 0 {
+	if vs.Unconfirmed.Len() == 0 {
 		return sb, errors.New("No transactions")
 	}
 	txns := vs.Unconfirmed.RawTxns()
@@ -503,9 +503,9 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	}
 
 	// Look in the unconfirmed pool
-	uxs := vs.Unconfirmed.Unspent.getAllForAddress(a)
+	uxs := vs.Unconfirmed.GetUnspentsOfAddr(a)
 	for _, ux := range uxs {
-		tx, ok := vs.Unconfirmed.Txns.get(ux.Body.SrcTransaction)
+		tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 		if !ok {
 			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
 			continue
@@ -523,7 +523,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 // GetTransaction returns a Transaction by hash.
 func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	// Look in the unconfirmed pool
-	tx, ok := vs.Unconfirmed.Txns.get(txHash)
+	tx, ok := vs.Unconfirmed.Get(txHash)
 	if ok {
 		return &Transaction{
 			Txn:    tx.Txn,

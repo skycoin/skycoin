@@ -218,7 +218,7 @@ func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 	return uxo
 }
 
-// CreateUnspent creates expected output of single
+// CreateUnspent creates single unspent output
 func CreateUnspent(bh BlockHeader, tx Transaction, outIndex int) (UxOut, error) {
 	if len(tx.Out) <= outIndex {
 		return UxOut{}, fmt.Errorf("Transaction out index is overflow")

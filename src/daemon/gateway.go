@@ -10,6 +10,8 @@ import (
 
 	"fmt"
 
+	"path/filepath"
+
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -477,4 +479,9 @@ func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.Bala
 		}
 	})
 	return
+}
+
+// GetWalletDir returns path for storing wallet files
+func (gw *Gateway) GetWalletDir() string {
+	return filepath.Join(gw.d.Config.DataDirectory, "wallets")
 }

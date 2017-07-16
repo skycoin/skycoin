@@ -357,7 +357,7 @@ func TestAddressUxOutsAdd(t *testing.T) {
 	up2[uxs[2].Body.Address] = UxArray{uxs[2]}
 
 	up3 := up.Add(up2)
-	require.Equal(t, len(up3), 3)
+	require.Equal(t, 3, len(up3))
 	require.Equal(t, len(up3[uxs[0].Body.Address]), 2)
 	require.Equal(t, up3[uxs[0].Body.Address], UxArray{uxs[0], uxs[1]})
 	require.Equal(t, up3[uxs[2].Body.Address], UxArray{uxs[2]})

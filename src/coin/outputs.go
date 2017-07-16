@@ -214,8 +214,12 @@ func (auo AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
 // Add returns a new unspents, with merged unspents
 func (auo AddressUxOuts) Add(other AddressUxOuts) AddressUxOuts {
 	ox := make(AddressUxOuts, len(auo))
+	for a, o := range auo {
+		ox[a] = o
+	}
+
 	for a, uxs := range other {
-		if suxs, ok := auo[a]; ok {
+		if suxs, ok := ox[a]; ok {
 			ox[a] = suxs.Add(uxs)
 		} else {
 			ox[a] = uxs

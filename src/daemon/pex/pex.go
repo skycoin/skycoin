@@ -491,6 +491,20 @@ func (px *Pex) AddPeer(ip string) (*Peer, error) {
 	return &p, err
 }
 
+// SetPrivate updates the private value of given ip in peerlist
+func (px *Pex) SetPrivate(ip string, private bool) error {
+	var err error
+	px.Peerlist.strand(func() {
+		if p, ok := px.peers[ip]; ok {
+			p.Private = private
+			return
+		}
+
+		err = fmt.Errorf("Set peer.Private failed: %v does not exist in peerlist", ip)
+	})
+	return err
+}
+
 // SetTrustState updates the peer's Trusted statue
 func (px *Pex) SetTrustState(addr string, trusted bool) error {
 	if !ValidateAddress(addr, px.AllowLocalhost) {

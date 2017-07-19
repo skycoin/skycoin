@@ -1,9 +1,12 @@
 import {Component, OnInit, ViewChild} from "@angular/core";
 import {ROUTER_DIRECTIVES} from "@angular/router";
 import {Http, Response, Headers} from "@angular/http";
-import {Observable as ObservableRx} from "rxjs/Rx";
+import {Observable as ObservableRx, Subject} from "rxjs/Rx";
 import "rxjs/add/operator/map";
 import "rxjs/add/operator/catch";
+import "rxjs/add/operator/debounceTime";
+import "rxjs/add/operator/distinctUntilChanged";
+import "rxjs/add/operator/mergeMap";
 import {QRCodeComponent} from "./ng2-qrcode";
 import {SkyCoinEditComponent} from "./components/skycoin.edit.component";
 import {SeedComponent} from "./components/seed.component";
@@ -11,6 +14,9 @@ import {SkyCoinOutputComponent} from "./components/outputs.component";
 import {PendingTxnsComponent} from "./components/pending.transactions.component";
 import {WalletBackupPageComponent} from "./components/wallet.backup.page.component";
 import {SkycoinSyncWalletBlock} from "./components/progress.bannner.component";
+
+import { TransactionInfo } from "./model/msg"
+
 
 declare var _: any;
 declare var $: any;
@@ -147,8 +153,10 @@ export class LoadWalletComponent implements OnInit {
 
     blockPager: any = {};
 
+    keyUp = new Subject<string>();
+    searchHistoryAnimation = false;
     //Constructor method for load HTTP object
-    constructor(private http: Http, private pagerService: PagerService) { }
+    constructor(private http: Http, private pagerService: PagerService) {}
 
     //Init function for load default value
     ngOnInit() {
@@ -202,6 +210,7 @@ export class LoadWalletComponent implements OnInit {
          return $state;*!/
          }
          });*/
+        this.initHistorySearch();
     }
 
     //Ready button function for disable "textbox" and enable "Send" button for ready to send coin
@@ -222,6 +231,29 @@ export class LoadWalletComponent implements OnInit {
         this.sendDisable = false;
     }
 
+    initHistorySearch() {
+        this.keyUp.map(value => event.target["value"])
+                        .debounceTime(100)
+                        .distinctUntilChanged()
+                        .flatMap((search) => {
+                            return ObservableRx.of(search).delay(500);
+                        }).subscribe((data:string) => {
+                            data = data.trim();
+                            this.searchHistoryAnimation = true;
+                            this.historySearchKey = data;
+                            if(data === '') {
+                                this.loadWallet();
+                            }else {
+                                this.userTransactions = this.userTransactions.filter(value => this.startFilterHistoyrs(value,data));
+                            }
+                            this.searchHistoryAnimation = false;
+                        });
+    }
+
+    startFilterHistoyrs(info:TransactionInfo,field:string) {
+        return info.actualTransaction.txid === field || info.transactionOutputs.findIndex(v => v.dst === field) >=0 || info.transactionInputs.findIndex(v => v.owner === field) >= 0;
+    }
+
     loadNumberOfBlocks(){
         this.numberOfBlocks=0;
         this.http.get('/blockchain/metadata')
@@ -234,6 +266,9 @@ export class LoadWalletComponent implements OnInit {
     }
 
     loadTransactionsForWallet(){
+        if(this.historySearchKey !== '') {
+            return;
+        }
         let addresses=[];
 
         this.userTransactions=[];
@@ -875,11 +910,6 @@ export class LoadWalletComponent implements OnInit {
         //console.log('this.pagedItems', this.historyTable, this.pagedItems);
     }
 
-
-    searchHistory(searchKey){
-        console.log(searchKey);
-
-    }
 
     onSelectWallet(val) {
         console.log("onSelectWallet", val);

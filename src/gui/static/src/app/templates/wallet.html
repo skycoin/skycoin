@@ -114,7 +114,7 @@
                         <div class="form-group">
                             <label class="col-sm-2 control-label">Amount:</label>
                             <div class="col-sm-6">
-                                <input type="number" #spendamount class="form-control" value="0">
+                                <input type="number" #spendamount class="form-control" value="1" min="0">
                             </div>
                         </div>
                         <div class="form-group">
@@ -132,7 +132,7 @@
                         <div class="form-group">
                             <label class="col-sm-2 control-label"></label>
                             <div class="col-sm-6">
-                                <button type="button" class="btn btn-default" [disabled]="!isValidAddress" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
+                                <button type="button" class="btn btn-default" [disabled]="!isValidAddress || !spendamount.value" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
                             </div>
                         </div>
                     </form>

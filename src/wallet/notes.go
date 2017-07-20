@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // NotesExtension file extension of notes
@@ -89,7 +89,7 @@ func LoadReadableNotes(filename string) (*ReadableNotes, error) {
 
 // Load loads readable notes from given file
 func (rns *ReadableNotes) Load(filename string) error {
-	return util.LoadJSON(filename, rns)
+	return file.LoadJSON(filename, rns)
 }
 
 // ToNotes converts from readable notes to Notes
@@ -106,7 +106,7 @@ func (rns ReadableNotes) ToNotes() ([]Note, error) {
 
 // Save persists readable notes to disk
 func (rns *ReadableNotes) Save(filename string) error {
-	return util.SaveJSON(filename, rns, 0600)
+	return file.SaveJSON(filename, rns, 0600)
 }
 
 // NewReadableNote creates readable note

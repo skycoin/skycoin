@@ -15,7 +15,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	"github.com/skycoin/skycoin/src/util"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
@@ -382,17 +381,6 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		//set fee automatically for now
-		/*
-			sfee := r.FormValue("fee")
-			fee, err := strconv.ParseUint(sfee, 10, 64)
-			if err != nil {
-				Error400(w, "Invalid \"fee\" value")
-				return
-			}
-		*/
-		//var fee uint64 = 0
-
 		scoins := r.FormValue("coins")
 		//shours := r.FormValue("hours")
 		coins, err := strconv.ParseUint(scoins, 10, 64)
@@ -465,6 +453,11 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
+// method: POST
+// url: /wallet/newAddress
+// params:
+// 		id: wallet id
+// 	   num: number of address need to create, if not set the default value is 1
 func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
@@ -478,7 +471,19 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		addrs, err := Wg.NewAddresses(wltID, 1)
+		// the number of address that need to create, default is 1
+		n := 1
+		var err error
+		num := r.FormValue("num")
+		if num != "" {
+			n, err = strconv.Atoi(num)
+			if err != nil {
+				wh.Error400(w, "invalid num value")
+				return
+			}
+		}
+
+		addrs, err := Wg.NewAddresses(wltID, n)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -491,10 +496,13 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		var rlt = struct {
-			Address string `json:"address"`
-		}{
-			addrs[0].String(),
+			Address []string `json:"addresses"`
+		}{}
+
+		for _, a := range addrs {
+			rlt.Address = append(rlt.Address, a.String())
 		}
+
 		wh.SendOr404(w, rlt)
 		return
 	}
@@ -610,7 +618,7 @@ type WalletFolder struct {
 func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
-			Address: util.UserHome() + "/.skycoin/wallets",
+			Address: gateway.GetWalletDir(),
 		}
 		wh.SendOr404(w, ret)
 	}

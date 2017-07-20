@@ -10,6 +10,7 @@ import (
 // TransactionResult represents transaction result
 type TransactionResult struct {
 	Status      TransactionStatus   `json:"status"`
+	Time        uint64              `json:"time"`
 	Transaction ReadableTransaction `json:"txn"`
 }
 
@@ -121,13 +122,14 @@ func (rpc RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*TransactionResul
 	return &TransactionResult{
 		Transaction: NewReadableTransaction(txn),
 		Status:      txn.Status,
+		Time:        txn.Time,
 	}, nil
 }
 
-// GetAddressTransactions get address transactions
-func (rpc RPC) GetAddressTransactions(v *Visor,
+// GetAddressTxns get address transactions
+func (rpc RPC) GetAddressTxns(v *Visor,
 	addr cipher.Address) (*TransactionResults, error) {
-	addrTxns, err := v.GetAddressTransactions(addr)
+	addrTxns, err := v.GetAddressTxns(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +139,7 @@ func (rpc RPC) GetAddressTransactions(v *Visor,
 		txns[i] = TransactionResult{
 			Transaction: NewReadableTransaction(&tx),
 			Status:      tx.Status,
+			Time:        tx.Time,
 		}
 	}
 	return &TransactionResults{

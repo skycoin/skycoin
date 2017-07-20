@@ -41,30 +41,29 @@ func (bcp *BlockchainParser) BlockListener(b coin.Block) {
 	bcp.blkC <- b
 }
 
-// Run starts blockchain parser, the q channel will be
-// closed to notify the invoker that the running process
-// is going to shutdown.
-func (bcp *BlockchainParser) Run(q chan struct{}) {
+// Run starts blockchain parser
+func (bcp *BlockchainParser) Run() error {
 	logger.Info("Blockchain parser start")
+	defer logger.Info("Blockchain parser closed")
+
+	if err := bcp.historyDB.ResetIfNeed(); err != nil {
+		return err
+	}
 
 	// parse to the blockchain head
 	headSeq := bcp.bc.Head().Seq()
 	if err := bcp.parseTo(headSeq); err != nil {
-		logger.Error("%v", err)
-		close(q)
-		return
+		return err
 	}
 
 	for {
 		select {
 		case cc := <-bcp.closing:
 			cc <- struct{}{}
-			return
+			return nil
 		case b := <-bcp.blkC:
 			if err := bcp.parseTo(b.Head.BkSeq); err != nil {
-				logger.Error("%v", err)
-				close(q)
-				return
+				return err
 			}
 		}
 	}
@@ -72,10 +71,9 @@ func (bcp *BlockchainParser) Run(q chan struct{}) {
 
 // Stop close the block parsing process.
 func (bcp *BlockchainParser) Stop() {
-	cc := make(chan struct{})
+	cc := make(chan struct{}, 1)
 	bcp.closing <- cc
 	<-cc
-	logger.Info("blockchain parser stopped")
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {

@@ -236,7 +236,7 @@ func (f *freelist) reload(p *page) {
 
 // reindex rebuilds the free cache based on available and pending free lists.
 func (f *freelist) reindex() {
-	f.cache = make(map[pgid]bool, len(f.ids))
+	f.cache = make(map[pgid]bool)
 	for _, id := range f.ids {
 		f.cache[id] = true
 	}

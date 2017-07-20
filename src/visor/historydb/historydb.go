@@ -8,7 +8,10 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
+
+var logger = logging.MustGetLogger("historydb")
 
 // Blockchainer interface for isolating the detail of blockchain.
 type Blockchainer interface {
@@ -26,6 +29,7 @@ type HistoryDB struct {
 	txns         *transactions // transactions bucket.
 	outputs      *UxOuts       // outputs bucket.
 	addrUx       *addressUx    // bucket which stores all UxOuts that address recved.
+	addrTxns     *addressTxns  //  address related transaction bucket
 	*historyMeta               // stores history meta info
 }
 
@@ -56,7 +60,55 @@ func New(db *bolt.DB) (*HistoryDB, error) {
 		return nil, err
 	}
 
+	hd.addrTxns, err = newAddressTxnsBkt(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return &hd, nil
+}
+
+// ResetIfNeed checks if need to reset the parsed block history,
+// If we have a new added bucket, we need to reset to parse
+// blockchain again to get the new bucket filled.
+func (hd *HistoryDB) ResetIfNeed() error {
+	if hd.historyMeta.ParsedHeight() == 0 {
+		return nil
+	}
+
+	// if any of the following buckets are empty, need to reset
+	if hd.addrTxns.IsEmpty() ||
+		hd.addrUx.IsEmpty() ||
+		hd.txns.IsEmpty() ||
+		hd.outputs.IsEmpty() {
+		return hd.reset()
+	}
+
+	return nil
+}
+
+func (hd *HistoryDB) reset() error {
+	logger.Info("History db reset")
+	if err := hd.addrTxns.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.addrUx.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.outputs.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.historyMeta.Reset(); err != nil {
+		return err
+	}
+
+	if err := hd.txns.Reset(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetUxout get UxOut of specific uxID.
@@ -83,6 +135,7 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 			txnsBkt := tx.Bucket(hd.txns.bkt.Name)
 			outputsBkt := tx.Bucket(hd.outputs.bkt.Name)
 			addrUxBkt := tx.Bucket(hd.addrUx.bkt.Name)
+			addrTxnsBkt := tx.Bucket(hd.addrTxns.bkt.Name)
 
 			if err := addTrandaction(txnsBkt, &txn); err != nil {
 				return err
@@ -101,6 +154,11 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 					if err := setOutput(outputsBkt, *o); err != nil {
 						return err
 					}
+
+					// store the IN address with txid
+					if err := setAddressTxns(addrTxnsBkt, o.Out.Body.Address, t.Hash()); err != nil {
+						return err
+					}
 				}
 			}
 
@@ -115,6 +173,10 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 				}
 
 				if err := setAddressUx(addrUxBkt, ux.Body.Address, ux.Hash()); err != nil {
+					return err
+				}
+
+				if err := setAddressTxns(addrTxnsBkt, ux.Body.Address, t.Hash()); err != nil {
 					return err
 				}
 			}
@@ -165,4 +227,14 @@ func (hd HistoryDB) GetAddrUxOuts(address cipher.Address) ([]*UxOut, error) {
 		uxOuts[i] = ux
 	}
 	return uxOuts, nil
+}
+
+// GetAddrTxns returns all the address related transactions
+func (hd HistoryDB) GetAddrTxns(address cipher.Address) ([]Transaction, error) {
+	hashes, err := hd.addrTxns.Get(address)
+	if err != nil {
+		return []Transaction{}, err
+	}
+
+	return hd.txns.GetSlice(hashes)
 }

@@ -101,15 +101,13 @@ func (ps *Peers) Shutdown() error {
 		return nil
 	}
 
-	logger.Info("Saving Peer List")
-
 	err := ps.Peers.Save(ps.Config.DataDirectory)
 	if err != nil {
 		logger.Warning("Failed to save peer database")
 		logger.Warning("Reason: %v", err)
 		return err
 	}
-	logger.Info("Shutdown peers")
+	logger.Info("Peers saved")
 	return nil
 }
 

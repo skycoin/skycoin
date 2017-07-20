@@ -34,3 +34,13 @@ func (hm *historyMeta) ParsedHeight() int64 {
 func (hm *historyMeta) setParsedHeight(h uint64) error {
 	return hm.v.Put(parsedHeightKey, bucket.Itob(h))
 }
+
+// IsEmpty checks if history meta bucket is empty
+func (hm *historyMeta) IsEmpty() bool {
+	return hm.v.IsEmpty()
+}
+
+// Reset resets the bucket
+func (hm *historyMeta) Reset() error {
+	return hm.v.Reset()
+}

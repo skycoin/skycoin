@@ -3,19 +3,19 @@ package gnet
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"net"
 	"reflect"
 	"testing"
 	"time"
 
-	logging "github.com/op/go-logging"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 func init() {
 	if silenceLogger {
-		logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+		logging.Disable()
 	}
 }
 

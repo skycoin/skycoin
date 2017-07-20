@@ -111,19 +111,53 @@ ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
 
 ## Dependencies
 
-Dependencies are managed with [gvt](https://github.com/FiloSottile/gvt).
+Dependencies are managed with [dep](https://github.com/golang/dep).
 
-To install gvt:
+To install `dep`:
 
 ```sh
-go get -u github.com/FiloSottile/gvt
+go get -u github.com/golang/dep
 ```
 
-gvt vendors all dependencies into the repo.
+`dep` vendors all dependencies into the repo.
 
-If you change the dependencies, you should update them as needed with `gvt fetch`, `gvt update`, `gvt delete`, etc.
+If you change the dependencies, you should update them as needed with `dep ensure`.
 
-Refer to the [gvt documentation](https://github.com/FiloSottile/gvt) or `gvt help` for further instructions.
+Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
+
+After adding a new dependency (with `dep ensure`), run `dep prune` to remove any unnecessary subpackages from the dependency.
+
+When updating or initializing, `dep` will find the latest version of a dependency that will compile.
+
+Examples:
+
+Initialize all dependencies:
+
+```sh
+dep init
+dep prune
+```
+
+Update all dependencies:
+
+```sh
+dep ensure -update -v
+dep prune
+```
+
+Add a single dependency (latest version):
+
+```sh
+dep ensure github.com/foo/bar
+dep prune
+```
+
+Add a single dependency (more specific version), or downgrade an existing dependency:
+
+```sh
+dep ensure github.com/foo/bar@tag
+dep prune
+```
 
 ## Run A Skycoin Node
 
@@ -165,13 +199,13 @@ gox [options] cmd/skycoin/
 
 ## Local Server API
 
-See the api details [here](src/gui/READEME.md).
+See the api details [here](src/gui/README.md).
 
 ## Skycoin explorer
 
-```link
 http://explorer.skycoin.net
-```
+
+https://github.com/skycoin/skycoin-explorer
 
 ## Modules
 

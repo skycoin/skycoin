@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -17,10 +19,9 @@ import (
 
 func setup() (*WebRPC, func()) {
 	c := make(chan struct{})
-	f := func() {
-		close(c)
-	}
+
 	rpc, err := New(
+		"0.0.0.0:8081",
 		ChanBuffSize(1),
 		ThreadNum(1),
 		Gateway(&fakeGateway{}),
@@ -29,7 +30,9 @@ func setup() (*WebRPC, func()) {
 		panic(err)
 	}
 
-	return rpc, f
+	return rpc, func() {
+		rpc.Shutdown()
+	}
 }
 
 type fakeGateway struct {
@@ -65,14 +68,14 @@ func (fg fakeGateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
 	return nil
 }
 
-func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) visor.ReadableOutputSet {
+func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
 	v := decodeOutputStr(outputStr)
 	for _, f := range filters {
 		v.HeadOutputs = f(v.HeadOutputs)
 		v.OutgoingOutputs = f(v.OutgoingOutputs)
 		v.IncommingOutputs = f(v.IncommingOutputs)
 	}
-	return v
+	return v, nil
 }
 
 func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
@@ -100,7 +103,7 @@ func (fg fakeGateway) GetTimeNow() uint64 {
 }
 
 func TestNewWebRPC(t *testing.T) {
-	rpc1, err := New(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
+	rpc1, err := New("0.0.0.0:8080", ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
 	assert.Nil(t, err)
 	assert.NotNil(t, rpc1.mux)
 	assert.NotNil(t, rpc1.handlers)
@@ -108,7 +111,7 @@ func TestNewWebRPC(t *testing.T) {
 }
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
-	rpc, err := New(ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
+	rpc, err := New("0.0.0.0:8080", ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
 	assert.Nil(t, err)
 	rpc.HandleFunc("get_status", getStatusHandler)
 	err = rpc.HandleFunc("get_status", getStatusHandler)
@@ -118,6 +121,9 @@ func Test_rpcHandler_HandlerFunc(t *testing.T) {
 func Test_rpcHandler_Handler(t *testing.T) {
 	rpc, teardown := setup()
 	defer teardown()
+	go rpc.Run()
+
+	time.Sleep(50 * time.Millisecond)
 
 	type args struct {
 		httpMethod string

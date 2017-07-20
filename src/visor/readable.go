@@ -233,19 +233,6 @@ type ReadableTransaction struct {
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// ReadableAddressTransaction represents readable address transaction
-type ReadableAddressTransaction struct {
-	Length    uint32 `json:"length"`
-	Type      uint8  `json:"type"`
-	Hash      string `json:"txid"`
-	InnerHash string `json:"inner_hash"`
-	Timestamp uint64 `json:"timestamp,omitempty"`
-
-	Sigs []string                    `json:"sigs"`
-	In   []ReadableTransactionInput  `json:"inputs"`
-	Out  []ReadableTransactionOutput `json:"outputs"`
-}
-
 // ReadableUnconfirmedTxn  represents readable unconfirmed transaction
 type ReadableUnconfirmedTxn struct {
 	Txn       ReadableTransaction `json:"transaction"`
@@ -320,31 +307,6 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 
 		Sigs: sigs,
 		In:   in,
-		Out:  out,
-	}
-}
-
-// NewReadableAddressTransaction creates readable address transaction
-func NewReadableAddressTransaction(t *Transaction, inputs []ReadableTransactionInput) ReadableAddressTransaction {
-	txid := t.Txn.Hash()
-	sigs := make([]string, len(t.Txn.Sigs))
-	for i := range t.Txn.Sigs {
-		sigs[i] = t.Txn.Sigs[i].Hex()
-	}
-	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
-
-	for i := range t.Txn.Out {
-		out[i] = NewReadableTransactionOutput(&t.Txn.Out[i], txid)
-	}
-	return ReadableAddressTransaction{
-		Length:    t.Txn.Length,
-		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
-		InnerHash: t.Txn.InnerHash.Hex(),
-		Timestamp: t.Time,
-
-		Sigs: sigs,
-		In:   inputs,
 		Out:  out,
 	}
 }
@@ -446,18 +408,17 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) Tr
 func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput, error) {
 	var tx coin.TransactionOutput
 
-	//hash, err := cipher.SHA256FromHex(in.Hash)
-	//if err != nil {
-	//	return coin.TransactionOutput{}, errors.New("Invalid hash")
-	//}
 	addr, err := cipher.DecodeBase58Address(in.Address)
 	if err != nil {
 		return coin.TransactionOutput{}, errors.New("Address decode fail")
 	}
-	//tx.Hash = hash
+
 	tx.Address = addr
 	tx.Coins = StrBalance2(in.Coins)
 	tx.Hours = in.Hours
+	if err != nil {
+		return coin.TransactionOutput{}, err
+	}
 
 	return tx, nil
 }

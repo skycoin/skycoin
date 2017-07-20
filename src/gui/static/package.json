@@ -41,9 +41,10 @@
     "gulp-tslint": "^6.1.1 ",
     "gulp-typescript": "^2.13.6",
     "lite-server": "^2.2.2",
+    "removeNPMAbsolutePaths": "0.0.3",
+    "ts-node": "^1.3.0",
     "tslint": "^3.5.0",
     "typescript": "^2.0.2",
-    "typings": "^1.3.3",
-    "ts-node": "^1.3.0"
+    "typings": "^1.3.3"
   }
 }

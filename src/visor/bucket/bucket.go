@@ -2,7 +2,6 @@ package bucket
 
 import (
 	"encoding/binary"
-	"fmt"
 
 	"github.com/boltdb/bolt"
 )
@@ -110,15 +109,11 @@ func (b *Bucket) Update(key []byte, f func([]byte) ([]byte, error)) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		// get the value of given key
 		bkt := tx.Bucket(b.Name)
-		if v := bkt.Get(key); v != nil {
-			var err error
-			v, err = f(v)
-			if err != nil {
-				return err
-			}
-			return bkt.Put(key, v)
+		v, err := f(bkt.Get(key))
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("%s not exist in bucket %s", string(key), string(b.Name))
+		return bkt.Put(key, v)
 	})
 }
 
@@ -159,6 +154,21 @@ func (b *Bucket) IsExist(k []byte) bool {
 		return nil
 	})
 	return exist
+}
+
+// IsEmpty check if the bucket is empty
+func (b *Bucket) IsEmpty() bool {
+	var empty = true
+	b.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket(b.Name).Cursor()
+		k, _ := c.First()
+		if k != nil {
+			empty = false
+		}
+
+		return nil
+	})
+	return empty
 }
 
 // ForEach iterate the whole bucket

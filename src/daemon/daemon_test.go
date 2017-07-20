@@ -466,7 +466,7 @@ package daemon
 // func testDaemonLoopClearOldPeersTicker(t *testing.T, d *Daemon, quit chan int,
 // 	count int) {
 // 	p := pex.NewPeer(addr)
-// 	p.LastSeen = util.ZeroTime()
+// 	p.LastSeen = time.Time()
 // 	d.Peers.Peers.Peerlist[addr] = p
 // 	d.Peers.Config.CullRate = time.Millisecond * 10
 // 	go d.Start(quit)
@@ -490,7 +490,7 @@ package daemon
 // func testDaemonLoopClearStaleConnectionsTicker(t *testing.T, d *Daemon,
 // 	quit chan int, poolCount int) {
 // 	c := gnetConnection(addr)
-// 	c.LastReceived = util.ZeroTime()
+// 	c.LastReceived = time.Time{}
 // 	d.Pool.Pool.Pool[c.Id] = c
 // 	d.Pool.Config.ClearStaleRate = time.Millisecond * 10
 // 	go d.Start(quit)
@@ -515,7 +515,7 @@ package daemon
 // 	sent bool) {
 // 	c := gnetConnection(addr)
 // 	go d.Pool.Pool.ConnectionWriteLoop(c)
-// 	c.LastSent = util.ZeroTime()
+// 	c.LastSent = time.Time{}
 // 	d.Pool.Pool.Pool[c.Id] = c
 // 	d.Pool.Config.IdleCheckRate = time.Millisecond * 10
 // 	go d.Start(quit)
@@ -649,7 +649,7 @@ package daemon
 // 	defer shutdown(dm)
 // 	c := gnetConnection(addr)
 // 	d := gnetConnection(addrb)
-// 	c.LastReceived = util.ZeroTime()
+// 	c.LastReceived = time.Time{}
 // 	d.LastReceived = time.Now()
 // 	dm.Pool.Pool.Pool[1] = c
 // 	dm.Pool.Pool.Pool[2] = d
@@ -888,9 +888,9 @@ package daemon
 // // 	// Is fine
 // // 	d.ExpectingIntroductions[addr] = time.Now()
 // // 	// Is expired
-// // 	d.ExpectingIntroductions[addrb] = util.ZeroTime()
+// // 	d.ExpectingIntroductions[addrb] = time.Time{}
 // // 	// Is not in pool
-// // 	d.ExpectingIntroductions[addrc] = util.ZeroTime()
+// // 	d.ExpectingIntroductions[addrc] = time.Time{}
 // // 	d.Peers.Peers.AddPeer(addr)
 // // 	d.Peers.Peers.AddPeer(addrb)
 // // 	d.Peers.Peers.AddPeer(addrc)
@@ -936,7 +936,7 @@ package daemon
 // func TestRecordMessageEventIsIntroduction(t *testing.T) {
 // 	// Needs Introduction and thats what it has received
 // 	d := newDefaultDaemon()
-// 	d.ExpectingIntroductions[addr] = util.Now()
+// 	d.ExpectingIntroductions[addr] = utc.Now()
 // 	assert.Equal(t, len(d.messageEvents), 0)
 // 	m := NewIntroductionMessage(d.Messages.Mirror, d.Config.Version,
 // 		d.Pool.Pool.Config.Port)
@@ -963,7 +963,7 @@ package daemon
 // 	d.Pool.Pool.Addresses[addr] = m.c.Conn
 // 	d.Pool.Pool.Pool[m.c.Conn.Id] = m.c.Conn
 // 	assert.Equal(t, len(d.messageEvents), 0)
-// 	d.ExpectingIntroductions[addr] = util.Now()
+// 	d.ExpectingIntroductions[addr] = utc.Now()
 // 	d.processMessageEvent(MessageEvent{m, m.c})
 // 	assert.Equal(t, len(d.Pool.Pool.DisconnectQueue), 1)
 // 	if len(d.Pool.Pool.DisconnectQueue) == 0 {
@@ -1053,7 +1053,7 @@ package daemon
 // 	delete(d.ipCounts, addrIP)
 
 // 	// Test a connection that is not connected by the time of processing
-// 	c.LastSent = util.ZeroTime()
+// 	c.LastSent = time.Time{}
 // 	e = ConnectEvent{addr, true}
 // 	delete(d.Pool.Pool.Addresses, addr)
 // 	d.pendingConnections[addr] = p

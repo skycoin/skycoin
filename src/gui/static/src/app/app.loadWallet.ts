@@ -141,19 +141,11 @@ export class LoadWalletComponent implements OnInit {
     sortDir:{};
     isValidAddress: boolean;
 
-    blockViewMode:string;
-    selectedBlock: any = {};
-    selectedBlockTransaction:any = {};
-    selectedBlockAddress:string;
-    selectedBlockAddressBalance:any = 0;
-    selectedBlackAddressTxList: any = [];
-
     // pager object
     historyPager: any = {};
     historyPagedItems: any[];
 
     blockPager: any = {};
-    blockPagedItems: any[];
 
     //Constructor method for load HTTP object
     constructor(private http: Http, private pagerService: PagerService) { }
@@ -172,7 +164,6 @@ export class LoadWalletComponent implements OnInit {
         this.loadNumberOfBlocks();
         this.loadProgress();
         this.isValidAddress = false;
-        this.blockViewMode = 'recentBlocks'
 
         //Set interval function for load wallet every 15 seconds
         setInterval(() => {
@@ -461,34 +452,7 @@ export class LoadWalletComponent implements OnInit {
 
         return ret;
     }
-    GetTransactionAmount2(transaction) {
-        var ret = 0;
-        _.each(transaction.outputs, function(o){
-            ret += Number(o.coins);
-        })
 
-        return ret;
-    }
-    GetBlockAmount(block) {
-        var ret = [];
-        _.each(block.body.txns, function(o){
-            _.each(o.outputs, function(_o){
-                ret.push(_o.coins);
-            })
-        })
-
-        return ret.join(",");
-    }
-    GetBlockTotalAmount(block) {
-        var ret = 0;
-        _.each(block.body.txns, function(o){
-            _.each(o.outputs, function(_o){
-                ret += Number(_o.coins);
-            })
-        })
-
-        return ret;
-    }
     loadDefaultConnections() {
         this.http.post('/network/defaultConnections', '')
         .map((res) => res.json())
@@ -515,7 +479,6 @@ export class LoadWalletComponent implements OnInit {
                 this.elapsedTime = moment().unix() - this.blockChain[0].header.timestamp;
             }
 
-            this.setBlockPage(1);
         }, err => console.log("Error on load blockchain: " + err), () => {
             //console.log('blockchain load done');
         });
@@ -912,27 +875,8 @@ export class LoadWalletComponent implements OnInit {
         //console.log('this.pagedItems', this.historyTable, this.pagedItems);
     }
 
-    setBlockPage(page: number) {
-        this.blockPager.totalPages = this.blockChain.length;
-
-        if (page < 1 || page > this.blockPager.totalPages) {
-            return;
-        }
-
-        // get pager object from service
-        this.blockPager = this.pagerService.getPager(this.blockChain.length, page);
-
-        // get current page of items
-        this.blockPagedItems = this.blockChain.slice(this.blockPager.startIndex, this.blockPager.endIndex + 1);
-        //console.log("this.blockPagedItems", this.blockPagedItems);
-    }
 
     searchHistory(searchKey){
-        console.log(searchKey);
-
-    }
-
-    searchBlockHistory(searchKey){
         console.log(searchKey);
 
     }
@@ -943,105 +887,6 @@ export class LoadWalletComponent implements OnInit {
         this.spendid = val;
         this.selectedWallet = _.find(this.wallets, function(o){
             return o.meta.filename === val;
-        })
-    }
-
-    showBlockDetail(block) {
-        //change viewMode as blockDetail
-        this.blockViewMode = 'blockDetail';
-        this.selectedBlock = block;
-    }
-
-    showRecentBlock() {
-        this.blockViewMode = 'recentBlocks';
-    }
-
-    showBlockTransactionDetail(txns) {
-        this.blockViewMode = 'blockTransactionDetail';
-        this.selectedBlockTransaction = txns;
-    }
-
-    showTransactionDetail(txId) {
-        var headers = new Headers();
-        headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        this.http.get('/transaction?txid=' + txId, { headers: headers })
-        .map((res) => res.json())
-        .subscribe(
-            //Response from API
-            response => {
-                console.log(response);
-                this.blockViewMode = 'blockTransactionDetail';
-                this.selectedBlockTransaction = response.txn;
-            }, err => {
-                console.log("Error on load transaction: " + err)
-            }, () => {
-            })
-    }
-
-    showBlockAddressDetail(address) {
-        this.blockViewMode = 'blockAddressDetail';
-        this.selectedBlockAddress = address;
-
-        var headers = new Headers();
-        headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        var txList = [];
-        async.parallel([
-            (callback)=>{
-                this.http.get('/balance?addrs=' + address, { headers: headers })
-                .map((res) => res.json())
-                .subscribe(
-                    //Response from API
-                    response => {
-                        //console.log(response);
-                        this.selectedBlockAddressBalance = response.confirmed.coins/1000000;
-                        callback(null, null);
-                    }, err => {
-                        callback(err, null);
-                        //console.log("Error on load balance: " + err)
-                    }, () => {
-                    })
-            },
-            (callback) => {
-                this.http.get('/address_in_uxouts?address=' + address, { headers: headers })
-                .map((res) => res.json())
-                .subscribe(
-                    //Response from API
-                    response => {
-                        console.log("address_in_uxouts", response);
-                        _.map(response, (o)=>{
-                            o.type = 'in';
-                            txList.push(o)
-                        });
-                        callback(null, null);
-                    }, err => {
-                        callback(err, null);
-                        //console.log("Error on load balance: " + err)
-                    }, () => {
-                    })
-            },
-            (callback) => {
-                this.http.get('/address_out_uxouts?address=' + address, { headers: headers })
-                .map((res) => res.json())
-                .subscribe(
-                    //Response from API
-                    response => {
-                        console.log("address_out_uxouts", response);
-                        _.map(response, (o)=>{
-                            o.type = 'out';
-                            txList.push(o)
-                        });
-                        callback(null, null);
-                    }, err => {
-                        callback(err, null);
-                        //console.log("Error on load balance: " + err)
-                    }, () => {
-                    })
-            }
-        ], (err, rets)=>{
-            console.log(err, rets);
-            this.selectedBlackAddressTxList = _.sortBy(txList, (o)=>{
-                return o.time;
-            })
         })
     }
 }

@@ -23,7 +23,7 @@ func broadcastTxCMD() gcli.Command {
 				gcli.ShowSubcommandHelp(c)
 				return nil
 			}
-			txid, err := broadcastTx(rawtx)
+			txid, err := BroadcastTx(rawtx)
 			if err != nil {
 				return err
 			}
@@ -35,7 +35,10 @@ func broadcastTxCMD() gcli.Command {
 	// Commands = append(Commands, cmd)
 }
 
-func broadcastTx(rawtx string) (string, error) {
+// PUBLIC
+
+// Returns TxId
+func BroadcastTx(rawtx string) (string, error) {
 	params := []string{rawtx}
 	req, err := webrpc.NewRequest("inject_transaction", params, "1")
 	if err != nil {

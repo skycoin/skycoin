@@ -18,7 +18,7 @@ func addPrivateKeyCMD() gcli.Command {
 		Usage:     "Add a private key to specific wallet",
 		ArgsUsage: "[private key]",
 		Description: fmt.Sprintf(`Add a private key to specific wallet, the default
-		wallet(%s/%s) will be 
+		wallet(%s/%s) will be
 		used if the wallet file or path is not specified`,
 			cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
@@ -51,43 +51,68 @@ func addPrivateKeyCMD() gcli.Command {
 				w = filepath.Join(cfg.WalletDir, w)
 			}
 
-			wlt, err := wallet.Load(w)
-			if err != nil {
+			err := AddPrivateKeyToFile(w, skStr)
+
+			switch err.(type) {
+			case nil:
+				fmt.Println("success")
+				return nil
+			case WalletLoadError:
 				errorWithHelp(c, err)
 				return nil
-			}
-
-			sk, err := cipher.SecKeyFromHex(skStr)
-			if err != nil {
-				return fmt.Errorf("invalid private key: %s, must be an hex string of length 64", skStr)
-			}
-
-			pk := cipher.PubKeyFromSecKey(sk)
-			addr := cipher.AddressFromPubKey(pk)
-
-			entry := wallet.Entry{
-				Address: addr,
-				Public:  pk,
-				Secret:  sk,
-			}
-
-			if err := wlt.AddEntry(entry); err != nil {
+			case WalletSaveError:
+				return errors.New("Save wallet failed")
+			default:
 				return err
 			}
-
-			dir, err := filepath.Abs(filepath.Dir(w))
-			if err != nil {
-				return err
-			}
-
-			if err := wlt.Save(dir); err != nil {
-				return errors.New("save wallet failed")
-			}
-
-			fmt.Println("success")
-
-			return nil
 		},
 	}
 	// Commands = append(Commands, cmd)
+}
+
+// PUBLIC
+
+type WalletLoadError error
+type WalletSaveError error
+
+// Adds a private key to a *wallet.Wallet. Caller should save the wallet afterwards
+func AddPrivateKey(wlt *wallet.Wallet, key string) error {
+	sk, err := cipher.SecKeyFromHex(key)
+	if err != nil {
+		return fmt.Errorf("invalid private key: %s, must be an hex string of length 64", key)
+	}
+
+	pk := cipher.PubKeyFromSecKey(sk)
+	addr := cipher.AddressFromPubKey(pk)
+
+	entry := wallet.Entry{
+		Address: addr,
+		Public:  pk,
+		Secret:  sk,
+	}
+
+	return wlt.AddEntry(entry)
+}
+
+// Adds a private key to a wallet based on filename.  Will save the wallet after modifying.
+func AddPrivateKeyToFile(walletFile, key string) error {
+	wlt, err := wallet.Load(walletFile)
+	if err != nil {
+		return WalletLoadError(err)
+	}
+
+	if err := AddPrivateKey(wlt, key); err != nil {
+		return err
+	}
+
+	dir, err := filepath.Abs(filepath.Dir(walletFile))
+	if err != nil {
+		return err
+	}
+
+	if err := wlt.Save(dir); err != nil {
+		return WalletSaveError(err)
+	}
+
+	return nil
 }

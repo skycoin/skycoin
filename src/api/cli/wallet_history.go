@@ -197,7 +197,7 @@ func makeAddrHisArray(ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 
 func createBlkTimeFinder(ss []uint64) (func(uint64) int64, error) {
 	// get spent blocks
-	blks, err := getBlocksBySeq(ss)
+	blks, err := GetBlocksBySeq(ss)
 	if err != nil {
 		return nil, err
 	}

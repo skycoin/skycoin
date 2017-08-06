@@ -2,14 +2,12 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 
-	"encoding/json"
-
 	"os"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
 	gcli "github.com/urfave/cli"
 )
@@ -33,7 +31,7 @@ var (
 var (
 	commandHelpTemplate = `USAGE:
 		{{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
-		
+
 CATEGORY:
 		{{.Category}}{{end}}{{if .Description}}
 
@@ -173,29 +171,6 @@ func Coin(coin string) Option {
 	}
 }
 
-func getUnspent(addrs []string) (unspentOutSet, error) {
-	req, err := webrpc.NewRequest("get_outputs", addrs, "1")
-	if err != nil {
-		return unspentOutSet{}, fmt.Errorf("create webrpc request failed:%v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return unspentOutSet{}, fmt.Errorf("do rpc request failed:%v", err)
-	}
-
-	if rsp.Error != nil {
-		return unspentOutSet{}, fmt.Errorf("rpc request failed, %+v", *rsp.Error)
-	}
-
-	var rlt webrpc.OutputsResult
-	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
-		return unspentOutSet{}, errJSONUnmarshal
-	}
-
-	return unspentOutSet{rlt.Outputs}, nil
-}
-
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 	return func(c *gcli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
@@ -206,4 +181,26 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 
 func errorWithHelp(c *gcli.Context, err error) {
 	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
+}
+
+func decodeJson(data []byte, obj interface{}) error {
+	if err := json.NewDecoder(bytes.NewBuffer(data)).Decode(obj); err != nil {
+		return errJSONUnmarshal
+	}
+	return nil
+}
+
+func formatJson(obj interface{}) ([]byte, error) {
+	return json.MarshalIndent(obj, "", "    ")
+}
+
+func printJson(obj interface{}) error {
+	d, err := formatJson(obj)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(d))
+
+	return nil
 }

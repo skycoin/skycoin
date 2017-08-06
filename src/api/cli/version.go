@@ -28,10 +28,10 @@ func versionCMD() gcli.Command {
 				RPC     string `json:"rpc"`
 				Wallet  string `json:"wallet"`
 			}{
-				"0.1",
-				"0.1",
-				"0.1",
-				"0.1",
+				"0.19",
+				"0.19",
+				"0.19",
+				"0.19",
 			}
 
 			jsonFmt := c.Bool("json")

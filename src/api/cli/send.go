@@ -16,13 +16,13 @@ func sendCMD() gcli.Command {
 		Description: `
 		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
 
-        If you are sending from a wallet the coins will be taken recursively from all 
-        addresses within the wallet starting with the first address until the amount of 
-        the transaction is met. 
-        
-        Use caution when using the “-p” command. If you have command history enabled 
-        your wallet encryption password can be recovered from the history log. 
-        If you do not include the “-p” option you will be prompted to enter your password 
+        If you are sending from a wallet the coins will be taken recursively from all
+        addresses within the wallet starting with the first address until the amount of
+        the transaction is met.
+
+        Use caution when using the “-p” command. If you have command history enabled
+        your wallet encryption password can be recovered from the history log.
+        If you do not include the “-p” option you will be prompted to enter your password
         after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
@@ -35,7 +35,7 @@ func sendCMD() gcli.Command {
 			},
 			gcli.StringFlag{
 				Name: "c",
-				Usage: `[changeAddress] Specify change address, by default the from address or 
+				Usage: `[changeAddress] Specify change address, by default the from address or
 				the wallet's coinbase address will be used`,
 			},
 			// gcli.StringFlag{
@@ -54,14 +54,14 @@ func sendCMD() gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rawtx, err := createRawTransaction(c)
+			rawtx, err := createRawTx(c)
 			if err != nil {
 				errorWithHelp(c, err)
 				return nil
 				// return err
 			}
 
-			txid, err := broadcastTx(rawtx)
+			txid, err := BroadcastTx(rawtx)
 			if err != nil {
 				return err
 			}

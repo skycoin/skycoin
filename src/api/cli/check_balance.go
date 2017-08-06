@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -9,27 +8,18 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
 
-type unspentOut struct {
-	visor.ReadableOutput
-}
-
-type unspentOutSet struct {
-	visor.ReadableOutputSet
-}
-
-type balance struct {
+type Balance struct {
 	Address string `json:"address"`
 	Amount  uint64 `json:"amount"`
 }
 
-type balanceResult struct {
+type BalanceResult struct {
 	TotalAmount uint64    `json:"total_amount"`
-	Addresses   []balance `json:"addresses"`
+	Addresses   []Balance `json:"addresses"`
 }
 
 func walletBalanceCMD() gcli.Command {
@@ -38,10 +28,10 @@ func walletBalanceCMD() gcli.Command {
 		Name:      name,
 		Usage:     "Check the balance of a wallet",
 		ArgsUsage: "[wallet]",
-		Description: fmt.Sprintf(`Check balance of specific wallet, the default 
-		wallet(%s/%s) will be 
-		used if no wallet was specificed, use ENV 'WALLET_NAME' 
-		to update default wallet file name, and 'WALLET_DIR' to update 
+		Description: fmt.Sprintf(`Check balance of specific wallet, the default
+		wallet(%s/%s) will be
+		used if no wallet was specificed, use ENV 'WALLET_NAME'
+		to update default wallet file name, and 'WALLET_DIR' to update
 		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
 		OnUsageError: onCommandUsageError(name),
 		Action:       checkWltBalance,
@@ -82,30 +72,12 @@ func checkWltBalance(c *gcli.Context) error {
 		}
 	}
 
-	wlt, err := wallet.Load(w)
+	balRlt, err := CheckWalletBalance(w)
 	if err != nil {
 		return err
 	}
 
-	var addrs []string
-	addresses := wlt.GetAddresses()
-	for _, a := range addresses {
-		// validate the address
-		addrs = append(addrs, a.String())
-	}
-
-	balRlt, err := getAddrsBalance(addrs)
-	if err != nil {
-		return err
-	}
-
-	var d []byte
-	d, err = json.MarshalIndent(balRlt, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-	fmt.Println(string(d))
-	return nil
+	return printJson(balRlt)
 }
 
 func addrBalance(c *gcli.Context) error {
@@ -118,37 +90,49 @@ func addrBalance(c *gcli.Context) error {
 		}
 	}
 
-	balRlt, err := getAddrsBalance(addrs)
+	balRlt, err := GetBalanceOfAddresses(addrs)
 	if err != nil {
 		return err
 	}
 
-	var d []byte
-	d, err = json.MarshalIndent(balRlt, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-	fmt.Println(string(d))
-	return nil
+	return printJson(balRlt)
 }
 
-func getAddrsBalance(addrs []string) (balanceResult, error) {
-	balRlt := balanceResult{
-		Addresses: make([]balance, len(addrs)),
+// PUBLIC
+
+func CheckWalletBalance(walletFile string) (BalanceResult, error) {
+	wlt, err := wallet.Load(walletFile)
+	if err != nil {
+		return BalanceResult{}, err
+	}
+
+	var addrs []string
+	addresses := wlt.GetAddresses()
+	for _, a := range addresses {
+		// validate the address
+		addrs = append(addrs, a.String())
+	}
+
+	return GetBalanceOfAddresses(addrs)
+}
+
+func GetBalanceOfAddresses(addrs []string) (BalanceResult, error) {
+	balRlt := BalanceResult{
+		Addresses: make([]Balance, len(addrs)),
 	}
 
 	for i, a := range addrs {
-		balRlt.Addresses[i] = balance{
+		balRlt.Addresses[i] = Balance{
 			Address: a,
 		}
 	}
 
-	outs, err := getUnspent(addrs)
+	outs, err := GetUnspent(addrs)
 	if err != nil {
-		return balanceResult{}, err
+		return BalanceResult{}, err
 	}
 
-	find := func(bals []balance, addr string) (int, error) {
+	find := func(bals []Balance, addr string) (int, error) {
 		for i, b := range bals {
 			if b.Address == addr {
 				return i, nil
@@ -160,12 +144,12 @@ func getAddrsBalance(addrs []string) (balanceResult, error) {
 	for _, o := range outs.HeadOutputs {
 		amt, err := strconv.ParseUint(o.Coins, 10, 64)
 		if err != nil {
-			return balanceResult{}, errors.New("error coins string")
+			return BalanceResult{}, errors.New("error coins string")
 		}
 
 		i, err := find(balRlt.Addresses, o.Address)
 		if err != nil {
-			return balanceResult{}, fmt.Errorf("output belongs to no address")
+			return BalanceResult{}, fmt.Errorf("output belongs to no address")
 		}
 		balRlt.Addresses[i].Amount += amt
 		balRlt.TotalAmount += amt

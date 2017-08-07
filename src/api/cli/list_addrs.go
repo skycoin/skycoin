@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -45,20 +43,13 @@ func listAddresses(c *gcli.Context) error {
 	}
 
 	addrs := wlt.GetAddresses()
-	var rlt = struct {
-		Addresses []string `json:"addresses"`
-	}{
-		make([]string, len(addrs)),
-	}
 
-	for i, a := range addrs {
-		rlt.Addresses[i] = a.String()
-	}
-
-	d, err := json.MarshalIndent(rlt, "", "    ")
+	s, err := FormatAddressesAsJson(addrs)
 	if err != nil {
-		return errors.New("json marshal failed")
+		return err
 	}
-	fmt.Println(string(d))
+
+	fmt.Println(s)
+
 	return nil
 }

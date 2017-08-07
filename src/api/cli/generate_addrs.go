@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -20,10 +19,10 @@ func generateAddrsCMD() gcli.Command {
 		ArgsUsage: " ",
 		Description: fmt.Sprintf(`The default wallet(%s/%s) will
 		be used if no wallet and address was specificed.
-		
-		Use caution when using the "-p" command. If you have command 
-		history enabled your wallet encryption password can be recovered from the 
-		history log. If you do not include the "-p" option you will be prompted to 
+
+		Use caution when using the "-p" command. If you have command
+		history enabled your wallet encryption password can be recovered from the
+		history log. If you do not include the "-p" option you will be prompted to
 		enter your password after you enter your command.`, cfg.WalletDir, cfg.DefaultWalletName),
 		Flags: []gcli.Flag{
 			gcli.UintFlag{
@@ -66,51 +65,79 @@ func generateAddrs(c *gcli.Context) error {
 		w = filepath.Join(cfg.WalletDir, w)
 	}
 
-	wlt, err := wallet.Load(w)
-	if err != nil {
+	addrs, err := GenerateAddressesInFile(w, int(num))
+
+	switch err.(type) {
+	case nil:
+	case WalletLoadError:
 		errorWithHelp(c, err)
 		return nil
-	}
-
-	addrs := wlt.GenerateAddresses(int(num))
-	dir, err := filepath.Abs(filepath.Dir(w))
-	if err != nil {
-		return err
-	}
-
-	if err := wlt.Save(dir); err != nil {
+	case WalletSaveError:
 		return errors.New("save wallet failed")
-	}
-
-	s, err := addrResult(addrs, jsonFmt)
-	if err != nil {
+	default:
 		return err
 	}
-	fmt.Println(s)
+
+	if jsonFmt {
+		s, err := FormatAddressesAsJson(addrs)
+		if err != nil {
+			return err
+		}
+		fmt.Println(s)
+	} else {
+		fmt.Println(FormatAddressesAsJoinedArray(addrs))
+	}
+
 	return nil
 }
 
-func addrResult(addrs []cipher.Address, jsonFmt bool) (string, error) {
-	if jsonFmt {
-		var rlt = struct {
-			Addresses []string `json:"addresses"`
-		}{
-			make([]string, len(addrs)),
-		}
-
-		for i, a := range addrs {
-			rlt.Addresses[i] = a.String()
-		}
-		d, err := json.MarshalIndent(rlt, "", "    ")
-		if err != nil {
-			return "", errJSONMarshal
-		}
-		return string(d), nil
+func GenerateAddressesInFile(walletFile string, num int) ([]cipher.Address, error) {
+	wlt, err := wallet.Load(walletFile)
+	if err != nil {
+		return nil, WalletLoadError(err)
 	}
 
-	addrArray := make([]string, len(addrs))
+	addrs := wlt.GenerateAddresses(num)
+
+	dir, err := filepath.Abs(filepath.Dir(walletFile))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := wlt.Save(dir); err != nil {
+		return nil, WalletSaveError(err)
+	}
+
+	return addrs, nil
+}
+
+func FormatAddressesAsJson(addrs []cipher.Address) (string, error) {
+	d, err := formatJson(struct {
+		Addresses []string `json:"addresses"`
+	}{
+		Addresses: AddressesToStrings(addrs),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(d), nil
+}
+
+func FormatAddressesAsJoinedArray(addrs []cipher.Address) string {
+	return strings.Join(AddressesToStrings(addrs), ",")
+}
+
+func AddressesToStrings(addrs []cipher.Address) []string {
+	if addrs == nil {
+		return nil
+	}
+
+	addrsStr := make([]string, len(addrs))
 	for i, a := range addrs {
-		addrArray[i] = a.String()
+		addrsStr[i] = a.String()
 	}
-	return strings.Join(addrArray, ","), nil
+
+	return addrsStr
 }

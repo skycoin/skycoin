@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 
 	gcli "github.com/urfave/cli"
@@ -68,20 +67,14 @@ func sendCMD() gcli.Command {
 
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				var rlt = struct {
+				return printJson(struct {
 					Txid string `json:"txid"`
 				}{
 					txid,
-				}
-				d, err := json.MarshalIndent(rlt, "", "    ")
-				if err != nil {
-					return errJSONMarshal
-				}
-				fmt.Println(string(d))
-			} else {
-				fmt.Printf("txid:%s\n", txid)
+				})
 			}
 
+			fmt.Printf("txid:%s\n", txid)
 			return nil
 		},
 	}

@@ -6,7 +6,6 @@ import (
 
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/visor"
 	gcli "github.com/urfave/cli"
 )
@@ -49,24 +48,10 @@ func GetLastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	}
 
 	param := []uint64{n}
-	req, err := webrpc.NewRequest("get_lastblocks", param, "1")
-	if err != nil {
-		return nil, fmt.Errorf("create rpc request failed: %v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return nil, fmt.Errorf("do rpc request failed: %v", err)
-	}
-
-	if rsp.Error != nil {
-		return nil, fmt.Errorf("rpc response error: %+v", *rsp.Error)
-	}
-
-	var rlt visor.ReadableBlocks
-	if err := decodeJson(rsp.Result, &rlt); err != nil {
+	blocks := visor.ReadableBlocks{}
+	if err := DoRpcRequest(&blocks, "get_lastblocks", param, "1"); err != nil {
 		return nil, err
 	}
 
-	return &rlt, nil
+	return &blocks, nil
 }

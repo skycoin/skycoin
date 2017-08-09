@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -236,12 +235,14 @@ func createRawTx(c *gcli.Context) (string, error) {
 		return CreateRawTxFromWallet(wltOrAddr.Wallet, chgAddr, toAddrs)
 	}
 
-	return CreateRawTxFromAddress(wltOrAddr.Address, chgAddr, toAddrs)
+	defaultWalletFile := filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
+	return CreateRawTxFromAddress(wltOrAddr.Address, defaultWalletFile, chgAddr, toAddrs)
 }
 
 // PUBLIC
 
-func CreateRawTxFromWallet(wltPath, chgAddr string, toAddrs []SendAmount) (string, error) {
+// Creates a transaction from any address or combination of addresses in a wallet
+func CreateRawTxFromWallet(walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// validate the send amount
 	for _, arg := range toAddrs {
 		// validate to address
@@ -258,7 +259,7 @@ func CreateRawTxFromWallet(wltPath, chgAddr string, toAddrs []SendAmount) (strin
 	}
 
 	// check if the change address is in wallet.
-	wlt, err := wallet.Load(wltPath)
+	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return "", err
 	}
@@ -275,10 +276,11 @@ func CreateRawTxFromWallet(wltPath, chgAddr string, toAddrs []SendAmount) (strin
 		addrStrArray[i] = a.String()
 	}
 
-	return makeTx(wlt, addrStrArray, chgAddr, toAddrs)
+	return CreateRawTranscaction(wlt, addrStrArray, chgAddr, toAddrs)
 }
 
-func CreateRawTxFromAddress(addr, chgAddr string, toAddrs []SendAmount) (string, error) {
+// Creates a transaction from a specific address in a wallet
+func CreateRawTxFromAddress(addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	var err error
 	for _, arg := range toAddrs {
 		// validate the address
@@ -288,7 +290,7 @@ func CreateRawTxFromAddress(addr, chgAddr string, toAddrs []SendAmount) (string,
 	}
 
 	// check if the address is in the default wallet.
-	wlt, err := wallet.Load(filepath.Join(cfg.WalletDir, cfg.DefaultWalletName))
+	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return "", err
 	}
@@ -314,10 +316,11 @@ func CreateRawTxFromAddress(addr, chgAddr string, toAddrs []SendAmount) (string,
 		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
-	return makeTx(wlt, []string{addr}, chgAddr, toAddrs)
+	return CreateRawTranscaction(wlt, []string{addr}, chgAddr, toAddrs)
 }
 
-func makeTx(wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
+// Creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
+func CreateRawTranscaction(wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// get unspent outputs of those addresses
 	unspents, err := GetUnspent(inAddrs)
 	if err != nil {
@@ -481,25 +484,11 @@ func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.Transa
 	return &tx, nil
 }
 
-func GetUnspent(addrs []string) (UnspentOutSet, error) {
-	req, err := webrpc.NewRequest("get_outputs", addrs, "1")
-	if err != nil {
-		return UnspentOutSet{}, fmt.Errorf("create webrpc request failed:%v", err)
+func GetUnspent(addrs []string) (*UnspentOutSet, error) {
+	outputs := webrpc.OutputsResult{}
+	if err := DoRpcRequest(&outputs, "get_outputs", addrs, "1"); err != nil {
+		return nil, err
 	}
 
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return UnspentOutSet{}, fmt.Errorf("do rpc request failed:%v", err)
-	}
-
-	if rsp.Error != nil {
-		return UnspentOutSet{}, fmt.Errorf("rpc request failed, %+v", *rsp.Error)
-	}
-
-	var rlt webrpc.OutputsResult
-	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
-		return UnspentOutSet{}, errJSONUnmarshal
-	}
-
-	return UnspentOutSet{rlt.Outputs}, nil
+	return &UnspentOutSet{outputs.Outputs}, nil
 }

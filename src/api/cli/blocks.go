@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/visor"
 	gcli "github.com/urfave/cli"
 )
@@ -56,48 +55,21 @@ func getBlocks(c *gcli.Context) error {
 
 func GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	param := []uint64{start, end}
+	blocks := visor.ReadableBlocks{}
 
-	req, err := webrpc.NewRequest("get_blocks", param, "1")
-	if err != nil {
-		return nil, fmt.Errorf("create rpc request failed: %v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return nil, fmt.Errorf("do rpc request failed: %v", err)
-	}
-
-	if rsp.Error != nil {
-		return nil, fmt.Errorf("rpc response error: %+v", *rsp.Error)
-	}
-
-	var rlt visor.ReadableBlocks
-	if err := decodeJson(rsp.Result, &rlt); err != nil {
+	if err := DoRpcRequest(&blocks, "get_blocks", param, "1"); err != nil {
 		return nil, err
 	}
 
-	return &rlt, nil
+	return &blocks, nil
 }
 
 func GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
-	req, err := webrpc.NewRequest("get_blocks_by_seq", ss, "1")
-	if err != nil {
-		return nil, fmt.Errorf("create rpc request failed: %v", err)
-	}
+	blocks := visor.ReadableBlocks{}
 
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return nil, fmt.Errorf("do rpc request failed: %v", err)
-	}
-
-	if rsp.Error != nil {
-		return nil, fmt.Errorf("rpc response error: %+v", *rsp.Error)
-	}
-
-	blks := visor.ReadableBlocks{}
-	if err := decodeJson(rsp.Result, &blks); err != nil {
+	if err := DoRpcRequest(&blocks, "get_blocks_by_seq", ss, "1"); err != nil {
 		return nil, err
 	}
 
-	return &blks, nil
+	return &blocks, nil
 }

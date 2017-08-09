@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -36,12 +35,7 @@ func versionCMD() gcli.Command {
 
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				d, err := json.MarshalIndent(ver, "", "    ")
-				if err != nil {
-					return errJSONMarshal
-				}
-				fmt.Println(string(d))
-				return nil
+				return printJson(ver)
 			}
 
 			v := reflect.ValueOf(ver)

@@ -70,7 +70,7 @@ func sendCMD() gcli.Command {
 				return printJson(struct {
 					Txid string `json:"txid"`
 				}{
-					txid,
+					Txid: txid,
 				})
 			}
 
@@ -79,4 +79,25 @@ func sendCMD() gcli.Command {
 		},
 	}
 	// Commands = append(Commands, cmd)
+}
+
+// Sends from any address or combination of addresses from a wallet. Returns txid.
+func SendFromWallet(walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+	rawTx, err := CreateRawTxFromWallet(walletFile, chgAddr, toAddrs)
+	if err != nil {
+		return "", nil
+	}
+
+	return BroadcastTx(rawTx)
+}
+
+// Sends from a specific address in a wallet. Returns txid.
+func SendFromAddress(addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+	rawTx, err := CreateRawTxFromAddress(addr, walletFile, chgAddr, toAddrs)
+	if err != nil {
+		return "", nil
+	}
+
+	return BroadcastTx(rawTx)
+
 }

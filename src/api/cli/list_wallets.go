@@ -25,42 +25,45 @@ func listWalletsCMD() gcli.Command {
 		Usage:        "Lists all wallets stored in the default wallet directory",
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			var wlts struct {
-				Wallets []walletEntry `json:"wallets"`
+		Action:       listWallets,
+	}
+	// Commands = append(Commands, cmd)
+}
+
+func listWallets(c *gcli.Context) error {
+	var wlts struct {
+		Wallets []walletEntry `json:"wallets"`
+	}
+
+	entries, err := ioutil.ReadDir(cfg.WalletDir)
+	if err != nil {
+		return err
+	}
+
+	for _, e := range entries {
+		if e.Mode().IsRegular() {
+			name := e.Name()
+			if !strings.HasSuffix(name, walletExt) {
+				continue
 			}
 
-			entries, err := ioutil.ReadDir(cfg.WalletDir)
+			path := filepath.Join(cfg.WalletDir, name)
+			w, err := wallet.Load(path)
 			if err != nil {
 				return err
 			}
-
-			for _, e := range entries {
-				if e.Mode().IsRegular() {
-					name := e.Name()
-					if !strings.HasSuffix(name, walletExt) {
-						continue
-					}
-
-					path := filepath.Join(cfg.WalletDir, name)
-					w, err := wallet.Load(path)
-					if err != nil {
-						return err
-					}
-					wlts.Wallets = append(wlts.Wallets, walletEntry{
-						Name:       name,
-						Label:      w.GetLabel(),
-						AddressNum: len(w.Entries),
-					})
-				}
-			}
-			d, err := json.MarshalIndent(wlts, "", "    ")
-			if err != nil {
-				return errJSONMarshal
-			}
-			fmt.Println(string(d))
-			return nil
-		},
+			wlts.Wallets = append(wlts.Wallets, walletEntry{
+				Name:       name,
+				Label:      w.GetLabel(),
+				AddressNum: len(w.Entries),
+			})
+		}
 	}
-	// Commands = append(Commands, cmd)
+	d, err := json.MarshalIndent(wlts, "", "    ")
+	if err != nil {
+		return errJSONMarshal
+	}
+	fmt.Println(string(d))
+	return nil
+
 }

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 
 	gcli "github.com/urfave/cli"
@@ -23,17 +22,11 @@ func walletDirCMD() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				var rlt = struct {
+				return printJson(struct {
 					WltDir string `json:"walletDir"`
 				}{
-					cfg.WalletDir,
-				}
-				d, err := json.MarshalIndent(rlt, "", "    ")
-				if err != nil {
-					return errJSONMarshal
-				}
-				fmt.Println(string(d))
-				return nil
+					WltDir: cfg.WalletDir,
+				})
 			}
 
 			fmt.Println(cfg.WalletDir)

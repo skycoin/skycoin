@@ -2,12 +2,8 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-
-	"bytes"
-	"encoding/json"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
@@ -32,41 +28,22 @@ func transactionCMD() gcli.Command {
 				return errors.New("error txid")
 			}
 
-			tx, err := getTransactionByID(txid)
+			tx, err := GetTransactionByID(txid)
 			if err != nil {
 				return err
 			}
 
-			v, err := json.MarshalIndent(tx, "", "    ")
-			if err != nil {
-				return errors.New("invalid tx result")
-			}
-
-			fmt.Println(string(v))
-			return nil
+			return printJson(tx)
 		},
 	}
 	// Commands = append(Commands, cmd)
 }
 
-func getTransactionByID(txid string) (*webrpc.TxnResult, error) {
-	req, err := webrpc.NewRequest("get_transaction", []string{txid}, "1")
-	if err != nil {
-		return nil, fmt.Errorf("create rpc request failed:%v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return nil, fmt.Errorf("do rpc request failed:%v", err)
-	}
-
-	if rsp.Error != nil {
-		return nil, fmt.Errorf("do rpc request failed:%+v", *rsp.Error)
-	}
-
-	rlt := webrpc.TxnResult{}
-	if err := json.NewDecoder(bytes.NewReader(rsp.Result)).Decode(&rlt); err != nil {
+func GetTransactionByID(txid string) (*webrpc.TxnResult, error) {
+	txn := webrpc.TxnResult{}
+	if err := DoRpcRequest(&txn, "get_transaction", []string{txid}, "1"); err != nil {
 		return nil, err
 	}
-	return &rlt, nil
+
+	return &txn, nil
 }

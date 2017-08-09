@@ -3,9 +3,6 @@ package cli
 import (
 	"fmt"
 
-	"bytes"
-	"encoding/json"
-
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
@@ -23,6 +20,7 @@ func broadcastTxCMD() gcli.Command {
 				gcli.ShowSubcommandHelp(c)
 				return nil
 			}
+
 			txid, err := BroadcastTx(rawtx)
 			if err != nil {
 				return err
@@ -40,23 +38,10 @@ func broadcastTxCMD() gcli.Command {
 // Returns TxId
 func BroadcastTx(rawtx string) (string, error) {
 	params := []string{rawtx}
-	req, err := webrpc.NewRequest("inject_transaction", params, "1")
-	if err != nil {
-		return "", fmt.Errorf("create rpc request failed, %v", err)
-	}
+	rlt := webrpc.TxIDJson{}
 
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return "", fmt.Errorf("do rpc request failed, %v", err)
-	}
-
-	if rsp.Error != nil {
-		return "", fmt.Errorf("rpc request failed, %+v", *rsp.Error)
-	}
-
-	var rlt webrpc.TxIDJson
-	if err := json.NewDecoder(bytes.NewBuffer(rsp.Result)).Decode(&rlt); err != nil {
-		return "", fmt.Errorf("decode inject result failed")
+	if err := DoRpcRequest(&rlt, "inject_transaction", params, "1"); err != nil {
+		return "", err
 	}
 
 	return rlt.Txid, nil

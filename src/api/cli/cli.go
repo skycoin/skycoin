@@ -8,6 +8,7 @@ import (
 
 	"os"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
 	gcli "github.com/urfave/cli"
 )
@@ -203,4 +204,22 @@ func printJson(obj interface{}) error {
 	fmt.Println(string(d))
 
 	return nil
+}
+
+func DoRpcRequest(obj interface{}, method string, params interface{}, id string) error {
+	req, err := webrpc.NewRequest("get_status", nil, "1")
+	if err != nil {
+		return fmt.Errorf("create rpc request failed: %v", err)
+	}
+
+	rsp, err := webrpc.Do(req, cfg.RPCAddress)
+	if err != nil {
+		return fmt.Errorf("do rpc request failed: %v", err)
+	}
+
+	if rsp.Error != nil {
+		return fmt.Errorf("rpc response error: %+v", *rsp.Error)
+	}
+
+	return decodeJson(rsp.Result, obj)
 }

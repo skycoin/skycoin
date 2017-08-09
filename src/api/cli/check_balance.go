@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
@@ -50,8 +51,8 @@ func addressBalanceCmd() gcli.Command {
 }
 
 func checkWltBalance(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	cfg := ConfigFromContext(c)
+	rpcClient := RpcClientFromContext(c)
 
 	var w string
 	if c.NArg() > 0 {
@@ -64,7 +65,7 @@ func checkWltBalance(c *gcli.Context) error {
 		return err
 	}
 
-	balRlt, err := rpcClient.CheckWalletBalance(w)
+	balRlt, err := CheckWalletBalance(rpcClient, w)
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func checkWltBalance(c *gcli.Context) error {
 }
 
 func addrBalance(c *gcli.Context) error {
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	rpcClient := RpcClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -84,7 +85,7 @@ func addrBalance(c *gcli.Context) error {
 		}
 	}
 
-	balRlt, err := rpcClient.GetBalanceOfAddresses(addrs)
+	balRlt, err := GetBalanceOfAddresses(rpcClient, addrs)
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func addrBalance(c *gcli.Context) error {
 
 // PUBLIC
 
-func (c *RpcClient) CheckWalletBalance(walletFile string) (BalanceResult, error) {
+func CheckWalletBalance(c *webrpc.Client, walletFile string) (BalanceResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return BalanceResult{}, err
@@ -107,10 +108,10 @@ func (c *RpcClient) CheckWalletBalance(walletFile string) (BalanceResult, error)
 		addrs = append(addrs, a.String())
 	}
 
-	return c.GetBalanceOfAddresses(addrs)
+	return GetBalanceOfAddresses(c, addrs)
 }
 
-func (c *RpcClient) GetBalanceOfAddresses(addrs []string) (BalanceResult, error) {
+func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (BalanceResult, error) {
 	balRlt := BalanceResult{
 		Addresses: make([]Balance, len(addrs)),
 	}
@@ -135,7 +136,7 @@ func (c *RpcClient) GetBalanceOfAddresses(addrs []string) (BalanceResult, error)
 		return -1, errors.New("not exist")
 	}
 
-	for _, o := range outs.HeadOutputs {
+	for _, o := range outs.Outputs.HeadOutputs {
 		amt, err := strconv.ParseUint(o.Coins, 10, 64)
 		if err != nil {
 			return BalanceResult{}, errors.New("error coins string")

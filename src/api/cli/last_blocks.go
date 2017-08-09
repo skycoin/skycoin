@@ -21,7 +21,7 @@ func lastBlocksCmd() gcli.Command {
 }
 
 func getLastBlocks(c *gcli.Context) error {
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	rpcClient := RpcClientFromContext(c)
 
 	num := c.Args().First()
 	if num == "" {

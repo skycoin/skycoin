@@ -57,8 +57,8 @@ if [ "$WITH_BUILDER" = "1" ]; then
 
     for plt in $platforms
     do
-        set -- "$plt" 
-        IFS="/"; declare -a s=($*) 
+        set -- "$plt"
+        IFS="/"; declare -a s=($*)
         case "${s[0]}" in
         "windows")
             if [ "${s[1]}" = "386" ]; then

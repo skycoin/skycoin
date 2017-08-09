@@ -53,8 +53,8 @@ func walletHisCmd() gcli.Command {
 }
 
 func walletHistoryAction(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	cfg := ConfigFromContext(c)
+	rpcClient := RpcClientFromContext(c)
 
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
@@ -95,7 +95,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	return printJson(totalAddrHis)
 }
 
-func makeAddrHisArray(c *RpcClient, ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
+func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 	if len(ux.UxOuts) == 0 {
 		return []addrHistory{}, nil
 	}
@@ -171,7 +171,7 @@ func makeAddrHisArray(c *RpcClient, ux webrpc.AddrUxoutResult) ([]addrHistory, e
 	return realHis, nil
 }
 
-func createBlkTimeFinder(c *RpcClient, ss []uint64) (func(uint64) int64, error) {
+func createBlkTimeFinder(c *webrpc.Client, ss []uint64) (func(uint64) int64, error) {
 	// get spent blocks
 	blks, err := c.GetBlocksBySeq(ss)
 	if err != nil {

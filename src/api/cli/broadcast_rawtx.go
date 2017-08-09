@@ -20,7 +20,7 @@ func broadcastTxCmd() gcli.Command {
 				return nil
 			}
 
-			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+			rpcClient := RpcClientFromContext(c)
 			txid, err := rpcClient.BroadcastTx(rawtx)
 			if err != nil {
 				return err

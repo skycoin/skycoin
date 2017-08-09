@@ -20,7 +20,7 @@ func blocksCmd() gcli.Command {
 }
 
 func getBlocks(c *gcli.Context) error {
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	rpcClient := RpcClientFromContext(c)
 
 	// get start
 	start := c.Args().Get(0)

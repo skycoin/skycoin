@@ -47,7 +47,7 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 }
 
 func generateAddrs(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
+	cfg := ConfigFromContext(c)
 
 	// get number of address that are need to be generated.
 	num := c.Uint("n")

@@ -27,7 +27,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			cfg := c.App.Metadata["config"].(Config)
+			cfg := ConfigFromContext(c)
 
 			// get private key
 			skStr := c.Args().First()

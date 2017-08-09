@@ -20,7 +20,7 @@ func walletDirCmd() gcli.Command {
 			},
 		},
 		Action: func(c *gcli.Context) error {
-			cfg := c.App.Metadata["config"].(Config)
+			cfg := ConfigFromContext(c)
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
 				return printJson(struct {

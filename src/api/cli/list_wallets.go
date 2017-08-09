@@ -29,7 +29,7 @@ func listWalletsCmd() gcli.Command {
 }
 
 func listWallets(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
+	cfg := ConfigFromContext(c)
 
 	var wlts struct {
 		Wallets []walletEntry `json:"wallets"`

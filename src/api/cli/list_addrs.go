@@ -21,7 +21,7 @@ func listAddressesCmd() gcli.Command {
 }
 
 func listAddresses(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
+	cfg := ConfigFromContext(c)
 
 	// get wallet name
 	w, err := resolveWalletPath(cfg, c.Args().First())

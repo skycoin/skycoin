@@ -40,8 +40,8 @@ func addressOutputsCmd() gcli.Command {
 }
 
 func getWalletOutputsCmd(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	cfg := ConfigFromContext(c)
+	rpcClient := RpcClientFromContext(c)
 
 	w := ""
 	if c.NArg() > 0 {
@@ -63,7 +63,7 @@ func getWalletOutputsCmd(c *gcli.Context) error {
 }
 
 func getAddressOutputsCmd(c *gcli.Context) error {
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	rpcClient := RpcClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -84,7 +84,7 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 
 // PUBLIC
 
-func GetWalletOutputsFromFile(c *RpcClient, walletFile string) (*webrpc.OutputsResult, error) {
+func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*webrpc.OutputsResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func GetWalletOutputsFromFile(c *RpcClient, walletFile string) (*webrpc.OutputsR
 	return GetWalletOutputs(c, wlt)
 }
 
-func GetWalletOutputs(c *RpcClient, wlt *wallet.Wallet) (*webrpc.OutputsResult, error) {
+func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*webrpc.OutputsResult, error) {
 	cipherAddrs := wlt.GetAddresses()
 	addrs := make([]string, len(cipherAddrs))
 	for i := range cipherAddrs {

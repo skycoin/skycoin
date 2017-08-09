@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
@@ -53,7 +54,7 @@ func sendCmd() gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+			rpcClient := RpcClientFromContext(c)
 
 			rawtx, err := createRawTx(c)
 			if err != nil {
@@ -84,7 +85,7 @@ func sendCmd() gcli.Command {
 }
 
 // Sends from any address or combination of addresses from a wallet. Returns txid.
-func SendFromWallet(c *RpcClient, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	rawTx, err := CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs)
 	if err != nil {
 		return "", nil
@@ -94,7 +95,7 @@ func SendFromWallet(c *RpcClient, walletFile, chgAddr string, toAddrs []SendAmou
 }
 
 // Sends from a specific address in a wallet. Returns txid.
-func SendFromAddress(c *RpcClient, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	rawTx, err := CreateRawTxFromAddress(c, addr, walletFile, chgAddr, toAddrs)
 	if err != nil {
 		return "", nil

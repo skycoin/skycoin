@@ -14,7 +14,7 @@ func statusCmd() gcli.Command {
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+			rpcClient := RpcClientFromContext(c)
 			status, err := rpcClient.GetStatus()
 			if err != nil {
 				return err

@@ -73,7 +73,7 @@ func generateWalletCmd(cfg Config) gcli.Command {
 }
 
 func generateWallet(c *gcli.Context) error {
-	cfg := c.App.Metadata["config"].(Config)
+	cfg := ConfigFromContext(c)
 
 	// create wallet dir if not exist
 	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
@@ -18,10 +19,6 @@ import (
 
 type UnspentOut struct {
 	visor.ReadableOutput
-}
-
-type UnspentOutSet struct {
-	visor.ReadableOutputSet
 }
 
 type SendAmount struct {
@@ -104,7 +101,7 @@ type walletAddress struct {
 }
 
 func fromWalletOrAddress(c *gcli.Context) (walletAddress, error) {
-	cfg := c.App.Metadata["config"].(Config)
+	cfg := ConfigFromContext(c)
 
 	wlt, err := resolveWalletPath(cfg, c.String("f"))
 	if err != nil {
@@ -201,7 +198,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 }
 
 func createRawTx(c *gcli.Context) (string, error) {
-	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+	rpcClient := RpcClientFromContext(c)
 
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {
@@ -228,7 +225,7 @@ func createRawTx(c *gcli.Context) (string, error) {
 // PUBLIC
 
 // Creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c *RpcClient, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// validate the send amount
 	for _, arg := range toAddrs {
 		// validate to address
@@ -266,7 +263,7 @@ func CreateRawTxFromWallet(c *RpcClient, walletFile, chgAddr string, toAddrs []S
 }
 
 // Creates a transaction from a specific address in a wallet
-func CreateRawTxFromAddress(c *RpcClient, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	var err error
 	for _, arg := range toAddrs {
 		// validate the address
@@ -306,14 +303,14 @@ func CreateRawTxFromAddress(c *RpcClient, addr, walletFile, chgAddr string, toAd
 }
 
 // Creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTransaction(c *RpcClient, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
+func CreateRawTransaction(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// get unspent outputs of those addresses
 	unspents, err := c.GetUnspent(inAddrs)
 	if err != nil {
 		return "", err
 	}
 
-	spdouts := unspents.SpendableOutputs()
+	spdouts := unspents.Outputs.SpendableOutputs()
 	spendableOuts := make([]UnspentOut, len(spdouts))
 	for i := range spdouts {
 		spendableOuts[i] = UnspentOut{spdouts[i]}

@@ -27,7 +27,7 @@ func transactionCmd() gcli.Command {
 				return errors.New("error txid")
 			}
 
-			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+			rpcClient := RpcClientFromContext(c)
 
 			tx, err := rpcClient.GetTransactionByID(txid)
 			if err != nil {

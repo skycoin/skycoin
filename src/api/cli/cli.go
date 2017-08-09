@@ -9,14 +9,15 @@ import (
 
 	"os"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/version"
 	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support
 
 const (
+	Version           = "0.19.0"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "skycoin_cli.wlt"
@@ -68,10 +69,9 @@ COPYRIGHT:
 %s
 `, envVarsHelp)
 
-	ErrWalletName    = fmt.Errorf("error wallet file name, must have %s extension", walletExt)
-	ErrAddress       = errors.New("invalid address")
-	ErrJSONMarshal   = errors.New("json marshal failed")
-	ErrJSONUnmarshal = errors.New("json unmarshal failed")
+	ErrWalletName  = fmt.Errorf("error wallet file name, must have %s extension", walletExt)
+	ErrAddress     = errors.New("invalid address")
+	ErrJSONMarshal = errors.New("json marshal failed")
 )
 
 // CLI cmds should call this from there init() method
@@ -194,7 +194,7 @@ func NewApp(cfg Config) *App {
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
-	app.Version = version.Version
+	app.Version = Version
 	app.Usage = fmt.Sprintf("the %s command line interface", cfg.Coin)
 	app.Commands = commands
 	app.EnableBashCompletion = true
@@ -210,7 +210,7 @@ func NewApp(cfg Config) *App {
 
 	gcliApp.Metadata = map[string]interface{}{
 		"config": cfg,
-		"rpc": &RpcClient{
+		"rpc": &webrpc.Client{
 			Addr: cfg.RpcAddress,
 		},
 	}
@@ -221,6 +221,14 @@ func NewApp(cfg Config) *App {
 // Run starts the app
 func (app *App) Run(args []string) error {
 	return app.App.Run(args)
+}
+
+func RpcClientFromContext(c *gcli.Context) *webrpc.Client {
+	return c.App.Metadata["rpc"].(*webrpc.Client)
+}
+
+func ConfigFromContext(c *gcli.Context) Config {
+	return ConfigFromContext(c)
 }
 
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {

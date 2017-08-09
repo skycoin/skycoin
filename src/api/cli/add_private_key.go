@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
 
-func addPrivateKeyCMD() gcli.Command {
+func addPrivateKeyCmd(cfg Config) gcli.Command {
 	name := "addPrivateKey"
 	return gcli.Command{
 		Name:      name,
@@ -19,8 +18,7 @@ func addPrivateKeyCMD() gcli.Command {
 		ArgsUsage: "[private key]",
 		Description: fmt.Sprintf(`Add a private key to specific wallet, the default
 		wallet(%s/%s) will be
-		used if the wallet file or path is not specified`,
-			cfg.WalletDir, cfg.DefaultWalletName),
+		used if the wallet file or path is not specified`, cfg.WalletDir, cfg.WalletName),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
@@ -29,6 +27,8 @@ func addPrivateKeyCMD() gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
+			cfg := c.App.Metadata["config"].(Config)
+
 			// get private key
 			skStr := c.Args().First()
 			if skStr == "" {
@@ -37,21 +37,12 @@ func addPrivateKeyCMD() gcli.Command {
 			}
 
 			// get wallet file path
-			w := c.String("f")
-			if w == "" {
-				w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
+			w, err := resolveWalletPath(cfg, c.String("f"))
+			if err != nil {
+				return err
 			}
 
-			if !strings.HasSuffix(w, walletExt) {
-				return errWalletName
-			}
-
-			// only wallet file name, no path.
-			if filepath.Base(w) == w {
-				w = filepath.Join(cfg.WalletDir, w)
-			}
-
-			err := AddPrivateKeyToFile(w, skStr)
+			err = AddPrivateKeyToFile(w, skStr)
 
 			switch err.(type) {
 			case nil:

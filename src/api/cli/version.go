@@ -5,9 +5,11 @@ import (
 	"reflect"
 
 	gcli "github.com/urfave/cli"
+
+	"github.com/skycoin/skycoin/src/util/version"
 )
 
-func versionCMD() gcli.Command {
+func versionCmd() gcli.Command {
 	name := "version"
 	return gcli.Command{
 		Name:      name,
@@ -27,10 +29,10 @@ func versionCMD() gcli.Command {
 				RPC     string `json:"rpc"`
 				Wallet  string `json:"wallet"`
 			}{
-				"0.19",
-				"0.19",
-				"0.19",
-				"0.19",
+				version.Version,
+				version.Version,
+				version.Version,
+				version.Version,
 			}
 
 			jsonFmt := c.Bool("json")

@@ -5,11 +5,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
-func transactionCMD() gcli.Command {
+func transactionCmd() gcli.Command {
 	name := "transaction"
 	return gcli.Command{
 		Name:         name,
@@ -28,7 +27,9 @@ func transactionCMD() gcli.Command {
 				return errors.New("error txid")
 			}
 
-			tx, err := GetTransactionByID(txid)
+			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+
+			tx, err := rpcClient.GetTransactionByID(txid)
 			if err != nil {
 				return err
 			}
@@ -37,13 +38,4 @@ func transactionCMD() gcli.Command {
 		},
 	}
 	// Commands = append(Commands, cmd)
-}
-
-func GetTransactionByID(txid string) (*webrpc.TxnResult, error) {
-	txn := webrpc.TxnResult{}
-	if err := DoRpcRequest(&txn, "get_transaction", []string{txid}, "1"); err != nil {
-		return nil, err
-	}
-
-	return &txn, nil
 }

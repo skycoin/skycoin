@@ -3,9 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -22,7 +20,7 @@ type BalanceResult struct {
 	Addresses   []Balance `json:"addresses"`
 }
 
-func walletBalanceCMD() gcli.Command {
+func walletBalanceCmd(cfg Config) gcli.Command {
 	name := "walletBalance"
 	return gcli.Command{
 		Name:      name,
@@ -32,13 +30,13 @@ func walletBalanceCMD() gcli.Command {
 		wallet(%s/%s) will be
 		used if no wallet was specificed, use ENV 'WALLET_NAME'
 		to update default wallet file name, and 'WALLET_DIR' to update
-		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
+		the default wallet directory`, cfg.WalletDir, cfg.WalletName),
 		OnUsageError: onCommandUsageError(name),
 		Action:       checkWltBalance,
 	}
 }
 
-func addressBalanceCMD() gcli.Command {
+func addressBalanceCmd() gcli.Command {
 	name := "addressBalance"
 	return gcli.Command{
 		Name:      name,
@@ -52,27 +50,21 @@ func addressBalanceCMD() gcli.Command {
 }
 
 func checkWltBalance(c *gcli.Context) error {
-	var w string
-	if c.NArg() == 0 {
-		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
-	} else {
-		w = c.Args().First()
-		if !strings.HasSuffix(w, walletExt) {
-			return errWalletName
-		}
+	cfg := c.App.Metadata["config"].(Config)
+	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
 
-		var err error
-		if filepath.Base(w) == w {
-			w = filepath.Join(cfg.WalletDir, w)
-		} else {
-			w, err = filepath.Abs(w)
-			if err != nil {
-				return err
-			}
-		}
+	var w string
+	if c.NArg() > 0 {
+		w = c.Args().First()
 	}
 
-	balRlt, err := CheckWalletBalance(w)
+	var err error
+	w, err = resolveWalletPath(cfg, w)
+	if err != nil {
+		return err
+	}
+
+	balRlt, err := rpcClient.CheckWalletBalance(w)
 	if err != nil {
 		return err
 	}
@@ -81,6 +73,8 @@ func checkWltBalance(c *gcli.Context) error {
 }
 
 func addrBalance(c *gcli.Context) error {
+	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+
 	addrs := make([]string, c.NArg())
 	var err error
 	for i := 0; i < c.NArg(); i++ {
@@ -90,7 +84,7 @@ func addrBalance(c *gcli.Context) error {
 		}
 	}
 
-	balRlt, err := GetBalanceOfAddresses(addrs)
+	balRlt, err := rpcClient.GetBalanceOfAddresses(addrs)
 	if err != nil {
 		return err
 	}
@@ -100,7 +94,7 @@ func addrBalance(c *gcli.Context) error {
 
 // PUBLIC
 
-func CheckWalletBalance(walletFile string) (BalanceResult, error) {
+func (c *RpcClient) CheckWalletBalance(walletFile string) (BalanceResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return BalanceResult{}, err
@@ -113,10 +107,10 @@ func CheckWalletBalance(walletFile string) (BalanceResult, error) {
 		addrs = append(addrs, a.String())
 	}
 
-	return GetBalanceOfAddresses(addrs)
+	return c.GetBalanceOfAddresses(addrs)
 }
 
-func GetBalanceOfAddresses(addrs []string) (BalanceResult, error) {
+func (c *RpcClient) GetBalanceOfAddresses(addrs []string) (BalanceResult, error) {
 	balRlt := BalanceResult{
 		Addresses: make([]Balance, len(addrs)),
 	}
@@ -127,7 +121,7 @@ func GetBalanceOfAddresses(addrs []string) (BalanceResult, error) {
 		}
 	}
 
-	outs, err := GetUnspent(addrs)
+	outs, err := c.GetUnspent(addrs)
 	if err != nil {
 		return BalanceResult{}, err
 	}

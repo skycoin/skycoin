@@ -11,7 +11,7 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func generateAddrsCMD() gcli.Command {
+func generateAddrsCmd(cfg Config) gcli.Command {
 	name := "generateAddresses"
 	return gcli.Command{
 		Name:      name,
@@ -23,7 +23,7 @@ func generateAddrsCMD() gcli.Command {
 		Use caution when using the "-p" command. If you have command
 		history enabled your wallet encryption password can be recovered from the
 		history log. If you do not include the "-p" option you will be prompted to
-		enter your password after you enter your command.`, cfg.WalletDir, cfg.DefaultWalletName),
+		enter your password after you enter your command.`, cfg.WalletDir, cfg.WalletName),
 		Flags: []gcli.Flag{
 			gcli.UintFlag{
 				Name:  "n",
@@ -32,7 +32,7 @@ func generateAddrsCMD() gcli.Command {
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: filepath.Join(cfg.WalletDir, cfg.DefaultWalletName),
+				Value: cfg.FullWalletPath(),
 				Usage: `[wallet file or path] Generate addresses in the wallet`,
 			},
 			gcli.BoolFlag{
@@ -47,6 +47,8 @@ func generateAddrsCMD() gcli.Command {
 }
 
 func generateAddrs(c *gcli.Context) error {
+	cfg := c.App.Metadata["config"].(Config)
+
 	// get number of address that are need to be generated.
 	num := c.Uint("n")
 	if num == 0 {
@@ -55,14 +57,9 @@ func generateAddrs(c *gcli.Context) error {
 
 	jsonFmt := c.Bool("json")
 
-	w := c.String("f")
-	if !strings.HasSuffix(w, walletExt) {
-		return errWalletName
-	}
-
-	// only wallet file name, no path.
-	if filepath.Base(w) == w {
-		w = filepath.Join(cfg.WalletDir, w)
+	w, err := resolveWalletPath(cfg, c.String("f"))
+	if err != nil {
+		return err
 	}
 
 	addrs, err := GenerateAddressesInFile(w, int(num))

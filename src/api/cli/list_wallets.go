@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -18,7 +16,7 @@ type walletEntry struct {
 	AddressNum int    `json:"address_num"`
 }
 
-func listWalletsCMD() gcli.Command {
+func listWalletsCmd() gcli.Command {
 	name := "listWallets"
 	return gcli.Command{
 		Name:         name,
@@ -31,6 +29,8 @@ func listWalletsCMD() gcli.Command {
 }
 
 func listWallets(c *gcli.Context) error {
+	cfg := c.App.Metadata["config"].(Config)
+
 	var wlts struct {
 		Wallets []walletEntry `json:"wallets"`
 	}
@@ -50,7 +50,7 @@ func listWallets(c *gcli.Context) error {
 			path := filepath.Join(cfg.WalletDir, name)
 			w, err := wallet.Load(path)
 			if err != nil {
-				return err
+				return WalletLoadError(err)
 			}
 			wlts.Wallets = append(wlts.Wallets, walletEntry{
 				Name:       name,
@@ -59,11 +59,6 @@ func listWallets(c *gcli.Context) error {
 			})
 		}
 	}
-	d, err := json.MarshalIndent(wlts, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-	fmt.Println(string(d))
-	return nil
 
+	return printJson(wlts)
 }

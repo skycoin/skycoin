@@ -6,7 +6,7 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func walletDirCMD() gcli.Command {
+func walletDirCmd() gcli.Command {
 	name := "walletDir"
 	return gcli.Command{
 		Name:         name,
@@ -20,6 +20,7 @@ func walletDirCMD() gcli.Command {
 			},
 		},
 		Action: func(c *gcli.Context) error {
+			cfg := c.App.Metadata["config"].(Config)
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
 				return printJson(struct {

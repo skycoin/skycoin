@@ -2,15 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/wallet"
 
 	gcli "github.com/urfave/cli"
 )
 
-func listAddressesCMD() gcli.Command {
+func listAddressesCmd() gcli.Command {
 	name := "listAddresses"
 	return gcli.Command{
 		Name:         name,
@@ -23,23 +21,17 @@ func listAddressesCMD() gcli.Command {
 }
 
 func listAddresses(c *gcli.Context) error {
+	cfg := c.App.Metadata["config"].(Config)
+
 	// get wallet name
-	w := c.Args().First()
-	if w == "" {
-		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
-	}
-
-	if !strings.HasSuffix(w, walletExt) {
-		return errWalletName
-	}
-
-	if filepath.Base(w) == w {
-		w = filepath.Join(cfg.WalletDir, w)
+	w, err := resolveWalletPath(cfg, c.Args().First())
+	if err != nil {
+		return err
 	}
 
 	wlt, err := wallet.Load(w)
 	if err != nil {
-		return err
+		return WalletLoadError(err)
 	}
 
 	addrs := wlt.GetAddresses()

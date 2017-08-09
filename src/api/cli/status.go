@@ -1,11 +1,12 @@
 package cli
 
 import (
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
+
+	"github.com/skycoin/skycoin/src/api/webrpc"
 )
 
-func statusCMD() gcli.Command {
+func statusCmd() gcli.Command {
 	name := "status"
 	return gcli.Command{
 		Name:         name,
@@ -13,7 +14,8 @@ func statusCMD() gcli.Command {
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			status, err := GetStatus()
+			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+			status, err := rpcClient.GetStatus()
 			if err != nil {
 				return err
 			}
@@ -23,17 +25,8 @@ func statusCMD() gcli.Command {
 				RPCAddress string `json:"webrpc_address"`
 			}{
 				StatusResult: *status,
-				RPCAddress:   cfg.RPCAddress,
+				RPCAddress:   rpcClient.Addr,
 			})
 		},
 	}
-}
-
-func GetStatus() (*webrpc.StatusResult, error) {
-	status := webrpc.StatusResult{}
-	if err := DoRpcRequest(&status, "get_status", nil, "1"); err != nil {
-		return nil, err
-	}
-
-	return &status, nil
 }

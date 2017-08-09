@@ -6,7 +6,7 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func sendCMD() gcli.Command {
+func sendCmd() gcli.Command {
 	name := "send"
 	return gcli.Command{
 		Name:      name,
@@ -53,6 +53,8 @@ func sendCMD() gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
+			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+
 			rawtx, err := createRawTx(c)
 			if err != nil {
 				errorWithHelp(c, err)
@@ -60,7 +62,7 @@ func sendCMD() gcli.Command {
 				// return err
 			}
 
-			txid, err := BroadcastTx(rawtx)
+			txid, err := rpcClient.BroadcastTx(rawtx)
 			if err != nil {
 				return err
 			}
@@ -82,22 +84,22 @@ func sendCMD() gcli.Command {
 }
 
 // Sends from any address or combination of addresses from a wallet. Returns txid.
-func SendFromWallet(walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
-	rawTx, err := CreateRawTxFromWallet(walletFile, chgAddr, toAddrs)
+func SendFromWallet(c *RpcClient, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+	rawTx, err := CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs)
 	if err != nil {
 		return "", nil
 	}
 
-	return BroadcastTx(rawTx)
+	return c.BroadcastTx(rawTx)
 }
 
 // Sends from a specific address in a wallet. Returns txid.
-func SendFromAddress(addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
-	rawTx, err := CreateRawTxFromAddress(addr, walletFile, chgAddr, toAddrs)
+func SendFromAddress(c *RpcClient, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+	rawTx, err := CreateRawTxFromAddress(c, addr, walletFile, chgAddr, toAddrs)
 	if err != nil {
 		return "", nil
 	}
 
-	return BroadcastTx(rawTx)
+	return c.BroadcastTx(rawTx)
 
 }

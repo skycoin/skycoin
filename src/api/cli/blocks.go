@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/visor"
 	gcli "github.com/urfave/cli"
 )
 
-func blocksCMD() gcli.Command {
+func blocksCmd() gcli.Command {
 	name := "blocks"
 	return gcli.Command{
 		Name:         name,
@@ -21,6 +20,8 @@ func blocksCMD() gcli.Command {
 }
 
 func getBlocks(c *gcli.Context) error {
+	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+
 	// get start
 	start := c.Args().Get(0)
 	end := c.Args().Get(1)
@@ -43,33 +44,10 @@ func getBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", end)
 	}
 
-	rlt, err := GetBlocks(s, e)
+	rlt, err := rpcClient.GetBlocks(s, e)
 	if err != nil {
 		return err
 	}
 
 	return printJson(rlt)
-}
-
-// PUBLIC
-
-func GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
-	param := []uint64{start, end}
-	blocks := visor.ReadableBlocks{}
-
-	if err := DoRpcRequest(&blocks, "get_blocks", param, "1"); err != nil {
-		return nil, err
-	}
-
-	return &blocks, nil
-}
-
-func GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
-	blocks := visor.ReadableBlocks{}
-
-	if err := DoRpcRequest(&blocks, "get_blocks_by_seq", ss, "1"); err != nil {
-		return nil, err
-	}
-
-	return &blocks, nil
 }

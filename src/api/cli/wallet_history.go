@@ -3,13 +3,6 @@ package cli
 import (
 	"fmt"
 
-	"path/filepath"
-
-	"strings"
-
-	"bytes"
-	"encoding/json"
-
 	"time"
 
 	"sort"
@@ -42,7 +35,7 @@ func (obt byTime) Len() int {
 	return len(obt)
 }
 
-func walletHisCMD() gcli.Command {
+func walletHisCmd() gcli.Command {
 	name := "walletHistory"
 	return gcli.Command{
 		Name:         name,
@@ -60,40 +53,28 @@ func walletHisCMD() gcli.Command {
 }
 
 func walletHistoryAction(c *gcli.Context) error {
+	cfg := c.App.Metadata["config"].(Config)
+	rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
 		gcli.ShowSubcommandHelp(c)
 		return nil
 	}
-	f := c.String("f")
-	if f == "" {
-		f = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
-	}
 
-	// check the file extension.
-	if !strings.HasSuffix(f, walletExt) {
-		return errWalletName
-	}
-
-	// check if file name contains path.
-	if filepath.Base(f) != f {
-		af, err := filepath.Abs(f)
-		if err != nil {
-			return fmt.Errorf("invalid wallet file:%v, err:%v", f, err)
-		}
-		f = af
-	} else {
-		f = filepath.Join(cfg.WalletDir, f)
+	w, err := resolveWalletPath(cfg, c.String("f"))
+	if err != nil {
+		return err
 	}
 
 	// get all addresses in the wallet.
-	addrs, err := getAddresses(f)
+	addrs, err := getAddresses(w)
 	if err != nil {
 		return err
 	}
 
 	// get all the addresses affected uxouts
-	uxouts, err := getAddrUxOuts(addrs)
+	uxouts, err := rpcClient.GetAddressUxOuts(addrs)
 	if err != nil {
 		return err
 	}
@@ -101,7 +82,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	// transmute the uxout to addrHistory, and sort the items by time in ascend order.
 	totalAddrHis := []addrHistory{}
 	for _, ux := range uxouts {
-		addrHis, err := makeAddrHisArray(ux)
+		addrHis, err := makeAddrHisArray(rpcClient, ux)
 		if err != nil {
 			return err
 		}
@@ -111,15 +92,10 @@ func walletHistoryAction(c *gcli.Context) error {
 	sort.Sort(byTime(totalAddrHis))
 
 	// print the addr history
-	v, err := json.MarshalIndent(totalAddrHis, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-	fmt.Println(string(v))
-	return nil
+	return printJson(totalAddrHis)
 }
 
-func makeAddrHisArray(ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
+func makeAddrHisArray(c *RpcClient, ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 	if len(ux.UxOuts) == 0 {
 		return []addrHistory{}, nil
 	}
@@ -159,7 +135,7 @@ func makeAddrHisArray(ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 	}
 
 	if len(spentBlkSeq) > 0 {
-		getBlkTime, err := createBlkTimeFinder(spentBlkSeq)
+		getBlkTime, err := createBlkTimeFinder(c, spentBlkSeq)
 		if err != nil {
 			return []addrHistory{}, err
 		}
@@ -195,9 +171,9 @@ func makeAddrHisArray(ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 	return realHis, nil
 }
 
-func createBlkTimeFinder(ss []uint64) (func(uint64) int64, error) {
+func createBlkTimeFinder(c *RpcClient, ss []uint64) (func(uint64) int64, error) {
 	// get spent blocks
-	blks, err := GetBlocksBySeq(ss)
+	blks, err := c.GetBlocksBySeq(ss)
 	if err != nil {
 		return nil, err
 	}
@@ -214,29 +190,6 @@ func createBlkTimeFinder(ss []uint64) (func(uint64) int64, error) {
 		}
 		panic("block not found")
 	}, nil
-}
-
-func getAddrUxOuts(addrs []string) ([]webrpc.AddrUxoutResult, error) {
-	req, err := webrpc.NewRequest("get_address_uxouts", addrs, "1")
-	if err != nil {
-		return nil, fmt.Errorf("create rpc request failed:%v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return nil, fmt.Errorf("do rpc request failed:%v", err)
-	}
-
-	if rsp.Error != nil {
-		return nil, fmt.Errorf("do rpc request failed:%+v", *rsp.Error)
-	}
-
-	uxouts := []webrpc.AddrUxoutResult{}
-	if err := json.NewDecoder(bytes.NewReader(rsp.Result)).Decode(&uxouts); err != nil {
-		return nil, fmt.Errorf("decode result failed, err:%v", err)
-	}
-
-	return uxouts, nil
 }
 
 func getAddresses(f string) ([]string, error) {

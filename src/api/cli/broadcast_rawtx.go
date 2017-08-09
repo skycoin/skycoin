@@ -3,11 +3,10 @@ package cli
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
-func broadcastTxCMD() gcli.Command {
+func broadcastTxCmd() gcli.Command {
 	name := "broadcastTransaction"
 	return gcli.Command{
 		Name:         name,
@@ -21,7 +20,8 @@ func broadcastTxCMD() gcli.Command {
 				return nil
 			}
 
-			txid, err := BroadcastTx(rawtx)
+			rpcClient := c.App.Metadata["rpc"].(*RpcClient)
+			txid, err := rpcClient.BroadcastTx(rawtx)
 			if err != nil {
 				return err
 			}
@@ -31,18 +31,4 @@ func broadcastTxCMD() gcli.Command {
 		},
 	}
 	// Commands = append(Commands, cmd)
-}
-
-// PUBLIC
-
-// Returns TxId
-func BroadcastTx(rawtx string) (string, error) {
-	params := []string{rawtx}
-	rlt := webrpc.TxIDJson{}
-
-	if err := DoRpcRequest(&rlt, "inject_transaction", params, "1"); err != nil {
-		return "", err
-	}
-
-	return rlt.Txid, nil
 }

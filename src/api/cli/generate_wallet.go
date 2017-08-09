@@ -21,7 +21,7 @@ const (
 	mnemonicSeedEntropy    = 128
 )
 
-func generateWalletCMD() gcli.Command {
+func generateWalletCmd(cfg Config) gcli.Command {
 	name := "generateWallet"
 	return gcli.Command{
 		Name:         "generateWallet",
@@ -36,7 +36,7 @@ func generateWalletCMD() gcli.Command {
 		from the history log. If you do not include the "-p" option you will
 		be prompted to enter your password after you enter your command.
 
-		All results are returned in JSON format.`, cfg.WalletDir, cfg.DefaultWalletName),
+		All results are returned in JSON format.`, cfg.WalletDir, cfg.WalletName),
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "r",
@@ -58,7 +58,7 @@ func generateWalletCMD() gcli.Command {
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: cfg.DefaultWalletName,
+				Value: cfg.WalletName,
 				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt".
 						 If no wallet name is specified a generic name will be selected.`,
 			},
@@ -73,6 +73,8 @@ func generateWalletCMD() gcli.Command {
 }
 
 func generateWallet(c *gcli.Context) error {
+	cfg := c.App.Metadata["config"].(Config)
+
 	// create wallet dir if not exist
 	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(cfg.WalletDir, 0755); err != nil {
@@ -85,7 +87,7 @@ func generateWallet(c *gcli.Context) error {
 
 	// check if the wallet name has wlt extension.
 	if !strings.HasSuffix(wltName, ".wlt") {
-		return errWalletName
+		return ErrWalletName
 	}
 
 	// wallet file should not be a path.

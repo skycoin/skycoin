@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-var outputStr = `{
-       "outputs": 
+const outputStr = `{
+       "outputs":
 			{
 				"head_outputs": [
 					{
@@ -58,7 +58,7 @@ func decodeOutputStr(str string) visor.ReadableOutputSet {
 func filterOut(outs visor.ReadableOutputSet, f func(out visor.ReadableOutput) bool) visor.ReadableOutputSet {
 	headOuts := []visor.ReadableOutput{}
 	outgoingOuts := []visor.ReadableOutput{}
-	incommingOuts := []visor.ReadableOutput{}
+	incomingOuts := []visor.ReadableOutput{}
 
 	for _, o := range outs.HeadOutputs {
 		if f(o) {
@@ -72,16 +72,16 @@ func filterOut(outs visor.ReadableOutputSet, f func(out visor.ReadableOutput) bo
 		}
 	}
 
-	for _, o := range outs.IncommingOutputs {
+	for _, o := range outs.IncomingOutputs {
 		if f(o) {
-			incommingOuts = append(incommingOuts, o)
+			incomingOuts = append(incomingOuts, o)
 		}
 	}
 
 	return visor.ReadableOutputSet{
-		HeadOutputs:      headOuts,
-		OutgoingOutputs:  outgoingOuts,
-		IncommingOutputs: incommingOuts,
+		HeadOutputs:     headOuts,
+		OutgoingOutputs: outgoingOuts,
+		IncomingOutputs: incomingOuts,
 	}
 }
 

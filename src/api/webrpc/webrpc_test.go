@@ -9,35 +9,28 @@ import (
 
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/stretchr/testify/assert"
 )
 
-func setup() (*WebRPC, func()) {
-	c := make(chan struct{})
+const testWebRPCAddr = "127.0.0.1:8081"
 
-	rpc, err := New(
-		"0.0.0.0:8081",
-		ChanBuffSize(1),
-		ThreadNum(1),
-		Gateway(&fakeGateway{}),
-		Quit(c))
-	if err != nil {
-		panic(err)
-	}
-
-	return rpc, func() {
-		rpc.Shutdown()
-	}
+func setupWebRPC(t *testing.T) *WebRPC {
+	rpc, err := New(testWebRPCAddr, &fakeGateway{})
+	require.NoError(t, err)
+	rpc.WorkerNum = 1
+	rpc.ChanBuffSize = 2
+	return rpc
 }
 
 type fakeGateway struct {
 	transactions    map[string]string
-	injectRawTxMap  map[string]bool // key: transacion hash, value indicates whether the injectTransaction should return error.
+	injectRawTxMap  map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.
 	addrRecvUxOuts  []*historydb.UxOut
 	addrSpentUxOUts []*historydb.UxOut
 }
@@ -73,7 +66,7 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.
 	for _, f := range filters {
 		v.HeadOutputs = f(v.HeadOutputs)
 		v.OutgoingOutputs = f(v.OutgoingOutputs)
-		v.IncommingOutputs = f(v.IncommingOutputs)
+		v.IncomingOutputs = f(v.IncomingOutputs)
 	}
 	return v, nil
 }
@@ -102,26 +95,23 @@ func (fg fakeGateway) GetTimeNow() uint64 {
 	return 0
 }
 
-func TestNewWebRPC(t *testing.T) {
-	rpc1, err := New("0.0.0.0:8080", ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
-	assert.Nil(t, err)
-	assert.NotNil(t, rpc1.mux)
-	assert.NotNil(t, rpc1.handlers)
-	assert.NotNil(t, rpc1.gateway)
-}
-
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
-	rpc, err := New("0.0.0.0:8080", ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
-	assert.Nil(t, err)
+	rpc := setupWebRPC(t)
 	rpc.HandleFunc("get_status", getStatusHandler)
-	err = rpc.HandleFunc("get_status", getStatusHandler)
-	assert.NotNil(t, err)
+	err := rpc.HandleFunc("get_status", getStatusHandler)
+	require.Error(t, err)
 }
 
 func Test_rpcHandler_Handler(t *testing.T) {
-	rpc, teardown := setup()
-	defer teardown()
-	go rpc.Run()
+	rpc := setupWebRPC(t)
+	errC := make(chan error, 1)
+	go func() {
+		errC <- rpc.Run()
+	}()
+	defer func() {
+		rpc.Shutdown()
+		require.NoError(t, <-errC)
+	}()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -176,7 +166,6 @@ func Test_rpcHandler_Handler(t *testing.T) {
 		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, res, tt.want)
+		require.Equal(t, res, tt.want)
 	}
-
 }

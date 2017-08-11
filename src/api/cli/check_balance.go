@@ -122,7 +122,7 @@ func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (BalanceResult, err
 		}
 	}
 
-	outs, err := c.GetUnspent(addrs)
+	outs, err := c.GetUnspentOutputs(addrs)
 	if err != nil {
 		return BalanceResult{}, err
 	}

@@ -305,7 +305,7 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 // Creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
 func CreateRawTransaction(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// get unspent outputs of those addresses
-	unspents, err := c.GetUnspent(inAddrs)
+	unspents, err := c.GetUnspentOutputs(inAddrs)
 	if err != nil {
 		return "", err
 	}

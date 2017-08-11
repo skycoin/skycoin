@@ -74,7 +74,7 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 		}
 	}
 
-	outputs, err := rpcClient.GetAddressOutputs(addrs)
+	outputs, err := rpcClient.GetUnspentOutputs(addrs)
 	if err != nil {
 		return err
 	}
@@ -100,5 +100,5 @@ func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*webrpc.OutputsResu
 		addrs[i] = cipherAddrs[i].String()
 	}
 
-	return c.GetAddressOutputs(addrs)
+	return c.GetUnspentOutputs(addrs)
 }

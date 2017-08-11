@@ -63,7 +63,7 @@ func sendCmd() gcli.Command {
 				// return err
 			}
 
-			txid, err := rpcClient.BroadcastTx(rawtx)
+			txid, err := rpcClient.InjectTransaction(rawtx)
 			if err != nil {
 				return err
 			}
@@ -91,7 +91,7 @@ func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []Send
 		return "", nil
 	}
 
-	return c.BroadcastTx(rawTx)
+	return c.InjectTransaction(rawTx)
 }
 
 // Sends from a specific address in a wallet. Returns txid.
@@ -101,6 +101,6 @@ func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs
 		return "", nil
 	}
 
-	return c.BroadcastTx(rawTx)
+	return c.InjectTransaction(rawTx)
 
 }

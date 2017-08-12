@@ -2,11 +2,11 @@ package webrpc
 
 import (
 	"encoding/json"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/stretchr/testify/require"
 )
 
 const outputStr = `{
@@ -150,9 +150,11 @@ func Test_getOutputsHandler(t *testing.T) {
 			})}),
 		},
 	}
+
 	for _, tt := range tests {
-		if got := getOutputsHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. getOutputsHandler() = %+v, want %+v", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got := getOutputsHandler(tt.args.req, tt.args.gateway)
+			require.Equal(t, tt.want, got)
+		})
 	}
 }

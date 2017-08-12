@@ -2,6 +2,7 @@ package webrpc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
@@ -29,10 +30,11 @@ func setupWebRPC(t *testing.T) *WebRPC {
 }
 
 type fakeGateway struct {
-	transactions    map[string]string
-	injectRawTxMap  map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.
-	addrRecvUxOuts  []*historydb.UxOut
-	addrSpentUxOUts []*historydb.UxOut
+	transactions         map[string]string
+	injectRawTxMap       map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.
+	injectedTransactions map[string]string
+	addrRecvUxOuts       []*historydb.UxOut
+	addrSpentUxOUts      []*historydb.UxOut
 }
 
 func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
@@ -79,12 +81,16 @@ func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, er
 	return nil, nil
 }
 
-func (fg fakeGateway) InjectTransaction(txn coin.Transaction) error {
+func (fg *fakeGateway) InjectTransaction(txn coin.Transaction) error {
 	if _, v := fg.injectRawTxMap[txn.Hash().Hex()]; v {
+		if fg.injectedTransactions == nil {
+			fg.injectedTransactions = make(map[string]string)
+		}
+		fg.injectedTransactions[txn.Hash().Hex()] = hex.EncodeToString(txn.Serialize())
 		return nil
 	}
 
-	return errors.New("inject transaction failed")
+	return errors.New("fake gateway inject transaction failed")
 }
 
 func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
@@ -154,18 +160,20 @@ func Test_rpcHandler_Handler(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		d, err := json.Marshal(tt.args.req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := json.Marshal(tt.args.req)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		r := httptest.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
-		w := httptest.NewRecorder()
-		rpc.Handler(w, r)
-		var res Response
-		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
-			t.Fatal(err)
-		}
-		require.Equal(t, res, tt.want)
+			r := httptest.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
+			w := httptest.NewRecorder()
+			rpc.Handler(w, r)
+			var res Response
+			if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+				t.Fatal(err)
+			}
+			require.Equal(t, res, tt.want)
+		})
 	}
 }

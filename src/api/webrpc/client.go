@@ -76,6 +76,15 @@ func (c *Client) GetTransactionByID(txid string) (*TxnResult, error) {
 	return &txn, nil
 }
 
+func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
+	uxouts := []AddrUxoutResult{}
+	if err := c.Do(&uxouts, "get_address_uxouts", addrs); err != nil {
+		return nil, err
+	}
+
+	return uxouts, nil
+}
+
 func (c *Client) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	param := []uint64{start, end}
 	blocks := visor.ReadableBlocks{}
@@ -97,20 +106,7 @@ func (c *Client) GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
 	return &blocks, nil
 }
 
-func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
-	uxouts := []AddrUxoutResult{}
-	if err := c.Do(&uxouts, "get_address_uxouts", addrs); err != nil {
-		return nil, err
-	}
-
-	return uxouts, nil
-}
-
 func (c *Client) GetLastBlocks(n uint64) (*visor.ReadableBlocks, error) {
-	if n <= 0 {
-		return nil, errors.New("block number must >= 0")
-	}
-
 	param := []uint64{n}
 	blocks := visor.ReadableBlocks{}
 	if err := c.Do(&blocks, "get_lastblocks", param); err != nil {

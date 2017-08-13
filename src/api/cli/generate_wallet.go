@@ -28,8 +28,8 @@ func generateWalletCmd(cfg Config) gcli.Command {
 		Usage:        "Generate a new wallet",
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
-		Description: fmt.Sprintf(`The default wallet(%s/%s) will
-		be created if no wallet and address was specificed.
+		Description: fmt.Sprintf(`The default wallet (%s/%s) will
+		be created if no wallet and address was specified.
 
 		Use caution when using the "-p" command. If you have command
 		history enabled your wallet encryption password can be recovered

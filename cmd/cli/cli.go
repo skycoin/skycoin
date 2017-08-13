@@ -7,10 +7,6 @@ import (
 	"github.com/skycoin/skycoin/src/api/cli"
 )
 
-func init() {
-	cli.Init()
-}
-
 func main() {
 	cfg, err := cli.LoadConfig()
 	if err != nil {

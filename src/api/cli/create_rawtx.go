@@ -35,8 +35,8 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		Description: fmt.Sprintf(`
   Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
 
-		  The default wallet(%s/%s) will be
-		  used if no wallet and address was specificed.
+		  The default wallet (%s/%s) will be
+		  used if no wallet and address was specified.
 
 
         If you are sending from a wallet the coins will be taken recursively

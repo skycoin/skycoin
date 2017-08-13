@@ -28,8 +28,8 @@ func walletBalanceCmd(cfg Config) gcli.Command {
 		Usage:     "Check the balance of a wallet",
 		ArgsUsage: "[wallet]",
 		Description: fmt.Sprintf(`Check balance of specific wallet, the default
-		wallet(%s/%s) will be
-		used if no wallet was specificed, use ENV 'WALLET_NAME'
+		wallet (%s/%s) will be
+		used if no wallet was specified, use ENV 'WALLET_NAME'
 		to update default wallet file name, and 'WALLET_DIR' to update
 		the default wallet directory`, cfg.WalletDir, cfg.WalletName),
 		OnUsageError: onCommandUsageError(name),

@@ -17,7 +17,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 		Usage:     "Add a private key to specific wallet",
 		ArgsUsage: "[private key]",
 		Description: fmt.Sprintf(`Add a private key to specific wallet, the default
-		wallet(%s/%s) will be
+		wallet (%s/%s) will be
 		used if the wallet file or path is not specified`, cfg.WalletDir, cfg.WalletName),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
@@ -70,7 +70,7 @@ type WalletSaveError error
 func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 	sk, err := cipher.SecKeyFromHex(key)
 	if err != nil {
-		return fmt.Errorf("invalid private key: %s, must be an hex string of length 64", key)
+		return fmt.Errorf("invalid private key: %s, must be a hex string of length 64", key)
 	}
 
 	pk := cipher.PubKeyFromSecKey(sk)

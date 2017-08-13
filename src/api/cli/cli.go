@@ -1,3 +1,8 @@
+/*
+Implements an interface for creating a CLI application.
+Includes methods for manipulating wallets files and interacting with the
+webrpc API to query a skycoin node's status.
+*/
 package cli
 
 import (
@@ -20,15 +25,17 @@ const (
 	Version           = "0.19.0"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
-	defaultWalletName = "skycoin_cli.wlt"
+	defaultWalletName = "$COIN_cli" + walletExt
+	defaultWalletDir  = "$HOME/.$COIN/wallets"
 	defaultRpcAddress = "127.0.0.1:6430"
 )
 
 var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
-    RPC_ADDR: Address of RPC node. Default %s
-    WALLET_DIR: Directory where wallets are stored. Default $HOME/.%s/wallets
-    WALLET_NAME: Name of wallet file (without path). Default %s`, defaultRpcAddress, defaultCoin, defaultWalletName)
+    RPC_ADDR: Address of RPC node. Default "%s"
+    COIN: Name of the coin. Default "%s"
+    WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
+    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`, defaultRpcAddress, defaultCoin, defaultWalletDir, defaultWalletName)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:
         {{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
@@ -48,21 +55,28 @@ OPTIONS:
 
 	appHelpTemplate = fmt.Sprintf(`NAME:
    {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
+
 USAGE:
    {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}}{{if .Commands}} command [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Version}}{{if not .HideVersion}}
+
 VERSION:
    {{.Version}}{{end}}{{end}}{{if .Description}}
+
 DESCRIPTION:
    {{.Description}}{{end}}{{if len .Authors}}
+
 AUTHOR{{with $length := len .Authors}}{{if ne 1 $length}}S{{end}}{{end}}:
    {{range $index, $author := .Authors}}{{if $index}}
    {{end}}{{$author}}{{end}}{{end}}{{if .VisibleCommands}}
+
 COMMANDS:{{range .VisibleCategories}}{{if .Name}}
    {{.Name}}:{{end}}{{range .VisibleCommands}}
      {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{end}}{{end}}{{if .VisibleFlags}}
+
 GLOBAL OPTIONS:
    {{range $index, $option := .VisibleFlags}}{{if $index}}
    {{end}}{{$option}}{{end}}{{end}}{{if .Copyright}}
+
 COPYRIGHT:
    {{.Copyright}}{{end}}
 
@@ -73,17 +87,6 @@ COPYRIGHT:
 	ErrAddress     = errors.New("invalid address")
 	ErrJSONMarshal = errors.New("json marshal failed")
 )
-
-// CLI cmds should call this from there init() method
-func Init() {
-	gcli.AppHelpTemplate = appHelpTemplate
-	gcli.SubcommandHelpTemplate = commandHelpTemplate
-	gcli.CommandHelpTemplate = commandHelpTemplate
-	gcli.HelpFlag = gcli.BoolFlag{
-		Name:  "help,h",
-		Usage: "show help, can also be used to show subcommand help",
-	}
-}
 
 // App Wraps the app so that main package won't use the raw App directly,
 // which will cause import issue
@@ -99,6 +102,7 @@ type Config struct {
 	RpcAddress string
 }
 
+// Loads config from environment, prior to parsing CLI flags
 func LoadConfig() (Config, error) {
 	// get coin name from env
 	coin := os.Getenv("COIN")
@@ -122,7 +126,7 @@ func LoadConfig() (Config, error) {
 	// get wallet name from env
 	wltName := os.Getenv("WALLET_NAME")
 	if wltName == "" {
-		wltName = defaultWalletName
+		wltName = fmt.Sprintf("%s_cli%s", coin, walletExt)
 	}
 
 	if !strings.HasSuffix(wltName, walletExt) {
@@ -142,6 +146,7 @@ func (c Config) FullWalletPath() string {
 }
 
 // Returns a full wallet path based on cfg and optional cli arg specifying wallet file
+// FIXME: A CLI flag for the wallet filename is redundant with the envvar. Remove the flags or the envvar.
 func resolveWalletPath(cfg Config, w string) (string, error) {
 	if w == "" {
 		w = cfg.FullWalletPath()
@@ -166,6 +171,10 @@ func resolveWalletPath(cfg Config, w string) (string, error) {
 
 // NewApp creates an app instance
 func NewApp(cfg Config) *App {
+	gcli.AppHelpTemplate = appHelpTemplate
+	gcli.SubcommandHelpTemplate = commandHelpTemplate
+	gcli.CommandHelpTemplate = commandHelpTemplate
+
 	gcliApp := gcli.NewApp()
 	app := &App{
 		App: *gcliApp,
@@ -208,7 +217,7 @@ func NewApp(cfg Config) *App {
 		gcli.HelpPrinter(app.Writer, tmp, app)
 	}
 
-	gcliApp.Metadata = map[string]interface{}{
+	app.Metadata = map[string]interface{}{
 		"config": cfg,
 		"rpc": &webrpc.Client{
 			Addr: cfg.RpcAddress,
@@ -228,7 +237,7 @@ func RpcClientFromContext(c *gcli.Context) *webrpc.Client {
 }
 
 func ConfigFromContext(c *gcli.Context) Config {
-	return ConfigFromContext(c)
+	return c.App.Metadata["config"].(Config)
 }
 
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {

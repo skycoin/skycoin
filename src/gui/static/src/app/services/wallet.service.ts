@@ -4,12 +4,11 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
 import { WalletModel } from '../models/wallet.model';
 import { Observable } from 'rxjs/Observable';
+import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/observable/forkJoin';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
-import * as moment from 'moment';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 
 @Injectable()
 export class WalletService {
@@ -24,7 +23,7 @@ export class WalletService {
     this.loadData();
     IntervalObservable
       .create(30000)
-      .subscribe(() => this.loadData());
+      .subscribe(() => this.refreshBalances());
   }
 
   addressesAsString(): Observable<string> {
@@ -45,7 +44,14 @@ export class WalletService {
   }
 
   create(label, seed) {
-    return this.apiService.post('wallet/create', {label: label, seed: seed});
+    return this.apiService.post('wallet/create', {label: label, seed: seed})
+      .do(wallet => {
+        this.wallets.first().subscribe(wallets => {
+          wallets.push(wallet);
+          this.wallets.next(wallets);
+          this.refreshBalances();
+        });
+      });
   }
 
   folder(): Observable<string> {

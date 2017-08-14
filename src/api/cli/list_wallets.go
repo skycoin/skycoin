@@ -20,7 +20,7 @@ func listWalletsCmd() gcli.Command {
 	name := "listWallets"
 	return gcli.Command{
 		Name:         name,
-		Usage:        "Lists all wallets stored in the default wallet directory",
+		Usage:        "Lists all wallets stored in the wallet directory",
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Action:       listWallets,

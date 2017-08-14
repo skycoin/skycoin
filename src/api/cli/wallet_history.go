@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 
 	"time"
@@ -39,7 +40,7 @@ func walletHisCmd() gcli.Command {
 	name := "walletHistory"
 	return gcli.Command{
 		Name:         name,
-		Usage:        "Display the transaction history of specific wallet",
+		Usage:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Flags: []gcli.Flag{
@@ -71,6 +72,10 @@ func walletHistoryAction(c *gcli.Context) error {
 	addrs, err := getAddresses(w)
 	if err != nil {
 		return err
+	}
+
+	if len(addrs) == 0 {
+		return errors.New("Wallet is empty")
 	}
 
 	// get all the addresses affected uxouts

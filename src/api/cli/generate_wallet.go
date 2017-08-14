@@ -28,7 +28,7 @@ func generateWalletCmd(cfg Config) gcli.Command {
 		Usage:        "Generate a new wallet",
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
-		Description: fmt.Sprintf(`The default wallet (%s/%s) will
+		Description: fmt.Sprintf(`The default wallet (%s) will
 		be created if no wallet and address was specified.
 
 		Use caution when using the "-p" command. If you have command
@@ -36,7 +36,7 @@ func generateWalletCmd(cfg Config) gcli.Command {
 		from the history log. If you do not include the "-p" option you will
 		be prompted to enter your password after you enter your command.
 
-		All results are returned in JSON format.`, cfg.WalletDir, cfg.WalletName),
+		All results are returned in JSON format.`, cfg.FullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "r",

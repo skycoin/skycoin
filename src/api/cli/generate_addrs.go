@@ -17,13 +17,13 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",
 		ArgsUsage: " ",
-		Description: fmt.Sprintf(`The default wallet (%s/%s) will
+		Description: fmt.Sprintf(`The default wallet (%s) will
 		be used if no wallet and address was specified.
 
 		Use caution when using the "-p" command. If you have command
 		history enabled your wallet encryption password can be recovered from the
 		history log. If you do not include the "-p" option you will be prompted to
-		enter your password after you enter your command.`, cfg.WalletDir, cfg.WalletName),
+		enter your password after you enter your command.`, cfg.FullWalletPath),
 		Flags: []gcli.Flag{
 			gcli.UintFlag{
 				Name:  "n",

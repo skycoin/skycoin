@@ -35,18 +35,18 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		Description: fmt.Sprintf(`
   Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
 
-		  The default wallet (%s/%s) will be
+		  The default wallet (%s) will be
 		  used if no wallet and address was specified.
 
 
-        If you are sending from a wallet the coins will be taken recursively
+        If you are sending from a wallet the coins will be taken iteratively
         from all addresses within the wallet starting with the first address until
         the amount of the transaction is met.
 
         Use caution when using the "-p" command. If you have command history enabled
         your wallet encryption password can be recovered from the history log. If you
         do not include the "-p" option you will be prompted to enter your password
-        after you enter your command.`, cfg.WalletDir, cfg.WalletName),
+        after you enter your command.`, cfg.FullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",

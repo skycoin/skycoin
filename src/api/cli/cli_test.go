@@ -12,6 +12,7 @@ import (
 )
 
 func Example() {
+	// In cmd/cli/cli.go:
 	cfg, err := LoadConfig()
 	if err != nil {
 		fmt.Println(err)

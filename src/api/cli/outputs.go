@@ -16,10 +16,10 @@ func walletOutputsCmd(cfg Config) gcli.Command {
 		Usage:     "Display outputs of specific wallet",
 		ArgsUsage: "[wallet file]",
 		Description: fmt.Sprintf(`Display outputs of specific wallet, the default
-		wallet (%s/%s) will be
+		wallet (%s) will be
 		used if no wallet was specified, use ENV 'WALLET_NAME'
 		to update default wallet file name, and 'WALLET_DIR' to update
-		the default wallet directory`, cfg.WalletDir, cfg.WalletName),
+		the default wallet directory`, cfg.FullWalletPath()),
 		OnUsageError: onCommandUsageError(name),
 		Action:       getWalletOutputsCmd,
 	}

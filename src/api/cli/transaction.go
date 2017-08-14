@@ -24,7 +24,7 @@ func transactionCmd() gcli.Command {
 			// validate the txid
 			_, err := cipher.SHA256FromHex(txid)
 			if err != nil {
-				return errors.New("error txid")
+				return errors.New("invalid txid")
 			}
 
 			rpcClient := RpcClientFromContext(c)

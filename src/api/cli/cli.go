@@ -49,7 +49,6 @@ DESCRIPTION:
 OPTIONS:
         {{range .VisibleFlags}}{{.}}
         {{end}}{{end}}
-
 %s
 `, envVarsHelp)
 
@@ -79,7 +78,6 @@ GLOBAL OPTIONS:
 
 COPYRIGHT:
    {{.Copyright}}{{end}}
-
 %s
 `, envVarsHelp)
 
@@ -182,12 +180,10 @@ func NewApp(cfg Config) *App {
 
 	commands := []gcli.Command{
 		addPrivateKeyCmd(cfg),
-		blocksCmd(),
-		broadcastTxCmd(),
-		walletBalanceCmd(cfg),
-		walletOutputsCmd(cfg),
 		addressBalanceCmd(),
 		addressOutputsCmd(),
+		blocksCmd(),
+		broadcastTxCmd(),
 		createRawTxCmd(cfg),
 		generateAddrsCmd(cfg),
 		generateWalletCmd(cfg),
@@ -198,8 +194,10 @@ func NewApp(cfg Config) *App {
 		statusCmd(),
 		transactionCmd(),
 		versionCmd(),
+		walletBalanceCmd(cfg),
 		walletDirCmd(),
 		walletHisCmd(),
+		walletOutputsCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

@@ -17,8 +17,8 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 		Usage:     "Add a private key to specific wallet",
 		ArgsUsage: "[private key]",
 		Description: fmt.Sprintf(`Add a private key to specific wallet, the default
-		wallet (%s/%s) will be
-		used if the wallet file or path is not specified`, cfg.WalletDir, cfg.WalletName),
+		wallet (%s) will be
+		used if the wallet file or path is not specified`, cfg.FullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",

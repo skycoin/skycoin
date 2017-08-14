@@ -47,3 +47,8 @@ md-expansion-panel {
 button.active {
   background-color: rgba(0,0,0,.12);
 }
+
+md-spinner.in-button .mat-spinner path {
+  stroke: #000;
+  opacity: 0.3;
+}

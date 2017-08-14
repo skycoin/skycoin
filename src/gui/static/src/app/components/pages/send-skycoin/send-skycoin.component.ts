@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { Router } from '@angular/router';
+import 'rxjs/add/operator/delay';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -10,6 +11,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./send-skycoin.component.css']
 })
 export class SendSkycoinComponent implements OnInit {
+  @ViewChild('button') button;
 
   form: FormGroup;
   records = [];
@@ -38,8 +40,16 @@ export class SendSkycoinComponent implements OnInit {
   }
 
   send() {
+    this.button.setLoading();
     this.walletService.sendSkycoin(this.form.value.wallet_id, this.form.value.address, this.form.value.amount * 1000000)
-      .subscribe(response => console.log(response));
+      .delay(1000)
+      .subscribe(
+        response => {
+          this.resetForm();
+          this.button.setSuccess();
+        },
+        error => this.button.setError(error)
+      );
   }
 
   private initForm() {
@@ -48,5 +58,11 @@ export class SendSkycoinComponent implements OnInit {
       address: ['', Validators.required],
       amount: ['', Validators.required],
     });
+  }
+
+  private resetForm() {
+    this.form.controls.wallet_id.reset(undefined);
+    this.form.controls.address.reset(undefined);
+    this.form.controls.amount.reset(undefined);
   }
 }

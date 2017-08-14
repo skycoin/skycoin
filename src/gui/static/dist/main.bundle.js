@@ -34,7 +34,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/app.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-toolbar color=\"primary\">\n  <span>Skycoin</span>\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\n  <!-- This fills the remaining space of the current row -->\n  <span class=\"fill-remaining-space\"></span>\n\n  <span>{{ walletService.sum() | async | sky }}</span>\n  <md-menu #settingsMenu=\"mdMenu\">\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\n  </md-menu>\n\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\n</md-toolbar>\n<md-toolbar>\n  <button md-button [routerLink]=\"['/wallets']\">Wallets</button>\n  <button md-button [routerLink]=\"['/send']\">Send</button>\n  <button md-button [routerLink]=\"['/history']\">History</button>\n  <button md-button [routerLink]=\"['/explorer']\">Explorer</button>\n  <!-- This fills the remaining space of the current row -->\n  <span class=\"fill-remaining-space\"></span>\n\n</md-toolbar>\n<div class=\"sky-container\">\n  <router-outlet></router-outlet>\n</div>\n"
+module.exports = "<md-toolbar color=\"primary\">\n  <span>Skycoin</span>\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\n  <!-- This fills the remaining space of the current row -->\n  <span class=\"fill-remaining-space\"></span>\n\n  <span>{{ walletService.sum() | async | sky }}</span>\n  <md-menu #settingsMenu=\"mdMenu\">\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\n  </md-menu>\n\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\n</md-toolbar>\n<md-toolbar>\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\n  <!-- This fills the remaining space of the current row -->\n  <span class=\"fill-remaining-space\"></span>\n\n</md-toolbar>\n<div class=\"sky-container\">\n  <router-outlet></router-outlet>\n</div>\n"
 
 /***/ }),
 
@@ -115,6 +115,7 @@ var _a;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_31__components_pages_settings_network_network_component__ = __webpack_require__("../../../../../src/app/components/pages/settings/network/network.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_32__services_network_service__ = __webpack_require__("../../../../../src/app/services/network.service.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__ = __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_34__components_layout_button_button_component__ = __webpack_require__("../../../../../src/app/components/layout/button/button.component.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppModule; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -122,6 +123,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+
 
 
 
@@ -299,6 +301,7 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_30__components_pages_settings_backup_backup_component__["a" /* BackupComponent */],
             __WEBPACK_IMPORTED_MODULE_31__components_pages_settings_network_network_component__["a" /* NetworkComponent */],
             __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__["a" /* ChangeNameComponent */],
+            __WEBPACK_IMPORTED_MODULE_34__components_layout_button_button_component__["a" /* ButtonComponent */],
         ],
         entryComponents: [
             __WEBPACK_IMPORTED_MODULE_10__components_pages_wallets_create_wallet_create_wallet_component__["a" /* CreateWalletComponent */],
@@ -316,9 +319,11 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["g" /* MdInputModule */],
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["h" /* MdListModule */],
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["i" /* MdMenuModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["j" /* MdSelectModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["k" /* MdTabsModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["l" /* MdToolbarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["j" /* MdProgressSpinnerModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["k" /* MdSelectModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["l" /* MdTabsModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["m" /* MdToolbarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["n" /* MdTooltipModule */],
             __WEBPACK_IMPORTED_MODULE_14__swimlane_ngx_datatable__["NgxDatatableModule"],
             __WEBPACK_IMPORTED_MODULE_3__angular_platform_browser_animations__["a" /* NoopAnimationsModule */],
             __WEBPACK_IMPORTED_MODULE_11__angular_forms__["a" /* ReactiveFormsModule */],
@@ -515,6 +520,87 @@ BreadcrumbComponent = __decorate([
 
 var _a, _b;
 //# sourceMappingURL=breadcrumb.component.js.map
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/layout/button/button.component.css":
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, "md-icon {\r\n  margin-left: 10px;\r\n  opacity: 0.3;\r\n}\r\n\r\nmd-spinner {\r\n  display: inline-block;\r\n  height: 24px !important;\r\n  width: 24px !important;\r\n  margin-left: 10px;\r\n}\r\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/layout/button/button.component.html":
+/***/ (function(module, exports) {
+
+module.exports = "<button type=\"submit\" md-raised-button color=\"primary\" [disabled]=\"disabled()\" [mdTooltip]=\"error ? error : null\">\n  {{ placeholder }}\n  <md-icon *ngIf=\"state === 1\">done</md-icon>\n  <md-icon *ngIf=\"state === 2\">error</md-icon>\n  <md-spinner *ngIf=\"state === 0\" class=\"in-button\"></md-spinner>\n</button>\n"
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/layout/button/button.component.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return ButtonComponent; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+var ButtonComponent = (function () {
+    function ButtonComponent() {
+    }
+    ButtonComponent.prototype.setLoading = function () {
+        this.state = 0;
+    };
+    ButtonComponent.prototype.setSuccess = function () {
+        var _this = this;
+        this.state = 1;
+        setTimeout(function () { return _this.state = null; }, 3000);
+    };
+    ButtonComponent.prototype.setError = function (error) {
+        this.error = error['_body'];
+        this.state = 2;
+    };
+    ButtonComponent.prototype.disabled = function () {
+        return this.state === 0 || (!(this.form === undefined) && !(this.form && this.form.valid));
+    };
+    return ButtonComponent;
+}());
+__decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Input"])(),
+    __metadata("design:type", Object)
+], ButtonComponent.prototype, "form", void 0);
+__decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Input"])(),
+    __metadata("design:type", String)
+], ButtonComponent.prototype, "placeholder", void 0);
+ButtonComponent = __decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
+        selector: 'app-button',
+        template: __webpack_require__("../../../../../src/app/components/layout/button/button.component.html"),
+        styles: [__webpack_require__("../../../../../src/app/components/layout/button/button.component.css")]
+    })
+], ButtonComponent);
+
+//# sourceMappingURL=button.component.js.map
 
 /***/ }),
 
@@ -852,7 +938,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n  <md-select formControlName=\"wallet_id\" placeholder=\"Wallet\" class=\"input-field\">\r\n    <md-option *ngFor=\"let wallet of walletService.all() | async\" [value]=\"wallet.meta.filename\">\r\n      {{ wallet.meta.label }} ({{ wallet.balance | sky }})\r\n    </md-option>\r\n  </md-select>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"address\" placeholder=\"Recipient address\">\r\n  </md-input-container>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"amount\" placeholder=\"Amount\">\r\n  </md-input-container>\r\n  <div class=\"button-line\">\r\n    <a md-raised-button color=\"primary\" (click)=\"send()\">Send</a>\r\n  </div>\r\n</md-card>\r\n<!--Time, Status, Address, Amount, Transaction ID-->\r\n<md-card>\r\n  <h3>Recent transactions</h3>\r\n  <ngx-datatable #table\r\n    class=\"material\"\r\n    [rows]=\"records\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"50\"\r\n    [footerHeight]=\"50\"\r\n    [rowHeight]=\"50\"\r\n    [limit]=\"10\"\r\n    [scrollbarH]=\"true\"\r\n    (activate)=\"onActivate($event)\">\r\n    <ngx-datatable-column name=\"Timestamp\" prop=\"txn.timestamp\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value | dateTime }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Status\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" [flexGrow]=\"4\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
+module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n  <md-select formControlName=\"wallet_id\" placeholder=\"Wallet\" class=\"input-field\">\r\n    <md-option *ngFor=\"let wallet of walletService.all() | async\" [value]=\"wallet.meta.filename\">\r\n      {{ wallet.meta.label }} ({{ wallet.balance | sky }})\r\n    </md-option>\r\n  </md-select>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"address\" placeholder=\"Recipient address\">\r\n  </md-input-container>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"amount\" placeholder=\"Amount\">\r\n  </md-input-container>\r\n  <div class=\"button-line\">\r\n    <app-button #button placeholder=\"Send\" (click)=\"send()\"></app-button>\r\n  </div>\r\n</md-card>\r\n<!--Time, Status, Address, Amount, Transaction ID-->\r\n<md-card>\r\n  <h3>Recent transactions</h3>\r\n  <ngx-datatable #table\r\n    class=\"material\"\r\n    [rows]=\"records\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"50\"\r\n    [footerHeight]=\"50\"\r\n    [rowHeight]=\"50\"\r\n    [limit]=\"10\"\r\n    [scrollbarH]=\"true\"\r\n    (activate)=\"onActivate($event)\">\r\n    <ngx-datatable-column name=\"Timestamp\" prop=\"txn.timestamp\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value | dateTime }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Status\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" [flexGrow]=\"4\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
 
 /***/ }),
 
@@ -866,6 +952,8 @@ module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__ = __webpack_require__("../../../../rxjs/observable/IntervalObservable.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_router__ = __webpack_require__("../../../router/@angular/router.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay__ = __webpack_require__("../../../../rxjs/add/operator/delay.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return SendSkycoinComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -876,6 +964,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+
 
 
 
@@ -905,8 +994,14 @@ var SendSkycoinComponent = (function () {
         }
     };
     SendSkycoinComponent.prototype.send = function () {
+        var _this = this;
+        this.button.setLoading();
         this.walletService.sendSkycoin(this.form.value.wallet_id, this.form.value.address, this.form.value.amount * 1000000)
-            .subscribe(function (response) { return console.log(response); });
+            .delay(1000)
+            .subscribe(function (response) {
+            _this.resetForm();
+            _this.button.setSuccess();
+        }, function (error) { return _this.button.setError(error); });
     };
     SendSkycoinComponent.prototype.initForm = function () {
         this.form = this.formBuilder.group({
@@ -915,8 +1010,17 @@ var SendSkycoinComponent = (function () {
             amount: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
         });
     };
+    SendSkycoinComponent.prototype.resetForm = function () {
+        this.form.controls.wallet_id.reset(undefined);
+        this.form.controls.address.reset(undefined);
+        this.form.controls.amount.reset(undefined);
+    };
     return SendSkycoinComponent;
 }());
+__decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["ViewChild"])('button'),
+    __metadata("design:type", Object)
+], SendSkycoinComponent.prototype, "button", void 0);
 SendSkycoinComponent = __decorate([
     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
         selector: 'app-send-skycoin',
@@ -1438,7 +1542,7 @@ var WalletDetailComponent = (function () {
     };
     WalletDetailComponent.prototype.renameWallet = function () {
         var _this = this;
-        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["o" /* MdDialogConfig */]();
+        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogConfig */]();
         config.width = '500px';
         config.data = this.wallet;
         this.dialog.open(__WEBPACK_IMPORTED_MODULE_4__change_name_change_name_component__["a" /* ChangeNameComponent */], config).afterClosed().subscribe(function (result) {
@@ -1459,7 +1563,7 @@ WalletDetailComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialog */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialog */]) === "function" && _c || Object])
 ], WalletDetailComponent);
 
 var _a, _b, _c;
@@ -1548,8 +1652,8 @@ ChangeNameComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.css")]
     }),
-    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["m" /* MD_DIALOG_DATA */])),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["n" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["n" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
+    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["o" /* MD_DIALOG_DATA */])),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
 ], ChangeNameComponent);
 
 var _a, _b, _c, _d;
@@ -1637,7 +1741,7 @@ CreateWalletComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["n" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["n" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
 ], CreateWalletComponent);
 
 var _a, _b, _c;
@@ -1698,7 +1802,7 @@ var WalletsComponent = (function () {
         this.dialog = dialog;
     }
     WalletsComponent.prototype.addWallet = function () {
-        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["o" /* MdDialogConfig */]();
+        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["q" /* MdDialogConfig */]();
         config.width = '500px';
         this.dialog.open(__WEBPACK_IMPORTED_MODULE_3__create_wallet_create_wallet_component__["a" /* CreateWalletComponent */], config).afterClosed().subscribe(function (result) {
             //
@@ -1712,7 +1816,7 @@ WalletsComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/wallets.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/wallets.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["p" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["p" /* MdDialog */]) === "function" && _b || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["r" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["r" /* MdDialog */]) === "function" && _b || Object])
 ], WalletsComponent);
 
 var _a, _b;
@@ -1893,10 +1997,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 var ApiService = (function () {
-    // private url = '/api/'; // test
     function ApiService(http) {
         this.http = http;
-        this.url = 'http://127.0.0.1:6420/'; // production
+        // private url = 'http://127.0.0.1:6420/'; // production
+        this.url = '/api/'; // test
     }
     ApiService.prototype.get = function (url, options) {
         if (options === void 0) { options = null; }
@@ -2150,7 +2254,7 @@ var WalletService = (function () {
     };
     WalletService.prototype.create = function (label, seed) {
         var _this = this;
-        return this.apiService.post('wallet/create', { label: label, seed: seed })
+        return this.apiService.post('wallet/create', { label: label ? label : 'undefined', seed: seed })
             .do(function (wallet) {
             _this.wallets.first().subscribe(function (wallets) {
                 wallets.push(wallet);

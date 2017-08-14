@@ -1,0 +1,11 @@
+md-icon {
+  margin-left: 10px;
+  opacity: 0.3;
+}
+
+md-spinner {
+  display: inline-block;
+  height: 24px !important;
+  width: 24px !important;
+  margin-left: 10px;
+}

@@ -43,3 +43,7 @@ md-expansion-panel {
 .datatable-row-group {
   cursor: pointer;
 }
+
+button.active {
+  background-color: rgba(0,0,0,.12);
+}

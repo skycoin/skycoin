@@ -1,71 +1,28 @@
+# Desktopwallet
 
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.2.6.
 
-If folder dev exists, application will serve web assets out of dev. Otherwise the dist folder will be used.
+## Development server
 
-dev will not be commited to the repo. For development.
+Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-dist is the distribution state files
+## Code scaffolding
 
-#### 1. Prerequisites
+Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|module`.
 
-*nodejs* must be installed on your system and the below global node packages must be installed:
+## Build
 
-- gulp
+Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
 
-> npm i -g gulp
+## Running unit tests
 
-- gulp-cli
+Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
 
-> npm i -g gulp-cli
+## Running end-to-end tests
 
-- typings
+Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+Before running the tests make sure you are serving the app via `ng serve`.
 
-> npm i -g typings@1.3.3
+## Further help
 
-- typescript
-
-> npm i -g typescript@2.0.2
-
-- ts-node
-
-> npm i -g ts-node@1.3.0
-
-Updating NPM
------
-
-```
-sudo apt-get install npm
-sudo apt-get install nodejs-legacy
-sudo npm cache clean -f
-
-sudo npm install -g n
-sudo n stable
-
-node -v
-npm -v
-```
-
-Setup
------
-
-```
-npm install
-npm install --only=dev
-```
-
-A folder `node_modules/` should now exist.
-
-Building
-----
-
-```
-gulp build
-```
-
-Will build the assets into the ./dev folder
-
-Updating
-----
-
-Copy dev over dist, and commit. To update the repo
-
+To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).

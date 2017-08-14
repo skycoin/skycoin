@@ -1,0 +1,17 @@
+.input-field {
+  display: block;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.send-skycoin-form {
+  padding-top: 40px;
+}
+
+md-select {
+  padding-bottom: 1.29688em;
+}
+
+md-card {
+  margin-bottom: 20px;
+}

@@ -1,0 +1,18 @@
+<ngx-datatable #table
+               class="material"
+               [rows]="transactions"
+               columnMode="flex"
+               [headerHeight]="50"
+               [footerHeight]="50"
+               [rowHeight]="50"
+               [limit]="10"
+               [scrollbarH]="true"
+               (activate)="onActivate($event)">
+  <ngx-datatable-column name="Timestamp" prop="timestamp" [flexGrow]="2">
+    <ng-template let-value="value" ngx-datatable-cell-template>
+      <strong>{{ value | dateTime }}</strong>
+    </ng-template>
+  </ngx-datatable-column>
+  <ngx-datatable-column name="Amount" [flexGrow]="1"></ngx-datatable-column>
+  <ngx-datatable-column name="Transaction ID" prop="txid" [flexGrow]="8"></ngx-datatable-column>
+</ngx-datatable>

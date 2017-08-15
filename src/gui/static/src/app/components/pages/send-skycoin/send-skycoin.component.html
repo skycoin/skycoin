@@ -11,7 +11,7 @@
     <input mdInput formControlName="amount" placeholder="Amount">
   </md-input-container>
   <div class="button-line">
-    <app-button #button placeholder="Send" (click)="send()"></app-button>
+    <app-button #button placeholder="Send" (click)="send()" [form]="form"></app-button>
   </div>
 </md-card>
 <!--Time, Status, Address, Amount, Transaction ID-->

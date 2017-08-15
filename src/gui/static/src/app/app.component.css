@@ -5,6 +5,10 @@ md-card {
   margin-left: auto;
 }
 
+.logo {
+  max-height: 40%;
+}
+
 .fill-remaining-space {
   flex: 1 1 auto;
 }

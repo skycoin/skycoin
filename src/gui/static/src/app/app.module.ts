@@ -2,8 +2,8 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import {
   MdButtonModule, MdCardModule, MdDialogModule, MdExpansionModule, MdGridListModule, MdIconModule, MdInputModule,
-  MdListModule, MdMenuModule,
-  MdSelectModule, MdTabsModule, MdToolbarModule
+  MdListModule, MdMenuModule, MdProgressSpinnerModule,
+  MdSelectModule, MdTabsModule, MdToolbarModule, MdTooltipModule
 } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AppComponent } from './app.component';
@@ -36,6 +36,7 @@ import { BackupComponent } from './components/pages/settings/backup/backup.compo
 import { NetworkComponent } from './components/pages/settings/network/network.component';
 import { NetworkService } from './services/network.service';
 import { ChangeNameComponent } from './components/pages/wallets/change-name/change-name.component';
+import { ButtonComponent } from './components/layout/button/button.component';
 
 const ROUTES = [
   {
@@ -175,6 +176,7 @@ const ROUTES = [
     BackupComponent,
     NetworkComponent,
     ChangeNameComponent,
+    ButtonComponent,
   ],
   entryComponents: [
     CreateWalletComponent,
@@ -192,9 +194,11 @@ const ROUTES = [
     MdInputModule,
     MdListModule,
     MdMenuModule,
+    MdProgressSpinnerModule,
     MdSelectModule,
     MdTabsModule,
     MdToolbarModule,
+    MdTooltipModule,
     NgxDatatableModule,
     NoopAnimationsModule,
     ReactiveFormsModule,

@@ -1,0 +1,6 @@
+<button type="submit" md-raised-button color="primary" [disabled]="disabled()" [mdTooltip]="error ? error : null">
+  {{ placeholder }}
+  <md-icon *ngIf="state === 1">done</md-icon>
+  <md-icon *ngIf="state === 2">error</md-icon>
+  <md-spinner *ngIf="state === 0" class="in-button"></md-spinner>
+</button>

@@ -259,7 +259,7 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 		addrStrArray[i] = a.String()
 	}
 
-	return CreateRawTransaction(c, wlt, addrStrArray, chgAddr, toAddrs)
+	return CreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs)
 }
 
 // Creates a transaction from a specific address in a wallet
@@ -299,11 +299,11 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
-	return CreateRawTransaction(c, wlt, []string{addr}, chgAddr, toAddrs)
+	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs)
 }
 
 // Creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTransaction(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
+func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// get unspent outputs of those addresses
 	unspents, err := c.GetUnspentOutputs(inAddrs)
 	if err != nil {
@@ -366,27 +366,32 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 		totalOutAmt += to.Coins
 	}
 
+	// Convert out amounts to droplets. The value in SendAmount is in whole skycoins.
+	totalOutAmt *= 1e6
+
 	if totalInAmt < totalOutAmt {
 		return nil, errors.New("amount is not sufficient")
 	}
 
 	outAddrs := []coin.TransactionOutput{}
-	chgAmt := totalInAmt - totalOutAmt*1e6
+	chgAmt := totalInAmt - totalOutAmt
+	// FIXME: Why divide by 4 here?
 	chgHours := totalInHours / 4
 	addrHours := chgHours / uint64(len(toAddrs))
 	if chgAmt > 0 {
 		// generate a change address
+		// FIXME: Why divide chgHours by 2 again, already divided by 4?
 		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, chgAmt, chgHours/2))
 	}
 
-	for _, arg := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(arg.Addr, arg.Coins*1e6, addrHours))
+	for _, to := range toAddrs {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins*1e6, addrHours))
 	}
 
 	return outAddrs, nil
 }
 
-func mustMakeUtxoOutput(addr string, amount uint64, hours uint64) coin.TransactionOutput {
+func mustMakeUtxoOutput(addr string, amount, hours uint64) coin.TransactionOutput {
 	uo := coin.TransactionOutput{}
 	uo.Address = cipher.MustDecodeBase58Address(addr)
 	uo.Coins = amount

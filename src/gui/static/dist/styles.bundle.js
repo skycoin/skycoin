@@ -43,7 +43,7 @@ exports.i(__webpack_require__("../../../../css-loader/index.js?{\"sourceMap\":fa
 exports.i(__webpack_require__("../../../../css-loader/index.js?{\"sourceMap\":false,\"importLoaders\":1}!../../../../postcss-loader/index.js?{\"ident\":\"postcss\"}!../../../../@swimlane/ngx-datatable/release/themes/material.css"), "");
 
 // module
-exports.push([module.i, "/* You can add global styles to this file, and also import other style files */\n\nbutton, md-panel-description, md-panel-title {\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\n}\n\nbody {\n  background-color: #eee;\n  margin: 0;\n  padding: 0;\n}\n\nheader {\n  background: url(" + __webpack_require__("../../../../../src/assets/header.png") + ") center center / cover, linear-gradient(-155deg, #686e96 0%, #373b5c 100%);\n  width: 100%;\n  height: 300px;\n}\n\nmd-expansion-panel {\n  margin-top: 20px !important;\n}\n\n.header-container {\n  max-width: 848px;\n  text-align: center;\n  padding-top: 40px;\n  margin-right: auto;\n  margin-left: auto;\n}\n\n.header-container h1 {\n  font-size: 3em;\n  color: white;\n}\n\n.button-line {\n  margin-top: 40px;\n  text-align: right;\n}\n\n.datatable-row-group {\n  cursor: pointer;\n}\n\nbutton.active {\n  background-color: rgba(0,0,0,.12);\n}\n\nmd-spinner.in-button .mat-spinner path {\n  stroke: #000;\n  opacity: 0.3;\n}\n", ""]);
+exports.push([module.i, "/* You can add global styles to this file, and also import other style files */\r\n\r\nbutton, md-panel-description, md-panel-title {\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nbody {\r\n  background-color: #eee;\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\nheader {\r\n  background: url(" + __webpack_require__("../../../../../src/assets/header.png") + ") center center / cover, linear-gradient(-155deg, #686e96 0%, #373b5c 100%);\r\n  width: 100%;\r\n  height: 300px;\r\n}\r\n\r\nmd-expansion-panel {\r\n  margin-top: 20px !important;\r\n}\r\n\r\n.header-container {\r\n  max-width: 848px;\r\n  text-align: center;\r\n  padding-top: 40px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.header-container h1 {\r\n  font-size: 3em;\r\n  color: white;\r\n}\r\n\r\n.button-line {\r\n  margin-top: 40px;\r\n  text-align: right;\r\n}\r\n\r\n.datatable-row-group {\r\n  cursor: pointer;\r\n}\r\n\r\nbutton.active {\r\n  background-color: rgba(0,0,0,.12);\r\n}\r\n\r\nmd-spinner.in-button .mat-spinner path {\r\n  stroke: #000;\r\n  opacity: 0.3;\r\n}\r\n\r\nsnack-bar-container {\r\n  background-color: rgba(255, 0, 0, 0.8) !important;\r\n}\r\n", ""]);
 
 // exports
 
@@ -59,6 +59,21 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 // module
 exports.push([module.i, ".ngx-datatable.material {\n  background: #FFF;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 1px 2px 0 rgba(0, 0, 0, 0.24);\n  /**\n\t * Shared Styles\n\t */\n  /**\n\t * Global Row Styles\n\t */\n  /**\n\t * Header Styles\n\t */\n  /**\n\t * Body Styles\n\t */\n  /**\n\t * Footer Styles\n\t */ }\n  .ngx-datatable.material.striped .datatable-row-odd {\n    background: #eee; }\n  .ngx-datatable.material.single-selection .datatable-body-row.active,\n  .ngx-datatable.material.single-selection .datatable-body-row.active .datatable-row-group, .ngx-datatable.material.multi-selection .datatable-body-row.active,\n  .ngx-datatable.material.multi-selection .datatable-body-row.active .datatable-row-group, .ngx-datatable.material.multi-click-selection .datatable-body-row.active,\n  .ngx-datatable.material.multi-click-selection .datatable-body-row.active .datatable-row-group {\n    background-color: #304FFE;\n    color: #FFF; }\n  .ngx-datatable.material.single-selection .datatable-body-row.active:hover,\n  .ngx-datatable.material.single-selection .datatable-body-row.active:hover .datatable-row-group, .ngx-datatable.material.multi-selection .datatable-body-row.active:hover,\n  .ngx-datatable.material.multi-selection .datatable-body-row.active:hover .datatable-row-group, .ngx-datatable.material.multi-click-selection .datatable-body-row.active:hover,\n  .ngx-datatable.material.multi-click-selection .datatable-body-row.active:hover .datatable-row-group {\n    background-color: #193AE4;\n    color: #FFF; }\n  .ngx-datatable.material.single-selection .datatable-body-row.active:focus,\n  .ngx-datatable.material.single-selection .datatable-body-row.active:focus .datatable-row-group, .ngx-datatable.material.multi-selection .datatable-body-row.active:focus,\n  .ngx-datatable.material.multi-selection .datatable-body-row.active:focus .datatable-row-group, .ngx-datatable.material.multi-click-selection .datatable-body-row.active:focus,\n  .ngx-datatable.material.multi-click-selection .datatable-body-row.active:focus .datatable-row-group {\n    background-color: #2041EF;\n    color: #FFF; }\n  .ngx-datatable.material:not(.cell-selection) .datatable-body-row:hover,\n  .ngx-datatable.material:not(.cell-selection) .datatable-body-row:hover .datatable-row-group {\n    background-color: #eee;\n    transition-property: background;\n    transition-duration: .3s;\n    transition-timing-function: linear; }\n  .ngx-datatable.material:not(.cell-selection) .datatable-body-row:focus,\n  .ngx-datatable.material:not(.cell-selection) .datatable-body-row:focus .datatable-row-group {\n    background-color: #ddd; }\n  .ngx-datatable.material.cell-selection .datatable-body-cell:hover,\n  .ngx-datatable.material.cell-selection .datatable-body-cell:hover .datatable-row-group {\n    background-color: #eee;\n    transition-property: background;\n    transition-duration: .3s;\n    transition-timing-function: linear; }\n  .ngx-datatable.material.cell-selection .datatable-body-cell:focus,\n  .ngx-datatable.material.cell-selection .datatable-body-cell:focus .datatable-row-group {\n    background-color: #ddd; }\n  .ngx-datatable.material.cell-selection .datatable-body-cell.active,\n  .ngx-datatable.material.cell-selection .datatable-body-cell.active .datatable-row-group {\n    background-color: #304FFE;\n    color: #FFF; }\n  .ngx-datatable.material.cell-selection .datatable-body-cell.active:hover,\n  .ngx-datatable.material.cell-selection .datatable-body-cell.active:hover .datatable-row-group {\n    background-color: #193AE4;\n    color: #FFF; }\n  .ngx-datatable.material.cell-selection .datatable-body-cell.active:focus,\n  .ngx-datatable.material.cell-selection .datatable-body-cell.active:focus .datatable-row-group {\n    background-color: #2041EF;\n    color: #FFF; }\n  .ngx-datatable.material .empty-row {\n    height: 50px;\n    text-align: left;\n    padding: .5rem 1.2rem;\n    vertical-align: top;\n    border-top: 0; }\n  .ngx-datatable.material .loading-row {\n    text-align: left;\n    padding: .5rem 1.2rem;\n    vertical-align: top;\n    border-top: 0; }\n  .ngx-datatable.material .datatable-header .datatable-row-left,\n  .ngx-datatable.material .datatable-body .datatable-row-left {\n    background-color: #FFF;\n    background-position: 100% 0;\n    background-repeat: repeat-y;\n    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAYAAAD5PA/NAAAAFklEQVQIHWPSkNeSBmJhTQVtbiDNCgASagIIuJX8OgAAAABJRU5ErkJggg==); }\n  .ngx-datatable.material .datatable-header .datatable-row-right,\n  .ngx-datatable.material .datatable-body .datatable-row-right {\n    background-position: 0 0;\n    background-color: #fff;\n    background-repeat: repeat-y;\n    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAYAAAD5PA/NAAAAFklEQVQI12PQkNdi1VTQ5gbSwkAsDQARLAIGtOSFUAAAAABJRU5ErkJggg==); }\n  .ngx-datatable.material .datatable-header {\n    border-bottom: 1px solid rgba(0, 0, 0, 0.12); }\n    .ngx-datatable.material .datatable-header .datatable-header-cell {\n      text-align: left;\n      padding: .5rem 1.2rem;\n      font-weight: 400;\n      color: #757575;\n      vertical-align: bottom; }\n      .ngx-datatable.material .datatable-header .datatable-header-cell .datatable-header-cell-wrapper {\n        position: relative; }\n      .ngx-datatable.material .datatable-header .datatable-header-cell.longpress .draggable::after {\n        transition: opacity 400ms ease, -webkit-transform 400ms ease;\n        transition: transform 400ms ease, opacity 400ms ease;\n        transition: transform 400ms ease, opacity 400ms ease, -webkit-transform 400ms ease;\n        opacity: .5;\n        -webkit-transform: scale(1);\n                transform: scale(1); }\n      .ngx-datatable.material .datatable-header .datatable-header-cell .draggable::after {\n        content: \" \";\n        position: absolute;\n        top: 50%;\n        left: 50%;\n        margin: -30px 0 0 -30px;\n        height: 60px;\n        width: 60px;\n        background: #eee;\n        border-radius: 100%;\n        opacity: 1;\n        -webkit-filter: none;\n                filter: none;\n        -webkit-transform: scale(0);\n                transform: scale(0);\n        z-index: 9999;\n        pointer-events: none; }\n      .ngx-datatable.material .datatable-header .datatable-header-cell.dragging .resize-handle {\n        border-right: none; }\n    .ngx-datatable.material .datatable-header .resize-handle {\n      border-right: solid 1px #eee; }\n  .ngx-datatable.material .datatable-body .datatable-row-detail {\n    background: #f5f5f5;\n    padding: 10px; }\n  .ngx-datatable.material .datatable-body .datatable-body-row .datatable-body-cell {\n    text-align: left;\n    padding: .5rem 1.2rem;\n    vertical-align: top;\n    border-top: 0;\n    transition: width 0.3s ease; }\n  .ngx-datatable.material .datatable-body .progress-linear {\n    display: block;\n    position: relative;\n    width: 100%;\n    height: 5px;\n    padding: 0;\n    margin: 0;\n    position: absolute; }\n    .ngx-datatable.material .datatable-body .progress-linear .container {\n      display: block;\n      position: relative;\n      overflow: hidden;\n      width: 100%;\n      height: 5px;\n      -webkit-transform: translate(0, 0) scale(1, 1);\n      transform: translate(0, 0) scale(1, 1);\n      background-color: #aad1f9; }\n      .ngx-datatable.material .datatable-body .progress-linear .container .bar {\n        transition: all .2s linear;\n        -webkit-animation: query 0.8s infinite cubic-bezier(0.39, 0.575, 0.565, 1);\n        animation: query 0.8s infinite cubic-bezier(0.39, 0.575, 0.565, 1);\n        transition: -webkit-transform .2s linear;\n        transition: transform .2s linear;\n        transition: transform .2s linear, -webkit-transform .2s linear;\n        background-color: #106cc8;\n        position: absolute;\n        left: 0;\n        top: 0;\n        bottom: 0;\n        width: 100%;\n        height: 5px; }\n  .ngx-datatable.material .datatable-footer {\n    border-top: 1px solid rgba(0, 0, 0, 0.12);\n    font-size: 16px; }\n    .ngx-datatable.material .datatable-footer .page-count {\n      line-height: 50px;\n      height: 50px;\n      padding: 0 1.2rem; }\n    .ngx-datatable.material .datatable-footer .datatable-pager {\n      margin: 0 10px; }\n      .ngx-datatable.material .datatable-footer .datatable-pager li {\n        vertical-align: middle; }\n        .ngx-datatable.material .datatable-footer .datatable-pager li.disabled a {\n          color: rgba(0, 0, 0, 0.26) !important;\n          background-color: transparent !important; }\n        .ngx-datatable.material .datatable-footer .datatable-pager li.active a {\n          background-color: rgba(158, 158, 158, 0.2);\n          font-weight: bold; }\n      .ngx-datatable.material .datatable-footer .datatable-pager a {\n        height: 22px;\n        min-width: 24px;\n        line-height: 22px;\n        padding: 0 6px;\n        border-radius: 3px;\n        margin: 6px 3px;\n        text-align: center;\n        vertical-align: top;\n        color: rgba(0, 0, 0, 0.54);\n        text-decoration: none;\n        vertical-align: bottom; }\n        .ngx-datatable.material .datatable-footer .datatable-pager a:hover {\n          color: rgba(0, 0, 0, 0.75);\n          background-color: rgba(158, 158, 158, 0.2); }\n      .ngx-datatable.material .datatable-footer .datatable-pager .datatable-icon-left,\n      .ngx-datatable.material .datatable-footer .datatable-pager .datatable-icon-skip,\n      .ngx-datatable.material .datatable-footer .datatable-pager .datatable-icon-right,\n      .ngx-datatable.material .datatable-footer .datatable-pager .datatable-icon-prev {\n        font-size: 20px;\n        line-height: 20px;\n        padding: 0 3px; }\n\n/**\n * Checkboxes\n**/\n.datatable-checkbox {\n  position: relative;\n  margin: 0;\n  cursor: pointer;\n  vertical-align: middle;\n  display: inline-block;\n  box-sizing: border-box;\n  padding: 10px 0; }\n  .datatable-checkbox input[type='checkbox'] {\n    position: relative;\n    margin: 0 1rem 0 0;\n    cursor: pointer;\n    outline: none; }\n    .datatable-checkbox input[type='checkbox']:before {\n      transition: all 0.3s ease-in-out;\n      content: \"\";\n      position: absolute;\n      left: 0;\n      z-index: 1;\n      width: 1rem;\n      height: 1rem;\n      border: 2px solid #f2f2f2; }\n    .datatable-checkbox input[type='checkbox']:checked:before {\n      -webkit-transform: rotate(-45deg);\n      transform: rotate(-45deg);\n      height: .5rem;\n      border-color: #009688;\n      border-top-style: none;\n      border-right-style: none; }\n    .datatable-checkbox input[type='checkbox']:after {\n      content: \"\";\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 1rem;\n      height: 1rem;\n      background: #fff;\n      cursor: pointer; }\n\n/**\n * Progress bar animations\n */\n@-webkit-keyframes query {\n  0% {\n    opacity: 1;\n    -webkit-transform: translateX(35%) scale(0.3, 1);\n            transform: translateX(35%) scale(0.3, 1); }\n  100% {\n    opacity: 0;\n    -webkit-transform: translateX(-50%) scale(0, 1);\n            transform: translateX(-50%) scale(0, 1); } }\n@keyframes query {\n  0% {\n    opacity: 1;\n    -webkit-transform: translateX(35%) scale(0.3, 1);\n            transform: translateX(35%) scale(0.3, 1); }\n  100% {\n    opacity: 0;\n    -webkit-transform: translateX(-50%) scale(0, 1);\n            transform: translateX(-50%) scale(0, 1); } }\n", ""]);
+
+// exports
+
+
+/***/ }),
+
+/***/ "../../../../css-loader/index.js?{\"sourceMap\":false,\"importLoaders\":1}!../../../../postcss-loader/index.js?{\"ident\":\"postcss\"}!../../../../material-design-icons/iconfont/material-icons.css":
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, "@font-face {\n  font-family: 'Material Icons';\n  font-style: normal;\n  font-weight: 400;\n  src: url(" + __webpack_require__("../../../../material-design-icons/iconfont/MaterialIcons-Regular.eot") + "); /* For IE6-8 */\n  src: local('Material Icons'),\n       local('MaterialIcons-Regular'),\n       url(" + __webpack_require__("../../../../material-design-icons/iconfont/MaterialIcons-Regular.woff2") + ") format('woff2'),\n       url(" + __webpack_require__("../../../../material-design-icons/iconfont/MaterialIcons-Regular.woff") + ") format('woff'),\n       url(" + __webpack_require__("../../../../material-design-icons/iconfont/MaterialIcons-Regular.ttf") + ") format('truetype');\n}\n\n.material-icons {\n  font-family: 'Material Icons';\n  font-weight: normal;\n  font-style: normal;\n  font-size: 24px;  /* Preferred icon size */\n  display: inline-block;\n  line-height: 1;\n  text-transform: none;\n  letter-spacing: normal;\n  word-wrap: normal;\n  white-space: nowrap;\n  direction: ltr;\n\n  /* Support for all WebKit browsers. */\n  -webkit-font-smoothing: antialiased;\n  /* Support for Safari and Chrome. */\n  text-rendering: optimizeLegibility;\n\n  /* Support for Firefox. */\n  -moz-osx-font-smoothing: grayscale;\n\n  /* Support for IE. */\n  -webkit-font-feature-settings: 'liga';\n          font-feature-settings: 'liga';\n}\n", ""]);
 
 // exports
 
@@ -160,6 +175,61 @@ function toComment(sourceMap) {
 	return '/*# ' + data + ' */';
 }
 
+
+/***/ }),
+
+/***/ "../../../../material-design-icons/iconfont/MaterialIcons-Regular.eot":
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__.p + "MaterialIcons-Regular.e79bfd88537def476913.eot";
+
+/***/ }),
+
+/***/ "../../../../material-design-icons/iconfont/MaterialIcons-Regular.ttf":
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__.p + "MaterialIcons-Regular.a37b0c01c0baf1888ca8.ttf";
+
+/***/ }),
+
+/***/ "../../../../material-design-icons/iconfont/MaterialIcons-Regular.woff":
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__.p + "MaterialIcons-Regular.012cf6a10129e2275d79.woff";
+
+/***/ }),
+
+/***/ "../../../../material-design-icons/iconfont/MaterialIcons-Regular.woff2":
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__.p + "MaterialIcons-Regular.570eb83859dc23dd0eec.woff2";
+
+/***/ }),
+
+/***/ "../../../../material-design-icons/iconfont/material-icons.css":
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__("../../../../css-loader/index.js?{\"sourceMap\":false,\"importLoaders\":1}!../../../../postcss-loader/index.js?{\"ident\":\"postcss\"}!../../../../material-design-icons/iconfont/material-icons.css");
+if(typeof content === 'string') content = [[module.i, content, '']];
+// add the styles to the DOM
+var update = __webpack_require__("../../../../style-loader/addStyles.js")(content, {});
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../css-loader/index.js??ref--8-1!../../postcss-loader/index.js??postcss!./material-icons.css", function() {
+			var newContent = require("!!../../css-loader/index.js??ref--8-1!../../postcss-loader/index.js??postcss!./material-icons.css");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
 
 /***/ }),
 
@@ -416,13 +486,14 @@ function updateLink(linkElement, obj) {
 
 /***/ }),
 
-/***/ 2:
+/***/ 0:
 /***/ (function(module, exports, __webpack_require__) {
 
+__webpack_require__("../../../../material-design-icons/iconfont/material-icons.css");
 module.exports = __webpack_require__("../../../../../src/styles.css");
 
 
 /***/ })
 
-},[2]);
+},[0]);
 //# sourceMappingURL=styles.bundle.js.map

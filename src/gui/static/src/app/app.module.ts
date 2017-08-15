@@ -3,7 +3,7 @@ import { NgModule } from '@angular/core';
 import {
   MdButtonModule, MdCardModule, MdDialogModule, MdExpansionModule, MdGridListModule, MdIconModule, MdInputModule,
   MdListModule, MdMenuModule, MdProgressSpinnerModule,
-  MdSelectModule, MdTabsModule, MdToolbarModule, MdTooltipModule
+  MdSelectModule, MdSnackBarModule, MdTabsModule, MdToolbarModule, MdTooltipModule
 } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AppComponent } from './app.component';
@@ -196,6 +196,7 @@ const ROUTES = [
     MdMenuModule,
     MdProgressSpinnerModule,
     MdSelectModule,
+    MdSnackBarModule,
     MdTabsModule,
     MdToolbarModule,
     MdTooltipModule,

@@ -391,6 +391,10 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 		}
 		have = have.Add(b)
 		spending = append(spending, uxa[i])
+
+		if have.Coins >= amt.Coins {
+			break
+		}
 	}
 
 	if amt.Coins > have.Coins {

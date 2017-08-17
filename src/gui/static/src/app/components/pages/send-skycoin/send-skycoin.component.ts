@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { Router } from '@angular/router';
 import 'rxjs/add/operator/delay';
+import { MdSnackBar, MdSnackBarConfig } from '@angular/material';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -21,6 +22,7 @@ export class SendSkycoinComponent implements OnInit {
     public formBuilder: FormBuilder,
     public walletService: WalletService,
     private router: Router,
+    private snackbar: MdSnackBar,
   ) {}
 
   ngOnInit() {
@@ -48,7 +50,12 @@ export class SendSkycoinComponent implements OnInit {
           this.resetForm();
           this.button.setSuccess();
         },
-        error => this.button.setError(error)
+        error => {
+          const config = new MdSnackBarConfig();
+          config.duration = 300000;
+          this.snackbar.open(error['_body'], null, config);
+          this.button.setError(error);
+        }
       );
   }
 

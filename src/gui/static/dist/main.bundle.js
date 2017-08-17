@@ -21,7 +21,7 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n", ""]);
+exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 40%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n", ""]);
 
 // exports
 
@@ -34,7 +34,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/app.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-toolbar color=\"primary\">\n  <span>Skycoin</span>\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\n  <!-- This fills the remaining space of the current row -->\n  <span class=\"fill-remaining-space\"></span>\n\n  <span>{{ walletService.sum() | async | sky }}</span>\n  <md-menu #settingsMenu=\"mdMenu\">\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\n  </md-menu>\n\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\n</md-toolbar>\n<md-toolbar>\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\n  <!-- This fills the remaining space of the current row -->\n  <span class=\"fill-remaining-space\"></span>\n\n</md-toolbar>\n<div class=\"sky-container\">\n  <router-outlet></router-outlet>\n</div>\n"
+module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">v0.20.0</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span>{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar>\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -321,9 +321,10 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["i" /* MdMenuModule */],
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["j" /* MdProgressSpinnerModule */],
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["k" /* MdSelectModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["l" /* MdTabsModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["m" /* MdToolbarModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["n" /* MdTooltipModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["l" /* MdSnackBarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["m" /* MdTabsModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["n" /* MdToolbarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["o" /* MdTooltipModule */],
             __WEBPACK_IMPORTED_MODULE_14__swimlane_ngx_datatable__["NgxDatatableModule"],
             __WEBPACK_IMPORTED_MODULE_3__angular_platform_browser_animations__["a" /* NoopAnimationsModule */],
             __WEBPACK_IMPORTED_MODULE_11__angular_forms__["a" /* ReactiveFormsModule */],
@@ -364,7 +365,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/layout/back-button/back-button.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<a md-raised-button color=\"primary\" (click)=\"onClick()\">Back</a>\n"
+module.exports = "<a md-raised-button color=\"primary\" (click)=\"onClick()\">Back</a>\r\n"
 
 /***/ }),
 
@@ -430,7 +431,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/layout/breadcrumb/breadcrumb.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<button md-button routerLink=\"\" class=\"breadcrumb\">Skycoin</button>\n\n<button md-button *ngFor=\"let breadcrumb of breadcrumbs\" [routerLink]=\"[breadcrumb.url, breadcrumb.params]\">{{ breadcrumb.label }}</button>\n\n"
+module.exports = "<button md-button routerLink=\"\" class=\"breadcrumb\">Skycoin</button>\r\n\r\n<button md-button *ngFor=\"let breadcrumb of breadcrumbs\" [routerLink]=\"[breadcrumb.url, breadcrumb.params]\">{{ breadcrumb.label }}</button>\r\n\r\n"
 
 /***/ }),
 
@@ -544,7 +545,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/layout/button/button.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<button type=\"submit\" md-raised-button color=\"primary\" [disabled]=\"disabled()\" [mdTooltip]=\"error ? error : null\">\n  {{ placeholder }}\n  <md-icon *ngIf=\"state === 1\">done</md-icon>\n  <md-icon *ngIf=\"state === 2\">error</md-icon>\n  <md-spinner *ngIf=\"state === 0\" class=\"in-button\"></md-spinner>\n</button>\n"
+module.exports = "<button type=\"submit\" md-raised-button color=\"primary\" [disabled]=\"disabled()\" [mdTooltip]=\"error ? error : null\">\r\n  {{ placeholder }}\r\n  <md-icon *ngIf=\"state === 1\">done</md-icon>\r\n  <md-icon *ngIf=\"state === 2\">error</md-icon>\r\n  <md-spinner *ngIf=\"state === 0\" class=\"in-button\"></md-spinner>\r\n</button>\r\n"
 
 /***/ }),
 
@@ -625,7 +626,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/address/address.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <md-card-title>Address <app-back-button></app-back-button></md-card-title>\n  <md-card class=\"skycoin-details\">\n    <div class=\"skycoin-detail-keys\">\n      ID: <br>\n      Transactions: <br>\n      Balance: <br>\n    </div>\n    <div class=\"skycoin-detail-values\" *ngIf=\"transactions\">\n      {{ id }} <br>\n      {{ transactions.length }} <br>\n      {{ transactions | transactionsAmount }}\n    </div>\n  </md-card>\n\n  <h3>Transactions</h3>\n  <md-expansion-panel *ngFor=\"let transaction of transactions\">\n    <md-expansion-panel-header>\n      <md-panel-title>\n        {{ transaction.txid }}\n      </md-panel-title>\n      <md-panel-description>\n        <!--{{ block.header.timestamp | dateTime }}-->\n      </md-panel-description>\n    </md-expansion-panel-header>\n    <md-list *ngIf=\"transaction\">\n      <h3 md-subheader>Inputs</h3>\n      <md-list-item *ngFor=\"let input of transaction.inputs\">\n        <h4 md-line>{{ input.owner }}</h4>\n      </md-list-item>\n      <md-divider></md-divider>\n      <h3 md-subheader>Outputs</h3>\n      <md-list-item *ngFor=\"let output of transaction.outputs\">\n        <h4 md-line>{{ output.dst }} ({{ output.coins }} SKY)</h4>\n      </md-list-item>\n    </md-list>\n    <div class=\"button-line\">\n      <a md-raised-button color=\"primary\" [routerLink]=\"['/explorer/transaction/', transaction.txid]\">Details</a>\n    </div>\n  </md-expansion-panel>\n</md-card>\n\n"
+module.exports = "<md-card>\r\n  <md-card-title>Address <app-back-button></app-back-button></md-card-title>\r\n  <md-card class=\"skycoin-details\">\r\n    <div class=\"skycoin-detail-keys\">\r\n      ID: <br>\r\n      Transactions: <br>\r\n      Balance: <br>\r\n    </div>\r\n    <div class=\"skycoin-detail-values\" *ngIf=\"transactions\">\r\n      {{ id }} <br>\r\n      {{ transactions.length }} <br>\r\n      {{ transactions | transactionsAmount }}\r\n    </div>\r\n  </md-card>\r\n\r\n  <h3>Transactions</h3>\r\n  <md-expansion-panel *ngFor=\"let transaction of transactions\">\r\n    <md-expansion-panel-header>\r\n      <md-panel-title>\r\n        {{ transaction.txid }}\r\n      </md-panel-title>\r\n      <md-panel-description>\r\n        <!--{{ block.header.timestamp | dateTime }}-->\r\n      </md-panel-description>\r\n    </md-expansion-panel-header>\r\n    <md-list *ngIf=\"transaction\">\r\n      <h3 md-subheader>Inputs</h3>\r\n      <md-list-item *ngFor=\"let input of transaction.inputs\">\r\n        <h4 md-line>{{ input.owner }}</h4>\r\n      </md-list-item>\r\n      <md-divider></md-divider>\r\n      <h3 md-subheader>Outputs</h3>\r\n      <md-list-item *ngFor=\"let output of transaction.outputs\">\r\n        <h4 md-line>{{ output.dst }} ({{ output.coins }} SKY)</h4>\r\n      </md-list-item>\r\n    </md-list>\r\n    <div class=\"button-line\">\r\n      <a md-raised-button color=\"primary\" [routerLink]=\"['/explorer/transaction/', transaction.txid]\">Details</a>\r\n    </div>\r\n  </md-expansion-panel>\r\n</md-card>\r\n\r\n"
 
 /***/ }),
 
@@ -705,7 +706,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/block/block.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <md-card-title>Block {{ block && block.header ? block.header.seq : '..' }} <app-back-button></app-back-button></md-card-title>\n  <md-card class=\"skycoin-details\">\n    <div class=\"skycoin-detail-keys\">\n      ID: <br>\n      Timestamp: <br>\n      Hash: <br>\n      Parent hash: <br>\n      Transactions: <br>\n      Total value: <br>\n    </div>\n    <div class=\"skycoin-detail-values\" *ngIf=\"block\">\n      {{ block && block.header ? block.header.seq : '' }} <br>\n      {{ block.header.timestamp | dateTime }} <br>\n      {{ block && block.header ? block.header.block_hash : '' }} <br>\n      {{ block && block.header ? block.header.previous_block_hash : '' }} <br>\n      {{ block && block.body && block.body.txns ? block.body.txns.length : '' }} <br>\n      {{ block.body.txns | transactionsAmount }}\n    </div>\n  </md-card>\n\n  <h3>Transactions</h3>\n  <div *ngIf=\"block && block.body && block.body.txns\">\n    <md-expansion-panel *ngFor=\"let transaction of block.body.txns\">\n      <md-expansion-panel-header>\n        <md-panel-title>\n          {{ transaction.txid }}\n        </md-panel-title>\n        <md-panel-description>\n          {{ block.header.timestamp | dateTime }}\n        </md-panel-description>\n      </md-expansion-panel-header>\n      <md-list *ngIf=\"transaction\">\n        <h3 md-subheader>Inputs</h3>\n        <md-list-item *ngFor=\"let input of transaction.inputs\">\n          <h4 md-line>{{ input }}</h4>\n        </md-list-item>\n        <md-divider></md-divider>\n        <h3 md-subheader>Outputs</h3>\n        <md-list-item *ngFor=\"let output of transaction.outputs\">\n          <h4 md-line>{{ output.dst }} ({{ output.coins }} SKY)</h4>\n        </md-list-item>\n      </md-list>\n      <div class=\"button-line\">\n        <a md-raised-button color=\"primary\" [routerLink]=\"['/explorer/transaction/', transaction.txid]\">Details</a>\n      </div>\n    </md-expansion-panel>\n  </div>\n</md-card>\n\n"
+module.exports = "<md-card>\r\n  <md-card-title>Block {{ block && block.header ? block.header.seq : '..' }} <app-back-button></app-back-button></md-card-title>\r\n  <md-card class=\"skycoin-details\">\r\n    <div class=\"skycoin-detail-keys\">\r\n      ID: <br>\r\n      Timestamp: <br>\r\n      Hash: <br>\r\n      Parent hash: <br>\r\n      Transactions: <br>\r\n      Total value: <br>\r\n    </div>\r\n    <div class=\"skycoin-detail-values\" *ngIf=\"block\">\r\n      {{ block && block.header ? block.header.seq : '' }} <br>\r\n      {{ block.header.timestamp | dateTime }} <br>\r\n      {{ block && block.header ? block.header.block_hash : '' }} <br>\r\n      {{ block && block.header ? block.header.previous_block_hash : '' }} <br>\r\n      {{ block && block.body && block.body.txns ? block.body.txns.length : '' }} <br>\r\n      {{ block.body.txns | transactionsAmount }}\r\n    </div>\r\n  </md-card>\r\n\r\n  <h3>Transactions</h3>\r\n  <div *ngIf=\"block && block.body && block.body.txns\">\r\n    <md-expansion-panel *ngFor=\"let transaction of block.body.txns\">\r\n      <md-expansion-panel-header>\r\n        <md-panel-title>\r\n          {{ transaction.txid }}\r\n        </md-panel-title>\r\n        <md-panel-description>\r\n          {{ block.header.timestamp | dateTime }}\r\n        </md-panel-description>\r\n      </md-expansion-panel-header>\r\n      <md-list *ngIf=\"transaction\">\r\n        <h3 md-subheader>Inputs</h3>\r\n        <md-list-item *ngFor=\"let input of transaction.inputs\">\r\n          <h4 md-line>{{ input }}</h4>\r\n        </md-list-item>\r\n        <md-divider></md-divider>\r\n        <h3 md-subheader>Outputs</h3>\r\n        <md-list-item *ngFor=\"let output of transaction.outputs\">\r\n          <h4 md-line>{{ output.dst }} ({{ output.coins }} SKY)</h4>\r\n        </md-list-item>\r\n      </md-list>\r\n      <div class=\"button-line\">\r\n        <a md-raised-button color=\"primary\" [routerLink]=\"['/explorer/transaction/', transaction.txid]\">Details</a>\r\n      </div>\r\n    </md-expansion-panel>\r\n  </div>\r\n</md-card>\r\n\r\n"
 
 /***/ }),
 
@@ -777,7 +778,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/explorer/explorer.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<ngx-datatable #table\n  class=\"material\"\n  [rows]=\"blocks\"\n  columnMode=\"flex\"\n  [headerHeight]=\"50\"\n  [footerHeight]=\"50\"\n  [rowHeight]=\"50\"\n  [limit]=\"10\"\n  [scrollbarH]=\"true\"\n  (activate)=\"onActivate($event)\">\n  <ngx-datatable-column name=\"Timestamp\" prop=\"header.timestamp\" [flexGrow]=\"1\">\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\n      {{ value | dateTime }}\n    </ng-template>\n  </ngx-datatable-column>\n  <ngx-datatable-column name=\"Block height\" prop=\"header.seq\" [flexGrow]=\"1\"></ngx-datatable-column>\n  <ngx-datatable-column name=\"Transactions\" prop=\"body.txns\" [flexGrow]=\"1\">\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\n      {{ value ? value.length : 0 }}\n    </ng-template>\n  </ngx-datatable-column>\n  <ngx-datatable-column name=\"Amount\" prop=\"body.txns\" [flexGrow]=\"1\">\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\n      {{ value | transactionsAmount }}\n    </ng-template>\n  </ngx-datatable-column>\n</ngx-datatable>\n"
+module.exports = "<ngx-datatable #table\r\n  class=\"material\"\r\n  [rows]=\"blocks\"\r\n  columnMode=\"flex\"\r\n  [headerHeight]=\"50\"\r\n  [footerHeight]=\"50\"\r\n  [rowHeight]=\"50\"\r\n  [limit]=\"10\"\r\n  [scrollbarH]=\"true\"\r\n  (activate)=\"onActivate($event)\">\r\n  <ngx-datatable-column name=\"Timestamp\" prop=\"header.timestamp\" [flexGrow]=\"1\">\r\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n      {{ value | dateTime }}\r\n    </ng-template>\r\n  </ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Block height\" prop=\"header.seq\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Transactions\" prop=\"body.txns\" [flexGrow]=\"1\">\r\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n      {{ value ? value.length : 0 }}\r\n    </ng-template>\r\n  </ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Amount\" prop=\"body.txns\" [flexGrow]=\"1\">\r\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n      {{ value | transactionsAmount }}\r\n    </ng-template>\r\n  </ngx-datatable-column>\r\n</ngx-datatable>\r\n"
 
 /***/ }),
 
@@ -938,7 +939,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n  <md-select formControlName=\"wallet_id\" placeholder=\"Wallet\" class=\"input-field\">\r\n    <md-option *ngFor=\"let wallet of walletService.all() | async\" [value]=\"wallet.meta.filename\">\r\n      {{ wallet.meta.label }} ({{ wallet.balance | sky }})\r\n    </md-option>\r\n  </md-select>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"address\" placeholder=\"Recipient address\">\r\n  </md-input-container>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"amount\" placeholder=\"Amount\">\r\n  </md-input-container>\r\n  <div class=\"button-line\">\r\n    <app-button #button placeholder=\"Send\" (click)=\"send()\"></app-button>\r\n  </div>\r\n</md-card>\r\n<!--Time, Status, Address, Amount, Transaction ID-->\r\n<md-card>\r\n  <h3>Recent transactions</h3>\r\n  <ngx-datatable #table\r\n    class=\"material\"\r\n    [rows]=\"records\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"50\"\r\n    [footerHeight]=\"50\"\r\n    [rowHeight]=\"50\"\r\n    [limit]=\"10\"\r\n    [scrollbarH]=\"true\"\r\n    (activate)=\"onActivate($event)\">\r\n    <ngx-datatable-column name=\"Timestamp\" prop=\"txn.timestamp\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value | dateTime }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Status\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" [flexGrow]=\"4\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
+module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n  <md-select formControlName=\"wallet_id\" placeholder=\"Wallet\" class=\"input-field\">\r\n    <md-option *ngFor=\"let wallet of walletService.all() | async\" [value]=\"wallet.meta.filename\" [disabled]=\"wallet.balance < 1\">\r\n      {{ wallet.meta.label }} ({{ wallet.balance | sky }})\r\n    </md-option>\r\n  </md-select>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"address\" placeholder=\"Recipient address\">\r\n  </md-input-container>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"amount\" placeholder=\"Amount\">\r\n  </md-input-container>\r\n  <div class=\"button-line\">\r\n    <app-button #button placeholder=\"Send\" (click)=\"send()\" [form]=\"form\"></app-button>\r\n  </div>\r\n</md-card>\r\n<!--Time, Status, Address, Amount, Transaction ID-->\r\n<md-card>\r\n  <h3>Recent transactions</h3>\r\n  <ngx-datatable #table\r\n    class=\"material\"\r\n    [rows]=\"records\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"50\"\r\n    [footerHeight]=\"50\"\r\n    [rowHeight]=\"50\"\r\n    [limit]=\"10\"\r\n    [scrollbarH]=\"true\"\r\n    (activate)=\"onActivate($event)\">\r\n    <ngx-datatable-column name=\"Timestamp\" prop=\"txn.timestamp\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value | dateTime }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Status\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" [flexGrow]=\"4\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
 
 /***/ }),
 
@@ -954,6 +955,7 @@ module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_router__ = __webpack_require__("../../../router/@angular/router.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay__ = __webpack_require__("../../../../rxjs/add/operator/delay.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return SendSkycoinComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -970,11 +972,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
+
 var SendSkycoinComponent = (function () {
-    function SendSkycoinComponent(formBuilder, walletService, router) {
+    function SendSkycoinComponent(formBuilder, walletService, router, snackbar) {
         this.formBuilder = formBuilder;
         this.walletService = walletService;
         this.router = router;
+        this.snackbar = snackbar;
         this.records = [];
         this.transactions = [];
     }
@@ -1001,7 +1005,12 @@ var SendSkycoinComponent = (function () {
             .subscribe(function (response) {
             _this.resetForm();
             _this.button.setSuccess();
-        }, function (error) { return _this.button.setError(error); });
+        }, function (error) {
+            var config = new __WEBPACK_IMPORTED_MODULE_6__angular_material__["t" /* MdSnackBarConfig */]();
+            config.duration = 300000;
+            _this.snackbar.open(error['_body'], null, config);
+            _this.button.setError(error);
+        });
     };
     SendSkycoinComponent.prototype.initForm = function () {
         this.form = this.formBuilder.group({
@@ -1027,10 +1036,10 @@ SendSkycoinComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_6__angular_material__["u" /* MdSnackBar */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_6__angular_material__["u" /* MdSnackBar */]) === "function" && _d || Object])
 ], SendSkycoinComponent);
 
-var _a, _b, _c;
+var _a, _b, _c, _d;
 //# sourceMappingURL=send-skycoin.component.js.map
 
 /***/ }),
@@ -1056,7 +1065,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/settings/backup/backup.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <p>Wallet Directory: {{ folder }}</p>\n\n  <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>\n</md-card>\n\n<ngx-datatable #table\n  class=\"material\"\n  [rows]=\"walletService.all() | async\"\n  columnMode=\"flex\"\n  [headerHeight]=\"50\"\n  [footerHeight]=\"50\"\n  [rowHeight]=\"50\"\n  [limit]=\"10\"\n  [scrollbarH]=\"true\">\n  <ngx-datatable-column name=\"Wallet label\" prop=\"meta.label\" [flexGrow]=\"1\"></ngx-datatable-column>\n  <ngx-datatable-column name=\"File name\" prop=\"meta.filename\" [flexGrow]=\"1\"></ngx-datatable-column>\n  <ngx-datatable-column name=\"Download\" [flexGrow]=\"1\">\n    <ng-template let-row=\"row\" ngx-datatable-cell-template>\n      <button md-raised-button color=\"primary\" (click)=\"download(row)\">Download</button>\n    </ng-template>\n  </ngx-datatable-column>\n</ngx-datatable>\n\n"
+module.exports = "<md-card>\r\n  <p>Wallet Directory: {{ folder }}</p>\r\n\r\n  <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>\r\n</md-card>\r\n\r\n<ngx-datatable #table\r\n  class=\"material\"\r\n  [rows]=\"walletService.all() | async\"\r\n  columnMode=\"flex\"\r\n  [headerHeight]=\"50\"\r\n  [footerHeight]=\"50\"\r\n  [rowHeight]=\"50\"\r\n  [limit]=\"10\"\r\n  [scrollbarH]=\"true\">\r\n  <ngx-datatable-column name=\"Wallet label\" prop=\"meta.label\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"File name\" prop=\"meta.filename\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Download\" [flexGrow]=\"1\">\r\n    <ng-template let-row=\"row\" ngx-datatable-cell-template>\r\n      <button md-raised-button color=\"primary\" (click)=\"download(row)\">Download</button>\r\n    </ng-template>\r\n  </ngx-datatable-column>\r\n</ngx-datatable>\r\n\r\n"
 
 /***/ }),
 
@@ -1133,7 +1142,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/settings/blockchain/blockchain.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <md-card-title>Blockchain</md-card-title>\n  <md-card class=\"skycoin-details\">\n    <div class=\"skycoin-detail-keys\">\n      Number of blocks: <br>\n      Time since last block: <br>\n      Hash of last block: <br>\n    </div>\n    <div class=\"skycoin-detail-values\" *ngIf=\"block && block.header\">\n      {{ block.header.seq }} <br>\n      {{ block.header.timestamp | dateFromNow }} <br>\n      {{ block.header.block_hash }}\n    </div>\n  </md-card>\n</md-card>\n\n"
+module.exports = "<md-card>\r\n  <md-card-title>Blockchain</md-card-title>\r\n  <md-card class=\"skycoin-details\">\r\n    <div class=\"skycoin-detail-keys\">\r\n      Number of blocks: <br>\r\n      Time since last block: <br>\r\n      Hash of last block: <br>\r\n    </div>\r\n    <div class=\"skycoin-detail-values\" *ngIf=\"block && block.header\">\r\n      {{ block.header.seq }} <br>\r\n      {{ block.header.timestamp | dateFromNow }} <br>\r\n      {{ block.header.block_hash }}\r\n    </div>\r\n  </md-card>\r\n</md-card>\r\n\r\n"
 
 /***/ }),
 
@@ -1200,7 +1209,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/settings/network/network.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <h3>Automatic peers</h3>\n\n  <ngx-datatable\n    class=\"material\"\n    [rows]=\"networkService.automatic() | async\"\n    columnMode=\"flex\"\n    [headerHeight]=\"40\"\n    [footerHeight]=\"40\"\n    [rowHeight]=\"40\"\n    [limit]=\"5\">\n    <ngx-datatable-column name=\"ID\" prop=\"id\" [flexGrow]=\"1\"></ngx-datatable-column>\n    <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"1\"></ngx-datatable-column>\n    <ngx-datatable-column name=\"Port\" prop=\"listen_port\" [flexGrow]=\"1\"></ngx-datatable-column>\n  </ngx-datatable>\n</md-card>\n\n<md-card>\n  <h3>Default peers</h3>\n\n  <ngx-datatable\n    class=\"material\"\n    [rows]=\"defaultConnections\"\n    columnMode=\"flex\"\n    [headerHeight]=\"40\"\n    [rowHeight]=\"50\">\n    <ngx-datatable-column name=\"ID\" prop=\"id\" [flexGrow]=\"1\"></ngx-datatable-column>\n    <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"1\"></ngx-datatable-column>\n    <ngx-datatable-column name=\"Port\" prop=\"listen_port\" [flexGrow]=\"1\"></ngx-datatable-column>\n  </ngx-datatable>\n</md-card>\n"
+module.exports = "<md-card>\r\n  <h3>Automatic peers</h3>\r\n\r\n  <ngx-datatable\r\n    class=\"material\"\r\n    [rows]=\"networkService.automatic() | async\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"40\"\r\n    [footerHeight]=\"40\"\r\n    [rowHeight]=\"40\"\r\n    [limit]=\"5\">\r\n    <ngx-datatable-column name=\"ID\" prop=\"id\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Port\" prop=\"listen_port\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n\r\n<md-card>\r\n  <h3>Default peers</h3>\r\n\r\n  <ngx-datatable\r\n    class=\"material\"\r\n    [rows]=\"defaultConnections\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"40\"\r\n    [rowHeight]=\"50\">\r\n    <ngx-datatable-column name=\"ID\" prop=\"id\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Port\" prop=\"listen_port\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
 
 /***/ }),
 
@@ -1268,7 +1277,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/settings/outputs/outputs.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<ngx-datatable #table\n               class=\"material\"\n               [rows]=\"outputs\"\n               columnMode=\"flex\"\n               [headerHeight]=\"50\"\n               [footerHeight]=\"50\"\n               [rowHeight]=\"50\"\n               [limit]=\"10\"\n               [scrollbarH]=\"true\">\n  <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"2\"></ngx-datatable-column>\n  <ngx-datatable-column name=\"Coins\" prop=\"coins\" [flexGrow]=\"1\"></ngx-datatable-column>\n  <ngx-datatable-column name=\"Hours\" prop=\"hours\" [flexGrow]=\"1\"></ngx-datatable-column>\n</ngx-datatable>\n"
+module.exports = "<ngx-datatable #table\r\n               class=\"material\"\r\n               [rows]=\"outputs\"\r\n               columnMode=\"flex\"\r\n               [headerHeight]=\"50\"\r\n               [footerHeight]=\"50\"\r\n               [rowHeight]=\"50\"\r\n               [limit]=\"10\"\r\n               [scrollbarH]=\"true\">\r\n  <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"2\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Coins\" prop=\"coins\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Hours\" prop=\"hours\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n</ngx-datatable>\r\n"
 
 /***/ }),
 
@@ -1335,7 +1344,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/settings/pending-transactions/pending-transactions.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<ngx-datatable #table\n               class=\"material\"\n               [rows]=\"transactions\"\n               columnMode=\"flex\"\n               [headerHeight]=\"50\"\n               [footerHeight]=\"50\"\n               [rowHeight]=\"50\"\n               [limit]=\"10\"\n               [scrollbarH]=\"true\"\n               (activate)=\"onActivate($event)\">\n  <ngx-datatable-column name=\"Timestamp\" prop=\"timestamp\" [flexGrow]=\"2\">\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\n      <strong>{{ value | dateTime }}</strong>\n    </ng-template>\n  </ngx-datatable-column>\n  <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\n  <ngx-datatable-column name=\"Transaction ID\" prop=\"txid\" [flexGrow]=\"8\"></ngx-datatable-column>\n</ngx-datatable>\n"
+module.exports = "<ngx-datatable #table\r\n               class=\"material\"\r\n               [rows]=\"transactions\"\r\n               columnMode=\"flex\"\r\n               [headerHeight]=\"50\"\r\n               [footerHeight]=\"50\"\r\n               [rowHeight]=\"50\"\r\n               [limit]=\"10\"\r\n               [scrollbarH]=\"true\"\r\n               (activate)=\"onActivate($event)\">\r\n  <ngx-datatable-column name=\"Timestamp\" prop=\"timestamp\" [flexGrow]=\"2\">\r\n    <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n      <strong>{{ value | dateTime }}</strong>\r\n    </ng-template>\r\n  </ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Transaction ID\" prop=\"txid\" [flexGrow]=\"8\"></ngx-datatable-column>\r\n</ngx-datatable>\r\n"
 
 /***/ }),
 
@@ -1426,7 +1435,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/transaction/transaction.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <md-card-title>Transaction <app-back-button></app-back-button></md-card-title>\n  <md-card class=\"skycoin-details\">\n    <div class=\"skycoin-detail-keys\">\n      ID: <br>\n      Timestamp: <br>\n      Block: <br>\n      Confirmed: <br>\n      Total value: <br>\n    </div>\n    <div class=\"skycoin-detail-values\">\n      {{ transaction && transaction.txn ? transaction.txn.txid : ''}} <br>\n      {{ transaction && transaction.txn ? transaction.txn.timestamp : ''}} <br>\n      {{ transaction && transaction.txn ? transaction.status.block_seq : ''}}<br>\n      {{ transaction && transaction.status ? (transaction.status.confirmed ? 'True' : 'False') : ''}} <br>\n      {{ total }}\n    </div>\n  </md-card>\n\n  <md-list *ngIf=\"transaction && transaction.txn\">\n    <h3 md-subheader>Inputs</h3>\n    <md-list-item *ngFor=\"let input of transaction.txn.inputs\">\n      <h4 md-line><button md-button [routerLink]=\"['/explorer/address/', input]\">{{ input }}</button></h4>\n    </md-list-item>\n    <md-divider></md-divider>\n    <h3 md-subheader>Outputs</h3>\n    <md-list-item *ngFor=\"let output of transaction.txn.outputs\">\n      <h4 md-line><button md-button [routerLink]=\"['/explorer/address/', output.dst]\">{{ output.dst }} ({{ output.coins }} SKY)</button></h4>\n    </md-list-item>\n  </md-list>\n</md-card>\n\n"
+module.exports = "<md-card>\r\n  <md-card-title>Transaction <app-back-button></app-back-button></md-card-title>\r\n  <md-card class=\"skycoin-details\">\r\n    <div class=\"skycoin-detail-keys\">\r\n      ID: <br>\r\n      Timestamp: <br>\r\n      Block: <br>\r\n      Confirmed: <br>\r\n      Total value: <br>\r\n    </div>\r\n    <div class=\"skycoin-detail-values\">\r\n      {{ transaction && transaction.txn ? transaction.txn.txid : ''}} <br>\r\n      {{ transaction && transaction.txn ? transaction.txn.timestamp : ''}} <br>\r\n      {{ transaction && transaction.txn ? transaction.status.block_seq : ''}}<br>\r\n      {{ transaction && transaction.status ? (transaction.status.confirmed ? 'True' : 'False') : ''}} <br>\r\n      {{ total }}\r\n    </div>\r\n  </md-card>\r\n\r\n  <md-list *ngIf=\"transaction && transaction.txn\">\r\n    <h3 md-subheader>Inputs</h3>\r\n    <md-list-item *ngFor=\"let input of transaction.txn.inputs\">\r\n      <h4 md-line><button md-button [routerLink]=\"['/explorer/address/', input]\">{{ input }}</button></h4>\r\n    </md-list-item>\r\n    <md-divider></md-divider>\r\n    <h3 md-subheader>Outputs</h3>\r\n    <md-list-item *ngFor=\"let output of transaction.txn.outputs\">\r\n      <h4 md-line><button md-button [routerLink]=\"['/explorer/address/', output.dst]\">{{ output.dst }} ({{ output.coins }} SKY)</button></h4>\r\n    </md-list-item>\r\n  </md-list>\r\n</md-card>\r\n\r\n"
 
 /***/ }),
 
@@ -1502,7 +1511,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-list>\n  <h3 md-subheader>Addresses</h3>\n  <md-list-item *ngFor=\"let address of wallet.entries\">\n    <md-icon md-list-icon>note</md-icon>\n    <h4 md-line>{{address.address}} - {{ address.balance | sky }}</h4>\n  </md-list-item>\n  <div class=\"button-line\">\n    <a md-raised-button color=\"primary\" (click)=\"renameWallet()\">Rename wallet</a>\n    <a md-raised-button color=\"primary\" (click)=\"addAddress()\">Add address</a>\n  </div>\n</md-list>\n"
+module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-item *ngFor=\"let address of wallet.entries\">\r\n    <md-icon md-list-icon>note</md-icon>\r\n    <h4 md-line>{{address.address}} - {{ address.balance | sky }}</h4>\r\n  </md-list-item>\r\n  <div class=\"button-line\">\r\n    <a md-raised-button color=\"primary\" (click)=\"renameWallet()\">Rename wallet</a>\r\n    <a md-raised-button color=\"primary\" (click)=\"addAddress()\">Add address</a>\r\n  </div>\r\n</md-list>\r\n"
 
 /***/ }),
 
@@ -1542,7 +1551,7 @@ var WalletDetailComponent = (function () {
     };
     WalletDetailComponent.prototype.renameWallet = function () {
         var _this = this;
-        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogConfig */]();
+        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogConfig */]();
         config.width = '500px';
         config.data = this.wallet;
         this.dialog.open(__WEBPACK_IMPORTED_MODULE_4__change_name_change_name_component__["a" /* ChangeNameComponent */], config).afterClosed().subscribe(function (result) {
@@ -1563,7 +1572,7 @@ WalletDetailComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialog */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["s" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["s" /* MdDialog */]) === "function" && _c || Object])
 ], WalletDetailComponent);
 
 var _a, _b, _c;
@@ -1592,7 +1601,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/change-name/change-name.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<div [formGroup]=\"form\">\n  <md-input-container>\n    <input mdInput formControlName=\"label\" placeholder=\"Label\">\n  </md-input-container>\n</div>\n<div class=\"button-line\">\n  <a md-raised-button (click)=\"rename()\">Rename</a>\n</div>\n"
+module.exports = "<div [formGroup]=\"form\">\r\n  <md-input-container>\r\n    <input mdInput formControlName=\"label\" placeholder=\"Label\">\r\n  </md-input-container>\r\n</div>\r\n<div class=\"button-line\">\r\n  <a md-raised-button (click)=\"rename()\">Rename</a>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -1652,8 +1661,8 @@ ChangeNameComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.css")]
     }),
-    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["o" /* MD_DIALOG_DATA */])),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
+    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MD_DIALOG_DATA */])),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
 ], ChangeNameComponent);
 
 var _a, _b, _c, _d;
@@ -1682,7 +1691,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<div [formGroup]=\"form\">\n  <md-input-container>\n    <input mdInput formControlName=\"label\" placeholder=\"Label\">\n  </md-input-container>\n  <md-input-container>\n    <textarea mdInput formControlName=\"seed\" row=\"5\" placeholder=\"Seed\"></textarea>\n  </md-input-container>\n</div>\n<div class=\"button-line\">\n  <a md-raised-button (click)=\"generateSeed()\">New Seed</a>\n  <a md-raised-button color=\"primary\" (click)=\"createWallet()\">Create</a>\n</div>\n"
+module.exports = "<div [formGroup]=\"form\">\r\n  <md-input-container>\r\n    <input mdInput formControlName=\"label\" placeholder=\"Label\">\r\n  </md-input-container>\r\n  <md-input-container>\r\n    <textarea mdInput formControlName=\"seed\" row=\"5\" placeholder=\"Seed\"></textarea>\r\n  </md-input-container>\r\n</div>\r\n<div class=\"button-line\">\r\n  <a md-raised-button (click)=\"generateSeed()\">New Seed</a>\r\n  <a md-raised-button color=\"primary\" (click)=\"createWallet()\">Create</a>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -1741,7 +1750,7 @@ CreateWalletComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
 ], CreateWalletComponent);
 
 var _a, _b, _c;
@@ -1770,7 +1779,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/wallets.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all() | async\">\n  <md-expansion-panel-header>\n    <md-panel-title>\n      {{ wallet.meta.label }}\n    </md-panel-title>\n    <md-panel-description>\n      {{ wallet.balance | sky }}\n    </md-panel-description>\n  </md-expansion-panel-header>\n  <app-wallet-detail [wallet]=\"wallet\"></app-wallet-detail>\n</md-expansion-panel>\n<div class=\"button-line\">\n  <a md-raised-button color=\"primary\" (click)=\"addWallet()\">Add wallet</a>\n</div>\n"
+module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all() | async\">\r\n  <md-expansion-panel-header>\r\n    <md-panel-title>\r\n      {{ wallet.meta.label }}\r\n    </md-panel-title>\r\n    <md-panel-description>\r\n      {{ wallet.balance | sky }}\r\n    </md-panel-description>\r\n  </md-expansion-panel-header>\r\n  <app-wallet-detail [wallet]=\"wallet\"></app-wallet-detail>\r\n</md-expansion-panel>\r\n<div class=\"button-line\">\r\n  <a md-raised-button color=\"primary\" (click)=\"addWallet()\">Add wallet</a>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -1802,7 +1811,7 @@ var WalletsComponent = (function () {
         this.dialog = dialog;
     }
     WalletsComponent.prototype.addWallet = function () {
-        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["q" /* MdDialogConfig */]();
+        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["r" /* MdDialogConfig */]();
         config.width = '500px';
         this.dialog.open(__WEBPACK_IMPORTED_MODULE_3__create_wallet_create_wallet_component__["a" /* CreateWalletComponent */], config).afterClosed().subscribe(function (result) {
             //
@@ -1816,7 +1825,7 @@ WalletsComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/wallets.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/wallets.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["r" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["r" /* MdDialog */]) === "function" && _b || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialog */]) === "function" && _b || Object])
 ], WalletsComponent);
 
 var _a, _b;
@@ -1997,10 +2006,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 var ApiService = (function () {
+    // private url = '/api/'; // test
     function ApiService(http) {
         this.http = http;
-        // private url = 'http://127.0.0.1:6420/'; // production
-        this.url = '/api/'; // test
+        this.url = 'http://127.0.0.1:6420/'; // production
     }
     ApiService.prototype.get = function (url, options) {
         if (options === void 0) { options = null; }
@@ -2679,7 +2688,7 @@ webpackContext.id = "../../../../moment/locale recursive ^\\.\\/.*$";
 
 /***/ }),
 
-/***/ 0:
+/***/ 1:
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__("../../../../../src/main.ts");
@@ -2687,5 +2696,5 @@ module.exports = __webpack_require__("../../../../../src/main.ts");
 
 /***/ })
 
-},[0]);
+},[1]);
 //# sourceMappingURL=main.bundle.js.map

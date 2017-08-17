@@ -1,6 +1,6 @@
 <md-card [formGroup]="form" class="send-skycoin-form">
   <md-select formControlName="wallet_id" placeholder="Wallet" class="input-field">
-    <md-option *ngFor="let wallet of walletService.all() | async" [value]="wallet.meta.filename">
+    <md-option *ngFor="let wallet of walletService.all() | async" [value]="wallet.meta.filename" [disabled]="wallet.balance < 1">
       {{ wallet.meta.label }} ({{ wallet.balance | sky }})
     </md-option>
   </md-select>
@@ -11,7 +11,7 @@
     <input mdInput formControlName="amount" placeholder="Amount">
   </md-input-container>
   <div class="button-line">
-    <app-button #button placeholder="Send" (click)="send()"></app-button>
+    <app-button #button placeholder="Send" (click)="send()" [form]="form"></app-button>
   </div>
 </md-card>
 <!--Time, Status, Address, Amount, Transaction ID-->

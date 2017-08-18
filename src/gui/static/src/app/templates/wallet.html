@@ -114,7 +114,7 @@
                         <div class="form-group">
                             <label class="col-sm-2 control-label">Amount:</label>
                             <div class="col-sm-6">
-                                <input type="number" #spendamount class="form-control" value="0">
+                                <input type="number" #spendamount class="form-control" value="1" min="0">
                             </div>
                         </div>
                         <div class="form-group">
@@ -132,7 +132,7 @@
                         <div class="form-group">
                             <label class="col-sm-2 control-label"></label>
                             <div class="col-sm-6">
-                                <button type="button" class="btn btn-default" [disabled]="!isValidAddress" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
+                                <button type="button" class="btn btn-default" [disabled]="!isValidAddress || !spendamount.value" (click)="spend(spendid, spendaddress.value, spendamount.value)">Send</button>
                             </div>
                         </div>
                     </form>
@@ -163,18 +163,23 @@
 
             <div tab-content-transclude="tab" [class.active]="displayMode === displayModeEnum.third" class="tab-pane ng-scope">
                 <div class="outline ng-scope">
-                    <form class="form-horizontal" (keyup.enter)="searchHistory(historySearchKey.value)" (submit)="searchHistory(historySearchKey.value)">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Search:</label>
-                            <div class="col-sm-6">
-                                <input #historySearchKey placeholder="Address or Transaction ID" class="form-control">
-                            </div>
-                            <div class="col-sm-4">
-                                <button type="submit" class="btn btn-default">Search</button>
+                    <div class="row">
+                        <div class="col-lg-3"></div>
+                        <div class="col-lg-6">
+                            <div class="input-group full-input">
+                                <input id="historySearchKey" [(ngModel)]="historySearchKey" placeholder="Address or Transaction ID" class="form-control" (keyup)="keyUp.next($event)">
+                                <span *ngIf="historySearchKey === ''" class="glyphicon glyphicon-search form-control-feedback"></span>
                             </div>
                         </div>
-                    </form>
-                    <div style="width:100%;overflow:auto;">
+                        <div class="col-lg-3" style="height:34px;line-height:34px;">
+                            <p *ngIf="searchHistoryAnimation">
+                                <i class="fa fa-spinner fa-spin fa-2x fa-fw"></i>
+                                <span>Loading...</span>
+                            </p>
+                              <p *ngIf="!searchHistoryAnimation" class="historyRecord">Total: <span class="number">{{userTransactions?.length}}</span></p>  
+                        </div>
+                        </div>
+                    <div class="historyBox">
                         <table id="transaction-table" class="table">
                             <thead>
                             <tr class="dark-row">
@@ -193,7 +198,11 @@
                             </tr>
                             </thead>
                             <tbody>
-
+                            <tr *ngIf="userTransactions?.length <= 0">
+                                <td colspan="7" class="noHistories">
+                                    no histories
+                                </td>
+                            </tr>
                             <tr *ngFor="let trnsObj of userTransactions">
                                 <td *ngIf="trnsObj.type == 'confirmed'">{{getDateTimeString(trnsObj.actualTransaction.timestamp)}}</td>
                                 <td *ngIf="trnsObj.type == 'pending'" >NA</td>

@@ -395,3 +395,22 @@ label {
 .custom-link:hover {
     color: blue;
 }
+.noHistories {
+    text-align: center !important;
+    color: #999;
+}
+.historyBox {
+    width:100%;
+    overflow:auto;
+    margin-top: 1rem;
+}
+.full-input {
+    width: 100%;
+}
+.historyRecord {
+    font-size: 1.6rem;
+}
+
+.historyRecord .number {
+    color: #d00000;
+}

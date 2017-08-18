@@ -606,6 +606,7 @@ func TestPoolSendMessage(t *testing.T) {
 	cfg.Address = address
 	cfg.Port = uint16(port)
 	cfg.WriteTimeout = time.Second
+	cfg.BroadcastResultSize = 1
 	// cfg.ConnectionWriteQueueSize = 1
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
@@ -626,10 +627,11 @@ func TestPoolSendMessage(t *testing.T) {
 	p.SendMessage(c.Addr(), m)
 
 	// queue full
-	for i := 0; i < cap(c.WriteQueue); i++ {
+	for i := 0; i < cap(c.WriteQueue)+1; i++ {
 		c.WriteQueue <- m
 	}
 
+	fmt.Printf("%v\n", len(c.WriteQueue))
 	err = p.SendMessage(c.Addr(), m)
 	assert.Equal(t, ErrDisconnectWriteQueueFull, err)
 }

@@ -167,17 +167,6 @@ func (wlts Wallets) Save(dir string) map[string]error {
 	return errs
 }
 
-// GetAddressSet get all addresses.
-func (wlts Wallets) GetAddressSet() map[cipher.Address]byte {
-	set := make(map[cipher.Address]byte)
-	for _, w := range wlts {
-		for _, a := range w.GetAddresses() {
-			set[a] = byte(1)
-		}
-	}
-	return set
-}
-
 func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
 	var rw []*ReadableWallet
 	for _, w := range wlts {

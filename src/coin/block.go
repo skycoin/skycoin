@@ -217,3 +217,28 @@ func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 	}
 	return uxo
 }
+
+// CreateUnspent creates single unspent output
+func CreateUnspent(bh BlockHeader, tx Transaction, outIndex int) (UxOut, error) {
+	if len(tx.Out) <= outIndex {
+		return UxOut{}, fmt.Errorf("Transaction out index is overflow")
+	}
+
+	var h cipher.SHA256
+	if bh.BkSeq != 0 {
+		h = tx.Hash()
+	}
+
+	return UxOut{
+		Head: UxHead{
+			Time:  bh.Time,
+			BkSeq: bh.BkSeq,
+		},
+		Body: UxBody{
+			SrcTransaction: h,
+			Address:        tx.Out[outIndex].Address,
+			Coins:          tx.Out[outIndex].Coins,
+			Hours:          tx.Out[outIndex].Hours,
+		},
+	}, nil
+}

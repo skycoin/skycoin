@@ -124,13 +124,13 @@ func createUnconfirmedTxn() UnconfirmedTxn {
 func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
 	ut := createUnconfirmedTxn()
 	ut.Hash()
-	v.Unconfirmed.Txns.put(&ut)
+	v.Unconfirmed.txns.put(&ut)
 	return ut
 }
 
 func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
 	ut := createUnconfirmedTxn()
-	utp.Txns.put(&ut)
+	utp.txns.put(&ut)
 	return ut
 }
 

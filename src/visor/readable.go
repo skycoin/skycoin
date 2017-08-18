@@ -28,7 +28,7 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
 		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(v.Unconfirmed.Txns.len()),
+		Unconfirmed: uint64(v.Unconfirmed.Len()),
 	}
 }
 
@@ -435,7 +435,6 @@ type TransactionJSON struct {
 
 // TransactionToJSON convert transaction to json string
 func TransactionToJSON(tx coin.Transaction) string {
-
 	var o TransactionJSON
 
 	if err := tx.Verify(); err != nil {

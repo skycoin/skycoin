@@ -86,12 +86,12 @@ func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, er
 	return nil, nil
 }
 
-func (fg fakeGateway) InjectTransaction(txn coin.Transaction) (coin.Transaction, error) {
+func (fg fakeGateway) InjectTransaction(txn coin.Transaction) error {
 	if _, v := fg.injectRawTxMap[txn.Hash().Hex()]; v {
-		return txn, nil
+		return nil
 	}
 
-	return txn, errors.New("inject transaction failed")
+	return errors.New("inject transaction failed")
 }
 
 func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {

@@ -258,9 +258,9 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	}
 
 	return visor.ReadableOutputSet{
-		HeadOutputs:      allOutputs,
-		OutgoingOutputs:  spendingOutputs,
-		IncommingOutputs: inOutputs,
+		HeadOutputs:     allOutputs,
+		OutgoingOutputs: spendingOutputs,
+		IncomingOutputs: inOutputs,
 	}, nil
 }
 

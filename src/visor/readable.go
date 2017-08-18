@@ -184,9 +184,9 @@ type ReadableOutput struct {
 
 // ReadableOutputSet records unspent outputs in different status.
 type ReadableOutputSet struct {
-	HeadOutputs      []ReadableOutput `json:"head_outputs"`
-	OutgoingOutputs  []ReadableOutput `json:"outgoing_outputs"`
-	IncommingOutputs []ReadableOutput `json:"incoming_outputs"`
+	HeadOutputs     []ReadableOutput `json:"head_outputs"`
+	OutgoingOutputs []ReadableOutput `json:"outgoing_outputs"`
+	IncomingOutputs []ReadableOutput `json:"incoming_outputs"`
 }
 
 // SpendableOutputs caculates the spendable unspent outputs

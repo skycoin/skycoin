@@ -1,13 +1,13 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
-func sendCMD() gcli.Command {
+func sendCmd() gcli.Command {
 	name := "send"
 	return gcli.Command{
 		Name:      name,
@@ -16,13 +16,13 @@ func sendCMD() gcli.Command {
 		Description: `
 		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
 
-        If you are sending from a wallet the coins will be taken recursively from all 
-        addresses within the wallet starting with the first address until the amount of 
-        the transaction is met. 
-        
-        Use caution when using the “-p” command. If you have command history enabled 
-        your wallet encryption password can be recovered from the history log. 
-        If you do not include the “-p” option you will be prompted to enter your password 
+        If you are sending from a wallet the coins will be taken recursively from all
+        addresses within the wallet starting with the first address until the amount of
+        the transaction is met.
+
+        Use caution when using the “-p” command. If you have command history enabled
+        your wallet encryption password can be recovered from the history log.
+        If you do not include the “-p” option you will be prompted to enter your password
         after you enter your command.`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
@@ -35,7 +35,7 @@ func sendCMD() gcli.Command {
 			},
 			gcli.StringFlag{
 				Name: "c",
-				Usage: `[changeAddress] Specify change address, by default the from address or 
+				Usage: `[changeAddress] Specify change address, by default the from address or
 				the wallet's coinbase address will be used`,
 			},
 			// gcli.StringFlag{
@@ -54,36 +54,52 @@ func sendCMD() gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rawtx, err := createRawTransaction(c)
+			rpcClient := RpcClientFromContext(c)
+
+			rawtx, err := createRawTx(c)
 			if err != nil {
 				errorWithHelp(c, err)
 				return nil
-				// return err
 			}
 
-			txid, err := broadcastTx(rawtx)
+			txid, err := rpcClient.InjectTransaction(rawtx)
 			if err != nil {
 				return err
 			}
 
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				var rlt = struct {
+				return printJson(struct {
 					Txid string `json:"txid"`
 				}{
-					txid,
-				}
-				d, err := json.MarshalIndent(rlt, "", "    ")
-				if err != nil {
-					return errJSONMarshal
-				}
-				fmt.Println(string(d))
-			} else {
-				fmt.Printf("txid:%s\n", txid)
+					Txid: txid,
+				})
 			}
 
+			fmt.Printf("txid:%s\n", txid)
 			return nil
 		},
 	}
 	// Commands = append(Commands, cmd)
+}
+
+// Sends from any address or combination of addresses from a wallet. Returns txid.
+func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+	rawTx, err := CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs)
+	if err != nil {
+		return "", err
+	}
+
+	return c.InjectTransaction(rawTx)
+}
+
+// Sends from a specific address in a wallet. Returns txid.
+func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+	rawTx, err := CreateRawTxFromAddress(c, addr, walletFile, chgAddr, toAddrs)
+	if err != nil {
+		return "", err
+	}
+
+	return c.InjectTransaction(rawTx)
+
 }

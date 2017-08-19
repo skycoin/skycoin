@@ -1,4 +1,50 @@
 {
+  "_args": [
+    [
+      {
+        "raw": "rxjs@5.0.0-beta.6",
+        "scope": null,
+        "escapedName": "rxjs",
+        "name": "rxjs",
+        "rawSpec": "5.0.0-beta.6",
+        "spec": "5.0.0-beta.6",
+        "type": "version"
+      },
+      "C:\\Users\\Sam\\Documents\\Skycoin\\skycoin\\skycoin\\src\\gui\\static"
+    ]
+  ],
+  "_from": "rxjs@5.0.0-beta.6",
+  "_id": "rxjs@5.0.0-beta.6",
+  "_inCache": true,
+  "_location": "/rxjs",
+  "_nodeVersion": "5.0.0",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/rxjs-5.0.0-beta.6.tgz_1460493695519_0.9258141233585775"
+  },
+  "_npmUser": {
+    "name": "blesh",
+    "email": "ben@benlesh.com"
+  },
+  "_npmVersion": "3.7.3",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "rxjs@5.0.0-beta.6",
+    "scope": null,
+    "escapedName": "rxjs",
+    "name": "rxjs",
+    "rawSpec": "5.0.0-beta.6",
+    "spec": "5.0.0-beta.6",
+    "type": "version"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/rxjs/-/rxjs-5.0.0-beta.6.tgz",
+  "_shasum": "cb6dc46d6ddfedfeefc9b15dafd09c34a4370d23",
+  "_shrinkwrap": null,
+  "_spec": "rxjs@5.0.0-beta.6",
+  "_where": "C:\\Users\\Sam\\Documents\\Skycoin\\skycoin\\skycoin\\src\\gui\\static",
   "author": {
     "name": "Ben Lesh",
     "email": "blesh@netflix.com"
@@ -6,7 +52,6 @@
   "bugs": {
     "url": "https://github.com/ReactiveX/RxJS/issues"
   },
-  "bundleDependencies": false,
   "config": {
     "commitizen": {
       "path": "node_modules/cz-conventional-changelog"
@@ -41,7 +86,7 @@
       "email": "andre@staltz.com"
     }
   ],
-  "deprecated": false,
+  "dependencies": {},
   "description": "Reactive Extensions for modern JavaScript",
   "devDependencies": {
     "babel-polyfill": "^6.7.2",
@@ -93,6 +138,11 @@
     "webpack": "^1.12.14",
     "xmlhttprequest": "1.8.0"
   },
+  "directories": {},
+  "dist": {
+    "shasum": "cb6dc46d6ddfedfeefc9b15dafd09c34a4370d23",
+    "tarball": "https://registry.npmjs.org/rxjs/-/rxjs-5.0.0-beta.6.tgz"
+  },
   "engines": {
     "npm": ">=2.0.0"
   },
@@ -111,11 +161,24 @@
   ],
   "license": "Apache-2.0",
   "main": "Rx.js",
+  "maintainers": [
+    {
+      "name": "blesh",
+      "email": "ben@benlesh.com"
+    },
+    {
+      "name": "jeffbcross",
+      "email": "middlefloor@gmail.com"
+    }
+  ],
   "name": "rxjs",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/ReactiveX/RxJS.git"
   },
+  "scripts": {},
   "scripts-info": {
     "info": "List available script",
     "build_all": "Build all packages(ES6, CJS, AMD, Global) and generate packages",

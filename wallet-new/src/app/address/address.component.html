@@ -1,9 +1,0 @@
-<qr-code [value]="selectedAddress" [size]="360"></qr-code>
-<!-- Dropdown Structure -->
-<h6>{{addresses[0]}}</h6>
-<div class="row">
-  <span *ngFor="let address of addresses;" (click)="handleTap(address)">
-    {{address}}
-  </span>
-</div>
-

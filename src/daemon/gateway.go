@@ -10,6 +10,8 @@ import (
 
 	"fmt"
 
+	"path/filepath"
+
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -256,9 +258,9 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	}
 
 	return visor.ReadableOutputSet{
-		HeadOutputs:      allOutputs,
-		OutgoingOutputs:  spendingOutputs,
-		IncommingOutputs: inOutputs,
+		HeadOutputs:     allOutputs,
+		OutgoingOutputs: spendingOutputs,
+		IncomingOutputs: inOutputs,
 	}, nil
 }
 
@@ -336,9 +338,9 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 }
 
 // InjectTransaction injects transaction
-func (gw *Gateway) InjectTransaction(txn coin.Transaction) (tx coin.Transaction, err error) {
+func (gw *Gateway) InjectTransaction(txn coin.Transaction) (err error) {
 	gw.strand(func() {
-		tx, err = gw.d.Visor.InjectTransaction(txn, gw.d.Pool)
+		err = gw.d.Visor.InjectTransaction(txn, gw.d.Pool)
 	})
 	return
 }
@@ -421,17 +423,79 @@ func (gw *Gateway) GetLastTxs() (txns []*visor.Transaction, err error) {
 // GetUnspent returns the unspent pool
 func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
 	gw.strand(func() {
-		unspent = gw.vrpc.GetUnspent(gw.v)
+		unspent = gw.v.Blockchain.Unspent()
 	})
 	return
+}
+
+// impelemts the wallet.Validator interface
+type spendValidator struct {
+	uncfm   *visor.UnconfirmedTxnPool
+	unspent *blockdb.UnspentPool
+}
+
+func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent *blockdb.UnspentPool) *spendValidator {
+	return &spendValidator{
+		uncfm:   uncfm,
+		unspent: unspent,
+	}
+}
+
+func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
+	aux, err := sv.uncfm.SpendsOfAddresses(addr, sv.unspent)
+	if err != nil {
+		return false, err
+	}
+
+	return len(aux) > 0, nil
+}
+
+// Spend spends coins from given wallet and broadcast it,
+// return transaction or error.
+func (gw *Gateway) Spend(wlt wallet.Wallet,
+	amt wallet.Balance,
+	dest cipher.Address) (*coin.Transaction, error) {
+	var err error
+	var tx *coin.Transaction
+	gw.strand(func() {
+		// create spend validator
+		unspent := gw.v.Blockchain.Unspent()
+		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+		// create and sign transaction
+		tx, err = wlt.CreateAndSignTransaction(sv,
+			unspent,
+			gw.v.Blockchain.Head().Time(),
+			amt,
+			dest)
+		if err != nil {
+			err = fmt.Errorf("Create transaction failed: %v", err)
+			return
+		}
+
+		// inject transaction
+		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
+			err = fmt.Errorf("Inject transaction failed: %v", err)
+		}
+	})
+
+	return tx, err
 }
 
 // CreateSpendingTransaction creates spending transactions
 func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 	amt wallet.Balance,
-	dest cipher.Address) (tx coin.Transaction, err error) {
+	dest cipher.Address) (tx *coin.Transaction, err error) {
 	gw.strand(func() {
-		tx, err = gw.vrpc.CreateSpendingTransaction(gw.v, wlt, amt, dest)
+		// generate spend validator
+		unspent := gw.v.Blockchain.Unspent()
+		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+
+		// create and sign transaction
+		tx, err = wlt.CreateAndSignTransaction(sv,
+			unspent,
+			gw.v.Blockchain.Head().Time(),
+			amt,
+			dest)
 	})
 	return
 }
@@ -439,17 +503,23 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 // WalletBalance returns balance pair of specific wallet
 func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
+		addrs := wlt.GetAddresses()
+		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
 
-		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(wlt.GetAddresses())
-
-		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, wlt.GetAddresses())
+		spendUxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
 		if err != nil {
-			err = fmt.Errorf("get unconfimed spends failed when checking wallet balance: %v", err)
+			err = fmt.Errorf("get unconfimed spending failed when checking wallet balance: %v", err)
+			return
+		}
+
+		recvUxs, err := gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
+		if err != nil {
+			err = fmt.Errorf("get unconfirmed receiving failed when when checking wallet balance: %v", err)
 			return
 		}
 
 		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(puxs))
+		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
@@ -462,19 +532,31 @@ func (gw *Gateway) WalletBalance(wlt wallet.Wallet) (balance wallet.BalancePair,
 func (gw *Gateway) AddressesBalance(addrs []cipher.Address) (balance wallet.BalancePair, err error) {
 	gw.strand(func() {
 		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
-
-		puxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
+		spendUxs, err := gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
 		if err != nil {
-			err = fmt.Errorf("get unconfirmed spends failed when checking addresses balance: %v", err)
+			err = fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
 			return
 		}
 
+		recvUxs, err := gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
+		if err != nil {
+			err = fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
+			return
+		}
+
+		uxs := auxs.Sub(spendUxs)
+		uxs = uxs.Add(recvUxs)
 		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(puxs))
+		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
 		}
 	})
 	return
+}
+
+// GetWalletDir returns path for storing wallet files
+func (gw *Gateway) GetWalletDir() string {
+	return filepath.Join(gw.d.Config.DataDirectory, "wallets")
 }

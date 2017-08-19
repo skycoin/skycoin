@@ -295,7 +295,7 @@ func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 }
 
 // InjectTransaction injects transaction
-func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Transaction, error) {
+func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error
 	vs.strand(func() {
 		err = visor.VerifyTransactionFee(vs.v.Blockchain, &txn)
@@ -315,7 +315,7 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) (coin.Trans
 		}
 		vs.BroadcastTransaction(txn, pool)
 	})
-	return txn, err
+	return err
 }
 
 // ResendTransaction resends a known UnconfirmedTxn.
@@ -387,7 +387,7 @@ func (vs *Visor) RecordBlockchainLength(addr string, bkLen uint64) {
 func (vs *Visor) EstimateBlockchainLength() uint64 {
 	var maxLen uint64
 	vs.strand(func() {
-		ourLen := vs.v.HeadBkSeq() + 1
+		ourLen := vs.v.HeadBkSeq()
 		if len(vs.blockchainLengths) < 2 {
 			maxLen = ourLen
 			return
@@ -716,7 +716,7 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 			hashes = append(hashes, txn.Hash())
 		} else {
 			if !known {
-				logger.Warning("Failed to record txn: %v", err)
+				logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
 			} else {
 				logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
 			}

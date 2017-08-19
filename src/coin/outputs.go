@@ -211,6 +211,23 @@ func (auo AddressUxOuts) Sub(other AddressUxOuts) AddressUxOuts {
 	return ox
 }
 
+// Add returns a new unspents, with merged unspents
+func (auo AddressUxOuts) Add(other AddressUxOuts) AddressUxOuts {
+	ox := make(AddressUxOuts, len(auo))
+	for a, o := range auo {
+		ox[a] = o
+	}
+
+	for a, uxs := range other {
+		if suxs, ok := ox[a]; ok {
+			ox[a] = suxs.Add(uxs)
+		} else {
+			ox[a] = uxs
+		}
+	}
+	return ox
+}
+
 // Sub returns a new UxArray with elements in other removed from self
 // Deprecate
 func (ua UxArray) Sub(other UxArray) UxArray {
@@ -222,4 +239,15 @@ func (ua UxArray) Sub(other UxArray) UxArray {
 		}
 	}
 	return uxa
+}
+
+// Add returns a new UxArray with merged elements
+func (ua UxArray) Add(other UxArray) UxArray {
+	m := ua.Set()
+	for i := range other {
+		if _, ok := m[other[i].Hash()]; !ok {
+			ua = append(ua, other[i])
+		}
+	}
+	return ua
 }

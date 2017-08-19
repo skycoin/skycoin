@@ -179,28 +179,19 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.Rea
 }
 
 // InjectTransaction mocked method
-func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) (coin.Transaction, error) {
+func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) error {
 
 	ret := m.Called(p0)
 
-	var r0 coin.Transaction
+	var r0 error
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case coin.Transaction:
+	case error:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
+	return r0
 
 }

@@ -28,7 +28,7 @@ func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	return BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head),
 		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(v.Unconfirmed.Txns.len()),
+		Unconfirmed: uint64(v.Unconfirmed.Len()),
 	}
 }
 
@@ -184,9 +184,9 @@ type ReadableOutput struct {
 
 // ReadableOutputSet records unspent outputs in different status.
 type ReadableOutputSet struct {
-	HeadOutputs      []ReadableOutput `json:"head_outputs"`
-	OutgoingOutputs  []ReadableOutput `json:"outgoing_outputs"`
-	IncommingOutputs []ReadableOutput `json:"incoming_outputs"`
+	HeadOutputs     []ReadableOutput `json:"head_outputs"`
+	OutgoingOutputs []ReadableOutput `json:"outgoing_outputs"`
+	IncomingOutputs []ReadableOutput `json:"incoming_outputs"`
 }
 
 // SpendableOutputs caculates the spendable unspent outputs
@@ -435,7 +435,6 @@ type TransactionJSON struct {
 
 // TransactionToJSON convert transaction to json string
 func TransactionToJSON(tx coin.Transaction) string {
-
 	var o TransactionJSON
 
 	if err := tx.Verify(); err != nil {

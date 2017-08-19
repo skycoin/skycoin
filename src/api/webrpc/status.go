@@ -1,6 +1,8 @@
 package webrpc
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // StatusResult result struct of get_status
 type StatusResult struct {

@@ -455,7 +455,6 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
-
 	dc := daemon.NewConfig()
 	dc.Peers.DataDirectory = c.DataDirectory
 	dc.Peers.Disabled = c.DisablePEX
@@ -466,6 +465,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
 	dc.Daemon.OutgoingMax = c.MaxConnections
+	dc.Daemon.DataDirectory = c.DataDirectory
 
 	daemon.DefaultConnections = DefaultConnections
 
@@ -545,15 +545,14 @@ func Run(c *Config) {
 	var rpc *webrpc.WebRPC
 	// start the webrpc
 	if c.RPCInterface {
-		rpc, err = webrpc.New(
-			fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort),
-			webrpc.ChanBuffSize(1000),
-			webrpc.ThreadNum(c.RPCThreadNum),
-			webrpc.Gateway(d.Gateway))
+		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
+		rpc, err := webrpc.New(rpcAddr, d.Gateway)
 		if err != nil {
 			logger.Error("%v", err)
 			return
 		}
+		rpc.ChanBuffSize = 1000
+		rpc.WorkerNum = c.RPCThreadNum
 
 		go func() {
 			errC <- rpc.Run()

@@ -137,7 +137,7 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 			addrUxBkt := tx.Bucket(hd.addrUx.bkt.Name)
 			addrTxnsBkt := tx.Bucket(hd.addrTxns.bkt.Name)
 
-			if err := addTrandaction(txnsBkt, &txn); err != nil {
+			if err := addTransaction(txnsBkt, &txn); err != nil {
 				return err
 			}
 

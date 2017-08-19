@@ -1,5 +1,7 @@
 package webrpc
 
+// returns type visor.ReadableBlocks
+
 // request params: [seq1, seq2, seq3...]
 func getBlocksBySeqHandler(req Request, gateway Gatewayer) Response {
 	var seqs []uint64

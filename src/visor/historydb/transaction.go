@@ -43,7 +43,7 @@ func newTransactionsBkt(db *bolt.DB) (*transactions, error) {
 	return &transactions{bkt: txBkt}, nil
 }
 
-func addTrandaction(b *bolt.Bucket, tx *Transaction) error {
+func addTransaction(b *bolt.Bucket, tx *Transaction) error {
 	hash := tx.Hash()
 	return b.Put(hash[:], encoder.Serialize(tx))
 }

@@ -135,13 +135,12 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		txn := coin.TransactionDeserialize(b)
-		t, err := gateway.InjectTransaction(txn)
-		if err != nil {
+		if err := gateway.InjectTransaction(txn); err != nil {
 			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
 			return
 		}
 
-		wh.SendOr404(w, t.Hash().Hex())
+		wh.SendOr404(w, txn.Hash().Hex())
 	}
 }
 

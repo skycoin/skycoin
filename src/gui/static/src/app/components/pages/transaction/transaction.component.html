@@ -1,0 +1,32 @@
+<md-card>
+  <md-card-title>Transaction <app-back-button></app-back-button></md-card-title>
+  <md-card class="skycoin-details">
+    <div class="skycoin-detail-keys">
+      ID: <br>
+      Timestamp: <br>
+      Block: <br>
+      Confirmed: <br>
+      Total value: <br>
+    </div>
+    <div class="skycoin-detail-values">
+      {{ transaction && transaction.txn ? transaction.txn.txid : ''}} <br>
+      {{ transaction && transaction.txn ? transaction.txn.timestamp : ''}} <br>
+      {{ transaction && transaction.txn ? transaction.status.block_seq : ''}}<br>
+      {{ transaction && transaction.status ? (transaction.status.confirmed ? 'True' : 'False') : ''}} <br>
+      {{ total }}
+    </div>
+  </md-card>
+
+  <md-list *ngIf="transaction && transaction.txn">
+    <h3 md-subheader>Inputs</h3>
+    <md-list-item *ngFor="let input of transaction.txn.inputs">
+      <h4 md-line><button md-button [routerLink]="['/explorer/address/', input]">{{ input }}</button></h4>
+    </md-list-item>
+    <md-divider></md-divider>
+    <h3 md-subheader>Outputs</h3>
+    <md-list-item *ngFor="let output of transaction.txn.outputs">
+      <h4 md-line><button md-button [routerLink]="['/explorer/address/', output.dst]">{{ output.dst }} ({{ output.coins }} SKY)</button></h4>
+    </md-list-item>
+  </md-list>
+</md-card>
+

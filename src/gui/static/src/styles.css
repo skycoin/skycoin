@@ -1,0 +1,58 @@
+/* You can add global styles to this file, and also import other style files */
+@import '~@angular/material/prebuilt-themes/indigo-pink.css';
+@import '~@swimlane/ngx-datatable/release/themes/material.css';
+
+button, md-panel-description, md-panel-title {
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+body {
+  background-color: #eee;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background: url("assets/header.png") center center / cover, linear-gradient(-155deg, #686e96 0%, #373b5c 100%);
+  width: 100%;
+  height: 300px;
+}
+
+md-expansion-panel {
+  margin-top: 20px !important;
+}
+
+.header-container {
+  max-width: 848px;
+  text-align: center;
+  padding-top: 40px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.header-container h1 {
+  font-size: 3em;
+  color: white;
+}
+
+.button-line {
+  margin-top: 40px;
+  text-align: right;
+}
+
+.datatable-row-group {
+  cursor: pointer;
+}
+
+button.active {
+  background-color: rgba(0,0,0,.12);
+}
+
+md-spinner.in-button .mat-spinner path {
+  stroke: #000;
+  opacity: 0.3;
+}
+
+snack-bar-container {
+  background-color: rgba(255, 0, 0, 0.8) !important;
+}

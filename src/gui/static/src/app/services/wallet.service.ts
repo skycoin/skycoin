@@ -80,6 +80,17 @@ export class WalletService {
     return this.recentTransactions.asObservable();
   }
 
+  refreshBalances() {
+    this.wallets.first().subscribe(wallets => {
+      Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
+        wallet.entries = response;
+        wallet.balance = response.map(address => address.balance >= 0 ? address.balance : 0).reduce((a , b) => a + b, 0);
+        return wallet;
+      })))
+        .subscribe(newWallets => this.wallets.next(newWallets));
+    });
+  }
+
   renameWallet(wallet: WalletModel, label: string): Observable<WalletModel> {
     return this.apiService.post('wallet/update', { id: wallet.meta.filename, label: label });
   }
@@ -124,17 +135,6 @@ export class WalletService {
       this.refreshBalances();
       // this.retrieveHistory();
       this.retrieveTransactions();
-    });
-  }
-
-  private refreshBalances() {
-    this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
-        wallet.entries = response;
-        wallet.balance = response.map(address => address.balance >= 0 ? address.balance : 0).reduce((a , b) => a + b, 0);
-        return wallet;
-      })))
-        .subscribe(newWallets => this.wallets.next(newWallets));
     });
   }
 

@@ -143,7 +143,7 @@ Compile and add the wallet source to git:
 ```sh
 cd src/gui/static
 npm install
-gulp build
+npm run build
 git add .
 ```
 
@@ -170,7 +170,7 @@ Make sure that the wallet dist is up to date:
 ```sh
 cd /src/gui/static
 npm install
-gulp dist
+npm run build
 ```
 
 *TODO: Finish release build instructions*

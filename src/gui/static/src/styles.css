@@ -56,3 +56,9 @@ md-spinner.in-button .mat-spinner path {
 snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }
+
+md-panel-title {
+  width: 60%;
+  display: block;
+  flex-grow: 0;
+}

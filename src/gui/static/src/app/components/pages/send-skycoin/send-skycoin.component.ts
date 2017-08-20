@@ -43,7 +43,8 @@ export class SendSkycoinComponent implements OnInit {
 
   send() {
     this.button.setLoading();
-    this.walletService.sendSkycoin(this.form.value.wallet_id, this.form.value.address, this.form.value.amount * 1000000)
+    const wallet_id = this.form.value.wallet.meta.filename;
+    this.walletService.sendSkycoin(wallet_id, this.form.value.address, this.form.value.amount * 1000000)
       .delay(1000)
       .subscribe(
         response => {
@@ -61,14 +62,23 @@ export class SendSkycoinComponent implements OnInit {
 
   private initForm() {
     this.form = this.formBuilder.group({
-      wallet_id: ['', Validators.required],
+      wallet: ['', Validators.required],
       address: ['', Validators.required],
-      amount: ['', Validators.required],
+      amount: ['', [Validators.required, Validators.min(0), Validators.max(0)]],
+    });
+    this.form.controls['wallet'].valueChanges.subscribe(value => {
+      const balance = value && value.balance ? (value.balance / 1000000) : 0;
+      this.form.controls['amount'].setValidators([
+        Validators.required,
+        Validators.min(0),
+        Validators.max(balance),
+      ]);
+      this.form.controls['amount'].updateValueAndValidity();
     });
   }
 
   private resetForm() {
-    this.form.controls.wallet_id.reset(undefined);
+    this.form.controls.wallet.reset(undefined);
     this.form.controls.address.reset(undefined);
     this.form.controls.amount.reset(undefined);
   }

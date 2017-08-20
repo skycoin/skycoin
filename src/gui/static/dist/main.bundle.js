@@ -21,7 +21,7 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 40%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n", ""]);
+exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 40%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n\r\n.syncing {\r\n  font-size: 14px;\r\n}\r\n", ""]);
 
 // exports
 
@@ -34,7 +34,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/app.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">v0.20.0</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span>{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar>\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
+module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">v0.20.0</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar>\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -44,6 +44,11 @@ module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-wh
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__ = __webpack_require__("../../../../../src/app/services/blockchain.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__ = __webpack_require__("../../../../rxjs/observable/IntervalObservable.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile__ = __webpack_require__("../../../../rxjs/add/operator/takeWhile.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -56,10 +61,35 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 
 
+
+
+
 var AppComponent = (function () {
-    function AppComponent(walletService) {
+    function AppComponent(walletService, blockchainService) {
         this.walletService = walletService;
+        this.blockchainService = blockchainService;
     }
+    AppComponent.prototype.ngOnInit = function () {
+        var _this = this;
+        __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__["IntervalObservable"]
+            .create(3000)
+            .flatMap(function () { return _this.blockchainService.progress(); })
+            .takeWhile(function (response) { return !response.current || response.current !== response.highest; })
+            .subscribe(function (response) {
+            _this.highest = response.highest;
+            _this.current = response.current;
+            _this.percentage = _this.current && _this.highest ? (_this.current / _this.highest * 100) : 0;
+            console.log(response);
+        }, function (error) { return console.log(error); }, function () { return _this.completeLoading(); });
+    };
+    AppComponent.prototype.loading = function () {
+        return !this.current || !this.highest || this.current != this.highest;
+    };
+    AppComponent.prototype.completeLoading = function () {
+        this.current = 999999999999;
+        this.highest = 999999999999;
+        this.walletService.refreshBalances();
+    };
     return AppComponent;
 }());
 AppComponent = __decorate([
@@ -68,10 +98,10 @@ AppComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/app.component.html"),
         styles: [__webpack_require__("../../../../../src/app/app.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */]) === "function" && _b || Object])
 ], AppComponent);
 
-var _a;
+var _a, _b;
 //# sourceMappingURL=app.component.js.map
 
 /***/ }),
@@ -319,16 +349,17 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["g" /* MdInputModule */],
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["h" /* MdListModule */],
             __WEBPACK_IMPORTED_MODULE_2__angular_material__["i" /* MdMenuModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["j" /* MdProgressSpinnerModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["k" /* MdSelectModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["l" /* MdSnackBarModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["m" /* MdTabsModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["n" /* MdToolbarModule */],
-            __WEBPACK_IMPORTED_MODULE_2__angular_material__["o" /* MdTooltipModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["j" /* MdProgressBarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["k" /* MdProgressSpinnerModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["l" /* MdSelectModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["m" /* MdSnackBarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["n" /* MdTabsModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["o" /* MdToolbarModule */],
+            __WEBPACK_IMPORTED_MODULE_2__angular_material__["p" /* MdTooltipModule */],
             __WEBPACK_IMPORTED_MODULE_14__swimlane_ngx_datatable__["NgxDatatableModule"],
             __WEBPACK_IMPORTED_MODULE_3__angular_platform_browser_animations__["a" /* NoopAnimationsModule */],
             __WEBPACK_IMPORTED_MODULE_11__angular_forms__["a" /* ReactiveFormsModule */],
-            __WEBPACK_IMPORTED_MODULE_17__angular_router__["a" /* RouterModule */].forRoot(ROUTES),
+            __WEBPACK_IMPORTED_MODULE_17__angular_router__["a" /* RouterModule */].forRoot(ROUTES, { useHash: true }),
         ],
         providers: [
             __WEBPACK_IMPORTED_MODULE_6__services_api_service__["a" /* ApiService */],
@@ -1006,7 +1037,7 @@ var SendSkycoinComponent = (function () {
             _this.resetForm();
             _this.button.setSuccess();
         }, function (error) {
-            var config = new __WEBPACK_IMPORTED_MODULE_6__angular_material__["t" /* MdSnackBarConfig */]();
+            var config = new __WEBPACK_IMPORTED_MODULE_6__angular_material__["u" /* MdSnackBarConfig */]();
             config.duration = 300000;
             _this.snackbar.open(error['_body'], null, config);
             _this.button.setError(error);
@@ -1036,7 +1067,7 @@ SendSkycoinComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_6__angular_material__["u" /* MdSnackBar */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_6__angular_material__["u" /* MdSnackBar */]) === "function" && _d || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__angular_router__["e" /* Router */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_6__angular_material__["v" /* MdSnackBar */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_6__angular_material__["v" /* MdSnackBar */]) === "function" && _d || Object])
 ], SendSkycoinComponent);
 
 var _a, _b, _c, _d;
@@ -1551,7 +1582,7 @@ var WalletDetailComponent = (function () {
     };
     WalletDetailComponent.prototype.renameWallet = function () {
         var _this = this;
-        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogConfig */]();
+        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["s" /* MdDialogConfig */]();
         config.width = '500px';
         config.data = this.wallet;
         this.dialog.open(__WEBPACK_IMPORTED_MODULE_4__change_name_change_name_component__["a" /* ChangeNameComponent */], config).afterClosed().subscribe(function (result) {
@@ -1572,7 +1603,7 @@ WalletDetailComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["s" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["s" /* MdDialog */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["t" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["t" /* MdDialog */]) === "function" && _c || Object])
 ], WalletDetailComponent);
 
 var _a, _b, _c;
@@ -1661,8 +1692,8 @@ ChangeNameComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.css")]
     }),
-    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["p" /* MD_DIALOG_DATA */])),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
+    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MD_DIALOG_DATA */])),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
 ], ChangeNameComponent);
 
 var _a, _b, _c, _d;
@@ -1750,7 +1781,7 @@ CreateWalletComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
 ], CreateWalletComponent);
 
 var _a, _b, _c;
@@ -1811,7 +1842,7 @@ var WalletsComponent = (function () {
         this.dialog = dialog;
     }
     WalletsComponent.prototype.addWallet = function () {
-        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["r" /* MdDialogConfig */]();
+        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialogConfig */]();
         config.width = '500px';
         this.dialog.open(__WEBPACK_IMPORTED_MODULE_3__create_wallet_create_wallet_component__["a" /* CreateWalletComponent */], config).afterClosed().subscribe(function (result) {
             //
@@ -1825,7 +1856,7 @@ WalletsComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/wallets.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/wallets.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialog */]) === "function" && _b || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["t" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["t" /* MdDialog */]) === "function" && _b || Object])
 ], WalletsComponent);
 
 var _a, _b;
@@ -2113,6 +2144,9 @@ var BlockchainService = (function () {
     BlockchainService.prototype.lastBlock = function () {
         return this.blocks(1).map(function (blocks) { return blocks[0]; });
     };
+    BlockchainService.prototype.progress = function () {
+        return this.apiService.get('blockchain/progress');
+    };
     BlockchainService.prototype.retrieveInputAddress = function (input) {
         return this.apiService.get('uxout', { uxid: input });
     };
@@ -2293,6 +2327,17 @@ var WalletService = (function () {
     WalletService.prototype.recent = function () {
         return this.recentTransactions.asObservable();
     };
+    WalletService.prototype.refreshBalances = function () {
+        var _this = this;
+        this.wallets.first().subscribe(function (wallets) {
+            __WEBPACK_IMPORTED_MODULE_3_rxjs_Observable__["Observable"].forkJoin(wallets.map(function (wallet) { return _this.retrieveWalletBalance(wallet).map(function (response) {
+                wallet.entries = response;
+                wallet.balance = response.map(function (address) { return address.balance >= 0 ? address.balance : 0; }).reduce(function (a, b) { return a + b; }, 0);
+                return wallet;
+            }); }))
+                .subscribe(function (newWallets) { return _this.wallets.next(newWallets); });
+        });
+    };
     WalletService.prototype.renameWallet = function (wallet, label) {
         return this.apiService.post('wallet/update', { id: wallet.meta.filename, label: label });
     };
@@ -2336,17 +2381,6 @@ var WalletService = (function () {
             _this.refreshBalances();
             // this.retrieveHistory();
             _this.retrieveTransactions();
-        });
-    };
-    WalletService.prototype.refreshBalances = function () {
-        var _this = this;
-        this.wallets.first().subscribe(function (wallets) {
-            __WEBPACK_IMPORTED_MODULE_3_rxjs_Observable__["Observable"].forkJoin(wallets.map(function (wallet) { return _this.retrieveWalletBalance(wallet).map(function (response) {
-                wallet.entries = response;
-                wallet.balance = response.map(function (address) { return address.balance >= 0 ? address.balance : 0; }).reduce(function (a, b) { return a + b; }, 0);
-                return wallet;
-            }); }))
-                .subscribe(function (newWallets) { return _this.wallets.next(newWallets); });
         });
     };
     WalletService.prototype.retrieveAddressBalance = function (address) {

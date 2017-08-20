@@ -2,7 +2,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import {
   MdButtonModule, MdCardModule, MdDialogModule, MdExpansionModule, MdGridListModule, MdIconModule, MdInputModule,
-  MdListModule, MdMenuModule, MdProgressSpinnerModule,
+  MdListModule, MdMenuModule, MdProgressBarModule, MdProgressSpinnerModule,
   MdSelectModule, MdSnackBarModule, MdTabsModule, MdToolbarModule, MdTooltipModule
 } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -194,6 +194,7 @@ const ROUTES = [
     MdInputModule,
     MdListModule,
     MdMenuModule,
+    MdProgressBarModule,
     MdProgressSpinnerModule,
     MdSelectModule,
     MdSnackBarModule,
@@ -203,7 +204,7 @@ const ROUTES = [
     NgxDatatableModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
-    RouterModule.forRoot(ROUTES),
+    RouterModule.forRoot(ROUTES, { useHash: true }),
   ],
   providers: [
     ApiService,

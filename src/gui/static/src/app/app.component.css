@@ -31,3 +31,7 @@ md-toolbar span {
   background-color: #fff;
   padding: 8px;
 }
+
+.syncing {
+  font-size: 14px;
+}

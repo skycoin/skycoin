@@ -203,7 +203,7 @@ const ROUTES = [
     NgxDatatableModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
-    RouterModule.forRoot(ROUTES),
+    RouterModule.forRoot(ROUTES, { useHash: true }),
   ],
   providers: [
     ApiService,

@@ -41,6 +41,10 @@ export class BlockchainService {
     return this.blocks(1).map(blocks => blocks[0]);
   }
 
+  progress() {
+    return this.apiService.get('blockchain/progress');
+  }
+
   private retrieveInputAddress(input: string) {
     return this.apiService.get('uxout', {uxid: input});
   }

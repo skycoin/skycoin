@@ -8,108 +8,83 @@ Skycoin improves on Bitcoin in too many ways to be addressed here.
 
 Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
+## Links
+
+* [skycoin.net](https://www.skycoin.net)
+* [Skycoin Blog](https://blog.skycoin.net)
+* [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
+* [Skycoin Distribution Event](https://event.skycoin.net)
+
 ## Installation
 
-For detailed installation instructions, see [Installing Skycoin](../../wiki/Installation).
+### Prerequisites
 
-## For OSX
+Install go1.8+.
 
-Install [homebrew](brew.sh), if you don't have it yet.
+*Note: In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.*
 
-```sh
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-```
-
-Install the latest version of golang
+### Fetch the source
 
 ```sh
-brew install go
+go get https://github.com/skycoin/skycoin
 ```
 
-Setup $GOPATH variable, add it to ~/.bash_profile (or bashrc). After editing, open a new tab
-Add to `bashrc` or `bash_profile`
+This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
 
-```sh
-export GOPATH=/Users/<username>/go
-export PATH=$PATH:$GOPATH/bin
+If you clone the repo with `git clone`, make sure to place it at `$GOPATH/src/github.com/skycoin/skycoin`.
 
-```
-
-Install Mercurial and Bazaar
-
-```sh
-brew install mercurial bzr
-```
-
-Fetch the latest code of skycoin from the github repository
-
-```sh
-go get github.com/skycoin/skycoin
-```
-
-Change your current directory to $GOPATH/src/github.com/skycoin/skycoin
+### Run
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-```
-
-Run Wallet
-
-```sh
 ./run.sh
-
-OR
-go run ./cmd/skycoin/skycoin.go
-
-For Options
-go run ./cmd/skycoin/skycoin.go --help
 ```
 
-## For linux
+### Options
 
 ```sh
-sudo apt-get install curl git mercurial make binutils gcc bzr bison libgmp3-dev screen -y
+cd $GOPATH/src/github.com/skycoin/skycoin
+./run.sh --help
 ```
 
-## Setup Golang
+## API Documentation
 
-use gvm or download binary and follow instructions.
+### Wallet REST API
 
-### Golang ENV setup with gvm
+[Wallet REST API](src/gui/README.md).
 
-In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.
+### JSON-RPC 2.0 API
 
-```sh
-sudo apt-get install bison curl git mercurial make binutils bison gcc build-essential
-bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
-source $HOME/.gvm/scripts/gvm
+[JSON-RPC 2.0 README](src/api/webrpc/README.md).
 
-gvm install go1.4 --source=https://github.com/golang/go
-gvm use go1.4
-gvm install go1.8
-gvm use go1.8 --default
-```
+### Skycoin command line interface
 
-If you open up new terminal and the go command is not found then add this to .bashrc . GVM should add this automatically.
+[CLI command API](cmd/cli/README.md).
 
-```sh
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-gvm use go1.8 >/dev/null
-```
+## Development
 
-The skycoin repo must be in $GOPATH, under `src/github.com/skycoin`. Otherwise golang programs cannot import the libraries.
+We have two branches: `master` and `develop`.
 
-Pull skycoin repo into the gopath, note: puts the skycoin folder in $GOPATH/src/github.com/skycoin/skycoin
+`develop` is the default branch and will have the latest code.
 
-```sh
-go get -v github.com/skycoin/skycoin/...
+`master` will always be equal to the current stable release on the website, and should correspond with the latest release tag.
 
-# create symlink of the repo
-cd $HOME
-ln -s $GOPATH/src/github.com/skycoin/skycoin skycoin
-```
+### Modules
 
-## Dependencies
+* `/src/cipher` - cryptography library
+* `/src/coin` - the blockchain
+* `/src/daemon` - networking and wire protocol
+* `/src/visor` - the top level, client
+* `/src/gui` - the web wallet and json client interface
+* `/src/wallet` - the private key storage library
+* `/src/api/webrpc` - JSON-RPC 2.0 API
+* `/src/api/cli` - CLI library
+
+### Formatting
+
+All `.go` source files should be formatted with `gofmt` or `goimports`.
+
+### Dependencies
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 
@@ -159,87 +134,38 @@ dep ensure github.com/foo/bar@tag
 dep prune
 ```
 
-## Run A Skycoin Node
+### Wallet GUI Development
 
-```sh
-cd skycoin
-screen
-go run ./cmd/skycoin/skycoin.go
-```
+The compiled wallet source should be checked in to the repo, so that others do not need to install node to run the software.
 
-then ctrl+A then D to exit screen
-screen -x to reattach screen
-
-### Todo
-
-Use gvm package set, so repo does not need to be symlinked. Does this have a default option?
-
-```sh
-gvm pkgset create skycoin
-gvm pkgset use skycoin
-git clone https://github.com/skycoin/skycoin
-cd skycoin
-go install
-```
-
-### Cross Compilation
-
-Install Gox:
-
-```sh
-go get github.com/mitchellh/gox
-```
-
-Compile:
-
-```sh
-gox --help
-gox [options] cmd/skycoin/
-```
-
-## Local Server API
-
-See the api details [here](src/gui/README.md).
-
-## Skycoin explorer
-
-http://explorer.skycoin.net
-
-https://github.com/skycoin/skycoin-explorer
-
-## Modules
-
-* /src/cipher - cryptography library
-* /src/coin - the blockchain
-* /src/daemon - networking and wire protocol
-* /src/visor - the top level, client
-* /src/gui - the web wallet and json client interface
-* /src/wallet - the private key storage library
-
-## Meshnet
-
-```sh
-go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_a.json
-go run ./cmd/mesh/*.go -config=cmd/mesh/sample/config_b.json
-```
-
-## Meshnet reminders
-
-* one way latency
-* two way latency (append), latency between packet and ack
-* service handler (ability to append services to meshnet)
-* uploading bandwidth, latency measurements over time
-* end-to-end route instrumentation
-
-## Rebuilding Wallet HTML
+Compile and add the wallet source to git:
 
 ```sh
 cd src/gui/static
 npm install
 gulp build
+git add .
 ```
 
-## Release Builds
+### Releases
+
+*TODO: Full instructions on doing a release. Need instructions on updating version number in source code, and running scripts to build releases*
+
+When ready to do a release, a pull request merging `develop` into `master` must be made.
+
+After merging to `master`, tag the branch with the version number.
+
+Once `master` branch is updated, `git checkout master` and create the release builds.
+
+#### Creating release builds
+
+Install Gox for cross-compilation:
+
+```sh
+go get github.com/mitchellh/gox
+```
+
+Make sure that the wallet dist is up to date:
 
 ```sh
 cd /src/gui/static
@@ -247,16 +173,4 @@ npm install
 gulp dist
 ```
 
-## Skycoin command line interface
-
-See the doc of command line interface [here](cmd/cli/README.md).
-
-## WebRPC
-
-See the doc of webrpc [here](src/api/webrpc/README.md).
-
-## Development
-
-We mainly has two branches: master and develop. The develop is the default branch as you can see, all latest code will be updated here.
-
-The master branch will always be in run ready state and will only be updated when we need to release a new version.
+*TODO: Finish release build instructions*

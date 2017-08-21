@@ -5,32 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	// "github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	// "github.com/skycoin/skycoin/src/visor"
-	// "github.com/skycoin/skycoin/src/wallet"
-
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-)
-
-// Wallet @todo remove duplicate struct of src/wallet/deterministic.go Wallet struct
-// when that will be adopted to have many entries
-type Wallet struct {
-	Meta    map[string]string `json:"meta"`
-	Entries []KeyEntry        `json:"entries"`
-}
-
-// KeyEntry wallet entry
-type KeyEntry struct {
-	Address string `json:"address"`
-	Public  string `json:"public_key"`
-	Secret  string `json:"secret_key"`
-}
-
-var (
-	isBitcoin  bool
-	hideSecKey bool
+	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // Generating secret key, address, public key by given
@@ -41,84 +18,63 @@ var (
 //	seed - string - seed hash
 func apiCreateAddressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		var seed = r.FormValue("seed")
-		var err error
-
+		seed := r.FormValue("seed")
 		if seed == "" {
 			wh.Error400(w, "Empty seed")
 			return
 		}
 
-		isBitcoin, err = strconv.ParseBool(r.FormValue("bc"))
-		if err != nil {
-			isBitcoin = true
+		isBitcoin := true
+		isBitcoinOpt := r.FormValue("bc")
+		if isBitcoinOpt != "" {
+			var err error
+			if isBitcoin, err = strconv.ParseBool(isBitcoinOpt); err != nil {
+				wh.Error400(w, `Invalid bool for "bc"`)
+				return
+			}
 		}
 
-		genCount, err := strconv.Atoi(r.FormValue("n"))
-		if err != nil {
-			genCount = 1
+		genCount := 1
+		genCountOpt := r.FormValue("n")
+		if genCountOpt != "" {
+			var err error
+			if genCount, err = strconv.Atoi(genCountOpt); err != nil {
+				wh.Error400(w, `Invalid int for "n"`)
+				return
+			}
 		}
 
-		hideSecKey, err = strconv.ParseBool(r.FormValue("s"))
-		if err != nil {
-			hideSecKey = false
+		if genCount < 1 {
+			wh.Error400(w, `"n" must be > 0`)
+			return
 		}
 
-		wallet := Wallet{
-			Meta:    make(map[string]string), //map[string]string
-			Entries: make([]KeyEntry, genCount),
+		// TODO -- hideSecKey should probably default to true
+		hideSecKey := false
+		hideSecKeyOpt := r.FormValue("s")
+		if hideSecKeyOpt != "" {
+			var err error
+			if hideSecKey, err = strconv.ParseBool(hideSecKeyOpt); err != nil {
+				wh.Error400(w, `Invalid bool for "s"`)
+				return
+			}
 		}
 
-		if isBitcoin == false {
-			wallet.Meta = map[string]string{"coin": "skycoin"}
+		var coinType wallet.CoinType
+		if isBitcoin {
+			coinType = wallet.CoinTypeBitcoin
 		} else {
-			wallet.Meta = map[string]string{"coin": "bitcoin"}
+			coinType = wallet.CoinTypeSkycoin
 		}
 
-		wallet.Meta["seed"] = seed
-
-		seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
-
-		for i, sec := range seckeys {
-			pub := cipher.PubKeyFromSecKey(sec)
-			wallet.Entries[i] = getKeyEntry(pub, sec)
+		wallet, err := wallet.CreateAddresses(coinType, seed, genCount, hideSecKey)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
 		}
 
-		ret := wallet
-
-		wh.SendOr404(w, ret)
+		wh.SendOr404(w, wallet)
 	}
-}
-
-func getKeyEntry(pub cipher.PubKey, sec cipher.SecKey) KeyEntry {
-
-	var e KeyEntry
-
-	//skycoin address
-	if isBitcoin == false {
-		e = KeyEntry{
-			Address: cipher.AddressFromPubKey(pub).String(),
-			Public:  pub.Hex(),
-			Secret:  sec.Hex(),
-		}
-	}
-
-	//bitcoin address
-	if isBitcoin == true {
-		e = KeyEntry{
-			Address: cipher.BitcoinAddressFromPubkey(pub),
-			Public:  pub.Hex(),
-			Secret:  cipher.BitcoinWalletImportFormatFromSeckey(sec),
-		}
-	}
-
-	//hide the secret key
-	if hideSecKey == true {
-		e.Secret = ""
-	}
-
-	return e
 }
 
 // RegisterAPIHandlers registers api handlers

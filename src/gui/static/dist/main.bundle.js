@@ -970,7 +970,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/send-skycoin/send-skycoin.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n  <md-select formControlName=\"wallet_id\" placeholder=\"Wallet\" class=\"input-field\">\r\n    <md-option *ngFor=\"let wallet of walletService.all() | async\" [value]=\"wallet.meta.filename\" [disabled]=\"wallet.balance < 1\">\r\n      {{ wallet.meta.label }} ({{ wallet.balance | sky }})\r\n    </md-option>\r\n  </md-select>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"address\" placeholder=\"Recipient address\">\r\n  </md-input-container>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"amount\" placeholder=\"Amount\">\r\n  </md-input-container>\r\n  <div class=\"button-line\">\r\n    <app-button #button placeholder=\"Send\" (click)=\"send()\" [form]=\"form\"></app-button>\r\n  </div>\r\n</md-card>\r\n<!--Time, Status, Address, Amount, Transaction ID-->\r\n<md-card>\r\n  <h3>Recent transactions</h3>\r\n  <ngx-datatable #table\r\n    class=\"material\"\r\n    [rows]=\"records\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"50\"\r\n    [footerHeight]=\"50\"\r\n    [rowHeight]=\"50\"\r\n    [limit]=\"10\"\r\n    [scrollbarH]=\"true\"\r\n    (activate)=\"onActivate($event)\">\r\n    <ngx-datatable-column name=\"Timestamp\" prop=\"txn.timestamp\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value | dateTime }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Status\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" [flexGrow]=\"4\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
+module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n  <md-select formControlName=\"wallet\" placeholder=\"Select Wallet\" class=\"input-field\">\r\n    <md-option *ngFor=\"let wallet of walletService.all() | async\" [value]=\"wallet\" [disabled]=\"wallet.balance <= 0\">\r\n      {{ wallet.meta.label }} ({{ wallet.balance | sky }})\r\n    </md-option>\r\n  </md-select>\r\n  <md-input-container class=\"input-field\">\r\n    <input mdInput formControlName=\"address\" placeholder=\"Recipient address\">\r\n  </md-input-container>\r\n  <md-input-container class=\"input-field\">\r\n    <input type=\"number\" mdInput formControlName=\"amount\" placeholder=\"Amount\">\r\n  </md-input-container>\r\n  <div class=\"button-line\">\r\n    <app-button #button placeholder=\"Send\" (click)=\"send()\" [form]=\"form\"></app-button>\r\n  </div>\r\n</md-card>\r\n<!--Time, Status, Address, Amount, Transaction ID-->\r\n<md-card>\r\n  <h3>Recent transactions</h3>\r\n  <ngx-datatable #table\r\n    class=\"material\"\r\n    [rows]=\"records\"\r\n    columnMode=\"flex\"\r\n    [headerHeight]=\"50\"\r\n    [footerHeight]=\"50\"\r\n    [rowHeight]=\"50\"\r\n    [limit]=\"10\"\r\n    [scrollbarH]=\"true\"\r\n    (activate)=\"onActivate($event)\">\r\n    <ngx-datatable-column name=\"Timestamp\" prop=\"txn.timestamp\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value | dateTime }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Status\" [flexGrow]=\"2\">\r\n      <ng-template let-value=\"value\" ngx-datatable-cell-template>\r\n        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>\r\n      </ng-template>\r\n    </ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Address\" [flexGrow]=\"4\"></ngx-datatable-column>\r\n    <ngx-datatable-column name=\"Amount\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  </ngx-datatable>\r\n</md-card>\r\n"
 
 /***/ }),
 
@@ -1031,7 +1031,8 @@ var SendSkycoinComponent = (function () {
     SendSkycoinComponent.prototype.send = function () {
         var _this = this;
         this.button.setLoading();
-        this.walletService.sendSkycoin(this.form.value.wallet_id, this.form.value.address, this.form.value.amount * 1000000)
+        var wallet_id = this.form.value.wallet.meta.filename;
+        this.walletService.sendSkycoin(wallet_id, this.form.value.address, this.form.value.amount * 1000000)
             .delay(1000)
             .subscribe(function (response) {
             _this.resetForm();
@@ -1044,14 +1045,24 @@ var SendSkycoinComponent = (function () {
         });
     };
     SendSkycoinComponent.prototype.initForm = function () {
+        var _this = this;
         this.form = this.formBuilder.group({
-            wallet_id: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
+            wallet: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
             address: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
-            amount: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
+            amount: ['', [__WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required, __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].min(0), __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].max(0)]],
+        });
+        this.form.controls['wallet'].valueChanges.subscribe(function (value) {
+            var balance = value && value.balance ? (value.balance / 1000000) : 0;
+            _this.form.controls['amount'].setValidators([
+                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required,
+                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].min(0),
+                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].max(balance),
+            ]);
+            _this.form.controls['amount'].updateValueAndValidity();
         });
     };
     SendSkycoinComponent.prototype.resetForm = function () {
-        this.form.controls.wallet_id.reset(undefined);
+        this.form.controls.wallet.reset(undefined);
         this.form.controls.address.reset(undefined);
         this.form.controls.amount.reset(undefined);
     };

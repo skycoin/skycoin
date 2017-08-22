@@ -298,21 +298,27 @@ func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error
 	vs.strand(func() {
-		err = visor.VerifyTransactionFee(vs.v.Blockchain, &txn)
-		if err != nil {
+		if err = visor.VerifyTransactionFee(vs.v.Blockchain, &txn); err != nil {
 			return
 		}
 
-		err = txn.Verify()
-		if err != nil {
+		isLocked := false
+		if isLocked, err = visor.TransactionIsLocked(vs.v.Blockchain, &txn); err != nil {
+			return
+		} else if isLocked {
+			err = errors.New("Transaction has locked address inputs")
+			return
+		}
+
+		if err = txn.Verify(); err != nil {
 			err = fmt.Errorf("Transaction Verification Failed, %v", err)
 			return
 		}
 
-		_, err := vs.v.InjectTxn(txn)
-		if err != nil {
+		if _, err = vs.v.InjectTxn(txn); err != nil {
 			return
 		}
+
 		vs.BroadcastTransaction(txn, pool)
 	})
 	return err

@@ -51,7 +51,7 @@ func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
-			wh.Error405(w, "")
+			wh.Error405(w)
 			return
 		}
 		hash := r.FormValue("hash")
@@ -94,7 +94,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
-			wh.Error405(w, "")
+			wh.Error405(w)
 			return
 		}
 		sstart := r.FormValue("start")
@@ -118,7 +118,7 @@ func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
-			wh.Error405(w, "")
+			wh.Error405(w)
 			return
 		}
 

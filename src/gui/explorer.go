@@ -8,7 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // RegisterExplorerHandlers register explorer handlers
@@ -18,6 +17,8 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	mux.HandleFunc("/explorer/getEffectiveOutputs", getCoinSupply(gateway))
 }
+
+const maxCoins = 100000000
 
 var addrList = []string{
 	"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
@@ -122,6 +123,16 @@ var addrList = []string{
 	"ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
 }
 
+// CoinSupply records the coin supply info
+// TODO -- API should export underscore key names e.g. coin_supply
+// Fixing this will require backwards-incompatible API changes
+type CoinSupply struct {
+	CurrentSupply                           int      `json:"coinSupply"`
+	CoinCap                                 int      `json:"coinCap"`
+	UndistributedLockedCoinBalance          int      `json:"UndistributedLockedCoinBalance"`
+	UndistributedLockedCoinHoldingAddresses []string `json:"UndistributedLockedCoinHoldingAddresses"`
+}
+
 func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -140,11 +151,13 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 		totalSupply := 0
 		for _, u := range outs.HeadOutputs {
 			coin, err := strconv.Atoi(u.Coins)
-			if err == nil {
-				totalSupply = totalSupply + coin
+			if err != nil {
+				wh.Error500(w)
+				return
 			}
-
+			totalSupply = totalSupply + coin
 		}
+
 		filtersDevAddresses := []daemon.OutputsFilter{}
 		filtersDevAddresses = append(filtersDevAddresses, daemon.FbyAddresses(addrList))
 		devAddresses, err := gateway.GetUnspentOutputs(filtersDevAddresses...)
@@ -152,17 +165,20 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error500(w)
 			return
 		}
+
 		totalDevBalance := 0
 		for _, u := range devAddresses.HeadOutputs {
 			coin, err := strconv.Atoi(u.Coins)
-			if err == nil {
-				totalDevBalance = totalDevBalance + coin
+			if err != nil {
+				wh.Error500(w)
+				return
 			}
-
+			totalDevBalance = totalDevBalance + coin
 		}
-		wh.SendOr404(w, wallet.CoinSupply{
+
+		wh.SendOr404(w, CoinSupply{
 			CurrentSupply: totalSupply,
-			CoinCap:       100000000,
+			CoinCap:       maxCoins,
 			UndistributedLockedCoinHoldingAddresses: addrList,
 			UndistributedLockedCoinBalance:          totalDevBalance,
 		})
@@ -177,6 +193,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
+
 		addr := r.URL.Query().Get("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
@@ -185,7 +202,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 
 		cipherAddr, err := cipher.DecodeBase58Address(addr)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			wh.Error400(w, "invalid address")
 			return
 		}
 

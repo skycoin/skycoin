@@ -24,7 +24,7 @@ func main() {
 	genCount := flag.Int("n", 1, "Number of addresses to generate")
 	hideSecKey := flag.Bool("s", false, "Hide the secret key from the output")
 	isBitcoin := flag.Bool("b", false, "Print address as a bitcoin address")
-	seed := flag.String("seed", "", "Seed for deterministic key generation. Will generate a random 1024-byte CSPRNG-generated seed if not provided.")
+	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not provided.")
 	flag.Parse()
 
 	var coinType wallet.CoinType

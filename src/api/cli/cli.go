@@ -181,6 +181,7 @@ func NewApp(cfg Config) *App {
 	commands := []gcli.Command{
 		addPrivateKeyCmd(cfg),
 		addressBalanceCmd(),
+		addressGenCmd(),
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),

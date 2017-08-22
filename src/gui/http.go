@@ -124,8 +124,6 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	RegisterBlockchainHandlers(mux, daemon.Gateway)
 	// Network stats interface
 	RegisterNetworkHandlers(mux, daemon.Gateway)
-	// Network API handler
-	RegisterAPIHandlers(mux, daemon.Gateway)
 	// Transaction handler
 	RegisterTxHandlers(mux, daemon.Gateway)
 	// UxOUt api handler

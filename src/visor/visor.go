@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -67,8 +68,9 @@ type Config struct {
 	//WalletConstructor wallet.WalletConstructor
 	// Default type of wallet to create
 	//WalletTypeDefault wallet.WalletType
-	DBPath      string
-	Arbitrating bool // enable arbitrating
+	DBPath          string
+	Arbitrating     bool   // enable arbitrating
+	WalletDirectory string // wallet directory
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block
@@ -77,12 +79,6 @@ type Config struct {
 func NewVisorConfig() Config {
 	c := Config{
 		IsMaster: false,
-
-		//move wallet management out
-		//WalletDirectory: "",
-
-		//WalletConstructor: wallet.NewSimpleWallet,
-		//WalletTypeDefault: wallet.SimpleWalletType,
 
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
@@ -115,6 +111,7 @@ type Visor struct {
 	blockSigs   *blockdb.BlockSigs
 	history     *historydb.HistoryDB
 	bcParser    *BlockchainParser
+	wallets     *wallet.Service
 }
 
 func walker(hps []coin.HashPair) cipher.SHA256 {
@@ -179,6 +176,11 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 	bc.BindListener(bp.BlockListener)
 
+	wltServ, err := wallet.NewService(c.WalletDirectory)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	v := &Visor{
 		Config:      c,
 		Blockchain:  bc,
@@ -186,6 +188,7 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
+		wallets:     wltServ,
 	}
 
 	return v, func() {

@@ -485,6 +485,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.Arbitrating = c.Arbitrating
+	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	return dc
 }
 

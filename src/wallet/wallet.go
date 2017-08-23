@@ -432,3 +432,7 @@ func (ouo uxOutByTimeDesc) Less(i, j int) bool {
 	}
 	return a < b
 }
+
+func errWalletNotExist(wltName string) error {
+	return fmt.Errorf("wallet %s doesn't exist", wltName)
+}

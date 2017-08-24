@@ -366,7 +366,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
-			wh.Error400(w, "Invalid destination address: %v", err.Error())
+			wh.Error400(w, fmt.Sprintf("Invalid destination address: %v", err))
 			return
 		}
 
@@ -446,7 +446,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
-			wh.Error405(w, "")
+			wh.Error405(w)
 			return
 		}
 
@@ -511,7 +511,7 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		wlt := Wg.GetWallet(id)
 		if wlt == nil {
-			wh.Error404(w, fmt.Sprintf("wallet of id: %v does not exist", id))
+			wh.Error404(w)
 			return
 		}
 

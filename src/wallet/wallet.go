@@ -23,11 +23,18 @@ var (
 	logger = logging.MustGetLogger("wallet")
 )
 
-// WalletExt  wallet file extension
-const WalletExt = "wlt"
+type CoinType string
 
-// WalletTimestampFormat  wallet timestamp layout
-const WalletTimestampFormat = "2006_01_02"
+const (
+	// WalletExt  wallet file extension
+	WalletExt = "wlt"
+
+	// WalletTimestampFormat  wallet timestamp layout
+	WalletTimestampFormat = "2006_01_02"
+
+	CoinTypeSkycoin CoinType = "skycoin"
+	CoinTypeBitcoin CoinType = "bitcoin"
+)
 
 // NewWalletFilename check for collisions and retry if failure
 func NewWalletFilename() string {
@@ -76,7 +83,8 @@ func NewWallet(wltName string, opts ...Option) (*Wallet, error) {
 			"lastSeed": seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
-			"coin":     "sky"},
+			"coin":     string(CoinTypeSkycoin),
+		},
 	}
 
 	for _, opt := range opts {

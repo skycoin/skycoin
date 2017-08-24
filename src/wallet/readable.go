@@ -14,14 +14,6 @@ type ReadableEntry struct {
 	Secret  string `json:"secret_key"`
 }
 
-// CoinSupply records the coin supply info
-type CoinSupply struct {
-	CurrentSupply                           int      `json:"coinSupply"`
-	CoinCap                                 int      `json:"coinCap"`
-	UndistributedLockedCoinBalance          int      `json:"UndistributedLockedCoinBalance"`
-	UndistributedLockedCoinHoldingAddresses []string `json:"UndistributedLockedCoinHoldingAddresses"`
-}
-
 // NewReadableEntry creates readable wallet entry
 func NewReadableEntry(w *Entry) ReadableEntry {
 	return ReadableEntry{

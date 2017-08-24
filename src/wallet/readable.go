@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"fmt"
 	//"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -50,16 +51,21 @@ func (re *ReadableEntry) Save(filename string) error {
 type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
-func (res ReadableEntries) ToWalletEntries() []Entry {
+func (res ReadableEntries) ToWalletEntries() ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		we := NewEntryFromReadable(&re)
-		if err := we.Verify(); err != nil {
-			logger.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
+		e, err := NewEntryFromReadable(&re)
+		if err != nil {
+			return []Entry{}, err
 		}
-		entries[i] = we
+
+		if err := e.Verify(); err != nil {
+			return []Entry{}, fmt.Errorf("convert readable wallet entry failed: %v", err)
+		}
+
+		entries[i] = *e
 	}
-	return entries
+	return entries, nil
 }
 
 // ReadableWallet used for [de]serialization of a Wallet
@@ -110,7 +116,11 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableWallet) ToWallet() (Wallet, error) {
-	return NewWalletFromReadable(rw), nil
+	w, err := newWalletFromReadable(rw)
+	if err != nil {
+		return Wallet{}, err
+	}
+	return *w, nil
 }
 
 // Save saves to filename

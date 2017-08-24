@@ -154,7 +154,13 @@ export class WalletService {
   private retrieveTransactions() {
     return this.wallets.first().subscribe(wallets => {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletTransactions(wallet)))
-        .map(addresses => [].concat.apply([], addresses).sort((a, b) =>  b.timestamp - a.timestamp))
+        .map(transactions => [].concat.apply([], transactions).sort((a, b) =>  b.timestamp - a.timestamp))
+        .map(transactions => transactions.reduce((array, item) => {
+          if (!array.find(trans => trans.txid === item.txid)) {
+            array.push(item);
+          }
+          return array;
+        }, []))
         .subscribe(transactions => this.transactions.next(transactions));
     });
   }

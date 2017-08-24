@@ -97,7 +97,7 @@ func (serv *Service) NewAddresses(wltID string, num int) ([]cipher.Address, erro
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, fmt.Errorf("generate new addresses failed, wallet %s doesn't exist", wltID)
+		return []cipher.Address{}, errWalletNotExist(wltID)
 	}
 
 	addrs := w.GenerateAddresses(num)
@@ -138,33 +138,6 @@ func (serv *Service) ReloadWallets() error {
 
 	serv.firstAddrIDMap = make(map[string]string)
 	serv.wallets = serv.removeDup(wallets)
-	return nil
-}
-
-// SaveWallet saves a wallet
-// func (serv *Service) SaveWallet(walletID string) error {
-// 	serv.Lock()
-// 	defer serv.Unlock()
-// 	if w, ok := serv.wallets.Get(walletID); ok {
-// 		return w.Save(serv.WalletDirectory)
-// 	}
-// 	return fmt.Errorf("unknown wallet %s", walletID)
-// }
-
-// SaveWallets saves wallets
-// func (serv *Service) SaveWallets() map[string]error {
-// 	serv.Lock()
-// 	defer serv.Unlock()
-// 	return serv.wallets.Save(serv.WalletDirectory)
-// }
-
-// GetWalletReadable returns a readable wallet
-func (serv *Service) GetWalletReadable(walletID string) *ReadableWallet {
-	serv.RLock()
-	defer serv.RUnlock()
-	if w, ok := serv.wallets.Get(walletID); ok {
-		return NewReadableWallet(w)
-	}
 	return nil
 }
 

@@ -16,7 +16,7 @@ type ReadableEntry struct {
 }
 
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(w *Entry) ReadableEntry {
+func NewReadableEntry(w Entry) ReadableEntry {
 	return ReadableEntry{
 		Address: w.Address.String(),
 		Public:  w.Public.Hex(),
@@ -94,15 +94,18 @@ type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
 // NewReadableWallet creates readable wallet
 func NewReadableWallet(w Wallet) *ReadableWallet {
-	//return newReadableWallet(w, NewReadableWalletEntry)
 	readable := make(ReadableEntries, len(w.Entries))
-	i := 0
-	for _, e := range w.Entries {
-		readable[i] = NewReadableEntry(&e)
-		i++
+	for i, e := range w.Entries {
+		readable[i] = NewReadableEntry(e)
 	}
+
+	meta := make(map[string]string, len(w.Meta))
+	for k, v := range w.Meta {
+		meta[k] = v
+	}
+
 	return &ReadableWallet{
-		Meta:    w.Meta,
+		Meta:    meta,
 		Entries: readable,
 	}
 }

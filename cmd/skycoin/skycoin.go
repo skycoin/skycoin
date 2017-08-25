@@ -528,8 +528,6 @@ func Run(c *Config) {
 	// Watch for SIGUSR1
 	go catchDebug()
 
-	gui.InitWalletRPC(c.WalletDirectory)
-
 	dconf := configureDaemon(c)
 	d, err := daemon.NewDaemon(dconf)
 	if err != nil {

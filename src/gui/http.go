@@ -163,51 +163,54 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 // if only specify one filter, then return outputs match the filter.
 func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			var addrs []string
-			var hashes []string
-
-			trimSpace := func(vs []string) []string {
-				for i := range vs {
-					vs[i] = strings.TrimSpace(vs[i])
-				}
-				return vs
-			}
-
-			addrStr := r.FormValue("addrs")
-			if addrStr != "" {
-				addrs = trimSpace(strings.Split(addrStr, ","))
-			}
-
-			hashStr := r.FormValue("hashes")
-			if hashStr != "" {
-				hashes = trimSpace(strings.Split(hashStr, ","))
-			}
-
-			filters := []daemon.OutputsFilter{}
-			if len(addrs) > 0 {
-				filters = append(filters, daemon.FbyAddresses(addrs))
-			}
-
-			if len(hashes) > 0 {
-				filters = append(filters, daemon.FbyHashes(hashes))
-			}
-
-			outs, err := gateway.GetUnspentOutputs(filters...)
-			if err != nil {
-				logger.Error("get unspent outputs failed: %v", err)
-				wh.Error500(w)
-				return
-			}
-
-			wh.SendOr404(w, outs)
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
 		}
+
+		var addrs []string
+		var hashes []string
+
+		trimSpace := func(vs []string) []string {
+			for i := range vs {
+				vs[i] = strings.TrimSpace(vs[i])
+			}
+			return vs
+		}
+
+		addrStr := r.FormValue("addrs")
+		if addrStr != "" {
+			addrs = trimSpace(strings.Split(addrStr, ","))
+		}
+
+		hashStr := r.FormValue("hashes")
+		if hashStr != "" {
+			hashes = trimSpace(strings.Split(hashStr, ","))
+		}
+
+		filters := []daemon.OutputsFilter{}
+		if len(addrs) > 0 {
+			filters = append(filters, daemon.FbyAddresses(addrs))
+		}
+
+		if len(hashes) > 0 {
+			filters = append(filters, daemon.FbyHashes(hashes))
+		}
+
+		outs, err := gateway.GetUnspentOutputs(filters...)
+		if err != nil {
+			logger.Error("get unspent outputs failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, outs)
 	}
 }
 
 func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}

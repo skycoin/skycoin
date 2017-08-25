@@ -118,7 +118,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		addr := r.URL.Query().Get("address")
+		addr := r.FormValue("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
 			return

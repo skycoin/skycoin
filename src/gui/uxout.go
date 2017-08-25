@@ -19,7 +19,7 @@ func RegisterUxOutHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -53,7 +53,7 @@ func getUxOutByID(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getAddrUxOuts(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}

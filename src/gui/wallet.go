@@ -67,7 +67,7 @@ func Spend(gateway *daemon.Gateway,
 // balance is the confirmed balance minus the pending spends.
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -91,6 +91,11 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		wltID := r.FormValue("id")
 		if wltID == "" {
 			wh.Error400(w, "missing wallet id")
@@ -134,7 +139,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Create a wallet Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -182,7 +187,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 // 	   num: number of address need to create, if not set the default value is 1
 func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
+		if r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
@@ -228,8 +233,8 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
-		id := r.FormValue("id")
-		if id == "" {
+		wltID := r.FormValue("id")
+		if wltID == "" {
 			wh.Error400(w, "missing wallet id")
 			return
 		}
@@ -240,7 +245,7 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.UpdateWalletLabel(id, label); err != nil {
+		if err := gateway.UpdateWalletLabel(wltID, label); err != nil {
 			wh.Error400(w, fmt.Sprintf("update wallet label failed: %v", err))
 			return
 		}
@@ -252,7 +257,7 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Returns a wallet by id
 func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -276,7 +281,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 // Returns JSON of unconfirmed transactions for user's wallet
 func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}

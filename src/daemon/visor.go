@@ -277,8 +277,8 @@ func (vs *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) {
 	pool.Pool.BroadcastMessage(m)
 }
 
-// BroadcastTransaction broadcasts a single transaction to all peers.
-func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
+// broadcastTransaction broadcasts a single transaction to all peers.
+func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
 	if vs.Config.Disabled {
 		logger.Debug("broadcast tx disabled")
 		return
@@ -294,34 +294,53 @@ func (vs *Visor) BroadcastTransaction(t coin.Transaction, pool *Pool) {
 	pool.Pool.BroadcastMessage(m)
 }
 
-// InjectTransaction injects transaction
+// Injects transaction to the unconfirmed pool and broadcasts it
+// The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error
 	vs.strand(func() {
-		if err = visor.VerifyTransactionFee(vs.v.Blockchain, &txn); err != nil {
+		if err = vs.injectTransaction(txn, pool); err != nil {
 			return
 		}
 
-		isLocked := false
-		if isLocked, err = visor.TransactionIsLocked(vs.v.Blockchain, &txn); err != nil {
-			return
-		} else if isLocked {
-			err = errors.New("Transaction has locked address inputs")
-			return
-		}
-
-		if err = txn.Verify(); err != nil {
-			err = fmt.Errorf("Transaction Verification Failed, %v", err)
-			return
-		}
-
-		if _, err = vs.v.InjectTxn(txn); err != nil {
-			return
-		}
-
-		vs.BroadcastTransaction(txn, pool)
+		vs.broadcastTransaction(txn, pool)
 	})
 	return err
+}
+
+func (vs *Visor) injectTransaction(txn coin.Transaction, pool *Pool) error {
+	if err := vs.verifyTransaction(txn); err != nil {
+		return err
+	}
+
+	_, err := vs.v.InjectTxn(txn)
+	return err
+}
+
+func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
+	inUxs, err := vs.v.Blockchain.Unspent().GetArray(txn.In)
+	if err != nil {
+		return err
+	}
+
+	fee, err := visor.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
+	if err != nil {
+		return err
+	}
+
+	if err := visor.VerifyTransactionFee(&txn, fee); err != nil {
+		return err
+	}
+
+	if visor.TransactionIsLocked(inUxs) {
+		return errors.New("Transaction has locked address inputs")
+	}
+
+	if err := txn.Verify(); err != nil {
+		return fmt.Errorf("Transaction Verification Failed, %v", err)
+	}
+
+	return nil
 }
 
 // ResendTransaction resends a known UnconfirmedTxn.
@@ -331,7 +350,7 @@ func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
 	}
 	vs.strand(func() {
 		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
-			vs.BroadcastTransaction(ut.Txn, pool)
+			vs.broadcastTransaction(ut.Txn, pool)
 		}
 	})
 	return
@@ -348,7 +367,7 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 
 		for i := range txns {
 			logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())
-			vs.BroadcastTransaction(txns[i].Txn, pool)
+			vs.broadcastTransaction(txns[i].Txn, pool)
 			txids = append(txids, txns[i].Txn.Hash())
 		}
 	})

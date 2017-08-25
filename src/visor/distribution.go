@@ -12,7 +12,7 @@ const (
 	DistributionAddressInitialBalance uint64 = MaxCoinSupply / DistributionAddressesTotal
 
 	// Initial number of unlocked addresses
-	InitialUnlockedCount uint64 = 30
+	InitialUnlockedCount uint64 = 25
 
 	// Number of addresses to unlock per unlock time interval
 	UnlockAddressRate uint64 = 5
@@ -62,6 +62,8 @@ func GetUnlockedDistributionAddresses() []string {
 
 // Returns distribution addresses that are locked, i.e. they have unspendable outputs
 func GetLockedDistributionAddresses() []string {
+	// TODO -- once we reach 30% distribution, we can hardcode the
+	// initial timestamp for releasing more coins
 	addrs := make([]string, DistributionAddressesTotal-InitialUnlockedCount)
 	for i := range distributionAddresses[InitialUnlockedCount:] {
 		addrs[i] = distributionAddresses[InitialUnlockedCount+uint64(i)]
@@ -70,12 +72,7 @@ func GetLockedDistributionAddresses() []string {
 }
 
 // Returns true if the transaction spends locked outputs
-func TransactionIsLocked(bc *Blockchain, t *coin.Transaction) (bool, error) {
-	inUxs, err := bc.Unspent().GetArray(t.In)
-	if err != nil {
-		return false, err
-	}
-
+func TransactionIsLocked(inUxs coin.UxArray) bool {
 	lockedAddrs := GetLockedDistributionAddresses()
 	lockedAddrsMap := make(map[string]struct{})
 	for _, a := range lockedAddrs {
@@ -85,11 +82,11 @@ func TransactionIsLocked(bc *Blockchain, t *coin.Transaction) (bool, error) {
 	for _, o := range inUxs {
 		uxAddr := o.Body.Address.String()
 		if _, ok := lockedAddrsMap[uxAddr]; ok {
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
 
 var distributionAddresses = [DistributionAddressesTotal]string{

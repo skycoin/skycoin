@@ -5,9 +5,11 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/stretchr/testify/assert"
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 func makeTransactionWithSecret(t *testing.T) (Transaction, cipher.SecKey) {
@@ -82,35 +84,35 @@ func TestTransactionVerify(t *testing.T) {
 	// Mismatch header hash
 	tx := makeTransaction(t)
 	tx.InnerHash = cipher.SHA256{}
-	assertError(t, tx.Verify(), "Invalid header hash")
+	testutil.RequireError(t, tx.Verify(), "Invalid header hash")
 
 	// No inputs
 	tx = makeTransaction(t)
 	tx.In = make([]cipher.SHA256, 0)
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "No inputs")
+	testutil.RequireError(t, tx.Verify(), "No inputs")
 
 	// No outputs
 	tx = makeTransaction(t)
 	tx.Out = make([]TransactionOutput, 0)
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "No outputs")
+	testutil.RequireError(t, tx.Verify(), "No outputs")
 
 	// Invalid number of sigs
 	tx = makeTransaction(t)
 	tx.Sigs = make([]cipher.Sig, 0)
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "Invalid number of signatures")
+	testutil.RequireError(t, tx.Verify(), "Invalid number of signatures")
 	tx.Sigs = make([]cipher.Sig, 20)
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "Invalid number of signatures")
+	testutil.RequireError(t, tx.Verify(), "Invalid number of signatures")
 
 	// Too many sigs & inputs
 	tx = makeTransaction(t)
 	tx.Sigs = make([]cipher.Sig, math.MaxUint16)
 	tx.In = make([]cipher.SHA256, math.MaxUint16)
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "Too many signatures and inputs")
+	testutil.RequireError(t, tx.Verify(), "Too many signatures and inputs")
 
 	// Duplicate inputs
 	tx, s := makeTransactionWithSecret(t)
@@ -118,19 +120,19 @@ func TestTransactionVerify(t *testing.T) {
 	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{s, s})
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "Duplicate spend")
+	testutil.RequireError(t, tx.Verify(), "Duplicate spend")
 
 	// Duplicate outputs
 	tx = makeTransaction(t)
 	to := tx.Out[0]
 	tx.PushOutput(to.Address, to.Coins, to.Hours)
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "Duplicate output in transaction")
+	testutil.RequireError(t, tx.Verify(), "Duplicate output in transaction")
 
 	// Invalid signature, empty
 	tx = makeTransaction(t)
 	tx.Sigs[0] = cipher.Sig{}
-	assertError(t, tx.Verify(), "Failed to recover public key")
+	testutil.RequireError(t, tx.Verify(), "Failed to recover public key")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
 	//      - Signature is for wrong hash
@@ -144,14 +146,14 @@ func TestTransactionVerify(t *testing.T) {
 	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	assert.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
-	assertError(t, tx.Verify(), "Transaction outputs must be multiple of "+
+	testutil.RequireError(t, tx.Verify(), "Transaction outputs must be multiple of "+
 		"1e6 base units")
 
 	// Output coins are 0
 	tx = makeTransaction(t)
 	tx.Out[0].Coins = 0
 	tx.UpdateHeader()
-	assertError(t, tx.Verify(), "Zero coin output")
+	testutil.RequireError(t, tx.Verify(), "Zero coin output")
 
 	// Valid
 	tx = makeTransaction(t)
@@ -312,14 +314,14 @@ func TestTransactionOutputHours(t *testing.T) {
 // 	unknownUx := makeUxOut(t)
 // 	tx.PushInput(unknownUx.Hash())
 // 	_, err = Transactions{tx}.Fees(bc.TransactionFee)
-// 	assertError(t, err, "Unspent output does not exist")
+// 	testutil.RequireError(t, err, "Unspent output does not exist")
 
 // 	// Txn spending more hours than avail
 // 	tx, _ = makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100,
 // 		100)
 // 	tx.PushOutput(makeAddress(), 1e6, 10000)
 // 	_, err = Transactions{tx}.Fees(bc.TransactionFee)
-// 	assertError(t, err, "Insufficient coinhours for transaction outputs")
+// 	testutil.RequireError(t, err, "Insufficient coinhours for transaction outputs")
 // }
 
 type outAddr struct {

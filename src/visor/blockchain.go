@@ -70,8 +70,13 @@ type Blockchain struct {
 // Option represents the option when creating the blockchain
 type Option func(*Blockchain)
 
+// Default blockchain walker
+func DefaultWalker(hps []coin.HashPair) cipher.SHA256 {
+	return hps[0].Hash
+}
+
 // NewBlockchain use the walker go through the tree and update the head and unspent outputs.
-func NewBlockchain(db *bolt.DB, walker Walker, ops ...Option) (*Blockchain, error) {
+func NewBlockchain(db *bolt.DB, ops ...Option) (*Blockchain, error) {
 	// creates blockchain tree
 	tree, err := blockdb.NewBlockTree(db)
 	if err != nil {
@@ -85,7 +90,7 @@ func NewBlockchain(db *bolt.DB, walker Walker, ops ...Option) (*Blockchain, erro
 
 	bc := &Blockchain{
 		tree:   tree,
-		walker: walker,
+		walker: DefaultWalker,
 		chain:  chainstore,
 	}
 
@@ -103,6 +108,12 @@ func NewBlockchain(db *bolt.DB, walker Walker, ops ...Option) (*Blockchain, erro
 func Arbitrating(enable bool) Option {
 	return func(bc *Blockchain) {
 		bc.arbitrating = enable
+	}
+}
+
+func BlockchainWalker(walker Walker) Option {
+	return func(bc *Blockchain) {
+		bc.walker = walker
 	}
 }
 
@@ -220,8 +231,7 @@ func (bc *Blockchain) Time() uint64 {
 
 // NewBlockFromTransactions creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
-func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions,
-	currentTime uint64) (*coin.Block, error) {
+func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTime uint64) (*coin.Block, error) {
 	if currentTime <= bc.Time() {
 		return nil, errors.New("Time can only move forward")
 	}
@@ -557,26 +567,12 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 // TransactionFee calculates the current transaction fee in coinhours of a Transaction
 func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 	headTime := bc.Time()
-	inHours := uint64(0)
 	inUxs, err := bc.Unspent().GetArray(t.In)
 	if err != nil {
 		return 0, err
 	}
 
-	// Compute input hours
-	for _, ux := range inUxs {
-		inHours += ux.CoinHours(headTime)
-	}
-
-	// Compute output hours
-	outHours := uint64(0)
-	for i := range t.Out {
-		outHours += t.Out[i].Hours
-	}
-	if inHours < outHours {
-		return 0, errors.New("Insufficient coinhours for transaction outputs")
-	}
-	return inHours - outHours, nil
+	return TransactionFee(t, headTime, inUxs)
 }
 
 // VerifySigs checks that BlockSigs state correspond with coin.Blockchain state

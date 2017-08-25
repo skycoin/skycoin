@@ -123,38 +123,6 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w)
-			return
-		}
-
-		addrsParam := r.FormValue("addrs")
-		addrsStr := strings.Split(addrsParam, ",")
-		addrs := make([]cipher.Address, 0, len(addrsStr))
-		for _, addr := range addrsStr {
-			// trim space
-			addr = strings.Trim(addr, " ")
-			a, err := cipher.DecodeBase58Address(addr)
-			if err != nil {
-				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
-				return
-			}
-			addrs = append(addrs, a)
-		}
-
-		bal, err := gateway.GetAddressesBalance(addrs)
-		if err != nil {
-			logger.Error("Get balance failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-
-		wh.SendOr404(w, bal)
-	}
-}
-
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
@@ -421,56 +389,6 @@ func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// getOutputsHandler get utxos base on the filters in url params.
-// mode: GET
-// url: /outputs?addrs=[:addrs]&hashes=[:hashes]
-// if addrs and hashes are not specificed, return all unspent outputs.
-// if both addrs and hashes are specificed, then both those filters are need to be matched.
-// if only specify one filter, then return outputs match the filter.
-func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			var addrs []string
-			var hashes []string
-
-			trimSpace := func(vs []string) []string {
-				for i := range vs {
-					vs[i] = strings.TrimSpace(vs[i])
-				}
-				return vs
-			}
-
-			addrStr := r.FormValue("addrs")
-			if addrStr != "" {
-				addrs = trimSpace(strings.Split(addrStr, ","))
-			}
-
-			hashStr := r.FormValue("hashes")
-			if hashStr != "" {
-				hashes = trimSpace(strings.Split(hashStr, ","))
-			}
-
-			filters := []daemon.OutputsFilter{}
-			if len(addrs) > 0 {
-				filters = append(filters, daemon.FbyAddresses(addrs))
-			}
-
-			if len(hashes) > 0 {
-				filters = append(filters, daemon.FbyHashes(hashes))
-			}
-
-			outs, err := gateway.GetUnspentOutputs(filters...)
-			if err != nil {
-				logger.Error("get unspent outputs failed: %v", err)
-				wh.Error500(w)
-				return
-			}
-
-			wh.SendOr404(w, outs)
-		}
-	}
-}
-
 func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		entropy, err := bip39.NewEntropy(128)
@@ -552,12 +470,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
 
 	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
-
-	//get set of unspent outputs
-	mux.HandleFunc("/outputs", getOutputsHandler(gateway))
-
-	// get balance of addresses
-	mux.HandleFunc("/balance", getBalanceHandler(gateway))
 
 	// generate wallet seed
 	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))

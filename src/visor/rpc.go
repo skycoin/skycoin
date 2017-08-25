@@ -174,9 +174,9 @@ func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, bool) {
 	return rpc.v.wallets.GetWallet(wltID)
 }
 
-// GetWalletsReadable returns all wallets in readable
-func (rpc *RPC) GetWalletsReadable() []*wallet.ReadableWallet {
-	return rpc.v.wallets.GetWalletsReadable()
+// GetWallets returns all wallet
+func (rpc *RPC) GetWallets() wallet.Wallets {
+	return rpc.v.wallets.GetWallets()
 }
 
 // ReloadWallets reloads all wallet from files

@@ -127,6 +127,16 @@ func (serv *Service) GetWallet(wltID string) (Wallet, bool) {
 	return serv.wallets.Get(wltID)
 }
 
+// GetWallets returns all wallet
+func (serv *Service) GetWallets() Wallets {
+	wlts := make(Wallets, len(serv.wallets))
+	for k, w := range serv.wallets {
+		nw := w.Copy()
+		wlts[k] = &nw
+	}
+	return wlts
+}
+
 // ReloadWallets reload wallets
 func (serv *Service) ReloadWallets() error {
 	serv.Lock()

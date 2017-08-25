@@ -2408,7 +2408,13 @@ var WalletService = (function () {
         var _this = this;
         return this.wallets.first().subscribe(function (wallets) {
             __WEBPACK_IMPORTED_MODULE_3_rxjs_Observable__["Observable"].forkJoin(wallets.map(function (wallet) { return _this.retrieveWalletTransactions(wallet); }))
-                .map(function (addresses) { return [].concat.apply([], addresses).sort(function (a, b) { return b.timestamp - a.timestamp; }); })
+                .map(function (transactions) { return [].concat.apply([], transactions).sort(function (a, b) { return b.timestamp - a.timestamp; }); })
+                .map(function (transactions) { return transactions.reduce(function (array, item) {
+                if (!array.find(function (trans) { return trans.txid === item.txid; })) {
+                    array.push(item);
+                }
+                return array;
+            }, []); })
                 .subscribe(function (transactions) { return _this.transactions.next(transactions); });
         });
     };

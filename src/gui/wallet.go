@@ -18,30 +18,17 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// WalletRPC wallet rpc
-// type WalletRPC struct {
-// 	sync.RWMutex
-// 	wallets         wallet.Wallets
-// 	WalletDirectory string
-// 	options         []wallet.Option
-// 	firstAddrIDMap  map[string]string // key: first address in wallet, value: wallet id
-// }
-
 // NotesRPC note rpc
 type NotesRPC struct {
 	Notes           wallet.Notes
 	WalletDirectory string
 }
 
-// Wg use a global for now
-// var Wg *WalletRPC
-
 // Ng global note
 var Ng *NotesRPC
 
 // InitWalletRPC init wallet rpc
 func InitWalletRPC(walletDir string, options ...wallet.Option) {
-	// Wg = NewWalletRPC(walletDir, options...)
 	Ng = NewNotesRPC(walletDir)
 }
 
@@ -73,13 +60,7 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
-// Spend TODO
-// - split send into
-// -- get addresses
-// -- get unspent outputs
-// -- construct transaction
-// -- sign transaction
-// -- inject transaction
+// Spend spend coins from specific wallet
 func Spend(gateway *daemon.Gateway,
 	walletID string,
 	amt wallet.Balance,
@@ -127,13 +108,13 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			wh.Error400(w, "id is required")
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, "missing wallet id")
 			return
 		}
 
-		b, err := gateway.GetWalletBalance(id)
+		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Error("Get wallet balance failed: %v", err)
 			return
@@ -144,28 +125,33 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			addrsParam := r.URL.Query().Get("addrs")
-			addrsStr := strings.Split(addrsParam, ",")
-			addrs := make([]cipher.Address, 0, len(addrsStr))
-			for _, addr := range addrsStr {
-				a, err := cipher.DecodeBase58Address(addr)
-				if err != nil {
-					wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
-					return
-				}
-				addrs = append(addrs, a)
-			}
+		if r.Method != "GET" {
+			wh.Error405(w)
+			return
+		}
 
-			bal, err := gateway.GetAddressesBalance(addrs)
+		addrsParam := r.FormValue("addrs")
+		addrsStr := strings.Split(addrsParam, ",")
+		addrs := make([]cipher.Address, 0, len(addrsStr))
+		for _, addr := range addrsStr {
+			// trim space
+			addr = strings.Trim(addr, " ")
+			a, err := cipher.DecodeBase58Address(addr)
 			if err != nil {
-				logger.Error("Get balance failed: %v", err)
-				wh.Error500(w)
+				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
 				return
 			}
-
-			wh.SendOr404(w, bal)
+			addrs = append(addrs, a)
 		}
+
+		bal, err := gateway.GetAddressesBalance(addrs)
+		if err != nil {
+			logger.Error("Get balance failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, bal)
 	}
 }
 
@@ -173,16 +159,12 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.FormValue("id") == "" {
-			wh.Error400(w, "Missing wallet_id")
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, "missing wallet id")
 			return
 		}
 
-		walletID := r.FormValue("id")
-		if walletID == "" {
-			wh.Error400(w, "Invalid Wallet Id")
-			return
-		}
 		sdst := r.FormValue("dst")
 		if sdst == "" {
 			wh.Error400(w, "Missing destination address \"dst\"")
@@ -203,7 +185,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		var hours uint64
 		//MOVE THIS INTO HERE
-		ret := Spend(gateway, walletID, wallet.NewBalance(coins, hours), dst)
+		ret := Spend(gateway, wltID, wallet.NewBalance(coins, hours), dst)
 		if ret.Error != "" {
 			logger.Error(ret.Error)
 		}
@@ -231,9 +213,24 @@ func notesCreate(gateway *daemon.Gateway) http.HandlerFunc {
 // Create a wallet Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("API request made to create a wallet")
+		if r.Method != "GET" {
+			wh.Error405(w)
+			return
+		}
+
 		seed := r.FormValue("seed")
 		label := r.FormValue("label")
+
+		if seed == "" {
+			wh.Error400(w, "missing seed")
+			return
+		}
+
+		if label == "" {
+			wh.Error400(w, "missing label")
+			return
+		}
+
 		wltName := wallet.NewWalletFilename()
 		var wlt wallet.Wallet
 		var err error
@@ -271,7 +268,7 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 
 		wltID := r.FormValue("id")
 		if wltID == "" {
-			wh.Error400(w, "wallet id is empty")
+			wh.Error400(w, "missing wallet id")
 			return
 		}
 
@@ -312,13 +309,13 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		// Update wallet
 		id := r.FormValue("id")
 		if id == "" {
-			wh.Error400(w, "wallet id is empty")
+			wh.Error400(w, "missing wallet id")
 			return
 		}
 
 		label := r.FormValue("label")
 		if label == "" {
-			wh.Error400(w, "label is empty")
+			wh.Error400(w, "missing label")
 			return
 		}
 
@@ -339,15 +336,15 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		id := r.FormValue("id")
-		if id == "" {
-			wh.Error400(w, fmt.Sprintf("wallet id is empty"))
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, fmt.Sprintf("missing wallet id"))
 			return
 		}
 
-		wlt, ok := gateway.GetWallet(id)
+		wlt, ok := gateway.GetWallet(wltID)
 		if !ok {
-			wh.Error400(w, fmt.Sprintf("wallet %s doesn't exist", id))
+			wh.Error400(w, fmt.Sprintf("wallet %s doesn't exist", wltID))
 			return
 		}
 
@@ -372,13 +369,13 @@ func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		id := r.FormValue("id")
-		if id == "" {
-			wh.Error400(w, "wallet id is empty")
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, "missing wallet id")
 			return
 		}
 
-		txns, err := gateway.GetWalletUnconfirmedTxns(r.FormValue("id"))
+		txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("get wallet unconfirmed transactions failed: %v", err))
 			return
@@ -391,8 +388,7 @@ func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Returns all loaded wallets
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//ret := wallet.Wallets.ToPublicReadable()
-		wlts := gateway.GetWalletsReadable()
+		wlts := gateway.GetWallets().ToReadable()
 		wh.SendOr404(w, wlts)
 	}
 }

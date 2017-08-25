@@ -598,10 +598,10 @@ func (gw *Gateway) GetWallet(wltID string) (w wallet.Wallet, ok bool) {
 	return
 }
 
-// GetWalletsReadable returns all wallet in readable format
-func (gw *Gateway) GetWalletsReadable() (wlts []*wallet.ReadableWallet) {
+// GetWallets returns wallets
+func (gw *Gateway) GetWallets() (w wallet.Wallets) {
 	gw.strand(func() {
-		wlts = gw.vrpc.GetWalletsReadable()
+		w = gw.vrpc.GetWallets()
 	})
 	return
 }

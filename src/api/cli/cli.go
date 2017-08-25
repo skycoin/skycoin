@@ -212,6 +212,7 @@ func NewApp(cfg Config) *App {
 		blocksCmd(),
 		broadcastTxCmd(),
 		createRawTxCmd(cfg),
+		decodeRawTxCmd(),
 		generateAddrsCmd(cfg),
 		generateWalletCmd(cfg),
 		lastBlocksCmd(),

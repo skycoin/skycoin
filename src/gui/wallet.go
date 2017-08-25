@@ -99,19 +99,24 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		sdst := r.FormValue("dst")
 		if sdst == "" {
-			wh.Error400(w, "Missing destination address \"dst\"")
+			wh.Error400(w, "missing destination address \"dst\"")
 			return
 		}
 		dst, err := cipher.DecodeBase58Address(sdst)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid destination address: %v", err))
+			wh.Error400(w, fmt.Sprintf("invalid destination address: %v", err))
 			return
 		}
 
 		scoins := r.FormValue("coins")
 		coins, err := strconv.ParseUint(scoins, 10, 64)
 		if err != nil {
-			wh.Error400(w, "Invalid \"coins\" value")
+			wh.Error400(w, `invalid "coins" value`)
+			return
+		}
+
+		if coins <= 0 {
+			wh.Error400(w, `invalid "coins" value, must > 0`)
 			return
 		}
 

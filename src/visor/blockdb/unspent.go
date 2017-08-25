@@ -252,7 +252,7 @@ func (up *UnspentPool) getArray(hashes []cipher.SHA256) (coin.UxArray, error) {
 	return uxs, nil
 }
 
-// Get returns the uxout value of give hash
+// Get returns the uxout value of given hash
 func (up *UnspentPool) Get(h cipher.SHA256) (coin.UxOut, bool) {
 	up.Lock()
 	ux, ok := up.cache.pool[h.Hex()]

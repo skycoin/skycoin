@@ -67,11 +67,11 @@ type Block struct {
 */
 
 // NewBlock creates new block.
-func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256,
-	txns Transactions, calc FeeCalculator) (*Block, error) {
+func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transactions, calc FeeCalculator) (*Block, error) {
 	if len(txns) == 0 {
 		return nil, fmt.Errorf("Refusing to create block with no transactions")
 	}
+
 	fee, err := txns.Fees(calc)
 	if err != nil {
 		// This should have been caught earlier
@@ -136,8 +136,7 @@ func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
 }
 
 // NewBlockHeader creates block header
-func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime,
-	fee uint64, body BlockBody) BlockHeader {
+func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body BlockBody) BlockHeader {
 	if currentTime <= prev.Time {
 		logger.Panic("Time can only move forward")
 	}

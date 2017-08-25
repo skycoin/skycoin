@@ -117,10 +117,6 @@ type Visor struct {
 	bcParser    *BlockchainParser
 }
 
-func walker(hps []coin.HashPair) cipher.SHA256 {
-	return hps[0].Hash
-}
-
 // open the blockdb.
 func openDB(dbFile string) (*bolt.DB, func(), error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
@@ -168,7 +164,7 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 	}
 
 	// creates blockchain instance
-	bc, err := NewBlockchain(db, walker, Arbitrating(c.Arbitrating))
+	bc, err := NewBlockchain(db, Arbitrating(c.Arbitrating))
 	if err != nil {
 		return nil, nil, err
 	}

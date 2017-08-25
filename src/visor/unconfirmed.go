@@ -2,12 +2,11 @@ package visor
 
 import (
 	"errors"
-
+	"fmt"
 	"time"
 
-	"fmt"
-
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -19,23 +18,39 @@ import (
 // BurnFactor half of coinhours must be burnt
 var BurnFactor uint64 = 2
 
-// VerifyTransactionFee performs additional transaction verification at the unconfirmed pool level.
+// Performs additional transaction verification at the unconfirmed pool level.
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransactionFee(bc *Blockchain, t *coin.Transaction) error {
-	fee, err := bc.TransactionFee(t)
-	if err != nil {
-		return err
-	}
-
-	//calculate total number of coinhours
+func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
+	// Calculate total number of coinhours
 	var total = t.OutputHours() + fee
-	//make sure at least half the coin hours are destroyed
+	// Make sure at least half (BurnFactor=2) the coin hours are destroyed
 	if fee < total/BurnFactor {
 		return errors.New("Transaction coinhour fee minimum not met")
 	}
 	return nil
+}
+
+// TransactionFee calculates the current transaction fee in coinhours of a Transaction
+func TransactionFee(t *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {
+	// Compute input hours
+	inHours := uint64(0)
+	for _, ux := range inUxs {
+		inHours += ux.CoinHours(headTime)
+	}
+
+	// Compute output hours
+	outHours := uint64(0)
+	for i := range t.Out {
+		outHours += t.Out[i].Hours
+	}
+
+	if inHours < outHours {
+		return 0, errors.New("Insufficient coinhours for transaction outputs")
+	}
+
+	return inHours - outHours, nil
 }
 
 // TxnUnspents maps from coin.Transaction hash to its expected unspents.  The unspents'
@@ -290,37 +305,46 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // InjectTxn adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (know bool, err error) {
+func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
 	var valid int8
-	for {
-		if err = VerifyTransactionFee(bc, &t); err != nil {
-			if err == ErrUnspentNotExist {
-				break
-			}
+	var unspentNotExistErr error
+
+	fee, err := bc.TransactionFee(&t)
+	if err != nil {
+		return false, err
+	}
+
+	if err := VerifyTransactionFee(&t, fee); err != nil {
+		if err == ErrUnspentNotExist {
+			unspentNotExistErr = err
+		} else {
 			return false, err
 		}
+	}
 
-		if err := bc.VerifyTransaction(t); err != nil {
-			return false, err
-		}
-
-		valid = 1
-		break
+	if err := bc.VerifyTransaction(t); err != nil {
+		return false, err
 	}
 
 	// Update if we already have this txn
 	h := t.Hash()
-	// update the time if exist
+	known := false
 	utp.txns.update(h, func(tx *UnconfirmedTxn) {
-		know = true
-		now := utc.Now()
-		tx.Received = now.UnixNano()
-		tx.Checked = now.UnixNano()
-		tx.IsValid = valid
+		known = true
+
+		now := utc.Now().UnixNano()
+		tx.Received = now
+		tx.Checked = now
+
+		if unspentNotExistErr == nil {
+			tx.IsValid = 1
+		} else {
+			tx.IsValid = 0
+		}
 	})
 
-	if know {
-		return
+	if known {
+		return true, unspentNotExistErr
 	}
 
 	// Add txn to index
@@ -328,7 +352,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (kn
 	utx.IsValid = valid
 	utp.txns.put(&utx)
 	utp.unspent.put(h, coin.CreateUnspents(bc.Head().Head, t))
-	return
+	return false, unspentNotExistErr
 }
 
 // RawTxns returns underlying coin.Transactions

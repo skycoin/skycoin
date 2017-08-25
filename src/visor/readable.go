@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"strconv"
@@ -123,44 +124,70 @@ type ReadableTransactionInput struct {
 	Address string `json:"owner"`
 }
 
-// StrBalance converts balance to string
-// each 1,000,000 units is 1 coin
-// skyoin has up to 6 decimal places but no more
-func StrBalance(amt uint64) string {
-	a := amt / 1000000 //whole part
-	b := amt % 1000000 //fractional part
-
-	//func strconv.FormatUint(i int64, base int) string
+// BalanceToStr converts balance (measured in droplets) to string
+// Each 1,000,000 units is 1 coin
+// Skycoin has up to 6 decimal places but no more
+func BalanceToStr(amt uint64) string {
+	a := amt / 1e6 // whole part
+	b := amt % 1e6 // fractional part
 
 	as := strconv.FormatUint(a, 10)
 	bs := strconv.FormatUint(b, 10)
 
 	if len(bs) > 6 {
-		logger.Panic("StrBalance: impossible condition")
+		logger.Panic("BalanceToStr: impossible condition")
 	}
 
-	if b == 0 { //no fractional part
+	if b == 0 {
+		// no fractional part
 		return as
 	}
 
 	return fmt.Sprintf("%s.%s", as, bs)
 }
 
-//StrBalance2 convert back
-func StrBalance2(amt string) uint64 {
-	b, err := strconv.ParseUint(amt, 10, 64)
-	if err != nil {
-		panic(err)
+// Convert decimal string back to coins, measured in droplets
+// Valid strings may have a single decimal point, e.g.:
+// "500", "500.", "500.0", "500.3", "500.123456"
+// but at most 6 decimal places.
+func StrToBalance(amt string) (uint64, error) {
+	pts := strings.Split(amt, ".")
+
+	if len(pts) > 2 {
+		return 0, fmt.Errorf("Invalid balance %s", amt)
 	}
-	return b
+
+	var droplets uint64
+	if len(pts) == 2 {
+		d := pts[1]
+		if len(d) > 6 {
+			return 0, errors.New("Maximum number of decimal places is 6")
+		}
+
+		if d != "" {
+			var err error
+			droplets, err = strconv.ParseUint(d, 10, 64)
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	c := pts[0]
+	coins, err := strconv.ParseUint(c, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return (coins * 1e6) + droplets, nil
 }
 
 // NewReadableTransactionOutput creates readable transaction outputs
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) ReadableTransactionOutput {
 	return ReadableTransactionOutput{
 		Hash:    t.UxID(txid).Hex(),
-		Address: t.Address.String(), //Destination Address
-		Coins:   StrBalance(t.Coins),
+		Address: t.Address.String(), // Destination Address
+		Coins:   BalanceToStr(t.Coins),
 		Hours:   t.Hours,
 	}
 }
@@ -215,7 +242,7 @@ func NewReadableOutput(t coin.UxOut) ReadableOutput {
 		Hash:              t.Hash().Hex(),
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
-		Coins:             StrBalance(t.Body.Coins),
+		Coins:             BalanceToStr(t.Body.Coins),
 		Hours:             t.Body.Hours,
 	}
 }
@@ -362,7 +389,7 @@ type ReadableBlock struct {
 	Body ReadableBlockBody   `json:"body"`
 }
 
-// NewReadableBlock creates readable blockj
+// NewReadableBlock creates readable block
 func NewReadableBlock(b *coin.Block) ReadableBlock {
 	return ReadableBlock{
 		Head: NewReadableBlockHeader(&b.Head),
@@ -399,28 +426,9 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) Tr
 	o.SourceTransaction = srcTx.Hex()
 
 	o.Address = ux.Address.String()
-	o.Coins = StrBalance(ux.Coins)
+	o.Coins = BalanceToStr(ux.Coins)
 	o.Hours = ux.Hours
 	return o
-}
-
-// TransactionOutputFromJSON load transaction output from json
-func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput, error) {
-	var tx coin.TransactionOutput
-
-	addr, err := cipher.DecodeBase58Address(in.Address)
-	if err != nil {
-		return coin.TransactionOutput{}, errors.New("Address decode fail")
-	}
-
-	tx.Address = addr
-	tx.Coins = StrBalance2(in.Coins)
-	tx.Hours = in.Hours
-	if err != nil {
-		return coin.TransactionOutput{}, err
-	}
-
-	return tx, nil
 }
 
 // TransactionJSON represents transaction in json
@@ -456,7 +464,7 @@ func TransactionToJSON(tx coin.Transaction) string {
 		o.Sigs[i] = sig.Hex()
 	}
 	for i, x := range tx.In {
-		o.In[i] = x.Hex() //hash to hex
+		o.In[i] = x.Hex() // hash to hex
 	}
 	for i, y := range tx.Out {
 		o.Out[i] = NewTransactionOutputJSON(y, tx.InnerHash)
@@ -468,69 +476,4 @@ func TransactionToJSON(tx coin.Transaction) string {
 	}
 
 	return string(b)
-}
-
-// TransactionFromJSON load transaction from json string
-func TransactionFromJSON(str string) (coin.Transaction, error) {
-
-	var TxIn TransactionJSON
-	err := json.Unmarshal([]byte(str), TxIn)
-
-	if err != nil {
-		return coin.Transaction{}, errors.New("cannot deserialize")
-	}
-
-	var tx coin.Transaction
-
-	tx.Sigs = make([]cipher.Sig, len(TxIn.Sigs))
-	tx.In = make([]cipher.SHA256, len(TxIn.In))
-	tx.Out = make([]coin.TransactionOutput, len(TxIn.Out))
-
-	for i := range tx.Sigs {
-		sig2, err := cipher.SigFromHex(TxIn.Sigs[i])
-		if err != nil {
-			return coin.Transaction{}, errors.New("invalid signature")
-		}
-		tx.Sigs[i] = sig2
-	}
-
-	for i := range tx.In {
-		hash, err := cipher.SHA256FromHex(TxIn.In[i])
-		if err != nil {
-			return coin.Transaction{}, errors.New("invalid signature")
-		}
-		tx.In[i] = hash
-	}
-
-	for i := range tx.Out {
-		out, err := TransactionOutputFromJSON(TxIn.Out[i])
-		if err != nil {
-			return coin.Transaction{}, errors.New("invalid output")
-		}
-		tx.Out[i] = out
-	}
-
-	tx.Length = uint32(tx.Size())
-	tx.Type = 0
-
-	hash, err := cipher.SHA256FromHex(TxIn.Hash)
-	if err != nil {
-		return coin.Transaction{}, errors.New("invalid hash")
-	}
-	if hash != tx.Hash() {
-
-	}
-
-	InnerHash, err := cipher.SHA256FromHex(TxIn.Hash)
-
-	if InnerHash != tx.InnerHash {
-		return coin.Transaction{}, errors.New("inner hash")
-	}
-
-	err = tx.Verify()
-	if err != nil {
-		return coin.Transaction{}, errors.New("transaction failed verification")
-	}
-
-	return tx, nil
 }

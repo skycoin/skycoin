@@ -135,7 +135,7 @@ type CoinSupply struct {
 
 func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -189,12 +189,12 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 // url: /explorer/address?address=${address}
 func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		addr := r.URL.Query().Get("address")
+		addr := r.FormValue("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
 			return

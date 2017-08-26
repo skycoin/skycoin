@@ -139,11 +139,6 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Create a wallet Name is set by creation date
 func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
 		seed := r.FormValue("seed")
 		label := r.FormValue("label")
 

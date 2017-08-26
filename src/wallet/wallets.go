@@ -121,37 +121,37 @@ func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
 }
 
 // Add add walet to current wallet
-func (wlts *Wallets) Add(w Wallet) error {
-	if _, dup := (*wlts)[w.GetFilename()]; dup {
+func (wlts Wallets) Add(w Wallet) error {
+	if _, dup := wlts[w.GetFilename()]; dup {
 		return errors.New("wallet name would conflict with existing wallet, renaming")
 	}
 
-	(*wlts)[w.GetFilename()] = &w
+	wlts[w.GetFilename()] = &w
 	return nil
 }
 
 // Remove wallet of specific id
-func (wlts *Wallets) Remove(id string) {
-	delete(*wlts, id)
+func (wlts Wallets) Remove(id string) {
+	delete(wlts, id)
 }
 
 // Get returns wallet by wallet id
-func (wlts *Wallets) Get(wltID string) (Wallet, bool) {
-	if w, ok := (*wlts)[wltID]; ok {
+func (wlts Wallets) Get(wltID string) (Wallet, bool) {
+	if w, ok := wlts[wltID]; ok {
 		return w.Copy(), true
 	}
 	return Wallet{}, false
 }
 
 // Update updates the given wallet, return error if not exist
-func (wlts *Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
-	w, ok := (*wlts)[wltID]
+func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
+	w, ok := wlts[wltID]
 	if !ok {
 		return errWalletNotExist(wltID)
 	}
 
 	newWlt := updateFunc(*w)
-	(*wlts)[wltID] = &newWlt
+	wlts[wltID] = &newWlt
 	return nil
 }
 

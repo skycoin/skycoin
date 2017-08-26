@@ -19,19 +19,16 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-func prepareWltDir() (string, func()) {
+func prepareWltDir() string {
 	tmpDir := os.TempDir()
-	rand.Seed(time.Now().Unix())
-	n := rand.Int31n(100)
+	n := rand.Int31n(1e6)
 	dir := fmt.Sprintf("%s%d/wallets", tmpDir, n)
-	return dir, func() {
-		os.RemoveAll(dir)
-	}
+	fmt.Println(dir)
+	return dir
 }
 
 func TestNewService(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
@@ -67,8 +64,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestServiceCreateWallet(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 
 	s, err := NewService(dir)
 	require.NoError(t, err)
@@ -98,8 +94,7 @@ func TestServiceCreateWallet(t *testing.T) {
 }
 
 func TestServiceNewAddress(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
@@ -122,8 +117,7 @@ func TestServiceNewAddress(t *testing.T) {
 }
 
 func TestServiceGetAddress(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
@@ -143,8 +137,7 @@ func TestServiceGetAddress(t *testing.T) {
 }
 
 func TestServiceGetWallet(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 
 	s, err := NewService(dir)
 	require.NoError(t, err)
@@ -167,8 +160,7 @@ func TestServiceGetWallet(t *testing.T) {
 }
 
 func TestServiceReloadWallets(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 
 	s, err := NewService(dir)
 	require.NoError(t, err)
@@ -229,8 +221,7 @@ func (dug dummyUnspentGetter) Get(uxid cipher.SHA256) (coin.UxOut, bool) {
 }
 
 func TestServiceCreateAndSignTx(t *testing.T) {
-	dir, clean := prepareWltDir()
-	defer clean()
+	dir := prepareWltDir()
 
 	s, err := NewService(dir)
 	require.NoError(t, err)

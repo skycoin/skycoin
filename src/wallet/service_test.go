@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -20,11 +21,18 @@ func init() {
 }
 
 func prepareWltDir() string {
-	tmpDir := os.TempDir()
-	n := rand.Int31n(1e6)
-	dir := fmt.Sprintf("%s%d/wallets", tmpDir, n)
-	fmt.Println(dir)
+	dir, err := ioutil.TempDir("", "wallets")
+	if err != nil {
+		panic(err)
+	}
+
 	return dir
+}
+
+func TestPrepareWltDir(t *testing.T) {
+	for i := 0; i < 4; i++ {
+		prepareWltDir()
+	}
 }
 
 func TestNewService(t *testing.T) {

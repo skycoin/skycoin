@@ -36,7 +36,8 @@ export class WalletService {
   }
 
   addAddress(wallet: WalletModel) {
-    return this.apiService.post('wallet/newAddress', {id: wallet.meta.filename});
+    return this.apiService.post('wallet/newAddress', {id: wallet.meta.filename})
+      .map(response => ({ address: response.addresses[0], balance: 0 }));
   }
 
   all(): Observable<WalletModel[]> {

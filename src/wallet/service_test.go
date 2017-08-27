@@ -16,10 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	rand.Seed(time.Now().Unix())
-}
-
 func prepareWltDir() string {
 	dir, err := ioutil.TempDir("", "wallets")
 	if err != nil {

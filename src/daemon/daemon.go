@@ -287,7 +287,10 @@ func (dm *Daemon) Shutdown() {
 	dm.quitC <- q
 	<-q
 
-	dm.Pool.Shutdown()
+	if !dm.Config.DisableNetworking {
+		dm.Pool.Shutdown()
+	}
+
 	dm.Peers.Shutdown()
 	dm.Visor.Shutdown()
 }

@@ -82,6 +82,8 @@ func (serv *Service) CreateWallet(wltName string, options ...Option) (Wallet, er
 	}
 
 	if err := w.Save(serv.WalletDirectory); err != nil {
+		// remove the added wallet from serv.wallets.
+		serv.wallets.Remove(w.GetID())
 		return Wallet{}, err
 	}
 

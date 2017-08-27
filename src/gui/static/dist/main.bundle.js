@@ -2301,7 +2301,8 @@ var WalletService = (function () {
         }).join(','); });
     };
     WalletService.prototype.addAddress = function (wallet) {
-        return this.apiService.post('wallet/newAddress', { id: wallet.meta.filename });
+        return this.apiService.post('wallet/newAddress', { id: wallet.meta.filename })
+            .map(function (response) { return ({ address: response.addresses[0], balance: 0 }); });
     };
     WalletService.prototype.all = function () {
         return this.wallets.asObservable();

@@ -8,11 +8,9 @@ ELECTRON_DIR = electron
 
 # build electron apps, the builds are located in electron/release folder.
 build: 
-	cd $(STATIC_DIR) && gulp dist
 	cd $(ELECTRON_DIR) && ./build.sh
 	@echo release files are in the folder of electron/release
 
 # clean dist files and delete all builds in electron/release 
 clean: 
-	cd $(STATIC_DIR) && gulp clean
 	rm $(ELECTRON_DIR)/release/*

@@ -29,12 +29,6 @@ func prepareWltDir() string {
 	return dir
 }
 
-func TestPrepareWltDir(t *testing.T) {
-	for i := 0; i < 4; i++ {
-		prepareWltDir()
-	}
-}
-
 func TestNewService(t *testing.T) {
 	dir := prepareWltDir()
 	s, err := NewService(dir)

@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // TransactionResult represents transaction result
@@ -25,7 +26,16 @@ type TransactionResults struct {
 
 // RPC is balance check and transaction injection
 // separate wallets out of visor
-type RPC struct{}
+type RPC struct {
+	v *Visor
+}
+
+// MakeRPC make RPC instance
+func MakeRPC(v *Visor) RPC {
+	return RPC{
+		v: v,
+	}
+}
 
 // GetBlockchainMetadata get blockchain meta data
 func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
@@ -123,4 +133,53 @@ func (rpc RPC) GetAddressTxns(v *Visor,
 	return &TransactionResults{
 		Txns: txns,
 	}, nil
+}
+
+// NewWallet creates new wallet
+func (rpc *RPC) NewWallet(wltName string, ops ...wallet.Option) (wallet.Wallet, error) {
+	return rpc.v.wallets.CreateWallet(wltName, ops...)
+}
+
+// NewAddresses generates new addresses in given wallet
+func (rpc *RPC) NewAddresses(wltName string, num int) ([]cipher.Address, error) {
+	return rpc.v.wallets.NewAddresses(wltName, num)
+}
+
+// GetWalletAddresses returns all addresses in given wallet
+func (rpc *RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
+	return rpc.v.wallets.GetAddresses(wltID)
+}
+
+// CreateAndSignTransaction creates and sign transaction from wallet
+func (rpc *RPC) CreateAndSignTransaction(wltID string, vld wallet.Validator,
+	unspent blockdb.UnspentGetter,
+	headTime uint64,
+	amt wallet.Balance,
+	dest cipher.Address) (*coin.Transaction, error) {
+	return rpc.v.wallets.CreateAndSignTransaction(wltID,
+		vld,
+		unspent,
+		headTime,
+		amt,
+		dest)
+}
+
+// UpdateWalletLabel updates wallet label
+func (rpc *RPC) UpdateWalletLabel(wltID, label string) error {
+	return rpc.v.wallets.UpdateWalletLabel(wltID, label)
+}
+
+// GetWallet returns wallet by id
+func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, bool) {
+	return rpc.v.wallets.GetWallet(wltID)
+}
+
+// GetWallets returns all wallet
+func (rpc *RPC) GetWallets() wallet.Wallets {
+	return rpc.v.wallets.GetWallets()
+}
+
+// ReloadWallets reloads all wallet from files
+func (rpc *RPC) ReloadWallets() error {
+	return rpc.v.wallets.ReloadWallets()
 }

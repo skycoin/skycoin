@@ -50,10 +50,11 @@ func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // params: hash or seq, should only specify one filter.
 func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
+
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
 		var b coin.Block
@@ -93,7 +94,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 
 func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -117,7 +118,7 @@ func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 // get last N blocks
 func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}

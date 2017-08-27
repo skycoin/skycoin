@@ -120,36 +120,31 @@ func OptSeed(sd string) Option {
 
 // Load loads wallet from given file
 func Load(wltFile string) (*Wallet, error) {
-	// check file's existence
-	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("load wallet file failed, %v", err)
+	w := Wallet{}
+	if err := w.Load(wltFile); err != nil {
+		return nil, err
 	}
-	wlt := Wallet{
-		Meta: make(map[string]string),
-	}
-	wlt.SetFilename(filepath.Base(wltFile))
-	dir, err := filepath.Abs(filepath.Dir(wltFile))
+
+	return &w, nil
+}
+
+// newWalletFromReadable creates wallet from readable wallet
+func newWalletFromReadable(r *ReadableWallet) (*Wallet, error) {
+	ets, err := r.Entries.ToWalletEntries()
 	if err != nil {
 		return nil, err
 	}
-	if err := wlt.Load(dir); err != nil {
-		return nil, fmt.Errorf("load wallet file failed, %v", err)
-	}
-	return &wlt, nil
-}
 
-// NewWalletFromReadable creates wallet from readable wallet
-func NewWalletFromReadable(r *ReadableWallet) Wallet {
 	w := Wallet{
 		Meta:    r.Meta,
-		Entries: r.Entries.ToWalletEntries(),
+		Entries: ets,
 	}
 
-	err := w.Validate()
-	if err != nil {
-		logger.Panicf("Wallet %s invalid: %v", w.GetFilename(), err)
+	if err := w.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid wallet %s: %v", w.GetFilename(), err)
 	}
-	return w
+
+	return &w, nil
 }
 
 // Validate validates the wallet
@@ -158,12 +153,12 @@ func (wlt Wallet) Validate() error {
 		return errors.New("filename not set")
 	}
 	if _, ok := wlt.Meta["seed"]; !ok {
-		return errors.New("seed not set")
+		return errors.New("seed field not set")
 	}
 
 	walletType, ok := wlt.Meta["type"]
 	if !ok {
-		return errors.New("type not set")
+		return errors.New("type field not set")
 	}
 	if walletType != "deterministic" {
 		return errors.New("wallet type invalid")
@@ -291,15 +286,40 @@ func (wlt *Wallet) Save(dir string) error {
 	return r.Save(filepath.Join(dir, wlt.GetFilename()))
 }
 
-// Load loads wallets from given dir
-func (wlt *Wallet) Load(dir string) error {
+// Load loads wallets from given wallet file
+func (wlt *Wallet) Load(wltFile string) error {
+	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
+		return fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
+	}
+
 	r := &ReadableWallet{}
-	if err := r.Load(filepath.Join(dir, wlt.GetFilename())); err != nil {
+	if err := r.Load(wltFile); err != nil {
 		return err
 	}
-	r.Meta["filename"] = wlt.GetFilename()
-	*wlt = NewWalletFromReadable(r)
+
+	// update filename meta info with the real filename
+	r.Meta["filename"] = filepath.Base(wltFile)
+	w, err := newWalletFromReadable(r)
+	if err != nil {
+		return err
+	}
+
+	*wlt = *w
 	return nil
+}
+
+// Copy returns the copy of wallet
+func (wlt *Wallet) Copy() Wallet {
+	w := Wallet{Meta: make(map[string]string)}
+	for k, v := range wlt.Meta {
+		w.Meta[k] = v
+	}
+
+	for _, e := range wlt.Entries {
+		w.Entries = append(w.Entries, e)
+	}
+
+	return w
 }
 
 // Validator validate if the wallet be able to create spending transaction
@@ -320,15 +340,15 @@ func (wlt *Wallet) CreateAndSignTransaction(
 	addrs := wlt.GetAddresses()
 	ok, err := vld.HasUnconfirmedSpendTx(addrs)
 	if err != nil {
-		return nil, fmt.Errorf("Checking unconfirmed spending failed: %v", err)
+		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
 	}
 
 	if ok {
-		return nil, errors.New("Please spend after your pending transaction is confirmed")
+		return nil, errors.New("please spend after your pending transaction is confirmed")
 	}
 
 	txn := coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(wlt.GetAddresses())
+	auxs := unspent.GetUnspentsOfAddrs(addrs)
 
 	// Determine which unspents to spend
 	spends, err := createSpends(headTime, auxs.Flatten(), amt)
@@ -342,7 +362,7 @@ func (wlt *Wallet) CreateAndSignTransaction(
 	for i, au := range spends {
 		entry, exists := wlt.GetEntry(au.Body.Address)
 		if !exists {
-			return nil, fmt.Errorf("Address:%v does not exist in wallet:%v", au.Body.Address, wlt.GetID())
+			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Body.Address, wlt.GetID())
 		}
 
 		txn.PushInput(au.Hash())
@@ -377,10 +397,10 @@ func (wlt *Wallet) CreateAndSignTransaction(
 func createSpends(headTime uint64, uxa coin.UxArray,
 	amt Balance) (coin.UxArray, error) {
 	if amt.Coins == 0 {
-		return nil, errors.New("Zero spend amount")
+		return nil, errors.New("zero spend amount")
 	}
 	if amt.Coins%1e6 != 0 {
-		return nil, errors.New("Coins must be multiple of 1e6")
+		return nil, errors.New("coins must be multiple of 1e6")
 	}
 
 	sort.Sort(uxOutByTimeDesc(uxa))
@@ -406,7 +426,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	}
 
 	if amt.Coins > have.Coins {
-		return nil, errors.New("Not enough confirmed coins")
+		return nil, errors.New("not enough confirmed coins")
 	}
 
 	return spending, nil
@@ -431,4 +451,8 @@ func (ouo uxOutByTimeDesc) Less(i, j int) bool {
 		return cmp < 0
 	}
 	return a < b
+}
+
+func errWalletNotExist(wltName string) error {
+	return fmt.Errorf("wallet %s doesn't exist", wltName)
 }

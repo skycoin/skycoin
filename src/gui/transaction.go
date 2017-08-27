@@ -32,7 +32,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 // Returns pending transactions
 func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -51,7 +51,7 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 // getLastTxs get the last confirmed txs.
 func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -76,7 +76,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -113,7 +113,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
+		if r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
@@ -147,7 +147,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 
 func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -162,7 +162,7 @@ func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 
 func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}

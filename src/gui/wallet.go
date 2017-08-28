@@ -91,7 +91,7 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // to destination address.
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}

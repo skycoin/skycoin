@@ -126,7 +126,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 func (serv *Service) GetWallet(wltID string) (Wallet, bool) {
 	serv.RLock()
 	defer serv.RUnlock()
-	return serv.wallets.Get(wltID)
+	return serv.wallets.Get(wltID).Copy()
 }
 
 // GetWallets returns all wallet

@@ -40,8 +40,6 @@ type Gateway struct {
 	v *visor.Visor
 	// Requests are queued on this channel
 	requests chan func()
-	// When a request is done processing, it is placed on this channel
-	// Responses chan interface{}
 }
 
 // NewGateway create and init an Gateway instance.
@@ -85,7 +83,6 @@ func (gw *Gateway) GetDefaultConnections() interface{} {
 
 // GetConnection returns a *Connection of specific address
 func (gw *Gateway) GetConnection(addr string) interface{} {
-	logger.Critical("here")
 	var conn interface{}
 	gw.strand(func() {
 		conn = gw.drpc.GetConnection(gw.d, addr)
@@ -624,6 +621,14 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) (txns []visor.Unconfir
 func (gw *Gateway) ReloadWallets() (err error) {
 	gw.strand(func() {
 		err = gw.vrpc.ReloadWallets()
+	})
+	return
+}
+
+// GetBuildInfo returns node build info.
+func (gw *Gateway) GetBuildInfo() (bi visor.BuildInfo) {
+	gw.strand(func() {
+		bi = gw.vrpc.GetBuildInfo()
 	})
 	return
 }

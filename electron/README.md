@@ -30,6 +30,14 @@ node -v
 npm -v
 ```
 
+## Make sure that the wallet dist is up to date
+
+```sh
+cd /src/gui/static
+npm install
+npm run build
+```
+
 ## Use electron-builder to pack and create app installer
 
 ### Install electron-builder

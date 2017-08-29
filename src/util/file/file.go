@@ -35,6 +35,12 @@ func InitDataDir(dir string) (string, error) {
 		return "", err
 	}
 
+	// check if dir already exist
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		// already exist
+		return dir, nil
+	}
+
 	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
 		logger.Error("Failed to create directory %s: %v", dir, err)
 		return "", err

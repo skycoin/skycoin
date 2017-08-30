@@ -4,7 +4,7 @@
       {{ wallet.meta.label }}
     </md-panel-title>
     <md-panel-description>
-      {{ wallet.balance | sky }}
+      <span>{{ wallet.balance | sky }}</span> <span>{{ wallet.hours ? wallet.hours : 0 }} Hours</span>
     </md-panel-description>
   </md-expansion-panel-header>
   <app-wallet-detail [wallet]="wallet"></app-wallet-detail>

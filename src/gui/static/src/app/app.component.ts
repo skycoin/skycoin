@@ -3,6 +3,7 @@ import { WalletService } from './services/wallet.service';
 import { BlockchainService } from './services/blockchain.service';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/operator/takeWhile';
+import { ApiService } from './services/api.service';
 
 @Component({
   selector: 'app-root',
@@ -14,13 +15,16 @@ export class AppComponent {
   current: number;
   highest: number;
   percentage: number;
+  version: string;
 
   constructor(
     public walletService: WalletService,
+    private apiService: ApiService,
     private blockchainService: BlockchainService,
   ) {}
 
   ngOnInit() {
+    this.setVersion();
     IntervalObservable
       .create(3000)
       .flatMap(() => this.blockchainService.progress())
@@ -42,5 +46,10 @@ export class AppComponent {
     this.current = 999999999999;
     this.highest = 999999999999;
     this.walletService.refreshBalances();
+  }
+
+  private setVersion() {
+    return this.apiService.get('version')
+      .subscribe(output => this.version = output.version);
   }
 }

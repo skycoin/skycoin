@@ -37,6 +37,7 @@ import { NetworkComponent } from './components/pages/settings/network/network.co
 import { NetworkService } from './services/network.service';
 import { ChangeNameComponent } from './components/pages/wallets/change-name/change-name.component';
 import { ButtonComponent } from './components/layout/button/button.component';
+import { QrCodeComponent } from './components/layout/qr-code/qr-code.component';
 
 const ROUTES = [
   {
@@ -177,6 +178,7 @@ const ROUTES = [
     NetworkComponent,
     ChangeNameComponent,
     ButtonComponent,
+    QrCodeComponent,
   ],
   entryComponents: [
     CreateWalletComponent,

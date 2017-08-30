@@ -21,6 +21,12 @@ var (
 	logger = logging.MustGetLogger("visor")
 )
 
+// BuildInfo represents the build info
+type BuildInfo struct {
+	Version string `json:"version"` // version number
+	Commit  string `json:"commit"`  // git commit id
+}
+
 // Config configuration parameters for the Visor
 type Config struct {
 	// Is this the master blockchain
@@ -64,13 +70,14 @@ type Config struct {
 	GenesisTimestamp uint64
 	// Number of coins in genesis block
 	GenesisCoinVolume uint64
-	// Function that creates a new Wallet
-	//WalletConstructor wallet.WalletConstructor
-	// Default type of wallet to create
-	//WalletTypeDefault wallet.WalletType
-	DBPath          string
-	Arbitrating     bool   // enable arbitrating
-	WalletDirectory string // wallet directory
+	// bolt db file path
+	DBPath string
+	// enable arbitrating mode
+	Arbitrating bool
+	// wallet directory
+	WalletDirectory string
+	// build info, including version, build time etc.
+	BuildInfo BuildInfo
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block

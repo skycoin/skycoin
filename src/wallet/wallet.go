@@ -23,6 +23,7 @@ var (
 	logger = logging.MustGetLogger("wallet")
 )
 
+// CoinType represents the wallet coin type
 type CoinType string
 
 const (
@@ -32,7 +33,9 @@ const (
 	// WalletTimestampFormat  wallet timestamp layout
 	WalletTimestampFormat = "2006_01_02"
 
+	// CoinTypeSkycoin skycoin type
 	CoinTypeSkycoin CoinType = "skycoin"
+	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
 )
 

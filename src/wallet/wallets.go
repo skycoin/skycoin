@@ -138,7 +138,7 @@ func (wlts Wallets) Remove(id string) {
 // Get returns wallet by wallet id
 func (wlts Wallets) Get(wltID string) (Wallet, bool) {
 	if w, ok := wlts[wltID]; ok {
-		return w.Copy(), true
+		return *w, true
 	}
 	return Wallet{}, false
 }

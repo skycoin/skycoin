@@ -29,7 +29,10 @@ import (
 
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
-	Version    = "0.0.0"
+	Version = "0.20.0-dev"
+	// Commit id
+	Commit = ""
+
 	logger     = logging.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
@@ -233,8 +236,6 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
 		"Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
-	//flag.StringVar(&c.AddressVersion, "address-version", c.AddressVersion,
-	//	"Wallet address version. Options are 'test' and 'main'")
 }
 
 var devConfig = Config{
@@ -487,6 +488,10 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.Arbitrating = c.Arbitrating
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
+	dc.Visor.Config.BuildInfo = visor.BuildInfo{
+		Version: Version,
+		Commit:  Commit,
+	}
 	return dc
 }
 

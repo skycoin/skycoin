@@ -44,7 +44,7 @@ func NewService(walletDir string, options ...Option) (*Service, error) {
 	if len(serv.wallets) == 0 {
 		wltName := NewWalletFilename()
 		// create default wallet
-		w, err := serv.CreateWallet(wltName)
+		w, err := serv.CreateWallet(wltName, OptLabel("Your Wallet"))
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,11 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 func (serv *Service) GetWallet(wltID string) (Wallet, bool) {
 	serv.RLock()
 	defer serv.RUnlock()
-	return serv.wallets.Get(wltID)
+	w, ok := serv.wallets.Get(wltID)
+	if !ok {
+		return Wallet{}, false
+	}
+	return w.Copy(), true
 }
 
 // GetWallets returns all wallet

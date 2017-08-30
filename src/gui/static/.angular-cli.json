@@ -22,7 +22,9 @@
         "../node_modules/material-design-icons/iconfont/material-icons.css",
         "styles.css"
       ],
-      "scripts": [],
+      "scripts": [
+        "assets/scripts/qrcode.min.js"
+      ],
       "environmentSource": "environments/environment.ts",
       "environments": {
         "dev": "environments/environment.ts",

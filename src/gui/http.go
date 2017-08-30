@@ -120,6 +120,8 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
 	}
 
+	mux.HandleFunc("/version", versionHandler(daemon.Gateway))
+
 	//get set of unspent outputs
 	mux.HandleFunc("/outputs", getOutputsHandler(daemon.Gateway))
 
@@ -237,5 +239,16 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, bal)
+	}
+}
+
+func versionHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		wh.SendOr404(w, gateway.GetBuildInfo())
 	}
 }

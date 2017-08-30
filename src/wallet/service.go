@@ -44,7 +44,7 @@ func NewService(walletDir string, options ...Option) (*Service, error) {
 	if len(serv.wallets) == 0 {
 		wltName := NewWalletFilename()
 		// create default wallet
-		w, err := serv.CreateWallet(wltName)
+		w, err := serv.CreateWallet(wltName, OptLabel("Your Wallet"))
 		if err != nil {
 			return nil, err
 		}

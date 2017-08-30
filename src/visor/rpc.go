@@ -183,3 +183,8 @@ func (rpc *RPC) GetWallets() wallet.Wallets {
 func (rpc *RPC) ReloadWallets() error {
 	return rpc.v.wallets.ReloadWallets()
 }
+
+// GetBuildInfo returns node build info, including version, build time, etc.
+func (rpc *RPC) GetBuildInfo() BuildInfo {
+	return rpc.v.Config.BuildInfo
+}

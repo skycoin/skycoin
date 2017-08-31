@@ -183,6 +183,7 @@ const ROUTES = [
   entryComponents: [
     CreateWalletComponent,
     ChangeNameComponent,
+    QrCodeComponent,
   ],
   imports: [
     BrowserModule,

@@ -18,10 +18,6 @@ header {
   height: 300px;
 }
 
-md-expansion-panel {
-  margin-top: 20px !important;
-}
-
 .header-container {
   max-width: 848px;
   text-align: center;
@@ -60,5 +56,5 @@ snack-bar-container {
 md-panel-title {
   width: 60%;
   display: block;
-  flex-grow: 0;
+  flex-grow: 0 !important;
 }

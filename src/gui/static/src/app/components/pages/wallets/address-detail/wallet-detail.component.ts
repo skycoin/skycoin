@@ -3,6 +3,7 @@ import { WalletService } from '../../../../services/wallet.service';
 import { WalletModel } from '../../../../models/wallet.model';
 import { MdDialog, MdDialogConfig } from '@angular/material';
 import { ChangeNameComponent } from '../change-name/change-name.component';
+import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -30,5 +31,11 @@ export class WalletDetailComponent {
         this.wallet.meta.label = result;
       }
     });
+  }
+
+  showQr(address) {
+    const config = new MdDialogConfig();
+    config.data = address;
+    this.dialog.open(QrCodeComponent, config);
   }
 }

@@ -86,6 +86,7 @@ export class WalletService {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
         wallet.entries = response;
         wallet.balance = response.map(address => address.balance >= 0 ? address.balance : 0).reduce((a , b) => a + b, 0);
+        wallet.hours = response.map(address => address.hours >= 0 ? address.hours : 0).reduce((a , b) => a + b, 0);
         return wallet;
       })))
         .subscribe(newWallets => this.wallets.next(newWallets));
@@ -169,6 +170,7 @@ export class WalletService {
   private retrieveWalletBalance(wallet: WalletModel): Observable<any> {
     return Observable.forkJoin(wallet.entries.map(address => this.retrieveAddressBalance(address).map(balance => {
       address.balance = balance.confirmed.coins;
+      address.hours = balance.confirmed.hours;
       return address;
     })));
   }

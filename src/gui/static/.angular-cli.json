@@ -20,6 +20,7 @@
       "prefix": "app",
       "styles": [
         "../node_modules/material-design-icons/iconfont/material-icons.css",
+        "../node_modules/font-awesome/css/font-awesome.css",
         "styles.css"
       ],
       "scripts": [

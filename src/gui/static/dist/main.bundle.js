@@ -34,7 +34,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/app.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">v0.20.0</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar>\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
+module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">{{ version }}</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar>\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -49,6 +49,7 @@ module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-wh
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile__ = __webpack_require__("../../../../rxjs/add/operator/takeWhile.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__services_api_service__ = __webpack_require__("../../../../../src/app/services/api.service.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -64,13 +65,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
+
 var AppComponent = (function () {
-    function AppComponent(walletService, blockchainService) {
+    function AppComponent(walletService, apiService, blockchainService) {
         this.walletService = walletService;
+        this.apiService = apiService;
         this.blockchainService = blockchainService;
     }
     AppComponent.prototype.ngOnInit = function () {
         var _this = this;
+        this.setVersion();
         __WEBPACK_IMPORTED_MODULE_3_rxjs_observable_IntervalObservable__["IntervalObservable"]
             .create(3000)
             .flatMap(function () { return _this.blockchainService.progress(); })
@@ -90,6 +94,11 @@ var AppComponent = (function () {
         this.highest = 999999999999;
         this.walletService.refreshBalances();
     };
+    AppComponent.prototype.setVersion = function () {
+        var _this = this;
+        return this.apiService.get('version')
+            .subscribe(function (output) { return _this.version = output.version; });
+    };
     return AppComponent;
 }());
 AppComponent = __decorate([
@@ -98,10 +107,10 @@ AppComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/app.component.html"),
         styles: [__webpack_require__("../../../../../src/app/app.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */]) === "function" && _b || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_5__services_api_service__["a" /* ApiService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_5__services_api_service__["a" /* ApiService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */]) === "function" && _c || Object])
 ], AppComponent);
 
-var _a, _b;
+var _a, _b, _c;
 //# sourceMappingURL=app.component.js.map
 
 /***/ }),
@@ -146,6 +155,7 @@ var _a, _b;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_32__services_network_service__ = __webpack_require__("../../../../../src/app/services/network.service.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__ = __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_34__components_layout_button_button_component__ = __webpack_require__("../../../../../src/app/components/layout/button/button.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_35__components_layout_qr_code_qr_code_component__ = __webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppModule; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -153,6 +163,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+
 
 
 
@@ -332,10 +343,12 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_31__components_pages_settings_network_network_component__["a" /* NetworkComponent */],
             __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__["a" /* ChangeNameComponent */],
             __WEBPACK_IMPORTED_MODULE_34__components_layout_button_button_component__["a" /* ButtonComponent */],
+            __WEBPACK_IMPORTED_MODULE_35__components_layout_qr_code_qr_code_component__["a" /* QrCodeComponent */],
         ],
         entryComponents: [
             __WEBPACK_IMPORTED_MODULE_10__components_pages_wallets_create_wallet_create_wallet_component__["a" /* CreateWalletComponent */],
             __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__["a" /* ChangeNameComponent */],
+            __WEBPACK_IMPORTED_MODULE_35__components_layout_qr_code_qr_code_component__["a" /* QrCodeComponent */],
         ],
         imports: [
             __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser__["BrowserModule"],
@@ -633,6 +646,94 @@ ButtonComponent = __decorate([
 ], ButtonComponent);
 
 //# sourceMappingURL=button.component.js.map
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/layout/qr-code/qr-code.component.css":
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, "", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/layout/qr-code/qr-code.component.html":
+/***/ (function(module, exports) {
+
+module.exports = "<div #qr></div>\r\n\r\n"
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/layout/qr-code/qr-code.component.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return QrCodeComponent; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+
+
+var QrCodeComponent = (function () {
+    function QrCodeComponent(data, el) {
+        this.data = data;
+        this.el = el;
+        this.size = 300;
+        this.level = 'M';
+        this.colordark = '#000000';
+        this.colorlight = '#ffffff';
+        this.usesvg = false;
+    }
+    QrCodeComponent.prototype.ngOnInit = function () {
+        new QRCode(this.qr.nativeElement, {
+            text: this.data.address,
+            width: this.size,
+            height: this.size,
+            colorDark: this.colordark,
+            colorLight: this.colorlight,
+            useSVG: this.usesvg,
+            correctLevel: QRCode.CorrectLevel[this.level.toString()]
+        });
+    };
+    return QrCodeComponent;
+}());
+__decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["ViewChild"])('qr'),
+    __metadata("design:type", Object)
+], QrCodeComponent.prototype, "qr", void 0);
+QrCodeComponent = __decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
+        selector: 'app-qr-code',
+        template: __webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.html"),
+        styles: [__webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.css")]
+    }),
+    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_1__angular_material__["q" /* MD_DIALOG_DATA */])),
+    __metadata("design:paramtypes", [Object, typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_0__angular_core__["ElementRef"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_0__angular_core__["ElementRef"]) === "function" && _a || Object])
+], QrCodeComponent);
+
+var _a;
+//# sourceMappingURL=qr-code.component.js.map
 
 /***/ }),
 
@@ -1540,7 +1641,7 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "", ""]);
+exports.push([module.i, "md-icon {\r\n  cursor: pointer;\r\n}\r\n", ""]);
 
 // exports
 
@@ -1553,7 +1654,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-item *ngFor=\"let address of wallet.entries\">\r\n    <md-icon md-list-icon>note</md-icon>\r\n    <h4 md-line>{{address.address}} - {{ address.balance | sky }}</h4>\r\n  </md-list-item>\r\n  <div class=\"button-line\">\r\n    <a md-raised-button color=\"primary\" (click)=\"renameWallet()\">Rename wallet</a>\r\n    <a md-raised-button color=\"primary\" (click)=\"addAddress()\">Add address</a>\r\n  </div>\r\n</md-list>\r\n"
+module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-item *ngFor=\"let address of wallet.entries\">\r\n    <md-icon md-list-icon (click)=\"showQr(address)\" class=\"fa fa-qrcode\"></md-icon>\r\n    <h4 md-line>{{address.address}} - {{ address.balance | sky }} ({{ address.hours ? address.hours : 0 }} hours)</h4>\r\n  </md-list-item>\r\n  <div class=\"button-line\">\r\n    <a md-raised-button color=\"primary\" (click)=\"renameWallet()\">Rename wallet</a>\r\n    <a md-raised-button color=\"primary\" (click)=\"addAddress()\">Add address</a>\r\n  </div>\r\n</md-list>\r\n"
 
 /***/ }),
 
@@ -1567,6 +1668,7 @@ module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-i
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__models_wallet_model___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__models_wallet_model__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__change_name_change_name_component__ = __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__layout_qr_code_qr_code_component__ = __webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return WalletDetailComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -1577,6 +1679,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+
 
 
 
@@ -1601,6 +1704,11 @@ var WalletDetailComponent = (function () {
                 _this.wallet.meta.label = result;
             }
         });
+    };
+    WalletDetailComponent.prototype.showQr = function (address) {
+        var config = new __WEBPACK_IMPORTED_MODULE_3__angular_material__["s" /* MdDialogConfig */]();
+        config.data = address;
+        this.dialog.open(__WEBPACK_IMPORTED_MODULE_5__layout_qr_code_qr_code_component__["a" /* QrCodeComponent */], config);
     };
     return WalletDetailComponent;
 }());
@@ -1808,7 +1916,7 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "", ""]);
+exports.push([module.i, "span {\r\n  display: inline-block;\r\n  width: 50%;\r\n}\r\n", ""]);
 
 // exports
 
@@ -1821,7 +1929,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/wallets.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all() | async\">\r\n  <md-expansion-panel-header>\r\n    <md-panel-title>\r\n      {{ wallet.meta.label }}\r\n    </md-panel-title>\r\n    <md-panel-description>\r\n      {{ wallet.balance | sky }}\r\n    </md-panel-description>\r\n  </md-expansion-panel-header>\r\n  <app-wallet-detail [wallet]=\"wallet\"></app-wallet-detail>\r\n</md-expansion-panel>\r\n<div class=\"button-line\">\r\n  <a md-raised-button color=\"primary\" (click)=\"addWallet()\">Add wallet</a>\r\n</div>\r\n"
+module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all() | async\">\r\n  <md-expansion-panel-header>\r\n    <md-panel-title>\r\n      {{ wallet.meta.label }}\r\n    </md-panel-title>\r\n    <md-panel-description>\r\n      <span>{{ wallet.balance | sky }}</span> <span>{{ wallet.hours ? wallet.hours : 0 }} Hours</span>\r\n    </md-panel-description>\r\n  </md-expansion-panel-header>\r\n  <app-wallet-detail [wallet]=\"wallet\"></app-wallet-detail>\r\n</md-expansion-panel>\r\n<div class=\"button-line\">\r\n  <a md-raised-button color=\"primary\" (click)=\"addWallet()\">Add wallet</a>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -2345,6 +2453,7 @@ var WalletService = (function () {
             __WEBPACK_IMPORTED_MODULE_3_rxjs_Observable__["Observable"].forkJoin(wallets.map(function (wallet) { return _this.retrieveWalletBalance(wallet).map(function (response) {
                 wallet.entries = response;
                 wallet.balance = response.map(function (address) { return address.balance >= 0 ? address.balance : 0; }).reduce(function (a, b) { return a + b; }, 0);
+                wallet.hours = response.map(function (address) { return address.hours >= 0 ? address.hours : 0; }).reduce(function (a, b) { return a + b; }, 0);
                 return wallet;
             }); }))
                 .subscribe(function (newWallets) { return _this.wallets.next(newWallets); });
@@ -2423,6 +2532,7 @@ var WalletService = (function () {
         var _this = this;
         return __WEBPACK_IMPORTED_MODULE_3_rxjs_Observable__["Observable"].forkJoin(wallet.entries.map(function (address) { return _this.retrieveAddressBalance(address).map(function (balance) {
             address.balance = balance.confirmed.coins;
+            address.hours = balance.confirmed.hours;
             return address;
         }); }));
     };

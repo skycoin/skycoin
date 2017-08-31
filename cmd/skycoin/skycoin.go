@@ -123,6 +123,8 @@ type Config struct {
 	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
 	LogLevel string
+	// Disable "Reply to ping", "Received pong" log messages
+	DisablePingPong bool
 
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
@@ -208,6 +210,8 @@ func (c *Config) register() {
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
+	flag.BoolVar(&c.DisablePingPong, "no-ping-log", false,
+		`disable "reply to ping" and "received pong" log messages`)
 	flag.BoolVar(&c.Logtofile, "logtofile", false, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
@@ -468,6 +472,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
 	dc.Daemon.OutgoingMax = c.MaxConnections
 	dc.Daemon.DataDirectory = c.DataDirectory
+	dc.Daemon.LogPings = !c.DisablePingPong
 
 	daemon.DefaultConnections = DefaultConnections
 

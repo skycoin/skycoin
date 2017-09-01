@@ -349,7 +349,7 @@ func (c *Config) postProcess() {
 	}
 
 	if c.WalletDirectory == "" {
-		c.WalletDirectory = filepath.Join(c.DataDirectory, "wallets/")
+		c.WalletDirectory = filepath.Join(c.DataDirectory, "wallets")
 	}
 
 	if c.DBPath == "" {

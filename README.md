@@ -159,18 +159,4 @@ Once `master` branch is updated, `git checkout master` and create the release bu
 
 #### Creating release builds
 
-Install Gox for cross-compilation:
-
-```sh
-go get github.com/mitchellh/gox
-```
-
-Make sure that the wallet dist is up to date:
-
-```sh
-cd /src/gui/static
-npm install
-npm run build
-```
-
-*TODO: Finish release build instructions*
+[Create Release builds](electron/README.md).

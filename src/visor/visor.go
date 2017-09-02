@@ -232,10 +232,15 @@ func (vs *Visor) Run() error {
 		}
 	}
 
+	if err := vs.processUnconfirmedTxns(); err != nil {
+		return err
+	}
+
 	errC := make(chan error, 1)
 	go func() {
 		logger.Info("Verify signature...")
 		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
+			// TODO: if detect signature lost, we need to parse the specific block again to get signature.
 			errC <- fmt.Errorf("Invalid block signatures: %v", err)
 			return
 		}
@@ -247,6 +252,31 @@ func (vs *Visor) Run() error {
 	}()
 
 	return <-errC
+}
+
+// check if there're unconfirmed transactions that are actually
+// already executed, and remove them if any
+func (vs *Visor) processUnconfirmedTxns() error {
+	removeTxs := []cipher.SHA256{}
+	vs.Unconfirmed.ForEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
+		// check if the tx already executed
+		txn, err := vs.history.GetTransaction(hash)
+		if err != nil {
+			return fmt.Errorf("process unconfirmed txs failed: %v", err)
+		}
+
+		if txn != nil {
+			removeTxs = append(removeTxs, hash)
+		}
+
+		return nil
+	})
+
+	if len(removeTxs) > 0 {
+		vs.Unconfirmed.RemoveTransactions(removeTxs)
+	}
+
+	return nil
 }
 
 // GenesisPreconditions panics if conditions for genesis block are not met
@@ -308,12 +338,21 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
+	// the transactions in body might be changed in the following ExecuteBlock,
+	// so need to record the original txns, and removed from
+	// unconfirmed transaction pool later.
+	txns := b.Block.Body.Transactions
+
 	if err := vs.Blockchain.ExecuteBlock(&b.Block); err != nil {
 		return err
 	}
 
 	// Remove the transactions in the Block from the unconfirmed pool
-	vs.Unconfirmed.RemoveTransactions(b.Block.Body.Transactions)
+	txHashes := make([]cipher.SHA256, 0, len(txns))
+	for _, tx := range txns {
+		txHashes = append(txHashes, tx.Hash())
+	}
+	vs.Unconfirmed.RemoveTransactions(txHashes)
 	return nil
 }
 

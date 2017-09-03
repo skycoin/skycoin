@@ -1,8 +1,6 @@
 package blockdb
 
 import (
-	"fmt"
-
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -37,16 +35,16 @@ func NewBlockSigs(db *bolt.DB) (*BlockSigs, error) {
 }
 
 // Get returns signature of specific block
-func (bs BlockSigs) Get(hash cipher.SHA256) (cipher.Sig, error) {
+func (bs BlockSigs) Get(hash cipher.SHA256) (cipher.Sig, bool, error) {
 	bin := bs.Sigs.Get(hash[:])
 	if bin == nil {
-		return cipher.Sig{}, fmt.Errorf("no sig for %v", hash.Hex())
+		return cipher.Sig{}, false, nil
 	}
 	var sig cipher.Sig
 	if err := encoder.DeserializeRaw(bin, &sig); err != nil {
-		return cipher.Sig{}, err
+		return cipher.Sig{}, false, err
 	}
-	return sig, nil
+	return sig, true, nil
 }
 
 // Add stores the signed block into db.

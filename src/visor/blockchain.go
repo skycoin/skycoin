@@ -152,7 +152,7 @@ func (bc *Blockchain) headSeq() int64 {
 }
 
 func (bc *Blockchain) processBlock(b coin.Block) (coin.Block, error) {
-	if !bc.isGenesisBlock(b) {
+	if bc.Len() > 0 && !bc.isGenesisBlock(b) {
 		if err := bc.verifyBlockHeader(b); err != nil {
 			return coin.Block{}, err
 		}
@@ -580,30 +580,37 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 
 // VerifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) error {
+// return block sequences whose signature are lost or error
+func (bc *Blockchain) VerifySigs(pubKey cipher.PubKey, sigs *blockdb.BlockSigs) ([]uint64, error) {
 	head := bc.Head()
 	if head == nil {
-		return nil
+		return []uint64{}, nil
 	}
 
+	lostSeq := []uint64{}
 	for i := uint64(0); i <= head.Seq(); i++ {
 		b := bc.GetBlockInDepth(i)
 		if b == nil {
-			return fmt.Errorf("No block in depth %v", i)
+			return []uint64{}, fmt.Errorf("no block in depth %v", i)
 		}
 
 		// get sig
-		sig, err := sigs.Get(b.HashHeader())
+		sig, exist, err := sigs.Get(b.HashHeader())
 		if err != nil {
-			return fmt.Errorf("Verify signature of block in depth: %d failed: %v", i, err)
+			return []uint64{}, fmt.Errorf("verify signature of block in depth: %d failed: %v", i, err)
+		}
+
+		if !exist {
+			lostSeq = append(lostSeq, i)
+			continue
 		}
 
 		if err := cipher.VerifySignature(pubKey, sig, b.HashHeader()); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return lostSeq, nil
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid

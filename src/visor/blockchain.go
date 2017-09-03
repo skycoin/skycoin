@@ -151,23 +151,27 @@ func (bc *Blockchain) headSeq() int64 {
 	return bc.chain.HeadSeq()
 }
 
-func (bc *Blockchain) processBlock(b *coin.Block) error {
-	if !bc.isGenesisBlock(*b) {
-		if err := bc.verifyBlockHeader(*b); err != nil {
-			return err
+func (bc *Blockchain) processBlock(b coin.Block) (coin.Block, error) {
+	if !bc.isGenesisBlock(b) {
+		if err := bc.verifyBlockHeader(b); err != nil {
+			return coin.Block{}, err
 		}
 		txns, err := bc.processTransactions(b.Body.Transactions)
 		if err != nil {
-			return err
+			return coin.Block{}, err
 		}
 		b.Body.Transactions = txns
 	}
 
-	if err := bc.verifyUxHash(*b); err != nil {
-		return err
+	if err := bc.verifyUxHash(b); err != nil {
+		return coin.Block{}, err
 	}
 
-	return bc.chain.ProcessBlock(b)
+	if err := bc.chain.ProcessBlock(&b); err != nil {
+		return coin.Block{}, err
+	}
+
+	return b, nil
 }
 
 // Unspent returns the unspent outputs pool
@@ -209,7 +213,9 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Body: body,
 	}
 
-	if err := bc.processBlock(&b); err != nil {
+	var err error
+	b, err = bc.processBlock(b)
+	if err != nil {
 		return coin.Block{}, err
 	}
 
@@ -284,20 +290,22 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 func (bc *Blockchain) ExecuteBlock(b *coin.Block) error {
 	b.Head.PrevHash = bc.Head().HashHeader()
 
-	if err := bc.processBlock(b); err != nil {
+	nb, err := bc.processBlock(*b)
+	if err != nil {
 		return err
 	}
 
-	if err := bc.addBlock(b); err != nil {
+	if err := bc.addBlock(&nb); err != nil {
 		return err
 	}
 
-	bc.notify(*b)
+	bc.notify(nb)
 	return nil
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
-	return bc.processBlock(&b)
+	_, err := bc.processBlock(b)
+	return err
 }
 
 // isGenesisBlock checks if the block is genesis block

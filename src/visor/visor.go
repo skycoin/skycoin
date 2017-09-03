@@ -177,7 +177,7 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 	// var verifyOnce sync.Once
 	bp := NewBlockchainParser(history, bc)
 
-	bc.BindListener(bp.BlockListener)
+	bc.BindListener(bp.FeedBlock)
 
 	wltServ, err := wallet.NewService(c.WalletDirectory)
 	if err != nil {
@@ -239,11 +239,19 @@ func (vs *Visor) Run() error {
 	errC := make(chan error, 1)
 	go func() {
 		logger.Info("Verify signature...")
-		if err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs); err != nil {
+		noSigBlockSeqs, err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs)
+		if err != nil {
 			// TODO: if detect signature lost, we need to parse the specific block again to get signature.
-			errC <- fmt.Errorf("Invalid block signatures: %v", err)
+			errC <- fmt.Errorf("invalid block signatures: %v", err)
 			return
 		}
+
+		for _, seq := range noSigBlockSeqs {
+			logger.Warning("no signature found in block %d, parse the block again", seq)
+			b := vs.GetBlockBySeq(seq)
+			vs.bcParser.FeedBlock(*b)
+		}
+
 		logger.Info("Signature verify success")
 	}()
 
@@ -412,7 +420,7 @@ func (vs *Visor) AllIncomingOutputs() ([]ReadableOutput, error) {
 }
 
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
-func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) []coin.SignedBlock {
+func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
 	avail := uint64(0)
 	headSeq := vs.Blockchain.Head().Seq()
 	if headSeq > seq {
@@ -422,18 +430,22 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) []coin.SignedBlock {
 		ct = avail
 	}
 	if ct == 0 {
-		return []coin.SignedBlock{}
+		return []coin.SignedBlock{}, nil
 	}
 	blocks := make([]coin.SignedBlock, 0, ct)
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
 		b := vs.Blockchain.GetBlockInDepth(i)
 		if b == nil {
-			return []coin.SignedBlock{}
+			return []coin.SignedBlock{}, fmt.Errorf("block of seq %d does not exist", i)
 		}
-		sig, err := vs.blockSigs.Get(b.HashHeader())
+		sig, exist, err := vs.blockSigs.Get(b.HashHeader())
 		if err != nil {
-			return []coin.SignedBlock{}
+			return []coin.SignedBlock{}, err
+		}
+
+		if !exist {
+			return []coin.SignedBlock{}, fmt.Errorf("find no signature of block in seq %d", i)
 		}
 
 		blocks = append(blocks, coin.SignedBlock{
@@ -441,19 +453,23 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) []coin.SignedBlock {
 			Sig:   sig,
 		})
 	}
-	return blocks
+	return blocks, nil
 }
 
-// GetGenesisBlock returns the signed genesis block. Panics if signature or block not found
-func (vs *Visor) GetGenesisBlock() coin.SignedBlock {
+// MustGetGenesisBlock returns the signed genesis block. Panics if signature or block not found
+func (vs *Visor) MustGetGenesisBlock() coin.SignedBlock {
 	b := vs.Blockchain.GetGenesisBlock()
 	if b == nil {
-		logger.Panic("No genesis signature")
+		logger.Panic("no genesis block")
 	}
 
-	sig, err := vs.blockSigs.Get(b.HashHeader())
+	sig, exist, err := vs.blockSigs.Get(b.HashHeader())
 	if err != nil {
 		logger.Panic(err)
+	}
+
+	if !exist {
+		logger.Panic("no genesis signature")
 	}
 
 	return coin.SignedBlock{

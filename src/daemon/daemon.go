@@ -283,9 +283,7 @@ type MessageEvent struct {
 // before calling this function.
 func (dm *Daemon) Shutdown() {
 	// close the daemon loop first
-	q := make(chan struct{}, 1)
-	dm.quitC <- q
-	<-q
+	close(dm.quitC)
 
 	if !dm.Config.DisableNetworking {
 		dm.Pool.Shutdown()
@@ -348,8 +346,7 @@ func (dm *Daemon) Run() (err error) {
 		select {
 		case err = <-errC:
 			return
-		case qc := <-dm.quitC:
-			qc <- struct{}{}
+		case <-dm.quitC:
 			return
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:

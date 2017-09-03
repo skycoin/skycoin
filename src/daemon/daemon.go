@@ -143,6 +143,8 @@ type DaemonConfig struct {
 	DisableIncomingConnections bool
 	// Run on localhost and only connect to localhost peers
 	LocalhostOnly bool
+	// Log ping and pong messages
+	LogPings bool
 }
 
 // NewDaemonConfig creates daemon config
@@ -162,6 +164,7 @@ func NewDaemonConfig() DaemonConfig {
 		DisableOutgoingConnections: false,
 		DisableIncomingConnections: false,
 		LocalhostOnly:              false,
+		LogPings:                   true,
 	}
 }
 
@@ -630,8 +633,7 @@ func (dm *Daemon) cullInvalidConnections() {
 
 // Records an AsyncMessage to the messageEvent chan.  Do not access
 // messageEvent directly.
-func (dm *Daemon) recordMessageEvent(m AsyncMessage,
-	c *gnet.MessageContext) error {
+func (dm *Daemon) recordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error {
 	dm.messageEvents <- MessageEvent{m, c}
 	return nil
 }

@@ -434,7 +434,11 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.Block {
 // TODO:
 //  - move arbitration to visor
 //  - blockchain should have strict checking
-func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transactions, error) {
+func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactions, error) {
+	// copy txs so that the following code won't modify the origianl txs
+	txns := make(coin.Transactions, len(txs))
+	copy(txns, txs)
+
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.arbitrating {
 		txns = coin.SortTransactions(txns, bc.TransactionFee)

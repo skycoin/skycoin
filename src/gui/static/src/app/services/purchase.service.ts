@@ -21,6 +21,27 @@ export class PurchaseService {
     return this.purchaseOrders.asObservable();
   }
 
+  generate(address: string) {
+    return this.post('bind', { skyaddr: address })
+      .do(response => {
+        this.purchaseOrders.first().subscribe(orders => {
+          let index = orders.findIndex(order => order.address === address);
+          if (index === -1) {
+            orders.push({address: address, addresses: []});
+            index = orders.length - 1;
+          }
+          const timestamp = Math.floor(Date.now() / 1000);
+          orders[index].addresses.unshift({
+            btc: response.btc_address,
+            status: 'waiting_deposit',
+            created: timestamp,
+            updated: timestamp,
+          });
+          this.updatePurchaseOrders(orders)
+        });
+      });
+  }
+
   private get(url) {
     return this.http.get(this.purchaseUrl + url)
       .map((res: any) => res.json())

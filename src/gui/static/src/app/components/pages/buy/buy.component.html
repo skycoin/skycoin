@@ -13,6 +13,9 @@
       <md-list-item *ngFor="let btc of address.addresses">
         <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>
         <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>
+        <button md-icon-button (click)="searchDepositAddress(address.address)" [disabled]="scanning">
+          <md-icon>refresh</md-icon>
+        </button>
       </md-list-item>
     </ng-container>
   </md-list>

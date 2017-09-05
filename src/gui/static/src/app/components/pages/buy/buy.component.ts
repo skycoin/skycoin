@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { PurchaseService } from '../../../services/purchase.service';
 import { MdDialog, MdDialogConfig } from '@angular/material';
 import { AddDepositAddressComponent } from './add-deposit-address/add-deposit-address.component';
 
@@ -10,6 +11,8 @@ import { AddDepositAddressComponent } from './add-deposit-address/add-deposit-ad
 export class BuyComponent {
 
   orders = [];
+  scanning = false;
+
   constructor(
     public purchaseService: PurchaseService,
     private dialog: MdDialog,
@@ -19,5 +22,19 @@ export class BuyComponent {
     const config = new MdDialogConfig();
     config.width = '500px';
     this.dialog.open(AddDepositAddressComponent, config);
+  }
+
+  searchDepositAddress(address: string) {
+    this.scanning = true;
+    this.purchaseService.scan(address).subscribe(() => {
+      this.disableScanning();
+    }, error => {
+      this.disableScanning();
+    });
+  }
+
+  private disableScanning()
+  {
+    setTimeout(() => this.scanning = false, 1000);
   }
 }

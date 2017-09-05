@@ -44,6 +44,10 @@ export class WalletService {
     return this.wallets.asObservable();
   }
 
+  allAddresses(): Observable<any[]> {
+    return this.all().map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.entries), []));
+  }
+
   create(label, seed) {
     return this.apiService.post('wallet/create', {label: label ? label : 'undefined', seed: seed})
       .do(wallet => {

@@ -21,7 +21,7 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 40%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n\r\n.syncing {\r\n  font-size: 14px;\r\n}\r\n", ""]);
+exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 40%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n\r\n.syncing {\r\n  font-size: 14px;\r\n}\r\n\r\n.main-menu button {\r\n  margin-right: 20px;\r\n}\r\n", ""]);
 
 // exports
 
@@ -34,7 +34,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/app.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">{{ version }}</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar>\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
+module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">{{ version }}</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar class=\"main-menu\">\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/buy']\" routerLinkActive=\"active\">Buy</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -156,6 +156,10 @@ var _a, _b, _c;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__ = __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_34__components_layout_button_button_component__ = __webpack_require__("../../../../../src/app/components/layout/button/button.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_35__components_layout_qr_code_qr_code_component__ = __webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_36__components_pages_buy_buy_component__ = __webpack_require__("../../../../../src/app/components/pages/buy/buy.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_37__components_pages_buy_add_deposit_address_add_deposit_address_component__ = __webpack_require__("../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_38__services_purchase_service__ = __webpack_require__("../../../../../src/app/services/purchase.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_39__pipes_teller_status_pipe__ = __webpack_require__("../../../../../src/app/pipes/teller-status.pipe.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppModule; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -163,6 +167,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+
+
+
+
 
 
 
@@ -272,6 +280,13 @@ var ROUTES = [
         ],
     },
     {
+        path: 'buy',
+        component: __WEBPACK_IMPORTED_MODULE_36__components_pages_buy_buy_component__["a" /* BuyComponent */],
+        data: {
+            breadcrumb: 'Buy Skycoin',
+        },
+    },
+    {
         path: 'settings',
         children: [
             {
@@ -344,8 +359,12 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__["a" /* ChangeNameComponent */],
             __WEBPACK_IMPORTED_MODULE_34__components_layout_button_button_component__["a" /* ButtonComponent */],
             __WEBPACK_IMPORTED_MODULE_35__components_layout_qr_code_qr_code_component__["a" /* QrCodeComponent */],
+            __WEBPACK_IMPORTED_MODULE_36__components_pages_buy_buy_component__["a" /* BuyComponent */],
+            __WEBPACK_IMPORTED_MODULE_37__components_pages_buy_add_deposit_address_add_deposit_address_component__["a" /* AddDepositAddressComponent */],
+            __WEBPACK_IMPORTED_MODULE_39__pipes_teller_status_pipe__["a" /* TellerStatusPipe */],
         ],
         entryComponents: [
+            __WEBPACK_IMPORTED_MODULE_37__components_pages_buy_add_deposit_address_add_deposit_address_component__["a" /* AddDepositAddressComponent */],
             __WEBPACK_IMPORTED_MODULE_10__components_pages_wallets_create_wallet_create_wallet_component__["a" /* CreateWalletComponent */],
             __WEBPACK_IMPORTED_MODULE_33__components_pages_wallets_change_name_change_name_component__["a" /* ChangeNameComponent */],
             __WEBPACK_IMPORTED_MODULE_35__components_layout_qr_code_qr_code_component__["a" /* QrCodeComponent */],
@@ -378,6 +397,7 @@ AppModule = __decorate([
             __WEBPACK_IMPORTED_MODULE_6__services_api_service__["a" /* ApiService */],
             __WEBPACK_IMPORTED_MODULE_22__services_blockchain_service__["a" /* BlockchainService */],
             __WEBPACK_IMPORTED_MODULE_32__services_network_service__["a" /* NetworkService */],
+            __WEBPACK_IMPORTED_MODULE_38__services_purchase_service__["a" /* PurchaseService */],
             __WEBPACK_IMPORTED_MODULE_7__services_wallet_service__["a" /* WalletService */],
         ],
         bootstrap: [__WEBPACK_IMPORTED_MODULE_4__app_component__["a" /* AppComponent */]]
@@ -728,7 +748,7 @@ QrCodeComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.css")]
     }),
-    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_1__angular_material__["q" /* MD_DIALOG_DATA */])),
+    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_1__angular_material__["r" /* MD_DIALOG_DATA */])),
     __metadata("design:paramtypes", [Object, typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_0__angular_core__["ElementRef"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_0__angular_core__["ElementRef"]) === "function" && _a || Object])
 ], QrCodeComponent);
 
@@ -886,6 +906,178 @@ BlockComponent = __decorate([
 
 var _a, _b;
 //# sourceMappingURL=block.component.js.map
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.css":
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, "md-select {\r\n  width: 100%;\r\n  padding: 40px 0 20px;\r\n}\r\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.html":
+/***/ (function(module, exports) {
+
+module.exports = "<p>Choose an address to generate a BTC deposit link for:</p>\n<div [formGroup]=\"form\">\n  <md-select formControlName=\"address\" placeholder=\"Select Address\" class=\"input-field\">\n    <md-option *ngFor=\"let address of walletService.allAddresses() | async\" [value]=\"address.address\">\n      {{ address.address }}\n    </md-option>\n  </md-select>\n</div>\n<div class=\"button-line\">\n  <a md-raised-button (click)=\"generate()\">Generate</a>\n</div>\n"
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_forms__ = __webpack_require__("../../../forms/@angular/forms.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__services_purchase_service__ = __webpack_require__("../../../../../src/app/services/purchase.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AddDepositAddressComponent; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+
+
+var AddDepositAddressComponent = (function () {
+    function AddDepositAddressComponent(walletService, dialogRef, formBuilder, purchaseService) {
+        this.walletService = walletService;
+        this.dialogRef = dialogRef;
+        this.formBuilder = formBuilder;
+        this.purchaseService = purchaseService;
+    }
+    AddDepositAddressComponent.prototype.ngOnInit = function () {
+        this.initForm();
+    };
+    AddDepositAddressComponent.prototype.generate = function () {
+        var _this = this;
+        this.purchaseService.generate(this.form.value.address).subscribe(function () { return _this.dialogRef.close(); });
+    };
+    AddDepositAddressComponent.prototype.initForm = function () {
+        this.form = this.formBuilder.group({
+            address: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["h" /* Validators */].required],
+        });
+    };
+    return AddDepositAddressComponent;
+}());
+AddDepositAddressComponent = __decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
+        selector: 'app-add-deposit-address',
+        template: __webpack_require__("../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.html"),
+        styles: [__webpack_require__("../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.css")]
+    }),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_4__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__angular_material__["q" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_3__services_purchase_service__["a" /* PurchaseService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__services_purchase_service__["a" /* PurchaseService */]) === "function" && _d || Object])
+], AddDepositAddressComponent);
+
+var _a, _b, _c, _d;
+//# sourceMappingURL=add-deposit-address.component.js.map
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/pages/buy/buy.component.css":
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, ".skycoin-details {\r\n  margin-top: 40px;\r\n  background-color: #eee;\r\n  margin-bottom: 20px;\r\n}\r\n", ""]);
+
+// exports
+
+
+/*** EXPORTS FROM exports-loader ***/
+module.exports = module.exports.toString();
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/pages/buy/buy.component.html":
+/***/ (function(module, exports) {
+
+module.exports = "<md-card>\n  <md-card-title>Purchase Skycoin</md-card-title>\n  <md-card class=\"skycoin-details\">\n    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per\n    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will\n    automatically be added to your selected address.\n  </md-card>\n\n  <md-list>\n    <ng-container *ngFor=\"let address of (purchaseService.all() | async); let i = index\">\n      <md-divider *ngIf=\"i\"></md-divider>\n      <h3 md-subheader>Sky address: {{ address.address }}</h3>\n      <md-list-item *ngFor=\"let btc of address.addresses\">\n        <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>\n        <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>\n        <button md-icon-button (click)=\"searchDepositAddress(address.address)\" [disabled]=\"scanning\">\n          <md-icon>refresh</md-icon>\n        </button>\n      </md-list-item>\n    </ng-container>\n  </md-list>\n</md-card>\n<div class=\"button-line\">\n  <a md-raised-button color=\"primary\" (click)=\"addDepositAddress()\">Add deposit address</a>\n</div>\n"
+
+/***/ }),
+
+/***/ "../../../../../src/app/components/pages/buy/buy.component.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_purchase_service__ = __webpack_require__("../../../../../src/app/services/purchase.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__add_deposit_address_add_deposit_address_component__ = __webpack_require__("../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.ts");
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return BuyComponent; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+
+var BuyComponent = (function () {
+    function BuyComponent(purchaseService, dialog) {
+        this.purchaseService = purchaseService;
+        this.dialog = dialog;
+        this.orders = [];
+        this.scanning = false;
+    }
+    BuyComponent.prototype.addDepositAddress = function () {
+        var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialogConfig */]();
+        config.width = '500px';
+        this.dialog.open(__WEBPACK_IMPORTED_MODULE_3__add_deposit_address_add_deposit_address_component__["a" /* AddDepositAddressComponent */], config);
+    };
+    BuyComponent.prototype.searchDepositAddress = function (address) {
+        var _this = this;
+        this.scanning = true;
+        this.purchaseService.scan(address).subscribe(function () {
+            _this.disableScanning();
+        }, function (error) {
+            _this.disableScanning();
+        });
+    };
+    BuyComponent.prototype.disableScanning = function () {
+        var _this = this;
+        setTimeout(function () { return _this.scanning = false; }, 1000);
+    };
+    return BuyComponent;
+}());
+BuyComponent = __decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
+        selector: 'app-buy',
+        template: __webpack_require__("../../../../../src/app/components/pages/buy/buy.component.html"),
+        styles: [__webpack_require__("../../../../../src/app/components/pages/buy/buy.component.css")]
+    }),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_purchase_service__["a" /* PurchaseService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_purchase_service__["a" /* PurchaseService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_2__angular_material__["t" /* MdDialog */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_material__["t" /* MdDialog */]) === "function" && _b || Object])
+], BuyComponent);
+
+var _a, _b;
+//# sourceMappingURL=buy.component.js.map
 
 /***/ }),
 
@@ -1811,8 +2003,8 @@ ChangeNameComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.css")]
     }),
-    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MD_DIALOG_DATA */])),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
+    __param(0, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Inject"])(__WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MD_DIALOG_DATA */])),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"] !== "undefined" && __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__["WalletModel"]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_forms__["i" /* FormBuilder */]) === "function" && _c || Object, typeof (_d = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _d || Object])
 ], ChangeNameComponent);
 
 var _a, _b, _c, _d;
@@ -1900,7 +2092,7 @@ CreateWalletComponent = __decorate([
         template: __webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.html"),
         styles: [__webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.css")]
     }),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["r" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_3__angular_material__["q" /* MdDialogRef */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_forms__["i" /* FormBuilder */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__["a" /* WalletService */]) === "function" && _c || Object])
 ], CreateWalletComponent);
 
 var _a, _b, _c;
@@ -2094,6 +2286,48 @@ SkyPipe = __decorate([
 
 /***/ }),
 
+/***/ "../../../../../src/app/pipes/teller-status.pipe.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return TellerStatusPipe; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+var TellerStatusPipe = (function () {
+    function TellerStatusPipe() {
+    }
+    TellerStatusPipe.prototype.transform = function (value) {
+        switch (value) {
+            case 'waiting_deposit':
+                return 'Waiting for deposit';
+            case 'waiting_send':
+                return 'Waiting for sending out';
+            case 'waiting_confirm':
+                return 'Waiting for confirmation';
+            case 'done':
+                return 'Completed';
+            default:
+                return 'Unknown';
+        }
+    };
+    return TellerStatusPipe;
+}());
+TellerStatusPipe = __decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Pipe"])({
+        name: 'tellerStatus'
+    })
+], TellerStatusPipe);
+
+//# sourceMappingURL=teller-status.pipe.js.map
+
+/***/ }),
+
 /***/ "../../../../../src/app/pipes/transactions-amount.pipe.ts":
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -2174,12 +2408,12 @@ var ApiService = (function () {
             .catch(function (error) { return __WEBPACK_IMPORTED_MODULE_2_rxjs_Observable__["Observable"].throw(error || 'Server error'); });
     };
     ApiService.prototype.getHeaders = function () {
-        var headers = new __WEBPACK_IMPORTED_MODULE_1__angular_http__["b" /* Headers */]();
+        var headers = new __WEBPACK_IMPORTED_MODULE_1__angular_http__["c" /* Headers */]();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
         return headers;
     };
     ApiService.prototype.returnRequestOptions = function () {
-        var options = new __WEBPACK_IMPORTED_MODULE_1__angular_http__["c" /* RequestOptions */]();
+        var options = new __WEBPACK_IMPORTED_MODULE_1__angular_http__["d" /* RequestOptions */]();
         options.headers = this.getHeaders();
         return options;
     };
@@ -2201,7 +2435,7 @@ var ApiService = (function () {
 }());
 ApiService = __decorate([
     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Injectable"])(),
-    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__angular_http__["d" /* Http */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_http__["d" /* Http */]) === "function" && _a || Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__angular_http__["b" /* Http */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__angular_http__["b" /* Http */]) === "function" && _a || Object])
 ], ApiService);
 
 var _a;
@@ -2349,6 +2583,109 @@ var _a;
 
 /***/ }),
 
+/***/ "../../../../../src/app/services/purchase.service.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_rxjs_BehaviorSubject__ = __webpack_require__("../../../../rxjs/BehaviorSubject.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_rxjs_BehaviorSubject___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_rxjs_BehaviorSubject__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_http__ = __webpack_require__("../../../http/@angular/http.es5.js");
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return PurchaseService; });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+var PurchaseService = (function () {
+    // private purchaseUrl: string = '/teller/';
+    function PurchaseService(http) {
+        this.http = http;
+        this.purchaseOrders = new __WEBPACK_IMPORTED_MODULE_1_rxjs_BehaviorSubject__["BehaviorSubject"]([]);
+        // private purchaseUrl: string = 'https://event.skycoin.net/api/';
+        this.purchaseUrl = 'http://127.0.01:7071/api/';
+        this.retrievePurchaseOrders();
+    }
+    PurchaseService.prototype.all = function () {
+        return this.purchaseOrders.asObservable();
+    };
+    PurchaseService.prototype.generate = function (address) {
+        var _this = this;
+        return this.post('bind', { skyaddr: address })
+            .do(function (response) {
+            _this.purchaseOrders.first().subscribe(function (orders) {
+                var index = orders.findIndex(function (order) { return order.address === address; });
+                if (index === -1) {
+                    orders.push({ address: address, addresses: [] });
+                    index = orders.length - 1;
+                }
+                var timestamp = Math.floor(Date.now() / 1000);
+                orders[index].addresses.unshift({
+                    btc: response.btc_address,
+                    status: 'waiting_deposit',
+                    created: timestamp,
+                    updated: timestamp,
+                });
+                _this.updatePurchaseOrders(orders);
+            });
+        });
+    };
+    PurchaseService.prototype.scan = function (address) {
+        var _this = this;
+        return this.get('status?skyaddr=' + address).do(function (response) {
+            _this.purchaseOrders.first().subscribe(function (orders) {
+                var index = orders.findIndex(function (order) { return order.address === address; });
+                // Sort addresses ascending by creation date to match teller status response
+                orders[index].addresses.sort(function (a, b) { return b.created - a.created; });
+                for (var _i = 0, _a = orders[index].addresses; _i < _a.length; _i++) {
+                    var btcAddress = _a[_i];
+                    // Splice last status to assign this to the latest known order
+                    var status = response.statuses.splice(-1, 1)[0];
+                    btcAddress.status = status.status;
+                    btcAddress.updated = status.update_at;
+                }
+                _this.updatePurchaseOrders(orders);
+            });
+        });
+    };
+    PurchaseService.prototype.get = function (url) {
+        return this.http.get(this.purchaseUrl + url)
+            .map(function (res) { return res.json(); });
+    };
+    PurchaseService.prototype.post = function (url, parameters) {
+        if (parameters === void 0) { parameters = {}; }
+        return this.http.post(this.purchaseUrl + url, parameters)
+            .map(function (res) { return res.json(); });
+    };
+    PurchaseService.prototype.retrievePurchaseOrders = function () {
+        var orders = JSON.parse(window.localStorage.getItem('purchaseOrders'));
+        if (orders) {
+            this.purchaseOrders.next(orders);
+        }
+    };
+    PurchaseService.prototype.updatePurchaseOrders = function (collection) {
+        this.purchaseOrders.next(collection);
+        window.localStorage.setItem('purchaseOrders', JSON.stringify(collection));
+    };
+    return PurchaseService;
+}());
+PurchaseService = __decorate([
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Injectable"])(),
+    __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_2__angular_http__["b" /* Http */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__angular_http__["b" /* Http */]) === "function" && _a || Object])
+], PurchaseService);
+
+var _a;
+//# sourceMappingURL=purchase.service.js.map
+
+/***/ }),
+
 /***/ "../../../../../src/app/services/wallet.service.ts":
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -2414,6 +2751,9 @@ var WalletService = (function () {
     };
     WalletService.prototype.all = function () {
         return this.wallets.asObservable();
+    };
+    WalletService.prototype.allAddresses = function () {
+        return this.all().map(function (wallets) { return wallets.reduce(function (array, wallet) { return array.concat(wallet.entries); }, []); });
     };
     WalletService.prototype.create = function (label, seed) {
         var _this = this;

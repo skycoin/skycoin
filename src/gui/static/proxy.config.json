@@ -6,5 +6,13 @@
     },
     "secure": false,
     "logLevel": "debug"
+  },
+  "/teller/*": {
+    "target": "http://localhost:7071/api",
+    "pathRewrite": {
+      "^/teller" : ""
+    },
+    "secure": true,
+    "logLevel": "debug"
   }
 }

@@ -7,4 +7,5 @@ import { Component, OnInit } from '@angular/core';
 })
 export class BuyComponent implements OnInit {
 
+  orders = [];
 }

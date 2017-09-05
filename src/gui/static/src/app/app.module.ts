@@ -38,6 +38,7 @@ import { NetworkService } from './services/network.service';
 import { ChangeNameComponent } from './components/pages/wallets/change-name/change-name.component';
 import { ButtonComponent } from './components/layout/button/button.component';
 import { QrCodeComponent } from './components/layout/qr-code/qr-code.component';
+import { PurchaseService } from './services/purchase.service';
 import { TellerStatusPipe } from './pipes/teller-status.pipe';
 
 const ROUTES = [
@@ -215,6 +216,7 @@ const ROUTES = [
     ApiService,
     BlockchainService,
     NetworkService,
+    PurchaseService,
     WalletService,
   ],
   bootstrap: [AppComponent]

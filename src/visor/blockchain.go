@@ -151,8 +151,27 @@ func (bc *Blockchain) headSeq() int64 {
 	return bc.chain.HeadSeq()
 }
 
-func (bc *Blockchain) processBlock(b *coin.Block) error {
-	return bc.chain.ProcessBlock(b)
+func (bc *Blockchain) processBlock(b coin.Block) (coin.Block, error) {
+	if !bc.isGenesisBlock(b) {
+		if err := bc.verifyBlockHeader(b); err != nil {
+			return coin.Block{}, err
+		}
+		txns, err := bc.processTransactions(b.Body.Transactions)
+		if err != nil {
+			return coin.Block{}, err
+		}
+		b.Body.Transactions = txns
+	}
+
+	if err := bc.verifyUxHash(b); err != nil {
+		return coin.Block{}, err
+	}
+
+	if err := bc.chain.ProcessBlock(&b); err != nil {
+		return coin.Block{}, err
+	}
+
+	return b, nil
 }
 
 // Unspent returns the unspent outputs pool
@@ -193,11 +212,14 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Head: head,
 		Body: body,
 	}
-	bc.addBlock(&b)
 
-	if err := bc.processBlock(&b); err != nil {
+	var err error
+	b, err = bc.processBlock(b)
+	if err != nil {
 		return coin.Block{}, err
 	}
+
+	bc.addBlock(&b)
 
 	bc.notify(b)
 	return b, nil
@@ -266,50 +288,29 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 
 // ExecuteBlock Attempts to append block to blockchain.
 func (bc *Blockchain) ExecuteBlock(b *coin.Block) error {
-	if err := bc.verifyBlock(*b); err != nil {
-		return err
-	}
-
 	b.Head.PrevHash = bc.Head().HashHeader()
 
-	if err := bc.addBlock(b); err != nil {
+	nb, err := bc.processBlock(*b)
+	if err != nil {
 		return err
 	}
 
-	if err := bc.processBlock(b); err != nil {
+	if err := bc.addBlock(&nb); err != nil {
 		return err
 	}
 
-	bc.notify(*b)
+	bc.notify(nb)
 	return nil
 }
 
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
-	if err := bc.verifyBlock(b); err != nil {
-		return err
-	}
-
-	return bc.processBlock(&b)
+	_, err := bc.processBlock(b)
+	return err
 }
 
-// VerifyBlock verifies the BlockHeader and BlockBody
-func (bc Blockchain) verifyBlock(b coin.Block) error {
-	gb := bc.GetGenesisBlock()
-	if gb.HashHeader() != b.HashHeader() {
-		if err := bc.verifyBlockHeader(b); err != nil {
-			return err
-		}
-		txns, err := bc.processTransactions(b.Body.Transactions)
-		if err != nil {
-			return err
-		}
-		b.Body.Transactions = txns
-	}
-
-	if err := bc.verifyUxHash(b); err != nil {
-		return err
-	}
-	return nil
+// isGenesisBlock checks if the block is genesis block
+func (bc Blockchain) isGenesisBlock(b coin.Block) bool {
+	return bc.GetGenesisBlock().HashHeader() == b.HashHeader()
 }
 
 // Compares the state of the current UxHash hash to state of unspent
@@ -433,7 +434,11 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.Block {
 // TODO:
 //  - move arbitration to visor
 //  - blockchain should have strict checking
-func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transactions, error) {
+func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactions, error) {
+	// copy txs so that the following code won't modify the origianl txs
+	txns := make(coin.Transactions, len(txs))
+	copy(txns, txs)
+
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.arbitrating {
 		txns = coin.SortTransactions(txns, bc.TransactionFee)
@@ -447,7 +452,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 		return nil, errors.New("No transactions")
 	}
 
-	skip := make(map[int]byte)
+	skip := make(map[int]struct{})
 	uxHashes := make(coin.UxHashSet, len(txns))
 	for i, tx := range txns {
 		// Check the transaction against itself.  This covers the hash,
@@ -455,7 +460,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 		err := bc.VerifyTransaction(tx)
 		if err != nil {
 			if bc.arbitrating {
-				skip[i] = byte(1)
+				skip[i] = struct{}{}
 				continue
 			} else {
 				return nil, err
@@ -473,7 +478,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 			_, exists := uxHashes[h]
 			if exists {
 				if bc.arbitrating {
-					skip[i] = byte(1)
+					skip[i] = struct{}{}
 					continue
 				} else {
 					m := "Duplicate unspent output across transactions"
@@ -485,7 +490,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 				// This should never happen because its a hash collision
 				if bc.Unspent().Contains(h) {
 					if bc.arbitrating {
-						skip[i] = byte(1)
+						skip[i] = struct{}{}
 						continue
 					} else {
 						m := "Output hash is in the UnspentPool"
@@ -508,7 +513,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 			}
 		}
 		txns = newtxns
-		skip = make(map[int]byte)
+		skip = make(map[int]struct{})
 	}
 
 	// Check to ensure that there are no duplicate spends in the entire block,
@@ -537,7 +542,7 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 							// is chosen when attempting a double spend.
 							// Since the txns are sorted, we skip the 2nd
 							// iterable
-							skip[j] = byte(1)
+							skip[j] = struct{}{}
 						} else {
 							m := "Cannot spend output twice in the same block"
 							return nil, errors.New(m)
@@ -550,12 +555,10 @@ func (bc Blockchain) processTransactions(txns coin.Transactions) (coin.Transacti
 
 	// Filter the final results, if necessary
 	if len(skip) > 0 {
-		newtxns := make(coin.Transactions, len(txns)-len(skip))
-		j := 0
+		newtxns := make(coin.Transactions, 0, len(txns)-len(skip))
 		for i := range txns {
 			if _, shouldSkip := skip[i]; !shouldSkip {
-				newtxns[j] = txns[i]
-				j++
+				newtxns = append(newtxns, txns[i])
 			}
 		}
 		return newtxns, nil

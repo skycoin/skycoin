@@ -112,6 +112,10 @@ func (bc *Blockchain) updateHeadSeq(b *coin.Block) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
 		meta := chainMeta{tx.Bucket(bc.meta.Name)}
 
+		if err := meta.setHeadSeq(b.Seq()); err != nil {
+			return func() {}, err
+		}
+
 		bc.Lock()
 		// get current head seq
 		seq := bc.cache.headSeq
@@ -125,7 +129,7 @@ func (bc *Blockchain) updateHeadSeq(b *coin.Block) bucket.TxHandler {
 			bc.Lock()
 			bc.cache.headSeq = int64(seq)
 			bc.Unlock()
-		}, meta.setHeadSeq(b.Seq())
+		}, nil
 	}
 }
 

@@ -386,12 +386,8 @@ func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
 }
 
 // RemoveTransactions removes confirmed txns from the pool
-func (utp *UnconfirmedTxnPool) RemoveTransactions(txns coin.Transactions) {
-	toRemove := make([]cipher.SHA256, len(txns))
-	for i := range txns {
-		toRemove[i] = txns[i].Hash()
-	}
-	utp.removeTxns(toRemove)
+func (utp *UnconfirmedTxnPool) RemoveTransactions(txns []cipher.SHA256) {
+	utp.removeTxns(txns)
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.

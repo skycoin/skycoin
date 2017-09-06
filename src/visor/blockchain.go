@@ -161,10 +161,10 @@ func (bc *Blockchain) processBlock(b coin.Block) (coin.Block, error) {
 			return coin.Block{}, err
 		}
 		b.Body.Transactions = txns
-	}
 
-	if err := bc.verifyUxHash(b); err != nil {
-		return coin.Block{}, err
+		if err := bc.verifyUxHash(b); err != nil {
+			return coin.Block{}, err
+		}
 	}
 
 	if err := bc.chain.ProcessBlock(&b); err != nil {

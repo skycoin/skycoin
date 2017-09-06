@@ -53,3 +53,10 @@ func (bs *BlockSigs) Add(sb *coin.SignedBlock) error {
 
 	return bs.Sigs.Put(hash[:], encoder.Serialize(sb.Sig))
 }
+
+// AddWithTx add signed block with bolt.Tx
+func (bs *BlockSigs) AddWithTx(tx *bolt.Tx, sb *coin.SignedBlock) error {
+	hash := sb.Block.HashHeader()
+
+	return bs.Sigs.PutWithTx(tx, hash[:], encoder.Serialize(sb.Sig))
+}

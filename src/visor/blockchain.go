@@ -43,6 +43,7 @@ var (
 // BlockTree provide method for access
 type BlockTree interface {
 	AddBlock(b *coin.Block) error
+	AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error
 	RemoveBlock(b *coin.Block) error
 	GetBlock(hash cipher.SHA256) *coin.Block
 	GetBlockInDepth(dep uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block
@@ -56,6 +57,7 @@ type BlockListener func(b coin.Block)
 
 // Blockchain maintains blockchain and provides apis for accessing the chain.
 type Blockchain struct {
+	db          *bolt.DB
 	tree        BlockTree
 	walker      Walker
 	blkListener []BlockListener
@@ -89,6 +91,7 @@ func NewBlockchain(db *bolt.DB, ops ...Option) (*Blockchain, error) {
 	}
 
 	bc := &Blockchain{
+		db:     db,
 		tree:   tree,
 		walker: DefaultWalker,
 		chain:  chainstore,
@@ -149,6 +152,29 @@ func (bc *Blockchain) walkTree() error {
 
 func (bc *Blockchain) headSeq() int64 {
 	return bc.chain.HeadSeq()
+}
+
+func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b coin.Block) (coin.Block, error) {
+	if bc.Len() > 0 && !bc.isGenesisBlock(b) {
+		if err := bc.verifyBlockHeader(b); err != nil {
+			return coin.Block{}, err
+		}
+		txns, err := bc.processTransactions(b.Body.Transactions)
+		if err != nil {
+			return coin.Block{}, err
+		}
+		b.Body.Transactions = txns
+
+		if err := bc.verifyUxHash(b); err != nil {
+			return coin.Block{}, err
+		}
+	}
+
+	if err := bc.chain.ProcessBlockWithTx(tx, &b); err != nil {
+		return coin.Block{}, err
+	}
+
+	return b, nil
 }
 
 func (bc *Blockchain) processBlock(b coin.Block) (coin.Block, error) {
@@ -213,13 +239,17 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 		Body: body,
 	}
 
-	var err error
-	b, err = bc.processBlock(b)
-	if err != nil {
+	if err := bc.db.Update(func(tx *bolt.Tx) error {
+		var er error
+		b, er = bc.processBlockWithTx(tx, b)
+		if er != nil {
+			return er
+		}
+
+		return bc.addBlockWithTx(tx, &b)
+	}); err != nil {
 		return coin.Block{}, err
 	}
-
-	bc.addBlock(&b)
 
 	bc.notify(b)
 	return b, nil
@@ -227,6 +257,10 @@ func (bc *Blockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoin
 
 func (bc *Blockchain) addBlock(b *coin.Block) error {
 	return bc.tree.AddBlock(b)
+}
+
+func (bc *Blockchain) addBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
+	return bc.tree.AddBlockWithTx(tx, b)
 }
 
 // GetBlock get block of specific hash in the blockchain, return nil on not found.
@@ -287,15 +321,15 @@ func (bc Blockchain) NewBlockFromTransactions(txns coin.Transactions, currentTim
 }
 
 // ExecuteBlock Attempts to append block to blockchain.
-func (bc *Blockchain) ExecuteBlock(b *coin.Block) error {
+func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, b *coin.Block) error {
 	b.Head.PrevHash = bc.Head().HashHeader()
 
-	nb, err := bc.processBlock(*b)
+	nb, err := bc.processBlockWithTx(tx, *b)
 	if err != nil {
 		return err
 	}
 
-	if err := bc.addBlock(&nb); err != nil {
+	if err := bc.addBlockWithTx(tx, &nb); err != nil {
 		return err
 	}
 

@@ -142,6 +142,10 @@ func (utb *uncfmTxnBkt) delete(key cipher.SHA256) error {
 	return utb.txns.Delete([]byte(key.Hex()))
 }
 
+func (utb *uncfmTxnBkt) deleteWithTx(tx *bolt.Tx, key cipher.SHA256) error {
+	return utb.txns.DeleteWithTx(tx, []byte(key.Hex()))
+}
+
 func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
 	vs := utb.txns.GetAll()
 	txns := make([]UnconfirmedTxn, 0, len(vs))
@@ -231,6 +235,10 @@ func (txus *txUnspents) len() int {
 
 func (txus *txUnspents) delete(key cipher.SHA256) error {
 	return txus.bkt.Delete([]byte(key.Hex()))
+}
+
+func (txus *txUnspents) deleteWithTx(tx *bolt.Tx, key cipher.SHA256) error {
+	return txus.bkt.DeleteWithTx(tx, []byte(key.Hex()))
 }
 
 func (txus *txUnspents) getByAddr(a cipher.Address) (uxo coin.UxArray) {
@@ -385,9 +393,20 @@ func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
 	}
 }
 
+func (utp *UnconfirmedTxnPool) removeTxnsWithTx(tx *bolt.Tx, hashes []cipher.SHA256) {
+	for i := range hashes {
+		utp.txns.deleteWithTx(tx, hashes[i])
+	}
+}
+
 // RemoveTransactions removes confirmed txns from the pool
 func (utp *UnconfirmedTxnPool) RemoveTransactions(txns []cipher.SHA256) {
 	utp.removeTxns(txns)
+}
+
+// RemoveTransactionsWithTx remove transactions with bolt.Tx
+func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txns []cipher.SHA256) {
+	utp.removeTxnsWithTx(tx, txns)
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.

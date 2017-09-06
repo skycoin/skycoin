@@ -2,6 +2,7 @@ package blockdb
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -48,63 +49,71 @@ func NewBlockTree(db *bolt.DB) (*BlockTree, error) {
 // tree in the block depth.
 func (bt *BlockTree) AddBlock(b *coin.Block) error {
 	return bt.db.Update(func(tx *bolt.Tx) error {
-		blocks := tx.Bucket(bt.blocks.Name)
+		return bt.AddBlockWithTx(tx, b)
+	})
+}
 
-		// can't store block if it's not genesis block and has no parent.
-		if b.Seq() > 0 && b.PreHashHeader() == emptyHash {
-			return errNoParent
-		}
+// AddBlockWithTx adds block with *bolt.Tx
+func (bt *BlockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
+	bkt := tx.Bucket(bt.blocks.Name)
+	if bkt == nil {
+		return fmt.Errorf("bucket %s doesn't eist", bt.blocks.Name)
+	}
 
-		// check if the block already exist.
-		hash := b.HashHeader()
-		if blk := blocks.Get(hash[:]); blk != nil {
-			return errBlockExist
-		}
+	// can't store block if it's not genesis block and has no parent.
+	if b.Seq() > 0 && b.PreHashHeader() == emptyHash {
+		return errNoParent
+	}
 
-		// write block into blocks bucket.
-		if err := setBlock(blocks, b); err != nil {
-			return err
-		}
+	// check if the block already exist.
+	hash := b.HashHeader()
+	if blk := bkt.Get(hash[:]); blk != nil {
+		return errBlockExist
+	}
 
-		// get tree bucket.
-		tree := tx.Bucket(bt.tree.Name)
+	// write block into blocks bucket.
+	if err := setBlock(bkt, b); err != nil {
+		return err
+	}
 
-		// the pre hash must be in depth - 1.
-		if b.Seq() > 0 {
-			preHash := b.PreHashHeader()
-			parentHashPair, err := getHashPairInDepth(tree, b.Seq()-1, func(hp coin.HashPair) bool {
-				return hp.Hash == preHash
-			})
-			if err != nil {
-				return err
-			}
-			if len(parentHashPair) == 0 {
-				return errWrongParent
-			}
-		}
+	// get tree bucket.
+	tree := tx.Bucket(bt.tree.Name)
 
-		hp := coin.HashPair{Hash: hash, PreHash: b.Head.PrevHash}
-
-		// get block pairs in the depth
-		hashPairs, err := getHashPairInDepth(tree, b.Seq(), allPairs)
+	// the pre hash must be in depth - 1.
+	if b.Seq() > 0 {
+		preHash := b.PreHashHeader()
+		parentHashPair, err := getHashPairInDepth(tree, b.Seq()-1, func(hp coin.HashPair) bool {
+			return hp.Hash == preHash
+		})
 		if err != nil {
 			return err
 		}
-
-		if len(hashPairs) == 0 {
-			// no hash pair exist in the depth.
-			// write the hash pair into tree.
-			return setHashPairInDepth(tree, b.Seq(), []coin.HashPair{hp})
+		if len(parentHashPair) == 0 {
+			return errWrongParent
 		}
+	}
 
-		// check dup block
-		if containHash(hashPairs, hp) {
-			return errBlockExist
-		}
+	hp := coin.HashPair{Hash: hash, PreHash: b.Head.PrevHash}
 
-		hashPairs = append(hashPairs, hp)
-		return setHashPairInDepth(tree, b.Seq(), hashPairs)
-	})
+	// get block pairs in the depth
+	hashPairs, err := getHashPairInDepth(tree, b.Seq(), allPairs)
+	if err != nil {
+		return err
+	}
+
+	if len(hashPairs) == 0 {
+		// no hash pair exist in the depth.
+		// write the hash pair into tree.
+		return setHashPairInDepth(tree, b.Seq(), []coin.HashPair{hp})
+	}
+
+	// check dup block
+	if containHash(hashPairs, hp) {
+		return errBlockExist
+	}
+
+	hashPairs = append(hashPairs, hp)
+	return setHashPairInDepth(tree, b.Seq(), hashPairs)
 }
 
 // RemoveBlock remove block from blocks bucket and tree bucket.

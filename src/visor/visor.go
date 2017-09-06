@@ -119,6 +119,7 @@ type Visor struct {
 	history     *historydb.HistoryDB
 	bcParser    *BlockchainParser
 	wallets     *wallet.Service
+	db          *bolt.DB
 }
 
 // open the blockdb.
@@ -186,6 +187,7 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 	v := &Visor{
 		Config:      c,
+		db:          db,
 		Blockchain:  bc,
 		blockSigs:   sigs,
 		Unconfirmed: NewUnconfirmedTxnPool(db),
@@ -338,29 +340,24 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
-	// TODO -- save them even if out of order, and execute later
-	// But make sure all prechecking as possible is done
-	// TODO -- check if bitcoin allows blocks to be receiving out of order
-	if err := vs.blockSigs.Add(&b); err != nil {
-		return err
-	}
+	return vs.db.Update(func(tx *bolt.Tx) error {
+		if err := vs.blockSigs.AddWithTx(tx, &b); err != nil {
+			return err
+		}
 
-	// the transactions in body might be changed in the following ExecuteBlock,
-	// so need to record the original txns, and removed from
-	// unconfirmed transaction pool later.
-	txns := b.Block.Body.Transactions
+		if err := vs.Blockchain.ExecuteBlock(tx, &b.Block); err != nil {
+			return err
+		}
 
-	if err := vs.Blockchain.ExecuteBlock(&b.Block); err != nil {
-		return err
-	}
+		// Remove the transactions in the Block from the unconfirmed pool
+		txHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
+		for _, tx := range b.Block.Body.Transactions {
+			txHashes = append(txHashes, tx.Hash())
+		}
+		vs.Unconfirmed.RemoveTransactionsWithTx(tx, txHashes)
 
-	// Remove the transactions in the Block from the unconfirmed pool
-	txHashes := make([]cipher.SHA256, 0, len(txns))
-	for _, tx := range txns {
-		txHashes = append(txHashes, tx.Hash())
-	}
-	vs.Unconfirmed.RemoveTransactions(txHashes)
-	return nil
+		return nil
+	})
 }
 
 // Returns an error if the cipher.Sig is not valid for the coin.Block

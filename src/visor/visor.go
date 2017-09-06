@@ -246,10 +246,9 @@ func (vs *Visor) Run() error {
 			return
 		}
 
-		for _, seq := range noSigBlockSeqs {
-			logger.Warning("no signature found in block %d, parse the block again", seq)
-			b := vs.GetBlockBySeq(seq)
-			vs.bcParser.FeedBlock(*b)
+		if len(noSigBlockSeqs) > 0 {
+			errC <- fmt.Errorf("no signature found in block %d", noSigBlockSeqs)
+			return
 		}
 
 		logger.Info("Signature verify success")

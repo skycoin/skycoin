@@ -249,7 +249,7 @@ func (vs *Visor) Run() error {
 		}
 
 		if len(noSigBlockSeqs) > 0 {
-			errC <- fmt.Errorf("no signature found in block %d", noSigBlockSeqs)
+			errC <- fmt.Errorf("no signature found in block %v", noSigBlockSeqs)
 			return
 		}
 

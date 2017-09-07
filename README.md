@@ -19,7 +19,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 ### Prerequisites
 
-Install go1.8+.
+[Install go1.8+](https://golang.org/doc/install)
 
 *Note: In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.*
 

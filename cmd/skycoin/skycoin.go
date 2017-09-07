@@ -652,7 +652,6 @@ func Run(c *Config) {
 	if rpc != nil {
 		rpc.Shutdown()
 	}
-
 	gui.Shutdown()
 	d.Shutdown()
 	closelog()

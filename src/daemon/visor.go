@@ -445,12 +445,11 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 }
 
 // GetSignedBlocksSince returns numbers of signed blocks since seq.
-func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) []coin.SignedBlock {
-	var sbs []coin.SignedBlock
+func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) (sbs []coin.SignedBlock, err error) {
 	vs.strand(func() {
-		sbs = vs.v.GetSignedBlocksSince(seq, num)
+		sbs, err = vs.v.GetSignedBlocksSince(seq, num)
 	})
-	return sbs
+	return
 }
 
 // UnConfirmFilterKnown returns all unknow transaction hashes
@@ -513,7 +512,12 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// Record this as this peer's highest block
 	d.Visor.RecordBlockchainLength(gbm.c.Addr, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	blocks := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	blocks, err := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	if err != nil {
+		logger.Info("Get signed blocks failed: %v", err)
+		return
+	}
+
 	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 	if len(blocks) == 0 {
 		return

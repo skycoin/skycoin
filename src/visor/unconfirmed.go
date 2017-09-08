@@ -114,7 +114,7 @@ func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 	return &tx, true
 }
 
-func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
+func (utb *uncfmTxnBkt) putWithTx(tx *bolt.Tx, v *UnconfirmedTxn) error {
 	key := []byte(v.Hash().Hex())
 	d := encoder.Serialize(v)
 	return utb.txns.Put(key, d)
@@ -215,9 +215,9 @@ func newTxUnspents(db *bolt.DB) *txUnspents {
 	return &txUnspents{bkt: bkt}
 }
 
-func (txus *txUnspents) put(key cipher.SHA256, uxs coin.UxArray) error {
+func (txus *txUnspents) putWithTx(tx *bolt.Tx, key cipher.SHA256, uxs coin.UxArray) error {
 	v := encoder.Serialize(uxs)
-	return txus.bkt.Put([]byte(key.Hex()), v)
+	return txus.bkt.PutWithTx(tx, []byte(key.Hex()), v)
 }
 
 func (txus *txUnspents) get(key cipher.SHA256) (coin.UxArray, error) {
@@ -314,20 +314,13 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
-	var valid int8
-	var unspentNotExistErr error
-
 	fee, err := bc.TransactionFee(&t)
 	if err != nil {
 		return false, err
 	}
 
 	if err := VerifyTransactionFee(&t, fee); err != nil {
-		if err == ErrUnspentNotExist {
-			unspentNotExistErr = err
-		} else {
-			return false, err
-		}
+		return false, err
 	}
 
 	if err := bc.VerifyTransaction(t); err != nil {
@@ -339,28 +332,30 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 	known := false
 	utp.txns.update(h, func(tx *UnconfirmedTxn) {
 		known = true
-
 		now := utc.Now().UnixNano()
 		tx.Received = now
 		tx.Checked = now
-
-		if unspentNotExistErr == nil {
-			tx.IsValid = 1
-		} else {
-			tx.IsValid = 0
-		}
+		tx.IsValid = 1
 	})
 
 	if known {
-		return true, unspentNotExistErr
+		return true, nil
 	}
 
-	// Add txn to index
 	utx := utp.createUnconfirmedTxn(t)
-	utx.IsValid = valid
-	utp.txns.put(&utx)
-	utp.unspent.put(h, coin.CreateUnspents(bc.Head().Head, t))
-	return false, unspentNotExistErr
+	if err := bc.db.Update(func(tx *bolt.Tx) error {
+		// add txn to index
+		if err := utp.txns.putWithTx(tx, &utx); err != nil {
+			return err
+		}
+
+		// update unconfirmed unspent
+		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(bc.Head().Head, t))
+	}); err != nil {
+		return false, err
+	}
+
+	return false, nil
 }
 
 // RawTxns returns underlying coin.Transactions

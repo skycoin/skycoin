@@ -63,8 +63,8 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 	return tx
 }
 
-func MakeBlockchain(t *testing.T, db *bolt.DB) *visor.Blockchain {
-	b, err := visor.NewBlockchain(db)
+func MakeBlockchain(t *testing.T, db *bolt.DB, pubkey cipher.PubKey) *visor.Blockchain {
+	b, err := visor.NewBlockchain(db, pubkey)
 	require.NoError(t, err)
 	b.CreateGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
 	return b
@@ -113,7 +113,13 @@ func executeGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, txn coin
 	block, err := bc.NewBlockFromTransactions(coin.Transactions{txn}, GenesisTime+TimeIncrement)
 	require.NoError(t, err)
 
-	err = bc.ExecuteBlock(block)
+	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
+	sb := coin.SignedBlock{
+		Block: *block,
+		Sig:   sig,
+	}
+
+	err = bc.ExecuteBlock(&sb)
 	require.NoError(t, err)
 
 	uxOut, err := coin.CreateUnspent(block.Head, txn, 0)
@@ -149,8 +155,10 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr, errMsg string) {
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
+	p, _ := cipher.GenerateKeyPair()
+
 	// Setup blockchain
-	bc := MakeBlockchain(t, db)
+	bc := MakeBlockchain(t, db, p)
 
 	// Send coins to the initial address
 	var coins uint64 = GenesisCoins
@@ -190,7 +198,8 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	defer close()
 
 	// Setup blockchain
-	bc := MakeBlockchain(t, db)
+	p, _ := cipher.GenerateKeyPair()
+	bc := MakeBlockchain(t, db, p)
 
 	// Send coins to the initial address, with invalid fee
 	var coins uint64 = GenesisCoins
@@ -213,7 +222,8 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	defer close()
 
 	// Setup blockchain
-	bc := MakeBlockchain(t, db)
+	p, _ := cipher.GenerateKeyPair()
+	bc := MakeBlockchain(t, db, p)
 
 	// Send coins to the initial address, with invalid fee
 	var coins uint64 = GenesisCoins
@@ -238,8 +248,9 @@ func TestInjectValidTransaction(t *testing.T) {
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
+	p, _ := cipher.GenerateKeyPair()
 	// Setup blockchain
-	bc := MakeBlockchain(t, db)
+	bc := MakeBlockchain(t, db, p)
 
 	// Send coins to the initial address, with invalid fee
 	var coins uint64 = GenesisCoins
@@ -271,7 +282,8 @@ func TestInjectInvalidTransaction(t *testing.T) {
 	defer close()
 
 	// Setup blockchain
-	bc := MakeBlockchain(t, db)
+	p, _ := cipher.GenerateKeyPair()
+	bc := MakeBlockchain(t, db, p)
 
 	// Send coins to the initial address, with invalid fee
 	var coins uint64 = GenesisCoins

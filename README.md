@@ -24,7 +24,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 ### Fetch the skycoin source
 
 ```sh
-go get https://github.com/skycoin/skycoin
+go get https://github.com/skycoin/skycoin/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
@@ -82,7 +82,7 @@ We have two branches: `master` and `develop`.
 
 All `.go` source files should be formatted with `gofmt` or `goimports`.
 
-### Dependencies
+### Updating Vendored Dependencies
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 

@@ -17,16 +17,14 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-### Prerequisites
+### Installing golang
 
 [Install go1.8+](https://golang.org/doc/install)
 
-*Note: In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.*
-
-### Fetch the source
+### Fetch the skycoin source
 
 ```sh
-go get https://github.com/skycoin/skycoin
+go get https://github.com/skycoin/skycoin/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
@@ -84,7 +82,7 @@ We have two branches: `master` and `develop`.
 
 All `.go` source files should be formatted with `gofmt` or `goimports`.
 
-### Dependencies
+### Updating Vendored Dependencies
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 

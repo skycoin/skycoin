@@ -741,14 +741,16 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 	for _, txn := range gtm.Txns {
 		// Only announce transactions that are new to us, so that peers can't
 		// spam relays
-		if known, err := d.Visor.InjectTxn(txn); err == nil && !known {
-			hashes = append(hashes, txn.Hash())
+		known, err := d.Visor.InjectTxn(txn)
+		if err != nil {
+			logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
+			continue
+		}
+
+		if known {
+			logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
 		} else {
-			if !known {
-				logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
-			} else {
-				logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
-			}
+			hashes = append(hashes, txn.Hash())
 		}
 	}
 	// Announce these transactions to peers

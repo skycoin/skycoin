@@ -369,6 +369,27 @@ func (bc *Blockchain) ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) erro
 	return nil
 }
 
+// ExecuteBlock attempts to append block to blockchain
+func (bc *Blockchain) ExecuteBlock(sb *coin.SignedBlock) error {
+	if err := bc.sigs.Add(sb); err != nil {
+		return err
+	}
+
+	b := sb.Block
+	b.Head.PrevHash = bc.Head().HashHeader()
+	nb, err := bc.processBlock(b)
+	if err != nil {
+		return err
+	}
+
+	if err := bc.addBlock(&nb); err != nil {
+		return err
+	}
+
+	bc.notify(nb)
+	return nil
+}
+
 func (bc *Blockchain) updateUnspent(b coin.Block) error {
 	_, err := bc.processBlock(b)
 	return err

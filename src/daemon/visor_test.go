@@ -109,11 +109,15 @@ func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr ci
 	return txn
 }
 
-func executeGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, txn coin.Transaction) coin.UxOut {
+func executeGenesisSpendTransaction(t *testing.T, db *bolt.DB, bc *visor.Blockchain, txn coin.Transaction) coin.UxOut {
 	block, err := bc.NewBlockFromTransactions(coin.Transactions{txn}, GenesisTime+TimeIncrement)
 	require.NoError(t, err)
 
-	err = bc.ExecuteBlock(block)
+	err = db.Update(func(tx *bolt.Tx) error {
+		err = bc.ExecuteBlock(tx, block)
+		require.NoError(t, err)
+		return err
+	})
 	require.NoError(t, err)
 
 	uxOut, err := coin.CreateUnspent(block.Head, txn, 0)
@@ -158,7 +162,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr, errMsg string) {
 	var fee uint64 = 5e8
 
 	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
-	uxOut := executeGenesisSpendTransaction(t, bc, txn)
+	uxOut := executeGenesisSpendTransaction(t, db, bc, txn)
 
 	// Create a transaction that spends from the locked address
 	// The secret key for the locked address is obviously unavailable here,

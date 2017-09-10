@@ -114,6 +114,12 @@ func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 	return &tx, true
 }
 
+func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
+	key := []byte(v.Hash().Hex())
+	d := encoder.Serialize(v)
+	return utb.txns.Put(key, d)
+}
+
 func (utb *uncfmTxnBkt) putWithTx(tx *bolt.Tx, v *UnconfirmedTxn) error {
 	key := []byte(v.Hash().Hex())
 	d := encoder.Serialize(v)

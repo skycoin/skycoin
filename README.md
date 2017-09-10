@@ -82,6 +82,12 @@ We have two branches: `master` and `develop`.
 
 All `.go` source files should be formatted with `gofmt` or `goimports`.
 
+### Running tests
+
+```sh
+go test ./src/...
+```
+
 ### Updating Vendored Dependencies
 
 Dependencies are managed with [dep](https://github.com/golang/dep).

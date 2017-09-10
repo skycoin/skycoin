@@ -138,6 +138,7 @@ func (vs *Visor) strand(f func()) {
 		}()
 		select {
 		case <-cxt.Done():
+			logger.Error("%v", cxt.Err())
 			return
 		case <-c:
 			return
@@ -294,7 +295,7 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
 	pool.Pool.BroadcastMessage(m)
 }
 
-// Injects transaction to the unconfirmed pool and broadcasts it
+// InjectTransaction injects transaction to the unconfirmed pool and broadcasts it
 // The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error

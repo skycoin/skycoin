@@ -14,11 +14,14 @@ import (
 func TestClient(t *testing.T) {
 	s := setupWebRPC(t)
 	errC := make(chan error, 1)
+
 	go func() {
 		errC <- s.Run()
 	}()
+
+	time.Sleep(time.Millisecond * 100) // give s.Run() enough time to start
+
 	defer func() {
-		time.Sleep(time.Millisecond * 50) // give rpc.Run() enough time to start
 		err := s.Shutdown()
 		require.NoError(t, err)
 		require.NoError(t, <-errC)

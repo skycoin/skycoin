@@ -696,6 +696,8 @@ func (bc *Blockchain) VerifySigs() error {
 	return <-errC
 }
 
+// signature verifier will get block seq from seqC channel,
+// and have multiple thread to do signature verification.
 func (bc *Blockchain) sigVerifier(seqC chan uint64) (func(), <-chan error) {
 	quitC := make(chan struct{})
 	wg := sync.WaitGroup{}
@@ -703,30 +705,33 @@ func (bc *Blockchain) sigVerifier(seqC chan uint64) (func(), <-chan error) {
 	for i := 0; i < SigVerifyTheadNum; i++ {
 		wg.Add(1)
 		go func(id int) {
-			defer wg.Done()
+			defer func() {
+				wg.Done()
+				logger.Critical("%d done", id)
+			}()
 			for {
 				select {
-				case <-quitC:
-					return
 				case seq := <-seqC:
 					if err := bc.verifyBlockSig(seq); err != nil {
 						errC <- err
 						return
 					}
+				case <-quitC:
+					return
 				}
 			}
 		}(i)
 	}
 
-	go func() {
-		defer func() {
-			errC <- nil
-		}()
-		wg.Wait()
-	}()
-
 	return func() {
 		close(quitC)
+		wg.Wait()
+		select {
+		case errC <- nil:
+			// no error
+		default:
+			// already has error in errC
+		}
 	}, errC
 }
 

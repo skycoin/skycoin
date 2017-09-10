@@ -705,10 +705,7 @@ func (bc *Blockchain) sigVerifier(seqC chan uint64) (func(), <-chan error) {
 	for i := 0; i < SigVerifyTheadNum; i++ {
 		wg.Add(1)
 		go func(id int) {
-			defer func() {
-				wg.Done()
-				logger.Critical("%d done", id)
-			}()
+			defer wg.Done()
 			for {
 				select {
 				case seq := <-seqC:

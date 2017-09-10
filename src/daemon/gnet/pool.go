@@ -247,7 +247,11 @@ func (pool *ConnectionPool) Shutdown() {
 	})
 
 	close(pool.quit)
-	pool.listener.Close()
+
+	if pool.listener != nil {
+		pool.listener.Close()
+	}
+
 	pool.listener = nil
 }
 

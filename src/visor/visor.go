@@ -123,18 +123,15 @@ type Visor struct {
 }
 
 // open the blockdb.
-func openDB(dbFile string) (*bolt.DB, func(), error) {
+func openDB(dbFile string) (*bolt.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("Open boltdb failed, %v", err)
+		return nil, fmt.Errorf("Open boltdb failed, %v", err)
 	}
 
-	return db, func() {
-		db.Close()
-		logger.Info("DB closed")
-	}, nil
+	return db, nil
 }
 
 // VsClose visor close function
@@ -152,34 +149,9 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		}
 	}
 
-	db, closeDB, err := openDB(c.DBPath)
+	db, bc, err := load(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	// creates blockchain instance
-	bc, err := NewBlockchain(db, c.BlockchainPubkey, Arbitrating(c.Arbitrating))
-	if err != nil {
-		if err != ErrSignatureLost {
-			return nil, nil, err
-		}
-		logger.Error("signature lost...")
-		closeDB()
-
-		// remove the db
-		if err := os.Remove(c.DBPath); err != nil {
-			return nil, nil, fmt.Errorf("remove db failed: %v", err)
-		}
-
-		db, closeDB, err = openDB(c.DBPath)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		bc, err = NewBlockchain(db, c.BlockchainPubkey, Arbitrating(c.Arbitrating))
-		if err != nil {
-			return nil, nil, err
-		}
 	}
 
 	history, err := historydb.New(db)
@@ -210,8 +182,42 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 	return v, func() {
 		v.bcParser.Stop()
-		closeDB()
+		db.Close()
+		logger.Info("DB closed")
 	}, nil
+}
+
+// load loads blockchain from DB and if any error occurs then delete
+// the db and create an empty blockchain.
+func load(dbpath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+	// creates blockchain instance
+	db, err := openDB(dbpath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	if err != nil {
+		logger.Error("%v", err)
+		db.Close()
+
+		// remove the db
+		if err := os.Remove(dbpath); err != nil {
+			return nil, nil, fmt.Errorf("remove db failed: %v", err)
+		}
+
+		db, err = openDB(dbpath)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return db, bc, err
 }
 
 // Run starts the visor process

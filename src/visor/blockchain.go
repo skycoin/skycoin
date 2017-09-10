@@ -674,7 +674,6 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 
 // VerifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-// return block sequences whose signature are lost or error
 func (bc *Blockchain) VerifySigs() error {
 	head := bc.Head()
 	if head == nil {
@@ -684,9 +683,22 @@ func (bc *Blockchain) VerifySigs() error {
 	start := time.Now()
 	defer logger.Info("verify signature: %v block size: %v", time.Since(start), head.Seq())
 
-	wg := sync.WaitGroup{}
-	c := make(chan struct{})
 	seqC := make(chan uint64)
+
+	shutdown, errC := bc.sigVerifier(seqC)
+
+	for i := uint64(0); i <= head.Seq(); i++ {
+		seqC <- i
+	}
+
+	shutdown()
+
+	return <-errC
+}
+
+func (bc *Blockchain) sigVerifier(seqC chan uint64) (func(), <-chan error) {
+	quitC := make(chan struct{})
+	wg := sync.WaitGroup{}
 	errC := make(chan error, 1)
 	for i := 0; i < SigVerifyTheadNum; i++ {
 		wg.Add(1)
@@ -694,28 +706,10 @@ func (bc *Blockchain) VerifySigs() error {
 			defer wg.Done()
 			for {
 				select {
-				case <-c:
+				case <-quitC:
 					return
 				case seq := <-seqC:
-					b := bc.GetBlockInDepth(seq)
-					if b == nil {
-						errC <- fmt.Errorf("no block in depth %v", i)
-						return
-					}
-
-					// get sig
-					sig, exist, err := bc.sigs.Get(b.HashHeader())
-					if err != nil {
-						errC <- fmt.Errorf("verify signature of block in depth: %d failed: %v", i, err)
-						return
-					}
-
-					if !exist {
-						errC <- ErrSignatureLost
-						return
-					}
-
-					if err := cipher.VerifySignature(bc.pubkey, sig, b.HashHeader()); err != nil {
+					if err := bc.verifyBlockSig(seq); err != nil {
 						errC <- err
 						return
 					}
@@ -724,28 +718,53 @@ func (bc *Blockchain) VerifySigs() error {
 		}(i)
 	}
 
-	for i := uint64(0); i <= head.Seq(); i++ {
-		seqC <- i
-	}
-
-	close(c)
-
-	q := make(chan struct{})
 	go func() {
 		defer func() {
-			close(q)
+			errC <- nil
 		}()
 		wg.Wait()
 	}()
 
-	var err error
-	for {
-		select {
-		case err = <-errC:
-		case <-q:
-			return err
-		}
+	return func() {
+		close(quitC)
+	}, errC
+}
+
+func (bc *Blockchain) getSignedBlock(seq uint64) (*coin.SignedBlock, bool, error) {
+	b := bc.GetBlockInDepth(seq)
+	if b == nil {
+		return nil, false, nil
 	}
+
+	// get sig
+	sig, exist, err := bc.sigs.Get(b.HashHeader())
+	if err != nil {
+		return nil, false, fmt.Errorf("get signature of block %d failed: %v", seq, err)
+	}
+
+	if !exist {
+		return nil, false, ErrSignatureLost
+	}
+
+	sb := &coin.SignedBlock{
+		Block: *b,
+		Sig:   sig,
+	}
+
+	return sb, true, nil
+}
+
+func (bc *Blockchain) verifyBlockSig(seq uint64) error {
+	sb, exist, err := bc.getSignedBlock(seq)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return fmt.Errorf("found no block in seq %d", seq)
+	}
+
+	return cipher.VerifySignature(bc.pubkey, sb.Sig, sb.Block.HashHeader())
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid

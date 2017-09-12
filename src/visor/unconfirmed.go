@@ -397,6 +397,7 @@ func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
 func (utp *UnconfirmedTxnPool) removeTxnsWithTx(tx *bolt.Tx, hashes []cipher.SHA256) {
 	for i := range hashes {
 		utp.txns.deleteWithTx(tx, hashes[i])
+		utp.unspent.deleteWithTx(tx, hashes[i])
 	}
 }
 

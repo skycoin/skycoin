@@ -22,8 +22,8 @@ type UnspentOut struct {
 }
 
 type SendAmount struct {
-	Addr  string `json:"addr"`  // send to address
-	Coins uint64 `json:"coins"` // send amount
+	Addr  string  `json:"addr"`  // send to address
+	Coins float64 `json:"coins"` // send amount
 }
 
 func createRawTxCmd(cfg Config) gcli.Command {
@@ -183,7 +183,7 @@ func getToAddresses(c *gcli.Context) ([]SendAmount, error) {
 	return []SendAmount{{toAddr, amt}}, nil
 }
 
-func getAmount(c *gcli.Context) (uint64, error) {
+func getAmount(c *gcli.Context) (float64, error) {
 	if c.NArg() < 2 {
 		return 0, errors.New("invalid argument")
 	}
@@ -194,7 +194,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 		return 0, errors.New("error amount")
 	}
 
-	return uint64(amt), nil
+	return amt, nil
 }
 
 func createRawTx(c *gcli.Context) (string, error) {
@@ -217,14 +217,13 @@ func createRawTx(c *gcli.Context) (string, error) {
 
 	if wltAddr.Address == "" {
 		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
-	} else {
-		return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 	}
+	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 }
 
 // PUBLIC
 
-// Creates a transaction from any address or combination of addresses in a wallet
+// CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
 func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// validate the send amount
 	for _, arg := range toAddrs {
@@ -302,7 +301,7 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs)
 }
 
-// Creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
+// CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
 func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
 	// get unspent outputs of those addresses
 	unspents, err := c.GetUnspentOutputs(inAddrs)
@@ -319,7 +318,7 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 	// caculate total required amount
 	var totalAmt uint64
 	for _, arg := range toAddrs {
-		totalAmt += arg.Coins
+		totalAmt += uint64(arg.Coins * 1e6)
 	}
 
 	outs, err := getSufficientUnspents(spendableOuts, totalAmt)
@@ -354,20 +353,17 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	)
 
 	for _, o := range outs {
-		c, err := strconv.ParseUint(o.Coins, 10, 64)
+		c, err := strconv.ParseFloat(o.Coins, 64)
 		if err != nil {
 			return nil, errors.New("error coins string")
 		}
-		totalInAmt += c
+		totalInAmt += uint64(c * 1e6)
 		totalInHours += o.Hours
 	}
 
 	for _, to := range toAddrs {
-		totalOutAmt += to.Coins
+		totalOutAmt += uint64(to.Coins * 1e6)
 	}
-
-	// Convert out amounts to droplets. The value in SendAmount is in whole skycoins.
-	totalOutAmt *= 1e6
 
 	if totalInAmt < totalOutAmt {
 		return nil, errors.New("amount is not sufficient")
@@ -385,7 +381,7 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	}
 
 	for _, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins*1e6, addrHours))
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, uint64(to.Coins*1e6), addrHours))
 	}
 
 	return outAddrs, nil
@@ -428,18 +424,15 @@ func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, err
 	}
 
 	for _, us := range addrOuts {
-		var tmpAmt uint64
 		for i, u := range us {
-			coins, err := strconv.ParseUint(u.Coins, 10, 64)
+			coins, err := strconv.ParseFloat(u.Coins, 64)
 			if err != nil {
 				return nil, errors.New("error coins string")
 			}
 			if coins == 0 {
 				continue
 			}
-			tmpAmt = (coins * 1e6)
-			us[i].Coins = strconv.FormatUint(tmpAmt, 10)
-			totalAmt += coins
+			totalAmt += uint64(coins * 1e6)
 			outs = append(outs, us[i])
 
 			if totalAmt >= amt {
@@ -460,9 +453,6 @@ func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.Transa
 	}
 
 	for _, o := range outs {
-		if (o.Coins % 1e6) != 0 {
-			return nil, errors.New("skycoin coins must be multiple of 1e6")
-		}
 		tx.PushOutput(o.Address, o.Coins, o.Hours)
 	}
 	// tx.Verify()

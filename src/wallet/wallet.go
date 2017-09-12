@@ -402,9 +402,6 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	if amt.Coins == 0 {
 		return nil, errors.New("zero spend amount")
 	}
-	if amt.Coins%1e6 != 0 {
-		return nil, errors.New("coins must be multiple of 1e6")
-	}
 
 	sort.Sort(uxOutByTimeDesc(uxa))
 
@@ -416,8 +413,8 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 			Hours: uxa[i].CoinHours(headTime),
 		}
 
-		if b.Coins == 0 || b.Coins%1e6 != 0 {
-			logger.Error("UxOut coins are 0 or not multiple of 1e6, can't spend")
+		if b.Coins == 0 {
+			logger.Error("UxOut coins are 0, can't spend")
 			continue
 		}
 		have = have.Add(b)

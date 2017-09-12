@@ -119,8 +119,11 @@ func executeGenesisSpendTransaction(t *testing.T, db *bolt.DB, bc *visor.Blockch
 		Sig:   sig,
 	}
 
-	err = bc.ExecuteBlock(&sb)
-	require.NoError(t, err)
+	db.Update(func(tx *bolt.Tx) error {
+		err = bc.ExecuteBlockWithTx(tx, &sb)
+		require.NoError(t, err)
+		return nil
+	})
 
 	uxOut, err := coin.CreateUnspent(block.Head, txn, 0)
 	require.NoError(t, err)

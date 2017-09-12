@@ -198,6 +198,10 @@ func load(dbpath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blo
 
 	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
 	if err != nil {
+		if err != ErrSignatureLost {
+			return nil, nil, err
+		}
+
 		logger.Error("%v", err)
 		db.Close()
 

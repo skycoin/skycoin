@@ -202,7 +202,7 @@ func load(dbpath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blo
 			return nil, nil, err
 		}
 
-		logger.Error("%v", err)
+		logger.Error("removing db, %v", err)
 		db.Close()
 
 		// remove the db

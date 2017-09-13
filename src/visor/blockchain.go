@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -658,9 +657,6 @@ func (bc *Blockchain) VerifySigs() error {
 	if head == nil {
 		return nil
 	}
-
-	start := time.Now()
-	defer logger.Info("verify signature: %v block size: %v", time.Since(start), head.Seq())
 
 	seqC := make(chan uint64)
 

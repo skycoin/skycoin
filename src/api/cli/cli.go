@@ -96,11 +96,12 @@ type App struct {
 type Config struct {
 	WalletDir  string
 	WalletName string
+	DataDir    string
 	Coin       string
 	RpcAddress string
 }
 
-// Loads config from environment, prior to parsing CLI flags
+// LoadConfig loads config from environment, prior to parsing CLI flags
 func LoadConfig() (Config, error) {
 	// get coin name from env
 	coin := os.Getenv("COIN")
@@ -114,10 +115,11 @@ func LoadConfig() (Config, error) {
 		rpcAddr = defaultRpcAddress
 	}
 
+	home := file.UserHome()
+
 	// get wallet dir from env
 	wltDir := os.Getenv("WALLET_DIR")
 	if wltDir == "" {
-		home := file.UserHome()
 		wltDir = fmt.Sprintf("%s/.%s/wallets", home, coin)
 	}
 
@@ -131,9 +133,12 @@ func LoadConfig() (Config, error) {
 		return Config{}, ErrWalletName
 	}
 
+	dataDir := filepath.Join(home, fmt.Sprintf(".%s", coin))
+
 	return Config{
 		WalletDir:  wltDir,
 		WalletName: wltName,
+		DataDir:    dataDir,
 		Coin:       coin,
 		RpcAddress: rpcAddr,
 	}, nil
@@ -141,6 +146,10 @@ func LoadConfig() (Config, error) {
 
 func (c Config) FullWalletPath() string {
 	return filepath.Join(c.WalletDir, c.WalletName)
+}
+
+func (c Config) FullDBPath() string {
+	return filepath.Join(c.DataDir, "data.db")
 }
 
 // Returns a full wallet path based on cfg and optional cli arg specifying wallet file
@@ -165,6 +174,23 @@ func resolveWalletPath(cfg Config, w string) (string, error) {
 	}
 
 	return absW, nil
+}
+
+func resolveDBPath(cfg Config, db string) (string, error) {
+	if db == "" {
+		db = cfg.FullDBPath()
+	}
+
+	// If w is only the basename, use the default data dir
+	if filepath.Base(db) == db {
+		db = filepath.Join(cfg.DataDir, db)
+	}
+
+	absDB, err := filepath.Abs(db)
+	if err != nil {
+		return "", fmt.Errorf("Invalid data path %s: %v", db, err)
+	}
+	return absDB, nil
 }
 
 // NewApp creates an app instance
@@ -199,6 +225,7 @@ func NewApp(cfg Config) *App {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
+		checkdbCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

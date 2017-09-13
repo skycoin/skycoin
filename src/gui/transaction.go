@@ -185,6 +185,11 @@ func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
+		if tx == nil {
+			wh.Error404(w)
+			return
+		}
+
 		d := tx.Txn.Serialize()
 		wh.SendOr404(w, hex.EncodeToString(d))
 		return

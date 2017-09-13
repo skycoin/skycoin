@@ -3,6 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -115,26 +115,23 @@ type Visor struct {
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed *UnconfirmedTxnPool
 	Blockchain  *Blockchain
-	blockSigs   *blockdb.BlockSigs
-	history     *historydb.HistoryDB
-	bcParser    *BlockchainParser
-	wallets     *wallet.Service
-	db          *bolt.DB
+	// blockSigs   *blockdb.BlockSigs
+	history  *historydb.HistoryDB
+	bcParser *BlockchainParser
+	wallets  *wallet.Service
+	db       *bolt.DB
 }
 
 // open the blockdb.
-func openDB(dbFile string) (*bolt.DB, func(), error) {
+func openDB(dbFile string) (*bolt.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("Open boltdb failed, %v", err)
+		return nil, fmt.Errorf("Open boltdb failed, %v", err)
 	}
 
-	return db, func() {
-		db.Close()
-		logger.Info("DB closed")
-	}, nil
+	return db, nil
 }
 
 // VsClose visor close function
@@ -152,24 +149,12 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		}
 	}
 
-	db, closeDB, err := openDB(c.DBPath)
+	db, bc, err := load(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	history, err := historydb.New(db)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// creates block signature bucket
-	sigs, err := blockdb.NewBlockSigs(db)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// creates blockchain instance
-	bc, err := NewBlockchain(db, Arbitrating(c.Arbitrating))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -189,7 +174,6 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		Config:      c,
 		db:          db,
 		Blockchain:  bc,
-		blockSigs:   sigs,
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
@@ -198,13 +182,52 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 	return v, func() {
 		v.bcParser.Stop()
-		closeDB()
+		db.Close()
+		logger.Info("DB closed")
 	}, nil
+}
+
+// load loads blockchain from DB and if any error occurs then delete
+// the db and create an empty blockchain.
+func load(dbpath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+	// creates blockchain instance
+	db, err := openDB(dbpath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	if err != nil {
+		if err != ErrSignatureLost {
+			return nil, nil, err
+		}
+
+		logger.Error("removing db, %v", err)
+		db.Close()
+
+		// remove the db
+		if err := os.Remove(dbpath); err != nil {
+			return nil, nil, fmt.Errorf("remove db failed: %v", err)
+		}
+
+		db, err = openDB(dbpath)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return db, bc, err
 }
 
 // Run starts the visor process
 func (vs *Visor) Run() error {
 	if vs.Blockchain.GetGenesisBlock() == nil {
+		logger.Debug("Create genesis block")
 		vs.GenesisPreconditions()
 		b, err := vs.Blockchain.CreateGenesisBlock(
 			vs.Config.GenesisAddress,
@@ -214,18 +237,16 @@ func (vs *Visor) Run() error {
 			return err
 		}
 
-		logger.Debug("Create genesis block")
-
 		// record the signature of genesis block
 		if vs.Config.IsMaster {
 			sb := vs.SignBlock(b)
-			if err := vs.blockSigs.Add(&sb); err != nil {
+			if err := vs.Blockchain.AddSig(&sb); err != nil {
 				return err
 			}
 
 			logger.Info("Genesis block signature=%s", sb.Sig.Hex())
 		} else {
-			if err := vs.blockSigs.Add(&coin.SignedBlock{
+			if err := vs.Blockchain.AddSig(&coin.SignedBlock{
 				Block: b,
 				Sig:   vs.Config.GenesisSignature,
 			}); err != nil {
@@ -238,29 +259,7 @@ func (vs *Visor) Run() error {
 		return err
 	}
 
-	errC := make(chan error, 1)
-	go func() {
-		logger.Info("Verify signature...")
-		noSigBlockSeqs, err := vs.Blockchain.VerifySigs(vs.Config.BlockchainPubkey, vs.blockSigs)
-		if err != nil {
-			// TODO: if detect signature lost, we need to parse the specific block again to get signature.
-			errC <- fmt.Errorf("invalid block signatures: %v", err)
-			return
-		}
-
-		if len(noSigBlockSeqs) > 0 {
-			errC <- fmt.Errorf("no signature found in block %v", noSigBlockSeqs)
-			return
-		}
-
-		logger.Info("Signature verify success")
-	}()
-
-	go func() {
-		errC <- vs.bcParser.Run()
-	}()
-
-	return <-errC
+	return vs.bcParser.Run()
 }
 
 // check if there're unconfirmed transactions that are actually
@@ -269,6 +268,10 @@ func (vs *Visor) processUnconfirmedTxns() error {
 	removeTxs := []cipher.SHA256{}
 	vs.Unconfirmed.ForEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
 		// check if the tx already executed
+		if err := vs.Blockchain.VerifyTransaction(tx.Txn); err != nil {
+			removeTxs = append(removeTxs, hash)
+		}
+
 		txn, err := vs.history.GetTransaction(hash)
 		if err != nil {
 			return fmt.Errorf("process unconfirmed txs failed: %v", err)
@@ -341,11 +344,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	}
 
 	return vs.db.Update(func(tx *bolt.Tx) error {
-		if err := vs.blockSigs.AddWithTx(tx, &b); err != nil {
-			return err
-		}
-
-		if err := vs.Blockchain.ExecuteBlock(tx, &b.Block); err != nil {
+		if err := vs.Blockchain.ExecuteBlockWithTx(tx, &b); err != nil {
 			return err
 		}
 
@@ -435,7 +434,7 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 		if b == nil {
 			return []coin.SignedBlock{}, fmt.Errorf("block of seq %d does not exist", i)
 		}
-		sig, exist, err := vs.blockSigs.Get(b.HashHeader())
+		sig, exist, err := vs.Blockchain.GetSig(b.HashHeader())
 		if err != nil {
 			return []coin.SignedBlock{}, err
 		}
@@ -459,7 +458,7 @@ func (vs *Visor) MustGetGenesisBlock() coin.SignedBlock {
 		logger.Panic("no genesis block")
 	}
 
-	sig, exist, err := vs.blockSigs.Get(b.HashHeader())
+	sig, exist, err := vs.Blockchain.GetSig(b.HashHeader())
 	if err != nil {
 		logger.Panic(err)
 	}

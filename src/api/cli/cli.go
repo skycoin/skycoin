@@ -181,7 +181,7 @@ func resolveDBPath(cfg Config, db string) (string, error) {
 		db = cfg.FullDBPath()
 	}
 
-	// If w is only the basename, use the default data dir
+	// If db is only the basename, use the default data dir
 	if filepath.Base(db) == db {
 		db = filepath.Join(cfg.DataDir, db)
 	}

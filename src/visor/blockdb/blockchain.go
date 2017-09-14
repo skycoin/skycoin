@@ -29,7 +29,7 @@ func (m chainMeta) getHeadSeq() uint64 {
 type Blockchain struct {
 	db      *bolt.DB
 	meta    *bucket.Bucket
-	Unspent *UnspentPool
+	unspent *UnspentPool
 
 	cache struct {
 		headSeq        int64  // head block seq
@@ -52,7 +52,7 @@ func NewBlockchain(db *bolt.DB) (*Blockchain, error) {
 
 	bc := &Blockchain{
 		db:      db,
-		Unspent: unspent,
+		unspent: unspent,
 		meta:    meta,
 	}
 	bc.cache.headSeq = -1
@@ -80,7 +80,7 @@ func (bc *Blockchain) getHeadSeqFromDB() int64 {
 func (bc *Blockchain) ProcessBlock(b *coin.Block) error {
 	if err := bc.dbUpdate(
 		bc.updateHeadSeq(b),
-		bc.Unspent.processBlock(b)); err != nil {
+		bc.unspent.processBlock(b)); err != nil {
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (bc *Blockchain) ProcessBlock(b *coin.Block) error {
 func (bc *Blockchain) ProcessBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
 	return bc.updateWithTx(tx,
 		bc.updateHeadSeq(b),
-		bc.Unspent.processBlock(b))
+		bc.unspent.processBlock(b))
 }
 
 // dbUpdate will execute all processors in sequence, return error will rollback all
@@ -149,4 +149,9 @@ func (bc *Blockchain) HeadSeq() int64 {
 	bc.Lock()
 	defer bc.Unlock()
 	return bc.cache.headSeq
+}
+
+// UnspentPool returns the unspent pool
+func (bc *Blockchain) UnspentPool() *UnspentPool {
+	return bc.unspent
 }

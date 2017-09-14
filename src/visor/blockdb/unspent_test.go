@@ -11,6 +11,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,10 +59,7 @@ func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 }
 
 func TestNewUnspentPool(t *testing.T) {
-	db, teardown, err := setup()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 
 	up, err := NewUnspentPool(db)
@@ -115,10 +113,7 @@ func TestUnspentPoolGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup()
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 
 			up, err := NewUnspentPool(db)
@@ -139,10 +134,7 @@ func TestUnspentPoolGet(t *testing.T) {
 }
 
 func TestUnspentPoolGetArray(t *testing.T) {
-	db, teardown, err := setup()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 
 	up, err := NewUnspentPool(db)
@@ -233,10 +225,7 @@ func TestUnspentPoolGetAll(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup()
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 
 			up, err := NewUnspentPool(db)
@@ -262,10 +251,7 @@ func TestUnspentPoolGetAll(t *testing.T) {
 
 func BenchmarkUnspentPoolGetAll(b *testing.B) {
 	var t testing.T
-	db, teardown, err := setup()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db, teardown := testutil.PrepareDB(&t)
 	defer teardown()
 
 	up, err := NewUnspentPool(db)
@@ -349,10 +335,7 @@ func TestUnspentPoolDeleteWithTx(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup()
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 
 			up, err := NewUnspentPool(db)
@@ -420,10 +403,7 @@ func TestGetUnspentOfAddr(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup()
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 
 			up, err := NewUnspentPool(db)
@@ -502,10 +482,7 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup()
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 
 			up, err := NewUnspentPool(db)
@@ -568,10 +545,7 @@ func TestCollides(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown, err := setup()
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 
 			up, err := NewUnspentPool(db)

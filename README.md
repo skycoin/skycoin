@@ -17,13 +17,49 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 * [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
 * [Skycoin Distribution Event](https://event.skycoin.net)
 
+## Table of Contents
+
+<!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
+
+- [Installation](#installation)
+    - [Installing Go](#installing-go)
+    - [Set GOPATH in your environment](#set-gopath-in-your-environment)
+    - [Go get skycoin](#go-get-skycoin)
+    - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
+    - [Run Skycoin with options](#run-skycoin-with-options)
+- [API Documentation](#api-documentation)
+    - [Wallet REST API](#wallet-rest-api)
+    - [JSON-RPC 2.0 API](#json-rpc-20-api)
+    - [Skycoin command line interface](#skycoin-command-line-interface)
+- [Development](#development)
+    - [Modules](#modules)
+    - [Formatting](#formatting)
+    - [Running tests](#running-tests)
+    - [Dependency Management](#dependency-management)
+    - [Wallet GUI Development](#wallet-gui-development)
+    - [Releases](#releases)
+
+<!-- /MarkdownTOC -->
+
 ## Installation
 
-### Installing golang
+### Installing Go
 
-[Install go1.8+](https://golang.org/doc/install)
+[Install go1.9+](https://golang.org/doc/install)
 
-### Fetch the skycoin source
+### Create GOPATH directory
+
+go packages are installed in `$GOPATH` which defaults to `$HOME/go`.
+
+Create `$HOME/go` for your `$GOPATH`:
+
+```sh
+mkdir ~/go
+```
+
+You may also want to update your `$PATH` environment variable to `PATH="$PATH:$GOPATH/bin`.
+
+### Go get skycoin
 
 ```sh
 go get https://github.com/skycoin/skycoin/...
@@ -31,16 +67,17 @@ go get https://github.com/skycoin/skycoin/...
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
 
-If you clone the repo with `git clone`, make sure to place it at `$GOPATH/src/github.com/skycoin/skycoin`.
+You can also clone the repo directly with `git clone https://github.com/skycoin/skycoin`,
+but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
-### Run
+### Run Skycoin from the command line
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
 ./run.sh
 ```
 
-### Options
+### Run Skycoin with options
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
@@ -90,7 +127,7 @@ All `.go` source files should be formatted with `gofmt` or `goimports`.
 go test ./src/...
 ```
 
-### Updating Vendored Dependencies
+### Dependency Management
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 

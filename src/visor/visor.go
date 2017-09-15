@@ -1,9 +1,13 @@
 package visor
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 
 	"time"
 
@@ -189,70 +193,102 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 // load loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func load(dbpath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+func load(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
 	// creates blockchain instance
-	db, err := openDB(dbpath)
+	db, err := openDB(dbPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
-	if err != nil {
-		if err != ErrSignatureLost {
-			return nil, nil, err
-		}
 
-		logger.Error("removing db, %v", err)
-		db.Close()
-
-		// remove the db
-		if err := os.Remove(dbpath); err != nil {
-			return nil, nil, fmt.Errorf("remove db failed: %v", err)
-		}
-
-		db, err = openDB(dbpath)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
-		if err != nil {
-			return nil, nil, err
-		}
+	if err == nil {
+		return db, bc, nil
 	}
 
-	return db, bc, err
+	if err != ErrSignatureLost {
+		return nil, nil, err
+	}
+
+	// Recreate the block database if ErrSignatureLost occurs
+	logger.Critical("Block database signature missing, recreating db: %v", err)
+	if err := db.Close(); err != nil {
+		return nil, nil, fmt.Errorf("failed to close db: %v", err)
+	}
+
+	corruptDBPath, err := moveCorruptDB(dbPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
+	}
+
+	logger.Critical("Moved corrupted db to %s", corruptDBPath)
+
+	db, err = openDB(dbPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, bc, nil
+}
+
+// moveCorruptDB moves a file to makeCorruptDBPath(dbPath)
+func moveCorruptDB(dbPath string) (string, error) {
+	newDBPath, err := makeCorruptDBPath(dbPath)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.Rename(dbPath, newDBPath); err != nil {
+		return "", err
+	}
+
+	return newDBPath, nil
+}
+
+// makeCorruptDBPath creates a $FILE.corrupt.$HASH string based on dbPath,
+// where $HASH is truncated SHA1 of $FILE.
+func makeCorruptDBPath(dbPath string) (string, error) {
+	dbFileHash, err := shaFileID(dbPath)
+	if err != nil {
+		return "", err
+	}
+
+	dbDir, dbFile := filepath.Split(dbPath)
+	newDBFile := fmt.Sprintf("%s.corrupt.%s", dbFile, dbFileHash)
+	newDBPath := filepath.Join(dbDir, newDBFile)
+
+	return newDBPath, nil
+}
+
+// shaFileID return the first 8 bytes of the SHA1 hash of the file,
+// base64-encoded
+func shaFileID(dbPath string) (string, error) {
+	fi, err := os.Open(dbPath)
+	if err != nil {
+		return "", err
+	}
+	defer fi.Close()
+
+	h := sha1.New()
+	if _, err := io.Copy(h, fi); err != nil {
+		return "", err
+	}
+
+	sum := h.Sum(nil)
+	encodedSum := base64.RawStdEncoding.EncodeToString(sum[:8])
+
+	return encodedSum, nil
 }
 
 // Run starts the visor process
 func (vs *Visor) Run() error {
-	if vs.Blockchain.GetGenesisBlock() == nil {
-		logger.Debug("Create genesis block")
-		vs.GenesisPreconditions()
-		b, err := vs.Blockchain.CreateGenesisBlock(
-			vs.Config.GenesisAddress,
-			vs.Config.GenesisCoinVolume,
-			vs.Config.GenesisTimestamp)
-		if err != nil {
-			return err
-		}
-
-		// record the signature of genesis block
-		if vs.Config.IsMaster {
-			sb := vs.SignBlock(b)
-			if err := vs.Blockchain.AddSig(&sb); err != nil {
-				return err
-			}
-
-			logger.Info("Genesis block signature=%s", sb.Sig.Hex())
-		} else {
-			if err := vs.Blockchain.AddSig(&coin.SignedBlock{
-				Block: b,
-				Sig:   vs.Config.GenesisSignature,
-			}); err != nil {
-				return err
-			}
-		}
+	if err := vs.maybeCreateGenesisBlock(); err != nil {
+		return err
 	}
 
 	if err := vs.processUnconfirmedTxns(); err != nil {
@@ -260,6 +296,36 @@ func (vs *Visor) Run() error {
 	}
 
 	return vs.bcParser.Run()
+}
+
+// maybeCreateGenesisBlock creates a genesis block if necessary
+func (vs *Visor) maybeCreateGenesisBlock() error {
+	if vs.Blockchain.GetGenesisBlock() != nil {
+		return nil
+	}
+
+	logger.Debug("Create genesis block")
+	vs.GenesisPreconditions()
+	b, err := vs.Blockchain.CreateGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
+	if err != nil {
+		return err
+	}
+
+	// record the signature of genesis block
+	if vs.Config.IsMaster {
+		sb := vs.SignBlock(b)
+		if err := vs.Blockchain.AddSig(&sb); err != nil {
+			return err
+		}
+
+		logger.Info("Genesis block signature=%s", sb.Sig.Hex())
+		return nil
+	}
+
+	return vs.Blockchain.AddSig(&coin.SignedBlock{
+		Block: b,
+		Sig:   vs.Config.GenesisSignature,
+	})
 }
 
 // check if there're unconfirmed transactions that are actually

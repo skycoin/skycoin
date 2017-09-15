@@ -82,7 +82,7 @@ type Blockchain struct {
 // Option represents the option when creating the blockchain
 type Option func(*Blockchain)
 
-// Default blockchain walker
+// DefaultWalker default blockchain walker
 func DefaultWalker(hps []coin.HashPair) cipher.SHA256 {
 	return hps[0].Hash
 }

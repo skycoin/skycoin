@@ -34,7 +34,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/app.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">{{ version }}</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar class=\"main-menu\">\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/buy']\" routerLinkActive=\"active\">Buy</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
+module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">{{ version }}</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar class=\"main-menu\">\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/buy']\" routerLinkActive=\"active\" *ngIf=\"otcEnabled\">Buy</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -50,6 +50,7 @@ module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-wh
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile__ = __webpack_require__("../../../../rxjs/add/operator/takeWhile.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_rxjs_add_operator_takeWhile__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__services_api_service__ = __webpack_require__("../../../../../src/app/services/api.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__app_config__ = __webpack_require__("../../../../../src/app/app.config.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AppComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -66,11 +67,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
+
 var AppComponent = (function () {
     function AppComponent(walletService, apiService, blockchainService) {
         this.walletService = walletService;
         this.apiService = apiService;
         this.blockchainService = blockchainService;
+        this.otcEnabled = __WEBPACK_IMPORTED_MODULE_6__app_config__["a" /* config */].otcEnabled;
     }
     AppComponent.prototype.ngOnInit = function () {
         var _this = this;
@@ -112,6 +115,18 @@ AppComponent = __decorate([
 
 var _a, _b, _c;
 //# sourceMappingURL=app.component.js.map
+
+/***/ }),
+
+/***/ "../../../../../src/app/app.config.ts":
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return config; });
+var config = {
+    otcEnabled: false
+};
+//# sourceMappingURL=app.config.js.map
 
 /***/ }),
 
@@ -1014,7 +1029,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/buy/buy.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-card>\n  <md-card-title>Purchase Skycoin</md-card-title>\n  <md-card class=\"skycoin-details\">\n    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per\n    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will\n    automatically be added to your selected address.\n  </md-card>\n\n  <md-list>\n    <ng-container *ngFor=\"let address of (purchaseService.all() | async); let i = index\">\n      <md-divider *ngIf=\"i\"></md-divider>\n      <h3 md-subheader>Sky address: {{ address.address }}</h3>\n      <md-list-item *ngFor=\"let btc of address.addresses\">\n        <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>\n        <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>\n        <button md-icon-button (click)=\"searchDepositAddress(address.address)\" [disabled]=\"scanning\">\n          <md-icon>refresh</md-icon>\n        </button>\n      </md-list-item>\n    </ng-container>\n  </md-list>\n</md-card>\n<div class=\"button-line\">\n  <a md-raised-button color=\"primary\" (click)=\"addDepositAddress()\">Add deposit address</a>\n</div>\n"
+module.exports = "<p *ngIf=\"!otcEnabled\">Sorry, otc has currently been disabled!</p>\n<md-card *ngIf=\"otcEnabled\">\n  <md-card-title>Purchase Skycoin</md-card-title>\n  <md-card class=\"skycoin-details\">\n    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per\n    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will\n    automatically be added to your selected address.\n  </md-card>\n\n  <md-list>\n    <ng-container *ngFor=\"let address of (purchaseService.all() | async); let i = index\">\n      <md-divider *ngIf=\"i\"></md-divider>\n      <h3 md-subheader>Sky address: {{ address.address }}</h3>\n      <md-list-item *ngFor=\"let btc of address.addresses\">\n        <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>\n        <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>\n        <button md-icon-button (click)=\"searchDepositAddress(address.address)\" [disabled]=\"scanning\">\n          <md-icon>refresh</md-icon>\n        </button>\n      </md-list-item>\n    </ng-container>\n  </md-list>\n</md-card>\n<div class=\"button-line\" *ngIf=\"otcEnabled\">\n  <a md-raised-button color=\"primary\" (click)=\"addDepositAddress()\">Add deposit address</a>\n</div>\n"
 
 /***/ }),
 
@@ -1026,6 +1041,7 @@ module.exports = "<md-card>\n  <md-card-title>Purchase Skycoin</md-card-title>\n
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_purchase_service__ = __webpack_require__("../../../../../src/app/services/purchase.service.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__add_deposit_address_add_deposit_address_component__ = __webpack_require__("../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__app_config__ = __webpack_require__("../../../../../src/app/app.config.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return BuyComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -1040,12 +1056,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
+
 var BuyComponent = (function () {
     function BuyComponent(purchaseService, dialog) {
         this.purchaseService = purchaseService;
         this.dialog = dialog;
         this.orders = [];
         this.scanning = false;
+        this.otcEnabled = __WEBPACK_IMPORTED_MODULE_4__app_config__["a" /* config */].otcEnabled;
     }
     BuyComponent.prototype.addDepositAddress = function () {
         var config = new __WEBPACK_IMPORTED_MODULE_2__angular_material__["s" /* MdDialogConfig */]();

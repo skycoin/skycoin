@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { MdDialog, MdDialogConfig } from '@angular/material';
 import { AddDepositAddressComponent } from './add-deposit-address/add-deposit-address.component';
+import { config } from '../../../app.config';
 
 @Component({
   selector: 'app-buy',
@@ -11,12 +12,15 @@ import { AddDepositAddressComponent } from './add-deposit-address/add-deposit-ad
 export class BuyComponent {
 
   orders = [];
+  otcEnabled: boolean;
   scanning = false;
 
   constructor(
     public purchaseService: PurchaseService,
     private dialog: MdDialog,
-  ) { }
+  ) {
+    this.otcEnabled = config.otcEnabled;
+  }
 
   addDepositAddress() {
     const config = new MdDialogConfig();

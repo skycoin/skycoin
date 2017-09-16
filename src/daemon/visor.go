@@ -427,13 +427,12 @@ func (vs *Visor) EstimateBlockchainLength() uint64 {
 	return maxLen
 }
 
-// HeadBkSeq returns the head sequence
-func (vs *Visor) HeadBkSeq() uint64 {
-	var seq uint64
+// HeadBkSeq returns the head sequence, returns -1 if blockchain is empty
+func (vs *Visor) HeadBkSeq() (seq uint64) {
 	vs.strand(func() {
 		seq = vs.v.HeadBkSeq()
 	})
-	return seq
+	return
 }
 
 // ExecuteSignedBlock executes signed block
@@ -562,9 +561,10 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 		// replies with 15 and the other 20, if we did not do this check and
 		// the reply with 15 was received first, we would toss the one with 20
 		// even though we could process it at the time.
-		if b.Block.Head.BkSeq <= maxSeq {
+		if b.Seq() <= maxSeq {
 			continue
 		}
+
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
 			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
@@ -580,11 +580,12 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 
+	headBkSeq := d.Visor.HeadBkSeq()
 	// Announce our new blocks to peers
-	m1 := NewAnnounceBlocksMessage(d.Visor.HeadBkSeq())
+	m1 := NewAnnounceBlocksMessage(headBkSeq)
 	d.Pool.Pool.BroadcastMessage(m1)
 	//request more blocks.
-	m2 := NewGetBlocksMessage(d.Visor.HeadBkSeq(), d.Visor.Config.BlocksResponseCount)
+	m2 := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	d.Pool.Pool.BroadcastMessage(m2)
 }
 

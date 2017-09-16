@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"time"
 
@@ -206,7 +207,7 @@ func load(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blo
 		return db, bc, nil
 	}
 
-	if err != ErrSignatureLost {
+	if !strings.Contains(err.Error(), "find no signature of block") {
 		return nil, nil, err
 	}
 
@@ -306,26 +307,24 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 
 	logger.Debug("Create genesis block")
 	vs.GenesisPreconditions()
-	b, err := vs.Blockchain.CreateGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
+	b, err := vs.Blockchain.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
 	if err != nil {
 		return err
 	}
 
+	var sb coin.SignedBlock
 	// record the signature of genesis block
 	if vs.Config.IsMaster {
-		sb := vs.SignBlock(b)
-		if err := vs.Blockchain.AddSig(&sb); err != nil {
-			return err
-		}
-
+		sb = vs.SignBlock(*b)
 		logger.Info("Genesis block signature=%s", sb.Sig.Hex())
-		return nil
+	} else {
+		sb = coin.SignedBlock{
+			Block: *b,
+			Sig:   vs.Config.GenesisSignature,
+		}
 	}
 
-	return vs.Blockchain.AddSig(&coin.SignedBlock{
-		Block: b,
-		Sig:   vs.Config.GenesisSignature,
-	})
+	return vs.ExecuteSignedBlock(sb)
 }
 
 // check if there're unconfirmed transactions that are actually
@@ -385,7 +384,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	txns := vs.Unconfirmed.RawTxns()
 	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
-	b, err := vs.Blockchain.NewBlockFromTransactions(txns, when)
+	b, err := vs.Blockchain.NewBlock(txns, when)
 	if err != nil {
 		return sb, err
 	}
@@ -477,13 +476,23 @@ func (vs *Visor) AllSpendsOutputs() ([]ReadableOutput, error) {
 
 // AllIncomingOutputs returns all predicted outputs that are in pending tx pool
 func (vs *Visor) AllIncomingOutputs() ([]ReadableOutput, error) {
-	return vs.Unconfirmed.AllIncomingOutputs(vs.Blockchain.Head().Head)
+	head, err := vs.Blockchain.Head()
+	if err != nil {
+		return []ReadableOutput{}, err
+	}
+
+	return vs.Unconfirmed.AllIncomingOutputs(head.Head)
 }
 
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
 	avail := uint64(0)
-	headSeq := vs.Blockchain.Head().Seq()
+	head, err := vs.Blockchain.Head()
+	if err != nil {
+		return []coin.SignedBlock{}, err
+	}
+
+	headSeq := head.Seq()
 	if headSeq > seq {
 		avail = headSeq - seq
 	}
@@ -496,52 +505,19 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 	blocks := make([]coin.SignedBlock, 0, ct)
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
-		b := vs.Blockchain.GetBlockInDepth(i)
-		if b == nil {
-			return []coin.SignedBlock{}, fmt.Errorf("block of seq %d does not exist", i)
-		}
-		sig, exist, err := vs.Blockchain.GetSig(b.HashHeader())
+		b, err := vs.Blockchain.GetBlockBySeq(i)
 		if err != nil {
 			return []coin.SignedBlock{}, err
 		}
 
-		if !exist {
-			return []coin.SignedBlock{}, fmt.Errorf("find no signature of block in seq %d", i)
-		}
-
-		blocks = append(blocks, coin.SignedBlock{
-			Block: *b,
-			Sig:   sig,
-		})
+		blocks = append(blocks, *b)
 	}
 	return blocks, nil
 }
 
-// MustGetGenesisBlock returns the signed genesis block. Panics if signature or block not found
-func (vs *Visor) MustGetGenesisBlock() coin.SignedBlock {
-	b := vs.Blockchain.GetGenesisBlock()
-	if b == nil {
-		logger.Panic("no genesis block")
-	}
-
-	sig, exist, err := vs.Blockchain.GetSig(b.HashHeader())
-	if err != nil {
-		logger.Panic(err)
-	}
-
-	if !exist {
-		logger.Panic("no genesis signature")
-	}
-
-	return coin.SignedBlock{
-		Sig:   sig,
-		Block: *b,
-	}
-}
-
-// HeadBkSeq returns the highest BkSeq we know
+// HeadBkSeq returns the highest BkSeq we know, returns -1 if the chain is empty
 func (vs *Visor) HeadBkSeq() uint64 {
-	return vs.Blockchain.Head().Seq()
+	return vs.Blockchain.HeadSeq()
 }
 
 // GetBlockchainMetadata returns descriptive Blockchain information
@@ -556,7 +532,7 @@ func (vs *Visor) GetReadableBlock(seq uint64) (ReadableBlock, error) {
 		return ReadableBlock{}, err
 	}
 
-	return NewReadableBlock(&b), nil
+	return NewReadableBlock(&b.Block), nil
 }
 
 // GetReadableBlocks returns multiple blocks between start and end (not including end). Returns
@@ -565,26 +541,26 @@ func (vs *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
 	blocks := vs.GetBlocks(start, end)
 	rbs := make([]ReadableBlock, 0, len(blocks))
 	for _, b := range blocks {
-		rbs = append(rbs, NewReadableBlock(&b))
+		rbs = append(rbs, NewReadableBlock(&b.Block))
 	}
 	return rbs
 }
 
 // GetBlock returns a copy of the block at seq. Returns error if seq out of range
 // Move to blockdb
-func (vs *Visor) GetBlock(seq uint64) (coin.Block, error) {
-	var b coin.Block
-	if seq > vs.Blockchain.Head().Head.BkSeq {
-		return b, errors.New("Block seq out of range")
+func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
+	var b coin.SignedBlock
+	if seq > vs.Blockchain.HeadSeq() {
+		return &b, errors.New("Block seq out of range")
 	}
 
-	return *vs.Blockchain.GetBlockInDepth(seq), nil
+	return vs.Blockchain.GetBlockBySeq(seq)
 }
 
 // GetBlocks returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
 // move to blockdb
-func (vs *Visor) GetBlocks(start, end uint64) []coin.Block {
+func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
 	return vs.Blockchain.GetBlocks(start, end)
 }
 
@@ -612,7 +588,11 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	for _, tx := range txs {
 		h := mxSeq - tx.BlockSeq + 1
 
-		bk := vs.GetBlockBySeq(tx.BlockSeq)
+		bk, err := vs.GetBlockBySeq(tx.BlockSeq)
+		if err != nil {
+			return []Transaction{}, err
+		}
+
 		if bk == nil {
 			return []Transaction{}, fmt.Errorf("No block exsit in depth:%d", tx.BlockSeq)
 		}
@@ -663,8 +643,14 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 		return nil, nil
 	}
 
-	confirms := vs.GetHeadBlock().Seq() - txn.BlockSeq + 1
-	b := vs.GetBlockBySeq(txn.BlockSeq)
+	headSeq := vs.HeadBkSeq()
+
+	confirms := headSeq - txn.BlockSeq + 1
+	b, err := vs.GetBlockBySeq(txn.BlockSeq)
+	if err != nil {
+		return nil, err
+	}
+
 	if b == nil {
 		return nil, fmt.Errorf("found no block in seq %v", txn.BlockSeq)
 	}
@@ -724,13 +710,13 @@ func (vs *Visor) GetAllValidUnconfirmedTxHashes() []cipher.SHA256 {
 }
 
 // GetBlockByHash get block of specific hash header, return nil on not found.
-func (vs *Visor) GetBlockByHash(hash cipher.SHA256) *coin.Block {
-	return vs.Blockchain.GetBlock(hash)
+func (vs *Visor) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
+	return vs.Blockchain.GetBlockByHash(hash)
 }
 
 // GetBlockBySeq get block of speicific seq, return nil on not found.
-func (vs *Visor) GetBlockBySeq(seq uint64) *coin.Block {
-	return vs.Blockchain.GetBlockInDepth(seq)
+func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
+	return vs.Blockchain.GetBlockBySeq(seq)
 }
 
 // GetLastTxs returns last confirmed transactions, return nil if empty
@@ -742,11 +728,16 @@ func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
 
 	txs := make([]*Transaction, len(ltxs))
 	var confirms uint64
-	bh := vs.GetHeadBlock().Seq()
-	var b *coin.Block
+	bh := vs.HeadBkSeq()
+	var b *coin.SignedBlock
 	for i, tx := range ltxs {
-		confirms = bh - tx.BlockSeq + 1
-		if b = vs.GetBlockBySeq(tx.BlockSeq); b == nil {
+		confirms = uint64(bh) - tx.BlockSeq + 1
+		b, err = vs.GetBlockBySeq(tx.BlockSeq)
+		if err != nil {
+			return nil, err
+		}
+
+		if b == nil {
 			return nil, fmt.Errorf("found no block in seq %v", tx.BlockSeq)
 		}
 
@@ -760,7 +751,7 @@ func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
 }
 
 // GetHeadBlock gets head block.
-func (vs Visor) GetHeadBlock() *coin.Block {
+func (vs Visor) GetHeadBlock() (*coin.SignedBlock, error) {
 	return vs.Blockchain.Head()
 }
 

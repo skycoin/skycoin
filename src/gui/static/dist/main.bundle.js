@@ -1630,7 +1630,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/settings/outputs/outputs.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<ngx-datatable #table\r\n               class=\"material\"\r\n               [rows]=\"outputs\"\r\n               columnMode=\"flex\"\r\n               [headerHeight]=\"50\"\r\n               [footerHeight]=\"50\"\r\n               [rowHeight]=\"50\"\r\n               [limit]=\"10\"\r\n               [scrollbarH]=\"true\">\r\n  <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"2\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Coins\" prop=\"coins\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Hours\" prop=\"hours\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n</ngx-datatable>\r\n"
+module.exports = "<ngx-datatable #table\r\n               class=\"material\"\r\n               [rows]=\"outputs\"\r\n               columnMode=\"flex\"\r\n               [headerHeight]=\"50\"\r\n               [footerHeight]=\"50\"\r\n               [rowHeight]=\"50\"\r\n               [limit]=\"10\"\r\n               [scrollbarH]=\"true\">\r\n  <ngx-datatable-column name=\"Address\" prop=\"address\" [flexGrow]=\"2\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Coins\" prop=\"coins\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n  <ngx-datatable-column name=\"Coin hours\" prop=\"hours\" [flexGrow]=\"1\"></ngx-datatable-column>\r\n</ngx-datatable>\r\n"
 
 /***/ }),
 
@@ -1864,7 +1864,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/address-detail/wallet-detail.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-item *ngFor=\"let address of wallet.entries\">\r\n    <md-icon md-list-icon (click)=\"showQr(address)\" class=\"fa fa-qrcode\"></md-icon>\r\n    <h4 md-line>{{address.address}} - {{ address.balance | sky }} ({{ address.hours ? address.hours : 0 }} hours)</h4>\r\n  </md-list-item>\r\n  <div class=\"button-line\">\r\n    <a md-raised-button color=\"primary\" (click)=\"renameWallet()\">Rename wallet</a>\r\n    <a md-raised-button color=\"primary\" (click)=\"addAddress()\">Add address</a>\r\n  </div>\r\n</md-list>\r\n"
+module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-item *ngFor=\"let address of wallet.entries\">\r\n    <md-icon md-list-icon (click)=\"showQr(address)\" class=\"fa fa-qrcode\"></md-icon>\r\n    <h4 md-line>{{address.address}} - {{ address.balance | sky }} ({{ address.hours ? address.hours : 0 }} Coin Hours)</h4>\r\n  </md-list-item>\r\n  <div class=\"button-line\">\r\n    <a md-raised-button color=\"primary\" (click)=\"renameWallet()\">Rename wallet</a>\r\n    <a md-raised-button color=\"primary\" (click)=\"addAddress()\">Add address</a>\r\n  </div>\r\n</md-list>\r\n"
 
 /***/ }),
 
@@ -2139,7 +2139,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/wallets/wallets.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all() | async\">\r\n  <md-expansion-panel-header>\r\n    <md-panel-title>\r\n      {{ wallet.meta.label }}\r\n    </md-panel-title>\r\n    <md-panel-description>\r\n      <span>{{ wallet.balance | sky }}</span> <span>{{ wallet.hours ? wallet.hours : 0 }} Hours</span>\r\n    </md-panel-description>\r\n  </md-expansion-panel-header>\r\n  <app-wallet-detail [wallet]=\"wallet\"></app-wallet-detail>\r\n</md-expansion-panel>\r\n<div class=\"button-line\">\r\n  <a md-raised-button color=\"primary\" (click)=\"addWallet()\">Add wallet</a>\r\n</div>\r\n"
+module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all() | async\">\r\n  <md-expansion-panel-header>\r\n    <md-panel-title>\r\n      {{ wallet.meta.label }}\r\n    </md-panel-title>\r\n    <md-panel-description>\r\n      <span>{{ wallet.balance | sky }}</span> <span>{{ wallet.hours ? wallet.hours : 0 }} Coin Hours</span>\r\n    </md-panel-description>\r\n  </md-expansion-panel-header>\r\n  <app-wallet-detail [wallet]=\"wallet\"></app-wallet-detail>\r\n</md-expansion-panel>\r\n<div class=\"button-line\">\r\n  <a md-raised-button color=\"primary\" (click)=\"addWallet()\">Add wallet</a>\r\n</div>\r\n"
 
 /***/ }),
 

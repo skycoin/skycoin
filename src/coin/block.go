@@ -45,8 +45,8 @@ type BlockBody struct {
 
 // SignedBlock signed block
 type SignedBlock struct {
-	Block Block
-	Sig   cipher.Sig
+	Block
+	Sig cipher.Sig
 }
 
 //TODO: merge header/body and cleanup top level interface

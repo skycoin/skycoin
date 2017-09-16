@@ -55,7 +55,11 @@ func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.Addr
 
 // GetUnconfirmedReceiving returns unconfirmed
 func (rpc RPC) GetUnconfirmedReceiving(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	return v.Unconfirmed.RecvOfAddresses(v.Blockchain.Head().Head, addrs)
+	head, err := v.Blockchain.Head()
+	if err != nil {
+		return coin.AddressUxOuts{}, err
+	}
+	return v.Unconfirmed.RecvOfAddresses(head.Head, addrs)
 }
 
 // GetUnspentOutputReadables gets unspent output readables
@@ -88,13 +92,20 @@ func (rpc RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 	return &ReadableBlocks{blocks}
 }
 
-// GetBlockInDepth get block in depth
-func (rpc RPC) GetBlockInDepth(v *Visor, n uint64) *ReadableBlock {
-	if b := v.GetBlockBySeq(n); b != nil {
-		block := NewReadableBlock(b)
-		return &block
+// GetBlockBySeq get block in depth
+func (rpc RPC) GetBlockBySeq(v *Visor, n uint64) *ReadableBlock {
+	b, err := v.GetBlockBySeq(n)
+	if err != nil {
+		logger.Error("%v", err)
+		return nil
 	}
-	return nil
+
+	if b == nil {
+		return nil
+	}
+
+	block := NewReadableBlock(&b.Block)
+	return &block
 }
 
 // GetTransaction gets transaction

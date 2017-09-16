@@ -117,12 +117,6 @@ func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 func (utb *uncfmTxnBkt) putWithTx(tx *bolt.Tx, v *UnconfirmedTxn) error {
 	key := []byte(v.Hash().Hex())
 	d := encoder.Serialize(v)
-	return utb.txns.Put(key, d)
-}
-
-func (utb *uncfmTxnBkt) putWithTx(tx *bolt.Tx, v *UnconfirmedTxn) error {
-	key := []byte(v.Hash().Hex())
-	d := encoder.Serialize(v)
 	return utb.txns.PutWithTx(tx, key, d)
 }
 
@@ -356,7 +350,12 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 		}
 
 		// update unconfirmed unspent
-		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(bc.Head().Head, t))
+		head, err := bc.Head()
+		if err != nil {
+			return err
+		}
+
+		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(head.Head, t))
 	}); err != nil {
 		return false, err
 	}

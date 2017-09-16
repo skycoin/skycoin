@@ -129,7 +129,7 @@ func (up *UnspentPool) syncCache() error {
 	return nil
 }
 
-func (up *UnspentPool) processBlock(b *coin.Block) bucket.TxHandler {
+func (up *UnspentPool) processBlock(b *coin.SignedBlock) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
 		var (
 			delUxs    []coin.UxOut

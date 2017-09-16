@@ -87,25 +87,36 @@ func (bc *Blockchain) ProcessBlock(b *coin.Block) error {
 	return nil
 }
 
+// ProcessBlockWithTx process block with *bolt.Tx
+func (bc *Blockchain) ProcessBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
+	return bc.updateWithTx(tx,
+		bc.updateHeadSeq(b),
+		bc.Unspent.processBlock(b))
+}
+
 // dbUpdate will execute all processors in sequence, return error will rollback all
 // updates to the db
 func (bc *Blockchain) dbUpdate(ps ...bucket.TxHandler) error {
 	return bc.db.Update(func(tx *bolt.Tx) error {
-		rollbackFuncs := []bucket.Rollback{}
-		for _, p := range ps {
-			rb, err := p(tx)
-			if err != nil {
-				// rollback previous updates if any
-				for _, r := range rollbackFuncs {
-					r()
-				}
-				return err
-			}
-			rollbackFuncs = append(rollbackFuncs, rb)
-		}
-
-		return nil
+		return bc.updateWithTx(tx, ps...)
 	})
+}
+
+func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...bucket.TxHandler) error {
+	rollbackFuncs := []bucket.Rollback{}
+	for _, p := range ps {
+		rb, err := p(tx)
+		if err != nil {
+			// rollback previous updates if any
+			for _, r := range rollbackFuncs {
+				r()
+			}
+			return err
+		}
+		rollbackFuncs = append(rollbackFuncs, rb)
+	}
+
+	return nil
 }
 
 func (bc *Blockchain) updateHeadSeq(b *coin.Block) bucket.TxHandler {

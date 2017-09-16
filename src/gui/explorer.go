@@ -19,10 +19,9 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
 }
 
-// CoinSupply records the coin supply info
-// TODO -- API should export underscore key names e.g. coin_supply
-// Fixing this will require backwards-incompatible API changes
+// DeprecatedCoinSupply records the coin supply info
 type DeprecatedCoinSupply struct {
+	CoinSupply
 	DeprecatedCurrentSupply                           uint64   `json:"coinSupply"`
 	DeprecatedCoinCap                                 uint64   `json:"coinCap"`
 	DeprecatedUndistributedLockedCoinBalance          uint64   `json:"UndistributedLockedCoinBalance"`
@@ -95,18 +94,21 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 	// "current supply" is the number of coins distribution from the unlocked pool
 	currentSupply := totalSupply - unlockedSupply
 
-	return &CoinSupply{
-			CurrentSupply:     currentSupply,
-			TotalSupply:       totalSupply,
-			MaxSupply:         visor.MaxCoinSupply,
-			UnlockedAddresses: unlockedAddrs,
-			LockedAddresses:   visor.GetLockedDistributionAddresses(),
-		}, &DeprecatedCoinSupply{
-			DeprecatedCurrentSupply:                           currentSupply,
-			DeprecatedCoinCap:                                 visor.MaxCoinSupply,
-			DeprecatedUndistributedLockedCoinBalance:          unlockedSupply,
-			DeprecatedUndistributedLockedCoinHoldingAddresses: visor.GetDistributionAddresses(),
-		}
+	cs := CoinSupply{
+		CurrentSupply:     currentSupply,
+		TotalSupply:       totalSupply,
+		MaxSupply:         visor.MaxCoinSupply,
+		UnlockedAddresses: unlockedAddrs,
+		LockedAddresses:   visor.GetLockedDistributionAddresses(),
+	}
+
+	return &cs, &DeprecatedCoinSupply{
+		CoinSupply:                                        cs,
+		DeprecatedCurrentSupply:                           currentSupply,
+		DeprecatedCoinCap:                                 visor.MaxCoinSupply,
+		DeprecatedUndistributedLockedCoinBalance:          unlockedSupply,
+		DeprecatedUndistributedLockedCoinHoldingAddresses: visor.GetDistributionAddresses(),
+	}
 }
 
 // method: GET

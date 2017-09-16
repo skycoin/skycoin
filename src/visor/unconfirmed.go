@@ -120,6 +120,12 @@ func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
 	return utb.txns.Put(key, d)
 }
 
+func (utb *uncfmTxnBkt) putWithTx(tx *bolt.Tx, v *UnconfirmedTxn) error {
+	key := []byte(v.Hash().Hex())
+	d := encoder.Serialize(v)
+	return utb.txns.PutWithTx(tx, key, d)
+}
+
 func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) error {
 	updateFun := func(v []byte) ([]byte, error) {
 		if v == nil {
@@ -140,6 +146,10 @@ func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) err
 
 func (utb *uncfmTxnBkt) delete(key cipher.SHA256) error {
 	return utb.txns.Delete([]byte(key.Hex()))
+}
+
+func (utb *uncfmTxnBkt) deleteWithTx(tx *bolt.Tx, key cipher.SHA256) error {
+	return utb.txns.DeleteWithTx(tx, []byte(key.Hex()))
 }
 
 func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
@@ -211,9 +221,9 @@ func newTxUnspents(db *bolt.DB) *txUnspents {
 	return &txUnspents{bkt: bkt}
 }
 
-func (txus *txUnspents) put(key cipher.SHA256, uxs coin.UxArray) error {
+func (txus *txUnspents) putWithTx(tx *bolt.Tx, key cipher.SHA256, uxs coin.UxArray) error {
 	v := encoder.Serialize(uxs)
-	return txus.bkt.Put([]byte(key.Hex()), v)
+	return txus.bkt.PutWithTx(tx, []byte(key.Hex()), v)
 }
 
 func (txus *txUnspents) get(key cipher.SHA256) (coin.UxArray, error) {
@@ -231,6 +241,10 @@ func (txus *txUnspents) len() int {
 
 func (txus *txUnspents) delete(key cipher.SHA256) error {
 	return txus.bkt.Delete([]byte(key.Hex()))
+}
+
+func (txus *txUnspents) deleteWithTx(tx *bolt.Tx, key cipher.SHA256) error {
+	return txus.bkt.DeleteWithTx(tx, []byte(key.Hex()))
 }
 
 func (txus *txUnspents) getByAddr(a cipher.Address) (uxo coin.UxArray) {
@@ -306,20 +320,13 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
-	var valid int8
-	var unspentNotExistErr error
-
 	fee, err := bc.TransactionFee(&t)
 	if err != nil {
 		return false, err
 	}
 
 	if err := VerifyTransactionFee(&t, fee); err != nil {
-		if err == ErrUnspentNotExist {
-			unspentNotExistErr = err
-		} else {
-			return false, err
-		}
+		return false, err
 	}
 
 	if err := bc.VerifyTransaction(t); err != nil {
@@ -331,28 +338,30 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 	known := false
 	utp.txns.update(h, func(tx *UnconfirmedTxn) {
 		known = true
-
 		now := utc.Now().UnixNano()
 		tx.Received = now
 		tx.Checked = now
-
-		if unspentNotExistErr == nil {
-			tx.IsValid = 1
-		} else {
-			tx.IsValid = 0
-		}
+		tx.IsValid = 1
 	})
 
 	if known {
-		return true, unspentNotExistErr
+		return true, nil
 	}
 
-	// Add txn to index
 	utx := utp.createUnconfirmedTxn(t)
-	utx.IsValid = valid
-	utp.txns.put(&utx)
-	utp.unspent.put(h, coin.CreateUnspents(bc.Head().Head, t))
-	return false, unspentNotExistErr
+	if err := bc.db.Update(func(tx *bolt.Tx) error {
+		// add txn to index
+		if err := utp.txns.putWithTx(tx, &utx); err != nil {
+			return err
+		}
+
+		// update unconfirmed unspent
+		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(bc.Head().Head, t))
+	}); err != nil {
+		return false, err
+	}
+
+	return false, nil
 }
 
 // RawTxns returns underlying coin.Transactions
@@ -385,9 +394,21 @@ func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
 	}
 }
 
+func (utp *UnconfirmedTxnPool) removeTxnsWithTx(tx *bolt.Tx, hashes []cipher.SHA256) {
+	for i := range hashes {
+		utp.txns.deleteWithTx(tx, hashes[i])
+		utp.unspent.deleteWithTx(tx, hashes[i])
+	}
+}
+
 // RemoveTransactions removes confirmed txns from the pool
 func (utp *UnconfirmedTxnPool) RemoveTransactions(txns []cipher.SHA256) {
 	utp.removeTxns(txns)
+}
+
+// RemoveTransactionsWithTx remove transactions with bolt.Tx
+func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txns []cipher.SHA256) {
+	utp.removeTxnsWithTx(tx, txns)
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.

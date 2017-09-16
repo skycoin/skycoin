@@ -36,8 +36,8 @@ func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain, ops ...Pars
 	return bp
 }
 
-// BlockListener when new block appended to blockchain, this method will b invoked
-func (bcp *BlockchainParser) BlockListener(b coin.Block) {
+// FeedBlock feeds block to the parser
+func (bcp *BlockchainParser) FeedBlock(b coin.Block) {
 	bcp.blkC <- b
 }
 
@@ -62,8 +62,14 @@ func (bcp *BlockchainParser) Run() error {
 			cc <- struct{}{}
 			return nil
 		case b := <-bcp.blkC:
-			if err := bcp.parseTo(b.Head.BkSeq); err != nil {
+			parsedHeight := bcp.historyDB.ParsedHeight()
+
+			if err := bcp.historyDB.ParseBlock(&b); err != nil {
 				return err
+			}
+
+			if b.Seq() > uint64(parsedHeight) {
+				bcp.historyDB.SetParsedHeight(b.Seq())
 			}
 		}
 	}

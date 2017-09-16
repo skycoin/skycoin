@@ -625,35 +625,6 @@ func TestNewBlockFromTransactions(t *testing.T) {
 	assert.Equal(t, b.Body.Transactions, txns2)
 }
 
-// func TestVerifyTransactionInputs(t *testing.T) {
-// 	ft := FakeTree{}
-// 	bc := NewBlockchain(&ft, nil)
-// 	bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
-// 	_, ux := addBlockToBlockchain(t, bc)
-// 	// Valid txn
-// 	tx, _ := makeTransactionForChainWithHoursFee(t, bc, ux, genSecret, 100, 50)
-// 	uxIn, err := bc.GetUnspent().GetMultiple(tx.In)
-// 	assert.Nil(t, err)
-// 	assert.Nil(t, bc.VerifyTransactionInputs(tx, uxIn))
-// 	// Bad sigs
-// 	sig := tx.Sigs[0]
-// 	tx.Sigs[0] = cipher.Sig{}
-// 	assert.NotNil(t, verifyTransactionInputs(tx, uxIn))
-// 	// Too many uxIn
-// 	tx.Sigs[0] = sig
-// 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, len(uxIn), len(tx.In))
-// 	uxIn = append(uxIn, makeUxOut(t))
-// 	assert.True(t, DebugLevel2)
-// 	assert.Panics(t, func() { verifyTransactionInputs(tx, uxIn) })
-// 	// ux hash mismatch
-// 	uxIn, err = bc.GetUnspent().GetMultiple(tx.In)
-// 	assert.Nil(t, err)
-// 	tx.In[0] = cipher.SHA256{}
-// 	assert.Panics(t, func() { verifyTransactionInputs(tx, uxIn) })
-// }
-
 func TestCreateUnspents(t *testing.T) {
 	ft := FakeTree{}
 	bc := NewBlockchain(&ft, nil)

@@ -48,7 +48,8 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// getLastTxs get the last confirmed txs.
+// DEPRECATED: last txs can't recover from db when restart
+// , and it's not used actually
 func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -181,6 +182,11 @@ func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 		tx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
+			return
+		}
+
+		if tx == nil {
+			wh.Error404(w)
 			return
 		}
 

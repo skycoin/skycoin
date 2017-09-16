@@ -5,8 +5,10 @@ package consensus
 
 import (
 	"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Struct ConsensusParticipant is inteneded to extend (or be contained in)
@@ -28,13 +30,16 @@ type ConsensusParticipant struct {
 
 	Incoming_block_count int
 }
+
 func (self *ConsensusParticipant) GetConnectionManager() ConnectionManagerInterface {
 	return self.pConnectionManager
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 func (self *ConsensusParticipant) GetNextBlockSeqNo() uint64 {
 	return self.block_queue.GetNextSeqNo()
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 func (self *ConsensusParticipant) SetPubkeySeckey(
 	pubkey cipher.PubKey,
@@ -43,6 +48,7 @@ func (self *ConsensusParticipant) SetPubkeySeckey(
 	self.Pubkey, self.Seckey = pubkey, seckey
 	//self.pConnectionManager.SetPubkey(pubkey)
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 func (self *ConsensusParticipant) Print() {
 	fmt.Printf("ConsensusParticipant={pubkey=%s,block_msg_count=%d,",
@@ -65,8 +71,8 @@ func (self *ConsensusParticipant) Print() {
 func NewConsensusParticipantPtr(pMan ConnectionManagerInterface) *ConsensusParticipant {
 
 	node := ConsensusParticipant{
-		pConnectionManager : pMan,
-		block_queue :  BlockchainTail{},
+		pConnectionManager:   pMan,
+		block_queue:          BlockchainTail{},
 		Incoming_block_count: 0,
 	}
 	node.block_queue.Init()
@@ -92,10 +98,12 @@ func (self *ConsensusParticipant) SignatureOf(hash cipher.SHA256) cipher.Sig {
 	// cipher.DebugLevel1 are true:
 	return cipher.SignHash(hash, self.Seckey)
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 func (self *ConsensusParticipant) Get_block_stat_queue_Len() int {
 	return self.block_stat_queue.Len()
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 func (self *ConsensusParticipant) Get_block_stat_queue_element_at(
 	j int) *BlockStat {
@@ -167,4 +175,5 @@ func (self *ConsensusParticipant) harvest_ripe_BlockStat() {
 	}
 
 }
+
 ////////////////////////////////////////////////////////////////////////////////

@@ -138,6 +138,7 @@ func (vs *Visor) strand(f func()) {
 		}()
 		select {
 		case <-cxt.Done():
+			logger.Error("%v", cxt.Err())
 			return
 		case <-c:
 			return
@@ -294,7 +295,7 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
 	pool.Pool.BroadcastMessage(m)
 }
 
-// Injects transaction to the unconfirmed pool and broadcasts it
+// InjectTransaction injects transaction to the unconfirmed pool and broadcasts it
 // The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error
@@ -445,12 +446,11 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 }
 
 // GetSignedBlocksSince returns numbers of signed blocks since seq.
-func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) []coin.SignedBlock {
-	var sbs []coin.SignedBlock
+func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) (sbs []coin.SignedBlock, err error) {
 	vs.strand(func() {
-		sbs = vs.v.GetSignedBlocksSince(seq, num)
+		sbs, err = vs.v.GetSignedBlocksSince(seq, num)
 	})
-	return sbs
+	return
 }
 
 // UnConfirmFilterKnown returns all unknow transaction hashes
@@ -513,7 +513,12 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// Record this as this peer's highest block
 	d.Visor.RecordBlockchainLength(gbm.c.Addr, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	blocks := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	blocks, err := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	if err != nil {
+		logger.Info("Get signed blocks failed: %v", err)
+		return
+	}
+
 	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 	if len(blocks) == 0 {
 		return
@@ -737,14 +742,16 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 	for _, txn := range gtm.Txns {
 		// Only announce transactions that are new to us, so that peers can't
 		// spam relays
-		if known, err := d.Visor.InjectTxn(txn); err == nil && !known {
-			hashes = append(hashes, txn.Hash())
+		known, err := d.Visor.InjectTxn(txn)
+		if err != nil {
+			logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
+			continue
+		}
+
+		if known {
+			logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
 		} else {
-			if !known {
-				logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
-			} else {
-				logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
-			}
+			hashes = append(hashes, txn.Hash())
 		}
 	}
 	// Announce these transactions to peers

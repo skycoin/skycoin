@@ -54,7 +54,7 @@ type chainStore interface {
 	AddBlockWithTx(tx *bolt.Tx, b *coin.SignedBlock) error
 	GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetBlockBySeq(seq uint64) (*coin.SignedBlock, error)
-	UnspentPool() *blockdb.UnspentPool
+	UnspentPool() blockdb.UnspentPool
 	GetGenesisBlock() *coin.SignedBlock
 }
 
@@ -162,36 +162,13 @@ func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b coin.SignedBlock) (coin.
 }
 
 // Unspent returns the unspent outputs pool
-func (bc *Blockchain) Unspent() *blockdb.UnspentPool {
+func (bc *Blockchain) Unspent() blockdb.UnspentPool {
 	return bc.store.UnspentPool()
 }
 
 // Len returns the length of current blockchain.
 func (bc Blockchain) Len() uint64 {
 	return bc.store.Len()
-}
-
-// NewGenesisBlock creates genesis block, won't affect the chain
-func (bc *Blockchain) NewGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) (*coin.Block, error) {
-	txn := coin.Transaction{}
-	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
-	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
-	prevHash := cipher.SHA256{}
-	head := coin.BlockHeader{
-		Time:     timestamp,
-		BodyHash: body.Hash(),
-		PrevHash: prevHash,
-		BkSeq:    0,
-		Version:  0,
-		Fee:      0,
-		UxHash:   cipher.SHA256{},
-	}
-	b := &coin.Block{
-		Head: head,
-		Body: body,
-	}
-
-	return b, nil
 }
 
 // Head returns the most recent confirmed block

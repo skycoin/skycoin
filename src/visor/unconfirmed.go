@@ -510,16 +510,18 @@ func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address,
 }
 
 // AllSpendsOutputs returns all spending outputs in unconfirmed tx pool.
-func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *blockdb.UnspentPool) ([]ReadableOutput, error) {
+func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent blockdb.UnspentPool) ([]ReadableOutput, error) {
 	outs := []ReadableOutput{}
 	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
-		for _, in := range tx.Txn.In {
-			ux, ok := bcUnspent.Get(in)
-
-			if ok {
-				outs = append(outs, NewReadableOutput(ux))
-			}
+		uxs, err := bcUnspent.GetArray(tx.Txn.In)
+		if err != nil {
+			return err
 		}
+
+		for _, ux := range uxs {
+			outs = append(outs, NewReadableOutput(ux))
+		}
+
 		return nil
 	}); err != nil {
 		return []ReadableOutput{}, fmt.Errorf("AllSpendsOutputs error:%v", err)

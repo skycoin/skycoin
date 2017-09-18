@@ -44,7 +44,7 @@ func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
 }
 
 // GetUnspent gets unspent
-func (rpc RPC) GetUnspent(v *Visor) *blockdb.UnspentPool {
+func (rpc RPC) GetUnspent(v *Visor) blockdb.UnspentPool {
 	return v.Blockchain.Unspent()
 }
 

@@ -425,7 +425,7 @@ func (gw *Gateway) GetLastTxs() (txns []*visor.Transaction, err error) {
 }
 
 // GetUnspent returns the unspent pool
-func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
+func (gw *Gateway) GetUnspent() (unspent blockdb.UnspentPool) {
 	gw.strand(func() {
 		unspent = gw.v.Blockchain.Unspent()
 	})
@@ -435,10 +435,10 @@ func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
 // impelemts the wallet.Validator interface
 type spendValidator struct {
 	uncfm   *visor.UnconfirmedTxnPool
-	unspent *blockdb.UnspentPool
+	unspent blockdb.UnspentPool
 }
 
-func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent *blockdb.UnspentPool) *spendValidator {
+func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent blockdb.UnspentPool) *spendValidator {
 	return &spendValidator{
 		uncfm:   uncfm,
 		unspent: unspent,

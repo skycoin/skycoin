@@ -78,7 +78,7 @@ func TestNewUnspentPool(t *testing.T) {
 	assert.Nil(t, v)
 }
 
-func addUxOut(up *UnspentPool, ux coin.UxOut) error {
+func addUxOut(up *Unspents, ux coin.UxOut) error {
 	var uxHash cipher.SHA256
 	var err error
 	if err := up.db.Update(func(tx *bolt.Tx) error {
@@ -612,7 +612,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 			txOuts := coin.CreateUnspents(block.Head, tx)
 			err = db.Update(func(tx *bolt.Tx) error {
 				oldUxHash := up.GetUxHash()
-				txHandler := up.processBlock(&coin.SignedBlock{Block: *block})
+				txHandler := up.ProcessBlock(&coin.SignedBlock{Block: *block})
 				rb, err := txHandler(tx)
 				if err != nil {
 					rb()

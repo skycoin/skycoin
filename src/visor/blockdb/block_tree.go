@@ -19,15 +19,15 @@ var (
 	errHasChild    = errors.New("remove block failed, it has children")
 )
 
-// BlockTree use the blockdb store all blocks and maintains the block tree struct.
-type BlockTree struct {
+// blockTree use the blockdb store all blocks and maintains the block tree struct.
+type blockTree struct {
 	db     *bolt.DB
 	blocks *bucket.Bucket
 	tree   *bucket.Bucket
 }
 
-// NewBlockTree create buckets in blockdb if does not exist.
-func NewBlockTree(db *bolt.DB) (*BlockTree, error) {
+// newBlockTree create buckets in blockdb if does not exist.
+func newBlockTree(db *bolt.DB) (*blockTree, error) {
 	blocks, err := bucket.New([]byte("blocks"), db)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func NewBlockTree(db *bolt.DB) (*BlockTree, error) {
 		return nil, err
 	}
 
-	return &BlockTree{
+	return &blockTree{
 		blocks: blocks,
 		tree:   tree,
 		db:     db,
@@ -47,14 +47,14 @@ func NewBlockTree(db *bolt.DB) (*BlockTree, error) {
 
 // AddBlock write the block into blocks bucket, add the pair of block hash and pre block hash into
 // tree in the block depth.
-func (bt *BlockTree) AddBlock(b *coin.Block) error {
+func (bt *blockTree) AddBlock(b *coin.Block) error {
 	return bt.db.Update(func(tx *bolt.Tx) error {
 		return bt.AddBlockWithTx(tx, b)
 	})
 }
 
 // AddBlockWithTx adds block with *bolt.Tx
-func (bt *BlockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
+func (bt *blockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
 	bkt := tx.Bucket(bt.blocks.Name)
 	if bkt == nil {
 		return fmt.Errorf("bucket %s doesn't eist", bt.blocks.Name)
@@ -118,7 +118,7 @@ func (bt *BlockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
 
 // RemoveBlock remove block from blocks bucket and tree bucket.
 // can't remove block if it has children.
-func (bt *BlockTree) RemoveBlock(b *coin.Block) error {
+func (bt *blockTree) RemoveBlock(b *coin.Block) error {
 	return bt.db.Update(func(tx *bolt.Tx) error {
 		// delete block in blocks bucket.
 		blocks := tx.Bucket(bt.blocks.Name)
@@ -160,13 +160,13 @@ func (bt *BlockTree) RemoveBlock(b *coin.Block) error {
 }
 
 // GetBlock get block by hash, return nil on not found
-func (bt *BlockTree) GetBlock(hash cipher.SHA256) *coin.Block {
+func (bt *blockTree) GetBlock(hash cipher.SHA256) *coin.Block {
 	return bt.getBlock(hash)
 }
 
 // GetBlockInDepth get block in depth, return nil on not found,
 // the filter is used to choose the appropriate block.
-func (bt *BlockTree) GetBlockInDepth(depth uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block {
+func (bt *blockTree) GetBlockInDepth(depth uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block {
 	hash, err := bt.getHashInDepth(depth, filter)
 	if err != nil {
 		return nil
@@ -175,22 +175,7 @@ func (bt *BlockTree) GetBlockInDepth(depth uint64, filter func(hps []coin.HashPa
 	return bt.getBlock(hash)
 }
 
-// GetAllBlockHashInDepth returns all block hash of N depth in the tree.
-func (bt *BlockTree) GetAllBlockHashInDepth(depth uint64) ([]cipher.SHA256, error) {
-	key := bucket.Itob(depth)
-	pairsBin := bt.tree.Get(key)
-	pairs := []coin.HashPair{}
-	if err := encoder.DeserializeRaw(pairsBin, &pairs); err != nil {
-		return []cipher.SHA256{}, err
-	}
-	hashes := make([]cipher.SHA256, len(pairs))
-	for i, hp := range pairs {
-		hashes[i] = hp.Hash
-	}
-	return hashes, nil
-}
-
-func (bt *BlockTree) getBlock(hash cipher.SHA256) *coin.Block {
+func (bt *blockTree) getBlock(hash cipher.SHA256) *coin.Block {
 	bin := bt.blocks.Get(hash[:])
 	if bin == nil {
 		return nil
@@ -202,7 +187,7 @@ func (bt *BlockTree) getBlock(hash cipher.SHA256) *coin.Block {
 	return &block
 }
 
-func (bt *BlockTree) getHashInDepth(depth uint64, filter func(ps []coin.HashPair) cipher.SHA256) (cipher.SHA256, error) {
+func (bt *blockTree) getHashInDepth(depth uint64, filter func(ps []coin.HashPair) cipher.SHA256) (cipher.SHA256, error) {
 	key := bucket.Itob(depth)
 	pairsBin := bt.tree.Get(key)
 	pairs := []coin.HashPair{}

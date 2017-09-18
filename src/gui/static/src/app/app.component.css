@@ -35,3 +35,7 @@ md-toolbar span {
 .syncing {
   font-size: 14px;
 }
+
+.main-menu button {
+  margin-right: 20px;
+}

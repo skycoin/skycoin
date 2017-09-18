@@ -38,6 +38,10 @@ import { NetworkService } from './services/network.service';
 import { ChangeNameComponent } from './components/pages/wallets/change-name/change-name.component';
 import { ButtonComponent } from './components/layout/button/button.component';
 import { QrCodeComponent } from './components/layout/qr-code/qr-code.component';
+import { BuyComponent } from './components/pages/buy/buy.component';
+import { AddDepositAddressComponent } from './components/pages/buy/add-deposit-address/add-deposit-address.component';
+import { PurchaseService } from './services/purchase.service';
+import { TellerStatusPipe } from './pipes/teller-status.pipe';
 
 const ROUTES = [
   {
@@ -112,6 +116,13 @@ const ROUTES = [
     ],
   },
   {
+    path: 'buy',
+    component: BuyComponent,
+    data: {
+      breadcrumb: 'Buy Skycoin',
+    },
+  },
+  {
     path: 'settings',
     children: [
       {
@@ -179,8 +190,12 @@ const ROUTES = [
     ChangeNameComponent,
     ButtonComponent,
     QrCodeComponent,
+    BuyComponent,
+    AddDepositAddressComponent,
+    TellerStatusPipe,
   ],
   entryComponents: [
+    AddDepositAddressComponent,
     CreateWalletComponent,
     ChangeNameComponent,
     QrCodeComponent,
@@ -213,6 +228,7 @@ const ROUTES = [
     ApiService,
     BlockchainService,
     NetworkService,
+    PurchaseService,
     WalletService,
   ],
   bootstrap: [AppComponent]

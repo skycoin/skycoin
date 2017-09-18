@@ -19,10 +19,11 @@
 
   <button md-button [mdMenuTriggerFor]="settingsMenu">Settings</button>
 </md-toolbar>
-<md-toolbar>
+<md-toolbar class="main-menu">
   <button md-button [routerLink]="['/wallets']" routerLinkActive="active">Wallets</button>
   <button md-button [routerLink]="['/send']" routerLinkActive="active">Send</button>
   <button md-button [routerLink]="['/history']" routerLinkActive="active">History</button>
+  <button md-button [routerLink]="['/buy']" routerLinkActive="active" *ngIf="otcEnabled">Buy</button>
   <button md-button [routerLink]="['/explorer']" routerLinkActive="active">Explorer</button>
   <span class="fill-remaining-space"></span>
 

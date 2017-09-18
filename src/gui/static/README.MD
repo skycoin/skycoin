@@ -27,3 +27,11 @@ Please note that you will most likely receive CORS errors as there's a differenc
 As a work-around, the development server will create a proxy from `http://localhost:4200/api` to `http://127.0.0.1:6420/`.
 
 You can route all calls to this address by changing the url property on the ApiService class.
+
+## Purchase API (teller)
+
+Please note that at the moment the Purchase API (teller) is both offline and not supporting CORS headers.
+
+While event.skycoin.net is not working, we will have to run the purchase API locally.
+
+Similar as the solution for the above CORS issue, you can circumvent CORS issues by changing the url property to '/teller/'

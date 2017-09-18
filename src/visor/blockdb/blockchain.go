@@ -3,7 +3,6 @@ package blockdb
 import (
 	"errors"
 	"fmt"
-	"runtime/debug"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -13,34 +12,54 @@ import (
 )
 
 var (
+	// blockchain meta info bucket
+	blockchainMetaBkt = []byte("blockchain_meta")
 	// blockchain head sequence number
 	headSeqKey = []byte("head_seq")
 )
 
 type chainMeta struct {
-	*bolt.Bucket
+	bucket.Bucket
 }
 
-func (m chainMeta) setHeadSeq(seq uint64) error {
-	return m.Put(headSeqKey, bucket.Itob(seq))
+func newChainMeta(db *bolt.DB) (*chainMeta, error) {
+	bkt, err := bucket.New(blockchainMetaBkt, db)
+	if err != nil {
+		return nil, err
+	}
+
+	return &chainMeta{
+		Bucket: *bkt,
+	}, nil
 }
 
-func (m chainMeta) getHeadSeq() uint64 {
-	return bucket.Btoi(m.Get(headSeqKey))
+func (m chainMeta) setHeadSeqWithTx(tx *bolt.Tx, seq uint64) error {
+	return m.PutWithTx(tx, headSeqKey, bucket.Itob(seq))
 }
 
-type blockTree interface {
-	AddBlock(b *coin.Block) error
+// BlockTree block storage
+type BlockTree interface {
 	AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error
-	RemoveBlock(b *coin.Block) error
 	GetBlock(hash cipher.SHA256) *coin.Block
 	GetBlockInDepth(dep uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block
 }
 
-type signatureStore interface {
-	Add(*coin.SignedBlock) error
-	AddWithTx(*bolt.Tx, *coin.SignedBlock) error
+// BlockSigs block signature storage
+type BlockSigs interface {
+	AddWithTx(*bolt.Tx, cipher.SHA256, cipher.Sig) error
 	Get(hash cipher.SHA256) (cipher.Sig, bool, error)
+}
+
+// UnspentPool unspent outputs pool
+type UnspentPool interface {
+	Len() uint64                          // Len returns the length of unspent outputs pool
+	Get(cipher.SHA256) (coin.UxOut, bool) // Get returns outpus
+	GetAll() (coin.UxArray, error)
+	GetArray(hashes []cipher.SHA256) (coin.UxArray, error)
+	GetUxHash() cipher.SHA256
+	GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts
+	ProcessBlock(*coin.SignedBlock) bucket.TxHandler
+	Contains(cipher.SHA256) bool
 }
 
 // Walker function for go through blockchain
@@ -49,10 +68,10 @@ type Walker func(hps []coin.HashPair) cipher.SHA256
 // Blockchain maintain the buckets for blockchain
 type Blockchain struct {
 	db      *bolt.DB
-	meta    *bucket.Bucket
-	unspent *UnspentPool
-	tree    blockTree
-	sigs    signatureStore
+	meta    *chainMeta
+	unspent UnspentPool
+	tree    BlockTree
+	sigs    BlockSigs
 	walker  Walker
 	cache   struct {
 		headSeq      uint64 // head block seq
@@ -76,17 +95,26 @@ func NewBlockchain(db *bolt.DB, walker Walker) (*Blockchain, error) {
 		return nil, err
 	}
 
-	meta, err := bucket.New([]byte("blockchain_meta"), db)
-	if err != nil {
-		return nil, err
-	}
-
-	tree, err := NewBlockTree(db)
+	tree, err := newBlockTree(db)
 	if err != nil {
 		return nil, err
 	}
 
 	sigs, err := NewBlockSigs(db)
+	if err != nil {
+		return nil, err
+	}
+
+	return createBlockchain(db, walker, tree, sigs, unspent)
+}
+
+func createBlockchain(db *bolt.DB,
+	walker Walker,
+	tree BlockTree,
+	sigs BlockSigs,
+	unspent UnspentPool,
+) (*Blockchain, error) {
+	meta, err := newChainMeta(db)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +137,11 @@ func NewBlockchain(db *bolt.DB, walker Walker) (*Blockchain, error) {
 
 // AddBlockWithTx adds signed block
 func (bc *Blockchain) AddBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) error {
-	if err := bc.sigs.AddWithTx(tx, sb); err != nil {
+	if err := bc.sigs.AddWithTx(tx, sb.HashHeader(), sb.Sig); err != nil {
 		return fmt.Errorf("save signature failed: %v", err)
 	}
 
 	if err := bc.tree.AddBlockWithTx(tx, &sb.Block); err != nil {
-		debug.PrintStack()
 		return fmt.Errorf("save block failed: %v", err)
 	}
 
@@ -130,7 +157,7 @@ func (bc *Blockchain) AddBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) error {
 func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b *coin.SignedBlock) error {
 	return bc.updateWithTx(tx,
 		bc.updateHeadSeq(b),
-		bc.unspent.processBlock(b),
+		bc.unspent.ProcessBlock(b),
 		bc.cacheGenesisBlock(b))
 }
 
@@ -156,7 +183,7 @@ func (bc *Blockchain) HeadSeq() uint64 {
 }
 
 // UnspentPool returns the unspent pool
-func (bc *Blockchain) UnspentPool() *UnspentPool {
+func (bc *Blockchain) UnspentPool() UnspentPool {
 	return bc.unspent
 }
 
@@ -275,9 +302,8 @@ func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...bucket.TxHandler) error {
 
 func (bc *Blockchain) updateHeadSeq(b *coin.SignedBlock) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
-		meta := chainMeta{tx.Bucket(bc.meta.Name)}
-
-		if err := meta.setHeadSeq(b.Seq()); err != nil {
+		// meta := chainMeta{tx.Bucket(bc.meta.Name)}
+		if err := bc.meta.setHeadSeqWithTx(tx, b.Seq()); err != nil {
 			return func() {}, err
 		}
 

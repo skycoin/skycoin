@@ -36,7 +36,7 @@ func testCase(t *testing.T, cases []blockCase) {
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
-	btree, err := NewBlockTree(db)
+	btree, err := newBlockTree(db)
 	assert.Nil(t, err)
 	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
@@ -170,7 +170,7 @@ func TestGetBlockInDepth(t *testing.T) {
 	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 
-	bc, err := NewBlockTree(db)
+	bc, err := newBlockTree(db)
 	assert.Nil(t, err)
 	blocks := []coin.Block{
 		coin.Block{

@@ -307,7 +307,7 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 
 	logger.Debug("Create genesis block")
 	vs.GenesisPreconditions()
-	b, err := vs.Blockchain.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
+	b, err := coin.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
 	if err != nil {
 		return err
 	}

@@ -94,6 +94,7 @@ func (cfg *Config) preprocess() Config {
 	config.Pool.address = config.Daemon.Address
 
 	if config.Daemon.DisableNetworking {
+		logger.Info("Networking is disabled")
 		config.Peers.Disabled = true
 		config.Daemon.DisableIncomingConnections = true
 		config.Daemon.DisableOutgoingConnections = true
@@ -104,6 +105,8 @@ func (cfg *Config) preprocess() Config {
 		}
 		if config.Daemon.DisableOutgoingConnections {
 			logger.Info("Outgoing connections are disabled.")
+			// Visor only makes outgoing connections
+			config.Visor.DisableNetworking = true
 		}
 	}
 

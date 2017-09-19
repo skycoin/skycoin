@@ -20,14 +20,14 @@ func TestMakeChangeOut(t *testing.T) {
 			Hash:              "",
 			SourceTransaction: "",
 			Address:           "k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND",
-			Coins:             strconv.Itoa(400 * 1e6),
+			Coins:             strconv.Itoa(400),
 			Hours:             200,
 		}},
 		{visor.ReadableOutput{
 			Hash:              "",
 			SourceTransaction: "",
 			Address:           "A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe",
-			Coins:             strconv.Itoa(300 * 1e6),
+			Coins:             strconv.Itoa(300),
 			Hours:             100,
 		}},
 	}

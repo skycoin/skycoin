@@ -7,6 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,10 +23,7 @@ func TestGetLastTxs(t *testing.T) {
 	testData := []uint64{0, 3, lastTxNum, lastTxNum + 10}
 	for i := range testData {
 		func(i uint64) {
-			db, teardown, err := setup(t)
-			if err != nil {
-				t.Fatal(err)
-			}
+			db, teardown := testutil.PrepareDB(t)
 			defer teardown()
 			txIns, err := newTransactionsBkt(db)
 			if err != nil {
@@ -79,8 +77,7 @@ func TestTransactionGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td, err := setup(t)
-			require.Nil(t, err)
+			db, td := testutil.PrepareDB(t)
 			defer td()
 			txsBkt, err := newTransactionsBkt(db)
 			require.Nil(t, err)
@@ -144,8 +141,7 @@ func TestTransactionGetSlice(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td, err := setup(t)
-			require.Nil(t, err)
+			db, td := testutil.PrepareDB(t)
 			defer td()
 			txsBkt, err := newTransactionsBkt(db)
 			require.Nil(t, err)

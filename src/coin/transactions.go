@@ -121,13 +121,9 @@ func (txn *Transaction) Verify() error {
 	}
 
 	// Artificial restriction to prevent spam
-	// Must spend only multiples of 1e6
 	for _, txo := range txn.Out {
 		if txo.Coins == 0 {
 			return errors.New("Zero coin output")
-		}
-		if txo.Coins%1e6 != 0 {
-			return errors.New("Transaction outputs must be multiple of 1e6 base units")
 		}
 	}
 

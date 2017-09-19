@@ -57,7 +57,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b coin.Block
+		var b coin.SignedBlock
 		var exist bool
 		switch {
 		case hash == "" && seq == "":
@@ -88,7 +88,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 			wh.SendOr404(w, nil)
 			return
 		}
-		wh.SendOr404(w, visor.NewReadableBlock(&b))
+		wh.SendOr404(w, visor.NewReadableBlock(&b.Block))
 	}
 }
 

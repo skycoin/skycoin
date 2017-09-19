@@ -322,7 +322,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			errors.New("zero spend amount"),
 		},
 		{
-			"spend coin not the multiple of 1e6",
+			"spend fractional coins",
 			uxouts[:],
 			coin.AddressUxOuts{
 				addr: uxouts,
@@ -332,7 +332,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			Balance{Coins: 1000},
 			addrs[0],
-			errors.New("coins must be multiple of 1e6"),
+			nil,
 		},
 		{
 			"not enough confirmed coins",

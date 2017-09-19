@@ -50,6 +50,11 @@ func (b Bucket) Get(key []byte) []byte {
 	return value
 }
 
+// GetWithTx gets value
+func (b Bucket) GetWithTx(tx *bolt.Tx, key []byte) []byte {
+	return tx.Bucket(b.Name).Get(key)
+}
+
 // GetAll returns all values
 func (b *Bucket) GetAll() map[interface{}][]byte {
 	values := map[interface{}][]byte{}

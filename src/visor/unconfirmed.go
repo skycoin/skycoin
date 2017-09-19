@@ -114,12 +114,6 @@ func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 	return &tx, true
 }
 
-func (utb *uncfmTxnBkt) put(v *UnconfirmedTxn) error {
-	key := []byte(v.Hash().Hex())
-	d := encoder.Serialize(v)
-	return utb.txns.Put(key, d)
-}
-
 func (utb *uncfmTxnBkt) putWithTx(tx *bolt.Tx, v *UnconfirmedTxn) error {
 	key := []byte(v.Hash().Hex())
 	d := encoder.Serialize(v)
@@ -356,7 +350,12 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 		}
 
 		// update unconfirmed unspent
-		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(bc.Head().Head, t))
+		head, err := bc.Head()
+		if err != nil {
+			return err
+		}
+
+		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(head.Head, t))
 	}); err != nil {
 		return false, err
 	}
@@ -511,16 +510,18 @@ func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address,
 }
 
 // AllSpendsOutputs returns all spending outputs in unconfirmed tx pool.
-func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent *blockdb.UnspentPool) ([]ReadableOutput, error) {
+func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent blockdb.UnspentPool) ([]ReadableOutput, error) {
 	outs := []ReadableOutput{}
 	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
-		for _, in := range tx.Txn.In {
-			ux, ok := bcUnspent.Get(in)
-
-			if ok {
-				outs = append(outs, NewReadableOutput(ux))
-			}
+		uxs, err := bcUnspent.GetArray(tx.Txn.In)
+		if err != nil {
+			return err
 		}
+
+		for _, ux := range uxs {
+			outs = append(outs, NewReadableOutput(ux))
+		}
+
 		return nil
 	}); err != nil {
 		return []ReadableOutput{}, fmt.Errorf("AllSpendsOutputs error:%v", err)

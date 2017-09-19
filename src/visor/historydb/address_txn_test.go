@@ -7,16 +7,15 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewAddressTxns(t *testing.T) {
-	db, td, err := setup(t)
-	require.Nil(t, err)
-
+	db, td := testutil.PrepareDB(t)
 	defer td()
 
-	_, err = newAddressTxnsBkt(db)
+	_, err := newAddressTxnsBkt(db)
 	require.Nil(t, err)
 
 	// the address_txns bucket must be exist
@@ -120,11 +119,10 @@ func TestAddAddressTxns(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td, err := setup(t)
-			require.Nil(t, err)
+			db, td := testutil.PrepareDB(t)
 			defer td()
 
-			_, err = newAddressTxnsBkt(db)
+			_, err := newAddressTxnsBkt(db)
 			require.Nil(t, err)
 
 			require.Nil(t, db.Update(func(tx *bolt.Tx) error {
@@ -244,8 +242,7 @@ func TestGetAddressTxns(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td, err := setup(t)
-			require.Nil(t, err)
+			db, td := testutil.PrepareDB(t)
 			defer td()
 
 			addrTxnsBkt, err := newAddressTxnsBkt(db)

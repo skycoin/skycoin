@@ -45,8 +45,8 @@ type BlockBody struct {
 
 // SignedBlock signed block
 type SignedBlock struct {
-	Block Block
-	Sig   cipher.Sig
+	Block
+	Sig cipher.Sig
 }
 
 //TODO: merge header/body and cleanup top level interface
@@ -83,6 +83,29 @@ func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transac
 		Head: NewBlockHeader(prev.Head, uxHash, currentTime, fee, body),
 		Body: body,
 	}, nil
+}
+
+// NewGenesisBlock creates genesis block
+func NewGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) (*Block, error) {
+	txn := Transaction{}
+	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	body := BlockBody{Transactions: Transactions{txn}}
+	prevHash := cipher.SHA256{}
+	head := BlockHeader{
+		Time:     timestamp,
+		BodyHash: body.Hash(),
+		PrevHash: prevHash,
+		BkSeq:    0,
+		Version:  0,
+		Fee:      0,
+		UxHash:   cipher.SHA256{},
+	}
+	b := &Block{
+		Head: head,
+		Body: body,
+	}
+
+	return b, nil
 }
 
 // HashHeader return hash of block head.

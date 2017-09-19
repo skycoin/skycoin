@@ -51,7 +51,7 @@ func (bcp *BlockchainParser) Run() error {
 	}
 
 	// parse to the blockchain head
-	headSeq := bcp.bc.Head().Seq()
+	headSeq := bcp.bc.HeadSeq()
 	if err := bcp.parseTo(headSeq); err != nil {
 		return err
 	}
@@ -86,12 +86,16 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 	parsedHeight := bcp.historyDB.ParsedHeight()
 
 	for i := int64(0); i < int64(bcHeight)-parsedHeight; i++ {
-		b := bcp.bc.GetBlockInDepth(uint64(parsedHeight + i + 1))
+		b, err := bcp.bc.GetBlockBySeq(uint64(parsedHeight + i + 1))
+		if err != nil {
+			return err
+		}
+
 		if b == nil {
 			return fmt.Errorf("no block exist in depth:%d", parsedHeight+i+1)
 		}
 
-		if err := bcp.historyDB.ProcessBlock(b); err != nil {
+		if err := bcp.historyDB.ProcessBlock(&b.Block); err != nil {
 			return err
 		}
 	}

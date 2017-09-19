@@ -1,4 +1,4 @@
-package droplets
+package droplet
 
 import (
 	"errors"
@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	// DropletExponent is the number of decimal places held by droplets
-	DropletExponent = 6
-	// DropletMultiplier is how much to multiply coins by to get droplets
-	DropletMultiplier = 1e6
+	// Exponent is the number of decimal places held by droplets
+	Exponent = 6
+	// Multiplier is how much to multiply coins by to get droplets
+	Multiplier = 1e6
 )
 
 var (
@@ -51,12 +51,12 @@ func FromString(b string) (uint64, error) {
 	}
 
 	// Skycoins have a maximum of 6 decimal places
-	if d.Exponent() < -DropletExponent {
+	if d.Exponent() < -Exponent {
 		return 0, ErrTooManyDecimals
 	}
 
 	// Multiply the coin balance by 1e6 to obtain droplets amount
-	e := d.Mul(decimal.New(1, DropletExponent))
+	e := d.Mul(decimal.New(1, Exponent))
 
 	// Check that there are no decimal places remaining. This error should not
 	// occur, because of the earlier check of Exponent()
@@ -81,7 +81,7 @@ func ToString(n uint64) (string, error) {
 		return "", ErrTooLarge
 	}
 
-	d := decimal.New(int64(n), -DropletExponent)
+	d := decimal.New(int64(n), -Exponent)
 
 	return d.String(), nil
 }

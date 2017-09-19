@@ -1,4 +1,4 @@
-package droplets
+package droplet
 
 import (
 	"errors"

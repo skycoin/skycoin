@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"fmt"
+
 	gcli "github.com/urfave/cli"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -27,6 +30,14 @@ func addressGenCmd() gcli.Command {
 				Name:  "bitcoin,b",
 				Usage: "Output the addresses as bitcoin addresses instead of skycoin addresses",
 			},
+			gcli.BoolFlag{
+				Name:  "hex, x",
+				Usage: "Use random hex string as seed",
+			},
+			gcli.BoolFlag{
+				Name:  "verbose, v",
+				Usage: "Show verbose info of generated addresses",
+			},
 			gcli.StringFlag{
 				Name:  "seed",
 				Usage: "Seed for deterministic key generation. Will use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not provided.",
@@ -43,8 +54,20 @@ func addressGenCmd() gcli.Command {
 
 			seed := c.String("seed")
 			if seed == "" {
-				// generate a new seed, as hex string
-				seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
+				hex := c.Bool("hex")
+				if hex {
+					// generate a new seed, as hex string
+					seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
+				} else {
+					var err error
+					var entropy []byte
+					entropy, err = bip39.NewEntropy(128)
+					if err != nil {
+						return fmt.Errorf("new entropy failed when new wallet seed: %v", err)
+					}
+
+					seed, err = bip39.NewMnemonic(entropy)
+				}
 			}
 
 			w, err := wallet.CreateAddresses(coinType, seed, c.Int("count"), c.Bool("hide-secret"))
@@ -52,7 +75,14 @@ func addressGenCmd() gcli.Command {
 				return err
 			}
 
-			return printJson(w)
+			if c.Bool("verbose") {
+				return printJson(w)
+			}
+
+			for _, e := range w.Entries {
+				fmt.Println(e.Address)
+			}
+			return nil
 		},
 	}
 }

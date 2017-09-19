@@ -205,7 +205,10 @@ func (pool *ConnectionPool) Run() error {
 
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
-	ln, err := net.Listen("tcp", addr)
+	logger.Info("Listening for connections on %s...", addr)
+
+	var err error
+	pool.listener, err = net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
@@ -227,9 +230,10 @@ func (pool *ConnectionPool) Run() error {
 	}()
 
 	logger.Info("Listening for connections...")
+
 loop:
 	for {
-		conn, err := ln.Accept()
+		conn, err := pool.listener.Accept()
 		if err != nil {
 			// When Accept() returns with a non-nill error, we check the quit
 			// channel to see if we should continue or quit . If quit, then we quit.

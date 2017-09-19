@@ -143,7 +143,8 @@ func (rpc RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 		Current: v.HeadBkSeq(),
 		Highest: v.EstimateBlockchainLength(),
 	}
-	v.strand(func() {
+
+	v.strand("Get blockchain progress", func() {
 		for addr, height := range v.blockchainLengths {
 			bp.Peers = append(bp.Peers, struct {
 				Address string `json:"address"`

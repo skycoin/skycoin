@@ -91,8 +91,7 @@ func (cfg *Config) preprocess() Config {
 			config.Daemon.Address = local
 		} else {
 			if !IsLocalhost(config.Daemon.Address) {
-				logger.Panicf("Invalid address for localhost-only: %s",
-					config.Daemon.Address)
+				logger.Panicf("Invalid address for localhost-only: %s", config.Daemon.Address)
 			}
 		}
 		config.Peers.AllowLocalhost = true
@@ -104,6 +103,7 @@ func (cfg *Config) preprocess() Config {
 		config.Peers.Disabled = true
 		config.Daemon.DisableIncomingConnections = true
 		config.Daemon.DisableOutgoingConnections = true
+		config.Visor.DisableNetworking = true
 	} else {
 		if config.Daemon.DisableIncomingConnections {
 			logger.Info("Incoming connections are disabled.")
@@ -302,8 +302,8 @@ func (dm *Daemon) Shutdown() {
 	dm.Visor.Shutdown()
 }
 
-// Run main loop for peer/connection management. Send anything to quit to shut it
-// down
+// Run main loop for peer/connection management.
+// Send anything to the quit channel to shut it down.
 func (dm *Daemon) Run() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -315,7 +315,7 @@ func (dm *Daemon) Run() (err error) {
 
 	errC := make(chan error)
 
-	// start visor
+	// Start visor
 	go func() {
 		errC <- dm.Visor.Run()
 	}()
@@ -346,7 +346,7 @@ func (dm *Daemon) Run() (err error) {
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
-	// connecto to trusted peers
+	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
 		go dm.connectToTrustPeer()
 	}
@@ -433,23 +433,23 @@ func (dm *Daemon) Run() (err error) {
 		// Process any pending RPC requests
 		case req := <-dm.Gateway.requests:
 			req()
-		// TODO -- run these in the Visor
 		// Create blocks, if master chain
 		case <-blockCreationTicker.C:
 			if dm.Visor.Config.Config.IsMaster {
-				err := dm.Visor.CreateAndPublishBlock(dm.Pool)
+				sb, err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
 					logger.Error("Failed to create block: %v", err)
 					continue
 				}
 
 				// Not a critical error, but we want it visible in logs
-				logger.Critical("Created and published a new block")
+				head := sb.Block.Head
+				logger.Critical("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
 			}
 		case <-unconfirmedRefreshTicker:
-			// get the transactions that turn to valid
+			// Get the transactions that turn to valid
 			validTxns := dm.Visor.RefreshUnconfirmed()
-			// announce this transactions
+			// Announce this transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)
@@ -459,8 +459,8 @@ func (dm *Daemon) Run() (err error) {
 	}
 }
 
-// GetListenPort returns the ListenPort for a given address.  If no port is found, 0 is
-// returned
+// GetListenPort returns the ListenPort for a given address.
+// If no port is found, 0 is returned.
 func (dm *Daemon) GetListenPort(addr string) uint16 {
 	m, ok := dm.connectionMirrors.Get(addr)
 	if !ok {
@@ -480,13 +480,14 @@ func (dm *Daemon) GetListenPort(addr string) uint16 {
 	return p
 }
 
-// Connects to a given peer.  Returns an error if no connection attempt was
-// made.  If the connection attempt itself fails, the error is sent to
+// Connects to a given peer. Returns an error if no connection attempt was
+// made. If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
 func (dm *Daemon) connectToPeer(p *pex.Peer) error {
 	if dm.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
+
 	a, _, err := SplitAddr(p.Addr)
 	if err != nil {
 		logger.Warning("PEX gave us an invalid peer: %v", err)
@@ -512,13 +513,16 @@ func (dm *Daemon) connectToPeer(p *pex.Peer) error {
 	if !dm.Config.LocalhostOnly && ok && cnt != 0 {
 		return errors.New("Already connected to a peer with this base IP")
 	}
+
 	logger.Debug("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
+
 	go func() {
 		if err := dm.Pool.Pool.Connect(p.Addr); err != nil {
 			dm.connectionErrors <- ConnectionError{p.Addr, err}
 		}
 	}()
+
 	return nil
 }
 
@@ -527,6 +531,7 @@ func (dm *Daemon) makePrivateConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
+
 	addrs := dm.Peers.Peers.GetPrivateAddresses()
 	for _, addr := range addrs {
 		p, exist := dm.Peers.Peers.GetPeerByAddr(addr)
@@ -544,49 +549,47 @@ func (dm *Daemon) connectToTrustPeer() {
 		return
 	}
 
-	logger.Info("connect to trusted peers")
-	// make connections to all trusted peers
+	logger.Info("Connect to trusted peers")
+	// Make connections to all trusted peers
 	peers := dm.Peers.Peers.GetPublicTrustPeers()
 	for _, p := range peers {
 		dm.connectToPeer(p)
 	}
 }
 
-// Attempts to connect to a random peer. If it fails, the peer is removed
+// Attempts to connect to a random peer. If it fails, the peer is removed.
 func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
+
 	// Make a connection to a random (public) peer
 	peers := dm.Peers.Peers.RandomPublic(0)
 	for _, p := range peers {
-		// check if the peer has public port
+		// Check if the peer has public port
 		if p.HasIncomePort {
-			// try to connect the peer if it's ip:mirror does not exist
+			// Try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
 				dm.connectToPeer(p)
 				continue
 			}
 		} else {
-			// try to connect to the peer if we don't know whether the peer have public port
+			// Try to connect to the peer if we don't know whether the peer have public port
 			dm.connectToPeer(p)
 		}
 	}
 
 	if len(peers) == 0 {
-		// reset the retry times of all peers
+		// Reset the retry times of all peers
 		dm.Peers.Peers.ResetAllRetryTimes()
 	}
 }
 
 // We remove a peer from the Pex if we failed to connect
-// Failure to connect
-// Use exponential backoff, not peer list
+// TODO - On failure to connect, use exponential backoff, not peer list
 func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	logger.Debug("Failed to connect to %s with error: %v", c.Addr, c.Error)
-
 	dm.pendingConnections.Remove(c.Addr)
-
 	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
 }
 
@@ -595,21 +598,22 @@ func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
 	now := utc.Now()
-	addrs, err := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) (bool, error) {
-		conned, err := dm.Pool.Pool.IsConnExist(addr)
-		if err != nil {
-			return false, err
-		}
+	addrs, err := dm.expectingIntroductions.CullInvalidConns(
+		func(addr string, t time.Time) (bool, error) {
+			conned, err := dm.Pool.Pool.IsConnExist(addr)
+			if err != nil {
+				return false, err
+			}
 
-		if !conned {
-			return true, nil
-		}
+			if !conned {
+				return true, nil
+			}
 
-		if t.Add(dm.Config.IntroductionWait).Before(now) {
-			return true, nil
-		}
-		return false, nil
-	})
+			if t.Add(dm.Config.IntroductionWait).Before(now) {
+				return true, nil
+			}
+			return false, nil
+		})
 
 	if err != nil {
 		logger.Error("expectingIntroduction cull invalid connections failed: %v", err)
@@ -683,8 +687,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	if !exist {
-		logger.Warning("While processing an onConnect event, no pool " +
-			"connection was found")
+		logger.Warning("While processing an onConnect event, no pool connection was found")
 		return
 	}
 
@@ -702,8 +705,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, utc.Now())
 	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version,
-		dm.Pool.Pool.Config.Port)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.Pool.Pool.Config.Port)
 	dm.Pool.Pool.SendMessage(a, m)
 }
 
@@ -773,8 +775,7 @@ func (dm *Daemon) removeIPCount(addr string) {
 func (dm *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
 	ip, port, err := SplitAddr(addr)
 	if err != nil {
-		logger.Warning("recordConnectionMirror called with invalid addr: %v",
-			err)
+		logger.Warning("recordConnectionMirror called with invalid addr: %v", err)
 		return err
 	}
 	dm.connectionMirrors.Add(addr, mirror)
@@ -790,8 +791,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 	}
 	ip, _, err := SplitAddr(addr)
 	if err != nil {
-		logger.Warning("removeConnectionMirror called with invalid addr: %v",
-			err)
+		logger.Warning("removeConnectionMirror called with invalid addr: %v", err)
 		return
 	}
 
@@ -814,8 +814,7 @@ func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 // When an async message send finishes, its result is handled by this
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.Warning("Failed to send %s to %s: %v",
-			reflect.TypeOf(r.Message), r.Addr, r.Error)
+		logger.Warning("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
 		return
 	}
 	switch r.Message.(type) {

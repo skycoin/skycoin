@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
+
+	"github.com/skycoin/skycoin/src/util/droplet"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -22,8 +23,13 @@ type UnspentOut struct {
 }
 
 type SendAmount struct {
-	Addr  string  `json:"addr"`  // send to address
-	Coins float64 `json:"coins"` // send amount
+	Addr  string
+	Coins uint64
+}
+
+type sendAmountJSON struct {
+	Addr  string
+	Coins string
 }
 
 func createRawTxCmd(cfg Config) gcli.Command {
@@ -159,11 +165,23 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 func getToAddresses(c *gcli.Context) ([]SendAmount, error) {
 	m := c.String("m")
 	if m != "" {
-		toAddrs := []SendAmount{}
-		if err := json.NewDecoder(strings.NewReader(m)).Decode(&toAddrs); err != nil {
+		sas := []sendAmountJSON{}
+		if err := json.NewDecoder(strings.NewReader(m)).Decode(&sas); err != nil {
 			return nil, fmt.Errorf("invalid -m flag string, err:%v", err)
 		}
-		return toAddrs, nil
+		sendAmts := make([]SendAmount, 0, len(sas))
+		for _, sa := range sas {
+			amt, err := droplet.FromString(sa.Coins)
+			if err != nil {
+				return nil, fmt.Errorf("invalid coins value in -m flag string: %v", err)
+			}
+
+			sendAmts = append(sendAmts, SendAmount{
+				Addr:  sa.Addr,
+				Coins: amt,
+			})
+		}
+		return sendAmts, nil
 	}
 
 	if c.NArg() < 2 {
@@ -183,15 +201,15 @@ func getToAddresses(c *gcli.Context) ([]SendAmount, error) {
 	return []SendAmount{{toAddr, amt}}, nil
 }
 
-func getAmount(c *gcli.Context) (float64, error) {
+func getAmount(c *gcli.Context) (uint64, error) {
 	if c.NArg() < 2 {
 		return 0, errors.New("invalid argument")
 	}
 
 	amount := c.Args().Get(1)
-	amt, err := strconv.ParseFloat(amount, 64)
+	amt, err := droplet.FromString(amount)
 	if err != nil {
-		return 0, errors.New("error amount")
+		return 0, fmt.Errorf("invalid amount: %v", err)
 	}
 
 	return amt, nil
@@ -318,7 +336,7 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 	// caculate total required amount
 	var totalAmt uint64
 	for _, arg := range toAddrs {
-		totalAmt += uint64(arg.Coins * 1e6)
+		totalAmt += arg.Coins
 	}
 
 	outs, err := getSufficientUnspents(spendableOuts, totalAmt)
@@ -353,16 +371,16 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	)
 
 	for _, o := range outs {
-		c, err := strconv.ParseFloat(o.Coins, 64)
+		c, err := droplet.FromString(o.Coins)
 		if err != nil {
 			return nil, errors.New("error coins string")
 		}
-		totalInAmt += uint64(c * 1e6)
+		totalInAmt += c
 		totalInHours += o.Hours
 	}
 
 	for _, to := range toAddrs {
-		totalOutAmt += uint64(to.Coins * 1e6)
+		totalOutAmt += to.Coins
 	}
 
 	if totalInAmt < totalOutAmt {
@@ -381,7 +399,7 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	}
 
 	for _, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, uint64(to.Coins*1e6), addrHours))
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours))
 	}
 
 	return outAddrs, nil
@@ -425,14 +443,14 @@ func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, err
 
 	for _, us := range addrOuts {
 		for i, u := range us {
-			coins, err := strconv.ParseFloat(u.Coins, 64)
+			coins, err := droplet.FromString(u.Coins)
 			if err != nil {
 				return nil, errors.New("error coins string")
 			}
 			if coins == 0 {
 				continue
 			}
-			totalAmt += uint64(coins * 1e6)
+			totalAmt += coins
 			outs = append(outs, us[i])
 
 			if totalAmt >= amt {
@@ -440,7 +458,6 @@ func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, err
 			}
 		}
 	}
-
 	return nil, errors.New("balance in wallet is not sufficient")
 }
 

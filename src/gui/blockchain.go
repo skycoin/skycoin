@@ -28,7 +28,7 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// mux.HandleFunc("/block/seq", getBlockBySeq(gateway))
 	// get blocks in specific range
 	mux.HandleFunc("/blocks", getBlocks(gateway))
-	// get last 10 blocks
+	// get last N blocks
 	mux.HandleFunc("/last_blocks", getLastBlocks(gateway))
 }
 

@@ -90,7 +90,7 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
 // URI: /wallet/spend
-// Method: GET
+// Method: POST
 // Args:
 //  id: wallet id
 //	dst: recipient address

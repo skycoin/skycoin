@@ -153,6 +153,7 @@ func TestStartListenTwice(t *testing.T) {
 	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	defer p.Shutdown()
+	wait()
 	go p.Run()
 	wait()
 	assert.NotNil(t, p.Run())

@@ -211,14 +211,15 @@ func (pool *ConnectionPool) Run() error {
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
 	logger.Info("Listening for connections on %s...", addr)
 
-	var err error
-	pool.listener, err = net.Listen("tcp", addr)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 
+	pool.listener = ln
+
 	for {
-		conn, err := pool.listener.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
 			// When Accept() returns with a non-nill error, we check the quit
 			// channel to see if we should continue or quit . If quit, then we quit.
@@ -401,7 +402,7 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 			continue
 		}
 
-		// write date to buffer.
+		// write data to buffer
 		if _, err := conn.Buffer.Write(data); err != nil {
 			return err
 		}
@@ -413,8 +414,8 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 		}
 
 		for _, d := range datas {
-			// use select to avoid the goroutine leak, cause if msgChan has no receiver, this goroutine
-			// will leak
+			// use select to avoid the goroutine leak,
+			// because if msgChan has no receiver this goroutine will leak
 			select {
 			case msgChan <- d:
 			default:

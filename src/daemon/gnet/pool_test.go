@@ -170,20 +170,6 @@ func TestStartListen(t *testing.T) {
 	<-q
 }
 
-func TestStartListenTwice(t *testing.T) {
-	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
-	q := make(chan struct{})
-	go func() {
-		defer close(q)
-		p.Run()
-	}()
-	wait()
-	assert.NotNil(t, p.Run())
-	p.Shutdown()
-	<-q
-}
-
 func TestStartListenFailed(t *testing.T) {
 	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)

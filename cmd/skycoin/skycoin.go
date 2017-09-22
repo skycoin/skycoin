@@ -732,7 +732,7 @@ var TestChainCfg = ChainConfig{
 	Port:              16000,
 	WebInterfacePort:  16420,
 	RPCInterfacePort:  16430,
-	DataDirectory:     ".skycoin/testnet",
+	DataDirectory:     ".skycoin-testnet",
 	LogFmt:            "[skycoin.testnet.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"139.162.33.154:16000",

@@ -432,12 +432,13 @@ func (vs *Visor) EstimateBlockchainLength() uint64 {
 	return maxLen
 }
 
-// HeadBkSeq returns the head sequence, returns -1 if blockchain is empty
-func (vs *Visor) HeadBkSeq() (seq uint64) {
+// HeadBkSeq returns the head sequence
+func (vs *Visor) HeadBkSeq() uint64 {
+	var seq uint64
 	vs.strand(func() {
 		seq = vs.v.HeadBkSeq()
 	})
-	return
+	return seq
 }
 
 // ExecuteSignedBlock executes signed block

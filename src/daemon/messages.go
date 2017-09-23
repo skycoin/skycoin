@@ -277,7 +277,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	}
 
 	if port == intro.Port {
-		if err := d.Peers.Peers.SetPeerHasInPort(mc.Addr, true); err != nil {
+		if err := d.Peers.Peers.SetPeerHasIncomingPort(mc.Addr, true); err != nil {
 			logger.Error("Failed to set peer hasInPort statue, %v", err)
 		}
 	} else {

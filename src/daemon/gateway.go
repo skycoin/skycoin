@@ -1,10 +1,9 @@
 package daemon
 
 import (
-	"time"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -419,7 +418,7 @@ func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, e
 
 // GetTimeNow returns the current Unix time
 func (gw *Gateway) GetTimeNow() uint64 {
-	return uint64(time.Now().Unix())
+	return uint64(utc.UnixNow())
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions

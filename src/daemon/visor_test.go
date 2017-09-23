@@ -78,7 +78,7 @@ func MakeAddress() (cipher.PubKey, cipher.SecKey, cipher.Address) {
 
 func setupSimpleVisor(db *bolt.DB, bc *visor.Blockchain) *Visor {
 	visorCfg := NewVisorConfig()
-	visorCfg.Disabled = true // disable broadcasting
+	visorCfg.DisableNetworking = true
 	visorCfg.Config.DBPath = db.Path()
 	return &Visor{
 		Config: visorCfg,

@@ -28,8 +28,8 @@ type SendAmount struct {
 }
 
 type sendAmountJSON struct {
-	Addr  string
-	Coins string
+	Addr  string `json:"addr"`
+	Coins string `json:"coins"`
 }
 
 func createRawTxCmd(cfg Config) gcli.Command {

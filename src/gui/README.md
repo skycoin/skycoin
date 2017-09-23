@@ -225,12 +225,12 @@ result:
 URI: /wallet/spend
 Method: POST
 Args:
-     id: wallet id
-     dst: recipient address
-     coins: send coin number, unit is drops, 1 shellcoin = 1e6 drops
+    id: wallet id
+    dst: recipient address
+    coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
 ```
 
-example:
+example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```bash
 curl -X POST \

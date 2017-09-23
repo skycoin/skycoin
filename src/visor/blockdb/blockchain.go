@@ -77,7 +77,7 @@ type Blockchain struct {
 		headSeq      uint64 // head block seq
 		genesisBlock *coin.SignedBlock
 	}
-	sync.Mutex // cache lock
+	sync.RWMutex // cache lock
 }
 
 // NewBlockchain creates a new blockchain instance
@@ -177,8 +177,8 @@ func (bc *Blockchain) Head() (*coin.SignedBlock, error) {
 
 // HeadSeq returns the head block sequence
 func (bc *Blockchain) HeadSeq() uint64 {
-	bc.Lock()
-	defer bc.Unlock()
+	bc.RLock()
+	defer bc.RUnlock()
 	return bc.cache.headSeq
 }
 
@@ -189,8 +189,8 @@ func (bc *Blockchain) UnspentPool() UnspentPool {
 
 // Len returns blockchain length
 func (bc *Blockchain) Len() uint64 {
-	bc.Lock()
-	defer bc.Unlock()
+	bc.RLock()
+	defer bc.RUnlock()
 	if bc.cache.genesisBlock == nil {
 		return 0
 	}
@@ -244,8 +244,8 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 
 // GetGenesisBlock returns genesis block
 func (bc *Blockchain) GetGenesisBlock() *coin.SignedBlock {
-	bc.Lock()
-	defer bc.Unlock()
+	bc.RLock()
+	defer bc.RUnlock()
 	return bc.cache.genesisBlock
 }
 

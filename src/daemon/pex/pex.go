@@ -140,7 +140,6 @@ type Peerlist struct {
 func (pl *Peerlist) strand(f func(), arg ...interface{}) {
 	pl.lock.Lock()
 	defer pl.lock.Unlock()
-	// logger.Critical("%v", arg)
 	f()
 }
 
@@ -153,7 +152,7 @@ func (pl *Peerlist) GetPublicTrustPeers() []*Peer {
 		for i, key := range keys {
 			peers[i] = pl.peers[key]
 		}
-	}, "GetPublickTrustPeers")
+	}, "GetPublicTrustPeers")
 	return peers
 }
 

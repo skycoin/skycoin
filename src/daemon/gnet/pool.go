@@ -275,19 +275,15 @@ func (pool *ConnectionPool) Shutdown() {
 }
 
 // strand ensures all read and write action of pool's member variable are in one thread.
-func (pool *ConnectionPool) strand(f func() error) error {
-	var err error
-	q := make(chan struct{})
-	select {
-	case <-pool.quit:
-		return ErrConnectionPoolClosed
-	case pool.ops <- func() {
-		defer close(q)
-		err = f()
-	}:
-	}
-	<-q
-	return err
+func (pool *ConnectionPool) strand(desc string, f func() error) (err error) {
+	desc = fmt.Sprintf("daemon.gnet.ConnectionPool: %s", desc)
+
+	err = strandCanQuit(pool.ops, strandReq{
+		Desc: desc,
+		Func: f,
+	}, pool.Quit, ErrConnectionPoolClosed)
+
+	return
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection

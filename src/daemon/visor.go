@@ -121,7 +121,11 @@ func (vs *Visor) strand(desc string, f func()) {
 	desc = fmt.Sprintf("daemon.Visor: %s", desc)
 	strand(vs.reqC, strandReq{
 		Desc: desc,
-		Func: reqFunc,
+		Func: func() error {
+			// TODO: Update f() to return error
+			f()
+			return nil
+		},
 	})
 }
 

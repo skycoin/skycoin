@@ -56,9 +56,13 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 
 func (gw *Gateway) strand(desc string, f func()) {
 	desc = fmt.Sprintf("daemon.Gateway: %s", desc)
-	strand(gw.requests, strandFunc{
+	strand(gw.requests, strandReq{
 		Desc: desc,
-		Func: f,
+		Func: func() error {
+			// TODO: Update f() to return error
+			f()
+			return nil
+		},
 	})
 }
 

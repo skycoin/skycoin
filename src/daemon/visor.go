@@ -68,23 +68,18 @@ func NewVisorConfig() VisorConfig {
 type Visor struct {
 	Config VisorConfig
 	v      *visor.Visor
-	// Peer-reported blockchain length.  Use to estimate download progress
-	blockchainLengths map[string]uint64
+	// Peer-reported blockchain height.  Use to estimate download progress
+	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
 	reqC     chan strandReq
 	Shutdown context.CancelFunc
-}
-
-type strandReq struct {
-	Name string
-	Func func(context.Context)
 }
 
 // NewVisor creates visor instance
 func NewVisor(c VisorConfig) (*Visor, error) {
 	vs := &Visor{
 		Config:            c,
-		blockchainLengths: make(map[string]uint64),
+		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strandReq, c.RequestBufferSize),
 	}
 
@@ -122,26 +117,18 @@ func (vs *Visor) Run() error {
 	}
 }
 
-// the callback function must not be blocked.
-func (vs *Visor) strand(name string, f func()) {
-	done := make(chan struct{})
-	vs.reqC <- func() {
-		defer close(done)
-		f()
-	}
-
-	vs.reqC <- strandReq{
-		Name: name,
+func (vs *Visor) strand(desc string, f func()) {
+	desc = fmt.Sprintf("daemon.Visor: %s", desc)
+	strand(vs.reqC, strandReq{
+		Desc: desc,
 		Func: reqFunc,
-	}
-
-	<-done
+	})
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
 func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
 	var hashes []cipher.SHA256
-	vs.strand("Refresh unconfirmed transaction", func() {
+	vs.strand("RefreshUnconfirmed", func() {
 		hashes = vs.v.RefreshUnconfirmed()
 	})
 	return hashes
@@ -153,7 +140,7 @@ func (vs *Visor) RequestBlocks(pool *Pool) {
 		return
 	}
 
-	vs.strand("Broadcast get blocks message", func() {
+	vs.strand("RequestBlocks", func() {
 		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
 		if err := pool.Pool.BroadcastMessage(m); err != nil {
 			logger.Debug("Broadcast GetBlocksMessage failed: %v", err)
@@ -167,7 +154,7 @@ func (vs *Visor) AnnounceBlocks(pool *Pool) {
 		return
 	}
 
-	vs.strand("Broadcast announce blocks message", func() {
+	vs.strand("AnnounceBlocks", func() {
 		m := NewAnnounceBlocksMessage(vs.v.HeadBkSeq())
 		if err := pool.Pool.BroadcastMessage(m); err != nil {
 			logger.Debug("Broadcast AnnounceBlocksMessage failed: %v", err)
@@ -181,7 +168,7 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) {
 		return
 	}
 
-	vs.strand("Broadcast unconfirmed transaction hash sets", func() {
+	vs.strand("AnnounceAllTxns", func() {
 		// Get local unconfirmed transaction hashes.
 		hashes := vs.v.GetAllValidUnconfirmedTxHashes()
 
@@ -208,7 +195,7 @@ func (vs *Visor) AnnounceTxns(pool *Pool, txns []cipher.SHA256) {
 		return
 	}
 
-	vs.strand("Announce transactions", func() {
+	vs.strand("AnnounceTxns", func() {
 		m := NewAnnounceTxnsMessage(txns)
 		if err := pool.Pool.BroadcastMessage(m); err != nil {
 			logger.Debug("Broadcast AnnounceTxnsMessage failed: %v", err)
@@ -248,7 +235,7 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 	}
 
 	var err error
-	vs.strand("Request blocks from address", func() {
+	vs.strand("RequestBlocksFromAddr", func() {
 		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
 		var exist bool
 		exist, err = pool.Pool.IsConnExist(addr)
@@ -269,7 +256,7 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 
 // SetTxnsAnnounced sets all txns as announced
 func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
-	vs.strand("Set unconfirms transactions as announced", func() {
+	vs.strand("SetTxnsAnnounced", func() {
 		now := utc.Now()
 		for _, h := range txns {
 			vs.v.Unconfirmed.SetAnnounced(h, now)
@@ -281,7 +268,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 // The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	var err error
-	vs.strand("Inject and broadcast transaction", func() {
+	vs.strand("InjectTransaction", func() {
 		if err = vs.injectTransaction(txn, pool); err != nil {
 			return
 		}
@@ -367,7 +354,7 @@ func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
 		return
 	}
 
-	vs.strand("Resend an unconfirmed transaction", func() {
+	vs.strand("ResendTransaction", func() {
 		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
 			vs.broadcastTransaction(ut.Txn, pool)
 		}
@@ -381,7 +368,7 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 	}
 
 	var txids []cipher.SHA256
-	vs.strand("Resend all unconfirmed transactions", func() {
+	vs.strand("ResendUnconfirmedTxns", func() {
 		txns := vs.v.GetAllUnconfirmedTxns()
 
 		for i := range txns {
@@ -403,7 +390,7 @@ func (vs *Visor) CreateAndPublishBlock(pool *Pool) (coin.SignedBlock, error) {
 
 	var sb coin.SignedBlock
 	var err error
-	vs.strand("Create and publish a new block", func() {
+	vs.strand("CreateAndPublishBlock", func() {
 		sb, err = vs.v.CreateAndExecuteBlock()
 		if err != nil {
 			return
@@ -416,29 +403,29 @@ func (vs *Visor) CreateAndPublishBlock(pool *Pool) (coin.SignedBlock, error) {
 
 // RemoveConnection updates internal state when a connection disconnects
 func (vs *Visor) RemoveConnection(addr string) {
-	vs.strand("Remove connection", func() {
-		delete(vs.blockchainLengths, addr)
+	vs.strand("RemoveConnection", func() {
+		delete(vs.blockchainHeights, addr)
 	})
 }
 
-// RecordBlockchainLength saves a peer-reported blockchain length
-func (vs *Visor) RecordBlockchainLength(addr string, bkLen uint64) {
-	vs.strand("Record blockchain length", func() {
-		vs.blockchainLengths[addr] = bkLen
+// RecordBlockchainHeight saves a peer-reported blockchain length
+func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
+	vs.strand("RecordBlockchainHeight", func() {
+		vs.blockchainHeights[addr] = bkLen
 	})
 }
 
-// EstimateBlockchainLength returns the blockchain length estimated from peer reports
+// EstimateBlockchainHeight returns the blockchain length estimated from peer reports
 // Deprecate. Should not need. Just report time of last block
-func (vs *Visor) EstimateBlockchainLength() uint64 {
+func (vs *Visor) EstimateBlockchainHeight() uint64 {
 	var maxLen uint64
-	vs.strand("Estimate blockchain length", func() {
+	vs.strand("EstimateBlockchainHeight", func() {
 		ourLen := vs.v.HeadBkSeq()
-		if len(vs.blockchainLengths) < 2 {
+		if len(vs.blockchainHeights) < 2 {
 			maxLen = ourLen
 			return
 		}
-		for _, seq := range vs.blockchainLengths {
+		for _, seq := range vs.blockchainHeights {
 			if maxLen < seq {
 				maxLen = seq
 			}
@@ -447,10 +434,36 @@ func (vs *Visor) EstimateBlockchainLength() uint64 {
 	return maxLen
 }
 
+// PeerBlockchainHeight is a peer's IP address with their reported blockchain height
+type PeerBlockchainHeight struct {
+	Address string
+	Height  uint64
+}
+
+// GetPeerBlockchainHeights returns recorded peers' blockchain heights as an array.
+func (vs *Visor) GetPeerBlockchainHeights() []PeerBlockchainHeight {
+	var peerHeights []PeerBlockchainHeight
+	vs.strand("GetPeerBlockchainHeights", func() {
+		if len(vs.blockchainHeights) == 0 {
+			return
+		}
+
+		peerHeights = make([]PeerBlockchainHeight, 0, len(peerHeights))
+		for addr, height := range vs.blockchainLengths {
+			peerHeights = append(PeerBlockchainHeight{
+				Address: addr,
+				Height:  height,
+			})
+		}
+	})
+
+	return peerHeights
+}
+
 // HeadBkSeq returns the head sequence
 func (vs *Visor) HeadBkSeq() uint64 {
 	var seq uint64
-	vs.strand("Get head block sequence", func() {
+	vs.strand("HeadBkSeq", func() {
 		seq = vs.v.HeadBkSeq()
 	})
 	return seq
@@ -459,7 +472,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 // ExecuteSignedBlock executes signed block
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	var err error
-	vs.strand("Execute signed block", func() {
+	vs.strand("ExecuteSignedBlock", func() {
 		err = vs.v.ExecuteSignedBlock(b)
 	})
 	return err
@@ -467,7 +480,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 
 // GetSignedBlocksSince returns numbers of signed blocks since seq.
 func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) (sbs []coin.SignedBlock, err error) {
-	vs.strand("Get signed blocks since some timestamp", func() {
+	vs.strand("GetSignedBlocksSince", func() {
 		sbs, err = vs.v.GetSignedBlocksSince(seq, num)
 	})
 	return
@@ -476,7 +489,7 @@ func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) (sbs []coin.Signed
 // UnConfirmFilterKnown returns all unknown transaction hashes
 func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 	var ts []cipher.SHA256
-	vs.strand("Get unknown unconfirmed transactions", func() {
+	vs.strand("UnConfirmFilterKnown", func() {
 		ts = vs.v.Unconfirmed.FilterKnown(txns)
 	})
 	return ts
@@ -485,7 +498,7 @@ func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 // UnConfirmKnow returns all know tansactions
 func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 	var txns coin.Transactions
-	vs.strand("Get known unconfirmed transactions", func() {
+	vs.strand("UnConfirmKnow", func() {
 		txns = vs.v.Unconfirmed.GetKnown(hashes)
 	})
 	return txns
@@ -495,7 +508,7 @@ func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 func (vs *Visor) InjectTxn(tx coin.Transaction) (bool, error) {
 	var known bool
 	var err error
-	vs.strand("Inject transaction", func() {
+	vs.strand("InjectTxn", func() {
 		known, err = vs.v.InjectTxn(tx)
 	})
 	return known, err
@@ -534,7 +547,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Record this as this peer's highest block
-	d.Visor.RecordBlockchainLength(gbm.c.Addr, gbm.LastBlock)
+	d.Visor.RecordBlockchainHeight(gbm.c.Addr, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
 	blocks, err := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {
@@ -788,36 +801,4 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 		m := NewAnnounceTxnsMessage(hashes)
 		d.Pool.Pool.BroadcastMessage(m)
 	}
-}
-
-// BlockchainLengths an array of uint64
-type BlockchainLengths []uint64
-
-// Len for sorting
-func (bcl BlockchainLengths) Len() int {
-	return len(bcl)
-}
-
-// Swap for sorting
-func (bcl BlockchainLengths) Swap(i, j int) {
-	bcl[i], bcl[j] = bcl[j], bcl[i]
-}
-
-// Less for sorting
-func (bcl BlockchainLengths) Less(i, j int) bool {
-	return bcl[i] < bcl[j]
-}
-
-type byTxnRecvTime []visor.UnconfirmedTxn
-
-func (txs byTxnRecvTime) Len() int {
-	return len(txs)
-}
-
-func (txs byTxnRecvTime) Swap(i, j int) {
-	txs[i], txs[j] = txs[j], txs[i]
-}
-
-func (txs byTxnRecvTime) Less(i, j int) bool {
-	return txs[i].Received < txs[j].Received
 }

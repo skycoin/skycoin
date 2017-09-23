@@ -1,9 +1,13 @@
 package cli
 
 import (
+	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 
 	gcli "github.com/urfave/cli"
 )
@@ -37,5 +41,31 @@ func transactionCmd() gcli.Command {
 			return printJson(tx)
 		},
 	}
-	// Commands = append(Commands, cmd)
+}
+
+func decodeRawTxCmd() gcli.Command {
+	name := "decodeRawTransaction"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Decode raw transaction",
+		ArgsUsage:    "[raw transaction]",
+		OnUsageError: onCommandUsageError(name),
+		Action: func(c *gcli.Context) error {
+			rawTxStr := c.Args().First()
+			if rawTxStr == "" {
+				errorWithHelp(c, errors.New("missing raw transaction value"))
+				return nil
+			}
+
+			b, err := hex.DecodeString(rawTxStr)
+			if err != nil {
+				fmt.Printf("invalid raw transaction:%v\n", err)
+				return nil
+			}
+
+			tx := coin.TransactionDeserialize(b)
+			fmt.Println(visor.TransactionToJSON(tx))
+			return nil
+		},
+	}
 }

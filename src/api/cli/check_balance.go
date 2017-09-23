@@ -3,10 +3,10 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -137,9 +137,9 @@ func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (BalanceResult, err
 	}
 
 	for _, o := range outs.Outputs.HeadOutputs {
-		amt, err := strconv.ParseUint(o.Coins, 10, 64)
+		amt, err := droplet.FromString(o.Coins)
 		if err != nil {
-			return BalanceResult{}, errors.New("error coins string")
+			return BalanceResult{}, fmt.Errorf("error coins string: %v", err)
 		}
 
 		i, err := find(balRlt.Addresses, o.Address)

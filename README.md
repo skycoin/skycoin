@@ -23,9 +23,10 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 - [Installation](#installation)
     - [Installing Go](#installing-go)
-    - [Set GOPATH in your environment](#set-gopath-in-your-environment)
+    - [Create GOPATH directory](#create-gopath-directory)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
+    - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
 - [API Documentation](#api-documentation)
     - [Wallet REST API](#wallet-rest-api)
@@ -33,8 +34,9 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Development](#development)
     - [Modules](#modules)
+    - [Running Tests](#running-tests)
     - [Formatting](#formatting)
-    - [Running tests](#running-tests)
+    - [Code Linting](#code-linting)
     - [Dependency Management](#dependency-management)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
@@ -74,14 +76,21 @@ but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-./run.sh
+make run
+```
+
+### Show Skycoin node options
+
+```sh
+cd $GOPATH/src/github.com/skycoin/skycoin
+make run-help
 ```
 
 ### Run Skycoin with options
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-./run.sh --help
+make ARGS="--launch-browser=false" run
 ```
 
 ## API Documentation
@@ -117,14 +126,31 @@ We have two branches: `master` and `develop`.
 * `/src/api/webrpc` - JSON-RPC 2.0 API
 * `/src/api/cli` - CLI library
 
+### Running Tests
+
+```sh
+make test
+```
+
 ### Formatting
 
 All `.go` source files should be formatted with `gofmt` or `goimports`.
 
-### Running tests
+### Code Linting
+
+Install prerequisites:
 
 ```sh
-go test ./src/...
+go get github.com/golang/lint/golint
+go get github.com/FiloSottile/vendorcheck
+go get github.com/alecthomas/gometalinter
+go get golang.org/x/tools/cmd/goimports
+```
+
+Run linters:
+
+```sh
+make lint
 ```
 
 ### Dependency Management

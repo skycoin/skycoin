@@ -56,12 +56,9 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 
 func (gw *Gateway) strand(name string, f func()) {
 	name = fmt.Sprintf("daemon.Gateway.%s", name)
-	strand.Strand(logger, gw.requests, strand.Request{
-		Name: name,
-		Func: func() error {
-			f()
-			return nil
-		},
+	strand.Strand(logger, gw.requests, name, func() error {
+		f()
+		return nil
 	})
 }
 

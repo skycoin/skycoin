@@ -120,10 +120,7 @@ func (vs *Visor) Run() error {
 
 func (vs *Visor) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.Visor.%s", name)
-	return strand.Strand(logger, vs.reqC, strand.Request{
-		Name: name,
-		Func: f,
-	})
+	return strand.Strand(logger, vs.reqC, name, f)
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old

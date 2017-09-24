@@ -1,6 +1,7 @@
 package strand
 
 import (
+	"log"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -16,55 +17,70 @@ type Request struct {
 // to avoid concurrency issues when conflicting methods are called from
 // multiple goroutines.
 // Methods passed to strand() will block until completed.
-func Strand(logger *logging.Logger, c chan Request, req Request) error {
+func Strand(logger *logging.Logger, c chan Request, name string, f func() error) error {
 	done := make(chan struct{})
 	var err error
 
-	c <- Request{
-		Name: req.Name,
+	req := Request{
+		Name: name,
 		Func: func() error {
 			defer close(done)
 
 			// TODO: record time statistics in a data structure and expose stats via an API
-
-			// logger.Debug("%s begin", req.Name)
+			// logger.Debug("%s begin", name)
 
 			t := time.Now()
-
-			wait := make(chan struct{})
-
+			// minThreshold is how long to wait before reporting a function call's time
 			minThreshold := time.Millisecond * 10
 
+			// Log function duration at an exponential time interval,
+			// this will notify us of any long running functions to look at.
 			go func() {
-				select {
-				case <-wait:
-				case <-time.After(minThreshold):
-					logger.Warning("%s is taking longer than %s", req.Name, minThreshold)
-				case <-time.After(minThreshold * 10):
-					logger.Warning("%s is taking longer than %s", req.Name, minThreshold*10)
-				case <-time.After(minThreshold * 100):
-					logger.Warning("%s is taking longer than %s", req.Name, minThreshold*100)
-				case <-time.After(minThreshold * 1000):
-					logger.Warning("%s is taking longer than %s", req.Name, minThreshold*1000)
+				threshold := minThreshold
+				t := time.NewTimer(threshold)
+				defer t.Stop()
+
+				for {
+					t0 := time.Now()
+					select {
+					case <-done:
+						return
+					case <-t.C:
+						logger.Warning("%s is taking longer than %s", name, threshold)
+						threshold *= 10
+						t.Reset(threshold)
+					}
+					t1 := time.Now()
+					logger.Info("ELAPSED: %s", t1.Sub(t0))
 				}
 			}()
 
-			err = req.Func()
+			err = f()
+
+			// Log the error here so that the Request channel consumer doesn't need to
 			if err != nil {
-				logger.Error("%s error: %v", req.Name, err)
+				logger.Error("%s error: %v", name, err)
 			}
 
-			close(wait)
-
+			// Notify us if the function call took too long
 			elapsed := time.Now().Sub(t)
 			if elapsed > minThreshold {
-				logger.Warning("%s took %s", req.Name, elapsed)
+				logger.Warning("%s took %s", name, elapsed)
 			} else {
-				// logger.Debug("%s took %s", req.Name, elapsed)
+				// logger.Debug("%s took %s", name, elapsed)
 			}
 
 			return err
 		},
+	}
+
+	// Log a message if waiting too long to write due to a full queue
+	writeWait := time.Second * 3
+	select {
+	case c <- req:
+	case <-time.After(writeWait):
+		log.Println("Waited %s while trying to write %s to the strand request channel", writeWait, req.Name)
+		c <- req
 	}
 
 	<-done

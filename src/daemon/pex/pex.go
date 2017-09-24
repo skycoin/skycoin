@@ -397,7 +397,7 @@ type PeerJSON struct {
 	LastSeen        interface{}
 	Private         bool  // Whether it should omitted from public requests
 	Trusted         bool  // Whether this peer is trusted
-	HasIncomePort   *bool // Whether this peer has incoming port [DEPRECATED]
+	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
 }
 

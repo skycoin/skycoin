@@ -25,20 +25,42 @@ func Strand(logger *logging.Logger, c chan Request, req Request) error {
 		Func: func() error {
 			defer close(done)
 
+			// TODO: record time statistics in a data structure and expose stats via an API
+
+			// logger.Debug("%s begin", req.Name)
+
 			t := time.Now()
 
-			logger.Debug("%s begin", req.Name)
+			wait := make(chan struct{})
+
+			minThreshold := time.Millisecond * 10
+
+			go func() {
+				select {
+				case <-wait:
+				case <-time.After(minThreshold):
+					logger.Warning("%s is taking longer than %s", req.Name, minThreshold)
+				case <-time.After(minThreshold * 10):
+					logger.Warning("%s is taking longer than %s", req.Name, minThreshold*10)
+				case <-time.After(minThreshold * 100):
+					logger.Warning("%s is taking longer than %s", req.Name, minThreshold*100)
+				case <-time.After(minThreshold * 1000):
+					logger.Warning("%s is taking longer than %s", req.Name, minThreshold*1000)
+				}
+			}()
 
 			err = req.Func()
 			if err != nil {
 				logger.Error("%s error: %v", req.Name, err)
 			}
 
+			close(wait)
+
 			elapsed := time.Now().Sub(t)
-			if elapsed > time.Second {
+			if elapsed > minThreshold {
 				logger.Warning("%s took %s", req.Name, elapsed)
 			} else {
-				logger.Debug("%s took %s", req.Name, elapsed)
+				// logger.Debug("%s took %s", req.Name, elapsed)
 			}
 
 			return err

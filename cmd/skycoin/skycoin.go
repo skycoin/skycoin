@@ -33,6 +33,8 @@ var (
 	// Commit id
 	Commit = ""
 
+	help = false
+
 	logger     = logging.MustGetLogger("main")
 	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
 	logModules = []string{
@@ -158,6 +160,7 @@ type Config struct {
 }
 
 func (c *Config) register() {
+	flag.BoolVar(&help, "help", false, "Show help")
 	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
 		"disable PEX peer discovery")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
@@ -316,6 +319,10 @@ var devConfig = Config{
 func (c *Config) Parse() {
 	c.register()
 	flag.Parse()
+	if help {
+		flag.Usage()
+		os.Exit(0)
+	}
 	c.postProcess()
 }
 

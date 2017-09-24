@@ -27,6 +27,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/shopspring/decimal"
+  packages = ["."]
+  revision = "aed1bfe463fa3c9cc268d60dcc1491db613bff7e"
+
+[[projects]]
+  branch = "master"
   name = "github.com/stretchr/objx"
   packages = ["."]
   revision = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
@@ -70,6 +76,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fe04266049e4a510d18884a25ff48676c7852487d18bc8bb81b0776bfd264259"
+  inputs-digest = "84c9589884b21a2909aa9ae6568c7f5f01bab4176fadf482520762a242b13842"
   solver-name = "gps-cdcl"
   solver-version = 1

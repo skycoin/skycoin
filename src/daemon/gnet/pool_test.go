@@ -194,13 +194,16 @@ func TestStopListen(t *testing.T) {
 		p.Run()
 	}()
 	wait()
+
 	assert.NotNil(t, p.listener)
 	_, err := net.Dial("tcp", addr)
 	assert.Nil(t, err)
 	wait()
+
 	assert.Equal(t, len(p.pool), 1)
 	p.Shutdown()
 	<-q
+
 	assert.Nil(t, p.listener)
 	assert.Equal(t, len(p.pool), 0)
 	assert.Equal(t, len(p.addresses), 0)
@@ -695,7 +698,9 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	<-ready
 
 	m := NewByteMessage(88)
-	p.BroadcastMessage(m)
+	err = p.BroadcastMessage(m)
+	require.NoError(t, err)
+
 	wait()
 
 	p.Shutdown()
@@ -703,27 +708,24 @@ func TestPoolBroadcastMessage(t *testing.T) {
 }
 
 func TestPoolReceiveMessage(t *testing.T) {
+	wait()
 	resetHandler()
 	EraseMessages()
 	RegisterMessage(BytePrefix, ByteMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
 
-	// c := &Connection{
-	// 	Conn:       NewDummyConn(addr),
-	// 	Buffer:     &bytes.Buffer{},
-	// 	WriteQueue: make(chan Message),
-	// }
 	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
+
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
 		p.Run()
 	}()
 	wait()
+
 	c := NewConnection(p, 1, NewDummyConn(addr), 10, true)
-	// assert.True(t, c.LastReceived.IsZero())
 
 	// Valid message received
 	b := make([]byte, 0)
@@ -748,7 +750,7 @@ func TestPoolReceiveMessage(t *testing.T) {
 	<-q
 }
 
-// /* Helpers */
+// Helpers
 
 func wait() {
 	time.Sleep(time.Millisecond * 100)

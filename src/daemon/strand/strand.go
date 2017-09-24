@@ -1,7 +1,6 @@
 package strand
 
 import (
-	"log"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -79,7 +78,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 	select {
 	case c <- req:
 	case <-time.After(writeWait):
-		log.Println("Waited %s while trying to write %s to the strand request channel", writeWait, req.Name)
+		logger.Warning("Waited %s while trying to write %s to the strand request channel", writeWait, req.Name)
 		c <- req
 	}
 

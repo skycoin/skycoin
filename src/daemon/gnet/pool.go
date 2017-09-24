@@ -177,15 +177,15 @@ type ConnectionPool struct {
 	// Listening connection
 	listener net.Listener
 	// operations channel
-	ops chan strand.Request
+	reqC chan strand.Request
 	// quit channel
 	quit chan struct{}
 	wg   sync.WaitGroup
 }
 
-// NewConnectionPool creates a new ConnectionPool that will listen on Config.Port upon
-// StartListen.  State is an application defined object that will be
-// passed to a Message's Handle().
+// NewConnectionPool creates a new ConnectionPool that will listen on
+// Config.Port upon StartListen. State is an application defined object that
+// will be passed to a Message's Handle().
 func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 	pool := &ConnectionPool{
 		Config:       c,
@@ -194,7 +194,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		SendResults:  make(chan SendResult, c.BroadcastResultSize),
 		messageState: state,
 		quit:         make(chan struct{}),
-		ops:          make(chan func()),
+		reqC:         make(chan strand.Request),
 	}
 
 	return pool
@@ -219,14 +219,13 @@ func (pool *ConnectionPool) Run() error {
 	go func() {
 		defer pool.wg.Done()
 		for {
-			select {
 			case <-pool.quit:
 				return
-			case op := <-pool.ops:
-				op()
+            select {
+            case req := <-pool.reqC:
+                req.Func()
 			}
 		}
-
 	}()
 
 	logger.Info("Listening for connections...")

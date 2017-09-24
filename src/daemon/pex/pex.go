@@ -440,7 +440,7 @@ func NewPeerFromJSON(p PeerJSON) (Peer, error) {
 			return Peer{}, err
 		}
 	default:
-		return Peer{}, errors.New("Invalid type for LastSeen field")
+		return Peer{}, fmt.Errorf("Invalid type %T for LastSeen field", p.LastSeen)
 	}
 
 	return Peer{

@@ -1,14 +1,17 @@
 package pex
 
 import (
+	"encoding/json"
 	"net"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -280,6 +283,53 @@ func TestPeerCanTry(t *testing.T) {
 		}
 		assert.Equal(t, d.CanTry, p.CanTry())
 	}
+}
+
+func TestPeerJSONParsing(t *testing.T) {
+	// The serialized peer json format changed,
+	// this tests that the old format can still parse.
+	oldFormat := `{
+        "Addr": "11.22.33.44:6000",
+        "LastSeen": "2017-09-24T06:42:18.999999999Z",
+        "Private": true,
+        "Trusted": true,
+        "HasIncomePort": true
+    }`
+
+	newFormat := `{
+        "Addr": "11.22.33.44:6000",
+        "LastSeen": 1506235338,
+        "Private": true,
+        "Trusted": true,
+        "HasIncomingPort": true
+    }`
+
+	check := func(p Peer) {
+		require.Equal(t, "11.22.33.44:6000", p.Addr)
+		require.True(t, p.Private)
+		require.True(t, p.Trusted)
+		require.True(t, p.HasIncomingPort)
+		require.Equal(t, int64(1506235338), p.LastSeen)
+	}
+
+	load := func(s string) PeerJSON {
+		var pj PeerJSON
+		dec := json.NewDecoder(strings.NewReader(s))
+		dec.UseNumber()
+		err := dec.Decode(&pj)
+		require.NoError(t, err)
+		return pj
+	}
+
+	pj := load(oldFormat)
+	p, err := NewPeerFromJSON(pj)
+	require.NoError(t, err)
+	check(p)
+
+	pj = load(newFormat)
+	p, err = NewPeerFromJSON(pj)
+	require.NoError(t, err)
+	check(p)
 }
 
 /* Addendum: dummies & mocks */

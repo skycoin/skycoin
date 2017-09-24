@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -71,7 +72,7 @@ type Visor struct {
 	// Peer-reported blockchain height.  Use to estimate download progress
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
-	reqC     chan strandReq
+	reqC     chan strand.Request
 	Shutdown context.CancelFunc
 }
 
@@ -80,7 +81,7 @@ func NewVisor(c VisorConfig) (*Visor, error) {
 	vs := &Visor{
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
-		reqC:              make(chan strandReq, c.RequestBufferSize),
+		reqC:              make(chan strand.Request, c.RequestBufferSize),
 	}
 
 	var v *visor.Visor
@@ -112,67 +113,72 @@ func (vs *Visor) Run() error {
 		case err := <-errC:
 			return err
 		case req := <-vs.reqC:
-			req()
+			req.Func()
 		}
 	}
 }
 
-func (vs *Visor) strand(desc string, f func()) {
-	desc = fmt.Sprintf("daemon.Visor: %s", desc)
-	strand(vs.reqC, strandReq{
-		Desc: desc,
-		Func: func() error {
-			// TODO: Update f() to return error
-			f()
-			return nil
-		},
+func (vs *Visor) strand(name string, f func() error) error {
+	name = fmt.Sprintf("daemon.Visor.%s", name)
+	return strand.Strand(logger, vs.reqC, strand.Request{
+		Name: name,
+		Func: f,
 	})
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
 func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
 	var hashes []cipher.SHA256
-	vs.strand("RefreshUnconfirmed", func() {
+	vs.strand("RefreshUnconfirmed", func() error {
 		hashes = vs.v.RefreshUnconfirmed()
+		return nil
 	})
 	return hashes
 }
 
 // RequestBlocks Sends a GetBlocksMessage to all connections
-func (vs *Visor) RequestBlocks(pool *Pool) {
+func (vs *Visor) RequestBlocks(pool *Pool) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
-	vs.strand("RequestBlocks", func() {
+	err := vs.strand("RequestBlocks", func() error {
 		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
-		if err := pool.Pool.BroadcastMessage(m); err != nil {
-			logger.Debug("Broadcast GetBlocksMessage failed: %v", err)
-		}
+		return pool.Pool.BroadcastMessage(m)
 	})
+
+	if err != nil {
+		logger.Debug("Broadcast GetBlocksMessage failed: %v", err)
+	}
+
+	return err
 }
 
 // AnnounceBlocks sends an AnnounceBlocksMessage to all connections
-func (vs *Visor) AnnounceBlocks(pool *Pool) {
+func (vs *Visor) AnnounceBlocks(pool *Pool) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
-	vs.strand("AnnounceBlocks", func() {
+	err := vs.strand("AnnounceBlocks", func() error {
 		m := NewAnnounceBlocksMessage(vs.v.HeadBkSeq())
-		if err := pool.Pool.BroadcastMessage(m); err != nil {
-			logger.Debug("Broadcast AnnounceBlocksMessage failed: %v", err)
-		}
+		return pool.Pool.BroadcastMessage(m)
 	})
+
+	if err != nil {
+		logger.Debug("Broadcast AnnounceBlocksMessage failed: %v", err)
+	}
+
+	return err
 }
 
 // AnnounceAllTxns announces local unconfirmed transactions
-func (vs *Visor) AnnounceAllTxns(pool *Pool) {
+func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
-	vs.strand("AnnounceAllTxns", func() {
+	err := vs.strand("AnnounceAllTxns", func() error {
 		// Get local unconfirmed transaction hashes.
 		hashes := vs.v.GetAllValidUnconfirmedTxHashes()
 
@@ -182,29 +188,40 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) {
 		for _, hs := range hashesSet {
 			m := NewAnnounceTxnsMessage(hs)
 			if err := pool.Pool.BroadcastMessage(m); err != nil {
-				logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
-				return
+				return err
 			}
 		}
+
+		return nil
 	})
+
+	if err != nil {
+		logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+	}
+
+	return err
 }
 
 // AnnounceTxns announces given transaction hashes.
-func (vs *Visor) AnnounceTxns(pool *Pool, txns []cipher.SHA256) {
+func (vs *Visor) AnnounceTxns(pool *Pool, txns []cipher.SHA256) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
-	if len(txns) <= 0 {
-		return
+	if len(txns) == 0 {
+		return nil
 	}
 
-	vs.strand("AnnounceTxns", func() {
+	err := vs.strand("AnnounceTxns", func() error {
 		m := NewAnnounceTxnsMessage(txns)
-		if err := pool.Pool.BroadcastMessage(m); err != nil {
-			logger.Debug("Broadcast AnnounceTxnsMessage failed: %v", err)
-		}
+		return pool.Pool.BroadcastMessage(m)
 	})
+
+	if err != nil {
+		logger.Debug("Broadcast AnnounceTxnsMessage failed: %v", err)
+	}
+
+	return err
 }
 
 func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
@@ -238,21 +255,18 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 		return errors.New("Visor disabled")
 	}
 
-	var err error
-	vs.strand("RequestBlocksFromAddr", func() {
+	err := vs.strand("RequestBlocksFromAddr", func() error {
 		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
-		var exist bool
-		exist, err = pool.Pool.IsConnExist(addr)
+		exist, err := pool.Pool.IsConnExist(addr)
 		if err != nil {
-			return
+			return err
 		}
 
 		if !exist {
-			err = fmt.Errorf("Tried to send GetBlocksMessage to %s, but we are not connected", addr)
-			return
+			return fmt.Errorf("Tried to send GetBlocksMessage to %s, but we are not connected", addr)
 		}
 
-		err = pool.Pool.SendMessage(addr, m)
+		return pool.Pool.SendMessage(addr, m)
 	})
 
 	return err
@@ -260,54 +274,61 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 
 // SetTxnsAnnounced sets all txns as announced
 func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
-	vs.strand("SetTxnsAnnounced", func() {
+	vs.strand("SetTxnsAnnounced", func() error {
 		now := utc.Now()
 		for _, h := range txns {
-			vs.v.Unconfirmed.SetAnnounced(h, now)
+			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
+				logger.Error("Failed to set unconfirmed txn announce time")
+			}
 		}
+
+		return nil
 	})
 }
 
 // InjectTransaction injects transaction to the unconfirmed pool and broadcasts it
 // The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
-	var err error
-	vs.strand("InjectTransaction", func() {
-		if err = vs.injectTransaction(txn, pool); err != nil {
-			return
+	return vs.strand("InjectTransaction", func() error {
+		if err := vs.injectTransaction(txn, pool); err != nil {
+			return err
 		}
 
-		vs.broadcastTransaction(txn, pool)
+		return vs.broadcastTransaction(txn, pool)
 	})
-	return err
 }
 
 // Sends a signed block to all connections.
 // TODO: deprecate, should only send to clients that request by hash
-func (vs *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) {
+func (vs *Visor) broadcastBlock(sb coin.SignedBlock, pool *Pool) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
-	pool.Pool.BroadcastMessage(m)
+	return pool.Pool.BroadcastMessage(m)
 }
 
 // broadcastTransaction broadcasts a single transaction to all peers.
-func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) {
+func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
 	m := NewGiveTxnsMessage(coin.Transactions{t})
 	l, err := pool.Pool.Size()
 	if err != nil {
-		logger.Error("Broadcast GivenTxnsMessage failed: %v", err)
-		return
+		return err
 	}
 
 	logger.Debug("Broadcasting GiveTxnsMessage to %d conns", l)
-	pool.Pool.BroadcastMessage(m)
+
+	err = pool.Pool.BroadcastMessage(m)
+	if err != nil {
+		logger.Error("Broadcast GivenTxnsMessage failed: %v", err)
+	}
+
+	return err
 }
 
 func (vs *Visor) injectTransaction(txn coin.Transaction, pool *Pool) error {
@@ -353,15 +374,16 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 }
 
 // ResendTransaction resends a known UnconfirmedTxn.
-func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) {
+func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) error {
 	if vs.Config.DisableNetworking {
-		return
+		return nil
 	}
 
-	vs.strand("ResendTransaction", func() {
+	return vs.strand("ResendTransaction", func() error {
 		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
-			vs.broadcastTransaction(ut.Txn, pool)
+			return vs.broadcastTransaction(ut.Txn, pool)
 		}
+		return nil
 	})
 }
 
@@ -372,14 +394,17 @@ func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) []cipher.SHA256 {
 	}
 
 	var txids []cipher.SHA256
-	vs.strand("ResendUnconfirmedTxns", func() {
+	vs.strand("ResendUnconfirmedTxns", func() error {
 		txns := vs.v.GetAllUnconfirmedTxns()
 
 		for i := range txns {
 			logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())
-			vs.broadcastTransaction(txns[i].Txn, pool)
-			txids = append(txids, txns[i].Txn.Hash())
+			if err := vs.broadcastTransaction(txns[i].Txn, pool); err == nil {
+				txids = append(txids, txns[i].Txn.Hash())
+			}
 		}
+
+		return nil
 	})
 	return txids
 }
@@ -393,13 +418,14 @@ func (vs *Visor) CreateAndPublishBlock(pool *Pool) (coin.SignedBlock, error) {
 	}
 
 	var sb coin.SignedBlock
-	var err error
-	vs.strand("CreateAndPublishBlock", func() {
+	err := vs.strand("CreateAndPublishBlock", func() error {
+		var err error
 		sb, err = vs.v.CreateAndExecuteBlock()
 		if err != nil {
-			return
+			return err
 		}
-		vs.broadcastBlock(sb, pool)
+
+		return vs.broadcastBlock(sb, pool)
 	})
 
 	return sb, err
@@ -407,15 +433,17 @@ func (vs *Visor) CreateAndPublishBlock(pool *Pool) (coin.SignedBlock, error) {
 
 // RemoveConnection updates internal state when a connection disconnects
 func (vs *Visor) RemoveConnection(addr string) {
-	vs.strand("RemoveConnection", func() {
+	vs.strand("RemoveConnection", func() error {
 		delete(vs.blockchainHeights, addr)
+		return nil
 	})
 }
 
 // RecordBlockchainHeight saves a peer-reported blockchain length
 func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
-	vs.strand("RecordBlockchainHeight", func() {
+	vs.strand("RecordBlockchainHeight", func() error {
 		vs.blockchainHeights[addr] = bkLen
+		return nil
 	})
 }
 
@@ -423,17 +451,20 @@ func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
 // Deprecate. Should not need. Just report time of last block
 func (vs *Visor) EstimateBlockchainHeight() uint64 {
 	var maxLen uint64
-	vs.strand("EstimateBlockchainHeight", func() {
+	vs.strand("EstimateBlockchainHeight", func() error {
 		ourLen := vs.v.HeadBkSeq()
 		if len(vs.blockchainHeights) < 2 {
 			maxLen = ourLen
-			return
+			return nil
 		}
+
 		for _, seq := range vs.blockchainHeights {
 			if maxLen < seq {
 				maxLen = seq
 			}
 		}
+
+		return nil
 	})
 	return maxLen
 }
@@ -447,18 +478,20 @@ type PeerBlockchainHeight struct {
 // GetPeerBlockchainHeights returns recorded peers' blockchain heights as an array.
 func (vs *Visor) GetPeerBlockchainHeights() []PeerBlockchainHeight {
 	var peerHeights []PeerBlockchainHeight
-	vs.strand("GetPeerBlockchainHeights", func() {
+	vs.strand("GetPeerBlockchainHeights", func() error {
 		if len(vs.blockchainHeights) == 0 {
-			return
+			return nil
 		}
 
 		peerHeights = make([]PeerBlockchainHeight, 0, len(peerHeights))
-		for addr, height := range vs.blockchainLengths {
-			peerHeights = append(PeerBlockchainHeight{
+		for addr, height := range vs.blockchainHeights {
+			peerHeights = append(peerHeights, PeerBlockchainHeight{
 				Address: addr,
 				Height:  height,
 			})
 		}
+
+		return nil
 	})
 
 	return peerHeights
@@ -467,34 +500,37 @@ func (vs *Visor) GetPeerBlockchainHeights() []PeerBlockchainHeight {
 // HeadBkSeq returns the head sequence
 func (vs *Visor) HeadBkSeq() uint64 {
 	var seq uint64
-	vs.strand("HeadBkSeq", func() {
+	vs.strand("HeadBkSeq", func() error {
 		seq = vs.v.HeadBkSeq()
+		return nil
 	})
 	return seq
 }
 
 // ExecuteSignedBlock executes signed block
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
-	var err error
-	vs.strand("ExecuteSignedBlock", func() {
-		err = vs.v.ExecuteSignedBlock(b)
+	return vs.strand("ExecuteSignedBlock", func() error {
+		return vs.v.ExecuteSignedBlock(b)
 	})
-	return err
 }
 
 // GetSignedBlocksSince returns numbers of signed blocks since seq.
-func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) (sbs []coin.SignedBlock, err error) {
-	vs.strand("GetSignedBlocksSince", func() {
+func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) ([]coin.SignedBlock, error) {
+	var sbs []coin.SignedBlock
+	err := vs.strand("GetSignedBlocksSince", func() error {
+		var err error
 		sbs, err = vs.v.GetSignedBlocksSince(seq, num)
+		return err
 	})
-	return
+	return sbs, err
 }
 
 // UnConfirmFilterKnown returns all unknown transaction hashes
 func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 	var ts []cipher.SHA256
-	vs.strand("UnConfirmFilterKnown", func() {
+	vs.strand("UnConfirmFilterKnown", func() error {
 		ts = vs.v.Unconfirmed.FilterKnown(txns)
+		return nil
 	})
 	return ts
 }
@@ -502,8 +538,9 @@ func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 // UnConfirmKnow returns all know tansactions
 func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 	var txns coin.Transactions
-	vs.strand("UnConfirmKnow", func() {
+	vs.strand("UnConfirmKnow", func() error {
 		txns = vs.v.Unconfirmed.GetKnown(hashes)
+		return nil
 	})
 	return txns
 }
@@ -511,9 +548,10 @@ func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 // InjectTxn only try to append transaction into local blockchain, don't broadcast it.
 func (vs *Visor) InjectTxn(tx coin.Transaction) (bool, error) {
 	var known bool
-	var err error
-	vs.strand("InjectTxn", func() {
+	err := vs.strand("InjectTxn", func() error {
+		var err error
 		known, err = vs.v.InjectTxn(tx)
+		return err
 	})
 	return known, err
 }

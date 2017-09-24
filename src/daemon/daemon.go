@@ -435,7 +435,7 @@ func (dm *Daemon) Run() (err error) {
 			dm.processMessageEvent(m)
 		// Process any pending RPC requests
 		case req := <-dm.Gateway.requests:
-			req()
+			req.Func()
 		// Create blocks, if master chain
 		case <-blockCreationTicker.C:
 			if dm.Visor.Config.Config.IsMaster {
@@ -486,7 +486,7 @@ func (dm *Daemon) GetListenPort(addr string) uint16 {
 // Connects to a given peer. Returns an error if no connection attempt was
 // made. If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
-func (dm *Daemon) connectToPeer(p *pex.Peer) error {
+func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	if dm.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
@@ -540,7 +540,7 @@ func (dm *Daemon) makePrivateConnections() {
 		p, exist := dm.Peers.Peers.GetPeerByAddr(addr)
 		if exist {
 			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := dm.connectToPeer(&p); err != nil {
+			if err := dm.connectToPeer(p); err != nil {
 				logger.Debug("Did not connect to private peer: %v", err)
 			}
 		}
@@ -570,7 +570,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	peers := dm.Peers.Peers.RandomPublic(0)
 	for _, p := range peers {
 		// Check if the peer has public port
-		if p.HasIncomePort {
+		if p.HasIncomingPort {
 			// Try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
 				dm.connectToPeer(p)

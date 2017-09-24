@@ -81,7 +81,7 @@ func TestPeerSeen(t *testing.T) {
 	time.Sleep(time.Second)
 	p.Seen()
 	assert.NotEqual(t, x, p.LastSeen)
-	if p.LastSeen.Before(x) {
+	if p.LastSeen < x {
 		t.Fail()
 	}
 }
@@ -145,7 +145,7 @@ func TestGetPrivateAddresses(t *testing.T) {
 	})
 }
 
-func convertPeersToStrings(peers []*Peer) []string {
+func convertPeersToStrings(peers []Peer) []string {
 	addresses := make([]string, 0, len(peers))
 	for _, p := range peers {
 		addresses = append(addresses, p.String())
@@ -153,8 +153,7 @@ func convertPeersToStrings(peers []*Peer) []string {
 	return addresses
 }
 
-func compareRandom(t *testing.T, p *Pex, npeers int,
-	result []string, f func(int) []*Peer) {
+func compareRandom(t *testing.T, p *Pex, npeers int, result []string, f func(int) []Peer) {
 	peers := f(npeers)
 	addresses := convertPeersToStrings(peers)
 	sort.Strings(addresses)
@@ -263,12 +262,12 @@ func TestRandomPublic(t *testing.T) {
 
 func TestPeerCanTry(t *testing.T) {
 	testData := []struct {
-		LastSeen   time.Time
+		LastSeen   int64
 		RetryTimes int
 		CanTry     bool
 	}{
 		{
-			utc.Now().Add(time.Duration(100) * time.Second * -1),
+			utc.Now().Add(time.Duration(100) * time.Second * -1).Unix(),
 			1,
 			true,
 		},

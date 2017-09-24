@@ -144,7 +144,7 @@ func (rpc RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
 		Highest: v.EstimateBlockchainHeight(),
 	}
 
-	peerHeights := v.GetBlockchainHeights()
+	peerHeights := v.GetPeerBlockchainHeights()
 
 	for _, ph := range peerHeights {
 		bp.Peers = append(bp.Peers, struct {

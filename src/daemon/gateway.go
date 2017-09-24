@@ -3,6 +3,7 @@ package daemon
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -38,7 +39,7 @@ type Gateway struct {
 	// Backref to Visor
 	v *visor.Visor
 	// Requests are queued on this channel
-	requests chan func()
+	requests chan strand.Request
 }
 
 // NewGateway create and init an Gateway instance.
@@ -49,16 +50,15 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 		vrpc:     visor.MakeRPC(D.Visor.v),
 		d:        D,
 		v:        D.Visor.v,
-		requests: make(chan strandReq, c.BufferSize),
+		requests: make(chan strand.Request, c.BufferSize),
 	}
 }
 
-func (gw *Gateway) strand(desc string, f func()) {
-	desc = fmt.Sprintf("daemon.Gateway: %s", desc)
-	strand(gw.requests, strandReq{
-		Desc: desc,
+func (gw *Gateway) strand(name string, f func()) {
+	name = fmt.Sprintf("daemon.Gateway.%s", name)
+	strand.Strand(logger, gw.requests, strand.Request{
+		Name: name,
 		Func: func() error {
-			// TODO: Update f() to return error
 			f()
 			return nil
 		},

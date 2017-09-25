@@ -129,19 +129,9 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return bc.store.GetBlockBySeq(seq)
 }
 
-// HeadSeq returns the sequence of head block
-func (bc *Blockchain) HeadSeq() uint64 {
-	return bc.store.HeadSeq()
-}
-
 func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
 	if bc.Len() > 0 {
-		isGenesis, err := bc.isGenesisBlock(b.Block)
-		if err != nil {
-			return coin.SignedBlock{}, err
-		}
-
-		if !isGenesis {
+		if !bc.isGenesisBlock(b.Block) {
 			if err := bc.verifyBlockHeader(b.Block); err != nil {
 				return coin.SignedBlock{}, err
 			}
@@ -174,6 +164,11 @@ func (bc Blockchain) Len() uint64 {
 // Head returns the most recent confirmed block
 func (bc Blockchain) Head() (*coin.SignedBlock, error) {
 	return bc.store.Head()
+}
+
+// HeadSeq returns the sequence of head block
+func (bc *Blockchain) HeadSeq() uint64 {
+	return bc.store.HeadSeq()
 }
 
 // Time returns time of last block
@@ -252,13 +247,13 @@ func (bc *Blockchain) ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) erro
 }
 
 // isGenesisBlock checks if the block is genesis block
-func (bc Blockchain) isGenesisBlock(b coin.Block) (bool, error) {
+func (bc Blockchain) isGenesisBlock(b coin.Block) bool {
 	gb := bc.store.GetGenesisBlock()
 	if gb == nil {
-		return false, errors.New("genesis block doesn't exist")
+		return false
 	}
 
-	return gb.HashHeader() == b.HashHeader(), nil
+	return gb.HashHeader() == b.HashHeader()
 }
 
 // Compares the state of the current UxHash hash to state of unspent

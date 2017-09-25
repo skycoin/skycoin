@@ -2,9 +2,7 @@ package blockdb
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -24,13 +22,6 @@ type blockCase struct {
 	Err    error
 	Action string
 }
-
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t)
-	return t
-}()
 
 func testCase(t *testing.T, cases []blockCase) {
 	db, close := testutil.PrepareDB(t)

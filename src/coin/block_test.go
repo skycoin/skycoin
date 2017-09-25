@@ -114,3 +114,74 @@ func TestNewGenesisBlock(t *testing.T) {
 	require.Equal(t, _genCoins, tx.Out[0].Coins)
 	require.Equal(t, _genCoins, tx.Out[0].Hours)
 }
+
+func TestCreateUnspent(t *testing.T) {
+	tx := Transaction{}
+	tx.PushOutput(genAddress, 11e6, 255)
+	bh := BlockHeader{
+		Time:  tNow(),
+		BkSeq: uint64(1),
+	}
+
+	tt := []struct {
+		name    string
+		txIndex int
+		err     error
+	}{
+		{
+			"ok",
+			0,
+			nil,
+		},
+		{
+			"index overflow",
+			10,
+			errors.New("Transaction out index is overflow"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			uxout, err := CreateUnspent(bh, tx, tc.txIndex)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+			assertUnspent(t, bh, tx, tc.txIndex, uxout)
+		})
+	}
+}
+
+func TestCreateUnspents(t *testing.T) {
+	tx := Transaction{}
+	tx.PushOutput(genAddress, 11e6, 255)
+	bh := BlockHeader{
+		Time:  tNow(),
+		BkSeq: uint64(1),
+	}
+	uxouts := CreateUnspents(bh, tx)
+	assert.Equal(t, len(uxouts), 1)
+	assertValidUnspents(t, bh, tx, uxouts)
+}
+
+func assertUnspent(t *testing.T, bh BlockHeader, tx Transaction, txIndex int, ux UxOut) {
+	assert.Equal(t, bh.Time, ux.Head.Time)
+	assert.Equal(t, bh.BkSeq, ux.Head.BkSeq)
+	assert.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
+	assert.Equal(t, tx.Out[txIndex].Address, ux.Body.Address)
+	assert.Equal(t, tx.Out[txIndex].Coins, ux.Body.Coins)
+	assert.Equal(t, tx.Out[txIndex].Hours, ux.Body.Hours)
+}
+
+func assertValidUnspents(t *testing.T, bh BlockHeader, tx Transaction,
+	uxo UxArray) {
+	assert.Equal(t, len(tx.Out), len(uxo))
+	for i, ux := range uxo {
+		assert.Equal(t, bh.Time, ux.Head.Time)
+		assert.Equal(t, bh.BkSeq, ux.Head.BkSeq)
+		assert.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
+		assert.Equal(t, tx.Out[i].Address, ux.Body.Address)
+		assert.Equal(t, tx.Out[i].Coins, ux.Body.Coins)
+		assert.Equal(t, tx.Out[i].Hours, ux.Body.Hours)
+	}
+}

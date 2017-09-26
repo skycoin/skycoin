@@ -41,15 +41,15 @@ In China, use `--source=https://github.com/golang/go` to bypass firewall when fe
 ```sh
 gvm install go1.4 --source=https://github.com/golang/go
 gvm use go1.4
-gvm install go1.8
-gvm use go1.8 --default
+gvm install go1.9
+gvm use go1.9 --default
 ```
 
 If you open up new terminal and the go command is not found then add this to `.bashrc`. GVM should add this automatically.
 
 ```sh
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-gvm use go1.8 >/dev/null
+gvm use go1.9 >/dev/null
 ```
 
 ## Setup your GOPATH
@@ -62,7 +62,7 @@ Create your workspace directory:
 mkdir -p $HOME/go
 ```
 
-Setup $GOPATH variable, add it to ~/.bash_profile. After editing, run `source ~/.bash_profile` or open a new tab.
+Setup $GOPATH variable, add it to ~/.bashrc. After editing, run `source ~/.bashrc` or open a new tab.
 
 ```sh
 export GOPATH=$HOME/go

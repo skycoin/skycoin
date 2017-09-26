@@ -92,6 +92,16 @@ func (rpc RPC) GetBlocks(v *Visor, start, end uint64) *ReadableBlocks {
 	return &ReadableBlocks{blocks}
 }
 
+// GetLastBlocks returns the last N blocks
+func (rpc RPC) GetLastBlocks(v *Visor, num uint64) *ReadableBlocks {
+	blocks := v.GetLastBlocks(num)
+	rbs := make([]ReadableBlock, 0, len(blocks))
+	for _, b := range blocks {
+		rbs = append(rbs, NewReadableBlock(&b.Block))
+	}
+	return &ReadableBlocks{rbs}
+}
+
 // GetBlockBySeq get block in depth
 func (rpc RPC) GetBlockBySeq(v *Visor, n uint64) *ReadableBlock {
 	b, err := v.GetBlockBySeq(n)

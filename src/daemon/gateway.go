@@ -211,13 +211,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
 func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 	var blocks *visor.ReadableBlocks
 	gw.strand(func() {
-		headSeq := gw.v.HeadBkSeq()
-		var start uint64
-		if headSeq+1 > num {
-			start = headSeq - num + 1
-		}
-
-		blocks = gw.vrpc.GetBlocks(gw.v, start, headSeq)
+		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
 	return blocks
 }

@@ -719,6 +719,11 @@ func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlockBySeq(seq)
 }
 
+// GetLastBlocks returns last N blocks
+func (vs *Visor) GetLastBlocks(num uint64) []coin.SignedBlock {
+	return vs.Blockchain.GetLastBlocks(num)
+}
+
 // GetLastTxs returns last confirmed transactions, return nil if empty
 func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
 	ltxs, err := vs.history.GetLastTxs()

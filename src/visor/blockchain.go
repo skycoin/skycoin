@@ -361,13 +361,7 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.SignedBlock {
 		return blocks
 	}
 
-	head, err := bc.store.GetBlockBySeq(0)
-	if err != nil {
-		logger.Error("%v", err)
-		return []coin.SignedBlock{}
-	}
-
-	end := head.Seq()
+	end := bc.HeadSeq()
 	start := end - num + 1
 	if start < 0 {
 		start = 0

@@ -40,6 +40,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
     - [Dependency Management](#dependency-management)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
+- [Changelog](#changelog)
 
 <!-- /MarkdownTOC -->
 
@@ -229,3 +230,7 @@ Once `master` branch is updated, `git checkout master` and create the release bu
 #### Creating release builds
 
 [Create Release builds](electron/README.md).
+
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md)

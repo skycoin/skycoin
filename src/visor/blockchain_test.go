@@ -1,6 +1,3 @@
-// build ignore
-// These tests need to be rewritten to conform with blockdb changes
-
 package visor
 
 import (

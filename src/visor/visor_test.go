@@ -92,7 +92,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 
 		_, err = NewBlockchain(db, pubkey, Arbitrating(false))
 		require.Error(t, err)
-		require.Equal(t, ErrSignatureLost, err)
+		require.Contains(t, err.Error(), "find no signature of block:")
 	}()
 
 	// Loading this invalid db should cause load() to recreate the db

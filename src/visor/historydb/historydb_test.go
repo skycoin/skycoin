@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -14,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,33 +49,6 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
-
-// setup will create a random boltdb file in temp folder,
-// and return teardown function for later clean
-func setup(t *testing.T) (*bolt.DB, func(), error) {
-	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
-	cancel := func() {}
-	tmpDir := os.TempDir()
-	dbPath := filepath.Join(tmpDir, dbName)
-	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, cancel, err
-	}
-
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
-		Timeout: 500 * time.Millisecond,
-	})
-	if err != nil {
-		return nil, cancel, err
-	}
-
-	cancel = func() {
-		db.Close()
-		if err := os.RemoveAll(dbPath); err != nil {
-			panic(err)
-		}
-	}
-	return db, cancel, nil
-}
 
 type fakeBlockchain struct {
 	blocks  []coin.Block
@@ -196,10 +168,7 @@ func (fbc fakeBlockchain) GetBlock(hash cipher.SHA256) *coin.Block {
 }
 
 func TestProcessGenesisBlock(t *testing.T) {
-	db, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
-	}
+	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 
 	bc := newBlockchain(db)
@@ -279,10 +248,7 @@ func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.
 }
 
 func TestProcessBlock(t *testing.T) {
-	db, teardown, err := setup(t)
-	if err != nil {
-		t.Fatal(err)
-	}
+	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 	bc := newBlockchain(db)
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,4 +26,9 @@ func PrepareDB(t *testing.T) (*bolt.DB, func()) {
 func RequireError(t *testing.T, err error, msg string) {
 	require.Error(t, err)
 	require.Equal(t, msg, err.Error())
+}
+
+func MakeAddress() cipher.Address {
+	p, _ := cipher.GenerateKeyPair()
+	return cipher.AddressFromPubKey(p)
 }

@@ -5,6 +5,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -146,8 +148,7 @@ func TestTransactionVerify(t *testing.T) {
 	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{genSecret})
 	assert.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
-	testutil.RequireError(t, tx.Verify(), "Transaction outputs must be multiple of "+
-		"1e6 base units")
+	require.NoError(t, tx.Verify())
 
 	// Output coins are 0
 	tx = makeTransaction(t)

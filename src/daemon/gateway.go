@@ -149,12 +149,17 @@ func (gw *Gateway) GetBlockchainMetadata() interface{} {
 }
 
 // GetBlockByHash returns the block by hash
-func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.Block, ok bool) {
+func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
 	gw.strand(func() {
-		b := gw.v.GetBlockByHash(hash)
+		b, err := gw.v.GetBlockByHash(hash)
+		if err != nil {
+			logger.Error("gateway.GetBlockByHash failed: %v", err)
+			return
+		}
 		if b == nil {
 			return
 		}
+
 		block = *b
 		ok = true
 	})
@@ -162,9 +167,13 @@ func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.Block, ok bool
 }
 
 // GetBlockBySeq returns blcok by seq
-func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.Block, ok bool) {
+func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	gw.strand(func() {
-		b := gw.v.GetBlockBySeq(seq)
+		b, err := gw.v.GetBlockBySeq(seq)
+		if err != nil {
+			logger.Error("gateway.GetBlockBySeq failed: %v", err)
+			return
+		}
 		if b == nil {
 			return
 		}
@@ -189,7 +198,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
 	gw.strand(func() {
 		blks := visor.ReadableBlocks{}
 		for _, n := range vs {
-			if b := gw.vrpc.GetBlockInDepth(gw.v, n); b != nil {
+			if b := gw.vrpc.GetBlockBySeq(gw.v, n); b != nil {
 				blks.Blocks = append(blks.Blocks, *b)
 			}
 		}
@@ -202,13 +211,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
 func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
 	var blocks *visor.ReadableBlocks
 	gw.strand(func() {
-		headSeq := gw.v.HeadBkSeq()
-		var start uint64
-		if (headSeq + 1) > num {
-			start = headSeq - num + 1
-		}
-
-		blocks = gw.vrpc.GetBlocks(gw.v, start, headSeq)
+		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
 	return blocks
 }
@@ -416,7 +419,7 @@ func (gw *Gateway) GetLastTxs() (txns []*visor.Transaction, err error) {
 }
 
 // GetUnspent returns the unspent pool
-func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
+func (gw *Gateway) GetUnspent() (unspent blockdb.UnspentPool) {
 	gw.strand(func() {
 		unspent = gw.v.Blockchain.Unspent()
 	})
@@ -426,10 +429,10 @@ func (gw *Gateway) GetUnspent() (unspent *blockdb.UnspentPool) {
 // impelemts the wallet.Validator interface
 type spendValidator struct {
 	uncfm   *visor.UnconfirmedTxnPool
-	unspent *blockdb.UnspentPool
+	unspent blockdb.UnspentPool
 }
 
-func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent *blockdb.UnspentPool) *spendValidator {
+func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent blockdb.UnspentPool) *spendValidator {
 	return &spendValidator{
 		uncfm:   uncfm,
 		unspent: unspent,
@@ -458,7 +461,7 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID,
 			sv,
 			unspent,
-			gw.v.Blockchain.Head().Time(),
+			gw.v.Blockchain.Time(),
 			amt,
 			dest)
 		if err != nil {
@@ -495,7 +498,7 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet,
 		// create and sign transaction
 		tx, err = wlt.CreateAndSignTransaction(sv,
 			unspent,
-			gw.v.Blockchain.Head().Time(),
+			gw.v.Blockchain.Time(),
 			amt,
 			dest)
 	})

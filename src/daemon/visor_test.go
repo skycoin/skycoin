@@ -63,10 +63,22 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 	return tx
 }
 
-func MakeBlockchain(t *testing.T, db *bolt.DB, pubkey cipher.PubKey) *visor.Blockchain {
+func MakeBlockchain(t *testing.T, db *bolt.DB, seckey cipher.SecKey) *visor.Blockchain {
+	pubkey := cipher.PubKeyFromSecKey(seckey)
 	b, err := visor.NewBlockchain(db, pubkey)
 	require.NoError(t, err)
-	b.CreateGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
+	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
+	if err != nil {
+		panic(fmt.Errorf("create genesis block failed: %v", err))
+	}
+
+	sig := cipher.SignHash(gb.HashHeader(), seckey)
+	db.Update(func(tx *bolt.Tx) error {
+		return b.ExecuteBlockWithTx(tx, &coin.SignedBlock{
+			Block: *gb,
+			Sig:   sig,
+		})
+	})
 	return b
 }
 
@@ -110,7 +122,7 @@ func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr ci
 }
 
 func executeGenesisSpendTransaction(t *testing.T, db *bolt.DB, bc *visor.Blockchain, txn coin.Transaction) coin.UxOut {
-	block, err := bc.NewBlockFromTransactions(coin.Transactions{txn}, GenesisTime+TimeIncrement)
+	block, err := bc.NewBlock(coin.Transactions{txn}, GenesisTime+TimeIncrement)
 	require.NoError(t, err)
 
 	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
@@ -158,10 +170,10 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr, errMsg string) {
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
-	p, _ := cipher.GenerateKeyPair()
+	_, s := cipher.GenerateKeyPair()
 
 	// Setup blockchain
-	bc := MakeBlockchain(t, db, p)
+	bc := MakeBlockchain(t, db, s)
 
 	// Send coins to the initial address
 	var coins = GenesisCoins
@@ -201,8 +213,8 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	defer close()
 
 	// Setup blockchain
-	p, _ := cipher.GenerateKeyPair()
-	bc := MakeBlockchain(t, db, p)
+	_, s := cipher.GenerateKeyPair()
+	bc := MakeBlockchain(t, db, s)
 
 	// Send coins to the initial address, with invalid fee
 	var coins = GenesisCoins
@@ -225,8 +237,8 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	defer close()
 
 	// Setup blockchain
-	p, _ := cipher.GenerateKeyPair()
-	bc := MakeBlockchain(t, db, p)
+	_, s := cipher.GenerateKeyPair()
+	bc := MakeBlockchain(t, db, s)
 
 	// Send coins to the initial address, with invalid fee
 	var coins = GenesisCoins
@@ -251,9 +263,9 @@ func TestInjectValidTransaction(t *testing.T) {
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
-	p, _ := cipher.GenerateKeyPair()
+	_, s := cipher.GenerateKeyPair()
 	// Setup blockchain
-	bc := MakeBlockchain(t, db, p)
+	bc := MakeBlockchain(t, db, s)
 
 	// Send coins to the initial address, with invalid fee
 	var coins = GenesisCoins
@@ -285,8 +297,8 @@ func TestInjectInvalidTransaction(t *testing.T) {
 	defer close()
 
 	// Setup blockchain
-	p, _ := cipher.GenerateKeyPair()
-	bc := MakeBlockchain(t, db, p)
+	_, s := cipher.GenerateKeyPair()
+	bc := MakeBlockchain(t, db, s)
 
 	// Send coins to the initial address, with invalid fee
 	var coins = GenesisCoins

@@ -28,7 +28,7 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// mux.HandleFunc("/block/seq", getBlockBySeq(gateway))
 	// get blocks in specific range
 	mux.HandleFunc("/blocks", getBlocks(gateway))
-	// get last 10 blocks
+	// get last N blocks
 	mux.HandleFunc("/last_blocks", getLastBlocks(gateway))
 }
 
@@ -57,7 +57,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b coin.Block
+		var b coin.SignedBlock
 		var exist bool
 		switch {
 		case hash == "" && seq == "":
@@ -88,7 +88,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 			wh.SendOr404(w, nil)
 			return
 		}
-		wh.SendOr404(w, visor.NewReadableBlock(&b))
+		wh.SendOr404(w, visor.NewReadableBlock(&b.Block))
 	}
 }
 

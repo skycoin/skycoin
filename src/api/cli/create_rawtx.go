@@ -464,15 +464,17 @@ func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, err
 // NewTransaction create skycoin transaction.
 func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	tx := coin.Transaction{}
-	// keys := make([]cipher.SecKey, len(utxos))
 	for _, u := range utxos {
 		tx.PushInput(cipher.MustSHA256FromHex(u.Hash))
 	}
 
 	for _, o := range outs {
+		if o.Coins%1e5 != 0 {
+			return nil, errors.New("invalid coin, only one decimal place is allowed")
+		}
+
 		tx.PushOutput(o.Address, o.Coins, o.Hours)
 	}
-	// tx.Verify()
 
 	tx.SignInputs(keys)
 	tx.UpdateHeader()

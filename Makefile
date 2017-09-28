@@ -23,6 +23,12 @@ lint: ## Run linters. requires vendorcheck, gometalinter, golint, goimports
 
 check: lint test ## Run tests and linters
 
+install-linters: ## Install linters
+	go get -u -f github.com/golang/lint/golint
+	go get -u -f golang.org/x/tools/cmd/goimports
+	go get -u github.com/alecthomas/gometalinter
+	go get -u github.com/FiloSottile/vendorcheck
+
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh
 	@echo release files are in the folder of electron/release

@@ -142,10 +142,7 @@ All `.go` source files should be formatted with `gofmt` or `goimports`.
 Install prerequisites:
 
 ```sh
-go get github.com/golang/lint/golint
-go get github.com/FiloSottile/vendorcheck
-go get github.com/alecthomas/gometalinter
-go get golang.org/x/tools/cmd/goimports
+make install-linters
 ```
 
 Run linters:

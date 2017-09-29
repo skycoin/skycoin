@@ -52,15 +52,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 ### Create GOPATH directory
 
-go packages are installed in `$GOPATH` which defaults to `$HOME/go`.
-
-Create `$HOME/go` for your `$GOPATH`:
-
-```sh
-mkdir ~/go
-```
-
-You may also want to update your `$PATH` environment variable to `PATH="$PATH:$GOPATH/bin`.
+[Setup GOPATH](./Installation.md#setup-your-gopath)
 
 ### Go get skycoin
 

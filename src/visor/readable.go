@@ -2,14 +2,10 @@ package visor
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
-
-	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -129,42 +125,6 @@ type ReadableTransactionOutput struct {
 type ReadableTransactionInput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"owner"`
-}
-
-// Convert decimal string back to coins, measured in droplets
-// Valid strings may have a single decimal point, e.g.:
-// "500", "500.", "500.0", "500.3", "500.123456"
-// but at most 6 decimal places.
-func StrToBalance(amt string) (uint64, error) {
-	pts := strings.Split(amt, ".")
-
-	if len(pts) > 2 {
-		return 0, fmt.Errorf("Invalid balance %s", amt)
-	}
-
-	var droplets uint64
-	if len(pts) == 2 {
-		d := pts[1]
-		if len(d) > 6 {
-			return 0, errors.New("Maximum number of decimal places is 6")
-		}
-
-		if d != "" {
-			var err error
-			droplets, err = strconv.ParseUint(d, 10, 64)
-			if err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	c := pts[0]
-	coins, err := strconv.ParseUint(c, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return (coins * 1e6) + droplets, nil
 }
 
 // NewReadableTransactionOutput creates readable transaction outputs

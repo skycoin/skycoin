@@ -45,10 +45,12 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist")
 	}
 
-	tx := &visor.TransactionResult{
-		Transaction: visor.NewReadableTransaction(txn),
-		Status:      txn.Status,
+	tx, err := visor.NewTransactionResult(txn)
+	if err != nil {
+		logger.Error("%v", err)
+		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
+
 	return makeSuccessResponse(req.ID, TxnResult{tx})
 }
 

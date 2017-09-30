@@ -88,7 +88,15 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 			wh.SendOr404(w, nil)
 			return
 		}
-		wh.SendOr404(w, visor.NewReadableBlock(&b.Block))
+
+		rb, err := visor.NewReadableBlock(&b.Block)
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, rb)
 	}
 }
 
@@ -111,7 +119,12 @@ func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
 			return
 		}
-		wh.SendOr404(w, gateway.GetBlocks(start, end))
+		rb, err := gateway.GetBlocks(start, end)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
+			return
+		}
+		wh.SendOr404(w, rb)
 	}
 }
 
@@ -135,6 +148,12 @@ func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetLastBlocks(n))
+		rb, err := gateway.GetLastBlocks(n)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			return
+		}
+
+		wh.SendOr404(w, rb)
 	}
 }

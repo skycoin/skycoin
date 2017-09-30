@@ -7,7 +7,6 @@ package webrpc
 
 import (
 	"fmt"
-
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -54,7 +53,7 @@ func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON
 }
 
 // GetBlocks mocked method
-func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) *visor.ReadableBlocks {
+func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) (*visor.ReadableBlocks, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -67,12 +66,21 @@ func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) *visor.ReadableBlocks {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
 // GetBlocksInDepth mocked method
-func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) *visor.ReadableBlocks {
+func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) (*visor.ReadableBlocks, error) {
 
 	ret := m.Called(p0)
 
@@ -85,12 +93,21 @@ func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) *visor.ReadableBlocks {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
 // GetLastBlocks mocked method
-func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
+func (m *GatewayerMock) GetLastBlocks(p0 uint64) (*visor.ReadableBlocks, error) {
 
 	ret := m.Called(p0)
 
@@ -103,7 +120,16 @@ func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 

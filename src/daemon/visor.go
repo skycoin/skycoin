@@ -349,7 +349,7 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 	// check the coin decimal place
 	for _, out := range txn.Out {
 		if out.Coins%1e5 != 0 {
-			return fmt.Errorf("invalid coin, only one decimal place is allowed")
+			return fmt.Errorf("invalid amount, too manay decimal places")
 		}
 	}
 

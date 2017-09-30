@@ -470,7 +470,7 @@ func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.Transa
 
 	for _, o := range outs {
 		if o.Coins%1e5 != 0 {
-			return nil, errors.New("invalid coin, only one decimal place is allowed")
+			return nil, errors.New("invalid amount, too manay decimal places")
 		}
 
 		tx.PushOutput(o.Address, o.Coins, o.Hours)

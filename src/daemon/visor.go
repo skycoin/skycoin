@@ -344,10 +344,10 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 		return fmt.Errorf("Transaction Verification Failed, %v", err)
 	}
 
-	// check the coin decimal place
+	// valid the spending coins
 	for _, out := range txn.Out {
-		if out.Coins%1e5 != 0 {
-			return fmt.Errorf("invalid amount, too manay decimal places")
+		if err := DropletPrecisionCheck(out.Coins); err != nil {
+			return err
 		}
 	}
 

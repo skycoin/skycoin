@@ -212,10 +212,6 @@ func NewReadableOutputs(uxs []coin.UxOut) ([]ReadableOutput, error) {
 		}
 
 		rxReadables[i] = out
-		if ux.Hash().Hex() == "f811852ece9932e8c5c0e15121a8c016eb29c2bd98b3c834705b986e9ac1c646" {
-			fmt.Println("uxux:", ux.Body.Coins)
-			fmt.Println("lala:", rxReadables[i].Coins)
-		}
 	}
 	return rxReadables, nil
 }

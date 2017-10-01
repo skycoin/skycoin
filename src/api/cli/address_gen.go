@@ -31,16 +31,16 @@ func addressGenCmd() gcli.Command {
 				Usage: "Output the addresses as bitcoin addresses instead of skycoin addresses",
 			},
 			gcli.BoolFlag{
-				Name:  "hex, x",
-				Usage: "Use random hex string as seed",
+				Name:  "hex,x",
+				Usage: "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided",
 			},
 			gcli.BoolFlag{
-				Name:  "verbose, v",
-				Usage: "Show verbose info of generated addresses",
+				Name:  "only-addr,oa",
+				Usage: "Only show generated address list, hide seed, secret key and public key",
 			},
 			gcli.StringFlag{
 				Name:  "seed",
-				Usage: "Seed for deterministic key generation. Will use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not provided.",
+				Usage: "Seed for deterministic key generation. Will use bip39 as the seed if not provided.",
 			},
 		},
 		OnUsageError: onCommandUsageError(name),
@@ -75,7 +75,7 @@ func addressGenCmd() gcli.Command {
 				return err
 			}
 
-			if c.Bool("verbose") {
+			if !c.Bool("only-addr") {
 				return printJson(w)
 			}
 

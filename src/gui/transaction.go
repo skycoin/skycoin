@@ -40,8 +40,13 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 		txns := gateway.GetAllUnconfirmedTxns()
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
-			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-			ret = append(ret, &readable)
+			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+			if err != nil {
+				logger.Error("%v", err)
+				wh.Error500(w)
+				return
+			}
+			ret = append(ret, readable)
 		}
 
 		wh.SendOr404(w, &ret)
@@ -65,8 +70,15 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 		resTxs := make([]visor.TransactionResult, len(txs))
 		for i, tx := range txs {
+			rbTx, err := visor.NewReadableTransaction(tx)
+			if err != nil {
+				logger.Error("%v", err)
+				wh.Error500(w)
+				return
+			}
+
 			resTxs[i] = visor.TransactionResult{
-				Transaction: visor.NewReadableTransaction(tx),
+				Transaction: *rbTx,
 				Status:      tx.Status,
 			}
 		}
@@ -103,8 +115,15 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
+		rbTx, err := visor.NewReadableTransaction(tx)
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
 		resTx := visor.TransactionResult{
-			Transaction: visor.NewReadableTransaction(tx),
+			Transaction: *rbTx,
 			Status:      tx.Status,
 		}
 		wh.SendOr404(w, &resTx)

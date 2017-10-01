@@ -2,9 +2,13 @@ package webrpc
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
 )
@@ -55,39 +59,34 @@ func decodeOutputStr(str string) visor.ReadableOutputSet {
 	return outs.Outputs
 }
 
-func filterOut(outs visor.ReadableOutputSet, f func(out visor.ReadableOutput) bool) visor.ReadableOutputSet {
-	headOuts := []visor.ReadableOutput{}
-	outgoingOuts := []visor.ReadableOutput{}
-	incomingOuts := []visor.ReadableOutput{}
-
-	for _, o := range outs.HeadOutputs {
+func filterOut(outs []coin.UxOut, f func(out coin.UxOut) bool) visor.ReadableOutputSet {
+	os := []coin.UxOut{}
+	for _, o := range outs {
 		if f(o) {
-			headOuts = append(headOuts, o)
+			os = append(os, o)
 		}
 	}
 
-	for _, o := range outs.OutgoingOutputs {
-		if f(o) {
-			outgoingOuts = append(outgoingOuts, o)
-		}
+	headOuts, err := visor.NewReadableOutputs(os)
+	if err != nil {
+		panic(err)
 	}
-
-	for _, o := range outs.IncomingOutputs {
-		if f(o) {
-			incomingOuts = append(incomingOuts, o)
-		}
-	}
-
 	return visor.ReadableOutputSet{
-		HeadOutputs:     headOuts,
-		OutgoingOutputs: outgoingOuts,
-		IncomingOutputs: incomingOuts,
+		HeadOutputs: headOuts,
 	}
 }
 
 func Test_getOutputsHandler(t *testing.T) {
+	uxouts := make([]coin.UxOut, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxouts[i] = coin.UxOut{}
+		uxouts[i].Body.Address = addrs[i]
+	}
+
 	type args struct {
-		req     Request
+		addrs   []string
 		gateway Gatewayer
 	}
 	tests := []struct {
@@ -99,61 +98,50 @@ func Test_getOutputsHandler(t *testing.T) {
 		{
 			"invalid address",
 			args{
-				req: Request{
-					ID:      "1",
-					Jsonrpc: jsonRPC,
-					Method:  "get_outputs",
-					Params:  []byte(`["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"]`),
-				},
+				addrs: []string{"fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"},
 			},
 			makeErrorResponse(errCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
 		},
 		{
 			"invalid params: empty addresses",
-			args{
-				req: Request{
-					ID:      "1",
-					Jsonrpc: jsonRPC,
-					Method:  "get_outputs",
-				},
-			},
+			args{},
 			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
 		},
 		{
-			"normal, single address",
+			"single address",
 			args{
-				req: Request{
-					ID:      "1",
-					Jsonrpc: jsonRPC,
-					Method:  "get_outputs",
-					Params:  []byte(`["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B"]`),
-				},
-				gateway: &fakeGateway{},
+				addrs:   []string{addrs[0].String()},
+				gateway: &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsResult{filterOut(decodeOutputStr(outputStr), func(out visor.ReadableOutput) bool {
-				return out.Address == "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B"
+			makeSuccessResponse("1", OutputsResult{filterOut(uxouts[:], func(out coin.UxOut) bool {
+				return out.Body.Address == addrs[0]
 			})}),
 		},
 		{
-			"normal, multiple addresses",
+			"multiple addresses",
 			args{
-				req: Request{
-					ID:      "1",
-					Jsonrpc: jsonRPC,
-					Method:  "get_outputs",
-					Params:  []byte(`["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B", "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW"]`),
-				},
-				gateway: &fakeGateway{},
+				addrs:   []string{addrs[0].String(), addrs[1].String()},
+				gateway: &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsResult{filterOut(decodeOutputStr(outputStr), func(out visor.ReadableOutput) bool {
-				return out.Address == "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B" || out.Address == "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW"
+			makeSuccessResponse("1", OutputsResult{filterOut(uxouts, func(out coin.UxOut) bool {
+				return out.Body.Address == addrs[0] || out.Body.Address == addrs[1]
 			})}),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getOutputsHandler(tt.args.req, tt.args.gateway)
+			params, err := json.Marshal(tt.args.addrs)
+			fmt.Println("param:", string(params))
+			require.NoError(t, err)
+			req := Request{
+				ID:      "1",
+				Jsonrpc: jsonRPC,
+				Method:  "get_outputs",
+				Params:  params,
+			}
+
+			got := getOutputsHandler(req, tt.args.gateway)
 			require.Equal(t, tt.want, got)
 		})
 	}

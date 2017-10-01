@@ -51,6 +51,12 @@ var (
 	logger = logging.MustGetLogger("daemon")
 )
 
+const (
+	// MaxDropletPrecision represents the precision of droplets
+	MaxDropletPrecision = 1
+	MaxDropletDivisor   = 1e5
+)
+
 // Config subsystem configurations
 type Config struct {
 	Daemon   DaemonConfig
@@ -855,4 +861,13 @@ func SplitAddr(addr string) (string, uint16, error) {
 		return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
 	}
 	return pts[0], uint16(port64), nil
+}
+
+// DropletPrecisionCheck checks if the amount is valid
+func DropletPrecisionCheck(amount uint64) error {
+	if amount%MaxDropletDivisor != 0 {
+		return fmt.Errorf("invalid amount, too many decimal place")
+	}
+
+	return nil
 }

@@ -509,39 +509,35 @@ func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address,
 	return auxs, nil
 }
 
-// AllSpendsOutputs returns all spending outputs in unconfirmed tx pool.
-func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent blockdb.UnspentPool) ([]ReadableOutput, error) {
-	outs := []ReadableOutput{}
-	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+// GetSpendingOutputs returns all spending outputs in unconfirmed tx pool.
+func (utp *UnconfirmedTxnPool) GetSpendingOutputs(bcUnspent blockdb.UnspentPool) (coin.UxArray, error) {
+	outs := coin.UxArray{}
+	err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		uxs, err := bcUnspent.GetArray(tx.Txn.In)
 		if err != nil {
 			return err
 		}
 
-		for _, ux := range uxs {
-			outs = append(outs, NewReadableOutput(ux))
-		}
-
+		outs = append(outs, uxs...)
 		return nil
-	}); err != nil {
-		return []ReadableOutput{}, fmt.Errorf("AllSpendsOutputs error:%v", err)
+	})
+
+	if err != nil {
+		return coin.UxArray{}, fmt.Errorf("get unconfirmed spending outputs failed: %v", err)
 	}
+
 	return outs, nil
 }
 
-// AllIncomingOutputs returns all predicted incomming outputs.
-func (utp *UnconfirmedTxnPool) AllIncomingOutputs(bh coin.BlockHeader) ([]ReadableOutput, error) {
-	outs := []ReadableOutput{}
-	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+// GetIncomingOutputs returns all predicted incoming outputs.
+func (utp *UnconfirmedTxnPool) GetIncomingOutputs(bh coin.BlockHeader) coin.UxArray {
+	outs := coin.UxArray{}
+	utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		uxOuts := coin.CreateUnspents(bh, tx.Txn)
-		for _, ux := range uxOuts {
-			outs = append(outs, NewReadableOutput(ux))
-		}
+		outs = append(outs, uxOuts...)
 		return nil
-	}); err != nil {
-		return []ReadableOutput{}, fmt.Errorf("AllIncommingOutputs error:%v", err)
-	}
-	return outs, nil
+	})
+	return outs
 }
 
 // Get returns the unconfirmed transaction of given tx hash.

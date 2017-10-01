@@ -244,7 +244,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse("1", &visor.ReadableBlocks{}),
+			makeSuccessResponse("1", nil),
 		},
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -79,7 +80,7 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 
 	var unlockedSupply uint64
 	for _, u := range unlockedOutputs.HeadOutputs {
-		coins, err := visor.StrToBalance(u.Coins)
+		coins, err := droplet.FromString(u.Coins)
 		if err != nil {
 			logger.Error("Invalid unlocked output balance string %s: %v", u.Coins, err)
 			wh.Error500(w)

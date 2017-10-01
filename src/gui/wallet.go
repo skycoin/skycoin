@@ -38,7 +38,13 @@ func Spend(gateway *daemon.Gateway,
 			break
 		}
 
-		logger.Info("Spend: \ntx= \n %s \n", visor.TransactionToJSON(*tx))
+		var txStr string
+		txStr, err = visor.TransactionToJSON(*tx)
+		if err != nil {
+			break
+		}
+
+		logger.Info("Spend: \ntx= \n %s \n", txStr)
 
 		b, err = gateway.GetWalletBalance(walletID)
 		if err != nil {
@@ -55,11 +61,15 @@ func Spend(gateway *daemon.Gateway,
 		}
 	}
 
-	rdtx := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+	if err != nil {
+		logger.Error("%v", err)
+		return &SpendResult{}
+	}
 
 	return &SpendResult{
 		Balance:     &b,
-		Transaction: &rdtx,
+		Transaction: rbTx,
 	}
 }
 

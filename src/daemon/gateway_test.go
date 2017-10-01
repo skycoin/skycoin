@@ -1,125 +1,90 @@
 package daemon
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFbyAddresses(t *testing.T) {
+	uxs := make(coin.UxArray, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxs[i] = coin.UxOut{
+			Body: coin.UxBody{
+				Address: addrs[i],
+			},
+		}
+	}
+
 	tests := []struct {
 		name    string
 		addrs   []string
-		outputs []visor.ReadableOutput
-		want    []visor.ReadableOutput
+		outputs []coin.UxOut
+		want    []coin.UxOut
 	}{
 		// TODO: Add test cases.
 		{
 			"filter with one address",
-			[]string{"abc"},
-			[]visor.ReadableOutput{
-				{
-					Address: "abc",
-				},
-				{
-					Address: "cde",
-				},
-			},
-			[]visor.ReadableOutput{
-				{
-					Address: "abc",
-				},
-			},
+			[]string{addrs[0].String()},
+			uxs[:2],
+			uxs[:1],
 		},
 		{
 			"filter with multiple addresses",
-			[]string{"abc", "cde"},
-			[]visor.ReadableOutput{
-				{
-					Address: "abc",
-				},
-				{
-					Address: "cde",
-				},
-				{
-					Address: "efg",
-				},
-			},
-			[]visor.ReadableOutput{
-				{
-					Address: "abc",
-				},
-				{
-					Address: "cde",
-				},
-			},
+			[]string{addrs[0].String(), addrs[1].String()},
+			uxs[:3],
+			uxs[:2],
 		},
 	}
 	for _, tt := range tests {
+		// fmt.Printf("want:%+v\n", tt.want)
 		outs := FbyAddresses(tt.addrs)(tt.outputs)
-		if !reflect.DeepEqual(outs, tt.want) {
-			t.Errorf("%q. FbyAddresses() = %v, want %v", tt.name, outs, tt.want)
-		}
+		require.Equal(t, outs, coin.UxArray(tt.want))
 	}
 }
 
 func TestFbyHashes(t *testing.T) {
+	uxs := make(coin.UxArray, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxs[i] = coin.UxOut{
+			Body: coin.UxBody{
+				Address: addrs[i],
+			},
+		}
+	}
+
 	type args struct {
 		hashes []string
 	}
 	tests := []struct {
 		name    string
 		hashes  []string
-		outputs []visor.ReadableOutput
-		want    []visor.ReadableOutput
+		outputs coin.UxArray
+		want    coin.UxArray
 	}{
 		// TODO: Add test cases.
 		{
 			"filter with one hash",
-			[]string{"abc"},
-			[]visor.ReadableOutput{
-				{
-					Hash: "abc",
-				},
-				{
-					Hash: "cde",
-				},
-			},
-			[]visor.ReadableOutput{
-				{
-					Hash: "abc",
-				},
-			},
+			[]string{uxs[0].Hash().Hex()},
+			uxs[:2],
+			uxs[:1],
 		},
 		{
 			"filter with multiple hash",
-			[]string{"abc", "cde"},
-			[]visor.ReadableOutput{
-				{
-					Hash: "abc",
-				},
-				{
-					Hash: "cde",
-				},
-				{
-					Hash: "efg",
-				},
-			},
-			[]visor.ReadableOutput{
-				{
-					Hash: "abc",
-				},
-				{
-					Hash: "cde",
-				},
-			},
+			[]string{uxs[0].Hash().Hex(), uxs[1].Hash().Hex()},
+			uxs[:3],
+			uxs[:2],
 		},
 	}
 	for _, tt := range tests {
 		outs := FbyHashes(tt.hashes)(tt.outputs)
-		if !reflect.DeepEqual(outs, tt.want) {
-			t.Errorf("%q. FbyHashes() = %v, want %v", tt.name, outs, tt.want)
-		}
+		require.Equal(t, outs, coin.UxArray(tt.want))
 	}
 }

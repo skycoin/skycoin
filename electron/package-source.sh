@@ -11,11 +11,13 @@ if [[ "$OSTYPE" == "linux"* ]]; then
     tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
         "../src" "../cmd" "../run.sh" "../test.sh" "../README.md" \
+        "../Installation.md" "../CHANGELOG.md" \
         >/dev/null
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     tar cvf "${SRC_TAR}" --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
         "../src" "../cmd" "../run.sh" "../test.sh" "../README.md" \
+        "../Installation.md" "../CHANGELOG.md" \
         >/dev/null
 fi
 

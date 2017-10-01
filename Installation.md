@@ -1,13 +1,13 @@
 # Installing go
 
 ## For OSX
-First you need to have installed `homebrew`, if you don't have it yet.
+First you need to have `homebrew` installed, if you don't have it yet.
 
 ```sh
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-Then, let's install latest go's version.
+Then, let's install go's latest version.
 
 ```sh
 brew install go
@@ -37,7 +37,7 @@ if [[ "$(cat /etc/redhat-release | grep -o CentOS)" == "CentOS" ]]; then sudo yu
 
 ### Install Go with Gvm
 #### Install Gvm
-<strong>gvm</strong> need to be installed.
+`gvm` need to be installed.
 
 ```sh
 curl -sSL https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer > gvm-installer && chmod a+x gvm-installer && 
@@ -58,7 +58,7 @@ gvm use go1.4
 ```
 
 #### Installation issues
-If you open up new terminal and the <strong>go command</strong> is not found then add this to `.bashrc`. GVM should add this automatically.
+If you open up new a terminal and the `go` command is not found then add this to `.bashrc`. GVM should add this automatically.
 
 ```sh
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
@@ -68,7 +68,7 @@ gvm use go1.9 >/dev/null
 ## Install Go manually
 ### Install Go
 
-Let's go to home directory and declare <strong>go version</strong> that you want to download.
+Let's go to home directory and declare `go`'s version that you want to download.
 
 ```sh
 cd ~
@@ -83,7 +83,7 @@ tar xvf go$GOV.linux-amd64.tar.gz
 rm go$GOV.linux-amd64.tar.gz
 ```
 
-lastly, let's install <strong>go</strong>.
+lastly, let's install `go`.
 
 ```sh
 sudo mv go /usr/local/go
@@ -95,7 +95,7 @@ sudo ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
 Note: Find any golang source version at [Go Website](https://golang.org/dl/)
 
 ### Setup your GOPATH
-The <strong>$GOPATH</strong> environment variable specifies the location of your workspace. It defaults to a directory named <strong>go</strong> inside your home directory, so <strong>$HOME/go</strong> on Unix.
+The $GOPATH environment variable specifies the location of your workspace. It defaults to a directory named `go` inside your home directory, so $HOME/go on Unix.
 
 Create your workspace directory with it's respective inner folders:
 
@@ -106,7 +106,7 @@ mkdir -p $HOME/go/src
 mkdir -p $HOME/go/pkg
 ```
 
-Setup <strong>$GOPATH</strong> variable, add it to ~/.bashrc. After editing, run `source ~/.bashrc` or open a new tab.
+Setup $GOPATH variable, add it to ~/.bashrc. After editing, run `source ~/.bashrc` or open a new tab.
 
 ```sh
 export GOROOT=/usr/local/go

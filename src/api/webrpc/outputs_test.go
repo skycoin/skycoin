@@ -61,7 +61,7 @@ func decodeOutputStr(str string) visor.ReadableOutputSet {
 
 func filterOut(outs []coin.UxOut, f func(out coin.UxOut) bool) visor.ReadableOutputSet {
 	os := []coin.UxOut{}
-	for _, o := range os {
+	for _, o := range outs {
 		if f(o) {
 			os = append(os, o)
 		}
@@ -111,7 +111,7 @@ func Test_getOutputsHandler(t *testing.T) {
 			"single address",
 			args{
 				addrs:   []string{addrs[0].String()},
-				gateway: &fakeGateway{},
+				gateway: &fakeGateway{uxouts: uxouts},
 			},
 			makeSuccessResponse("1", OutputsResult{filterOut(uxouts[:], func(out coin.UxOut) bool {
 				return out.Body.Address == addrs[0]
@@ -121,7 +121,7 @@ func Test_getOutputsHandler(t *testing.T) {
 			"multiple addresses",
 			args{
 				addrs:   []string{addrs[0].String(), addrs[1].String()},
-				gateway: &fakeGateway{},
+				gateway: &fakeGateway{uxouts: uxouts},
 			},
 			makeSuccessResponse("1", OutputsResult{filterOut(uxouts, func(out coin.UxOut) bool {
 				return out.Body.Address == addrs[0] || out.Body.Address == addrs[1]
@@ -142,7 +142,6 @@ func Test_getOutputsHandler(t *testing.T) {
 			}
 
 			got := getOutputsHandler(req, tt.args.gateway)
-			// fmt.Println(string(got.Result))
 			require.Equal(t, tt.want, got)
 		})
 	}

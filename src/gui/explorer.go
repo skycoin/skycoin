@@ -32,11 +32,11 @@ type DeprecatedCoinSupply struct {
 // CoinSupply records the coin supply info
 type CoinSupply struct {
 	// Coins distributed beyond the project:
-	CurrentSupply uint64 `json:"current_supply"`
+	CurrentSupply string `json:"current_supply"`
 	// TotalSupply is CurrentSupply plus coins held by the distribution addresses that are spendable
-	TotalSupply uint64 `json:"total_supply"`
+	TotalSupply string `json:"total_supply"`
 	// MaxSupply is the maximum number of coins to be distributed ever
-	MaxSupply uint64 `json:"max_supply"`
+	MaxSupply string `json:"max_supply"`
 	// Distribution addresses which count towards total supply
 	UnlockedAddresses []string `json:"unlocked_distribution_addresses"`
 	// Distribution addresses which are locked and do not count towards total supply
@@ -52,7 +52,7 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// DEPRECATED
+// TODO: DEPRECATED Remove for v21 release
 func getEffectiveOutputs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, oldSupply := coinSupply(gateway, w, r)
@@ -86,19 +86,42 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 			wh.Error500(w)
 			return nil, nil
 		}
-		unlockedSupply += coins / 1e6
+		unlockedSupply += coins
 	}
 
 	// "total supply" is the number of coins unlocked.
 	// Each distribution address was allocated visor.DistributionAddressInitialBalance coins.
 	totalSupply := uint64(len(unlockedAddrs)) * visor.DistributionAddressInitialBalance
+	totalSupply *= droplet.Multiplier
+
 	// "current supply" is the number of coins distribution from the unlocked pool
 	currentSupply := totalSupply - unlockedSupply
 
+	currentSupplyStr, err := droplet.ToString(currentSupply)
+	if err != nil {
+		logger.Error("Failed to convert coins to string: %v", err)
+		wh.Error500(w)
+		return nil, nil
+	}
+
+	totalSupplyStr, err := droplet.ToString(totalSupply)
+	if err != nil {
+		logger.Error("Failed to convert coins to string: %v", err)
+		wh.Error500(w)
+		return nil, nil
+	}
+
+	maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
+	if err != nil {
+		logger.Error("Failed to convert coins to string: %v", err)
+		wh.Error500(w)
+		return nil, nil
+	}
+
 	cs := CoinSupply{
-		CurrentSupply:     currentSupply,
-		TotalSupply:       totalSupply,
-		MaxSupply:         visor.MaxCoinSupply,
+		CurrentSupply:     currentSupplyStr,
+		TotalSupply:       totalSupplyStr,
+		MaxSupply:         maxSupplyStr,
 		UnlockedAddresses: unlockedAddrs,
 		LockedAddresses:   visor.GetLockedDistributionAddresses(),
 	}

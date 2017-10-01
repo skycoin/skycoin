@@ -873,9 +873,9 @@ result:
 
 ```json
 {
-    "current_supply": 5847530,
-    "total_supply": 30000000,
-    "max_supply": 100000000,
+    "current_supply": "5847530.000000",
+    "total_supply": "30000000.000000",
+    "max_supply": "100000000.000000",
     "unlocked_distribution_addresses": [
         "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
         "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

@@ -25,8 +25,8 @@ func main() {
 	genCount := flag.Int("n", 1, "Number of addresses to generate")
 	hideSecKey := flag.Bool("s", false, "Hide the secret key from the output")
 	isBitcoin := flag.Bool("b", false, "Print address as a bitcoin address")
-	hexSeed := flag.Bool("x", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed")
-	onlyAddr := flag.Bool("only-addr", false, "Only show generated address list, hide seed, secret key and pubkey")
+	hexSeed := flag.Bool("x", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if seed is not provided")
+	onlyAddr := flag.Bool("only-addr", false, "Only show generated address list. Hide seed, secret key and public key")
 	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
 	flag.Parse()
 

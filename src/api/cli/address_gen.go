@@ -32,15 +32,15 @@ func addressGenCmd() gcli.Command {
 			},
 			gcli.BoolFlag{
 				Name:  "hex,x",
-				Usage: "Use random hex string as seed",
+				Usage: "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided",
 			},
 			gcli.BoolFlag{
 				Name:  "only-addr,oa",
-				Usage: "Only show generated address list, hide seed, secret key and pubkey",
+				Usage: "Only show generated address list, hide seed, secret key and public key",
 			},
 			gcli.StringFlag{
 				Name:  "seed",
-				Usage: "Seed for deterministic key generation. Will use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not provided.",
+				Usage: "Seed for deterministic key generation. Will use bip39 as the seed if not provided.",
 			},
 		},
 		OnUsageError: onCommandUsageError(name),

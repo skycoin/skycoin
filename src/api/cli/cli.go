@@ -22,7 +22,7 @@ import (
 // Commands all cmds that we support
 
 const (
-	Version           = "0.19.0"
+	Version           = "0.20.0-dev"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt

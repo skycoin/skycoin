@@ -35,42 +35,49 @@ type fakeGateway struct {
 	injectedTransactions map[string]string
 	addrRecvUxOuts       []*historydb.UxOut
 	addrSpentUxOUts      []*historydb.UxOut
+	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
+func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &blocks
+	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
+func (fg fakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if start > end {
-		return &blocks
+		return nil, nil
 	}
 
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &blocks
+	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
-	return nil
+func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+	return nil, nil
 }
 
 func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
-	v := decodeOutputStr(outputStr)
+	outs := []coin.UxOut{}
 	for _, f := range filters {
-		v.HeadOutputs = f(v.HeadOutputs)
-		v.OutgoingOutputs = f(v.OutgoingOutputs)
-		v.IncomingOutputs = f(v.IncomingOutputs)
+		outs = f(fg.uxouts)
 	}
-	return v, nil
+
+	rbOuts, err := visor.NewReadableOutputs(outs)
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
+
+	return visor.ReadableOutputSet{
+		HeadOutputs: rbOuts,
+	}, nil
 }
 
 func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {

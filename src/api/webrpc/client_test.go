@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
 )
@@ -53,16 +56,35 @@ func TestClient(t *testing.T) {
 }
 
 func testClientGetUnspentOutputs(t *testing.T, c *Client, s *WebRPC, gw *fakeGateway) {
-	// address is copied from outputsStr
-	addrs := []string{"fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B", "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW"}
+	uxouts := make([]coin.UxOut, 5)
+	addrs := make([]cipher.Address, 5)
+	rbOutputs := make([]visor.ReadableOutput, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxouts[i] = coin.UxOut{}
+		uxouts[i].Body.Address = addrs[i]
+		rbOut, err := visor.NewReadableOutput(uxouts[i])
+		require.NoError(t, err)
+		rbOutputs[i] = rbOut
+	}
 
-	outputs, err := c.GetUnspentOutputs(addrs)
+	s.Gateway = &fakeGateway{
+		uxouts: uxouts,
+	}
+
+	defer func() {
+		s.Gateway = gw
+	}()
+
+	reqAddrs := []string{addrs[0].String(), addrs[1].String()}
+
+	outputs, err := c.GetUnspentOutputs(reqAddrs)
 	require.NoError(t, err)
-	require.Len(t, outputs.Outputs.HeadOutputs, 4)
+	require.Len(t, outputs.Outputs.HeadOutputs, 2)
 	require.Len(t, outputs.Outputs.IncomingOutputs, 0)
 	require.Len(t, outputs.Outputs.OutgoingOutputs, 0)
 
-	require.Equal(t, decodeOutputStr(outputStr), outputs.Outputs)
+	require.Equal(t, rbOutputs[:2], outputs.Outputs.HeadOutputs)
 
 	// Invalid address
 	_, err = c.GetUnspentOutputs([]string{"invalid-address-foo"})
@@ -76,9 +98,9 @@ func testClientInjectTransaction(t *testing.T, c *Client, s *WebRPC, gw *fakeGat
 	}
 	require.Empty(t, gw.injectedTransactions)
 
-	txId, err := c.InjectTransaction(rawTxStr)
+	txID, err := c.InjectTransaction(rawTxStr)
 	require.NoError(t, err)
-	require.NotEmpty(t, txId)
+	require.NotEmpty(t, txID)
 
 	log.Println(gw.injectedTransactions)
 	require.Len(t, gw.injectedTransactions, 1)
@@ -117,10 +139,12 @@ func testClientGetTransactionByID(t *testing.T, c *Client, s *WebRPC, gw *fakeGa
 	txn, err = c.GetTransactionByID(rawTxId)
 	require.NoError(t, err)
 	expectedTxn := decodeRawTransaction(rawTxStr)
+	rbTx, err := visor.NewReadableTransaction(expectedTxn)
+	require.NoError(t, err)
 	require.Equal(t, &visor.TransactionResult{
 		Status:      expectedTxn.Status,
 		Time:        0,
-		Transaction: visor.NewReadableTransaction(expectedTxn),
+		Transaction: *rbTx,
 	}, txn.Transaction)
 }
 

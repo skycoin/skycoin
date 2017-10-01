@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
-	//"github.com/skycoin/skycoin/src/wallet"
 )
 
 //TODO
@@ -344,6 +342,13 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 
 	if err := txn.Verify(); err != nil {
 		return fmt.Errorf("Transaction Verification Failed, %v", err)
+	}
+
+	// valid the spending coins
+	for _, out := range txn.Out {
+		if err := DropletPrecisionCheck(out.Coins); err != nil {
+			return err
+		}
 	}
 
 	return nil

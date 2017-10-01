@@ -44,12 +44,14 @@ func Test_getTransactionHandler(t *testing.T) {
 	}
 
 	tx := decodeRawTransaction(rawTxStr)
+	rbTx, err := visor.NewReadableTransaction(tx)
+	require.NoError(t, err)
 	txRlt := visor.TransactionResult{
 		Status: visor.TransactionStatus{
 			Confirmed: true,
 			Height:    103,
 		},
-		Transaction: visor.NewReadableTransaction(tx),
+		Transaction: *rbTx,
 	}
 
 	tests := []struct {

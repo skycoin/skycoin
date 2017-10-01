@@ -64,7 +64,13 @@ func decodeRawTxCmd() gcli.Command {
 			}
 
 			tx := coin.TransactionDeserialize(b)
-			fmt.Println(visor.TransactionToJSON(tx))
+			txStr, err := visor.TransactionToJSON(tx)
+			if err != nil {
+				fmt.Println(err)
+				return nil
+			}
+
+			fmt.Println(txStr)
 			return nil
 		},
 	}

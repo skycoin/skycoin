@@ -22,7 +22,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 <!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
 
 - [Installation](#installation)
-    - [Installation and Setup Go](#installation-and-setup)
+    - [Go Installation and Setup](#installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -50,7 +49,7 @@ func TestMakeChangeOut(t *testing.T) {
 	require.Len(t, txOuts, 2)
 
 	chgOut := txOuts[0]
-	fmt.Printf("chgOut:%+v\n", chgOut)
+	t.Logf("chgOut:%+v\n", chgOut)
 	require.Equal(t, chgAddr, chgOut.Address.String())
 	require.Exactly(t, uint64(100e6), chgOut.Coins)
 	require.Exactly(t, uint64(300/8), chgOut.Hours)

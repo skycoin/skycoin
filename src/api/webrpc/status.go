@@ -17,7 +17,11 @@ func getStatusHandler(req Request, gw Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	blocks := gw.GetLastBlocks(1)
+	blocks, err := gw.GetLastBlocks(1)
+	if err != nil {
+		logger.Error("%v", err)
+		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+	}
 	if len(blocks.Blocks) == 0 {
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}

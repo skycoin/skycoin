@@ -19,10 +19,12 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
+// UnspentOut wraps visor.ReadableOutput
 type UnspentOut struct {
 	visor.ReadableOutput
 }
 
+// SendAmount represents an amount to send to an address
 type SendAmount struct {
 	Addr  string
 	Coins uint64
@@ -40,7 +42,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		Usage:     "Create a raw transaction to be broadcast to the network later",
 		ArgsUsage: "[to address] [amount]",
 		Description: fmt.Sprintf(`
-  Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+  Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
 
 		  The default wallet (%s) will be
 		  used if no wallet and address was specified.
@@ -71,7 +73,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			gcli.StringFlag{
 				Name: "m",
 				Usage: `[send to many] use JSON string to set multiple receive addresses and coins,
-				example: -m '[{"addr":"$addr1", "coins": 10}, {"addr":"$addr2", "coins": 20}]'`,
+				example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`,
 			},
 			gcli.BoolFlag{
 				Name:  "json,j",
@@ -86,16 +88,15 @@ func createRawTxCmd(cfg Config) gcli.Command {
 				return nil
 			}
 
-			useJson := c.Bool("json")
-			if useJson {
+			if c.Bool("json") {
 				return printJson(struct {
 					RawTx string `json:"rawtx"`
 				}{
 					RawTx: rawtx,
 				})
-			} else {
-				fmt.Println(rawtx)
 			}
+
+			fmt.Println(rawtx)
 			return nil
 		},
 	}
@@ -335,12 +336,12 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 	}
 
 	// caculate total required amount
-	var totalAmt uint64
+	var totalCoins uint64
 	for _, arg := range toAddrs {
-		totalAmt += arg.Coins
+		totalCoins += arg.Coins
 	}
 
-	outs, err := getSufficientUnspents(spendableOuts, totalAmt)
+	outs, err := getSufficientUnspents(spendableOuts, totalCoins)
 	if err != nil {
 		return "", err
 	}
@@ -365,31 +366,27 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 }
 
 func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
-	var (
-		totalInAmt   uint64
-		totalInHours uint64
-		totalOutAmt  uint64
-	)
+	var totalInCoins, totalInHours, totalOutCoins uint64
 
 	for _, o := range outs {
 		c, err := droplet.FromString(o.Coins)
 		if err != nil {
 			return nil, errors.New("error coins string")
 		}
-		totalInAmt += c
+		totalInCoins += c
 		totalInHours += o.Hours
 	}
 
 	for _, to := range toAddrs {
-		totalOutAmt += to.Coins
+		totalOutCoins += to.Coins
 	}
 
-	if totalInAmt < totalOutAmt {
+	if totalInCoins < totalOutCoins {
 		return nil, errors.New("amount is not sufficient")
 	}
 
 	outAddrs := []coin.TransactionOutput{}
-	chgAmt := totalInAmt - totalOutAmt
+	chgAmt := totalInCoins - totalOutCoins
 	// FIXME: Why divide by 4 here?
 	chgHours := totalInHours / 4
 	addrHours := chgHours / uint64(len(toAddrs))
@@ -406,10 +403,10 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	return outAddrs, nil
 }
 
-func mustMakeUtxoOutput(addr string, amount, hours uint64) coin.TransactionOutput {
+func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput {
 	uo := coin.TransactionOutput{}
 	uo.Address = cipher.MustDecodeBase58Address(addr)
-	uo.Coins = amount
+	uo.Coins = coins
 	uo.Hours = hours
 	return uo
 }
@@ -431,11 +428,9 @@ func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
 	return keys, nil
 }
 
-func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, error) {
-	var (
-		totalAmt uint64
-		outs     []UnspentOut
-	)
+func getSufficientUnspents(unspents []UnspentOut, coins uint64) ([]UnspentOut, error) {
+	var totalCoins uint64
+	var outs []UnspentOut
 
 	addrOuts := make(map[string][]UnspentOut)
 	for _, u := range unspents {
@@ -446,19 +441,22 @@ func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, err
 		for i, u := range us {
 			coins, err := droplet.FromString(u.Coins)
 			if err != nil {
-				return nil, errors.New("error coins string")
+				return nil, err
 			}
+
 			if coins == 0 {
 				continue
 			}
-			totalAmt += coins
+
+			totalCoins += coins
 			outs = append(outs, us[i])
 
-			if totalAmt >= amt {
+			if totalCoins >= coins {
 				return outs, nil
 			}
 		}
 	}
+
 	return nil, errors.New("balance in wallet is not sufficient")
 }
 

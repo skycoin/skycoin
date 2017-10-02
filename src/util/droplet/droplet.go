@@ -75,7 +75,9 @@ func FromString(b string) (uint64, error) {
 }
 
 // ToString converts droplets to a skycoin balance fixed-point decimal string.
-// For example, 123000456 becomes "123.000456"
+// String will always have a decimal precision of droplet.Exponent (6).
+// For example, 123000456 becomes "123.000456" and
+// 123000000 becomes "123.000000".
 func ToString(n uint64) (string, error) {
 	if n > math.MaxInt64 {
 		return "", ErrTooLarge
@@ -83,5 +85,5 @@ func ToString(n uint64) (string, error) {
 
 	d := decimal.New(int64(n), -Exponent)
 
-	return d.String(), nil
+	return d.StringFixed(Exponent), nil
 }

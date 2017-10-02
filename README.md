@@ -22,8 +22,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 <!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
 
 - [Installation](#installation)
-    - [Installing Go](#installing-go)
-    - [Create GOPATH directory](#create-gopath-directory)
+    - [Go Installation and Setup](#go-19-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
@@ -46,21 +45,9 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-### Installing Go
+### Go 1.9+ Installation and Setup
 
-[Install go1.9+](./Installation.md)
-
-### Create GOPATH directory
-
-go packages are installed in `$GOPATH` which defaults to `$HOME/go`.
-
-Create `$HOME/go` for your `$GOPATH`:
-
-```sh
-mkdir ~/go
-```
-
-You may also want to update your `$PATH` environment variable to `PATH="$PATH:$GOPATH/bin`.
+[Golang 1.9+ Installation/Setup](./Installation.md)
 
 ### Go get skycoin
 

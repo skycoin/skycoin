@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/droplet"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
@@ -462,15 +463,16 @@ func getSufficientUnspents(unspents []UnspentOut, coins uint64) ([]UnspentOut, e
 // NewTransaction create skycoin transaction.
 func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	tx := coin.Transaction{}
-	// keys := make([]cipher.SecKey, len(utxos))
 	for _, u := range utxos {
 		tx.PushInput(cipher.MustSHA256FromHex(u.Hash))
 	}
 
 	for _, o := range outs {
+		if err := daemon.DropletPrecisionCheck(o.Coins); err != nil {
+			return nil, err
+		}
 		tx.PushOutput(o.Address, o.Coins, o.Hours)
 	}
-	// tx.Verify()
 
 	tx.SignInputs(keys)
 	tx.UpdateHeader()

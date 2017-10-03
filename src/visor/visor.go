@@ -454,34 +454,19 @@ func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
 	return vs.Blockchain.Unspent().GetAll()
 }
 
-// GetUnspentOutputReadables returns readable unspent outputs
-func (vs *Visor) GetUnspentOutputReadables() ([]ReadableOutput, error) {
-	uxs, err := vs.GetUnspentOutputs()
-	if err != nil {
-		return []ReadableOutput{}, err
-	}
-
-	rxReadables := make([]ReadableOutput, len(uxs))
-	for i, ux := range uxs {
-		rxReadables[i] = NewReadableOutput(ux)
-	}
-
-	return rxReadables, nil
+// UnconfirmedSpendingOutputs returns all spending outputs in unconfirmed tx pool
+func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
+	return vs.Unconfirmed.GetSpendingOutputs(vs.Blockchain.Unspent())
 }
 
-// AllSpendsOutputs returns all spending outputs in unconfirmed tx pool
-func (vs *Visor) AllSpendsOutputs() ([]ReadableOutput, error) {
-	return vs.Unconfirmed.AllSpendsOutputs(vs.Blockchain.Unspent())
-}
-
-// AllIncomingOutputs returns all predicted outputs that are in pending tx pool
-func (vs *Visor) AllIncomingOutputs() ([]ReadableOutput, error) {
+// UnconfirmedIncomingOutputs returns all predicted outputs that are in pending tx pool
+func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 	head, err := vs.Blockchain.Head()
 	if err != nil {
-		return []ReadableOutput{}, err
+		return coin.UxArray{}, err
 	}
 
-	return vs.Unconfirmed.AllIncomingOutputs(head.Head)
+	return vs.Unconfirmed.GetIncomingOutputs(head.Head), nil
 }
 
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
@@ -523,27 +508,6 @@ func (vs *Visor) HeadBkSeq() uint64 {
 // GetBlockchainMetadata returns descriptive Blockchain information
 func (vs *Visor) GetBlockchainMetadata() BlockchainMetadata {
 	return NewBlockchainMetadata(vs)
-}
-
-// GetReadableBlock returns a readable copy of the block at seq. Returns error if seq out of range
-func (vs *Visor) GetReadableBlock(seq uint64) (ReadableBlock, error) {
-	b, err := vs.GetBlock(seq)
-	if err != nil {
-		return ReadableBlock{}, err
-	}
-
-	return NewReadableBlock(&b.Block), nil
-}
-
-// GetReadableBlocks returns multiple blocks between start and end (not including end). Returns
-// empty slice if unable to fulfill request, it does not return nil.
-func (vs *Visor) GetReadableBlocks(start, end uint64) []ReadableBlock {
-	blocks := vs.GetBlocks(start, end)
-	rbs := make([]ReadableBlock, 0, len(blocks))
-	for _, b := range blocks {
-		rbs = append(rbs, NewReadableBlock(&b.Block))
-	}
-	return rbs
 }
 
 // GetBlock returns a copy of the block at seq. Returns error if seq out of range

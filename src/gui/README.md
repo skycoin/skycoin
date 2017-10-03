@@ -95,7 +95,7 @@ result:
             "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
             "src_tx": "b51e1933f286c4f03d73e8966186bafb25f64053db8514327291e690ae8aafa5",
             "address": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
-            "coins": "2",
+            "coins": "2.000000",
             "hours": 633
         },
     ],
@@ -268,13 +268,13 @@ result:
             {
                 "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
                 "dst": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
-                "coins": "60",
+                "coins": "60.000000",
                 "hours": 2458
             },
             {
                 "uxid": "be40210601829ba8653bac1d6ecc4049955d97fb490a48c310fd912280422bd9",
                 "dst": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
-                "coins": "1",
+                "coins": "1.000000",
                 "hours": 2458
             }
         ]
@@ -320,13 +320,13 @@ result:
                 {
                     "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
                     "dst": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
-                    "coins": "60",
+                    "coins": "60.000000",
                     "hours": 2458
                 },
                 {
                     "uxid": "be40210601829ba8653bac1d6ecc4049955d97fb490a48c310fd912280422bd9",
                     "dst": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
-                    "coins": "1",
+                    "coins": "1.000000",
                     "hours": 2458
                 }
             ]
@@ -381,7 +381,7 @@ result:
             {
                 "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
                 "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
-                "coins": "8",
+                "coins": "8.000000",
                 "hours": 931
             }
         ]
@@ -453,16 +453,16 @@ result:
 
 ```json
 {
-    current: 2760,
-    highest: 2760,
-    peers: [
+    "current": 2760,
+    "highest": 2760,
+    "peers": [
     {
-        address: "35.157.164.126:6000",
-        height: 2760
+        "address": "35.157.164.126:6000",
+        "height": 2760
     },
     {
-        address: "63.142.253.76:6000",
-        height: 2760
+        "address": "63.142.253.76:6000",
+        "height": 2760
     },
     ]
 }
@@ -493,40 +493,40 @@ result:
 ```json
 {
     {
-        header: {
-            seq: 2760,
-            block_hash: "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
-            previous_block_hash: "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
-            timestamp: 1504220821,
-            fee: 196130,
-            version: 0,
-            tx_body_hash: "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+        "header": {
+            "seq": 2760,
+            "block_hash": "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
+            "previous_block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
+            "timestamp": 1504220821,
+            "fee": 196130,
+            "version": 0,
+            "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
         },
-        body: {
-            txns: [
+        "body": {
+            "txns": [
                 {
-                    length: 220,
-                    type: 0,
-                    txid: "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
-                   inner_hash: "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
-                    sigs: [
+                    "length": 220,
+                    "type": 0,
+                    "txid": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
+                   "inner_hash": "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
+                    "sigs": [
                             "f0d0eb337e3440af6e8f0c105037ec205f36c83770d26a9e3a0fb4b7ec1a2be64764f4e31cbaf6629933c971613d10d58e6acb592704a7d511f19836441f09fb00"
                     ],
-                    inputs: [
+                    "inputs": [
                             "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c"
                     ],
-                    outputs: [
+                    "outputs": [
                         {
-                            uxid: "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
-                            dst: "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                            coins: "998",
-                            hours: 35390
+                            "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
+                            "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                            "coins": "998.000000",
+                            "hours": 35390
                         },
                         {
-                            uxid: "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
-                            dst: "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
-                            coins: "2",
-                            hours: 70780
+                            "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
+                            "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
+                            "coins": "2.000000",
+                            "hours": 70780
                         }
                     ]
                 }
@@ -584,7 +584,7 @@ result:
                             {
                                 "uxid": "194cc596d2beda803d8142ddc455872082f84b09a5edd8085082b60d314c1e29",
                                 "dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-                                "coins": "23000",
+                                "coins": "23000.000000",
                                 "hours": 87673
                             }
                         ]
@@ -619,7 +619,7 @@ result:
                             {
                                 "uxid": "f9bffdcbe252acb1c3a8a1e8c99829342ba1963860d5692eebaeb9bcfbcaf274",
                                 "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                                "coins": "27000",
+                                "coins": "27000.000000",
                                 "hours": 102905
                             }
                         ]
@@ -679,13 +679,13 @@ result:
                             {
                                 "uxid": "448c87cdebfa8ae92f009b961463f650bf23dfc696a381e81d0c64bafebe7847",
                                 "dst": "B9UG4KLggfX9MNcVuMJPm11XXNDU5vkRcY",
-                                "coins": "500",
+                                "coins": "500.000000",
                                 "hours": 55426
                             },
                             {
                                 "uxid": "018b4132ad1f110619ff98074f36028cee082992feb824e5409f013cf61c048c",
                                 "dst": "uTHMcHr3YSEwv3M2ne9B1KfoyVkRwyDYF9",
-                                "coins": "350",
+                                "coins": "350.000000",
                                 "hours": 55426
                             }
                         ]
@@ -720,13 +720,13 @@ result:
                             {
                                 "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
                                 "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                                "coins": "998",
+                                "coins": "998.000000",
                                 "hours": 35390
                             },
                             {
                                 "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
                                 "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
-                                "coins": "2",
+                                "coins": "2.000000",
                                 "hours": 70780
                             }
                         ]
@@ -784,7 +784,7 @@ result:
             {
                 "uxid": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
                 "dst": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
-                "coins": "2",
+                "coins": "2.000000",
                 "hours": 633
             }
         ]
@@ -873,9 +873,9 @@ result:
 
 ```json
 {
-    "current_supply": 5847530,
-    "total_supply": 30000000,
-    "max_supply": 100000000,
+    "current_supply": "5847530.000000",
+    "total_supply": "30000000.000000",
+    "max_supply": "100000000.000000",
     "unlocked_distribution_addresses": [
         "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
         "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

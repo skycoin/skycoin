@@ -18,11 +18,11 @@ const (
 
 var (
 	// ErrNegativeValue is returned if a balance string is a negative number
-	ErrNegativeValue = errors.New("Negative balance")
+	ErrNegativeValue = errors.New("Droplet string conversion failed: Negative balance")
 	// ErrTooManyDecimals is returned if a balance string has more than 6 decimal places
-	ErrTooManyDecimals = errors.New("Too many decimal places")
+	ErrTooManyDecimals = errors.New("Droplet string conversion failed: Too many decimal places")
 	// ErrTooLarge is returned if a balance string is greater than math.MaxInt64
-	ErrTooLarge = errors.New("Value is too large")
+	ErrTooLarge = errors.New("Droplet string conversion failed: Value is too large")
 
 	logger     = logging.MustGetLogger("convert")
 	maxDecimal decimal.Decimal
@@ -75,7 +75,9 @@ func FromString(b string) (uint64, error) {
 }
 
 // ToString converts droplets to a skycoin balance fixed-point decimal string.
-// For example, 123000456 becomes "123.000456"
+// String will always have a decimal precision of droplet.Exponent (6).
+// For example, 123000456 becomes "123.000456" and
+// 123000000 becomes "123.000000".
 func ToString(n uint64) (string, error) {
 	if n > math.MaxInt64 {
 		return "", ErrTooLarge
@@ -83,5 +85,5 @@ func ToString(n uint64) (string, error) {
 
 	d := decimal.New(int64(n), -Exponent)
 
-	return d.String(), nil
+	return d.StringFixed(Exponent), nil
 }

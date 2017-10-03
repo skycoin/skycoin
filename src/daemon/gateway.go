@@ -184,61 +184,74 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 }
 
 // GetBlocks returns a *visor.ReadableBlocks
-func (gw *Gateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
-	var blocks *visor.ReadableBlocks
+func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
+	var blocks []coin.SignedBlock
 	gw.strand(func() {
 		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
 	})
-	return blocks
+
+	return visor.NewReadableBlocks(blocks)
 }
 
 // GetBlocksInDepth returns blocks in different depth
-func (gw *Gateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
-	var blocks *visor.ReadableBlocks
+func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+	blocks := []coin.SignedBlock{}
+	var err error
 	gw.strand(func() {
-		blks := visor.ReadableBlocks{}
 		for _, n := range vs {
-			if b := gw.vrpc.GetBlockBySeq(gw.v, n); b != nil {
-				blks.Blocks = append(blks.Blocks, *b)
+			b, err := gw.vrpc.GetBlockBySeq(gw.v, n)
+			if err != nil {
+				err = fmt.Errorf("get block %v failed: %v", n, err)
+				return
 			}
+			blocks = append(blocks, *b)
 		}
-		blocks = &blks
 	})
-	return blocks
+
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks)
 }
 
 // GetLastBlocks get last N blocks
-func (gw *Gateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
-	var blocks *visor.ReadableBlocks
+func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
+	var blocks []coin.SignedBlock
 	gw.strand(func() {
 		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
-	return blocks
+
+	return visor.NewReadableBlocks(blocks)
 }
 
 // OutputsFilter used as optional arguments in GetUnspentOutputs method
-type OutputsFilter func(outputs []visor.ReadableOutput) []visor.ReadableOutput
+type OutputsFilter func(outputs coin.UxArray) coin.UxArray
 
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
 func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOutputSet, error) {
-	var allOutputs []visor.ReadableOutput
-	var spendingOutputs []visor.ReadableOutput
-	var inOutputs []visor.ReadableOutput
+	// unspent outputs
+	var unspentOutputs []coin.UxOut
+	// unconfirmed spending outputs
+	var uncfmSpendingOutputs coin.UxArray
+	// unconfirmed incoming outputs
+	var uncfmIncomingOutputs coin.UxArray
 	var err error
 	gw.strand(func() {
-		allOutputs, err = gw.v.GetUnspentOutputReadables()
+		unspentOutputs, err = gw.v.GetUnspentOutputs()
 		if err != nil {
 			err = fmt.Errorf("get unspent output readables failed: %v", err)
 			return
 		}
-		spendingOutputs, err = gw.v.AllSpendsOutputs()
+
+		uncfmSpendingOutputs, err = gw.v.UnconfirmedSpendingOutputs()
 		if err != nil {
-			err = fmt.Errorf("get all spends outputs failed: %v", err)
+			err = fmt.Errorf("get unconfirmed spending outputs failed: %v", err)
 			return
 		}
 
-		inOutputs, err = gw.v.AllIncomingOutputs()
+		uncfmIncomingOutputs, err = gw.v.UnconfirmedIncomingOutputs()
 		if err != nil {
 			err = fmt.Errorf("get all incomming outputs failed: %v", err)
 			return
@@ -250,29 +263,41 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	}
 
 	for _, flt := range filters {
-		allOutputs = flt(allOutputs)
-		spendingOutputs = flt(spendingOutputs)
-		inOutputs = flt(inOutputs)
+		unspentOutputs = flt(unspentOutputs)
+		uncfmSpendingOutputs = flt(uncfmSpendingOutputs)
+		uncfmIncomingOutputs = flt(uncfmIncomingOutputs)
 	}
 
-	return visor.ReadableOutputSet{
-		HeadOutputs:     allOutputs,
-		OutgoingOutputs: spendingOutputs,
-		IncomingOutputs: inOutputs,
-	}, nil
+	outputSet := visor.ReadableOutputSet{}
+	outputSet.HeadOutputs, err = visor.NewReadableOutputs(unspentOutputs)
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
+
+	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(uncfmSpendingOutputs)
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
+
+	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(uncfmIncomingOutputs)
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
+
+	return outputSet, nil
 }
 
 // FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
 func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
-	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
-		addrMatch := []visor.ReadableOutput{}
+	return func(outputs coin.UxArray) coin.UxArray {
+		addrMatch := coin.UxArray{}
 		addrMap := make(map[string]bool)
 		for _, addr := range addrs {
 			addrMap[addr] = false
 		}
 
 		for _, u := range outputs {
-			_, ok := addrMap[u.Address]
+			_, ok := addrMap[u.Body.Address.String()]
 			if !ok {
 				addrMatch = append(addrMatch, u)
 			}
@@ -283,15 +308,15 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 
 // FbyAddresses filters the unspent outputs that owned by the addresses
 func FbyAddresses(addrs []string) OutputsFilter {
-	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
-		addrMatch := []visor.ReadableOutput{}
+	return func(outputs coin.UxArray) coin.UxArray {
+		addrMatch := coin.UxArray{}
 		addrMap := make(map[string]bool)
 		for _, addr := range addrs {
 			addrMap[addr] = true
 		}
 
 		for _, u := range outputs {
-			if _, ok := addrMap[u.Address]; ok {
+			if _, ok := addrMap[u.Body.Address.String()]; ok {
 				addrMatch = append(addrMatch, u)
 			}
 		}
@@ -301,15 +326,15 @@ func FbyAddresses(addrs []string) OutputsFilter {
 
 // FbyHashes filters the unspent outputs that have hashes matched.
 func FbyHashes(hashes []string) OutputsFilter {
-	return func(outputs []visor.ReadableOutput) []visor.ReadableOutput {
-		hsMatch := []visor.ReadableOutput{}
+	return func(outputs coin.UxArray) coin.UxArray {
+		hsMatch := coin.UxArray{}
 		hsMap := make(map[string]bool)
 		for _, h := range hashes {
 			hsMap[h] = true
 		}
 
 		for _, u := range outputs {
-			if _, ok := hsMap[u.Hash]; ok {
+			if _, ok := hsMap[u.Hash().Hex()]; ok {
 				hsMatch = append(hsMatch, u)
 			}
 		}
@@ -327,12 +352,17 @@ func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, er
 
 // GetTransactionResult gets transaction result by txid.
 func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionResult, error) {
-	var tx *visor.TransactionResult
+	var tx *visor.Transaction
 	var err error
 	gw.strand(func() {
 		tx, err = gw.vrpc.GetTransaction(gw.v, txid)
 	})
-	return tx, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewTransactionResult(tx)
 }
 
 // InjectTransaction injects transaction
@@ -344,11 +374,18 @@ func (gw *Gateway) InjectTransaction(txn coin.Transaction) (err error) {
 }
 
 // GetAddressTxns returns a *visor.TransactionResults
-func (gw *Gateway) GetAddressTxns(a cipher.Address) (tx *visor.TransactionResults, err error) {
+func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error) {
+	var txs []visor.Transaction
+	var err error
 	gw.strand(func() {
-		tx, err = gw.vrpc.GetAddressTxns(gw.v, a)
+		txs, err = gw.vrpc.GetAddressTxns(gw.v, a)
 	})
-	return
+
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewTransactionResults(txs)
 }
 
 // GetUxOutByID gets UxOut by hash id.

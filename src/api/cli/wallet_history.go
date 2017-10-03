@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -17,9 +18,11 @@ type addrHistory struct {
 	BlockSeq  uint64    `json:"-"`
 	Txid      string    `json:"txid"`
 	Address   string    `json:"address"`
-	Amount    int64     `json:"amount"`
+	Amount    string    `json:"amount"`
 	Timestamp time.Time `json:"timestamp"`
 	Status    int       `json:"status"`
+
+	coins uint64 `json:"-"`
 }
 
 type byTime []addrHistory
@@ -102,23 +105,26 @@ func walletHistoryAction(c *gcli.Context) error {
 
 func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]addrHistory, error) {
 	if len(ux.UxOuts) == 0 {
-		return []addrHistory{}, nil
+		return nil, nil
 	}
 
-	var (
-		addrHis        = []addrHistory{}
-		spentHis       = []addrHistory{}
-		spentBlkSeqMap = map[uint64]bool{}
-	)
+	var addrHis, spentHis, realHis []addrHistory
+	var spentBlkSeqMap = map[uint64]bool{}
 
 	for _, u := range ux.UxOuts {
+		amount, err := droplet.ToString(u.Coins)
+		if err != nil {
+			return nil, err
+		}
+
 		addrHis = append(addrHis, addrHistory{
 			BlockSeq:  u.SrcBkSeq,
 			Txid:      u.SrcTx,
 			Address:   ux.Address,
-			Amount:    int64(u.Coins) / 1e6,
+			Amount:    amount,
 			Timestamp: time.Unix(int64(u.Time), 0).UTC(),
 			Status:    1,
+			coins:     u.Coins,
 		})
 
 		// the SpentBlockSeq will be 0 if the uxout has not been spent yet.
@@ -128,47 +134,86 @@ func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]addrHistor
 				BlockSeq: u.SpentBlockSeq,
 				Address:  ux.Address,
 				Txid:     u.SpentTxID,
-				Amount:   (int64(u.Coins) * -1) / 1e6,
+				Amount:   "-" + amount,
 				Status:   1,
+				coins:    u.Coins,
 			})
 		}
 	}
 
-	spentBlkSeq := make([]uint64, 0, len(spentBlkSeqMap))
-	for seq := range spentBlkSeqMap {
-		spentBlkSeq = append(spentBlkSeq, seq)
-	}
+	if len(spentBlkSeqMap) > 0 {
+		spentBlkSeq := make([]uint64, 0, len(spentBlkSeqMap))
+		for seq := range spentBlkSeqMap {
+			spentBlkSeq = append(spentBlkSeq, seq)
+		}
 
-	if len(spentBlkSeq) > 0 {
 		getBlkTime, err := createBlkTimeFinder(c, spentBlkSeq)
 		if err != nil {
-			return []addrHistory{}, err
+			return nil, err
 		}
 
 		for i, his := range spentHis {
 			spentHis[i].Timestamp = time.Unix(getBlkTime(his.BlockSeq), 0).UTC()
 		}
-		addrHis = append(addrHis, spentHis...)
+	}
+
+	type historyRecord struct {
+		received []addrHistory
+		spent    []addrHistory
 	}
 
 	// merge history in the same transaction.
-	hisMap := map[string][]addrHistory{}
+	hisMap := map[string]historyRecord{}
 	for _, his := range addrHis {
-		hisMap[his.Txid] = append(hisMap[his.Txid], his)
+		hr := hisMap[his.Txid]
+		hr.received = append(hr.received, his)
+		hisMap[his.Txid] = hr
+	}
+	for _, his := range spentHis {
+		hr := hisMap[his.Txid]
+		hr.spent = append(hr.spent, his)
+		hisMap[his.Txid] = hr
 	}
 
-	realHis := []addrHistory{}
 	for txid, hs := range hisMap {
-		var amt int64
-		for _, h := range hs {
-			amt += h.Amount
+		var receivedCoins, spentCoins, coins uint64
+		for _, h := range hs.received {
+			receivedCoins += h.coins
 		}
+		for _, h := range hs.spent {
+			spentCoins += h.coins
+		}
+
+		isNegative := spentCoins > receivedCoins
+
+		if spentCoins > receivedCoins {
+			coins = spentCoins - receivedCoins
+		} else {
+			coins = receivedCoins - spentCoins
+		}
+
+		amount, err := droplet.ToString(coins)
+		if err != nil {
+			return nil, err
+		}
+
+		if isNegative {
+			amount = "-" + amount
+		}
+
+		var his addrHistory
+		if len(hs.received) > 0 {
+			his = hs.received[0]
+		} else {
+			his = hs.spent[0]
+		}
+
 		realHis = append(realHis, addrHistory{
-			BlockSeq:  hs[0].BlockSeq,
+			BlockSeq:  his.BlockSeq,
 			Txid:      txid,
 			Address:   ux.Address,
-			Amount:    amt,
-			Timestamp: hs[0].Timestamp,
+			Amount:    amount,
+			Timestamp: his.Timestamp,
 			Status:    1,
 		})
 	}

@@ -45,6 +45,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   (pubkey, seckey, address, seed) to stdout as JSON.
 - All API and CLI methods with "coin"-related arguments must be a string and
   can use decimal notation to specify coin amounts.
+- CLI's `walletHistory` command prints amounts as fixed-point decimal strings.
+  Previously, it printed amounts as integers representing whole skycoin amounts,
+  and did not support droplets / fractional skycoins.
 - A user is prevented from broadcasting a new transaction with unspent outputs
   that they have already sent as an unconfirmed transaction.
 

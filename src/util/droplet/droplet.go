@@ -18,11 +18,11 @@ const (
 
 var (
 	// ErrNegativeValue is returned if a balance string is a negative number
-	ErrNegativeValue = errors.New("Negative balance")
+	ErrNegativeValue = errors.New("Droplet string conversion failed: Negative balance")
 	// ErrTooManyDecimals is returned if a balance string has more than 6 decimal places
-	ErrTooManyDecimals = errors.New("Too many decimal places")
+	ErrTooManyDecimals = errors.New("Droplet string conversion failed: Too many decimal places")
 	// ErrTooLarge is returned if a balance string is greater than math.MaxInt64
-	ErrTooLarge = errors.New("Value is too large")
+	ErrTooLarge = errors.New("Droplet string conversion failed: Value is too large")
 
 	logger     = logging.MustGetLogger("convert")
 	maxDecimal decimal.Decimal

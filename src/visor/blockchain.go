@@ -362,11 +362,11 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.SignedBlock {
 	}
 
 	end := bc.HeadSeq()
-	start := end - num + 1
+	start := int(end-num) + 1
 	if start < 0 {
 		start = 0
 	}
-	return bc.GetBlocks(start, end)
+	return bc.GetBlocks(uint64(start), end)
 }
 
 /* Private */

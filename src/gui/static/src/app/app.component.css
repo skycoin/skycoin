@@ -1,5 +1,5 @@
 md-card {
-  max-width: 900px;
+  max-width: 1000px;
   margin-top: 80px;
   margin-right: auto;
   margin-left: auto;
@@ -14,7 +14,7 @@ md-card {
 }
 
 .sky-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin-top: 20px;
   margin-right: auto;
   margin-left: auto;

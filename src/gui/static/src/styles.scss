@@ -3,8 +3,35 @@
 @import 'app/app.theme.scss';
 @import '~@swimlane/ngx-datatable/release/themes/material.css';
 
-button, md-panel-description, md-panel-title {
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Poppins Light'), local('Poppins-Light'), url(assets/fonts/poppins-light.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Poppins Regular'), local('Poppins-Regular'), url(assets/fonts/poppins-regular.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Poppins Bold'), local('Poppins-Bold'), url(assets/fonts/poppins-bold.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+
+$mat-font-family: Poppins, sans-serif;
+
+body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
+md-panel-description, md-panel-title, md-option.mat-option {
+  font-family: $mat-font-family;
 }
 
 body {

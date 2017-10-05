@@ -21,7 +21,7 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "md-card {\r\n  max-width: 900px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 40%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 900px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n\r\n.syncing {\r\n  font-size: 14px;\r\n}\r\n\r\n.main-menu button {\r\n  margin-right: 20px;\r\n}\r\n", ""]);
+exports.push([module.i, "md-card {\r\n  max-width: 1000px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 100%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 1000px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n  font-family: Roboto, \"Helvetica Neue\", sans-serif;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n\r\n.syncing {\r\n  font-size: 14px;\r\n}\r\n\r\n.main-menu button {\r\n  margin-right: 20px;\r\n}\r\n", ""]);
 
 // exports
 
@@ -136,7 +136,7 @@ var config = {
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser__ = __webpack_require__("../../../platform-browser/@angular/platform-browser.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_platform_browser_animations__ = __webpack_require__("../../../platform-browser/@angular/platform-browser/animations.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__app_component__ = __webpack_require__("../../../../../src/app/app.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__angular_http__ = __webpack_require__("../../../http/@angular/http.es5.js");
@@ -714,7 +714,7 @@ module.exports = "<div #qr></div>\r\n\r\n"
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return QrCodeComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -945,7 +945,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<p>Choose an address to generate a BTC deposit link for:</p>\n<div [formGroup]=\"form\">\n  <md-select formControlName=\"address\" placeholder=\"Select Address\" class=\"input-field\">\n    <md-option *ngFor=\"let address of walletService.allAddresses() | async\" [value]=\"address.address\">\n      {{ address.address }}\n    </md-option>\n  </md-select>\n</div>\n<div class=\"button-line\">\n  <a md-raised-button (click)=\"generate()\">Generate</a>\n</div>\n"
+module.exports = "<p>Choose an address to generate a BTC deposit link for:</p>\r\n<div [formGroup]=\"form\">\r\n  <md-select formControlName=\"address\" placeholder=\"Select Address\" class=\"input-field\">\r\n    <md-option *ngFor=\"let address of walletService.allAddresses() | async\" [value]=\"address.address\">\r\n      {{ address.address }}\r\n    </md-option>\r\n  </md-select>\r\n</div>\r\n<div class=\"button-line\">\r\n  <a md-raised-button (click)=\"generate()\">Generate</a>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -957,7 +957,7 @@ module.exports = "<p>Choose an address to generate a BTC deposit link for:</p>\n
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_forms__ = __webpack_require__("../../../forms/@angular/forms.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__services_purchase_service__ = __webpack_require__("../../../../../src/app/services/purchase.service.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return AddDepositAddressComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -989,7 +989,7 @@ var AddDepositAddressComponent = (function () {
     };
     AddDepositAddressComponent.prototype.initForm = function () {
         this.form = this.formBuilder.group({
-            address: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["h" /* Validators */].required],
+            address: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["g" /* Validators */].required],
         });
     };
     return AddDepositAddressComponent;
@@ -1029,7 +1029,7 @@ module.exports = module.exports.toString();
 /***/ "../../../../../src/app/components/pages/buy/buy.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<p *ngIf=\"!otcEnabled\">Sorry, otc has currently been disabled!</p>\n<md-card *ngIf=\"otcEnabled\">\n  <md-card-title>Purchase Skycoin</md-card-title>\n  <md-card class=\"skycoin-details\">\n    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per\n    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will\n    automatically be added to your selected address.\n  </md-card>\n\n  <md-list>\n    <ng-container *ngFor=\"let address of (purchaseService.all() | async); let i = index\">\n      <md-divider *ngIf=\"i\"></md-divider>\n      <h3 md-subheader>Sky address: {{ address.address }}</h3>\n      <md-list-item *ngFor=\"let btc of address.addresses\">\n        <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>\n        <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>\n        <button md-icon-button (click)=\"searchDepositAddress(address.address)\" [disabled]=\"scanning\">\n          <md-icon>refresh</md-icon>\n        </button>\n      </md-list-item>\n    </ng-container>\n  </md-list>\n</md-card>\n<div class=\"button-line\" *ngIf=\"otcEnabled\">\n  <a md-raised-button color=\"primary\" (click)=\"addDepositAddress()\">Add deposit address</a>\n</div>\n"
+module.exports = "<p *ngIf=\"!otcEnabled\">Sorry, otc has currently been disabled!</p>\r\n<md-card *ngIf=\"otcEnabled\">\r\n  <md-card-title>Purchase Skycoin</md-card-title>\r\n  <md-card class=\"skycoin-details\">\r\n    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per\r\n    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will\r\n    automatically be added to your selected address.\r\n  </md-card>\r\n\r\n  <md-list>\r\n    <ng-container *ngFor=\"let address of (purchaseService.all() | async); let i = index\">\r\n      <md-divider *ngIf=\"i\"></md-divider>\r\n      <h3 md-subheader>Sky address: {{ address.address }}</h3>\r\n      <md-list-item *ngFor=\"let btc of address.addresses\">\r\n        <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>\r\n        <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>\r\n        <button md-icon-button (click)=\"searchDepositAddress(address.address)\" [disabled]=\"scanning\">\r\n          <md-icon>refresh</md-icon>\r\n        </button>\r\n      </md-list-item>\r\n    </ng-container>\r\n  </md-list>\r\n</md-card>\r\n<div class=\"button-line\" *ngIf=\"otcEnabled\">\r\n  <a md-raised-button color=\"primary\" (click)=\"addDepositAddress()\">Add deposit address</a>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -1039,7 +1039,7 @@ module.exports = "<p *ngIf=\"!otcEnabled\">Sorry, otc has currently been disable
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_purchase_service__ = __webpack_require__("../../../../../src/app/services/purchase.service.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__add_deposit_address_add_deposit_address_component__ = __webpack_require__("../../../../../src/app/components/pages/buy/add-deposit-address/add-deposit-address.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__app_config__ = __webpack_require__("../../../../../src/app/app.config.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return BuyComponent; });
@@ -1297,7 +1297,7 @@ module.exports = "<md-card [formGroup]=\"form\" class=\"send-skycoin-form\">\r\n
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_router__ = __webpack_require__("../../../router/@angular/router.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay__ = __webpack_require__("../../../../rxjs/add/operator/delay.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_rxjs_add_operator_delay__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return SendSkycoinComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -1358,16 +1358,16 @@ var SendSkycoinComponent = (function () {
     SendSkycoinComponent.prototype.initForm = function () {
         var _this = this;
         this.form = this.formBuilder.group({
-            wallet: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
-            address: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
-            amount: ['', [__WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required, __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].min(0), __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].max(0)]],
+            wallet: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].required],
+            address: ['', __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].required],
+            amount: ['', [__WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].required, __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].min(0), __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].max(0)]],
         });
         this.form.controls['wallet'].valueChanges.subscribe(function (value) {
             var balance = value && value.balance ? (value.balance / 1000000) : 0;
             _this.form.controls['amount'].setValidators([
-                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required,
-                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].min(0),
-                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].max(balance),
+                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].required,
+                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].min(0),
+                __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].max(balance),
             ]);
             _this.form.controls['amount'].updateValueAndValidity();
         });
@@ -1876,7 +1876,7 @@ module.exports = "<md-list>\r\n  <h3 md-subheader>Addresses</h3>\r\n  <md-list-i
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__models_wallet_model__ = __webpack_require__("../../../../../src/app/models/wallet.model.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__models_wallet_model___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__models_wallet_model__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__change_name_change_name_component__ = __webpack_require__("../../../../../src/app/components/pages/wallets/change-name/change-name.component.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__layout_qr_code_qr_code_component__ = __webpack_require__("../../../../../src/app/components/layout/qr-code/qr-code.component.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return WalletDetailComponent; });
@@ -1972,7 +1972,7 @@ module.exports = "<div [formGroup]=\"form\">\r\n  <md-input-container>\r\n    <i
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_forms__ = __webpack_require__("../../../forms/@angular/forms.es5.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__models_wallet_model__ = __webpack_require__("../../../../../src/app/models/wallet.model.ts");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__models_wallet_model___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4__models_wallet_model__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return ChangeNameComponent; });
@@ -2010,7 +2010,7 @@ var ChangeNameComponent = (function () {
     };
     ChangeNameComponent.prototype.initForm = function () {
         this.form = this.formBuilder.group({
-            label: [this.data.meta.label, __WEBPACK_IMPORTED_MODULE_2__angular_forms__["h" /* Validators */].required],
+            label: [this.data.meta.label, __WEBPACK_IMPORTED_MODULE_2__angular_forms__["g" /* Validators */].required],
         });
     };
     return ChangeNameComponent;
@@ -2062,7 +2062,7 @@ module.exports = "<div [formGroup]=\"form\">\r\n  <md-input-container>\r\n    <i
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_forms__ = __webpack_require__("../../../forms/@angular/forms.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return CreateWalletComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -2097,8 +2097,8 @@ var CreateWalletComponent = (function () {
     };
     CreateWalletComponent.prototype.initForm = function () {
         this.form = this.formBuilder.group({
-            label: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["h" /* Validators */].required],
-            seed: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["h" /* Validators */].required],
+            label: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["g" /* Validators */].required],
+            seed: ['', __WEBPACK_IMPORTED_MODULE_1__angular_forms__["g" /* Validators */].required],
         });
         this.generateSeed();
     };
@@ -2149,7 +2149,7 @@ module.exports = "<md-expansion-panel *ngFor=\"let wallet of walletService.all()
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("../../../core/@angular/core.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__ = __webpack_require__("../../../../../src/app/services/wallet.service.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/@angular/material.es5.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_material__ = __webpack_require__("../../../material/esm5/material.es5.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__create_wallet_create_wallet_component__ = __webpack_require__("../../../../../src/app/components/pages/wallets/create-wallet/create-wallet.component.ts");
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return WalletsComponent; });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -2323,9 +2323,9 @@ var TellerStatusPipe = (function () {
     TellerStatusPipe.prototype.transform = function (value) {
         switch (value) {
             case 'waiting_deposit':
-                return 'Waiting for deposit';
+                return 'Waiting for Bitcoin deposit';
             case 'waiting_send':
-                return 'Waiting for sending out';
+                return 'Waiting to send Skycoin';
             case 'waiting_confirm':
                 return 'Waiting for confirmation';
             case 'done':

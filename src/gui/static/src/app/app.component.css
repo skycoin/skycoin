@@ -1,12 +1,12 @@
 md-card {
-  max-width: 900px;
+  max-width: 1000px;
   margin-top: 80px;
   margin-right: auto;
   margin-left: auto;
 }
 
 .logo {
-  max-height: 40%;
+  max-height: 100%;
 }
 
 .fill-remaining-space {
@@ -14,11 +14,10 @@ md-card {
 }
 
 .sky-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin-top: 20px;
   margin-right: auto;
   margin-left: auto;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 md-toolbar span {

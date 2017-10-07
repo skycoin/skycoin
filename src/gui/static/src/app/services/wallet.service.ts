@@ -6,6 +6,7 @@ import { WalletModel } from '../models/wallet.model';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/observable/forkJoin';
+import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
@@ -126,6 +127,9 @@ export class WalletService {
 
   transaction(txid: string): Observable<any> {
     return this.apiService.get('transaction', {txid: txid}).flatMap(transaction => {
+      if (transaction.txn.inputs && !transaction.txn.inputs.length) {
+        return Observable.of(transaction);
+      }
       return Observable.forkJoin(transaction.txn.inputs.map(input => this.retrieveInputAddress(input).map(response => {
         return response.owner_address;
       }))).map(inputs => {

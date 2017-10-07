@@ -1,3 +1,5 @@
+$white: #FBFBFB;
+
 md-card {
   max-width: 1000px;
   margin-top: 80px;
@@ -37,4 +39,14 @@ md-toolbar span {
 
 .main-menu button {
   margin-right: 20px;
+}
+
+#top-menu {
+  span {
+    color: $white;
+
+    &#version {
+      padding-top: 12px;
+    }
+  }
 }

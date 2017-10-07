@@ -13,7 +13,14 @@ webpackEmptyContext.id = "../../../../../src async recursive";
 
 /***/ }),
 
-/***/ "../../../../../src/app/app.component.css":
+/***/ "../../../../../src/app/app.component.html":
+/***/ (function(module, exports) {
+
+module.exports = "<md-toolbar color=\"primary\" id=\"top-menu\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [disabled]=\"true\"> Version {{ version }} </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar class=\"main-menu\">\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/buy']\" routerLinkActive=\"active\" *ngIf=\"otcEnabled\">Buy</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
+
+/***/ }),
+
+/***/ "../../../../../src/app/app.component.scss":
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-base.js")(false);
@@ -21,20 +28,13 @@ exports = module.exports = __webpack_require__("../../../../css-loader/lib/css-b
 
 
 // module
-exports.push([module.i, "md-card {\r\n  max-width: 1000px;\r\n  margin-top: 80px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\n.logo {\r\n  max-height: 100%;\r\n}\r\n\r\n.fill-remaining-space {\r\n  -webkit-box-flex: 1;\r\n      -ms-flex: 1 1 auto;\r\n          flex: 1 1 auto;\r\n}\r\n\r\n.sky-container {\r\n  max-width: 1000px;\r\n  margin-top: 20px;\r\n  margin-right: auto;\r\n  margin-left: auto;\r\n}\r\n\r\nmd-toolbar span {\r\n  margin: 0 20px;\r\n}\r\n\r\n.search-field {\r\n  border-radius: 8px;\r\n  border: none;\r\n  background-color: #fff;\r\n  padding: 8px;\r\n}\r\n\r\n.syncing {\r\n  font-size: 14px;\r\n}\r\n\r\n.main-menu button {\r\n  margin-right: 20px;\r\n}\r\n", ""]);
+exports.push([module.i, "md-card {\n  max-width: 1000px;\n  margin-top: 80px;\n  margin-right: auto;\n  margin-left: auto; }\n\n.logo {\n  max-height: 100%; }\n\n.fill-remaining-space {\n  -webkit-box-flex: 1;\n      -ms-flex: 1 1 auto;\n          flex: 1 1 auto; }\n\n.sky-container {\n  max-width: 1000px;\n  margin-top: 20px;\n  margin-right: auto;\n  margin-left: auto; }\n\nmd-toolbar span {\n  margin: 0 20px; }\n\n.search-field {\n  border-radius: 8px;\n  border: none;\n  background-color: #fff;\n  padding: 8px; }\n\n.syncing {\n  font-size: 14px; }\n\n.main-menu button {\n  margin-right: 20px; }\n\n#top-menu span {\n  color: #FBFBFB; }\n  #top-menu span#version {\n    padding-top: 12px; }\n", ""]);
 
 // exports
 
 
 /*** EXPORTS FROM exports-loader ***/
 module.exports = module.exports.toString();
-
-/***/ }),
-
-/***/ "../../../../../src/app/app.component.html":
-/***/ (function(module, exports) {
-
-module.exports = "<md-toolbar color=\"primary\">\r\n  <img src=\"/assets/logo-white.png\" class=\"logo\">\r\n  <span id=\"version\">{{ version }}</span>\r\n  <!--<span><app-breadcrumb></app-breadcrumb></span>-->\r\n  <!-- This fills the remaining space of the current row -->\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n  <span *ngIf=\"loading()\" class=\"syncing\">\r\n    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}\r\n  </span>\r\n  <span *ngIf=\"!loading()\">{{ walletService.sum() | async | sky }}</span>\r\n  <md-menu #settingsMenu=\"mdMenu\">\r\n    <button md-menu-item [routerLink]=\"['/settings/network']\"> Networking </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/blockchain']\"> Blockchain </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/outputs']\"> Outputs </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/pending-transactions']\"> Pending Transactions </button>\r\n    <button md-menu-item [routerLink]=\"['/settings/backup']\"> Back-up wallet </button>\r\n  </md-menu>\r\n\r\n  <button md-button [mdMenuTriggerFor]=\"settingsMenu\">Settings</button>\r\n</md-toolbar>\r\n<md-toolbar class=\"main-menu\">\r\n  <button md-button [routerLink]=\"['/wallets']\" routerLinkActive=\"active\">Wallets</button>\r\n  <button md-button [routerLink]=\"['/send']\" routerLinkActive=\"active\">Send</button>\r\n  <button md-button [routerLink]=\"['/history']\" routerLinkActive=\"active\">History</button>\r\n  <button md-button [routerLink]=\"['/buy']\" routerLinkActive=\"active\" *ngIf=\"otcEnabled\">Buy</button>\r\n  <button md-button [routerLink]=\"['/explorer']\" routerLinkActive=\"active\">Explorer</button>\r\n  <span class=\"fill-remaining-space\"></span>\r\n\r\n</md-toolbar>\r\n<md-progress-bar\r\n  *ngIf=\"loading()\"\r\n  class=\"example-margin\"\r\n  color=\"primary\"\r\n  mode=\"determinate\"\r\n  [value]=\"percentage\"></md-progress-bar>\r\n<div class=\"sky-container\">\r\n  <router-outlet></router-outlet>\r\n</div>\r\n"
 
 /***/ }),
 
@@ -108,7 +108,7 @@ AppComponent = __decorate([
     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Component"])({
         selector: 'app-root',
         template: __webpack_require__("../../../../../src/app/app.component.html"),
-        styles: [__webpack_require__("../../../../../src/app/app.component.css")]
+        styles: [__webpack_require__("../../../../../src/app/app.component.scss")]
     }),
     __metadata("design:paramtypes", [typeof (_a = typeof __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_1__services_wallet_service__["a" /* WalletService */]) === "function" && _a || Object, typeof (_b = typeof __WEBPACK_IMPORTED_MODULE_5__services_api_service__["a" /* ApiService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_5__services_api_service__["a" /* ApiService */]) === "function" && _b || Object, typeof (_c = typeof __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */] !== "undefined" && __WEBPACK_IMPORTED_MODULE_2__services_blockchain_service__["a" /* BlockchainService */]) === "function" && _c || Object])
 ], AppComponent);

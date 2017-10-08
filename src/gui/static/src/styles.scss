@@ -1,0 +1,88 @@
+/* You can add global styles to this file, and also import other style files */
+//@import '~@angular/material/prebuilt-themes/indigo-pink.css';
+@import 'app/app.theme.scss';
+@import '~@swimlane/ngx-datatable/release/themes/material.css';
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Poppins Light'), local('Poppins-Light'), url(assets/fonts/poppins-light.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Poppins Regular'), local('Poppins-Regular'), url(assets/fonts/poppins-regular.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Poppins Bold'), local('Poppins-Bold'), url(assets/fonts/poppins-bold.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+
+$mat-font-family: Poppins, sans-serif;
+
+body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
+md-panel-description, md-panel-title, md-option.mat-option {
+  font-family: $mat-font-family;
+}
+
+body {
+  background-color: #eee;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background: url("assets/header.png") center center / cover, linear-gradient(-155deg, #686e96 0%, #373b5c 100%);
+  width: 100%;
+  height: 300px;
+}
+
+.header-container {
+  max-width: 848px;
+  text-align: center;
+  padding-top: 40px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.header-container h1 {
+  font-size: 3em;
+  color: white;
+}
+
+.button-line {
+  margin-top: 40px;
+  text-align: right;
+}
+
+.datatable-row-group {
+  cursor: pointer;
+}
+
+button.active {
+  background-color: rgba(0,0,0,.12);
+}
+
+md-spinner.in-button .mat-spinner path {
+  stroke: #000;
+  opacity: 0.3;
+}
+
+snack-bar-container {
+  background-color: rgba(255, 0, 0, 0.8) !important;
+}
+
+md-panel-title {
+  width: 60%;
+  display: block;
+  flex-grow: 0 !important;
+}

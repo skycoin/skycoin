@@ -1,6 +1,5 @@
-<md-toolbar color="primary">
+<md-toolbar color="primary" id="top-menu">
   <img src="/assets/logo-white.png" class="logo">
-  <span id="version">{{ version }}</span>
   <!--<span><app-breadcrumb></app-breadcrumb></span>-->
   <!-- This fills the remaining space of the current row -->
   <span class="fill-remaining-space"></span>
@@ -10,6 +9,7 @@
   </span>
   <span *ngIf="!loading()">{{ walletService.sum() | async | sky }}</span>
   <md-menu #settingsMenu="mdMenu">
+    <button md-menu-item [disabled]="true"> Version {{ version }} </button>
     <button md-menu-item [routerLink]="['/settings/network']"> Networking </button>
     <button md-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
     <button md-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>

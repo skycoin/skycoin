@@ -1,0 +1,31 @@
+<md-card>
+  <h3>Automatic peers</h3>
+
+  <ngx-datatable
+    class="material"
+    [rows]="networkService.automatic() | async"
+    columnMode="flex"
+    [headerHeight]="40"
+    [footerHeight]="40"
+    [rowHeight]="40"
+    [limit]="5">
+    <ngx-datatable-column name="ID" prop="id" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="Address" prop="address" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="Port" prop="listen_port" [flexGrow]="1"></ngx-datatable-column>
+  </ngx-datatable>
+</md-card>
+
+<md-card>
+  <h3>Default peers</h3>
+
+  <ngx-datatable
+    class="material"
+    [rows]="defaultConnections"
+    columnMode="flex"
+    [headerHeight]="40"
+    [rowHeight]="50">
+    <ngx-datatable-column name="ID" prop="id" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="Address" prop="address" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="Port" prop="listen_port" [flexGrow]="1"></ngx-datatable-column>
+  </ngx-datatable>
+</md-card>

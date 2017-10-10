@@ -10,7 +10,11 @@ func getBlocksBySeqHandler(req Request, gateway Gatewayer) Response {
 	if len(seqs) == 0 {
 		return makeErrorResponse(errCodeInvalidParams, "empty params")
 	}
-	blocks := gateway.GetBlocksInDepth(seqs)
+	blocks, err := gateway.GetBlocksInDepth(seqs)
+	if err != nil {
+		logger.Error("%v", err)
+		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+	}
 	return makeSuccessResponse(req.ID, blocks)
 }
 
@@ -26,7 +30,11 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	blocks := gateway.GetLastBlocks(num[0])
+	blocks, err := gateway.GetLastBlocks(num[0])
+	if err != nil {
+		logger.Error("%v", err)
+		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+	}
 	return makeSuccessResponse(req.ID, blocks)
 }
 
@@ -40,6 +48,9 @@ func getBlocksHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
-	blocks := gateway.GetBlocks(params[0], params[1])
+	blocks, err := gateway.GetBlocks(params[0], params[1])
+	if err != nil {
+		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+	}
 	return makeSuccessResponse(req.ID, blocks)
 }

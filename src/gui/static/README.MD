@@ -1,71 +1,39 @@
+# Skycoin desktop client
 
+The Skycoin wallet ships with a web interface which can be ran from the browser and/or Electron.
 
-If folder dev exists, application will serve web assets out of dev. Otherwise the dist folder will be used.
+The project contains both the source (src) and target (dist) files of this web interface.
 
-dev will not be commited to the repo. For development.
+## Prerequisites
 
-dist is the distribution state files
+The Skycoin web interface requires Node 6.9.0 or higher, together with NPM 3 or higher.
 
-#### 1. Prerequisites
+## Installation
 
-*nodejs* must be installed on your system and the below global node packages must be installed:
+This project is generated using Angular CLI, therefore it is adviced to first run `npm install -g @angular/cli`.
 
-- gulp
+To install all Angular, Angular CLI and all other libraries, you will have to run `npm install`.
 
-> npm i -g gulp
+You will only have to run this again, if any dependencies have been changed in the `package.json` file.
 
-- gulp-cli
+## Compiling new target files
 
-> npm i -g gulp-cli
+To compile new target files, you will have to run: `npm run build`
 
-- typings
+## Development server
 
-> npm i -g typings@1.3.3
+Run `npm start` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-- typescript
+Please note that you will most likely receive CORS errors as there's a difference between the port number of the source and destination.
 
-> npm i -g typescript@2.0.2
+As a work-around, the development server will create a proxy from `http://localhost:4200/api` to `http://127.0.0.1:6420/`.
 
-- ts-node
+You can route all calls to this address by changing the url property on the ApiService class.
 
-> npm i -g ts-node@1.3.0
+## Purchase API (teller)
 
-Updating NPM
------
+Please note that at the moment the Purchase API (teller) is both offline and not supporting CORS headers.
 
-```
-sudo apt-get install npm
-sudo apt-get install nodejs-legacy
-sudo npm cache clean -f
+While event.skycoin.net is not working, we will have to run the purchase API locally.
 
-sudo npm install -g n
-sudo n stable
-
-node -v
-npm -v
-```
-
-Setup
------
-
-```
-npm install
-npm install --only=dev
-```
-
-A folder `node_modules/` should now exist.
-
-Building
-----
-
-```
-gulp build
-```
-
-Will build the assets into the ./dev folder
-
-Updating
-----
-
-Copy dev over dist, and commit. To update the repo
-
+Similar as the solution for the above CORS issue, you can circumvent CORS issues by changing the url property to '/teller/'

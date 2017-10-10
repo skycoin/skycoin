@@ -1,0 +1,16 @@
+<md-card>
+  <md-card-title>Blockchain</md-card-title>
+  <md-card class="skycoin-details">
+    <div class="skycoin-detail-keys">
+      Number of blocks: <br>
+      Time since last block: <br>
+      Hash of last block: <br>
+    </div>
+    <div class="skycoin-detail-values" *ngIf="block && block.header">
+      {{ block.header.seq }} <br>
+      {{ block.header.timestamp | dateFromNow }} <br>
+      {{ block.header.block_hash }}
+    </div>
+  </md-card>
+</md-card>
+

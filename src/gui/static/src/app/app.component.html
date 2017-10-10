@@ -1,0 +1,39 @@
+<md-toolbar color="primary">
+  <img src="/assets/logo-white.png" class="logo">
+  <span id="version">{{ version }}</span>
+  <!--<span><app-breadcrumb></app-breadcrumb></span>-->
+  <!-- This fills the remaining space of the current row -->
+  <span class="fill-remaining-space"></span>
+
+  <span *ngIf="loading()" class="syncing">
+    Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}
+  </span>
+  <span *ngIf="!loading()">{{ walletService.sum() | async | sky }}</span>
+  <md-menu #settingsMenu="mdMenu">
+    <button md-menu-item [routerLink]="['/settings/network']"> Networking </button>
+    <button md-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
+    <button md-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>
+    <button md-menu-item [routerLink]="['/settings/pending-transactions']"> Pending Transactions </button>
+    <button md-menu-item [routerLink]="['/settings/backup']"> Back-up wallet </button>
+  </md-menu>
+
+  <button md-button [mdMenuTriggerFor]="settingsMenu">Settings</button>
+</md-toolbar>
+<md-toolbar class="main-menu">
+  <button md-button [routerLink]="['/wallets']" routerLinkActive="active">Wallets</button>
+  <button md-button [routerLink]="['/send']" routerLinkActive="active">Send</button>
+  <button md-button [routerLink]="['/history']" routerLinkActive="active">History</button>
+  <button md-button [routerLink]="['/buy']" routerLinkActive="active" *ngIf="otcEnabled">Buy</button>
+  <button md-button [routerLink]="['/explorer']" routerLinkActive="active">Explorer</button>
+  <span class="fill-remaining-space"></span>
+
+</md-toolbar>
+<md-progress-bar
+  *ngIf="loading()"
+  class="example-margin"
+  color="primary"
+  mode="determinate"
+  [value]="percentage"></md-progress-bar>
+<div class="sky-container">
+  <router-outlet></router-outlet>
+</div>

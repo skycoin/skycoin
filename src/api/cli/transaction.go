@@ -1,19 +1,18 @@
 package cli
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 
-	"bytes"
-	"encoding/json"
-
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
-func transactionCMD() gcli.Command {
+func transactionCmd() gcli.Command {
 	name := "transaction"
 	return gcli.Command{
 		Name:         name,
@@ -29,44 +28,50 @@ func transactionCMD() gcli.Command {
 			// validate the txid
 			_, err := cipher.SHA256FromHex(txid)
 			if err != nil {
-				return errors.New("error txid")
+				return errors.New("invalid txid")
 			}
 
-			tx, err := getTransactionByID(txid)
+			rpcClient := RpcClientFromContext(c)
+
+			tx, err := rpcClient.GetTransactionByID(txid)
 			if err != nil {
 				return err
 			}
 
-			v, err := json.MarshalIndent(tx, "", "    ")
-			if err != nil {
-				return errors.New("invalid tx result")
+			return printJson(tx)
+		},
+	}
+}
+
+func decodeRawTxCmd() gcli.Command {
+	name := "decodeRawTransaction"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Decode raw transaction",
+		ArgsUsage:    "[raw transaction]",
+		OnUsageError: onCommandUsageError(name),
+		Action: func(c *gcli.Context) error {
+			rawTxStr := c.Args().First()
+			if rawTxStr == "" {
+				errorWithHelp(c, errors.New("missing raw transaction value"))
+				return nil
 			}
 
-			fmt.Println(string(v))
+			b, err := hex.DecodeString(rawTxStr)
+			if err != nil {
+				fmt.Printf("invalid raw transaction:%v\n", err)
+				return nil
+			}
+
+			tx := coin.TransactionDeserialize(b)
+			txStr, err := visor.TransactionToJSON(tx)
+			if err != nil {
+				fmt.Println(err)
+				return nil
+			}
+
+			fmt.Println(txStr)
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
-}
-
-func getTransactionByID(txid string) (*webrpc.TxnResult, error) {
-	req, err := webrpc.NewRequest("get_transaction", []string{txid}, "1")
-	if err != nil {
-		return nil, fmt.Errorf("create rpc request failed:%v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return nil, fmt.Errorf("do rpc request failed:%v", err)
-	}
-
-	if rsp.Error != nil {
-		return nil, fmt.Errorf("do rpc request failed:%+v", *rsp.Error)
-	}
-
-	rlt := webrpc.TxnResult{}
-	if err := json.NewDecoder(bytes.NewReader(rsp.Result)).Decode(&rlt); err != nil {
-		return nil, err
-	}
-	return &rlt, nil
 }

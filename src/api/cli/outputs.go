@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -11,23 +9,23 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func walletOutputsCMD() gcli.Command {
+func walletOutputsCmd(cfg Config) gcli.Command {
 	name := "walletOutputs"
 	return gcli.Command{
 		Name:      name,
 		Usage:     "Display outputs of specific wallet",
 		ArgsUsage: "[wallet file]",
-		Description: fmt.Sprintf(`Display outputs of specific wallet, the default 
-		wallet(%s/%s) will be 
-		used if no wallet was specificed, use ENV 'WALLET_NAME' 
-		to update default wallet file name, and 'WALLET_DIR' to update 
-		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
+		Description: fmt.Sprintf(`Display outputs of specific wallet, the default
+		wallet (%s) will be
+		used if no wallet was specified, use ENV 'WALLET_NAME'
+		to update default wallet file name, and 'WALLET_DIR' to update
+		the default wallet directory`, cfg.FullWalletPath()),
 		OnUsageError: onCommandUsageError(name),
-		Action:       wltOutputs,
+		Action:       getWalletOutputsCmd,
 	}
 }
 
-func addressOutputsCMD() gcli.Command {
+func addressOutputsCmd() gcli.Command {
 	name := "addressOutputs"
 	return gcli.Command{
 		Name:      name,
@@ -36,53 +34,37 @@ func addressOutputsCMD() gcli.Command {
 		Description: `Display outputs of specific addresses, join multiple addresses with space,
         example: addressOutputs $addr1 $addr2 $addr3`,
 		OnUsageError: onCommandUsageError(name),
-		Action:       addrOutputs,
+		Action:       getAddressOutputsCmd,
 	}
 
 }
 
-func wltOutputs(c *gcli.Context) error {
-	var w string
-	if c.NArg() == 0 {
-		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
-	} else {
+func getWalletOutputsCmd(c *gcli.Context) error {
+	cfg := ConfigFromContext(c)
+	rpcClient := RpcClientFromContext(c)
+
+	w := ""
+	if c.NArg() > 0 {
 		w = c.Args().First()
-		if !strings.HasSuffix(w, walletExt) {
-			return errWalletName
-		}
-
-		var err error
-		if filepath.Base(w) == w {
-			w = filepath.Join(cfg.WalletDir, w)
-		} else {
-			w, err = filepath.Abs(w)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
-	wlt, err := wallet.Load(w)
+	var err error
+	w, err = resolveWalletPath(cfg, w)
 	if err != nil {
 		return err
 	}
 
-	cipherAddrs := wlt.GetAddresses()
-	addrs := make([]string, len(cipherAddrs))
-	for i := range cipherAddrs {
-		addrs[i] = cipherAddrs[i].String()
-	}
-
-	rlt, err := getAddrOutputs(addrs)
+	outputs, err := GetWalletOutputsFromFile(rpcClient, w)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(rlt)
-	return nil
+	return printJson(outputs)
 }
 
-func addrOutputs(c *gcli.Context) error {
+func getAddressOutputsCmd(c *gcli.Context) error {
+	rpcClient := RpcClientFromContext(c)
+
 	addrs := make([]string, c.NArg())
 	var err error
 	for i := 0; i < c.NArg(); i++ {
@@ -92,28 +74,31 @@ func addrOutputs(c *gcli.Context) error {
 		}
 	}
 
-	rlt, err := getAddrOutputs(addrs)
+	outputs, err := rpcClient.GetUnspentOutputs(addrs)
 	if err != nil {
 		return err
 	}
-	fmt.Println(rlt)
-	return nil
+
+	return printJson(outputs)
 }
 
-func getAddrOutputs(addrs []string) (string, error) {
-	req, err := webrpc.NewRequest("get_outputs", addrs, "1")
+// PUBLIC
+
+func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*webrpc.OutputsResult, error) {
+	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return "", fmt.Errorf("do rpc request failed: %v", err)
+		return nil, err
 	}
 
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
-	if err != nil {
-		return "", err
+	return GetWalletOutputs(c, wlt)
+}
+
+func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*webrpc.OutputsResult, error) {
+	cipherAddrs := wlt.GetAddresses()
+	addrs := make([]string, len(cipherAddrs))
+	for i := range cipherAddrs {
+		addrs[i] = cipherAddrs[i].String()
 	}
 
-	if rsp.Error != nil {
-		return "", fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
-	}
-
-	return string(rsp.Result), nil
+	return c.GetUnspentOutputs(addrs)
 }

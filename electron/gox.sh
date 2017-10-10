@@ -44,8 +44,10 @@ if [ -n "$OUTPUT" ]; then
     mkdir -p "$OUTPUT"
 fi
 
+COMMIT=`git rev-parse HEAD`
+
 gox -osarch="$OSARCH" \
-    -ldflags="-X main.Version=${APP_VERSION}" \
+    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT}" \
     -output="${OUTPUT}{{.Dir}}_{{.OS}}_{{.Arch}}" \
     "${CMDDIR}/${CMD}"
 
@@ -57,8 +59,8 @@ if [ "$WITH_BUILDER" = "1" ]; then
 
     for plt in $platforms
     do
-        set -- "$plt" 
-        IFS="/"; declare -a s=($*) 
+        set -- "$plt"
+        IFS="/"; declare -a s=($*)
         case "${s[0]}" in
         "windows")
             if [ "${s[1]}" = "386" ]; then

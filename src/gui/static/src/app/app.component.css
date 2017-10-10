@@ -1,0 +1,40 @@
+md-card {
+  max-width: 1000px;
+  margin-top: 80px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.logo {
+  max-height: 100%;
+}
+
+.fill-remaining-space {
+  flex: 1 1 auto;
+}
+
+.sky-container {
+  max-width: 1000px;
+  margin-top: 20px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+md-toolbar span {
+  margin: 0 20px;
+}
+
+.search-field {
+  border-radius: 8px;
+  border: none;
+  background-color: #fff;
+  padding: 8px;
+}
+
+.syncing {
+  font-size: 14px;
+}
+
+.main-menu button {
+  margin-right: 20px;
+}

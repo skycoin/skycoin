@@ -5,15 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/stretchr/testify/assert"
 )
-
-func init() {
-	if silenceLogger {
-		logging.Disable()
-	}
-}
 
 func TestNewMessageContext(t *testing.T) {
 	c := &Connection{}

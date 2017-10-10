@@ -3,7 +3,7 @@
     "productName": "Skycoin",
     "author": "skycoin",
     "main": "src/electron-main.js",
-    "version": "0.19.0",
+    "version": "0.20.0",
     "description": "skycoin wallet",
     "build": {
         "appId": "org.skycoin.skycoin",
@@ -29,7 +29,7 @@
                 "from": ".gox_output/${os}_${arch}",
                 "to": "./resources/app"
             }]
-        }, 
+        },
          "files": [
             "!**/*",
             "src/**/*"

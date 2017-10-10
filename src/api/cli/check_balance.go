@@ -1,54 +1,43 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"strconv"
-	"strings"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
 
-type unspentOut struct {
-	visor.ReadableOutput
-}
-
-type unspentOutSet struct {
-	visor.ReadableOutputSet
-}
-
-type balance struct {
+type Balance struct {
 	Address string `json:"address"`
 	Amount  uint64 `json:"amount"`
 }
 
-type balanceResult struct {
+type BalanceResult struct {
 	TotalAmount uint64    `json:"total_amount"`
-	Addresses   []balance `json:"addresses"`
+	Addresses   []Balance `json:"addresses"`
 }
 
-func walletBalanceCMD() gcli.Command {
+func walletBalanceCmd(cfg Config) gcli.Command {
 	name := "walletBalance"
 	return gcli.Command{
 		Name:      name,
 		Usage:     "Check the balance of a wallet",
 		ArgsUsage: "[wallet]",
-		Description: fmt.Sprintf(`Check balance of specific wallet, the default 
-		wallet(%s/%s) will be 
-		used if no wallet was specificed, use ENV 'WALLET_NAME' 
-		to update default wallet file name, and 'WALLET_DIR' to update 
-		the default wallet directory`, cfg.WalletDir, cfg.DefaultWalletName),
+		Description: fmt.Sprintf(`Check balance of specific wallet, the default
+		wallet (%s) will be
+		used if no wallet was specified, use ENV 'WALLET_NAME'
+		to update default wallet file name, and 'WALLET_DIR' to update
+		the default wallet directory`, cfg.FullWalletPath()),
 		OnUsageError: onCommandUsageError(name),
 		Action:       checkWltBalance,
 	}
 }
 
-func addressBalanceCMD() gcli.Command {
+func addressBalanceCmd() gcli.Command {
 	name := "addressBalance"
 	return gcli.Command{
 		Name:      name,
@@ -62,53 +51,31 @@ func addressBalanceCMD() gcli.Command {
 }
 
 func checkWltBalance(c *gcli.Context) error {
+	cfg := ConfigFromContext(c)
+	rpcClient := RpcClientFromContext(c)
+
 	var w string
-	if c.NArg() == 0 {
-		w = filepath.Join(cfg.WalletDir, cfg.DefaultWalletName)
-	} else {
+	if c.NArg() > 0 {
 		w = c.Args().First()
-		if !strings.HasSuffix(w, walletExt) {
-			return errWalletName
-		}
-
-		var err error
-		if filepath.Base(w) == w {
-			w = filepath.Join(cfg.WalletDir, w)
-		} else {
-			w, err = filepath.Abs(w)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
-	wlt, err := wallet.Load(w)
+	var err error
+	w, err = resolveWalletPath(cfg, w)
 	if err != nil {
 		return err
 	}
 
-	var addrs []string
-	addresses := wlt.GetAddresses()
-	for _, a := range addresses {
-		// validate the address
-		addrs = append(addrs, a.String())
-	}
-
-	balRlt, err := getAddrsBalance(addrs)
+	balRlt, err := CheckWalletBalance(rpcClient, w)
 	if err != nil {
 		return err
 	}
 
-	var d []byte
-	d, err = json.MarshalIndent(balRlt, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-	fmt.Println(string(d))
-	return nil
+	return printJson(balRlt)
 }
 
 func addrBalance(c *gcli.Context) error {
+	rpcClient := RpcClientFromContext(c)
+
 	addrs := make([]string, c.NArg())
 	var err error
 	for i := 0; i < c.NArg(); i++ {
@@ -118,37 +85,49 @@ func addrBalance(c *gcli.Context) error {
 		}
 	}
 
-	balRlt, err := getAddrsBalance(addrs)
+	balRlt, err := GetBalanceOfAddresses(rpcClient, addrs)
 	if err != nil {
 		return err
 	}
 
-	var d []byte
-	d, err = json.MarshalIndent(balRlt, "", "    ")
-	if err != nil {
-		return errJSONMarshal
-	}
-	fmt.Println(string(d))
-	return nil
+	return printJson(balRlt)
 }
 
-func getAddrsBalance(addrs []string) (balanceResult, error) {
-	balRlt := balanceResult{
-		Addresses: make([]balance, len(addrs)),
+// PUBLIC
+
+func CheckWalletBalance(c *webrpc.Client, walletFile string) (BalanceResult, error) {
+	wlt, err := wallet.Load(walletFile)
+	if err != nil {
+		return BalanceResult{}, err
+	}
+
+	var addrs []string
+	addresses := wlt.GetAddresses()
+	for _, a := range addresses {
+		// validate the address
+		addrs = append(addrs, a.String())
+	}
+
+	return GetBalanceOfAddresses(c, addrs)
+}
+
+func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (BalanceResult, error) {
+	balRlt := BalanceResult{
+		Addresses: make([]Balance, len(addrs)),
 	}
 
 	for i, a := range addrs {
-		balRlt.Addresses[i] = balance{
+		balRlt.Addresses[i] = Balance{
 			Address: a,
 		}
 	}
 
-	outs, err := getUnspent(addrs)
+	outs, err := c.GetUnspentOutputs(addrs)
 	if err != nil {
-		return balanceResult{}, err
+		return BalanceResult{}, err
 	}
 
-	find := func(bals []balance, addr string) (int, error) {
+	find := func(bals []Balance, addr string) (int, error) {
 		for i, b := range bals {
 			if b.Address == addr {
 				return i, nil
@@ -157,15 +136,15 @@ func getAddrsBalance(addrs []string) (balanceResult, error) {
 		return -1, errors.New("not exist")
 	}
 
-	for _, o := range outs.HeadOutputs {
-		amt, err := strconv.ParseUint(o.Coins, 10, 64)
+	for _, o := range outs.Outputs.HeadOutputs {
+		amt, err := droplet.FromString(o.Coins)
 		if err != nil {
-			return balanceResult{}, errors.New("error coins string")
+			return BalanceResult{}, fmt.Errorf("error coins string: %v", err)
 		}
 
 		i, err := find(balRlt.Addresses, o.Address)
 		if err != nil {
-			return balanceResult{}, fmt.Errorf("output belongs to no address")
+			return BalanceResult{}, fmt.Errorf("output belongs to no address")
 		}
 		balRlt.Addresses[i].Amount += amt
 		balRlt.TotalAmount += amt

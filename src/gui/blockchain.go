@@ -28,7 +28,7 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// mux.HandleFunc("/block/seq", getBlockBySeq(gateway))
 	// get blocks in specific range
 	mux.HandleFunc("/blocks", getBlocks(gateway))
-	// get last 10 blocks
+	// get last N blocks
 	mux.HandleFunc("/last_blocks", getLastBlocks(gateway))
 }
 
@@ -50,13 +50,14 @@ func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // params: hash or seq, should only specify one filter.
 func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
+
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b coin.Block
+		var b coin.SignedBlock
 		var exist bool
 		switch {
 		case hash == "" && seq == "":
@@ -87,14 +88,22 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 			wh.SendOr404(w, nil)
 			return
 		}
-		wh.SendOr404(w, visor.NewReadableBlock(&b))
+
+		rb, err := visor.NewReadableBlock(&b.Block)
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, rb)
 	}
 }
 
 func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 		sstart := r.FormValue("start")
@@ -110,15 +119,20 @@ func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
 			return
 		}
-		wh.SendOr404(w, gateway.GetBlocks(start, end))
+		rb, err := gateway.GetBlocks(start, end)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
+			return
+		}
+		wh.SendOr404(w, rb)
 	}
 }
 
 // get last N blocks
 func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 
@@ -134,6 +148,12 @@ func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetLastBlocks(n))
+		rb, err := gateway.GetLastBlocks(n)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			return
+		}
+
+		wh.SendOr404(w, rb)
 	}
 }

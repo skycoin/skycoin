@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func randBytes(t *testing.T, n int) []byte {
@@ -335,6 +336,37 @@ func TestAddressUxOutsSub(t *testing.T) {
 	// Originals should be unmodified
 	assert.Equal(t, len(up), 3)
 	assert.Equal(t, len(up[uxs[0].Body.Address]), 2)
+	assert.Equal(t, len(up[uxs[2].Body.Address]), 1)
+	assert.Equal(t, len(up[uxs[3].Body.Address]), 1)
+	assert.Equal(t, len(up2), 2)
+	assert.Equal(t, len(up2[uxs[0].Body.Address]), 1)
+	assert.Equal(t, len(up2[uxs[2].Body.Address]), 1)
+}
+
+func TestAddressUxOutsAdd(t *testing.T) {
+	up := make(AddressUxOuts)
+	up2 := make(AddressUxOuts)
+	uxs := makeUxArray(t, 4)
+
+	uxs[1].Body.Address = uxs[0].Body.Address
+	up[uxs[0].Body.Address] = UxArray{uxs[0]}
+	up[uxs[2].Body.Address] = UxArray{uxs[2]}
+	up[uxs[3].Body.Address] = UxArray{uxs[3]}
+
+	up2[uxs[0].Body.Address] = UxArray{uxs[1]}
+	up2[uxs[2].Body.Address] = UxArray{uxs[2]}
+
+	up3 := up.Add(up2)
+	require.Equal(t, 3, len(up3))
+	require.Equal(t, len(up3[uxs[0].Body.Address]), 2)
+	require.Equal(t, up3[uxs[0].Body.Address], UxArray{uxs[0], uxs[1]})
+	require.Equal(t, up3[uxs[2].Body.Address], UxArray{uxs[2]})
+	require.Equal(t, up3[uxs[3].Body.Address], UxArray{uxs[3]})
+	require.Equal(t, up3[uxs[1].Body.Address], UxArray{uxs[0], uxs[1]})
+
+	// Originals should be unmodified
+	assert.Equal(t, len(up), 3)
+	assert.Equal(t, len(up[uxs[0].Body.Address]), 1)
 	assert.Equal(t, len(up[uxs[2].Body.Address]), 1)
 	assert.Equal(t, len(up[uxs[3].Body.Address]), 1)
 	assert.Equal(t, len(up2), 2)

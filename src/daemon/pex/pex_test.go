@@ -271,8 +271,8 @@ func TestPeerString(t *testing.T) {
 func TestGetAllAddresses(t *testing.T) {
 	p := NewPex(10)
 	p.AddPeer("112.32.32.14:10011")
-	q, _ := p.AddPeer("112.32.32.14:20011")
-	q.Private = true
+	p.AddPeer("112.32.32.14:20011")
+	p.SetPrivate("112.32.32.14:20011", true)
 	addresses := p.Peerlist.GetAllAddresses()
 	assert.Equal(t, len(addresses), 2)
 	sort.Strings(addresses)
@@ -286,8 +286,9 @@ func TestGetPublicAddresses(t *testing.T) {
 	p := NewPex(10)
 	p.AddPeer("112.32.32.14:10011")
 	p.AddPeer("112.32.32.14:20011")
-	q, _ := p.AddPeer("112.32.32.14:30011")
-	q.Private = true
+	p.AddPeer("112.32.32.14:30011")
+	p.SetPrivate("112.32.32.14:30011", true)
+
 	addresses := p.Peerlist.GetPublicAddresses()
 	assert.Equal(t, len(addresses), 2)
 	sort.Strings(addresses)
@@ -298,19 +299,26 @@ func TestGetPublicAddresses(t *testing.T) {
 }
 
 func TestGetPrivateAddresses(t *testing.T) {
+	ips := []string{
+		"112.32.32.14:10011",
+		"112.32.32.14:20011",
+		"112.32.32.14:30011",
+		"112.32.32.14:40011",
+	}
 	p := NewPex(10)
-	p.AddPeer("112.32.32.14:10011")
-	p.AddPeer("112.32.32.14:20011")
-	q, _ := p.AddPeer("112.32.32.14:30011")
-	r, _ := p.AddPeer("112.32.32.14:40011")
-	q.Private = true
-	r.Private = true
+	p.AddPeer(ips[0])
+	p.AddPeer(ips[1])
+	p.AddPeer(ips[2])
+	p.AddPeer(ips[3])
+	p.SetPrivate(ips[2], true)
+	p.SetPrivate(ips[3], true)
+
 	addresses := p.Peerlist.GetPrivateAddresses()
 	assert.Equal(t, len(addresses), 2)
 	sort.Strings(addresses)
 	assert.Equal(t, addresses, []string{
-		"112.32.32.14:30011",
-		"112.32.32.14:40011",
+		ips[2],
+		ips[3],
 	})
 }
 
@@ -377,9 +385,8 @@ func testRandom(t *testing.T, publicOnly bool) {
 	}, f)
 
 	// check with 3 peers, one private
-	q, err := p.AddPeer("112.32.32.14:30011")
-	assert.Nil(t, err)
-	q.Private = true
+	p.AddPeer("112.32.32.14:30011")
+	p.SetPrivate("112.32.32.14:30011", true)
 	if publicOnly {
 		// The private peer should never be included
 		compareRandom(t, p, 0, []string{

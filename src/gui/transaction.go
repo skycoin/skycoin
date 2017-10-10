@@ -32,39 +32,53 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 // Returns pending transactions
 func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 
 		txns := gateway.GetAllUnconfirmedTxns()
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
-			readable := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-			ret = append(ret, &readable)
+			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+			if err != nil {
+				logger.Error("%v", err)
+				wh.Error500(w)
+				return
+			}
+			ret = append(ret, readable)
 		}
 
 		wh.SendOr404(w, &ret)
 	}
 }
 
-// getLastTxs get the last confirmed txs.
+// DEPRECATED: last txs can't recover from db when restart
+// , and it's not used actually
 func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 		txs, err := gateway.GetLastTxs()
 		if err != nil {
-			wh.Error500(w, err.Error())
+			logger.Error("gateway.GetLastTxs failed: %v", err)
+			wh.Error500(w)
 			return
 		}
 
 		resTxs := make([]visor.TransactionResult, len(txs))
 		for i, tx := range txs {
+			rbTx, err := visor.NewReadableTransaction(tx)
+			if err != nil {
+				logger.Error("%v", err)
+				wh.Error500(w)
+				return
+			}
+
 			resTxs[i] = visor.TransactionResult{
-				Transaction: visor.NewReadableTransaction(tx),
+				Transaction: *rbTx,
 				Status:      tx.Status,
 			}
 		}
@@ -75,8 +89,8 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 		txid := r.FormValue("txid")
@@ -97,12 +111,19 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 		if tx == nil {
-			wh.Error404(w, "not found")
+			wh.Error404(w)
+			return
+		}
+
+		rbTx, err := visor.NewReadableTransaction(tx)
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
 			return
 		}
 
 		resTx := visor.TransactionResult{
-			Transaction: visor.NewReadableTransaction(tx),
+			Transaction: *rbTx,
 			Status:      tx.Status,
 		}
 		wh.SendOr404(w, &resTx)
@@ -112,8 +133,8 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 //Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
 			return
 		}
 		// get the rawtransaction
@@ -135,20 +156,19 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		txn := coin.TransactionDeserialize(b)
-		t, err := gateway.InjectTransaction(txn)
-		if err != nil {
+		if err := gateway.InjectTransaction(txn); err != nil {
 			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
 			return
 		}
 
-		wh.SendOr404(w, t.Hash().Hex())
+		wh.SendOr404(w, txn.Hash().Hex())
 	}
 }
 
 func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 
@@ -162,8 +182,8 @@ func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 
 func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			wh.Error405(w, "")
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
 			return
 		}
 		txid := r.FormValue("txid")
@@ -181,6 +201,11 @@ func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
 		tx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
+			return
+		}
+
+		if tx == nil {
+			wh.Error404(w)
 			return
 		}
 

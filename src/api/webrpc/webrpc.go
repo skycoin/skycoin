@@ -1,6 +1,7 @@
 package webrpc
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -52,6 +53,10 @@ type RPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    string `json:"data,omitempty"`
+}
+
+func (e RPCError) Error() string {
+	return fmt.Sprintf("%s [code: %d]", e.Message, e.Code)
 }
 
 // Response rpc response struct
@@ -110,33 +115,28 @@ type HandlerFunc func(req Request, gateway Gatewayer) Response
 
 // WebRPC manage the web rpc state and handles
 type WebRPC struct {
-	addr      string // service address
-	workerNum uint
-	ops       chan operation // request channel
-	close     chan struct{}
-	mux       *http.ServeMux
-	handlers  map[string]HandlerFunc
-	gateway   Gatewayer
-	listener  net.Listener
-	quit      chan struct{}
+	Addr         string // service address
+	Gateway      Gatewayer
+	WorkerNum    uint
+	ChanBuffSize uint // size of ops channel
+
+	ops      chan operation // request channel
+	mux      *http.ServeMux
+	handlers map[string]HandlerFunc
+	listener net.Listener
+	quit     chan struct{}
 }
 
-// Option is the argument type for creating webrpc instance.
-type Option func(*WebRPC)
-
-// New creates webrpc instance
-func New(addr string, ops ...Option) (*WebRPC, error) {
+func New(addr string, gw Gatewayer) (*WebRPC, error) {
 	rpc := &WebRPC{
-		addr: addr,
-		quit: make(chan struct{}),
+		Addr:         addr,
+		Gateway:      gw,
+		WorkerNum:    5,
+		ChanBuffSize: 1000,
+		quit:         make(chan struct{}),
+		mux:          http.NewServeMux(),
+		handlers:     make(map[string]HandlerFunc),
 	}
-
-	for _, opt := range ops {
-		opt(rpc)
-	}
-
-	rpc.handlers = make(map[string]HandlerFunc)
-	rpc.mux = http.NewServeMux()
 
 	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
 
@@ -180,24 +180,37 @@ func (rpc *WebRPC) initHandlers() error {
 
 // Run starts the webrpc service.
 func (rpc *WebRPC) Run() error {
-	logger.Infof("start webrpc on http://%s", rpc.addr)
+	if rpc.WorkerNum < 1 {
+		return errors.New("rpc.WorkerNum must be > 0")
+	}
+
+	if rpc.ChanBuffSize < 1 {
+		return errors.New("rpc.ChanBuffSize must be > 0")
+	}
+
+	logger.Infof("start webrpc on http://%s", rpc.Addr)
 	defer logger.Info("webrpc service closed")
 
-	l, err := net.Listen("tcp", rpc.addr)
-	if err != nil {
+	var err error
+	if rpc.listener, err = net.Listen("tcp", rpc.Addr); err != nil {
 		return err
 	}
 
-	rpc.listener = l
+	rpc.ops = make(chan operation, rpc.ChanBuffSize)
+
+	for i := uint(0); i < rpc.WorkerNum; i++ {
+		go rpc.workerThread(i)
+	}
 
 	errC := make(chan error, 1)
 	go func() {
-		if err := http.Serve(l, rpc); err != nil {
+		if err := http.Serve(rpc.listener, rpc); err != nil {
 			select {
 			case <-rpc.quit:
-				return
+				errC <- nil
 			default:
-				// the webrpc service failed unexpectly, notify the
+				// the webrpc service failed unexpectedly
+				logger.Info("webrpc.Run, http.Serve error:", err)
 				errC <- err
 			}
 		}
@@ -207,9 +220,16 @@ func (rpc *WebRPC) Run() error {
 }
 
 // Shutdown close the webrpc service
-func (rpc *WebRPC) Shutdown() {
-	close(rpc.quit)
-	rpc.listener.Close()
+func (rpc *WebRPC) Shutdown() error {
+	if rpc.quit != nil {
+		close(rpc.quit)
+	}
+
+	if rpc.listener != nil {
+		return rpc.listener.Close()
+	}
+
+	return nil
 }
 
 // HandleFunc registers handler function
@@ -224,106 +244,67 @@ func (rpc *WebRPC) HandleFunc(method string, h HandlerFunc) error {
 
 // ServHTTP implements the interface of http.Handler
 func (rpc *WebRPC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rpc.dispatch()
 	rpc.mux.ServeHTTP(w, r)
 }
 
 // Handler processes the http request
 func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
-	var (
-		req Request
-		res Response
-	)
-
-	for {
-		// only support post.
-		if r.Method != "POST" {
-			res = makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
-			break
-		}
-
-		// deocder request.
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			res = makeErrorResponse(errCodeParseError, errMsgParseError)
-			break
-		}
-
-		if req.Jsonrpc != jsonRPC {
-			res = makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
-			break
-		}
-
-		resC := make(chan Response)
-		rpc.ops <- func(rpc *WebRPC) {
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Critical(fmt.Sprintf("%v", r))
-					resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
-				}
-			}()
-			if handler, ok := rpc.handlers[req.Method]; ok {
-				logger.Info("method: %v", req.Method)
-				resC <- handler(req, rpc.gateway)
-				return
-			}
-			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
-		}
-		res = <-resC
-		break
+	// only support post.
+	if r.Method != http.MethodPost {
+		res := makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
+		wh.SendOr404(w, &res)
+		return
 	}
 
+	// deocder request.
+	req := Request{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		res := makeErrorResponse(errCodeParseError, errMsgParseError)
+		wh.SendOr404(w, &res)
+		return
+	}
+
+	if req.Jsonrpc != jsonRPC {
+		res := makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
+		wh.SendOr404(w, &res)
+		return
+	}
+
+	resC := make(chan Response)
+	rpc.ops <- func(rpc *WebRPC) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Critical(fmt.Sprintf("%v", r))
+				resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
+			}
+		}()
+
+		if handler, ok := rpc.handlers[req.Method]; ok {
+			logger.Info("webrpc handling method: %v", req.Method)
+			resC <- handler(req, rpc.Gateway)
+		} else {
+			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
+		}
+	}
+
+	res := <-resC
 	wh.SendOr404(w, &res)
 }
 
-// dispatch will create numbers of goroutines, each routine will
-func (rpc *WebRPC) dispatch() {
-	for i := uint(0); i < rpc.workerNum; i++ {
-		go func(seq uint) {
-			for {
-				select {
-				case <-rpc.close:
-					// logger.Infof("[%d]rpc job handler quit", seq)
-					return
-				case op := <-rpc.ops:
-					func() {
-						defer func() {
-							if r := recover(); r != nil {
-								logger.Error("recover: %v", r)
-							}
-						}()
-
-						op(rpc)
-					}()
-				}
-			}
-		}(i)
-	}
-}
-
-// ChanBuffSize set request channel buffer size
-func ChanBuffSize(n uint) Option {
-	return func(rpc *WebRPC) {
-		rpc.ops = make(chan operation, n)
-	}
-}
-
-// ThreadNum set concurrent request processor number
-func ThreadNum(n uint) Option {
-	return func(rpc *WebRPC) {
-		rpc.workerNum = n
-	}
-}
-
-// Gateway set gateway
-func Gateway(gateway Gatewayer) Option {
-	return func(rpc *WebRPC) {
-		rpc.gateway = gateway
-	}
-}
-
-// Quit set closing channel
-func Quit(c chan struct{}) Option {
-	return func(rpc *WebRPC) {
-		rpc.close = c
+func (rpc *WebRPC) workerThread(seq uint) {
+	for {
+		select {
+		case <-rpc.quit:
+			return
+		case op := <-rpc.ops:
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.Error("recover: %v", r)
+					}
+				}()
+				op(rpc)
+			}()
+		}
 	}
 }

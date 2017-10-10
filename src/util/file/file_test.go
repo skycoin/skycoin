@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"encoding/json"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,6 +26,7 @@ func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
 	b := make([]byte, len(contents)*16)
 	n, err := f.Read(b)
 	require.Nil(t, err)
+
 	require.Equal(t, n, len(contents))
 	require.True(t, bytes.Equal(b[:n], contents))
 }
@@ -117,22 +120,30 @@ func TestSaveJSON(t *testing.T) {
 	obj := struct {
 		Key string `json:"key"`
 	}{Key: "value"}
-	err := SaveJSON(fn, obj, 0644)
+
+	b, err := json.MarshalIndent(obj, "", "    ")
 	require.Nil(t, err)
+
+	err = SaveJSON(fn, obj, 0644)
+	require.Nil(t, err)
+
 	requireFileExists(t, fn)
 	requireFileNotExists(t, fn+".bak")
 	requireFileMode(t, fn, 0644)
-	requireFileContents(t, fn, "{\"key\":\"value\"}")
+	requireFileContents(t, fn, string(b))
 
 	// Saving again should result in a .bak file same as original
 	obj.Key = "value2"
 	err = SaveJSON(fn, obj, 0644)
 	require.Nil(t, err)
+	b2, err := json.MarshalIndent(obj, "", "    ")
+	require.Nil(t, err)
+
 	requireFileMode(t, fn, 0644)
 	requireFileExists(t, fn)
 	requireFileExists(t, fn+".bak")
-	requireFileContents(t, fn, "{\"key\":\"value2\"}")
-	requireFileContents(t, fn+".bak", "{\"key\":\"value\"}")
+	requireFileContents(t, fn, string(b2))
+	requireFileContents(t, fn+".bak", string(b))
 	requireFileNotExists(t, fn+".tmp")
 }
 
@@ -144,16 +155,20 @@ func TestSaveJSONSafe(t *testing.T) {
 	}{Key: "value"}
 	err := SaveJSONSafe(fn, obj, 0600)
 	require.Nil(t, err)
+	b, err := json.MarshalIndent(obj, "", "    ")
+	require.Nil(t, err)
+
 	requireFileExists(t, fn)
 	requireFileMode(t, fn, 0600)
-	requireFileContents(t, fn, "{\"key\":\"value\"}")
+	requireFileContents(t, fn, string(b))
 
 	// Saving again should result in error, and original file not changed
 	obj.Key = "value2"
 	err = SaveJSONSafe(fn, obj, 0600)
 	require.NotNil(t, err)
+
 	requireFileExists(t, fn)
-	requireFileContents(t, fn, "{\"key\":\"value\"}")
+	requireFileContents(t, fn, string(b))
 	requireFileNotExists(t, fn+".bak")
 	requireFileNotExists(t, fn+".tmp")
 }

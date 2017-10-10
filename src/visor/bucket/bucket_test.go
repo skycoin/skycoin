@@ -3,31 +3,21 @@ package bucket
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"testing"
 
 	"encoding/json"
 
 	"bytes"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 type person struct {
 	Name string
 	Age  int
-}
-
-func prepareDB(t *testing.T) (*bolt.DB, func()) {
-	f := fmt.Sprintf("test%d.db", rand.Intn(1024))
-	db, err := bolt.Open(f, 0700, nil)
-	assert.Nil(t, err)
-	return db, func() {
-		db.Close()
-		os.Remove(f)
-	}
 }
 
 func TestBktUpdate(t *testing.T) {
@@ -47,7 +37,7 @@ func TestBktUpdate(t *testing.T) {
 		},
 	}
 
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -89,7 +79,7 @@ func TestBktUpdate(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 
 	bkt, err := New([]byte("tete"), db)
@@ -141,7 +131,7 @@ func TestDelete(t *testing.T) {
 			nil,
 		},
 	}
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
@@ -174,7 +164,7 @@ func TestGetAll(t *testing.T) {
 			},
 		},
 	}
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -211,7 +201,7 @@ func TestRangeUpdate(t *testing.T) {
 			},
 		},
 	}
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -270,7 +260,7 @@ func TestIsExsit(t *testing.T) {
 		},
 	}
 
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 
 	for _, tc := range testCases {
@@ -301,7 +291,7 @@ func TestForEach(t *testing.T) {
 			map[string]string{},
 		},
 	}
-	db, cancel := prepareDB(t)
+	db, cancel := testutil.PrepareDB(t)
 	defer cancel()
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("fasd%d", rand.Int31n(1024))), db)
@@ -347,7 +337,7 @@ func TestLen(t *testing.T) {
 		},
 	}
 
-	db, cl := prepareDB(t)
+	db, cl := testutil.PrepareDB(t)
 	defer cl()
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("adsf%d", rand.Int31n(1024))), db)
@@ -361,7 +351,7 @@ func TestLen(t *testing.T) {
 }
 
 func TestBucketIsEmpty(t *testing.T) {
-	db, td := prepareDB(t)
+	db, td := testutil.PrepareDB(t)
 	defer td()
 
 	bkt, err := New([]byte("bkt1"), db)

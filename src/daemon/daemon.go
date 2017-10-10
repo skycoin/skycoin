@@ -54,7 +54,7 @@ var (
 const (
 	// MaxDropletPrecision represents the precision of droplets
 	MaxDropletPrecision = 1
-	MaxDropletDivisor   = 1e5
+	MaxDropletDivisor   = 1e6
 )
 
 // Config subsystem configurations

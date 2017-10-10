@@ -3,8 +3,9 @@ import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { Router } from '@angular/router';
-import 'rxjs/add/operator/delay';
 import { MdSnackBar, MdSnackBarConfig } from '@angular/material';
+import 'rxjs/add/operator/delay';
+import 'rxjs/add/operator/filter';
 
 @Component({
   selector: 'app-send-skycoin',

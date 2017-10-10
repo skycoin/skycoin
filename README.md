@@ -203,12 +203,16 @@ Instructions for doing this:
 2. Update all version strings in the repo (grep for them) to the new version
 3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 4. Merge these changes to `develop`
-5. Make sure that the client runs properly from the `develop` branch.
-6. Make a PR merging `develop` into `master`
-7. Review the PR and merge it
-8. Make sure that the client runs properly from the `master` branch
+5. On the `develop` branch, make sure that the client runs properly from the command line (`./run.sh`)
+6. Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS. Delete these releases when done.
+7. Make a PR merging `develop` into `master`
+8. Review the PR and merge it
 9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
-10. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
+10. Make sure that the client runs properly from the `master` branch
+11. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
+
+If there are problems discovered after merging to master, start over, and increment the 3rd version number.
+For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 
 #### Creating release builds
 

@@ -22,7 +22,7 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 <!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
 
 - [Installation](#installation)
-    - [Go Installation and Setup](#go-19-installation-and-setup)
+    - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
@@ -192,24 +192,23 @@ dep prune
 
 The compiled wallet source should be checked in to the repo, so that others do not need to install node to run the software.
 
-Compile and add the wallet source to git:
+Instructions for doing this:
 
-```sh
-cd src/gui/static
-npm install
-npm run build
-git add .
-```
+[Wallet GUI Development README](src/gui/static/README.md)
 
 ### Releases
 
-*TODO: Full instructions on doing a release. Need instructions on updating version number in source code, and running scripts to build releases*
-
-When ready to do a release, a pull request merging `develop` into `master` must be made.
-
-After merging to `master`, tag the branch with the version number.
-
-Once `master` branch is updated, `git checkout master` and create the release builds.
+0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
+1. Compile the `src/gui/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
+2. Update all version strings in the repo (grep for them) to the new version
+3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
+4. Merge these changes to `develop`
+5. Make sure that the client runs properly from the `develop` branch.
+6. Make a PR merging `develop` into `master`
+7. Review the PR and merge it
+8. Make sure that the client runs properly from the `master` branch
+9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+10. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
 
 #### Creating release builds
 

@@ -2,9 +2,10 @@ package webrpc
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 var lastBlockStr = `
@@ -60,7 +61,7 @@ func Test_getStatusHandler(t *testing.T) {
 	b := decodeBlock(lastBlockStr)
 	now := time.Now().Unix()
 	m := NewGatewayerMock()
-	m.On("GetLastBlocks", uint64(1)).Return(b)
+	m.On("GetLastBlocks", uint64(1)).Return(b, nil)
 	m.On("GetTimeNow").Return(uint64(now))
 
 	type args struct {
@@ -105,9 +106,11 @@ func Test_getStatusHandler(t *testing.T) {
 			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
 		},
 	}
+
 	for _, tt := range tests {
-		if got := getStatusHandler(tt.args.req, tt.args.in1); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. getStatusHandler() = %+v, want %+v", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got := getStatusHandler(tt.args.req, tt.args.in1)
+			require.Equal(t, tt.want, got)
+		})
 	}
 }

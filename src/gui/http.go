@@ -7,7 +7,9 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strings"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 
 	"github.com/skycoin/skycoin/src/util/file"
@@ -118,14 +120,20 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
 	}
 
+	mux.HandleFunc("/version", versionHandler(daemon.Gateway))
+
+	//get set of unspent outputs
+	mux.HandleFunc("/outputs", getOutputsHandler(daemon.Gateway))
+
+	// get balance of addresses
+	mux.HandleFunc("/balance", getBalanceHandler(daemon.Gateway))
+
 	// Wallet interface
 	RegisterWalletHandlers(mux, daemon.Gateway)
 	// Blockchain interface
 	RegisterBlockchainHandlers(mux, daemon.Gateway)
 	// Network stats interface
 	RegisterNetworkHandlers(mux, daemon.Gateway)
-	// Network API handler
-	RegisterAPIHandlers(mux, daemon.Gateway)
 	// Transaction handler
 	RegisterTxHandlers(mux, daemon.Gateway)
 	// UxOUt api handler
@@ -146,5 +154,101 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 		} else {
 			wh.Error404(w)
 		}
+	}
+}
+
+// getOutputsHandler get utxos base on the filters in url params.
+// mode: GET
+// url: /outputs?addrs=[:addrs]&hashes=[:hashes]
+// if addrs and hashes are not specificed, return all unspent outputs.
+// if both addrs and hashes are specificed, then both those filters are need to be matched.
+// if only specify one filter, then return outputs match the filter.
+func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		var addrs []string
+		var hashes []string
+
+		trimSpace := func(vs []string) []string {
+			for i := range vs {
+				vs[i] = strings.TrimSpace(vs[i])
+			}
+			return vs
+		}
+
+		addrStr := r.FormValue("addrs")
+		if addrStr != "" {
+			addrs = trimSpace(strings.Split(addrStr, ","))
+		}
+
+		hashStr := r.FormValue("hashes")
+		if hashStr != "" {
+			hashes = trimSpace(strings.Split(hashStr, ","))
+		}
+
+		filters := []daemon.OutputsFilter{}
+		if len(addrs) > 0 {
+			filters = append(filters, daemon.FbyAddresses(addrs))
+		}
+
+		if len(hashes) > 0 {
+			filters = append(filters, daemon.FbyHashes(hashes))
+		}
+
+		outs, err := gateway.GetUnspentOutputs(filters...)
+		if err != nil {
+			logger.Error("get unspent outputs failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, outs)
+	}
+}
+
+func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		addrsParam := r.FormValue("addrs")
+		addrsStr := strings.Split(addrsParam, ",")
+		addrs := make([]cipher.Address, 0, len(addrsStr))
+		for _, addr := range addrsStr {
+			// trim space
+			addr = strings.Trim(addr, " ")
+			a, err := cipher.DecodeBase58Address(addr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
+				return
+			}
+			addrs = append(addrs, a)
+		}
+
+		bal, err := gateway.GetAddressesBalance(addrs)
+		if err != nil {
+			logger.Error("Get balance failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, bal)
+	}
+}
+
+func versionHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		wh.SendOr404(w, gateway.GetBuildInfo())
 	}
 }

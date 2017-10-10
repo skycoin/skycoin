@@ -45,7 +45,7 @@ func (xy *XY) Print(lab string) {
 //however, elem.IsValid will fail
 func (xy *XY) ParsePubkey(pub []byte) bool {
 	if len(pub) != 33 {
-		log.Panic() //do not permit invalid length inputs
+		log.Panic("pubkey len must be 33, len is ", len(pub)) // do not permit invalid length inputs
 		return false
 	}
 	if len(pub) == 33 && (pub[0] == 0x02 || pub[0] == 0x03) {

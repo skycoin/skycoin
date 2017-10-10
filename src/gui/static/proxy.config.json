@@ -1,0 +1,18 @@
+{
+  "/api/*": {
+    "target": "http://127.0.0.1:6420",
+    "pathRewrite": {
+      "^/api" : ""
+    },
+    "secure": false,
+    "logLevel": "debug"
+  },
+  "/teller/*": {
+    "target": "http://localhost:7071/api",
+    "pathRewrite": {
+      "^/teller" : ""
+    },
+    "secure": true,
+    "logLevel": "debug"
+  }
+}

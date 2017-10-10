@@ -1,3 +1,4 @@
+// +build ignore
 package visor
 
 import (
@@ -121,18 +122,18 @@ func createUnconfirmedTxn() UnconfirmedTxn {
 	return ut
 }
 
-func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
-	ut := createUnconfirmedTxn()
-	ut.Hash()
-	v.Unconfirmed.Txns.put(&ut)
-	return ut
-}
+// func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
+// 	ut := createUnconfirmedTxn()
+// 	ut.Hash()
+// 	v.Unconfirmed.txns.put(&ut)
+// 	return ut
+// }
 
-func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
-	ut := createUnconfirmedTxn()
-	utp.Txns.put(&ut)
-	return ut
-}
+// func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
+// 	ut := createUnconfirmedTxn()
+// 	utp.txns.put(&ut)
+// 	return ut
+// }
 
 // func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
 // 	tx, err := v.Spend(v.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, addr)

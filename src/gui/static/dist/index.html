@@ -1,73 +1,14 @@
-<html>
-
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Skycoin</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/assets/css/animate.css">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="/assets/css/bootstrap.icon-large.css">
-    <link rel="stylesheet" href="/assets/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/assets/css/toastr.min.css">
-    <link rel="stylesheet" href="/assets/css/style.css">
-    <script>
-        if (typeof module === 'object') {
-            window.module = module;
-            module = undefined;
-        }
-    </script>
-    <script src="/assets/script/jQuery/jQuery-2.1.4.min.js"></script>
-    <script src="/assets/script/bootstrap.min.js"></script>
-    <script src="/assets/script/moment.js"></script>
-    <script src="/assets/script/underscore.min.js"></script>
-    <script src="/assets/script/async.min.js"></script>
-    <script src="/assets/script/toastr.min.js"></script>
-    <script src="/assets/script/qrcode.min.js"></script>
-
-    <!-- 1. Load libraries -->
-    <!-- Polyfill(s) for older browsers -->
-    <script src="lib/es6-shim/es6-shim.min.js"></script>
-
-    <script src="lib/zone.js/dist/zone.js"></script>
-    <script src="lib/reflect-metadata/Reflect.js"></script>
-    <script src="lib/systemjs/dist/system.src.js"></script>
-
-    <script src="current-skycoin.json"></script>
-
-    <!-- 2. Configure SystemJS -->
-    <script src="systemjs.config.js"></script>
-    <script>
-        System.import('app')
-            .then(null, console.error.bind(console));
-    </script>
-
-
-
-
+  <meta charset="utf-8">
+  <title>Skycoin</title>
+  <base href="/">
+  <!--<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
-
-<!-- 3. Display the application -->
-
 <body>
-    <div id="sky-header">
-        <p id="versionNumber"></p>
-        <div class="fa fa-cloud background-cloud-0"><i class="fa fa-btc"></i></div>
-    </div>
-    <load-wallet>Loading...</load-wallet>
-    <script>
-        function load() {
-            var data = JSON.parse(versionData);
-            document.getElementById("versionNumber").innerHTML = data.version;
-        }
-        try{
-          load();
-        }
-        catch(e){
-          console.log("Error in setting up the version ");
-        }
-
-    </script>
-</body>
-
+  <app-root></app-root>
+<script type="text/javascript" src="inline.bundle.js"></script><script type="text/javascript" src="polyfills.bundle.js"></script><script type="text/javascript" src="scripts.bundle.js"></script><script type="text/javascript" src="styles.bundle.js"></script><script type="text/javascript" src="vendor.bundle.js"></script><script type="text/javascript" src="main.bundle.js"></script></body>
 </html>

@@ -1,0 +1,43 @@
+<md-card [formGroup]="form" class="send-skycoin-form">
+  <md-select formControlName="wallet" placeholder="Select Wallet" class="input-field">
+    <md-option *ngFor="let wallet of walletService.all() | async" [value]="wallet" [disabled]="wallet.balance <= 0">
+      {{ wallet.meta.label }} ({{ wallet.balance | sky }})
+    </md-option>
+  </md-select>
+  <md-input-container class="input-field">
+    <input mdInput formControlName="address" placeholder="Recipient address">
+  </md-input-container>
+  <md-input-container class="input-field">
+    <input type="number" mdInput formControlName="amount" placeholder="Amount">
+  </md-input-container>
+  <div class="button-line">
+    <app-button #button placeholder="Send" (click)="send()" [form]="form"></app-button>
+  </div>
+</md-card>
+<!--Time, Status, Address, Amount, Transaction ID-->
+<md-card>
+  <h3>Recent transactions</h3>
+  <ngx-datatable #table
+    class="material"
+    [rows]="records"
+    columnMode="flex"
+    [headerHeight]="50"
+    [footerHeight]="50"
+    [rowHeight]="50"
+    [limit]="10"
+    [scrollbarH]="true"
+    (activate)="onActivate($event)">
+    <ngx-datatable-column name="Timestamp" prop="txn.timestamp" [flexGrow]="2">
+      <ng-template let-value="value" ngx-datatable-cell-template>
+        <strong>{{ value | dateTime }}</strong>
+      </ng-template>
+    </ngx-datatable-column>
+    <ngx-datatable-column name="Status" [flexGrow]="2">
+      <ng-template let-value="value" ngx-datatable-cell-template>
+        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>
+      </ng-template>
+    </ngx-datatable-column>
+    <ngx-datatable-column name="Address" [flexGrow]="4"></ngx-datatable-column>
+    <ngx-datatable-column name="Amount" [flexGrow]="1"></ngx-datatable-column>
+  </ngx-datatable>
+</md-card>

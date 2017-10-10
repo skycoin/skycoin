@@ -45,10 +45,12 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist")
 	}
 
-	tx := &visor.TransactionResult{
-		Transaction: visor.NewReadableTransaction(txn),
-		Status:      txn.Status,
+	tx, err := visor.NewTransactionResult(txn)
+	if err != nil {
+		logger.Error("%v", err)
+		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
+
 	return makeSuccessResponse(req.ID, TxnResult{tx})
 }
 
@@ -73,12 +75,11 @@ func injectTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("%v", err))
 	}
 
-	t, err := gateway.InjectTransaction(txn)
-	if err != nil {
+	if err := gateway.InjectTransaction(txn); err != nil {
 		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("inject transaction failed:%v", err))
 	}
 
-	return makeSuccessResponse(req.ID, TxIDJson{t.Hash().Hex()})
+	return makeSuccessResponse(req.ID, TxIDJson{txn.Hash().Hex()})
 }
 
 func deserializeTx(b []byte) (tx coin.Transaction, err error) {

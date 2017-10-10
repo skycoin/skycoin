@@ -1,0 +1,11 @@
+<md-list>
+  <h3 md-subheader>Addresses</h3>
+  <md-list-item *ngFor="let address of wallet.entries">
+    <md-icon md-list-icon (click)="showQr(address)" class="fa fa-qrcode"></md-icon>
+    <h4 md-line>{{address.address}} - {{ address.balance | sky }} ({{ address.hours ? address.hours : 0 }} Coin Hours)</h4>
+  </md-list-item>
+  <div class="button-line">
+    <a md-raised-button color="primary" (click)="renameWallet()">Rename wallet</a>
+    <a md-raised-button color="primary" (click)="addAddress()">Add address</a>
+  </div>
+</md-list>

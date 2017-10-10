@@ -9,15 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/skycoin/skycoin/src/util/logging"
 )
-
-func init() {
-	if silenceLogger {
-		logging.Disable()
-	}
-}
 
 var (
 	_sendByteMessage = sendByteMessage

@@ -1,8 +1,7 @@
 # Webrpc
 
-This is a description about skycoin webrpc, which implemented the [json-rpc 2.0](http://www.jsonrpc.org/specification) protocol. 
-The rpc service entry point is /webrpc, and only handles the `post` messages. 
-
+This is a description about skycoin webrpc, which implemented the [json-rpc 2.0](http://www.jsonrpc.org/specification) protocol.
+The rpc service entry point is /webrpc, and only accept the HTTP `POST` requests.
 
 ## Get Status
 
@@ -29,7 +28,7 @@ request:
     "id": "1",
     "jsonrpc": "2.0",
     "method": "get_lastblocks",
-    "params": [1]
+    "params": [3]
 }
 ```
 
@@ -37,7 +36,7 @@ The params must be an array with one integer value.
 
 ## Get blocks
 
-Get blocks in specific range.
+Get blocks in specific range, inclusive.
 
 request:
 
@@ -46,11 +45,28 @@ request:
     "id": "1",
     "jsonrpc": "2.0",
     "method": "get_blocks",
-    "params": [0, 1]
+    "params": [2, 10]
 }
 ```
 
-The params must be an array with two integer value.
+The params must be an array with two integer values.
+
+## Get blocks by sequence number
+
+Get blocks at specific sequence numbers.
+
+request:
+
+```json
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "method": "get_blocks",
+    "params": [133, 401, 212]
+}
+```
+
+The params must be an array of integer values.
 
 ## Get outputs
 
@@ -67,7 +83,7 @@ request:
 }
 ```
 
-The params must be an string array.
+The params must be an array of strings.
 
 ## Inject transaction
 
@@ -88,7 +104,7 @@ The params must be an array with one raw transaction string.
 
 ## Get transaction
 
-Get transaction verbose info of specific transaction id. 
+Get transaction verbose info of specific transaction id.
 
 request:
 

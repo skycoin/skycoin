@@ -82,9 +82,9 @@ func (txn *Transaction) Verify() error {
 	}
 
 	// Check duplicate inputs
-	uxOuts := make(map[cipher.SHA256]int, len(txn.In))
+	uxOuts := make(map[cipher.SHA256]struct{}, len(txn.In))
 	for i := range txn.In {
-		uxOuts[txn.In[i]] = 1
+		uxOuts[txn.In[i]] = struct{}{}
 	}
 	if len(uxOuts) != len(txn.In) {
 		return errors.New("Duplicate spend")
@@ -98,7 +98,7 @@ func (txn *Transaction) Verify() error {
 	}
 
 	// Check for duplicate potential outputs
-	outputs := make(map[cipher.SHA256]int, len(txn.Out))
+	outputs := make(map[cipher.SHA256]struct{}, len(txn.Out))
 	uxb := UxBody{
 		SrcTransaction: txn.Hash(),
 	}
@@ -106,7 +106,7 @@ func (txn *Transaction) Verify() error {
 		uxb.Coins = to.Coins
 		uxb.Hours = to.Hours
 		uxb.Address = to.Address
-		outputs[uxb.Hash()] = 1
+		outputs[uxb.Hash()] = struct{}{}
 	}
 	if len(outputs) != len(txn.Out) {
 		return errors.New("Duplicate output in transaction")
@@ -121,14 +121,9 @@ func (txn *Transaction) Verify() error {
 	}
 
 	// Artificial restriction to prevent spam
-	// Must spend only multiples of 1e6
 	for _, txo := range txn.Out {
 		if txo.Coins == 0 {
 			return errors.New("Zero coin output")
-		}
-		if txo.Coins%1e6 != 0 {
-			return errors.New("Transaction outputs must be multiple of 1e6 " +
-				"base units")
 		}
 	}
 
@@ -218,7 +213,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	sigs := make([]cipher.Sig, len(txn.In))
 	innerHash := txn.HashInner()
 	for i, k := range keys {
-		h := cipher.AddSHA256(innerHash, txn.In[i]) //hash to sign
+		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
 		sigs[i] = cipher.SignHash(h, k)
 	}
 	txn.Sigs = sigs

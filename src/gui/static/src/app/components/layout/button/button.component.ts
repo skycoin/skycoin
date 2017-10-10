@@ -27,7 +27,7 @@ export class ButtonComponent {
     this.state = 2;
   }
 
-  private disabled() {
+  disabled() {
     return this.state === 0  || (!(this.form === undefined) && !(this.form && this.form.valid));
   }
 }

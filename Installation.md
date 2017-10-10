@@ -45,16 +45,14 @@ source $HOME/.gvm/scripts/gvm
 ```
 
 #### Install Go
-```sh
-gvm install go1.9
-gvm use go1.9 --default
-```
-
 In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.
 
 ```sh
 gvm install go1.4 --source=https://github.com/golang/go
 gvm use go1.4
+
+gvm install go1.9
+gvm use go1.9 --default
 ```
 
 #### Installation issues

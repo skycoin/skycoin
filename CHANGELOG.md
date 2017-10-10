@@ -6,10 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.20.0] - 2017-10-10
+
 ### Added
 
-- Added fractional coin support. Allow up to one decimal place (of a maximum
-  of 6).
 - New wallet frontend in angular4. This is a complete rewrite and fixes many
   of the old wallet issues.
 - New wallet has preliminary support for OTC functionality
@@ -105,5 +105,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.20.0]: https://github.com/skycoin/skycoin/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/skycoin/skycoin/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/skycoin/skycoin/commit/dd924e1f2de8fab945e05b3245dbeabf267f2910

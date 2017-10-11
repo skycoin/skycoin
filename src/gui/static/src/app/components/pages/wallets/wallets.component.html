@@ -1,0 +1,14 @@
+<md-expansion-panel *ngFor="let wallet of walletService.all() | async">
+  <md-expansion-panel-header>
+    <md-panel-title>
+      {{ wallet.meta.label }}
+    </md-panel-title>
+    <md-panel-description>
+      <span>{{ wallet.balance | sky }}</span> <span>{{ wallet.hours ? wallet.hours : 0 }} Coin Hours</span>
+    </md-panel-description>
+  </md-expansion-panel-header>
+  <app-wallet-detail [wallet]="wallet"></app-wallet-detail>
+</md-expansion-panel>
+<div class="button-line">
+  <a md-raised-button color="primary" (click)="addWallet()">Add wallet</a>
+</div>

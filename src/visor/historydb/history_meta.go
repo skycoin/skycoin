@@ -31,7 +31,7 @@ func (hm *historyMeta) ParsedHeight() int64 {
 }
 
 // SetParsedHeight updates history parsed height
-func (hm *historyMeta) setParsedHeight(h uint64) error {
+func (hm *historyMeta) SetParsedHeight(h uint64) error {
 	return hm.v.Put(parsedHeightKey, bucket.Itob(h))
 }
 

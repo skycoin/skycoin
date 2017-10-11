@@ -1,0 +1,13 @@
+.skycoin-details {
+  margin-top: 40px;
+  background-color: #eee;
+  margin-bottom: 20px;
+}
+
+.skycoin-detail-keys {
+  display: inline-block;
+}
+
+.skycoin-detail-values {
+  display: inline-block;
+}

@@ -12,15 +12,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
+const (
 	addr          = "127.0.0.1:50823"
 	addrb         = "127.0.0.1:50824"
 	addrc         = "127.0.0.1:50825"
 	port          = 50823
 	address       = "127.0.0.1"
-	listener      net.Listener
-	conn          net.Conn
 	silenceLogger = false
+)
+
+var (
+	listener net.Listener
+	conn     net.Conn
 )
 
 func init() {
@@ -29,10 +32,15 @@ func init() {
 	}
 }
 
-func TestNewConnectionPool(t *testing.T) {
+func newTestConfig() Config {
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
+	return cfg
+}
+
+func TestNewConnectionPool(t *testing.T) {
+	cfg := newTestConfig()
 	cfg.MaxConnections = 108
 	cfg.DialTimeout = time.Duration(777)
 	p := NewConnectionPool(cfg, nil)
@@ -48,9 +56,7 @@ func TestNewConnectionPool(t *testing.T) {
 
 func TestNewConnection(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	cfg.ConnectionWriteQueueSize = 101
 	p := NewConnectionPool(cfg, nil)
 	defer p.Shutdown()
@@ -73,9 +79,7 @@ func TestNewConnection(t *testing.T) {
 
 func TestNewConnectionAlreadyConnected(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	defer p.Shutdown()
 	go p.Run()
@@ -91,9 +95,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 
 func TestAcceptConnections(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	called := false
 	cfg.ConnectCallback = func(addr string, solicited bool) {
 		assert.False(t, solicited)
@@ -126,23 +128,9 @@ func TestAcceptConnections(t *testing.T) {
 	assert.True(t, called)
 }
 
-func TestListeningAddress(t *testing.T) {
-	wait()
-	cfg := NewConfig()
-	cfg.Address = ""
-	cfg.Port = 0
-	p := NewConnectionPool(cfg, nil)
-	defer p.Shutdown()
-	go p.Run()
-	wait()
-	t.Log("ListeningAddress: ", addr)
-}
-
 func TestStartListen(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	called := false
 	cfg.ConnectCallback = func(addr string, solicited bool) {
 		assert.False(t, solicited)
@@ -162,9 +150,7 @@ func TestStartListen(t *testing.T) {
 
 func TestStartListenTwice(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	defer p.Shutdown()
 	go p.Run()
@@ -174,9 +160,7 @@ func TestStartListenTwice(t *testing.T) {
 
 func TestStartListenFailed(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	defer p.Shutdown()
@@ -187,9 +171,7 @@ func TestStartListenFailed(t *testing.T) {
 
 func TestStopListen(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	wait()
@@ -215,9 +197,7 @@ func TestStopListen(t *testing.T) {
 
 func TestHandleConnection(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 
 	// Unsolicited
 	called := false
@@ -261,9 +241,7 @@ func TestHandleConnection(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	// cfg.Port
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
@@ -298,9 +276,7 @@ func TestConnect(t *testing.T) {
 
 func TestConnectNoTimeout(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	cfg.DialTimeout = 0
 	cfg.Port++
 	p := NewConnectionPool(cfg, nil)
@@ -314,9 +290,7 @@ func TestConnectNoTimeout(t *testing.T) {
 
 func TestDisconnect(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	defer p.Shutdown()
@@ -359,7 +333,8 @@ func TestConnectionClose(t *testing.T) {
 
 func TestGetConnections(t *testing.T) {
 	wait()
-	p := NewConnectionPool(NewConfig(), nil)
+	cfg := newTestConfig()
+	p := NewConnectionPool(cfg, nil)
 	c := &Connection{ID: 1}
 	d := &Connection{ID: 2}
 	e := &Connection{ID: 3}
@@ -384,9 +359,7 @@ func TestGetConnections(t *testing.T) {
 
 func TestConnectionReadLoop(t *testing.T) {
 	wait()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	defer p.Shutdown()
@@ -452,9 +425,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	RegisterMessage(DummyPrefix, DummyMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	wait()
@@ -554,9 +525,7 @@ func TestConnectionWriteLoop(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 
-	cfg := NewConfig()
-	cfg.Port = uint16(port)
-	cfg.Address = address
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	defer p.Shutdown()
@@ -602,10 +571,9 @@ func TestPoolSendMessage(t *testing.T) {
 	EraseMessages()
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
-	cfg := NewConfig()
-	cfg.Address = address
-	cfg.Port = uint16(port)
+	cfg := newTestConfig()
 	cfg.WriteTimeout = time.Second
+	cfg.BroadcastResultSize = 1
 	// cfg.ConnectionWriteQueueSize = 1
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
@@ -626,10 +594,11 @@ func TestPoolSendMessage(t *testing.T) {
 	p.SendMessage(c.Addr(), m)
 
 	// queue full
-	for i := 0; i < cap(c.WriteQueue); i++ {
+	for i := 0; i < cap(c.WriteQueue)+1; i++ {
 		c.WriteQueue <- m
 	}
 
+	fmt.Printf("%v\n", len(c.WriteQueue))
 	err = p.SendMessage(c.Addr(), m)
 	assert.Equal(t, ErrDisconnectWriteQueueFull, err)
 }
@@ -640,9 +609,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	EraseMessages()
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
-	cfg := NewConfig()
-	cfg.Address = address
-	cfg.Port = uint16(port)
+	cfg := newTestConfig()
 	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	defer p.Shutdown()
@@ -684,7 +651,8 @@ func TestPoolReceiveMessage(t *testing.T) {
 	// 	Buffer:     &bytes.Buffer{},
 	// 	WriteQueue: make(chan Message),
 	// }
-	p := NewConnectionPool(NewConfig(), nil)
+	cfg := newTestConfig()
+	p := NewConnectionPool(cfg, nil)
 	go p.Run()
 	wait()
 	defer p.Shutdown()
@@ -714,7 +682,7 @@ func TestPoolReceiveMessage(t *testing.T) {
 // /* Helpers */
 
 func wait() {
-	time.Sleep(time.Millisecond * 50)
+	time.Sleep(time.Millisecond * 100)
 }
 
 type DummyAddr struct {

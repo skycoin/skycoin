@@ -174,7 +174,7 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
 
 ## Note
 
-The `[option]` in subcommand must be set before the rest values, otherwise the `option` won't 
+The `[option]` in subcommand must be set before the rest values, otherwise the `option` won't
 be parsed, example:
 
 If we want to specify a `change address` in `send` command, we can use `-c` option, if you run
@@ -185,7 +185,7 @@ $ skycoin-cli send $recipient_address $amount -c $change_address
 ```
 
 The change coins won't go to the address as you wish, it will go to the
-default `change address`, which can be by `from` address or the wallet's 
+default `change address`, which can be by `from` address or the wallet's
 coinbase address.
 
 The right script should look like this:

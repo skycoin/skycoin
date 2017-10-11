@@ -1,0 +1,27 @@
+<ngx-datatable #table
+  class="material"
+  [rows]="blocks"
+  columnMode="flex"
+  [headerHeight]="50"
+  [footerHeight]="50"
+  [rowHeight]="50"
+  [limit]="10"
+  [scrollbarH]="true"
+  (activate)="onActivate($event)">
+  <ngx-datatable-column name="Timestamp" prop="header.timestamp" [flexGrow]="1">
+    <ng-template let-value="value" ngx-datatable-cell-template>
+      {{ value | dateTime }}
+    </ng-template>
+  </ngx-datatable-column>
+  <ngx-datatable-column name="Block height" prop="header.seq" [flexGrow]="1"></ngx-datatable-column>
+  <ngx-datatable-column name="Transactions" prop="body.txns" [flexGrow]="1">
+    <ng-template let-value="value" ngx-datatable-cell-template>
+      {{ value ? value.length : 0 }}
+    </ng-template>
+  </ngx-datatable-column>
+  <ngx-datatable-column name="Amount" prop="body.txns" [flexGrow]="1">
+    <ng-template let-value="value" ngx-datatable-cell-template>
+      {{ value | transactionsAmount }}
+    </ng-template>
+  </ngx-datatable-column>
+</ngx-datatable>

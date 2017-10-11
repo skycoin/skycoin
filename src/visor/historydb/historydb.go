@@ -116,28 +116,36 @@ func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 	return hd.outputs.Get(uxID)
 }
 
-// ProcessBlock will index the transaction, outputs,etc.
+// ProcessBlock parses the block and update parsed block height
 func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
+	if err := hd.ParseBlock(b); err != nil {
+		return err
+	}
+
+	return hd.SetParsedHeight(b.Seq())
+}
+
+// ParseBlock will index the transaction, outputs,etc.
+func (hd *HistoryDB) ParseBlock(b *coin.Block) error {
 	if b == nil {
 		return errors.New("process nil block")
 	}
 
 	// index the transactions
-	for _, t := range b.Body.Transactions {
-		txn := Transaction{
-			Tx:       t,
-			BlockSeq: b.Seq(),
-		}
-
-		if err := hd.db.Update(func(tx *bolt.Tx) error {
-			// all updates will rollback if return error is not nil
+	return hd.db.Update(func(tx *bolt.Tx) error {
+		// all updates will rollback if return error is not nil
+		for _, t := range b.Body.Transactions {
+			txn := Transaction{
+				Tx:       t,
+				BlockSeq: b.Seq(),
+			}
 
 			txnsBkt := tx.Bucket(hd.txns.bkt.Name)
 			outputsBkt := tx.Bucket(hd.outputs.bkt.Name)
 			addrUxBkt := tx.Bucket(hd.addrUx.bkt.Name)
 			addrTxnsBkt := tx.Bucket(hd.addrTxns.bkt.Name)
 
-			if err := addTrandaction(txnsBkt, &txn); err != nil {
+			if err := addTransaction(txnsBkt, &txn); err != nil {
 				return err
 			}
 
@@ -180,17 +188,10 @@ func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
 					return err
 				}
 			}
-
-			return nil
-		}); err != nil {
-			return err
 		}
 
-		// update the last tx hash in transaction
-		hd.txns.updateLastTxs(t.Hash())
-	}
-
-	return hd.setParsedHeight(b.Seq())
+		return nil
+	})
 }
 
 // GetTransaction get transaction by hash.

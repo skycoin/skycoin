@@ -2,11 +2,10 @@ package visor
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
-	"strconv"
+	"github.com/skycoin/skycoin/src/util/droplet"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -24,11 +23,16 @@ type BlockchainMetadata struct {
 
 // NewBlockchainMetadata creates blockchain meta data
 func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
-	head := v.Blockchain.Head().Head
+	head, err := v.Blockchain.Head()
+	if err != nil {
+		logger.Error("%v", err)
+		return BlockchainMetadata{}
+	}
+
 	return BlockchainMetadata{
-		Head:        NewReadableBlockHeader(&head),
+		Head:        NewReadableBlockHeader(&head.Head),
 		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(v.Unconfirmed.Txns.len()),
+		Unconfirmed: uint64(v.Unconfirmed.Len()),
 	}
 }
 
@@ -123,46 +127,19 @@ type ReadableTransactionInput struct {
 	Address string `json:"owner"`
 }
 
-// StrBalance converts balance to string
-// each 1,000,000 units is 1 coin
-// skyoin has up to 6 decimal places but no more
-func StrBalance(amt uint64) string {
-	a := amt / 1000000 //whole part
-	b := amt % 1000000 //fractional part
-
-	//func strconv.FormatUint(i int64, base int) string
-
-	as := strconv.FormatUint(a, 10)
-	bs := strconv.FormatUint(b, 10)
-
-	if len(bs) > 6 {
-		logger.Panic("StrBalance: impossible condition")
-	}
-
-	if b == 0 { //no fractional part
-		return as
-	}
-
-	return fmt.Sprintf("%s.%s", as, bs)
-}
-
-//StrBalance2 convert back
-func StrBalance2(amt string) uint64 {
-	b, err := strconv.ParseUint(amt, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
-
 // NewReadableTransactionOutput creates readable transaction outputs
-func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) ReadableTransactionOutput {
-	return ReadableTransactionOutput{
-		Hash:    t.UxID(txid).Hex(),
-		Address: t.Address.String(), //Destination Address
-		Coins:   StrBalance(t.Coins),
-		Hours:   t.Hours,
+func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*ReadableTransactionOutput, error) {
+	coinStr, err := droplet.ToString(t.Coins)
+	if err != nil {
+		return nil, err
 	}
+
+	return &ReadableTransactionOutput{
+		Hash:    t.UxID(txid).Hex(),
+		Address: t.Address.String(), // Destination Address
+		Coins:   coinStr,
+		Hours:   t.Hours,
+	}, nil
 }
 
 // NewReadableTransactionInput creates readable transaction input
@@ -184,9 +161,9 @@ type ReadableOutput struct {
 
 // ReadableOutputSet records unspent outputs in different status.
 type ReadableOutputSet struct {
-	HeadOutputs      []ReadableOutput `json:"head_outputs"`
-	OutgoingOutputs  []ReadableOutput `json:"outgoing_outputs"`
-	IncommingOutputs []ReadableOutput `json:"incoming_outputs"`
+	HeadOutputs     []ReadableOutput `json:"head_outputs"`
+	OutgoingOutputs []ReadableOutput `json:"outgoing_outputs"`
+	IncomingOutputs []ReadableOutput `json:"incoming_outputs"`
 }
 
 // SpendableOutputs caculates the spendable unspent outputs
@@ -210,14 +187,33 @@ func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
 }
 
 // NewReadableOutput creates readable output
-func NewReadableOutput(t coin.UxOut) ReadableOutput {
+func NewReadableOutput(t coin.UxOut) (ReadableOutput, error) {
+	coinStr, err := droplet.ToString(t.Body.Coins)
+	if err != nil {
+		return ReadableOutput{}, err
+	}
+
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
-		Coins:             StrBalance(t.Body.Coins),
+		Coins:             coinStr,
 		Hours:             t.Body.Hours,
+	}, nil
+}
+
+// NewReadableOutputs converts unspent outputs to readable output
+func NewReadableOutputs(uxs []coin.UxOut) ([]ReadableOutput, error) {
+	rxReadables := make([]ReadableOutput, len(uxs))
+	for i, ux := range uxs {
+		out, err := NewReadableOutput(ux)
+		if err != nil {
+			return []ReadableOutput{}, err
+		}
+
+		rxReadables[i] = out
 	}
+	return rxReadables, nil
 }
 
 // ReadableTransaction represents readable transaction
@@ -243,18 +239,35 @@ type ReadableUnconfirmedTxn struct {
 }
 
 // NewReadableUnconfirmedTxn creates readable unconfirmed transaction
-func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) ReadableUnconfirmedTxn {
-	return ReadableUnconfirmedTxn{
-		Txn:       NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn}),
+func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
+	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
+	if err != nil {
+		return nil, err
+	}
+	return &ReadableUnconfirmedTxn{
+		Txn:       *tx,
 		Received:  nanoToTime(unconfirmed.Received),
 		Checked:   nanoToTime(unconfirmed.Checked),
 		Announced: nanoToTime(unconfirmed.Announced),
 		IsValid:   unconfirmed.IsValid == 1,
+	}, nil
+}
+
+// NewReadableUnconfirmedTxns converts []UnconfirmedTxn to []ReadableUnconfirmedTxn
+func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn, error) {
+	rut := make([]ReadableUnconfirmedTxn, len(txs))
+	for i := range txs {
+		tx, err := NewReadableUnconfirmedTxn(&txs[i])
+		if err != nil {
+			return []ReadableUnconfirmedTxn{}, err
+		}
+		rut[i] = *tx
 	}
+	return rut, nil
 }
 
 // NewGenesisReadableTransaction creates genesis readable transaction
-func NewGenesisReadableTransaction(t *Transaction) ReadableTransaction {
+func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	txid := cipher.SHA256{}
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
@@ -267,9 +280,14 @@ func NewGenesisReadableTransaction(t *Transaction) ReadableTransaction {
 	}
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
-		out[i] = NewReadableTransactionOutput(&t.Txn.Out[i], txid)
+		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
+		if err != nil {
+			return &ReadableTransaction{}, err
+		}
+
+		out[i] = *o
 	}
-	return ReadableTransaction{
+	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
 		Hash:      t.Txn.Hash().Hex(),
@@ -279,11 +297,11 @@ func NewGenesisReadableTransaction(t *Transaction) ReadableTransaction {
 		Sigs: sigs,
 		In:   in,
 		Out:  out,
-	}
+	}, nil
 }
 
 // NewReadableTransaction creates readable transaction
-func NewReadableTransaction(t *Transaction) ReadableTransaction {
+func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	txid := t.Txn.Hash()
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
@@ -296,9 +314,14 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 	}
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
-		out[i] = NewReadableTransactionOutput(&t.Txn.Out[i], txid)
+		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
+		if err != nil {
+			return nil, err
+		}
+
+		out[i] = *o
 	}
-	return ReadableTransaction{
+	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
 		Hash:      t.Txn.Hash().Hex(),
@@ -308,7 +331,7 @@ func NewReadableTransaction(t *Transaction) ReadableTransaction {
 		Sigs: sigs,
 		In:   in,
 		Out:  out,
-	}
+	}, nil
 }
 
 // ReadableBlockHeader represents the readable block header
@@ -341,19 +364,27 @@ type ReadableBlockBody struct {
 }
 
 // NewReadableBlockBody creates readable block body
-func NewReadableBlockBody(b *coin.Block) ReadableBlockBody {
+func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
 		if b.Seq() == uint64(0) {
 			// genesis block
-			txns[i] = NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+			tx, err := NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+			if err != nil {
+				return nil, err
+			}
+			txns[i] = *tx
 		} else {
-			txns[i] = NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+			tx, err := NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+			if err != nil {
+				return nil, err
+			}
+			txns[i] = *tx
 		}
 	}
-	return ReadableBlockBody{
+	return &ReadableBlockBody{
 		Transactions: txns,
-	}
+	}, nil
 }
 
 // ReadableBlock  represents readable block
@@ -362,12 +393,31 @@ type ReadableBlock struct {
 	Body ReadableBlockBody   `json:"body"`
 }
 
-// NewReadableBlock creates readable blockj
-func NewReadableBlock(b *coin.Block) ReadableBlock {
-	return ReadableBlock{
-		Head: NewReadableBlockHeader(&b.Head),
-		Body: NewReadableBlockBody(b),
+// NewReadableBlock creates readable block
+func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
+	body, err := NewReadableBlockBody(b)
+	if err != nil {
+		return nil, err
 	}
+	return &ReadableBlock{
+		Head: NewReadableBlockHeader(&b.Head),
+		Body: *body,
+	}, nil
+}
+
+// NewReadableBlocks converts []coin.SignedBlock to readable blocks
+func NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, error) {
+	rbs := make([]ReadableBlock, 0, len(blocks))
+	for _, b := range blocks {
+		rb, err := NewReadableBlock(&b.Block)
+		if err != nil {
+			return nil, err
+		}
+		rbs = append(rbs, *rb)
+	}
+	return &ReadableBlocks{
+		Blocks: rbs,
+	}, nil
 }
 
 /*
@@ -383,8 +433,8 @@ type TransactionOutputJSON struct {
 	Hours             uint64 `json:"hours"`   // Coin hours
 }
 
-// NewTransactionOutputJSON creates transaction output json
-func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) TransactionOutputJSON {
+// NewTxOutputJSON creates transaction output json
+func NewTxOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) (*TransactionOutputJSON, error) {
 	tmp := coin.UxOut{
 		Body: coin.UxBody{
 			SrcTransaction: srcTx,
@@ -399,28 +449,13 @@ func NewTransactionOutputJSON(ux coin.TransactionOutput, srcTx cipher.SHA256) Tr
 	o.SourceTransaction = srcTx.Hex()
 
 	o.Address = ux.Address.String()
-	o.Coins = StrBalance(ux.Coins)
+	coin, err := droplet.ToString(ux.Coins)
+	if err != nil {
+		return nil, err
+	}
+	o.Coins = coin
 	o.Hours = ux.Hours
-	return o
-}
-
-// TransactionOutputFromJSON load transaction output from json
-func TransactionOutputFromJSON(in TransactionOutputJSON) (coin.TransactionOutput, error) {
-	var tx coin.TransactionOutput
-
-	addr, err := cipher.DecodeBase58Address(in.Address)
-	if err != nil {
-		return coin.TransactionOutput{}, errors.New("Address decode fail")
-	}
-
-	tx.Address = addr
-	tx.Coins = StrBalance2(in.Coins)
-	tx.Hours = in.Hours
-	if err != nil {
-		return coin.TransactionOutput{}, err
-	}
-
-	return tx, nil
+	return &o, nil
 }
 
 // TransactionJSON represents transaction in json
@@ -434,20 +469,11 @@ type TransactionJSON struct {
 }
 
 // TransactionToJSON convert transaction to json string
-func TransactionToJSON(tx coin.Transaction) string {
-
+func TransactionToJSON(tx coin.Transaction) (string, error) {
 	var o TransactionJSON
-
-	if err := tx.Verify(); err != nil {
-		logger.Panic("Input Transaction Invalid: Cannot serialize to JSON, fails verify")
-	}
 
 	o.Hash = tx.Hash().Hex()
 	o.InnerHash = tx.InnerHash.Hex()
-
-	if tx.InnerHash != tx.HashInner() {
-		logger.Panic("TransactionToJSON called with invalid transaction, inner hash mising")
-	}
 
 	o.Sigs = make([]string, len(tx.Sigs))
 	o.In = make([]string, len(tx.In))
@@ -457,81 +483,20 @@ func TransactionToJSON(tx coin.Transaction) string {
 		o.Sigs[i] = sig.Hex()
 	}
 	for i, x := range tx.In {
-		o.In[i] = x.Hex() //hash to hex
+		o.In[i] = x.Hex() // hash to hex
 	}
 	for i, y := range tx.Out {
-		o.Out[i] = NewTransactionOutputJSON(y, tx.InnerHash)
+		out, err := NewTxOutputJSON(y, tx.InnerHash)
+		if err != nil {
+			return "", err
+		}
+		o.Out[i] = *out
 	}
 
 	b, err := json.MarshalIndent(o, "", "  ")
 	if err != nil {
-		logger.Panic("Cannot serialize transaction as JSON")
+		return "", fmt.Errorf("serialize TransactionJSON failed: %v", err)
 	}
 
-	return string(b)
-}
-
-// TransactionFromJSON load transaction from json string
-func TransactionFromJSON(str string) (coin.Transaction, error) {
-
-	var TxIn TransactionJSON
-	err := json.Unmarshal([]byte(str), TxIn)
-
-	if err != nil {
-		return coin.Transaction{}, errors.New("cannot deserialize")
-	}
-
-	var tx coin.Transaction
-
-	tx.Sigs = make([]cipher.Sig, len(TxIn.Sigs))
-	tx.In = make([]cipher.SHA256, len(TxIn.In))
-	tx.Out = make([]coin.TransactionOutput, len(TxIn.Out))
-
-	for i := range tx.Sigs {
-		sig2, err := cipher.SigFromHex(TxIn.Sigs[i])
-		if err != nil {
-			return coin.Transaction{}, errors.New("invalid signature")
-		}
-		tx.Sigs[i] = sig2
-	}
-
-	for i := range tx.In {
-		hash, err := cipher.SHA256FromHex(TxIn.In[i])
-		if err != nil {
-			return coin.Transaction{}, errors.New("invalid signature")
-		}
-		tx.In[i] = hash
-	}
-
-	for i := range tx.Out {
-		out, err := TransactionOutputFromJSON(TxIn.Out[i])
-		if err != nil {
-			return coin.Transaction{}, errors.New("invalid output")
-		}
-		tx.Out[i] = out
-	}
-
-	tx.Length = uint32(tx.Size())
-	tx.Type = 0
-
-	hash, err := cipher.SHA256FromHex(TxIn.Hash)
-	if err != nil {
-		return coin.Transaction{}, errors.New("invalid hash")
-	}
-	if hash != tx.Hash() {
-
-	}
-
-	InnerHash, err := cipher.SHA256FromHex(TxIn.Hash)
-
-	if InnerHash != tx.InnerHash {
-		return coin.Transaction{}, errors.New("inner hash")
-	}
-
-	err = tx.Verify()
-	if err != nil {
-		return coin.Transaction{}, errors.New("transaction failed verification")
-	}
-
-	return tx, nil
+	return string(b), nil
 }

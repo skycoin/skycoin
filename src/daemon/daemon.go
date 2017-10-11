@@ -51,6 +51,12 @@ var (
 	logger = logging.MustGetLogger("daemon")
 )
 
+const (
+	// MaxDropletPrecision represents the precision of droplets
+	MaxDropletPrecision = 1
+	MaxDropletDivisor   = 1e6
+)
+
 // Config subsystem configurations
 type Config struct {
 	Daemon   DaemonConfig
@@ -143,6 +149,8 @@ type DaemonConfig struct {
 	DisableIncomingConnections bool
 	// Run on localhost and only connect to localhost peers
 	LocalhostOnly bool
+	// Log ping and pong messages
+	LogPings bool
 }
 
 // NewDaemonConfig creates daemon config
@@ -162,6 +170,7 @@ func NewDaemonConfig() DaemonConfig {
 		DisableOutgoingConnections: false,
 		DisableIncomingConnections: false,
 		LocalhostOnly:              false,
+		LogPings:                   true,
 	}
 }
 
@@ -283,11 +292,12 @@ type MessageEvent struct {
 // before calling this function.
 func (dm *Daemon) Shutdown() {
 	// close the daemon loop first
-	q := make(chan struct{}, 1)
-	dm.quitC <- q
-	<-q
+	close(dm.quitC)
 
-	dm.Pool.Shutdown()
+	if !dm.Config.DisableNetworking {
+		dm.Pool.Shutdown()
+	}
+
 	dm.Peers.Shutdown()
 	dm.Visor.Shutdown()
 }
@@ -345,8 +355,7 @@ func (dm *Daemon) Run() (err error) {
 		select {
 		case err = <-errC:
 			return
-		case qc := <-dm.quitC:
-			qc <- struct{}{}
+		case <-dm.quitC:
 			return
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
@@ -627,8 +636,7 @@ func (dm *Daemon) cullInvalidConnections() {
 
 // Records an AsyncMessage to the messageEvent chan.  Do not access
 // messageEvent directly.
-func (dm *Daemon) recordMessageEvent(m AsyncMessage,
-	c *gnet.MessageContext) error {
+func (dm *Daemon) recordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error {
 	dm.messageEvents <- MessageEvent{m, c}
 	return nil
 }
@@ -661,9 +669,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	a := e.Addr
 
 	if e.Solicited {
-		logger.Info("Connected to %s as we requested", a)
+		logger.Info("Connected to peer: %s (outgoing)", a)
 	} else {
-		logger.Info("Received unsolicited connection from %s", a)
+		logger.Info("Connected to peer: %s (incoming)", a)
 	}
 
 	dm.pendingConnections.Remove(a)
@@ -853,4 +861,13 @@ func SplitAddr(addr string) (string, uint16, error) {
 		return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
 	}
 	return pts[0], uint16(port64), nil
+}
+
+// DropletPrecisionCheck checks if the amount is valid
+func DropletPrecisionCheck(amount uint64) error {
+	if amount%MaxDropletDivisor != 0 {
+		return fmt.Errorf("invalid amount, too many decimal place")
+	}
+
+	return nil
 }

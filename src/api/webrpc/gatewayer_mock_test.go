@@ -1,12 +1,8 @@
-/*
-* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/goautomock
-* THIS FILE MUST NEVER BE EDITED MANUALLY
- */
-
 package webrpc
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -53,7 +49,7 @@ func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON
 }
 
 // GetBlocks mocked method
-func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) *visor.ReadableBlocks {
+func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) (*visor.ReadableBlocks, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -66,12 +62,21 @@ func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) *visor.ReadableBlocks {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
 // GetBlocksInDepth mocked method
-func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) *visor.ReadableBlocks {
+func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) (*visor.ReadableBlocks, error) {
 
 	ret := m.Called(p0)
 
@@ -84,12 +89,21 @@ func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) *visor.ReadableBlocks {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
 // GetLastBlocks mocked method
-func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
+func (m *GatewayerMock) GetLastBlocks(p0 uint64) (*visor.ReadableBlocks, error) {
 
 	ret := m.Called(p0)
 
@@ -102,7 +116,16 @@ func (m *GatewayerMock) GetLastBlocks(p0 uint64) *visor.ReadableBlocks {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -179,28 +202,19 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.Rea
 }
 
 // InjectTransaction mocked method
-func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) (coin.Transaction, error) {
+func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) error {
 
 	ret := m.Called(p0)
 
-	var r0 coin.Transaction
+	var r0 error
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case coin.Transaction:
+	case error:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
+	return r0
 
 }

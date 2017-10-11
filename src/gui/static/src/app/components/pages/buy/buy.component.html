@@ -1,0 +1,26 @@
+<p *ngIf="!otcEnabled">Sorry, otc has currently been disabled!</p>
+<md-card *ngIf="otcEnabled">
+  <md-card-title>Purchase Skycoin</md-card-title>
+  <md-card class="skycoin-details">
+    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per
+    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will
+    automatically be added to your selected address.
+  </md-card>
+
+  <md-list>
+    <ng-container *ngFor="let address of (purchaseService.all() | async); let i = index">
+      <md-divider *ngIf="i"></md-divider>
+      <h3 md-subheader>Sky address: {{ address.address }}</h3>
+      <md-list-item *ngFor="let btc of address.addresses">
+        <h4 md-line> Bitcoin address: {{ btc.btc }}</h4>
+        <p md-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>
+        <button md-icon-button (click)="searchDepositAddress(address.address)" [disabled]="scanning">
+          <md-icon>refresh</md-icon>
+        </button>
+      </md-list-item>
+    </ng-container>
+  </md-list>
+</md-card>
+<div class="button-line" *ngIf="otcEnabled">
+  <a md-raised-button color="primary" (click)="addDepositAddress()">Add deposit address</a>
+</div>

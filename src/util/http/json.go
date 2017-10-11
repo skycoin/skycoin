@@ -7,29 +7,18 @@ import (
 	"net/http"
 )
 
-// JSONMessage json message
-type JSONMessage interface{}
-
-// JSONResponse simple JSON response wrapper
-type JSONResponse struct {
-	Message string
-}
-
-// NewJSONResponse returns a JSONResponse conforming to JSONMessage
-func NewJSONResponse(message string) JSONMessage {
-	return &JSONResponse{Message: message}
-}
-
 // SendJSON emits JSON to an http response
-func SendJSON(w http.ResponseWriter, message JSONMessage) error {
-	out, err := json.MarshalIndent(message, "", "    ")
-	if err == nil {
-		_, err := w.Write(out)
-		if err != nil {
-			return err
-		}
+func SendJSON(w http.ResponseWriter, m interface{}) error {
+	out, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return err
 	}
-	return err
+
+	if _, err := w.Write(out); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SendOr404 sends an interface as JSON if its not nil (404) or fails (500)

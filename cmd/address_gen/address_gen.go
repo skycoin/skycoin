@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // Note: Address_gen generates public keys and addresses
@@ -18,133 +21,62 @@ import (
 // -add option to password the secret key
 // -let people add the key from the command line
 
-var (
-	// HideSeckey whether need hide secret key
-	HideSeckey = false
-	// BitcoinAddress represents if need to generate bitcoin address
-	BitcoinAddress = false
-
-	seed     = ""
-	genCount = 1
-)
-
-func registerFlags() {
-
-	flag.IntVar(&genCount, "n", genCount,
-		"number of addresses to generate")
-
-	flag.BoolVar(&HideSeckey, "s", HideSeckey,
-		"only generate publickey and address, hide seckey")
-
-	flag.BoolVar(&BitcoinAddress, "b", BitcoinAddress,
-		"print seckey address as bitcoin address")
-
-	flag.StringVar(&seed, "seed", seed,
-		"seed for deterministic key generation")
-
-	//flag.StringVar(&outFile, "o", outFile,
-	//    "If present, will create a new wallet entry and write to disk. "+
-	//        "For safety, it will not overwrite an existing keypair")
-	//flag.BoolVar(&printSecret, "print-secret", printSecret,
-	//    "Print the wallet entry's secret key")
-	//flag.StringVar(&inFile, "i", inFile,
-	//    "Will read a wallet entry from this file for printing info")
-}
-
-func parseFlags() {
-	flag.Parse()
-}
-
-// Wallet represents the wallet
-type Wallet struct {
-	Meta    map[string]string `json:"meta"`
-	Entries []KeyEntry        `json:"entries"`
-}
-
-// KeyEntry represents the key entry in wallet
-type KeyEntry struct {
-	Address string `json:"address"`
-	Public  string `json:"public_key"`
-	Secret  string `json:"secret_key"`
-}
-
-func getKeyEntry(pub cipher.PubKey, sec cipher.SecKey) KeyEntry {
-
-	var e KeyEntry
-
-	//skycoin address
-	if BitcoinAddress == false {
-		e = KeyEntry{
-			Address: cipher.AddressFromPubKey(pub).String(),
-			Public:  pub.Hex(),
-			Secret:  sec.Hex(),
-		}
-	}
-
-	//bitcoin address
-	if BitcoinAddress == true {
-		e = KeyEntry{
-			Address: cipher.BitcoinAddressFromPubkey(pub),
-			Public:  pub.Hex(),
-			Secret:  cipher.BitcoinWalletImportFormatFromSeckey(sec),
-		}
-	}
-
-	//hide the secret key
-	if HideSeckey == true {
-		e.Secret = ""
-	}
-
-	return e
-}
-
 func main() {
-	registerFlags()
-	parseFlags()
+	genCount := flag.Int("n", 1, "Number of addresses to generate")
+	hideSecKey := flag.Bool("s", false, "Hide the secret key from the output")
+	isBitcoin := flag.Bool("b", false, "Print address as a bitcoin address")
+	hexSeed := flag.Bool("x", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if seed is not provided")
+	onlyAddr := flag.Bool("only-addr", false, "Only show generated address list. Hide seed, secret key and public key")
+	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
+	flag.Parse()
 
-	w := Wallet{
-		Meta:    make(map[string]string), //map[string]string
-		Entries: make([]KeyEntry, genCount),
-	}
-
-	if BitcoinAddress == false {
-		w.Meta = map[string]string{"coin": "skycoin"}
+	var coinType wallet.CoinType
+	if *isBitcoin {
+		coinType = wallet.CoinTypeBitcoin
 	} else {
-		w.Meta = map[string]string{"coin": "bitcoin"}
+		coinType = wallet.CoinTypeSkycoin
 	}
 
-	if seed == "" { //generate a new seed, as hex string
-		seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
+	if *seed == "" {
+		if *hexSeed {
+			// generate a new seed, as hex string
+			*seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
+		} else {
+			entropy, err := bip39.NewEntropy(128)
+			if err != nil {
+				fmt.Printf("new entropy failed when new wallet seed: %v\n", err)
+				os.Exit(1)
+			}
+
+			mnemonic, err := bip39.NewMnemonic(entropy)
+			if err != nil {
+				fmt.Printf("new mnemonic failed when new wallet seed: %v\n", err)
+				os.Exit(1)
+			}
+
+			*seed = mnemonic
+		}
 	}
 
-	w.Meta["seed"] = seed
+	w, err := wallet.CreateAddresses(coinType, *seed, *genCount, *hideSecKey)
 
-	seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
-
-	for i, sec := range seckeys {
-		pub := cipher.PubKeyFromSecKey(sec)
-		w.Entries[i] = getKeyEntry(pub, sec)
-	}
-
-	output, err := json.MarshalIndent(w, "", "    ")
 	if err != nil {
-		fmt.Printf("Error formating wallet to JSON. Error : %s\n", err.Error())
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if !*onlyAddr {
+		output, err := json.MarshalIndent(w, "", "    ")
+		if err != nil {
+			fmt.Println("Error formating wallet to JSON. Error:", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(string(output))
 		return
 	}
-	fmt.Printf("%s\n", string(output))
 
+	for _, e := range w.Entries {
+		fmt.Println(e.Address)
+	}
 }
-
-/*
-   if outFile != "" {
-       w := createWalletEntry(outFile, testNetwork)
-       if w != nil {
-           printWalletEntry(w, labelStdout, PrintAddress, printPublic,
-               printSecret)
-       }
-   }
-   if inFile != "" {
-       printWalletEntryFromFile(inFile, labelStdout, PrintAddress,
-           printPublic, printSecret)
-   }
-*/

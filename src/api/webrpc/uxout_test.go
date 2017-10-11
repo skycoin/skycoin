@@ -2,7 +2,6 @@ package webrpc
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"encoding/json"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_getAddrUxOutsHandler(t *testing.T) {
@@ -105,10 +105,12 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
 		},
 	}
+
 	for _, tt := range tests {
-		if got := getAddrUxOutsHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. getAddrUxOutsHandler() = %v, want %v", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got := getAddrUxOutsHandler(tt.args.req, tt.args.gateway)
+			require.Equal(t, tt.want, got)
+		})
 	}
 }
 

@@ -1,0 +1,13 @@
+ngx-datatable {
+  margin-bottom: 20px;
+}
+
+md-card {
+  margin-bottom: 20px;
+}
+
+md-card h3 button {
+  display: inline;
+  float: right;
+  margin-top: -8px;
+}

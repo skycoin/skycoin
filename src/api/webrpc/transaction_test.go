@@ -3,16 +3,19 @@ package webrpc
 import (
 	"encoding/hex"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/stretchr/testify/require"
 )
 
-var rawTxS = `dc00000000a8558b814926ed0062cd720a572bd67367aa0d01c0769ea4800adcc89cdee524010000008756e4bde4ee1c725510a6a9a308c6a90d949de7785978599a87faba601d119f27e1be695cbb32a1e346e5dd88653a97006bf1a93c9673ac59cf7b5db7e07901000100000079216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b020000000060dfa95881cdc827b45a6d49b11dbc152ecd4de640420f00000000000000000000000000006409744bcacb181bf98b1f02a11e112d7e4fa9f940f1f23a000000000000000000000000`
-var txHeight = uint64(103)
-var txConfirmed = true
+const (
+	rawTxStr    = "dc00000000a8558b814926ed0062cd720a572bd67367aa0d01c0769ea4800adcc89cdee524010000008756e4bde4ee1c725510a6a9a308c6a90d949de7785978599a87faba601d119f27e1be695cbb32a1e346e5dd88653a97006bf1a93c9673ac59cf7b5db7e07901000100000079216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b020000000060dfa95881cdc827b45a6d49b11dbc152ecd4de640420f00000000000000000000000000006409744bcacb181bf98b1f02a11e112d7e4fa9f940f1f23a000000000000000000000000"
+	rawTxId     = "bdc4a85a3e9d17a8fe00aa7430d0347c7f1dd6480a16da7147b6e43905057d43"
+	txHeight    = uint64(103)
+	txConfirmed = true
+)
 
 var emptyTransactionStr = `{
         "transaction": null
@@ -40,13 +43,15 @@ func Test_getTransactionHandler(t *testing.T) {
 		gateway Gatewayer
 	}
 
-	tx := decodeRawTransaction(rawTxS)
+	tx := decodeRawTransaction(rawTxStr)
+	rbTx, err := visor.NewReadableTransaction(tx)
+	require.NoError(t, err)
 	txRlt := visor.TransactionResult{
 		Status: visor.TransactionStatus{
 			Confirmed: true,
 			Height:    103,
 		},
-		Transaction: visor.NewReadableTransaction(tx),
+		Transaction: *rbTx,
 	}
 
 	tests := []struct {
@@ -62,10 +67,10 @@ func Test_getTransactionHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_transaction",
-					Params:  []byte(`["bdc4a85a3e9d17a8fe00aa7430d0347c7f1dd6480a16da7147b6e43905057d43"]`),
+					Params:  []byte(fmt.Sprintf(`["%s"]`, rawTxId)),
 				},
 				gateway: &fakeGateway{transactions: map[string]string{
-					"bdc4a85a3e9d17a8fe00aa7430d0347c7f1dd6480a16da7147b6e43905057d43": rawTxS,
+					rawTxId: rawTxStr,
 				}},
 			},
 			makeSuccessResponse("1", TxnResult{&txRlt}),
@@ -122,11 +127,12 @@ func Test_getTransactionHandler(t *testing.T) {
 			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
 		},
 	}
+
 	for _, tt := range tests {
-		if got := getTransactionHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
-			fmt.Println(string(got.Result))
-			t.Errorf("%q. getTransactionHandler() = %+v, want %+v", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got := getTransactionHandler(tt.args.req, tt.args.gateway)
+			require.Equal(t, tt.want, got)
+		})
 	}
 }
 
@@ -208,13 +214,14 @@ func Test_injectTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInternalError, "inject transaction failed:inject transaction failed"),
+			makeErrorResponse(errCodeInternalError, "inject transaction failed:fake gateway inject transaction failed"),
 		},
 	}
 
 	for _, tt := range tests {
-		if got := injectTransactionHandler(tt.args.req, tt.args.gateway); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. injectTransactionHandler() = %+v, want %+v", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got := injectTransactionHandler(tt.args.req, tt.args.gateway)
+			require.Equal(t, tt.want, got)
+		})
 	}
 }

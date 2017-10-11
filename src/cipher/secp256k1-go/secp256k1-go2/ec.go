@@ -6,36 +6,38 @@ import (
 	"log"
 )
 
-func ecdsaVerify(pubkey, sig, msg []byte) int {
-	var m Number
-	var s Signature
-	m.SetBytes(msg)
+// func ecdsaVerify(pubkey, sig, msg []byte) int {
+// 	var m Number
+// 	var s Signature
+// 	m.SetBytes(msg)
 
-	var q XY
-	if !q.ParsePubkey(pubkey) {
-		return -1
-	}
+// 	log.Println("pubkey len is", len(pubkey))
 
-	//if s.ParseBytes(sig) < 0 {
-	//	return -2
-	//}
-	if len(pubkey) != 32 {
-		return -2
-	}
-	if len(sig) != 64 {
-		return -3
-	}
+// 	var q XY
+// 	if !q.ParsePubkey(pubkey) {
+// 		return -1
+// 	}
 
-	if !s.Verify(&q, &m) {
-		return 0
-	}
-	return 1
-}
+// 	//if s.ParseBytes(sig) < 0 {
+// 	//	return -2
+// 	//}
+// 	if len(pubkey) != 32 {
+// 		return -2
+// 	}
+// 	if len(sig) != 64 {
+// 		return -3
+// 	}
 
-// Verify verifies ecdsa
-func Verify(k, s, m []byte) bool {
-	return ecdsaVerify(k, s, m) == 1
-}
+// 	if !s.Verify(&q, &m) {
+// 		return 0
+// 	}
+// 	return 1
+// }
+
+// // Verify verifies ecdsa
+// func Verify(k, s, m []byte) bool {
+// 	return ecdsaVerify(k, s, m) == 1
+// }
 
 // DecompressPoint decompresses point
 func DecompressPoint(X []byte, off bool, Y []byte) {

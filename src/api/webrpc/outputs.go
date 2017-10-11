@@ -40,5 +40,6 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 		logger.Error("get unspent outputs failed: %v", err)
 		return makeErrorResponse(errCodeInternalError)
 	}
+
 	return makeSuccessResponse(req.ID, OutputsResult{outs})
 }

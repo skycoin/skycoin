@@ -2,7 +2,6 @@ package droplet
 
 import (
 	"errors"
-	"fmt"
 	"math"
 
 	logging "github.com/op/go-logging"
@@ -29,7 +28,8 @@ var (
 )
 
 func init() {
-	max, err := decimal.NewFromString(fmt.Sprint(math.MaxInt64))
+	maxInt64 := "9223372036854775807"
+	max, err := decimal.NewFromString(maxInt64)
 	if err != nil {
 		panic(err)
 	}

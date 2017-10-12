@@ -126,8 +126,16 @@ sudo apt-get install --no-install-recommends -y gcc-multilib g++-multilib
 
 Once requirements are installed, node dependencies must be downloaded.
 
+Install yarn:
+
 ```sh
-npm install
+npm install -g yarn
+```
+
+Install dependencies with yarn:
+
+```sh
+yarn install
 ```
 
 A folder `node_modules/` should now exist.

@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -62,7 +63,7 @@ type Config struct {
 	Daemon   DaemonConfig
 	Messages MessagesConfig
 	Pool     PoolConfig
-	Peers    PeersConfig
+	Pex      pex.Config
 	Gateway  GatewayConfig
 	Visor    VisorConfig
 }
@@ -72,7 +73,7 @@ func NewConfig() Config {
 	return Config{
 		Daemon:   NewDaemonConfig(),
 		Pool:     NewPoolConfig(),
-		Peers:    NewPeersConfig(),
+		Pex:      pex.NewConfig(),
 		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
 		Visor:    NewVisorConfig(),
@@ -94,7 +95,7 @@ func (cfg *Config) preprocess() Config {
 				logger.Panicf("Invalid address for localhost-only: %s", config.Daemon.Address)
 			}
 		}
-		config.Peers.AllowLocalhost = true
+		config.Pex.AllowLocalhost = true
 	}
 	config.Pool.port = config.Daemon.Port
 	config.Pool.address = config.Daemon.Address
@@ -185,7 +186,7 @@ type Daemon struct {
 	// Components
 	Messages *Messages
 	Pool     *Pool
-	Peers    *Peers
+	Pex      *pex.Pex
 	Gateway  *Gateway
 	Visor    *Visor
 
@@ -223,14 +224,14 @@ type Daemon struct {
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config) (*Daemon, error) {
+func NewDaemon(config Config, defaultConns []string) (*Daemon, error) {
 	config = config.preprocess()
 	vs, err := NewVisor(config.Visor)
 	if err != nil {
 		return nil, err
 	}
 
-	peers, err := NewPeers(config.Peers)
+	pex, err := pex.New(config.Pex, defaultConns)
 	if err != nil {
 		return nil, err
 	}
@@ -238,10 +239,10 @@ func NewDaemon(config Config) (*Daemon, error) {
 	d := &Daemon{
 		Config:   config.Daemon,
 		Messages: NewMessages(config.Messages),
-		Peers:    peers,
+		Pex:      pex,
 		Visor:    vs,
 
-		DefaultConnections: DefaultConnections, //passed in from top level
+		DefaultConnections: defaultConns, //passed in from top level
 
 		expectingIntroductions: NewExpectIntroductions(),
 		connectionMirrors:      NewConnectionMirrors(),
@@ -294,15 +295,15 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (dm *Daemon) Shutdown() {
-	// close the daemon loop first
-	close(dm.quitC)
-
 	if !dm.Config.DisableNetworking {
 		dm.Pool.Shutdown()
 	}
 
-	dm.Peers.Shutdown()
+	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
+
+	// close the daemon loop first
+	close(dm.quitC)
 }
 
 // Run main loop for peer/connection management.
@@ -316,16 +317,32 @@ func (dm *Daemon) Run() (err error) {
 		logger.Info("Daemon closed")
 	}()
 
-	errC := make(chan error)
+	wg := sync.WaitGroup{}
 
-	// Start visor
+	// start visor
+	wg.Add(1)
 	go func() {
-		errC <- dm.Visor.Run()
+		defer wg.Done()
+		if err := dm.Visor.Run(); err != nil {
+			logger.Error("%v", err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := dm.Pex.Run(); err != nil {
+			logger.Error("%v", err)
+		}
 	}()
 
 	if !dm.Config.DisableIncomingConnections {
+		wg.Add(1)
 		go func() {
-			errC <- dm.Pool.Run()
+			defer wg.Done()
+			if err := dm.Pool.Run(); err != nil {
+				logger.Error("%v", err)
+			}
 		}()
 	}
 
@@ -344,22 +361,25 @@ func (dm *Daemon) Run() (err error) {
 	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
 	outgoingConnectionsTicker := time.Tick(dm.Config.OutgoingRate)
-	clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
-	requestPeersTicker := time.Tick(dm.Peers.Config.RequestRate)
+	// clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
+	requestPeersTicker := time.Tick(dm.Pex.Config.RequestRate)
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
 	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
-		go dm.connectToTrustPeer()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			dm.connectToTrustPeer()
+		}()
 	}
 
+loop:
 	for {
 		select {
-		case err = <-errC:
-			return
 		case <-dm.quitC:
-			return
+			break loop
 		// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
 			if !dm.Config.DisableNetworking {
@@ -367,11 +387,17 @@ func (dm *Daemon) Run() (err error) {
 			}
 		// Request peers via PEX
 		case <-requestPeersTicker:
-			dm.Peers.requestPeers(dm.Pool)
-		// Remove peers we haven't seen in a while
-		case <-clearOldPeersTicker:
-			if !dm.Peers.Config.Disabled {
-				dm.Peers.Peers.ClearOld(dm.Peers.Config.Expiration)
+			if dm.Pex.Config.Disabled {
+				continue
+			}
+
+			if dm.Pex.Full() {
+				continue
+			}
+
+			m := NewGetPeersMessage()
+			if err := dm.Pool.Pool.BroadcastMessage(m); err != nil {
+				logger.Error("%v", err)
 			}
 		// Remove connections that haven't said anything in a while
 		case <-clearStaleConnectionsTicker:
@@ -385,7 +411,7 @@ func (dm *Daemon) Run() (err error) {
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
-			trustPeerNum := len(dm.Peers.Peers.GetAllTrustedPeers())
+			trustPeerNum := len(dm.Pex.Trust())
 			if !dm.Config.DisableOutgoingConnections &&
 				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
 				dm.pendingConnections.Len() < dm.Config.PendingMax {
@@ -460,6 +486,8 @@ func (dm *Daemon) Run() (err error) {
 			dm.Visor.AnnounceBlocks(dm.Pool)
 		}
 	}
+
+	wg.Wait()
 }
 
 // GetListenPort returns the ListenPort for a given address.
@@ -534,10 +562,9 @@ func (dm *Daemon) makePrivateConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-
-	addrs := dm.Peers.Peers.GetPrivateAddresses()
+	addrs := dm.Pex.Private().ToAddrs()
 	for _, addr := range addrs {
-		p, exist := dm.Peers.Peers.GetPeerByAddr(addr)
+		p, exist := dm.Pex.GetPeerByAddr(addr)
 		if exist {
 			logger.Info("Private peer attempt: %s", p.Addr)
 			if err := dm.connectToPeer(p); err != nil {
@@ -552,11 +579,11 @@ func (dm *Daemon) connectToTrustPeer() {
 		return
 	}
 
-	logger.Info("Connect to trusted peers")
-	// Make connections to all trusted peers
-	peers := dm.Peers.Peers.GetPublicTrustPeers()
+	logger.Info("connect to trusted peers")
+	// make connections to all trusted peers
+	peers := dm.Pex.TrustPublic()
 	for _, p := range peers {
-		dm.connectToPeer(p)
+		dm.connectToPeer(&p)
 	}
 }
 
@@ -567,13 +594,13 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.Peers.Peers.RandomPublic(0)
+	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
-		// Check if the peer has public port
-		if p.HasIncomingPort {
-			// Try to connect the peer if it's ip:mirror does not exist
+		// check if the peer has public port
+		if p.Valid {
+			// try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
-				dm.connectToPeer(p)
+				dm.connectToPeer(&p)
 				continue
 			}
 		} else {
@@ -583,8 +610,8 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	if len(peers) == 0 {
-		// Reset the retry times of all peers
-		dm.Peers.Peers.ResetAllRetryTimes()
+		// reset the retry times of all peers
+		dm.Pex.ResetAllRetryTimes()
 	}
 }
 
@@ -593,13 +620,17 @@ func (dm *Daemon) connectToRandomPeer() {
 func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	logger.Debug("Failed to connect to %s with error: %v", c.Addr, c.Error)
 	dm.pendingConnections.Remove(c.Addr)
-	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
+
+	dm.Pex.IncreaseRetryTimes(c.Addr)
 }
 
 // Removes unsolicited connections who haven't sent a version
 func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
+	// dm.Pex.CullInvalidPeers()
+	dm.Pex.PrintAll()
+	fmt.Println("peers num:", dm.Pex.Len())
 	now := utc.Now()
 	addrs, err := dm.expectingIntroductions.CullInvalidConns(
 		func(addr string, t time.Time) (bool, error) {
@@ -636,7 +667,7 @@ func (dm *Daemon) cullInvalidConnections() {
 				logger.Error("%v", err)
 				return
 			}
-			dm.Peers.RemovePeer(a)
+			dm.Pex.RemovePeer(a)
 		}
 	}
 }

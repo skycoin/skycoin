@@ -153,11 +153,11 @@ func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext,
 
 // Process Notifies the Pex instance that peers were requested
 func (gpm *GetPeersMessage) Process(d *Daemon) {
-	if d.Peers.Config.Disabled {
+	if d.Config.DisableNetworking {
 		return
 	}
 
-	peers := d.Peers.Peers.RandomExchgPublic(d.Peers.Config.ReplyCount)
+	peers := d.Pex.RandomValidPublic(d.Pex.Config.ReplyCount)
 	if len(peers) == 0 {
 		logger.Debug("We have no peers to send in reply")
 		return
@@ -209,14 +209,14 @@ func (gpm *GivePeersMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // Process Notifies the Pex instance that peers were received
 func (gpm *GivePeersMessage) Process(d *Daemon) {
-	if d.Peers.Config.Disabled {
+	if d.Pex.Config.Disabled {
 		return
 	}
 	peers := gpm.GetPeers()
 	if len(peers) != 0 {
 		logger.Debug("Got these peers via PEX: %s", strings.Join(peers, ", "))
 	}
-	d.Peers.Peers.AddPeers(peers)
+	d.Pex.AddPeers(peers)
 }
 
 // IntroductionMessage jan IntroductionMessage is sent on first connect by both parties
@@ -277,12 +277,11 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	}
 
 	if port == intro.Port {
-		if err := d.Peers.Peers.SetPeerHasIncomingPort(mc.Addr, true); err != nil {
-			logger.Error("SetPeerHasIncomingPort failed: %v", err)
+		if err := d.Pex.SetValid(mc.Addr, true); err != nil {
+			logger.Error("Failed to set peer hasInPort statue, %v", err)
 		}
 	} else {
-		_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port))
-		if err != nil {
+		if err = d.Pex.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
 			logger.Error("Failed to add peer: %v", err)
 		}
 	}
@@ -299,9 +298,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	intro.c = mc
 	if err == nil {
 		err = d.recordMessageEvent(intro, mc)
-		d.Peers.Peers.ResetRetryTimes(mc.Addr)
+		d.Pex.ResetRetryTimes(mc.Addr)
 	} else {
-		d.Peers.Peers.IncreaseRetryTimes(mc.Addr)
+		d.Pex.IncreaseRetryTimes(mc.Addr)
 		d.expectingIntroductions.Remove(mc.Addr)
 	}
 	return

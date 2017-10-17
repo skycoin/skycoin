@@ -468,8 +468,8 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
-	dc.Peers.DataDirectory = c.DataDirectory
-	dc.Peers.Disabled = c.DisablePEX
+	dc.Pex.DataDirectory = c.DataDirectory
+	dc.Pex.Disabled = c.DisablePEX
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking
@@ -479,8 +479,6 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.OutgoingMax = c.MaxConnections
 	dc.Daemon.DataDirectory = c.DataDirectory
 	dc.Daemon.LogPings = !c.DisablePingPong
-
-	daemon.DefaultConnections = DefaultConnections
 
 	if c.OutgoingConnectionsRate == 0 {
 		c.OutgoingConnectionsRate = time.Millisecond
@@ -546,7 +544,7 @@ func Run(c *Config) {
 	go catchDebug()
 
 	dconf := configureDaemon(c)
-	d, err := daemon.NewDaemon(dconf)
+	d, err := daemon.NewDaemon(dconf, DefaultConnections)
 	if err != nil {
 		logger.Error("%v", err)
 		return

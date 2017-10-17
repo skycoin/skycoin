@@ -1,129 +1,144 @@
 package daemon
 
-import (
-	"time"
+// // PeersConfig config for peers
+// type PeersConfig struct {
+// 	// Folder where peers database should be saved
+// 	DataDirectory string
+// 	// Maximum number of peers to keep account of in the PeerList
+// 	Max int
+// 	// Cull peers after they havent been seen in this much time
+// 	Expiration time.Duration
+// 	// Cull expired peers on this interval
+// 	CullRate time.Duration
+// 	// How often to clear expired blacklist entries
+// 	UpdateBlacklistRate time.Duration
+// 	// How often to request peers via PEX
+// 	RequestRate time.Duration
+// 	// How many peers to send back in response to a peers request
+// 	ReplyCount int
+// 	// Localhost peers are allowed in the peerlist
+// 	AllowLocalhost bool
+// 	// Disable exchanging of peers.  Peers are still loaded from disk
+// 	Disabled bool
+// 	// Whether the network is disabled
+// 	NetworkDisabled bool
+// }
 
-	"os"
+// // NewPeersConfig creates peers config
+// func NewPeersConfig() PeersConfig {
+// 	return PeersConfig{
+// 		DataDirectory:       "./",
+// 		Max:                 1000,
+// 		Expiration:          time.Hour * 24 * 7,
+// 		CullRate:            time.Minute * 10,
+// 		UpdateBlacklistRate: time.Minute,
+// 		RequestRate:         time.Minute,
+// 		ReplyCount:          30,
+// 		AllowLocalhost:      false,
+// 		Disabled:            false,
+// 		NetworkDisabled:     false,
+// 	}
+// }
 
-	"github.com/skycoin/skycoin/src/daemon/pex"
-)
+// // Peers maintains the config and peers instance
+// type Peers struct {
+// 	Config PeersConfig
+// 	// Peer list
+// 	Peers *pex.Pex
+// }
 
-// PeersConfig config for peers
-type PeersConfig struct {
-	// Folder where peers database should be saved
-	DataDirectory string
-	// Maximum number of peers to keep account of in the PeerList
-	Max int
-	// Cull peers after they havent been seen in this much time
-	Expiration time.Duration
-	// Cull expired peers on this interval
-	CullRate time.Duration
-	// How often to clear expired blacklist entries
-	UpdateBlacklistRate time.Duration
-	// How often to request peers via PEX
-	RequestRate time.Duration
-	// How many peers to send back in response to a peers request
-	ReplyCount int
-	// Localhost peers are allowed in the peerlist
-	AllowLocalhost bool
-	// Disable exchanging of peers.  Peers are still loaded from disk
-	Disabled bool
-}
+// // NewPeers creates peers
+// func NewPeers(c PeersConfig, defaultConns []string) (*Peers, error) {
+// 	if c.Disabled {
+// 		logger.Info("PEX is disabled")
+// 	}
 
-// NewPeersConfig creates peers config
-func NewPeersConfig() PeersConfig {
-	return PeersConfig{
-		DataDirectory:       "./",
-		Max:                 1000,
-		Expiration:          time.Hour * 24 * 7,
-		CullRate:            time.Minute * 10,
-		UpdateBlacklistRate: time.Minute,
-		RequestRate:         time.Minute,
-		ReplyCount:          30,
-		AllowLocalhost:      false,
-		Disabled:            false,
-	}
-}
+// 	ps := &Peers{
+// 		Config: c,
+// 	}
 
-// Peers maintains the config and peers instance
-type Peers struct {
-	Config PeersConfig
-	// Peer list
-	Peers *pex.Pex
-}
+// 	pex.NewPex(pex.Config{
+// 		PeerStorePath:   c.DataDirectory,
+// 		NetworkDisabled: c.NetworkDisabled,
+// 		AllowLocalhost:  c.AllowLocalhost,
+// 		MaxPeers:        c.Max,
+// 	})
 
-// NewPeers creates peers
-func NewPeers(c PeersConfig) (*Peers, error) {
-	if c.Disabled {
-		logger.Info("PEX is disabled")
-	}
+// 	peers := pex.NewPex(ps.Config.Max)
+// 	err := peers.Load(ps.Config.DataDirectory)
+// 	if err != nil {
+// 		if !os.IsNotExist(err) {
+// 			logger.Notice("Failed to load peer database")
+// 			logger.Notice("Reason: %v", err)
+// 		}
+// 	}
+// 	logger.Debug("Init peers")
+// 	peers.AllowLocalhost = ps.Config.AllowLocalhost
 
-	ps := &Peers{
-		Config: c,
-	}
+// 	//Boot strap peers
+// 	for _, addr := range defaultConns {
+// 		// default peers will mark as trusted peers.
+// 		if err := peers.AddPeer(addr); err != nil {
+// 			logger.Critical("add peer error:%v", err)
+// 		}
+// 		peers.SetTrusted(addr, true)
+// 	}
 
-	peers := pex.NewPex(ps.Config.Max)
-	err := peers.Load(ps.Config.DataDirectory)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			logger.Notice("Failed to load peer database")
-			logger.Notice("Reason: %v", err)
-		}
-	}
-	logger.Debug("Init peers")
-	peers.AllowLocalhost = ps.Config.AllowLocalhost
+// 	ps.Peers = peers
+// 	if err := ps.Peers.Save(ps.Config.DataDirectory); err != nil {
+// 		return nil, err
+// 	}
 
-	//Boot strap peers
-	for _, addr := range DefaultConnections {
-		// default peers will mark as trusted peers.
-		_, err := peers.AddPeer(addr)
-		if err != nil {
-			logger.Critical("add peer error:%v", err)
-		}
-		peers.SetTrustState(addr, true)
-	}
+// 	return ps, nil
+// }
 
-	ps.Peers = peers
-	if err := ps.Peers.Save(ps.Config.DataDirectory); err != nil {
-		return nil, err
-	}
+// // Run start the peer exchange service
+// func (ps *Peers) Run() error {
+// 	return ps.Peers.Run()
+// }
 
-	return ps, nil
-}
+// // Shutdown the PeerList
+// func (ps *Peers) Shutdown() error {
+// 	if ps.Peers == nil {
+// 		return nil
+// 	}
 
-// DefaultConnections do "default_peers file"
-// read file, write, if does not exist
-var DefaultConnections = []string{}
+// 	err := ps.Peers.Save(ps.Config.DataDirectory)
+// 	if err != nil {
+// 		logger.Warning("Failed to save peer database")
+// 		logger.Warning("Reason: %v", err)
+// 		return err
+// 	}
+// 	logger.Info("Peers saved")
+// 	return nil
+// }
 
-// Shutdown the PeerList
-func (ps *Peers) Shutdown() error {
-	if ps.Peers == nil {
-		return nil
-	}
+// // RemovePeer removes a peer, if not private
+// func (ps *Peers) RemovePeer(a string) {
+// 	ps.Peers.RemovePeer(a)
+// }
 
-	err := ps.Peers.Save(ps.Config.DataDirectory)
-	if err != nil {
-		logger.Warning("Failed to save peer database")
-		logger.Warning("Reason: %v", err)
-		return err
-	}
-	logger.Info("Peers saved")
-	return nil
-}
+// // Requests peers from our connections
+// func (ps *Peers) requestPeers(pool *Pool) {
+// 	if ps.Config.Disabled {
+// 		return
+// 	}
+// 	if ps.Peers.Full() {
+// 		return
+// 	}
+// 	m := NewGetPeersMessage()
+// 	pool.Pool.BroadcastMessage(m)
+// }
 
-// RemovePeer removes a peer, if not private
-func (ps *Peers) RemovePeer(a string) {
-	ps.Peers.RemovePeer(a)
-}
+// func (ps *Peers) PrintAll() {
+// 	ps.Peers.PrintAll()
+// }
 
-// Requests peers from our connections
-func (ps *Peers) requestPeers(pool *Pool) {
-	if ps.Config.Disabled {
-		return
-	}
-	if ps.Peers.Full() {
-		return
-	}
-	m := NewGetPeersMessage()
-	pool.Pool.BroadcastMessage(m)
-}
+// // CullInvalidPeers remove those unreachable peers
+// func (ps *Peers) CullInvalidPeers() {
+// 	ps.Peers.CullInvalidPeers()
+// }
+
+// func (ps *Peers) Len() int {
+// 	return ps.Peers.Len()
+// }

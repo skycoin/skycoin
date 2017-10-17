@@ -3,6 +3,7 @@ package pex
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -10,6 +11,18 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
+
+// Peers peer list
+type Peers []Peer
+
+// ToAddrs returns the address list
+func (ps Peers) ToAddrs() []string {
+	addrs := make([]string, 0, len(ps))
+	for _, p := range ps {
+		addrs = append(addrs, p.Addr)
+	}
+	return addrs
+}
 
 // peerlist is a map of addresses to *PeerStates
 type peerlist struct {
@@ -21,11 +34,20 @@ type peerlist struct {
 func newPeerlist(maxPeers int) *peerlist {
 	return &peerlist{
 		peers: make(map[string]*Peer, maxPeers),
+		cap:   maxPeers,
 	}
 }
 
-func (pl *peerlist) load(dir string) error {
+// Filter peers filter
+type Filter func(peers Peers) Peers
+
+// loadIfExist loads if the peer.txt file does exist
+func (pl *peerlist) loadIfExist(dir string) error {
 	fn := filepath.Join(dir, PeerDatabaseFilename)
+	// check if the file does exist
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		return nil
+	}
 	return file.LoadJSON(fn, &pl.peers)
 }
 
@@ -92,18 +114,92 @@ func (pl *peerlist) addPeers(addrs []string, verifyFunc func(string) error) int 
 	return n
 }
 
-// GetPublicTrustPeers returns all trusted public peers
-func (pl *peerlist) GetPublicTrustPeers() []*Peer {
-	var peers []*Peer
+// GetPeers returns peers that can pass through the filters if any,
+// otherwise returns all peers that are allowed to connect to.
+func (pl *peerlist) GetPeers(flts ...Filter) Peers {
+	var ps Peers
 	pl.strand(func() {
-		keys := pl.getTrustAddresses(false)
-		peers = make([]*Peer, len(keys))
-		for i, key := range keys {
-			peers[i] = pl.peers[key]
-		}
-	}, "GetPublickTrustPeers")
-	return peers
+		ps = pl.getPeers(flts...)
+	}, "GetPeers")
+
+	return ps
 }
+
+func (pl *peerlist) getPeers(flts ...Filter) Peers {
+	var ps Peers
+	for _, p := range pl.peers {
+		if p.CanTry() {
+			ps = append(ps, *p)
+		}
+	}
+
+	for _, flt := range flts {
+		ps = flt(ps)
+	}
+	return ps
+}
+
+// filters
+
+// isPrivate filters private peers
+func isPrivate(peers Peers) Peers {
+	var ps Peers
+	for _, p := range peers {
+		if p.Private {
+			ps = append(ps, p)
+		}
+	}
+
+	return ps
+}
+
+// isPublic filters public peers
+func isPublic(peers Peers) Peers {
+	var ps Peers
+	for _, p := range peers {
+		if !p.Private {
+			ps = append(ps, p)
+		}
+	}
+	return ps
+}
+
+// isTrusted filters trusted peers
+func isTrusted(peers Peers) Peers {
+	var ps Peers
+	for _, p := range peers {
+		if p.Trusted {
+			ps = append(ps, p)
+		}
+	}
+	return ps
+}
+
+// isValid filters valid peers
+func isValid(peers Peers) Peers {
+	var ps Peers
+	for _, p := range peers {
+		if p.Valid {
+			ps = append(ps, p)
+		}
+	}
+	return ps
+}
+
+// isExchangeable filters exchangeable peers
+var isExchangeable = isValid
+
+// RemovePeer removes peer
+func (pl *peerlist) RemovePeer(addr string) {
+	pl.strand(func() {
+		delete(pl.peers, addr)
+	}, "RemovePeer")
+}
+
+// GetPublicTrustPeers returns all trusted public peers
+// func (pl *peerlist) GetPublicTrustPeers() Peers {
+// 	return pl.getPeersSafe(IsPublic, IsTrusted)
+// }
 
 // GetPrivateTrustPeers returns all trusted private peers
 // func (pl *peerlist) GetPrivateTrustPeers() []*Peer {
@@ -119,33 +215,34 @@ func (pl *peerlist) GetPublicTrustPeers() []*Peer {
 // }
 
 // GetAllTrustedPeers returns all trusted peers, including private and public peers.
-func (pl *peerlist) GetAllTrustedPeers() []*Peer {
-	var peers []*Peer
-	pl.strand(func() {
-		keys := pl.getAllTrustPeers()
-		peers = make([]*Peer, len(keys))
-		for i, key := range keys {
-			peers[i] = pl.peers[key]
-		}
-	}, "GetAllTrustedPeers")
-	return peers
-}
+// func (pl *peerlist) GetAllTrustedPeers() Peers {
+// var peers []*Peer
+// pl.strand(func() {
+// 	keys := pl.getAllTrustPeers()
+// 	peers = make([]*Peer, len(keys))
+// 	for i, key := range keys {
+// 		peers[i] = pl.peers[key]
+// 	}
+// }, "GetAllTrustedPeers")
+// return peers
+// return pl.getPeersSafe(trustFilter)
+// }
 
-func (pl *peerlist) getTrustAddresses(private bool) []string {
-	keys := []string{}
-	for key, p := range pl.peers {
-		if p.Trusted {
-			if p.CanTry() {
-				if private && p.Private {
-					keys = append(keys, key)
-				} else if !private && !p.Private {
-					keys = append(keys, key)
-				}
-			}
-		}
-	}
-	return keys
-}
+// func (pl *peerlist) getTrustAddresses(private bool) []string {
+// 	keys := []string{}
+// 	for key, p := range pl.peers {
+// 		if p.Trusted {
+// 			if p.CanTry() {
+// 				if private && p.Private {
+// 					keys = append(keys, key)
+// 				} else if !private && !p.Private {
+// 					keys = append(keys, key)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return keys
+// }
 
 // SetPrivate sets specific peer as private
 func (pl *peerlist) setPrivate(addr string, private bool) error {
@@ -190,9 +287,9 @@ func (pl *peerlist) setPeerIsValid(addr string, valid bool) error {
 	return err
 }
 
-func (pl *peerlist) getAllTrustPeers() []string {
-	return append(pl.getTrustAddresses(false), pl.getTrustAddresses(true)...)
-}
+// func (pl *peerlist) getAllTrustPeers() []string {
+// 	return append(pl.getTrustAddresses(false), pl.getTrustAddresses(true)...)
+// }
 
 // GetPublicAddresses returns the string addresses of all public peers
 // func (pl *peerlist) GetPublicAddresses() []string {
@@ -204,20 +301,14 @@ func (pl *peerlist) getAllTrustPeers() []string {
 // }
 
 // GetPrivateAddresses returns the string addresses of all private peers
-func (pl *peerlist) GetPrivateAddresses() []string {
-	var addrs []string
-	pl.strand(func() {
-		addrs = pl.getAddresses(true)
-	}, "GetPrivateAddresses")
-	return addrs
-}
-
-// RemovePeer removes peer
-func (pl *peerlist) RemovePeer(addr string) {
-	pl.strand(func() {
-		delete(pl.peers, addr)
-	}, "RemovePeer")
-}
+// func (pl *peerlist) GetPrivatePeers() Peers {
+// var addrs []string
+// pl.strand(func() {
+// 	addrs = pl.getAddresses(true)
+// }, "GetPrivateAddresses")
+// return addrs
+// 	return pl.getPeersSafe(privateFilter)
+// }
 
 // cullInvalidPeers removes those unreachable and untrusted peers
 func (pl *peerlist) cullInvalidPeers() []*Peer {
@@ -241,7 +332,11 @@ func (pl *peerlist) cullInvalidPeers() []*Peer {
 
 // Len returns number of peers
 func (pl *peerlist) Len() int {
-	return len(pl.peers)
+	var l int
+	pl.strand(func() {
+		l = len(pl.peers)
+	}, "Len")
+	return l
 }
 
 // GetPeerByAddr returns peer of given address
@@ -267,119 +362,109 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 				delete(pl.peers, addr)
 			}
 		}
-	}, "ClearOld")
+	}, "clearOld")
 }
 
 // Returns the string addresses of all public peers
-func (pl *peerlist) getAddresses(private bool) []string {
-	keys := make([]string, 0, len(pl.peers))
-	for key, p := range pl.peers {
-		if p.CanTry() {
-			if private && p.Private {
-				keys = append(keys, key)
-			} else if !private && !p.Private {
-				keys = append(keys, key)
-			}
-		}
-	}
+// func (pl *peerlist) getAddresses(private bool) []string {
+// 	keys := make([]string, 0, len(pl.peers))
+// 	for key, p := range pl.peers {
+// 		if p.CanTry() {
+// 			if private && p.Private {
+// 				keys = append(keys, key)
+// 			} else if !private && !p.Private {
+// 				keys = append(keys, key)
+// 			}
+// 		}
+// 	}
 
-	return keys
-}
+// 	return keys
+// }
 
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
-func (pl *peerlist) random(count int, includePrivate bool) []*Peer {
-	keys := []string{}
-	if includePrivate {
-		keys = append(pl.getAddresses(true), pl.getAddresses(false)...)
-	} else {
-		keys = pl.getAddresses(false)
-	}
+func (pl *peerlist) random(count int, flts ...Filter) Peers {
+	keys := pl.getPeers(flts...).ToAddrs()
 	if len(keys) == 0 {
-		return make([]*Peer, 0)
+		return Peers{}
 	}
 	max := count
 	if count == 0 || count > len(keys) {
 		max = len(keys)
 	}
-	peers := make([]*Peer, 0, max)
+	var ps Peers
 	perm := rand.Perm(len(keys))
 	for _, i := range perm[:max] {
-		peers = append(peers, pl.peers[keys[i]])
+		ps = append(ps, *pl.peers[keys[i]])
 	}
-	return peers
+	return ps
 }
 
-func (pl *peerlist) getExchgAddr(private bool) []string {
-	keys := []string{}
-	for a, p := range pl.peers {
-		if p.Valid && p.Private == private {
-			keys = append(keys, a)
-		}
-	}
-	return keys
-}
+// func (pl *peerlist) getExchgAddr(private bool) []string {
+// 	keys := []string{}
+// 	for a, p := range pl.peers {
+// 		if p.Valid && p.Private == private {
+// 			keys = append(keys, a)
+// 		}
+// 	}
+// 	return keys
+// }
 
 // returns all exchangeable addresses
-func (pl *peerlist) getAllExchgAddr() []string {
-	return append(pl.getExchgAddr(true), pl.getExchgAddr(false)...)
-}
+// func (pl *peerlist) getExchangePeers() Peers {
+// 	return pl.getPeers(validFilter)
+// }
 
 // returns n random exchangeable peers, return all if count is 0.
-func (pl *peerlist) randomExchg(count int, includePrivate bool) []*Peer {
-	keys := []string{}
-	if includePrivate {
-		keys = pl.getAllExchgAddr()
-	} else {
-		keys = pl.getExchgAddr(false)
-	}
+// func (pl *peerlist) getRandomExchangePeers(count int, flt filter) Peers {
+// 	keys := pl.getPeers(flt).ToAddrs()
 
-	if len(keys) == 0 {
-		return make([]*Peer, 0)
-	}
+// 	if len(keys) == 0 {
+// 		return make([]*Peer, 0)
+// 	}
 
-	max := count
-	if count == 0 || count > len(keys) {
-		max = len(keys)
-	}
-	peers := make([]*Peer, 0, max)
-	perm := rand.Perm(len(keys))
-	for _, i := range perm[:max] {
-		peers = append(peers, pl.peers[keys[i]])
-	}
-	return peers
-}
+// 	max := count
+// 	if count == 0 || count > len(keys) {
+// 		max = len(keys)
+// 	}
+// 	peers := make([]*Peer, 0, max)
+// 	perm := rand.Perm(len(keys))
+// 	for _, i := range perm[:max] {
+// 		peers = append(peers, pl.peers[keys[i]])
+// 	}
+// 	return peers
+// }
 
 // RandomExchgPublic returns n random exchangeable public peers
 // return all exchangeable public peers if count is 0.
-func (pl *peerlist) RandomExchgPublic(count int) []*Peer {
-	var peers []*Peer
-	pl.strand(func() {
-		peers = pl.randomExchg(count, false)
-	}, "RandomExchgPublic")
-	return peers
-}
+// func (pl *peerlist) GetRandomExchangePublicPeers(count int) []*Peer {
+// 	var peers []*Peer
+// 	pl.strand(func() {
+// 		peers = pl.randomExchg(count, false)
+// 	}, "RandomExchgPublic")
+// 	return peers
+// }
 
 // RandomExchgAll returns n random exchangeable peers, including private peers.
 // return all exchangeable peers if count is 0.
-func (pl *peerlist) RandomExchgAll(count int) []*Peer {
-	var peers []*Peer
-	pl.strand(func() {
-		peers = pl.randomExchg(count, true)
-	}, "RandomExchgAll")
-	return peers
-}
+// func (pl *peerlist) RandomExchgAll(count int) []*Peer {
+// 	var peers []*Peer
+// 	pl.strand(func() {
+// 		peers = pl.randomExchg(count, true)
+// 	}, "RandomExchgAll")
+// 	return peers
+// }
 
 // RandomPublic returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.  Will not include
 // private peers.
-func (pl *peerlist) RandomPublic(count int) []*Peer {
-	var peers []*Peer
-	pl.strand(func() {
-		peers = pl.random(count, false)
-	}, "RandomPublic")
-	return peers
-}
+// func (pl *peerlist) RandomPublic(count int) Peers {
+// 	var peers Peers
+// 	pl.strand(func() {
+// 		peers = pl.random(count, publicFilter)
+// 	}, "RandomPublic")
+// 	return peers
+// }
 
 // RandomAll returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.  Includes private
@@ -450,4 +535,58 @@ func (pl *peerlist) PrintAll() {
 			fmt.Println(p.String(), " ", p.RetryTimes, " is valid:", p.Valid)
 		}
 	})
+}
+
+// GetTrustPeers returns trusted peers
+func (pl *peerlist) Trust() Peers {
+	var ps Peers
+	pl.strand(func() {
+		ps = pl.getPeers(isTrusted)
+	}, "Trust")
+	return ps
+}
+
+// GetPrivate returns private peers
+func (pl *peerlist) Private() Peers {
+	var ps Peers
+	pl.strand(func() {
+		ps = pl.getPeers(isPrivate)
+	}, "Private")
+	return ps
+}
+
+// GetTrustPublicPeers returns trusted public peers
+func (pl *peerlist) TrustPublic() Peers {
+	var ps Peers
+	pl.strand(func() {
+		ps = pl.getPeers(isPublic, isTrusted)
+	}, "TrustPublic")
+	return ps
+}
+
+// GetRandomPublicPeers returns N random public peers
+func (pl *peerlist) RandomPublic(n int) Peers {
+	var ps Peers
+	pl.strand(func() {
+		ps = pl.random(n, isPublic)
+	}, "GetRandomPublic")
+	return ps
+}
+
+// GetRandomValidPublic returns N random valid peers
+func (pl *peerlist) RandomValidPublic(n int) Peers {
+	var ps Peers
+	pl.strand(func() {
+		ps = pl.random(n, isPublic)
+	}, "RandomValidPublic")
+	return ps
+}
+
+// RandomValid returns N random valid peers, returns all if N is 0
+func (pl *peerlist) RandomValid(n int) Peers {
+	var ps Peers
+	pl.strand(func() {
+		ps = pl.random(n)
+	}, "RandomValid")
+	return ps
 }

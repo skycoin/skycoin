@@ -68,7 +68,7 @@ type Visor struct {
 	Shutdown          context.CancelFunc
 }
 
-type reqFunc func()
+type reqFunc func(cxt context.Context)
 
 // NewVisor creates visor instance
 func NewVisor(c VisorConfig) (*Visor, error) {
@@ -116,7 +116,9 @@ func (vs *Visor) Run() error {
 			return err
 		case req := <-vs.reqC:
 			func() {
-				req()
+				cxt, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
+				defer cancel()
+				req(cxt)
 			}()
 		}
 	}
@@ -125,14 +127,18 @@ func (vs *Visor) Run() error {
 // the callback function must not be blocked.
 func (vs *Visor) strand(f func()) {
 	done := make(chan struct{})
-	vs.reqC <- func() {
+	vs.reqC <- func(cxt context.Context) {
 		defer close(done)
 		c := make(chan struct{})
 		go func() {
 			defer close(c)
 			f()
 		}()
-		<-c
+		select {
+		case <-c:
+		case <-cxt.Done():
+			logger.Critical("%v", cxt.Err())
+		}
 	}
 	<-done
 }

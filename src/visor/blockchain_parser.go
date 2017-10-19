@@ -62,14 +62,8 @@ func (bcp *BlockchainParser) Run() error {
 			cc <- struct{}{}
 			return nil
 		case b := <-bcp.blkC:
-			parsedHeight := bcp.historyDB.ParsedHeight()
-
 			if err := bcp.historyDB.ParseBlock(&b); err != nil {
 				return err
-			}
-
-			if b.Seq() > uint64(parsedHeight) {
-				bcp.historyDB.SetParsedHeight(b.Seq())
 			}
 		}
 	}
@@ -95,7 +89,7 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 			return fmt.Errorf("no block exist in depth:%d", parsedHeight+i+1)
 		}
 
-		if err := bcp.historyDB.ProcessBlock(&b.Block); err != nil {
+		if err := bcp.historyDB.ParseBlock(&b.Block); err != nil {
 			return err
 		}
 	}

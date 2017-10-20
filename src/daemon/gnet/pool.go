@@ -21,6 +21,8 @@ import (
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
 type DisconnectReason error
 
+const sendResultTimeout = 3 * time.Second
+
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
 	ErrDisconnectReadFailed DisconnectReason = errors.New("Read failed")
@@ -439,7 +441,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration) er
 		sr := newSendResult(conn.Addr(), m, err)
 		select {
 		case pool.SendResults <- sr:
-		case <-time.After(3 * time.Second):
+		case <-time.After(sendResultTimeout):
 			logger.Warning("push send result channel timeout")
 		}
 

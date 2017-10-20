@@ -201,9 +201,17 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 // Run starts the connection pool
 func (pool *ConnectionPool) Run() error {
 	defer logger.Info("Connection pool closed")
-	// init the quit and operations channel here, in case run this pool again.
-	var wg sync.WaitGroup
 
+	// start the connection accept loop
+	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	pool.listener = ln
+
+	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -218,16 +226,8 @@ func (pool *ConnectionPool) Run() error {
 
 	}()
 
-	// start the connection accept loop
-	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-
-	pool.listener = ln
-
 	logger.Info("Listening for connections...")
+loop:
 	for {
 		conn, err := ln.Accept()
 		if err != nil {

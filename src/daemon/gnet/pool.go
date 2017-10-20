@@ -318,6 +318,7 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 
 // Creates a Connection and begins its read and write loop
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
+	defer logger.Debug("connection %s closed", conn.RemoteAddr())
 	addr := conn.RemoteAddr().String()
 	exist, err := pool.IsConnExist(addr)
 	if err != nil {
@@ -347,16 +348,19 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errC <- readLoop(c, pool.Config.ReadTimeout, pool.Config.MaxMessageLength, msgC)
+		if err := pool.readLoop(c, msgC); err != nil {
+			errC <- err
+		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errC <- pool.sendLoop(c, pool.Config.WriteTimeout)
+		if err := pool.sendLoop(c, pool.Config.WriteTimeout); err != nil {
+			errC <- err
+		}
 	}()
 
-	qc := make(chan chan struct{})
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

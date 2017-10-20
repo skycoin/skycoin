@@ -428,6 +428,8 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 			// use select to avoid the goroutine leak, cause if msgChan has no receiver, this goroutine
 			// will leak
 			select {
+			case <-pool.quit:
+				return nil
 			case msgChan <- d:
 			default:
 				return errors.New("The msgChan has no receiver")
@@ -445,6 +447,8 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration) er
 		err := sendMessage(conn.Conn, m, timeout)
 		sr := newSendResult(conn.Addr(), m, err)
 		select {
+		case <-pool.quit:
+			return nil
 		case pool.SendResults <- sr:
 		case <-time.After(sendResultTimeout):
 			logger.Warning("push send result channel timeout")

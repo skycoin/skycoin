@@ -236,8 +236,7 @@ loop:
 			// Otherwise we continue
 			select {
 			case <-pool.quit:
-				wg.Wait()
-				return nil
+				break loop
 			default:
 				// without the default case the select will block.
 				logger.Error("%v", err)
@@ -247,6 +246,8 @@ loop:
 
 		go pool.handleConnection(conn, false)
 	}
+	wg.Wait()
+	return nil
 }
 
 // Shutdown gracefully shutdown the connection pool

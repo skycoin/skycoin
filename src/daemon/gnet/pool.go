@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync"
 	"time"
 
 	"io"
@@ -188,6 +189,8 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		addresses:    make(map[string]*Connection),
 		SendResults:  make(chan SendResult, c.BroadcastResultSize),
 		messageState: state,
+		quit:         make(chan struct{}),
+		ops:          make(chan func()),
 	}
 
 	return pool
@@ -195,16 +198,22 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 // Run starts the connection pool
 func (pool *ConnectionPool) Run() error {
+	defer logger.Info("Connection pool closed")
 	// init the quit and operations channel here, in case run this pool again.
-	pool.quit = make(chan struct{})
-	pool.ops = make(chan func())
+	var wg sync.WaitGroup
 
+	wg.Add(1)
 	go func() {
-		for op := range pool.ops {
-			op()
+		defer wg.Done()
+		for {
+			select {
+			case <-pool.quit:
+				return
+			case op := <-pool.ops:
+				op()
+			}
 		}
 
-		logger.Info("Connection pool closed")
 	}()
 
 	// start the connection accept loop
@@ -225,7 +234,7 @@ func (pool *ConnectionPool) Run() error {
 			// Otherwise we continue
 			select {
 			case <-pool.quit:
-				close(pool.ops)
+				wg.Wait()
 				return nil
 			default:
 				// without the default case the select will block.
@@ -256,21 +265,19 @@ func (pool *ConnectionPool) Shutdown() {
 }
 
 // strand ensures all read and write action of pool's member variable are in one thread.
-func (pool *ConnectionPool) strand(f func() error) (err error) {
-	defer func() {
-		// send on closed operation channel will panic.
-		if r := recover(); r != nil {
-			err = ErrConnectionPoolClosed
-		}
-	}()
-
+func (pool *ConnectionPool) strand(f func() error) error {
+	var err error
 	q := make(chan struct{})
-	pool.ops <- func() {
+	select {
+	case <-pool.quit:
+		return ErrConnectionPoolClosed
+	case pool.ops <- func() {
 		defer close(q)
 		err = f()
+	}:
 	}
 	<-q
-	return
+	return err
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
@@ -331,36 +338,34 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	}
 
 	msgC := make(chan []byte, 10)
-	errC := make(chan error, 1)
+	errC := make(chan error, 3)
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		errC <- readLoop(c, pool.Config.ReadTimeout, pool.Config.MaxMessageLength, msgC)
 	}()
 
-	qc := make(chan chan struct{})
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+		errC <- pool.sendLoop(c, pool.Config.WriteTimeout)
+	}()
+
+	qc := make(chan chan struct{})
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		for {
 			select {
-			case m := <-c.WriteQueue:
-				if m == nil {
-					continue
-				}
-				err := sendMessage(conn, m, pool.Config.WriteTimeout)
-				sr := newSendResult(c.Addr(), m, err)
-				pool.SendResults <- sr
-				if err != nil {
-					errC <- err
+			case msg, ok := <-msgC:
+				if !ok {
 					return
 				}
 
-				if err := pool.updateLastSent(c.Addr(), Now()); err != nil {
-					errC <- err
-					return
-				}
-			case msg := <-msgC:
 				if err := pool.receiveMessage(c, msg); err != nil {
 					errC <- err
-					return
 				}
 			case q := <-qc:
 				q <- struct{}{}
@@ -373,7 +378,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	q := make(chan struct{}, 1)
 	qc <- q
 	<-q
-
+	wg.Wait()
 	if err := pool.Disconnect(c.Addr(), e); err != nil {
 		logger.Error("Disconnect failed: %v", err)
 	}
@@ -424,11 +429,37 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 	}
 }
 
+func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration) error {
+	for m := range conn.WriteQueue {
+		if m == nil {
+			continue
+		}
+
+		err := sendMessage(conn.Conn, m, timeout)
+		sr := newSendResult(conn.Addr(), m, err)
+		select {
+		case pool.SendResults <- sr:
+		case <-time.After(3 * time.Second):
+			logger.Warning("push send result channel timeout")
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	c, err := reader.Read(buf)
 	if err != nil {
-		return nil, ErrDisconnectReadFailed
+		return nil, fmt.Errorf("read data failed: %v", err)
 	}
+
 	if c == 0 {
 		return nil, nil
 	}

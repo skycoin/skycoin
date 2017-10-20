@@ -373,32 +373,29 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 				if err := pool.receiveMessage(c, msg); err != nil {
 					errC <- err
+					return
 				}
-			case q := <-qc:
-				q <- struct{}{}
-				return
 			}
 		}
 	}()
 
 	e := <-errC
-	q := make(chan struct{}, 1)
-	qc <- q
-	<-q
+	close(msgC)
 	wg.Wait()
+
 	if err := pool.Disconnect(c.Addr(), e); err != nil {
 		logger.Error("Disconnect failed: %v", err)
 	}
 }
 
-func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan chan []byte) error {
+func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte) error {
 	// read data from connection
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
 	for {
 		deadline := time.Time{}
-		if timeout != 0 {
-			deadline = time.Now().Add(timeout)
+		if pool.Config.ReadTimeout != 0 {
+			deadline = time.Now().Add(pool.Config.ReadTimeout)
 		}
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
 			return ErrDisconnectSetReadDeadlineFailed
@@ -419,7 +416,7 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 		}
 
 		// decode data
-		datas, err := decodeData(conn.Buffer, maxMsgLen)
+		datas, err := decodeData(conn.Buffer, pool.Config.MaxMessageLength)
 		if err != nil {
 			return err
 		}

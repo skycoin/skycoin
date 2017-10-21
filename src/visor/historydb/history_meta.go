@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	historyMetaBkt  = []byte("history_Meta")
+	historyMetaBkt  = []byte("history_meta")
 	parsedHeightKey = []byte("parsed_height")
 )
 

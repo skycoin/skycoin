@@ -179,6 +179,7 @@ type ConnectionPool struct {
 	ops chan func()
 	// quit channel
 	quit chan struct{}
+	wg   sync.WaitGroup
 }
 
 // NewConnectionPool creates a new ConnectionPool that will listen on Config.Port upon
@@ -211,10 +212,9 @@ func (pool *ConnectionPool) Run() error {
 
 	pool.listener = ln
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	pool.wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer pool.wg.Done()
 		for {
 			select {
 			case <-pool.quit:
@@ -244,9 +244,13 @@ loop:
 			}
 		}
 
-		go pool.handleConnection(conn, false)
+		pool.wg.Add(1)
+		go func() {
+			defer pool.wg.Done()
+			pool.handleConnection(conn, false)
+		}()
 	}
-	wg.Wait()
+	pool.wg.Wait()
 	return nil
 }
 
@@ -346,9 +350,10 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
+	qc := make(chan struct{})
 	go func() {
 		defer wg.Done()
-		if err := pool.readLoop(c, msgC); err != nil {
+		if err := pool.readLoop(c, msgC, qc); err != nil {
 			errC <- err
 		}
 	}()
@@ -356,7 +361,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := pool.sendLoop(c, pool.Config.WriteTimeout); err != nil {
+		if err := pool.sendLoop(c, pool.Config.WriteTimeout, qc); err != nil {
 			errC <- err
 		}
 	}()
@@ -379,16 +384,21 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 		}
 	}()
 
-	e := <-errC
-	close(msgC)
-	wg.Wait()
-
-	if err := pool.Disconnect(c.Addr(), e); err != nil {
-		logger.Error("Disconnect failed: %v", err)
+	select {
+	case <-pool.quit:
+		conn.Close()
+	case err = <-errC:
+		if err := pool.Disconnect(c.Addr(), err); err != nil {
+			logger.Error("Disconnect failed: %v", err)
+		}
 	}
+	close(qc)
+
+	wg.Wait()
 }
 
-func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte) error {
+func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc chan struct{}) error {
+	defer close(msgChan)
 	// read data from connection
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
@@ -422,9 +432,9 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte) erro
 		}
 
 		for _, d := range datas {
-			// use select to avoid the goroutine leak, cause if msgChan has no receiver, this goroutine
-			// will leak
 			select {
+			case <-qc:
+				return nil
 			case <-pool.quit:
 				return nil
 			case msgChan <- d:
@@ -435,31 +445,37 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte) erro
 	}
 }
 
-func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration) error {
-	for m := range conn.WriteQueue {
-		if m == nil {
-			continue
-		}
-
-		err := sendMessage(conn.Conn, m, timeout)
-		sr := newSendResult(conn.Addr(), m, err)
+func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
+	for {
 		select {
 		case <-pool.quit:
 			return nil
-		case pool.SendResults <- sr:
-		case <-time.After(sendResultTimeout):
-			logger.Warning("push send result channel timeout")
-		}
+		case <-qc:
+			return nil
+		case m := <-conn.WriteQueue:
+			if m == nil {
+				continue
+			}
 
-		if err != nil {
-			return err
-		}
+			err := sendMessage(conn.Conn, m, timeout)
+			sr := newSendResult(conn.Addr(), m, err)
+			select {
+			case <-qc:
+				return nil
+			case pool.SendResults <- sr:
+			case <-time.After(sendResultTimeout):
+				logger.Warning("push send result channel timeout")
+			}
 
-		if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
+				return err
+			}
 		}
 	}
-	return nil
 }
 
 func readData(reader io.Reader, buf []byte) ([]byte, error) {
@@ -581,8 +597,11 @@ func (pool *ConnectionPool) Connect(address string) error {
 	if err != nil {
 		return err
 	}
-
-	go pool.handleConnection(conn, true)
+	pool.wg.Add(1)
+	go func() {
+		defer pool.wg.Done()
+		pool.handleConnection(conn, true)
+	}()
 	return nil
 }
 

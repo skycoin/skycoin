@@ -203,6 +203,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 func (pool *ConnectionPool) Run() error {
 	defer logger.Info("Connection pool closed")
 
+	logger.Info("Listening for connections...")
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
 	ln, err := net.Listen("tcp", addr)
@@ -226,7 +227,6 @@ func (pool *ConnectionPool) Run() error {
 
 	}()
 
-	logger.Info("Listening for connections...")
 loop:
 	for {
 		conn, err := ln.Accept()

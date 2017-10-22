@@ -115,9 +115,7 @@ func (vs *Visor) Run() error {
 		case err := <-errC:
 			return err
 		case req := <-vs.reqC:
-			func() {
-				req()
-			}()
+			req()
 		}
 	}
 }
@@ -127,12 +125,7 @@ func (vs *Visor) strand(f func()) {
 	done := make(chan struct{})
 	vs.reqC <- func() {
 		defer close(done)
-		c := make(chan struct{})
-		go func() {
-			defer close(c)
-			f()
-		}()
-		<-c
+		f()
 	}
 	<-done
 }

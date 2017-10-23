@@ -242,7 +242,6 @@ func (bc *Blockchain) ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) erro
 		return err
 	}
 
-	bc.notify(nb.Block)
 	return nil
 }
 
@@ -627,7 +626,7 @@ func (bc *Blockchain) BindListener(ls BlockListener) {
 }
 
 // notifies the listener the new block.
-func (bc *Blockchain) notify(b coin.Block) {
+func (bc *Blockchain) Notify(b coin.Block) {
 	for _, l := range bc.blkListener {
 		l(b)
 	}

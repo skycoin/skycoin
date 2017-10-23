@@ -815,7 +815,7 @@ func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
 		logger.Warning("Failed to send %s to %s: %v",
-			reflect.TypeOf(r.Message).Name(), r.Addr, r.Error)
+			reflect.TypeOf(r.Message), r.Addr, r.Error)
 		return
 	}
 	switch r.Message.(type) {

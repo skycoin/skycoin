@@ -1,11 +1,14 @@
 package historydb
 
 import (
+	"fmt"
+
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
 var (
+	historyMetaBkt  = []byte("history_meta")
 	parsedHeightKey = []byte("parsed_height")
 )
 
@@ -15,7 +18,7 @@ type historyMeta struct {
 }
 
 func newHistoryMeta(db *bolt.DB) (*historyMeta, error) {
-	bkt, err := bucket.New([]byte("history_meta"), db)
+	bkt, err := bucket.New(historyMetaBkt, db)
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +36,16 @@ func (hm *historyMeta) ParsedHeight() int64 {
 // SetParsedHeight updates history parsed height
 func (hm *historyMeta) SetParsedHeight(h uint64) error {
 	return hm.v.Put(parsedHeightKey, bucket.Itob(h))
+}
+
+// SetParsedHeightWithTx updates history parsed height with *bolt.Tx
+func (hm *historyMeta) SetParsedHeightWithTx(tx *bolt.Tx, h uint64) error {
+	bkt := tx.Bucket(historyMetaBkt)
+	if bkt == nil {
+		return fmt.Errorf("set parsed height failed, bucket: %s does not exist", string(historyMetaBkt))
+	}
+
+	return bkt.Put(parsedHeightKey, bucket.Itob(h))
 }
 
 // IsEmpty checks if history meta bucket is empty

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync"
 	"time"
 
 	"io"
@@ -19,6 +20,8 @@ import (
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
 type DisconnectReason error
+
+const sendResultTimeout = 3 * time.Second
 
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
@@ -176,6 +179,7 @@ type ConnectionPool struct {
 	ops chan func()
 	// quit channel
 	quit chan struct{}
+	wg   sync.WaitGroup
 }
 
 // NewConnectionPool creates a new ConnectionPool that will listen on Config.Port upon
@@ -188,6 +192,8 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		addresses:    make(map[string]*Connection),
 		SendResults:  make(chan SendResult, c.BroadcastResultSize),
 		messageState: state,
+		quit:         make(chan struct{}),
+		ops:          make(chan func()),
 	}
 
 	return pool
@@ -195,17 +201,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 // Run starts the connection pool
 func (pool *ConnectionPool) Run() error {
-	// init the quit and operations channel here, in case run this pool again.
-	pool.quit = make(chan struct{})
-	pool.ops = make(chan func())
-
-	go func() {
-		for op := range pool.ops {
-			op()
-		}
-
-		logger.Info("Connection pool closed")
-	}()
+	defer logger.Info("Connection pool closed")
 
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
@@ -216,7 +212,22 @@ func (pool *ConnectionPool) Run() error {
 
 	pool.listener = ln
 
+	pool.wg.Add(1)
+	go func() {
+		defer pool.wg.Done()
+		for {
+			select {
+			case <-pool.quit:
+				return
+			case op := <-pool.ops:
+				op()
+			}
+		}
+
+	}()
+
 	logger.Info("Listening for connections...")
+loop:
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -225,8 +236,7 @@ func (pool *ConnectionPool) Run() error {
 			// Otherwise we continue
 			select {
 			case <-pool.quit:
-				close(pool.ops)
-				return nil
+				break loop
 			default:
 				// without the default case the select will block.
 				logger.Error("%v", err)
@@ -234,8 +244,14 @@ func (pool *ConnectionPool) Run() error {
 			}
 		}
 
-		go pool.handleConnection(conn, false)
+		pool.wg.Add(1)
+		go func() {
+			defer pool.wg.Done()
+			pool.handleConnection(conn, false)
+		}()
 	}
+	pool.wg.Wait()
+	return nil
 }
 
 // Shutdown gracefully shutdown the connection pool
@@ -256,21 +272,19 @@ func (pool *ConnectionPool) Shutdown() {
 }
 
 // strand ensures all read and write action of pool's member variable are in one thread.
-func (pool *ConnectionPool) strand(f func() error) (err error) {
-	defer func() {
-		// send on closed operation channel will panic.
-		if r := recover(); r != nil {
-			err = ErrConnectionPoolClosed
-		}
-	}()
-
+func (pool *ConnectionPool) strand(f func() error) error {
+	var err error
 	q := make(chan struct{})
-	pool.ops <- func() {
+	select {
+	case <-pool.quit:
+		return ErrConnectionPoolClosed
+	case pool.ops <- func() {
 		defer close(q)
 		err = f()
+	}:
 	}
 	<-q
-	return
+	return err
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
@@ -308,6 +322,7 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 
 // Creates a Connection and begins its read and write loop
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
+	defer logger.Debug("connection %s closed", conn.RemoteAddr())
 	addr := conn.RemoteAddr().String()
 	exist, err := pool.IsConnExist(addr)
 	if err != nil {
@@ -331,62 +346,66 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	}
 
 	msgC := make(chan []byte, 10)
-	errC := make(chan error, 1)
+	errC := make(chan error, 3)
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	qc := make(chan struct{})
 	go func() {
-		errC <- readLoop(c, pool.Config.ReadTimeout, pool.Config.MaxMessageLength, msgC)
+		defer wg.Done()
+		if err := pool.readLoop(c, msgC, qc); err != nil {
+			errC <- err
+		}
 	}()
 
-	qc := make(chan chan struct{})
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+		if err := pool.sendLoop(c, pool.Config.WriteTimeout, qc); err != nil {
+			errC <- err
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		for {
 			select {
-			case m := <-c.WriteQueue:
-				if m == nil {
-					continue
-				}
-				err := sendMessage(conn, m, pool.Config.WriteTimeout)
-				sr := newSendResult(c.Addr(), m, err)
-				pool.SendResults <- sr
-				if err != nil {
-					errC <- err
+			case msg, ok := <-msgC:
+				if !ok {
 					return
 				}
 
-				if err := pool.updateLastSent(c.Addr(), Now()); err != nil {
-					errC <- err
-					return
-				}
-			case msg := <-msgC:
 				if err := pool.receiveMessage(c, msg); err != nil {
 					errC <- err
 					return
 				}
-			case q := <-qc:
-				q <- struct{}{}
-				return
 			}
 		}
 	}()
 
-	e := <-errC
-	q := make(chan struct{}, 1)
-	qc <- q
-	<-q
-
-	if err := pool.Disconnect(c.Addr(), e); err != nil {
-		logger.Error("Disconnect failed: %v", err)
+	select {
+	case <-pool.quit:
+		conn.Close()
+	case err = <-errC:
+		if err := pool.Disconnect(c.Addr(), err); err != nil {
+			logger.Error("Disconnect failed: %v", err)
+		}
 	}
+	close(qc)
+
+	wg.Wait()
 }
 
-func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan chan []byte) error {
+func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc chan struct{}) error {
+	defer close(msgChan)
 	// read data from connection
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
 	for {
 		deadline := time.Time{}
-		if timeout != 0 {
-			deadline = time.Now().Add(timeout)
+		if pool.Config.ReadTimeout != 0 {
+			deadline = time.Now().Add(pool.Config.ReadTimeout)
 		}
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
 			return ErrDisconnectSetReadDeadlineFailed
@@ -407,15 +426,17 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 		}
 
 		// decode data
-		datas, err := decodeData(conn.Buffer, maxMsgLen)
+		datas, err := decodeData(conn.Buffer, pool.Config.MaxMessageLength)
 		if err != nil {
 			return err
 		}
 
 		for _, d := range datas {
-			// use select to avoid the goroutine leak, cause if msgChan has no receiver, this goroutine
-			// will leak
 			select {
+			case <-qc:
+				return nil
+			case <-pool.quit:
+				return nil
 			case msgChan <- d:
 			default:
 				return errors.New("The msgChan has no receiver")
@@ -424,11 +445,45 @@ func readLoop(conn *Connection, timeout time.Duration, maxMsgLen int, msgChan ch
 	}
 }
 
+func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
+	for {
+		select {
+		case <-pool.quit:
+			return nil
+		case <-qc:
+			return nil
+		case m := <-conn.WriteQueue:
+			if m == nil {
+				continue
+			}
+
+			err := sendMessage(conn.Conn, m, timeout)
+			sr := newSendResult(conn.Addr(), m, err)
+			select {
+			case <-qc:
+				return nil
+			case pool.SendResults <- sr:
+			case <-time.After(sendResultTimeout):
+				logger.Warning("push send result channel timeout")
+			}
+
+			if err != nil {
+				return err
+			}
+
+			if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
+				return err
+			}
+		}
+	}
+}
+
 func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	c, err := reader.Read(buf)
 	if err != nil {
-		return nil, ErrDisconnectReadFailed
+		return nil, fmt.Errorf("read data failed: %v", err)
 	}
+
 	if c == 0 {
 		return nil, nil
 	}
@@ -542,8 +597,11 @@ func (pool *ConnectionPool) Connect(address string) error {
 	if err != nil {
 		return err
 	}
-
-	go pool.handleConnection(conn, true)
+	pool.wg.Add(1)
+	go func() {
+		defer pool.wg.Done()
+		pool.handleConnection(conn, true)
+	}()
 	return nil
 }
 

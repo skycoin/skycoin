@@ -408,7 +408,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
-	return vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *bolt.Tx) error {
 		if err := vs.Blockchain.ExecuteBlockWithTx(tx, &b); err != nil {
 			return err
 		}
@@ -421,7 +421,12 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		vs.Unconfirmed.RemoveTransactionsWithTx(tx, txHashes)
 
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	vs.Blockchain.Notify(b.Block)
+	return nil
 }
 
 // Returns an error if the cipher.Sig is not valid for the coin.Block

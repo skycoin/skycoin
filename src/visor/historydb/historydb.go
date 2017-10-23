@@ -116,15 +116,6 @@ func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 	return hd.outputs.Get(uxID)
 }
 
-// ProcessBlock parses the block and update parsed block height
-func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
-	if err := hd.ParseBlock(b); err != nil {
-		return err
-	}
-
-	return hd.SetParsedHeight(b.Seq())
-}
-
 // ParseBlock will index the transaction, outputs,etc.
 func (hd *HistoryDB) ParseBlock(b *coin.Block) error {
 	if b == nil {
@@ -190,7 +181,7 @@ func (hd *HistoryDB) ParseBlock(b *coin.Block) error {
 			}
 		}
 
-		return nil
+		return hd.SetParsedHeightWithTx(tx, b.Seq())
 	})
 }
 

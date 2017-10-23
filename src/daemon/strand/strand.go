@@ -6,6 +6,11 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
+const (
+	// logDurationThreshold is how long to wait before reporting a function call's time
+	logDurationThreshold = time.Millisecond * 100
+)
+
 // Request is sent to the channel provided to Strand
 type Request struct {
 	Name string
@@ -17,6 +22,17 @@ type Request struct {
 // multiple goroutines.
 // Methods passed to strand() will block until completed.
 func Strand(logger *logging.Logger, c chan Request, name string, f func() error) error {
+	quit := make(chan struct{})
+	return WithQuit(logger, c, name, f, quit, nil)
+}
+
+// WithQuit linearizes concurrent method calls through a single channel,
+// to avoid concurrency issues when conflicting methods are called from
+// multiple goroutines.
+// Methods passed to WithQuit() will block until completed.
+// WithQuit accepts a quit channel and will return quitErr if the quit
+// channel closes.
+func WithQuit(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	done := make(chan struct{})
 	var err error
 
@@ -29,13 +45,11 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 			// logger.Debug("%s begin", name)
 
 			t := time.Now()
-			// minThreshold is how long to wait before reporting a function call's time
-			minThreshold := time.Millisecond * 10
 
 			// Log function duration at an exponential time interval,
 			// this will notify us of any long running functions to look at.
 			go func() {
-				threshold := minThreshold
+				threshold := logDurationThreshold
 				t := time.NewTimer(threshold)
 				defer t.Stop()
 
@@ -63,7 +77,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 
 			// Notify us if the function call took too long
 			elapsed := time.Now().Sub(t)
-			if elapsed > minThreshold {
+			if elapsed > logDurationThreshold {
 				logger.Warning("%s took %s", name, elapsed)
 			} else {
 				// logger.Debug("%s took %s", name, elapsed)
@@ -80,49 +94,6 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 	case <-time.After(writeWait):
 		logger.Warning("Waited %s while trying to write %s to the strand request channel", writeWait, req.Name)
 		c <- req
-	}
-
-	<-done
-	return err
-}
-
-// StrandCanQuit linearizes concurrent method calls through a single channel,
-// to avoid concurrency issues when conflicting methods are called from
-// multiple goroutines.
-// Methods passed to StrandCanQuit() will block until completed.
-// StrandCanQuit accepts a quit channel and will return quitErr if the quit
-// channel closes.
-func StrandCanQuit(logger *logging.Logger, c chan Request, req Request, quit chan struct{}, quitErr error) error {
-	done := make(chan struct{})
-	var err error
-
-	select {
-	case <-quit:
-		return quitErr
-	case c <- Request{
-		Name: req.Name,
-		Func: func() error {
-			defer close(done)
-
-			t := time.Now()
-
-			logger.Debug("%s begin", req.Name)
-
-			err = req.Func()
-			if err != nil {
-				logger.Error("%s error: %v", req.Name, err)
-			}
-
-			elapsed := time.Now().Sub(t)
-			if elapsed > time.Second {
-				logger.Warning("%s took %s", req.Name, elapsed)
-			} else {
-				logger.Debug("%s took %s", req.Name, elapsed)
-			}
-
-			return err
-		},
-	}:
 	}
 
 	<-done

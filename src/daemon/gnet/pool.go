@@ -278,11 +278,7 @@ func (pool *ConnectionPool) Shutdown() {
 // strand ensures all read and write action of pool's member variable are in one thread.
 func (pool *ConnectionPool) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.gnet.ConnectionPool.%s", name)
-
-	return strand.StrandCanQuit(logger, pool.reqC, strand.Request{
-		Name: name,
-		Func: f,
-	}, pool.quit, ErrConnectionPoolClosed)
+	return strand.WithQuit(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
@@ -383,7 +379,9 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 	select {
 	case <-pool.quit:
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			logger.Error("conn.Close() error: %v", err)
+		}
 	case err = <-errC:
 		if err := pool.Disconnect(c.Addr(), err); err != nil {
 			logger.Error("Disconnect failed: %v", err)

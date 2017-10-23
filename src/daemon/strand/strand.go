@@ -92,7 +92,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 // Methods passed to StrandCanQuit() will block until completed.
 // StrandCanQuit accepts a quit channel and will return quitErr if the quit
 // channel closes.
-func StrandCanQuit(logger *logging.Logger, c chan Request, req Request, q chan struct{}, quitErr error) error {
+func StrandCanQuit(logger *logging.Logger, c chan Request, req Request, quit chan struct{}, quitErr error) error {
 	done := make(chan struct{})
 	var err error
 

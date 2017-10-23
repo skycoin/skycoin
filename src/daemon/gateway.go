@@ -194,8 +194,9 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 // GetBlocksInDepth returns blocks in different depth
 func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
 	blocks := []coin.SignedBlock{}
+	var err error
+
 	gw.strand("GetBlocksInDepth", func() {
-		blks := visor.ReadableBlocks{}
 		for _, n := range vs {
 			b, err := gw.vrpc.GetBlockBySeq(gw.v, n)
 			if err != nil {
@@ -376,8 +377,9 @@ func (gw *Gateway) InjectTransaction(txn coin.Transaction) error {
 func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error) {
 	var txs []visor.Transaction
 	var err error
+
 	gw.strand("GetAddressesTxns", func() {
-		tx, err = gw.vrpc.GetAddressTxns(gw.v, a)
+		txs, err = gw.vrpc.GetAddressTxns(gw.v, a)
 	})
 
 	if err != nil {

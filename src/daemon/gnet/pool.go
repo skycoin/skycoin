@@ -219,11 +219,13 @@ func (pool *ConnectionPool) Run() error {
 	go func() {
 		defer pool.wg.Done()
 		for {
+			select {
 			case <-pool.quit:
 				return
-            select {
-            case req := <-pool.reqC:
-                req.Func()
+			case req := <-pool.reqC:
+				if err := req.Func(); err != nil {
+					logger.Error("req.Func %s failed: %v", req.Name, err)
+				}
 			}
 		}
 	}()
@@ -277,10 +279,10 @@ func (pool *ConnectionPool) Shutdown() {
 func (pool *ConnectionPool) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.gnet.ConnectionPool.%s", name)
 
-	return strand.StrandCanQuit(logger, pool.ops, strand.Request{
+	return strand.StrandCanQuit(logger, pool.reqC, strand.Request{
 		Name: name,
 		Func: f,
-	}, pool.Quit, ErrConnectionPoolClosed)
+	}, pool.quit, ErrConnectionPoolClosed)
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection

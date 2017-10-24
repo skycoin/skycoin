@@ -391,7 +391,7 @@ loop:
 				continue
 			}
 
-			if dm.Pex.Full() {
+			if dm.Pex.IsFull() {
 				continue
 			}
 

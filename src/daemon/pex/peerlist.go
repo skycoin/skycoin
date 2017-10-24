@@ -58,16 +58,16 @@ func (pl *peerlist) strand(f func(), arg ...interface{}) {
 	f()
 }
 
-// Full returns true if no more peers can be added
-func (pl *peerlist) Full() bool {
+// IsFull returns if the peerlist is full
+func (pl *peerlist) IsFull() bool {
 	var full bool
 	pl.strand(func() {
-		full = pl.full()
+		full = pl.isFull()
 	}, "Full")
 	return full
 }
 
-func (pl *peerlist) full() bool {
+func (pl *peerlist) isFull() bool {
 	return pl.cap > 0 && len(pl.peers) >= pl.cap
 }
 
@@ -77,7 +77,7 @@ func (pl *peerlist) add(addr string) error {
 		return nil
 	}
 
-	if pl.full() {
+	if pl.isFull() {
 		return ErrPeerlistFull
 	}
 
@@ -90,7 +90,7 @@ func (pl *peerlist) addPeer(addr string) error {
 	var err error
 	pl.strand(func() {
 		err = pl.add(addr)
-	}, "AddPeer")
+	}, "addPeer")
 
 	return err
 }
@@ -110,7 +110,7 @@ func (pl *peerlist) addPeers(addrs []string, verifyFunc func(string) error) int 
 				n--
 			}
 		}
-	}, "AddPeers")
+	}, "addPeers")
 	return n
 }
 

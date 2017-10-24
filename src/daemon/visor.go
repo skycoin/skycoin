@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -72,8 +71,7 @@ type Visor struct {
 	// Peer-reported blockchain height.  Use to estimate download progress
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
-	reqC     chan strand.Request
-	Shutdown context.CancelFunc
+	reqC chan strand.Request
 }
 
 // NewVisor creates visor instance
@@ -85,16 +83,12 @@ func NewVisor(c VisorConfig) (*Visor, error) {
 	}
 
 	var v *visor.Visor
-	v, closeVs, err := visor.NewVisor(c.Config)
+	v, err := visor.NewVisor(c.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	vs.v = v
-	vs.Shutdown = func() {
-		// close the visor
-		closeVs()
-	}
 
 	return vs, nil
 }
@@ -104,7 +98,6 @@ func (vs *Visor) Run() error {
 	defer logger.Info("Visor closed")
 	errC := make(chan error, 1)
 	go func() {
-		// vs.Shutdown will notify the vs.v.Run to return.
 		errC <- vs.v.Run()
 	}()
 
@@ -113,9 +106,16 @@ func (vs *Visor) Run() error {
 		case err := <-errC:
 			return err
 		case req := <-vs.reqC:
-			req.Func()
+			if err := req.Func(); err != nil {
+				logger.Error("Visor request func failed: %v", err)
+			}
 		}
 	}
+}
+
+// Shutdown shuts down the visor
+func (vs *Visor) Shutdown() {
+	vs.v.Shutdown()
 }
 
 func (vs *Visor) strand(name string, f func() error) error {

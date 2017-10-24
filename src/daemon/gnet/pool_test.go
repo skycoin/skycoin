@@ -212,8 +212,6 @@ func TestStopListen(t *testing.T) {
 	<-q
 
 	require.Nil(t, p.listener)
-	require.Equal(t, len(p.pool), 0)
-	require.Equal(t, len(p.addresses), 0)
 }
 
 func TestHandleConnection(t *testing.T) {

@@ -35,13 +35,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 // WithQuit accepts a quit channel and will return quitErr if the quit
 // channel closes.
 func WithQuit(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
-	select {
-	case _, ok := <-quit:
-		if !ok {
-			return nil
-		}
-	default:
-	}
+	logger.Debug("strand precall %s", name)
 
 	done := make(chan struct{})
 	var err error
@@ -80,6 +74,8 @@ func WithQuit(logger *logging.Logger, c chan Request, name string, f func() erro
 				}
 			}()
 
+			logger.Debug("Stranding %s", name)
+
 			err = f()
 
 			// Log the error here so that the Request channel consumer doesn't need to
@@ -100,13 +96,16 @@ func WithQuit(logger *logging.Logger, c chan Request, name string, f func() erro
 	}
 
 	// Log a message if waiting too long to write due to a full queue
-	select {
-	case <-quit:
-		return nil
-	case c <- req:
-	case <-time.After(logQueueRequestWaitThreshold):
-		logger.Warning("Waited %s while trying to write %s to the strand request channel", logQueueRequestWaitThreshold, req.Name)
-		c <- req
+loop:
+	for {
+		select {
+		case <-quit:
+			return nil
+		case c <- req:
+			break loop
+		case <-time.After(logQueueRequestWaitThreshold):
+			logger.Warning("Waited %s while trying to write %s to the strand request channel", logQueueRequestWaitThreshold, req.Name)
+		}
 	}
 
 	<-done

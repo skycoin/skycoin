@@ -260,12 +260,6 @@ loop:
 
 // Shutdown gracefully shutdown the connection pool
 func (pool *ConnectionPool) Shutdown() {
-	pool.strand("Shutdown", func() error {
-		pool.addresses = map[string]*Connection{}
-		pool.pool = map[int]*Connection{}
-		return nil
-	})
-
 	close(pool.quit)
 
 	if pool.listener != nil {
@@ -621,6 +615,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	if pool.Config.DisconnectCallback != nil && exist {
 		pool.Config.DisconnectCallback(addr, r)
 	}
+
 	return nil
 }
 
@@ -653,25 +648,17 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	if pool.Config.DebugPrint {
 		logger.Debug("Send, Msg Type: %s", reflect.TypeOf(msg))
 	}
-	var msgQueueFull bool
-	if err := pool.strand("SendMessage", func() error {
+
+	return pool.strand("SendMessage", func() error {
 		if conn, ok := pool.addresses[addr]; ok {
 			select {
 			case conn.WriteQueue <- msg:
 			default:
-				msgQueueFull = true
+				return ErrDisconnectWriteQueueFull
 			}
 		}
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	if msgQueueFull {
-		return ErrDisconnectWriteQueueFull
-	}
-
-	return nil
+	})
 }
 
 // BroadcastMessage sends a Message to all connections in the Pool.

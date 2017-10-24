@@ -740,7 +740,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	dm.expectingIntroductions.Add(a, utc.Now())
 	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.Pool.Pool.Config.Port)
-	dm.Pool.Pool.SendMessage(a, m)
+	if err := dm.Pool.Pool.SendMessage(a, m); err != nil {
+		logger.Error("Send IntroductionMessage to %s failed: %v", a, err)
+	}
 }
 
 func (dm *Daemon) onDisconnect(e DisconnectEvent) {

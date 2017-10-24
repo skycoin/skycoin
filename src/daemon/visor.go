@@ -599,7 +599,9 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	m := NewGiveBlocksMessage(blocks)
-	d.Pool.Pool.SendMessage(gbm.c.Addr, m)
+	if err := d.Pool.Pool.SendMessage(gbm.c.Addr, m); err != nil {
+		logger.Error("Send GiveBlocksMessage to %s failed: %v", gbm.c.Addr, err)
+	}
 }
 
 // GiveBlocksMessage sent in response to GetBlocksMessage, or unsolicited
@@ -701,7 +703,9 @@ func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
 	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
-	d.Pool.Pool.SendMessage(abm.c.Addr, m)
+	if err := d.Pool.Pool.SendMessage(abm.c.Addr, m); err != nil {
+		logger.Error("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
+	}
 }
 
 // SendingTxnsMessage send transaction message interface
@@ -746,7 +750,9 @@ func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
 	}
 
 	m := NewGetTxnsMessage(unknown)
-	d.Pool.Pool.SendMessage(atm.c.Addr, m)
+	if err := d.Pool.Pool.SendMessage(atm.c.Addr, m); err != nil {
+		logger.Error("Send GetTxnsMessage to %s failed: %v", atm.c.Addr, err)
+	}
 }
 
 // GetTxnsMessage request transactions of given hash
@@ -783,7 +789,9 @@ func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	// Reply to sender with GiveTxnsMessage
 	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
-	d.Pool.Pool.SendMessage(gtm.c.Addr, m)
+	if err := d.Pool.Pool.SendMessage(gtm.c.Addr, m); err != nil {
+		logger.Error("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)
+	}
 }
 
 // GiveTxnsMessage tells the transaction of given hashes

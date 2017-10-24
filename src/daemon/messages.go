@@ -166,7 +166,9 @@ func (gpm *GetPeersMessage) Process(d *Daemon) {
 	// logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
 
 	m := NewGivePeersMessage(peers)
-	d.Pool.Pool.SendMessage(gpm.addr, m)
+	if err := d.Pool.Pool.SendMessage(gpm.addr, m); err != nil {
+		logger.Error("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
+	}
 }
 
 // GivePeersMessage sent in response to GetPeersMessage
@@ -353,7 +355,9 @@ func (ping *PingMessage) Process(d *Daemon) {
 	if d.Config.LogPings {
 		logger.Debug("Reply to ping from %s", ping.c.Addr)
 	}
-	d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{})
+	if err := d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
+		logger.Error("Send PongMessage to %s failed: %v", ping.c.Addr, err)
+	}
 }
 
 // PongMessage Sent in reply to a PingMessage.  No action is taken when this is received.

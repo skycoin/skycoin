@@ -355,29 +355,29 @@ func TestPeerlistGetPublicTrustPeers(t *testing.T) {
 
 }
 
-func TestGetPrivateAddresses(t *testing.T) {
-	ips := []string{
-		"112.32.32.14:10011",
-		"112.32.32.14:20011",
-		"112.32.32.14:30011",
-		"112.32.32.14:40011",
-	}
-	pl := newPeerlist(10)
-	pl.addPeer(ips[0])
-	pl.addPeer(ips[1])
-	pl.addPeer(ips[2])
-	pl.addPeer(ips[3])
-	pl.setPrivate(ips[2], true)
-	pl.setPrivate(ips[3], true)
+// func TestGetPrivateAddresses(t *testing.T) {
+// 	ips := []string{
+// 		"112.32.32.14:10011",
+// 		"112.32.32.14:20011",
+// 		"112.32.32.14:30011",
+// 		"112.32.32.14:40011",
+// 	}
+// 	pl := newPeerlist(10)
+// 	pl.addPeer(ips[0])
+// 	pl.addPeer(ips[1])
+// 	pl.addPeer(ips[2])
+// 	pl.addPeer(ips[3])
+// 	pl.setPrivate(ips[2], true)
+// 	pl.setPrivate(ips[3], true)
 
-	addresses := pl.GetPrivateAddresses()
-	assert.Equal(t, len(addresses), 2)
-	sort.Strings(addresses)
-	assert.Equal(t, addresses, []string{
-		ips[2],
-		ips[3],
-	})
-}
+// 	addresses := pl.GetPrivateAddresses()
+// 	assert.Equal(t, len(addresses), 2)
+// 	sort.Strings(addresses)
+// 	assert.Equal(t, addresses, []string{
+// 		ips[2],
+// 		ips[3],
+// 	})
+// }
 
 func convertPeersToStrings(peers []Peer) []string {
 	addresses := make([]string, 0, len(peers))

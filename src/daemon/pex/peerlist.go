@@ -175,11 +175,11 @@ func isTrusted(peers Peers) Peers {
 	return ps
 }
 
-// isValid filters valid peers
-func isValid(peers Peers) Peers {
+// hasPublicPort filters peers that have public port
+func hasPublicPort(peers Peers) Peers {
 	var ps Peers
 	for _, p := range peers {
-		if p.Valid {
+		if p.HasPublicPort {
 			ps = append(ps, p)
 		}
 	}
@@ -187,7 +187,7 @@ func isValid(peers Peers) Peers {
 }
 
 // isExchangeable filters exchangeable peers
-var isExchangeable = isValid
+var isExchangeable = hasPublicPort
 
 // RemovePeer removes peer
 func (pl *peerlist) RemovePeer(addr string) {
@@ -272,12 +272,12 @@ func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	return err
 }
 
-// setPeerIsValid updates whether the peer is valid and has public incoming port
-func (pl *peerlist) setPeerIsValid(addr string, valid bool) error {
+// setPeerHasPublicPort updates whether the peer is valid and has public incoming port
+func (pl *peerlist) setPeerHasPublicPort(addr string, hasPublicPort bool) error {
 	var err error
 	pl.strand(func() {
 		if p, ok := pl.peers[addr]; ok {
-			p.Valid = valid
+			p.HasPublicPort = hasPublicPort
 			p.Seen()
 			return
 		}
@@ -365,22 +365,6 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	}, "clearOld")
 }
 
-// Returns the string addresses of all public peers
-// func (pl *peerlist) getAddresses(private bool) []string {
-// 	keys := make([]string, 0, len(pl.peers))
-// 	for key, p := range pl.peers {
-// 		if p.CanTry() {
-// 			if private && p.Private {
-// 				keys = append(keys, key)
-// 			} else if !private && !p.Private {
-// 				keys = append(keys, key)
-// 			}
-// 		}
-// 	}
-
-// 	return keys
-// }
-
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
 func (pl *peerlist) random(count int, flts ...Filter) Peers {
@@ -399,83 +383,6 @@ func (pl *peerlist) random(count int, flts ...Filter) Peers {
 	}
 	return ps
 }
-
-// func (pl *peerlist) getExchgAddr(private bool) []string {
-// 	keys := []string{}
-// 	for a, p := range pl.peers {
-// 		if p.Valid && p.Private == private {
-// 			keys = append(keys, a)
-// 		}
-// 	}
-// 	return keys
-// }
-
-// returns all exchangeable addresses
-// func (pl *peerlist) getExchangePeers() Peers {
-// 	return pl.getPeers(validFilter)
-// }
-
-// returns n random exchangeable peers, return all if count is 0.
-// func (pl *peerlist) getRandomExchangePeers(count int, flt filter) Peers {
-// 	keys := pl.getPeers(flt).ToAddrs()
-
-// 	if len(keys) == 0 {
-// 		return make([]*Peer, 0)
-// 	}
-
-// 	max := count
-// 	if count == 0 || count > len(keys) {
-// 		max = len(keys)
-// 	}
-// 	peers := make([]*Peer, 0, max)
-// 	perm := rand.Perm(len(keys))
-// 	for _, i := range perm[:max] {
-// 		peers = append(peers, pl.peers[keys[i]])
-// 	}
-// 	return peers
-// }
-
-// RandomExchgPublic returns n random exchangeable public peers
-// return all exchangeable public peers if count is 0.
-// func (pl *peerlist) GetRandomExchangePublicPeers(count int) []*Peer {
-// 	var peers []*Peer
-// 	pl.strand(func() {
-// 		peers = pl.randomExchg(count, false)
-// 	}, "RandomExchgPublic")
-// 	return peers
-// }
-
-// RandomExchgAll returns n random exchangeable peers, including private peers.
-// return all exchangeable peers if count is 0.
-// func (pl *peerlist) RandomExchgAll(count int) []*Peer {
-// 	var peers []*Peer
-// 	pl.strand(func() {
-// 		peers = pl.randomExchg(count, true)
-// 	}, "RandomExchgAll")
-// 	return peers
-// }
-
-// RandomPublic returns n random peers, or all of the peers, whichever is lower.
-// If count is 0, all of the peers are returned, shuffled.  Will not include
-// private peers.
-// func (pl *peerlist) RandomPublic(count int) Peers {
-// 	var peers Peers
-// 	pl.strand(func() {
-// 		peers = pl.random(count, publicFilter)
-// 	}, "RandomPublic")
-// 	return peers
-// }
-
-// RandomAll returns n random peers, or all of the peers, whichever is lower.
-// If count is 0, all of the peers are returned, shuffled.  Includes private
-// peers.
-// func (pl *peerlist) RandomAll(count int) []*Peer {
-// 	var peers []*Peer
-// 	pl.strand(func() {
-// 		peers = pl.random(count, true)
-// 	}, "RandomAll")
-// 	return peers
-// }
 
 // save saves known peers to disk as a newline delimited list of addresses to
 // <dir><PeerDatabaseFilename>
@@ -532,7 +439,7 @@ func (pl *peerlist) ResetAllRetryTimes() {
 func (pl *peerlist) PrintAll() {
 	pl.strand(func() {
 		for _, p := range pl.peers {
-			fmt.Println(p.String(), " ", p.RetryTimes, " is valid:", p.Valid)
+			fmt.Println(p.String(), " ", p.RetryTimes, " public:", p.HasPublicPort)
 		}
 	})
 }

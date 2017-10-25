@@ -470,6 +470,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc := daemon.NewConfig()
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
+	dc.Pex.Port = c.Port
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking

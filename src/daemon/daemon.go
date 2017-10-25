@@ -45,6 +45,8 @@ var (
 	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
 	// ErrDisconnectIPLimitReached ip limit reached
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
+	// ErrDisConnectWrongPort invalid peer, which has wrong node port number
+	ErrDisconnectWrongPort gnet.DisconnectReason = errors.New("Wrong node port")
 	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
 	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
@@ -595,7 +597,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
 		// check if the peer has public port
-		if p.Valid {
+		if p.HasPublicPort {
 			// try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
 				dm.connectToPeer(&p)

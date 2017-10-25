@@ -47,7 +47,7 @@ var (
 )
 
 // validateAddress returns true if ipPort is a valid ip:host string
-func validateAddress(ipPort string, allowLocalhost bool) bool {
+func validateAddress(ipPort string, allowLocalhost bool, validPort int) bool {
 	ipPort = whitespaceFilter.ReplaceAllString(ipPort, "")
 	pts := strings.Split(ipPort, ":")
 	if len(pts) != 2 {
@@ -66,7 +66,7 @@ func validateAddress(ipPort string, allowLocalhost bool) bool {
 	}
 
 	port, err := strconv.ParseUint(pts[1], 10, 16)
-	if err != nil || port < 1024 {
+	if err != nil || port < 1024 || int(port) != validPort {
 		return false
 	}
 
@@ -75,12 +75,12 @@ func validateAddress(ipPort string, allowLocalhost bool) bool {
 
 // Peer represents a known peer
 type Peer struct {
-	Addr       string // An address of the form ip:port
-	LastSeen   int64  // Unix timestamp when this peer was last seen
-	Private    bool   // Whether it should omitted from public requests
-	Trusted    bool   // Whether this peer is trusted
-	Valid      bool   // Whether this peer is valid(has reachable public port)
-	RetryTimes int    `json:"-"` // records the retry times
+	Addr          string // An address of the form ip:port
+	LastSeen      int64  // Unix timestamp when this peer was last seen
+	Private       bool   // Whether it should omitted from public requests
+	Trusted       bool   // Whether this peer is trusted
+	HasPublicPort bool   // Whether this peer has accessable public port
+	RetryTimes    int    `json:"-"` // records the retry times
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port
@@ -154,6 +154,7 @@ type Config struct {
 	Disabled bool
 	// Whether the network is disabled
 	NetworkDisabled bool
+	Port            int // node port
 }
 
 // NewConfig creates default pex config.
@@ -202,6 +203,9 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		return nil, err
 	}
 
+	// filter invalid peers
+	pex.filterInvalidPeers()
+
 	//Boot strap peers
 	for _, addr := range defaultConns {
 		// default peers will mark as trusted peers.
@@ -222,10 +226,21 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	return pex, nil
 }
 
+func (px *Pex) filterInvalidPeers() {
+	ps := make(map[string]*Peer)
+	for addr, p := range px.peers {
+		if validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
+			ps[addr] = p
+		}
+	}
+
+	px.peers = ps
+}
+
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
 // full, PeerlistFullError is returned */
 func (px *Pex) AddPeer(addr string) error {
-	if !validateAddress(addr, px.Config.AllowLocalhost) {
+	if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
 		return ErrInvalidAddress
 	}
 
@@ -234,7 +249,7 @@ func (px *Pex) AddPeer(addr string) error {
 
 // SetPrivate updates peer's private value
 func (px *Pex) SetPrivate(addr string, private bool) error {
-	if !validateAddress(addr, px.Config.AllowLocalhost) {
+	if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
 		return ErrInvalidAddress
 	}
 
@@ -243,20 +258,20 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 
 // SetTrust updates peer's trusted value
 func (px *Pex) SetTrust(addr string, trusted bool) error {
-	if !validateAddress(addr, px.Config.AllowLocalhost) {
+	if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
 		return ErrInvalidAddress
 	}
 
 	return px.setTrusted(addr, trusted)
 }
 
-// SetValid updates peer's Valid value
-func (px *Pex) SetValid(addr string, valid bool) error {
-	if !validateAddress(addr, px.Config.AllowLocalhost) {
+// SetHasPublicPort sets if the peer has public port
+func (px *Pex) SetHasPublicPort(addr string, hasPublicPort bool) error {
+	if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
 		return ErrInvalidAddress
 	}
 
-	return px.setPeerIsValid(addr, valid)
+	return px.setPeerHasPublicPort(addr, hasPublicPort)
 }
 
 // AddPeers add multiple peers at once. Any errors will be logged, but not returned
@@ -264,7 +279,7 @@ func (px *Pex) SetValid(addr string, valid bool) error {
 // adding a duplicate peer will not cause an error.
 func (px *Pex) AddPeers(addrs []string) int {
 	return px.addPeers(addrs, func(addr string) error {
-		if !validateAddress(addr, px.Config.AllowLocalhost) {
+		if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
 			return ErrInvalidAddress
 		}
 		return nil

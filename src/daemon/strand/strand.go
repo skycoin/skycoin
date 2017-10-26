@@ -13,6 +13,11 @@ const (
 	logQueueRequestWaitThreshold = time.Second * 3
 )
 
+var (
+	// Debug enables debug logging
+	Debug = false
+)
+
 // Request is sent to the channel provided to Strand
 type Request struct {
 	Name string
@@ -35,7 +40,9 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 // WithQuit accepts a quit channel and will return quitErr if the quit
 // channel closes.
 func WithQuit(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
-	logger.Debug("strand precall %s", name)
+	if Debug {
+		logger.Debug("Strand precall %s", name)
+	}
 
 	done := make(chan struct{})
 	var err error
@@ -74,7 +81,9 @@ func WithQuit(logger *logging.Logger, c chan Request, name string, f func() erro
 				}
 			}()
 
-			logger.Debug("Stranding %s", name)
+			if Debug {
+				logger.Debug("Stranding %s", name)
+			}
 
 			err = f()
 

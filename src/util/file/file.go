@@ -102,11 +102,14 @@ func UserHome() string {
 
 // LoadJSON load json file
 func LoadJSON(filename string, thing interface{}) error {
-	file, err := ioutil.ReadFile(filename)
+	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(file, thing)
+
+	dec := json.NewDecoder(file)
+	dec.UseNumber()
+	return dec.Decode(thing)
 }
 
 // SaveJSON write value into json file

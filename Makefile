@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test lint check release clean help
+.PHONY: run run-help test lint check format install-linters release clean help
 
 # Static files directory
 STATIC_DIR = src/gui/static
@@ -14,8 +14,8 @@ run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
 test: ## Run tests
-	go test ./cmd/...
-	go test ./src/...
+	go test ./cmd/... -timeout=1m
+	go test ./src/... -timeout=1m
 
 lint: ## Run linters. requires vendorcheck, gometalinter, golint, goimports
 	gometalinter --disable-all -E goimports --tests --vendor ./...
@@ -28,6 +28,10 @@ install-linters: ## Install linters
 	go get -u -f golang.org/x/tools/cmd/goimports
 	go get -u github.com/alecthomas/gometalinter
 	go get -u github.com/FiloSottile/vendorcheck
+
+format:  # Formats the code. Must have goimports installed (use make install-linters).
+	goimports -w ./cmd/...
+	goimports -w ./src/...
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

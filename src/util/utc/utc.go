@@ -14,8 +14,3 @@ func Now() time.Time {
 func UnixNow() int64 {
 	return Now().Unix()
 }
-
-// ZeroTime returns the zero value time
-func ZeroTime() time.Time {
-	return time.Time{}
-}

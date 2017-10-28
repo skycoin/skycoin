@@ -18,8 +18,3 @@ func TestUnixNow(t *testing.T) {
 	unow := UnixNow()
 	assert.True(t, now.Unix() == unow || now.Unix() == unow-1)
 }
-
-func TestZeroTime(t *testing.T) {
-	z := ZeroTime()
-	assert.True(t, z.IsZero())
-}

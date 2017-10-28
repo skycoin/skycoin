@@ -14,7 +14,8 @@ type ParserOption func(*BlockchainParser)
 type BlockchainParser struct {
 	historyDB *historydb.HistoryDB
 	blkC      chan coin.Block
-	closing   chan chan struct{}
+	quit      chan struct{}
+	done      chan struct{}
 	bc        *Blockchain
 
 	isStart bool
@@ -25,7 +26,8 @@ func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain, ops ...Pars
 	bp := &BlockchainParser{
 		bc:        bc,
 		historyDB: hisDB,
-		closing:   make(chan chan struct{}),
+		quit:      make(chan struct{}),
+		done:      make(chan struct{}),
 		blkC:      make(chan coin.Block, 10),
 	}
 
@@ -44,6 +46,7 @@ func (bcp *BlockchainParser) FeedBlock(b coin.Block) {
 // Run starts blockchain parser
 func (bcp *BlockchainParser) Run() error {
 	logger.Info("Blockchain parser start")
+	defer close(bcp.done)
 	defer logger.Info("Blockchain parser closed")
 
 	if err := bcp.historyDB.ResetIfNeed(); err != nil {
@@ -58,8 +61,7 @@ func (bcp *BlockchainParser) Run() error {
 
 	for {
 		select {
-		case cc := <-bcp.closing:
-			cc <- struct{}{}
+		case <-bcp.quit:
 			return nil
 		case b := <-bcp.blkC:
 			if err := bcp.historyDB.ParseBlock(&b); err != nil {
@@ -69,11 +71,10 @@ func (bcp *BlockchainParser) Run() error {
 	}
 }
 
-// Stop close the block parsing process.
-func (bcp *BlockchainParser) Stop() {
-	cc := make(chan struct{}, 1)
-	bcp.closing <- cc
-	<-cc
+// Shutdown close the block parsing process.
+func (bcp *BlockchainParser) Shutdown() {
+	close(bcp.quit)
+	<-bcp.done
 }
 
 func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {

@@ -28,14 +28,13 @@ type BlockHeader struct {
 	Version uint32
 
 	Time  uint64
-	BkSeq uint64 //increment every block
-	Fee   uint64 //fee in block, used for Proof of Stake
+	BkSeq uint64 // Increment every block
+	Fee   uint64 // Fee in block
 
-	PrevHash cipher.SHA256 //hash of header of previous block
-	BodyHash cipher.SHA256 //hash of transaction block
+	PrevHash cipher.SHA256 // Hash of header of previous block
+	BodyHash cipher.SHA256 // Hash of transaction block
 
-	UxHash cipher.SHA256 //XOR of sha256 of elements in unspent output set
-
+	UxHash cipher.SHA256 // XOR of sha256 of elements in unspent output set
 }
 
 // BlockBody represents the block body
@@ -48,23 +47,6 @@ type SignedBlock struct {
 	Block
 	Sig cipher.Sig
 }
-
-//TODO: merge header/body and cleanup top level interface
-
-/*
-Todo: merge header/body
-
-type Block struct {
-    Time  uint64
-    BkSeq uint64 //increment every block
-    Fee   uint64 //fee in block, used for Proof of Stake
-
-    HashPrevBlock cipher.SHA256 //hash of header of previous block
-    BodyHash      cipher.SHA256 //hash of transaction block
-
-    Transactions Transactions
-}
-*/
 
 // NewBlock creates new block.
 func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transactions, calc FeeCalculator) (*Block, error) {

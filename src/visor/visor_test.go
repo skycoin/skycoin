@@ -95,9 +95,9 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 		require.Contains(t, err.Error(), "find no signature of block:")
 	}()
 
-	// Loading this invalid db should cause load() to recreate the db
+	// Loading this invalid db should cause loadBlockchain() to recreate the db
 	t.Logf("Loading the corrupted db")
-	db, bc, err := load(badDBFile, pubkey, false)
+	db, bc, err := loadBlockchain(badDBFile, pubkey, false)
 	require.NoError(t, err)
 
 	err = db.Close()
@@ -128,7 +128,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 }
 
 func TestNormalLoadDBErr(t *testing.T) {
-	// If load() returns an error other than ErrSignatureLost,
+	// If loadBlockchain() returns an error other than ErrSignatureLost,
 	// it should not recreate a db
 	badDBFile := "./testdata/data.db.garbage"
 	badDBData := readAll(t, badDBFile)
@@ -143,7 +143,7 @@ func TestNormalLoadDBErr(t *testing.T) {
 		removeCorruptDBFiles(t, badDBFile)
 	}()
 
-	db, bc, err := load(badDBFile, pubkey, false)
+	db, bc, err := loadBlockchain(badDBFile, pubkey, false)
 	require.Error(t, err)
 	require.NotEqual(t, ErrSignatureLost, err)
 	require.Nil(t, db)

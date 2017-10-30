@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/rand"
 	"net"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -43,7 +44,7 @@ var (
 	rnum = rand.New(rand.NewSource(time.Now().Unix()))
 	// For removing inadvertent whitespace from addresses
 	whitespaceFilter = regexp.MustCompile("\\s")
-	maxRetryTimes    = 3
+	maxRetryTimes    = 10
 )
 
 // validateAddress returns true if ipPort is a valid ip:host string
@@ -75,12 +76,12 @@ func validateAddress(ipPort string, allowLocalhost bool, validPort int) bool {
 
 // Peer represents a known peer
 type Peer struct {
-	Addr          string // An address of the form ip:port
-	LastSeen      int64  // Unix timestamp when this peer was last seen
-	Private       bool   // Whether it should omitted from public requests
-	Trusted       bool   // Whether this peer is trusted
-	HasPublicPort bool   // Whether this peer has accessable public port
-	RetryTimes    int    `json:"-"` // records the retry times
+	Addr            string // An address of the form ip:port
+	LastSeen        int64  // Unix timestamp when this peer was last seen
+	Private         bool   // Whether it should omitted from public requests
+	Trusted         bool   // Whether this peer is trusted
+	HasIncomingPort bool   // Whether this peer has accessable public port
+	RetryTimes      int    `json:"-"` // records the retry times
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port
@@ -177,7 +178,7 @@ func NewConfig() Config {
 // Pex manages a set of known peers and controls peer acquisition
 type Pex struct {
 	// All known peers
-	*peerlist
+	peerlist
 	Config    Config
 	blacklist *blacklist
 	quit      chan struct{}
@@ -185,26 +186,17 @@ type Pex struct {
 
 // New creates pex
 func New(cfg Config, defaultConns []string) (*Pex, error) {
-	pl := newPeerlist(cfg.Max)
-	if err := pl.loadIfExist(cfg.DataDirectory); err != nil {
-		return nil, err
-	}
-
-	bl := newBlacklist()
-
 	pex := &Pex{
 		Config:    cfg,
-		peerlist:  pl,
-		blacklist: bl,
+		peerlist:  *newPeerlist(),
+		blacklist: newBlacklist(),
 		quit:      make(chan struct{}),
 	}
 
-	if err := pex.loadIfExist(cfg.DataDirectory); err != nil {
+	// load peers
+	if err := pex.load(); err != nil {
 		return nil, err
 	}
-
-	// filter invalid peers
-	pex.filterInvalidPeers()
 
 	//Boot strap peers
 	for _, addr := range defaultConns {
@@ -218,23 +210,51 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		}
 	}
 
-	// persists peers
-	if err := pex.save(cfg.DataDirectory); err != nil {
+	// save peers to disk
+	fn := filepath.Join(cfg.DataDirectory, PeerDatabaseFilename)
+	if err := pex.save(fn); err != nil {
 		return nil, err
 	}
 
 	return pex, nil
 }
 
-func (px *Pex) filterInvalidPeers() {
-	ps := make(map[string]*Peer)
-	for addr, p := range px.peers {
-		if validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
-			ps[addr] = p
-		}
+func (px *Pex) load() error {
+	fp := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
+	peers, err := loadPeersFromFile(fp)
+	if err != nil {
+		return err
 	}
 
-	px.peers = ps
+	// file does not exist
+	if peers == nil {
+		return nil
+	}
+
+	// remove invalid peers and limit the max number of peers to pex.Config.Max
+	l := len(peers)
+	if l > px.Config.Max {
+		l = px.Config.Max
+	}
+
+	var validPeers []Peer
+	for addr, p := range peers {
+		if validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
+			validPeers = append(validPeers, *p)
+			l--
+			if l == 0 {
+				break
+			}
+		}
+	}
+	px.setPeers(validPeers)
+	return nil
+}
+
+// remainingCap returns the remaining number of peers that
+// are allowed to add
+func (px *Pex) remainingCap() int {
+	return px.Config.Max - px.Len()
 }
 
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
@@ -244,7 +264,40 @@ func (px *Pex) AddPeer(addr string) error {
 		return ErrInvalidAddress
 	}
 
-	return px.addPeer(addr)
+	if px.remainingCap() == 0 {
+		return ErrPeerlistFull
+	}
+
+	px.addPeer(addr)
+	return nil
+}
+
+// AddPeers add multiple peers at once. Any errors will be logged, but not returned
+// Returns the number of peers that were added without error.  Note that
+// adding a duplicate peer will not cause an error.
+func (px *Pex) AddPeers(addrs []string) int {
+	rcap := px.remainingCap()
+	if rcap == 0 {
+		logger.Warning("Add peers failed, peer list is full")
+		return 0
+	}
+
+	// validate the addresses
+	var validAddrs []string
+	for _, a := range addrs {
+		if !validateAddress(a, px.Config.AllowLocalhost, px.Config.Port) {
+			logger.Warning("Add peer failed, invalid address %v", a)
+			continue
+		}
+		validAddrs = append(validAddrs, a)
+	}
+
+	if len(validAddrs) > rcap {
+		validAddrs = validAddrs[:rcap]
+	}
+
+	px.addPeers(validAddrs)
+	return len(validAddrs)
 }
 
 // SetPrivate updates peer's private value
@@ -265,25 +318,13 @@ func (px *Pex) SetTrust(addr string, trusted bool) error {
 	return px.setTrusted(addr, trusted)
 }
 
-// SetHasPublicPort sets if the peer has public port
-func (px *Pex) SetHasPublicPort(addr string, hasPublicPort bool) error {
+// SetHasIncomingPort sets if the peer has public port
+func (px *Pex) SetHasIncomingPort(addr string, hasPublicPort bool) error {
 	if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
 		return ErrInvalidAddress
 	}
 
-	return px.setPeerHasPublicPort(addr, hasPublicPort)
-}
-
-// AddPeers add multiple peers at once. Any errors will be logged, but not returned
-// Returns the number of peers that were added without error.  Note that
-// adding a duplicate peer will not cause an error.
-func (px *Pex) AddPeers(addrs []string) int {
-	return px.addPeers(addrs, func(addr string) error {
-		if !validateAddress(addr, px.Config.AllowLocalhost, px.Config.Port) {
-			return ErrInvalidAddress
-		}
-		return nil
-	})
+	return px.setPeerHasIncomingPort(addr, hasPublicPort)
 }
 
 // Run starts the pex service
@@ -291,7 +332,9 @@ func (px *Pex) Run() error {
 	defer func() {
 		// save the peerlist
 		logger.Info("Save peerlist")
-		px.save(px.Config.DataDirectory)
+		if err := px.Save(); err != nil {
+			logger.Error("Save peers failed: %v", err)
+		}
 	}()
 
 	cullTicker := time.NewTicker(px.Config.CullRate)
@@ -300,7 +343,7 @@ func (px *Pex) Run() error {
 		select {
 		case <-cullTicker.C:
 			if !px.Config.NetworkDisabled {
-				px.cullInvalidPeers()
+				// px.cullInvalidPeers()
 			}
 		case <-clearOldTicker.C:
 			// Remove peers we haven't seen in a while
@@ -313,10 +356,16 @@ func (px *Pex) Run() error {
 	}
 }
 
+// IsFull returns whether the peer list is full
+func (px *Pex) IsFull() bool {
+	return px.Config.Max > 0 && px.remainingCap() == 0
+}
+
 // Save persists the peerlist
-// func (px *Pex) Save() error {
-// 	return px.save(px.cfg.DataDirectory)
-// }
+func (px *Pex) Save() error {
+	fn := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
+	return px.save(fn)
+}
 
 // Shutdown notifies the pex service to exist
 func (px *Pex) Shutdown() {

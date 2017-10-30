@@ -1,29 +1,22 @@
 package pex
 
 import (
-	"sort"
-	"strings"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// var (
-// 	address   = "112.32.32.14:3030"
-// 	address2  = "112.32.32.14:3031"
-// 	addresses = []string{
-// 		address, "111.32.32.13:2020", "69.32.54.111:2222",
-// 	}
-// 	silenceLogger = true
-// )
-
-var peers = []string{
+var testPeers = []string{
 	"112.32.32.14:7200",
 	"112.32.32.15:7200",
 	"112.32.32.16:7200",
@@ -38,14 +31,14 @@ func init() {
 /* Peer tests */
 
 func TestNewPeer(t *testing.T) {
-	p := NewPeer(peers[0])
+	p := NewPeer(testPeers[0])
 	assert.NotEqual(t, p.LastSeen, 0)
-	assert.Equal(t, p.Addr, peers[0])
+	assert.Equal(t, p.Addr, testPeers[0])
 	assert.False(t, p.Private)
 }
 
 func TestPeerSeen(t *testing.T) {
-	p := NewPeer(peers[0])
+	p := NewPeer(testPeers[0])
 	x := p.LastSeen
 	time.Sleep(time.Second)
 	p.Seen()
@@ -56,495 +49,1208 @@ func TestPeerSeen(t *testing.T) {
 }
 
 func TestPeerString(t *testing.T) {
-	p := NewPeer(peers[0])
-	assert.Equal(t, peers[0], p.String())
+	p := NewPeer(testPeers[0])
+	assert.Equal(t, testPeers[0], p.String())
 }
 
-/* BlacklistEntry tests */
-
-// func TestBlacklistEntryExpiresAt(t *testing.T) {
-// 	now := utc.Now()
-// 	b := BlacklistEntry{Start: now, Duration: time.Second}
-// 	assert.Equal(t, now.Add(time.Second), b.ExpiresAt())
-// }
-
-/* Blacklist tests */
-
-// func TestBlacklistSaveLoad(t *testing.T) {
-// 	// Create and save a blacklist
-// 	os.Remove("./" + BlacklistedDatabaseFilename)
-// 	b := make(Blacklist)
-// 	be := NewBlacklistEntry(time.Minute)
-// 	b[address] = be
-// 	b[""] = be
-// 	b.Save(".")
-
-// 	// Check that the file appears correct
-// 	f, err := os.Open("./" + BlacklistedDatabaseFilename)
-// 	assert.Nil(t, err)
-// 	buf := make([]byte, 1024)
-// 	reader := bufio.NewReader(f)
-// 	n, err := reader.Read(buf)
-// 	assert.Nil(t, err)
-// 	buf = buf[:n]
-// 	assert.Equal(t, string(buf[:len(address)]), address)
-// 	assert.Equal(t, int8(buf[len(buf)-1]), '\n')
-// 	f.Close()
-
-// 	// Load the saved blacklist, check the contents match
-// 	bb, err := LoadBlacklist(".")
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, len(bb), len(b)-1)
-// 	for k, v := range bb {
-// 		assert.Equal(t, v.Start.Unix(), b[k].Start.Unix())
-// 		assert.Equal(t, v.Duration, b[k].Duration)
-// 	}
-
-// 	// Write a file with bad data
-// 	f, err = os.Create("./" + BlacklistedDatabaseFilename)
-// 	assert.Nil(t, err)
-// 	garbage := []string{
-// 		"", // empty line
-// 		"#" + address + " 1000 1000", // commented line
-// 		"notaddress 1000 1000",       // bad address
-// 		address + " xxx 1000",        // bad start time
-// 		address + " 1000 xxx",        // bad duration
-// 		address + " 1000",            // not enough info
-// 		// this one is good, but has extra spaces
-// 		address + "  9999999999\t\t1000",
-// 	}
-// 	w := bufio.NewWriter(f)
-// 	data := strings.Join(garbage, "\n") + "\n"
-// 	n, err = w.Write([]byte(data))
-// 	assert.Nil(t, err)
-// 	w.Flush()
-// 	f.Close()
-
-// 	// Load the file with bad data and confirm they did not make it
-// 	bb, err = LoadBlacklist(".")
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, len(bb), 1)
-// 	assert.NotNil(t, bb[address])
-// 	assert.Equal(t, bb[address].Duration, time.Duration(1000)*time.Second)
-// }
-
-// func TestBlacklistRefresh(t *testing.T) {
-// 	b := make(Blacklist)
-// 	be := NewBlacklistEntry(time.Microsecond)
-// 	b[address] = be
-// 	time.Sleep(time.Microsecond * 500)
-// 	assert.Equal(t, len(b), 1)
-// 	b.Refresh()
-// 	assert.Equal(t, len(b), 0)
-// }
-
-// func TestBlacklistGetAddresses(t *testing.T) {
-// 	b := make(Blacklist)
-// 	for _, a := range addresses {
-// 		b[a] = NewBlacklistEntry(time.Second)
-// 	}
-// 	expect := make([]string, len(addresses))
-// 	for i, k := range addresses {
-// 		expect[i] = k
-// 	}
-// 	sort.Strings(expect)
-// 	keys := b.GetAddresses()
-// 	sort.Strings(keys)
-// 	assert.Equal(t, len(keys), len(expect))
-// 	for i, v := range keys {
-// 		assert.Equal(t, v, expect[i])
-// 	}
-
-// }
-
-/* Pex tests */
-
-// func TestNewPex(t *testing.T) {
-// 	p := NewPex(10)
-// 	assert.NotNil(t, p.Peerlist)
-// 	assert.Equal(t, len(p.Peerlist), 0)
-// 	assert.NotNil(t, p.Blacklist)
-// 	assert.Equal(t, p.maxPeers, 10)
-// }
-
-// func TestAddBlacklistEntry(t *testing.T) {
-// 	p := NewPex(10)
-// 	p.AddPeer(address)
-// 	assert.NotNil(t, p.Peerlist[address])
-// 	_, exists := p.Blacklist[address]
-// 	assert.False(t, exists)
-// 	duration := time.Minute * 9
-// 	p.AddBlacklistEntry(p.Peerlist[address].Addr, duration)
-// 	assert.Nil(t, p.Peerlist[address])
-// 	assert.Equal(t, p.Blacklist[address].Duration, duration)
-// 	now := time.Now()
-// 	assert.True(t, p.Blacklist[address].Start.Before(now))
-// 	assert.True(t, p.Blacklist[address].Start.Add(duration).After(now))
-// 	// Blacklisting invalid peer triggers logger -- just get the coverage
-// 	p.AddBlacklistEntry("xxx", time.Second)
-// 	_, exists = p.Blacklist["xxx"]
-// 	assert.False(t, exists)
-// 	// Blacklisting private peer is prevented
-// 	q, err := p.AddPeer(address2)
-// 	assert.Nil(t, err)
-// 	q.Private = true
-// 	p.AddBlacklistEntry(address2, time.Second)
-// 	_, exists = p.Blacklist[address2]
-// 	assert.False(t, exists)
-// 	q = p.Peerlist[address2]
-// 	assert.NotNil(t, q)
-// 	assert.Equal(t, q.Addr, address2)
-// }
-
-// func TestAddPeers(t *testing.T) {
-// 	p := NewPex(10)
-// 	peers := make([]string, 4)
-// 	peers[0] = "112.32.32.14:10011"
-// 	peers[1] = "112.32.32.14:20011"
-// 	peers[2] = "xxx"
-// 	peers[3] = "127.0.0.1:10444"
-// 	n := p.AddPeers(peers)
-// 	assert.Equal(t, n, 2)
-// 	assert.NotNil(t, p.Peerlist[peers[0]])
-// 	assert.NotNil(t, p.Peerlist[peers[1]])
-// 	assert.Nil(t, p.Peerlist[peers[2]])
-// }
-
-// func TestClearOld(t *testing.T) {
-// 	p := NewPex(10)
-// 	p.AddPeer("112.32.32.14:10011")
-// 	q, _ := p.AddPeer("112.32.32.14:20011")
-// 	assert.Equal(t, len(p.Peerlist), 2)
-// 	p.Peerlist.ClearOld(time.Second * 100)
-// 	assert.Equal(t, len(p.Peerlist), 2)
-// 	q.LastSeen = q.LastSeen.Add(time.Second * -200)
-// 	p.Peerlist.ClearOld(time.Second * 100)
-// 	assert.Equal(t, len(p.Peerlist), 1)
-// 	assert.Nil(t, p.Peerlist["112.32.32.14:20011"])
-// 	assert.NotNil(t, p.Peerlist["112.32.32.14:10011"])
-
-// 	// Should ignore a private peer
-// 	assert.Equal(t, len(p.Peerlist), 1)
-// 	q, err := p.AddPeer("112.32.32.14:20011")
-// 	assert.Nil(t, err)
-// 	q.Private = true
-// 	assert.Equal(t, len(p.Peerlist), 2)
-// 	q.LastSeen = q.LastSeen.Add(time.Second * -200)
-// 	p.Peerlist.ClearOld(time.Second * 100)
-// 	// Private peer should not be removed
-// 	assert.Equal(t, len(p.Peerlist), 2)
-// 	assert.NotNil(t, p.Peerlist["112.32.32.14:10011"])
-// 	assert.NotNil(t, p.Peerlist["112.32.32.14:20011"])
-// }
-
-// func TestGetPublicAddresses(t *testing.T) {
-// 	pex, err := NewPex(Config{
-// 		MaxPeers: 10,
-// 	})
-// 	require.NoError(t, err)
-
-// 	pex.AddPeer("112.32.32.14:10011")
-// 	pex.AddPeer("112.32.32.14:20011")
-// 	pex.AddPeer("112.32.32.14:30011")
-// 	pex.SetPrivate("112.32.32.14:30011", true)
-
-// 	addresses := pex.GetPublicAddresses()
-// 	assert.Equal(t, len(addresses), 2)
-// 	sort.Strings(addresses)
-// 	assert.Equal(t, addresses, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	})
-// }
-
-func TestPeerlistAddPeer(t *testing.T) {
-	l := len(peers)
-	pl := newPeerlist(l - 1)
-	for i := 0; i < l-1; i++ {
-		err := pl.addPeer(peers[i])
-		require.NoError(t, err)
+func TestLoadPeersFromFile(t *testing.T) {
+	tt := []struct {
+		name        string
+		noFile      bool
+		emptyFile   bool
+		ps          []string
+		expectPeers map[string]*Peer
+		err         error
+	}{
+		{
+			"no file",
+			true,
+			false,
+			testPeers[0:0],
+			map[string]*Peer{},
+			nil,
+		},
+		{
+			"one addr",
+			false,
+			false,
+			testPeers[:1],
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+			},
+			nil,
+		},
+		{
+			"two addr",
+			false,
+			false,
+			testPeers[:2],
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+				testPeers[1]: NewPeer(testPeers[1]),
+			},
+			nil,
+		},
+		{
+			"empty peer list file",
+			false,
+			true,
+			testPeers[0:0],
+			map[string]*Peer{},
+			io.EOF,
+		},
 	}
 
-	require.Len(t, pl.peers, 3)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			f, removeFile := preparePeerlistFile(t)
+			if !tc.emptyFile {
+				persistPeers(t, f, tc.ps)
+			}
 
-	// test peer list full
-	require.Error(t, ErrPeerlistFull, pl.addPeer(peers[3]))
+			if tc.noFile {
+				// remove file immediately
+				removeFile()
+			} else {
+				defer removeFile()
+			}
 
-	// test dup peer
-	require.NoError(t, pl.addPeer(peers[0]))
+			peers, err := loadPeersFromFile(f)
+			require.Equal(t, tc.err, err)
+			require.Equal(t, len(tc.expectPeers), len(peers))
+			for k, v := range tc.expectPeers {
+				p, ok := peers[k]
+				require.True(t, ok)
+				require.Equal(t, *v, *p)
+			}
+		})
+	}
+}
+
+func TestPeerlistSetPeers(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		expect map[string]Peer
+	}{
+		{
+			"empty peers",
+			[]Peer{},
+			map[string]Peer{},
+		},
+		{
+			"one peer",
+			[]Peer{*NewPeer(testPeers[0])},
+			map[string]Peer{
+				testPeers[0]: *NewPeer(testPeers[0]),
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+			require.Equal(t, len(tc.expect), len(pl.peers))
+			for k, v := range tc.expect {
+				p, ok := pl.peers[k]
+				require.True(t, ok)
+				require.Equal(t, v, *p)
+			}
+		})
+	}
+}
+
+func TestPeerlistAddPeer(t *testing.T) {
+	tt := []struct {
+		name        string
+		initPeers   []Peer
+		addPeer     string
+		dup         bool
+		expectPeers map[string]*Peer
+	}{
+		{
+			"add peer to empty peer list",
+			[]Peer{},
+			testPeers[0],
+			false,
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+			},
+		},
+		{
+			"add peer to none empty peer list",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[1],
+			false,
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+				testPeers[1]: NewPeer(testPeers[1]),
+			},
+		},
+		{
+			"add dup peer",
+			[]Peer{Peer{Addr: testPeers[0]}},
+			testPeers[0],
+			true,
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init the peers
+			pl.setPeers(tc.initPeers)
+
+			if tc.dup {
+				// sleep a second so that LastSeen is diff
+				time.Sleep(time.Second)
+			}
+
+			// add peer
+			pl.addPeer(tc.addPeer)
+
+			require.Equal(t, len(tc.expectPeers), len(pl.peers))
+			for k, v := range tc.expectPeers {
+				p, ok := pl.peers[k]
+				require.True(t, ok)
+				if tc.dup {
+					require.True(t, p.LastSeen > v.LastSeen)
+					continue
+				}
+
+				require.Equal(t, *v, *p)
+			}
+		})
+	}
 }
 
 func TestPeerlistAddPeers(t *testing.T) {
-	l := len(peers)
-	pl := newPeerlist(l)
-	verifyF := func(addr string) error {
-		if !validateAddress(addr, false, 7200) {
-			return ErrInvalidAddress
-		}
-		return nil
+	tt := []struct {
+		name        string
+		initPeers   []Peer
+		addPeers    []string
+		expectPeers map[string]*Peer
+	}{
+		{
+			"add one peer to empty list",
+			[]Peer{},
+			testPeers[:1],
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+			},
+		},
+		{
+			"add two peer to none empty list",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[1:3],
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+				testPeers[1]: NewPeer(testPeers[1]),
+				testPeers[2]: NewPeer(testPeers[2]),
+			},
+		},
+		{
+			"add dup peers",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[:3],
+			map[string]*Peer{
+				testPeers[0]: NewPeer(testPeers[0]),
+				testPeers[1]: NewPeer(testPeers[1]),
+				testPeers[2]: NewPeer(testPeers[2]),
+			},
+		},
 	}
-	n := pl.addPeers(peers, verifyF)
-	ps := append(peers, "localhost:7200")
 
-	n = pl.addPeers(ps, verifyF)
-	require.Equal(t, l, n)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init peers
+			pl.setPeers(tc.initPeers)
 
-	// check peer list full
-	ps = append(peers, "112.32.32.19:7200")
-	n = pl.addPeers(ps, verifyF)
-	require.Equal(t, l, n)
+			// add peers
+			pl.addPeers(tc.addPeers)
+
+			require.Equal(t, len(tc.expectPeers), len(pl.peers))
+			for k, v := range tc.expectPeers {
+				p, ok := pl.peers[k]
+				require.True(t, ok)
+				require.Equal(t, *v, *p)
+			}
+		})
+	}
 }
 
 func TestPeerlistRemovePeer(t *testing.T) {
-	l := len(peers)
-	pl := newPeerlist(l)
-	for _, p := range peers {
-		require.NoError(t, pl.addPeer(p))
+	tt := []struct {
+		name       string
+		initPeers  []Peer
+		removePeer string
+		expect     map[string]*Peer
+	}{
+		{
+			"remove from empty peer list",
+			[]Peer{},
+			testPeers[0],
+			map[string]*Peer{},
+		},
+		{
+			"remove one",
+			[]Peer{*NewPeer(testPeers[0]), *NewPeer(testPeers[1])},
+			testPeers[0],
+			map[string]*Peer{
+				testPeers[1]: NewPeer(testPeers[1]),
+			},
+		},
 	}
 
-	require.Len(t, pl.peers, l)
-	pl.RemovePeer(peers[0])
-	require.Len(t, pl.peers, l-1)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init peers
+			pl.setPeers(tc.initPeers)
+
+			pl.RemovePeer(tc.removePeer)
+
+			require.Equal(t, len(tc.expect), len(pl.peers))
+			for k, v := range tc.expect {
+				p, ok := pl.peers[k]
+				require.True(t, ok)
+				require.Equal(t, *v, *p)
+			}
+		})
+	}
 }
 
-func TestPeerlistGetPublicTrustPeers(t *testing.T) {
-	l := len(peers)
-	pl := newPeerlist(l)
-	for _, p := range peers {
-		require.NoError(t, pl.addPeer(p))
+func TestPeerlistSetPrivate(t *testing.T) {
+	tt := []struct {
+		name     string
+		initPeer []Peer
+		peer     string
+		private  bool
+		err      error
+	}{
+		{
+			"set private true",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[0],
+			true,
+			nil,
+		},
+		{
+			"set private false",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[0],
+			false,
+			nil,
+		},
+		{
+			"set failed",
+			[]Peer{*NewPeer(testPeers[1])},
+			testPeers[0],
+			false,
+			fmt.Errorf("set peer.Private failed: %v does not exist in peer list", testPeers[0]),
+		},
 	}
 
-}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init peer list
+			pl.setPeers(tc.initPeer)
 
-// func TestGetPrivateAddresses(t *testing.T) {
-// 	ips := []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 		"112.32.32.14:30011",
-// 		"112.32.32.14:40011",
-// 	}
-// 	pl := newPeerlist(10)
-// 	pl.addPeer(ips[0])
-// 	pl.addPeer(ips[1])
-// 	pl.addPeer(ips[2])
-// 	pl.addPeer(ips[3])
-// 	pl.setPrivate(ips[2], true)
-// 	pl.setPrivate(ips[3], true)
+			err := pl.setPrivate(tc.peer, tc.private)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+			p, ok := pl.peers[tc.peer]
+			require.True(t, ok)
 
-// 	addresses := pl.GetPrivateAddresses()
-// 	assert.Equal(t, len(addresses), 2)
-// 	sort.Strings(addresses)
-// 	assert.Equal(t, addresses, []string{
-// 		ips[2],
-// 		ips[3],
-// 	})
-// }
-
-func convertPeersToStrings(peers []Peer) []string {
-	addresses := make([]string, 0, len(peers))
-	for _, p := range peers {
-		addresses = append(addresses, p.String())
+			require.Equal(t, tc.private, p.Private)
+		})
 	}
-	return addresses
 }
 
-func compareRandom(t *testing.T, p *Pex, npeers int, result []string, f func(int) []Peer) {
-	peers := f(npeers)
-	addresses := convertPeersToStrings(peers)
-	sort.Strings(addresses)
-	assert.Equal(t, addresses, result)
+func TestPeerlistSetTrust(t *testing.T) {
+	tt := []struct {
+		name      string
+		initPeers []Peer
+		peer      string
+		trust     bool
+		err       error
+	}{
+		{
+			"set trust true",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[0],
+			true,
+			nil,
+		},
+		{
+			"set trust false",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[0],
+			false,
+			nil,
+		},
+		{
+			"set failed",
+			[]Peer{*NewPeer(testPeers[1])},
+			testPeers[0],
+			false,
+			fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", testPeers[0]),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+
+			// init peer
+			pl.setPeers(tc.initPeers)
+
+			err := pl.setTrusted(tc.peer, tc.trust)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			p, ok := pl.peers[tc.peer]
+			require.True(t, ok)
+			require.Equal(t, tc.trust, p.Trusted)
+		})
+	}
 }
 
-// func testRandom(t *testing.T, publicOnly bool) {
-// 	p, err := NewPex(Config{
-// 		MaxPeers: 10,
-// 	})
-// 	require.NoError(t, err)
+func TestPeerlistSetHasIncomingPort(t *testing.T) {
+	tt := []struct {
+		name            string
+		initPeers       []Peer
+		peer            string
+		hasIncomingPort bool
+		err             error
+	}{
+		{
+			"set has incoming port true",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[0],
+			true,
+			nil,
+		},
+		{
+			"set has incoming port false",
+			[]Peer{*NewPeer(testPeers[0])},
+			testPeers[0],
+			false,
+			nil,
+		},
+		{
+			"set failed",
+			[]Peer{*NewPeer(testPeers[1])},
+			testPeers[0],
+			false,
+			fmt.Errorf("set peer.HasIncomingPort failed: %v does not exist in peer list", testPeers[0]),
+		},
+	}
 
-// 	f := p.RandomAll
-// 	if publicOnly {
-// 		f = p.RandomPublic
-// 	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
 
-// 	// check without peers
-// 	assert.NotNil(t, p.RandomAll(100))
-// 	assert.Equal(t, len(p.RandomAll(100)), 0)
+			// init peer
+			pl.setPeers(tc.initPeers)
 
-// 	// check with one peer
-// 	p.AddPeer("112.32.32.14:10011")
-// 	// 0 defaults to all peers
-// 	compareRandom(t, p, 0, []string{"112.32.32.14:10011"}, f)
-// 	compareRandom(t, p, 1, []string{"112.32.32.14:10011"}, f)
-// 	// exceeding known peers is safe
-// 	compareRandom(t, p, 2, []string{"112.32.32.14:10011"}, f)
-// 	// exceeding max peers is safe
-// 	compareRandom(t, p, 100, []string{"112.32.32.14:10011"}, f)
+			err := pl.setPeerHasIncomingPort(tc.peer, tc.hasIncomingPort)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
 
-// 	// check with two peers
-// 	p.AddPeer("112.32.32.14:20011")
-// 	one := p.RandomAll(1)[0].String()
-// 	if one != "112.32.32.14:10011" && one != "112.32.32.14:20011" {
-// 		assert.Nil(t, nil)
-// 	}
-// 	// 0 defaults to all peers
-// 	compareRandom(t, p, 0, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
-// 	compareRandom(t, p, 2, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
-// 	compareRandom(t, p, 3, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
-// 	compareRandom(t, p, 100, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
+			p, ok := pl.peers[tc.peer]
+			require.True(t, ok)
+			require.Equal(t, tc.hasIncomingPort, p.HasIncomingPort)
+		})
+	}
+}
 
-// 	// check with 3 peers, one private
-// 	p.AddPeer("112.32.32.14:30011")
-// 	p.SetPrivate("112.32.32.14:30011", true)
-// 	if publicOnly {
-// 		// The private peer should never be included
-// 		compareRandom(t, p, 0, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 		compareRandom(t, p, 2, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 		compareRandom(t, p, 3, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 		compareRandom(t, p, 100, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 	} else {
-// 		// The private peer should be included
-// 		compareRandom(t, p, 0, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 		compareRandom(t, p, 3, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 		compareRandom(t, p, 4, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 		compareRandom(t, p, 100, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 	}
-// }
+func TestPeerlistCullInvalidPeers(t *testing.T) {
+	tt := []struct {
+		name        string
+		initPeers   Peers
+		culledPeers map[string]Peer
+	}{
+		{
+			"no invalid peer",
+			Peers{
+				Peer{Addr: testPeers[0], Trusted: true},
+				Peer{Addr: testPeers[1], Trusted: true},
+			},
+			map[string]Peer{},
+		},
+		{
+			"cull invalid peer",
+			Peers{
+				Peer{Addr: testPeers[0], Trusted: false, RetryTimes: maxRetryTimes + 1},
+				Peer{Addr: testPeers[1], Trusted: true},
+			},
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0], Trusted: false, RetryTimes: maxRetryTimes + 1},
+			},
+		},
+	}
 
-// func TestRandomAll(t *testing.T) {
-// 	testRandom(t, true)
-// }
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.initPeers)
 
-// func TestRandomPublic(t *testing.T) {
-// 	p, err := NewPex(Config{
-// 		MaxPeers: 10,
-// 	})
-// 	require.NoError(t, err)
+			invalidPeers := pl.cullInvalidPeers()
+			require.Equal(t, len(tc.culledPeers), len(invalidPeers))
+			for _, p := range invalidPeers {
+				v, ok := tc.culledPeers[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, v, p)
+			}
+		})
+	}
+}
 
-// 	f := p.RandomPublic
+func TestPeerlistGetPeerByAddr(t *testing.T) {
+	tt := []struct {
+		name      string
+		initPeers []Peer
+		addr      string
+		find      bool
+		peer      Peer
+	}{
+		{
+			"ok",
+			[]Peer{
+				*NewPeer(testPeers[0]),
+				*NewPeer(testPeers[1]),
+			},
+			testPeers[0],
+			true,
+			*NewPeer(testPeers[0]),
+		},
+		{
+			"not exist",
+			[]Peer{
+				*NewPeer(testPeers[0]),
+				*NewPeer(testPeers[1]),
+			},
+			testPeers[2],
+			false,
+			Peer{},
+		},
+	}
 
-// 	// check without peers
-// 	assert.NotNil(t, p.RandomPublic(100))
-// 	assert.Equal(t, len(p.RandomPublic(100)), 0)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init peer
+			pl.setPeers(tc.initPeers)
 
-// 	// check with one peer
-// 	p.AddPeer("112.32.32.14:10011")
-// 	// 0 defaults to all peers
-// 	compareRandom(t, p, 0, []string{"112.32.32.14:10011"}, f)
-// 	compareRandom(t, p, 1, []string{"112.32.32.14:10011"}, f)
-// 	// exceeding known peers is safe
-// 	compareRandom(t, p, 2, []string{"112.32.32.14:10011"}, f)
-// 	// exceeding max peers is safe
-// 	compareRandom(t, p, 100, []string{"112.32.32.14:10011"}, f)
+			p, ok := pl.GetPeerByAddr(tc.addr)
+			require.Equal(t, tc.find, ok)
+			if ok {
+				require.Equal(t, tc.peer, p)
+			}
+		})
+	}
+}
 
-// 	// check with two peers
-// 	p.AddPeer("112.32.32.14:20011")
-// 	one := p.RandomAll(1)[0].String()
-// 	if one != "112.32.32.14:10011" && one != "112.32.32.14:20011" {
-// 		assert.Nil(t, nil)
-// 	}
-// 	// 0 defaults to all peers
-// 	compareRandom(t, p, 0, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
-// 	compareRandom(t, p, 2, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
-// 	compareRandom(t, p, 3, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
-// 	compareRandom(t, p, 100, []string{
-// 		"112.32.32.14:10011",
-// 		"112.32.32.14:20011",
-// 	}, f)
+func TestPeerlistClearOld(t *testing.T) {
+	tt := []struct {
+		name        string
+		initPeers   []Peer
+		timeAgo     time.Duration
+		expectPeers map[string]Peer
+	}{
+		{
+			"no old peers",
+			[]Peer{
+				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+			},
+			110 * time.Second,
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+			},
+		},
+		{
+			"clear one old peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				Peer{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				Peer{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+			},
+			111 * time.Second,
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[1]: Peer{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+			},
+		},
+		{
+			"clear two old peers",
+			[]Peer{
+				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				Peer{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				Peer{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+			},
+			101 * time.Second,
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+			},
+		},
+	}
 
-// 	// check with 3 peers, one private
-// 	p.AddPeer("112.32.32.14:30011")
-// 	p.SetPrivate("112.32.32.14:30011", true)
-// 	if publicOnly {
-// 		// The private peer should never be included
-// 		compareRandom(t, p, 0, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 		compareRandom(t, p, 2, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 		compareRandom(t, p, 3, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 		compareRandom(t, p, 100, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 		}, f)
-// 	} else {
-// 		// The private peer should be included
-// 		compareRandom(t, p, 0, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 		compareRandom(t, p, 3, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 		compareRandom(t, p, 4, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 		compareRandom(t, p, 100, []string{
-// 			"112.32.32.14:10011",
-// 			"112.32.32.14:20011",
-// 			"112.32.32.14:30011",
-// 		}, f)
-// 	}
-// }
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.initPeers)
+
+			pl.clearOld(tc.timeAgo)
+			require.Equal(t, len(pl.peers), len(tc.expectPeers))
+			for _, p := range tc.expectPeers {
+				v, ok := pl.peers[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, *v, p)
+			}
+		})
+	}
+}
+
+func TestPeerlistSave(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		expect map[string]Peer
+	}{
+		{
+			"save all",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0]},
+				testPeers[1]: Peer{Addr: testPeers[1]},
+			},
+		},
+		{
+			"save one peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], RetryTimes: maxRetryTimes + 1},
+				Peer{Addr: testPeers[1]},
+			},
+			map[string]Peer{
+				testPeers[1]: Peer{Addr: testPeers[1]},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+
+			f, removeFile := preparePeerlistFile(t)
+			defer removeFile()
+			require.NoError(t, pl.save(f))
+
+			psMap, err := loadPeersFromFile(f)
+			require.NoError(t, err)
+			for k, v := range tc.expect {
+				p, ok := psMap[k]
+				require.True(t, ok)
+				require.Equal(t, v, *p)
+			}
+		})
+	}
+}
+
+func TestPeerlistIncreaseRetryTimes(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		addr   string
+		expect map[string]Peer
+	}{
+		{
+			"addr not exist",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			testPeers[2],
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0]},
+				testPeers[1]: Peer{Addr: testPeers[1]},
+			},
+		},
+		{
+			"ok",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			testPeers[0],
+			map[string]Peer{
+				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow(), RetryTimes: 1},
+				testPeers[1]: Peer{Addr: testPeers[1]},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+
+			pl.IncreaseRetryTimes(tc.addr)
+
+			require.Equal(t, len(tc.expect), len(pl.peers))
+			for k, v := range tc.expect {
+				p, ok := pl.peers[k]
+				require.True(t, ok)
+				require.Equal(t, v, *p)
+			}
+		})
+	}
+}
+
+func TestPeerlistResetRetryTimes(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		addr   string
+		expect []Peer
+	}{
+		{
+			"no peer need reset",
+			[]Peer{*NewPeer(testPeers[0]), *NewPeer(testPeers[1])},
+			testPeers[2],
+			[]Peer{*NewPeer(testPeers[0]), *NewPeer(testPeers[1])},
+		},
+		{
+			"reset one",
+			[]Peer{
+				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow(), RetryTimes: 10},
+				Peer{Addr: testPeers[1], RetryTimes: 2},
+			},
+			testPeers[0],
+			[]Peer{
+				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow()},
+				Peer{Addr: testPeers[1], RetryTimes: 2},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+
+			pl.ResetRetryTimes(tc.addr)
+
+			for _, p := range tc.expect {
+				v, ok := pl.peers[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, *v)
+			}
+		})
+	}
+}
+
+func TestPeerlistResetAllRetryTimes(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		expect []Peer
+	}{
+		{
+			"all",
+			[]Peer{
+				Peer{Addr: testPeers[0], RetryTimes: 1},
+				Peer{Addr: testPeers[1], RetryTimes: 2},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+			pl.ResetAllRetryTimes()
+
+			for _, p := range tc.expect {
+				v, ok := pl.peers[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, *v)
+			}
+		})
+	}
+}
+
+func TestGetPeerlistTrust(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		expect []Peer
+	}{
+		{
+
+			"no trust peer",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			[]Peer{},
+		},
+		{
+
+			"one trust peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true},
+				Peer{Addr: testPeers[1]},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true},
+			},
+		},
+		{
+
+			"all trust peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true},
+				Peer{Addr: testPeers[1], Trusted: true},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true},
+				Peer{Addr: testPeers[1], Trusted: true},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+			peers := pl.Trust()
+			require.Equal(t, len(tc.expect), len(peers))
+			pm := make(map[string]Peer)
+			for _, p := range peers {
+				pm[p.Addr] = p
+			}
+
+			for _, p := range tc.expect {
+				v, ok := pm[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, v)
+			}
+		})
+	}
+}
+
+func TestPeerlistPrivate(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		expect []Peer
+	}{
+		{
+
+			"no private peer",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			[]Peer{},
+		},
+		{
+
+			"one private peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+				Peer{Addr: testPeers[1]},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+			},
+		},
+		{
+
+			"all trust peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+				Peer{Addr: testPeers[1], Private: true},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+				Peer{Addr: testPeers[1], Private: true},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+			peers := pl.Private()
+			require.Equal(t, len(tc.expect), len(peers))
+			pm := make(map[string]Peer)
+			for _, p := range peers {
+				pm[p.Addr] = p
+			}
+
+			for _, p := range tc.expect {
+				v, ok := pm[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, v)
+			}
+		})
+	}
+}
+
+func TestPeerlistTrustPublic(t *testing.T) {
+	tt := []struct {
+		name   string
+		peers  []Peer
+		expect []Peer
+	}{
+		{
+
+			"none peer",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1], Trusted: true, Private: true},
+			},
+			[]Peer{},
+		},
+		{
+
+			"one trusted public peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true, Private: false},
+				Peer{Addr: testPeers[1], Trusted: true, Private: true},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true, Private: false},
+			},
+		},
+		{
+
+			"all trust peer",
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true, Private: false},
+				Peer{Addr: testPeers[1], Trusted: true, Private: false},
+			},
+			[]Peer{
+				Peer{Addr: testPeers[0], Trusted: true, Private: false},
+				Peer{Addr: testPeers[1], Trusted: true, Private: false},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init peers
+			pl.setPeers(tc.peers)
+
+			// get trusted public peers
+			peers := pl.TrustPublic()
+
+			require.Equal(t, len(tc.expect), len(peers))
+			pm := make(map[string]Peer)
+			for _, p := range peers {
+				pm[p.Addr] = p
+			}
+
+			for _, p := range tc.expect {
+				v, ok := pm[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, v)
+			}
+		})
+	}
+}
+
+func TestPeerRandomPublic(t *testing.T) {
+	tt := []struct {
+		name    string
+		peers   []Peer
+		n       int
+		expectN int
+	}{
+		{
+			"0 peer",
+			[]Peer{},
+			1,
+			0,
+		},
+		{
+			"1 peer",
+			[]Peer{
+				Peer{Addr: testPeers[0]},
+			},
+			1,
+			1,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			// init peers
+			pl.setPeers(tc.peers)
+
+			peers := pl.RandomPublic(tc.n)
+			require.Len(t, peers, tc.expectN)
+		})
+	}
+}
+
+func TestPeerlistRandomPublic(t *testing.T) {
+	tt := []struct {
+		name     string
+		peers    []Peer
+		n        int
+		expectN  int
+		expectIN []Peer
+	}{
+		{
+			"n=0 public=0",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+				Peer{Addr: testPeers[1], Private: true},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			0,
+			0,
+			[]Peer{},
+		},
+		{
+			"n=0 public=2",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: false},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			0,
+			2,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: false},
+			},
+		},
+		{
+			"n=1 public=0",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+				Peer{Addr: testPeers[1], Private: true},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			1,
+			0,
+			[]Peer{},
+		},
+		{
+			"n=1 public=2",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: false},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			1,
+			1,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: false},
+			},
+		},
+		{
+			"n=2 public=0",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true},
+				Peer{Addr: testPeers[1], Private: true},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			2,
+			0,
+			[]Peer{},
+		},
+		{
+			"n=2 public=1",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: true},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			2,
+			1,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+			},
+		},
+		{
+			"n=2 public=2",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: false},
+				Peer{Addr: testPeers[2], Private: true},
+			},
+			2,
+			2,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false},
+				Peer{Addr: testPeers[1], Private: false},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+
+			// get N random public
+			peers := pl.RandomPublic(tc.n)
+
+			require.Len(t, peers, tc.expectN)
+
+			// map the peers
+			psm := make(map[string]Peer)
+			for _, p := range tc.expectIN {
+				psm[p.Addr] = p
+			}
+
+			// check if the returned peers are in the expectIN
+			for _, p := range peers {
+				v, ok := psm[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, v)
+			}
+		})
+	}
+}
+
+func TestPeerlistRandomExchangeable(t *testing.T) {
+	tt := []struct {
+		name     string
+		peers    []Peer
+		n        int
+		expectN  int
+		expectIN []Peer
+	}{
+		{
+			"n=0 exchangeable=0",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			0,
+			0,
+			[]Peer{},
+		},
+		{
+			"n=0 exchangeable=1",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			0,
+			1,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+			},
+		},
+		{
+			"n=0 exchangeable=2",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			0,
+			2,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
+			},
+		},
+		{
+			"n=1 exchangeable=0",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: true, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			1,
+			0,
+			[]Peer{},
+		},
+		{
+			"n=1 exchangeable=1",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: false},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			1,
+			1,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+			},
+		},
+		{
+			"n=1 exchangeable=2",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			1,
+			1,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.peers)
+
+			peers := pl.RandomExchangeable(tc.n)
+			require.Len(t, peers, tc.expectN)
+
+			// map expectIN peers
+			psm := make(map[string]Peer)
+			for _, p := range tc.expectIN {
+				psm[p.Addr] = p
+			}
+
+			for _, p := range peers {
+				v, ok := psm[p.Addr]
+				require.True(t, ok)
+				require.Equal(t, p, v)
+			}
+		})
+	}
+}
 
 func TestPeerCanTry(t *testing.T) {
 	testData := []struct {
@@ -568,97 +1274,24 @@ func TestPeerCanTry(t *testing.T) {
 	}
 }
 
-func TestPeerJSONParsing(t *testing.T) {
-	// The serialized peer json format changed,
-	// this tests that the old format can still parse.
-	oldFormat := `{
-        "Addr": "11.22.33.44:6000",
-        "LastSeen": "2017-09-24T06:42:18.999999999Z",
-        "Private": true,
-        "Trusted": true,
-        "HasIncomePort": true
-    }`
-
-	newFormat := `{
-        "Addr": "11.22.33.44:6000",
-        "LastSeen": 1506235338,
-        "Private": true,
-        "Trusted": true,
-        "HasIncomingPort": true
-    }`
-
-	check := func(p Peer) {
-		require.Equal(t, "11.22.33.44:6000", p.Addr)
-		require.True(t, p.Private)
-		require.True(t, p.Trusted)
-		require.True(t, p.HasIncomingPort)
-		require.Equal(t, int64(1506235338), p.LastSeen)
-	}
-
-	load := func(s string) PeerJSON {
-		var pj PeerJSON
-		dec := json.NewDecoder(strings.NewReader(s))
-		dec.UseNumber()
-		err := dec.Decode(&pj)
-		require.NoError(t, err)
-		return pj
-	}
-
-	pj := load(oldFormat)
-	p, err := NewPeerFromJSON(pj)
+// preparePeerlistFile makes peers.txt in temporary dir,
+func preparePeerlistFile(t *testing.T) (string, func()) {
+	f, err := ioutil.TempFile("", "peers.txt")
 	require.NoError(t, err)
-	check(p)
 
-	pj = load(newFormat)
-	p, err = NewPeerFromJSON(pj)
-	require.NoError(t, err)
-	check(p)
+	return f.Name(), func() {
+		os.Remove(f.Name())
+	}
 }
 
-/* Addendum: dummies & mocks */
+func persistPeers(t *testing.T, fn string, peers []string) {
+	t.Helper()
+	peersMap := make(map[string]*Peer, len(peers))
+	for _, p := range peers {
+		peersMap[p] = NewPeer(p)
+	}
 
-// Fake addr that satisfies net.Addr interface
-// type dummyAddr struct{}
-
-// func (da *dummyAddr) Network() string {
-// 	return da.String()
-// }
-
-// func (da *dummyAddr) String() string {
-// 	return "none"
-// }
-
-// Fake connection that satisfies net.Conn interface
-// type dummyConnection struct{}
-
-// func (dc *dummyConnection) Read(b []byte) (int, error) {
-// 	return 0, nil
-// }
-
-// func (dc *dummyConnection) Write(b []byte) (int, error) {
-// 	return 0, nil
-// }
-
-// func (dc *dummyConnection) Close() error {
-// 	return nil
-// }
-
-// func (dc *dummyConnection) LocalAddr() net.Addr {
-// 	return &dummyAddr{}
-// }
-
-// func (dc *dummyConnection) RemoteAddr() net.Addr {
-// 	return &dummyAddr{}
-// }
-
-// func (dc *dummyConnection) SetDeadline(t time.Time) error {
-// 	return nil
-// }
-
-// func (dc *dummyConnection) SetReadDeadline(t time.Time) error {
-// 	return nil
-// }
-
-// func (dc *dummyConnection) SetWriteDeadline(t time.Time) error {
-// 	return nil
-// }
+	if err := file.SaveJSON(fn, peersMap, 0600); err != nil {
+		panic(fmt.Sprintf("save peer list failed: %v", err))
+	}
+}

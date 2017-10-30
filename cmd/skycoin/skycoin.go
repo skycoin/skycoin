@@ -553,9 +553,7 @@ func Run(c *Config) {
 
 	errC := make(chan error, 1)
 
-	go func() {
-		errC <- d.Run()
-	}()
+	go d.Run()
 
 	var rpc *webrpc.WebRPC
 	// start the webrpc

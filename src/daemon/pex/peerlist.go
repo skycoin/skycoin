@@ -1,6 +1,7 @@
 package pex
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -46,10 +47,20 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 		return nil, nil
 	}
 
-	peers := make(map[string]*Peer)
-	if err := file.LoadJSON(path, &peers); err != nil {
+	peersJSON := make(map[string]PeerJSON)
+	if err := file.LoadJSON(path, &peersJSON); err != nil {
 		return nil, err
 	}
+
+	peers := make(map[string]*Peer, len(peersJSON))
+	for addr, peerJSON := range peersJSON {
+		peer, err := newPeerFromJSON(peerJSON)
+		if err != nil {
+			return nil, err
+		}
+		peers[addr] = &peer
+	}
+
 	return peers, nil
 }
 
@@ -272,10 +283,10 @@ func (pl *peerlist) save(fn string) error {
 	pl.Lock()
 	defer pl.Unlock()
 	// filter the peers that has retrytime > maxRetryTimes
-	peers := make(map[string]*Peer)
+	peers := make(map[string]PeerJSON)
 	for k, p := range pl.peers {
 		if p.RetryTimes <= maxRetryTimes {
-			peers[k] = p
+			peers[k] = newPeerJSON(*p)
 		}
 	}
 
@@ -357,4 +368,66 @@ func (pl *peerlist) RandomExchangeable(n int) Peers {
 	pl.RLock()
 	defer pl.RUnlock()
 	return pl.random(n, isExchangeable...)
+}
+
+// PeerJSON is for saving and loading peers to disk. Some fields are strange,
+// to be backwards compatible due to variable name changes
+type PeerJSON struct {
+	Addr string // An address of the form ip:port
+	// Unix timestamp when this peer was last seen.
+	// This could be a time.Time string or an int64 timestamp
+	LastSeen        interface{}
+	Private         bool  // Whether it should omitted from public requests
+	Trusted         bool  // Whether this peer is trusted
+	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
+	HasIncomingPort *bool // Whether this peer has incoming port
+}
+
+// newPeerJSON returns a PeerJSON from a Peer
+func newPeerJSON(p Peer) PeerJSON {
+	return PeerJSON{
+		Addr:            p.Addr,
+		LastSeen:        p.LastSeen,
+		Private:         p.Private,
+		Trusted:         p.Trusted,
+		HasIncomingPort: &p.HasIncomingPort,
+	}
+}
+
+// newPeerFromJSON converts a PeerJSON to a Peer
+func newPeerFromJSON(p PeerJSON) (Peer, error) {
+	hasIncomingPort := false
+	if p.HasIncomingPort != nil {
+		hasIncomingPort = *p.HasIncomingPort
+	} else if p.HasIncomePort != nil {
+		hasIncomingPort = *p.HasIncomePort
+	}
+
+	// LastSeen could be a RFC3339Nano timestamp or an int64 unix timestamp
+	var lastSeen int64
+	switch p.LastSeen.(type) {
+	case string:
+		lastSeenTime, err := time.Parse(time.RFC3339Nano, p.LastSeen.(string))
+		if err != nil {
+			return Peer{}, err
+		}
+		lastSeen = lastSeenTime.Unix()
+	case json.Number:
+		lastSeenNum := p.LastSeen.(json.Number)
+		var err error
+		lastSeen, err = lastSeenNum.Int64()
+		if err != nil {
+			return Peer{}, err
+		}
+	default:
+		return Peer{}, fmt.Errorf("Invalid type %T for LastSeen field", p.LastSeen)
+	}
+
+	return Peer{
+		Addr:            p.Addr,
+		LastSeen:        lastSeen,
+		Private:         p.Private,
+		Trusted:         p.Trusted,
+		HasIncomingPort: hasIncomingPort,
+	}, nil
 }

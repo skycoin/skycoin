@@ -104,7 +104,7 @@ func (cfg *Config) preprocess() Config {
 
 	if config.Daemon.DisableNetworking {
 		logger.Info("Networking is disabled")
-		config.Peers.Disabled = true
+		config.Pex.Disabled = true
 		config.Daemon.DisableIncomingConnections = true
 		config.Daemon.DisableOutgoingConnections = true
 		config.Visor.DisableNetworking = true
@@ -310,7 +310,7 @@ func (dm *Daemon) Shutdown() {
 
 // Run main loop for peer/connection management.
 // Send anything to the quit channel to shut it down.
-func (dm *Daemon) Run() (err error) {
+func (dm *Daemon) Run() {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))

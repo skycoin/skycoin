@@ -156,7 +156,7 @@ func (gpm *GetPeersMessage) Process(d *Daemon) {
 		return
 	}
 
-	peers := d.Pex.RandomValidPublic(d.Pex.Config.ReplyCount)
+	peers := d.Pex.RandomExchangeable(d.Pex.Config.ReplyCount)
 	if len(peers) == 0 {
 		logger.Debug("We have no peers to send in reply")
 		return
@@ -295,7 +295,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		}
 
 		if port == intro.Port {
-			if err := d.Pex.SetHasPublicPort(mc.Addr, true); err != nil {
+			if err := d.Pex.SetHasIncomingPort(mc.Addr, true); err != nil {
 				logger.Error("Failed to set peer hasInPort status, %v", err)
 			}
 		} else {

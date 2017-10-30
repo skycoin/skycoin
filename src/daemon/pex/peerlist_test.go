@@ -1,10 +1,12 @@
 package pex
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,6 +24,8 @@ var testPeers = []string{
 	"112.32.32.16:7200",
 	"112.32.32.17:7200",
 }
+
+var wrongPortPeer = "112.32.32.14:7201"
 
 func init() {
 	// silence the logger
@@ -1274,6 +1278,53 @@ func TestPeerCanTry(t *testing.T) {
 	}
 }
 
+func TestPeerJSONParsing(t *testing.T) {
+	// The serialized peer json format changed,
+	// this tests that the old format can still parse.
+	oldFormat := `{
+        "Addr": "11.22.33.44:6000",
+        "LastSeen": "2017-09-24T06:42:18.999999999Z",
+        "Private": true,
+        "Trusted": true,
+        "HasIncomePort": true
+    }`
+
+	newFormat := `{
+        "Addr": "11.22.33.44:6000",
+        "LastSeen": 1506235338,
+        "Private": true,
+        "Trusted": true,
+        "HasIncomingPort": true
+    }`
+
+	check := func(p Peer) {
+		require.Equal(t, "11.22.33.44:6000", p.Addr)
+		require.True(t, p.Private)
+		require.True(t, p.Trusted)
+		require.True(t, p.HasIncomingPort)
+		require.Equal(t, int64(1506235338), p.LastSeen)
+	}
+
+	load := func(s string) PeerJSON {
+		var pj PeerJSON
+		dec := json.NewDecoder(strings.NewReader(s))
+		dec.UseNumber()
+		err := dec.Decode(&pj)
+		require.NoError(t, err)
+		return pj
+	}
+
+	pj := load(oldFormat)
+	p, err := newPeerFromJSON(pj)
+	require.NoError(t, err)
+	check(p)
+
+	pj = load(newFormat)
+	p, err = newPeerFromJSON(pj)
+	require.NoError(t, err)
+	check(p)
+}
+
 // preparePeerlistFile makes peers.txt in temporary dir,
 func preparePeerlistFile(t *testing.T) (string, func()) {
 	f, err := ioutil.TempFile("", "peers.txt")
@@ -1281,6 +1332,17 @@ func preparePeerlistFile(t *testing.T) (string, func()) {
 
 	return f.Name(), func() {
 		os.Remove(f.Name())
+	}
+}
+
+func preparePeerlistDir(t *testing.T) (string, func()) {
+	f, err := ioutil.TempDir("", "peerlist")
+	if err != nil {
+		panic(err)
+	}
+
+	return f, func() {
+		os.Remove(f)
 	}
 }
 

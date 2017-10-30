@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
@@ -91,8 +90,7 @@ func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []Send
 		return "", err
 	}
 
-	tx := hex.EncodeToString(rawTx.Serialize())
-	return c.InjectTransaction(tx)
+	return c.InjectTransaction(rawTx)
 }
 
 // SendFromAddress sends from a specific address in a wallet. Returns txid.
@@ -102,6 +100,5 @@ func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs
 		return "", err
 	}
 
-	tx := hex.EncodeToString(rawTx.Serialize())
-	return c.InjectTransaction(tx)
+	return c.InjectTransaction(rawTx)
 }

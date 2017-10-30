@@ -82,21 +82,23 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rawtx, err := createRawTx(c)
+			tx, err := createRawTx(c)
 			if err != nil {
 				errorWithHelp(c, err)
 				return nil
 			}
 
+			rawTx := hex.EncodeToString(tx.Serialize())
+
 			if c.Bool("json") {
 				return printJson(struct {
 					RawTx string `json:"rawtx"`
 				}{
-					RawTx: rawtx,
+					RawTx: rawTx,
 				})
 			}
 
-			fmt.Println(rawtx)
+			fmt.Println(rawTx)
 			return nil
 		},
 	}
@@ -217,37 +219,29 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	return amt, nil
 }
 
-func createRawTx(c *gcli.Context) (string, error) {
+func createRawTx(c *gcli.Context) (*coin.Transaction, error) {
 	rpcClient := RpcClientFromContext(c)
 
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	chgAddr, err := getChangeAddress(wltAddr, c.String("c"))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	toAddrs, err := getToAddresses(c)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var tx *coin.Transaction
 	if wltAddr.Address == "" {
-		tx, err = CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
-	} else {
-		tx, err = CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
+		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
 	}
 
-	if err != nil {
-		return "", err
-	}
-
-	d := tx.Serialize()
-	return hex.EncodeToString(d), nil
+	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 }
 
 // PUBLIC

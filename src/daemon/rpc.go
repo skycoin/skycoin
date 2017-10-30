@@ -120,7 +120,7 @@ func (rpc RPC) GetTrustConnections(d *Daemon) []string {
 
 // GetAllExchgConnections return all exchangeable connections
 func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
-	return d.Pex.RandomValid(0).ToAddrs()
+	return d.Pex.RandomExchangeable(0).ToAddrs()
 }
 
 // GetBlockchainProgress gets the blockchain progress

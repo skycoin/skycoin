@@ -583,7 +583,7 @@ func (dm *Daemon) connectToTrustPeer() {
 	// make connections to all trusted peers
 	peers := dm.Pex.TrustPublic()
 	for _, p := range peers {
-		dm.connectToPeer(&p)
+		dm.connectToPeer(p)
 	}
 }
 
@@ -597,10 +597,10 @@ func (dm *Daemon) connectToRandomPeer() {
 	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
 		// check if the peer has public port
-		if p.HasPublicPort {
+		if p.HasIncomingPort {
 			// try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
-				dm.connectToPeer(&p)
+				dm.connectToPeer(p)
 				continue
 			}
 		} else {
@@ -610,7 +610,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	if len(peers) == 0 {
-		// reset the retry times of all peers
+		// reset the retry times of all peers,
 		dm.Pex.ResetAllRetryTimes()
 	}
 }

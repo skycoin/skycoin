@@ -235,40 +235,49 @@ func createRawTx(c *gcli.Context) (string, error) {
 		return "", err
 	}
 
+	var tx *coin.Transaction
 	if wltAddr.Address == "" {
-		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
+		tx, err = CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
+	} else {
+		tx, err = CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 	}
-	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
+
+	if err != nil {
+		return "", err
+	}
+
+	d := tx.Serialize()
+	return hex.EncodeToString(d), nil
 }
 
 // PUBLIC
 
 // CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// validate the send amount
 	for _, arg := range toAddrs {
 		// validate to address
 		_, err := cipher.DecodeBase58Address(arg.Addr)
 		if err != nil {
-			return "", ErrAddress
+			return nil, ErrAddress
 		}
 	}
 
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", ErrAddress
+		return nil, ErrAddress
 	}
 
 	// check if the change address is in wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, ok := wlt.GetEntry(cAddr)
 	if !ok {
-		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
+		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
 	// get all address in the wallet
@@ -281,52 +290,52 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 	return CreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs)
 }
 
-// Creates a transaction from a specific address in a wallet
-func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
+// CreateRawTxFromAddress creates a transaction from a specific address in a wallet
+func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	var err error
 	for _, arg := range toAddrs {
 		// validate the address
 		if _, err = cipher.DecodeBase58Address(arg.Addr); err != nil {
-			return "", ErrAddress
+			return nil, ErrAddress
 		}
 	}
 
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	srcAddr, err := cipher.DecodeBase58Address(addr)
 	if err != nil {
-		return "", ErrAddress
+		return nil, ErrAddress
 	}
 
 	_, ok := wlt.GetEntry(srcAddr)
 	if !ok {
-		return "", fmt.Errorf("%v address is not in wallet", addr)
+		return nil, fmt.Errorf("%v address is not in wallet", addr)
 	}
 
 	// validate change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", ErrAddress
+		return nil, ErrAddress
 	}
 
 	_, ok = wlt.GetEntry(cAddr)
 	if !ok {
-		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
+		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
 	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs)
 }
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
+func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// get unspent outputs of those addresses
 	unspents, err := c.GetUnspentOutputs(inAddrs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	spdouts := unspents.Outputs.SpendableOutputs()
@@ -343,26 +352,25 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 
 	outs, err := getSufficientUnspents(spendableOuts, totalCoins)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	keys, err := getKeys(wlt, outs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	txOuts, err := makeChangeOut(outs, chgAddr, toAddrs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	tx, err := NewTransaction(outs, keys, txOuts)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	d := tx.Serialize()
-	return hex.EncodeToString(d), nil
+	return tx, nil
 }
 
 func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {

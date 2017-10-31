@@ -179,18 +179,16 @@ func NewConfig() Config {
 type Pex struct {
 	// All known peers
 	peerlist
-	Config    Config
-	blacklist *blacklist
-	quit      chan struct{}
+	Config Config
+	quit   chan struct{}
 }
 
 // New creates pex
 func New(cfg Config, defaultConns []string) (*Pex, error) {
 	pex := &Pex{
-		Config:    cfg,
-		peerlist:  *newPeerlist(),
-		blacklist: newBlacklist(),
-		quit:      make(chan struct{}),
+		Config:   cfg,
+		peerlist: *newPeerlist(),
+		quit:     make(chan struct{}),
 	}
 
 	// load peers

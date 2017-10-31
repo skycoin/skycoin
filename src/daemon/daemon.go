@@ -570,14 +570,12 @@ func (dm *Daemon) makePrivateConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	addrs := dm.Pex.Private().ToAddrs()
-	for _, addr := range addrs {
-		p, exist := dm.Pex.GetPeerByAddr(addr)
-		if exist {
-			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := dm.connectToPeer(p); err != nil {
-				logger.Debug("Did not connect to private peer: %v", err)
-			}
+
+	peers := dm.Pex.Private()
+	for _, p := range peers {
+		logger.Info("Private peer attempt: %s", p.Addr)
+		if err := dm.connectToPeer(p); err != nil {
+			logger.Debug("Did not connect to private peer: %v", err)
 		}
 	}
 }

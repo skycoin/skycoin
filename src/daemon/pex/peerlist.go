@@ -37,7 +37,9 @@ func newPeerlist() *peerlist {
 }
 
 // Filter peers filter
-type Filter func(peers Peers) Peers
+// type Filter func(peers Peers) Peers
+
+type Filter func(peer Peer) bool
 
 // loadFromFile loads if the peer.txt file does exist
 // return nil if the file doesn't exist
@@ -100,67 +102,92 @@ func (pl *peerlist) addPeers(addrs []string) {
 
 func (pl *peerlist) getPeers(flts ...Filter) Peers {
 	var ps Peers
+	flts = append([]Filter{canTry}, flts...)
+loop:
 	for _, p := range pl.peers {
-		if p.CanTry() {
-			ps = append(ps, *p)
+		for i := range flts {
+			if !flts[i](*p) {
+				continue loop
+			}
 		}
+
+		ps = append(ps, *p)
 	}
 
-	for _, flt := range flts {
-		ps = flt(ps)
-	}
 	return ps
 }
 
 // filters
 
 // isPrivate filters private peers
-func isPrivate(peers Peers) Peers {
-	var ps Peers
-	for _, p := range peers {
-		if p.Private {
-			ps = append(ps, p)
-		}
-	}
+// func isPrivate(peers Peers) Peers {
+// 	var ps Peers
+// 	for _, p := range peers {
+// 		if p.Private {
+// 			ps = append(ps, p)
+// 		}
+// 	}
 
-	return ps
+// 	return ps
+// }
+
+// // isPublic filters public peers
+// func isPublic(peers Peers) Peers {
+// 	var ps Peers
+// 	for _, p := range peers {
+// 		if !p.Private {
+// 			ps = append(ps, p)
+// 		}
+// 	}
+// 	return ps
+// }
+
+// // isTrusted filters trusted peers
+// func isTrusted(peers Peers) Peers {
+// 	var ps Peers
+// 	for _, p := range peers {
+// 		if p.Trusted {
+// 			ps = append(ps, p)
+// 		}
+// 	}
+// 	return ps
+// }
+
+// // hasIncomingPort filters peers that have public port
+// func hasIncomingPort(peers Peers) Peers {
+// 	var ps Peers
+// 	for _, p := range peers {
+// 		if p.HasIncomingPort {
+// 			ps = append(ps, p)
+// 		}
+// 	}
+// 	return ps
+// }
+
+func isPrivate(p Peer) bool {
+	return p.Private
 }
 
-// isPublic filters public peers
-func isPublic(peers Peers) Peers {
-	var ps Peers
-	for _, p := range peers {
-		if !p.Private {
-			ps = append(ps, p)
-		}
-	}
-	return ps
+func isPublic(p Peer) bool {
+	return !p.Private
 }
 
-// isTrusted filters trusted peers
-func isTrusted(peers Peers) Peers {
-	var ps Peers
-	for _, p := range peers {
-		if p.Trusted {
-			ps = append(ps, p)
-		}
-	}
-	return ps
+func isTrusted(p Peer) bool {
+	return p.Trusted
 }
 
-// hasIncomingPort filters peers that have public port
-func hasIncomingPort(peers Peers) Peers {
-	var ps Peers
-	for _, p := range peers {
-		if p.HasIncomingPort {
-			ps = append(ps, p)
-		}
-	}
-	return ps
+func hasIncomingPort(p Peer) bool {
+	return p.HasIncomingPort
 }
+
+func canTry(p Peer) bool {
+	return p.CanTry()
+}
+
+var isExchangeable = []Filter{hasIncomingPort, isPublic}
 
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic}
+// var isExchangeable = []Filter{hasIncomingPort, isPublic}
 
 // RemovePeer removes peer
 func (pl *peerlist) RemovePeer(addr string) {

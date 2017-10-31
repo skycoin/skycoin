@@ -155,7 +155,13 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		txn := coin.TransactionDeserialize(b)
+		txn, err := coin.TransactionDeserialize(b)
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error400(w, err.Error())
+			return
+		}
+
 		if err := gateway.InjectTransaction(txn); err != nil {
 			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
 			return

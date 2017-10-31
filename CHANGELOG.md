@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.20.3] - 2017-10-23
+
+### Fixed
+
+- Fix block sync stall (mostly affected Windows users, but any OS was potentially affected)
+
+## [0.20.2] - 2017-10-12
+
+### Fixed
+
+- Fixed Linux .AppImage missing "Category" field
+- Clean up electron build script, switch to yarn and remove gulp
+
+## [0.20.1] - 2017-10-12
+
+### Fixed
+
+- Fixed app icon padding
+
 ## [0.20.0] - 2017-10-10
 
 ### Added
@@ -105,6 +124,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.20.3]: https://github.com/skycoin/skycoin/compare/v0.20.2...v0.20.3
+[0.20.2]: https://github.com/skycoin/skycoin/compare/v0.20.1...v0.20.2
+[0.20.1]: https://github.com/skycoin/skycoin/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/skycoin/skycoin/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/skycoin/skycoin/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/skycoin/skycoin/commit/dd924e1f2de8fab945e05b3245dbeabf267f2910

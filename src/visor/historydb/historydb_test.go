@@ -178,7 +178,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := hisDB.ProcessBlock(&gb); err != nil {
+	if err := hisDB.ParseBlock(&gb); err != nil {
 		t.Fatal(err)
 	}
 
@@ -259,7 +259,7 @@ func TestProcessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := hisDB.ProcessBlock(&gb); err != nil {
+	if err := hisDB.ParseBlock(&gb); err != nil {
 		t.Fatal(err)
 	}
 	/*
@@ -342,7 +342,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 			tds[i+1].PreBlockHash = b.HashHeader()
 		}
 
-		if err := hdb.ProcessBlock(b); err != nil {
+		if err := hdb.ParseBlock(b); err != nil {
 			t.Fatal(err)
 		}
 

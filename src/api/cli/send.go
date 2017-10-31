@@ -101,5 +101,4 @@ func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs
 	}
 
 	return c.InjectTransaction(rawTx)
-
 }

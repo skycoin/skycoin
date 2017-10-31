@@ -1,14 +1,8 @@
 package visor
 
 import (
-	"crypto/sha1"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"time"
 
@@ -127,41 +121,26 @@ type Visor struct {
 	db       *bolt.DB
 }
 
-// open the blockdb.
-func openDB(dbFile string) (*bolt.DB, error) {
-	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
-		Timeout: 500 * time.Millisecond,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Open boltdb failed, %v", err)
-	}
-
-	return db, nil
-}
-
-// VsClose visor close function
-type VsClose func()
-
 // NewVisor Creates a normal Visor given a master's public key
-func NewVisor(c Config) (*Visor, VsClose, error) {
+func NewVisor(c Config) (*Visor, error) {
 	logger.Debug("Creating new visor")
 	// Make sure inputs are correct
 	if c.IsMaster {
 		logger.Debug("Visor is master")
 		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
 			// logger.Panicf("Cannot run in master: invalid seckey for pubkey")
-			return nil, nil, errors.New("Cannot run in master: invalid seckey for pubkey")
+			return nil, errors.New("Cannot run in master: invalid seckey for pubkey")
 		}
 	}
 
-	db, bc, err := load(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
+	db, bc, err := loadBlockchain(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	history, err := historydb.New(db)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// creates blockchain parser instance
@@ -172,7 +151,7 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 
 	wltServ, err := wallet.NewService(c.WalletDirectory)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	v := &Visor{
@@ -185,108 +164,10 @@ func NewVisor(c Config) (*Visor, VsClose, error) {
 		wallets:     wltServ,
 	}
 
-	return v, func() {
-		v.bcParser.Stop()
-		db.Close()
-		logger.Info("DB closed")
-	}, nil
+	return v, nil
 }
 
-// load loads blockchain from DB and if any error occurs then delete
-// the db and create an empty blockchain.
-func load(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
-	// creates blockchain instance
-	db, err := openDB(dbPath)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
-
-	if err == nil {
-		return db, bc, nil
-	}
-
-	if !strings.Contains(err.Error(), "find no signature of block") {
-		return nil, nil, err
-	}
-
-	// Recreate the block database if ErrSignatureLost occurs
-	logger.Critical("Block database signature missing, recreating db: %v", err)
-	if err := db.Close(); err != nil {
-		return nil, nil, fmt.Errorf("failed to close db: %v", err)
-	}
-
-	corruptDBPath, err := moveCorruptDB(dbPath)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
-	}
-
-	logger.Critical("Moved corrupted db to %s", corruptDBPath)
-
-	db, err = openDB(dbPath)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return db, bc, nil
-}
-
-// moveCorruptDB moves a file to makeCorruptDBPath(dbPath)
-func moveCorruptDB(dbPath string) (string, error) {
-	newDBPath, err := makeCorruptDBPath(dbPath)
-	if err != nil {
-		return "", err
-	}
-
-	if err := os.Rename(dbPath, newDBPath); err != nil {
-		return "", err
-	}
-
-	return newDBPath, nil
-}
-
-// makeCorruptDBPath creates a $FILE.corrupt.$HASH string based on dbPath,
-// where $HASH is truncated SHA1 of $FILE.
-func makeCorruptDBPath(dbPath string) (string, error) {
-	dbFileHash, err := shaFileID(dbPath)
-	if err != nil {
-		return "", err
-	}
-
-	dbDir, dbFile := filepath.Split(dbPath)
-	newDBFile := fmt.Sprintf("%s.corrupt.%s", dbFile, dbFileHash)
-	newDBPath := filepath.Join(dbDir, newDBFile)
-
-	return newDBPath, nil
-}
-
-// shaFileID return the first 8 bytes of the SHA1 hash of the file,
-// base64-encoded
-func shaFileID(dbPath string) (string, error) {
-	fi, err := os.Open(dbPath)
-	if err != nil {
-		return "", err
-	}
-	defer fi.Close()
-
-	h := sha1.New()
-	if _, err := io.Copy(h, fi); err != nil {
-		return "", err
-	}
-
-	sum := h.Sum(nil)
-	encodedSum := base64.RawStdEncoding.EncodeToString(sum[:8])
-
-	return encodedSum, nil
-}
-
-// Run starts the visor process
+// Run starts the visor
 func (vs *Visor) Run() error {
 	if err := vs.maybeCreateGenesisBlock(); err != nil {
 		return err
@@ -297,6 +178,17 @@ func (vs *Visor) Run() error {
 	}
 
 	return vs.bcParser.Run()
+}
+
+// Shutdown shuts down the visor
+func (vs *Visor) Shutdown() {
+	defer logger.Info("DB and BlockchainParser closed")
+
+	vs.bcParser.Shutdown()
+
+	if err := vs.db.Close(); err != nil {
+		logger.Error("db.Close() error: %v", err)
+	}
 }
 
 // maybeCreateGenesisBlock creates a genesis block if necessary
@@ -408,7 +300,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		return err
 	}
 
-	return vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *bolt.Tx) error {
 		if err := vs.Blockchain.ExecuteBlockWithTx(tx, &b); err != nil {
 			return err
 		}
@@ -421,7 +313,12 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 		vs.Unconfirmed.RemoveTransactionsWithTx(tx, txHashes)
 
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	vs.Blockchain.Notify(b.Block)
+	return nil
 }
 
 // Returns an error if the cipher.Sig is not valid for the coin.Block

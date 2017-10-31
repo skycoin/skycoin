@@ -176,7 +176,7 @@ type GivePeersMessage struct {
 }
 
 // NewGivePeersMessage []*pex.Peer is converted to []IPAddr for binary transmission
-func NewGivePeersMessage(peers []*pex.Peer) *GivePeersMessage {
+func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 	ipaddrs := make([]IPAddr, 0, len(peers))
 	for _, ps := range peers {
 		ipaddr, err := NewIPAddr(ps.Addr)
@@ -277,8 +277,8 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	}
 
 	if port == intro.Port {
-		if err := d.Peers.Peers.SetPeerHasInPort(mc.Addr, true); err != nil {
-			logger.Error("Failed to set peer hasInPort statue, %v", err)
+		if err := d.Peers.Peers.SetPeerHasIncomingPort(mc.Addr, true); err != nil {
+			logger.Error("SetPeerHasIncomingPort failed: %v", err)
 		}
 	} else {
 		_, err = d.Peers.Peers.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port))

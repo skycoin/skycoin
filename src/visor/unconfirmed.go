@@ -293,8 +293,8 @@ func NewUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
 }
 
 // SetAnnounced updates announced time of specific tx
-func (utp *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) {
-	utp.txns.update(h, func(tx *UnconfirmedTxn) {
+func (utp *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) error {
+	return utp.txns.update(h, func(tx *UnconfirmedTxn) {
 		tx.Announced = t.UnixNano()
 	})
 }

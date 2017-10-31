@@ -674,9 +674,7 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
-	logger.Warning("rpc is nil %v", rpc == nil)
 	if rpc != nil {
-		logger.Warning("shutdown rpc")
 		rpc.Shutdown()
 	}
 	gui.Shutdown()

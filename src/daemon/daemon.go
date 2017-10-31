@@ -312,7 +312,7 @@ func (dm *Daemon) Shutdown() {
 
 // Run main loop for peer/connection management.
 // Send anything to the quit channel to shut it down.
-func (dm *Daemon) Run() {
+func (dm *Daemon) Run() error {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))
@@ -321,6 +321,7 @@ func (dm *Daemon) Run() {
 		logger.Info("Daemon closed")
 	}()
 
+	errC := make(chan error, 5)
 	wg := sync.WaitGroup{}
 
 	// start visor
@@ -328,7 +329,7 @@ func (dm *Daemon) Run() {
 	go func() {
 		defer wg.Done()
 		if err := dm.Visor.Run(); err != nil {
-			logger.Error("%v", err)
+			errC <- err
 		}
 	}()
 
@@ -336,7 +337,7 @@ func (dm *Daemon) Run() {
 	go func() {
 		defer wg.Done()
 		if err := dm.Pex.Run(); err != nil {
-			logger.Error("%v", err)
+			errC <- err
 		}
 	}()
 
@@ -345,7 +346,7 @@ func (dm *Daemon) Run() {
 		go func() {
 			defer wg.Done()
 			if err := dm.Pool.Run(); err != nil {
-				logger.Error("%v", err)
+				errC <- err
 			}
 		}()
 	}
@@ -379,6 +380,7 @@ func (dm *Daemon) Run() {
 		}()
 	}
 
+	var err error
 loop:
 	for {
 		select {
@@ -433,34 +435,34 @@ loop:
 		case r := <-dm.onConnectEvent:
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no connect events")
-				return
+				return nil
 			}
 			dm.onConnect(r)
 		case de := <-dm.onDisconnectEvent:
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no disconnect events")
-				return
+				return nil
 			}
 			dm.onDisconnect(de)
 		// Handle connection errors
 		case r := <-dm.connectionErrors:
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no connection errors")
-				return
+				return nil
 			}
 			dm.handleConnectionError(r)
 		// Process message sending results
 		case r := <-dm.Pool.Pool.SendResults:
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be nothing in SendResults")
-				return
+				return nil
 			}
 			dm.handleMessageSendResult(r)
 		// Message handlers
 		case m := <-dm.messageEvents:
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no message events")
-				return
+				return nil
 			}
 			dm.processMessageEvent(m)
 		// Process any pending RPC requests
@@ -488,10 +490,14 @@ loop:
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:
 			dm.Visor.AnnounceBlocks(dm.Pool)
+		case err = <-errC:
+			break loop
 		}
 	}
 
 	wg.Wait()
+
+	return err
 }
 
 // GetListenPort returns the ListenPort for a given address.

@@ -337,14 +337,9 @@ func (px *Pex) Run() error {
 		}
 	}()
 
-	cullTicker := time.NewTicker(px.Config.CullRate)
 	clearOldTicker := time.NewTicker(px.Config.ClearOldRate)
 	for {
 		select {
-		case <-cullTicker.C:
-			if !px.Config.NetworkDisabled {
-				// px.cullInvalidPeers()
-			}
 		case <-clearOldTicker.C:
 			// Remove peers we haven't seen in a while
 			if !px.Config.Disabled && !px.Config.NetworkDisabled {

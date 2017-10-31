@@ -284,7 +284,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	var validAddrs []string
 	for _, a := range addrs {
 		if !validateAddress(a, px.Config.AllowLocalhost, px.Config.Port) {
-			logger.Warning("Add peer failed, invalid address %v", a)
+			logger.Info("Add peer failed, invalid address %v", a)
 			continue
 		}
 		validAddrs = append(validAddrs, a)

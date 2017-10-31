@@ -326,15 +326,6 @@ func (pl *peerlist) ResetAllRetryTimes() {
 	pl.Unlock()
 }
 
-// PrintAll print all peers
-func (pl *peerlist) PrintAll() {
-	pl.RLock()
-	for _, p := range pl.peers {
-		fmt.Println(p.String(), " ", p.RetryTimes, " has incoming port:", p.HasIncomingPort)
-	}
-	pl.RUnlock()
-}
-
 // GetTrustPeers returns trusted peers
 func (pl *peerlist) Trust() Peers {
 	pl.RLock()

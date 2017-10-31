@@ -630,9 +630,6 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
-	// dm.Pex.CullInvalidPeers()
-	dm.Pex.PrintAll()
-	fmt.Println("peers num:", dm.Pex.Len())
 	now := utc.Now()
 	addrs, err := dm.expectingIntroductions.CullInvalidConns(
 		func(addr string, t time.Time) (bool, error) {

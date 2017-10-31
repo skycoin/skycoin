@@ -297,6 +297,10 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (dm *Daemon) Shutdown() {
+	// close daemon run loop first to avoid creating new connection after
+	// the connection pool is shutdown.
+	close(dm.quitC)
+
 	if !dm.Config.DisableNetworking {
 		dm.Pool.Shutdown()
 	}
@@ -304,8 +308,6 @@ func (dm *Daemon) Shutdown() {
 	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
 
-	// close the daemon loop first
-	close(dm.quitC)
 }
 
 // Run main loop for peer/connection management.

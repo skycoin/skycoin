@@ -1231,6 +1231,19 @@ func TestPeerlistRandomExchangeable(t *testing.T) {
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 			},
 		},
+		{
+			"n=2 exchangeable=1",
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true, RetryTimes: 1},
+				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
+			},
+			2,
+			1,
+			[]Peer{
+				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
+			},
+		},
 	}
 
 	for _, tc := range tt {

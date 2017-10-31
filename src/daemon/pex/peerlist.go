@@ -118,52 +118,6 @@ loop:
 }
 
 // filters
-
-// isPrivate filters private peers
-// func isPrivate(peers Peers) Peers {
-// 	var ps Peers
-// 	for _, p := range peers {
-// 		if p.Private {
-// 			ps = append(ps, p)
-// 		}
-// 	}
-
-// 	return ps
-// }
-
-// // isPublic filters public peers
-// func isPublic(peers Peers) Peers {
-// 	var ps Peers
-// 	for _, p := range peers {
-// 		if !p.Private {
-// 			ps = append(ps, p)
-// 		}
-// 	}
-// 	return ps
-// }
-
-// // isTrusted filters trusted peers
-// func isTrusted(peers Peers) Peers {
-// 	var ps Peers
-// 	for _, p := range peers {
-// 		if p.Trusted {
-// 			ps = append(ps, p)
-// 		}
-// 	}
-// 	return ps
-// }
-
-// // hasIncomingPort filters peers that have public port
-// func hasIncomingPort(peers Peers) Peers {
-// 	var ps Peers
-// 	for _, p := range peers {
-// 		if p.HasIncomingPort {
-// 			ps = append(ps, p)
-// 		}
-// 	}
-// 	return ps
-// }
-
 func isPrivate(p Peer) bool {
 	return p.Private
 }
@@ -184,7 +138,11 @@ func canTry(p Peer) bool {
 	return p.CanTry()
 }
 
-var isExchangeable = []Filter{hasIncomingPort, isPublic}
+func zeroRetryTimes(p Peer) bool {
+	return p.RetryTimes == 0
+}
+
+var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
 
 // isExchangeable filters exchangeable peers
 // var isExchangeable = []Filter{hasIncomingPort, isPublic}

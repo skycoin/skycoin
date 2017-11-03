@@ -441,16 +441,16 @@ func getSufficientUnspents(unspents []UnspentOut, coins uint64) ([]UnspentOut, e
 
 	for _, us := range addrOuts {
 		for i, u := range us {
-			coins, err := droplet.FromString(u.Coins)
+			c, err := droplet.FromString(u.Coins)
 			if err != nil {
 				return nil, err
 			}
 
-			if coins == 0 {
+			if c == 0 {
 				continue
 			}
 
-			totalCoins += coins
+			totalCoins += c
 			outs = append(outs, us[i])
 
 			if totalCoins >= coins {

@@ -1,0 +1,42 @@
+<md-card>
+  <md-card-title>Address <app-back-button></app-back-button></md-card-title>
+  <md-card class="skycoin-details">
+    <div class="skycoin-detail-keys">
+      ID: <br>
+      Transactions: <br>
+      Balance: <br>
+    </div>
+    <div class="skycoin-detail-values" *ngIf="transactions">
+      {{ id }} <br>
+      {{ transactions.length }} <br>
+      {{ transactions | transactionsAmount }}
+    </div>
+  </md-card>
+
+  <h3>Transactions</h3>
+  <md-expansion-panel *ngFor="let transaction of transactions">
+    <md-expansion-panel-header>
+      <md-panel-title>
+        {{ transaction.txid }}
+      </md-panel-title>
+      <md-panel-description>
+        <!--{{ block.header.timestamp | dateTime }}-->
+      </md-panel-description>
+    </md-expansion-panel-header>
+    <md-list *ngIf="transaction">
+      <h3 md-subheader>Inputs</h3>
+      <md-list-item *ngFor="let input of transaction.inputs">
+        <h4 md-line>{{ input.owner }}</h4>
+      </md-list-item>
+      <md-divider></md-divider>
+      <h3 md-subheader>Outputs</h3>
+      <md-list-item *ngFor="let output of transaction.outputs">
+        <h4 md-line>{{ output.dst }} ({{ output.coins }} SKY)</h4>
+      </md-list-item>
+    </md-list>
+    <div class="button-line">
+      <a md-raised-button color="primary" [routerLink]="['/explorer/transaction/', transaction.txid]">Details</a>
+    </div>
+  </md-expansion-panel>
+</md-card>
+

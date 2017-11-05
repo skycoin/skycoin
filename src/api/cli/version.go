@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
 	gcli "github.com/urfave/cli"
 )
 
-func versionCMD() gcli.Command {
+func versionCmd() gcli.Command {
 	name := "version"
 	return gcli.Command{
 		Name:      name,
@@ -28,20 +27,15 @@ func versionCMD() gcli.Command {
 				RPC     string `json:"rpc"`
 				Wallet  string `json:"wallet"`
 			}{
-				"0.1",
-				"0.1",
-				"0.1",
-				"0.1",
+				Version,
+				Version,
+				Version,
+				Version,
 			}
 
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				d, err := json.MarshalIndent(ver, "", "    ")
-				if err != nil {
-					return errJSONMarshal
-				}
-				fmt.Println(string(d))
-				return nil
+				return printJson(ver)
 			}
 
 			v := reflect.ValueOf(ver)

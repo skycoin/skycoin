@@ -1,0 +1,13 @@
+<ngx-datatable #table
+               class="material"
+               [rows]="outputs"
+               columnMode="flex"
+               [headerHeight]="50"
+               [footerHeight]="50"
+               [rowHeight]="50"
+               [limit]="10"
+               [scrollbarH]="true">
+  <ngx-datatable-column name="Address" prop="address" [flexGrow]="2"></ngx-datatable-column>
+  <ngx-datatable-column name="Coins" prop="coins" [flexGrow]="1"></ngx-datatable-column>
+  <ngx-datatable-column name="Coin hours" prop="hours" [flexGrow]="1"></ngx-datatable-column>
+</ngx-datatable>

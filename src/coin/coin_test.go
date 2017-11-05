@@ -7,7 +7,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -19,11 +18,6 @@ var (
 	_genCoins            uint64 = 1000e6
 	_genCoinHours        uint64 = 1000 * 1000
 )
-
-func assertError(t *testing.T, err error, msg string) {
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), msg)
-}
 
 func tNow() uint64 {
 	return uint64(utc.UnixNow())

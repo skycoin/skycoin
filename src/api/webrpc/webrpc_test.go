@@ -2,6 +2,7 @@ package webrpc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
@@ -9,73 +10,74 @@ import (
 
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/stretchr/testify/assert"
 )
 
-func setup() (*WebRPC, func()) {
-	c := make(chan struct{})
+const testWebRPCAddr = "127.0.0.1:8081"
 
-	rpc, err := New(
-		"0.0.0.0:8081",
-		ChanBuffSize(1),
-		ThreadNum(1),
-		Gateway(&fakeGateway{}),
-		Quit(c))
-	if err != nil {
-		panic(err)
-	}
-
-	return rpc, func() {
-		rpc.Shutdown()
-	}
+func setupWebRPC(t *testing.T) *WebRPC {
+	rpc, err := New(testWebRPCAddr, &fakeGateway{})
+	require.NoError(t, err)
+	rpc.WorkerNum = 1
+	rpc.ChanBuffSize = 2
+	return rpc
 }
 
 type fakeGateway struct {
-	transactions    map[string]string
-	injectRawTxMap  map[string]bool // key: transacion hash, value indicates whether the injectTransaction should return error.
-	addrRecvUxOuts  []*historydb.UxOut
-	addrSpentUxOUts []*historydb.UxOut
+	transactions         map[string]string
+	injectRawTxMap       map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.
+	injectedTransactions map[string]string
+	addrRecvUxOuts       []*historydb.UxOut
+	addrSpentUxOUts      []*historydb.UxOut
+	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
+func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &blocks
+	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
+func (fg fakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if start > end {
-		return &blocks
+		return nil, nil
 	}
 
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &blocks
+	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
-	return nil
+func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+	return nil, nil
 }
 
 func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
-	v := decodeOutputStr(outputStr)
+	outs := []coin.UxOut{}
 	for _, f := range filters {
-		v.HeadOutputs = f(v.HeadOutputs)
-		v.OutgoingOutputs = f(v.OutgoingOutputs)
-		v.IncommingOutputs = f(v.IncommingOutputs)
+		outs = f(fg.uxouts)
 	}
-	return v, nil
+
+	rbOuts, err := visor.NewReadableOutputs(outs)
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
+
+	return visor.ReadableOutputSet{
+		HeadOutputs: rbOuts,
+	}, nil
 }
 
 func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
@@ -86,12 +88,16 @@ func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, er
 	return nil, nil
 }
 
-func (fg fakeGateway) InjectTransaction(txn coin.Transaction) (coin.Transaction, error) {
+func (fg *fakeGateway) InjectTransaction(txn coin.Transaction) error {
 	if _, v := fg.injectRawTxMap[txn.Hash().Hex()]; v {
-		return txn, nil
+		if fg.injectedTransactions == nil {
+			fg.injectedTransactions = make(map[string]string)
+		}
+		fg.injectedTransactions[txn.Hash().Hex()] = hex.EncodeToString(txn.Serialize())
+		return nil
 	}
 
-	return txn, errors.New("inject transaction failed")
+	return errors.New("fake gateway inject transaction failed")
 }
 
 func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
@@ -102,26 +108,23 @@ func (fg fakeGateway) GetTimeNow() uint64 {
 	return 0
 }
 
-func TestNewWebRPC(t *testing.T) {
-	rpc1, err := New("0.0.0.0:8080", ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
-	assert.Nil(t, err)
-	assert.NotNil(t, rpc1.mux)
-	assert.NotNil(t, rpc1.handlers)
-	assert.NotNil(t, rpc1.gateway)
-}
-
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
-	rpc, err := New("0.0.0.0:8080", ChanBuffSize(1), ThreadNum(1), Gateway(&fakeGateway{}), Quit(make(chan struct{})))
-	assert.Nil(t, err)
+	rpc := setupWebRPC(t)
 	rpc.HandleFunc("get_status", getStatusHandler)
-	err = rpc.HandleFunc("get_status", getStatusHandler)
-	assert.NotNil(t, err)
+	err := rpc.HandleFunc("get_status", getStatusHandler)
+	require.Error(t, err)
 }
 
 func Test_rpcHandler_Handler(t *testing.T) {
-	rpc, teardown := setup()
-	defer teardown()
-	go rpc.Run()
+	rpc := setupWebRPC(t)
+	errC := make(chan error, 1)
+	go func() {
+		errC <- rpc.Run()
+	}()
+	defer func() {
+		rpc.Shutdown()
+		require.NoError(t, <-errC)
+	}()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -164,19 +167,20 @@ func Test_rpcHandler_Handler(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		d, err := json.Marshal(tt.args.req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := json.Marshal(tt.args.req)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		r := httptest.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
-		w := httptest.NewRecorder()
-		rpc.Handler(w, r)
-		var res Response
-		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, res, tt.want)
+			r := httptest.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
+			w := httptest.NewRecorder()
+			rpc.Handler(w, r)
+			var res Response
+			if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+				t.Fatal(err)
+			}
+			require.Equal(t, res, tt.want)
+		})
 	}
-
 }

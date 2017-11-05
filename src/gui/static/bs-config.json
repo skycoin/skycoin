@@ -1,9 +1,0 @@
-{
-  "port": 8000,
-  "files": [
-    "dev/**/*.{html,htm,css,js}"
-  ],
-  "server": {
-    "baseDir": "dev"
-  }
-}

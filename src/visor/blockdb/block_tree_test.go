@@ -2,15 +2,11 @@ package blockdb
 
 import (
 	"fmt"
-	"math/rand"
-	"os"
-	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,49 +23,11 @@ type blockCase struct {
 	Action string
 }
 
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t)
-	return t
-}()
-
-// setup will create a random boltdb file in temp folder,
-// and return teardown function for later clean
-func setup() (*bolt.DB, func(), error) {
-	dbName := fmt.Sprintf("%d.db", rand.Int31n(100))
-	cancel := func() {}
-	tmpDir := os.TempDir()
-	dbPath := filepath.Join(tmpDir, dbName)
-	if err := os.MkdirAll(tmpDir, 0777); err != nil {
-		return nil, cancel, err
-	}
-
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
-		Timeout: 500 * time.Millisecond,
-	})
-	if err != nil {
-		return nil, cancel, err
-	}
-
-	cancel = func() {
-		db.Close()
-		if err := os.RemoveAll(dbPath); err != nil {
-			panic(err)
-		}
-	}
-	return db, cancel, nil
-}
-
 func testCase(t *testing.T, cases []blockCase) {
-	db, close, err := setup()
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	db, close := testutil.PrepareDB(t)
 	defer close()
 
-	btree, err := NewBlockTree(db)
+	btree, err := newBlockTree(db)
 	assert.Nil(t, err)
 	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
@@ -200,13 +158,10 @@ func TestRemoveBlock(t *testing.T) {
 }
 
 func TestGetBlockInDepth(t *testing.T) {
-	db, teardown, err := setup()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 
-	bc, err := NewBlockTree(db)
+	bc, err := newBlockTree(db)
 	assert.Nil(t, err)
 	blocks := []coin.Block{
 		coin.Block{

@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"fmt"
 	//"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -14,16 +15,8 @@ type ReadableEntry struct {
 	Secret  string `json:"secret_key"`
 }
 
-// CoinSupply records the coin supply info
-type CoinSupply struct {
-	CurrentSupply                           int      `json:"coinSupply"`
-	CoinCap                                 int      `json:"coinCap"`
-	UndistributedLockedCoinBalance          int      `json:"UndistributedLockedCoinBalance"`
-	UndistributedLockedCoinHoldingAddresses []string `json:"UndistributedLockedCoinHoldingAddresses"`
-}
-
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(w *Entry) ReadableEntry {
+func NewReadableEntry(w Entry) ReadableEntry {
 	return ReadableEntry{
 		Address: w.Address.String(),
 		Public:  w.Public.Hex(),
@@ -58,16 +51,21 @@ func (re *ReadableEntry) Save(filename string) error {
 type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
-func (res ReadableEntries) ToWalletEntries() []Entry {
+func (res ReadableEntries) ToWalletEntries() ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		we := NewEntryFromReadable(&re)
-		if err := we.Verify(); err != nil {
-			logger.Panicf("Invalid wallet entry loaded. Address: %s", re.Address)
+		e, err := NewEntryFromReadable(&re)
+		if err != nil {
+			return []Entry{}, err
 		}
-		entries[i] = we
+
+		if err := e.Verify(); err != nil {
+			return []Entry{}, fmt.Errorf("convert readable wallet entry failed: %v", err)
+		}
+
+		entries[i] = *e
 	}
-	return entries
+	return entries, nil
 }
 
 // ReadableWallet used for [de]serialization of a Wallet
@@ -96,15 +94,18 @@ type ReadableWalletCtor func(w Wallet) *ReadableWallet
 
 // NewReadableWallet creates readable wallet
 func NewReadableWallet(w Wallet) *ReadableWallet {
-	//return newReadableWallet(w, NewReadableWalletEntry)
 	readable := make(ReadableEntries, len(w.Entries))
-	i := 0
-	for _, e := range w.Entries {
-		readable[i] = NewReadableEntry(&e)
-		i++
+	for i, e := range w.Entries {
+		readable[i] = NewReadableEntry(e)
 	}
+
+	meta := make(map[string]string, len(w.Meta))
+	for k, v := range w.Meta {
+		meta[k] = v
+	}
+
 	return &ReadableWallet{
-		Meta:    w.Meta,
+		Meta:    meta,
 		Entries: readable,
 	}
 }
@@ -118,7 +119,11 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableWallet) ToWallet() (Wallet, error) {
-	return NewWalletFromReadable(rw), nil
+	w, err := newWalletFromReadable(rw)
+	if err != nil {
+		return Wallet{}, err
+	}
+	return *w, nil
 }
 
 // Save saves to filename

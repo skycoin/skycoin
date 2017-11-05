@@ -190,17 +190,17 @@ func NewPendingConnections(maxConn int) *PendingConnections {
 }
 
 // Add adds pending connection
-func (pc *PendingConnections) Add(addr string, peer *pex.Peer) {
+func (pc *PendingConnections) Add(addr string, peer pex.Peer) {
 	pc.setValue(addr, peer)
 }
 
 // Get returns pending connections
-func (pc *PendingConnections) Get(addr string) (*pex.Peer, bool) {
+func (pc *PendingConnections) Get(addr string) (pex.Peer, bool) {
 	v, ok := pc.getValue(addr)
 	if ok {
-		return v.(*pex.Peer), true
+		return v.(pex.Peer), true
 	}
-	return nil, false
+	return pex.Peer{}, false
 }
 
 // Remove removes pending connection

@@ -64,7 +64,7 @@ func TestBlockchainTail_03(t *testing.T) {
 		t.Log("BlockchainTail::try_append_to_BlockchainTail(): initial insert failed.")
 		t.Fail()
 	}
-	if bq.GetNextSeqNo() != b1.Seqno + 1 {
+	if bq.GetNextSeqNo() != b1.Seqno+1 {
 		t.Log("BlockchainTail::GetNextSeqNo() failed.")
 		t.Fail()
 	}
@@ -83,7 +83,7 @@ func TestBlockchainTail_03(t *testing.T) {
 		t.Log("BlockchainTail::try_append_to_BlockchainTail(): next insert failed.")
 		t.Fail()
 	}
-	if bq.GetNextSeqNo() != b2.Seqno + 1 {
+	if bq.GetNextSeqNo() != b2.Seqno+1 {
 		t.Log("BlockchainTail::GetNextSeqNo() failed.")
 		t.Fail()
 	}

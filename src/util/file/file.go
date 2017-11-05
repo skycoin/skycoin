@@ -35,6 +35,16 @@ func InitDataDir(dir string) (string, error) {
 		return "", err
 	}
 
+	// check if dir already exist
+	st, err := os.Stat(dir)
+	if !os.IsNotExist(err) {
+		if !st.IsDir() {
+			return "", fmt.Errorf("%s is not a directory", dir)
+		}
+		// dir already exist
+		return dir, nil
+	}
+
 	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
 		logger.Error("Failed to create directory %s: %v", dir, err)
 		return "", err
@@ -92,11 +102,14 @@ func UserHome() string {
 
 // LoadJSON load json file
 func LoadJSON(filename string, thing interface{}) error {
-	file, err := ioutil.ReadFile(filename)
+	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(file, thing)
+
+	dec := json.NewDecoder(file)
+	dec.UseNumber()
+	return dec.Decode(thing)
 }
 
 // SaveJSON write value into json file

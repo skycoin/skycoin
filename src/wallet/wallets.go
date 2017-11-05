@@ -42,7 +42,6 @@ func LoadWallets(dir string) (Wallets, error) {
 		}
 	}
 
-	//have := make(map[WalletID]Wallet, len(entries))
 	wallets := Wallets{}
 	for i, e := range entries {
 		if e.Mode().IsRegular() {
@@ -63,7 +62,7 @@ func LoadWallets(dir string) (Wallets, error) {
 			w.SetFilename(name)
 			// check the wallet version
 			if w.GetVersion() != version {
-				logger.Info("update wallet %v", fullpath)
+				logger.Info("Update wallet %v", fullpath)
 				bkFile := filepath.Join(bkpath, w.GetFilename())
 				if err := backupWltFile(fullpath, bkFile); err != nil {
 					return nil, err
@@ -122,26 +121,38 @@ func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
 }
 
 // Add add walet to current wallet
-func (wlts *Wallets) Add(w Wallet) error {
-	if _, dup := (*wlts)[w.GetFilename()]; dup {
-		return errors.New("Wallets.Add, Wallet name would conflict with existing wallet, renaming")
+func (wlts Wallets) Add(w Wallet) error {
+	if _, dup := wlts[w.GetFilename()]; dup {
+		return errors.New("wallet name would conflict with existing wallet, renaming")
 	}
 
-	(*wlts)[w.GetFilename()] = &w
+	wlts[w.GetFilename()] = &w
 	return nil
 }
 
 // Remove wallet of specific id
-func (wlts *Wallets) Remove(id string) {
-	delete(*wlts, id)
+func (wlts Wallets) Remove(id string) {
+	delete(wlts, id)
 }
 
 // Get returns wallet by wallet id
-func (wlts *Wallets) Get(wltID string) (Wallet, bool) {
-	if w, ok := (*wlts)[wltID]; ok {
-		return *w, true
+func (wlts Wallets) Get(wltID string) (*Wallet, bool) {
+	if w, ok := wlts[wltID]; ok {
+		return w, true
 	}
-	return Wallet{}, false
+	return &Wallet{}, false
+}
+
+// Update updates the given wallet, return error if not exist
+func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
+	w, ok := wlts[wltID]
+	if !ok {
+		return errWalletNotExist(wltID)
+	}
+
+	newWlt := updateFunc(*w)
+	wlts[wltID] = &newWlt
+	return nil
 }
 
 // NewAddresses creates num addresses in given wallet
@@ -165,17 +176,6 @@ func (wlts Wallets) Save(dir string) map[string]error {
 		return nil
 	}
 	return errs
-}
-
-// GetAddressSet get all addresses.
-func (wlts Wallets) GetAddressSet() map[cipher.Address]byte {
-	set := make(map[cipher.Address]byte)
-	for _, w := range wlts {
-		for _, a := range w.GetAddresses() {
-			set[a] = byte(1)
-		}
-	}
-	return set
 }
 
 func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {

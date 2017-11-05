@@ -2,6 +2,7 @@ package bucket
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/boltdb/bolt"
 )
@@ -49,6 +50,11 @@ func (b Bucket) Get(key []byte) []byte {
 	return value
 }
 
+// GetWithTx gets value
+func (b Bucket) GetWithTx(tx *bolt.Tx, key []byte) []byte {
+	return tx.Bucket(b.Name).Get(key)
+}
+
 // GetAll returns all values
 func (b *Bucket) GetAll() map[interface{}][]byte {
 	values := map[interface{}][]byte{}
@@ -84,6 +90,16 @@ func (b Bucket) Put(key []byte, value []byte) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(b.Name).Put(key, value)
 	})
+}
+
+// PutWithTx put key value with bolt.Tx
+func (b Bucket) PutWithTx(tx *bolt.Tx, key []byte, value []byte) error {
+	bkt := tx.Bucket(b.Name)
+	if bkt == nil {
+		return fmt.Errorf("bucket %s does not exist", b.Name)
+	}
+
+	return bkt.Put(key, value)
 }
 
 // Find find value that match the filter in the bucket.
@@ -122,6 +138,16 @@ func (b *Bucket) Delete(key []byte) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(b.Name).Delete(key)
 	})
+}
+
+// DeleteWithTx remove from bucket with tx
+func (b *Bucket) DeleteWithTx(tx *bolt.Tx, key []byte) error {
+	bkt := tx.Bucket(b.Name)
+	if bkt == nil {
+		return fmt.Errorf("bucket %s doesn't exist", b.Name)
+	}
+
+	return bkt.Delete(key)
 }
 
 // RangeUpdate updates range of the values

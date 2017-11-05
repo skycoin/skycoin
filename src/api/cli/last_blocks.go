@@ -1,16 +1,14 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
 )
 
-func lastBlocksCMD() gcli.Command {
+func lastBlocksCmd() gcli.Command {
 	name := "lastBlocks"
 	return gcli.Command{
 		Name:         name,
@@ -23,6 +21,8 @@ func lastBlocksCMD() gcli.Command {
 }
 
 func getLastBlocks(c *gcli.Context) error {
+	rpcClient := RpcClientFromContext(c)
+
 	num := c.Args().First()
 	if num == "" {
 		num = "1"
@@ -33,25 +33,11 @@ func getLastBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block number, %s", err)
 	}
 
-	if n <= 0 {
-		return errors.New("block number must >= 0")
-	}
+	blocks, err := rpcClient.GetLastBlocks(n)
 
-	param := []uint64{n}
-	req, err := webrpc.NewRequest("get_lastblocks", param, "1")
-	if err != nil {
-		return fmt.Errorf("do rpc request failed: %v", err)
-	}
-
-	rsp, err := webrpc.Do(req, cfg.RPCAddress)
 	if err != nil {
 		return err
 	}
 
-	if rsp.Error != nil {
-		return fmt.Errorf("do rpc request failed: %+v", *rsp.Error)
-	}
-
-	fmt.Println(string(rsp.Result))
-	return nil
+	return printJson(blocks)
 }

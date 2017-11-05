@@ -14,42 +14,41 @@ import (
 
 func TestValidateAddress(t *testing.T) {
 	// empty string
-	assert.False(t, validateAddress("", false, 7200))
+	assert.False(t, validateAddress("", false))
 	// doubled ip:port
-	assert.False(t, validateAddress("112.32.32.14:100112.32.32.14:101", false, 7200))
+	assert.False(t, validateAddress("112.32.32.14:100112.32.32.14:101", false))
 	// requires port
-	assert.False(t, validateAddress("112.32.32.14", false, 7200))
+	assert.False(t, validateAddress("112.32.32.14", false))
 	// not ip
-	assert.False(t, validateAddress("112", false, 7200))
-	assert.False(t, validateAddress("112.32", false, 7200))
-	assert.False(t, validateAddress("112.32.32", false, 7200))
+	assert.False(t, validateAddress("112", false))
+	assert.False(t, validateAddress("112.32", false))
+	assert.False(t, validateAddress("112.32.32", false))
 	// bad part
-	assert.False(t, validateAddress("112.32.32.14000", false, 7200))
+	assert.False(t, validateAddress("112.32.32.14000", false))
 	// large port
-	assert.False(t, validateAddress("112.32.32.14:66666", false, 7200))
+	assert.False(t, validateAddress("112.32.32.14:66666", false))
 	// unspecified
-	assert.False(t, validateAddress("0.0.0.0:8888", false, 7200))
+	assert.False(t, validateAddress("0.0.0.0:8888", false))
 	// no ip
-	assert.False(t, validateAddress(":8888", false, 7200))
+	assert.False(t, validateAddress(":8888", false))
 	// multicast
-	assert.False(t, validateAddress("224.1.1.1:8888", false, 7200))
+	assert.False(t, validateAddress("224.1.1.1:8888", false))
 	// invalid ports
-	assert.False(t, validateAddress("112.32.32.14:0", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:1", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:10", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:100", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:1000", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:1023", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:65536", false, 7200))
-	assert.False(t, validateAddress("112.32.32.14:7200", false, 7201))
+	assert.False(t, validateAddress("112.32.32.14:0", false))
+	assert.False(t, validateAddress("112.32.32.14:1", false))
+	assert.False(t, validateAddress("112.32.32.14:10", false))
+	assert.False(t, validateAddress("112.32.32.14:100", false))
+	assert.False(t, validateAddress("112.32.32.14:1000", false))
+	assert.False(t, validateAddress("112.32.32.14:1023", false))
+	assert.False(t, validateAddress("112.32.32.14:65536", false))
 	// valid ones
-	assert.True(t, validateAddress("112.32.32.14:1024", false, 1024))
-	assert.True(t, validateAddress("112.32.32.14:10000", false, 10000))
-	assert.True(t, validateAddress("112.32.32.14:65535", false, 65535))
+	assert.True(t, validateAddress("112.32.32.14:1024", false))
+	assert.True(t, validateAddress("112.32.32.14:10000", false))
+	assert.True(t, validateAddress("112.32.32.14:65535", false))
 	// localhost is allowed
-	assert.True(t, validateAddress("127.0.0.1:8888", true, 8888))
+	assert.True(t, validateAddress("127.0.0.1:8888", true))
 	// localhost is not allowed
-	assert.False(t, validateAddress("127.0.0.1:8888", false, 7200))
+	assert.False(t, validateAddress("127.0.0.1:8888", false))
 }
 
 func TestNewPex(t *testing.T) {
@@ -60,7 +59,6 @@ func TestNewPex(t *testing.T) {
 	// defer removeFile()
 	config := NewConfig()
 	config.DataDirectory = dir
-	config.Port = 7200
 
 	_, err = New(config, testPeers[:])
 	require.NoError(t, err)
@@ -148,7 +146,6 @@ func TestPexLoadPeers(t *testing.T) {
 			cfg := NewConfig()
 			cfg.DataDirectory = dir
 			cfg.Max = tc.max
-			cfg.Port = 7200
 
 			px := Pex{
 				peerlist: *newPeerlist(),
@@ -213,7 +210,6 @@ func TestPexAddPeer(t *testing.T) {
 			// create px config
 			cfg := NewConfig()
 			cfg.Max = tc.max
-			cfg.Port = 7200
 			cfg.DataDirectory = dir
 
 			// create px instance and load peers
@@ -285,7 +281,6 @@ func TestPexAddPeers(t *testing.T) {
 			// create px config
 			cfg := NewConfig()
 			cfg.Max = tc.max
-			cfg.Port = 7200
 			cfg.DataDirectory = dir
 
 			// create px instance and load peers

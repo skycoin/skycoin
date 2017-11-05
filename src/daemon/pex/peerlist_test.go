@@ -25,7 +25,7 @@ var testPeers = []string{
 	"112.32.32.17:7200",
 }
 
-var wrongPortPeer = "112.32.32.14:7201"
+var wrongPortPeer = "112.32.32.14:1"
 
 func init() {
 	// silence the logger

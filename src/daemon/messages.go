@@ -274,14 +274,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		logger.Info("%s verified for version %d", mc.Addr, intro.Version)
 
-		// Disconnect if wrong port
-		if int(intro.Port) != d.Config.Port {
-			logger.Info("%s has wrong node port:%d. Disconnection.", mc.Addr, intro.Port)
-			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectWrongPort)
-			err = ErrDisconnectWrongPort
-			break
-		}
-
 		// only solicited connection can be added to exchange peer list, cause accepted
 		// connection may not have incomming  port.
 		ip, port, err := SplitAddr(mc.Addr)

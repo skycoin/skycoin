@@ -37,8 +37,6 @@ func newPeerlist() *peerlist {
 }
 
 // Filter peers filter
-// type Filter func(peers Peers) Peers
-
 type Filter func(peer Peer) bool
 
 // loadFromFile loads if the peer.txt file does exist
@@ -142,10 +140,8 @@ func zeroRetryTimes(p Peer) bool {
 	return p.RetryTimes == 0
 }
 
-var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
-
 // isExchangeable filters exchangeable peers
-// var isExchangeable = []Filter{hasIncomingPort, isPublic}
+var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
 
 // RemovePeer removes peer
 func (pl *peerlist) RemovePeer(addr string) {

@@ -207,8 +207,8 @@ func (pl *peerlist) cullInvalidPeers() []Peer {
 	return culledPeers
 }
 
-// Len returns number of peers
-func (pl *peerlist) Len() int {
+// len returns number of peers
+func (pl *peerlist) len() int {
 	pl.RLock()
 	defer pl.RUnlock()
 	return len(pl.peers)

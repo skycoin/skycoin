@@ -208,8 +208,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	}
 
 	// save peers to disk
-	fn := filepath.Join(cfg.DataDirectory, PeerDatabaseFilename)
-	if err := pex.save(fn); err != nil {
+	if err := pex.save(); err != nil {
 		return nil, err
 	}
 
@@ -251,7 +250,7 @@ func (px *Pex) load() error {
 // remainingCap returns the remaining number of peers that
 // are allowed to add
 func (px *Pex) remainingCap() int {
-	return px.Config.Max - px.Len()
+	return px.Config.Max - px.len()
 }
 
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
@@ -329,7 +328,7 @@ func (px *Pex) Run() error {
 	defer func() {
 		// save the peerlist
 		logger.Info("Save peerlist")
-		if err := px.Save(); err != nil {
+		if err := px.save(); err != nil {
 			logger.Error("Save peers failed: %v", err)
 		}
 	}()
@@ -353,10 +352,10 @@ func (px *Pex) IsFull() bool {
 	return px.Config.Max > 0 && px.remainingCap() == 0
 }
 
-// Save persists the peerlist
-func (px *Pex) Save() error {
+// SavePeers persists the peerlist
+func (px *Pex) save() error {
 	fn := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
-	return px.save(fn)
+	return px.peerlist.save(fn)
 }
 
 // Shutdown notifies the pex service to exist

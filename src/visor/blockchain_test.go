@@ -37,12 +37,6 @@ func _feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func _makeFeeCalc(fee uint64) coin.FeeCalculator {
-	return func(t *coin.Transaction) (uint64, error) {
-		return fee, nil
-	}
-}
-
 func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, _genCoins, _genTime)
@@ -81,7 +75,7 @@ func makeSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, 
 	return spendTx
 }
 
-func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
+func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	tx := coin.Transaction{}
 	var (
 		totalCoins uint64

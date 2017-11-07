@@ -138,10 +138,6 @@ func (utb *uncfmTxnBkt) update(key cipher.SHA256, f func(v *UnconfirmedTxn)) err
 	return utb.txns.Update([]byte(key.Hex()), updateFun)
 }
 
-func (utb *uncfmTxnBkt) delete(key cipher.SHA256) error {
-	return utb.txns.Delete([]byte(key.Hex()))
-}
-
 func (utb *uncfmTxnBkt) deleteWithTx(tx *bolt.Tx, key cipher.SHA256) error {
 	return utb.txns.DeleteWithTx(tx, []byte(key.Hex()))
 }
@@ -378,53 +374,44 @@ func (utp *UnconfirmedTxnPool) RawTxns() coin.Transactions {
 }
 
 // Remove a single txn by hash
-func (utp *UnconfirmedTxnPool) removeTxn(bc *Blockchain, txHash cipher.SHA256) {
-	// delete(utp.Txns, txHash)
-	utp.txns.delete(txHash)
-	utp.unspent.delete(txHash)
-}
-
-// Removes multiple txns at once. Slightly more efficient than a series of
-// single RemoveTxns.  Hashes is an array of Transaction hashes.
-func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
-	for i := range hashes {
-		utp.txns.delete(hashes[i])
-		utp.unspent.delete(hashes[i])
+func (utp *UnconfirmedTxnPool) removeTxnWithTx(tx *bolt.Tx, txHash cipher.SHA256) error {
+	if err := utp.txns.deleteWithTx(tx, txHash); err != nil {
+		return err
 	}
-}
 
-func (utp *UnconfirmedTxnPool) removeTxnsWithTx(tx *bolt.Tx, hashes []cipher.SHA256) {
-	for i := range hashes {
-		utp.txns.deleteWithTx(tx, hashes[i])
-		utp.unspent.deleteWithTx(tx, hashes[i])
-	}
-}
-
-// RemoveTransactions removes confirmed txns from the pool
-func (utp *UnconfirmedTxnPool) RemoveTransactions(txns []cipher.SHA256) {
-	utp.removeTxns(txns)
+	return utp.unspent.deleteWithTx(tx, txHash)
 }
 
 // RemoveTransactionsWithTx remove transactions with bolt.Tx
-func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txns []cipher.SHA256) {
-	utp.removeTxnsWithTx(tx, txns)
+func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txHashes []cipher.SHA256) error {
+	for i := range txHashes {
+		if err := utp.removeTxnWithTx(tx, txHashes[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.
 // verify the transaction and returns all those txns that turn to valid.
-func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) {
-	now := utc.Now()
-	utp.txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
-		tx.Checked = now.UnixNano()
+func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+	now := utc.Now().UnixNano()
+
+	if err := utp.txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
+		tx.Checked = now
 		if tx.IsValid == 0 {
 			if bc.VerifyTransaction(tx.Txn) == nil {
 				tx.IsValid = 1
 				hashes = append(hashes, tx.Hash())
 			}
 		}
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	return
+	return hashes, nil
 }
 
 // FilterKnown returns txn hashes with known ones removed

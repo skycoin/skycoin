@@ -300,7 +300,7 @@ func (up *Unspents) GetAll() (coin.UxArray, error) {
 }
 
 // delete delete unspent of given hashes
-func (up *Unspents) deleteWithTx(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SHA256, error) {
+func (up *Unspents) deleteWithTx(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SHA256, error) { // nolint: unparam
 	var uxHash cipher.SHA256
 	for _, hash := range hashes {
 		ux, ok, err := up.pool.getWithTx(tx, hash)

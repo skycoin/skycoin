@@ -132,7 +132,7 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
 	if bc.Len() > 0 {
 		if !bc.isGenesisBlock(b.Block) {
-			if err := bc.verifyBlockHeader(b.Block); err != nil {
+			if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
 				return coin.SignedBlock{}, err
 			}
 			txns, err := bc.processTransactions(b.Body.Transactions)
@@ -596,7 +596,7 @@ func (bc *Blockchain) verifyBlockSig(seq uint64) error {
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid
-func (bc Blockchain) verifyBlockHeader(b coin.Block) error {
+func (bc Blockchain) verifyBlockHeader(tx *bolt.Tx, b coin.Block) error {
 	//check BkSeq
 	head, err := bc.Head()
 	if err != nil {

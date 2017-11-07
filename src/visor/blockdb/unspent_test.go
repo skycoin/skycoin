@@ -23,7 +23,7 @@ type spending struct {
 	Coins  uint64
 }
 
-func randBytes(t *testing.T, n int) []byte {
+func randBytes(t *testing.T, n int) []byte { // nolint: unparam
 	b := make([]byte, n)
 	x, err := rand.Read(b)
 	assert.Equal(t, n, x) //end unit testing.
@@ -55,7 +55,7 @@ func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	}, s
 }
 
-func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) { // nolint: unparam
 	body, sec := makeUxBodyWithSecret(t)
 	return coin.UxOut{
 		Head: coin.UxHead{

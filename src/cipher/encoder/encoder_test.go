@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(n int) []byte {
+func randBytes(n int) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
 	rand.Read(bytes)
@@ -21,18 +21,7 @@ func randBytes(n int) []byte {
 	return bytes
 }
 
-/*
-* the file name has to end with _test.go to be picked up as a set of tests by go test
-* the package name has to be the same as in the source file that has to be tested
-* you have to import the package testing
-* all test functions should start with Test to be run as a test
-* the tests will be executed in the same order that they are appear in the source
-* the test function TestXxx functions take a pointer to the type testing.T. You use it to record the test status and also for logging.
-* the signature of the test function should always be func TestXxx ( *testing.T). You can have any combination of alphanumeric characters and the hyphen for the Xxx part, the only constraint that it should not begin with a small alphabet, [a-z].
-* a call to any of the following functions of testing.T within the test code Error, Errorf, FailNow, Fatal, FatalIf will indicate to go test that the test has failed.
- */
-
-//Size of= 13
+// Size of= 13
 type TestStruct struct {
 	X int32
 	Y int64
@@ -64,9 +53,7 @@ type TestStructWithoutIgnore struct {
 	K []byte
 }
 
-//func (*B) Fatal
-
-func Test_Encode_1(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_1(T *testing.T) {
 	var t TestStruct
 	t.X = 345535
 	t.Y = 23432435443
@@ -94,7 +81,7 @@ func Test_Encode_1(T *testing.T) { //test function starts with "Test" and takes 
 	}
 }
 
-func Test_Encode_2a(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_2a(T *testing.T) {
 	var t TestStruct2
 	t.X = 345535
 	t.Y = 23432435443
@@ -123,7 +110,7 @@ func Test_Encode_2a(T *testing.T) { //test function starts with "Test" and takes
 	}
 }
 
-func Test_Encode_2b(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_2b(T *testing.T) {
 	var t TestStruct2
 	t.X = 345535
 	t.Y = 23432435443
@@ -153,7 +140,7 @@ type TestStruct3 struct {
 	K []byte
 }
 
-func Test_Encode_3a(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_3a(T *testing.T) {
 	var t1 TestStruct3
 	t1.X = 345535
 	t1.K = randBytes(32)
@@ -180,7 +167,7 @@ func Test_Encode_3a(T *testing.T) { //test function starts with "Test" and takes
 	}
 }
 
-func Test_Encode_3b(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_3b(T *testing.T) {
 	var t1 TestStruct3
 	t1.X = 345535
 	t1.K = randBytes(32)
@@ -250,15 +237,7 @@ func Test_Encode_4(T *testing.T) {
 	}
 }
 
-// type TestStruct2 struct {
-//     X   int32
-//     Y   int64
-//     Z   uint8
-//     K   [8]byte
-// }
-
 func Test_Encode_5(T *testing.T) {
-
 	var ts TestStruct2
 	ts.X = 345535
 	ts.Y = 23432435443
@@ -343,22 +322,28 @@ type Container struct {
 func TestEncodeNestedSlice(t *testing.T) {
 	size := 0
 	elems := make([]Contained, 4)
+
 	for i := range elems {
 		elems[i].X = uint32(i)
 		size += 4
 		elems[i].Y = uint64(i)
 		size += 8
 		elems[i].Bytes = make([]uint8, i)
+
 		for j := range elems[i].Bytes {
 			elems[i].Bytes[j] = uint8(j)
 		}
+
 		size += 4 + i*1
 		elems[i].Ints = make([]uint16, i)
+
 		for j := range elems[i].Ints {
 			elems[i].Ints[j] = uint16(j)
 		}
+
 		size += 4 + i*2
 	}
+
 	c := Container{elems}
 	n, err := datasizeWrite(reflect.ValueOf(c))
 	if err != nil {
@@ -367,29 +352,33 @@ func TestEncodeNestedSlice(t *testing.T) {
 	if n != size+4 {
 		t.Fatal("Wrong data size")
 	}
+
 	b := Serialize(c)
 	d := Container{}
 	err = DeserializeRaw(b, &d)
 	if err != nil {
 		t.Fatalf("DeserializeRaw failed: %v", err)
 	}
+
 	for i, e := range d.Elements {
 		if c.Elements[i].X != e.X || c.Elements[i].Y != e.Y {
-			t.Fatalf("Deserialized x, y to invalid value. "+
-				"Expected %d,%d but got %d,%d", c.Elements[i].X,
-				c.Elements[i].Y, e.X, e.Y)
+			t.Fatalf("Deserialized x, y to invalid value. Expected %d,%d but got %d,%d", c.Elements[i].X, c.Elements[i].Y, e.X, e.Y)
 		}
+
 		if len(c.Elements[i].Bytes) != len(e.Bytes) {
 			t.Fatal("Deserialized Bytes to invalid length")
 		}
+
 		for j, b := range c.Elements[i].Bytes {
 			if c.Elements[i].Bytes[j] != b {
 				t.Fatal("Deserialized to invalid value")
 			}
 		}
+
 		if len(c.Elements[i].Ints) != len(e.Ints) {
 			t.Fatal("Deserialized Ints to invalid length")
 		}
+
 		for j, b := range c.Elements[i].Ints {
 			if c.Elements[i].Ints[j] != b {
 				t.Fatal("Deserialized Ints to invalid value")
@@ -435,7 +424,6 @@ func TestFlattenMultidimensionalBytes(t *testing.T) {
 	if len(b) != expect {
 		t.Fatalf("Expected %d bytes, decoded to %d bytes", expect, len(b))
 	}
-
 }
 
 func TestMultiArrays(T *testing.T) {
@@ -471,11 +459,9 @@ func TestMultiArrays(T *testing.T) {
 	if len(b) != 256 {
 		T.Fatalf("decoded to wrong byte length")
 	}
-
 }
 
 func TestSerializeAtomic(t *testing.T) {
-
 	var sp uint64 = 0x000C8A9E1809F720
 	b := SerializeAtomic(sp)
 
@@ -493,13 +479,10 @@ func TestPushPop(t *testing.T) {
 	var d [8]byte
 	EncodeInt(d[0:8], sp)
 
-	//fmt.Printf("d= %X \n", d[:])
-
 	var ti uint64
 	DecodeInt(d[0:8], &ti)
 
 	if ti != sp {
-		//fmt.Printf("sp= %X ti= %X \n", sp,ti)
 		t.Error("roundtrip failed")
 	}
 }
@@ -509,7 +492,6 @@ type TestStruct5a struct {
 }
 
 func TestPanicTest(t *testing.T) {
-
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("EncodeInt Did not panic")
@@ -520,7 +502,6 @@ func TestPanicTest(t *testing.T) {
 }
 
 func TestPushPopNegative(t *testing.T) {
-
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("EncodeInt Did not panic on invalid input type")
@@ -528,14 +509,12 @@ func TestPushPopNegative(t *testing.T) {
 	}()
 
 	var tst TestStruct5a
-	//var sp uint64 = 0x000C8A9E1809F720
 	var d [8]byte
-	EncodeInt(d[0:8], &tst) //attemp to encode invalid type
+	EncodeInt(d[0:8], &tst) // attempt to encode invalid type
 
 }
 
 func TestByteArray(t *testing.T) {
-
 	tstr := "7105a46cb4c2810f0c916e0bb4b4e4ef834ad42040c471b42c96d356a9fd1b21"
 
 	d, err := hex.DecodeString(tstr)
@@ -550,5 +529,4 @@ func TestByteArray(t *testing.T) {
 	if len(buff2) != 32 {
 		t.Errorf("incorrect serialization length for fixed sized arrays: %d byte fixed sized array serialized to %d bytes \n", len(d), len(buff2))
 	}
-
 }

@@ -199,7 +199,7 @@ func (rpc *WebRPC) Run() error {
 	rpc.ops = make(chan operation, rpc.ChanBuffSize)
 
 	for i := uint(0); i < rpc.WorkerNum; i++ {
-		go rpc.workerThread(i)
+		go rpc.workerThread()
 	}
 
 	errC := make(chan error, 1)
@@ -291,7 +291,7 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	wh.SendOr404(w, &res)
 }
 
-func (rpc *WebRPC) workerThread(seq uint) {
+func (rpc *WebRPC) workerThread() {
 	for {
 		select {
 		case <-rpc.quit:

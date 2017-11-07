@@ -481,8 +481,13 @@ loop:
 			}
 		case <-unconfirmedRefreshTicker:
 			// Get the transactions that turn to valid
-			validTxns := dm.Visor.RefreshUnconfirmed()
-			// Announce this transactions
+			validTxns, err := dm.Visor.RefreshUnconfirmed()
+			if err != nil {
+				logger.Error("dm.Visor.RefreshUnconfirmed failed: %v", err)
+				continue
+			}
+
+			// Announce these transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)

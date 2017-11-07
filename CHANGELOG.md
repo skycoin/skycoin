@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.20.4] - 2017-11-3
+
+### Fixed
+
+- Fix create_rawtx coin balance check bug
+
 ## [0.20.3] - 2017-10-23
 
 ### Fixed
@@ -124,6 +130,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.20.4]: https://github.com/skycoin/skycoin/compare/v0.20.3...v0.20.4
 [0.20.3]: https://github.com/skycoin/skycoin/compare/v0.20.2...v0.20.3
 [0.20.2]: https://github.com/skycoin/skycoin/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/skycoin/skycoin/compare/v0.20.0...v0.20.1

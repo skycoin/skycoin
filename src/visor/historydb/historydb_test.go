@@ -37,12 +37,6 @@ func _feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func _makeFeeCalc(fee uint64) coin.FeeCalculator {
-	return func(t *coin.Transaction) (uint64, error) {
-		return fee, nil
-	}
-}
-
 // set rand seed.
 var _ = func() int64 {
 	t := time.Now().Unix()
@@ -56,7 +50,7 @@ type fakeBlockchain struct {
 	uxhash  cipher.SHA256
 }
 
-func newBlockchain(db *bolt.DB) *fakeBlockchain {
+func newBlockchain() *fakeBlockchain {
 	return &fakeBlockchain{
 		unspent: make(map[string]coin.UxOut),
 	}
@@ -171,7 +165,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
 
-	bc := newBlockchain(db)
+	bc := newBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 	hisDB, err := New(db)
 	if err != nil {
@@ -250,7 +244,7 @@ func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.
 func TestProcessBlock(t *testing.T) {
 	db, teardown := testutil.PrepareDB(t)
 	defer teardown()
-	bc := newBlockchain(db)
+	bc := newBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, _genCoins, _genTime)
 
 	// create

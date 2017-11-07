@@ -700,7 +700,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
-	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
+	m, err := convertToMessage(msg, pool.Config.DebugPrint)
 	if err != nil {
 		return err
 	}

@@ -32,7 +32,7 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 }
 
 // Event handler that is called after a Connection sends a complete message
-func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
+func convertToMessage(msg []byte, debugPrint bool) (Message, error) {
 	msgID := [4]byte{}
 	if len(msg) < len(msgID) {
 		return nil, errors.New("Not enough data to read msg id")

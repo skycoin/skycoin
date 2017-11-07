@@ -102,7 +102,7 @@ func setupSimpleVisor(db *bolt.DB, bc *visor.Blockchain) *Visor {
 	}
 }
 
-func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
+func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction { // nolint: unparam
 	uxOuts, err := bc.Unspent().GetAll()
 	require.NoError(t, err)
 	require.Len(t, uxOuts, 1)
@@ -283,7 +283,7 @@ func TestInjectValidTransaction(t *testing.T) {
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	err := v.injectTransaction(txn, nil)
+	err := v.injectTransaction(txn)
 	require.NoError(t, err)
 
 	// The transaction should appear in the unconfirmed pool
@@ -316,7 +316,7 @@ func TestInjectInvalidTransaction(t *testing.T) {
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	err := v.injectTransaction(txn, nil)
+	err := v.injectTransaction(txn)
 	testutil.RequireError(t, err, "Transaction coinhour fee minimum not met")
 
 	// The transaction should appear in the unconfirmed pool

@@ -124,13 +124,18 @@ func (vs *Visor) strand(name string, f func() error) error {
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
-func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
+func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
-	vs.strand("RefreshUnconfirmed", func() error {
-		hashes = vs.v.RefreshUnconfirmed()
-		return nil
-	})
-	return hashes
+
+	if err := vs.strand("RefreshUnconfirmed", func() error {
+		var err error
+		hashes, err = vs.v.RefreshUnconfirmed()
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return hashes, nil
 }
 
 // RequestBlocks Sends a GetBlocksMessage to all connections
@@ -287,7 +292,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 // The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	return vs.strand("InjectTransaction", func() error {
-		if err := vs.injectTransaction(txn, pool); err != nil {
+		if err := vs.injectTransaction(txn); err != nil {
 			return err
 		}
 
@@ -328,7 +333,7 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 	return err
 }
 
-func (vs *Visor) injectTransaction(txn coin.Transaction, pool *Pool) error {
+func (vs *Visor) injectTransaction(txn coin.Transaction) error {
 	if err := vs.verifyTransaction(txn); err != nil {
 		return err
 	}

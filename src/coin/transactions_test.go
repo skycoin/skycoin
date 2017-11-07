@@ -28,7 +28,7 @@ func makeTransaction(t *testing.T) Transaction {
 	return tx
 }
 
-func makeTransactions(t *testing.T, n int) Transactions {
+func makeTransactions(t *testing.T, n int) Transactions { // nolint: unparam
 	txns := make(Transactions, n)
 	for i := range txns {
 		txns[i] = makeTransaction(t)

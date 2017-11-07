@@ -2,13 +2,17 @@ package blockdb
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
+)
+
+const (
+	blocksBkt = "blocks"
+	treeBkt   = "block_tree"
 )
 
 var (
@@ -19,46 +23,44 @@ var (
 	errHasChild    = errors.New("remove block failed, it has children")
 )
 
+type hasBucket interface {
+	Bucket(name []byte) *bolt.Bucket
+}
+
 // blockTree use the blockdb store all blocks and maintains the block tree struct.
 type blockTree struct {
-	db     *bolt.DB
-	blocks *bucket.Bucket
-	tree   *bucket.Bucket
+	db *bolt.DB
 }
 
 // newBlockTree create buckets in blockdb if does not exist.
 func newBlockTree(db *bolt.DB) (*blockTree, error) {
-	blocks, err := bucket.New([]byte("blocks"), db)
-	if err != nil {
-		return nil, err
-	}
+	if err := db.Update(func(tx *bolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists([]byte(blocksBkt)); err != nil {
+			return err
+		}
 
-	tree, err := bucket.New([]byte("block_tree"), db)
-	if err != nil {
+		_, err := tx.CreateBucketIfNotExists([]byte(treeBkt))
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
 	return &blockTree{
-		blocks: blocks,
-		tree:   tree,
-		db:     db,
+		db: db,
 	}, nil
 }
 
-// AddBlock write the block into blocks bucket, add the pair of block hash and pre block hash into
-// tree in the block depth.
-func (bt *blockTree) AddBlock(b *coin.Block) error {
-	return bt.db.Update(func(tx *bolt.Tx) error {
-		return bt.AddBlockWithTx(tx, b)
-	})
+func (bt *blockTree) blocks(tx *bolt.Tx) *bolt.Bucket {
+	return tx.Bucket([]byte(blocksBkt))
 }
 
-// AddBlockWithTx adds block with *bolt.Tx
-func (bt *blockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
-	bkt := tx.Bucket(bt.blocks.Name)
-	if bkt == nil {
-		return fmt.Errorf("bucket %s doesn't eist", bt.blocks.Name)
-	}
+func (bt *blockTree) tree(tx *bolt.Tx) *bolt.Bucket {
+	return tx.Bucket([]byte(treeBkt))
+}
+
+// AddBlock adds block with *bolt.Tx
+func (bt *blockTree) AddBlock(tx *bolt.Tx, b *coin.Block) error {
+	bkt := bt.blocks(tx)
 
 	// can't store block if it's not genesis block and has no parent.
 	if b.Seq() > 0 && b.PreHashHeader() == emptyHash {
@@ -77,7 +79,7 @@ func (bt *blockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
 	}
 
 	// get tree bucket.
-	tree := tx.Bucket(bt.tree.Name)
+	tree := bt.tree(tx)
 
 	// the pre hash must be in depth - 1.
 	if b.Seq() > 0 {
@@ -121,14 +123,14 @@ func (bt *blockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
 func (bt *blockTree) RemoveBlock(b *coin.Block) error {
 	return bt.db.Update(func(tx *bolt.Tx) error {
 		// delete block in blocks bucket.
-		blocks := tx.Bucket(bt.blocks.Name)
+		blocks := bt.blocks(tx)
 		hash := b.HashHeader()
 		if err := blocks.Delete(hash[:]); err != nil {
 			return err
 		}
 
 		// get tree bucket.
-		tree := tx.Bucket(bt.tree.Name)
+		tree := bt.tree(tx)
 
 		// check if this block has children
 		has, err := hasChild(tree, *b)
@@ -159,37 +161,36 @@ func (bt *blockTree) RemoveBlock(b *coin.Block) error {
 	})
 }
 
-// GetBlock get block by hash, return nil on not found
-func (bt *blockTree) GetBlock(hash cipher.SHA256) *coin.Block {
-	return bt.getBlock(hash)
-}
-
 // GetBlockInDepth get block in depth, return nil on not found,
 // the filter is used to choose the appropriate block.
-func (bt *blockTree) GetBlockInDepth(depth uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block {
-	hash, err := bt.getHashInDepth(depth, filter)
+func (bt *blockTree) GetBlockInDepth(tx *bolt.Tx, depth uint64, filter func(hps []coin.HashPair) cipher.SHA256) (*coin.Block, error) {
+	hash, err := bt.getHashInDepth(tx, depth, filter)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return bt.getBlock(hash)
+	return bt.GetBlock(tx, hash)
 }
 
-func (bt *blockTree) getBlock(hash cipher.SHA256) *coin.Block {
-	bin := bt.blocks.Get(hash[:])
+// GetBlock get block by hash, return nil on not found
+func (bt *blockTree) GetBlock(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, error) {
+	bin := bt.blocks(tx).Get(hash[:])
 	if bin == nil {
-		return nil
+		return nil, nil
 	}
+
 	block := coin.Block{}
 	if err := encoder.DeserializeRaw(bin, &block); err != nil {
-		return nil
+		return nil, err
 	}
-	return &block
+
+	return &block, nil
 }
 
-func (bt *blockTree) getHashInDepth(depth uint64, filter func(ps []coin.HashPair) cipher.SHA256) (cipher.SHA256, error) {
+func (bt *blockTree) getHashInDepth(tx *bolt.Tx, depth uint64, filter func(ps []coin.HashPair) cipher.SHA256) (cipher.SHA256, error) {
 	key := bucket.Itob(depth)
-	pairsBin := bt.tree.Get(key)
+
+	pairsBin := bt.tree(tx).Get(key)
 	pairs := []coin.HashPair{}
 	if err := encoder.DeserializeRaw(pairsBin, &pairs); err != nil {
 		return cipher.SHA256{}, err
@@ -252,7 +253,7 @@ func hasChild(bkt *bolt.Bucket, b coin.Block) (bool, error) {
 	})
 
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	return len(childHashPair) > 0, nil

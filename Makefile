@@ -17,16 +17,15 @@ test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-lint: ## Run linters. requires vendorcheck, gometalinter, golint, goimports
-	gometalinter --disable-all -E goimports --tests --vendor ./...
+lint: ## Run linters. requires vendorcheck, gometalinter
 	vendorcheck ./...
+	gometalinter --enable-gc --warn-unmatched-nolint --disable-all -E goimports -E unparam --tests --vendor ./...
 
 check: lint test ## Run tests and linters
 
 install-linters: ## Install linters
-	go get -u -f github.com/golang/lint/golint
-	go get -u -f golang.org/x/tools/cmd/goimports
 	go get -u github.com/alecthomas/gometalinter
+	gometalinter --install --vendored-linters
 	go get -u github.com/FiloSottile/vendorcheck
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).

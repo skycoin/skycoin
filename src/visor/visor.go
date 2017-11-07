@@ -242,7 +242,9 @@ func (vs *Visor) processUnconfirmedTxns() error {
 	})
 
 	if len(removeTxs) > 0 {
-		vs.Unconfirmed.RemoveTransactions(removeTxs)
+		return vs.db.Update(func(tx *bolt.Tx) error {
+			return vs.Unconfirmed.RemoveTransactionsWithTx(tx, removeTxs)
+		})
 	}
 
 	return nil
@@ -260,7 +262,7 @@ func (vs *Visor) GenesisPreconditions() {
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and returns
 // all transaction that turn to valid.
-func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
+func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	return vs.Unconfirmed.Refresh(vs.Blockchain)
 }
 

@@ -38,7 +38,7 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
+func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) { // nolint: unparam
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
 		return nil, err

@@ -196,7 +196,7 @@ func makeUxOutWithSecret() (coin.UxOut, cipher.SecKey) {
 	}, sec
 }
 
-func randBytes(n int) []byte {
+func randBytes(n int) []byte { // nolint: unparam
 	b := make([]byte, n)
 	rand.Read(b)
 	return b

@@ -109,7 +109,7 @@ loop:
 	for {
 		select {
 		case <-quit:
-			return nil
+			return quitErr
 		case c <- req:
 			break loop
 		case <-time.After(logQueueRequestWaitThreshold):

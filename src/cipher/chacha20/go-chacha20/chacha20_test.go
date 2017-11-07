@@ -104,7 +104,7 @@ func BenchmarkChacha208_1K(b *testing.B) {
 	benchmarkChacha(b, XORKeyStream8, 1024)
 }
 
-func benchmarkChacha(b *testing.B, xor func(out, in []byte, nonce []byte, key []byte), dataLen int64) {
+func benchmarkChacha(b *testing.B, xor func(out, in []byte, nonce []byte, key []byte), dataLen int64) { // nolint: unparam
 	b.StopTimer()
 	var buff []byte = make([]byte, dataLen)
 	var key []byte = make([]byte, 32)

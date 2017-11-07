@@ -60,7 +60,7 @@ func TestNewBlock(t *testing.T) {
 	// valid block is fine
 	fee := uint64(121)
 	currentTime := uint64(133)
-	b, err := NewBlock(prev, currentTime, uxHash, txns, _makeFeeCalc(fee))
+	b, err := NewBlock(prev, currentTime, uxHash, txns, makeFeeCalc(fee))
 	require.NoError(t, err)
 	assert.Equal(t, b.Body.Transactions, txns)
 	assert.Equal(t, b.Head.Fee, fee*uint64(len(txns)))

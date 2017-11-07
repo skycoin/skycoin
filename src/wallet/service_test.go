@@ -397,7 +397,7 @@ func makeUxBodyWithSecret(t *testing.T, s cipher.SecKey) (coin.UxBody, cipher.Se
 	}, s
 }
 
-func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecKey) {
+func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecKey) { // nolint: unparam
 	body, sec := makeUxBodyWithSecret(t, s)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)
@@ -410,10 +410,10 @@ func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecK
 	}, sec
 }
 
-func randBytes(t *testing.T, n int) []byte {
+func randBytes(t *testing.T, n int) []byte { // nolint: unparam
 	b := make([]byte, n)
 	x, err := rand.Read(b)
-	assert.Equal(t, n, x) //end unit testing.
+	assert.Equal(t, n, x)
 	assert.Nil(t, err)
 	return b
 }

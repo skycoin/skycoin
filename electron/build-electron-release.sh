@@ -33,22 +33,23 @@ if [ -e "$ELN_OUTPUT" ]; then
 fi
 
 if [ ! -z "$WIN64_ELN" ] && [ ! -z "$WIN32_ELN" ]; then
-    npm run dist-win
+    yarn run dist-win
 elif [ ! -z "$WIN64_ELN" ]; then
-    npm run dist-win64
+    yarn run dist-win64
 elif [ ! -z "$WIN32_ELN" ]; then
-    npm run dist-win32
+    yarn run dist-win32
 fi
 
 if [ ! -z "$LNX64_ELN" ]; then
-    npm run dist-linux
+    yarn run dist-linux
 fi
 
 if [ ! -z "$OSX64_ELN" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        npm run dist-mac
+        echo "run dist-mac"
+        yarn run dist-mac
     elif [[ "$OSTYPE" == "linux"* ]]; then
-        npm run pack-mac
+        yarn run pack-mac
     else
         echo "Can not run build script in $OSTYPE"
     fi

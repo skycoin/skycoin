@@ -83,6 +83,18 @@ if [ -e "$EXE" ]; then
     mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
 fi
 
+# rename dmg file name
+DMG="${PKG_NAME}-${APP_VERSION}.dmg"
+if [ -e "$DMG" ]; then
+    mv "$DMG" "${PKG_NAME}-${APP_VERSION}-gui-osx.dmg"
+fi
+
+# delete app zip file
+MZIP="${PKG_NAME}-${APP_VERSION}-mac.zip"
+if [ -e "$MZIP" ]; then
+    rm "$MZIP"
+fi
+
 # clean unpacked folders
 rm -rf *-unpacked
 

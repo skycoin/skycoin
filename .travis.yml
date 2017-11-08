@@ -1,10 +1,42 @@
+sudo: required
+# dist: trusty
 language: go
-
 go:
-    - 1.9
+- 1.9
+
+env:
+  global:
+    - secure: ww7z5N+q/eYQ4kkgw0dOFNIpnscjJrZulctwSVRIr2JmiiZxo5Q7CqvkKuxg0j5qmDEsMdXFhrdmdXxQxvxDFnh9irRmtoL+0Icp6Kj9itvz0tt/DciB9nkScTSmosxFdgQcHMm3ptsg3JHGb5eOlJG4QHYOsWmun2aYlnj3WEQzpJ59AgB9pI/QNrgd+Jafdy7QiOKzVQeNaSO0QStxH9SGxuKZVi/wO1H78LEf6DfibYVV9Wi3Yp5gRgRx1zWx059/FGWzENR4Z2zeV8N5dPd5lWFUswfPYXfGA10hInE9VJJQlAyxEJ7D7jOzbn5VQgO4u+c0VH4ro6xwgl4M+Eh4BLiFXMFa/3vwMu5VwtigzTzTYSx/bfGLoRo7O4BLj31zh4hLYnThCS/MXyehbFdNyVIeoPxM2RJRUKca32WZfBEVHXRQWSj26ogyUYcdv3DPvNDgCpqHjOOOK6Y3PDEx7J43BuYSJ7wI8T3wEnWzqwPHS/VQ1+8PpOI631WuQc/Ts8HIlO8x0Q8/Q/jP6NsP+80IiV79yGF2qwpML6u+CCOg834VANrjkEgx+QK4y3wwou++Wy5XP8GxVDAkRB+3ed2DJduMN65RKHZh10GyEB5h2E982oAasIZcHOQ34hg90qSJMCb+LJ6tqWrCaclTLKP+C3Nmk2MLMWzU3WY=
+    - ELECTRON_CACHE: $HOME/.cache/electron
+    - ELECTRON_BUILDER_CACHE: $HOME/.cache/electron-builder
+
+cache:
+  yarn: true
+  directories:
+  - electron/node_modules
+  - electron/src/node_modules
+  - $HOME/.cache/electron
+  - $HOME/.cache/electron-builder
+  - $HOME/.npm/_prebuilds
+
+matrix:
+  include:
+  - os: linux
+    dist: trusty
+  - os: osx
+    osx_image: xcode8.3
 
 install:
-  - go get -t ./...
+  - ./ci-scripts/install_deps.sh
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
+
+before_script:
+  # add osx keychain and install yarn
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./ci-scripts/add-key.sh &&npm install -g yarn ;fi
+
+
+install:
+  # - go get -t ./...
   - go get github.com/golang/lint/golint
   - go get github.com/FiloSottile/vendorcheck
   # Install gometalinter and certain linters
@@ -20,7 +52,43 @@ script:
   - vendorcheck ./...
   - go test ./cmd/...
   - go test ./src/...
+  # build wallets
+  - cd electron
+  - yarn
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./build.sh 'linux/amd64' ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./build.sh 'darwin/amd64' ;fi
+  - cd ../
 
 # after_script:
 #   - golint -set_exit_status ./src/...
 #   - golint -set_exit_status ./cmd/...
+
+notifications:
+  email: false
+
+
+after_success:
+  - ls ./electron/release/
+#   - sh ./electron/set_tags.sh
+
+deploy:
+  provider: s3
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  bucket: "skycoin"
+  skip_cleanup: true
+  local_dir: electron/release
+  on:
+    repo: iketheadore/skycoin
+    branch: rl
+
+# deploy:
+#   provider: releases
+#   api_key:
+#     secure: gbweiQ63jVliz0TMsVWFCpuQv0sQ4x0SabdKh4Y5NncqMcUTCryy1Lr8nPXC1dGaIDy8ZXDcYMeVM+cBj4GolGj5EDvCkTtlrpyUsZ73Oj20pEdbX6TA6JVlAIsO9N/knJFl3ylXfFPEkXJSdaLwQCEWQuBz8hF4QETl693g4d47n3XLOY5e4N6YVZMrz+3KGNf4k0lrxV8eKVVaXMgeBuRYL13pVEuDXLEXQVa+2gUuDNDgCsxlb8yeyXWmYgVIDOM6euZ63wYGqcTBZQoctgxFtPU6VkACUinL3H584oikFtFH45n1UiWPpE9jBtorUBDpESCByfqvsUPZMimGxvUIAARh/aw1cM6SQs0+53lqPB+p8kG9SGb+/muU1BugaKdKTufR5jNG5SxUHVWKQfhV1U1lqDfgQMn9kWdkeCHrpvnLLIZVaj0l4cZNtiYx7KdLFdoFN8XJjgxbT9E3uFSGGxVWgH2RAvrob0fHThTd2hmVwduWb2Zn04D4zNS3X070/hclY+Uze2uWZR73JLgvojxQYPCWxJmLCcc6ogDo0j8esfNIhRYhRDIaYgC+A5avsStwm4wstn5H5CcaiQ9HF0SjG5L1PFej4vn62gvoT2mWdJIGN1NHVWfQySALKfZp5vRcniTPE9sLE7i6B8jR63ZFJMMaoFBWBxM2/W8=
+#   file_glob: true
+#   file: electron/release/*
+#   skip_cleanup: true
+#   on:
+#     repo: iketheadore/skycoin
+#     branch: rl

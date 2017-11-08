@@ -80,7 +80,7 @@ deploy:
   local_dir: electron/release
   on:
     repo: iketheadore/skycoin
-    branch: rl
+    branch: ci
 
 # deploy:
 #   provider: releases

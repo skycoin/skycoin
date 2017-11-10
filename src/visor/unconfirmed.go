@@ -193,7 +193,7 @@ func (utb *uncfmTxnBkt) forEach(f func(key cipher.SHA256, tx *UnconfirmedTxn) er
 	})
 }
 
-func (utb *uncfmTxnBkt) len() int {
+func (utb *uncfmTxnBkt) len() (int, error) {
 	// exclude the index
 	return utb.txns.Len()
 }
@@ -225,7 +225,7 @@ func (txus *txUnspents) get(key cipher.SHA256) (coin.UxArray, error) {
 	return uxs, nil
 }
 
-func (txus *txUnspents) len() int {
+func (txus *txUnspents) len() (int, error) {
 	return txus.bkt.Len()
 }
 
@@ -579,7 +579,7 @@ func All(tx UnconfirmedTxn) bool {
 }
 
 // Len returns the number of unconfirmed transactions
-func (utp *UnconfirmedTxnPool) Len() int {
+func (utp *UnconfirmedTxnPool) Len() (int, error) {
 	return utp.txns.len()
 }
 

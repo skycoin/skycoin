@@ -34,7 +34,12 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendOr404(w, gateway.GetBlockchainMetadata())
+		bcm, err := gateway.GetBlockchainMetadata()
+		if err != nil {
+			wh.Error500(w)
+			return
+		}
+		wh.SendOr404(w, bcm)
 	}
 }
 

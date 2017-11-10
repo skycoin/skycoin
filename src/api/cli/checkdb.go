@@ -61,7 +61,10 @@ func checkdb(c *gcli.Context) error {
 	return nil
 }
 
+// IntegrityCheck loads the blockchain in arbitrating mode to check for errors
 func IntegrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
-	_, err := visor.NewBlockchain(db, genesisPubkey, visor.Arbitrating(true))
+	_, err := visor.NewBlockchain(db, genesisPubkey, visor.BlockchainOptions{
+		Arbitrating: true,
+	})
 	return err
 }

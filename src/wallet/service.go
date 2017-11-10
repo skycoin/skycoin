@@ -165,12 +165,8 @@ func (serv *Service) GetWalletsReadable() []*ReadableWallet {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (serv *Service) CreateAndSignTransaction(wltID string,
-	vld Validator,
-	unspent blockdb.UnspentGetter,
-	headTime uint64,
-	amt Balance,
-	dest cipher.Address) (*coin.Transaction, error) {
+func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
+	headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)

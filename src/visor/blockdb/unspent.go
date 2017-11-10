@@ -5,10 +5,12 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -37,101 +39,92 @@ type Unspents struct {
 		pool   map[string]coin.UxOut
 		uxhash cipher.SHA256
 	}
-	sync.Mutex
+	sync.RWMutex
 }
 
-type unspentMeta struct {
-	bucket.Bucket
-}
+type unspentMeta struct{}
 
-func newUnspentMeta(db *bolt.DB) (*unspentMeta, error) {
-	bkt, err := bucket.New(unspentMetaBkt, db)
+func (m unspentMeta) getXorHash(tx *bolt.Tx) (cipher.SHA256, error) {
+	v, err := dbutil.GetBucketValue(tx, unspentMetaBkt, xorhashKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create unspent_meta bucket: %v", err)
+		switch err.(type) {
+		case dbutil.ObjectNotExistErr:
+			return cipher.SHA256{}, nil
+		default:
+			return cipher.SHA256{}, err
+		}
 	}
 
-	return &unspentMeta{
-		Bucket: *bkt,
-	}, nil
+	var hash cipher.SHA256
+	copy(hash[:], v[:])
+	return hash, nil
 }
 
-func (m unspentMeta) getXorHashWithTx(tx *bolt.Tx) (cipher.SHA256, error) {
-	if v := m.GetWithTx(tx, xorhashKey); v != nil {
-		var hash cipher.SHA256
-		copy(hash[:], v[:])
-		return hash, nil
-	}
-
-	return cipher.SHA256{}, nil
+func (m *unspentMeta) setXorHash(tx *bolt.Tx, hash cipher.SHA256) error {
+	return dbutil.PutBucketValue(tx, unspentMetaBkt, xorhashKey, hash[:])
 }
 
-func (m *unspentMeta) setXorHashWithTx(tx *bolt.Tx, hash cipher.SHA256) error {
-	return m.PutWithTx(tx, xorhashKey, hash[:])
-}
+type pool struct{}
 
-type pool struct {
-	bucket.Bucket
-}
+func (pl pool) get(tx *bolt.Tx, hash cipher.SHA256) (*coin.UxOut, bool, error) {
+	var out coin.UxOut
 
-func newPool(db *bolt.DB) (*pool, error) {
-	bkt, err := bucket.New(unspentPoolBkt, db)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pool{
-		Bucket: *bkt,
-	}, nil
-}
-
-func (pl pool) getWithTx(tx *bolt.Tx, hash cipher.SHA256) (*coin.UxOut, bool, error) {
-	if v := pl.GetWithTx(tx, hash[:]); v != nil {
-		var out coin.UxOut
-		if err := encoder.DeserializeRaw(v, &out); err != nil {
+	if err := dbutil.GetBucketObjectDecoded(tx, unspentPoolBkt, hash[:], &out); err != nil {
+		switch err.(type) {
+		case dbutil.ObjectNotExistErr:
+			return nil, false, nil
+		default:
 			return nil, false, err
 		}
-		return &out, true, nil
 	}
-	return nil, false, nil
+
+	return &out, true, nil
 }
 
-func (pl pool) setWithTx(tx *bolt.Tx, hash cipher.SHA256, ux coin.UxOut) error {
-	v := encoder.Serialize(ux)
-	return pl.PutWithTx(tx, hash[:], v)
+func (pl pool) set(tx *bolt.Tx, hash cipher.SHA256, ux coin.UxOut) error {
+	return dbutil.PutBucketValue(tx, unspentPoolBkt, hash[:], encoder.Serialize(ux))
 }
 
-func (pl *pool) deleteWithTx(tx *bolt.Tx, hash cipher.SHA256) error {
-	return pl.DeleteWithTx(tx, hash[:])
+func (pl *pool) delete(tx *bolt.Tx, hash cipher.SHA256) error {
+	return dbutil.Delete(tx, unspentPoolBkt, hash[:])
 }
 
 // NewUnspentPool creates new unspent pool instance
 func NewUnspentPool(db *bolt.DB) (*Unspents, error) {
-	up := &Unspents{db: db}
+	if err := db.Update(func(tx *bolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists(unspentPoolBkt); err != nil {
+			return dbutil.NewCreateBucketFailedErr(unspentPoolBkt, err)
+		}
+
+		if _, err := tx.CreateBucketIfNotExists(unspentMetaBkt); err != nil {
+			return dbutil.NewCreateBucketFailedErr(unspentMetaBkt, err)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	up := &Unspents{
+		db:   db,
+		pool: &pool{},
+		meta: &unspentMeta{},
+	}
 	up.cache.pool = make(map[string]coin.UxOut)
 
-	pool, err := newPool(db)
-	if err != nil {
-		return nil, err
-	}
-	up.pool = pool
-
-	meta, err := newUnspentMeta(db)
-	if err != nil {
-		return nil, err
-	}
-	up.meta = meta
-
-	// load from db
-	if err := up.syncCache(); err != nil {
+	// Load from db
+	if err := db.View(func(tx *bolt.Tx) error {
+		return up.syncCache(tx)
+	}); err != nil {
 		return nil, err
 	}
 
 	return up, nil
 }
 
-func (up *Unspents) syncCache() error {
-	// load unspent outputs
-	if err := up.pool.ForEach(func(k, v []byte) error {
+func (up *Unspents) syncCache(tx *bolt.Tx) error {
+	// Load unspent outputs
+	if err := dbutil.ForEach(tx, unspentPoolBkt, func(k, v []byte) error {
 		var hash cipher.SHA256
 		copy(hash[:], k[:])
 
@@ -146,8 +139,8 @@ func (up *Unspents) syncCache() error {
 		return err
 	}
 
-	// load uxhash
-	uxhash, err := up.getUxHashFromDB()
+	// Load uxhash
+	uxhash, err := up.meta.getXorHash(tx)
 	if err != nil {
 		return err
 	}
@@ -156,6 +149,7 @@ func (up *Unspents) syncCache() error {
 	return nil
 }
 
+// ProcessBlock adds unspents from a block to the unspent pool
 func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
 		var (
@@ -166,7 +160,7 @@ func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 		)
 
 		for _, txn := range b.Body.Transactions {
-			// get uxouts that need to be deleted
+			// Get uxouts that need to be deleted
 			uxs, err := up.getArray(txn.In)
 			if err != nil {
 				return func() {}, err
@@ -175,7 +169,7 @@ func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 			delUxs = append(delUxs, uxs...)
 
 			// Remove spent outputs
-			if _, err = up.deleteWithTx(tx, txn.In); err != nil {
+			if _, err = up.delete(tx, txn.In); err != nil {
 				return func() {}, err
 			}
 
@@ -183,7 +177,7 @@ func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 			txUxs := coin.CreateUnspents(b.Head, txn)
 			addUxs = append(addUxs, txUxs...)
 			for i := range txUxs {
-				uxHash, err = up.addWithTx(tx, txUxs[i])
+				uxHash, err = up.add(tx, txUxs[i])
 				if err != nil {
 					return func() {}, err
 				}
@@ -192,23 +186,23 @@ func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 
 		// update caches
 		up.Lock()
+		defer up.Unlock()
 		up.deleteUxFromCache(delUxs)
 		up.addUxToCache(addUxs)
 		up.updateUxHashInCache(uxHash)
-		up.Unlock()
 
 		return func() {
 			up.Lock()
+			defer up.Unlock()
 			// reverse the cache
 			up.deleteUxFromCache(addUxs)
 			up.addUxToCache(delUxs)
 			up.updateUxHashInCache(oldUxHash)
-			up.Unlock()
 		}, nil
 	}
 }
 
-func (up *Unspents) addWithTx(tx *bolt.Tx, ux coin.UxOut) (uxhash cipher.SHA256, err error) {
+func (up *Unspents) add(tx *bolt.Tx, ux coin.UxOut) (uxhash cipher.SHA256, err error) {
 	// will rollback all updates if return is not nil
 	// in case of unexpected panic, we must catch it and return error
 	defer func() {
@@ -223,17 +217,17 @@ func (up *Unspents) addWithTx(tx *bolt.Tx, ux coin.UxOut) (uxhash cipher.SHA256,
 		return cipher.SHA256{}, fmt.Errorf("attemps to insert uxout:%v twice into the unspent pool", h.Hex())
 	}
 
-	xorhash, err := up.meta.getXorHashWithTx(tx)
+	xorhash, err := up.meta.getXorHash(tx)
 	if err != nil {
 		return cipher.SHA256{}, err
 	}
 
 	xorhash = xorhash.Xor(ux.SnapshotHash())
-	if err := up.meta.setXorHashWithTx(tx, xorhash); err != nil {
+	if err := up.meta.setXorHash(tx, xorhash); err != nil {
 		return cipher.SHA256{}, err
 	}
 
-	err = up.pool.setWithTx(tx, h, ux)
+	err = up.pool.set(tx, h, ux)
 	if err != nil {
 		return cipher.SHA256{}, err
 	}
@@ -257,11 +251,10 @@ func (up *Unspents) updateUxHashInCache(hash cipher.SHA256) {
 	up.cache.uxhash = hash
 }
 
-// GetArray returns UxOut by given hash array, will return error when
-// if any of the hashes is not exist.
+// GetArray returns UxOut for a set of hashes, will return error if any of the hashes do not exist in the pool.
 func (up *Unspents) GetArray(hashes []cipher.SHA256) (coin.UxArray, error) {
-	up.Lock()
-	defer up.Unlock()
+	up.RLock()
+	defer up.RUnlock()
 	return up.getArray(hashes)
 }
 
@@ -280,30 +273,31 @@ func (up *Unspents) getArray(hashes []cipher.SHA256) (coin.UxArray, error) {
 
 // Get returns the uxout value of given hash
 func (up *Unspents) Get(h cipher.SHA256) (coin.UxOut, bool) {
-	up.Lock()
-	ux, ok := up.cache.pool[h.Hex()]
-	up.Unlock()
+	up.RLock()
+	defer up.RUnlock()
 
+	ux, ok := up.cache.pool[h.Hex()]
 	return ux, ok
 }
 
 // GetAll returns Pool as an array. Note: they are not in any particular order.
 func (up *Unspents) GetAll() (coin.UxArray, error) {
-	up.Lock()
+	up.RLock()
+	defer up.RUnlock()
+
 	arr := make(coin.UxArray, 0, len(up.cache.pool))
 	for _, ux := range up.cache.pool {
 		arr = append(arr, ux)
 	}
-	up.Unlock()
 
 	return arr, nil
 }
 
 // delete delete unspent of given hashes
-func (up *Unspents) deleteWithTx(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SHA256, error) { // nolint: unparam
+func (up *Unspents) delete(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SHA256, error) { // nolint: unparam
 	var uxHash cipher.SHA256
 	for _, hash := range hashes {
-		ux, ok, err := up.pool.getWithTx(tx, hash)
+		ux, ok, err := up.pool.get(tx, hash)
 		if err != nil {
 			return cipher.SHA256{}, err
 		}
@@ -312,7 +306,7 @@ func (up *Unspents) deleteWithTx(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SH
 			continue
 		}
 
-		uxHash, err = up.meta.getXorHashWithTx(tx)
+		uxHash, err = up.meta.getXorHash(tx)
 		if err != nil {
 			return cipher.SHA256{}, err
 		}
@@ -320,11 +314,11 @@ func (up *Unspents) deleteWithTx(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SH
 		uxHash = uxHash.Xor(ux.SnapshotHash())
 
 		// update uxhash
-		if err = up.meta.setXorHashWithTx(tx, uxHash); err != nil {
+		if err = up.meta.setXorHash(tx, uxHash); err != nil {
 			return cipher.SHA256{}, err
 		}
 
-		if err := up.pool.deleteWithTx(tx, hash); err != nil {
+		if err := up.pool.delete(tx, hash); err != nil {
 			return cipher.SHA256{}, err
 		}
 	}
@@ -334,23 +328,25 @@ func (up *Unspents) deleteWithTx(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SH
 
 // Len returns the unspent outputs num
 func (up *Unspents) Len() uint64 {
-	up.Lock()
-	defer up.Unlock()
+	up.RLock()
+	defer up.RUnlock()
 	return uint64(len(up.cache.pool))
 }
 
 // Contains check if the hash of uxout does exist in the pool
 func (up *Unspents) Contains(h cipher.SHA256) bool {
-	up.Lock()
+	up.RLock()
+	defer up.RUnlock()
 	_, ok := up.cache.pool[h.Hex()]
-	up.Unlock()
 	return ok
 }
 
 // GetUnspentsOfAddrs returns unspent outputs map of given addresses,
 // the address as return map key, unspent outputs as value.
 func (up *Unspents) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
-	up.Lock()
+	up.RLock()
+	defer up.RUnlock()
+
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -362,7 +358,6 @@ func (up *Unspents) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOut
 			addrUxs[ux.Body.Address] = append(addrUxs[ux.Body.Address], ux)
 		}
 	}
-	up.Unlock()
 	return addrUxs
 }
 
@@ -370,16 +365,7 @@ func (up *Unspents) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOut
 // Must be called after Block is fully initialized,
 // and before its outputs are added to the unspent pool
 func (up *Unspents) GetUxHash() cipher.SHA256 {
-	up.Lock()
-	defer up.Unlock()
+	up.RLock()
+	defer up.RUnlock()
 	return up.cache.uxhash
-}
-
-func (up *Unspents) getUxHashFromDB() (cipher.SHA256, error) {
-	if v := up.meta.Get(xorhashKey); v != nil {
-		var hash cipher.SHA256
-		copy(hash[:], v[:])
-		return hash, nil
-	}
-	return cipher.SHA256{}, nil
 }

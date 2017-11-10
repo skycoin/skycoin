@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test lint check format install-linters release clean help
+.PHONY: run run-help test lint lint-fast check format install-linters release clean help
 
 # Static files directory
 STATIC_DIR = src/gui/static
@@ -17,9 +17,13 @@ test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-lint: ## Run linters. requires vendorcheck, gometalinter
+lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --enable-gc --warn-unmatched-nolint --disable-all -E goimports -E unparam --tests --vendor ./...
+	gometalinter --deadline=2m --enable-gc --warn-unmatched-nolint --disable-all -E goimports -E unparam --tests --vendor ./...
+
+lint-fast: ## Run linters. Use make install-linters first. Skips slow linters.
+	vendorcheck ./...
+	gometalinter --deadline=2m --enable-gc --warn-unmatched-nolint --disable-all -E goimports --tests --vendor ./...
 
 check: lint test ## Run tests and linters
 

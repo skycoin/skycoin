@@ -77,9 +77,8 @@ func MakeRPC(v *Visor) RPC {
 }
 
 // GetBlockchainMetadata get blockchain meta data
-func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
-	bm := v.GetBlockchainMetadata()
-	return &bm
+func (rpc RPC) GetBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
+	return NewBlockchainMetadata(v)
 }
 
 // GetUnspent gets unspent
@@ -112,12 +111,12 @@ func (rpc RPC) GetBlock(v *Visor, seq uint64) (*coin.SignedBlock, error) {
 }
 
 // GetBlocks gets blocks
-func (rpc RPC) GetBlocks(v *Visor, start, end uint64) []coin.SignedBlock {
+func (rpc RPC) GetBlocks(v *Visor, start, end uint64) ([]coin.SignedBlock, error) {
 	return v.GetBlocks(start, end)
 }
 
 // GetLastBlocks returns the last N blocks
-func (rpc RPC) GetLastBlocks(v *Visor, num uint64) []coin.SignedBlock {
+func (rpc RPC) GetLastBlocks(v *Visor, num uint64) ([]coin.SignedBlock, error) {
 	return v.GetLastBlocks(num)
 }
 

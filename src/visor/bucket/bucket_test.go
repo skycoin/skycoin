@@ -1,15 +1,12 @@
 package bucket
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
 
-	"encoding/json"
-
-	"bytes"
-
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/testutil"
@@ -42,11 +39,11 @@ func TestBktUpdate(t *testing.T) {
 
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("bkt%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		// init value
 		for k, v := range tc.Init {
 			d, err := json.Marshal(v)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			bkt.Put([]byte(k), d)
 		}
 
@@ -64,7 +61,7 @@ func TestBktUpdate(t *testing.T) {
 				}
 				return d, nil
 			})
-			assert.Nil(t, err)
+			require.NoError(t, err)
 		}
 
 		// check the updated value
@@ -72,8 +69,8 @@ func TestBktUpdate(t *testing.T) {
 			val := bkt.Get([]byte(k))
 			var p person
 			err := json.NewDecoder(bytes.NewReader(val)).Decode(&p)
-			assert.Nil(t, err)
-			assert.Equal(t, v, p.Age)
+			require.NoError(t, err)
+			require.Equal(t, v, p.Age)
 		}
 	}
 }
@@ -83,16 +80,16 @@ func TestReset(t *testing.T) {
 	defer cancel()
 
 	bkt, err := New([]byte("tete"), db)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
-	assert.Nil(t, bkt.Put([]byte("k1"), []byte("v1")))
+	require.Nil(t, bkt.Put([]byte("k1"), []byte("v1")))
 
-	assert.Nil(t, bkt.Put([]byte("k2"), []byte("v2")))
+	require.Nil(t, bkt.Put([]byte("k2"), []byte("v2")))
 
-	assert.Equal(t, []byte("v1"), bkt.Get([]byte("k1")))
-	assert.Equal(t, []byte("v2"), bkt.Get([]byte("k2")))
+	require.Equal(t, []byte("v1"), bkt.Get([]byte("k1")))
+	require.Equal(t, []byte("v2"), bkt.Get([]byte("k2")))
 
-	assert.Nil(t, bkt.Reset())
+	require.Nil(t, bkt.Reset())
 
 	v1 := bkt.Get([]byte("k1"))
 	if v1 != nil {
@@ -136,18 +133,18 @@ func TestDelete(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			bkt, err := New([]byte(fmt.Sprintf("abc%d", rand.Int31n(1024))), db)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			for k, v := range tc.Init {
 				err := bkt.Put([]byte(k), []byte(v))
-				assert.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			err = bkt.Delete([]byte(tc.Del))
-			assert.Equal(t, tc.Err, err)
+			require.Equal(t, tc.Err, err)
 
 			// check if this value is deleted
 			v := bkt.Get([]byte(tc.Del))
-			assert.Nil(t, v)
+			require.Nil(t, v)
 		})
 	}
 }
@@ -169,7 +166,7 @@ func TestGetAll(t *testing.T) {
 
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("abc%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		// init bkt
 		for k, v := range tc.init {
 			bkt.Put([]byte(k), []byte(v))
@@ -178,7 +175,7 @@ func TestGetAll(t *testing.T) {
 		// get all
 		vs := bkt.GetAll()
 		for k, v := range vs {
-			assert.Equal(t, string(v), tc.init[k.(string)])
+			require.Equal(t, string(v), tc.init[k.(string)])
 		}
 	}
 }
@@ -206,7 +203,7 @@ func TestRangeUpdate(t *testing.T) {
 
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("asd%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		for k, v := range tc.init {
 			bkt.Put([]byte(k), []byte(v))
 		}
@@ -218,7 +215,7 @@ func TestRangeUpdate(t *testing.T) {
 
 		// check if the value has been updated
 		for k, v := range tc.up {
-			assert.Equal(t, []byte(v), bkt.Get([]byte(k)))
+			require.Equal(t, []byte(v), bkt.Get([]byte(k)))
 		}
 	}
 }
@@ -265,14 +262,14 @@ func TestIsExsit(t *testing.T) {
 
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("asdf%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		// init the bucket
 		for k, v := range tc.init {
 			bkt.Put([]byte(k), []byte(v))
 		}
 
-		assert.Equal(t, tc.exist, bkt.IsExist([]byte(tc.k)))
+		require.Equal(t, tc.exist, bkt.IsExist([]byte(tc.k)))
 	}
 }
 
@@ -295,7 +292,7 @@ func TestForEach(t *testing.T) {
 	defer cancel()
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("fasd%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		for k, v := range tc.init {
 			bkt.Put([]byte(k), []byte(v))
 		}
@@ -303,18 +300,18 @@ func TestForEach(t *testing.T) {
 		var count int
 		bkt.ForEach(func(k, v []byte) error {
 			count++
-			assert.Equal(t, string(v), tc.init[string(k)])
+			require.Equal(t, string(v), tc.init[string(k)])
 			return nil
 		})
 
-		assert.Equal(t, len(tc.init), count)
+		require.Equal(t, len(tc.init), count)
 	}
 }
 
 func TestLen(t *testing.T) {
 	testCases := []struct {
-		data map[string]string
-		len  int
+		data   map[string]string
+		length int
 	}{
 		{
 			map[string]string{},
@@ -341,12 +338,14 @@ func TestLen(t *testing.T) {
 	defer cl()
 	for _, tc := range testCases {
 		bkt, err := New([]byte(fmt.Sprintf("adsf%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		for k, v := range tc.data {
 			bkt.Put([]byte(k), []byte(v))
 		}
 
-		assert.Equal(t, tc.len, bkt.Len())
+		length, err := bkt.Len()
+		require.NoError(t, err)
+		require.Equal(t, tc.length, length)
 	}
 }
 
@@ -355,7 +354,7 @@ func TestBucketIsEmpty(t *testing.T) {
 	defer td()
 
 	bkt, err := New([]byte("bkt1"), db)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.True(t, bkt.IsEmpty())
 

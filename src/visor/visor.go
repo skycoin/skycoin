@@ -133,7 +133,9 @@ func NewVisor(c Config) (*Visor, error) {
 		}
 	}
 
-	db, bc, err := loadBlockchain(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
+	db, bc, err := loadBlockchain(c.DBPath, c.BlockchainPubkey, BlockchainOptions{
+		Arbitrating: c.Arbitrating,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -272,16 +274,25 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can create blocks")
 	}
-	if vs.Unconfirmed.Len() == 0 {
+
+	length, err := vs.Unconfirmed.Len()
+	if err != nil {
+		return sb, err
+	}
+
+	if length == 0 {
 		return sb, errors.New("No transactions")
 	}
+
 	txns := vs.Unconfirmed.RawTxns()
 	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+
 	b, err := vs.Blockchain.NewBlock(txns, when)
 	if err != nil {
 		return sb, err
 	}
+
 	return vs.SignBlock(*b), nil
 }
 
@@ -303,7 +314,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	}
 
 	if err := vs.db.Update(func(tx *bolt.Tx) error {
-		if err := vs.Blockchain.ExecuteBlockWithTx(tx, &b); err != nil {
+		if err := vs.Blockchain.ExecuteBlock(tx, &b); err != nil {
 			return err
 		}
 
@@ -405,7 +416,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 }
 
 // GetBlockchainMetadata returns descriptive Blockchain information
-func (vs *Visor) GetBlockchainMetadata() BlockchainMetadata {
+func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 	return NewBlockchainMetadata(vs)
 }
 
@@ -423,7 +434,7 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 // GetBlocks returns multiple blocks between start and end (not including end). Returns
 // empty slice if unable to fulfill request, it does not return nil.
 // move to blockdb
-func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
+func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlocks(start, end)
 }
 
@@ -583,7 +594,7 @@ func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 }
 
 // GetLastBlocks returns last N blocks
-func (vs *Visor) GetLastBlocks(num uint64) []coin.SignedBlock {
+func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetLastBlocks(num)
 }
 

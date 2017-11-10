@@ -22,18 +22,22 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
+func NewBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
 	head, err := v.Blockchain.Head()
 	if err != nil {
-		logger.Error("%v", err)
-		return BlockchainMetadata{}
+		return nil, err
 	}
 
-	return BlockchainMetadata{
+	unconfirmedLen, err := v.Unconfirmed.Len()
+	if err != nil {
+		return nil, err
+	}
+
+	return &BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head.Head),
 		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(v.Unconfirmed.Len()),
-	}
+		Unconfirmed: uint64(unconfirmedLen),
+	}, nil
 }
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us

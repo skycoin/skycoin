@@ -90,14 +90,18 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		_, err = NewBlockchain(db, pubkey, Arbitrating(false))
+		_, err = NewBlockchain(db, pubkey, BlockchainOptions{
+			Arbitrating: false,
+		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "find no signature of block:")
 	}()
 
 	// Loading this invalid db should cause loadBlockchain() to recreate the db
 	t.Logf("Loading the corrupted db")
-	db, bc, err := loadBlockchain(badDBFile, pubkey, false)
+	db, bc, err := loadBlockchain(badDBFile, pubkey, BlockchainOptions{
+		Arbitrating: false,
+	})
 	require.NoError(t, err)
 
 	err = db.Close()
@@ -121,7 +125,9 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 		}()
 
 		// The new db is not corrupted and loads without error
-		bc, err := NewBlockchain(db, pubkey, Arbitrating(false))
+		bc, err := NewBlockchain(db, pubkey, BlockchainOptions{
+			Arbitrating: false,
+		})
 		require.NoError(t, err)
 		require.NotNil(t, bc)
 	}()
@@ -143,7 +149,9 @@ func TestNormalLoadDBErr(t *testing.T) {
 		removeCorruptDBFiles(t, badDBFile)
 	}()
 
-	db, bc, err := loadBlockchain(badDBFile, pubkey, false)
+	db, bc, err := loadBlockchain(badDBFile, pubkey, BlockchainOptions{
+		Arbitrating: false,
+	})
 	require.Error(t, err)
 	require.NotEqual(t, ErrSignatureLost, err)
 	require.Nil(t, db)

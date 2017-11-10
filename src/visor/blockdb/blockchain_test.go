@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
-	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -23,47 +23,65 @@ var (
 	incTime      uint64 = 3600 * 1000
 	genCoins     uint64 = 1000e6
 	genCoinHours uint64 = 1000 * 1000
-
-	failedWhenSave bool
 )
 
-func _feeCalc(t *coin.Transaction) (uint64, error) {
+func feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func cleanState() {
-	failedWhenSave = false
+type fakeStorage struct {
+	tree    *fakeBlockTree
+	sigs    *fakeSignatureStore
+	unspent *fakeUnspentPool
+}
+
+func newFakeStorage() *fakeStorage {
+	var failedWhenSaved bool
+	// var failedWhenSaved2 bool
+	// var failedWhenSaved3 bool
+	return &fakeStorage{
+		tree:    newFakeBlockTree(&failedWhenSaved),
+		sigs:    newFakeSigStore(&failedWhenSaved),
+		unspent: newFakeUnspentPool(&failedWhenSaved),
+	}
 }
 
 type fakeBlockTree struct {
 	blocks     map[string]*coin.Block
 	saveFailed bool
+
+	// state tracking: do not configure directly
+	// set to true if saveFailed was true and certain operations were performed
+	failedWhenSaved *bool
 }
 
-func newFakeBlockTree() *fakeBlockTree {
+func newFakeBlockTree(failedWhenSaved *bool) *fakeBlockTree {
 	return &fakeBlockTree{
-		blocks: make(map[string]*coin.Block),
+		blocks:          make(map[string]*coin.Block),
+		failedWhenSaved: failedWhenSaved,
 	}
 }
 
-func (bt fakeBlockTree) AddBlockWithTx(tx *bolt.Tx, b *coin.Block) error {
+func (bt *fakeBlockTree) AddBlock(tx *bolt.Tx, b *coin.Block) error {
 	if bt.saveFailed {
-		failedWhenSave = true
-		return errors.New("intentional failed")
+		if bt.failedWhenSaved != nil {
+			*bt.failedWhenSaved = true
+		}
+		return errors.New("intentionally failed")
 	}
 	bt.blocks[b.HashHeader().Hex()] = b
 	return nil
 }
 
-func (bt fakeBlockTree) GetBlock(hash cipher.SHA256) *coin.Block {
-	if failedWhenSave {
-		return nil
+func (bt *fakeBlockTree) GetBlock(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, error) {
+	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
+		return nil, nil
 	}
-	return bt.blocks[hash.Hex()]
+	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt fakeBlockTree) GetBlockInDepth(dep uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block {
-	return nil
+func (bt *fakeBlockTree) GetBlockInDepth(tx *bolt.Tx, dep uint64, filter Walker) (*coin.Block, error) {
+	return nil, nil
 }
 
 type fakeSignatureStore struct {
@@ -71,26 +89,31 @@ type fakeSignatureStore struct {
 	sigs       map[string]cipher.Sig
 	saveFailed bool
 	getSigErr  error
+
+	failedWhenSaved *bool
 }
 
-func newFakeSigStore() *fakeSignatureStore {
+func newFakeSigStore(failedWhenSaved *bool) *fakeSignatureStore {
 	return &fakeSignatureStore{
-		sigs: make(map[string]cipher.Sig),
+		sigs:            make(map[string]cipher.Sig),
+		failedWhenSaved: failedWhenSaved,
 	}
 }
 
-func (ss fakeSignatureStore) AddWithTx(tx *bolt.Tx, hash cipher.SHA256, sig cipher.Sig) error {
+func (ss *fakeSignatureStore) Add(tx *bolt.Tx, hash cipher.SHA256, sig cipher.Sig) error {
 	if ss.saveFailed {
-		failedWhenSave = true
-		return errors.New("intentional failed")
+		if ss.failedWhenSaved != nil {
+			*ss.failedWhenSaved = true
+		}
+		return errors.New("intentionally failed")
 	}
 
 	ss.sigs[hash.Hex()] = sig
 	return nil
 }
 
-func (ss fakeSignatureStore) Get(hash cipher.SHA256) (cipher.Sig, bool, error) {
-	if failedWhenSave {
+func (ss *fakeSignatureStore) Get(tx *bolt.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
+	if ss.failedWhenSaved != nil && *ss.failedWhenSaved {
 		return cipher.Sig{}, false, nil
 	}
 
@@ -106,24 +129,27 @@ type fakeUnspentPool struct {
 	outs       map[cipher.SHA256]coin.UxOut
 	uxHash     cipher.SHA256
 	saveFailed bool
+
+	failedWhenSaved *bool
 }
 
-func newFakeUnspentsPool() *fakeUnspentPool {
+func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	return &fakeUnspentPool{
-		outs: make(map[cipher.SHA256]coin.UxOut),
+		outs:            make(map[cipher.SHA256]coin.UxOut),
+		failedWhenSaved: failedWhenSaved,
 	}
 }
 
-func (fup fakeUnspentPool) Len() uint64 {
+func (fup *fakeUnspentPool) Len() uint64 {
 	return uint64(len(fup.outs))
 }
 
-func (fup fakeUnspentPool) Get(h cipher.SHA256) (coin.UxOut, bool) {
+func (fup *fakeUnspentPool) Get(h cipher.SHA256) (coin.UxOut, bool) {
 	out, ok := fup.outs[h]
 	return out, ok
 }
 
-func (fup fakeUnspentPool) GetAll() (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetAll() (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(fup.outs))
 	for _, out := range fup.outs {
 		outs = append(outs, out)
@@ -132,7 +158,7 @@ func (fup fakeUnspentPool) GetAll() (coin.UxArray, error) {
 	return outs, nil
 }
 
-func (fup fakeUnspentPool) GetArray(hashes []cipher.SHA256) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetArray(hashes []cipher.SHA256) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(hashes))
 	for _, h := range hashes {
 		ux, ok := fup.outs[h]
@@ -145,12 +171,17 @@ func (fup fakeUnspentPool) GetArray(hashes []cipher.SHA256) (coin.UxArray, error
 	return outs, nil
 }
 
-func (fup fakeUnspentPool) GetUxHash() cipher.SHA256 {
+func (fup *fakeUnspentPool) GetUxHash() cipher.SHA256 {
 	return fup.uxHash
 }
 
-func (fup fakeUnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
-	addrOutMap := map[cipher.Address]coin.UxArray{}
+func (fup *fakeUnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		addrm[a] = struct{}{}
+	}
+
+	addrOutMap := make(coin.AddressUxOuts)
 	for _, out := range fup.outs {
 		addr := out.Body.Address
 		addrOutMap[addr] = append(addrOutMap[addr], out)
@@ -159,72 +190,25 @@ func (fup fakeUnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) coin.Addre
 	return addrOutMap
 }
 
-func (fup fakeUnspentPool) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
+func (fup *fakeUnspentPool) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
 		if fup.saveFailed {
-			failedWhenSave = true
-			return func() {}, errors.New("intentional failed")
+			if fup.failedWhenSaved != nil {
+				*fup.failedWhenSaved = true
+			}
+			return func() {}, errors.New("intentionally failed")
 		}
 		return func() {}, nil
 	}
 }
 
-func (fup fakeUnspentPool) Contains(h cipher.SHA256) bool {
+func (fup *fakeUnspentPool) Contains(h cipher.SHA256) bool {
 	_, ok := fup.outs[h]
 	return ok
 }
 
-func TestNewBlockchain(t *testing.T) {
-	// walker := func(hps []coin.HashPair) cipher.SHA256 {
-	// 	return hps[0].Hash
-	// }
-
-	// tt := []struct {
-	// 	name string
-	// 	wlk  func(hps []coin.HashPair) cipher.SHA256
-	// 	tree blockTree
-	// 	sigs signatureStore
-	// 	err  error
-	// }{
-	// 	{
-	// 		"ok",
-	// 		false,
-	// 		walker,
-	// 		&fakeBlockTree{},
-	// 		&fakeSignatureStore{},
-	// 		nil,
-	// 	},
-	// }
-
-	// for _, tc := range tt {
-	// 	t.Run(tc.name, func(t *testing.T) {
-	// 		db, err := testutil.PrepareDB(t)
-	// 		require.NoError(t, err)
-	// 		bc, err := NewBlockchain(db, walker)
-	// 		require.Equal(t, , actual interface{}, msgAndArgs ...interface{})
-	// 	})
-	// }
-
-	// bc, err := NewBlockchain(db, func(hps []coin.HashPair) cipher.SHA256 {
-	// 	return hps[0].Hash
-	// })
-
-	// assert.Nil(t, err)
-	// assert.NotNil(t, bc.db)
-	// assert.NotNil(t, bc.UnspentPool())
-	// assert.NotNil(t, bc.meta)
-
-	// // check the existence of buckets
-	// db.View(func(tx *bolt.Tx) error {
-	// 	assert.NotNil(t, tx.Bucket([]byte("unspent_pool")))
-	// 	assert.NotNil(t, tx.Bucket([]byte("unspent_meta")))
-	// 	assert.NotNil(t, tx.Bucket([]byte("blockchain_meta")))
-	// 	return nil
-	// })
-}
-
-func DefaultWalker(hps []coin.HashPair) cipher.SHA256 {
-	return hps[0].Hash
+func DefaultWalker(tx *bolt.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+	return hps[0].Hash, true
 }
 
 func makeGenesisBlock(t *testing.T) coin.SignedBlock {
@@ -247,18 +231,22 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 		headSeq       uint64
 	}
 
+	type failedSaves struct {
+		tree    bool
+		sigs    bool
+		unspent bool
+	}
+
 	tt := []struct {
-		name     string
-		tree     BlockTree
-		sigs     BlockSigs
-		unspents UnspentPool
-		expect   expect
+		name        string
+		fakeStorage *fakeStorage
+		failedSaves failedSaves
+		expect      expect
 	}{
 		{
 			"ok",
-			newFakeBlockTree(),
-			newFakeSigStore(),
-			newFakeUnspentsPool(),
+			newFakeStorage(),
+			failedSaves{},
 			expect{
 				nil,
 				true,
@@ -269,11 +257,12 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 		},
 		{
 			"save sig failed",
-			newFakeBlockTree(),
-			fakeSignatureStore{saveFailed: true},
-			newFakeUnspentsPool(),
+			newFakeStorage(),
+			failedSaves{
+				sigs: true,
+			},
 			expect{
-				errors.New("save signature failed: intentional failed"),
+				errors.New("save signature failed: intentionally failed"),
 				false,
 				false,
 				false,
@@ -282,11 +271,12 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 		},
 		{
 			"save block failed",
-			fakeBlockTree{saveFailed: true},
-			newFakeSigStore(),
-			newFakeUnspentsPool(),
+			newFakeStorage(),
+			failedSaves{
+				tree: true,
+			},
 			expect{
-				errors.New("save block failed: intentional failed"),
+				errors.New("save block failed: intentionally failed"),
 				false,
 				false,
 				false,
@@ -295,11 +285,12 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 		},
 		{
 			"unspent process block failed",
-			newFakeBlockTree(),
-			newFakeSigStore(),
-			fakeUnspentPool{saveFailed: true},
+			newFakeStorage(),
+			failedSaves{
+				unspent: true,
+			},
 			expect{
-				errors.New("intentional failed"),
+				errors.New("intentionally failed"),
 				false,
 				false,
 				false,
@@ -310,32 +301,38 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			cleanState()
 			db, closeDB := testutil.PrepareDB(t)
 			defer closeDB()
-			bc, err := createBlockchain(db,
-				DefaultWalker,
-				tc.tree,
-				tc.sigs,
-				tc.unspents)
+
+			tc.fakeStorage.tree.saveFailed = tc.failedSaves.tree
+			tc.fakeStorage.sigs.saveFailed = tc.failedSaves.sigs
+			tc.fakeStorage.unspent.saveFailed = tc.failedSaves.unspent
+
+			bc, err := createBlockchain(db, DefaultWalker, tc.fakeStorage.tree, tc.fakeStorage.sigs, tc.fakeStorage.unspent)
 			require.NoError(t, err)
 
 			gb := makeGenesisBlock(t)
 
 			err = db.Update(func(tx *bolt.Tx) error {
-				return bc.AddBlockWithTx(tx, &gb)
+				return bc.AddBlock(tx, &gb)
 			})
 
 			require.Equal(t, tc.expect.err, err)
 
 			// check sig
-			_, ok, err := tc.sigs.Get(gb.HashHeader())
-			require.NoError(t, err)
-			require.Equal(t, tc.expect.sigSaved, ok)
+			err = db.View(func(tx *bolt.Tx) error {
+				_, ok, err := tc.fakeStorage.sigs.Get(tx, gb.HashHeader())
+				require.NoError(t, err)
+				require.Equal(t, tc.expect.sigSaved, ok)
 
-			// check block in tree
-			b := tc.tree.GetBlock(gb.HashHeader())
-			require.Equal(t, tc.expect.blockSaved, b != nil)
+				// check block in tree
+				b, err := tc.fakeStorage.tree.GetBlock(tx, gb.HashHeader())
+				require.NoError(t, err)
+				require.Equal(t, tc.expect.blockSaved, b != nil)
+
+				return nil
+			})
+			require.NoError(t, err)
 
 			// check cache of head seq
 			require.Equal(t, tc.expect.headSeq, bc.cache.headSeq)
@@ -350,26 +347,28 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 }
 
 func TestBlockchainHead(t *testing.T) {
-	cleanState()
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
 
 	bc, err := NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
-	_, err = bc.Head()
-	require.EqualError(t, err, "found no head block: 0")
+	err = db.Update(func(tx *bolt.Tx) error {
+		_, err = bc.Head(tx)
+		require.EqualError(t, err, "found no head block: 0")
 
-	gb := makeGenesisBlock(t)
-	db.Update(func(tx *bolt.Tx) error {
-		err := bc.AddBlockWithTx(tx, &gb)
+		gb := makeGenesisBlock(t)
+
+		err := bc.AddBlock(tx, &gb)
 		require.NoError(t, err)
+
+		b, err := bc.Head(tx)
+		require.NoError(t, err)
+		require.Equal(t, gb.HashHeader().Hex(), b.HashHeader().Hex())
+
 		return nil
 	})
-
-	b, err := bc.Head()
 	require.NoError(t, err)
-	require.Equal(t, gb.HashHeader().Hex(), b.HashHeader().Hex())
 }
 
 func TestBlockchainLen(t *testing.T) {
@@ -468,16 +467,22 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			cleanState()
+			db, closeDB := testutil.PrepareDB(t)
+			defer closeDB()
 
-			bc := Blockchain{
-				tree: tc.tree,
-				sigs: tc.sigs,
-			}
+			bc, err := NewBlockchain(db, DefaultWalker)
+			require.NoError(t, err)
 
-			b, err := bc.GetBlockByHash(tc.hash)
-			require.Equal(t, tc.expect.err, err)
-			require.Equal(t, tc.expect.b, b)
+			bc.tree = tc.tree
+			bc.sigs = tc.sigs
+
+			err = db.View(func(tx *bolt.Tx) error {
+				b, err := bc.GetBlockByHash(tx, tc.hash)
+				require.Equal(t, tc.expect.err, err)
+				require.Equal(t, tc.expect.b, b)
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 }

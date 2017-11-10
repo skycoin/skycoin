@@ -16,14 +16,14 @@ import (
 
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+func loadBlockchain(dbPath string, pubkey cipher.PubKey, opts BlockchainOptions) (*bolt.DB, *Blockchain, error) {
 	// creates blockchain instance
 	db, err := openDB(dbPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	bc, err := NewBlockchain(db, pubkey, opts)
 
 	if err == nil {
 		return db, bc, nil
@@ -51,7 +51,7 @@ func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bol
 		return nil, nil, err
 	}
 
-	bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	bc, err = NewBlockchain(db, pubkey, opts)
 	if err != nil {
 		return nil, nil, err
 	}

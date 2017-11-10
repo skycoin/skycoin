@@ -15,18 +15,16 @@ func TestNewBlockSigs(t *testing.T) {
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
 
-	sigs, err := NewBlockSigs(db)
+	_, err := newBlockSigs(db)
 	require.NoError(t, err)
-	require.NotNil(t, sigs)
 
-	// check the bucket
-	require.NotNil(t, sigs.Sigs)
-
-	db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(blockSigsBkt)
 		require.NotNil(t, bkt)
 		return nil
 	})
+
+	require.NoError(t, err)
 }
 
 func TestBlockSigsGet(t *testing.T) {
@@ -87,7 +85,7 @@ func TestBlockSigsGet(t *testing.T) {
 			defer closeDB()
 
 			// init db
-			db.Update(func(tx *bolt.Tx) error {
+			err := db.Update(func(tx *bolt.Tx) error {
 				bkt, err := tx.CreateBucketIfNotExists(blockSigsBkt)
 				require.NoError(t, err)
 				for _, hs := range tc.init {
@@ -96,15 +94,22 @@ func TestBlockSigsGet(t *testing.T) {
 				}
 				return nil
 			})
-
-			sigs, err := NewBlockSigs(db)
 			require.NoError(t, err)
-			sg, ok, err := sigs.Get(tc.hash)
-			require.Equal(t, tc.expect.err, err)
-			require.Equal(t, tc.expect.exist, ok)
-			if ok {
-				require.Equal(t, tc.expect.sig, sg)
-			}
+
+			sigs, err := newBlockSigs(db)
+			require.NoError(t, err)
+
+			err = db.View(func(tx *bolt.Tx) error {
+				sg, ok, err := sigs.Get(tx, tc.hash)
+				require.Equal(t, tc.expect.err, err)
+				require.Equal(t, tc.expect.exist, ok)
+				if ok {
+					require.Equal(t, tc.expect.sig, sg)
+				}
+
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 }
@@ -117,15 +122,16 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 	h := randSHA256(t)
 	sig := cipher.SignHash(h, s)
 
-	sigs, err := NewBlockSigs(db)
+	sigs, err := newBlockSigs(db)
 	require.NoError(t, err)
 
-	db.Update(func(tx *bolt.Tx) error {
-		return sigs.AddWithTx(tx, h, sig)
+	err = db.Update(func(tx *bolt.Tx) error {
+		return sigs.Add(tx, h, sig)
 	})
+	require.NoError(t, err)
 
 	// check the db
-	db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(blockSigsBkt)
 		v := bkt.Get(h[:])
 		require.NotNil(t, v)
@@ -135,4 +141,5 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 		require.Equal(t, sig, s)
 		return nil
 	})
+	require.NoError(t, err)
 }

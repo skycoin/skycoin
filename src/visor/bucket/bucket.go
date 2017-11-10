@@ -205,15 +205,20 @@ func (b *Bucket) ForEach(f func(k, v []byte) error) error {
 }
 
 // Len returns the number of key value pairs
-func (b *Bucket) Len() (len int) {
-	b.db.View(func(tx *bolt.Tx) error {
+func (b *Bucket) Len() (int, error) {
+	length := 0
+
+	if err := b.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(b.Name).Cursor()
 		for k, _ := c.First(); k != nil; k, _ = c.Next() {
-			len++
+			length++
 		}
 		return nil
-	})
-	return
+	}); err != nil {
+		return 0, err
+	}
+
+	return length, nil
 }
 
 // Itob converts uint64 to bytes

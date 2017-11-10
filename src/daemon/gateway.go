@@ -138,12 +138,13 @@ func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() interface{} {
-	var bcm interface{}
+func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
+	var bcm *visor.BlockchainMetadata
+	var err error
 	gw.strand("GetBlockchainMetadata", func() {
-		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
+		bcm, err = visor.NewBlockchainMetadata(gw.v)
 	})
-	return bcm
+	return bcm, err
 }
 
 // GetBlockByHash returns the block by hash
@@ -184,9 +185,14 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 // GetBlocks returns a *visor.ReadableBlocks
 func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
+	var err error
+
 	gw.strand("GetBlocks", func() {
-		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
+		blocks, err = gw.vrpc.GetBlocks(gw.v, start, end)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return visor.NewReadableBlocks(blocks)
 }
@@ -223,9 +229,14 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 // GetLastBlocks get last N blocks
 func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
+	var err error
+
 	gw.strand("GetLastBlocks", func() {
-		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
+		blocks, err = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return visor.NewReadableBlocks(blocks)
 }

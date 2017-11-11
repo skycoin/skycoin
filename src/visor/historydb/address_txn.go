@@ -4,66 +4,49 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-var addressTxnsBktName = []byte("address_txns")
+var addressTxnsBkt = []byte("address_txns")
 
 // addressTxn buckets for storing address related transactions
 // address as key, transaction id slice as value
-type addressTxns struct {
-	bkt *bucket.Bucket
-}
+type addressTxns struct{}
 
-func newAddressTxnsBkt(db *bolt.DB) (*addressTxns, error) {
-	bkt, err := bucket.New(addressTxnsBktName, db)
-	if err != nil {
+func newAddressTxns(db *bolt.DB) (*addressTxns, error) {
+	if err := db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(addressTxnsBkt)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
-	return &addressTxns{bkt}, nil
+	return &addressTxns{}, nil
 }
 
 // Get returns the transaction hashes of given address
-func (atx *addressTxns) Get(address cipher.Address) ([]cipher.SHA256, error) {
+func (atx *addressTxns) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var txHashes []cipher.SHA256
-	v := atx.bkt.Get(address.Bytes())
-	if v == nil {
-		return []cipher.SHA256{}, nil
-	}
-
-	if err := encoder.DeserializeRaw(v, &txHashes); err != nil {
-		return []cipher.SHA256{}, err
+	if err := dbutil.GetBucketObjectDecoded(tx, addressTxnsBkt, address.Bytes(), &txHashes); err != nil {
+		switch err.(type) {
+		case dbutil.ObjectNotExistErr:
+			return nil, nil
+		default:
+			return nil, err
+		}
 	}
 
 	return txHashes, nil
 }
 
-// IsEmpty checks if address transactions bucket is empty
-func (atx *addressTxns) IsEmpty() bool {
-	return atx.bkt.IsEmpty()
-}
-
-// Reset resets the bucket
-func (atx *addressTxns) Reset() error {
-	return atx.bkt.Reset()
-}
-
-func setAddressTxns(bkt *bolt.Bucket, addr cipher.Address, hash cipher.SHA256) error {
-	// get hashes
-	addrBytes := addr.Bytes()
-	v := bkt.Get(addrBytes)
-	if v == nil {
-		bin := encoder.Serialize([]cipher.SHA256{hash})
-		return bkt.Put(addrBytes, bin)
-	}
-
-	var hashes []cipher.SHA256
-	if err := encoder.DeserializeRaw(v, &hashes); err != nil {
+// Add adds a hash to an address's hash list
+func (atx *addressTxns) Add(tx *bolt.Tx, addr cipher.Address, hash cipher.SHA256) error {
+	hashes, err := atx.Get(tx, addr)
+	if err != nil {
 		return err
 	}
 
-	// check dup
+	// check for duplicates
 	for _, u := range hashes {
 		if u == hash {
 			return nil
@@ -71,6 +54,15 @@ func setAddressTxns(bkt *bolt.Bucket, addr cipher.Address, hash cipher.SHA256) e
 	}
 
 	hashes = append(hashes, hash)
-	bin := encoder.Serialize(hashes)
-	return bkt.Put(addrBytes, bin)
+	return dbutil.PutBucketValue(tx, addressTxnsBkt, addr.Bytes(), encoder.Serialize(hashes))
+}
+
+// IsEmpty checks if address transactions bucket is empty
+func (atx *addressTxns) IsEmpty(tx *bolt.Tx) (bool, error) {
+	return dbutil.IsEmpty(tx, addressTxnsBkt)
+}
+
+// Reset resets the bucket
+func (atx *addressTxns) Reset(tx *bolt.Tx) error {
+	return dbutil.Reset(tx, addressTxnsBkt)
 }

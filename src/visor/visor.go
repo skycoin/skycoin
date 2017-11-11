@@ -176,17 +176,17 @@ func NewVisor(c Config) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	if err := vs.DB.Update(func(tx *bolt.Tx) error {
+	return vs.DB.Update(func(tx *bolt.Tx) error {
 		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
 			return err
 		}
 
-		return vs.processUnconfirmedTxns(tx)
-	}); err != nil {
-		return err
-	}
+		if err := vs.processUnconfirmedTxns(tx); err != nil {
+			return err
+		}
 
-	return vs.bcParser.Run()
+		return vs.bcParser.Run(tx)
+	})
 }
 
 // Shutdown shuts down the visor
@@ -245,7 +245,7 @@ func (vs *Visor) processUnconfirmedTxns(tx *bolt.Tx) error {
 		}
 
 		// TODO: history needs to use txns
-		txn, err := vs.history.GetTransaction(hash)
+		txn, err := vs.history.GetTransaction(tx, hash)
 		if err != nil {
 			return err
 		}
@@ -421,32 +421,42 @@ func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
-	avail := uint64(0)
-	head, err := vs.Blockchain.Head()
-	if err != nil {
+	var blocks []coin.SignedBlock
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		avail := uint64(0)
+		head, err := vs.Blockchain.HeadWithTx(tx)
+		if err != nil {
+			return err
+		}
+
+		headSeq := head.Seq()
+		if headSeq > seq {
+			avail = headSeq - seq
+		}
+		if avail < ct {
+			ct = avail
+		}
+		if ct == 0 {
+			return nil
+		}
+
+		blocks = make([]coin.SignedBlock, 0, ct)
+		for j := uint64(0); j < ct; j++ {
+			i := seq + 1 + j
+			b, err := vs.Blockchain.GetBlockBySeq(tx, i)
+			if err != nil {
+				return err
+			}
+
+			blocks = append(blocks, *b)
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
-	headSeq := head.Seq()
-	if headSeq > seq {
-		avail = headSeq - seq
-	}
-	if avail < ct {
-		ct = avail
-	}
-	if ct == 0 {
-		return nil, nil
-	}
-	blocks := make([]coin.SignedBlock, 0, ct)
-	for j := uint64(0); j < ct; j++ {
-		i := seq + 1 + j
-		b, err := vs.Blockchain.GetBlockBySeq(i)
-		if err != nil {
-			return nil, err
-		}
-
-		blocks = append(blocks, *b)
-	}
 	return blocks, nil
 }
 
@@ -481,12 +491,21 @@ func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 // GetBlock returns a copy of the block at seq. Returns error if seq out of range
 // Move to blockdb
 func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
-	var b coin.SignedBlock
 	if seq > vs.Blockchain.HeadSeq() {
-		return &b, errors.New("Block seq out of range")
+		return nil, errors.New("Block seq out of range")
 	}
 
-	return vs.Blockchain.GetBlockBySeq(seq)
+	var b *coin.SignedBlock
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		b, err = vs.Blockchain.GetBlockBySeq(tx, seq)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 // GetBlocks returns multiple blocks between start and end (not including end). Returns
@@ -519,8 +538,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 
 	if err := vs.DB.View(func(tx *bolt.Tx) error {
 		mxSeq := vs.HeadBkSeq()
-		// TODO: Use tx for history
-		txs, err := vs.history.GetAddrTxns(a)
+		txs, err := vs.history.GetAddrTxns(tx, a)
 		if err != nil {
 			return err
 		}
@@ -596,8 +614,7 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 			return nil
 		}
 
-		// TODO: use a tx for history
-		htxn, err := vs.history.GetTransaction(txHash)
+		htxn, err := vs.history.GetTransaction(tx, txHash)
 		if err != nil {
 			return err
 		}
@@ -716,8 +733,17 @@ func (vs *Visor) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
 
 // GetBlockBySeq get block of speicific seq, return nil on not found.
 func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
-	// TODO -- use txn?
-	return vs.Blockchain.GetBlockBySeq(seq)
+	var b *coin.SignedBlock
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		b, err = vs.Blockchain.GetBlockBySeq(tx, seq)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 // GetLastBlocks returns last N blocks
@@ -727,33 +753,42 @@ func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 
 // GetLastTxs returns last confirmed transactions, return nil if empty
 func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
-	ltxs, err := vs.history.GetLastTxs()
-	if err != nil {
+	var txns []*Transaction
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		ltxns, err := vs.history.GetLastTxs(tx)
+		if err != nil {
+			return err
+		}
+
+		bh := vs.HeadBkSeq()
+		var confirms uint64
+		txns = make([]*Transaction, len(ltxns))
+
+		for i, txn := range ltxns {
+			confirms = uint64(bh) - txn.BlockSeq + 1
+			b, err := vs.Blockchain.GetBlockBySeq(tx, txn.BlockSeq)
+			if err != nil {
+				return err
+			}
+
+			if b == nil {
+				return fmt.Errorf("found no block in seq %v", txn.BlockSeq)
+			}
+
+			txns[i] = &Transaction{
+				Txn:    txn.Tx,
+				Status: NewConfirmedTransactionStatus(confirms, txn.BlockSeq),
+				Time:   b.Time(),
+			}
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
-	txs := make([]*Transaction, len(ltxs))
-	var confirms uint64
-	bh := vs.HeadBkSeq()
-	var b *coin.SignedBlock
-	for i, tx := range ltxs {
-		confirms = uint64(bh) - tx.BlockSeq + 1
-		b, err = vs.GetBlockBySeq(tx.BlockSeq)
-		if err != nil {
-			return nil, err
-		}
-
-		if b == nil {
-			return nil, fmt.Errorf("found no block in seq %v", tx.BlockSeq)
-		}
-
-		txs[i] = &Transaction{
-			Txn:    tx.Tx,
-			Status: NewConfirmedTransactionStatus(confirms, tx.BlockSeq),
-			Time:   b.Time(),
-		}
-	}
-	return txs, nil
+	return txns, nil
 }
 
 // GetHeadBlock gets head block.
@@ -763,12 +798,32 @@ func (vs Visor) GetHeadBlock() (*coin.SignedBlock, error) {
 
 // GetUxOutByID gets UxOut by hash id.
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
-	return vs.history.GetUxout(id)
+	var out *historydb.UxOut
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		out, err = vs.history.GetUxout(tx, id)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
-	return vs.history.GetAddrUxOuts(address)
+	var out []*historydb.UxOut
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		out, err = vs.history.GetAddrUxOuts(tx, address)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // RecvOfAddresses returns unconfirmed receiving uxouts of addresses

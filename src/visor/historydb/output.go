@@ -2,11 +2,14 @@ package historydb
 
 import (
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
+
+var uxOutsBkt = []byte("uxouts")
 
 // UxOut expend coin.UxOut struct
 type UxOut struct {
@@ -53,64 +56,47 @@ func (o UxOut) Hash() cipher.SHA256 {
 }
 
 // UxOuts bucket stores outputs, UxOut hash as key and Output as value.
-type UxOuts struct {
-	bkt *bucket.Bucket
-}
+type UxOuts struct{}
 
-func newOutputsBkt(db *bolt.DB) (*UxOuts, error) {
-	bkt, err := bucket.New([]byte("uxouts"), db)
-	if err != nil {
+func newUxOuts(db *bolt.DB) (*UxOuts, error) {
+	if err := db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(uxOutsBkt)
+		return err
+	}); err != nil {
 		return nil, err
 	}
-	return &UxOuts{bkt}, nil
+
+	return &UxOuts{}, nil
 }
 
 // Set sets out value
-func (ux *UxOuts) Set(out UxOut) error {
-	key := out.Hash()
-	bin := encoder.Serialize(out)
-	return ux.bkt.Put(key[:], bin)
+func (ux *UxOuts) Set(tx *bolt.Tx, out UxOut) error {
+	hash := out.Hash()
+	return dbutil.PutBucketValue(tx, uxOutsBkt, hash[:], encoder.Serialize(out))
 }
 
 // Get gets UxOut of given id
-func (ux *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
-	bin := ux.bkt.Get(uxID[:])
-	if bin == nil {
-		return nil, nil
-	}
+func (ux *UxOuts) Get(tx *bolt.Tx, uxID cipher.SHA256) (*UxOut, error) {
+	var out UxOut
 
-	out := UxOut{}
-	if err := encoder.DeserializeRaw(bin, &out); err != nil {
-		return nil, err
+	if err := dbutil.GetBucketObjectDecoded(tx, uxOutsBkt, uxID[:], &out); err != nil {
+		switch err.(type) {
+		case dbutil.ObjectNotExistErr:
+			return nil, nil
+		default:
+			return nil, err
+		}
 	}
 
 	return &out, nil
 }
 
 // IsEmpty checks if the uxout bucekt is empty
-func (ux *UxOuts) IsEmpty() bool {
-	return ux.bkt.IsEmpty()
+func (ux *UxOuts) IsEmpty(tx *bolt.Tx) (bool, error) {
+	return dbutil.IsEmpty(tx, uxOutsBkt)
 }
 
 // Reset resets the bucket
-func (ux *UxOuts) Reset() error {
-	return ux.bkt.Reset()
-}
-
-func getOutput(bkt *bolt.Bucket, hash cipher.SHA256) (*UxOut, error) {
-	bin := bkt.Get(hash[:])
-	if bin != nil {
-		var out UxOut
-		if err := encoder.DeserializeRaw(bin, &out); err != nil {
-			return nil, err
-		}
-		return &out, nil
-	}
-
-	return nil, nil
-}
-
-func setOutput(bkt *bolt.Bucket, ux UxOut) error {
-	hash := ux.Hash()
-	return bkt.Put(hash[:], encoder.Serialize(ux))
+func (ux *UxOuts) Reset(tx *bolt.Tx) error {
+	return dbutil.Reset(tx, uxOutsBkt)
 }

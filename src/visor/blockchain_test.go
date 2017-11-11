@@ -821,7 +821,7 @@ func TestProcessBlock(t *testing.T) {
 		Sig:   cipher.SignHash(gb.HashHeader(), genSecret),
 	}
 
-	// test with empty blockchain
+	// Test with empty blockchain
 	db.Update(func(tx *bolt.Tx) error {
 		_, err := bc.processBlock(tx, nil, sb)
 		require.NoError(t, err)
@@ -835,7 +835,7 @@ func TestProcessBlock(t *testing.T) {
 		return nil
 	})
 
-	// create new block
+	// Create new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
 	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
@@ -853,7 +853,6 @@ func TestProcessBlock(t *testing.T) {
 		require.NoError(t, err)
 		return nil
 	})
-
 }
 
 func TestExecuteBlock(t *testing.T) {

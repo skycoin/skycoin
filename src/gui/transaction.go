@@ -169,7 +169,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectTransaction(txn); err != nil {
-			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
+			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 

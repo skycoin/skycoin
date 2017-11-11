@@ -3,6 +3,7 @@ package visor
 import (
 	"fmt"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -44,18 +45,18 @@ func (bcp *BlockchainParser) FeedBlock(b coin.Block) {
 }
 
 // Run starts blockchain parser
-func (bcp *BlockchainParser) Run() error {
+func (bcp *BlockchainParser) Run(tx *bolt.Tx) error {
 	logger.Info("Blockchain parser start")
-	defer close(bcp.done)
 	defer logger.Info("Blockchain parser closed")
+	defer close(bcp.done)
 
-	if err := bcp.historyDB.ResetIfNeed(); err != nil {
+	if err := bcp.historyDB.ResetIfNeed(tx); err != nil {
 		return err
 	}
 
 	// parse to the blockchain head
 	headSeq := bcp.bc.HeadSeq()
-	if err := bcp.parseTo(headSeq); err != nil {
+	if err := bcp.parseTo(tx, headSeq); err != nil {
 		return err
 	}
 
@@ -64,7 +65,7 @@ func (bcp *BlockchainParser) Run() error {
 		case <-bcp.quit:
 			return nil
 		case b := <-bcp.blkC:
-			if err := bcp.historyDB.ParseBlock(&b); err != nil {
+			if err := bcp.historyDB.ParseBlock(tx, &b); err != nil {
 				return err
 			}
 		}
@@ -77,11 +78,14 @@ func (bcp *BlockchainParser) Shutdown() {
 	<-bcp.done
 }
 
-func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
-	parsedHeight := bcp.historyDB.ParsedHeight()
+func (bcp *BlockchainParser) parseTo(tx *bolt.Tx, bcHeight uint64) error {
+	parsedHeight, err := bcp.historyDB.ParsedHeight(tx)
+	if err != nil {
+		return err
+	}
 
 	for i := int64(0); i < int64(bcHeight)-parsedHeight; i++ {
-		b, err := bcp.bc.GetBlockBySeq(uint64(parsedHeight + i + 1))
+		b, err := bcp.bc.store.GetBlockBySeq(tx, uint64(parsedHeight+i+1))
 		if err != nil {
 			return err
 		}
@@ -90,7 +94,7 @@ func (bcp *BlockchainParser) parseTo(bcHeight uint64) error {
 			return fmt.Errorf("no block exist in depth:%d", parsedHeight+i+1)
 		}
 
-		if err := bcp.historyDB.ParseBlock(&b.Block); err != nil {
+		if err := bcp.historyDB.ParseBlock(tx, &b.Block); err != nil {
 			return err
 		}
 	}

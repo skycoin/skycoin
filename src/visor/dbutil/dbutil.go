@@ -130,27 +130,14 @@ func getBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 	return v, nil
 }
 
-// PutBucketValue puts a value into a bucket under key. If the value's type is
-// a string, it stores the value as a string. Otherwise, it marshals the value
-// to JSON and stores the JSON string.
-func PutBucketValue(tx *bolt.Tx, bktName, key []byte, obj interface{}) error {
+// PutBucketValue puts a value into a bucket under key.
+func PutBucketValue(tx *bolt.Tx, bktName, key, val []byte) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return NewBucketNotExistErr(bktName)
 	}
 
-	switch obj.(type) {
-	case []byte:
-		return bkt.Put(key, obj.([]byte))
-	case string:
-		return bkt.Put(key, []byte(obj.(string)))
-	default:
-		v, err := json.Marshal(obj)
-		if err != nil {
-			return fmt.Errorf("encode value failed: %v", err)
-		}
-		return bkt.Put(key, v)
-	}
+	return bkt.Put(key, val)
 }
 
 // BucketHasKey returns true if a bucket has a non-nil value for a key
@@ -208,4 +195,23 @@ func Len(tx *bolt.Tx, bktName []byte) (uint64, error) {
 	}
 
 	return uint64(bstats.KeyN), nil
+}
+
+// IsEmpty returns true if the bucket is empty
+func IsEmpty(tx *bolt.Tx, bktName []byte) (bool, error) {
+	length, err := Len(tx, bktName)
+	if err != nil {
+		return false, err
+	}
+	return length == 0, nil
+}
+
+// Reset resets the bucket
+func Reset(tx *bolt.Tx, bktName []byte) error {
+	if err := tx.DeleteBucket(bktName); err != nil {
+		return err
+	}
+
+	_, err := tx.CreateBucketIfNotExists(bktName)
+	return err
 }

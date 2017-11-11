@@ -131,18 +131,8 @@ func (bc *Blockchain) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, err
 }
 
 // GetBlockBySeq returns block of given seq
-func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
-	var sb *coin.SignedBlock
-
-	if err := bc.db.View(func(tx *bolt.Tx) error {
-		var err error
-		sb, err = bc.store.GetBlockBySeq(tx, seq)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return sb, nil
+func (bc *Blockchain) GetBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error) {
+	return bc.store.GetBlockBySeq(tx, seq)
 }
 
 // Head returns the most recent confirmed block

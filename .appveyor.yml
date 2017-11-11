@@ -47,7 +47,7 @@ deploy:
   artifact: published
   unzip: true
   on:
-    branch: rl
+    branch: ci
 
 
 notifications:

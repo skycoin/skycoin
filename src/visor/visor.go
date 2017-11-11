@@ -118,7 +118,7 @@ type Visor struct {
 	history  *historydb.HistoryDB
 	bcParser *BlockchainParser
 	wallets  *wallet.Service
-	db       *bolt.DB
+	DB       *bolt.DB
 }
 
 // NewVisor Creates a normal Visor given a master's public key
@@ -156,11 +156,16 @@ func NewVisor(c Config) (*Visor, error) {
 		return nil, err
 	}
 
+	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	if err != nil {
+		return nil, err
+	}
+
 	v := &Visor{
 		Config:      c,
-		db:          db,
+		DB:          db,
 		Blockchain:  bc,
-		Unconfirmed: NewUnconfirmedTxnPool(db),
+		Unconfirmed: unconfirmed,
 		history:     history,
 		bcParser:    bp,
 		wallets:     wltServ,
@@ -171,11 +176,13 @@ func NewVisor(c Config) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	if err := vs.maybeCreateGenesisBlock(); err != nil {
-		return err
-	}
+	if err := vs.DB.Update(func(tx *bolt.Tx) error {
+		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
+			return err
+		}
 
-	if err := vs.processUnconfirmedTxns(); err != nil {
+		return vs.processUnconfirmedTxns(tx)
+	}); err != nil {
 		return err
 	}
 
@@ -188,13 +195,13 @@ func (vs *Visor) Shutdown() {
 
 	vs.bcParser.Shutdown()
 
-	if err := vs.db.Close(); err != nil {
+	if err := vs.DB.Close(); err != nil {
 		logger.Error("db.Close() error: %v", err)
 	}
 }
 
 // maybeCreateGenesisBlock creates a genesis block if necessary
-func (vs *Visor) maybeCreateGenesisBlock() error {
+func (vs *Visor) maybeCreateGenesisBlock(tx *bolt.Tx) error {
 	if vs.Blockchain.GetGenesisBlock() != nil {
 		return nil
 	}
@@ -218,22 +225,29 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 		}
 	}
 
-	return vs.ExecuteSignedBlock(sb)
+	return vs.executeSignedBlock(tx, sb)
 }
 
 // check if there're unconfirmed transactions that are actually
 // already executed, and remove them if any
-func (vs *Visor) processUnconfirmedTxns() error {
-	removeTxs := []cipher.SHA256{}
-	vs.Unconfirmed.ForEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
+func (vs *Visor) processUnconfirmedTxns(tx *bolt.Tx) error {
+	var removeTxs []cipher.SHA256
+
+	if err := vs.Unconfirmed.ForEach(tx, func(hash cipher.SHA256, utxn UnconfirmedTxn) error {
+		head, err := vs.Blockchain.HeadWithTx(tx)
+		if err != nil {
+			return err
+		}
+
 		// check if the tx already executed
-		if err := vs.Blockchain.VerifyTransaction(tx.Txn); err != nil {
+		if err := vs.Blockchain.VerifyTransaction(head, utxn.Txn); err != nil {
 			removeTxs = append(removeTxs, hash)
 		}
 
+		// TODO: history needs to use txns
 		txn, err := vs.history.GetTransaction(hash)
 		if err != nil {
-			return fmt.Errorf("process unconfirmed txs failed: %v", err)
+			return err
 		}
 
 		if txn != nil {
@@ -241,12 +255,12 @@ func (vs *Visor) processUnconfirmedTxns() error {
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
 
 	if len(removeTxs) > 0 {
-		return vs.db.Update(func(tx *bolt.Tx) error {
-			return vs.Unconfirmed.RemoveTransactionsWithTx(tx, removeTxs)
-		})
+		return vs.Unconfirmed.RemoveTransactions(tx, removeTxs)
 	}
 
 	return nil
@@ -269,28 +283,31 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 }
 
 // CreateBlock creates a SignedBlock from pending transactions
-func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
-	var sb coin.SignedBlock
+func (vs *Visor) CreateBlock(tx *bolt.Tx, when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can create blocks")
 	}
 
-	length, err := vs.Unconfirmed.Len()
+	length, err := vs.Unconfirmed.Len(tx)
 	if err != nil {
-		return sb, err
+		return coin.SignedBlock{}, err
 	}
 
 	if length == 0 {
-		return sb, errors.New("No transactions")
+		return coin.SignedBlock{}, errors.New("No transactions")
 	}
 
-	txns := vs.Unconfirmed.RawTxns()
+	txns, err := vs.Unconfirmed.RawTxns(tx)
+	if err != nil {
+		return coin.SignedBlock{}, err
+	}
+
 	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
 
-	b, err := vs.Blockchain.NewBlock(txns, when)
+	b, err := vs.Blockchain.NewBlock(tx, txns, when)
 	if err != nil {
-		return sb, err
+		return coin.SignedBlock{}, err
 	}
 
 	return vs.SignBlock(*b), nil
@@ -298,35 +315,49 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 
 // CreateAndExecuteBlock creates a SignedBlock from pending transactions and executes it
 func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
-	sb, err := vs.CreateBlock(uint64(utc.UnixNow()))
-	if err == nil {
-		return sb, vs.ExecuteSignedBlock(sb)
+	var sb coin.SignedBlock
+
+	if err := vs.DB.Update(func(tx *bolt.Tx) error {
+		var err error
+		sb, err = vs.CreateBlock(tx, uint64(utc.UnixNow()))
+		if err != nil {
+			return err
+		}
+
+		return vs.executeSignedBlock(tx, sb)
+	}); err != nil {
+		return coin.SignedBlock{}, err
 	}
 
-	return sb, err
+	return sb, nil
 }
 
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
+	return vs.DB.Update(func(tx *bolt.Tx) error {
+		return vs.executeSignedBlock(tx, b)
+	})
+}
+
+// executeSignedBlock adds a block to the blockchain, or returns error.
+// Blocks must be executed in sequence, and be signed by the master server
+func (vs *Visor) executeSignedBlock(tx *bolt.Tx, b coin.SignedBlock) error {
 	if err := vs.verifySignedBlock(&b); err != nil {
 		return err
 	}
 
-	if err := vs.db.Update(func(tx *bolt.Tx) error {
-		if err := vs.Blockchain.ExecuteBlock(tx, &b); err != nil {
-			return err
-		}
+	if err := vs.Blockchain.ExecuteBlock(tx, &b); err != nil {
+		return err
+	}
 
-		// Remove the transactions in the Block from the unconfirmed pool
-		txHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
-		for _, tx := range b.Block.Body.Transactions {
-			txHashes = append(txHashes, tx.Hash())
-		}
-		vs.Unconfirmed.RemoveTransactionsWithTx(tx, txHashes)
+	// Remove the transactions in the Block from the unconfirmed pool
+	txHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
+	for _, tx := range b.Block.Body.Transactions {
+		txHashes = append(txHashes, tx.Hash())
+	}
 
-		return nil
-	}); err != nil {
+	if err := vs.Unconfirmed.RemoveTransactions(tx, txHashes); err != nil {
 		return err
 	}
 
@@ -371,12 +402,21 @@ func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
 
 // UnconfirmedIncomingOutputs returns all predicted outputs that are in pending tx pool
 func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
-	head, err := vs.Blockchain.Head()
-	if err != nil {
-		return coin.UxArray{}, err
+	var uxa coin.UxArray
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		head, err := vs.Blockchain.HeadWithTx(tx)
+		if err != nil {
+			return err
+		}
+
+		uxa, err = vs.Unconfirmed.GetIncomingOutputs(tx, head.Head)
+		return err
+	}); err != nil {
+		return nil, err
 	}
 
-	return vs.Unconfirmed.GetIncomingOutputs(head.Head), nil
+	return uxa, nil
 }
 
 // GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
@@ -384,7 +424,7 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 	avail := uint64(0)
 	head, err := vs.Blockchain.Head()
 	if err != nil {
-		return []coin.SignedBlock{}, err
+		return nil, err
 	}
 
 	headSeq := head.Seq()
@@ -395,14 +435,14 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 		ct = avail
 	}
 	if ct == 0 {
-		return []coin.SignedBlock{}, nil
+		return nil, nil
 	}
 	blocks := make([]coin.SignedBlock, 0, ct)
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
 		b, err := vs.Blockchain.GetBlockBySeq(i)
 		if err != nil {
-			return []coin.SignedBlock{}, err
+			return nil, err
 		}
 
 		blocks = append(blocks, *b)
@@ -417,7 +457,25 @@ func (vs *Visor) HeadBkSeq() uint64 {
 
 // GetBlockchainMetadata returns descriptive Blockchain information
 func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
-	return NewBlockchainMetadata(vs)
+	var head *coin.SignedBlock
+	var unconfirmedLen uint64
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		head, err = vs.Blockchain.HeadWithTx(tx)
+		if err != nil {
+			return err
+		}
+
+		unconfirmedLen, err = vs.Unconfirmed.Len(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	unspentsLen := vs.Blockchain.Unspent().Len()
+
+	return NewBlockchainMetadata(head, unconfirmedLen, unspentsLen)
 }
 
 // GetBlock returns a copy of the block at seq. Returns error if seq out of range
@@ -438,14 +496,20 @@ func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlocks(start, end)
 }
 
-// InjectTxn records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain
-// TODO
-// - rename InjectTransaction
-// Refactor
-// Why do does this return both error and bool
-func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
-	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
+func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, error) {
+	var known bool
+
+	if err := vs.DB.Update(func(tx *bolt.Tx) error {
+		var err error
+		known, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn)
+		return err
+	}); err != nil {
+		return false, err
+	}
+
+	return known, nil
 }
 
 // GetAddressTxns returns the Transactions whose unspents give coins to a cipher.Address.
@@ -453,44 +517,60 @@ func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
 func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
 
-	mxSeq := vs.HeadBkSeq()
-	txs, err := vs.history.GetAddrTxns(a)
-	if err != nil {
-		return []Transaction{}, err
-	}
-
-	for _, tx := range txs {
-		h := mxSeq - tx.BlockSeq + 1
-
-		bk, err := vs.GetBlockBySeq(tx.BlockSeq)
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		mxSeq := vs.HeadBkSeq()
+		// TODO: Use tx for history
+		txs, err := vs.history.GetAddrTxns(a)
 		if err != nil {
-			return []Transaction{}, err
+			return err
 		}
 
-		if bk == nil {
-			return []Transaction{}, fmt.Errorf("No block exsit in depth:%d", tx.BlockSeq)
+		for _, tx := range txs {
+			h := mxSeq - tx.BlockSeq + 1
+
+			bk, err := vs.GetBlockBySeq(tx.BlockSeq)
+			if err != nil {
+				return err
+			}
+
+			if bk == nil {
+				return fmt.Errorf("No block exists in depth: %d", tx.BlockSeq)
+			}
+
+			txns = append(txns, Transaction{
+				Txn:    tx.Tx,
+				Status: NewConfirmedTransactionStatus(h, tx.BlockSeq),
+				Time:   bk.Time(),
+			})
 		}
 
-		txns = append(txns, Transaction{
-			Txn:    tx.Tx,
-			Status: NewConfirmedTransactionStatus(h, tx.BlockSeq),
-			Time:   bk.Time(),
-		})
-	}
-
-	// Look in the unconfirmed pool
-	uxs := vs.Unconfirmed.GetUnspentsOfAddr(a)
-	for _, ux := range uxs {
-		tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
-		if !ok {
-			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
-			continue
+		// Look in the unconfirmed pool
+		uxs, err := vs.Unconfirmed.GetUnspentsOfAddr(tx, a)
+		if err != nil {
+			return err
 		}
-		txns = append(txns, Transaction{
-			Txn:    tx.Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(tx.Received).Unix()),
-		})
+
+		for _, ux := range uxs {
+			utxn, err := vs.Unconfirmed.Get(tx, ux.Body.SrcTransaction)
+			if err != nil {
+				return err
+			}
+
+			if utxn == nil {
+				logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+				continue
+			}
+
+			txns = append(txns, Transaction{
+				Txn:    utxn.Txn,
+				Status: NewUnconfirmedTransactionStatus(),
+				Time:   uint64(nanoToTime(utxn.Received).Unix()),
+			})
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	return txns, nil
@@ -498,42 +578,58 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 
 // GetTransaction returns a Transaction by hash.
 func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
-	// Look in the unconfirmed pool
-	tx, ok := vs.Unconfirmed.Get(txHash)
-	if ok {
-		return &Transaction{
-			Txn:    tx.Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(tx.Received).Unix()),
-		}, nil
-	}
+	var txn *Transaction
 
-	txn, err := vs.history.GetTransaction(txHash)
-	if err != nil {
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		// Look in the unconfirmed pool
+		utxn, err := vs.Unconfirmed.Get(tx, txHash)
+		if err != nil {
+			return err
+		}
+
+		if utxn != nil {
+			txn = &Transaction{
+				Txn:    utxn.Txn,
+				Status: NewUnconfirmedTransactionStatus(),
+				Time:   uint64(nanoToTime(utxn.Received).Unix()),
+			}
+			return nil
+		}
+
+		// TODO: use a tx for history
+		htxn, err := vs.history.GetTransaction(txHash)
+		if err != nil {
+			return err
+		}
+
+		if htxn == nil {
+			return nil
+		}
+
+		headSeq := vs.HeadBkSeq()
+
+		b, err := vs.GetBlockBySeq(htxn.BlockSeq)
+		if err != nil {
+			return err
+		}
+
+		if b == nil {
+			return fmt.Errorf("found no block in seq %v", htxn.BlockSeq)
+		}
+
+		confirms := headSeq - htxn.BlockSeq + 1
+		txn = &Transaction{
+			Txn:    htxn.Tx,
+			Status: NewConfirmedTransactionStatus(confirms, htxn.BlockSeq),
+			Time:   b.Time(),
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
-	if txn == nil {
-		return nil, nil
-	}
-
-	headSeq := vs.HeadBkSeq()
-
-	confirms := headSeq - txn.BlockSeq + 1
-	b, err := vs.GetBlockBySeq(txn.BlockSeq)
-	if err != nil {
-		return nil, err
-	}
-
-	if b == nil {
-		return nil, fmt.Errorf("found no block in seq %v", txn.BlockSeq)
-	}
-
-	return &Transaction{
-		Txn:    txn.Tx,
-		Status: NewConfirmedTransactionStatus(confirms, txn.BlockSeq),
-		Time:   b.Time(),
-	}, nil
+	return txn, nil
 }
 
 // AddressBalance computes the total balance for cipher.Addresses and their coin.UxOuts
@@ -554,8 +650,18 @@ func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) []UnconfirmedTxn {
-	return vs.Unconfirmed.GetTxns(filter)
+func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
+	var txns []UnconfirmedTxn
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		txns, err = vs.Unconfirmed.GetTxns(tx, filter)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return txns, nil
 }
 
 // ToAddresses represents a filter that check if tx has output to the given addresses
@@ -574,13 +680,33 @@ func ToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (vs *Visor) GetAllUnconfirmedTxns() []UnconfirmedTxn {
-	return vs.Unconfirmed.GetTxns(All)
+func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTxn, error) {
+	var txns []UnconfirmedTxn
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		txns, err = vs.Unconfirmed.GetTxns(tx, All)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return txns, nil
 }
 
 // GetAllValidUnconfirmedTxHashes returns all valid unconfirmed transaction hashes
-func (vs *Visor) GetAllValidUnconfirmedTxHashes() []cipher.SHA256 {
-	return vs.Unconfirmed.GetTxHashes(IsValid)
+func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		hashes, err = vs.Unconfirmed.GetTxHashes(tx, IsValid)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return hashes, nil
 }
 
 // GetBlockByHash get block of specific hash header, return nil on not found.
@@ -590,6 +716,7 @@ func (vs *Visor) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
 
 // GetBlockBySeq get block of speicific seq, return nil on not found.
 func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
+	// TODO -- use txn?
 	return vs.Blockchain.GetBlockBySeq(seq)
 }
 
@@ -642,4 +769,57 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 // GetAddrUxOuts gets all the address affected UxOuts.
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
 	return vs.history.GetAddrUxOuts(address)
+}
+
+// RecvOfAddresses returns unconfirmed receiving uxouts of addresses
+func (vs *Visor) RecvOfAddresses(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	var uxouts coin.AddressUxOuts
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		head, err := vs.Blockchain.HeadWithTx(tx)
+		if err != nil {
+			return err
+		}
+
+		uxouts, err = vs.Unconfirmed.RecvOfAddresses(tx, head.Head, addrs)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return uxouts, nil
+}
+
+// GetIncomingOutputs returns all predicted outputs that are in pending tx pool
+func (vs *Visor) GetIncomingOutputs() (coin.UxArray, error) {
+	var uxa coin.UxArray
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		head, err := vs.Blockchain.HeadWithTx(tx)
+		if err != nil {
+			return err
+		}
+
+		uxa, err = vs.Unconfirmed.GetIncomingOutputs(tx, head.Head)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return uxa, nil
+}
+
+// GetUnconfirmedTxn gets an unconfirmed transaction from the DB
+func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTxn, error) {
+	var txn *UnconfirmedTxn
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		txn, err = vs.Unconfirmed.Get(tx, hash)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return txn, nil
 }

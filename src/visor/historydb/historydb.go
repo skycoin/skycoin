@@ -35,9 +35,11 @@ type HistoryDB struct {
 
 // New create historydb instance and create corresponding buckets if does not exist.
 func New(db *bolt.DB) (*HistoryDB, error) {
-	hd := HistoryDB{db: db}
-	var err error
+	hd := HistoryDB{
+		db: db,
+	}
 
+	var err error
 	hd.txns, err = newTransactionsBkt(db)
 	if err != nil {
 		return nil, err

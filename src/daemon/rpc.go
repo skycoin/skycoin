@@ -159,14 +159,22 @@ func (rpc RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *Resen
 }
 
 // ResendUnconfirmedTxns rebroadcast unconfirmed transactions
-func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) *ResendResult {
+func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) (*ResendResult, error) {
 	if v.v == nil {
-		return nil
+		return nil, nil
 	}
-	txids := v.ResendUnconfirmedTxns(p)
-	var rlt ResendResult
+
+	txids, err := v.ResendUnconfirmedTxns(p)
+	if err != nil {
+		return nil, err
+	}
+
+	var rltTxids []string
 	for _, txid := range txids {
-		rlt.Txids = append(rlt.Txids, txid.Hex())
+		rltTxids = append(rltTxids, txid.Hex())
 	}
-	return &rlt
+
+	return &ResendResult{
+		Txids: rltTxids,
+	}, nil
 }

@@ -51,7 +51,7 @@ const (
 type chainStore interface {
 	Head(tx *bolt.Tx) (*coin.SignedBlock, error) // returns head block
 	HeadSeq() uint64                             // returns head block sequence
-	Len() uint64                                 // returns blockchain lenght
+	Len() uint64                                 // returns blockchain length
 	AddBlock(tx *bolt.Tx, b *coin.SignedBlock) error
 	GetBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error)
@@ -160,6 +160,11 @@ func (bc Blockchain) Head() (*coin.SignedBlock, error) {
 	return sb, nil
 }
 
+// HeadWithTx returns the most recent confirmed block
+func (bc Blockchain) HeadWithTx(tx *bolt.Tx) (*coin.SignedBlock, error) {
+	return bc.store.Head(tx)
+}
+
 // Unspent returns the unspent outputs pool
 func (bc *Blockchain) Unspent() blockdb.UnspentPool {
 	return bc.store.UnspentPool()
@@ -189,47 +194,42 @@ func (bc *Blockchain) Time() uint64 {
 
 // NewBlock creates a Block given an array of Transactions.  It does not verify the
 // block; ExecuteBlock will handle verification.  Transactions must be sorted.
-func (bc Blockchain) NewBlock(txns coin.Transactions, currentTime uint64) (*coin.Block, error) {
+func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error) {
 	if len(txns) == 0 {
 		return nil, errors.New("No transactions")
 	}
-	txns, err := bc.processTransactions(txns)
+
+	head, err := bc.store.Head(tx)
 	if err != nil {
 		return nil, err
 	}
+
+	if currentTime <= head.Time() {
+		return nil, errors.New("Time can only move forward")
+	}
+
+	txns, err = bc.processTransactions(head, txns)
+	if err != nil {
+		return nil, err
+	}
+
 	uxHash := bc.Unspent().GetUxHash()
 
-	var b *coin.Block
-	if err := bc.db.View(func(tx *bolt.Tx) error {
-		head, err := bc.store.Head(tx)
-		if err != nil {
-			return err
-		}
-
-		if currentTime <= head.Time() {
-			return errors.New("Time can only move forward")
-		}
-
-		b, err = coin.NewBlock(head.Block, currentTime, uxHash, txns, bc.TransactionFee)
-		if err != nil {
-			return err
-		}
-
-		//make sure block is valid
-		if DebugLevel2 == true {
-			if err := bc.verifyBlockHeader(tx, *b); err != nil {
-				return err
-			}
-			txns, err := bc.processTransactions(b.Body.Transactions)
-			if err != nil {
-				logger.Panic("Impossible Error: not allowed to fail")
-			}
-			b.Body.Transactions = txns
-		}
-
-		return nil
-	}); err != nil {
+	b, err := coin.NewBlock(head.Block, currentTime, uxHash, txns, bc.TransactionFee)
+	if err != nil {
 		return nil, err
+	}
+
+	//make sure block is valid
+	if DebugLevel2 == true {
+		if err := bc.verifyBlockHeader(tx, *b); err != nil {
+			return nil, err
+		}
+		txns, err := bc.processTransactions(head, b.Body.Transactions)
+		if err != nil {
+			logger.Panic("Impossible Error: not allowed to fail")
+		}
+		b.Body.Transactions = txns
 	}
 
 	return b, nil
@@ -237,16 +237,17 @@ func (bc Blockchain) NewBlock(txns coin.Transactions, currentTime uint64) (*coin
 
 // ExecuteBlock attempts to append block to blockchain with *bolt.Tx
 func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
+	var head *coin.SignedBlock
 	if bc.Len() > 0 {
-		head, err := bc.store.Head(tx)
-		if err != nil {
+		var err error
+		if head, err = bc.store.Head(tx); err != nil {
 			return err
 		}
 
 		sb.Head.PrevHash = head.HashHeader()
 	}
 
-	nb, err := bc.processBlock(tx, *sb)
+	nb, err := bc.processBlock(tx, head, *sb)
 	if err != nil {
 		return err
 	}
@@ -258,22 +259,27 @@ func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
 	return nil
 }
 
-func (bc *Blockchain) processBlock(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
+func (bc *Blockchain) processBlock(tx *bolt.Tx, head *coin.SignedBlock, b coin.SignedBlock) (coin.SignedBlock, error) {
 	if bc.Len() > 0 {
-		if !bc.isGenesisBlock(b.Block) {
-			if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
-			}
-			txns, err := bc.processTransactions(b.Body.Transactions)
-			if err != nil {
-				return coin.SignedBlock{}, err
-			}
-			b.Body.Transactions = txns
+		if bc.isGenesisBlock(b.Block) {
+			err := errors.New("Attempt to process genesis block after blockchain has genesis block")
+			logger.Panic(err.Error())
+			return coin.SignedBlock{}, err
+		}
 
-			if err := bc.verifyUxHash(b.Block); err != nil {
-				return coin.SignedBlock{}, err
-			}
+		if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
+			return coin.SignedBlock{}, err
+		}
 
+		txns, err := bc.processTransactions(head, b.Body.Transactions)
+		if err != nil {
+			return coin.SignedBlock{}, err
+		}
+
+		b.Body.Transactions = txns
+
+		if err := bc.verifyUxHash(b.Block); err != nil {
+			return coin.SignedBlock{}, err
 		}
 	}
 
@@ -304,7 +310,7 @@ func (bc Blockchain) verifyUxHash(b coin.Block) error {
 // VerifyTransaction checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
-func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
+func (bc Blockchain) VerifyTransaction(head *coin.SignedBlock, txn coin.Transaction) error {
 	//CHECKLIST: DONE: check for duplicate ux inputs/double spending
 	//CHECKLIST: DONE: check that inputs of transaction have not been spent
 	//CHECKLIST: DONE: check there are no duplicate outputs
@@ -323,26 +329,21 @@ func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
 	// Check for no outputs
 	// Check for zero coin outputs
 	// Check valid looking signatures
-	if err := tx.Verify(); err != nil {
+	if err := txn.Verify(); err != nil {
 		return err
 	}
 
-	uxIn, err := bc.Unspent().GetArray(tx.In)
+	uxIn, err := bc.Unspent().GetArray(txn.In)
 	if err != nil {
 		return err
 	}
 	// Checks whether ux inputs exist,
 	// Check that signatures are allowed to spend inputs
-	if err := tx.VerifyInput(uxIn); err != nil {
+	if err := txn.VerifyInput(uxIn); err != nil {
 		return err
 	}
 
-	// Get the UxOuts we expect to have when the block is created.
-	head, err := bc.Head()
-	if err != nil {
-		return err
-	}
-	uxOut := coin.CreateUnspents(head.Head, tx)
+	uxOut := coin.CreateUnspents(head.Head, txn)
 	// Check that there are any duplicates within this set
 	if uxOut.HasDupes() {
 		return errors.New("Duplicate unspent outputs in transaction")
@@ -422,7 +423,7 @@ func (bc Blockchain) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 // TODO:
 //  - move arbitration to visor
 //  - blockchain should have strict checking
-func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactions, error) {
+func (bc Blockchain) processTransactions(head *coin.SignedBlock, txs coin.Transactions) (coin.Transactions, error) {
 	// copy txs so that the following code won't modify the origianl txs
 	txns := make(coin.Transactions, len(txs))
 	copy(txns, txs)
@@ -445,7 +446,7 @@ func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactio
 	for i, tx := range txns {
 		// Check the transaction against itself.  This covers the hash,
 		// signature indices and duplicate spends within itself
-		err := bc.VerifyTransaction(tx)
+		err := bc.VerifyTransaction(head, tx)
 		if err != nil {
 			if bc.arbitrating {
 				skip[i] = struct{}{}
@@ -672,7 +673,7 @@ func (bc *Blockchain) BindListener(ls BlockListener) {
 	bc.blkListener = append(bc.blkListener, ls)
 }
 
-// notifies the listener the new block.
+// Notify notifies the listener the new block.
 func (bc *Blockchain) Notify(b coin.Block) {
 	for _, l := range bc.blkListener {
 		l(b)

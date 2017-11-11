@@ -6,11 +6,14 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+	logging "github.com/op/go-logging"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
+
+var logger = logging.MustGetLogger("blockdb")
 
 // BlockTree block storage
 type BlockTree interface {

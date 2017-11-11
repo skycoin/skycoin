@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 type spending struct {
@@ -71,8 +72,9 @@ func TestNewUnspentPool(t *testing.T) {
 	require.NoError(t, err)
 
 	err = db.View(func(tx *bolt.Tx) error {
-		bstats := tx.Bucket(unspentPoolBkt).Stats()
-		require.Equal(t, 0, bstats.KeyN)
+		length, err := dbutil.Len(tx, unspentPoolBkt)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
 
 		h, err := up.meta.getXorHash(tx)
 		require.NoError(t, err)

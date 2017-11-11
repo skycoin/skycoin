@@ -78,7 +78,7 @@ func MakeRPC(v *Visor) RPC {
 
 // GetBlockchainMetadata get blockchain meta data
 func (rpc RPC) GetBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
-	return NewBlockchainMetadata(v)
+	return v.GetBlockchainMetadata()
 }
 
 // GetUnspent gets unspent
@@ -93,15 +93,11 @@ func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.Addr
 
 // GetUnconfirmedReceiving returns unconfirmed
 func (rpc RPC) GetUnconfirmedReceiving(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	head, err := v.Blockchain.Head()
-	if err != nil {
-		return coin.AddressUxOuts{}, err
-	}
-	return v.Unconfirmed.RecvOfAddresses(head.Head, addrs)
+	return v.RecvOfAddresses(addrs)
 }
 
 // GetUnconfirmedTxns gets unconfirmed transactions
-func (rpc RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []UnconfirmedTxn {
+func (rpc RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) ([]UnconfirmedTxn, error) {
 	return v.GetUnconfirmedTxns(ToAddresses(addresses))
 }
 

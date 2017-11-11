@@ -130,20 +130,26 @@ func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
 }
 
 // ResendUnconfirmedTxns resents all unconfirmed transactions
-func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
+func (gw *Gateway) ResendUnconfirmedTxns() (*ResendResult, error) {
+	var rlt *ResendResult
+	var err error
+
 	gw.strand("ResendUnconfirmedTxns", func() {
-		rlt = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
+		rlt, err = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
 	})
-	return
+
+	return rlt, err
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
 func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var bcm *visor.BlockchainMetadata
 	var err error
+
 	gw.strand("GetBlockchainMetadata", func() {
-		bcm, err = visor.NewBlockchainMetadata(gw.v)
+		bcm, err = gw.v.GetBlockchainMetadata()
 	})
+
 	return bcm, err
 }
 
@@ -438,21 +444,23 @@ func (gw *Gateway) GetTimeNow() uint64 {
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (gw *Gateway) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
+func (gw *Gateway) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
+	var err error
 	gw.strand("GetAllUnconfirmedTxns", func() {
-		txns = gw.v.GetAllUnconfirmedTxns()
+		txns, err = gw.v.GetAllUnconfirmedTxns()
 	})
-	return txns
+	return txns, err
 }
 
 // GetUnconfirmedTxns returns addresses related unconfirmed transactions
-func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) []visor.UnconfirmedTxn {
+func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
+	var err error
 	gw.strand("GetUnconfirmedTxns", func() {
-		txns = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
-	return txns
+	return txns, err
 }
 
 // GetLastTxs returns last confirmed transactions, return nil if empty
@@ -676,7 +684,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 			return
 		}
 
-		txns = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
 
 	return txns, err

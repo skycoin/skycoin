@@ -2,6 +2,7 @@ package dbutil
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/boltdb/bolt"
@@ -191,4 +192,20 @@ func Delete(tx *bolt.Tx, bktName, key []byte) error {
 	}
 
 	return bkt.Delete(key)
+}
+
+// Len returns the number of keys in a bucket
+func Len(tx *bolt.Tx, bktName []byte) (uint64, error) {
+	bkt := tx.Bucket(bktName)
+	if bkt == nil {
+		return 0, NewBucketNotExistErr(bktName)
+	}
+
+	bstats := bkt.Stats()
+
+	if bstats.KeyN < 0 {
+		return 0, errors.New("Negative length queried from db stats")
+	}
+
+	return uint64(bstats.KeyN), nil
 }

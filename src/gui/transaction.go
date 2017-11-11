@@ -37,7 +37,13 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		txns := gateway.GetAllUnconfirmedTxns()
+		txns, err := gateway.GetAllUnconfirmedTxns()
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
@@ -178,9 +184,16 @@ func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		rlt := gate.ResendUnconfirmedTxns()
+		rlt, err := gate.ResendUnconfirmedTxns()
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
 		v, _ := json.MarshalIndent(rlt, "", "    ")
-		fmt.Println(v)
+		logger.Debug(string(v))
+
 		wh.SendOr404(w, rlt)
 		return
 	}

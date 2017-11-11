@@ -644,7 +644,7 @@ func Run(c *Config) {
 		time.Sleep(5)
 		tx := InitTransaction()
 		_ = tx
-		err, _ = d.Visor.Visor.InjectTxn(tx)
+		err, _ = d.Visor.Visor.InjectTransaction(tx)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -657,7 +657,7 @@ func Run(c *Config) {
 				for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
 					time.Sleep(5)
 					tx := InitTransaction()
-					err, _ := d.Visor.Visor.InjectTxn(tx)
+					err, _ := d.Visor.Visor.InjectTransaction(tx)
 					if err != nil {
 						//log.Panic(err)
 					}

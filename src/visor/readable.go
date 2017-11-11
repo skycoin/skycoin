@@ -22,21 +22,11 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
-	head, err := v.Blockchain.Head()
-	if err != nil {
-		return nil, err
-	}
-
-	unconfirmedLen, err := v.Unconfirmed.Len()
-	if err != nil {
-		return nil, err
-	}
-
+func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen uint64) (*BlockchainMetadata, error) {
 	return &BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head.Head),
-		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(unconfirmedLen),
+		Unspents:    unspentsLen,
+		Unconfirmed: unconfirmedLen,
 	}, nil
 }
 

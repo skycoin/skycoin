@@ -15,7 +15,7 @@ const (
 
 var (
 	// Debug enables debug logging
-	Debug = false
+	Debug = true
 )
 
 // Request is sent to the channel provided to Strand

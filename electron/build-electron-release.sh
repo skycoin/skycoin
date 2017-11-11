@@ -95,6 +95,10 @@ if [ -e "$MZIP" ]; then
     rm "$MZIP"
 fi
 
+# delete github and latest-mac.yml
+if [ -d "github" ]; then rm -rf github ;fi
+if [ -e "latest-mac.yml" ]; then rm latest-mac.yml ;fi
+
 # clean unpacked folders
 rm -rf *-unpacked
 

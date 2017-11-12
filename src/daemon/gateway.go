@@ -198,11 +198,17 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 
 	gw.strand("GetBlocksInDepth", func() {
 		for _, n := range vs {
-			b, err := gw.vrpc.GetBlockBySeq(gw.v, n)
+			var b *coin.SignedBlock
+			b, err = gw.vrpc.GetBlockBySeq(gw.v, n)
 			if err != nil {
 				err = fmt.Errorf("get block %v failed: %v", n, err)
 				return
 			}
+
+			if b == nil {
+				return
+			}
+
 			blocks = append(blocks, *b)
 		}
 	})

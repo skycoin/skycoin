@@ -224,7 +224,7 @@ func (bc *Blockchain) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, err
 func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	b := bc.tree.GetBlockInDepth(seq, bc.walker)
 	if b == nil {
-		return nil, nil
+		return nil, fmt.Errorf("find no seq of block: %v", seq)
 	}
 
 	sig, ok, err := bc.sigs.Get(b.HashHeader())

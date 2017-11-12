@@ -126,18 +126,8 @@ func (bc *Blockchain) GetGenesisBlock() *coin.SignedBlock {
 }
 
 // GetSignedBlockByHash returns block of given hash
-func (bc *Blockchain) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
-	var sb *coin.SignedBlock
-
-	if err := bc.db.View(func(tx *bolt.Tx) error {
-		var err error
-		sb, err = bc.store.GetSignedBlockByHash(tx, hash)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return sb, nil
+func (bc *Blockchain) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+	return bc.store.GetSignedBlockByHash(tx, hash)
 }
 
 // GetSignedBlockBySeq returns block of given seq
@@ -355,37 +345,31 @@ func (bc Blockchain) VerifyTransaction(head *coin.SignedBlock, txn coin.Transact
 }
 
 // GetBlocks return blocks whose seq are in the range of start and end.
-func (bc Blockchain) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
+func (bc Blockchain) GetBlocks(tx *bolt.Tx, start, end uint64) ([]coin.SignedBlock, error) {
 	if start > end {
 		return nil, nil
 	}
 
 	var blocks []coin.SignedBlock
-	if err := bc.db.View(func(tx *bolt.Tx) error {
-		for i := start; i <= end; i++ {
-			b, err := bc.store.GetSignedBlockBySeq(tx, i)
-			if err != nil {
-				logger.Error("%v", err)
-				return err
-			}
-
-			if b == nil {
-				break
-			}
-
-			blocks = append(blocks, *b)
+	for i := start; i <= end; i++ {
+		b, err := bc.store.GetSignedBlockBySeq(tx, i)
+		if err != nil {
+			logger.Error("GetSignedBlockBySeq failed: %v", err)
+			return nil, err
 		}
 
-		return nil
-	}); err != nil {
-		return nil, err
+		if b == nil {
+			break
+		}
+
+		blocks = append(blocks, *b)
 	}
 
 	return blocks, nil
 }
 
 // GetLastBlocks return the latest N blocks.
-func (bc Blockchain) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
+func (bc Blockchain) GetLastBlocks(tx *bolt.Tx, num uint64) ([]coin.SignedBlock, error) {
 	if num == 0 {
 		return nil, nil
 	}
@@ -396,7 +380,7 @@ func (bc Blockchain) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 		start = 0
 	}
 
-	return bc.GetBlocks(uint64(start), end)
+	return bc.GetBlocks(tx, uint64(start), end)
 }
 
 /* Private */

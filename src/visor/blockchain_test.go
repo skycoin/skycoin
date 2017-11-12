@@ -455,10 +455,14 @@ func TestGetBlocks(t *testing.T) {
 				store: tc.store,
 			}
 
-			bs, err := bc.GetBlocks(tc.req.st, tc.req.ed)
+			err := db.View(func(tx *bolt.Tx) error {
+				bs, err := bc.GetBlocks(tx, tc.req.st, tc.req.ed)
+				require.NoError(t, err)
+				require.Equal(t, len(tc.expect), len(bs))
+				require.Equal(t, tc.expect, bs)
+				return nil
+			})
 			require.NoError(t, err)
-			require.Equal(t, len(tc.expect), len(bs))
-			require.Equal(t, tc.expect, bs)
 		})
 	}
 }
@@ -513,9 +517,13 @@ func TestGetLastBlocks(t *testing.T) {
 				store: tc.store,
 			}
 
-			bs, err := bc.GetLastBlocks(tc.n)
+			err := db.View(func(tx *bolt.Tx) error {
+				bs, err := bc.GetLastBlocks(tx, tc.n)
+				require.NoError(t, err)
+				require.Equal(t, tc.expcet, bs)
+				return nil
+			})
 			require.NoError(t, err)
-			require.Equal(t, tc.expcet, bs)
 		})
 	}
 

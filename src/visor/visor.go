@@ -517,7 +517,17 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 // empty slice if unable to fulfill request, it does not return nil.
 // move to blockdb
 func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
-	return vs.Blockchain.GetBlocks(start, end)
+	var blocks []coin.SignedBlock
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		blocks, err = vs.Blockchain.GetBlocks(tx, start, end)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
 }
 
 // InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
@@ -739,7 +749,17 @@ func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 
 // GetSignedBlockByHash get block of specific hash header, return nil on not found.
 func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
-	return vs.Blockchain.GetSignedBlockByHash(hash)
+	var sb *coin.SignedBlock
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		sb, err = vs.Blockchain.GetSignedBlockByHash(tx, hash)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return sb, nil
 }
 
 // GetSignedBlockBySeq get block of speicific seq, return nil on not found.
@@ -759,7 +779,17 @@ func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 
 // GetLastBlocks returns last N blocks
 func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
-	return vs.Blockchain.GetLastBlocks(num)
+	var blocks []coin.SignedBlock
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		blocks, err = vs.Blockchain.GetLastBlocks(tx, num)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
 }
 
 // GetLastTxs returns last confirmed transactions, return nil if empty

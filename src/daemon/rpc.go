@@ -115,7 +115,7 @@ func (rpc RPC) GetDefaultConnections(d *Daemon) []string {
 
 // GetTrustConnections get all trusted transaction
 func (rpc RPC) GetTrustConnections(d *Daemon) []string {
-	return d.Pex.Trust().ToAddrs()
+	return d.Pex.Trusted().ToAddrs()
 }
 
 // GetAllExchgConnections return all exchangeable connections

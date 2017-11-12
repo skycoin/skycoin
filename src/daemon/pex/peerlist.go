@@ -308,7 +308,7 @@ func (pl *peerlist) ResetAllRetryTimes() {
 }
 
 // GetTrustPeers returns trusted peers
-func (pl *peerlist) Trust() Peers {
+func (pl *peerlist) Trusted() Peers {
 	pl.RLock()
 	defer pl.RUnlock()
 	return pl.getPeers(isTrusted)
@@ -322,7 +322,7 @@ func (pl *peerlist) Private() Peers {
 }
 
 // GetTrustPublicPeers returns trusted public peers
-func (pl *peerlist) TrustPublic() Peers {
+func (pl *peerlist) TrustedPublic() Peers {
 	pl.RLock()
 	defer pl.RUnlock()
 	return pl.getPeers(isPublic, isTrusted)

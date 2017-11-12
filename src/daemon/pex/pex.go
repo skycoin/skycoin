@@ -202,7 +202,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 			logger.Critical("add peer failed:%v", err)
 			continue
 		}
-		if err := pex.SetTrust(addr, true); err != nil {
+		if err := pex.SetTrusted(addr); err != nil {
 			logger.Critical("pex.SetTrust failed: %v", err)
 		}
 	}
@@ -228,17 +228,11 @@ func (px *Pex) load() error {
 	}
 
 	// remove invalid peers and limit the max number of peers to pex.Config.Max
-	l := len(peers)
-	if l > px.Config.Max {
-		l = px.Config.Max
-	}
-
 	var validPeers []Peer
 	for addr, p := range peers {
 		if validateAddress(addr, px.Config.AllowLocalhost) {
 			validPeers = append(validPeers, *p)
-			l--
-			if l == 0 {
+			if len(validPeers) >= px.Config.Max {
 				break
 			}
 		}
@@ -305,13 +299,13 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 	return px.setPrivate(addr, private)
 }
 
-// SetTrust updates peer's trusted value
-func (px *Pex) SetTrust(addr string, trusted bool) error {
+// SetTrusted updates peer's trusted value
+func (px *Pex) SetTrusted(addr string) error {
 	if !validateAddress(addr, px.Config.AllowLocalhost) {
 		return ErrInvalidAddress
 	}
 
-	return px.setTrusted(addr, trusted)
+	return px.setTrusted(addr, true)
 }
 
 // SetHasIncomingPort sets if the peer has public port

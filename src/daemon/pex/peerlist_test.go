@@ -848,7 +848,7 @@ func TestGetPeerlistTrust(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pl := newPeerlist()
 			pl.setPeers(tc.peers)
-			peers := pl.Trust()
+			peers := pl.Trusted()
 			require.Equal(t, len(tc.expect), len(peers))
 			pm := make(map[string]Peer)
 			for _, p := range peers {
@@ -971,7 +971,7 @@ func TestPeerlistTrustPublic(t *testing.T) {
 			pl.setPeers(tc.peers)
 
 			// get trusted public peers
-			peers := pl.TrustPublic()
+			peers := pl.TrustedPublic()
 
 			require.Equal(t, len(tc.expect), len(peers))
 			pm := make(map[string]Peer)

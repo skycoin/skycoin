@@ -415,7 +415,7 @@ loop:
 			}
 		// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
-			trustPeerNum := len(dm.Pex.Trust())
+			trustPeerNum := len(dm.Pex.Trusted())
 			if !dm.Config.DisableOutgoingConnections &&
 				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
 				dm.pendingConnections.Len() < dm.Config.PendingMax {
@@ -585,7 +585,7 @@ func (dm *Daemon) connectToTrustPeer() {
 
 	logger.Info("Connect to trusted peers")
 	// Make connections to all trusted peers
-	peers := dm.Pex.TrustPublic()
+	peers := dm.Pex.TrustedPublic()
 	for _, p := range peers {
 		dm.connectToPeer(p)
 	}

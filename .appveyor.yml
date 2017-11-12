@@ -33,6 +33,7 @@ after_build:
   - ps: 7z a skycoin.zip C:\gopath\src\github.com\skycoin\skycoin\electron\release\*
   - ps: ls *.zip
 
+test: off
 
 artifacts: 
   - path: skycoin.zip
@@ -43,7 +44,8 @@ deploy:
   access_key_id: $(AWS_ACCESS_KEY_ID) 
   secret_access_key: $(AWS_SECRET_ACCESS_KEY)
   bucket: $(AWS_BUCKET)
-  region: us-west-2
+  region: $(AWS_REGION)
+  folder: wallet
   artifact: published
   unzip: true
   on:

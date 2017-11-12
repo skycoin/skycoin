@@ -76,6 +76,7 @@ deploy:
   bucket: $AWS_BUCKET
   skip_cleanup: true
   local_dir: electron/release
+  upload-dir: wallet
   on:
     repo: skycoin/skycoin
     branch: master

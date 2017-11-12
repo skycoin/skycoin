@@ -25,9 +25,11 @@ matrix:
   - os: osx
 
 install:
-  - ./ci-scripts/install_deps.sh
+  # Install gox
+  - go get github.com/mitchellh/gox
+  # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
-  # run test
+  # for test
   - go get -t ./...
   - go get github.com/golang/lint/golint
   - go get github.com/FiloSottile/vendorcheck
@@ -66,7 +68,6 @@ notifications:
 
 after_success:
   - ls ./electron/release/
-#   - sh ./electron/set_tags.sh
 
 deploy:
   provider: s3

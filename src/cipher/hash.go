@@ -95,9 +95,30 @@ func SHA256FromHex(hs string) (SHA256, error) {
 	return h, nil
 }
 
-// MustSHA256FromHex same as SHA256FromHex, except will panic when detect error
+// MustSHA256FromHex is the same as SHA256FromHex, except it will panic when it detects an error
 func MustSHA256FromHex(hs string) SHA256 {
 	h, err := SHA256FromHex(hs)
+	if err != nil {
+		log.Panic(err)
+	}
+	return h
+}
+
+// SHA256FromBytes converts []byte to SHA256
+func SHA256FromBytes(b []byte) (SHA256, error) {
+	h := SHA256{}
+
+	if len(b) != len(h) {
+		return h, errors.New("Invalid bytes length")
+	}
+
+	h.Set(b)
+	return h, nil
+}
+
+// MustSHA256FromBytes is the same as SHA256FromBytes, except it will panic when it detects an error
+func MustSHA256FromBytes(b []byte) SHA256 {
+	h, err := SHA256FromBytes(b)
 	if err != nil {
 		log.Panic(err)
 	}

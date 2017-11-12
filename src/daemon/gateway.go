@@ -153,12 +153,12 @@ func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	return bcm, err
 }
 
-// GetBlockByHash returns the block by hash
-func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
-	gw.strand("GetBlockByHash", func() {
-		b, err := gw.v.GetBlockByHash(hash)
+// GetSignedBlockByHash returns the block by hash
+func (gw *Gateway) GetSignedBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
+	gw.strand("GetSignedBlockByHash", func() {
+		b, err := gw.v.GetSignedBlockByHash(hash)
 		if err != nil {
-			logger.Error("gateway.GetBlockByHash failed: %v", err)
+			logger.Error("gateway.GetSignedBlockByHash failed: %v", err)
 			return
 		}
 		if b == nil {
@@ -171,12 +171,12 @@ func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, o
 	return
 }
 
-// GetBlockBySeq returns blcok by seq
-func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
-	gw.strand("GetBlockBySeq", func() {
-		b, err := gw.v.GetBlockBySeq(seq)
+// GetSignedBlockBySeq returns blcok by seq
+func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
+	gw.strand("GetSignedBlockBySeq", func() {
+		b, err := gw.v.GetSignedBlockBySeq(seq)
 		if err != nil {
-			logger.Error("gateway.GetBlockBySeq failed: %v", err)
+			logger.Error("gateway.GetSignedBlockBySeq failed: %v", err)
 			return
 		}
 		if b == nil {
@@ -205,13 +205,13 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 
 // GetBlocksInDepth returns blocks in different depth
 func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
-	blocks := []coin.SignedBlock{}
+	var blocks []coin.SignedBlock
 	var err error
 
 	gw.strand("GetBlocksInDepth", func() {
 		for _, n := range vs {
 			var b *coin.SignedBlock
-			b, err = gw.vrpc.GetBlockBySeq(gw.v, n)
+			b, err = gw.vrpc.GetSignedBlockBySeq(gw.v, n)
 			if err != nil {
 				err = fmt.Errorf("get block %v failed: %v", n, err)
 				return
@@ -509,17 +509,21 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
 	var tx *coin.Transaction
 	var err error
+
 	gw.strand("Spend", func() {
 		// create spend validator
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+
+		var headTime uint64
+		headTime, err = gw.v.GetHeadBlockTime()
+		if err != nil {
+			err = fmt.Errorf("GetHeadBlockTime failed: %v", err)
+			return
+		}
+
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID,
-			sv,
-			unspent,
-			gw.v.Blockchain.Time(),
-			amt,
-			dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, headTime, amt, dest)
 		if err != nil {
 			err = fmt.Errorf("Create transaction failed: %v", err)
 			return
@@ -553,8 +557,13 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balan
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 
+		var headTime uint64
+		headTime, err = gw.v.GetHeadBlockTime()
+		if err != nil {
+			return
+		}
+
 		// create and sign transaction
-		headTime := gw.v.Blockchain.Time()
 		tx, err = wlt.CreateAndSignTransaction(sv, unspent, headTime, amt, dest)
 	})
 	return tx, err
@@ -586,8 +595,17 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 			return
 		}
 
-		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		var coins1, hours1, coins2, hours2 uint64
+		coins1, hours1, err = gw.v.AddressBalance(auxs)
+		if err != nil {
+			return
+		}
+
+		coins2, hours2, err = gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		if err != nil {
+			return
+		}
+
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
@@ -619,8 +637,18 @@ func (gw *Gateway) GetAddressesBalance(addrs []cipher.Address) (wallet.BalancePa
 
 		uxs := auxs.Sub(spendUxs)
 		uxs = uxs.Add(recvUxs)
-		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+
+		var coins1, hours1, coins2, hours2 uint64
+		coins1, hours1, err = gw.v.AddressBalance(auxs)
+		if err != nil {
+			return
+		}
+
+		coins2, hours2, err = gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		if err != nil {
+			return
+		}
+
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},

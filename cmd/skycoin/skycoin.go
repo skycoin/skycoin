@@ -654,7 +654,7 @@ func Run(c *Config) {
 		//first transaction
 		if c.RunMaster == true {
 			go func() {
-				for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
+				for d.Visor.Visor.GetHeadBlock().Seq() < 2 {
 					time.Sleep(5)
 					tx := InitTransaction()
 					err, _ := d.Visor.Visor.InjectTransaction(tx)

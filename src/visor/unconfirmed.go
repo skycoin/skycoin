@@ -334,7 +334,12 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t coin.Transaction) (bool, error) {
-	fee, err := bc.TransactionFee(&t)
+	head, err := bc.Head(tx)
+	if err != nil {
+		return false, err
+	}
+
+	fee, err := bc.TransactionFee(head.Time())(&t)
 	if err != nil {
 		return false, err
 	}
@@ -344,11 +349,6 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t 
 	}
 
 	hash := t.Hash()
-
-	head, err := bc.HeadWithTx(tx)
-	if err != nil {
-		return false, err
-	}
 
 	if err := bc.VerifyTransaction(head, t); err != nil {
 		return false, err
@@ -381,7 +381,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t 
 	}
 
 	// update unconfirmed unspent
-	head, err = bc.HeadWithTx(tx)
+	head, err = bc.Head(tx)
 	if err != nil {
 		return false, err
 	}
@@ -434,7 +434,7 @@ func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) ([]cipher.SHA256, error) 
 	now := utc.Now().UnixNano()
 
 	if err := utp.db.Update(func(tx *bolt.Tx) error {
-		head, err := bc.HeadWithTx(tx)
+		head, err := bc.Head(tx)
 		if err != nil {
 			return err
 		}

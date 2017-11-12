@@ -78,7 +78,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			b, exist = gate.GetBlockByHash(h)
+			b, exist = gate.GetSignedBlockByHash(h)
 		case seq != "":
 			uSeq, err := strconv.ParseUint(seq, 10, 64)
 			if err != nil {
@@ -86,7 +86,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			b, exist = gate.GetBlockBySeq(uSeq)
+			b, exist = gate.GetSignedBlockBySeq(uSeq)
 		}
 
 		if !exist {

@@ -339,12 +339,22 @@ func (vs *Visor) verifyInjectTransaction(txn coin.Transaction) error {
 }
 
 func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
+	// TODO -- when Unspent becomes a bolt.DB,
+	// then the result from Blockchain.Unspent().GetArray()
+	// and the result from GetHeadBlockTime()
+	// need to be merged into a single method in visor.Visor,
+	// so that a bolt.Tx can be used properly
 	inUxs, err := vs.v.Blockchain.Unspent().GetArray(txn.In)
 	if err != nil {
 		return err
 	}
 
-	fee, err := visor.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
+	headTime, err := vs.v.GetHeadBlockTime()
+	if err != nil {
+		return err
+	}
+
+	fee, err := visor.TransactionFee(&txn, headTime, inUxs)
 	if err != nil {
 		return err
 	}

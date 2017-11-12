@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 const (
@@ -94,7 +95,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 			Arbitrating: false,
 		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "find no signature of block:")
+		require.IsType(t, blockdb.ErrSignatureLost{}, err, "error message is: %v", err)
 	}()
 
 	// Loading this invalid db should cause loadBlockchain() to recreate the db
@@ -153,7 +154,10 @@ func TestNormalLoadDBErr(t *testing.T) {
 		Arbitrating: false,
 	})
 	require.Error(t, err)
-	require.NotEqual(t, ErrSignatureLost, err)
+
+	_, isType := err.(blockdb.ErrSignatureLost)
+	require.False(t, isType)
+
 	require.Nil(t, db)
 	require.Nil(t, bc)
 

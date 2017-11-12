@@ -116,9 +116,9 @@ func (rpc RPC) GetLastBlocks(v *Visor, num uint64) ([]coin.SignedBlock, error) {
 	return v.GetLastBlocks(num)
 }
 
-// GetBlockBySeq get block in depth
-func (rpc RPC) GetBlockBySeq(v *Visor, n uint64) (*coin.SignedBlock, error) {
-	return v.GetBlockBySeq(n)
+// GetSignedBlockBySeq get block in depth
+func (rpc RPC) GetSignedBlockBySeq(v *Visor, n uint64) (*coin.SignedBlock, error) {
+	return v.GetSignedBlockBySeq(n)
 
 }
 

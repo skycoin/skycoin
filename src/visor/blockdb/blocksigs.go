@@ -56,3 +56,20 @@ func (bs blockSigs) Get(tx *bolt.Tx, hash cipher.SHA256) (cipher.Sig, bool, erro
 func (bs *blockSigs) Add(tx *bolt.Tx, hash cipher.SHA256, sig cipher.Sig) error {
 	return dbutil.PutBucketValue(tx, blockSigsBkt, hash[:], encoder.Serialize(sig))
 }
+
+// ForEach iterates all signatures and calls f on them
+func (bs *blockSigs) ForEach(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+	return dbutil.ForEach(tx, blocksBkt, func(k, v []byte) error {
+		hash, err := cipher.SHA256FromBytes(k)
+		if err != nil {
+			return err
+		}
+
+		var sig cipher.Sig
+		if err := encoder.DeserializeRaw(v, &sig); err != nil {
+			return err
+		}
+
+		return f(hash, sig)
+	})
+}

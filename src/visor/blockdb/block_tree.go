@@ -29,7 +29,6 @@ type Walker func(*bolt.Tx, []coin.HashPair) (cipher.SHA256, bool)
 
 // blockTree use the blockdb store all blocks and maintains the block tree struct.
 type blockTree struct {
-	db *bolt.DB
 }
 
 // newBlockTree create buckets in blockdb if does not exist.
@@ -45,9 +44,7 @@ func newBlockTree(db *bolt.DB) (*blockTree, error) {
 		return nil, err
 	}
 
-	return &blockTree{
-		db: db,
-	}, nil
+	return &blockTree{}, nil
 }
 
 // AddBlock adds block with *bolt.Tx
@@ -163,6 +160,10 @@ func (bt *blockTree) GetBlock(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, err
 		}
 	}
 
+	if hash != b.HashHeader() {
+		return nil, fmt.Errorf("DB key %s does not match block hash header %s", hash, b.HashHeader())
+	}
+
 	return &b, nil
 }
 
@@ -180,6 +181,19 @@ func (bt *blockTree) GetBlockInDepth(tx *bolt.Tx, depth uint64, filter Walker) (
 	}
 
 	return bt.GetBlock(tx, hash)
+}
+
+// ForEachBlock iterates all blocks and calls f on them
+func (bt *blockTree) ForEachBlock(tx *bolt.Tx, f func(b *coin.Block) error) error {
+	return dbutil.ForEach(tx, blocksBkt, func(_, v []byte) error {
+		var b coin.Block
+
+		if err := encoder.DeserializeRaw(v, &b); err != nil {
+			return err
+		}
+
+		return f(&b)
+	})
 }
 
 func (bt *blockTree) getHashInDepth(tx *bolt.Tx, depth uint64, filter Walker) (cipher.SHA256, error) {

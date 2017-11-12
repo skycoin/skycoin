@@ -25,12 +25,15 @@ const (
 	GenesisCoinHours uint64 = 1000 * 1000
 )
 
-func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
-	chrs := ux.CoinHours(bc.Time())
+func MakeTransactionForChain(t *testing.T, vs *Visor, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
+	headTime, err := vs.v.GetHeadBlockTime()
+	require.NoError(t, err)
+
+	chrs := ux.CoinHours(headTime)
 
 	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
 
-	knownUx, exists := bc.Unspent().Get(ux.Hash())
+	knownUx, exists := vs.v.Blockchain.Unspent().Get(ux.Hash())
 	require.True(t, exists)
 	require.Equal(t, knownUx, ux)
 
@@ -49,7 +52,7 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 
 	require.Equal(t, len(tx.Sigs), 1)
 
-	err := cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0])
+	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0])
 	require.NoError(t, err)
 
 	tx.UpdateHeader()
@@ -57,10 +60,10 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 	err = tx.Verify()
 	require.NoError(t, err)
 
-	head, err := bc.Head()
+	head, err := vs.v.GetHeadBlock()
 	require.NoError(t, err)
 
-	err = bc.VerifyTransaction(head, tx)
+	err = vs.v.Blockchain.VerifyTransaction(head, tx)
 	require.NoError(t, err)
 
 	return tx
@@ -110,12 +113,12 @@ func setupSimpleVisor(t *testing.T, db *bolt.DB, bc *visor.Blockchain) *Visor {
 	}
 }
 
-func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction { // nolint: unparam
-	uxOuts, err := bc.Unspent().GetAll()
+func createGenesisSpendTransaction(t *testing.T, vs *Visor, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction { // nolint: unparam
+	uxOuts, err := vs.v.Blockchain.Unspent().GetAll()
 	require.NoError(t, err)
 	require.Len(t, uxOuts, 1)
 
-	txn := MakeTransactionForChain(t, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
+	txn := MakeTransactionForChain(t, vs, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
 	require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
 
 	if coins == GenesisCoins {
@@ -192,7 +195,10 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr, errMsg string) {
 	var hours uint64 = 1e6
 	var fee uint64 = 5e8
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
+	// Setup a minimal visor
+	v := setupSimpleVisor(t, db, bc)
+
+	txn := createGenesisSpendTransaction(t, v, addr, coins, hours, fee)
 	uxOut := executeGenesisSpendTransaction(t, db, bc, txn)
 
 	// Create a transaction that spends from the locked address
@@ -211,9 +217,6 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr, errMsg string) {
 			},
 		},
 	}
-
-	// Setup a minimal visor
-	v := setupSimpleVisor(t, db, bc)
 
 	// Call verifyTransaction
 	err = v.verifyTransaction(txn)
@@ -234,10 +237,10 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	var fee uint64
 	_, _, addr := MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
-
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
+
+	txn := createGenesisSpendTransaction(t, v, addr, coins, hours, fee)
 
 	// Call verifyTransaction
 	err := v.verifyTransaction(txn)
@@ -258,13 +261,13 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	var fee uint64
 	_, _, addr := MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
+	// Setup a minimal visor
+	v := setupSimpleVisor(t, db, bc)
+
+	txn := createGenesisSpendTransaction(t, v, addr, coins, hours, fee)
 
 	// Invalidate signatures
 	txn.Sigs = nil
-
-	// Setup a minimal visor
-	v := setupSimpleVisor(t, db, bc)
 
 	// Call verifyTransaction
 	err := v.verifyTransaction(txn)
@@ -285,10 +288,10 @@ func TestInjectValidTransaction(t *testing.T) {
 	var fee uint64
 	_, _, addr := MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
-
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
+
+	txn := createGenesisSpendTransaction(t, v, addr, coins, hours, fee)
 
 	// The unconfirmed pool should be empty
 	err := db.Update(func(tx *bolt.Tx) error {
@@ -327,10 +330,10 @@ func TestInjectInvalidTransaction(t *testing.T) {
 	var fee uint64
 	_, _, addr := MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
-
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
+
+	txn := createGenesisSpendTransaction(t, v, addr, coins, hours, fee)
 
 	// The unconfirmed pool should be empty
 	err := db.View(func(tx *bolt.Tx) error {

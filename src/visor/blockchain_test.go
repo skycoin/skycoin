@@ -108,7 +108,7 @@ type fakeChainStore struct {
 func (fcs *fakeChainStore) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if l == 0 {
-		return nil, errors.New("no head block")
+		return nil, blockdb.ErrNoHeadBlock
 	}
 
 	return &fcs.blocks[l-1], nil
@@ -130,11 +130,19 @@ func (fcs *fakeChainStore) AddBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetBlockSignature(tx *bolt.Tx, b *coin.Block) (cipher.Sig, bool, error) {
+	return cipher.Sig{}, false, nil
+}
+
+func (fcs *fakeChainStore) GetBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) GetBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+	return nil, nil
+}
+
+func (fcs *fakeChainStore) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if seq >= uint64(l) {
 		return nil, nil
@@ -151,6 +159,14 @@ func (fcs *fakeChainStore) GetGenesisBlock() *coin.SignedBlock {
 	if len(fcs.blocks) > 0 {
 		return &fcs.blocks[0]
 	}
+	return nil
+}
+
+func (fcs *fakeChainStore) ForEachBlock(tx *bolt.Tx, f func(*coin.Block) error) error {
+	return nil
+}
+
+func (fcs *fakeChainStore) ForEachSignature(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
 	return nil
 }
 
@@ -212,7 +228,13 @@ func TestBlockchainTime(t *testing.T) {
 				store: tc.store,
 			}
 
-			require.Equal(t, tc.time, bc.Time())
+			err := db.View(func(tx *bolt.Tx) error {
+				tm, err := bc.Time(tx)
+				require.NoError(t, err)
+				require.Equal(t, tc.time, tm)
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 }
@@ -316,7 +338,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 			"empty blockchain",
 			&fakeChainStore{},
 			coin.Block{},
-			errors.New("no head block"),
+			blockdb.ErrNoHeadBlock,
 		},
 	}
 
@@ -512,12 +534,12 @@ func newBlock(t *testing.T, bc *Blockchain, txn coin.Transaction, timestamp uint
 	return b
 }
 
-// blockchainHead calls bc.HeadWithTx in a bolt.Tx
+// blockchainHead calls bc.Head in a bolt.Tx
 func blockchainHead(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	var head *coin.SignedBlock
 	err := bc.db.View(func(tx *bolt.Tx) error {
 		var err error
-		head, err = bc.HeadWithTx(tx)
+		head, err = bc.Head(tx)
 		require.NoError(t, err)
 		return nil
 	})

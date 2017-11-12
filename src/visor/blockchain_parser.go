@@ -85,7 +85,7 @@ func (bcp *BlockchainParser) parseTo(tx *bolt.Tx, bcHeight uint64) error {
 	}
 
 	for i := int64(0); i < int64(bcHeight)-parsedHeight; i++ {
-		b, err := bcp.bc.store.GetBlockBySeq(tx, uint64(parsedHeight+i+1))
+		b, err := bcp.bc.store.GetSignedBlockBySeq(tx, uint64(parsedHeight+i+1))
 		if err != nil {
 			return err
 		}

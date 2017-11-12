@@ -7,11 +7,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
@@ -29,7 +29,9 @@ func loadBlockchain(dbPath string, pubkey cipher.PubKey, opts BlockchainOptions)
 		return db, bc, nil
 	}
 
-	if !strings.Contains(err.Error(), "find no signature of block") {
+	switch err.(type) {
+	case blockdb.ErrSignatureLost:
+	default:
 		return nil, nil, err
 	}
 

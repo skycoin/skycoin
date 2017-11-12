@@ -84,6 +84,10 @@ func (bt *fakeBlockTree) GetBlockInDepth(tx *bolt.Tx, dep uint64, filter Walker)
 	return nil, nil
 }
 
+func (bt *fakeBlockTree) ForEachBlock(tx *bolt.Tx, f func(*coin.Block) error) error {
+	return nil
+}
+
 type fakeSignatureStore struct {
 	db         *bolt.DB
 	sigs       map[string]cipher.Sig
@@ -123,6 +127,10 @@ func (ss *fakeSignatureStore) Get(tx *bolt.Tx, hash cipher.SHA256) (cipher.Sig, 
 
 	sig, ok := ss.sigs[hash.Hex()]
 	return sig, ok, nil
+}
+
+func (ss *fakeSignatureStore) ForEach(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+	return nil
 }
 
 type fakeUnspentPool struct {
@@ -355,7 +363,7 @@ func TestBlockchainHead(t *testing.T) {
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		_, err = bc.Head(tx)
-		require.EqualError(t, err, "found no head block: 0")
+		require.Equal(t, err, ErrNoHeadBlock)
 
 		gb := makeGenesisBlock(t)
 
@@ -442,7 +450,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			},
 			gb.HashHeader(),
 			expect{
-				fmt.Errorf("find no signature of block: %v", gb.HashHeader().Hex()),
+				NewErrSignatureLost(&gb.Block),
 				nil,
 			},
 		},
@@ -477,7 +485,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			bc.sigs = tc.sigs
 
 			err = db.View(func(tx *bolt.Tx) error {
-				b, err := bc.GetBlockByHash(tx, tc.hash)
+				b, err := bc.GetSignedBlockByHash(tx, tc.hash)
 				require.Equal(t, tc.expect.err, err)
 				require.Equal(t, tc.expect.b, b)
 				return nil

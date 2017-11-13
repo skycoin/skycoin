@@ -8,13 +8,19 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "${SCRIPTDIR}"
 
 if [[ "$OSTYPE" == "linux"* ]]; then
-    tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
+    tar cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
         "../src" "../cmd" "../run.sh" "../README.md" \
         "../Installation.md" "../CHANGELOG.md" \
         >/dev/null
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     tar cvf "${SRC_TAR}" --exclude=electron \
+        --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
+        "../src" "../cmd" "../run.sh" "../README.md" \
+        "../Installation.md" "../CHANGELOG.md" \
+        >/dev/null
+elif [[ "$OSTYPE" == "msys"* ]]; then
+    tar cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
         "../src" "../cmd" "../run.sh" "../README.md" \
         "../Installation.md" "../CHANGELOG.md" \
@@ -28,7 +34,7 @@ function copy_source {
     mkdir -p "$1"
     cp "${SRC_TAR}" "$1"
     pushd "$1"
-    tar xvf "${SRC_TAR}" >/dev/null
+    tar xvPf "${SRC_TAR}" >/dev/null
     rm "${SRC_TAR}"
     popd >/dev/null
 }

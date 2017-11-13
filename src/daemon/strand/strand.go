@@ -15,7 +15,7 @@ const (
 
 var (
 	// Debug enables debug logging
-	Debug = true
+	Debug = false
 )
 
 // Request is sent to the channel provided to Strand
@@ -41,7 +41,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error)
 // channel closes.
 func WithQuit(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	if Debug {
-		logger.Debug("Strand precall %s", name)
+		// logger.Debug("Strand precall %s", name)
 	}
 
 	done := make(chan struct{})
@@ -96,8 +96,8 @@ func WithQuit(logger *logging.Logger, c chan Request, name string, f func() erro
 			elapsed := time.Now().Sub(t)
 			if elapsed > logDurationThreshold {
 				logger.Warning("%s took %s", name, elapsed)
-			} else {
-				// logger.Debug("%s took %s", name, elapsed)
+			} else if Debug {
+				logger.Debug("%s took %s", name, elapsed)
 			}
 
 			return err

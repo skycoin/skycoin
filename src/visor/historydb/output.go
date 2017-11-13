@@ -58,7 +58,7 @@ func (o UxOut) Hash() cipher.SHA256 {
 // UxOuts bucket stores outputs, UxOut hash as key and Output as value.
 type UxOuts struct{}
 
-func newUxOuts(db *bolt.DB) (*UxOuts, error) {
+func newUxOuts(db *dbutil.DB) (*UxOuts, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(uxOutsBkt)
 		return err

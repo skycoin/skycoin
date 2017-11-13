@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -13,6 +15,7 @@ type ParserOption func(*BlockchainParser)
 
 // BlockchainParser parses the blockchain and stores the data into historydb.
 type BlockchainParser struct {
+	db        *dbutil.DB
 	historyDB *historydb.HistoryDB
 	blkC      chan coin.Block
 	quit      chan struct{}
@@ -23,20 +26,15 @@ type BlockchainParser struct {
 }
 
 // NewBlockchainParser create and init the parser instance.
-func NewBlockchainParser(hisDB *historydb.HistoryDB, bc *Blockchain, ops ...ParserOption) *BlockchainParser {
-	bp := &BlockchainParser{
+func NewBlockchainParser(db *dbutil.DB, hisDB *historydb.HistoryDB, bc *Blockchain) *BlockchainParser {
+	return &BlockchainParser{
+		db:        db,
 		bc:        bc,
 		historyDB: hisDB,
 		quit:      make(chan struct{}),
 		done:      make(chan struct{}),
 		blkC:      make(chan coin.Block, 10),
 	}
-
-	for _, op := range ops {
-		op(bp)
-	}
-
-	return bp
 }
 
 // FeedBlock feeds block to the parser
@@ -44,11 +42,10 @@ func (bcp *BlockchainParser) FeedBlock(b coin.Block) {
 	bcp.blkC <- b
 }
 
-// Run starts blockchain parser
-func (bcp *BlockchainParser) Run(tx *bolt.Tx) error {
-	logger.Info("Blockchain parser start")
-	defer logger.Info("Blockchain parser closed")
-	defer close(bcp.done)
+// Init initializes blockchain parser
+func (bcp *BlockchainParser) Init(tx *bolt.Tx) error {
+	logger.Info("Blockchain parser initializing")
+	defer logger.Info("Blockchain parser initialization completed")
 
 	if err := bcp.historyDB.ResetIfNeed(tx); err != nil {
 		return err
@@ -56,16 +53,24 @@ func (bcp *BlockchainParser) Run(tx *bolt.Tx) error {
 
 	// parse to the blockchain head
 	headSeq := bcp.bc.HeadSeq()
-	if err := bcp.parseTo(tx, headSeq); err != nil {
-		return err
-	}
+	return bcp.parseTo(tx, headSeq)
+}
+
+// Run starts blockchain parser
+func (bcp *BlockchainParser) Run() error {
+	logger.Info("Blockchain parser start")
+	defer logger.Info("Blockchain parser closed")
+	defer close(bcp.done)
 
 	for {
 		select {
 		case <-bcp.quit:
 			return nil
 		case b := <-bcp.blkC:
-			if err := bcp.historyDB.ParseBlock(tx, &b); err != nil {
+			if err := bcp.db.Update(func(tx *bolt.Tx) error {
+				return bcp.historyDB.ParseBlock(tx, &b)
+			}); err != nil {
+				logger.Errorf("BlockchainParser.historyDB.ParseBlock failed: %v", err)
 				return err
 			}
 		}

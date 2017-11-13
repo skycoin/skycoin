@@ -4,10 +4,65 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
+
+var (
+	logger        = logging.MustGetLogger("dbutil")
+	txViewLog     = false
+	txViewTrace   = false
+	txUpdateLog   = false
+	txUpdateTrace = false
+)
+
+// DB wraps a bolt.DB to add logging
+type DB struct {
+	ViewLog     bool
+	ViewTrace   bool
+	UpdateLog   bool
+	UpdateTrace bool
+	*bolt.DB
+}
+
+// View wraps *bolt.DB.View to add logging
+func (db DB) View(f func(*bolt.Tx) error) error {
+	if db.ViewLog {
+		logger.Debug("db.View starting")
+		defer logger.Debug("db.View done")
+	}
+	if db.ViewTrace {
+		debug.PrintStack()
+	}
+	return db.DB.View(f)
+}
+
+// Update wraps *bolt.DB.Update to add logging
+func (db DB) Update(f func(*bolt.Tx) error) error {
+	if db.UpdateLog {
+		logger.Debug("db.Update starting")
+		defer logger.Debug("db.Update done")
+	}
+	if db.UpdateTrace {
+		debug.PrintStack()
+	}
+	return db.DB.Update(f)
+}
+
+// WrapDB returns WrapDB
+func WrapDB(db *bolt.DB) *DB {
+	return &DB{
+		ViewLog:     txViewLog,
+		UpdateLog:   txUpdateLog,
+		ViewTrace:   txViewTrace,
+		UpdateTrace: txUpdateTrace,
+		DB:          db,
+	}
+}
 
 // CreateBucketFailedErr is returned if creating a bolt.DB bucket fails
 type CreateBucketFailedErr struct {

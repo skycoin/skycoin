@@ -88,7 +88,7 @@ func (rpc RPC) GetUnspent(v *Visor) blockdb.UnspentPool {
 
 // GetUnconfirmedSpends get unconfirmed spents
 func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	return v.Unconfirmed.SpendsOfAddresses(addrs, rpc.GetUnspent(v))
+	return v.SpendsOfAddresses(addrs, rpc.GetUnspent(v))
 }
 
 // GetUnconfirmedReceiving returns unconfirmed

@@ -13,7 +13,7 @@ var addressTxnsBkt = []byte("address_txns")
 // address as key, transaction id slice as value
 type addressTxns struct{}
 
-func newAddressTxns(db *bolt.DB) (*addressTxns, error) {
+func newAddressTxns(db *dbutil.DB) (*addressTxns, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(addressTxnsBkt)
 		return err

@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var logger = logging.MustGetLogger("historydb")
@@ -25,7 +26,7 @@ type Blockchainer interface {
 
 // HistoryDB provides apis for blockchain explorer.
 type HistoryDB struct {
-	db           *bolt.DB      // bolt db instance.
+	db           *dbutil.DB    // bolt db instance.
 	txns         *transactions // transactions bucket.
 	outputs      *UxOuts       // outputs bucket.
 	addrUx       *addressUx    // bucket which stores all UxOuts that address recved.
@@ -34,7 +35,7 @@ type HistoryDB struct {
 }
 
 // New create historydb instance and create corresponding buckets if does not exist.
-func New(db *bolt.DB) (*HistoryDB, error) {
+func New(db *dbutil.DB) (*HistoryDB, error) {
 	hd := HistoryDB{
 		db: db,
 	}

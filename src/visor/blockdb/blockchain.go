@@ -6,11 +6,12 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
-	logging "github.com/op/go-logging"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -64,7 +65,7 @@ type UnspentPool interface {
 
 // Blockchain maintain the buckets for blockchain
 type Blockchain struct {
-	db      *bolt.DB
+	db      *dbutil.DB
 	meta    *chainMeta
 	unspent UnspentPool
 	tree    BlockTree
@@ -78,7 +79,7 @@ type Blockchain struct {
 }
 
 // NewBlockchain creates a new blockchain instance
-func NewBlockchain(db *bolt.DB, walker Walker) (*Blockchain, error) {
+func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
 	if db == nil {
 		return nil, errors.New("db is nil")
 	}
@@ -105,7 +106,7 @@ func NewBlockchain(db *bolt.DB, walker Walker) (*Blockchain, error) {
 	return createBlockchain(db, walker, tree, sigs, unspent)
 }
 
-func createBlockchain(db *bolt.DB, walker Walker, tree BlockTree, sigs BlockSigs, unspent UnspentPool) (*Blockchain, error) {
+func createBlockchain(db *dbutil.DB, walker Walker, tree BlockTree, sigs BlockSigs, unspent UnspentPool) (*Blockchain, error) {
 	meta, err := newChainMeta(db)
 	if err != nil {
 		return nil, fmt.Errorf("newChainMeta failed: %v", err)
@@ -294,14 +295,6 @@ func (bc *Blockchain) syncCache(tx *bolt.Tx) error {
 	return nil
 }
 
-// dbUpdate will execute all processors in sequence, return error will rollback all
-// updates to the db
-func (bc *Blockchain) dbUpdate(ps ...bucket.TxHandler) error {
-	return bc.db.Update(func(tx *bolt.Tx) error {
-		return bc.updateWithTx(tx, ps...)
-	})
-}
-
 func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...bucket.TxHandler) error {
 	rollbackFuncs := []bucket.Rollback{}
 	for _, p := range ps {
@@ -327,18 +320,18 @@ func (bc *Blockchain) updateHeadSeq(b *coin.SignedBlock) bucket.TxHandler {
 		}
 
 		bc.Lock()
+		defer bc.Unlock()
 		// get current head seq
 		seq := bc.cache.headSeq
 
 		// update the cache head seq
 		bc.cache.headSeq = b.Seq()
-		bc.Unlock()
 
 		return func() {
 			// reset the cache head seq
 			bc.Lock()
+			defer bc.Unlock()
 			bc.cache.headSeq = seq
-			bc.Unlock()
 		}, nil
 	}
 }

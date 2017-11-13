@@ -32,7 +32,7 @@ type blockTree struct {
 }
 
 // newBlockTree create buckets in blockdb if does not exist.
-func newBlockTree(db *bolt.DB) (*blockTree, error) {
+func newBlockTree(db *dbutil.DB) (*blockTree, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(blocksBkt); err != nil {
 			return err

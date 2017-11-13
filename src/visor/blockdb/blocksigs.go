@@ -25,7 +25,7 @@ var (
 )
 
 // newBlockSigs create block signature bucket
-func newBlockSigs(db *bolt.DB) (*blockSigs, error) {
+func newBlockSigs(db *dbutil.DB) (*blockSigs, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(blockSigsBkt)
 		return err

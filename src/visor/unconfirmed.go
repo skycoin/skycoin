@@ -156,25 +156,26 @@ func (utb *unconfirmedTxns) getAll(tx *bolt.Tx) ([]UnconfirmedTxn, error) {
 	return txns, nil
 }
 
-func (utb *unconfirmedTxns) rangeUpdate(tx *bolt.Tx, f func(hash cipher.SHA256, tx UnconfirmedTxn) (UnconfirmedTxn, error)) error {
-	return dbutil.ForEach(tx, unconfirmedTxnsBkt, func(k, v []byte) error {
-		hash, err := cipher.SHA256FromHex(string(k))
+func (utb *unconfirmedTxns) rangeUpdate(tx *bolt.Tx, f func(UnconfirmedTxn) (UnconfirmedTxn, error)) error {
+	// The UnconfirmedTxns must be pulled from the DB first, it is not
+	// safe to iterate the db with ForEach while modifying the DB
+	txns, err := utb.getAll(tx)
+	if err != nil {
+		return err
+	}
+
+	for _, txn := range txns {
+		modifiedTxn, err := f(txn)
 		if err != nil {
 			return err
 		}
 
-		var txn UnconfirmedTxn
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if err := utb.put(tx, &modifiedTxn); err != nil {
 			return err
 		}
+	}
 
-		txn, err = f(hash, txn)
-		if err != nil {
-			return err
-		}
-
-		return dbutil.PutBucketValue(tx, unconfirmedTxnsBkt, k, encoder.Serialize(&txn))
-	})
+	return nil
 }
 
 func (utb *unconfirmedTxns) hasKey(tx *bolt.Tx, hash cipher.SHA256) (bool, error) {
@@ -271,7 +272,7 @@ func (txus *txUnspents) forEach(tx *bolt.Tx, f func(cipher.SHA256, coin.UxArray)
 
 // UnconfirmedTxnPool manages unconfirmed transactions
 type UnconfirmedTxnPool struct {
-	db   *bolt.DB
+	db   *dbutil.DB
 	txns *unconfirmedTxns
 	// Predicted unspents, assuming txns are valid.  Needed to predict
 	// our future balance and avoid double spending our own coins
@@ -280,7 +281,7 @@ type UnconfirmedTxnPool struct {
 }
 
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
-func NewUnconfirmedTxnPool(db *bolt.DB) (*UnconfirmedTxnPool, error) {
+func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(unconfirmedTxnsBkt); err != nil {
 			return err
@@ -300,16 +301,14 @@ func NewUnconfirmedTxnPool(db *bolt.DB) (*UnconfirmedTxnPool, error) {
 }
 
 // SetTxnsAnnounced updates announced time of specific tx
-func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(txns []cipher.SHA256, t time.Time) error {
-	return utp.db.Update(func(tx *bolt.Tx) error {
-		for _, h := range txns {
-			if err := utp.setAnnounced(tx, h, t); err != nil {
-				return err
-			}
+func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *bolt.Tx, txns []cipher.SHA256, t time.Time) error {
+	for _, h := range txns {
+		if err := utp.setAnnounced(tx, h, t); err != nil {
+			return err
 		}
+	}
 
-		return nil
-	})
+	return nil
 }
 
 func (utp *UnconfirmedTxnPool) setAnnounced(tx *bolt.Tx, h cipher.SHA256, t time.Time) error {
@@ -429,26 +428,25 @@ func (utp *UnconfirmedTxnPool) RemoveTransactions(tx *bolt.Tx, txHashes []cipher
 
 // Refresh checks all unconfirmed txns against the blockchain.
 // verify the transaction and returns all those txns that turn to valid.
-func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) Refresh(tx *bolt.Tx, bc *Blockchain) ([]cipher.SHA256, error) {
+	logger.Debug("UnconfirmedTxnPool.RefreshUnconfirmed")
 	var hashes []cipher.SHA256
 	now := utc.Now().UnixNano()
 
-	if err := utp.db.Update(func(tx *bolt.Tx) error {
-		head, err := bc.Head(tx)
-		if err != nil {
-			return err
-		}
+	head, err := bc.Head(tx)
+	if err != nil {
+		return nil, err
+	}
 
-		return utp.txns.rangeUpdate(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) (UnconfirmedTxn, error) {
-			txn.Checked = now
-			if txn.IsValid == 0 {
-				if bc.VerifyTransaction(head, txn.Txn) == nil {
-					txn.IsValid = 1
-					hashes = append(hashes, txn.Hash())
-				}
+	if err := utp.txns.rangeUpdate(tx, func(txn UnconfirmedTxn) (UnconfirmedTxn, error) {
+		txn.Checked = now
+		if txn.IsValid == 0 {
+			if bc.VerifyTransaction(head, txn.Txn) == nil {
+				txn.IsValid = 1
+				hashes = append(hashes, txn.Hash())
 			}
-			return txn, nil
-		})
+		}
+		return txn, nil
 	}); err != nil {
 		return nil, err
 	}
@@ -457,42 +455,30 @@ func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) ([]cipher.SHA256, error) 
 }
 
 // GetUnknown returns txn hashes with known ones removed
-func (utp *UnconfirmedTxnPool) GetUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) GetUnknown(tx *bolt.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	var unknown []cipher.SHA256
 
-	if err := utp.db.View(func(tx *bolt.Tx) error {
-		for _, h := range txns {
-			if hasKey, err := utp.txns.hasKey(tx, h); err != nil {
-				return err
-			} else if !hasKey {
-				unknown = append(unknown, h)
-			}
+	for _, h := range txns {
+		if hasKey, err := utp.txns.hasKey(tx, h); err != nil {
+			return nil, err
+		} else if !hasKey {
+			unknown = append(unknown, h)
 		}
-
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
 	return unknown, nil
 }
 
 // GetKnown returns all known coin.Transactions from the pool, given hashes to select
-func (utp *UnconfirmedTxnPool) GetKnown(txns []cipher.SHA256) (coin.Transactions, error) {
+func (utp *UnconfirmedTxnPool) GetKnown(tx *bolt.Tx, txns []cipher.SHA256) (coin.Transactions, error) {
 	var known coin.Transactions
 
-	if err := utp.db.View(func(tx *bolt.Tx) error {
-		for _, h := range txns {
-			if tx, err := utp.txns.get(tx, h); err != nil {
-				return err
-			} else if tx != nil {
-				known = append(known, tx.Txn)
-			}
+	for _, h := range txns {
+		if tx, err := utp.txns.get(tx, h); err != nil {
+			return nil, err
+		} else if tx != nil {
+			known = append(known, tx.Txn)
 		}
-
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
 	return known, nil
@@ -531,7 +517,7 @@ type UnspentGetFunc func(hash cipher.SHA256) (coin.UxOut, bool)
 // SpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
 // Looks at all inputs for unconfirmed txns, gets their source UxOut from the
 // blockchain's unspent pool, and returns as coin.AddressUxOuts
-func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address, unspent blockdb.UnspentGetter) (coin.AddressUxOuts, error) {
+func (utp *UnconfirmedTxnPool) SpendsOfAddresses(tx *bolt.Tx, addrs []cipher.Address, unspent blockdb.UnspentGetter) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, addr := range addrs {
 		addrm[addr] = struct{}{}
@@ -539,21 +525,19 @@ func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address, unspent
 
 	auxs := make(coin.AddressUxOuts, len(addrs))
 
-	if err := utp.db.View(func(tx *bolt.Tx) error {
-		return utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
-			for _, h := range txn.Txn.In {
-				ux, ok := unspent.Get(h)
-				if !ok {
-					// unconfirm transaction's IN is not in the unspent pool, this should not happen
-					return fmt.Errorf("unconfirmed transaction's IN: %s is not in unspent pool", h.Hex())
-				}
-
-				if _, ok := addrm[ux.Body.Address]; ok {
-					auxs[ux.Body.Address] = append(auxs[ux.Body.Address], ux)
-				}
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
+		for _, h := range txn.Txn.In {
+			ux, ok := unspent.Get(h)
+			if !ok {
+				// unconfirm transaction's IN is not in the unspent pool, this should not happen
+				return fmt.Errorf("unconfirmed transaction's IN: %s is not in unspent pool", h.Hex())
 			}
-			return nil
-		})
+
+			if _, ok := addrm[ux.Body.Address]; ok {
+				auxs[ux.Body.Address] = append(auxs[ux.Body.Address], ux)
+			}
+		}
+		return nil
 	}); err != nil {
 		return nil, err
 	}
@@ -562,21 +546,19 @@ func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address, unspent
 }
 
 // GetSpendingOutputs returns all spending outputs in unconfirmed tx pool.
-func (utp *UnconfirmedTxnPool) GetSpendingOutputs(bcUnspent blockdb.UnspentPool) (coin.UxArray, error) {
+func (utp *UnconfirmedTxnPool) GetSpendingOutputs(tx *bolt.Tx, bcUnspent blockdb.UnspentPool) (coin.UxArray, error) {
 	var outs coin.UxArray
 
-	if err := utp.db.View(func(tx *bolt.Tx) error {
-		return utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
-			uxs, err := bcUnspent.GetArray(txn.Txn.In)
-			if err != nil {
-				return err
-			}
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
+		uxs, err := bcUnspent.GetArray(txn.Txn.In)
+		if err != nil {
+			return err
+		}
 
-			outs = append(outs, uxs...)
-			return nil
-		})
+		outs = append(outs, uxs...)
+		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("get unconfirmed spending outputs failed: %v", err)
+		return nil, err
 	}
 
 	return outs, nil

@@ -16,7 +16,7 @@ var (
 
 type chainMeta struct{}
 
-func newChainMeta(db *bolt.DB) (*chainMeta, error) {
+func newChainMeta(db *dbutil.DB) (*chainMeta, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(blockchainMetaBkt)
 		return err

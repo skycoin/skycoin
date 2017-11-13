@@ -10,9 +10,9 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -319,7 +319,7 @@ func TestProcessBlock(t *testing.T) {
 	testEngine(t, testData, bc, hisDB, db)
 }
 
-func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB, db *bolt.DB) {
+func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB, db *dbutil.DB) {
 	for i, td := range tds {
 		b, tx, err := addBlock(bc, td, incTime*(uint64(i)+1))
 		require.NoError(t, err)
@@ -405,20 +405,13 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 	return &b, &tx, nil
 }
 
-func getBucketValue(db *bolt.DB, name []byte, key []byte, value interface{}) error {
+func getBucketValue(db *dbutil.DB, name []byte, key []byte, value interface{}) error {
 	return db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(name)
-		bin := b.Get(key)
-		if bin == nil {
-			value = nil
-			return nil
-		}
-		return encoder.DeserializeRaw(bin, value)
+		return dbutil.GetBucketObjectDecoded(tx, name, key, value)
 	})
 }
 
-func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
-	txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
+func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256, txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
 	if len(txns) == 0 {
 		log.Panic("Refusing to create block with no transactions")
 	}
@@ -434,8 +427,7 @@ func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
 	}
 }
 
-func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime,
-	fee uint64, body coin.BlockBody) coin.BlockHeader {
+func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
 	return coin.BlockHeader{
 		BodyHash: body.Hash(),

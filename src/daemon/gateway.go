@@ -484,19 +484,19 @@ func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 
 // impelemts the wallet.Validator interface
 type spendValidator struct {
-	uncfm   *visor.UnconfirmedTxnPool
+	v       *visor.Visor
 	unspent blockdb.UnspentPool
 }
 
-func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent blockdb.UnspentPool) *spendValidator {
+func newSpendValidator(v *visor.Visor, unspent blockdb.UnspentPool) *spendValidator {
 	return &spendValidator{
-		uncfm:   uncfm,
+		v:       v,
 		unspent: unspent,
 	}
 }
 
 func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
-	aux, err := sv.uncfm.SpendsOfAddresses(addr, sv.unspent)
+	aux, err := sv.v.SpendsOfAddresses(addr, sv.unspent)
 	if err != nil {
 		return false, err
 	}
@@ -513,7 +513,7 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 	gw.strand("Spend", func() {
 		// create spend validator
 		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+		sv := newSpendValidator(gw.v, unspent)
 
 		var headTime uint64
 		headTime, err = gw.v.GetHeadBlockTime()
@@ -555,7 +555,7 @@ func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balan
 	gw.strand("CreateSpendingTransaction", func() {
 		// generate spend validator
 		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+		sv := newSpendValidator(gw.v, unspent)
 
 		var headTime uint64
 		headTime, err = gw.v.GetHeadBlockTime()

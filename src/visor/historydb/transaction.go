@@ -36,7 +36,7 @@ func (tx *Transaction) Hash() cipher.SHA256 {
 }
 
 // New create a transaction db instance.
-func newTransactions(db *bolt.DB) (*transactions, error) {
+func newTransactions(db *dbutil.DB) (*transactions, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(transactionsBkt)
 		return err

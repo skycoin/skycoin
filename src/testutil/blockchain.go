@@ -10,17 +10,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // PrepareDB initializes a temporary bolt.db and provides a cleanup method to defer
-func PrepareDB(t *testing.T) (*bolt.DB, func()) {
+func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 	f, err := ioutil.TempFile("", "testdb")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	db, err := bolt.Open(f.Name(), 0700, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	return db, func() {
+	return dbutil.WrapDB(db), func() {
 		db.Close()
 		os.Remove(f.Name())
 	}
@@ -48,6 +49,6 @@ func RandBytes(t *testing.T, n int) []byte {
 	b := make([]byte, n)
 	x, err := rand.Read(b)
 	require.Equal(t, n, x)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	return b
 }

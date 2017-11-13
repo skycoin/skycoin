@@ -14,7 +14,7 @@ var (
 // historyMeta bucket for storing block history meta info
 type historyMeta struct{}
 
-func newHistoryMeta(db *bolt.DB) (*historyMeta, error) {
+func newHistoryMeta(db *dbutil.DB) (*historyMeta, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(historyMetaBkt)
 		return err

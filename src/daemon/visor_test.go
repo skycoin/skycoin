@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -69,7 +70,7 @@ func MakeTransactionForChain(t *testing.T, vs *Visor, ux coin.UxOut, sec cipher.
 	return tx
 }
 
-func MakeBlockchain(t *testing.T, db *bolt.DB, seckey cipher.SecKey) *visor.Blockchain {
+func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Blockchain {
 	pubkey := cipher.PubKeyFromSecKey(seckey)
 	b, err := visor.NewBlockchain(db, pubkey, visor.BlockchainOptions{})
 	require.NoError(t, err)
@@ -94,7 +95,7 @@ func MakeAddress() (cipher.PubKey, cipher.SecKey, cipher.Address) {
 	return p, s, a
 }
 
-func setupSimpleVisor(t *testing.T, db *bolt.DB, bc *visor.Blockchain) *Visor {
+func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *visor.Blockchain) *Visor {
 	visorCfg := NewVisorConfig()
 	visorCfg.DisableNetworking = true
 	visorCfg.Config.DBPath = db.Path()
@@ -132,7 +133,7 @@ func createGenesisSpendTransaction(t *testing.T, vs *Visor, toAddr cipher.Addres
 	return txn
 }
 
-func executeGenesisSpendTransaction(t *testing.T, db *bolt.DB, bc *visor.Blockchain, txn coin.Transaction) coin.UxOut {
+func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *visor.Blockchain, txn coin.Transaction) coin.UxOut {
 	var block *coin.Block
 
 	err := db.Update(func(tx *bolt.Tx) error {

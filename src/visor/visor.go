@@ -10,6 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -95,9 +97,8 @@ func NewVisorConfig() Config {
 		UnconfirmedCheckInterval: time.Hour * 2,
 		UnconfirmedMaxAge:        time.Hour * 48,
 		UnconfirmedRefreshRate:   time.Minute,
-		// UnconfirmedRefreshRate:   time.Minute * 30,
-		UnconfirmedResendPeriod: time.Minute,
-		MaxBlockSize:            1024 * 32,
+		UnconfirmedResendPeriod:  time.Minute,
+		MaxBlockSize:             1024 * 32,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -118,7 +119,7 @@ type Visor struct {
 	history  *historydb.HistoryDB
 	bcParser *BlockchainParser
 	wallets  *wallet.Service
-	DB       *bolt.DB
+	DB       *dbutil.DB
 }
 
 // NewVisor Creates a normal Visor given a master's public key
@@ -146,8 +147,7 @@ func NewVisor(c Config) (*Visor, error) {
 	}
 
 	// creates blockchain parser instance
-	// var verifyOnce sync.Once
-	bp := NewBlockchainParser(history, bc)
+	bp := NewBlockchainParser(db, history, bc)
 
 	bc.BindListener(bp.FeedBlock)
 
@@ -176,17 +176,24 @@ func NewVisor(c Config) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	return vs.DB.Update(func(tx *bolt.Tx) error {
+	if err := vs.DB.Update(func(tx *bolt.Tx) error {
+		logger.Debug("Visor.Run: maybeCreateGenesisBlock")
 		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
 			return err
 		}
 
+		logger.Debug("Visor.Run: processUnconfirmedTxns")
 		if err := vs.processUnconfirmedTxns(tx); err != nil {
 			return err
 		}
 
-		return vs.bcParser.Run(tx)
-	})
+		logger.Debug("Visor.Run: BlockchainParser.Init")
+		return vs.bcParser.Init(tx)
+	}); err != nil {
+		return err
+	}
+
+	return vs.bcParser.Run()
 }
 
 // Shutdown shuts down the visor
@@ -279,7 +286,18 @@ func (vs *Visor) GenesisPreconditions() {
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and returns
 // all transaction that turn to valid.
 func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
-	return vs.Unconfirmed.Refresh(vs.Blockchain)
+	logger.Debug("visor.Visor.RefreshUnconfirmed")
+	var hashes []cipher.SHA256
+
+	if err := vs.DB.Update(func(tx *bolt.Tx) error {
+		var err error
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return hashes, nil
 }
 
 // CreateAndExecuteBlock creates a SignedBlock from pending transactions and executes it
@@ -304,7 +322,9 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
+	logger.Debug("visor.Visor.ExecuteSignedBlock")
 	return vs.DB.Update(func(tx *bolt.Tx) error {
+		logger.Debug("visor.Visor.ExecuteSignedBlock entered the bolt transaction")
 		return vs.executeSignedBlock(tx, b)
 	})
 }
@@ -348,6 +368,7 @@ func (vs *Visor) createBlock(tx *bolt.Tx, when uint64) (coin.SignedBlock, error)
 // executeSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) executeSignedBlock(tx *bolt.Tx, b coin.SignedBlock) error {
+	logger.Debug("visor.Visor.executeSignedBlock")
 	if err := vs.verifySignedBlock(&b); err != nil {
 		return err
 	}
@@ -402,7 +423,17 @@ func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
 
 // UnconfirmedSpendingOutputs returns all spending outputs in unconfirmed tx pool
 func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
-	return vs.Unconfirmed.GetSpendingOutputs(vs.Blockchain.Unspent())
+	var uxa coin.UxArray
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		uxa, err = vs.Unconfirmed.GetSpendingOutputs(tx, vs.Blockchain.Unspent())
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return uxa, nil
 }
 
 // UnconfirmedIncomingOutputs returns all predicted outputs that are in pending tx pool
@@ -943,4 +974,71 @@ func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTxn, error) 
 	}
 
 	return txn, nil
+}
+
+// GetUnconfirmedUnknown returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		hashes, err = vs.Unconfirmed.GetUnknown(tx, txns)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return hashes, nil
+}
+
+// GetUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
+	var hashes coin.Transactions
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		hashes, err = vs.Unconfirmed.GetKnown(tx, txns)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return hashes, nil
+}
+
+// SpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
+func (vs *Visor) SpendsOfAddresses(addrs []cipher.Address, unspent blockdb.UnspentGetter) (coin.AddressUxOuts, error) {
+	var outs coin.AddressUxOuts
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		outs, err = vs.Unconfirmed.SpendsOfAddresses(tx, addrs, unspent)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return outs, nil
+}
+
+// GetSpendingOutputs returns all unconfirmed coin.UxOut spends of addresses
+func (vs *Visor) GetSpendingOutputs() (coin.UxArray, error) {
+	var outs coin.UxArray
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		outs, err = vs.Unconfirmed.GetSpendingOutputs(tx, vs.Blockchain.Unspent())
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return outs, nil
+}
+
+// SetTxnsAnnounced updates announced time of specific tx
+func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256, t time.Time) error {
+	return vs.DB.Update(func(tx *bolt.Tx) error {
+		return vs.Unconfirmed.SetTxnsAnnounced(tx, txns, t)
+	})
 }

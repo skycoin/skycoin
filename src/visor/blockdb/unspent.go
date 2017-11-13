@@ -32,7 +32,7 @@ type UnspentGetter interface {
 
 // Unspents unspent outputs pool
 type Unspents struct {
-	db    *bolt.DB
+	db    *dbutil.DB
 	pool  *pool
 	meta  *unspentMeta
 	cache struct {
@@ -90,7 +90,7 @@ func (pl *pool) delete(tx *bolt.Tx, hash cipher.SHA256) error {
 }
 
 // NewUnspentPool creates new unspent pool instance
-func NewUnspentPool(db *bolt.DB) (*Unspents, error) {
+func NewUnspentPool(db *dbutil.DB) (*Unspents, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(unspentPoolBkt); err != nil {
 			return dbutil.NewCreateBucketFailedErr(unspentPoolBkt, err)

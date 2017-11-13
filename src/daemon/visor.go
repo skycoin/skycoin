@@ -98,7 +98,8 @@ func (vs *Visor) Run() error {
 	defer logger.Info("Visor closed")
 	errC := make(chan error, 1)
 	go func() {
-		errC <- vs.v.Run()
+		err := vs.v.Run()
+		errC <- err
 	}()
 
 	for {
@@ -275,7 +276,7 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 	vs.strand("SetTxnsAnnounced", func() error {
 		now := utc.Now()
-		if err := vs.v.Unconfirmed.SetTxnsAnnounced(txns, now); err != nil {
+		if err := vs.v.SetTxnsAnnounced(txns, now); err != nil {
 			logger.Error("Failed to set unconfirmed txns announce time")
 			return err
 		}
@@ -549,7 +550,7 @@ func (vs *Visor) UnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, erro
 
 	if err := vs.strand("UnconfirmedUnknown", func() error {
 		var err error
-		ts, err = vs.v.Unconfirmed.GetUnknown(txns)
+		ts, err = vs.v.GetUnconfirmedUnknown(txns)
 		return err
 	}); err != nil {
 		return nil, err
@@ -564,7 +565,7 @@ func (vs *Visor) UnconfirmedKnown(hashes []cipher.SHA256) (coin.Transactions, er
 
 	if err := vs.strand("UnconfirmedKnown", func() error {
 		var err error
-		txns, err = vs.v.Unconfirmed.GetKnown(hashes)
+		txns, err = vs.v.GetUnconfirmedKnown(hashes)
 		return err
 	}); err != nil {
 		return nil, err
@@ -660,10 +661,14 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
+	logger.Debug("daemon.GiveBlocksMessage.Process")
+
 	if d.Visor.Config.DisableNetworking {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return nil
 	}
+
+	logger.Debug("daemon.GiveBlocksMessage.Process has %d blocks", len(gbm.Blocks))
 
 	processed := 0
 	maxSeq := d.Visor.HeadBkSeq()
@@ -678,6 +683,7 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
 			continue
 		}
 
+		logger.Debug("Calling d.Visor.ExecuteSignedBlock")
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
 			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
@@ -698,9 +704,11 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
 
 	// Announce our new blocks to peers
 	m1 := NewAnnounceBlocksMessage(headBkSeq)
-	d.Pool.Pool.BroadcastMessage(m1)
+	if err := d.Pool.Pool.BroadcastMessage(m1); err != nil {
+		logger.Warning("Broadcast AnnounceBlocksMessage failed")
+	}
 
-	//request more blocks.
+	// Request more blocks.
 	m2 := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	return d.Pool.Pool.BroadcastMessage(m2)
 }

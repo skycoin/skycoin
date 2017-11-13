@@ -13,7 +13,7 @@ var addressUxBkt = []byte("address_in")
 type addressUx struct{}
 
 // create address affected UxOuts bucket.
-func newAddressUx(db *bolt.DB) (*addressUx, error) {
+func newAddressUx(db *dbutil.DB) (*addressUx, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(addressUxBkt)
 		return err

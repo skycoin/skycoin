@@ -212,7 +212,7 @@ func (gpm *GivePeersMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 // Process Notifies the Pex instance that peers were received
 func (gpm *GivePeersMessage) Process(d *Daemon) error {
 	if d.Pex.Config.Disabled {
-		return
+		return nil
 	}
 
 	peers := gpm.GetPeers()

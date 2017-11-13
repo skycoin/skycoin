@@ -1351,7 +1351,7 @@ func preparePeerlistFile(t *testing.T) (string, func()) {
 func preparePeerlistDir(t *testing.T) (string, func()) {
 	f, err := ioutil.TempDir("", "peerlist")
 	if err != nil {
-		panic(err)
+		require.Nil(t, err)
 	}
 
 	return f, func() {
@@ -1366,7 +1366,6 @@ func persistPeers(t *testing.T, fn string, peers []string) {
 		peersMap[p] = NewPeer(p)
 	}
 
-	if err := file.SaveJSON(fn, peersMap, 0600); err != nil {
-		panic(fmt.Sprintf("save peer list failed: %v", err))
-	}
+	err := file.SaveJSON(fn, peersMap, 0600)
+	require.Nil(t, err, "save peer list failed: %v", err)
 }

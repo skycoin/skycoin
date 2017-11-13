@@ -460,7 +460,7 @@ func TestUnspentPoolDeleteWithTx(t *testing.T) {
 			}
 
 			err = up.db.Update(func(tx *bolt.Tx) error {
-				if _, err := up.delete(tx, tc.deleteHashes); err != nil {
+				if err := up.delete(tx, tc.deleteHashes); err != nil {
 					return err
 				}
 

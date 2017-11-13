@@ -157,7 +157,7 @@ func (up *Unspents) ProcessBlock(b *coin.SignedBlock) dbutil.TxHandler {
 			delUxs = append(delUxs, uxs...)
 
 			// Remove spent outputs
-			if _, err = up.delete(tx, txn.In); err != nil {
+			if err := up.delete(tx, txn.In); err != nil {
 				return func() {}, err
 			}
 
@@ -282,12 +282,12 @@ func (up *Unspents) GetAll() (coin.UxArray, error) {
 }
 
 // delete delete unspent of given hashes
-func (up *Unspents) delete(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SHA256, error) { // nolint: unparam
+func (up *Unspents) delete(tx *bolt.Tx, hashes []cipher.SHA256) error {
 	var uxHash cipher.SHA256
 	for _, hash := range hashes {
 		ux, ok, err := up.pool.get(tx, hash)
 		if err != nil {
-			return cipher.SHA256{}, err
+			return err
 		}
 
 		if !ok {
@@ -296,22 +296,22 @@ func (up *Unspents) delete(tx *bolt.Tx, hashes []cipher.SHA256) (cipher.SHA256, 
 
 		uxHash, err = up.meta.getXorHash(tx)
 		if err != nil {
-			return cipher.SHA256{}, err
+			return err
 		}
 
 		uxHash = uxHash.Xor(ux.SnapshotHash())
 
 		// update uxhash
 		if err = up.meta.setXorHash(tx, uxHash); err != nil {
-			return cipher.SHA256{}, err
+			return err
 		}
 
 		if err := up.pool.delete(tx, hash); err != nil {
-			return cipher.SHA256{}, err
+			return err
 		}
 	}
 
-	return uxHash, nil
+	return nil
 }
 
 // Len returns the unspent outputs num

@@ -29,6 +29,10 @@ func setupWebRPC(t *testing.T) *WebRPC {
 	return rpc
 }
 
+func foo(i int) int {
+	return 0
+}
+
 type fakeGateway struct {
 	transactions         map[string]string
 	injectRawTxMap       map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.

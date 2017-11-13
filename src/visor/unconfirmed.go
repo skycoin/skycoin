@@ -299,21 +299,33 @@ func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 }
 
 // SetTxnsAnnounced updates announced time of specific tx
-func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *bolt.Tx, txns []cipher.SHA256, t time.Time) error {
-	for _, h := range txns {
-		if err := utp.setAnnounced(tx, h, t); err != nil {
+func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *bolt.Tx, hashes []cipher.SHA256, t time.Time) error {
+	logger.Debug("UnconfirmedTxnPool.SetTxnsAnnounced: %d txns", len(hashes))
+
+	var txns []*UnconfirmedTxn
+	for _, h := range hashes {
+		txn, err := utp.txns.get(tx, h)
+		if err != nil {
+			return err
+		}
+
+		if txn == nil {
+			logger.Warning("UnconfirmedTxnPool.SetTxnsAnnounced: UnconfirmedTxn %s not found in DB", h.Hex())
+			continue
+		}
+
+		txns = append(txns, txn)
+	}
+
+	now := t.UnixNano()
+	for _, txn := range txns {
+		txn.Announced = now
+		if err := utp.txns.put(tx, txn); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func (utp *UnconfirmedTxnPool) setAnnounced(tx *bolt.Tx, h cipher.SHA256, t time.Time) error {
-	return utp.txns.update(tx, h, func(tx *UnconfirmedTxn) error {
-		tx.Announced = t.UnixNano()
-		return nil
-	})
 }
 
 // Creates an unconfirmed transaction
@@ -358,11 +370,11 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t 
 
 	// Update if we already have this txn
 	if known {
-		if err := utp.txns.update(tx, hash, func(tx *UnconfirmedTxn) error {
+		if err := utp.txns.update(tx, hash, func(txn *UnconfirmedTxn) error {
 			now := utc.Now().UnixNano()
-			tx.Received = now
-			tx.Checked = now
-			tx.IsValid = 1
+			txn.Received = now
+			txn.Checked = now
+			txn.IsValid = 1
 			return nil
 		}); err != nil {
 			return false, err

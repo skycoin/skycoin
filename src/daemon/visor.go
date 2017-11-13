@@ -188,6 +188,8 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 			return err
 		}
 
+		logger.Debug("Visor.AnnounceAllTxns: announcing %d txns", len(hashes))
+
 		// Divide hashes into multiple sets of max size
 		hashesSet := divideHashes(hashes, vs.Config.MaxTxnAnnounceNum)
 
@@ -844,7 +846,7 @@ func (gtm *GetTxnsMessage) Process(d *Daemon) error {
 	}
 
 	// Reply to sender with GiveTxnsMessage
-	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
+	logger.Debug("GetTxnsMessage.Process: %d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
 	err = d.Pool.Pool.SendMessage(gtm.c.Addr, m)
 	if err != nil {

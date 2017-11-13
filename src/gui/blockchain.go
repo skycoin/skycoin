@@ -155,7 +155,8 @@ func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 
 		rb, err := gateway.GetLastBlocks(n)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			logger.Error(err.Error())
+			wh.Error500(w)
 			return
 		}
 

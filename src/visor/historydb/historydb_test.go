@@ -174,14 +174,12 @@ func TestProcessGenesisBlock(t *testing.T) {
 	// check transactions bucket.
 	var tx Transaction
 	txHash := gb.Body.Transactions[0].Hash()
-	err = getBucketValue(db, transactionsBkt, txHash[:], &tx)
-	require.NoError(t, err)
+	mustGetBucketValue(t, db, transactionsBkt, txHash[:], &tx)
 	require.Equal(t, tx.Tx, gb.Body.Transactions[0])
 
 	// check address in
 	outID := []cipher.SHA256{}
-	err = getBucketValue(db, addressUxBkt, genAddress.Bytes(), &outID)
-	require.NoError(t, err)
+	mustGetBucketValue(t, db, addressUxBkt, genAddress.Bytes(), &outID)
 
 	ux, ok := bc.unspent[outID[0].Hex()]
 	require.True(t, ok)
@@ -189,8 +187,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 
 	// check outputs
 	output := UxOut{}
-	err = getBucketValue(db, uxOutsBkt, outID[0][:], &output)
-	require.NoError(t, err)
+	mustGetBucketValue(t, db, uxOutsBkt, outID[0][:], &output)
 
 	require.Equal(t, output.Out, ux)
 }
@@ -341,8 +338,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		// check tx
 		txInBkt := Transaction{}
 		k := tx.Hash()
-		err = getBucketValue(db, transactionsBkt, k[:], &txInBkt)
-		require.NoError(t, err)
+		mustGetBucketValue(t, db, transactionsBkt, k[:], &txInBkt)
 		require.Equal(t, &txInBkt.Tx, tx)
 
 		// check outputs
@@ -352,8 +348,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 
 			uxInDB := UxOut{}
 			uxKey := ux.Hash()
-			err = getBucketValue(db, uxOutsBkt, uxKey[:], &uxInDB)
-			require.NoError(t, err)
+			mustGetBucketValue(t, db, uxOutsBkt, uxKey[:], &uxInDB)
 			require.Equal(t, &uxInDB.Out, ux)
 		}
 
@@ -361,8 +356,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		for _, o := range td.Vouts {
 			addr := cipher.MustDecodeBase58Address(o.ToAddr)
 			uxHashes := []cipher.SHA256{}
-			err = getBucketValue(db, addressUxBkt, addr.Bytes(), &uxHashes)
-			require.NoError(t, err)
+			mustGetBucketValue(t, db, addressUxBkt, addr.Bytes(), &uxHashes)
 			require.Equal(t, len(uxHashes), td.AddrInNum[o.ToAddr])
 		}
 	}
@@ -405,10 +399,14 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 	return &b, &tx, nil
 }
 
-func getBucketValue(db *dbutil.DB, name []byte, key []byte, value interface{}) error {
-	return db.View(func(tx *bolt.Tx) error {
-		return dbutil.GetBucketObjectDecoded(tx, name, key, value)
+func mustGetBucketValue(t *testing.T, db *dbutil.DB, name []byte, key []byte, value interface{}) {
+	err := db.View(func(tx *bolt.Tx) error {
+		ok, err := dbutil.GetBucketObjectDecoded(tx, name, key, value)
+		require.NoError(t, err)
+		require.True(t, ok)
+		return err
 	})
+	require.NoError(t, err)
 }
 
 func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256, txns coin.Transactions, calc coin.FeeCalculator) coin.Block {

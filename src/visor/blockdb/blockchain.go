@@ -10,7 +10,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor/bucket"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -59,7 +58,7 @@ type UnspentPool interface {
 	GetArray([]cipher.SHA256) (coin.UxArray, error)
 	GetUxHash() cipher.SHA256
 	GetUnspentsOfAddrs([]cipher.Address) coin.AddressUxOuts
-	ProcessBlock(*coin.SignedBlock) bucket.TxHandler
+	ProcessBlock(*coin.SignedBlock) dbutil.TxHandler
 	Contains(cipher.SHA256) bool
 }
 
@@ -295,8 +294,8 @@ func (bc *Blockchain) syncCache(tx *bolt.Tx) error {
 	return nil
 }
 
-func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...bucket.TxHandler) error {
-	rollbackFuncs := []bucket.Rollback{}
+func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...dbutil.TxHandler) error {
+	rollbackFuncs := []dbutil.Rollback{}
 	for _, p := range ps {
 		rb, err := p(tx)
 		if err != nil {
@@ -312,8 +311,8 @@ func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...bucket.TxHandler) error {
 	return nil
 }
 
-func (bc *Blockchain) updateHeadSeq(b *coin.SignedBlock) bucket.TxHandler {
-	return func(tx *bolt.Tx) (bucket.Rollback, error) {
+func (bc *Blockchain) updateHeadSeq(b *coin.SignedBlock) dbutil.TxHandler {
+	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
 		// meta := chainMeta{tx.Bucket(bc.meta.Name)}
 		if err := bc.meta.setHeadSeq(tx, b.Seq()); err != nil {
 			return func() {}, err
@@ -337,8 +336,8 @@ func (bc *Blockchain) updateHeadSeq(b *coin.SignedBlock) bucket.TxHandler {
 }
 
 // cacheGenesisBlock will cache genesis block if the current block is genesis
-func (bc *Blockchain) cacheGenesisBlock(b *coin.SignedBlock) bucket.TxHandler {
-	return func(tx *bolt.Tx) (bucket.Rollback, error) {
+func (bc *Blockchain) cacheGenesisBlock(b *coin.SignedBlock) dbutil.TxHandler {
+	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
 		bc.Lock()
 		defer bc.Unlock()
 

@@ -101,13 +101,16 @@ type unconfirmedTxns struct{}
 func (utb *unconfirmedTxns) get(tx *bolt.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
 	var txn UnconfirmedTxn
 
-	if err := dbutil.GetBucketObjectDecoded(tx, unconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, nil
-		default:
-			return nil, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
+	}
+
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return &txn, nil
@@ -211,13 +214,10 @@ func (txus *txUnspents) put(tx *bolt.Tx, hash cipher.SHA256, uxs coin.UxArray) e
 func (txus *txUnspents) get(tx *bolt.Tx, hash cipher.SHA256) (coin.UxArray, error) {
 	var uxs coin.UxArray
 
-	if err := dbutil.GetBucketObjectDecoded(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()), &uxs); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, nil
-		default:
-			return nil, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()), &uxs); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return uxs, nil
@@ -283,12 +283,10 @@ type UnconfirmedTxnPool struct {
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
 func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(unconfirmedTxnsBkt); err != nil {
-			return err
-		}
-
-		_, err := tx.CreateBucketIfNotExists(unconfirmedUnspentsBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			unconfirmedTxnsBkt,
+			unconfirmedUnspentsBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}

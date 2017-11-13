@@ -2,7 +2,6 @@ package historydb
 
 import (
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/visor/bucket"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -16,8 +15,9 @@ type historyMeta struct{}
 
 func newHistoryMeta(db *dbutil.DB) (*historyMeta, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(historyMetaBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			historyMetaBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -29,20 +29,17 @@ func newHistoryMeta(db *dbutil.DB) (*historyMeta, error) {
 func (hm *historyMeta) ParsedHeight(tx *bolt.Tx) (int64, error) {
 	v, err := dbutil.GetBucketValue(tx, historyMetaBkt, parsedHeightKey)
 	if err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return -1, nil
-		default:
-			return 0, err
-		}
+		return 0, err
+	} else if v == nil {
+		return -1, nil
 	}
 
-	return int64(bucket.Btoi(v)), nil
+	return int64(dbutil.Btoi(v)), nil
 }
 
 // SetParsedHeight updates history parsed height
 func (hm *historyMeta) SetParsedHeight(tx *bolt.Tx, h uint64) error {
-	return dbutil.PutBucketValue(tx, historyMetaBkt, parsedHeightKey, bucket.Itob(h))
+	return dbutil.PutBucketValue(tx, historyMetaBkt, parsedHeightKey, dbutil.Itob(h))
 }
 
 // IsEmpty checks if history meta bucket is empty

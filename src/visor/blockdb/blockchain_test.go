@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -198,8 +198,8 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) coin.Addr
 	return addrOutMap
 }
 
-func (fup *fakeUnspentPool) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
-	return func(tx *bolt.Tx) (bucket.Rollback, error) {
+func (fup *fakeUnspentPool) ProcessBlock(b *coin.SignedBlock) dbutil.TxHandler {
+	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
 		if fup.saveFailed {
 			if fup.failedWhenSaved != nil {
 				*fup.failedWhenSaved = true

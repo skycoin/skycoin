@@ -15,8 +15,9 @@ type addressUx struct{}
 // create address affected UxOuts bucket.
 func newAddressUx(db *dbutil.DB) (*addressUx, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(addressUxBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			addressUxBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -28,13 +29,10 @@ func newAddressUx(db *dbutil.DB) (*addressUx, error) {
 func (au *addressUx) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var uxHashes []cipher.SHA256
 
-	if err := dbutil.GetBucketObjectDecoded(tx, addressUxBkt, address.Bytes(), &uxHashes); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, nil
-		default:
-			return nil, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, addressUxBkt, address.Bytes(), &uxHashes); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return uxHashes, nil

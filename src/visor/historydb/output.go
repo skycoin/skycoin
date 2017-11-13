@@ -60,8 +60,9 @@ type UxOuts struct{}
 
 func newUxOuts(db *dbutil.DB) (*UxOuts, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(uxOutsBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			uxOutsBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -79,13 +80,10 @@ func (ux *UxOuts) Set(tx *bolt.Tx, out UxOut) error {
 func (ux *UxOuts) Get(tx *bolt.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	var out UxOut
 
-	if err := dbutil.GetBucketObjectDecoded(tx, uxOutsBkt, uxID[:], &out); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, nil
-		default:
-			return nil, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, uxOutsBkt, uxID[:], &out); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return &out, nil

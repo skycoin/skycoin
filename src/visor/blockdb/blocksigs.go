@@ -27,8 +27,9 @@ var (
 // newBlockSigs create block signature bucket
 func newBlockSigs(db *dbutil.DB) (*blockSigs, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(blockSigsBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			blockSigsBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -40,13 +41,10 @@ func newBlockSigs(db *dbutil.DB) (*blockSigs, error) {
 func (bs blockSigs) Get(tx *bolt.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	var sig cipher.Sig
 
-	if err := dbutil.GetBucketObjectDecoded(tx, blockSigsBkt, hash[:], &sig); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return cipher.Sig{}, false, nil
-		default:
-			return cipher.Sig{}, false, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, blockSigsBkt, hash[:], &sig); err != nil {
+		return cipher.Sig{}, false, err
+	} else if !ok {
+		return cipher.Sig{}, false, nil
 	}
 
 	return sig, true, nil

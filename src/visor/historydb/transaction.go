@@ -38,8 +38,9 @@ func (tx *Transaction) Hash() cipher.SHA256 {
 // New create a transaction db instance.
 func newTransactions(db *dbutil.DB) (*transactions, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(transactionsBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			transactionsBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -65,13 +66,10 @@ func (txs *transactions) Add(tx *bolt.Tx, t *Transaction) error {
 func (txs *transactions) Get(tx *bolt.Tx, hash cipher.SHA256) (*Transaction, error) {
 	var txn Transaction
 
-	if err := dbutil.GetBucketObjectDecoded(tx, transactionsBkt, hash[:], &txn); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, nil
-		default:
-			return nil, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, transactionsBkt, hash[:], &txn); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return &txn, nil
@@ -83,13 +81,10 @@ func (txs *transactions) GetSlice(tx *bolt.Tx, hashes []cipher.SHA256) ([]Transa
 	for _, h := range hashes {
 		var txn Transaction
 
-		if err := dbutil.GetBucketObjectDecoded(tx, transactionsBkt, h[:], &txn); err != nil {
-			switch err.(type) {
-			case dbutil.ObjectNotExistErr:
-				continue
-			default:
-				return nil, err
-			}
+		if ok, err := dbutil.GetBucketObjectDecoded(tx, transactionsBkt, h[:], &txn); err != nil {
+			return nil, err
+		} else if !ok {
+			continue
 		}
 
 		txns = append(txns, txn)

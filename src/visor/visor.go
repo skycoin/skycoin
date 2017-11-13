@@ -793,7 +793,7 @@ func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, er
 	return sb, nil
 }
 
-// GetSignedBlockBySeq get block of speicific seq, return nil on not found.
+// GetSignedBlockBySeq get block of specific seq, return nil on not found.
 func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	var b *coin.SignedBlock
 

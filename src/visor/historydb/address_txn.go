@@ -15,8 +15,9 @@ type addressTxns struct{}
 
 func newAddressTxns(db *dbutil.DB) (*addressTxns, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(addressTxnsBkt)
-		return err
+		return dbutil.CreateBuckets(tx, [][]byte{
+			addressTxnsBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -27,13 +28,10 @@ func newAddressTxns(db *dbutil.DB) (*addressTxns, error) {
 // Get returns the transaction hashes of given address
 func (atx *addressTxns) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var txHashes []cipher.SHA256
-	if err := dbutil.GetBucketObjectDecoded(tx, addressTxnsBkt, address.Bytes(), &txHashes); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, nil
-		default:
-			return nil, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, addressTxnsBkt, address.Bytes(), &txHashes); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return txHashes, nil

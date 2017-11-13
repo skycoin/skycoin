@@ -9,7 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/bucket"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -30,29 +29,14 @@ type UnspentGetter interface {
 	Get(cipher.SHA256) (coin.UxOut, bool)
 }
 
-// Unspents unspent outputs pool
-type Unspents struct {
-	db    *dbutil.DB
-	pool  *pool
-	meta  *unspentMeta
-	cache struct {
-		pool   map[string]coin.UxOut
-		uxhash cipher.SHA256
-	}
-	sync.RWMutex
-}
-
 type unspentMeta struct{}
 
 func (m unspentMeta) getXorHash(tx *bolt.Tx) (cipher.SHA256, error) {
 	v, err := dbutil.GetBucketValue(tx, unspentMetaBkt, xorhashKey)
 	if err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return cipher.SHA256{}, nil
-		default:
-			return cipher.SHA256{}, err
-		}
+		return cipher.SHA256{}, err
+	} else if v == nil {
+		return cipher.SHA256{}, nil
 	}
 
 	var hash cipher.SHA256
@@ -69,13 +53,10 @@ type pool struct{}
 func (pl pool) get(tx *bolt.Tx, hash cipher.SHA256) (*coin.UxOut, bool, error) {
 	var out coin.UxOut
 
-	if err := dbutil.GetBucketObjectDecoded(tx, unspentPoolBkt, hash[:], &out); err != nil {
-		switch err.(type) {
-		case dbutil.ObjectNotExistErr:
-			return nil, false, nil
-		default:
-			return nil, false, err
-		}
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, unspentPoolBkt, hash[:], &out); err != nil {
+		return nil, false, err
+	} else if !ok {
+		return nil, false, nil
 	}
 
 	return &out, true, nil
@@ -89,18 +70,25 @@ func (pl *pool) delete(tx *bolt.Tx, hash cipher.SHA256) error {
 	return dbutil.Delete(tx, unspentPoolBkt, hash[:])
 }
 
+// Unspents unspent outputs pool
+type Unspents struct {
+	db    *dbutil.DB
+	pool  *pool
+	meta  *unspentMeta
+	cache struct {
+		pool   map[string]coin.UxOut
+		uxhash cipher.SHA256
+	}
+	sync.RWMutex
+}
+
 // NewUnspentPool creates new unspent pool instance
 func NewUnspentPool(db *dbutil.DB) (*Unspents, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(unspentPoolBkt); err != nil {
-			return dbutil.NewCreateBucketFailedErr(unspentPoolBkt, err)
-		}
-
-		if _, err := tx.CreateBucketIfNotExists(unspentMetaBkt); err != nil {
-			return dbutil.NewCreateBucketFailedErr(unspentMetaBkt, err)
-		}
-
-		return nil
+		return dbutil.CreateBuckets(tx, [][]byte{
+			unspentPoolBkt,
+			unspentMetaBkt,
+		})
 	}); err != nil {
 		return nil, err
 	}
@@ -150,8 +138,8 @@ func (up *Unspents) syncCache(tx *bolt.Tx) error {
 }
 
 // ProcessBlock adds unspents from a block to the unspent pool
-func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
-	return func(tx *bolt.Tx) (bucket.Rollback, error) {
+func (up *Unspents) ProcessBlock(b *coin.SignedBlock) dbutil.TxHandler {
+	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
 		var (
 			delUxs    []coin.UxOut
 			addUxs    []coin.UxOut

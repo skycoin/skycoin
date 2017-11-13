@@ -473,7 +473,7 @@ func TestGetLastBlocks(t *testing.T) {
 		name   string
 		store  chainStore
 		n      uint64
-		expcet []coin.SignedBlock
+		expect []coin.SignedBlock
 	}{
 		{
 			"get last block",
@@ -520,7 +520,7 @@ func TestGetLastBlocks(t *testing.T) {
 			err := db.View(func(tx *bolt.Tx) error {
 				bs, err := bc.GetLastBlocks(tx, tc.n)
 				require.NoError(t, err)
-				require.Equal(t, tc.expcet, bs)
+				require.Equal(t, tc.expect, bs)
 				return nil
 			})
 			require.NoError(t, err)

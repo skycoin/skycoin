@@ -1,6 +1,7 @@
 package dbutil
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,94 +65,93 @@ func WrapDB(db *bolt.DB) *DB {
 	}
 }
 
-// CreateBucketFailedErr is returned if creating a bolt.DB bucket fails
-type CreateBucketFailedErr struct {
+// ErrCreateBucketFailed is returned if creating a bolt.DB bucket fails
+type ErrCreateBucketFailed struct {
 	Bucket string
 	Err    error
 }
 
-func (e CreateBucketFailedErr) Error() string {
+func (e ErrCreateBucketFailed) Error() string {
 	return fmt.Sprintf("Create bucket \"%s\" failed: %v", e.Bucket, e.Err)
 }
 
-// NewCreateBucketFailedErr returns an CreateBucketFailedErr
-func NewCreateBucketFailedErr(bucket []byte, err error) error {
-	return CreateBucketFailedErr{
+// NewErrCreateBucketFailed returns an ErrCreateBucketFailed
+func NewErrCreateBucketFailed(bucket []byte, err error) error {
+	return ErrCreateBucketFailed{
 		Bucket: string(bucket),
 		Err:    err,
 	}
 }
 
-// BucketNotExistErr is returned if a bolt.DB bucket does not exist
-type BucketNotExistErr struct {
+// ErrBucketNotExist is returned if a bolt.DB bucket does not exist
+type ErrBucketNotExist struct {
 	Bucket string
 }
 
-func (e BucketNotExistErr) Error() string {
+func (e ErrBucketNotExist) Error() string {
 	return fmt.Sprintf("Bucket \"%s\" doesn't exist", e.Bucket)
 }
 
-// NewBucketNotExistErr returns an BucketNotExistErr
-func NewBucketNotExistErr(bucket []byte) error {
-	return BucketNotExistErr{
+// NewErrBucketNotExist returns an ErrBucketNotExist
+func NewErrBucketNotExist(bucket []byte) error {
+	return ErrBucketNotExist{
 		Bucket: string(bucket),
 	}
 }
 
-// ObjectNotExistErr is returned if an object specified by "key" is not found in a bolt.DB bucket
-type ObjectNotExistErr struct {
-	Bucket string
-	Key    string
-}
-
-func (e ObjectNotExistErr) Error() string {
-	return fmt.Sprintf("Object with key \"%s\" not found in bucket \"%s\"", e.Key, e.Bucket)
-}
-
-// NewObjectNotExistErr returns an ObjectNotExistErr
-func NewObjectNotExistErr(bucket, key []byte) error {
-	return ObjectNotExistErr{
-		Bucket: string(bucket),
-		Key:    string(key),
+// CreateBuckets creates multiple buckets
+func CreateBuckets(tx *bolt.Tx, buckets [][]byte) error {
+	for _, b := range buckets {
+		if _, err := tx.CreateBucketIfNotExists(b); err != nil {
+			return NewErrCreateBucketFailed(b, err)
+		}
 	}
+
+	return nil
 }
 
 // GetBucketObjectDecoded returns an encoder-serialized value from a bucket, decoded to an object
-func GetBucketObjectDecoded(tx *bolt.Tx, bktName, key []byte, obj interface{}) error {
+func GetBucketObjectDecoded(tx *bolt.Tx, bktName, key []byte, obj interface{}) (bool, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
-		return err
+		return false, err
+	} else if v == nil {
+		return false, nil
 	}
 
 	if err := encoder.DeserializeRaw(v, obj); err != nil {
-		return fmt.Errorf("encoder.DeserializeRaw failed: %v", err)
+		return false, fmt.Errorf("encoder.DeserializeRaw failed: %v", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 // GetBucketObjectJSON returns a JSON value from a bucket, unmarshaled to an object
-func GetBucketObjectJSON(tx *bolt.Tx, bktName, key []byte, obj interface{}) error {
+func GetBucketObjectJSON(tx *bolt.Tx, bktName, key []byte, obj interface{}) (bool, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
-		return err
+		return false, err
+	} else if v == nil {
+		return false, nil
 	}
 
 	if err := json.Unmarshal(v, obj); err != nil {
-		return fmt.Errorf("json.Unmarshal failed: %v", err)
+		return false, fmt.Errorf("json.Unmarshal failed: %v", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 // GetBucketString returns a string value from a bucket
-func GetBucketString(tx *bolt.Tx, bktName, key []byte) (string, error) {
+func GetBucketString(tx *bolt.Tx, bktName, key []byte) (string, bool, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
-		return "", err
+		return "", false, err
+	} else if v == nil {
+		return "", false, nil
 	}
 
-	return string(v), nil
+	return string(v), true, nil
 }
 
 // GetBucketValue returns a []byte value from a bucket
@@ -159,6 +159,8 @@ func GetBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
 		return nil, err
+	} else if v == nil {
+		return nil, nil
 	}
 
 	// Bytes returned from boltdb are not valid outside of the transaction
@@ -170,16 +172,16 @@ func GetBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 }
 
 // getBucketValue returns a value from a bucket. If the value does not exist,
-// it returns an error of type BucketNotExistErr
+// it returns an error of type ErrBucketNotExist
 func getBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return nil, NewBucketNotExistErr(bktName)
+		return nil, NewErrBucketNotExist(bktName)
 	}
 
 	v := bkt.Get(key)
 	if v == nil {
-		return nil, NewObjectNotExistErr(bktName, key)
+		return nil, nil
 	}
 
 	return v, nil
@@ -189,7 +191,7 @@ func getBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 func PutBucketValue(tx *bolt.Tx, bktName, key, val []byte) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return NewBucketNotExistErr(bktName)
+		return NewErrBucketNotExist(bktName)
 	}
 
 	return bkt.Put(key, val)
@@ -199,7 +201,7 @@ func PutBucketValue(tx *bolt.Tx, bktName, key, val []byte) error {
 func BucketHasKey(tx *bolt.Tx, bktName, key []byte) (bool, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return false, NewBucketNotExistErr(bktName)
+		return false, NewErrBucketNotExist(bktName)
 	}
 
 	v := bkt.Get(key)
@@ -210,7 +212,7 @@ func BucketHasKey(tx *bolt.Tx, bktName, key []byte) (bool, error) {
 func NextSequence(tx *bolt.Tx, bktName []byte) (uint64, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return 0, NewBucketNotExistErr(bktName)
+		return 0, NewErrBucketNotExist(bktName)
 	}
 
 	return bkt.NextSequence()
@@ -220,7 +222,7 @@ func NextSequence(tx *bolt.Tx, bktName []byte) (uint64, error) {
 func ForEach(tx *bolt.Tx, bktName []byte, f func(k, v []byte) error) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return NewBucketNotExistErr(bktName)
+		return NewErrBucketNotExist(bktName)
 	}
 
 	return bkt.ForEach(f)
@@ -230,7 +232,7 @@ func ForEach(tx *bolt.Tx, bktName []byte, f func(k, v []byte) error) error {
 func Delete(tx *bolt.Tx, bktName, key []byte) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return NewBucketNotExistErr(bktName)
+		return NewErrBucketNotExist(bktName)
 	}
 
 	return bkt.Delete(key)
@@ -240,7 +242,7 @@ func Delete(tx *bolt.Tx, bktName, key []byte) error {
 func Len(tx *bolt.Tx, bktName []byte) (uint64, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
-		return 0, NewBucketNotExistErr(bktName)
+		return 0, NewErrBucketNotExist(bktName)
 	}
 
 	bstats := bkt.Stats()
@@ -267,6 +269,23 @@ func Reset(tx *bolt.Tx, bktName []byte) error {
 		return err
 	}
 
-	_, err := tx.CreateBucketIfNotExists(bktName)
-	return err
+	return CreateBuckets(tx, [][]byte{bktName})
 }
+
+// Itob converts uint64 to bytes
+func Itob(v uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
+	return b
+}
+
+// Btoi converts bytes to uint64
+func Btoi(v []byte) uint64 {
+	return binary.BigEndian.Uint64(v)
+}
+
+// Rollback callback function type
+type Rollback func()
+
+// TxHandler function type for processing bolt transaction
+type TxHandler func(tx *bolt.Tx) (Rollback, error)

@@ -159,28 +159,6 @@ func (utb *unconfirmedTxns) getAll(tx *bolt.Tx) ([]UnconfirmedTxn, error) {
 	return txns, nil
 }
 
-func (utb *unconfirmedTxns) rangeUpdate(tx *bolt.Tx, f func(UnconfirmedTxn) (UnconfirmedTxn, error)) error {
-	// The UnconfirmedTxns must be pulled from the DB first, it is not
-	// safe to iterate the db with ForEach while modifying the DB
-	txns, err := utb.getAll(tx)
-	if err != nil {
-		return err
-	}
-
-	for _, txn := range txns {
-		modifiedTxn, err := f(txn)
-		if err != nil {
-			return err
-		}
-
-		if err := utb.put(tx, &modifiedTxn); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (utb *unconfirmedTxns) hasKey(tx *bolt.Tx, hash cipher.SHA256) (bool, error) {
 	return dbutil.BucketHasKey(tx, unconfirmedTxnsBkt, []byte(hash.Hex()))
 }

@@ -332,19 +332,13 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 		return nil, err
 	}
 
-	spdouts := unspents.Outputs.SpendableOutputs()
-	spendableOuts := make([]UnspentOut, len(spdouts))
-	for i := range spdouts {
-		spendableOuts[i] = UnspentOut{spdouts[i]}
-	}
-
-	// caculate total required amount
+	// caculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
 		totalCoins += arg.Coins
 	}
 
-	outs, err := getSufficientUnspents(spendableOuts, totalCoins)
+	outs, err := getSufficientUnspents(unspents, totalCoins)
 	if err != nil {
 		return nil, err
 	}
@@ -430,36 +424,36 @@ func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
 	return keys, nil
 }
 
-func getSufficientUnspents(unspents []UnspentOut, coins uint64) ([]UnspentOut, error) {
-	var totalCoins uint64
-	var outs []UnspentOut
+func getSufficientUnspents(unspents *webrpc.OutputsResult, coins uint64) ([]UnspentOut, error) {
+	spendableOuts := unspents.Outputs.SpendableOutputs()
+	var spendCoins uint64
+	var spendOuts []UnspentOut
+	for i, out := range spendableOuts {
+		c, err := droplet.FromString(out.Coins)
+		if err != nil {
+			return nil, err
+		}
 
-	addrOuts := make(map[string][]UnspentOut)
-	for _, u := range unspents {
-		addrOuts[u.Address] = append(addrOuts[u.Address], u)
-	}
+		spendCoins += c
+		spendOuts = append(spendOuts, UnspentOut{spendableOuts[i]})
 
-	for _, us := range addrOuts {
-		for i, u := range us {
-			c, err := droplet.FromString(u.Coins)
-			if err != nil {
-				return nil, err
-			}
-
-			if c == 0 {
-				continue
-			}
-
-			totalCoins += c
-			outs = append(outs, us[i])
-
-			if totalCoins >= coins {
-				return outs, nil
-			}
+		if spendCoins >= coins {
+			return spendOuts, nil
 		}
 	}
 
-	return nil, errors.New("balance in wallet is not sufficient")
+	unconfirmedOuts := unspents.Outputs.IncomingOutputs
+	unconfirmedBalance, err := unconfirmedOuts.Balance()
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed balance failed: %v", err)
+	}
+
+	if unconfirmedBalance.Coins+spendCoins < coins {
+		return nil, errors.New("balance in wallet is not sufficient")
+	}
+
+	// spendable coins + unconfirmed incoming coins >= coins
+	return nil, errors.New(`balance in wallet is not sufficient. Balance will be sufficient after unconfirmed transactions confirm`)
 }
 
 // NewTransaction create skycoin transaction.

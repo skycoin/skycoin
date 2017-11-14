@@ -672,9 +672,6 @@ func (bc *Blockchain) BindListener(ls BlockListener) {
 
 // Notify notifies the listener the new block.
 func (bc *Blockchain) Notify(b coin.Block) {
-	logger.Debug("visor.Blockchain.Notify")
-	defer logger.Debug("visor.Blockchain.Notify complete")
-
 	for _, l := range bc.blkListener {
 		l(b)
 	}

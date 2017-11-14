@@ -55,7 +55,10 @@ var (
 const (
 	// MaxDropletPrecision represents the precision of droplets
 	MaxDropletPrecision = 1
-	MaxDropletDivisor   = 1e6
+	// MaxDropletDivisor is the number of droplets per skycoin,
+	// it can be used as the divisor in modulo arithmetic to obtain the
+	// whole number portion of a skycoin balance
+	MaxDropletDivisor = 1e6
 )
 
 // Config subsystem configurations
@@ -304,8 +307,8 @@ func (dm *Daemon) Shutdown() {
 	}
 
 	dm.Pex.Shutdown()
+	dm.Gateway.Shutdown()
 	dm.Visor.Shutdown()
-
 }
 
 // Run main loop for peer/connection management.
@@ -697,8 +700,6 @@ func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	// We have to check at process time and not record time because
 	// Introduction message does not update ExpectingIntroductions until its
 	// Process() is called
-	// _, needsIntro := self.expectingIntroductions[e.Context.Addr]
-	// if needsIntro {
 	if dm.needsIntro(e.Context.Addr) {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {

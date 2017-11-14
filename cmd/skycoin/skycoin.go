@@ -374,18 +374,28 @@ func panicIfError(err error, msg string, args ...interface{}) {
 	}
 }
 
-func printProgramStatus() {
+func writeProgramStatus() {
 	fn := "goroutine.prof"
 	logger.Debug("Writing goroutine profile to %s", fn)
 	p := pprof.Lookup("goroutine")
 	f, err := os.Create(fn)
-	defer f.Close()
 	if err != nil {
 		logger.Error("%v", err)
 		return
 	}
+
+	defer f.Close()
+
 	err = p.WriteTo(f, 2)
 	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+}
+
+func printProgramStatus() {
+	p := pprof.Lookup("goroutine")
+	if err := p.WriteTo(os.Stdout, 2); err != nil {
 		logger.Error("%v", err)
 		return
 	}
@@ -397,6 +407,20 @@ func catchInterrupt(quit chan<- struct{}) {
 	<-sigchan
 	signal.Stop(sigchan)
 	close(quit)
+
+	// If ctrl-c is called again, panic so that the program state can be examined.
+	// Ctrl-c would be called again if program shutdown was stuck.
+	go catchInterruptPanic()
+}
+
+// catchInterruptPanic catches os.Interrupt and panics
+func catchInterruptPanic() {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	printProgramStatus()
+	panic("SIGINT")
 }
 
 // Catches SIGUSR1 and prints internal program state
@@ -407,7 +431,7 @@ func catchDebug() {
 	for {
 		select {
 		case <-sigchan:
-			printProgramStatus()
+			writeProgramStatus()
 		}
 	}
 }
@@ -541,19 +565,10 @@ func Run(c *Config) {
 
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		catchInterrupt(quit)
-	}()
+	go catchInterrupt(quit)
 
 	// Watch for SIGUSR1
-	wg.Add(1)
-	func() {
-		defer wg.Done()
-		go catchDebug()
-	}()
+	go catchDebug()
 
 	dconf := configureDaemon(c)
 	d, err := daemon.NewDaemon(dconf, DefaultConnections)
@@ -562,12 +577,16 @@ func Run(c *Config) {
 		return
 	}
 
-	errC := make(chan error, 1)
+	errC := make(chan error, 10)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		d.Run()
+		defer logger.Info("daemon.Run goroutine exited")
+		if err := d.Run(); err != nil {
+			logger.Error("%v", err)
+			errC <- err
+		}
 	}()
 
 	var rpc *webrpc.WebRPC
@@ -585,6 +604,7 @@ func Run(c *Config) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer logger.Info("rpc.Run goroutine exited")
 			if err := rpc.Run(); err != nil {
 				errC <- err
 			}
@@ -624,10 +644,7 @@ func Run(c *Config) {
 		}
 
 		if c.LaunchBrowser {
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
-
 				// Wait a moment just to make sure the http interface is up
 				time.Sleep(time.Millisecond * 100)
 
@@ -673,13 +690,24 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
+
 	if rpc != nil {
+		logger.Info("Shutting down RPC")
 		rpc.Shutdown()
 	}
+
+	logger.Info("Shutting down GUI")
 	gui.Shutdown()
+
+	logger.Info("Shutting down daemon")
 	d.Shutdown()
+
+	logger.Info("Closing logs")
 	closelog()
+
+	logger.Info("Waiting for goroutines to exit")
 	wg.Wait()
+
 	logger.Info("Goodbye")
 }
 

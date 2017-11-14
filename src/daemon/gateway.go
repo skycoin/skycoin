@@ -40,6 +40,8 @@ type Gateway struct {
 	v *visor.Visor
 	// Requests are queued on this channel
 	requests chan strand.Request
+
+	quit chan struct{}
 }
 
 // NewGateway create and init an Gateway instance.
@@ -51,7 +53,13 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 		d:        D,
 		v:        D.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
+		quit:     make(chan struct{}),
 	}
+}
+
+// Shutdown shuts down the gateway
+func (gw *Gateway) Shutdown() {
+	close(gw.quit)
 }
 
 func (gw *Gateway) strand(name string, f func()) {
@@ -59,7 +67,7 @@ func (gw *Gateway) strand(name string, f func()) {
 	strand.Strand(logger, gw.requests, name, func() error {
 		f()
 		return nil
-	})
+	}, gw.quit, nil)
 }
 
 // GetConnections returns a *Connections

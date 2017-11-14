@@ -120,6 +120,8 @@ type Visor struct {
 	bcParser *BlockchainParser
 	wallets  *wallet.Service
 	DB       *dbutil.DB
+
+	done chan struct{}
 }
 
 // NewVisor Creates a normal Visor given a master's public key
@@ -169,6 +171,7 @@ func NewVisor(c Config) (*Visor, error) {
 		history:     history,
 		bcParser:    bp,
 		wallets:     wltServ,
+		done:        make(chan struct{}),
 	}
 
 	return v, nil
@@ -176,6 +179,8 @@ func NewVisor(c Config) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
+	defer close(vs.done)
+
 	if err := vs.DB.Update(func(tx *bolt.Tx) error {
 		logger.Debug("Visor.Run: maybeCreateGenesisBlock")
 		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
@@ -202,6 +207,9 @@ func (vs *Visor) Shutdown() {
 
 	vs.bcParser.Shutdown()
 
+	<-vs.done
+
+	logger.Info("Closing bolt.DB")
 	if err := vs.DB.Close(); err != nil {
 		logger.Error("db.Close() error: %v", err)
 	}
@@ -322,9 +330,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
-	logger.Debug("visor.Visor.ExecuteSignedBlock")
 	return vs.DB.Update(func(tx *bolt.Tx) error {
-		logger.Debug("visor.Visor.ExecuteSignedBlock entered the bolt transaction")
 		return vs.executeSignedBlock(tx, b)
 	})
 }
@@ -368,7 +374,6 @@ func (vs *Visor) createBlock(tx *bolt.Tx, when uint64) (coin.SignedBlock, error)
 // executeSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) executeSignedBlock(tx *bolt.Tx, b coin.SignedBlock) error {
-	logger.Debug("visor.Visor.executeSignedBlock")
 	if err := vs.verifySignedBlock(&b); err != nil {
 		return err
 	}

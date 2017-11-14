@@ -72,6 +72,8 @@ type Visor struct {
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
 	reqC chan strand.Request
+	quit chan struct{}
+	done chan struct{}
 }
 
 // NewVisor creates visor instance
@@ -80,6 +82,8 @@ func NewVisor(c VisorConfig) (*Visor, error) {
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
+		quit:              make(chan struct{}),
+		done:              make(chan struct{}),
 	}
 
 	var v *visor.Visor
@@ -95,6 +99,7 @@ func NewVisor(c VisorConfig) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
+	defer close(vs.done)
 	defer logger.Info("Visor closed")
 	errC := make(chan error, 1)
 	go func() {
@@ -104,6 +109,8 @@ func (vs *Visor) Run() error {
 
 	for {
 		select {
+		case <-vs.quit:
+			return nil
 		case err := <-errC:
 			return err
 		case req := <-vs.reqC:
@@ -116,12 +123,20 @@ func (vs *Visor) Run() error {
 
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
+	close(vs.quit)
+
+	// Must wait for Run() to finish first, so that any pending calls to
+	// visor.Visor have completed. These calls may use a bolt.DB transaction.
+	// vs.v.Shutdown() will close the database, and all transactions must
+	// be completed before closing the database.
+	<-vs.done
+
 	vs.v.Shutdown()
 }
 
 func (vs *Visor) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.Visor.%s", name)
-	return strand.Strand(logger, vs.reqC, name, f)
+	return strand.Strand(logger, vs.reqC, name, f, vs.quit, nil)
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
@@ -663,8 +678,6 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
-	logger.Debug("daemon.GiveBlocksMessage.Process")
-
 	if d.Visor.Config.DisableNetworking {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return nil
@@ -685,7 +698,6 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
 			continue
 		}
 
-		logger.Debug("Calling d.Visor.ExecuteSignedBlock")
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
 			logger.Critical("Added new block %d", b.Block.Head.BkSeq)

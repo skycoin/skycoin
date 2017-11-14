@@ -11,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -148,16 +147,19 @@ func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	}
 }
 
-func (fup *fakeUnspentPool) Len() uint64 {
-	return uint64(len(fup.outs))
+func (fup *fakeUnspentPool) Len(tx *bolt.Tx) (uint64, error) {
+	return uint64(len(fup.outs)), nil
 }
 
-func (fup *fakeUnspentPool) Get(h cipher.SHA256) (coin.UxOut, bool) {
+func (fup *fakeUnspentPool) Get(tx *bolt.Tx, h cipher.SHA256) (*coin.UxOut, error) {
 	out, ok := fup.outs[h]
-	return out, ok
+	if !ok {
+		return nil, nil
+	}
+	return &out, nil
 }
 
-func (fup *fakeUnspentPool) GetAll() (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetAll(tx *bolt.Tx) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(fup.outs))
 	for _, out := range fup.outs {
 		outs = append(outs, out)
@@ -166,7 +168,7 @@ func (fup *fakeUnspentPool) GetAll() (coin.UxArray, error) {
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetArray(hashes []cipher.SHA256) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetArray(tx *bolt.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(hashes))
 	for _, h := range hashes {
 		ux, ok := fup.outs[h]
@@ -179,11 +181,11 @@ func (fup *fakeUnspentPool) GetArray(hashes []cipher.SHA256) (coin.UxArray, erro
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetUxHash() cipher.SHA256 {
-	return fup.uxHash
+func (fup *fakeUnspentPool) GetUxHash(tx *bolt.Tx) (cipher.SHA256, error) {
+	return fup.uxHash, nil
 }
 
-func (fup *fakeUnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
+func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -195,24 +197,22 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(addrs []cipher.Address) coin.Addr
 		addrOutMap[addr] = append(addrOutMap[addr], out)
 	}
 
-	return addrOutMap
+	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) ProcessBlock(b *coin.SignedBlock) dbutil.TxHandler {
-	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
-		if fup.saveFailed {
-			if fup.failedWhenSaved != nil {
-				*fup.failedWhenSaved = true
-			}
-			return func() {}, errors.New("intentionally failed")
+func (fup *fakeUnspentPool) ProcessBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
+	if fup.saveFailed {
+		if fup.failedWhenSaved != nil {
+			*fup.failedWhenSaved = true
 		}
-		return func() {}, nil
+		return errors.New("intentionally failed")
 	}
+	return nil
 }
 
-func (fup *fakeUnspentPool) Contains(h cipher.SHA256) bool {
+func (fup *fakeUnspentPool) Contains(tx *bolt.Tx, h cipher.SHA256) (bool, error) {
 	_, ok := fup.outs[h]
-	return ok
+	return ok, nil
 }
 
 func DefaultWalker(tx *bolt.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {

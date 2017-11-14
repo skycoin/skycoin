@@ -10,7 +10,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -249,17 +248,11 @@ func (vs *Visor) processUnconfirmedTxns(tx *bolt.Tx) error {
 	var removeTxs []cipher.SHA256
 
 	if err := vs.Unconfirmed.ForEach(tx, func(hash cipher.SHA256, utxn UnconfirmedTxn) error {
-		head, err := vs.Blockchain.Head(tx)
-		if err != nil {
-			return err
-		}
-
 		// check if the tx already executed
-		if err := vs.Blockchain.VerifyTransaction(head, utxn.Txn); err != nil {
+		if err := vs.Blockchain.VerifyTransaction(tx, utxn.Txn); err != nil {
 			removeTxs = append(removeTxs, hash)
 		}
 
-		// TODO: history needs to use txns
 		txn, err := vs.history.GetTransaction(tx, hash)
 		if err != nil {
 			return err
@@ -360,7 +353,7 @@ func (vs *Visor) createBlock(tx *bolt.Tx, when uint64) (coin.SignedBlock, error)
 		return coin.SignedBlock{}, err
 	}
 
-	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(head.Time()))
+	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
 
 	b, err := vs.Blockchain.NewBlock(tx, txns, when)
@@ -414,16 +407,34 @@ func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 	return sb
 }
 
-/*
-	Return Data
-*/
+// GetUnspentOutputs returns all unspent outputs from the unspent pool
+func (vs *Visor) GetUnspentOutputs() (coin.UxArray, error) {
+	var uxa coin.UxArray
 
-// GetUnspentOutputs makes local copy and update when block header changes
-// update should lock
-// isolate effect of threading
-// call .Array() to get []UxOut array
-func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
-	return vs.Blockchain.Unspent().GetAll()
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		uxa, err = vs.Blockchain.Unspent().GetAll(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return uxa, nil
+}
+
+// GetUnspentOutput returns an unspent outputs from the unspent pool by hash
+func (vs *Visor) GetUnspentOutput(h cipher.SHA256) (*coin.UxOut, error) {
+	var ux *coin.UxOut
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		ux, err = vs.Blockchain.Unspent().Get(tx, h)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return ux, nil
 }
 
 // UnconfirmedSpendingOutputs returns all spending outputs in unconfirmed tx pool
@@ -431,8 +442,17 @@ func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
 	var uxa coin.UxArray
 
 	if err := vs.DB.View(func(tx *bolt.Tx) error {
-		var err error
-		uxa, err = vs.Unconfirmed.GetSpendingOutputs(tx, vs.Blockchain.Unspent())
+		var inputs []cipher.SHA256
+		txns, err := vs.Unconfirmed.RawTxns(tx)
+		if err != nil {
+			return err
+		}
+
+		for _, txn := range txns {
+			inputs = append(inputs, txn.In...)
+		}
+
+		uxa, err = vs.Blockchain.Unspent().GetArray(tx, inputs)
 		return err
 	}); err != nil {
 		return nil, err
@@ -509,7 +529,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 // GetBlockchainMetadata returns descriptive Blockchain information
 func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 	var head *coin.SignedBlock
-	var unconfirmedLen uint64
+	var unconfirmedLen, unspentsLen uint64
 
 	if err := vs.DB.View(func(tx *bolt.Tx) error {
 		var err error
@@ -519,12 +539,15 @@ func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 		}
 
 		unconfirmedLen, err = vs.Unconfirmed.Len(tx)
+		if err != nil {
+			return err
+		}
+
+		unspentsLen, err = vs.Blockchain.Unspent().Len(tx)
 		return err
 	}); err != nil {
 		return nil, err
 	}
-
-	unspentsLen := vs.Blockchain.Unspent().Len()
 
 	return NewBlockchainMetadata(head, unconfirmedLen, unspentsLen)
 }
@@ -1006,13 +1029,13 @@ func (vs *Visor) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, e
 	return hashes, nil
 }
 
-// SpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
-func (vs *Visor) SpendsOfAddresses(addrs []cipher.Address, unspent blockdb.UnspentGetter) (coin.AddressUxOuts, error) {
+// UnconfirmedSpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
+func (vs *Visor) UnconfirmedSpendsOfAddresses(addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	var outs coin.AddressUxOuts
 
 	if err := vs.DB.View(func(tx *bolt.Tx) error {
 		var err error
-		outs, err = vs.Unconfirmed.SpendsOfAddresses(tx, addrs, unspent)
+		outs, err = vs.unconfirmedSpendsOfAddresses(tx, addrs)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1021,16 +1044,34 @@ func (vs *Visor) SpendsOfAddresses(addrs []cipher.Address, unspent blockdb.Unspe
 	return outs, nil
 }
 
-// GetSpendingOutputs returns all unconfirmed coin.UxOut spends of addresses
-func (vs *Visor) GetSpendingOutputs() (coin.UxArray, error) {
-	var outs coin.UxArray
-
-	if err := vs.DB.View(func(tx *bolt.Tx) error {
-		var err error
-		outs, err = vs.Unconfirmed.GetSpendingOutputs(tx, vs.Blockchain.Unspent())
-		return err
-	}); err != nil {
+// unconfirmedSpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
+func (vs *Visor) unconfirmedSpendsOfAddresses(tx *bolt.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	txns, err := vs.Unconfirmed.RawTxns(tx)
+	if err != nil {
 		return nil, err
+	}
+
+	var inputs []cipher.SHA256
+	for _, txn := range txns {
+		inputs = append(inputs, txn.In...)
+	}
+
+	uxa, err := vs.Blockchain.Unspent().GetArray(tx, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	outs := make(coin.AddressUxOuts, len(addrs))
+
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, addr := range addrs {
+		addrm[addr] = struct{}{}
+	}
+
+	for _, ux := range uxa {
+		if _, ok := addrm[ux.Body.Address]; ok {
+			outs[ux.Body.Address] = append(outs[ux.Body.Address], ux)
+		}
 	}
 
 	return outs, nil
@@ -1049,18 +1090,20 @@ func (vs *Visor) GetBalanceOfAddrs(addrs []cipher.Address) (wallet.BalancePair, 
 	var allUxs, spendUxs, recvUxs coin.AddressUxOuts
 
 	if err := vs.DB.View(func(tx *bolt.Tx) error {
-		unspent := vs.Blockchain.Unspent()
-		allUxs = unspent.GetUnspentsOfAddrs(addrs)
-
 		var err error
 		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
 		}
 
-		spendUxs, err = vs.Unconfirmed.SpendsOfAddresses(tx, addrs, unspent)
+		allUxs, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
 		if err != nil {
-			err = fmt.Errorf("vs.Unconfirmed.SpendsOfAddresses failed: %v", err)
+			return err
+		}
+
+		spendUxs, err = vs.unconfirmedSpendsOfAddresses(tx, addrs)
+		if err != nil {
+			err = fmt.Errorf("vs.unconfirmedSpendsOfAddresses failed: %v", err)
 			return err
 		}
 
@@ -1082,4 +1125,40 @@ func (vs *Visor) GetBalanceOfAddrs(addrs []cipher.Address) (wallet.BalancePair, 
 		Confirmed: confirmed,
 		Predicted: predicted,
 	}, nil
+}
+
+// GetTxnVerificationData returns data necessary for verifying a transaction
+func (vs *Visor) GetTxnVerificationData(txn coin.Transaction) (coin.UxArray, uint64, error) {
+	var uxa coin.UxArray
+	var headTime uint64
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		uxa, err = vs.Blockchain.Unspent().GetArray(tx, txn.In)
+		if err != nil {
+			return err
+		}
+
+		headTime, err = vs.Blockchain.Time(tx)
+		return err
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	return uxa, headTime, nil
+}
+
+// GetUnspentsOfAddrs returns unspent outputs of multiple addresses
+func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	var uxa coin.AddressUxOuts
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		var err error
+		uxa, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return uxa, nil
 }

@@ -27,7 +27,7 @@ const sendResultTimeout = 3 * time.Second
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
 	ErrDisconnectReadFailed DisconnectReason = errors.New("Read failed")
-	// ErrDisconnectWriteFailed write faile
+	// ErrDisconnectWriteFailed write failed
 	ErrDisconnectWriteFailed DisconnectReason = errors.New("Write failed")
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
@@ -35,11 +35,11 @@ var (
 	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
 	// ErrDisconnectMalformedMessage malformed message
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
-	// ErrDisconnectUnknownMessage unknow message
+	// ErrDisconnectUnknownMessage unknown message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
 	// ErrDisconnectWriteQueueFull write queue is full
 	ErrDisconnectWriteQueueFull DisconnectReason = errors.New("Write queue full")
-	// ErrDisconnectUnexpectedError  unexpected error
+	// ErrDisconnectUnexpectedError unexpected error
 	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
 	// ErrConnectionPoolClosed error message indicates the connection pool is closed
 	ErrConnectionPoolClosed = errors.New("Connection pool is closed")

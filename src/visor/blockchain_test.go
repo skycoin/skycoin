@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -43,12 +44,14 @@ func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
 
 	// add genesis block to blockchain
-	bc.db.Update(func(tx *bolt.Tx) error {
+	err = bc.db.Update(func(tx *bolt.Tx) error {
 		return bc.store.AddBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   gbSig,
 		})
 	})
+	require.NoError(t, err)
+
 	return &coin.SignedBlock{
 		Block: *gb,
 		Sig:   gbSig,
@@ -572,25 +575,29 @@ func TestVerifyTransaction(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
 
-	head := blockchainHead(t, bc)
+	verifyTransaction := func(txn coin.Transaction) error {
+		return db.View(func(tx *bolt.Tx) error {
+			return bc.VerifyTransaction(tx, txn)
+		})
+	}
 
 	// create normal spending tx
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, coins)
-	err = bc.VerifyTransaction(head, tx)
+	txn := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	err = verifyTransaction(txn)
 	require.NoError(t, err)
 
-	originInnerHash := tx.InnerHash
+	originInnerHash := txn.InnerHash
 	// test invalid header hash
-	tx.InnerHash = cipher.SHA256{}
-	err = bc.VerifyTransaction(head, tx)
+	txn.InnerHash = cipher.SHA256{}
+	err = verifyTransaction(txn)
 	require.Equal(t, errors.New("Invalid header hash"), err)
 
 	// set back the originInnerHash
-	tx.InnerHash = originInnerHash
+	txn.InnerHash = originInnerHash
 
 	// create new block to spend the coins
-	b := newBlock(t, bc, tx, genTime+100)
+	b := newBlock(t, bc, txn, genTime+100)
 
 	// add the block to blockchain
 	err = bc.db.Update(func(tx *bolt.Tx) error {
@@ -602,23 +609,23 @@ func TestVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	// none exist ux, the ux already spent
-	err = bc.VerifyTransaction(head, tx)
-	er := fmt.Errorf("unspent output of %s does not exist", tx.In[0].Hex())
+	err = verifyTransaction(txn)
+	er := fmt.Errorf("unspent output does not exist: %s", txn.In[0].Hex())
 	require.Equal(t, er, err)
 
 	// check invalid sig
-	uxs = coin.CreateUnspents(b.Head, tx)
+	uxs = coin.CreateUnspents(b.Head, txn)
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
-	tx2 := makeSpendTx(uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
-	err = bc.VerifyTransaction(head, tx2)
+	txn2 := makeSpendTx(uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
+	err = verifyTransaction(txn2)
 	require.Equal(t, errors.New("Signature not valid for output being spent"), err)
 
 	// create lost coin transaction
-	uxs2 := coin.CreateUnspents(b.Head, tx)
+	uxs2 := coin.CreateUnspents(b.Head, txn)
 	toAddr3 := testutil.MakeAddress()
 	lostCoinTx := makeLostCoinTx(coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
-	err = bc.VerifyTransaction(head, lostCoinTx)
+	err = verifyTransaction(lostCoinTx)
 	require.Equal(t, errors.New("Transactions may not create or destroy coins"), err)
 }
 
@@ -781,9 +788,10 @@ func TestProcessTransactions(t *testing.T) {
 					Block: *b,
 					Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 				}
-				db.Update(func(tx *bolt.Tx) error {
+				err = db.Update(func(tx *bolt.Tx) error {
 					return bc.store.AddBlock(tx, sb)
 				})
+				require.NoError(t, err)
 				head = sb
 			}
 
@@ -795,12 +803,26 @@ func TestProcessTransactions(t *testing.T) {
 				txs[i] = tx
 			}
 
-			head = blockchainHead(t, bc)
-			_, err = bc.processTransactions(head, txs)
-			require.EqualValues(t, tc.err, err)
+			err = db.View(func(tx *bolt.Tx) error {
+				_, err := bc.processTransactions(tx, txs)
+				require.EqualValues(t, tc.err, err)
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 
+}
+
+func getUxHash(t *testing.T, db *dbutil.DB, bc *Blockchain) cipher.SHA256 {
+	var uxHash cipher.SHA256
+	err := db.View(func(tx *bolt.Tx) error {
+		var err error
+		uxHash, err = bc.Unspent().GetUxHash(tx)
+		return err
+	})
+	require.NoError(t, err)
+	return uxHash
 }
 
 func TestVerifyUxHash(t *testing.T) {
@@ -816,19 +838,27 @@ func TestVerifyUxHash(t *testing.T) {
 	}
 
 	gb := addGenesisBlock(t, bc)
-	uxHash := bc.Unspent().GetUxHash()
-	tx := coin.Transaction{}
-	b, err := coin.NewBlock(gb.Block, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
+	uxHash := getUxHash(t, db, bc)
+	txn := coin.Transaction{}
+	b, err := coin.NewBlock(gb.Block, genTime+100, uxHash, coin.Transactions{txn}, feeCalc)
 	require.NoError(t, err)
 
-	err = bc.verifyUxHash(*b)
+	err = db.View(func(tx *bolt.Tx) error {
+		err = bc.verifyUxHash(tx, *b)
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
 
-	b2, err := coin.NewBlock(gb.Block, genTime+10, testutil.RandSHA256(t), coin.Transactions{tx}, feeCalc)
+	b2, err := coin.NewBlock(gb.Block, genTime+10, testutil.RandSHA256(t), coin.Transactions{txn}, feeCalc)
 	require.NoError(t, err)
 
-	err = bc.verifyUxHash(*b2)
-	require.Equal(t, errors.New("UxHash does not match"), err)
+	err = db.View(func(tx *bolt.Tx) error {
+		err = bc.verifyUxHash(tx, *b2)
+		require.Equal(t, errors.New("UxHash does not match"), err)
+		return nil
+	})
+	require.NoError(t, err)
 }
 
 func TestProcessBlock(t *testing.T) {
@@ -852,37 +882,38 @@ func TestProcessBlock(t *testing.T) {
 	}
 
 	// Test with empty blockchain
-	db.Update(func(tx *bolt.Tx) error {
-		_, err := bc.processBlock(tx, nil, sb)
+	err = db.Update(func(tx *bolt.Tx) error {
+		_, err := bc.processBlock(tx, sb)
 		require.NoError(t, err)
 		return nil
 	})
+	require.NoError(t, err)
 
 	// Add genesis block to chain store
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		err := bc.store.AddBlock(tx, &sb)
 		require.NoError(t, err)
 		return nil
 	})
+	require.NoError(t, err)
 
 	// Create new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
 	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
-	uxhash := bc.Unspent().GetUxHash()
-	b, err := coin.NewBlock(*gb, genTime+100, uxhash, coin.Transactions{tx}, feeCalc)
+	uxHash := getUxHash(t, db, bc)
+	b, err := coin.NewBlock(*gb, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 
-	head := blockchainHead(t, bc)
-
-	db.Update(func(tx *bolt.Tx) error {
-		_, err := bc.processBlock(tx, head, coin.SignedBlock{
+	err = db.Update(func(tx *bolt.Tx) error {
+		_, err := bc.processBlock(tx, coin.SignedBlock{
 			Block: *b,
 			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 		})
 		require.NoError(t, err)
 		return nil
 	})
+	require.NoError(t, err)
 }
 
 func TestExecuteBlock(t *testing.T) {
@@ -906,21 +937,21 @@ func TestExecuteBlock(t *testing.T) {
 	}
 
 	// test with empty chain
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		err := bc.ExecuteBlock(tx, &sb)
 		require.NoError(t, err)
 		return nil
 	})
+	require.NoError(t, err)
 
 	// new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
 	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
-	uxhash := bc.Unspent().GetUxHash()
-
-	b, err := coin.NewBlock(*gb, genTime+100, uxhash, coin.Transactions{tx}, feeCalc)
+	uxHash := getUxHash(t, db, bc)
+	b, err := coin.NewBlock(*gb, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		err := bc.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *b,
 			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
@@ -928,4 +959,5 @@ func TestExecuteBlock(t *testing.T) {
 		require.NoError(t, err)
 		return nil
 	})
+	require.NoError(t, err)
 }

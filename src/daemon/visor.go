@@ -306,7 +306,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 // The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
 func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
 	return vs.strand("InjectTransaction", func() error {
-		if err := vs.verifyInjectTransaction(txn); err != nil {
+		if err := vs.verifyAndInjectTransaction(txn); err != nil {
 			return err
 		}
 
@@ -347,7 +347,7 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 	return err
 }
 
-func (vs *Visor) verifyInjectTransaction(txn coin.Transaction) error {
+func (vs *Visor) verifyAndInjectTransaction(txn coin.Transaction) error {
 	if err := vs.verifyTransaction(txn); err != nil {
 		return err
 	}
@@ -357,17 +357,7 @@ func (vs *Visor) verifyInjectTransaction(txn coin.Transaction) error {
 }
 
 func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
-	// TODO -- when Unspent becomes a bolt.DB,
-	// then the result from Blockchain.Unspent().GetArray()
-	// and the result from GetHeadBlockTime()
-	// need to be merged into a single method in visor.Visor,
-	// so that a bolt.Tx can be used properly
-	inUxs, err := vs.v.Blockchain.Unspent().GetArray(txn.In)
-	if err != nil {
-		return err
-	}
-
-	headTime, err := vs.v.GetHeadBlockTime()
+	inUxs, headTime, err := vs.v.GetTxnVerificationData(txn)
 	if err != nil {
 		return err
 	}

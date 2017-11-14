@@ -187,14 +187,17 @@ func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime u
 		return nil, errors.New("Time can only move forward")
 	}
 
-	txns, err = bc.processTransactions(head, txns)
+	txns, err = bc.processTransactions(tx, txns)
 	if err != nil {
 		return nil, err
 	}
 
-	uxHash := bc.Unspent().GetUxHash()
+	uxHash, err := bc.Unspent().GetUxHash(tx)
+	if err != nil {
+		return nil, err
+	}
 
-	b, err := coin.NewBlock(head.Block, currentTime, uxHash, txns, bc.TransactionFee(head.Time()))
+	b, err := coin.NewBlock(head.Block, currentTime, uxHash, txns, bc.TransactionFee(tx, head.Time()))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +207,8 @@ func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime u
 		if err := bc.verifyBlockHeader(tx, *b); err != nil {
 			return nil, err
 		}
-		txns, err := bc.processTransactions(head, b.Body.Transactions)
+
+		txns, err := bc.processTransactions(tx, b.Body.Transactions)
 		if err != nil {
 			logger.Panic("Impossible Error: not allowed to fail")
 		}
@@ -216,29 +220,24 @@ func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime u
 
 // ExecuteBlock attempts to append block to blockchain with *bolt.Tx
 func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
-	var head *coin.SignedBlock
 	if bc.Len() > 0 {
-		var err error
-		if head, err = bc.store.Head(tx); err != nil {
+		head, err := bc.store.Head(tx)
+		if err != nil {
 			return err
 		}
 
 		sb.Head.PrevHash = head.HashHeader()
 	}
 
-	nb, err := bc.processBlock(tx, head, *sb)
+	nb, err := bc.processBlock(tx, *sb)
 	if err != nil {
 		return err
 	}
 
-	if err := bc.store.AddBlock(tx, &nb); err != nil {
-		return err
-	}
-
-	return nil
+	return bc.store.AddBlock(tx, &nb)
 }
 
-func (bc *Blockchain) processBlock(tx *bolt.Tx, head *coin.SignedBlock, b coin.SignedBlock) (coin.SignedBlock, error) {
+func (bc *Blockchain) processBlock(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
 	if bc.Len() > 0 {
 		if bc.isGenesisBlock(b.Block) {
 			err := errors.New("Attempt to process genesis block after blockchain has genesis block")
@@ -250,14 +249,14 @@ func (bc *Blockchain) processBlock(tx *bolt.Tx, head *coin.SignedBlock, b coin.S
 			return coin.SignedBlock{}, err
 		}
 
-		txns, err := bc.processTransactions(head, b.Body.Transactions)
+		txns, err := bc.processTransactions(tx, b.Body.Transactions)
 		if err != nil {
 			return coin.SignedBlock{}, err
 		}
 
 		b.Body.Transactions = txns
 
-		if err := bc.verifyUxHash(b.Block); err != nil {
+		if err := bc.verifyUxHash(tx, b.Block); err != nil {
 			return coin.SignedBlock{}, err
 		}
 	}
@@ -277,8 +276,11 @@ func (bc Blockchain) isGenesisBlock(b coin.Block) bool {
 
 // Compares the state of the current UxHash hash to state of unspent
 // output pool.
-func (bc Blockchain) verifyUxHash(b coin.Block) error {
-	uxHash := bc.Unspent().GetUxHash()
+func (bc Blockchain) verifyUxHash(tx *bolt.Tx, b coin.Block) error {
+	uxHash, err := bc.Unspent().GetUxHash(tx)
+	if err != nil {
+		return err
+	}
 
 	if !bytes.Equal(b.Head.UxHash[:], uxHash[:]) {
 		return errors.New("UxHash does not match")
@@ -289,7 +291,7 @@ func (bc Blockchain) verifyUxHash(b coin.Block) error {
 // VerifyTransaction checks that the inputs to the transaction exist,
 // that the transaction does not create or destroy coins and that the
 // signatures on the transaction are valid
-func (bc Blockchain) VerifyTransaction(head *coin.SignedBlock, txn coin.Transaction) error {
+func (bc Blockchain) VerifyTransaction(tx *bolt.Tx, txn coin.Transaction) error {
 	//CHECKLIST: DONE: check for duplicate ux inputs/double spending
 	//CHECKLIST: DONE: check that inputs of transaction have not been spent
 	//CHECKLIST: DONE: check there are no duplicate outputs
@@ -312,10 +314,16 @@ func (bc Blockchain) VerifyTransaction(head *coin.SignedBlock, txn coin.Transact
 		return err
 	}
 
-	uxIn, err := bc.Unspent().GetArray(txn.In)
+	head, err := bc.store.Head(tx)
 	if err != nil {
 		return err
 	}
+
+	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
+	if err != nil {
+		return err
+	}
+
 	// Checks whether ux inputs exist,
 	// Check that signatures are allowed to spend inputs
 	if err := txn.VerifyInput(uxIn); err != nil {
@@ -331,18 +339,16 @@ func (bc Blockchain) VerifyTransaction(head *coin.SignedBlock, txn coin.Transact
 		// Check that new unspents don't collide with existing.  This should
 		// also be checked in verifyTransactions
 		for i := range uxOut {
-			if bc.Unspent().Contains(uxOut[i].Hash()) {
+			if hasKey, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+				return err
+			} else if hasKey {
 				return errors.New("New unspent collides with existing unspent")
 			}
 		}
 	}
 
 	// Check that no coins are lost, and sufficient coins and hours are spent
-	err = coin.VerifyTransactionSpending(head.Time(), uxIn, uxOut)
-	if err != nil {
-		return err
-	}
-	return nil
+	return coin.VerifyTransactionSpending(head.Time(), uxIn, uxOut)
 }
 
 // GetBlocks return blocks whose seq are in the range of start and end.
@@ -387,23 +393,24 @@ func (bc Blockchain) GetLastBlocks(tx *bolt.Tx, num uint64) ([]coin.SignedBlock,
 /* Private */
 
 // Validates a set of Transactions, individually, against each other and
-// against the Blockchain.  If firstFail is true, it will return an error
-// as soon as it encounters one.  Else, it will return an array of
-// Transactions that are valid as a whole.  It may return an error if
-// firstFalse is false, if there is no way to filter the txns into a valid
-// array, i.e. processTransactions(processTransactions(txn, false), true)
-// should not result in an error, unless all txns are invalid.
+// against the Blockchain.
 // TODO:
 //  - move arbitration to visor
 //  - blockchain should have strict checking
-func (bc Blockchain) processTransactions(head *coin.SignedBlock, txs coin.Transactions) (coin.Transactions, error) {
-	// copy txs so that the following code won't modify the origianl txs
-	txns := make(coin.Transactions, len(txs))
-	copy(txns, txs)
+func (bc Blockchain) processTransactions(tx *bolt.Tx, txns coin.Transactions) (coin.Transactions, error) {
+	// copy txns so that the following code won't modify the original txns
+	newTxns := make(coin.Transactions, len(txns))
+	copy(newTxns, txns)
+	txns = newTxns
+
+	head, err := bc.store.Head(tx)
+	if err != nil {
+		return nil, err
+	}
 
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.arbitrating {
-		txns = coin.SortTransactions(txns, bc.TransactionFee(head.Time()))
+		txns = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
 	}
 	//TODO: audit
 	if len(txns) == 0 {
@@ -416,11 +423,10 @@ func (bc Blockchain) processTransactions(head *coin.SignedBlock, txs coin.Transa
 
 	skip := make(map[int]struct{})
 	uxHashes := make(coin.UxHashSet, len(txns))
-	for i, tx := range txns {
+	for i, txn := range txns {
 		// Check the transaction against itself.  This covers the hash,
 		// signature indices and duplicate spends within itself
-		err := bc.VerifyTransaction(head, tx)
-		if err != nil {
+		if err := bc.VerifyTransaction(tx, txn); err != nil {
 			if bc.arbitrating {
 				skip[i] = struct{}{}
 				continue
@@ -431,9 +437,9 @@ func (bc Blockchain) processTransactions(head *coin.SignedBlock, txs coin.Transa
 
 		// Check that each pending unspent will be unique
 		uxb := coin.UxBody{
-			SrcTransaction: tx.Hash(),
+			SrcTransaction: txn.Hash(),
 		}
-		for _, to := range tx.Out {
+		for _, to := range txn.Out {
 			uxb.Coins = to.Coins
 			uxb.Hours = to.Hours
 			uxb.Address = to.Address
@@ -451,7 +457,9 @@ func (bc Blockchain) processTransactions(head *coin.SignedBlock, txs coin.Transa
 			if DebugLevel1 {
 				// Check that the expected unspent is not already in the pool.
 				// This should never happen because its a hash collision
-				if bc.Unspent().Contains(h) {
+				if hasKey, err := bc.Unspent().Contains(tx, h); err != nil {
+					return nil, err
+				} else if hasKey {
 					if bc.arbitrating {
 						skip[i] = struct{}{}
 						continue
@@ -531,9 +539,9 @@ func (bc Blockchain) processTransactions(head *coin.SignedBlock, txs coin.Transa
 }
 
 // TransactionFee calculates the current transaction fee in coinhours of a Transaction
-func (bc Blockchain) TransactionFee(headTime uint64) coin.FeeCalculator {
+func (bc Blockchain) TransactionFee(tx *bolt.Tx, headTime uint64) coin.FeeCalculator {
 	return func(t *coin.Transaction) (uint64, error) {
-		inUxs, err := bc.Unspent().GetArray(t.In)
+		inUxs, err := bc.Unspent().GetArray(tx, t.In)
 		if err != nil {
 			return 0, err
 		}

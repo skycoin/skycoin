@@ -14,7 +14,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -331,23 +330,22 @@ type Validator interface {
 	HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error)
 }
 
-// CreateAndSignTransaction Creates a Transaction
-// spending coins and hours from wallet
-func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-	headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
-
+// CreateAndSignTransaction Creates a Transaction spending coins and hours from wallet
+func (wlt *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
+	// Check that the address in auxs are in the wallet
 	addrs := wlt.GetAddresses()
-	ok, err := vld.HasUnconfirmedSpendTx(addrs)
-	if err != nil {
-		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
+	addrsMap := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		addrsMap[a] = struct{}{}
 	}
 
-	if ok {
-		return nil, errors.New("please spend after your pending transaction is confirmed")
+	for a := range auxs {
+		if _, ok := addrsMap[a]; !ok {
+			return nil, fmt.Errorf("CreateAndSignTransaction AddressUxOuts contain address %s that is not in the wallet", a.String())
+		}
 	}
 
 	txn := coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(addrs)
 
 	// Determine which unspents to spend
 	spends, err := createSpends(headTime, auxs.Flatten(), amt)
@@ -393,8 +391,7 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	return &txn, nil
 }
 
-func createSpends(headTime uint64, uxa coin.UxArray,
-	amt Balance) (coin.UxArray, error) {
+func createSpends(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray, error) {
 	if amt.Coins == 0 {
 		return nil, errors.New("zero spend amount")
 	}

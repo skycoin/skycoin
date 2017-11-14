@@ -195,29 +195,6 @@ func TestServiceReloadWallets(t *testing.T) {
 	require.True(t, ok)
 }
 
-type dummyValidator struct {
-	ok  bool
-	err error
-}
-
-func (dvld dummyValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
-	return dvld.ok, dvld.err
-}
-
-type dummyUnspentGetter struct {
-	addrUnspents coin.AddressUxOuts
-	unspents     map[cipher.SHA256]coin.UxOut
-}
-
-func (dug dummyUnspentGetter) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
-	return dug.addrUnspents
-}
-
-func (dug dummyUnspentGetter) Get(uxid cipher.SHA256) (coin.UxOut, bool) {
-	uxout, ok := dug.unspents[uxid]
-	return uxout, ok
-}
-
 func TestServiceCreateAndSignTx(t *testing.T) {
 	dir := prepareWltDir()
 
@@ -250,7 +227,6 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		name       string
 		unspents   []coin.UxOut
 		addrUxouts coin.AddressUxOuts
-		vld        Validator
 		amt        Balance
 		dest       cipher.Address
 		err        error
@@ -260,9 +236,6 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			uxouts[:],
 			coin.AddressUxOuts{
 				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
 			},
 			Balance{Coins: 2e6},
 			addrs[0],
@@ -274,48 +247,15 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			coin.AddressUxOuts{
 				addr: uxouts,
 			},
-			&dummyValidator{
-				ok: false,
-			},
 			Balance{Coins: 1e6},
 			addrs[0],
 			nil,
-		},
-		{
-			"has unconfirmed spending transaction",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: true,
-			},
-			Balance{Coins: 2e6},
-			addrs[0],
-			errors.New("please spend after your pending transaction is confirmed"),
-		},
-		{
-			"check unconfirmed spend failed",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok:  false,
-				err: errors.New("fail intentionally"),
-			},
-			Balance{Coins: 2e6},
-			addrs[0],
-			errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
 		{
 			"spend zero",
 			uxouts[:],
 			coin.AddressUxOuts{
 				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
 			},
 			Balance{},
 			addrs[0],
@@ -327,9 +267,6 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			coin.AddressUxOuts{
 				addr: uxouts,
 			},
-			&dummyValidator{
-				ok: false,
-			},
 			Balance{Coins: 1000},
 			addrs[0],
 			nil,
@@ -340,9 +277,6 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			coin.AddressUxOuts{
 				addr: uxouts,
 			},
-			&dummyValidator{
-				ok: false,
-			},
 			Balance{Coins: 100e6},
 			addrs[0],
 			errors.New("not enough confirmed coins"),
@@ -351,16 +285,12 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			unspents := &dummyUnspentGetter{
-				addrUnspents: tc.addrUxouts,
-				unspents:     map[cipher.SHA256]coin.UxOut{},
-			}
-
+			unspents := make(map[cipher.SHA256]coin.UxOut)
 			for _, ux := range tc.unspents {
-				unspents.unspents[ux.Hash()] = ux
+				unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.amt, tc.dest)
+			tx, err := s.CreateAndSignTransaction(id, tc.addrUxouts, uint64(headTime), tc.amt, tc.dest)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -368,11 +298,12 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 			// check the IN of tx
 			for _, inUxid := range tx.In {
-				_, ok := unspents.unspents[inUxid]
+				_, ok := unspents[inUxid]
 				require.True(t, ok)
 			}
 
-			require.NoError(t, tx.Verify())
+			err = tx.Verify()
+			require.NoError(t, err)
 		})
 	}
 }

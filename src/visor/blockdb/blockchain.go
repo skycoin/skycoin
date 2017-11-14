@@ -52,14 +52,15 @@ type BlockSigs interface {
 
 // UnspentPool unspent outputs pool
 type UnspentPool interface {
-	Len() uint64                          // Len returns the length of unspent outputs pool
-	Get(cipher.SHA256) (coin.UxOut, bool) // Get returns outpus
-	GetAll() (coin.UxArray, error)
-	GetArray([]cipher.SHA256) (coin.UxArray, error)
-	GetUxHash() cipher.SHA256
-	GetUnspentsOfAddrs([]cipher.Address) coin.AddressUxOuts
-	ProcessBlock(*coin.SignedBlock) dbutil.TxHandler
-	Contains(cipher.SHA256) bool
+	Len(*bolt.Tx) (uint64, error)
+	Contains(*bolt.Tx, cipher.SHA256) (bool, error)
+	Get(*bolt.Tx, cipher.SHA256) (*coin.UxOut, error)
+	GetAll(*bolt.Tx) (coin.UxArray, error)
+	GetArray(*bolt.Tx, []cipher.SHA256) (coin.UxArray, error)
+	GetUxHash(*bolt.Tx) (cipher.SHA256, error)
+	GetUnspentsOfAddrs(*bolt.Tx, []cipher.Address) (coin.AddressUxOuts, error)
+	ProcessBlock(*bolt.Tx, *coin.SignedBlock) error
+	// GetForTransactionInputs(*bolt.Tx, coin.Transactions) (coin.TransactionUnspents, error)
 }
 
 // Blockchain maintain the buckets for blockchain
@@ -149,7 +150,15 @@ func (bc *Blockchain) AddBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
 
 // processBlock processes a block and updates the db
 func (bc *Blockchain) processBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
-	return bc.updateWithTx(tx, bc.updateHeadSeq(b), bc.unspent.ProcessBlock(b), bc.cacheGenesisBlock(b))
+	if err := bc.updateWithTx(tx, bc.updateHeadSeq(b)); err != nil {
+		return err
+	}
+
+	if err := bc.unspent.ProcessBlock(tx, b); err != nil {
+		return err
+	}
+
+	return bc.updateWithTx(tx, bc.cacheGenesisBlock(b))
 }
 
 // Head returns head block, returns error if no block does exist
@@ -166,16 +175,16 @@ func (bc *Blockchain) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
+// UnspentPool returns the unspent pool
+func (bc *Blockchain) UnspentPool() UnspentPool {
+	return bc.unspent
+}
+
 // HeadSeq returns the head block sequence
 func (bc *Blockchain) HeadSeq() uint64 {
 	bc.RLock()
 	defer bc.RUnlock()
 	return bc.cache.headSeq
-}
-
-// UnspentPool returns the unspent pool
-func (bc *Blockchain) UnspentPool() UnspentPool {
-	return bc.unspent
 }
 
 // Len returns blockchain length

@@ -7,7 +7,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 // Service wallet service struct
@@ -165,8 +164,7 @@ func (serv *Service) GetWalletsReadable() []*ReadableWallet {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
-	headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
+func (serv *Service) CreateAndSignTransaction(wltID string, auxs coin.AddressUxOuts, headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
@@ -174,7 +172,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspe
 		return nil, errWalletNotExist(wltID)
 	}
 
-	return w.CreateAndSignTransaction(vld, unspent, headTime, amt, dest)
+	return w.CreateAndSignTransaction(auxs, headTime, amt, dest)
 }
 
 // UpdateWalletLabel updates the wallet label

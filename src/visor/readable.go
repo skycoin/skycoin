@@ -64,7 +64,7 @@ func NewUnconfirmedTransactionStatus() TransactionStatus {
 	}
 }
 
-// NewUnknownTransactionStatus creates unknow transaction status
+// NewUnknownTransactionStatus creates unknown transaction status
 func NewUnknownTransactionStatus() TransactionStatus {
 	return TransactionStatus{
 		Unconfirmed: false,

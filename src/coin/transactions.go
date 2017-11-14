@@ -423,6 +423,9 @@ func (txns SortableTransactions) Swap(i, j int) {
 	txns.Hashes[i], txns.Hashes[j] = txns.Hashes[j], txns.Hashes[i]
 }
 
+// TransactionUnspents maps from Transaction hash to unspent outputs
+type TransactionUnspents map[cipher.SHA256]UxArray
+
 // VerifyTransactionSpending checks that coins will not be destroyed and that enough coins are hours
 // are being spent for the outputs
 func VerifyTransactionSpending(headTime uint64, uxIn UxArray, uxOut UxArray) error {

@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
@@ -10,7 +12,6 @@ import (
 
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -476,36 +477,27 @@ func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
 	return txns, err
 }
 
-// GetUnspent returns the unspent pool
-func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
-	var unspent blockdb.UnspentPool
-	gw.strand("GetUnspent", func() {
-		unspent = gw.v.Blockchain.Unspent()
-	})
-	return unspent
-}
+// // spendValidator implements the wallet.Validator interface
+// type spendValidator struct {
+// 	v       *visor.Visor
+// 	unspent blockdb.UnspentPool
+// }
 
-// impelemts the wallet.Validator interface
-type spendValidator struct {
-	v       *visor.Visor
-	unspent blockdb.UnspentPool
-}
+// func newSpendValidator(v *visor.Visor, unspent blockdb.UnspentPool) *spendValidator {
+// 	return &spendValidator{
+// 		v:       v,
+// 		unspent: unspent,
+// 	}
+// }
 
-func newSpendValidator(v *visor.Visor, unspent blockdb.UnspentPool) *spendValidator {
-	return &spendValidator{
-		v:       v,
-		unspent: unspent,
-	}
-}
+// func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
+// 	aux, err := sv.v.SpendsOfAddresses(addr, sv.unspent)
+// 	if err != nil {
+// 		return false, err
+// 	}
 
-func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
-	aux, err := sv.v.SpendsOfAddresses(addr, sv.unspent)
-	if err != nil {
-		return false, err
-	}
-
-	return len(aux) > 0, nil
-}
+// 	return len(aux) > 0, nil
+// }
 
 // Spend spends coins from given wallet and broadcast it,
 // return transaction or error.
@@ -514,9 +506,23 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 	var err error
 
 	gw.strand("Spend", func() {
-		// create spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v, unspent)
+		// NOTE: visor.Visor makes multiple bolt.Tx calls
+		// gw.d.Visor.InjectTransaction eventually calls visor.Visor methods,
+		// these would all need to be gathered into one bolt.Tx,
+		// this is too difficult.
+		// This should be safe anyway as long as we use strand()
+		var addrs []cipher.Address
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
+		if err != nil {
+			return
+		}
+
+		// Check that this is not trying to spend unconfirmed outputs
+		var auxs coin.AddressUxOuts
+		auxs, err = gw.getUnspentsForSpending(addrs)
+		if err != nil {
+			return
+		}
 
 		var headTime uint64
 		headTime, err = gw.v.GetHeadBlockTime()
@@ -525,20 +531,74 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 			return
 		}
 
-		// create and sign transaction
-		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, sv, unspent, headTime, amt, dest)
+		// Create and sign transaction
+		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, auxs, headTime, amt, dest)
 		if err != nil {
-			err = fmt.Errorf("Create transaction failed: %v", err)
+			err = fmt.Errorf("CreateAndSignTransaction failed: %v", err)
 			return
 		}
 
-		// inject transaction
+		// Inject transaction to the network
 		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
-			err = fmt.Errorf("Inject transaction failed: %v", err)
+			err = fmt.Errorf("InjectTransaction failed: %v", err)
+			return
 		}
 	})
 
 	return tx, err
+}
+
+// CreateSpendingTransaction creates spending transactions
+func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
+	var tx *coin.Transaction
+	var err error
+
+	gw.strand("CreateSpendingTransaction", func() {
+		// NOTE: visor.Visor makes multiple bolt.Tx calls
+		// gw.d.Visor.InjectTransaction eventually calls visor.Visor methods,
+		// these would all need to be gathered into one bolt.Tx,
+		// this is too difficult.
+		// This should be safe anyway as long as we use strand()
+		addrs := wlt.GetAddresses()
+
+		// Check that this is not trying to spend unconfirmed outputs
+		var auxs coin.AddressUxOuts
+		auxs, err = gw.getUnspentsForSpending(addrs)
+		if err != nil {
+			return
+		}
+
+		var headTime uint64
+		headTime, err = gw.v.GetHeadBlockTime()
+		if err != nil {
+			return
+		}
+
+		// Create and sign transaction
+		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, amt, dest)
+	})
+	return tx, err
+}
+
+func (gw *Gateway) getUnspentsForSpending(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	auxs, err := gw.v.UnconfirmedSpendsOfAddresses(addrs)
+	if err != nil {
+		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
+		return nil, err
+	}
+
+	// Check that this is not trying to spend unconfirmed outputs
+	if len(auxs) > 0 {
+		return nil, errors.New("please spend after your pending transaction is confirmed")
+	}
+
+	auxs, err = gw.v.GetUnspentsOfAddrs(addrs)
+	if err != nil {
+		err = fmt.Errorf("GetUnspentsOfAddrs failed: %v", err)
+		return nil, err
+	}
+
+	return auxs, nil
 }
 
 // NewWallet creates wallet
@@ -549,27 +609,6 @@ func (gw *Gateway) NewWallet(wltName string, options ...wallet.Option) (wallet.W
 		wlt, err = gw.v.Wallets.CreateWallet(wltName, options...)
 	})
 	return wlt, err
-}
-
-// CreateSpendingTransaction creates spending transactions
-func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
-	var tx *coin.Transaction
-	var err error
-	gw.strand("CreateSpendingTransaction", func() {
-		// generate spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v, unspent)
-
-		var headTime uint64
-		headTime, err = gw.v.GetHeadBlockTime()
-		if err != nil {
-			return
-		}
-
-		// create and sign transaction
-		tx, err = wlt.CreateAndSignTransaction(sv, unspent, headTime, amt, dest)
-	})
-	return tx, err
 }
 
 // GetWalletBalance returns balance pair of specific wallet

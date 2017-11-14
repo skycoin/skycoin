@@ -118,7 +118,7 @@ type Visor struct {
 	// blockSigs   *blockdb.BlockSigs
 	history  *historydb.HistoryDB
 	bcParser *BlockchainParser
-	wallets  *wallet.Service
+	Wallets  *wallet.Service
 	DB       *dbutil.DB
 
 	done chan struct{}
@@ -170,7 +170,7 @@ func NewVisor(c Config) (*Visor, error) {
 		Unconfirmed: unconfirmed,
 		history:     history,
 		bcParser:    bp,
-		wallets:     wltServ,
+		Wallets:     wltServ,
 		done:        make(chan struct{}),
 	}
 
@@ -701,17 +701,9 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 }
 
 // AddressBalance computes the total balance for cipher.Addresses and their coin.UxOuts
-func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64, error) {
-	var head *coin.SignedBlock
-	if err := vs.DB.View(func(tx *bolt.Tx) error {
-		var err error
-		head, err = vs.Blockchain.Head(tx)
-		return err
-	}); err != nil {
-		return 0, 0, err
-	}
-
+func (vs *Visor) AddressBalance(head *coin.SignedBlock, auxs coin.AddressUxOuts) wallet.Balance {
 	prevTime := head.Time()
+
 	var coins, hours uint64
 	for _, uxs := range auxs {
 		for _, ux := range uxs {
@@ -720,7 +712,10 @@ func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64, error)
 		}
 	}
 
-	return coins, hours, nil
+	return wallet.Balance{
+		Coins: coins,
+		Hours: hours,
+	}
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
@@ -1046,4 +1041,45 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256, t time.Time) error {
 	return vs.DB.Update(func(tx *bolt.Tx) error {
 		return vs.Unconfirmed.SetTxnsAnnounced(tx, txns, t)
 	})
+}
+
+// GetBalanceOfAddrs returns balance pair for multiple addresses
+func (vs *Visor) GetBalanceOfAddrs(addrs []cipher.Address) (wallet.BalancePair, error) {
+	var head *coin.SignedBlock
+	var allUxs, spendUxs, recvUxs coin.AddressUxOuts
+
+	if err := vs.DB.View(func(tx *bolt.Tx) error {
+		unspent := vs.Blockchain.Unspent()
+		allUxs = unspent.GetUnspentsOfAddrs(addrs)
+
+		var err error
+		head, err = vs.Blockchain.Head(tx)
+		if err != nil {
+			return err
+		}
+
+		spendUxs, err = vs.Unconfirmed.SpendsOfAddresses(tx, addrs, unspent)
+		if err != nil {
+			err = fmt.Errorf("vs.Unconfirmed.SpendsOfAddresses failed: %v", err)
+			return err
+		}
+
+		recvUxs, err = vs.Unconfirmed.RecvOfAddresses(tx, head.Head, addrs)
+		if err != nil {
+			err = fmt.Errorf("vs.recvOfAddresses failed: %v", err)
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return wallet.BalancePair{}, err
+	}
+
+	confirmed := vs.AddressBalance(head, allUxs)
+	predicted := vs.AddressBalance(head, allUxs.Sub(spendUxs).Add(recvUxs))
+
+	return wallet.BalancePair{
+		Confirmed: confirmed,
+		Predicted: predicted,
+	}, nil
 }

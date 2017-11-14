@@ -74,7 +74,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		resTxs := make([]visor.TransactionResult, len(txs))
+		resTxs := make([]daemon.TransactionResult, len(txs))
 		for i, tx := range txs {
 			rbTx, err := visor.NewReadableTransaction(tx)
 			if err != nil {
@@ -83,7 +83,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			resTxs[i] = visor.TransactionResult{
+			resTxs[i] = daemon.TransactionResult{
 				Transaction: *rbTx,
 				Status:      tx.Status,
 			}
@@ -128,7 +128,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		resTx := visor.TransactionResult{
+		resTx := daemon.TransactionResult{
 			Transaction: *rbTx,
 			Status:      tx.Status,
 		}

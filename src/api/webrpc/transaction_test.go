@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 const (
@@ -46,7 +48,7 @@ func Test_getTransactionHandler(t *testing.T) {
 	tx := decodeRawTransaction(rawTxStr)
 	rbTx, err := visor.NewReadableTransaction(tx)
 	require.NoError(t, err)
-	txRlt := visor.TransactionResult{
+	txRlt := daemon.TransactionResult{
 		Status: visor.TransactionStatus{
 			Confirmed: true,
 			Height:    103,

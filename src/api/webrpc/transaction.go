@@ -6,12 +6,12 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/daemon"
 )
 
-// TxnResult wraps the visor.TransactionResult
+// TxnResult wraps the daemon.TransactionResult
 type TxnResult struct {
-	Transaction *visor.TransactionResult `json:"transaction"`
+	Transaction *daemon.TransactionResult `json:"transaction"`
 }
 
 // TxIDJson wraps txid with json tags
@@ -45,7 +45,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist")
 	}
 
-	tx, err := visor.NewTransactionResult(txn)
+	tx, err := daemon.NewTransactionResult(txn)
 	if err != nil {
 		logger.Error("%v", err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)

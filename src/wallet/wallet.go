@@ -333,12 +333,8 @@ type Validator interface {
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
-func (wlt *Wallet) CreateAndSignTransaction(
-	vld Validator,
-	unspent blockdb.UnspentGetter,
-	headTime uint64,
-	amt Balance,
-	dest cipher.Address) (*coin.Transaction, error) {
+func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
+	headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
 
 	addrs := wlt.GetAddresses()
 	ok, err := vld.HasUnconfirmedSpendTx(addrs)

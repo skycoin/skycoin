@@ -440,25 +440,25 @@ func (utp *UnconfirmedTxnPool) RemoveTransactions(tx *bolt.Tx, txHashes []cipher
 // verify the transaction and returns all those txns that turn to valid.
 func (utp *UnconfirmedTxnPool) Refresh(tx *bolt.Tx, bc *Blockchain) ([]cipher.SHA256, error) {
 	logger.Debug("UnconfirmedTxnPool.RefreshUnconfirmed")
-	var hashes []cipher.SHA256
-	now := utc.Now().UnixNano()
+	utxns, err := utp.txns.getAll(tx)
+	if err != nil {
+		return nil, err
+	}
 
 	head, err := bc.Head(tx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := utp.txns.rangeUpdate(tx, func(txn UnconfirmedTxn) (UnconfirmedTxn, error) {
+	now := utc.Now().UnixNano()
+
+	var hashes []cipher.SHA256
+	for _, txn := range utxns {
 		txn.Checked = now
-		if txn.IsValid == 0 {
-			if bc.VerifyTransaction(head, txn.Txn) == nil {
-				txn.IsValid = 1
-				hashes = append(hashes, txn.Hash())
-			}
+		if txn.IsValid == 0 && bc.VerifyTransaction(head, txn.Txn) == nil {
+			txn.IsValid = 1
+			hashes = append(hashes, txn.Hash())
 		}
-		return txn, nil
-	}); err != nil {
-		return nil, err
 	}
 
 	return hashes, nil

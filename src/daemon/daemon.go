@@ -728,7 +728,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	if !exist {
-		logger.Warning("While processing an onConnect event, no pool connection was found")
+		logger.Warning("While processing an onConnect event for %s, their pool connection was not found", a)
 		return
 	}
 

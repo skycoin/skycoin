@@ -494,3 +494,8 @@ func TransactionToJSON(tx coin.Transaction) (string, error) {
 
 	return string(b), nil
 }
+
+// ReadableBlocks an array of readable blocks.
+type ReadableBlocks struct {
+	Blocks []ReadableBlock `json:"blocks"`
+}

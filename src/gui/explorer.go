@@ -213,7 +213,7 @@ type ReadableTransaction struct {
 }
 
 // NewReadableTransaction creates readable address transaction
-func NewReadableTransaction(t visor.TransactionResult, inputs []visor.ReadableTransactionInput) ReadableTransaction {
+func NewReadableTransaction(t daemon.TransactionResult, inputs []visor.ReadableTransactionInput) ReadableTransaction {
 	return ReadableTransaction{
 		Status:    t.Status,
 		Length:    t.Transaction.Length,

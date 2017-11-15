@@ -89,24 +89,6 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 	}
 }
 
-/*
-type ReadableTransactionHeader struct {
-	Hash string   `json:"hash"`
-	Sigs []string `json:"sigs"`
-}
-
-func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
-	sigs := make([]string, len(t.Sigs))
-	for i, _ := range t.Sigs {
-		sigs[i] = t.Sigs[i].Hex()
-	}
-	return ReadableTransactionHeader{
-		Hash: t.Hash.Hex(),
-		Sigs: sigs,
-	}
-}
-*/
-
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
 	Hash    string `json:"uxid"`
@@ -223,43 +205,6 @@ type ReadableTransaction struct {
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// ReadableUnconfirmedTxn  represents readable unconfirmed transaction
-type ReadableUnconfirmedTxn struct {
-	Txn       ReadableTransaction `json:"transaction"`
-	Received  time.Time           `json:"received"`
-	Checked   time.Time           `json:"checked"`
-	Announced time.Time           `json:"announced"`
-	IsValid   bool                `json:"is_valid"`
-}
-
-// NewReadableUnconfirmedTxn creates readable unconfirmed transaction
-func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
-	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
-	if err != nil {
-		return nil, err
-	}
-	return &ReadableUnconfirmedTxn{
-		Txn:       *tx,
-		Received:  nanoToTime(unconfirmed.Received),
-		Checked:   nanoToTime(unconfirmed.Checked),
-		Announced: nanoToTime(unconfirmed.Announced),
-		IsValid:   unconfirmed.IsValid == 1,
-	}, nil
-}
-
-// NewReadableUnconfirmedTxns converts []UnconfirmedTxn to []ReadableUnconfirmedTxn
-func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn, error) {
-	rut := make([]ReadableUnconfirmedTxn, len(txs))
-	for i := range txs {
-		tx, err := NewReadableUnconfirmedTxn(&txs[i])
-		if err != nil {
-			return []ReadableUnconfirmedTxn{}, err
-		}
-		rut[i] = *tx
-	}
-	return rut, nil
-}
-
 // NewGenesisReadableTransaction creates genesis readable transaction
 func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	txid := cipher.SHA256{}
@@ -326,6 +271,43 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 		In:   in,
 		Out:  out,
 	}, nil
+}
+
+// ReadableUnconfirmedTxn  represents readable unconfirmed transaction
+type ReadableUnconfirmedTxn struct {
+	Txn       ReadableTransaction `json:"transaction"`
+	Received  time.Time           `json:"received"`
+	Checked   time.Time           `json:"checked"`
+	Announced time.Time           `json:"announced"`
+	IsValid   bool                `json:"is_valid"`
+}
+
+// NewReadableUnconfirmedTxn creates readable unconfirmed transaction
+func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
+	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
+	if err != nil {
+		return nil, err
+	}
+	return &ReadableUnconfirmedTxn{
+		Txn:       *tx,
+		Received:  nanoToTime(unconfirmed.Received),
+		Checked:   nanoToTime(unconfirmed.Checked),
+		Announced: nanoToTime(unconfirmed.Announced),
+		IsValid:   unconfirmed.IsValid == 1,
+	}, nil
+}
+
+// NewReadableUnconfirmedTxns converts []UnconfirmedTxn to []ReadableUnconfirmedTxn
+func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn, error) {
+	rut := make([]ReadableUnconfirmedTxn, len(txs))
+	for i := range txs {
+		tx, err := NewReadableUnconfirmedTxn(&txs[i])
+		if err != nil {
+			return []ReadableUnconfirmedTxn{}, err
+		}
+		rut[i] = *tx
+	}
+	return rut, nil
 }
 
 // ReadableBlockHeader represents the readable block header

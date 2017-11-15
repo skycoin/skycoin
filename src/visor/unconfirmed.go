@@ -322,9 +322,6 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t 
 	}
 
 	// Update if we already have this txn
-	// TODO -- why update to IsValid if we already have the txn?
-	// It looks like the other code assumes IsValid txns are txns that we
-	// created due to spending.
 	if known {
 		if err := utp.txns.update(tx, hash, func(txn *UnconfirmedTxn) error {
 			now := utc.Now().UnixNano()
@@ -340,6 +337,8 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t 
 	}
 
 	utx := utp.createUnconfirmedTxn(t)
+	utx.IsValid = 1
+
 	// add txn to index
 	if err := utp.txns.put(tx, &utx); err != nil {
 		return false, err

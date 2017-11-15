@@ -33,22 +33,23 @@ if [ -e "$ELN_OUTPUT" ]; then
 fi
 
 if [ ! -z "$WIN64_ELN" ] && [ ! -z "$WIN32_ELN" ]; then
-    npm run dist-win
+    yarn run dist-win
 elif [ ! -z "$WIN64_ELN" ]; then
-    npm run dist-win64
+    yarn run dist-win64
 elif [ ! -z "$WIN32_ELN" ]; then
-    npm run dist-win32
+    yarn run dist-win32
 fi
 
 if [ ! -z "$LNX64_ELN" ]; then
-    npm run dist-linux
+    yarn run dist-linux
 fi
 
 if [ ! -z "$OSX64_ELN" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        npm run dist-mac
+        echo "run dist-mac"
+        yarn run dist-mac
     elif [[ "$OSTYPE" == "linux"* ]]; then
-        npm run pack-mac
+        yarn run pack-mac
     else
         echo "Can not run build script in $OSTYPE"
     fi
@@ -81,6 +82,22 @@ EXE="${PDT_NAME} Setup ${APP_VERSION}.exe"
 if [ -e "$EXE" ]; then
     mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
 fi
+
+# rename dmg file name
+DMG="${PKG_NAME}-${APP_VERSION}.dmg"
+if [ -e "$DMG" ]; then
+    mv "$DMG" "${PKG_NAME}-${APP_VERSION}-gui-osx.dmg"
+fi
+
+# delete app zip file
+MZIP="${PKG_NAME}-${APP_VERSION}-mac.zip"
+if [ -e "$MZIP" ]; then
+    rm "$MZIP"
+fi
+
+# delete github and latest-mac.yml
+if [ -d "github" ]; then rm -rf github ;fi
+if [ -e "latest-mac.yml" ]; then rm latest-mac.yml ;fi
 
 # clean unpacked folders
 rm -rf *-unpacked

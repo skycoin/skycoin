@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"runtime/pprof"
+	"sync"
 	"syscall"
 	"time"
 
@@ -468,8 +469,8 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
-	dc.Peers.DataDirectory = c.DataDirectory
-	dc.Peers.Disabled = c.DisablePEX
+	dc.Pex.DataDirectory = c.DataDirectory
+	dc.Pex.Disabled = c.DisablePEX
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking
@@ -479,8 +480,6 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Daemon.OutgoingMax = c.MaxConnections
 	dc.Daemon.DataDirectory = c.DataDirectory
 	dc.Daemon.LogPings = !c.DisablePingPong
-
-	daemon.DefaultConnections = DefaultConnections
 
 	if c.OutgoingConnectionsRate == 0 {
 		c.OutgoingConnectionsRate = time.Millisecond
@@ -538,15 +537,26 @@ func Run(c *Config) {
 		return
 	}
 
+	var wg sync.WaitGroup
+
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
 
-	go catchInterrupt(quit)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		catchInterrupt(quit)
+	}()
+
 	// Watch for SIGUSR1
-	go catchDebug()
+	wg.Add(1)
+	func() {
+		defer wg.Done()
+		go catchDebug()
+	}()
 
 	dconf := configureDaemon(c)
-	d, err := daemon.NewDaemon(dconf)
+	d, err := daemon.NewDaemon(dconf, DefaultConnections)
 	if err != nil {
 		logger.Error("%v", err)
 		return
@@ -554,15 +564,17 @@ func Run(c *Config) {
 
 	errC := make(chan error, 1)
 
+	wg.Add(1)
 	go func() {
-		errC <- d.Run()
+		defer wg.Done()
+		d.Run()
 	}()
 
 	var rpc *webrpc.WebRPC
 	// start the webrpc
 	if c.RPCInterface {
 		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err := webrpc.New(rpcAddr, d.Gateway)
+		rpc, err = webrpc.New(rpcAddr, d.Gateway)
 		if err != nil {
 			logger.Error("%v", err)
 			return
@@ -570,8 +582,12 @@ func Run(c *Config) {
 		rpc.ChanBuffSize = 1000
 		rpc.WorkerNum = c.RPCThreadNum
 
+		wg.Add(1)
 		go func() {
-			errC <- rpc.Run()
+			defer wg.Done()
+			if err := rpc.Run(); err != nil {
+				errC <- err
+			}
 		}()
 	}
 
@@ -608,7 +624,10 @@ func Run(c *Config) {
 		}
 
 		if c.LaunchBrowser {
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
+
 				// Wait a moment just to make sure the http interface is up
 				time.Sleep(time.Millisecond * 100)
 
@@ -654,13 +673,13 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
-
 	if rpc != nil {
 		rpc.Shutdown()
 	}
 	gui.Shutdown()
 	d.Shutdown()
 	closelog()
+	wg.Wait()
 	logger.Info("Goodbye")
 }
 

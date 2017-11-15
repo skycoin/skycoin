@@ -224,22 +224,33 @@ func (txus *txUnspents) forEach(tx *bolt.Tx, f func(cipher.SHA256, coin.UxArray)
 }
 
 // UnconfirmedTxnPool manages unconfirmed transactions
+// Unconfirmed transactions can be valid or invalid.
+// Currently, only valid transactions are injected into the pool.
+// Later, invalid transactions need to be injected, to allow propagation
+// to continue during blockchain syncing or forks.
 type UnconfirmedTxnPool struct {
-	db   *dbutil.DB
-	txns *unconfirmedTxns
-	// Predicted unspents, assuming txns are valid.  Needed to predict
-	// our future balance and avoid double spending our own coins
-	// Maps from Transaction.Hash() to UxArray.
+	db      *dbutil.DB
+	txns    *unconfirmedTxns
 	unspent *txUnspents
 }
 
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
 func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
-		return dbutil.CreateBuckets(tx, [][]byte{
+		if err := dbutil.CreateBuckets(tx, [][]byte{
 			unconfirmedTxnsBkt,
 			unconfirmedUnspentsBkt,
-		})
+		}); err != nil {
+			return err
+		}
+
+		n, err := dbutil.Len(tx, unconfirmedTxnsBkt)
+		if err != nil {
+			return err
+		}
+
+		logger.Info("Unconfirmed transaction pool size: %d", n)
+		return nil
 	}); err != nil {
 		return nil, err
 	}
@@ -337,6 +348,8 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc *Blockchain, t 
 	}
 
 	utx := utp.createUnconfirmedTxn(t)
+
+	// The transaction is valid, it was checked by the verifiers above
 	utx.IsValid = 1
 
 	// add txn to index
@@ -387,10 +400,17 @@ func (utp *UnconfirmedTxnPool) RemoveTransactions(tx *bolt.Tx, txHashes []cipher
 
 // Refresh checks all unconfirmed txns against the blockchain.
 // verify the transaction and returns all those txns that turn to valid.
+// NOTE: All transaction are valid at this time [2017-11-15], invalid txns are not added to the pool
 func (utp *UnconfirmedTxnPool) Refresh(tx *bolt.Tx, bc *Blockchain) ([]cipher.SHA256, error) {
 	logger.Debug("UnconfirmedTxnPool.RefreshUnconfirmed")
-	utxns, err := utp.txns.getAll(tx)
-	if err != nil {
+
+	var utxns []*UnconfirmedTxn
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
+		if txn.IsValid == 0 {
+			utxns = append(utxns, &txn)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -402,6 +422,10 @@ func (utp *UnconfirmedTxnPool) Refresh(tx *bolt.Tx, bc *Blockchain) ([]cipher.SH
 		if txn.IsValid == 0 && bc.VerifyTransaction(tx, txn.Txn) == nil {
 			txn.IsValid = 1
 			hashes = append(hashes, txn.Hash())
+		}
+
+		if err := utp.txns.put(tx, txn); err != nil {
+			return nil, err
 		}
 	}
 

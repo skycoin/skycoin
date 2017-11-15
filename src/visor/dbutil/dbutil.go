@@ -283,9 +283,3 @@ func Itob(v uint64) []byte {
 func Btoi(v []byte) uint64 {
 	return binary.BigEndian.Uint64(v)
 }
-
-// Rollback callback function type
-type Rollback func()
-
-// TxHandler function type for processing bolt transaction
-type TxHandler func(tx *bolt.Tx) (Rollback, error)

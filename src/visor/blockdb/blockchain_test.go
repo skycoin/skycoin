@@ -29,19 +29,19 @@ func feeCalc(t *coin.Transaction) (uint64, error) {
 }
 
 type fakeStorage struct {
-	tree    *fakeBlockTree
-	sigs    *fakeSignatureStore
-	unspent *fakeUnspentPool
+	tree      *fakeBlockTree
+	sigs      *fakeSignatureStore
+	unspent   *fakeUnspentPool
+	chainMeta *fakeChainMeta
 }
 
 func newFakeStorage() *fakeStorage {
 	var failedWhenSaved bool
-	// var failedWhenSaved2 bool
-	// var failedWhenSaved3 bool
 	return &fakeStorage{
-		tree:    newFakeBlockTree(&failedWhenSaved),
-		sigs:    newFakeSigStore(&failedWhenSaved),
-		unspent: newFakeUnspentPool(&failedWhenSaved),
+		tree:      newFakeBlockTree(&failedWhenSaved),
+		sigs:      newFakeSigStore(&failedWhenSaved),
+		unspent:   newFakeUnspentPool(&failedWhenSaved),
+		chainMeta: newFakeChainMeta(),
 	}
 }
 
@@ -80,6 +80,16 @@ func (bt *fakeBlockTree) GetBlock(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block,
 }
 
 func (bt *fakeBlockTree) GetBlockInDepth(tx *bolt.Tx, dep uint64, filter Walker) (*coin.Block, error) {
+	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
+		return nil, nil
+	}
+
+	for _, b := range bt.blocks {
+		if b.Head.BkSeq == dep {
+			return b, nil
+		}
+	}
+
 	return nil, nil
 }
 
@@ -215,6 +225,29 @@ func (fup *fakeUnspentPool) Contains(tx *bolt.Tx, h cipher.SHA256) (bool, error)
 	return ok, nil
 }
 
+type fakeChainMeta struct {
+	headSeq   uint64
+	didSetSeq bool
+}
+
+func newFakeChainMeta() *fakeChainMeta {
+	return &fakeChainMeta{}
+}
+
+func (fcm *fakeChainMeta) GetHeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+	if !fcm.didSetSeq {
+		return 0, false, nil
+	}
+
+	return fcm.headSeq, true, nil
+}
+
+func (fcm *fakeChainMeta) SetHeadSeq(tx *bolt.Tx, seq uint64) error {
+	fcm.headSeq = seq
+	fcm.didSetSeq = true
+	return nil
+}
+
 func DefaultWalker(tx *bolt.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	return hps[0].Hash, true
 }
@@ -232,11 +265,10 @@ func makeGenesisBlock(t *testing.T) coin.SignedBlock {
 
 func TestBlockchainAddBlockWithTx(t *testing.T) {
 	type expect struct {
-		err           error
-		sigSaved      bool
-		blockSaved    bool
-		genesisCached bool
-		headSeq       uint64
+		err        error
+		sigSaved   bool
+		blockSaved bool
+		headSeq    uint64
 	}
 
 	type failedSaves struct {
@@ -259,7 +291,6 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 				nil,
 				true,
 				true,
-				true,
 				uint64(0),
 			},
 		},
@@ -271,7 +302,6 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 			},
 			expect{
 				errors.New("save signature failed: intentionally failed"),
-				false,
 				false,
 				false,
 				uint64(0),
@@ -287,7 +317,6 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 				errors.New("save block failed: intentionally failed"),
 				false,
 				false,
-				false,
 				uint64(0),
 			},
 		},
@@ -299,7 +328,6 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 			},
 			expect{
 				errors.New("intentionally failed"),
-				false,
 				false,
 				false,
 				uint64(0),
@@ -316,16 +344,23 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 			tc.fakeStorage.sigs.saveFailed = tc.failedSaves.sigs
 			tc.fakeStorage.unspent.saveFailed = tc.failedSaves.unspent
 
-			bc, err := createBlockchain(db, DefaultWalker, tc.fakeStorage.tree, tc.fakeStorage.sigs, tc.fakeStorage.unspent)
-			require.NoError(t, err)
+			bc := &Blockchain{
+				db:      db,
+				unspent: tc.fakeStorage.unspent,
+				meta:    tc.fakeStorage.chainMeta,
+				tree:    tc.fakeStorage.tree,
+				sigs:    tc.fakeStorage.sigs,
+				walker:  DefaultWalker,
+			}
 
 			gb := makeGenesisBlock(t)
 
-			err = db.Update(func(tx *bolt.Tx) error {
-				return bc.AddBlock(tx, &gb)
+			err := db.Update(func(tx *bolt.Tx) error {
+				err := bc.AddBlock(tx, &gb)
+				require.Equal(t, tc.expect.err, err)
+				return nil
 			})
-
-			require.Equal(t, tc.expect.err, err)
+			require.NoError(t, err)
 
 			// check sig
 			err = db.View(func(tx *bolt.Tx) error {
@@ -338,17 +373,41 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.expect.blockSaved, b != nil)
 
+				// check head seq
+				headSeq, ok, err := bc.HeadSeq(tx)
+				require.NoError(t, err)
+
+				if tc.expect.err == nil {
+					require.True(t, ok)
+					require.Equal(t, tc.expect.headSeq, headSeq)
+				} else {
+					require.False(t, ok)
+				}
+
+				// check len
+				length, err := bc.Len(tx)
+				require.NoError(t, err)
+
+				if tc.expect.err == nil {
+					require.Equal(t, uint64(1), length)
+				} else {
+					require.Equal(t, uint64(0), length)
+				}
+
+				// check genesis block
+				genesisBlock, err := bc.GetGenesisBlock(tx)
+				require.NoError(t, err)
+
+				if tc.expect.err == nil {
+					require.NotNil(t, genesisBlock)
+					require.Equal(t, gb, *genesisBlock)
+				} else {
+					require.Nil(t, genesisBlock)
+				}
+
 				return nil
 			})
 			require.NoError(t, err)
-
-			// check cache of head seq
-			require.Equal(t, tc.expect.headSeq, bc.cache.headSeq)
-
-			require.Equal(t, tc.expect.genesisCached, bc.cache.genesisBlock != nil)
-			if tc.expect.genesisCached {
-				require.Equal(t, gb.HashHeader().Hex(), bc.cache.genesisBlock.HashHeader().Hex())
-			}
 		})
 	}
 
@@ -380,15 +439,35 @@ func TestBlockchainHead(t *testing.T) {
 }
 
 func TestBlockchainLen(t *testing.T) {
-	bc := Blockchain{}
-	require.Equal(t, uint64(0), bc.Len())
+	db, closeDB := testutil.PrepareDB(t)
+	defer closeDB()
+
+	bc, err := NewBlockchain(db, DefaultWalker)
+	require.NoError(t, err)
+
+	err = db.View(func(tx *bolt.Tx) error {
+		length, err := bc.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
+		return nil
+	})
+	require.NoError(t, err)
 
 	gb := makeGenesisBlock(t)
-	bc.cache.genesisBlock = &gb
-	require.Equal(t, uint64(1), bc.Len())
+	err = db.Update(func(tx *bolt.Tx) error {
+		err := bc.AddBlock(tx, &gb)
+		require.NoError(t, err)
+		return nil
+	})
+	require.NoError(t, err)
 
-	bc.cache.headSeq = 1
-	require.Equal(t, uint64(2), bc.Len())
+	err = db.View(func(tx *bolt.Tx) error {
+		length, err := bc.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), length)
+		return nil
+	})
+	require.NoError(t, err)
 }
 
 func TestBlockchainGetBlockByHash(t *testing.T) {

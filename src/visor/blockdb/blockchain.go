@@ -3,7 +3,6 @@ package blockdb
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/boltdb/bolt"
 
@@ -63,19 +62,20 @@ type UnspentPool interface {
 	// GetForTransactionInputs(*bolt.Tx, coin.Transactions) (coin.TransactionUnspents, error)
 }
 
+// ChainMeta blockchain metadata
+type ChainMeta interface {
+	GetHeadSeq(*bolt.Tx) (uint64, bool, error)
+	SetHeadSeq(*bolt.Tx, uint64) error
+}
+
 // Blockchain maintain the buckets for blockchain
 type Blockchain struct {
 	db      *dbutil.DB
-	meta    *chainMeta
+	meta    ChainMeta
 	unspent UnspentPool
 	tree    BlockTree
 	sigs    BlockSigs
 	walker  Walker
-	cache   struct {
-		headSeq      uint64 // head block seq
-		genesisBlock *coin.SignedBlock
-	}
-	sync.RWMutex // cache lock
 }
 
 // NewBlockchain creates a new blockchain instance
@@ -103,31 +103,24 @@ func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
 		return nil, fmt.Errorf("newBlockSigs failed: %v", err)
 	}
 
-	return createBlockchain(db, walker, tree, sigs, unspent)
-}
-
-func createBlockchain(db *dbutil.DB, walker Walker, tree BlockTree, sigs BlockSigs, unspent UnspentPool) (*Blockchain, error) {
 	meta, err := newChainMeta(db)
 	if err != nil {
 		return nil, fmt.Errorf("newChainMeta failed: %v", err)
 	}
 
-	bc := &Blockchain{
+	return &Blockchain{
 		db:      db,
 		unspent: unspent,
 		meta:    meta,
 		tree:    tree,
 		sigs:    sigs,
 		walker:  walker,
-	}
+	}, nil
+}
 
-	if err := db.View(func(tx *bolt.Tx) error {
-		return bc.syncCache(tx)
-	}); err != nil {
-		return nil, err
-	}
-
-	return bc, nil
+// UnspentPool returns the unspent pool
+func (bc *Blockchain) UnspentPool() UnspentPool {
+	return bc.unspent
 }
 
 // AddBlock adds signed block
@@ -150,20 +143,23 @@ func (bc *Blockchain) AddBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
 
 // processBlock processes a block and updates the db
 func (bc *Blockchain) processBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
-	if err := bc.updateWithTx(tx, bc.updateHeadSeq(b)); err != nil {
-		return err
-	}
-
 	if err := bc.unspent.ProcessBlock(tx, b); err != nil {
 		return err
 	}
 
-	return bc.updateWithTx(tx, bc.cacheGenesisBlock(b))
+	return bc.meta.SetHeadSeq(tx, b.Seq())
 }
 
-// Head returns head block, returns error if no block does exist
+// Head returns head block, returns error if no head block exists
 func (bc *Blockchain) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
-	b, err := bc.GetSignedBlockBySeq(tx, bc.HeadSeq())
+	seq, ok, err := bc.HeadSeq(tx)
+	if err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, ErrNoHeadBlock
+	}
+
+	b, err := bc.GetSignedBlockBySeq(tx, seq)
 	if err != nil {
 		return nil, err
 	}
@@ -175,26 +171,21 @@ func (bc *Blockchain) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// UnspentPool returns the unspent pool
-func (bc *Blockchain) UnspentPool() UnspentPool {
-	return bc.unspent
-}
-
 // HeadSeq returns the head block sequence
-func (bc *Blockchain) HeadSeq() uint64 {
-	bc.RLock()
-	defer bc.RUnlock()
-	return bc.cache.headSeq
+func (bc *Blockchain) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+	return bc.meta.GetHeadSeq(tx)
 }
 
 // Len returns blockchain length
-func (bc *Blockchain) Len() uint64 {
-	bc.RLock()
-	defer bc.RUnlock()
-	if bc.cache.genesisBlock == nil {
-		return 0
+func (bc *Blockchain) Len(tx *bolt.Tx) (uint64, error) {
+	seq, ok, err := bc.meta.GetHeadSeq(tx)
+	if err != nil {
+		return 0, err
+	} else if !ok {
+		return 0, nil
 	}
-	return uint64(bc.cache.headSeq + 1)
+
+	return seq + 1, nil
 }
 
 // GetBlockSignature returns the signature of a block
@@ -263,6 +254,11 @@ func (bc *Blockchain) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.Signed
 	}, nil
 }
 
+// GetGenesisBlock returns genesis block
+func (bc *Blockchain) GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error) {
+	return bc.GetSignedBlockBySeq(tx, 0)
+}
+
 // ForEachSignature iterates all signatures and calls f on them
 func (bc *Blockchain) ForEachSignature(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
 	return bc.sigs.ForEach(tx, f)
@@ -271,95 +267,4 @@ func (bc *Blockchain) ForEachSignature(tx *bolt.Tx, f func(cipher.SHA256, cipher
 // ForEachBlock iterates all blocks and calls f on them
 func (bc *Blockchain) ForEachBlock(tx *bolt.Tx, f func(b *coin.Block) error) error {
 	return bc.tree.ForEachBlock(tx, f)
-}
-
-// GetGenesisBlock returns genesis block
-func (bc *Blockchain) GetGenesisBlock() *coin.SignedBlock {
-	bc.RLock()
-	defer bc.RUnlock()
-	return bc.cache.genesisBlock
-}
-
-func (bc *Blockchain) syncCache(tx *bolt.Tx) error {
-	// update head seq cache
-	bc.Lock()
-	defer bc.Unlock()
-	headSeq, err := bc.meta.getHeadSeq(tx)
-	if err != nil {
-		return err
-	}
-
-	bc.cache.headSeq = headSeq
-
-	// load genesis block
-	if bc.cache.genesisBlock == nil {
-		b, err := bc.GetSignedBlockBySeq(tx, 0)
-		if err != nil {
-			return err
-		}
-
-		bc.cache.genesisBlock = b
-	}
-	return nil
-}
-
-func (bc *Blockchain) updateWithTx(tx *bolt.Tx, ps ...dbutil.TxHandler) error {
-	rollbackFuncs := []dbutil.Rollback{}
-	for _, p := range ps {
-		rb, err := p(tx)
-		if err != nil {
-			// rollback previous updates if any
-			for _, r := range rollbackFuncs {
-				r()
-			}
-			return err
-		}
-		rollbackFuncs = append(rollbackFuncs, rb)
-	}
-
-	return nil
-}
-
-func (bc *Blockchain) updateHeadSeq(b *coin.SignedBlock) dbutil.TxHandler {
-	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
-		// meta := chainMeta{tx.Bucket(bc.meta.Name)}
-		if err := bc.meta.setHeadSeq(tx, b.Seq()); err != nil {
-			return func() {}, err
-		}
-
-		bc.Lock()
-		defer bc.Unlock()
-		// get current head seq
-		seq := bc.cache.headSeq
-
-		// update the cache head seq
-		bc.cache.headSeq = b.Seq()
-
-		return func() {
-			// reset the cache head seq
-			bc.Lock()
-			defer bc.Unlock()
-			bc.cache.headSeq = seq
-		}, nil
-	}
-}
-
-// cacheGenesisBlock will cache genesis block if the current block is genesis
-func (bc *Blockchain) cacheGenesisBlock(b *coin.SignedBlock) dbutil.TxHandler {
-	return func(tx *bolt.Tx) (dbutil.Rollback, error) {
-		bc.Lock()
-		defer bc.Unlock()
-
-		seq := bc.cache.headSeq
-		originGenesisBlock := bc.cache.genesisBlock
-		if seq == 0 {
-			bc.cache.genesisBlock = b
-		}
-
-		return func() {
-			bc.Lock()
-			defer bc.Unlock()
-			bc.cache.genesisBlock = originGenesisBlock
-		}, nil
-	}
 }

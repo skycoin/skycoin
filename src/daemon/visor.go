@@ -161,7 +161,15 @@ func (vs *Visor) RequestBlocks(pool *Pool) error {
 	}
 
 	err := vs.strand("RequestBlocks", func() error {
-		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
+		headSeq, ok, err := vs.v.HeadBkSeq()
+		if err != nil {
+			return err
+		} else if !ok {
+			logger.Warning("RequestBlocks: No head block sequence")
+			return nil
+		}
+
+		m := NewGetBlocksMessage(headSeq, vs.Config.BlocksResponseCount)
 		return pool.Pool.BroadcastMessage(m)
 	})
 
@@ -179,7 +187,15 @@ func (vs *Visor) AnnounceBlocks(pool *Pool) error {
 	}
 
 	err := vs.strand("AnnounceBlocks", func() error {
-		m := NewAnnounceBlocksMessage(vs.v.HeadBkSeq())
+		headSeq, ok, err := vs.v.HeadBkSeq()
+		if err != nil {
+			return err
+		} else if !ok {
+			logger.Warning("AnnounceBlocks: No head block sequence")
+			return nil
+		}
+
+		m := NewAnnounceBlocksMessage(headSeq)
 		return pool.Pool.BroadcastMessage(m)
 	})
 
@@ -272,8 +288,13 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 		return errors.New("Visor disabled")
 	}
 
-	err := vs.strand("RequestBlocksFromAddr", func() error {
-		m := NewGetBlocksMessage(vs.v.HeadBkSeq(), vs.Config.BlocksResponseCount)
+	return vs.strand("RequestBlocksFromAddr", func() error {
+		headSeq, _, err := vs.v.HeadBkSeq()
+		if err != nil {
+			return err
+		}
+
+		m := NewGetBlocksMessage(headSeq, vs.Config.BlocksResponseCount)
 		exist, err := pool.Pool.IsConnExist(addr)
 		if err != nil {
 			return err
@@ -285,13 +306,11 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 
 		return pool.Pool.SendMessage(addr, m)
 	})
-
-	return err
 }
 
 // SetTxnsAnnounced sets all txns as announced
-func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
-	vs.strand("SetTxnsAnnounced", func() error {
+func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) error {
+	return vs.strand("SetTxnsAnnounced", func() error {
 		now := utc.Now()
 		if err := vs.v.SetTxnsAnnounced(txns, now); err != nil {
 			logger.Error("Failed to set unconfirmed txns announce time")
@@ -475,11 +494,15 @@ func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
 
 // EstimateBlockchainHeight returns the blockchain length estimated from peer reports
 // Deprecate. Should not need. Just report time of last block
-func (vs *Visor) EstimateBlockchainHeight() uint64 {
+func (vs *Visor) EstimateBlockchainHeight() (uint64, error) {
 	var maxLen uint64
-	vs.strand("EstimateBlockchainHeight", func() error {
-		ourLen := vs.v.HeadBkSeq()
-		if len(vs.blockchainHeights) < 2 {
+	if err := vs.strand("EstimateBlockchainHeight", func() error {
+		ourLen, ok, err := vs.v.HeadBkSeq()
+		if err != nil {
+			return err
+		}
+
+		if ok && len(vs.blockchainHeights) < 2 {
 			maxLen = ourLen
 			return nil
 		}
@@ -491,8 +514,11 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 		}
 
 		return nil
-	})
-	return maxLen
+	}); err != nil {
+		return 0, err
+	}
+
+	return maxLen, nil
 }
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height
@@ -524,13 +550,19 @@ func (vs *Visor) GetPeerBlockchainHeights() []PeerBlockchainHeight {
 }
 
 // HeadBkSeq returns the head sequence
-func (vs *Visor) HeadBkSeq() uint64 {
+func (vs *Visor) HeadBkSeq() (uint64, bool, error) {
 	var seq uint64
-	vs.strand("HeadBkSeq", func() error {
-		seq = vs.v.HeadBkSeq()
-		return nil
-	})
-	return seq
+	var ok bool
+
+	if err := vs.strand("HeadBkSeq", func() error {
+		var err error
+		seq, ok, err = vs.v.HeadBkSeq()
+		return err
+	}); err != nil {
+		return 0, false, err
+	}
+
+	return seq, ok, nil
 }
 
 // ExecuteSignedBlock executes signed block
@@ -676,7 +708,13 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
 	logger.Debug("daemon.GiveBlocksMessage.Process has %d blocks", len(gbm.Blocks))
 
 	processed := 0
-	maxSeq := d.Visor.HeadBkSeq()
+	maxSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+
 	for _, b := range gbm.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
@@ -688,15 +726,14 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
 			continue
 		}
 
-		err := d.Visor.ExecuteSignedBlock(b)
-		if err == nil {
-			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
-			processed++
-		} else {
+		if err := d.Visor.ExecuteSignedBlock(b); err != nil {
 			logger.Critical("Failed to execute received block: %v", err)
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break
+		} else {
+			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
+			processed++
 		}
 	}
 
@@ -704,7 +741,12 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) error {
 		return nil
 	}
 
-	headBkSeq := d.Visor.HeadBkSeq()
+	headBkSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
 
 	// Announce our new blocks to peers
 	m1 := NewAnnounceBlocksMessage(headBkSeq)
@@ -744,19 +786,23 @@ func (abm *AnnounceBlocksMessage) Process(d *Daemon) error {
 		return nil
 	}
 
-	headBkSeq := d.Visor.HeadBkSeq()
-	if headBkSeq >= abm.MaxBkSeq {
+	headBkSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		return err
+	} else if !ok {
+		return nil
+	} else if headBkSeq >= abm.MaxBkSeq {
 		return nil
 	}
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
 	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
-	err := d.Pool.Pool.SendMessage(abm.c.Addr, m)
-	if err != nil {
+	if err := d.Pool.Pool.SendMessage(abm.c.Addr, m); err != nil {
 		logger.Error("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
+		return err
 	}
-	return err
+	return nil
 }
 
 // SendingTxnsMessage send transaction message interface

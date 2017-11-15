@@ -117,16 +117,19 @@ func (fcs *fakeChainStore) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
 	return &fcs.blocks[l-1], nil
 }
 
-func (fcs *fakeChainStore) HeadSeq() uint64 {
-	h, err := fcs.Head(nil)
+func (fcs *fakeChainStore) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+	h, err := fcs.Head(tx)
 	if err != nil {
-		return 0
+		if err == blockdb.ErrNoHeadBlock {
+			return 0, false, nil
+		}
+		return 0, false, err
 	}
-	return h.Seq()
+	return h.Seq(), true, nil
 }
 
-func (fcs *fakeChainStore) Len() uint64 {
-	return uint64(len(fcs.blocks))
+func (fcs *fakeChainStore) Len(tx *bolt.Tx) (uint64, error) {
+	return uint64(len(fcs.blocks)), nil
 }
 
 func (fcs *fakeChainStore) AddBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
@@ -158,11 +161,11 @@ func (fcs *fakeChainStore) UnspentPool() blockdb.UnspentPool {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetGenesisBlock() *coin.SignedBlock {
+func (fcs *fakeChainStore) GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error) {
 	if len(fcs.blocks) > 0 {
-		return &fcs.blocks[0]
+		return &fcs.blocks[0], nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (fcs *fakeChainStore) ForEachBlock(tx *bolt.Tx, f func(*coin.Block) error) error {
@@ -280,7 +283,9 @@ func TestIsGenesisBlock(t *testing.T) {
 				store: tc.store,
 			}
 
-			require.Equal(t, tc.isGenesis, bc.isGenesisBlock(*tc.b))
+			isGenesis, err := bc.isGenesisBlock(nil, *tc.b)
+			require.NoError(t, err)
+			require.Equal(t, tc.isGenesis, isGenesis)
 		})
 	}
 }

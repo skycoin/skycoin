@@ -118,13 +118,43 @@ func (gw *Gateway) GetExchgConnection() interface{} {
 
 /* Blockchain & Transaction status */
 
-// GetBlockchainProgress returns a *BlockchainProgress
-func (gw *Gateway) GetBlockchainProgress() interface{} {
-	var bcp interface{}
+// GetBlockchainProgress gets the blockchain progress
+func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
+	var bcp *BlockchainProgress
+	var err error
+
 	gw.strand("GetBlockchainProgress", func() {
-		bcp = gw.drpc.GetBlockchainProgress(gw.d.Visor)
+		if gw.d.Visor.v == nil {
+			return
+		}
+
+		var headSeq uint64
+		headSeq, _, err = gw.d.Visor.HeadBkSeq()
+		if err != nil {
+			return
+		}
+
+		var height uint64
+		height, err = gw.d.Visor.EstimateBlockchainHeight()
+		if err != nil {
+			return
+		}
+
+		bcp = &BlockchainProgress{
+			Current: headSeq,
+			Highest: height,
+		}
+
+		peerHeights := gw.d.Visor.GetPeerBlockchainHeights()
+		for _, ph := range peerHeights {
+			bcp.Peers = append(bcp.Peers, BlockchainPeer{
+				Address: ph.Address,
+				Height:  ph.Height,
+			})
+		}
 	})
-	return bcp
+
+	return bcp, err
 }
 
 // ResendTransaction resent the transaction and return a *ResendResult

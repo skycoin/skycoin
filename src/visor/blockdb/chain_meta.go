@@ -27,17 +27,17 @@ func newChainMeta(db *dbutil.DB) (*chainMeta, error) {
 	return &chainMeta{}, nil
 }
 
-func (m chainMeta) setHeadSeq(tx *bolt.Tx, seq uint64) error {
+func (m chainMeta) SetHeadSeq(tx *bolt.Tx, seq uint64) error {
 	return dbutil.PutBucketValue(tx, blockchainMetaBkt, headSeqKey, dbutil.Itob(seq))
 }
 
-func (m chainMeta) getHeadSeq(tx *bolt.Tx) (uint64, error) {
+func (m chainMeta) GetHeadSeq(tx *bolt.Tx) (uint64, bool, error) {
 	v, err := dbutil.GetBucketValue(tx, blockchainMetaBkt, headSeqKey)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	} else if v == nil {
-		return 0, nil
+		return 0, false, nil
 	}
 
-	return dbutil.Btoi(v), nil
+	return dbutil.Btoi(v), true, nil
 }

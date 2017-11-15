@@ -52,7 +52,13 @@ func (bcp *BlockchainParser) Init(tx *bolt.Tx) error {
 	}
 
 	// parse to the blockchain head
-	headSeq := bcp.bc.HeadSeq()
+	headSeq, ok, err := bcp.bc.HeadSeq(tx)
+	if err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+
 	return bcp.parseTo(tx, headSeq)
 }
 

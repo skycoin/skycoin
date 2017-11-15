@@ -36,6 +36,7 @@ func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bcm, err := gateway.GetBlockchainMetadata()
 		if err != nil {
+			logger.Error("gateway.GetBlockchainMetadata failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -45,7 +46,13 @@ func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendOr404(w, gateway.GetBlockchainProgress())
+		bcp, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			logger.Error("gateway.GetBlockchainProgress failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+		wh.SendOr404(w, bcp)
 	}
 }
 

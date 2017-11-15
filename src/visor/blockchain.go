@@ -48,15 +48,15 @@ const (
 
 // chainStore
 type chainStore interface {
-	Head(*bolt.Tx) (*coin.SignedBlock, error) // returns head block
-	HeadSeq() uint64                          // returns head block sequence
-	Len() uint64                              // returns blockchain length
+	Head(*bolt.Tx) (*coin.SignedBlock, error)
+	HeadSeq(*bolt.Tx) (uint64, bool, error)
+	Len(*bolt.Tx) (uint64, error)
 	AddBlock(*bolt.Tx, *coin.SignedBlock) error
 	GetBlockByHash(*bolt.Tx, cipher.SHA256) (*coin.Block, error)
 	GetSignedBlockByHash(*bolt.Tx, cipher.SHA256) (*coin.SignedBlock, error)
 	GetSignedBlockBySeq(*bolt.Tx, uint64) (*coin.SignedBlock, error)
 	UnspentPool() blockdb.UnspentPool
-	GetGenesisBlock() *coin.SignedBlock
+	GetGenesisBlock(*bolt.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*bolt.Tx, *coin.Block) (cipher.Sig, bool, error)
 	ForEachBlock(*bolt.Tx, func(*coin.Block) error) error
 	ForEachSignature(*bolt.Tx, func(cipher.SHA256, cipher.Sig) error) error
@@ -122,8 +122,8 @@ func NewBlockchain(db *dbutil.DB, pubkey cipher.PubKey, opts BlockchainOptions) 
 }
 
 // GetGenesisBlock returns genesis block
-func (bc *Blockchain) GetGenesisBlock() *coin.SignedBlock {
-	return bc.store.GetGenesisBlock()
+func (bc *Blockchain) GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error) {
+	return bc.store.GetGenesisBlock(tx)
 }
 
 // GetSignedBlockByHash returns block of given hash
@@ -147,13 +147,13 @@ func (bc *Blockchain) Unspent() blockdb.UnspentPool {
 }
 
 // Len returns the length of current blockchain.
-func (bc Blockchain) Len() uint64 {
-	return bc.store.Len()
+func (bc Blockchain) Len(tx *bolt.Tx) (uint64, error) {
+	return bc.store.Len(tx)
 }
 
 // HeadSeq returns the sequence of head block
-func (bc *Blockchain) HeadSeq() uint64 {
-	return bc.store.HeadSeq()
+func (bc *Blockchain) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+	return bc.store.HeadSeq(tx)
 }
 
 // Time returns time of last block
@@ -220,7 +220,12 @@ func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime u
 
 // ExecuteBlock attempts to append block to blockchain with *bolt.Tx
 func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
-	if bc.Len() > 0 {
+	length, err := bc.Len(tx)
+	if err != nil {
+		return err
+	}
+
+	if length > 0 {
 		head, err := bc.store.Head(tx)
 		if err != nil {
 			return err
@@ -238,8 +243,15 @@ func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
 }
 
 func (bc *Blockchain) processBlock(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
-	if bc.Len() > 0 {
-		if bc.isGenesisBlock(b.Block) {
+	length, err := bc.Len(tx)
+	if err != nil {
+		return coin.SignedBlock{}, err
+	}
+
+	if length > 0 {
+		if isGenesis, err := bc.isGenesisBlock(tx, b.Block); err != nil {
+			return coin.SignedBlock{}, err
+		} else if isGenesis {
 			err := errors.New("Attempt to process genesis block after blockchain has genesis block")
 			logger.Panic(err.Error())
 			return coin.SignedBlock{}, err
@@ -265,13 +277,17 @@ func (bc *Blockchain) processBlock(tx *bolt.Tx, b coin.SignedBlock) (coin.Signed
 }
 
 // isGenesisBlock checks if the block is genesis block
-func (bc Blockchain) isGenesisBlock(b coin.Block) bool {
-	gb := bc.store.GetGenesisBlock()
-	if gb == nil {
-		return false
+func (bc Blockchain) isGenesisBlock(tx *bolt.Tx, b coin.Block) (bool, error) {
+	gb, err := bc.store.GetGenesisBlock(tx)
+	if err != nil {
+		return false, err
 	}
 
-	return gb.HashHeader() == b.HashHeader()
+	if gb == nil {
+		return false, nil
+	}
+
+	return gb.HashHeader() == b.HashHeader(), nil
 }
 
 // Compares the state of the current UxHash hash to state of unspent
@@ -381,7 +397,13 @@ func (bc Blockchain) GetLastBlocks(tx *bolt.Tx, num uint64) ([]coin.SignedBlock,
 		return nil, nil
 	}
 
-	end := bc.HeadSeq()
+	end, ok, err := bc.HeadSeq(tx)
+	if err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
+	}
+
 	start := int(end-num) + 1
 	if start < 0 {
 		start = 0
@@ -558,7 +580,9 @@ type sigHash struct {
 // verifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
 func (bc *Blockchain) verifySigs(tx *bolt.Tx, workers int) error {
-	if bc.Len() == 0 {
+	if length, err := bc.Len(tx); err != nil {
+		return err
+	} else if length == 0 {
 		return nil
 	}
 
@@ -620,7 +644,7 @@ func (bc *Blockchain) verifySigs(tx *bolt.Tx, workers int) error {
 				return errStopped
 			}
 		}); err != nil && err != errStopped {
-			logger.Error("bc.store.ForEachSignature failed: %v", err)
+			logger.Error("bc.store.ForEachBlock failed: %v", err)
 			select {
 			case errC <- err:
 			default:

@@ -179,12 +179,7 @@ func getBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 		return nil, NewErrBucketNotExist(bktName)
 	}
 
-	v := bkt.Get(key)
-	if v == nil {
-		return nil, nil
-	}
-
-	return v, nil
+	return bkt.Get(key), nil
 }
 
 // PutBucketValue puts a value into a bucket under key.

@@ -650,7 +650,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 			}
 			h := mxSeq - tx.BlockSeq + 1
 
-			bk, err := vs.GetSignedBlockBySeq(tx.BlockSeq)
+			bk, err := vs.Blockchain.GetSignedBlockBySeq(tx.BlockSeq)
 			if err != nil {
 				return err
 			}
@@ -734,7 +734,7 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 			return errors.New("Blockchain is empty but history has transactions")
 		}
 
-		b, err := vs.GetSignedBlockBySeq(htxn.BlockSeq)
+		b, err := vs.Blockchain.GetSignedBlockBySeq(htxn.BlockSeq)
 		if err != nil {
 			return err
 		}

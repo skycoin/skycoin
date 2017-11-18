@@ -25,6 +25,54 @@ func prepareWltDir() string {
 	return dir
 }
 
+type mockBalanceGetter map[cipher.Address]BalancePair
+
+// 10 addresses of seed1
+var addrsOfSeed1 = []string{
+	"2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
+	"q2kU13X8XsAg8cS8BuSeSVzjPF9AT9ghAa",
+	"2WXvTagXtrc1Qq71yjNXw86TC6SRgfVRH1B",
+	"2NUNw748b9mT2FHRxgJL5KjBHasLfdP32Sh",
+	"2V1CnVzWoXDaCX6wHU4tLJkWaFmLcQBb2q4",
+	"wBkMr936thcr57wxyrH6ffvA99JN2Q1MN1",
+	"2f92Wht7VQefAyoJUz3SEnfwT6wTdeAcq3L",
+	"27UM5jPFYVuve3ceEHAYGaJSmkynQYmwPcH",
+	"xjWbVN7ihReasVFwXJSSYYWF7rgQa22auC",
+	"2LyanokLYFeBfBsNkRYHp2qtN8naGFJqeUw",
+}
+
+var childSeedsOfSeed1 = []string{
+	"22b826c586039f8078433be26618ca1024e883d97de2267313bb78068f634c5a",
+	"68efbbdf8aa06368cfc55e252d1e782bbd7651e590ee59e94ab579d2e44c20ad",
+	"8894c818732375680284be4509d153272726f42296b85ecac1fb66b9dc7484b9",
+	"6603375ee19c1e9fffe369e3f62e9deaa6931c1183d7da7f24ecbbd591061502",
+	"91a63f939149d423ea39701d8ed16cfb16a3554c184d214d2289018ddb9e73de",
+	"f0f4f008aa3e7cd32ee953507856fb46e37b734fd289dc01449133d7e37a1f07",
+	"6b194da58a5ba5660cf2b00076cf6a2962fe8fe0523abca5647c87df3352866a",
+	"b47a2678f7e797d3ada86e7e36855f572a18ab78dcbe54ed0613bba69fd76f8d",
+	"fe064533108dadbef13be3a95f547ba03423aa6a701c40aaaed775cb783b12b3",
+	"d554da211321a437e4d08f2a57e3ef255cffa89dd182e0fd52a4fd5bdfcab1ae",
+}
+
+func fromAddrString(t *testing.T, addrStrs []string) []cipher.Address {
+	addrs := make([]cipher.Address, 0, len(addrStrs))
+	for _, addr := range addrStrs {
+		a, err := cipher.DecodeBase58Address(addr)
+		require.NoError(t, err)
+		addrs = append(addrs, a)
+	}
+	return addrs
+}
+
+func (mb mockBalanceGetter) GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error) {
+	var bals []BalancePair
+	for _, addr := range addrs {
+		bal := mb[addr]
+		bals = append(bals, bal)
+	}
+	return bals, nil
+}
+
 func TestNewService(t *testing.T) {
 	dir := prepareWltDir()
 	s, err := NewService(dir)
@@ -89,6 +137,140 @@ func TestServiceCreateWallet(t *testing.T) {
 
 	_, err = os.Stat(filepath.Join(dir, dupWlt))
 	require.True(t, os.IsNotExist(err))
+}
+
+func TestServiceCreateAndScanWallet(t *testing.T) {
+	bg := make(mockBalanceGetter, len(addrsOfSeed1))
+	addrs := fromAddrString(t, addrsOfSeed1)
+	for _, a := range addrs {
+		bg[a] = BalancePair{}
+	}
+
+	type exp struct {
+		seed              string
+		lastSeed          string
+		entryNum          int
+		confirmedBalance  uint64
+		predicatedBalance uint64
+	}
+
+	tt := []struct {
+		name      string
+		scanN     uint64
+		balGetter BalanceGetter
+		expect    exp
+	}{
+		{
+			"no coins and scan 0",
+			0,
+			bg,
+			exp{
+				seed:              "seed1",
+				lastSeed:          childSeedsOfSeed1[0],
+				entryNum:          1,
+				confirmedBalance:  0,
+				predicatedBalance: 0,
+			},
+		},
+		{
+			"no coins and scan 1",
+			1,
+			bg,
+			exp{
+				seed:              "seed1",
+				lastSeed:          childSeedsOfSeed1[0],
+				entryNum:          1,
+				confirmedBalance:  0,
+				predicatedBalance: 0,
+			},
+		},
+		{
+			"no coins and scan 10",
+			10,
+			bg,
+			exp{
+				seed:              "seed1",
+				lastSeed:          childSeedsOfSeed1[0],
+				entryNum:          1,
+				confirmedBalance:  0,
+				predicatedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 5",
+			5,
+			mockBalanceGetter{
+				addrs[0]: BalancePair{},
+				addrs[1]: BalancePair{},
+				addrs[2]: BalancePair{},
+				addrs[3]: BalancePair{},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				seed:              "seed1",
+				lastSeed:          childSeedsOfSeed1[4],
+				entryNum:          5,
+				confirmedBalance:  10,
+				predicatedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 4",
+			5,
+			mockBalanceGetter{
+				addrs[0]: BalancePair{},
+				addrs[1]: BalancePair{},
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{},
+			},
+			exp{
+				seed:              "seed1",
+				lastSeed:          childSeedsOfSeed1[3],
+				entryNum:          4,
+				confirmedBalance:  20,
+				predicatedBalance: 0,
+			},
+		},
+		{
+			"confirmed and predicated",
+			5,
+			mockBalanceGetter{
+				addrs[0]: BalancePair{},
+				addrs[1]: BalancePair{},
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{},
+			},
+			exp{
+				seed:              "seed1",
+				lastSeed:          childSeedsOfSeed1[3],
+				entryNum:          4,
+				confirmedBalance:  20,
+				predicatedBalance: 0,
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			wltName := "t1.wlt"
+			seed := "seed1"
+			w, err := s.LoadAndScanWallet(wltName, seed, tc.scanN, tc.balGetter)
+			require.NoError(t, err)
+
+			require.Equal(t, seed, w.Meta["seed"])
+			require.NoError(t, w.Validate())
+
+			require.Len(t, w.Entries, tc.expect.entryNum)
+			require.Equal(t, tc.expect.lastSeed, w.getLastSeed())
+		})
+	}
 }
 
 func TestServiceNewAddress(t *testing.T) {

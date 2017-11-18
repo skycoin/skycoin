@@ -1,6 +1,8 @@
 package visor
 
 import (
+	"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -143,8 +145,13 @@ func (rpc *RPC) NewWallet(wltName string, ops ...wallet.Option) (wallet.Wallet, 
 	return rpc.v.wallets.CreateWallet(wltName, ops...)
 }
 
+// LoadAndScanWallet create wallet and scan ahead N address in the wallet
+func (rpc *RPC) LoadAndScanWallet(wltName string, seed string, scanN uint64, bg wallet.BalanceGetter, ops ...wallet.Option) (wallet.Wallet, error) {
+	return rpc.v.wallets.LoadAndScanWallet(wltName, seed, scanN, bg, ops...)
+}
+
 // NewAddresses generates new addresses in given wallet
-func (rpc *RPC) NewAddresses(wltName string, num int) ([]cipher.Address, error) {
+func (rpc *RPC) NewAddresses(wltName string, num uint64) ([]cipher.Address, error) {
 	return rpc.v.wallets.NewAddresses(wltName, num)
 }
 
@@ -190,4 +197,43 @@ func (rpc *RPC) ReloadWallets() error {
 // GetBuildInfo returns node build info, including version, build time, etc.
 func (rpc *RPC) GetBuildInfo() BuildInfo {
 	return rpc.v.Config.BuildInfo
+}
+
+// GetBalanceOfAddrs gets balance of given addresses
+func (rpc *RPC) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+	var bps []wallet.BalancePair
+	auxs := rpc.GetUnspent(rpc.v).GetUnspentsOfAddrs(addrs)
+	spendUxs, err := rpc.GetUnconfirmedSpends(rpc.v, addrs)
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
+	}
+
+	recvUxs, err := rpc.GetUnconfirmedReceiving(rpc.v, addrs)
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
+	}
+
+	headTime := rpc.v.Blockchain.Time()
+	for _, addr := range addrs {
+		uxs, ok := auxs[addr]
+		if !ok {
+			bps = append(bps, wallet.BalancePair{})
+			continue
+		}
+
+		outUxs := spendUxs[addr]
+		inUxs := recvUxs[addr]
+		predictedUxs := uxs.Sub(outUxs).Add(inUxs)
+
+		coins, hours := uxs.CoinHours(headTime)
+		pcoins, phours := predictedUxs.CoinHours(headTime)
+		bp := wallet.BalancePair{
+			Confirmed: wallet.Balance{Coins: coins, Hours: hours},
+			Predicted: wallet.Balance{Coins: pcoins, Hours: phours},
+		}
+
+		bps = append(bps, bp)
+	}
+
+	return bps, nil
 }

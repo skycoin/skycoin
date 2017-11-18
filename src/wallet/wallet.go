@@ -223,18 +223,22 @@ func (wlt Wallet) NumEntries() int {
 }
 
 // GenerateAddresses generate addresses of given number
-func (wlt *Wallet) GenerateAddresses(num int) []cipher.Address {
+func (wlt *Wallet) GenerateAddresses(num uint64) []cipher.Address {
+	if num == 0 {
+		return []cipher.Address{}
+	}
+
 	var seckeys []cipher.SecKey
 	var sd []byte
 	var err error
 	if len(wlt.Entries) == 0 {
-		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), num)
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), int(num))
 	} else {
 		sd, err = hex.DecodeString(wlt.getLastSeed())
 		if err != nil {
 			logger.Panicf("decode hex seed failed,%v", err)
 		}
-		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, num)
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
 	wlt.setLastSeed(hex.EncodeToString(sd))
 	addrs := make([]cipher.Address, len(seckeys))
@@ -281,6 +285,12 @@ func (wlt *Wallet) AddEntry(entry Entry) error {
 
 	wlt.Entries = append(wlt.Entries, entry)
 	return nil
+}
+
+// Reset resets the wallet entries and move the lastSeed to origin
+func (wlt *Wallet) Reset() {
+	wlt.Entries = wlt.Entries[0:0]
+	wlt.Meta["lastSeed"] = wlt.Meta["seed"]
 }
 
 // Save persists wallet to disk

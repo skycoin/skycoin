@@ -644,24 +644,24 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 			return nil
 		}
 
-		for _, tx := range txs {
-			if mxSeq < tx.BlockSeq {
-				return fmt.Errorf("Blockchain head seq %d is earlier than history txn seq %d", mxSeq, tx.BlockSeq)
+		for _, txn := range txs {
+			if mxSeq < txn.BlockSeq {
+				return fmt.Errorf("Blockchain head seq %d is earlier than history txn seq %d", mxSeq, txn.BlockSeq)
 			}
-			h := mxSeq - tx.BlockSeq + 1
+			h := mxSeq - txn.BlockSeq + 1
 
-			bk, err := vs.Blockchain.GetSignedBlockBySeq(tx.BlockSeq)
+			bk, err := vs.Blockchain.GetSignedBlockBySeq(tx, txn.BlockSeq)
 			if err != nil {
 				return err
 			}
 
 			if bk == nil {
-				return fmt.Errorf("No block exists in depth: %d", tx.BlockSeq)
+				return fmt.Errorf("No block exists in depth: %d", txn.BlockSeq)
 			}
 
 			txns = append(txns, Transaction{
-				Txn:    tx.Tx,
-				Status: NewConfirmedTransactionStatus(h, tx.BlockSeq),
+				Txn:    txn.Tx,
+				Status: NewConfirmedTransactionStatus(h, txn.BlockSeq),
 				Time:   bk.Time(),
 			})
 		}
@@ -734,7 +734,7 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 			return errors.New("Blockchain is empty but history has transactions")
 		}
 
-		b, err := vs.Blockchain.GetSignedBlockBySeq(htxn.BlockSeq)
+		b, err := vs.Blockchain.GetSignedBlockBySeq(tx, htxn.BlockSeq)
 		if err != nil {
 			return err
 		}

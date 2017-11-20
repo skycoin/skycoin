@@ -37,7 +37,13 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		txns := gateway.GetAllUnconfirmedTxns()
+		txns, err := gateway.GetAllUnconfirmedTxns()
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
@@ -68,7 +74,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		resTxs := make([]visor.TransactionResult, len(txs))
+		resTxs := make([]daemon.TransactionResult, len(txs))
 		for i, tx := range txs {
 			rbTx, err := visor.NewReadableTransaction(tx)
 			if err != nil {
@@ -77,7 +83,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			resTxs[i] = visor.TransactionResult{
+			resTxs[i] = daemon.TransactionResult{
 				Transaction: *rbTx,
 				Status:      tx.Status,
 			}
@@ -122,7 +128,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		resTx := visor.TransactionResult{
+		resTx := daemon.TransactionResult{
 			Transaction: *rbTx,
 			Status:      tx.Status,
 		}
@@ -163,7 +169,7 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectTransaction(txn); err != nil {
-			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
+			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 
@@ -178,9 +184,16 @@ func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		rlt := gate.ResendUnconfirmedTxns()
+		rlt, err := gate.ResendUnconfirmedTxns()
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
+		}
+
 		v, _ := json.MarshalIndent(rlt, "", "    ")
-		fmt.Println(v)
+		logger.Debug(string(v))
+
 		wh.SendOr404(w, rlt)
 		return
 	}

@@ -5,26 +5,11 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/testutil"
 )
-
-func TestNewAddressTxns(t *testing.T) {
-	db, td := testutil.PrepareDB(t)
-	defer td()
-
-	_, err := newAddressTxnsBkt(db)
-	require.Nil(t, err)
-
-	// the address_txns bucket must be exist
-	db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket([]byte("address_txns"))
-		require.NotNil(t, bkt)
-		return nil
-	})
-}
 
 func TestAddAddressTxns(t *testing.T) {
 	var preAddrs []cipher.Address
@@ -122,27 +107,26 @@ func TestAddAddressTxns(t *testing.T) {
 			db, td := testutil.PrepareDB(t)
 			defer td()
 
-			_, err := newAddressTxnsBkt(db)
-			require.Nil(t, err)
+			addrTxns, err := newAddressTxns(db)
+			require.NoError(t, err)
 
-			require.Nil(t, db.Update(func(tx *bolt.Tx) error {
-				bkt := tx.Bucket(addressTxnsBktName)
+			err = db.Update(func(tx *bolt.Tx) error {
 				for _, pr := range tc.addPairs {
-					require.Nil(t, setAddressTxns(bkt, pr.addr, pr.txHash))
+					err := addrTxns.Add(tx, pr.addr, pr.txHash)
+					require.NoError(t, err)
 				}
 				return nil
-			}))
+			})
+			require.NoError(t, err)
 
 			for _, e := range tc.expect {
-				db.View(func(tx *bolt.Tx) error {
-					bkt := tx.Bucket(addressTxnsBktName)
-					v := bkt.Get(e.addr.Bytes())
-					require.NotNil(t, v)
-					var hashes []cipher.SHA256
-					require.Nil(t, encoder.DeserializeRaw(v, &hashes))
+				err := db.View(func(tx *bolt.Tx) error {
+					hashes, err := addrTxns.Get(tx, e.addr)
+					require.NoError(t, err)
 					require.Equal(t, e.txs, hashes)
 					return nil
 				})
+				require.NoError(t, err)
 			}
 
 		})
@@ -245,26 +229,28 @@ func TestGetAddressTxns(t *testing.T) {
 			db, td := testutil.PrepareDB(t)
 			defer td()
 
-			addrTxnsBkt, err := newAddressTxnsBkt(db)
-			require.Nil(t, err)
+			addrTxns, err := newAddressTxns(db)
+			require.NoError(t, err)
 
-			require.Nil(t, db.Update(func(tx *bolt.Tx) error {
-				bkt := tx.Bucket(addressTxnsBktName)
-
+			err = db.Update(func(tx *bolt.Tx) error {
 				for _, pr := range tc.addPairs {
-					if err := setAddressTxns(bkt, pr.addr, pr.txHash); err != nil {
-						return err
-					}
+					err := addrTxns.Add(tx, pr.addr, pr.txHash)
+					require.NoError(t, err)
 				}
 
 				return nil
-			}))
+			})
+			require.NoError(t, err)
 
-			for _, e := range tc.expect {
-				hashes, err := addrTxnsBkt.Get(e.addr)
-				require.Nil(t, err)
-				require.Equal(t, e.txs, hashes)
-			}
+			err = db.View(func(tx *bolt.Tx) error {
+				for _, e := range tc.expect {
+					hashes, err := addrTxns.Get(tx, e.addr)
+					require.NoError(t, err)
+					require.Equal(t, e.txs, hashes)
+				}
+				return nil
+			})
+			require.NoError(t, err)
 
 		})
 	}

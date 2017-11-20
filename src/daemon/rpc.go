@@ -25,16 +25,19 @@ type Connections struct {
 	Connections []*Connection `json:"connections"`
 }
 
+// BlockchainPeer sync peer
+type BlockchainPeer struct {
+	Address string `json:"address"`
+	Height  uint64 `json:"height"`
+}
+
 // BlockchainProgress current sync blockchain status
 type BlockchainProgress struct {
 	// Our current blockchain length
 	Current uint64 `json:"current"`
 	// Our best guess at true blockchain length
-	Highest uint64 `json:"highest"`
-	Peers   []struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	} `json:"peers"`
+	Highest uint64           `json:"highest"`
+	Peers   []BlockchainPeer `json:"peers"`
 }
 
 // ResendResult rebroadcast tx result
@@ -123,32 +126,6 @@ func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
 	return d.Pex.RandomExchangeable(0).ToAddrs()
 }
 
-// GetBlockchainProgress gets the blockchain progress
-func (rpc RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
-	if v.v == nil {
-		return nil
-	}
-
-	bp := &BlockchainProgress{
-		Current: v.HeadBkSeq(),
-		Highest: v.EstimateBlockchainHeight(),
-	}
-
-	peerHeights := v.GetPeerBlockchainHeights()
-
-	for _, ph := range peerHeights {
-		bp.Peers = append(bp.Peers, struct {
-			Address string `json:"address"`
-			Height  uint64 `json:"height"`
-		}{
-			Address: ph.Address,
-			Height:  ph.Height,
-		})
-	}
-
-	return bp
-}
-
 // ResendTransaction rebroadcast transaction
 func (rpc RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *ResendResult {
 	if v.v == nil {
@@ -159,14 +136,22 @@ func (rpc RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *Resen
 }
 
 // ResendUnconfirmedTxns rebroadcast unconfirmed transactions
-func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) *ResendResult {
+func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) (*ResendResult, error) {
 	if v.v == nil {
-		return nil
+		return nil, nil
 	}
-	txids := v.ResendUnconfirmedTxns(p)
-	var rlt ResendResult
+
+	txids, err := v.ResendUnconfirmedTxns(p)
+	if err != nil {
+		return nil, err
+	}
+
+	var rltTxids []string
 	for _, txid := range txids {
-		rlt.Txids = append(rlt.Txids, txid.Hex())
+		rltTxids = append(rltTxids, txid.Hex())
 	}
-	return &rlt
+
+	return &ResendResult{
+		Txids: rltTxids,
+	}, nil
 }

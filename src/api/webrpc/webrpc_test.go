@@ -29,6 +29,10 @@ func setupWebRPC(t *testing.T) *WebRPC {
 	return rpc
 }
 
+func foo(i int) int {
+	return 0
+}
+
 type fakeGateway struct {
 	transactions         map[string]string
 	injectRawTxMap       map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.
@@ -38,7 +42,7 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
+func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) { // nolint: unparam
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
 		return nil, err

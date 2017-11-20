@@ -27,7 +27,7 @@ func _feeCalc(t *Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func _makeFeeCalc(fee uint64) FeeCalculator {
+func makeFeeCalc(fee uint64) FeeCalculator { // nolint: unparam
 	return func(t *Transaction) (uint64, error) {
 		return fee, nil
 	}
@@ -148,15 +148,6 @@ func _gaddrA2(S []cipher.SecKey, O []UxOut) []int {
 	}
 
 	return I
-}
-
-func _gaddrA3(S []cipher.SecKey, O []UxOut) map[cipher.Address]int {
-	A := _gaddrA1(S)
-	M := make(map[cipher.Address]int) //address to int
-	for i, a := range A {
-		M[a] = i
-	}
-	return M
 }
 
 //assign amt to n bins in randomized manner

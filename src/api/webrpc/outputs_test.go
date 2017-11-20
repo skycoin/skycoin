@@ -3,7 +3,6 @@ package webrpc
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -50,14 +49,6 @@ const outputStr = `{
 				"incoming_outputs": []
 			}
     }`
-
-func decodeOutputStr(str string) visor.ReadableOutputSet {
-	outs := OutputsResult{}
-	if err := json.NewDecoder(strings.NewReader(outputStr)).Decode(&outs); err != nil {
-		panic(err)
-	}
-	return outs.Outputs
-}
 
 func filterOut(outs []coin.UxOut, f func(out coin.UxOut) bool) visor.ReadableOutputSet {
 	os := []coin.UxOut{}

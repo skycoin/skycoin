@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func randBytes(t *testing.T, n int) []byte {
+func randBytes(t *testing.T, n int) []byte { // nolint: unparam
 	b := make([]byte, n)
 	x, err := rand.Read(b)
 	assert.Equal(t, n, x) //end unit testing.

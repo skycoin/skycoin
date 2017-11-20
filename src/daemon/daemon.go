@@ -55,7 +55,10 @@ var (
 const (
 	// MaxDropletPrecision represents the precision of droplets
 	MaxDropletPrecision = 1
-	MaxDropletDivisor   = 1e6
+	// MaxDropletDivisor is the number of droplets per skycoin,
+	// it can be used as the divisor in modulo arithmetic to obtain the
+	// whole number portion of a skycoin balance
+	MaxDropletDivisor = 1e6
 )
 
 // Config subsystem configurations
@@ -304,8 +307,8 @@ func (dm *Daemon) Shutdown() {
 	}
 
 	dm.Pex.Shutdown()
+	dm.Gateway.Shutdown()
 	dm.Visor.Shutdown()
-
 }
 
 // Run main loop for peer/connection management.
@@ -481,8 +484,13 @@ loop:
 			}
 		case <-unconfirmedRefreshTicker:
 			// Get the transactions that turn to valid
-			validTxns := dm.Visor.RefreshUnconfirmed()
-			// Announce this transactions
+			validTxns, err := dm.Visor.RefreshUnconfirmed()
+			if err != nil {
+				logger.Error("dm.Visor.RefreshUnconfirmed failed: %v", err)
+				continue
+			}
+
+			// Announce these transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
 		case <-blocksRequestTicker:
 			dm.Visor.RequestBlocks(dm.Pool)
@@ -692,8 +700,6 @@ func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	// We have to check at process time and not record time because
 	// Introduction message does not update ExpectingIntroductions until its
 	// Process() is called
-	// _, needsIntro := self.expectingIntroductions[e.Context.Addr]
-	// if needsIntro {
 	if dm.needsIntro(e.Context.Addr) {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
@@ -722,7 +728,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	if !exist {
-		logger.Warning("While processing an onConnect event, no pool connection was found")
+		logger.Warning("While processing an onConnect event for %s, their pool connection was not found", a)
 		return
 	}
 

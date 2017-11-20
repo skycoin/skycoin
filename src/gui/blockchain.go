@@ -34,13 +34,25 @@ func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 func blockchainHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendOr404(w, gateway.GetBlockchainMetadata())
+		bcm, err := gateway.GetBlockchainMetadata()
+		if err != nil {
+			logger.Error("gateway.GetBlockchainMetadata failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+		wh.SendOr404(w, bcm)
 	}
 }
 
 func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendOr404(w, gateway.GetBlockchainProgress())
+		bcp, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			logger.Error("gateway.GetBlockchainProgress failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+		wh.SendOr404(w, bcp)
 	}
 }
 
@@ -73,7 +85,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			b, exist = gate.GetBlockByHash(h)
+			b, exist = gate.GetSignedBlockByHash(h)
 		case seq != "":
 			uSeq, err := strconv.ParseUint(seq, 10, 64)
 			if err != nil {
@@ -81,7 +93,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 				return
 			}
 
-			b, exist = gate.GetBlockBySeq(uSeq)
+			b, exist = gate.GetSignedBlockBySeq(uSeq)
 		}
 
 		if !exist {
@@ -150,7 +162,8 @@ func getLastBlocks(gateway *daemon.Gateway) http.HandlerFunc {
 
 		rb, err := gateway.GetLastBlocks(n)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			logger.Error(err.Error())
+			wh.Error500(w)
 			return
 		}
 

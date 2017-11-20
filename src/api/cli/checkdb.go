@@ -8,6 +8,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	gcli "github.com/urfave/cli"
 )
 
@@ -53,7 +54,7 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode genesis pubkey failed: %v", err)
 	}
 
-	if err := IntegrityCheck(db, pubkey); err != nil {
+	if err := IntegrityCheck(dbutil.WrapDB(db), pubkey); err != nil {
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 
@@ -61,7 +62,10 @@ func checkdb(c *gcli.Context) error {
 	return nil
 }
 
-func IntegrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
-	_, err := visor.NewBlockchain(db, genesisPubkey, visor.Arbitrating(true))
+// IntegrityCheck loads the blockchain in arbitrating mode to check for errors
+func IntegrityCheck(db *dbutil.DB, genesisPubkey cipher.PubKey) error {
+	_, err := visor.NewBlockchain(db, genesisPubkey, visor.BlockchainOptions{
+		Arbitrating: true,
+	})
 	return err
 }

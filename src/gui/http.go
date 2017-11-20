@@ -231,7 +231,7 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			addrs = append(addrs, a)
 		}
 
-		bal, err := gateway.GetAddressesBalance(addrs)
+		bal, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			logger.Error("Get balance failed: %v", err)
 			wh.Error500(w)

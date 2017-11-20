@@ -128,7 +128,7 @@ func (ipa IPAddr) String() string {
 // Messages should place themselves on the messageEvent channel in their
 // Handle() method required by gnet.
 type AsyncMessage interface {
-	Process(d *Daemon)
+	Process(d *Daemon) error
 }
 
 // GetPeersMessage sent to request peers
@@ -152,23 +152,23 @@ func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext,
 }
 
 // Process Notifies the Pex instance that peers were requested
-func (gpm *GetPeersMessage) Process(d *Daemon) {
+func (gpm *GetPeersMessage) Process(d *Daemon) error {
 	if d.Pex.Config.Disabled {
-		return
+		return nil
 	}
 
 	peers := d.Pex.RandomExchangeable(d.Pex.Config.ReplyCount)
 	if len(peers) == 0 {
 		logger.Debug("We have no peers to send in reply")
-		return
+		return nil
 	}
-
-	// logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
 
 	m := NewGivePeersMessage(peers)
-	if err := d.Pool.Pool.SendMessage(gpm.addr, m); err != nil {
+	err := d.Pool.Pool.SendMessage(gpm.addr, m)
+	if err != nil {
 		logger.Error("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
 	}
+	return err
 }
 
 // GivePeersMessage sent in response to GetPeersMessage
@@ -210,14 +210,17 @@ func (gpm *GivePeersMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 }
 
 // Process Notifies the Pex instance that peers were received
-func (gpm *GivePeersMessage) Process(d *Daemon) {
+func (gpm *GivePeersMessage) Process(d *Daemon) error {
 	if d.Pex.Config.Disabled {
-		return
+		return nil
 	}
+
 	peers := gpm.GetPeers()
 	logger.Debug("Got these peers via PEX: %s", strings.Join(peers, ", "))
 
 	d.Pex.AddPeers(peers)
+
+	return nil
 }
 
 // IntroductionMessage jan IntroductionMessage is sent on first connect by both parties
@@ -315,11 +318,12 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 }
 
 // Process an event queued by Handle()
-func (intro *IntroductionMessage) Process(d *Daemon) {
+func (intro *IntroductionMessage) Process(d *Daemon) error {
 	d.expectingIntroductions.Remove(intro.c.Addr)
 	if !intro.valid {
-		return
+		return nil
 	}
+
 	// Add the remote peer with their chosen listening port
 	a := intro.c.Addr
 
@@ -330,7 +334,7 @@ func (intro *IntroductionMessage) Process(d *Daemon) {
 		// to be corrupted in case it does
 		logger.Error("Invalid port for connection %s", a)
 		d.Pool.Pool.Disconnect(intro.c.Addr, ErrDisconnectOtherError)
-		return
+		return err
 	}
 
 	// Request blocks immediately after they're confirmed
@@ -342,7 +346,7 @@ func (intro *IntroductionMessage) Process(d *Daemon) {
 	}
 
 	// Anounce unconfirmed know txns
-	d.Visor.AnnounceAllTxns(d.Pool)
+	return d.Visor.AnnounceAllTxns(d.Pool)
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
@@ -357,13 +361,15 @@ func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 }
 
 // Process Sends a PongMessage to the sender of PingMessage
-func (ping *PingMessage) Process(d *Daemon) {
+func (ping *PingMessage) Process(d *Daemon) error {
 	if d.Config.LogPings {
 		logger.Debug("Reply to ping from %s", ping.c.Addr)
 	}
-	if err := d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
+	err := d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{})
+	if err != nil {
 		logger.Error("Send PongMessage to %s failed: %v", ping.c.Addr, err)
 	}
+	return err
 }
 
 // PongMessage Sent in reply to a PingMessage.  No action is taken when this is received.

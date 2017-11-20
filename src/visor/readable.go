@@ -22,18 +22,12 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
-	head, err := v.Blockchain.Head()
-	if err != nil {
-		logger.Error("%v", err)
-		return BlockchainMetadata{}
-	}
-
-	return BlockchainMetadata{
+func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen uint64) (*BlockchainMetadata, error) {
+	return &BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head.Head),
-		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(v.Unconfirmed.Len()),
-	}
+		Unspents:    unspentsLen,
+		Unconfirmed: unconfirmedLen,
+	}, nil
 }
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us
@@ -70,7 +64,7 @@ func NewUnconfirmedTransactionStatus() TransactionStatus {
 	}
 }
 
-// NewUnknownTransactionStatus creates unknow transaction status
+// NewUnknownTransactionStatus creates unknown transaction status
 func NewUnknownTransactionStatus() TransactionStatus {
 	return TransactionStatus{
 		Unconfirmed: false,
@@ -94,24 +88,6 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 		BlockSeq:    blockSeq,
 	}
 }
-
-/*
-type ReadableTransactionHeader struct {
-	Hash string   `json:"hash"`
-	Sigs []string `json:"sigs"`
-}
-
-func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
-	sigs := make([]string, len(t.Sigs))
-	for i, _ := range t.Sigs {
-		sigs[i] = t.Sigs[i].Hex()
-	}
-	return ReadableTransactionHeader{
-		Hash: t.Hash.Hex(),
-		Sigs: sigs,
-	}
-}
-*/
 
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
@@ -229,43 +205,6 @@ type ReadableTransaction struct {
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// ReadableUnconfirmedTxn  represents readable unconfirmed transaction
-type ReadableUnconfirmedTxn struct {
-	Txn       ReadableTransaction `json:"transaction"`
-	Received  time.Time           `json:"received"`
-	Checked   time.Time           `json:"checked"`
-	Announced time.Time           `json:"announced"`
-	IsValid   bool                `json:"is_valid"`
-}
-
-// NewReadableUnconfirmedTxn creates readable unconfirmed transaction
-func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
-	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
-	if err != nil {
-		return nil, err
-	}
-	return &ReadableUnconfirmedTxn{
-		Txn:       *tx,
-		Received:  nanoToTime(unconfirmed.Received),
-		Checked:   nanoToTime(unconfirmed.Checked),
-		Announced: nanoToTime(unconfirmed.Announced),
-		IsValid:   unconfirmed.IsValid == 1,
-	}, nil
-}
-
-// NewReadableUnconfirmedTxns converts []UnconfirmedTxn to []ReadableUnconfirmedTxn
-func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn, error) {
-	rut := make([]ReadableUnconfirmedTxn, len(txs))
-	for i := range txs {
-		tx, err := NewReadableUnconfirmedTxn(&txs[i])
-		if err != nil {
-			return []ReadableUnconfirmedTxn{}, err
-		}
-		rut[i] = *tx
-	}
-	return rut, nil
-}
-
 // NewGenesisReadableTransaction creates genesis readable transaction
 func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	txid := cipher.SHA256{}
@@ -332,6 +271,43 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 		In:   in,
 		Out:  out,
 	}, nil
+}
+
+// ReadableUnconfirmedTxn  represents readable unconfirmed transaction
+type ReadableUnconfirmedTxn struct {
+	Txn       ReadableTransaction `json:"transaction"`
+	Received  time.Time           `json:"received"`
+	Checked   time.Time           `json:"checked"`
+	Announced time.Time           `json:"announced"`
+	IsValid   bool                `json:"is_valid"`
+}
+
+// NewReadableUnconfirmedTxn creates readable unconfirmed transaction
+func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
+	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
+	if err != nil {
+		return nil, err
+	}
+	return &ReadableUnconfirmedTxn{
+		Txn:       *tx,
+		Received:  nanoToTime(unconfirmed.Received),
+		Checked:   nanoToTime(unconfirmed.Checked),
+		Announced: nanoToTime(unconfirmed.Announced),
+		IsValid:   unconfirmed.IsValid == 1,
+	}, nil
+}
+
+// NewReadableUnconfirmedTxns converts []UnconfirmedTxn to []ReadableUnconfirmedTxn
+func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn, error) {
+	rut := make([]ReadableUnconfirmedTxn, len(txs))
+	for i := range txs {
+		tx, err := NewReadableUnconfirmedTxn(&txs[i])
+		if err != nil {
+			return []ReadableUnconfirmedTxn{}, err
+		}
+		rut[i] = *tx
+	}
+	return rut, nil
 }
 
 // ReadableBlockHeader represents the readable block header
@@ -499,4 +475,9 @@ func TransactionToJSON(tx coin.Transaction) (string, error) {
 	}
 
 	return string(b), nil
+}
+
+// ReadableBlocks an array of readable blocks.
+type ReadableBlocks struct {
+	Blocks []ReadableBlock `json:"blocks"`
 }

@@ -27,7 +27,7 @@ const sendResultTimeout = 3 * time.Second
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
 	ErrDisconnectReadFailed DisconnectReason = errors.New("Read failed")
-	// ErrDisconnectWriteFailed write faile
+	// ErrDisconnectWriteFailed write failed
 	ErrDisconnectWriteFailed DisconnectReason = errors.New("Write failed")
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
@@ -35,11 +35,11 @@ var (
 	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
 	// ErrDisconnectMalformedMessage malformed message
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
-	// ErrDisconnectUnknownMessage unknow message
+	// ErrDisconnectUnknownMessage unknown message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
 	// ErrDisconnectWriteQueueFull write queue is full
 	ErrDisconnectWriteQueueFull DisconnectReason = errors.New("Write queue full")
-	// ErrDisconnectUnexpectedError  unexpected error
+	// ErrDisconnectUnexpectedError unexpected error
 	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
 	// ErrConnectionPoolClosed error message indicates the connection pool is closed
 	ErrConnectionPoolClosed = errors.New("Connection pool is closed")
@@ -270,7 +270,7 @@ func (pool *ConnectionPool) Shutdown() {
 // strand ensures all read and write action of pool's member variable are in one thread.
 func (pool *ConnectionPool) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.gnet.ConnectionPool.%s", name)
-	return strand.WithQuit(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
+	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
@@ -700,7 +700,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
-	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
+	m, err := convertToMessage(msg, pool.Config.DebugPrint)
 	if err != nil {
 		return err
 	}

@@ -7,29 +7,32 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+func loadBlockchain(dbPath string, pubkey cipher.PubKey, opts BlockchainOptions) (*dbutil.DB, *Blockchain, error) {
 	// creates blockchain instance
 	db, err := openDB(dbPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	bc, err := NewBlockchain(db, pubkey, opts)
 
 	if err == nil {
 		return db, bc, nil
 	}
 
-	if !strings.Contains(err.Error(), "find no signature of block") {
+	switch err.(type) {
+	case blockdb.ErrSignatureLost:
+	default:
 		return nil, nil, err
 	}
 
@@ -51,7 +54,7 @@ func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bol
 		return nil, nil, err
 	}
 
-	bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	bc, err = NewBlockchain(db, pubkey, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,7 +63,7 @@ func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bol
 }
 
 // open the blockdb.
-func openDB(dbFile string) (*bolt.DB, error) {
+func openDB(dbFile string) (*dbutil.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
@@ -68,7 +71,7 @@ func openDB(dbFile string) (*bolt.DB, error) {
 		return nil, fmt.Errorf("Open boltdb failed, %v", err)
 	}
 
-	return db, nil
+	return dbutil.WrapDB(db), nil
 }
 
 // moveCorruptDB moves a file to makeCorruptDBPath(dbPath)
@@ -107,7 +110,11 @@ func shaFileID(dbPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer fi.Close()
+	defer func() {
+		if err := fi.Close(); err != nil {
+			logger.Warning("Failed to close db file: %v", err)
+		}
+	}()
 
 	h := sha1.New()
 	if _, err := io.Copy(h, fi); err != nil {

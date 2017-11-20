@@ -26,11 +26,10 @@ func TestConvertToMessage(t *testing.T) {
 	resetHandler()
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
-	c := &Connection{}
 	b := make([]byte, 0)
 	b = append(b, BytePrefix[:]...)
 	b = append(b, byte(7))
-	m, err := convertToMessage(c.ID, b, testing.Verbose())
+	m, err := convertToMessage(b, testing.Verbose())
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 	if m == nil {
@@ -43,9 +42,8 @@ func TestConvertToMessage(t *testing.T) {
 func TestConvertToMessageNoMessageId(t *testing.T) {
 	EraseMessages()
 	resetHandler()
-	c := &Connection{}
 	b := []byte{}
-	m, err := convertToMessage(c.ID, b, testing.Verbose())
+	m, err := convertToMessage(b, testing.Verbose())
 	assert.Nil(t, m)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Not enough data to read msg id")
@@ -54,9 +52,8 @@ func TestConvertToMessageNoMessageId(t *testing.T) {
 func TestConvertToMessageUnknownMessage(t *testing.T) {
 	EraseMessages()
 	resetHandler()
-	c := &Connection{}
 	b := MessagePrefix{'C', 'C', 'C', 'C'}
-	m, err := convertToMessage(c.ID, b[:], testing.Verbose())
+	m, err := convertToMessage(b[:], testing.Verbose())
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Unknown message CCCC received")
 	assert.Nil(t, m)
@@ -68,17 +65,17 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 	RegisterMessage(DummyPrefix, DummyMessage{})
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
-	c := &Connection{}
+
 	// Test with too many bytes
 	b := append(DummyPrefix[:], []byte{0, 1, 1, 1}...)
-	m, err := convertToMessage(c.ID, b, testing.Verbose())
+	m, err := convertToMessage(b, testing.Verbose())
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Data buffer was not completely decoded")
 	assert.Nil(t, m)
 
 	// Test with not enough bytes
 	b = append([]byte{}, BytePrefix[:]...)
-	m, err = convertToMessage(c.ID, b, testing.Verbose())
+	m, err = convertToMessage(b, testing.Verbose())
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Deserialization failed")
 	assert.Nil(t, m)
@@ -89,9 +86,8 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	resetHandler()
 	RegisterMessage(NothingPrefix, Nothing{})
 	// don't verify messages
-	c := &Connection{}
 	assert.Panics(t, func() {
-		convertToMessage(c.ID, NothingPrefix[:], testing.Verbose())
+		convertToMessage(NothingPrefix[:], testing.Verbose())
 	})
 }
 

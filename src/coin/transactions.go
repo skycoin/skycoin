@@ -359,8 +359,7 @@ type FeeCalculator func(*Transaction) (uint64, error)
 
 // SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if
 // tied.  Transactions that fail in fee computation are excluded.
-func SortTransactions(txns Transactions,
-	feeCalc FeeCalculator) Transactions {
+func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
 	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
 	return sorted.Txns
@@ -423,6 +422,9 @@ func (txns SortableTransactions) Swap(i, j int) {
 	txns.Fees[i], txns.Fees[j] = txns.Fees[j], txns.Fees[i]
 	txns.Hashes[i], txns.Hashes[j] = txns.Hashes[j], txns.Hashes[i]
 }
+
+// TransactionUnspents maps from Transaction hash to unspent outputs
+type TransactionUnspents map[cipher.SHA256]UxArray
 
 // VerifyTransactionSpending checks that coins will not be destroyed and that enough coins are hours
 // are being spent for the outputs

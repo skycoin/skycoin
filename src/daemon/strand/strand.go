@@ -27,21 +27,18 @@ type Request struct {
 // Strand linearizes concurrent method calls through a single channel,
 // to avoid concurrency issues when conflicting methods are called from
 // multiple goroutines.
-// Methods passed to strand() will block until completed.
-func Strand(logger *logging.Logger, c chan Request, name string, f func() error) error {
-	quit := make(chan struct{})
-	return WithQuit(logger, c, name, f, quit, nil)
-}
-
-// WithQuit linearizes concurrent method calls through a single channel,
-// to avoid concurrency issues when conflicting methods are called from
-// multiple goroutines.
 // Methods passed to WithQuit() will block until completed.
 // WithQuit accepts a quit channel and will return quitErr if the quit
 // channel closes.
-func WithQuit(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
+func Strand(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	if Debug {
 		logger.Debug("Strand precall %s", name)
+	}
+
+	select {
+	case <-quit:
+		return quitErr
+	default:
 	}
 
 	done := make(chan struct{})
@@ -96,8 +93,8 @@ func WithQuit(logger *logging.Logger, c chan Request, name string, f func() erro
 			elapsed := time.Now().Sub(t)
 			if elapsed > logDurationThreshold {
 				logger.Warning("%s took %s", name, elapsed)
-			} else {
-				// logger.Debug("%s took %s", name, elapsed)
+			} else if Debug {
+				logger.Debug("%s took %s", name, elapsed)
 			}
 
 			return err
@@ -109,7 +106,7 @@ loop:
 	for {
 		select {
 		case <-quit:
-			return nil
+			return quitErr
 		case c <- req:
 			break loop
 		case <-time.After(logQueueRequestWaitThreshold):

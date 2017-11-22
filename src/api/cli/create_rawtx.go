@@ -425,8 +425,10 @@ func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
 }
 
 func getSufficientUnspents(unspents *webrpc.OutputsResult, coins uint64) ([]UnspentOut, error) {
+	// get spendable outputs, which are all confirmed outputs without
+	// the spending outputs that are in unconfirmed tx pool.
 	spendableOuts := unspents.Outputs.SpendableOutputs()
-	var spendCoins uint64
+	var spendableCoins uint64
 	var spendOuts []UnspentOut
 	for i, out := range spendableOuts {
 		c, err := droplet.FromString(out.Coins)
@@ -434,21 +436,22 @@ func getSufficientUnspents(unspents *webrpc.OutputsResult, coins uint64) ([]Unsp
 			return nil, err
 		}
 
-		spendCoins += c
+		spendableCoins += c
 		spendOuts = append(spendOuts, UnspentOut{spendableOuts[i]})
 
-		if spendCoins >= coins {
+		if spendableCoins >= coins {
 			return spendOuts, nil
 		}
 	}
 
-	unconfirmedOuts := unspents.Outputs.IncomingOutputs
-	unconfirmedBalance, err := unconfirmedOuts.Balance()
+	// get unconfirmed incoming outputs
+	uncfmIncomingOuts := unspents.Outputs.IncomingOutputs
+	uncfmIncoming, err := uncfmIncomingOuts.Balance()
 	if err != nil {
 		return nil, fmt.Errorf("get unconfirmed balance failed: %v", err)
 	}
 
-	if unconfirmedBalance.Coins+spendCoins < coins {
+	if spendableCoins+uncfmIncoming.Coins < coins {
 		return nil, errors.New("balance in wallet is not sufficient")
 	}
 

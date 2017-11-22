@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
@@ -178,7 +177,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		for {
 			wlt, err = gateway.NewWallet(wltName, wallet.OptSeed(seed), wallet.OptLabel(label))
 			if err != nil {
-				if strings.Contains(err.Error(), "renaming") {
+				if err == wallet.ErrWalletNameConflict {
 					wltName = wallet.NewWalletFilename()
 					continue
 				}
@@ -228,7 +227,7 @@ func walletLoad(gateway *daemon.Gateway) http.HandlerFunc {
 		for {
 			wlt, err = gateway.LoadAndScanWallet(wltName, seed, scanN, wallet.OptLabel(label))
 			if err != nil {
-				if strings.Contains(err.Error(), "renaming") {
+				if err == wallet.ErrWalletNameConflict {
 					wltName = wallet.NewWalletFilename()
 					continue
 				}

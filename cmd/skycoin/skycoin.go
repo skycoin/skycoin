@@ -318,7 +318,7 @@ var devConfig = Config{
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo:   "",
-	LogBuffSize: 16384, //2*1024*8
+	LogBuffSize: 8388608, //1024*1024*8
 }
 
 // Parse prepare the config
@@ -584,11 +584,9 @@ func Run(c *Config) {
 					logger.Info("Logbuff service closed normally")
 					return
 				case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
-					logger.Debug("logbuffer size %d", buf.Len())
 					for buf.Len() > c.LogBuffSize {
 						_, err := buf.ReadString(byte('\n')) //discard one line
 						if err != nil {
-							logger.Info("read logbuffer err %v", err)
 							continue
 						}
 					}

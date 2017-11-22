@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.20.4] - 2017-11-22
+
+### Added
+
+- Add  /logs api to filter skycoin logs ,so that we can add a debug panel to the GUI wallet to show logs
+
 ## [0.20.3] - 2017-10-23
 
 ### Fixed

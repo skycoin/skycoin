@@ -289,7 +289,7 @@ func (wlt *Wallet) AddEntry(entry Entry) error {
 
 // Reset resets the wallet entries and move the lastSeed to origin
 func (wlt *Wallet) Reset() {
-	wlt.Entries = wlt.Entries[0:0]
+	wlt.Entries = []Entry{}
 	wlt.Meta["lastSeed"] = wlt.Meta["seed"]
 }
 

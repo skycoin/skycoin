@@ -307,7 +307,7 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 			}
 
 			if len(logs) >= linenum {
-				logger.Debug("log logbuffer size %d", len(logs))
+				logger.Debug("logs size %d,total size:%d", len(logs), len(logList))
 				break
 			}
 			log := attrActualLog(logInfo)

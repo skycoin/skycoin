@@ -630,3 +630,52 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
 	return vs.history.GetAddrUxOuts(address)
 }
+
+// LoadAndScanWallet loads wallet from seed and scan ahead N addresses
+func (vs Visor) LoadAndScanWallet(wltName string, seed string, scanN uint64, ops ...wallet.Option) (wallet.Wallet, error) {
+	return vs.wallets.LoadAndScanWallet(wltName, seed, scanN, vs, ops...)
+}
+
+// GetBalanceOfAddrs returns balance pairs of given addreses
+func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+	var bps []wallet.BalancePair
+	auxs := vs.Blockchain.Unspent().GetUnspentsOfAddrs(addrs)
+	spendUxs, err := vs.Unconfirmed.SpendsOfAddresses(addrs, vs.Blockchain.Unspent())
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
+	}
+
+	head, err := vs.Blockchain.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	recvUxs, err := vs.Unconfirmed.RecvOfAddresses(head.Head, addrs)
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
+	}
+
+	headTime := head.Time()
+	for _, addr := range addrs {
+		uxs, ok := auxs[addr]
+		if !ok {
+			bps = append(bps, wallet.BalancePair{})
+			continue
+		}
+
+		outUxs := spendUxs[addr]
+		inUxs := recvUxs[addr]
+		predictedUxs := uxs.Sub(outUxs).Add(inUxs)
+
+		coins, hours := uxs.CoinHours(headTime)
+		pcoins, phours := predictedUxs.CoinHours(headTime)
+		bp := wallet.BalancePair{
+			Confirmed: wallet.Balance{Coins: coins, Hours: hours},
+			Predicted: wallet.Balance{Coins: pcoins, Hours: phours},
+		}
+
+		bps = append(bps, bp)
+	}
+
+	return bps, nil
+}

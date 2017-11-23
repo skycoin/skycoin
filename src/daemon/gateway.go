@@ -530,7 +530,7 @@ func (gw *Gateway) LoadAndScanWallet(wltName string, seed string, scanN uint64, 
 	var wlt wallet.Wallet
 	var err error
 	gw.strand("LoadAndScanWallet", func() {
-		wlt, err = gw.vrpc.LoadAndScanWallet(wltName, seed, scanN, &gw.vrpc, options...)
+		wlt, err = gw.v.LoadAndScanWallet(wltName, seed, scanN, options...)
 	})
 	return wlt, err
 }
@@ -593,7 +593,7 @@ func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePa
 	var bps []wallet.BalancePair
 	var err error
 	gw.strand("GetBalanceOfAddrs", func() {
-		bps, err = gw.vrpc.GetBalanceOfAddrs(addrs)
+		bps, err = gw.v.GetBalanceOfAddrs(addrs)
 	})
 
 	return bps, err

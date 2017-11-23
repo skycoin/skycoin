@@ -124,7 +124,7 @@ func TestServiceCreateWallet(t *testing.T) {
 
 	// create walelt with dup wallet name
 	_, err = s.CreateWallet(wltName)
-	require.EqualError(t, err, ErrWalletNameConflict)
+	require.Equal(t, err, ErrWalletNameConflict)
 
 	// create wallet with dup seed
 	dupWlt := "dup_wallet.wlt"

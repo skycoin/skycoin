@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -161,13 +162,33 @@ type ReadableOutput struct {
 
 // ReadableOutputSet records unspent outputs in different status.
 type ReadableOutputSet struct {
-	HeadOutputs     []ReadableOutput `json:"head_outputs"`
-	OutgoingOutputs []ReadableOutput `json:"outgoing_outputs"`
-	IncomingOutputs []ReadableOutput `json:"incoming_outputs"`
+	HeadOutputs     ReadableOutputs `json:"head_outputs"`
+	OutgoingOutputs ReadableOutputs `json:"outgoing_outputs"`
+	IncomingOutputs ReadableOutputs `json:"incoming_outputs"`
+}
+
+// ReadableOutputs slice of ReadableOutput
+// provids method to calculate balance
+type ReadableOutputs []ReadableOutput
+
+// Balance returns the balance in droplets
+func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
+	var bal wallet.Balance
+	for _, out := range ros {
+		coins, err := droplet.FromString(out.Coins)
+		if err != nil {
+			return wallet.Balance{}, err
+		}
+
+		bal.Coins += coins
+		bal.Hours += out.Hours
+	}
+
+	return bal, nil
 }
 
 // SpendableOutputs caculates the spendable unspent outputs
-func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
+func (os ReadableOutputSet) SpendableOutputs() ReadableOutputs {
 	if len(os.OutgoingOutputs) == 0 {
 		return os.HeadOutputs
 	}
@@ -177,7 +198,7 @@ func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
 		spending[u.Hash] = true
 	}
 
-	var outs []ReadableOutput
+	var outs ReadableOutputs
 	for i := range os.HeadOutputs {
 		if _, ok := spending[os.HeadOutputs[i].Hash]; !ok {
 			outs = append(outs, os.HeadOutputs[i])
@@ -203,12 +224,12 @@ func NewReadableOutput(t coin.UxOut) (ReadableOutput, error) {
 }
 
 // NewReadableOutputs converts unspent outputs to readable output
-func NewReadableOutputs(uxs []coin.UxOut) ([]ReadableOutput, error) {
-	rxReadables := make([]ReadableOutput, len(uxs))
+func NewReadableOutputs(uxs []coin.UxOut) (ReadableOutputs, error) {
+	rxReadables := make(ReadableOutputs, len(uxs))
 	for i, ux := range uxs {
 		out, err := NewReadableOutput(ux)
 		if err != nil {
-			return []ReadableOutput{}, err
+			return ReadableOutputs{}, err
 		}
 
 		rxReadables[i] = out

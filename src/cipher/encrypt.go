@@ -2,6 +2,7 @@ package cipher
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -49,9 +50,13 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 	var encryptedBlocks []string
 	// encode the blocks
 	for i := range blocks {
+		// hash(password, hash(index, hash(nonce)))
 		h := hashPwdIndexNonce(password, int64(i), nonce)
 		bh := SHA256(blocks[i])
-		encryptedBlocks = append(encryptedBlocks, bh.Xor(h).Hex())
+		encryptedHash := bh.Xor(h)
+		// encode the encrypted hash in base64
+		s := base64.StdEncoding.EncodeToString(encryptedHash[:])
+		encryptedBlocks = append(encryptedBlocks, s)
 	}
 
 	encryptedData := strings.Join(encryptedBlocks, ",")
@@ -71,6 +76,7 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Decrypt decrypts the data
 func Decrypt(data []byte, password []byte) ([]byte, error) {
 	buf := bytes.NewBuffer(data)
 
@@ -106,10 +112,17 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	encryptedBlocks := strings.Split(buf.String(), ",")
 	var decodeData []byte
 	for i := range encryptedBlocks {
-		bh, err := SHA256FromHex(encryptedBlocks[i])
+		b, err := base64.StdEncoding.DecodeString(encryptedBlocks[i])
 		if err != nil {
 			return nil, err
 		}
+
+		if len(b) != blockSize {
+			return nil, errors.New("invalid encrypted block string")
+		}
+
+		var bh SHA256
+		copy(bh[:], b[:])
 
 		dataHash := bh.Xor(hashPwdIndexNonce(password, int64(i), nonce))
 		decodeData = append(decodeData, dataHash[:]...)

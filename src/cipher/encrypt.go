@@ -1,4 +1,4 @@
-package wallet
+package cipher
 
 import (
 	"bytes"
@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/skycoin/skycoin/src/cipher"
 )
 
 const (
@@ -17,14 +15,14 @@ const (
 	lenPrefixSize = 4 // 4 bytes
 )
 
-// encrypt encrypts the data with password
+// Encrypt encrypts the data with password
 // 1> Add 32 bits length prefix to indicate the length of data
 // 2> Split data into 256 bits(32 bytes) blocks (pad to 32 bytes with nulls at end)
 // 3> Each block is encrypted by XORing the unencrypted block with SHA256(SHA256(password), SHA256(index, SHA256(nonce))
 // 	  - index is 0 for the first block of 32 bytes, 1 for the second block of 32 bytes, 2 for third block
 // 4> SHA256 the nonce with comma seperated, hex encoded blocks of 32 bytes(256 bits)
 // 5> Encode <checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...> with base64
-func encrypt(data []byte, password []byte) ([]byte, error) {
+func Encrypt(data []byte, password []byte) ([]byte, error) {
 	// set data length prefix
 	prefix := make([]byte, lenPrefixSize)
 	binary.PutUvarint(prefix, uint64(len(data)))
@@ -47,18 +45,18 @@ func encrypt(data []byte, password []byte) ([]byte, error) {
 		blocks = append(blocks, b)
 	}
 
-	nonce := cipher.RandByte(blockSize)
+	nonce := RandByte(blockSize)
 	var encryptedBlocks []string
 	// encode the blocks
 	for i := range blocks {
 		h := hashPwdIndexNonce(password, int64(i), nonce)
-		bh := cipher.SHA256(blocks[i])
+		bh := SHA256(blocks[i])
 		encryptedBlocks = append(encryptedBlocks, bh.Xor(h).Hex())
 	}
 
 	encryptedData := strings.Join(encryptedBlocks, ",")
 	nonceAndDataBytes := append(nonce, []byte(encryptedData)...)
-	checkSum := cipher.SumSHA256(nonceAndDataBytes)
+	checkSum := SumSHA256(nonceAndDataBytes)
 	var buf bytes.Buffer
 	_, err := buf.Write(checkSum[:])
 	if err != nil {
@@ -73,7 +71,7 @@ func encrypt(data []byte, password []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func decrypt(data []byte, password []byte) ([]byte, error) {
+func Decrypt(data []byte, password []byte) ([]byte, error) {
 	buf := bytes.NewBuffer(data)
 
 	checkSumBytes := make([]byte, blockSize)
@@ -86,11 +84,11 @@ func decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, errors.New("decode checksum failed")
 	}
 
-	var checkSum cipher.SHA256
+	var checkSum SHA256
 	copy(checkSum[:], checkSumBytes)
 
 	// verify the checksum
-	csh := cipher.SumSHA256(buf.Bytes())
+	csh := SumSHA256(buf.Bytes())
 	if csh.Hex() != checkSum.Hex() {
 		return nil, errors.New("invalid checksum")
 	}
@@ -108,7 +106,7 @@ func decrypt(data []byte, password []byte) ([]byte, error) {
 	encryptedBlocks := strings.Split(buf.String(), ",")
 	var decodeData []byte
 	for i := range encryptedBlocks {
-		bh, err := cipher.SHA256FromHex(encryptedBlocks[i])
+		bh, err := SHA256FromHex(encryptedBlocks[i])
 		if err != nil {
 			return nil, err
 		}
@@ -131,15 +129,15 @@ func decrypt(data []byte, password []byte) ([]byte, error) {
 }
 
 // hash(password, hash(index, hash(nonce)))
-func hashPwdIndexNonce(password []byte, index int64, nonce []byte) cipher.SHA256 {
+func hashPwdIndexNonce(password []byte, index int64, nonce []byte) SHA256 {
 	// convert index to 256bit number
 	indexBytes := make([]byte, 32)
 	binary.PutVarint(indexBytes, index)
 
 	// hash(index, hash(nonce))
-	nonceHash := cipher.SumSHA256(nonce)
-	indexNonceHash := cipher.SumSHA256(append(indexBytes, nonceHash[:]...))
+	nonceHash := SumSHA256(nonce)
+	indexNonceHash := SumSHA256(append(indexBytes, nonceHash[:]...))
 
 	// hash(hash(password), indexNonceHash)
-	return cipher.AddSHA256(cipher.SumSHA256(password), indexNonceHash)
+	return AddSHA256(SumSHA256(password), indexNonceHash)
 }

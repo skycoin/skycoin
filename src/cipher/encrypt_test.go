@@ -59,10 +59,10 @@ func TestEncryptAndDecrypt(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			enData, err := encrypt([]byte(tc.data), []byte(tc.key))
+			enData, err := Encrypt([]byte(tc.data), []byte(tc.key))
 			require.NoError(t, err)
 
-			d, err := decrypt(enData, []byte(tc.key))
+			d, err := Decrypt(enData, []byte(tc.key))
 			require.NoError(t, err)
 			require.Equal(t, tc.data, string(d))
 		})

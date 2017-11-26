@@ -61,9 +61,8 @@ func TestEncryptAndDecrypt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enData, err := encrypt([]byte(tc.data), []byte(tc.key))
 			require.NoError(t, err)
-			str := string(enData)
 
-			d, err := decrypt(str, []byte(tc.key))
+			d, err := decrypt(enData, []byte(tc.key))
 			require.NoError(t, err)
 			require.Equal(t, tc.data, string(d))
 		})

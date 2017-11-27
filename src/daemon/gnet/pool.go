@@ -409,7 +409,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
 			return ErrDisconnectSetReadDeadlineFailed
 		}
-		data, err := readData(reader, buf, elapser, conn.ID)
+		data, err := readData(reader, buf)
 		if err != nil {
 			return err
 		}
@@ -482,7 +482,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 	}
 }
 
-func readData(reader io.Reader, buf []byte, e *elapse.Elapser, connId int) ([]byte, error) {
+func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	c, err := reader.Read(buf)
 	if err != nil {
 		return nil, fmt.Errorf("read data failed: %v", err)

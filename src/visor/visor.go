@@ -667,11 +667,13 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 		inUxs := recvUxs[addr]
 		predictedUxs := uxs.Sub(outUxs).Add(inUxs)
 
-		coins, hours := uxs.CoinHours(headTime)
-		pcoins, phours := predictedUxs.CoinHours(headTime)
+		coins := uxs.Coins()
+		coinHours := uxs.CoinHours(headTime)
+		pcoins := predictedUxs.Coins()
+		pcoinHours := predictedUxs.CoinHours(headTime)
 		bp := wallet.BalancePair{
-			Confirmed: wallet.Balance{Coins: coins, Hours: hours},
-			Predicted: wallet.Balance{Coins: pcoins, Hours: phours},
+			Confirmed: wallet.Balance{Coins: coins, Hours: coinHours},
+			Predicted: wallet.Balance{Coins: pcoins, Hours: pcoinHours},
 		}
 
 		bps = append(bps, bp)

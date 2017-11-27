@@ -139,7 +139,6 @@ func (serv *Service) LoadAndScanWallet(wltName string, seed string, scanN uint64
 
 	// reset the wallet if scan number > 1 and not equal to the keep number
 	if scanN > 1 && keepNum != scanN {
-		// reset wallet and
 		w.Reset()
 		w.GenerateAddresses(uint64(keepNum))
 	}

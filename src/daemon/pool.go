@@ -11,6 +11,8 @@ import (
 type PoolConfig struct {
 	// Timeout when trying to connect to new peers through the pool
 	DialTimeout time.Duration
+	// Maximum value of connections count
+	MaxConnections int
 	// How often to process message buffers and generate events
 	MessageHandlingRate time.Duration
 	// How long to wait before sending another ping
@@ -59,6 +61,7 @@ func NewPool(c PoolConfig, d *Daemon) *Pool {
 
 	cfg := gnet.NewConfig()
 	cfg.DialTimeout = pool.Config.DialTimeout
+	cfg.MaxConnections = c.MaxConnections
 	cfg.Port = uint16(pool.Config.port)
 	cfg.Address = pool.Config.address
 	cfg.ConnectCallback = d.onGnetConnect

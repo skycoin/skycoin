@@ -175,6 +175,7 @@ func (c *Config) register() {
 	flag.StringVar(&c.Address, "address", c.Address,
 		"IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Max connections pool size")
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
 		"enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
@@ -267,7 +268,7 @@ var devConfig = Config{
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
 
-	MaxConnections: 16,
+	MaxConnections: 7,
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	// Wallet Address Version
@@ -517,6 +518,7 @@ func configureDaemon(c *Config) daemon.Config {
 		Version: Version,
 		Commit:  Commit,
 	}
+	dc.Pool.MaxConnections = c.MaxConnections
 	return dc
 }
 

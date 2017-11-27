@@ -17,6 +17,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/util/elapse"
 )
 
 /*
@@ -57,6 +58,7 @@ const (
 	// MaxDropletPrecision represents the precision of droplets
 	MaxDropletPrecision = 1
 	MaxDropletDivisor   = 1e6
+	daemonRunDurationThreshold = time.Millisecond * 200
 )
 
 // Config subsystem configurations
@@ -382,18 +384,24 @@ func (dm *Daemon) Run() error {
 	}
 
 	var err error
+	var elapser = elapse.NewElapser(daemonRunDurationThreshold, logger)
+
 loop:
 	for {
 		select {
+		case <-elapser.Done:
+			elapser.Elapsed()
 		case <-dm.quitC:
 			break loop
-		// Remove connections that failed to complete the handshake
+			// Remove connections that failed to complete the handshake
 		case <-cullInvalidTicker:
+			elapser.Register("cullInvalidTicker")
 			if !dm.Config.DisableNetworking {
 				dm.cullInvalidConnections()
 			}
-		// Request peers via PEX
+			// Request peers via PEX
 		case <-requestPeersTicker:
+			elapser.Register("requestPeersTicker")
 			if dm.Pex.Config.Disabled {
 				continue
 			}
@@ -406,71 +414,82 @@ loop:
 			if err := dm.Pool.Pool.BroadcastMessage(m); err != nil {
 				logger.Error("%v", err)
 			}
-		// Remove connections that haven't said anything in a while
+			// Remove connections that haven't said anything in a while
 		case <-clearStaleConnectionsTicker:
+			elapser.Register("clearStaleConnectionsTicker")
 			if !dm.Config.DisableNetworking {
 				dm.Pool.clearStaleConnections()
 			}
-		// Sends pings as needed
+			// Sends pings as needed
 		case <-idleCheckTicker:
+			elapser.Register("idleCheckTicker")
 			if !dm.Config.DisableNetworking {
 				dm.Pool.sendPings()
 			}
-		// Fill up our outgoing connections
+			// Fill up our outgoing connections
 		case <-outgoingConnectionsTicker:
+			elapser.Register("outgoingConnectionsTicker")
 			trustPeerNum := len(dm.Pex.Trusted())
 			if !dm.Config.DisableOutgoingConnections &&
 				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
 				dm.pendingConnections.Len() < dm.Config.PendingMax {
 				dm.connectToRandomPeer()
 			}
-		// Always try to stay connected to our private peers
-		// TODO (also, connect to all of them on start)
+			// Always try to stay connected to our private peers
+			// TODO (also, connect to all of them on start)
 		case <-privateConnectionsTicker:
+			elapser.Register("privateConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections {
 				dm.makePrivateConnections()
 			}
-		// Process callbacks for when a client connects. No disconnect chan
-		// is needed because the callback is triggered by HandleDisconnectEvent
-		// which is already select{}ed here
+			// Process callbacks for when a client connects. No disconnect chan
+			// is needed because the callback is triggered by HandleDisconnectEvent
+			// which is already select{}ed here
 		case r := <-dm.onConnectEvent:
+			elapser.Register("dm.onConnectEvent")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no connect events")
 				return nil
 			}
 			dm.onConnect(r)
 		case de := <-dm.onDisconnectEvent:
+			elapser.Register("dm.onDisconnectEvent")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no disconnect events")
 				return nil
 			}
 			dm.onDisconnect(de)
-		// Handle connection errors
+			// Handle connection errors
 		case r := <-dm.connectionErrors:
+			elapser.Register("dm.connectionErrors")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no connection errors")
 				return nil
 			}
 			dm.handleConnectionError(r)
-		// Process message sending results
+			// Process message sending results
 		case r := <-dm.Pool.Pool.SendResults:
+			elapser.Register("dm.Pool.Pool.SendResults")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be nothing in SendResults")
 				return nil
 			}
 			dm.handleMessageSendResult(r)
-		// Message handlers
+			// Message handlers
 		case m := <-dm.messageEvents:
+			elapser.Register("dm.messageEvents")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no message events")
 				return nil
 			}
 			dm.processMessageEvent(m)
-		// Process any pending RPC requests
+			// Process any pending RPC requests
 		case req := <-dm.Gateway.requests:
+			elapser.Register("dm.Gateway.requests")
 			req.Func()
-		// Create blocks, if master chain
+			// Create blocks, if master chain
 		case <-blockCreationTicker.C:
+			elapser.Register("blockCreationTicker.C")
 			if dm.Visor.Config.Config.IsMaster {
 				sb, err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
@@ -483,13 +502,16 @@ loop:
 				logger.Critical("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
 			}
 		case <-unconfirmedRefreshTicker:
+			elapser.Register("unconfirmedRefreshTicker")
 			// Get the transactions that turn to valid
 			validTxns := dm.Visor.RefreshUnconfirmed()
 			// Announce this transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
 		case <-blocksRequestTicker:
+			elapser.Register("blocksRequestTicker")
 			dm.Visor.RequestBlocks(dm.Pool)
 		case <-blocksAnnounceTicker:
+			elapser.Register("blocksAnnounceTicker")
 			dm.Visor.AnnounceBlocks(dm.Pool)
 		case err = <-errC:
 			break loop
@@ -500,6 +522,8 @@ loop:
 
 	return err
 }
+
+
 
 // GetListenPort returns the ListenPort for a given address.
 // If no port is found, 0 is returned.

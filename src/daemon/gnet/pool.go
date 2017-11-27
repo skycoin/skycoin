@@ -17,12 +17,18 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/util/elapse"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
 type DisconnectReason error
 
-const sendResultTimeout = 3 * time.Second
+const (
+	receiveMessageDurationThreshold = 500 * time.Millisecond
+	readLoopDurationThreshold       = 500 * time.Millisecond
+	sendLoopDurationThreshold       = 500 * time.Millisecond
+	sendResultTimeout               = 3 * time.Second
+)
 
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
@@ -353,18 +359,21 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 	wg.Add(1)
 	go func() {
+		var elapser = elapse.NewElapser(receiveMessageDurationThreshold, logger)
 		defer wg.Done()
+		defer elapser.CheckForDone()
 		for {
 			select {
 			case msg, ok := <-msgC:
 				if !ok {
 					return
 				}
-
+				elapser.Register("pool.receiveMessage")
 				if err := pool.receiveMessage(c, msg); err != nil {
 					errC <- err
 					return
 				}
+				elapser.CheckForDone()
 			}
 		}
 	}()
@@ -389,7 +398,10 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 	// read data from connection
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
+	var elapser = elapse.NewElapser(readLoopDurationThreshold, logger)
+	defer elapser.CheckForDone()
 	for {
+		elapser.Register("readLoop")
 		deadline := time.Time{}
 		if pool.Config.ReadTimeout != 0 {
 			deadline = time.Now().Add(pool.Config.ReadTimeout)
@@ -397,8 +409,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
 			return ErrDisconnectSetReadDeadlineFailed
 		}
-
-		data, err := readData(reader, buf)
+		data, err := readData(reader, buf, elapser, conn.ID)
 		if err != nil {
 			return err
 		}
@@ -411,13 +422,11 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 		if _, err := conn.Buffer.Write(data); err != nil {
 			return err
 		}
-
 		// decode data
 		datas, err := decodeData(conn.Buffer, pool.Config.MaxMessageLength)
 		if err != nil {
 			return err
 		}
-
 		for _, d := range datas {
 			// use select to avoid the goroutine leak,
 			// because if msgChan has no receiver this goroutine will leak
@@ -435,6 +444,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 }
 
 func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
+	var elapser = elapse.NewElapser(sendLoopDurationThreshold, logger)
 	for {
 		select {
 		case <-pool.quit:
@@ -442,14 +452,16 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 		case <-qc:
 			return nil
 		case m := <-conn.WriteQueue:
+			elapser.Register("conn.WriteQueue")
 			if m == nil {
+				elapser.CheckForDone()
 				continue
 			}
-
 			err := sendMessage(conn.Conn, m, timeout)
 			sr := newSendResult(conn.Addr(), m, err)
 			select {
 			case <-qc:
+				elapser.CheckForDone()
 				return nil
 			case pool.SendResults <- sr:
 			case <-time.After(sendResultTimeout):
@@ -457,26 +469,27 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 			}
 
 			if err != nil {
+				elapser.CheckForDone()
 				return err
 			}
 
 			if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
+				elapser.CheckForDone()
 				return err
 			}
+			elapser.CheckForDone()
 		}
 	}
 }
 
-func readData(reader io.Reader, buf []byte) ([]byte, error) {
+func readData(reader io.Reader, buf []byte, e *elapse.Elapser, connId int) ([]byte, error) {
 	c, err := reader.Read(buf)
 	if err != nil {
 		return nil, fmt.Errorf("read data failed: %v", err)
 	}
-
 	if c == 0 {
 		return nil, nil
 	}
-
 	data := make([]byte, c)
 	n := copy(data, buf)
 	if n != c {
@@ -700,6 +713,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
+
 	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
 	if err != nil {
 		return err

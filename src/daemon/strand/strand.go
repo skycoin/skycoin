@@ -97,7 +97,7 @@ func WithQuit(logger *logging.Logger, c chan Request, name string, f func() erro
 			if elapsed > logDurationThreshold {
 				logger.Warning("%s took %s", name, elapsed)
 			} else {
-				// logger.Debug("%s took %s", name, elapsed)
+				 //logger.Debug("%s took %s", name, elapsed)
 			}
 
 			return err

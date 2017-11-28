@@ -45,6 +45,7 @@ import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { FooterComponent } from './components/layout/footer/footer.component';
+import { WalletShowComponent } from './components/pages/wallet-show/wallet-show.component';
 
 const ROUTES = [
   {
@@ -58,6 +59,10 @@ const ROUTES = [
     data: {
       breadcrumb: 'Wallets',
     },
+  },
+  {
+    path: 'wallet/:filename',
+    component: WalletShowComponent,
   },
   {
     path: 'send',
@@ -199,6 +204,7 @@ const ROUTES = [
     HeaderComponent,
     TopBarComponent,
     FooterComponent,
+    WalletShowComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

@@ -47,6 +47,7 @@ func TestNewWallet(t *testing.T) {
 					"coin":     "skycoin",
 					"type":     "deterministic",
 					"seed":     "testseed123",
+					"version":  wltVersion,
 				},
 				err: nil,
 			},
@@ -65,6 +66,7 @@ func TestNewWallet(t *testing.T) {
 					"coin":     "skycoin",
 					"type":     "deterministic",
 					"seed":     "testseed123",
+					"version":  wltVersion,
 				},
 				err: nil,
 			},
@@ -97,11 +99,23 @@ func TestNewWallet(t *testing.T) {
 			if err != nil {
 				return
 			}
+
+			_, err = w.GenerateAddresses(1, []byte("pwd"))
+			require.NoError(t, err)
 			require.NoError(t, w.Validate())
 			for k, v := range tc.expect.meta {
 				vv, ok := w.Meta[k]
 				require.True(t, ok)
 				require.Equal(t, v, vv)
+			}
+
+			if w.seed() != "" {
+				// decrypt the seed and genearte the first address
+				seed, err := decrypt(w.seed(), []byte("pwd"))
+				require.NoError(t, err)
+				_, seckeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
+				addr := cipher.AddressFromSecKey(seckeys[0])
+				require.Equal(t, w.Entries[0].Address.String(), addr.String())
 			}
 		})
 	}
@@ -175,6 +189,23 @@ func TestLoadWallet(t *testing.T) {
 				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed field not set"),
 			},
 		},
+		{
+			"load wallet of version 0.2",
+			"./testdata/v2.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":     "skycoin",
+					"filename": "v2.wlt",
+					"label":    "",
+					"lastSeed": "pYCzcK5exEqBS+bnePDkGs7U2UXIPhPrNdrkp81I2hyCJyJtL122GzsBBtRJpiX+3yvOnmTQZJ7+7m8wZ/qq6nluejE4bzdFSzA3WEtVODdkQi9iUlRGbGdHZWJ6WXlHSlZvOHp3YTVleTA9LEFCaGxpWFlFbVhEVUdHTDJRd2w3VmdVTEJseWVkSzFQMjN6VHBRVVVUMDA9LERmUzRPMGVGS2t0UjU4Y01rbndVcWh2cjlCN1JWZFRueFU3UkFjUkZ3RW89",
+					"seed":     "g8slU58evVZtiO4ouxY5QeC6ZsMXprLAQYY9nls/JFyIYQvBxufxZvSlppyiO6X0dK8MzHaEFg0wpHUgbm8WsTd3VXBmR1dMVXVsaE03UkVmY3U3QU0vOWVhallJWDhJN1N6QzcycjFtUlU9LExtSUxVbHMzNkxwbnZFR1FjT0YrdHUyRHJaQ3NqaWdQMDhuTUVFdjhZNzA9",
+					"tm":       "1511856544",
+					"type":     "deterministic",
+					"version":  "0.2",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -189,6 +220,80 @@ func TestLoadWallet(t *testing.T) {
 			for k, v := range tc.expect.meta {
 				vv := w.Meta[k]
 				require.Equal(t, v, vv)
+			}
+		})
+	}
+}
+
+func TestWalletGenerateAddress(t *testing.T) {
+	tt := []struct {
+		name               string
+		seed               []byte
+		pwd                []byte
+		num                int
+		oneAddressEachTime bool
+		err                error
+	}{
+		{
+			"ok with one address",
+			[]byte("seed"),
+			[]byte("pwd"),
+			1,
+			false,
+			nil,
+		},
+		{
+			"ok with two address",
+			[]byte("seed"),
+			[]byte("pwd"),
+			2,
+			false,
+			nil,
+		},
+		{
+			"ok with three address and generate one address each time",
+			[]byte("seed"),
+			[]byte("pwd"),
+			2,
+			true,
+			nil,
+		},
+		{
+			"invalid password",
+			[]byte("seed"),
+			[]byte("pwd1"),
+			0,
+			false,
+			cipher.ErrInvalidPassword,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// create wallet
+			w, err := NewWallet("test.wlt", []byte("pwd"), OptSeed(string(tc.seed)))
+			require.NoError(t, err)
+
+			// generate addresses
+			if tc.oneAddressEachTime {
+				_, err = w.GenerateAddresses(tc.num, tc.pwd)
+				require.NoError(t, err)
+			} else {
+				for i := 0; i < tc.num; i++ {
+					_, err := w.GenerateAddresses(1, tc.pwd)
+					require.NoError(t, err)
+				}
+			}
+
+			// check the entry number
+			require.Equal(t, tc.num, len(w.Entries))
+
+			addrs := w.GetAddresses()
+
+			_, keys := cipher.GenerateDeterministicKeyPairsSeed(tc.seed, tc.num)
+			for i, k := range keys {
+				a := cipher.AddressFromSecKey(k)
+				require.Equal(t, a.String(), addrs[i].String())
 			}
 		})
 	}
@@ -212,6 +317,12 @@ func TestWalletGetEntry(t *testing.T) {
 			"./testdata/test1.wlt",
 			"2ULfxDUuenUY5V4Pr8whmoAwFdUseXNyjXC",
 			false,
+		},
+		{
+			"wallet of version 0.2",
+			"./testdata/v2.wlt",
+			"2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
+			true,
 		},
 	}
 

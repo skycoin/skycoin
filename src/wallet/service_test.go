@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/stretchr/testify/require"
 )
 
 func prepareWltDir() string {
@@ -86,8 +85,7 @@ func TestNewService(t *testing.T) {
 
 	require.Equal(t, dir, s.WalletDirectory)
 
-	// check if the default wallet is created
-	require.Equal(t, 1, len(s.wallets))
+	require.Equal(t, 0, len(s.wallets))
 
 	// check if the default wallet file is created
 	for name := range s.wallets {
@@ -113,7 +111,7 @@ func TestNewService(t *testing.T) {
 
 func TestServiceCreateWallet(t *testing.T) {
 	dir := prepareWltDir()
-
+	fmt.Println("dir:", dir)
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
@@ -123,7 +121,7 @@ func TestServiceCreateWallet(t *testing.T) {
 		Seed: seed,
 	})
 	require.NoError(t, err)
-	require.Equal(t, seed, w.Meta["seed"])
+	require.Equal(t, seed, string(sd))
 	require.NoError(t, w.Validate())
 
 	// create wallet with dup wallet name
@@ -297,21 +295,22 @@ func TestServiceNewAddress(t *testing.T) {
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
+	pwd := []byte("pwd")
+	wltName := "test.wlt"
+	w, err := s.CreateWallet(wltName, pwd)
+	require.NoError(t, err)
+
 	// get the default wallet id
-	var id string
-	for id = range s.wallets {
-		break
-	}
-	addrs, err := s.NewAddresses(id, 1)
+	addrs, err := s.NewAddresses(w.GetID(), 1, pwd)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(addrs))
 
 	// check if the wallet file is created
-	_, err = os.Stat(filepath.Join(dir, id))
+	_, err = os.Stat(filepath.Join(dir, w.GetID()))
 	require.NoError(t, err)
 
 	// wallet doesn't exist
-	_, err = s.NewAddresses("not_exist_id.wlt", 1)
+	_, err = s.NewAddresses("not_exist_id.wlt", 1, pwd)
 	require.Equal(t, errWalletNotExist("not_exist_id.wlt"), err)
 }
 
@@ -320,12 +319,10 @@ func TestServiceGetAddress(t *testing.T) {
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
-	var id string
-	for id = range s.wallets {
-		break
-	}
+	w, err := s.CreateWallet("test.wlt", []byte("pwd"))
+	require.NoError(t, err)
 
-	addrs, err := s.GetAddresses(id)
+	addrs, err := s.GetAddresses(w.GetID())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(addrs))
 
@@ -341,21 +338,19 @@ func TestServiceGetWallet(t *testing.T) {
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
-	var id string
-	for id = range s.wallets {
-		break
-	}
+	w, err := s.CreateWallet("test.wlt", []byte("pwd"))
+	require.NoError(t, err)
 
 	w, err := s.GetWallet(id)
 	require.NoError(t, err)
 
 	// modify the returned wallet won't affect the wallet in service
-	w.SetLabel("new_label")
+	w1.SetLabel("new_label")
 
 	w1, err := s.GetWallet(id)
 	require.NoError(t, err)
 
-	require.NotEqual(t, "new_label", w1.GetLabel())
+	require.NotEqual(t, "new_label", w2.GetLabel())
 }
 
 func TestServiceReloadWallets(t *testing.T) {
@@ -364,10 +359,11 @@ func TestServiceReloadWallets(t *testing.T) {
 	s, err := NewService(dir)
 	require.NoError(t, err)
 
-	var defaultWltID string
-	for defaultWltID = range s.wallets {
-		break
-	}
+	pwd := []byte("pwd")
+	w, err := s.CreateWallet("test.wlt", pwd)
+	require.NoError(t, err)
+
+	defaultWltID := w.GetID()
 
 	var defaultAddr string
 	for defaultAddr = range s.firstAddrIDMap {
@@ -385,14 +381,14 @@ func TestServiceReloadWallets(t *testing.T) {
 	_, ok := s.wallets[defaultWltID]
 	require.True(t, ok)
 
-	_, ok = s.wallets[wltName]
+	_, ok = s.wallets["t1.wlt"]
 	require.True(t, ok)
 
 	// check if the first address of each wallet is reloaded
 	_, ok = s.firstAddrIDMap[defaultAddr]
 	require.True(t, ok)
 
-	_, ok = s.firstAddrIDMap[w.Entries[0].Address.String()]
+	_, ok = s.firstAddrIDMap[w1.Entries[0].Address.String()]
 	require.True(t, ok)
 }
 
@@ -440,7 +436,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 	var uxouts []coin.UxOut
 	addrs := []cipher.Address{}
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey)
+		uxout := makeUxOut(t, seckeys[0])
 		uxouts = append(uxouts, uxout)
 
 		p, _ := cipher.GenerateKeyPair()
@@ -468,6 +464,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		vld        Validator
 		coins      uint64
 		dest       cipher.Address
+		pwd        []byte
 		err        error
 	}{
 		{
@@ -481,6 +478,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			2e6,
 			addrs[0],
+			pwd,
 			nil,
 		},
 		{
@@ -494,6 +492,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			1e6,
 			addrs[0],
+			pwd,
 			nil,
 		},
 		{
@@ -507,6 +506,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			2e6,
 			addrs[0],
+			pwd,
 			errors.New("please spend after your pending transaction is confirmed"),
 		},
 		{
@@ -521,6 +521,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			2e6,
 			addrs[0],
+			pwd,
 			errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
 		{
@@ -534,6 +535,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			0,
 			addrs[0],
+			pwd,
 			errors.New("zero spend amount"),
 		},
 		{
@@ -547,6 +549,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			1e3,
 			addrs[0],
+			pwd,
 			nil,
 		},
 		{
@@ -560,6 +563,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			100e6,
 			addrs[0],
+			pwd,
 			ErrInsufficientBalance,
 		},
 		{
@@ -573,12 +577,34 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			1e6,
 			addrsNoHours[0],
+			pwd,
 			fee.ErrTxnNoFee,
+		},
+		{
+			"wrong password",
+			uxouts[:],
+			coin.AddressUxOuts{
+				addr: uxouts,
+			},
+			&dummyValidator{
+				ok: false,
+			},
+			Balance{Coins: 2e6},
+			addrs[0],
+			pwd,
+			[]byte("wrong password"),
+			cipher.ErrInvalidPassword,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+			w, err := s.CreateWallet("test.wlt", pwd, OptSeed(string(seed)))
+			require.NoError(t, err)
+
 			unspents := &dummyUnspentGetter{
 				addrUnspents: tc.addrUxouts,
 				unspents:     map[cipher.SHA256]coin.UxOut{},
@@ -588,7 +614,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				unspents.unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest, tc.pwd)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

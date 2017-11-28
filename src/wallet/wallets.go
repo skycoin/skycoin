@@ -1,9 +1,7 @@
 package wallet
 
 import (
-	//"fmt"
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,7 +9,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -48,7 +45,7 @@ func LoadWallets(dir string) (Wallets, error) {
 	}
 
 	wallets := Wallets{}
-	for i, e := range entries {
+	for _, e := range entries {
 		if e.Mode().IsRegular() {
 			name := e.Name()
 			if !strings.HasSuffix(name, WalletExt) {
@@ -59,26 +56,26 @@ func LoadWallets(dir string) (Wallets, error) {
 			if err != nil {
 				return nil, err
 			}
-			w, err := rw.ToWallet()
+			w, err := rw.toWallet()
 			if err != nil {
 				return nil, err
 			}
 			logger.Info("Loaded wallet from %s", fullpath)
 			w.SetFilename(name)
 			// check the wallet version
-			if w.GetVersion() != version {
-				logger.Info("Update wallet %v", fullpath)
-				bkFile := filepath.Join(bkpath, w.GetFilename())
-				if err := backupWltFile(fullpath, bkFile); err != nil {
-					return nil, err
-				}
+			// if w.GetVersion() != wltVersion {
+			// 	logger.Info("Update wallet %v", fullpath)
+			// 	bkFile := filepath.Join(bkpath, w.GetFilename())
+			// 	if err := backupWltFile(fullpath, bkFile); err != nil {
+			// 		return nil, err
+			// 	}
 
-				// update wallet to new version.
-				tm := time.Now().Unix() + int64(i)
-				mustUpdateWallet(&w, dir, tm)
-			}
+			// 	// update wallet to new version.
+			// 	tm := time.Now().Unix() + int64(i)
+			// 	mustUpdateWallet(&w, dir, tm)
+			// }
 
-			wallets[name] = &w
+			wallets[name] = w
 		}
 	}
 	return wallets, nil
@@ -106,24 +103,24 @@ func backupWltFile(src, dst string) error {
 	return nil
 }
 
-func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
-	// update version meta data.
-	wlt.Meta["version"] = version
+// func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
+// 	// update version meta data.
+// 	wlt.Meta["version"] = version
 
-	// update lastSeed meta data.
-	lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.Meta["seed"]), 1)
-	if seckeys[0] != wlt.Entries[0].Secret {
-		logger.Panic("update wallet failed, seckey not match")
-	}
+// 	// update lastSeed meta data.
+// 	lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.Meta["seed"]), 1)
+// 	if seckeys[0] != wlt.Entries[0].Secret {
+// 		logger.Panic("update wallet failed, seckey not match")
+// 	}
 
-	wlt.Meta["lastSeed"] = hex.EncodeToString(lsd)
+// 	wlt.Meta["lastSeed"] = hex.EncodeToString(lsd)
 
-	// update tm meta data.
-	wlt.Meta["tm"] = fmt.Sprintf("%v", tm)
-	if err := wlt.Save(dir); err != nil {
-		logger.Panic(err)
-	}
-}
+// 	// update tm meta data.
+// 	wlt.Meta["tm"] = fmt.Sprintf("%v", tm)
+// 	if err := wlt.Save(dir); err != nil {
+// 		logger.Panic(err)
+// 	}
+// }
 
 // Add adds wallet to current wallet
 func (wlts Wallets) Add(w Wallet) error {
@@ -166,9 +163,9 @@ func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 }
 
 // NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
+func (wlts *Wallets) NewAddresses(wltID string, num int, password []byte) ([]cipher.Address, error) {
 	if w, ok := (*wlts)[wltID]; ok {
-		return w.GenerateAddresses(num), nil
+		return w.GenerateAddresses(num, password)
 	}
 	return nil, fmt.Errorf("wallet: %v does not exist", wltID)
 }

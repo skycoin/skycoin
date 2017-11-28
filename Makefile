@@ -1,11 +1,26 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test lint check format install-linters release clean help
+.PHONY: run run-help test lint check cover install-linters format release clean help
 
 # Static files directory
 STATIC_DIR = src/gui/static
 
 # Electron files directory
 ELECTRON_DIR = electron
+
+# ./src folder does not have code
+# ./src/api folder does not have code
+# ./src/util folder does not have code
+# ./src/ciper/* are libraries manually vendored by cipher that do not need coverage
+# ./src/gui/static* are static assets
+# */testdata* folders do not have code
+# ./src/consensus/example has no buildable code
+PACKAGES = $(shell find ./src -type d -not -path '\./src' \
+    							      -not -path '\./src/api' \
+    							      -not -path '\./src/util' \
+    							      -not -path '\./src/consensus/example' \
+    							      -not -path '\./src/gui/static*' \
+    							      -not -path '\./src/cipher/*' \
+    							      -not -path '*/testdata*')
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
@@ -17,21 +32,27 @@ test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-lint: ## Run linters. requires vendorcheck, gometalinter, golint, goimports
-	gometalinter --disable-all -E goimports --tests --vendor ./...
+lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
+	gometalinter --disable-all -E goimports --tests --vendor ./...
 
 check: lint test ## Run tests and linters
 
+cover: ## Runs tests on ./src/ with HTML code coverage
+	@echo "mode: count" > coverage-all.out
+	$(foreach pkg,$(PACKAGES),\
+		go test -coverprofile=coverage.out $(pkg);\
+		tail -n +2 coverage.out >> coverage-all.out;)
+	go tool cover -html=coverage-all.out
+
 install-linters: ## Install linters
-	go get -u -f github.com/golang/lint/golint
-	go get -u -f golang.org/x/tools/cmd/goimports
-	go get -u github.com/alecthomas/gometalinter
 	go get -u github.com/FiloSottile/vendorcheck
+	go get -u github.com/alecthomas/gometalinter
+	gometalinter --vendored-linters --install
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).
-	goimports -w ./cmd/...
-	goimports -w ./src/...
+	goimports -w -local github.com/skycoin/skycoin ./cmd
+	goimports -w -local github.com/skycoin/skycoin ./src
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

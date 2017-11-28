@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-	gcli "github.com/urfave/cli"
 )
 
 func generateAddrsCmd(cfg Config) gcli.Command {

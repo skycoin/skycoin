@@ -19,6 +19,20 @@ var (
 	headSeqKey = []byte("head_seq")
 )
 
+// ErrMissingSignature is returned if no matching signature is found for a block in the db
+type ErrMissingSignature struct {
+	Seq  uint64
+	Hash string
+}
+
+func (e ErrMissingSignature) Error() string {
+	msg := "find no signature of block"
+	if e.Hash != "" {
+		return fmt.Sprintf("%s: hash=%s", msg, e.Hash)
+	}
+	return fmt.Sprintf("%s: seq=%d", msg, e.Seq)
+}
+
 type chainMeta struct {
 	bucket.Bucket
 }
@@ -212,7 +226,9 @@ func (bc *Blockchain) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, err
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("find no signature of block: %v", hash.Hex())
+		return nil, ErrMissingSignature{
+			Hash: hash.Hex(),
+		}
 	}
 
 	return &coin.SignedBlock{
@@ -234,7 +250,9 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("find no signature of block: %v", seq)
+		return nil, ErrMissingSignature{
+			Seq: seq,
+		}
 	}
 
 	return &coin.SignedBlock{

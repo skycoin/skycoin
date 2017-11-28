@@ -16,9 +16,9 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 
+	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/skycoin/skycoin/src/util/elapse"
 )
 
 /*
@@ -57,8 +57,8 @@ var (
 
 const (
 	// MaxDropletPrecision represents the precision of droplets
-	MaxDropletPrecision = 1
-	MaxDropletDivisor   = 1e6
+	MaxDropletPrecision        = 1
+	MaxDropletDivisor          = 1e6
 	daemonRunDurationThreshold = time.Millisecond * 200
 )
 
@@ -389,9 +389,8 @@ func (dm *Daemon) Run() error {
 
 loop:
 	for {
+		elapser.CheckForDone()
 		select {
-		case <-elapser.Done:
-			elapser.Elapsed()
 		case <-dm.quitC:
 			break loop
 			// Remove connections that failed to complete the handshake
@@ -523,8 +522,6 @@ loop:
 
 	return err
 }
-
-
 
 // GetListenPort returns the ListenPort for a given address.
 // If no port is found, 0 is returned.

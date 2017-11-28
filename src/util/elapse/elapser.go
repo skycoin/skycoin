@@ -2,6 +2,7 @@ package elapse
 
 import (
 	"time"
+
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
@@ -23,9 +24,10 @@ func NewElapser(elapsedThreshold time.Duration, logger *logging.Logger) *Elapser
 }
 
 func (e *Elapser) CheckForDone() {
-	if len(e.Done) > 0 {
-		<-e.Done
+	select {
+	case <-e.Done:
 		e.Elapsed()
+	default:
 	}
 }
 

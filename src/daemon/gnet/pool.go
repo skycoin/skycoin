@@ -15,9 +15,9 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 
+	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/skycoin/skycoin/src/util/elapse"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -445,7 +445,9 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 
 func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
 	var elapser = elapse.NewElapser(sendLoopDurationThreshold, logger)
+	defer elapser.CheckForDone()
 	for {
+		elapser.CheckForDone()
 		select {
 		case <-pool.quit:
 			return nil
@@ -454,14 +456,12 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 		case m := <-conn.WriteQueue:
 			elapser.Register("conn.WriteQueue")
 			if m == nil {
-				elapser.CheckForDone()
 				continue
 			}
 			err := sendMessage(conn.Conn, m, timeout)
 			sr := newSendResult(conn.Addr(), m, err)
 			select {
 			case <-qc:
-				elapser.CheckForDone()
 				return nil
 			case pool.SendResults <- sr:
 			case <-time.After(sendResultTimeout):
@@ -469,15 +469,12 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 			}
 
 			if err != nil {
-				elapser.CheckForDone()
 				return err
 			}
 
 			if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
-				elapser.CheckForDone()
 				return err
 			}
-			elapser.CheckForDone()
 		}
 	}
 }

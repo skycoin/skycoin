@@ -101,7 +101,7 @@ make ARGS="--launch-browser=false" run
 ## Contributing a node to the network
 
 Add your node's ip:port to the [peers.txt](./peers.txt) file.
-This file will be periodically uploaded to https://skycoin.net/downloads/peers.txt
+This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
 and used to seed client with peers.
 
 ## Development

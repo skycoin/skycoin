@@ -181,7 +181,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, MaxDropletDivisor)
+	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, maxDropletDivisor)
 	known, err := unconfirmed.InjectTxn(bc, txn)
 	require.False(t, known)
 	require.NoError(t, err)
@@ -279,7 +279,6 @@ func TestVisorCreateBlock(t *testing.T) {
 	}
 
 	// Check that decimal rules are enforced
-	require.Equal(t, v.Config.MaxDropletDivisor, MaxDropletDivisor)
 	for i, txn := range blockTxns {
 		for j, o := range txn.Out {
 			err := DropletPrecisionCheck(o.Coins)
@@ -350,7 +349,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
-	invalidCoins := coins + (v.Config.MaxDropletDivisor / 10)
+	invalidCoins := coins + (maxDropletDivisor / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, err = v.InjectTxn(txn)
 	testutil.RequireError(t, err, ErrInvalidDecimals.Error())

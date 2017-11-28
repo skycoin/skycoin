@@ -1,0 +1,20 @@
+<div class="buttons-left">
+
+</div>
+<div class="title">
+  Wallets
+</div>
+<div class="buttons-right">
+  <md-menu #settingsMenu="mdMenu">
+    <button md-menu-item [disabled]="true"> Version {{ version }} </button>
+    <button md-menu-item [routerLink]="['/settings/network']"> Networking </button>
+    <button md-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
+    <button md-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>
+    <button md-menu-item [routerLink]="['/settings/pending-transactions']"> Pending Transactions </button>
+    <button md-menu-item [routerLink]="['/settings/backup']"> Back-up wallet </button>
+  </md-menu>
+
+  <button md-icon-button [mdMenuTriggerFor]="settingsMenu">
+    <md-icon>settings</md-icon>
+  </button>
+</div>

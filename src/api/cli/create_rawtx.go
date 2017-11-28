@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/droplet"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
@@ -475,7 +474,7 @@ func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.Transa
 	}
 
 	for _, o := range outs {
-		if err := daemon.DropletPrecisionCheck(o.Coins); err != nil {
+		if err := visor.DropletPrecisionCheck(o.Coins); err != nil {
 			return nil, err
 		}
 		tx.PushOutput(o.Address, o.Coins, o.Hours)

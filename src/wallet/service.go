@@ -10,6 +10,11 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
+// BalanceGetter interface for getting the balance of given addresses
+type BalanceGetter interface {
+	GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error)
+}
+
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
@@ -92,9 +97,70 @@ func (serv *Service) CreateWallet(wltName string, options ...Option) (Wallet, er
 	return *w, nil
 }
 
+// LoadAndScanWallet loads wallet from seed and scan the first N address
+func (serv *Service) LoadAndScanWallet(wltName string, seed string, scanN uint64, bg BalanceGetter, options ...Option) (Wallet, error) {
+	ops := make([]Option, 0, len(serv.options)+len(options))
+	ops = append(ops, serv.options...)
+	ops = append(ops, options...)
+	ops = append(ops, OptSeed(seed))
+	w, err := NewWallet(wltName, ops...)
+	if err != nil {
+		return Wallet{}, err
+	}
+
+	// generate a default address
+	w.GenerateAddresses(1)
+
+	serv.Lock()
+	defer serv.Unlock()
+	// check dup
+	if id, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
+		return Wallet{}, fmt.Errorf("duplicate wallet with %v", id)
+	}
+
+	// generate the remaining addresses that are need to scan
+	w.GenerateAddresses(scanN - 1)
+
+	// check balance from the last one till we find the
+	// address that has coins
+	addrs := w.GetAddresses()
+	bals, err := bg.GetBalanceOfAddrs(addrs)
+	if err != nil {
+		return Wallet{}, err
+	}
+
+	var keepNum uint64 = 1
+	for i := len(bals) - 1; i >= 0; i-- {
+		if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
+			keepNum = uint64(i + 1)
+			break
+		}
+	}
+
+	// reset the wallet if scan number > 1 and not equal to the keep number
+	if scanN > 1 && keepNum != scanN {
+		w.Reset()
+		w.GenerateAddresses(uint64(keepNum))
+	}
+
+	if err := serv.wallets.Add(*w); err != nil {
+		return Wallet{}, err
+	}
+
+	if err := w.Save(serv.WalletDirectory); err != nil {
+		// remove the added wallet from serv.wallets.
+		serv.wallets.Remove(w.GetID())
+		return Wallet{}, err
+	}
+
+	serv.firstAddrIDMap[w.Entries[0].Address.String()] = w.GetID()
+
+	return *w, nil
+}
+
 // NewAddresses generate address entries in given wallet,
 // return nil if wallet does not exist.
-func (serv *Service) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)

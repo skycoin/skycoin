@@ -168,6 +168,27 @@ result:
 }
 ```
 
+### Load wallet from seed and scan ahead N address
+
+```bash
+URI: /wallet/load
+Method: GET/POST
+Args:
+    seed: wallet seed
+    label: wallet label
+    scan-num: the number of ahead addresses that we are going to scan(if not specified, the default num: 100 will be used)
+```
+
+example:
+
+```bash
+curl http://127.0.0.1:6420/wallet/load?seed=$seed&label=$label&scan-num=100
+```
+
+result:
+
+The result is the same format as `wallet/create`, excpet it returns all entries that contains coins.
+
 ### Generate new address in wallet
 
 ```bash

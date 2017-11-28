@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
@@ -16,6 +15,9 @@ import (
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
+
+// default address scan number
+const defaultScanNum = 100
 
 // SpendResult represents the result of spending
 type SpendResult struct {
@@ -175,7 +177,57 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 		for {
 			wlt, err = gateway.NewWallet(wltName, wallet.OptSeed(seed), wallet.OptLabel(label))
 			if err != nil {
-				if strings.Contains(err.Error(), "renaming") {
+				if err == wallet.ErrWalletNameConflict {
+					wltName = wallet.NewWalletFilename()
+					continue
+				}
+
+				wh.Error400(w, err.Error())
+				return
+			}
+			break
+		}
+
+		rlt := wallet.NewReadableWallet(wlt)
+		wh.SendOr500(w, rlt)
+	}
+}
+
+// Create a wallet Name is set by creation date
+func walletLoad(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		seed := r.FormValue("seed")
+		label := r.FormValue("label")
+		scanNStr := r.FormValue("scan-num")
+		var scanN uint64 = defaultScanNum
+
+		if seed == "" {
+			wh.Error400(w, "missing seed")
+			return
+		}
+
+		if label == "" {
+			wh.Error400(w, "missing label")
+			return
+		}
+
+		if scanNStr != "" {
+			var err error
+			scanN, err = strconv.ParseUint(scanNStr, 10, 64)
+			if err != nil {
+				wh.Error400(w, "invalid scan-num value")
+				return
+			}
+		}
+
+		wltName := wallet.NewWalletFilename()
+		var wlt wallet.Wallet
+		var err error
+		// the wallet name may dup, rename it till no conflict.
+		for {
+			wlt, err = gateway.LoadAndScanWallet(wltName, seed, scanN, wallet.OptLabel(label))
+			if err != nil {
+				if err == wallet.ErrWalletNameConflict {
 					wltName = wallet.NewWalletFilename()
 					continue
 				}
@@ -210,11 +262,11 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		// the number of address that need to create, default is 1
-		n := 1
+		var n uint64 = 1
 		var err error
 		num := r.FormValue("num")
 		if num != "" {
-			n, err = strconv.Atoi(num)
+			n, err = strconv.ParseUint(num, 10, 64)
 			if err != nil {
 				wh.Error400(w, "invalid num value")
 				return
@@ -385,9 +437,18 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/wallet", walletGet(gateway))
 
 	// POST/GET Arguments:
-	//		seed [optional]
+	//		seed: the seed that wallet will create from
+	// 		label: wallet label
 	//create new wallet
 	mux.HandleFunc("/wallet/create", walletCreate(gateway))
+
+	// Loads wallet from seed, will scan ahead N address and
+	// load addresses till the last one that have coins.
+	// POST/GET Arguments:
+	// 		seed: the seed the wallet that will load from
+	// 		label:  wallet label
+	// 		scan-num: the ahead number that will scan(the defaultScanNum will be used if this argument does not exist)
+	mux.HandleFunc("/wallet/load", walletLoad(gateway))
 
 	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
 

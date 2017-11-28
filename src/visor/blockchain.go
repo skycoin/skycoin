@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -19,8 +20,6 @@ var (
 
 	// ErrUnspentNotExist represents the error of unspent output in a tx does not exist
 	ErrUnspentNotExist = errors.New("Unspent output does not exist")
-	// ErrSignatureLost signature lost error
-	ErrSignatureLost = errors.New("signature lost")
 )
 
 const (

@@ -144,14 +144,14 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, ErrInvalidPassword
 	}
 
-	if l > uint64(len(decodeData[lenPrefixSize:])) {
+	if l > uint64(len(decodeData[lenPrefixSize:])) || l < 32 {
 		return nil, ErrInvalidPassword
 	}
 
 	var dataHash SHA256
 	copy(dataHash[:], decodeData[lenPrefixSize:lenPrefixSize+32])
 	rawData := decodeData[lenPrefixSize+32 : lenPrefixSize+l]
-	if dataHash.Hex() != SumSHA256(rawData).Hex() {
+	if dataHash != SumSHA256(rawData) {
 		return nil, ErrInvalidPassword
 	}
 

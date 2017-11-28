@@ -1,14 +1,24 @@
-<md-expansion-panel *ngFor="let wallet of walletService.all() | async">
-  <md-expansion-panel-header>
-    <md-panel-title>
-      {{ wallet.meta.label }}
-    </md-panel-title>
-    <md-panel-description>
-      <span>{{ wallet.balance | sky }}</span> <span>{{ wallet.hours ? wallet.hours : 0 }} Coin Hours</span>
-    </md-panel-description>
-  </md-expansion-panel-header>
-  <app-wallet-detail [wallet]="wallet"></app-wallet-detail>
-</md-expansion-panel>
-<div class="button-line">
-  <a md-raised-button color="primary" (click)="addWallet()">Add wallet</a>
+<div class="sky-container sky-container-grey">
+  <app-header coins="199" title="Wallets"></app-header>
+  <div class="grid-headers">
+    <div class="flex-fill">Wallet</div>
+    <div class="flex-100">SKY Hours</div>
+    <div class="flex-100">Balance</div>
+  </div>
+  <ng-container *ngFor="let wallet of walletService.all() | async">
+    <div class="grid-row" (click)="openWallet()">
+      <div class="flex-fill label">{{ wallet.meta.label }}</div>
+      <div class="flex-100 hours">{{ wallet.hours ? wallet.hours : 0 }}</div>
+      <div class="flex-100 coins">{{ wallet.balance ? wallet.balance : 0 }}</div>
+      <img src="../../../../assets/img/chevron-right-grey.png">
+    </div>
+  </ng-container>
+  <div class="action-buttons">
+    <button md-button (click)="addWallet()">
+      <img src="../../../../assets/img/plus-gold.png"> Add Wallet
+    </button>
+    <button md-button (click)="loadWallet()">
+      <img src="../../../../assets/img/load-gold.png"> Load Wallet
+    </button>
+  </div>
 </div>

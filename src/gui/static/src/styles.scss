@@ -1,3 +1,5 @@
+@import 'theme/_variables';
+
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
@@ -25,10 +27,15 @@ md-panel-description, md-panel-title, md-option.mat-option {
   font-family: $mat-font-family;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   background-color: #eee;
   margin: 0;
   padding: 0;
+  height: 100%;
 }
 
 header {
@@ -77,3 +84,17 @@ md-panel-title {
   display: block;
   flex-grow: 0 !important;
 }
+
+.sky-container {
+  min-width: 100%;
+  min-height: 100%;
+
+  &.sky-container-grey {
+    background-color: $grey-light;
+  }
+}
+
+.flex-fill {
+  flex: 1 1 auto;
+}
+

@@ -8,7 +8,7 @@ import { ChangeNameComponent } from './change-name/change-name.component';
 @Component({
   selector: 'app-wallets',
   templateUrl: './wallets.component.html',
-  styleUrls: ['./wallets.component.css']
+  styleUrls: ['./wallets.component.scss']
 })
 export class WalletsComponent {
 
@@ -23,5 +23,13 @@ export class WalletsComponent {
     this.dialog.open(CreateWalletComponent, config).afterClosed().subscribe(result => {
       //
     });
+  }
+
+  loadWallet() {
+    // to be implemented
+  }
+
+  openWallet() {
+    // to be implemented
   }
 }

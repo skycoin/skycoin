@@ -16,6 +16,13 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
+const (
+	// MaxDropletPrecision represents the precision of droplets
+	MaxDropletPrecision = 0
+	// MaxDropletDivisor represents the modulus divisor when checking droplet precision rules
+	MaxDropletDivisor uint64 = 1e6
+)
+
 var (
 	logger = logging.MustGetLogger("visor")
 )
@@ -30,8 +37,6 @@ type BuildInfo struct {
 type Config struct {
 	// Is this the master blockchain
 	IsMaster bool
-
-	//WalletDirectory string //move out
 
 	//Public key of blockchain authority
 	BlockchainPubkey cipher.PubKey
@@ -51,10 +56,10 @@ type Config struct {
 	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
-	// Divisor of coin hours required as fee. E.g. with hours=100 and factor=4,
-	// 25 additional hours are required as a fee.  A value of 0 disables
-	// the fee requirement.
-	//CoinHourBurnFactor uint64
+
+	// Modulus divisor of coin amount to control decimal place precision
+	// Valid values are 1e6, 1e5, 1e4, 1e3, 1e2, 1
+	MaxDropletDivisor uint64
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -98,6 +103,7 @@ func NewVisorConfig() Config {
 		// UnconfirmedRefreshRate:   time.Minute * 30,
 		UnconfirmedResendPeriod: time.Minute,
 		MaxBlockSize:            1024 * 32,
+		MaxDropletDivisor:       MaxDropletDivisor,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -106,6 +112,23 @@ func NewVisorConfig() Config {
 	}
 
 	return c
+}
+
+// Verify verifies the configuration
+func (c Config) Verify() error {
+	if c.IsMaster {
+		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
+			return errors.New("Cannot run in master: invalid seckey for pubkey")
+		}
+	}
+
+	switch c.MaxDropletDivisor {
+	case 1e6, 1e5, 1e4, 1e3, 1e2, 1:
+	default:
+		return errors.New("MaxDropletDivisor must be 1e6, 1e5, 1e4, 1e3, 1e2 or 1")
+	}
+
+	return nil
 }
 
 // Visor manages the Blockchain as both a Master and a Normal
@@ -121,19 +144,18 @@ type Visor struct {
 	db       *bolt.DB
 }
 
-// NewVisor Creates a normal Visor given a master's public key
-func NewVisor(c Config) (*Visor, error) {
+// NewVisor creates a Visor for managing the blockchain database
+func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 	logger.Debug("Creating new visor")
-	// Make sure inputs are correct
 	if c.IsMaster {
 		logger.Debug("Visor is master")
-		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
-			// logger.Panicf("Cannot run in master: invalid seckey for pubkey")
-			return nil, errors.New("Cannot run in master: invalid seckey for pubkey")
-		}
 	}
 
-	db, bc, err := loadBlockchain(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
+	if err := c.Verify(); err != nil {
+		return nil, err
+	}
+
+	db, bc, err := loadBlockchain(db, c.BlockchainPubkey, c.Arbitrating)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +166,6 @@ func NewVisor(c Config) (*Visor, error) {
 	}
 
 	// creates blockchain parser instance
-	// var verifyOnce sync.Once
 	bp := NewBlockchainParser(history, bc)
 
 	bc.BindListener(bp.FeedBlock)
@@ -250,7 +271,6 @@ func (vs *Visor) processUnconfirmedTxns() error {
 
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {
-	//if seckey is set
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
 		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
 			logger.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
@@ -266,20 +286,56 @@ func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
 
 // CreateBlock creates a SignedBlock from pending transactions
 func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
-	var sb coin.SignedBlock
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can create blocks")
 	}
+
+	var sb coin.SignedBlock
 	if vs.Unconfirmed.Len() == 0 {
 		return sb, errors.New("No transactions")
 	}
+
+	// Gather all unconfirmed transactions
 	txns := vs.Unconfirmed.RawTxns()
+	logger.Info("Unconfirmed pool has %d transactions pending", len(txns))
+
+	// Sort them by highest fee per kilobyte
 	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
+
+	// Filter transactions that do not obey droplet precision rules
+	var filteredTxns coin.Transactions
+	for _, txn := range txns {
+		skip := false
+		for _, o := range txn.Out {
+			if err := dropletPrecisionCheck(o.Coins, vs.Config.MaxDropletDivisor); err != nil {
+				skip = true
+				break
+			}
+		}
+
+		if !skip {
+			filteredTxns = append(filteredTxns, txn)
+		}
+	}
+
+	nRemoved := len(txns) - len(filteredTxns)
+	if nRemoved > 0 {
+		logger.Info("CreateBlock ignored %d transactions with too many decimal places", nRemoved)
+	}
+
+	txns = filteredTxns
+
+	// Apply block size transaction limit
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+
+	logger.Info("Creating new block with %d transactions, head time %d", len(txns), when)
+
 	b, err := vs.Blockchain.NewBlock(txns, when)
 	if err != nil {
+		logger.Warning("Blockchain.NewBlock failed: %v", err)
 		return sb, err
 	}
+
 	return vs.SignBlock(*b), nil
 }
 
@@ -680,4 +736,17 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 	}
 
 	return bps, nil
+}
+
+// DropletPrecisionCheck checks if the amount is valid
+func DropletPrecisionCheck(amount uint64) error {
+	return dropletPrecisionCheck(amount, MaxDropletDivisor)
+}
+
+func dropletPrecisionCheck(amount, divisor uint64) error {
+	if amount%divisor != 0 {
+		return errors.New("invalid amount, too many decimal places")
+	}
+
+	return nil
 }

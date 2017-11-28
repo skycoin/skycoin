@@ -19,8 +19,6 @@ var (
 
 	// ErrUnspentNotExist represents the error of unspent output in a tx does not exist
 	ErrUnspentNotExist = errors.New("Unspent output does not exist")
-	// ErrSignatureLost signature lost error
-	ErrSignatureLost = errors.New("signature lost")
 )
 
 const (

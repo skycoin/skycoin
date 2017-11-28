@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 
@@ -229,9 +230,9 @@ type Daemon struct {
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config, defaultConns []string) (*Daemon, error) {
+func NewDaemon(config Config, db *bolt.DB, defaultConns []string) (*Daemon, error) {
 	config = config.preprocess()
-	vs, err := NewVisor(config.Visor)
+	vs, err := NewVisor(config.Visor, db)
 	if err != nil {
 		return nil, err
 	}
@@ -924,13 +925,4 @@ func SplitAddr(addr string) (string, uint16, error) {
 		return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
 	}
 	return pts[0], uint16(port64), nil
-}
-
-// DropletPrecisionCheck checks if the amount is valid
-func DropletPrecisionCheck(amount uint64) error {
-	if amount%MaxDropletDivisor != 0 {
-		return fmt.Errorf("invalid amount, too many decimal place")
-	}
-
-	return nil
 }

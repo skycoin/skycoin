@@ -359,8 +359,7 @@ type FeeCalculator func(*Transaction) (uint64, error)
 
 // SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if
 // tied.  Transactions that fail in fee computation are excluded.
-func SortTransactions(txns Transactions,
-	feeCalc FeeCalculator) Transactions {
+func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
 	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
 	return sorted.Txns

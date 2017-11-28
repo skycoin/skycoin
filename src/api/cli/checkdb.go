@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor"
-	gcli "github.com/urfave/cli"
 )
 
 const (

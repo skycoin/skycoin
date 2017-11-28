@@ -6,9 +6,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 func randBytes(t *testing.T, n int) []byte {

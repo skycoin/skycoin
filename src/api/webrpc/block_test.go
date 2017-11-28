@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 var blockString = `{

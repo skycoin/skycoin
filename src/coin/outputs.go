@@ -159,6 +159,25 @@ func (ua UxArray) Swap(i, j int) {
 	ua[i], ua[j] = ua[j], ua[i]
 }
 
+// Coins returns the total coins
+func (ua UxArray) Coins() uint64 {
+	var coins uint64
+	for _, ux := range ua {
+		coins += ux.Body.Coins
+	}
+
+	return coins
+}
+
+// CoinHours returns the total coin hours
+func (ua UxArray) CoinHours(headTime uint64) uint64 {
+	var hours uint64
+	for _, ux := range ua {
+		hours += ux.CoinHours(headTime)
+	}
+	return hours
+}
+
 // AddressUxOuts maps address with uxarray
 type AddressUxOuts map[cipher.Address]UxArray
 

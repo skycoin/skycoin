@@ -13,6 +13,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
@@ -235,14 +236,20 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			addrs = append(addrs, a)
 		}
 
-		bal, err := gateway.GetAddressesBalance(addrs)
+		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			logger.Error("Get balance failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
-		wh.SendOr404(w, bal)
+		var balance wallet.BalancePair
+		for _, bal := range bals {
+			balance.Confirmed = balance.Confirmed.Add(bal.Confirmed)
+			balance.Predicted = balance.Predicted.Add(bal.Predicted)
+		}
+
+		wh.SendOr404(w, balance)
 	}
 }
 

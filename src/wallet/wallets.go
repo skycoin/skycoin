@@ -20,6 +20,11 @@ import (
 // Wallets wallets map
 type Wallets map[string]*Wallet
 
+var (
+	// ErrWalletNameConflict represents the wallet name conflict error
+	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
+)
+
 // LoadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered. If encounter old wallet file, then backup
@@ -123,7 +128,7 @@ func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
 // Add add walet to current wallet
 func (wlts Wallets) Add(w Wallet) error {
 	if _, dup := wlts[w.GetFilename()]; dup {
-		return errors.New("wallet name would conflict with existing wallet, renaming")
+		return ErrWalletNameConflict
 	}
 
 	wlts[w.GetFilename()] = &w
@@ -156,7 +161,7 @@ func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 }
 
 // NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+func (wlts *Wallets) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
 	if w, ok := (*wlts)[wltID]; ok {
 		return w.GenerateAddresses(num), nil
 	}

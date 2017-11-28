@@ -19,6 +19,14 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
+var (
+	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
+	ErrInsufficientBalance = errors.New("balance in wallet is not sufficient")
+
+	// ErrTemporaryInsufficientBalance is returned if a wallet does not have enough balance for a spend, but will have enough after unconfirmed transactions confirm
+	ErrTemporaryInsufficientBalance = errors.New(`balance in wallet is not sufficient. Balance will be sufficient after unconfirmed transactions confirm`)
+)
+
 // UnspentOut wraps visor.ReadableOutput
 type UnspentOut struct {
 	visor.ReadableOutput
@@ -367,7 +375,7 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	for _, o := range outs {
 		c, err := droplet.FromString(o.Coins)
 		if err != nil {
-			return nil, errors.New("error coins string")
+			return nil, err
 		}
 		totalInCoins += c
 		totalInHours += o.Hours
@@ -378,7 +386,7 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	}
 
 	if totalInCoins < totalOutCoins {
-		return nil, errors.New("amount is not sufficient")
+		return nil, ErrInsufficientBalance
 	}
 
 	outAddrs := []coin.TransactionOutput{}
@@ -452,11 +460,11 @@ func getSufficientUnspents(unspents *webrpc.OutputsResult, coins uint64) ([]Unsp
 	}
 
 	if spendableCoins+uncfmIncoming.Coins < coins {
-		return nil, errors.New("balance in wallet is not sufficient")
+		return nil, ErrInsufficientBalance
 	}
 
 	// spendable coins + unconfirmed incoming coins >= coins
-	return nil, errors.New(`balance in wallet is not sufficient. Balance will be sufficient after unconfirmed transactions confirm`)
+	return nil, ErrTemporaryInsufficientBalance
 }
 
 // NewTransaction create skycoin transaction.

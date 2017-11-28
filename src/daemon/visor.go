@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 //TODO
@@ -464,6 +465,18 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 		return nil
 	})
 	return maxLen
+}
+
+// LoadAndScanWallet loads wallet from seeds and scan ahead N addresses
+func (vs *Visor) LoadAndScanWallet(wltName string, seed string, scanN uint64, ops ...wallet.Option) (wallet.Wallet, error) {
+	var wlt wallet.Wallet
+	var err error
+	vs.strand("LoadAndScanWallet", func() error {
+		wlt, err = vs.v.LoadAndScanWallet(wltName, seed, scanN, ops...)
+		return nil
+	})
+
+	return wlt, err
 }
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height

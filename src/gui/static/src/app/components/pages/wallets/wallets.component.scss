@@ -22,6 +22,7 @@
 .grid-row {
   background-color: $white;
   border-bottom: 1px solid #eff0f0;
+  cursor: pointer;
   display: flex;
   font-size: $font-size-standard;
   line-height: $row-height;

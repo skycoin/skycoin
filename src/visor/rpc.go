@@ -144,7 +144,7 @@ func (rpc *RPC) NewWallet(wltName string, ops ...wallet.Option) (wallet.Wallet, 
 }
 
 // NewAddresses generates new addresses in given wallet
-func (rpc *RPC) NewAddresses(wltName string, num int) ([]cipher.Address, error) {
+func (rpc *RPC) NewAddresses(wltName string, num uint64) ([]cipher.Address, error) {
 	return rpc.v.wallets.NewAddresses(wltName, num)
 }
 

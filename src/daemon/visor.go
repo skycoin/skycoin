@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 //TODO
@@ -75,15 +77,14 @@ type Visor struct {
 }
 
 // NewVisor creates visor instance
-func NewVisor(c VisorConfig) (*Visor, error) {
+func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 	vs := &Visor{
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
 	}
 
-	var v *visor.Visor
-	v, err := visor.NewVisor(c.Config)
+	v, err := visor.NewVisor(c.Config, db)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +363,7 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 
 	// valid the spending coins
 	for _, out := range txn.Out {
-		if err := DropletPrecisionCheck(out.Coins); err != nil {
+		if err := visor.DropletPrecisionCheck(out.Coins); err != nil {
 			return err
 		}
 	}
@@ -464,6 +465,18 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 		return nil
 	})
 	return maxLen
+}
+
+// LoadAndScanWallet loads wallet from seeds and scan ahead N addresses
+func (vs *Visor) LoadAndScanWallet(wltName string, seed string, scanN uint64, ops ...wallet.Option) (wallet.Wallet, error) {
+	var wlt wallet.Wallet
+	var err error
+	vs.strand("LoadAndScanWallet", func() error {
+		wlt, err = vs.v.LoadAndScanWallet(wltName, seed, scanN, ops...)
+		return nil
+	})
+
+	return wlt, err
 }
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height

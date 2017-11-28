@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-	gcli "github.com/urfave/cli"
 )
 
 func generateAddrsCmd(cfg Config) gcli.Command {
@@ -50,7 +51,7 @@ func generateAddrs(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
 
 	// get number of address that are need to be generated.
-	num := c.Uint("n")
+	num := c.Uint64("n")
 	if num == 0 {
 		return errors.New("-n must > 0")
 	}
@@ -62,7 +63,7 @@ func generateAddrs(c *gcli.Context) error {
 		return err
 	}
 
-	addrs, err := GenerateAddressesInFile(w, int(num))
+	addrs, err := GenerateAddressesInFile(w, num)
 
 	switch err.(type) {
 	case nil:
@@ -88,7 +89,7 @@ func generateAddrs(c *gcli.Context) error {
 	return nil
 }
 
-func GenerateAddressesInFile(walletFile string, num int) ([]cipher.Address, error) {
+func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError(err)

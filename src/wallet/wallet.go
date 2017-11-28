@@ -45,6 +45,13 @@ const (
 	CoinTypeBitcoin CoinType = "bitcoin"
 )
 
+var (
+	// ErrNoPassword find no password when creating wallet
+	ErrNoPassword = errors.New("password is required when creating wallet")
+	// ErrInvalidWalletVersion represents invalid wallet version erro
+	ErrInvalidWalletVersion = errors.New("invalid wallet version")
+)
+
 // NewWalletFilename check for collisions and retry if failure
 func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
@@ -64,7 +71,8 @@ type Wallet struct {
 	Entries []Entry
 }
 
-var version = "0.1"
+// wallet version
+var wltVersion = "0.2"
 
 // Options are wallet constructor options
 type Options struct {
@@ -87,7 +95,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	w := &Wallet{
 		Meta: map[string]string{
 			"filename": wltName,
-			"version":  version,
+			"version":  wltVersion,
 			"label":    opts.Label,
 			"seed":     opts.Seed,
 			"lastSeed": opts.Seed,
@@ -105,25 +113,6 @@ func Load(wltFile string) (*Wallet, error) {
 	w := Wallet{}
 	if err := w.Load(wltFile); err != nil {
 		return nil, err
-	}
-
-	return &w, nil
-}
-
-// newWalletFromReadable creates wallet from readable wallet
-func newWalletFromReadable(r *ReadableWallet) (*Wallet, error) {
-	ets, err := r.Entries.ToWalletEntries()
-	if err != nil {
-		return nil, err
-	}
-
-	w := Wallet{
-		Meta:    r.Meta,
-		Entries: ets,
-	}
-
-	if err := w.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid wallet %s: %v", w.GetFilename(), err)
 	}
 
 	return &w, nil
@@ -196,6 +185,14 @@ func (w *Wallet) setLastSeed(lseed string) {
 	w.Meta["lastSeed"] = lseed
 }
 
+func (wlt *Wallet) seed() string {
+	return wlt.Meta["seed"]
+}
+
+func (wlt *Wallet) setSeed(seed string) {
+	wlt.Meta["seed"] = seed
+}
+
 // GetVersion gets the wallet version
 func (w *Wallet) GetVersion() string {
 	return w.Meta["version"]
@@ -219,7 +216,52 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	if w.getLastSeed() == "" {
 		return nil, errors.New("missing lastSeed in wallet")
 	}
+	return nil, ErrInvalidWalletVersion
+}
 
+func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password []byte) ([]cipher.Address, error) {
+	var seckeys []cipher.SecKey
+	var sd []byte
+	var err error
+
+	lastSeed, err := decrypt(wlt.getLastSeed(), password)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt last seed failed: %v", err)
+	}
+
+	sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(lastSeed, num)
+
+	// encrypt the last seed
+	newLastSeed, err := encrypt(sd, []byte(password))
+	if err != nil {
+		return nil, err
+	}
+
+	// update the last seed
+	wlt.setLastSeed(newLastSeed)
+
+	addrs := make([]cipher.Address, len(seckeys))
+	for i, s := range seckeys {
+		p := cipher.PubKeyFromSecKey(s)
+		a := cipher.AddressFromPubKey(p)
+		addrs[i] = a
+
+		// encrypt seckey
+		ss, err := encrypt(s[:], []byte(password))
+		if err != nil {
+			return nil, fmt.Errorf("encrypt private key failed: %v", err)
+		}
+
+		wlt.Entries = append(wlt.Entries, Entry{
+			Address:         a,
+			EncryptedSeckey: ss,
+			Public:          p,
+		})
+	}
+	return addrs, nil
+}
+
+func (wlt *Wallet) newAddressesInUnencryptedWallet(num int) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.Entries) == 0 {
@@ -345,12 +387,12 @@ func (w *Wallet) Load(wltFile string) error {
 
 	// update filename meta info with the real filename
 	r.Meta["filename"] = filepath.Base(wltFile)
-	wlt, err := newWalletFromReadable(r)
+	var err error
+	w, err := r.toWallet()
 	if err != nil {
 		return err
 	}
-
-	*w = *wlt
+	*wlt = *w
 	return nil
 }
 
@@ -415,7 +457,19 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 		}
 
 		txn.PushInput(au.Hash)
-		toSign[i] = entry.Secret
+
+		switch wlt.GetVersion() {
+		case "0.1":
+			toSign[i] = entry.Secret
+		case wltVersion:
+			// decrypt the private key
+			s, err := decrypt(entry.EncryptedSeckey, []byte(password))
+			if err != nil {
+				return nil, err
+			}
+
+			copy(toSign[i][:], s[:])
+		}
 		spending.Coins += au.Coins
 		spending.Hours += au.Hours
 	}

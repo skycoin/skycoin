@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 func PrepareDB(t *testing.T) (*bolt.DB, func()) {

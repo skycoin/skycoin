@@ -22,10 +22,10 @@ var (
 	testMaxSize          = 1024 * 1024
 )
 
-var _genTime uint64 = 1000
-var _incTime uint64 = 3600 * 1000
-var _genCoins uint64 = 1000e6
-var _genCoinHours uint64 = 1000 * 1000
+var genTime uint64 = 1000
+var incTime uint64 = 3600 * 1000
+var genCoins uint64 = 1000e6
+var genCoinHours uint64 = 1000 * 1000
 
 var failedWhenSave bool
 
@@ -33,11 +33,11 @@ func tNow() uint64 {
 	return uint64(utc.UnixNow())
 }
 
-func _feeCalc(t *coin.Transaction) (uint64, error) {
+func feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func _makeFeeCalc(fee uint64) coin.FeeCalculator {
+func makeFeeCalc(fee uint64) coin.FeeCalculator {
 	return func(t *coin.Transaction) (uint64, error) {
 		return fee, nil
 	}
@@ -45,7 +45,7 @@ func _makeFeeCalc(fee uint64) coin.FeeCalculator {
 
 func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	// create genesis block
-	gb, err := coin.NewGenesisBlock(genAddress, _genCoins, _genTime)
+	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
 
@@ -62,7 +62,7 @@ func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	}
 }
 
-func makeSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
+func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -72,10 +72,85 @@ func makeSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, 
 		totalCoins += ux.Body.Coins
 	}
 
+	require.True(t, coins <= totalCoins)
+
 	hours := totalHours / 4
 
 	spendTx.PushOutput(toAddr, coins, hours)
-	spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, totalHours/4)
+	if totalCoins-coins != 0 {
+		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, totalHours/4)
+	}
+	spendTx.SignInputs(keys)
+	spendTx.UpdateHeader()
+	return spendTx
+}
+
+// makeUnspentsTx creates a transaction that has a configurable number of outputs sent to the same address.
+// The genesis block has only one unspent output, so only one transaction can be made from it.
+// This is useful for when multiple test transactions need to be made from the same block.
+// Coins and hours are distributed equally amongst all new outputs.
+func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDivisor uint64) coin.Transaction {
+	// Add inputs to the transaction
+	spendTx := coin.Transaction{}
+	var totalHours uint64
+	var totalCoins uint64
+	for _, ux := range uxs {
+		spendTx.PushInput(ux.Hash())
+		totalHours += ux.Body.Hours
+		totalCoins += ux.Body.Coins
+	}
+
+	// Distribute coins and hours equally to all of the new outputs
+	coins := totalCoins / uint64(nUnspents)
+	coins = (coins / maxDivisor) * maxDivisor
+	t.Logf("Assigning %d coins to each of %d outputs", coins, nUnspents)
+	changeCoins := totalCoins - (coins * uint64(nUnspents))
+
+	hours := (totalHours / 2) / uint64(nUnspents)
+	changeHours := (totalHours / 2) - (hours * uint64(nUnspents))
+
+	// Create the new outputs
+	require.True(t, uint64(nUnspents) < hours)
+	for i := 0; i < nUnspents; i++ {
+		// Subtract index from hours so that the outputs are not all the same,
+		// otherwise the output hashes will be duplicated and the transaction
+		// will be invalid
+		spendHours := hours - uint64(i)
+		spendTx.PushOutput(toAddr, coins, spendHours)
+	}
+
+	// Add change output, if necessary
+	if changeCoins != 0 {
+		spendTx.PushOutput(uxs[0].Body.Address, changeCoins, changeHours)
+	}
+
+	// Sign the transaction
+	spendTx.SignInputs(keys)
+	spendTx.UpdateHeader()
+
+	return spendTx
+}
+
+func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, fee uint64) coin.Transaction {
+	spendTx := coin.Transaction{}
+	var totalHours uint64
+	var totalCoins uint64
+	for _, ux := range uxs {
+		spendTx.PushInput(ux.Hash())
+		totalHours += ux.Body.Hours
+		totalCoins += ux.Body.Coins
+	}
+
+	require.True(t, coins <= totalCoins)
+	require.True(t, fee <= totalHours/2, "Fee must be <= half of total hours")
+
+	baseHours := totalHours - fee
+	hours := baseHours / 4
+
+	spendTx.PushOutput(toAddr, coins, hours)
+	if totalCoins-coins != 0 {
+		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, hours)
+	}
 	spendTx.SignInputs(keys)
 	spendTx.UpdateHeader()
 	return spendTx
@@ -164,18 +239,18 @@ func (fcs fakeChainStore) GetGenesisBlock() *coin.SignedBlock {
 func makeBlock(t *testing.T, preBlock coin.Block, tm uint64) *coin.Block {
 	uxHash := randSHA256()
 	tx := coin.Transaction{}
-	b, err := coin.NewBlock(preBlock, tm, uxHash, coin.Transactions{tx}, _feeCalc)
+	b, err := coin.NewBlock(preBlock, tm, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 	return b
 }
 
 func makeBlocks(t *testing.T, n int) []coin.SignedBlock {
 	var bs []coin.SignedBlock
-	preBlock, err := coin.NewGenesisBlock(genAddress, _genCoins, _genTime)
+	preBlock, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 	bs = append(bs, coin.SignedBlock{Block: *preBlock})
 
-	now := _genTime + 100
+	now := genTime + 100
 	for i := 1; i < n; i++ {
 		b := makeBlock(t, *preBlock, now+uint64(i)*100)
 		sb := coin.SignedBlock{
@@ -504,7 +579,7 @@ func TestVerifyTransaction(t *testing.T) {
 
 	// create normal spending tx
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 	err = bc.VerifyTransaction(tx)
 	require.NoError(t, err)
 
@@ -518,7 +593,7 @@ func TestVerifyTransaction(t *testing.T) {
 	tx.InnerHash = originInnerHash
 
 	// create new block to spend the coins
-	b, err := bc.NewBlock(coin.Transactions{tx}, _genTime+100)
+	b, err := bc.NewBlock(coin.Transactions{tx}, genTime+100)
 	require.NoError(t, err)
 
 	// add the block to blockchain
@@ -539,7 +614,7 @@ func TestVerifyTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(b.Head, tx)
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
-	tx2 := makeSpendTx(uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
+	tx2 := makeSpendTx(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
 	err = bc.VerifyTransaction(tx2)
 	require.Equal(t, errors.New("Signature not valid for output being spent"), err)
 
@@ -701,10 +776,8 @@ func TestProcessTransactions(t *testing.T) {
 			head := addGenesisBlock(t, bc)
 			tm := head.Time()
 			for i, spend := range tc.initChain {
-				uxs := coin.CreateUnspents(head.Head,
-					head.Body.Transactions[spend.TxIndex])
-				tx := makeSpendTx(coin.UxArray{uxs[spend.UxIndex]},
-					spend.Keys, spend.ToAddr, spend.Coins)
+				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
+				tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 
 				b, err := bc.NewBlock(coin.Transactions{tx}, tm+uint64(i*100))
 				require.NoError(t, err)
@@ -722,10 +795,8 @@ func TestProcessTransactions(t *testing.T) {
 			// create spending transactions
 			txs := make([]coin.Transaction, len(tc.spends))
 			for i, spend := range tc.spends {
-				uxs := coin.CreateUnspents(head.Head,
-					head.Body.Transactions[spend.TxIndex])
-				tx := makeSpendTx(coin.UxArray{uxs[spend.UxIndex]},
-					spend.Keys, spend.ToAddr, spend.Coins)
+				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
+				tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 				txs[i] = tx
 			}
 
@@ -751,13 +822,13 @@ func TestVerifyUxHash(t *testing.T) {
 	gb := addGenesisBlock(t, bc)
 	uxHash := bc.Unspent().GetUxHash()
 	tx := coin.Transaction{}
-	b, err := coin.NewBlock(gb.Block, _genTime+100, uxHash, coin.Transactions{tx}, _feeCalc)
+	b, err := coin.NewBlock(gb.Block, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 
 	err = bc.verifyUxHash(*b)
 	require.NoError(t, err)
 
-	b2, err := coin.NewBlock(gb.Block, _genTime+10, randSHA256(), coin.Transactions{tx}, _feeCalc)
+	b2, err := coin.NewBlock(gb.Block, genTime+10, randSHA256(), coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 
 	err = bc.verifyUxHash(*b2)
@@ -776,7 +847,7 @@ func TestProcessBlockWIthTx(t *testing.T) {
 		store: store,
 	}
 
-	gb, err := coin.NewGenesisBlock(genAddress, _genCoins, _genTime)
+	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 
 	sb := coin.SignedBlock{
@@ -801,9 +872,9 @@ func TestProcessBlockWIthTx(t *testing.T) {
 	// create new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
-	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
+	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
 	uxhash := bc.Unspent().GetUxHash()
-	b, err := coin.NewBlock(*gb, _genTime+100, uxhash, coin.Transactions{tx}, _feeCalc)
+	b, err := coin.NewBlock(*gb, genTime+100, uxhash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 
 	db.Update(func(tx *bolt.Tx) error {
@@ -829,7 +900,7 @@ func TestExecuteBlockWithTx(t *testing.T) {
 		store: store,
 	}
 
-	gb, err := coin.NewGenesisBlock(genAddress, _genCoins, _genTime)
+	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 
 	sb := coin.SignedBlock{
@@ -847,10 +918,10 @@ func TestExecuteBlockWithTx(t *testing.T) {
 	// new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
-	tx := makeSpendTx(uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
+	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
 	uxhash := bc.Unspent().GetUxHash()
 
-	b, err := coin.NewBlock(*gb, _genTime+100, uxhash, coin.Transactions{tx}, _feeCalc)
+	b, err := coin.NewBlock(*gb, genTime+100, uxhash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 	db.Update(func(tx *bolt.Tx) error {
 		err := bc.ExecuteBlockWithTx(tx, &coin.SignedBlock{

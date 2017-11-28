@@ -1,7 +1,6 @@
 package coin
 
 import (
-	"bytes"
 	"math"
 	"testing"
 
@@ -39,31 +38,6 @@ func makeTransactions(t *testing.T, n int) Transactions {
 func makeAddress() cipher.Address {
 	p, _ := cipher.GenerateKeyPair()
 	return cipher.AddressFromPubKey(p)
-}
-
-func manualTransactionsIsSorted(t *testing.T, txns Transactions,
-	getFee FeeCalculator) bool {
-	isSorted := true
-	for i := 0; i < len(txns)-1; i++ {
-		ifee, err := getFee(&txns[i])
-		require.Nil(t, err)
-		jfee, err := getFee(&txns[i+1])
-		require.Nil(t, err)
-		if ifee == jfee {
-			hi := txns[i].Hash()
-			hj := txns[i+1].Hash()
-			if bytes.Compare(hi[:], hj[:]) > 0 {
-				isSorted = false
-				break
-			}
-		} else {
-			if ifee < jfee {
-				isSorted = false
-				break
-			}
-		}
-	}
-	return isSorted
 }
 
 func copyTransaction(tx Transaction) Transaction {

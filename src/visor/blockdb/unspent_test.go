@@ -12,10 +12,11 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/stretchr/testify/assert"
 )
 
 type spending struct {

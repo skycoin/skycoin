@@ -198,11 +198,17 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 
 	gw.strand("GetBlocksInDepth", func() {
 		for _, n := range vs {
-			b, err := gw.vrpc.GetBlockBySeq(gw.v, n)
+			var b *coin.SignedBlock
+			b, err = gw.vrpc.GetBlockBySeq(gw.v, n)
 			if err != nil {
 				err = fmt.Errorf("get block %v failed: %v", n, err)
 				return
 			}
+
+			if b == nil {
+				return
+			}
+
 			blocks = append(blocks, *b)
 		}
 	})
@@ -519,6 +525,16 @@ func (gw *Gateway) NewWallet(wltName string, options ...wallet.Option) (wallet.W
 	return wlt, err
 }
 
+// LoadAndScanWallet loads wallet from given seed and scan ahead N addresses
+func (gw *Gateway) LoadAndScanWallet(wltName string, seed string, scanN uint64, options ...wallet.Option) (wallet.Wallet, error) {
+	var wlt wallet.Wallet
+	var err error
+	gw.strand("LoadAndScanWallet", func() {
+		wlt, err = gw.v.LoadAndScanWallet(wltName, seed, scanN, options...)
+	})
+	return wlt, err
+}
+
 // CreateSpendingTransaction creates spending transactions
 func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
 	var tx *coin.Transaction
@@ -572,37 +588,15 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 	return balance, err
 }
 
-// GetAddressesBalance gets balance of given addresses
-func (gw *Gateway) GetAddressesBalance(addrs []cipher.Address) (wallet.BalancePair, error) {
-	var balance wallet.BalancePair
+// GetBalanceOfAddrs gets balance of given addresses
+func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+	var bps []wallet.BalancePair
 	var err error
-	gw.strand("GetAddressBalance", func() {
-		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
-		var spendUxs coin.AddressUxOuts
-		spendUxs, err = gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
-		if err != nil {
-			err = fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
-			return
-		}
-
-		var recvUxs coin.AddressUxOuts
-		recvUxs, err = gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
-		if err != nil {
-			err = fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
-			return
-		}
-
-		uxs := auxs.Sub(spendUxs)
-		uxs = uxs.Add(recvUxs)
-		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
-		balance = wallet.BalancePair{
-			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
-			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
-		}
+	gw.strand("GetBalanceOfAddrs", func() {
+		bps, err = gw.v.GetBalanceOfAddrs(addrs)
 	})
 
-	return balance, err
+	return bps, err
 }
 
 // GetWalletDir returns path for storing wallet files
@@ -611,7 +605,7 @@ func (gw *Gateway) GetWalletDir() string {
 }
 
 // NewAddresses generate addresses in given wallet
-func (gw *Gateway) NewAddresses(wltID string, n int) ([]cipher.Address, error) {
+func (gw *Gateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
 	var addrs []cipher.Address
 	var err error
 	gw.strand("NewAddresses", func() {

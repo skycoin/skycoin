@@ -230,8 +230,6 @@ func (pool *ConnectionPool) Run() error {
 		}
 	}()
 
-	logger.Info("Listening for connections...")
-
 loop:
 	for {
 		conn, err := ln.Accept()

@@ -115,22 +115,12 @@ func (rpc RPC) GetDefaultConnections(d *Daemon) []string {
 
 // GetTrustConnections get all trusted transaction
 func (rpc RPC) GetTrustConnections(d *Daemon) []string {
-	peers := d.Peers.Peers.GetAllTrustedPeers()
-	addrs := make([]string, len(peers))
-	for i, p := range peers {
-		addrs[i] = p.Addr
-	}
-	return addrs
+	return d.Pex.Trusted().ToAddrs()
 }
 
 // GetAllExchgConnections return all exchangeable connections
 func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
-	peers := d.Peers.Peers.RandomExchgAll(0)
-	addrs := make([]string, len(peers))
-	for i, p := range peers {
-		addrs[i] = p.Addr
-	}
-	return addrs
+	return d.Pex.RandomExchangeable(0).ToAddrs()
 }
 
 // GetBlockchainProgress gets the blockchain progress

@@ -12,11 +12,12 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/assert"
 )
 
 // const (

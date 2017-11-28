@@ -14,9 +14,10 @@ import (
 
 	"os"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
-	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support

@@ -1,16 +1,19 @@
 package gui
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
@@ -119,6 +122,8 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 		}
 		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
 	}
+
+	mux.HandleFunc("/logs", getLogsHandler(&daemon.LogBuff))
 
 	mux.HandleFunc("/version", versionHandler(daemon.Gateway))
 
@@ -231,14 +236,20 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			addrs = append(addrs, a)
 		}
 
-		bal, err := gateway.GetAddressesBalance(addrs)
+		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			logger.Error("Get balance failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
-		wh.SendOr404(w, bal)
+		var balance wallet.BalancePair
+		for _, bal := range bals {
+			balance.Confirmed = balance.Confirmed.Add(bal.Confirmed)
+			balance.Predicted = balance.Predicted.Add(bal.Predicted)
+		}
+
+		wh.SendOr404(w, balance)
 	}
 }
 
@@ -250,5 +261,69 @@ func versionHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, gateway.GetBuildInfo())
+	}
+}
+
+/*
+attrActualLog remove color char in log
+origin: "\u001b[36m[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000\u001b[0m",
+*/
+func attrActualLog(logInfo string) string {
+	//return logInfo
+	var actualLog string
+	actualLog = logInfo
+	if strings.HasPrefix(logInfo, "[skycoin") {
+		if strings.Contains(logInfo, "\u001b") {
+			actualLog = logInfo[0 : len(logInfo)-4]
+		}
+	} else {
+		if len(logInfo) > 5 {
+			if strings.Contains(logInfo, "\u001b") {
+				actualLog = logInfo[5 : len(logInfo)-4]
+			}
+		}
+	}
+	return actualLog
+}
+func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		var err error
+		defaultLineNum := 1000 // default line numbers
+		linenum := defaultLineNum
+		if lines := r.FormValue("lines"); lines != "" {
+			linenum, err = strconv.Atoi(lines)
+			if err != nil {
+				linenum = defaultLineNum
+			}
+		}
+		keyword := r.FormValue("include")
+		excludeKeyword := r.FormValue("exclude")
+		logs := []string{}
+		logList := strings.Split(logbuf.String(), "\n")
+		for _, logInfo := range logList {
+			if excludeKeyword != "" && strings.Contains(logInfo, excludeKeyword) {
+				continue
+			}
+			if keyword != "" && !strings.Contains(logInfo, keyword) {
+				continue
+			}
+
+			if len(logs) >= linenum {
+				logger.Debug("logs size %d,total size:%d", len(logs), len(logList))
+				break
+			}
+			log := attrActualLog(logInfo)
+			if "" != log {
+				logs = append(logs, log)
+			}
+
+		}
+
+		wh.SendOr404(w, logs)
 	}
 }

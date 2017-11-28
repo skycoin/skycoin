@@ -13,11 +13,12 @@ import (
 
 	"math"
 
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"os"
-	"net/http"
-	"io"
 )
 
 //TODO:
@@ -29,9 +30,11 @@ import (
 
 var (
 	// PeerDatabaseUrl url for downloading peers
-	PeerDatabaseUrl = "skycoin.net/downloads/peers.txt"
+	PeerDatabaseUrl = "https://downloads.skycoin.net/blockchain/peers.txt"
 	// PeerDatabaseFilename filename for disk-cached peers
 	PeerDatabaseFilename = "peers.txt"
+	// PeerDatabaseFilename filename for disk-cached peers
+	DownloadedPeerDatabaseFilename = "downloadedPeers.txt"
 	// BlacklistedDatabaseFilename  filename for disk-cached blacklisted peers
 	BlacklistedDatabaseFilename = "blacklisted_peers.txt"
 	// ErrPeerlistFull returned when the Pex is at a maximum
@@ -81,12 +84,12 @@ func validateAddress(ipPort string, allowLocalhost bool) bool {
 
 // Peer represents a known peer
 type Peer struct {
-	Addr            string         // An address of the form ip:port
-	LastSeen        int64          // Unix timestamp when this peer was last seen
-	Private         bool           // Whether it should omitted from public requests
-	Trusted         bool           // Whether this peer is trusted
-	HasIncomingPort bool           // Whether this peer has accessable public port
-	RetryTimes      int `json:"-"` // records the retry times
+	Addr            string // An address of the form ip:port
+	LastSeen        int64  // Unix timestamp when this peer was last seen
+	Private         bool   // Whether it should omitted from public requests
+	Trusted         bool   // Whether this peer is trusted
+	HasIncomingPort bool   // Whether this peer has accessable public port
+	RetryTimes      int    `json:"-"` // records the retry times
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port
@@ -178,6 +181,7 @@ func NewConfig() Config {
 		AllowLocalhost:      false,
 		Disabled:            false,
 		NetworkDisabled:     false,
+		DownloadPeersList:   false,
 	}
 }
 
@@ -201,9 +205,10 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		if err := pex.download(); err != nil {
 			logger.Error("failed to download peers from %s. err: %s", PeerDatabaseUrl, err.Error())
 		}
+
 	}
 	// load peers
-	if err := pex.load(); err != nil {
+	if err := pex.loadLocalCached(); err != nil {
 		return nil, err
 	}
 
@@ -228,7 +233,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 }
 
 func (px *Pex) download() error {
-	fp := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
+	fp := filepath.Join(px.Config.DataDirectory, DownloadedPeerDatabaseFilename)
 	out, err := os.Create(fp)
 	if err != nil {
 		return err
@@ -244,11 +249,15 @@ func (px *Pex) download() error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return px.load(fp)
 }
 
-func (px *Pex) load() error {
+func (px *Pex) loadLocalCached() error {
 	fp := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
+	return px.load(fp)
+}
+
+func (px *Pex) load(fp string) error {
 	peers, err := loadPeersFromFile(fp)
 	if err != nil {
 		return err

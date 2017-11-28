@@ -42,13 +42,20 @@ func MaxDropletDivisor() uint64 {
 
 func init() {
 	// Compute maxDropletDivisor from precision
-	n := droplet.Exponent - MaxDropletPrecision
+	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
+}
+
+func calculateDivisor(precision uint64) uint64 {
+	if precision > droplet.Exponent {
+		logger.Panic("precision must be <= droplet.Exponent")
+	}
+
+	n := droplet.Exponent - precision
 	var i uint64 = 1
 	for k := uint64(0); k < n; k++ {
 		i = i * 10
 	}
-
-	maxDropletDivisor = i
+	return i
 }
 
 // DropletPrecisionCheck checks if an amount of coins is valid given decimal place restrictions

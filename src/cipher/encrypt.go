@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -14,6 +13,11 @@ const (
 	blockSize = 32 // 32 bytes
 	// the data length prefix size
 	lenPrefixSize = 4 // 4 bytes
+)
+
+var (
+	// ErrInvalidPassword represents the invalid password error
+	ErrInvalidPassword = errors.New("invalid password")
 )
 
 // Encrypt encrypts the data with password
@@ -137,18 +141,18 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	buf = bytes.NewBuffer(decodeData)
 	l, err := binary.ReadUvarint(bytes.NewReader(decodeData[:lenPrefixSize]))
 	if err != nil {
-		return nil, fmt.Errorf("invalid password, read prefix length failed: %v", err)
+		return nil, ErrInvalidPassword
 	}
 
 	if l > uint64(len(decodeData[lenPrefixSize:])) {
-		return nil, errors.New("invalid password, prefix length > data length")
+		return nil, ErrInvalidPassword
 	}
 
 	var dataHash SHA256
 	copy(dataHash[:], decodeData[lenPrefixSize:lenPrefixSize+32])
 	rawData := decodeData[lenPrefixSize+32 : lenPrefixSize+l]
 	if dataHash.Hex() != SumSHA256(rawData).Hex() {
-		return nil, errors.New("decrypt data failed, invalid password")
+		return nil, ErrInvalidPassword
 	}
 
 	return rawData, nil

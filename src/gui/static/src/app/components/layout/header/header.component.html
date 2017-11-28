@@ -1,0 +1,15 @@
+<div class="small-header" *ngIf="!showLargeHeader">
+  <app-top-bar></app-top-bar>
+</div>
+<div class="large-header" *ngIf="showLargeHeader">
+  <app-top-bar></app-top-bar>
+  <div class="balance-container">
+      <div class="balance">
+        <p class="coins"><span>0</span> sky</p>
+        <p class="dollars">$0.00 ($7.5)</p>
+      </div>
+    </div>
+  <div class="hour-balance">
+    <p>0 SKY Hours</p>
+  </div>
+</div>

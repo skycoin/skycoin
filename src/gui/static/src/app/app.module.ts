@@ -42,6 +42,7 @@ import { BuyComponent } from './components/pages/buy/buy.component';
 import { AddDepositAddressComponent } from './components/pages/buy/add-deposit-address/add-deposit-address.component';
 import { PurchaseService } from './services/purchase.service';
 import { TellerStatusPipe } from './pipes/teller-status.pipe';
+import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 
 const ROUTES = [
@@ -194,6 +195,7 @@ const ROUTES = [
     BuyComponent,
     AddDepositAddressComponent,
     TellerStatusPipe,
+    HeaderComponent,
     TopBarComponent,
   ],
   entryComponents: [

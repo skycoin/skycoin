@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
-import { WalletModel } from '../../../../models/wallet.model';
 import { MdDialog, MdDialogConfig } from '@angular/material';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
+import { Wallet } from '../../../../app.datatypes';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -11,7 +11,7 @@ import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
   styleUrls: ['./wallet-detail.component.css']
 })
 export class WalletDetailComponent {
-  @Input() wallet: WalletModel;
+  @Input() wallet: Wallet;
 
   constructor(
     public walletService: WalletService,
@@ -19,7 +19,7 @@ export class WalletDetailComponent {
   ) {}
 
   addAddress() {
-    this.walletService.addAddress(this.wallet).subscribe(output => this.wallet.entries.push(output));
+    this.walletService.addAddress(this.wallet).subscribe(output => this.wallet.addresses.push(output));
   }
 
   renameWallet() {
@@ -28,7 +28,7 @@ export class WalletDetailComponent {
     config.data = this.wallet;
     this.dialog.open(ChangeNameComponent, config).afterClosed().subscribe(result => {
       if (result) {
-        this.wallet.meta.label = result;
+        this.wallet.label = result;
       }
     });
   }

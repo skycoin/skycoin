@@ -2,7 +2,7 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MD_DIALOG_DATA, MdDialogRef } from '@angular/material';
-import { WalletModel } from '../../../../models/wallet.model';
+import { Wallet } from '../../../../app.datatypes';
 
 @Component({
   selector: 'app-change-name',
@@ -14,7 +14,7 @@ export class ChangeNameComponent implements OnInit {
   form: FormGroup;
 
   constructor(
-    @Inject(MD_DIALOG_DATA) private data: WalletModel,
+    @Inject(MD_DIALOG_DATA) private data: Wallet,
     public dialogRef: MdDialogRef<ChangeNameComponent>,
     private formBuilder: FormBuilder,
     private walletService: WalletService,
@@ -31,7 +31,7 @@ export class ChangeNameComponent implements OnInit {
 
   private initForm() {
     this.form = this.formBuilder.group({
-      label: [this.data.meta.label, Validators.required],
+      label: [this.data.label, Validators.required],
     });
   }
 }

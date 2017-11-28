@@ -26,6 +26,9 @@ const (
 
 var (
 	logger = logging.MustGetLogger("visor")
+
+	// ErrInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
+	ErrInvalidDecimals = errors.New("invalid amount, too many decimal places")
 )
 
 // BuildInfo represents the build info
@@ -489,6 +492,13 @@ func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
 // Refactor
 // Why do does this return both error and bool
 func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
+	// Ignore transactions that do not conform to decimal restrictions
+	for _, o := range txn.Out {
+		if err := DropletPrecisionCheck(o.Coins); err != nil {
+			return false, err
+		}
+	}
+
 	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
 }
 
@@ -746,7 +756,7 @@ func DropletPrecisionCheck(amount uint64) error {
 
 func dropletPrecisionCheck(amount, divisor uint64) error {
 	if amount%divisor != 0 {
-		return errors.New("invalid amount, too many decimal places")
+		return ErrInvalidDecimals
 	}
 
 	return nil

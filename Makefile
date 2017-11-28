@@ -51,8 +51,8 @@ install-linters: ## Install linters
 	gometalinter --vendored-linters --install
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).
-	goimports -w ./cmd/...
-	goimports -w ./src/...
+	goimports -w -local github.com/skycoin/skycoin ./cmd
+	goimports -w -local github.com/skycoin/skycoin ./src
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

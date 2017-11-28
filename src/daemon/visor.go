@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -76,15 +77,14 @@ type Visor struct {
 }
 
 // NewVisor creates visor instance
-func NewVisor(c VisorConfig) (*Visor, error) {
+func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 	vs := &Visor{
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
 	}
 
-	var v *visor.Visor
-	v, err := visor.NewVisor(c.Config)
+	v, err := visor.NewVisor(c.Config, db)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 
 	// valid the spending coins
 	for _, out := range txn.Out {
-		if err := DropletPrecisionCheck(out.Coins); err != nil {
+		if err := visor.DropletPrecisionCheck(out.Coins); err != nil {
 			return err
 		}
 	}

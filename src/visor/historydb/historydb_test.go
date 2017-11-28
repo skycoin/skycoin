@@ -430,8 +430,7 @@ func getBucketValue(db *bolt.DB, name []byte, key []byte, value interface{}) err
 	})
 }
 
-func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
-	txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
+func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256, txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
 	if len(txns) == 0 {
 		log.Panic("Refusing to create block with no transactions")
 	}
@@ -447,8 +446,7 @@ func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
 	}
 }
 
-func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime,
-	fee uint64, body coin.BlockBody) coin.BlockHeader {
+func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
 	return coin.BlockHeader{
 		BodyHash: body.Hash(),

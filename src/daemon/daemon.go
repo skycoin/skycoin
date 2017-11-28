@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 

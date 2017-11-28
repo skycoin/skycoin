@@ -1,3 +1,27 @@
-<p>
-  wallet-show works!
-</p>
+<div class="sky-container sky-container-grey">
+  <app-header [coins]="wallet ? wallet.coins : 0" title="Existing wallet"></app-header>
+  <div class="grid-headers">
+    <div class="id-column">ID</div>
+    <div class="address-column">Wallet</div>
+    <div class="hours-column">SKY Hours</div>
+    <div class="coins-column">Balance</div>
+  </div>
+  <ng-container *ngFor="let address of (wallet ? wallet.addresses : [])">
+    <div class="grid-row">
+      <div class="id-column">ID</div>
+      <div class="address-column">{{ address.address }}</div>
+      <div class="hours-column">{{ address.hours ? address.hours : 0 }}</div>
+      <div class="coins-column">{{ address.coins ? address.coins : 0 }}</div>
+    </div>
+  </ng-container>
+  <div class="action-buttons">
+    <button md-button (click)="newAddress()">
+      <img src="../../../../assets/img/load-gold.png"> New Address
+    </button>
+    <button md-button (click)="toggleEmpty()">
+      <img src="../../../../assets/img/minus-red.png"> Hide Empty
+    </button>
+  </div>
+  <app-footer></app-footer>
+</div>
+

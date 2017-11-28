@@ -61,6 +61,10 @@ export class WalletService {
       });
   }
 
+  find(filename: string): Observable<Wallet> {
+    return this.all().map(wallets => wallets.find(wallet => wallet.filename === filename));
+  }
+
   folder(): Observable<string> {
     return this.apiService.get('wallets/folderName').map(response => response.address);
   }

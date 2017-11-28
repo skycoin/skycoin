@@ -5,6 +5,7 @@ import { CreateWalletComponent } from './create-wallet/create-wallet.component';
 import { WalletModel } from '../../../models/wallet.model';
 import { ChangeNameComponent } from './change-name/change-name.component';
 import { Wallet } from '../../../app.datatypes';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-wallets',
@@ -16,6 +17,7 @@ export class WalletsComponent {
   constructor(
     public walletService: WalletService,
     private dialog: MdDialog,
+    private router: Router,
   ) {}
 
   addWallet() {
@@ -31,6 +33,6 @@ export class WalletsComponent {
   }
 
   openWallet(wallet: Wallet) {
-    //
+    this.router.navigate(['/wallet', wallet.filename]);
   }
 }

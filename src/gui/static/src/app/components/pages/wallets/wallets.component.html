@@ -6,7 +6,7 @@
     <div class="flex-100">Balance</div>
   </div>
   <ng-container *ngFor="let wallet of walletService.all() | async">
-    <div class="grid-row" (click)="openWallet()">
+    <div class="grid-row" (click)="openWallet(wallet)">
       <div class="flex-fill label">{{ wallet.label }}</div>
       <div class="flex-100 hours">{{ wallet.hours ? wallet.hours : 0 }}</div>
       <div class="flex-100 coins">{{ wallet.balance ? wallet.balance : 0 }}</div>

@@ -6,6 +6,7 @@ export class Wallet {
   hours: number;
   addresses: Address[];
   visible?: boolean;
+  hideEmpty?: boolean;
 }
 
 export class Address {

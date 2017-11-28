@@ -153,7 +153,6 @@ func TestVisorCreateBlock(t *testing.T) {
 	cfg.IsMaster = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
-	cfg.MaxBlockSize = 1024
 
 	v := &Visor{
 		Config:      cfg,
@@ -191,6 +190,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
+	require.Equal(t, 0, unconfirmed.Len())
 	v.Config.MaxBlockSize = 1024 * 4
 
 	// Create various transactions and add them to unconfirmed pool
@@ -286,4 +286,73 @@ func TestVisorCreateBlock(t *testing.T) {
 			require.NoError(t, err, "txout %d.%d coins=%d", i, j, o.Coins)
 		}
 	}
+}
+
+func TestVisorInjectTransaction(t *testing.T) {
+	when := uint64(time.Now().UTC().Unix())
+
+	db, shutdown := testutil.PrepareDB(t)
+	defer shutdown()
+
+	db, bc, err := loadBlockchain(db, genPublic, false)
+	require.NoError(t, err)
+
+	unconfirmed := NewUnconfirmedTxnPool(db)
+
+	cfg := NewVisorConfig()
+	cfg.DBPath = db.Path()
+	cfg.IsMaster = false
+	cfg.BlockchainPubkey = genPublic
+	cfg.GenesisAddress = genAddress
+
+	v := &Visor{
+		Config:      cfg,
+		Unconfirmed: unconfirmed,
+		Blockchain:  bc,
+		db:          db,
+	}
+
+	// CreateBlock panics if called when not master
+	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
+		v.CreateBlock(when)
+	})
+
+	v.Config.IsMaster = true
+	v.Config.BlockchainSeckey = genSecret
+
+	addGenesisBlock(t, v.Blockchain)
+	gb := v.Blockchain.GetGenesisBlock()
+	require.NotNil(t, gb)
+
+	// If no transactions in the unconfirmed pool, return an error
+	_, err = v.CreateBlock(when)
+	testutil.RequireError(t, err, "No transactions")
+
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+
+	toAddr := testutil.MakeAddress()
+	var coins uint64 = 10e6
+
+	// Create an transaction with valid decimal places
+	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	known, err := v.InjectTxn(txn)
+	require.False(t, known)
+	require.NoError(t, err)
+
+	// Execute a block to clear this transaction from the pool
+	sb, err := v.CreateAndExecuteBlock()
+	require.NoError(t, err)
+	require.Equal(t, 1, len(sb.Body.Transactions))
+	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
+	require.Equal(t, 0, unconfirmed.Len())
+	require.Equal(t, uint64(2), bc.Len())
+
+	// Create a transaction with invalid decimal places
+	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
+
+	invalidCoins := coins + (v.Config.MaxDropletDivisor / 10)
+	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
+	_, err = v.InjectTxn(txn)
+	testutil.RequireError(t, err, ErrInvalidDecimals.Error())
+	require.Equal(t, 0, unconfirmed.Len())
 }

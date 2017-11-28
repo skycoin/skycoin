@@ -268,7 +268,7 @@ var devConfig = Config{
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
 
-	MaxConnections: 7,
+	MaxConnections: 64,
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	// Wallet Address Version
@@ -518,7 +518,6 @@ func configureDaemon(c *Config) daemon.Config {
 		Version: Version,
 		Commit:  Commit,
 	}
-	dc.Pool.MaxConnections = c.MaxConnections
 	return dc
 }
 

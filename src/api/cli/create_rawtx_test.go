@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCreateRawTx(t *testing.T) {

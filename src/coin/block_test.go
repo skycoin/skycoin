@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
 
 	"github.com/stretchr/testify/assert"
 )

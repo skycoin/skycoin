@@ -3,8 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
+
+	"github.com/skycoin/skycoin/src/api/webrpc"
 )
 
 func sendCmd() gcli.Command {

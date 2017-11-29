@@ -4,6 +4,10 @@ platform:
 
 clone_folder: c:\gopath\src\github.com\skycoin\skycoin
 
+branches:
+  only:
+    - master
+
 environment:
   GOPATH: c:\gopath
   GOX_OUTPUT: .gox_output

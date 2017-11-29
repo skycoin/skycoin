@@ -15,19 +15,36 @@ import (
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
 
-// BurnFactor half of coinhours must be burnt
-var BurnFactor uint64 = 2
+var (
+	// BurnFactor half of coinhours must be burnt
+	BurnFactor uint64 = 2
 
-// Performs additional transaction verification at the unconfirmed pool level.
+	// ErrTxnNoCoinHours is returned if a transaction has no coinhours in its inputs
+	ErrTxnNoCoinHours = errors.New("Transaction has no coinhour inputs")
+
+	// ErrTxnInsufficientCoinHourFee is returned if a transaction's coinhour burn fee is not enough
+	ErrTxnInsufficientCoinHourFee = errors.New("Transaction coinhour fee minimum not met")
+)
+
+// VerifyTransactionFee performs additional transaction verification at the unconfirmed pool level.
 // This checks tunable parameters that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
 func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
 	// Calculate total number of coinhours
 	var total = t.OutputHours() + fee
-	// Make sure at least half (BurnFactor=2) the coin hours are destroyed
+
+	// Require non-zero coinhours
+	if total == 0 {
+		return ErrTxnNoCoinHours
+	}
+
+	// Make sure at least half (BurnFactor=2) the coinhours are destroyed
+	// NOTE: This division rounds down, so not exactly 50% are required.
+	// For example, transaction with 1 coinhour input can spend that coinhour
+	// with no fee.
 	if fee < total/BurnFactor {
-		return errors.New("Transaction coinhour fee minimum not met")
+		return ErrTxnInsufficientCoinHourFee
 	}
 	return nil
 }

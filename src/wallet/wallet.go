@@ -217,12 +217,12 @@ func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 	return wlt.newAddressesInUnencryptedWallet(num)
 }
 
-func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password []byte) ([]cipher.Address, error) {
+func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password string) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var sd []byte
 	var err error
 
-	lastSeed, err := decrypt(wlt.lastSeed(), password)
+	lastSeed, err := decrypt(wlt.lastSeed(), []byte(password))
 	if err != nil {
 		return nil, fmt.Errorf("decrypt last seed failed: %v", err)
 	}

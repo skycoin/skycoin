@@ -55,7 +55,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 ### Go get skycoin
 
 ```sh
-go get https://github.com/skycoin/skycoin/...
+go get github.com/skycoin/skycoin/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.

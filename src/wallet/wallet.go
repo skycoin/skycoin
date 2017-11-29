@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
@@ -343,12 +344,8 @@ type Validator interface {
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
-func (wlt *Wallet) CreateAndSignTransaction(
-	vld Validator,
-	unspent blockdb.UnspentGetter,
-	headTime uint64,
-	amt Balance,
-	dest cipher.Address) (*coin.Transaction, error) {
+func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
+	headTime uint64, amt Balance, dest cipher.Address) (*coin.Transaction, error) {
 
 	addrs := wlt.GetAddresses()
 	ok, err := vld.HasUnconfirmedSpendTx(addrs)
@@ -384,31 +381,93 @@ func (wlt *Wallet) CreateAndSignTransaction(
 		spending.Hours += au.CoinHours(headTime)
 	}
 
-	//keep 1/4th of hours as change
-	//send half to each address
-	var changeHours = uint64(spending.Hours / 4)
-
-	if amt.Coins == spending.Coins {
-		txn.PushOutput(dest, amt.Coins, changeHours/2)
-		txn.SignInputs(toSign)
-		txn.UpdateHeader()
-		return &txn, nil
+	if spending.Hours == 0 {
+		return nil, fee.ErrTxnNoFee
 	}
 
-	change := NewBalance(spending.Coins-amt.Coins, changeHours/2)
-	// TODO -- send change to a new address
-	changeAddr := spends[0].Body.Address
+	// Calculate coin hour allocation
+	changeCoins := spending.Coins - amt.Coins
+	haveChange := changeCoins > 0
+	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, 1, haveChange)
 
-	//create transaction
-	txn.PushOutput(changeAddr, change.Coins, change.Hours)
-	txn.PushOutput(dest, amt.Coins, changeHours/2)
+	logger.Info("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
+	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours); err != nil {
+		return nil, err
+	}
+
+	if haveChange {
+		changeAddr := spends[0].Body.Address
+		txn.PushOutput(changeAddr, changeCoins, changeHours)
+	}
+
+	txn.PushOutput(dest, amt.Coins, addrHours[0])
+
 	txn.SignInputs(toSign)
 	txn.UpdateHeader()
+
 	return &txn, nil
 }
 
-func createSpends(headTime uint64, uxa coin.UxArray,
-	amt Balance) (coin.UxArray, error) {
+// DistributeSpendHours calculates how many coin hours to transfer to the change address and how
+// many to transfer to each of the other destination addresses.
+// Input hours are split by BurnFactor (rounded down) to meet the fee requirement.
+// The remaining hours are split in half, one half goes to the change address
+// and the other half goes to the destination addresses.
+// If the remaining hours are an odd number, the change address gets the extra hour.
+// If the amount assigned to the destination addresses is not perfectly divisible by the
+// number of destination addresses, the extra hours are distributed to some of these addresses.
+// Returns the number of hours to send to the change address,
+// an array of length nAddrs with the hours to give to each destination address,
+// and a sum of these values.
+func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
+	// TODO: Allow the caller to control coinhour distribution
+	remainingHours := inputHours / fee.BurnFactor
+
+	var changeHours uint64
+	if haveChange {
+		// Split the remaining hours between the change output and the other outputs
+		changeHours = remainingHours / 2
+
+		// If remainingHours is an odd number, give the extra hour to the change output
+		if remainingHours%2 == 1 {
+			changeHours++
+		}
+
+	}
+
+	// Distribute the remaining hours equally amongst the destination outputs
+	remainingAddrHours := remainingHours - changeHours
+	addrHoursShare := remainingAddrHours / nAddrs
+
+	// Due to integer division, extra coin hours might remain after dividing by len(toAddrs)
+	// Allocate these extra hours to the toAddrs
+	addrHours := make([]uint64, nAddrs)
+	for i := range addrHours {
+		addrHours[i] = addrHoursShare
+	}
+
+	extraHours := remainingAddrHours - (addrHoursShare * nAddrs)
+	i := 0
+	for extraHours > 0 {
+		addrHours[i] = addrHours[i] + 1
+		i++
+		extraHours--
+	}
+
+	// Assert that the hour calculation is correct
+	var spendHours uint64
+	for _, h := range addrHours {
+		spendHours += h
+	}
+	spendHours += changeHours
+	if spendHours != remainingHours {
+		logger.Panicf("spendHours != remainingHours (%d != %d), calculation error", spendHours, remainingHours)
+	}
+
+	return changeHours, addrHours, spendHours
+}
+
+func createSpends(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray, error) {
 	if amt.Coins == 0 {
 		return nil, errors.New("zero spend amount")
 	}
@@ -436,7 +495,7 @@ func createSpends(headTime uint64, uxa coin.UxArray,
 	}
 
 	if amt.Coins > have.Coins {
-		return nil, errors.New("not enough confirmed coins")
+		return nil, fmt.Errorf("not enough confirmed coins (want %d, have %d)", amt.Coins, have.Coins)
 	}
 
 	return spending, nil

@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"crypto/rand"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -32,4 +33,11 @@ func RequireError(t *testing.T, err error, msg string) {
 func MakeAddress() cipher.Address {
 	p, _ := cipher.GenerateKeyPair()
 	return cipher.AddressFromPubKey(p)
+}
+
+func RandBytes(t *testing.T, n int) []byte {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	require.NoError(t, err)
+	return b
 }

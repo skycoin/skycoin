@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -345,12 +346,12 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 		return err
 	}
 
-	fee, err := visor.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
+	f, err := fee.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
 	if err != nil {
 		return err
 	}
 
-	if err := visor.VerifyTransactionFee(&txn, fee); err != nil {
+	if err := fee.VerifyTransactionFee(&txn, f); err != nil {
 		return err
 	}
 

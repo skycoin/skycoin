@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/fee"
 )
 
 func TestNewWallet(t *testing.T) {
@@ -277,5 +278,191 @@ func TestWalletAddEntry(t *testing.T) {
 				Secret:  s,
 			}))
 		})
+	}
+}
+
+func TestWalletDistributeSpendHours(t *testing.T) {
+	cases := []struct {
+		name              string
+		inputHours        uint64
+		nAddrs            uint64
+		haveChange        bool
+		expectChangeHours uint64
+		expectAddrHours   []uint64
+	}{
+		{
+			name:            "no input hours, one addr, no change",
+			inputHours:      0,
+			nAddrs:          1,
+			haveChange:      false,
+			expectAddrHours: []uint64{0},
+		},
+		{
+			name:            "no input hours, two addrs, no change",
+			inputHours:      0,
+			nAddrs:          2,
+			haveChange:      false,
+			expectAddrHours: []uint64{0, 0},
+		},
+		{
+			name:            "no input hours, one addr, change",
+			inputHours:      0,
+			nAddrs:          1,
+			haveChange:      true,
+			expectAddrHours: []uint64{0},
+		},
+		{
+			name:            "one input hour, one addr, no change",
+			inputHours:      1,
+			nAddrs:          1,
+			haveChange:      false,
+			expectAddrHours: []uint64{0},
+		},
+		{
+			name:            "two input hours, one addr, no change",
+			inputHours:      2,
+			nAddrs:          1,
+			haveChange:      false,
+			expectAddrHours: []uint64{1},
+		},
+		{
+			name:              "two input hours, one addr, change",
+			inputHours:        2,
+			nAddrs:            1,
+			haveChange:        true,
+			expectChangeHours: 1,
+			expectAddrHours:   []uint64{0},
+		},
+		{
+			name:              "three input hours, one addr, change",
+			inputHours:        3,
+			nAddrs:            1,
+			haveChange:        true,
+			expectChangeHours: 1,
+			expectAddrHours:   []uint64{0},
+		},
+		{
+			name:            "three input hours, one addr, no change",
+			inputHours:      3,
+			nAddrs:          1,
+			haveChange:      false,
+			expectAddrHours: []uint64{1},
+		},
+		{
+			name:            "three input hours, two addrs, no change",
+			inputHours:      3,
+			nAddrs:          2,
+			haveChange:      false,
+			expectAddrHours: []uint64{1, 0},
+		},
+		{
+			name:            "four input hours, one addr, no change",
+			inputHours:      4,
+			nAddrs:          1,
+			haveChange:      false,
+			expectAddrHours: []uint64{2},
+		},
+		{
+			name:              "four input hours, one addr, change",
+			inputHours:        4,
+			nAddrs:            1,
+			haveChange:        true,
+			expectChangeHours: 1,
+			expectAddrHours:   []uint64{1},
+		},
+		{
+			name:              "four input hours, two addr, change",
+			inputHours:        4,
+			nAddrs:            2,
+			haveChange:        true,
+			expectChangeHours: 1,
+			expectAddrHours:   []uint64{1, 0},
+		},
+		{
+			name:              "30 (divided by 2, odd number) input hours, two addr, change",
+			inputHours:        30,
+			nAddrs:            2,
+			haveChange:        true,
+			expectChangeHours: 8,
+			expectAddrHours:   []uint64{4, 3},
+		},
+		{
+			name:              "33 (odd number) input hours, two addr, change",
+			inputHours:        33,
+			nAddrs:            2,
+			haveChange:        true,
+			expectChangeHours: 8,
+			expectAddrHours:   []uint64{4, 4},
+		},
+		{
+			name:              "33 (odd number) input hours, three addr, change",
+			inputHours:        33,
+			nAddrs:            3,
+			haveChange:        true,
+			expectChangeHours: 8,
+			expectAddrHours:   []uint64{3, 3, 2},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			changeHours, addrHours, totalHours := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
+			require.Equal(t, tc.expectChangeHours, changeHours)
+			require.Equal(t, tc.expectAddrHours, addrHours)
+			require.Equal(t, tc.nAddrs, uint64(len(addrHours)))
+
+			outputHours := changeHours
+			for _, h := range addrHours {
+				outputHours += h
+			}
+			require.True(t, tc.inputHours >= outputHours)
+			require.Equal(t, outputHours, totalHours)
+
+			if tc.inputHours != 0 {
+				err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours)
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	// Tests over range of values
+	for inputHours := uint64(0); inputHours <= 1e3; inputHours++ {
+		for nAddrs := uint64(1); nAddrs < 16; nAddrs++ {
+			for _, haveChange := range []bool{true, false} {
+				name := fmt.Sprintf("inputHours=%d nAddrs=%d haveChange=%v", inputHours, nAddrs, haveChange)
+				t.Run(name, func(t *testing.T) {
+					changeHours, addrHours, totalHours := DistributeSpendHours(inputHours, nAddrs, haveChange)
+					require.Equal(t, nAddrs, uint64(len(addrHours)))
+
+					var sumAddrHours uint64
+					for _, h := range addrHours {
+						sumAddrHours += h
+					}
+
+					if haveChange {
+						expectedChangeHours := (inputHours / fee.BurnFactor) / 2
+						require.True(t, changeHours == expectedChangeHours || changeHours == expectedChangeHours+1)
+						require.Equal(t, expectedChangeHours, sumAddrHours)
+					} else {
+						require.Equal(t, uint64(0), changeHours)
+						require.Equal(t, inputHours/fee.BurnFactor, sumAddrHours)
+					}
+
+					outputHours := sumAddrHours + changeHours
+					require.True(t, inputHours >= outputHours)
+					require.Equal(t, outputHours, totalHours)
+
+					if inputHours != 0 {
+						err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours)
+						require.NoError(t, err)
+					}
+
+					// addrHours at the beginning and end of the array should not differ by more than one
+					max := addrHours[0]
+					min := addrHours[len(addrHours)-1]
+					require.True(t, max-min <= 1)
+				})
+			}
+		}
 	}
 }

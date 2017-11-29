@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/fee"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -380,6 +381,10 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 		totalInHours += o.Hours
 	}
 
+	if totalInHours == 0 {
+		return nil, fee.ErrTxnNoFee
+	}
+
 	for _, to := range toAddrs {
 		totalOutCoins += to.Coins
 	}
@@ -389,18 +394,22 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	}
 
 	outAddrs := []coin.TransactionOutput{}
-	chgAmt := totalInCoins - totalOutCoins
-	// FIXME: Why divide by 4 here?
-	chgHours := totalInHours / 4
-	addrHours := chgHours / uint64(len(toAddrs))
-	if chgAmt > 0 {
-		// generate a change address
-		// FIXME: Why divide chgHours by 2 again, already divided by 4?
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, chgAmt, chgHours/2))
+	changeAmount := totalInCoins - totalOutCoins
+
+	haveChange := changeAmount > 0
+	nAddrs := uint64(len(toAddrs))
+	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+
+	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
+		return nil, err
 	}
 
-	for _, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours))
+	if haveChange {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
+	}
+
+	for i, to := range toAddrs {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
 	}
 
 	return outAddrs, nil

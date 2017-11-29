@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
@@ -521,7 +522,7 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 		return 0, err
 	}
 
-	return TransactionFee(t, headTime, inUxs)
+	return fee.TransactionFee(t, headTime, inUxs)
 }
 
 // verifySigs checks that BlockSigs state correspond with coin.Blockchain state

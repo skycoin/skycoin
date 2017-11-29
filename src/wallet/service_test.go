@@ -351,7 +351,7 @@ func TestServiceNewAddress(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	pwd := []byte("pwd")
+	pwd := "pwd"
 	wltName := "test.wlt"
 	w, err := s.CreateWallet(wltName, pwd)
 	require.NoError(t, err)
@@ -387,7 +387,7 @@ func TestServiceGetAddress(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	w, err := s.CreateWallet("test.wlt", []byte("pwd"))
+	w, err := s.CreateWallet("test.wlt", "pwd")
 	require.NoError(t, err)
 
 	addrs, err := s.GetAddresses(w.Filename())
@@ -419,7 +419,7 @@ func TestServiceGetWallet(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	w, err := s.CreateWallet("test.wlt", []byte("pwd"))
+	w, err := s.CreateWallet("test.wlt", "pwd")
 	require.NoError(t, err)
 
 	w, err := s.GetWallet(id)
@@ -451,7 +451,7 @@ func TestServiceReloadWallets(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	pwd := []byte("pwd")
+	pwd := "pwd"
 	w, err := s.CreateWallet("test.wlt", pwd)
 	require.NoError(t, err)
 
@@ -556,7 +556,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		vld        Validator
 		coins      uint64
 		dest       cipher.Address
-		pwd        []byte
+		pwd        string
 		err        error
 	}{
 		{

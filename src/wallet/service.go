@@ -164,7 +164,7 @@ func (serv *Service) generateUniqueWalletFilename() string {
 
 // NewAddresses generate address entries in given wallet,
 // return nil if wallet does not exist.
-func (serv *Service) NewAddresses(wltID string, num int, password []byte) ([]cipher.Address, error) {
+func (serv *Service) NewAddresses(wltID string, num int, password string) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
@@ -243,7 +243,7 @@ func (serv *Service) ReloadWallets() error {
 
 // CreateAndSignTransaction creates and sign transaction from wallet
 func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address, password []byte) (*coin.Transaction, error) {
+	headTime, coins uint64, dest cipher.Address, password string) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)

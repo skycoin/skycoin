@@ -203,7 +203,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		quit:         make(chan struct{}),
 		reqC:         make(chan strand.Request),
 	}
-	logger.Info("NewConnectionPool size: %d", pool.Config.MaxConnections)
+
 	return pool
 }
 

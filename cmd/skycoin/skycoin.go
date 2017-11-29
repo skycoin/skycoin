@@ -532,7 +532,6 @@ func configureDaemon(c *Config) daemon.Config {
 		Version: Version,
 		Commit:  Commit,
 	}
-	dc.Pool.MaxConnections = c.MaxConnections
 	return dc
 }
 

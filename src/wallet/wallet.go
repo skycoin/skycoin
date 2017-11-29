@@ -392,6 +392,7 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 
 	logger.Info("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
 	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours); err != nil {
+		logger.Warning("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed: %v", err)
 		return nil, err
 	}
 

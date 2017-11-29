@@ -400,7 +400,9 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	nAddrs := uint64(len(toAddrs))
 	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
+	logger.Info("makeChangeOut: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
+		logger.Warning("makeChangeOut: fee.VerifyTransactionFeeForHours failed: %v", err)
 		return nil, err
 	}
 

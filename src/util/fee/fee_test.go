@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUnconfirmedVerifyTransactionFee(t *testing.T) {

@@ -13,9 +13,9 @@ import (
 
 	"math"
 
-	"io"
 	"net/http"
-	"os"
+
+	"io/ioutil"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
@@ -33,8 +33,6 @@ var (
 	PeerDatabaseUrl = "https://downloads.skycoin.net/blockchain/peers.txt"
 	// PeerDatabaseFilename filename for disk-cached peers
 	PeerDatabaseFilename = "peers.txt"
-	// PeerDatabaseFilename filename for disk-cached peers
-	DownloadedPeerDatabaseFilename = "downloadedPeers.txt"
 	// BlacklistedDatabaseFilename  filename for disk-cached blacklisted peers
 	BlacklistedDatabaseFilename = "blacklisted_peers.txt"
 	// ErrPeerlistFull returned when the Pex is at a maximum
@@ -203,12 +201,11 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 
 	if pex.Config.DownloadPeersList {
 		if err := pex.download(); err != nil {
-			logger.Error("failed to download peers from %s. err: %s", PeerDatabaseUrl, err.Error())
+			logger.Error("Failed to download peers from %s. err: %s", PeerDatabaseUrl, err.Error())
 		}
-
 	}
 	// load peers
-	if err := pex.loadLocalCached(); err != nil {
+	if err := pex.load(); err != nil {
 		return nil, err
 	}
 
@@ -233,31 +230,34 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 }
 
 func (px *Pex) download() error {
-	fp := filepath.Join(px.Config.DataDirectory, DownloadedPeerDatabaseFilename)
-	out, err := os.Create(fp)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
 	resp, err := http.Get(PeerDatabaseUrl)
 	if err != nil {
 		return err
 	}
 
 	defer resp.Body.Close()
-	_, err = io.Copy(out, resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	return px.load(fp)
+
+	for _, address := range strings.Split(string(body), "\n") {
+		if validateAddress(address, px.Config.AllowLocalhost) {
+			err := px.AddPeer(address)
+			if err != nil {
+				if err == ErrPeerlistFull {
+					break
+				} else {
+					logger.Warning("Add downloaded peer %s failed. err:  $%", address, err.Error())
+				}
+			}
+		}
+	}
+	return nil
 }
 
-func (px *Pex) loadLocalCached() error {
+func (px *Pex) load() error {
 	fp := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
-	return px.load(fp)
-}
-
-func (px *Pex) load(fp string) error {
 	peers, err := loadPeersFromFile(fp)
 	if err != nil {
 		return err

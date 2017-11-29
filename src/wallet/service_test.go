@@ -87,14 +87,6 @@ func TestNewService(t *testing.T) {
 
 	require.Equal(t, 0, len(s.wallets))
 
-	// check if the default wallet file is created
-	for name := range s.wallets {
-		wltFile := filepath.Join(dir, name)
-		_, err := os.Stat(wltFile)
-		require.NoError(t, err)
-		break
-	}
-
 	// test load wallets
 	s, err = NewService("./testdata")
 	require.NoError(t, err)
@@ -106,7 +98,7 @@ func TestNewService(t *testing.T) {
 		t.Fatal("load dup wallet")
 	}
 
-	require.Equal(t, 3, len(s.wallets))
+	require.Equal(t, 4, len(s.wallets))
 }
 
 func TestServiceCreateWallet(t *testing.T) {
@@ -122,7 +114,7 @@ func TestServiceCreateWallet(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, seed, string(sd))
-	require.NoError(t, w.Validate())
+	require.NoError(t, w.validate())
 
 	// create wallet with dup wallet name
 	_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
@@ -279,13 +271,13 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, seed, w.Meta["seed"])
-			require.NoError(t, w.Validate())
+			require.NoError(t, w.validate())
 
 			w, err = s.ScanAheadWalletAddresses(wltName, tc.scanN, tc.balGetter)
 			require.NoError(t, err)
 
 			require.Len(t, w.Entries, tc.expect.entryNum)
-			require.Equal(t, tc.expect.lastSeed, w.getLastSeed())
+			require.Equal(t, tc.expect.lastSeed, w.lastSeed())
 		})
 	}
 }
@@ -301,12 +293,12 @@ func TestServiceNewAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	// get the default wallet id
-	addrs, err := s.NewAddresses(w.GetID(), 1, pwd)
+	addrs, err := s.NewAddresses(w.Filename(), 1, pwd)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(addrs))
 
 	// check if the wallet file is created
-	_, err = os.Stat(filepath.Join(dir, w.GetID()))
+	_, err = os.Stat(filepath.Join(dir, w.Filename()))
 	require.NoError(t, err)
 
 	// wallet doesn't exist
@@ -322,7 +314,7 @@ func TestServiceGetAddress(t *testing.T) {
 	w, err := s.CreateWallet("test.wlt", []byte("pwd"))
 	require.NoError(t, err)
 
-	addrs, err := s.GetAddresses(w.GetID())
+	addrs, err := s.GetAddresses(w.Filename())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(addrs))
 
@@ -345,12 +337,12 @@ func TestServiceGetWallet(t *testing.T) {
 	require.NoError(t, err)
 
 	// modify the returned wallet won't affect the wallet in service
-	w1.SetLabel("new_label")
+	w1.setLabel("new_label")
 
 	w1, err := s.GetWallet(id)
 	require.NoError(t, err)
 
-	require.NotEqual(t, "new_label", w2.GetLabel())
+	require.NotEqual(t, "new_label", w2.Label())
 }
 
 func TestServiceReloadWallets(t *testing.T) {
@@ -363,7 +355,7 @@ func TestServiceReloadWallets(t *testing.T) {
 	w, err := s.CreateWallet("test.wlt", pwd)
 	require.NoError(t, err)
 
-	defaultWltID := w.GetID()
+	defaultWltID := w.Filename()
 
 	var defaultAddr string
 	for defaultAddr = range s.firstAddrIDMap {
@@ -447,7 +439,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 	var uxoutsNoHours []coin.UxOut
 	addrsNoHours := []cipher.Address{}
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey)
+		uxout := makeUxOut(t, seckeys[0])
 		uxout.Body.Hours = 0
 		uxout.Head.Time = uint64(headTime)
 		uxoutsNoHours = append(uxoutsNoHours, uxout)
@@ -589,10 +581,9 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			pwd,
-			[]byte("wrong password"),
 			cipher.ErrInvalidPassword,
 		},
 	}
@@ -614,7 +605,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				unspents.unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest, tc.pwd)
+			tx, err := s.CreateAndSignTransaction(w.Filename(), tc.vld, unspents, uint64(headTime), tc.coins, tc.dest, tc.pwd)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

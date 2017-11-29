@@ -102,7 +102,7 @@ func TestNewWallet(t *testing.T) {
 
 			_, err = w.GenerateAddresses(1, []byte("pwd"))
 			require.NoError(t, err)
-			require.NoError(t, w.Validate())
+			require.NoError(t, w.validate())
 			for k, v := range tc.expect.meta {
 				vv, ok := w.Meta[k]
 				require.True(t, ok)
@@ -210,8 +210,7 @@ func TestLoadWallet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w := Wallet{}
-			err := w.Load(tc.file)
+			w, err := Load(tc.file)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
@@ -328,8 +327,8 @@ func TestWalletGetEntry(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w := Wallet{}
-			require.NoError(t, w.Load(tc.wltFile))
+			w, err := Load(tc.wltFile)
+			require.NoError(t, err)
 			a, err := cipher.DecodeBase58Address(tc.address)
 			require.NoError(t, err)
 			e, ok := w.GetEntry(a)
@@ -373,8 +372,8 @@ func TestWalletAddEntry(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w := Wallet{}
-			require.NoError(t, w.Load(tc.wltFile))
+			w, err := Load(tc.wltFile)
+			require.NoError(t, err)
 			a := cipher.AddressFromSecKey(tc.secKey)
 			p := cipher.PubKeyFromSecKey(tc.secKey)
 			require.Equal(t, tc.err, w.AddEntry(Entry{

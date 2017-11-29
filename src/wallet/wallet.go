@@ -226,7 +226,7 @@ func (wlt *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	return wlt.newAddressesInUnencryptedWallet(int(num))
 }
 
-func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password string) ([]cipher.Address, error) {
+func (wlt *Wallet) newAddressesInEncryptedWallet(password string, num int) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var sd []byte
 	var err error

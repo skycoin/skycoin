@@ -100,7 +100,7 @@ func TestNewWallet(t *testing.T) {
 				return
 			}
 
-			_, err = w.GenerateAddresses(1, "pwd")
+			_, err = w.GenerateAddresses("pwd", 1)
 			require.NoError(t, err)
 			require.NoError(t, w.validate())
 			for k, v := range tc.expect.meta {
@@ -275,11 +275,11 @@ func TestWalletGenerateAddress(t *testing.T) {
 
 			// generate addresses
 			if tc.oneAddressEachTime {
-				_, err = w.GenerateAddresses(tc.num, string(tc.pwd))
+				_, err = w.GenerateAddresses(string(tc.pwd), tc.num)
 				require.NoError(t, err)
 			} else {
 				for i := 0; i < tc.num; i++ {
-					_, err := w.GenerateAddresses(1, string(tc.pwd))
+					_, err := w.GenerateAddresses(string(tc.pwd), 1)
 					require.NoError(t, err)
 				}
 			}

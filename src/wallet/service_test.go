@@ -357,7 +357,7 @@ func TestServiceNewAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	// get the default wallet id
-	addrs, err := s.NewAddresses(w.Filename(), 1, pwd)
+	addrs, err := s.NewAddresses(w.Filename(), pwd, 1)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(addrs))
 
@@ -705,7 +705,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				unspents.unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(w.Filename(), tc.vld, unspents, uint64(headTime), tc.coins, tc.dest, tc.pwd)
+			tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

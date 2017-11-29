@@ -134,14 +134,11 @@ func (bt ByTm) Swap(i, j int) {
 	bt[i], bt[j] = bt[j], bt[i]
 }
 
-// ReadableWalletCtor readable wallet creator
-type ReadableWalletCtor func(w Wallet) *ReadableWallet
-
 // NewReadableWallet creates readable wallet
 func NewReadableWallet(w Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(e, w.GetVersion())
+		readable[i] = NewReadableEntry(e, w.version())
 	}
 
 	meta := make(map[string]string, len(w.Meta))
@@ -174,8 +171,8 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 		Entries: ets,
 	}
 
-	if err := w.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid wallet %s: %v", w.GetFilename(), err)
+	if err := w.validate(); err != nil {
+		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
 	}
 
 	return w, nil

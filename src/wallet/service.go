@@ -97,7 +97,7 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, scanN uint64, bg B
 		return Wallet{}, err
 	}
 
-	if err := w.Save(serv.WalletDirectory); err != nil {
+	if err := Save(serv.WalletDirectory); err != nil {
 		return Wallet{}, err
 	}
 
@@ -170,7 +170,7 @@ func (serv *Service) NewAddresses(wltID string, num int, password []byte) ([]cip
 		return nil, err
 	}
 
-	if err := w.Save(serv.WalletDirectory); err != nil {
+	if err := Save(w, serv.WalletDirectory); err != nil {
 		return []cipher.Address{}, err
 	}
 
@@ -202,14 +202,16 @@ func (serv *Service) getWallet(wltID string) (Wallet, error) {
 	if !ok {
 		return Wallet{}, errWalletNotExist(wltID)
 	}
-	return w.Copy(), nil
+	return w.clone(), nil
 }
 
-// GetWallets returns all wallet
+// GetWallets returns all wallets
 func (serv *Service) GetWallets() Wallets {
+	serv.RLock()
+	defer serv.RUnlock()
 	wlts := make(Wallets, len(serv.wallets))
 	for k, w := range serv.wallets {
-		nw := w.Copy()
+		nw := w.clone()
 		wlts[k] = &nw
 	}
 	return wlts
@@ -227,13 +229,6 @@ func (serv *Service) ReloadWallets() error {
 	serv.firstAddrIDMap = make(map[string]string)
 	serv.wallets = serv.removeDup(wallets)
 	return nil
-}
-
-// GetWalletsReadable returns readable wallets
-func (serv *Service) GetWalletsReadable() []*ReadableWallet {
-	serv.RLock()
-	defer serv.RUnlock()
-	return serv.wallets.ToReadable()
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
@@ -254,15 +249,15 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
 	var wlt Wallet
-	if err := serv.wallets.Update(wltID, func(w Wallet) Wallet {
-		w.SetLabel(label)
+	if err := serv.wallets.update(wltID, func(w Wallet) Wallet {
+		w.setLabel(label)
 		wlt = w
 		return w
 	}); err != nil {
 		return err
 	}
 
-	return wlt.Save(serv.WalletDirectory)
+	return Save(&wlt, serv.WalletDirectory)
 }
 
 func (serv *Service) removeDup(wlts Wallets) Wallets {

@@ -47,7 +47,13 @@ var (
 	ErrNoPassword = errors.New("password is required when creating wallet")
 	// ErrInvalidWalletVersion represents invalid wallet version erro
 	ErrInvalidWalletVersion = errors.New("invalid wallet version")
+
+	// wallet version
+	wltVersion = "0.2"
 )
+
+// Option NewWallet optional arguments type
+type Option func(w *Wallet)
 
 // NewWalletFilename check for collisions and retry if failure
 func NewWalletFilename() string {
@@ -58,18 +64,20 @@ func NewWalletFilename() string {
 }
 
 // Wallet contains meta data and address entries.
+//
 // Meta:
-// 		Filename
-// 		Seed
-//		Type - wallet type
-//		Coin - coin type
+//      filename
+//      version
+//      label
+//      seed
+//      lastSeed - seed for generating next address
+//      tm - timestamp when creating the wallet
+//      type - wallet type
+//      coin - coin type
 type Wallet struct {
 	Meta    map[string]string
 	Entries []Entry
 }
-
-// wallet version
-var wltVersion = "0.2"
 
 // Options are wallet constructor options
 type Options struct {
@@ -109,12 +117,24 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 // Load loads wallet from given file
 func Load(wltFile string) (*Wallet, error) {
-	w := Wallet{}
-	if err := w.Load(wltFile); err != nil {
+	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
+	}
+
+	r := &ReadableWallet{}
+	if err := r.Load(wltFile); err != nil {
 		return nil, err
 	}
 
-	return &w, nil
+	// update filename meta info with the real filename
+	r.Meta["filename"] = filepath.Base(wltFile)
+	return r.toWallet()
+}
+
+// Save saves the wallet to given dir
+func Save(w *Wallet, dir string) error {
+	r := NewReadableWallet(*w)
+	return r.Save(filepath.Join(dir, w.Filename()))
 }
 
 // Validate validates the wallet
@@ -141,38 +161,34 @@ func (w *Wallet) Validate() error {
 	return nil
 }
 
-// GetType gets the wallet type
-func (w *Wallet) GetType() string {
-	return w.Meta["type"]
+// Type gets the wallet type
+func (wlt Wallet) Type() string {
+	return wlt.Meta["type"]
 }
 
-// GetFilename gets the wallet filename
-func (w *Wallet) GetFilename() string {
-	return w.Meta["filename"]
+// Filename gets the wallet filename
+func (wlt Wallet) Filename() string {
+	return wlt.Meta["filename"]
 }
 
-// SetFilename sets the wallet filename
-func (w *Wallet) SetFilename(fn string) {
-	w.Meta["filename"] = fn
+// setFilename sets the wallet filename
+func (wlt *Wallet) setFilename(fn string) {
+	wlt.Meta["filename"] = fn
 }
 
-// GetID gets the wallet id
-func (w *Wallet) GetID() string {
-	return w.Meta["filename"]
+// Label gets the wallet label
+func (wlt Wallet) Label() string {
+	return wlt.Meta["label"]
 }
 
-// GetLabel gets the wallet label
-func (w *Wallet) GetLabel() string {
-	return w.Meta["label"]
+// setLabel sets the wallet label
+func (wlt *Wallet) setLabel(label string) {
+	wlt.Meta["label"] = label
 }
 
-// SetLabel sets the wallet label
-func (w *Wallet) SetLabel(label string) {
-	w.Meta["label"] = label
-}
-
-func (w *Wallet) getLastSeed() string {
-	return w.Meta["lastSeed"]
+// lastSeed returns the last seed
+func (wlt Wallet) lastSeed() string {
+	return wlt.Meta["lastSeed"]
 }
 
 func (w *Wallet) setLastSeed(lseed string) {
@@ -187,14 +203,9 @@ func (wlt *Wallet) setSeed(seed string) {
 	wlt.Meta["seed"] = seed
 }
 
-// GetVersion gets the wallet version
-func (w *Wallet) GetVersion() string {
-	return w.Meta["version"]
-}
-
-// NumEntries returns the number of entries
-func (w *Wallet) NumEntries() int {
-	return len(w.Entries)
+// Version gets the wallet version
+func (wlt *Wallet) version() string {
+	return wlt.Meta["version"]
 }
 
 // GenerateAddresses generate addresses of given number and adds them to the wallet
@@ -202,7 +213,8 @@ func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 	if num == 0 {
 		return []cipher.Address{}
 	}
-	return nil, ErrInvalidWalletVersion
+
+	return wlt.newAddressesInUnencryptedWallet(num)
 }
 
 func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password []byte) ([]cipher.Address, error) {
@@ -210,7 +222,7 @@ func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password []byte) ([]ci
 	var sd []byte
 	var err error
 
-	lastSeed, err := decrypt(wlt.getLastSeed(), password)
+	lastSeed, err := decrypt(wlt.lastSeed(), password)
 	if err != nil {
 		return nil, fmt.Errorf("decrypt last seed failed: %v", err)
 	}
@@ -249,12 +261,12 @@ func (wlt *Wallet) newAddressesInEncryptedWallet(num int, password []byte) ([]ci
 
 func (wlt *Wallet) newAddressesInUnencryptedWallet(num int) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
-	var seed []byte
-	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.getLastSeed()), int(num))
+	var sd []byte
+	var err error
+	if len(wlt.Entries) == 0 {
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.lastSeed()), num)
 	} else {
-		var err error
-		seed, err = hex.DecodeString(w.getLastSeed())
+		sd, err = hex.DecodeString(wlt.lastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
@@ -379,11 +391,11 @@ func (w *Wallet) Load(wltFile string) error {
 	return nil
 }
 
-// Copy returns the copy of wallet
-func (w *Wallet) Copy() Wallet {
-	wlt := Wallet{Meta: make(map[string]string)}
-	for k, v := range w.Meta {
-		wlt.Meta[k] = v
+// clone returns the clone of self
+func (wlt *Wallet) clone() Wallet {
+	w := Wallet{Meta: make(map[string]string)}
+	for k, v := range wlt.Meta {
+		w.Meta[k] = v
 	}
 
 	for _, e := range w.Entries {
@@ -432,12 +444,12 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	for i, au := range spends {
 		entry, exists := w.GetEntry(au.Address)
 		if !exists {
-			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, w.GetID())
+			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, wlt.Filename())
 		}
 
 		txn.PushInput(au.Hash)
 
-		switch wlt.GetVersion() {
+		switch wlt.version() {
 		case "0.1":
 			toSign[i] = entry.Secret
 		case wltVersion:

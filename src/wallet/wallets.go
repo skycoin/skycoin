@@ -61,20 +61,7 @@ func LoadWallets(dir string) (Wallets, error) {
 				return nil, err
 			}
 			logger.Info("Loaded wallet from %s", fullpath)
-			w.SetFilename(name)
-			// check the wallet version
-			// if w.GetVersion() != wltVersion {
-			// 	logger.Info("Update wallet %v", fullpath)
-			// 	bkFile := filepath.Join(bkpath, w.GetFilename())
-			// 	if err := backupWltFile(fullpath, bkFile); err != nil {
-			// 		return nil, err
-			// 	}
-
-			// 	// update wallet to new version.
-			// 	tm := time.Now().Unix() + int64(i)
-			// 	mustUpdateWallet(&w, dir, tm)
-			// }
-
+			w.setFilename(name)
 			wallets[name] = w
 		}
 	}
@@ -124,11 +111,11 @@ func backupWltFile(src, dst string) error {
 
 // Add adds wallet to current wallet
 func (wlts Wallets) Add(w Wallet) error {
-	if _, dup := wlts[w.GetFilename()]; dup {
-		return ErrWalletNameConflict
+	if _, dup := wlts[w.Filename()]; dup {
+		return errors.New("wallet name would conflict with existing wallet, renaming")
 	}
 
-	wlts[w.GetFilename()] = &w
+	wlts[w.Filename()] = &w
 	return nil
 }
 
@@ -138,8 +125,8 @@ func (wlts Wallets) Remove(id string) {
 }
 
 // Get returns wallet by wallet id
-func (wlts Wallets) Get(wltID string) (*Wallet, bool) {
-	if w, ok := wlts[wltID]; ok {
+func (wlts Wallets) Get(id string) (*Wallet, bool) {
+	if w, ok := wlts[id]; ok {
 		return w, true
 	}
 	return &Wallet{}, false
@@ -163,11 +150,11 @@ func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 }
 
 // NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) NewAddresses(wltID string, num int, password []byte) ([]cipher.Address, error) {
-	if w, ok := (*wlts)[wltID]; ok {
+func (wlts *Wallets) NewAddresses(id string, num int, password []byte) ([]cipher.Address, error) {
+	if w, ok := (*wlts)[id]; ok {
 		return w.GenerateAddresses(num, password)
 	}
-	return nil, fmt.Errorf("wallet: %v does not exist", wltID)
+	return nil, fmt.Errorf("wallet: %v does not exist", id)
 }
 
 // Save check for name conflicts!
@@ -175,7 +162,7 @@ func (wlts *Wallets) NewAddresses(wltID string, num int, password []byte) ([]cip
 func (wlts Wallets) Save(dir string) map[string]error {
 	errs := make(map[string]error)
 	for id, w := range wlts {
-		if err := w.Save(dir); err != nil {
+		if err := Save(w, dir); err != nil {
 			errs[id] = err
 		}
 	}
@@ -185,16 +172,24 @@ func (wlts Wallets) Save(dir string) map[string]error {
 	return errs
 }
 
-func (wlts Wallets) toReadable(f ReadableWalletCtor) []*ReadableWallet {
+// ToReadable converts Wallets to *ReadableWallet array
+func (wlts Wallets) ToReadable() []*ReadableWallet {
 	var rw []*ReadableWallet
 	for _, w := range wlts {
-		rw = append(rw, f(*w))
+		rw = append(rw, NewReadableWallet(*w))
 	}
 	sort.Sort(ByTm(rw))
 	return rw
 }
 
-// ToReadable converts Wallets to *ReadableWallet array
-func (wlts Wallets) ToReadable() []*ReadableWallet {
-	return wlts.toReadable(NewReadableWallet)
+// Update updates the given wallet, return error if not exist
+func (wlts Wallets) update(id string, updateFunc func(Wallet) Wallet) error {
+	w, ok := wlts[id]
+	if !ok {
+		return errWalletNotExist(id)
+	}
+
+	newWlt := updateFunc(*w)
+	wlts[id] = &newWlt
+	return nil
 }

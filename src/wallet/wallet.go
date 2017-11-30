@@ -51,8 +51,8 @@ var (
 	// ErrInvalidWalletVersion represents invalid wallet version erro
 	ErrInvalidWalletVersion = errors.New("invalid wallet version")
 
-	// wallet version
-	wltVersion = "0.2"
+	// Version represents the current wallet version
+	Version = "0.2"
 )
 
 // Option NewWallet optional arguments type
@@ -133,7 +133,7 @@ func Load(wltFile string) (*Wallet, error) {
 }
 
 // Save saves the wallet to given dir
-func Save(w *Wallet, dir string) error {
+func Save(dir string, w *Wallet) error {
 	r := NewReadableWallet(*w)
 	return r.Save(filepath.Join(dir, w.Filename()))
 }
@@ -170,6 +170,11 @@ func (wlt Wallet) Type() string {
 // Filename gets the wallet filename
 func (wlt Wallet) Filename() string {
 	return wlt.Meta["filename"]
+}
+
+// Version gets the wallet version
+func (wlt *Wallet) Version() string {
+	return wlt.Meta["version"]
 }
 
 // setFilename sets the wallet filename
@@ -464,10 +469,10 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 		txn.PushInput(au.Hash)
 
-		switch wlt.version() {
+		switch wlt.Version() {
 		case "0.1":
 			toSign[i] = entry.Secret
-		case wltVersion:
+		case Version:
 			// decrypt the private key
 			s, err := decrypt(entry.EncryptedSeckey, []byte(password))
 			if err != nil {

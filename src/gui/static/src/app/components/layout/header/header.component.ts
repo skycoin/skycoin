@@ -1,11 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss']
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent {
   @Input() title: string;
   @Input() coins: number;
   @Input() hours: number;
@@ -13,10 +13,4 @@ export class HeaderComponent implements OnInit {
   get showLargeHeader(): boolean {
     return this.coins >= 0;
   }
-
-  constructor() { }
-
-  ngOnInit() {
-  }
-
 }

@@ -21,16 +21,33 @@
   min-height: $row-height;
   padding: 0 20px;
 
-  .label {
-    color: black;
-    font-weight: 700;
+  .id-column {
+    color: rgba(30, 34, 39, 0.6);
   }
 
-  .hours {
+  .address-column {
+    color: rgba(30, 34, 39, 0.6);
+
+    img {
+      display: inline-block;
+      height: 32px;
+      vertical-align: middle;
+      width: 32px;
+    }
+
+    p {
+      display: inline-block;
+      line-height: $row-height;
+      margin: 0;
+      vertical-align: middle;
+    }
+  }
+
+  .hours-column {
     color: rgba(30, 34, 39, 0.5);
   }
 
-  .coins {
+  .coins-column {
     color: black;
   }
 

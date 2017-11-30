@@ -6,10 +6,13 @@
     <div class="hours-column">SKY Hours</div>
     <div class="coins-column">Balance</div>
   </div>
-  <ng-container *ngFor="let address of (wallet ? wallet.addresses : [])">
+  <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
     <div class="grid-row">
-      <div class="id-column">ID</div>
-      <div class="address-column">{{ address.address }}</div>
+      <div class="id-column">{{ i + 1 }}</div>
+      <div class="address-column">
+        <img src="../../../../assets/img/qr-code-black.png">
+        <p>{{ address.address }}</p>
+      </div>
       <div class="hours-column">{{ address.hours ? address.hours : 0 }}</div>
       <div class="coins-column">{{ address.coins ? address.coins : 0 }}</div>
     </div>

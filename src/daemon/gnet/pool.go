@@ -25,7 +25,8 @@ type DisconnectReason error
 
 const (
 	receiveMessageDurationThreshold = 500 * time.Millisecond
-	readLoopDurationThreshold       = 500 * time.Millisecond
+	readLoopDurationThreshold       = 10 * time.Second
+	sendInMsgChanDurationThreshold  = 5 * time.Second
 	sendLoopDurationThreshold       = 500 * time.Millisecond
 	sendResultTimeout               = 3 * time.Second
 )
@@ -399,7 +400,9 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
 	var elapser = elapse.NewElapser(readLoopDurationThreshold, logger)
+	var sendInMsgChanElapser = elapse.NewElapser(sendInMsgChanDurationThreshold, logger)
 	defer elapser.CheckForDone()
+	defer sendInMsgChanElapser.CheckForDone()
 	for {
 		elapser.Register("readLoop")
 		deadline := time.Time{}
@@ -428,6 +431,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 			return err
 		}
 		for _, d := range datas {
+			sendInMsgChanElapser.Register("readLoop msgChan write")
 			// use select to avoid the goroutine leak,
 			// because if msgChan has no receiver this goroutine will leak
 			select {
@@ -440,6 +444,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 				return errors.New("The msgChan has no receiver")
 			}
 		}
+		sendInMsgChanElapser.CheckForDone()
 	}
 }
 

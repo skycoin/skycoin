@@ -162,7 +162,7 @@ func (wlts *Wallets) NewAddresses(id string, num int, password string) ([]cipher
 func (wlts Wallets) Save(dir string) map[string]error {
 	errs := make(map[string]error)
 	for id, w := range wlts {
-		if err := Save(w, dir); err != nil {
+		if err := Save(dir, w); err != nil {
 			errs[id] = err
 		}
 	}

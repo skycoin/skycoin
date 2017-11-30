@@ -170,7 +170,7 @@ func (serv *Service) NewAddresses(wltID string, password string, num int) ([]cip
 		return nil, err
 	}
 
-	if err := Save(w, serv.WalletDirectory); err != nil {
+	if err := Save(serv.WalletDirectory, w); err != nil {
 		return []cipher.Address{}, err
 	}
 
@@ -257,7 +257,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 		return err
 	}
 
-	return Save(&wlt, serv.WalletDirectory)
+	return Save(serv.WalletDirectory, &wlt)
 }
 
 func (serv *Service) removeDup(wlts Wallets) Wallets {

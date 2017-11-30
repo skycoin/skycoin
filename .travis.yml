@@ -28,7 +28,7 @@ install:
   # Install gox
   - go get github.com/mitchellh/gox
   # Install dependences for building wallet
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
   # for test
   - go get -t ./...
   - go get github.com/golang/lint/golint
@@ -43,7 +43,7 @@ install:
 
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
 
 script:
   # - gometalinter --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode --tests --vendor ./...
@@ -52,11 +52,7 @@ script:
   - go test ./cmd/...
   - go test ./src/...
   # build wallets
-  - cd electron
-  - yarn
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./build.sh 'linux/amd64' ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./build.sh 'darwin/amd64' ;fi
-  - cd ../
+  - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 
 # after_script:
 #   - golint -set_exit_status ./src/...
@@ -65,9 +61,6 @@ script:
 notifications:
   email: false
 
-
-after_success:
-  - ls ./electron/release/
 
 deploy:
   provider: s3

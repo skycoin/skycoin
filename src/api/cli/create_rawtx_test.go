@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func TestCreateRawTx(t *testing.T) {
@@ -18,21 +17,21 @@ func TestCreateRawTx(t *testing.T) {
 }
 
 func TestMakeChangeOut(t *testing.T) {
-	uxOuts := []UnspentOut{
-		{visor.ReadableOutput{
-			Hash:              "",
-			SourceTransaction: "",
-			Address:           "k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND",
-			Coins:             strconv.Itoa(400),
-			Hours:             200,
-		}},
-		{visor.ReadableOutput{
-			Hash:              "",
-			SourceTransaction: "",
-			Address:           "A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe",
-			Coins:             strconv.Itoa(300),
-			Hours:             100,
-		}},
+	uxOuts := []wallet.UxBalance{
+		{
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
+			BkSeq:   10,
+			Coins:   400e6,
+			Hours:   200,
+		},
+		{
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
+			BkSeq:   11,
+			Coins:   300e6,
+			Hours:   100,
+		},
 	}
 
 	spendAmt := []SendAmount{{
@@ -66,21 +65,21 @@ func TestMakeChangeOut(t *testing.T) {
 func TestMakeChangeOutOneCoinHour(t *testing.T) {
 	// As long as there is at least one coin hour left, creating a transaction
 	// will still succeed
-	uxOuts := []UnspentOut{
-		{visor.ReadableOutput{
-			Hash:              "",
-			SourceTransaction: "",
-			Address:           "k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND",
-			Coins:             strconv.Itoa(400),
-			Hours:             0,
-		}},
-		{visor.ReadableOutput{
-			Hash:              "",
-			SourceTransaction: "",
-			Address:           "A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe",
-			Coins:             strconv.Itoa(300),
-			Hours:             1,
-		}},
+	uxOuts := []wallet.UxBalance{
+		{
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			BkSeq:   10,
+			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
+			Coins:   400e6,
+			Hours:   0,
+		},
+		{
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			BkSeq:   11,
+			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
+			Coins:   300e6,
+			Hours:   1,
+		},
 	}
 
 	spendAmt := []SendAmount{{
@@ -114,21 +113,21 @@ func TestMakeChangeOutOneCoinHour(t *testing.T) {
 func TestMakeChangeOutInsufficientCoinHours(t *testing.T) {
 	// If there are no coin hours in the inputs, creating the txn will fail
 	// because it will not be accepted by the network
-	uxOuts := []UnspentOut{
-		{visor.ReadableOutput{
-			Hash:              "",
-			SourceTransaction: "",
-			Address:           "k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND",
-			Coins:             strconv.Itoa(400),
-			Hours:             0,
-		}},
-		{visor.ReadableOutput{
-			Hash:              "",
-			SourceTransaction: "",
-			Address:           "A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe",
-			Coins:             strconv.Itoa(300),
-			Hours:             0,
-		}},
+	uxOuts := []wallet.UxBalance{
+		{
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			BkSeq:   10,
+			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
+			Coins:   400e6,
+			Hours:   0,
+		},
+		{
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			BkSeq:   11,
+			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
+			Coins:   300e6,
+			Hours:   0,
+		},
 	}
 
 	spendAmt := []SendAmount{{

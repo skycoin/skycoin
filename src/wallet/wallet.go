@@ -22,6 +22,9 @@ import (
 
 var (
 	logger = logging.MustGetLogger("wallet")
+
+	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
+	ErrInsufficientBalance = errors.New("balance is not sufficient")
 )
 
 // CoinType represents the wallet coin type
@@ -360,8 +363,11 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	txn := coin.Transaction{}
 	auxs := unspent.GetUnspentsOfAddrs(addrs)
 
-	// Determine which unspents to spend
-	spends, err := createSpendsOldestFirst(headTime, auxs.Flatten(), amt)
+	// Determine which unspents to spend.
+	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
+	uxa := auxs.Flatten()
+	uxb := NewUxBalances(headTime, uxa)
+	spends, err := CreateSpendsMaximizeUxOuts(uxb, amt)
 	if err != nil {
 		return nil, err
 	}
@@ -370,15 +376,15 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	toSign := make([]cipher.SecKey, len(spends))
 	spending := Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
-		entry, exists := wlt.GetEntry(au.Body.Address)
+		entry, exists := wlt.GetEntry(au.Address)
 		if !exists {
-			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Body.Address, wlt.GetID())
+			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, wlt.GetID())
 		}
 
-		txn.PushInput(au.Hash())
+		txn.PushInput(au.Hash)
 		toSign[i] = entry.Secret
-		spending.Coins += au.Body.Coins
-		spending.Hours += au.CoinHours(headTime)
+		spending.Coins += au.Coins
+		spending.Hours += au.Hours
 	}
 
 	if spending.Hours == 0 {
@@ -397,7 +403,7 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	}
 
 	if haveChange {
-		changeAddr := spends[0].Body.Address
+		changeAddr := spends[0].Address
 		txn.PushOutput(changeAddr, changeCoins, changeHours)
 	}
 
@@ -468,11 +474,39 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	return changeHours, addrHours, spendHours
 }
 
+// UxBalance is an intermediate representation of a UxOut for sorting and spend choosing
+type UxBalance struct {
+	Hash    cipher.SHA256
+	BkSeq   uint64
+	Address cipher.Address
+	Coins   uint64
+	Hours   uint64
+}
+
+// NewUxBalances converts coin.UxArray to []UxBalance.
+// headTime is required to calculate coin hours.
+func NewUxBalances(headTime uint64, uxa coin.UxArray) []UxBalance {
+	uxb := make([]UxBalance, len(uxa))
+	for i, ux := range uxa {
+		b := UxBalance{
+			Hash:    ux.Hash(),
+			BkSeq:   ux.Head.BkSeq,
+			Address: ux.Body.Address,
+			Coins:   ux.Body.Coins,
+			Hours:   ux.CoinHours(headTime),
+		}
+
+		uxb[i] = b
+	}
+
+	return uxb
+}
+
 // createSpendsOldestFirst chooses uxout spends to satisfy an amount, prioritizing older oxouts
-func createSpendsOldestFirst(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray, error) {
+func createSpendsOldestFirst(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
 	sort.Slice(uxa, func(i, j int) bool {
-		a := uxa[i].Head.BkSeq
-		b := uxa[j].Head.BkSeq
+		a := uxa[i].BkSeq
+		b := uxa[j].BkSeq
 		// Use hash to break ties
 		if a == b {
 			return cmpUxOutByHash(uxa[i], uxa[j])
@@ -480,55 +514,58 @@ func createSpendsOldestFirst(headTime uint64, uxa coin.UxArray, amt Balance) (co
 		return a < b
 	})
 
-	return chooseSpends(headTime, uxa, amt)
+	return ChooseSpends(uxa, amt)
 }
 
-// createSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts
+// CreateSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts
 //     -- PRO: Allows more frequent spending, less waiting for confirmations, useful for exchanges.
 //     -- PRO: When transaction is volume is higher, transactions are prioritized by fee/size. Minimizing uxouts minimizes size.
 //     -- CON: Would make the unconfirmed pool grow larger.
 // Users with high transaction frequency will want to use this so that they will not need to wait as frequently
 // for unconfirmed spends to complete before sending more.
 // Alternatively, or in addition to this, they should batch sends into single transactions.
-func createSpendsMinimizeUxOuts(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray, error) {
+func CreateSpendsMinimizeUxOuts(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
 	sort.Slice(uxa, makeCmpUxOutByCoins(uxa, func(a, b uint64) bool {
 		return a < b
 	}))
 
-	return chooseSpends(headTime, uxa, amt)
+	return ChooseSpends(uxa, amt)
 }
 
-// createSpendsMaximizeUxOuts chooses uxout spends to satisfy an amount, using the most number of uxouts
-// See the pros and cons of createSpendsMinimizeUxOuts.
+// CreateSpendsMaximizeUxOuts chooses uxout spends to satisfy an amount, using the most number of uxouts
+// See the pros and cons of CreateSpendsMinimizeUxOuts.
 // This should be the default mode, because this keeps the unconfirmed pool smaller which will allow
 // the network to scale better.
-func createSpendsMaximizeUxOuts(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray, error) {
+func CreateSpendsMaximizeUxOuts(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
 	sort.Slice(uxa, makeCmpUxOutByCoins(uxa, func(a, b uint64) bool {
 		return a > b
 	}))
-	return chooseSpends(headTime, uxa, amt)
+	return ChooseSpends(uxa, amt)
 }
 
-// chooseSpends chooses uxouts from a prioritized list of uxouts.
+// ChooseSpends chooses uxouts from a prioritized list of uxouts.
 // uxOuts with zero coinhours should be sorted last, to avoid choosing unspents
 // that all have no coin hours, since a valid transaction requires at least 1 coinhour.
-func chooseSpends(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray, error) {
+// Make sure that the UxBalances have the coinhours updated based on
+// blockchain head time before calling this.
+func ChooseSpends(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
 	if amt.Coins == 0 {
 		return nil, errors.New("zero spend amount")
 	}
 
-	have := Balance{Coins: 0, Hours: 0}
-	spending := make(coin.UxArray, 0)
+	var have Balance
+	var spending []UxBalance
 	for i := range uxa {
 		b := Balance{
-			Coins: uxa[i].Body.Coins,
-			Hours: uxa[i].CoinHours(headTime),
+			Coins: uxa[i].Coins,
+			Hours: uxa[i].Hours,
 		}
 
 		if b.Coins == 0 {
 			logger.Error("UxOut coins are 0, can't spend")
 			continue
 		}
+
 		have = have.Add(b)
 		spending = append(spending, uxa[i])
 
@@ -538,7 +575,7 @@ func chooseSpends(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray,
 	}
 
 	if amt.Coins > have.Coins {
-		return nil, fmt.Errorf("not enough confirmed coins (want %d, have %d)", amt.Coins, have.Coins)
+		return nil, ErrInsufficientBalance
 	}
 
 	if have.Hours == 0 {
@@ -554,48 +591,48 @@ func chooseSpends(headTime uint64, uxa coin.UxArray, amt Balance) (coin.UxArray,
 // If coins are equal, then they are sorted by least hours first
 // If hours are equal, then they are sorted by oldest first
 // If they are equally old, the UxOut's hash is used to break the tie.
-func makeCmpUxOutByCoins(uxa coin.UxArray, coinsCmp func(a, b uint64) bool) func(i, j int) bool {
-	cmpUxOutByCoins := func(a, b coin.UxOut) bool {
+func makeCmpUxOutByCoins(uxa []UxBalance, coinsCmp func(a, b uint64) bool) func(i, j int) bool {
+	cmpUxOutByCoins := func(a, b UxBalance) bool {
 		// Sort by:
 		// coins highest
 		//  hours lowest, unless zero, then last
 		//   oldest first
 		//    tie break with hash comparison
-		if a.Body.Coins == b.Body.Coins {
-			if a.Body.Hours == b.Body.Hours {
-				if a.Head.BkSeq == b.Head.BkSeq {
+		if a.Coins == b.Coins {
+			if a.Hours == b.Hours {
+				if a.BkSeq == b.BkSeq {
 					return cmpUxOutByHash(a, b)
 				}
 
-				return a.Head.BkSeq < b.Head.BkSeq
+				return a.BkSeq < b.BkSeq
 			}
 
 			// Sort by least hours, unless hours are zero, then sort them last
-			if a.Body.Hours == 0 {
+			if a.Hours == 0 {
 				return false
-			} else if b.Body.Hours == 0 {
+			} else if b.Hours == 0 {
 				return true
 			}
 
-			return a.Body.Hours < b.Body.Hours
+			return a.Hours < b.Hours
 		}
 
-		return coinsCmp(a.Body.Coins, b.Body.Coins)
+		return coinsCmp(a.Coins, b.Coins)
 	}
 
 	return func(i, j int) bool {
 		a := uxa[i]
 		b := uxa[j]
 
-		if a.Body.Hours == 0 {
-			if a.Body.Hours == b.Body.Hours {
+		if a.Hours == 0 {
+			if a.Hours == b.Hours {
 				// If they are both zero, sort as normal
 				return cmpUxOutByCoins(a, b)
 			}
 
 			// If a's Hours are 0, sort it last
 			return false
-		} else if b.Body.Hours == 0 {
+		} else if b.Hours == 0 {
 			// If b's Hours are 0, sort it last
 			return false
 		}
@@ -605,17 +642,11 @@ func makeCmpUxOutByCoins(uxa coin.UxArray, coinsCmp func(a, b uint64) bool) func
 	}
 }
 
-func cmpUxOutByHash(a, b coin.UxOut) bool {
-	ah := a.Hash()
-	bh := b.Hash()
-	cmp := bytes.Compare(ah[:], bh[:])
+func cmpUxOutByHash(a, b UxBalance) bool {
+	cmp := bytes.Compare(a.Hash[:], b.Hash[:])
 	if cmp == 0 {
 		logger.Panic("Duplicate UxOut when sorting")
 	}
 	return cmp < 0
 
-}
-
-func errWalletNotExist(wltName string) error {
-	return fmt.Errorf("wallet %s doesn't exist", wltName)
 }

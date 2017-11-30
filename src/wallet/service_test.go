@@ -542,7 +542,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			Balance{Coins: 100e6},
 			addrs[0],
-			errors.New("not enough confirmed coins (want 100000000, have 20000000)"),
+			ErrInsufficientBalance,
 		},
 		{
 			"no coin hours in inputs",

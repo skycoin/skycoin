@@ -20,17 +20,9 @@ import (
 )
 
 var (
-	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
-	ErrInsufficientBalance = errors.New("balance in wallet is not sufficient")
-
 	// ErrTemporaryInsufficientBalance is returned if a wallet does not have enough balance for a spend, but will have enough after unconfirmed transactions confirm
-	ErrTemporaryInsufficientBalance = errors.New(`balance in wallet is not sufficient. Balance will be sufficient after unconfirmed transactions confirm`)
+	ErrTemporaryInsufficientBalance = errors.New("balance is not sufficient. Balance will be sufficient after unconfirmed transactions confirm")
 )
-
-// UnspentOut wraps visor.ReadableOutput
-type UnspentOut struct {
-	visor.ReadableOutput
-}
 
 // SendAmount represents an amount to send to an address
 type SendAmount struct {
@@ -334,20 +326,47 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
 func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
-	// get unspent outputs of those addresses
+	// Get unspent outputs of those addresses
 	unspents, err := c.GetUnspentOutputs(inAddrs)
 	if err != nil {
 		return nil, err
 	}
 
-	// caculate total required coins
+	// Convert spendable unspent outputs to []wallet.UxBalance
+	uxb, err := visor.ReadableOutputsToUxBalances(unspents.Outputs.SpendableOutputs())
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
 		totalCoins += arg.Coins
 	}
 
-	outs, err := getSufficientUnspents(unspents, totalCoins)
+	// Choose which unspent outputs to spend
+	// Use the MinimizeUxOuts strategy, since this is most likely used by
+	// application that may need to send frequently.
+	// Using fewer UxOuts will leave more available for other transactions,
+	// instead of waiting for confirmation.
+	bal := wallet.Balance{Coins: totalCoins}
+	outs, err := wallet.CreateSpendsMinimizeUxOuts(uxb, bal)
 	if err != nil {
+		// If there is not enough balance in the spendable outputs,
+		// see if there is enough balance when including incoming outputs
+		if err == wallet.ErrInsufficientBalance {
+			uxb, otherErr := visor.ReadableOutputsToUxBalances(unspents.Outputs.ExpectedOutputs())
+			if otherErr != nil {
+				return nil, otherErr
+			}
+
+			if _, otherErr := wallet.CreateSpendsMinimizeUxOuts(uxb, bal); otherErr != nil {
+				return nil, err
+			}
+
+			return nil, ErrTemporaryInsufficientBalance
+		}
+
 		return nil, err
 	}
 
@@ -369,15 +388,11 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 	return tx, nil
 }
 
-func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
+func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
 	var totalInCoins, totalInHours, totalOutCoins uint64
 
 	for _, o := range outs {
-		c, err := droplet.FromString(o.Coins)
-		if err != nil {
-			return nil, err
-		}
-		totalInCoins += c
+		totalInCoins += o.Coins
 		totalInHours += o.Hours
 	}
 
@@ -390,7 +405,7 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	}
 
 	if totalInCoins < totalOutCoins {
-		return nil, ErrInsufficientBalance
+		return nil, wallet.ErrInsufficientBalance
 	}
 
 	outAddrs := []coin.TransactionOutput{}
@@ -400,9 +415,7 @@ func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]c
 	nAddrs := uint64(len(toAddrs))
 	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
-	logger.Info("makeChangeOut: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
-		logger.Warning("makeChangeOut: fee.VerifyTransactionFeeForHours failed: %v", err)
 		return nil, err
 	}
 
@@ -425,16 +438,12 @@ func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput
 	return uo
 }
 
-func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
+func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, error) {
 	keys := make([]cipher.SecKey, len(outs))
 	for i, o := range outs {
-		addr, err := cipher.DecodeBase58Address(o.Address)
-		if err != nil {
-			return nil, ErrAddress
-		}
-		entry, ok := wlt.GetEntry(addr)
+		entry, ok := wlt.GetEntry(o.Address)
 		if !ok {
-			return nil, fmt.Errorf("%v is not in wallet", o.Address)
+			return nil, fmt.Errorf("%v is not in wallet", o.Address.String())
 		}
 
 		keys[i] = entry.Secret
@@ -442,49 +451,15 @@ func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
 	return keys, nil
 }
 
-func getSufficientUnspents(unspents *webrpc.OutputsResult, coins uint64) ([]UnspentOut, error) {
-	// get spendable outputs, which are all confirmed outputs without
-	// the spending outputs that are in unconfirmed tx pool.
-	spendableOuts := unspents.Outputs.SpendableOutputs()
-	var spendableCoins uint64
-	var spendOuts []UnspentOut
-	for i, out := range spendableOuts {
-		c, err := droplet.FromString(out.Coins)
-		if err != nil {
-			return nil, err
-		}
-
-		spendableCoins += c
-		spendOuts = append(spendOuts, UnspentOut{spendableOuts[i]})
-
-		if spendableCoins >= coins {
-			return spendOuts, nil
-		}
-	}
-
-	// get unconfirmed incoming outputs
-	uncfmIncomingOuts := unspents.Outputs.IncomingOutputs
-	uncfmIncoming, err := uncfmIncomingOuts.Balance()
-	if err != nil {
-		return nil, fmt.Errorf("get unconfirmed balance failed: %v", err)
-	}
-
-	if spendableCoins+uncfmIncoming.Coins < coins {
-		return nil, ErrInsufficientBalance
-	}
-
-	// spendable coins + unconfirmed incoming coins >= coins
-	return nil, ErrTemporaryInsufficientBalance
-}
-
 // NewTransaction create skycoin transaction.
-func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	tx := coin.Transaction{}
 	for _, u := range utxos {
-		tx.PushInput(cipher.MustSHA256FromHex(u.Hash))
+		tx.PushInput(u.Hash)
 	}
 
 	for _, o := range outs {
+		// Do not create a transaction with invalid number of droplets
 		if err := visor.DropletPrecisionCheck(o.Coins); err != nil {
 			return nil, err
 		}

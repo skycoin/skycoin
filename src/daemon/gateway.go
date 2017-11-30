@@ -242,8 +242,11 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	var uncfmSpendingOutputs coin.UxArray
 	// unconfirmed incoming outputs
 	var uncfmIncomingOutputs coin.UxArray
+	var headTime uint64
 	var err error
 	gw.strand("GetUnspentOutputs", func() {
+		headTime = gw.v.Blockchain.Time()
+
 		unspentOutputs, err = gw.v.GetUnspentOutputs()
 		if err != nil {
 			err = fmt.Errorf("get unspent output readables failed: %v", err)
@@ -258,7 +261,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 
 		uncfmIncomingOutputs, err = gw.v.UnconfirmedIncomingOutputs()
 		if err != nil {
-			err = fmt.Errorf("get all incomming outputs failed: %v", err)
+			err = fmt.Errorf("get all incoming outputs failed: %v", err)
 			return
 		}
 	})
@@ -274,17 +277,17 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	}
 
 	outputSet := visor.ReadableOutputSet{}
-	outputSet.HeadOutputs, err = visor.NewReadableOutputs(unspentOutputs)
+	outputSet.HeadOutputs, err = visor.NewReadableOutputs(headTime, unspentOutputs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}
 
-	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(uncfmSpendingOutputs)
+	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(headTime, uncfmSpendingOutputs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}
 
-	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(uncfmIncomingOutputs)
+	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(headTime, uncfmIncomingOutputs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}
@@ -296,14 +299,13 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]bool)
+		addrMap := make(map[string]struct{})
 		for _, addr := range addrs {
-			addrMap[addr] = false
+			addrMap[addr] = struct{}{}
 		}
 
 		for _, u := range outputs {
-			_, ok := addrMap[u.Body.Address.String()]
-			if !ok {
+			if _, ok := addrMap[u.Body.Address.String()]; !ok {
 				addrMatch = append(addrMatch, u)
 			}
 		}
@@ -315,9 +317,9 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 func FbyAddresses(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]bool)
+		addrMap := make(map[string]struct{})
 		for _, addr := range addrs {
-			addrMap[addr] = true
+			addrMap[addr] = struct{}{}
 		}
 
 		for _, u := range outputs {
@@ -333,9 +335,9 @@ func FbyAddresses(addrs []string) OutputsFilter {
 func FbyHashes(hashes []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		hsMatch := coin.UxArray{}
-		hsMap := make(map[string]bool)
+		hsMap := make(map[string]struct{})
 		for _, h := range hashes {
-			hsMap[h] = true
+			hsMap[h] = struct{}{}
 		}
 
 		for _, u := range outputs {

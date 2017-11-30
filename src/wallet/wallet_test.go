@@ -466,3 +466,11 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 		}
 	}
 }
+
+func TestWalletCreateSpendsMaximizeUxOuts(t *testing.T) {
+	// TODO
+}
+
+func TestWalletCreateSpendsMinimizeUxOuts(t *testing.T) {
+	// TODO
+}

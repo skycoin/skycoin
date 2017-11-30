@@ -10,6 +10,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
+func errWalletNotExist(wltName string) error {
+	return fmt.Errorf("wallet %s doesn't exist", wltName)
+}
+
 // BalanceGetter interface for getting the balance of given addresses
 type BalanceGetter interface {
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error)

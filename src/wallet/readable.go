@@ -24,7 +24,7 @@ func NewReadableEntry(w Entry, v string) ReadableEntry {
 	switch v {
 	case "0.1":
 		secret = w.Secret.Hex()
-	case wltVersion:
+	case Version:
 		secret = w.EncryptedSeckey
 	}
 	return ReadableEntry{
@@ -102,7 +102,7 @@ func newEntryFromReadable(w *ReadableEntry, v string) (*Entry, error) {
 			Public:  p,
 			Secret:  s,
 		}, nil
-	case wltVersion:
+	case Version:
 		return &Entry{
 			Address:         a,
 			Public:          p,
@@ -138,7 +138,7 @@ func (bt ByTm) Swap(i, j int) {
 func NewReadableWallet(w Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(e, w.version())
+		readable[i] = NewReadableEntry(e, w.Version())
 	}
 
 	meta := make(map[string]string, len(w.Meta))

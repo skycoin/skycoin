@@ -267,7 +267,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 		return err
 	}
 
-	return Save(&wlt, serv.WalletDirectory)
+	return Save(serv.WalletDirectory, &wlt)
 }
 
 // Remove removes wallet of given wallet id from the service

@@ -7,7 +7,7 @@
     <div class="coins-column">Balance</div>
   </div>
   <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
-    <div class="grid-row">
+    <div class="grid-row" *ngIf="!wallet.hideEmpty && !address.balance">
       <div class="id-column">{{ i + 1 }}</div>
       <div class="address-column">
         <img src="../../../../assets/img/qr-code-black.png">
@@ -22,7 +22,8 @@
       <img src="../../../../assets/img/load-gold.png"> New Address
     </button>
     <button md-button (click)="toggleEmpty()">
-      <img src="../../../../assets/img/minus-red.png"> Hide Empty
+      <ng-container *ngIf="!wallet || !wallet.hideEmpty"><img src="../../../../assets/img/minus-red.png"> Hide Empty</ng-container>
+      <ng-container *ngIf="wallet && wallet.hideEmpty"><img src="../../../../assets/img/plus-gold.png"> Show Empty</ng-container>
     </button>
   </div>
   <app-footer></app-footer>

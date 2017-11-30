@@ -38,8 +38,11 @@ export class WalletService {
   }
 
   addAddress(wallet: Wallet) {
-    return this.apiService.post('wallet/newAddress', {id: wallet.filename})
-      .map(response => ({ address: response.addresses[0], coins: null, hours: null }));
+    return this.apiService.postWalletNewAddress(wallet)
+      .do(address => {
+        wallet.addresses.push(address);
+        this.refreshBalances();
+      });
   }
 
   all(): Observable<Wallet[]> {

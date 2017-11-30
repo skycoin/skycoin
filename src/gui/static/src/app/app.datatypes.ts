@@ -1,3 +1,7 @@
+/**
+ * Internal Objects
+ */
+
 export class Wallet {
   label: string;
   filename: string;
@@ -15,10 +19,22 @@ export class Address {
   hours: number;
 }
 
+/**
+ * Response Objects
+ */
+
 export class GetWalletsResponseWallet {
   meta: GetWalletsResponseMeta;
   entries: GetWalletsResponseEntry[];
 }
+
+export class PostWalletNewAddressResponse {
+  addresses: string[];
+}
+
+/**
+ * Response Embedded Objects
+ */
 
 export class GetWalletsResponseMeta {
   label: string;

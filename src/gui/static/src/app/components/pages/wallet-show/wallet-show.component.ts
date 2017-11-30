@@ -28,7 +28,7 @@ export class WalletShowComponent implements OnInit, OnDestroy {
   }
 
   newAddress() {
-    this.walletService.addAddress(this.wallet);
+    this.walletService.addAddress(this.wallet).subscribe(() => console.log('completed'));
   }
 
   toggleEmpty() {

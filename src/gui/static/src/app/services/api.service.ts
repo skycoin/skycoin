@@ -4,7 +4,7 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
-import { GetWalletsResponseEntry, GetWalletsResponseWallet, Wallet } from '../app.datatypes';
+import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Wallet } from '../app.datatypes';
 
 @Injectable()
 export class ApiService {
@@ -35,6 +35,11 @@ export class ApiService {
       });
       return wallets;
     });
+  }
+
+  postWalletNewAddress(wallet: Wallet): Observable<Address> {
+    return this.post('wallet/newAddress', { id: wallet.filename })
+      .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
   }
 
   get(url, options = null) {

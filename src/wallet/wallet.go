@@ -236,7 +236,7 @@ func (wlt *Wallet) newAddressesInEncryptedWallet(password string, num int) ([]ci
 	var sd []byte
 	var err error
 
-	lastSeed, err := decrypt(wlt.lastSeed(), []byte(password))
+	lastSeed, err := Decrypt(wlt.lastSeed(), []byte(password))
 	if err != nil {
 		return nil, fmt.Errorf("decrypt last seed failed: %v", err)
 	}
@@ -244,7 +244,7 @@ func (wlt *Wallet) newAddressesInEncryptedWallet(password string, num int) ([]ci
 	sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(lastSeed, num)
 
 	// encrypt the last seed
-	newLastSeed, err := encrypt(sd, []byte(password))
+	newLastSeed, err := Encrypt(sd, []byte(password))
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func (wlt *Wallet) newAddressesInEncryptedWallet(password string, num int) ([]ci
 		addrs[i] = a
 
 		// encrypt seckey
-		ss, err := encrypt(s[:], []byte(password))
+		ss, err := Encrypt(s[:], []byte(password))
 		if err != nil {
 			return nil, fmt.Errorf("encrypt private key failed: %v", err)
 		}
@@ -474,7 +474,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 			toSign[i] = entry.Secret
 		case Version:
 			// decrypt the private key
-			s, err := decrypt(entry.EncryptedSeckey, []byte(password))
+			s, err := Decrypt(entry.EncryptedSeckey, []byte(password))
 			if err != nil {
 				return nil, err
 			}

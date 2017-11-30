@@ -111,7 +111,7 @@ func TestNewWallet(t *testing.T) {
 
 			if w.seed() != "" {
 				// decrypt the seed and genearte the first address
-				seed, err := decrypt(w.seed(), []byte("pwd"))
+				seed, err := Decrypt(w.seed(), []byte("pwd"))
 				require.NoError(t, err)
 				_, seckeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
 				addr := cipher.AddressFromSecKey(seckeys[0])

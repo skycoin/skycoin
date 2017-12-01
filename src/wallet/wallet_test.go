@@ -635,7 +635,7 @@ func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 		}
 		uxb := makeRandomUxBalances(t)
 
-		verifyChosenCoins(t, uxb, amt, sortSpendsCoinsLowToHigh, func(a, b UxBalance) bool {
+		verifyChosenCoins(t, uxb, amt, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins <= b.Coins
 		})
 	}
@@ -645,11 +645,11 @@ func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
 		amt := Balance{
-			Coins: 33,
+			Coins: uint64((rand.Intn(3)+1)*10 + rand.Intn(3)), // 10,20,30 + 0,1,2
 		}
 		uxb := makeRandomUxBalances(t)
 
-		verifyChosenCoins(t, uxb, amt, sortSpendsCoinsHighToLow, func(a, b UxBalance) bool {
+		verifyChosenCoins(t, uxb, amt, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins >= b.Coins
 		})
 	}
@@ -667,18 +667,15 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 	n := rand.Intn(101)
 	uxb := make([]UxBalance, n)
 
-	// 1/3 chance of having 0 coinhours
-	hasZeroHoursChance := rand.Intn(3)
-	var hours uint64
-	if hasZeroHoursChance > 0 {
-		hours = uint64(rand.Intn(11))
-	}
+	// Use a random max range for the hours' rand range to ensure enough
+	// balances have zero hours
+	hasZeroHoursRange := rand.Intn(3) + 1
 
 	for i := 0; i < n; i++ {
 		ux := UxBalance{
 			Coins: uint64(rand.Intn(10) + 1), // 1-10
-			Hours: hours,                     // 0-10
-			BkSeq: uint64(rand.Intn(11)),     // 0-10
+			Hours: uint64(rand.Intn(hasZeroHoursRange)),
+			BkSeq: uint64(rand.Intn(11)), // 0-10
 			Hash:  testutil.RandSHA256(t),
 		}
 
@@ -688,7 +685,7 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 	return uxb
 }
 
-func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, sortStrategy func([]UxBalance), cmpCoins func(i, j UxBalance) bool) {
+func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, chooseSpends func([]UxBalance, Balance) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
 	var haveZero, haveNonzero int
 	for _, ux := range uxb {
 		if ux.Hours == 0 {
@@ -704,7 +701,7 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, sortStrategy 
 		totalHours += ux.Hours
 	}
 
-	chosen, err := ChooseSpends(uxb, amt, sortStrategy)
+	chosen, err := chooseSpends(uxb, amt)
 
 	if amt.Coins == 0 {
 		testutil.RequireError(t, err, "zero spend amount")

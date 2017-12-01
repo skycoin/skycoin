@@ -489,7 +489,7 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 
 // Spend spends coins from given wallet and broadcast it,
 // return transaction or error.
-func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
+func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	var tx *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
@@ -497,7 +497,7 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), amt, dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			err = fmt.Errorf("Create transaction failed: %v", err)
 			return
@@ -530,22 +530,6 @@ func (gw *Gateway) LoadAndScanWallet(wltName string, seed string, scanN uint64, 
 		wlt, err = gw.v.LoadAndScanWallet(wltName, seed, scanN, options...)
 	})
 	return wlt, err
-}
-
-// CreateSpendingTransaction creates spending transactions
-func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
-	var tx *coin.Transaction
-	var err error
-	gw.strand("CreateSpendingTransaction", func() {
-		// generate spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
-
-		// create and sign transaction
-		headTime := gw.v.Blockchain.Time()
-		tx, err = wlt.CreateAndSignTransaction(sv, unspent, headTime, amt, dest)
-	})
-	return tx, err
 }
 
 // GetWalletBalance returns balance pair of specific wallet

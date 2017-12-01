@@ -235,12 +235,8 @@ func (serv *Service) GetWalletsReadable() []*ReadableWallet {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (serv *Service) CreateAndSignTransaction(wltID string,
-	vld Validator,
-	unspent blockdb.UnspentGetter,
-	headTime uint64,
-	amt Balance,
-	dest cipher.Address) (*coin.Transaction, error) {
+func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
+	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
@@ -248,7 +244,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string,
 		return nil, errWalletNotExist(wltID)
 	}
 
-	return w.CreateAndSignTransaction(vld, unspent, headTime, amt, dest)
+	return w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
 }
 
 // UpdateWalletLabel updates the wallet label

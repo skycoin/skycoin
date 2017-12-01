@@ -82,7 +82,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			tx, err := createRawTx(c)
+			tx, err := createRawTxCmdHandler(c)
 			if err != nil {
 				errorWithHelp(c, err)
 				return nil
@@ -219,7 +219,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	return amt, nil
 }
 
-func createRawTx(c *gcli.Context) (*coin.Transaction, error) {
+func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	rpcClient := RpcClientFromContext(c)
 
 	wltAddr, err := fromWalletOrAddress(c)
@@ -332,41 +332,18 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 		return nil, err
 	}
 
-	// Convert spendable unspent outputs to []wallet.UxBalance
-	uxb, err := visor.ReadableOutputsToUxBalances(unspents.Outputs.SpendableOutputs())
-	if err != nil {
-		return nil, err
-	}
+	return createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs)
+}
 
+func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
 		totalCoins += arg.Coins
 	}
 
-	// Choose which unspent outputs to spend
-	// Use the MinimizeUxOuts strategy, since this is most likely used by
-	// application that may need to send frequently.
-	// Using fewer UxOuts will leave more available for other transactions,
-	// instead of waiting for confirmation.
-	bal := wallet.Balance{Coins: totalCoins}
-	outs, err := wallet.CreateSpendsMinimizeUxOuts(uxb, bal)
+	outs, err := chooseSpends(uxouts, totalCoins)
 	if err != nil {
-		// If there is not enough balance in the spendable outputs,
-		// see if there is enough balance when including incoming outputs
-		if err == wallet.ErrInsufficientBalance {
-			uxb, otherErr := visor.ReadableOutputsToUxBalances(unspents.Outputs.ExpectedOutputs())
-			if otherErr != nil {
-				return nil, otherErr
-			}
-
-			if _, otherErr := wallet.CreateSpendsMinimizeUxOuts(uxb, bal); otherErr != nil {
-				return nil, err
-			}
-
-			return nil, ErrTemporaryInsufficientBalance
-		}
-
 		return nil, err
 	}
 
@@ -386,6 +363,41 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 	}
 
 	return tx, nil
+}
+
+func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
+	// Convert spendable unspent outputs to []wallet.UxBalance
+	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
+	if err != nil {
+		return nil, err
+	}
+
+	// Choose which unspent outputs to spend
+	// Use the MinimizeUxOuts strategy, since this is most likely used by
+	// application that may need to send frequently.
+	// Using fewer UxOuts will leave more available for other transactions,
+	// instead of waiting for confirmation.
+	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins)
+	if err != nil {
+		// If there is not enough balance in the spendable outputs,
+		// see if there is enough balance when including incoming outputs
+		if err == wallet.ErrInsufficientBalance {
+			expectedOutputs, otherErr := visor.ReadableOutputsToUxBalances(uxouts.ExpectedOutputs())
+			if otherErr != nil {
+				return nil, otherErr
+			}
+
+			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins); otherErr != nil {
+				return nil, err
+			}
+
+			return nil, ErrTemporaryInsufficientBalance
+		}
+
+		return nil, err
+	}
+
+	return outs, nil
 }
 
 func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {

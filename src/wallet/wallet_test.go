@@ -630,12 +630,10 @@ func TestWalletSortSpendsHighToLow(t *testing.T) {
 func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
-		amt := Balance{
-			Coins: 33,
-		}
+		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
 		uxb := makeRandomUxBalances(t)
 
-		verifyChosenCoins(t, uxb, amt, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
+		verifyChosenCoins(t, uxb, coins, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins <= b.Coins
 		})
 	}
@@ -644,12 +642,10 @@ func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
-		amt := Balance{
-			Coins: uint64((rand.Intn(3)+1)*10 + rand.Intn(3)), // 10,20,30 + 0,1,2
-		}
+		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
 		uxb := makeRandomUxBalances(t)
 
-		verifyChosenCoins(t, uxb, amt, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
+		verifyChosenCoins(t, uxb, coins, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins >= b.Coins
 		})
 	}
@@ -685,7 +681,7 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 	return uxb
 }
 
-func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, chooseSpends func([]UxBalance, Balance) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
+func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends func([]UxBalance, uint64) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
 	var haveZero, haveNonzero int
 	for _, ux := range uxb {
 		if ux.Hours == 0 {
@@ -701,9 +697,9 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, chooseSpends 
 		totalHours += ux.Hours
 	}
 
-	chosen, err := chooseSpends(uxb, amt)
+	chosen, err := chooseSpends(uxb, coins)
 
-	if amt.Coins == 0 {
+	if coins == 0 {
 		testutil.RequireError(t, err, "zero spend amount")
 		return
 	}
@@ -718,7 +714,7 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, chooseSpends 
 		return
 	}
 
-	if amt.Coins > totalCoins {
+	if coins > totalCoins {
 		testutil.RequireError(t, err, ErrInsufficientBalance.Error())
 		return
 	}
@@ -788,7 +784,7 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, amt Balance, chooseSpends 
 	var haveCoins uint64
 	for i, ux := range chosen {
 		haveCoins += ux.Coins
-		if haveCoins >= amt.Coins {
+		if haveCoins >= coins {
 			require.Equal(t, len(chosen)-1, i)
 		}
 	}

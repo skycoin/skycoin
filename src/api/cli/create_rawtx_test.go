@@ -8,13 +8,9 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
-
-func TestCreateRawTx(t *testing.T) {
-	// Need fake gateway
-
-}
 
 func TestMakeChangeOut(t *testing.T) {
 	uxOuts := []wallet.UxBalance{
@@ -141,4 +137,230 @@ func TestMakeChangeOutInsufficientCoinHours(t *testing.T) {
 
 	_, err = makeChangeOut(uxOuts, chgAddr, spendAmt)
 	testutil.RequireError(t, err, fee.ErrTxnNoFee.Error())
+}
+
+func TestChooseSpends(t *testing.T) {
+	// Start with visor.ReadableOutputSet
+	// Spends should be minimized
+
+	// Insufficient HeadOutputs
+	// Sufficient HeadOutputs, but insufficient after adjusting for OutgoingOutputs
+	// Insufficient HeadOutputs, but sufficient after adjusting for IncomingOutputs
+	// Sufficient HeadOutputs after adjusting for OutgoingOutputs
+
+	var coins uint64 = 100e6
+
+	hashA := testutil.RandSHA256(t).Hex()
+	hashB := testutil.RandSHA256(t).Hex()
+	hashC := testutil.RandSHA256(t).Hex()
+	hashD := testutil.RandSHA256(t).Hex()
+
+	addrA := testutil.MakeAddress().String()
+	addrB := testutil.MakeAddress().String()
+	addrC := testutil.MakeAddress().String()
+	addrD := testutil.MakeAddress().String()
+
+	cases := []struct {
+		name     string
+		err      error
+		spendLen int
+		ros      visor.ReadableOutputSet
+	}{
+		{
+			"Insufficient HeadOutputs",
+			wallet.ErrInsufficientBalance,
+			0,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "75.000000",
+						Hours:   100,
+					},
+					{
+						Hash:    hashB,
+						Address: addrB,
+						BkSeq:   19,
+						Coins:   "13.000000",
+						Hours:   0,
+					},
+				},
+			},
+		},
+
+		{
+			"Sufficient HeadOutputs, but insufficient after subtracting OutgoingOutputs",
+			wallet.ErrInsufficientBalance,
+			0,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "75.000000",
+						Hours:   100,
+					},
+					{
+						Hash:    hashB,
+						Address: addrB,
+						BkSeq:   19,
+						Coins:   "50.000000",
+						Hours:   0,
+					},
+				},
+				OutgoingOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashB,
+						Address: addrB,
+						BkSeq:   19,
+						Coins:   "50.000000",
+						Hours:   0,
+					},
+				},
+			},
+		},
+
+		{
+			"Insufficient HeadOutputs, but sufficient after adding IncomingOutputs",
+			ErrTemporaryInsufficientBalance,
+			0,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "20.000000",
+						Hours:   100,
+					},
+					{
+						Hash:    hashB,
+						Address: addrB,
+						BkSeq:   19,
+						Coins:   "30.000000",
+						Hours:   0,
+					},
+				},
+				IncomingOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashC,
+						Address: addrC,
+						BkSeq:   134,
+						Coins:   "40.000000",
+						Hours:   200,
+					},
+					{
+						Hash:    hashD,
+						Address: addrD,
+						BkSeq:   29,
+						Coins:   "11.000000",
+						Hours:   0,
+					},
+				},
+			},
+		},
+
+		{
+			"Sufficient HeadOutputs and still sufficient after subtracting OutgoingOutputs",
+			nil,
+			2,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "15.000000",
+						Hours:   100,
+					},
+					{
+						Hash:    hashB,
+						Address: addrB,
+						BkSeq:   19,
+						Coins:   "90.000000",
+						Hours:   0,
+					},
+					{
+						Hash:    hashC,
+						Address: addrC,
+						BkSeq:   19,
+						Coins:   "20.000000",
+						Hours:   1,
+					},
+				},
+				OutgoingOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "15.000000",
+						Hours:   100,
+					},
+				},
+			},
+		},
+
+		{
+			"Sufficient HeadOutputs and still sufficient after subtracting OutgoingOutputs but will have no coinhours",
+			fee.ErrTxnNoFee,
+			0,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "15.000000",
+						Hours:   100,
+					},
+					{
+						Hash:    hashB,
+						Address: addrB,
+						BkSeq:   19,
+						Coins:   "90.000000",
+						Hours:   0,
+					},
+					{
+						Hash:    hashC,
+						Address: addrC,
+						BkSeq:   19,
+						Coins:   "30.000000",
+						Hours:   0,
+					},
+				},
+				OutgoingOutputs: visor.ReadableOutputs{
+					{
+						Hash:    hashA,
+						Address: addrA,
+						BkSeq:   22,
+						Coins:   "15.000000",
+						Hours:   100,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			spends, err := chooseSpends(tc.ros, coins)
+
+			if tc.err != nil {
+				testutil.RequireError(t, err, tc.err.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.spendLen, len(spends))
+
+				var totalCoins uint64
+				for _, ux := range spends {
+					totalCoins += ux.Coins
+				}
+
+				require.True(t, coins <= totalCoins)
+			}
+		})
+	}
 }

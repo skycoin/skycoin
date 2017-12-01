@@ -448,7 +448,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		unspents   []coin.UxOut
 		addrUxouts coin.AddressUxOuts
 		vld        Validator
-		amt        Balance
+		coins      uint64
 		dest       cipher.Address
 		err        error
 	}{
@@ -461,7 +461,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			nil,
 		},
@@ -474,7 +474,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1e6},
+			1e6,
 			addrs[0],
 			nil,
 		},
@@ -487,7 +487,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: true,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			errors.New("please spend after your pending transaction is confirmed"),
 		},
@@ -501,7 +501,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				ok:  false,
 				err: errors.New("fail intentionally"),
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
@@ -527,7 +527,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1e3},
+			1e3,
 			addrs[0],
 			nil,
 		},
@@ -540,7 +540,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 100e6},
+			100e6,
 			addrs[0],
 			ErrInsufficientBalance,
 		},
@@ -553,7 +553,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1e6},
+			1e6,
 			addrsNoHours[0],
 			fee.ErrTxnNoFee,
 		},
@@ -570,7 +570,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				unspents.unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.amt, tc.dest)
+			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

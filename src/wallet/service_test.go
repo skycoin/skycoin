@@ -514,7 +514,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{},
+			0,
 			addrs[0],
 			errors.New("zero spend amount"),
 		},

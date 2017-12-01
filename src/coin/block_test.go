@@ -10,11 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/testutil"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func _badFeeCalc(t *Transaction) (uint64, error) {
+func badFeeCalc(t *Transaction) (uint64, error) {
 	return 0, errors.New("Bad")
 }
 
@@ -45,10 +46,10 @@ func addTransactionToBlock(t *testing.T, b *Block) Transaction {
 func TestNewBlock(t *testing.T) {
 	// TODO -- update this test for newBlock changes
 	prev := Block{Head: BlockHeader{Version: 0x02, Time: 100, BkSeq: 98}}
-	uxHash := randSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	txns := Transactions{Transaction{}}
 	// invalid txn fees panics
-	_, err := NewBlock(prev, 133, uxHash, txns, _badFeeCalc)
+	_, err := NewBlock(prev, 133, uxHash, txns, badFeeCalc)
 	require.EqualError(t, err, fmt.Sprintf("Invalid transaction fees: Bad"))
 
 	// no txns panics
@@ -73,7 +74,7 @@ func TestNewBlock(t *testing.T) {
 }
 
 func TestBlockHashHeader(t *testing.T) {
-	uxHash := randSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	b, err := makeNewBlock(uxHash)
 	require.NoError(t, err)
 	assert.Equal(t, b.HashHeader(), b.Head.Hash())
@@ -81,7 +82,7 @@ func TestBlockHashHeader(t *testing.T) {
 }
 
 func TestBlockHashBody(t *testing.T) {
-	uxHash := randSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	b, err := makeNewBlock(uxHash)
 	require.NoError(t, err)
 	assert.Equal(t, b.HashBody(), b.Body.Hash())

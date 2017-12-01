@@ -237,7 +237,7 @@ func (fcs fakeChainStore) GetGenesisBlock() *coin.SignedBlock {
 }
 
 func makeBlock(t *testing.T, preBlock coin.Block, tm uint64) *coin.Block {
-	uxHash := RandSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	tx := coin.Transaction{}
 	b, err := coin.NewBlock(preBlock, tm, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
@@ -828,7 +828,7 @@ func TestVerifyUxHash(t *testing.T) {
 	err = bc.verifyUxHash(*b)
 	require.NoError(t, err)
 
-	b2, err := coin.NewBlock(gb.Block, genTime+10, RandSHA256(t), coin.Transactions{tx}, feeCalc)
+	b2, err := coin.NewBlock(gb.Block, genTime+10, testutil.RandSHA256(t), coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 
 	err = bc.verifyUxHash(*b2)

@@ -2,9 +2,11 @@
 package visor
 
 import (
+	"testing"
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
 
@@ -104,10 +106,10 @@ const (
 // 	}
 // }
 
-func createUnconfirmedTxn() UnconfirmedTxn {
+func createUnconfirmedTxn(t *testing.T) UnconfirmedTxn {
 	ut := UnconfirmedTxn{}
 	ut.Txn = coin.Transaction{}
-	ut.Txn.InnerHash = randSHA256()
+	ut.Txn.InnerHash = testutil.RandSHA256(t)
 	ut.Received = utc.Now().UnixNano()
 	ut.Checked = ut.Received
 	ut.Announced = time.Time{}.UnixNano()

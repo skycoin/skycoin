@@ -428,6 +428,8 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 // and a sum of these values.
 func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
 	// TODO: Allow the caller to control coinhour distribution
+	// TODO: This calculation only works when BurnFactor=2
+	// Needs to be fixed to support BurnFactor > 2
 	remainingHours := inputHours / fee.BurnFactor
 
 	var changeHours uint64

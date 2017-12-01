@@ -497,12 +497,7 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID,
-			sv,
-			unspent,
-			gw.v.Blockchain.Time(),
-			amt,
-			dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), amt, dest)
 		if err != nil {
 			err = fmt.Errorf("Create transaction failed: %v", err)
 			return

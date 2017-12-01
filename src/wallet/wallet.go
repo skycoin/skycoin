@@ -367,7 +367,7 @@ func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
 	uxa := auxs.Flatten()
 	uxb := NewUxBalances(headTime, uxa)
-	spends, err := CreateSpendsMaximizeUxOuts(uxb, amt)
+	spends, err := ChooseSpendsMaximizeUxOuts(uxb, amt)
 	if err != nil {
 		return nil, err
 	}
@@ -502,87 +502,37 @@ func NewUxBalances(headTime uint64, uxa coin.UxArray) []UxBalance {
 	return uxb
 }
 
-// createSpendsOldestFirst chooses uxout spends to satisfy an amount, prioritizing older oxouts
-func createSpendsOldestFirst(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
-	sort.Slice(uxa, func(i, j int) bool {
-		a := uxa[i].BkSeq
-		b := uxa[j].BkSeq
-		// Use hash to break ties
-		if a == b {
-			return cmpUxOutByHash(uxa[i], uxa[j])
-		}
-		return a < b
-	})
-
-	return ChooseSpends(uxa, amt)
-}
-
-// CreateSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts
+// ChooseSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts
 //     -- PRO: Allows more frequent spending, less waiting for confirmations, useful for exchanges.
 //     -- PRO: When transaction is volume is higher, transactions are prioritized by fee/size. Minimizing uxouts minimizes size.
 //     -- CON: Would make the unconfirmed pool grow larger.
 // Users with high transaction frequency will want to use this so that they will not need to wait as frequently
 // for unconfirmed spends to complete before sending more.
 // Alternatively, or in addition to this, they should batch sends into single transactions.
-func CreateSpendsMinimizeUxOuts(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
-	sort.Slice(uxa, makeCmpUxOutByCoins(uxa, func(a, b uint64) bool {
-		return a < b
-	}))
-
-	return ChooseSpends(uxa, amt)
+func ChooseSpendsMinimizeUxOuts(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
+	return ChooseSpends(uxa, amt, sortSpendsCoinsHighToLow)
 }
 
-// CreateSpendsMaximizeUxOuts chooses uxout spends to satisfy an amount, using the most number of uxouts
-// See the pros and cons of CreateSpendsMinimizeUxOuts.
-// This should be the default mode, because this keeps the unconfirmed pool smaller which will allow
-// the network to scale better.
-func CreateSpendsMaximizeUxOuts(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
+// sortSpendsCoinsHighToLow sorts uxout spends with highest balance to lowest
+func sortSpendsCoinsHighToLow(uxa []UxBalance) {
 	sort.Slice(uxa, makeCmpUxOutByCoins(uxa, func(a, b uint64) bool {
 		return a > b
 	}))
-	return ChooseSpends(uxa, amt)
 }
 
-// ChooseSpends chooses uxouts from a prioritized list of uxouts.
-// uxOuts with zero coinhours should be sorted last, to avoid choosing unspents
-// that all have no coin hours, since a valid transaction requires at least 1 coinhour.
-// Make sure that the UxBalances have the coinhours updated based on
-// blockchain head time before calling this.
-func ChooseSpends(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
-	if amt.Coins == 0 {
-		return nil, errors.New("zero spend amount")
-	}
+// ChooseSpendsMaximizeUxOuts chooses uxout spends to satisfy an amount, using the most number of uxouts
+// See the pros and cons of ChooseSpendsMinimizeUxOuts.
+// This should be the default mode, because this keeps the unconfirmed pool smaller which will allow
+// the network to scale better.
+func ChooseSpendsMaximizeUxOuts(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
+	return ChooseSpends(uxa, amt, sortSpendsCoinsLowToHigh)
+}
 
-	var have Balance
-	var spending []UxBalance
-	for i := range uxa {
-		b := Balance{
-			Coins: uxa[i].Coins,
-			Hours: uxa[i].Hours,
-		}
-
-		if b.Coins == 0 {
-			logger.Error("UxOut coins are 0, can't spend")
-			continue
-		}
-
-		have = have.Add(b)
-		spending = append(spending, uxa[i])
-
-		if have.Coins >= amt.Coins && have.Hours != 0 {
-			break
-		}
-	}
-
-	if amt.Coins > have.Coins {
-		return nil, ErrInsufficientBalance
-	}
-
-	if have.Hours == 0 {
-		return nil, fee.ErrTxnNoFee
-	}
-
-	return spending, nil
+// sortSpendsCoinsLowToHigh sorts uxout spends with lowest balance to highest
+func sortSpendsCoinsLowToHigh(uxa []UxBalance) {
+	sort.Slice(uxa, makeCmpUxOutByCoins(uxa, func(a, b uint64) bool {
+		return a < b
+	}))
 }
 
 // Sorts UxOuts by those with zero coinhours last.
@@ -592,53 +542,25 @@ func ChooseSpends(uxa []UxBalance, amt Balance) ([]UxBalance, error) {
 // If hours are equal, then they are sorted by oldest first
 // If they are equally old, the UxOut's hash is used to break the tie.
 func makeCmpUxOutByCoins(uxa []UxBalance, coinsCmp func(a, b uint64) bool) func(i, j int) bool {
-	cmpUxOutByCoins := func(a, b UxBalance) bool {
-		// Sort by:
-		// coins highest
-		//  hours lowest, unless zero, then last
-		//   oldest first
-		//    tie break with hash comparison
+	// Sort by:
+	// coins highest or lowest depending on coinsCmp
+	//  hours lowest, unless zero, then last
+	//   oldest first
+	//    tie break with hash comparison
+	return func(i, j int) bool {
+		a := uxa[i]
+		b := uxa[j]
+
 		if a.Coins == b.Coins {
 			if a.Hours == b.Hours {
 				if a.BkSeq == b.BkSeq {
 					return cmpUxOutByHash(a, b)
 				}
-
 				return a.BkSeq < b.BkSeq
 			}
-
-			// Sort by least hours, unless hours are zero, then sort them last
-			if a.Hours == 0 {
-				return false
-			} else if b.Hours == 0 {
-				return true
-			}
-
 			return a.Hours < b.Hours
 		}
-
 		return coinsCmp(a.Coins, b.Coins)
-	}
-
-	return func(i, j int) bool {
-		a := uxa[i]
-		b := uxa[j]
-
-		if a.Hours == 0 {
-			if a.Hours == b.Hours {
-				// If they are both zero, sort as normal
-				return cmpUxOutByCoins(a, b)
-			}
-
-			// If a's Hours are 0, sort it last
-			return false
-		} else if b.Hours == 0 {
-			// If b's Hours are 0, sort it last
-			return false
-		}
-
-		// If both a's and b's Hours are non-zero, sort as normal
-		return cmpUxOutByCoins(a, b)
 	}
 }
 
@@ -648,5 +570,93 @@ func cmpUxOutByHash(a, b UxBalance) bool {
 		logger.Panic("Duplicate UxOut when sorting")
 	}
 	return cmp < 0
+}
 
+// ChooseSpends chooses uxouts from a list of uxouts.
+// It first chooses the uxout with the most number of coins that has nonzero coinhours.
+// It then chooses uxouts with zero coinhours, ordered by sortStrategy
+// It then chooses remaining uxouts with nonzero coinhours, ordered by sortStrategy
+func ChooseSpends(uxa []UxBalance, amt Balance, sortStrategy func([]UxBalance)) ([]UxBalance, error) {
+	if amt.Coins == 0 {
+		return nil, errors.New("zero spend amount")
+	}
+
+	if len(uxa) == 0 {
+		return nil, errors.New("no unspents to spend")
+	}
+
+	for _, ux := range uxa {
+		if ux.Coins == 0 {
+			logger.Panic("UxOut coins are 0, can't spend")
+			return nil, errors.New("UxOut coins are 0, can't spend")
+		}
+	}
+
+	// Split split UxBalances into those with and without hours
+	var nonzero, zero []UxBalance
+	for _, ux := range uxa {
+		if ux.Hours == 0 {
+			zero = append(zero, ux)
+		} else {
+			nonzero = append(nonzero, ux)
+		}
+	}
+
+	// Abort if there are no uxouts with non-zero coinhours, they can't be spent yet
+	if len(nonzero) == 0 {
+		return nil, fee.ErrTxnNoFee
+	}
+
+	// Sort uxouts with hours, highest coins to lowest
+	sortSpendsCoinsHighToLow(nonzero)
+
+	var have Balance
+	var spending []UxBalance
+
+	firstNonzero := nonzero[0]
+	if firstNonzero.Hours == 0 {
+		logger.Panic("balance has zero hours unexpectedly")
+		return nil, errors.New("balance has zero hours unexpectedly")
+	}
+
+	nonzero = nonzero[1:]
+
+	spending = append(spending, firstNonzero)
+
+	have.Coins += firstNonzero.Coins
+	have.Hours += firstNonzero.Hours
+
+	if have.Coins >= amt.Coins {
+		return spending, nil
+	}
+
+	// Sort uxouts without hours according to the sorting strategy
+	sortStrategy(zero)
+
+	for _, ux := range zero {
+		spending = append(spending, ux)
+
+		have.Coins += ux.Coins
+		have.Hours += ux.Hours
+
+		if have.Coins >= amt.Coins {
+			return spending, nil
+		}
+	}
+
+	// Sort remaining uxouts with hours according to the sorting strategy
+	sortStrategy(nonzero)
+
+	for _, ux := range nonzero {
+		spending = append(spending, ux)
+
+		have.Coins += ux.Coins
+		have.Hours += ux.Hours
+
+		if have.Coins >= amt.Coins {
+			return spending, nil
+		}
+	}
+
+	return nil, ErrInsufficientBalance
 }

@@ -2,10 +2,8 @@
 package visor
 
 import (
-	"crypto/rand"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
@@ -105,12 +103,6 @@ const (
 // 		}
 // 	}
 // }
-
-func randSHA256() cipher.SHA256 {
-	b := make([]byte, 128)
-	rand.Read(b)
-	return cipher.SumSHA256(b)
-}
 
 func createUnconfirmedTxn() UnconfirmedTxn {
 	ut := UnconfirmedTxn{}

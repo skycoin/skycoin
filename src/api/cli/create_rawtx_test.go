@@ -50,12 +50,24 @@ func TestMakeChangeOut(t *testing.T) {
 	t.Logf("chgOut:%+v\n", chgOut)
 	require.Equal(t, chgAddr, chgOut.Address.String())
 	require.Exactly(t, uint64(100e6), chgOut.Coins)
-	require.Exactly(t, uint64(300/4), chgOut.Hours)
 
 	spendOut := txOuts[1]
 	require.Equal(t, spendAmt[0].Addr, spendOut.Address.String())
 	require.Exactly(t, spendAmt[0].Coins, spendOut.Coins)
-	require.Exactly(t, uint64(300/4), spendOut.Hours)
+
+	var totalHours uint64
+	for _, ux := range uxOuts {
+		totalHours += ux.Hours
+	}
+	remainingHours := totalHours - fee.RequiredFee(totalHours)
+	chgHours := remainingHours / 2
+	if remainingHours%2 != 0 {
+		chgHours++
+	}
+	spendHours := remainingHours - chgHours
+
+	require.Exactly(t, chgHours, chgOut.Hours)
+	require.Exactly(t, spendHours, spendOut.Hours)
 }
 
 func TestMakeChangeOutOneCoinHour(t *testing.T) {

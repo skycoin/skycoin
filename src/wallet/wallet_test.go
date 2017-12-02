@@ -292,127 +292,269 @@ func TestWalletAddEntry(t *testing.T) {
 	}
 }
 
+type distributeSpendHoursTestCase struct {
+	name              string
+	inputHours        uint64
+	nAddrs            uint64
+	haveChange        bool
+	expectChangeHours uint64
+	expectAddrHours   []uint64
+}
+
+var burnFactor2TestCases = []distributeSpendHoursTestCase{
+	{
+		name:            "no input hours, one addr, no change",
+		inputHours:      0,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "no input hours, two addrs, no change",
+		inputHours:      0,
+		nAddrs:          2,
+		haveChange:      false,
+		expectAddrHours: []uint64{0, 0},
+	},
+	{
+		name:            "no input hours, one addr, change",
+		inputHours:      0,
+		nAddrs:          1,
+		haveChange:      true,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "one input hour, one addr, no change",
+		inputHours:      1,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "two input hours, one addr, no change",
+		inputHours:      2,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{1},
+	},
+	{
+		name:              "two input hours, one addr, change",
+		inputHours:        2,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{0},
+	},
+	{
+		name:              "three input hours, one addr, change",
+		inputHours:        3,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{0},
+	},
+	{
+		name:            "three input hours, one addr, no change",
+		inputHours:      3,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{1},
+	},
+	{
+		name:            "three input hours, two addrs, no change",
+		inputHours:      3,
+		nAddrs:          2,
+		haveChange:      false,
+		expectAddrHours: []uint64{1, 0},
+	},
+	{
+		name:            "four input hours, one addr, no change",
+		inputHours:      4,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{2},
+	},
+	{
+		name:              "four input hours, one addr, change",
+		inputHours:        4,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{1},
+	},
+	{
+		name:              "four input hours, two addr, change",
+		inputHours:        4,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{1, 0},
+	},
+	{
+		name:              "30 (divided by 2, odd number) input hours, two addr, change",
+		inputHours:        30,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 8,
+		expectAddrHours:   []uint64{4, 3},
+	},
+	{
+		name:              "33 (odd number) input hours, two addr, change",
+		inputHours:        33,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 8,
+		expectAddrHours:   []uint64{4, 4},
+	},
+	{
+		name:              "33 (odd number) input hours, three addr, change",
+		inputHours:        33,
+		nAddrs:            3,
+		haveChange:        true,
+		expectChangeHours: 8,
+		expectAddrHours:   []uint64{3, 3, 2},
+	},
+}
+
+var burnFactor3TestCases = []distributeSpendHoursTestCase{
+	{
+		name:            "no input hours, one addr, no change",
+		inputHours:      0,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "no input hours, two addrs, no change",
+		inputHours:      0,
+		nAddrs:          2,
+		haveChange:      false,
+		expectAddrHours: []uint64{0, 0},
+	},
+	{
+		name:            "no input hours, one addr, change",
+		inputHours:      0,
+		nAddrs:          1,
+		haveChange:      true,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "one input hour, one addr, no change",
+		inputHours:      1,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "two input hours, one addr, no change",
+		inputHours:      2,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{1},
+	},
+	{
+		name:            "three input hours, one addr, no change",
+		inputHours:      3,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{2},
+	},
+	{
+		name:              "two input hours, one addr, change",
+		inputHours:        2,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{0},
+	},
+	{
+		name:              "three input hours, one addr, change",
+		inputHours:        3,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{1},
+	},
+	{
+		name:              "four input hours, one addr, change",
+		inputHours:        4,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{1},
+	},
+	{
+		name:            "four input hours, one addr, no change",
+		inputHours:      4,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{2},
+	},
+	{
+		name:            "four input hours, two addrs, no change",
+		inputHours:      4,
+		nAddrs:          2,
+		haveChange:      false,
+		expectAddrHours: []uint64{1, 1},
+	},
+	{
+		name:            "five input hours, one addr, no change",
+		inputHours:      5,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{3},
+	},
+	{
+		name:              "five input hours, one addr, change",
+		inputHours:        5,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 2,
+		expectAddrHours:   []uint64{1},
+	},
+	{
+		name:              "five input hours, two addr, change",
+		inputHours:        5,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 2,
+		expectAddrHours:   []uint64{1, 0},
+	},
+	{
+		name:              "32 input hours, two addr, change",
+		inputHours:        32,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 11,
+		expectAddrHours:   []uint64{5, 5},
+	},
+	{
+		name:              "35 input hours, two addr, change",
+		inputHours:        35,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 12,
+		expectAddrHours:   []uint64{6, 5},
+	},
+	{
+		name:              "32 input hours, three addr, change",
+		inputHours:        32,
+		nAddrs:            3,
+		haveChange:        true,
+		expectChangeHours: 11,
+		expectAddrHours:   []uint64{4, 3, 3},
+	},
+}
+
 func TestWalletDistributeSpendHours(t *testing.T) {
-	cases := []struct {
-		name              string
-		inputHours        uint64
-		nAddrs            uint64
-		haveChange        bool
-		expectChangeHours uint64
-		expectAddrHours   []uint64
-	}{
-		{
-			name:            "no input hours, one addr, no change",
-			inputHours:      0,
-			nAddrs:          1,
-			haveChange:      false,
-			expectAddrHours: []uint64{0},
-		},
-		{
-			name:            "no input hours, two addrs, no change",
-			inputHours:      0,
-			nAddrs:          2,
-			haveChange:      false,
-			expectAddrHours: []uint64{0, 0},
-		},
-		{
-			name:            "no input hours, one addr, change",
-			inputHours:      0,
-			nAddrs:          1,
-			haveChange:      true,
-			expectAddrHours: []uint64{0},
-		},
-		{
-			name:            "one input hour, one addr, no change",
-			inputHours:      1,
-			nAddrs:          1,
-			haveChange:      false,
-			expectAddrHours: []uint64{0},
-		},
-		{
-			name:            "two input hours, one addr, no change",
-			inputHours:      2,
-			nAddrs:          1,
-			haveChange:      false,
-			expectAddrHours: []uint64{1},
-		},
-		{
-			name:              "two input hours, one addr, change",
-			inputHours:        2,
-			nAddrs:            1,
-			haveChange:        true,
-			expectChangeHours: 1,
-			expectAddrHours:   []uint64{0},
-		},
-		{
-			name:              "three input hours, one addr, change",
-			inputHours:        3,
-			nAddrs:            1,
-			haveChange:        true,
-			expectChangeHours: 1,
-			expectAddrHours:   []uint64{0},
-		},
-		{
-			name:            "three input hours, one addr, no change",
-			inputHours:      3,
-			nAddrs:          1,
-			haveChange:      false,
-			expectAddrHours: []uint64{1},
-		},
-		{
-			name:            "three input hours, two addrs, no change",
-			inputHours:      3,
-			nAddrs:          2,
-			haveChange:      false,
-			expectAddrHours: []uint64{1, 0},
-		},
-		{
-			name:            "four input hours, one addr, no change",
-			inputHours:      4,
-			nAddrs:          1,
-			haveChange:      false,
-			expectAddrHours: []uint64{2},
-		},
-		{
-			name:              "four input hours, one addr, change",
-			inputHours:        4,
-			nAddrs:            1,
-			haveChange:        true,
-			expectChangeHours: 1,
-			expectAddrHours:   []uint64{1},
-		},
-		{
-			name:              "four input hours, two addr, change",
-			inputHours:        4,
-			nAddrs:            2,
-			haveChange:        true,
-			expectChangeHours: 1,
-			expectAddrHours:   []uint64{1, 0},
-		},
-		{
-			name:              "30 (divided by 2, odd number) input hours, two addr, change",
-			inputHours:        30,
-			nAddrs:            2,
-			haveChange:        true,
-			expectChangeHours: 8,
-			expectAddrHours:   []uint64{4, 3},
-		},
-		{
-			name:              "33 (odd number) input hours, two addr, change",
-			inputHours:        33,
-			nAddrs:            2,
-			haveChange:        true,
-			expectChangeHours: 8,
-			expectAddrHours:   []uint64{4, 4},
-		},
-		{
-			name:              "33 (odd number) input hours, three addr, change",
-			inputHours:        33,
-			nAddrs:            3,
-			haveChange:        true,
-			expectChangeHours: 8,
-			expectAddrHours:   []uint64{3, 3, 2},
-		},
+	var cases []distributeSpendHoursTestCase
+	switch fee.BurnFactor {
+	case 2:
+		cases = burnFactor2TestCases
+	case 3:
+		cases = burnFactor3TestCases
+	default:
+		t.Fatalf("No test cases defined for fee.BurnFactor=%d", fee.BurnFactor)
 	}
 
 	for _, tc := range cases {
@@ -451,12 +593,13 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 					}
 
 					if haveChange {
-						expectedChangeHours := (inputHours / fee.BurnFactor) / 2
-						require.True(t, changeHours == expectedChangeHours || changeHours == expectedChangeHours+1)
-						require.Equal(t, expectedChangeHours, sumAddrHours)
+						remainingHours := (inputHours - fee.RequiredFee(inputHours))
+						splitRemainingHours := remainingHours / 2
+						require.True(t, changeHours == splitRemainingHours || changeHours == splitRemainingHours+1)
+						require.Equal(t, splitRemainingHours, sumAddrHours)
 					} else {
 						require.Equal(t, uint64(0), changeHours)
-						require.Equal(t, inputHours/fee.BurnFactor, sumAddrHours)
+						require.Equal(t, inputHours-fee.RequiredFee(inputHours), sumAddrHours)
 					}
 
 					outputHours := sumAddrHours + changeHours

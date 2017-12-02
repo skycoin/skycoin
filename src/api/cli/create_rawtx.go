@@ -237,6 +237,10 @@ func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 		return nil, err
 	}
 
+	if err := validateSendAmounts(toAddrs); err != nil {
+		return nil, err
+	}
+
 	if wltAddr.Address == "" {
 		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
 	}
@@ -244,19 +248,30 @@ func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 }
 
-// PUBLIC
-
-// CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
-	// validate the send amount
+func validateSendAmounts(toAddrs []SendAmount) error {
 	for _, arg := range toAddrs {
 		// validate to address
 		_, err := cipher.DecodeBase58Address(arg.Addr)
 		if err != nil {
-			return nil, ErrAddress
+			return ErrAddress
+		}
+
+		if arg.Coins == 0 {
+			return errors.New("Cannot send 0 coins")
 		}
 	}
 
+	if len(toAddrs) == 0 {
+		return errors.New("No destination addresses")
+	}
+
+	return nil
+}
+
+// PUBLIC
+
+// CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
+func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
@@ -286,14 +301,6 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 
 // CreateRawTxFromAddress creates a transaction from a specific address in a wallet
 func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
-	var err error
-	for _, arg := range toAddrs {
-		// validate the address
-		if _, err = cipher.DecodeBase58Address(arg.Addr); err != nil {
-			return nil, ErrAddress
-		}
-	}
-
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -326,6 +333,10 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
 func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+	if err := validateSendAmounts(toAddrs); err != nil {
+		return nil, err
+	}
+
 	// Get unspent outputs of those addresses
 	unspents, err := c.GetUnspentOutputs(inAddrs)
 	if err != nil {

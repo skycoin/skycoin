@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	// BurnFactor half of coinhours must be burnt
-	BurnFactor uint64 = 2
+	// BurnFactor inverse fraction of coinhours that must be burned
+	BurnFactor uint64 = 3
 )
 
 var (
@@ -17,6 +17,9 @@ var (
 
 	// ErrTxnInsufficientFee is returned if a transaction's coinhour burn fee is not enough
 	ErrTxnInsufficientFee = errors.New("Transaction coinhour fee minimum not met")
+
+	// ErrTxnInsufficientCoinHours is returned if a transaction has more coinhours in its outputs than its inputs
+	ErrTxnInsufficientCoinHours = errors.New("Insufficient coinhours for transaction outputs")
 )
 
 // VerifyTransactionFee performs additional transaction verification at the unconfirmed pool level.
@@ -39,23 +42,31 @@ func VerifyTransactionFeeForHours(hours, fee uint64) error {
 	// Calculate total number of coinhours
 	total := hours + fee
 
-	// Make sure at least half (BurnFactor=2) the coinhours are destroyed
-	// Compare hours to the burned coins, because total/BurnFactor
-	// rounds down.
-	// Examples for BurnFactor=2:
-	// If inputs are 3, one coinhour can be spent and the fee is 2
-	// If inputs are 2, one coinhour can be spent and the fee is 1
-	// If inputs are 1, no coinhour can be spent, and the fee is 1.
-	// If inputs are 0, the fee is 0 and ErrTxnNoFee was returned.
-	if hours > total/BurnFactor {
+	// Calculate the required fee
+	requiredFee := RequiredFee(total)
+
+	// Ensure that the required fee is met
+	if fee < requiredFee {
 		return ErrTxnInsufficientFee
 	}
 
 	return nil
 }
 
-// TransactionFee calculates the current transaction fee in coinhours of a Transaction
-func TransactionFee(t *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {
+// RequiredFee returns the coinhours fee required for an amount of hours
+// The required fee is calculated as hours/BurnFactor, rounded up.
+func RequiredFee(hours uint64) uint64 {
+	feeHours := hours / BurnFactor
+	if hours%BurnFactor != 0 {
+		feeHours++
+	}
+
+	return feeHours
+}
+
+// TransactionFee calculates the current transaction fee in coinhours of a Transaction.
+// Returns ErrTxnInsufficientCoinHours if input hours is less than output hours.
+func TransactionFee(tx *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {
 	// Compute input hours
 	inHours := uint64(0)
 	for _, ux := range inUxs {
@@ -64,12 +75,12 @@ func TransactionFee(t *coin.Transaction, headTime uint64, inUxs coin.UxArray) (u
 
 	// Compute output hours
 	outHours := uint64(0)
-	for i := range t.Out {
-		outHours += t.Out[i].Hours
+	for i := range tx.Out {
+		outHours += tx.Out[i].Hours
 	}
 
 	if inHours < outHours {
-		return 0, errors.New("Insufficient coinhours for transaction outputs")
+		return 0, ErrTxnInsufficientCoinHours
 	}
 
 	return inHours - outHours, nil

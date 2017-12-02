@@ -2,6 +2,7 @@ package visor
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -181,7 +182,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, MaxDropletDivisor)
+	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, maxDropletDivisor)
 	known, err := unconfirmed.InjectTxn(bc, txn)
 	require.False(t, known)
 	require.NoError(t, err)
@@ -279,7 +280,6 @@ func TestVisorCreateBlock(t *testing.T) {
 	}
 
 	// Check that decimal rules are enforced
-	require.Equal(t, v.Config.MaxDropletDivisor, MaxDropletDivisor)
 	for i, txn := range blockTxns {
 		for j, o := range txn.Out {
 			err := DropletPrecisionCheck(o.Coins)
@@ -350,9 +350,36 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
-	invalidCoins := coins + (v.Config.MaxDropletDivisor / 10)
+	invalidCoins := coins + (maxDropletDivisor / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, err = v.InjectTxn(txn)
 	testutil.RequireError(t, err, ErrInvalidDecimals.Error())
 	require.Equal(t, 0, unconfirmed.Len())
+}
+
+func TestVisorCalculatePrecision(t *testing.T) {
+	cases := []struct {
+		precision uint64
+		divisor   uint64
+	}{
+		{0, 1e6},
+		{1, 1e5},
+		{2, 1e4},
+		{3, 1e3},
+		{4, 1e2},
+		{5, 1e1},
+		{6, 1},
+	}
+
+	for _, tc := range cases {
+		name := fmt.Sprintf("calculateDivisor(%d)=%d", tc.precision, tc.divisor)
+		t.Run(name, func(t *testing.T) {
+			divisor := calculateDivisor(tc.precision)
+			require.Equal(t, tc.divisor, divisor, "%d != %d", tc.divisor, divisor)
+		})
+	}
+
+	require.PanicsWithValue(t, "precision must be <= droplet.Exponent", func() {
+		calculateDivisor(7)
+	})
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -18,10 +19,8 @@ import (
 )
 
 const (
-	// MaxDropletPrecision represents the precision of droplets
-	MaxDropletPrecision = 0
-	// MaxDropletDivisor represents the modulus divisor when checking droplet precision rules
-	MaxDropletDivisor uint64 = 1e6
+	// MaxDropletPrecision represents the decimal precision of droplets
+	MaxDropletPrecision uint64 = 2
 )
 
 var (
@@ -29,7 +28,43 @@ var (
 
 	// ErrInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
 	ErrInvalidDecimals = errors.New("invalid amount, too many decimal places")
+
+	// maxDropletDivisor represents the modulus divisor when checking droplet precision rules.
+	// It is computed from MaxDropletPrecision in init()
+	maxDropletDivisor uint64
 )
+
+// MaxDropletDivisor represents the modulus divisor when checking droplet precision rules.
+func MaxDropletDivisor() uint64 {
+	// The value is wrapped in a getter to make it immutable to external packages
+	return maxDropletDivisor
+}
+
+func init() {
+	// Compute maxDropletDivisor from precision
+	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
+}
+
+func calculateDivisor(precision uint64) uint64 {
+	if precision > droplet.Exponent {
+		logger.Panic("precision must be <= droplet.Exponent")
+	}
+
+	n := droplet.Exponent - precision
+	var i uint64 = 1
+	for k := uint64(0); k < n; k++ {
+		i = i * 10
+	}
+	return i
+}
+
+// DropletPrecisionCheck checks if an amount of coins is valid given decimal place restrictions
+func DropletPrecisionCheck(amount uint64) error {
+	if amount%maxDropletDivisor != 0 {
+		return ErrInvalidDecimals
+	}
+	return nil
+}
 
 // BuildInfo represents the build info
 type BuildInfo struct {
@@ -60,10 +95,6 @@ type Config struct {
 	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
-
-	// Modulus divisor of coin amount to control decimal place precision
-	// Valid values are 1e6, 1e5, 1e4, 1e3, 1e2, 1
-	MaxDropletDivisor uint64
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -107,7 +138,6 @@ func NewVisorConfig() Config {
 		// UnconfirmedRefreshRate:   time.Minute * 30,
 		UnconfirmedResendPeriod: time.Minute,
 		MaxBlockSize:            1024 * 32,
-		MaxDropletDivisor:       MaxDropletDivisor,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -124,12 +154,6 @@ func (c Config) Verify() error {
 		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
 			return errors.New("Cannot run in master: invalid seckey for pubkey")
 		}
-	}
-
-	switch c.MaxDropletDivisor {
-	case 1e6, 1e5, 1e4, 1e3, 1e2, 1:
-	default:
-		return errors.New("MaxDropletDivisor must be 1e6, 1e5, 1e4, 1e3, 1e2 or 1")
 	}
 
 	return nil
@@ -311,7 +335,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	for _, txn := range txns {
 		skip := false
 		for _, o := range txn.Out {
-			if err := dropletPrecisionCheck(o.Coins, vs.Config.MaxDropletDivisor); err != nil {
+			if err := DropletPrecisionCheck(o.Coins); err != nil {
 				skip = true
 				break
 			}
@@ -747,17 +771,4 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 	}
 
 	return bps, nil
-}
-
-// DropletPrecisionCheck checks if the amount is valid
-func DropletPrecisionCheck(amount uint64) error {
-	return dropletPrecisionCheck(amount, MaxDropletDivisor)
-}
-
-func dropletPrecisionCheck(amount, divisor uint64) error {
-	if amount%divisor != 0 {
-		return ErrInvalidDecimals
-	}
-
-	return nil
 }

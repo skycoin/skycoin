@@ -13,6 +13,10 @@ import (
 
 	"math"
 
+	"net/http"
+
+	"io/ioutil"
+
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
@@ -25,6 +29,8 @@ import (
 // - only transmit peers that have active or recent connections
 
 var (
+	// PeerDatabaseUrl url for downloading peers
+	PeerDatabaseUrl = "https://downloads.skycoin.net/blockchain/peers.txt"
 	// PeerDatabaseFilename filename for disk-cached peers
 	PeerDatabaseFilename = "peers.txt"
 	// BlacklistedDatabaseFilename  filename for disk-cached blacklisted peers
@@ -155,6 +161,8 @@ type Config struct {
 	Disabled bool
 	// Whether the network is disabled
 	NetworkDisabled bool
+	// Download peers list from remote host
+	DownloadPeersList bool
 }
 
 // NewConfig creates default pex config.
@@ -171,6 +179,7 @@ func NewConfig() Config {
 		AllowLocalhost:      false,
 		Disabled:            false,
 		NetworkDisabled:     false,
+		DownloadPeersList:   false,
 	}
 }
 
@@ -190,6 +199,11 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		quit:     make(chan struct{}),
 	}
 
+	if pex.Config.DownloadPeersList {
+		if err := pex.download(); err != nil {
+			logger.Error("Failed to download peers from %s. err: %s", PeerDatabaseUrl, err.Error())
+		}
+	}
 	// load peers
 	if err := pex.load(); err != nil {
 		return nil, err
@@ -213,6 +227,33 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	}
 
 	return pex, nil
+}
+
+func (px *Pex) download() error {
+	resp, err := http.Get(PeerDatabaseUrl)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	for _, address := range strings.Split(string(body), "\n") {
+		if validateAddress(address, px.Config.AllowLocalhost) {
+			err := px.AddPeer(address)
+			if err != nil {
+				if err == ErrPeerlistFull {
+					break
+				} else {
+					logger.Warning("Add downloaded peer %s failed. err:  $%", address, err.Error())
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (px *Pex) load() error {

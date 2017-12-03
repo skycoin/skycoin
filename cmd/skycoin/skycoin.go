@@ -87,6 +87,8 @@ type Config struct {
 	DisablePEX bool
 	// Download peers list
 	DownloadPeersList bool
+	// Download the peers list from this URL
+	PeersListURL string
 	// Don't make any outgoing connections
 	DisableOutgoingConnections bool
 	// Don't allowing incoming connections
@@ -175,8 +177,10 @@ func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
 		"disable PEX peer discovery")
-	flag.BoolVar(&c.DownloadPeersList, "download-peers-bootstrap", c.DownloadPeersList,
-		"fetch bootstrap peers from skycoin.net")
+	flag.BoolVar(&c.DownloadPeersList, "download-peers-list", c.DownloadPeersList,
+		"download a peers.txt from --peers-list-url")
+	flag.BoolVar(&c.PeersListURL, "peers-list-url", c.PeersListURL,
+		"with --download-peers-list=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
 		c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
@@ -280,6 +284,8 @@ var devConfig = Config{
 	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
 	MaxOutgoingConnections: 16,
+	DownloadPeersList:      false,
+	PeersListURL:           "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	PeerlistSize:            65535,
@@ -501,6 +507,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Pex.Disabled = c.DisablePEX
 	dc.Pex.Max = c.PeerlistSize
 	dc.Pex.DownloadPeersList = c.DownloadPeersList
+	dc.Pex.PeersListURL = c.PeersListURL
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking

@@ -177,10 +177,8 @@ func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
 		"disable PEX peer discovery")
-	flag.BoolVar(&c.DownloadPeersList, "download-peers-list", c.DownloadPeersList,
-		"download a peers.txt from --peers-list-url")
-	flag.BoolVar(&c.PeersListURL, "peers-list-url", c.PeersListURL,
-		"with --download-peers-list=true, download a peers.txt file from this url")
+	flag.BoolVar(&c.DownloadPeersList, "download-peers-list", c.DownloadPeersList, "download a peers.txt from -peers-list-url")
+	flag.StringVar(&c.PeersListURL, "peers-list-url", c.PeersListURL, "with -download-peers-list=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
 		c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",

@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff"
+
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
@@ -220,7 +222,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 
 	// Load default hardcoded peers
 	for _, addr := range defaultConns {
-		// default peers will mark as trusted peers.
+		// Default peers will mark as trusted peers.
 		if err := pex.AddPeer(addr); err != nil {
 			logger.Critical("add peer failed:%v", err)
 			continue
@@ -254,7 +256,7 @@ func (px *Pex) Run() error {
 	defer close(px.done)
 
 	defer func() {
-		// save the peerlist
+		// Save the peerlist
 		logger.Info("Save peerlist")
 		if err := px.save(); err != nil {
 			logger.Error("Save peers failed: %v", err)
@@ -287,7 +289,7 @@ func (px *Pex) Shutdown() {
 }
 
 func (px *Pex) downloadPeers() error {
-	body, err := downloadText(cfg.PeersListURL)
+	body, err := backoffDownloadText(px.Config.PeersListURL)
 	if err != nil {
 		logger.Error("Failed to download peers from %s. err: %s", px.Config.PeersListURL, err.Error())
 		return err
@@ -542,6 +544,32 @@ func downloadText(url string) (string, error) {
 	return string(body), nil
 }
 
+func backoffDownloadText(url string) (string, error) {
+	var body string
+
+	b := backoff.NewExponentialBackOff()
+
+	notify := func(err error, wait time.Duration) {
+		logger.Error("waiting %v to retry downloadText, error: %v", wait, err)
+	}
+
+	operation := func() error {
+		logger.Info("Trying to download peers list from %s", url)
+		var err error
+		body, err = downloadText(url)
+		return err
+	}
+
+	if err := backoff.RetryNotify(operation, b, notify); err != nil {
+		logger.Info("Gave up dowloading peers list from %s: %v", url, err)
+		return "", err
+	}
+
+	logger.Info("Peers list downloaded from %s", url)
+
+	return body, nil
+}
+
 // parseRemotePeersList parses a remote peers.txt file
 // The peers list format is newline separated ip:port
 // Any lines that don't parse to an ip:port are skipped
@@ -549,6 +577,11 @@ func downloadText(url string) (string, error) {
 func parseRemotePeersList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {
+		addr = whitespaceFilter.ReplaceAllString(addr, "")
+		if addr == "" {
+			continue
+		}
+
 		// Never allow localhost addresses from the remote peers list
 		a, err := validateAddress(addr, false)
 		if err != nil {

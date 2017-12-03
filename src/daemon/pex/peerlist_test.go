@@ -412,7 +412,7 @@ func TestPeerlistSave(t *testing.T) {
 		{
 			"save one peer",
 			[]Peer{
-				Peer{Addr: testPeers[0], RetryTimes: maxRetryTimes + 1},
+				Peer{Addr: testPeers[0], RetryTimes: MaxPeerRetryTimes + 1},
 				Peer{Addr: testPeers[1]},
 			},
 			map[string]Peer{

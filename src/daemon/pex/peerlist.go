@@ -227,10 +227,10 @@ func (pl *peerlist) random(count int, flts ...Filter) Peers {
 // save saves known peers to disk as a newline delimited list of addresses to
 // <dir><PeerDatabaseFilename>
 func (pl *peerlist) save(fn string) error {
-	// filter the peers that has retrytime > maxRetryTimes
+	// filter the peers that has retrytime > MaxPeerRetryTimes
 	peers := make(map[string]PeerJSON)
 	for k, p := range pl.peers {
-		if p.RetryTimes <= maxRetryTimes {
+		if p.RetryTimes <= MaxPeerRetryTimes {
 			peers[k] = newPeerJSON(*p)
 		}
 	}

@@ -28,14 +28,16 @@ import (
 // - save last time connected to, use 0 for never
 // - only transmit peers that have active or recent connections
 
-var (
+const (
+	// DefaultPeersListURL is the default URL to download remote peers list from, if enabled
+	DefaultPeersListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
 	// PeerDatabaseFilename filename for disk-cached peers
 	PeerDatabaseFilename = "peers.txt"
-	// BlacklistedDatabaseFilename filename for disk-cached blacklisted peers
-	BlacklistedDatabaseFilename = "blacklisted_peers.txt"
-	// RefreshBlacklistRate How often to updated expired entries in the blacklist
-	RefreshBlacklistRate = time.Second * 30
+	// MaxPeerRetryTimes is the maximum number of times to retry a peer
+	MaxPeerRetryTimes = 10
+)
 
+var (
 	// ErrPeerlistFull is returned when the Pex is at a maximum
 	ErrPeerlistFull = errors.New("Peer list full")
 	// ErrInvalidAddress is returned when an address appears malformed
@@ -56,7 +58,6 @@ var (
 	rnum = rand.New(rand.NewSource(time.Now().Unix()))
 	// For removing inadvertent whitespace from addresses
 	whitespaceFilter = regexp.MustCompile(`\s`)
-	maxRetryTimes    = 10
 )
 
 // validateAddress returns a sanitized address if valid, otherwise an error
@@ -192,7 +193,7 @@ func NewConfig() Config {
 		Disabled:            false,
 		NetworkDisabled:     false,
 		DownloadPeersList:   false,
-		PeersListURL:        "https://downloads.skycoin.net/blockchain/peers.txt",
+		PeersListURL:        DefaultPeersListURL,
 	}
 }
 

@@ -20,7 +20,7 @@ import (
 
 const (
 	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 = 2
+	MaxDropletPrecision uint64 = 3
 )
 
 var (

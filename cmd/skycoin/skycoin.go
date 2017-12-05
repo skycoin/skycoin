@@ -98,10 +98,12 @@ type Config struct {
 	Address string
 	//gnet uses this for TCP incoming and outgoing
 	Port int
-	//max connections to maintain
-	MaxConnections int
+	//max outgoing connections to maintain
+	MaxOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
+	// PeerlistSize represents the maximum number of peers that the pex would maintain
+	PeerlistSize int
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
@@ -244,7 +246,8 @@ func (c *Config) register() {
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
-
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 64, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.PeerlistSize, "peerlistsize", 65535, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
 		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
@@ -270,10 +273,11 @@ var devConfig = Config{
 	Address: "",
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
-
-	MaxConnections: 16,
+	// MaxOutgoingConnections is the maximum outgoing connections allowed.
+	MaxOutgoingConnections: 16,
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
+	PeerlistSize:            65535,
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
@@ -490,13 +494,14 @@ func configureDaemon(c *Config) daemon.Config {
 	dc := daemon.NewConfig()
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
+	dc.Pex.Max = c.PeerlistSize
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking
 	dc.Daemon.Port = c.Port
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
-	dc.Daemon.OutgoingMax = c.MaxConnections
+	dc.Daemon.OutgoingMax = c.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.DataDirectory
 	dc.Daemon.LogPings = !c.DisablePingPong
 

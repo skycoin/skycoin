@@ -100,6 +100,8 @@ type Config struct {
 	Port int
 	//max connections to maintain
 	MaxConnections int
+	//max incoming connections to maintain
+	MaxIncomingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// Wallet Address Version
@@ -179,6 +181,8 @@ func (c *Config) register() {
 	flag.StringVar(&c.Address, "address", c.Address,
 		"IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+	flag.IntVar(&c.MaxConnections, "max-out-connections", c.MaxConnections, "Max outgoing connections pool size")
+	flag.IntVar(&c.MaxIncomingConnections, "max-in-connections", c.MaxIncomingConnections, "Max incoming connections pool size")
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
 		"enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
@@ -271,7 +275,7 @@ var devConfig = Config{
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
 
-	MaxConnections: 16,
+	MaxConnections: 64,
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	// Wallet Address Version
@@ -490,6 +494,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc := daemon.NewConfig()
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
+	dc.Pex.Max = c.MaxIncomingConnections
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking

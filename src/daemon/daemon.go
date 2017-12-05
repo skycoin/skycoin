@@ -167,7 +167,7 @@ func NewDaemonConfig() DaemonConfig {
 		Port:                       6677,
 		OutgoingRate:               time.Second * 5,
 		PrivateRate:                time.Second * 5,
-		OutgoingMax:                16,
+		OutgoingMax:                64,
 		PendingMax:                 16,
 		IntroductionWait:           time.Second * 30,
 		CullInvalidRate:            time.Second * 3,

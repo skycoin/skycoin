@@ -2,6 +2,8 @@ package cli
 
 import (
 	"errors"
+	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
@@ -12,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -188,45 +191,122 @@ func TestNewTransaction(t *testing.T) {
 	require.NoError(t, tx.Verify())
 }
 
-func makeReadableOutput(addr, coins string, hours uint64) UnspentOut {
-	return UnspentOut{
-		visor.ReadableOutput{
-			Address: addr,
-			Coins:   coins,
-			Hours:   hours,
-		},
+func makeReadableOutput(addr, coins string, hours uint64) visor.ReadableOutput {
+	return visor.ReadableOutput{
+		Address: addr,
+		Coins:   coins,
+		Hours:   hours,
 	}
 }
 
 func TestGetSufficientUnspents(t *testing.T) {
-	uxOuts := []UnspentOut{
-		makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "200", 0),
-		makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "400", 0),
+	tests := []struct {
+		Name       string
+		Unspents   webrpc.OutputsResult
+		BeingSpent uint64
+
+		Expected []UnspentOut
+		Err      error
+	}{
+		{
+			Name: "sufficient HeadOutputs",
+			Unspents: webrpc.OutputsResult{
+				Outputs: visor.ReadableOutputSet{
+					HeadOutputs: []visor.ReadableOutput{
+						makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "200", 0),
+						makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "400", 0),
+					},
+				},
+			},
+			BeingSpent: 300e6,
+			Expected: []UnspentOut{
+				UnspentOut{
+					makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "200", 0),
+				},
+				UnspentOut{
+					makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "400", 0),
+				},
+			},
+		},
+		{
+			Name: "insufficient HeadOutputs",
+			Unspents: webrpc.OutputsResult{
+				Outputs: visor.ReadableOutputSet{
+					HeadOutputs: []visor.ReadableOutput{
+						makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "200", 0),
+						makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "400", 0),
+					},
+				},
+			},
+			BeingSpent: 700e6,
+			Expected:   nil,
+			Err:        ErrInsufficientBalance,
+		},
+		{
+			Name: "temporary insufficient HeadOutputs + UncfmIncomingOutputs",
+			Unspents: webrpc.OutputsResult{
+				Outputs: visor.ReadableOutputSet{
+					HeadOutputs: []visor.ReadableOutput{
+						makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "200", 0),
+						makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "400", 0),
+					},
+					IncomingOutputs: []visor.ReadableOutput{
+						makeReadableOutput("PRXLNyB64cqaiG4pCoFZZ8Tuv7LWYPpa7m", "200", 0),
+					},
+				},
+			},
+			BeingSpent: 700e6,
+			Expected:   nil,
+			Err:        ErrTemporaryInsufficientBalance,
+		},
+		{
+			Name: "insufficient HeadOutputs + UncfmIncomingOutputs",
+			Unspents: webrpc.OutputsResult{
+				Outputs: visor.ReadableOutputSet{
+					HeadOutputs: []visor.ReadableOutput{
+						makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "200", 0),
+						makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "400", 0),
+					},
+					IncomingOutputs: []visor.ReadableOutput{
+						makeReadableOutput("PRXLNyB64cqaiG4pCoFZZ8Tuv7LWYPpa7m", "200", 0),
+					},
+				},
+			},
+			BeingSpent: 900e6,
+			Expected:   nil,
+			Err:        ErrInsufficientBalance,
+		},
 	}
-	// 200 + 400 > 100
-	uxns, err := getSufficientUnspents(uxOuts, 100e6)
-	require.NoError(t, err)
-	require.Exactly(t, uxns[0].Coins, "200")
-	require.Len(t, uxns, 1)
 
-	// 200 + 400 < 900
-	uxns, err = getSufficientUnspents(uxOuts, 900e6)
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "balance in wallet is not sufficient")
-	require.Len(t, uxns, 0)
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			unspents, err := getSufficientUnspents(&tc.Unspents, tc.BeingSpent)
+			if err != nil {
+				require.Equal(t, err, tc.Err)
+			} else {
+				assert.True(t, reflect.DeepEqual(unspents, tc.Expected))
+			}
+		})
+	}
 
-	// 200 + 400 == 600
-	uxns, err = getSufficientUnspents(uxOuts, 600e6)
-	require.NoError(t, err)
-	require.Exactly(t, uxns[0].Coins, "200")
-	require.Exactly(t, uxns[1].Coins, "400")
-	require.Len(t, uxns, 2)
 }
 
 func TestMakeChangeOut(t *testing.T) {
 	uxOuts := []UnspentOut{
-		makeReadableOutput("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND", "400", 200),
-		makeReadableOutput("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe", "300", 100),
+		{visor.ReadableOutput{
+			Hash:              "",
+			SourceTransaction: "",
+			Address:           "k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND",
+			Coins:             strconv.Itoa(400),
+			Hours:             200,
+		}},
+		{visor.ReadableOutput{
+			Hash:              "",
+			SourceTransaction: "",
+			Address:           "A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe",
+			Coins:             strconv.Itoa(300),
+			Hours:             100,
+		}},
 	}
 
 	spendAmt := []SendAmount{{

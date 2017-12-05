@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 * Require transactions to have an input with non-zero coinhours
+* Add `peerlistsize` and `max-outgoing-connections` command line options
 
 ### Fixed
 
 * Fix change hours calculation. Previous gave 1/8 to change and destination addresses; now gives 1/4 to each.
+* #653
 
 ### Changed
 
@@ -22,6 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 * `create_rawtx` will try to minimize the number of UxOuts used to create a transaction.
 * `/wallet/spend` will try to maximize the number of UxOuts used to create a transaction.
 * Coinhour burn fee change to 1/3 from 1/2 of coinhour inputs.
+* Update the default peerlist size to 65535 from 1000
+* Update the default maximum outgoing connection size from 16 to 64
 
 ## [0.20.4] - 2017-11-22
 

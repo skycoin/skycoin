@@ -85,10 +85,10 @@ func (uo *UxOut) CoinHours(t uint64) uint64 {
 		return uo.Body.Hours
 	}
 
-	seconds := (t - uo.Head.Time)                  //number of seconds
-	coinSeconds := (seconds * uo.Body.Coins) / 1e6 //coin seconds
-	coinHours := coinSeconds / 3600                //coin hours
-	return uo.Body.Hours + coinHours               //starting+earned
+	seconds := (t - uo.Head.Time)                  // number of seconds
+	coinSeconds := (seconds * uo.Body.Coins) / 1e6 // coin seconds
+	coinHours := coinSeconds / 3600                // coin hours
+	return uo.Body.Hours + coinHours               // starting+earned
 }
 
 // UxHashSet set mapping from UxHash to a placeholder value. Ignore the byte value,

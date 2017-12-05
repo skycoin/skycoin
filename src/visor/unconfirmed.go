@@ -1,7 +1,6 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,48 +9,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
-
-// BurnFactor half of coinhours must be burnt
-var BurnFactor uint64 = 2
-
-// Performs additional transaction verification at the unconfirmed pool level.
-// This checks tunable parameters that should prevent the transaction from
-// entering the blockchain, but cannot be done at the blockchain level because
-// they may be changed.
-func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
-	// Calculate total number of coinhours
-	var total = t.OutputHours() + fee
-	// Make sure at least half (BurnFactor=2) the coin hours are destroyed
-	if fee < total/BurnFactor {
-		return errors.New("Transaction coinhour fee minimum not met")
-	}
-	return nil
-}
-
-// TransactionFee calculates the current transaction fee in coinhours of a Transaction
-func TransactionFee(t *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {
-	// Compute input hours
-	inHours := uint64(0)
-	for _, ux := range inUxs {
-		inHours += ux.CoinHours(headTime)
-	}
-
-	// Compute output hours
-	outHours := uint64(0)
-	for i := range t.Out {
-		outHours += t.Out[i].Hours
-	}
-
-	if inHours < outHours {
-		return 0, errors.New("Insufficient coinhours for transaction outputs")
-	}
-
-	return inHours - outHours, nil
-}
 
 // TxnUnspents maps from coin.Transaction hash to its expected unspents.  The unspents'
 // Head can be different at execution time, but the Unspent's hash is fixed.
@@ -314,12 +276,12 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
 func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
-	fee, err := bc.TransactionFee(&t)
+	f, err := bc.TransactionFee(&t)
 	if err != nil {
 		return false, err
 	}
 
-	if err := VerifyTransactionFee(&t, fee); err != nil {
+	if err := fee.VerifyTransactionFee(&t, f); err != nil {
 		return false, err
 	}
 

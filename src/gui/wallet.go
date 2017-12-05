@@ -27,15 +27,12 @@ type SpendResult struct {
 }
 
 // Spend spend coins from specific wallet
-func Spend(gateway *daemon.Gateway,
-	walletID string,
-	amt wallet.Balance,
-	dest cipher.Address) *SpendResult {
+func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) *SpendResult {
 	var tx *coin.Transaction
 	var b wallet.BalancePair
 	var err error
 	for {
-		tx, err = gateway.Spend(walletID, amt, dest)
+		tx, err = gateway.Spend(walletID, coins, dest)
 		if err != nil {
 			break
 		}
@@ -143,9 +140,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		var hours uint64
-		//MOVE THIS INTO HERE
-		ret := Spend(gateway, wltID, wallet.NewBalance(coins, hours), dst)
+		ret := Spend(gateway, wltID, coins, dst)
 		if ret.Error != "" {
 			logger.Error(ret.Error)
 		}

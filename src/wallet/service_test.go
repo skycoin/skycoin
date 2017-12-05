@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/fee"
 )
 
 func prepareWltDir() string {
@@ -429,12 +430,25 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		addrs = append(addrs, a)
 	}
 
+	var uxoutsNoHours []coin.UxOut
+	addrsNoHours := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey)
+		uxout.Body.Hours = 0
+		uxout.Head.Time = uint64(headTime)
+		uxoutsNoHours = append(uxoutsNoHours, uxout)
+
+		p, _ := cipher.GenerateKeyPair()
+		a := cipher.AddressFromPubKey(p)
+		addrsNoHours = append(addrsNoHours, a)
+	}
+
 	tt := []struct {
 		name       string
 		unspents   []coin.UxOut
 		addrUxouts coin.AddressUxOuts
 		vld        Validator
-		amt        Balance
+		coins      uint64
 		dest       cipher.Address
 		err        error
 	}{
@@ -447,7 +461,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			nil,
 		},
@@ -460,7 +474,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1e6},
+			1e6,
 			addrs[0],
 			nil,
 		},
@@ -473,7 +487,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: true,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			errors.New("please spend after your pending transaction is confirmed"),
 		},
@@ -487,7 +501,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				ok:  false,
 				err: errors.New("fail intentionally"),
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
@@ -500,7 +514,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{},
+			0,
 			addrs[0],
 			errors.New("zero spend amount"),
 		},
@@ -513,7 +527,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1000},
+			1e3,
 			addrs[0],
 			nil,
 		},
@@ -526,9 +540,22 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 100e6},
+			100e6,
 			addrs[0],
-			errors.New("not enough confirmed coins"),
+			ErrInsufficientBalance,
+		},
+		{
+			"no coin hours in inputs",
+			uxoutsNoHours[:],
+			coin.AddressUxOuts{
+				addr: uxoutsNoHours,
+			},
+			&dummyValidator{
+				ok: false,
+			},
+			1e6,
+			addrsNoHours[0],
+			fee.ErrTxnNoFee,
 		},
 	}
 
@@ -543,7 +570,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				unspents.unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.amt, tc.dest)
+			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -555,33 +582,24 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				require.True(t, ok)
 			}
 
-			require.NoError(t, tx.Verify())
+			err = tx.Verify()
+			require.NoError(t, err)
 		})
 	}
 }
 
 func makeUxBody(t *testing.T, s cipher.SecKey) coin.UxBody {
-	body, _ := makeUxBodyWithSecret(t, s)
-	return body
-}
-
-func makeUxOut(t *testing.T, s cipher.SecKey) coin.UxOut {
-	ux, _ := makeUxOutWithSecret(t, s)
-	return ux
-}
-
-func makeUxBodyWithSecret(t *testing.T, s cipher.SecKey) (coin.UxBody, cipher.SecKey) {
 	p := cipher.PubKeyFromSecKey(s)
 	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
+		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          2e6,
 		Hours:          100,
-	}, s
+	}
 }
 
-func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecKey) {
-	body, sec := makeUxBodyWithSecret(t, s)
+func makeUxOut(t *testing.T, s cipher.SecKey) coin.UxOut {
+	body := makeUxBody(t, s)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)
 	return coin.UxOut{
@@ -590,13 +608,5 @@ func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecK
 			BkSeq: uint64(seq),
 		},
 		Body: body,
-	}, sec
-}
-
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x) //end unit testing.
-	assert.Nil(t, err)
-	return b
+	}
 }

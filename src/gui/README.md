@@ -95,6 +95,7 @@ result:
     "head_outputs": [
         {
             "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
+            "block_seq": 22,
             "src_tx": "b51e1933f286c4f03d73e8966186bafb25f64053db8514327291e690ae8aafa5",
             "address": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
             "coins": "2.000000",

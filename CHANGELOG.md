@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+* Require transactions to have an input with non-zero coinhours
+
+### Fixed
+
+* Fix change hours calculation. Previous gave 1/8 to change and destination addresses; now gives 1/4 to each.
+
+### Changed
+
+* When splitting an odd number of hours in a spend, give the extra hour to the fee
+* Add `block_seq` to `get_outputs` and `/outputs` API response
+* Improve UxOut spend selection. Previously, they were spent oldest first. Now they are spent to ensure a non-zero coinhour input and otherwise minimize coinhours.
+* `create_rawtx` will try to minimize the number of UxOuts used to create a transaction.
+* `/wallet/spend` will try to maximize the number of UxOuts used to create a transaction.
+* Coinhour burn fee change to 1/3 from 1/2 of coinhour inputs.
+
 ## [0.20.4] - 2017-11-22
 
 ### Added

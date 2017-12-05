@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
@@ -197,44 +198,44 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Create various transactions and add them to unconfirmed pool
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 	var coins uint64 = 9e6
-	var fee uint64 = 10
+	var f uint64 = 10
 	toAddr := testutil.MakeAddress()
 
 	// Add more transactions than is allowed in a block, to verify truncation
 	var txns coin.Transactions
 	var i int
 	for len(txns) == len(txns.TruncateBytesTo(v.Config.MaxBlockSize)) {
-		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, fee)
+		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
 	}
 	require.NotEqual(t, 0, len(txns))
 
-	// Use different fee sizes to verify fee ordering
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, fee*5))
+	// Use different f sizes to verify f ordering
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f*5))
 	i++
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, fee*10))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f*10))
 	i++
 
 	// Use invalid decimal places to verify decimal place filtering.
-	// The fees are set higher to ensure that they are not filtered due to truncating with a low fee
+	// The fs are set higher to ensure that they are not filtered due to truncating with a low f
 	// Spending 9.1 SKY
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e5, fee*20))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e5, f*20))
 	i++
 	// Spending 9.01 SKY
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e4, fee*30))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e4, f*30))
 	i++
 	// Spending 9.0001 SKY
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e3, fee*40))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e3, f*40))
 	i++
 	// Spending 9.0001 SKY
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e2, fee*50))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e2, f*50))
 	i++
 	// Spending 9.00001 SKY
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e1, fee*60))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1e1, f*60))
 	i++
 	// Spending 9.000001 SKY
-	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1, fee*70))
+	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1, f*70))
 	i++
 
 	// Confirm that at least one transaction has an invalid decimal output
@@ -264,19 +265,19 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.NotEqual(t, len(txns), len(blockTxns), "Txns should be truncated")
 	require.Equal(t, 18, len(blockTxns))
 
-	// Check fee ordering
+	// Check f ordering
 	inUxs, err := v.Blockchain.Unspent().GetArray(blockTxns[0].In)
 	require.NoError(t, err)
-	prevFee, err := TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
+	prevFee, err := fee.TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
 	require.NoError(t, err)
 
 	for i := 1; i < len(blockTxns); i++ {
 		inUxs, err := v.Blockchain.Unspent().GetArray(blockTxns[i].In)
 		require.NoError(t, err)
-		fee, err := TransactionFee(&blockTxns[i], sb.Head.Time, inUxs)
+		f, err := fee.TransactionFee(&blockTxns[i], sb.Head.Time, inUxs)
 		require.NoError(t, err)
-		require.True(t, fee <= prevFee)
-		prevFee = fee
+		require.True(t, f <= prevFee)
+		prevFee = f
 	}
 
 	// Check that decimal rules are enforced

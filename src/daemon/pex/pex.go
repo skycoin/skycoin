@@ -29,8 +29,8 @@ import (
 // - only transmit peers that have active or recent connections
 
 const (
-	// DefaultPeersListURL is the default URL to download remote peers list from, if enabled
-	DefaultPeersListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
+	// DefaultPeerListURL is the default URL to download remote peers list from, if enabled
+	DefaultPeerListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
 	// PeerDatabaseFilename filename for disk-cached peers
 	PeerDatabaseFilename = "peers.txt"
 	// MaxPeerRetryTimes is the maximum number of times to retry a peer
@@ -173,9 +173,9 @@ type Config struct {
 	// Whether the network is disabled
 	NetworkDisabled bool
 	// Download peers list from remote host
-	DownloadPeersList bool
+	DownloadPeerList bool
 	// Download peers list from this URL
-	PeersListURL string
+	PeerListURL string
 }
 
 // NewConfig creates default pex config.
@@ -192,8 +192,8 @@ func NewConfig() Config {
 		AllowLocalhost:      false,
 		Disabled:            false,
 		NetworkDisabled:     false,
-		DownloadPeersList:   false,
-		PeersListURL:        DefaultPeersListURL,
+		DownloadPeerList:    false,
+		PeerListURL:         DefaultPeerListURL,
 	}
 }
 
@@ -239,7 +239,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	}
 
 	// Download peers from remote peers list
-	if pex.Config.DownloadPeersList {
+	if pex.Config.DownloadPeerList {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
 				logger.Error("Failed to download peers list: %v", err)
@@ -290,14 +290,14 @@ func (px *Pex) Shutdown() {
 }
 
 func (px *Pex) downloadPeers() error {
-	body, err := backoffDownloadText(px.Config.PeersListURL)
+	body, err := backoffDownloadText(px.Config.PeerListURL)
 	if err != nil {
-		logger.Error("Failed to download peers from %s. err: %s", px.Config.PeersListURL, err.Error())
+		logger.Error("Failed to download peers from %s. err: %s", px.Config.PeerListURL, err.Error())
 		return err
 	}
 
-	peers := parseRemotePeersList(body)
-	logger.Info("Downloaded peers list from %s, got %d peers", px.Config.PeersListURL, len(peers))
+	peers := parseRemotePeerList(body)
+	logger.Info("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
 
 	n := px.AddPeers(peers)
 	logger.Info("Added %d/%d peers from downloaded peers list", n, len(peers))
@@ -571,11 +571,11 @@ func backoffDownloadText(url string) (string, error) {
 	return body, nil
 }
 
-// parseRemotePeersList parses a remote peers.txt file
+// parseRemotePeerList parses a remote peers.txt file
 // The peers list format is newline separated ip:port
 // Any lines that don't parse to an ip:port are skipped
 // Localhost ip:port addresses are ignored
-func parseRemotePeersList(body string) []string {
+func parseRemotePeerList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {
 		addr = whitespaceFilter.ReplaceAllString(addr, "")

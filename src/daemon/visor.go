@@ -802,7 +802,6 @@ func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	}
 
 	// Reply to sender with GiveTxnsMessage
-	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
 	if err := d.Pool.Pool.SendMessage(gtm.c.Addr, m); err != nil {
 		logger.Error("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)

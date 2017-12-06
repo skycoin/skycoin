@@ -1332,7 +1332,7 @@ func TestPexIsFull(t *testing.T) {
 	require.True(t, pex.IsFull())
 }
 
-func TestParseRemotePeersList(t *testing.T) {
+func TestParseRemotePeerList(t *testing.T) {
 	body := `11.22.33.44:5555
 66.55.44.33:2020
 # comment
@@ -1343,7 +1343,7 @@ func TestParseRemotePeersList(t *testing.T) {
 22.44.22.44:99
 `
 
-	peers := parseRemotePeersList(body)
+	peers := parseRemotePeerList(body)
 	require.Len(t, peers, 3)
 	require.Equal(t, []string{
 		"11.22.33.44:5555",

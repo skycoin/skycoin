@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 * Require transactions to have an input with non-zero coinhours
-* Add `peerlistsize` and `max-outgoing-connections` command line options
+* Add `-peerlist-size` and `-max-outgoing-connections` CLI options
+* Add `-download-peerlist` and `-peerlist-url` CLI options, to get peers from a URL
+* For electron clients, download a list of peers from https://downloads.skycoin.net/blockchain/peers.txt by default
 
 ### Fixed
 
-* Fix change hours calculation. Previous gave 1/8 to change and destination addresses; now gives 1/4 to each.
-* #653, the peerlist size was too small and could be easily filled up; now sets to 65535.
+* Fix change hours calculation. Previous gave 1/8 to change and destination addresses; now gives 1/4 to each
+* #653, the peerlist size was too small and could be easily filled up; default changed to 65535 from 1000
 
 ### Changed
 
@@ -25,7 +27,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 * `/wallet/spend` will try to maximize the number of UxOuts used to create a transaction.
 * Coinhour burn fee change to 1/3 from 1/2 of coinhour inputs.
 * Update the default peerlist size to 65535 from 1000
-* Update the default maximum outgoing connection size from 16 to 64
 
 ## [0.20.4] - 2017-11-22
 

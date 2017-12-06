@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 * Fix change hours calculation. Previous gave 1/8 to change and destination addresses; now gives 1/4 to each.
-* #653
+* #653, the peerlist size was too small and could be easily filled up; now sets to 65535.
 
 ### Changed
 

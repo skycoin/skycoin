@@ -246,7 +246,7 @@ func (c *Config) register() {
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 64, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 16, "The maximum outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlistsize", 65535, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
 		c.OutgoingConnectionsRate, "How often to make an outgoing connection")

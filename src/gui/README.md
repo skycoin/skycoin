@@ -38,7 +38,7 @@ result:
 
 ### Get balance of addresses
 
-```bash
+```
 URI: /balance
 Method: GET
 Args:
@@ -111,7 +111,7 @@ result:
 
 ### Generate wallet seed
 
-```bash
+```
 URI: /wallet/newSeed
 Method: GET
 ```
@@ -124,25 +124,27 @@ curl http://127.0.0.1:6420/wallet/newSeed
 
 result:
 
-```bash
+```json
 {
-seed: "helmet van actor peanut differ icon trial glare member cancel marble rack"
+    "seed": "helmet van actor peanut differ icon trial glare member cancel marble rack"
 }
 ```
 
-### Create wallet
+### Create a wallet from seed
 
-```bash
+```
 URI: /wallet/create
 Method: POST
 Args:
-    seed [optional]
+    seed: wallet seed [required]
+    label: wallet label [required]
+    scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 ```
 
 example:
 
 ```bash
-curl -X POST http://127.0.0.1:6420/wallet/create
+curl http://127.0.0.1:6420/wallet/create -d "seed=$seed&label=$label&scan-num=5"
 ```
 
 result:
@@ -169,30 +171,9 @@ result:
 }
 ```
 
-### Load wallet from seed and scan ahead N address
-
-```bash
-URI: /wallet/load
-Method: GET/POST
-Args:
-    seed: wallet seed
-    label: wallet label
-    scan-num: the number of ahead addresses that we are going to scan(if not specified, the default num: 100 will be used)
-```
-
-example:
-
-```bash
-curl http://127.0.0.1:6420/wallet/load?seed=$seed&label=$label&scan-num=100
-```
-
-result:
-
-The result is the same format as `wallet/create`, excpet it returns all entries that contains coins.
-
 ### Generate new address in wallet
 
-```bash
+```
 URI: /wallet/newAddress
 Method: POST
 Args:
@@ -215,7 +196,7 @@ result:
 
 ### Get wallet balance
 
-```bash
+```
 URI: /wallet/balance
 Method: GET
 Args:
@@ -245,7 +226,7 @@ result:
 
 ### Spend coins from wallet
 
-```bash
+```
 URI: /wallet/spend
 Method: POST
 Args:
@@ -311,7 +292,7 @@ result:
 
 ### Get unconfirmed transactions
 
-```bash
+```
 URI: /pendingTxs
 Method: GET
 ```
@@ -365,7 +346,7 @@ result:
 
 ### Get transaction info by id
 
-```bash
+```
 URI: /transaction
 Method: GET
 Args:
@@ -415,7 +396,7 @@ result:
 
 ### Get raw transaction by id
 
-```bash
+```
 URI: /rawtx
 Method: GET
 ```
@@ -435,7 +416,7 @@ b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000
 
 ### Inject raw transaction
 
-```bash
+```
 URI: /injectTransaction
 Method: POST
 Content-Type: application/json
@@ -882,7 +863,7 @@ result:
 
 ## Coin supply informations
 
-```bash
+```
 URI: /coinSupply
 Method: GET
 ```

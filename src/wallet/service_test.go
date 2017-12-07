@@ -119,18 +119,22 @@ func TestServiceCreateWallet(t *testing.T) {
 
 	wltName := "t1.wlt"
 	seed := "seed1"
-	w, err := s.CreateWallet(wltName, OptSeed(seed))
+	w, err := s.CreateWallet(wltName, Options{
+		Seed: seed,
+	})
 	require.NoError(t, err)
 	require.Equal(t, seed, w.Meta["seed"])
 	require.NoError(t, w.Validate())
 
-	// create walelt with dup wallet name
-	_, err = s.CreateWallet(wltName)
+	// create wallet with dup wallet name
+	_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
 	require.Equal(t, err, ErrWalletNameConflict)
 
 	// create wallet with dup seed
 	dupWlt := "dup_wallet.wlt"
-	_, err = s.CreateWallet(dupWlt, OptSeed(seed))
+	_, err = s.CreateWallet(dupWlt, Options{
+		Seed: seed,
+	})
 	require.EqualError(t, err, fmt.Sprintf("duplicate wallet with %v", wltName))
 
 	// check if the dup wallet is created
@@ -149,11 +153,11 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 	}
 
 	type exp struct {
-		seed              string
-		lastSeed          string
-		entryNum          int
-		confirmedBalance  uint64
-		predicatedBalance uint64
+		seed             string
+		lastSeed         string
+		entryNum         int
+		confirmedBalance uint64
+		predictedBalance uint64
 	}
 
 	tt := []struct {
@@ -167,11 +171,11 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			0,
 			bg,
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[0],
-				entryNum:          1,
-				confirmedBalance:  0,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
 			},
 		},
 		{
@@ -179,11 +183,11 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			1,
 			bg,
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[0],
-				entryNum:          1,
-				confirmedBalance:  0,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
 			},
 		},
 		{
@@ -191,65 +195,55 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			10,
 			bg,
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[0],
-				entryNum:          1,
-				confirmedBalance:  0,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
 			},
 		},
 		{
 			"scan 5 get 5",
 			5,
 			mockBalanceGetter{
-				addrs[0]: BalancePair{},
-				addrs[1]: BalancePair{},
-				addrs[2]: BalancePair{},
-				addrs[3]: BalancePair{},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[4],
-				entryNum:          5,
-				confirmedBalance:  10,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[5],
+				entryNum:         5 + 1,
+				confirmedBalance: 10,
+				predictedBalance: 0,
 			},
 		},
 		{
 			"scan 5 get 4",
 			5,
 			mockBalanceGetter{
-				addrs[0]: BalancePair{},
-				addrs[1]: BalancePair{},
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[3],
-				entryNum:          4,
-				confirmedBalance:  20,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
 			},
 		},
 		{
-			"confirmed and predicated",
+			"confirmed and predicted",
 			5,
 			mockBalanceGetter{
-				addrs[0]: BalancePair{},
-				addrs[1]: BalancePair{},
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[3],
-				entryNum:          4,
-				confirmedBalance:  20,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
 			},
 		},
 	}
@@ -263,11 +257,17 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 
 			wltName := "t1.wlt"
 			seed := "seed1"
-			w, err := s.LoadAndScanWallet(wltName, seed, tc.scanN, tc.balGetter)
+			w, err := s.CreateWallet(wltName, Options{
+				Seed:  seed,
+				Label: "foo",
+			})
 			require.NoError(t, err)
 
 			require.Equal(t, seed, w.Meta["seed"])
 			require.NoError(t, w.Validate())
+
+			w, err = s.ScanAheadWalletAddresses(wltName, tc.scanN, tc.balGetter)
+			require.NoError(t, err)
 
 			require.Len(t, w.Entries, tc.expect.entryNum)
 			require.Equal(t, tc.expect.lastSeed, w.getLastSeed())
@@ -329,14 +329,14 @@ func TestServiceGetWallet(t *testing.T) {
 		break
 	}
 
-	w, ok := s.GetWallet(id)
-	require.True(t, ok)
+	w, err := s.GetWallet(id)
+	require.NoError(t, err)
 
 	// modify the returned wallet won't affect the wallet in service
 	w.SetLabel("new_label")
 
-	w1, ok := s.GetWallet(id)
-	require.True(t, ok)
+	w1, err := s.GetWallet(id)
+	require.NoError(t, err)
 
 	require.NotEqual(t, "new_label", w1.GetLabel())
 }
@@ -358,7 +358,7 @@ func TestServiceReloadWallets(t *testing.T) {
 	}
 
 	wltName := "t1.wlt"
-	w, err := s.CreateWallet(wltName)
+	w, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
 	require.NoError(t, err)
 
 	err = s.ReloadWallets()
@@ -414,8 +414,9 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 	headTime := time.Now().UTC().Unix()
 
-	wlt, ok := s.GetWallet(id)
-	require.True(t, ok)
+	wlt, err := s.GetWallet(id)
+	require.NoError(t, err)
+
 	secKey := wlt.Entries[0].Secret
 	addr := wlt.Entries[0].Address
 

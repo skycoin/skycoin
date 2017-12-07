@@ -58,8 +58,7 @@ $ export WALLET_NAME=YOUR_WALLET_NAME
 
 After the installation, you can run `skycoin-cli` to see the usage:
 
-```bash
-
+```
 $ skycoin-cli
 
 NAME:
@@ -91,11 +90,15 @@ COMMANDS:
      version
      walletDir             Displays wallet folder address
      walletHistory         Display the transaction history of specific wallet
-     help, h               Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h     show help, can also be used to show subcommand help
    --version, -v  print the version
+ENVIRONMENT VARIABLES:
+    RPC_ADDR: Address of RPC node. Default "127.0.0.1:6430"
+    COIN: Name of the coin. Default "skycoin"
+    WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$HOME/.$COIN/wallets"
+    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
 ```
 
 ### Send coin
@@ -116,13 +119,107 @@ Use `skycoin-cli send -h` to see the subcommand usage.
 ### Check address balance
 
 ```bash
-$ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
+$ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc 2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv
+```
+
+```json
 {
-    "total_amount": 1,
+    "confirmed": {
+        "coins": "123.000000",
+        "hours": "456"
+    },
+    "spendable": {
+        "coins": "123.000000",
+        "hours": "456"
+    },
+    "expected": {
+        "coins": "123.000000",
+        "hours": "456"
+    },
     "addresses": [
         {
-            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
-            "amount": 1
+            "confirmed": {
+                "coins": "123.000000",
+                "hours": "456"
+            },
+            "spendable": {
+                "coins": "123.000000",
+                "hours": "456"
+            },
+            "expected": {
+                "coins": "123.000000",
+                "hours": "456"
+            },
+            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"
+        }, {
+            "confirmed": {
+                "coins": "0.000000",
+                "hours": "0"
+            },
+            "spendable": {
+                "coins": "0.000000",
+                "hours": "0"
+            },
+            "expected": {
+                "coins": "0.000000",
+                "hours": "0"
+            },
+            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
+        }
+    ]
+}
+```
+
+
+### Check wallet balance
+
+```bash
+$ skycoin-cli walletBalance
+```
+
+```json
+{
+    "confirmed": {
+        "coins": "123.000000",
+        "hours": "456"
+    },
+    "spendable": {
+        "coins": "123.000000",
+        "hours": "456"
+    },
+    "expected": {
+        "coins": "123.000000",
+        "hours": "456"
+    },
+    "addresses": [
+        {
+            "confirmed": {
+                "coins": "123.000000",
+                "hours": "456"
+            },
+            "spendable": {
+                "coins": "123.000000",
+                "hours": "456"
+            },
+            "expected": {
+                "coins": "123.000000",
+                "hours": "456"
+            },
+            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"
+        }, {
+            "confirmed": {
+                "coins": "0.000000",
+                "hours": "0"
+            },
+            "spendable": {
+                "coins": "0.000000",
+                "hours": "0"
+            },
+            "expected": {
+                "coins": "0.000000",
+                "hours": "0"
+            },
+            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
         }
     ]
 }
@@ -132,6 +229,9 @@ $ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
 
 ```bash
 $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748da6d77d135
+```
+
+```json
 {
     "transaction": {
         "status": {

@@ -2,6 +2,24 @@
 
 Skycoin command line interface
 
+<!-- MarkdownTOC depth="3" autolink="true" bracket="round" -->
+
+- [Install](#install)
+    - [Enable command autocomplete](#enable-command-autocomplete)
+- [Environment Setting](#environment-setting)
+    - [RPC_ADDR](#rpcaddr)
+    - [WALLET_DIR](#walletdir)
+    - [WALLET_NAME](#walletname)
+- [Usage](#usage)
+    - [Send](#send)
+    - [Check address balance](#check-address-balance)
+    - [Check wallet balance](#check-wallet-balance)
+    - [Get transaction](#get-transaction)
+- [Note](#note)
+
+<!-- /MarkdownTOC -->
+
+
 ## Install
 
 ```bash
@@ -90,6 +108,7 @@ COMMANDS:
      version
      walletDir             Displays wallet folder address
      walletHistory         Display the transaction history of specific wallet
+     help, h               Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h     show help, can also be used to show subcommand help
@@ -101,7 +120,7 @@ ENVIRONMENT VARIABLES:
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
 ```
 
-### Send coin
+### Send
 
 ```bash
 $ skycoin-cli send $recipient_address $amount
@@ -274,8 +293,8 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
 
 ## Note
 
-The `[option]` in subcommand must be set before the rest values, otherwise the `option` won't
-be parsed, example:
+The `[option]` in subcommand must be set before the rest of the values, otherwise the `option` won't
+be parsed. For example:
 
 If we want to specify a `change address` in `send` command, we can use `-c` option, if you run
 the command in the following way:

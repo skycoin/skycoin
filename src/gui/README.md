@@ -144,7 +144,7 @@ Args:
 example:
 
 ```bash
-curl http://127.0.0.1:6420/wallet/create -d "seed=$seed&label=$label&scan-num=5"
+curl http://127.0.0.1:6420/wallet/create -d "seed=$seed&label=$label&scan=5"
 ```
 
 result:

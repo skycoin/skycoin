@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 * `create_rawtx` will try to minimize the number of UxOuts used to create a transaction.
 * `/wallet/spend` will try to maximize the number of UxOuts used to create a transaction.
 * Update the default peerlist size to 65535 from 1000
+* When loading a wallet, 100 addresses will be scanned ahead to find one with a balance
 
 ## [0.20.4] - 2017-11-22
 

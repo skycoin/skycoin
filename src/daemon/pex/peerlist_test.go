@@ -511,12 +511,9 @@ func TestPeerJSONParsing(t *testing.T) {
 }
 
 func peersEqualWithSeenAllowedDiff(t *testing.T, expected Peer, actual Peer) {
-	require.Equal(t, expected.Private, actual.Private)
-	require.Equal(t, expected.HasIncomingPort, actual.HasIncomingPort)
-	require.Equal(t, expected.Addr, actual.Addr)
 	require.WithinDuration(t, time.Unix(expected.LastSeen, 0), time.Unix(actual.LastSeen, 0), 1*time.Second)
-	require.Equal(t, expected.RetryTimes, actual.RetryTimes)
-	require.Equal(t, expected.Trusted, actual.Trusted)
+	expected.LastSeen = actual.LastSeen
+	require.Equal(t, expected, actual)
 }
 
 // preparePeerlistFile makes peers.txt in temporary dir,

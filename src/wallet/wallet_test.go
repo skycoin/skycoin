@@ -31,76 +31,59 @@ func TestNewWallet(t *testing.T) {
 	tt := []struct {
 		name    string
 		wltName string
-		ops     []Option
+		ops     Options
 		expect  expect
 	}{
 		{
-			"ok",
+			"ok with seed set",
 			"test.wlt",
-			[]Option{},
+			Options{
+				Seed: "testseed123",
+			},
 			expect{
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test.wlt",
 					"coin":     "skycoin",
 					"type":     "deterministic",
-				},
-				err: nil,
-			},
-		},
-		{
-			"ok with label set",
-			"test.wlt",
-			[]Option{OptLabel("wallet1")},
-			expect{
-				meta: map[string]string{
-					"label":    "wallet1",
-					"filename": "test.wlt",
-					"coin":     "skycoin",
-					"type":     "deterministic",
-				},
-				err: nil,
-			},
-		},
-		{
-			"ok with label set",
-			"test.wlt",
-			[]Option{OptLabel("wallet1")},
-			expect{
-				meta: map[string]string{
-					"label":    "wallet1",
-					"filename": "test.wlt",
-					"coin":     "skycoin",
-					"type":     "deterministic",
-				},
-				err: nil,
-			},
-		},
-		{
-			"ok with coin set",
-			"test.wlt",
-			[]Option{OptLabel("wallet1"), OptCoin("testcoin")},
-			expect{
-				meta: map[string]string{
-					"label":    "wallet1",
-					"filename": "test.wlt",
-					"coin":     "testcoin",
-					"type":     "deterministic",
-				},
-				err: nil,
-			},
-		},
-		{
-			"ok with seed set",
-			"test.wlt",
-			[]Option{OptLabel("wallet1"), OptSeed("testseed123")},
-			expect{
-				meta: map[string]string{
-					"label":    "wallet1",
-					"filename": "test.wlt",
-					"coin":     "skycoin",
 					"seed":     "testseed123",
+				},
+				err: nil,
+			},
+		},
+		{
+			"ok with label and seed set",
+			"test.wlt",
+			Options{
+				Label: "wallet1",
+				Seed:  "testseed123",
+			},
+			expect{
+				meta: map[string]string{
+					"label":    "wallet1",
+					"filename": "test.wlt",
+					"coin":     "skycoin",
 					"type":     "deterministic",
+					"seed":     "testseed123",
+				},
+				err: nil,
+			},
+		},
+		{
+			"ok with label, seed and coin set",
+			"test.wlt",
+			Options{
+				Label: "wallet1",
+				Coin:  CoinTypeBitcoin,
+				Seed:  "testseed123",
+			},
+			expect{
+				meta: map[string]string{
+					"label":    "wallet1",
+					"filename": "test.wlt",
+					"coin":     string(CoinTypeBitcoin),
+					"type":     "deterministic",
+					"seed":     "testseed123",
 				},
 				err: nil,
 			},
@@ -109,7 +92,7 @@ func TestNewWallet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w, err := NewWallet(tc.wltName, tc.ops...)
+			w, err := NewWallet(tc.wltName, tc.ops)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
@@ -140,7 +123,7 @@ func TestLoadWallet(t *testing.T) {
 			"./testdata/test1.wlt",
 			expect{
 				meta: map[string]string{
-					"coin":     "sky",
+					"coin":     string(CoinTypeSkycoin),
 					"filename": "test1.wlt",
 					"label":    "test3",
 					"lastSeed": "9182b02c0004217ba9a55593f8cf0abecc30d041e094b266dbb5103e1919adaf",

@@ -18,7 +18,7 @@ import (
 const lastBlockNum = 10
 
 // RegisterBlockchainHandlers registers blockchain handlers
-func (s *server) RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
+func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/blockchain/metadata", blockchainHandler(gateway))
 	mux.HandleFunc("/blockchain/progress", blockchainProgressHandler(gateway))
 
@@ -48,7 +48,7 @@ func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // method: GET
 // url: /block?hash=[:hash]  or /block?seq[:seq]
 // params: hash or seq, should only specify one filter.
-func (s *server) getBlock(gate *daemon.Gateway) http.HandlerFunc {
+func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -91,7 +91,7 @@ func (s *server) getBlock(gate *daemon.Gateway) http.HandlerFunc {
 
 		rb, err := visor.NewReadableBlock(&b.Block)
 		if err != nil {
-			s.logger.Error("%v", err)
+			logger.Error("%v", err)
 			wh.Error500(w)
 			return
 		}

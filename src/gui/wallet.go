@@ -27,12 +27,12 @@ type SpendResult struct {
 }
 
 // Spend spend coins from specific wallet
-func (s *server) Spend(walletID string, coins uint64, dest cipher.Address) *SpendResult {
+func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) *SpendResult {
 	var tx *coin.Transaction
 	var b wallet.BalancePair
 	var err error
 	for {
-		tx, err = s.daemon.Gateway.Spend(walletID, coins, dest)
+		tx, err = gateway.Spend(walletID, coins, dest)
 		if err != nil {
 			break
 		}
@@ -43,9 +43,9 @@ func (s *server) Spend(walletID string, coins uint64, dest cipher.Address) *Spen
 			break
 		}
 
-		s.logger.Info("Spend: \ntx= \n %s \n", txStr)
+		logger.Info("Spend: \ntx= \n %s \n", txStr)
 
-		b, err = s.daemon.Gateway.GetWalletBalance(walletID)
+		b, err = gateway.GetWalletBalance(walletID)
 		if err != nil {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
 			break
@@ -62,7 +62,7 @@ func (s *server) Spend(walletID string, coins uint64, dest cipher.Address) *Spen
 
 	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 	if err != nil {
-		s.logger.Error("%v", err)
+		logger.Error("%v", err)
 		return &SpendResult{}
 	}
 
@@ -74,7 +74,7 @@ func (s *server) Spend(walletID string, coins uint64, dest cipher.Address) *Spen
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-func (s *server) walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -89,7 +89,7 @@ func (s *server) walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc 
 
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
-			s.logger.Error("Get wallet balance failed: %v", err)
+			logger.Error("Get wallet balance failed: %v", err)
 			return
 		}
 		wh.SendOr404(w, b)
@@ -104,7 +104,7 @@ func (s *server) walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc 
 //  id: wallet id
 //	dst: recipient address
 // 	coins: the number of droplet you will send
-func (s *server) walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -140,9 +140,9 @@ func (s *server) walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		ret := s.Spend(wltID, coins, dst)
+		ret := Spend(gateway, wltID, coins, dst)
 		if ret.Error != "" {
-			s.logger.Error(ret.Error)
+			logger.Error(ret.Error)
 		}
 
 		wh.SendOr404(w, ret)
@@ -369,10 +369,10 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Loads/unloads wallets from the wallet directory
-func (s *server) walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := gateway.ReloadWallets(); err != nil {
-			s.logger.Error("reload wallet failed: %v", err)
+			logger.Error("reload wallet failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -396,18 +396,18 @@ func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func (s *server) newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
+func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		entropy, err := bip39.NewEntropy(128)
 		if err != nil {
-			s.logger.Error("new entropy failed when new wallet seed: %v", err)
+			logger.Error("new entropy failed when new wallet seed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
-			s.logger.Error("new mnemonic failed when new wallet seed: %v", err)
+			logger.Error("new mnemonic failed when new wallet seed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -452,7 +452,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// spent amount.
 	// GET arguments:
 	//      id: Wallet ID
-	mux.HandleFunc("/wallet/balance", s.walletBalanceHandler(gateway))
+	mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
 
 	// Sends coins&hours to another address.
 	// POST arguments:

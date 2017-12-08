@@ -23,7 +23,7 @@ install:
   - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
   - go version
   - go env
-  - go get github.com/mitchellh/gox
+  - go get github.com/gz-c/gox
   - ps: Install-Product node 8 x64
 
 build_script:
@@ -39,13 +39,13 @@ after_build:
 
 test: off
 
-artifacts: 
+artifacts:
   - path: skycoin.zip
     name: published
 
 deploy:
   provider: S3
-  access_key_id: $(AWS_ACCESS_KEY_ID) 
+  access_key_id: $(AWS_ACCESS_KEY_ID)
   secret_access_key: $(AWS_SECRET_ACCESS_KEY)
   bucket: $(AWS_BUCKET)
   region: $(AWS_REGION)

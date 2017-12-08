@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- CLI's `walletBalance` and `addressBalance` commands return aggregate balances for confirmed, spendable and expected balances.  Coins are formatted as droplet strings.  Hours added as strings.
 - When splitting an odd number of hours in a spend, give the extra hour to the fee
 - Add `block_seq` to `get_outputs` and `/outputs` API response
 - Improve UxOut spend selection. Previously, they were spent oldest first. Now they are spent to ensure a non-zero coinhour input and otherwise minimize coinhours.

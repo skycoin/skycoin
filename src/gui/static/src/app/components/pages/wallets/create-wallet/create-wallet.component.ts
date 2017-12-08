@@ -12,6 +12,7 @@ export class CreateWalletComponent implements OnInit {
 
   form: FormGroup;
   seed: string;
+  scan: Number;
 
   constructor(
     public dialogRef: MdDialogRef<CreateWalletComponent>,
@@ -24,7 +25,7 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed)
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan)
       .subscribe(() => this.dialogRef.close());
   }
 
@@ -39,6 +40,8 @@ export class CreateWalletComponent implements OnInit {
     });
 
     this.generateSeed();
+
+    this.scan = 100;
   }
 
 }

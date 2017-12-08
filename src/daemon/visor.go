@@ -469,12 +469,12 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 	return maxLen
 }
 
-// LoadAndScanWallet loads wallet from seeds and scan ahead N addresses
-func (vs *Visor) LoadAndScanWallet(wltName string, seed string, scanN uint64, ops ...wallet.Option) (wallet.Wallet, error) {
+// ScanAheadWalletAddresses loads wallet from seeds and scan ahead N addresses
+func (vs *Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
-	vs.strand("LoadAndScanWallet", func() error {
-		wlt, err = vs.v.LoadAndScanWallet(wltName, seed, scanN, ops...)
+	vs.strand("ScanAheadWalletAddresses", func() error {
+		wlt, err = vs.v.ScanAheadWalletAddresses(wltName, scanN)
 		return nil
 	})
 
@@ -802,7 +802,6 @@ func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	}
 
 	// Reply to sender with GiveTxnsMessage
-	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
 	if err := d.Pool.Pool.SendMessage(gtm.c.Addr, m); err != nil {
 		logger.Error("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)

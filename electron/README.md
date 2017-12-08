@@ -13,7 +13,7 @@ gox (go cross compiler), node and npm.
 To install gox:
 
 ```sh
-go get github.com/mitchellh/gox
+go get github.com/gz-c/gox
 ```
 
 ### NPM

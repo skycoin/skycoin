@@ -85,6 +85,10 @@ var (
 type Config struct {
 	// Disable peer exchange
 	DisablePEX bool
+	// Download peer list
+	DownloadPeerList bool
+	// Download the peers list from this URL
+	PeerListURL string
 	// Don't make any outgoing connections
 	DisableOutgoingConnections bool
 	// Don't allowing incoming connections
@@ -173,6 +177,8 @@ func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
 		"disable PEX peer discovery")
+	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
+	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
 		c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
@@ -247,7 +253,7 @@ func (c *Config) register() {
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 16, "The maximum outgoing connections allowed")
-	flag.IntVar(&c.PeerlistSize, "peerlistsize", 65535, "The peer list size")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", 65535, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
 		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
@@ -275,6 +281,8 @@ var devConfig = Config{
 	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
 	MaxOutgoingConnections: 16,
+	DownloadPeerList:       false,
+	PeerListURL:            "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	PeerlistSize:            65535,
@@ -495,6 +503,8 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
 	dc.Pex.Max = c.PeerlistSize
+	dc.Pex.DownloadPeerList = c.DownloadPeerList
+	dc.Pex.PeerListURL = c.PeerListURL
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking

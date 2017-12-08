@@ -24,21 +24,20 @@ func run() error {
 	genCount := flag.Int("n", 1, "Number of addresses to generate")
 	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
 	strict := flag.Bool("strict", true, "Checks if input is space separated list of words.")
-	coin := flag.String("coin", "", "address output type: sky/btc")
-	secfile := flag.String("sec_file", "", "command for file to write the secret keys")
-	addrOut := flag.String("addr_out", "addresses", "command for changing addresses output file")
-	outputInfo := flag.String("info_out", "", "create file with date of generation, seed, coin, number of keys generated")
+	coin := flag.String("coin", "skycoin", "address output type: sky/btc")
+	secfile := flag.String("secfile", "", "command for file to write the secret keys")
+	addrOut := flag.String("addrfile", "addresses", "command for changing addresses output file")
+	outputInfo := flag.String("infofile", "", "create file with date of generation, seed, coin, number of keys generated")
 	flag.Parse()
 
 	var coinType wallet.CoinType
 	switch *coin {
-	case "btc":
+	case "btc", "bitcoin":
 		coinType = wallet.CoinTypeBitcoin
-	case "sky":
+	case "sky", "skycoin":
 		coinType = wallet.CoinTypeSkycoin
 	default:
-		coinType = wallet.CoinTypeSkycoin
-		*coin = "sky"
+		return errors.New("unknown coin type")
 	}
 
 	if *seed != "" && *strict {

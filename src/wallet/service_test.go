@@ -232,6 +232,23 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			},
 		},
 		{
+			"scan 5 get 4 have 6",
+			5,
+			mockBalanceGetter{
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+
+		{
 			"confirmed and predicted",
 			5,
 			mockBalanceGetter{

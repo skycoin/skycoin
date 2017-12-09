@@ -19,7 +19,6 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 
 	"github.com/skycoin/skycoin/src/util/logging"
-	"sync"
 )
 
 var (
@@ -29,7 +28,6 @@ var (
 )
 
 type Server struct {
-	wg *sync.WaitGroup
 	daemon   *daemon.Daemon
 	listener net.Listener
 	quit     chan struct{}
@@ -43,9 +41,8 @@ const (
 	indexPage   = "index.html"
 )
 
-func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string, wg *sync.WaitGroup) *Server {
+func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) *Server {
 	s := Server{
-		wg: wg,
 		daemon: daemon,
 		quit:   make(chan struct{}),
 	}
@@ -110,20 +107,16 @@ func (s *Server) launchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.
 
 func (s *Server) Serve() {
 	mux := NewGUIMux(s.appLoc, s.daemon)
-	go func() {
-		s.wg.Add(1)
-		defer s.wg.Done()
-		for {
-			if err := http.Serve(s.listener, mux); err != nil {
-				select {
-				case <-s.quit:
-					return
-				default:
-				}
-				continue
+	for {
+		if err := http.Serve(s.listener, mux); err != nil {
+			select {
+			case <-s.quit:
+				return
+			default:
 			}
+			continue
 		}
-	}()
+	}
 }
 
 // Shutdown close http service
@@ -301,12 +294,12 @@ func attrActualLog(logInfo string) string {
 	actualLog = logInfo
 	if strings.HasPrefix(logInfo, "[skycoin") {
 		if strings.Contains(logInfo, "\u001b") {
-			actualLog = logInfo[0: len(logInfo)-4]
+			actualLog = logInfo[0 : len(logInfo)-4]
 		}
 	} else {
 		if len(logInfo) > 5 {
 			if strings.Contains(logInfo, "\u001b") {
-				actualLog = logInfo[5: len(logInfo)-4]
+				actualLog = logInfo[5 : len(logInfo)-4]
 			}
 		}
 	}

@@ -458,7 +458,7 @@ func createGUI(c *Config, d *daemon.Daemon, wg sync.WaitGroup) *gui.Server {
 			return nil
 		}
 	}
-	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey, &wg)
+	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
 
 	if s.Err != nil {
 		logger.Error(s.Err.Error())
@@ -722,7 +722,11 @@ func Run(c *Config) {
 			}()
 		}
 	*/
-	go s.Serve()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.Serve()
+	}()
 
 	select {
 	case <-quit:

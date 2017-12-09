@@ -118,7 +118,7 @@ func TestLoadPeersFromFile(t *testing.T) {
 			for k, v := range tc.expectPeers {
 				p, ok := peers[k]
 				require.True(t, ok)
-				require.Equal(t, *v, *p)
+				peersEqualWithSeenAllowedDiff(t, *v, *p)
 			}
 		})
 	}
@@ -152,7 +152,7 @@ func TestPeerlistSetPeers(t *testing.T) {
 			for k, v := range tc.expect {
 				p, ok := pl.peers[k]
 				require.True(t, ok)
-				require.Equal(t, v, *p)
+				peersEqualWithSeenAllowedDiff(t, v, *p)
 			}
 		})
 	}
@@ -219,7 +219,7 @@ func TestPeerlistAddPeer(t *testing.T) {
 					continue
 				}
 
-				require.Equal(t, *v, *p)
+				peersEqualWithSeenAllowedDiff(t, *v, *p)
 			}
 		})
 	}
@@ -275,7 +275,7 @@ func TestPeerlistAddPeers(t *testing.T) {
 			for k, v := range tc.expectPeers {
 				p, ok := pl.peers[k]
 				require.True(t, ok)
-				require.Equal(t, *v, *p)
+				peersEqualWithSeenAllowedDiff(t, *v, *p)
 			}
 		})
 	}
@@ -386,7 +386,7 @@ func TestPeerlistClearOld(t *testing.T) {
 			for _, p := range tc.expectPeers {
 				v, ok := pl.peers[p.Addr]
 				require.True(t, ok)
-				require.Equal(t, *v, p)
+				peersEqualWithSeenAllowedDiff(t, *v, p)
 			}
 		})
 	}
@@ -435,7 +435,7 @@ func TestPeerlistSave(t *testing.T) {
 			for k, v := range tc.expect {
 				p, ok := psMap[k]
 				require.True(t, ok)
-				require.Equal(t, v, *p)
+				peersEqualWithSeenAllowedDiff(t, v, *p)
 			}
 		})
 	}
@@ -508,6 +508,12 @@ func TestPeerJSONParsing(t *testing.T) {
 	p, err = newPeerFromJSON(pj)
 	require.NoError(t, err)
 	check(p)
+}
+
+func peersEqualWithSeenAllowedDiff(t *testing.T, expected Peer, actual Peer) {
+	require.WithinDuration(t, time.Unix(expected.LastSeen, 0), time.Unix(actual.LastSeen, 0), 1*time.Second)
+	expected.LastSeen = actual.LastSeen
+	require.Equal(t, expected, actual)
 }
 
 // preparePeerlistFile makes peers.txt in temporary dir,

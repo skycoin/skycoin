@@ -23,8 +23,6 @@ import (
 
 var (
 	logger   = logging.MustGetLogger("gui")
-	listener net.Listener
-	quit     chan struct{}
 )
 
 type Server struct {
@@ -41,10 +39,10 @@ const (
 	indexPage   = "index.html"
 )
 
-func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string, quit chan struct{}) *Server {
+func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) *Server {
 	s := Server{
 		daemon: daemon,
-		quit:   quit,
+		quit:   make(chan struct{}),
 	}
 	if needHttps {
 		s.Err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
@@ -102,7 +100,6 @@ func (s *Server) launchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.
 }
 
 func (s *Server) Serve() error {
-	defer close(s.quit)
 	defer logger.Info("Server closed")
 	logger.Info("Starting web interface on %s", s.listener.Addr())
 	mux := NewGUIMux(s.appLoc, s.daemon)
@@ -124,8 +121,8 @@ func (s *Server) Shutdown() {
 		logger.Info("Shutting down Server")
 		// must close quit first
 		close(s.quit)
-		listener.Close()
-		listener = nil
+		s.listener.Close()
+		s.listener = nil
 }
 
 // NewGUIMux creates an http.ServeMux with handlers registered

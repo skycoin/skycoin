@@ -448,7 +448,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) *gu
 			return nil
 		}
 	}
-	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey, quit)
+	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
 
 	if s.Err != nil {
 		logger.Error(s.Err.Error())
@@ -707,9 +707,6 @@ func Run(c *Config) {
 			}()
 		}
 	*/
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6420", nil))
-	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

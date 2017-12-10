@@ -1,10 +1,9 @@
 package gui
 
 import (
-	"testing"
 	"net/http"
 	"net/http/httptest"
-	"gateway_test"
+	"testing"
 )
 
 func TestWalletSpendHandler(t *testing.T) {

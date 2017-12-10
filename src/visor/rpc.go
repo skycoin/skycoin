@@ -138,9 +138,9 @@ func (rpc RPC) GetAddressTxns(v *Visor,
 	return v.GetAddressTxns(addr)
 }
 
-// CreateWallet creates new wallet
-func (rpc *RPC) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
-	return rpc.v.wallets.CreateWallet(wltName, options)
+// NewWallet creates new wallet
+func (rpc *RPC) NewWallet(wltName string, ops ...wallet.Option) (wallet.Wallet, error) {
+	return rpc.v.wallets.CreateWallet(wltName, ops...)
 }
 
 // NewAddresses generates new addresses in given wallet
@@ -165,7 +165,7 @@ func (rpc *RPC) UpdateWalletLabel(wltID, label string) error {
 }
 
 // GetWallet returns wallet by id
-func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, error) {
+func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, bool) {
 	return rpc.v.wallets.GetWallet(wltID)
 }
 

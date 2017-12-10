@@ -1,8 +1,8 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
 
 	gcli "github.com/urfave/cli"
 
@@ -12,26 +12,14 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-// Balance represents an coin and hours balance
 type Balance struct {
-	Coins string `json:"coins"`
-	Hours string `json:"hours"`
+	Address string `json:"address"`
+	Amount  uint64 `json:"amount"`
 }
 
-// AddressBalance represents an address's balance
-type AddressBalance struct {
-	Confirmed Balance `json:"confirmed"`
-	Spendable Balance `json:"spendable"`
-	Expected  Balance `json:"expected"`
-	Address   string  `json:"address"`
-}
-
-// BalanceResult represents an set of addresses' balances
 type BalanceResult struct {
-	Confirmed Balance          `json:"confirmed"`
-	Spendable Balance          `json:"spendable"`
-	Expected  Balance          `json:"expected"`
-	Addresses []AddressBalance `json:"addresses"`
+	TotalAmount uint64    `json:"total_amount"`
+	Addresses   []Balance `json:"addresses"`
 }
 
 func walletBalanceCmd(cfg Config) gcli.Command {
@@ -108,154 +96,59 @@ func addrBalance(c *gcli.Context) error {
 
 // PUBLIC
 
-// CheckWalletBalance returns the total and individual balances of addresses in a wallet file
-func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, error) {
+func CheckWalletBalance(c *webrpc.Client, walletFile string) (BalanceResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return nil, err
+		return BalanceResult{}, err
 	}
 
 	var addrs []string
 	addresses := wlt.GetAddresses()
 	for _, a := range addresses {
+		// validate the address
 		addrs = append(addrs, a.String())
 	}
 
 	return GetBalanceOfAddresses(c, addrs)
 }
 
-// GetBalanceOfAddresses returns the total and individual balances of a set of addresses
-func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (*BalanceResult, error) {
-	outs, err := c.GetUnspentOutputs(addrs)
-	if err != nil {
-		return nil, err
-	}
-
-	return getBalanceOfAddresses(outs, addrs)
-}
-
-func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*BalanceResult, error) {
-	addrsMap := make(map[string]struct{}, len(addrs))
-	for _, a := range addrs {
-		addrsMap[a] = struct{}{}
-	}
-
-	addrBalances := make(map[string]struct {
-		confirmed, spendable, expected wallet.Balance
-	}, len(addrs))
-
-	// Count confirmed balances
-	for _, o := range outs.Outputs.HeadOutputs {
-		if _, ok := addrsMap[o.Address]; !ok {
-			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
-		}
-
-		amt, err := droplet.FromString(o.Coins)
-		if err != nil {
-			return nil, fmt.Errorf("droplet.FromString failed: %v", err)
-		}
-
-		b := addrBalances[o.Address]
-		b.confirmed.Coins += amt
-		b.confirmed.Hours += o.Hours
-
-		addrBalances[o.Address] = b
-	}
-
-	// Count spendable balances
-	for _, o := range outs.Outputs.SpendableOutputs() {
-		if _, ok := addrsMap[o.Address]; !ok {
-			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
-		}
-
-		amt, err := droplet.FromString(o.Coins)
-		if err != nil {
-			return nil, fmt.Errorf("droplet.FromString failed: %v", err)
-		}
-
-		b := addrBalances[o.Address]
-		b.spendable.Coins += amt
-		b.spendable.Hours += o.Hours
-
-		addrBalances[o.Address] = b
-	}
-
-	// Count predicted balances
-	for _, o := range outs.Outputs.ExpectedOutputs() {
-		if _, ok := addrsMap[o.Address]; !ok {
-			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
-		}
-
-		amt, err := droplet.FromString(o.Coins)
-		if err != nil {
-			return nil, fmt.Errorf("droplet.FromString failed: %v", err)
-		}
-
-		b := addrBalances[o.Address]
-		b.expected.Coins += amt
-		b.expected.Hours += o.Hours
-
-		addrBalances[o.Address] = b
-	}
-
-	toBalance := func(b wallet.Balance) (Balance, error) {
-		coins, err := droplet.ToString(b.Coins)
-		if err != nil {
-			return Balance{}, err
-		}
-
-		return Balance{
-			Coins: coins,
-			Hours: strconv.FormatUint(b.Hours, 10),
-		}, nil
-	}
-
-	var totalConfirmed, totalSpendable, totalExpected wallet.Balance
-	balRlt := &BalanceResult{
-		Addresses: make([]AddressBalance, len(addrs)),
+func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (BalanceResult, error) {
+	balRlt := BalanceResult{
+		Addresses: make([]Balance, len(addrs)),
 	}
 
 	for i, a := range addrs {
-		b := addrBalances[a]
-		var err error
-
-		balRlt.Addresses[i].Address = a
-
-		totalConfirmed = totalConfirmed.Add(b.confirmed)
-		totalSpendable = totalSpendable.Add(b.spendable)
-		totalExpected = totalExpected.Add(b.expected)
-
-		balRlt.Addresses[i].Confirmed, err = toBalance(b.confirmed)
-		if err != nil {
-			return nil, err
-		}
-
-		balRlt.Addresses[i].Spendable, err = toBalance(b.spendable)
-		if err != nil {
-			return nil, err
-		}
-
-		balRlt.Addresses[i].Expected, err = toBalance(b.expected)
-		if err != nil {
-			return nil, err
+		balRlt.Addresses[i] = Balance{
+			Address: a,
 		}
 	}
 
-	var err error
-	balRlt.Confirmed, err = toBalance(totalConfirmed)
+	outs, err := c.GetUnspentOutputs(addrs)
 	if err != nil {
-		return nil, err
+		return BalanceResult{}, err
 	}
 
-	balRlt.Spendable, err = toBalance(totalSpendable)
-	if err != nil {
-		return nil, err
+	find := func(bals []Balance, addr string) (int, error) {
+		for i, b := range bals {
+			if b.Address == addr {
+				return i, nil
+			}
+		}
+		return -1, errors.New("not exist")
 	}
 
-	balRlt.Expected, err = toBalance(totalExpected)
-	if err != nil {
-		return nil, err
-	}
+	for _, o := range outs.Outputs.HeadOutputs {
+		amt, err := droplet.FromString(o.Coins)
+		if err != nil {
+			return BalanceResult{}, fmt.Errorf("error coins string: %v", err)
+		}
 
+		i, err := find(balRlt.Addresses, o.Address)
+		if err != nil {
+			return BalanceResult{}, fmt.Errorf("output belongs to no address")
+		}
+		balRlt.Addresses[i].Amount += amt
+		balRlt.TotalAmount += amt
+	}
 	return balRlt, nil
 }

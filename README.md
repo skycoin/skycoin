@@ -29,7 +29,6 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
-    - [Docker image](#docker-image)
 - [API Documentation](#api-documentation)
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
@@ -84,10 +83,6 @@ make run-help
 cd $GOPATH/src/github.com/skycoin/skycoin
 make ARGS="--launch-browser=false" run
 ```
-
-### Docker image
-
-A Dockerfile is available at https://github.com/skycoin/docker-img
 
 ## API Documentation
 

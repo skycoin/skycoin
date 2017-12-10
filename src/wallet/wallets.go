@@ -125,7 +125,7 @@ func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
 	}
 }
 
-// Add adds wallet to current wallet
+// Add add walet to current wallet
 func (wlts Wallets) Add(w Wallet) error {
 	if _, dup := wlts[w.GetFilename()]; dup {
 		return ErrWalletNameConflict
@@ -146,11 +146,6 @@ func (wlts Wallets) Get(wltID string) (*Wallet, bool) {
 		return w, true
 	}
 	return &Wallet{}, false
-}
-
-// set sets a wallet into the map
-func (wlts Wallets) set(w Wallet) {
-	wlts[w.GetFilename()] = &w
 }
 
 // Update updates the given wallet, return error if not exist

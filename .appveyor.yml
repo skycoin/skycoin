@@ -23,7 +23,7 @@ install:
   - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
   - go version
   - go env
-  - go get github.com/gz-c/gox
+  - go get github.com/mitchellh/gox
   - ps: Install-Product node 8 x64
 
 build_script:

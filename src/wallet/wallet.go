@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
@@ -45,7 +46,7 @@ const (
 // NewWalletFilename check for collisions and retry if failure
 func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
-	// should read in wallet files and make sure does not exist
+	//should read in wallet files and make sure does not exist
 	padding := hex.EncodeToString((cipher.RandByte(2)))
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }
@@ -63,40 +64,65 @@ type Wallet struct {
 
 var version = "0.1"
 
-// Options are wallet constructor options
-type Options struct {
-	Coin  CoinType
-	Label string
-	Seed  string
-}
+// Option NewWallet optional arguments type
+type Option func(w *Wallet)
 
 // NewWallet generates Deterministic Wallet
 // generates a random seed if seed is ""
-func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	seed := opts.Seed
-	if seed == "" {
-		return nil, errors.New("seed required")
+func NewWallet(wltName string, opts ...Option) (*Wallet, error) {
+	// generaten bip39 as default seed
+	entropy, err := bip39.NewEntropy(128)
+	if err != nil {
+		return nil, fmt.Errorf("generate bip39 entropy failed, err:%v", err)
 	}
 
-	coin := opts.Coin
-	if coin == "" {
-		coin = CoinTypeSkycoin
+	seed, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		return nil, fmt.Errorf("generate bip39 seed failed, err:%v", err)
 	}
 
 	w := &Wallet{
 		Meta: map[string]string{
 			"filename": wltName,
 			"version":  version,
-			"label":    opts.Label,
+			"label":    "",
 			"seed":     seed,
 			"lastSeed": seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
-			"coin":     string(coin),
+			"coin":     string(CoinTypeSkycoin),
 		},
 	}
 
+	for _, opt := range opts {
+		opt(w)
+	}
+
 	return w, nil
+}
+
+// OptCoin NewWallet function's optional argument
+func OptCoin(coin string) Option {
+	return func(w *Wallet) {
+		w.Meta["coin"] = coin
+	}
+}
+
+// OptLabel NewWallet function's optional argument
+func OptLabel(label string) Option {
+	return func(w *Wallet) {
+		w.Meta["label"] = label
+	}
+}
+
+// OptSeed NewWallet function's optional argument
+func OptSeed(sd string) Option {
+	return func(w *Wallet) {
+		if sd != "" {
+			w.Meta["seed"] = sd
+			w.Meta["lastSeed"] = sd
+		}
+	}
 }
 
 // Load loads wallet from given file
@@ -129,15 +155,15 @@ func newWalletFromReadable(r *ReadableWallet) (*Wallet, error) {
 }
 
 // Validate validates the wallet
-func (w *Wallet) Validate() error {
-	if _, ok := w.Meta["filename"]; !ok {
+func (wlt Wallet) Validate() error {
+	if _, ok := wlt.Meta["filename"]; !ok {
 		return errors.New("filename not set")
 	}
-	if _, ok := w.Meta["seed"]; !ok {
+	if _, ok := wlt.Meta["seed"]; !ok {
 		return errors.New("seed field not set")
 	}
 
-	walletType, ok := w.Meta["type"]
+	walletType, ok := wlt.Meta["type"]
 	if !ok {
 		return errors.New("type field not set")
 	}
@@ -145,7 +171,7 @@ func (w *Wallet) Validate() error {
 		return errors.New("wallet type invalid")
 	}
 
-	if _, ok := w.Meta["coin"]; !ok {
+	if _, ok := wlt.Meta["coin"]; !ok {
 		return errors.New("coin field not set")
 	}
 
@@ -153,80 +179,78 @@ func (w *Wallet) Validate() error {
 }
 
 // GetType gets the wallet type
-func (w *Wallet) GetType() string {
-	return w.Meta["type"]
+func (wlt Wallet) GetType() string {
+	return wlt.Meta["type"]
 }
 
 // GetFilename gets the wallet filename
-func (w *Wallet) GetFilename() string {
-	return w.Meta["filename"]
+func (wlt Wallet) GetFilename() string {
+	return wlt.Meta["filename"]
 }
 
 // SetFilename sets the wallet filename
-func (w *Wallet) SetFilename(fn string) {
-	w.Meta["filename"] = fn
+func (wlt *Wallet) SetFilename(fn string) {
+	wlt.Meta["filename"] = fn
 }
 
 // GetID gets the wallet id
-func (w *Wallet) GetID() string {
-	return w.Meta["filename"]
+func (wlt Wallet) GetID() string {
+	return wlt.Meta["filename"]
 }
 
 // GetLabel gets the wallet label
-func (w *Wallet) GetLabel() string {
-	return w.Meta["label"]
+func (wlt Wallet) GetLabel() string {
+	return wlt.Meta["label"]
 }
 
 // SetLabel sets the wallet label
-func (w *Wallet) SetLabel(label string) {
-	w.Meta["label"] = label
+func (wlt *Wallet) SetLabel(label string) {
+	wlt.Meta["label"] = label
 }
 
-func (w *Wallet) getLastSeed() string {
-	return w.Meta["lastSeed"]
+func (wlt Wallet) getLastSeed() string {
+	return wlt.Meta["lastSeed"]
 }
 
-func (w *Wallet) setLastSeed(lseed string) {
-	w.Meta["lastSeed"] = lseed
+func (wlt *Wallet) setLastSeed(lseed string) {
+	wlt.Meta["lastSeed"] = lseed
 }
 
 // GetVersion gets the wallet version
-func (w *Wallet) GetVersion() string {
-	return w.Meta["version"]
+func (wlt *Wallet) GetVersion() string {
+	return wlt.Meta["version"]
 }
 
 // NumEntries returns the number of entries
-func (w *Wallet) NumEntries() int {
-	return len(w.Entries)
+func (wlt Wallet) NumEntries() int {
+	return len(wlt.Entries)
 }
 
-// GenerateAddresses generate addresses of given number and adds them to the wallet
-func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
+// GenerateAddresses generate addresses of given number
+func (wlt *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 	if num == 0 {
 		return []cipher.Address{}
 	}
 
 	var seckeys []cipher.SecKey
-	var seed []byte
-	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.getLastSeed()), int(num))
+	var sd []byte
+	var err error
+	if len(wlt.Entries) == 0 {
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.getLastSeed()), int(num))
 	} else {
-		var err error
-		seed, err = hex.DecodeString(w.getLastSeed())
+		sd, err = hex.DecodeString(wlt.getLastSeed())
 		if err != nil {
-			logger.Panicf("decode hex seed failed: %v", err)
+			logger.Panicf("decode hex seed failed,%v", err)
 		}
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(seed, int(num))
+		sd, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
-
-	w.setLastSeed(hex.EncodeToString(seed))
-
+	wlt.setLastSeed(hex.EncodeToString(sd))
 	addrs := make([]cipher.Address, len(seckeys))
 	for i, s := range seckeys {
 		p := cipher.PubKeyFromSecKey(s)
 		a := cipher.AddressFromPubKey(p)
 		addrs[i] = a
-		w.Entries = append(w.Entries, Entry{
+		wlt.Entries = append(wlt.Entries, Entry{
 			Address: a,
 			Secret:  s,
 			Public:  p,
@@ -235,54 +259,18 @@ func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 	return addrs
 }
 
-// ScanAddresses scans ahead N addresses to find one with non-zero coins
-func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
-	if scanN <= 0 {
-		return nil
-	}
-
-	nExistingAddrs := uint64(w.NumEntries())
-
-	// Generate the addresses to scan
-	addrs := w.GenerateAddresses(scanN)
-
-	// Get these addresses' balances
-	bals, err := bg.GetBalanceOfAddrs(addrs)
-	if err != nil {
-		return err
-	}
-
-	// Check balance from the last one until we find the address that has coins
-	var keepNum uint64
-	for i := len(bals) - 1; i >= 0; i-- {
-		if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
-			keepNum = uint64(i + 1)
-			break
-		}
-	}
-
-	// Regenerate addresses up to keepNum.
-	// This is necessary to keep the lastSeed updated.
-	if keepNum != uint64(len(bals)) {
-		w.Reset()
-		w.GenerateAddresses(nExistingAddrs + keepNum)
-	}
-
-	return nil
-}
-
 // GetAddresses returns all addresses in wallet
-func (w *Wallet) GetAddresses() []cipher.Address {
-	addrs := make([]cipher.Address, len(w.Entries))
-	for i, e := range w.Entries {
+func (wlt *Wallet) GetAddresses() []cipher.Address {
+	addrs := make([]cipher.Address, len(wlt.Entries))
+	for i, e := range wlt.Entries {
 		addrs[i] = e.Address
 	}
 	return addrs
 }
 
 // GetEntry returns entry of given address
-func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
-	for _, e := range w.Entries {
+func (wlt *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
+	for _, e := range wlt.Entries {
 		if e.Address == a {
 			return e, true
 		}
@@ -291,32 +279,32 @@ func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 }
 
 // AddEntry adds new entry
-func (w *Wallet) AddEntry(entry Entry) error {
+func (wlt *Wallet) AddEntry(entry Entry) error {
 	// dup check
-	for _, e := range w.Entries {
+	for _, e := range wlt.Entries {
 		if e.Address == entry.Address {
 			return errors.New("duplicate address entry")
 		}
 	}
 
-	w.Entries = append(w.Entries, entry)
+	wlt.Entries = append(wlt.Entries, entry)
 	return nil
 }
 
 // Reset resets the wallet entries and move the lastSeed to origin
-func (w *Wallet) Reset() {
-	w.Entries = []Entry{}
-	w.Meta["lastSeed"] = w.Meta["seed"]
+func (wlt *Wallet) Reset() {
+	wlt.Entries = []Entry{}
+	wlt.Meta["lastSeed"] = wlt.Meta["seed"]
 }
 
 // Save persists wallet to disk
-func (w *Wallet) Save(dir string) error {
-	r := NewReadableWallet(*w)
-	return r.Save(filepath.Join(dir, w.GetFilename()))
+func (wlt *Wallet) Save(dir string) error {
+	r := NewReadableWallet(*wlt)
+	return r.Save(filepath.Join(dir, wlt.GetFilename()))
 }
 
 // Load loads wallets from given wallet file
-func (w *Wallet) Load(wltFile string) error {
+func (wlt *Wallet) Load(wltFile string) error {
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
 		return fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
 	}
@@ -328,27 +316,27 @@ func (w *Wallet) Load(wltFile string) error {
 
 	// update filename meta info with the real filename
 	r.Meta["filename"] = filepath.Base(wltFile)
-	wlt, err := newWalletFromReadable(r)
+	w, err := newWalletFromReadable(r)
 	if err != nil {
 		return err
 	}
 
-	*w = *wlt
+	*wlt = *w
 	return nil
 }
 
 // Copy returns the copy of wallet
-func (w *Wallet) Copy() Wallet {
-	wlt := Wallet{Meta: make(map[string]string)}
-	for k, v := range w.Meta {
-		wlt.Meta[k] = v
+func (wlt *Wallet) Copy() Wallet {
+	w := Wallet{Meta: make(map[string]string)}
+	for k, v := range wlt.Meta {
+		w.Meta[k] = v
 	}
 
-	for _, e := range w.Entries {
-		wlt.Entries = append(wlt.Entries, e)
+	for _, e := range wlt.Entries {
+		w.Entries = append(w.Entries, e)
 	}
 
-	return wlt
+	return w
 }
 
 // Validator validate if the wallet be able to create spending transaction
@@ -359,10 +347,10 @@ type Validator interface {
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
-func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
+func (wlt *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 
-	addrs := w.GetAddresses()
+	addrs := wlt.GetAddresses()
 	ok, err := vld.HasUnconfirmedSpendTx(addrs)
 	if err != nil {
 		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
@@ -388,9 +376,9 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	toSign := make([]cipher.SecKey, len(spends))
 	spending := Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
-		entry, exists := w.GetEntry(au.Address)
+		entry, exists := wlt.GetEntry(au.Address)
 		if !exists {
-			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, w.GetID())
+			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, wlt.GetID())
 		}
 
 		txn.PushInput(au.Hash)

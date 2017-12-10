@@ -18,6 +18,7 @@ import (
 
 const (
 	alphaNumericSeedLength = 64 // bytes
+	mnemonicSeedEntropy    = 128
 )
 
 func generateWalletCmd(cfg Config) gcli.Command {
@@ -157,7 +158,7 @@ func makeSeed(s string, r, rd bool) (string, error) {
 	}
 
 	// 001, 000
-	return bip39.NewDefaultMnemomic()
+	return MakeMnemonicSeed()
 }
 
 // PUBLIC
@@ -167,10 +168,7 @@ func makeSeed(s string, r, rd bool) (string, error) {
 func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wallet, error) {
 	walletFile = filepath.Base(walletFile)
 
-	wlt, err := wallet.NewWallet(walletFile, wallet.Options{
-		Seed:  seed,
-		Label: label,
-	})
+	wlt, err := wallet.NewWallet(walletFile, wallet.OptLabel(label), wallet.OptSeed(seed))
 	if err != nil {
 		return nil, err
 	}
@@ -183,4 +181,19 @@ func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wa
 func MakeAlphanumericSeed() string {
 	seedRaw := cipher.SumSHA256(secp256k1.RandByte(alphaNumericSeedLength))
 	return hex.EncodeToString(seedRaw[:])
+}
+
+func MakeMnemonicSeed() (string, error) {
+	entropy, err := bip39.NewEntropy(mnemonicSeedEntropy)
+	if err != nil {
+		return "", err
+	}
+
+	mnemonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		return "", err
+	}
+
+	return mnemonic, nil
+
 }

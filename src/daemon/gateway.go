@@ -512,22 +512,22 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 	return tx, err
 }
 
-// CreateWallet creates wallet
-func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
+// NewWallet creates wallet
+func (gw *Gateway) NewWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
-	gw.strand("CreateWallet", func() {
-		wlt, err = gw.vrpc.CreateWallet(wltName, options)
+	gw.strand("NewWallet", func() {
+		wlt, err = gw.vrpc.NewWallet(wltName, options...)
 	})
 	return wlt, err
 }
 
-// ScanAheadWalletAddresses loads wallet from given seed and scan ahead N addresses
-func (gw *Gateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
+// LoadAndScanWallet loads wallet from given seed and scan ahead N addresses
+func (gw *Gateway) LoadAndScanWallet(wltName string, seed string, scanN uint64, options ...wallet.Option) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
-	gw.strand("ScanAheadWalletAddresses", func() {
-		wlt, err = gw.v.ScanAheadWalletAddresses(wltName, scanN)
+	gw.strand("LoadAndScanWallet", func() {
+		wlt, err = gw.v.LoadAndScanWallet(wltName, seed, scanN, options...)
 	})
 	return wlt, err
 }
@@ -605,13 +605,13 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 }
 
 // GetWallet returns wallet by id
-func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, error) {
+func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, bool) {
 	var w wallet.Wallet
-	var err error
+	var ok bool
 	gw.strand("GetWallet", func() {
-		w, err = gw.vrpc.GetWallet(wltID)
+		w, ok = gw.vrpc.GetWallet(wltID)
 	})
-	return w, err
+	return w, ok
 }
 
 // GetWallets returns wallets

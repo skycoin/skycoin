@@ -28,7 +28,7 @@ var (
 type Server struct {
 	daemon   *daemon.Daemon
 	listener net.Listener
-	quit     chan struct{}
+	done     chan struct{}
 	appLoc   string
 	Err      error
 }
@@ -42,7 +42,7 @@ const (
 func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) *Server {
 	s := Server{
 		daemon: daemon,
-		quit:   make(chan struct{}),
+		done:   make(chan struct{}),
 	}
 	if needHttps {
 		s.Err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
@@ -106,7 +106,7 @@ func (s *Server) Serve() error {
 	for {
 		if err := http.Serve(s.listener, mux); err != nil {
 			select {
-			case <-s.quit:
+			case <-s.done:
 				return nil
 			default:
 				return err
@@ -119,8 +119,8 @@ func (s *Server) Serve() error {
 // Shutdown close http service
 func (s *Server) Shutdown() {
 		logger.Info("Shutting down Server")
-		// must close quit first
-		close(s.quit)
+		// must close done first
+		close(s.done)
 		s.listener.Close()
 		s.listener = nil
 }

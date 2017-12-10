@@ -2,24 +2,6 @@
 
 Skycoin command line interface
 
-<!-- MarkdownTOC depth="3" autolink="true" bracket="round" -->
-
-- [Install](#install)
-    - [Enable command autocomplete](#enable-command-autocomplete)
-- [Environment Setting](#environment-setting)
-    - [RPC_ADDR](#rpcaddr)
-    - [WALLET_DIR](#walletdir)
-    - [WALLET_NAME](#walletname)
-- [Usage](#usage)
-    - [Send](#send)
-    - [Check address balance](#check-address-balance)
-    - [Check wallet balance](#check-wallet-balance)
-    - [Get transaction](#get-transaction)
-- [Note](#note)
-
-<!-- /MarkdownTOC -->
-
-
 ## Install
 
 ```bash
@@ -76,7 +58,8 @@ $ export WALLET_NAME=YOUR_WALLET_NAME
 
 After the installation, you can run `skycoin-cli` to see the usage:
 
-```
+```bash
+
 $ skycoin-cli
 
 NAME:
@@ -113,14 +96,9 @@ COMMANDS:
 GLOBAL OPTIONS:
    --help, -h     show help, can also be used to show subcommand help
    --version, -v  print the version
-ENVIRONMENT VARIABLES:
-    RPC_ADDR: Address of RPC node. Default "127.0.0.1:6430"
-    COIN: Name of the coin. Default "skycoin"
-    WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$HOME/.$COIN/wallets"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
 ```
 
-### Send
+### Send coin
 
 ```bash
 $ skycoin-cli send $recipient_address $amount
@@ -138,107 +116,13 @@ Use `skycoin-cli send -h` to see the subcommand usage.
 ### Check address balance
 
 ```bash
-$ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc 2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv
-```
-
-```json
+$ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc
 {
-    "confirmed": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "spendable": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "expected": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
+    "total_amount": 1,
     "addresses": [
         {
-            "confirmed": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "spendable": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "expected": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"
-        }, {
-            "confirmed": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "spendable": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "expected": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
-        }
-    ]
-}
-```
-
-
-### Check wallet balance
-
-```bash
-$ skycoin-cli walletBalance
-```
-
-```json
-{
-    "confirmed": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "spendable": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "expected": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "addresses": [
-        {
-            "confirmed": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "spendable": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "expected": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"
-        }, {
-            "confirmed": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "spendable": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "expected": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
+            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
+            "amount": 1
         }
     ]
 }
@@ -248,9 +132,6 @@ $ skycoin-cli walletBalance
 
 ```bash
 $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748da6d77d135
-```
-
-```json
 {
     "transaction": {
         "status": {
@@ -293,8 +174,8 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
 
 ## Note
 
-The `[option]` in subcommand must be set before the rest of the values, otherwise the `option` won't
-be parsed. For example:
+The `[option]` in subcommand must be set before the rest values, otherwise the `option` won't
+be parsed, example:
 
 If we want to specify a `change address` in `send` command, we can use `-c` option, if you run
 the command in the following way:

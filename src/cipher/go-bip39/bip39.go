@@ -22,19 +22,6 @@ var (
 	BigTwo                  = big.NewInt(2)
 )
 
-// DefaultMnemonicEntropyBitSize is the default bit size for NewDefaultMnemomic's entropy
-const DefaultMnemonicEntropyBitSize = 128
-
-// NewDefaultMnemomic returns a generated mnemomic using entropy with bitSize 128
-func NewDefaultMnemomic() (string, error) {
-	entropy, err := NewEntropy(DefaultMnemonicEntropyBitSize)
-	if err != nil {
-		return "", err
-	}
-
-	return NewMnemonic(entropy)
-}
-
 // NewEntropy will create random entropy bytes
 // so long as the requested size bitSize is an appropriate size.
 func NewEntropy(bitSize int) ([]byte, error) {

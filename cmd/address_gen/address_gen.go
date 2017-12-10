@@ -42,9 +42,15 @@ func main() {
 			// generate a new seed, as hex string
 			*seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
 		} else {
-			mnemonic, err := bip39.NewDefaultMnemomic()
+			entropy, err := bip39.NewEntropy(128)
 			if err != nil {
-				fmt.Printf("bip39.NewDefaultMnemomic failed: %v\n", err)
+				fmt.Printf("new entropy failed when new wallet seed: %v\n", err)
+				os.Exit(1)
+			}
+
+			mnemonic, err := bip39.NewMnemonic(entropy)
+			if err != nil {
+				fmt.Printf("new mnemonic failed when new wallet seed: %v\n", err)
 				os.Exit(1)
 			}
 

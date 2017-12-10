@@ -41,10 +41,10 @@ const (
 	indexPage   = "index.html"
 )
 
-func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) *Server {
+func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string, quit chan struct{}) *Server {
 	s := Server{
 		daemon: daemon,
-		quit:   make(chan struct{}),
+		quit:   quit,
 	}
 	if needHttps {
 		s.Err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
@@ -58,7 +58,6 @@ func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Dae
 // Does NOT use HTTPS
 func (s *Server) launchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
 	var err error
-	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 	s.appLoc, err = file.DetermineResourcePath(staticDir, resourceDir, devDir)
 	if err != nil {
@@ -71,8 +70,6 @@ func (s *Server) launchWebInterface(host, staticDir string, daemon *daemon.Daemo
 		return err
 	}
 
-	// Runs http.Serve() in a goroutine
-	//s.serve(NewGUIMux(appLoc, daemon, &s))
 	return nil
 }
 
@@ -80,7 +77,6 @@ func (s *Server) launchWebInterface(host, staticDir string, daemon *daemon.Daemo
 // Uses HTTPS
 func (s *Server) launchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
 	var err error
-	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
 	logger.Info("Web resources directory: %s", staticDir)
@@ -105,14 +101,18 @@ func (s *Server) launchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.
 
 }
 
-func (s *Server) Serve() {
+func (s *Server) Serve() error {
+	defer close(s.quit)
+	defer logger.Info("Server closed")
+	logger.Info("Starting web interface on %s", s.listener.Addr())
 	mux := NewGUIMux(s.appLoc, s.daemon)
 	for {
 		if err := http.Serve(s.listener, mux); err != nil {
 			select {
 			case <-s.quit:
-				return
+				return nil
 			default:
+				return err
 			}
 			continue
 		}
@@ -121,12 +121,11 @@ func (s *Server) Serve() {
 
 // Shutdown close http service
 func (s *Server) Shutdown() {
-	if quit != nil {
+		logger.Info("Shutting down Server")
 		// must close quit first
-		close(quit)
+		close(s.quit)
 		listener.Close()
 		listener = nil
-	}
 }
 
 // NewGUIMux creates an http.ServeMux with handlers registered

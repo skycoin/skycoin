@@ -434,19 +434,9 @@ func catchDebug() {
 	}
 }
 
-func createGUI(c *Config, d *daemon.Daemon, wg sync.WaitGroup) *gui.Server {
-	scheme := "http"
-	if c.WebInterfaceHTTPS {
-		scheme = "https"
-	}
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
+func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) *gui.Server {
 
-	if c.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
-		return nil
-	}
+
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
@@ -458,28 +448,12 @@ func createGUI(c *Config, d *daemon.Daemon, wg sync.WaitGroup) *gui.Server {
 			return nil
 		}
 	}
-	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey, quit)
 
 	if s.Err != nil {
 		logger.Error(s.Err.Error())
 		logger.Error("Failed to start web GUI")
 		return nil
-	}
-
-	if c.LaunchBrowser {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			// Wait a moment just to make sure the http interface is up
-			time.Sleep(time.Millisecond * 100)
-
-			logger.Info("Launching System Browser with %s", fullAddress)
-			if err := browser.Open(fullAddress); err != nil {
-				logger.Error(err.Error())
-				return
-			}
-		}()
 	}
 	return s
 }
@@ -696,7 +670,18 @@ func Run(c *Config) {
 		}
 	}
 
-	s := createGUI(c, d, wg)
+	scheme := "http"
+	if c.WebInterfaceHTTPS {
+		scheme = "https"
+	}
+	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	logger.Critical("Full address: %s", fullAddress)
+	if c.PrintWebInterfaceAddress {
+		fmt.Println(fullAddress)
+	}
+	s := createGUI(c, d, host, quit)
+
 	/*
 		time.Sleep(5)
 		tx := InitTransaction()
@@ -722,11 +707,33 @@ func Run(c *Config) {
 			}()
 		}
 	*/
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6420", nil))
+	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		s.Serve()
+		err = s.Serve()
+		if err != nil {
+			errC <- err
+		}
 	}()
+
+	if c.LaunchBrowser {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// Wait a moment just to make sure the http interface is up
+			time.Sleep(time.Millisecond * 100)
+
+			logger.Info("Launching System Browser with %s", fullAddress)
+			if err := browser.Open(fullAddress); err != nil {
+				logger.Error(err.Error())
+				return
+			}
+		}()
+	}
 
 	select {
 	case <-quit:

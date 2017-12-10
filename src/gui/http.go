@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	logger   = logging.MustGetLogger("gui")
+	logger = logging.MustGetLogger("gui")
 )
 
 type Server struct {
@@ -118,11 +118,11 @@ func (s *Server) Serve() error {
 
 // Shutdown close http service
 func (s *Server) Shutdown() {
-		logger.Info("Shutting down Server")
-		// must close done first
-		close(s.done)
-		s.listener.Close()
-		s.listener = nil
+	logger.Info("Shutting down Server")
+	// must close done first
+	close(s.done)
+	s.listener.Close()
+	s.listener = nil
 }
 
 // NewGUIMux creates an http.ServeMux with handlers registered

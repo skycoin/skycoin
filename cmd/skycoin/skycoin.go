@@ -436,7 +436,6 @@ func catchDebug() {
 
 func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) *gui.Server {
 
-
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")

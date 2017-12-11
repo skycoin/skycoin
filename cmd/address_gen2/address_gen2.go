@@ -67,9 +67,9 @@ func run() error {
 	}
 
 	if *secfile != "" {
-		f, err := os.Create(*secfile)
+		f, err := os.OpenFile(*secfile, os.O_RDWR | os.O_CREATE | os.O_EXCL,0600)
 		if err != nil {
-			return err
+			return errors.New("secret file already exist")
 		}
 		for _, e := range w.Entries {
 			fmt.Fprintln(f, e.Secret)

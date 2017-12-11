@@ -5,15 +5,15 @@
 This utility have several flags:
 
 ```
--addr_out string
+-addrfile string
         command for changing addresses output file (default "addresses")
   -coin string
         address output type: sky/btc (default "sky)
-  -info_out string
+  -infofile string
         create file with date of generation, seed, coin, number of keys generated
   -n int
         Number of addresses to generate (default 1)
-  -sec_file string
+  -secfile string
         command for file to write the secret keys
   -seed string
         Seed for deterministic key generation. Will use bip39 as the seed if not provided

@@ -67,7 +67,7 @@ func run() error {
 	}
 
 	if *secfile != "" {
-		f, err := os.OpenFile(*secfile, os.O_RDWR | os.O_CREATE | os.O_EXCL,0600)
+		f, err := os.OpenFile(*secfile, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
 		if err != nil {
 			return errors.New("secret file already exist")
 		}

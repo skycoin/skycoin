@@ -21,7 +21,7 @@ func broadcastTxCmd() gcli.Command {
 			}
 
 			rpcClient := RpcClientFromContext(c)
-			txid, err := rpcClient.InjectTransaction(rawtx)
+			txid, err := rpcClient.InjectTransactionString(rawtx)
 			if err != nil {
 				return err
 			}

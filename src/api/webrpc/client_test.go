@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/stretchr/testify/require"
 )
 
 // Tests are setup as subtests, to retain a single *WebRPC instance for scaffolding
@@ -56,14 +57,15 @@ func TestClient(t *testing.T) {
 }
 
 func testClientGetUnspentOutputs(t *testing.T, c *Client, s *WebRPC, gw *fakeGateway) {
+	headTime := uint64(time.Now().UTC().Unix())
 	uxouts := make([]coin.UxOut, 5)
 	addrs := make([]cipher.Address, 5)
-	rbOutputs := make([]visor.ReadableOutput, 5)
+	rbOutputs := make(visor.ReadableOutputs, 5)
 	for i := 0; i < 5; i++ {
 		addrs[i] = testutil.MakeAddress()
 		uxouts[i] = coin.UxOut{}
 		uxouts[i].Body.Address = addrs[i]
-		rbOut, err := visor.NewReadableOutput(uxouts[i])
+		rbOut, err := visor.NewReadableOutput(headTime, uxouts[i])
 		require.NoError(t, err)
 		rbOutputs[i] = rbOut
 	}
@@ -94,17 +96,17 @@ func testClientGetUnspentOutputs(t *testing.T, c *Client, s *WebRPC, gw *fakeGat
 
 func testClientInjectTransaction(t *testing.T, c *Client, s *WebRPC, gw *fakeGateway) {
 	gw.injectRawTxMap = map[string]bool{
-		rawTxId: true,
+		rawTxID: true,
 	}
 	require.Empty(t, gw.injectedTransactions)
 
-	txID, err := c.InjectTransaction(rawTxStr)
+	txID, err := c.InjectTransactionString(rawTxStr)
 	require.NoError(t, err)
 	require.NotEmpty(t, txID)
 
 	log.Println(gw.injectedTransactions)
 	require.Len(t, gw.injectedTransactions, 1)
-	require.Contains(t, gw.injectedTransactions, rawTxId)
+	require.Contains(t, gw.injectedTransactions, rawTxID)
 }
 
 func testClientGetStatus(t *testing.T, c *Client, s *WebRPC, gw *fakeGateway) {
@@ -128,15 +130,15 @@ func testClientGetTransactionByID(t *testing.T, c *Client, s *WebRPC, gw *fakeGa
 
 	// Valid txn id, txn does not exist
 	// TODO
-	txn, err = c.GetTransactionByID(rawTxId)
+	txn, err = c.GetTransactionByID(rawTxID)
 	require.Nil(t, txn)
 	require.Error(t, err)
 
 	// Txn exists
 	gw.transactions = map[string]string{
-		rawTxId: rawTxStr,
+		rawTxID: rawTxStr,
 	}
-	txn, err = c.GetTransactionByID(rawTxId)
+	txn, err = c.GetTransactionByID(rawTxID)
 	require.NoError(t, err)
 	expectedTxn := decodeRawTransaction(rawTxStr)
 	rbTx, err := visor.NewReadableTransaction(expectedTxn)

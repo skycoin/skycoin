@@ -6,6 +6,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.21.0] - 2017-12-10
+
+### Added
+
+- Require transactions to have an input with non-zero coinhours
+- Add `-peerlist-size` and `-max-outgoing-connections` CLI options
+- Add `-download-peerlist` and `-peerlist-url` CLI options, to get peers from a URL
+- For electron clients, download a list of peers from https://downloads.skycoin.net/blockchain/peers.txt by default
+
+### Fixed
+
+- Fix change hours calculation. Previous gave 1/8 to change and destination addresses; now gives 1/4 to each
+- #653, the peerlist size was too small and could be easily filled up; default changed to 65535 from 1000
+
+### Changed
+
+- CLI's `walletBalance` and `addressBalance` commands return aggregate balances for confirmed, spendable and expected balances.  Coins are formatted as droplet strings.  Hours added as strings.
+- When splitting an odd number of hours in a spend, give the extra hour to the fee
+- Add `block_seq` to `get_outputs` and `/outputs` API response
+- Improve UxOut spend selection. Previously, they were spent oldest first. Now they are spent to ensure a non-zero coinhour input and otherwise minimize coinhours.
+- `create_rawtx` will try to minimize the number of UxOuts used to create a transaction.
+- `/wallet/spend` will try to maximize the number of UxOuts used to create a transaction.
+- Update the default peerlist size to 65535 from 1000
+- When loading a wallet, 100 addresses will be scanned ahead to find one with a balance
+
+## [0.20.4] - 2017-11-22
+
+### Added
+
+- Add  /logs api to filter skycoin logs ,so that we can add a debug panel to the GUI wallet to show logs
+
 ## [0.20.3] - 2017-10-23
 
 ### Fixed
@@ -124,6 +155,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.21.0]: https://github.com/skycoin/skycoin/compare/v0.20.4...v0.21.0
+[0.20.4]: https://github.com/skycoin/skycoin/compare/v0.20.3...v0.20.4
 [0.20.3]: https://github.com/skycoin/skycoin/compare/v0.20.2...v0.20.3
 [0.20.2]: https://github.com/skycoin/skycoin/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/skycoin/skycoin/compare/v0.20.0...v0.20.1

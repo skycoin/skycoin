@@ -188,8 +188,8 @@ func (rpc *WebRPC) Run() error {
 		return errors.New("rpc.ChanBuffSize must be > 0")
 	}
 
-	logger.Infof("start webrpc on http://%s", rpc.Addr)
-	defer logger.Info("webrpc service closed")
+	logger.Infof("Start webrpc on http://%s", rpc.Addr)
+	defer logger.Info("Webrpc service closed")
 
 	var err error
 	if rpc.listener, err = net.Listen("tcp", rpc.Addr); err != nil {

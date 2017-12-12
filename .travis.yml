@@ -70,6 +70,8 @@ deploy:
   skip_cleanup: true
   local_dir: electron/release
   upload-dir: wallet
+  acl: public_read
+  region: $AWS_REGION
   on:
     repo: skycoin/skycoin
     branch: master

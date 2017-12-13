@@ -11,28 +11,13 @@ import (
 
 	"github.com/google/go-querystring/query"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-)
-
-var (
-	genPublic, genSecret         = cipher.GenerateKeyPair()
-	genAddress                   = cipher.AddressFromPubKey(genPublic)
-	testMaxSize                  = 1024 * 1024
-	GenesisPublic, GenesisSecret = cipher.GenerateKeyPair()
-	GenesisAddress               = cipher.AddressFromPubKey(GenesisPublic)
-)
-
-const (
-	TimeIncrement    uint64 = 3600 * 1000
-	GenesisTime      uint64 = 1000
-	GenesisCoins     uint64 = 1000e6
-	GenesisCoinHours uint64 = 1000 * 1000
+	"github.com/stretchr/testify/require"
 )
 
 type httpBody struct {
@@ -58,7 +43,6 @@ func (gw *FakeGateway) Spend(wltID string, coins uint64, dest cipher.Address) (*
 // GetWalletBalance returns balance pair of specific wallet
 func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 	args := gw.Called(wltID)
-	//logger.Info("arg[0]: %s, arg[1]: %s", args.Get(0), args.Get(1))
 	return args.Get(0).(wallet.BalancePair), args.Error(1)
 }
 
@@ -339,7 +323,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		} else {
 			var msg SpendResult
 			json.Unmarshal(rr.Body.Bytes(), &msg)
-			assert.Equal(t, *tc.spendResult, msg, "test")
+			require.Equal(t, *tc.spendResult, msg, "test")
 		}
 	}
 

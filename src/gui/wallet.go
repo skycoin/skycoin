@@ -16,7 +16,7 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-type Gateway interface {
+type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 }
@@ -29,7 +29,7 @@ type SpendResult struct {
 }
 
 // Spend spend coins from specific wallet
-func Spend(gateway Gateway, walletID string, coins uint64, dest cipher.Address) *SpendResult {
+func Spend(gateway Gatewayer, walletID string, coins uint64, dest cipher.Address) *SpendResult {
 	var tx *coin.Transaction
 	var b wallet.BalancePair
 	var err error
@@ -76,7 +76,7 @@ func Spend(gateway Gateway, walletID string, coins uint64, dest cipher.Address) 
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-func walletBalanceHandler(gateway Gateway) http.HandlerFunc {
+func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -106,7 +106,7 @@ func walletBalanceHandler(gateway Gateway) http.HandlerFunc {
 //  id: wallet id
 //	dst: recipient address
 // 	coins: the number of droplet you will send
-func WalletSpendHandler(gateway Gateway) http.HandlerFunc {
+func WalletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)

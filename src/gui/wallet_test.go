@@ -7,15 +7,17 @@ import (
 	"strings"
 	"testing"
 
+	"encoding/json"
+
 	"github.com/google/go-querystring/query"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/mock"
-	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -288,17 +290,17 @@ func TestWalletSpendHandler(t *testing.T) {
 			wallet.BalancePair{},
 			nil,
 			&SpendResult{
-				Error:"",
+				Error:   "",
 				Balance: &wallet.BalancePair{},
 				Transaction: &visor.ReadableTransaction{
-					Length:0,
-					Type:0,
-					Hash: "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Timestamp:0,
-					Sigs:[]string{},
-					In: []string{},
-					Out:[]visor.ReadableTransactionOutput{},
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},
 		},

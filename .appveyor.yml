@@ -52,6 +52,7 @@ deploy:
   folder: wallet
   artifact: published
   unzip: true
+  set_public: true
   on:
     branch: master
 

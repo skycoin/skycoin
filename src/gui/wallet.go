@@ -16,6 +16,11 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
+type Gatewayer interface {
+	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
+	GetWalletBalance(wltID string) (wallet.BalancePair, error)
+}
+
 // SpendResult represents the result of spending
 type SpendResult struct {
 	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
@@ -24,7 +29,7 @@ type SpendResult struct {
 }
 
 // Spend spend coins from specific wallet
-func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) *SpendResult {
+func Spend(gateway Gatewayer, walletID string, coins uint64, dest cipher.Address) *SpendResult {
 	var tx *coin.Transaction
 	var b wallet.BalancePair
 	var err error
@@ -71,7 +76,7 @@ func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.A
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -101,7 +106,7 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 //  id: wallet id
 //	dst: recipient address
 // 	coins: the number of droplet you will send
-func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -412,7 +417,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// spent amount.
 	// GET arguments:
 	//      id: Wallet ID
-	mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
+	mux.HandleFunc("/wallet/balance", WalletBalanceHandler(gateway))
 
 	// Sends coins&hours to another address.
 	// POST arguments:
@@ -422,7 +427,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  fee: Number of hours to use as fee, on top of the default fee.
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
-	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
+	mux.HandleFunc("/wallet/spend", WalletSpendHandler(gateway))
 
 	// GET Arguments:
 	//		id: Wallet ID

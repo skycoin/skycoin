@@ -76,7 +76,7 @@ func Spend(gateway Gatewayer, walletID string, coins uint64, dest cipher.Address
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
+func WalletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -417,7 +417,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// spent amount.
 	// GET arguments:
 	//      id: Wallet ID
-	mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
+	mux.HandleFunc("/wallet/balance", WalletBalanceHandler(gateway))
 
 	// Sends coins&hours to another address.
 	// POST arguments:

@@ -221,7 +221,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				Coins: "12",
 			},
 			http.StatusOK,
-			"400 Bad Request - invalid \"coins\" value, must > 0",
+			"",
 			"123",
 			12,
 			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
@@ -243,7 +243,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				Coins: "12",
 			},
 			http.StatusOK,
-			"400 Bad Request - Get wallet balance failed: GetWalletBalance error",
+			"",
 			"1234",
 			12,
 			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
@@ -265,7 +265,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				Coins: "12",
 			},
 			http.StatusOK,
-			"400 Bad Request - Get wallet balance failed: GetWalletBalance error",
+			"",
 			"1234",
 			12,
 			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
@@ -311,15 +311,12 @@ func TestWalletSpendHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
-		if status != tc.status {
-			t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
-		}
+		require.Equal(t, status, tc.status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
 		if status != http.StatusOK {
-			if errMsg := rr.Body.String(); strings.TrimSpace(errMsg) != tc.err {
-				t.Errorf("case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, errMsg, status, tc.err)
-			}
+			require.Equal(t, strings.TrimSpace(rr.Body.String()), tc.err, "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg SpendResult
 			json.Unmarshal(rr.Body.Bytes(), &msg)

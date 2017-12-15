@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.21.1] - 2017-12-14
+
+### Fixed
+
+- Fix blank page issue in windows gui wallet, which was caused by misusing the flag of -download-peers-list in electron.
+
+
 ## [0.21.0] - 2017-12-10
 
 ### Added
@@ -153,6 +160,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.21.1]: https://github.com/skycoin/skycoin/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/skycoin/skycoin/compare/v0.20.4...v0.21.0
 [0.20.4]: https://github.com/skycoin/skycoin/compare/v0.20.3...v0.20.4
 [0.20.3]: https://github.com/skycoin/skycoin/compare/v0.20.2...v0.20.3

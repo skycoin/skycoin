@@ -11,7 +11,6 @@ import (
 	"github.com/google/go-querystring/query"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -45,86 +44,40 @@ func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error
 	return args.Get(0).(wallet.BalancePair), args.Error(1)
 }
 
-func TestWalletBalanceHandler(t *testing.T) {
+// GetWalletBalance returns balance pair of specific wallet
+func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
+	args := gw.Called(wltID)
+	return args.Get(0).(wallet.Wallet), args.Error(1)
+}
+
+func TestWalletHandler(t *testing.T) {
 	tt := []struct {
-		name                          string
-		method                        string
-		url                           string
-		body                          *httpBody
-		status                        int
-		err                           string
-		walletId                      string
-		coins                         uint64
-		dst                           string
-		gatewayGetWalletBalanceResult wallet.BalancePair
-		gatewayBalanceErr             error
-		result                        *wallet.BalancePair
+		name                   string
+		method                 string
+		url                    string
+		body                   *httpBody
+		status                 int
+		err                    string
+		walletId               string
+		coins                  uint64
+		dst                    string
+		gatewayGetWalletResult wallet.Wallet
+		gatewayGetWalletErr    error
+		result                 *wallet.Wallet
 	}{
 		{
 			"405",
 			"PUT",
-			"/wallet/balance",
+			"/wallet",
 			nil,
 			http.StatusMethodNotAllowed,
 			"405 Method Not Allowed",
 			"0",
 			0,
 			"",
-			wallet.BalancePair{},
+			wallet.Wallet{},
 			nil,
 			nil,
-		},
-		{
-			"400 - no walletId",
-			"GET",
-			"/wallet/balance",
-			nil,
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"0",
-			0,
-			"",
-			wallet.BalancePair{},
-			nil,
-			nil,
-		},
-		{
-			"200 - OK",
-			"GET",
-			"/wallet/balance",
-			&httpBody{
-				Id: "foo",
-			},
-			http.StatusOK,
-			"",
-			"foo",
-			0,
-			"",
-			wallet.BalancePair{},
-			nil,
-			&wallet.BalancePair{},
-		},
-		{
-			"200 - but with err from `b, err := gateway.GetWalletBalance(wltID)`",
-			"GET",
-			"/wallet/balance",
-			&httpBody{
-				Id: "someId",
-			},
-			http.StatusOK,
-			"",
-			"someId",
-			0,
-			"",
-			wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
-			},
-			errors.New("200 - but with err from `b, err := gateway.GetWalletBalance(wltID)`"),
-			&wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
-			},
 		},
 	}
 
@@ -133,7 +86,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			walletId: tc.walletId,
 			t:        t,
 		}
-		gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+		gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 		query, _ := query.Values(tc.body)
 		params := query.Encode()
 		var url = tc.url

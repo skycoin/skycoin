@@ -48,13 +48,8 @@ func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error
 
 // GetWalletBalance returns balance pair of specific wallet
 func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
-	var w wallet.Wallet
 	args := gw.Called(wltID)
-	if args.Get(0) != nil {
-		return args.Get(0).(wallet.Wallet), args.Error(1)
-	} else {
-		return w, args.Error(1)
-	}
+	return args.Get(0).(wallet.Wallet), args.Error(1)
 }
 
 func TestWalletHandler(t *testing.T) {

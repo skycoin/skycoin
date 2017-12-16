@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/pkg/errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -46,8 +48,13 @@ func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error
 
 // GetWalletBalance returns balance pair of specific wallet
 func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
+	var w wallet.Wallet
 	args := gw.Called(wltID)
-	return args.Get(0).(wallet.Wallet), args.Error(1)
+	if args.Get(0) != nil {
+		return args.Get(0).(wallet.Wallet), args.Error(1)
+	} else {
+		return w, args.Error(1)
+	}
 }
 
 func TestWalletHandler(t *testing.T) {
@@ -59,24 +66,58 @@ func TestWalletHandler(t *testing.T) {
 		status                 int
 		err                    string
 		walletId               string
-		coins                  uint64
-		dst                    string
 		gatewayGetWalletResult wallet.Wallet
 		gatewayGetWalletErr    error
-		result                 *wallet.Wallet
 	}{
 		{
 			"405",
-			"PUT",
+			http.MethodPut,
 			"/wallet",
 			nil,
 			http.StatusMethodNotAllowed,
 			"405 Method Not Allowed",
 			"0",
-			0,
+			wallet.Wallet{},
+			nil,
+		},
+		{
+			"400 - no walletId",
+			http.MethodGet,
+			"/wallet",
+			nil,
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
 			"",
 			wallet.Wallet{},
 			nil,
+		},
+		{
+			"400 - error from the `gateway.GetWallet(wltID)`",
+			http.MethodGet,
+			"/wallet",
+			&httpBody{
+				Id: "123",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - wallet 123 doesn't exist",
+			"123",
+			wallet.Wallet{},
+			errors.New("wallet 123 doesn't exist"),
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallet",
+			&httpBody{
+				Id: "1234",
+			},
+			http.StatusOK,
+			"",
+			"1234",
+			wallet.Wallet{
+				Meta:    map[string]string{},
+				Entries: []wallet.Entry{},
+			},
 			nil,
 		},
 	}
@@ -86,7 +127,7 @@ func TestWalletHandler(t *testing.T) {
 			walletId: tc.walletId,
 			t:        t,
 		}
-		gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+		gateway.On("GetWallet", tc.walletId).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 		query, _ := query.Values(tc.body)
 		params := query.Encode()
 		var url = tc.url
@@ -100,27 +141,24 @@ func TestWalletHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletBalanceHandler(gateway))
+		handler := http.HandlerFunc(WalletGet(gateway))
 
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
-		if status != tc.status {
-			t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
-		}
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
 		if status != http.StatusOK {
-			if errMsg := rr.Body.String(); strings.TrimSpace(errMsg) != tc.err {
-				t.Errorf("case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, errMsg, status, tc.err)
-			}
+			require.Equal(t, strings.TrimSpace(rr.Body.String()), tc.err, "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg wallet.BalancePair
+			var msg wallet.Wallet
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			if err != nil {
 				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
 			}
-			require.Equal(t, tc.result, &msg, tc.name)
+			require.Equal(t, tc.gatewayGetWalletResult, msg, tc.name)
 		}
 	}
 }

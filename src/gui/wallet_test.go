@@ -70,7 +70,7 @@ func (gw *FakeGateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (w
 	return args.Get(0).(wallet.Wallet), args.Error(1)
 }
 
-func TestWalletHandler(t *testing.T) {
+func TestWalletCreateHandler(t *testing.T) {
 	tt := []struct {
 		name                      string
 		method                    string

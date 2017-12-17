@@ -223,7 +223,7 @@ func WalletCreate(gateway Gatewayer) http.HandlerFunc {
 // params:
 // 		id: wallet id
 // 	   num: number of address need to create, if not set the default value is 1
-func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)

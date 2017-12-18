@@ -309,7 +309,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns JSON of unconfirmed transactions for user's wallet
-func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -427,7 +427,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// GET Arguments:
 	//		id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet
-	mux.HandleFunc("/wallet/transactions", walletTransactionsHandler(gateway))
+	mux.HandleFunc("/wallet/transactions", WalletTransactionsHandler(gateway))
 
 	// Update wallet label
 	// 		GET Arguments:

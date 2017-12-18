@@ -13,12 +13,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"bytes"
-
 	"github.com/pkg/errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -77,140 +76,77 @@ func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, e
 	return args.Get(0).([]cipher.Address), args.Error(1)
 }
 
-func TestWalletNewAddressesHandler(t *testing.T) {
-	type Addresses struct {
-		Address []string `json:"addresses"`
-	}
-	var responseAddresses = Addresses{}
-	var responseEmptyAddresses = Addresses{}
+// NewAddresses generate addresses in given wallet
+func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
+	args := gw.Called(wltID)
+	return args.Get(0).([]visor.UnconfirmedTxn), args.Error(1)
+}
 
-	var emptyAddrs = make([]cipher.Address, 0)
-	var addrs = make([]cipher.Address, 3)
+func TestWalletTransactionsHandler(t *testing.T) {
 
-	for i := 0; i < 3; i++ {
-		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
-
-		addrs[i] = cipher.AddressFromPubKey(pub)
-		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
-	}
 	tt := []struct {
-		name                      string
-		method                    string
-		url                       string
-		body                      *httpBody
-		status                    int
-		err                       string
-		walletId                  string
-		n                         uint64
-		gatewayNewAddressesResult []cipher.Address
-		gatewayNewAddressesErr    error
-		responseBody              Addresses
+		name                                  string
+		method                                string
+		url                                   string
+		body                                  *httpBody
+		status                                int
+		err                                   string
+		walletId                              string
+		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
+		gatewayGetWalletUnconfirmedTxnsErr    error
+		responseBody                          []visor.UnconfirmedTxn
 	}{
 		{
 			"405",
 			http.MethodPut,
-			"/wallet/create",
+			"/wallet/transactions",
 			nil,
 			http.StatusMethodNotAllowed,
 			"405 Method Not Allowed",
 			"",
-			1,
-			make([]cipher.Address, 0),
+			make([]visor.UnconfirmedTxn, 0),
 			nil,
-			Addresses{},
+			[]visor.UnconfirmedTxn{},
 		},
 		{
 			"400 - missing wallet id",
-			http.MethodPost,
-			"/wallet/create",
+			http.MethodGet,
+			"/wallet/transactions",
 			nil,
 			http.StatusBadRequest,
 			"400 Bad Request - missing wallet id",
-			"foo",
-			1,
-			make([]cipher.Address, 0),
+			"",
+			make([]visor.UnconfirmedTxn, 0),
 			nil,
-			Addresses{},
+			[]visor.UnconfirmedTxn{},
 		},
 		{
-			"400 - invalid num value",
-			http.MethodPost,
-			"/wallet/create",
+			"400 - gateway.GetWalletUnconfirmedTxns error",
+			http.MethodGet,
+			"/wallet/transactions",
 			&httpBody{
-				Id:  "foo",
-				Num: "bar",
+				Id: "foo",
 			},
 			http.StatusBadRequest,
-			"400 Bad Request - invalid num value",
+			"400 Bad Request - get wallet unconfirmed transactions failed: gateway.GetWalletUnconfirmedTxns error",
 			"foo",
-			1,
-			make([]cipher.Address, 0),
-			nil,
-			Addresses{},
-		},
-		{
-			"400 - gateway.NewAddresses error",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
-				Num: "1",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - gateway.NewAddresses error",
-			"foo",
-			1,
-			make([]cipher.Address, 0),
-			errors.New("gateway.NewAddresses error"),
-			Addresses{},
-		},
-		{
-			"400 - gateway.NewAddresses error",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
-				Num: "1",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - gateway.NewAddresses error",
-			"foo",
-			1,
-			make([]cipher.Address, 0),
-			errors.New("gateway.NewAddresses error"),
-			Addresses{},
+			make([]visor.UnconfirmedTxn, 0),
+			errors.New("gateway.GetWalletUnconfirmedTxns error"),
+			[]visor.UnconfirmedTxn{},
 		},
 		{
 			"200 - OK",
-			http.MethodPost,
-			"/wallet/create",
+			http.MethodGet,
+			"/wallet/transactions",
 			&httpBody{
-				Id:  "foo",
-				Num: "1",
+				Id: "foo",
 			},
 			http.StatusOK,
 			"",
 			"foo",
-			1,
-			addrs,
+			make([]visor.UnconfirmedTxn, 0),
 			nil,
-			responseAddresses,
-		},
-		{
-			"200 - OK empty addresses",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
-				Num: "1",
-			},
-			http.StatusOK,
-			"",
-			"foo",
-			1,
-			emptyAddrs,
-			nil,
-			responseEmptyAddresses,
+			[]visor.UnconfirmedTxn{},
 		},
 	}
 
@@ -218,17 +154,20 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		gateway := &FakeGateway{
 			t: t,
 		}
-		gateway.On("NewAddresses", tc.walletId, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
-		body, _ := query.Values(tc.body)
-
-		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(body.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		gateway.On("GetWalletUnconfirmedTxns", tc.walletId).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		params, _ := query.Values(tc.body)
+		paramsEncoded := params.Encode()
+		var url = tc.url
+		if paramsEncoded != "" {
+			url = url + "?" + paramsEncoded
+		}
+		req, err := http.NewRequest(tc.method, url, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletNewAddresses(gateway))
+		handler := http.HandlerFunc(WalletTransactionsHandler(gateway))
 
 		handler.ServeHTTP(rr, req)
 
@@ -240,7 +179,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg Addresses
+			var msg []visor.UnconfirmedTxn
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			if err != nil {
 				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)

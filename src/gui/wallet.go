@@ -23,6 +23,7 @@ type Gatewayer interface {
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
+	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
 }
 
 // SpendResult represents the result of spending
@@ -318,7 +319,7 @@ func WalletGet(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns JSON of unconfirmed transactions for user's wallet
-func WalletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

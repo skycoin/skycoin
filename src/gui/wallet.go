@@ -22,6 +22,7 @@ type Gatewayer interface {
 	GetWallet(wltID string) (wallet.Wallet, error)
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
+	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 }
 
 // SpendResult represents the result of spending
@@ -223,7 +224,7 @@ func WalletCreate(gateway Gatewayer) http.HandlerFunc {
 // params:
 // 		id: wallet id
 // 	   num: number of address need to create, if not set the default value is 1
-func WalletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -413,7 +414,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 	mux.HandleFunc("/wallet/create", WalletCreate(gateway))
 
-	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
+	mux.HandleFunc("/wallet/newAddress", WalletNewAddresses(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.
 	// The predicted balance is the confirmed balance minus any pending

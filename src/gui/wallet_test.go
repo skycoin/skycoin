@@ -29,6 +29,7 @@ type httpBody struct {
 	Seed  string `url:"seed,omitempty"`
 	Label string `url:"label,omitempty"`
 	ScanN string `url:"scan,omitempty"`
+	Num   string `url:"num,omitempty"`
 }
 
 // Gateway RPC interface wrapper for daemon state
@@ -70,7 +71,28 @@ func (gw *FakeGateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (w
 	return args.Get(0).(wallet.Wallet), args.Error(1)
 }
 
-func TestWalletHandler(t *testing.T) {
+// NewAddresses generate addresses in given wallet
+func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
+	args := gw.Called(wltID, n)
+	return args.Get(0).([]cipher.Address), args.Error(1)
+}
+
+func TestWalletNewAddressesHandler(t *testing.T) {
+	type Addresses struct {
+		Address []string `json:"addresses"`
+	}
+	var responseAddresses = Addresses{}
+	var responseEmptyAddresses = Addresses{}
+
+	var emptyAddrs = make([]cipher.Address, 0)
+	var addrs = make([]cipher.Address, 3)
+
+	for i := 0; i < 3; i++ {
+		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
+
+		addrs[i] = cipher.AddressFromPubKey(pub)
+		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
+	}
 	tt := []struct {
 		name                      string
 		method                    string
@@ -78,14 +100,11 @@ func TestWalletHandler(t *testing.T) {
 		body                      *httpBody
 		status                    int
 		err                       string
-		wltname                   string
-		scnN                      uint64
-		options                   wallet.Options
-		gatewayCreateWalletResult wallet.Wallet
-		gatewayCreateWalletErr    error
-		scanWalletAddressesResult wallet.Wallet
-		scanWalletAddressesError  error
-		responseBody              wallet.ReadableWallet
+		walletId                  string
+		n                         uint64
+		gatewayNewAddressesResult []cipher.Address
+		gatewayNewAddressesErr    error
+		responseBody              Addresses
 	}{
 		{
 			"405",
@@ -94,179 +113,112 @@ func TestWalletHandler(t *testing.T) {
 			nil,
 			http.StatusMethodNotAllowed,
 			"405 Method Not Allowed",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
-		},
-		{
-			"400 - missing seed",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{},
-			http.StatusBadRequest,
-			"400 Bad Request - missing seed",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
-		},
-		{
-			"400 - missing label",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Seed: "foo",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - missing label",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
-		},
-		{
-			"400 - invalid scan value",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "bad scanN",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid scan value",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
-		},
-		{
-			"400 - scan must be > 0",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "0",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - scan must be > 0",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
-		},
-		{
-			"400 - gateway.CreateWallet error",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "1",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - gateway.CreateWallet error",
 			"",
-			0,
-			wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
-			},
-			wallet.Wallet{},
-			errors.New("gateway.CreateWallet error"),
-			wallet.Wallet{},
+			1,
+			make([]cipher.Address, 0),
 			nil,
-			wallet.ReadableWallet{},
+			Addresses{},
 		},
 		{
-			"500 - gateway.ScanAheadWalletAddresses error",
+			"400 - missing wallet id",
+			http.MethodPost,
+			"/wallet/create",
+			nil,
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
+			nil,
+			Addresses{},
+		},
+		{
+			"400 - invalid num value",
 			http.MethodPost,
 			"/wallet/create",
 			&httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "2",
+				Id:  "foo",
+				Num: "bar",
 			},
-			http.StatusInternalServerError,
-			"500 Internal Server Error",
-			"filename",
-			2,
-			wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
-			},
-			wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-			},
+			http.StatusBadRequest,
+			"400 Bad Request - invalid num value",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
 			nil,
-			wallet.Wallet{},
-			errors.New("gateway.ScanAheadWalletAddresses error"),
-			wallet.ReadableWallet{},
+			Addresses{},
+		},
+		{
+			"400 - gateway.NewAddresses error",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "1",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - gateway.NewAddresses error",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
+			errors.New("gateway.NewAddresses error"),
+			Addresses{},
+		},
+		{
+			"400 - gateway.NewAddresses error",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "1",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - gateway.NewAddresses error",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
+			errors.New("gateway.NewAddresses error"),
+			Addresses{},
 		},
 		{
 			"200 - OK",
 			http.MethodPost,
 			"/wallet/create",
 			&httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "2",
+				Id:  "foo",
+				Num: "1",
 			},
 			http.StatusOK,
 			"",
-			"filename",
-			2,
-			wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
-			},
-			wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-			},
+			"foo",
+			1,
+			addrs,
 			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{
-				Meta:    map[string]string{},
-				Entries: wallet.ReadableEntries{},
+			responseAddresses,
+		},
+		{
+			"200 - OK empty addresses",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "1",
 			},
+			http.StatusOK,
+			"",
+			"foo",
+			1,
+			emptyAddrs,
+			nil,
+			responseEmptyAddresses,
 		},
 	}
 
 	for _, tc := range tt {
 		gateway := &FakeGateway{
-			wltName: tc.wltname,
-			scanN:   tc.scnN,
-			t:       t,
+			t: t,
 		}
-		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-		gateway.On("ScanAheadWalletAddresses", tc.wltname, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		gateway.On("NewAddresses", tc.walletId, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 		body, _ := query.Values(tc.body)
 
 		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(body.Encode()))
@@ -276,7 +228,7 @@ func TestWalletHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletCreate(gateway))
+		handler := http.HandlerFunc(WalletNewAddresses(gateway))
 
 		handler.ServeHTTP(rr, req)
 
@@ -288,7 +240,7 @@ func TestWalletHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg wallet.ReadableWallet
+			var msg Addresses
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			if err != nil {
 				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)

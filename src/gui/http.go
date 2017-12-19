@@ -30,7 +30,6 @@ type Server struct {
 	listener net.Listener
 	done     chan struct{}
 	appLoc   string
-	Err      error
 }
 
 const (
@@ -39,17 +38,18 @@ const (
 	indexPage   = "index.html"
 )
 
-func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) *Server {
+func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) (*Server, error) {
+	var err error
 	s := Server{
 		daemon: daemon,
 		done:   make(chan struct{}),
 	}
 	if needHttps {
-		s.Err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
+		err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
 	} else {
-		s.Err = s.launchWebInterface(host, guiDirectory, daemon)
+		err = s.launchWebInterface(host, guiDirectory, daemon)
 	}
-	return &s
+	return &s, err
 }
 
 // LaunchWebInterface begins listening on http://$host, for enabling remote web access
@@ -103,26 +103,21 @@ func (s *Server) Serve() error {
 	defer logger.Info("Server closed")
 	logger.Info("Starting web interface on %s", s.listener.Addr())
 	mux := NewGUIMux(s.appLoc, s.daemon)
-	for {
-		if err := http.Serve(s.listener, mux); err != nil {
-			select {
-			case <-s.done:
-				return nil
-			default:
-				return err
-			}
-			continue
+	if err := http.Serve(s.listener, mux); err != nil {
+		close(s.done)
+		if err != http.ErrServerClosed {
+			return err
 		}
 	}
+	return nil
 }
 
 // Shutdown close http service
 func (s *Server) Shutdown() {
 	logger.Info("Shutting down Server")
-	// must close done first
-	close(s.done)
 	s.listener.Close()
 	s.listener = nil
+	<-s.done
 }
 
 // NewGUIMux creates an http.ServeMux with handlers registered

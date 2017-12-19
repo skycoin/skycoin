@@ -447,10 +447,10 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) *gu
 			return nil
 		}
 	}
-	s := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+	s, err := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
 
-	if s.Err != nil {
-		logger.Error(s.Err.Error())
+	if err != nil {
+		logger.Error(err.Error())
 		logger.Error("Failed to start web GUI")
 		return nil
 	}
@@ -680,7 +680,7 @@ func Run(c *Config) {
 		fmt.Println(fullAddress)
 	}
 	s := createGUI(c, d, host, quit)
-
+	wg.Add(1)
 	/*
 		time.Sleep(5)
 		tx := InitTransaction()
@@ -706,10 +706,9 @@ func Run(c *Config) {
 			}()
 		}
 	*/
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = s.Serve()
+		err := s.Serve()
 		if err != nil {
 			errC <- err
 		}

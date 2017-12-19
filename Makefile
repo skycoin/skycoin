@@ -34,7 +34,7 @@ test: ## Run tests
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --disable-all -E goimports --tests --vendor ./...
+	gometalinter --config=.gometalinter.json -E goimports --tests --vendor ./...
 
 check: lint test ## Run tests and linters
 
@@ -48,6 +48,7 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	go get -u github.com/alecthomas/gometalinter
+
 	gometalinter --vendored-linters --install
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).

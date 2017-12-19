@@ -6,14 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"encoding/json"
-
 	"github.com/google/go-querystring/query"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -35,6 +33,7 @@ type httpBody struct {
 type FakeGateway struct {
 	mock.Mock
 	walletId string
+	label    string
 	coins    uint64
 	wltName  string
 	scanN    uint64
@@ -82,71 +81,80 @@ func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.Unconfirm
 	return args.Get(0).([]visor.UnconfirmedTxn), args.Error(1)
 }
 
-func TestWalletTransactionsHandler(t *testing.T) {
+func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
+	args := gw.Called(wltID, label)
+	return args.Error(0)
+}
+
+func TestUpdateWalletLabelHandler(t *testing.T) {
 
 	tt := []struct {
-		name                                  string
-		method                                string
-		url                                   string
-		body                                  *httpBody
-		status                                int
-		err                                   string
-		walletId                              string
-		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
-		gatewayGetWalletUnconfirmedTxnsErr    error
-		responseBody                          []visor.UnconfirmedTxn
+		name                        string
+		method                      string
+		url                         string
+		body                        *httpBody
+		status                      int
+		err                         string
+		walletId                    string
+		label                       string
+		gatewayUpdateWalletLabelErr error
+		responseBody                string
 	}{
-		{
-			"405",
-			http.MethodPut,
-			"/wallet/transactions",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"",
-			make([]visor.UnconfirmedTxn, 0),
-			nil,
-			[]visor.UnconfirmedTxn{},
-		},
 		{
 			"400 - missing wallet id",
 			http.MethodGet,
 			"/wallet/transactions",
-			nil,
+			&httpBody{},
 			http.StatusBadRequest,
 			"400 Bad Request - missing wallet id",
 			"",
-			make([]visor.UnconfirmedTxn, 0),
+			"",
 			nil,
-			[]visor.UnconfirmedTxn{},
+			"",
 		},
 		{
-			"400 - gateway.GetWalletUnconfirmedTxns error",
+			"400 - missing label",
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
 				Id: "foo",
 			},
 			http.StatusBadRequest,
-			"400 Bad Request - get wallet unconfirmed transactions failed: gateway.GetWalletUnconfirmedTxns error",
+			"400 Bad Request - missing label",
 			"foo",
-			make([]visor.UnconfirmedTxn, 0),
-			errors.New("gateway.GetWalletUnconfirmedTxns error"),
-			[]visor.UnconfirmedTxn{},
+			"",
+			nil,
+			"",
 		},
 		{
-			"200 - OK",
+			"400 - gateway.UpdateWalletLabel error",
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
-				Id: "foo",
+				Id:    "foo",
+				Label: "label",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - update wallet label failed: gateway.UpdateWalletLabel error",
+			"foo",
+			"label",
+			errors.New("gateway.UpdateWalletLabel error"),
+			"",
+		},
+		{
+			"200 OK",
+			http.MethodGet,
+			"/wallet/transactions",
+			&httpBody{
+				Id:    "foo",
+				Label: "label",
 			},
 			http.StatusOK,
-			"",
+			"400 Bad Request - update wallet label failed: gateway.UpdateWalletLabel error",
 			"foo",
-			make([]visor.UnconfirmedTxn, 0),
+			"label",
 			nil,
-			[]visor.UnconfirmedTxn{},
+			"\"success\"",
 		},
 	}
 
@@ -154,7 +162,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		gateway := &FakeGateway{
 			t: t,
 		}
-		gateway.On("GetWalletUnconfirmedTxns", tc.walletId).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
 		params, _ := query.Values(tc.body)
 		paramsEncoded := params.Encode()
 		var url = tc.url
@@ -167,7 +175,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletTransactionsHandler(gateway))
+		handler := http.HandlerFunc(WalletUpdateHandler(gateway))
 
 		handler.ServeHTTP(rr, req)
 
@@ -179,12 +187,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg []visor.UnconfirmedTxn
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
-			if err != nil {
-				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
-			}
-			require.Equal(t, tc.responseBody, msg, tc.name)
+			require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
 		}
 	}
 }

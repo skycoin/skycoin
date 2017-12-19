@@ -24,6 +24,7 @@ type Gatewayer interface {
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	UpdateWalletLabel(wltID, label string) error
 }
 
 // SpendResult represents the result of spending
@@ -270,7 +271,7 @@ func WalletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Update wallet label
-func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Update wallet
 		wltID := r.FormValue("id")
@@ -443,7 +444,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// 		GET Arguments:
 	// 			id: wallet id
 	// 			label: wallet label
-	mux.HandleFunc("/wallet/update", walletUpdateHandler(gateway))
+	mux.HandleFunc("/wallet/update", WalletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))

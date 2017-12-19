@@ -87,7 +87,6 @@ func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
 }
 
 func TestUpdateWalletLabelHandler(t *testing.T) {
-
 	tt := []struct {
 		name                        string
 		method                      string
@@ -150,7 +149,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				Label: "label",
 			},
 			http.StatusOK,
-			"400 Bad Request - update wallet label failed: gateway.UpdateWalletLabel error",
+			"",
 			"foo",
 			"label",
 			nil,

@@ -322,14 +322,15 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, seed, w.Meta["seed"])
 			require.NoError(t, w.validate())
 
 			w, err = s.ScanAheadWalletAddresses(wltName, tc.scanN, tc.balGetter)
 			require.NoError(t, err)
 
 			require.Len(t, w.Entries, tc.expect.entryNum)
-			require.Equal(t, tc.expect.lastSeed, w.lastSeed())
+			for i := range w.Entries {
+				require.Equal(t, addrsOfSeed1[i], w.Entries[i].Address.String())
+			}
 		})
 	}
 }
@@ -366,8 +367,8 @@ func TestServiceNewAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	// wallet doesn't exist
-	_, err = s.NewAddresses("not_exist_id.wlt", 1)
-	require.Equal(t, ErrWalletNotExist, err)
+	_, err = s.NewAddresses("not_exist_id.wlt", pwd, 1)
+	require.Equal(t, ErrWalletNotExist{"not_exist_id.wlt"}, err)
 }
 
 func TestServiceGetAddressDisabledWalletAPI(t *testing.T) {
@@ -397,7 +398,7 @@ func TestServiceGetAddress(t *testing.T) {
 	// test none exist wallet
 	notExistID := "not_exist_id.wlt"
 	_, err = s.GetAddresses(notExistID)
-	require.Equal(t, ErrWalletNotExist, err)
+	require.Equal(t, ErrWalletNotExist{notExistID}, err)
 }
 
 func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {

@@ -90,32 +90,13 @@ func backupWltFile(src, dst string) error {
 	return nil
 }
 
-// func mustUpdateWallet(wlt *Wallet, dir string, tm int64) {
-// 	// update version meta data.
-// 	wlt.Meta["version"] = version
-
-// 	// update lastSeed meta data.
-// 	lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.Meta["seed"]), 1)
-// 	if seckeys[0] != wlt.Entries[0].Secret {
-// 		logger.Panic("update wallet failed, seckey not match")
-// 	}
-
-// 	wlt.Meta["lastSeed"] = hex.EncodeToString(lsd)
-
-// 	// update tm meta data.
-// 	wlt.Meta["tm"] = fmt.Sprintf("%v", tm)
-// 	if err := wlt.Save(dir); err != nil {
-// 		logger.Panic(err)
-// 	}
-// }
-
-// Add adds wallet to current wallet
-func (wlts Wallets) Add(w Wallet) error {
+// Add add walet to current wallet
+func (wlts Wallets) Add(w *Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
 		return errors.New("wallet name would conflict with existing wallet, renaming")
 	}
 
-	wlts[w.Filename()] = &w
+	wlts[w.Filename()] = w
 	return nil
 }
 
@@ -150,9 +131,9 @@ func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 }
 
 // NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) NewAddresses(id string, num int, password string) ([]cipher.Address, error) {
+func (wlts *Wallets) NewAddresses(id string, num uint64) ([]cipher.Address, error) {
 	if w, ok := (*wlts)[id]; ok {
-		return w.GenerateAddresses(password, num)
+		return w.GenerateAddresses(num)
 	}
 	return nil, fmt.Errorf("wallet: %v does not exist", id)
 }
@@ -176,20 +157,20 @@ func (wlts Wallets) Save(dir string) map[string]error {
 func (wlts Wallets) ToReadable() []*ReadableWallet {
 	var rw []*ReadableWallet
 	for _, w := range wlts {
-		rw = append(rw, NewReadableWallet(*w))
+		rw = append(rw, NewReadableWallet(w))
 	}
 	sort.Sort(ByTm(rw))
 	return rw
 }
 
 // Update updates the given wallet, return error if not exist
-func (wlts Wallets) update(id string, updateFunc func(Wallet) Wallet) error {
+func (wlts Wallets) update(id string, updateFunc func(*Wallet) *Wallet) error {
 	w, ok := wlts[id]
 	if !ok {
-		return errWalletNotExist(id)
+		return ErrWalletNotExist{id}
 	}
 
-	newWlt := updateFunc(*w)
-	wlts[id] = &newWlt
+	newWlt := updateFunc(w)
+	wlts[id] = newWlt
 	return nil
 }

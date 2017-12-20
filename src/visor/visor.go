@@ -279,7 +279,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
-		wallets:     wltServ,
+		Wallets:     wltServ,
 	}
 
 	return v, nil
@@ -1102,6 +1102,5 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		bps = append(bps, bp)
 	}
-
 	return bps, nil
 }

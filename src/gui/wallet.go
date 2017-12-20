@@ -29,11 +29,11 @@ type SpendResult struct {
 // URI: /wallet/create
 // Method: POST
 // Args:
-//     seed: wallet seed [required]
-//     label: wallet label [required]
-//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-// 	   encrypt: whether encrypt the wallet [optional, must be 0 or 1]
-// 	   password: password for encrypting wallet [optional, required if the encrypt value is 1]
+//     seed: Wallet seed [required]
+//     label: Wallet label [required]
+//     scan: The number of addresses to scan ahead for balances [optional, must be > 0]
+// 	   encrypt: Whether encrypt the wallet [optional, must be 0 or 1]
+// 	   password: Password for encrypting wallet [optional, required if the encrypt value is 1]
 func walletCreateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -95,8 +95,7 @@ func walletCreateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		rlt := wallet.NewReadableWallet(wlt)
-		wh.SendOr500(w, rlt)
+		wh.SendOr500(w, wallet.NewReadableWallet(wlt))
 	}
 }
 
@@ -121,8 +120,9 @@ func getWalletEncryptOptions(r *http.Request) (bool, []byte, error) {
 // URI: /wallet/newAddress
 // Method: POST
 // Args:
-//     id: wallet id
-//     num: number of address need to create, if not set the default value is 1
+//     id: Wallet ID [required]
+//     num: Number of address need to create [optional, if not set the default value is 1]
+//     password: Wallet password [optional, required if the wallet is encrypted]
 func walletNewAddressesHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -175,7 +175,7 @@ func walletNewAddressesHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // URI: /wallet/balance
 // Method: GET
 // Args:
-//     id: Wallet id [required]
+//     id: Wallet ID [required]
 func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -203,10 +203,10 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // URI: /wallet/spend
 // Method: POST
 // Args:
-//    id: wallet id [required]
-//	  dst: recipient address [required]
-// 	  coins: the number of droplet you will send [required]
-//	  password: wallet password [optional, required if the wallet is encrypted]
+//    id: Wallet ID [required]
+//	  dst: Recipient address [required]
+// 	  coins: The number of droplet you will send [required]
+//	  password: Wallet password [optional, required if the wallet is encrypted]
 func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -254,8 +254,9 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// spend spends coins from specific wallet
+// Spends coins from specific wallet.
 // Set password as nil if spend coins from unencrypted wallet,
+// otherwise the password must be provided.
 func spend(gateway *daemon.Gateway, walletID string, password []byte, coins uint64, dest cipher.Address) *SpendResult {
 	var tx *coin.Transaction
 	var b wallet.BalancePair
@@ -331,6 +332,10 @@ func walletUpdateLabelHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns a wallet by id
+// Method: GET
+// URI: /wallet
+// Args:
+//     id: Wallet ID [required]
 func walletGetHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -354,7 +359,15 @@ func walletGetHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Returns JSON of unconfirmed transactions for user's wallet
+// Returns wallet related unconfirmed transactions
+// [Deprecated]:
+//     No one is using this api and the URI is easy to misunderstanding,
+//     this api should returns all transactions that are related to a wallet, while
+//     the implementation actually returns the unconfirmed pending transactions of a wallet.
+// Method: GET
+// Args:
+//     id: Wallet ID [required]
+// Returns all pending transanction for all addresses by selected Wallet
 func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -379,6 +392,7 @@ func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns all loaded wallets
+// URI: /wallets
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wlts := gateway.GetWallets().ToReadable()
@@ -387,6 +401,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Loads/unloads wallets from the wallet directory
+// URI: /wallets/reload
 func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := gateway.ReloadWallets(); err != nil {
@@ -405,6 +420,7 @@ type WalletFolder struct {
 }
 
 // Returns the path of wallet directory
+// URI: /wallet/folderName
 func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
@@ -415,6 +431,7 @@ func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Generates and returns a new wallet seed
+// URI: /wallet/newSeed
 func newWalletSeedHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mnemonic, err := bip39.NewDefaultMnemomic()
@@ -431,6 +448,48 @@ func newWalletSeedHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, rlt)
+	}
+}
+
+// Encrypts wallet
+// Method: GET
+// URI: /wallet/encrypt
+// Args:
+//     id: Wallet ID [required]
+//     password: Password for encrypting the wallet [required]
+func walletEncryptHandler(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		id := r.FormValue("id")
+		if id == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		password := r.FormValue("password")
+		if password == "" {
+			wh.Error400(w, "missing password")
+			return
+		}
+
+		wlt, err := gateway.EncryptWallet(id, []byte(password))
+		if err != nil {
+			switch err.(type) {
+			case wallet.ErrWalletNotExist:
+				wh.Error400(w, err.Error())
+				return
+			default:
+				logger.Error("Encrypt wallet failed: %v", err)
+				wh.Error500(w)
+				return
+			}
+		}
+
+		wh.SendOr404(w, wallet.NewReadableWallet(wlt))
 	}
 }
 
@@ -508,6 +567,13 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns the path of wallet directory
 	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
 
-	// Generate a new wallet seed
+	// Generates a new wallet seed
 	mux.Handle("/wallet/newSeed", newWalletSeedHandler(gateway))
+
+	// Encrypts wallet
+	// Method: GET
+	// Args:
+	//     id: Wallet ID [required]
+	//     password: Password for encrypting wallet [required]
+	mux.Handle("/wallet/encrypt", walletEncryptHandler(gateway))
 }

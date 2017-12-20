@@ -229,7 +229,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 		name               string
 		seed               []byte
 		pwd                []byte
-		num                int
+		num                uint64
 		oneAddressEachTime bool
 		err                error
 	}{
@@ -278,18 +278,18 @@ func TestWalletGenerateAddress(t *testing.T) {
 				_, err = w.GenerateAddresses(string(tc.pwd), tc.num)
 				require.NoError(t, err)
 			} else {
-				for i := 0; i < tc.num; i++ {
+				for i := uint64(0); i < tc.num; i++ {
 					_, err := w.GenerateAddresses(string(tc.pwd), 1)
 					require.NoError(t, err)
 				}
 			}
 
 			// check the entry number
-			require.Equal(t, tc.num, len(w.Entries))
+			require.Equal(t, int(tc.num), len(w.Entries))
 
 			addrs := w.GetAddresses()
 
-			_, keys := cipher.GenerateDeterministicKeyPairsSeed(tc.seed, tc.num)
+			_, keys := cipher.GenerateDeterministicKeyPairsSeed(tc.seed, int(tc.num))
 			for i, k := range keys {
 				a := cipher.AddressFromSecKey(k)
 				require.Equal(t, a.String(), addrs[i].String())

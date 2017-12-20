@@ -135,7 +135,7 @@ func (bt ByTm) Swap(i, j int) {
 }
 
 // NewReadableWallet creates readable wallet
-func NewReadableWallet(w Wallet) *ReadableWallet {
+func NewReadableWallet(w *Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
 		readable[i] = NewReadableEntry(e, w.Version())

@@ -49,12 +49,6 @@
   revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/tang0th/go-chacha20"
-  packages = ["chacha"]
-  revision = "3d46990f349dd41d624446d57ed5e46e7b1da024"
-
-[[projects]]
   name = "github.com/toqueteos/webbrowser"
   packages = ["."]
   revision = "21fc9f95c83442fd164094666f7cb4f9fdd56cd6"
@@ -87,6 +81,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bde909784fc2529c397f0e8c82bbfc2fd9c668876d15fe0d28b0b969900ddb57"
+  inputs-digest = "35b5d3198cad3c85f69122223bab608f94bdc5c96284be3c22746f1c8b7f74bc"
   solver-name = "gps-cdcl"
   solver-version = 1

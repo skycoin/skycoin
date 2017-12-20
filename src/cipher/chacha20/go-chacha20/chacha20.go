@@ -1,6 +1,6 @@
 package chacha20
 
-import "github.com/tang0th/go-chacha20/chacha"
+import "github.com/skycoin/skycoin/src/cipher/go-chacha20/chacha"
 
 // XORKeyStream crypts bytes from in to out using the given key and nonce. It
 // performs the 20 round chacha cipher operation. In and out may be the same

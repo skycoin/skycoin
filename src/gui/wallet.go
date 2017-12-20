@@ -25,6 +25,7 @@ type Gatewayer interface {
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
 	UpdateWalletLabel(wltID, label string) error
+	ReloadWallets() error
 }
 
 // SpendResult represents the result of spending
@@ -352,7 +353,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Loads/unloads wallets from the wallet directory
-func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func WalletsReloadHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := gateway.ReloadWallets(); err != nil {
 			logger.Error("reload wallet failed: %v", err)
@@ -454,7 +455,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Rescans the wallet directory and loads/unloads wallets based on which
 	// files are present. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
-	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
+	mux.HandleFunc("/wallets/reload", WalletsReloadHandler(gateway))
 
 	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
 

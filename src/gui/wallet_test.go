@@ -86,72 +86,59 @@ func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
 	return args.Error(0)
 }
 
-func TestUpdateWalletLabelHandler(t *testing.T) {
+func (gw *FakeGateway) ReloadWallets() error {
+	args := gw.Called()
+	return args.Error(0)
+}
+
+func TestWalletsReloadHandler(t *testing.T) {
 	tt := []struct {
-		name                        string
-		method                      string
-		url                         string
-		body                        *httpBody
-		status                      int
-		err                         string
-		walletId                    string
-		label                       string
-		gatewayUpdateWalletLabelErr error
-		responseBody                string
+		name                    string
+		method                  string
+		url                     string
+		body                    *httpBody
+		status                  int
+		err                     string
+		gatewayWalletsReloadErr error
+		responseBody            string
 	}{
 		{
-			"400 - missing wallet id",
+			"500 - gateway.ReloadWallets error",
 			http.MethodGet,
-			"/wallet/transactions",
+			"/wallets/reload",
 			&httpBody{},
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			errors.New("gateway.ReloadWallets error"),
 			"",
-			"",
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallets/reload",
 			nil,
-			"",
-		},
-		{
-			"400 - missing label",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
-				Id: "foo",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - missing label",
-			"foo",
-			"",
-			nil,
-			"",
-		},
-		{
-			"400 - gateway.UpdateWalletLabel error",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
-				Id:    "foo",
-				Label: "label",
-			},
-			http.StatusBadRequest,
-			"400 Bad Request - update wallet label failed: gateway.UpdateWalletLabel error",
-			"foo",
-			"label",
-			errors.New("gateway.UpdateWalletLabel error"),
-			"",
-		},
-		{
-			"200 OK",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
-				Id:    "foo",
-				Label: "label",
-			},
 			http.StatusOK,
 			"",
-			"foo",
-			"label",
+			nil,
+			"\"success\"",
+		},
+		{
+			"200 - OK POST",
+			http.MethodPost,
+			"/wallets/reload",
+			nil,
+			http.StatusOK,
+			"",
+			nil,
+			"\"success\"",
+		},
+		{
+			"200 - OK trailing backslash",
+			http.MethodGet,
+			"/wallets/reload/",
+			nil,
+			http.StatusOK,
+			"",
 			nil,
 			"\"success\"",
 		},
@@ -161,7 +148,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		gateway := &FakeGateway{
 			t: t,
 		}
-		gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
+		gateway.On("ReloadWallets").Return(tc.gatewayWalletsReloadErr)
 		params, _ := query.Values(tc.body)
 		paramsEncoded := params.Encode()
 		var url = tc.url
@@ -174,7 +161,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletUpdateHandler(gateway))
+		handler := http.HandlerFunc(WalletsReloadHandler(gateway))
 
 		handler.ServeHTTP(rr, req)
 

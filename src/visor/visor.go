@@ -1022,8 +1022,8 @@ func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error
 }
 
 // ScanAheadWalletAddresses scans ahead N addresses in a wallet, looking for a non-empty balance
-func (vs Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
-	return vs.wallets.ScanAheadWalletAddresses(wltName, scanN, vs)
+func (vs Visor) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
+	return vs.Wallets.ScanAheadWalletAddresses(wltName, password, scanN, vs)
 }
 
 // GetBalanceOfAddrs returns balance pairs of given addreses

@@ -20,6 +20,9 @@ import (
 )
 
 var (
+	// Version represents the current wallet version
+	Version = "0.2"
+
 	logger = logging.MustGetLogger("wallet")
 
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
@@ -33,10 +36,11 @@ var (
 	ErrWalletEncrypted = errors.New("wallet is encrypted")
 	// ErrWalletNotEncrypted is returned when trying to decrypt unencrypted wallet
 	ErrWalletNotEncrypted = errors.New("wallet is not encrypted")
+	// ErrRequirePassword find no password when creating wallet
+	ErrRequirePassword = errors.New("password is required")
+	// ErrInvalidWalletVersion represents invalid wallet version erro
+	ErrInvalidWalletVersion = errors.New("invalid wallet version")
 )
-
-// CoinType represents the wallet coin type
-type CoinType string
 
 const (
 	// WalletExt  wallet file extension
@@ -51,28 +55,24 @@ const (
 	CoinTypeBitcoin CoinType = "bitcoin"
 )
 
-var (
-	// ErrNoPassword find no password when creating wallet
-	ErrNoPassword = errors.New("password is required")
-	// ErrInvalidWalletVersion represents invalid wallet version erro
-	ErrInvalidWalletVersion = errors.New("invalid wallet version")
-
-	// Version represents the current wallet version
-	Version = "0.2"
-)
+// CoinType represents the wallet coin type
+type CoinType string
 
 // Options are wallet constructor options
 type Options struct {
-	Coin  CoinType
-	Label string
-	Seed  string
+	Coin       CoinType
+	Label      string
+	Seed       string
+	Encrypt    bool
+	Password   []byte
+	AddressNum uint64 // Generate N addresses when create wallet
 }
 
 // Option NewWallet optional arguments type
 type Option func(w *Wallet)
 
-// NewWalletFilename check for collisions and retry if failure
-func NewWalletFilename() string {
+// newWalletFilename check for collisions and retry if failure
+func newWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	// should read in wallet files and make sure does not exist
 	padding := hex.EncodeToString((cipher.RandByte(2)))
@@ -96,13 +96,6 @@ type Wallet struct {
 	Entries []Entry
 }
 
-// Options are wallet constructor options
-type Options struct {
-	Coin  CoinType
-	Label string
-	Seed  string
-}
-
 // NewWallet generates Deterministic Wallet
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	if opts.Seed == "" {
@@ -117,101 +110,159 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	w := &Wallet{
 		Meta: map[string]string{
 			"filename": wltName,
-			"version":  wltVersion,
+			"version":  Version,
 			"label":    opts.Label,
 			"seed":     opts.Seed,
 			"lastSeed": opts.Seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     string(coin),
-			"encrypted": "false",
 		},
 	}
+
+	// Generate addresses
+	if _, err := w.GenerateAddresses(opts.AddressNum); err != nil {
+		return nil, fmt.Errorf("generate addresses failed when creating wallets: %v", err)
+	}
+
+	if !opts.Encrypt {
+		return w, nil
+	}
+
+	if opts.Password == nil {
+		return nil, errors.New("password is required for creating wallet with encryption")
+	}
+
+	if err := w.lock(opts.Password); err != nil {
+		return nil, fmt.Errorf("lock wallet failed: %v", err)
+	}
+
+	// Update the encrypted meta field
+	w.setEncrypted(true)
 
 	return w, nil
 }
 
-// Lock encrypts the wallet with password
-func (wlt *Wallet) Lock(password []byte) error {
+// lock encrypts the wallet with password
+func (w *Wallet) lock(password []byte) error {
 	if password == nil {
-		return errors.New("password is requried to encrypt wallet")
+		return ErrRequirePassword
 	}
 
-	if wlt.IsEncrypted() {
+	if w.IsEncrypted() {
 		return ErrWalletEncrypted
 	}
 
-	// encrypt the seed
-	ss, err := Encrypt([]byte(wlt.seed()), password)
+	// Encrypt the seed
+	ss, err := Encrypt([]byte(w.seed()), password)
 	if err != nil {
 		return err
 	}
 
-	wlt.setSeed(ss)
+	w.setSeed(ss)
 
-	// encrypt the last seed
-	sls, err := Encrypt([]byte(wlt.lastSeed()), password)
+	// Encrypt the last seed
+	sls, err := Encrypt([]byte(w.lastSeed()), password)
 	if err != nil {
 		return err
 	}
 
-	wlt.setLastSeed(sls)
+	w.setLastSeed(sls)
 
 	// encrypt private keys in entries
-	for i, e := range wlt.Entries {
+	for i, e := range w.Entries {
 		se, err := Encrypt(e.Secret[:], password)
 		if err != nil {
 			return err
 		}
 
-		e.EncryptedSeckey = se
-		// clear the entry.Secret
-		wlt.Entries[i].Secret = cipher.SecKey{}
+		// Set the encrypted seckey value
+		w.Entries[i].EncryptedSeckey = se
+		// Clear the entry.Secret
+		w.Entries[i].Secret = cipher.SecKey{}
 	}
+
+	w.setEncrypted(true)
 
 	return nil
 }
 
-// Unlock decrypts the wallet into a temporary decrypted copy of the wallet
+// unlock decrypts the wallet into a temporary decrypted copy of the wallet
 // It returns an error if decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
-func (wlt *Wallet) Unlock(password []byte) (*Wallet, error) {
+func (w *Wallet) unlock(password []byte) (*Wallet, error) {
+	if !w.IsEncrypted() {
+		return nil, ErrWalletNotEncrypted
+	}
+
 	if password == nil {
 		return nil, errors.New("password is required to decrypt wallet")
 	}
 
-	if !wlt.IsEncrypted() {
-		return nil, ErrWalletNotEncrypted
-	}
-
-	w := wlt.clone()
+	wlt := w.clone()
 
 	// decrypt the seed
-	s, err := Decrypt(w.seed(), password)
+	s, err := Decrypt(wlt.seed(), password)
 	if err != nil {
 		return nil, err
 	}
-	w.setSeed(string(s))
+	wlt.setSeed(string(s))
 
 	// decrypt lastSeed
-	ls, err := Decrypt(w.lastSeed(), password)
+	ls, err := Decrypt(wlt.lastSeed(), password)
 	if err != nil {
 		return nil, err
 	}
-	w.setLastSeed(string(ls))
+	wlt.setLastSeed(string(ls))
 
 	// decrypt the entries
-	for i, e := range w.Entries {
-		sk, err := Decrypt(e.EncryptedSeckey, password)
+	for i := range wlt.Entries {
+		sk, err := Decrypt(wlt.Entries[i].EncryptedSeckey, password)
 		if err != nil {
 			return nil, err
 		}
-		copy(w.Entries[i].Secret[:], sk[:])
-		w.Entries[i].EncryptedSeckey = ""
+		copy(wlt.Entries[i].Secret[:], sk[:])
+		wlt.Entries[i].EncryptedSeckey = ""
 	}
-	w.setEncrypted(false)
+	wlt.setEncrypted(false)
 
-	return w, nil
+	return wlt, nil
+}
+
+// guard will do:
+// 1. unlock the encrypted wallet
+// 2. process with the decrypted wallet by calling the callback function
+// 3. lock the wallet at the end again
+// If the wallet is not encrypted, it would return ErrWalletNotEncrypted error
+func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
+	if !w.IsEncrypted() {
+		return ErrWalletNotEncrypted
+	}
+
+	if password == nil {
+		return ErrRequirePassword
+	}
+
+	var wlt *Wallet
+	wlt, err = w.unlock(password)
+	if err != nil {
+		return fmt.Errorf("unlock wallet failed: %v", err)
+	}
+
+	defer func() {
+		if lockErr := wlt.lock(password); lockErr != nil {
+			err = fmt.Errorf("lock wallet failed: %v", lockErr)
+			return
+		}
+
+		*w = *wlt
+	}()
+
+	if err := f(wlt); err != nil {
+		return fmt.Errorf("process wallet failed: %v", err)
+	}
+
+	return
 }
 
 // Load loads wallet from given file
@@ -236,10 +287,10 @@ func Save(dir string, w *Wallet) error {
 	return r.Save(filepath.Join(dir, w.Filename()))
 }
 
-// Reset resets the wallet entries and move the lastSeed to origin
-func (wlt *Wallet) Reset() {
-	wlt.Entries = []Entry{}
-	wlt.setLastSeed(wlt.seed())
+// reset resets the wallet entries and move the lastSeed to origin
+func (w *Wallet) reset() {
+	w.Entries = []Entry{}
+	w.setLastSeed(w.seed())
 }
 
 // Validate validates the wallet
@@ -263,82 +314,82 @@ func (w *Wallet) validate() error {
 		return errors.New("coin field not set")
 	}
 
-	switch wlt.Meta["encrypted"] {
+	switch w.Meta["encrypted"] {
 	case "true", "false", "":
 	default:
-		return ErrInvalidEncryptedField
+		return ErrInvalidEncryptedFieldValue
 	}
 
 	return nil
 }
 
 // Type gets the wallet type
-func (wlt *Wallet) Type() string {
-	return wlt.Meta["type"]
+func (w *Wallet) Type() string {
+	return w.Meta["type"]
 }
 
 // Version gets the wallet version
-func (wlt *Wallet) Version() string {
-	return wlt.Meta["version"]
+func (w *Wallet) Version() string {
+	return w.Meta["version"]
 }
 
-func (wlt *Wallet) setVersion(v string) {
-	wlt.Meta["version"] = v
+func (w *Wallet) setVersion(v string) {
+	w.Meta["version"] = v
 }
 
 // Filename gets the wallet filename
-func (wlt *Wallet) Filename() string {
-	return wlt.Meta["filename"]
+func (w *Wallet) Filename() string {
+	return w.Meta["filename"]
 }
 
 // setFilename sets the wallet filename
-func (wlt *Wallet) setFilename(fn string) {
-	wlt.Meta["filename"] = fn
+func (w *Wallet) setFilename(fn string) {
+	w.Meta["filename"] = fn
 }
 
 // Label gets the wallet label
-func (wlt *Wallet) Label() string {
-	return wlt.Meta["label"]
+func (w *Wallet) Label() string {
+	return w.Meta["label"]
 }
 
 // setLabel sets the wallet label
-func (wlt *Wallet) setLabel(label string) {
-	wlt.Meta["label"] = label
+func (w *Wallet) setLabel(label string) {
+	w.Meta["label"] = label
 }
 
 // lastSeed returns the last seed
-func (wlt *Wallet) lastSeed() string {
-	return wlt.Meta["lastSeed"]
+func (w *Wallet) lastSeed() string {
+	return w.Meta["lastSeed"]
 }
 
 func (wlt *Wallet) setLastSeed(lseed string) {
 	wlt.Meta["lastSeed"] = lseed
 }
 
-func (wlt *Wallet) seed() string {
-	return wlt.Meta["seed"]
+func (w *Wallet) seed() string {
+	return w.Meta["seed"]
 }
 
-func (wlt *Wallet) setSeed(seed string) {
-	wlt.Meta["seed"] = seed
+func (w *Wallet) setSeed(seed string) {
+	w.Meta["seed"] = seed
 }
 
 // GenerateAddresses generates addresses
-func (wlt *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
-	if wlt.IsEncrypted() {
+func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
+	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
 
-	return wlt.generateAddresses(num)
-}
+	if num == 0 {
+		return nil, nil
+	}
 
-func (wlt *Wallet) generateAddresses(num uint64) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var seed []byte
-	if len(wlt.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), num)
+	if len(w.Entries) == 0 {
+		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
 	} else {
-		sd, err := hex.DecodeString(wlt.lastSeed())
+		sd, err := hex.DecodeString(w.lastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
@@ -361,13 +412,17 @@ func (wlt *Wallet) generateAddresses(num uint64) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-// ScanAddresses scans ahead N addresses to find one with non-zero coins
+// ScanAddresses scans ahead N addresses to find one with none-zero coins.
 func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
+	if w.IsEncrypted() {
+		return ErrWalletEncrypted
+	}
+
 	if scanN <= 0 {
 		return nil
 	}
 
-	nExistingAddrs := uint64(w.NumEntries())
+	nExistingAddrs := uint64(len(w.Entries))
 
 	// Generate the addresses to scan
 	addrs, err := w.GenerateAddresses(scanN)
@@ -393,39 +448,11 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 	// Regenerate addresses up to keepNum.
 	// This is necessary to keep the lastSeed updated.
 	if keepNum != uint64(len(bals)) {
-		w.Reset()
+		w.reset()
 		w.GenerateAddresses(nExistingAddrs + keepNum)
 	}
 
 	return nil
-// GenerateAddressesEncrypted generates addresses in encrypted wallet with password
-func (wlt *Wallet) GenerateAddressesEncrypted(num uint64, password []byte) (addrs []cipher.Address, err error) {
-	if !wlt.IsEncrypted() {
-		return nil, errors.New("wallet is not encrypted")
-	}
-
-	if password == nil {
-		return nil, errors.New("password is required for generating addresses in encrypted wallet")
-	}
-
-	// Unlock the wallet
-	w, err := wlt.Unlock(password)
-	if err != nil {
-		return nil, fmt.Errorf("unlock wallet failed: %v", err)
-	}
-
-	// Lock the wallet when done
-	defer func() {
-		if lockErr := w.Lock(password); lockErr != nil {
-			addrs = nil
-			err = fmt.Errorf("lock wallet failed after generating addresses: %v", err)
-			return
-		}
-
-		wlt = w
-	}()
-
-	return w.generateAddresses(num)
 }
 
 // GetAddresses returns all addresses in wallet
@@ -460,52 +487,18 @@ func (w *Wallet) AddEntry(entry Entry) error {
 	return nil
 }
 
-// Reset resets the wallet entries and move the lastSeed to origin
-func (w *Wallet) Reset() {
-	w.Entries = []Entry{}
-	w.Meta["lastSeed"] = w.Meta["seed"]
-}
-
-// Save persists wallet to disk
-func (w *Wallet) Save(dir string) error {
-	r := NewReadableWallet(*w)
-	return r.Save(filepath.Join(dir, w.GetFilename()))
-}
-
-// Load loads wallets from given wallet file
-func (w *Wallet) Load(wltFile string) error {
-	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
-	}
-
-	r := &ReadableWallet{}
-	if err := r.Load(wltFile); err != nil {
-		return err
-	}
-
-	// update filename meta info with the real filename
-	r.Meta["filename"] = filepath.Base(wltFile)
-	var err error
-	w, err := r.toWallet()
-	if err != nil {
-		return err
-	}
-	*wlt = *w
-	return nil
-}
-
 // clone returns the clone of self
-func (wlt *Wallet) clone() *Wallet {
-	w := Wallet{Meta: make(map[string]string)}
-	for k, v := range wlt.Meta {
-		w.Meta[k] = v
+func (w *Wallet) clone() *Wallet {
+	wlt := Wallet{Meta: make(map[string]string)}
+	for k, v := range w.Meta {
+		wlt.Meta[k] = v
 	}
 
 	for _, e := range w.Entries {
 		wlt.Entries = append(wlt.Entries, e)
 	}
 
-	return &w
+	return &wlt
 }
 
 // Validator validate if the wallet be able to create spending transaction
@@ -514,45 +507,44 @@ type Validator interface {
 	HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error)
 }
 
+// // CreateAndSignTransaction Creates a Transaction
+// // spending coins and hours from wallet
+// func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
+// 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+// 	if w.IsEncrypted() {
+// 		return nil, ErrWalletEncrypted
+// 	}
+
+// 	return w.createAndSignTransaction(vld, unspent, headTime, coins, dest)
+// }
+
+// // CreateAndSignTransactionEncrypted creates and signs the transaction
+// func (w *Wallet) CreateAndSignTransactionEncrypted(vld Validator, unspent blockdb.UnspentGetter,
+// 	headTime, coins uint64, dest cipher.Address, password []byte) (*coin.Transaction, error) {
+// 	var tx *coin.Transaction
+// 	if err := w.guard(password, func(wlt *Wallet) error {
+// 		var err error
+// 		tx, err = wlt.createAndSignTransaction(vld, unspent, headTime, coins, dest)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		return nil
+// 	}); err != nil {
+// 		return nil, err
+// 	}
+
+// 	return tx, nil
+// }
+
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
 func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	if wlt.IsEncrypted() {
+	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
 
-	return wlt.createAndSignTransaction(vld, unspent, headTime, coins, dest)
-}
-
-// CreateAndSignTransactionEncrypted creates and signs the transaction
-func (wlt *Wallet) CreateAndSignTransactionEncrypted(vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address, password []byte) (tx *coin.Transaction, err error) {
-	if !wlt.IsEncrypted() {
-		return nil, ErrWalletNotEncrypted
-	}
-
-	w, err := wlt.Unlock(password)
-	if err != nil {
-		return nil, fmt.Errorf("unlock wallet failed: %v", err)
-	}
-
-	defer func() {
-		if lockErr := w.Lock(password); lockErr != nil {
-			tx = nil
-			err = fmt.Errorf("lock wallet failed after signing tx: %v", err)
-			return
-		}
-	}()
-
-	return w.createAndSignTransaction(vld, unspent, headTime, coins, dest)
-}
-
-// createAndSignTransaction Creates a Transaction
-// spending coins and hours from wallet
-func (wlt *Wallet) createAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	addrs := wlt.GetAddresses()
+	addrs := w.GetAddresses()
 	ok, err := vld.HasUnconfirmedSpendTx(addrs)
 	if err != nil {
 		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
@@ -584,12 +576,12 @@ func (wlt *Wallet) createAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	for i, au := range spends {
 		entry, exists := w.GetEntry(au.Address)
 		if !exists {
-			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, wlt.Filename())
+			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, w.Filename())
 		}
 
 		txn.PushInput(au.Hash)
 
-		if wlt.IsEncrypted() {
+		if w.IsEncrypted() {
 			return nil, ErrWalletEncrypted
 		}
 
@@ -627,11 +619,11 @@ func (wlt *Wallet) createAndSignTransaction(vld Validator, unspent blockdb.Unspe
 	return &txn, nil
 }
 
-func (wlt *Wallet) setEncrypted(encrypt bool) {
+func (w *Wallet) setEncrypted(encrypt bool) {
 	if encrypt {
-		wlt.Meta["encrypted"] = "true"
+		w.Meta["encrypted"] = "true"
 	} else {
-		wlt.Meta["encrypted"] = "false"
+		w.Meta["encrypted"] = "false"
 	}
 }
 
@@ -639,8 +631,12 @@ func (wlt *Wallet) setEncrypted(encrypt bool) {
 // Check the "encrypted" meta field:
 //     - return true if "true".
 //     - return false if "false" or "".
-func (wlt *Wallet) IsEncrypted() bool {
-	switch wlt.Meta["encrypted"] {
+func (w *Wallet) IsEncrypted() bool {
+	return checkEncrypted(w.Meta["encrypted"])
+}
+
+func checkEncrypted(v string) bool {
+	switch v {
 	// return false if it's value is "false" or empty string, cause old wallets do
 	// not have this field.
 	case "true":
@@ -648,7 +644,7 @@ func (wlt *Wallet) IsEncrypted() bool {
 	case "false", "":
 		return false
 	default:
-		panic(ErrInvalidEncryptedField)
+		panic(ErrInvalidEncryptedFieldValue)
 	}
 }
 

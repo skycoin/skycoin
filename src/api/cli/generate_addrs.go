@@ -89,6 +89,7 @@ func generateAddrs(c *gcli.Context) error {
 	return nil
 }
 
+// GenerateAddressesInFile generates addresses in given wallet file
 func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {

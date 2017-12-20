@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/daemon"
 
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -25,6 +26,44 @@ type SpendResult struct {
 
 type UnconfirmedTxnsResponse struct {
 	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
+}
+
+// Spend spends coins from given wallet id
+// Args:
+//  walletID    string          ID of wallet to spend from
+//  coins       uint64          amount of coins to spend
+//  dest        ciper.Address   recipient address
+// Return:
+//  balance     *wallet.BalancePair         latest balance
+//  transaction *visor.ReadableTransaction  readable transaction
+//  error       error                       error in spending the coins
+func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) (balance *wallet.BalancePair, transaction *visor.ReadableTransaction, spendError error) {
+	tx, err := gateway.Spend(walletID, nil, coins, dest)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txStr, err := visor.TransactionToJSON(*tx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	logger.Info("Spend: \ntx= \n %s \n", txStr)
+
+	// Get the new wallet balance
+	b, err := gateway.GetWalletBalance(walletID)
+	if err != nil {
+		logger.Error("Get wallet balance failed: %v", err)
+		return nil, nil, err
+	}
+
+	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+	if err != nil {
+		logger.Error("Creation of new readable transaction failed: %s", err)
+		return nil, nil, err
+	}
+
+	return &b, rbTx, err
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
@@ -226,7 +265,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wlt, err = gateway.ScanAheadWalletAddresses(wlt.GetFilename(), scanN-1)
+		wlt, err = gateway.ScanAheadWalletAddresses(wlt.Filename(), nil, scanN-1)
 		if err != nil {
 			logger.Errorf("gateway.ScanAheadWalletAddresses failed: %v", err)
 			wh.Error500(w)
@@ -269,7 +308,7 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		addrs, err := gateway.NewAddresses(wltID, n)
+		addrs, err := gateway.NewAddresses(wltID, nil, n)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletApiDisabled:

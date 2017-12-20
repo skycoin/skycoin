@@ -59,7 +59,7 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 			return nil, err
 		}
 
-		// create default wallet
+		// Create default wallet
 		w, err := serv.CreateWallet("", Options{
 			Label: "Your Wallet",
 			Seed:  seed,
@@ -68,7 +68,7 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 			return nil, err
 		}
 
-		if err := w.Save(serv.WalletDirectory); err != nil {
+		if err := Save(serv.WalletDirectory, w); err != nil {
 			return nil, fmt.Errorf("failed to save wallets to %s: %v", serv.WalletDirectory, err)
 		}
 	}
@@ -77,7 +77,7 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 }
 
 // CreateWallet creates a wallet with one address
-func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, error) {
+func (serv *Service) CreateWallet(wltName string, options Options) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if serv.disableWalletAPI {
@@ -92,79 +92,105 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 
 // ScanAheadWalletAddresses scans n addresses for a balance, and sets the wallet's entry list to the highest
 // address with a non-zero coins balance.
-func (serv *Service) ScanAheadWalletAddresses(wltName string, scanN uint64, bg BalanceGetter) (Wallet, error) {
+// Set password as nil if the wallet is not encrypted, otherwise the password must be provided.
+func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64, bg BalanceGetter) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 
 	w, err := serv.getWallet(wltName)
 	if err != nil {
-		return Wallet{}, err
+		return nil, err
 	}
 
-	if err := w.ScanAddresses(scanN, bg); err != nil {
-		return Wallet{}, err
+	f := func(wlt *Wallet) error {
+		return wlt.ScanAddresses(scanN, bg)
 	}
 
-	if err := Save(serv.WalletDirectory); err != nil {
-		return Wallet{}, err
+	if w.IsEncrypted() {
+		if err := w.guard(password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := f(w); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := Save(serv.WalletDirectory, w); err != nil {
+		return nil, err
 	}
 
 	serv.wallets.set(w)
 
-	return w.Copy(), nil
+	return w.clone(), nil
 }
 
 // loadWallet loads wallet from seed and scan the first N addresses
-func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, bg BalanceGetter) (Wallet, error) {
+func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, bg BalanceGetter) (*Wallet, error) {
 	w, err := NewWallet(wltName, options)
 	if err != nil {
-		return Wallet{}, err
+		return nil, err
 	}
 
-	// Generate a default address
-	w.GenerateAddresses(1)
+	f := func(wlt *Wallet) error {
+		if len(wlt.Entries) == 0 {
+			// Generate a default address
+			wlt.GenerateAddresses(1)
+		}
 
-	// Check for duplicate wallets by initial seed
-	if id, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
-		return Wallet{}, fmt.Errorf("duplicate wallet with %v", id)
+		// Check for duplicate wallets by initial seed
+		if id, ok := serv.firstAddrIDMap[wlt.Entries[0].Address.String()]; ok {
+			return fmt.Errorf("duplicate wallet with %v", id)
+		}
+
+		// Scan for addresses with balances
+		if scanN > 1 && bg != nil {
+			if err := wlt.ScanAddresses(scanN-1, bg); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
-	// Scan for addresses with balances
-	if scanN > 1 && bg != nil {
-		if err := w.ScanAddresses(scanN-1, bg); err != nil {
-			return Wallet{}, err
+	if w.IsEncrypted() {
+		if err := w.guard(options.Password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := f(w); err != nil {
+			return nil, err
 		}
 	}
 
-	if err := serv.wallets.Add(*w); err != nil {
-		return Wallet{}, err
+	if err := serv.wallets.Add(w); err != nil {
+		return nil, err
 	}
 
-	if err := w.Save(serv.WalletDirectory); err != nil {
+	if err := Save(serv.WalletDirectory, w); err != nil {
 		// If save fails, remove the added wallet
-		serv.wallets.Remove(w.GetID())
-		return Wallet{}, err
+		serv.wallets.Remove(w.Filename())
+		return nil, err
 	}
 
 	serv.firstAddrIDMap[w.Entries[0].Address.String()] = w.Filename()
 
-	return w.Copy(), nil
+	return w.clone(), nil
 }
 
 func (serv *Service) generateUniqueWalletFilename() string {
-	wltName := NewWalletFilename()
+	wltName := newWalletFilename()
 	for {
 		if _, ok := serv.wallets.Get(wltName); !ok {
 			break
 		}
-		wltName = NewWalletFilename()
+		wltName = newWalletFilename()
 	}
 
 	return wltName
 }
 
-// Encrypt encrypts wallet by given password
-func (serv *Service) Encrypt(wltID, password string) (*Wallet, error) {
+// EncryptWallet encrypts wallet with password
+func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
@@ -172,43 +198,19 @@ func (serv *Service) Encrypt(wltID, password string) (*Wallet, error) {
 		return nil, ErrWalletNotExist{wltID}
 	}
 
-	oldVersion := w.Version()
+	isEncrypted := w.IsEncrypted()
 
-	// Update version to lastest
-	w.setVersion(Version)
-
-	// encrypt seed
-	sseed, err := Encrypt([]byte(w.seed()), []byte(password))
-	if err != nil {
+	if err := w.lock(password); err != nil {
 		return nil, err
-	}
-	w.setSeed(sseed)
-
-	// encrypt lastSeed
-	lsseed, err := Encrypt([]byte(w.lastSeed()), []byte(password))
-	if err != nil {
-		return nil, err
-	}
-	w.setLastSeed(lsseed)
-
-	// encrypts private keys in entries
-	for i := range w.Entries {
-		sk, err := Encrypt(w.Entries[i].Secret[:], []byte(password))
-		if err != nil {
-			return nil, err
-		}
-
-		w.Entries[i].EncryptedSeckey = sk
-		w.Entries[i].Secret = cipher.SecKey{}
 	}
 
 	if err := Save(serv.WalletDirectory, w); err != nil {
 		return nil, err
 	}
 
-	// Delete the .bak file if the previous version is 0.1,
+	// Delete the .bak file if the previous version was not encrypted
 	// othewise it would expose the plaintext seeds and private keys.
-	if oldVersion == "0.1" {
+	if !isEncrypted {
 		fn := w.Filename() + ".bak"
 		path := filepath.Join(serv.WalletDirectory, fn)
 		if e, err := os.Stat(path); !os.IsNotExist(err) {
@@ -220,14 +222,13 @@ func (serv *Service) Encrypt(wltID, password string) (*Wallet, error) {
 		}
 	}
 
-	nw := w.clone()
-
-	return nw, nil
+	return w.clone(), nil
 }
 
 // NewAddresses generate address entries in given wallet,
 // return nil if wallet does not exist.
-func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
+// Set password as nil if the wallet is not encrypted, otherwise the password must be provided.
+func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
@@ -235,9 +236,21 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 		return []cipher.Address{}, ErrWalletNotExist{wltID}
 	}
 
-	addrs, err := w.GenerateAddresses(num)
-	if err != nil {
-		return nil, err
+	var addrs []cipher.Address
+	f := func(wlt *Wallet) error {
+		var err error
+		addrs, err = wlt.GenerateAddresses(num)
+		return err
+	}
+
+	if w.IsEncrypted() {
+		if err := w.guard(password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := f(w); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := Save(w, serv.WalletDirectory); err != nil {
@@ -260,17 +273,17 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 }
 
 // GetWallet returns wallet by id
-func (serv *Service) GetWallet(wltID string) (Wallet, error) {
+func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 
 	return serv.getWallet(wltID)
 }
 
-func (serv *Service) getWallet(wltID string) (Wallet, error) {
+func (serv *Service) getWallet(wltID string) (*Wallet, error) {
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return Wallet{}, ErrWalletNotExist
+		return nil, ErrWalletNotExist{wltID}
 	}
 	return w.clone(), nil
 }
@@ -281,8 +294,7 @@ func (serv *Service) GetWallets() Wallets {
 	defer serv.RUnlock()
 	wlts := make(Wallets, len(serv.wallets))
 	for k, w := range serv.wallets {
-		nw := w.clone()
-		wlts[k] = nw
+		wlts[k] = w.clone()
 	}
 	return wlts
 }
@@ -305,7 +317,8 @@ func (serv *Service) ReloadWallets() error {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
+// Set password as nil if the wallet is not encrypted, otherwise the password must be provided
+func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
@@ -314,7 +327,23 @@ func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspe
 		return nil, ErrWalletNotExist{wltID}
 	}
 
-	return w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
+	var tx *coin.Transaction
+	f := func(wlt *Wallet) error {
+		var err error
+		tx, err = wlt.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
+		return err
+	}
+
+	if w.IsEncrypted() {
+		if err := w.guard(password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := f(w); err != nil {
+			return nil, err
+		}
+	}
+	return tx, nil
 }
 
 // UpdateWalletLabel updates the wallet label

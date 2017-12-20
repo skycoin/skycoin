@@ -1,9 +1,10 @@
+// build ignore
+
 package wallet
 
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -27,78 +28,6 @@ func prepareWltDir() string {
 	return dir
 }
 
-func dirIsEmpty(t *testing.T, dir string) {
-	f, err := os.Open(dir)
-	require.NoError(t, err)
-	names, err := f.Readdirnames(1)
-	require.Equal(t, io.EOF, err)
-	require.Empty(t, names)
-}
-
-type mockBalanceGetter map[cipher.Address]BalancePair
-
-// 10 addresses of seed1
-var addrsOfSeed1 = []string{
-	"2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
-	"q2kU13X8XsAg8cS8BuSeSVzjPF9AT9ghAa",
-	"2WXvTagXtrc1Qq71yjNXw86TC6SRgfVRH1B",
-	"2NUNw748b9mT2FHRxgJL5KjBHasLfdP32Sh",
-	"2V1CnVzWoXDaCX6wHU4tLJkWaFmLcQBb2q4",
-	"wBkMr936thcr57wxyrH6ffvA99JN2Q1MN1",
-	"2f92Wht7VQefAyoJUz3SEnfwT6wTdeAcq3L",
-	"27UM5jPFYVuve3ceEHAYGaJSmkynQYmwPcH",
-	"xjWbVN7ihReasVFwXJSSYYWF7rgQa22auC",
-	"2LyanokLYFeBfBsNkRYHp2qtN8naGFJqeUw",
-}
-
-var childSeedsOfSeed1 = []string{
-	"22b826c586039f8078433be26618ca1024e883d97de2267313bb78068f634c5a",
-	"68efbbdf8aa06368cfc55e252d1e782bbd7651e590ee59e94ab579d2e44c20ad",
-	"8894c818732375680284be4509d153272726f42296b85ecac1fb66b9dc7484b9",
-	"6603375ee19c1e9fffe369e3f62e9deaa6931c1183d7da7f24ecbbd591061502",
-	"91a63f939149d423ea39701d8ed16cfb16a3554c184d214d2289018ddb9e73de",
-	"f0f4f008aa3e7cd32ee953507856fb46e37b734fd289dc01449133d7e37a1f07",
-	"6b194da58a5ba5660cf2b00076cf6a2962fe8fe0523abca5647c87df3352866a",
-	"b47a2678f7e797d3ada86e7e36855f572a18ab78dcbe54ed0613bba69fd76f8d",
-	"fe064533108dadbef13be3a95f547ba03423aa6a701c40aaaed775cb783b12b3",
-	"d554da211321a437e4d08f2a57e3ef255cffa89dd182e0fd52a4fd5bdfcab1ae",
-}
-
-func fromAddrString(t *testing.T, addrStrs []string) []cipher.Address {
-	addrs := make([]cipher.Address, 0, len(addrStrs))
-	for _, addr := range addrStrs {
-		a, err := cipher.DecodeBase58Address(addr)
-		require.NoError(t, err)
-		addrs = append(addrs, a)
-	}
-	return addrs
-}
-
-func (mb mockBalanceGetter) GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error) {
-	var bals []BalancePair
-	for _, addr := range addrs {
-		bal := mb[addr]
-		bals = append(bals, bal)
-	}
-	return bals, nil
-}
-
-func TestNewServiceDisabledWalletAPI(t *testing.T) {
-	dir := prepareWltDir()
-	s, err := NewService(dir, true)
-	require.NoError(t, err)
-	dirIsEmpty(t, dir)
-
-	// check if the wallet dir is created
-	_, err = os.Stat(dir)
-	require.NoError(t, err)
-
-	require.Equal(t, "", s.WalletDirectory)
-
-	// check if the default wallet is created
-	require.Equal(t, 0, len(s.wallets))
-}
-
 func TestNewService(t *testing.T) {
 	dir := prepareWltDir()
 	s, err := NewService(dir, false)
@@ -110,7 +39,7 @@ func TestNewService(t *testing.T) {
 
 	require.Equal(t, dir, s.WalletDirectory)
 
-	require.Equal(t, 0, len(s.wallets))
+	require.Equal(t, 1, len(s.wallets))
 
 	// test load wallets
 	s, err = NewService("./testdata", false)
@@ -153,7 +82,6 @@ func TestServiceCreateWallet(t *testing.T) {
 		Seed: seed,
 	})
 	require.NoError(t, err)
-	require.Equal(t, seed, string(sd))
 	require.NoError(t, w.validate())
 
 	// create wallet with dup wallet name
@@ -175,164 +103,250 @@ func TestServiceCreateWallet(t *testing.T) {
 	require.True(t, os.IsNotExist(err))
 }
 
-func TestServiceScanWalletDisabledWalletAPI(t *testing.T) {
-	bg := make(mockBalanceGetter, len(addrsOfSeed1))
-	dir := prepareWltDir()
-	s, err := NewService(dir, true)
-	require.NoError(t, err)
-	dirIsEmpty(t, dir)
-
-	wallet, err := s.ScanAheadWalletAddresses("wltName", 1, bg)
-	require.Equal(t, err, errors.New("wallet doesn't exist"))
-	require.Equal(t, wallet, Wallet{})
-}
-
-func TestServiceCreateAndScanWallet(t *testing.T) {
-	bg := make(mockBalanceGetter, len(addrsOfSeed1))
-	addrs := fromAddrString(t, addrsOfSeed1)
-	for _, a := range addrs {
-		bg[a] = BalancePair{}
-	}
-
-	type exp struct {
-		seed             string
-		lastSeed         string
-		entryNum         int
-		confirmedBalance uint64
-		predictedBalance uint64
+func TestServiceLoadWallet(t *testing.T) {
+	// Prepare addresss
+	seed := "seed"
+	_, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 10)
+	var addrs []cipher.Address
+	for _, s := range seckeys {
+		addrs = append(addrs, cipher.AddressFromSecKey(s))
 	}
 
 	tt := []struct {
-		name      string
-		scanN     uint64
-		balGetter BalanceGetter
-		expect    exp
+		name          string
+		opts          Options
+		scanN         uint64
+		bg            BalanceGetter
+		err           error
+		expectAddrNum int
+		expectAddrs   []cipher.Address
 	}{
 		{
-			"no coins and scan 0",
-			0,
-			bg,
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
-				entryNum:         1,
-				confirmedBalance: 0,
-				predictedBalance: 0,
+			"raw wallet, one address",
+			Options{
+				Seed:  "seed",
+				Label: "wallet",
 			},
-		},
-		{
-			"no coins and scan 1",
+			5,
+			mockBalanceGetter{
+				addrs[0]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
+			},
+			nil,
 			1,
-			bg,
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
-				entryNum:         1,
-				confirmedBalance: 0,
-				predictedBalance: 0,
-			},
+			addrs[:1],
 		},
 		{
-			"no coins and scan 10",
-			10,
-			bg,
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
-				entryNum:         1,
-				confirmedBalance: 0,
-				predictedBalance: 0,
+			"raw wallet, two address",
+			Options{
+				Seed:  "seed",
+				Label: "wallet",
 			},
-		},
-		{
-			"scan 5 get 5",
 			5,
 			mockBalanceGetter{
-				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[1]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[5],
-				entryNum:         5 + 1,
-				confirmedBalance: 10,
-				predictedBalance: 0,
-			},
+			nil,
+			2,
+			addrs[:2],
 		},
 		{
-			"scan 5 get 4",
+			"encrypted wallet, one address",
+			Options{
+				Seed:     "seed",
+				Label:    "wallet",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
 			5,
 			mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[0]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4 + 1,
-				confirmedBalance: 20,
-				predictedBalance: 0,
-			},
+			nil,
+			1,
+			addrs[:1],
 		},
 		{
-			"scan 5 get 4 have 6",
+			"encrypted wallet, two address",
+			Options{
+				Seed:     "seed",
+				Label:    "wallet",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
 			5,
 			mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[1]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4 + 1,
-				confirmedBalance: 20,
-				predictedBalance: 0,
-			},
-		},
-
-		{
-			"confirmed and predicted",
-			5,
-			mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
-			},
-			exp{
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4 + 1,
-				confirmedBalance: 20,
-				predictedBalance: 0,
-			},
+			nil,
+			2,
+			addrs[:2],
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := prepareWltDir()
-
-			s, err := NewService(dir, false)
+			s, err := NewService(dir)
 			require.NoError(t, err)
+			wltName := newWalletFilename()
+			w, err := s.loadWallet(wltName, tc.opts, tc.scanN, tc.bg)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
 
-			wltName := "t1.wlt"
-			seed := "seed1"
-			w, err := s.CreateWallet(wltName, Options{
-				Seed:  seed,
-				Label: "foo",
-			})
-			require.NoError(t, err)
-
-			require.NoError(t, w.validate())
-
-			w, err = s.ScanAheadWalletAddresses(wltName, tc.scanN, tc.balGetter)
-			require.NoError(t, err)
-
-			require.Len(t, w.Entries, tc.expect.entryNum)
-			for i := range w.Entries {
-				require.Equal(t, addrsOfSeed1[i], w.Entries[i].Address.String())
+			require.Len(t, w.Entries, tc.expectAddrNum)
+			for i, a := range tc.expectAddrs {
+				require.Equal(t, a, w.Entries[i].Address)
 			}
 		})
 	}
+
+}
+
+func TestServiceNewAddress(t *testing.T) {
+	seed := []byte("seed")
+	// Generate adddresses from the seed
+	var addrs []cipher.Address
+	_, seckeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 10)
+	for _, s := range seckeys {
+		addrs = append(addrs, cipher.AddressFromSecKey(s))
+	}
+
+	tt := []struct {
+		name          string
+		opts          Options
+		n             uint64
+		pwd           []byte
+		err           error
+		expectAddrNum int
+		expectAddrs   []cipher.Address
+	}{
+		{
+			"not encrypted, 0 address",
+			Options{
+				Label: "label",
+				Seed:  string(seed),
+			},
+			0,
+			nil,
+			nil,
+			0,
+			nil, // CreateWallet will generate a default address, so check from new address
+		},
+		{
+			"not encrypted, 1 addresses",
+			Options{
+				Label: "label",
+				Seed:  string(seed),
+			},
+			2,
+			nil,
+			nil,
+			2,
+			addrs[1:3], // CreateWallet will generate a default address, so check from new address
+		},
+		{
+			"not encrypted, 2 addresses",
+			Options{
+				Label: "label",
+				Seed:  string(seed),
+			},
+			2,
+			nil,
+			nil,
+			2,
+			addrs[1:3], // CreateWallet will generate a default address, so check from new address
+		},
+		{
+			"encrypted, 1 addresses",
+			Options{
+				Label:    "label",
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			1,
+			[]byte("pwd"),
+			nil,
+			1,
+			addrs[1:2], // CreateWallet will generate a default address, so check from new address
+		},
+		{
+			"encrypted, 2 addresses",
+			Options{
+				Label:    "label",
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			2,
+			[]byte("pwd"),
+			nil,
+			2,
+			addrs[1:3], // CreateWallet will generate a default address, so check from new address
+		},
+		{
+			"encrypted, wrong password",
+			Options{
+				Label:    "label",
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			1,
+			[]byte("wrong password"),
+			errors.New("unlock wallet failed: invalid password"),
+			1,
+			nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir, false)
+			require.NoError(t, err)
+
+			wltName := newWalletFilename()
+			w, err := s.CreateWallet(wltName, tc.opts)
+			require.NoError(t, err)
+
+			naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			require.Len(t, naddrs, tc.expectAddrNum)
+			for i, a := range tc.expectAddrs {
+				require.Equal(t, a, naddrs[i])
+			}
+
+			// Check the wallet again
+			w, ok := s.wallets[wltName]
+			require.True(t, ok)
+			require.Len(t, w.Entries, int(tc.n+1))
+
+			// Wallet has a default address, so need to start from the second address
+			for i, a := range tc.expectAddrs {
+				require.Equal(t, a, w.Entries[i+1].Address)
+			}
+
+			// Load wallet from file and check
+			_, err = os.Stat(filepath.Join(dir, w.Filename()))
+			require.NoError(t, err)
+
+			lw, err := Load(filepath.Join(dir, w.Filename()))
+			require.NoError(t, err)
+			require.Equal(t, lw, w)
+
+			// Wallet doesn't exist
+			_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
+			require.Equal(t, ErrWalletNotExist{"wallet_not_exist.wlt"}, err)
+		})
+	}
+
 }
 
 func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
@@ -345,30 +359,6 @@ func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
 	addrs, err := s.NewAddresses("", 1)
 	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, 0, len(addrs))
-}
-
-func TestServiceNewAddress(t *testing.T) {
-	dir := prepareWltDir()
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
-
-	pwd := "pwd"
-	wltName := "test.wlt"
-	w, err := s.CreateWallet(wltName, pwd)
-	require.NoError(t, err)
-
-	// get the default wallet id
-	addrs, err := s.NewAddresses(w.Filename(), pwd, 1)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(addrs))
-
-	// check if the wallet file is created
-	_, err = os.Stat(filepath.Join(dir, w.Filename()))
-	require.NoError(t, err)
-
-	// wallet doesn't exist
-	_, err = s.NewAddresses("not_exist_id.wlt", pwd, 1)
-	require.Equal(t, ErrWalletNotExist{"not_exist_id.wlt"}, err)
 }
 
 func TestServiceGetAddressDisabledWalletAPI(t *testing.T) {
@@ -388,8 +378,10 @@ func TestServiceGetAddress(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	w, err := s.CreateWallet("test.wlt", "pwd")
-	require.NoError(t, err)
+	// get the defaut wallet
+	var w *Wallet
+	for _, w = range s.wallets {
+	}
 
 	addrs, err := s.GetAddresses(w.Filename())
 	require.NoError(t, err)
@@ -420,19 +412,54 @@ func TestServiceGetWallet(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	w, err := s.CreateWallet("test.wlt", "pwd")
+	// Get the defaut wallet
+	var w *Wallet
+	for _, w = range s.wallets {
+	}
 	require.NoError(t, err)
 
-	w, err := s.GetWallet(id)
+	w1, err := s.GetWallet(w.Filename())
 	require.NoError(t, err)
 
-	// modify the returned wallet won't affect the wallet in service
-	w1.setLabel("new_label")
+	// Check if change original wallet would change the returned wallet
+	w.setLabel("new_label")
 
-	w1, err := s.GetWallet(id)
+	require.NotEqual(t, "new_label", w1.Label())
+
+	// Get wallet doesn't exist
+	wltName := "does_not_exist.wlt"
+	_, err = s.GetWallet(wltName)
+	require.Equal(t, ErrWalletNotExist{wltName}, err)
+}
+
+func TestServiceGetWallets(t *testing.T) {
+	dir := prepareWltDir()
+	s, err := NewService(dir)
 	require.NoError(t, err)
 
-	require.NotEqual(t, "new_label", w2.Label())
+	var wallets []*Wallet
+	// Get the default wallet
+	var w1 *Wallet
+	for _, w1 = range s.wallets {
+	}
+	wallets = append(wallets, w1)
+
+	// Create a new wallet
+	wltName := newWalletFilename()
+	w2, err := s.CreateWallet(wltName, Options{
+		Seed:  "seed",
+		Label: "label",
+	})
+	require.NoError(t, err)
+	wallets = append(wallets, w2)
+
+	ws := s.GetWallets()
+	for _, w := range wallets {
+		ww, ok := ws[w.Filename()]
+		require.True(t, ok)
+		require.Equal(t, w, ww)
+	}
+
 }
 
 func TestServiceReloadWalletsDisabledWalletAPI(t *testing.T) {
@@ -452,9 +479,9 @@ func TestServiceReloadWallets(t *testing.T) {
 	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
-	pwd := "pwd"
-	w, err := s.CreateWallet("test.wlt", pwd)
-	require.NoError(t, err)
+	var w *Wallet
+	for _, w = range s.wallets {
+	}
 
 	defaultWltID := w.Filename()
 
@@ -464,8 +491,10 @@ func TestServiceReloadWallets(t *testing.T) {
 	}
 
 	wltName := "t1.wlt"
-	w, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
+	w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
 	require.NoError(t, err)
+
+	fmt.Println(dir, w1.Filename())
 
 	err = s.ReloadWallets()
 	require.NoError(t, err)
@@ -483,6 +512,680 @@ func TestServiceReloadWallets(t *testing.T) {
 
 	_, ok = s.firstAddrIDMap[w1.Entries[0].Address.String()]
 	require.True(t, ok)
+}
+
+func TestServiceCreateAndSignTx(t *testing.T) {
+	headTime := time.Now().UTC().Unix()
+	seed := []byte("seed")
+
+	// Generate first keys
+	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
+	secKey := secKeys[0]
+	addr := cipher.AddressFromSecKey(secKey)
+
+	// Create unspent outptus
+	var uxouts []coin.UxOut
+	addrs := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, 100)
+		uxouts = append(uxouts, uxout)
+
+		p, _ := cipher.GenerateKeyPair()
+		a := cipher.AddressFromPubKey(p)
+		addrs = append(addrs, a)
+	}
+
+	// Create unspent outputs with no hours
+	var uxoutsNoHours []coin.UxOut
+	addrsNoHours := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, 100)
+		uxout.Body.Hours = 0
+		uxout.Head.Time = uint64(headTime)
+		uxoutsNoHours = append(uxoutsNoHours, uxout)
+
+		p, _ := cipher.GenerateKeyPair()
+		a := cipher.AddressFromPubKey(p)
+		addrsNoHours = append(addrsNoHours, a)
+	}
+
+	tt := []struct {
+		name     string
+		opts     Options
+		pwd      []byte
+		unspents []coin.UxOut
+		vld      Validator
+		coins    uint64
+		dest     cipher.Address
+		err      error
+	}{
+		{
+			"ok with no change, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok: false,
+			},
+			2e6,
+			addrs[0],
+			nil,
+		},
+		{
+			"ok with no change, encrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+				Encrypt:    true,
+				Password:   []byte("pwd"),
+			},
+			[]byte("pwd"),
+			uxouts[:],
+			&dummyValidator{
+				ok: false,
+			},
+			2e6,
+			addrs[0],
+			nil,
+		},
+		{
+			"ok with change, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok: false,
+			},
+			1e6,
+			addrs[0],
+			nil,
+		},
+		{
+			"has unconfirmed spending transaction, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok: true,
+			},
+			2e6,
+			addrs[0],
+			errors.New("please spend after your pending transaction is confirmed"),
+		},
+		{
+			"check unconfirmed spend failed, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok:  false,
+				err: errors.New("fail intentionally"),
+			},
+			2e6,
+			addrs[0],
+			errors.New("checking unconfirmed spending failed: fail intentionally"),
+		},
+		{
+			"spend zero, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok: false,
+			},
+			0,
+			addrs[0],
+			errors.New("zero spend amount"),
+		},
+		{
+			"spend fractional coins, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok: false,
+			},
+			1e3,
+			addrs[0],
+			nil,
+		},
+		{
+			"not enough confirmed coins, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxouts[:],
+			&dummyValidator{
+				ok: false,
+			},
+			100e6,
+			addrs[0],
+			ErrInsufficientBalance,
+		},
+		{
+			"no coin hours in inputs, unencrypted",
+			Options{
+				Seed:       string(seed),
+				AddressNum: 1,
+			},
+			nil,
+			uxoutsNoHours[:],
+			&dummyValidator{
+				ok: false,
+			},
+			1e6,
+			addrsNoHours[0],
+			fee.ErrTxnNoFee,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			unspents := &dummyUnspentGetter{
+				addrUnspents: coin.AddressUxOuts{
+					addr: tc.unspents,
+				},
+				unspents: map[cipher.SHA256]coin.UxOut{},
+			}
+
+			for _, ux := range tc.unspents {
+				unspents.unspents[ux.Hash()] = ux
+			}
+
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			wltName := newWalletFilename()
+
+			w, err := s.CreateWallet(wltName, tc.opts)
+			require.NoError(t, err)
+
+			tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			// check the IN of tx
+			for _, inUxid := range tx.In {
+				_, ok := unspents.unspents[inUxid]
+				require.True(t, ok)
+			}
+
+			err = tx.Verify()
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestServiceUpdateWalletLabel(t *testing.T) {
+	tt := []struct {
+		name          string
+		wltName       string
+		opts          Options
+		updateWltName string
+		label         string
+		err           error
+	}{
+		{
+			"ok",
+			"t.wlt",
+			Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			"t.wlt",
+			"new-label",
+			nil,
+		},
+		{
+			"wallet doesn't exist",
+			"t.wlt",
+			Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			"t1.wlt",
+			"new-label",
+			ErrWalletNotExist{"t1.wlt"},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create the wallet service
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			// Create a new wallet
+			w, err := s.CreateWallet(tc.wltName, tc.opts)
+			require.NoError(t, err)
+
+			err = s.UpdateWalletLabel(tc.updateWltName, tc.label)
+			require.Equal(t, tc.err, err)
+
+			if err != nil {
+				return
+			}
+
+			nw, err := s.GetWallet(w.Filename())
+			require.NoError(t, err)
+			require.NotEqual(t, w.Label(), nw.Label())
+
+			require.Equal(t, tc.label, nw.Label())
+		})
+	}
+}
+
+func TestServiceEncryptWallet(t *testing.T) {
+	tt := []struct {
+		name       string
+		wltName    string
+		opts       Options
+		encWltName string
+		pwd        []byte
+		err        error
+	}{
+		{
+			"ok",
+			"t.wlt",
+			Options{
+				Seed: "seed",
+			},
+			"t.wlt",
+			[]byte("pwd"),
+			nil,
+		},
+		{
+			"wallet doesn't exist",
+			"t.wlt",
+			Options{
+				Seed: "seed",
+			},
+			"t2.wlt",
+			nil,
+			ErrWalletNotExist{"t2.wlt"},
+		},
+		{
+			"wallet already encrypted",
+			"t.wlt",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			"t.wlt",
+			[]byte("pwd"),
+			ErrWalletEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			// Create the wallet service
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			// Create a new wallet
+			w, err := s.CreateWallet(tc.wltName, tc.opts)
+			require.NoError(t, err)
+
+			// Encrypt the wallet
+			encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			// Check the encrypted wallet
+			require.True(t, encWlt.IsEncrypted())
+			require.Equal(t, cipher.SecKey{}, encWlt.Entries[0].Secret)
+			require.NotEqual(t, w.seed(), encWlt.seed())
+			require.NotEqual(t, w.lastSeed(), encWlt.lastSeed())
+
+			// Check the decrypted seeds
+			decWlt, err := encWlt.unlock(tc.pwd)
+			require.NoError(t, err)
+			require.Equal(t, w.seed(), decWlt.seed())
+			require.Equal(t, w.lastSeed(), decWlt.lastSeed())
+
+			// Check if the wallet file exist
+			path := filepath.Join(dir, w.Filename())
+			_, err = os.Stat(path)
+			require.True(t, !os.IsNotExist(err))
+
+			// Check if the backup wallet file, which should not exist
+			bakPath := path + ".bak"
+			_, err = os.Stat(bakPath)
+			require.True(t, os.IsNotExist(err))
+		})
+	}
+}
+
+func TestServiceScanAheadWalletAddresses(t *testing.T) {
+	bg := make(mockBalanceGetter, len(addrsOfSeed1))
+	addrs := fromAddrString(t, addrsOfSeed1)
+	for _, a := range addrs {
+		bg[a] = BalancePair{}
+	}
+
+	type exp struct {
+		err              error
+		seed             string
+		lastSeed         string
+		entryNum         int
+		confirmedBalance uint64
+		predictedBalance uint64
+	}
+
+	tt := []struct {
+		name      string
+		opts      Options
+		pwd       []byte
+		scanN     uint64
+		balGetter BalanceGetter
+		expect    exp
+	}{
+		{
+			"no coins and scan 0, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			0,
+			bg,
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"no coins and scan 0, encrypted",
+			Options{
+				Seed:     "seed1",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			0,
+			bg,
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"no coins and scan 1, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			1,
+			bg,
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"no coins and scan 1, encrypted",
+			Options{
+				Seed:     "seed1",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			1,
+			bg,
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"no coins and scan 10, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			10,
+			bg,
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 5, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			5,
+			mockBalanceGetter{
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[5],
+				entryNum:         5,
+				confirmedBalance: 10,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 5, encrypted",
+			Options{
+				Seed:     "seed1",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			5,
+			mockBalanceGetter{
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[5],
+				entryNum:         5,
+				confirmedBalance: 10,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 4, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			5,
+			mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 4, encrypted",
+			Options{
+				Seed:     "seed1",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			5,
+			mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"scan 5 get 4 have 6, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			5,
+			mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"confirmed and predicted, unencrypted",
+			Options{
+				Seed: "seed1",
+			},
+			nil,
+			5,
+			mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"confirmed and predicted, encrypted",
+			Options{
+				Seed:     "seed1",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			5,
+			mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err:              nil,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			"confirmed and predicted, wrong password",
+			Options{
+				Seed:     "seed1",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("wrong password"),
+			5,
+			mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				err: errors.New("unlock wallet failed: invalid password"),
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			wltName := newWalletFilename()
+			w, err := s.CreateWallet(wltName, tc.opts)
+			require.NoError(t, err)
+
+			require.NoError(t, w.validate())
+
+			w1, err := s.ScanAheadWalletAddresses(wltName, tc.pwd, tc.scanN, tc.balGetter)
+			require.Equal(t, tc.expect.err, err)
+			if err != nil {
+				return
+			}
+
+			require.Len(t, w1.Entries, tc.expect.entryNum)
+			for i := range w1.Entries {
+				require.Equal(t, addrsOfSeed1[i], w1.Entries[i].Address.String())
+			}
+		})
+	}
 }
 
 type dummyValidator struct {
@@ -508,234 +1211,8 @@ func (dug dummyUnspentGetter) Get(uxid cipher.SHA256) (coin.UxOut, bool) {
 	return uxout, ok
 }
 
-func TestServiceCreateAndSignTx(t *testing.T) {
-	dir := prepareWltDir()
-
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
-	var id string
-	for id = range s.wallets {
-		break
-	}
-
-	headTime := time.Now().UTC().Unix()
-
-	wlt, err := s.GetWallet(id)
-	require.NoError(t, err)
-
-	secKey := wlt.Entries[0].Secret
-	addr := wlt.Entries[0].Address
-
-	var uxouts []coin.UxOut
-	addrs := []cipher.Address{}
-	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, seckeys[0])
-		uxouts = append(uxouts, uxout)
-
-		p, _ := cipher.GenerateKeyPair()
-		a := cipher.AddressFromPubKey(p)
-		addrs = append(addrs, a)
-	}
-
-	var uxoutsNoHours []coin.UxOut
-	addrsNoHours := []cipher.Address{}
-	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, seckeys[0])
-		uxout.Body.Hours = 0
-		uxout.Head.Time = uint64(headTime)
-		uxoutsNoHours = append(uxoutsNoHours, uxout)
-
-		p, _ := cipher.GenerateKeyPair()
-		a := cipher.AddressFromPubKey(p)
-		addrsNoHours = append(addrsNoHours, a)
-	}
-
-	tt := []struct {
-		name       string
-		unspents   []coin.UxOut
-		addrUxouts coin.AddressUxOuts
-		vld        Validator
-		coins      uint64
-		dest       cipher.Address
-		pwd        string
-		err        error
-	}{
-		{
-			"ok with no change",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			2e6,
-			addrs[0],
-			pwd,
-			nil,
-		},
-		{
-			"ok with change",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			1e6,
-			addrs[0],
-			pwd,
-			nil,
-		},
-		{
-			"has unconfirmed spending transaction",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: true,
-			},
-			2e6,
-			addrs[0],
-			pwd,
-			errors.New("please spend after your pending transaction is confirmed"),
-		},
-		{
-			"check unconfirmed spend failed",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok:  false,
-				err: errors.New("fail intentionally"),
-			},
-			2e6,
-			addrs[0],
-			pwd,
-			errors.New("checking unconfirmed spending failed: fail intentionally"),
-		},
-		{
-			"spend zero",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			0,
-			addrs[0],
-			pwd,
-			errors.New("zero spend amount"),
-		},
-		{
-			"spend fractional coins",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			1e3,
-			addrs[0],
-			pwd,
-			nil,
-		},
-		{
-			"not enough confirmed coins",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			100e6,
-			addrs[0],
-			pwd,
-			ErrInsufficientBalance,
-		},
-		{
-			"no coin hours in inputs",
-			uxoutsNoHours[:],
-			coin.AddressUxOuts{
-				addr: uxoutsNoHours,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			1e6,
-			addrsNoHours[0],
-			pwd,
-			fee.ErrTxnNoFee,
-		},
-		{
-			"wrong password",
-			uxouts[:],
-			coin.AddressUxOuts{
-				addr: uxouts,
-			},
-			&dummyValidator{
-				ok: false,
-			},
-			2e6,
-			addrs[0],
-			pwd,
-			cipher.ErrInvalidPassword,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(dir)
-			require.NoError(t, err)
-			w, err := s.CreateWallet("test.wlt", pwd, OptSeed(string(seed)))
-			require.NoError(t, err)
-
-			unspents := &dummyUnspentGetter{
-				addrUnspents: tc.addrUxouts,
-				unspents:     map[cipher.SHA256]coin.UxOut{},
-			}
-
-			for _, ux := range tc.unspents {
-				unspents.unspents[ux.Hash()] = ux
-			}
-
-			tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
-
-			// check the IN of tx
-			for _, inUxid := range tx.In {
-				_, ok := unspents.unspents[inUxid]
-				require.True(t, ok)
-			}
-
-			err = tx.Verify()
-			require.NoError(t, err)
-		})
-	}
-}
-
-func makeUxBody(t *testing.T, s cipher.SecKey) coin.UxBody {
-	p := cipher.PubKeyFromSecKey(s)
-	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
-		Address:        cipher.AddressFromPubKey(p),
-		Coins:          2e6,
-		Hours:          100,
-	}
-}
-
-func makeUxOut(t *testing.T, s cipher.SecKey) coin.UxOut {
-	body := makeUxBody(t, s)
+func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut {
+	body := makeUxBody(t, s, coins, hours)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)
 	return coin.UxOut{
@@ -744,5 +1221,15 @@ func makeUxOut(t *testing.T, s cipher.SecKey) coin.UxOut {
 			BkSeq: uint64(seq),
 		},
 		Body: body,
+	}
+}
+
+func makeUxBody(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxBody {
+	p := cipher.PubKeyFromSecKey(s)
+	return coin.UxBody{
+		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
+		Address:        cipher.AddressFromPubKey(p),
+		Coins:          coins,
+		Hours:          hours,
 	}
 }

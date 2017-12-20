@@ -27,7 +27,6 @@ var (
 // 4> Each block is encrypted by XORing the unencrypted block with SHA256(SHA256(password), SHA256(index, SHA256(nonce))
 // 	  - index is 0 for the first block of 32 bytes, 1 for the second block of 32 bytes, 2 for third block
 // 5> SHA256 the nonce with comma seperated, hex encoded blocks of 32 bytes(256 bits)
-// 6> Encode <checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...> with base64
 func Encrypt(data []byte, password []byte) ([]byte, error) {
 	// set data length prefix
 	dataHash := SumSHA256(data)

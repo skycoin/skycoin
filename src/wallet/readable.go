@@ -4,7 +4,6 @@ import (
 
 	//"fmt"
 
-	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -19,14 +18,14 @@ type ReadableEntry struct {
 }
 
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(w Entry, v string) ReadableEntry {
+func NewReadableEntry(w Entry, isEncrypted bool) ReadableEntry {
 	var secret string
-	switch v {
-	case "0.1":
+	if !isEncrypted {
 		secret = w.Secret.Hex()
-	case Version:
+	} else {
 		secret = w.EncryptedSeckey
 	}
+
 	return ReadableEntry{
 		Address: w.Address.String(),
 		Public:  w.Public.Hex(),
@@ -62,10 +61,10 @@ type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries(v string) ([]Entry, error) {
+func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		e, err := newEntryFromReadable(&re, v)
+		e, err := newEntryFromReadable(&re, isEncrypted)
 		if err != nil {
 			return []Entry{}, err
 		}
@@ -76,11 +75,7 @@ func (res ReadableEntries) toWalletEntries(v string) ([]Entry, error) {
 }
 
 // newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func newEntryFromReadable(w *ReadableEntry, v string) (*Entry, error) {
-	if w.Secret == "" {
-		return nil, errors.New("secret field is empty")
-	}
-
+func newEntryFromReadable(w *ReadableEntry, isEncrypted bool) (*Entry, error) {
 	a, err := cipher.DecodeBase58Address(w.Address)
 	if err != nil {
 		return nil, err
@@ -91,8 +86,8 @@ func newEntryFromReadable(w *ReadableEntry, v string) (*Entry, error) {
 		return nil, err
 	}
 
-	switch v {
-	case "0.1":
+	if !isEncrypted {
+		// decode the secret hex string
 		s, err := cipher.SecKeyFromHex(w.Secret)
 		if err != nil {
 			return nil, err
@@ -102,15 +97,13 @@ func newEntryFromReadable(w *ReadableEntry, v string) (*Entry, error) {
 			Public:  p,
 			Secret:  s,
 		}, nil
-	case Version:
-		return &Entry{
-			Address:         a,
-			Public:          p,
-			EncryptedSeckey: w.Secret,
-		}, nil
 	}
 
-	return nil, errors.New("invalid wallet version")
+	return &Entry{
+		Address:         a,
+		Public:          p,
+		EncryptedSeckey: w.Secret,
+	}, nil
 }
 
 // ReadableWallet used for [de]serialization of a Wallet
@@ -138,7 +131,7 @@ func (bt ByTm) Swap(i, j int) {
 func NewReadableWallet(w *Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(e, w.Version())
+		readable[i] = NewReadableEntry(e, w.IsEncrypted())
 	}
 
 	meta := make(map[string]string, len(w.Meta))
@@ -161,7 +154,7 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableWallet) toWallet() (*Wallet, error) {
-	ets, err := rw.Entries.toWalletEntries(rw.version())
+	ets, err := rw.Entries.toWalletEntries(rw.isEncrypted())
 	if err != nil {
 		return nil, err
 	}
@@ -197,4 +190,8 @@ func (rw *ReadableWallet) Load(filename string) error {
 
 func (rw *ReadableWallet) version() string {
 	return rw.Meta["version"]
+}
+
+func (rw *ReadableWallet) isEncrypted() bool {
+	return checkEncrypted(rw.Meta["encrypted"])
 }

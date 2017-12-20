@@ -123,17 +123,16 @@ func generateWallet(c *gcli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	wlt, err := GenerateWallet(wltName, label, sd, num)
 	if err != nil {
 		return err
 	}
 
-	if err := wlt.Save(cfg.WalletDir); err != nil {
+	if err := wallet.Save(cfg.WalletDir, wlt); err != nil {
 		return err
 	}
 
-	return printJson(wallet.NewReadableWallet(*wlt))
+	return printJson(wallet.NewReadableWallet(wlt))
 }
 
 func makeSeed(s string, r, rd bool) (string, error) {
@@ -175,7 +174,9 @@ func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wa
 		return nil, err
 	}
 
-	wlt.GenerateAddresses(numAddrs)
+	if _, err := wlt.GenerateAddresses(numAddrs); err != nil {
+		return nil, err
+	}
 
 	return wlt, nil
 }

@@ -29,7 +29,7 @@ func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.A
 	var b wallet.BalancePair
 	var err error
 	for {
-		tx, err = gateway.Spend(walletID, coins, dest)
+		tx, err = gateway.Spend(walletID, nil, coins, dest)
 		if err != nil {
 			break
 		}
@@ -198,7 +198,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		wlt, err = gateway.ScanAheadWalletAddresses(wlt.GetFilename(), scanN-1)
+		wlt, err = gateway.ScanAheadWalletAddresses(wlt.Filename(), nil, scanN-1)
 		if err != nil {
 			logger.Error("gateway.ScanAheadWalletAddresses failed: %v", err)
 			wh.Error500(w)
@@ -240,7 +240,7 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 			}
 		}
 
-		addrs, err := gateway.NewAddresses(wltID, n)
+		addrs, err := gateway.NewAddresses(wltID, nil, n)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -405,6 +405,10 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 	mux.HandleFunc("/wallet/create", walletCreate(gateway))
 
+	// Generates new addresses in specific wallet
+	// POST Arguments:
+	//         id: wallet id.
+	//         num: the number of address want to generate
 	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.

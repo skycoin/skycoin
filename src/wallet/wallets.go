@@ -93,7 +93,7 @@ func backupWltFile(src, dst string) error {
 // Add add walet to current wallet
 func (wlts Wallets) Add(w *Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
-		return errors.New("wallet name would conflict with existing wallet, renaming")
+		return ErrWalletNameConflict
 	}
 
 	wlts[w.Filename()] = w
@@ -110,23 +110,23 @@ func (wlts Wallets) Get(id string) (*Wallet, bool) {
 	if w, ok := wlts[id]; ok {
 		return w, true
 	}
-	return &Wallet{}, false
+	return nil, false
 }
 
 // set sets a wallet into the map
-func (wlts Wallets) set(w Wallet) {
-	wlts[w.GetFilename()] = &w
+func (wlts Wallets) set(w *Wallet) {
+	wlts[w.Filename()] = w
 }
 
 // Update updates the given wallet, return error if not exist
-func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
+func (wlts Wallets) Update(wltID string, updateFunc func(*Wallet) *Wallet) error {
 	w, ok := wlts[wltID]
 	if !ok {
-		return errWalletNotExist(wltID)
+		return ErrWalletNotExist{wltID}
 	}
 
-	newWlt := updateFunc(*w)
-	wlts[wltID] = &newWlt
+	newWlt := updateFunc(w.clone())
+	wlts[wltID] = newWlt
 	return nil
 }
 

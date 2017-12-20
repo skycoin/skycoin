@@ -470,11 +470,12 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 }
 
 // ScanAheadWalletAddresses loads wallet from seeds and scan ahead N addresses
-func (vs *Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
-	var wlt wallet.Wallet
+// Set password as nil if the wallet is not encrypted, otherwise the password must be provided.
+func (vs *Visor) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
+	var wlt *wallet.Wallet
 	var err error
 	vs.strand("ScanAheadWalletAddresses", func() error {
-		wlt, err = vs.v.ScanAheadWalletAddresses(wltName, scanN)
+		wlt, err = vs.v.ScanAheadWalletAddresses(wltName, password, scanN)
 		return nil
 	})
 

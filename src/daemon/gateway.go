@@ -489,7 +489,7 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 
 // Spend spends coins from given wallet and broadcast it,
 // return transaction or error.
-func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (gw *Gateway) Spend(wltID string, password string, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	var tx *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
@@ -497,7 +497,7 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			err = fmt.Errorf("Create transaction failed: %v", err)
 			return
@@ -532,13 +532,23 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (walle
 	return wlt, err
 }
 
+// EncryptWallet encrypts the wallet
+func (gw *Gateway) EncryptWallet(wltName, password string) (*wallet.Wallet, error) {
+	var wlt *wallet.Wallet
+	var err error
+	gw.strand("EncryptWallet", func() {
+		wlt, err = gw.v.Wallets.Encrypt(wltName, password)
+	})
+	return wlt, err
+}
+
 // GetWalletBalance returns balance pair of specific wallet
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 	var balance wallet.BalancePair
 	var err error
 	gw.strand("GetWalletBalance", func() {
 		var addrs []cipher.Address
-		addrs, err = gw.vrpc.GetWalletAddresses(wltID)
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
 		if err != nil {
 			return
 		}
@@ -586,11 +596,11 @@ func (gw *Gateway) GetWalletDir() string {
 }
 
 // NewAddresses generate addresses in given wallet
-func (gw *Gateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
+func (gw *Gateway) NewAddresses(wltID string, password string, n uint64) ([]cipher.Address, error) {
 	var addrs []cipher.Address
 	var err error
 	gw.strand("NewAddresses", func() {
-		addrs, err = gw.vrpc.NewAddresses(wltID, n)
+		addrs, err = gw.v.Wallets.NewAddresses(wltID, password, n)
 	})
 	return addrs, err
 }
@@ -599,7 +609,7 @@ func (gw *Gateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 	var err error
 	gw.strand("UpdateWalletLabel", func() {
-		err = gw.vrpc.UpdateWalletLabel(wltID, label)
+		err = gw.v.Wallets.UpdateWalletLabel(wltID, label)
 	})
 	return err
 }
@@ -618,7 +628,7 @@ func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, error) {
 func (gw *Gateway) GetWallets() wallet.Wallets {
 	var w wallet.Wallets
 	gw.strand("GetWallets", func() {
-		w = gw.vrpc.GetWallets()
+		w = gw.v.Wallets.GetWallets()
 	})
 	return w
 }
@@ -629,7 +639,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 	var err error
 	gw.strand("GetWalletUnconfirmedTxns", func() {
 		var addrs []cipher.Address
-		addrs, err = gw.vrpc.GetWalletAddresses(wltID)
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
 		if err != nil {
 			return
 		}
@@ -644,7 +654,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 func (gw *Gateway) ReloadWallets() error {
 	var err error
 	gw.strand("ReloadWallets", func() {
-		err = gw.vrpc.ReloadWallets()
+		err = gw.v.Wallets.ReloadWallets()
 	})
 	return err
 }
@@ -653,7 +663,7 @@ func (gw *Gateway) ReloadWallets() error {
 func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 	var bi visor.BuildInfo
 	gw.strand("GetBuildInfo", func() {
-		bi = gw.vrpc.GetBuildInfo()
+		bi = gw.v.Config.BuildInfo
 	})
 	return bi
 }

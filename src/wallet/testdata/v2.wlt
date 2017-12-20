@@ -7,7 +7,8 @@
         "seed": "g8slU58evVZtiO4ouxY5QeC6ZsMXprLAQYY9nls/JFyIYQvBxufxZvSlppyiO6X0dK8MzHaEFg0wpHUgbm8WsTd3VXBmR1dMVXVsaE03UkVmY3U3QU0vOWVhallJWDhJN1N6QzcycjFtUlU9LExtSUxVbHMzNkxwbnZFR1FjT0YrdHUyRHJaQ3NqaWdQMDhuTUVFdjhZNzA9",
         "tm": "1511856544",
         "type": "deterministic",
-        "version": "0.2"
+        "version": "0.2",
+        "encrypted": "true"
     },
     "entries": [
         {

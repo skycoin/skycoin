@@ -3,6 +3,7 @@ package wallet
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -138,7 +139,7 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 		return Wallet{}, err
 	}
 
-	serv.firstAddrIDMap[w.Entries[0].Address.String()] = w.GetID()
+	serv.firstAddrIDMap[w.Entries[0].Address.String()] = w.Filename()
 
 	return w.Copy(), nil
 }
@@ -155,17 +156,79 @@ func (serv *Service) generateUniqueWalletFilename() string {
 	return wltName
 }
 
-// NewAddresses generate address entries in given wallet,
-// return nil if wallet does not exist.
-func (serv *Service) NewAddresses(wltID string, password string, num int) ([]cipher.Address, error) {
+// Encrypt encrypts wallet by given password
+func (serv *Service) Encrypt(wltID, password string) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return nil, ErrWalletNotExist{wltID}
 	}
 
-	addrs, err := w.GenerateAddresses(password, num)
+	oldVersion := w.Version()
+
+	// Update version to lastest
+	w.setVersion(Version)
+
+	// encrypt seed
+	sseed, err := Encrypt([]byte(w.seed()), []byte(password))
+	if err != nil {
+		return nil, err
+	}
+	w.setSeed(sseed)
+
+	// encrypt lastSeed
+	lsseed, err := Encrypt([]byte(w.lastSeed()), []byte(password))
+	if err != nil {
+		return nil, err
+	}
+	w.setLastSeed(lsseed)
+
+	// encrypts private keys in entries
+	for i := range w.Entries {
+		sk, err := Encrypt(w.Entries[i].Secret[:], []byte(password))
+		if err != nil {
+			return nil, err
+		}
+
+		w.Entries[i].EncryptedSeckey = sk
+		w.Entries[i].Secret = cipher.SecKey{}
+	}
+
+	if err := Save(serv.WalletDirectory, w); err != nil {
+		return nil, err
+	}
+
+	// Delete the .bak file if the previous version is 0.1,
+	// othewise it would expose the plaintext seeds and private keys.
+	if oldVersion == "0.1" {
+		fn := w.Filename() + ".bak"
+		path := filepath.Join(serv.WalletDirectory, fn)
+		if e, err := os.Stat(path); !os.IsNotExist(err) {
+			if !e.IsDir() {
+				if err := os.Remove(path); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	nw := w.clone()
+
+	return nw, nil
+}
+
+// NewAddresses generate address entries in given wallet,
+// return nil if wallet does not exist.
+func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
+	serv.Lock()
+	defer serv.Unlock()
+	w, ok := serv.wallets.Get(wltID)
+	if !ok {
+		return []cipher.Address{}, ErrWalletNotExist{wltID}
+	}
+
+	addrs, err := w.GenerateAddresses(num)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +246,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist{wltID}
 	}
 
 	return w.GetAddresses(), nil
@@ -212,7 +275,7 @@ func (serv *Service) GetWallets() Wallets {
 	wlts := make(Wallets, len(serv.wallets))
 	for k, w := range serv.wallets {
 		nw := w.clone()
-		wlts[k] = &nw
+		wlts[k] = nw
 	}
 	return wlts
 }
@@ -232,24 +295,24 @@ func (serv *Service) ReloadWallets() error {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (serv *Service) CreateAndSignTransaction(wltID string, password string, vld Validator, unspent blockdb.UnspentGetter,
+func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return nil, errWalletNotExist(wltID)
+		return nil, ErrWalletNotExist{wltID}
 	}
 
-	return w.CreateAndSignTransaction(password, vld, unspent, headTime, coins, dest)
+	return w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
 }
 
 // UpdateWalletLabel updates the wallet label
 func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
-	var wlt Wallet
-	if err := serv.wallets.update(wltID, func(w Wallet) Wallet {
+	var wlt *Wallet
+	if err := serv.wallets.update(wltID, func(w *Wallet) *Wallet {
 		w.setLabel(label)
 		wlt = w
 		return w
@@ -257,7 +320,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 		return err
 	}
 
-	return Save(serv.WalletDirectory, &wlt)
+	return Save(serv.WalletDirectory, wlt)
 }
 
 func (serv *Service) removeDup(wlts Wallets) Wallets {
@@ -297,4 +360,14 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 	}
 
 	return wlts
+}
+
+// ErrWalletNotExist represents wallet doesnt exist error
+type ErrWalletNotExist struct {
+	id string
+}
+
+// Error returns the error message
+func (ew ErrWalletNotExist) Error() string {
+	return fmt.Sprintf("wallet %s doesn't exist", ew.id)
 }

@@ -144,7 +144,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 // lock encrypts the wallet with password
 func (w *Wallet) lock(password []byte) error {
-	if password == nil {
+	if len(password) == 0 {
 		return ErrRequirePassword
 	}
 
@@ -238,7 +238,7 @@ func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 		return ErrWalletNotEncrypted
 	}
 
-	if password == nil {
+	if len(password) == 0 {
 		return ErrRequirePassword
 	}
 

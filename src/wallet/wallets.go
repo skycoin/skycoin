@@ -115,7 +115,7 @@ func (wlts Wallets) Get(id string) (*Wallet, bool) {
 
 // set sets a wallet into the map
 func (wlts Wallets) set(w *Wallet) {
-	wlts[w.Filename()] = w
+	wlts[w.Filename()] = w.clone()
 }
 
 // Update updates the given wallet, return error if not exist

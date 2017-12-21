@@ -227,8 +227,8 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 
 // guard will do:
 // 1. unlock the encrypted wallet
-// 2. process with the decrypted wallet by calling the callback function
-// 3. lock the wallet at the end again
+// 2. process the decrypted wallet by calling the callback function
+// 3. lock the wallet at the end
 // If the wallet is not encrypted, it would return ErrWalletNotEncrypted error
 func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 	if !w.IsEncrypted() {

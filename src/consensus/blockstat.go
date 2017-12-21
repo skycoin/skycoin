@@ -119,7 +119,6 @@ type BlockStat struct {
 	//
 	// END debugging/diagnostics
 	//
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -289,11 +288,6 @@ func (self *BlockStat) try_add_hash_and_sig(
 
 	self.debug_count += 1
 	self.debug_usage += 1
-
-	if !(action_update || action_skip || action_insert) {
-		panic("Inconsistent BlockStat::try_add_hash_and_sig()")
-		return -1
-	}
 
 	if action_update || action_insert {
 		return 0
@@ -570,11 +564,6 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 		action_insert = true
 	}
 	n = -1 // guard
-
-	if !(action_update || action_skip || action_insert) {
-		panic("Inconsistent")
-		return -1
-	}
 
 	var status_code int = 1
 

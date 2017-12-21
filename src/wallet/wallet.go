@@ -129,10 +129,6 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 		return w, nil
 	}
 
-	if opts.Password == nil {
-		return nil, errors.New("password is required for creating wallet with encryption")
-	}
-
 	if err := w.lock(opts.Password); err != nil {
 		return nil, fmt.Errorf("lock wallet failed: %v", err)
 	}
@@ -145,7 +141,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 // lock encrypts the wallet with password
 func (w *Wallet) lock(password []byte) error {
-	if password == nil {
+	if len(password) == 0 {
 		return ErrRequirePassword
 	}
 
@@ -195,7 +191,7 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 		return nil, ErrWalletNotEncrypted
 	}
 
-	if password == nil {
+	if len(password) == 0 {
 		return nil, errors.New("password is required to decrypt wallet")
 	}
 
@@ -239,7 +235,7 @@ func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 		return ErrWalletNotEncrypted
 	}
 
-	if password == nil {
+	if len(password) == 0 {
 		return ErrRequirePassword
 	}
 

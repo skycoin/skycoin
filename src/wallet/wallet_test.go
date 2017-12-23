@@ -174,7 +174,7 @@ func TestNewWallet(t *testing.T) {
 					"type":      "deterministic",
 					"encrypted": "true",
 				},
-				err: errors.New("password is required for creating wallet with encryption"),
+				err: errors.New("lock wallet failed: password is required"),
 			},
 		},
 		{

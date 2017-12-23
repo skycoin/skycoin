@@ -175,6 +175,10 @@ func (w *Wallet) lock(password []byte) error {
 		// Set the encrypted seckey value
 		w.Entries[i].EncryptedSeckey = se
 		// Clear the entry.Secret
+		for j := range w.Entries[i].Secret {
+			w.Entries[i].Secret[j] = 0
+		}
+
 		w.Entries[i].Secret = cipher.SecKey{}
 	}
 
@@ -502,35 +506,6 @@ type Validator interface {
 	// checks if any of the given addresses has unconfirmed spending transactions
 	HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error)
 }
-
-// // CreateAndSignTransaction Creates a Transaction
-// // spending coins and hours from wallet
-// func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-// 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-// 	if w.IsEncrypted() {
-// 		return nil, ErrWalletEncrypted
-// 	}
-
-// 	return w.createAndSignTransaction(vld, unspent, headTime, coins, dest)
-// }
-
-// // CreateAndSignTransactionEncrypted creates and signs the transaction
-// func (w *Wallet) CreateAndSignTransactionEncrypted(vld Validator, unspent blockdb.UnspentGetter,
-// 	headTime, coins uint64, dest cipher.Address, password []byte) (*coin.Transaction, error) {
-// 	var tx *coin.Transaction
-// 	if err := w.guard(password, func(wlt *Wallet) error {
-// 		var err error
-// 		tx, err = wlt.createAndSignTransaction(vld, unspent, headTime, coins, dest)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		return nil
-// 	}); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return tx, nil
-// }
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet

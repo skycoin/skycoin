@@ -90,8 +90,8 @@ func backupWltFile(src, dst string) error {
 	return nil
 }
 
-// Add add walet to current wallet
-func (wlts Wallets) Add(w *Wallet) error {
+// add add walet to current wallet
+func (wlts Wallets) add(w *Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
 		return ErrWalletNameConflict
 	}
@@ -100,13 +100,13 @@ func (wlts Wallets) Add(w *Wallet) error {
 	return nil
 }
 
-// Remove wallet of specific id
-func (wlts Wallets) Remove(id string) {
+// remove wallet of specific id
+func (wlts Wallets) remove(id string) {
 	delete(wlts, id)
 }
 
-// Get returns wallet by wallet id
-func (wlts Wallets) Get(id string) (*Wallet, bool) {
+// get returns wallet by wallet id
+func (wlts Wallets) get(id string) (*Wallet, bool) {
 	if w, ok := wlts[id]; ok {
 		return w, true
 	}
@@ -118,39 +118,12 @@ func (wlts Wallets) set(w *Wallet) {
 	wlts[w.Filename()] = w.clone()
 }
 
-// Update updates the given wallet, return error if not exist
-func (wlts Wallets) Update(wltID string, updateFunc func(*Wallet) *Wallet) error {
-	w, ok := wlts[wltID]
-	if !ok {
-		return ErrWalletNotExist{wltID}
-	}
-
-	newWlt := updateFunc(w.clone())
-	wlts[wltID] = newWlt
-	return nil
-}
-
 // NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) NewAddresses(id string, num uint64) ([]cipher.Address, error) {
+func (wlts *Wallets) newAddresses(id string, num uint64) ([]cipher.Address, error) {
 	if w, ok := (*wlts)[id]; ok {
 		return w.GenerateAddresses(num)
 	}
 	return nil, fmt.Errorf("wallet: %v does not exist", id)
-}
-
-// Save check for name conflicts!
-// resolve conflicts for saving wallets who have different names
-func (wlts Wallets) Save(dir string) map[string]error {
-	errs := make(map[string]error)
-	for id, w := range wlts {
-		if err := Save(dir, w); err != nil {
-			errs[id] = err
-		}
-	}
-	if len(errs) == 0 {
-		return nil
-	}
-	return errs
 }
 
 // ToReadable converts Wallets to *ReadableWallet array
@@ -170,7 +143,7 @@ func (wlts Wallets) update(id string, updateFunc func(*Wallet) *Wallet) error {
 		return ErrWalletNotExist{id}
 	}
 
-	newWlt := updateFunc(w)
+	newWlt := updateFunc(w.clone())
 	wlts[id] = newWlt
 	return nil
 }

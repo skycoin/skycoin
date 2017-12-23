@@ -162,13 +162,13 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 		}
 	}
 
-	if err := serv.wallets.Add(w); err != nil {
+	if err := serv.wallets.add(w); err != nil {
 		return nil, err
 	}
 
 	if err := Save(serv.WalletDirectory, w); err != nil {
 		// If save fails, remove the added wallet
-		serv.wallets.Remove(w.Filename())
+		serv.wallets.remove(w.Filename())
 		return nil, err
 	}
 
@@ -180,7 +180,7 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 func (serv *Service) generateUniqueWalletFilename() string {
 	wltName := newWalletFilename()
 	for {
-		if _, ok := serv.wallets.Get(wltName); !ok {
+		if _, ok := serv.wallets.get(wltName); !ok {
 			break
 		}
 		wltName = newWalletFilename()
@@ -193,9 +193,9 @@ func (serv *Service) generateUniqueWalletFilename() string {
 func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	w, ok := serv.wallets.Get(wltID)
-	if !ok {
-		return nil, ErrWalletNotExist{wltID}
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
 	}
 
 	isEncrypted := w.IsEncrypted()
@@ -203,6 +203,9 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 	if err := w.lock(password); err != nil {
 		return nil, err
 	}
+
+	// Set the encrypted wallet
+	serv.wallets.set(w)
 
 	if err := Save(serv.WalletDirectory, w); err != nil {
 		return nil, err
@@ -222,7 +225,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 		}
 	}
 
-	return w.clone(), nil
+	return w, nil
 }
 
 // NewAddresses generate address entries in given wallet,
@@ -231,9 +234,9 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	w, ok := serv.wallets.Get(wltID)
-	if !ok {
-		return []cipher.Address{}, ErrWalletNotExist{wltID}
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
 	}
 
 	var addrs []cipher.Address
@@ -253,8 +256,11 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 		}
 	}
 
-	if err := Save(w, serv.WalletDirectory); err != nil {
-		return nil, err
+	// Set the updated wallet back
+	serv.wallets.set(w)
+
+	if err := Save(serv.WalletDirectory, w); err != nil {
+		return []cipher.Address{}, err
 	}
 
 	return addrs, nil
@@ -264,9 +270,9 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	w, ok := serv.wallets.Get(wltID)
-	if !ok {
-		return []cipher.Address{}, ErrWalletNotExist{wltID}
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
 	}
 
 	return w.GetAddresses(), nil
@@ -280,15 +286,16 @@ func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 	return serv.getWallet(wltID)
 }
 
+// returns the clone of the wallet of given id
 func (serv *Service) getWallet(wltID string) (*Wallet, error) {
-	w, ok := serv.wallets.Get(wltID)
+	w, ok := serv.wallets.get(wltID)
 	if !ok {
 		return nil, ErrWalletNotExist{wltID}
 	}
 	return w.clone(), nil
 }
 
-// GetWallets returns all wallets
+// GetWallets returns all wallet clones
 func (serv *Service) GetWallets() Wallets {
 	serv.RLock()
 	defer serv.RUnlock()
@@ -322,9 +329,9 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	w, ok := serv.wallets.Get(wltID)
-	if !ok {
-		return nil, ErrWalletNotExist{wltID}
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
 	}
 
 	var tx *coin.Transaction
@@ -383,7 +390,7 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 		id, ok := serv.firstAddrIDMap[addr]
 		if ok {
 			// check whose entries number is bigger
-			pw, _ := wlts.Get(id)
+			pw, _ := serv.getWallet(id)
 			if len(pw.Entries) >= len(wlt.Entries) {
 				rmWltIDS = append(rmWltIDS, wltID)
 				continue
@@ -402,7 +409,7 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 
 	// remove the duplicate and empty wallet
 	for _, id := range rmWltIDS {
-		wlts.Remove(id)
+		wlts.remove(id)
 	}
 
 	return wlts

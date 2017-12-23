@@ -190,42 +190,67 @@ func (serv *Service) generateUniqueWalletFilename() string {
 }
 
 // EncryptWallet encrypts wallet with password
-func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, error) {
+func (serv *Service) EncryptWallet(wltID string, password []byte) error {
 	serv.Lock()
 	defer serv.Unlock()
 	w, err := serv.getWallet(wltID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	isEncrypted := w.IsEncrypted()
+	if w.IsEncrypted() {
+		return ErrWalletEncrypted
+	}
 
 	if err := w.lock(password); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Set the encrypted wallet
 	serv.wallets.set(w)
 
 	if err := Save(serv.WalletDirectory, w); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Delete the .bak file if the previous version was not encrypted
 	// othewise it would expose the plaintext seeds and private keys.
-	if !isEncrypted {
-		fn := w.Filename() + ".bak"
-		path := filepath.Join(serv.WalletDirectory, fn)
-		if e, err := os.Stat(path); !os.IsNotExist(err) {
-			if !e.IsDir() {
-				if err := os.Remove(path); err != nil {
-					return nil, err
-				}
+	fn := w.Filename() + ".bak"
+	path := filepath.Join(serv.WalletDirectory, fn)
+	if e, err := os.Stat(path); !os.IsNotExist(err) {
+		if !e.IsDir() {
+			if err := os.Remove(path); err != nil {
+				return err
 			}
 		}
 	}
 
-	return w, nil
+	return nil
+}
+
+// DecryptWallet decrypts wallet with password
+func (serv *Service) DecryptWallet(wltID string, password []byte) error {
+	serv.Lock()
+	defer serv.Unlock()
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return err
+	}
+
+	// Return error if wallet is not encrypted
+	if !w.IsEncrypted() {
+		return ErrWalletNotEncrypted
+	}
+
+	unlockWlt, err := w.unlock(password)
+	if err != nil {
+		return err
+	}
+
+	// Set the decrypted wallet
+	serv.wallets.set(unlockWlt)
+
+	return Save(serv.WalletDirectory, unlockWlt)
 }
 
 // NewAddresses generate address entries in given wallet,
@@ -388,9 +413,11 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 
 		addr := wlt.Entries[0].Address.String()
 		id, ok := serv.firstAddrIDMap[addr]
+
 		if ok {
 			// check whose entries number is bigger
-			pw, _ := serv.getWallet(id)
+			pw, _ := wlts.get(id)
+
 			if len(pw.Entries) >= len(wlt.Entries) {
 				rmWltIDS = append(rmWltIDS, wltID)
 				continue

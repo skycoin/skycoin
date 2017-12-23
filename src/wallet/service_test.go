@@ -3,6 +3,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -854,11 +855,14 @@ func TestServiceEncryptWallet(t *testing.T) {
 			require.NoError(t, err)
 
 			// Encrypt the wallet
-			encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
+			err = s.EncryptWallet(tc.encWltName, tc.pwd)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
 			}
+
+			encWlt, err := s.getWallet(tc.encWltName)
+			require.NoError(t, err)
 
 			// Check the encrypted wallet
 			require.True(t, encWlt.IsEncrypted())
@@ -881,6 +885,116 @@ func TestServiceEncryptWallet(t *testing.T) {
 			bakPath := path + ".bak"
 			_, err = os.Stat(bakPath)
 			require.True(t, os.IsNotExist(err))
+		})
+	}
+}
+
+func TestServiceDecryptWallet(t *testing.T) {
+	tt := []struct {
+		name           string
+		wltName        string
+		opts           Options
+		decryptWltName string
+		password       []byte
+		err            error
+	}{
+		{
+			"ok",
+			"test.wlt",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			"test.wlt",
+			[]byte("pwd"),
+			nil,
+		},
+		{
+			"wallet not exist",
+			"test.wlt",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			"t.wlt",
+			[]byte("pwd"),
+			ErrWalletNotExist{"t.wlt"},
+		},
+		{
+			"wallet not encrypted",
+			"test.wlt",
+			Options{
+				Seed: "seed",
+			},
+			"test.wlt",
+			[]byte("pwd"),
+			ErrWalletNotEncrypted,
+		},
+		{
+			"invalid password",
+			"test.wlt",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			"test.wlt",
+			[]byte("wrong password"),
+			cipher.ErrInvalidPassword,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			_, err = s.CreateWallet(tc.wltName, tc.opts)
+			require.NoError(t, err)
+
+			err = s.DecryptWallet(tc.decryptWltName, tc.password)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			verifyDecryptedWlt := func(wlt *Wallet) {
+				// Checks the "encrypted" meta info
+				require.False(t, wlt.IsEncrypted())
+				// Checks the seed
+				require.Equal(t, tc.opts.Seed, wlt.seed())
+				// Checks the last seed
+				entryNum := len(wlt.Entries)
+				lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), entryNum)
+				require.NoError(t, err)
+				require.Equal(t, hex.EncodeToString(lsd), wlt.lastSeed())
+
+				// Checks the entries
+				for i := range seckeys {
+					a := cipher.AddressFromSecKey(seckeys[i])
+					require.Equal(t, a, wlt.Entries[i].Address)
+					require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
+					require.Empty(t, wlt.Entries[i].EncryptedSeckey)
+				}
+			}
+
+			// Checks the decrypted wallet in service
+			w, err := s.getWallet(tc.wltName)
+			require.NoError(t, err)
+			verifyDecryptedWlt(w)
+
+			// Checks the existence of the wallet file
+			fn := filepath.Join(dir, tc.wltName)
+			_, err = os.Stat(fn)
+			require.True(t, !os.IsNotExist(err))
+
+			// Loads wallet from the file and check if it's decrypted
+			w1, err := Load(fn)
+			require.NoError(t, err)
+			verifyDecryptedWlt(w1)
 		})
 	}
 }

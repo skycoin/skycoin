@@ -1,3 +1,5 @@
+// This was originally "\+\build !cgo" but the cgo file is always ignored in build now
+
 package chacha
 
 // core applies the ChaCha20 core function to 16-uint32 input matrix in, and puts

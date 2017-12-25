@@ -60,9 +60,9 @@ const (
 	daemonRunDurationThreshold = time.Millisecond * 200
 )
 
-// Config subsystem configurations
-type Config struct {
-	Daemon   DaemonConfig
+// CommonConfig subsystem configurations
+type CommonConfig struct {
+	Daemon   Config
 	Messages MessagesConfig
 	Pool     PoolConfig
 	Pex      pex.Config
@@ -71,8 +71,8 @@ type Config struct {
 }
 
 // NewConfig returns a Config with defaults set
-func NewConfig() Config {
-	return Config{
+func NewConfig() CommonConfig {
+	return CommonConfig{
 		Daemon:   NewDaemonConfig(),
 		Pool:     NewPoolConfig(),
 		Pex:      pex.NewConfig(),
@@ -83,7 +83,7 @@ func NewConfig() Config {
 }
 
 // preprocess preprocess for config
-func (cfg *Config) preprocess() Config {
+func (cfg *CommonConfig) preprocess() CommonConfig {
 	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		if config.Daemon.Address == "" {
@@ -122,8 +122,8 @@ func (cfg *Config) preprocess() Config {
 	return config
 }
 
-// DaemonConfig configuration for the Daemon
-type DaemonConfig struct {
+// Config configuration for the Daemon
+type Config struct {
 	// Application version. TODO -- manage version better
 	Version int32
 	// IP Address to serve on. Leave empty for automatic assignment
@@ -160,8 +160,8 @@ type DaemonConfig struct {
 }
 
 // NewDaemonConfig creates daemon config
-func NewDaemonConfig() DaemonConfig {
-	return DaemonConfig{
+func NewDaemonConfig() Config {
+	return Config{
 		Version:                    2,
 		Address:                    "",
 		Port:                       6677,
@@ -183,7 +183,7 @@ func NewDaemonConfig() DaemonConfig {
 // Daemon stateful properties of the daemon
 type Daemon struct {
 	// Daemon configuration
-	Config DaemonConfig
+	Config Config
 
 	// Components
 	Messages *Messages
@@ -228,7 +228,7 @@ type Daemon struct {
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config, db *bolt.DB, defaultConns []string) (*Daemon, error) {
+func NewDaemon(config CommonConfig, db *bolt.DB, defaultConns []string) (*Daemon, error) {
 	config = config.preprocess()
 	vs, err := NewVisor(config.Visor, db)
 	if err != nil {

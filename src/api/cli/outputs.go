@@ -20,7 +20,7 @@ func walletOutputsCmd(cfg Config) gcli.Command {
 		wallet (%s) will be
 		used if no wallet was specified, use ENV 'WALLET_NAME'
 		to update default wallet file name, and 'WALLET_DIR' to update
-		the default wallet directory`, cfg.FullWalletPath()),
+		the default wallet directory`, cfg.fullWalletPath()),
 		OnUsageError: onCommandUsageError(name),
 		Action:       getWalletOutputsCmd,
 	}
@@ -41,8 +41,8 @@ func addressOutputsCmd() gcli.Command {
 }
 
 func getWalletOutputsCmd(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-	rpcClient := RpcClientFromContext(c)
+	cfg := configFromContext(c)
+	rpcClient := rpcClientFromContext(c)
 
 	w := ""
 	if c.NArg() > 0 {
@@ -55,16 +55,16 @@ func getWalletOutputsCmd(c *gcli.Context) error {
 		return err
 	}
 
-	outputs, err := GetWalletOutputsFromFile(rpcClient, w)
+	outputs, err := getWalletOutputsFromFile(rpcClient, w)
 	if err != nil {
 		return err
 	}
 
-	return printJson(outputs)
+	return printJSON(outputs)
 }
 
 func getAddressOutputsCmd(c *gcli.Context) error {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := rpcClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -80,21 +80,21 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(outputs)
+	return printJSON(outputs)
 }
 
 // PUBLIC
 
-func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*webrpc.OutputsResult, error) {
+func getWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*webrpc.OutputsResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return GetWalletOutputs(c, wlt)
+	return getWalletOutputs(c, wlt)
 }
 
-func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*webrpc.OutputsResult, error) {
+func getWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*webrpc.OutputsResult, error) {
 	cipherAddrs := wlt.GetAddresses()
 	addrs := make([]string, len(cipherAddrs))
 	for i := range cipherAddrs {

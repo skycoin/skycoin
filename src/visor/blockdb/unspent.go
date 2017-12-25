@@ -157,6 +157,7 @@ func (up *Unspents) syncCache() error {
 	return nil
 }
 
+// ProcessBlock processes signed blocks in tx
 func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
 		var (

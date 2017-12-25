@@ -19,7 +19,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 		ArgsUsage: "[private key]",
 		Description: fmt.Sprintf(`Add a private key to specific wallet, the default
 		wallet (%s) will be
-		used if the wallet file or path is not specified`, cfg.FullWalletPath()),
+		used if the wallet file or path is not specified`, cfg.fullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
@@ -28,7 +28,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
+			cfg := configFromContext(c)
 
 			// get private key
 			skStr := c.Args().First()
@@ -49,10 +49,10 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 			case nil:
 				fmt.Println("success")
 				return nil
-			case WalletLoadError:
+			case walletLoadError:
 				errorWithHelp(c, err)
 				return nil
-			case WalletSaveError:
+			case walletSaveError:
 				return errors.New("Save wallet failed")
 			default:
 				return err
@@ -64,10 +64,10 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 
 // PUBLIC
 
-type WalletLoadError error
-type WalletSaveError error
+type walletLoadError error
+type walletSaveError error
 
-// Adds a private key to a *wallet.Wallet. Caller should save the wallet afterwards
+//AddPrivateKey adds a private key to a *wallet.Wallet. Caller should save the wallet afterwards
 func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 	sk, err := cipher.SecKeyFromHex(key)
 	if err != nil {
@@ -86,11 +86,11 @@ func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 	return wlt.AddEntry(entry)
 }
 
-// Adds a private key to a wallet based on filename.  Will save the wallet after modifying.
+// AddPrivateKeyToFile adds a private key to a wallet based on filename.  Will save the wallet after modifying.
 func AddPrivateKeyToFile(walletFile, key string) error {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return WalletLoadError(err)
+		return walletLoadError(err)
 	}
 
 	if err := AddPrivateKey(wlt, key); err != nil {
@@ -103,7 +103,7 @@ func AddPrivateKeyToFile(walletFile, key string) error {
 	}
 
 	if err := wlt.Save(dir); err != nil {
-		return WalletSaveError(err)
+		return walletSaveError(err)
 	}
 
 	return nil

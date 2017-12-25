@@ -29,7 +29,7 @@ func listWalletsCmd() gcli.Command {
 }
 
 func listWallets(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
+	cfg := configFromContext(c)
 
 	var wlts struct {
 		Wallets []walletEntry `json:"wallets"`
@@ -50,7 +50,7 @@ func listWallets(c *gcli.Context) error {
 			path := filepath.Join(cfg.WalletDir, name)
 			w, err := wallet.Load(path)
 			if err != nil {
-				return WalletLoadError(err)
+				return walletLoadError(err)
 			}
 			wlts.Wallets = append(wlts.Wallets, walletEntry{
 				Name:       name,
@@ -60,5 +60,5 @@ func listWallets(c *gcli.Context) error {
 		}
 	}
 
-	return printJson(wlts)
+	return printJSON(wlts)
 }

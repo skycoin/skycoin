@@ -29,7 +29,7 @@ func checkdbCmd() gcli.Command {
 }
 
 func checkdb(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
+	cfg := configFromContext(c)
 
 	// get db path
 	dbpath, err := resolveDBPath(cfg, c.Args().First())
@@ -54,7 +54,7 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode genesis pubkey failed: %v", err)
 	}
 
-	if err := IntegrityCheck(db, pubkey); err != nil {
+	if err := integrityCheck(db, pubkey); err != nil {
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 
@@ -62,7 +62,7 @@ func checkdb(c *gcli.Context) error {
 	return nil
 }
 
-func IntegrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
+func integrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
 	_, err := visor.NewBlockchain(db, genesisPubkey, visor.Arbitrating(true))
 	return err
 }

@@ -24,7 +24,7 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 		Use caution when using the "-p" command. If you have command
 		history enabled your wallet encryption password can be recovered from the
 		history log. If you do not include the "-p" option you will be prompted to
-		enter your password after you enter your command.`, cfg.FullWalletPath()),
+		enter your password after you enter your command.`, cfg.fullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.UintFlag{
 				Name:  "n",
@@ -33,7 +33,7 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 			},
 			gcli.StringFlag{
 				Name:  "f",
-				Value: cfg.FullWalletPath(),
+				Value: cfg.fullWalletPath(),
 				Usage: `[wallet file or path] Generate addresses in the wallet`,
 			},
 			gcli.BoolFlag{
@@ -48,7 +48,7 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 }
 
 func generateAddrs(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
+	cfg := configFromContext(c)
 
 	// get number of address that are need to be generated.
 	num := c.Uint64("n")
@@ -63,36 +63,36 @@ func generateAddrs(c *gcli.Context) error {
 		return err
 	}
 
-	addrs, err := GenerateAddressesInFile(w, num)
+	addrs, err := generateAddressesInFile(w, num)
 
 	switch err.(type) {
 	case nil:
-	case WalletLoadError:
+	case walletLoadError:
 		errorWithHelp(c, err)
 		return nil
-	case WalletSaveError:
+	case walletSaveError:
 		return errors.New("save wallet failed")
 	default:
 		return err
 	}
 
 	if jsonFmt {
-		s, err := FormatAddressesAsJson(addrs)
+		s, err := formatAddressesAsJSON(addrs)
 		if err != nil {
 			return err
 		}
 		fmt.Println(s)
 	} else {
-		fmt.Println(FormatAddressesAsJoinedArray(addrs))
+		fmt.Println(formatAddressesAsJoinedArray(addrs))
 	}
 
 	return nil
 }
 
-func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
+func generateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return nil, WalletLoadError(err)
+		return nil, walletLoadError(err)
 	}
 
 	addrs := wlt.GenerateAddresses(num)
@@ -103,17 +103,17 @@ func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, e
 	}
 
 	if err := wlt.Save(dir); err != nil {
-		return nil, WalletSaveError(err)
+		return nil, walletSaveError(err)
 	}
 
 	return addrs, nil
 }
 
-func FormatAddressesAsJson(addrs []cipher.Address) (string, error) {
-	d, err := formatJson(struct {
+func formatAddressesAsJSON(addrs []cipher.Address) (string, error) {
+	d, err := formatJSON(struct {
 		Addresses []string `json:"addresses"`
 	}{
-		Addresses: AddressesToStrings(addrs),
+		Addresses: addressesToStrings(addrs),
 	})
 
 	if err != nil {
@@ -123,11 +123,11 @@ func FormatAddressesAsJson(addrs []cipher.Address) (string, error) {
 	return string(d), nil
 }
 
-func FormatAddressesAsJoinedArray(addrs []cipher.Address) string {
-	return strings.Join(AddressesToStrings(addrs), ",")
+func formatAddressesAsJoinedArray(addrs []cipher.Address) string {
+	return strings.Join(addressesToStrings(addrs), ",")
 }
 
-func AddressesToStrings(addrs []cipher.Address) []string {
+func addressesToStrings(addrs []cipher.Address) []string {
 	if addrs == nil {
 		return nil
 	}

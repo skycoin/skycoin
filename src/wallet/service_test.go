@@ -999,6 +999,178 @@ func TestServiceDecryptWallet(t *testing.T) {
 	}
 }
 
+func TestServiceEncryptWallets(t *testing.T) {
+	type wltInitInfo struct {
+		wltName string
+		opts    Options
+	}
+
+	tt := []struct {
+		name     string
+		initWlts []wltInitInfo
+		password []byte
+		err      error
+	}{
+		{
+			"ok",
+			[]wltInitInfo{
+				wltInitInfo{
+					"t1.wlt",
+					Options{
+						Seed: "seed",
+					},
+				},
+				wltInitInfo{
+					"t2.wlt",
+					Options{
+						Seed: "seed1",
+					},
+				},
+				wltInitInfo{
+					"t3.wlt",
+					Options{
+						Seed: "seed2",
+					},
+				},
+			},
+			[]byte("pwd"),
+			nil,
+		},
+		{
+			"ok, there's one wallet encrypted with the same password",
+			[]wltInitInfo{
+				wltInitInfo{
+					"t1.wlt",
+					Options{
+						Seed:     "seed",
+						Encrypt:  true,
+						Password: []byte("pwd"),
+					},
+				},
+				wltInitInfo{
+					"t2.wlt",
+					Options{
+						Seed: "seed1",
+					},
+				},
+				wltInitInfo{
+					"t3.wlt",
+					Options{
+						Seed: "seed2",
+					},
+				},
+			},
+			[]byte("pwd"),
+			nil,
+		},
+		{
+			"fail, there's a wallet encrypted with different password",
+			[]wltInitInfo{
+				wltInitInfo{
+					"t1.wlt",
+					Options{
+						Seed:     "seed",
+						Encrypt:  true,
+						Password: []byte("diff pwd"),
+					},
+				},
+				wltInitInfo{
+					"t2.wlt",
+					Options{
+						Seed: "seed1",
+					},
+				},
+				wltInitInfo{
+					"t3.wlt",
+					Options{
+						Seed: "seed2",
+					},
+				},
+			},
+			[]byte("pwd"),
+			errors.New("wallet t1.wlt is encrypted with a different password"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			// Creates init wallets
+			for _, wi := range tc.initWlts {
+				_, err := s.CreateWallet(wi.wltName, wi.opts)
+				require.NoError(t, err)
+			}
+
+			// Encrypts wallets
+			err = s.EncryptWallets(tc.password)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			verifyEncryptedWlt := func(wlt *Wallet, seed []byte, password []byte) {
+				// Checks if the wallet is encrypted
+				require.True(t, wlt.IsEncrypted())
+				// Checks if the seed is the same as befoe, must be not.
+				require.NotEqual(t, string(seed), wlt.seed())
+
+				// Decrypt the seed and compare
+				dseed, err := Decrypt(wlt.seed(), password)
+				require.NoError(t, err)
+				require.Equal(t, dseed, seed)
+
+				l := len(wlt.Entries)
+				sd, seckeys := cipher.GenerateDeterministicKeyPairsSeed(seed, l)
+				require.NotEqual(t, string(sd), wlt.lastSeed())
+
+				// Decrypt the last seed and compare
+				dlseed, err := Decrypt(wlt.lastSeed(), password)
+				require.NoError(t, err)
+				require.Equal(t, hex.EncodeToString(sd), string(dlseed))
+
+				// Checks all entries
+				for i, e := range wlt.Entries {
+					// Compares addresss
+					a := cipher.AddressFromSecKey(seckeys[i])
+					require.Equal(t, a, e.Address)
+					// Checks if the Secret field is empty
+					require.Equal(t, cipher.SecKey{}, e.Secret)
+					// Checks if the encrypted secret is filled
+					require.NotEmpty(t, e.EncryptedSeckey)
+					// Decrypts the secret and compare
+					var s cipher.SecKey
+					ss, err := Decrypt(e.EncryptedSeckey, password)
+					require.NoError(t, err)
+					copy(s[:], ss[:])
+					require.Equal(t, s, seckeys[i])
+				}
+			}
+
+			// Checks all wallets in both memory and file
+			require.Len(t, s.wallets, len(tc.initWlts)+1)
+			for _, wi := range tc.initWlts {
+				w, err := s.getWallet(wi.wltName)
+				require.NoError(t, err)
+				verifyEncryptedWlt(w, []byte(wi.opts.Seed), tc.password)
+
+				// Load wallet from file
+				wltFile := filepath.Join(dir, wi.wltName)
+				wf, err := Load(wltFile)
+				require.NoError(t, err)
+				verifyEncryptedWlt(wf, []byte(wi.opts.Seed), tc.password)
+
+				// Verifies no .bak files
+				bakFile := wltFile + ".bak"
+				_, err = os.Stat(bakFile)
+				require.True(t, os.IsNotExist(err))
+			}
+		})
+	}
+}
+
 func TestServiceScanAheadWalletAddresses(t *testing.T) {
 	bg := make(mockBalanceGetter, len(addrsOfSeed1))
 	addrs := fromAddrString(t, addrsOfSeed1)

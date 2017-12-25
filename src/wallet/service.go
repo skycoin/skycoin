@@ -213,19 +213,10 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) error {
 		return err
 	}
 
-	// Delete the .bak file if the previous version was not encrypted
-	// othewise it would expose the plaintext seeds and private keys.
+	// Delete the .bak file, which might expose the plaintext seeds and private keys.
 	fn := w.Filename() + ".bak"
 	path := filepath.Join(serv.WalletDirectory, fn)
-	if e, err := os.Stat(path); !os.IsNotExist(err) {
-		if !e.IsDir() {
-			if err := os.Remove(path); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return removeBackupWalletFile(path)
 }
 
 // DecryptWallet decrypts wallet with password
@@ -251,6 +242,58 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) error {
 	serv.wallets.set(unlockWlt)
 
 	return Save(serv.WalletDirectory, unlockWlt)
+}
+
+// EncryptWallets encrypts all wallets.
+// If if any wallet is already encrypted, and this wallet does not decrypt with the password, then fail.
+// otherwise encrypt all unencrypted wallets with this password.
+// at the end of the operation, all wallets should be encrypted with the same password. if they cannot be, then it fails
+func (serv *Service) EncryptWallets(password []byte) error {
+	// Checks if any of wallet already encrypted.
+	serv.Lock()
+	defer serv.Unlock()
+	// Gets wallets that are going to be encrypted
+	var wlts []*Wallet
+	for id, w := range serv.wallets {
+		if w.IsEncrypted() {
+			// Checks if this wallet is encrypted with this password
+			_, err := w.unlock(password)
+			if err != nil {
+				if err == cipher.ErrInvalidPassword {
+					return fmt.Errorf("wallet %s is encrypted with a different password", id)
+				}
+
+				return err
+			}
+
+			continue
+		}
+		wlts = append(wlts, w.clone())
+	}
+
+	// Encrypts the wallets
+	for i := range wlts {
+		if err := wlts[i].lock(password); err != nil {
+			return fmt.Errorf("encrypt wallet %s failed: err: %v", wlts[i].Filename(), err)
+		}
+
+		// Updates the wallet in memory
+		serv.wallets.set(wlts[i])
+
+		// Updates the wallet file
+		if err := Save(serv.WalletDirectory, wlts[i]); err != nil {
+			return fmt.Errorf("save wallet %s file failed: %v", wlts[i].Filename(), err)
+		}
+
+		// Delete the .bak file, othewise it would expose the plaintext seeds and private keys.
+		fn := wlts[i].Filename() + ".bak"
+		path := filepath.Join(serv.WalletDirectory, fn)
+		if err := removeBackupWalletFile(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // NewAddresses generate address entries in given wallet,
@@ -440,6 +483,18 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 	}
 
 	return wlts
+}
+
+// Delete the .bak file, which might expose the plaintext seeds and private keys.
+func removeBackupWalletFile(path string) error {
+	if e, err := os.Stat(path); !os.IsNotExist(err) {
+		if !e.IsDir() {
+			if err := os.Remove(path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // ErrWalletNotExist represents wallet doesnt exist error

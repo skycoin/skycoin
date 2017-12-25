@@ -23,8 +23,10 @@ var (
 )
 
 var genTime uint64 = 1000
+
 //var incTime uint64 = 3600 * 1000
 var genCoins uint64 = 1000e6
+
 //var genCoinHours uint64 = 1000 * 1000
 
 //var failedWhenSave bool

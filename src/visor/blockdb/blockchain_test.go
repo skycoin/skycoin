@@ -20,7 +20,7 @@ var (
 	genAddress           = cipher.AddressFromPubKey(genPublic)
 	//testMaxSize          = 1024 * 1024
 
-	genTime      uint64 = 1000
+	genTime uint64 = 1000
 	//incTime      uint64 = 3600 * 1000
 	//genCoins     uint64 = 1000e6
 	genCoinHours uint64 = 1000 * 1000

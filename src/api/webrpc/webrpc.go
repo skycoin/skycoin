@@ -23,7 +23,7 @@ var (
 	errCodeInvalidParams  = -32602 // Invalid params	Invalid method parameter(s).
 	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
 
-	errMsgParseError     = "Parse error"
+	errMsgParseError = "Parse error"
 	//errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"

@@ -94,7 +94,7 @@ func TestServiceCreateWallet(t *testing.T) {
 	_, err = s.CreateWallet(dupWlt, Options{
 		Seed: seed,
 	})
-	require.EqualError(t, err, fmt.Sprintf("duplicate wallet with %v", wltName))
+	require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
 
 	// check if the dup wallet is created
 	_, ok := s.wallets[dupWlt]
@@ -1166,6 +1166,118 @@ func TestServiceEncryptWallets(t *testing.T) {
 				bakFile := wltFile + ".bak"
 				_, err = os.Stat(bakFile)
 				require.True(t, os.IsNotExist(err))
+			}
+		})
+	}
+}
+
+func TestServiceDecryptWallets(t *testing.T) {
+	type wltInitInfo struct {
+		wltName string
+		opts    Options
+	}
+
+	tt := []struct {
+		name     string
+		initWlts []wltInitInfo
+		password []byte
+		err      error
+	}{
+		{
+			"ok",
+			[]wltInitInfo{
+				wltInitInfo{
+					"t1.wlt",
+					Options{
+						Seed:     "seed1",
+						Encrypt:  true,
+						Password: []byte("password"),
+					},
+				},
+				wltInitInfo{
+					"t2.wlt",
+					Options{
+						Seed:     "seed2",
+						Encrypt:  true,
+						Password: []byte("password"),
+					},
+				},
+				wltInitInfo{
+					"t3.wlt",
+					Options{
+						Seed: "seed3",
+					},
+				},
+			},
+			[]byte("password"),
+			nil,
+		},
+		{
+			"ok, no encrypted wallet",
+			[]wltInitInfo{
+				wltInitInfo{
+					"t1.wlt",
+					Options{
+						Seed: "seed1",
+					},
+				},
+				wltInitInfo{
+					"t2.wlt",
+					Options{
+						Seed: "seed2",
+					},
+				},
+				wltInitInfo{
+					"t3.wlt",
+					Options{
+						Seed: "seed3",
+					},
+				},
+			},
+			nil,
+			nil,
+		},
+		{
+			"fails, there's a wallet encrypted with different password",
+			[]wltInitInfo{
+				wltInitInfo{
+					"t1.wlt",
+					Options{
+						Seed:     "seed1",
+						Encrypt:  true,
+						Password: []byte("password"),
+					},
+				},
+				wltInitInfo{
+					"t2.wlt",
+					Options{
+						Seed:     "seed2",
+						Encrypt:  true,
+						Password: []byte("p1"),
+					},
+				},
+			},
+			[]byte("password"),
+			fmt.Errorf("decrypt wallet t2.wlt failed: invalid password"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir)
+			require.NoError(t, err)
+
+			// Init wallets
+			for _, wi := range tc.initWlts {
+				_, err = s.CreateWallet(wi.wltName, wi.opts)
+				require.NoError(t, err)
+			}
+
+			err = s.DecryptWallets(tc.password)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
 			}
 		})
 	}

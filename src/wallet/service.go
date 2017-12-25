@@ -140,7 +140,7 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 
 		// Check for duplicate wallets by initial seed
 		if id, ok := serv.firstAddrIDMap[wlt.Entries[0].Address.String()]; ok {
-			return fmt.Errorf("duplicate wallet with %v", id)
+			return fmt.Errorf("wallet %s would be duplicate with %v, same seed", wlt.Filename(), id)
 		}
 
 		// Scan for addresses with balances
@@ -277,13 +277,13 @@ func (serv *Service) EncryptWallets(password []byte) error {
 			return fmt.Errorf("encrypt wallet %s failed: err: %v", wlts[i].Filename(), err)
 		}
 
-		// Updates the wallet in memory
-		serv.wallets.set(wlts[i])
-
 		// Updates the wallet file
 		if err := Save(serv.WalletDirectory, wlts[i]); err != nil {
 			return fmt.Errorf("save wallet %s file failed: %v", wlts[i].Filename(), err)
 		}
+
+		// Updates the wallet in memory
+		serv.wallets.set(wlts[i])
 
 		// Delete the .bak file, othewise it would expose the plaintext seeds and private keys.
 		fn := wlts[i].Filename() + ".bak"
@@ -291,6 +291,44 @@ func (serv *Service) EncryptWallets(password []byte) error {
 		if err := removeBackupWalletFile(path); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// DecryptWallets decrypts all wallets with password
+// Fails if any encrypted wallet fails to decrypt with the password (In the case
+// of multiple encrypted wallets having different passwords).
+// it does not fail if any wallet is already decrypted
+func (serv *Service) DecryptWallets(password []byte) error {
+	serv.Lock()
+	defer serv.Unlock()
+
+	// Decrypts all wallets
+	var wlts []*Wallet
+	for i := range serv.wallets {
+		w := serv.wallets[i].clone()
+		if !w.IsEncrypted() {
+			continue
+		}
+
+		// Checks if the wallet can be decrypted with the provided password,
+		// fails if can't.
+		decryptedWlt, err := w.unlock(password)
+		if err != nil {
+			return fmt.Errorf("decrypt wallet %s failed: %v", w.Filename(), err)
+		}
+
+		wlts = append(wlts, decryptedWlt)
+	}
+
+	// Updates the wallets in both memory and disk
+	for i := range wlts {
+		if err := Save(serv.WalletDirectory, wlts[i]); err != nil {
+			return err
+		}
+
+		serv.wallets.set(wlts[i])
 	}
 
 	return nil

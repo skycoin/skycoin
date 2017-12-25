@@ -148,7 +148,8 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 	return err
 }
 
-// SaveBinary persists data into given file in binary
+// SaveBinary persists data into given file in binary,
+// backup the previous file, if there was one
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	tmpname := filename + ".tmp"

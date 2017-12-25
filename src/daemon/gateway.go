@@ -556,13 +556,12 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, sca
 }
 
 // EncryptWallet encrypts the wallet
-func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
-	var wlt *wallet.Wallet
+func (gw *Gateway) EncryptWallet(wltName string, password []byte) error {
 	var err error
 	gw.strand("EncryptWallet", func() {
-		wlt, err = gw.v.Wallets.EncryptWallet(wltName, password)
+		err = gw.v.Wallets.EncryptWallet(wltName, password)
 	})
-	return wlt, err
+	return err
 }
 
 // GetWalletBalance returns balance pair of specific wallet

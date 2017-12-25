@@ -24,7 +24,7 @@ var (
 	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
 
 	errMsgParseError     = "Parse error"
-	errMsgInvalidRequest = "Invalid Request"
+	//errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
 	errMsgInternalError  = "Internal error"

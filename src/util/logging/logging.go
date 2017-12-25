@@ -31,14 +31,14 @@ const (
 	DEBUG
 )
 
-var levelNames = []string{
-	"CRITICAL",
-	"ERROR",
-	"WARNING",
-	"NOTICE",
-	"INFO",
-	"DEBUG",
-}
+//var levelNames = []string{
+//	"CRITICAL",
+//	"ERROR",
+//	"WARNING",
+//	"NOTICE",
+//	"INFO",
+//	"DEBUG",
+//}
 
 // LogConfig logger configurations
 type LogConfig struct {

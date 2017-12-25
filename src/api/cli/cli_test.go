@@ -88,7 +88,7 @@ func TestResolveWalletPath(t *testing.T) {
 
 	defaultCfg := mustLoadConfig()
 	expectedFullPath := fmt.Sprintf("%[1]s/.%[2]s/wallets/%[2]s_cli%[3]s", file.UserHome(), defaultCoin, walletExt)
-	require.Equal(t, expectedFullPath, defaultCfg.FullWalletPath())
+	require.Equal(t, expectedFullPath, defaultCfg.fullWalletPath())
 
 	absPathInput := "./foo/bar.wlt"
 	absPathOutput, err := filepath.Abs(absPathInput)

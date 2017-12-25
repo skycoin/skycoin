@@ -55,7 +55,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
         Use caution when using the "-p" command. If you have command history enabled
         your wallet encryption password can be recovered from the history log. If you
         do not include the "-p" option you will be prompted to enter your password
-        after you enter your command.`, cfg.FullWalletPath()),
+        after you enter your command.`, cfg.fullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",
@@ -91,7 +91,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			rawTx := hex.EncodeToString(tx.Serialize())
 
 			if c.Bool("json") {
-				return printJson(struct {
+				return printJSON(struct {
 					RawTx string `json:"rawtx"`
 				}{
 					RawTx: rawTx,
@@ -111,7 +111,7 @@ type walletAddress struct {
 }
 
 func fromWalletOrAddress(c *gcli.Context) (walletAddress, error) {
-	cfg := ConfigFromContext(c)
+	cfg := configFromContext(c)
 
 	wlt, err := resolveWalletPath(cfg, c.String("f"))
 	if err != nil {
@@ -144,7 +144,7 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 			// get the default wallet's coin base address
 			wlt, err := wallet.Load(wltAddr.Wallet)
 			if err != nil {
-				return "", WalletLoadError(err)
+				return "", walletLoadError(err)
 			}
 
 			if len(wlt.Entries) > 0 {
@@ -220,7 +220,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 }
 
 func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := rpcClientFromContext(c)
 
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {

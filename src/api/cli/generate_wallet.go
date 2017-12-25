@@ -35,7 +35,7 @@ func generateWalletCmd(cfg Config) gcli.Command {
 		from the history log. If you do not include the "-p" option you will
 		be prompted to enter your password after you enter your command.
 
-		All results are returned in JSON format.`, cfg.FullWalletPath()),
+		All results are returned in JSON format.`, cfg.fullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "r",
@@ -72,7 +72,7 @@ func generateWalletCmd(cfg Config) gcli.Command {
 }
 
 func generateWallet(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
+	cfg := configFromContext(c)
 
 	// create wallet dir if not exist
 	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
@@ -86,7 +86,7 @@ func generateWallet(c *gcli.Context) error {
 
 	// check if the wallet name has wlt extension.
 	if !strings.HasSuffix(wltName, ".wlt") {
-		return ErrWalletName
+		return errWalletName
 	}
 
 	// wallet file should not be a path.
@@ -133,7 +133,7 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(wallet.NewReadableWallet(*wlt))
+	return printJSON(wallet.NewReadableWallet(*wlt))
 }
 
 func makeSeed(s string, r, rd bool) (string, error) {
@@ -153,7 +153,7 @@ func makeSeed(s string, r, rd bool) (string, error) {
 
 	// 010
 	if r {
-		return MakeAlphanumericSeed(), nil
+		return makeAlphanumericSeed(), nil
 	}
 
 	// 001, 000
@@ -180,7 +180,7 @@ func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wa
 	return wlt, nil
 }
 
-func MakeAlphanumericSeed() string {
+func makeAlphanumericSeed() string {
 	seedRaw := cipher.SumSHA256(secp256k1.RandByte(alphaNumericSeedLength))
 	return hex.EncodeToString(seedRaw[:])
 }

@@ -127,6 +127,7 @@ type WebRPC struct {
 	quit     chan struct{}
 }
 
+// New creates the instance of WebRPC
 func New(addr string, gw Gatewayer) (*WebRPC, error) {
 	rpc := &WebRPC{
 		Addr:         addr,

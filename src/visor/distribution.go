@@ -3,21 +3,22 @@ package visor
 import "github.com/skycoin/skycoin/src/coin"
 
 const (
-	// Maximum supply of skycoins
+	// MaxCoinSupply - maximum supply of skycoins
 	MaxCoinSupply uint64 = 1e8 // 100,000,000 million
 
-	// Number of distribution addresses
+	// DistributionAddressesTotal - number of distribution addresses
 	DistributionAddressesTotal uint64 = 100
 
-	DistributionAddressInitialBalance uint64 = MaxCoinSupply / DistributionAddressesTotal
+	// DistributionAddressInitialBalance - the ratio of maximum supply of coins and number of distribution addresses
+	DistributionAddressInitialBalance = MaxCoinSupply / DistributionAddressesTotal
 
-	// Initial number of unlocked addresses
+	// InitialUnlockedCount - initial number of unlocked addresses
 	InitialUnlockedCount uint64 = 25
 
-	// Number of addresses to unlock per unlock time interval
+	// UnlockAddressRate is number of addresses to unlock per unlock time interval
 	UnlockAddressRate uint64 = 5
 
-	// Unlock time interval, measured in seconds
+	// UnlockTimeInterval is unlock time interval, measured in seconds
 	// Once the InitialUnlockedCount is exhausted,
 	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 = 60 * 60 * 24 * 365 // 1 year
@@ -29,7 +30,7 @@ func init() {
 	}
 }
 
-// Returns a copy of the hardcoded distribution addresses array.
+// GetDistributionAddresses returns a copy of the hardcoded distribution addresses array.
 // Each address has 1,000,000 coins. There are 100 addresses.
 func GetDistributionAddresses() []string {
 	addrs := make([]string, len(distributionAddresses))
@@ -39,7 +40,7 @@ func GetDistributionAddresses() []string {
 	return addrs
 }
 
-// Returns distribution addresses that are unlocked, i.e. they have spendable outputs
+// GetUnlockedDistributionAddresses returns distribution addresses that are unlocked, i.e. they have spendable outputs
 func GetUnlockedDistributionAddresses() []string {
 	// The first InitialUnlockedCount (25) addresses are unlocked by default.
 	// Subsequent addresses will be unlocked at a rate of UnlockAddressRate (5) per year,
@@ -60,7 +61,7 @@ func GetUnlockedDistributionAddresses() []string {
 	return addrs
 }
 
-// Returns distribution addresses that are locked, i.e. they have unspendable outputs
+// GetLockedDistributionAddresses returns distribution addresses that are locked, i.e. they have unspendable outputs
 func GetLockedDistributionAddresses() []string {
 	// TODO -- once we reach 30% distribution, we can hardcode the
 	// initial timestamp for releasing more coins
@@ -71,7 +72,7 @@ func GetLockedDistributionAddresses() []string {
 	return addrs
 }
 
-// Returns true if the transaction spends locked outputs
+// TransactionIsLocked returns true if the transaction spends locked outputs
 func TransactionIsLocked(inUxs coin.UxArray) bool {
 	lockedAddrs := GetLockedDistributionAddresses()
 	lockedAddrsMap := make(map[string]struct{})

@@ -1,3 +1,4 @@
+//Package consensus provides consensus algorithm.
 // 20160901 - Initial version by user johnstuartmill,
 // public key 02fb4acf944c84d48341e3c1cb14d707034a68b7f931d6be6d732bec03597d6ff6
 // 20161025 - Code revision by user johnstuartmill.
@@ -12,12 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
-////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////
-// How many (hash,signer_pubkey) pairs to acquire for decision-making.
+// Cfg_consensus_max_candidate_messages - how many (hash,signer_pubkey) pairs to acquire for decision-making.
 // This also limits forwarded traffic, because the messages in excess
 // of this limit are discarded hence not forwarded:
 var Cfg_consensus_max_candidate_messages = 10

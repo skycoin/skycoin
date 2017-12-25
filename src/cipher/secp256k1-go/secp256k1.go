@@ -193,8 +193,8 @@ new_seckey:
 	return pubkey, seckey
 }
 
-// Secp256k1Hash double SHA256, salted with ECDH operation in curve
-func Secp256k1Hash(hash []byte) []byte {
+// Hash double SHA256, salted with ECDH operation in curve
+func Hash(hash []byte) []byte {
 	hash = SumSHA256(hash)
 	_, seckey := generateDeterministicKeyPair(hash)            //seckey1 is usually sha256 of hash
 	pubkey, _ := generateDeterministicKeyPair(SumSHA256(hash)) //SumSHA256(hash) equals seckey usually
@@ -212,7 +212,7 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 //Feed SHA256 back into function to generate sequence of seckeys
 //If private key is diclosed, should not be able to compute future or past keys in sequence
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
-	seed1 := Secp256k1Hash(seedIn) //make it difficult to derive future seckeys from previous seckeys
+	seed1 := Hash(seedIn) //make it difficult to derive future seckeys from previous seckeys
 	seed2 := SumSHA256(append(seedIn, seed1...))
 	pubkey, seckey := generateDeterministicKeyPair(seed2) //this is our seckey
 	return seed1, pubkey, seckey

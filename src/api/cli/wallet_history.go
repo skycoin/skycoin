@@ -58,8 +58,8 @@ func walletHisCmd() gcli.Command {
 }
 
 func walletHistoryAction(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-	rpcClient := RpcClientFromContext(c)
+	cfg := configFromContext(c)
+	rpcClient := rpcClientFromContext(c)
 
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
@@ -101,7 +101,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	sort.Sort(byTime(totalAddrHis))
 
 	// print the addr history
-	return printJson(totalAddrHis)
+	return printJSON(totalAddrHis)
 }
 
 func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]addrHistory, error) {

@@ -44,7 +44,7 @@ func walletBalanceCmd(cfg Config) gcli.Command {
 		wallet (%s) will be
 		used if no wallet was specified, use ENV 'WALLET_NAME'
 		to update default wallet file name, and 'WALLET_DIR' to update
-		the default wallet directory`, cfg.FullWalletPath()),
+		the default wallet directory`, cfg.fullWalletPath()),
 		OnUsageError: onCommandUsageError(name),
 		Action:       checkWltBalance,
 	}
@@ -64,8 +64,8 @@ func addressBalanceCmd() gcli.Command {
 }
 
 func checkWltBalance(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-	rpcClient := RpcClientFromContext(c)
+	cfg := configFromContext(c)
+	rpcClient := rpcClientFromContext(c)
 
 	var w string
 	if c.NArg() > 0 {
@@ -83,11 +83,11 @@ func checkWltBalance(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(balRlt)
+	return printJSON(balRlt)
 }
 
 func addrBalance(c *gcli.Context) error {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := rpcClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -103,7 +103,7 @@ func addrBalance(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(balRlt)
+	return printJSON(balRlt)
 }
 
 // PUBLIC

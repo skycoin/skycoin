@@ -19,7 +19,7 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
-
+// PrepareDB prepares test instance of the DB
 func PrepareDB(t *testing.T) (*bolt.DB, func()) {
 	f, err := ioutil.TempFile("", "testdb")
 	require.NoError(t, err)
@@ -32,18 +32,20 @@ func PrepareDB(t *testing.T) (*bolt.DB, func()) {
 		os.Remove(f.Name())
 	}
 }
-
+// RequireError checks that the error exists as required
 func RequireError(t *testing.T, err error, msg string) {
 	t.Helper()
 	require.Error(t, err)
 	require.Equal(t, msg, err.Error())
 }
 
+// MakeAddress generates new cipher.Address
 func MakeAddress() cipher.Address {
 	p, _ := cipher.GenerateKeyPair()
 	return cipher.AddressFromPubKey(p)
 }
 
+// RandBytes random bytes with n length
 func RandBytes(t *testing.T, n int) []byte {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
@@ -51,6 +53,7 @@ func RandBytes(t *testing.T, n int) []byte {
 	return b
 }
 
+// RandSHA256 generates random SHA256
 func RandSHA256(t *testing.T) cipher.SHA256 {
 	return cipher.SumSHA256(RandBytes(t, 128))
 }

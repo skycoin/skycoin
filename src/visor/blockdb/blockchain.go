@@ -59,8 +59,8 @@ type BlockTree interface {
 	GetBlockInDepth(dep uint64, filter func(hps []coin.HashPair) cipher.SHA256) *coin.Block
 }
 
-// BlockSigs block signature storage
-type BlockSigs interface {
+// BlockSigser block signature storage
+type BlockSigser interface {
 	AddWithTx(*bolt.Tx, cipher.SHA256, cipher.Sig) error
 	Get(hash cipher.SHA256) (cipher.Sig, bool, error)
 }
@@ -86,7 +86,7 @@ type Blockchain struct {
 	meta    *chainMeta
 	unspent UnspentPool
 	tree    BlockTree
-	sigs    BlockSigs
+	sigs    BlockSigser
 	walker  Walker
 	cache   struct {
 		headSeq      uint64 // head block seq
@@ -126,7 +126,7 @@ func NewBlockchain(db *bolt.DB, walker Walker) (*Blockchain, error) {
 func createBlockchain(db *bolt.DB,
 	walker Walker,
 	tree BlockTree,
-	sigs BlockSigs,
+	sigs BlockSigser,
 	unspent UnspentPool,
 ) (*Blockchain, error) {
 	meta, err := newChainMeta(db)

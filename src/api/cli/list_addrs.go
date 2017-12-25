@@ -21,7 +21,7 @@ func listAddressesCmd() gcli.Command {
 }
 
 func listAddresses(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
+	cfg := configFromContext(c)
 
 	// get wallet name
 	w, err := resolveWalletPath(cfg, c.Args().First())
@@ -31,7 +31,7 @@ func listAddresses(c *gcli.Context) error {
 
 	wlt, err := wallet.Load(w)
 	if err != nil {
-		return WalletLoadError(err)
+		return walletLoadError(err)
 	}
 
 	addrs := wlt.GetAddresses()

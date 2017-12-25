@@ -106,9 +106,9 @@ func BenchmarkChacha208_1K(b *testing.B) {
 
 func benchmarkChacha(b *testing.B, xor func(out, in []byte, nonce []byte, key []byte), dataLen int64) {
 	b.StopTimer()
-	var buff []byte = make([]byte, dataLen)
-	var key []byte = make([]byte, 32)
-	var iv []byte = make([]byte, 8)
+	var buff = make([]byte, dataLen)
+	var key = make([]byte, 32)
+	var iv = make([]byte, 8)
 	io.ReadFull(rand.Reader, key)
 	io.ReadFull(rand.Reader, iv)
 	b.StartTimer()

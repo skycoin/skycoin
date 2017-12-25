@@ -455,7 +455,7 @@ func Test_Secp256k1_Hash(t *testing.T) {
 	for i := 0; i < len(testArray)/2; i++ {
 		hash1 := Decode(testArray[2*i+0]) //input
 		hash2 := Decode(testArray[2*i+1]) //target
-		hash3 := Hash(hash1)     //output
+		hash3 := Hash(hash1)              //output
 		if bytes.Equal(hash2, hash3) == false {
 			t.Fail()
 		}

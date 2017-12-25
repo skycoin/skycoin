@@ -19,6 +19,7 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
+
 // PrepareDB prepares test instance of the DB
 func PrepareDB(t *testing.T) (*bolt.DB, func()) {
 	f, err := ioutil.TempFile("", "testdb")
@@ -32,6 +33,7 @@ func PrepareDB(t *testing.T) (*bolt.DB, func()) {
 		os.Remove(f.Name())
 	}
 }
+
 // RequireError checks that the error exists as required
 func RequireError(t *testing.T, err error, msg string) {
 	t.Helper()

@@ -67,8 +67,6 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 type walletLoadError error
 type walletSaveError error
 
-
-
 //AddPrivateKey adds a private key to a *wallet.Wallet. Caller should save the wallet afterwards
 func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 	sk, err := cipher.SecKeyFromHex(key)

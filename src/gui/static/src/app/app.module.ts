@@ -47,6 +47,7 @@ import { TopBarComponent } from './components/layout/header/top-bar/top-bar.comp
 import { FooterComponent } from './components/layout/footer/footer.component';
 import { WalletShowComponent } from './components/pages/wallet-show/wallet-show.component';
 import { PriceService } from './price.service';
+import { LoadWalletComponent } from './components/pages/wallets/load-wallet/load-wallet.component';
 
 const ROUTES = [
   {
@@ -192,25 +193,27 @@ const ROUTES = [
     BlockComponent,
     AddressComponent,
     PendingTransactionsComponent,
-    OutputsComponent,
-    BlockchainComponent,
-    BackupComponent,
-    NetworkComponent,
-    ChangeNameComponent,
-    ButtonComponent,
-    QrCodeComponent,
-    BuyComponent,
     AddDepositAddressComponent,
-    TellerStatusPipe,
-    HeaderComponent,
-    TopBarComponent,
+    BackupComponent,
+    BlockchainComponent,
+    BuyComponent,
+    ButtonComponent,
+    ChangeNameComponent,
     FooterComponent,
+    HeaderComponent,
+    LoadWalletComponent,
+    NetworkComponent,
+    OutputsComponent,
+    QrCodeComponent,
+    TellerStatusPipe,
+    TopBarComponent,
     WalletShowComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
     CreateWalletComponent,
     ChangeNameComponent,
+    LoadWalletComponent,
     QrCodeComponent,
   ],
   imports: [

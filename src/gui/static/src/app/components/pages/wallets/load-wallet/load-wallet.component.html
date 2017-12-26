@@ -1,0 +1,25 @@
+<div class="container">
+  <div class="-header">
+    Load Wallet <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()">
+  </div>
+  <div class="-body">
+    <div [formGroup]="form">
+      <div class="form-field">
+        <label for="label">Name</label>
+        <input formControlName="label" id="label">
+      </div>
+      <div class="form-field">
+        <label for="seed">Seed</label>
+        <textarea formControlName="seed" id="seed" row="2"></textarea>
+      </div>
+    </div>
+    <div class="-buttons">
+      <app-button (action)="closePopup()">
+        Cancel
+      </app-button>
+      <app-button (action)="loadWallet()" class="primary" [disabled]="!form.valid">
+        Load
+      </app-button>
+    </div>
+  </div>
+</div>

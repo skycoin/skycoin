@@ -23,48 +23,55 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
-// Spend spends coins from specific wallet
-func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) *SpendResult {
+// Spend spends coins from given wallet id
+// Args:
+//  walletID    string          ID of wallet to spend from
+//  coins       uint64          amount of coins to spend
+//  dest        ciper.Address   recipient address
+// Return:
+//  balance     *wallet.BalancePair         latest balance
+//  transaction *visor.ReadableTransaction  readable transaction
+//  error       error                       error in spending the coins
+func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) (balance *wallet.BalancePair, transaction *visor.ReadableTransaction, spendError error) {
 	var tx *coin.Transaction
 	var b wallet.BalancePair
 	var err error
 
 	if tx, err = gateway.Spend(walletID, coins, dest); err != nil {
-		return &SpendResult{
-			Error: err.Error(),
-		}
-	} else {
-		var txStr string
+		// Skip the errors here as it already failed to spend the coins
+		rbTx, _ := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		// Get the current wallet balance
+		b, _ = gateway.GetWalletBalance(walletID)
+		return &b, rbTx, err
+	}
 
-		if txStr, err = visor.TransactionToJSON(*tx); err != nil {
-			return &SpendResult{
-				Error: err.Error(),
-			}
-		}
+	var txStr string
 
-		logger.Info("Spend: \ntx= \n %s \n", txStr)
-
+	if txStr, err = visor.TransactionToJSON(*tx); err != nil {
+		// Skip the errors here as it already failed above
+		rbTx, _ := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 		// Get the new wallet balance
-		if b, err = gateway.GetWalletBalance(walletID); err != nil {
-			logger.Error("Get wallet balance failed: %v", err)
-			return &SpendResult{
-				Error: err.Error(),
-			}
-		}
+		b, _ = gateway.GetWalletBalance(walletID)
+		return &b, rbTx, err
+	}
+
+	logger.Info("Spend: \ntx= \n %s \n", txStr)
+
+	// Get the new wallet balance
+	if b, err = gateway.GetWalletBalance(walletID); err != nil {
+		logger.Error("Get wallet balance failed: %v", err)
+		// Skip the error here as it already failed to get the wallet balance
+		rbTx, _ := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		return &b, rbTx, err
 	}
 
 	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 	if err != nil {
 		logger.Error("Creation of new readable transaction failed: %s", err)
-		return &SpendResult{
-			Error: err.Error(),
-		}
+		return &b, rbTx, err
 	}
 
-	return &SpendResult{
-		Balance:     &b,
-		Transaction: rbTx,
-	}
+	return &b, rbTx, err
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
@@ -135,7 +142,12 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		ret := Spend(gateway, wltID, coins, dst)
+		balance, transaction, err := Spend(gateway, wltID, coins, dst)
+		ret := SpendResult{
+			Balance:     balance,
+			Transaction: transaction,
+			Error:       err.Error(),
+		}
 		if ret.Error != "" {
 			logger.Error(ret.Error)
 		}

@@ -39,6 +39,18 @@ export class ApiService {
     });
   }
 
+  postWalletCreate(label: string, seed: string, scan: number): Observable<Wallet> {
+    return this.post('wallet/create', { label: label, seed: seed, scan: scan })
+      .map(response => ({
+        label: response.meta.label,
+        filename: response.meta.filename,
+        seed: response.meta.seed,
+        coins: null,
+        hours: null,
+        addresses: [ { address: response.entries[0].address, coins: null, hours: null } ],
+      }))
+  }
+
   postWalletNewAddress(wallet: Wallet): Observable<Address> {
     return this.post('wallet/newAddress', { id: wallet.filename })
       .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));

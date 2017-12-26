@@ -54,8 +54,9 @@ export class WalletService {
   }
 
   create(label, seed, scan) {
-    return this.apiService.post('wallet/create', {label: label ? label : 'undefined', seed: seed, scan: scan ? scan : 100})
+    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100)
       .do(wallet => {
+        console.log(wallet);
         this.wallets.first().subscribe(wallets => {
           wallets.push(wallet);
           this.wallets.next(wallets);

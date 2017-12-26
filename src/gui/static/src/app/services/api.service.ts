@@ -12,7 +12,9 @@ export class ApiService {
   // private url = 'http://127.0.0.1:6420/'; // production
   private url = '/api/'; // test
 
-  constructor(private http: Http) { }
+  constructor(
+    private http: Http,
+  ) { }
 
   getWallets(): Observable<Wallet[]> {
     return this.get('wallets').map((response: GetWalletsResponseWallet[]) => {

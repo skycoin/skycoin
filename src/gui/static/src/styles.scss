@@ -44,6 +44,14 @@ header {
   height: 300px;
 }
 
+md-dialog-container {
+  border-radius: 5px !important;
+}
+
+.mat-dialog-container {
+  padding: 0 !important;
+}
+
 .header-container {
   max-width: 848px;
   text-align: center;
@@ -98,3 +106,43 @@ md-panel-title {
   flex: 1 1 auto;
 }
 
+.form-field {
+  margin-bottom: 20px;
+
+  label {
+    color: #1e2227;
+    display: block;
+    font-size: 13px;
+    line-height: 20px;
+    margin-bottom: 2px;
+  }
+
+  input {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
+  textarea {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+}
+
+.primary button.enabled {
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+  color: white;
+}

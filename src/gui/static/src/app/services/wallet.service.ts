@@ -185,7 +185,7 @@ export class WalletService {
 
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
     return Observable.forkJoin(wallet.addresses.map(address => this.retrieveAddressBalance(address).map(balance => {
-      address.coins = balance.confirmed.coins;
+      address.coins = balance.confirmed.coins / 1000000;
       address.hours = balance.confirmed.hours;
       return address;
     })));

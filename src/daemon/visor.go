@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -76,15 +79,14 @@ type Visor struct {
 }
 
 // NewVisor creates visor instance
-func NewVisor(c VisorConfig) (*Visor, error) {
+func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 	vs := &Visor{
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
 	}
 
-	var v *visor.Visor
-	v, err := visor.NewVisor(c.Config)
+	v, err := visor.NewVisor(c.Config, db)
 	if err != nil {
 		return nil, err
 	}
@@ -344,12 +346,12 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 		return err
 	}
 
-	fee, err := visor.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
+	f, err := fee.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
 	if err != nil {
 		return err
 	}
 
-	if err := visor.VerifyTransactionFee(&txn, fee); err != nil {
+	if err := fee.VerifyTransactionFee(&txn, f); err != nil {
 		return err
 	}
 
@@ -363,7 +365,7 @@ func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
 
 	// valid the spending coins
 	for _, out := range txn.Out {
-		if err := DropletPrecisionCheck(out.Coins); err != nil {
+		if err := visor.DropletPrecisionCheck(out.Coins); err != nil {
 			return err
 		}
 	}
@@ -467,12 +469,12 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 	return maxLen
 }
 
-// LoadAndScanWallet loads wallet from seeds and scan ahead N addresses
-func (vs *Visor) LoadAndScanWallet(wltName string, seed string, scanN uint64, ops ...wallet.Option) (wallet.Wallet, error) {
+// ScanAheadWalletAddresses loads wallet from seeds and scan ahead N addresses
+func (vs *Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
-	vs.strand("LoadAndScanWallet", func() error {
-		wlt, err = vs.v.LoadAndScanWallet(wltName, seed, scanN, ops...)
+	vs.strand("ScanAheadWalletAddresses", func() error {
+		wlt, err = vs.v.ScanAheadWalletAddresses(wltName, scanN)
 		return nil
 	})
 
@@ -800,7 +802,6 @@ func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	}
 
 	// Reply to sender with GiveTxnsMessage
-	logger.Debug("%d/%d txns known", len(known), len(gtm.Txns))
 	m := NewGiveTxnsMessage(known)
 	if err := d.Pool.Pool.SendMessage(gtm.c.Addr, m); err != nil {
 		logger.Error("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)

@@ -242,8 +242,11 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	var uncfmSpendingOutputs coin.UxArray
 	// unconfirmed incoming outputs
 	var uncfmIncomingOutputs coin.UxArray
+	var headTime uint64
 	var err error
 	gw.strand("GetUnspentOutputs", func() {
+		headTime = gw.v.Blockchain.Time()
+
 		unspentOutputs, err = gw.v.GetUnspentOutputs()
 		if err != nil {
 			err = fmt.Errorf("get unspent output readables failed: %v", err)
@@ -258,7 +261,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 
 		uncfmIncomingOutputs, err = gw.v.UnconfirmedIncomingOutputs()
 		if err != nil {
-			err = fmt.Errorf("get all incomming outputs failed: %v", err)
+			err = fmt.Errorf("get all incoming outputs failed: %v", err)
 			return
 		}
 	})
@@ -274,17 +277,17 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	}
 
 	outputSet := visor.ReadableOutputSet{}
-	outputSet.HeadOutputs, err = visor.NewReadableOutputs(unspentOutputs)
+	outputSet.HeadOutputs, err = visor.NewReadableOutputs(headTime, unspentOutputs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}
 
-	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(uncfmSpendingOutputs)
+	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(headTime, uncfmSpendingOutputs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}
 
-	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(uncfmIncomingOutputs)
+	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(headTime, uncfmIncomingOutputs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}
@@ -296,14 +299,13 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]bool)
+		addrMap := make(map[string]struct{})
 		for _, addr := range addrs {
-			addrMap[addr] = false
+			addrMap[addr] = struct{}{}
 		}
 
 		for _, u := range outputs {
-			_, ok := addrMap[u.Body.Address.String()]
-			if !ok {
+			if _, ok := addrMap[u.Body.Address.String()]; !ok {
 				addrMatch = append(addrMatch, u)
 			}
 		}
@@ -315,9 +317,9 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 func FbyAddresses(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]bool)
+		addrMap := make(map[string]struct{})
 		for _, addr := range addrs {
-			addrMap[addr] = true
+			addrMap[addr] = struct{}{}
 		}
 
 		for _, u := range outputs {
@@ -333,9 +335,9 @@ func FbyAddresses(addrs []string) OutputsFilter {
 func FbyHashes(hashes []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		hsMatch := coin.UxArray{}
-		hsMap := make(map[string]bool)
+		hsMap := make(map[string]struct{})
 		for _, h := range hashes {
-			hsMap[h] = true
+			hsMap[h] = struct{}{}
 		}
 
 		for _, u := range outputs {
@@ -487,7 +489,7 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 
 // Spend spends coins from given wallet and broadcast it,
 // return transaction or error.
-func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
+func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	var tx *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
@@ -495,12 +497,7 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID,
-			sv,
-			unspent,
-			gw.v.Blockchain.Time(),
-			amt,
-			dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			err = fmt.Errorf("Create transaction failed: %v", err)
 			return
@@ -515,40 +512,24 @@ func (gw *Gateway) Spend(wltID string, amt wallet.Balance, dest cipher.Address) 
 	return tx, err
 }
 
-// NewWallet creates wallet
-func (gw *Gateway) NewWallet(wltName string, options ...wallet.Option) (wallet.Wallet, error) {
+// CreateWallet creates wallet
+func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
-	gw.strand("NewWallet", func() {
-		wlt, err = gw.vrpc.NewWallet(wltName, options...)
+	gw.strand("CreateWallet", func() {
+		wlt, err = gw.vrpc.CreateWallet(wltName, options)
 	})
 	return wlt, err
 }
 
-// LoadAndScanWallet loads wallet from given seed and scan ahead N addresses
-func (gw *Gateway) LoadAndScanWallet(wltName string, seed string, scanN uint64, options ...wallet.Option) (wallet.Wallet, error) {
+// ScanAheadWalletAddresses loads wallet from given seed and scan ahead N addresses
+func (gw *Gateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
-	gw.strand("LoadAndScanWallet", func() {
-		wlt, err = gw.v.LoadAndScanWallet(wltName, seed, scanN, options...)
+	gw.strand("ScanAheadWalletAddresses", func() {
+		wlt, err = gw.v.ScanAheadWalletAddresses(wltName, scanN)
 	})
 	return wlt, err
-}
-
-// CreateSpendingTransaction creates spending transactions
-func (gw *Gateway) CreateSpendingTransaction(wlt wallet.Wallet, amt wallet.Balance, dest cipher.Address) (*coin.Transaction, error) {
-	var tx *coin.Transaction
-	var err error
-	gw.strand("CreateSpendingTransaction", func() {
-		// generate spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
-
-		// create and sign transaction
-		headTime := gw.v.Blockchain.Time()
-		tx, err = wlt.CreateAndSignTransaction(sv, unspent, headTime, amt, dest)
-	})
-	return tx, err
 }
 
 // GetWalletBalance returns balance pair of specific wallet
@@ -624,13 +605,13 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 }
 
 // GetWallet returns wallet by id
-func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, bool) {
+func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, error) {
 	var w wallet.Wallet
-	var ok bool
+	var err error
 	gw.strand("GetWallet", func() {
-		w, ok = gw.vrpc.GetWallet(wltID)
+		w, err = gw.vrpc.GetWallet(wltID)
 	})
-	return w, ok
+	return w, err
 }
 
 // GetWallets returns wallets

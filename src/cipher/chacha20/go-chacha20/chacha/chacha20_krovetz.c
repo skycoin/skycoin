@@ -1,4 +1,6 @@
-// +build cgo
+// +build ignore
+// NOTE: the build directive was originally "+build cgo", but this code is not meant to be built
+// for skycoin and exists only as a reference implementation
 
 /* Chacha implementation for 16-byte vectors by Ted Krovetz (ted@krovetz.net).
  * Assumes 32-bit int, 64-bit long long. Public domain. Modified: 2012.07.26.

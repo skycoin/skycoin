@@ -444,7 +444,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			},
 			gb.HashHeader(),
 			expect{
-				fmt.Errorf("find no signature of block: %v", gb.HashHeader().Hex()),
+				ErrMissingSignature{Hash: gb.HashHeader().Hex()},
 				nil,
 			},
 		},

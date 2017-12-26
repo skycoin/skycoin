@@ -31,7 +31,7 @@ import (
 
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
-	Version = "0.20.3"
+	Version = "0.21.1"
 	// Commit id
 	Commit = ""
 
@@ -72,6 +72,10 @@ var (
 		"47.88.33.156:6000",
 		"121.41.103.148:6000",
 		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
 	}
 )
 
@@ -81,6 +85,10 @@ var (
 type Config struct {
 	// Disable peer exchange
 	DisablePEX bool
+	// Download peer list
+	DownloadPeerList bool
+	// Download the peers list from this URL
+	PeerListURL string
 	// Don't make any outgoing connections
 	DisableOutgoingConnections bool
 	// Don't allowing incoming connections
@@ -94,10 +102,12 @@ type Config struct {
 	Address string
 	//gnet uses this for TCP incoming and outgoing
 	Port int
-	//max connections to maintain
-	MaxConnections int
+	//max outgoing connections to maintain
+	MaxOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
+	// PeerlistSize represents the maximum number of peers that the pex would maintain
+	PeerlistSize int
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
@@ -167,6 +177,8 @@ func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
 		"disable PEX peer discovery")
+	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
+	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
 		c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
@@ -240,7 +252,8 @@ func (c *Config) register() {
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
 		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
-
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 16, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", 65535, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
 		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
@@ -266,10 +279,13 @@ var devConfig = Config{
 	Address: "",
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
-
-	MaxConnections: 16,
+	// MaxOutgoingConnections is the maximum outgoing connections allowed.
+	MaxOutgoingConnections: 16,
+	DownloadPeerList:       false,
+	PeerListURL:            "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
+	PeerlistSize:            65535,
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
@@ -486,13 +502,16 @@ func configureDaemon(c *Config) daemon.Config {
 	dc := daemon.NewConfig()
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
+	dc.Pex.Max = c.PeerlistSize
+	dc.Pex.DownloadPeerList = c.DownloadPeerList
+	dc.Pex.PeerListURL = c.PeerListURL
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking
 	dc.Daemon.Port = c.Port
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
-	dc.Daemon.OutgoingMax = c.MaxConnections
+	dc.Daemon.OutgoingMax = c.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.DataDirectory
 	dc.Daemon.LogPings = !c.DisablePingPong
 
@@ -564,8 +583,16 @@ func Run(c *Config) {
 		go catchDebug()
 	}()
 
+	// creates blockchain instance
 	dconf := configureDaemon(c)
-	d, err := daemon.NewDaemon(dconf, DefaultConnections)
+
+	db, err := visor.OpenDB(dconf.Visor.Config.DBPath)
+	if err != nil {
+		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)
+		return
+	}
+
+	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
 		logger.Error("%v", err)
 		return

@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/fee"
 )
 
 func prepareWltDir() string {
@@ -118,18 +119,22 @@ func TestServiceCreateWallet(t *testing.T) {
 
 	wltName := "t1.wlt"
 	seed := "seed1"
-	w, err := s.CreateWallet(wltName, OptSeed(seed))
+	w, err := s.CreateWallet(wltName, Options{
+		Seed: seed,
+	})
 	require.NoError(t, err)
 	require.Equal(t, seed, w.Meta["seed"])
 	require.NoError(t, w.Validate())
 
-	// create walelt with dup wallet name
-	_, err = s.CreateWallet(wltName)
+	// create wallet with dup wallet name
+	_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
 	require.Equal(t, err, ErrWalletNameConflict)
 
 	// create wallet with dup seed
 	dupWlt := "dup_wallet.wlt"
-	_, err = s.CreateWallet(dupWlt, OptSeed(seed))
+	_, err = s.CreateWallet(dupWlt, Options{
+		Seed: seed,
+	})
 	require.EqualError(t, err, fmt.Sprintf("duplicate wallet with %v", wltName))
 
 	// check if the dup wallet is created
@@ -148,11 +153,11 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 	}
 
 	type exp struct {
-		seed              string
-		lastSeed          string
-		entryNum          int
-		confirmedBalance  uint64
-		predicatedBalance uint64
+		seed             string
+		lastSeed         string
+		entryNum         int
+		confirmedBalance uint64
+		predictedBalance uint64
 	}
 
 	tt := []struct {
@@ -166,11 +171,11 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			0,
 			bg,
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[0],
-				entryNum:          1,
-				confirmedBalance:  0,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
 			},
 		},
 		{
@@ -178,11 +183,11 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			1,
 			bg,
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[0],
-				entryNum:          1,
-				confirmedBalance:  0,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
 			},
 		},
 		{
@@ -190,65 +195,72 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 			10,
 			bg,
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[0],
-				entryNum:          1,
-				confirmedBalance:  0,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[0],
+				entryNum:         1,
+				confirmedBalance: 0,
+				predictedBalance: 0,
 			},
 		},
 		{
 			"scan 5 get 5",
 			5,
 			mockBalanceGetter{
-				addrs[0]: BalancePair{},
-				addrs[1]: BalancePair{},
-				addrs[2]: BalancePair{},
-				addrs[3]: BalancePair{},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[4],
-				entryNum:          5,
-				confirmedBalance:  10,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[5],
+				entryNum:         5 + 1,
+				confirmedBalance: 10,
+				predictedBalance: 0,
 			},
 		},
 		{
 			"scan 5 get 4",
 			5,
 			mockBalanceGetter{
-				addrs[0]: BalancePair{},
-				addrs[1]: BalancePair{},
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[3],
-				entryNum:          4,
-				confirmedBalance:  20,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
 			},
 		},
 		{
-			"confirmed and predicated",
+			"scan 5 get 4 have 6",
 			5,
 			mockBalanceGetter{
-				addrs[0]: BalancePair{},
-				addrs[1]: BalancePair{},
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				seed:              "seed1",
-				lastSeed:          childSeedsOfSeed1[3],
-				entryNum:          4,
-				confirmedBalance:  20,
-				predicatedBalance: 0,
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+
+		{
+			"confirmed and predicted",
+			5,
+			mockBalanceGetter{
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+			},
+			exp{
+				seed:             "seed1",
+				lastSeed:         childSeedsOfSeed1[4],
+				entryNum:         4 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
 			},
 		},
 	}
@@ -262,11 +274,17 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 
 			wltName := "t1.wlt"
 			seed := "seed1"
-			w, err := s.LoadAndScanWallet(wltName, seed, tc.scanN, tc.balGetter)
+			w, err := s.CreateWallet(wltName, Options{
+				Seed:  seed,
+				Label: "foo",
+			})
 			require.NoError(t, err)
 
 			require.Equal(t, seed, w.Meta["seed"])
 			require.NoError(t, w.Validate())
+
+			w, err = s.ScanAheadWalletAddresses(wltName, tc.scanN, tc.balGetter)
+			require.NoError(t, err)
 
 			require.Len(t, w.Entries, tc.expect.entryNum)
 			require.Equal(t, tc.expect.lastSeed, w.getLastSeed())
@@ -328,14 +346,14 @@ func TestServiceGetWallet(t *testing.T) {
 		break
 	}
 
-	w, ok := s.GetWallet(id)
-	require.True(t, ok)
+	w, err := s.GetWallet(id)
+	require.NoError(t, err)
 
 	// modify the returned wallet won't affect the wallet in service
 	w.SetLabel("new_label")
 
-	w1, ok := s.GetWallet(id)
-	require.True(t, ok)
+	w1, err := s.GetWallet(id)
+	require.NoError(t, err)
 
 	require.NotEqual(t, "new_label", w1.GetLabel())
 }
@@ -357,7 +375,7 @@ func TestServiceReloadWallets(t *testing.T) {
 	}
 
 	wltName := "t1.wlt"
-	w, err := s.CreateWallet(wltName)
+	w, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
 	require.NoError(t, err)
 
 	err = s.ReloadWallets()
@@ -413,8 +431,9 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 	headTime := time.Now().UTC().Unix()
 
-	wlt, ok := s.GetWallet(id)
-	require.True(t, ok)
+	wlt, err := s.GetWallet(id)
+	require.NoError(t, err)
+
 	secKey := wlt.Entries[0].Secret
 	addr := wlt.Entries[0].Address
 
@@ -429,12 +448,25 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		addrs = append(addrs, a)
 	}
 
+	var uxoutsNoHours []coin.UxOut
+	addrsNoHours := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey)
+		uxout.Body.Hours = 0
+		uxout.Head.Time = uint64(headTime)
+		uxoutsNoHours = append(uxoutsNoHours, uxout)
+
+		p, _ := cipher.GenerateKeyPair()
+		a := cipher.AddressFromPubKey(p)
+		addrsNoHours = append(addrsNoHours, a)
+	}
+
 	tt := []struct {
 		name       string
 		unspents   []coin.UxOut
 		addrUxouts coin.AddressUxOuts
 		vld        Validator
-		amt        Balance
+		coins      uint64
 		dest       cipher.Address
 		err        error
 	}{
@@ -447,7 +479,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			nil,
 		},
@@ -460,7 +492,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1e6},
+			1e6,
 			addrs[0],
 			nil,
 		},
@@ -473,7 +505,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: true,
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			errors.New("please spend after your pending transaction is confirmed"),
 		},
@@ -487,7 +519,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				ok:  false,
 				err: errors.New("fail intentionally"),
 			},
-			Balance{Coins: 2e6},
+			2e6,
 			addrs[0],
 			errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
@@ -500,7 +532,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{},
+			0,
 			addrs[0],
 			errors.New("zero spend amount"),
 		},
@@ -513,7 +545,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 1000},
+			1e3,
 			addrs[0],
 			nil,
 		},
@@ -526,9 +558,22 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			&dummyValidator{
 				ok: false,
 			},
-			Balance{Coins: 100e6},
+			100e6,
 			addrs[0],
-			errors.New("not enough confirmed coins"),
+			ErrInsufficientBalance,
+		},
+		{
+			"no coin hours in inputs",
+			uxoutsNoHours[:],
+			coin.AddressUxOuts{
+				addr: uxoutsNoHours,
+			},
+			&dummyValidator{
+				ok: false,
+			},
+			1e6,
+			addrsNoHours[0],
+			fee.ErrTxnNoFee,
 		},
 	}
 
@@ -543,7 +588,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				unspents.unspents[ux.Hash()] = ux
 			}
 
-			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.amt, tc.dest)
+			tx, err := s.CreateAndSignTransaction(id, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -555,33 +600,24 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				require.True(t, ok)
 			}
 
-			require.NoError(t, tx.Verify())
+			err = tx.Verify()
+			require.NoError(t, err)
 		})
 	}
 }
 
 func makeUxBody(t *testing.T, s cipher.SecKey) coin.UxBody {
-	body, _ := makeUxBodyWithSecret(t, s)
-	return body
-}
-
-func makeUxOut(t *testing.T, s cipher.SecKey) coin.UxOut {
-	ux, _ := makeUxOutWithSecret(t, s)
-	return ux
-}
-
-func makeUxBodyWithSecret(t *testing.T, s cipher.SecKey) (coin.UxBody, cipher.SecKey) {
 	p := cipher.PubKeyFromSecKey(s)
 	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
+		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          2e6,
 		Hours:          100,
-	}, s
+	}
 }
 
-func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecKey) {
-	body, sec := makeUxBodyWithSecret(t, s)
+func makeUxOut(t *testing.T, s cipher.SecKey) coin.UxOut {
+	body := makeUxBody(t, s)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)
 	return coin.UxOut{
@@ -590,13 +626,5 @@ func makeUxOutWithSecret(t *testing.T, s cipher.SecKey) (coin.UxOut, cipher.SecK
 			BkSeq: uint64(seq),
 		},
 		Body: body,
-	}, sec
-}
-
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x) //end unit testing.
-	assert.Nil(t, err)
-	return b
+	}
 }

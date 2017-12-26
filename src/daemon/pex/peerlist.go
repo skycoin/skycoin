@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/file"
@@ -26,12 +25,11 @@ func (ps Peers) ToAddrs() []string {
 
 // peerlist is a map of addresses to *PeerStates
 type peerlist struct {
-	sync.RWMutex
 	peers map[string]*Peer
 }
 
-func newPeerlist() *peerlist {
-	return &peerlist{
+func newPeerlist() peerlist {
+	return peerlist{
 		peers: make(map[string]*Peer),
 	}
 }
@@ -54,26 +52,37 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 
 	peers := make(map[string]*Peer, len(peersJSON))
 	for addr, peerJSON := range peersJSON {
+		a, err := validateAddress(addr, true)
+		if err != nil {
+			logger.Error("Invalid address in peers JSON file %s: %v", addr, err)
+			continue
+		}
+
 		peer, err := newPeerFromJSON(peerJSON)
 		if err != nil {
-			return nil, err
+			logger.Error("newPeerFromJSON failed: %v", err)
+			continue
 		}
-		peers[addr] = &peer
+
+		if a != peer.Addr {
+			logger.Error("address key %s does not match Peer.Addr %s", a, peer.Addr)
+			continue
+		}
+
+		peers[a] = peer
 	}
 
 	return peers, nil
 }
 
 func (pl *peerlist) setPeers(peers []Peer) {
-	pl.Lock()
 	for _, p := range peers {
 		np := p
 		pl.peers[p.Addr] = &np
 	}
-	pl.Unlock()
 }
 
-func (pl *peerlist) add(addr string) {
+func (pl *peerlist) addPeer(addr string) {
 	if p, ok := pl.peers[addr]; ok && p != nil {
 		p.Seen()
 		return
@@ -84,18 +93,10 @@ func (pl *peerlist) add(addr string) {
 	return
 }
 
-func (pl *peerlist) addPeer(addr string) {
-	pl.Lock()
-	pl.add(addr)
-	pl.Unlock()
-}
-
 func (pl *peerlist) addPeers(addrs []string) {
-	pl.Lock()
 	for _, addr := range addrs {
-		pl.add(addr)
+		pl.addPeer(addr)
 	}
-	pl.Unlock()
 }
 
 func (pl *peerlist) getPeers(flts ...Filter) Peers {
@@ -143,17 +144,13 @@ func zeroRetryTimes(p Peer) bool {
 // isExchangeable filters exchangeable peers
 var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
 
-// RemovePeer removes peer
-func (pl *peerlist) RemovePeer(addr string) {
-	pl.Lock()
+// removePeer removes peer
+func (pl *peerlist) removePeer(addr string) {
 	delete(pl.peers, addr)
-	pl.Unlock()
 }
 
 // SetPrivate sets specific peer as private
 func (pl *peerlist) setPrivate(addr string, private bool) error {
-	pl.Lock()
-	defer pl.Unlock()
 	if p, ok := pl.peers[addr]; ok {
 		p.Private = private
 		return nil
@@ -164,8 +161,6 @@ func (pl *peerlist) setPrivate(addr string, private bool) error {
 
 // SetTrusted sets peer as trusted peer
 func (pl *peerlist) setTrusted(addr string, trusted bool) error {
-	pl.Lock()
-	defer pl.Unlock()
 	if p, ok := pl.peers[addr]; ok {
 		p.Trusted = trusted
 		return nil
@@ -174,10 +169,8 @@ func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
 }
 
-// setPeerHasIncomingPort updates whether the peer is valid and has public incoming port
-func (pl *peerlist) setPeerHasIncomingPort(addr string, hasIncomingPort bool) error {
-	pl.Lock()
-	defer pl.Unlock()
+// setHasIncomingPort updates whether the peer is valid and has public incoming port
+func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
 	if p, ok := pl.peers[addr]; ok {
 		p.HasIncomingPort = hasIncomingPort
 		p.Seen()
@@ -187,37 +180,13 @@ func (pl *peerlist) setPeerHasIncomingPort(addr string, hasIncomingPort bool) er
 	return fmt.Errorf("set peer.HasIncomingPort failed: %v does not exist in peer list", addr)
 }
 
-// cullInvalidPeers removes those unreachable and untrusted peers
-func (pl *peerlist) cullInvalidPeers() []Peer {
-	pl.Lock()
-	defer pl.Unlock()
-	var culledPeers []Peer
-	for _, p := range pl.peers {
-		if p.Trusted {
-			continue
-		}
-
-		if p.RetryTimes >= maxRetryTimes {
-			culledPeers = append(culledPeers, *p)
-			logger.Critical("delete peer:%v", p.Addr)
-			delete(pl.peers, p.Addr)
-		}
-	}
-
-	return culledPeers
-}
-
 // len returns number of peers
 func (pl *peerlist) len() int {
-	pl.RLock()
-	defer pl.RUnlock()
 	return len(pl.peers)
 }
 
-// GetPeerByAddr returns peer of given address
-func (pl *peerlist) GetPeerByAddr(addr string) (Peer, bool) {
-	pl.RLock()
-	defer pl.RUnlock()
+// getPeerByAddr returns peer of given address
+func (pl *peerlist) getPeerByAddr(addr string) (Peer, bool) {
 	p, ok := pl.peers[addr]
 	if ok {
 		return *p, true
@@ -228,11 +197,8 @@ func (pl *peerlist) GetPeerByAddr(addr string) (Peer, bool) {
 // ClearOld removes public peers that haven't been seen in timeAgo seconds
 func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	t := utc.Now()
-	pl.Lock()
-	defer pl.Unlock()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		fmt.Println(t.Sub(lastSeen), timeAgo)
 		if !peer.Private && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
@@ -261,12 +227,10 @@ func (pl *peerlist) random(count int, flts ...Filter) Peers {
 // save saves known peers to disk as a newline delimited list of addresses to
 // <dir><PeerDatabaseFilename>
 func (pl *peerlist) save(fn string) error {
-	pl.Lock()
-	defer pl.Unlock()
-	// filter the peers that has retrytime > maxRetryTimes
+	// filter the peers that has retrytime > MaxPeerRetryTimes
 	peers := make(map[string]PeerJSON)
 	for k, p := range pl.peers {
-		if p.RetryTimes <= maxRetryTimes {
+		if p.RetryTimes <= MaxPeerRetryTimes {
 			peers[k] = newPeerJSON(*p)
 		}
 	}
@@ -277,69 +241,28 @@ func (pl *peerlist) save(fn string) error {
 	return nil
 }
 
-// IncreaseRetryTimes increases retry times
-func (pl *peerlist) IncreaseRetryTimes(addr string) {
-	pl.Lock()
+// increaseRetryTimes increases retry times
+func (pl *peerlist) increaseRetryTimes(addr string) {
 	if p, ok := pl.peers[addr]; ok {
 		p.IncreaseRetryTimes()
 		p.Seen()
 	}
-	pl.Unlock()
 }
 
-// ResetRetryTimes reset retry times
-func (pl *peerlist) ResetRetryTimes(addr string) {
-	pl.Lock()
+// resetRetryTimes reset retry times
+func (pl *peerlist) resetRetryTimes(addr string) {
 	if p, ok := pl.peers[addr]; ok {
 		p.ResetRetryTimes()
 		p.Seen()
 	}
-	pl.Unlock()
 }
 
-// ResetAllRetryTimes reset all peers' retry times
-func (pl *peerlist) ResetAllRetryTimes() {
+// resetAllRetryTimes reset all peers' retry times
+func (pl *peerlist) resetAllRetryTimes() {
 	logger.Info("Reset all peer's retry times")
-	pl.Lock()
 	for _, p := range pl.peers {
 		p.ResetRetryTimes()
 	}
-	pl.Unlock()
-}
-
-// GetTrustPeers returns trusted peers
-func (pl *peerlist) Trusted() Peers {
-	pl.RLock()
-	defer pl.RUnlock()
-	return pl.getPeers(isTrusted)
-}
-
-// GetPrivate returns private peers
-func (pl *peerlist) Private() Peers {
-	pl.RLock()
-	defer pl.RUnlock()
-	return pl.getPeers(isPrivate)
-}
-
-// GetTrustPublicPeers returns trusted public peers
-func (pl *peerlist) TrustedPublic() Peers {
-	pl.RLock()
-	defer pl.RUnlock()
-	return pl.getPeers(isPublic, isTrusted)
-}
-
-// GetRandomPublicPeers returns N random public peers
-func (pl *peerlist) RandomPublic(n int) Peers {
-	pl.RLock()
-	defer pl.RUnlock()
-	return pl.random(n, isPublic)
-}
-
-// RandomExchange returns N random exchangeable peers
-func (pl *peerlist) RandomExchangeable(n int) Peers {
-	pl.RLock()
-	defer pl.RUnlock()
-	return pl.random(n, isExchangeable...)
 }
 
 // PeerJSON is for saving and loading peers to disk. Some fields are strange,
@@ -367,7 +290,7 @@ func newPeerJSON(p Peer) PeerJSON {
 }
 
 // newPeerFromJSON converts a PeerJSON to a Peer
-func newPeerFromJSON(p PeerJSON) (Peer, error) {
+func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	hasIncomingPort := false
 	if p.HasIncomingPort != nil {
 		hasIncomingPort = *p.HasIncomingPort
@@ -381,7 +304,7 @@ func newPeerFromJSON(p PeerJSON) (Peer, error) {
 	case string:
 		lastSeenTime, err := time.Parse(time.RFC3339Nano, p.LastSeen.(string))
 		if err != nil {
-			return Peer{}, err
+			return nil, err
 		}
 		lastSeen = lastSeenTime.Unix()
 	case json.Number:
@@ -389,14 +312,19 @@ func newPeerFromJSON(p PeerJSON) (Peer, error) {
 		var err error
 		lastSeen, err = lastSeenNum.Int64()
 		if err != nil {
-			return Peer{}, err
+			return nil, err
 		}
 	default:
-		return Peer{}, fmt.Errorf("Invalid type %T for LastSeen field", p.LastSeen)
+		return nil, fmt.Errorf("Invalid type %T for LastSeen field", p.LastSeen)
 	}
 
-	return Peer{
-		Addr:            p.Addr,
+	addr, err := validateAddress(p.Addr, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Peer{
+		Addr:            addr,
 		LastSeen:        lastSeen,
 		Private:         p.Private,
 		Trusted:         p.Trusted,

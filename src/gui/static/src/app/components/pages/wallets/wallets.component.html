@@ -1,5 +1,5 @@
 <div class="sky-container sky-container-grey">
-  <app-header coins="199" title="Wallets"></app-header>
+  <app-header [coins]="coins" [hours]="hours" title="Wallets" class="front-page"></app-header>
   <div class="grid-headers">
     <div class="flex-fill">Wallet</div>
     <div class="flex-100">SKY Hours</div>
@@ -9,7 +9,7 @@
     <div class="grid-row" (click)="openWallet(wallet)">
       <div class="flex-fill label">{{ wallet.label }}</div>
       <div class="flex-100 hours">{{ wallet.hours ? wallet.hours : 0 }}</div>
-      <div class="flex-100 coins">{{ wallet.balance ? wallet.balance : 0 }}</div>
+      <div class="flex-100 coins">{{ wallet.coins ? wallet.coins : 0 }}</div>
       <img src="../../../../assets/img/chevron-right-grey.png">
     </div>
   </ng-container>
@@ -23,4 +23,3 @@
   </div>
   <app-footer></app-footer>
 </div>
-

@@ -46,6 +46,7 @@ import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { FooterComponent } from './components/layout/footer/footer.component';
 import { WalletShowComponent } from './components/pages/wallet-show/wallet-show.component';
+import { PriceService } from './price.service';
 
 const ROUTES = [
   {
@@ -240,6 +241,7 @@ const ROUTES = [
     ApiService,
     BlockchainService,
     NetworkService,
+    PriceService,
     PurchaseService,
     WalletService,
   ],

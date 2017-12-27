@@ -127,6 +127,16 @@ md-panel-title {
     width: 100%;
   }
 
+  select {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
   textarea {
     border: 2px solid rgba(0, 0, 0, 0.05);
     border-radius: 6px;

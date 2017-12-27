@@ -121,13 +121,13 @@ export class WalletService {
     })));
   }
 
-  sendSkycoin(wallet_id: string, address: string, amount: number) {
-    return this.apiService.post('wallet/spend', {id: wallet_id, dst: address, coins: amount})
-      .do(output => this.recentTransactions.first().subscribe(transactions => {
-        const transaction = {id: output.txn.txid, address: address, amount: amount / 1000000};
-        transactions.push(transaction);
-        this.recentTransactions.next(transactions);
-      }));
+  sendSkycoin(wallet: Wallet, address: string, amount: number) {
+    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount})
+      // .do(output => this.recentTransactions.first().subscribe(transactions => {
+      //   const transaction = {id: output.txn.txid, address: address, amount: amount / 1000000};
+      //   transactions.push(transaction);
+      //   this.recentTransactions.next(transactions);
+      // }));
   }
 
   sum(): Observable<number> {

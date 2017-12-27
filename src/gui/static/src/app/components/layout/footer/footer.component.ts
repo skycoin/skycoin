@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { MdDialog, MdDialogConfig } from '@angular/material';
+import { SendSkycoinComponent } from '../../pages/send-skycoin/send-skycoin.component';
 
 @Component({
   selector: 'app-footer',
@@ -9,6 +11,7 @@ import { Router } from '@angular/router';
 export class FooterComponent {
 
   constructor(
+    private dialog: MdDialog,
     private router: Router,
   ) { }
 
@@ -17,8 +20,9 @@ export class FooterComponent {
   }
 
   openSendPage() {
-    // const modal = this.modal.create(SendSkycoinPage);
-    // modal.present();
+    const config = new MdDialogConfig();
+    config.width = '566px';
+    this.dialog.open(SendSkycoinComponent, config);
   }
 
   openTransactions() {

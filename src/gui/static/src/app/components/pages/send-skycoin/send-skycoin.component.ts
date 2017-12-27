@@ -3,17 +3,18 @@ import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { Router } from '@angular/router';
-import { MdSnackBar, MdSnackBarConfig } from '@angular/material';
+import { MdDialogRef, MdSnackBar, MdSnackBarConfig } from '@angular/material';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
+import { ButtonComponent } from '../../layout/button/button.component';
 
 @Component({
   selector: 'app-send-skycoin',
   templateUrl: './send-skycoin.component.html',
-  styleUrls: ['./send-skycoin.component.css']
+  styleUrls: ['./send-skycoin.component.scss']
 })
 export class SendSkycoinComponent implements OnInit {
-  @ViewChild('button') button;
+  @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
   records = [];
@@ -22,7 +23,7 @@ export class SendSkycoinComponent implements OnInit {
   constructor(
     public formBuilder: FormBuilder,
     public walletService: WalletService,
-    private router: Router,
+    public dialogRef: MdDialogRef<SendSkycoinComponent>,
     private snackbar: MdSnackBar,
   ) {}
 
@@ -36,23 +37,18 @@ export class SendSkycoinComponent implements OnInit {
     this.walletService.recent().subscribe(transactions => this.transactions = transactions);
   }
 
-  onActivate(response) {
-    if (response.row && response.row.txid) {
-      this.router.navigate(['/history', response.row.txid]);
-    }
-  }
-
   send() {
     this.button.setLoading();
-    const wallet_id = this.form.value.wallet.meta.filename;
-    this.walletService.sendSkycoin(wallet_id, this.form.value.address, this.form.value.amount * 1000000)
+    this.walletService.sendSkycoin(this.form.value.wallet, this.form.value.address, this.form.value.amount * 1000000)
       .delay(1000)
       .subscribe(
-        response => {
+        () => {
           this.resetForm();
           this.button.setSuccess();
+          this.dialogRef.close();
         },
         error => {
+          console.log(error, error['_body']);
           const config = new MdSnackBarConfig();
           config.duration = 300000;
           this.snackbar.open(error['_body'], null, config);
@@ -66,13 +62,15 @@ export class SendSkycoinComponent implements OnInit {
       wallet: ['', Validators.required],
       address: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(0), Validators.max(0)]],
+      notes: [''],
     });
     this.form.controls['wallet'].valueChanges.subscribe(value => {
-      const balance = value && value.balance ? (value.balance / 1000000) : 0;
+      console.log(value);
+      const balance = value && value.coins ? value.coins : 0;
       this.form.controls['amount'].setValidators([
         Validators.required,
         Validators.min(0),
-        Validators.max(balance),
+        // Validators.max(balance),
       ]);
       this.form.controls['amount'].updateValueAndValidity();
     });

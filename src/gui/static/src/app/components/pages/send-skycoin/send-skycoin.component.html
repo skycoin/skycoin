@@ -1,45 +1,37 @@
-<md-card [formGroup]="form" class="send-skycoin-form">
-  <md-select formControlName="wallet" placeholder="Select Wallet" class="input-field">
-    <md-option *ngFor="let wallet of walletService.all() | async" [value]="wallet" [disabled]="wallet.balance <= 0">
-      {{ wallet.meta.label }} ({{ wallet.balance | sky }})
-    </md-option>
-  </md-select>
-  <md-input-container class="input-field">
-    <input mdInput formControlName="address" placeholder="Recipient address">
-  </md-input-container>
-  <md-input-container class="input-field">
-    <input type="number" mdInput formControlName="amount" placeholder="Amount">
-  </md-input-container>
-  <div class="button-line">
-    <app-button #button (click)="send()" [disabled]="!form.valid">
-      Send
-    </app-button>
+<div class="container">
+  <div class="-header">
+    New Wallet <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()">
   </div>
-</md-card>
-<!--Time, Status, Address, Amount, Transaction ID-->
-<md-card>
-  <h3>Recent transactions</h3>
-  <ngx-datatable #table
-    class="material"
-    [rows]="records"
-    columnMode="flex"
-    [headerHeight]="50"
-    [footerHeight]="50"
-    [rowHeight]="50"
-    [limit]="10"
-    [scrollbarH]="true"
-    (activate)="onActivate($event)">
-    <ngx-datatable-column name="Timestamp" prop="txn.timestamp" [flexGrow]="2">
-      <ng-template let-value="value" ngx-datatable-cell-template>
-        <strong>{{ value | dateTime }}</strong>
-      </ng-template>
-    </ngx-datatable-column>
-    <ngx-datatable-column name="Status" [flexGrow]="2">
-      <ng-template let-value="value" ngx-datatable-cell-template>
-        <strong>{{ value.confirmed ? 'Confirmed' : 'Unconfirmed' }}</strong>
-      </ng-template>
-    </ngx-datatable-column>
-    <ngx-datatable-column name="Address" [flexGrow]="4"></ngx-datatable-column>
-    <ngx-datatable-column name="Amount" [flexGrow]="1"></ngx-datatable-column>
-  </ngx-datatable>
-</md-card>
+  <div class="-body">
+    <div [formGroup]="form">
+      <div class="form-field">
+        <label for="wallet">Send from</label>
+        <select formControlName="wallet" id="wallet">
+          <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
+            {{ wallet.label }} - {{ wallet.coins }} SKY
+          </option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="address">Send to</label>
+        <input formControlName="address" id="address">
+      </div>
+      <div class="form-field">
+        <label for="amount">Amount</label>
+        <input formControlName="amount" id="amount">
+      </div>
+      <div class="form-field">
+        <label for="notes">Notes</label>
+        <textarea formControlName="notes" id="notes" row="2"></textarea>
+      </div>
+    </div>
+    <div class="-buttons">
+      <app-button (action)="closePopup()">
+        Cancel
+      </app-button>
+      <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
+        Create
+      </app-button>
+    </div>
+  </div>
+</div>

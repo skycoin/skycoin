@@ -37,6 +37,10 @@ export class SendSkycoinComponent implements OnInit {
     this.walletService.recent().subscribe(transactions => this.transactions = transactions);
   }
 
+  closePopup() {
+    this.dialogRef.close();
+  }
+
   send() {
     this.button.setLoading();
     this.walletService.sendSkycoin(this.form.value.wallet, this.form.value.address, this.form.value.amount * 1000000)
@@ -48,7 +52,6 @@ export class SendSkycoinComponent implements OnInit {
           this.dialogRef.close();
         },
         error => {
-          console.log(error, error['_body']);
           const config = new MdSnackBarConfig();
           config.duration = 300000;
           this.snackbar.open(error['_body'], null, config);
@@ -70,7 +73,7 @@ export class SendSkycoinComponent implements OnInit {
       this.form.controls['amount'].setValidators([
         Validators.required,
         Validators.min(0),
-        // Validators.max(balance),
+        Validators.max(balance),
       ]);
       this.form.controls['amount'].updateValueAndValidity();
     });

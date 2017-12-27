@@ -160,16 +160,18 @@ func (c Config) Verify() error {
 }
 
 // Visor manages the Blockchain as both a Master and a Normal
+// TODO:
+//     Replaces the history and unconfirmed transaction pool with interface, to
+//     make it easier for testing.
 type Visor struct {
 	Config Config
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed *UnconfirmedTxnPool
 	Blockchain  *Blockchain
-	// blockSigs   *blockdb.BlockSigs
-	history  *historydb.HistoryDB
-	bcParser *BlockchainParser
-	wallets  *wallet.Service
-	db       *bolt.DB
+	history     *historydb.HistoryDB
+	bcParser    *BlockchainParser
+	wallets     *wallet.Service
+	db          *bolt.DB
 }
 
 // NewVisor creates a Visor for managing the blockchain database
@@ -612,6 +614,61 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 		Status: NewConfirmedTransactionStatus(confirms, txn.BlockSeq),
 		Time:   b.Time(),
 	}, nil
+}
+
+// GetTransactionsOfAddrs returns all addresses related transactions.
+// Including both confirmed and unconfirmed transactions.
+func (vs *Visor) GetTransactionsOfAddrs(addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
+	// Initialize the address transactions map
+	addrTxs := make(map[cipher.Address][]Transaction)
+
+	// Get the head block seq, for caculating the tx status
+	headBkSeq := vs.HeadBkSeq()
+	for _, a := range addrs {
+		var txns []Transaction
+		txs, err := vs.history.GetAddrTxns(a)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, tx := range txs {
+			h := headBkSeq - tx.BlockSeq + 1
+
+			bk, err := vs.GetBlockBySeq(tx.BlockSeq)
+			if err != nil {
+				return nil, err
+			}
+
+			if bk == nil {
+				return nil, fmt.Errorf("block of seq: %d doesn't exist", tx.BlockSeq)
+			}
+
+			txns = append(txns, Transaction{
+				Txn:    tx.Tx,
+				Status: NewConfirmedTransactionStatus(h, tx.BlockSeq),
+				Time:   bk.Time(),
+			})
+		}
+
+		// Look in the unconfirmed pool
+		uxs := vs.Unconfirmed.GetUnspentsOfAddr(a)
+		for _, ux := range uxs {
+			tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
+			if !ok {
+				logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+				continue
+			}
+			txns = append(txns, Transaction{
+				Txn:    tx.Txn,
+				Status: NewUnconfirmedTransactionStatus(),
+				Time:   uint64(nanoToTime(tx.Received).Unix()),
+			})
+		}
+
+		addrTxs[a] = txns
+	}
+
+	return addrTxs, nil
 }
 
 // AddressBalance computes the total balance for cipher.Addresses and their coin.UxOuts

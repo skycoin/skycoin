@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -22,6 +23,13 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/lastTxs", getLastTxs(gateway))
 	// get txn by txid
 	mux.HandleFunc("/transaction", getTransactionByID(gateway))
+
+	// Returns transactions that match the filters.
+	// Method: GET
+	// Args:
+	//     addrs: Comma seperated addresses [optional, returns no transactions if no address provided]
+	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+	mux.HandleFunc("/transactions", getTransactions(gateway))
 	//inject a transaction into network
 	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
 	mux.HandleFunc("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
@@ -127,6 +135,119 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 			Status:      tx.Status,
 		}
 		wh.SendOr404(w, &resTx)
+	}
+}
+
+// Returns transactions that match the filters.
+// Method: GET
+// URI: /transactions
+// Args:
+//     addrs: Comma seperated addresses [optional, returns no transactions if no address provided]
+//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		// Gets addresses
+		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("parse parament: 'addrs' failed: %v", err))
+			return
+		}
+
+		// Returns no transactions if addrs is empty
+		if len(addrs) == 0 {
+			wh.SendOr404(w, []visor.TransactionResult{})
+			return
+		}
+
+		// Gets addresses related transactions
+		addrTxns, err := gateway.GetTransactionsOfAddrs(addrs)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		// Converts address transactions map into []visor.Transaction, and remove duplicate txns
+		txnMap := make(map[cipher.SHA256]struct{}, 0)
+		var txns []visor.Transaction
+		for _, txs := range addrTxns {
+			for _, tx := range txs {
+				if _, exist := txnMap[tx.Txn.Hash()]; exist {
+					continue
+				}
+				txnMap[tx.Txn.Hash()] = struct{}{}
+				txns = append(txns, tx)
+			}
+		}
+
+		var retTxns []visor.Transaction
+		// Gets the "confirmed" string
+		confirmedStr := r.FormValue("confirmed")
+		if confirmedStr == "" {
+			// Returns all transactions
+			retTxns = txns
+		} else {
+			confirmed, err := parseConfirmedFromStr(confirmedStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("parse paramenter: 'confirmed' failed: %v", err))
+				return
+			}
+
+			for _, tx := range txns {
+				if tx.Status.Confirmed == confirmed {
+					retTxns = append(retTxns, tx)
+				}
+			}
+		}
+
+		txRlts, err := visor.NewTransactionResults(retTxns)
+		if err != nil {
+			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, txRlts.Txns)
+	}
+}
+
+// Parses comma seperated addresses string into []cipher.Address,
+func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
+	if addrStr == "" {
+		return nil, nil
+	}
+
+	var addrs []cipher.Address
+	for _, as := range strings.Split(addrStr, ",") {
+		s := strings.TrimSpace(as)
+		if s == "" {
+			continue
+		}
+
+		a, err := cipher.DecodeBase58Address(s)
+		if err != nil {
+			return nil, err
+		}
+
+		addrs = append(addrs, a)
+	}
+
+	return addrs, nil
+}
+
+// Parses the confirmed string int bool value, must be "0" or "1".
+func parseConfirmedFromStr(confirmedStr string) (bool, error) {
+	switch confirmedStr {
+	case "0":
+		return false, nil
+	case "1":
+		return true, nil
+	default:
+		return false, fmt.Errorf("invalid 'confirmed' value: %v", confirmedStr)
 	}
 }
 

@@ -397,6 +397,17 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 	return visor.NewTransactionResults(txs)
 }
 
+// GetTransactionsOfAddrs returns addresses related transactions
+func (gw *Gateway) GetTransactionsOfAddrs(addrs []cipher.Address) (map[cipher.Address][]visor.Transaction, error) {
+	addrTxs := make(map[cipher.Address][]visor.Transaction)
+	var err error
+	gw.strand("GetTransactionsOfAddrs", func() {
+		addrTxs, err = gw.v.GetTransactionsOfAddrs(addrs)
+	})
+
+	return addrTxs, err
+}
+
 // GetUxOutByID gets UxOut by hash id.
 func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	var uxout *historydb.UxOut

@@ -106,10 +106,7 @@ func (hd *HistoryDB) reset() error {
 		return err
 	}
 
-	if err := hd.txns.Reset(); err != nil {
-		return err
-	}
-	return nil
+	return hd.txns.Reset()
 }
 
 // GetUxout get UxOut of specific uxID.

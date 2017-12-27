@@ -384,3 +384,7 @@ func TestVisorCalculatePrecision(t *testing.T) {
 		calculateDivisor(7)
 	})
 }
+
+func TestGetTransctionsOfAddrs(t *testing.T) {
+
+}

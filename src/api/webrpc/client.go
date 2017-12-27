@@ -53,6 +53,17 @@ func (c *Client) GetUnspentOutputs(addrs []string) (*OutputsResult, error) {
 	return &outputs, nil
 }
 
+// GetTopnOutputs returns topn unspent outputs
+func (c *Client) GetTopnOutputs(topn int, includeDistribution bool) (*OutputsTopn, error) {
+	outputs := OutputsTopn{}
+	topnParms := TopnParas{Topn: topn, IncludeDistribution: includeDistribution}
+	if err := c.Do(&outputs, "get_topn_outputs", topnParms); err != nil {
+		return nil, err
+	}
+
+	return &outputs, nil
+}
+
 // InjectTransactionString injects a hex-encoded transaction string to the network
 func (c *Client) InjectTransactionString(rawtx string) (string, error) {
 	params := []string{rawtx}

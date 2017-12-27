@@ -79,6 +79,7 @@ COMMANDS:
      walletOutputs         Display outputs of specific wallet
      addressBalance        Check the balance of specific addresses
      addressOutputs        Display outputs of specific addresses
+     topnBalance           Display topn balance
      createRawTransaction  Create a raw transaction to be broadcast to the network later
      generateAddresses     Generate additional addresses for a wallet
      generateWallet        Generate a new wallet

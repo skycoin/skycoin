@@ -45,7 +45,7 @@ func (am AccountMgr) Less(i, j int) bool {
 			if am.Accounts[i].Coins == am.Accounts[j].Coins {
 				//sort alphabetically
 				cp := strings.Compare(am.Accounts[i].Addr, am.Accounts[j].Addr)
-				if cp > 1 {
+				if cp > 0 {
 					return true
 				} else {
 					return false

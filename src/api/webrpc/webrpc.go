@@ -160,6 +160,8 @@ func (rpc *WebRPC) initHandlers() error {
 		"get_blocks": getBlocksHandler,
 		// get unspent outputs of address
 		"get_outputs": getOutputsHandler,
+		// get topn unspent outputs
+		"get_topn_outputs": getTopnUxoutHandler,
 		// get transaction by txid
 		"get_transaction": getTransactionHandler,
 		// broadcast transaction

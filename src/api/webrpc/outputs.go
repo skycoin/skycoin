@@ -21,6 +21,12 @@ type OutputsTopn struct {
 	Outputs []uxotutil.AccountJSON `json:"richlist"`
 }
 
+//TopnParas the argument for topn outputs
+type TopnParas struct {
+	Topn                int  `json:"topn"`
+	IncludeDistribution bool `json:"include_distribution"`
+}
+
 func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	var addrs []string
 	if err := req.DecodeParams(&addrs); err != nil {
@@ -51,17 +57,13 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 }
 
 func getTopnUxoutHandler(req Request, gateway Gatewayer) Response {
-	type topnInfo struct {
-		Topn                int
-		IncludeDistribution bool
-	}
-	topn := topnInfo{}
+	topn := TopnParas{}
 	if err := req.DecodeParams(&topn); err != nil {
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 	outsall, err := gateway.GetUnspentOutputs(daemon.FbyAddressesNotIncluded([]string{}))
 	if err != nil {
-		logger.Error("get unspent outputs failed: %v", err)
+		logger.Error("get topn unspent outputs failed: %v", err)
 		return makeErrorResponse(errCodeInternalError)
 	}
 
@@ -78,7 +80,7 @@ func getTopnUxoutHandler(req Request, gateway Gatewayer) Response {
 			allAccounts[out.Address] = amt
 		}
 	}
-	distributionMap := map[string]struct{}{}
+	distributionMap := getDistributiomAddressMap()
 	amgr := uxotutil.NewAccountMgr(allAccounts, distributionMap)
 	amgr.Sort()
 	topnAcc, err := amgr.GetTopn(topn.Topn, topn.IncludeDistribution)
@@ -88,4 +90,13 @@ func getTopnUxoutHandler(req Request, gateway Gatewayer) Response {
 	}
 
 	return makeSuccessResponse(req.ID, OutputsTopn{topnAcc})
+}
+
+func getDistributiomAddressMap() map[string]struct{} {
+	distributionMap := map[string]struct{}{}
+	addresses := visor.GetLockedDistributionAddresses()
+	for _, address := range addresses {
+		distributionMap[address] = struct{}{}
+	}
+	return distributionMap
 }

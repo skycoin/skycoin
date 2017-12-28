@@ -1,8 +1,8 @@
 <div class="small-header" *ngIf="!showLargeHeader">
-  <app-top-bar ></app-top-bar>
+  <app-top-bar [title]="title"></app-top-bar>
 </div>
 <div class="large-header" *ngIf="showLargeHeader">
-  <app-top-bar></app-top-bar>
+  <app-top-bar [title]="title"></app-top-bar>
   <div class="balance-container">
       <div class="balance">
         <p class="coins"><span>{{ this.coins }}</span> sky</p>

@@ -70,7 +70,9 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.
 		outs = f(fg.uxouts)
 	}
 
-	rbOuts, err := visor.NewReadableOutputs(outs)
+	headTime := uint64(time.Now().UTC().Unix())
+
+	rbOuts, err := visor.NewReadableOutputs(headTime, outs)
 	if err != nil {
 		return visor.ReadableOutputSet{}, err
 	}

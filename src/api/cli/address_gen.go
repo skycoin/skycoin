@@ -60,13 +60,10 @@ func addressGenCmd() gcli.Command {
 					seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
 				} else {
 					var err error
-					var entropy []byte
-					entropy, err = bip39.NewEntropy(128)
+					seed, err = bip39.NewDefaultMnemomic()
 					if err != nil {
-						return fmt.Errorf("new entropy failed when new wallet seed: %v", err)
+						return err
 					}
-
-					seed, err = bip39.NewMnemonic(entropy)
 				}
 			}
 

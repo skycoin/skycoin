@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/stretchr/testify/require"
 )
 
 // Tests are setup as subtests, to retain a single *WebRPC instance for scaffolding
@@ -56,14 +57,15 @@ func TestClient(t *testing.T) {
 }
 
 func testClientGetUnspentOutputs(t *testing.T, c *Client, s *WebRPC, gw *fakeGateway) {
+	headTime := uint64(time.Now().UTC().Unix())
 	uxouts := make([]coin.UxOut, 5)
 	addrs := make([]cipher.Address, 5)
-	rbOutputs := make([]visor.ReadableOutput, 5)
+	rbOutputs := make(visor.ReadableOutputs, 5)
 	for i := 0; i < 5; i++ {
 		addrs[i] = testutil.MakeAddress()
 		uxouts[i] = coin.UxOut{}
 		uxouts[i].Body.Address = addrs[i]
-		rbOut, err := visor.NewReadableOutput(uxouts[i])
+		rbOut, err := visor.NewReadableOutput(headTime, uxouts[i])
 		require.NoError(t, err)
 		rbOutputs[i] = rbOut
 	}

@@ -85,10 +85,10 @@ func (uo *UxOut) CoinHours(t uint64) uint64 {
 		return uo.Body.Hours
 	}
 
-	seconds := (t - uo.Head.Time)                  //number of seconds
-	coinSeconds := (seconds * uo.Body.Coins) / 1e6 //coin seconds
-	coinHours := coinSeconds / 3600                //coin hours
-	return uo.Body.Hours + coinHours               //starting+earned
+	seconds := (t - uo.Head.Time)                  // number of seconds
+	coinSeconds := (seconds * uo.Body.Coins) / 1e6 // coin seconds
+	coinHours := coinSeconds / 3600                // coin hours
+	return uo.Body.Hours + coinHours               // starting+earned
 }
 
 // UxHashSet set mapping from UxHash to a placeholder value. Ignore the byte value,
@@ -157,6 +157,25 @@ func (ua UxArray) Less(i, j int) bool {
 // Swap swaps value of UxArray[i] and UxArray[j]
 func (ua UxArray) Swap(i, j int) {
 	ua[i], ua[j] = ua[j], ua[i]
+}
+
+// Coins returns the total coins
+func (ua UxArray) Coins() uint64 {
+	var coins uint64
+	for _, ux := range ua {
+		coins += ux.Body.Coins
+	}
+
+	return coins
+}
+
+// CoinHours returns the total coin hours
+func (ua UxArray) CoinHours(headTime uint64) uint64 {
+	var hours uint64
+	for _, ux := range ua {
+		hours += ux.CoinHours(headTime)
+	}
+	return hours
 }
 
 // AddressUxOuts maps address with uxarray

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -443,7 +444,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			},
 			gb.HashHeader(),
 			expect{
-				fmt.Errorf("find no signature of block: %v", gb.HashHeader().Hex()),
+				ErrMissingSignature{Hash: gb.HashHeader().Hex()},
 				nil,
 			},
 		},

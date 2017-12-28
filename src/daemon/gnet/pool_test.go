@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 const (

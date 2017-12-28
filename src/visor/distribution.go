@@ -43,11 +43,11 @@ func GetDistributionAddresses() []string {
 
 // Returns distribution addresses that are unlocked, i.e. they have spendable outputs
 func GetUnlockedDistributionAddresses() []string {
-	// The first InitialUnlockedCount (30) addresses are unlocked by default.
+	// The first InitialUnlockedCount (25) addresses are unlocked by default.
 	// Subsequent addresses will be unlocked at a rate of UnlockAddressRate (5) per year,
-	// after the InitialUnlockedCount (30) addresses have no remaining balance.
+	// after the InitialUnlockedCount (25) addresses have no remaining balance.
 	// The unlock timer will be enabled manually once the
-	// InitialUnlockedCount (30) addresses are distributed.
+	// InitialUnlockedCount (25) addresses are distributed.
 
 	// NOTE: To have automatic unlocking, transaction verification would have
 	// to be handled in visor rather than in coin.Transactions.Visor(), because

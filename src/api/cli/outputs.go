@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strconv"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-	gcli "github.com/urfave/cli"
 )
 
 func walletOutputsCmd(cfg Config) gcli.Command {

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"path/filepath"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-	gcli "github.com/urfave/cli"
 )
 
 func addPrivateKeyCmd(cfg Config) gcli.Command {

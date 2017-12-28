@@ -50,8 +50,8 @@ export class WalletService {
     return this.all().map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.entries), []));
   }
 
-  create(label, seed) {
-    return this.apiService.post('wallet/create', {label: label ? label : 'undefined', seed: seed})
+  create(label, seed, scan) {
+    return this.apiService.post('wallet/create', {label: label ? label : 'undefined', seed: seed, scan: scan ? scan : 100})
       .do(wallet => {
         this.wallets.first().subscribe(wallets => {
           wallets.push(wallet);

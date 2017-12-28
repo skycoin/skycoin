@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestStoreAdd(t *testing.T) {

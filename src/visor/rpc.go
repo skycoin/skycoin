@@ -138,13 +138,13 @@ func (rpc RPC) GetAddressTxns(v *Visor,
 	return v.GetAddressTxns(addr)
 }
 
-// NewWallet creates new wallet
-func (rpc *RPC) NewWallet(wltName string, ops ...wallet.Option) (wallet.Wallet, error) {
-	return rpc.v.wallets.CreateWallet(wltName, ops...)
+// CreateWallet creates new wallet
+func (rpc *RPC) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
+	return rpc.v.wallets.CreateWallet(wltName, options)
 }
 
 // NewAddresses generates new addresses in given wallet
-func (rpc *RPC) NewAddresses(wltName string, num int) ([]cipher.Address, error) {
+func (rpc *RPC) NewAddresses(wltName string, num uint64) ([]cipher.Address, error) {
 	return rpc.v.wallets.NewAddresses(wltName, num)
 }
 
@@ -154,17 +154,9 @@ func (rpc *RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (rpc *RPC) CreateAndSignTransaction(wltID string, vld wallet.Validator,
-	unspent blockdb.UnspentGetter,
-	headTime uint64,
-	amt wallet.Balance,
-	dest cipher.Address) (*coin.Transaction, error) {
-	return rpc.v.wallets.CreateAndSignTransaction(wltID,
-		vld,
-		unspent,
-		headTime,
-		amt,
-		dest)
+func (rpc *RPC) CreateAndSignTransaction(wltID string, vld wallet.Validator, unspent blockdb.UnspentGetter,
+	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+	return rpc.v.wallets.CreateAndSignTransaction(wltID, vld, unspent, headTime, coins, dest)
 }
 
 // UpdateWalletLabel updates wallet label
@@ -173,7 +165,7 @@ func (rpc *RPC) UpdateWalletLabel(wltID, label string) error {
 }
 
 // GetWallet returns wallet by id
-func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, bool) {
+func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, error) {
 	return rpc.v.wallets.GetWallet(wltID)
 }
 

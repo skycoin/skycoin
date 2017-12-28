@@ -2,19 +2,21 @@ package utc
 
 import (
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNow(t *testing.T) {
 	now := Now()
-	assert.False(t, now.IsZero())
+	require.False(t, now.IsZero())
+	time.Sleep(time.Millisecond * 10)
 	now2 := Now()
-	assert.True(t, now2.After(now))
+	require.True(t, now2.After(now))
 }
 
 func TestUnixNow(t *testing.T) {
 	now := Now()
 	unow := UnixNow()
-	assert.True(t, now.Unix() == unow || now.Unix() == unow-1)
+	require.True(t, now.Unix() == unow || now.Unix() == unow-1)
 }

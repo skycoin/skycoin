@@ -8,7 +8,8 @@
 
 .buttons-left {
   display: inline-block;
-  width: 100px;
+  padding: 0 10px;
+  width: 120px;
 }
 
 .title {
@@ -24,11 +25,18 @@
 .buttons-right {
   display: inline-block;
   text-align: right;
-  width: 100px;
+  width: 120px;
+
+  button {
+    display: inline-block;
+  }
 }
 
 button {
   height: 50px;
-  margin: 0 10px;
   width: 50px;
+}
+
+.color-primary {
+  color: #0072FF;
 }

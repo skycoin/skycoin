@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/uxotutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -19,5 +20,6 @@ type Gatewayer interface {
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	InjectTransaction(tx coin.Transaction) error
 	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
+	GetTopnUxOutputs(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error)
 	GetTimeNow() uint64
 }

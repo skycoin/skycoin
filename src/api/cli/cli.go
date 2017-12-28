@@ -209,7 +209,7 @@ func NewApp(cfg Config) *App {
 		addressBalanceCmd(),
 		addressGenCmd(),
 		addressOutputsCmd(),
-		topnOutputsCmd(),
+		richlistCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
 		createRawTxCmd(cfg),

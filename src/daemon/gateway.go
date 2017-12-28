@@ -5,8 +5,10 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/util/uxotutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/spaco/spo/src/util/droplet"
 
 	"fmt"
 
@@ -687,4 +689,34 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 		bi = gw.vrpc.GetBuildInfo()
 	})
 	return bi
+}
+
+// GetTopnUxOutput returns topn unspent outputs as desc order.
+func (gw *Gateway) GetTopnUxOutputs(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error) {
+	var topnAccount []uxotutil.AccountJSON
+	outsall, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
+	if err != nil {
+		return topnAccount, err
+	}
+
+	allAccounts := map[string]uint64{}
+	for _, out := range outsall.HeadOutputs {
+		amt, err := droplet.FromString(out.Coins)
+		if err != nil {
+		}
+		if _, ok := allAccounts[out.Address]; ok {
+			allAccounts[out.Address] += amt
+		} else {
+			allAccounts[out.Address] = amt
+		}
+	}
+	distributionMap := visor.GetLockedDistributiomAddressMap()
+	amgr := uxotutil.NewAccountMgr(allAccounts, distributionMap)
+	amgr.Sort()
+	topnAccount, err = amgr.GetTopn(topn, includeDistribution)
+	if err != nil {
+		return topnAccount, err
+	}
+
+	return topnAccount, nil
 }

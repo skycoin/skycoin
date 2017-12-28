@@ -40,14 +40,14 @@ func addressOutputsCmd() gcli.Command {
 
 }
 
-func topnOutputsCmd() gcli.Command {
-	name := "topnBalance"
+func richlistCmd() gcli.Command {
+	name := "richlist"
 	return gcli.Command{
 		Name:      name,
-		Usage:     "Display topn unspent outputs",
+		Usage:     "Display rich list as desc order",
 		ArgsUsage: "[topn] [bool (include distribution address or not, default false)]",
-		Description: `Display topn unspent outputs, first argument is topn, second argument is bool(inlcude distribution address or not) 
-        example: topnBalance 100 true`,
+		Description: `Display rich list, first argument is topn, second argument is bool(inlcude distribution address or not) 
+        example: richlist 100 true`,
 		OnUsageError: onCommandUsageError(name),
 		Action:       getTopnOutputsCmd,
 	}

@@ -31,4 +31,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   closePopup() {
     this.dialogRef.close();
   }
+
+  showOutput(output) {
+    return !this.transaction.inputs.find(input => input.owner === output.dst);
+  }
 }

@@ -13,9 +13,11 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
+// Gatewayer interface for Gateway methods
 type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
@@ -25,53 +27,7 @@ type Gatewayer interface {
 type SpendResult struct {
 	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
 	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
-	Error       string                     `json:"error,omitempty"`
-}
-
-// Spend spend coins from specific wallet
-func Spend(gateway Gatewayer, walletID string, coins uint64, dest cipher.Address) *SpendResult {
-	var tx *coin.Transaction
-	var b wallet.BalancePair
-	var err error
-	for {
-		tx, err = gateway.Spend(walletID, coins, dest)
-		if err != nil {
-			break
-		}
-
-		var txStr string
-		txStr, err = visor.TransactionToJSON(*tx)
-		if err != nil {
-			break
-		}
-
-		logger.Info("Spend: \ntx= \n %s \n", txStr)
-
-		b, err = gateway.GetWalletBalance(walletID)
-		if err != nil {
-			err = fmt.Errorf("Get wallet balance failed: %v", err)
-			break
-		}
-
-		break
-	}
-
-	if err != nil {
-		return &SpendResult{
-			Error: err.Error(),
-		}
-	}
-
-	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-	if err != nil {
-		logger.Error("%v", err)
-		return &SpendResult{}
-	}
-
-	return &SpendResult{
-		Balance:     &b,
-		Transaction: rbTx,
-	}
+	Error       error                      `json:"error,omitempty"`
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
@@ -106,7 +62,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 //  id: wallet id
 //	dst: recipient address
 // 	coins: the number of droplet you will send
-func WalletSpendHandler(gateway Gatewayer) http.HandlerFunc {
+// Response:
+//  balance: new balance of the wallet
+//  txn: spent transaction
+//  error: an error that may have occured after broadcast the transaction to the network
+//         if this field is not empty, the spend succeeded, but the response data could not be prepared
+func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -142,10 +103,52 @@ func WalletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		ret := Spend(gateway, wltID, coins, dst)
-		if ret.Error != "" {
-			logger.Error(ret.Error)
+		tx, err := gateway.Spend(wltID, coins, dst)
+		switch err {
+		case nil:
+		case fee.ErrTxnNoFee, wallet.ErrSpendingUnconfirmed, wallet.ErrInsufficientBalance:
+			wh.Error400(w, err.Error())
+			return
+		case wallet.ErrWalletNotExist:
+			wh.Error404(w)
+			return
+		default:
+			wh.Error500Msg(w, err.Error())
+			return
 		}
+
+		txStr, err := visor.TransactionToJSON(*tx)
+		if err != nil {
+			logger.Error(err.Error())
+			wh.SendOr404(w, SpendResult{
+				Error: err,
+			})
+			return
+		}
+
+		logger.Info("Spend: \ntx= \n %s \n", txStr)
+
+		var ret SpendResult
+
+		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		if err != nil {
+			err = fmt.Errorf("Creation of new readable transaction failed: %s", err)
+			logger.Error(err.Error())
+			ret.Error = err
+			wh.SendOr404(w, ret)
+			return
+		}
+
+		// Get the new wallet balance
+		b, err := gateway.GetWalletBalance(wltID)
+		if err != nil {
+			err = fmt.Errorf("Get wallet balance failed: %v", err)
+			logger.Error(err.Error())
+			ret.Error = err
+			wh.SendOr404(w, ret)
+			return
+		}
+		ret.Balance = &b
 
 		wh.SendOr404(w, ret)
 	}

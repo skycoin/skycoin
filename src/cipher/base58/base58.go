@@ -51,28 +51,39 @@ func String2Hex(s string) []byte {
 }
 
 // ToBig convert base58 to big.Int
-func (b Base58) ToBig() *big.Int {
+func (b Base58) ToBig() (*big.Int, error) {
 	answer := new(big.Int)
 	for i := 0; i < len(b); i++ {
-		answer.Mul(answer, big.NewInt(58))                              //multiply current value by 58
-		answer.Add(answer, big.NewInt(int64(revalp[string(b[i:i+1])]))) //add value of the current letter
+		answer.Mul(answer, big.NewInt(58)) //multiply current value by 58
+		c, ok := revalp[string(b[i:i+1])]
+		if !ok {
+			return nil, errors.New("Invalid base58 character")
+		}
+		answer.Add(answer, big.NewInt(int64(c))) //add value of the current letter
 	}
-	return answer
+	return answer, nil
 }
 
 // ToInt converts base58 to int
-func (b Base58) ToInt() int {
+func (b Base58) ToInt() (int, error) {
 	answer := 0
 	for i := 0; i < len(b); i++ {
-		answer *= 58                       //multiply current value by 58
-		answer += revalp[string(b[i:i+1])] //add value of the current letter
+		answer *= 58 //multiply current value by 58
+		c, ok := revalp[string(b[i:i+1])]
+		if !ok {
+			return 0, errors.New("Invalid base58 character")
+		}
+		answer += c //add value of the current letter
 	}
-	return answer
+	return answer, nil
 }
 
 //ToHex converts base58 to hex bytes
 func (b Base58) ToHex() ([]byte, error) {
-	value := b.ToBig() //convert to big.Int
+	value, err := b.ToBig() //convert to big.Int
+	if err != nil {
+		return nil, err
+	}
 	oneCount := 0
 	bs := string(b)
 	if len(bs) == 0 {
@@ -89,23 +100,31 @@ func (b Base58) ToHex() ([]byte, error) {
 }
 
 // Base582Big converts base58 to big
-func (b Base58) Base582Big() *big.Int {
+func (b Base58) Base582Big() (*big.Int, error) {
 	answer := new(big.Int)
 	for i := 0; i < len(b); i++ {
-		answer.Mul(answer, big.NewInt(58))                              //multiply current value by 58
-		answer.Add(answer, big.NewInt(int64(revalp[string(b[i:i+1])]))) //add value of the current letter
+		answer.Mul(answer, big.NewInt(58)) //multiply current value by 58
+		c, ok := revalp[string(b[i:i+1])]
+		if !ok {
+			return nil, errors.New("Invalid base58 character")
+		}
+		answer.Add(answer, big.NewInt(int64(c))) //add value of the current letter
 	}
-	return answer
+	return answer, nil
 }
 
 // Base582Int converts base58 to int
-func (b Base58) Base582Int() int {
+func (b Base58) Base582Int() (int, error) {
 	answer := 0
 	for i := 0; i < len(b); i++ {
-		answer *= 58                       //multiply current value by 58
-		answer += revalp[string(b[i:i+1])] //add value of the current letter
+		answer *= 58 //multiply current value by 58
+		c, ok := revalp[string(b[i:i+1])]
+		if !ok {
+			return 0, errors.New("Invalid base58 character")
+		}
+		answer += c //add value of the current letter
 	}
-	return answer
+	return answer, nil
 }
 
 // Base582Hex converts base58 to hex bytes
@@ -114,20 +133,23 @@ func Base582Hex(b string) ([]byte, error) {
 }
 
 // BitHex converts base58 to hexes used by Bitcoins (keeping the zeroes on the front, 25 bytes long)
-func (b Base58) BitHex() []byte {
-	value := b.ToBig() //convert to big.Int
+func (b Base58) BitHex() ([]byte, error) {
+	value, err := b.ToBig() //convert to big.Int
+	if err != nil {
+		return nil, err
+	}
 
 	tmp := value.Bytes() //convert to hex bytes
 	if len(tmp) == 25 {  //if it is exactly 25 bytes, return
-		return tmp
+		return tmp, nil
 	} else if len(tmp) > 25 { //if it is longer than 25, return nothing
-		return nil
+		return nil, errors.New("base58 invalid length")
 	}
 	answer := make([]byte, 25)      //make 25 byte container
 	for i := 0; i < len(tmp); i++ { //copy converted bytes
 		answer[24-i] = tmp[len(tmp)-1-i]
 	}
-	return answer
+	return answer, nil
 }
 
 // Big2Base58 encodes big.Int to base58 string
@@ -201,48 +223,4 @@ func Hex2Base58String(val []byte) string {
 // Hex2Base58Str converts hex to Base58 string
 func Hex2Base58Str(val []byte) string {
 	return string(Hex2Base58(val))
-}
-
-// StringHex2Base58 converts string to base58
-//encodes string stored hex bytes into base58
-func StringHex2Base58(val string) Base58 {
-	tmp := Big2Base58(Hex2Big(String2Hex(val))) //encoding of the number without zeroes in front
-
-	//looking for zeros at the beginning
-	i := 0
-	for i = 0; val[i:i+2] == string("00") && i < len(val)-2; i += 2 {
-	}
-	i /= 2
-	answer := ""
-	for j := 0; j < i; j++ {
-		answer += alphabet[0:1]
-	}
-	answer += string(tmp)
-
-	return Base58(answer)
-}
-
-// StrHex2Base58 converts string hex to base58
-func StrHex2Base58(val string) Base58 {
-	return StringHex2Base58(val)
-}
-
-// String2Base58 converts string to base58
-func String2Base58(val string) Base58 {
-	var answer Base58
-	for i := 0; i < len(val); i++ {
-		_, err := revalp[val[i:i+1]]
-		if err == false {
-			return answer
-		}
-	}
-
-	answer = Base58(val)
-
-	return answer
-}
-
-// Str2Hex58 converts string to hex58
-func Str2Hex58(val string) Base58 {
-	return String2Base58(val)
 }

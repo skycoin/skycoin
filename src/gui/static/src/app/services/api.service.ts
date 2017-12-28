@@ -4,7 +4,7 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
-import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Wallet } from '../app.datatypes';
+import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Transaction, Wallet } from '../app.datatypes';
 
 @Injectable()
 export class ApiService {
@@ -15,6 +15,20 @@ export class ApiService {
   constructor(
     private http: Http,
   ) { }
+
+  getExplorerAddress(address: Address): Observable<Transaction[]> {
+    return this.get('explorer/address', {address: address.address})
+      .map(transactions => transactions.map(transaction => ({
+        addresses: [],
+        balance: 0,
+        block: transaction.status.block_seq,
+        confirmed: transaction.status.confirmed,
+        timestamp: transaction.timestamp,
+        txid: transaction.txid,
+        inputs: transaction.inputs,
+        outputs: transaction.outputs,
+      })));
+  }
 
   getWallets(): Observable<Wallet[]> {
     return this.get('wallets').map((response: GetWalletsResponseWallet[]) => {

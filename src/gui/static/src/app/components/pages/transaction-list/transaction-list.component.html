@@ -1,25 +1,24 @@
 <div class="sky-container sky-container-grey">
   <app-header title="Transactions"></app-header>
-  <div class="grid-headers">
-    <div class="flex-fill">Wallet</div>
-    <div class="flex-100">SKY Hours</div>
-    <div class="flex-100">Balance</div>
-  </div>
-  <!--<ng-container *ngFor="let wallet of walletService.all() | async">-->
-    <!--<div class="grid-row" (click)="openWallet(wallet)">-->
-      <!--<div class="flex-fill label">{{ wallet.label }}</div>-->
-      <!--<div class="flex-100 hours">{{ wallet.hours ? wallet.hours : 0 }}</div>-->
-      <!--<div class="flex-100 coins">{{ wallet.coins ? wallet.coins : 0 }}</div>-->
-      <!--<img src="../../../../assets/img/chevron-right-grey.png">-->
-    <!--</div>-->
-  <!--</ng-container>-->
-  <!--<div class="action-buttons">-->
-    <!--<button md-button (click)="addWallet()">-->
-      <!--<img src="../../../../assets/img/plus-gold.png"> Add Wallet-->
-    <!--</button>-->
-    <!--<button md-button (click)="loadWallet()">-->
-      <!--<img src="../../../../assets/img/load-gold.png"> Load Wallet-->
-    <!--</button>-->
-  <!--</div>-->
+  <ng-container *ngFor="let transaction of transactions">
+    <div class="-transaction" *ngIf="transaction.balance !== 0">
+      <div class="-icon" [ngClass]="{ '-incoming': transaction.balance > 0, '-pending': !transaction.confirmed }">
+        <img src="/assets/img/send-blue.png">
+      </div>
+      <div class="-address">
+        <h4 *ngIf="transaction.balance < 0 && transaction.confirmed">Sent SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
+        <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">Sending SKY <span class="-pending">Pending</span></h4>
+        <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">Received SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
+        <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">Sent SKY <span class="-pending">Pending</span></h4>
+        <img src="../../../../assets/img/qr-code-black.png">
+        <p>{{ transaction.addresses.join(', ') }}</p>
+      </div>
+      <div class="-balance">
+        <h4>{{ transaction.balance }} SKY</h4>
+        <p *ngIf="price">{{ transaction.balance * price | currency:'USD':true:'1.2-2' }}</p>
+      </div>
+    </div>
+  </ng-container>
+
   <app-footer></app-footer>
 </div>

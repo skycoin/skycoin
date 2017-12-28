@@ -18,7 +18,7 @@ export class HistoryComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.walletService.history().subscribe(transactions => this.transactions = this.mapTransactions(transactions));
+    // this.walletService.history().subscribe(transactions => this.transactions = this.mapTransactions(transactions));
   }
 
   onActivate(response) {

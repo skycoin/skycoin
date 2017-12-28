@@ -26,6 +26,6 @@ export class FooterComponent {
   }
 
   openTransactions() {
-    // this.router(TransactionsPage);
+    this.router.navigate(['/transactions']);
   }
 }

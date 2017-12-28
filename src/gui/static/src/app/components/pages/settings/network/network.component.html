@@ -1,6 +1,7 @@
-<md-card>
-  <h3>Automatic peers</h3>
+<div class="sky-container sky-container-grey">
+  <app-header title="Networking"></app-header>
 
+  <h3>Automatic peers</h3>
   <ngx-datatable
     class="material"
     [rows]="networkService.automatic() | async"
@@ -13,11 +14,8 @@
     <ngx-datatable-column name="Address" prop="address" [flexGrow]="1"></ngx-datatable-column>
     <ngx-datatable-column name="Port" prop="listen_port" [flexGrow]="1"></ngx-datatable-column>
   </ngx-datatable>
-</md-card>
 
-<md-card>
   <h3>Default peers</h3>
-
   <ngx-datatable
     class="material"
     [rows]="defaultConnections"
@@ -28,4 +26,6 @@
     <ngx-datatable-column name="Address" prop="address" [flexGrow]="1"></ngx-datatable-column>
     <ngx-datatable-column name="Port" prop="listen_port" [flexGrow]="1"></ngx-datatable-column>
   </ngx-datatable>
-</md-card>
+
+  <app-footer></app-footer>
+</div>

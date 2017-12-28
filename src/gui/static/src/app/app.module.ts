@@ -155,6 +155,7 @@ const ROUTES = [
     ChangeNameComponent,
     LoadWalletComponent,
     QrCodeComponent,
+    SendSkycoinComponent,
     TransactionDetailComponent,
   ],
   imports: [

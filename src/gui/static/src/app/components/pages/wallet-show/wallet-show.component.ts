@@ -3,6 +3,7 @@ import { WalletService } from '../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
 import { Wallet } from '../../../app.datatypes';
 import { Subscription } from 'rxjs/Subscription';
+import 'rxjs/add/operator/switchMap';
 
 @Component({
   selector: 'app-wallet-show',

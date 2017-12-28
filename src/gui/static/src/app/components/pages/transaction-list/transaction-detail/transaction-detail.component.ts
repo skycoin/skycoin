@@ -11,7 +11,8 @@ import { Subscription } from 'rxjs/Subscription';
 })
 export class TransactionDetailComponent implements OnInit, OnDestroy {
 
-  private price: number;
+  price: number;
+
   private priceSubscription: Subscription;
 
   constructor(

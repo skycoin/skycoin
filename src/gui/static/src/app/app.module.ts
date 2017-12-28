@@ -15,17 +15,13 @@ import { CreateWalletComponent } from './components/pages/wallets/create-wallet/
 import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
-import { HistoryComponent } from './components/pages/history/history.component';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
-import { BreadcrumbComponent } from './components/layout/breadcrumb/breadcrumb.component';
 import { BackButtonComponent } from './components/layout/back-button/back-button.component';
 import { ExplorerComponent } from './components/pages/explorer/explorer.component';
 import { BlockchainService } from './services/blockchain.service';
 import { DateTimePipe } from './pipes/date-time.pipe';
 import { TransactionsAmountPipe } from './pipes/transactions-amount.pipe';
-import { BlockComponent } from './components/pages/block/block.component';
-import { AddressComponent } from './components/pages/address/address.component';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
@@ -69,9 +65,6 @@ const ROUTES = [
   {
     path: 'buy',
     component: BuyComponent,
-    data: {
-      breadcrumb: 'Buy Skycoin',
-    },
   },
   {
     path: 'settings',
@@ -79,37 +72,22 @@ const ROUTES = [
       {
         path: 'backup',
         component: BackupComponent,
-        data: {
-          breadcrumb: 'Backup',
-        },
       },
       {
         path: 'blockchain',
         component: BlockchainComponent,
-        data: {
-          breadcrumb: 'Blockchain',
-        },
       },
       {
         path: 'network',
         component: NetworkComponent,
-        data: {
-          breadcrumb: 'Networking',
-        },
       },
       {
         path: 'outputs',
         component: OutputsComponent,
-        data: {
-          breadcrumb: 'Outputs',
-        },
       },
       {
         path: 'pending-transactions',
         component: PendingTransactionsComponent,
-        data: {
-          breadcrumb: 'Pending transactions',
-        },
       },
     ],
   },
@@ -117,22 +95,15 @@ const ROUTES = [
 
 @NgModule({
   declarations: [
-    AppComponent,
-    HistoryComponent,
-    WalletsComponent,
-    CreateWalletComponent,
-    SendSkycoinComponent,
-    BreadcrumbComponent,
-    AddressComponent,
-    PendingTransactionsComponent,
     AddDepositAddressComponent,
+    AppComponent,
     BackButtonComponent,
     BackupComponent,
-    BlockComponent,
     BlockchainComponent,
     BuyComponent,
     ButtonComponent,
     ChangeNameComponent,
+    CreateWalletComponent,
     DateFromNowPipe,
     DateTimePipe,
     ExplorerComponent,
@@ -141,13 +112,16 @@ const ROUTES = [
     LoadWalletComponent,
     NetworkComponent,
     OutputsComponent,
+    PendingTransactionsComponent,
     QrCodeComponent,
+    SendSkycoinComponent,
     TellerStatusPipe,
     TopBarComponent,
     TransactionDetailComponent,
     TransactionListComponent,
     TransactionsAmountPipe,
     WalletShowComponent,
+    WalletsComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

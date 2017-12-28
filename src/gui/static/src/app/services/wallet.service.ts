@@ -101,16 +101,6 @@ export class WalletService {
     return this.apiService.post('wallet/update', { id: wallet.filename, label: label });
   }
 
-  retrieveUpdatedTransactions(transactions) {
-    return Observable.forkJoin((transactions.map(transaction => {
-      return this.apiService.get('transaction', { txid: transaction.id }).map(response => {
-        response.amount = transaction.amount;
-        response.address = transaction.address;
-        return response;
-      });
-    })));
-  }
-
   sendSkycoin(wallet: Wallet, address: string, amount: number) {
     return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount})
   }

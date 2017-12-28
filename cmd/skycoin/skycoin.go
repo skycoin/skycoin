@@ -434,6 +434,29 @@ func catchDebug() {
 	}
 }
 
+func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) *gui.Server {
+
+	if c.WebInterfaceHTTPS {
+		// Verify cert/key parameters, and if neither exist, create them
+		errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
+		if len(errs) != 0 {
+			for _, err := range errs {
+				logger.Error(err.Error())
+			}
+			logger.Error("gui.CreateCertIfNotExists failure")
+			return nil
+		}
+	}
+	s, err := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+
+	if err != nil {
+		logger.Error(err.Error())
+		logger.Error("Failed to start web GUI")
+		return nil
+	}
+	return s
+}
+
 // init logging settings
 func initLogging(dataDir string, level string, color, logtofile, logtogui bool, logbuf *bytes.Buffer) (func(), error) {
 	logCfg := logging.DevLogConfig(logModules)
@@ -550,19 +573,6 @@ func Run(c *Config) {
 
 	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 
-	scheme := "http"
-	if c.WebInterfaceHTTPS {
-		scheme = "https"
-	}
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
-
-	if c.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
-		return
-	}
-
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 
 	var wg sync.WaitGroup
@@ -659,47 +669,18 @@ func Run(c *Config) {
 		}
 	}
 
-	if c.WebInterface {
-		var err error
-		if c.WebInterfaceHTTPS {
-			// Verify cert/key parameters, and if neither exist, create them
-			errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
-			if len(errs) != 0 {
-				for _, err := range errs {
-					logger.Error(err.Error())
-				}
-				logger.Error("gui.CreateCertIfNotExists failure")
-				return
-			}
-
-			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
-		} else {
-			err = gui.LaunchWebInterface(host, c.GUIDirectory, d)
-		}
-
-		if err != nil {
-			logger.Error(err.Error())
-			logger.Error("Failed to start web GUI")
-			return
-		}
-
-		if c.LaunchBrowser {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				// Wait a moment just to make sure the http interface is up
-				time.Sleep(time.Millisecond * 100)
-
-				logger.Info("Launching System Browser with %s", fullAddress)
-				if err := browser.Open(fullAddress); err != nil {
-					logger.Error(err.Error())
-					return
-				}
-			}()
-		}
+	scheme := "http"
+	if c.WebInterfaceHTTPS {
+		scheme = "https"
 	}
-
+	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	logger.Critical("Full address: %s", fullAddress)
+	if c.PrintWebInterfaceAddress {
+		fmt.Println(fullAddress)
+	}
+	s := createGUI(c, d, host, quit)
+	wg.Add(1)
 	/*
 		time.Sleep(5)
 		tx := InitTransaction()
@@ -725,6 +706,29 @@ func Run(c *Config) {
 			}()
 		}
 	*/
+	go func() {
+		defer wg.Done()
+		err := s.Serve()
+		if err != nil {
+			errC <- err
+		}
+	}()
+
+	if c.LaunchBrowser {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// Wait a moment just to make sure the http interface is up
+			time.Sleep(time.Millisecond * 100)
+
+			logger.Info("Launching System Browser with %s", fullAddress)
+			if err := browser.Open(fullAddress); err != nil {
+				logger.Error(err.Error())
+				return
+			}
+		}()
+	}
 
 	select {
 	case <-quit:
@@ -736,7 +740,7 @@ func Run(c *Config) {
 	if rpc != nil {
 		rpc.Shutdown()
 	}
-	gui.Shutdown()
+	s.Shutdown()
 	d.Shutdown()
 	closelog()
 	wg.Wait()

@@ -22,10 +22,15 @@ import (
 )
 
 var (
-	logger   = logging.MustGetLogger("gui")
-	listener net.Listener
-	quit     chan struct{}
+	logger = logging.MustGetLogger("gui")
 )
+
+type Server struct {
+	daemon   *daemon.Daemon
+	listener net.Listener
+	done     chan struct{}
+	appLoc   string
+}
 
 const (
 	resourceDir = "dist/"
@@ -33,38 +38,48 @@ const (
 	indexPage   = "index.html"
 )
 
+func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) (*Server, error) {
+	var err error
+	s := Server{
+		daemon: daemon,
+		done:   make(chan struct{}),
+	}
+	if needHttps {
+		err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
+	} else {
+		err = s.launchWebInterface(host, guiDirectory, daemon)
+	}
+	return &s, err
+}
+
 // LaunchWebInterface begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
-func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
-	quit = make(chan struct{})
-	logger.Info("Starting web interface on http://%s", host)
+func (s *Server) launchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
+	var err error
 	logger.Warning("HTTPS not in use!")
-	appLoc, err := file.DetermineResourcePath(staticDir, resourceDir, devDir)
+	s.appLoc, err = file.DetermineResourcePath(staticDir, resourceDir, devDir)
 	if err != nil {
 		return err
 	}
-	logger.Info("Web resources directory: %s", appLoc)
+	logger.Info("Web resources directory: %s", s.appLoc)
 
-	listener, err = net.Listen("tcp", host)
+	s.listener, err = net.Listen("tcp", host)
 	if err != nil {
 		return err
 	}
 
-	// Runs http.Serve() in a goroutine
-	serve(listener, NewGUIMux(appLoc, daemon), quit)
 	return nil
 }
 
 // LaunchWebInterfaceHTTPS begins listening on https://$host, for enabling remote web access
 // Uses HTTPS
-func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
-	quit = make(chan struct{})
-	logger.Info("Starting web interface on https://%s", host)
+func (s *Server) launchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
+	var err error
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
 	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := file.DetermineResourcePath(staticDir, devDir, resourceDir)
+	s.appLoc, err = file.DetermineResourcePath(staticDir, devDir, resourceDir)
 	if err != nil {
 		return err
 	}
@@ -74,39 +89,35 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, cert
 		return err
 	}
 
-	listener, err = tls.Listen("tcp", host, &tls.Config{Certificates: certs})
+	s.listener, err = tls.Listen("tcp", host, &tls.Config{Certificates: certs})
 	if err != nil {
 		return err
 	}
 
 	// Runs http.Serve() in a goroutine
-	serve(listener, NewGUIMux(appLoc, daemon), quit)
+	return nil
+
+}
+
+func (s *Server) Serve() error {
+	defer logger.Info("Server closed")
+	logger.Info("Starting web interface on %s", s.listener.Addr())
+	mux := NewGUIMux(s.appLoc, s.daemon)
+	if err := http.Serve(s.listener, mux); err != nil {
+		close(s.done)
+		if err != http.ErrServerClosed {
+			return err
+		}
+	}
 	return nil
 }
 
-func serve(listener net.Listener, mux *http.ServeMux, q chan struct{}) {
-	go func() {
-		for {
-			if err := http.Serve(listener, mux); err != nil {
-				select {
-				case <-q:
-					return
-				default:
-				}
-				continue
-			}
-		}
-	}()
-}
-
 // Shutdown close http service
-func Shutdown() {
-	if quit != nil {
-		// must close quit first
-		close(quit)
-		listener.Close()
-		listener = nil
-	}
+func (s *Server) Shutdown() {
+	logger.Info("Shutting down Server")
+	s.listener.Close()
+	s.listener = nil
+	<-s.done
 }
 
 // NewGUIMux creates an http.ServeMux with handlers registered

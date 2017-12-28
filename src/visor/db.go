@@ -7,33 +7,33 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
-	// creates blockchain instance
-	db, err := openDB(dbPath)
-	if err != nil {
-		return nil, nil, err
-	}
+func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+	logger.Info("Loading blockchain")
 
 	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
-
 	if err == nil {
 		return db, bc, nil
 	}
 
-	if !strings.Contains(err.Error(), "find no signature of block") {
+	switch err.(type) {
+	case blockdb.ErrMissingSignature:
+	default:
 		return nil, nil, err
 	}
 
-	// Recreate the block database if ErrSignatureLost occurs
+	// Recreate the block database if ErrMissingSignature occurs
+	dbPath := db.Path()
+
 	logger.Critical("Block database signature missing, recreating db: %v", err)
 	if err := db.Close(); err != nil {
 		return nil, nil, fmt.Errorf("failed to close db: %v", err)
@@ -46,7 +46,7 @@ func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bol
 
 	logger.Critical("Moved corrupted db to %s", corruptDBPath)
 
-	db, err = openDB(dbPath)
+	db, err = OpenDB(dbPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,8 +59,8 @@ func loadBlockchain(dbPath string, pubkey cipher.PubKey, arbitrating bool) (*bol
 	return db, bc, nil
 }
 
-// open the blockdb.
-func openDB(dbFile string) (*bolt.DB, error) {
+// OpenDB opens the blockdb
+func OpenDB(dbFile string) (*bolt.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout: 500 * time.Millisecond,
 	})
@@ -79,6 +79,7 @@ func moveCorruptDB(dbPath string) (string, error) {
 	}
 
 	if err := os.Rename(dbPath, newDBPath); err != nil {
+		logger.Info("os.Rename(%s, %s) failed: %v", dbPath, newDBPath, err)
 		return "", err
 	}
 

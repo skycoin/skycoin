@@ -9,6 +9,8 @@ Apis service port is `6420`.
 * [Explorer apis](#explorer-apis)
 * [Uxout apis](#uxout-apis)
 * [Coin supply api](#coin-supply-informations)
+* [Log api](#wallet-log-api)
+
 
 ## Simple query apis
 
@@ -36,7 +38,7 @@ result:
 
 ### Get balance of addresses
 
-```bash
+```
 URI: /balance
 Method: GET
 Args:
@@ -93,6 +95,7 @@ result:
     "head_outputs": [
         {
             "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
+            "block_seq": 22,
             "src_tx": "b51e1933f286c4f03d73e8966186bafb25f64053db8514327291e690ae8aafa5",
             "address": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
             "coins": "2.000000",
@@ -108,7 +111,7 @@ result:
 
 ### Generate wallet seed
 
-```bash
+```
 URI: /wallet/newSeed
 Method: GET
 ```
@@ -121,25 +124,27 @@ curl http://127.0.0.1:6420/wallet/newSeed
 
 result:
 
-```bash
+```json
 {
-seed: "helmet van actor peanut differ icon trial glare member cancel marble rack"
+    "seed": "helmet van actor peanut differ icon trial glare member cancel marble rack"
 }
 ```
 
-### Create wallet
+### Create a wallet from seed
 
-```bash
+```
 URI: /wallet/create
 Method: POST
 Args:
-    seed [optional]
+    seed: wallet seed [required]
+    label: wallet label [required]
+    scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 ```
 
 example:
 
 ```bash
-curl -X POST http://127.0.0.1:6420/wallet/create
+curl http://127.0.0.1:6420/wallet/create -d "seed=$seed&label=$label&scan=5"
 ```
 
 result:
@@ -168,7 +173,7 @@ result:
 
 ### Generate new address in wallet
 
-```bash
+```
 URI: /wallet/newAddress
 Method: POST
 Args:
@@ -191,7 +196,7 @@ result:
 
 ### Get wallet balance
 
-```bash
+```
 URI: /wallet/balance
 Method: GET
 Args:
@@ -221,7 +226,7 @@ result:
 
 ### Spend coins from wallet
 
-```bash
+```
 URI: /wallet/spend
 Method: POST
 Args:
@@ -287,7 +292,7 @@ result:
 
 ### Get unconfirmed transactions
 
-```bash
+```
 URI: /pendingTxs
 Method: GET
 ```
@@ -341,7 +346,7 @@ result:
 
 ### Get transaction info by id
 
-```bash
+```
 URI: /transaction
 Method: GET
 Args:
@@ -391,7 +396,7 @@ result:
 
 ### Get raw transaction by id
 
-```bash
+```
 URI: /rawtx
 Method: GET
 ```
@@ -411,7 +416,7 @@ b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000
 
 ### Inject raw transaction
 
-```bash
+```
 URI: /injectTransaction
 Method: POST
 Content-Type: application/json
@@ -858,7 +863,7 @@ result:
 
 ## Coin supply informations
 
-```bash
+```
 URI: /coinSupply
 Method: GET
 ```
@@ -982,3 +987,118 @@ result:
     ]
 }
 ```
+## Wallet log api
+
+```sh
+URI: /logs
+Method: GET
+Args:
+    lines: how many lines to return,It is 1000 by default.
+    include: the word which must be included in log line.It's empty by default.
+    exclude: the word which must not be included in log line.It's empty by default.
+```
+
+example:
+
+```sh
+curl http://127.0.0.1:6420/logs?lines=1000
+```
+
+result:
+
+```json
+[
+    "[skycoin.gui:INFO] Starting web interface on http://127.0.0.1:6420",
+    "[skycoin.gui:WARNING] HTTPS not in use!",
+    "[skycoin.gui:INFO] Web resources directory: /Users/hanyouhong/go/src/github.com/skycoin/skycoin/src/gui/static/dist",
+    "[skycoin.webrpc:INFO] Start webrpc on http://127.0.0.1:6430",
+    "[skycoin.visor:INFO] Blockchain parser start",
+    "[skycoin.daemon:INFO] Connect to trusted peers",
+    "[skycoin.daemon:INFO] daemon.Pool listening on port 6000",
+    "[skycoin.gnet:INFO] Listening for connections on :6000...",
+    "[skycoin.daemon:DEBUG] Trying to connect to 121.41.103.148:6000",
+    "[skycoin.daemon:DEBUG] Trying to connect to 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000",
+    "[skycoin.daemon:DEBUG] Trying to connect to 118.178.135.93:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 118.178.135.93:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 121.41.103.148:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 47.88.33.156:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 120.77.69.188:6000",
+    "[skycoin.daemon:INFO] Connected to peer: 121.41.103.148:6000 (outgoing)",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 121.41.103.148:6000, mirror:1033754283",
+    "[skycoin.daemon:INFO] Connected to peer: 118.178.135.93:6000 (outgoing)",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 118.178.135.93:6000, mirror:1033754283",
+    "[skycoin.daemon:INFO] Connected to peer: 120.77.69.188:6000 (outgoing)",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 120.77.69.188:6000, mirror:1033754283",
+    "[skycoin.gnet:DEBUG] connection 118.178.135.93:6000 closed",
+    "[skycoin.daemon:INFO] 118.178.135.93:6000 disconnected because: read data failed: EOF",
+    "[skycoin.gnet:DEBUG] connection 121.41.103.148:6000 closed",
+    "[skycoin.daemon:INFO] 121.41.103.148:6000 disconnected because: read data failed: EOF",
+    "[skycoin.daemon:INFO] 120.77.69.188:6000 verified for version 2",
+    "[skycoin.pex:DEBUG] Reset retry times of 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Successfully requested blocks from 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Got 0 blocks since 4082",
+    "[skycoin.main:INFO] Launching System Browser with http://127.0.0.1:6420",
+    "[skycoin.daemon:CRITICAL] Added new block 4078",
+    "[skycoin.daemon:CRITICAL] Added new block 4079",
+    "[skycoin.daemon:CRITICAL] Added new block 4080",
+    "[skycoin.daemon:CRITICAL] Added new block 4081",
+    "[skycoin.daemon:CRITICAL] Added new block 4082"
+]
+```
+
+
+```sh
+curl http://127.0.0.1:6420/logs?lines=100&include=DEBUG
+```
+
+result:
+
+```json
+[
+    "[skycoin.daemon:DEBUG] Trying to connect to 118.178.135.93:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 118.178.135.93:6000",
+    "[skycoin.daemon:DEBUG] Trying to connect to 121.41.103.148:6000",
+    "[skycoin.daemon:DEBUG] Trying to connect to 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 47.88.33.156:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 121.41.103.148:6000",
+    "[skycoin.gnet:DEBUG] Making TCP Connection to 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 121.41.103.148:6000, mirror:1023099266",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 118.178.135.93:6000, mirror:1023099266",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 120.77.69.188:6000, mirror:1023099266",
+    "[skycoin.pex:DEBUG] Reset retry times of 121.41.103.148:6000",
+    "[skycoin.gnet:DEBUG] connection 121.41.103.148:6000 closed",
+    "[skycoin.gnet:DEBUG] connection 118.178.135.93:6000 closed",
+    "[skycoin.pex:DEBUG] Reset retry times of 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Successfully requested blocks from 120.77.69.188:6000",
+    "[skycoin.daemon:DEBUG] Got 0 blocks since 4083",
+    "[skycoin.daemon:DEBUG] Sending introduction message to 47.88.33.156:6000, mirror:1023099266",
+    "[skycoin.pex:DEBUG] Reset retry times of 47.88.33.156:6000",
+    "[skycoin.daemon:DEBUG] Successfully requested blocks from 47.88.33.156:6000",
+    "[skycoin.daemon:DEBUG] Got 0 blocks since 4083"
+]
+```
+
+```sh
+curl http://127.0.0.1:6420/logs?lines=100&include=DEBUG&exclude=ping
+```
+
+result:
+
+```json
+[
+     "[skycoin.pex:DEBUG] Increase retry times of 111.198.225.50:6000: 1",
+    "[skycoin.daemon:DEBUG] Failed to connect to 91.105.75.60:6000 with error: dial tcp 91.105.75.60:6000: i/o timeout",
+    "[skycoin.pex:DEBUG] Increase retry times of 91.105.75.60:6000: 1",
+    "[skycoin.daemon:DEBUG] Received pong from 117.48.197.46:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 176.9.47.13:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 139.162.33.154:6000",
+    "[skycoin.daemon:DEBUG] Reply to ping from 197.97.221.117:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 197.97.221.117:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 118.190.40.103:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 47.88.33.156:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 35.157.164.126:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 178.62.225.38:6000",
+    "[skycoin.daemon:DEBUG] Received pong from 45.32.235.85:6000",
+]

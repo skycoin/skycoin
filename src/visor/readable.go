@@ -2,10 +2,12 @@ package visor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -153,6 +155,7 @@ func NewReadableTransactionInput(uxID string, ownerAddress string) ReadableTrans
 // ReadableOutput represents readable output
 type ReadableOutput struct {
 	Hash              string `json:"hash"`
+	BkSeq             uint64 `json:"block_seq"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
@@ -161,23 +164,46 @@ type ReadableOutput struct {
 
 // ReadableOutputSet records unspent outputs in different status.
 type ReadableOutputSet struct {
-	HeadOutputs     []ReadableOutput `json:"head_outputs"`
-	OutgoingOutputs []ReadableOutput `json:"outgoing_outputs"`
-	IncomingOutputs []ReadableOutput `json:"incoming_outputs"`
+	// HeadOutputs are unspent outputs confirmed in the blockchain
+	HeadOutputs ReadableOutputs `json:"head_outputs"`
+	// IncomingOutputs are unspent outputs being spent in unconfirmed transactions
+	OutgoingOutputs ReadableOutputs `json:"outgoing_outputs"`
+	// IncomingOutputs are unspent outputs being created by unconfirmed transactions
+	IncomingOutputs ReadableOutputs `json:"incoming_outputs"`
 }
 
-// SpendableOutputs caculates the spendable unspent outputs
-func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
+// ReadableOutputs slice of ReadableOutput
+// provids method to calculate balance
+type ReadableOutputs []ReadableOutput
+
+// Balance returns the balance in droplets
+func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
+	var bal wallet.Balance
+	for _, out := range ros {
+		coins, err := droplet.FromString(out.Coins)
+		if err != nil {
+			return wallet.Balance{}, err
+		}
+
+		bal.Coins += coins
+		bal.Hours += out.Hours
+	}
+
+	return bal, nil
+}
+
+// SpendableOutputs subtracts OutgoingOutputs from HeadOutputs
+func (os ReadableOutputSet) SpendableOutputs() ReadableOutputs {
 	if len(os.OutgoingOutputs) == 0 {
 		return os.HeadOutputs
 	}
 
-	spending := make(map[string]bool)
+	spending := make(map[string]struct{}, len(os.OutgoingOutputs))
 	for _, u := range os.OutgoingOutputs {
-		spending[u.Hash] = true
+		spending[u.Hash] = struct{}{}
 	}
 
-	var outs []ReadableOutput
+	var outs ReadableOutputs
 	for i := range os.HeadOutputs {
 		if _, ok := spending[os.HeadOutputs[i].Hash]; !ok {
 			outs = append(outs, os.HeadOutputs[i])
@@ -186,8 +212,13 @@ func (os ReadableOutputSet) SpendableOutputs() []ReadableOutput {
 	return outs
 }
 
+// ExpectedOutputs adds IncomingOutputs to SpendableOutputs
+func (os ReadableOutputSet) ExpectedOutputs() ReadableOutputs {
+	return append(os.SpendableOutputs(), os.IncomingOutputs...)
+}
+
 // NewReadableOutput creates readable output
-func NewReadableOutput(t coin.UxOut) (ReadableOutput, error) {
+func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	coinStr, err := droplet.ToString(t.Body.Coins)
 	if err != nil {
 		return ReadableOutput{}, err
@@ -195,25 +226,63 @@ func NewReadableOutput(t coin.UxOut) (ReadableOutput, error) {
 
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),
+		BkSeq:             t.Head.BkSeq,
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             t.Body.Hours,
+		Hours:             t.CoinHours(headTime),
 	}, nil
 }
 
 // NewReadableOutputs converts unspent outputs to readable output
-func NewReadableOutputs(uxs []coin.UxOut) ([]ReadableOutput, error) {
-	rxReadables := make([]ReadableOutput, len(uxs))
+func NewReadableOutputs(headTime uint64, uxs coin.UxArray) (ReadableOutputs, error) {
+	rxReadables := make(ReadableOutputs, len(uxs))
 	for i, ux := range uxs {
-		out, err := NewReadableOutput(ux)
+		out, err := NewReadableOutput(headTime, ux)
 		if err != nil {
-			return []ReadableOutput{}, err
+			return ReadableOutputs{}, err
 		}
 
 		rxReadables[i] = out
 	}
 	return rxReadables, nil
+}
+
+// ReadableOutputsToUxBalances converts ReadableOutputs to []wallet.UxBalance
+func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error) {
+	uxb := make([]wallet.UxBalance, len(ros))
+	for i, ro := range ros {
+		if ro.Hash == "" {
+			return nil, errors.New("ReadableOutput missing hash")
+		}
+
+		hash, err := cipher.SHA256FromHex(ro.Hash)
+		if err != nil {
+			return nil, fmt.Errorf("ReadableOutput hash is invalid: %v", err)
+		}
+
+		coins, err := droplet.FromString(ro.Coins)
+		if err != nil {
+			return nil, fmt.Errorf("ReadableOutput coins is invalid: %v", err)
+		}
+
+		addr, err := cipher.DecodeBase58Address(ro.Address)
+		if err != nil {
+			return nil, fmt.Errorf("ReadableOutput address is invalid: %v", err)
+		}
+
+		b := wallet.UxBalance{
+			Hash:    hash,
+			BkSeq:   ro.BkSeq,
+			Address: addr,
+			Coins:   coins,
+			Hours:   ro.Hours,
+		}
+
+		uxb[i] = b
+	}
+
+	return uxb, nil
 }
 
 // ReadableTransaction represents readable transaction
@@ -229,7 +298,7 @@ type ReadableTransaction struct {
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// ReadableUnconfirmedTxn  represents readable unconfirmed transaction
+// ReadableUnconfirmedTxn represents readable unconfirmed transaction
 type ReadableUnconfirmedTxn struct {
 	Txn       ReadableTransaction `json:"transaction"`
 	Received  time.Time           `json:"received"`
@@ -358,7 +427,7 @@ func NewReadableBlockHeader(b *coin.BlockHeader) ReadableBlockHeader {
 	}
 }
 
-// ReadableBlockBody  represents readable block body
+// ReadableBlockBody represents readable block body
 type ReadableBlockBody struct {
 	Transactions []ReadableTransaction `json:"txns"`
 }
@@ -387,7 +456,7 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	}, nil
 }
 
-// ReadableBlock  represents readable block
+// ReadableBlock represents readable block
 type ReadableBlock struct {
 	Head ReadableBlockHeader `json:"header"`
 	Body ReadableBlockBody   `json:"body"`
@@ -424,7 +493,7 @@ func NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, error) {
 	Transactions to and from JSON
 */
 
-// TransactionOutputJSON  represents the transaction output json
+// TransactionOutputJSON represents the transaction output json
 type TransactionOutputJSON struct {
 	Hash              string `json:"hash"`
 	SourceTransaction string `json:"src_tx"`

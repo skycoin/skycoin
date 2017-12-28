@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -219,17 +220,17 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	// Send coins to the initial address, with invalid fee
 	var coins = GenesisCoins
 	var hours = GenesisCoinHours * 1e3
-	var fee uint64
+	var f uint64
 	_, _, addr := MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
+	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, f)
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(db, bc)
 
 	// Call verifyTransaction
 	err := v.verifyTransaction(txn)
-	testutil.RequireError(t, err, "Transaction coinhour fee minimum not met")
+	testutil.RequireError(t, err, fee.ErrTxnNoFee.Error())
 }
 
 func TestVerifyTransactionInvalidSignature(t *testing.T) {
@@ -303,10 +304,10 @@ func TestInjectInvalidTransaction(t *testing.T) {
 	// Send coins to the initial address, with invalid fee
 	var coins = GenesisCoins
 	var hours = GenesisCoinHours * 1e3
-	var fee uint64
+	var f uint64
 	_, _, addr := MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
+	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, f)
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(db, bc)
@@ -317,7 +318,7 @@ func TestInjectInvalidTransaction(t *testing.T) {
 
 	// Call injectTransaction
 	err := v.injectTransaction(txn, nil)
-	testutil.RequireError(t, err, "Transaction coinhour fee minimum not met")
+	testutil.RequireError(t, err, fee.ErrTxnNoFee.Error())
 
 	// The transaction should appear in the unconfirmed pool
 	txns = v.v.Unconfirmed.RawTxns()

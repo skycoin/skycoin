@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -16,9 +18,53 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
+const (
+	// MaxDropletPrecision represents the decimal precision of droplets
+	MaxDropletPrecision uint64 = 3
+)
+
 var (
 	logger = logging.MustGetLogger("visor")
+
+	// ErrInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
+	ErrInvalidDecimals = errors.New("invalid amount, too many decimal places")
+
+	// maxDropletDivisor represents the modulus divisor when checking droplet precision rules.
+	// It is computed from MaxDropletPrecision in init()
+	maxDropletDivisor uint64
 )
+
+// MaxDropletDivisor represents the modulus divisor when checking droplet precision rules.
+func MaxDropletDivisor() uint64 {
+	// The value is wrapped in a getter to make it immutable to external packages
+	return maxDropletDivisor
+}
+
+func init() {
+	// Compute maxDropletDivisor from precision
+	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
+}
+
+func calculateDivisor(precision uint64) uint64 {
+	if precision > droplet.Exponent {
+		logger.Panic("precision must be <= droplet.Exponent")
+	}
+
+	n := droplet.Exponent - precision
+	var i uint64 = 1
+	for k := uint64(0); k < n; k++ {
+		i = i * 10
+	}
+	return i
+}
+
+// DropletPrecisionCheck checks if an amount of coins is valid given decimal place restrictions
+func DropletPrecisionCheck(amount uint64) error {
+	if amount%maxDropletDivisor != 0 {
+		return ErrInvalidDecimals
+	}
+	return nil
+}
 
 // BuildInfo represents the build info
 type BuildInfo struct {
@@ -30,8 +76,6 @@ type BuildInfo struct {
 type Config struct {
 	// Is this the master blockchain
 	IsMaster bool
-
-	//WalletDirectory string //move out
 
 	//Public key of blockchain authority
 	BlockchainPubkey cipher.PubKey
@@ -51,10 +95,6 @@ type Config struct {
 	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
-	// Divisor of coin hours required as fee. E.g. with hours=100 and factor=4,
-	// 25 additional hours are required as a fee.  A value of 0 disables
-	// the fee requirement.
-	//CoinHourBurnFactor uint64
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -108,6 +148,17 @@ func NewVisorConfig() Config {
 	return c
 }
 
+// Verify verifies the configuration
+func (c Config) Verify() error {
+	if c.IsMaster {
+		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
+			return errors.New("Cannot run in master: invalid seckey for pubkey")
+		}
+	}
+
+	return nil
+}
+
 // Visor manages the Blockchain as both a Master and a Normal
 type Visor struct {
 	Config Config
@@ -121,19 +172,18 @@ type Visor struct {
 	db       *bolt.DB
 }
 
-// NewVisor Creates a normal Visor given a master's public key
-func NewVisor(c Config) (*Visor, error) {
+// NewVisor creates a Visor for managing the blockchain database
+func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 	logger.Debug("Creating new visor")
-	// Make sure inputs are correct
 	if c.IsMaster {
 		logger.Debug("Visor is master")
-		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
-			// logger.Panicf("Cannot run in master: invalid seckey for pubkey")
-			return nil, errors.New("Cannot run in master: invalid seckey for pubkey")
-		}
 	}
 
-	db, bc, err := loadBlockchain(c.DBPath, c.BlockchainPubkey, c.Arbitrating)
+	if err := c.Verify(); err != nil {
+		return nil, err
+	}
+
+	db, bc, err := loadBlockchain(db, c.BlockchainPubkey, c.Arbitrating)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +194,6 @@ func NewVisor(c Config) (*Visor, error) {
 	}
 
 	// creates blockchain parser instance
-	// var verifyOnce sync.Once
 	bp := NewBlockchainParser(history, bc)
 
 	bc.BindListener(bp.FeedBlock)
@@ -250,7 +299,6 @@ func (vs *Visor) processUnconfirmedTxns() error {
 
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {
-	//if seckey is set
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
 		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
 			logger.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
@@ -266,20 +314,56 @@ func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
 
 // CreateBlock creates a SignedBlock from pending transactions
 func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
-	var sb coin.SignedBlock
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can create blocks")
 	}
+
+	var sb coin.SignedBlock
 	if vs.Unconfirmed.Len() == 0 {
 		return sb, errors.New("No transactions")
 	}
+
+	// Gather all unconfirmed transactions
 	txns := vs.Unconfirmed.RawTxns()
+	logger.Info("Unconfirmed pool has %d transactions pending", len(txns))
+
+	// Sort them by highest fee per kilobyte
 	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
+
+	// Filter transactions that do not obey droplet precision rules
+	var filteredTxns coin.Transactions
+	for _, txn := range txns {
+		skip := false
+		for _, o := range txn.Out {
+			if err := DropletPrecisionCheck(o.Coins); err != nil {
+				skip = true
+				break
+			}
+		}
+
+		if !skip {
+			filteredTxns = append(filteredTxns, txn)
+		}
+	}
+
+	nRemoved := len(txns) - len(filteredTxns)
+	if nRemoved > 0 {
+		logger.Info("CreateBlock ignored %d transactions with too many decimal places", nRemoved)
+	}
+
+	txns = filteredTxns
+
+	// Apply block size transaction limit
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+
+	logger.Info("Creating new block with %d transactions, head time %d", len(txns), when)
+
 	b, err := vs.Blockchain.NewBlock(txns, when)
 	if err != nil {
+		logger.Warning("Blockchain.NewBlock failed: %v", err)
 		return sb, err
 	}
+
 	return vs.SignBlock(*b), nil
 }
 
@@ -432,6 +516,13 @@ func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
 // Refactor
 // Why do does this return both error and bool
 func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
+	// Ignore transactions that do not conform to decimal restrictions
+	for _, o := range txn.Out {
+		if err := DropletPrecisionCheck(o.Coins); err != nil {
+			return false, err
+		}
+	}
+
 	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
 }
 
@@ -629,4 +720,55 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 // GetAddrUxOuts gets all the address affected UxOuts.
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
 	return vs.history.GetAddrUxOuts(address)
+}
+
+// ScanAheadWalletAddresses scans ahead N addresses in a wallet, looking for a non-empty balance
+func (vs Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
+	return vs.wallets.ScanAheadWalletAddresses(wltName, scanN, vs)
+}
+
+// GetBalanceOfAddrs returns balance pairs of given addreses
+func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+	var bps []wallet.BalancePair
+	auxs := vs.Blockchain.Unspent().GetUnspentsOfAddrs(addrs)
+	spendUxs, err := vs.Unconfirmed.SpendsOfAddresses(addrs, vs.Blockchain.Unspent())
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
+	}
+
+	head, err := vs.Blockchain.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	recvUxs, err := vs.Unconfirmed.RecvOfAddresses(head.Head, addrs)
+	if err != nil {
+		return nil, fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
+	}
+
+	headTime := head.Time()
+	for _, addr := range addrs {
+		uxs, ok := auxs[addr]
+		if !ok {
+			bps = append(bps, wallet.BalancePair{})
+			continue
+		}
+
+		outUxs := spendUxs[addr]
+		inUxs := recvUxs[addr]
+		predictedUxs := uxs.Sub(outUxs).Add(inUxs)
+
+		coins := uxs.Coins()
+		coinHours := uxs.CoinHours(headTime)
+		pcoins := predictedUxs.Coins()
+		pcoinHours := predictedUxs.CoinHours(headTime)
+		bp := wallet.BalancePair{
+			Confirmed: wallet.Balance{Coins: coins, Hours: coinHours},
+			Predicted: wallet.Balance{Coins: pcoins, Hours: pcoinHours},
+		}
+
+		bps = append(bps, bp)
+	}
+
+	return bps, nil
 }

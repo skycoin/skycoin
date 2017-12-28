@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 func TestGenerateCert(t *testing.T) {

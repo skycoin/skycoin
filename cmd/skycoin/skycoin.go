@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -30,7 +31,7 @@ import (
 
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
-	Version = "0.20.3"
+	Version = "0.21.1"
 	// Commit id
 	Commit = ""
 
@@ -71,6 +72,10 @@ var (
 		"47.88.33.156:6000",
 		"121.41.103.148:6000",
 		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
 	}
 )
 
@@ -80,6 +85,10 @@ var (
 type Config struct {
 	// Disable peer exchange
 	DisablePEX bool
+	// Download peer list
+	DownloadPeerList bool
+	// Download the peers list from this URL
+	PeerListURL string
 	// Don't make any outgoing connections
 	DisableOutgoingConnections bool
 	// Don't allowing incoming connections
@@ -93,10 +102,12 @@ type Config struct {
 	Address string
 	//gnet uses this for TCP incoming and outgoing
 	Port int
-	//max connections to maintain
-	MaxConnections int
+	//max outgoing connections to maintain
+	MaxOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
+	// PeerlistSize represents the maximum number of peers that the pex would maintain
+	PeerlistSize int
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
@@ -158,91 +169,64 @@ type Config struct {
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
 	Logtofile    bool
+	Logtogui     bool
+	LogBuffSize  int
 }
 
 func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
-	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
-		"disable PEX peer discovery")
-	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
-		c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
-		c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
+	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
+	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
+	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.StringVar(&c.Address, "address", c.Address,
-		"IP Address to run application on. Leave empty to default to a public interface")
+	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
-	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
-		"enable the web interface")
-	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
-		c.WebInterfacePort, "port to serve web interface on")
-	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr",
-		c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert",
-		c.WebInterfaceCert, "cert.pem file for web interface HTTPS. "+
-			"If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key",
-		c.WebInterfaceKey, "key.pem file for web interface HTTPS. "+
-			"If not provided, will use key.pem in -data-directory")
-	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
-		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 
-	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface,
-		"enable the rpc interface")
-	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort,
-		"port to serve rpc interface on")
-	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr,
-		"addr to serve rpc interface on")
+	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
+	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
+	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
+	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+
+	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the rpc interface")
+	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort, "port to serve rpc interface on")
+	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr, "addr to serve rpc interface on")
 	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 
-	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
-		"launch system default webbrowser at client startup")
-	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
-		c.PrintWebInterfaceAddress, "print configured web interface address and exit")
-	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
-		"directory to store app data (defaults to ~/.skycoin)")
-	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
-		"connect to this ip only")
-	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU,
-		"enable cpu profiling")
-	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file",
-		c.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf,
-		"Run the http profiling interface")
-	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel,
-		"Choices are: debug, info, notice, warning, error, critical")
-	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
-		"Add terminal colors to log output")
-	flag.BoolVar(&c.DisablePingPong, "no-ping-log", false,
-		`disable "reply to ping" and "received pong" log messages`)
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
+	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
+	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
+	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
+	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
+	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
+	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, notice, warning, error, critical")
+	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
+	flag.BoolVar(&c.DisablePingPong, "no-ping-log", false, `disable "reply to ping" and "received pong" log messages`)
 	flag.BoolVar(&c.Logtofile, "logtofile", false, "log to file")
-	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
-		"static content directory for the html gui")
+	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
 
-	//Key Configuration Data
-	flag.BoolVar(&c.RunMaster, "master", c.RunMaster,
-		"run the daemon as blockchain master server")
+	// Key Configuration Data
+	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
 
-	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr,
-		"public key of the master chain")
-	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr,
-		"secret key, set for master")
+	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr, "public key of the master chain")
+	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr, "secret key, set for master")
 
-	flag.StringVar(&GenesisAddressStr, "genesis-address", GenesisAddressStr,
-		"genesis address")
-	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr,
-		"genesis block signature")
-	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp,
-		"genesis block timestamp")
+	flag.StringVar(&GenesisAddressStr, "genesis-address", GenesisAddressStr, "genesis address")
+	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr, "genesis block signature")
+	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
-	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
-		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
-
-	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
-		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
-	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
-		"Run on localhost and only connect to localhost peers")
+	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 16, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", 65535, "The peer list size")
+	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
+	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
+	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
 }
 
 var devConfig = Config{
@@ -261,10 +245,13 @@ var devConfig = Config{
 	Address: "",
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
-
-	MaxConnections: 16,
+	// MaxOutgoingConnections is the maximum outgoing connections allowed.
+	MaxOutgoingConnections: 16,
+	DownloadPeerList:       false,
+	PeerListURL:            "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
+	PeerlistSize:            65535,
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
@@ -312,7 +299,8 @@ var devConfig = Config{
 	HTTPProf: false,
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
-	ConnectTo: "",
+	ConnectTo:   "",
+	LogBuffSize: 8388608, //1024*1024*8
 }
 
 // Parse prepare the config
@@ -412,8 +400,30 @@ func catchDebug() {
 	}
 }
 
+func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
+	var s *gui.Server
+	var err error
+	if c.WebInterfaceHTTPS {
+		// Verify cert/key parameters, and if neither exist, create them
+		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
+			logger.Error("gui.CreateCertIfNotExists failure: %v", err)
+			return nil, err
+		}
+
+		s, err = gui.CreateHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+	} else {
+		s, err = gui.Create(host, c.GUIDirectory, d)
+	}
+	if err != nil {
+		logger.Error("Failed to start web GUI: %v", err)
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // init logging settings
-func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
+func initLogging(dataDir string, level string, color, logtofile, logtogui bool, logbuf *bytes.Buffer) (func(), error) {
 	logCfg := logging.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = color
@@ -437,7 +447,16 @@ func initLogging(dataDir string, level string, color, logtofile bool) (func(), e
 			return nil, err
 		}
 
-		logCfg.Output = io.MultiWriter(os.Stdout, fd)
+		if logtogui {
+			logCfg.Output = io.MultiWriter(os.Stdout, fd, logbuf)
+		} else {
+			logCfg.Output = io.MultiWriter(os.Stdout, fd)
+		}
+
+	} else {
+		if logtogui {
+			logCfg.Output = io.MultiWriter(os.Stdout, logbuf)
+		}
 	}
 
 	logCfg.InitLogger()
@@ -471,13 +490,16 @@ func configureDaemon(c *Config) daemon.Config {
 	dc := daemon.NewConfig()
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
+	dc.Pex.Max = c.PeerlistSize
+	dc.Pex.DownloadPeerList = c.DownloadPeerList
+	dc.Pex.PeerListURL = c.PeerListURL
 	dc.Daemon.DisableOutgoingConnections = c.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.DisableNetworking
 	dc.Daemon.Port = c.Port
 	dc.Daemon.Address = c.Address
 	dc.Daemon.LocalhostOnly = c.LocalhostOnly
-	dc.Daemon.OutgoingMax = c.MaxConnections
+	dc.Daemon.OutgoingMax = c.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.DataDirectory
 	dc.Daemon.LogPings = !c.DisablePingPong
 
@@ -523,19 +545,11 @@ func Run(c *Config) {
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
 	logger.Critical("Full address: %s", fullAddress)
-
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)
-		return
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
-
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
 	var wg sync.WaitGroup
 
@@ -555,23 +569,22 @@ func Run(c *Config) {
 		go catchDebug()
 	}()
 
+	// creates blockchain instance
 	dconf := configureDaemon(c)
-	d, err := daemon.NewDaemon(dconf, DefaultConnections)
+
+	db, err := visor.OpenDB(dconf.Visor.Config.DBPath)
+	if err != nil {
+		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)
+		return
+	}
+
+	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
 		logger.Error("%v", err)
 		return
 	}
 
-	errC := make(chan error, 1)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		d.Run()
-	}()
-
 	var rpc *webrpc.WebRPC
-	// start the webrpc
 	if c.RPCInterface {
 		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
 		rpc, err = webrpc.New(rpcAddr, d.Gateway)
@@ -581,14 +594,15 @@ func Run(c *Config) {
 		}
 		rpc.ChanBuffSize = 1000
 		rpc.WorkerNum = c.RPCThreadNum
+	}
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := rpc.Run(); err != nil {
-				errC <- err
-			}
-		}()
+	var webInterface *gui.Server
+	if c.WebInterface {
+		webInterface, err = createGUI(c, d, host, quit)
+		if err != nil {
+			logger.Error("%v", err)
+			return
+		}
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
@@ -599,29 +613,62 @@ func Run(c *Config) {
 		}
 	}
 
-	if c.WebInterface {
-		var err error
-		if c.WebInterfaceHTTPS {
-			// Verify cert/key parameters, and if neither exist, create them
-			errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
-			if len(errs) != 0 {
-				for _, err := range errs {
-					logger.Error(err.Error())
+	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if c.Logtogui {
+		go func(buf *bytes.Buffer, quit chan struct{}) {
+			for {
+				select {
+				case <-quit:
+					logger.Info("Logbuff service closed normally")
+					return
+				case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
+					for buf.Len() > c.LogBuffSize {
+						_, err := buf.ReadString(byte('\n')) //discard one line
+						if err != nil {
+							continue
+						}
+					}
 				}
-				logger.Error("gui.CreateCertIfNotExists failure")
-				return
 			}
+		}(&d.LogBuff, quit)
+	}
 
-			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
-		} else {
-			err = gui.LaunchWebInterface(host, c.GUIDirectory, d)
-		}
+	errC := make(chan error, 10)
 
-		if err != nil {
-			logger.Error(err.Error())
-			logger.Error("Failed to start web GUI")
-			return
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := d.Run(); err != nil {
+			logger.Error("%v", err)
+			errC <- err
 		}
+	}()
+
+	// start the webrpc
+	if c.RPCInterface {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := rpc.Run(); err != nil {
+				logger.Error("%v", err)
+				errC <- err
+			}
+		}()
+	}
+
+	if c.WebInterface {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := webInterface.Serve(); err != nil {
+				logger.Error("%v", err)
+				errC <- err
+			}
+		}()
 
 		if c.LaunchBrowser {
 			wg.Add(1)
@@ -641,29 +688,29 @@ func Run(c *Config) {
 	}
 
 	/*
-		time.Sleep(5)
-		tx := InitTransaction()
-		_ = tx
-		err, _ = d.Visor.Visor.InjectTxn(tx)
-		if err != nil {
-			log.Panic(err)
-		}
+	   time.Sleep(5)
+	   tx := InitTransaction()
+	   _ = tx
+	   err, _ = d.Visor.Visor.InjectTxn(tx)
+	   if err != nil {
+	       log.Panic(err)
+	   }
 	*/
 
 	/*
-		//first transaction
-		if c.RunMaster == true {
-			go func() {
-				for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
-					time.Sleep(5)
-					tx := InitTransaction()
-					err, _ := d.Visor.Visor.InjectTxn(tx)
-					if err != nil {
-						//log.Panic(err)
-					}
-				}
-			}()
-		}
+	   //first transaction
+	   if c.RunMaster == true {
+	       go func() {
+	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
+	               time.Sleep(5)
+	               tx := InitTransaction()
+	               err, _ := d.Visor.Visor.InjectTxn(tx)
+	               if err != nil {
+	                   //log.Panic(err)
+	               }
+	           }
+	       }()
+	   }
 	*/
 
 	select {
@@ -676,7 +723,9 @@ func Run(c *Config) {
 	if rpc != nil {
 		rpc.Shutdown()
 	}
-	gui.Shutdown()
+	if webInterface != nil {
+		webInterface.Shutdown()
+	}
 	d.Shutdown()
 	closelog()
 	wg.Wait()

@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 
+	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
@@ -22,7 +23,13 @@ import (
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
 type DisconnectReason error
 
-const sendResultTimeout = 3 * time.Second
+const (
+	receiveMessageDurationThreshold = 500 * time.Millisecond
+	readLoopDurationThreshold       = 10 * time.Second
+	sendInMsgChanDurationThreshold  = 5 * time.Second
+	sendLoopDurationThreshold       = 500 * time.Millisecond
+	sendResultTimeout               = 3 * time.Second
+)
 
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
@@ -353,18 +360,21 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 
 	wg.Add(1)
 	go func() {
+		var elapser = elapse.NewElapser(receiveMessageDurationThreshold, logger)
 		defer wg.Done()
+		defer elapser.CheckForDone()
 		for {
 			select {
 			case msg, ok := <-msgC:
 				if !ok {
 					return
 				}
-
+				elapser.Register("pool.receiveMessage")
 				if err := pool.receiveMessage(c, msg); err != nil {
 					errC <- err
 					return
 				}
+				elapser.CheckForDone()
 			}
 		}
 	}()
@@ -389,7 +399,12 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 	// read data from connection
 	reader := bufio.NewReader(conn.Conn)
 	buf := make([]byte, 1024)
+	var elapser = elapse.NewElapser(readLoopDurationThreshold, logger)
+	var sendInMsgChanElapser = elapse.NewElapser(sendInMsgChanDurationThreshold, logger)
+	defer elapser.CheckForDone()
+	defer sendInMsgChanElapser.CheckForDone()
 	for {
+		elapser.Register("readLoop")
 		deadline := time.Time{}
 		if pool.Config.ReadTimeout != 0 {
 			deadline = time.Now().Add(pool.Config.ReadTimeout)
@@ -397,7 +412,6 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 		if err := conn.Conn.SetReadDeadline(deadline); err != nil {
 			return ErrDisconnectSetReadDeadlineFailed
 		}
-
 		data, err := readData(reader, buf)
 		if err != nil {
 			return err
@@ -411,14 +425,13 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 		if _, err := conn.Buffer.Write(data); err != nil {
 			return err
 		}
-
 		// decode data
 		datas, err := decodeData(conn.Buffer, pool.Config.MaxMessageLength)
 		if err != nil {
 			return err
 		}
-
 		for _, d := range datas {
+			sendInMsgChanElapser.Register("readLoop msgChan write")
 			// use select to avoid the goroutine leak,
 			// because if msgChan has no receiver this goroutine will leak
 			select {
@@ -431,21 +444,25 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 				return errors.New("The msgChan has no receiver")
 			}
 		}
+		sendInMsgChanElapser.CheckForDone()
 	}
 }
 
 func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
+	var elapser = elapse.NewElapser(sendLoopDurationThreshold, logger)
+	defer elapser.CheckForDone()
 	for {
+		elapser.CheckForDone()
 		select {
 		case <-pool.quit:
 			return nil
 		case <-qc:
 			return nil
 		case m := <-conn.WriteQueue:
+			elapser.Register("conn.WriteQueue")
 			if m == nil {
 				continue
 			}
-
 			err := sendMessage(conn.Conn, m, timeout)
 			sr := newSendResult(conn.Addr(), m, err)
 			select {
@@ -472,11 +489,9 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read data failed: %v", err)
 	}
-
 	if c == 0 {
 		return nil, nil
 	}
-
 	data := make([]byte, c)
 	n := copy(data, buf)
 	if n != c {
@@ -700,6 +715,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
+
 	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
 	if err != nil {
 		return err

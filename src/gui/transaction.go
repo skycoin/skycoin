@@ -27,7 +27,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns transactions that match the filters.
 	// Method: GET
 	// Args:
-	//     addrs: Comma seperated addresses [optional, returns no transactions if no address provided]
+	//     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 	mux.HandleFunc("/transactions", getTransactions(gateway))
 	//inject a transaction into network
@@ -142,7 +142,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 // Method: GET
 // URI: /transactions
 // Args:
-//     addrs: Comma seperated addresses [optional, returns no transactions if no address provided]
+//     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -151,60 +151,38 @@ func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		// Gets addresses
+		// Gets 'addrs' parameter value
 		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("parse parament: 'addrs' failed: %v", err))
 			return
 		}
 
-		// Returns no transactions if addrs is empty
-		if len(addrs) == 0 {
-			wh.SendOr404(w, []visor.TransactionResult{})
-			return
-		}
+		// Initialize transaction filters
+		flts := []visor.TxFilter{visor.AddrsFilter(addrs)}
 
-		// Gets addresses related transactions
-		addrTxns, err := gateway.GetTransactionsOfAddrs(addrs)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		// Converts address transactions map into []visor.Transaction, and remove duplicate txns
-		txnMap := make(map[cipher.SHA256]struct{}, 0)
-		var txns []visor.Transaction
-		for _, txs := range addrTxns {
-			for _, tx := range txs {
-				if _, exist := txnMap[tx.Txn.Hash()]; exist {
-					continue
-				}
-				txnMap[tx.Txn.Hash()] = struct{}{}
-				txns = append(txns, tx)
-			}
-		}
-
-		var retTxns []visor.Transaction
-		// Gets the "confirmed" string
+		// Gets the "confirmed" parameter value
 		confirmedStr := r.FormValue("confirmed")
-		if confirmedStr == "" {
-			// Returns all transactions
-			retTxns = txns
-		} else {
+		if confirmedStr != "" {
 			confirmed, err := parseConfirmedFromStr(confirmedStr)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("parse paramenter: 'confirmed' failed: %v", err))
 				return
 			}
 
-			for _, tx := range txns {
-				if tx.Status.Confirmed == confirmed {
-					retTxns = append(retTxns, tx)
-				}
-			}
+			flts = append(flts, visor.ConfirmedTxFilter(confirmed))
 		}
 
-		txRlts, err := visor.NewTransactionResults(retTxns)
+		// Gets transactions
+		txns, err := gateway.GetTransactions(flts...)
+		if err != nil {
+			logger.Error("get transactions failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		// Converts visor.Transaction to visor.TransactionResult
+		txRlts, err := visor.NewTransactionResults(txns)
 		if err != nil {
 			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
 			wh.Error500(w)

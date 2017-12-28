@@ -8,7 +8,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -33,42 +32,29 @@ type SpendResult struct {
 //  transaction *visor.ReadableTransaction  readable transaction
 //  error       error                       error in spending the coins
 func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) (balance *wallet.BalancePair, transaction *visor.ReadableTransaction, spendError error) {
-	var tx *coin.Transaction
-	var b wallet.BalancePair
-	var err error
-
-	if tx, err = gateway.Spend(walletID, coins, dest); err != nil {
-		// Skip the errors here as it already failed to spend the coins
-		rbTx, _ := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-		// Get the current wallet balance
-		b, _ = gateway.GetWalletBalance(walletID)
-		return &b, rbTx, err
+	tx, err := gateway.Spend(walletID, coins, dest)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	var txStr string
-
-	if txStr, err = visor.TransactionToJSON(*tx); err != nil {
-		// Skip the errors here as it already failed above
-		rbTx, _ := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-		// Get the new wallet balance
-		b, _ = gateway.GetWalletBalance(walletID)
-		return &b, rbTx, err
+	txStr, err := visor.TransactionToJSON(*tx)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	logger.Info("Spend: \ntx= \n %s \n", txStr)
 
 	// Get the new wallet balance
-	if b, err = gateway.GetWalletBalance(walletID); err != nil {
+	b, err := gateway.GetWalletBalance(walletID)
+	if err != nil {
 		logger.Error("Get wallet balance failed: %v", err)
-		// Skip the error here as it already failed to get the wallet balance
-		rbTx, _ := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-		return &b, rbTx, err
+		return nil, nil, err
 	}
 
 	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 	if err != nil {
 		logger.Error("Creation of new readable transaction failed: %s", err)
-		return &b, rbTx, err
+		return nil, nil, err
 	}
 
 	return &b, rbTx, err

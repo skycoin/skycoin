@@ -7,10 +7,6 @@ STATIC_DIR = src/gui/static
 # Electron files directory
 ELECTRON_DIR = electron
 
-define NEWLINE
-
-endef
-
 # ./src folder does not have code
 # ./src/api folder does not have code
 # ./src/util folder does not have code

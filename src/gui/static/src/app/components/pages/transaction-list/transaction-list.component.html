@@ -1,7 +1,7 @@
 <div class="sky-container sky-container-grey">
   <app-header title="Transactions"></app-header>
   <ng-container *ngFor="let transaction of transactions">
-    <div class="-transaction" *ngIf="transaction.balance !== 0">
+    <div class="-transaction" *ngIf="transaction.balance !== 0" (click)="showTransaction(transaction)">
       <div class="-icon" [ngClass]="{ '-incoming': transaction.balance > 0, '-pending': !transaction.confirmed }">
         <img src="/assets/img/send-blue.png">
       </div>

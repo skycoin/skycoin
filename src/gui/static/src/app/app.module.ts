@@ -46,6 +46,7 @@ import { WalletShowComponent } from './components/pages/wallet-show/wallet-show.
 import { PriceService } from './price.service';
 import { LoadWalletComponent } from './components/pages/wallets/load-wallet/load-wallet.component';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
+import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
 
 const ROUTES = [
   {
@@ -143,6 +144,7 @@ const ROUTES = [
     QrCodeComponent,
     TellerStatusPipe,
     TopBarComponent,
+    TransactionDetailComponent,
     TransactionListComponent,
     TransactionsAmountPipe,
     WalletShowComponent,
@@ -153,6 +155,7 @@ const ROUTES = [
     ChangeNameComponent,
     LoadWalletComponent,
     QrCodeComponent,
+    TransactionDetailComponent,
   ],
   imports: [
     BrowserModule,

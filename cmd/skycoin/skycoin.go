@@ -175,89 +175,55 @@ type Config struct {
 
 func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
-	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
-		"disable PEX peer discovery")
+	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
 	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
 	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
-	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
-		c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
-		c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.StringVar(&c.Address, "address", c.Address,
-		"IP Address to run application on. Leave empty to default to a public interface")
+	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
-	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
-		"enable the web interface")
-	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
-		c.WebInterfacePort, "port to serve web interface on")
-	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr",
-		c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert",
-		c.WebInterfaceCert, "cert.pem file for web interface HTTPS. "+
-			"If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key",
-		c.WebInterfaceKey, "key.pem file for web interface HTTPS. "+
-			"If not provided, will use key.pem in -data-directory")
-	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
-		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 
-	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface,
-		"enable the rpc interface")
-	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort,
-		"port to serve rpc interface on")
-	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr,
-		"addr to serve rpc interface on")
+	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
+	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
+	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
+	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+
+	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the rpc interface")
+	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort, "port to serve rpc interface on")
+	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr, "addr to serve rpc interface on")
 	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 
-	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
-		"launch system default webbrowser at client startup")
-	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
-		c.PrintWebInterfaceAddress, "print configured web interface address and exit")
-	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
-		"directory to store app data (defaults to ~/.skycoin)")
-	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
-		"connect to this ip only")
-	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU,
-		"enable cpu profiling")
-	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file",
-		c.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf,
-		"Run the http profiling interface")
-	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel,
-		"Choices are: debug, info, notice, warning, error, critical")
-	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
-		"Add terminal colors to log output")
-	flag.BoolVar(&c.DisablePingPong, "no-ping-log", false,
-		`disable "reply to ping" and "received pong" log messages`)
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
+	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
+	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
+	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
+	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
+	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
+	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, notice, warning, error, critical")
+	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
+	flag.BoolVar(&c.DisablePingPong, "no-ping-log", false, `disable "reply to ping" and "received pong" log messages`)
 	flag.BoolVar(&c.Logtofile, "logtofile", false, "log to file")
-	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
-		"static content directory for the html gui")
+	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
 
-	//Key Configuration Data
-	flag.BoolVar(&c.RunMaster, "master", c.RunMaster,
-		"run the daemon as blockchain master server")
+	// Key Configuration Data
+	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
 
-	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr,
-		"public key of the master chain")
-	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr,
-		"secret key, set for master")
+	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr, "public key of the master chain")
+	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr, "secret key, set for master")
 
-	flag.StringVar(&GenesisAddressStr, "genesis-address", GenesisAddressStr,
-		"genesis address")
-	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr,
-		"genesis block signature")
-	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp,
-		"genesis block timestamp")
+	flag.StringVar(&GenesisAddressStr, "genesis-address", GenesisAddressStr, "genesis address")
+	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr, "genesis block signature")
+	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
-	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory,
-		"location of the wallet files. Defaults to ~/.skycoin/wallet/")
+	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 16, "The maximum outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", 65535, "The peer list size")
-	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate",
-		c.OutgoingConnectionsRate, "How often to make an outgoing connection")
-	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly,
-		"Run on localhost and only connect to localhost peers")
+	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
@@ -630,10 +596,13 @@ func Run(c *Config) {
 		rpc.WorkerNum = c.RPCThreadNum
 	}
 
-	webInterface, err := createGUI(c, d, host, quit)
-	if err != nil {
-		logger.Error("%v", err)
-		return
+	var webInterface *gui.Server
+	if c.WebInterface {
+		webInterface, err = createGUI(c, d, host, quit)
+		if err != nil {
+			logger.Error("%v", err)
+			return
+		}
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
@@ -691,29 +660,31 @@ func Run(c *Config) {
 		}()
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := webInterface.Serve(); err != nil {
-			logger.Error("%v", err)
-			errC <- err
-		}
-	}()
-
-	if c.LaunchBrowser {
+	if c.WebInterface {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-
-			// Wait a moment just to make sure the http interface is up
-			time.Sleep(time.Millisecond * 100)
-
-			logger.Info("Launching System Browser with %s", fullAddress)
-			if err := browser.Open(fullAddress); err != nil {
-				logger.Error(err.Error())
-				return
+			if err := webInterface.Serve(); err != nil {
+				logger.Error("%v", err)
+				errC <- err
 			}
 		}()
+
+		if c.LaunchBrowser {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				// Wait a moment just to make sure the http interface is up
+				time.Sleep(time.Millisecond * 100)
+
+				logger.Info("Launching System Browser with %s", fullAddress)
+				if err := browser.Open(fullAddress); err != nil {
+					logger.Error(err.Error())
+					return
+				}
+			}()
+		}
 	}
 
 	/*
@@ -752,7 +723,9 @@ func Run(c *Config) {
 	if rpc != nil {
 		rpc.Shutdown()
 	}
-	webInterface.Shutdown()
+	if webInterface != nil {
+		webInterface.Shutdown()
+	}
 	d.Shutdown()
 	closelog()
 	wg.Wait()

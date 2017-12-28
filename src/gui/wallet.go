@@ -27,7 +27,7 @@ type Gatewayer interface {
 type SpendResult struct {
 	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
 	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
-	Error       error                      `json:"error,omitempty"`
+	Error       string                     `json:"error,omitempty"`
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
@@ -121,7 +121,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			logger.Error(err.Error())
 			wh.SendOr404(w, SpendResult{
-				Error: err,
+				Error: err.Error(),
 			})
 			return
 		}
@@ -132,9 +132,9 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 		if err != nil {
-			err = fmt.Errorf("Creation of new readable transaction failed: %s", err)
+			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
 			logger.Error(err.Error())
-			ret.Error = err
+			ret.Error = err.Error()
 			wh.SendOr404(w, ret)
 			return
 		}
@@ -144,7 +144,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
 			logger.Error(err.Error())
-			ret.Error = err
+			ret.Error = err.Error()
 			wh.SendOr404(w, ret)
 			return
 		}
@@ -430,7 +430,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//  fee: Number of hours to use as fee, on top of the default fee.
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
-	mux.HandleFunc("/wallet/spend", WalletSpendHandler(gateway))
+	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
 
 	// GET Arguments:
 	//		id: Wallet ID

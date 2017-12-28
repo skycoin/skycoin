@@ -25,86 +25,81 @@ var (
 	logger = logging.MustGetLogger("gui")
 )
 
-type Server struct {
-	daemon   *daemon.Daemon
-	listener net.Listener
-	done     chan struct{}
-	appLoc   string
-}
-
 const (
 	resourceDir = "dist/"
 	devDir      = "dev/"
 	indexPage   = "index.html"
 )
 
-func Create(needHttps bool, host string, guiDirectory string, daemon *daemon.Daemon, cert string, key string) (*Server, error) {
-	var err error
-	s := Server{
-		daemon: daemon,
-		done:   make(chan struct{}),
-	}
-	if needHttps {
-		err = s.launchWebInterfaceHTTPS(host, guiDirectory, daemon, cert, key)
-	} else {
-		err = s.launchWebInterface(host, guiDirectory, daemon)
-	}
-	return &s, err
+// Server exposes an HTTP API
+type Server struct {
+	mux      *http.ServeMux
+	listener net.Listener
+	done     chan struct{}
 }
 
-// LaunchWebInterface begins listening on http://$host, for enabling remote web access
-// Does NOT use HTTPS
-func (s *Server) launchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
-	var err error
-	logger.Warning("HTTPS not in use!")
-	s.appLoc, err = file.DetermineResourcePath(staticDir, resourceDir, devDir)
+func create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(staticDir, resourceDir, devDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	logger.Info("Web resources directory: %s", s.appLoc)
+	logger.Info("Web resources directory: %s", appLoc)
+
+	return &Server{
+		mux:  NewServerMux(appLoc, daemon),
+		done: make(chan struct{}),
+	}, nil
+}
+
+// Create creates a new Server instance that listens on HTTP
+func Create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, staticDir, daemon)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Warning("HTTPS not in use!")
 
 	s.listener, err = net.Listen("tcp", host)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return s, nil
 }
 
-// LaunchWebInterfaceHTTPS begins listening on https://$host, for enabling remote web access
-// Uses HTTPS
-func (s *Server) launchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
-	var err error
+// CreateHTTPS creates a new Server instance that listens on HTTPS
+func CreateHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, staticDir, daemon)
+	if err != nil {
+		return nil, err
+	}
+
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
-	logger.Info("Web resources directory: %s", staticDir)
 
-	s.appLoc, err = file.DetermineResourcePath(staticDir, devDir, resourceDir)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	certs := make([]tls.Certificate, 1)
-	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {
-		return err
-	}
-
-	s.listener, err = tls.Listen("tcp", host, &tls.Config{Certificates: certs})
+	s.listener, err = tls.Listen("tcp", host, &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Runs http.Serve() in a goroutine
-	return nil
-
+	return s, nil
 }
 
+// Serve serves the web interface on the configured host
 func (s *Server) Serve() error {
-	defer logger.Info("Server closed")
 	logger.Info("Starting web interface on %s", s.listener.Addr())
-	mux := NewGUIMux(s.appLoc, s.daemon)
-	if err := http.Serve(s.listener, mux); err != nil {
-		close(s.done)
+	defer logger.Info("Web interface closed")
+	defer close(s.done)
+
+	if err := http.Serve(s.listener, s.mux); err != nil {
 		if err != http.ErrServerClosed {
 			return err
 		}
@@ -112,16 +107,16 @@ func (s *Server) Serve() error {
 	return nil
 }
 
-// Shutdown close http service
+// Shutdown closes the HTTP service. This can only be called after Serve or ServeHTTPS has been called.
 func (s *Server) Shutdown() {
-	logger.Info("Shutting down Server")
+	logger.Info("Shutting down web interface")
+	defer logger.Info("Web interface shut down")
 	s.listener.Close()
-	s.listener = nil
 	<-s.done
 }
 
-// NewGUIMux creates an http.ServeMux with handlers registered
-func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
+// NewServerMux creates an http.ServeMux with handlers registered
+func NewServerMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", newIndexHandler(appLoc))
 

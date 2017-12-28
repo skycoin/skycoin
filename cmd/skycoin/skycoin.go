@@ -434,27 +434,26 @@ func catchDebug() {
 	}
 }
 
-func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) *gui.Server {
-
+func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
+	var s *gui.Server
+	var err error
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
-		errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
-		if len(errs) != 0 {
-			for _, err := range errs {
-				logger.Error(err.Error())
-			}
-			logger.Error("gui.CreateCertIfNotExists failure")
-			return nil
+		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
+			logger.Error("gui.CreateCertIfNotExists failure: %v", err)
+			return nil, err
 		}
-	}
-	s, err := gui.Create(c.WebInterfaceHTTPS, host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
 
-	if err != nil {
-		logger.Error(err.Error())
-		logger.Error("Failed to start web GUI")
-		return nil
+		s, err = gui.CreateHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+	} else {
+		s, err = gui.Create(host, c.GUIDirectory, d)
 	}
-	return s
+	if err != nil {
+		logger.Error("Failed to start web GUI: %v", err)
+		return nil, err
+	}
+
+	return s, nil
 }
 
 // init logging settings
@@ -573,6 +572,17 @@ func Run(c *Config) {
 
 	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 
+	scheme := "http"
+	if c.WebInterfaceHTTPS {
+		scheme = "https"
+	}
+	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	logger.Critical("Full address: %s", fullAddress)
+	if c.PrintWebInterfaceAddress {
+		fmt.Println(fullAddress)
+	}
+
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 
 	var wg sync.WaitGroup
@@ -608,6 +618,32 @@ func Run(c *Config) {
 		return
 	}
 
+	var rpc *webrpc.WebRPC
+	if c.RPCInterface {
+		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
+		rpc, err = webrpc.New(rpcAddr, d.Gateway)
+		if err != nil {
+			logger.Error("%v", err)
+			return
+		}
+		rpc.ChanBuffSize = 1000
+		rpc.WorkerNum = c.RPCThreadNum
+	}
+
+	webInterface, err := createGUI(c, d, host, quit)
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+
+	// Debug only - forces connection on start.  Violates thread safety.
+	if c.ConnectTo != "" {
+		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
+			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
+			return
+		}
+	}
+
 	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
 	if err != nil {
 		fmt.Println(err)
@@ -632,84 +668,34 @@ func Run(c *Config) {
 		}(&d.LogBuff, quit)
 	}
 
-	errC := make(chan error, 1)
+	errC := make(chan error, 10)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		d.Run()
+		if err := d.Run(); err != nil {
+			logger.Error("%v", err)
+			errC <- err
+		}
 	}()
 
-	var rpc *webrpc.WebRPC
 	// start the webrpc
 	if c.RPCInterface {
-		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err = webrpc.New(rpcAddr, d.Gateway)
-		if err != nil {
-			logger.Error("%v", err)
-			return
-		}
-		rpc.ChanBuffSize = 1000
-		rpc.WorkerNum = c.RPCThreadNum
-
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := rpc.Run(); err != nil {
+				logger.Error("%v", err)
 				errC <- err
 			}
 		}()
 	}
 
-	// Debug only - forces connection on start.  Violates thread safety.
-	if c.ConnectTo != "" {
-		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
-			return
-		}
-	}
-
-	scheme := "http"
-	if c.WebInterfaceHTTPS {
-		scheme = "https"
-	}
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
-	if c.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
-	}
-	s := createGUI(c, d, host, quit)
 	wg.Add(1)
-	/*
-		time.Sleep(5)
-		tx := InitTransaction()
-		_ = tx
-		err, _ = d.Visor.Visor.InjectTxn(tx)
-		if err != nil {
-			log.Panic(err)
-		}
-	*/
-
-	/*
-		//first transaction
-		if c.RunMaster == true {
-			go func() {
-				for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
-					time.Sleep(5)
-					tx := InitTransaction()
-					err, _ := d.Visor.Visor.InjectTxn(tx)
-					if err != nil {
-						//log.Panic(err)
-					}
-				}
-			}()
-		}
-	*/
 	go func() {
 		defer wg.Done()
-		err := s.Serve()
-		if err != nil {
+		if err := webInterface.Serve(); err != nil {
+			logger.Error("%v", err)
 			errC <- err
 		}
 	}()
@@ -730,6 +716,32 @@ func Run(c *Config) {
 		}()
 	}
 
+	/*
+	   time.Sleep(5)
+	   tx := InitTransaction()
+	   _ = tx
+	   err, _ = d.Visor.Visor.InjectTxn(tx)
+	   if err != nil {
+	       log.Panic(err)
+	   }
+	*/
+
+	/*
+	   //first transaction
+	   if c.RunMaster == true {
+	       go func() {
+	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
+	               time.Sleep(5)
+	               tx := InitTransaction()
+	               err, _ := d.Visor.Visor.InjectTxn(tx)
+	               if err != nil {
+	                   //log.Panic(err)
+	               }
+	           }
+	       }()
+	   }
+	*/
+
 	select {
 	case <-quit:
 	case err := <-errC:
@@ -740,7 +752,7 @@ func Run(c *Config) {
 	if rpc != nil {
 		rpc.Shutdown()
 	}
-	s.Shutdown()
+	webInterface.Shutdown()
 	d.Shutdown()
 	closelog()
 	wg.Wait()

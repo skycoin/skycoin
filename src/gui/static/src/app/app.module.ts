@@ -19,7 +19,6 @@ import { HistoryComponent } from './components/pages/history/history.component';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
 import { BreadcrumbComponent } from './components/layout/breadcrumb/breadcrumb.component';
-import { TransactionComponent } from './components/pages/transaction/transaction.component';
 import { BackButtonComponent } from './components/layout/back-button/back-button.component';
 import { ExplorerComponent } from './components/pages/explorer/explorer.component';
 import { BlockchainService } from './services/blockchain.service';
@@ -144,7 +143,6 @@ const ROUTES = [
     QrCodeComponent,
     TellerStatusPipe,
     TopBarComponent,
-    TransactionComponent,
     TransactionListComponent,
     TransactionsAmountPipe,
     WalletShowComponent,
@@ -155,7 +153,6 @@ const ROUTES = [
     ChangeNameComponent,
     LoadWalletComponent,
     QrCodeComponent,
-    TransactionListComponent,
   ],
   imports: [
     BrowserModule,

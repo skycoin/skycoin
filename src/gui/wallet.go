@@ -8,7 +8,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -23,50 +22,42 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
-// Spend spend coins from specific wallet
-func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) *SpendResult {
-	var tx *coin.Transaction
-	var b wallet.BalancePair
-	var err error
-	for {
-		tx, err = gateway.Spend(walletID, coins, dest)
-		if err != nil {
-			break
-		}
-
-		var txStr string
-		txStr, err = visor.TransactionToJSON(*tx)
-		if err != nil {
-			break
-		}
-
-		logger.Info("Spend: \ntx= \n %s \n", txStr)
-
-		b, err = gateway.GetWalletBalance(walletID)
-		if err != nil {
-			err = fmt.Errorf("Get wallet balance failed: %v", err)
-			break
-		}
-
-		break
+// Spend spends coins from given wallet id
+// Args:
+//  walletID    string          ID of wallet to spend from
+//  coins       uint64          amount of coins to spend
+//  dest        ciper.Address   recipient address
+// Return:
+//  balance     *wallet.BalancePair         latest balance
+//  transaction *visor.ReadableTransaction  readable transaction
+//  error       error                       error in spending the coins
+func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) (balance *wallet.BalancePair, transaction *visor.ReadableTransaction, spendError error) {
+	tx, err := gateway.Spend(walletID, coins, dest)
+	if err != nil {
+		return nil, nil, err
 	}
 
+	txStr, err := visor.TransactionToJSON(*tx)
 	if err != nil {
-		return &SpendResult{
-			Error: err.Error(),
-		}
+		return nil, nil, err
+	}
+
+	logger.Info("Spend: \ntx= \n %s \n", txStr)
+
+	// Get the new wallet balance
+	b, err := gateway.GetWalletBalance(walletID)
+	if err != nil {
+		logger.Error("Get wallet balance failed: %v", err)
+		return nil, nil, err
 	}
 
 	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 	if err != nil {
-		logger.Error("%v", err)
-		return &SpendResult{}
+		logger.Error("Creation of new readable transaction failed: %s", err)
+		return nil, nil, err
 	}
 
-	return &SpendResult{
-		Balance:     &b,
-		Transaction: rbTx,
-	}
+	return &b, rbTx, err
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
@@ -137,7 +128,12 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		ret := Spend(gateway, wltID, coins, dst)
+		balance, transaction, err := Spend(gateway, wltID, coins, dst)
+		ret := SpendResult{
+			Balance:     balance,
+			Transaction: transaction,
+			Error:       err.Error(),
+		}
 		if ret.Error != "" {
 			logger.Error(ret.Error)
 		}

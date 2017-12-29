@@ -45,6 +45,12 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 
 	serv.WalletDirectory = walletDir
 
+	// Removes .wlt.bak files before loading wallets
+	if err := removeBackupFiles(serv.WalletDirectory); err != nil {
+		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.WalletDirectory, err)
+	}
+
+	// Loads wallets
 	w, err := LoadWallets(serv.WalletDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load all wallets: %v", err)
@@ -510,18 +516,6 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 	}
 
 	return wlts
-}
-
-// Delete the .bak file, which might expose the plaintext seeds and private keys.
-func removeBackupWalletFile(path string) error {
-	if e, err := os.Stat(path); !os.IsNotExist(err) {
-		if !e.IsDir() {
-			if err := os.Remove(path); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // ErrWalletNotExist represents wallet doesnt exist error

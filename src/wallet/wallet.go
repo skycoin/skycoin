@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"encoding/hex"
@@ -285,6 +287,37 @@ func Load(wltFile string) (*Wallet, error) {
 func Save(dir string, w *Wallet) error {
 	r := NewReadableWallet(w)
 	return r.Save(filepath.Join(dir, w.Filename()))
+}
+
+// removeBackupFiles removes all .wlt.bak files in the given directory
+func removeBackupFiles(dir string) error {
+	// Filters all .wlt.bak files in the directory
+	fs, err := filterDir(dir, ".wlt.bak")
+	if err != nil {
+		return err
+	}
+
+	// Removes the filtered files
+	for _, f := range fs {
+		if err := os.Remove(f); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func filterDir(dir string, suffix string) ([]string, error) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	res := []string{}
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), suffix) {
+			res = append(res, filepath.Join(dir, f.Name()))
+		}
+	}
+	return res, nil
 }
 
 // reset resets the wallet entries and move the lastSeed to origin

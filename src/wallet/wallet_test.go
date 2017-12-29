@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -1200,6 +1203,105 @@ func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
 
 		verifyChosenCoins(t, uxb, coins, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins >= b.Coins
+		})
+	}
+}
+
+func TestRemoveBackupFiles(t *testing.T) {
+	tt := []struct {
+		name                   string
+		initFiles              []string
+		expectedRemainingFiles map[string]struct{}
+	}{
+		{
+			"no file",
+			[]string{},
+			map[string]struct{}{},
+		},
+		{
+			"1 bak file",
+			[]string{
+				"t1.wlt.bak",
+			},
+			map[string]struct{}{},
+		},
+		{
+			"2 file, 1 bak file",
+			[]string{
+				"t1.wlt",
+				"t2.wlt.bak",
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+			},
+		},
+		{
+			"3 file, 1 bak file",
+			[]string{
+				"t1.wlt",
+				"t2.wlt",
+				"t3.wlt.bak",
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+			},
+		},
+		{
+			"3 file, 2 bak file",
+			[]string{
+				"t1.wlt",
+				"t2.wlt.bak",
+				"t3.wlt.bak",
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+			},
+		},
+		{
+			"3 file, 3 bak file",
+			[]string{
+				"t1.wlt.bak",
+				"t2.wlt.bak",
+				"t3.wlt.bak",
+			},
+			map[string]struct{}{},
+		},
+		{
+			"3 file, no bak file",
+			[]string{
+				"t1.wlt",
+				"t2.wlt",
+				"t3.wlt",
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			// Initialize files
+			for _, f := range tc.initFiles {
+				f, err := os.Create(filepath.Join(dir, f))
+				require.NoError(t, err)
+				f.Close()
+			}
+
+			require.NoError(t, removeBackupFiles(dir))
+
+			// Get all remaining files
+			fs, err := ioutil.ReadDir(dir)
+			require.NoError(t, err)
+			require.Len(t, fs, len(tc.expectedRemainingFiles))
+			for _, f := range fs {
+				_, ok := tc.expectedRemainingFiles[f.Name()]
+				require.True(t, ok)
+			}
 		})
 	}
 }

@@ -24,24 +24,13 @@ var (
 
 // LoadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
-// extension WalletExt are considered. If encounter old wallet file, then backup
-// the wallet file into dir/backup/
+// extension WalletExt are considered.
 func LoadWallets(dir string) (Wallets, error) {
 	// TODO -- don't load duplicate wallets.
 	// TODO -- save a last_modified value in wallets to decide which to load
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
-	}
-
-	// create backup dir if not exist
-	bkpath := dir + "/backup/"
-	if _, err := os.Stat(bkpath); os.IsNotExist(err) {
-		// create the backup dir
-		logger.Noticef("create wallet backup dir, %v", bkpath)
-		if err := os.Mkdir(bkpath, 0777); err != nil {
-			return nil, err
-		}
 	}
 
 	wallets := Wallets{}

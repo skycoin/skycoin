@@ -108,8 +108,8 @@ func newEntryFromReadable(w *ReadableEntry, isEncrypted bool) (*Entry, error) {
 
 // ReadableWallet used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	Meta    map[string]string `json:"meta"`
-	Entries ReadableEntries   `json:"entries"`
+	Meta    map[string]interface{} `json:"meta"`
+	Entries ReadableEntries        `json:"entries"`
 }
 
 // ByTm for sort ReadableWallets
@@ -120,7 +120,7 @@ func (bt ByTm) Len() int {
 }
 
 func (bt ByTm) Less(i, j int) bool {
-	return bt[i].Meta["tm"] < bt[j].Meta["tm"]
+	return bt[i].time() < bt[j].time()
 }
 
 func (bt ByTm) Swap(i, j int) {
@@ -134,7 +134,7 @@ func NewReadableWallet(w *Wallet) *ReadableWallet {
 		readable[i] = NewReadableEntry(e, w.IsEncrypted())
 	}
 
-	meta := make(map[string]string, len(w.Meta))
+	meta := make(map[string]interface{}, len(w.Meta))
 	for k, v := range w.Meta {
 		meta[k] = v
 	}
@@ -192,9 +192,23 @@ func (rw *ReadableWallet) Load(filename string) error {
 }
 
 func (rw *ReadableWallet) version() string {
-	return rw.Meta["version"]
+	if v, ok := rw.Meta["version"].(string); ok {
+		return v
+	}
+	return ""
 }
 
 func (rw *ReadableWallet) isEncrypted() bool {
-	return checkEncrypted(rw.Meta["encrypted"])
+	if encrypted, ok := rw.Meta["encrypted"].(bool); ok {
+		return encrypted
+	}
+	return false
+}
+
+func (rw *ReadableWallet) time() string {
+	if tm, ok := rw.Meta["tm"].(string); ok {
+		return tm
+	}
+
+	return ""
 }

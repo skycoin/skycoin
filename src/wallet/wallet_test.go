@@ -399,7 +399,7 @@ func TestWalletUnlock(t *testing.T) {
 
 func TestLoadWallet(t *testing.T) {
 	type expect struct {
-		meta map[string]string
+		meta map[string]interface{}
 		err  error
 	}
 
@@ -412,7 +412,7 @@ func TestLoadWallet(t *testing.T) {
 			"ok",
 			"./testdata/test1.wlt",
 			expect{
-				meta: map[string]string{
+				meta: map[string]interface{}{
 					"coin":     string(CoinTypeSkycoin),
 					"filename": "test1.wlt",
 					"label":    "test3",
@@ -429,7 +429,7 @@ func TestLoadWallet(t *testing.T) {
 			"wallet file doesn't exist",
 			"not_exist_file.wlt",
 			expect{
-				meta: map[string]string{},
+				meta: map[string]interface{}{},
 				err:  fmt.Errorf("load wallet file failed, wallet not_exist_file.wlt doesn't exist"),
 			},
 		},
@@ -437,7 +437,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: no type",
 			"./testdata/invalid_wallets/no_type.wlt",
 			expect{
-				meta: map[string]string{},
+				meta: map[string]interface{}{},
 				err:  fmt.Errorf("invalid wallet no_type.wlt: type field not set"),
 			},
 		},
@@ -445,7 +445,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: invalid type",
 			"./testdata/invalid_wallets/err_type.wlt",
 			expect{
-				meta: map[string]string{},
+				meta: map[string]interface{}{},
 				err:  fmt.Errorf("invalid wallet err_type.wlt: wallet type invalid"),
 			},
 		},
@@ -453,7 +453,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: no coin",
 			"./testdata/invalid_wallets/no_coin.wlt",
 			expect{
-				meta: map[string]string{},
+				meta: map[string]interface{}{},
 				err:  fmt.Errorf("invalid wallet no_coin.wlt: coin field not set"),
 			},
 		},
@@ -461,7 +461,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: no seed",
 			"./testdata/invalid_wallets/no_seed.wlt",
 			expect{
-				meta: map[string]string{},
+				meta: map[string]interface{}{},
 				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed field not set"),
 			},
 		},
@@ -469,15 +469,16 @@ func TestLoadWallet(t *testing.T) {
 			"load wallet of version 0.2",
 			"./testdata/v2.wlt",
 			expect{
-				meta: map[string]string{
-					"coin":     "skycoin",
-					"filename": "v2.wlt",
-					"label":    "",
-					"lastSeed": "pYCzcK5exEqBS+bnePDkGs7U2UXIPhPrNdrkp81I2hyCJyJtL122GzsBBtRJpiX+3yvOnmTQZJ7+7m8wZ/qq6nluejE4bzdFSzA3WEtVODdkQi9iUlRGbGdHZWJ6WXlHSlZvOHp3YTVleTA9LEFCaGxpWFlFbVhEVUdHTDJRd2w3VmdVTEJseWVkSzFQMjN6VHBRVVVUMDA9LERmUzRPMGVGS2t0UjU4Y01rbndVcWh2cjlCN1JWZFRueFU3UkFjUkZ3RW89",
-					"seed":     "g8slU58evVZtiO4ouxY5QeC6ZsMXprLAQYY9nls/JFyIYQvBxufxZvSlppyiO6X0dK8MzHaEFg0wpHUgbm8WsTd3VXBmR1dMVXVsaE03UkVmY3U3QU0vOWVhallJWDhJN1N6QzcycjFtUlU9LExtSUxVbHMzNkxwbnZFR1FjT0YrdHUyRHJaQ3NqaWdQMDhuTUVFdjhZNzA9",
-					"tm":       "1511856544",
-					"type":     "deterministic",
-					"version":  "0.2",
+				meta: map[string]interface{}{
+					"coin":      "skycoin",
+					"filename":  "v2.wlt",
+					"label":     "",
+					"lastSeed":  "pYCzcK5exEqBS+bnePDkGs7U2UXIPhPrNdrkp81I2hyCJyJtL122GzsBBtRJpiX+3yvOnmTQZJ7+7m8wZ/qq6nluejE4bzdFSzA3WEtVODdkQi9iUlRGbGdHZWJ6WXlHSlZvOHp3YTVleTA9LEFCaGxpWFlFbVhEVUdHTDJRd2w3VmdVTEJseWVkSzFQMjN6VHBRVVVUMDA9LERmUzRPMGVGS2t0UjU4Y01rbndVcWh2cjlCN1JWZFRueFU3UkFjUkZ3RW89",
+					"seed":      "g8slU58evVZtiO4ouxY5QeC6ZsMXprLAQYY9nls/JFyIYQvBxufxZvSlppyiO6X0dK8MzHaEFg0wpHUgbm8WsTd3VXBmR1dMVXVsaE03UkVmY3U3QU0vOWVhallJWDhJN1N6QzcycjFtUlU9LExtSUxVbHMzNkxwbnZFR1FjT0YrdHUyRHJaQ3NqaWdQMDhuTUVFdjhZNzA9",
+					"tm":        "1511856544",
+					"type":      "deterministic",
+					"encrypted": true,
+					"version":   "0.2",
 				},
 				err: nil,
 			},

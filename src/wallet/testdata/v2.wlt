@@ -8,7 +8,7 @@
         "tm": "1511856544",
         "type": "deterministic",
         "version": "0.2",
-        "encrypted": "true"
+        "encrypted": true
     },
     "entries": [
         {

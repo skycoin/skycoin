@@ -19,7 +19,7 @@ func CreateAddresses(coinType CoinType, seed string, genCount int, hideSecretKey
 	}
 
 	wallet := &ReadableWallet{
-		Meta: map[string]string{
+		Meta: map[string]interface{}{
 			"coin": string(coinType),
 			"seed": seed,
 		},

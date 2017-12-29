@@ -127,8 +127,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			"200 -OK. POST",
 			http.MethodPost,
 			"/wallets/folderName",
-			&httpBody{},
-			http.StatusOK,
+			&httpBody{}, http.StatusOK,
 			"",
 			"/wallet/folder/address",
 			WalletFolder{

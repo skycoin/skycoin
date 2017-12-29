@@ -289,20 +289,35 @@ func Save(dir string, w *Wallet) error {
 	return r.Save(filepath.Join(dir, w.Filename()))
 }
 
-// removeBackupFiles removes all .wlt.bak files in the given directory
+// removeBackupFiles removes any *.wlt with *wlt.bak that matches in the given directory
 func removeBackupFiles(dir string) error {
-	// Filters all .wlt.bak files in the directory
-	fs, err := filterDir(dir, ".wlt.bak")
+	fs, err := filterDir(dir, ".wlt")
 	if err != nil {
 		return err
 	}
 
-	// Removes the filtered files
+	// Creates the .wlt file map
+	fm := make(map[string]struct{})
 	for _, f := range fs {
-		if err := os.Remove(f); err != nil {
-			return err
+		fm[f] = struct{}{}
+	}
+
+	// Filters all .wlt.bak files in the directory
+	bakFs, err := filterDir(dir, ".wlt.bak")
+	if err != nil {
+		return err
+	}
+
+	// Removes the .wlt.bak file that has .wlt matched.
+	for _, bf := range bakFs {
+		f := strings.TrimRight(bf, ".bak")
+		if _, ok := fm[f]; ok {
+			if err := os.Remove(bf); err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }
 

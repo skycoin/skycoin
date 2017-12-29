@@ -1219,28 +1219,21 @@ func TestRemoveBackupFiles(t *testing.T) {
 			map[string]struct{}{},
 		},
 		{
-			"1 bak file",
-			[]string{
-				"t1.wlt.bak",
-			},
-			map[string]struct{}{},
-		},
-		{
-			"2 file, 1 bak file",
+			"1 matched bak file",
 			[]string{
 				"t1.wlt",
-				"t2.wlt.bak",
+				"t1.wlt.bak",
 			},
 			map[string]struct{}{
 				"t1.wlt": struct{}{},
 			},
 		},
 		{
-			"3 file, 1 bak file",
+			"3 file, 1 matched bak file",
 			[]string{
 				"t1.wlt",
 				"t2.wlt",
-				"t3.wlt.bak",
+				"t2.wlt.bak",
 			},
 			map[string]struct{}{
 				"t1.wlt": struct{}{},
@@ -1248,36 +1241,63 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"3 file, 2 bak file",
-			[]string{
-				"t1.wlt",
-				"t2.wlt.bak",
-				"t3.wlt.bak",
-			},
-			map[string]struct{}{
-				"t1.wlt": struct{}{},
-			},
-		},
-		{
-			"3 file, 3 bak file",
-			[]string{
-				"t1.wlt.bak",
-				"t2.wlt.bak",
-				"t3.wlt.bak",
-			},
-			map[string]struct{}{},
-		},
-		{
-			"3 file, no bak file",
+			"4 file, 1 matched bak file",
 			[]string{
 				"t1.wlt",
 				"t2.wlt",
 				"t3.wlt",
+				"t3.wlt.bak",
 			},
 			map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"5 file, 2 matched bak file",
+			[]string{
+				"t1.wlt",
+				"t2.wlt",
+				"t2.wlt.bak",
+				"t3.wlt",
+				"t3.wlt.bak",
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"6 file, 3 matched bak file",
+			[]string{
+				"t1.wlt",
+				"t1.wlt.bak",
+				"t2.wlt",
+				"t2.wlt.bak",
+				"t3.wlt",
+				"t3.wlt.bak",
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"4 file, no matched bak file",
+			[]string{
+				"t1.wlt",
+				"t2.wlt",
+				"t3.wlt",
+				"t4.wlt.bak",
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t3.wlt":     struct{}{},
+				"t4.wlt.bak": struct{}{},
 			},
 		},
 	}

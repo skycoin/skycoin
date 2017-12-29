@@ -175,7 +175,7 @@ func (w *Wallet) lock(password []byte) error {
 		}
 
 		// Set the encrypted seckey value
-		w.Entries[i].EncryptedSeckey = se
+		w.Entries[i].EncryptedSecret = se
 		// Clear the entry.Secret
 		for j := range w.Entries[i].Secret {
 			w.Entries[i].Secret[j] = 0
@@ -219,12 +219,12 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 
 	// decrypt the entries
 	for i := range wlt.Entries {
-		sk, err := Decrypt(wlt.Entries[i].EncryptedSeckey, password)
+		sk, err := Decrypt(wlt.Entries[i].EncryptedSecret, password)
 		if err != nil {
 			return nil, err
 		}
 		copy(wlt.Entries[i].Secret[:], sk[:])
-		wlt.Entries[i].EncryptedSeckey = ""
+		wlt.Entries[i].EncryptedSecret = ""
 	}
 	wlt.setEncrypted(false)
 

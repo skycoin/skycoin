@@ -26,7 +26,7 @@ func NewReadableEntry(w Entry, isEncrypted bool) ReadableEntry {
 	if !isEncrypted {
 		secret = w.Secret.Hex()
 	} else {
-		secret = w.EncryptedSeckey
+		secret = w.EncryptedSecret
 	}
 
 	return ReadableEntry{
@@ -105,7 +105,7 @@ func newEntryFromReadable(w *ReadableEntry, isEncrypted bool) (*Entry, error) {
 	return &Entry{
 		Address:         a,
 		Public:          p,
-		EncryptedSeckey: w.Secret,
+		EncryptedSecret: w.Secret,
 	}, nil
 }
 

@@ -9,5 +9,5 @@ type Entry struct {
 	Address         cipher.Address
 	Public          cipher.PubKey
 	Secret          cipher.SecKey
-	EncryptedSeckey string
+	EncryptedSecret string
 }

@@ -248,7 +248,7 @@ func TestNewWallet(t *testing.T) {
 				// check the entries, the seckeys must be erased.
 				for _, e := range w.Entries {
 					require.Empty(t, e.Secret)
-					require.NotEmpty(t, e.EncryptedSeckey)
+					require.NotEmpty(t, e.EncryptedSecret)
 				}
 			}
 		})
@@ -314,7 +314,7 @@ func TestWalletLock(t *testing.T) {
 			// Checks if the entries are encrypted
 			for i := range w.Entries {
 				require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
-				require.NotEmpty(t, w.Entries[i].EncryptedSeckey)
+				require.NotEmpty(t, w.Entries[i].EncryptedSecret)
 			}
 		})
 	}

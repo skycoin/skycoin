@@ -977,7 +977,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 					a := cipher.AddressFromSecKey(seckeys[i])
 					require.Equal(t, a, wlt.Entries[i].Address)
 					require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
-					require.Empty(t, wlt.Entries[i].EncryptedSeckey)
+					require.Empty(t, wlt.Entries[i].EncryptedSecret)
 				}
 			}
 
@@ -1139,10 +1139,10 @@ func TestServiceEncryptWallets(t *testing.T) {
 					// Checks if the Secret field is empty
 					require.Equal(t, cipher.SecKey{}, e.Secret)
 					// Checks if the encrypted secret is filled
-					require.NotEmpty(t, e.EncryptedSeckey)
+					require.NotEmpty(t, e.EncryptedSecret)
 					// Decrypts the secret and compare
 					var s cipher.SecKey
-					ss, err := Decrypt(e.EncryptedSeckey, password)
+					ss, err := Decrypt(e.EncryptedSecret, password)
 					require.NoError(t, err)
 					copy(s[:], ss[:])
 					require.Equal(t, s, seckeys[i])

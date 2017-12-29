@@ -58,10 +58,12 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 
 	nonce := RandByte(blockSize)
 	var encryptedBlocks []string
+	hashPassword := SumSHA256(password)
+	hashNonce := SumSHA256(nonce)
 	// encode the blocks
 	for i := range blocks {
 		// hash(password, hash(index, hash(nonce)))
-		h := hashPwdIndexNonce(password, int64(i), nonce)
+		h := hashPwdIndexNonce(hashPassword, int64(i), hashNonce)
 		bh := SHA256(blocks[i])
 		encryptedHash := bh.Xor(h)
 		// encode the encrypted hash in base64
@@ -97,7 +99,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	if n != blockSize {
-		return nil, errors.New("decode checksum failed")
+		return nil, errors.New("invalid checksum length")
 	}
 
 	var checkSum SHA256
@@ -105,7 +107,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 
 	// verify the checksum
 	csh := SumSHA256(buf.Bytes())
-	if csh.Hex() != checkSum.Hex() {
+	if csh != checkSum {
 		return nil, errors.New("invalid checksum")
 	}
 
@@ -116,11 +118,13 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	if n != blockSize {
-		return nil, errors.New("decode nonce failed")
+		return nil, errors.New("invalid nonce length")
 	}
 
 	encryptedBlocks := strings.Split(buf.String(), ",")
 	var decodeData []byte
+	hashPassword := SumSHA256(password)
+	hashNonce := SumSHA256(nonce)
 	for i := range encryptedBlocks {
 		b, err := base64.StdEncoding.DecodeString(encryptedBlocks[i])
 		if err != nil {
@@ -134,7 +138,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 		var bh SHA256
 		copy(bh[:], b[:])
 
-		dataHash := bh.Xor(hashPwdIndexNonce(password, int64(i), nonce))
+		dataHash := bh.Xor(hashPwdIndexNonce(hashPassword, int64(i), hashNonce))
 		decodeData = append(decodeData, dataHash[:]...)
 	}
 
@@ -159,15 +163,14 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 }
 
 // hash(password, hash(index, hash(nonce)))
-func hashPwdIndexNonce(password []byte, index int64, nonce []byte) SHA256 {
+func hashPwdIndexNonce(password SHA256, index int64, nonceHash SHA256) SHA256 {
 	// convert index to 256bit number
 	indexBytes := make([]byte, 32)
 	binary.PutVarint(indexBytes, index)
 
-	// hash(index, hash(nonce))
-	nonceHash := SumSHA256(nonce)
+	// hash(index, nonceHash)
 	indexNonceHash := SumSHA256(append(indexBytes, nonceHash[:]...))
 
 	// hash(hash(password), indexNonceHash)
-	return AddSHA256(SumSHA256(password), indexNonceHash)
+	return AddSHA256(password, indexNonceHash)
 }

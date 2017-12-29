@@ -210,7 +210,6 @@ func NewApp(cfg Config) *App {
 		addressBalanceCmd(),
 		addressGenCmd(),
 		addressOutputsCmd(),
-		richlistCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
 		createRawTxCmd(cfg),

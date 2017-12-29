@@ -106,28 +106,6 @@ func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON
 	return nil, nil
 }
 
-func (fg fakeGateway) GetRichlist(topn int, includeDistribution bool) ([]visor.AccountJSON, error) {
-	var topnAccount []visor.AccountJSON
-	rbOuts, err := fg.GetUnspentOutputs(daemon.FbyAddressesNotIncluded([]string{}))
-	if err != nil {
-		return topnAccount, err
-	}
-
-	allAccounts, err := rbOuts.AggregateUnspentOutputs()
-	if err != nil {
-		return topnAccount, err
-	}
-	distributionMap := map[string]struct{}{}
-	amgr := visor.NewAccountMgr(allAccounts, distributionMap)
-	amgr.Sort()
-	topnAccount, err = amgr.GetTopn(topn, includeDistribution)
-	if err != nil {
-		return topnAccount, err
-	}
-
-	return topnAccount, nil
-}
-
 func (fg fakeGateway) GetTimeNow() uint64 {
 	return 0
 }

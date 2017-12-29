@@ -174,11 +174,6 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 
 }
 
-// GetRichlist mocked method
-func (m *GatewayerMock) GetRichlist(topn int, includeDistr bool) ([]visor.AccountJSON, error) {
-	return []visor.AccountJSON{}, nil
-}
-
 // GetUnspentOutputs mocked method
 func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
 

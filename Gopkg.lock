@@ -45,8 +45,18 @@
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","mock","require"]
+  packages = [
+    "assert",
+    "mock",
+    "require"
+  ]
   revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/therealssj/base58"
+  packages = ["."]
+  revision = "f8923e070b796d03115a7c9dab0918683299cca8"
 
 [[projects]]
   name = "github.com/toqueteos/webbrowser"
@@ -81,6 +91,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "35b5d3198cad3c85f69122223bab608f94bdc5c96284be3c22746f1c8b7f74bc"
+  inputs-digest = "2281320a0befa0b3a9c0882965ede87514dbff1666958ba9f3b82f8dc01a5b1b"
   solver-name = "gps-cdcl"
   solver-version = 1

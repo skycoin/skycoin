@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/therealssj/base58"
 )
 
 func TestMustDecodeBase58Address(t *testing.T) {
@@ -14,9 +15,9 @@ func TestMustDecodeBase58Address(t *testing.T) {
 	require.Panics(t, func() { MustDecodeBase58Address("") })
 	require.Panics(t, func() { MustDecodeBase58Address("cascs") })
 	b := a.Bytes()
-	h, _ := b58.EncodeToString(b[:len(b)/2])
+	h, _ := base58.Encode(b[:len(b)/2])
 	require.Panics(t, func() { MustDecodeBase58Address(h) })
-	h, _ = b58.EncodeToString(b)
+	h, _ = base58.Encode(b)
 	require.NotPanics(t, func() { MustDecodeBase58Address(h) })
 	a2 := MustDecodeBase58Address(h)
 	require.Equal(t, a, a2)
@@ -52,10 +53,10 @@ func TestDecodeBase58Address(t *testing.T) {
 	a2, err = DecodeBase58Address("cascs")
 	require.Error(t, err)
 	b := a.Bytes()
-	h, _ := b58.EncodeToString(b[:len(b)/2])
+	h, _ := base58.Encode(b[:len(b)/2])
 	a2, err = DecodeBase58Address(h)
 	require.Error(t, err)
-	h, _ = b58.EncodeToString(b)
+	h, _ = base58.Encode(b)
 	a2, err = DecodeBase58Address(h)
 	require.NoError(t, err)
 	require.Equal(t, a, a2)

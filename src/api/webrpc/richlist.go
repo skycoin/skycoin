@@ -1,12 +1,10 @@
 package webrpc
 
-import (
-	"github.com/skycoin/skycoin/src/util/uxotutil"
-)
+import "github.com/skycoin/skycoin/src/visor"
 
 // OutputsTopn the output json format
 type OutputsTopn struct {
-	Outputs []uxotutil.AccountJSON `json:"richlist"`
+	Outputs []visor.AccountJSON `json:"richlist"`
 }
 
 //TopnParas the argument for topn outputs

@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"strconv"
-
 	gcli "github.com/urfave/cli"
 )
 
@@ -15,38 +13,27 @@ func richlistCmd() gcli.Command {
 		Description: `Display rich list, first argument is topn, second argument is bool(inlcude distribution address or not) 
         example: richlist 100 true`,
 		OnUsageError: onCommandUsageError(name),
-		Action:       getRichlistCmd,
+		Flags: []gcli.Flag{
+			gcli.IntFlag{
+				Name:  "topn,n",
+				Usage: "Returns richlist top number, by default returns all",
+			},
+			gcli.BoolFlag{
+				Name:  "include-distribution,d",
+				Usage: "Include distribution address or not, default false",
+			},
+		},
+		Action: getRichlistCmd,
 	}
 
 }
 
 func getRichlistCmd(c *gcli.Context) error {
-	var err error
-	var isDistribution bool
-	var topn int
-	topnStr := c.Args().Get(0)
-	//return all if no args
-	if topnStr == "" {
-		isDistribution = true
+	topn := c.Int("n")
+	if topn == 0 {
 		topn = -1
-	} else {
-		topn, err = strconv.Atoi(topnStr)
-		if err != nil {
-			gcli.ShowSubcommandHelp(c)
-			return err
-		}
-		isDistributionStr := c.Args().Get(1)
-		if isDistributionStr == "" {
-			isDistribution = false
-		} else {
-			isDistribution, err = strconv.ParseBool(isDistributionStr)
-			if err != nil {
-				gcli.ShowSubcommandHelp(c)
-				return err
-			}
-		}
 	}
-
+	isDistribution := c.Bool("d")
 	rpcClient := RpcClientFromContext(c)
 	outputs, err := rpcClient.GetRichlist(topn, isDistribution)
 	if err != nil {

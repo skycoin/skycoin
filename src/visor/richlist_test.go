@@ -1,4 +1,4 @@
-package uxotutil
+package visor
 
 import (
 	"fmt"
@@ -34,6 +34,7 @@ func TestAccountSort(t *testing.T) {
 	accMap := getAllAccounts()
 	distributionMap := getDistributionMap()
 	accMgr := NewAccountMgr(accMap, distributionMap)
+	accMgr.Sort()
 	cases := []struct {
 		topn                int
 		includeDistribution bool

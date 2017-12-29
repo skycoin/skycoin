@@ -5,7 +5,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/skycoin/skycoin/src/util/uxotutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -660,25 +659,25 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 }
 
 // GetRichlist returns rich list as desc order.
-func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error) {
-	var topnAccount []uxotutil.AccountJSON
+func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]visor.AccountJSON, error) {
+	var topnAccounts []visor.AccountJSON
 	rbOuts, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
 	if err != nil {
-		return topnAccount, err
+		return nil, err
 	}
 
 	allAccounts, err := rbOuts.AggregateUnspentOutputs()
 	if err != nil {
-		return topnAccount, err
+		return nil, err
 	}
 
-	distributionMap := visor.GetLockedDistributiomAddressMap()
-	amgr := uxotutil.NewAccountMgr(allAccounts, distributionMap)
+	distributionMap := visor.GetLockedDistributionAddressMap()
+	amgr := visor.NewAccountMgr(allAccounts, distributionMap)
 	amgr.Sort()
-	topnAccount, err = amgr.GetTopn(topn, includeDistribution)
+	topnAccounts, err = amgr.GetTopn(topn, includeDistribution)
 	if err != nil {
-		return topnAccount, err
+		return nil, err
 	}
 
-	return topnAccount, nil
+	return topnAccounts, nil
 }

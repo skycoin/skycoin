@@ -92,7 +92,7 @@ func TransactionIsLocked(inUxs coin.UxArray) bool {
 }
 
 // Returns map struct of locked distribution address
-func GetLockedDistributiomAddressMap() map[string]struct{} {
+func GetLockedDistributionAddressMap() map[string]struct{} {
 	distributionMap := map[string]struct{}{}
 	addresses := GetLockedDistributionAddresses()
 	for _, address := range addresses {

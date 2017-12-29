@@ -1,27 +1,33 @@
-/*************************************************************************
-   > File Name: skycoin_webrpc.go
-   > Author: ben
-   > Mail: zhiyuan_06@126.com
-   > Created Time: 一 10/16 23:09:41 2017
-************************************************************************/
-package uxotutil
+package visor
 
 import (
 	"sort"
 	"strings"
 
-	"github.com/spaco/spo/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/droplet"
 )
+
+type Account struct {
+	Addr   string
+	Coins  uint64
+	Locked bool
+}
+
+//AccountJson topn elements
+type AccountJSON struct {
+	Addr   string `json:"address"`
+	Coins  string `json:"coins"`
+	Locked bool   `json:"locked"`
+}
 
 //AccountMgr manager all unspent outputs
 type AccountMgr struct {
 	Accounts []Account
-	IsSorted bool
 }
 
 //NewAccountMgr create AccountMgr via unspent outputs map
 func NewAccountMgr(allAccount map[string]uint64, distributionMap map[string]struct{}) *AccountMgr {
-	am := &AccountMgr{IsSorted: false}
+	am := &AccountMgr{}
 	am.Accounts = make([]Account, 0, len(allAccount))
 	var islocked bool
 	for acc, value := range allAccount {
@@ -72,20 +78,6 @@ func (am AccountMgr) Swap(i, j int) {
 //Sort sort coin owner desc order
 func (am *AccountMgr) Sort() {
 	sort.Sort(am)
-	am.IsSorted = true
-}
-
-type Account struct {
-	Addr   string
-	Coins  uint64
-	Locked bool
-}
-
-//AccountJson topn elements
-type AccountJSON struct {
-	Addr   string `json:"address"`
-	Coins  string `json:"coins"`
-	Locked bool   `json:"locked"`
 }
 
 //GetTopn returns topn rich owner, returns all if topn = -1, exclude distribution if includeDistribution = false
@@ -93,9 +85,6 @@ func (am *AccountMgr) GetTopn(topn int, includeDistribution bool) ([]AccountJSON
 	topnAccount := []AccountJSON{}
 	if topn == 0 {
 		return topnAccount, nil
-	}
-	if !am.IsSorted {
-		am.Sort()
 	}
 	for _, acc := range am.Accounts {
 		//skip special address

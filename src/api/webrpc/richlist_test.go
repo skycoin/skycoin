@@ -7,7 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/uxotutil"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,8 +23,8 @@ func Test_getRichlistHandler(t *testing.T) {
 		uxouts[i].Body.Coins = coins[i]
 	}
 
-	account1 := uxotutil.AccountJSON{Addr: "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B", Coins: "60.000000", Locked: false}
-	account2 := uxotutil.AccountJSON{Addr: "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW", Coins: "30.000000", Locked: false}
+	account1 := visor.AccountJSON{Addr: "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B", Coins: "60.000000", Locked: false}
+	account2 := visor.AccountJSON{Addr: "cBnu9sUvv12dovBmjQKTtfE4rbjMmf3fzW", Coins: "30.000000", Locked: false}
 	type args struct {
 		Topn           int
 		IsDistribution bool
@@ -42,7 +42,7 @@ func Test_getRichlistHandler(t *testing.T) {
 				IsDistribution: false,
 				gateway:        &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsTopn{[]uxotutil.AccountJSON{account1}}),
+			makeSuccessResponse("1", OutputsTopn{[]visor.AccountJSON{account1}}),
 		},
 		{
 			"richest two",
@@ -51,7 +51,7 @@ func Test_getRichlistHandler(t *testing.T) {
 				IsDistribution: false,
 				gateway:        &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsTopn{[]uxotutil.AccountJSON{account1, account2}}),
+			makeSuccessResponse("1", OutputsTopn{[]visor.AccountJSON{account1, account2}}),
 		},
 		{
 			"richest all",
@@ -60,7 +60,7 @@ func Test_getRichlistHandler(t *testing.T) {
 				IsDistribution: true,
 				gateway:        &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsTopn{[]uxotutil.AccountJSON{account1, account2}}),
+			makeSuccessResponse("1", OutputsTopn{[]visor.AccountJSON{account1, account2}}),
 		},
 	}
 

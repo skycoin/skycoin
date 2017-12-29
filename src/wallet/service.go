@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -209,14 +208,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) error {
 	// Set the encrypted wallet
 	serv.wallets.set(w)
 
-	if err := Save(serv.WalletDirectory, w); err != nil {
-		return err
-	}
-
-	// Delete the .bak file, which might expose the plaintext seeds and private keys.
-	fn := w.Filename() + ".bak"
-	path := filepath.Join(serv.WalletDirectory, fn)
-	return removeBackupWalletFile(path)
+	return Save(serv.WalletDirectory, w)
 }
 
 // DecryptWallet decrypts wallet with password
@@ -228,7 +220,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) error {
 		return err
 	}
 
-	// Return error if wallet is not encrypted
+	// Returns error if wallet is not encrypted
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
@@ -238,10 +230,14 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) error {
 		return err
 	}
 
-	// Set the decrypted wallet
-	serv.wallets.set(unlockWlt)
+	// Updates the wallet file
+	if err := Save(serv.WalletDirectory, unlockWlt); err != nil {
+		return err
+	}
 
-	return Save(serv.WalletDirectory, unlockWlt)
+	// Sets the decrypted wallet in memory
+	serv.wallets.set(unlockWlt)
+	return nil
 }
 
 // EncryptWallets encrypts all wallets.
@@ -284,13 +280,6 @@ func (serv *Service) EncryptWallets(password []byte) error {
 
 		// Updates the wallet in memory
 		serv.wallets.set(wlts[i])
-
-		// Delete the .bak file, othewise it would expose the plaintext seeds and private keys.
-		fn := wlts[i].Filename() + ".bak"
-		path := filepath.Join(serv.WalletDirectory, fn)
-		if err := removeBackupWalletFile(path); err != nil {
-			return err
-		}
 	}
 
 	return nil

@@ -173,12 +173,7 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 
 // Save saves to filename, remove .bak file if exist
 func (rw *ReadableWallet) Save(filename string) error {
-	if err := file.SaveJSON(filename, rw, 0600); err != nil {
-		return err
-	}
-
-	// Remove .bak file if exist
-	return removeBackupWalletFile(filename + ".bak")
+	return file.SaveJSON(filename, rw, 0600)
 }
 
 // SaveSafe saves to filename, but won't overwrite existing

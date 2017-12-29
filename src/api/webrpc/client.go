@@ -53,11 +53,11 @@ func (c *Client) GetUnspentOutputs(addrs []string) (*OutputsResult, error) {
 	return &outputs, nil
 }
 
-// GetTopnOutputs returns topn unspent outputs
-func (c *Client) GetTopnOutputs(topn int, includeDistribution bool) (*OutputsTopn, error) {
+// GetRichlist returns topn unspent outputs
+func (c *Client) GetRichlist(topn int, includeDistribution bool) (*OutputsTopn, error) {
 	outputs := OutputsTopn{}
 	topnParms := TopnParas{Topn: topn, IncludeDistribution: includeDistribution}
-	if err := c.Do(&outputs, "get_topn_outputs", topnParms); err != nil {
+	if err := c.Do(&outputs, "get_richlist", topnParms); err != nil {
 		return nil, err
 	}
 

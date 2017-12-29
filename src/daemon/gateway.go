@@ -8,7 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/uxotutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/spaco/spo/src/util/droplet"
 
 	"fmt"
 
@@ -660,25 +659,19 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 	return bi
 }
 
-// GetTopnUxOutput returns topn unspent outputs as desc order.
-func (gw *Gateway) GetTopnUxOutputs(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error) {
+// GetRichlist returns rich list as desc order.
+func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error) {
 	var topnAccount []uxotutil.AccountJSON
-	outsall, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
+	rbOuts, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
 	if err != nil {
 		return topnAccount, err
 	}
 
-	allAccounts := map[string]uint64{}
-	for _, out := range outsall.HeadOutputs {
-		amt, err := droplet.FromString(out.Coins)
-		if err != nil {
-		}
-		if _, ok := allAccounts[out.Address]; ok {
-			allAccounts[out.Address] += amt
-		} else {
-			allAccounts[out.Address] = amt
-		}
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return topnAccount, err
 	}
+
 	distributionMap := visor.GetLockedDistributiomAddressMap()
 	amgr := uxotutil.NewAccountMgr(allAccounts, distributionMap)
 	amgr.Sort()

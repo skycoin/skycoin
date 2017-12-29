@@ -20,6 +20,6 @@ type Gatewayer interface {
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	InjectTransaction(tx coin.Transaction) error
 	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
-	GetTopnUxOutputs(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error)
+	GetRichlist(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error)
 	GetTimeNow() uint64
 }

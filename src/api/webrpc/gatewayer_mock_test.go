@@ -8,6 +8,7 @@ import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
 	daemon "github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/uxotutil"
 	visor "github.com/skycoin/skycoin/src/visor"
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -172,6 +173,11 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 
 	return r0, r1
 
+}
+
+// GetRichlist mocked method
+func (m *GatewayerMock) GetRichlist(topn int, includeDistr bool) ([]uxotutil.AccountJSON, error) {
+	return []uxotutil.AccountJSON{}, nil
 }
 
 // GetUnspentOutputs mocked method

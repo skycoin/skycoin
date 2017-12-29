@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/uxotutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -104,6 +105,28 @@ func (fg *fakeGateway) InjectTransaction(txn coin.Transaction) error {
 
 func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
 	return nil, nil
+}
+
+func (fg fakeGateway) GetRichlist(topn int, includeDistribution bool) ([]uxotutil.AccountJSON, error) {
+	var topnAccount []uxotutil.AccountJSON
+	rbOuts, err := fg.GetUnspentOutputs(daemon.FbyAddressesNotIncluded([]string{}))
+	if err != nil {
+		return topnAccount, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return topnAccount, err
+	}
+	distributionMap := map[string]struct{}{}
+	amgr := uxotutil.NewAccountMgr(allAccounts, distributionMap)
+	amgr.Sort()
+	topnAccount, err = amgr.GetTopn(topn, includeDistribution)
+	if err != nil {
+		return topnAccount, err
+	}
+
+	return topnAccount, nil
 }
 
 func (fg fakeGateway) GetTimeNow() uint64 {

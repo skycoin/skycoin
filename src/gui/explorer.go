@@ -20,7 +20,7 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
 
-	mux.HandleFunc("/explorer/richlist", getRichlist(gateway))
+	mux.HandleFunc("/richlist", getRichlist(gateway))
 }
 
 // DeprecatedCoinSupply records the coin supply info
@@ -234,7 +234,7 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 			}
 		}
 
-		topnAcc, err := gateway.GetTopnUxOutputs(topn, isDistribution)
+		topnAcc, err := gateway.GetRichlist(topn, isDistribution)
 		if err != nil {
 			wh.Error400(w, "internal error when get richlist")
 			return

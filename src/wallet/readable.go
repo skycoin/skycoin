@@ -4,7 +4,10 @@ import (
 
 	//"fmt"
 
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -173,7 +176,18 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 
 // Save saves to filename, remove .bak file if exist
 func (rw *ReadableWallet) Save(filename string) error {
-	return file.SaveJSON(filename, rw, 0600)
+	// return file.SaveJSON(filename, rw, 0600)
+	data, err := json.MarshalIndent(rw, "", "    ")
+	if err != nil {
+		return err
+	}
+	// Write the new file to a temporary
+	tmpname := filename + ".tmp"
+	if err := ioutil.WriteFile(tmpname, data, 0600); err != nil {
+		return err
+	}
+	// Move the temporary to the new file
+	return os.Rename(tmpname, filename)
 }
 
 // SaveSafe saves to filename, but won't overwrite existing

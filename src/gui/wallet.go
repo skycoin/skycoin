@@ -12,8 +12,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/coin"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 type Gatewayer interface {
@@ -369,7 +369,7 @@ type WalletFolder struct {
 }
 
 // Loads/unloads wallets from the wallet directory
-func GetWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
+func GetWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
 			Address: gateway.GetWalletDir(),
@@ -455,7 +455,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// 500 status with error message.
 	mux.HandleFunc("/wallets/reload", WalletsReloadHandler(gateway))
 
-	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
+	mux.HandleFunc("/wallets/folderName", GetWalletFolder(gateway))
 
 	// generate wallet seed
 	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))

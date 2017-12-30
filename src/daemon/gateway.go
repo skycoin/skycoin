@@ -10,9 +10,9 @@ import (
 
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 )
 
 // Exposes a read-only api for use by the gui rpc interface

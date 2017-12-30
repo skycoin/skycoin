@@ -6,21 +6,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-querystring/query"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/require"
 
 	"encoding/json"
 
+	"bytes"
+	"net/url"
+
+	"errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/pkg/errors"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"net/url"
-	"bytes"
 )
 
 // Gateway RPC interface wrapper for daemon state
@@ -438,7 +439,6 @@ func TestWalletSpendHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &FakeGateway{
 				walletID: tc.walletID,
@@ -466,7 +466,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(WalletSpendHandler(gateway))
+			handler := http.HandlerFunc(walletSpendHandler(gateway))
 
 			handler.ServeHTTP(rr, req)
 
@@ -486,10 +486,7 @@ func TestWalletSpendHandler(t *testing.T) {
 	}
 }
 
-
 func TestNewWalletSeed(t *testing.T) {
-	type httpRequestBody struct{}
-
 	type httpResponseBody struct {
 		Seed string `json:"seed"`
 	}
@@ -498,18 +495,16 @@ func TestNewWalletSeed(t *testing.T) {
 		name                  string
 		method                string
 		url                   string
-		body                  *httpRequestBody
 		status                int
 		err                   string
 		newWalletSeedResponse string
 		newWalletSeedError    error
-		httpResponse httpResponseBody
+		httpResponse          httpResponseBody
 	}{
 		{
 			"200 - OK",
 			http.MethodGet,
 			"/wallets/newSeed",
-			&httpRequestBody{},
 			http.StatusOK,
 			"",
 			"newWalletSeedResponse",
@@ -519,10 +514,9 @@ func TestNewWalletSeed(t *testing.T) {
 			},
 		},
 		{
-			"200 - OK. trailing backspace",
+			"200 - trailing backspace",
 			http.MethodGet,
 			"/wallets/newSeed/",
-			&httpRequestBody{},
 			http.StatusOK,
 			"",
 			"newWalletSeedResponse",
@@ -532,10 +526,9 @@ func TestNewWalletSeed(t *testing.T) {
 			},
 		},
 		{
-			"200 - OK. POST",
+			"200 - POST method",
 			http.MethodPost,
 			"/wallets/newSeed",
-			&httpRequestBody{},
 			http.StatusOK,
 			"",
 			"newWalletSeedResponse",
@@ -545,19 +538,15 @@ func TestNewWalletSeed(t *testing.T) {
 			},
 		},
 		{
-			"500 - newWalletSeedError",
+			"500 - gw newWalletSeed error",
 			http.MethodGet,
 			"/wallets/newSeed",
-			&httpRequestBody{},
 			http.StatusInternalServerError,
 			"500 Internal Server Error",
 			"",
 			errors.New("newWalletSeedError"),
 			httpResponseBody{
 				Seed: "",
-
-
-
 			},
 		},
 	}
@@ -568,19 +557,13 @@ func TestNewWalletSeed(t *testing.T) {
 			t: t,
 		}
 		gateway.On("NewWalletSeed").Return(tc.newWalletSeedResponse, tc.newWalletSeedError)
-		params, _ := query.Values(tc.body)
-		paramsEncoded := params.Encode()
-		var url = tc.url
-		if paramsEncoded != "" {
-			url = url + "?" + paramsEncoded
-		}
-		req, err := http.NewRequest(tc.method, url, nil)
+		req, err := http.NewRequest(tc.method, tc.url, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(NewWalletSeed(gateway))
+		handler := http.HandlerFunc(newWalletSeed(gateway))
 
 		handler.ServeHTTP(rr, req)
 

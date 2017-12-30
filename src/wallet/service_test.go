@@ -312,7 +312,7 @@ func TestServiceNewAddress(t *testing.T) {
 
 	// wallet doesn't exist
 	_, err = s.NewAddresses("not_exist_id.wlt", 1)
-	require.Equal(t, errWalletNotExist("not_exist_id.wlt"), err)
+	require.Equal(t, ErrWalletNotExist, err)
 }
 
 func TestServiceGetAddress(t *testing.T) {
@@ -332,7 +332,7 @@ func TestServiceGetAddress(t *testing.T) {
 	// test none exist wallet
 	notExistID := "not_exist_id.wlt"
 	_, err = s.GetAddresses(notExistID)
-	require.Equal(t, errWalletNotExist(notExistID), err)
+	require.Equal(t, ErrWalletNotExist, err)
 }
 
 func TestServiceGetWallet(t *testing.T) {

@@ -96,7 +96,6 @@ COMMANDS:
      walletOutputs         Display outputs of specific wallet
      addressBalance        Check the balance of specific addresses
      addressOutputs        Display outputs of specific addresses
-     richlist              Display rich list as desc order
      createRawTransaction  Create a raw transaction to be broadcast to the network later
      generateAddresses     Generate additional addresses for a wallet
      generateWallet        Generate a new wallet

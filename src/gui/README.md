@@ -9,6 +9,7 @@ Apis service port is `6420`.
 * [Explorer apis](#explorer-apis)
 * [Uxout apis](#uxout-apis)
 * [Coin supply api](#coin-supply-informations)
+* [Richlist api](#Richlist-show-top-N-addresses-by-uxouts)
 * [Log api](#wallet-log-api)
 
 
@@ -987,6 +988,49 @@ result:
     ]
 }
 ```
+## Richlist show top N addresses by uxouts
+
+```
+URI: /richlist
+Method: GET
+Args:
+    n: top N addresses, [default -1 returns all].
+    include-distribution: include distribution addresses or not, default false. 
+```
+
+example:
+
+```bash
+curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
+```
+
+result:
+
+```json
+[
+    {
+        "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
+        "coins": "1000000.000000",
+        "locked": true
+    }
+]
+```
+
 ## Wallet log api
 
 ```sh
@@ -1102,3 +1146,4 @@ result:
     "[skycoin.daemon:DEBUG] Received pong from 178.62.225.38:6000",
     "[skycoin.daemon:DEBUG] Received pong from 45.32.235.85:6000",
 ]
+```

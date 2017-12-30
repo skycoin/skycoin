@@ -9,7 +9,7 @@ Apis service port is `6420`.
 * [Explorer apis](#explorer-apis)
 * [Uxout apis](#uxout-apis)
 * [Coin supply api](#coin-supply-informations)
-* [Richlist api](#Richlist-show-top-n-addresses-by-uxouts)
+* [Richlist api](#richlist-show-top-n-addresses-by-uxouts)
 * [Log api](#wallet-log-api)
 
 
